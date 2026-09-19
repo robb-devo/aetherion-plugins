@@ -1,3 +1,4 @@
+import Vec3 from 'vec3'
 import { note } from './util.js'
 
 /**
@@ -102,11 +103,7 @@ export function blockIsSolid(block) {
 
 export function standingIsSafe(bot, x, y, z) {
   if (!bot?.blockAt) return false
-  const Vec3 = bot.entity?.position?.constructor
-  const at = (ax, ay, az) => {
-    if (Vec3) return bot.blockAt(new Vec3(Math.floor(ax), Math.floor(ay), Math.floor(az)))
-    return bot.blockAt({ x: Math.floor(ax), y: Math.floor(ay), z: Math.floor(az) })
-  }
+  const at = (ax, ay, az) => bot.blockAt(new Vec3(Math.floor(ax), Math.floor(ay), Math.floor(az)))
   const feet = at(x, y, z)
   const head = at(x, y + 1, z)
   const below = at(x, y - 1, z)
@@ -195,9 +192,10 @@ export function attachSafety(bot, opts = {}) {
       return
     }
 
-    if (bot.qaLastSafe && horizontalDistance(pos, bot.qaLastSafe) > 24 && Math.abs(pos.y - bot.qaLastSafe.y) > 3) {
+    if (bot.qaLastSafe && (horizontalDistance(pos, bot.qaLastSafe) > 24 || Math.abs(pos.y - bot.qaLastSafe.y) > 8)) {
       cancelPath(bot)
       bot.qaHome = resolveHome(bot, anchors)
+      bot.qaLastSafe = { x: pos.x, y: pos.y, z: pos.z }
       note(bot, `re-anchored @ ${pos.x.toFixed(1)} ${pos.y.toFixed(1)} ${pos.z.toFixed(1)}`, 'recovering')
     }
 
