@@ -230,7 +230,7 @@ public final class ForageIsleScan {
                 .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
                 .limit(30)
                 .forEach(e -> plugin.getLogger().info("  BIOME " + e.getValue() + " " + e.getKey()));
-        sender.sendMessage("§7Full list in latest.log — use tags to place §e/forage habitat§7 boxes.");
+        sender.sendMessage("§7Full list in latest.log — use tags to place §e/forageadmin habitat§7 boxes.");
         if (plugin.getConfig().getBoolean("forage-isle.auto-apply-habitats-from-scan", true)) {
             applyHabitatsFromTags(plugin, sender, tags);
         }

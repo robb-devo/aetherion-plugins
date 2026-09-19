@@ -14,9 +14,10 @@ softdepend:
   - PlaceholderAPI
 
 commands:
-  forage:
+  forageadmin:
     description: Foraging admin helpers (isle paste).
-    usage: /forage isle clear|paste|paste here
+    usage: /forageadmin isle clear|paste|paste here
+    aliases: [forageadm]
     permission: aetherion.forage.admin
 
 permissions:

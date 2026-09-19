@@ -26,7 +26,7 @@ public final class ForageCommand implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 0) {
-            sender.sendMessage("§7/forage isle … §8· §7/forage habitat … §8· §7/forage weather|grove|guide");
+            sender.sendMessage("§7/forageadmin isle … §8· §7/forageadmin habitat … §8· §7/forageadmin weather|grove|guide");
             return true;
         }
         String sub = args[0].toLowerCase(Locale.ROOT);
@@ -43,7 +43,7 @@ public final class ForageCommand implements CommandExecutor, TabCompleter {
             return handleGuide(sender, args);
         }
         if (!sub.equals("isle") && !sub.equals("island")) {
-            sender.sendMessage("§7/forage isle … §8| §7/forage habitat … §8| §7/forage weather|grove|guide");
+            sender.sendMessage("§7/forageadmin isle … §8| §7/forageadmin habitat … §8| §7/forageadmin weather|grove|guide");
             return true;
         }
         if (!sender.hasPermission("aetherion.forage.admin")) {
@@ -76,7 +76,7 @@ public final class ForageCommand implements CommandExecutor, TabCompleter {
             boolean here = args.length >= 3 && args[2].equalsIgnoreCase("here");
             if (here) {
                 if (!(sender instanceof Player player)) {
-                    sender.sendMessage("§c/forage isle paste here needs a player.");
+                    sender.sendMessage("§c/forageadmin isle paste here needs a player.");
                     return true;
                 }
                 ForageIslePaste.paste(plugin, sender, player.getLocation());
@@ -85,7 +85,7 @@ public final class ForageCommand implements CommandExecutor, TabCompleter {
             }
             return true;
         }
-        sender.sendMessage("§7/forage isle clear|paste|light|pads|scan|ensurearea");
+        sender.sendMessage("§7/forageadmin isle clear|paste|light|pads|scan|ensurearea");
         return true;
     }
 
@@ -151,7 +151,7 @@ public final class ForageCommand implements CommandExecutor, TabCompleter {
                     return true;
                 }
                 if (args.length < 3) {
-                    player.sendMessage("§c/forage habitat save <id> [display…]");
+                    player.sendMessage("§c/forageadmin habitat save <id> [display…]");
                     return true;
                 }
                 String id = args[2];
@@ -176,7 +176,7 @@ public final class ForageCommand implements CommandExecutor, TabCompleter {
                 sender.sendMessage("§aHabitats + weather + grove + guide reloaded.");
             }
             default -> sender.sendMessage(
-                    "§7/forage habitat list|here|pos1|pos2|save <id>|reload");
+                    "§7/forageadmin habitat list|here|pos1|pos2|save <id>|reload");
         }
         return true;
     }
@@ -269,7 +269,7 @@ public final class ForageCommand implements CommandExecutor, TabCompleter {
             }
             return true;
         }
-        sender.sendMessage("§7/forage guide give|talk|despawn §8· place via DEV menu");
+        sender.sendMessage("§7/forageadmin guide give|talk|despawn §8· place via DEV menu");
         return true;
     }
 

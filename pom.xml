@@ -35,6 +35,8 @@
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- Paper 1.21.1-R0.1-SNAPSHOT: keep SNAPSHOT so we stay on the 1.21.1 Paper API
+             coordinate used by the live servers. Do not bump Minecraft version here. -->
         <paper.version>1.21.1-R0.1-SNAPSHOT</paper.version>
         <aetherion.version>1.0.0</aetherion.version>
         <placeholderapi.version>2.11.6</placeholderapi.version>
@@ -50,7 +52,7 @@
         </repository>
         <repository>
             <id>placeholderapi</id>
-            <url>https://repo.extendedclip.com/content/repositories/placeholderapi/</url>
+            <url>https://repo.helpch.at/releases/</url>
         </repository>
         <repository>
             <id>enginehub</id>
