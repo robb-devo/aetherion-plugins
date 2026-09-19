@@ -48,8 +48,9 @@ mining:
 # ---------------------------------------------------------------------------
 testbots:
   enabled: false
-  max-total: 20
-  max-per-start: 20
+  # Mixed fleet headroom (~5 roles × 8, or a thinner mix of all 9). Live max-players is 60.
+  max-total: 40
+  max-per-start: 40
   runner:
     host: 127.0.0.1
     port: 18765
@@ -60,11 +61,23 @@ testbots:
     forage: QaForage
     catch: QaCatch
     roam: QaRoam
+    combat: QaCombat
+    fish: QaFish
+    trade: QaTrade
+    quest: QaQuest
+    pad: QaPad
   caps:
-    mine: 20
-    forage: 20
-    catch: 20
-    roam: 20
+    mine: 8
+    forage: 8
+    catch: 8
+    roam: 8
+    combat: 8
+    fish: 8
+    quest: 8
+    trade: 8
+    pad: 8
+  # Player-like extras (skills, mixed-tier kits, pets, boosters) run on every provision.
+  # Skill XP only lands on equipped loadout skills — bots do not /skills setlevel.
   safety:
     # Paper watchdog + Mineflayer hold. Tune if pads sit lower than Y 56.
     void-floor-y: 40
@@ -73,7 +86,7 @@ testbots:
     respawn-setup-ticks: 5
     # Teleport idle mine/forage/catch bots to another role pad (12s).
     idle-reanchor-ticks: 240
-    # Roam: plugin pad-hop between origin pads (80s). 0 disables.
+    # Roam/pad: plugin pad-hop between origin pads (80s). 0 disables.
     pad-hop-ticks: 1600
   roles:
     # Eldervale interior first (paste center), then mid-isle, then landing lip.
@@ -90,6 +103,7 @@ testbots:
       leash-radius: 16
     # Grove / return platform / paste center. Removed jump-pad lip 479.5 74 -240.5
     # (Canopy-Kalle death loop) and any canopy-edge scatter.
+    # Leash 20 so logs a few blocks past the pad still count; search does not pick off-island trees.
     forage:
       world: world
       anchors:
@@ -100,7 +114,7 @@ testbots:
       yaw: 90.0
       pitch: 10.0
       scatter-radius: 5
-      leash-radius: 16
+      leash-radius: 20
     # Solid habitat pads only. Removed 500.5 80 -200.5 (immediate void after TP).
     catch:
       world: world
@@ -131,6 +145,66 @@ testbots:
       pitch: 0.0
       scatter-radius: 3
       leash-radius: 14
+
+    # Borderlands combat zone (hostiles). QaCombat login names; StressC still kits.
+    combat:
+      world: world
+      anchors:
+        - { x: 220.5, y: 58.0, z: 160.5 }
+      yaw: 0.0
+      pitch: 0.0
+      scatter-radius: 8
+      leash-radius: 22
+    # Water scan from these pads (Forage dock / Origin). Tune if live water is elsewhere.
+    fish:
+      world: world
+      anchors:
+        - { x: 560.5, y: 91.0, z: -200.5 }
+        - { x: 559.5, y: 90.0, z: -208.5 }
+        - { x: 560.5, y: 90.0, z: -160.5 }
+        - { x: 22.5, y: 56.0, z: 305.5 }
+      yaw: 90.0
+      pitch: 20.0
+      scatter-radius: 3
+      leash-radius: 14
+    # Origin pads + /ah /bazaar. GUIs need the TRADER progression flag.
+    trade:
+      world: world
+      waypoints:
+        - { x: 22.5, y: 56.0, z: 305.5 }
+        - { x: 18.5, y: 56.0, z: 301.5 }
+        - { x: 438.5, y: 56.0, z: -233.5 }
+      yaw: 0.0
+      pitch: 0.0
+      scatter-radius: 3
+      leash-radius: 14
+    # Known FancyNPC pads (Maren / Twig / Eldervale interior). Right-click only.
+    quest:
+      world: world
+      anchors:
+        - { x: 53.5, y: 91.0, z: 482.5 }
+        - { x: 22.5, y: 90.0, z: 580.5 }
+        - { x: 438.5, y: 56.0, z: -233.5 }
+        - { x: 560.5, y: 91.0, z: -200.5 }
+      yaw: 0.0
+      pitch: 0.0
+      scatter-radius: 3
+      leash-radius: 14
+    # Jump pads. Forage lip 479.5 74 -240.5 is omitted (void after wander); plugin TPs between Origin pads.
+    pad:
+      world: world
+      waypoints:
+        - { x: 22.5, y: 56.0, z: 305.5 }
+        - { x: 18.5, y: 56.0, z: 301.5 }
+        - { x: 26.5, y: 56.0, z: 309.5 }
+        - { x: 53.5, y: 91.0, z: 482.5 }
+        - { x: 438.5, y: 56.0, z: -233.5 }
+        - { x: 434.5, y: 56.0, z: -229.5 }
+        - { x: 442.5, y: 56.0, z: -237.5 }
+      yaw: 0.0
+      pitch: 0.0
+      scatter-radius: 0
+      leash-radius: 12
 
   # Chat / tab / Collection leaderboard labels. Login names stay QaMine01 (Velocity).
   nicknames:

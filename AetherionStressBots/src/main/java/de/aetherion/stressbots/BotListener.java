@@ -69,7 +69,7 @@ public final class BotListener implements Listener {
     }
 
     private ConfigurationSection roleSection(BotRoleHandler handler) {
-        if (handler.role().wave1()) {
+        if (handler.role().startable()) {
             return BotRoleRegistry.roleSection(plugin, handler.role());
         }
         return plugin.getConfig().getConfigurationSection(handler.role().id());

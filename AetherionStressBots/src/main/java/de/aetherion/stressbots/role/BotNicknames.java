@@ -18,37 +18,54 @@ import java.util.Map;
  */
 public final class BotNicknames {
 
-    private static final Map<BotRole, List<String>> DEFAULTS = Map.of(
-            BotRole.MINE, List.of(
+    private static final Map<BotRole, List<String>> DEFAULTS = Map.ofEntries(
+            Map.entry(BotRole.MINE, List.of(
                     "§bPickel-Ute", "§bErz-Ernie", "§bSchacht-Stefan", "§bKohle-Karla", "§bAder-Achim",
                     "§bGruben-Gabi", "§bStollen-Sören", "§bFlinz-Frieda", "§bTiefen-Theo", "§bKies-Klaus",
                     "§bGestein-Greta", "§bBohr-Bernd", "§bErzgeist", "§bSchiefer-Susi", "§bHauer-Hans",
                     "§bAetherader", "§bKrummpickel", "§bVenen-Vera", "§bDusty-Dieter", "§bAderwächter"
-            ),
-            BotRole.FORAGE, List.of(
+            )),
+            Map.entry(BotRole.FORAGE, List.of(
                     "§aAst-Anni", "§aLaub-Lutz", "§aCanopy-Kalle", "§aStamm-Steffi", "§aMiss-Axt",
                     "§aBirken-Bert", "§aEichen-Else", "§aRinden-Rudi", "§aForst-Fritze", "§aAetherholz",
                     "§aZweig-Zora", "§aKlotz-Kai", "§aHain-Hilde", "§aWurzel-Willi", "§aSchnitzi",
                     "§aKronen-Kira", "§aMoos-Moritz", "§aHolz-Heiner", "§aIsle-Ilse", "§aBlatt-Bärbel"
-            ),
-            BotRole.CATCH, List.of(
+            )),
+            Map.entry(BotRole.CATCH, List.of(
                     "§dKugel-Kai", "§dSphäre-Sven", "§dPet-Petra", "§dFang-Fiete", "§dHabitat-Hansi",
                     "§dNetz-Nadja", "§dGaff-Gustav", "§dFlucht-Felix", "§dAetherfang", "§dKnautsch-Kim",
                     "§dPfote-Pia", "§dWurf-Waldi", "§dZoo-Zelda", "§dMenagerie-Max", "§dSchnapp-Sandra",
                     "§dKäfig-Kurt", "§dPlüsch-Paul", "§dTreffer-Tine", "§dMiss-Catch", "§dKugelregen"
-            ),
-            BotRole.ROAM, List.of(
+            )),
+            Map.entry(BotRole.ROAM, List.of(
                     "§eFlaneur-Franz", "§eCapital-Claus", "§ePad-Poldi", "§eBummel-Bärbel", "§eAether-Tourist",
                     "§eHafen-Heike", "§ePflaster-Pit", "§eUmweg-Uwe", "§eGasse-Gundula", "§eSchlender-Sepp",
                     "§eOrigin-Otto", "§eBrücken-Britta", "§eMarkt-Manni", "§eIrrläufer", "§eHub-Hugo",
                     "§eEcken-Ella", "§eTorkel-Tim", "§eStadtgeist", "§eQuatsch-Quirin", "§eBummelant"
-            ),
-            BotRole.COMBAT, List.of(
-                    "§cBorder-Bernd", "§cWaste-Wanda", "§cVex-Victim", "§cKlingen-Kai", "§cScharmützel"
-            ),
-            BotRole.MINING, List.of(
+            )),
+            Map.entry(BotRole.COMBAT, List.of(
+                    "§cBorder-Bernd", "§cWaste-Wanda", "§cVex-Victim", "§cKlingen-Kai", "§cScharmützel",
+                    "§cHieb-Hilde", "§cAetherfehde", "§cTritt-Toni", "§cSchild-Susi", "§cRage-Rudi"
+            )),
+            Map.entry(BotRole.FISH, List.of(
+                    "§3Köder-Kai", "§3Nibble-Nora", "§3Angel-Ansgar", "§3Brassen-Berta", "§3Haken-Heinz",
+                    "§3Tiden-Tine", "§3Kutter-Kurt", "§3Aetherköder", "§3Schnur-Sven", "§3Wellen-Wilma"
+            )),
+            Map.entry(BotRole.TRADE, List.of(
+                    "§6Markt-Marga", "§6Bazaar-Berti", "§6Auktions-Ute", "§6Händler-Hans", "§6Schatz-Susi",
+                    "§6Gebot-Gerd", "§6Taler-Tanja", "§6Aethermarkt", "§6Schnäppchen", "§6Zahltag-Zack"
+            )),
+            Map.entry(BotRole.QUEST, List.of(
+                    "§dQuest-Quirin", "§dMaren-Fan", "§dTwig-Talker", "§dNpc-Nadja", "§dDialog-Dieter",
+                    "§dAuftrag-Anni", "§dKlatsch-Klaus", "§dAethergeschwätz", "§dPlauder-Pia", "§dHint-Heiko"
+            )),
+            Map.entry(BotRole.PAD, List.of(
+                    "§ePad-Hopper", "§eSchleim-Sepp", "§eSprung-Steffi", "§eLaunch-Lutz", "§eBogen-Bärbel",
+                    "§eInsel-Ilse", "§eHub-Hüpfer", "§eAetherpad", "§eTrampolin-Tim", "§eAbsprung-Anke"
+            )),
+            Map.entry(BotRole.MINING, List.of(
                     "§7Stress-Stollen", "§7Schacht-Bot", "§7Alte-Ader", "§7Mine-Marga", "§7Staub-Stefan"
-            )
+            ))
     );
 
     private final AetherionStressBots plugin;

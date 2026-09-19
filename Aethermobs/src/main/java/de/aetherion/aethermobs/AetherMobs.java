@@ -1305,6 +1305,42 @@ public final class AetherMobs extends JavaPlugin implements Listener {
     }
 
     /**
+     * QA helper: own the pet (if missing) and equip it so it follows like a player companion.
+     */
+    public boolean equipDevPet(Player player, String petId) {
+        if (player == null || !player.isOnline()) {
+            return false;
+        }
+        giveDevPet(player, petId);
+        PlayerPetCollection collection = getPetCollection(player);
+        if (collection == null || collection.getPets().isEmpty()) {
+            return false;
+        }
+        PetInstance chosen = null;
+        if (petId != null && !petId.isBlank()) {
+            String want = petId.toLowerCase(java.util.Locale.ROOT);
+            for (PetInstance pet : collection.getPets()) {
+                if (pet.getDefinition() != null && want.equalsIgnoreCase(pet.getDefinition().getId())) {
+                    chosen = pet;
+                    break;
+                }
+            }
+        }
+        if (chosen == null) {
+            chosen = collection.getPets().get(collection.getPets().size() - 1);
+        }
+        collection.equipPet(chosen);
+        if (petDataManager != null) {
+            petDataManager.save(collection);
+        }
+        ActivePetManager active = getActivePetManager();
+        if (active != null) {
+            active.equip(player, chosen);
+        }
+        return true;
+    }
+
+    /**
      * Shop / grant helper. Optional forced rarity (e.g. RARE / EPIC for Hacker).
      */
     public boolean giveShopPet(Player player, String petId, String rarityName) {

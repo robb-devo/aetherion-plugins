@@ -89,6 +89,11 @@ public final class PetAccessImpl implements PetAccess {
     }
 
     @Override
+    public boolean equipDevPet(Player player, String petId) {
+        return plugin.equipDevPet(player, petId);
+    }
+
+    @Override
     public int unlockAllPetsDev(Player player) {
         return plugin.unlockAllPetsDev(player);
     }

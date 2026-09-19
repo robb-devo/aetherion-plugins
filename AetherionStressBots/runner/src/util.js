@@ -2,6 +2,31 @@ export function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+/** Human-ish delay: base ± spread fraction. */
+export function jitter(base, spread = 0.35) {
+  const s = Math.max(0, spread)
+  return Math.max(40, Math.round(base * (1 - s + Math.random() * s * 2)))
+}
+
+export function fidget(bot, activity) {
+  const roll = Math.random()
+  try {
+    if (roll < 0.34) {
+      bot.setControlState('jump', true)
+      setTimeout(() => bot.setControlState('jump', false), jitter(220, 0.3))
+      note(bot, 'jump', activity)
+    } else if (roll < 0.67) {
+      bot.swingArm()
+      note(bot, 'swing', activity)
+    } else {
+      bot.look(Math.random() * Math.PI * 2, (Math.random() - 0.5) * 0.5, true).catch(() => {})
+      note(bot, 'look around', activity)
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
 export function waitUntil(predicate, timeoutMs) {
   return new Promise((resolve, reject) => {
     const start = Date.now()
@@ -40,22 +65,31 @@ export function inventoryAlmostFull(bot) {
 export function tossJunk(bot) {
   for (const item of bot.inventory.items()) {
     const n = item.name
-    if (n.includes('cobble') || n.includes('dirt') || n.includes('gravel') || n === 'stone' || n.includes('deepslate')) {
+    if (
+      n.includes('cobble') || n.includes('dirt') || n.includes('gravel') || n === 'stone'
+      || n.includes('deepslate') || n.includes('netherrack') || n.includes('andesite')
+      || n.includes('diorite') || n.includes('granite') || n.includes('tuff')
+      || n.includes('rotten_flesh') || n === 'stick' || n.includes('poisonous')
+    ) {
       bot.tossStack(item).catch(() => {})
     }
   }
 }
 
-export function findMatchingBlock(bot, nameSet, radius, yRange = 6) {
-  const origin = bot.entity.position
+export function findMatchingBlock(bot, nameSet, radius, yRange = 6, origin = bot.entity?.position) {
+  if (!bot?.entity?.position || !origin) return null
+  const originVec = bot.entity.position.offset(0, 0, 0)
+  originVec.x = origin.x
+  originVec.y = origin.y
+  originVec.z = origin.z
   let best = null
   let bestDist = radius
   const r = Math.ceil(radius)
   for (let dx = -r; dx <= r; dx++) {
     for (let dy = -yRange; dy <= yRange; dy++) {
       for (let dz = -r; dz <= r; dz++) {
-        const pos = origin.offset(dx, dy, dz).floored()
-        const dist = origin.distanceTo(pos.offset(0.5, 0.5, 0.5))
+        const pos = originVec.offset(dx, dy, dz).floored()
+        const dist = originVec.distanceTo(pos.offset(0.5, 0.5, 0.5))
         if (dist > radius || dist >= bestDist) continue
         const block = bot.blockAt(pos)
         if (!block || !block.name) continue

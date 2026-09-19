@@ -322,6 +322,19 @@ public final class SkillService implements StatProvider, Listener {
         dirty = true;
     }
 
+    /**
+     * Extra unlocked slots on top of the lifetime-coin curve.
+     * Used by StressBots so a few skills can be equipped without {@code /skills setlevel}.
+     */
+    public void grantBonusSlots(Player player, int extra) {
+        if (player == null) {
+            return;
+        }
+        PlayerSkills skills = of(player);
+        skills.bonusSlots = Math.max(skills.bonusSlots, Math.min(SLOT_COUNT, Math.max(0, extra)));
+        dirty = true;
+    }
+
     public void resetLoadout(Player player) {
         PlayerSkills skills = of(player);
         for (int i = 0; i < skills.slots.length; i++) {

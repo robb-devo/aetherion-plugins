@@ -14,6 +14,14 @@ public interface TestBotsAccess {
     List<String> wave1Roles();
 
     /**
+     * Dev-menu / {@code /stressbots start} role ids (Wave 1 + later waves).
+     * Default: {@link #wave1Roles()}.
+     */
+    default List<String> startableRoles() {
+        return wave1Roles();
+    }
+
+    /**
      * Ask the runner to bring this role to {@code count} online bots.
      * @return chat-ready status line (success or error)
      */

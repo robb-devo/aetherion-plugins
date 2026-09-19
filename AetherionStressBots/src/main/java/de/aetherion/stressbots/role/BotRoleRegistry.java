@@ -26,6 +26,10 @@ public final class BotRoleRegistry {
         register(new CatchRoleHandler(plugin));
         register(new RoamRoleHandler(plugin));
         register(new CombatRoleHandler(plugin));
+        register(new FishRoleHandler(plugin));
+        register(new TradeRoleHandler(plugin));
+        register(new QuestRoleHandler(plugin));
+        register(new PadRoleHandler(plugin));
         register(new LegacyMiningRoleHandler(plugin));
     }
 
@@ -53,15 +57,36 @@ public final class BotRoleRegistry {
         int bestLen = -1;
         for (BotRoleHandler handler : handlers.values()) {
             String prefix = handler.prefix();
-            if (prefix == null || prefix.isBlank()) {
-                continue;
-            }
-            if (lower.startsWith(prefix) && prefix.length() > bestLen) {
+            if (prefix != null && !prefix.isBlank() && lower.startsWith(prefix) && prefix.length() > bestLen) {
                 best = handler;
                 bestLen = prefix.length();
             }
+            for (String extra : handler.prefixes()) {
+                if (extra == null || extra.isBlank()) {
+                    continue;
+                }
+                String alias = extra.toLowerCase(Locale.ROOT);
+                if (lower.startsWith(alias) && alias.length() > bestLen) {
+                    best = handler;
+                    bestLen = alias.length();
+                }
+            }
         }
         return best;
+    }
+
+    public List<BotRoleHandler> startable() {
+        List<BotRoleHandler> out = new ArrayList<>();
+        for (BotRole role : BotRole.values()) {
+            if (!role.startable()) {
+                continue;
+            }
+            BotRoleHandler handler = handlers.get(role);
+            if (handler != null) {
+                out.add(handler);
+            }
+        }
+        return out;
     }
 
     public List<BotRoleHandler> wave1() {
@@ -99,8 +124,8 @@ public final class BotRoleRegistry {
     }
 
     static int capOf(AetherionStressBots plugin, BotRole role) {
-        int configured = plugin.getConfig().getInt("testbots.caps." + role.id(), 20);
-        int maxStart = plugin.getConfig().getInt("testbots.max-per-start", 20);
+        int configured = plugin.getConfig().getInt("testbots.caps." + role.id(), 8);
+        int maxStart = plugin.getConfig().getInt("testbots.max-per-start", 40);
         return Math.max(0, Math.min(configured, maxStart));
     }
 

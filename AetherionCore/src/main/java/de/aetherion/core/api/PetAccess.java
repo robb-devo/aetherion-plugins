@@ -24,6 +24,14 @@ public interface PetAccess {
 
     boolean giveDevPet(Player player, String petId);
 
+    /**
+     * Give (if needed) and equip a pet so it follows. Default is a no-op for
+     * implementors that only expose catalog helpers.
+     */
+    default boolean equipDevPet(Player player, String petId) {
+        return false;
+    }
+
     int unlockAllPetsDev(Player player);
 
     ItemStack catchSphere(String id);

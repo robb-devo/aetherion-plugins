@@ -39,11 +39,7 @@ public final class CatchRoleHandler implements BotRoleHandler {
     @Override
     public void kit(Player player, CustomItem items) {
         PlayerInventory inv = player.getInventory();
-        inv.setHelmet(items.catcher().helmet(1));
-        inv.setChestplate(items.catcher().chestplate(1));
-        inv.setLeggings(items.catcher().leggings(1));
-        inv.setBoots(items.catcher().boots(1));
-        inv.setItemInMainHand(items.catcher().gaff(1));
+        BotPlaystyle.kitCatcher(inv, items, BotPlaystyle.gearTier(player));
         giveSpheres(inv);
     }
 
@@ -78,6 +74,6 @@ public final class CatchRoleHandler implements BotRoleHandler {
 
     @Override
     public String description() {
-        return "Throw catch spheres from a solid habitat pad. No void chase; timing minigame is not automated.";
+        return "Throw catch spheres from a solid habitat pad. Mixed catcher gear + optional follow pet. Timing minigame is not automated.";
     }
 }

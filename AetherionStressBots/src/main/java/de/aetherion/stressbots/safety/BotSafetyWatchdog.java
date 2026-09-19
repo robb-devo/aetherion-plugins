@@ -101,7 +101,7 @@ public final class BotSafetyWatchdog implements Listener, Runnable {
             }
 
             int hopTicks = plugin.getConfig().getInt("testbots.safety.pad-hop-ticks", 0);
-            if (handler.role() == BotRole.ROAM && hopTicks > 0) {
+            if ((handler.role() == BotRole.ROAM || handler.role() == BotRole.PAD) && hopTicks > 0) {
                 long last = lastHopAt.getOrDefault(player.getUniqueId(), 0L);
                 if (now - last > hopTicks * 50L) {
                     recover(player, handler, "pad-hop", true);
@@ -143,7 +143,7 @@ public final class BotSafetyWatchdog implements Listener, Runnable {
     }
 
     private ConfigurationSection roleSection(BotRoleHandler handler) {
-        if (handler.role().wave1()) {
+        if (handler.role().startable()) {
             return BotRoleRegistry.roleSection(plugin, handler.role());
         }
         return plugin.getConfig().getConfigurationSection(handler.role().id());

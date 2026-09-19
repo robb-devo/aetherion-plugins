@@ -26,6 +26,10 @@ function parseArgs(argv) {
     forage: 0,
     catch: 0,
     roam: 0,
+    fish: 0,
+    trade: 0,
+    quest: 0,
+    pad: 0,
     listen: false,
     host: baseConfig.host,
     port: baseConfig.port,
@@ -45,6 +49,10 @@ function parseArgs(argv) {
     else if (arg === '--forage' && next != null) takeNum('forage')
     else if (arg === '--catch' && next != null) takeNum('catch')
     else if (arg === '--roam' && next != null) takeNum('roam')
+    else if (arg === '--fish' && next != null) takeNum('fish')
+    else if ((arg === '--trade' || arg === '--ah') && next != null) takeNum('trade')
+    else if (arg === '--quest' && next != null) takeNum('quest')
+    else if (arg === '--pad' && next != null) takeNum('pad')
     else if (arg === '--host' && next != null) { out.host = next; i++ }
     else if (arg === '--port' && next != null) { out.port = Number(next); i++ }
     else if (arg === '--version' && next != null) { out.version = next; i++ }
@@ -63,10 +71,12 @@ async function main() {
   const args = parseArgs(process.argv.slice(2))
   if (args.help) {
     console.log(`Usage:
-  node src/index.js [--listen] [--mine N] [--forage N] [--catch N] [--roam N] [--combat N] [--mining N]
+  node src/index.js [--listen] [--mine N] [--forage N] [--catch N] [--roam N]
+                    [--combat N] [--fish N] [--trade N] [--quest N] [--pad N] [--mining N]
 
-Wave 1 QA: --mine / --forage / --catch / --roam  (or Dev menu via --listen)
-Phase 1 stress: --combat / --mining (StressC / StressM)
+Wave 1 QA: --mine / --forage / --catch / --roam
+Wave 2 QA: --combat (QaCombat) / --fish / --trade / --quest / --pad
+Legacy:    --mining (StressM). --combat uses QaCombat unless prefixes.combat is StressC.
 
 --listen   start with 0 bots and keep the HTTP control server up (Dev menu)
 Defaults connect offline to MMO-R (${baseConfig.host}:${baseConfig.port}).
@@ -105,6 +115,10 @@ Stop with Ctrl+C.`)
     catch: args.catch,
     roam: args.roam,
     combat: args.combat,
+    fish: args.fish,
+    trade: args.trade,
+    quest: args.quest,
+    pad: args.pad,
     mining: args.mining
   }
   const total = Object.values(planned).reduce((a, b) => a + b, 0)
