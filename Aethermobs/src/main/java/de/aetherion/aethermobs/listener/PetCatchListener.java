@@ -850,8 +850,11 @@ public class PetCatchListener implements Listener {
         AetherionItems items = AetherionItems.getInstance();
 
         if (items != null && items.getItemManager() != null) {
-            chance += new ActiveEquipmentStats(items.getItemManager())
+            double gear = new ActiveEquipmentStats(items.getItemManager())
                     .getStat(player, ItemCapability.PET_CATCH_RATE);
+            // Gear scales the sphere rate (Skyblock-ish), never a flat +61% Mythic.
+            double scale = 1.0d + Math.min(0.80d, Math.max(0.0d, gear) / 100.0d);
+            chance *= scale;
         }
 
         return Math.max(0.0, Math.min(100.0, chance));

@@ -18,7 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Pet catcher set — hay T1, feather-compressed T2/T3.
+ * Pet catcher set — hay T1, raw-feather T2, Compacted Feather T3.
  */
 public final class CatcherItems {
 

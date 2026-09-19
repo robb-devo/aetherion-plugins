@@ -7,6 +7,26 @@
 
 ---
 
+## Applied in PR (`cursor/balance-patch-878f`)
+
+Gewicht-5 / high-priority Soll from this audit, plus fishing / pickaxe / skill-proc feedback. Item IDs unchanged.
+
+| # | Change | After |
+|---|--------|-------|
+| A / F1 | Compact chain one language | **128 raw → Compressed**, **128 Compressed → Compacted**. Craft 4×32. Lore „128 Compressed“. Pocket Forge 128. Quarry `COMPACT_UNIT` 128×128. Economy already 128 → Craft→Trader **1.5×**. |
+| B / F2 | McNugget aetherblade | Rank loot: 8/5/3 Compressed Coal + booster. Silas aetherblade now gated on **Aetherion**. |
+| C / F3 | Catcher T3 + Common Sphere ≈ 63% Mythic | Sphere Mythic **2% → 0.3%**. Catch gear **multiplies** sphere rate (cap +80%), not +flat. T3 recipe **8 Compacted Feather**. T3+Common Mythic ≈ **0.5%**. |
+| D / F4 | Listing printers | `catcher_*_3` ~910k → ~457k (honest T2+8 Compacted Feather×1.65). `charm_estate` 1.4M → **19**. `vein_siphon` 10.6M → **180**. 32% buyback is no longer a printer. |
+| E / F7–F8 | Compacted-named gear vs T-ladder | Stone Pick **16/28/2** (≥ T1). Iron Pick **46/76/6** (1 stone + 3 Comp. Iron). Diamond Pick **80/130/12** (1 iron + 2 Compac. Diamond). Chest **4** Compac. Diamond, Def 54 / HP 74. Sword **3** Compac. Diamond + scrap (T4 stats kept). |
+| F | Early Compacted fish | Crates **0%** below rod T4 (or T3 + L40 + 160 Catch). Catch-upgrade Compressed needs rod T3+. Base/vanilla/T1 rod + L1: no Compacted crate, no catch-upgrade. Base crate 4.5% → 1.2% gated. |
+| G | T5 pick 3× T4 sink | T5 = **1 T4 + 1 Compacted Diamond + 3 Compacted Redstone**. Listed 3.66M → 2.03M. |
+| H | Skill procs | Compact **1.2–5.5% → 0.6–2.8%**. Compacted-of-proc **6/10% → 3/5%**. Spread Sheet **1.5 → 8**. Wide Furrow **14 → 22**. |
+| extra | Diamond ore gate | Required MP **95 → 80** so T4 pick (88) mines diamond alone. |
+
+Not in this PR: Hollow Lurker, F1 relic pool / F2 HP, Blood Tax / Account softcap, pet spawn weights, wildlife T3, shard shop, Pathwarden, quarry type gaps.
+
+---
+
 ## A) Kurzfazit
 
 ### Was schon gut wirkt
@@ -383,7 +403,7 @@ Die letzten drei sind **keine Senken**, sondern Drucker, solange der Gear-Trader
 
 ## F) Priorisierte Unbalance-Liste
 
-Gruppe nach einem Patch, nicht einzeln anfassen. **Nicht in diesem Run umgesetzt.**
+Gruppe nach einem Patch, nicht einzeln anfassen. **F1–F4, F7–F8, F12 (diamond MP) plus fishing/skill-proc feedback: siehe Applied in PR oben.** F5–F6, F9–F11, F13–F20 still open.
 
 | # | Gewicht | Ist | Soll-Vorschlag (Skyblock-glatt) | Datei / Symbol |
 |---|---------|-----|----------------------------------|----------------|

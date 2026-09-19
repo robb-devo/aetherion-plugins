@@ -273,7 +273,7 @@ public final class FenceService implements Listener {
                 offer("warped_blade", "Warped Blade", "hollow_lurker", "Hollow Lurker", items::createWarpedBlade),
                 offer("hollow_longbow", "Hollow Longbow", "hollow_lurker", "Hollow Lurker", items::createHollowLongbow),
                 offer("gravwell_cleaver", "Gravwell Cleaver", "pathwarden", "Pathwarden", items::createGravwellCleaver),
-                offer("aetherblade", "Aetherblade", "mcnugget", "McNugget", items::createAetherblade),
+                offer("aetherblade", "Aetherblade", "aetherion", "Aetherion", items::createAetherblade),
                 offer("bridged_axe", "Bridged Axe", "bridge_troll", "Bridge Troll", items::createBridgedAxe),
                 offer("squids_boot", "Squid's Boot", "squidward", "Squidward", items::createSquidsBoot),
                 offer("skuldugery_shortbow", "Skuldugery Shortbow", "skuldugery", "Skuldugery", items::createSkuldugeryShortbow),

@@ -13,16 +13,28 @@ import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Aetherion fishing loot — no vanilla junk/treasure.
- * Weights lean on fishing skill + Fish Catch; stays mildly OP on purpose.
+ * Weights lean on fishing skill + Fish Catch.
+ * Compressed/Compacted fish are gated by rod tier, fishing level, and catch power.
  */
 public final class FishingLootPool {
 
     /** Guaranteed extra fish every this much Fish Catch. */
     public static final double CATCH_PER_EXTRA = 40.0d;
     public static final int EXTRA_CAP = 6;
-    /** Catch-stat bonus toward compressed/compacted procs. */
-    public static final double CATCH_COMPACT_DIV = 1200.0d;
-    public static final double CATCH_COMPACT_CAP = 0.12d;
+    /**
+     * Catch-stat bonus toward compressed procs — only after a real rod tier.
+     * Base / wooden / vanilla rods stay at 0.
+     */
+    public static final double CATCH_COMPACT_DIV = 1800.0d;
+    public static final double CATCH_COMPACT_CAP = 0.06d;
+    /** Compressed catch-upgrade needs rod T3+ (or T2 with skill/level). */
+    public static final int COMPRESSED_ROD_TIER = 3;
+    /** Compacted catch-upgrade / crates need rod T4+ (or T3 with real skill). */
+    public static final int COMPACTED_ROD_TIER = 4;
+    public static final int COMPRESSED_FISH_LEVEL = 18;
+    public static final int COMPACTED_FISH_LEVEL = 40;
+    public static final double COMPRESSED_CATCH_STAT = 80.0d;
+    public static final double COMPACTED_CATCH_STAT = 160.0d;
 
     private FishingLootPool() {
     }
@@ -73,7 +85,15 @@ public final class FishingLootPool {
             compressed.setAmount(Math.max(1, raw.getAmount()));
             return compressed;
         }
+        int rodTier = rodTier(player, items);
+        int fishingLevel = fishingLevel(player);
+        if (!allowsCompressed(rodTier, fishingLevel, catchStat)) {
+            return raw;
+        }
         double catchBonus = Math.min(CATCH_COMPACT_CAP, Math.max(0.0d, catchStat) / CATCH_COMPACT_DIV);
+        if (rodTier < COMPRESSED_ROD_TIER) {
+            catchBonus *= 0.25d;
+        }
         if (catchBonus <= 0.0d || ThreadLocalRandom.current().nextDouble() >= catchBonus) {
             return raw;
         }
@@ -83,7 +103,9 @@ public final class FishingLootPool {
         }
         SkillService skills = AetherionItemsSkills.skills();
         double upgrade = skills == null ? 0.0d : skills.compactedUpgradeChance(player, false, false, false, true);
-        if (upgrade > 0.0d && ThreadLocalRandom.current().nextDouble() < upgrade) {
+        if (allowsCompacted(rodTier, fishingLevel, catchStat)
+                && upgrade > 0.0d
+                && ThreadLocalRandom.current().nextDouble() < upgrade) {
             ItemStack compacted = resource.compacted();
             if (compacted != null) {
                 compacted.setAmount(1);
@@ -118,8 +140,62 @@ public final class FishingLootPool {
     }
 
     public static double compactedCrateChance(double base, double catchStat, int fishingLevel) {
-        return Math.min(0.09d, base * (1.0d + catchStat / 160.0d)
-                * (0.9d + 0.12d * SkillProgression.effectMultiplier(fishingLevel)));
+        return compactedCrateChance(base, catchStat, fishingLevel, 0);
+    }
+
+    public static double compactedCrateChance(double base, double catchStat, int fishingLevel, int rodTier) {
+        if (!allowsCompacted(rodTier, fishingLevel, catchStat)) {
+            return 0.0d;
+        }
+        double scale = rodTier >= 5 ? 1.0d : rodTier >= 4 ? 0.65d : 0.35d;
+        return Math.min(0.04d, base * scale * (1.0d + catchStat / 220.0d)
+                * (0.85d + 0.10d * SkillProgression.effectMultiplier(fishingLevel)));
+    }
+
+    public static boolean allowsCompressed(int rodTier, int fishingLevel, double catchStat) {
+        if (rodTier >= COMPRESSED_ROD_TIER) {
+            return true;
+        }
+        if (rodTier >= 2 && (fishingLevel >= COMPRESSED_FISH_LEVEL || catchStat >= COMPRESSED_CATCH_STAT)) {
+            return true;
+        }
+        return false;
+    }
+
+    public static boolean allowsCompacted(int rodTier, int fishingLevel, double catchStat) {
+        if (rodTier >= COMPACTED_ROD_TIER) {
+            return true;
+        }
+        if (rodTier >= 3 && fishingLevel >= COMPACTED_FISH_LEVEL && catchStat >= COMPACTED_CATCH_STAT) {
+            return true;
+        }
+        return false;
+    }
+
+    public static int rodTier(Player player, ItemManager items) {
+        if (player == null || items == null) {
+            return 0;
+        }
+        return rodTier(items.getItemId(player.getInventory().getItemInMainHand()));
+    }
+
+    public static int rodTier(String itemId) {
+        if (itemId == null || itemId.isBlank()) {
+            return 0;
+        }
+        return switch (itemId.toLowerCase()) {
+            case "fishing_rod_5" -> 5;
+            case "fishing_rod_4" -> 4;
+            case "fishing_rod_3" -> 3;
+            case "fishing_rod_2" -> 2;
+            case "fishing_rod" -> 1;
+            default -> 0;
+        };
+    }
+
+    private static int fishingLevel(Player player) {
+        SkillService skills = AetherionItemsSkills.skills();
+        return skills == null ? 1 : skills.fishingLevel(player);
     }
 
     public static double boosterChance(double base, double catchStat) {

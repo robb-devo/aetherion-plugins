@@ -145,7 +145,7 @@ public enum AetherSkill {
             Category.MINING,
             Material.CHEST,
             "You compress hobbies. And ore.",
-            "+1% chance to compact mining drops (up to ~5% at max).",
+            "+0.6% chance to compact mining drops (up to ~2.8% at max).",
             Flag.PACK_RAT
     ),
     SPREAD_SHEET(
@@ -154,9 +154,9 @@ public enum AetherSkill {
             Category.MINING,
             Material.EMERALD,
             "Mining, but make it a spreadsheet.",
-            "+3 Spread. Columns. Rows. Cobble.",
+            "+8 Spread. Extra blocks actually happen.",
             Flag.NONE,
-            bonus(ItemCapability.SPREAD, 1.5)
+            bonus(ItemCapability.SPREAD, 8)
     ),
     QUARRY_MANNERS(
             "quarry_manners",
@@ -204,7 +204,7 @@ public enum AetherSkill {
             Category.FORAGING,
             Material.IRON_AXE,
             "Paperwork for trees. They hate it.",
-            "+1% chance to compact oak while foraging (up to ~5% at max).",
+            "+0.6% chance to compact oak while foraging (up to ~2.8% at max).",
             Flag.TIMBER_TAX
     ),
     GREEN_THUMB(
@@ -234,9 +234,9 @@ public enum AetherSkill {
             Category.FARMING,
             Material.IRON_HOE,
             "Your personal space includes the next three rows.",
-            "+25 Harvest. Neighbors included. Professionally.",
+            "+22 Harvest. Neighbors included. Professionally.",
             Flag.NONE,
-            bonus(ItemCapability.HARVEST_SPREAD, 14)
+            bonus(ItemCapability.HARVEST_SPREAD, 22)
     ),
     SEED_LEDGER(
             "seed_ledger",
@@ -244,7 +244,7 @@ public enum AetherSkill {
             Category.FARMING,
             Material.HAY_BLOCK,
             "Every grain is itemized. The field hates it.",
-            "+1% chance to compact crops while farming (up to ~5% at max).",
+            "+0.6% chance to compact crops while farming (up to ~2.8% at max).",
             Flag.SEED_LEDGER
     ),
 
@@ -274,7 +274,7 @@ public enum AetherSkill {
             Category.FISHING,
             Material.DRIED_KELP_BLOCK,
             "Every nibble is itemized. The ocean hates it.",
-            "+1% chance to compact cod while fishing (up to ~5% at max).",
+            "+0.6% chance to compact cod while fishing (up to ~2.8% at max).",
             Flag.FISH_LEDGER
     ),
 

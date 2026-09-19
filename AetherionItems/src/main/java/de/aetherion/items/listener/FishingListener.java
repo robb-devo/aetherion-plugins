@@ -51,7 +51,7 @@ public final class FishingListener implements Listener {
     private static final int LURE_TICKS = 24;
     private static final double BOOSTER_CHANCE = 0.03d;
     private static final double DIVING_CHANCE = 0.02d;
-    private static final double COMPACTED_CHANCE = 0.045d;
+    private static final double COMPACTED_CHANCE = 0.012d;
     private static final double BOSS_DROP_BASE = 0.0004d;
     private static final double BOSS_DROP_CATCH_DIV = 40.0d;
     private static final double BOSS_DROP_CAP = 0.0035d;
@@ -249,8 +249,9 @@ public final class FishingListener implements Listener {
                 player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.25f, 1.6f);
             }
         }
+        int rodTier = FishingLootPool.rodTier(player, items);
         if (ThreadLocalRandom.current().nextDouble()
-                < FishingLootPool.compactedCrateChance(COMPACTED_CHANCE, catchStat, fishingLevel)) {
+                < FishingLootPool.compactedCrateChance(COMPACTED_CHANCE, catchStat, fishingLevel, rodTier)) {
             ItemStack crate = compactedCatch();
             if (crate != null) {
                 give(player, crate);

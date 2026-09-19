@@ -17,10 +17,10 @@ public class CatchSphereRegistry {
                 2000L,
                 45.0,
                 28.0,
-                15.0,
-                8.0,
+                12.0,
                 4.0,
-                2.0
+                1.2,
+                0.3
         ));
 
         register(CatchSphere.rarityTable(
@@ -28,11 +28,11 @@ public class CatchSphereRegistry {
                 "Rare Catch Sphere",
                 2500L,
                 60.0,
-                45.0,
-                32.0,
-                18.0,
+                42.0,
+                24.0,
                 10.0,
-                5.0
+                3.5,
+                0.8
         ));
 
         register(CatchSphere.rarityTable(
@@ -40,11 +40,11 @@ public class CatchSphereRegistry {
                 "Epic Catch Sphere",
                 3000L,
                 75.0,
-                62.0,
-                50.0,
-                38.0,
+                58.0,
+                40.0,
                 22.0,
-                12.0
+                10.0,
+                2.0
         ));
 
         register(CatchSphere.rarityTable(
@@ -52,11 +52,11 @@ public class CatchSphereRegistry {
                 "Legendary Catch Sphere",
                 3500L,
                 88.0,
-                78.0,
-                68.0,
+                72.0,
                 55.0,
-                40.0,
-                22.0
+                35.0,
+                18.0,
+                5.0
         ));
 
         register(CatchSphere.flat(

@@ -1,7 +1,7 @@
 # Aetherion listed coin values (Skyblock-feel).
 # Formula (see EconomyCurve.java):
 #   compressed = round(unit x 128 x 1.4)
-#   compacted  = round(compressed x 128 x 1.5)
+#   compacted  = round(compressed x 128 x 1.5)  (128 compressed / Compacted; Craft matches)
 #   refined    = round(compacted x 4)
 #   crafted    = round(ingredientSum x craftMargin)
 # Margins: T1 1.20, T2 1.30, T3 1.45, T4 1.65, T5 1.90
@@ -174,23 +174,23 @@ crafted:
   carrot_booster: 389
   catcher_boots: 12
   catcher_boots_2: 2094
-  catcher_boots_3: 910770
+  catcher_boots_3: 457113
   catcher_chestplate: 24
   catcher_chestplate_2: 2111
-  catcher_chestplate_3: 910798
+  catcher_chestplate_3: 457141
   catcher_gaff: 14
   catcher_gaff_2: 2097
-  catcher_gaff_3: 910775
+  catcher_gaff_3: 457118
   catcher_helmet: 14
   catcher_helmet_2: 2097
-  catcher_helmet_3: 910775
+  catcher_helmet_3: 457118
   catcher_leggings: 20
   catcher_leggings_2: 2105
-  catcher_leggings_3: 910788
+  catcher_leggings_3: 457131
   charm_combat: 5
   charm_combat_2: 2084
   charm_combat_3: 470948
-  charm_estate: 1408396
+  charm_estate: 19
   charm_farming: 5
   charm_farming_2: 2084
   charm_farming_3: 470948
@@ -236,11 +236,11 @@ crafted:
   combat_sword_4: 1138924
   combat_sword_5: 5825088
   compacted_cobble_hammer: 106544
-  compacted_diamond_chestplate: 3414067
-  compacted_diamond_pickaxe: 1333547
-  compacted_diamond_sword: 426779
+  compacted_diamond_chestplate: 1707034
+  compacted_diamond_pickaxe: 859405
+  compacted_diamond_sword: 1280295
   compacted_emerald_scythe: 1066600
-  compacted_iron_pickaxe: 480330
+  compacted_iron_pickaxe: 3798
   compacted_midas_dagger: 643586
   compacted_timber_axe: 159814
   compressed_coal_ring: 4441
@@ -375,7 +375,7 @@ crafted:
   mining_pickaxe_2: 60
   mining_pickaxe_3: 4246
   mining_pickaxe_4: 687492
-  mining_pickaxe_5: 3659924
+  mining_pickaxe_5: 2025256
   mining_sack: 4189
   oak_booster: 12
   obsidian_maul: 170125
@@ -391,7 +391,7 @@ crafted:
   simple_pickaxe: 6
   simple_shortbow: 5
   splinter_glaive: 18000
-  vein_siphon: 10614988
+  vein_siphon: 180
   venom_dagger: 932
   webweave_boots: 931
   webweave_chestplate: 1862
