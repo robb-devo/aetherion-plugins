@@ -48,8 +48,8 @@ mining:
 # ---------------------------------------------------------------------------
 testbots:
   enabled: false
-  max-total: 20
-  max-per-start: 20
+  max-total: 40
+  max-per-start: 8
   runner:
     host: 127.0.0.1
     port: 18765
@@ -60,11 +60,27 @@ testbots:
     forage: QaForage
     catch: QaCatch
     roam: QaRoam
+    combat: QaCombat
+    fish: QaFish
+    trade: QaTrade
+    quest: QaQuest
+    pad: QaPad
   caps:
-    mine: 20
-    forage: 20
-    catch: 20
-    roam: 20
+    mine: 8
+    forage: 8
+    catch: 8
+    roam: 8
+    combat: 8
+    fish: 8
+    trade: 8
+    quest: 8
+    pad: 8
+  # New keys — copy into live YAML. saveDefaultConfig does not overwrite.
+  playstyle:
+    starter-coins: 2500
+    pocket-coins: 250
+    unlock-trader: true
+    unlock-spawns: true
   safety:
     # Paper watchdog + Mineflayer hold. Tune if pads sit lower than Y 56.
     void-floor-y: 40
@@ -75,6 +91,8 @@ testbots:
     idle-reanchor-ticks: 240
     # Roam: plugin pad-hop between origin pads (80s). 0 disables.
     pad-hop-ticks: 1600
+    # Pad role: ignore leash/falling while mid-arc (ms).
+    pad-flight-ms: 8000
   roles:
     # Eldervale interior first (paste center), then mid-isle, then landing lip.
     # Do not scatter off the slime-pad ledge — leash stays on the assigned patch.
@@ -131,6 +149,56 @@ testbots:
       pitch: 0.0
       scatter-radius: 3
       leash-radius: 14
+    combat:
+      world: world
+      anchors:
+        - { x: 220.5, y: 58.0, z: 160.5 }
+      yaw: 0.0
+      pitch: 0.0
+      scatter-radius: 8
+      leash-radius: 22
+    fish:
+      world: world
+      anchors:
+        - { x: 22.5, y: 56.0, z: 305.5 }
+        - { x: 18.5, y: 56.0, z: 301.5 }
+        - { x: 438.5, y: 56.0, z: -233.5 }
+      yaw: 90.0
+      pitch: 20.0
+      scatter-radius: 3
+      leash-radius: 14
+    trade:
+      world: world
+      anchors:
+        - { x: 22.5, y: 56.0, z: 305.5 }
+        - { x: 26.5, y: 56.0, z: 309.5 }
+        - { x: 438.5, y: 56.0, z: -233.5 }
+      yaw: 0.0
+      pitch: 0.0
+      scatter-radius: 3
+      leash-radius: 14
+    quest:
+      world: world
+      anchors:
+        - { x: 22.5, y: 56.0, z: 305.5 }
+        - { x: 18.5, y: 56.0, z: 301.5 }
+        - { x: 26.5, y: 56.0, z: 309.5 }
+      yaw: 0.0
+      pitch: 0.0
+      scatter-radius: 3
+      leash-radius: 16
+    # Real jump-pad centers (Hub island-pads). Forage lip is a pad destination, not a forage work pad.
+    pad:
+      world: world
+      anchors:
+        - { x: 22.5, y: 56.0, z: 305.5 }
+        - { x: 438.5, y: 56.0, z: -233.5 }
+        - { x: 53.5, y: 91.0, z: 482.5 }
+        - { x: 479.5, y: 74.0, z: -240.5 }
+      yaw: 0.0
+      pitch: 0.0
+      scatter-radius: 1
+      leash-radius: 72
 
   # Chat / tab / Collection leaderboard labels. Login names stay QaMine01 (Velocity).
   nicknames:

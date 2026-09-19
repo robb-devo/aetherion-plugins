@@ -10,7 +10,7 @@ import org.bukkit.inventory.PlayerInventory;
 
 import java.util.concurrent.ThreadLocalRandom;
 
-/** Phase 1 Borderlands combat bots ({@code StressC*}). */
+/** Wave 2 QA combat bots ({@code QaCombat*}). Legacy {@code StressC*} still match. */
 public final class CombatRoleHandler implements BotRoleHandler {
 
     private final AetherionStressBots plugin;
@@ -26,7 +26,7 @@ public final class CombatRoleHandler implements BotRoleHandler {
 
     @Override
     public String prefix() {
-        return BotRoleRegistry.prefixOf(plugin, BotRole.COMBAT, "StressC");
+        return BotRoleRegistry.prefixOf(plugin, BotRole.COMBAT, "QaCombat");
     }
 
     @Override
@@ -47,6 +47,10 @@ public final class CombatRoleHandler implements BotRoleHandler {
 
     @Override
     public Location destination(Player player) {
+        ConfigurationSection qa = BotRoleRegistry.roleSection(plugin, BotRole.COMBAT);
+        if (qa != null && (qa.getList("anchors") != null || qa.isSet("x"))) {
+            return BotLocations.pickAnchor(player, qa);
+        }
         ConfigurationSection section = plugin.getConfig().getConfigurationSection("combat");
         if (section == null) {
             return null;
@@ -56,6 +60,6 @@ public final class CombatRoleHandler implements BotRoleHandler {
 
     @Override
     public String description() {
-        return "Legacy stress: Borderlands combat wander/attack loop.";
+        return "Fight nearby hostiles on the combat pad. Deaths here are expected.";
     }
 }

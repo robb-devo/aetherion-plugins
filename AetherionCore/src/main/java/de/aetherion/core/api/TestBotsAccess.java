@@ -1,5 +1,6 @@
 package de.aetherion.core.api;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -12,6 +13,25 @@ public interface TestBotsAccess {
 
     /** Wave 1 role ids: {@code mine}, {@code forage}, {@code catch}, {@code roam}. */
     List<String> wave1Roles();
+
+    /**
+     * Wave 2 role ids: {@code combat}, {@code fish}, {@code trade}, {@code quest}, {@code pad}.
+     * Default empty so older implementations stay valid.
+     */
+    default List<String> wave2Roles() {
+        return List.of();
+    }
+
+    /** Wave 1 + Wave 2 startable QA roles. */
+    default List<String> qaRoles() {
+        List<String> out = new ArrayList<>(wave1Roles());
+        for (String id : wave2Roles()) {
+            if (!out.contains(id)) {
+                out.add(id);
+            }
+        }
+        return out;
+    }
 
     /**
      * Ask the runner to bring this role to {@code count} online bots.

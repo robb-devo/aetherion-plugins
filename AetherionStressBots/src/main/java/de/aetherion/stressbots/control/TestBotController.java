@@ -31,7 +31,7 @@ public final class TestBotController implements TestBotsAccess {
         this.plugin = plugin;
         this.runner = runner;
         this.reports = reports;
-        for (BotRoleHandler handler : plugin.getRegistry().wave1()) {
+        for (BotRoleHandler handler : plugin.getRegistry().qa()) {
             desired.put(handler.role(), 0);
         }
     }
@@ -43,8 +43,17 @@ public final class TestBotController implements TestBotsAccess {
 
     @Override
     public List<String> wave1Roles() {
+        return idsOf(plugin.getRegistry().wave1());
+    }
+
+    @Override
+    public List<String> wave2Roles() {
+        return idsOf(plugin.getRegistry().wave2());
+    }
+
+    private static List<String> idsOf(List<BotRoleHandler> handlers) {
         List<String> ids = new ArrayList<>();
-        for (BotRoleHandler handler : plugin.getRegistry().wave1()) {
+        for (BotRoleHandler handler : handlers) {
             ids.add(handler.role().id());
         }
         return ids;
@@ -55,9 +64,9 @@ public final class TestBotController implements TestBotsAccess {
         if (!enabled()) {
             return "§cTestbots disabled. Set §ftestbots.enabled: true §cin AetherionStressBots/config.yml.";
         }
-        BotRole role = requireWave1(roleId);
+        BotRole role = requireQa(roleId);
         if (role == null) {
-            return "§cUnknown role. Wave 1: mine, forage, catch, roam.";
+            return "§cUnknown role. Wave 1: mine, forage, catch, roam. Wave 2: combat, fish, trade, quest, pad.";
         }
         BotRoleHandler handler = plugin.getRegistry().handler(role);
         int clamped = clampCount(role, count <= 0 ? Math.max(1, desired.getOrDefault(role, 1)) : count);
@@ -119,7 +128,7 @@ public final class TestBotController implements TestBotsAccess {
 
     @Override
     public int adjustDesired(String roleId, int delta) {
-        BotRole role = requireWave1(roleId);
+        BotRole role = requireQa(roleId);
         if (role == null) {
             return 0;
         }
@@ -178,9 +187,9 @@ public final class TestBotController implements TestBotsAccess {
         return Math.max(0, Math.min(requested, hard));
     }
 
-    private BotRole requireWave1(String roleId) {
+    private BotRole requireQa(String roleId) {
         BotRole role = BotRole.fromId(roleId);
-        if (role == null || !role.wave1()) {
+        if (role == null || !role.qa()) {
             return null;
         }
         return role;

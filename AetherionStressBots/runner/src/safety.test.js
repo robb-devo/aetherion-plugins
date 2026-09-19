@@ -8,6 +8,7 @@ import {
   readAnchors,
   withinLeash
 } from './safety.js'
+import { isWorkingActivity } from './playstyle.js'
 
 describe('island safety helpers', () => {
   it('measures horizontal distance ignoring Y', () => {
@@ -45,5 +46,13 @@ describe('island safety helpers', () => {
     assert.equal(readAnchors({ anchors: [{ x: 1, y: 2, z: 3 }] }).length, 1)
     assert.equal(readAnchors({ waypoints: [{ x: '8', y: 9, z: 10 }] })[0].x, 8)
     assert.equal(readAnchors({}).length, 0)
+  })
+})
+
+describe('idle vs working stuck policy', () => {
+  it('does not treat mining/pathing as idle cancel candidates', () => {
+    assert.equal(isWorkingActivity('mining'), true)
+    assert.equal(isWorkingActivity('pathing'), true)
+    assert.equal(isWorkingActivity('foraging'), true)
   })
 })

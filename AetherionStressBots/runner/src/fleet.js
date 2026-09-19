@@ -3,12 +3,19 @@ import { createCombatLoop } from './combat.js'
 import { createMiningLoop, createForageLoop } from './gather.js'
 import { createCatchLoop } from './catch.js'
 import { createRoamLoop } from './roam.js'
+import { createFishLoop } from './fish.js'
+import { createTradeLoop } from './trade.js'
+import { createQuestLoop } from './quest.js'
+import { createPadLoop } from './pad.js'
 import { attachVelocityForwarding } from './velocity.js'
 import { attachSafety, readAnchors } from './safety.js'
+import { attachLocale } from './locale.js'
+import { attachMinigames } from './minigame.js'
 import { fmtPos, heldName, note, sleep } from './util.js'
 
 const WAVE1 = ['mine', 'forage', 'catch', 'roam']
-const ALL_ROLES = ['mine', 'forage', 'catch', 'roam', 'combat', 'mining']
+const WAVE2 = ['combat', 'fish', 'trade', 'quest', 'pad']
+const ALL_ROLES = ['mine', 'forage', 'catch', 'roam', 'combat', 'fish', 'trade', 'quest', 'pad', 'mining']
 
 export function createFleet({ config, log }) {
   const slots = new Map()
@@ -19,7 +26,6 @@ export function createFleet({ config, log }) {
   function prefix(role) {
     const prefixes = config.prefixes || {}
     if (role === 'mining') return prefixes.mining || 'StressM'
-    if (role === 'combat') return prefixes.combat || 'StressC'
     return prefixes[role] || defaultPrefix(role)
   }
 
@@ -29,7 +35,11 @@ export function createFleet({ config, log }) {
       forage: 'QaForage',
       catch: 'QaCatch',
       roam: 'QaRoam',
-      combat: 'StressC',
+      combat: 'QaCombat',
+      fish: 'QaFish',
+      trade: 'QaTrade',
+      quest: 'QaQuest',
+      pad: 'QaPad',
       mining: 'StressM'
     }[role] || 'QaBot'
   }
@@ -56,20 +66,28 @@ export function createFleet({ config, log }) {
       leashRadius: cfg.leashRadius ?? safety.leashRadius ?? defaultLeash(role),
       anchors: readAnchors(cfg),
       stuckMs: safety.stuckMs ?? 10_000,
+      idleGoalMs: safety.idleGoalMs ?? 8000,
       resumeDelayMs: safety.resumeDelayMs ?? 2800,
       log
     })
+    attachLocale(bot, log)
+    attachMinigames(bot, log)
     if (role === 'combat') return createCombatLoop(bot, cfg, log)
     if (role === 'forage') return createForageLoop(bot, cfg, log)
     if (role === 'catch') return createCatchLoop(bot, cfg, log)
     if (role === 'roam') return createRoamLoop(bot, cfg, log)
+    if (role === 'fish') return createFishLoop(bot, cfg, log)
+    if (role === 'trade') return createTradeLoop(bot, cfg, log)
+    if (role === 'quest') return createQuestLoop(bot, cfg, log)
+    if (role === 'pad') return createPadLoop(bot, cfg, log)
     return createMiningLoop(bot, cfg, log)
   }
 
   function defaultLeash(role) {
     if (role === 'catch') return 12
-    if (role === 'roam') return 14
+    if (role === 'roam' || role === 'fish' || role === 'trade' || role === 'quest') return 14
     if (role === 'combat') return 22
+    if (role === 'pad') return 72
     return 16
   }
 
@@ -206,6 +224,7 @@ export function createFleet({ config, log }) {
 
   return {
     WAVE1,
+    WAVE2,
     ALL_ROLES,
     setDesired(role, count) {
       if (!ALL_ROLES.includes(role)) {

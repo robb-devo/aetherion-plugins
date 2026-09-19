@@ -26,6 +26,10 @@ public final class BotRoleRegistry {
         register(new CatchRoleHandler(plugin));
         register(new RoamRoleHandler(plugin));
         register(new CombatRoleHandler(plugin));
+        register(new FishRoleHandler(plugin));
+        register(new TradeRoleHandler(plugin));
+        register(new QuestRoleHandler(plugin));
+        register(new PadRoleHandler(plugin));
         register(new LegacyMiningRoleHandler(plugin));
     }
 
@@ -49,6 +53,9 @@ public final class BotRoleRegistry {
             return null;
         }
         String lower = name.toLowerCase(Locale.ROOT);
+        if (lower.startsWith("stressc")) {
+            return handlers.get(BotRole.COMBAT);
+        }
         BotRoleHandler best = null;
         int bestLen = -1;
         for (BotRoleHandler handler : handlers.values()) {
@@ -65,9 +72,24 @@ public final class BotRoleRegistry {
     }
 
     public List<BotRoleHandler> wave1() {
+        return byWave(1);
+    }
+
+    public List<BotRoleHandler> wave2() {
+        return byWave(2);
+    }
+
+    public List<BotRoleHandler> qa() {
+        List<BotRoleHandler> out = new ArrayList<>();
+        out.addAll(wave1());
+        out.addAll(wave2());
+        return out;
+    }
+
+    private List<BotRoleHandler> byWave(int wave) {
         List<BotRoleHandler> out = new ArrayList<>();
         for (BotRole role : BotRole.values()) {
-            if (!role.wave1()) {
+            if (role.wave() != wave) {
                 continue;
             }
             BotRoleHandler handler = handlers.get(role);
@@ -93,6 +115,9 @@ public final class BotRoleRegistry {
         String wave = plugin.getConfig().getString("testbots.prefixes." + role.id(), null);
         if (wave != null && !wave.isBlank()) {
             return wave.toLowerCase(Locale.ROOT);
+        }
+        if (role != null && role.qa()) {
+            return fallback.toLowerCase(Locale.ROOT);
         }
         String legacy = plugin.getConfig().getString("prefixes." + role.id(), fallback);
         return (legacy == null ? fallback : legacy).toLowerCase(Locale.ROOT);

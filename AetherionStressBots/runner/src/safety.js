@@ -224,13 +224,34 @@ export function attachSafety(bot, opts = {}) {
     const moved = !bot.qaLastSafe || pos.distanceTo(bot.qaLastSafe) > 0.4
     if (moved) {
       bot.qaStuckSince = 0
+      bot.qaIdleSince = 0
       bot.qaLastSafe = { x: pos.x, y: pos.y, z: pos.z }
     } else if (!bot.qaSuspended) {
       bot.qaStuckSince = bot.qaStuckSince || Date.now()
-      if (Date.now() - bot.qaStuckSince > (opts.stuckMs ?? 10_000)) {
-        cancelPath(bot)
-        note(bot, 'stuck — cancel path', 'stuck')
+      const working = bot.targetDigBlock
+        || ['mining', 'foraging', 'pathing', 'catching', 'fishing', 'ah', 'bazaar', 'quest_dialog', 'minigame', 'pad_hop', 'combat']
+          .includes(bot.qaActivity)
+        || bot.pathfinder?.isMoving?.()
+      const limit = working ? (opts.stuckMs ?? 10_000) * 2.4 : (opts.stuckMs ?? 10_000)
+      if (Date.now() - bot.qaStuckSince > limit) {
+        if (!working) {
+          cancelPath(bot)
+          note(bot, 'stuck — cancel path', 'stuck')
+          bot.qaNeedNewGoal = true
+        } else {
+          note(bot, 'stuck while working — keep job', bot.qaActivity || 'stuck')
+        }
         bot.qaStuckSince = Date.now()
+      }
+      if (!working) {
+        bot.qaIdleSince = bot.qaIdleSince || Date.now()
+        if (Date.now() - bot.qaIdleSince > (opts.idleGoalMs ?? 8000)) {
+          bot.qaNeedNewGoal = true
+          bot.qaIdleSince = Date.now()
+          note(bot, 'idle too long — new goal', 'idle')
+        }
+      } else {
+        bot.qaIdleSince = 0
       }
     }
   }

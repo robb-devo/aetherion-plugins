@@ -128,7 +128,7 @@ public final class BotReportBuilder {
         out.append('\n');
         out.append("Roles:\n");
         for (TestBotRoleView role : report.roles()) {
-            if (role.online() == 0 && role.desired() == 0 && !isWave1(role.id())) {
+            if (role.online() == 0 && role.desired() == 0 && !isQa(role.id())) {
                 continue;
             }
             out.append("  - ").append(role.id())
@@ -166,7 +166,7 @@ public final class BotReportBuilder {
             }
         }
         out.append('\n');
-        out.append("Wave 1 limits: no AH/Bazaar, no quest NPC dialogue, no jump-pad pathing, no spawn unlocks, no equip UI.\n");
+        out.append("Activities: idle/pathing/mining/foraging/catching/roaming/combat/fishing/ah/bazaar/quest_dialog/minigame/pad_hop/void/recovering/stuck.\n");
         return out.toString();
     }
 
@@ -215,8 +215,8 @@ public final class BotReportBuilder {
         return "";
     }
 
-    private static boolean isWave1(String id) {
+    private static boolean isQa(String id) {
         BotRole role = BotRole.fromId(id);
-        return role != null && role.wave1();
+        return role != null && role.qa();
     }
 }

@@ -17,7 +17,7 @@ export function createCombatLoop(bot, cfg, log) {
 
   async function tick() {
     if (!bot.entity || bot.entity.isValid === false || bot.qaSuspended) return
-    if (!home) home = bot.entity.position.clone()
+    home = bot.qaHome || home || bot.entity.position.clone()
 
     if (!bot.pathfinder.movements) {
       bot.pathfinder.setMovements(applyIslandMovements(new Movements(bot), {
@@ -29,7 +29,7 @@ export function createCombatLoop(bot, cfg, log) {
     const target = nearestHostile(bot, searchRadius)
     if (target) {
       const dist = bot.entity.position.distanceTo(target.position)
-      note(bot, `combat ${target.name || 'mob'}`, 'pathing')
+      note(bot, `combat ${target.name || 'mob'}`, 'combat')
       bot.lookAt(target.position.offset(0, target.height * 0.85, 0), true).catch(() => {})
       if (dist > 2.6) {
         bot.pathfinder.setGoal(new goals.GoalFollow(target, 1.6), true)

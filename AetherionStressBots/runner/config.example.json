@@ -4,40 +4,47 @@
   "version": "1.21.1",
   "joinDelayMs": 2500,
   "velocitySecret": "CHANGE_ME",
-  "maxTotal": 20,
+  "maxTotal": 40,
   "control": {
     "bind": "127.0.0.1",
     "port": 18765,
     "token": ""
   },
   "prefixes": {
-    "combat": "StressC",
     "mining": "StressM",
     "mine": "QaMine",
     "forage": "QaForage",
     "catch": "QaCatch",
-    "roam": "QaRoam"
+    "roam": "QaRoam",
+    "combat": "QaCombat",
+    "fish": "QaFish",
+    "trade": "QaTrade",
+    "quest": "QaQuest",
+    "pad": "QaPad"
   },
   "caps": {
-    "mine": 20,
-    "forage": 20,
-    "catch": 20,
-    "roam": 20,
-    "combat": 20,
-    "mining": 20
+    "mine": 8,
+    "forage": 8,
+    "catch": 8,
+    "roam": 8,
+    "combat": 8,
+    "fish": 8,
+    "trade": 8,
+    "quest": 8,
+    "pad": 8,
+    "mining": 8
+  },
+  "playstyle": {
+    "starterCoins": 2500,
+    "pocketCoins": 250,
+    "unlockTrader": true
   },
   "safety": {
     "voidFloorY": 40,
     "leashRadius": 16,
     "stuckMs": 10000,
+    "idleGoalMs": 8000,
     "resumeDelayMs": 2800
-  },
-  "combat": {
-    "searchRadius": 28,
-    "attackIntervalMs": 450,
-    "wanderRadius": 10,
-    "leashRadius": 22,
-    "maxDrop": 3
   },
   "mining": {
     "searchRadius": 16,
@@ -158,6 +165,59 @@
       { "x": 438.5, "y": 56.0, "z": -233.5 },
       { "x": 434.5, "y": 56.0, "z": -229.5 },
       { "x": 442.5, "y": 56.0, "z": -237.5 }
+    ]
+  },
+  "combat": {
+    "searchRadius": 28,
+    "attackIntervalMs": 450,
+    "wanderRadius": 10,
+    "leashRadius": 22,
+    "maxDrop": 3,
+    "anchors": [
+      { "x": 220.5, "y": 58.0, "z": 160.5 }
+    ]
+  },
+  "fish": {
+    "searchRadius": 10,
+    "wanderRadius": 5,
+    "leashRadius": 14,
+    "castWaitMs": 16000,
+    "recastMs": 2200,
+    "anchors": [
+      { "x": 22.5, "y": 56.0, "z": 305.5 },
+      { "x": 18.5, "y": 56.0, "z": 301.5 },
+      { "x": 438.5, "y": 56.0, "z": -233.5 }
+    ]
+  },
+  "trade": {
+    "wanderRadius": 5,
+    "leashRadius": 14,
+    "actionGapMs": 3500,
+    "anchors": [
+      { "x": 22.5, "y": 56.0, "z": 305.5 },
+      { "x": 26.5, "y": 56.0, "z": 309.5 },
+      { "x": 438.5, "y": 56.0, "z": -233.5 }
+    ]
+  },
+  "quest": {
+    "searchRadius": 10,
+    "wanderRadius": 5,
+    "leashRadius": 16,
+    "anchors": [
+      { "x": 22.5, "y": 56.0, "z": 305.5 },
+      { "x": 18.5, "y": 56.0, "z": 301.5 },
+      { "x": 26.5, "y": 56.0, "z": 309.5 }
+    ]
+  },
+  "pad": {
+    "leashRadius": 72,
+    "hopTimeoutMs": 9000,
+    "stuckHopMs": 5000,
+    "pads": [
+      { "id": "origin_to_mining", "x": 22.5, "y": 56.0, "z": 305.5 },
+      { "id": "origin_to_forage", "x": 438.5, "y": 56.0, "z": -233.5 },
+      { "id": "mining_to_origin", "x": 53.5, "y": 91.0, "z": 482.5 },
+      { "id": "forage_to_origin", "x": 479.5, "y": 74.0, "z": -240.5 }
     ]
   }
 }

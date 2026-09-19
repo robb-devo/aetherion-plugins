@@ -26,10 +26,22 @@ Bots connect **offline to MMO-R** `127.0.0.1:25567` with Velocity modern-forward
 |------|-------|------|-----|
 | `mine` | `QaMine01…` | TP to **Eldervale interior pads**, leash + dig ores/stone | Mining I |
 | `forage` | `QaForage01…` | TP to **Forage Isle grove/interior**, chop logs (and leaves if idle) | Kindling I axe |
-| `catch` | `QaCatch01…` | Stay on solid habitat pads, throw catch spheres (no void chase) | Catcher I + common spheres |
+| `catch` | `QaCatch01…` | Stay on solid habitat pads, throw catch spheres + timing clicks | Catcher I + common spheres |
 | `roam` | `QaRoam01…` | Local hops on Origin slime pads + plugin pad-hop; flees husks/skeletons | Combat I |
 
-**Not in wave 1:** Auction House / Bazaar, quest NPC dialogue, jump pads as pathing, spawn unlocks, equip-swap UI, full progression.
+## Wave 2 roles
+
+| Role | Names | Does | Kit |
+|------|-------|------|-----|
+| `combat` | `QaCombat01…` | Fight hostiles on the combat pad | Combat I |
+| `fish` | `QaFish01…` | Cast and reel on the green strike bar | Fishing I rod |
+| `trade` | `QaTrade01…` | `/ah` list+buy and `/bazaar` sell+buy via real GUIs | Spare gear + coal/cobble + TRADER coins |
+| `quest` | `QaQuest01…` | Right-click NPCs, click Quest Offer accept | Combat I |
+| `pad` | `QaPad01…` | Walk onto island jump pads, ride the arc, hop a different pad | Combat I |
+
+Language GUI (`Language / Sprache`) is forced to English on join (plugin + runner click slot 11).
+
+**Not automated:** every spawn-unlock edge case, anvil booster fusion, full quest completion trees.
 
 ### Catch limits (wave 1)
 
@@ -50,7 +62,7 @@ Counts clamp to `testbots.max-total`, `testbots.caps.<role>`, `max-per-start` (1
 ## Commands
 
 ```
-/stressbots start <mine|forage|catch|roam> [count]
+/stressbots start <mine|forage|catch|roam|combat|fish|trade|quest|pad> [count]
 /stressbots stop <role|all>
 /stressbots stopall
 /stressbots list
@@ -76,7 +88,8 @@ npm start -- --listen
 
 # or CLI
 node src/index.js --mine 5 --forage 3 --catch 2 --roam 5
-node src/index.js --combat 5 --mining 5    # Phase 1 StressC / StressM
+node src/index.js --combat 2 --fish 2 --trade 2 --quest 2 --pad 2
+node src/index.js --mining 5    # Phase 1 StressM
 ```
 
 Control HTTP: `http://127.0.0.1:18765` (`/health`, `/desired`, `/stop`, `/stop-all`). Optional `control.token` must match plugin `testbots.runner.token`.
@@ -130,5 +143,5 @@ Names: `StressC01…` / `StressM01…` still auto-kit on join.
 
 | Wave | Scope |
 |------|--------|
-| **1 (this)** | Foundation: role interface, registry, report DTO, Dev menu, `/botreport`, mine / forage / catch / roam |
-| Later | AH/Bazaar trading, quest NPC talks, jump pads as primary pathing, spawn unlocks, equip swapping, full progression play |
+| **1** | Foundation: role interface, registry, report DTO, Dev menu, `/botreport`, mine / forage / catch / roam |
+| **2 (this)** | Language dismiss, jump-pad role, AH/Bazaar GUI flows, quest dialogue clicks, fishing/catch minigames, idle polish |

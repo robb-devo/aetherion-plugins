@@ -44,10 +44,27 @@ public final class BotNicknames {
                     "§eEcken-Ella", "§eTorkel-Tim", "§eStadtgeist", "§eQuatsch-Quirin", "§eBummelant"
             ),
             BotRole.COMBAT, List.of(
-                    "§cBorder-Bernd", "§cWaste-Wanda", "§cVex-Victim", "§cKlingen-Kai", "§cScharmützel"
+                    "§cBorder-Bernd", "§cWaste-Wanda", "§cVex-Victim", "§cKlingen-Kai", "§cScharmützel",
+                    "§cHieb-Hilde", "§cKlinge-Kurt", "§cMob-Marta"
             ),
             BotRole.MINING, List.of(
                     "§7Stress-Stollen", "§7Schacht-Bot", "§7Alte-Ader", "§7Mine-Marga", "§7Staub-Stefan"
+            ),
+            BotRole.FISH, List.of(
+                    "§3Köder-Kai", "§3Nibble-Nora", "§3Angel-Ansgar", "§3Reel-Rita", "§3Hafen-Hecht",
+                    "§3Pose-Pia", "§3Splash-Sören", "§3Aetherfisch"
+            ),
+            BotRole.TRADE, List.of(
+                    "§6Mark-Max", "§6Bazaar-Bärbel", "§6Auktions-Ute", "§6Coin-Conrad", "§6List-Lotte",
+                    "§6Purse-Paul", "§6Handel-Hilde", "§6Gebot-Gerd"
+            ),
+            BotRole.QUEST, List.of(
+                    "§eEgon-Echo", "§eDialog-Dieter", "§eQuest-Quirin", "§eAccept-Anna", "§eNpc-Nina",
+                    "§eTurnin-Theo", "§eHint-Hanna", "§eStory-Steffi"
+            ),
+            BotRole.PAD, List.of(
+                    "§aPad-Pia", "§aSlime-Sepp", "§aHop-Hannes", "§aArc-Anni", "§aSprung-Susi",
+                    "§aLip-Lutz", "§aBounce-Bernd", "§aFlug-Frida"
             )
     );
 

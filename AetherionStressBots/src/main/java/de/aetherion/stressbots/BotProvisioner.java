@@ -3,6 +3,7 @@ package de.aetherion.stressbots;
 import de.aetherion.items.AetherionItems;
 import de.aetherion.items.item.CustomItem;
 import de.aetherion.stressbots.role.BotLocations;
+import de.aetherion.stressbots.role.BotPlaystyle;
 import de.aetherion.stressbots.role.BotRole;
 import de.aetherion.stressbots.role.BotRoleHandler;
 
@@ -77,6 +78,7 @@ public final class BotProvisioner {
         player.getInventory().setArmorContents(null);
         handler.kit(player, custom);
         player.updateInventory();
+        BotPlaystyle.apply(plugin, player, handler.role());
         plugin.getNicknames().applyLater(player, handler.role());
 
         Location destination = handler.destination(player);
