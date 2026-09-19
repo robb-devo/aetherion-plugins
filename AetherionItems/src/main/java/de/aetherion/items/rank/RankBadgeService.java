@@ -38,7 +38,7 @@ public final class RankBadgeService implements Listener {
             new Rank("eternal", 86, "&8[&4✶&8] &f", "§4§lEternal"),
             new Rank("aetherion", 88, "&8[&5♛&8] &f", "§5§lAetherion"),
             new Rank("mvpplusplus", 90, "&6[MVP&c++&6] &f", "§6MVP§c++"),
-            new Rank("monkey", 50, "&2[Monkey] &f", "§aMonkey"),
+            new Rank("monkey", 95, CelestialDye.monkeyPrefixStatic(), "§d§lMonkey"),
             new Rank("admin", 100, "&c[Admin] &f", "§cAdmin")
     );
 
@@ -142,7 +142,13 @@ public final class RankBadgeService implements Listener {
 
     public String ultraTitle(Player player) {
         Rank extra = extraRank(player);
-        return extra == null ? "" : extra.display();
+        if (extra == null) {
+            return "";
+        }
+        if ("monkey".equals(extra.group())) {
+            return CelestialDye.monkeyBadge().trim();
+        }
+        return extra.display();
     }
 
     public boolean hasUltra(Player player) {
@@ -167,7 +173,7 @@ public final class RankBadgeService implements Listener {
             prefix.append(switch (extra.group()) {
                 case "admin" -> "§c[Admin] ";
                 case "mvpplusplus" -> "§6[MVP§c++§6] ";
-                case "monkey" -> "§a[Monkey] ";
+                case "monkey" -> CelestialDye.monkeyBadge();
                 default -> "";
             });
         }
@@ -333,7 +339,13 @@ public final class RankBadgeService implements Listener {
 
     private void paint(Player player) {
         player.setDisplayName("§f" + player.getName());
-        player.setPlayerListName(nametag(player));
+        net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer hex =
+                net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.builder()
+                        .character('&')
+                        .hexColors()
+                        .build();
+        String raw = nametag(player).replace('§', '&');
+        player.playerListName(hex.deserialize(raw));
     }
 
     private void syncGroups() {

@@ -56,7 +56,7 @@ public final class HelpMenu implements Listener {
                 Material.NAME_TAG,
                 "§aPermission",
                 "§faetherion.npc.editor",
-                "§7LuckPerms §fmonkey §7(Homie) or §fmoderator",
+                "§7LuckPerms §fmonkey §7(Homie ultra, weight 95)",
                 "§7Grant: Dev Menu → Ranks → Monkey",
                 "§8Fallback: /lp user <name> parent set monkey",
                 "§7Not the same as §faetherionquests.admin"

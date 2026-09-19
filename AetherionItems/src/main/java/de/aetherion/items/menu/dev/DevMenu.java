@@ -2255,15 +2255,16 @@ public class DevMenu {
                 "§7Aetherion title."
         ));
         boolean monkeyOn = extra != null && extra.group().equals("monkey");
-        inventory.setItem(37, button(
+        inventory.setItem(35, button(
                 rankIcon("monkey"),
-                (monkeyOn ? "§a▶ " : "") + "§aMonkey",
+                (monkeyOn ? "§a▶ " : "") + "§d§lMonkey §8· celestial",
                 "rank-set:monkey",
-                "§7Content rank for Homie (NPC / quests).",
-                "§7Grants flight, NPC editor, Resources,",
-                "§7and self-serve shards — not full admin.",
+                "§7Ultra rank (weight 95) — above MVP++.",
+                "§7Celestial dye TAB prefix (rainbow).",
+                "§7Content tools: flight, /npc, Resources, shards.",
+                "§7Not full admin. Stays on top of XP title.",
                 monkeyOn ? "§eClick again to remove." : "§7Click to grant.",
-                "§8LuckPerms: §7/lp user <name> parent set monkey"
+                "§8Fallback: §7/lp user <name> parent set monkey"
         ));
         inventory.setItem(40, button(
                 Material.EXPERIENCE_BOTTLE,
@@ -2812,7 +2813,7 @@ public class DevMenu {
             case "eternal" -> Material.ECHO_SHARD;
             case "aetherion" -> Material.DRAGON_EGG;
             case "mvpplusplus" -> Material.NETHER_STAR;
-            case "monkey" -> Material.COCOA_BEANS;
+            case "monkey" -> Material.MAGENTA_DYE;
             case "admin" -> Material.BARRIER;
             default -> Material.GRAY_DYE;
         };
