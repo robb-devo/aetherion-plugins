@@ -210,31 +210,31 @@ crafted:
   charm_utility_3: 707754
   coal_booster: 219
   combat_boots: 5
-  combat_boots_2: 22
-  combat_boots_3: 1070
-  combat_boots_4: 569471
-  combat_boots_5: 2781598
+  combat_boots_2: 17
+  combat_boots_3: 1063
+  combat_boots_4: 569460
+  combat_boots_5: 2781577
   combat_chestplate: 10
-  combat_chestplate_2: 29
-  combat_chestplate_3: 1080
-  combat_chestplate_4: 569488
-  combat_chestplate_5: 2781630
+  combat_chestplate_2: 23
+  combat_chestplate_3: 1072
+  combat_chestplate_4: 569474
+  combat_chestplate_5: 2781604
   combat_helmet: 6
-  combat_helmet_2: 23
-  combat_helmet_3: 1072
-  combat_helmet_4: 569474
-  combat_helmet_5: 2781604
+  combat_helmet_2: 18
+  combat_helmet_3: 1064
+  combat_helmet_4: 569461
+  combat_helmet_5: 2781579
   combat_leggings: 8
-  combat_leggings_2: 26
-  combat_leggings_3: 1076
-  combat_leggings_4: 569481
-  combat_leggings_5: 2781617
+  combat_leggings_2: 21
+  combat_leggings_3: 1069
+  combat_leggings_4: 569469
+  combat_leggings_5: 2781594
   combat_sack: 3956
   combat_sword: 4
-  combat_sword_2: 21
-  combat_sword_3: 1069
-  combat_sword_4: 569469
-  combat_sword_5: 2781594
+  combat_sword_2: 16
+  combat_sword_3: 1061
+  combat_sword_4: 569456
+  combat_sword_5: 2781570
   compacted_cobble_hammer: 106544
   compacted_diamond_chestplate: 1707034
   compacted_diamond_pickaxe: 859405
@@ -284,30 +284,30 @@ crafted:
   farming_leggings_5: 760796
   farming_sack: 3956
   fishing_boots: 5
-  fishing_boots_2: 17
-  fishing_boots_3: 2623
-  fishing_boots_4: 457986
-  fishing_boots_5: 1589559
+  fishing_boots_2: 14
+  fishing_boots_3: 2619
+  fishing_boots_4: 457979
+  fishing_boots_5: 1589546
   fishing_chestplate: 10
-  fishing_chestplate_2: 23
-  fishing_chestplate_3: 2632
-  fishing_chestplate_4: 458000
-  fishing_chestplate_5: 1589586
+  fishing_chestplate_2: 21
+  fishing_chestplate_3: 2629
+  fishing_chestplate_4: 457995
+  fishing_chestplate_5: 1589576
   fishing_helmet: 6
-  fishing_helmet_2: 18
-  fishing_helmet_3: 2624
-  fishing_helmet_4: 457987
-  fishing_helmet_5: 1589561
+  fishing_helmet_2: 16
+  fishing_helmet_3: 2622
+  fishing_helmet_4: 457984
+  fishing_helmet_5: 1589555
   fishing_leggings: 8
-  fishing_leggings_2: 21
-  fishing_leggings_3: 2629
-  fishing_leggings_4: 457995
-  fishing_leggings_5: 1589576
+  fishing_leggings_2: 18
+  fishing_leggings_3: 2624
+  fishing_leggings_4: 457987
+  fishing_leggings_5: 1589561
   fishing_rod: 6
-  fishing_rod_2: 18
-  fishing_rod_3: 2624
-  fishing_rod_4: 457987
-  fishing_rod_5: 1589561
+  fishing_rod_2: 16
+  fishing_rod_3: 2622
+  fishing_rod_4: 457984
+  fishing_rod_5: 1589555
   fishing_sack: 3956
   foraging_axe: 6
   foraging_axe_2: 13

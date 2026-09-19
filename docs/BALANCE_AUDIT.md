@@ -90,19 +90,32 @@ Tool is ~50% of the set primary (was ~30% on mining fortune — armor was overwe
 
 ### Recipe pattern (all Combat / Mining / Farming / Foraging / Fishing T1–T5)
 
-Same Skyblock-smooth ladder as the Wave 1 T5 pick fix. **1 previous piece + tier mats.** No 8-compacted / 4+4 dual-wrap sinks.
+Same Skyblock-smooth ladder as the Wave 1 T5 pick fix. **1 previous piece + tier mats.** No 8-compacted / 4+4 dual-wrap sinks. **Never 2–3× the same predecessor.**
 
 | Tier | Shape | Mats |
 |------|-------|------|
 | T1 | Vanilla armor / tool | Unchanged |
-| T2 | Plus (` X / XCX / X `) or 2+2 mix | 4 vanilla / early mats |
+| T2 | Mix (` V / HCH / V `) | **2+2 vanilla / early** (Combat iron+bone, Mining iron+coal, Farming carrot+wheat, Foraging birch+spruce, Fishing salmon+cod) |
 | T3 | Mix plus (` V / HCH / V `) | **2+2 Compressed** |
 | T4 | Diagonal cross (`A B / C / B A`) | **2+2 Compacted** — same count as T3, rarer mats, harder shape |
 | T5 | Peak (` S / SCS / P `) | **1 premium Compacted + 3 support Compacted** |
 
-Peter-constraint: **exactly one predecessor** (the previous-tier piece) in every T2–T5 craft. Never 2–3× the same pick/sword/armor in the center column. New mats each tier. Audited: no multi-predecessor sinks remain on Combat / Mining / Farming / Foraging / Fishing ladders.
+Peter-constraint (audit, 19 Sep 2026): **exactly one predecessor** (the previous-tier piece) in every T2–T5 craft. Never 2–3× the same pick/sword/armor in the center column. New mats each tier. Helpers (`registerLadderMix` / `Cross` / `Peak`) place the predecessor only in the center slot.
 
-Charms T2/T3: 8-wrap → plus **4** Compressed / **4** Compacted. Catcher T3 stays 8 Compacted Feather (Wave 1). Compact 128/128 and fishing Compacted gate unchanged.
+#### Mining pickaxe ladder (the example Peter called out)
+
+| ID | Shape | Predecessor | New mats |
+|----|-------|-------------|----------|
+| `simple_pickaxe` | `CCC / S / S` | — | 3 coal + 2 stick |
+| `mining_pickaxe` | 8-wrap around center | **1** Simple Pick | 8 coal |
+| `mining_pickaxe_2` | mix plus | **1** T1 pick | 2 iron + 2 coal |
+| `mining_pickaxe_3` | mix plus | **1** T2 pick | 2 Compressed Copper + 2 Compressed Iron |
+| `mining_pickaxe_4` | diagonal cross | **1** T3 pick | 2 Compacted Copper + 2 Compacted Coal |
+| `mining_pickaxe_5` | peak | **1** T4 pick | 1 Compacted Diamond + 3 Compacted Redstone |
+
+Same one-predecessor pattern on every Combat / Mining / Farming / Foraging / Fishing armor piece, sword, hoe, axe, and rod. Sidegrades (`compacted_iron_pickaxe`, midas dagger) also use at most one previous tool. Catcher T3 stays 8 Compacted Feather (Wave 1). Compact 128/128 and fishing Compacted gate unchanged.
+
+Charms T2/T3: 8-wrap → plus **4** Compressed / **4** Compacted.
 
 `economy.yml` crafted listings for the ladders were recomputed from the new ingredient counts (T5 sword 5.83M → 2.78M, T5 pick 2.03M → 1.37M). Estate / Siphon / Catcher-T3 Wave 1 listings kept.
 
@@ -132,7 +145,7 @@ Charms T2/T3: 8-wrap → plus **4** Compressed / **4** Compacted. Catcher T3 sta
 ### Was schon gut wirkt
 
 - **Skill-Leitern T1–T5** (`BalanceTargets` REV 5) sind intern stimmig: primäre Stats grob ×1.80 pro Stufe, Crit langsam, Crit-Damage steiler. Combat/Mining/Farming/Foraging/Fishing folgen derselben Kurve.
-- **Rezept-Form** der Leitern ist Skyblock-nah: T1 Vanilla-Form, T2 Eisen/Karotte/Lachs-Wrap, T3 Compressed-Mix, T4 Compacted-Mix, T5 Dual-Wrap (4 Ecken + 4 Kanten Compacted). Vorgänger-Gates (`CraftedPredecessorRequirement`) verhindern das Überspringen.
+- **Rezept-Form** der Leitern (Wave 2 / Peter): T1 Vanilla, T2 2+2 Mix, T3 Compressed-Mix, T4 Diagonal-Kreuz Compacted, T5 Peak (1 Premium + 3 Support). Genau **ein** Vorgänger pro Craft. Vorgänger-Gates (`CraftedPredecessorRequirement`) verhindern das Überspringen.
 - **Foraging-Holzleiter** ist die sauberste Ressourcen-Story: Oak → Birch+Spruce → Jungle+Acacia compressed → Dark Oak+Mangrove compacted → Cherry+Bamboo compacted (`RecipeRegistry` Kommentar Zeile 1017).
 - **Skill-Compact-Procs** sind bewusst flach (1,2 % → 5,5 %) — das ist der richtige Ton: Compact bleibt Helfer, nicht Drucker.
 - **Account-Level** ist einfach (100 XP = 1 Level) und als Langzeit-Leiter lesbar. Titel-Meilensteine und +1 Damage/+1 Health alle 5 Level sind nachvollziehbar.

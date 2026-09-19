@@ -325,22 +325,24 @@ public class RecipeRegistry {
         /*
          * =====================================================
          * COMBAT ARMOR II–V
-         * Wave 2: 1 previous + tier mats (plus / 2+2 mix / 1+3 peak).
+         * Peter / Wave 2: exactly 1 previous piece + new tier mats.
+         * Never 2–3× the same helmet/sword in the grid.
+         * T2 mix · T3 mix-compressed · T4 diagonal cross · T5 peak.
          * =====================================================
          */
 
-        registerLadderPlus(
+        registerLadderMix(
                 "combat_helmet_2", RecipeCategory.COMBAT, customItem.createCombatHelmet2(), Rarity.RARE,
-                customItem.createCombatHelmet(), new ItemStack(Material.IRON_INGOT));
-        registerLadderPlus(
+                customItem.createCombatHelmet(), new ItemStack(Material.IRON_INGOT), new ItemStack(Material.BONE));
+        registerLadderMix(
                 "combat_chestplate_2", RecipeCategory.COMBAT, customItem.createCombatChestplate2(), Rarity.RARE,
-                customItem.createCombatChestplate(), new ItemStack(Material.IRON_INGOT));
-        registerLadderPlus(
+                customItem.createCombatChestplate(), new ItemStack(Material.IRON_INGOT), new ItemStack(Material.BONE));
+        registerLadderMix(
                 "combat_leggings_2", RecipeCategory.COMBAT, customItem.createCombatLeggings2(), Rarity.RARE,
-                customItem.createCombatLeggings(), new ItemStack(Material.IRON_INGOT));
-        registerLadderPlus(
+                customItem.createCombatLeggings(), new ItemStack(Material.IRON_INGOT), new ItemStack(Material.BONE));
+        registerLadderMix(
                 "combat_boots_2", RecipeCategory.COMBAT, customItem.createCombatBoots2(), Rarity.RARE,
-                customItem.createCombatBoots(), new ItemStack(Material.IRON_INGOT));
+                customItem.createCombatBoots(), new ItemStack(Material.IRON_INGOT), new ItemStack(Material.BONE));
 
         registerLadderMix(
                 "combat_helmet_3", RecipeCategory.COMBAT, customItem.createCombatHelmet3(), Rarity.EPIC,
@@ -433,9 +435,9 @@ public class RecipeRegistry {
          * =====================================================
          */
 
-        registerLadderPlus(
+        registerLadderMix(
                 "combat_sword_2", RecipeCategory.COMBAT, customItem.createCombatSword2(), Rarity.RARE,
-                customItem.createCombatSword(), new ItemStack(Material.IRON_INGOT));
+                customItem.createCombatSword(), new ItemStack(Material.IRON_INGOT), new ItemStack(Material.BONE));
         registerLadderMix(
                 "combat_sword_3", RecipeCategory.COMBAT, customItem.createCombatSword3(), Rarity.EPIC,
                 customItem.createCombatSword2(),
@@ -500,7 +502,8 @@ public class RecipeRegistry {
         /*
          * =====================================================
          * MINING ARMOR II–V
-         * Wave 2: 1 previous + tier mats (plus / 2+2 mix / 1+3 peak).
+         * Peter / Wave 2: exactly 1 previous piece + new tier mats.
+         * T2 mix · T3 mix-compressed · T4 diagonal cross · T5 peak.
          * =====================================================
          */
 
@@ -606,8 +609,8 @@ public class RecipeRegistry {
         /*
          * =====================================================
          * MINING PICKAXE I
-         * Simple Pickaxe in the middle, eight coal around it.
-         * Second recipe after Egon's starter pick.
+         * Exactly one predecessor (Simple Pickaxe) + eight coal.
+         * Not 2–3× the previous pick — coal is the new mat.
          * =====================================================
          */
 
@@ -629,8 +632,12 @@ public class RecipeRegistry {
 
         /*
          * =====================================================
-         * MINING PICKAXE II–V
-         * Same 1-previous + tier-mats ladder as armor (Wave 1 T5 pick pattern).
+         * MINING PICKAXE II–V  (Peter one-predecessor ladder)
+         * T2 mix 2 iron + 2 coal
+         * T3 mix 2 compressed copper + 2 compressed iron
+         * T4 diagonal cross 2 compacted copper + 2 compacted coal
+         * T5 peak 1 compacted diamond + 3 compacted redstone
+         * Center is always exactly one previous pickaxe.
          * =====================================================
          */
 
@@ -934,21 +941,21 @@ public class RecipeRegistry {
                         new ItemStack(Material.STICK)
                 )
         );
-        registerLadderPlus(
+        registerLadderMix(
                 "fishing_helmet_2", RecipeCategory.FISHING, fishing.helmet(2), Rarity.RARE,
-                fishing.helmet(1), new ItemStack(Material.SALMON));
-        registerLadderPlus(
+                fishing.helmet(1), new ItemStack(Material.SALMON), new ItemStack(Material.COD));
+        registerLadderMix(
                 "fishing_chestplate_2", RecipeCategory.FISHING, fishing.chestplate(2), Rarity.RARE,
-                fishing.chestplate(1), new ItemStack(Material.SALMON));
-        registerLadderPlus(
+                fishing.chestplate(1), new ItemStack(Material.SALMON), new ItemStack(Material.COD));
+        registerLadderMix(
                 "fishing_leggings_2", RecipeCategory.FISHING, fishing.leggings(2), Rarity.RARE,
-                fishing.leggings(1), new ItemStack(Material.SALMON));
-        registerLadderPlus(
+                fishing.leggings(1), new ItemStack(Material.SALMON), new ItemStack(Material.COD));
+        registerLadderMix(
                 "fishing_boots_2", RecipeCategory.FISHING, fishing.boots(2), Rarity.RARE,
-                fishing.boots(1), new ItemStack(Material.SALMON));
-        registerLadderPlus(
+                fishing.boots(1), new ItemStack(Material.SALMON), new ItemStack(Material.COD));
+        registerLadderMix(
                 "fishing_rod_2", RecipeCategory.FISHING, fishing.rod(2), Rarity.RARE,
-                fishing.rod(1), new ItemStack(Material.SALMON));
+                fishing.rod(1), new ItemStack(Material.SALMON), new ItemStack(Material.COD));
         registerLadderMix(
                 "fishing_helmet_3", RecipeCategory.FISHING, fishing.helmet(3), Rarity.EPIC,
                 fishing.helmet(2), CompressedResource.PUFFERFISH.compressed(), CompressedResource.SALMON.compressed());
@@ -2190,8 +2197,9 @@ public class RecipeRegistry {
     }
 
     /**
-     * Wave 2 T2 (and single-mat charm upgrades): exactly 1 previous + 4 tier mats.
-     * Never 2–3× the predecessor. Shape: {@code  X  / XCX /  X }
+     * Charm T2/T3 and leftover single-mat plus crafts: exactly 1 previous + 4 tier mats.
+     * Skill T2 ladders use {@link #registerLadderMix}. Never 2–3× the predecessor.
+     * Shape: {@code  X  / XCX /  X }
      */
     private void registerLadderPlus(
             String id,

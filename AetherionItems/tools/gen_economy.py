@@ -200,9 +200,9 @@ combat_t1 = {
 for k, n in combat_t1.items():
     items[k] = craft(n * V("COBBLESTONE"), MARGIN[1])
 
-# Wave 2: T2 plus 4 · T3/T4 mix 2+2 · T5 peak 1 premium + 3 support
+# Wave 2 / Peter: T2 mix 2+2 · T3 mix 2+2 compressed · T4 cross 2+2 compacted · T5 peak 1+3
 for piece in combat_t1:
-    items[f"{piece}_2"] = craft(items[piece] + 4 * V("IRON_INGOT"), MARGIN[2])
+    items[f"{piece}_2"] = craft(items[piece] + 2 * V("IRON_INGOT") + 2 * V("BONE"), MARGIN[2])
 
 for piece in combat_t1:
     items[f"{piece}_3"] = craft(
@@ -221,7 +221,7 @@ for piece in combat_t1:
 
 # Combat sword T1: 2 cobble + stick
 items["combat_sword"] = craft(2 * V("COBBLESTONE") + V("STICK"), MARGIN[1])
-items["combat_sword_2"] = craft(items["combat_sword"] + 4 * V("IRON_INGOT"), MARGIN[2])
+items["combat_sword_2"] = craft(items["combat_sword"] + 2 * V("IRON_INGOT") + 2 * V("BONE"), MARGIN[2])
 items["combat_sword_3"] = craft(
     items["combat_sword_2"] + 2 * C("bone") + 2 * C("rotten_flesh"), MARGIN[3]
 )
@@ -355,7 +355,7 @@ for k, n in fish_t1.items():
     items[k] = craft(n * V("COD"), MARGIN[1])
 items["fishing_rod"] = craft(2 * V("COD") + 2 * V("STICK") + V("STRING"), MARGIN[1])
 for piece in list(fish_t1) + ["fishing_rod"]:
-    items[f"{piece}_2"] = craft(items[piece] + 4 * V("SALMON"), MARGIN[2])
+    items[f"{piece}_2"] = craft(items[piece] + 2 * V("SALMON") + 2 * V("COD"), MARGIN[2])
 for piece in list(fish_t1) + ["fishing_rod"]:
     items[f"{piece}_3"] = craft(
         items[f"{piece}_2"] + 2 * C("pufferfish") + 2 * C("salmon"), MARGIN[3]
@@ -386,23 +386,24 @@ charm_t1_mats = {
 }
 for k, s in charm_t1_mats.items():
     items[k] = craft(s, CHARM[1])
+# Matches RecipeRegistry.registerCharms (1 previous + 4 compressed / compacted).
 charm_t2 = {
     "charm_combat_2": ("charm_combat", "bone"),
-    "charm_mining_2": ("charm_mining", "coal"),
+    "charm_mining_2": ("charm_mining", "raw_copper"),
     "charm_foraging_2": ("charm_foraging", "oak_log"),
-    "charm_farming_2": ("charm_farming", "wheat"),
+    "charm_farming_2": ("charm_farming", "carrot"),
     "charm_fishing_2": ("charm_fishing", "cod"),
-    "charm_utility_2": ("charm_utility", "raw_iron"),
+    "charm_utility_2": ("charm_utility", "lapis"),
 }
 for k, (prev, mat) in charm_t2.items():
     items[k] = craft(items[prev] + 4 * C(mat), CHARM[2])
 charm_t3 = {
-    "charm_combat_3": ("charm_combat_2", "bone"),
-    "charm_mining_3": ("charm_mining_2", "coal"),
+    "charm_combat_3": ("charm_combat_2", "gunpowder"),
+    "charm_mining_3": ("charm_mining_2", "raw_iron"),
     "charm_foraging_3": ("charm_foraging_2", "oak_log"),
-    "charm_farming_3": ("charm_farming_2", "wheat"),
+    "charm_farming_3": ("charm_farming_2", "potato"),
     "charm_fishing_3": ("charm_fishing_2", "cod"),
-    "charm_utility_3": ("charm_utility_2", "raw_iron"),
+    "charm_utility_3": ("charm_utility_2", "lapis"),
 }
 for k, (prev, mat) in charm_t3.items():
     items[k] = craft(items[prev] + 4 * D(mat), CHARM[3])
