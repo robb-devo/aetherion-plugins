@@ -300,6 +300,31 @@ public final class RecipeUnlockService {
         load();
     }
 
+    public void overlayPlayerFromDisk(UUID playerId) {
+        if (playerId == null || !file.isFile()) {
+            return;
+        }
+        YamlConfiguration yaml = YamlConfiguration.loadConfiguration(file);
+        String key = playerId.toString();
+        ConfigurationSection craftedSection = yaml.getConfigurationSection("crafted");
+        if (craftedSection != null && craftedSection.contains(key)) {
+            Set<String> values = ConcurrentHashMap.newKeySet();
+            values.addAll(craftedSection.getStringList(key));
+            crafted.put(playerId, values);
+        }
+        ConfigurationSection obtainedSection = yaml.getConfigurationSection("obtained");
+        if (obtainedSection != null && obtainedSection.contains(key)) {
+            Set<String> values = ConcurrentHashMap.newKeySet();
+            values.addAll(obtainedSection.getStringList(key));
+            obtained.put(playerId, values);
+        }
+        if (yaml.getStringList("full-unlock").contains(key)) {
+            fullUnlock.add(playerId);
+        } else {
+            fullUnlock.remove(playerId);
+        }
+    }
+
     private void load() {
         if (!file.exists()) {
             return;

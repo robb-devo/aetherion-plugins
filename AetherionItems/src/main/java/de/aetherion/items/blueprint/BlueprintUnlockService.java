@@ -211,6 +211,65 @@ public final class BlueprintUnlockService {
         load();
     }
 
+    public void overlayPlayerFromDisk(UUID playerId) {
+        if (playerId == null || !file.isFile()) {
+            return;
+        }
+        YamlConfiguration yaml = YamlConfiguration.loadConfiguration(file);
+        ConfigurationSection players = yaml.getConfigurationSection("players");
+        if (players == null) {
+            return;
+        }
+        String key = playerId.toString();
+        if (!players.contains(key)) {
+            huntEnabled.remove(playerId);
+            deskReady.remove(playerId);
+            collected.remove(playerId);
+            stamped.remove(playerId);
+            return;
+        }
+        if (players.getBoolean(key + ".hunt", false)) {
+            huntEnabled.add(playerId);
+        } else {
+            huntEnabled.remove(playerId);
+        }
+        if (players.getBoolean(key + ".desk", false)) {
+            deskReady.add(playerId);
+        } else {
+            deskReady.remove(playerId);
+        }
+        Set<String> set = ConcurrentHashMap.newKeySet();
+        for (String id : players.getStringList(key + ".collected")) {
+            if (id != null && !id.isBlank()) {
+                set.add(id.toLowerCase(Locale.ROOT));
+            }
+        }
+        for (String id : players.getStringList(key + ".unlocked")) {
+            if (id != null && !id.isBlank()) {
+                set.add(id.toLowerCase(Locale.ROOT));
+                huntEnabled.add(playerId);
+            }
+        }
+        if (set.isEmpty()) {
+            collected.remove(playerId);
+        } else {
+            collected.put(playerId, set);
+            deskReady.add(playerId);
+        }
+        Set<String> stampedSet = ConcurrentHashMap.newKeySet();
+        for (String id : players.getStringList(key + ".stamped")) {
+            if (id != null && !id.isBlank()) {
+                stampedSet.add(id.toLowerCase(Locale.ROOT));
+            }
+        }
+        if (stampedSet.isEmpty()) {
+            stamped.remove(playerId);
+        } else {
+            stamped.put(playerId, stampedSet);
+            deskReady.add(playerId);
+        }
+    }
+
     private void load() {
         if (!file.exists()) {
             return;

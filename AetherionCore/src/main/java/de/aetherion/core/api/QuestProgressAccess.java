@@ -40,6 +40,13 @@ public interface QuestProgressAccess {
 
     void unsuppress(UUID playerId);
 
+    /**
+     * Persist this player's quest YAML before a network snapshot. Default no-op
+     * when Quests is not loaded.
+     */
+    default void flushPlayer(Player player) {
+    }
+
     List<QuestNpcInfo> npcs();
 
     ItemStack npcAnchor(String npcId);

@@ -151,7 +151,7 @@ public final class BoosterSackMenu {
             }
         }
         try {
-            yaml.save(file(holder.sackId));
+            de.aetherion.core.persist.AtomicYaml.save(yaml, file(holder.sackId), plugin.getLogger());
         } catch (IOException exception) {
             plugin.getLogger().warning("Could not save booster sack " + holder.sackId + ": " + exception.getMessage());
         }

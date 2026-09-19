@@ -127,6 +127,16 @@ public class PlayerQuestStorage {
         }
     }
 
+    /** Persist without dropping the in-memory cache (transfer snapshot / quit). */
+    public void flushPlayer(UUID uuid) {
+        if (uuid == null) {
+            return;
+        }
+        if (dirty.contains(uuid) || cache.containsKey(uuid)) {
+            persist(uuid);
+        }
+    }
+
     public void unload(UUID uuid) {
         if (uuid == null) {
             return;
@@ -186,7 +196,11 @@ public class PlayerQuestStorage {
             if (!folder.exists()) {
                 folder.mkdirs();
             }
-            config.save(file(uuid));
+            if (config instanceof YamlConfiguration yaml) {
+                de.aetherion.core.persist.AtomicYaml.save(yaml, file(uuid), plugin == null ? null : plugin.getLogger());
+            } else {
+                config.save(file(uuid));
+            }
             dirty.remove(uuid);
         } catch (IOException exception) {
             if (plugin != null) {

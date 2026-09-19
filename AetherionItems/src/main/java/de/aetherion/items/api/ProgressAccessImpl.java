@@ -28,6 +28,12 @@ public final class ProgressAccessImpl implements ProgressAccess {
             return;
         }
         UUID id = player.getUniqueId();
+        if (plugin.getMarket() != null) {
+            plugin.getMarket().closeOpenGuis(player);
+        }
+        if (plugin.getLoadoutListener() != null) {
+            plugin.getLoadoutListener().flushWornLoadout(player);
+        }
         if (plugin.getStorageInventory() != null) {
             plugin.getStorageInventory().savePlayerStorage(id);
             plugin.getStorageInventory().saveAll();
@@ -88,35 +94,34 @@ public final class ProgressAccessImpl implements ProgressAccess {
             return;
         }
         UUID id = player == null ? null : player.getUniqueId();
-        if (plugin.getCoins() != null) {
-            plugin.getCoins().reloadFromDisk();
+        // Overlay this player only. A full reloadFromDisk() would clobber other
+        // online players' unsaved in-memory balances on the arrival JVM.
+        if (id != null && plugin.getCoins() != null) {
+            plugin.getCoins().overlayPlayerFromDisk(id);
         }
-        if (plugin.getSkills() != null) {
-            plugin.getSkills().reloadFromDisk();
+        if (id != null && plugin.getSkills() != null) {
+            plugin.getSkills().overlayPlayerFromDisk(id);
         }
-        if (plugin.progress() != null) {
-            plugin.progress().reloadFromDisk();
+        if (id != null && plugin.progress() != null) {
+            plugin.progress().overlayPlayerFromDisk(id);
         }
-        if (plugin.getShards() != null) {
-            plugin.getShards().reloadFromDisk();
+        if (id != null && plugin.getShards() != null) {
+            plugin.getShards().overlayPlayerFromDisk(id);
         }
-        if (plugin.xpBoost() != null) {
-            plugin.xpBoost().reloadFromDisk();
+        if (id != null && plugin.xpBoost() != null) {
+            plugin.xpBoost().overlayPlayerFromDisk(id);
         }
-        if (plugin.recipeUnlocks() != null) {
-            plugin.recipeUnlocks().reloadFromDisk();
+        if (id != null && plugin.recipeUnlocks() != null) {
+            plugin.recipeUnlocks().overlayPlayerFromDisk(id);
         }
-        if (plugin.blueprintUnlocks() != null) {
-            plugin.blueprintUnlocks().reloadFromDisk();
+        if (id != null && plugin.blueprintUnlocks() != null) {
+            plugin.blueprintUnlocks().overlayPlayerFromDisk(id);
         }
-        if (plugin.getAreas() != null) {
-            plugin.getAreas().reloadFromDisk();
+        if (id != null && plugin.getCodex() != null) {
+            plugin.getCodex().overlayPlayerFromDisk(id);
         }
-        if (plugin.getCodex() != null) {
-            plugin.getCodex().reloadFromDisk();
-        }
-        if (plugin.ranks() != null) {
-            plugin.ranks().reloadFromDisk();
+        if (id != null && plugin.ranks() != null) {
+            plugin.ranks().overlayPlayerFromDisk(id);
         }
         if (id != null && plugin.getStorageInventory() != null) {
             plugin.getStorageInventory().invalidateAndReload(id);

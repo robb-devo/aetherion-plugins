@@ -355,6 +355,39 @@ public final class RankBadgeService implements Listener {
         load();
     }
 
+    public void overlayPlayerFromDisk(UUID playerId) {
+        if (playerId == null || !file.isFile()) {
+            return;
+        }
+        YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
+        String key = playerId.toString();
+        ConfigurationSection section = config.getConfigurationSection("players");
+        if (section != null && section.contains(key)) {
+            try {
+                String group = rankByGroup(section.getString(key, "adventurer")).group();
+                if (!isExtra(group)) {
+                    assigned.put(playerId, group);
+                }
+            } catch (RuntimeException ignored) {
+            }
+        }
+        ConfigurationSection extraSection = config.getConfigurationSection("extras");
+        if (extraSection != null && extraSection.contains(key)) {
+            try {
+                String group = rankByGroup(extraSection.getString(key, "")).group();
+                if (isExtra(group)) {
+                    extras.put(playerId, group);
+                }
+            } catch (RuntimeException ignored) {
+            }
+        }
+        if (config.getStringList("forced").contains(key)) {
+            forced.add(playerId);
+        } else {
+            forced.remove(playerId);
+        }
+    }
+
     private void load() {
         if (!file.exists()) {
             return;

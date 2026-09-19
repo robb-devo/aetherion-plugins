@@ -487,10 +487,7 @@ public final class GuildService {
             }
         }
         try {
-            if (!plugin.getDataFolder().exists()) {
-                plugin.getDataFolder().mkdirs();
-            }
-            config.save(file);
+            de.aetherion.core.persist.AtomicYaml.save(config, file, plugin.getLogger());
         } catch (IOException exception) {
             plugin.getLogger().warning("Could not save guilds.yml: " + exception.getMessage());
         }

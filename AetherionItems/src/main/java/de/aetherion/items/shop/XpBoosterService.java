@@ -186,6 +186,28 @@ public final class XpBoosterService implements Listener, Runnable {
         load();
     }
 
+    public void overlayPlayerFromDisk(UUID playerId) {
+        if (playerId == null || !file.isFile()) {
+            return;
+        }
+        YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
+        ConfigurationSection section = config.getConfigurationSection("players");
+        String key = playerId.toString();
+        if (section == null || !section.contains(key)) {
+            remaining.remove(playerId);
+            leftover.remove(playerId);
+            return;
+        }
+        long ms = section.getLong(key + ".ms");
+        if (ms > 0L) {
+            remaining.put(playerId, ms);
+            leftover.put(playerId, section.getDouble(key + ".leftover"));
+        } else {
+            remaining.remove(playerId);
+            leftover.remove(playerId);
+        }
+    }
+
     private void load() {
         if (!file.exists()) {
             return;

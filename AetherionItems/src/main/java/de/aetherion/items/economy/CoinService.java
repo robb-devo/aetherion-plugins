@@ -1,5 +1,7 @@
 package de.aetherion.items.economy;
 
+import de.aetherion.core.persist.AtomicYaml;
+
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
@@ -7,9 +9,12 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 public final class CoinService implements de.aetherion.core.api.CoinAccess {
 
@@ -17,7 +22,9 @@ public final class CoinService implements de.aetherion.core.api.CoinAccess {
     private final File file;
     private final ConcurrentHashMap<UUID, Long> balances = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, Long> lifetime = new ConcurrentHashMap<>();
-    private volatile boolean dirty;
+    private final Object saveLock = new Object();
+    private final AtomicLong mutationEpoch = new AtomicLong();
+    private volatile long savedEpoch;
 
     public CoinService(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -30,7 +37,7 @@ public final class CoinService implements de.aetherion.core.api.CoinAccess {
         if (player == null) {
             return 0L;
         }
-        return balances.getOrDefault(player.getUniqueId(), 0L);
+        return get(player.getUniqueId());
     }
 
     public String formatted(Player player) {
@@ -62,7 +69,7 @@ public final class CoinService implements de.aetherion.core.api.CoinAccess {
         }
         balances.merge(playerId, amount, Long::sum);
         lifetime.merge(playerId, amount, Long::sum);
-        dirty = true;
+        markDirty();
     }
 
     public long lifetime(Player player) {
@@ -77,16 +84,27 @@ public final class CoinService implements de.aetherion.core.api.CoinAccess {
     }
 
     public boolean take(Player player, long amount) {
-        if (player == null || amount <= 0L) {
+        if (player == null) {
             return false;
         }
-        long current = get(player);
-        if (current < amount) {
+        return take(player.getUniqueId(), amount);
+    }
+
+    public boolean take(UUID playerId, long amount) {
+        if (playerId == null || amount <= 0L) {
             return false;
         }
-        balances.put(player.getUniqueId(), current - amount);
-        dirty = true;
-        return true;
+        while (true) {
+            Long current = balances.get(playerId);
+            if (current == null || current < amount) {
+                return false;
+            }
+            long next = current - amount;
+            if (balances.replace(playerId, current, next)) {
+                markDirty();
+                return true;
+            }
+        }
     }
 
     /** Casino payouts: no XP-boost, no lifetime grind. */
@@ -95,29 +113,33 @@ public final class CoinService implements de.aetherion.core.api.CoinAccess {
             return;
         }
         balances.merge(player.getUniqueId(), amount, Long::sum);
-        dirty = true;
+        markDirty();
     }
 
     public void save() {
-        YamlConfiguration config = file.exists()
-                ? YamlConfiguration.loadConfiguration(file)
-                : new YamlConfiguration();
-        balances.forEach((id, amount) -> config.set("players." + id, amount));
-        lifetime.forEach((id, amount) -> config.set("lifetime." + id, amount));
-        try {
-            File folder = file.getParentFile();
-            if (folder != null && !folder.exists()) {
-                folder.mkdirs();
+        synchronized (saveLock) {
+            long epoch = mutationEpoch.get();
+            Map<UUID, Long> balanceSnap = new HashMap<>(balances);
+            Map<UUID, Long> lifeSnap = new HashMap<>(lifetime);
+            // Merge into disk so a shared network coins.yml keeps other JVMs' offline players.
+            YamlConfiguration config = file.isFile()
+                    ? YamlConfiguration.loadConfiguration(file)
+                    : new YamlConfiguration();
+            balanceSnap.forEach((id, amount) -> config.set("players." + id, amount));
+            lifeSnap.forEach((id, amount) -> config.set("lifetime." + id, amount));
+            try {
+                AtomicYaml.save(config, file, plugin.getLogger());
+                if (mutationEpoch.get() == epoch) {
+                    savedEpoch = epoch;
+                }
+            } catch (IOException exception) {
+                plugin.getLogger().warning("Could not save coins.yml: " + exception.getMessage());
             }
-            config.save(file);
-            dirty = false;
-        } catch (IOException exception) {
-            plugin.getLogger().warning("Could not save coins.yml: " + exception.getMessage());
         }
     }
 
     public void saveIfDirty() {
-        if (dirty) {
+        if (mutationEpoch.get() != savedEpoch) {
             save();
         }
     }
@@ -125,6 +147,27 @@ public final class CoinService implements de.aetherion.core.api.CoinAccess {
     @Override
     public void reloadFromDisk() {
         load();
+    }
+
+    /**
+     * Overlay one player from disk without clobbering other online balances.
+     */
+    public void overlayPlayerFromDisk(UUID playerId) {
+        if (playerId == null) {
+            return;
+        }
+        AtomicYaml.recoverTemp(file, plugin.getLogger());
+        if (!file.isFile()) {
+            return;
+        }
+        YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
+        String key = playerId.toString();
+        if (config.contains("players." + key)) {
+            balances.put(playerId, config.getLong("players." + key));
+        }
+        if (config.contains("lifetime." + key)) {
+            lifetime.put(playerId, config.getLong("lifetime." + key));
+        }
     }
 
     @Override
@@ -140,7 +183,12 @@ public final class CoinService implements de.aetherion.core.api.CoinAccess {
         }
     }
 
+    private void markDirty() {
+        mutationEpoch.incrementAndGet();
+    }
+
     private void load() {
+        AtomicYaml.recoverTemp(file, plugin.getLogger());
         if (!file.exists()) {
             return;
         }

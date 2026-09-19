@@ -1,5 +1,6 @@
 package de.aetherion.items.economy;
 
+import de.aetherion.core.persist.AtomicYaml;
 import de.aetherion.items.AetherionItems;
 import de.aetherion.items.core.ItemKeys;
 
@@ -19,8 +20,10 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.player.PlayerKickEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
@@ -34,12 +37,14 @@ import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
 import java.io.IOException;
+
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -64,6 +69,8 @@ public final class MarketService implements Listener {
     private final File file;
     private final Map<UUID, MarketListing> listings = new ConcurrentHashMap<>();
     private final Map<UUID, List<ItemStack>> returns = new ConcurrentHashMap<>();
+    private final Set<UUID> buying = ConcurrentHashMap.newKeySet();
+    private final Object listingLock = new Object();
 
     public MarketService(AetherionItems plugin, ItemValueService values, CoinService coins) {
         this.plugin = plugin;
@@ -220,6 +227,32 @@ public final class MarketService implements Listener {
         }
         holder.committed = true;
         giveOrDrop(player, holder.item);
+    }
+
+    @EventHandler
+    public void onQuit(PlayerQuitEvent event) {
+        closeOpenGuis(event.getPlayer());
+    }
+
+    @EventHandler
+    public void onKick(PlayerKickEvent event) {
+        closeOpenGuis(event.getPlayer());
+    }
+
+    public void closeOpenGuis(Player player) {
+        if (player == null) {
+            return;
+        }
+        InventoryHolder holder = player.getOpenInventory().getTopInventory().getHolder();
+        if (holder instanceof BrowseHolder || holder instanceof PriceHolder || holder instanceof ConfirmHolder) {
+            player.closeInventory();
+        }
+    }
+
+    public void closeOpenGuisForAll() {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            closeOpenGuis(player);
+        }
     }
 
     private void handleBrowse(Player player, BrowseHolder holder, int slot, ItemStack clicked) {
@@ -381,37 +414,58 @@ public final class MarketService implements Listener {
         if (slot != 11) {
             return;
         }
-        MarketListing listing = listings.get(holder.listingId);
-        if (listing == null) {
-            player.sendMessage("§cThat listing is gone.");
-            openBrowse(player, holder.channel, holder.page);
+        if (!buying.add(player.getUniqueId())) {
             return;
         }
-        buy(player, listing);
-        openBrowse(player, holder.channel, holder.page);
+        try {
+            MarketListing listing = listings.get(holder.listingId);
+            if (listing == null) {
+                player.sendMessage("§cThat listing is gone.");
+                openBrowse(player, holder.channel, holder.page);
+                return;
+            }
+            buy(player, listing);
+            openBrowse(player, holder.channel, holder.page);
+        } finally {
+            buying.remove(player.getUniqueId());
+        }
     }
 
     private void buy(Player player, MarketListing listing) {
-        if (!coins.take(player, listing.price())) {
-            player.sendMessage("§cYou need §6" + format(listing.price()) + " coins§c.");
-            return;
+        MarketListing held;
+        synchronized (listingLock) {
+            held = listings.remove(listing.id());
+            if (held == null) {
+                player.sendMessage("§cThat listing is gone.");
+                return;
+            }
+            if (!coins.take(player, held.price())) {
+                listings.put(held.id(), held);
+                player.sendMessage("§cYou need §6" + format(held.price()) + " coins§c.");
+                return;
+            }
         }
-        listings.remove(listing.id());
-        coins.add(listing.seller(), listing.price());
-        giveOrDrop(player, listing.item().clone());
+        coins.add(held.seller(), held.price());
+        giveOrDrop(player, held.item().clone());
         save();
         player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.4f);
-        player.sendMessage("§aBought for §6" + format(listing.price()) + " coins§a.");
-        Player seller = Bukkit.getPlayer(listing.seller());
+        player.sendMessage("§aBought for §6" + format(held.price()) + " coins§a.");
+        Player seller = Bukkit.getPlayer(held.seller());
         if (seller != null && seller.isOnline()) {
-            seller.sendMessage("§6" + label(listing.channel()) + " §8» §a+" + format(listing.price())
+            seller.sendMessage("§6" + label(held.channel()) + " §8» §a+" + format(held.price())
                     + " coins §7from §f" + player.getName());
         }
     }
 
     private void cancel(Player player, MarketListing listing) {
-        listings.remove(listing.id());
-        giveOrDrop(player, listing.item().clone());
+        MarketListing held;
+        synchronized (listingLock) {
+            held = listings.remove(listing.id());
+        }
+        if (held == null) {
+            return;
+        }
+        giveOrDrop(player, held.item().clone());
         save();
         player.sendMessage("§eListing cancelled. Item returned.");
     }
@@ -623,17 +677,14 @@ public final class MarketService implements Listener {
             config.set("returns." + id, encoded);
         });
         try {
-            File folder = file.getParentFile();
-            if (folder != null && !folder.exists()) {
-                folder.mkdirs();
-            }
-            config.save(file);
+            AtomicYaml.save(config, file, plugin.getLogger());
         } catch (IOException exception) {
             plugin.getLogger().warning("Could not save market.yml: " + exception.getMessage());
         }
     }
 
     private void load() {
+        AtomicYaml.recoverTemp(file, plugin.getLogger());
         if (!file.exists()) {
             return;
         }
@@ -790,7 +841,7 @@ public final class MarketService implements Listener {
     public static final class PriceHolder implements InventoryHolder {
         private final MarketChannel channel;
         private final ItemStack item;
-        private boolean committed;
+        private volatile boolean committed;
 
         private PriceHolder(MarketChannel channel, ItemStack item) {
             this.channel = channel;
