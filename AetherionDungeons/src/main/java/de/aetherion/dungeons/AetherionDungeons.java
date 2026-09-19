@@ -43,6 +43,7 @@ public final class AetherionDungeons extends JavaPlugin {
     private HubPortalBridge hubPortalBridge;
     private DungeonTpsProbe tpsProbe;
     private DungeonHubService hubService;
+    private de.aetherion.core.api.DungeonAccess dungeonAccess;
 
     @Override
     public void onEnable() {
@@ -93,6 +94,8 @@ public final class AetherionDungeons extends JavaPlugin {
         getServer().getScheduler().runTaskLater(this, keeper::load, 40L);
         getServer().getScheduler().runTaskLater(this, guide::load, 45L);
         getLogger().info("AetherionDungeons enabled. Temporary instances only.");
+        dungeonAccess = new de.aetherion.dungeons.api.DungeonAccessImpl(this);
+        de.aetherion.core.api.AetherServices.registerDungeons(dungeonAccess);
     }
 
     @Override
@@ -103,6 +106,10 @@ public final class AetherionDungeons extends JavaPlugin {
         DungeonProgressHud.stop();
         if (instances != null) {
             instances.shutdown();
+        }
+        if (dungeonAccess != null) {
+            de.aetherion.core.api.AetherServices.clearDungeons(dungeonAccess);
+            dungeonAccess = null;
         }
         instance = null;
         getLogger().info("AetherionDungeons disabled.");

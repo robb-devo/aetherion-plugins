@@ -60,14 +60,8 @@ public final class ProgressionUnlock {
     }
 
     private static boolean completed(String questId, Player player) {
-        try {
-            Object yes = Class.forName("de.aetherion.quests.bridge.QuestProgressBridge")
-                    .getMethod("isQuestCompleted", Player.class, String.class)
-                    .invoke(null, player, questId);
-            return yes instanceof Boolean b && b;
-        } catch (Throwable ignored) {
-            return false;
-        }
+        de.aetherion.core.api.QuestProgressAccess quests = de.aetherion.core.api.AetherServices.quests();
+        return quests != null && quests.isQuestCompleted(player, questId);
     }
 
     private static boolean active(String questId, Player player) {

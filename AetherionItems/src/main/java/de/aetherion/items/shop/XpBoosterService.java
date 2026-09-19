@@ -182,6 +182,10 @@ public final class XpBoosterService implements Listener, Runnable {
         }
     }
 
+    public void reloadFromDisk() {
+        load();
+    }
+
     private void load() {
         if (!file.exists()) {
             return;

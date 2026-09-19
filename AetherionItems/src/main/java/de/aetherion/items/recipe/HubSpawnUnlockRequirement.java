@@ -1,8 +1,6 @@
 package de.aetherion.items.recipe;
 
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-import org.bukkit.plugin.Plugin;
 
 import java.util.Locale;
 import java.util.UUID;
@@ -41,17 +39,7 @@ public final class HubSpawnUnlockRequirement implements UnlockRequirement {
         if (uuid == null || spawnId == null || spawnId.isBlank()) {
             return false;
         }
-        Plugin hub = Bukkit.getPluginManager().getPlugin("AetherionHub");
-        if (hub == null || !hub.isEnabled()) {
-            return false;
-        }
-        try {
-            Object unlocked = Class.forName("de.aetherion.hub.api.AetherionHubAPI")
-                    .getMethod("isUnlocked", UUID.class, String.class)
-                    .invoke(null, uuid, spawnId);
-            return unlocked instanceof Boolean ok && ok;
-        } catch (ReflectiveOperationException ignored) {
-            return false;
-        }
+        de.aetherion.core.api.HubAccess hub = de.aetherion.core.api.AetherServices.hub();
+        return hub != null && hub.isUnlocked(uuid, spawnId);
     }
 }

@@ -351,6 +351,10 @@ public final class RankBadgeService implements Listener {
         return groups;
     }
 
+    public void reloadFromDisk() {
+        load();
+    }
+
     private void load() {
         if (!file.exists()) {
             return;

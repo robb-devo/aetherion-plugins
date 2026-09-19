@@ -82,15 +82,11 @@ public final class SurveyorMineHintListener implements Listener, Runnable {
         if (hasWorkbench(player)) {
             return;
         }
-        boolean unlocked;
-        try {
-            Object result = Class.forName("de.aetherion.items.progress.ProgressionUnlock")
-                    .getMethod("unlock", org.bukkit.entity.Player.class, String.class, String.class, String.class)
-                    .invoke(null, player, "WORKBENCH", "Crafting + Recipes", "Manager → green Recipe Book");
-            unlocked = result instanceof Boolean b && b;
-        } catch (ReflectiveOperationException | NoClassDefFoundError ignored) {
+        de.aetherion.core.api.ProgressAccess progress = de.aetherion.core.api.AetherServices.progress();
+        if (progress == null) {
             return;
         }
+        boolean unlocked = progress.unlock(player, "WORKBENCH", "Crafting + Recipes", "Manager → green Recipe Book");
         plugin.getPlayerQuestStorage().markStarterKit(player.getUniqueId(), MINE_CRAFT_BACKUP);
         if (!unlocked) {
             return;
@@ -104,27 +100,8 @@ public final class SurveyorMineHintListener implements Listener, Runnable {
     }
 
     private static boolean hasWorkbench(Player player) {
-        try {
-            Object items = Class.forName("de.aetherion.items.AetherionItems")
-                    .getMethod("getInstance")
-                    .invoke(null);
-            if (items == null) {
-                return false;
-            }
-            Object progress = items.getClass().getMethod("progress").invoke(items);
-            if (progress == null) {
-                return false;
-            }
-            Object flag = Class.forName("de.aetherion.items.progress.ProgressionService$Flag")
-                    .getField("WORKBENCH")
-                    .get(null);
-            Object has = progress.getClass()
-                    .getMethod("has", org.bukkit.entity.Player.class, flag.getClass())
-                    .invoke(progress, player, flag);
-            return has instanceof Boolean b && b;
-        } catch (Throwable ignored) {
-            return false;
-        }
+        de.aetherion.core.api.ProgressAccess progress = de.aetherion.core.api.AetherServices.progress();
+        return progress != null && progress.hasFlag(player, "WORKBENCH");
     }
 
     private static boolean eligible(Player player) {

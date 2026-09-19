@@ -1248,6 +1248,20 @@ public class LoadoutListener implements Listener {
         // Keep YAML active slot, but do not re-equip — transferred inventory is source of truth.
     }
 
+    /**
+     * Drop in-memory loadout maps/sets for this player after a network yaml import
+     * (same fields the old reflection walk cleared).
+     */
+    public void invalidateCachesAfterNetworkImport(UUID id) {
+        if (id == null) {
+            return;
+        }
+        editTarget.remove(id);
+        activeLoadouts.remove(id);
+        applyingLoadout.remove(id);
+        restoreOnRespawn.remove(id);
+    }
+
 
     @EventHandler(
             priority = EventPriority.HIGHEST

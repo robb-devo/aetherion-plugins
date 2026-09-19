@@ -142,29 +142,22 @@ public final class CoinPlaceholderExpansion extends PlaceholderExpansion {
 
     /** Soft-read forage isle weather for TAB; off-isle returns em dash for layout room. */
     private static String weatherLine(Player player) {
-        if (player == null || org.bukkit.Bukkit.getPluginManager().getPlugin("AetherionForaging") == null) {
+        de.aetherion.core.api.ForageAccess foraging = de.aetherion.core.api.AetherServices.foraging();
+        if (player == null || foraging == null) {
             return "—";
         }
-        try {
-            Class<?> hook = Class.forName("de.aetherion.foraging.weather.FishingWeatherHook");
-            Object state = hook.getMethod("state", Player.class).invoke(null, player);
-            if (state == null) {
-                return "—";
-            }
-            Object habitat = state.getClass().getMethod("habitat").invoke(state);
-            if (habitat == null || "none".equals(String.valueOf(habitat))) {
-                return "—";
-            }
-            Object kind = state.getClass().getMethod("kind").invoke(state);
-            Object source = state.getClass().getMethod("source").invoke(state);
-            String label = prettyWeather(kind == null ? null : String.valueOf(kind));
-            if (source != null && "RITUAL".equalsIgnoreCase(String.valueOf(source))) {
-                return label + " §8(rite)";
-            }
-            return label;
-        } catch (Throwable ignored) {
+        de.aetherion.core.api.ForageWeatherView state = foraging.weather(player);
+        if (state == null) {
             return "—";
         }
+        if (state.habitat() == null || "none".equals(String.valueOf(state.habitat()))) {
+            return "—";
+        }
+        String label = prettyWeather(state.kind());
+        if (state.source() != null && "RITUAL".equalsIgnoreCase(String.valueOf(state.source()))) {
+            return label + " §8(rite)";
+        }
+        return label;
     }
 
     private static String prettyWeather(String raw) {

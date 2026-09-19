@@ -1,5 +1,7 @@
 package de.aetherion.foraging;
 
+import de.aetherion.core.api.QuestBars;
+
 import org.bukkit.Bukkit;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
@@ -35,15 +37,15 @@ final class ForagingHud {
         }
         BossBar bar = bars.remove(playerId);
         if (bar == null) {
-            QuestBossBarHook.unsuppress(playerId);
+            QuestBars.unsuppress(playerId);
             return;
         }
         Player player = Bukkit.getPlayer(playerId);
         if (player != null) {
             bar.removePlayer(player);
-            QuestBossBarHook.unsuppress(player);
+            QuestBars.unsuppress(player);
         } else {
-            QuestBossBarHook.unsuppress(playerId);
+            QuestBars.unsuppress(playerId);
         }
         bar.removeAll();
         bar.setVisible(false);
@@ -62,12 +64,12 @@ final class ForagingHud {
         BossBar bar = bars.computeIfAbsent(player.getUniqueId(), id -> {
             BossBar created = Bukkit.createBossBar(title, color, BarStyle.SEGMENTED_20);
             created.setVisible(true);
-            QuestBossBarHook.suppress(player);
+            QuestBars.suppress(player);
             return created;
         });
         if (!bar.getPlayers().contains(player)) {
             bar.addPlayer(player);
-            QuestBossBarHook.suppress(player);
+            QuestBars.suppress(player);
         }
         bar.setTitle(title);
         bar.setProgress(Math.max(0.0d, Math.min(1.0d, progress)));

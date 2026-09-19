@@ -2,14 +2,11 @@ package de.aetherion.items.menu.dev;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.Plugin;
 
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -73,81 +70,55 @@ public final class DevBridges {
         items.add(new NamedItem("roulette_table", "§cRoulette Table", de.aetherion.items.casino.RouletteCabinet.createAnchor()));
         items.add(new NamedItem("millstone", "§eMillstone", de.aetherion.items.farm.MillstoneCabinet.createAnchor()));
         items.add(new NamedItem("millstone_v2", "§6Millstone 2.0", de.aetherion.items.farm.MillstoneWindmill.createAnchor()));
-        if (Bukkit.getPluginManager().getPlugin("AetherionQuests") != null) {
-            try {
-                Class<?> registry = Class.forName("de.aetherion.quests.npc.QuestNPCRegistry");
-                Class<?> anchor = Class.forName("de.aetherion.quests.listener.NpcAnchorListener");
-                Object map = registry.getMethod("getAll").invoke(null);
-                if (map instanceof java.util.Map<?, ?> npcs) {
-                    Method create = anchor.getMethod("create", String.class);
-                    for (Object npc : npcs.values()) {
-                        String id = String.valueOf(npc.getClass().getMethod("getId").invoke(npc));
-                        String name = String.valueOf(npc.getClass().getMethod("getName").invoke(npc));
-                        String questId = String.valueOf(npc.getClass().getMethod("getQuestId").invoke(npc));
-                        Object type = npc.getClass().getMethod("getType").invoke(npc);
-                        ItemStack icon = (ItemStack) create.invoke(null, id);
-                        if (icon == null) {
-                            icon = new ItemStack(Material.VILLAGER_SPAWN_EGG);
-                        }
-                        Object entityId = npc.getClass().getMethod("getEntityId").invoke(npc);
-                        boolean flavor = (questId == null || questId.isBlank() || "null".equalsIgnoreCase(questId))
-                                || (type != null && "FLAVOR".equalsIgnoreCase(type.toString()));
-                        String boss = linkedBoss(id);
-                        String online = entityId == null ? " §8(offline)" : " §a●";
-                        String label;
-                        if (flavor) {
-                            label = "§7" + name + " §8· flavor" + online;
-                        } else if (boss == null) {
-                            label = "§b" + name + online;
-                        } else {
-                            label = "§b" + name + " §8· §7" + boss + online;
-                        }
-                        items.add(new NamedItem(id, label, icon));
-                    }
+        if (de.aetherion.core.api.AetherServices.quests() != null) {
+            for (de.aetherion.core.api.QuestNpcInfo npc : de.aetherion.core.api.AetherServices.quests().npcs()) {
+                String id = npc.id();
+                String name = npc.name();
+                String questId = npc.questId();
+                String type = npc.type();
+                ItemStack icon = npc.icon();
+                if (icon == null) {
+                    icon = new ItemStack(Material.VILLAGER_SPAWN_EGG);
                 }
-            } catch (ReflectiveOperationException ignored) {
+                String entityId = npc.entityId();
+                boolean flavor = (questId == null || questId.isBlank() || "null".equalsIgnoreCase(questId))
+                        || (type != null && "FLAVOR".equalsIgnoreCase(type));
+                String boss = linkedBoss(id);
+                String online = entityId == null ? " §8(offline)" : " §a●";
+                String label;
+                if (flavor) {
+                    label = "§7" + name + " §8· flavor" + online;
+                } else if (boss == null) {
+                    label = "§b" + name + online;
+                } else {
+                    label = "§b" + name + " §8· §7" + boss + online;
+                }
+                items.add(new NamedItem(id, label, icon));
             }
         }
-        Plugin dungeons = Bukkit.getPluginManager().getPlugin("AetherionDungeons");
-        if (dungeons != null && dungeons.isEnabled()) {
-            try {
-                ItemStack icon = (ItemStack) dungeons.getClass()
-                        .getMethod("createDungeonKeeperAnchor")
-                        .invoke(dungeons);
-                if (icon != null) {
-                    items.add(new NamedItem("dungeon_keeper", "§5Dungeon Keeper", icon));
-                }
-            } catch (ReflectiveOperationException ignored) {
+        de.aetherion.core.api.DungeonAccess dungeons = de.aetherion.core.api.AetherServices.dungeons();
+        if (dungeons != null) {
+            ItemStack icon = dungeons.dungeonKeeperAnchor();
+            if (icon != null) {
+                items.add(new NamedItem("dungeon_keeper", "§5Dungeon Keeper", icon));
             }
         }
-        Plugin mining = Bukkit.getPluginManager().getPlugin("AetherionMining");
-        if (mining != null && mining.isEnabled()) {
-            try {
-                Class<?> veins = Class.forName("de.aetherion.mining.veins.VeinsNpcs");
-                ItemStack icon = (ItemStack) veins.getMethod("anchor").invoke(null);
-                if (icon != null) {
-                    items.add(new NamedItem("veins_foreman", "§6Foreman §8· §7The Veins", icon));
-                }
-            } catch (ReflectiveOperationException ignored) {
+        de.aetherion.core.api.MiningAccess mining = de.aetherion.core.api.AetherServices.mining();
+        if (mining != null) {
+            ItemStack icon = mining.veinsForemanAnchor();
+            if (icon != null) {
+                items.add(new NamedItem("veins_foreman", "§6Foreman §8· §7The Veins", icon));
             }
         }
-        Plugin foraging = Bukkit.getPluginManager().getPlugin("AetherionForaging");
-        if (foraging != null && foraging.isEnabled()) {
-            try {
-                Class<?> guide = Class.forName("de.aetherion.foraging.npc.IsleGuideNpc");
-                ItemStack icon = (ItemStack) guide.getMethod("createAnchor").invoke(null);
-                if (icon != null) {
-                    items.add(new NamedItem("miss_canopy", "§aMiss Canopy §8· §7Foraging Teacher", icon));
-                }
-            } catch (ReflectiveOperationException ignored) {
+        de.aetherion.core.api.ForageAccess foraging = de.aetherion.core.api.AetherServices.foraging();
+        if (foraging != null) {
+            ItemStack guide = foraging.isleGuideAnchor();
+            if (guide != null) {
+                items.add(new NamedItem("miss_canopy", "§aMiss Canopy §8· §7Foraging Teacher", guide));
             }
-            try {
-                Class<?> grove = Class.forName("de.aetherion.foraging.ritual.GroveRitualService");
-                ItemStack icon = (ItemStack) grove.getMethod("createAnchor").invoke(null);
-                if (icon != null) {
-                    items.add(new NamedItem("grove_table", "§2Grove Enchanting Table", icon));
-                }
-            } catch (ReflectiveOperationException ignored) {
+            ItemStack grove = foraging.groveAnchor();
+            if (grove != null) {
+                items.add(new NamedItem("grove_table", "§2Grove Enchanting Table", grove));
             }
         }
         return items;
@@ -196,132 +167,53 @@ public final class DevBridges {
     }
 
     static ItemStack merchantChest() {
-        Plugin plugin = Bukkit.getPluginManager().getPlugin("AetherionQuests");
-        if (plugin == null || !plugin.isEnabled()) {
-            return null;
-        }
-        try {
-            Class<?> type = Class.forName("de.aetherion.quests.listener.MerchantChestListener");
-            return (ItemStack) type.getMethod("create").invoke(null);
-        } catch (ReflectiveOperationException ignored) {
-            return null;
-        }
+        de.aetherion.core.api.QuestProgressAccess quests = de.aetherion.core.api.AetherServices.quests();
+        return quests == null ? null : quests.merchantChest();
     }
 
     static ItemStack exploreChest(String kind) {
-        Plugin plugin = Bukkit.getPluginManager().getPlugin("AetherionQuests");
-        if (plugin == null || !plugin.isEnabled()) {
-            return null;
-        }
-        try {
-            Class<?> type = Class.forName("de.aetherion.quests.listener.ExploreChestListener");
-            return (ItemStack) type.getMethod("create", String.class).invoke(null, kind);
-        } catch (ReflectiveOperationException ignored) {
-            return null;
-        }
+        de.aetherion.core.api.QuestProgressAccess quests = de.aetherion.core.api.AetherServices.quests();
+        return quests == null ? null : quests.exploreChest(kind);
     }
 
     static List<NamedItem> pets() {
         List<NamedItem> items = new ArrayList<>();
-        Plugin plugin = Bukkit.getPluginManager().getPlugin("AetherMobs");
-        if (plugin == null || !plugin.isEnabled()) {
+        de.aetherion.core.api.PetAccess pets = de.aetherion.core.api.AetherServices.pets();
+        if (pets == null) {
             return items;
         }
-        try {
-            Object registry = plugin.getClass().getMethod("getPetRegistry").invoke(plugin);
-            Collection<?> all = (Collection<?>) registry.getClass().getMethod("getAll").invoke(registry);
-            Method headCreate = Class.forName("de.aetherion.aethermobs.pet.PetHead")
-                    .getMethod("create", String.class);
-            for (Object definition : all) {
-                String id = String.valueOf(definition.getClass().getMethod("getId").invoke(definition));
-                String name = String.valueOf(definition.getClass().getMethod("getDisplayName").invoke(definition));
-                ItemStack icon;
-                try {
-                    icon = (ItemStack) headCreate.invoke(null, id);
-                } catch (ReflectiveOperationException ignored) {
-                    icon = new ItemStack(eggFor(id));
-                }
-                if (icon == null || icon.getType().isAir()) {
-                    icon = new ItemStack(eggFor(id));
-                }
-                org.bukkit.inventory.meta.ItemMeta meta = icon.getItemMeta();
-                if (meta != null) {
-                    meta.setDisplayName("§d" + name);
-                    meta.setLore(List.of(
-                            "§7Left-click to spawn beside you.",
-                            "§8Anywhere. Habitat ignored.",
-                            "§7Right-click to add to collection."
-                    ));
-                    icon.setItemMeta(meta);
-                }
-                items.add(new NamedItem(id, "§d" + name, icon));
-            }
-        } catch (ReflectiveOperationException ignored) {
+        for (de.aetherion.core.api.PetCatalogItem pet : pets.pets()) {
+            items.add(new NamedItem(pet.id(), pet.displayName(), pet.icon()));
         }
         return items;
     }
 
     static boolean spawnPet(Player player, String petId) {
-        return invokePet(player, petId, "spawnDevPet");
+        de.aetherion.core.api.PetAccess pets = de.aetherion.core.api.AetherServices.pets();
+        return pets != null && pets.spawnDevPet(player, petId);
     }
 
     static boolean givePet(Player player, String petId) {
-        return invokePet(player, petId, "giveDevPet");
+        de.aetherion.core.api.PetAccess pets = de.aetherion.core.api.AetherServices.pets();
+        return pets != null && pets.giveDevPet(player, petId);
     }
 
     static int unlockAllPets(Player player) {
-        Plugin plugin = Bukkit.getPluginManager().getPlugin("AetherMobs");
-        if (plugin == null || !plugin.isEnabled() || player == null) {
+        de.aetherion.core.api.PetAccess pets = de.aetherion.core.api.AetherServices.pets();
+        if (pets == null || player == null) {
             return -1;
         }
-        try {
-            Object result = plugin.getClass()
-                    .getMethod("unlockAllPetsDev", Player.class)
-                    .invoke(plugin, player);
-            if (result instanceof Integer count) {
-                return count;
-            }
-            return 0;
-        } catch (ReflectiveOperationException exception) {
-            return -1;
-        }
-    }
-
-    private static boolean invokePet(Player player, String petId, String method) {
-        Plugin plugin = Bukkit.getPluginManager().getPlugin("AetherMobs");
-        if (plugin == null || !plugin.isEnabled()) {
-            return false;
-        }
-        try {
-            return Boolean.TRUE.equals(plugin.getClass()
-                    .getMethod(method, Player.class, String.class)
-                    .invoke(plugin, player, petId));
-        } catch (ReflectiveOperationException exception) {
-            return false;
-        }
+        return pets.unlockAllPetsDev(player);
     }
 
     static ItemStack catchSphere(String id) {
-        Plugin plugin = Bukkit.getPluginManager().getPlugin("AetherMobs");
-        if (plugin == null || !plugin.isEnabled()) {
-            return null;
-        }
-        try {
-            return (ItemStack) plugin.getClass()
-                    .getMethod("createDevCatchSphere", String.class)
-                    .invoke(plugin, id);
-        } catch (ReflectiveOperationException exception) {
-            return null;
-        }
+        de.aetherion.core.api.PetAccess pets = de.aetherion.core.api.AetherServices.pets();
+        return pets == null ? null : pets.catchSphere(id);
     }
 
     static ItemStack petExpTreat(int tier) {
-        try {
-            Class<?> type = Class.forName("de.aetherion.aethermobs.pet.PetExpTreat");
-            return (ItemStack) type.getMethod("create", int.class).invoke(null, tier);
-        } catch (ReflectiveOperationException exception) {
-            return null;
-        }
+        de.aetherion.core.api.PetAccess pets = de.aetherion.core.api.AetherServices.pets();
+        return pets == null ? null : pets.petExpTreat(tier);
     }
 
     static ItemStack homestead() {
@@ -329,31 +221,22 @@ public final class DevBridges {
     }
 
     static ItemStack spawnAnchor(String spawnId) {
-        Plugin plugin = Bukkit.getPluginManager().getPlugin("AetherionHub");
-        if (plugin == null || !plugin.isEnabled()) {
+        de.aetherion.core.api.HubAccess hub = de.aetherion.core.api.AetherServices.hub();
+        String id = spawnId == null || spawnId.isBlank() ? "harbour" : spawnId;
+        if (hub == null) {
             return null;
         }
-        String id = spawnId == null || spawnId.isBlank() ? "harbour" : spawnId;
-        try {
-            Object marker = plugin.getClass().getMethod("getHomesteadMarker").invoke(plugin);
-            return (ItemStack) marker.getClass().getMethod("createAnchor", String.class).invoke(marker, id);
-        } catch (ReflectiveOperationException exception) {
-            return homestead(id);
-        }
+        ItemStack anchor = hub.createAnchor(id);
+        return anchor != null ? anchor : homestead(id);
     }
 
     static ItemStack homestead(String spawnId) {
-        Plugin plugin = Bukkit.getPluginManager().getPlugin("AetherionHub");
-        if (plugin == null || !plugin.isEnabled()) {
+        de.aetherion.core.api.HubAccess hub = de.aetherion.core.api.AetherServices.hub();
+        if (hub == null) {
             return null;
         }
         String id = spawnId == null || spawnId.isBlank() ? "harbour" : spawnId;
-        try {
-            Object marker = plugin.getClass().getMethod("getHomesteadMarker").invoke(plugin);
-            return (ItemStack) marker.getClass().getMethod("create", String.class).invoke(marker, id);
-        } catch (ReflectiveOperationException exception) {
-            return null;
-        }
+        return hub.createUnlockItem(id);
     }
 
     /** Origin-map teleports only — no old megamap camps. */
@@ -371,52 +254,38 @@ public final class DevBridges {
 
     static List<NamedItem> spawnMarkers() {
         List<NamedItem> items = new ArrayList<>();
-        Plugin plugin = Bukkit.getPluginManager().getPlugin("AetherionHub");
-        if (plugin == null || !plugin.isEnabled()) {
+        de.aetherion.core.api.HubAccess hub = de.aetherion.core.api.AetherServices.hub();
+        if (hub == null) {
             return items;
         }
-        try {
-            Object hub = plugin.getClass().getMethod("getHub").invoke(plugin);
-            Object marker = plugin.getClass().getMethod("getHomesteadMarker").invoke(plugin);
-            Method create = marker.getClass().getMethod("createAnchor", String.class);
-            java.util.Map<String, String> names = new java.util.HashMap<>();
-            Collection<?> spawns = (Collection<?>) hub.getClass().getMethod("spawns").invoke(hub);
-            for (Object spawn : spawns) {
-                String id = String.valueOf(spawn.getClass().getMethod("id").invoke(spawn));
-                String name = String.valueOf(spawn.getClass().getMethod("displayName").invoke(spawn));
-                if (id != null && !id.isBlank()) {
-                    names.put(id.toLowerCase(java.util.Locale.ROOT), name);
-                }
+        java.util.Map<String, String> names = new java.util.HashMap<>();
+        java.util.Map<String, ItemStack> icons = new java.util.HashMap<>();
+        for (de.aetherion.core.api.HubSpawnInfo spawn : hub.spawns()) {
+            if (spawn.id() != null && !spawn.id().isBlank()) {
+                names.put(spawn.id().toLowerCase(java.util.Locale.ROOT), spawn.displayName());
+                icons.put(spawn.id().toLowerCase(java.util.Locale.ROOT), spawn.anchor());
             }
-            for (String id : ORIGIN_SPAWN_IDS) {
-                String name = names.getOrDefault(id, id.replace('_', ' '));
-                ItemStack icon = (ItemStack) create.invoke(marker, id);
-                if (icon == null) {
-                    icon = new ItemStack(Material.LODESTONE);
-                }
-                items.add(new NamedItem(id, spawnLabel(id, name), icon));
+        }
+        for (String id : ORIGIN_SPAWN_IDS) {
+            String name = names.getOrDefault(id, id.replace('_', ' '));
+            ItemStack icon = icons.get(id);
+            if (icon == null) {
+                icon = hub.createAnchor(id);
             }
-        } catch (ReflectiveOperationException ignored) {
+            if (icon == null) {
+                icon = new ItemStack(Material.LODESTONE);
+            }
+            items.add(new NamedItem(id, spawnLabel(id, name), icon));
         }
         return items;
     }
 
     public static int unlockAllSpawns(Player player) {
-        Plugin plugin = Bukkit.getPluginManager().getPlugin("AetherionHub");
-        if (plugin == null || !plugin.isEnabled() || player == null) {
+        de.aetherion.core.api.HubAccess hub = de.aetherion.core.api.AetherServices.hub();
+        if (hub == null || player == null) {
             return -1;
         }
-        try {
-            Object result = plugin.getClass()
-                    .getMethod("unlockAllSpawns", Player.class)
-                    .invoke(plugin, player);
-            if (result instanceof Number number) {
-                return number.intValue();
-            }
-            return 0;
-        } catch (ReflectiveOperationException exception) {
-            return -1;
-        }
+        return hub.unlockAll(player);
     }
 
     static boolean startDungeon(Player player, boolean bossOnly) {
@@ -424,153 +293,18 @@ public final class DevBridges {
     }
 
     static boolean startDungeon(Player player, boolean bossOnly, int floor) {
-        Plugin dungeons = Bukkit.getPluginManager().getPlugin("AetherionDungeons");
-        if (dungeons == null || !dungeons.isEnabled() || player == null) {
-            return false;
-        }
-        try {
-            dungeons.getClass()
-                    .getMethod("startTest", Player.class, boolean.class, int.class)
-                    .invoke(dungeons, player, bossOnly, floor);
-            return true;
-        } catch (ReflectiveOperationException ignored) {
-        }
-        try {
-            dungeons.getClass()
-                    .getMethod("startTest", Player.class, boolean.class)
-                    .invoke(dungeons, player, bossOnly);
-            return true;
-        } catch (ReflectiveOperationException exception) {
-            return false;
-        }
+        de.aetherion.core.api.DungeonAccess dungeons = de.aetherion.core.api.AetherServices.dungeons();
+        return dungeons != null && dungeons.startTest(player, bossOnly, floor);
     }
 
     public static boolean despawnDungeonKeeper(Entity entity) {
-        if (entity == null) {
-            return false;
-        }
-        Plugin plugin = Bukkit.getPluginManager().getPlugin("AetherionDungeons");
-        if (plugin == null || !plugin.isEnabled()) {
-            return false;
-        }
-        boolean keeper = entity.getScoreboardTags().contains("dungeon_keeper");
-        String name = entity.getCustomName();
-        if (name != null && name.contains("Dungeon Keeper")) {
-            keeper = true;
-        }
-        String tagged = entity.getPersistentDataContainer().get(
-                new NamespacedKey(plugin, "dungeon_npc"),
-                PersistentDataType.STRING
-        );
-        if ("dungeon_keeper".equals(tagged)) {
-            keeper = true;
-        }
-        if (!keeper) {
-            return false;
-        }
-        try {
-            plugin.getClass().getMethod("despawnDungeonKeeper").invoke(plugin);
-            return true;
-        } catch (ReflectiveOperationException exception) {
-            return false;
-        }
+        de.aetherion.core.api.DungeonAccess dungeons = de.aetherion.core.api.AetherServices.dungeons();
+        return dungeons != null && dungeons.despawnKeeper(entity);
     }
 
     public static String despawnQuestNpc(Entity entity) {
-        if (entity == null) {
-            return null;
-        }
-        Plugin plugin = Bukkit.getPluginManager().getPlugin("AetherionQuests");
-        if (plugin == null || !plugin.isEnabled()) {
-            return null;
-        }
-        String npcId = entity.getPersistentDataContainer().get(
-                new NamespacedKey(plugin, "quest_npc"),
-                PersistentDataType.STRING
-        );
-        if (npcId == null || npcId.isBlank()) {
-            npcId = entity.getPersistentDataContainer().get(
-                    new NamespacedKey(plugin, "quest_npc_name"),
-                    PersistentDataType.STRING
-            );
-        }
-        if (npcId == null || npcId.isBlank()) {
-            npcId = entity.getPersistentDataContainer().get(
-                    new NamespacedKey(plugin, "quest_marker_npc"),
-                    PersistentDataType.STRING
-            );
-        }
-        if (npcId == null || npcId.isBlank()) {
-            try {
-                Class<?> registry = Class.forName("de.aetherion.quests.npc.QuestNPCRegistry");
-                Object npc = registry.getMethod("getNPCByEntityId", String.class)
-                        .invoke(null, entity.getUniqueId().toString());
-                if (npc != null) {
-                    npcId = String.valueOf(npc.getClass().getMethod("getId").invoke(npc));
-                }
-            } catch (ReflectiveOperationException ignored) {
-            }
-        }
-        if (npcId == null || npcId.isBlank()) {
-            return null;
-        }
-        String name = npcId;
-        try {
-            Class<?> registry = Class.forName("de.aetherion.quests.npc.QuestNPCRegistry");
-            Object npc = registry.getMethod("getNPC", String.class).invoke(null, npcId);
-            if (npc != null) {
-                name = String.valueOf(npc.getClass().getMethod("getName").invoke(npc));
-            }
-            Boolean ok = (Boolean) plugin.getClass()
-                    .getMethod("despawnQuestNpc", String.class)
-                    .invoke(plugin, npcId);
-            if (!Boolean.TRUE.equals(ok)) {
-                return null;
-            }
-            return name;
-        } catch (ReflectiveOperationException exception) {
-            return null;
-        }
-    }
-
-    private static Material eggFor(String petId) {
-        return switch (petId.toLowerCase()) {
-            case "wolf" -> Material.WOLF_SPAWN_EGG;
-            case "pig" -> Material.PIG_SPAWN_EGG;
-            case "cow" -> Material.COW_SPAWN_EGG;
-            case "bat" -> Material.BAT_SPAWN_EGG;
-            case "cavespider", "cave_spider" -> Material.CAVE_SPIDER_SPAWN_EGG;
-            case "creeper" -> Material.CREEPER_SPAWN_EGG;
-            case "zombie" -> Material.ZOMBIE_SPAWN_EGG;
-            case "skeleton" -> Material.SKELETON_SPAWN_EGG;
-            case "squid" -> Material.SQUID_SPAWN_EGG;
-            case "glowsquid", "glow_squid" -> Material.GLOW_SQUID_SPAWN_EGG;
-            case "axolotl" -> Material.AXOLOTL_SPAWN_EGG;
-            case "guardian" -> Material.GUARDIAN_SPAWN_EGG;
-            case "dolphin" -> Material.DOLPHIN_SPAWN_EGG;
-            case "cod" -> Material.COD_SPAWN_EGG;
-            case "salmon" -> Material.SALMON_SPAWN_EGG;
-            case "pufferfish" -> Material.PUFFERFISH_SPAWN_EGG;
-            case "tropical_fish", "tropicalfish" -> Material.TROPICAL_FISH_SPAWN_EGG;
-            case "ocelot" -> Material.OCELOT_SPAWN_EGG;
-            case "parrot" -> Material.PARROT_SPAWN_EGG;
-            case "wither" -> Material.WITHER_SKELETON_SPAWN_EGG;
-            case "hawk", "pigeon", "bee", "owl", "butterfly", "bloom_fairy" -> Material.PARROT_SPAWN_EGG;
-            case "frog" -> Material.FROG_SPAWN_EGG;
-            case "cat" -> Material.CAT_SPAWN_EGG;
-            case "sheep" -> Material.SHEEP_SPAWN_EGG;
-            case "mooshroom", "mycelord" -> Material.MOOSHROOM_SPAWN_EGG;
-            case "sniffer" -> Material.SNIFFER_SPAWN_EGG;
-            case "iron_golem" -> Material.IRON_GOLEM_SPAWN_EGG;
-            case "witch", "swamp_hag" -> Material.WITCH_SPAWN_EGG;
-            case "sand_wraith" -> Material.HUSK_SPAWN_EGG;
-            case "forest_spirit", "lush_oracle" -> Material.ALLAY_SPAWN_EGG;
-            case "aetherion" -> Material.DRAGON_EGG;
-            case "dungeon_dragon" -> Material.PHANTOM_SPAWN_EGG;
-            case "dungeon_zombie" -> Material.ZOMBIE_SPAWN_EGG;
-            case "dungeon_skeleton" -> Material.SKELETON_SPAWN_EGG;
-            default -> Material.GHAST_SPAWN_EGG;
-        };
+        de.aetherion.core.api.QuestProgressAccess quests = de.aetherion.core.api.AetherServices.quests();
+        return quests == null ? null : quests.despawnNpc(entity);
     }
 
     private static String linkedBoss(String npcId) {
@@ -614,99 +348,74 @@ public final class DevBridges {
     }
 
     static boolean farmPortalAvailable() {
-        Plugin plugin = Bukkit.getPluginManager().getPlugin("AetherionFarming");
-        if (plugin == null || !plugin.isEnabled()) {
-            return false;
-        }
-        try {
-            Class<?> api = Class.forName("de.aetherion.farming.portal.FarmPortalAPI");
-            Object ok = api.getMethod("available").invoke(null);
-            return ok instanceof Boolean b && b;
-        } catch (ReflectiveOperationException ignored) {
-            return false;
-        }
+        de.aetherion.core.api.FarmAccess farming = de.aetherion.core.api.AetherServices.farming();
+        return farming != null && farming.available();
     }
 
     static String farmPortalEnsure(boolean forceRebuild) {
-        try {
-            Class<?> api = Class.forName("de.aetherion.farming.portal.FarmPortalAPI");
-            Object result = api.getMethod("ensureIsland", boolean.class).invoke(null, forceRebuild);
-            return result == null ? "§cNo response." : String.valueOf(result);
-        } catch (ReflectiveOperationException exception) {
+        de.aetherion.core.api.FarmAccess farming = de.aetherion.core.api.AetherServices.farming();
+        if (farming == null) {
             return "§cAetherionFarming portal API missing.";
         }
+        String result = farming.ensureIsland(forceRebuild);
+        return result == null ? "§cNo response." : result;
     }
 
     static ItemStack farmPortalTool() {
-        try {
-            Class<?> api = Class.forName("de.aetherion.farming.portal.FarmPortalAPI");
-            return (ItemStack) api.getMethod("createHubPortalTool").invoke(null);
-        } catch (ReflectiveOperationException ignored) {
-            return null;
-        }
+        de.aetherion.core.api.FarmAccess farming = de.aetherion.core.api.AetherServices.farming();
+        return farming == null ? null : farming.hubPortalTool();
     }
 
     static void farmPortalSetIslandExit(Player player) {
-        try {
-            Class<?> api = Class.forName("de.aetherion.farming.portal.FarmPortalAPI");
-            api.getMethod("setIslandExitHere", Player.class).invoke(null, player);
-        } catch (ReflectiveOperationException exception) {
+        de.aetherion.core.api.FarmAccess farming = de.aetherion.core.api.AetherServices.farming();
+        if (farming == null) {
             player.sendMessage("§cAetherionFarming portal API missing.");
+            return;
         }
+        farming.setIslandExitHere(player);
     }
 
     static void farmPortalTeleport(Player player) {
-        try {
-            Class<?> api = Class.forName("de.aetherion.farming.portal.FarmPortalAPI");
-            api.getMethod("teleportToIsland", Player.class).invoke(null, player);
-        } catch (ReflectiveOperationException exception) {
+        de.aetherion.core.api.FarmAccess farming = de.aetherion.core.api.AetherServices.farming();
+        if (farming == null) {
             player.sendMessage("§cAetherionFarming portal API missing.");
+            return;
         }
+        farming.teleportToIsland(player);
     }
 
     static String farmPortalRefreshAmbience() {
-        try {
-            Class<?> api = Class.forName("de.aetherion.farming.portal.FarmPortalAPI");
-            Object result = api.getMethod("refreshAmbience").invoke(null);
-            return result == null ? "§cNo response." : String.valueOf(result);
-        } catch (ReflectiveOperationException exception) {
+        de.aetherion.core.api.FarmAccess farming = de.aetherion.core.api.AetherServices.farming();
+        if (farming == null) {
             return "§cAetherionFarming portal API missing.";
         }
+        String result = farming.refreshAmbience();
+        return result == null ? "§cNo response." : result;
     }
 
     static String farmPortalStatus() {
-        try {
-            Class<?> api = Class.forName("de.aetherion.farming.portal.FarmPortalAPI");
-            Object result = api.getMethod("statusLine").invoke(null);
-            return result == null ? "§7No status." : String.valueOf(result);
-        } catch (ReflectiveOperationException ignored) {
+        de.aetherion.core.api.FarmAccess farming = de.aetherion.core.api.AetherServices.farming();
+        if (farming == null) {
             return "§cAetherionFarming offline";
         }
+        String result = farming.statusLine();
+        return result == null ? "§7No status." : result;
     }
 
     /** Current forage-isle weather line for DEV header. */
     static String isleWeatherStatus(Player player) {
-        Plugin foraging = Bukkit.getPluginManager().getPlugin("AetherionForaging");
-        if (foraging == null || !foraging.isEnabled() || player == null) {
+        de.aetherion.core.api.ForageAccess foraging = de.aetherion.core.api.AetherServices.foraging();
+        if (foraging == null || player == null) {
             return "§cAetherionForaging offline";
         }
-        try {
-            Class<?> hook = Class.forName("de.aetherion.foraging.weather.FishingWeatherHook");
-            Object state = hook.getMethod("state", Player.class).invoke(null, player);
-            if (state == null) {
-                return "§7No weather state";
-            }
-            Object kind = state.getClass().getMethod("kind").invoke(state);
-            Object habitat = state.getClass().getMethod("habitat").invoke(state);
-            Object source = state.getClass().getMethod("source").invoke(state);
-            Object phase = state.getClass().getMethod("phase").invoke(state);
-            return "§7Now §f" + kind
-                    + " §8· §7Area §f" + habitat
-                    + " §8· §7" + source
-                    + " §8· §7" + phase;
-        } catch (ReflectiveOperationException exception) {
-            return "§cWeather bridge failed";
+        de.aetherion.core.api.ForageWeatherView state = foraging.weather(player);
+        if (state == null) {
+            return "§7No weather state";
         }
+        return "§7Now §f" + state.kind()
+                + " §8· §7Area §f" + state.habitat()
+                + " §8· §7" + state.source()
+                + " §8· §7" + state.phase();
     }
 
     /**
@@ -714,42 +423,18 @@ public final class DevBridges {
      * @return true if applied
      */
     static boolean isleWeatherForce(Player player, String kind, int seconds) {
-        Plugin foraging = Bukkit.getPluginManager().getPlugin("AetherionForaging");
-        if (foraging == null || !foraging.isEnabled() || player == null || kind == null) {
+        de.aetherion.core.api.ForageAccess foraging = de.aetherion.core.api.AetherServices.foraging();
+        if (foraging == null || player == null || kind == null) {
             return false;
         }
-        try {
-            Object plugin = foraging;
-            Object weather = plugin.getClass().getMethod("weather").invoke(plugin);
-            if (weather == null) {
-                return false;
-            }
-            Class<?> kindClass = Class.forName("de.aetherion.foraging.weather.WeatherKind");
-            @SuppressWarnings({"unchecked", "rawtypes"})
-            Object kindEnum = Enum.valueOf((Class<? extends Enum>) kindClass, kind.trim().toUpperCase(java.util.Locale.ROOT));
-            weather.getClass()
-                    .getMethod("setRitualOverride", Player.class, kindClass, int.class)
-                    .invoke(weather, player, kindEnum, Math.max(10, seconds));
-            return true;
-        } catch (ReflectiveOperationException | IllegalArgumentException exception) {
-            return false;
-        }
+        return foraging.forceWeather(player, kind, seconds);
     }
 
     static boolean isleWeatherClear(Player player) {
-        Plugin foraging = Bukkit.getPluginManager().getPlugin("AetherionForaging");
-        if (foraging == null || !foraging.isEnabled() || player == null) {
+        de.aetherion.core.api.ForageAccess foraging = de.aetherion.core.api.AetherServices.foraging();
+        if (foraging == null || player == null) {
             return false;
         }
-        try {
-            Object weather = foraging.getClass().getMethod("weather").invoke(foraging);
-            if (weather == null) {
-                return false;
-            }
-            weather.getClass().getMethod("clearRitualOverride", Player.class).invoke(weather, player);
-            return true;
-        } catch (ReflectiveOperationException exception) {
-            return false;
-        }
+        return foraging.clearWeather(player);
     }
 }

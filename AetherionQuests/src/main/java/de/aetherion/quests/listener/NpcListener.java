@@ -500,11 +500,9 @@ public class NpcListener implements Listener {
                                     "→ Manager → Pets → Equip your catch",
                                     net.kyori.adventure.text.format.NamedTextColor.LIGHT_PURPLE
                             ));
-                            try {
-                                Class.forName("de.aetherion.items.menu.AetherionManagerListener")
-                                        .getMethod("refreshManagerItem", org.bukkit.entity.Player.class)
-                                        .invoke(null, player);
-                            } catch (ReflectiveOperationException | NoClassDefFoundError ignored) {
+                            de.aetherion.core.api.ProgressAccess progress = de.aetherion.core.api.AetherServices.progress();
+                            if (progress != null) {
+                                progress.refreshManager(player);
                             }
                             de.aetherion.quests.ui.QuestProgressDisplay.showProgress(player, questManager);
                         }, 45L);
@@ -633,14 +631,13 @@ public class NpcListener implements Listener {
 
 
     private static void playForagerDemo(Player player, org.bukkit.Location near) {
-        try {
-            Class<?> demo = Class.forName("de.aetherion.foraging.ForagerChopDemo");
-            demo.getMethod("play", Player.class, org.bukkit.Location.class)
-                    .invoke(null, player, near);
-        } catch (ReflectiveOperationException | NoClassDefFoundError ignored) {
-            LivingNpcProfile.say(player, "lumberjack", "Forager", "Left-click a glowing trunk — green CHOP, then swing.");
-            LivingNpcProfile.say(player, "lumberjack", "Forager", "Ten oak logs to Egon on the pier.");
+        de.aetherion.core.api.ForageAccess foraging = de.aetherion.core.api.AetherServices.foraging();
+        if (foraging != null) {
+            foraging.playChopDemo(player, near);
+            return;
         }
+        LivingNpcProfile.say(player, "lumberjack", "Forager", "Left-click a glowing trunk — green CHOP, then swing.");
+        LivingNpcProfile.say(player, "lumberjack", "Forager", "Ten oak logs to Egon on the pier.");
     }
 
 
@@ -783,11 +780,9 @@ public class NpcListener implements Listener {
                 && plugin.getPlayerQuestStorage().hasStarterKit(player.getUniqueId(), giftKey);
 
         // Unlock crafting on first real visit.
-        try {
-            Class.forName("de.aetherion.items.progress.ProgressionUnlock")
-                    .getMethod("unlock", org.bukkit.entity.Player.class, String.class, String.class, String.class)
-                    .invoke(null, player, "WORKBENCH", "Crafting + Recipes", "Manager → green Recipe Book");
-        } catch (ReflectiveOperationException | NoClassDefFoundError ignored) {
+        de.aetherion.core.api.ProgressAccess progress = de.aetherion.core.api.AetherServices.progress();
+        if (progress != null) {
+            progress.unlock(player, "WORKBENCH", "Crafting + Recipes", "Manager → green Recipe Book");
         }
         if (plugin != null && plugin.getPlayerQuestStorage() != null) {
             plugin.getPlayerQuestStorage().markStarterKit(player.getUniqueId(), "craftsman_spoken");
@@ -1056,22 +1051,18 @@ public class NpcListener implements Listener {
                 "Next: §eShaft Foreman§f at the Mines. Yellow arrow up top tracks him.");
 
         if (plugin != null) {
-            try {
-                Class.forName("de.aetherion.items.menu.AetherionManagerListener")
-                        .getMethod("refreshManagerItem", org.bukkit.entity.Player.class)
-                        .invoke(null, player);
-            } catch (ReflectiveOperationException | NoClassDefFoundError ignored) {
+            de.aetherion.core.api.ProgressAccess progress = de.aetherion.core.api.AetherServices.progress();
+            if (progress != null) {
+                progress.refreshManager(player);
             }
         }
     }
 
 
     private static void blinkHomesteadMarker(Player player) {
-        try {
-            Class.forName("de.aetherion.hub.api.AetherionHubAPI")
-                    .getMethod("blinkUnlockItem", org.bukkit.entity.Player.class, int.class)
-                    .invoke(null, player, 10);
-        } catch (ReflectiveOperationException | NoClassDefFoundError ignored) {
+        de.aetherion.core.api.HubAccess hub = de.aetherion.core.api.AetherServices.hub();
+        if (hub != null) {
+            hub.blinkUnlockItem(player, 10);
         }
     }
 

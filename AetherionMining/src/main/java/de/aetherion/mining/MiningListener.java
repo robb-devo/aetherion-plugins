@@ -83,11 +83,9 @@ public class MiningListener implements Listener {
             return;
         }
         // Seal cancels the break for regen — notify quests explicitly so First Shift still counts.
-        try {
-            Class.forName("de.aetherion.quests.bridge.QuestProgressBridge")
-                    .getMethod("noteBroken", org.bukkit.entity.Player.class, Material.class, int.class)
-                    .invoke(null, event.getPlayer(), material, 1);
-        } catch (ReflectiveOperationException | NoClassDefFoundError ignored) {
+        de.aetherion.core.api.QuestProgressAccess quests = de.aetherion.core.api.AetherServices.quests();
+        if (quests != null) {
+            quests.noteBroken(event.getPlayer(), material, 1);
         }
         BlockData original = block.getBlockData().clone();
         seal(event.getPlayer(), block, original, getRespawnTime(material));

@@ -20,6 +20,7 @@ public class AetherionForaging extends JavaPlugin {
     private IsleWeatherService weather;
     private GroveRitualService grove;
     private IsleGuideNpc guide;
+    private de.aetherion.core.api.ForageAccess forageAccess;
 
     public static AetherionForaging getInstance() {
         return instance;
@@ -91,6 +92,8 @@ public class AetherionForaging extends JavaPlugin {
             }, 100L);
         }
         getLogger().info("AetherionForaging enabled!");
+        forageAccess = new de.aetherion.foraging.api.ForageAccessImpl(this);
+        de.aetherion.core.api.AetherServices.registerForaging(forageAccess);
     }
 
     private void mergeExtraWoodTypes() {
@@ -167,6 +170,10 @@ public class AetherionForaging extends JavaPlugin {
     public void onDisable() {
         if (listener != null) {
             listener.shutdown();
+        }
+        if (forageAccess != null) {
+            de.aetherion.core.api.AetherServices.clearForaging(forageAccess);
+            forageAccess = null;
         }
         instance = null;
     }

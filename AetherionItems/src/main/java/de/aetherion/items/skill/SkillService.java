@@ -940,6 +940,10 @@ public final class SkillService implements StatProvider, Listener {
         }
     }
 
+    public void reloadFromDisk() {
+        load();
+    }
+
     private void load() {
         if (!file.exists()) {
             return;

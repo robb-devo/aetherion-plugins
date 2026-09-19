@@ -277,13 +277,8 @@ public class QuestCompass {
     }
 
     private static Location hubSpawnLocation(String id) {
-        try {
-            Class<?> api = Class.forName("de.aetherion.hub.api.AetherionHubAPI");
-            Object at = api.getMethod("location", String.class).invoke(null, id);
-            return at instanceof Location location ? location : null;
-        } catch (ReflectiveOperationException | NoClassDefFoundError ignored) {
-            return null;
-        }
+        de.aetherion.core.api.HubAccess hub = de.aetherion.core.api.AetherServices.hub();
+        return hub == null ? null : hub.location(id);
     }
 
 

@@ -270,14 +270,8 @@ public class AetherionManagerGUI {
     }
 
     private static boolean hasHomesteadMarker(Player player) {
-        try {
-            Object yes = Class.forName("de.aetherion.hub.api.AetherionHubAPI")
-                    .getMethod("hasUnlockItem", Player.class)
-                    .invoke(null, player);
-            return yes instanceof Boolean b && b;
-        } catch (ReflectiveOperationException | NoClassDefFoundError ignored) {
-            return false;
-        }
+        de.aetherion.core.api.HubAccess hub = de.aetherion.core.api.AetherServices.hub();
+        return hub != null && hub.hasUnlockItem(player);
     }
 
     private void startSpawnsBlink(Player player) {

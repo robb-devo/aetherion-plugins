@@ -175,6 +175,10 @@ public final class CodexService {
         return data;
     }
 
+    public void reloadFromDisk() {
+        load();
+    }
+
     private void load() {
         if (!file.exists()) {
             return;

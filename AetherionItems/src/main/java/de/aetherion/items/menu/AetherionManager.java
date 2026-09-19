@@ -50,16 +50,7 @@ public class AetherionManager {
     }
 
     private static void noteManagerOpened(Player player) {
-        if (player == null) {
-            return;
-        }
-        try {
-            Class.forName("de.aetherion.quests.bridge.QuestProgressBridge")
-                    .getMethod("noteUsed", Player.class, String.class)
-                    .invoke(null, player, "AETHERION_MANAGER");
-        } catch (ReflectiveOperationException ignored) {
-            // Quests plugin optional / older jar
-        }
+        de.aetherion.items.util.QuestProgressHook.noteUsed(player, "AETHERION_MANAGER");
     }
 
     private boolean tryOpenDungeonMap(Player player) {
@@ -130,12 +121,7 @@ public class AetherionManager {
     }
 
     private static void notePetsOpened(Player player) {
-        try {
-            Class.forName("de.aetherion.quests.bridge.QuestProgressBridge")
-                    .getMethod("noteUsed", Player.class, String.class)
-                    .invoke(null, player, "AETHERION_PET_MENU");
-        } catch (ReflectiveOperationException ignored) {
-        }
+        de.aetherion.items.util.QuestProgressHook.noteUsed(player, "AETHERION_PET_MENU");
     }
 
     private static boolean openPetsFromPlugin(Player player) {

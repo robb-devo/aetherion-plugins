@@ -1210,11 +1210,10 @@ public class DialogManager implements Listener {
                 if (near == null) {
                     near = player.getLocation();
                 }
-                try {
-                    Class.forName("de.aetherion.foraging.ForagerChopDemo")
-                            .getMethod("play", Player.class, org.bukkit.Location.class)
-                            .invoke(null, player, near);
-                } catch (Throwable ignored) {
+                de.aetherion.core.api.ForageAccess foraging = de.aetherion.core.api.AetherServices.foraging();
+                if (foraging != null) {
+                    foraging.playChopDemo(player, near);
+                } else {
                     de.aetherion.quests.bridge.QuestProgressBridge.unlockForagerChop(player);
                 }
             }, 10L);
@@ -1226,12 +1225,9 @@ public class DialogManager implements Listener {
                     net.kyori.adventure.text.format.NamedTextColor.LIGHT_PURPLE
             ));
             plugin.getServer().getScheduler().runTask(plugin, () -> {
-                try {
-                    Class<?> type = Class.forName(
-                            "de.aetherion.items.menu.AetherionManagerListener"
-                    );
-                    type.getMethod("refreshManagerItem", Player.class).invoke(null, player);
-                } catch (Throwable ignored) {
+                de.aetherion.core.api.ProgressAccess progress = de.aetherion.core.api.AetherServices.progress();
+                if (progress != null) {
+                    progress.refreshManager(player);
                 }
             });
         }
@@ -1241,11 +1237,9 @@ public class DialogManager implements Listener {
                     net.kyori.adventure.text.format.NamedTextColor.LIGHT_PURPLE
             ));
             plugin.getServer().getScheduler().runTask(plugin, () -> {
-                try {
-                    Class.forName("de.aetherion.items.menu.AetherionManagerListener")
-                            .getMethod("refreshManagerItem", Player.class)
-                            .invoke(null, player);
-                } catch (Throwable ignored) {
+                de.aetherion.core.api.ProgressAccess progress = de.aetherion.core.api.AetherServices.progress();
+                if (progress != null) {
+                    progress.refreshManager(player);
                 }
             });
         }
@@ -1255,11 +1249,9 @@ public class DialogManager implements Listener {
                     net.kyori.adventure.text.format.NamedTextColor.YELLOW
             ));
             plugin.getServer().getScheduler().runTask(plugin, () -> {
-                try {
-                    Class.forName("de.aetherion.items.menu.AetherionManagerListener")
-                            .getMethod("refreshManagerItem", Player.class)
-                            .invoke(null, player);
-                } catch (Throwable ignored) {
+                de.aetherion.core.api.ProgressAccess progress = de.aetherion.core.api.AetherServices.progress();
+                if (progress != null) {
+                    progress.refreshManager(player);
                 }
             });
         }
@@ -2229,11 +2221,9 @@ public class DialogManager implements Listener {
         }
         // Backup unlock if they skipped Craftsman.
         if (!craftsmanSpoken) {
-            try {
-                Class.forName("de.aetherion.items.progress.ProgressionUnlock")
-                        .getMethod("unlock", org.bukkit.entity.Player.class, String.class, String.class, String.class)
-                        .invoke(null, player, "WORKBENCH", "Crafting + Recipes", "Manager → green Recipe Book");
-            } catch (ReflectiveOperationException | NoClassDefFoundError ignored) {
+            de.aetherion.core.api.ProgressAccess progress = de.aetherion.core.api.AetherServices.progress();
+            if (progress != null) {
+                progress.unlock(player, "WORKBENCH", "Crafting + Recipes", "Manager → green Recipe Book");
             }
             if (plugin != null && plugin.getPlayerQuestStorage() != null && player != null) {
                 plugin.getPlayerQuestStorage().markStarterKit(player.getUniqueId(), "craftsman_spoken");

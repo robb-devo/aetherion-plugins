@@ -145,11 +145,9 @@ public final class LangMenu implements Listener {
                     if (!player.isOnline()) {
                         return;
                     }
-                    try {
-                        Class.forName("de.aetherion.hub.api.AetherionHubAPI")
-                                .getMethod("sendStarterHint", Player.class)
-                                .invoke(null, player);
-                    } catch (ReflectiveOperationException | NoClassDefFoundError ignored) {
+                    de.aetherion.core.api.HubAccess hub = de.aetherion.core.api.AetherServices.hub();
+                    if (hub != null) {
+                        hub.sendStarterHint(player);
                     }
                 }, 12L);
             }

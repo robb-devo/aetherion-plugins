@@ -1,10 +1,13 @@
 package de.aetherion.foraging;
 
+import de.aetherion.core.api.AetherServices;
+import de.aetherion.core.api.QuestProgressAccess;
+
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 
 /**
- * Reflection bridge to AetherionQuests when tree collapse skips BlockBreakEvent.
+ * Typed bridge to AetherionQuests when tree collapse skips BlockBreakEvent.
  */
 final class QuestProgressHook {
 
@@ -12,15 +15,9 @@ final class QuestProgressHook {
     }
 
     static void noteBroken(Player player, Material material, int amount) {
-        if (player == null || material == null || amount <= 0) {
-            return;
-        }
-        try {
-            Class<?> type = Class.forName("de.aetherion.quests.bridge.QuestProgressBridge");
-            type.getMethod("noteBroken", Player.class, Material.class, int.class)
-                    .invoke(null, player, material, amount);
-        } catch (Throwable ignored) {
-            // Quests missing or older JAR
+        QuestProgressAccess quests = AetherServices.quests();
+        if (quests != null) {
+            quests.noteBroken(player, material, amount);
         }
     }
 
@@ -29,13 +26,10 @@ final class QuestProgressHook {
         if (player == null) {
             return false;
         }
-        try {
-            Object ok = Class.forName("de.aetherion.quests.bridge.QuestProgressBridge")
-                    .getMethod("canChopTrees", Player.class)
-                    .invoke(null, player);
-            return !(ok instanceof Boolean b) || b;
-        } catch (Throwable ignored) {
+        QuestProgressAccess quests = AetherServices.quests();
+        if (quests == null) {
             return true;
         }
+        return quests.canChopTrees(player);
     }
 }

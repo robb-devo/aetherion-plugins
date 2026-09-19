@@ -174,11 +174,9 @@ public final class ForagerChopDemo {
         if (player == null) {
             return;
         }
-        try {
-            Class.forName("de.aetherion.quests.bridge.QuestProgressBridge")
-                    .getMethod("unlockForagerChop", Player.class)
-                    .invoke(null, player);
-        } catch (Throwable ignored) {
+        de.aetherion.core.api.QuestProgressAccess quests = de.aetherion.core.api.AetherServices.quests();
+        if (quests != null) {
+            quests.unlockForagerChop(player);
         }
     }
 

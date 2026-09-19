@@ -261,14 +261,8 @@ public final class QuestProgressBridge {
     }
 
     private static boolean foragerDemoRunning(Player player) {
-        try {
-            Object running = Class.forName("de.aetherion.foraging.ForagerChopDemo")
-                    .getMethod("isRunning", Player.class)
-                    .invoke(null, player);
-            return running instanceof Boolean b && b;
-        } catch (Throwable ignored) {
-            return false;
-        }
+        de.aetherion.core.api.ForageAccess foraging = de.aetherion.core.api.AetherServices.foraging();
+        return foraging != null && foraging.isChopDemoRunning(player);
     }
 
     private static Quest find(QuestManager manager, String questId) {

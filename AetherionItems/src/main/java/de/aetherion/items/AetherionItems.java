@@ -104,6 +104,7 @@ public class AetherionItems extends JavaPlugin {
     private CustomItem customItem;
     private de.aetherion.items.progress.ProgressionService progress;
     private de.aetherion.core.api.ItemFactoryAccess itemFactoryAccess;
+    private de.aetherion.core.api.ProgressAccess progressAccess;
     private de.aetherion.items.blueprint.BlueprintForgeStation blueprintForgeStation;
     private de.aetherion.items.blueprint.BlueprintForgeRitual blueprintForgeRitual;
     private de.aetherion.items.farm.MillstoneRitual millstoneRitual;
@@ -117,6 +118,7 @@ public class AetherionItems extends JavaPlugin {
         de.aetherion.items.combat.GearSetBonuses.register(itemManager);
         itemValues = new de.aetherion.items.economy.ItemValueService(this, itemManager);
         coins = new de.aetherion.items.economy.CoinService(this);
+        de.aetherion.core.api.AetherServices.registerCoins(coins);
         shards = new de.aetherion.items.economy.ShardService(this);
         xpBoost = new de.aetherion.items.shop.XpBoosterService(this);
         party = new de.aetherion.items.social.PartyService();
@@ -125,6 +127,8 @@ public class AetherionItems extends JavaPlugin {
         xpBarSync = new de.aetherion.items.skill.AetherionXpBarSync(this, skills);
         skillMenu = new de.aetherion.items.skill.SkillMenu(skills);
         progress = new de.aetherion.items.progress.ProgressionService(this);
+        progressAccess = new de.aetherion.items.api.ProgressAccessImpl(this);
+        de.aetherion.core.api.AetherServices.registerProgress(progressAccess);
         recipeUnlocks = new de.aetherion.items.recipe.RecipeUnlockService(this);
         blueprintUnlocks = new de.aetherion.items.blueprint.BlueprintUnlockService(this);
         getServer().getPluginManager().registerEvents(new de.aetherion.items.listener.ProgressUnlockListener(progress), this);
@@ -162,7 +166,7 @@ public class AetherionItems extends JavaPlugin {
         storageInventory = new StorageInventory(this);
 
         customItem = new CustomItem(itemManager);
-        itemFactoryAccess = customItem::createById;
+        itemFactoryAccess = new de.aetherion.items.api.ItemFactoryAccessImpl(customItem);
         de.aetherion.core.api.AetherServices.registerItems(itemFactoryAccess);
         getServer().getPluginManager().registerEvents(new PersistenceFlushListener(this), this);
         gearTrader = new de.aetherion.items.economy.GearTraderService(this, itemValues, coins, customItem);
@@ -513,6 +517,13 @@ public class AetherionItems extends JavaPlugin {
         }
         if (party != null) {
             de.aetherion.core.api.AetherServices.clearParty(party);
+        }
+        if (progressAccess != null) {
+            de.aetherion.core.api.AetherServices.clearProgress(progressAccess);
+            progressAccess = null;
+        }
+        if (coins != null) {
+            de.aetherion.core.api.AetherServices.clearCoins(coins);
         }
         if (itemFactoryAccess != null) {
             de.aetherion.core.api.AetherServices.clearItems(itemFactoryAccess);

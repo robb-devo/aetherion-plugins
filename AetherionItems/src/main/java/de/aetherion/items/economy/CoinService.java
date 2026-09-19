@@ -11,7 +11,7 @@ import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-public final class CoinService {
+public final class CoinService implements de.aetherion.core.api.CoinAccess {
 
     private final JavaPlugin plugin;
     private final File file;
@@ -119,6 +119,24 @@ public final class CoinService {
     public void saveIfDirty() {
         if (dirty) {
             save();
+        }
+    }
+
+    @Override
+    public void reloadFromDisk() {
+        load();
+    }
+
+    @Override
+    public void applyImported(UUID playerId, Long balance, Long lifetimeEarned) {
+        if (playerId == null) {
+            return;
+        }
+        if (balance != null) {
+            balances.put(playerId, balance);
+        }
+        if (lifetimeEarned != null) {
+            lifetime.put(playerId, lifetimeEarned);
         }
     }
 

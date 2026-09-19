@@ -1,11 +1,10 @@
 package de.aetherion.dungeons.bridge;
 
-import org.bukkit.Bukkit;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.plugin.Plugin;
+import de.aetherion.core.api.AetherServices;
+import de.aetherion.core.api.ItemFactoryAccess;
 
-import java.lang.reflect.Method;
-import java.util.Locale;
+import org.bukkit.inventory.ItemStack;
+
 import java.util.concurrent.ThreadLocalRandom;
 
 public final class ItemLootBridge {
@@ -120,26 +119,20 @@ public final class ItemLootBridge {
         if (item == null) {
             return null;
         }
-        Plugin items = Bukkit.getPluginManager().getPlugin("AetherionItems");
-        if (items == null || !items.isEnabled()) {
+        ItemFactoryAccess factory = AetherServices.items();
+        if (factory == null) {
             return null;
         }
-        try {
-            Object plugin = items.getClass().getMethod("getInstance").invoke(null);
-            Object manager = plugin.getClass().getMethod("getItemManager").invoke(plugin);
-            Object id = manager.getClass().getMethod("getItemId", ItemStack.class).invoke(manager, item);
-            if (!(id instanceof String text) || text.isBlank()) {
-                return null;
-            }
-            for (String piece : VESTIGE_PIECES) {
-                if (piece.equals(text)) {
-                    return text;
-                }
-            }
-            return null;
-        } catch (Exception ignored) {
+        String text = factory.itemId(item);
+        if (text == null || text.isBlank()) {
             return null;
         }
+        for (String piece : VESTIGE_PIECES) {
+            if (piece.equals(text)) {
+                return text;
+            }
+        }
+        return null;
     }
 
     public static ItemStack rollWeaponSchematic() {
@@ -158,23 +151,12 @@ public final class ItemLootBridge {
     }
 
     private static ItemStack createDungeonWeaponSchematic(int floor) {
-        Plugin items = Bukkit.getPluginManager().getPlugin("AetherionItems");
-        if (items == null || !items.isEnabled()) {
+        ItemFactoryAccess factory = AetherServices.items();
+        if (factory == null) {
             return null;
         }
-        try {
-            Object plugin = items.getClass().getMethod("getInstance").invoke(null);
-            Object manager = plugin.getClass().getMethod("getItemManager").invoke(plugin);
-            Class<?> managerClass = Class.forName("de.aetherion.items.manager.ItemManager");
-            Class<?> customClass = Class.forName("de.aetherion.items.item.CustomItem");
-            Object custom = customClass.getConstructor(managerClass).newInstance(manager);
-            Object created = customClass.getMethod("createDungeonWeaponSchematic", int.class)
-                    .invoke(custom, Math.max(1, floor));
-            return created instanceof ItemStack stack ? stack : null;
-        } catch (Exception exception) {
-            items.getLogger().warning("Dungeon weapon schematic failed: " + exception.getMessage());
-            return create("dungeon_weapon_schematic");
-        }
+        ItemStack created = factory.dungeonWeaponSchematic(Math.max(1, floor));
+        return created != null ? created : create("dungeon_weapon_schematic");
     }
 
     public static ItemStack rollCompressed() {
@@ -186,67 +168,15 @@ public final class ItemLootBridge {
     }
 
     private static ItemStack compressedItem(boolean compacted) {
-        Plugin items = Bukkit.getPluginManager().getPlugin("AetherionItems");
-        if (items == null || !items.isEnabled()) {
-            return null;
-        }
-        try {
-            Class<?> type = Class.forName("de.aetherion.items.economy.CompressedResource");
-            Object[] values = (Object[]) type.getMethod("values").invoke(null);
-            if (values == null || values.length == 0) {
-                return null;
-            }
-            Object pick = values[ThreadLocalRandom.current().nextInt(values.length)];
-            Object created = type.getMethod(compacted ? "compacted" : "compressed").invoke(pick);
-            return created instanceof ItemStack stack ? stack : null;
-        } catch (Exception exception) {
-            items.getLogger().warning("Dungeon compressed loot failed: " + exception.getMessage());
-            return null;
-        }
+        ItemFactoryAccess factory = AetherServices.items();
+        return factory == null ? null : factory.randomCompressed(compacted);
     }
 
     public static ItemStack create(String itemId) {
-        de.aetherion.core.api.ItemFactoryAccess factory = de.aetherion.core.api.AetherServices.items();
-        if (factory != null && itemId != null && !itemId.isBlank()) {
-            ItemStack created = factory.create(itemId);
-            if (created != null) {
-                return created;
-            }
-        }
-        Plugin items = Bukkit.getPluginManager().getPlugin("AetherionItems");
-        if (items == null || !items.isEnabled() || itemId == null || itemId.isBlank()) {
+        ItemFactoryAccess factory = AetherServices.items();
+        if (factory == null || itemId == null || itemId.isBlank()) {
             return null;
         }
-        try {
-            Object plugin = items.getClass().getMethod("getInstance").invoke(null);
-            Object manager = plugin.getClass().getMethod("getItemManager").invoke(plugin);
-            Class<?> managerClass = Class.forName("de.aetherion.items.manager.ItemManager");
-            Class<?> customClass = Class.forName("de.aetherion.items.item.CustomItem");
-            Object custom = customClass.getConstructor(managerClass).newInstance(manager);
-            Method method = customClass.getMethod(toCreateMethod(itemId));
-            Object created = method.invoke(custom);
-            return created instanceof ItemStack stack ? stack : null;
-        } catch (Exception exception) {
-            items.getLogger().warning("Dungeon loot roll failed for " + itemId + ": " + exception.getMessage());
-            return null;
-        }
-    }
-
-    private static String toCreateMethod(String itemId) {
-        StringBuilder builder = new StringBuilder("create");
-        for (String part : itemId.toLowerCase(Locale.ROOT).split("_")) {
-            if (part.isBlank()) {
-                continue;
-            }
-            if (part.chars().allMatch(Character::isDigit)) {
-                builder.append(part);
-                continue;
-            }
-            builder.append(Character.toUpperCase(part.charAt(0)));
-            if (part.length() > 1) {
-                builder.append(part.substring(1));
-            }
-        }
-        return builder.toString();
+        return factory.create(itemId);
     }
 }

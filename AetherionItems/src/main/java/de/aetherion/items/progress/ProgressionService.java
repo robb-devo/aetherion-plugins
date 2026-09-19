@@ -4,7 +4,6 @@ import de.aetherion.items.AetherionItems;
 import de.aetherion.items.codex.CodexService;
 import de.aetherion.items.skill.SkillService;
 
-import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
@@ -176,16 +175,11 @@ public final class ProgressionService {
     }
 
     private boolean hubHasBonusSpawn(Player player) {
-        if (player == null || !Bukkit.getPluginManager().isPluginEnabled("AetherionHub")) {
+        if (player == null) {
             return false;
         }
-        try {
-            Class<?> api = Class.forName("de.aetherion.hub.api.AetherionHubAPI");
-            Object result = api.getMethod("hasBonusSpawn", UUID.class).invoke(null, player.getUniqueId());
-            return result instanceof Boolean unlocked && unlocked;
-        } catch (Exception ignored) {
-            return false;
-        }
+        de.aetherion.core.api.HubAccess hub = de.aetherion.core.api.AetherServices.hub();
+        return hub != null && hub.hasBonusSpawn(player.getUniqueId());
     }
 
     public void save() {
@@ -214,6 +208,10 @@ public final class ProgressionService {
         if (dirty) {
             save();
         }
+    }
+
+    public void reloadFromDisk() {
+        load();
     }
 
     private void load() {

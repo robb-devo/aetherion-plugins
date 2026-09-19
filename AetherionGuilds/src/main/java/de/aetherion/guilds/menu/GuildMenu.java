@@ -255,22 +255,12 @@ public final class GuildMenu {
     }
 
     private static void openManager(Player player) {
-        try {
-            Class<?> type = Class.forName("de.aetherion.items.AetherionItems");
-            Object plugin = type.getMethod("getInstance").invoke(null);
-            if (plugin == null) {
-                player.closeInventory();
-                return;
-            }
-            Object manager = plugin.getClass().getMethod("getManager").invoke(plugin);
-            if (manager == null) {
-                player.closeInventory();
-                return;
-            }
-            manager.getClass().getMethod("open", org.bukkit.entity.Player.class).invoke(manager, player);
-        } catch (ReflectiveOperationException | LinkageError ignored) {
+        de.aetherion.core.api.ProgressAccess progress = de.aetherion.core.api.AetherServices.progress();
+        if (progress == null) {
             player.closeInventory();
+            return;
         }
+        progress.openManager(player);
     }
 
     public static final class Holder implements InventoryHolder {

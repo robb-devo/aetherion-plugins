@@ -68,6 +68,8 @@ public final class AetherionQuests extends JavaPlugin {
 
     private LivingNpcService livingNpcService;
 
+    private de.aetherion.core.api.QuestProgressAccess questAccess;
+
 
 
     @Override
@@ -409,6 +411,8 @@ public final class AetherionQuests extends JavaPlugin {
         getLogger().info(
                 "AetherionQuests enabled!"
         );
+        questAccess = new de.aetherion.quests.api.QuestProgressAccessImpl(this);
+        de.aetherion.core.api.AetherServices.registerQuests(questAccess);
 
     }
 
@@ -482,6 +486,11 @@ public final class AetherionQuests extends JavaPlugin {
 
         if (playerQuestStorage != null) {
             playerQuestStorage.flush();
+        }
+
+        if (questAccess != null) {
+            de.aetherion.core.api.AetherServices.clearQuests(questAccess);
+            questAccess = null;
         }
 
         getLogger().info(

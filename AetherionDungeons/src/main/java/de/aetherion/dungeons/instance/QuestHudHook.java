@@ -1,28 +1,22 @@
 package de.aetherion.dungeons.instance;
 
+import de.aetherion.core.api.QuestBars;
+
 import org.bukkit.entity.Player;
 
+/**
+ * Thin adapter — quest-bar suppress goes through {@link QuestBars}.
+ */
 public final class QuestHudHook {
 
     private QuestHudHook() {
     }
 
     public static void suppress(Player player) {
-        invoke("suppress", player);
+        QuestBars.suppress(player);
     }
 
     public static void unsuppress(Player player) {
-        invoke("unsuppress", player);
-    }
-
-    private static void invoke(String method, Player player) {
-        if (player == null) {
-            return;
-        }
-        try {
-            Class<?> type = Class.forName("de.aetherion.quests.ui.QuestProgressDisplay");
-            type.getMethod(method, Player.class).invoke(null, player);
-        } catch (Throwable ignored) {
-        }
+        QuestBars.unsuppress(player);
     }
 }

@@ -76,12 +76,7 @@ public final class InventoryDrops {
                 plugin.recipeUnlocks().noteObtained(player, type);
             }
         } else {
-            try {
-                Class.forName("de.aetherion.quests.bridge.QuestProgressBridge")
-                        .getMethod("noteInventoryGain", Player.class)
-                        .invoke(null, player);
-            } catch (Throwable ignored) {
-            }
+            QuestProgressHook.noteInventoryGain(player);
         }
     }
 
