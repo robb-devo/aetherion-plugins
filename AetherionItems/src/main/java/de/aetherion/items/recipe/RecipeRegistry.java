@@ -324,159 +324,82 @@ public class RecipeRegistry {
 
         /*
          * =====================================================
-         * COMBAT ARMOR II
+         * COMBAT ARMOR II–V
+         * Wave 2: 1 previous + tier mats (plus / 2+2 mix / 1+3 peak).
          * =====================================================
          */
 
-        registerSimple(
-                "combat_helmet_2",
-                RecipeCategory.COMBAT,
-                customItem.createCombatHelmet2(),
-                Rarity.RARE,
-                List.of(
-                        "III",
-                        "ICI",
-                        "III"
-                ),
-                createMixedIngredients(
-                        'I',
-                        new ItemStack(Material.IRON_INGOT),
-                        'C',
-                        customItem.createCombatHelmet()
-                )
-        );
+        registerLadderPlus(
+                "combat_helmet_2", RecipeCategory.COMBAT, customItem.createCombatHelmet2(), Rarity.RARE,
+                customItem.createCombatHelmet(), new ItemStack(Material.IRON_INGOT));
+        registerLadderPlus(
+                "combat_chestplate_2", RecipeCategory.COMBAT, customItem.createCombatChestplate2(), Rarity.RARE,
+                customItem.createCombatChestplate(), new ItemStack(Material.IRON_INGOT));
+        registerLadderPlus(
+                "combat_leggings_2", RecipeCategory.COMBAT, customItem.createCombatLeggings2(), Rarity.RARE,
+                customItem.createCombatLeggings(), new ItemStack(Material.IRON_INGOT));
+        registerLadderPlus(
+                "combat_boots_2", RecipeCategory.COMBAT, customItem.createCombatBoots2(), Rarity.RARE,
+                customItem.createCombatBoots(), new ItemStack(Material.IRON_INGOT));
 
-
-        registerSimple(
-                "combat_chestplate_2",
-                RecipeCategory.COMBAT,
-                customItem.createCombatChestplate2(),
-                Rarity.RARE,
-                List.of(
-                        "III",
-                        "ICI",
-                        "III"
-                ),
-                createMixedIngredients(
-                        'I',
-                        new ItemStack(Material.IRON_INGOT),
-                        'C',
-                        customItem.createCombatChestplate()
-                )
-        );
-
-
-        registerSimple(
-                "combat_leggings_2",
-                RecipeCategory.COMBAT,
-                customItem.createCombatLeggings2(),
-                Rarity.RARE,
-                List.of(
-                        "III",
-                        "ICI",
-                        "III"
-                ),
-                createMixedIngredients(
-                        'I',
-                        new ItemStack(Material.IRON_INGOT),
-                        'C',
-                        customItem.createCombatLeggings()
-                )
-        );
-
-
-        registerSimple(
-                "combat_boots_2",
-                RecipeCategory.COMBAT,
-                customItem.createCombatBoots2(),
-                Rarity.RARE,
-                List.of(
-                        "III",
-                        "ICI",
-                        "III"
-                ),
-                createMixedIngredients(
-                        'I',
-                        new ItemStack(Material.IRON_INGOT),
-                        'C',
-                        customItem.createCombatBoots()
-                )
-        );
-
-
-        /*
-         * =====================================================
-         * COMBAT ARMOR III / IV / V
-         * Mixed surrounds — two mats, not one blunt stack.
-         * =====================================================
-         */
-
-        registerMixedPlusUpgrade(
+        registerLadderMix(
                 "combat_helmet_3", RecipeCategory.COMBAT, customItem.createCombatHelmet3(), Rarity.EPIC,
                 customItem.createCombatHelmet2(),
                 CompressedResource.BONE.compressed(),
                 CompressedResource.ROTTEN_FLESH.compressed());
-        registerMixedPlusUpgrade(
+        registerLadderMix(
                 "combat_chestplate_3", RecipeCategory.COMBAT, customItem.createCombatChestplate3(), Rarity.EPIC,
                 customItem.createCombatChestplate2(),
                 CompressedResource.BONE.compressed(),
                 CompressedResource.ROTTEN_FLESH.compressed());
-        registerMixedPlusUpgrade(
+        registerLadderMix(
                 "combat_leggings_3", RecipeCategory.COMBAT, customItem.createCombatLeggings3(), Rarity.EPIC,
                 customItem.createCombatLeggings2(),
                 CompressedResource.BONE.compressed(),
                 CompressedResource.ROTTEN_FLESH.compressed());
-        registerMixedPlusUpgrade(
+        registerLadderMix(
                 "combat_boots_3", RecipeCategory.COMBAT, customItem.createCombatBoots3(), Rarity.EPIC,
                 customItem.createCombatBoots2(),
                 CompressedResource.BONE.compressed(),
                 CompressedResource.ROTTEN_FLESH.compressed());
 
-        registerMixedPlusUpgrade(
+        registerLadderMix(
                 "combat_helmet_4", RecipeCategory.COMBAT, customItem.createCombatHelmet4(), Rarity.LEGENDARY,
                 customItem.createCombatHelmet3(),
                 CompressedResource.RAW_GOLD.compacted(),
                 CompressedResource.BONE.compacted());
-        registerMixedPlusUpgrade(
+        registerLadderMix(
                 "combat_chestplate_4", RecipeCategory.COMBAT, customItem.createCombatChestplate4(), Rarity.LEGENDARY,
                 customItem.createCombatChestplate3(),
                 CompressedResource.RAW_GOLD.compacted(),
                 CompressedResource.BONE.compacted());
-        registerMixedPlusUpgrade(
+        registerLadderMix(
                 "combat_leggings_4", RecipeCategory.COMBAT, customItem.createCombatLeggings4(), Rarity.LEGENDARY,
                 customItem.createCombatLeggings3(),
                 CompressedResource.RAW_GOLD.compacted(),
                 CompressedResource.BONE.compacted());
-        registerMixedPlusUpgrade(
+        registerLadderMix(
                 "combat_boots_4", RecipeCategory.COMBAT, customItem.createCombatBoots4(), Rarity.LEGENDARY,
                 customItem.createCombatBoots3(),
                 CompressedResource.RAW_GOLD.compacted(),
                 CompressedResource.BONE.compacted());
 
-
-        /*
-         * =====================================================
-         * COMBAT ARMOR V / MYTHIC
-         * Diamond corners, emerald edges.
-         * =====================================================
-         */
-
-        registerDualWrapUpgrade(
+        registerLadderPeak(
                 "combat_helmet_5", RecipeCategory.COMBAT, customItem.createCombatHelmet5(), Rarity.MYTHIC,
                 customItem.createCombatHelmet4(),
                 CompressedResource.DIAMOND.compacted(),
                 CompressedResource.EMERALD.compacted());
-        registerDualWrapUpgrade(
+        registerLadderPeak(
                 "combat_chestplate_5", RecipeCategory.COMBAT, customItem.createCombatChestplate5(), Rarity.MYTHIC,
                 customItem.createCombatChestplate4(),
                 CompressedResource.DIAMOND.compacted(),
                 CompressedResource.EMERALD.compacted());
-        registerDualWrapUpgrade(
+        registerLadderPeak(
                 "combat_leggings_5", RecipeCategory.COMBAT, customItem.createCombatLeggings5(), Rarity.MYTHIC,
                 customItem.createCombatLeggings4(),
                 CompressedResource.DIAMOND.compacted(),
                 CompressedResource.EMERALD.compacted());
-        registerDualWrapUpgrade(
+        registerLadderPeak(
                 "combat_boots_5", RecipeCategory.COMBAT, customItem.createCombatBoots5(), Rarity.MYTHIC,
                 customItem.createCombatBoots4(),
                 CompressedResource.DIAMOND.compacted(),
@@ -506,71 +429,28 @@ public class RecipeRegistry {
 
         /*
          * =====================================================
-         * COMBAT SWORD II
+         * COMBAT SWORD II–V
          * =====================================================
          */
 
-        registerSimple(
-                "combat_sword_2",
-                RecipeCategory.COMBAT,
-                customItem.createCombatSword2(),
-                Rarity.RARE,
-                List.of(
-                        "III",
-                        "ISI",
-                        "III"
-                ),
-                createMixedIngredients(
-                        'I',
-                        new ItemStack(Material.IRON_INGOT),
-                        'S',
-                        customItem.createCombatSword()
-                )
-        );
-
-
-        /*
-         * =====================================================
-         * COMBAT SWORD III
-         * =====================================================
-         */
-
-        registerMixedPlusUpgrade(
-                "combat_sword_3",
-                RecipeCategory.COMBAT,
-                customItem.createCombatSword3(),
-                Rarity.EPIC,
+        registerLadderPlus(
+                "combat_sword_2", RecipeCategory.COMBAT, customItem.createCombatSword2(), Rarity.RARE,
+                customItem.createCombatSword(), new ItemStack(Material.IRON_INGOT));
+        registerLadderMix(
+                "combat_sword_3", RecipeCategory.COMBAT, customItem.createCombatSword3(), Rarity.EPIC,
                 customItem.createCombatSword2(),
                 CompressedResource.BONE.compressed(),
-                CompressedResource.ROTTEN_FLESH.compressed()
-        );
-
-        registerMixedPlusUpgrade(
-                "combat_sword_4",
-                RecipeCategory.COMBAT,
-                customItem.createCombatSword4(),
-                Rarity.LEGENDARY,
+                CompressedResource.ROTTEN_FLESH.compressed());
+        registerLadderMix(
+                "combat_sword_4", RecipeCategory.COMBAT, customItem.createCombatSword4(), Rarity.LEGENDARY,
                 customItem.createCombatSword3(),
                 CompressedResource.RAW_GOLD.compacted(),
-                CompressedResource.BONE.compacted()
-        );
-
-
-        /*
-         * =====================================================
-         * COMBAT SWORD V / MYTHIC
-         * =====================================================
-         */
-
-        registerDualWrapUpgrade(
-                "combat_sword_5",
-                RecipeCategory.COMBAT,
-                customItem.createCombatSword5(),
-                Rarity.MYTHIC,
+                CompressedResource.BONE.compacted());
+        registerLadderPeak(
+                "combat_sword_5", RecipeCategory.COMBAT, customItem.createCombatSword5(), Rarity.MYTHIC,
                 customItem.createCombatSword4(),
                 CompressedResource.DIAMOND.compacted(),
-                CompressedResource.EMERALD.compacted()
-        );
+                CompressedResource.EMERALD.compacted());
 
 
         /*
@@ -619,159 +499,82 @@ public class RecipeRegistry {
 
         /*
          * =====================================================
-         * MINING ARMOR II
+         * MINING ARMOR II–V
+         * Wave 2: 1 previous + tier mats (plus / 2+2 mix / 1+3 peak).
          * =====================================================
          */
 
-        registerSimple(
-                "mining_helmet_2",
-                RecipeCategory.MINING,
-                customItem.createMiningHelmet2(),
-                Rarity.RARE,
-                List.of(
-                        "III",
-                        "IMI",
-                        "III"
-                ),
-                createMixedIngredients(
-                        'I',
-                        new ItemStack(Material.IRON_INGOT),
-                        'M',
-                        customItem.createMiningHelmet()
-                )
-        );
+        registerLadderMix(
+                "mining_helmet_2", RecipeCategory.MINING, customItem.createMiningHelmet2(), Rarity.RARE,
+                customItem.createMiningHelmet(), new ItemStack(Material.IRON_INGOT), new ItemStack(Material.COAL));
+        registerLadderMix(
+                "mining_chestplate_2", RecipeCategory.MINING, customItem.createMiningChestplate2(), Rarity.RARE,
+                customItem.createMiningChestplate(), new ItemStack(Material.IRON_INGOT), new ItemStack(Material.COAL));
+        registerLadderMix(
+                "mining_leggings_2", RecipeCategory.MINING, customItem.createMiningLeggings2(), Rarity.RARE,
+                customItem.createMiningLeggings(), new ItemStack(Material.IRON_INGOT), new ItemStack(Material.COAL));
+        registerLadderMix(
+                "mining_boots_2", RecipeCategory.MINING, customItem.createMiningBoots2(), Rarity.RARE,
+                customItem.createMiningBoots(), new ItemStack(Material.IRON_INGOT), new ItemStack(Material.COAL));
 
-
-        registerSimple(
-                "mining_chestplate_2",
-                RecipeCategory.MINING,
-                customItem.createMiningChestplate2(),
-                Rarity.RARE,
-                List.of(
-                        "III",
-                        "IMI",
-                        "III"
-                ),
-                createMixedIngredients(
-                        'I',
-                        new ItemStack(Material.IRON_INGOT),
-                        'M',
-                        customItem.createMiningChestplate()
-                )
-        );
-
-
-        registerSimple(
-                "mining_leggings_2",
-                RecipeCategory.MINING,
-                customItem.createMiningLeggings2(),
-                Rarity.RARE,
-                List.of(
-                        "III",
-                        "IMI",
-                        "III"
-                ),
-                createMixedIngredients(
-                        'I',
-                        new ItemStack(Material.IRON_INGOT),
-                        'M',
-                        customItem.createMiningLeggings()
-                )
-        );
-
-
-        registerSimple(
-                "mining_boots_2",
-                RecipeCategory.MINING,
-                customItem.createMiningBoots2(),
-                Rarity.RARE,
-                List.of(
-                        "III",
-                        "IMI",
-                        "III"
-                ),
-                createMixedIngredients(
-                        'I',
-                        new ItemStack(Material.IRON_INGOT),
-                        'M',
-                        customItem.createMiningBoots()
-                )
-        );
-
-
-        /*
-         * =====================================================
-         * MINING ARMOR III / IV / V
-         * Mixed surrounds — iron/coal, copper/coal, diamond/redstone.
-         * =====================================================
-         */
-
-        registerMixedPlusUpgrade(
+        registerLadderMix(
                 "mining_helmet_3", RecipeCategory.MINING, customItem.createMiningHelmet3(), Rarity.EPIC,
                 customItem.createMiningHelmet2(),
                 CompressedResource.RAW_IRON.compressed(),
                 CompressedResource.COAL.compressed());
-        registerMixedPlusUpgrade(
+        registerLadderMix(
                 "mining_chestplate_3", RecipeCategory.MINING, customItem.createMiningChestplate3(), Rarity.EPIC,
                 customItem.createMiningChestplate2(),
                 CompressedResource.RAW_IRON.compressed(),
                 CompressedResource.COAL.compressed());
-        registerMixedPlusUpgrade(
+        registerLadderMix(
                 "mining_leggings_3", RecipeCategory.MINING, customItem.createMiningLeggings3(), Rarity.EPIC,
                 customItem.createMiningLeggings2(),
                 CompressedResource.RAW_IRON.compressed(),
                 CompressedResource.COAL.compressed());
-        registerMixedPlusUpgrade(
+        registerLadderMix(
                 "mining_boots_3", RecipeCategory.MINING, customItem.createMiningBoots3(), Rarity.EPIC,
                 customItem.createMiningBoots2(),
                 CompressedResource.RAW_IRON.compressed(),
                 CompressedResource.COAL.compressed());
 
-        registerMixedPlusUpgrade(
+        registerLadderMix(
                 "mining_helmet_4", RecipeCategory.MINING, customItem.createMiningHelmet4(), Rarity.LEGENDARY,
                 customItem.createMiningHelmet3(),
                 CompressedResource.RAW_COPPER.compacted(),
                 CompressedResource.COAL.compacted());
-        registerMixedPlusUpgrade(
+        registerLadderMix(
                 "mining_chestplate_4", RecipeCategory.MINING, customItem.createMiningChestplate4(), Rarity.LEGENDARY,
                 customItem.createMiningChestplate3(),
                 CompressedResource.RAW_COPPER.compacted(),
                 CompressedResource.COAL.compacted());
-        registerMixedPlusUpgrade(
+        registerLadderMix(
                 "mining_leggings_4", RecipeCategory.MINING, customItem.createMiningLeggings4(), Rarity.LEGENDARY,
                 customItem.createMiningLeggings3(),
                 CompressedResource.RAW_COPPER.compacted(),
                 CompressedResource.COAL.compacted());
-        registerMixedPlusUpgrade(
+        registerLadderMix(
                 "mining_boots_4", RecipeCategory.MINING, customItem.createMiningBoots4(), Rarity.LEGENDARY,
                 customItem.createMiningBoots3(),
                 CompressedResource.RAW_COPPER.compacted(),
                 CompressedResource.COAL.compacted());
 
-
-        /*
-         * =====================================================
-         * MINING ARMOR V / MYTHIC
-         * Diamond corners, redstone edges.
-         * =====================================================
-         */
-
-        registerDualWrapUpgrade(
+        registerLadderPeak(
                 "mining_helmet_5", RecipeCategory.MINING, customItem.createMiningHelmet5(), Rarity.MYTHIC,
                 customItem.createMiningHelmet4(),
                 CompressedResource.DIAMOND.compacted(),
                 CompressedResource.REDSTONE.compacted());
-        registerDualWrapUpgrade(
+        registerLadderPeak(
                 "mining_chestplate_5", RecipeCategory.MINING, customItem.createMiningChestplate5(), Rarity.MYTHIC,
                 customItem.createMiningChestplate4(),
                 CompressedResource.DIAMOND.compacted(),
                 CompressedResource.REDSTONE.compacted());
-        registerDualWrapUpgrade(
+        registerLadderPeak(
                 "mining_leggings_5", RecipeCategory.MINING, customItem.createMiningLeggings5(), Rarity.MYTHIC,
                 customItem.createMiningLeggings4(),
                 CompressedResource.DIAMOND.compacted(),
                 CompressedResource.REDSTONE.compacted());
-        registerDualWrapUpgrade(
+        registerLadderPeak(
                 "mining_boots_5", RecipeCategory.MINING, customItem.createMiningBoots5(), Rarity.MYTHIC,
                 customItem.createMiningBoots4(),
                 CompressedResource.DIAMOND.compacted(),
@@ -826,72 +629,29 @@ public class RecipeRegistry {
 
         /*
          * =====================================================
-         * MINING PICKAXE II
-         * Four iron on the plus.
+         * MINING PICKAXE II–V
+         * Same 1-previous + tier-mats ladder as armor (Wave 1 T5 pick pattern).
          * =====================================================
          */
 
-        registerMixedPlusUpgrade(
-                "mining_pickaxe_2",
-                RecipeCategory.MINING,
-                customItem.createMiningPickaxe2(),
-                Rarity.RARE,
-                customItem.createMiningPickaxe(),
-                new ItemStack(Material.IRON_INGOT),
-                new ItemStack(Material.COAL)
-        );
-
-
-        /*
-         * =====================================================
-         * MINING PICKAXE III
-         * Corners compressed copper, edges compressed iron.
-         * =====================================================
-         */
-
-        registerDualWrapUpgrade(
-                "mining_pickaxe_3",
-                RecipeCategory.MINING,
-                customItem.createMiningPickaxe3(),
-                Rarity.EPIC,
+        registerLadderMix(
+                "mining_pickaxe_2", RecipeCategory.MINING, customItem.createMiningPickaxe2(), Rarity.RARE,
+                customItem.createMiningPickaxe(), new ItemStack(Material.IRON_INGOT), new ItemStack(Material.COAL));
+        registerLadderMix(
+                "mining_pickaxe_3", RecipeCategory.MINING, customItem.createMiningPickaxe3(), Rarity.EPIC,
                 customItem.createMiningPickaxe2(),
                 CompressedResource.RAW_COPPER.compressed(),
-                CompressedResource.RAW_IRON.compressed()
-        );
-
-        registerMixedPlusUpgrade(
-                "mining_pickaxe_4",
-                RecipeCategory.MINING,
-                customItem.createMiningPickaxe4(),
-                Rarity.LEGENDARY,
+                CompressedResource.RAW_IRON.compressed());
+        registerLadderMix(
+                "mining_pickaxe_4", RecipeCategory.MINING, customItem.createMiningPickaxe4(), Rarity.LEGENDARY,
                 customItem.createMiningPickaxe3(),
                 CompressedResource.RAW_COPPER.compacted(),
-                CompressedResource.COAL.compacted()
-        );
-
-
-        /*
-         * =====================================================
-         * MINING PICKAXE V / MYTHIC
-         * 1 previous pick + 1 Compacted Diamond + 3 Compacted Redstone.
-         * Was 4+4 Compacted (≈3× the T4 pick's ingredient value).
-         * =====================================================
-         */
-
-        {
-            Map<Character, ItemStack> pick5 = new LinkedHashMap<>();
-            pick5.put('R', CompressedResource.REDSTONE.compacted());
-            pick5.put('P', customItem.createMiningPickaxe4());
-            pick5.put('D', CompressedResource.DIAMOND.compacted());
-            registerSimple(
-                    "mining_pickaxe_5",
-                    RecipeCategory.MINING,
-                    customItem.createMiningPickaxe5(),
-                    Rarity.MYTHIC,
-                    List.of(" R ", "RPR", " D "),
-                    pick5
-            );
-        }
+                CompressedResource.COAL.compacted());
+        registerLadderPeak(
+                "mining_pickaxe_5", RecipeCategory.MINING, customItem.createMiningPickaxe5(), Rarity.MYTHIC,
+                customItem.createMiningPickaxe4(),
+                CompressedResource.DIAMOND.compacted(),
+                CompressedResource.REDSTONE.compacted());
 
         registerSimple(
                 "vein_siphon",
@@ -959,64 +719,64 @@ public class RecipeRegistry {
                         new ItemStack(Material.STICK)
                 )
         );
-        registerPlusUpgrade(
+        registerLadderMix(
                 "farming_helmet_2", RecipeCategory.FARMING, farming.helmet(2), Rarity.RARE,
-                farming.helmet(1), new ItemStack(Material.CARROT));
-        registerPlusUpgrade(
+                farming.helmet(1), new ItemStack(Material.CARROT), new ItemStack(Material.WHEAT));
+        registerLadderMix(
                 "farming_chestplate_2", RecipeCategory.FARMING, farming.chestplate(2), Rarity.RARE,
-                farming.chestplate(1), new ItemStack(Material.CARROT));
-        registerPlusUpgrade(
+                farming.chestplate(1), new ItemStack(Material.CARROT), new ItemStack(Material.WHEAT));
+        registerLadderMix(
                 "farming_leggings_2", RecipeCategory.FARMING, farming.leggings(2), Rarity.RARE,
-                farming.leggings(1), new ItemStack(Material.CARROT));
-        registerPlusUpgrade(
+                farming.leggings(1), new ItemStack(Material.CARROT), new ItemStack(Material.WHEAT));
+        registerLadderMix(
                 "farming_boots_2", RecipeCategory.FARMING, farming.boots(2), Rarity.RARE,
-                farming.boots(1), new ItemStack(Material.CARROT));
-        registerPlusUpgrade(
+                farming.boots(1), new ItemStack(Material.CARROT), new ItemStack(Material.WHEAT));
+        registerLadderMix(
                 "farming_hoe_2", RecipeCategory.FARMING, farming.hoe(2), Rarity.RARE,
-                farming.hoe(1), new ItemStack(Material.CARROT));
-        registerPlusUpgrade(
+                farming.hoe(1), new ItemStack(Material.CARROT), new ItemStack(Material.WHEAT));
+        registerLadderMix(
                 "farming_helmet_3", RecipeCategory.FARMING, farming.helmet(3), Rarity.EPIC,
-                farming.helmet(2), CompressedResource.POTATO.compressed());
-        registerPlusUpgrade(
+                farming.helmet(2), CompressedResource.POTATO.compressed(), CompressedResource.WHEAT.compressed());
+        registerLadderMix(
                 "farming_chestplate_3", RecipeCategory.FARMING, farming.chestplate(3), Rarity.EPIC,
-                farming.chestplate(2), CompressedResource.POTATO.compressed());
-        registerPlusUpgrade(
+                farming.chestplate(2), CompressedResource.POTATO.compressed(), CompressedResource.WHEAT.compressed());
+        registerLadderMix(
                 "farming_leggings_3", RecipeCategory.FARMING, farming.leggings(3), Rarity.EPIC,
-                farming.leggings(2), CompressedResource.POTATO.compressed());
-        registerPlusUpgrade(
+                farming.leggings(2), CompressedResource.POTATO.compressed(), CompressedResource.WHEAT.compressed());
+        registerLadderMix(
                 "farming_boots_3", RecipeCategory.FARMING, farming.boots(3), Rarity.EPIC,
-                farming.boots(2), CompressedResource.POTATO.compressed());
-        registerPlusUpgrade(
+                farming.boots(2), CompressedResource.POTATO.compressed(), CompressedResource.WHEAT.compressed());
+        registerLadderMix(
                 "farming_hoe_3", RecipeCategory.FARMING, farming.hoe(3), Rarity.EPIC,
-                farming.hoe(2), CompressedResource.WHEAT.compressed());
-        registerMixedPlusUpgrade(
+                farming.hoe(2), CompressedResource.POTATO.compressed(), CompressedResource.WHEAT.compressed());
+        registerLadderMix(
                 "farming_helmet_4", RecipeCategory.FARMING, farming.helmet(4), Rarity.LEGENDARY,
                 farming.helmet(3), CompressedResource.SUGAR_CANE.compacted(), CompressedResource.CARROT.compacted());
-        registerMixedPlusUpgrade(
+        registerLadderMix(
                 "farming_chestplate_4", RecipeCategory.FARMING, farming.chestplate(4), Rarity.LEGENDARY,
                 farming.chestplate(3), CompressedResource.SUGAR_CANE.compacted(), CompressedResource.CARROT.compacted());
-        registerMixedPlusUpgrade(
+        registerLadderMix(
                 "farming_leggings_4", RecipeCategory.FARMING, farming.leggings(4), Rarity.LEGENDARY,
                 farming.leggings(3), CompressedResource.SUGAR_CANE.compacted(), CompressedResource.CARROT.compacted());
-        registerMixedPlusUpgrade(
+        registerLadderMix(
                 "farming_boots_4", RecipeCategory.FARMING, farming.boots(4), Rarity.LEGENDARY,
                 farming.boots(3), CompressedResource.SUGAR_CANE.compacted(), CompressedResource.CARROT.compacted());
-        registerMixedPlusUpgrade(
+        registerLadderMix(
                 "farming_hoe_4", RecipeCategory.FARMING, farming.hoe(4), Rarity.LEGENDARY,
                 farming.hoe(3), CompressedResource.SUGAR_CANE.compacted(), CompressedResource.WHEAT.compacted());
-        registerDualWrapUpgrade(
+        registerLadderPeak(
                 "farming_helmet_5", RecipeCategory.FARMING, farming.helmet(5), Rarity.MYTHIC,
                 farming.helmet(4), CompressedResource.NETHER_WART.compacted(), CompressedResource.POTATO.compacted());
-        registerDualWrapUpgrade(
+        registerLadderPeak(
                 "farming_chestplate_5", RecipeCategory.FARMING, farming.chestplate(5), Rarity.MYTHIC,
                 farming.chestplate(4), CompressedResource.NETHER_WART.compacted(), CompressedResource.POTATO.compacted());
-        registerDualWrapUpgrade(
+        registerLadderPeak(
                 "farming_leggings_5", RecipeCategory.FARMING, farming.leggings(5), Rarity.MYTHIC,
                 farming.leggings(4), CompressedResource.NETHER_WART.compacted(), CompressedResource.POTATO.compacted());
-        registerDualWrapUpgrade(
+        registerLadderPeak(
                 "farming_boots_5", RecipeCategory.FARMING, farming.boots(5), Rarity.MYTHIC,
                 farming.boots(4), CompressedResource.NETHER_WART.compacted(), CompressedResource.POTATO.compacted());
-        registerDualWrapUpgrade(
+        registerLadderPeak(
                 "farming_hoe_5", RecipeCategory.FARMING, farming.hoe(5), Rarity.MYTHIC,
                 farming.hoe(4), CompressedResource.NETHER_WART.compacted(), CompressedResource.WHEAT.compacted());
 
@@ -1067,64 +827,64 @@ public class RecipeRegistry {
                         new ItemStack(Material.STICK)
                 )
         );
-        registerMixedPlusUpgrade(
+        registerLadderMix(
                 "foraging_helmet_2", RecipeCategory.FORAGING, foraging.helmet(2), Rarity.RARE,
                 foraging.helmet(1), new ItemStack(Material.BIRCH_LOG), new ItemStack(Material.SPRUCE_LOG));
-        registerMixedPlusUpgrade(
+        registerLadderMix(
                 "foraging_chestplate_2", RecipeCategory.FORAGING, foraging.chestplate(2), Rarity.RARE,
                 foraging.chestplate(1), new ItemStack(Material.BIRCH_LOG), new ItemStack(Material.SPRUCE_LOG));
-        registerMixedPlusUpgrade(
+        registerLadderMix(
                 "foraging_leggings_2", RecipeCategory.FORAGING, foraging.leggings(2), Rarity.RARE,
                 foraging.leggings(1), new ItemStack(Material.BIRCH_LOG), new ItemStack(Material.SPRUCE_LOG));
-        registerMixedPlusUpgrade(
+        registerLadderMix(
                 "foraging_boots_2", RecipeCategory.FORAGING, foraging.boots(2), Rarity.RARE,
                 foraging.boots(1), new ItemStack(Material.BIRCH_LOG), new ItemStack(Material.SPRUCE_LOG));
-        registerMixedPlusUpgrade(
+        registerLadderMix(
                 "foraging_axe_2", RecipeCategory.FORAGING, foraging.axe(2), Rarity.RARE,
                 foraging.axe(1), new ItemStack(Material.BIRCH_LOG), new ItemStack(Material.SPRUCE_LOG));
-        registerMixedPlusUpgrade(
+        registerLadderMix(
                 "foraging_helmet_3", RecipeCategory.FORAGING, foraging.helmet(3), Rarity.EPIC,
                 foraging.helmet(2), CompressedResource.JUNGLE_LOG.compressed(), CompressedResource.ACACIA_LOG.compressed());
-        registerMixedPlusUpgrade(
+        registerLadderMix(
                 "foraging_chestplate_3", RecipeCategory.FORAGING, foraging.chestplate(3), Rarity.EPIC,
                 foraging.chestplate(2), CompressedResource.JUNGLE_LOG.compressed(), CompressedResource.ACACIA_LOG.compressed());
-        registerMixedPlusUpgrade(
+        registerLadderMix(
                 "foraging_leggings_3", RecipeCategory.FORAGING, foraging.leggings(3), Rarity.EPIC,
                 foraging.leggings(2), CompressedResource.JUNGLE_LOG.compressed(), CompressedResource.ACACIA_LOG.compressed());
-        registerMixedPlusUpgrade(
+        registerLadderMix(
                 "foraging_boots_3", RecipeCategory.FORAGING, foraging.boots(3), Rarity.EPIC,
                 foraging.boots(2), CompressedResource.JUNGLE_LOG.compressed(), CompressedResource.ACACIA_LOG.compressed());
-        registerMixedPlusUpgrade(
+        registerLadderMix(
                 "foraging_axe_3", RecipeCategory.FORAGING, foraging.axe(3), Rarity.EPIC,
                 foraging.axe(2), CompressedResource.JUNGLE_LOG.compressed(), CompressedResource.ACACIA_LOG.compressed());
-        registerMixedPlusUpgrade(
+        registerLadderMix(
                 "foraging_helmet_4", RecipeCategory.FORAGING, foraging.helmet(4), Rarity.LEGENDARY,
                 foraging.helmet(3), CompressedResource.DARK_OAK_LOG.compacted(), CompressedResource.MANGROVE_LOG.compacted());
-        registerMixedPlusUpgrade(
+        registerLadderMix(
                 "foraging_chestplate_4", RecipeCategory.FORAGING, foraging.chestplate(4), Rarity.LEGENDARY,
                 foraging.chestplate(3), CompressedResource.DARK_OAK_LOG.compacted(), CompressedResource.MANGROVE_LOG.compacted());
-        registerMixedPlusUpgrade(
+        registerLadderMix(
                 "foraging_leggings_4", RecipeCategory.FORAGING, foraging.leggings(4), Rarity.LEGENDARY,
                 foraging.leggings(3), CompressedResource.DARK_OAK_LOG.compacted(), CompressedResource.MANGROVE_LOG.compacted());
-        registerMixedPlusUpgrade(
+        registerLadderMix(
                 "foraging_boots_4", RecipeCategory.FORAGING, foraging.boots(4), Rarity.LEGENDARY,
                 foraging.boots(3), CompressedResource.DARK_OAK_LOG.compacted(), CompressedResource.MANGROVE_LOG.compacted());
-        registerMixedPlusUpgrade(
+        registerLadderMix(
                 "foraging_axe_4", RecipeCategory.FORAGING, foraging.axe(4), Rarity.LEGENDARY,
                 foraging.axe(3), CompressedResource.DARK_OAK_LOG.compacted(), CompressedResource.MANGROVE_LOG.compacted());
-        registerDualWrapUpgrade(
+        registerLadderPeak(
                 "foraging_helmet_5", RecipeCategory.FORAGING, foraging.helmet(5), Rarity.MYTHIC,
                 foraging.helmet(4), CompressedResource.CHERRY_LOG.compacted(), CompressedResource.BAMBOO_BLOCK.compacted());
-        registerDualWrapUpgrade(
+        registerLadderPeak(
                 "foraging_chestplate_5", RecipeCategory.FORAGING, foraging.chestplate(5), Rarity.MYTHIC,
                 foraging.chestplate(4), CompressedResource.CHERRY_LOG.compacted(), CompressedResource.BAMBOO_BLOCK.compacted());
-        registerDualWrapUpgrade(
+        registerLadderPeak(
                 "foraging_leggings_5", RecipeCategory.FORAGING, foraging.leggings(5), Rarity.MYTHIC,
                 foraging.leggings(4), CompressedResource.CHERRY_LOG.compacted(), CompressedResource.BAMBOO_BLOCK.compacted());
-        registerDualWrapUpgrade(
+        registerLadderPeak(
                 "foraging_boots_5", RecipeCategory.FORAGING, foraging.boots(5), Rarity.MYTHIC,
                 foraging.boots(4), CompressedResource.CHERRY_LOG.compacted(), CompressedResource.BAMBOO_BLOCK.compacted());
-        registerDualWrapUpgrade(
+        registerLadderPeak(
                 "foraging_axe_5", RecipeCategory.FORAGING, foraging.axe(5), Rarity.MYTHIC,
                 foraging.axe(4), CompressedResource.CHERRY_LOG.compacted(), CompressedResource.BAMBOO_BLOCK.compacted());
 
@@ -1174,64 +934,64 @@ public class RecipeRegistry {
                         new ItemStack(Material.STICK)
                 )
         );
-        registerPlusUpgrade(
+        registerLadderPlus(
                 "fishing_helmet_2", RecipeCategory.FISHING, fishing.helmet(2), Rarity.RARE,
                 fishing.helmet(1), new ItemStack(Material.SALMON));
-        registerPlusUpgrade(
+        registerLadderPlus(
                 "fishing_chestplate_2", RecipeCategory.FISHING, fishing.chestplate(2), Rarity.RARE,
                 fishing.chestplate(1), new ItemStack(Material.SALMON));
-        registerPlusUpgrade(
+        registerLadderPlus(
                 "fishing_leggings_2", RecipeCategory.FISHING, fishing.leggings(2), Rarity.RARE,
                 fishing.leggings(1), new ItemStack(Material.SALMON));
-        registerPlusUpgrade(
+        registerLadderPlus(
                 "fishing_boots_2", RecipeCategory.FISHING, fishing.boots(2), Rarity.RARE,
                 fishing.boots(1), new ItemStack(Material.SALMON));
-        registerPlusUpgrade(
+        registerLadderPlus(
                 "fishing_rod_2", RecipeCategory.FISHING, fishing.rod(2), Rarity.RARE,
                 fishing.rod(1), new ItemStack(Material.SALMON));
-        registerPlusUpgrade(
+        registerLadderMix(
                 "fishing_helmet_3", RecipeCategory.FISHING, fishing.helmet(3), Rarity.EPIC,
-                fishing.helmet(2), CompressedResource.PUFFERFISH.compressed());
-        registerPlusUpgrade(
+                fishing.helmet(2), CompressedResource.PUFFERFISH.compressed(), CompressedResource.SALMON.compressed());
+        registerLadderMix(
                 "fishing_chestplate_3", RecipeCategory.FISHING, fishing.chestplate(3), Rarity.EPIC,
-                fishing.chestplate(2), CompressedResource.PUFFERFISH.compressed());
-        registerPlusUpgrade(
+                fishing.chestplate(2), CompressedResource.PUFFERFISH.compressed(), CompressedResource.SALMON.compressed());
+        registerLadderMix(
                 "fishing_leggings_3", RecipeCategory.FISHING, fishing.leggings(3), Rarity.EPIC,
-                fishing.leggings(2), CompressedResource.PUFFERFISH.compressed());
-        registerPlusUpgrade(
+                fishing.leggings(2), CompressedResource.PUFFERFISH.compressed(), CompressedResource.SALMON.compressed());
+        registerLadderMix(
                 "fishing_boots_3", RecipeCategory.FISHING, fishing.boots(3), Rarity.EPIC,
-                fishing.boots(2), CompressedResource.PUFFERFISH.compressed());
-        registerPlusUpgrade(
+                fishing.boots(2), CompressedResource.PUFFERFISH.compressed(), CompressedResource.SALMON.compressed());
+        registerLadderMix(
                 "fishing_rod_3", RecipeCategory.FISHING, fishing.rod(3), Rarity.EPIC,
-                fishing.rod(2), CompressedResource.PUFFERFISH.compressed());
-        registerMixedPlusUpgrade(
+                fishing.rod(2), CompressedResource.PUFFERFISH.compressed(), CompressedResource.SALMON.compressed());
+        registerLadderMix(
                 "fishing_helmet_4", RecipeCategory.FISHING, fishing.helmet(4), Rarity.LEGENDARY,
                 fishing.helmet(3), CompressedResource.PRISMARINE_SHARD.compacted(), CompressedResource.SALMON.compacted());
-        registerMixedPlusUpgrade(
+        registerLadderMix(
                 "fishing_chestplate_4", RecipeCategory.FISHING, fishing.chestplate(4), Rarity.LEGENDARY,
                 fishing.chestplate(3), CompressedResource.PRISMARINE_SHARD.compacted(), CompressedResource.SALMON.compacted());
-        registerMixedPlusUpgrade(
+        registerLadderMix(
                 "fishing_leggings_4", RecipeCategory.FISHING, fishing.leggings(4), Rarity.LEGENDARY,
                 fishing.leggings(3), CompressedResource.PRISMARINE_SHARD.compacted(), CompressedResource.SALMON.compacted());
-        registerMixedPlusUpgrade(
+        registerLadderMix(
                 "fishing_boots_4", RecipeCategory.FISHING, fishing.boots(4), Rarity.LEGENDARY,
                 fishing.boots(3), CompressedResource.PRISMARINE_SHARD.compacted(), CompressedResource.SALMON.compacted());
-        registerMixedPlusUpgrade(
+        registerLadderMix(
                 "fishing_rod_4", RecipeCategory.FISHING, fishing.rod(4), Rarity.LEGENDARY,
                 fishing.rod(3), CompressedResource.PRISMARINE_SHARD.compacted(), CompressedResource.SALMON.compacted());
-        registerDualWrapUpgrade(
+        registerLadderPeak(
                 "fishing_helmet_5", RecipeCategory.FISHING, fishing.helmet(5), Rarity.MYTHIC,
                 fishing.helmet(4), CompressedResource.PRISMARINE_SHARD.compacted(), CompressedResource.PUFFERFISH.compacted());
-        registerDualWrapUpgrade(
+        registerLadderPeak(
                 "fishing_chestplate_5", RecipeCategory.FISHING, fishing.chestplate(5), Rarity.MYTHIC,
                 fishing.chestplate(4), CompressedResource.PRISMARINE_SHARD.compacted(), CompressedResource.PUFFERFISH.compacted());
-        registerDualWrapUpgrade(
+        registerLadderPeak(
                 "fishing_leggings_5", RecipeCategory.FISHING, fishing.leggings(5), Rarity.MYTHIC,
                 fishing.leggings(4), CompressedResource.PRISMARINE_SHARD.compacted(), CompressedResource.PUFFERFISH.compacted());
-        registerDualWrapUpgrade(
+        registerLadderPeak(
                 "fishing_boots_5", RecipeCategory.FISHING, fishing.boots(5), Rarity.MYTHIC,
                 fishing.boots(4), CompressedResource.PRISMARINE_SHARD.compacted(), CompressedResource.PUFFERFISH.compacted());
-        registerDualWrapUpgrade(
+        registerLadderPeak(
                 "fishing_rod_5", RecipeCategory.FISHING, fishing.rod(5), Rarity.MYTHIC,
                 fishing.rod(4), CompressedResource.PRISMARINE_SHARD.compacted(), CompressedResource.PUFFERFISH.compacted());
 
@@ -1799,41 +1559,41 @@ public class RecipeRegistry {
                 createMixedIngredients('A', new ItemStack(Material.AMETHYST_CLUSTER), 'G', new ItemStack(Material.GLOWSTONE_DUST))
         );
 
-        registerPlusUpgrade(
+        registerLadderPlus(
                 "charm_combat_2", RecipeCategory.CHARMS, charms.charm(AccessoryItems.Charm.COMBAT, 2), Rarity.RARE,
                 charms.charm(AccessoryItems.Charm.COMBAT, 1), CompressedResource.BONE.compressed());
-        registerPlusUpgrade(
+        registerLadderPlus(
                 "charm_mining_2", RecipeCategory.CHARMS, charms.charm(AccessoryItems.Charm.MINING, 2), Rarity.RARE,
                 charms.charm(AccessoryItems.Charm.MINING, 1), CompressedResource.RAW_COPPER.compressed());
-        registerPlusUpgrade(
+        registerLadderPlus(
                 "charm_foraging_2", RecipeCategory.CHARMS, charms.charm(AccessoryItems.Charm.FORAGING, 2), Rarity.RARE,
                 charms.charm(AccessoryItems.Charm.FORAGING, 1), CompressedResource.OAK_LOG.compressed());
-        registerPlusUpgrade(
+        registerLadderPlus(
                 "charm_farming_2", RecipeCategory.CHARMS, charms.charm(AccessoryItems.Charm.FARMING, 2), Rarity.RARE,
                 charms.charm(AccessoryItems.Charm.FARMING, 1), CompressedResource.CARROT.compressed());
-        registerPlusUpgrade(
+        registerLadderPlus(
                 "charm_fishing_2", RecipeCategory.CHARMS, charms.charm(AccessoryItems.Charm.FISHING, 2), Rarity.RARE,
                 charms.charm(AccessoryItems.Charm.FISHING, 1), CompressedResource.COD.compressed());
-        registerPlusUpgrade(
+        registerLadderPlus(
                 "charm_utility_2", RecipeCategory.CHARMS, charms.charm(AccessoryItems.Charm.UTILITY, 2), Rarity.RARE,
                 charms.charm(AccessoryItems.Charm.UTILITY, 1), CompressedResource.LAPIS.compressed());
 
-        registerPlusUpgrade(
+        registerLadderPlus(
                 "charm_combat_3", RecipeCategory.CHARMS, charms.charm(AccessoryItems.Charm.COMBAT, 3), Rarity.EPIC,
                 charms.charm(AccessoryItems.Charm.COMBAT, 2), CompressedResource.GUNPOWDER.compacted());
-        registerPlusUpgrade(
+        registerLadderPlus(
                 "charm_mining_3", RecipeCategory.CHARMS, charms.charm(AccessoryItems.Charm.MINING, 3), Rarity.EPIC,
                 charms.charm(AccessoryItems.Charm.MINING, 2), CompressedResource.RAW_IRON.compacted());
-        registerPlusUpgrade(
+        registerLadderPlus(
                 "charm_foraging_3", RecipeCategory.CHARMS, charms.charm(AccessoryItems.Charm.FORAGING, 3), Rarity.EPIC,
                 charms.charm(AccessoryItems.Charm.FORAGING, 2), CompressedResource.OAK_LOG.compacted());
-        registerPlusUpgrade(
+        registerLadderPlus(
                 "charm_farming_3", RecipeCategory.CHARMS, charms.charm(AccessoryItems.Charm.FARMING, 3), Rarity.EPIC,
                 charms.charm(AccessoryItems.Charm.FARMING, 2), CompressedResource.POTATO.compacted());
-        registerPlusUpgrade(
+        registerLadderPlus(
                 "charm_fishing_3", RecipeCategory.CHARMS, charms.charm(AccessoryItems.Charm.FISHING, 3), Rarity.EPIC,
                 charms.charm(AccessoryItems.Charm.FISHING, 2), CompressedResource.COD.compacted());
-        registerPlusUpgrade(
+        registerLadderPlus(
                 "charm_utility_3", RecipeCategory.CHARMS, charms.charm(AccessoryItems.Charm.UTILITY, 3), Rarity.EPIC,
                 charms.charm(AccessoryItems.Charm.UTILITY, 2), CompressedResource.LAPIS.compacted());
 
@@ -2351,8 +2111,8 @@ public class RecipeRegistry {
     }
 
     /**
-     * CraftCurve T2–T3 single-mat: full wrap (8 surround). Was plus (4).
-     * Shape: XXX / XCX / XXX
+     * Full wrap (8 surround). Kept for Catcher / legacy 8-mat crafts.
+     * Skill T1–T5 ladders use {@link #registerLadderPlus} instead.
      */
     private void registerPlusUpgrade(
             String id,
@@ -2366,8 +2126,8 @@ public class RecipeRegistry {
     }
 
     /**
-     * CraftCurve T3–T4 mixed mats: full checker wrap (4+4). Was plus (2+2).
-     * Shape: VHV / HCH / VHV
+     * Full checker wrap (4+4). Kept for any leftover 8-mat crafts.
+     * Skill ladders use {@link #registerLadderMix}.
      */
     private void registerMixedPlusUpgrade(
             String id,
@@ -2407,8 +2167,8 @@ public class RecipeRegistry {
     }
 
     /**
-     * Corners = corner ingredient, edges = edge ingredient, center = previous piece.
-     * Shape: ACA / ECE / ACA
+     * Corners + edges (4+4). Kept as a primitive; T5 skill ladders use
+     * {@link #registerLadderPeak} (1 premium + 3 support).
      */
     private void registerDualWrapUpgrade(
             String id,
@@ -2426,6 +2186,75 @@ public class RecipeRegistry {
                 rarity,
                 List.of("ACA", "ECE", "ACA"),
                 createMixedIngredients('A', corners, 'E', edges, 'C', center)
+        );
+    }
+
+    /**
+     * Wave 2 T2 (and single-mat charm upgrades): 1 previous + 4 tier mats.
+     * Shape: {@code  X  / XCX /  X }
+     */
+    private void registerLadderPlus(
+            String id,
+            RecipeCategory category,
+            ItemStack result,
+            Rarity rarity,
+            ItemStack center,
+            ItemStack surround
+    ) {
+        registerSimple(
+                id,
+                category,
+                result,
+                rarity,
+                List.of(" X ", "XCX", " X "),
+                createMixedIngredients('X', surround, 'C', center)
+        );
+    }
+
+    /**
+     * Wave 2 T3/T4: 1 previous + 2+2 tier mats (plus-shaped, not 8-slot checker).
+     * Shape: {@code  V  / HCH /  V }
+     */
+    private void registerLadderMix(
+            String id,
+            RecipeCategory category,
+            ItemStack result,
+            Rarity rarity,
+            ItemStack center,
+            ItemStack vertical,
+            ItemStack horizontal
+    ) {
+        registerSimple(
+                id,
+                category,
+                result,
+                rarity,
+                List.of(" V ", "HCH", " V "),
+                createMixedIngredients('V', vertical, 'H', horizontal, 'C', center)
+        );
+    }
+
+    /**
+     * Wave 2 T5: 1 previous + 1 premium compacted + 3 support compacted.
+     * Same pattern as the Wave 1 mining pick T5 fix.
+     * Shape: {@code  S  / SCS /  P }
+     */
+    private void registerLadderPeak(
+            String id,
+            RecipeCategory category,
+            ItemStack result,
+            Rarity rarity,
+            ItemStack center,
+            ItemStack premium,
+            ItemStack support
+    ) {
+        registerSimple(
+                id,
+                category,
+                result,
+                rarity,
+                List.of(" S ", "SCS", " P "),
+                createMixedIngredients('S', support, 'C', center, 'P', premium)
         );
     }
 }

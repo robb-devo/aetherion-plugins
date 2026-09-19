@@ -356,18 +356,173 @@ public final class StarterSetBalance {
 
     /** Curve snapshot just before {@code fromRev} → current. */
     private static ItemStats previousCurveBase(String itemId, int fromRev) {
-        ItemStats stats = currentBase(itemId);
-        if (stats == null) {
-            return null;
-        }
-        // REV3 had BalanceTargets without combat-armor Damage; REV4+ include it.
-        if (fromRev < 4) {
-            String base = baseId(itemId.toLowerCase());
-            if (base.startsWith("combat_") && !base.contains("sword")) {
-                stats.setDamage(0);
+        if (fromRev < 6) {
+            ItemStats rev5 = rev5Base(itemId);
+            if (rev5 != null) {
+                if (fromRev < 4) {
+                    String base = baseId(itemId.toLowerCase());
+                    if (base.startsWith("combat_") && !base.contains("sword")) {
+                        rev5.setDamage(0);
+                    }
+                }
+                return rev5;
             }
         }
-        return stats;
+        return currentBase(itemId);
+    }
+
+    /**
+     * REV5 ladder (Wave 1). Needed so REV6 rebase subtracts the real old base
+     * instead of treating the new curve as the pre-image (which would keep
+     * inflated Fortune/Damage and ignore the stacking-budget nerf).
+     */
+    static ItemStats rev5Base(String itemId) {
+        if (itemId == null) {
+            return null;
+        }
+        String id = itemId.toLowerCase();
+        int t = tier(id);
+        String base = baseId(id);
+        ItemStats stats = new ItemStats();
+        switch (base) {
+            case "beginner_pickaxe" -> {
+                pick(stats, 2, 6, 0);
+                return stats;
+            }
+            case "simple_pickaxe" -> {
+                pick(stats, 10, 16, 1);
+                return stats;
+            }
+            case "combat_helmet" -> {
+                combatPiece(stats, v(t, 4, 8, 14, 26, 46), v(t, 8, 14, 26, 46, 80),
+                        v(t, 2, 3, 5, 9, 14), v(t, 1, 2, 4, 7, 12), 0, 0);
+                return stats;
+            }
+            case "combat_chestplate" -> {
+                combatPiece(stats, v(t, 8, 16, 30, 54, 95), v(t, 12, 22, 42, 74, 130),
+                        v(t, 3, 5, 9, 14, 22), v(t, 2, 4, 8, 14, 24),
+                        v(t, 4, 6, 9, 12, 16), v(t, 25, 38, 55, 78, 105));
+                return stats;
+            }
+            case "combat_leggings" -> {
+                combatPiece(stats, v(t, 6, 12, 22, 40, 70), v(t, 10, 18, 34, 60, 105),
+                        v(t, 2, 4, 7, 11, 17), v(t, 1, 3, 6, 10, 18), 0, 0);
+                return stats;
+            }
+            case "combat_boots" -> {
+                combatPiece(stats, v(t, 4, 8, 14, 26, 46), v(t, 8, 14, 26, 46, 80),
+                        v(t, 1, 3, 5, 8, 12), v(t, 1, 2, 4, 7, 12), 0, 0);
+                return stats;
+            }
+            case "combat_sword" -> {
+                sword(stats, v(t, 14, 22, 40, 72, 130), v(t, 3, 5, 9, 14, 22),
+                        v(t, 5, 6, 9, 13, 18), v(t, 42, 40, 58, 82, 110));
+                return stats;
+            }
+            case "mining_helmet" -> {
+                minePiece(stats, v(t, 3, 6, 11, 20, 36), v(t, 6, 12, 22, 40, 72),
+                        v(t, 10, 20, 38, 70, 125), v(t, 1, 2, 4, 8, 14));
+                return stats;
+            }
+            case "mining_chestplate" -> {
+                minePiece(stats, v(t, 6, 12, 22, 40, 70), v(t, 10, 20, 36, 65, 120),
+                        v(t, 16, 32, 58, 105, 190), v(t, 2, 4, 7, 13, 22));
+                return stats;
+            }
+            case "mining_leggings" -> {
+                minePiece(stats, v(t, 5, 10, 18, 32, 56), v(t, 8, 16, 30, 54, 98),
+                        v(t, 12, 26, 48, 88, 160), v(t, 1, 3, 5, 10, 18));
+                return stats;
+            }
+            case "mining_boots" -> {
+                minePiece(stats, v(t, 3, 6, 11, 20, 36), v(t, 6, 12, 22, 40, 72),
+                        v(t, 10, 20, 38, 70, 125), v(t, 1, 2, 4, 8, 14));
+                return stats;
+            }
+            case "mining_pickaxe" -> {
+                pick(stats, v(t, 14, 26, 48, 88, 160), v(t, 24, 44, 80, 145, 260),
+                        v(t, 2, 4, 7, 13, 22));
+                return stats;
+            }
+            case "farming_helmet" -> {
+                farmArmor(stats, v(t, 3, 6, 11, 20, 36), v(t, 8, 16, 30, 55, 100),
+                        v(t, 10, 20, 38, 70, 125), 0);
+                return stats;
+            }
+            case "farming_chestplate" -> {
+                farmArmor(stats, v(t, 6, 11, 20, 36, 64), v(t, 12, 22, 42, 76, 140),
+                        v(t, 14, 28, 52, 95, 170), 0);
+                return stats;
+            }
+            case "farming_leggings" -> {
+                farmArmor(stats, v(t, 5, 9, 16, 30, 52), v(t, 10, 18, 34, 62, 110),
+                        v(t, 12, 24, 44, 80, 145), 0);
+                return stats;
+            }
+            case "farming_boots" -> {
+                farmArmor(stats, v(t, 3, 5, 10, 18, 32), v(t, 8, 14, 26, 48, 88),
+                        v(t, 10, 18, 34, 62, 110), v(t, 2, 4, 7, 11, 16));
+                return stats;
+            }
+            case "farming_hoe" -> {
+                farmHoe(stats, v(t, 18, 34, 62, 110, 200), v(t, 28, 52, 95, 170, 300));
+                return stats;
+            }
+            case "foraging_helmet" -> {
+                forageArmor(stats, v(t, 3, 6, 11, 20, 36), v(t, 8, 16, 30, 55, 100),
+                        v(t, 4, 8, 14, 26, 46), 0);
+                return stats;
+            }
+            case "foraging_chestplate" -> {
+                forageArmor(stats, v(t, 6, 11, 20, 36, 64), v(t, 12, 22, 42, 76, 140),
+                        v(t, 5, 10, 18, 34, 60), 0);
+                return stats;
+            }
+            case "foraging_leggings" -> {
+                forageArmor(stats, v(t, 5, 9, 16, 30, 52), v(t, 10, 18, 34, 62, 110),
+                        v(t, 4, 9, 16, 30, 52), 0);
+                return stats;
+            }
+            case "foraging_boots" -> {
+                forageArmor(stats, v(t, 3, 5, 10, 18, 32), v(t, 8, 14, 26, 48, 88),
+                        v(t, 3, 7, 12, 22, 40), v(t, 2, 4, 7, 11, 16));
+                return stats;
+            }
+            case "foraging_axe" -> {
+                forageAxe(stats, v(t, 10, 18, 34, 62, 110), v(t, 18, 34, 62, 110, 200),
+                        v(t, 2, 4, 7, 13, 22));
+                return stats;
+            }
+            case "fishing_helmet" -> {
+                fishArmor(stats, v(t, 3, 6, 11, 20, 36), v(t, 8, 16, 30, 55, 100),
+                        v(t, 2, 4, 7, 12, 20), v(t, 10, 20, 38, 70, 125), 0);
+                return stats;
+            }
+            case "fishing_chestplate" -> {
+                fishArmor(stats, v(t, 6, 11, 20, 36, 64), v(t, 12, 22, 42, 76, 140),
+                        v(t, 3, 5, 10, 16, 28), v(t, 14, 28, 52, 95, 170), 0);
+                return stats;
+            }
+            case "fishing_leggings" -> {
+                fishArmor(stats, v(t, 5, 9, 16, 30, 52), v(t, 10, 18, 34, 62, 110),
+                        v(t, 2, 4, 7, 12, 20), v(t, 12, 24, 44, 80, 145), 0);
+                return stats;
+            }
+            case "fishing_boots" -> {
+                fishArmor(stats, v(t, 3, 5, 10, 18, 32), v(t, 8, 14, 26, 48, 88),
+                        v(t, 2, 4, 7, 12, 20), v(t, 10, 20, 38, 70, 125),
+                        v(t, 2, 4, 7, 11, 16));
+                return stats;
+            }
+            case "fishing_rod" -> {
+                fishRod(stats, v(t, 18, 34, 62, 110, 200), v(t, 4, 8, 14, 24, 38),
+                        v(t, 32, 58, 105, 190, 340));
+                return stats;
+            }
+            default -> {
+                return null;
+            }
+        }
     }
 
     /**
