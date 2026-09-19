@@ -104,9 +104,10 @@ aether-paste:
     ignore-air: true
     rotate-y: 0
     paste:
-      x: -528
+      x: -600
       y: 90
-      z: 474
+      z: 427
+    # last: written by /aetherpaste after a successful start (origin + schem AABB)
   fishing:
     world: world
     schematic: Fishing-Eldervale-Island.schem
