@@ -1,7 +1,7 @@
 package de.aetherion.bossengine.hud;
 
 import de.aetherion.bossengine.instance.BossInstance;
-import de.aetherion.bossengine.integration.QuestBossBarHook;
+import de.aetherion.core.api.QuestBars;
 import de.aetherion.bossengine.util.TextUtil;
 
 import org.bukkit.Bukkit;
@@ -104,7 +104,7 @@ public class BossBarHud {
         for (BossBar bar : bars.values()) {
             bar.removePlayer(player);
         }
-        QuestBossBarHook.unsuppress(player);
+        QuestBars.unsuppress(player);
     }
 
     public void hideAll() {
@@ -162,7 +162,7 @@ public class BossBarHud {
         }
         Set<UUID> current = viewers.computeIfAbsent(instance.getInstanceId(), id -> ConcurrentHashMap.newKeySet());
         if (current.add(playerId)) {
-            QuestBossBarHook.suppress(player);
+            QuestBars.suppress(player);
             bar.addPlayer(player);
         }
     }
@@ -177,7 +177,7 @@ public class BossBarHud {
         if (bar != null && player != null) {
             bar.removePlayer(player);
         }
-        QuestBossBarHook.unsuppress(playerId);
+        QuestBars.unsuppress(playerId);
     }
 
     private boolean eligible(Player player, BossInstance instance) {
@@ -231,7 +231,7 @@ public class BossBarHud {
         if (bar != null) {
             for (Player player : new HashSet<>(bar.getPlayers())) {
                 bar.removePlayer(player);
-                QuestBossBarHook.unsuppress(player);
+                QuestBars.unsuppress(player);
             }
             bar.removeAll();
             bar.setVisible(false);
@@ -240,7 +240,7 @@ public class BossBarHud {
             return;
         }
         for (UUID playerId : ids) {
-            QuestBossBarHook.unsuppress(playerId);
+            QuestBars.unsuppress(playerId);
         }
     }
 }

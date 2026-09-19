@@ -87,24 +87,14 @@ public final class ColosseumGateService implements Listener, Runnable {
 
     /** Soft gate + Hub teleport unlock when the Proctor opens the ring. */
     private void unlockHubTeleport(Player player) {
-        try {
-            org.bukkit.plugin.Plugin hubPlugin = Bukkit.getPluginManager().getPlugin("AetherionHub");
-            if (hubPlugin == null || !hubPlugin.isEnabled()) {
-                return;
-            }
-            Object hub = hubPlugin.getClass().getMethod("getHub").invoke(hubPlugin);
-            if (hub == null) {
-                return;
-            }
-            Object neu = hub.getClass()
-                    .getMethod("unlockNew", java.util.UUID.class, String.class)
-                    .invoke(hub, player.getUniqueId(), "colosseum");
-            if (neu instanceof Boolean added && added) {
-                player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1f, 1.15f);
-                player.sendMessage("§b✦ §eNew teleport: §fColosseum§e.");
-                player.sendMessage("§7Open Aetherion Manager → Teleports to return to the ring.");
-            }
-        } catch (ReflectiveOperationException | NoClassDefFoundError ignored) {
+        de.aetherion.core.api.HubAccess hub = de.aetherion.core.api.AetherServices.hub();
+        if (hub == null || player == null) {
+            return;
+        }
+        if (hub.unlockNew(player.getUniqueId(), "colosseum")) {
+            player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1f, 1.15f);
+            player.sendMessage("§b✦ §eNew teleport: §fColosseum§e.");
+            player.sendMessage("§7Open Aetherion Manager → Teleports to return to the ring.");
         }
     }
 

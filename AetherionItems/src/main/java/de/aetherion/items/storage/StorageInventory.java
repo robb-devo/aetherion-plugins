@@ -834,4 +834,16 @@ public class StorageInventory {
             );
         }
     }
+
+    public void savePlayerStorage(UUID uuid) {
+        saveStorage(uuid);
+    }
+
+    public void invalidateAndReload(UUID uuid) {
+        if (uuid == null) {
+            return;
+        }
+        storageContents.remove(uuid);
+        loadStorage(uuid);
+    }
 }

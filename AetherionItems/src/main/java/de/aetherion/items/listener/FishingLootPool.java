@@ -194,24 +194,20 @@ public final class FishingLootPool {
         }
 
         static WeatherBias of(Player player) {
-            if (player == null || org.bukkit.Bukkit.getPluginManager().getPlugin("AetherionForaging") == null) {
+            de.aetherion.core.api.ForageAccess foraging = de.aetherion.core.api.AetherServices.foraging();
+            if (player == null || foraging == null) {
                 return NONE;
             }
-            try {
-                Class<?> hook = Class.forName("de.aetherion.foraging.weather.FishingWeatherHook");
-                boolean wet = Boolean.TRUE.equals(hook.getMethod("preferWetLoot", Player.class).invoke(null, player));
-                boolean fog = Boolean.TRUE.equals(hook.getMethod("preferFogLoot", Player.class).invoke(null, player));
-                if (!wet && !fog) {
-                    return NONE;
-                }
-                return new WeatherBias(
-                        wet ? 1.35d : 1.0d,
-                        fog ? 1.45d : 1.0d,
-                        wet ? 1.25d : 1.0d
-                );
-            } catch (Throwable ignored) {
+            boolean wet = foraging.preferWetLoot(player);
+            boolean fog = foraging.preferFogLoot(player);
+            if (!wet && !fog) {
                 return NONE;
             }
+            return new WeatherBias(
+                    wet ? 1.35d : 1.0d,
+                    fog ? 1.45d : 1.0d,
+                    wet ? 1.25d : 1.0d
+            );
         }
 
         private static final WeatherBias NONE = new WeatherBias(1.0d, 1.0d, 1.0d);

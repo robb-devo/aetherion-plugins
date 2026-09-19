@@ -1,5 +1,7 @@
 package de.aetherion.fishing;
 
+import de.aetherion.core.api.QuestBars;
+
 import net.kyori.adventure.text.Component;
 
 import org.bukkit.Bukkit;
@@ -56,7 +58,7 @@ final class FishingHud {
             bar.removeAll();
             bar.setVisible(false);
         }
-        QuestBossBarHook.unsuppress(playerId);
+        QuestBars.unsuppress(playerId);
     }
 
     void hideAll() {
@@ -76,7 +78,7 @@ final class FishingHud {
             return created;
         });
         if (!bar.getPlayers().contains(player)) {
-            QuestBossBarHook.suppress(player);
+            QuestBars.suppress(player);
             bar.addPlayer(player);
         }
         bar.setTitle(title);

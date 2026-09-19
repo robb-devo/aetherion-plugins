@@ -25,6 +25,7 @@ public final class AetherionHub extends JavaPlugin {
     private HomesteadMarker homesteadMarker;
     private HubAdminCommand adminCommand;
     private IslandLaunchPads launchPads;
+    private de.aetherion.core.api.HubAccess hubAccess;
 
     @Override
     public void onEnable() {
@@ -62,6 +63,8 @@ public final class AetherionHub extends JavaPlugin {
         SpawnDiscoverListener discover = new SpawnDiscoverListener(this, hub);
         getServer().getPluginManager().registerEvents(discover, this);
         discover.start();
+        hubAccess = new de.aetherion.hub.api.HubAccessImpl();
+        de.aetherion.core.api.AetherServices.registerHub(hubAccess);
         getLogger().info("AetherionHub enabled. /spawn and /hub teleport, /spawns opens the menu.");
     }
 
@@ -69,6 +72,10 @@ public final class AetherionHub extends JavaPlugin {
     public void onDisable() {
         if (hub != null) {
             hub.saveAll();
+        }
+        if (hubAccess != null) {
+            de.aetherion.core.api.AetherServices.clearHub(hubAccess);
+            hubAccess = null;
         }
         instance = null;
     }

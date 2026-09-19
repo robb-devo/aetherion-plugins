@@ -187,11 +187,9 @@ public final class SpawnDiscoverListener implements Listener, Runnable {
         ));
         player.sendMessage("§b✦ §eNew area: §f" + name + "§e.");
         player.sendMessage("§7Teleport unlocked — Manager → Teleports.");
-        try {
-            Class.forName("de.aetherion.items.progress.ProgressionUnlock")
-                    .getMethod("unlock", org.bukkit.entity.Player.class, String.class, String.class, String.class)
-                    .invoke(null, player, "SPAWN_UNLOCKER", "Teleports", "Manager → Teleports");
-        } catch (ReflectiveOperationException | NoClassDefFoundError ignored) {
+        de.aetherion.core.api.ProgressAccess progress = de.aetherion.core.api.AetherServices.progress();
+        if (progress != null) {
+            progress.unlock(player, "SPAWN_UNLOCKER", "Teleports", "Manager → Teleports");
         }
     }
 }

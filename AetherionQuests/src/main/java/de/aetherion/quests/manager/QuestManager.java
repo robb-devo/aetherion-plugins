@@ -700,11 +700,9 @@ public class QuestManager {
     }
 
     private static void unlockProgressFeature(Player player, String flag, String title, String subtitle) {
-        try {
-            Class.forName("de.aetherion.items.progress.ProgressionUnlock")
-                    .getMethod("unlock", Player.class, String.class, String.class, String.class)
-                    .invoke(null, player, flag, title, subtitle);
-        } catch (ReflectiveOperationException | NoClassDefFoundError ignored) {
+        de.aetherion.core.api.ProgressAccess progress = de.aetherion.core.api.AetherServices.progress();
+        if (progress != null) {
+            progress.unlock(player, flag, title, subtitle);
         }
     }
 
@@ -1268,12 +1266,16 @@ public class QuestManager {
             return;
         }
 
+        de.aetherion.core.api.HubAccess hub = de.aetherion.core.api.AetherServices.hub();
+        if (hub == null) {
+            Bukkit.getLogger().warning(
+                    "[AetherionQuests] Could not give Homestead Marker: AetherionHub API missing"
+            );
+            player.sendMessage("§cCould not give Homestead Marker.");
+            return;
+        }
         try {
-            Class<?> api = Class.forName("de.aetherion.hub.api.AetherionHubAPI");
-            boolean given = (boolean) api
-                    .getMethod("giveUnlockItem", Player.class, String.class)
-                    .invoke(null, player, id);
-
+            boolean given = hub.giveUnlockItem(player, id);
             if (given) {
                 sendReward(player, id.replace('_', ' ') + " §7marker");
             } else {
@@ -1307,11 +1309,16 @@ public class QuestManager {
             }
             return;
         }
+        de.aetherion.core.api.HubAccess hub = de.aetherion.core.api.AetherServices.hub();
+        if (hub == null) {
+            Bukkit.getLogger().warning("[AetherionQuests] Could not unlock spawn: AetherionHub API missing");
+            if (announce) {
+                player.sendMessage("§cCould not unlock spawn.");
+            }
+            return;
+        }
         try {
-            Class<?> api = Class.forName("de.aetherion.hub.api.AetherionHubAPI");
-            boolean unlocked = (boolean) api
-                    .getMethod("unlock", org.bukkit.entity.Player.class, String.class)
-                    .invoke(null, player, spawnId.toLowerCase());
+            boolean unlocked = hub.unlock(player, spawnId.toLowerCase());
             if (unlocked) {
                 if (announce) {
                     String pretty = spawnId.replace('_', ' ');
@@ -1319,29 +1326,9 @@ public class QuestManager {
                     player.sendMessage("§7Open Aetherion Manager → Teleports to travel there.");
                     player.sendMessage("");
                 }
-                try {
-                    Class<?> items = Class.forName("de.aetherion.items.AetherionItems");
-                    Object plugin = items.getMethod("getInstance").invoke(null);
-                    if (plugin != null) {
-                        Object progress = plugin.getClass().getMethod("progress").invoke(plugin);
-                        Class<?> flagClass = Class.forName("de.aetherion.items.progress.ProgressionService$Flag");
-                        Object spawnFlag = null;
-                        Object[] constants = flagClass.getEnumConstants();
-                        if (constants != null) {
-                            for (Object constant : constants) {
-                                if ("SPAWN_UNLOCKER".equals(String.valueOf(constant))) {
-                                    spawnFlag = constant;
-                                    break;
-                                }
-                            }
-                        }
-                        if (progress != null && spawnFlag != null) {
-                            progress.getClass()
-                                    .getMethod("unlock", org.bukkit.entity.Player.class, flagClass)
-                                    .invoke(progress, player, spawnFlag);
-                        }
-                    }
-                } catch (Exception ignored) {
+                de.aetherion.core.api.ProgressAccess progress = de.aetherion.core.api.AetherServices.progress();
+                if (progress != null) {
+                    progress.unlockSilent(player, "SPAWN_UNLOCKER");
                 }
             } else if (announce) {
                 player.sendMessage("§cCould not unlock spawn §f" + spawnId + "§c.");

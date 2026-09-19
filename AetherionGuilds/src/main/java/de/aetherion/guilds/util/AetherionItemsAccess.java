@@ -1,6 +1,9 @@
 package de.aetherion.guilds.util;
 
 import de.aetherion.core.AetherKeys;
+import de.aetherion.core.api.AetherServices;
+import de.aetherion.core.api.CoinAccess;
+import de.aetherion.core.api.ProgressAccess;
 
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
@@ -23,105 +26,56 @@ public final class AetherionItemsAccess {
         if (!available() || player == null) {
             return true;
         }
-        try {
-            Object plugin = Class.forName("de.aetherion.items.AetherionItems").getMethod("getInstance").invoke(null);
-            if (plugin == null) {
-                return false;
-            }
-            Object progress = plugin.getClass().getMethod("progress").invoke(plugin);
-            if (progress == null) {
-                return false;
-            }
-            Object result = progress.getClass().getMethod("island", Player.class).invoke(progress, player);
-            return Boolean.TRUE.equals(result);
-        } catch (ReflectiveOperationException ignored) {
-            return false;
-        }
+        ProgressAccess progress = AetherServices.progress();
+        return progress != null && progress.island(player);
     }
 
     public static String islandHint() {
-        if (!available()) {
+        ProgressAccess progress = AetherServices.progress();
+        if (progress == null) {
             return "§7Reach Aetherion Level §f20 §7to claim your island.";
         }
-        try {
-            Object plugin = Class.forName("de.aetherion.items.AetherionItems").getMethod("getInstance").invoke(null);
-            Object progress = plugin == null ? null : plugin.getClass().getMethod("progress").invoke(plugin);
-            Object result = progress == null ? null : progress.getClass().getMethod("islandHint").invoke(progress);
-            return result instanceof String hint ? hint : "§7Reach Aetherion Level §f20 §7to claim your island.";
-        } catch (ReflectiveOperationException ignored) {
-            return "§7Reach Aetherion Level §f20 §7to claim your island.";
-        }
+        return progress.islandHint();
     }
 
     public static boolean guildUnlocked(Player player) {
         if (!available() || player == null) {
             return true;
         }
-        try {
-            Object plugin = Class.forName("de.aetherion.items.AetherionItems").getMethod("getInstance").invoke(null);
-            if (plugin == null) {
-                return false;
-            }
-            Object progress = plugin.getClass().getMethod("progress").invoke(plugin);
-            if (progress == null) {
-                return false;
-            }
-            Object result = progress.getClass().getMethod("guild", Player.class).invoke(progress, player);
-            return Boolean.TRUE.equals(result);
-        } catch (ReflectiveOperationException ignored) {
-            return false;
-        }
+        ProgressAccess progress = AetherServices.progress();
+        return progress != null && progress.guild(player);
     }
 
     public static String guildHint() {
-        if (!available()) {
+        ProgressAccess progress = AetherServices.progress();
+        if (progress == null) {
             return "§7Reach Aetherion Level §f75 §7to unlock.";
         }
-        try {
-            Object plugin = Class.forName("de.aetherion.items.AetherionItems").getMethod("getInstance").invoke(null);
-            Object progress = plugin == null ? null : plugin.getClass().getMethod("progress").invoke(plugin);
-            Object result = progress == null ? null : progress.getClass().getMethod("guildHint").invoke(progress);
-            return result instanceof String hint ? hint : "§7Reach Aetherion Level §f75 §7to unlock.";
-        } catch (ReflectiveOperationException ignored) {
-            return "§7Reach Aetherion Level §f75 §7to unlock.";
-        }
+        return progress.guildHint();
     }
 
     public static long coins(Player player) {
-        Object coins = coinsService();
+        CoinAccess coins = AetherServices.coins();
         if (coins == null || player == null) {
             return 0L;
         }
-        try {
-            Object value = coins.getClass().getMethod("get", Player.class).invoke(coins, player);
-            return value instanceof Number number ? number.longValue() : 0L;
-        } catch (ReflectiveOperationException ignored) {
-            return 0L;
-        }
+        return coins.get(player);
     }
 
     public static boolean takeCoins(Player player, long amount) {
-        Object coins = coinsService();
+        CoinAccess coins = AetherServices.coins();
         if (coins == null || player == null || amount <= 0L) {
             return amount <= 0L;
         }
-        try {
-            Object value = coins.getClass().getMethod("take", Player.class, long.class).invoke(coins, player, amount);
-            return Boolean.TRUE.equals(value);
-        } catch (ReflectiveOperationException ignored) {
-            return false;
-        }
+        return coins.take(player, amount);
     }
 
     public static void addCoins(Player player, long amount) {
-        Object coins = coinsService();
+        CoinAccess coins = AetherServices.coins();
         if (coins == null || player == null || amount <= 0L) {
             return;
         }
-        try {
-            coins.getClass().getMethod("add", Player.class, long.class).invoke(coins, player, amount);
-        } catch (ReflectiveOperationException ignored) {
-        }
+        coins.add(player, amount);
     }
 
     public static String itemId(ItemStack item) {
@@ -164,21 +118,6 @@ public final class AetherionItemsAccess {
             if (left <= 0) {
                 return;
             }
-        }
-    }
-
-    private static Object coinsService() {
-        if (!available()) {
-            return null;
-        }
-        try {
-            Object plugin = Class.forName("de.aetherion.items.AetherionItems").getMethod("getInstance").invoke(null);
-            if (plugin == null) {
-                return null;
-            }
-            return plugin.getClass().getMethod("getCoins").invoke(plugin);
-        } catch (ReflectiveOperationException ignored) {
-            return null;
         }
     }
 }

@@ -94,6 +94,10 @@ public final class ShardService {
         }
     }
 
+    public void reloadFromDisk() {
+        load();
+    }
+
     private void load() {
         if (!file.exists()) {
             return;

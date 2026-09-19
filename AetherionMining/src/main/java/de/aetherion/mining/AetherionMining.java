@@ -14,6 +14,7 @@ public class AetherionMining extends JavaPlugin {
     private static AetherionMining instance;
     private WorldGuardPlugin worldGuard;
     private VeinsWorld veins;
+    private de.aetherion.core.api.MiningAccess miningAccess;
 
     @Override
     public void onEnable() {
@@ -48,6 +49,8 @@ public class AetherionMining extends JavaPlugin {
         });
         getServer().getScheduler().runTaskTimer(this, veins::tickReset, 20L * 60L, 20L * 60L * 5L);
         getLogger().info("The Veins ready. /deepmines");
+        miningAccess = new de.aetherion.mining.api.MiningAccessImpl();
+        de.aetherion.core.api.AetherServices.registerMining(miningAccess);
     }
 
     @Override
@@ -66,6 +69,10 @@ public class AetherionMining extends JavaPlugin {
     public void onDisable() {
         if (veins != null) {
             veins.saveData();
+        }
+        if (miningAccess != null) {
+            de.aetherion.core.api.AetherServices.clearMining(miningAccess);
+            miningAccess = null;
         }
         getLogger().info("AetherionMining beendet!");
         instance = null;

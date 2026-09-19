@@ -5,15 +5,12 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
 import java.io.File;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
 /**
@@ -53,69 +50,19 @@ public final class NetworkPlayerDataSync {
 
         Plugin items = Bukkit.getPluginManager().getPlugin("AetherionItems");
         if (items != null && items.isEnabled()) {
-            saveStorageDirect(items, id);
-            invoke(items, "getStorageInventory", "saveAll");
-            invoke(items, "getCoins", "save");
-            invoke(items, "getSkills", "save");
-            invoke(items, "progress", "save");
-            invoke(items, "getShards", "save");
-            invoke(items, "xpBoost", "save");
-            invoke(items, "recipeUnlocks", "save");
-            invoke(items, "blueprintUnlocks", "save");
-            invoke(items, "getAreas", "save");
-            invoke(items, "getCodex", "save");
-            invoke(items, "ranks", "save");
-            invoke(items, "getMarket", "save");
-        }
-
-        Plugin mobs = Bukkit.getPluginManager().getPlugin("AetherMobs");
-        if (mobs != null && mobs.isEnabled()) {
-            try {
-                Object collection = mobs.getClass().getMethod("getPetCollection", UUID.class).invoke(mobs, id);
-                Object mgr = mobs.getClass().getMethod("getPetDataManager").invoke(mobs);
-                boolean saved = false;
-                if (mgr != null && collection != null) {
-                    for (Method m : mgr.getClass().getMethods()) {
-                        if (!"save".equals(m.getName()) || m.getParameterCount() != 1) {
-                            continue;
-                        }
-                        if (m.getParameterTypes()[0].isInstance(collection)) {
-                            m.invoke(mgr, collection);
-                            saved = true;
-                            break;
-                        }
-                    }
-                }
-                if (!saved) {
-                    mobs.getClass().getMethod("markPetsDirty", UUID.class).invoke(mobs, id);
-                    Method saveDirty = mobs.getClass().getDeclaredMethod("saveDirtyPets");
-                    saveDirty.setAccessible(true);
-                    saveDirty.invoke(mobs);
-                }
-            } catch (Exception ex) {
-                plugin.getLogger().warning("Pet flush: " + ex.getMessage());
+            de.aetherion.core.api.ProgressAccess progress = de.aetherion.core.api.AetherServices.progress();
+            if (progress != null) {
+                progress.flushPlayer(player);
             }
         }
 
-        Plugin quests = Bukkit.getPluginManager().getPlugin("AetherionQuests");
-        if (quests != null && quests.isEnabled()) {
-            invokeNoArg(quests, "savePlayer", player);
-            invokeNoArg(quests, "saveAll", null);
+        de.aetherion.core.api.PetAccess pets = de.aetherion.core.api.AetherServices.pets();
+        if (pets != null) {
+            pets.flushPlayer(id);
         }
-    }
 
-    private void saveStorageDirect(Plugin items, UUID id) {
-        try {
-            Object storage = items.getClass().getMethod("getStorageInventory").invoke(items);
-            if (storage == null) {
-                return;
-            }
-            Method save = storage.getClass().getDeclaredMethod("saveStorage", UUID.class);
-            save.setAccessible(true);
-            save.invoke(storage, id);
-        } catch (Exception ex) {
-            plugin.getLogger().warning("Direct storage save failed: " + ex.getMessage());
-        }
+        // Quests: savePlayer/saveAll were invoked reflectively but never existed on
+        // AetherionQuests — those calls no-oped. Quest yaml is still copied below.
     }
 
     public Map<String, Object> exportAll(Player player) {
@@ -188,28 +135,22 @@ public final class NetworkPlayerDataSync {
                     plugin.getLogger().log(Level.WARNING, "Import failed for " + name, ex);
                 }
             }
-            applyCoinsInMemory(items, id, plain);
-            reloadPrivate(items, "getCoins");
-            reloadPrivate(items, "getSkills");
-            reloadPrivate(items, "progress");
-            reloadPrivate(items, "getShards");
-            reloadPrivate(items, "xpBoost");
-            reloadPrivate(items, "recipeUnlocks");
-            reloadPrivate(items, "blueprintUnlocks");
-            reloadPrivate(items, "getAreas");
-            reloadPrivate(items, "getCodex");
-            reloadPrivate(items, "ranks");
-            invalidateStorageCache(items, id);
-            refreshAetherionXpBar(items, player);
+            applyCoinsInMemory(id, plain);
+            de.aetherion.core.api.ProgressAccess progress = de.aetherion.core.api.AetherServices.progress();
+            if (progress != null) {
+                progress.reloadAfterImport(player);
+            }
         }
 
-        Plugin mobs = Bukkit.getPluginManager().getPlugin("AetherMobs");
-        if (mobs != null && plain.get("file:pets") instanceof String rawPets) {
-            writeString(new File(mobs.getDataFolder(), "pets/" + key + ".yml"), rawPets);
-            reloadPets(mobs, id);
-            // Join hooks may have already spawned the local (stale) pet — re-equip from imported file.
-            Bukkit.getScheduler().runTaskLater(plugin, () -> reequipPet(mobs, player), 2L);
-            Bukkit.getScheduler().runTaskLater(plugin, () -> reequipPet(mobs, player), 12L);
+        de.aetherion.core.api.PetAccess pets = de.aetherion.core.api.AetherServices.pets();
+        if (pets != null && plain.get("file:pets") instanceof String rawPets) {
+            Plugin mobs = Bukkit.getPluginManager().getPlugin("AetherMobs");
+            if (mobs != null) {
+                writeString(new File(mobs.getDataFolder(), "pets/" + key + ".yml"), rawPets);
+            }
+            pets.reloadAfterImport(id);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> pets.reequip(player), 2L);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> pets.reequip(player), 12L);
         }
 
         Plugin quests = Bukkit.getPluginManager().getPlugin("AetherionQuests");
@@ -290,263 +231,21 @@ public final class NetworkPlayerDataSync {
         if (player == null) {
             return;
         }
-        Plugin items = Bukkit.getPluginManager().getPlugin("AetherionItems");
-        if (items == null || !items.isEnabled()) {
-            return;
-        }
-        try {
-            Object listener = items.getClass().getMethod("getLoadoutListener").invoke(items);
-            if (listener == null) {
-                return;
-            }
-            try {
-                Method reset = listener.getClass().getMethod("resetRuntimeAfterNetworkSync", Player.class);
-                reset.invoke(listener, player);
-                return;
-            } catch (NoSuchMethodException ignored) {
-                // older jar — fall through to field scrub
-            }
-            for (Field field : listener.getClass().getDeclaredFields()) {
-                if (!Map.class.isAssignableFrom(field.getType())
-                        && !java.util.Set.class.isAssignableFrom(field.getType())) {
-                    continue;
-                }
-                String name = field.getName().toLowerCase();
-                if (!name.contains("loadout") && !name.contains("applying") && !name.contains("edit")) {
-                    continue;
-                }
-                field.setAccessible(true);
-                Object value = field.get(listener);
-                if (value instanceof Map<?, ?> map) {
-                    map.remove(player.getUniqueId());
-                } else if (value instanceof java.util.Set<?> set) {
-                    set.remove(player.getUniqueId());
-                }
-            }
-        } catch (Exception ex) {
-            plugin.getLogger().warning("Loadout runtime reset failed: " + ex.getMessage());
+        de.aetherion.core.api.ProgressAccess progress = de.aetherion.core.api.AetherServices.progress();
+        if (progress != null) {
+            progress.resetLoadoutRuntime(player);
         }
     }
 
-    private void invalidateStorageCache(Plugin items, UUID id) {
-        try {
-            Object storage = items.getClass().getMethod("getStorageInventory").invoke(items);
-            if (storage == null) {
-                return;
-            }
-            Field field = storage.getClass().getDeclaredField("storageContents");
-            field.setAccessible(true);
-            Object map = field.get(storage);
-            if (map instanceof Map<?, ?> m) {
-                m.remove(id);
-            }
-            // force reload from disk next open
-            Method load = storage.getClass().getDeclaredMethod("loadStorage", UUID.class);
-            load.setAccessible(true);
-            load.invoke(storage, id);
-        } catch (Exception ex) {
-            plugin.getLogger().warning("Storage cache invalidate failed: " + ex.getMessage());
-        }
-        invalidateLoadoutCache(items, id);
-    }
-
-    private void invalidateLoadoutCache(Plugin items, UUID id) {
-        try {
-            Object listener = items.getClass().getMethod("getLoadoutListener").invoke(items);
-            if (listener == null) {
-                return;
-            }
-            for (Field field : listener.getClass().getDeclaredFields()) {
-                String typeName = field.getType().getName();
-                if (!typeName.contains("LoadoutManager") && !Map.class.isAssignableFrom(field.getType())
-                        && !java.util.Set.class.isAssignableFrom(field.getType())) {
-                    continue;
-                }
-                field.setAccessible(true);
-                Object value = field.get(listener);
-                if (value instanceof Map<?, ?> map) {
-                    map.remove(id);
-                    continue;
-                }
-                if (value instanceof java.util.Set<?> set) {
-                    set.remove(id);
-                    continue;
-                }
-                if (value != null && typeName.contains("LoadoutManager")) {
-                    for (Field mf : value.getClass().getDeclaredFields()) {
-                        if (!Map.class.isAssignableFrom(mf.getType())) {
-                            continue;
-                        }
-                        mf.setAccessible(true);
-                        Object map = mf.get(value);
-                        if (map instanceof Map<?, ?> m) {
-                            m.remove(id);
-                        }
-                    }
-                }
-            }
-        } catch (Exception ex) {
-            plugin.getLogger().warning("Loadout cache invalidate failed: " + ex.getMessage());
-        }
-    }
-
-    private void reloadPets(Plugin mobs, UUID id) {
-        try {
-            // Drop cached collection so next access reloads from file
-            for (Field field : mobs.getClass().getDeclaredFields()) {
-                if (Map.class.isAssignableFrom(field.getType())
-                        && field.getName().toLowerCase().contains("pet")) {
-                    field.setAccessible(true);
-                    Object map = field.get(mobs);
-                    if (map instanceof Map<?, ?> m) {
-                        m.remove(id);
-                    }
-                }
-            }
-            Method mark = null;
-            try {
-                mark = mobs.getClass().getMethod("markPetsDirty", UUID.class);
-            } catch (NoSuchMethodException ignored) {
-            }
-            // Touch-load
-            for (Method m : mobs.getClass().getMethods()) {
-                if (m.getParameterCount() == 1 && m.getParameterTypes()[0] == UUID.class
-                        && m.getName().toLowerCase().contains("pet")
-                        && m.getName().toLowerCase().contains("collection")) {
-                    m.invoke(mobs, id);
-                    break;
-                }
-            }
-        } catch (Exception ex) {
-            plugin.getLogger().warning("Pet reload failed: " + ex.getMessage());
-        }
-    }
-
-    private void reequipPet(Plugin mobs, Player player) {
-        if (mobs == null || player == null || !player.isOnline()) {
-            return;
-        }
-        try {
-            Object active = mobs.getClass().getMethod("getActivePetManager").invoke(mobs);
-            Object collection = mobs.getClass().getMethod("getPetCollection", UUID.class)
-                    .invoke(mobs, player.getUniqueId());
-            if (active == null || collection == null) {
-                return;
-            }
-            // Unequip current entity if any, then equip from reloaded collection.
-            try {
-                active.getClass().getMethod("unequip", Player.class).invoke(active, player);
-            } catch (NoSuchMethodException ignored) {
-                try {
-                    active.getClass().getMethod("removeActivePet", Player.class).invoke(active, player);
-                } catch (NoSuchMethodException ignored2) {
-                }
-            }
-            Object equipped = collection.getClass().getMethod("getEquippedPet").invoke(collection);
-            if (equipped == null) {
-                return;
-            }
-            for (Method m : active.getClass().getMethods()) {
-                if (!"equip".equals(m.getName()) || m.getParameterCount() != 2) {
-                    continue;
-                }
-                if (m.getParameterTypes()[0] == Player.class
-                        && m.getParameterTypes()[1].isInstance(equipped)) {
-                    m.invoke(active, player, equipped);
-                    return;
-                }
-            }
-        } catch (Exception ex) {
-            plugin.getLogger().warning("Pet re-equip after transfer failed: " + ex.getMessage());
-        }
-    }
-
-    private void refreshAetherionXpBar(Plugin items, Player player) {
-        try {
-            Object skills = items.getClass().getMethod("getSkills").invoke(items);
-            if (skills == null || player == null || !player.isOnline()) {
-                return;
-            }
-            // Find registered AetherionXpBarSync instance on the plugin and sync.
-            for (Field field : items.getClass().getDeclaredFields()) {
-                if (!field.getType().getName().contains("AetherionXpBarSync")
-                        && !field.getType().getName().toLowerCase().contains("xpbar")) {
-                    continue;
-                }
-                field.setAccessible(true);
-                Object sync = field.get(items);
-                if (sync == null) {
-                    continue;
-                }
-                try {
-                    sync.getClass().getMethod("sync", Player.class).invoke(sync, player);
-                    return;
-                } catch (NoSuchMethodException ignored) {
-                }
-            }
-            // Fallback: set vanilla bar from accountXp directly.
-            Object xpObj = skills.getClass().getMethod("accountXp", Player.class).invoke(skills, player);
-            long xp = xpObj instanceof Number n ? n.longValue() : Long.parseLong(String.valueOf(xpObj));
-            Class<?> lvl = Class.forName("de.aetherion.items.skill.AetherionLevel");
-            int level = ((Number) lvl.getMethod("of", long.class).invoke(null, xp)).intValue();
-            int max = ((Number) lvl.getField("MAX_LEVEL").get(null)).intValue();
-            float progress = 1f;
-            if (level < max) {
-                long into = ((Number) lvl.getMethod("intoLevel", long.class).invoke(null, xp)).longValue();
-                long need = ((Number) lvl.getMethod("xpToNext", int.class).invoke(null, level)).longValue();
-                progress = need <= 0L ? 0f : Math.min(0.999f, (float) into / (float) need);
-            }
-            player.setLevel(level);
-            player.setExp(progress);
-        } catch (Exception ex) {
-            plugin.getLogger().warning("Aetherion XP bar refresh failed: " + ex.getMessage());
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private void applyCoinsInMemory(Plugin items, UUID id, Map<?, ?> data) {
+    private void applyCoinsInMemory(UUID id, Map<String, Object> data) {
         Object raw = data.get("yaml:coins.yml");
         Map<String, Object> map = toPlainMap(raw);
         if (map.isEmpty()) {
             return;
         }
-        try {
-            Object coins = items.getClass().getMethod("getCoins").invoke(items);
-            if (coins == null) {
-                return;
-            }
-            setUuidLongMap(coins, "balances", id, map.get("players." + id));
-            setUuidLongMap(coins, "lifetime", id, map.get("lifetime." + id));
-        } catch (Exception ex) {
-            plugin.getLogger().warning("Coin memory apply failed: " + ex.getMessage());
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private void setUuidLongMap(Object service, String fieldName, UUID id, Object value) throws Exception {
-        if (value == null) {
-            return;
-        }
-        long amount = value instanceof Number n ? n.longValue() : Long.parseLong(String.valueOf(value));
-        Field field = service.getClass().getDeclaredField(fieldName);
-        field.setAccessible(true);
-        Object mapObj = field.get(service);
-        if (mapObj instanceof ConcurrentHashMap<?, ?> map) {
-            ((ConcurrentHashMap<UUID, Long>) map).put(id, amount);
-        }
-    }
-
-    private void reloadPrivate(Plugin items, String getter) {
-        try {
-            Object service = items.getClass().getMethod(getter).invoke(items);
-            if (service == null) {
-                return;
-            }
-            Method load = service.getClass().getDeclaredMethod("load");
-            load.setAccessible(true);
-            load.invoke(service);
-        } catch (Exception ex) {
-            plugin.getLogger().warning("Reload " + getter + " failed: " + ex.getMessage());
+        de.aetherion.core.api.ProgressAccess progress = de.aetherion.core.api.AetherServices.progress();
+        if (progress != null) {
+            progress.applyImportedCoins(id, map);
         }
     }
 
@@ -598,52 +297,6 @@ public final class NetworkPlayerDataSync {
             Files.writeString(file.toPath(), raw, StandardCharsets.UTF_8);
         } catch (Exception ex) {
             plugin.getLogger().warning("Could not write " + file.getName() + ": " + ex.getMessage());
-        }
-    }
-
-    private void invoke(Plugin target, String getter, String method) {
-        try {
-            Object service = target.getClass().getMethod(getter).invoke(target);
-            if (service != null) {
-                service.getClass().getMethod(method).invoke(service);
-            }
-        } catch (Exception ignored) {
-        }
-    }
-
-    private void invoke(Plugin target, String getter, String method, Object arg) {
-        try {
-            Object service = target.getClass().getMethod(getter).invoke(target);
-            if (service == null) {
-                return;
-            }
-            for (Method m : service.getClass().getMethods()) {
-                if (m.getName().equals(method) && m.getParameterCount() == 1
-                        && m.getParameterTypes()[0].isInstance(arg)) {
-                    m.invoke(service, arg);
-                    return;
-                }
-            }
-        } catch (Exception ignored) {
-        }
-    }
-
-    private void invokeNoArg(Plugin target, String method, Object arg) {
-        try {
-            for (Method m : target.getClass().getMethods()) {
-                if (!m.getName().equals(method)) {
-                    continue;
-                }
-                if (arg == null && m.getParameterCount() == 0) {
-                    m.invoke(target);
-                    return;
-                }
-                if (arg != null && m.getParameterCount() == 1 && m.getParameterTypes()[0].isInstance(arg)) {
-                    m.invoke(target, arg);
-                    return;
-                }
-            }
-        } catch (Exception ignored) {
         }
     }
 }

@@ -925,15 +925,13 @@ public final class MinionService {
     }
 
     private ItemStack processedItem(QuarryType type, QuarryMinion.Processor processor) {
-        try {
-            Class<?> resourceClass = Class.forName("de.aetherion.items.economy.CompressedResource");
-            Object resource = resourceClass.getMethod("valueOf", String.class).invoke(null, type.name());
-            String method = processor == QuarryMinion.Processor.COMPACTED ? "compacted" : "compressed";
-            Object created = resourceClass.getMethod(method).invoke(resource);
-            return created instanceof ItemStack stack ? stack : null;
-        } catch (ReflectiveOperationException ignored) {
+        de.aetherion.core.api.ItemFactoryAccess items = de.aetherion.core.api.AetherServices.items();
+        if (items == null || type == null) {
             return null;
         }
+        return processor == QuarryMinion.Processor.COMPACTED
+                ? items.compacted(type.name())
+                : items.compressed(type.name());
     }
 
     private int giveAmount(Player player, ItemStack template, int amount) {

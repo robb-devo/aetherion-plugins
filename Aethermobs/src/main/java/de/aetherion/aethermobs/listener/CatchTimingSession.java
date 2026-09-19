@@ -1,6 +1,7 @@
 package de.aetherion.aethermobs.listener;
 
 import de.aetherion.aethermobs.pet.PetEntity;
+import de.aetherion.core.api.QuestBars;
 
 import org.bukkit.Bukkit;
 import org.bukkit.boss.BarColor;
@@ -36,7 +37,7 @@ final class CatchTimingSession {
         this.playerId = player.getUniqueId();
         this.pet = pet;
         this.baseChance = baseChance;
-        QuestBossBarHook.suppress(player);
+        QuestBars.suppress(player);
         this.bar = Bukkit.createBossBar(title(false), BarColor.PURPLE, BarStyle.SOLID);
         this.bar.setProgress(1.0d);
         this.bar.addPlayer(player);
@@ -90,9 +91,9 @@ final class CatchTimingSession {
         Player player = Bukkit.getPlayer(playerId);
         if (player != null) {
             bar.removePlayer(player);
-            QuestBossBarHook.unsuppress(player);
+            QuestBars.unsuppress(player);
         } else {
-            QuestBossBarHook.unsuppress(playerId);
+            QuestBars.unsuppress(playerId);
         }
     }
 

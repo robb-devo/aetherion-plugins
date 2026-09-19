@@ -1912,11 +1912,9 @@ public class PetMenu implements Listener {
                         1.4f
                 );
 
-                try {
-                    Class.forName("de.aetherion.items.util.QuestProgressHook")
-                            .getMethod("noteUsed", org.bukkit.entity.Player.class, String.class)
-                            .invoke(null, player, "AETHER_PET");
-                } catch (Throwable ignored) {
+                de.aetherion.core.api.QuestProgressAccess quests = de.aetherion.core.api.AetherServices.quests();
+                if (quests != null) {
+                    quests.noteUsed(player, "AETHER_PET");
                 }
             }
 

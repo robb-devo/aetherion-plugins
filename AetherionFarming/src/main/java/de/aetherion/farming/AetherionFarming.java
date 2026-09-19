@@ -21,6 +21,7 @@ public class AetherionFarming extends JavaPlugin {
     private FarmPortalService portals;
     private FarmIslandAmbience ambience;
     private NamespacedKey portalToolKey;
+    private de.aetherion.core.api.FarmAccess farmAccess;
 
     @Override
     public void onEnable() {
@@ -67,6 +68,8 @@ public class AetherionFarming extends JavaPlugin {
         } else {
             getLogger().warning("AetherionItems missing — bird scare event disabled.");
         }
+        farmAccess = new de.aetherion.farming.api.FarmAccessImpl();
+        de.aetherion.core.api.AetherServices.registerFarming(farmAccess);
     }
 
     @Override
@@ -74,6 +77,10 @@ public class AetherionFarming extends JavaPlugin {
         if (birdScare != null) {
             birdScare.shutdown();
             birdScare = null;
+        }
+        if (farmAccess != null) {
+            de.aetherion.core.api.AetherServices.clearFarming(farmAccess);
+            farmAccess = null;
         }
         getLogger().info("AetherionFarming beendet!");
     }

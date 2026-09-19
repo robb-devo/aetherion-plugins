@@ -58,6 +58,7 @@ public final class AetherMobs extends JavaPlugin implements Listener {
     private PetSkillManager petSkillManager;
     private Object petStatProvider;
     private PetExperienceListener petExperienceListener;
+    private de.aetherion.core.api.PetAccess petAccess;
 
     private final Map<UUID, PlayerPetCollection> playerPetCollections =
             new ConcurrentHashMap<>();
@@ -801,6 +802,8 @@ public final class AetherMobs extends JavaPlugin implements Listener {
         getLogger().info(
                 "AetherMobs has been enabled!"
         );
+        petAccess = new de.aetherion.aethermobs.api.PetAccessImpl(this);
+        de.aetherion.core.api.AetherServices.registerPets(petAccess);
     }
 
 
@@ -858,6 +861,10 @@ public final class AetherMobs extends JavaPlugin implements Listener {
 
         dirtyPetPlayers.clear();
         playerPetCollections.clear();
+        if (petAccess != null) {
+            de.aetherion.core.api.AetherServices.clearPets(petAccess);
+            petAccess = null;
+        }
 
 
         /*
@@ -1002,6 +1009,60 @@ public final class AetherMobs extends JavaPlugin implements Listener {
     public void markPetsDirty(UUID playerId) {
         if (playerId != null) {
             dirtyPetPlayers.add(playerId);
+        }
+    }
+
+    public void flushPetsForNetwork(UUID id) {
+        if (id == null) {
+            return;
+        }
+        try {
+            PlayerPetCollection collection = getPetCollection(id);
+            boolean saved = false;
+            if (petDataManager != null && collection != null) {
+                petDataManager.save(collection);
+                saved = true;
+            }
+            if (!saved) {
+                markPetsDirty(id);
+                saveDirtyPets();
+            }
+        } catch (Exception ex) {
+            getLogger().warning("Pet flush: " + ex.getMessage());
+        }
+    }
+
+    public void reloadPetsAfterImport(UUID id) {
+        if (id == null) {
+            return;
+        }
+        try {
+            playerPetCollections.remove(id);
+            markPetsDirty(id);
+            getPetCollection(id);
+        } catch (Exception ex) {
+            getLogger().warning("Pet reload failed: " + ex.getMessage());
+        }
+    }
+
+    public void reequipPetAfterImport(Player player) {
+        if (player == null || !player.isOnline()) {
+            return;
+        }
+        try {
+            ActivePetManager active = getActivePetManager();
+            PlayerPetCollection collection = getPetCollection(player.getUniqueId());
+            if (active == null || collection == null) {
+                return;
+            }
+            active.unequip(player);
+            PetInstance equipped = collection.getEquippedPet();
+            if (equipped == null) {
+                return;
+            }
+            active.equip(player, equipped);
+        } catch (Exception ex) {
+            getLogger().warning("Pet re-equip after transfer failed: " + ex.getMessage());
         }
     }
 

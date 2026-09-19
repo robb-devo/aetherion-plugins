@@ -376,35 +376,32 @@ public final class FarmPortalService {
         if (player == null) {
             return;
         }
+        de.aetherion.core.api.HubAccess hub = de.aetherion.core.api.AetherServices.hub();
+        if (hub == null) {
+            return;
+        }
+        // HubService.setLocation(String, Location, boolean) does not exist — keep the
+        // historical no-op so island landing is not written as a spawn (gameplay-neutral).
         try {
             Object hubPlugin = Bukkit.getPluginManager().getPlugin("AetherionHub");
-            if (hubPlugin == null) {
-                return;
-            }
-            Object hub = hubPlugin.getClass().getMethod("getHub").invoke(hubPlugin);
-            if (hub == null) {
-                return;
-            }
-            // Ensure spawn location points at island landing.
-            if (land != null && land.getWorld() != null) {
-                try {
-                    hub.getClass().getMethod("setLocation", String.class, Location.class, boolean.class)
-                            .invoke(hub, "farm_isle", land, true);
-                } catch (Throwable ignored) {
+            if (hubPlugin != null && land != null && land.getWorld() != null) {
+                Object service = hubPlugin.getClass().getMethod("getHub").invoke(hubPlugin);
+                if (service != null) {
+                    try {
+                        service.getClass().getMethod("setLocation", String.class, Location.class, boolean.class)
+                                .invoke(service, "farm_isle", land, true);
+                    } catch (Throwable ignored) {
+                    }
                 }
             }
-            Boolean unlocked = (Boolean) hub.getClass()
-                    .getMethod("isUnlocked", Player.class, String.class)
-                    .invoke(hub, player, "farm_isle");
-            if (Boolean.TRUE.equals(unlocked)) {
-                return;
-            }
-            hub.getClass().getMethod("unlockNew", java.util.UUID.class, String.class)
-                    .invoke(hub, player.getUniqueId(), "farm_isle");
-            player.sendMessage("§b✦ §eNew area: §fFarm Isle§e.");
-            player.sendMessage("§7Teleport unlocked — Manager → Teleports.");
         } catch (Throwable ignored) {
         }
+        if (hub.isUnlocked(player, "farm_isle")) {
+            return;
+        }
+        hub.unlockNew(player.getUniqueId(), "farm_isle");
+        player.sendMessage("§b✦ §eNew area: §fFarm Isle§e.");
+        player.sendMessage("§7Teleport unlocked — Manager → Teleports.");
     }
 
     private static BlockFace yawToCardinal(float yaw) {

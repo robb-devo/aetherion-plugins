@@ -1,5 +1,6 @@
 package de.aetherion.farming;
 
+import de.aetherion.core.api.QuestBars;
 import de.aetherion.items.manager.ActiveEquipmentStats;
 import de.aetherion.items.manager.StatProvider;
 import de.aetherion.items.model.ItemCapability;
@@ -502,7 +503,7 @@ public final class BirdScareEvent implements Listener, StatProvider, Runnable {
                     BossBar.Overlay.NOTCHED_20
             );
             bars.put(player.getUniqueId(), bar);
-            QuestBossBarHook.suppress(player);
+            QuestBars.suppress(player);
             player.showBossBar(bar);
             return;
         }
@@ -522,7 +523,7 @@ public final class BirdScareEvent implements Listener, StatProvider, Runnable {
                 player.hideBossBar(bar);
             }
         }
-        QuestBossBarHook.unsuppress(playerId);
+        QuestBars.unsuppress(playerId);
         viewers.remove(playerId);
     }
 
