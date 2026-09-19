@@ -873,18 +873,25 @@ public class RecipeRegistry {
         /*
          * =====================================================
          * MINING PICKAXE V / MYTHIC
+         * 1 previous pick + 1 Compacted Diamond + 3 Compacted Redstone.
+         * Was 4+4 Compacted (≈3× the T4 pick's ingredient value).
          * =====================================================
          */
 
-        registerDualWrapUpgrade(
-                "mining_pickaxe_5",
-                RecipeCategory.MINING,
-                customItem.createMiningPickaxe5(),
-                Rarity.MYTHIC,
-                customItem.createMiningPickaxe4(),
-                CompressedResource.DIAMOND.compacted(),
-                CompressedResource.REDSTONE.compacted()
-        );
+        {
+            Map<Character, ItemStack> pick5 = new LinkedHashMap<>();
+            pick5.put('R', CompressedResource.REDSTONE.compacted());
+            pick5.put('P', customItem.createMiningPickaxe4());
+            pick5.put('D', CompressedResource.DIAMOND.compacted());
+            registerSimple(
+                    "mining_pickaxe_5",
+                    RecipeCategory.MINING,
+                    customItem.createMiningPickaxe5(),
+                    Rarity.MYTHIC,
+                    List.of(" R ", "RPR", " D "),
+                    pick5
+            );
+        }
 
         registerSimple(
                 "vein_siphon",
@@ -1724,19 +1731,19 @@ public class RecipeRegistry {
                 catcher.gaff(1), new ItemStack(Material.FEATHER));
         registerPlusUpgrade(
                 "catcher_helmet_3", RecipeCategory.AETHER_MOBS, catcher.helmet(3), Rarity.LEGENDARY,
-                catcher.helmet(2), CompressedResource.FEATHER.compressed());
+                catcher.helmet(2), CompressedResource.FEATHER.compacted());
         registerPlusUpgrade(
                 "catcher_chestplate_3", RecipeCategory.AETHER_MOBS, catcher.chestplate(3), Rarity.LEGENDARY,
-                catcher.chestplate(2), CompressedResource.FEATHER.compressed());
+                catcher.chestplate(2), CompressedResource.FEATHER.compacted());
         registerPlusUpgrade(
                 "catcher_leggings_3", RecipeCategory.AETHER_MOBS, catcher.leggings(3), Rarity.LEGENDARY,
-                catcher.leggings(2), CompressedResource.FEATHER.compressed());
+                catcher.leggings(2), CompressedResource.FEATHER.compacted());
         registerPlusUpgrade(
                 "catcher_boots_3", RecipeCategory.AETHER_MOBS, catcher.boots(3), Rarity.LEGENDARY,
-                catcher.boots(2), CompressedResource.FEATHER.compressed());
+                catcher.boots(2), CompressedResource.FEATHER.compacted());
         registerPlusUpgrade(
                 "catcher_gaff_3", RecipeCategory.AETHER_MOBS, catcher.gaff(3), Rarity.LEGENDARY,
-                catcher.gaff(2), CompressedResource.FEATHER.compressed());
+                catcher.gaff(2), CompressedResource.FEATHER.compacted());
 
         registerResourceCompression();
         registerSacks();
@@ -1887,15 +1894,15 @@ public class RecipeRegistry {
                     obtained
             );
 
-            ItemStack sixteenCompressed = resource.compressed();
-            sixteenCompressed.setAmount(16);
+            ItemStack thirtyTwoCompressed = resource.compressed();
+            thirtyTwoCompressed.setAmount(32);
             registerSimple(
                     resource.compactedId(),
                     RecipeCategory.RESOURCES,
                     resource.compacted(),
                     Rarity.RARE,
                     List.of("CC", "CC"),
-                    Map.of('C', sixteenCompressed),
+                    Map.of('C', thirtyTwoCompressed),
                     obtained
             );
 
@@ -2085,7 +2092,7 @@ public class RecipeRegistry {
                 RecipeCategory.ARMOR,
                 gear.createCompactedDiamondChestplate(),
                 Rarity.LEGENDARY,
-                List.of("D D", "DDD", "DDD"),
+                List.of("DD", "DD"),
                 Map.of('D', CompressedResource.DIAMOND.compacted())
         );
         {
@@ -2098,7 +2105,7 @@ public class RecipeRegistry {
                     RecipeCategory.COMBAT,
                     gear.createCompactedDiamondSword(),
                     Rarity.LEGENDARY,
-                    List.of(" D ", " N ", " S "),
+                    List.of(" D ", " D ", "DNS"),
                     diamondSword
             );
         }
@@ -2129,25 +2136,31 @@ public class RecipeRegistry {
                     scythe
             );
         }
-        registerSimple(
-                "compacted_iron_pickaxe",
-                RecipeCategory.MINING,
-                gear.createCompactedIronPickaxe(),
-                Rarity.EPIC,
-                List.of("III", " S ", " S "),
-                createMixedIngredients('I', CompressedResource.RAW_IRON.compacted(), 'S', stick)
-        );
+        {
+            Map<Character, ItemStack> ironPick = new LinkedHashMap<>();
+            ironPick.put('I', CompressedResource.RAW_IRON.compressed());
+            ironPick.put('P', gear.createCompressedStonePickaxe());
+            ironPick.put('S', stick);
+            registerSimple(
+                    "compacted_iron_pickaxe",
+                    RecipeCategory.MINING,
+                    gear.createCompactedIronPickaxe(),
+                    Rarity.EPIC,
+                    List.of(" I ", "IPI", " S "),
+                    ironPick
+            );
+        }
         {
             Map<Character, ItemStack> diamondPick = new LinkedHashMap<>();
             diamondPick.put('D', CompressedResource.DIAMOND.compacted());
-            diamondPick.put('C', CompressedResource.COBBLESTONE.compacted());
+            diamondPick.put('P', gear.createCompactedIronPickaxe());
             diamondPick.put('S', stick);
             registerSimple(
                     "compacted_diamond_pickaxe",
                     RecipeCategory.MINING,
                     gear.createCompactedDiamondPickaxe(),
                     Rarity.LEGENDARY,
-                    List.of("DDD", " C ", " S "),
+                    List.of("DD ", " P ", " S "),
                     diamondPick
             );
         }

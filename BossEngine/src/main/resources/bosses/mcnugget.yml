@@ -150,19 +150,27 @@ loot:
   rank-loot:
     1:
       - source: AETHERION
-        item-id: aetherblade
+        item-id: compressed_coal
+        amount: 8
+        chance: 1.0
+      - source: AETHERION
+        item-id: random_booster
         amount: 1
-        chance: 0.08
+        chance: 1.0
     2:
       - source: AETHERION
-        item-id: aetherblade
+        item-id: compressed_coal
+        amount: 5
+        chance: 1.0
+      - source: AETHERION
+        item-id: random_booster
         amount: 1
-        chance: 0.04
+        chance: 0.55
     3:
       - source: AETHERION
-        item-id: aetherblade
-        amount: 1
-        chance: 0.02
+        item-id: compressed_coal
+        amount: 3
+        chance: 1.0
 
   top-damagers:
     count: 3

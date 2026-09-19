@@ -7,8 +7,9 @@ public final class QuarryMinion {
 
     public static final String COBBLE = QuarryType.COBBLESTONE.id();
     public static final int MAX_LEVEL = QuarryType.MAX_LEVEL;
+    /** Same 128/128 chain as EconomyCurve / Craft / Pocket Forge. */
     public static final int COMPRESS_UNIT = 128;
-    public static final int COMPACT_UNIT = 128 * 64;
+    public static final int COMPACT_UNIT = 128 * 128;
 
     public enum Processor {
         NONE,

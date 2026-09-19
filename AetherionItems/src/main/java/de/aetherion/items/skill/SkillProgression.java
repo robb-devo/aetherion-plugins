@@ -16,10 +16,10 @@ public final class SkillProgression {
     public static final double PER_LEVEL_AFTER_50 = 0.068d;
     public static final double PER_RARITY = 0.14d;
 
-    /** Compact proc chance at skill level 1. */
-    public static final double COMPACT_CHANCE_BASE = 0.012d;
-    /** Compact proc chance at skill level {@link #MAX_LEVEL} — kept low on purpose. */
-    public static final double COMPACT_CHANCE_MAX = 0.055d;
+    /** Compact proc chance at skill level 1 — modest early helper. */
+    public static final double COMPACT_CHANCE_BASE = 0.006d;
+    /** Compact proc chance at skill level {@link #MAX_LEVEL} — rewarding, not a printer. */
+    public static final double COMPACT_CHANCE_MAX = 0.028d;
 
     private SkillProgression() {
     }
@@ -58,7 +58,7 @@ public final class SkillProgression {
     }
 
     /**
-     * Skill compact chance: ~1% at level 1, ~5% at level 100.
+     * Skill compact chance: ~0.6% at level 1, ~2.8% at level 100.
      * Kept flatter than {@link #effectMultiplier(int)} so compact stays a gentle helper.
      */
     public static double compactChance(int level) {

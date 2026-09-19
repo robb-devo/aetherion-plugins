@@ -18,8 +18,8 @@ import java.util.List;
 
 public final class PocketForgeListener implements Listener {
 
-    private static final int VANILLA_PER_COMPRESSED = 128;
-    private static final int COMPRESSED_PER_COMPACTED = 64;
+    private static final int VANILLA_PER_COMPRESSED = de.aetherion.items.economy.EconomyCurve.RAW_PER_COMPRESSED;
+    private static final int COMPRESSED_PER_COMPACTED = de.aetherion.items.economy.EconomyCurve.COMPRESSED_PER_COMPACTED;
 
     private final ItemManager items;
 

@@ -722,7 +722,7 @@ public enum CompressedResource {
             meta.setLore(lore(
                     "§7✦ §bRARE",
                     "",
-                    "§716 Compressed " + pretty(key) + ",",
+                    "§7128 Compressed " + pretty(key) + ",",
                     compactedHash != null && !compactedHash.isBlank()
                             ? "§7forged into one crate."
                             : "§7forged into one enchanted block.",

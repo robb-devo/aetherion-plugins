@@ -264,10 +264,10 @@ items["mining_pickaxe_4"] = craft(
     items["mining_pickaxe_3"] + 4 * D("raw_copper") + 4 * D("coal"), MARGIN[4]
 )
 items["mining_pickaxe_5"] = craft(
-    items["mining_pickaxe_4"] + 4 * D("diamond") + 4 * D("redstone"), MARGIN[5]
+    items["mining_pickaxe_4"] + D("diamond") + 3 * D("redstone"), MARGIN[5]
 )
 items["vein_siphon"] = craft(
-    items["mining_pickaxe_5"] + 4 * D("diamond") + 4 * D("emerald"), MARGIN[5]
+    items["mining_pickaxe"] + 4 * V("IRON_INGOT") + 4 * V("REDSTONE"), MARGIN[3]
 )
 
 # Farming
@@ -394,7 +394,9 @@ for k, (prev, mat) in charm_t3.items():
 # Special charms
 items["charm_shiny"] = craft(4 * C("diamond") + 4 * C("emerald"), CHARM[2])
 items["charm_forge"] = craft(4 * D("raw_iron") + 4 * C("coal"), CHARM[3])
-items["charm_estate"] = craft(4 * D("emerald") + 4 * C("raw_gold"), CHARM[3])
+items["charm_estate"] = craft(
+    V("LEATHER") + V("BONE") + V("GOLD_INGOT") + 8, CHARM[1]
+)
 
 # Catcher set T1–3
 catcher_t1 = {
@@ -407,9 +409,9 @@ for k, n in catcher_t1.items():
     items[k] = craft(n * V("STRING") + n * V("IRON_INGOT") // 2, MARGIN[1])
 items["catcher_gaff"] = craft(3 * V("IRON_INGOT") + 2 * V("STICK") + V("STRING"), MARGIN[1])
 for piece in list(catcher_t1) + ["catcher_gaff"]:
-    items[f"{piece}_2"] = craft(items[piece] + 8 * C("string"), MARGIN[3])
+    items[f"{piece}_2"] = craft(items[piece] + 8 * V("FEATHER"), MARGIN[2])
 for piece in list(catcher_t1) + ["catcher_gaff"]:
-    items[f"{piece}_3"] = craft(items[f"{piece}_2"] + 8 * D("leather"), MARGIN[4])
+    items[f"{piece}_3"] = craft(items[f"{piece}_2"] + 8 * D("feather"), MARGIN[4])
 
 # Boosters: 9 blocks (carrot = 9×32)
 boosters = {
@@ -442,17 +444,19 @@ items["compacted_midas_dagger"] = craft(
 )
 items["redstone_infused_boots"] = craft(6 * D("redstone") + V("IRON_BOOTS"), MATERIAL)
 items["lapis_pendant"] = craft(8 * C("lapis") + V("AMETHYST_CLUSTER"), MATERIAL)
-items["compacted_diamond_chestplate"] = craft(8 * D("diamond"), MATERIAL)
+items["compacted_diamond_chestplate"] = craft(4 * D("diamond"), MATERIAL)
 items["compacted_diamond_sword"] = craft(
-    D("diamond") + V("NETHERITE_SCRAP") + V("STICK"), MATERIAL
+    3 * D("diamond") + V("NETHERITE_SCRAP") + V("STICK"), MATERIAL
 )
 items["emerald_crown"] = craft(5 * D("emerald") + 2 * V("GOLD_INGOT"), MATERIAL)
 items["compacted_emerald_scythe"] = craft(
     2 * D("emerald") + D("diamond") + V("STICK"), MATERIAL
 )
-items["compacted_iron_pickaxe"] = craft(3 * D("raw_iron") + 2 * V("STICK"), MATERIAL)
+items["compacted_iron_pickaxe"] = craft(
+    items["compressed_stone_pickaxe"] + 3 * C("raw_iron") + V("STICK"), MATERIAL
+)
 items["compacted_diamond_pickaxe"] = craft(
-    3 * D("diamond") + D("cobblestone") + V("STICK"), MATERIAL
+    items["compacted_iron_pickaxe"] + 2 * D("diamond") + V("STICK"), MATERIAL
 )
 
 # Blueprint stones

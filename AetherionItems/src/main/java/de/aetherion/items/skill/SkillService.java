@@ -503,10 +503,10 @@ public final class SkillService implements StatProvider, Listener {
 
     private static double compactedChanceForTier(int rarityTier) {
         if (rarityTier >= 5) {
-            return 0.10d;
+            return 0.05d;
         }
         if (rarityTier >= 4) {
-            return 0.06d;
+            return 0.03d;
         }
         return 0.0d;
     }

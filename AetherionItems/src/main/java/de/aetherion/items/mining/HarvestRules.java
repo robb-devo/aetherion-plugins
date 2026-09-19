@@ -166,7 +166,7 @@ public final class HarvestRules {
             case GOLD_ORE, DEEPSLATE_GOLD_ORE, NETHER_QUARTZ_ORE -> 42;
             case LAPIS_ORE, DEEPSLATE_LAPIS_ORE -> 48;
             case AMETHYST_CLUSTER -> 55;
-            case DIAMOND_ORE, DEEPSLATE_DIAMOND_ORE -> 95;
+            case DIAMOND_ORE, DEEPSLATE_DIAMOND_ORE -> 80;
             case EMERALD_ORE, DEEPSLATE_EMERALD_ORE -> 140;
             case ANCIENT_DEBRIS -> 250;
             case COAL_BLOCK -> 22;

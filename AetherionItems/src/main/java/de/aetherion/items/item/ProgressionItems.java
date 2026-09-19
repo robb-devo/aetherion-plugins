@@ -21,7 +21,7 @@ import java.util.List;
 
 public final class ProgressionItems {
 
-    public static final int STAT_REV = 1;
+    public static final int STAT_REV = 2;
 
     private final ItemManager items;
 
@@ -100,9 +100,9 @@ public final class ProgressionItems {
 
     public ItemStack createCompressedStonePickaxe() {
         ItemStats stats = new ItemStats();
-        stats.setMiningPower(12);
-        stats.setFortune(16);
-        stats.setSpread(1);
+        stats.setMiningPower(16);
+        stats.setFortune(28);
+        stats.setSpread(2);
         return tool(
                 Material.STONE_PICKAXE,
                 "compressed_stone_pickaxe",
@@ -114,7 +114,7 @@ public final class ProgressionItems {
                         "§7Cobble, but it went to finishing school.",
                         "§71% chance to compact cobble as you mine.",
                         "",
-                        "§8Mining tool. The first real one."
+                        "§8Mining tool. Sits just above the T1 pick."
                 )
         );
     }
@@ -273,8 +273,8 @@ public final class ProgressionItems {
 
     public ItemStack createCompactedDiamondChestplate() {
         ItemStats stats = new ItemStats();
-        stats.setDefense(58);
-        stats.setHealth(32);
+        stats.setDefense(54);
+        stats.setHealth(74);
         stats.setAttackSpread(6);
         return tool(
                 Material.DIAMOND_CHESTPLATE,
@@ -287,7 +287,7 @@ public final class ProgressionItems {
                         "§7If they hit you, they can have some back.",
                         "§7Reflects 10% melee damage.",
                         "",
-                        "§8Boss-slayer plate. Sparkles under pressure."
+                        "§8T4-adjacent plate. Sparkles under pressure."
                 )
         );
     }
@@ -309,7 +309,7 @@ public final class ProgressionItems {
                         "§7Bosses hate paperwork. This is paperwork.",
                         "§7+25% damage to bosses.",
                         "",
-                        "§8McNugget has been served."
+                        "§8Bosses still hate the invoice."
                 )
         );
     }
@@ -361,9 +361,9 @@ public final class ProgressionItems {
 
     public ItemStack createCompactedIronPickaxe() {
         ItemStats stats = new ItemStats();
-        stats.setMiningPower(32);
-        stats.setFortune(40);
-        stats.setSpread(3);
+        stats.setMiningPower(46);
+        stats.setFortune(76);
+        stats.setSpread(6);
         return tool(
                 Material.IRON_PICKAXE,
                 "compacted_iron_pickaxe",
@@ -375,16 +375,16 @@ public final class ProgressionItems {
                         "§7Smelted the waiting out of mining.",
                         "§72% chance to compact ores as you go.",
                         "",
-                        "§8Mid-game pick. The quarry's older sibling."
+                        "§8Just under the T3 pick. Upgrade the stone one."
                 )
         );
     }
 
     public ItemStack createCompactedDiamondPickaxe() {
         ItemStats stats = new ItemStats();
-        stats.setMiningPower(55);
-        stats.setFortune(70);
-        stats.setSpread(5);
+        stats.setMiningPower(80);
+        stats.setFortune(130);
+        stats.setSpread(12);
         return tool(
                 Material.DIAMOND_PICKAXE,
                 "compacted_diamond_pickaxe",
@@ -396,7 +396,7 @@ public final class ProgressionItems {
                         "§7The rock files for compressed status.",
                         "§74% chance to compact while mining.",
                         "",
-                        "§8Endgame pick. Still jealous of the mythic set."
+                        "§8Just under the T4 pick. Still jealous of mythic."
                 )
         );
     }
@@ -513,35 +513,25 @@ public final class ProgressionItems {
             return false;
         }
         return switch (id) {
-            case "compressed_coal_ring" -> bumpRing(stats);
-            case "compressed_oak_chestplate" -> bumpHealth(stats, 10);
-            case "compressed_gold_sword" -> bumpAttackSpread(stats, 8);
-            case "lapis_pendant" -> bumpSpeed(stats, 3);
-            case "compacted_diamond_chestplate" -> bumpAttackSpread(stats, 6);
-            case "emerald_crown" -> bumpHealth(stats, 8);
+            case "compressed_stone_pickaxe" -> setPick(stats, 16, 28, 2);
+            case "compacted_iron_pickaxe" -> setPick(stats, 46, 76, 6);
+            case "compacted_diamond_pickaxe" -> setPick(stats, 80, 130, 12);
+            case "compacted_diamond_chestplate" -> setChest(stats, 54, 74, 6);
             default -> false;
         };
     }
 
-    private static boolean bumpRing(ItemStats stats) {
-        stats.setDefense(stats.getDefense() + 6);
-        stats.setHealth(stats.getHealth() + 6);
-        stats.setSpeed(stats.getSpeed() + 8);
+    private static boolean setPick(ItemStats stats, double miningPower, double fortune, double spread) {
+        stats.setMiningPower(miningPower);
+        stats.setFortune(fortune);
+        stats.setSpread(spread);
         return true;
     }
 
-    private static boolean bumpHealth(ItemStats stats, double amount) {
-        stats.setHealth(stats.getHealth() + amount);
-        return true;
-    }
-
-    private static boolean bumpSpeed(ItemStats stats, double amount) {
-        stats.setSpeed(stats.getSpeed() + amount);
-        return true;
-    }
-
-    private static boolean bumpAttackSpread(ItemStats stats, double amount) {
-        stats.setAttackSpread(stats.getAttackSpread() + amount);
+    private static boolean setChest(ItemStats stats, double defense, double health, double attackSpread) {
+        stats.setDefense(defense);
+        stats.setHealth(health);
+        stats.setAttackSpread(attackSpread);
         return true;
     }
 }

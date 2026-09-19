@@ -12,13 +12,20 @@ package de.aetherion.items.economy;
  * refined    = round(compacted × 4)          // millstone crops
  * crafted    = round(ingredientSum × craftMargin(tier))
  * </pre>
+ *
+ * <p>Compact chain is one language everywhere (Craft, Pocket Forge, Quarry, Lore, Economy):
+ * {@code 128 raw → 1 compressed}, {@code 128 compressed → 1 compacted}.
+ * Craft→Trader compacted margin is therefore ~1.5× ingredients, not 3×.
  */
 public final class EconomyCurve {
 
     public static final double COMPRESS_MULT = 1.4d;
     public static final double COMPACT_MULT = 1.5d;
     public static final double REFINE_MULT = 4.0d;
-    public static final int STACK_RAW = 128; // 2×64
+    /** 2×64 raw per Compressed — same ratio again for Compacted. */
+    public static final int STACK_RAW = 128;
+    public static final int RAW_PER_COMPRESSED = STACK_RAW;
+    public static final int COMPRESSED_PER_COMPACTED = STACK_RAW;
 
     public static final double MARGIN_T1 = 1.20d;
     public static final double MARGIN_T2 = 1.30d;
