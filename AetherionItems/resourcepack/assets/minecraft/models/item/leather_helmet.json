@@ -1,0 +1,17 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "minecraft:item/leather_helmet",
+    "layer1": "minecraft:item/leather_helmet_overlay"
+  },
+  "overrides": [
+    {
+      "predicate": { "custom_model_data": 2001 },
+      "model": "minecraft:item/simple_helmet"
+    },
+    {
+      "predicate": { "custom_model_data": 2002 },
+      "model": "minecraft:item/leather_helmet_vanilla"
+    }
+  ]
+}

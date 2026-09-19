@@ -1,0 +1,160 @@
+name: AetherionItems
+version: 1.0.0
+main: de.aetherion.items.AetherionItems
+api-version: 1.21
+author: Aetherion
+
+description: Custom MMO Items System
+
+depend:
+  - AetherionCore
+
+softdepend:
+  - PlaceholderAPI
+  - AetherionHub
+  - BossEngine
+  - AetherionQuests
+  - AetherionDungeons
+  - AetherionGuilds
+  - AetherMobs
+  - LuckPerms
+  - WorldGuard
+  - DiscordSRV
+
+commands:
+
+  aetheriontest:
+    description: Gives a test Aetherion item
+
+  atrecipes:
+    description: Opens the Aetherion Recipe Book
+    aliases:
+      - atrecepies
+      - aetherionrecipes
+      - recipebook
+
+  aetherionitems:
+    description: Aetherion item commands
+    aliases:
+      - kit1
+      - kit2
+      - pickaxe
+      - axe
+      - sword
+      - shortbow
+      - aetherblade
+      - bridgedaxe
+      - squidsboot
+      - aetherionset
+      - voidstick
+      - hoe
+      - helmet
+      - chestplate
+      - leggings
+      - boots
+      - booster
+
+  aetherion:
+    description: Opens the Aetherion Manager
+    aliases:
+      - amanager
+      - aethermanager
+
+  devmenu:
+    description: Open the Aetherion DEV chest
+    aliases:
+      - adev
+      - aetheriondev
+    permission: aetherion.dev
+
+  bazaar:
+    description: Open the resource Bazaar
+    aliases:
+      - bz
+      - aetherbazaar
+
+  ah:
+    description: Open the Auction House
+    aliases:
+      - auction
+      - auctionhouse
+      - aetherah
+
+  shards:
+    description: Aether Shards balance and admin give
+    aliases:
+      - shard
+      - aethershards
+      - gems
+
+  shardshop:
+    description: Open the Aether Shard shop
+    aliases:
+      - gemshop
+      - bitshop
+      - aethershop
+    permission: aetherion.shardshop
+    permission-message: §cThe shop is open to everyone. If you see this, LuckPerms is being weird.
+
+  skills:
+    description: Open the Aetherion skill loadout
+    aliases:
+      - skill
+      - aetherskills
+      - aetherskill
+
+  av:
+    description: Open a portable anvil (after unlocking one in the world)
+    aliases:
+      - anvil
+      - aetheranvil
+
+  ct:
+    description: Open a portable crafting table (after unlocking one in the world)
+    aliases:
+      - craft
+      - craftingtable
+      - aethercraft
+
+  trades:
+    description: Open the resource trader
+    aliases:
+      - trade
+      - trader
+      - sell
+
+  party:
+    description: Create or manage a party
+    aliases:
+      - aetherparty
+
+  gamble:
+    description: Open Lucky Vince's casino
+    aliases:
+      - casino
+      - slots
+      - roulette
+
+  guide:
+    description: Simple Aetherion helper (next steps + craft lookup)
+    aliases:
+      - aetherguide
+      - helpme
+      - whatnext
+
+permissions:
+  aetherion.shardshop:
+    description: Open the Aether Shard shop
+    default: true
+  aetherion.dev:
+    description: Access the DEV menu and animal anchors
+    default: op
+  aetherion.shards.admin:
+    description: Give and take Aether Shards
+    default: op
+  aetherion.skills.admin:
+    description: Unlock or reset player skill slots
+    default: op
+  aetherion.rank.mvpplusplus:
+    description: Exclusive MVP++ homage rank
+    default: false

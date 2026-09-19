@@ -1,0 +1,16 @@
+{
+  "parent": "minecraft:item/handheld",
+  "textures": {
+    "layer0": "minecraft:item/netherite_pickaxe"
+  },
+  "overrides": [
+    {
+      "predicate": { "custom_model_data": 2281 },
+      "model": "minecraft:item/mining_pickaxe"
+    },
+    {
+      "predicate": { "custom_model_data": 2282 },
+      "model": "minecraft:item/netherite_pickaxe_vanilla"
+    }
+  ]
+}

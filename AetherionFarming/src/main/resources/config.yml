@@ -1,0 +1,28 @@
+# Crops regrow after 18 seconds. No bedrock placeholders.
+
+bird-scare:
+  # Try every 2 minutes near a survival player by mature crops.
+  interval-ticks: 2400
+  # Bossbar / birds only within this many blocks (horizontal) of the field.
+  view-range: 25
+  # Only fire on real farm fields around the Farm spawn — not every wheat patch on the map.
+  farm-zone:
+    enabled: true
+    world: world
+    x: -211.5
+    y: 61.0
+    z: 183.5
+    # Player + crop must both sit inside this radius of the farm center.
+    radius: 90
+
+# Shared communal farm island (void world + nether portal link).
+farm-island:
+  enabled: true
+  auto-ensure: true
+  world: aether_farm_island
+  require-farming-level: 10
+  cooldown-ticks: 20
+  hub-portal-radius: 6
+  pasted: false
+  ambience-ready: false
+  # hub-portal / island-exit filled by Dev → Portals

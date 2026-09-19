@@ -1,0 +1,269 @@
+# ============================================================
+# The Insolvent Wither – T3–T4 world boss (REV5 curve)
+# Intended: Combat T3–T4 party. Slightly higher HP pool kept.
+# Lost the auction. Kept the attitude. Rich players get audited.
+# ============================================================
+
+id: insolvent_wither
+display-name: "&8&lThe Insolvent Wither"
+entity-type: WITHER
+model-engine-id: ""
+
+attributes:
+  max-health: 145000
+  movement-speed: 0.38
+  attack-damage: 168
+  scale: 1.35
+  follow-range: 40
+  knockback-resistance: 1.0
+
+equipment:
+  helmet: AIR
+  chestplate: AIR
+  leggings: AIR
+  boots: AIR
+  main-hand: AIR
+  off-hand: AIR
+  drop-chance: 0.0
+
+options:
+  glowing: false
+  custom-name-visible: true
+  silent: false
+  invulnerable-spawn-ticks: 40
+  persistent: true
+  remove-when-far-away: false
+  prevent-item-pickup: true
+
+conditions:
+  max-instances: 1
+  leash-radius: 44
+  leash-action: TELEPORT
+
+phases:
+  - id: audit
+    health-percent: 100
+    display-name: "&8&lThe Insolvent Wither"
+    skills:
+      - type: TAX_COLLECTOR
+        trigger: ON_TIMER
+        interval-ticks: 70
+        range: 30
+        bonus-power: 104
+      - type: RING_BURST
+        trigger: ON_TIMER
+        interval-ticks: 130
+        waves: 4
+        step: 3.4
+        damage: 62
+        particle: SMOKE
+      - type: MINION_SPAWN
+        trigger: ON_TIMER
+        interval-ticks: 160
+        entity-type: WITHER_SKELETON
+        amount: 4
+        health: 680
+        damage: 50
+        lifespan-ticks: 520
+        custom-name: "&eIOU Skeleton"
+        scoreboard-tag: debt_collector
+        main-hand: GOLDEN_SWORD
+
+  - id: foreclosure
+    health-percent: 55
+    display-name: "&8&lThe Insolvent Wither &7(&eForeclosure&7)"
+    transition:
+      duration-ticks: 85
+      invulnerable: true
+      freeze-ai: true
+      shape: BLACK_HOLE
+      explode: false
+    attributes:
+      attack-damage: 192
+      movement-speed: 0.44
+    skills:
+      - type: DIALOG
+        trigger: ON_PHASE
+        broadcast: true
+        message: "&8&lThe Insolvent Wither&7: &eBoosters are assets. Assets are taxable."
+      - type: SPECTACLE
+        trigger: ON_PHASE
+        title: "&eFORECLOSURE"
+        subtitle: "&7The house always wins. Today the house is dead."
+        lightning: 8
+        particle: SMOKE
+        count: 90
+        radius: 13
+        sound: ENTITY_WITHER_AMBIENT
+      - type: TAX_COLLECTOR
+        trigger: ON_TIMER
+        interval-ticks: 55
+        range: 32
+        bonus-power: 122
+      - type: METEOR_RAIN
+        trigger: ON_TIMER
+        interval-ticks: 110
+        amount: 8
+        damage: 78
+        scatter: 12
+        style: BURST
+      - type: RING_BURST
+        trigger: ON_TIMER
+        interval-ticks: 90
+        waves: 5
+        step: 3.2
+        damage: 76
+        particle: WAX_ON
+      - type: MINION_SPAWN
+        trigger: ON_TIMER
+        interval-ticks: 120
+        entity-type: WITHER_SKELETON
+        amount: 5
+        health: 800
+        damage: 58
+        lifespan-ticks: 540
+        custom-name: "&eIOU Skeleton"
+        scoreboard-tag: debt_collector
+        main-hand: GOLDEN_SWORD
+      - type: SLAM_LEAP
+        trigger: ON_TIMER
+        interval-ticks: 70
+        upward: 1.15
+        range: 22
+        slam-radius: 5.6
+        slam-damage: 92
+
+  - id: chapter_eleven
+    health-percent: 22
+    display-name: "&8&lThe Insolvent Wither &7(&4Ch. 11&7)"
+    transition:
+      duration-ticks: 90
+      invulnerable: true
+      freeze-ai: true
+      shape: LIGHTNING_STORM
+      lightning-count: 12
+      explode: true
+      explode-damage: 52
+      explode-radius: 9.0
+    attributes:
+      attack-damage: 220
+      movement-speed: 0.50
+      scale: 1.55
+    skills:
+      - type: DIALOG
+        trigger: ON_PHASE
+        broadcast: true
+        message: "&8&lThe Insolvent Wither&7: &4Chapter 11. You are the collateral."
+      - type: SPECTACLE
+        trigger: ON_PHASE
+        title: "&4CHAPTER 11"
+        subtitle: "&7Collections sent everyone."
+        lightning: 14
+        particle: SMOKE
+        count: 50
+        radius: 15
+        sound: ENTITY_WITHER_SPAWN
+      - type: TAX_COLLECTOR
+        trigger: ON_TIMER
+        interval-ticks: 40
+        range: 34
+        bonus-power: 140
+      - type: METEOR_RAIN
+        trigger: ON_TIMER
+        interval-ticks: 85
+        amount: 9
+        damage: 90
+        scatter: 14
+        style: BURST
+      - type: RING_BURST
+        trigger: ON_TIMER
+        interval-ticks: 80
+        waves: 5
+        step: 3.0
+        damage: 88
+        particle: SMOKE
+      - type: MINION_SPAWN
+        trigger: ON_TIMER
+        interval-ticks: 90
+        entity-type: WITHER_SKELETON
+        amount: 6
+        health: 860
+        damage: 64
+        lifespan-ticks: 480
+        custom-name: "&6Repo Agent"
+        scoreboard-tag: debt_collector
+        main-hand: GOLDEN_SWORD
+
+skills:
+  - type: SOUND
+    trigger: ON_SPAWN
+    sound: ENTITY_WITHER_SPAWN
+    volume: 1.25
+    pitch: 0.65
+
+  - type: SPECTACLE
+    trigger: ON_SPAWN
+    title: "&8INSOLVENT WITHER"
+    subtitle: "&7The auction house sent fake flowers."
+    lightning: 8
+    particle: SMOKE
+    count: 80
+    radius: 12
+    sound: ENTITY_WITHER_AMBIENT
+
+  - type: DIALOG
+    trigger: ON_SPAWN
+    broadcast: true
+    message: "&8&lThe Insolvent Wither &7arrives. The auction house sent flowers. Fake ones."
+
+  - type: PARTICLE_AURA
+    trigger: ON_TIMER
+    interval-ticks: 7
+    particle: SMOKE
+    count: 22
+    radius: 1.6
+    extra: 0.03
+
+  - type: DIALOG
+    trigger: ON_DEATH
+    broadcast: true
+    message: "&8&lThe Insolvent Wither&7: &fKeep the ledger. I am done with markets."
+
+loot:
+  damage-based: true
+  participation-threshold-percent: 5.0
+  experience: 56000
+  killer-bonus:
+    - source: AETHERION
+      item-id: insolvent_ledger
+      amount: 1
+      chance: 0.34
+    - source: AETHERION
+      item-id: random_booster
+      amount: 1
+      chance: 1.0
+  rank-loot:
+    1:
+      - source: AETHERION
+        item-id: insolvent_ledger
+        amount: 1
+        chance: 0.18
+  top-damagers:
+    count: 3
+    items:
+      - source: AETHERION
+        item-id: random_booster
+        amount: 1
+        chance: 1.0
+  shared:
+    - source: VANILLA
+      material: NETHER_STAR
+      amount: 1
+      chance: 0.7
+  per-damager:
+    - source: VANILLA
+      material: GOLD_INGOT
+      min-amount: 6
+      max-amount: 14
+      chance: 1.0
+      scale-with-damage: true

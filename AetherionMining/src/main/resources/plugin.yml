@@ -1,0 +1,29 @@
+name: AetherionMining
+version: 1.0.0
+main: de.aetherion.mining.AetherionMining
+api-version: '1.21'
+author: Aetherion
+
+depend:
+  - AetherionCore
+  - WorldGuard
+
+softdepend:
+  - AetherionHub
+  - AetherionItems
+  - WorldEdit
+
+description: Mining areas and The Veins
+
+commands:
+  deepmines:
+    description: Enter The Veins (Eldervale deep mine), or admin tools
+    usage: /deepmines [leave|time|npc|reset|eldervale]
+    aliases: [veins]
+    permission: aetherion.mines.use
+
+permissions:
+  aetherion.mines.use:
+    default: true
+  aetherion.mines.admin:
+    default: op

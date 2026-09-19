@@ -1,0 +1,63 @@
+name: AetherionHub
+version: 1.0.0
+main: de.aetherion.hub.AetherionHub
+api-version: '1.21'
+author: Aetherion
+description: Unlockable spawns, /spawn /hub, and the first-join hint
+
+depend:
+  - AetherionCore
+
+softdepend:
+  - AetherionItems
+
+commands:
+  spawn:
+    description: Teleport to your selected spawn
+    aliases: [hub]
+    permission: aetherionhub.use
+  spawns:
+    description: Open the spawn selection menu
+    aliases: [hubs, spawnmenu]
+    permission: aetherionhub.use
+  harbour:
+    description: Teleport to Harbour if unlocked
+    permission: aetherionhub.use
+  oreridge:
+    description: Teleport to Ore Ridge if unlocked
+    aliases: [ore_ridge]
+    permission: aetherionhub.use
+  mines:
+    description: Teleport to Shabby Mines if unlocked
+    permission: aetherionhub.use
+  capital:
+    description: Teleport to Capital if unlocked
+    permission: aetherionhub.use
+  forage:
+    description: Teleport to Forage Isle if unlocked
+    aliases: [forageisle]
+    permission: aetherionhub.use
+  farm:
+    description: Teleport to Farm if unlocked
+    permission: aetherionhub.use
+  farmisle:
+    description: Teleport to Farm Isle if unlocked
+    permission: aetherionhub.use
+  borderlands:
+    description: Teleport to Borderlands if unlocked
+    permission: aetherionhub.use
+  colosseum:
+    description: Teleport to Colosseum if unlocked
+    permission: aetherionhub.use
+  eldervale:
+    description: Teleport to Eldervale if unlocked
+    permission: aetherionhub.use
+  hubadmin:
+    description: Manage Aetherion spawn points
+    permission: aetherionhub.admin
+
+permissions:
+  aetherionhub.use:
+    default: true
+  aetherionhub.admin:
+    default: op

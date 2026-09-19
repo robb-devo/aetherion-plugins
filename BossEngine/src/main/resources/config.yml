@@ -1,0 +1,24 @@
+# ============================================================
+# BossEngine – globale Einstellungen
+# ============================================================
+
+prefix: "&8[&5BossEngine&8]&r "
+
+# Wie oft Laufzeit-Logik tickt (Phasen, Leash, Timer-Skills, Kreis-Animation).
+# 1 = jeder Tick, damit die Phase-2-Ringanimation sauber schrumpft.
+tick-interval-ticks: 1
+
+# Standard-Werte, falls ein Boss-Template nichts eigenes setzt.
+defaults:
+  max-instances: 1
+  leash-radius: 48
+  leash-action: TELEPORT
+  glowing: false
+  custom-name-visible: true
+
+# Broadcast, wenn ein Boss spawnt oder stirbt.
+announce-spawn: false
+announce-death: false
+
+# Debug-Logs für Skills, Spawner und WorldGuard-Bypass.
+debug: false

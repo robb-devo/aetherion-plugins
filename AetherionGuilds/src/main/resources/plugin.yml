@@ -1,0 +1,34 @@
+name: AetherionGuilds
+version: 1.0.0
+main: de.aetherion.guilds.AetherionGuilds
+api-version: 1.21
+author: Aetherion
+description: Guilds, personal islands, and quarry minions
+
+depend:
+  - AetherionCore
+
+softdepend:
+  - AetherionItems
+  - AetherionHub
+  - PlaceholderAPI
+
+commands:
+  guild:
+    description: Guild menu and commands
+    usage: /guild
+    aliases: [g, gilde, aetherguild]
+  island:
+    description: Personal island menu and commands
+    usage: /island
+    aliases: [is, insel, aetherisland]
+  friend:
+    description: Friends list, visits and guild invites
+    usage: /friend
+    aliases: [friends, freund, freunde]
+
+permissions:
+  aetherion.guild.use:
+    default: true
+  aetherion.guild.admin:
+    default: op

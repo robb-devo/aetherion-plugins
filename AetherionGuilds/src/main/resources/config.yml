@@ -1,0 +1,10 @@
+max-members: 50
+invite-seconds: 300
+island-spacing: 512
+island-world: aether_guilds
+personal-island-spacing: 512
+personal-island-world: aether_islands
+minion-interval-seconds: 10
+max-quarry-level: 7
+island-build-radius: 24
+reset-islands: false

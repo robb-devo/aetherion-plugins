@@ -1,0 +1,23 @@
+{
+  "name": "aetherion-stress-bots",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Mineflayer stress bots for Aetherion Borderlands combat + Shabby Mine mining",
+  "type": "module",
+  "bin": {
+    "aetherion-stress": "./src/index.js"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "start:default": "node src/index.js --combat 5 --mining 5"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "mineflayer": "^4.33.0",
+    "mineflayer-pathfinder": "^2.4.5",
+    "minecraft-data": "^3.99.0",
+    "vec3": "^0.1.10"
+  }
+}

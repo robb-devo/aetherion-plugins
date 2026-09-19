@@ -1,0 +1,11 @@
+# Strike window after a bite. Fishing Speed stretches this a little.
+strike-ticks: 70
+# How long a lure fish may take to swim in and bite.
+approach-ticks: 28
+
+# Chance to yank a fishing-skill encounter mob on a successful catch.
+# Scales mildly with Fish Catch up to encounter-chance-cap.
+encounter-chance: 0.12
+encounter-chance-cap: 0.18
+# Seconds before an ignored encounter despawns.
+encounter-despawn-seconds: 90

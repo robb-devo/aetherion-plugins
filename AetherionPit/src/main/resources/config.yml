@@ -1,0 +1,83 @@
+# Hub Pit — safe inside the red line box, PvP + progression outside.
+
+safe-zone:
+  world: world
+  # Rectangle from red-line corners (-78,56,60) ↔ (42,56,-60)
+  min-x: -78.0
+  max-x: 42.0
+  min-z: -60.0
+  max-z: 60.0
+
+spawn:
+  world: world
+  x: 0.0
+  y: 64.0
+  z: 0.0
+  # Face west toward Aetherion NPC (~-33,65,0). Was 0 (south); +90° right.
+  yaw: 90.0
+  pitch: 0.0
+
+# Always send players here when they join the hub (network entry).
+force-spawn-on-join: true
+
+# Velocity / Bungee server name for the MMO capital.
+aetherion-server: mmo-r
+
+# Clickable Discord invite (open URL on Discord NPC click).
+# Leave empty to auto-pick from DiscordSRV DiscordInviteLink when available.
+discord-invite: ""
+
+# FancyNPC visibility (blocks). Slightly above default so lobby NPCs read from farther away.
+npc-visibility-distance: 72
+
+levels:
+  # XP needed for level N ≈ base * N^1.35
+  base-xp: 40
+  kill-xp: 12
+  death-xp-loss: 4
+  max-level: 50
+
+economy:
+  kill-gold: 8
+  assist-gold: 2
+
+messages:
+  enter-pit: "&cPit &7- PvP is live out here. Vanilla gear. Have fun."
+  enter-safe: "&aSafe spawn &7- no PvP inside the red line."
+
+# Lobby FancyNPCs (place/move with /pit placenpc <aetherion|discord|shop>)
+npcs:
+  aetherion:
+    world: world
+    x: 4.5
+    y: 64.0
+    z: 3.5
+    yaw: 180.0
+    pitch: 0.0
+    # NameMC → real Mojang texture hash (page hash ≠ texture hash)
+    skin: "https://textures.minecraft.net/texture/f163d98f20f7b8dec6ecc7a314f82e33f4d4105919dfd287080627979a957933"
+  discord:
+    world: world
+    x: -4.5
+    y: 64.0
+    z: 3.5
+    yaw: 180.0
+    pitch: 0.0
+    # Question skin (minecraftskins #24292966) via Mineskin
+    skin: "https://textures.minecraft.net/texture/ed1e52092b09bc2495d0ed1a2e8e6279548a120dd27e4955963d75e820a181c6"
+  shop:
+    world: world
+    x: 0.5
+    y: 64.0
+    z: 5.5
+    yaw: 180.0
+    pitch: 0.0
+
+# One-shot paste of the medieval spawn schem (set false after success).
+schem-paste:
+  enabled: false
+  file: medieval-spawn-warzone.schem
+  world: world
+  x: 0.0
+  y: 64.0
+  z: 0.0

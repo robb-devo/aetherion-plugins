@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/glowstone",
+  "overrides": [
+    {
+      "predicate": { "custom_model_data": 3009 },
+      "model": "minecraft:item/glowstone_booster"
+    }
+  ]
+}

@@ -1,0 +1,183 @@
+# ============================================================
+# McNugget – T1 rite / tutorial boss (solo ~3k HP)
+# Combat T1 gear. Egg spam hurtful but not one-shotty.
+# Spawn-Punkt: /boss give mcnugget_anchor  (Rechtsklick auf Block)
+# Test-Spawn:  /boss give mcnugget_core
+# ============================================================
+
+id: mcnugget
+display-name: "&6&lMcNugget"
+entity-type: CHICKEN
+model-engine-id: ""
+
+attributes:
+  max-health: 3000
+  movement-speed: 0.28
+  attack-damage: 30
+  scale: 2.8
+  follow-range: 32
+  knockback-resistance: 0.15
+
+equipment:
+  helmet: AIR
+  chestplate: AIR
+  leggings: AIR
+  boots: AIR
+  main-hand: AIR
+  off-hand: AIR
+  drop-chance: 0.0
+
+options:
+  glowing: false
+  custom-name-visible: true
+  silent: false
+  invulnerable-spawn-ticks: 20
+  persistent: true
+  remove-when-far-away: false
+  prevent-item-pickup: true
+
+conditions:
+  max-instances: 1
+  leash-radius: 36
+  leash-action: TELEPORT
+
+phases:
+  - id: cluck
+    health-percent: 100
+    display-name: "&6&lMcNugget"
+    skills:
+      - type: EGG_SHOT
+        trigger: ON_TIMER
+        interval-ticks: 22
+        speed: 1.25
+        spread: 0.07
+        damage: 22
+        knockback: 0.28
+
+  - id: nugget_panic
+    health-percent: 50
+    display-name: "&6&lMcNugget &7(&cPanic&7)"
+    transition:
+      duration-ticks: 55
+      invulnerable: true
+      freeze-ai: true
+      start-radius: 5.5
+      end-radius: 1.0
+      shape: CIRCLE
+      particle: CLOUD
+      extra-particle: CRIT
+      points: 40
+      height: 0.35
+      explode: false
+    attributes:
+      movement-speed: 0.38
+    skills:
+      - type: DIALOG
+        trigger: ON_PHASE
+        broadcast: true
+        message: "&6McNugget &7flaps into a panic — chickens rain from the sky!"
+      - type: SOUND
+        trigger: ON_PHASE
+        sound: ENTITY_CHICKEN_HURT
+        volume: 1.4
+        pitch: 0.55
+      - type: LEAP
+        trigger: ON_PHASE
+        upward: 0.72
+        horizontal: 0.45
+      - type: MINION_SPAWN
+        trigger: ON_PHASE
+        entity-type: CHICKEN
+        amount: 4
+        max-alive: 6
+        health: 4
+        spread: 4.5
+        y-offset: 10
+        lifespan-ticks: 260
+        custom-name: "&eNugget"
+      - type: EGG_SHOT
+        trigger: ON_TIMER
+        interval-ticks: 16
+        speed: 1.25
+        spread: 0.09
+        damage: 26
+        knockback: 0.32
+      # Occasional hop — not a permanent hover.
+      - type: LEAP
+        trigger: ON_TIMER
+        interval-ticks: 78
+        upward: 0.48
+        horizontal: 0.28
+
+skills:
+  - type: SOUND
+    trigger: ON_SPAWN
+    sound: ENTITY_CHICKEN_AMBIENT
+    volume: 1.5
+    pitch: 0.6
+
+  - type: DIALOG
+    trigger: ON_SPAWN
+    broadcast: true
+    message: "&6&lMcNugget &7struts into the fight."
+
+  - type: PARTICLE_AURA
+    trigger: ON_TIMER
+    interval-ticks: 10
+    particle: CLOUD
+    count: 6
+    radius: 0.7
+    extra: 0.01
+
+  - type: DIALOG
+    trigger: ON_DEATH
+    broadcast: true
+    message: "&6&lMcNugget &7is extra crispy."
+
+loot:
+  damage-based: true
+  participation-threshold-percent: 5.0
+  experience: 42000
+
+  # Was 10% killer-bonus (top damager). Now rank-scaled.
+  killer-bonus:
+    - source: VANILLA
+      material: REDSTONE_BLOCK
+      min-amount: 12
+      max-amount: 24
+      chance: 1.0
+
+  rank-loot:
+    1:
+      - source: AETHERION
+        item-id: aetherblade
+        amount: 1
+        chance: 0.08
+    2:
+      - source: AETHERION
+        item-id: aetherblade
+        amount: 1
+        chance: 0.04
+    3:
+      - source: AETHERION
+        item-id: aetherblade
+        amount: 1
+        chance: 0.02
+
+  top-damagers:
+    count: 3
+    items:
+      - source: AETHERION
+        item-id: random_booster
+        amount: 1
+        chance: 1.0
+
+  shared: []
+
+  per-damager:
+    - source: VANILLA
+      material: EXPERIENCE_BOTTLE
+      min-amount: 6
+      max-amount: 12
+      chance: 1.0
+      scale-with-damage: true

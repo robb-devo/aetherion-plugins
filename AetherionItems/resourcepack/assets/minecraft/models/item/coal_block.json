@@ -1,0 +1,11 @@
+{
+  "parent": "minecraft:block/coal_block",
+  "overrides": [
+    {
+      "predicate": {
+        "custom_model_data": 3001
+      },
+      "model": "minecraft:item/coal_booster"
+    }
+  ]
+}

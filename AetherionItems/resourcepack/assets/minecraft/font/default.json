@@ -1,0 +1,11 @@
+{
+  "providers": [
+    {
+      "type": "bitmap",
+      "file": "aetherion:font/badge_wanderer.png",
+      "ascent": 8,
+      "height": 12,
+      "chars": ["\uE001"]
+    }
+  ]
+}

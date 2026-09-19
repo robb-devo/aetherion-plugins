@@ -1,0 +1,32 @@
+name: AetherionDungeons
+version: 1.0.0
+main: de.aetherion.dungeons.AetherionDungeons
+api-version: 1.21
+author: Aetherion
+description: Temporary dungeon instances for Aetherion
+
+depend:
+  - AetherionCore
+
+softdepend:
+  - AetherionItems
+  - AetherionHub
+  - BossEngine
+  - AetherionQuests
+  - WorldEdit
+
+commands:
+  dungeon:
+    description: Dungeon admin and leave
+    usage: /dungeon <give|remove|leave|enter|boss|home|dhub>
+    aliases: [dungeons, aedungeon]
+  dhub:
+    description: Teleport to the dungeon hub from anywhere
+    usage: /dhub
+    aliases: [dungeonhub, dh]
+
+permissions:
+  aetherion.dungeon.use:
+    default: true
+  aetherion.dungeon.admin:
+    default: op

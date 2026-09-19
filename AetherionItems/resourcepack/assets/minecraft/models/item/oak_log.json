@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/oak_log",
+  "overrides": [
+    {
+      "predicate": { "custom_model_data": 3011 },
+      "model": "minecraft:item/oak_booster"
+    }
+  ]
+}

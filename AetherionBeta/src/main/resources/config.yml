@@ -1,0 +1,12 @@
+# Personal guide NPC anchor. Set with: /beta npc place
+npc:
+  enabled: false
+  world: world
+  x: 0.5
+  y: 64.0
+  z: 0.5
+  yaw: 0.0
+  pitch: 0.0
+  # Display name shown above each player's personal guide
+  name-en: "§d✦ Patch Courier"
+  name-de: "§d✦ Patch-Kurier"

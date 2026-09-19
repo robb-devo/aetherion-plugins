@@ -1,0 +1,174 @@
+# ============================================================
+# Aether Colossus – T3 overworld bruiser (REV5 curve)
+# Intended: Combat T3. Solo ~5 min / small party faster.
+# Schema:
+#   attributes  – Basiswerte
+#   phases      – Health-Thresholds (höchster passender Wert gewinnt)
+#   skills      – Aktionen (SOUND, PARTICLE_AURA, POTION, MINION_SPAWN,
+#                 DIALOG, ACTION_BAR)
+#   loot        – VANILLA oder AETHERION (Item-IDs aus AetherionItems)
+# ============================================================
+
+id: aether_colossus
+display-name: "&5&lAether Colossus"
+entity-type: RAVAGER
+
+# Optional: ModelEngine-Model-ID (Hook kommt später)
+model-engine-id: ""
+
+attributes:
+  max-health: 38000
+  movement-speed: 0.28
+  attack-damage: 74
+  scale: 1.65
+  follow-range: 44
+  knockback-resistance: 0.8
+
+equipment:
+  helmet: NETHERITE_HELMET
+  chestplate: NETHERITE_CHESTPLATE
+  leggings: NETHERITE_LEGGINGS
+  boots: NETHERITE_BOOTS
+  main-hand: NETHERITE_AXE
+  off-hand: AIR
+  drop-chance: 0.0
+
+options:
+  glowing: true
+  custom-name-visible: true
+  silent: false
+  invulnerable-spawn-ticks: 30
+  persistent: true
+  remove-when-far-away: false
+  prevent-item-pickup: true
+
+conditions:
+  max-instances: 1
+  leash-radius: 48
+  leash-action: TELEPORT
+
+phases:
+  - id: awakened
+    health-percent: 100
+    display-name: "&5&lAether Colossus"
+    skills:
+      - type: ACTION_BAR
+        trigger: ON_PHASE
+        message: "&5The Colossus locks onto the raid."
+
+  - id: enraged
+    health-percent: 50
+    display-name: "&c&lAether Colossus &7(&cEnraged&7)"
+    attributes:
+      movement-speed: 0.34
+      attack-damage: 96
+      scale: 1.85
+    skills:
+      - type: DIALOG
+        trigger: ON_PHASE
+        broadcast: true
+        message: "&5The Colossus howls as aether cracks around it!"
+      - type: SOUND
+        trigger: ON_PHASE
+        sound: ENTITY_RAVAGER_ROAR
+        volume: 1.6
+        pitch: 0.6
+      - type: POTION
+        trigger: ON_PHASE
+        effect: INCREASE_DAMAGE
+        amplifier: 1
+        duration-ticks: 200
+        ambient: true
+      - type: MINION_SPAWN
+        trigger: ON_PHASE
+        entity-type: VEX
+        amount: 3
+        lifespan-ticks: 400
+
+  - id: last_stand
+    health-percent: 20
+    display-name: "&4&lAether Colossus &7(&4Last Stand&7)"
+    attributes:
+      movement-speed: 0.38
+      attack-damage: 90
+    skills:
+      - type: DIALOG
+        trigger: ON_PHASE
+        broadcast: true
+        message: "&4The Colossus refuses to fall!"
+      - type: PARTICLE_AURA
+        trigger: ON_TIMER
+        interval-ticks: 8
+        particle: FLAME
+        count: 24
+        radius: 2.2
+        extra: 0.02
+
+skills:
+  - type: SOUND
+    trigger: ON_SPAWN
+    sound: ENTITY_WITHER_SPAWN
+    volume: 1.2
+    pitch: 0.8
+
+  - type: DIALOG
+    trigger: ON_SPAWN
+    broadcast: true
+    message: "&5&lAether Colossus &7has awakened!"
+
+  - type: PARTICLE_AURA
+    trigger: ON_TIMER
+    interval-ticks: 12
+    particle: PORTAL
+    count: 18
+    radius: 1.8
+    extra: 0.35
+
+  - type: ACTION_BAR
+    trigger: ON_DAMAGE
+    cooldown-ticks: 40
+    message: "&5Colossus &8• &c{health}&8/&c{max-health} HP"
+
+  - type: SOUND
+    trigger: ON_DEATH
+    sound: ENTITY_RAVAGER_DEATH
+    volume: 1.4
+    pitch: 0.7
+
+  - type: DIALOG
+    trigger: ON_DEATH
+    broadcast: true
+    message: "&5&lAether Colossus &7has been slain!"
+
+loot:
+  damage-based: true
+  participation-threshold-percent: 5.0
+  experience: 62000
+
+  killer-bonus:
+    - source: AETHERION
+      item-id: combat_sword
+      amount: 1
+      chance: 1.0
+
+  shared:
+    - source: VANILLA
+      material: NETHER_STAR
+      amount: 1
+      chance: 1.0
+    - source: AETHERION
+      item-id: combat_chestplate
+      amount: 1
+      chance: 0.35
+
+  per-damager:
+    - source: VANILLA
+      material: DIAMOND
+      min-amount: 4
+      max-amount: 12
+      chance: 1.0
+      scale-with-damage: true
+    - source: VANILLA
+      material: EXPERIENCE_BOTTLE
+      amount: 8
+      chance: 0.8

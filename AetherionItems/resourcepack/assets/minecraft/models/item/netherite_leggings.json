@@ -1,0 +1,24 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "minecraft:item/netherite_leggings"
+  },
+  "overrides": [
+    {
+      "predicate": { "custom_model_data": 2173 },
+      "model": "minecraft:item/combat_leggings"
+    },
+    {
+      "predicate": { "custom_model_data": 2174 },
+      "model": "minecraft:item/netherite_leggings_vanilla"
+    },
+    {
+      "predicate": { "custom_model_data": 2273 },
+      "model": "minecraft:item/mining_leggings"
+    },
+    {
+      "predicate": { "custom_model_data": 2274 },
+      "model": "minecraft:item/netherite_leggings_vanilla"
+    }
+  ]
+}

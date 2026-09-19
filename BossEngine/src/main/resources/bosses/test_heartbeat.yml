@@ -1,0 +1,77 @@
+# ============================================================
+# SANDBOX / TEST ARENA ONLY — no live drops, mechanics prototype
+# Spawn via Dev → Test Arena (not world anchors)
+# ============================================================
+
+id: test_heartbeat
+display-name: "&4&lHeartbeat"
+entity-type: BREEZE
+model-engine-id: ""
+
+attributes:
+  max-health: 36000
+  movement-speed: 0.28
+  attack-damage: 70
+  scale: 1.40
+  follow-range: 48
+  knockback-resistance: 0.85
+
+equipment:
+  helmet: AIR
+  chestplate: AIR
+  leggings: AIR
+  boots: AIR
+  main-hand: AIR
+  off-hand: AIR
+  drop-chance: 0.0
+
+options:
+  glowing: true
+  custom-name-visible: true
+  silent: false
+  invulnerable-spawn-ticks: 25
+  persistent: true
+  remove-when-far-away: false
+  prevent-item-pickup: true
+
+conditions:
+  max-instances: 8
+  leash-radius: 52
+  leash-action: TELEPORT
+
+phases:
+  - id: spectacle
+    health-percent: 100
+    display-name: "&4&lHeartbeat"
+    skills: []
+  - id: enraged
+    health-percent: 35
+    display-name: "&4&lHeartbeat &c[ARRHYTHMIA]"
+    skills: []
+
+skills:
+  - type: SOUND
+    trigger: ON_SPAWN
+    sound: BLOCK_BEACON_ACTIVATE
+    volume: 1.25
+    pitch: 0.75
+  - type: DIALOG
+    trigger: ON_SPAWN
+    broadcast: true
+    message: "&4&lHEARTBEAT &8— &fstrike ON the beat. Tempo accelerates. &eMetronome Bow &7helps off-beat."
+  - type: DIALOG
+    trigger: ON_DEATH
+    broadcast: true
+    message: "&7Heartbeat falls. Sandbox clear — no loot."
+
+loot:
+  damage-based: false
+  participation-threshold-percent: 0.0
+  experience: 0
+  killer-bonus: []
+  top-damagers:
+    count: 0
+    items: []
+  shared: []
+  per-damager: []
+

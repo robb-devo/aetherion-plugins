@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/redstone_block",
+  "overrides": [
+    {
+      "predicate": { "custom_model_data": 3006 },
+      "model": "minecraft:item/redstone_booster"
+    }
+  ]
+}

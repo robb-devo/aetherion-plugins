@@ -1,0 +1,160 @@
+# ============================================================
+# Hollow Lurker – T1 rite / tutorial boss (solo ~3k HP)
+# Combat T1 gear. BossHits ~32 ≈ soft chunk, not one-shot.
+# Spawn-Punkt: /boss give hollow_lurker_anchor  (Rechtsklick auf Block)
+# ============================================================
+
+id: hollow_lurker
+display-name: "&8&lHollow Lurker"
+entity-type: ZOMBIE
+model-engine-id: ""
+
+attributes:
+  max-health: 3000
+  movement-speed: 0.24
+  attack-damage: 32
+  scale: 1.4
+  follow-range: 32
+  knockback-resistance: 0.55
+
+equipment:
+  helmet: AIR
+  chestplate: AIR
+  leggings: AIR
+  boots: AIR
+  main-hand: IRON_SWORD
+  off-hand: AIR
+  drop-chance: 0.0
+
+options:
+  glowing: false
+  custom-name-visible: true
+  silent: false
+  invulnerable-spawn-ticks: 20
+  persistent: true
+  remove-when-far-away: false
+  prevent-item-pickup: true
+
+conditions:
+  max-instances: 1
+  leash-radius: 0
+  leash-action: TELEPORT
+
+phases:
+  - id: lurking
+    health-percent: 100
+    display-name: "&8&lHollow Lurker"
+    skills:
+      - type: RING_BURST
+        trigger: ON_TIMER
+        interval-ticks: 150
+        waves: 3
+        step: 2.4
+        damage: 18
+        particle: SOUL
+
+  - id: frenzy
+    health-percent: 50
+    display-name: "&4&lHollow Lurker &7(&cFrenzy&7)"
+    transition:
+      duration-ticks: 80
+      invulnerable: true
+      freeze-ai: true
+      start-radius: 5.5
+      end-radius: 1.15
+      particle: SOUL_FIRE_FLAME
+      points: 56
+      height: 0.15
+    attributes:
+      movement-speed: 0.32
+      attack-damage: 40
+      scale: 1.55
+    skills:
+      - type: DIALOG
+        trigger: ON_PHASE
+        broadcast: true
+        message: "&8The Hollow Lurker tears out of its shell!"
+      - type: SOUND
+        trigger: ON_PHASE
+        sound: ENTITY_ZOMBIE_VILLAGER_CURE
+        volume: 1.2
+        pitch: 0.55
+      - type: RING_BURST
+        trigger: ON_TIMER
+        interval-ticks: 110
+        waves: 4
+        step: 2.5
+        damage: 24
+        particle: SOUL_FIRE_FLAME
+
+skills:
+  - type: SOUND
+    trigger: ON_SPAWN
+    sound: ENTITY_ZOMBIE_AMBIENT
+    volume: 1.4
+    pitch: 0.5
+
+  - type: DIALOG
+    trigger: ON_SPAWN
+    broadcast: false
+    radius: 48
+    message: "&8&lHollow Lurker &7stirs in the dark."
+
+  - type: PARTICLE_AURA
+    trigger: ON_TIMER
+    interval-ticks: 10
+    particle: SOUL
+    count: 10
+    radius: 0.7
+    extra: 0.01
+
+  - type: DIALOG
+    trigger: ON_DEATH
+    broadcast: true
+    message: "&8&lHollow Lurker &7collapses into dust."
+
+loot:
+  damage-based: true
+  participation-threshold-percent: 5.0
+  experience: 16000
+
+  killer-bonus:
+    - source: VANILLA
+      material: DIAMOND_BLOCK
+      amount: 32
+      chance: 1.0
+
+  rank-loot:
+    1:
+      - source: AETHERION
+        item-id: warped_blade
+        amount: 1
+        chance: 0.40
+    2:
+      - source: AETHERION
+        item-id: warped_blade
+        amount: 1
+        chance: 0.16
+    3:
+      - source: AETHERION
+        item-id: warped_blade
+        amount: 1
+        chance: 0.06
+
+  top-damagers:
+    count: 3
+    items:
+      - source: AETHERION
+        item-id: random_booster
+        amount: 1
+        chance: 1.0
+
+  shared: []
+
+  per-damager:
+    - source: VANILLA
+      material: EXPERIENCE_BOTTLE
+      min-amount: 8
+      max-amount: 16
+      chance: 1.0
+      scale-with-damage: true

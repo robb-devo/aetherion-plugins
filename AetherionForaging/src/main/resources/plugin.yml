@@ -1,0 +1,25 @@
+name: AetherionForaging
+version: 1.0.0
+main: de.aetherion.foraging.AetherionForaging
+api-version: '1.21'
+
+depend:
+  - AetherionCore
+  - WorldGuard
+softdepend:
+  - AetherionItems
+  - AetherionMining
+  - WorldEdit
+  - FancyNpcs
+  - PlaceholderAPI
+
+commands:
+  forage:
+    description: Foraging admin helpers (isle paste).
+    usage: /forage isle clear|paste|paste here
+    permission: aetherion.forage.admin
+
+permissions:
+  aetherion.forage.admin:
+    description: Paste forage isle / admin forage tools
+    default: op

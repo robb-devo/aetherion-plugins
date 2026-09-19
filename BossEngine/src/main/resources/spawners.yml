@@ -1,0 +1,42 @@
+# ============================================================
+# BossEngine – Spawner
+# ------------------------------------------------------------
+# type:
+#   TIMER   – spawnt im Intervall an den Koordinaten
+#   COMMAND – nur manuell (/boss spawn oder Spawn-Item)
+#   ITEM    – Spieler nutzt ein Spawn-Item am Altar
+#
+# interval: 30s | 5m | 2h | 1d  (nur TIMER)
+# ============================================================
+
+spawners:
+  colossus_altar:
+    enabled: true
+    boss: aether_colossus
+    type: ITEM
+    world: world
+    x: 0.5
+    y: 64.0
+    z: 0.5
+    yaw: 180
+    pitch: 0
+    item-id: aether_colossus_core
+    altar-radius: 5
+    max-instances: 1
+    leash-radius: 48
+    leash-action: TELEPORT
+
+  colossus_timer:
+    enabled: false
+    boss: aether_colossus
+    type: TIMER
+    world: world
+    x: 100.5
+    y: 70.0
+    z: -20.5
+    yaw: 90
+    pitch: 0
+    interval: 2h
+    max-instances: 1
+    leash-radius: 54
+    leash-action: RESET

@@ -1,0 +1,14 @@
+name: AetherionFishing
+version: 1.0.0
+main: de.aetherion.fishing.AetherionFishing
+api-version: '1.21'
+author: Aetherion
+
+depend:
+  - AetherionCore
+
+softdepend:
+  - AetherionItems
+  - AetherionQuests
+
+description: Fishing minigame, lure fish, and hook animations

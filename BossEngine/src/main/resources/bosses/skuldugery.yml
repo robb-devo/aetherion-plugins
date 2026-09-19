@@ -1,0 +1,170 @@
+# ============================================================
+# Skuldugery – T1 rite / tutorial boss (solo ~3k HP)
+# Replaces Squidward in the rite pool (land only). Dodge-heavy.
+# Arrow damage is vanilla-scaled — keep low vs T1 gear.
+# Spawn-Punkt: /boss give skuldugery_anchor  (Rechtsklick auf Block)
+# Test-Spawn:  /boss give skuldugery_core
+# ============================================================
+
+id: skuldugery
+display-name: "&6&lSkuldugery"
+entity-type: SKELETON
+model-engine-id: ""
+
+attributes:
+  max-health: 3000
+  movement-speed: 0.26
+  attack-damage: 30
+  scale: 1.75
+  follow-range: 34
+  knockback-resistance: 0.4
+
+equipment:
+  helmet: AIR
+  chestplate: LEATHER_CHESTPLATE
+  leggings: LEATHER_LEGGINGS
+  boots: LEATHER_BOOTS
+  main-hand: BOW
+  off-hand: AIR
+  drop-chance: 0.0
+  leather-color: "C44B16"
+
+options:
+  glowing: false
+  custom-name-visible: true
+  silent: false
+  invulnerable-spawn-ticks: 20
+  persistent: true
+  remove-when-far-away: false
+  prevent-item-pickup: true
+
+conditions:
+  max-instances: 1
+  leash-radius: 36
+  leash-action: TELEPORT
+
+phases:
+  - id: volley
+    health-percent: 100
+    display-name: "&6&lSkuldugery"
+    skills:
+      - type: ARROW_SHOT
+        trigger: ON_TIMER
+        interval-ticks: 22
+        speed: 2.1
+        spread: 1.6
+        flame: true
+        particle: FLAME
+        damage: 18
+
+  - id: inferno
+    health-percent: 50
+    display-name: "&6&lSkuldugery &7(&cInferno&7)"
+    transition:
+      duration-ticks: 70
+      invulnerable: true
+      freeze-ai: true
+      start-radius: 6.5
+      end-radius: 0.85
+      shape: SPHERE
+      particle: FLAME
+      extra-particle: LAVA
+      points: 72
+      height: 1.2
+      explode: true
+      explode-damage: 22
+      explode-radius: 7.0
+      explode-knockback: 0.75
+    skills:
+      - type: DIALOG
+        trigger: ON_PHASE
+        broadcast: true
+        message: "&6Skuldugery &7ignites the field — minions claw out of the ash!"
+      - type: SOUND
+        trigger: ON_PHASE
+        sound: ENTITY_WITHER_SHOOT
+        volume: 1.15
+        pitch: 0.7
+      - type: MINION_SPAWN
+        trigger: ON_PHASE
+        entity-type: SKELETON
+        amount: 2
+        health: 80
+        scale: 1.1
+        damage: 12
+        speed: 0.26
+        spread: 2.8
+        lifespan-ticks: 0
+        custom-name: "&6Skuldugery Minion"
+        helmet: AIR
+        chestplate: LEATHER_CHESTPLATE
+        leggings: LEATHER_LEGGINGS
+        boots: LEATHER_BOOTS
+        main-hand: BOW
+        leather-color: "8B3A1A"
+      - type: ARROW_SHOT
+        trigger: ON_TIMER
+        interval-ticks: 14
+        speed: 2.1
+        spread: 1.5
+        flame: true
+        particle: FLAME
+        damage: 22
+
+skills:
+  - type: SOUND
+    trigger: ON_SPAWN
+    sound: ENTITY_SKELETON_AMBIENT
+    volume: 1.4
+    pitch: 0.55
+
+  - type: DIALOG
+    trigger: ON_SPAWN
+    broadcast: true
+    message: "&6&lSkuldugery &7draws a flaming bow."
+
+  - type: PARTICLE_AURA
+    trigger: ON_TIMER
+    interval-ticks: 8
+    particle: FLAME
+    count: 14
+    radius: 0.55
+    extra: 0.02
+
+  - type: DIALOG
+    trigger: ON_DEATH
+    broadcast: true
+    message: "&6&lSkuldugery &7crumbles, bowstrings snapping."
+
+loot:
+  damage-based: true
+  participation-threshold-percent: 5.0
+  experience: 52000
+
+  killer-bonus:
+    - source: AETHERION
+      item-id: skuldugery_shortbow
+      amount: 1
+      chance: 0.15
+    - source: AETHERMOBS
+      item-id: catch_sphere_epic
+      amount: 8
+      chance: 1.0
+
+  top-damagers:
+    count: 3
+    items:
+      - source: AETHERION
+        item-id: random_booster
+        amount: 1
+        chance: 1.0
+
+  shared: []
+
+  per-damager:
+    - source: VANILLA
+      material: EXPERIENCE_BOTTLE
+      min-amount: 10
+      max-amount: 18
+      chance: 1.0
+      scale-with-damage: true

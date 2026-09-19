@@ -1,0 +1,38 @@
+name: AetherionQuests
+version: 1.0.0
+main: de.aetherion.quests.AetherionQuests
+api-version: '1.21'
+
+author: Aetherion
+description: Aetherion MMO Quest System
+
+depend:
+  - AetherionCore
+  - AetherionItems
+
+softdepend:
+  - TAB
+  - PlaceholderAPI
+  - FancyNpcs
+  - FancyHolograms
+  - Vault
+  - AetherionMining
+  - AetherionForaging
+  - BossEngine
+  - AetherionHub
+  - AetherMobs
+
+commands:
+  aquest:
+    description: Main AetherionQuests command
+    usage: /aquest
+
+  questnpc:
+    description: Manage Aetherion quest NPCs
+    usage: /questnpc <spawn|give|remove|cleanup|list|removeall>
+    permission: aetherionquests.admin
+
+  language:
+    description: Choose quest/hint language (EN fully supported, DE experimental)
+    usage: /language [en|de]
+    aliases: [lang, sprache, sprachewahl]

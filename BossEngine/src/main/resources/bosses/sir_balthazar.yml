@@ -1,0 +1,239 @@
+# ============================================================
+# Sir Balthazar – T3 world boss (REV5 curve)
+# Intended: Combat T3 party (~5–6 min / 3 players). HP kept.
+# Needs dungeon-ready ambition. Phases get loud on purpose.
+# ============================================================
+
+id: sir_balthazar
+display-name: "&5&lSir Balthazar"
+entity-type: EVOKER
+model-engine-id: ""
+
+attributes:
+  max-health: 115000
+  movement-speed: 0.30
+  attack-damage: 142
+  scale: 1.55
+  follow-range: 38
+  knockback-resistance: 0.62
+
+equipment:
+  helmet: AIR
+  chestplate: AIR
+  leggings: AIR
+  boots: AIR
+  main-hand: BLAZE_ROD
+  off-hand: TOTEM_OF_UNDYING
+  drop-chance: 0.0
+
+options:
+  glowing: true
+  custom-name-visible: true
+  silent: false
+  invulnerable-spawn-ticks: 30
+  persistent: true
+  remove-when-far-away: false
+  prevent-item-pickup: true
+
+conditions:
+  max-instances: 1
+  leash-radius: 42
+  leash-action: TELEPORT
+
+phases:
+  - id: lecture
+    health-percent: 100
+    display-name: "&5&lSir Balthazar"
+    skills:
+      - type: CHARM_DRAIN
+        trigger: ON_TIMER
+        interval-ticks: 190
+        range: 24
+        lifetime-ticks: 140
+      - type: RING_BURST
+        trigger: ON_TIMER
+        interval-ticks: 150
+        waves: 4
+        step: 3.1
+        damage: 52
+        particle: WITCH
+
+  - id: hotfix
+    health-percent: 65
+    display-name: "&5&lSir Balthazar &7(&cHotfix&7)"
+    transition:
+      duration-ticks: 80
+      invulnerable: true
+      freeze-ai: true
+      shape: SPHERE
+      particle: WITCH
+      extra-particle: ENCHANT
+      points: 80
+      explode: false
+    attributes:
+      movement-speed: 0.36
+      attack-damage: 168
+    skills:
+      - type: DIALOG
+        trigger: ON_PHASE
+        broadcast: true
+        message: "&5&lSir Balthazar&7: &fI wrote the rules. You are in beta."
+      - type: SPECTACLE
+        trigger: ON_PHASE
+        title: "&5PATCH NOTES"
+        subtitle: "&7Mandatory. No opt-out."
+        lightning: 8
+        particle: WITCH
+        count: 90
+        radius: 12
+        sound: ENTITY_EVOKER_PREPARE_ATTACK
+      - type: CHARM_DRAIN
+        trigger: ON_TIMER
+        interval-ticks: 140
+        range: 26
+        lifetime-ticks: 120
+      - type: RING_BURST
+        trigger: ON_TIMER
+        interval-ticks: 110
+        waves: 5
+        step: 3.0
+        damage: 64
+        particle: ENCHANT
+      - type: MINION_SPAWN
+        trigger: ON_PHASE
+        entity-type: VEX
+        amount: 6
+        health: 520
+        damage: 44
+        lifespan-ticks: 520
+        custom-name: "&dPatch Note"
+
+  - id: rollback
+    health-percent: 30
+    display-name: "&5&lSir Balthazar &7(&4Rollback&7)"
+    transition:
+      duration-ticks: 90
+      invulnerable: true
+      freeze-ai: true
+      shape: LIGHTNING_STORM
+      particle: WITCH
+      extra-particle: FLASH
+      lightning-count: 10
+      explode: true
+      explode-damage: 42
+      explode-radius: 8.0
+    attributes:
+      movement-speed: 0.40
+      attack-damage: 188
+      scale: 1.75
+    skills:
+      - type: DIALOG
+        trigger: ON_PHASE
+        broadcast: true
+        message: "&5&lSir Balthazar&7: &cReverting physics. You were a rounding error."
+      - type: SPECTACLE
+        trigger: ON_PHASE
+        title: "&4ROLLBACK"
+        subtitle: "&7The universe is in committee."
+        lightning: 12
+        particle: WITCH
+        count: 40
+        radius: 14
+        sound: ENTITY_WITHER_SPAWN
+      - type: RING_BURST
+        trigger: ON_TIMER
+        interval-ticks: 80
+        waves: 6
+        step: 2.8
+        damage: 78
+        particle: WITCH
+      - type: METEOR_RAIN
+        trigger: ON_TIMER
+        interval-ticks: 120
+        amount: 8
+        damage: 70
+        scatter: 11
+        style: BURST
+      - type: MINION_SPAWN
+        trigger: ON_TIMER
+        interval-ticks: 160
+        entity-type: VEX
+        amount: 5
+        health: 480
+        damage: 48
+        lifespan-ticks: 400
+        custom-name: "&dHotfix"
+
+skills:
+  - type: SOUND
+    trigger: ON_SPAWN
+    sound: ENTITY_EVOKER_PREPARE_ATTACK
+    volume: 1.6
+    pitch: 0.55
+
+  - type: SPECTACLE
+    trigger: ON_SPAWN
+    title: "&5SIR BALTHAZAR"
+    subtitle: "&7Ticket opened against physics."
+    lightning: 6
+    particle: WITCH
+    count: 70
+    radius: 10
+    sound: ENTITY_EVOKER_CAST_SPELL
+
+  - type: DIALOG
+    trigger: ON_SPAWN
+    broadcast: true
+    message: "&5&lSir Balthazar &7opens a ticket against physics."
+
+  - type: PARTICLE_AURA
+    trigger: ON_TIMER
+    interval-ticks: 8
+    particle: WITCH
+    count: 22
+    radius: 1.3
+    extra: 0.04
+
+  - type: DIALOG
+    trigger: ON_DEATH
+    broadcast: true
+    message: "&5&lSir Balthazar&7: &fFine. File a report. I still invented it."
+
+loot:
+  damage-based: true
+  participation-threshold-percent: 5.0
+  experience: 52000
+  killer-bonus:
+    - source: AETHERION
+      item-id: staff_of_technical_difficulties
+      amount: 1
+      chance: 0.34
+    - source: AETHERION
+      item-id: random_booster
+      amount: 1
+      chance: 1.0
+  rank-loot:
+    1:
+      - source: AETHERION
+        item-id: staff_of_technical_difficulties
+        amount: 1
+        chance: 0.18
+  top-damagers:
+    count: 3
+    items:
+      - source: AETHERION
+        item-id: random_booster
+        amount: 1
+        chance: 1.0
+  shared:
+    - source: VANILLA
+      material: NETHER_STAR
+      amount: 1
+      chance: 0.55
+  per-damager:
+    - source: VANILLA
+      material: EXPERIENCE_BOTTLE
+      min-amount: 10
+      max-amount: 18
+      chance: 1.0
+      scale-with-damage: true

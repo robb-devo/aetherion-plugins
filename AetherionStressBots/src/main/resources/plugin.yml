@@ -1,0 +1,20 @@
+name: AetherionStressBots
+version: 1.0.0
+main: de.aetherion.stressbots.AetherionStressBots
+api-version: 1.21
+author: Aetherion
+description: Provisions Mineflayer stress bots with gear and zone teleports
+depend:
+  - AetherionItems
+
+commands:
+  stressbots:
+    description: Stress-bot assist controls
+    usage: /stressbots <reload|setup|list>
+    permission: aetherion.stressbots.admin
+    permission-message: No permission.
+
+permissions:
+  aetherion.stressbots.admin:
+    description: Manage stress-bot assist
+    default: op

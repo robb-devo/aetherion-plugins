@@ -1,0 +1,56 @@
+# AetherionDungeons — network roles
+# hub     = mmo-r (RPG hub / capital portal)
+# dungeon = mmo-d (dungeon hub + instances)
+
+role: hub
+
+remote-transfer:
+  enabled: false
+  target-server: mmo-d
+  return-server: mmo-r
+  skip-warm-on-hub: true
+  skip-floor2-warm-on-hub: true
+  shared-dir: "/var/opt/minecraft/crafty/shared/transfer"
+  join-grace-ms: 4000
+
+# Capital nether portal on mmo-r → mmo-d
+hub-portal:
+  enabled: false
+  world: world
+  x: -1.0
+  y: 67.0
+  z: -204.0
+  radius: 12.0
+  cooldown-ms: 3000
+
+# Where players land when arriving on mmo-d (dungeon hub)
+dungeon-hub:
+  arrival:
+    world: world
+    x: -1.0
+    y: 49.0
+    z: -15.0
+    yaw: 180.0
+    pitch: 0.0
+
+# Dungeon-hub portal on mmo-d → capital (mmo-r)
+return-portal:
+  enabled: false
+  world: world
+  x: -1.0
+  y: 48.0
+  z: -27.0
+  radius: 8.0
+  cooldown-ms: 3000
+  arrival:
+    world: world
+    x: -1.0
+    y: 67.0
+    z: -198.0
+    yaw: 0.0
+    pitch: 0.0
+
+tps-log:
+  enabled: true
+  interval-ticks: 1200
+  prefix: "[DungeonTPS]"

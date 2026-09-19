@@ -1,0 +1,340 @@
+# ============================================================
+# BossEngine – Spawn-Items (zum Testen / für Altäre)
+# ------------------------------------------------------------
+# Jedes Item trägt eine PDC-Kennung (bossengine:spawn_item).
+# /boss give [spieler] [item-id]
+# ============================================================
+
+spawn-items:
+  aether_colossus_core:
+    boss: aether_colossus
+    material: NETHER_STAR
+    display-name: "&5&lAether Colossus Core"
+    lore:
+      - "&7Rechtsklick, um den Colossus zu beschwören."
+      - "&8Test-Item · BossEngine"
+    glowing: true
+    consume: true
+    cooldown-seconds: 3
+    # leer = überall nutzbar (praktisch zum Testen)
+    # gesetzt = muss zum passenden ITEM-Spawner (Altar) passen
+    require-altar: false
+
+  hollow_lurker_anchor:
+    boss: hollow_lurker
+    mode: SET_SPAWN
+    material: RECOVERY_COMPASS
+    display-name: "&8&lHollow Anchor"
+    lore:
+      - "&7Right-click a cave block to lock his home."
+      - "&7He spawns there, stays leashed, and returns after 5m."
+      - "&8Admin · BossEngine"
+    glowing: true
+    consume: false
+    cooldown-seconds: 1
+    require-altar: false
+
+  hollow_lurker_core:
+    boss: hollow_lurker
+    mode: SUMMON
+    material: ROTTEN_FLESH
+    display-name: "&8Hollow Lurker Core"
+    lore:
+      - "&7Right-click to summon him here (test)."
+      - "&8Test-Item · BossEngine"
+    glowing: true
+    consume: true
+    cooldown-seconds: 3
+    require-altar: false
+
+  skuldugery_anchor:
+    boss: skuldugery
+    mode: SET_SPAWN
+    material: BLAZE_ROD
+    display-name: "&6&lSkuldugery Anchor"
+    lore:
+      - "&7Right-click a block to lock his home."
+      - "&7He spawns there, stays leashed, and returns after 5m."
+      - "&8Admin · BossEngine"
+    glowing: true
+    consume: false
+    cooldown-seconds: 1
+    require-altar: false
+
+  skuldugery_core:
+    boss: skuldugery
+    mode: SUMMON
+    material: SKELETON_SKULL
+    display-name: "&6Skuldugery Core"
+    lore:
+      - "&7Right-click to summon him here (test)."
+      - "&8Test-Item · BossEngine"
+    glowing: true
+    consume: true
+    cooldown-seconds: 3
+    require-altar: false
+
+  mcnugget_anchor:
+    boss: mcnugget
+    mode: SET_SPAWN
+    material: FEATHER
+    display-name: "&6&lMcNugget Anchor"
+    lore:
+      - "&7Right-click a block to lock his coop."
+      - "&7He spawns there, stays leashed, and returns after 5m."
+      - "&8Admin · BossEngine"
+    glowing: true
+    consume: false
+    cooldown-seconds: 1
+    require-altar: false
+
+  mcnugget_core:
+    boss: mcnugget
+    mode: SUMMON
+    material: EGG
+    display-name: "&6McNugget Core"
+    lore:
+      - "&7Right-click to summon him here (test)."
+      - "&8Test-Item · BossEngine"
+    glowing: true
+    consume: true
+    cooldown-seconds: 3
+    require-altar: false
+
+  bridge_troll_anchor:
+    boss: bridge_troll
+    mode: SET_SPAWN
+    material: ANVIL
+    display-name: "&6&lBridge Troll Anchor"
+    lore:
+      - "&7Right-click a block to lock his bridge."
+      - "&7He spawns there, stays leashed, and returns after 5m."
+      - "&8Admin · BossEngine"
+    glowing: true
+    consume: false
+    cooldown-seconds: 1
+    require-altar: false
+
+  bridge_troll_core:
+    boss: bridge_troll
+    mode: SUMMON
+    material: GOLDEN_AXE
+    display-name: "&6Bridge Troll Core"
+    lore:
+      - "&7Right-click to summon him here (test)."
+      - "&8Test-Item · BossEngine"
+    glowing: true
+    consume: true
+    cooldown-seconds: 3
+    require-altar: false
+
+  pathwarden_anchor:
+    boss: pathwarden
+    mode: SET_SPAWN
+    material: IRON_SWORD
+    display-name: "&4&lPathwarden Anchor"
+    lore:
+      - "&7Right-click a block to lock the gate."
+      - "&7He spawns there, stays leashed, and returns after 5m."
+      - "&8Admin · BossEngine"
+    glowing: true
+    consume: false
+    cooldown-seconds: 1
+    require-altar: false
+
+  pathwarden_core:
+    boss: pathwarden
+    mode: SUMMON
+    material: NETHERITE_SWORD
+    display-name: "&4Pathwarden Core"
+    lore:
+      - "&7Right-click to summon him here (test)."
+      - "&8Test-Item · BossEngine"
+    glowing: true
+    consume: true
+    cooldown-seconds: 3
+    require-altar: false
+
+  squidward_anchor:
+    boss: squidward
+    mode: SET_SPAWN
+    material: HEART_OF_THE_SEA
+    display-name: "&8&lSquidward Anchor"
+    lore:
+      - "&7Right-click a water block to lock his den."
+      - "&7He spawns there, stays leashed, and returns after 5m."
+      - "&8Admin · BossEngine"
+    glowing: true
+    consume: false
+    cooldown-seconds: 1
+    require-altar: false
+
+  squidward_core:
+    boss: squidward
+    mode: SUMMON
+    material: INK_SAC
+    display-name: "&8Squidward Core"
+    lore:
+      - "&7Right-click to summon him here (test)."
+      - "&8Test-Item · BossEngine"
+    glowing: true
+    consume: true
+    cooldown-seconds: 3
+    require-altar: false
+
+  aetherion_anchor:
+    boss: aetherion
+    mode: SET_SPAWN
+    material: DRAGON_EGG
+    display-name: "&5&lAetherion Anchor"
+    lore:
+      - "&7Right-click a block to lock his arena."
+      - "&7He spawns there, stays leashed, and returns after 5m."
+      - "&8Admin · BossEngine"
+    glowing: true
+    consume: false
+    cooldown-seconds: 1
+    require-altar: false
+
+  aetherion_core:
+    boss: aetherion
+    mode: SUMMON
+    material: END_CRYSTAL
+    display-name: "&5Aetherion Core"
+    lore:
+      - "&7Right-click to summon him here (test)."
+      - "&8Test-Item · BossEngine"
+    glowing: true
+    consume: true
+    cooldown-seconds: 3
+    require-altar: false
+
+  sir_balthazar_anchor:
+    boss: sir_balthazar
+    mode: SET_SPAWN
+    material: BLAZE_ROD
+    display-name: "&5&lBalthazar Anchor"
+    lore:
+      - "&7Right-click a block to lock his lecture hall."
+      - "&8Admin · BossEngine · T2"
+    glowing: true
+    consume: false
+    cooldown-seconds: 1
+    require-altar: false
+
+  sir_balthazar_core:
+    boss: sir_balthazar
+    mode: SUMMON
+    material: TOTEM_OF_UNDYING
+    display-name: "&5Balthazar Core"
+    lore:
+      - "&7Right-click to summon him here (test)."
+      - "&8Test-Item · BossEngine · T2"
+    glowing: true
+    consume: true
+    cooldown-seconds: 3
+    require-altar: false
+
+  lobby_cleaner_anchor:
+    boss: lobby_cleaner
+    mode: SET_SPAWN
+    material: ENDER_EYE
+    display-name: "&5&lLobby Cleaner Anchor"
+    lore:
+      - "&7Right-click a block to lock his closet."
+      - "&8Admin · BossEngine · T2"
+    glowing: true
+    consume: false
+    cooldown-seconds: 1
+    require-altar: false
+
+  lobby_cleaner_core:
+    boss: lobby_cleaner
+    mode: SUMMON
+    material: HOPPER
+    display-name: "&5Lobby Cleaner Core"
+    lore:
+      - "&7Right-click to summon him here (test)."
+      - "&8Test-Item · BossEngine · T2"
+    glowing: true
+    consume: true
+    cooldown-seconds: 3
+    require-altar: false
+
+  sparky_anchor:
+    boss: sparky
+    mode: SET_SPAWN
+    material: MAGMA_CREAM
+    display-name: "&6&lSparky Anchor"
+    lore:
+      - "&7Right-click a block to lock the quarry accident."
+      - "&8Admin · BossEngine · T2"
+    glowing: true
+    consume: false
+    cooldown-seconds: 1
+    require-altar: false
+
+  sparky_core:
+    boss: sparky
+    mode: SUMMON
+    material: FIRE_CHARGE
+    display-name: "&6Sparky Core"
+    lore:
+      - "&7Right-click to summon him here (test)."
+      - "&8Test-Item · BossEngine · T2"
+    glowing: true
+    consume: true
+    cooldown-seconds: 3
+    require-altar: false
+
+  baron_von_wurm_anchor:
+    boss: baron_von_wurm
+    mode: SET_SPAWN
+    material: IRON_PICKAXE
+    display-name: "&8&lBaron von Wurm Anchor"
+    lore:
+      - "&7Right-click a block to lock his hole."
+      - "&8Admin · BossEngine · T2"
+    glowing: true
+    consume: false
+    cooldown-seconds: 1
+    require-altar: false
+
+  baron_von_wurm_core:
+    boss: baron_von_wurm
+    mode: SUMMON
+    material: STONE
+    display-name: "&8Baron von Wurm Core"
+    lore:
+      - "&7Right-click to summon him here (test)."
+      - "&8Test-Item · BossEngine · T2"
+    glowing: true
+    consume: true
+    cooldown-seconds: 3
+    require-altar: false
+
+  insolvent_wither_anchor:
+    boss: insolvent_wither
+    mode: SET_SPAWN
+    material: NETHER_STAR
+    display-name: "&8&lInsolvent Wither Anchor"
+    lore:
+      - "&7Right-click a block to lock the foreclosure."
+      - "&8Admin · BossEngine · T2"
+    glowing: true
+    consume: false
+    cooldown-seconds: 1
+    require-altar: false
+
+  insolvent_wither_core:
+    boss: insolvent_wither
+    mode: SUMMON
+    material: GOLD_INGOT
+    display-name: "&8Insolvent Wither Core"
+    lore:
+      - "&7Right-click to summon him here (test)."
+      - "&8Test-Item · BossEngine · T2"
+    glowing: true
+    consume: true
+    cooldown-seconds: 3
+    require-altar: false

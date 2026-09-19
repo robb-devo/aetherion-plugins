@@ -1,0 +1,77 @@
+# ============================================================
+# SANDBOX / TEST ARENA ONLY — no live drops, mechanics prototype
+# Spawn via Dev → Test Arena (not world anchors)
+# ============================================================
+
+id: test_quiet
+display-name: "&f&lThe Quiet Room"
+entity-type: WARDEN
+model-engine-id: ""
+
+attributes:
+  max-health: 40000
+  movement-speed: 0.24
+  attack-damage: 80
+  scale: 1.55
+  follow-range: 48
+  knockback-resistance: 0.85
+
+equipment:
+  helmet: AIR
+  chestplate: AIR
+  leggings: AIR
+  boots: AIR
+  main-hand: AIR
+  off-hand: AIR
+  drop-chance: 0.0
+
+options:
+  glowing: true
+  custom-name-visible: true
+  silent: false
+  invulnerable-spawn-ticks: 25
+  persistent: true
+  remove-when-far-away: false
+  prevent-item-pickup: true
+
+conditions:
+  max-instances: 8
+  leash-radius: 52
+  leash-action: TELEPORT
+
+phases:
+  - id: spectacle
+    health-percent: 100
+    display-name: "&f&lThe Quiet Room"
+    skills: []
+  - id: enraged
+    health-percent: 40
+    display-name: "&f&lThe Quiet Room &8[DEAFENING]"
+    skills: []
+
+skills:
+  - type: SOUND
+    trigger: ON_SPAWN
+    sound: BLOCK_BEACON_ACTIVATE
+    volume: 1.25
+    pitch: 0.75
+  - type: DIALOG
+    trigger: ON_SPAWN
+    broadcast: true
+    message: "&f&lTHE QUIET ROOM &8— &7almost no sound. &fWatch the floor. &7Sculk tells only."
+  - type: DIALOG
+    trigger: ON_DEATH
+    broadcast: true
+    message: "&7The Quiet Room falls. Sandbox clear — no loot."
+
+loot:
+  damage-based: false
+  participation-threshold-percent: 0.0
+  experience: 0
+  killer-bonus: []
+  top-damagers:
+    count: 0
+    items: []
+  shared: []
+  per-damager: []
+

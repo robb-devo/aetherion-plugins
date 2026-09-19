@@ -1,0 +1,171 @@
+# ============================================================
+# Aetherion – Floor 3 dungeon raid (BossEngine)
+# Same arrogance. Smaller sky. The set is not a participation trophy.
+# World raid stays the 155k sky fight. This one is still a brick.
+# ============================================================
+
+id: dungeon_aetherion
+display-name: "&5&l✦✦✦ Aetherion"
+entity-type: ENDER_DRAGON
+model-engine-id: ""
+
+attributes:
+  max-health: 115000
+  movement-speed: 0.40
+  attack-damage: 240
+  scale: 1.0
+  follow-range: 50
+  knockback-resistance: 1.0
+
+equipment:
+  helmet: AIR
+  chestplate: AIR
+  leggings: AIR
+  boots: AIR
+  main-hand: AIR
+  off-hand: AIR
+  drop-chance: 0.0
+
+options:
+  glowing: false
+  custom-name-visible: true
+  silent: false
+  invulnerable-spawn-ticks: 80
+  persistent: true
+  remove-when-far-away: false
+  prevent-item-pickup: true
+
+conditions:
+  max-instances: 16
+  leash-radius: 54
+  leash-action: TELEPORT
+
+phases:
+  - id: challenger
+    health-percent: 100
+    display-name: "&5&l✦✦✦ Aetherion"
+    skills:
+      - type: DRAGON_FIREBALL
+        trigger: ON_TIMER
+        interval-ticks: 50
+        speed: 1.18
+        damage: 165
+        spread: 0.05
+
+  - id: stormborn
+    health-percent: 75
+    display-name: "&5&l✦✦✦ Aetherion &7(&6Stormborn&7)"
+    transition:
+      duration-ticks: 80
+      invulnerable: true
+      freeze-ai: true
+      shape: FIRE_SPIRAL
+      particle: FLAME
+      extra-particle: SOUL_FIRE_FLAME
+      explode: false
+    attributes:
+      attack-damage: 220
+      movement-speed: 0.48
+    skills:
+      - type: DIALOG
+        trigger: ON_PHASE
+        broadcast: true
+        message: "&5&lAetherion&7: &6This chamber is not the sky. Try anyway."
+      - type: DRAGON_FIREBALL
+        trigger: ON_TIMER
+        interval-ticks: 40
+        speed: 1.26
+        damage: 195
+        spread: 0.06
+
+  - id: tempest
+    health-percent: 50
+    display-name: "&5&l✦✦✦ Aetherion &7(&bTempest&7)"
+    transition:
+      duration-ticks: 90
+      invulnerable: true
+      freeze-ai: true
+      shape: LIGHTNING_STORM
+      explode: false
+      explode-radius: 18
+      explode-damage: 78
+    skills:
+      - type: DIALOG
+        trigger: ON_PHASE
+        broadcast: true
+        message: "&5&lAetherion&7: &bYou wanted the set. Earn the bruise."
+      - type: DRAGON_FIREBALL
+        trigger: ON_TIMER
+        interval-ticks: 36
+        speed: 1.30
+        damage: 225
+        spread: 0.07
+
+  - id: singularity
+    health-percent: 25
+    display-name: "&5&l✦✦✦ Aetherion &7(&8Singularity&7)"
+    transition:
+      duration-ticks: 85
+      invulnerable: true
+      freeze-ai: true
+      shape: BLACK_HOLE
+      explode: false
+      explode-radius: 20
+    attributes:
+      attack-damage: 255
+      movement-speed: 0.52
+    skills:
+      - type: DIALOG
+        trigger: ON_PHASE
+        broadcast: true
+        message: "&5&lAetherion&7: &8The armor remembers who bled for it."
+      - type: DRAGON_FIREBALL
+        trigger: ON_TIMER
+        interval-ticks: 32
+        speed: 1.34
+        damage: 255
+        spread: 0.08
+
+skills:
+  - type: DIALOG
+    trigger: ON_SPAWN
+    broadcast: true
+    delay-ticks: 10
+    message: "&5&lAetherion&7: &fA dungeon. How quaint. &cShow me."
+
+  - type: DIALOG
+    trigger: ON_SPAWN
+    broadcast: true
+    delay-ticks: 55
+    message: "&5&lAetherion&7: &fThe set is not a souvenir."
+
+  - type: SOUND
+    trigger: ON_SPAWN
+    sound: ENTITY_ENDER_DRAGON_GROWL
+    volume: 0.85
+    pitch: 0.65
+
+  - type: PARTICLE_AURA
+    trigger: ON_TIMER
+    interval-ticks: 12
+    particle: PORTAL
+    count: 8
+    radius: 1.8
+    extra: 0.02
+
+  - type: DIALOG
+    trigger: ON_DEATH
+    broadcast: true
+    message: "&5&lAetherion&7: &fFine. Take a piece. Not the whole myth."
+
+loot:
+  damage-based: true
+  participation-threshold-percent: 5.0
+  experience: 0
+  killer-bonus: []
+  rank-loot: {}
+  top-damagers:
+    count: 0
+    items: []
+  shared: []
+  per-damager: []

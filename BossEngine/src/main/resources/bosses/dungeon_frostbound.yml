@@ -1,0 +1,148 @@
+# ============================================================
+# The Frostbound – Floor 2 dungeon boss
+# Giant snowman. Needs real gear, skills, pet, boosters, or dungeon kit.
+# Overworld combat bounces.
+# ============================================================
+
+id: dungeon_frostbound
+display-name: "&b&lThe Frostbound"
+entity-type: SNOW_GOLEM
+model-engine-id: ""
+
+attributes:
+  max-health: 90000
+  movement-speed: 0.21
+  attack-damage: 200
+  scale: 2.85
+  follow-range: 34
+  knockback-resistance: 1.0
+
+equipment:
+  helmet: CARVED_PUMPKIN
+  chestplate: AIR
+  leggings: AIR
+  boots: AIR
+  main-hand: AIR
+  off-hand: AIR
+  drop-chance: 0.0
+
+options:
+  glowing: true
+  custom-name-visible: true
+  silent: false
+  invulnerable-spawn-ticks: 20
+  persistent: true
+  remove-when-far-away: false
+  prevent-item-pickup: true
+
+conditions:
+  max-instances: 48
+  leash-radius: 38
+  leash-action: TELEPORT
+
+phases:
+  - id: packed
+    health-percent: 100
+    display-name: "&b&lThe Frostbound"
+    skills:
+      - type: SLAM_LEAP
+        trigger: ON_TIMER
+        interval-ticks: 90
+        upward: 1.12
+        range: 22
+        slam-radius: 4.6
+        slam-damage: 140
+
+  - id: blizzard
+    health-percent: 55
+    display-name: "&b&lThe Frostbound &7(&fBlizzard&7)"
+    transition:
+      duration-ticks: 80
+      invulnerable: true
+      freeze-ai: true
+      start-radius: 8.0
+      end-radius: 2.2
+      particle: SNOWFLAKE
+      extra-particle: CLOUD
+      points: 64
+      height: 0.35
+    attributes:
+      movement-speed: 0.26
+      attack-damage: 260
+      scale: 3.25
+    skills:
+      - type: SOUND
+        trigger: ON_PHASE
+        sound: ENTITY_SNOW_GOLEM_HURT
+        volume: 1.4
+        pitch: 0.45
+      - type: SLAM_LEAP
+        trigger: ON_TIMER
+        interval-ticks: 70
+        upward: 1.22
+        range: 24
+        slam-radius: 5.4
+        slam-damage: 180
+
+  - id: hearth
+    health-percent: 22
+    display-name: "&b&lThe Frostbound &7(&cHearths&7)"
+    transition:
+      duration-ticks: 80
+      invulnerable: true
+      freeze-ai: true
+      start-radius: 10.0
+      end-radius: 2.6
+      particle: SNOWFLAKE
+      extra-particle: CLOUD
+      points: 72
+      height: 0.45
+    attributes:
+      movement-speed: 0.05
+      attack-damage: 300
+      scale: 3.55
+    skills:
+      - type: SOUND
+        trigger: ON_PHASE
+        sound: BLOCK_BEACON_DEACTIVATE
+        volume: 1.2
+        pitch: 0.6
+
+skills:
+  - type: SOUND
+    trigger: ON_SPAWN
+    sound: ENTITY_SNOW_GOLEM_AMBIENT
+    volume: 1.5
+    pitch: 0.45
+
+  - type: DIALOG
+    trigger: ON_SPAWN
+    broadcast: false
+    radius: 64
+    message: "&b&lThe Frostbound&7: &fCarrot's decorative. The rest of me is a workplace hazard."
+
+  - type: PARTICLE_AURA
+    trigger: ON_TIMER
+    interval-ticks: 8
+    particle: SNOWFLAKE
+    count: 10
+    radius: 1.1
+    extra: 0.01
+
+  - type: DIALOG
+    trigger: ON_DEATH
+    broadcast: false
+    radius: 64
+    message: "&b&lThe Frostbound&7: &7Puddle filed. Portal's awake."
+
+loot:
+  damage-based: true
+  participation-threshold-percent: 5.0
+  experience: 0
+  killer-bonus: []
+  rank-loot: {}
+  top-damagers:
+    count: 0
+    items: []
+  shared: []
+  per-damager: []

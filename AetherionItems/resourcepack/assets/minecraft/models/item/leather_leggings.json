@@ -1,0 +1,17 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "minecraft:item/leather_leggings",
+    "layer1": "minecraft:item/leather_leggings_overlay"
+  },
+  "overrides": [
+    {
+      "predicate": { "custom_model_data": 2003 },
+      "model": "minecraft:item/simple_leggings"
+    },
+    {
+      "predicate": { "custom_model_data": 2004 },
+      "model": "minecraft:item/leather_leggings_vanilla"
+    }
+  ]
+}

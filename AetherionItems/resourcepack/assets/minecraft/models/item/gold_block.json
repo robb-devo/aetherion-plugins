@@ -1,0 +1,11 @@
+{
+  "parent": "minecraft:block/gold_block",
+  "overrides": [
+    {
+      "predicate": {
+        "custom_model_data": 3003
+      },
+      "model": "minecraft:item/gold_booster"
+    }
+  ]
+}

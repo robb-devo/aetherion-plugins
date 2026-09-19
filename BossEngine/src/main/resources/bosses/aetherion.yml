@@ -1,0 +1,198 @@
+# ============================================================
+# Aetherion – T4–T5 Ender Dragon raid (REV5 curve)
+# Intended: Combat T4 party (~4–5 min / 3) or T5 faster.
+# HP 200k + power ~90 already sit on the curve — leave.
+# Spawn-Punkt: /boss give aetherion_anchor
+# Test-Spawn:  /boss give aetherion_core
+# ============================================================
+
+id: aetherion
+display-name: "&5&l✦✦✦ Aetherion"
+entity-type: ENDER_DRAGON
+model-engine-id: ""
+
+attributes:
+  max-health: 200000
+  movement-speed: 0.42
+  attack-damage: 92
+  scale: 1.0
+  follow-range: 46
+  knockback-resistance: 1.0
+
+equipment:
+  helmet: AIR
+  chestplate: AIR
+  leggings: AIR
+  boots: AIR
+  main-hand: AIR
+  off-hand: AIR
+  drop-chance: 0.0
+
+options:
+  glowing: false
+  custom-name-visible: true
+  silent: false
+  invulnerable-spawn-ticks: 80
+  persistent: true
+  remove-when-far-away: false
+  prevent-item-pickup: true
+
+conditions:
+  max-instances: 1
+  leash-radius: 50
+  leash-action: TELEPORT
+
+phases:
+  - id: challenger
+    health-percent: 100
+    display-name: "&5&l✦✦✦ Aetherion"
+    skills:
+      - type: DRAGON_FIREBALL
+        trigger: ON_TIMER
+        interval-ticks: 55
+        speed: 1.15
+        damage: 90
+        spread: 0.05
+
+  - id: stormborn
+    health-percent: 75
+    display-name: "&5&l✦✦✦ Aetherion &7(&6Stormborn&7)"
+    transition:
+      duration-ticks: 80
+      invulnerable: true
+      freeze-ai: true
+      shape: FIRE_SPIRAL
+      particle: FLAME
+      extra-particle: SOUL_FIRE_FLAME
+      explode: false
+    attributes:
+      attack-damage: 110
+      movement-speed: 0.5
+    skills:
+      - type: DIALOG
+        trigger: ON_PHASE
+        broadcast: true
+        message: "&5&lAetherion&7: &6The old fire still answers..."
+      - type: DRAGON_FIREBALL
+        trigger: ON_TIMER
+        interval-ticks: 42
+        speed: 1.25
+        damage: 105
+        spread: 0.06
+
+  - id: tempest
+    health-percent: 50
+    display-name: "&5&l✦✦✦ Aetherion &7(&bTempest&7)"
+    transition:
+      duration-ticks: 90
+      invulnerable: true
+      freeze-ai: true
+      shape: LIGHTNING_STORM
+      explode: false
+      explode-radius: 22
+      explode-damage: 42
+    skills:
+      - type: DIALOG
+        trigger: ON_PHASE
+        broadcast: true
+        message: "&5&lAetherion&7: &bThe sky was always mine."
+      - type: DRAGON_FIREBALL
+        trigger: ON_TIMER
+        interval-ticks: 40
+        speed: 1.28
+        damage: 112
+        spread: 0.07
+
+  - id: singularity
+    health-percent: 25
+    display-name: "&5&l✦✦✦ Aetherion &7(&8Singularity&7)"
+    transition:
+      duration-ticks: 85
+      invulnerable: true
+      freeze-ai: true
+      shape: BLACK_HOLE
+      explode: false
+      explode-radius: 22
+    attributes:
+      attack-damage: 124
+      movement-speed: 0.54
+    skills:
+      - type: DIALOG
+        trigger: ON_PHASE
+        broadcast: true
+        message: "&5&lAetherion&7: &8Run, if you still can."
+      - type: DRAGON_FIREBALL
+        trigger: ON_TIMER
+        interval-ticks: 36
+        speed: 1.32
+        damage: 126
+        spread: 0.08
+
+skills:
+  - type: DIALOG
+    trigger: ON_SPAWN
+    broadcast: true
+    delay-ticks: 10
+    message: "&5&lAetherion&7: &fOh a challenger... its been a while."
+
+  - type: DIALOG
+    trigger: ON_SPAWN
+    broadcast: true
+    delay-ticks: 55
+    message: "&5&lAetherion&7: &fEntertain me and &c&lSHOW ME WHAT U GOT"
+
+  - type: SOUND
+    trigger: ON_SPAWN
+    sound: ENTITY_ENDER_DRAGON_GROWL
+    volume: 0.7
+    pitch: 0.7
+
+  - type: PARTICLE_AURA
+    trigger: ON_TIMER
+    interval-ticks: 12
+    particle: PORTAL
+    count: 6
+    radius: 1.6
+    extra: 0.02
+
+loot:
+  damage-based: true
+  participation-threshold-percent: 3.0
+  experience: 95000
+
+  killer-bonus: []
+
+  rank-loot:
+    1:
+      - source: AETHERION
+        item-id: aetherion_void_stick
+        amount: 1
+        chance: 0.10
+      - source: AETHERION
+        item-id: random_aetherion_armor
+        amount: 1
+        chance: 1.0
+    2:
+      - source: AETHERION
+        item-id: random_aetherion_armor
+        amount: 1
+        chance: 0.70
+    3:
+      - source: AETHERION
+        item-id: random_aetherion_armor
+        amount: 1
+        chance: 0.15
+
+  top-damagers:
+    count: 0
+    items: []
+
+  shared: []
+
+  per-damager:
+    - source: VANILLA
+      material: EXPERIENCE_BOTTLE
+      min-amount: 12
+      max-amount: 24
+      chance: 1.0
+      scale-with-damage: true

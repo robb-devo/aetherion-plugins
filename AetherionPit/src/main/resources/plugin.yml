@@ -1,0 +1,30 @@
+name: AetherionPit
+version: 1.0.0
+main: de.aetherion.pit.AetherionPit
+api-version: 1.21
+author: Aetherion
+description: Hub spawn safe-zone + Hypixel-Pit-lite combat outside the red line
+softdepend: [WorldEdit, FastAsyncWorldEdit, FancyNpcs, PlaceholderAPI, DiscordSRV]
+
+commands:
+  pit:
+    description: Pit help / spawn / shop / play
+    usage: /pit [spawn|shop|play|stats|setsafebox|placenpc]
+  aetherion:
+    description: Transfer to Aetherion (mmo-r)
+    aliases: [play, mmor]
+    usage: /aetherion
+  hub:
+    description: Teleport to hub spawn (0, 64, 0)
+    aliases: [lobby, spawn]
+    usage: /hub
+  dev:
+    description: Hub DEV menu (NPC place etc.)
+    usage: /dev
+    permission: aetherion.pit.admin
+
+permissions:
+  aetherion.pit.admin:
+    default: op
+  aetherion.pit.use:
+    default: true

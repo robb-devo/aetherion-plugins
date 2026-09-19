@@ -1,0 +1,17 @@
+name: AetherionFarming
+version: 1.0.0
+main: de.aetherion.farming.AetherionFarming
+api-version: '1.21'
+author: Aetherion
+
+depend:
+  - AetherionCore
+  - WorldGuard
+
+softdepend:
+  - AetherionItems
+  - AetherionQuests
+  - WorldEdit
+  - AetherMobs
+
+description: Crop harvest, regen, bird scare, and shared farm island portals

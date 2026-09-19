@@ -1,0 +1,81 @@
+﻿# ============================================================
+# SANDBOX / TEST ARENA ONLY — no live drops, mechanics prototype
+# Spawn via Dev → Test Arena (not world anchors)
+# ============================================================
+
+id: test_loadbearing
+display-name: "&7&lLoad-Bearing"
+entity-type: IRON_GOLEM
+model-engine-id: ""
+
+attributes:
+  max-health: 52000
+  movement-speed: 0.28
+  attack-damage: 95
+  scale: 1.85
+  follow-range: 48
+  knockback-resistance: 1.0
+
+equipment:
+  helmet: AIR
+  chestplate: AIR
+  leggings: AIR
+  boots: AIR
+  main-hand: AIR
+  off-hand: AIR
+  drop-chance: 0.0
+
+options:
+  glowing: true
+  custom-name-visible: true
+  silent: false
+  invulnerable-spawn-ticks: 30
+  persistent: true
+  remove-when-far-away: false
+  prevent-item-pickup: true
+
+conditions:
+  max-instances: 8
+  leash-radius: 52
+  leash-action: TELEPORT
+
+phases:
+  - id: sealed
+    health-percent: 100
+    display-name: "&7&lLoad-Bearing &8[SEALED]"
+    skills: []
+  - id: critical
+    health-percent: 40
+    display-name: "&c&lLoad-Bearing &4[CRITICAL]"
+    skills: []
+
+skills:
+  - type: SOUND
+    trigger: ON_SPAWN
+    sound: BLOCK_BEACON_ACTIVATE
+    volume: 1.2
+    pitch: 0.55
+  - type: DIALOG
+    trigger: ON_SPAWN
+    broadcast: true
+    message: "&7&lLOAD-BEARING &8— &fRight-click &7the pillars (&e3× &7each). Mining does nothing."
+  - type: DIALOG
+    trigger: ON_DEATH
+    broadcast: true
+    message: "&7The structure folds. &8Sandbox clear — no loot."
+  - type: SOUND
+    trigger: ON_DEATH
+    sound: ENTITY_GENERIC_EXPLODE
+    volume: 1.3
+    pitch: 0.45
+
+loot:
+  damage-based: false
+  participation-threshold-percent: 0.0
+  experience: 0
+  killer-bonus: []
+  top-damagers:
+    count: 0
+    items: []
+  shared: []
+  per-damager: []

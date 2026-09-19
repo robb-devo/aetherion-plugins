@@ -1,0 +1,36 @@
+name: BossEngine
+version: 1.0.0
+main: de.aetherion.bossengine.BossEngine
+api-version: 1.21
+author: Aetherion
+description: Modular custom-mob and boss engine for Aetherion
+
+depend:
+  - AetherionCore
+
+softdepend:
+  - AetherionItems
+  - AetherMobs
+  - AetherionQuests
+  - WorldGuard
+  - WorldGuardExtraFlagsPlus
+  - DeluxeHub
+  - MythicMobs
+  - Essentials
+
+commands:
+  boss:
+    description: BossEngine admin command
+    usage: /boss <spawn|kill|list|reload|give|info>
+    permission: bossengine.admin
+    aliases:
+      - bossengine
+      - be
+
+permissions:
+  bossengine.admin:
+    description: Full BossEngine admin access
+    default: op
+  bossengine.spawn:
+    description: Spawn bosses via command or spawn item
+    default: op

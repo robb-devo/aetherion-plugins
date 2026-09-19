@@ -1,0 +1,14 @@
+---
+description: Aetherion plugin split — Core vs game plugins
+alwaysApply: true
+---
+
+# Aetherion plugins
+
+`AetherionCore` is a thin shared library (keys, entity identity, scripted/raw hit flags). It must not grow a game loop, boss AI, loot, quests, or world ticks.
+
+Game behavior stays in the owning plugin: Items, BossEngine, Aethermobs, Dungeons, Quests, Guilds, Hub, Mining, Farming, Foraging, Fishing.
+
+When two plugins duplicate the same PDC key or “is this a boss/pet/minion?” check, use Core. Do not move combat formulas or tick work into Core unless Robbi asks.
+
+Do not change live game logic while only wiring Core. Same key strings as before (`bossengine:boss_id`, `aethermobs:pet_entity`, …).

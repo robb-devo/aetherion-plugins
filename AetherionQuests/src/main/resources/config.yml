@@ -1,0 +1,33 @@
+# ============================================================
+# Quest compass
+# ============================================================
+# The sidebar on the right is drawn by TAB or DeluxeHub,
+# not by this plugin. If BOTH scoreboards are enabled they
+# overwrite each other. Keep TAB, disable DeluxeHub's board.
+#
+# PlaceholderAPI must be installed. Then add this line to TAB
+# (plugins/TAB/config.yml scoreboard) or DeluxeHub scoreboard:
+#
+#   %aetherionquests_compass% %aetherionquests_target%
+#
+# Placeholders:
+#   %aetherionquests_compass%   ↗ 84m
+#   %aetherionquests_arrow%     ↗
+#   %aetherionquests_distance%  84m
+#   %aetherionquests_target%    Hunter
+#   %aetherionquests_title%     First Hunt
+#
+# TAB refresh (optional, makes the arrow feel live):
+#   placeholder-refresh-intervals:
+#     "%aetherionquests_compass%": 200
+#     "%aetherionquests_target%": 1000
+#
+# The same arrow also appears on the quest bossbar.
+
+npcs:
+
+  fisherman:
+    world: world
+    x: 0
+    y: 64
+    z: 0

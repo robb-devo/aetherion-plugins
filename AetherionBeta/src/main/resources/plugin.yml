@@ -1,0 +1,22 @@
+name: AetherionBeta
+version: 1.0.0
+main: de.aetherion.beta.AetherionBeta
+api-version: 1.21
+author: Aetherion
+depend: [AetherionCore]
+description: Beta checklist, feedback GUI, and spawn guide NPC.
+
+commands:
+  checklist:
+    description: Open the beta checklist
+    usage: /checklist
+    aliases: [betafeedback, feedbackbook]
+  beta:
+    description: Beta admin tools and player analysis
+    usage: /beta
+    permission: aetherion.beta.admin
+
+permissions:
+  aetherion.beta.admin:
+    description: Open beta analysis and place the guide NPC
+    default: op

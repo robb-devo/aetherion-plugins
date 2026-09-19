@@ -1,0 +1,35 @@
+# Name prefixes for auto-provisioning (case-insensitive).
+prefixes:
+  combat: StressC
+  mining: StressM
+
+# Ticks after join/respawn before gear + teleport.
+setup-delay-ticks: 40
+
+# Keep bots fed and alive enough to keep working.
+auto-feed: true
+full-heal-on-setup: true
+
+combat:
+  world: world
+  # Mob-zone center (borderlands profile)
+  x: 220.5
+  y: 58.0
+  z: 160.5
+  yaw: 0.0
+  pitch: 0.0
+  # Spread bots so they do not stack
+  scatter-radius: 18
+
+mining:
+  world: world
+  # Shabby Mine area anchors (from areas.yml)
+  anchors:
+    - { x: 13.5, y: 55.5, z: 297.5 }
+    - { x: -85.5, y: 51.5, z: 277.5 }
+    - { x: -25.5, y: 46.5, z: 254.5 }
+    - { x: 71.5, y: 49.5, z: 266.5 }
+    - { x: 20.5, y: 50.5, z: 231.5 }
+  yaw: 0.0
+  pitch: 0.0
+  scatter-radius: 10

@@ -1,0 +1,32 @@
+{
+  "host": "127.0.0.1",
+  "port": 25567,
+  "version": "1.21.1",
+  "joinDelayMs": 2500,
+  "velocitySecret": "kvbrdcXeETG5",
+  "prefixes": {
+    "combat": "StressC",
+    "mining": "StressM"
+  },
+  "combat": {
+    "searchRadius": 28,
+    "attackIntervalMs": 450,
+    "wanderRadius": 22
+  },
+  "mining": {
+    "searchRadius": 20,
+    "digTimeoutMs": 12000,
+    "ores": [
+      "coal_ore",
+      "copper_ore",
+      "iron_ore",
+      "deepslate_coal_ore",
+      "deepslate_copper_ore",
+      "deepslate_iron_ore",
+      "stone",
+      "cobblestone",
+      "deepslate",
+      "cobbled_deepslate"
+    ]
+  }
+}

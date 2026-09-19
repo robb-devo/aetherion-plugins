@@ -1,0 +1,11 @@
+{
+  "parent": "minecraft:block/diamond_block",
+  "overrides": [
+    {
+      "predicate": {
+        "custom_model_data": 3004
+      },
+      "model": "minecraft:item/diamond_booster"
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+﻿# Build
+**/target/
+**/build/
+!.mvn/wrapper/maven-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs / temp
+*.log
+_tmp*/
+_pack_merge/
+
+# Large assets (not needed for plugin source)
+Aetherion_texturepack.zip
+Aetherion_texturepack_extract/
+
+# Secrets / local deploy
+.env
+.env.*
+*.pem
+discordsrv-secrets*
+DiscordSRV*.jar
+**/secrets*
+**/credentials*
+
+# Kotlin
+.kotlin/

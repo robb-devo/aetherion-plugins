@@ -1,0 +1,197 @@
+# ============================================================
+# Squidward – T1–T2 water boss (REV5 curve)
+# Intended: Combat T1–T2 (or fishing players with a weapon).
+# HP trimmed so T2 solo lands ~3 min; power/skills kept.
+# Spawn-Punkt: /boss give squidward_anchor  (Rechtsklick auf Block, im Wasser)
+# Test-Spawn:  /boss give squidward_core
+# ============================================================
+
+id: squidward
+display-name: "&8&lSquidward"
+entity-type: SQUID
+model-engine-id: ""
+
+attributes:
+  max-health: 11000
+  movement-speed: 0.34
+  attack-damage: 48
+  scale: 3.6
+  follow-range: 36
+  knockback-resistance: 0.65
+
+equipment:
+  helmet: AIR
+  chestplate: AIR
+  leggings: AIR
+  boots: AIR
+  main-hand: AIR
+  off-hand: AIR
+  drop-chance: 0.0
+
+options:
+  glowing: false
+  custom-name-visible: true
+  silent: false
+  invulnerable-spawn-ticks: 20
+  persistent: true
+  remove-when-far-away: false
+  prevent-item-pickup: true
+
+conditions:
+  max-instances: 1
+  leash-radius: 40
+  leash-action: TELEPORT
+
+phases:
+  - id: ink
+    health-percent: 100
+    display-name: "&8&lSquidward"
+    skills:
+      - type: INK_SHOT
+        trigger: ON_TIMER
+        interval-ticks: 80
+        speed: 1.12
+        spread: 0.07
+        damage: 54
+        count: 1
+        blind-ticks: 50
+        slow-ticks: 60
+        poison-ticks: 0
+
+  - id: inkstorm
+    health-percent: 66
+    display-name: "&8&lSquidward &7(&5Inkstorm&7)"
+    transition:
+      duration-ticks: 90
+      invulnerable: true
+      freeze-ai: true
+      shape: INK_SPIN
+      particle: SQUID_INK
+      extra-particle: BUBBLE
+      points: 32
+      lightning-count: 5
+      under-damage: 38
+      explode: false
+    attributes:
+      movement-speed: 0.38
+    skills:
+      - type: DIALOG
+        trigger: ON_PHASE
+        broadcast: true
+        message: "&8Squidward &7unleashes a poisoned ink storm!"
+      - type: SOUND
+        trigger: ON_PHASE
+        sound: ENTITY_SQUID_SQUIRT
+        volume: 1.5
+        pitch: 0.55
+      - type: INK_SHOT
+        trigger: ON_TIMER
+        interval-ticks: 70
+        speed: 1.18
+        spread: 0.11
+        damage: 52
+        count: 2
+        blind-ticks: 50
+        slow-ticks: 60
+        poison-ticks: 55
+
+  - id: boil
+    health-percent: 33
+    display-name: "&8&lSquidward &7(&cBoil&7)"
+    transition:
+      duration-ticks: 45
+      invulnerable: true
+      freeze-ai: true
+      start-radius: 8.5
+      end-radius: 1.6
+      shape: CIRCLE
+      particle: BUBBLE_COLUMN_UP
+      extra-particle: SQUID_INK
+      points: 48
+      height: 0.35
+      explode: false
+    skills:
+      - type: DIALOG
+        trigger: ON_PHASE
+        broadcast: true
+        message: "&cThe water starts to boil — get out of the clusters!"
+      - type: SOUND
+        trigger: ON_PHASE
+        sound: BLOCK_BUBBLE_COLUMN_WHIRLPOOL_INSIDE
+        volume: 1.4
+        pitch: 0.6
+      - type: BOILING_WATER
+        trigger: ON_PHASE
+        amount: 5
+        radius: 2.45
+        spread: 11
+        percent-per-second: 4.0
+      - type: INK_SHOT
+        trigger: ON_TIMER
+        interval-ticks: 60
+        speed: 1.22
+        spread: 0.12
+        damage: 56
+        count: 2
+        blind-ticks: 55
+        slow-ticks: 70
+        poison-ticks: 60
+
+skills:
+  - type: SOUND
+    trigger: ON_SPAWN
+    sound: ENTITY_SQUID_AMBIENT
+    volume: 1.5
+    pitch: 0.55
+
+  - type: DIALOG
+    trigger: ON_SPAWN
+    broadcast: true
+    message: "&8&lSquidward &7rises from the deep."
+
+  - type: PARTICLE_AURA
+    trigger: ON_TIMER
+    interval-ticks: 10
+    particle: BUBBLE
+    count: 5
+    radius: 0.9
+    extra: 0.01
+
+  - type: DIALOG
+    trigger: ON_DEATH
+    broadcast: true
+    message: "&8&lSquidward &7sinks. One boot remains."
+
+loot:
+  damage-based: true
+  participation-threshold-percent: 5.0
+  experience: 26000
+
+  killer-bonus:
+    - source: AETHERION
+      item-id: squids_boot
+      amount: 1
+      chance: 0.12
+    - source: VANILLA
+      material: INK_SAC
+      min-amount: 16
+      max-amount: 32
+      chance: 1.0
+
+  top-damagers:
+    count: 3
+    items:
+      - source: AETHERION
+        item-id: random_booster
+        amount: 1
+        chance: 1.0
+
+  shared: []
+
+  per-damager:
+    - source: VANILLA
+      material: EXPERIENCE_BOTTLE
+      min-amount: 8
+      max-amount: 16
+      chance: 1.0
+      scale-with-damage: true

@@ -1,0 +1,24 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "minecraft:item/netherite_chestplate"
+  },
+  "overrides": [
+    {
+      "predicate": { "custom_model_data": 2172 },
+      "model": "minecraft:item/combat_chestplate"
+    },
+    {
+      "predicate": { "custom_model_data": 2173 },
+      "model": "minecraft:item/netherite_chestplate_vanilla"
+    },
+    {
+      "predicate": { "custom_model_data": 2272 },
+      "model": "minecraft:item/mining_chestplate"
+    },
+    {
+      "predicate": { "custom_model_data": 2273 },
+      "model": "minecraft:item/netherite_chestplate_vanilla"
+    }
+  ]
+}

@@ -1,0 +1,120 @@
+# ============================================================
+# Pathwarden – T2–T3 path gate (REV5 curve)
+# Intended: Combat T2–T3 party. Solo T3 ~7 min; party ~2–3 min.
+# HP was world-boss scale; cut to gate size. Power 520 kept —
+# BossHits softcaps ~72% bar; Director smash/spin stay lethal.
+# Spawn: /boss give pathwarden_anchor  (right-click block)
+# Test:  /boss give pathwarden_core
+# Mechanics live in PathwardenDirector (blades, spin, beam, death).
+# ============================================================
+
+id: pathwarden
+display-name: "&4&lPathwarden"
+entity-type: GIANT
+model-engine-id: ""
+
+attributes:
+  max-health: 52000
+  movement-speed: 0.06
+  attack-damage: 520
+  scale: 1.0
+  follow-range: 28
+  knockback-resistance: 1.0
+
+equipment:
+  helmet: IRON_HELMET
+  chestplate: IRON_CHESTPLATE
+  leggings: IRON_LEGGINGS
+  boots: IRON_BOOTS
+  main-hand: DIAMOND_SWORD
+  off-hand: NETHERITE_SWORD
+  drop-chance: 0.0
+
+options:
+  glowing: false
+  custom-name-visible: true
+  silent: false
+  invulnerable-spawn-ticks: 25
+  persistent: true
+  remove-when-far-away: false
+  prevent-item-pickup: true
+
+conditions:
+  max-instances: 1
+  leash-radius: 32
+  leash-action: TELEPORT
+
+phases:
+  - id: gate
+    health-percent: 100
+    display-name: "&4&lPathwarden"
+    skills: []
+
+skills:
+  - type: SOUND
+    trigger: ON_SPAWN
+    sound: ENTITY_RAVAGER_ROAR
+    volume: 1.35
+    pitch: 0.45
+
+  - type: DIALOG
+    trigger: ON_SPAWN
+    broadcast: true
+    message: "&4&lPathwarden &7plants his blades across the path."
+
+  - type: DIALOG
+    trigger: ON_DEATH
+    broadcast: true
+    message: "&4&lPathwarden &7falls — the path is open."
+
+loot:
+  damage-based: true
+  participation-threshold-percent: 5.0
+  experience: 22000
+
+  killer-bonus:
+    - source: VANILLA
+      material: DIAMOND
+      min-amount: 4
+      max-amount: 8
+      chance: 1.0
+    - source: VANILLA
+      material: REDSTONE_BLOCK
+      min-amount: 2
+      max-amount: 4
+      chance: 0.55
+
+  rank-loot:
+    1:
+      - source: AETHERION
+        item-id: gravwell_cleaver
+        amount: 1
+        chance: 0.10
+    2:
+      - source: AETHERION
+        item-id: gravwell_cleaver
+        amount: 1
+        chance: 0.04
+    3:
+      - source: AETHERION
+        item-id: gravwell_cleaver
+        amount: 1
+        chance: 0.02
+
+  top-damagers:
+    count: 3
+    items:
+      - source: AETHERION
+        item-id: random_booster
+        amount: 1
+        chance: 0.65
+
+  shared: []
+
+  per-damager:
+    - source: VANILLA
+      material: EXPERIENCE_BOTTLE
+      min-amount: 6
+      max-amount: 12
+      chance: 1.0
+      scale-with-damage: true

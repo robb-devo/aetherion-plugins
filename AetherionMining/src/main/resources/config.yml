@@ -1,0 +1,39 @@
+# Cleared 2026-09-11 — old megamap mine box removed.
+# Re-define the Origin mine region when ready.
+
+mine:
+  world: world
+  pos1:
+    x: 0
+    y: 0
+    z: 0
+  pos2:
+    x: 0
+    y: 0
+    z: 0
+  blocks:
+    IRON_ORE:
+      respawn: 30
+    GOLD_ORE:
+      respawn: 60
+    DIAMOND_ORE:
+      respawn: 120
+
+veins:
+  world: aether_veins
+  radius: 250
+  hub-y: 220
+  reset-hours: 24
+  keep-inventory: true
+
+# Mining Eldervale Island (Blocky Verse) — paste south of Origin slime pad.
+eldervale:
+  world: world
+  schematic: Mining-Eldervale-Island.schem
+  ignore-air: true
+  auto-paste-once: false
+  paste:
+    x: 22
+    y: 90
+    z: 580
+

@@ -1,0 +1,296 @@
+package de.aetherion.mining.veins;
+
+import de.aetherion.mining.AetherionMining;
+
+import org.bukkit.GameMode;
+import org.bukkit.Location;
+import org.bukkit.block.Block;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.entity.EntityPortalEvent;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
+import org.bukkit.event.player.PlayerGameModeChangeEvent;
+import org.bukkit.event.player.PlayerInteractAtEntityEvent;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerPortalEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.scheduler.BukkitRunnable;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
+public final class VeinsListener implements Listener {
+
+    private static final long DIALOG_INTERVAL_TICKS = 60L;
+
+    private final Map<UUID, BukkitRunnable> activeDialogs = new ConcurrentHashMap<>();
+
+    private final AetherionMining plugin;
+    private final VeinsWorld veins;
+    private final VeinsNpcs npcs;
+
+    public VeinsListener(AetherionMining plugin, VeinsWorld veins, VeinsNpcs npcs) {
+        this.plugin = plugin;
+        this.veins = veins;
+        this.npcs = npcs;
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
+    public void onNpc(PlayerInteractEntityEvent event) {
+        if (!VeinsNpcs.isNpc(event.getRightClicked())) {
+            return;
+        }
+        event.setCancelled(true);
+        if (event.getHand() != EquipmentSlot.HAND) {
+            return;
+        }
+        handleNpc(event.getPlayer(), event.getRightClicked());
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
+    public void onNpcAt(PlayerInteractAtEntityEvent event) {
+        if (!VeinsNpcs.isNpc(event.getRightClicked())) {
+            return;
+        }
+        event.setCancelled(true);
+        if (event.getHand() != EquipmentSlot.HAND) {
+            return;
+        }
+        handleNpc(event.getPlayer(), event.getRightClicked());
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
+    public void onAnchor(PlayerInteractEvent event) {
+        if (event.getHand() != EquipmentSlot.HAND) {
+            return;
+        }
+        Player player = event.getPlayer();
+        if (!VeinsNpcs.isAnchor(player.getInventory().getItemInMainHand())) {
+            return;
+        }
+        if (!player.hasPermission("aetherion.mines.admin")) {
+            return;
+        }
+        event.setCancelled(true);
+        if (player.isSneaking()) {
+            npcs.removeEntrance();
+            player.sendMessage("§7Foreman removed.");
+            return;
+        }
+        Block block = event.getClickedBlock();
+        if (block == null) {
+            return;
+        }
+        Location location = block.getRelative(event.getBlockFace()).getLocation().add(0.5, 0, 0.5);
+        location.setYaw(player.getLocation().getYaw());
+        location.setPitch(0f);
+        npcs.spawnEntrance(location);
+        player.sendMessage("§aAnchored §fForeman§a. Players click him to enter The Veins §7(Mining Skill 30+)§a.");
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
+    public void onBreak(BlockBreakEvent event) {
+        if (!veins.isVeins(event.getBlock().getWorld())) {
+            return;
+        }
+        if (VeinsHub.protectedSpot(event.getBlock().getLocation(), veins.hubY())) {
+            if (!admin(event.getPlayer())) {
+                event.setCancelled(true);
+            }
+            return;
+        }
+        // Soft dirt/sand/gravel is not mineable — SharedWorldGuard owns that cancel.
+        if (de.aetherion.mining.SharedWorldGuard.isSoftTerrain(event.getBlock().getType())) {
+            return;
+        }
+        event.setCancelled(false);
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onPlace(BlockPlaceEvent event) {
+        if (!veins.isVeins(event.getBlock().getWorld())) {
+            return;
+        }
+        if (!VeinsHub.protectedSpot(event.getBlock().getLocation(), veins.hubY())) {
+            return;
+        }
+        if (admin(event.getPlayer())) {
+            return;
+        }
+        event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onExplode(EntityExplodeEvent event) {
+        if (veins.isVeins(event.getEntity().getWorld())) {
+            event.blockList().clear();
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onPortal(PlayerPortalEvent event) {
+        if (veins.isVeins(event.getFrom().getWorld())) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onEntityPortal(EntityPortalEvent event) {
+        if (veins.isVeins(event.getFrom().getWorld())) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onRespawn(PlayerRespawnEvent event) {
+        Player player = event.getPlayer();
+        if (!veins.isVeins(player.getWorld()) && !veins.isVeins(event.getRespawnLocation().getWorld())) {
+            return;
+        }
+        Location spawn = veins.hubSpawn();
+        if (spawn != null) {
+            event.setRespawnLocation(spawn);
+        }
+    }
+
+    @EventHandler
+    public void onJoin(PlayerJoinEvent event) {
+        plugin.getServer().getScheduler().runTask(plugin, () -> {
+            Player player = event.getPlayer();
+            keepSurvival(player);
+            veins.rescueIfBuried(player);
+        });
+    }
+
+    @EventHandler
+    public void onWorld(PlayerChangedWorldEvent event) {
+        keepSurvival(event.getPlayer());
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onGameMode(PlayerGameModeChangeEvent event) {
+        if (event.getNewGameMode() != GameMode.ADVENTURE) {
+            return;
+        }
+        if (!veins.isVeins(event.getPlayer().getWorld())) {
+            return;
+        }
+        event.setCancelled(true);
+        event.getPlayer().setGameMode(GameMode.SURVIVAL);
+    }
+
+    private void keepSurvival(Player player) {
+        if (player != null && veins.isVeins(player.getWorld()) && player.getGameMode() == GameMode.ADVENTURE) {
+            player.setGameMode(GameMode.SURVIVAL);
+        }
+    }
+
+    private void handleNpc(Player player, Entity entity) {
+        if (player.isSneaking() && player.hasPermission("aetherion.mines.admin")) {
+            if (npcs.tryRemoveClicked(entity)) {
+                player.sendMessage("§7Foreman removed.");
+            }
+            return;
+        }
+        if (veins.isVeins(player.getWorld())) {
+            playForemanDialog(player, List.of(
+                    "Done already? Fine. Back to daylight."
+            ), () -> veins.leave(player));
+            return;
+        }
+
+        if (!hasMiningAccess(player)) {
+            playForemanDialog(player, List.of(
+                    "Name's the Foreman. I don't dig. I point.",
+                    "I ship people into §eThe Veins§f — the big mine.",
+                    "Door policy is simple: §aMining Skill 30§f on at least one mining skill.",
+                    "§cYou? Not yet. Dig more. Come back when the dirt respects you."
+            ), null);
+            return;
+        }
+
+        playForemanDialog(player, List.of(
+                "Name's the Foreman. I don't dig. I point.",
+                "I ship people into §eThe Veins§f — the big mine.",
+                "Door policy is simple: §aMining Skill 30§f on at least one mining skill.",
+                "§aYou're cleared. Try not to become a cautionary tale."
+        ), () -> veins.enter(player));
+    }
+
+    private void playForemanDialog(Player player, List<String> lines, Runnable after) {
+        cancelDialog(player.getUniqueId());
+
+        List<String> copy = new ArrayList<>(lines);
+        BukkitRunnable task = new BukkitRunnable() {
+            private int index = 0;
+
+            @Override
+            public void run() {
+                if (!player.isOnline()) {
+                    cancelDialog(player.getUniqueId());
+                    return;
+                }
+
+                if (index >= copy.size()) {
+                    cancelDialog(player.getUniqueId());
+                    if (after != null) {
+                        after.run();
+                    }
+                    return;
+                }
+
+                String line = copy.get(index);
+                if (line != null && !line.isEmpty()) {
+                    player.sendMessage("§6Foreman§7: §f" + line);
+                }
+                index++;
+            }
+        };
+
+        activeDialogs.put(player.getUniqueId(), task);
+        task.runTaskTimer(plugin, 0L, DIALOG_INTERVAL_TICKS);
+    }
+
+    private void cancelDialog(UUID playerId) {
+        BukkitRunnable running = activeDialogs.remove(playerId);
+        if (running != null) {
+            running.cancel();
+        }
+    }
+
+    private static boolean hasMiningAccess(Player player) {
+        org.bukkit.plugin.Plugin items = org.bukkit.Bukkit.getPluginManager().getPlugin("AetherionItems");
+        if (items == null || !items.isEnabled()) {
+            return true;
+        }
+        try {
+            Object skills = items.getClass().getMethod("getSkills").invoke(items);
+            if (skills == null) {
+                return true;
+            }
+            Object level = skills.getClass().getMethod("miningLevel", Player.class).invoke(skills, player);
+            return level instanceof Number number && number.intValue() >= 30;
+        } catch (ReflectiveOperationException ignored) {
+            return true;
+        }
+    }
+
+    private static boolean admin(Player player) {
+        return player != null
+                && player.getGameMode() == GameMode.CREATIVE
+                && player.hasPermission("aetherion.mines.admin");
+    }
+}

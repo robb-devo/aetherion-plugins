@@ -1,0 +1,143 @@
+# ============================================================
+# Prototype Sentinel – Floor 1 dungeon boss (BossEngine)
+# Small bump over the old rare/epic entry fight.
+# Dungeon set % scaling should make this clearly faster, not a gear nerf.
+# ============================================================
+
+id: dungeon_sentinel
+display-name: "&5&lPrototype Sentinel"
+entity-type: HUSK
+model-engine-id: ""
+
+attributes:
+  max-health: 5800
+  movement-speed: 0.26
+  attack-damage: 72
+  scale: 1.85
+  follow-range: 26
+  knockback-resistance: 0.7
+
+equipment:
+  helmet: IRON_HELMET
+  chestplate: IRON_CHESTPLATE
+  leggings: IRON_LEGGINGS
+  boots: IRON_BOOTS
+  main-hand: IRON_SWORD
+  off-hand: AIR
+  drop-chance: 0.0
+
+options:
+  glowing: true
+  custom-name-visible: true
+  silent: false
+  invulnerable-spawn-ticks: 20
+  persistent: true
+  remove-when-far-away: false
+  prevent-item-pickup: true
+
+conditions:
+  max-instances: 48
+  leash-radius: 28
+  leash-action: TELEPORT
+
+phases:
+  - id: hold
+    health-percent: 100
+    display-name: "&5&lPrototype Sentinel"
+    skills:
+      - type: SLAM_LEAP
+        trigger: ON_TIMER
+        interval-ticks: 110
+        upward: 1.02
+        range: 16
+        slam-radius: 3.6
+        slam-damage: 30
+
+  - id: rupture
+    health-percent: 50
+    display-name: "&5&lPrototype Sentinel &7(&cRupture&7)"
+    transition:
+      duration-ticks: 70
+      invulnerable: true
+      freeze-ai: true
+      start-radius: 6.0
+      end-radius: 1.1
+      particle: SOUL_FIRE_FLAME
+      points: 48
+      height: 0.18
+    attributes:
+      movement-speed: 0.32
+      attack-damage: 88
+      scale: 2.05
+    skills:
+      - type: DIALOG
+        trigger: ON_PHASE
+        broadcast: false
+        radius: 64
+        message: "&5The Sentinel &7splits its shell — the floor answers."
+      - type: SOUND
+        trigger: ON_PHASE
+        sound: ENTITY_ZOMBIE_VILLAGER_CURE
+        volume: 1.2
+        pitch: 0.5
+      - type: POTION
+        trigger: ON_PHASE
+        effect: STRENGTH
+        amplifier: 0
+        duration-ticks: 400
+      - type: MINION_SPAWN
+        trigger: ON_PHASE
+        entity-type: HUSK
+        amount: 2
+        spread: 2.4
+        health: 400
+        damage: 26
+        scale: 1.05
+        custom-name: "&8Sentinel Shard"
+        lifespan-ticks: 600
+      - type: SLAM_LEAP
+        trigger: ON_TIMER
+        interval-ticks: 80
+        upward: 1.08
+        range: 16
+        slam-radius: 4.2
+        slam-damage: 40
+
+skills:
+  - type: SOUND
+    trigger: ON_SPAWN
+    sound: ENTITY_HUSK_AMBIENT
+    volume: 1.4
+    pitch: 0.45
+
+  - type: DIALOG
+    trigger: ON_SPAWN
+    broadcast: false
+    radius: 64
+    message: "&5&lPrototype Sentinel &7steps into the chamber."
+
+  - type: PARTICLE_AURA
+    trigger: ON_TIMER
+    interval-ticks: 12
+    particle: SOUL
+    count: 6
+    radius: 0.55
+    extra: 0.01
+
+  - type: DIALOG
+    trigger: ON_DEATH
+    broadcast: false
+    radius: 64
+    message: "&5&lPrototype Sentinel &7crumbles. The portal behind it wakes."
+
+loot:
+  damage-based: true
+  participation-threshold-percent: 5.0
+  experience: 0
+  killer-bonus: []
+  rank-loot: {}
+  top-damagers:
+    count: 0
+    items: []
+  shared: []
+  per-damager: []

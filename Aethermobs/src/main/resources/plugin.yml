@@ -1,0 +1,24 @@
+name: AetherMobs
+version: 1.0.0
+main: de.aetherion.aethermobs.AetherMobs
+api-version: '1.21'
+depend:
+  - AetherionCore
+  - AetherionItems
+softdepend:
+  - PlaceholderAPI
+  - AetherionQuests
+
+commands:
+
+  pet:
+    description: AetherMobs pet test command
+    usage: /pet <shiny|collection|sphere|beta>
+
+  pets:
+    description: Open your pet collection
+    usage: /pets
+
+  aetherlex:
+    description: Open the Aetherlex pet encyclopedia
+    usage: /aetherlex

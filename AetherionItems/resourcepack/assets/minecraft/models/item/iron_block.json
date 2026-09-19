@@ -1,0 +1,11 @@
+{
+  "parent": "minecraft:block/iron_block",
+  "overrides": [
+    {
+      "predicate": {
+        "custom_model_data": 3002
+      },
+      "model": "minecraft:item/iron_booster"
+    }
+  ]
+}

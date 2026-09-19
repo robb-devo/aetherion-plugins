@@ -1,0 +1,24 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "minecraft:item/netherite_boots"
+  },
+  "overrides": [
+    {
+      "predicate": { "custom_model_data": 2174 },
+      "model": "minecraft:item/combat_boots"
+    },
+    {
+      "predicate": { "custom_model_data": 2175 },
+      "model": "minecraft:item/netherite_boots_vanilla"
+    },
+    {
+      "predicate": { "custom_model_data": 2274 },
+      "model": "minecraft:item/mining_boots"
+    },
+    {
+      "predicate": { "custom_model_data": 2275 },
+      "model": "minecraft:item/netherite_boots_vanilla"
+    }
+  ]
+}

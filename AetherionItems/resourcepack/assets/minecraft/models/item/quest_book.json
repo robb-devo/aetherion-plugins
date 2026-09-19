@@ -1,0 +1,11 @@
+{
+  "parent": "minecraft:item/generated",
+  "overrides": [
+    {
+      "predicate": {
+        "custom_model_data": 3008
+      },
+      "model": "minecraft:item/quest_book"
+    }
+  ]
+}

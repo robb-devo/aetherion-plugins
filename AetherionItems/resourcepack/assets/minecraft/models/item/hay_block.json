@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/hay_block",
+  "overrides": [
+    {
+      "predicate": { "custom_model_data": 3010 },
+      "model": "minecraft:item/wheat_booster"
+    }
+  ]
+}

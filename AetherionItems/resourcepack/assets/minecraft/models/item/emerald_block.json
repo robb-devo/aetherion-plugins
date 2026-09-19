@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/emerald_block",
+  "overrides": [
+    {
+      "predicate": { "custom_model_data": 3005 },
+      "model": "minecraft:item/emerald_booster"
+    }
+  ]
+}

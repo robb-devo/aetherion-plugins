@@ -1,0 +1,155 @@
+# ============================================================
+# Bridge Troll – T1 rite / tutorial boss (solo ~3k HP)
+# Combat T1 gear. Slam/storm chunky, not wipe.
+# Spawn-Punkt: /boss give bridge_troll_anchor  (Rechtsklick auf Block)
+# Test-Spawn:  /boss give bridge_troll_core
+# ============================================================
+
+id: bridge_troll
+display-name: "&6&lBridge Troll"
+entity-type: PIGLIN_BRUTE
+model-engine-id: ""
+
+attributes:
+  max-health: 3000
+  movement-speed: 0.24
+  attack-damage: 34
+  scale: 1.55
+  follow-range: 80
+  knockback-resistance: 0.9
+
+equipment:
+  helmet: AIR
+  chestplate: GOLDEN_CHESTPLATE
+  leggings: AIR
+  boots: AIR
+  main-hand: GOLDEN_AXE
+  off-hand: AIR
+  drop-chance: 0.0
+
+options:
+  glowing: false
+  custom-name-visible: true
+  silent: false
+  invulnerable-spawn-ticks: 20
+  persistent: true
+  remove-when-far-away: false
+  prevent-item-pickup: true
+
+conditions:
+  max-instances: 1
+  leash-radius: 128
+  leash-action: TELEPORT
+
+phases:
+  - id: stomp
+    health-percent: 100
+    display-name: "&6&lBridge Troll"
+    skills:
+      - type: SLAM_LEAP
+        trigger: ON_TIMER
+        interval-ticks: 110
+        upward: 1.08
+        range: 36
+        slam-radius: 4.5
+        slam-damage: 18
+
+  - id: storm
+    health-percent: 50
+    display-name: "&6&lBridge Troll &7(&cStorm&7)"
+    transition:
+      duration-ticks: 140
+      invulnerable: true
+      freeze-ai: true
+      shape: HOVER_STORM
+      hover-height: 5.2
+      lightning-count: 4
+      under-damage: 16
+      under-radius: 5.0
+      particle: ELECTRIC_SPARK
+      extra-particle: END_ROD
+      points: 48
+      height: 0.2
+      explode: true
+      explode-damage: 32
+      explode-radius: 28
+      explode-knockback: 1.1
+    attributes:
+      movement-speed: 0.30
+      attack-damage: 42
+    skills:
+      - type: DIALOG
+        trigger: ON_PHASE
+        broadcast: true
+        message: "&6Bridge Troll &7charges the crossing — then the storm drops."
+      - type: SOUND
+        trigger: ON_PHASE
+        sound: ENTITY_LIGHTNING_BOLT_THUNDER
+        volume: 1.2
+        pitch: 0.7
+      - type: SLAM_LEAP
+        trigger: ON_TIMER
+        interval-ticks: 95
+        upward: 1.12
+        range: 40
+        slam-radius: 5.0
+        slam-damage: 22
+
+skills:
+  - type: SOUND
+    trigger: ON_SPAWN
+    sound: ENTITY_HOGLIN_ANGRY
+    volume: 1.4
+    pitch: 0.55
+
+  - type: DIALOG
+    trigger: ON_SPAWN
+    broadcast: true
+    message: "&6&lBridge Troll &7stomps onto the crossing."
+
+  - type: PARTICLE_AURA
+    trigger: ON_TIMER
+    interval-ticks: 12
+    particle: CRIT
+    count: 4
+    radius: 0.55
+    extra: 0.01
+
+  - type: DIALOG
+    trigger: ON_DEATH
+    broadcast: true
+    message: "&6&lBridge Troll &7crumbles off the bridge."
+
+loot:
+  damage-based: true
+  participation-threshold-percent: 5.0
+  experience: 28000
+
+  killer-bonus:
+    - source: AETHERION
+      item-id: bridged_axe
+      amount: 1
+      chance: 0.12
+    - source: VANILLA
+      material: GOLD_BLOCK
+      min-amount: 8
+      max-amount: 16
+      chance: 1.0
+
+  top-damagers:
+    count: 3
+    items:
+      - source: AETHERION
+        item-id: random_booster
+        amount: 1
+        chance: 1.0
+
+  shared: []
+
+  per-damager:
+    - source: VANILLA
+      material: EXPERIENCE_BOTTLE
+      min-amount: 8
+      max-amount: 14
+      chance: 1.0
+      scale-with-damage: true

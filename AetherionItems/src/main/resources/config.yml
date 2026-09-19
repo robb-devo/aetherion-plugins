@@ -1,0 +1,7 @@
+ranks:
+  mvpplusplus:
+    group: mvpplusplus
+    weight: 90
+    prefix: "&6[MVP&c++&6] "
+    players:
+      - c46afc0c-488b-430f-83a7-98f8a5df3ac5

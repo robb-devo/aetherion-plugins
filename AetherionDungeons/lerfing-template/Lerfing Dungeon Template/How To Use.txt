@@ -1,0 +1,30 @@
+== Lerfing's Dungeon Template ==
+
+Don't want to build your own dungeons? 
+Gold rank+ gets access to premade dungeon styles. Check it out here:
+https://www.patreon.com/posts/infinite-dungeon-143066901
+
+I highly recommend thoroughly watching my youtube video tutorial on how to use
+these before you hop into a world.
+
+INSTALLATION:
+Version recommended to use this on is 1.19 - 1.20. It might work in future
+versions too.
+
+- Open your world folder and drop the datapacks and generated folder into it, then
+reboot your world. Easy as that.
+
+- Type /give [your username] jigsaw
+- Place the block with the arrow facing horizontally.
+- In the top, type lerfing:test or lerfing:sao_brick_dungeon
+- For the next 2 lines type test or sao_brick_dungeon
+- Don't change anything else
+- Set the slider up
+- Click generate
+
+All done!
+
+If you want to add your own dungeon styles, watch my tutorial or download
+high quality premade versions on my patreon.
+
+Support discord: https://discord.gg/jCJGU6quGF

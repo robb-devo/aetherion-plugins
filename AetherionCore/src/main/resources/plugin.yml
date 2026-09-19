@@ -1,0 +1,25 @@
+name: AetherionCore
+version: 1.0.0
+main: de.aetherion.core.AetherionCore
+api-version: 1.21
+author: Aetherion
+load: STARTUP
+description: Shared keys, entity identity, and hit flags. No game loop.
+
+commands:
+  aethercore:
+    description: Core status
+    permission: aetherion.core.admin
+    usage: /aethercore
+  wipe:
+    description: Shut down, reset all player data, then restart
+    permission: aetherion.wipe
+    usage: /wipe beta confirm
+
+permissions:
+  aetherion.core.admin:
+    description: Core admin command
+    default: op
+  aetherion.wipe:
+    description: Run a full beta player-data wipe
+    default: op

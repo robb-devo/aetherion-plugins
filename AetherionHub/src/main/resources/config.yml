@@ -1,0 +1,179 @@
+# /spawn and /hub teleport to the player's selected spawn.
+# /spawns opens the unlock menu. New destinations: /hubadmin set <id>
+
+respawn-at-selected-spawn: true
+# On login, move players to their selected spawn (same as /spawn), not last logout spot.
+join-at-selected-spawn: true
+
+starter-hint:
+  enabled: true
+  # First join only (Minecraft hasPlayedBefore). Existing players can use /hubadmin hint.
+  delay-ticks: 60
+  title: "§6§lFIND EGON"
+  subtitle: "§eGreen glow near harbour · talk to him"
+  actionbar: "§aLook for the green aura — Egon kits rookies"
+  also-chat: false
+  messages:
+    - ""
+    - "§6§lHint: §eTalk to Egon and Quartermaster to start your journey"
+
+messages:
+  teleported: "§aTeleported to §f{name}§a."
+  selected: "§aYour spawn is now §f{name}§a. Use /spawn to go there."
+  locked: "§cYou have not unlocked §f{name} §cyet."
+  missing-location: "§cThat spawn has no location yet. An admin must stand there and run §f/hubadmin set {id}§c."
+  no-spawn: "§cNo spawn is set. An admin should stand at the harbour and run §f/hubadmin set harbour§c."
+
+# Menu: left/right edge columns stay glass. Content row slots 10–16.
+# Capital / Farm / Borderlands / Ore Ridge unlock by walking near (discover-radius + title popup).
+spawns:
+  harbour:
+    display-name: "Harbour"
+    description: "Anker Harbour — Egon, market, and the docks."
+    icon: OAK_BOAT
+    slot: 10
+    unlocked-by-default: true
+
+  ore_ridge:
+    display-name: "Ore Ridge"
+    description: "Coal hill near the harbour. Quartermaster's first errand. Walk in to unlock."
+    icon: IRON_ORE
+    slot: 11
+    unlocked-by-default: false
+    discover-radius: 40
+
+  mines:
+    display-name: "Mines"
+    description: "Shabby Mine mouth. Shaft Foreman runs the first shift."
+    icon: IRON_PICKAXE
+    slot: 12
+    unlocked-by-default: false
+
+  capital:
+    display-name: "Capital"
+    description: "City hub — Skills, Ledger, and the road onward. Walk in to unlock."
+    icon: BELL
+    slot: 13
+    unlocked-by-default: false
+    discover-radius: 36
+
+  forage_isle:
+    display-name: "Forage Isle"
+    description: "Wooded chop loops. Find the lumberjack."
+    icon: OAK_LEAVES
+    slot: 14
+    unlocked-by-default: false
+
+  farm:
+    display-name: "Farm"
+    description: "Fields and Clucksworth. Walk in to unlock."
+    icon: HAY_BLOCK
+    slot: 15
+    unlocked-by-default: false
+    discover-radius: 28
+
+  borderlands:
+    display-name: "Borderlands"
+    description: "Beyond Vex's gate. Hostile wastes. Walk in to unlock."
+    icon: COARSE_DIRT
+    slot: 16
+    unlocked-by-default: false
+    discover-radius: 36
+
+  colosseum:
+    display-name: "Colosseum"
+    description: "Proctor's ring — Crypt vials, T2 bosses. Unlocks with the Proctor."
+    icon: SANDSTONE
+    slot: 19
+    unlocked-by-default: false
+
+  eldervale:
+    display-name: "Eldervale"
+    description: "Mining island past the slime jump pad. Walk in to unlock."
+    icon: DEEPSLATE_DIAMOND_ORE
+    slot: 20
+    unlocked-by-default: false
+    discover-radius: 36
+
+# Island jump pads (Eldervale + Forage Isle)
+island-pads:
+  enabled: true
+  require-stamped-blueprint: true
+  require-blueprint-ids: []
+  pads:
+    origin_to_mining:
+      world: world
+      min:
+        x: 20
+        y: 54
+        z: 304
+      max:
+        x: 24
+        y: 54
+        z: 306
+      target:
+        x: 53.5
+        y: 91.0
+        z: 482.5
+      arc-height: 55
+      horiz-speed: 3.15
+      boost-ticks: 70
+      cooldown-ms: 1500
+      require-stamped-blueprint: true
+    mining_to_origin:
+      world: world
+      min:
+        x: 52
+        y: 89
+        z: 481
+      max:
+        x: 55
+        y: 89
+        z: 483
+      target:
+        x: 22.5
+        y: 56.0
+        z: 305.5
+      arc-height: 55
+      horiz-speed: 3.15
+      boost-ticks: 70
+      cooldown-ms: 1500
+      require-stamped-blueprint: false
+    origin_to_forage:
+      world: world
+      min:
+        x: 435
+        y: 54
+        z: -237
+      max:
+        x: 441
+        y: 56
+        z: -231
+      target:
+        x: 479.5
+        y: 74.0
+        z: -240.5
+      arc-height: 45
+      horiz-speed: 2.9
+      boost-ticks: 65
+      cooldown-ms: 1500
+      require-stamped-blueprint: false
+    forage_to_origin:
+      world: world
+      min:
+        x: 476
+        y: 71
+        z: -244
+      max:
+        x: 482
+        y: 74
+        z: -238
+      target:
+        x: 438.5
+        y: 56.0
+        z: -233.5
+      arc-height: 45
+      horiz-speed: 2.9
+      boost-ticks: 65
+      cooldown-ms: 1500
+      require-stamped-blueprint: false

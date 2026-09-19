@@ -1,0 +1,104 @@
+foraging:
+  blocks:
+  - OAK_LOG
+  - SPRUCE_LOG
+  - BIRCH_LOG
+  - JUNGLE_LOG
+  - ACACIA_LOG
+  - DARK_OAK_LOG
+  - MANGROVE_LOG
+  - CHERRY_LOG
+  - BAMBOO_BLOCK
+  # Harbour: force oak. Forage Isle (footprint) yields typed wood instead.
+  force-drop: OAK_LOG
+
+fell:
+  enabled: true
+  strike-ticks: 64
+  zone-size: 4
+
+forage-isle:
+  world: world
+  schematic: Foraging-Eldervale-Island.schem
+  ignore-air: true
+  rotate-y: 180
+  paste:
+    x: 677
+    y: 90
+    z: -116
+  return-platform:
+    min:
+      x: 558
+      y: 89
+      z: -211
+    max:
+      x: 560
+      y: 89
+      z: -206
+  # Isle footprint only — never writes Area Tools / main island.
+  light:
+    min-x: 500
+    max-x: 1070
+    min-y: 50
+    max-y: 220
+    min-z: -500
+    max-z: 30
+  scan-step: 4
+  area-radius: 120
+  auto-scan-if-empty: false
+  auto-apply-habitats-from-scan: false
+
+# Live habitat from nearby blocks (forage isle footprint ONLY).
+# Spruce/snow → Snow · dark oak/mushrooms → Dark Thicket · oak/birch → Plains …
+habitat-sense:
+  enabled: true
+  radius: 8
+  step: 4
+  y-range: 4
+  cache-ms: 4000
+  min-score: 3
+  # rules: omitted → built-in defaults (snow, dark_thicket, flower, jungle, swamp, savanna, lush, plains)
+
+# Optional manual AABB overlays (fallback if sense finds nothing). Prefer empty.
+habitats: {}
+
+# Ambient weather on forage isle (player-local). Habitats without entries use built-in defaults.
+# Visual rain/fog packets are OFF — TAB + loot only (dense foliage + rain = FPS death).
+isle-weather:
+  enabled: true
+  tick-ticks: 100
+  reroll-seconds: 120
+  visuals: false
+  # habitats:
+  #   swamp:
+  #     morning: { FOG: 50, CLEAR: 30, DRIZZLE: 20 }
+  #     day: { FOG: 25, CLEAR: 40, DRIZZLE: 25, RAIN: 10 }
+  #   snow:
+  #     morning: { SNOW: 60, CLEAR: 25, WINDY: 15 }
+
+# Heartwood grove ritual — right-click near grove while holding isle heartwood.
+rituals:
+  enabled: true
+  placed: false
+  buff-seconds: 240
+  weather-seconds: 300
+  grove:
+    world: world
+    x: 560.5
+    y: 91.0
+    z: -200.5
+    reach: 4.5
+
+isle-guide:
+  enabled: true
+  placed: false
+hotspots:
+  enabled: false
+  interval-seconds: 480
+  duration-seconds: 120
+bait:
+  enabled: false
+
+# Rare heartwood — forage isle only (~3% per paid log). Grove ritual fuel.
+isle-heartwood:
+  chance: 0.03

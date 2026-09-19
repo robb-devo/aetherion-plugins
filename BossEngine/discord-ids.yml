@@ -1,0 +1,45 @@
+# Aetherion Discord IDs (no secrets)
+# Guild: Aetherion
+guild_id: "1550245657816600647"
+bot_app_id: "1550250844329480202"
+
+channels:
+  rules: "1550246273855135954"
+  info: "1550246277508239471"
+  roles: "1550246280582664284"
+  link: "1550267881399517214"          # paste /discord link codes OR DM the bot
+  chat: "1550246284097626133"          # DiscordSRV global (Aetherion / MMO-R)
+  media: "1550246287172046848"
+  support: "1550246290330353757"
+  guide: "1550290136594645084"           # gameplay guide (not support)
+  announcements: "1550246293329281116"
+  status: "1550246296739258529"
+  staff-chat: "1550264245147541596"    # TEAM
+  server: "1550525829304295434"        # TEAM watchdog / lag alerts
+  mc-console: "1550264236398350538"    # DiscordSRV console
+  mc-logs: "1550264241452351572"       # TEAM
+  # Delete these old locked duplicates in Discord UI if still present:
+  # old-team-chat: "1550246300040171530"
+  # old-mc-console: "1550246303135441037"
+  # old-mc-logs: "1550246306331762820"
+
+roles:
+  # Managed bot role (Discord creates this from the app invite)
+  Aetherion Bot: "1550252535523180627"
+  Admin: "1550246255018647693"
+  MVP++: "1550246252007137403"
+  Aetherion: "1550246247682543758"     # player rank (not the bot)
+  Eternal: "1550246243358212166"
+  Empyrean: "1550246239571021954"
+  Ascendant: "1550246236433547385"
+  Sovereign: "1550246233002483852"
+  Celestine: "1550246229789642832"
+  Aetherborn: "1550246226866213024"
+  Mythwright: "1550246223485870141"
+  Legend: "1550246219987558410"
+  Champion: "1550246217089425509"
+  Veteran: "1550246214174384228"
+  Adventurer: "1550246211364323398"
+  Playtest: "1550246205575930056"
+  Updates: "1550246202644238467"
+  Verified: "1550246199737585684"

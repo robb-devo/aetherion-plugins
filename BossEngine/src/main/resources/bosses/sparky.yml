@@ -1,0 +1,270 @@
+# ============================================================
+# Sparky – T3 world boss (REV5 curve)
+# Intended: Combat T3 party. HP/power already match ~5–6 min / 3.
+# Guild quarry experiment. Too much grid. Not enough adult supervision.
+# Identity: ghast meteors + overheat + slam.
+# ============================================================
+
+id: sparky
+display-name: "&6&lSparky"
+entity-type: MAGMA_CUBE
+model-engine-id: ""
+
+attributes:
+  max-health: 120000
+  movement-speed: 0.34
+  attack-damage: 148
+  scale: 3.2
+  follow-range: 52
+  knockback-resistance: 0.85
+
+equipment:
+  helmet: AIR
+  chestplate: AIR
+  leggings: AIR
+  boots: AIR
+  main-hand: AIR
+  off-hand: AIR
+  drop-chance: 0.0
+
+options:
+  glowing: true
+  custom-name-visible: true
+  silent: false
+  invulnerable-spawn-ticks: 30
+  persistent: true
+  remove-when-far-away: false
+  prevent-item-pickup: true
+
+conditions:
+  max-instances: 1
+  leash-radius: 55
+  leash-action: TELEPORT
+
+phases:
+  - id: warm
+    health-percent: 100
+    display-name: "&6&lSparky"
+    skills:
+      - type: METEOR_RAIN
+        trigger: ON_TIMER
+        interval-ticks: 140
+        amount: 5
+        damage: 58
+        scatter: 11
+        style: GHAST
+      - type: RING_BURST
+        trigger: ON_TIMER
+        interval-ticks: 160
+        waves: 4
+        step: 3.0
+        damage: 54
+        particle: FLAME
+
+  - id: melt
+    health-percent: 75
+    display-name: "&6&lSparky &7(&cOverheat&7)"
+    transition:
+      duration-ticks: 50
+      invulnerable: true
+      freeze-ai: true
+      start-radius: 5.2
+      end-radius: 1.1
+      shape: CIRCLE
+      particle: FLAME
+      extra-particle: LAVA
+      points: 40
+      height: 0.28
+      explode: false
+    skills:
+      - type: OVERHEAT
+        trigger: ON_PHASE
+        duration-ticks: 90
+      - type: SPECTACLE
+        trigger: ON_PHASE
+        title: "&6OVERHEAT"
+        subtitle: "&cArrows still land soft. Watch the floor."
+        lightning: 8
+        particle: LAVA
+        count: 70
+        radius: 11
+        sound: ENTITY_BLAZE_AMBIENT
+      - type: METEOR_RAIN
+        trigger: ON_TIMER
+        interval-ticks: 120
+        amount: 6
+        damage: 66
+        scatter: 11
+        style: GHAST
+      - type: RING_BURST
+        trigger: ON_TIMER
+        interval-ticks: 145
+        waves: 4
+        step: 3.1
+        damage: 62
+        particle: LAVA
+
+  - id: grid
+    health-percent: 50
+    display-name: "&6&lSparky &7(&4Grid Fault&7)"
+    transition:
+      duration-ticks: 50
+      invulnerable: true
+      freeze-ai: true
+      start-radius: 5.8
+      end-radius: 1.1
+      shape: CIRCLE
+      particle: LAVA
+      extra-particle: FLAME
+      points: 44
+      height: 0.3
+      explode: false
+    skills:
+      - type: OVERHEAT
+        trigger: ON_PHASE
+        duration-ticks: 100
+      - type: RING_BURST
+        trigger: ON_TIMER
+        interval-ticks: 130
+        waves: 5
+        step: 3.1
+        damage: 72
+        particle: LAVA
+      - type: METEOR_RAIN
+        trigger: ON_TIMER
+        interval-ticks: 105
+        amount: 7
+        damage: 74
+        scatter: 12
+        style: GHAST
+
+  - id: meltdown
+    health-percent: 28
+    display-name: "&6&lSparky &7(&4Meltdown&7)"
+    transition:
+      duration-ticks: 80
+      invulnerable: true
+      freeze-ai: true
+      particle: FLAME
+      extra-particle: LAVA
+      explode: true
+      explode-damage: 48
+      explode-radius: 8.0
+      lightning-count: 8
+    attributes:
+      attack-damage: 178
+      movement-speed: 0.40
+      scale: 3.5
+    skills:
+      - type: DIALOG
+        trigger: ON_PHASE
+        broadcast: true
+        message: "&6&lSparky&7: &cThe quarry did not budget for this."
+      - type: SPECTACLE
+        trigger: ON_PHASE
+        title: "&4MELTDOWN"
+        subtitle: "&7HR already signed. In soot."
+        lightning: 12
+        particle: LAVA
+        count: 90
+        radius: 14
+        sound: ENTITY_GENERIC_EXPLODE
+      - type: OVERHEAT
+        trigger: ON_PHASE
+        duration-ticks: 70
+      - type: METEOR_RAIN
+        trigger: ON_TIMER
+        interval-ticks: 85
+        amount: 9
+        damage: 84
+        scatter: 13
+        style: GHAST
+      - type: SLAM_LEAP
+        trigger: ON_TIMER
+        interval-ticks: 120
+        upward: 1.25
+        range: 24
+        slam-radius: 5.4
+        slam-damage: 88
+      - type: RING_BURST
+        trigger: ON_TIMER
+        interval-ticks: 100
+        waves: 5
+        step: 2.9
+        damage: 80
+        particle: FLAME
+
+skills:
+  - type: SOUND
+    trigger: ON_SPAWN
+    sound: ENTITY_MAGMA_CUBE_SQUISH
+    volume: 1.7
+    pitch: 0.35
+
+  - type: SPECTACLE
+    trigger: ON_SPAWN
+    title: "&6SPARKY"
+    subtitle: "&7The grid follows."
+    lightning: 6
+    particle: FLAME
+    count: 80
+    radius: 10
+    sound: ENTITY_BLAZE_SHOOT
+
+  - type: DIALOG
+    trigger: ON_SPAWN
+    broadcast: true
+    message: "&6&lSparky &7leaves the quarry. The grid follows."
+
+  - type: PARTICLE_AURA
+    trigger: ON_TIMER
+    interval-ticks: 5
+    particle: FLAME
+    count: 24
+    radius: 1.4
+    extra: 0.04
+
+  - type: DIALOG
+    trigger: ON_DEATH
+    broadcast: true
+    message: "&6&lSparky &7cools. Someone should tell the guild accountant."
+
+loot:
+  damage-based: true
+  participation-threshold-percent: 5.0
+  experience: 53000
+  killer-bonus:
+    - source: AETHERION
+      item-id: thermal_core
+      amount: 1
+      chance: 0.34
+    - source: AETHERION
+      item-id: random_booster
+      amount: 1
+      chance: 1.0
+  rank-loot:
+    1:
+      - source: AETHERION
+        item-id: thermal_core
+        amount: 1
+        chance: 0.18
+  top-damagers:
+    count: 3
+    items:
+      - source: AETHERION
+        item-id: random_booster
+        amount: 1
+        chance: 1.0
+  shared:
+    - source: VANILLA
+      material: MAGMA_CREAM
+      min-amount: 8
+      max-amount: 16
+      chance: 1.0
+  per-damager:
+    - source: VANILLA
+      material: EXPERIENCE_BOTTLE
+      min-amount: 10
+      max-amount: 18
+      chance: 1.0
+      scale-with-damage: true

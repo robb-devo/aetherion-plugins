@@ -1,0 +1,32 @@
+# DiscordSRV — Hub drop-in notes
+# Copy values into plugins/DiscordSRV/ after first start on Hub (Crafty).
+# NEVER commit a real BotToken.
+
+# --- config.yml essentials ---
+# BotToken: "<from Discord Developer Portal>"
+# Channels:
+#   "global": "<#chat channel snowflake>"
+# DiscordConsoleChannelId: "<#mc-console snowflake>"
+# MinecraftPlayerJoinMessageFormat: "**%player%** joined Aetherion / ist beigetreten"
+# MinecraftPlayerLeaveMessageFormat: "**%player%** left Aetherion / hat verlassen"
+# DiscordChatChannelMinecraftToDiscordFormat: "**%player%** » %message%"
+# DiscordChatChannelDiscordToMinecraftFormat: "[§9Discord§r] %name% » %message%"
+
+# --- synchronization.yml GroupRoleSynchronizationGroupsAndRolesToSync ---
+# Use Discord role IDs (Developer Mode → right-click role → Copy ID).
+# Group names MUST match RankBadgeService / LuckPerms exactly:
+#
+# adventurer: ""
+# veteran: ""
+# champion: ""
+# legend: ""
+# mythwright: ""
+# aetherborn: ""
+# celestine: ""
+# sovereign: ""
+# ascendant: ""
+# empyrean: ""
+# eternal: ""
+# aetherion: ""
+# mvpplusplus: ""
+# admin: ""

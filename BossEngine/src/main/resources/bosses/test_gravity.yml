@@ -1,0 +1,77 @@
+# ============================================================
+# SANDBOX / TEST ARENA ONLY — no live drops, mechanics prototype
+# Spawn via Dev → Test Arena (not world anchors)
+# ============================================================
+
+id: test_gravity
+display-name: "&3&lGravity Clerk"
+entity-type: BLAZE
+model-engine-id: ""
+
+attributes:
+  max-health: 37000
+  movement-speed: 0.27
+  attack-damage: 74
+  scale: 1.50
+  follow-range: 48
+  knockback-resistance: 0.85
+
+equipment:
+  helmet: AIR
+  chestplate: AIR
+  leggings: AIR
+  boots: AIR
+  main-hand: AIR
+  off-hand: AIR
+  drop-chance: 0.0
+
+options:
+  glowing: true
+  custom-name-visible: true
+  silent: false
+  invulnerable-spawn-ticks: 25
+  persistent: true
+  remove-when-far-away: false
+  prevent-item-pickup: true
+
+conditions:
+  max-instances: 8
+  leash-radius: 52
+  leash-action: TELEPORT
+
+phases:
+  - id: spectacle
+    health-percent: 100
+    display-name: "&3&lGravity Clerk"
+    skills: []
+  - id: enraged
+    health-percent: 35
+    display-name: "&3&lGravity Clerk &9[CRITICAL MASS]"
+    skills: []
+
+skills:
+  - type: SOUND
+    trigger: ON_SPAWN
+    sound: BLOCK_BEACON_ACTIVATE
+    volume: 1.25
+    pitch: 0.75
+  - type: DIALOG
+    trigger: ON_SPAWN
+    broadcast: true
+    message: "&3&lGRAVITY CLERK &8— &fmodes rotate (ceiling / shear / crush). &eNullstep Boots &7resist."
+  - type: DIALOG
+    trigger: ON_DEATH
+    broadcast: true
+    message: "&7Gravity Clerk falls. Sandbox clear — no loot."
+
+loot:
+  damage-based: false
+  participation-threshold-percent: 0.0
+  experience: 0
+  killer-bonus: []
+  top-damagers:
+    count: 0
+    items: []
+  shared: []
+  per-damager: []
+
