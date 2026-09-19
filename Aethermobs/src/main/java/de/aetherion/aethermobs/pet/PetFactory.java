@@ -2201,6 +2201,10 @@ public class PetFactory {
      * =========================================================
      */
 
+    /**
+     * Wave 3: non-percent cores are sized from {@link de.aetherion.aethermobs.model.PetBalance}
+     * (12% stacking slice). {@code min}/{@code max} stay as dungeon-percent literals.
+     */
     private void addRarity(
             PetDefinition pet,
             Rarity rarity,
@@ -2208,12 +2212,28 @@ public class PetFactory {
             double max,
             double weight
     ) {
-
+        if (pet != null && pet.isPercentBonus()) {
+            pet.addRarityConfig(
+                    new PetRarityConfig(
+                            rarity,
+                            min,
+                            max,
+                            weight
+                    )
+            );
+            return;
+        }
+        double[] band = de.aetherion.aethermobs.model.PetBalance.coreBand(
+                pet.getId(),
+                pet.getCoreStat(),
+                pet.rollsRandomCoreStat(),
+                rarity
+        );
         pet.addRarityConfig(
                 new PetRarityConfig(
                         rarity,
-                        min,
-                        max,
+                        band[0],
+                        band[1],
                         weight
                 )
         );

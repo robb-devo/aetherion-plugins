@@ -929,8 +929,8 @@ public enum PetSkill {
             int level
     ) {
 
-        return 6.0
-                + 0.06 * (clampLevel(level) - 1);
+        return 3.0
+                + 0.02 * (clampLevel(level) - 1);
     }
 
     public boolean matchesCrop(

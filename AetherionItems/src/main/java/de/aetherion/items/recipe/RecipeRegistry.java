@@ -1769,14 +1769,16 @@ public class RecipeRegistry {
         {
             Map<Character, ItemStack> axe = new LinkedHashMap<>();
             axe.put('C', CompressedResource.OAK_LOG.compacted());
+            axe.put('A', customItem.foraging().axe(2));
             axe.put('S', stick);
             registerSimple(
                     "compacted_timber_axe",
                     RecipeCategory.FORAGING,
                     gear.createCompactedTimberAxe(),
                     Rarity.RARE,
-                    List.of("CC ", "CS ", " S "),
-                    axe
+                    List.of(" C ", " A ", " S "),
+                    axe,
+                    new CraftedPredecessorRequirement("foraging_axe_2")
             );
         }
         registerSimple(
@@ -1790,14 +1792,16 @@ public class RecipeRegistry {
         {
             Map<Character, ItemStack> hammer = new LinkedHashMap<>();
             hammer.put('C', CompressedResource.COBBLESTONE.compacted());
+            hammer.put('P', gear.createCompressedStonePickaxe());
             hammer.put('S', stick);
             registerSimple(
                     "compacted_cobble_hammer",
                     RecipeCategory.MINING,
                     gear.createCompactedCobbleHammer(),
                     Rarity.RARE,
-                    List.of("CC ", " S ", " S "),
-                    hammer
+                    List.of(" C ", " P ", " S "),
+                    hammer,
+                    new CraftedPredecessorRequirement("compressed_stone_pickaxe")
             );
         }
         registerSimple(
@@ -1835,7 +1839,8 @@ public class RecipeRegistry {
                     gear.createCompactedMidasDagger(),
                     Rarity.EPIC,
                     List.of(" G ", "GDG", " S "),
-                    midas
+                    midas,
+                    new CraftedPredecessorRequirement("compressed_gold_sword")
             );
         }
         registerSimple(
@@ -1843,8 +1848,9 @@ public class RecipeRegistry {
                 RecipeCategory.ARMOR,
                 gear.createRedstoneInfusedBoots(),
                 Rarity.RARE,
-                List.of("R R", "RBR", "R R"),
-                createMixedIngredients('R', CompressedResource.REDSTONE.compacted(), 'B', new ItemStack(Material.IRON_BOOTS))
+                List.of(" R ", "RBR", " R "),
+                createMixedIngredients('R', CompressedResource.REDSTONE.compacted(), 'B', customItem.createCombatBoots2()),
+                new CraftedPredecessorRequirement("combat_boots_2")
         );
         registerSimple(
                 "lapis_pendant",
@@ -1854,81 +1860,90 @@ public class RecipeRegistry {
                 List.of("LLL", "LAL", "LLL"),
                 createMixedIngredients('L', CompressedResource.LAPIS.compressed(), 'A', new ItemStack(Material.AMETHYST_CLUSTER))
         );
-        registerSimple(
-                "compacted_diamond_chestplate",
-                RecipeCategory.ARMOR,
-                gear.createCompactedDiamondChestplate(),
-                Rarity.LEGENDARY,
-                List.of("DD", "DD"),
-                Map.of('D', CompressedResource.DIAMOND.compacted())
-        );
+        {
+            Map<Character, ItemStack> diamondChest = new LinkedHashMap<>();
+            diamondChest.put('D', CompressedResource.DIAMOND.compacted());
+            diamondChest.put('C', customItem.createCombatChestplate3());
+            registerSimple(
+                    "compacted_diamond_chestplate",
+                    RecipeCategory.ARMOR,
+                    gear.createCompactedDiamondChestplate(),
+                    Rarity.LEGENDARY,
+                    List.of(" D ", " C ", " D "),
+                    diamondChest,
+                    new CraftedPredecessorRequirement("combat_chestplate_3")
+            );
+        }
         {
             Map<Character, ItemStack> diamondSword = new LinkedHashMap<>();
             diamondSword.put('D', CompressedResource.DIAMOND.compacted());
             diamondSword.put('N', new ItemStack(Material.NETHERITE_SCRAP));
-            diamondSword.put('S', stick);
+            diamondSword.put('C', customItem.createCombatSword3());
             registerSimple(
                     "compacted_diamond_sword",
                     RecipeCategory.COMBAT,
                     gear.createCompactedDiamondSword(),
                     Rarity.LEGENDARY,
-                    List.of(" D ", " D ", "DNS"),
-                    diamondSword
+                    List.of(" D ", " C ", " N "),
+                    diamondSword,
+                    new CraftedPredecessorRequirement("combat_sword_3")
             );
         }
         {
             Map<Character, ItemStack> crown = new LinkedHashMap<>();
             crown.put('E', CompressedResource.EMERALD.compacted());
-            crown.put('G', new ItemStack(Material.GOLD_INGOT));
+            crown.put('H', customItem.createCombatHelmet3());
             registerSimple(
                     "emerald_crown",
                     RecipeCategory.ARMOR,
                     gear.createEmeraldCrown(),
                     Rarity.LEGENDARY,
-                    List.of("EEE", "EGE", " G "),
-                    crown
+                    List.of(" E ", " H ", " E "),
+                    crown,
+                    new CraftedPredecessorRequirement("combat_helmet_3")
             );
         }
         {
             Map<Character, ItemStack> scythe = new LinkedHashMap<>();
             scythe.put('E', CompressedResource.EMERALD.compacted());
             scythe.put('D', CompressedResource.DIAMOND.compacted());
-            scythe.put('S', stick);
+            scythe.put('C', customItem.createCombatSword3());
             registerSimple(
                     "compacted_emerald_scythe",
                     RecipeCategory.COMBAT,
                     gear.createCompactedEmeraldScythe(),
                     Rarity.LEGENDARY,
-                    List.of(" EE", " D ", " S "),
-                    scythe
+                    List.of(" E ", " C ", " D "),
+                    scythe,
+                    new CraftedPredecessorRequirement("combat_sword_3")
             );
         }
         {
             Map<Character, ItemStack> ironPick = new LinkedHashMap<>();
             ironPick.put('I', CompressedResource.RAW_IRON.compressed());
             ironPick.put('P', gear.createCompressedStonePickaxe());
-            ironPick.put('S', stick);
             registerSimple(
                     "compacted_iron_pickaxe",
                     RecipeCategory.MINING,
                     gear.createCompactedIronPickaxe(),
                     Rarity.EPIC,
-                    List.of(" I ", "IPI", " S "),
-                    ironPick
+                    List.of(" I ", " P ", " I "),
+                    ironPick,
+                    new CraftedPredecessorRequirement("compressed_stone_pickaxe")
             );
         }
         {
             Map<Character, ItemStack> diamondPick = new LinkedHashMap<>();
             diamondPick.put('D', CompressedResource.DIAMOND.compacted());
             diamondPick.put('P', gear.createCompactedIronPickaxe());
-            diamondPick.put('S', stick);
             registerSimple(
                     "compacted_diamond_pickaxe",
                     RecipeCategory.MINING,
                     gear.createCompactedDiamondPickaxe(),
                     Rarity.LEGENDARY,
-                    List.of("DD ", " P ", " S "),
-                    diamondPick
+                    List.of(" D ", " P ", " D "),
+                    diamondPick,
+                    new CraftedPredecessorRequirement("compacted_iron_pickaxe")
             );
         }
 

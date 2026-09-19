@@ -363,6 +363,12 @@ public class ItemManager {
         if (de.aetherion.items.item.FishingItems.migrate(itemId, stats, meta)) {
             saveItemStats(meta, stats);
         }
+        if (de.aetherion.items.blueprint.BlueprintUpgrade.migrate(itemId, stats, meta)) {
+            saveItemStats(meta, stats);
+        }
+        if (de.aetherion.items.item.CatcherItems.migrate(itemId, stats, meta)) {
+            saveItemStats(meta, stats);
+        }
         Integer revision = meta.getPersistentDataContainer().get(ItemKeys.statRev(), PersistentDataType.INTEGER);
         if (revision != null && revision >= de.aetherion.items.item.ProgressionItems.STAT_REV) {
             return stats;
