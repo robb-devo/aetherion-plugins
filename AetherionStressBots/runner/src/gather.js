@@ -8,6 +8,7 @@ import {
   wanderOnIsland
 } from './safety.js'
 import { findMatchingBlock, inventoryAlmostFull, jitter, markError, note, tossJunk, waitUntil, sleep } from './util.js'
+import { applyPathfinderDefaults, fidget, takeIdleGoal } from './playstyle.js'
 
 const { goals, Movements, pathfinder } = pathfinderPkg
 
@@ -73,10 +74,12 @@ export function createDigLoop(bot, cfg, log, { activity, names, searchRadius, yR
     }
 
     if (!bot.pathfinder.movements) {
-      bot.pathfinder.setMovements(applyIslandMovements(new Movements(bot), {
+      const moves = applyIslandMovements(new Movements(bot), {
         canDig,
         maxDrop: cfg.maxDrop ?? 2
-      }))
+      })
+      bot.pathfinder.setMovements(moves)
+      applyPathfinderDefaults(bot, moves)
     }
 
     if (inventoryAlmostFull(bot)) {
@@ -84,7 +87,8 @@ export function createDigLoop(bot, cfg, log, { activity, names, searchRadius, yR
     }
 
     const block = pickBlock()
-    if (!block) {
+    const needGoal = takeIdleGoal(bot)
+    if (!block || needGoal) {
       bot.qaGathering = false
       bot.qaDigging = false
       setGoal(bot, null)
@@ -92,12 +96,13 @@ export function createDigLoop(bot, cfg, log, { activity, names, searchRadius, yR
       if (!bot.pathfinder.isMoving()) {
         const pad = sampleSolidNear(bot, home(), wanderRadius)
         if (pad) {
-          note(bot, 'scan hop', 'pathing')
+          note(bot, needGoal ? 'new goal hop' : 'scan hop', 'pathing')
           setGoal(bot, pad)
           bot.pathfinder.setGoal(new goals.GoalNear(pad.x, pad.y, pad.z, 1))
         } else {
           wanderOnIsland(bot, home(), wanderRadius, goals)
         }
+        if (Math.random() < 0.25) fidget(bot, activity)
       }
       return
     }
@@ -114,7 +119,7 @@ export function createDigLoop(bot, cfg, log, { activity, names, searchRadius, yR
         await waitUntil(() => {
           if (aborted()) return true
           return bot.entity.position.distanceTo(block.position.offset(0.5, 0.5, 0.5)) <= 3.2
-        }, 9000)
+        }, 10_000)
       }
       if (aborted()) {
         cancelPath(bot)

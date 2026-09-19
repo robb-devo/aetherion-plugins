@@ -78,6 +78,12 @@ testbots:
     pad: 8
   # Player-like extras (skills, mixed-tier kits, pets, boosters) run on every provision.
   # Skill XP only lands on equipped loadout skills — bots do not /skills setlevel.
+  # New keys — copy into live YAML. saveDefaultConfig does not overwrite.
+  playstyle:
+    starter-coins: 2500
+    pocket-coins: 250
+    unlock-trader: true
+    unlock-spawns: true
   safety:
     # Paper watchdog + Mineflayer hold. Tune if pads sit lower than Y 56.
     void-floor-y: 40
@@ -88,6 +94,8 @@ testbots:
     idle-reanchor-ticks: 240
     # Roam/pad: plugin pad-hop between origin pads (80s). 0 disables.
     pad-hop-ticks: 1600
+    # Pad role: ignore leash/falling while mid-arc (ms).
+    pad-flight-ms: 8000
   roles:
     # Eldervale interior first (paste center), then mid-isle, then landing lip.
     # Do not scatter off the slime-pad ledge — leash stays on the assigned patch.
@@ -190,21 +198,19 @@ testbots:
       pitch: 0.0
       scatter-radius: 3
       leash-radius: 14
-    # Jump pads. Forage lip 479.5 74 -240.5 is omitted (void after wander); plugin TPs between Origin pads.
+    # Real jump-pad centers. Forage lip 479.5 74 -240.5 is a pad destination (not a forage work pad).
+    # Leash 72 so mid-arc hops are not yanked; pad-flight-ms covers the same window.
     pad:
       world: world
-      waypoints:
+      anchors:
         - { x: 22.5, y: 56.0, z: 305.5 }
-        - { x: 18.5, y: 56.0, z: 301.5 }
-        - { x: 26.5, y: 56.0, z: 309.5 }
-        - { x: 53.5, y: 91.0, z: 482.5 }
         - { x: 438.5, y: 56.0, z: -233.5 }
-        - { x: 434.5, y: 56.0, z: -229.5 }
-        - { x: 442.5, y: 56.0, z: -237.5 }
+        - { x: 53.5, y: 91.0, z: 482.5 }
+        - { x: 479.5, y: 74.0, z: -240.5 }
       yaw: 0.0
       pitch: 0.0
-      scatter-radius: 0
-      leash-radius: 12
+      scatter-radius: 1
+      leash-radius: 72
 
   # Chat / tab / Collection leaderboard labels. Login names stay QaMine01 (Velocity).
   nicknames:

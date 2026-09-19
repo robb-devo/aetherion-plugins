@@ -4,7 +4,10 @@ import de.aetherion.items.item.CustomItem;
 import de.aetherion.stressbots.AetherionStressBots;
 
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 
 public final class TradeRoleHandler implements BotRoleHandler {
 
@@ -31,7 +34,12 @@ public final class TradeRoleHandler implements BotRoleHandler {
 
     @Override
     public void kit(Player player, CustomItem items) {
-        BotPlaystyle.kitCombat(player.getInventory(), items, BotPlaystyle.gearTier(player), false);
+        PlayerInventory inv = player.getInventory();
+        BotPlaystyle.kitCombat(inv, items, BotPlaystyle.gearTier(player), false);
+        BotRoleRegistry.giveSpare(inv, items.createMiningPickaxe());
+        inv.addItem(new ItemStack(Material.COAL, 32));
+        inv.addItem(new ItemStack(Material.COBBLESTONE, 32));
+        inv.addItem(new ItemStack(Material.OAK_LOG, 16));
     }
 
     @Override
@@ -41,6 +49,6 @@ public final class TradeRoleHandler implements BotRoleHandler {
 
     @Override
     public String description() {
-        return "Try /ah and /bazaar (TRADER unlocked on provision), else right-click AH/Bazaar NPCs. Listings are not automated.";
+        return "Drive Auction House list/buy and Bazaar sell/buy through the real GUIs (TRADER + starter coins).";
     }
 }

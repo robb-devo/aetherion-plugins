@@ -41,6 +41,6 @@ public final class FishRoleHandler implements BotRoleHandler {
 
     @Override
     public String description() {
-        return "Cast a mixed-tier Nibble–Keelhaul rod at water near a safe pad. Strike minigame is not automated.";
+        return "Cast a mixed-tier Nibble–Keelhaul rod at water near a safe pad and complete the strike/reel minigame.";
     }
 }

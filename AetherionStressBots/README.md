@@ -26,7 +26,7 @@ Bots connect **offline to MMO-R** `127.0.0.1:25567` with Velocity modern-forward
 |------|-------|------|-----|
 | `mine` | `QaMine01…` | TP to **Eldervale interior pads**, leash + dig ores/stone | Mixed T1–T4 mining + mining skills |
 | `forage` | `QaForage01…` | TP to **Forage Isle grove/interior**, chop logs (and leaves if idle) | Mixed Kindling–Canopy axe + foraging skills |
-| `catch` | `QaCatch01…` | Stay on solid habitat pads, throw catch spheres (no void chase) | Mixed catcher + spheres + varied pets |
+| `catch` | `QaCatch01…` | Stay on solid habitat pads, throw catch spheres + timing clicks | Mixed catcher + spheres + varied pets |
 | `roam` | `QaRoam01…` | Local hops on Origin slime pads + plugin pad-hop; flees husks/skeletons | Mixed combat kit |
 
 ## Wave 2 roles
@@ -34,23 +34,24 @@ Bots connect **offline to MMO-R** `127.0.0.1:25567` with Velocity modern-forward
 | Role | Names | Does | Kit |
 |------|-------|------|-----|
 | `combat` | `QaCombat01…` | Leashed wander/attack near the combat pad (default Borderlands). **Velocity offline auth uses `QaCombat` like other Qa* names.** Set `prefixes.combat: StressC` only if you still want the Phase 1 names; `StressC*` still auto-kits as an alias. | Mixed combat T1–T4 + combat skills |
-| `fish` | `QaFish01…` | Walk to water near forage/origin pads, cast/reel a Nibble–Keelhaul rod | Mixed fishing kit + fishing skills |
-| `trade` | `QaTrade01…` | Chat `/ah` and `/bazaar`, else right-click AH/Bazaar NPCs. Provisioner unlocks **TRADER** + starter coins. | Mixed combat kit |
-| `quest` | `QaQuest01…` | Walk to known FancyNPC pads (Maren / Twig / Eldervale) and right-click | Mixed combat kit |
-| `pad` | `QaPad01…` | Stand on Origin/Eldervale jump-pad coords; plugin TPs between far pads | Mixed combat kit |
+| `fish` | `QaFish01…` | Walk to water near forage/origin pads, cast and reel on the green strike bar | Mixed fishing kit + fishing skills |
+| `trade` | `QaTrade01…` | `/ah` list+buy and `/bazaar` sell+buy via real GUIs. Provisioner unlocks **TRADER** + starter coins. | Mixed combat kit + surplus mats |
+| `quest` | `QaQuest01…` | Walk to known FancyNPC pads (Maren / Twig / Eldervale), click Quest Offer accept | Mixed combat kit |
+| `pad` | `QaPad01…` | Walk onto island jump pads, ride the arc, hop a different pad. `pad-flight-ms` covers mid-hop. | Mixed combat kit |
 
 ### Residual risks / limits
 
-- **AH / Bazaar:** Trade bots get the **TRADER** flag + a few hundred coins so `/ah` / `/bazaar` can open. They still do **not** create listings, bid, or click GUI slots.
-- **Quests:** Right-click only. No dialogue-tree / click-option automation. NPC xyz in YAML are **hints** — live FancyNPC positions may differ; retune `testbots.roles.quest` if they stand in the wrong place.
-- **Fishing:** Vanilla cast/reel. Aetherion's strike minigame is **not** played, so many casts miss. Water is scanned near grove/origin pads — if the dock has no water in range, they idle-wander. Add `anchors` next to real water.
+- **AH / Bazaar:** Trade bots get the **TRADER** flag + starter coins and click list/buy slots (AH list 49 / price 2 / confirm 11). Empty books still fail.
+- **Quests:** Right-click NPCs, then click Quest Offer accept (slot 11) or chat `/aetherionquest accept <id>`. Full completion trees are still best-effort.
+- **Fishing:** Casts and reels when the green strike bar / Bite! fires (`qaMinigame.biteUntil`). Water is scanned near grove/origin pads.
 - **Combat:** Default pad is Borderlands `220.5 58 160.5` (hostiles). That zone killed **roam** bots; combat bots are geared for it but can still die if they walk off the waste. `StressC*` still matches as an alias.
-- **Pads:** The Forage Isle jump-pad lip `479.5 74 -240.5` stays **omitted** (void after wander). Pad bots hop Origin slime pads + Eldervale landing; far islands are plugin teleports.
+- **Pads:** Real jump-pad centers including Forage lip `479.5 74 -240.5`. Mid-arc is covered by `pad-flight-ms` + leash 72 so the watchdog does not yank the hop.
 - **Forage stuck (fixed):** Safety used to mark `activity=stuck` after ~10s of no movement and cancel the dig path while the bot was approaching a log. Dig/path-to-block now uses a longer freeze window, ignores still-closing distance to the target, and **retargets / wanderOnIsland** instead of staying stuck. Forage leash is 20; logs outside that disk are not chosen (`searchLeashBonus` only expands search within the island).
 - **Skills:** XP only accrues on **equipped** loadout skills. Provisioner unlocks 3 slots and equips role skills. Bots do **not** `/skills setlevel`. There are no skill hotkeys — they peek `/skills` like a player opening the GUI.
-- **Boosters:** Applied on the main-hand tool at provision (`BoosterApplier`). Bots do not click the booster-lab GUI. Some also get a leftover booster item + a short XP flask.
-- **Pets:** Catch bots still throw spheres (timing minigame not automated). Other roles vary: follow (equip), collection-only, wild spawn beside them, or none. Follow needs AetherMobs online.
-- Still not automated: spawn unlocks, GUI equip-swap, AH listings, quest dialogue, strike/catch minigames.
+- **Boosters:** Applied on the main-hand tool at provision (`BoosterApplier`). Runner also clicks leftover booster items / confirm GUIs when they appear.
+- **Pets:** Catch bots throw spheres and click the timing window. Other roles vary: follow (equip), collection-only, wild spawn beside them, or none. Follow needs AetherMobs online.
+- **Language:** `Language / Sprache` is forced to English on join (plugin + runner click slot 11).
+- Still not automated: every spawn-unlock edge case, anvil booster fusion, full quest completion trees.
 
 ### Player-like mix (same PR)
 
@@ -162,5 +163,5 @@ Names: `QaCombat01…` (Wave 2) and `StressC01…` (alias) / `StressM01…` stil
 | Wave | Scope |
 |------|--------|
 | **1** | Foundation: role interface, registry, report DTO, Dev menu, `/botreport`, mine / forage / catch / roam |
-| **2 (this)** | Forage stuck/leash fix; combat (QaCombat), fish, trade/AH, quest NPC click, jump-pad hops; player-like skills/kits/pets/timing; ~40 mixed cap |
-| Later | AH listings, quest dialogue trees, strike/catch minigames, GUI booster clicks, spawn unlocks |
+| **2 (on main)** | Forage stuck/leash fix; combat (QaCombat), fish, trade/AH, quest NPC click, jump-pad hops; player-like skills/kits/pets; ~40 mixed cap |
+| **3 (this)** | Language dismiss, real AH/Bazaar GUI list/buy, quest accept clicks, fishing strike/reel, pad-arc hops, spawn unlocks |

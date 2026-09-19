@@ -34,12 +34,18 @@
     "pad": 8,
     "mining": 8
   },
+  "playstyle": {
+    "starterCoins": 2500,
+    "pocketCoins": 250,
+    "unlockTrader": true
+  },
   "safety": {
     "voidFloorY": 40,
     "leashRadius": 16,
     "stuckMs": 10000,
     "gatherStuckMs": 18000,
     "digStuckMs": 28000,
+    "idleGoalMs": 8000,
     "resumeDelayMs": 2800
   },
   "combat": {
@@ -192,6 +198,7 @@
     "wanderRadius": 5,
     "leashRadius": 14,
     "maxHop": 10,
+    "actionGapMs": 3500,
     "commandEveryMs": 14000,
     "clickEveryMs": 9000,
     "commands": ["ah", "bazaar"],
@@ -227,15 +234,14 @@
   "pad": {
     "maxHop": 8,
     "wanderRadius": 4,
-    "leashRadius": 12,
+    "leashRadius": 72,
+    "hopTimeoutMs": 9000,
+    "stuckHopMs": 5000,
     "pads": [
-      { "x": 22.5, "y": 56.0, "z": 305.5 },
-      { "x": 18.5, "y": 56.0, "z": 301.5 },
-      { "x": 26.5, "y": 56.0, "z": 309.5 },
-      { "x": 53.5, "y": 91.0, "z": 482.5 },
-      { "x": 438.5, "y": 56.0, "z": -233.5 },
-      { "x": 434.5, "y": 56.0, "z": -229.5 },
-      { "x": 442.5, "y": 56.0, "z": -237.5 }
+      { "id": "origin_to_mining", "x": 22.5, "y": 56.0, "z": 305.5 },
+      { "id": "origin_to_forage", "x": 438.5, "y": 56.0, "z": -233.5 },
+      { "id": "mining_to_origin", "x": 53.5, "y": 91.0, "z": 482.5 },
+      { "id": "forage_to_origin", "x": 479.5, "y": 74.0, "z": -240.5 }
     ]
   }
 }

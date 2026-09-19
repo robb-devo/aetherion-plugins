@@ -41,6 +41,6 @@ public final class QuestRoleHandler implements BotRoleHandler {
 
     @Override
     public String description() {
-        return "Walk to known quest NPCs (Maren, Twig, …) and right-click. No dialogue-tree automation.";
+        return "Talk to quest NPCs, click dialogue/accept GUIs, and turn in when possible.";
     }
 }

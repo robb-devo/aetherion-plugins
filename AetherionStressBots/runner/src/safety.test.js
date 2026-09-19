@@ -11,6 +11,7 @@ import {
   stuckTimeoutMs,
   withinLeash
 } from './safety.js'
+import { isWorkingActivity } from './playstyle.js'
 
 describe('island safety helpers', () => {
   it('measures horizontal distance ignoring Y', () => {
@@ -95,5 +96,13 @@ describe('forage stuck cancel', () => {
     assert.equal(closer.progressed, true)
     const same = goalProgress({ x: 8, y: 90, z: 0 }, { x: 0, y: 90, z: 0 }, closer.dist)
     assert.equal(same.progressed, false)
+  })
+})
+
+describe('idle vs working stuck policy', () => {
+  it('does not treat mining/pathing as idle cancel candidates', () => {
+    assert.equal(isWorkingActivity('mining'), true)
+    assert.equal(isWorkingActivity('pathing'), true)
+    assert.equal(isWorkingActivity('foraging'), true)
   })
 })

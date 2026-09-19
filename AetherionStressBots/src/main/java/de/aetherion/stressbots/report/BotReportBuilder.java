@@ -128,7 +128,7 @@ public final class BotReportBuilder {
         out.append('\n');
         out.append("Roles:\n");
         for (TestBotRoleView role : report.roles()) {
-            if (role.online() == 0 && role.desired() == 0 && !isWave1(role.id())) {
+            if (role.online() == 0 && role.desired() == 0 && !isQa(role.id())) {
                 continue;
             }
             out.append("  - ").append(role.id())
@@ -166,7 +166,8 @@ public final class BotReportBuilder {
             }
         }
         out.append('\n');
-        out.append("Limits: skills level only while equipped (provisioner equips 3); boosters applied on kit not via GUI; pets vary (follow / collection / wild spawn / none); AH listings still not automated; quests right-click only; fishing skips strike minigame; pad hops use plugin TP for far islands.\n");
+        out.append("Activities: idle/pathing/mining/foraging/catching/roaming/combat/fishing/ah/bazaar/quest_dialog/minigame/pad_hop/void/recovering/stuck.\n");
+        out.append("Playstyle: mixed-tier kits + equipped skills + boosters + pets. AH/Bazaar click list/buy; quests click accept; fishing plays strike/reel; pad hops ride the arc.\n");
         return out.toString();
     }
 
@@ -215,7 +216,7 @@ public final class BotReportBuilder {
         return "";
     }
 
-    private static boolean isWave1(String id) {
+    private static boolean isQa(String id) {
         BotRole role = BotRole.fromId(id);
         return role != null && role.startable();
     }

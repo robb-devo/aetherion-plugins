@@ -11,6 +11,8 @@ import { createPadLoop } from './pad.js'
 import { attachVelocityForwarding } from './velocity.js'
 import { attachSafety, readAnchors } from './safety.js'
 import { attachPlaystyle } from './playstyle.js'
+import { attachLocale } from './locale.js'
+import { attachMinigames } from './minigame.js'
 import { fmtPos, heldName, note, sleep } from './util.js'
 
 const { goals } = pathfinderPkg
@@ -69,10 +71,13 @@ export function createFleet({ config, log }) {
       stuckMs: cfg.stuckMs ?? safety.stuckMs ?? 10_000,
       digStuckMs: cfg.digStuckMs ?? safety.digStuckMs ?? 28_000,
       gatherStuckMs: cfg.gatherStuckMs ?? safety.gatherStuckMs ?? 18_000,
+      idleGoalMs: cfg.idleGoalMs ?? safety.idleGoalMs ?? 8000,
       resumeDelayMs: safety.resumeDelayMs ?? 2800,
       goals,
       log
     })
+    attachLocale(bot, log)
+    attachMinigames(bot, log)
     if (role === 'combat') return createCombatLoop(bot, cfg, log)
     if (role === 'forage') return createForageLoop(bot, cfg, log)
     if (role === 'catch') return createCatchLoop(bot, cfg, log)
@@ -85,10 +90,11 @@ export function createFleet({ config, log }) {
   }
 
   function defaultLeash(role) {
-    if (role === 'catch' || role === 'pad') return 12
+    if (role === 'catch') return 12
     if (role === 'roam' || role === 'fish' || role === 'trade' || role === 'quest') return 14
     if (role === 'combat') return 22
     if (role === 'forage') return 20
+    if (role === 'pad') return 72
     return 16
   }
 
