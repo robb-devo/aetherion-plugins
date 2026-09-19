@@ -1,5 +1,6 @@
 package de.aetherion.items.skill;
 
+import de.aetherion.core.persist.AtomicYaml;
 import de.aetherion.items.AetherionItems;
 import de.aetherion.items.economy.CoinService;
 import de.aetherion.items.listener.HealthListener;
@@ -656,11 +657,7 @@ public final class SkillService implements StatProvider, Listener {
             }
         });
         try {
-            File folder = file.getParentFile();
-            if (folder != null && !folder.exists()) {
-                folder.mkdirs();
-            }
-            config.save(file);
+            AtomicYaml.save(config, file, plugin.getLogger());
             dirty = false;
         } catch (Exception exception) {
             plugin.getLogger().warning("Could not save skills.yml: " + exception.getMessage());
@@ -944,6 +941,18 @@ public final class SkillService implements StatProvider, Listener {
         load();
     }
 
+    public void overlayPlayerFromDisk(UUID playerId) {
+        if (playerId == null || !file.isFile()) {
+            return;
+        }
+        YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
+        ConfigurationSection section = config.getConfigurationSection("players");
+        if (section == null || !section.contains(playerId.toString())) {
+            return;
+        }
+        loadPlayer(section, playerId.toString());
+    }
+
     private void load() {
         if (!file.exists()) {
             return;
@@ -954,30 +963,34 @@ public final class SkillService implements StatProvider, Listener {
             return;
         }
         for (String key : section.getKeys(false)) {
-            try {
-                UUID id = UUID.fromString(key);
-                PlayerSkills skills = new PlayerSkills();
-                List<String> slots = section.getStringList(key + ".slots");
-                for (int i = 0; i < SLOT_COUNT && i < slots.size(); i++) {
-                    skills.slots[i] = slots.get(i) == null ? "" : slots.get(i);
-                }
-                skills.bonusSlots = section.getInt(key + ".bonusSlots");
-                skills.bonusXp = section.getLong(key + ".bonusXp");
-                skills.claimedShardLevel = section.getInt(key + ".claimedShardLevel");
-                ConfigurationSection progress = section.getConfigurationSection(key + ".progress");
-                if (progress != null) {
-                    for (String skillId : progress.getKeys(false)) {
-                        AetherSkill skill = AetherSkill.byId(skillId);
-                        if (skill == null) {
-                            continue;
-                        }
-                        skills.levels.put(skill, SkillProgression.clampLevel(progress.getInt(skillId + ".level", 1)));
-                        skills.xp.put(skill, Math.max(0, progress.getInt(skillId + ".xp", 0)));
-                    }
-                }
-                data.put(id, skills);
-            } catch (IllegalArgumentException ignored) {
+            loadPlayer(section, key);
+        }
+    }
+
+    private void loadPlayer(ConfigurationSection section, String key) {
+        try {
+            UUID id = UUID.fromString(key);
+            PlayerSkills skills = new PlayerSkills();
+            List<String> slots = section.getStringList(key + ".slots");
+            for (int i = 0; i < SLOT_COUNT && i < slots.size(); i++) {
+                skills.slots[i] = slots.get(i) == null ? "" : slots.get(i);
             }
+            skills.bonusSlots = section.getInt(key + ".bonusSlots");
+            skills.bonusXp = section.getLong(key + ".bonusXp");
+            skills.claimedShardLevel = section.getInt(key + ".claimedShardLevel");
+            ConfigurationSection progress = section.getConfigurationSection(key + ".progress");
+            if (progress != null) {
+                for (String skillId : progress.getKeys(false)) {
+                    AetherSkill skill = AetherSkill.byId(skillId);
+                    if (skill == null) {
+                        continue;
+                    }
+                    skills.levels.put(skill, SkillProgression.clampLevel(progress.getInt(skillId + ".level", 1)));
+                    skills.xp.put(skill, Math.max(0, progress.getInt(skillId + ".xp", 0)));
+                }
+            }
+            data.put(id, skills);
+        } catch (IllegalArgumentException ignored) {
         }
     }
 

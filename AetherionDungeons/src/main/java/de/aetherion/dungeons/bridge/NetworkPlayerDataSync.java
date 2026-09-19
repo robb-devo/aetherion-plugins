@@ -61,8 +61,10 @@ public final class NetworkPlayerDataSync {
             pets.flushPlayer(id);
         }
 
-        // Quests: savePlayer/saveAll were invoked reflectively but never existed on
-        // AetherionQuests — those calls no-oped. Quest yaml is still copied below.
+        de.aetherion.core.api.QuestProgressAccess quests = de.aetherion.core.api.AetherServices.quests();
+        if (quests != null) {
+            quests.flushPlayer(player);
+        }
     }
 
     public Map<String, Object> exportAll(Player player) {
@@ -269,13 +271,14 @@ public final class NetworkPlayerDataSync {
         if (file.getParentFile() != null) {
             file.getParentFile().mkdirs();
         }
+        de.aetherion.core.persist.AtomicYaml.recoverTemp(file, plugin.getLogger());
         var yaml = file.isFile()
                 ? org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(file)
                 : new org.bukkit.configuration.file.YamlConfiguration();
         for (Map.Entry<String, Object> entry : values.entrySet()) {
             yaml.set(entry.getKey(), toPlainValue(entry.getValue()));
         }
-        yaml.save(file);
+        de.aetherion.core.persist.AtomicYaml.save(yaml, file, plugin.getLogger());
     }
 
     private void putFile(Map<String, Object> out, String key, File file) {
@@ -291,10 +294,7 @@ public final class NetworkPlayerDataSync {
 
     private void writeString(File file, String raw) {
         try {
-            if (file.getParentFile() != null) {
-                file.getParentFile().mkdirs();
-            }
-            Files.writeString(file.toPath(), raw, StandardCharsets.UTF_8);
+            de.aetherion.core.persist.AtomicYaml.writeString(file, raw);
         } catch (Exception ex) {
             plugin.getLogger().warning("Could not write " + file.getName() + ": " + ex.getMessage());
         }

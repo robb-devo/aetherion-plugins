@@ -179,6 +179,27 @@ public final class CodexService {
         load();
     }
 
+    public void overlayPlayerFromDisk(UUID playerId) {
+        if (playerId == null || !file.isFile()) {
+            return;
+        }
+        YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
+        ConfigurationSection root = config.getConfigurationSection("players");
+        if (root == null) {
+            return;
+        }
+        ConfigurationSection section = root.getConfigurationSection(playerId.toString());
+        if (section == null) {
+            players.remove(playerId);
+            return;
+        }
+        PlayerCodex data = new PlayerCodex(playerId, section.getString("name", "Unknown"));
+        readMap(section.getConfigurationSection("kills"), data.kills, true);
+        readMap(section.getConfigurationSection("blocks"), data.blocks, false);
+        readBosses(section.getConfigurationSection("bosses"), data.bosses);
+        players.put(playerId, data);
+    }
+
     private void load() {
         if (!file.exists()) {
             return;

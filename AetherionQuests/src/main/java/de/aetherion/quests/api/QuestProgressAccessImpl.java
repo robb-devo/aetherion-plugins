@@ -100,6 +100,14 @@ public final class QuestProgressAccessImpl implements QuestProgressAccess {
     }
 
     @Override
+    public void flushPlayer(Player player) {
+        if (player == null || plugin == null || plugin.getPlayerQuestStorage() == null) {
+            return;
+        }
+        plugin.getPlayerQuestStorage().flushPlayer(player.getUniqueId());
+    }
+
+    @Override
     public List<QuestNpcInfo> npcs() {
         List<QuestNpcInfo> out = new ArrayList<>();
         Map<String, QuestNPC> all = QuestNPCRegistry.getAll();

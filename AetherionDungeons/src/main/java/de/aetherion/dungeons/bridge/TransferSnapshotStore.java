@@ -12,11 +12,15 @@ import org.bukkit.potion.PotionEffectType;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
 /**
@@ -28,6 +32,7 @@ public final class TransferSnapshotStore {
     private final Plugin plugin;
     private final File dir;
     private final NetworkPlayerDataSync networkData;
+    private final Set<UUID> appliedThisSession = ConcurrentHashMap.newKeySet();
 
     public TransferSnapshotStore(Plugin plugin) {
         this.plugin = plugin;
@@ -65,7 +70,6 @@ public final class TransferSnapshotStore {
         }
         UUID id = player.getUniqueId();
         File file = fileFor(id);
-        networkData.flushPlayer(player);
         YamlConfiguration yaml = new YamlConfiguration();
         yaml.set("version", 4);
         yaml.set("uuid", id.toString());
@@ -112,7 +116,7 @@ public final class TransferSnapshotStore {
         yaml.set("effects", effects);
 
         try {
-            yaml.save(file);
+            de.aetherion.core.persist.AtomicYaml.save(yaml, file, plugin.getLogger());
             plugin.getLogger().info("Saved transfer snapshot v4 for " + player.getName()
                     + " floor=" + pendingFloor + " (" + file.length() + " bytes)");
         } catch (IOException ex) {
@@ -138,11 +142,15 @@ public final class TransferSnapshotStore {
         if (player == null || !player.isOnline()) {
             return ApplyResult.none();
         }
-        File file = fileFor(player.getUniqueId());
-        if (!file.isFile()) {
+        UUID id = player.getUniqueId();
+        File live = fileFor(id);
+        File claimed = claimedFileFor(id);
+        de.aetherion.core.persist.AtomicYaml.recoverTemp(live, plugin.getLogger());
+        File source = claimSnapshot(live, claimed, id);
+        if (source == null || !source.isFile()) {
             return ApplyResult.none();
         }
-        YamlConfiguration yaml = YamlConfiguration.loadConfiguration(file);
+        YamlConfiguration yaml = YamlConfiguration.loadConfiguration(source);
         int pendingFloor = yaml.getInt("pending-floor", 0);
         boolean bossOnly = yaml.getBoolean("pending-boss-only", false);
         try {
@@ -223,9 +231,11 @@ public final class TransferSnapshotStore {
                         + " had no usable network-data (pets/skills/level may stay local).");
             }
             networkData.resetLoadoutRuntime(player);
-            if (!file.delete()) {
-                plugin.getLogger().warning("Could not delete used snapshot: " + file.getAbsolutePath());
+            if (!source.delete() && source.exists()) {
+                plugin.getLogger().warning("Could not delete used snapshot: " + source.getAbsolutePath());
             }
+            live.delete();
+            appliedThisSession.add(id);
             // Re-assert inventory after loadout/join hooks (tick 25).
             final ItemStack[] invCopy = inventory == null ? null : inventory.clone();
             final ItemStack[] armorCopy = armor == null ? null : armor.clone();
@@ -266,6 +276,43 @@ public final class TransferSnapshotStore {
 
     private File fileFor(UUID id) {
         return new File(dir, id.toString() + ".yml");
+    }
+
+    private File claimedFileFor(UUID id) {
+        return new File(dir, id.toString() + ".claimed.yml");
+    }
+
+    /**
+     * Atomically claim {@code uuid.yml} → {@code uuid.claimed.yml} so a second join
+     * cannot apply the same snapshot. A leftover claimed file is retried once
+     * (inventory/coin overlay is set-not-add).
+     */
+    private File claimSnapshot(File live, File claimed, UUID id) {
+        if (live != null && live.isFile()) {
+            appliedThisSession.remove(id);
+            try {
+                Files.move(
+                        live.toPath(),
+                        claimed.toPath(),
+                        StandardCopyOption.ATOMIC_MOVE,
+                        StandardCopyOption.REPLACE_EXISTING
+                );
+                return claimed;
+            } catch (IOException ex) {
+                plugin.getLogger().warning("Could not claim transfer snapshot for " + id + ": " + ex.getMessage());
+                return live;
+            }
+        }
+        if (claimed != null && claimed.isFile()) {
+            if (appliedThisSession.contains(id)) {
+                if (!claimed.delete()) {
+                    plugin.getLogger().warning("Could not delete already-applied snapshot: " + claimed.getAbsolutePath());
+                }
+                return null;
+            }
+            return claimed;
+        }
+        return null;
     }
 
     private static List<String> encodeItems(ItemStack[] items) {

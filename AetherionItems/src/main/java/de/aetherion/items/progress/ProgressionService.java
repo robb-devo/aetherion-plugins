@@ -1,5 +1,6 @@
 package de.aetherion.items.progress;
 
+import de.aetherion.core.persist.AtomicYaml;
 import de.aetherion.items.AetherionItems;
 import de.aetherion.items.codex.CodexService;
 import de.aetherion.items.skill.SkillService;
@@ -193,11 +194,7 @@ public final class ProgressionService {
             config.set("players." + id, set.stream().map(flag -> flag.name().toLowerCase(Locale.ROOT)).toList());
         });
         try {
-            File folder = file.getParentFile();
-            if (folder != null && !folder.exists()) {
-                folder.mkdirs();
-            }
-            config.save(file);
+            AtomicYaml.save(config, file, plugin.getLogger());
             dirty = false;
         } catch (Exception exception) {
             plugin.getLogger().warning("Could not save progress.yml: " + exception.getMessage());
@@ -214,6 +211,18 @@ public final class ProgressionService {
         load();
     }
 
+    public void overlayPlayerFromDisk(UUID playerId) {
+        if (playerId == null || !file.isFile()) {
+            return;
+        }
+        YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
+        ConfigurationSection root = config.getConfigurationSection("players");
+        if (root == null || !root.contains(playerId.toString())) {
+            return;
+        }
+        loadPlayer(root, playerId.toString());
+    }
+
     private void load() {
         if (!file.exists()) {
             return;
@@ -224,20 +233,26 @@ public final class ProgressionService {
             return;
         }
         for (String key : root.getKeys(false)) {
-            try {
-                UUID id = UUID.fromString(key);
-                EnumSet<Flag> set = EnumSet.noneOf(Flag.class);
-                for (String name : root.getStringList(key)) {
-                    try {
-                        set.add(Flag.valueOf(name.toUpperCase(Locale.ROOT)));
-                    } catch (IllegalArgumentException ignored) {
-                    }
+            loadPlayer(root, key);
+        }
+    }
+
+    private void loadPlayer(ConfigurationSection root, String key) {
+        try {
+            UUID id = UUID.fromString(key);
+            EnumSet<Flag> set = EnumSet.noneOf(Flag.class);
+            for (String name : root.getStringList(key)) {
+                try {
+                    set.add(Flag.valueOf(name.toUpperCase(Locale.ROOT)));
+                } catch (IllegalArgumentException ignored) {
                 }
-                if (!set.isEmpty()) {
-                    flags.put(id, set);
-                }
-            } catch (IllegalArgumentException ignored) {
             }
+            if (set.isEmpty()) {
+                flags.remove(id);
+            } else {
+                flags.put(id, set);
+            }
+        } catch (IllegalArgumentException ignored) {
         }
     }
 }

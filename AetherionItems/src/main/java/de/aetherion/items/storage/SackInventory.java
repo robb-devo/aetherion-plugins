@@ -72,7 +72,7 @@ public final class SackInventory {
         yaml.set("contents", holder.inventory.getContents());
         File file = file(holder.sackId);
         try {
-            yaml.save(file);
+            de.aetherion.core.persist.AtomicYaml.save(yaml, file, plugin.getLogger());
         } catch (IOException exception) {
             plugin.getLogger().warning("Could not save sack " + holder.sackId + ": " + exception.getMessage());
         }

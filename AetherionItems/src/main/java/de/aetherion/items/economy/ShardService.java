@@ -1,5 +1,7 @@
 package de.aetherion.items.economy;
 
+import de.aetherion.core.persist.AtomicYaml;
+
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
@@ -7,16 +9,21 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 public final class ShardService {
 
     private final JavaPlugin plugin;
     private final File file;
     private final ConcurrentHashMap<UUID, Long> balances = new ConcurrentHashMap<>();
-    private volatile boolean dirty;
+    private final Object saveLock = new Object();
+    private final AtomicLong mutationEpoch = new AtomicLong();
+    private volatile long savedEpoch;
 
     public ShardService(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -51,7 +58,7 @@ public final class ShardService {
             return;
         }
         balances.merge(playerId, amount, Long::sum);
-        dirty = true;
+        markDirty();
     }
 
     public boolean take(Player player, long amount) {
@@ -62,34 +69,40 @@ public final class ShardService {
         if (playerId == null || amount <= 0L) {
             return false;
         }
-        long current = get(playerId);
-        if (current < amount) {
-            return false;
+        while (true) {
+            Long current = balances.get(playerId);
+            if (current == null || current < amount) {
+                return false;
+            }
+            long next = current - amount;
+            if (balances.replace(playerId, current, next)) {
+                markDirty();
+                return true;
+            }
         }
-        balances.put(playerId, current - amount);
-        dirty = true;
-        return true;
     }
 
     public void save() {
-        YamlConfiguration config = file.exists()
-                ? YamlConfiguration.loadConfiguration(file)
-                : new YamlConfiguration();
-        balances.forEach((id, amount) -> config.set("players." + id, amount));
-        try {
-            File folder = file.getParentFile();
-            if (folder != null && !folder.exists()) {
-                folder.mkdirs();
+        synchronized (saveLock) {
+            long epoch = mutationEpoch.get();
+            Map<UUID, Long> snap = new HashMap<>(balances);
+            YamlConfiguration config = file.isFile()
+                    ? YamlConfiguration.loadConfiguration(file)
+                    : new YamlConfiguration();
+            snap.forEach((id, amount) -> config.set("players." + id, amount));
+            try {
+                AtomicYaml.save(config, file, plugin.getLogger());
+                if (mutationEpoch.get() == epoch) {
+                    savedEpoch = epoch;
+                }
+            } catch (IOException exception) {
+                plugin.getLogger().warning("Could not save shards.yml: " + exception.getMessage());
             }
-            config.save(file);
-            dirty = false;
-        } catch (IOException exception) {
-            plugin.getLogger().warning("Could not save shards.yml: " + exception.getMessage());
         }
     }
 
     public void saveIfDirty() {
-        if (dirty) {
+        if (mutationEpoch.get() != savedEpoch) {
             save();
         }
     }
@@ -98,7 +111,27 @@ public final class ShardService {
         load();
     }
 
+    public void overlayPlayerFromDisk(UUID playerId) {
+        if (playerId == null) {
+            return;
+        }
+        AtomicYaml.recoverTemp(file, plugin.getLogger());
+        if (!file.isFile()) {
+            return;
+        }
+        YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
+        String key = playerId.toString();
+        if (config.contains("players." + key)) {
+            balances.put(playerId, config.getLong("players." + key));
+        }
+    }
+
+    private void markDirty() {
+        mutationEpoch.incrementAndGet();
+    }
+
     private void load() {
+        AtomicYaml.recoverTemp(file, plugin.getLogger());
         if (!file.exists()) {
             return;
         }

@@ -465,6 +465,14 @@ public class AetherionItems extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        // Close open GUIs so AH/Bazaar/trade/sack holders return or persist items
+        // before YAML flush. Server is stopping; this is not a gameplay change.
+        for (org.bukkit.entity.Player player : getServer().getOnlinePlayers()) {
+            if (market != null) {
+                market.closeOpenGuis(player);
+            }
+            player.closeInventory();
+        }
         if (discordGuide != null) {
             discordGuide.unhook();
         }

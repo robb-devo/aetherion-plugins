@@ -1263,6 +1263,32 @@ public class LoadoutListener implements Listener {
     }
 
 
+    /**
+     * Persist worn loadout armor before a Velocity snapshot or quit.
+     * Skips empty armor so a post-transfer inventory clear cannot wipe YAML.
+     */
+    public void flushWornLoadout(Player player) {
+        if (player == null) {
+            return;
+        }
+        Integer activeLoadout = activeOf(player);
+        if (activeLoadout == null) {
+            int stored = loadoutManager.getActiveLoadout(player);
+            activeLoadout = stored <= 0 ? null : stored;
+        }
+        if (activeLoadout == null
+                || activeLoadout < 1
+                || activeLoadout > LoadoutManager.LOADOUTS_PER_PAGE) {
+            return;
+        }
+        ItemStack[] worn = player.getInventory().getArmorContents();
+        if (isEmptyArmor(worn)) {
+            return;
+        }
+        saveCurrentArmorToLoadout(player, activeLoadout, worn);
+        loadoutManager.setActiveLoadout(player, activeLoadout);
+    }
+
     @EventHandler(
             priority = EventPriority.HIGHEST
     )
@@ -1282,6 +1308,7 @@ public class LoadoutListener implements Listener {
                 activeLoadout != null
                         && activeLoadout >= 1
                         && activeLoadout <= LoadoutManager.LOADOUTS_PER_PAGE
+                        && !isEmptyArmor(player.getInventory().getArmorContents())
         ) {
 
             saveCurrentArmorToLoadout(
@@ -1838,6 +1865,18 @@ public class LoadoutListener implements Listener {
             }
         }
         return out;
+    }
+
+    private static boolean isEmptyArmor(ItemStack[] worn) {
+        if (worn == null) {
+            return true;
+        }
+        for (ItemStack piece : worn) {
+            if (piece != null && !piece.getType().isAir()) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static ItemStack[] cloneArmorContents(ItemStack[] worn) {
