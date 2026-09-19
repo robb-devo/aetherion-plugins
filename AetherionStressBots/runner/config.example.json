@@ -40,7 +40,7 @@
     "maxDrop": 3
   },
   "mining": {
-    "searchRadius": 12,
+    "searchRadius": 16,
     "digTimeoutMs": 10000,
     "wanderRadius": 6,
     "leashRadius": 16,
@@ -58,7 +58,7 @@
     ]
   },
   "mine": {
-    "searchRadius": 12,
+    "searchRadius": 16,
     "digTimeoutMs": 10000,
     "wanderRadius": 6,
     "leashRadius": 16,
@@ -99,7 +99,7 @@
     ]
   },
   "forage": {
-    "searchRadius": 12,
+    "searchRadius": 16,
     "digTimeoutMs": 10000,
     "wanderRadius": 6,
     "leashRadius": 16,

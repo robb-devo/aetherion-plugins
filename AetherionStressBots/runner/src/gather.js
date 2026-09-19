@@ -17,12 +17,12 @@ const { goals, Movements, pathfinder } = pathfinderPkg
 export function createDigLoop(bot, cfg, log, { activity, names, searchRadius, yRange, canDig = false, fallback = [] }) {
   bot.loadPlugin(pathfinder)
 
-  const radius = searchRadius ?? cfg.searchRadius ?? 12
+  const leash = cfg.leashRadius ?? bot.qaLeash ?? 16
+  const radius = Math.max(leash, searchRadius ?? cfg.searchRadius ?? 16)
   const digTimeoutMs = cfg.digTimeoutMs ?? 10_000
   const nameSet = new Set((names || cfg.blocks || cfg.ores || []).map((s) => s.toLowerCase()))
   const fallbackSet = new Set((fallback.length ? fallback : (cfg.fallback || [])).map((s) => s.toLowerCase()))
   const wanderRadius = cfg.wanderRadius ?? 6
-  const leash = cfg.leashRadius ?? bot.qaLeash ?? 16
 
   let running = false
   let busy = false
@@ -39,7 +39,7 @@ export function createDigLoop(bot, cfg, log, { activity, names, searchRadius, yR
     if (fallbackSet.size === 0) {
       return null
     }
-    const filler = findMatchingBlock(bot, fallbackSet, Math.min(radius, 8), Math.min(yRange ?? 6, 4))
+    const filler = findMatchingBlock(bot, fallbackSet, leash, Math.min(yRange ?? 6, 5))
     if (filler && withinLeash(filler.position.offset(0.5, 0.5, 0.5), home(), leash)) {
       return filler
     }
@@ -136,7 +136,7 @@ export function createMiningLoop(bot, cfg, log) {
   return createDigLoop(bot, cfg, log, {
     activity: 'mining',
     names: cfg.ores,
-    searchRadius: cfg.searchRadius ?? 12,
+    searchRadius: cfg.searchRadius ?? 16,
     yRange: 8,
     canDig: false,
     fallback: cfg.fallback || [
@@ -150,7 +150,7 @@ export function createForageLoop(bot, cfg, log) {
   return createDigLoop(bot, cfg, log, {
     activity: 'foraging',
     names: cfg.logs || cfg.blocks,
-    searchRadius: cfg.searchRadius ?? 12,
+    searchRadius: cfg.searchRadius ?? 16,
     yRange: 8,
     canDig: false,
     fallback: cfg.fallback || [
