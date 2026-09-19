@@ -10,7 +10,6 @@ depend:
 
 softdepend:
   - AetherionItems
-  - AetherionHub
   - BossEngine
   - AetherionQuests
   - WorldEdit

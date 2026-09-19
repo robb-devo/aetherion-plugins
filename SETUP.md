@@ -27,12 +27,12 @@ See `AetherionCore/README.md` and the comments in Core `config.yml`.
 
 | Plugin | Soft-deps |
 |--------|-----------|
-| AetherionItems | PlaceholderAPI, LuckPerms, WorldGuard, Hub, BossEngine, Quests, Dungeons, Guilds, AetherMobs |
-| AetherionQuests | TAB, PlaceholderAPI, FancyNpcs, FancyHolograms, Vault, Mining, Foraging, BossEngine, Hub, AetherMobs |
-| AetherionDungeons | Items, Hub, BossEngine, Quests, WorldEdit |
-| AetherionGuilds | Items, Hub, PlaceholderAPI |
-| AetherionMining / Farming / Foraging | WorldGuard (+ Items soft) |
-| BossEngine | Items, AetherMobs, Quests, WorldGuard |
+| AetherionItems | PlaceholderAPI, LuckPerms, WorldGuard, Hub, BossEngine, Quests, Dungeons, Guilds, AetherMobs, DiscordSRV |
+| AetherionQuests | PlaceholderAPI, FancyNpcs, BossEngine, Hub, AetherMobs |
+| AetherionDungeons | Items, BossEngine, Quests, WorldEdit |
+| AetherionGuilds | Items, PlaceholderAPI |
+| AetherionMining / Farming / Foraging | WorldGuard hard; Items soft. Farming also WorldEdit + AetherMobs. Foraging also WorldEdit + FancyNpcs. |
+| BossEngine | Items, AetherMobs, Quests, WorldGuard (+ DeluxeHub / MythicMobs / WorldGuardExtraFlagsPlus for spawn-protect load order) |
 | AetherionPit | WorldEdit/FAWE, FancyNpcs, PlaceholderAPI, DiscordSRV (hard-depend AetherionCore) |
 
 ## Smoke test (every deploy)

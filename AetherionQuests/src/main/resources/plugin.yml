@@ -11,13 +11,8 @@ depend:
   - AetherionItems
 
 softdepend:
-  - TAB
   - PlaceholderAPI
   - FancyNpcs
-  - FancyHolograms
-  - Vault
-  - AetherionMining
-  - AetherionForaging
   - BossEngine
   - AetherionHub
   - AetherMobs
