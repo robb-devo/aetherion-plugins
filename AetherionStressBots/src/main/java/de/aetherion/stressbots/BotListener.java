@@ -18,7 +18,13 @@ public final class BotListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onJoin(PlayerJoinEvent event) {
-        plugin.getProvisioner().scheduleSetup(event.getPlayer());
+        Player player = event.getPlayer();
+        if (!plugin.getProvisioner().isStressBot(player)) {
+            return;
+        }
+        plugin.getActivity().onJoin(player);
+        plugin.getLogger().info("Testbot joined: " + player.getName());
+        plugin.getProvisioner().scheduleSetup(player);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

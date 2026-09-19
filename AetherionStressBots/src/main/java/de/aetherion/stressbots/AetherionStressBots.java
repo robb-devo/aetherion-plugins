@@ -1,18 +1,34 @@
 package de.aetherion.stressbots;
 
+import de.aetherion.core.api.AetherServices;
+import de.aetherion.stressbots.control.RunnerControlClient;
+import de.aetherion.stressbots.control.TestBotController;
+import de.aetherion.stressbots.report.BotActivityTracker;
+import de.aetherion.stressbots.report.BotReportBuilder;
+import de.aetherion.stressbots.role.BotRoleRegistry;
+
 import org.bukkit.Bukkit;
+import org.bukkit.command.CommandSender;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitTask;
 
 public final class AetherionStressBots extends JavaPlugin {
 
+    private BotRoleRegistry registry;
     private BotProvisioner provisioner;
+    private BotActivityTracker activity;
+    private TestBotController controller;
+    private BukkitTask activityTask;
 
     @Override
     public void onEnable() {
         saveDefaultConfig();
-        provisioner = new BotProvisioner(this);
+        activity = new BotActivityTracker(this);
+        wire();
         Bukkit.getPluginManager().registerEvents(new BotListener(this), this);
+        Bukkit.getPluginManager().registerEvents(activity, this);
+        activityTask = Bukkit.getScheduler().runTaskTimer(this, activity, 20L, 10L);
 
         PluginCommand command = getCommand("stressbots");
         if (command != null) {
@@ -20,20 +36,62 @@ public final class AetherionStressBots extends JavaPlugin {
             command.setExecutor(executor);
             command.setTabCompleter(executor);
         }
+        PluginCommand report = getCommand("botreport");
+        if (report != null) {
+            report.setExecutor(new BotReportCommand(this));
+        }
 
-        getLogger().info("Stress bot assist enabled (combat="
-                + getConfig().getString("prefixes.combat", "StressC")
-                + ", mining="
-                + getConfig().getString("prefixes.mining", "StressM")
-                + ")");
+        AetherServices.registerTestBots(controller);
+        getLogger().info("Testbots ready (enabled=" + controller.enabled()
+                + ", runner=" + getConfig().getString("testbots.runner.host", "127.0.0.1")
+                + ":" + getConfig().getInt("testbots.runner.port", 18765)
+                + ", max=" + controller.maxTotal() + ")");
+    }
+
+    @Override
+    public void onDisable() {
+        if (activityTask != null) {
+            activityTask.cancel();
+            activityTask = null;
+        }
+        if (controller != null) {
+            AetherServices.clearTestBots(controller);
+        }
+    }
+
+    public void reloadAssist() {
+        reloadConfig();
+        wire();
+        AetherServices.registerTestBots(controller);
+    }
+
+    private void wire() {
+        registry = new BotRoleRegistry(this);
+        provisioner = new BotProvisioner(this);
+        BotReportBuilder reports = new BotReportBuilder(this);
+        RunnerControlClient runner = new RunnerControlClient(this);
+        controller = new TestBotController(this, runner, reports);
+    }
+
+    public BotRoleRegistry getRegistry() {
+        return registry;
     }
 
     public BotProvisioner getProvisioner() {
         return provisioner;
     }
 
-    public void reloadAssist() {
-        reloadConfig();
-        provisioner = new BotProvisioner(this);
+    public BotActivityTracker getActivity() {
+        return activity;
+    }
+
+    public TestBotController getController() {
+        return controller;
+    }
+
+    public static boolean canControl(CommandSender sender) {
+        return sender != null && (sender.isOp()
+                || sender.hasPermission("aetherion.stressbots.admin")
+                || sender.hasPermission("aetherion.dev"));
     }
 }

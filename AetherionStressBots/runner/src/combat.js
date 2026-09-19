@@ -1,4 +1,5 @@
 import pathfinderPkg from 'mineflayer-pathfinder'
+import { note } from './util.js'
 
 const { goals, Movements, pathfinder } = pathfinderPkg
 
@@ -27,6 +28,7 @@ export function createCombatLoop(bot, cfg, log) {
     const target = nearestHostile(bot, searchRadius)
     if (target) {
       const dist = bot.entity.position.distanceTo(target.position)
+      note(bot, `combat ${target.name || 'mob'}`, 'pathing')
       bot.lookAt(target.position.offset(0, target.height * 0.85, 0), true).catch(() => {})
       if (dist > 2.6) {
         bot.pathfinder.setGoal(new goals.GoalFollow(target, 1.6), true)
@@ -45,6 +47,7 @@ export function createCombatLoop(bot, cfg, log) {
       return
     }
 
+    bot.qaActivity = bot.pathfinder.isMoving() ? 'pathing' : 'idle'
     // No mobs — light wander so chunk/entity systems stay warm
     if (!bot.pathfinder.isMoving()) {
       const angle = Math.random() * Math.PI * 2

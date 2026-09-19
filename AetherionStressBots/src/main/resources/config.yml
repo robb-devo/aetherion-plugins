@@ -1,4 +1,5 @@
 # Name prefixes for auto-provisioning (case-insensitive).
+# Phase 1 stress bots keep StressC / StressM. Wave 1 QA bots use Qa* names.
 prefixes:
   combat: StressC
   mining: StressM
@@ -18,12 +19,11 @@ combat:
   z: 160.5
   yaw: 0.0
   pitch: 0.0
-  # Spread bots so they do not stack
   scatter-radius: 18
 
 mining:
   world: world
-  # Shabby Mine area anchors (from areas.yml)
+  # Shabby Mine area anchors (from areas.yml) — legacy StressM*
   anchors:
     - { x: 13.5, y: 55.5, z: 297.5 }
     - { x: -85.5, y: 51.5, z: 277.5 }
@@ -33,3 +33,72 @@ mining:
   yaw: 0.0
   pitch: 0.0
   scatter-radius: 10
+
+# ---------------------------------------------------------------------------
+# Wave 1 QA testbots (Dev menu + /botreport + /stressbots start)
+# Bots only spawn from the plugin when enabled is true.
+# The Mineflayer runner still needs to be running (control HTTP).
+# Velocity forwarding secret stays in runner/config.json — do not put it here.
+# ---------------------------------------------------------------------------
+testbots:
+  enabled: false
+  max-total: 20
+  max-per-start: 20
+  runner:
+    host: 127.0.0.1
+    port: 18765
+    # Optional. Empty = no header. If set, must match runner config.json control.token.
+    token: ""
+  prefixes:
+    mine: QaMine
+    forage: QaForage
+    catch: QaCatch
+    roam: QaRoam
+  caps:
+    mine: 20
+    forage: 20
+    catch: 20
+    roam: 20
+  roles:
+    # Mining isle (Eldervale) — Hub pad landing + nearby vein-ish spots on mmo-r world.
+    mine:
+      world: world
+      anchors:
+        - { x: 53.5, y: 91.0, z: 482.5 }
+        - { x: 80.5, y: 92.0, z: 530.5 }
+        - { x: 22.5, y: 90.0, z: 580.5 }
+      yaw: 0.0
+      pitch: 20.0
+      scatter-radius: 12
+    # Forage Isle — pad landing + schematic interior.
+    forage:
+      world: world
+      anchors:
+        - { x: 479.5, y: 74.0, z: -240.5 }
+        - { x: 560.5, y: 90.0, z: -160.5 }
+        - { x: 677.5, y: 91.0, z: -116.5 }
+      yaw: 90.0
+      pitch: 10.0
+      scatter-radius: 14
+    # Pet habitats: forage-isle canopy + Eldervale disk fallback.
+    catch:
+      world: world
+      spheres: [common]
+      sphere-count: 16
+      anchors:
+        - { x: 500.5, y: 80.0, z: -200.5 }
+        - { x: 560.5, y: 90.0, z: -160.5 }
+        - { x: 53.5, y: 91.0, z: 482.5 }
+      yaw: 0.0
+      pitch: 0.0
+      scatter-radius: 16
+    # Origin / capital approach paths (pads + borderlands gate). Adjust if Hub spawn coords differ.
+    roam:
+      world: world
+      waypoints:
+        - { x: 22.5, y: 56.0, z: 305.5 }
+        - { x: 220.5, y: 58.0, z: 160.5 }
+        - { x: 438.5, y: 56.0, z: -233.5 }
+      yaw: 0.0
+      pitch: 0.0
+      scatter-radius: 8
