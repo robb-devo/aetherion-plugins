@@ -3,7 +3,7 @@
   "port": 25567,
   "version": "1.21.1",
   "joinDelayMs": 2500,
-  "velocitySecret": "kvbrdcXeETG5",
+  "velocitySecret": "CHANGE_ME",
   "prefixes": {
     "combat": "StressC",
     "mining": "StressM"

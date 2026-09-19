@@ -104,7 +104,7 @@ public final class ForageHabitatService {
         Location a = pos1.get(player.getUniqueId());
         Location b = pos2.get(player.getUniqueId());
         if (a == null || b == null || a.getWorld() == null || b.getWorld() == null) {
-            player.sendMessage("§cSet both corners first: §e/forage habitat pos1 §7+ §epos2");
+            player.sendMessage("§cSet both corners first: §e/forageadmin habitat pos1 §7+ §epos2");
             return false;
         }
         if (!a.getWorld().equals(b.getWorld())) {

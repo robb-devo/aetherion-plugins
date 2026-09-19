@@ -41,6 +41,13 @@ Names: `StressC01…` / `StressM01…`
 
 - Plugin sources: `AetherionStressBots/`
 - Runner on server: `/opt/aetherion-stress-bots/runner`
-- Config: `runner/config.json` + `plugins/AetherionStressBots/config.yml`
+- Config: `runner/config.json` (local, gitignored) + `plugins/AetherionStressBots/config.yml`
+
+Copy the example runner config, then set the **live Velocity forwarding secret only on the server / local runner env**. Do not commit a real `velocitySecret`.
+
+```bash
+cp runner/config.example.json runner/config.json
+# edit runner/config.json → velocitySecret = the server's proxies.velocity.secret
+```
 
 `max-players` on MMO-R was raised to **60** for headroom.

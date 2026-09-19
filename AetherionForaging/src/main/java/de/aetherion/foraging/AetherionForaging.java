@@ -76,10 +76,10 @@ public class AetherionForaging extends JavaPlugin {
         Bukkit.getScheduler().runTaskTimer(this, foragingListener::tick, 1L, 1L);
 
         ForageCommand forageCommand = new ForageCommand(this);
-        var forage = getCommand("forage");
-        if (forage != null) {
-            forage.setExecutor(forageCommand);
-            forage.setTabCompleter(forageCommand);
+        var forageAdmin = getCommand("forageadmin");
+        if (forageAdmin != null) {
+            forageAdmin.setExecutor(forageCommand);
+            forageAdmin.setTabCompleter(forageCommand);
         }
 
         if (getConfig().getBoolean("forage-isle.auto-scan-if-empty", true)

@@ -156,7 +156,7 @@ public final class ForageIslePaste {
                 placeReturnPad(plugin, world);
                 syncHubForagePads(plugin, world, sender);
                 reloadHubPads(sender);
-                sender.sendMessage("§7Clear anytime with §f/forage isle clear§7 (not WorldEdit //undo).");
+                sender.sendMessage("§7Clear anytime with §f/forageadmin isle clear§7 (not WorldEdit //undo).");
             } catch (Throwable t) {
                 plugin.getLogger().log(Level.SEVERE, "Forage Isle paste failed", t);
                 sender.sendMessage("§cPaste failed: " + t.getMessage());
@@ -246,7 +246,7 @@ public final class ForageIslePaste {
                 clearReturnPad(plugin, world);
                 long ms = System.currentTimeMillis() - start;
                 sender.sendMessage("§aCleared §f" + cleared + "§a schem blocks (+ return pad) in §f" + ms + "ms§a.");
-                sender.sendMessage("§7Stand at the island center, then §f/forage isle paste here§7.");
+                sender.sendMessage("§7Stand at the island center, then §f/forageadmin isle paste here§7.");
             } catch (Throwable t) {
                 plugin.getLogger().log(Level.SEVERE, "Forage Isle clear failed", t);
                 sender.sendMessage("§cClear failed: " + t.getMessage());
