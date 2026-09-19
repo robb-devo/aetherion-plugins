@@ -57,6 +57,7 @@ public final class HelpMenu implements Listener {
                 "§aPermission",
                 "§faetherion.npc.editor",
                 "§7LuckPerms group §fmoderator",
+                "§7LuckPerms group §fMonkey §8+ §faetherion.dev.menu",
                 "§7Not the same as §faetherionquests.admin"
         ));
         inventory.setItem(BACK, EditorItems.button(Material.ARROW, "§7Back"));

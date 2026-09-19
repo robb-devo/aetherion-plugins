@@ -65,7 +65,6 @@ commands:
     aliases:
       - adev
       - aetheriondev
-    permission: aetherion.dev
 
   bazaar:
     description: Open the resource Bazaar
@@ -146,9 +145,14 @@ permissions:
   aetherion.shardshop:
     description: Open the Aether Shard shop
     default: true
+  aetherion.dev.menu:
+    description: See the DEV icon (Manager bottom-left) and open the menu. Entries stay permission-gated.
+    default: false
   aetherion.dev:
-    description: Access the DEV menu and animal anchors
+    description: Full DEV menu and animal anchors
     default: op
+    children:
+      aetherion.dev.menu: true
   aetherion.shards.admin:
     description: Give and take Aether Shards
     default: op

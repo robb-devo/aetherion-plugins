@@ -188,4 +188,16 @@ public final class QuestProgressAccessImpl implements QuestProgressAccess {
         }
         return name;
     }
+
+    @Override
+    public boolean openNpcEditor(Player player) {
+        if (player == null || plugin == null || plugin.getNpcEditor() == null) {
+            return false;
+        }
+        if (!de.aetherion.quests.editor.NpcEditor.allowed(player)) {
+            return false;
+        }
+        plugin.getNpcEditor().openMain(player);
+        return true;
+    }
 }

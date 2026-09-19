@@ -134,8 +134,23 @@ public class DevMenu {
         this.buildingBanners = buildingBanners;
     }
 
+    public static final String PERM_FULL = "aetherion.dev";
+    public static final String PERM_MENU = "aetherion.dev.menu";
+    public static final String PERM_NPC_EDITOR = "aetherion.npc.editor";
+
     public static boolean canUse(Player player) {
-        return player != null && (player.isOp() || player.hasPermission("aetherion.dev"));
+        return player != null && (player.isOp()
+                || player.hasPermission(PERM_FULL)
+                || player.hasPermission(PERM_MENU));
+    }
+
+    /** Moderators / admins: every Dev-menu tile. Monkey is menu-only. */
+    public static boolean hasFullAccess(Player player) {
+        return player != null && (player.isOp() || player.hasPermission(PERM_FULL));
+    }
+
+    public static boolean canUseNpcEditor(Player player) {
+        return player != null && (player.hasPermission(PERM_NPC_EDITOR) || hasFullAccess(player));
     }
 
     public void open(Player player) {
@@ -155,14 +170,18 @@ public class DevMenu {
             player.sendMessage("§cDEV only.");
             return;
         }
-        Inventory inventory = Bukkit.createInventory(new Holder(page, target, index), 54, TITLE);
+        Page shown = page;
+        if (!hasFullAccess(player) && page != Page.ROOT) {
+            shown = Page.ROOT;
+        }
+        Inventory inventory = Bukkit.createInventory(new Holder(shown, target, index), 54, TITLE);
         fill(inventory);
-        if (page == Page.ROOT) {
-            drawRoot(inventory, Math.max(0, index));
-        } else if (page == Page.ISLE_WEATHER) {
+        if (shown == Page.ROOT) {
+            drawRoot(inventory, player, Math.max(0, index));
+        } else if (shown == Page.ISLE_WEATHER) {
             drawIsleWeather(inventory, player);
         } else {
-            drawPage(inventory, page, target, Math.max(0, index));
+            drawPage(inventory, shown, target, Math.max(0, index));
         }
         player.openInventory(inventory);
     }
@@ -172,7 +191,7 @@ public class DevMenu {
     }
 
     public void handle(Player player, ItemStack clicked, int slot, ClickType click) {
-        if (clicked == null || !clicked.hasItemMeta()) {
+        if (!canUse(player) || clicked == null || !clicked.hasItemMeta()) {
             return;
         }
         String action = clicked.getItemMeta().getPersistentDataContainer().get(ItemKeys.devAction(), PersistentDataType.STRING);
@@ -182,6 +201,14 @@ public class DevMenu {
             } else if (slot == 49) {
                 player.closeInventory();
             }
+            return;
+        }
+        if (!allowAction(player, action)) {
+            player.sendMessage("§cThis tool is not available for your rank.");
+            return;
+        }
+        if (action.equals("npc-editor")) {
+            openNpcEditor(player);
             return;
         }
         if (action.equals("close")) {
@@ -793,7 +820,11 @@ public class DevMenu {
         }
     }
 
-    private void drawRoot(Inventory inventory, int index) {
+    private void drawRoot(Inventory inventory, Player player, int index) {
+        if (!hasFullAccess(player)) {
+            drawLimitedRoot(inventory, player);
+            return;
+        }
         int page = Math.max(0, Math.min(1, index));
         inventory.setItem(4, button(Material.NETHER_STAR, "§6§lDEV Menu", "root",
                 "§7Page §f" + (page + 1) + "§7 / §f2",
@@ -861,9 +892,50 @@ public class DevMenu {
             inventory.setItem(21, button(Material.PLAYER_HEAD, "§bTestbots", "page:TESTBOTS",
                     "§7QA bots · Wave 1 + combat/fish/trade/quest/pad.",
                     "§7Start/stop from here. §f/botreport"));
+            if (canUseNpcEditor(player)) {
+                inventory.setItem(22, npcEditorButton());
+            }
         }
 
         drawBorderNav(inventory, page, 2, "ROOT");
+    }
+
+    private void drawLimitedRoot(Inventory inventory, Player player) {
+        inventory.setItem(4, button(Material.NETHER_STAR, "§6§lDEV Menu", "root",
+                "§7Staff tools you can use."));
+        if (canUseNpcEditor(player)) {
+            inventory.setItem(22, npcEditorButton());
+        }
+        inventory.setItem(45, button(Material.ARROW, "§eClose", "close", "§7Leave DEV menu."));
+        inventory.setItem(49, button(Material.BARRIER, "§cClose", "close"));
+    }
+
+    private ItemStack npcEditorButton() {
+        return button(Material.WRITABLE_BOOK, "§bNPC / Quest Editor", "npc-editor",
+                "§7Create FancyNPCs with dialogue.",
+                "§7Story NPCs stay untouched.",
+                "§eOpens /npc");
+    }
+
+    private static boolean allowAction(Player player, String action) {
+        if (hasFullAccess(player)) {
+            return true;
+        }
+        return "close".equals(action)
+                || "back".equals(action)
+                || "root".equals(action)
+                || "npc-editor".equals(action);
+    }
+
+    private static void openNpcEditor(Player player) {
+        if (!canUseNpcEditor(player)) {
+            player.sendMessage("§cYou need §faetherion.npc.editor §cto use the NPC editor.");
+            return;
+        }
+        de.aetherion.core.api.QuestProgressAccess quests = de.aetherion.core.api.AetherServices.quests();
+        if (quests == null || !quests.openNpcEditor(player)) {
+            player.sendMessage("§cAetherionQuests is not loaded.");
+        }
     }
 
     /** Bottom nav: far-left 45 · center Close 49 · far-right 53. */
@@ -2677,6 +2749,10 @@ public class DevMenu {
     }
 
     public void handleBoosterLab(Player player, InventoryClickEvent event) {
+        if (!hasFullAccess(player)) {
+            event.setCancelled(true);
+            return;
+        }
         Inventory top = event.getView().getTopInventory();
         if (event.getClickedInventory() == null) {
             return;

@@ -56,4 +56,13 @@ public interface QuestProgressAccess {
     ItemStack exploreChest(String kind);
 
     String despawnNpc(Entity entity);
+
+    /**
+     * Open the in-game FancyNPC / quest editor ({@code /npc}).
+     *
+     * @return {@code true} if the editor opened
+     */
+    default boolean openNpcEditor(Player player) {
+        return false;
+    }
 }
