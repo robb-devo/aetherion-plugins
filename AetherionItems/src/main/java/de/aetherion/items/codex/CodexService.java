@@ -170,9 +170,30 @@ public final class CodexService {
     }
 
     private PlayerCodex data(Player player) {
-        PlayerCodex data = players.computeIfAbsent(player.getUniqueId(), uuid -> new PlayerCodex(uuid, player.getName()));
-        data.name = player.getName();
+        PlayerCodex data = players.computeIfAbsent(player.getUniqueId(), uuid -> new PlayerCodex(uuid, publicLabel(player)));
+        data.name = publicLabel(player);
         return data;
+    }
+
+    /** Prefer in-game nickname (testbots, TAB) so Collection/Bestiary leaderboards read nicely. */
+    private static String publicLabel(Player player) {
+        try {
+            net.kyori.adventure.text.Component component = player.displayName();
+            if (component != null) {
+                String plain = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
+                        .serialize(component)
+                        .trim();
+                if (!plain.isEmpty()) {
+                    return plain;
+                }
+            }
+        } catch (RuntimeException ignored) {
+        }
+        String legacy = player.getDisplayName();
+        if (legacy != null && !legacy.isBlank()) {
+            return legacy.replaceAll("§.", "").trim();
+        }
+        return player.getName();
     }
 
     public void reloadFromDisk() {

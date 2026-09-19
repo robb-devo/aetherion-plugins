@@ -51,3 +51,14 @@ mvn -q clean install
 ```
 
 Jars land in each module `target/*.jar`. Install **AetherionCore** before anything that compiles against it if you build a single module alone.
+
+## Test bots (Wave 1)
+
+QA Mineflayer bots (mine / forage / catch / roam) live in **AetherionStressBots**. They only **start from Dev menu / commands** when `plugins/AetherionStressBots/config.yml` has `testbots.enabled: true`.
+
+1. On the host: `cd AetherionStressBots/runner && cp config.example.json config.json` — set `velocitySecret` locally, never commit it.
+2. `npm start -- --listen` (HTTP control on `127.0.0.1:18765`).
+3. In-game: `/dev` → page 2 → **Testbots**, or `/stressbots start mine 3` / `/botreport`.
+
+Details, role limits, and later-wave gaps: [AetherionStressBots/README.md](AetherionStressBots/README.md).
+

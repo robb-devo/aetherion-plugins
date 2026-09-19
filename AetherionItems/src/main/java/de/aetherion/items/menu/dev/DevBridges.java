@@ -437,4 +437,58 @@ public final class DevBridges {
         }
         return foraging.clearWeather(player);
     }
+
+    static de.aetherion.core.api.TestBotsAccess testBots() {
+        return de.aetherion.core.api.AetherServices.testBots();
+    }
+
+    static String testBotsStart(String role, int count) {
+        de.aetherion.core.api.TestBotsAccess access = testBots();
+        if (access == null) {
+            return "§cAetherionStressBots is not loaded.";
+        }
+        return access.start(role, count);
+    }
+
+    static String testBotsStop(String role) {
+        de.aetherion.core.api.TestBotsAccess access = testBots();
+        if (access == null) {
+            return "§cAetherionStressBots is not loaded.";
+        }
+        return access.stop(role);
+    }
+
+    static String testBotsStopAll() {
+        de.aetherion.core.api.TestBotsAccess access = testBots();
+        if (access == null) {
+            return "§cAetherionStressBots is not loaded.";
+        }
+        return access.stopAll();
+    }
+
+    static int testBotsAdjust(String role, int delta) {
+        de.aetherion.core.api.TestBotsAccess access = testBots();
+        if (access == null) {
+            return 0;
+        }
+        return access.adjustDesired(role, delta);
+    }
+
+    static de.aetherion.core.api.TestBotReport testBotsReport() {
+        de.aetherion.core.api.TestBotsAccess access = testBots();
+        return access == null ? null : access.report();
+    }
+
+    static String testBotsReportText() {
+        de.aetherion.core.api.TestBotsAccess access = testBots();
+        if (access == null) {
+            return "AetherionStressBots is not loaded.";
+        }
+        return access.reportText();
+    }
+
+    static de.aetherion.core.api.TestBotView testBot(String name) {
+        de.aetherion.core.api.TestBotsAccess access = testBots();
+        return access == null ? null : access.bot(name);
+    }
 }

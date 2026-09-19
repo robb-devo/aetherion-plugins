@@ -3,18 +3,25 @@ version: 1.0.0
 main: de.aetherion.stressbots.AetherionStressBots
 api-version: 1.21
 author: Aetherion
-description: Provisions Mineflayer stress bots with gear and zone teleports
+description: Mineflayer test/stress bots — kits, teleports, Dev-menu control, /botreport
 depend:
+  - AetherionCore
   - AetherionItems
+softdepend:
+  - AetherMobs
 
 commands:
   stressbots:
-    description: Stress-bot assist controls
-    usage: /stressbots <reload|setup|list>
-    permission: aetherion.stressbots.admin
+    description: Stress/test-bot assist controls
+    usage: /stressbots <reload|setup|list|start|stop|stopall|report>
+    permission-message: No permission.
+  botreport:
+    description: Dump online test-bot status for QA
+    usage: /botreport
+    aliases: [testbotreport]
     permission-message: No permission.
 
 permissions:
   aetherion.stressbots.admin:
-    description: Manage stress-bot assist
+    description: Manage test/stress bots and /botreport
     default: op

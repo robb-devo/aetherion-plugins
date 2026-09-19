@@ -13,12 +13,16 @@
 
   <artifactId>AetherionStressBots</artifactId>
   <name>AetherionStressBots</name>
-  <description>Auto-gear and teleport assist for Mineflayer stress bots</description>
+  <description>Mineflayer test/stress bots — kits, teleports, Dev-menu control, /botreport</description>
 
   <dependencies>
     <dependency>
       <groupId>io.papermc.paper</groupId>
       <artifactId>paper-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>de.aetherion</groupId>
+      <artifactId>AetherionCore</artifactId>
     </dependency>
     <dependency>
       <groupId>de.aetherion</groupId>

@@ -13,6 +13,7 @@
 | **AetherMobs** | Pets, catch, collection, Aetherlex | Boss templates |
 | **AetherionGuilds** | Guilds, friends, personal islands, quarry minions | Hub spawns |
 | **Mining / Farming / Foraging / Fishing** | World rules, zones, regen, minigames | Item stats / recipes (live in Items) |
+| **AetherionStressBots** | Mineflayer QA/stress bots, kits/TP, `/botreport` | Economy, quests |
 
 ## Cross-plugin rules
 

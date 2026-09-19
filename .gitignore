@@ -35,6 +35,7 @@ DiscordSRV*.jar
 **/secrets*
 **/credentials*
 AetherionStressBots/runner/config.json
+AetherionStressBots/runner/node_modules/
 
 # Kotlin
 .kotlin/

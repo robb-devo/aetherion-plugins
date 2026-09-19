@@ -19,10 +19,11 @@ Crafty layout: `/var/opt/minecraft/crafty/` (`servers/<id>/` backends, `shared/`
 
 ## Docs
 
-- [SETUP.md](SETUP.md) — load order, soft-deps, smoke test
+- [SETUP.md](SETUP.md) — load order, soft-deps, smoke test, testbots
 - [ARCHITECTURE.md](ARCHITECTURE.md) — who owns what
 - [docs/OWNERSHIP.md](docs/OWNERSHIP.md) — gather vs Items
 - [docs/DUPING_CHECKLIST.md](docs/DUPING_CHECKLIST.md) — economy / transfer checks
+- [AetherionStressBots/README.md](AetherionStressBots/README.md) — QA/stress Mineflayer bots (Wave 1: mine/forage/catch/roam + Dev menu)
 
 ## Build
 

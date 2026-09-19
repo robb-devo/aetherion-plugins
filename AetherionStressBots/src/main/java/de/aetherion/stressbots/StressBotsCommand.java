@@ -1,5 +1,8 @@
 package de.aetherion.stressbots;
 
+import de.aetherion.stressbots.role.BotRole;
+import de.aetherion.stressbots.role.BotRoleHandler;
+
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -13,6 +16,10 @@ import java.util.Locale;
 
 public final class StressBotsCommand implements CommandExecutor, TabCompleter {
 
+    private static final List<String> SUBS = List.of(
+            "reload", "setup", "list", "start", "stop", "stopall", "report"
+    );
+
     private final AetherionStressBots plugin;
 
     public StressBotsCommand(AetherionStressBots plugin) {
@@ -21,57 +28,91 @@ public final class StressBotsCommand implements CommandExecutor, TabCompleter {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        BotProvisioner provisioner = plugin.getProvisioner();
+        if (!AetherionStressBots.canControl(sender)) {
+            sender.sendMessage("§cNo permission.");
+            return true;
+        }
         if (args.length == 0) {
-            sender.sendMessage("§e/stressbots <reload|setup|list>");
+            help(sender);
             return true;
         }
         String sub = args[0].toLowerCase(Locale.ROOT);
         switch (sub) {
             case "reload" -> {
                 plugin.reloadAssist();
-                sender.sendMessage("§aStress bot config reloaded.");
+                sender.sendMessage("§aStress/testbot config reloaded. enabled=" + plugin.getController().enabled());
             }
             case "setup" -> {
                 int count = 0;
                 for (Player player : Bukkit.getOnlinePlayers()) {
-                    BotRole role = provisioner.roleOf(player);
-                    if (role == null) {
+                    BotRoleHandler handler = plugin.getRegistry().byPlayer(player);
+                    if (handler == null) {
                         continue;
                     }
-                    provisioner.setup(player, role);
+                    plugin.getProvisioner().setup(player, handler);
                     count++;
                 }
-                sender.sendMessage("§aRe-provisioned §f" + count + " §astress bots.");
+                sender.sendMessage("§aRe-provisioned §f" + count + " §abots.");
             }
-            case "list" -> {
-                List<String> combat = new ArrayList<>();
-                List<String> mining = new ArrayList<>();
-                for (Player player : Bukkit.getOnlinePlayers()) {
-                    BotRole role = provisioner.roleOf(player);
-                    if (role == BotRole.COMBAT) {
-                        combat.add(player.getName());
-                    } else if (role == BotRole.MINING) {
-                        mining.add(player.getName());
-                    }
+            case "list" -> sender.sendMessage(plugin.getController().reportText().split("\n"));
+            case "start" -> {
+                if (args.length < 2) {
+                    sender.sendMessage("§e/stressbots start <mine|forage|catch|roam> [count]");
+                    return true;
                 }
-                sender.sendMessage("§6Combat (§f" + combat.size() + "§6): §7" + String.join(", ", combat));
-                sender.sendMessage("§6Mining (§f" + mining.size() + "§6): §7" + String.join(", ", mining));
-                sender.sendMessage("§7Prefixes: combat=§f" + provisioner.combatPrefix()
-                        + " §7mining=§f" + provisioner.miningPrefix());
+                int count = args.length >= 3 ? parseInt(args[2], 1) : Math.max(1, plugin.getController().desired(args[1]));
+                sender.sendMessage(plugin.getController().start(args[1], count));
             }
-            default -> sender.sendMessage("§e/stressbots <reload|setup|list>");
+            case "stop" -> {
+                if (args.length < 2 || "all".equalsIgnoreCase(args[1])) {
+                    sender.sendMessage(plugin.getController().stopAll());
+                    return true;
+                }
+                sender.sendMessage(plugin.getController().stop(args[1]));
+            }
+            case "stopall" -> sender.sendMessage(plugin.getController().stopAll());
+            case "report" -> sender.sendMessage(plugin.getController().reportText().split("\n"));
+            default -> help(sender);
         }
         return true;
+    }
+
+    private void help(CommandSender sender) {
+        sender.sendMessage("§e/stressbots <reload|setup|list|start|stop|stopall|report>");
+        sender.sendMessage("§7Wave 1 start: §f/stressbots start mine 3");
+        sender.sendMessage("§7Also: §f/botreport");
+    }
+
+    private static int parseInt(String raw, int fallback) {
+        try {
+            return Integer.parseInt(raw);
+        } catch (NumberFormatException exception) {
+            return fallback;
+        }
     }
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            return List.of("reload", "setup", "list").stream()
-                    .filter(s -> s.startsWith(args[0].toLowerCase(Locale.ROOT)))
-                    .toList();
+            return filter(SUBS, args[0]);
+        }
+        if (args.length == 2 && ("start".equalsIgnoreCase(args[0]) || "stop".equalsIgnoreCase(args[0]))) {
+            List<String> roles = new ArrayList<>(plugin.getController().wave1Roles());
+            if ("stop".equalsIgnoreCase(args[0])) {
+                roles.add("all");
+                roles.add(BotRole.COMBAT.id());
+                roles.add(BotRole.MINING.id());
+            }
+            return filter(roles, args[1]);
+        }
+        if (args.length == 3 && "start".equalsIgnoreCase(args[0])) {
+            return filter(List.of("1", "3", "5", "10"), args[2]);
         }
         return List.of();
+    }
+
+    private static List<String> filter(List<String> options, String prefix) {
+        String lower = prefix.toLowerCase(Locale.ROOT);
+        return options.stream().filter(s -> s.startsWith(lower)).toList();
     }
 }
