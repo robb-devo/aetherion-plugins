@@ -92,6 +92,8 @@ rituals:
 isle-guide:
   enabled: true
   placed: false
+  # FancyNPC packet reveal (blocks). Default Fancy is ~10; 48 reads from the pad.
+  visibility-distance: 48
 hotspots:
   enabled: false
   interval-seconds: 480

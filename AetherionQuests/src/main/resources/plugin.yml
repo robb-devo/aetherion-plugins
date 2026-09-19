@@ -31,3 +31,17 @@ commands:
     description: Choose quest/hint language (EN fully supported, DE experimental)
     usage: /language [en|de]
     aliases: [lang, sprache, sprachewahl]
+
+  npc:
+    description: In-game FancyNPC creator for moderators
+    usage: /npc
+    aliases: [aethernpc, npceditor]
+    permission: aetherion.npc.editor
+
+permissions:
+  aetherion.npc.editor:
+    description: Create and edit FancyNPCs with dialogue (moderator / content helper)
+    default: false
+  aetherionquests.admin:
+    description: Admin quest NPC tools (/questnpc, anchors)
+    default: op

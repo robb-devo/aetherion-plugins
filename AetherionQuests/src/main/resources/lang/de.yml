@@ -15,6 +15,14 @@ ui:
   accept: "§a§lAnnehmen"
   decline: "§c§lAblehnen"
   close: "§cSchließen"
+  npc_editor: "§8NPC-Editor"
+  npc_edit: "§8NPC bearbeiten"
+  npc_list: "§8NPC-Liste"
+  npc_appear: "§8Aussehen"
+  npc_dialogue: "§8Dialog"
+  npc_quest: "§8Quest verknüpfen"
+  npc_confirm: "§8Bestätigen"
+  npc_help: "§8NPC-Hilfe"
 
 progress:
   catch_pet: "Fang ein Pet"

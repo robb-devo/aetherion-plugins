@@ -148,6 +148,9 @@ public class AetherionForaging extends JavaPlugin {
             getConfig().set("isle-guide.enabled", true);
             getConfig().set("isle-guide.placed", false);
         }
+        if (!getConfig().contains("isle-guide.visibility-distance")) {
+            getConfig().set("isle-guide.visibility-distance", 48);
+        }
         if (!getConfig().contains("rituals.placed")) {
             getConfig().set("rituals.placed", false);
         }

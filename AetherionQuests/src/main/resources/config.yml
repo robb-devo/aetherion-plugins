@@ -31,3 +31,16 @@ npcs:
     x: 0
     y: 64
     z: 0
+
+# ============================================================
+# FancyNPC visibility (blocks)
+# ============================================================
+# Living story NPCs (Egon, Twig, …) stay high so the hub does not pop-in.
+# Moderator-created editor NPCs use a shorter default — fine on islands.
+# Miss Canopy lives in AetherionForaging: isle-guide.visibility-distance
+#
+# These keys are read with code defaults if missing. The jar will not
+# overwrite a live plugins/AetherionQuests/config.yml.
+
+living-npc-visibility-distance: 96
+editor-npc-visibility-distance: 48
