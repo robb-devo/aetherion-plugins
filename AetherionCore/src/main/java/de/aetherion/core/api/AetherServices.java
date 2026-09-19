@@ -20,6 +20,7 @@ public final class AetherServices {
     private static volatile ForageAccess foraging;
     private static volatile FarmAccess farming;
     private static volatile MiningAccess mining;
+    private static volatile HarvestAccess harvest;
     private static volatile DungeonAccess dungeons;
 
     private AetherServices() {
@@ -69,6 +70,10 @@ public final class AetherServices {
         mining = access;
     }
 
+    public static void registerHarvest(HarvestAccess access) {
+        harvest = access;
+    }
+
     public static void registerDungeons(DungeonAccess access) {
         dungeons = access;
     }
@@ -115,6 +120,10 @@ public final class AetherServices {
 
     public static MiningAccess mining() {
         return mining;
+    }
+
+    public static HarvestAccess harvest() {
+        return harvest;
     }
 
     public static DungeonAccess dungeons() {
@@ -184,6 +193,12 @@ public final class AetherServices {
     public static void clearMining(MiningAccess access) {
         if (mining == access) {
             mining = null;
+        }
+    }
+
+    public static void clearHarvest(HarvestAccess access) {
+        if (harvest == access) {
+            harvest = null;
         }
     }
 

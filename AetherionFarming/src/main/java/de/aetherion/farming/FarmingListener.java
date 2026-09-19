@@ -34,6 +34,10 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import static org.bukkit.event.Event.Result.ALLOW;
 
+/**
+ * Crop WorldGuard allow, trample protect, replant/regen. Harvest fortune/XP
+ * stays in Items {@code CropHarvestListener}.
+ */
 public class FarmingListener implements Listener {
 
     private final Set<String> regenerating = ConcurrentHashMap.newKeySet();

@@ -42,6 +42,7 @@ public class CustomItem {
     private final CatcherItems catcher;
     private final AccessoryItems accessories;
     private final BoosterItems boosters;
+    private final List<java.util.function.Function<String, ItemStack>> idFactories;
     private String lastItemId;
     private ItemStats lastStats;
 
@@ -54,6 +55,16 @@ public class CustomItem {
         this.catcher = new CatcherItems(itemManager);
         this.accessories = new AccessoryItems(itemManager);
         this.boosters = new BoosterItems();
+        this.idFactories = List.of(
+                progression::byId,
+                farming::byId,
+                foraging::byId,
+                fishing::byId,
+                catcher::byId,
+                accessories::byId,
+                boosters::byId,
+                this::createDungeonFromId
+        );
     }
 
     public ProgressionItems progression() {
@@ -6978,37 +6989,18 @@ public class CustomItem {
 
     /**
      * Cross-plugin factory used via {@link de.aetherion.core.api.ItemFactoryAccess}.
+     * Domain factories first, then dungeon ids, then legacy {@code createXxx} methods.
      */
     public ItemStack createById(String itemId) {
         if (itemId == null || itemId.isBlank()) {
             return null;
         }
         String id = itemId.toLowerCase(java.util.Locale.ROOT);
-        ItemStack domain = progression.byId(id);
-        if (domain == null) {
-            domain = farming.byId(id);
-        }
-        if (domain == null) {
-            domain = foraging.byId(id);
-        }
-        if (domain == null) {
-            domain = fishing.byId(id);
-        }
-        if (domain == null) {
-            domain = catcher.byId(id);
-        }
-        if (domain == null) {
-            domain = accessories.byId(id);
-        }
-        if (domain == null) {
-            domain = boosters.byId(id);
-        }
-        if (domain != null) {
-            return domain;
-        }
-        ItemStack dungeon = createDungeonFromId(id);
-        if (dungeon != null) {
-            return dungeon;
+        for (java.util.function.Function<String, ItemStack> factory : idFactories) {
+            ItemStack created = factory.apply(id);
+            if (created != null) {
+                return created;
+            }
         }
         try {
             java.lang.reflect.Method method = getClass().getMethod(toCreateMethodName(id));

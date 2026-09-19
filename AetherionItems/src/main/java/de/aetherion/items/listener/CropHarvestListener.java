@@ -27,7 +27,8 @@ import java.util.Queue;
 import java.util.Set;
 
 /**
- * Harvest = break extra neighbouring crops only.
+ * Harvest = break extra neighbouring crops only (HARVEST_SPREAD / hoe XP / farm skill).
+ * Crop regen, replant, and bird scare are AetherionFarming ({@code FarmingListener}).
  * Fortune on crops is applied once here: 100 Fortune → +1 item. Base yield is 1.
  */
 public class CropHarvestListener implements Listener {

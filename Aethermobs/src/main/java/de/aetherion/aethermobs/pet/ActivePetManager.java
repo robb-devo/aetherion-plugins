@@ -209,12 +209,11 @@ public class ActivePetManager implements Listener {
          * =====================================================
          */
 
-        if (itemsPlugin.getMiningListener() != null) {
-
-            itemsPlugin.getMiningListener()
-                    .refreshMiningPower(
-                            player
-                    );
+        de.aetherion.core.api.HarvestAccess harvest = de.aetherion.core.api.AetherServices.harvest();
+        if (harvest != null) {
+            harvest.refreshMiningPower(player);
+        } else if (itemsPlugin.getHarvestListener() != null) {
+            itemsPlugin.getHarvestListener().refreshMiningPower(player);
         }
     }
 

@@ -17,7 +17,7 @@ public final class AetherionFishing extends JavaPlugin {
         getServer().getPluginManager().registerEvents(controller, this);
         getServer().getPluginManager().registerEvents(encounters, this);
         getServer().getScheduler().runTaskTimer(this, controller::tick, 1L, 1L);
-        getLogger().info("AetherionFishing ready.");
+        getLogger().info("AetherionFishing ready. Minigame/lure here; loot/rod XP stays in AetherionItems.");
     }
 
     @Override

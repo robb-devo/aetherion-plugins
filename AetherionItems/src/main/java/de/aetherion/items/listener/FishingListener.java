@@ -38,6 +38,12 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
+/**
+ * Loot pool, rod progress, skill XP, and treasure rolls on {@code CAUGHT_FISH}.
+ * Wait / lure / strike minigame is {@link de.aetherion.fishing.FishingController}
+ * when AetherionFishing is installed. The NMS wait-clamp below is only a fallback
+ * if that plugin is missing.
+ */
 public final class FishingListener implements Listener {
 
     private static final int BASE_WAIT_TICKS = 20 * 14;
@@ -74,7 +80,9 @@ public final class FishingListener implements Listener {
         this.items = items;
         this.equipment = new ActiveEquipmentStats(items);
         this.fishingMinigameOwnsCast = Bukkit.getPluginManager().getPlugin("AetherionFishing") != null;
-        plugin.getServer().getScheduler().runTaskTimer(plugin, this::tick, 1L, 1L);
+        if (!this.fishingMinigameOwnsCast) {
+            plugin.getServer().getScheduler().runTaskTimer(plugin, this::tick, 1L, 1L);
+        }
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
