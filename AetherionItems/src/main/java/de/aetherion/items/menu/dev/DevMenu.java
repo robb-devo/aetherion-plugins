@@ -75,6 +75,7 @@ public class DevMenu {
         PETS,
         SPHERES,
         NPCS,
+        NPC_EDITOR,
         NPCS_STARTER,
         NPCS_BOSSES,
         NPCS_WORLD,
@@ -207,8 +208,9 @@ public class DevMenu {
             player.sendMessage("§cThis tool is not available for your rank.");
             return;
         }
-        if (action.equals("npc-editor")) {
-            openNpcEditor(player);
+        if (action.equals("npc-editor") || action.startsWith("npc-editor:")) {
+            String sub = action.equals("npc-editor") ? "open" : action.substring("npc-editor:".length());
+            runNpcEditor(player, sub);
             return;
         }
         if (action.equals("close")) {
@@ -828,7 +830,11 @@ public class DevMenu {
         int page = Math.max(0, Math.min(1, index));
         inventory.setItem(4, button(Material.NETHER_STAR, "§6§lDEV Menu", "root",
                 "§7Page §f" + (page + 1) + "§7 / §f2",
+                "§bNPC / Quest Editor §7· dedicated section",
                 "§8One glass ring · no edge clutter."));
+        if (canUseNpcEditor(player)) {
+            inventory.setItem(2, npcEditorSectionButton());
+        }
 
         if (page == 0) {
             // Row 1 — sets
@@ -893,7 +899,7 @@ public class DevMenu {
                     "§7QA bots · Wave 1 + combat/fish/trade/quest/pad.",
                     "§7Start/stop from here. §f/botreport"));
             if (canUseNpcEditor(player)) {
-                inventory.setItem(22, npcEditorButton());
+                inventory.setItem(22, npcEditorSectionButton());
             }
         }
 
@@ -917,6 +923,37 @@ public class DevMenu {
                 "§eOpens /npc");
     }
 
+    private ItemStack npcEditorSectionButton() {
+        return button(Material.WRITABLE_BOOK, "§b§lNPC / Quest Editor", "page:NPC_EDITOR",
+                "§7Dedicated staff section.",
+                "§7Create FancyNPCs with dialogue.",
+                "§7Story NPCs stay untouched.",
+                "§eClick · also /npc /aethernpc");
+    }
+
+    private void drawNpcEditorSection(Inventory inventory) {
+        inventory.setItem(4, button(Material.WRITABLE_BOOK, "§b§lNPC / Quest Editor", "root",
+                "§7Dedicated staff section.",
+                "§7Also §f/npc §7· §f/aethernpc",
+                "§8Story NPCs stay in npcs.yml."));
+        inventory.setItem(11, button(Material.NETHER_STAR, "§bOpen editor", "npc-editor",
+                "§7Full /npc menu.",
+                "§7Create, edit, list, wand."));
+        inventory.setItem(13, button(Material.EMERALD_BLOCK, "§aCreate NPC", "npc-editor:create",
+                "§7Name in chat, then place at your feet."));
+        inventory.setItem(15, button(Material.COMPASS, "§eEdit nearby", "npc-editor:nearby",
+                "§7Closest editor NPC within 8 blocks."));
+        inventory.setItem(21, button(Material.BLAZE_ROD, "§6Get wand", "npc-editor:wand",
+                "§7Right-click air — editor menu.",
+                "§7Right-click an editor NPC — edit."));
+        inventory.setItem(23, button(Material.BOOK, "§6List NPCs", "npc-editor:list",
+                "§7Every editor NPC you created."));
+        inventory.setItem(31, button(Material.KNOWLEDGE_BOOK, "§fHelp", "npc-editor:help",
+                "§7Commands and permissions."));
+        inventory.setItem(45, button(Material.ARROW, "§eBack", "back", "§7Return to DEV menu."));
+        inventory.setItem(49, button(Material.BARRIER, "§cClose", "close"));
+    }
+
     private static boolean allowAction(Player player, String action) {
         if (hasFullAccess(player)) {
             return true;
@@ -924,16 +961,17 @@ public class DevMenu {
         return "close".equals(action)
                 || "back".equals(action)
                 || "root".equals(action)
-                || "npc-editor".equals(action);
+                || "npc-editor".equals(action)
+                || (action != null && action.startsWith("npc-editor:"));
     }
 
-    private static void openNpcEditor(Player player) {
+    private static void runNpcEditor(Player player, String action) {
         if (!canUseNpcEditor(player)) {
             player.sendMessage("§cYou need §faetherion.npc.editor §cto use the NPC editor.");
             return;
         }
         de.aetherion.core.api.QuestProgressAccess quests = de.aetherion.core.api.AetherServices.quests();
-        if (quests == null || !quests.openNpcEditor(player)) {
+        if (quests == null || !quests.npcEditorAction(player, action)) {
             player.sendMessage("§cAetherionQuests is not loaded.");
         }
     }
@@ -980,6 +1018,10 @@ public class DevMenu {
         }
         if (page == Page.NPCS) {
             drawNpcHub(inventory);
+            return;
+        }
+        if (page == Page.NPC_EDITOR) {
+            drawNpcEditorSection(inventory);
             return;
         }
         if (page == Page.TEST_ARENA) {

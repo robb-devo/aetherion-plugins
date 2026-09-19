@@ -33,15 +33,15 @@ commands:
     aliases: [lang, sprache, sprachewahl]
 
   npc:
-    description: In-game FancyNPC creator for moderators and Monkey
+    description: In-game FancyNPC creator (admin, moderator, Monkey)
     usage: /npc
     aliases: [aethernpc, npceditor]
     permission: aetherion.npc.editor
 
 permissions:
   aetherion.npc.editor:
-    description: Create and edit FancyNPCs with dialogue (moderator / Monkey / content helper)
-    default: false
+    description: Create and edit FancyNPCs with dialogue. Default op; also inherited from aetherion.dev.
+    default: op
   aetherionquests.admin:
     description: Admin quest NPC tools (/questnpc, anchors)
     default: op

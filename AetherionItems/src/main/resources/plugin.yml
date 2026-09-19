@@ -153,6 +153,7 @@ permissions:
     default: op
     children:
       aetherion.dev.menu: true
+      aetherion.npc.editor: true
   aetherion.shards.admin:
     description: Give and take Aether Shards
     default: op

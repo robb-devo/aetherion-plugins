@@ -212,9 +212,9 @@ public class AetherionManagerGUI {
                     Material.COMMAND_BLOCK,
                     "§cDEV Menu",
                     full
-                            ? "§7Sets, items, bosses, animals,"
+                            ? "§7Full tools + NPC / Quest Editor section."
                             : "§7NPC / Quest editor.",
-                    full ? "§7pets and NPCs. One click." : "§8Limited staff tools."
+                    full ? "§7Sets, items, bosses, animals, pets." : "§8Limited staff tools."
             ));
         }
 

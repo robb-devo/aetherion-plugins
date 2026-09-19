@@ -190,14 +190,31 @@ public final class QuestProgressAccessImpl implements QuestProgressAccess {
     }
 
     @Override
-    public boolean openNpcEditor(Player player) {
+    public boolean npcEditorAction(Player player, String action) {
         if (player == null || plugin == null || plugin.getNpcEditor() == null) {
             return false;
         }
+        de.aetherion.quests.editor.NpcEditor editor = plugin.getNpcEditor();
         if (!de.aetherion.quests.editor.NpcEditor.allowed(player)) {
             return false;
         }
-        plugin.getNpcEditor().openMain(player);
+        String key = action == null || action.isBlank() ? "open" : action.toLowerCase(java.util.Locale.ROOT);
+        switch (key) {
+            case "create" -> editor.beginCreate(player);
+            case "nearby" -> {
+                de.aetherion.quests.editor.CustomNpc npc = editor.service().nearby(player, 8);
+                if (npc == null) {
+                    player.sendMessage("§eNo editor NPC within 8 blocks.");
+                    player.sendMessage("§7Story NPCs cannot be edited with this tool.");
+                    return true;
+                }
+                editor.openEdit(player, npc);
+            }
+            case "list" -> de.aetherion.quests.editor.gui.ListMenu.open(player, 0);
+            case "wand" -> editor.giveWand(player);
+            case "help" -> de.aetherion.quests.editor.gui.HelpMenu.open(player);
+            default -> editor.openMain(player);
+        }
         return true;
     }
 }
