@@ -174,15 +174,15 @@ public final class TestBotController implements TestBotsAccess {
     }
 
     public int maxTotal() {
-        int configured = plugin.getConfig().getInt("testbots.max-total", 20);
+        int configured = plugin.getConfig().getInt("testbots.max-total", 40);
         int server = Bukkit.getMaxPlayers();
         return Math.max(1, Math.min(configured, server));
     }
 
     public int clampCount(BotRole role, int requested) {
         BotRoleHandler handler = plugin.getRegistry().handler(role);
-        int cap = handler == null ? 20 : handler.cap();
-        int maxStart = plugin.getConfig().getInt("testbots.max-per-start", 20);
+        int cap = handler == null ? 8 : handler.cap();
+        int maxStart = plugin.getConfig().getInt("testbots.max-per-start", 40);
         int hard = Math.min(cap, Math.min(maxStart, maxTotal()));
         return Math.max(0, Math.min(requested, hard));
     }

@@ -5,7 +5,6 @@ import de.aetherion.stressbots.AetherionStressBots;
 
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.PlayerInventory;
 
 public final class MineRoleHandler implements BotRoleHandler {
 
@@ -32,13 +31,7 @@ public final class MineRoleHandler implements BotRoleHandler {
 
     @Override
     public void kit(Player player, CustomItem items) {
-        PlayerInventory inv = player.getInventory();
-        inv.setHelmet(items.createMiningHelmet());
-        inv.setChestplate(items.createMiningChestplate());
-        inv.setLeggings(items.createMiningLeggings());
-        inv.setBoots(items.createMiningBoots());
-        inv.setItemInMainHand(items.createMiningPickaxe());
-        BotRoleRegistry.giveSpare(inv, items.createMiningPickaxe());
+        BotPlaystyle.kitMining(player.getInventory(), items, BotPlaystyle.gearTier(player));
     }
 
     @Override
@@ -48,6 +41,6 @@ public final class MineRoleHandler implements BotRoleHandler {
 
     @Override
     public String description() {
-        return "Teleport to Eldervale interior pads and break ores/stone with a starter pick.";
+        return "Teleport to Eldervale interior pads and break ores/stone. Mixed T1–T4 pick, mining skills equipped.";
     }
 }

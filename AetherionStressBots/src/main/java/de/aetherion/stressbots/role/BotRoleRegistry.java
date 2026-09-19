@@ -124,8 +124,8 @@ public final class BotRoleRegistry {
     }
 
     static int capOf(AetherionStressBots plugin, BotRole role) {
-        int configured = plugin.getConfig().getInt("testbots.caps." + role.id(), 20);
-        int maxStart = plugin.getConfig().getInt("testbots.max-per-start", 20);
+        int configured = plugin.getConfig().getInt("testbots.caps." + role.id(), 8);
+        int maxStart = plugin.getConfig().getInt("testbots.max-per-start", 40);
         return Math.max(0, Math.min(configured, maxStart));
     }
 

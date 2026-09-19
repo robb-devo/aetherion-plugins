@@ -1,6 +1,7 @@
 import pathfinderPkg from 'mineflayer-pathfinder'
 import { applyIslandMovements, cancelPath, standingIsSafe, withinLeash, wanderOnIsland } from './safety.js'
-import { markError, note } from './util.js'
+import { fidget, markError, note } from './util.js'
+import { maybeSkip } from './playstyle.js'
 
 const { goals, Movements, pathfinder } = pathfinderPkg
 
@@ -77,6 +78,11 @@ export function createCatchLoop(bot, cfg, log) {
       return
     }
     lastThrow = now
+    if (maybeSkip(0.14)) {
+      note(bot, 'hesitate throw', 'catching')
+      fidget(bot, 'catching')
+      return
+    }
     try {
       note(bot, `throw sphere at ${target.name || 'entity'}`, 'catching')
       await bot.activateItem()

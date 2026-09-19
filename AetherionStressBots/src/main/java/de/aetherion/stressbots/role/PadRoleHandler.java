@@ -5,7 +5,6 @@ import de.aetherion.stressbots.AetherionStressBots;
 
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.PlayerInventory;
 
 public final class PadRoleHandler implements BotRoleHandler {
 
@@ -32,12 +31,7 @@ public final class PadRoleHandler implements BotRoleHandler {
 
     @Override
     public void kit(Player player, CustomItem items) {
-        PlayerInventory inv = player.getInventory();
-        inv.setHelmet(items.createCombatHelmet());
-        inv.setChestplate(items.createCombatChestplate());
-        inv.setLeggings(items.createCombatLeggings());
-        inv.setBoots(items.createCombatBoots());
-        inv.setItemInMainHand(items.createCombatSword());
+        BotPlaystyle.kitCombat(player.getInventory(), items, BotPlaystyle.gearTier(player), false);
     }
 
     @Override

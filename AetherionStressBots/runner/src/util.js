@@ -65,7 +65,12 @@ export function inventoryAlmostFull(bot) {
 export function tossJunk(bot) {
   for (const item of bot.inventory.items()) {
     const n = item.name
-    if (n.includes('cobble') || n.includes('dirt') || n.includes('gravel') || n === 'stone' || n.includes('deepslate')) {
+    if (
+      n.includes('cobble') || n.includes('dirt') || n.includes('gravel') || n === 'stone'
+      || n.includes('deepslate') || n.includes('netherrack') || n.includes('andesite')
+      || n.includes('diorite') || n.includes('granite') || n.includes('tuff')
+      || n.includes('rotten_flesh') || n === 'stick' || n.includes('poisonous')
+    ) {
       bot.tossStack(item).catch(() => {})
     }
   }

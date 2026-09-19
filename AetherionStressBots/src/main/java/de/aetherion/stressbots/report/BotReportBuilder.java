@@ -166,7 +166,7 @@ public final class BotReportBuilder {
             }
         }
         out.append('\n');
-        out.append("Limits: AH/Bazaar needs TRADER unlock; quests right-click only (no dialogue); fishing skips strike minigame; pad hops use plugin TP for far islands.\n");
+        out.append("Limits: skills level only while equipped (provisioner equips 3); boosters applied on kit not via GUI; pets vary (follow / collection / wild spawn / none); AH listings still not automated; quests right-click only; fishing skips strike minigame; pad hops use plugin TP for far islands.\n");
         return out.toString();
     }
 

@@ -125,6 +125,10 @@ export function createDigLoop(bot, cfg, log, { activity, names, searchRadius, yR
       bot.qaDigging = true
       note(bot, `dig ${block.name}`, activity)
       await sleep(jitter(180, 0.6))
+      if (Math.random() < 0.12) {
+        note(bot, 'scratch head', activity)
+        await sleep(jitter(700, 0.5))
+      }
       await bot.lookAt(block.position.offset(0.5, 0.5, 0.5), true)
       await Promise.race([
         bot.dig(block),

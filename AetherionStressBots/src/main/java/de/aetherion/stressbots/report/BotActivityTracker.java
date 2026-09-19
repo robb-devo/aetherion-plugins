@@ -45,6 +45,7 @@ public final class BotActivityTracker implements Listener, Runnable {
     public static final String QUESTING = "questing";
     public static final String FIGHTING = "fighting";
     public static final String HOPPING = "hopping";
+    public static final String BROWSING = "browsing";
     public static final String ERROR = "error";
     public static final String VOID = "void";
     public static final String RECOVERING = "recovering";
@@ -161,12 +162,17 @@ public final class BotActivityTracker implements Listener, Runnable {
         if (!(event.getPlayer() instanceof Player player) || !isBot(player)) {
             return;
         }
-        if (roleOf(player) == BotRole.TRADE) {
-            Runtime runtime = runtime(player);
+        BotRole role = roleOf(player);
+        Runtime runtime = runtime(player);
+        String title = event.getView().getTitle().replaceAll("§.", "");
+        if (role == BotRole.TRADE) {
             runtime.activity = TRADING;
-            runtime.note("gui " + event.getView().getTitle().replaceAll("§.", ""));
-            runtime.lastActionMs = System.currentTimeMillis();
+            runtime.note("gui " + title);
+        } else {
+            runtime.activity = BROWSING;
+            runtime.note("gui " + title);
         }
+        runtime.lastActionMs = System.currentTimeMillis();
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -300,7 +306,8 @@ public final class BotActivityTracker implements Listener, Runnable {
                 || FIGHTING.equals(activity)
                 || TRADING.equals(activity)
                 || QUESTING.equals(activity)
-                || HOPPING.equals(activity);
+                || HOPPING.equals(activity)
+                || BROWSING.equals(activity);
     }
 
     private Runtime runtime(Player player) {

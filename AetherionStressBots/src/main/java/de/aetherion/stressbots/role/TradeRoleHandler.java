@@ -5,7 +5,6 @@ import de.aetherion.stressbots.AetherionStressBots;
 
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.PlayerInventory;
 
 public final class TradeRoleHandler implements BotRoleHandler {
 
@@ -32,12 +31,7 @@ public final class TradeRoleHandler implements BotRoleHandler {
 
     @Override
     public void kit(Player player, CustomItem items) {
-        PlayerInventory inv = player.getInventory();
-        inv.setHelmet(items.createCombatHelmet());
-        inv.setChestplate(items.createCombatChestplate());
-        inv.setLeggings(items.createCombatLeggings());
-        inv.setBoots(items.createCombatBoots());
-        inv.setItemInMainHand(items.createCombatSword());
+        BotPlaystyle.kitCombat(player.getInventory(), items, BotPlaystyle.gearTier(player), false);
     }
 
     @Override
@@ -47,6 +41,6 @@ public final class TradeRoleHandler implements BotRoleHandler {
 
     @Override
     public String description() {
-        return "Try /ah and /bazaar, else right-click AH/Bazaar NPCs. Listings and TRADER unlock are not automated.";
+        return "Try /ah and /bazaar (TRADER unlocked on provision), else right-click AH/Bazaar NPCs. Listings are not automated.";
     }
 }

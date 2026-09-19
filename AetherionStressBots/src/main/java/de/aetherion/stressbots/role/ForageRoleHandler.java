@@ -5,7 +5,6 @@ import de.aetherion.stressbots.AetherionStressBots;
 
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.PlayerInventory;
 
 public final class ForageRoleHandler implements BotRoleHandler {
 
@@ -32,13 +31,7 @@ public final class ForageRoleHandler implements BotRoleHandler {
 
     @Override
     public void kit(Player player, CustomItem items) {
-        PlayerInventory inv = player.getInventory();
-        inv.setHelmet(items.foraging().helmet(1));
-        inv.setChestplate(items.foraging().chestplate(1));
-        inv.setLeggings(items.foraging().leggings(1));
-        inv.setBoots(items.foraging().boots(1));
-        inv.setItemInMainHand(items.foraging().axe(1));
-        BotRoleRegistry.giveSpare(inv, items.foraging().axe(1));
+        BotPlaystyle.kitForaging(player.getInventory(), items, BotPlaystyle.gearTier(player));
     }
 
     @Override
@@ -48,6 +41,6 @@ public final class ForageRoleHandler implements BotRoleHandler {
 
     @Override
     public String description() {
-        return "Teleport to Forage Isle grove/interior and chop logs (Kindling I axe).";
+        return "Teleport to Forage Isle grove/interior and chop logs. Mixed Kindling–Canopy axe, foraging skills equipped.";
     }
 }

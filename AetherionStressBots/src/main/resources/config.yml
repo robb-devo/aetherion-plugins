@@ -48,8 +48,9 @@ mining:
 # ---------------------------------------------------------------------------
 testbots:
   enabled: false
-  max-total: 20
-  max-per-start: 20
+  # Mixed fleet headroom (~5 roles × 8, or a thinner mix of all 9). Live max-players is 60.
+  max-total: 40
+  max-per-start: 40
   runner:
     host: 127.0.0.1
     port: 18765
@@ -66,15 +67,17 @@ testbots:
     quest: QaQuest
     pad: QaPad
   caps:
-    mine: 20
-    forage: 20
-    catch: 20
-    roam: 20
-    combat: 20
-    fish: 20
-    quest: 20
-    trade: 20
-    pad: 20
+    mine: 8
+    forage: 8
+    catch: 8
+    roam: 8
+    combat: 8
+    fish: 8
+    quest: 8
+    trade: 8
+    pad: 8
+  # Player-like extras (skills, mixed-tier kits, pets, boosters) run on every provision.
+  # Skill XP only lands on equipped loadout skills — bots do not /skills setlevel.
   safety:
     # Paper watchdog + Mineflayer hold. Tune if pads sit lower than Y 56.
     void-floor-y: 40

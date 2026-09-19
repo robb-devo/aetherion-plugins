@@ -24,30 +24,41 @@ Bots connect **offline to MMO-R** `127.0.0.1:25567` with Velocity modern-forward
 
 | Role | Names | Does | Kit |
 |------|-------|------|-----|
-| `mine` | `QaMine01…` | TP to **Eldervale interior pads**, leash + dig ores/stone | Mining I |
-| `forage` | `QaForage01…` | TP to **Forage Isle grove/interior**, chop logs (and leaves if idle) | Kindling I axe |
-| `catch` | `QaCatch01…` | Stay on solid habitat pads, throw catch spheres (no void chase) | Catcher I + common spheres |
-| `roam` | `QaRoam01…` | Local hops on Origin slime pads + plugin pad-hop; flees husks/skeletons | Combat I |
+| `mine` | `QaMine01…` | TP to **Eldervale interior pads**, leash + dig ores/stone | Mixed T1–T4 mining + mining skills |
+| `forage` | `QaForage01…` | TP to **Forage Isle grove/interior**, chop logs (and leaves if idle) | Mixed Kindling–Canopy axe + foraging skills |
+| `catch` | `QaCatch01…` | Stay on solid habitat pads, throw catch spheres (no void chase) | Mixed catcher + spheres + varied pets |
+| `roam` | `QaRoam01…` | Local hops on Origin slime pads + plugin pad-hop; flees husks/skeletons | Mixed combat kit |
 
 ## Wave 2 roles
 
 | Role | Names | Does | Kit |
 |------|-------|------|-----|
-| `combat` | `QaCombat01…` | Leashed wander/attack near the combat pad (default Borderlands). **Velocity offline auth uses `QaCombat` like other Qa* names.** Set `prefixes.combat: StressC` only if you still want the Phase 1 names; `StressC*` still auto-kits as an alias. | Combat I |
-| `fish` | `QaFish01…` | Walk to water near forage/origin pads, cast/reel a Nibble rod | Fishing I |
-| `trade` | `QaTrade01…` | Chat `/ah` and `/bazaar`, else right-click AH/Bazaar NPCs | Combat I |
-| `quest` | `QaQuest01…` | Walk to known FancyNPC pads (Maren / Twig / Eldervale) and right-click | Combat I |
-| `pad` | `QaPad01…` | Stand on Origin/Eldervale jump-pad coords; plugin TPs between far pads | Combat I |
+| `combat` | `QaCombat01…` | Leashed wander/attack near the combat pad (default Borderlands). **Velocity offline auth uses `QaCombat` like other Qa* names.** Set `prefixes.combat: StressC` only if you still want the Phase 1 names; `StressC*` still auto-kits as an alias. | Mixed combat T1–T4 + combat skills |
+| `fish` | `QaFish01…` | Walk to water near forage/origin pads, cast/reel a Nibble–Keelhaul rod | Mixed fishing kit + fishing skills |
+| `trade` | `QaTrade01…` | Chat `/ah` and `/bazaar`, else right-click AH/Bazaar NPCs. Provisioner unlocks **TRADER** + starter coins. | Mixed combat kit |
+| `quest` | `QaQuest01…` | Walk to known FancyNPC pads (Maren / Twig / Eldervale) and right-click | Mixed combat kit |
+| `pad` | `QaPad01…` | Stand on Origin/Eldervale jump-pad coords; plugin TPs between far pads | Mixed combat kit |
 
 ### Residual risks / limits
 
-- **AH / Bazaar:** `/ah` and `/bazaar` exist on AetherionItems but are gated by the **TRADER** progression flag. Fresh bots usually get a hint instead of the GUI. Right-clicking the villager still needs the live NPC to be in range of the configured Origin pads. Bots do **not** create listings, bid, or click GUI slots.
+- **AH / Bazaar:** Trade bots get the **TRADER** flag + a few hundred coins so `/ah` / `/bazaar` can open. They still do **not** create listings, bid, or click GUI slots.
 - **Quests:** Right-click only. No dialogue-tree / click-option automation. NPC xyz in YAML are **hints** — live FancyNPC positions may differ; retune `testbots.roles.quest` if they stand in the wrong place.
 - **Fishing:** Vanilla cast/reel. Aetherion's strike minigame is **not** played, so many casts miss. Water is scanned near grove/origin pads — if the dock has no water in range, they idle-wander. Add `anchors` next to real water.
 - **Combat:** Default pad is Borderlands `220.5 58 160.5` (hostiles). That zone killed **roam** bots; combat bots are geared for it but can still die if they walk off the waste. `StressC*` still matches as an alias.
 - **Pads:** The Forage Isle jump-pad lip `479.5 74 -240.5` stays **omitted** (void after wander). Pad bots hop Origin slime pads + Eldervale landing; far islands are plugin teleports.
 - **Forage stuck (fixed):** Safety used to mark `activity=stuck` after ~10s of no movement and cancel the dig path while the bot was approaching a log. Dig/path-to-block now uses a longer freeze window, ignores still-closing distance to the target, and **retargets / wanderOnIsland** instead of staying stuck. Forage leash is 20; logs outside that disk are not chosen (`searchLeashBonus` only expands search within the island).
-- Still not automated: spawn unlocks, equip-swap UI, full progression.
+- **Skills:** XP only accrues on **equipped** loadout skills. Provisioner unlocks 3 slots and equips role skills. Bots do **not** `/skills setlevel`. There are no skill hotkeys — they peek `/skills` like a player opening the GUI.
+- **Boosters:** Applied on the main-hand tool at provision (`BoosterApplier`). Bots do not click the booster-lab GUI. Some also get a leftover booster item + a short XP flask.
+- **Pets:** Catch bots still throw spheres (timing minigame not automated). Other roles vary: follow (equip), collection-only, wild spawn beside them, or none. Follow needs AetherMobs online.
+- Still not automated: spawn unlocks, GUI equip-swap, AH listings, quest dialogue, strike/catch minigames.
+
+### Player-like mix (same PR)
+
+Every role now kits mixed T1–T4 (catcher T1–T3) from the login index (`QaMine01` = T1, `02` = T2, …), equips skills so mining/foraging/fishing/combat actually levels, and runs a shared fidget/inventory/`/skills`/`/pets` loop. Goal is economy + stat + skill telemetry under **~40 concurrent** bots.
+
+### Caps
+
+`testbots.max-total: 40`, `max-per-start: 40`, per-role **8**. A mixed fleet of five roles × 8 fills the 40 cap; nine roles cannot all sit at 8 at once. Live `max-players` (60) is the other clamp. Copy these keys into the live `config.yml` — jar defaults do not overwrite an existing file.
 
 ### Catch limits (wave 1)
 
@@ -63,7 +74,7 @@ Bots **throw spheres** at nearby living entities. They do **not** play the catch
 
 Login names stay `QaMine01…` (Velocity). In chat, tab list, death messages, Dev menu, `/botreport`, and **Collection** top-3 they wear a quirky nickname (`Pickel-Ute`, `Ast-Anni`, `Kugel-Kai`, `Flaneur-Franz`, …). Edit `testbots.nicknames` in config. There is no Mysteries API — skipped.
 
-Counts clamp to `testbots.max-total`, `testbots.caps.<role>`, `max-per-start` (1–20 UI), and the server `max-players`.
+Counts clamp to `testbots.max-total` (40), `testbots.caps.<role>` (8), `max-per-start` (40), and the server `max-players`.
 
 ## Commands
 
@@ -124,7 +135,7 @@ Copy `testbots.safety` + the new `roles.*.anchors` into the **live** `plugins/Ae
 | `pad-hop-ticks` | 1600 | Roam **and pad** plugin-teleport between Origin pads (~80s). `0` disables |
 | `gatherStuckMs` / `digStuckMs` | 18s / 28s | Runner: freeze window while pathing-to-block / breaking. Do not treat digging as stuck |
 
-`/botreport` activity: idle / pathing / mining / foraging / catching / roaming / fighting / fishing / trading / questing / hopping / void / recovering / stuck.
+`/botreport` activity: idle / pathing / mining / foraging / catching / roaming / fighting / fishing / trading / questing / hopping / browsing / void / recovering / stuck.
 
 **Do not** add far cross-island roam/pad waypoints expecting the runner to walk them. The runner only hops `maxHop` blocks; distant pads are plugin teleports.
 
@@ -151,5 +162,5 @@ Names: `QaCombat01…` (Wave 2) and `StressC01…` (alias) / `StressM01…` stil
 | Wave | Scope |
 |------|--------|
 | **1** | Foundation: role interface, registry, report DTO, Dev menu, `/botreport`, mine / forage / catch / roam |
-| **2 (this)** | Forage stuck/leash fix; combat (QaCombat), fish, trade/AH, quest NPC click, jump-pad hops |
-| Later | AH listings, quest dialogue trees, spawn unlocks, equip swapping, full progression play |
+| **2 (this)** | Forage stuck/leash fix; combat (QaCombat), fish, trade/AH, quest NPC click, jump-pad hops; player-like skills/kits/pets/timing; ~40 mixed cap |
+| Later | AH listings, quest dialogue trees, strike/catch minigames, GUI booster clicks, spawn unlocks |

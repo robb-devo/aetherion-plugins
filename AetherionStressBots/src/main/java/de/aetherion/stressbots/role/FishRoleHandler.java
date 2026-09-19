@@ -5,7 +5,6 @@ import de.aetherion.stressbots.AetherionStressBots;
 
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.PlayerInventory;
 
 public final class FishRoleHandler implements BotRoleHandler {
 
@@ -32,13 +31,7 @@ public final class FishRoleHandler implements BotRoleHandler {
 
     @Override
     public void kit(Player player, CustomItem items) {
-        PlayerInventory inv = player.getInventory();
-        inv.setHelmet(items.fishing().helmet(1));
-        inv.setChestplate(items.fishing().chestplate(1));
-        inv.setLeggings(items.fishing().leggings(1));
-        inv.setBoots(items.fishing().boots(1));
-        inv.setItemInMainHand(items.fishing().rod(1));
-        BotRoleRegistry.giveSpare(inv, items.fishing().rod(1));
+        BotPlaystyle.kitFishing(player.getInventory(), items, BotPlaystyle.gearTier(player));
     }
 
     @Override
@@ -48,6 +41,6 @@ public final class FishRoleHandler implements BotRoleHandler {
 
     @Override
     public String description() {
-        return "Cast a Nibble rod at water near a safe pad. Strike minigame is not automated.";
+        return "Cast a mixed-tier Nibble–Keelhaul rod at water near a safe pad. Strike minigame is not automated.";
     }
 }

@@ -4,7 +4,7 @@
   "version": "1.21.1",
   "joinDelayMs": 2500,
   "velocitySecret": "CHANGE_ME",
-  "maxTotal": 20,
+  "maxTotal": 40,
   "control": {
     "bind": "127.0.0.1",
     "port": 18765,
@@ -23,16 +23,16 @@
     "pad": "QaPad"
   },
   "caps": {
-    "mine": 20,
-    "forage": 20,
-    "catch": 20,
-    "roam": 20,
-    "combat": 20,
-    "fish": 20,
-    "trade": 20,
-    "quest": 20,
-    "pad": 20,
-    "mining": 20
+    "mine": 8,
+    "forage": 8,
+    "catch": 8,
+    "roam": 8,
+    "combat": 8,
+    "fish": 8,
+    "trade": 8,
+    "quest": 8,
+    "pad": 8,
+    "mining": 8
   },
   "safety": {
     "voidFloorY": 40,

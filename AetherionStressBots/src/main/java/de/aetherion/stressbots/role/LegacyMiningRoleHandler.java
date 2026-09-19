@@ -5,7 +5,6 @@ import de.aetherion.stressbots.AetherionStressBots;
 
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.PlayerInventory;
 
 /** Phase 1 Shabby Mine bots ({@code StressM*}). Same mining loop as Wave 1 {@code mine}. */
 public final class LegacyMiningRoleHandler implements BotRoleHandler {
@@ -33,13 +32,7 @@ public final class LegacyMiningRoleHandler implements BotRoleHandler {
 
     @Override
     public void kit(Player player, CustomItem items) {
-        PlayerInventory inv = player.getInventory();
-        inv.setHelmet(items.createMiningHelmet());
-        inv.setChestplate(items.createMiningChestplate());
-        inv.setLeggings(items.createMiningLeggings());
-        inv.setBoots(items.createMiningBoots());
-        inv.setItemInMainHand(items.createMiningPickaxe());
-        BotRoleRegistry.giveSpare(inv, items.createMiningPickaxe());
+        BotPlaystyle.kitMining(player.getInventory(), items, BotPlaystyle.gearTier(player));
     }
 
     @Override

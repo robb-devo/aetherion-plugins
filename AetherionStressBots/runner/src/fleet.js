@@ -10,6 +10,7 @@ import { createQuestLoop } from './quest.js'
 import { createPadLoop } from './pad.js'
 import { attachVelocityForwarding } from './velocity.js'
 import { attachSafety, readAnchors } from './safety.js'
+import { attachPlaystyle } from './playstyle.js'
 import { fmtPos, heldName, note, sleep } from './util.js'
 
 const { goals } = pathfinderPkg
@@ -142,6 +143,7 @@ export function createFleet({ config, log }) {
     })
 
     const loop = startLoop(bot, role)
+    attachPlaystyle(bot, log)
     let started = false
     bot.on('spawn', () => {
       if (started) return
@@ -176,7 +178,7 @@ export function createFleet({ config, log }) {
 
   function maxFor(role) {
     const caps = config.caps || {}
-    const cap = Number(caps[role] ?? config.maxTotal ?? 20)
+    const cap = Number(caps[role] ?? config.maxTotal ?? 40)
     return Math.max(0, cap)
   }
 
