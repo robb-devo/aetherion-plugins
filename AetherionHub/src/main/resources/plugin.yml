@@ -59,7 +59,7 @@ commands:
     permission: aetherionhub.admin
   aetherpaste:
     description: Async-paste Eldervale farming/fishing island schematics via FAWE
-    usage: /aetherpaste <farming|fishing> [x y z] [world]
+    usage: /aetherpaste <farming|fishing|clear> …
     permission: aetherion.paste
 
 permissions:
