@@ -1,98 +1,161 @@
 import pathfinderPkg from 'mineflayer-pathfinder'
-import { applyIslandMovements, cancelPath, horizontalDistance, nearestAnchor, wanderOnIsland } from './safety.js'
-import { fidget, jitter, markError, note } from './util.js'
+import { applyIslandMovements, cancelPath, horizontalDistance, nearestAnchor, standingIsSafe } from './safety.js'
+import { pickNextPad, readPads } from './pads.js'
+import { markError, note, sleep } from './util.js'
+import { ACTIVITIES, fidget } from './playstyle.js'
 
 const { goals, Movements, pathfinder } = pathfinderPkg
 
-/**
- * Hop between known Hub/island jump-pad coords. Distant pads are plugin teleports.
- */
+export { pickNextPad, readPads } from './pads.js'
+
+export function isAirborne(bot) {
+  const vel = bot.entity?.velocity
+  const pos = bot.entity?.position
+  if (!pos || !vel) return false
+  return Math.abs(vel.y) > 0.35 || (!bot.entity.onGround && pos.y > (bot.qaHome?.y ?? pos.y) + 1.4)
+}
+
 export function createPadLoop(bot, cfg, log) {
   bot.loadPlugin(pathfinder)
 
-  const pads = (cfg.pads || cfg.waypoints || cfg.anchors || []).map((p) => ({
-    x: Number(p.x),
-    y: Number(p.y),
-    z: Number(p.z)
-  })).filter((p) => Number.isFinite(p.x) && Number.isFinite(p.y) && Number.isFinite(p.z))
-
-  const maxHop = cfg.maxHop ?? 8
-  const hopRadius = cfg.wanderRadius ?? 4
+  const pads = readPads(cfg)
+  const hopTimeoutMs = cfg.hopTimeoutMs ?? 9000
+  const stuckMs = cfg.stuckHopMs ?? 5000
   let running = false
-  let lastHop = 0
+  let lastId = null
+  let hopStarted = 0
+  let lastLand = 0
   let lastFidget = 0
-  let cursor = 0
 
   function home() {
-    if (bot.qaHome) return bot.qaHome
-    const pos = bot.entity?.position
-    return nearestAnchor(pos, pads) || pos
+    return bot.qaHome || nearestAnchor(bot.entity?.position, pads) || bot.entity?.position
+  }
+
+  function slimeNear(radius = 8) {
+    if (!bot.findBlock) return null
+    try {
+      return bot.findBlock({
+        matching: (block) => block && (block.name === 'slime_block' || block.name === 'honey_block'),
+        maxDistance: radius
+      })
+    } catch {
+      return null
+    }
+  }
+
+  async function walkOnto(dest) {
+    if (!dest || !bot.pathfinder) return false
+    if (!standingIsSafe(bot, dest.x, dest.y, dest.z) && dest.y < (bot.qaVoidFloorY ?? 40) + 4) {
+      note(bot, `skip void pad ${dest.id || ''}`, 'recovering')
+      return false
+    }
+    note(bot, `pad walk ${dest.id || dest.x.toFixed(0)}`, ACTIVITIES.padHop)
+    bot.pathfinder.setGoal(new goals.GoalNear(dest.x, dest.y, dest.z, 1.1))
+    hopStarted = Date.now()
+    const start = bot.entity.position.clone()
+    const deadline = Date.now() + 7000
+    while (Date.now() < deadline) {
+      if (bot.qaSuspended) return false
+      if (isAirborne(bot) || bot.entity.position.y > start.y + 2.2) {
+        cancelPath(bot)
+        note(bot, 'pad launch', ACTIVITIES.padHop)
+        return true
+      }
+      const here = bot.entity.position
+      if (horizontalDistance(here, dest) < 1.4 && Math.abs(here.y - dest.y) < 1.6) {
+        bot.setControlState('jump', true)
+        setTimeout(() => bot.setControlState('jump', false), 200)
+      }
+      await sleep(180)
+    }
+    cancelPath(bot)
+    return false
+  }
+
+  async function waitLand() {
+    const startY = bot.entity.position.y
+    const start = Date.now()
+    let lastY = startY
+    let progressAt = Date.now()
+    while (Date.now() - start < hopTimeoutMs) {
+      if (bot.qaSuspended) return false
+      const pos = bot.entity.position
+      if (Math.abs(pos.y - lastY) > 0.6) {
+        progressAt = Date.now()
+        lastY = pos.y
+      }
+      if (bot.entity.onGround && !isAirborne(bot) && Date.now() - start > 400) {
+        bot.qaHome = { x: pos.x, y: pos.y, z: pos.z }
+        lastLand = Date.now()
+        note(bot, `pad land @ ${pos.x.toFixed(0)} ${pos.y.toFixed(0)} ${pos.z.toFixed(0)}`, ACTIVITIES.padHop)
+        return true
+      }
+      if (Date.now() - progressAt > stuckMs && isAirborne(bot)) {
+        cancelPath(bot)
+        note(bot, 'stuck mid-hop — hold', 'stuck')
+        bot.qaSuspended = false
+        return false
+      }
+      await sleep(120)
+    }
+    note(bot, 'hop timeout', 'stuck')
+    return false
   }
 
   async function tick() {
     if (!bot.entity || bot.qaSuspended) return
-    if (bot.qaNeedRetarget) {
-      bot.qaNeedRetarget = false
-      cancelPath(bot)
-      wanderOnIsland(bot, home(), hopRadius, goals)
-      return
-    }
     if (!bot.pathfinder.movements) {
-      bot.pathfinder.setMovements(applyIslandMovements(new Movements(bot), {
-        canDig: false,
-        maxDrop: cfg.maxDrop ?? 2
-      }))
+      bot.pathfinder.setMovements(applyIslandMovements(new Movements(bot), { canDig: false, maxDrop: 3 }))
     }
 
-    if (!bot.qaHome) {
-      const pad = home()
-      if (pad) bot.qaHome = { x: pad.x, y: pad.y, z: pad.z }
-    }
-
-    if (pads.length === 0) {
-      note(bot, 'pad idle (no pads)', 'idle')
-      fidget(bot, 'idle')
+    if (isAirborne(bot)) {
+      bot.qaActivity = ACTIVITIES.padHop
+      await waitLand()
       return
     }
 
-    const now = Date.now()
-    if (bot.pathfinder.isMoving()) {
-      bot.qaActivity = 'hopping'
-    } else if (now - lastHop > jitter(1600, 0.35)) {
-      lastHop = now
-      const nearby = pads.filter((wp) => horizontalDistance(bot.entity.position, wp) <= maxHop)
-      const dest = nearby.length > 0
-        ? nearby[Math.floor(Math.random() * nearby.length)]
-        : pads[cursor % pads.length]
-      cursor++
-      if (dest && horizontalDistance(bot.entity.position, dest) <= maxHop) {
-        note(bot, `stand on pad ${dest.x.toFixed(0)} ${dest.z.toFixed(0)}`, 'hopping')
-        bot.pathfinder.setGoal(new goals.GoalNear(dest.x, dest.y, dest.z, 1))
-      } else {
-        note(bot, 'local pad fidget', 'hopping')
-        wanderOnIsland(bot, home(), hopRadius, goals)
+    if (Date.now() - lastLand < 900) {
+      if (Date.now() - lastFidget > 2000) {
+        lastFidget = Date.now()
+        fidget(bot, ACTIVITIES.padHop)
       }
-    } else {
-      bot.qaActivity = 'hopping'
+      return
     }
 
-    if (now - lastFidget > 3200) {
-      lastFidget = now
-      fidget(bot, 'hopping')
+    const slime = slimeNear(6)
+    const dest = pickNextPad(bot.entity.position, pads, lastId, { minHop: 8 })
+    let target = dest
+    if (slime && dest && horizontalDistance(slime.position, dest) < 4) {
+      target = { id: dest.id, x: slime.position.x + 0.5, y: slime.position.y + 1, z: slime.position.z + 0.5 }
+    } else if (!target && slime) {
+      target = { id: 'slime', x: slime.position.x + 0.5, y: slime.position.y + 1, z: slime.position.z + 0.5 }
+    }
+    if (!target) {
+      note(bot, 'no pad nearby', 'idle')
+      fidget(bot, ACTIVITIES.padHop)
+      return
+    }
+    lastId = dest?.id || lastId
+    const launched = await walkOnto(target)
+    if (launched) {
+      await waitLand()
+    } else if (Date.now() - hopStarted > hopTimeoutMs) {
+      note(bot, 'pad retry other', ACTIVITIES.padHop)
+      lastId = target.id
     }
   }
 
   return function start() {
     if (running) return
     running = true
-    log(bot.stressName, `pad loop start (${pads.length} pads, hop<=${maxHop}; far pads = plugin TP)`)
-    note(bot, 'pad loop start', 'hopping')
+    log(bot.stressName, `pad loop start (${pads.length} pads)`)
+    note(bot, 'pad loop start', ACTIVITIES.padHop)
     const handle = setInterval(() => {
       tick().catch((err) => {
         markError(bot, err)
         log(bot.stressName, `pad tick: ${err.message}`)
       })
-    }, jitter(380, 0.15))
+    }, 420)
     bot.once('end', () => clearInterval(handle))
   }
 }

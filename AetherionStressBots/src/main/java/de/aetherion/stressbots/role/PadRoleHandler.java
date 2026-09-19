@@ -41,6 +41,6 @@ public final class PadRoleHandler implements BotRoleHandler {
 
     @Override
     public String description() {
-        return "Stand on known Hub/island jump pads. Far pads are plugin teleports, not void walks.";
+        return "Walk onto island jump pads, ride the arc, and hop a different pad after landing.";
     }
 }

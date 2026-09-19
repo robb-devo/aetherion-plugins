@@ -29,6 +29,7 @@ public final class BotSafetyWatchdog implements Listener, Runnable {
     private final Map<UUID, Long> recoverAt = new ConcurrentHashMap<>();
     private final Map<UUID, Long> lastHopAt = new ConcurrentHashMap<>();
     private final Map<UUID, Long> idleSince = new ConcurrentHashMap<>();
+    private final Map<UUID, Long> padFlightUntil = new ConcurrentHashMap<>();
 
     public BotSafetyWatchdog(AetherionStressBots plugin) {
         this.plugin = plugin;
@@ -53,6 +54,9 @@ public final class BotSafetyWatchdog implements Listener, Runnable {
             event.setCancelled(true);
             recover(player, handler, "hostile", true);
         }
+        if (handler.role() == BotRole.PAD && cause == DamageCause.FALL) {
+            event.setCancelled(true);
+        }
     }
 
     @Override
@@ -69,8 +73,15 @@ public final class BotSafetyWatchdog implements Listener, Runnable {
             Location home = BotLocations.assignedAnchor(player, section);
             double leash = leashOf(section);
 
+            trackPadFlight(player, handler, loc, now);
+
             if (loc.getY() < floor) {
                 recover(player, handler, "void-floor", false);
+                continue;
+            }
+            boolean padFlight = handler.role() == BotRole.PAD && now < padFlightUntil.getOrDefault(player.getUniqueId(), 0L);
+            if (padFlight) {
+                plugin.getActivity().markActivity(player, "pad_hop", "mid-hop");
                 continue;
             }
             if (home != null && BotLocations.horizontalDistance(loc, home) > leash) {
@@ -103,7 +114,8 @@ public final class BotSafetyWatchdog implements Listener, Runnable {
             int hopTicks = plugin.getConfig().getInt("testbots.safety.pad-hop-ticks", 0);
             if ((handler.role() == BotRole.ROAM || handler.role() == BotRole.PAD) && hopTicks > 0) {
                 long last = lastHopAt.getOrDefault(player.getUniqueId(), 0L);
-                if (now - last > hopTicks * 50L) {
+                long interval = handler.role() == BotRole.PAD ? Math.max(400L, hopTicks * 20L) : hopTicks * 50L;
+                if (now - last > interval && handler.role() == BotRole.ROAM) {
                     recover(player, handler, "pad-hop", true);
                 }
             }
@@ -142,9 +154,25 @@ public final class BotSafetyWatchdog implements Listener, Runnable {
         return true;
     }
 
+    private void trackPadFlight(Player player, BotRoleHandler handler, Location loc, long now) {
+        if (handler.role() != BotRole.PAD) {
+            return;
+        }
+        Vector velocity = player.getVelocity();
+        boolean launched = velocity.getY() > 0.55 || (!player.isOnGround() && loc.getY() > 60 && velocity.lengthSquared() > 0.35);
+        if (launched) {
+            long grace = plugin.getConfig().getLong("testbots.safety.pad-flight-ms", 8000L);
+            padFlightUntil.put(player.getUniqueId(), now + grace);
+            lastHopAt.put(player.getUniqueId(), now);
+        } else if (player.isOnGround() && BotLocations.isSolidStand(loc) && now > padFlightUntil.getOrDefault(player.getUniqueId(), 0L)) {
+            padFlightUntil.remove(player.getUniqueId());
+        }
+    }
+
     private ConfigurationSection roleSection(BotRoleHandler handler) {
-        if (handler.role().startable()) {
-            return BotRoleRegistry.roleSection(plugin, handler.role());
+        ConfigurationSection qa = BotRoleRegistry.roleSection(plugin, handler.role());
+        if (qa != null) {
+            return qa;
         }
         return plugin.getConfig().getConfigurationSection(handler.role().id());
     }

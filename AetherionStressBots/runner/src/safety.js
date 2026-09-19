@@ -256,7 +256,7 @@ export function attachSafety(bot, opts = {}) {
       bot.qaHome = resolveHome(bot, anchors)
     }
 
-    if (bot.qaHome && !withinLeash(pos, bot.qaHome, leash + 3)) {
+    if (bot.qaHome && !withinLeash(pos, bot.qaHome, leash + 3) && bot.qaActivity !== 'pad_hop') {
       cancelPath(bot)
       bot.qaNeedRetarget = true
       bot.qaGoal = null
@@ -284,12 +284,18 @@ export function attachSafety(bot, opts = {}) {
     if (progress.dist != null) bot.qaGoalDist = progress.dist
     const digging = !!bot.qaDigging
     const gathering = !!bot.qaGathering || bot.qaActivity === 'foraging' || bot.qaActivity === 'mining' || bot.qaActivity === 'fishing'
+    const working = digging || gathering || !!bot.targetDigBlock
+      || ['mining', 'foraging', 'pathing', 'catching', 'fishing', 'ah', 'bazaar', 'quest_dialog', 'minigame', 'pad_hop', 'combat', 'trading', 'fighting']
+        .includes(bot.qaActivity)
+      || bot.pathfinder?.isMoving?.()
     if (moved || progress.progressed) {
       bot.qaStuckSince = 0
+      bot.qaIdleSince = 0
       bot.qaLastMoved = { x: pos.x, y: pos.y, z: pos.z }
     } else if (!bot.qaSuspended) {
       bot.qaStuckSince = bot.qaStuckSince || Date.now()
       const frozenMs = Date.now() - bot.qaStuckSince
+      const keepJob = working && ['ah', 'bazaar', 'quest_dialog', 'minigame', 'pad_hop'].includes(bot.qaActivity)
       if (shouldCancelStuck({
         moved: false,
         progressedTowardGoal: false,
@@ -300,16 +306,31 @@ export function attachSafety(bot, opts = {}) {
         digStuckMs: opts.digStuckMs ?? 28_000,
         gatherStuckMs: opts.gatherStuckMs ?? 18_000
       })) {
-        cancelPath(bot)
-        bot.qaNeedRetarget = true
-        bot.qaGoal = null
-        bot.qaGoalDist = null
         bot.qaStuckSince = Date.now()
-        const pad = bot.qaHome
-        note(bot, 'stuck — cancel and retarget', 'idle')
-        if (pad && opts.goals && !bot.qaSuspended) {
-          wanderOnIsland(bot, pad, Math.min(6, Math.max(3, (opts.leashRadius ?? 16) * 0.35)), opts.goals)
+        if (keepJob) {
+          note(bot, 'stuck while working — keep job', bot.qaActivity || 'stuck')
+        } else {
+          cancelPath(bot)
+          bot.qaNeedRetarget = true
+          bot.qaNeedNewGoal = true
+          bot.qaGoal = null
+          bot.qaGoalDist = null
+          note(bot, working ? 'stuck — cancel and retarget' : 'stuck — cancel path', working ? 'idle' : 'stuck')
+          const pad = bot.qaHome
+          if (pad && opts.goals && !bot.qaSuspended) {
+            wanderOnIsland(bot, pad, Math.min(6, Math.max(3, (opts.leashRadius ?? 16) * 0.35)), opts.goals)
+          }
         }
+      }
+      if (!working) {
+        bot.qaIdleSince = bot.qaIdleSince || Date.now()
+        if (Date.now() - bot.qaIdleSince > (opts.idleGoalMs ?? 8000)) {
+          bot.qaNeedNewGoal = true
+          bot.qaIdleSince = Date.now()
+          note(bot, 'idle too long — new goal', 'idle')
+        }
+      } else {
+        bot.qaIdleSince = 0
       }
     }
   }

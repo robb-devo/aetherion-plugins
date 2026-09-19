@@ -1,132 +1,120 @@
 import pathfinderPkg from 'mineflayer-pathfinder'
-import { applyIslandMovements, cancelPath, setGoal, wanderOnIsland, withinLeash } from './safety.js'
-import { fidget, findMatchingBlock, jitter, markError, note, sleep } from './util.js'
+import { applyIslandMovements, standingIsSafe, wanderOnIsland } from './safety.js'
+import { markError, note, sleep } from './util.js'
+import { ACTIVITIES, fidget } from './playstyle.js'
+import { maybeOpenBooster } from './minigame.js'
 
 const { goals, Movements, pathfinder } = pathfinderPkg
 
-const WATER = new Set([
-  'water', 'kelp', 'kelp_plant', 'seagrass', 'tall_seagrass',
-  'bubble_column', 'lily_pad'
-])
+function isRod(item) {
+  if (!item?.name) return false
+  return item.name.toLowerCase().includes('fishing_rod')
+}
 
-/**
- * Cast a rod at water near a safe pad. Does not play the Aetherion strike minigame.
- */
+export function findWater(bot, radius = 8) {
+  if (!bot.findBlock) return null
+  try {
+    return bot.findBlock({
+      matching: (block) => block && (block.name === 'water' || block.name === 'bubble_column'),
+      maxDistance: radius
+    })
+  } catch {
+    return null
+  }
+}
+
 export function createFishLoop(bot, cfg, log) {
   bot.loadPlugin(pathfinder)
-
-  const leash = cfg.leashRadius ?? bot.qaLeash ?? 14
   const wanderRadius = cfg.wanderRadius ?? 5
-  const searchRadius = cfg.searchRadius ?? 16
   let running = false
-  let busy = false
   let lastCast = 0
   let lastFidget = 0
+  let casting = false
 
-  function home() {
-    return bot.qaHome || bot.entity?.position
+  function equipRod() {
+    if (bot.heldItem && isRod(bot.heldItem)) return true
+    const rod = (bot.inventory.items() || []).find(isRod)
+    if (!rod) return false
+    bot.equip(rod, 'hand').catch(() => {})
+    return true
+  }
+
+  async function castAt(water) {
+    if (casting) return
+    casting = true
+    lastCast = Date.now()
+    try {
+      await bot.lookAt(water.position.offset(0.5, 0.2, 0.5), true)
+      note(bot, 'cast', ACTIVITIES.fishing)
+      await bot.activateItem()
+      const deadline = Date.now() + (cfg.castWaitMs ?? 16_000)
+      while (Date.now() < deadline) {
+        if (bot.qaSuspended) break
+        if ((bot.qaMinigame?.biteUntil || 0) > Date.now()) {
+          note(bot, 'reel', ACTIVITIES.minigame)
+          try { await bot.activateItem() } catch { /* ignore */ }
+          await sleep(250)
+          try { await bot.activateItem() } catch { /* ignore */ }
+          note(bot, 'fish strike', ACTIVITIES.fishing)
+          break
+        }
+        await sleep(180)
+      }
+    } finally {
+      casting = false
+      try { bot.deactivateItem() } catch { /* ignore */ }
+    }
   }
 
   async function tick() {
-    if (!bot.entity || busy || bot.qaSuspended) return
-    if (bot.qaNeedRetarget) {
-      bot.qaNeedRetarget = false
-      cancelPath(bot)
-      wanderOnIsland(bot, home(), wanderRadius, goals)
+    if (!bot.entity || bot.qaSuspended || casting) return
+    if (!bot.pathfinder.movements) {
+      bot.pathfinder.setMovements(applyIslandMovements(new Movements(bot), { canDig: false, maxDrop: 2 }))
+    }
+    if (!equipRod()) {
+      note(bot, 'no fishing rod', 'idle')
       return
     }
-    if (!bot.pathfinder.movements) {
-      bot.pathfinder.setMovements(applyIslandMovements(new Movements(bot), {
-        canDig: false,
-        maxDrop: cfg.maxDrop ?? 1
-      }))
+    const pos = bot.entity.position
+    if (!standingIsSafe(bot, pos.x, pos.y, pos.z)) {
+      wanderOnIsland(bot, bot.qaHome || pos, 3, goals)
+      return
     }
-
-    equipRod(bot)
-
-    const water = findWater(bot, home(), searchRadius, leash)
+    const water = findWater(bot, cfg.searchRadius ?? 10)
     if (!water) {
-      bot.qaActivity = bot.pathfinder.isMoving() ? 'pathing' : 'idle'
-      wanderOnIsland(bot, home(), wanderRadius, goals)
+      bot.qaActivity = bot.pathfinder.isMoving() ? 'pathing' : ACTIVITIES.fishing
+      wanderOnIsland(bot, bot.qaHome || pos, wanderRadius, goals)
       if (Date.now() - lastFidget > 4000) {
         lastFidget = Date.now()
-        fidget(bot, 'idle')
+        fidget(bot, ACTIVITIES.fishing)
       }
       return
     }
-
-    const dest = water.position.offset(0.5, 1, 0.5)
-    const dist = bot.entity.position.distanceTo(dest)
-    setGoal(bot, dest)
-    if (dist > 3.8) {
-      note(bot, 'walk to water', 'pathing')
-      bot.pathfinder.setGoal(new goals.GoalNear(water.position.x, water.position.y + 1, water.position.z, 2))
+    const dist = pos.distanceTo(water.position.offset(0.5, 0, 0.5))
+    if (dist > 4.5) {
+      note(bot, 'path to water', 'pathing')
+      bot.pathfinder.setGoal(new goals.GoalNear(water.position.x, pos.y, water.position.z, 2))
       return
     }
-
     bot.pathfinder.setGoal(null)
-    busy = true
-    bot.qaGathering = true
-    try {
-      const now = Date.now()
-      if (now - lastCast < jitter(cfg.castCooldownMs ?? 4200, 0.25)) {
-        note(bot, 'wait for bite window', 'fishing')
-        if (Math.random() < 0.2) fidget(bot, 'fishing')
-        return
-      }
-      lastCast = now
-      note(bot, 'cast rod', 'fishing')
-      await bot.lookAt(water.position.offset(0.5, 0.2, 0.5), true)
-      await sleep(jitter(180, 0.5))
-      try {
-        bot.activateItem()
-      } catch (err) {
-        markError(bot, err)
-      }
-      await sleep(jitter(cfg.reelWaitMs ?? 6500, 0.3))
-      try {
-        bot.activateItem()
-      } catch {
-        /* already reeled */
-      }
-      note(bot, 'reel', 'fishing')
-      await sleep(jitter(900, 0.4))
-    } finally {
-      bot.qaGathering = false
-      busy = false
+    if (Date.now() - lastCast < (cfg.recastMs ?? 2200)) return
+    await castAt(water)
+    if (Math.random() < 0.12) {
+      await maybeOpenBooster(bot)
     }
   }
 
   return function start() {
     if (running) return
     running = true
-    log(bot.stressName, 'fish loop start (cast/reel; strike minigame not automated)')
-    note(bot, 'fish loop start', 'fishing')
+    log(bot.stressName, 'fish loop start')
+    note(bot, 'fish loop start', ACTIVITIES.fishing)
     const handle = setInterval(() => {
       tick().catch((err) => {
         markError(bot, err)
         log(bot.stressName, `fish tick: ${err.message}`)
       })
-    }, jitter(420, 0.2))
+    }, 360)
     bot.once('end', () => clearInterval(handle))
   }
-}
-
-function findWater(bot, home, radius, leash) {
-  const block = findMatchingBlock(bot, WATER, radius, 4, home)
-  if (!block) return null
-  if (!withinLeash(block.position.offset(0.5, 0.5, 0.5), home, leash + 2)) return null
-  return block
-}
-
-function equipRod(bot) {
-  const held = bot.heldItem
-  if (held && isRod(held)) return
-  const rod = bot.inventory.items().find(isRod)
-  if (!rod) return
-  bot.equip(rod, 'hand').catch(() => {})
-}
-
-function isRod(item) {
-  return item && item.name && item.name.toLowerCase().includes('fishing_rod')
 }

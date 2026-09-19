@@ -9,6 +9,9 @@ depend:
   - AetherionItems
 softdepend:
   - AetherMobs
+  - AetherionQuests
+  - AetherionHub
+  - AetherionBeta
 
 commands:
   stressbots:

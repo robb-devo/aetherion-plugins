@@ -64,7 +64,8 @@ export function createRoamLoop(bot, cfg, log) {
 
     if (bot.pathfinder.isMoving()) {
       bot.qaActivity = 'roaming'
-    } else if (Date.now() - lastHop > 1400) {
+    } else if (Date.now() - lastHop > 1400 || bot.qaNeedNewGoal) {
+      bot.qaNeedNewGoal = false
       lastHop = Date.now()
       const nearby = waypoints.filter((wp) => horizontalDistance(bot.entity.position, wp) <= maxHop)
       const dest = nearby.length > 0 && Math.random() < 0.35

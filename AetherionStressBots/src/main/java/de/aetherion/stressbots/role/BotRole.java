@@ -40,9 +40,17 @@ public enum BotRole {
         return wave == 1;
     }
 
+    public boolean wave2() {
+        return wave == 2;
+    }
+
     /** Dev menu / {@code /stressbots start} roles (Wave 1 + later). */
     public boolean startable() {
         return wave >= 1;
+    }
+
+    public boolean qa() {
+        return wave == 1 || wave == 2;
     }
 
     public static BotRole fromId(String raw) {
@@ -62,21 +70,22 @@ public enum BotRole {
         if ("walk".equals(key) || "hub".equals(key) || "capital".equals(key)) {
             return ROAM;
         }
-        if ("qacombat".equals(key) || "fight".equals(key) || "pve".equals(key)) {
+        if ("qacombat".equals(key) || "qa-combat".equals(key) || "fight".equals(key)
+                || "pve".equals(key) || "sword".equals(key)) {
             return COMBAT;
         }
-        if ("fishing".equals(key) || "rod".equals(key)) {
+        if ("fishing".equals(key) || "angler".equals(key) || "rod".equals(key)) {
             return FISH;
         }
         if ("ah".equals(key) || "auction".equals(key) || "auction-house".equals(key)
-                || "bazaar".equals(key) || "market".equals(key)) {
+                || "bazaar".equals(key) || "market".equals(key) || "trader".equals(key)) {
             return TRADE;
         }
-        if ("quests".equals(key) || "npc".equals(key) || "npcs".equals(key)) {
+        if ("quests".equals(key) || "npc".equals(key) || "npcs".equals(key) || "dialog".equals(key)) {
             return QUEST;
         }
         if ("jump".equals(key) || "jumppad".equals(key) || "jump-pad".equals(key)
-                || "pads".equals(key) || "slime".equals(key)) {
+                || "pads".equals(key) || "slime".equals(key) || "hop".equals(key)) {
             return PAD;
         }
         for (BotRole role : values()) {

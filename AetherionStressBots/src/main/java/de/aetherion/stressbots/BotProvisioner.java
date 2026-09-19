@@ -79,6 +79,7 @@ public final class BotProvisioner {
         handler.kit(player, custom);
         BotPlaystyle.enrich(plugin, player, handler.role(), custom);
         player.updateInventory();
+        BotPlaystyle.apply(plugin, player, handler.role());
         plugin.getNicknames().applyLater(player, handler.role());
 
         Location destination = handler.destination(player);

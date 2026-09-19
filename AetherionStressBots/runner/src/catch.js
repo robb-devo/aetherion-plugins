@@ -86,6 +86,9 @@ export function createCatchLoop(bot, cfg, log) {
     try {
       note(bot, `throw sphere at ${target.name || 'entity'}`, 'catching')
       await bot.activateItem()
+      bot.qaMinigame = bot.qaMinigame || {}
+      bot.qaMinigame.biteUntil = Date.now() + 2200
+      note(bot, 'catch timing window', 'minigame')
     } catch (err) {
       markError(bot, err)
     }
@@ -97,7 +100,7 @@ export function createCatchLoop(bot, cfg, log) {
     if (bot.entity?.position) {
       bot.qaHome = bot.qaHome || { x: bot.entity.position.x, y: bot.entity.position.y, z: bot.entity.position.z }
     }
-    log(bot.stressName, 'catch loop start (pad throws; minigame not automated)')
+    log(bot.stressName, 'catch loop start (pad throws + timing clicks)')
     note(bot, 'catch loop start', 'catching')
     const handle = setInterval(() => {
       tick().catch((err) => {

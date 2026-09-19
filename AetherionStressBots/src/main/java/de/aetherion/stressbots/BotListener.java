@@ -30,6 +30,15 @@ public final class BotListener implements Listener {
         }
         plugin.getActivity().onJoin(player);
         plugin.getLogger().info("Testbot joined: " + player.getName());
+        BotRoleHandler handler = plugin.getRegistry().byPlayer(player);
+        if (handler != null) {
+            de.aetherion.stressbots.role.BotPlaystyle.forceEnglish(plugin, player);
+            plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                if (player.isOnline()) {
+                    de.aetherion.stressbots.role.BotPlaystyle.forceEnglish(plugin, player);
+                }
+            }, 12L);
+        }
         plugin.getProvisioner().scheduleSetup(player);
     }
 
@@ -69,8 +78,9 @@ public final class BotListener implements Listener {
     }
 
     private ConfigurationSection roleSection(BotRoleHandler handler) {
-        if (handler.role().startable()) {
-            return BotRoleRegistry.roleSection(plugin, handler.role());
+        ConfigurationSection qa = BotRoleRegistry.roleSection(plugin, handler.role());
+        if (qa != null) {
+            return qa;
         }
         return plugin.getConfig().getConfigurationSection(handler.role().id());
     }
