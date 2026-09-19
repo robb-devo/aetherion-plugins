@@ -21,7 +21,7 @@ import java.util.List;
 
 public final class FishingItems {
 
-    public static final int STAT_REV = 5;
+    public static final int STAT_REV = 6;
 
     private final ItemManager items;
 
@@ -138,9 +138,9 @@ public final class FishingItems {
 
     public ItemStack divingHelmet() {
         ItemStats stats = new ItemStats();
-        stats.setDefense(8);
-        stats.setFortune(12);
-        stats.setFishingSpeed(6);
+        stats.setDefense(5);
+        stats.setFortune(14);
+        stats.setFishingSpeed(3);
         stats.setFishingCatch(18);
         return armor(
                 Material.LEATHER_HELMET,
@@ -155,10 +155,10 @@ public final class FishingItems {
 
     public ItemStack divingChestplate() {
         ItemStats stats = new ItemStats();
-        stats.setDefense(12);
-        stats.setFortune(14);
-        stats.setFishingSpeed(6);
-        stats.setFishingCatch(22);
+        stats.setDefense(10);
+        stats.setFortune(20);
+        stats.setFishingSpeed(5);
+        stats.setFishingCatch(24);
         return armor(
                 Material.LEATHER_CHESTPLATE,
                 "diving_chestplate",
@@ -172,10 +172,10 @@ public final class FishingItems {
 
     public ItemStack divingLeggings() {
         ItemStats stats = new ItemStats();
-        stats.setDefense(10);
-        stats.setFortune(12);
-        stats.setFishingSpeed(5);
-        stats.setFishingCatch(18);
+        stats.setDefense(8);
+        stats.setFortune(16);
+        stats.setFishingSpeed(4);
+        stats.setFishingCatch(20);
         return armor(
                 Material.LEATHER_LEGGINGS,
                 "diving_leggings",
@@ -189,11 +189,11 @@ public final class FishingItems {
 
     public ItemStack divingBoots() {
         ItemStats stats = new ItemStats();
-        stats.setDefense(7);
-        stats.setFortune(10);
-        stats.setFishingSpeed(5);
+        stats.setDefense(5);
+        stats.setFortune(12);
+        stats.setFishingSpeed(3);
         stats.setFishingCatch(16);
-        stats.setSpeed(4);
+        stats.setSpeed(3);
         return armor(
                 Material.LEATHER_BOOTS,
                 "diving_boots",
@@ -251,8 +251,37 @@ public final class FishingItems {
             stats.setSpeed(0);
             changed = true;
         }
+        if (diving) {
+            applyDivingBase(lower, stats);
+            changed = true;
+        }
         meta.getPersistentDataContainer().set(ItemKeys.fishingRev(), PersistentDataType.INTEGER, STAT_REV);
         return changed || revision == null || revision < STAT_REV;
+    }
+
+    private static void applyDivingBase(String lower, ItemStats stats) {
+        if (lower.contains("helmet")) {
+            stats.setDefense(5);
+            stats.setFortune(14);
+            stats.setFishingSpeed(3);
+            stats.setFishingCatch(18);
+        } else if (lower.contains("chest")) {
+            stats.setDefense(10);
+            stats.setFortune(20);
+            stats.setFishingSpeed(5);
+            stats.setFishingCatch(24);
+        } else if (lower.contains("legging")) {
+            stats.setDefense(8);
+            stats.setFortune(16);
+            stats.setFishingSpeed(4);
+            stats.setFishingCatch(20);
+        } else if (lower.contains("boot")) {
+            stats.setDefense(5);
+            stats.setFortune(12);
+            stats.setFishingSpeed(3);
+            stats.setFishingCatch(16);
+            stats.setSpeed(3);
+        }
     }
 
     private ItemStack armor(

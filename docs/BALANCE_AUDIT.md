@@ -1,7 +1,7 @@
 # Aetherion — Balance- & Progressions-Audit (Read-First)
 
-**Stand:** 19. September 2026 · Wave 2 on `cursor/balance-wave2-stacking-cb8a` (audit origin: `cursor/balance-audit-2b34`)  
-**Scope:** Audit is read-first; **Wave 1 + Wave 2 numbers are applied** (see sections below).  
+**Stand:** 19. September 2026 · Wave 3 on `cursor/balance-wave3-spectrum-08b2` (Wave 2: `cursor/balance-wave2-stacking-cb8a`)  
+**Scope:** Audit is read-first; **Wave 1 + Wave 2 + Wave 3 numbers are applied**.  
 **Methode:** Rezepte, `CompressedResource`, `EconomyCurve`/`economy.yml`, `BalanceTargets` REV 6, Skill-Kurven, Boss-YAML, Dungeon-Loot, Pet-Tabellen, Quarry/Minions, Shops.  
 **Skyblock-Maßstab:** Enchanted ≈ 160→1 (hier 128 = 2×64), Super-Compact ≈ gleiche Ratio nochmal, Tiers ×~1.6–2.0, Unique-Drops selten und an den richtigen Boss gebunden.
 
@@ -136,6 +136,93 @@ Charms T2/T3: 8-wrap → plus **4** Compressed / **4** Compacted.
 | Special mythic (Emerald/Lapis/…) | +20 | **+15** |
 
 14 Mythic Diamond on a T5 pick (250 Fort) is **+126 / +50%** of that piece — inside the old “20–35% per piece” intent for a fully socketed tool, not a second set.
+
+---
+
+## Wave 3 applied (`cursor/balance-wave3-spectrum-08b2`)
+
+Full custom-stat spectrum onto the Wave 2 stacking philosophy. Item IDs unchanged. Compact **128/128**, fishing Compacted gates, and the **1-predecessor** ladder rule are untouched. T1–T5 Combat/Mining/Farming/Foraging/Fishing numbers stay REV 6.
+
+### Stacking budget (with pet slice)
+
+| Slice | Wave 2 | Wave 3 |
+|-------|--------|--------|
+| Set (tool + 4 armor) | 45% | **40%** (T5 numbers unchanged; they sit a hair over 40%) |
+| Pad (T3 domain charm) | 14% | **12%** |
+| Skills (domain @100) | 21% | **18%** |
+| Booster (typical load) | 20% | **18%** |
+| Pet (L100 good roll) | — | **12%** |
+
+Comfortable bands unchanged. Pet 12% of those bands (L100, after per-stat dampen):
+
+| Stat | 12% slice (soft cap) |
+|------|----------------------|
+| Mining Fortune | 132 |
+| Mining Power | 58 |
+| Farming Harvest | 144 |
+| Fishing Catch | 168 |
+| Combat Damage | 38 |
+| Combat Health | 67 |
+| Combat Defense | 50 |
+
+### DE — was sich geändert hat / EN — what changed
+
+| Quelle / Source | Vorher / Before | Nachher / After |
+|-----------------|-----------------|-----------------|
+| **Pets** Core-Kurve | Eine Softcap 48 für alle Stats; Mythic-Aetherion 225–450 Dmg → L100 ~285 | Pro-Stat-Cap = 12%-Slice; L1-Cores an `PetBalance`; Aetherion Mythic ~30–37 → L100 ~42–44 Dmg |
+| Pet Shiny | ×2 | **×1.25** |
+| Pet Bonus-Anzahl | Mythic 6 / Aethered 8 | **3 / 4** |
+| Pet Bonus-Werte | Mythic 22.5–37.5 | **10–16** |
+| Tropical Catch-Skill | 6 + 0.06/Lvl (~12 @100) | **3 + 0.02/Lvl** (~5 @100) |
+| **Blueprint** Step | ×1.40 / ×1.55 / ×1.75 (cum **×3.80**) | ×1.22 / ×1.28 / ×1.32 (cum **×2.06**) |
+| Vein Siphon T1 → T4 Fort | 65 → **247** | 96 → **~198** (unter T5-Pick 250) |
+| Bounty Hoe T1 Harvest | 140 → T4 **532** | 100 → T4 **~206** (T5-Hoe 260) |
+| Resonance Scythe T1 Dmg | 96 → T4 **365** | 36 → T4 **~74** (T5-Schwert 88) |
+| Tide Latch T1 FS | 35 → T4 **133** | 14 → T4 **~29** (T5-Rute 32) |
+| Wild Sight T1 Catch | 14 → T4 **53** | 8 → T4 **~16** |
+| **voided_455** | 220 / 255 / 24 | **145 / 270 / 14** (~T5+ pick) |
+| Compacted Diamond Sword | 72 Dmg | **64** (T4.5) |
+| Compacted Diamond Chest | Def 54 / HP 74 | **38 / 56** (T4 chest) |
+| Compacted Diamond Pick | 80 / 130 / 12 | **96 / 128 / 8** (T4 pick) |
+| Compacted Iron Pick | 46 / 76 / 6 | **48 / 74 / 5** (T3 pick) |
+| Copper Sword AS | **35** | **8** |
+| Timber Axe | 16 / 18 | **32 / 50** (T3 foraging axe) |
+| Emerald Crown Catch | 25 | **14** |
+| Catcher T3 Catch (set) | 61 | **~37** (gaff 14 + armor 23) |
+| **aetherblade** | 155 Dmg | **100** (T5×~1.14) |
+| Gravwell Cleaver | 115 | **80** |
+| Aetherion-Set Def / HP | 385 / 545 | **210 / 276** (~T5×1.22) |
+| Hollow Longbow | 165 | **88** |
+| Ironhide-Set Def / HP | 192 / 132 | **108 / 170** (T4 combat) +20 flat set (Lore war „+20%“, Code war +20) |
+| Diving-Set | über T2 | **= Fishing T2** armor |
+| Burrower Pick | MP 28 / Fort 62 | **96 / 128 / 8** (T4 pick) |
+
+### Rezepte (1 Vorgänger + neue Mats)
+
+Sidegrades die ohne Vorgänger gebaut haben, jetzt **genau ein** vorheriges Stück:
+
+| Item | Vorgänger | Neue Mats |
+|------|-----------|-----------|
+| `compacted_timber_axe` | Foraging Axe T2 | 1 Compacted Oak |
+| `compacted_cobble_hammer` | Compressed Stone Pick | 1 Compacted Cobble |
+| `redstone_infused_boots` | Combat Boots T2 (nicht Vanilla Iron) | 4 Compacted Redstone |
+| `compacted_diamond_chestplate` | Combat Chest T3 | 2 Compacted Diamond |
+| `compacted_diamond_sword` | Combat Sword T3 | 1 Compacted Diamond + Scrap |
+| `emerald_crown` | Combat Helm T3 | 2 Compacted Emerald |
+| `compacted_emerald_scythe` | Combat Sword T3 | 1 Compacted Emerald + 1 Compacted Diamond |
+| `compacted_iron_pickaxe` | Compressed Stone Pick | 2 Compressed Iron |
+| `compacted_diamond_pickaxe` | Compacted Iron Pick | 2 Compacted Diamond |
+| `compacted_midas_dagger` | Compressed Gold Sword (schon) | Compacted Gold |
+
+Greenfield T1-Sidegrades (Copper Sword, Stone Pick, Oak Chest, Coal Ring, Lapis Pendant, Gold Sword) bleiben ohne Vorgänger.
+
+### Boosters / StatProvider
+
+`BoosterStats` Wave-2 Flats **unverändert** (typische Last = 18%-Slice). Specials (Emerald Spread, Lapis HP, Wheat Catch, …) wurden gegen die 12%-Pet- und 18%-Booster-Budgets gehalten.
+
+`ActiveEquipmentStats`: Pets zählen einmal (`registerProvider` de-dupe). Blueprint-Upgrades mutieren PDC, kein Doppel-Apply. Ironhide-Set-Bonus Lore **+20 Defense** (war fälschlich +20%). Catcher-Gaff-Level-Extras überleben die Catcher-Migrate.
+
+Live items: `BossGearBalance.REV=2`, `ProgressionItems.STAT_REV=3`, `CatcherItems.STAT_REV=2`, `FishingItems.STAT_REV=6` (Diving), `BlueprintUpgrade.STAT_REV=3`.
 
 ---
 

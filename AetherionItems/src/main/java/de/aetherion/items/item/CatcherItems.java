@@ -22,7 +22,7 @@ import java.util.List;
  */
 public final class CatcherItems {
 
-    public static final int STAT_REV = 1;
+    public static final int STAT_REV = 2;
 
     private final ItemManager items;
 
@@ -56,8 +56,8 @@ public final class CatcherItems {
 
     public ItemStack helmet(int tier) {
         ItemStats stats = new ItemStats();
-        stats.setDefense(stat(tier, 2, 5, 9));
-        stats.setCatchRate(stat(tier, 2, 5, 9));
+        stats.setDefense(stat(tier, 2, 5, 7));
+        stats.setCatchRate(stat(tier, 2, 4, 5));
         return armor(
                 Material.GOLDEN_HELMET,
                 id("catcher_helmet", tier),
@@ -71,8 +71,8 @@ public final class CatcherItems {
 
     public ItemStack chestplate(int tier) {
         ItemStats stats = new ItemStats();
-        stats.setDefense(stat(tier, 4, 8, 14));
-        stats.setCatchRate(stat(tier, 3, 7, 12));
+        stats.setDefense(stat(tier, 4, 8, 12));
+        stats.setCatchRate(stat(tier, 3, 5, 8));
         return armor(
                 Material.GOLDEN_CHESTPLATE,
                 id("catcher_chestplate", tier),
@@ -86,8 +86,8 @@ public final class CatcherItems {
 
     public ItemStack leggings(int tier) {
         ItemStats stats = new ItemStats();
-        stats.setDefense(stat(tier, 3, 6, 11));
-        stats.setCatchRate(stat(tier, 2, 5, 9));
+        stats.setDefense(stat(tier, 3, 6, 9));
+        stats.setCatchRate(stat(tier, 2, 4, 5));
         return armor(
                 Material.GOLDEN_LEGGINGS,
                 id("catcher_leggings", tier),
@@ -101,9 +101,9 @@ public final class CatcherItems {
 
     public ItemStack boots(int tier) {
         ItemStats stats = new ItemStats();
-        stats.setDefense(stat(tier, 1, 3, 6));
-        stats.setCatchRate(stat(tier, 2, 5, 9));
-        stats.setSpeed(stat(tier, 2, 4, 7));
+        stats.setDefense(stat(tier, 1, 3, 5));
+        stats.setCatchRate(stat(tier, 2, 4, 5));
+        stats.setSpeed(stat(tier, 2, 4, 6));
         return armor(
                 Material.GOLDEN_BOOTS,
                 id("catcher_boots", tier),
@@ -117,8 +117,8 @@ public final class CatcherItems {
 
     public ItemStack gaff(int tier) {
         ItemStats stats = new ItemStats();
-        stats.setCatchRate(stat(tier, 8, 14, 22));
-        stats.setSpeed(stat(tier, 3, 5, 8));
+        stats.setCatchRate(stat(tier, 7, 11, 14));
+        stats.setSpeed(stat(tier, 3, 5, 7));
         ItemStack item = tool(
                 gaffMaterial(tier),
                 id("catcher_gaff", tier),
@@ -161,6 +161,7 @@ public final class CatcherItems {
         meta.getPersistentDataContainer().set(ItemKeys.item(), PersistentDataType.STRING, id);
         items.applyItemData(meta, rarity, stats);
         meta.getPersistentDataContainer().set(ItemKeys.statRev(), PersistentDataType.INTEGER, STAT_REV);
+        meta.getPersistentDataContainer().set(ItemKeys.catcherRev(), PersistentDataType.INTEGER, STAT_REV);
         meta.setDisplayName(rarity.getChatColor() + display);
         List<String> lore = new ArrayList<>();
         lore.add("");
@@ -194,6 +195,70 @@ public final class CatcherItems {
         ItemPresentation.polish(meta);
         item.setItemMeta(meta);
         return item;
+    }
+
+    public static boolean migrate(String itemId, ItemStats stats, ItemMeta meta) {
+        if (itemId == null || stats == null || meta == null) {
+            return false;
+        }
+        String lower = itemId.toLowerCase(java.util.Locale.ROOT);
+        if (!lower.startsWith("catcher_")) {
+            return false;
+        }
+        Integer revision = meta.getPersistentDataContainer().get(ItemKeys.catcherRev(), PersistentDataType.INTEGER);
+        if (revision != null && revision >= STAT_REV) {
+            return false;
+        }
+        int tier = lower.endsWith("_3") ? 3 : lower.endsWith("_2") ? 2 : 1;
+        double oldCatch;
+        double oldDef = 0;
+        double oldSpeed = 0;
+        double newCatch;
+        double newDef = 0;
+        double newSpeed = 0;
+        if (lower.contains("helmet")) {
+            oldDef = stat(tier, 2, 5, 9);
+            oldCatch = stat(tier, 2, 5, 9);
+            newDef = stat(tier, 2, 5, 7);
+            newCatch = stat(tier, 2, 4, 5);
+            stats.setDefense(newDef + Math.max(0, stats.getDefense() - oldDef));
+            stats.setCatchRate(newCatch + Math.max(0, stats.getCatchRate() - oldCatch));
+        } else if (lower.contains("chest")) {
+            oldDef = stat(tier, 4, 8, 14);
+            oldCatch = stat(tier, 3, 7, 12);
+            newDef = stat(tier, 4, 8, 12);
+            newCatch = stat(tier, 3, 5, 8);
+            stats.setDefense(newDef + Math.max(0, stats.getDefense() - oldDef));
+            stats.setCatchRate(newCatch + Math.max(0, stats.getCatchRate() - oldCatch));
+        } else if (lower.contains("legging")) {
+            oldDef = stat(tier, 3, 6, 11);
+            oldCatch = stat(tier, 2, 5, 9);
+            newDef = stat(tier, 3, 6, 9);
+            newCatch = stat(tier, 2, 4, 5);
+            stats.setDefense(newDef + Math.max(0, stats.getDefense() - oldDef));
+            stats.setCatchRate(newCatch + Math.max(0, stats.getCatchRate() - oldCatch));
+        } else if (lower.contains("boot")) {
+            oldDef = stat(tier, 1, 3, 6);
+            oldCatch = stat(tier, 2, 5, 9);
+            oldSpeed = stat(tier, 2, 4, 7);
+            newDef = stat(tier, 1, 3, 5);
+            newCatch = stat(tier, 2, 4, 5);
+            newSpeed = stat(tier, 2, 4, 6);
+            stats.setDefense(newDef + Math.max(0, stats.getDefense() - oldDef));
+            stats.setCatchRate(newCatch + Math.max(0, stats.getCatchRate() - oldCatch));
+            stats.setSpeed(newSpeed + Math.max(0, stats.getSpeed() - oldSpeed));
+        } else if (lower.contains("gaff")) {
+            oldCatch = stat(tier, 8, 14, 22);
+            oldSpeed = stat(tier, 3, 5, 8);
+            newCatch = stat(tier, 7, 11, 14);
+            newSpeed = stat(tier, 3, 5, 7);
+            stats.setCatchRate(newCatch + Math.max(0, stats.getCatchRate() - oldCatch));
+            stats.setSpeed(newSpeed + Math.max(0, stats.getSpeed() - oldSpeed));
+        } else {
+            return false;
+        }
+        meta.getPersistentDataContainer().set(ItemKeys.catcherRev(), PersistentDataType.INTEGER, STAT_REV);
+        return true;
     }
 
     private static List<String> flavor(int tier, boolean gaff) {

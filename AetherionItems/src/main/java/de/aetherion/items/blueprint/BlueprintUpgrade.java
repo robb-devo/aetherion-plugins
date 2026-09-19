@@ -24,6 +24,8 @@ import java.util.Set;
 public final class BlueprintUpgrade {
 
     public static final int MAX_TIER = 4;
+    /** Wave 3: T4 lands near T5 specialty, not 3.8× T1. */
+    public static final int STAT_REV = 3;
     public static final String STONE_PREFIX = "blueprint_upgrade_stone_";
 
     private static final Set<String> TOOL_IDS = Set.of(
@@ -91,6 +93,7 @@ public final class BlueprintUpgrade {
         int use = Math.max(1, Math.min(MAX_TIER, tier));
         meta.getPersistentDataContainer().set(ItemKeys.blueprintTier(), PersistentDataType.INTEGER, use);
         meta.getPersistentDataContainer().set(ItemKeys.siphonTier(), PersistentDataType.INTEGER, use);
+        stampRev(meta);
     }
 
     public static ItemStack createStone(int targetTier) {
@@ -170,11 +173,13 @@ public final class BlueprintUpgrade {
             return null;
         }
         ItemStats stats = items.getItemStats(result);
-        double mul = stepMultiplier(next);
-        scaleStats(stats, mul);
+        String itemId = items.getItemId(result);
+        int from = tier(tool);
+        rebaseToTier(stats, itemId, from, next);
         items.saveItemStats(meta, stats);
         writeTier(meta, next);
-        patchLore(meta, items.getItemId(result), next, stats, items.getProfile(result));
+        stampRev(meta);
+        patchLore(meta, itemId, next, stats, items.getProfile(result));
         result.setItemMeta(meta);
         ItemMeta polished = result.getItemMeta();
         if (polished != null) {
@@ -233,14 +238,196 @@ public final class BlueprintUpgrade {
         };
     }
 
-    /** Incremental multiply when moving into this tier. */
+    /** Incremental multiply when moving into this tier. Wave 3: cum ×2.06 to T4. */
     public static double stepMultiplier(int targetTier) {
         return switch (clamp(targetTier)) {
-            case 2 -> 1.40;
-            case 3 -> 1.55;
-            case 4 -> 1.75;
+            case 2 -> 1.22;
+            case 3 -> 1.28;
+            case 4 -> 1.32;
             default -> 1.0;
         };
+    }
+
+    public static double cumulativeMultiplier(int tier) {
+        double mul = 1.0;
+        int use = clamp(tier);
+        for (int t = 2; t <= use; t++) {
+            mul *= stepMultiplier(t);
+        }
+        return mul;
+    }
+
+    /**
+     * Live items: rebuild the scaled fields from T1 × cumulative, keep booster extras.
+     */
+    public static boolean migrate(String itemId, ItemStats stats, ItemMeta meta) {
+        if (itemId == null || stats == null || meta == null || !isBlueprintTool(itemId)) {
+            return false;
+        }
+        Integer revision = meta.getPersistentDataContainer().get(
+                ItemKeys.blueprintStatRev(),
+                PersistentDataType.INTEGER
+        );
+        if (revision != null && revision >= STAT_REV) {
+            return false;
+        }
+        int current = 1;
+        Integer stored = meta.getPersistentDataContainer().get(
+                ItemKeys.blueprintTier(),
+                PersistentDataType.INTEGER
+        );
+        if (stored != null && stored >= 1) {
+            current = Math.min(MAX_TIER, stored);
+        } else {
+            Integer siphon = meta.getPersistentDataContainer().get(
+                    ItemKeys.siphonTier(),
+                    PersistentDataType.INTEGER
+            );
+            if (siphon != null && siphon >= 1) {
+                current = Math.min(MAX_TIER, siphon);
+            }
+        }
+        int fromRev = revision == null ? 0 : revision;
+        ItemStats oldBase = scaledBase(itemId, current, fromRev < STAT_REV);
+        ItemStats newBase = scaledBase(itemId, current, false);
+        if (oldBase == null || newBase == null) {
+            return false;
+        }
+        rebaseScaled(stats, oldBase, newBase);
+        stampRev(meta);
+        return true;
+    }
+
+    public static ItemStats tier1Base(String itemId) {
+        return tier1Base(itemId, false);
+    }
+
+    /** {@code legacy=true} is the pre-Wave-3 T1 snapshot used to peel extras off live items. */
+    public static ItemStats tier1Base(String itemId, boolean legacy) {
+        if (itemId == null) {
+            return null;
+        }
+        ItemStats stats = new ItemStats();
+        String id = itemId.toLowerCase(Locale.ROOT);
+        if (legacy) {
+            switch (id) {
+                case "vein_siphon" -> {
+                    stats.setMiningPower(40);
+                    stats.setFortune(65);
+                    stats.setSpread(5);
+                }
+                case "canopy_cleaver" -> {
+                    stats.setFortune(55);
+                    stats.setSpread(8);
+                }
+                case "bounty_hoe" -> {
+                    stats.setFortune(40);
+                    stats.setHarvestSpread(140);
+                }
+                case "wild_sight" -> stats.setCatchRate(14);
+                case "tide_latch" -> {
+                    stats.setFortune(40);
+                    stats.setFishingSpeed(35);
+                    stats.setFishingCatch(45);
+                }
+                case "resonance_scythe" -> {
+                    stats.setDamage(96);
+                    stats.setAttackSpread(7);
+                    stats.setCritChance(16);
+                    stats.setCritDamage(118);
+                }
+                default -> {
+                    return null;
+                }
+            }
+            return stats;
+        }
+        switch (id) {
+            case "vein_siphon" -> {
+                stats.setMiningPower(48);
+                stats.setFortune(96);
+                stats.setSpread(5);
+            }
+            case "canopy_cleaver" -> {
+                stats.setFortune(72);
+                stats.setSpread(6);
+            }
+            case "bounty_hoe" -> {
+                stats.setFortune(80);
+                stats.setHarvestSpread(100);
+            }
+            case "wild_sight" -> stats.setCatchRate(8);
+            case "tide_latch" -> {
+                stats.setFortune(72);
+                stats.setFishingSpeed(14);
+                stats.setFishingCatch(120);
+            }
+            case "resonance_scythe" -> {
+                stats.setDamage(36);
+                stats.setAttackSpread(6);
+                stats.setCritChance(8);
+                stats.setCritDamage(50);
+            }
+            default -> {
+                return null;
+            }
+        }
+        return stats;
+    }
+
+    private static double legacyCumulative(int tier) {
+        double mul = 1.0;
+        int use = clamp(tier);
+        double[] steps = {1.0, 1.40, 1.55, 1.75};
+        for (int t = 2; t <= use; t++) {
+            mul *= steps[t - 1];
+        }
+        return mul;
+    }
+
+    private static ItemStats scaledBase(String itemId, int tier, boolean legacy) {
+        ItemStats base = tier1Base(itemId, legacy);
+        if (base == null) {
+            return null;
+        }
+        double mul = legacy ? legacyCumulative(tier) : cumulativeMultiplier(tier);
+        if (mul != 1.0) {
+            scaleStats(base, mul);
+        }
+        return base;
+    }
+
+    private static void rebaseToTier(ItemStats actual, String itemId, int fromTier, int toTier) {
+        ItemStats oldBase = scaledBase(itemId, fromTier, false);
+        ItemStats newBase = scaledBase(itemId, toTier, false);
+        if (oldBase == null || newBase == null) {
+            return;
+        }
+        rebaseScaled(actual, oldBase, newBase);
+    }
+
+    private static void rebaseScaled(ItemStats actual, ItemStats oldBase, ItemStats newBase) {
+        actual.setMiningPower(newBase.getMiningPower() + extra(actual.getMiningPower(), oldBase.getMiningPower()));
+        actual.setFortune(newBase.getFortune() + extra(actual.getFortune(), oldBase.getFortune()));
+        actual.setSpread(newBase.getSpread() + extra(actual.getSpread(), oldBase.getSpread()));
+        actual.setHarvestSpread(newBase.getHarvestSpread() + extra(actual.getHarvestSpread(), oldBase.getHarvestSpread()));
+        actual.setDamage(newBase.getDamage() + extra(actual.getDamage(), oldBase.getDamage()));
+        actual.setCritChance(newBase.getCritChance() + extra(actual.getCritChance(), oldBase.getCritChance()));
+        actual.setCritDamage(newBase.getCritDamage() + extra(actual.getCritDamage(), oldBase.getCritDamage()));
+        actual.setAttackSpread(newBase.getAttackSpread() + extra(actual.getAttackSpread(), oldBase.getAttackSpread()));
+        actual.setFishingSpeed(newBase.getFishingSpeed() + extra(actual.getFishingSpeed(), oldBase.getFishingSpeed()));
+        actual.setFishingCatch(newBase.getFishingCatch() + extra(actual.getFishingCatch(), oldBase.getFishingCatch()));
+        actual.setCatchRate(newBase.getCatchRate() + extra(actual.getCatchRate(), oldBase.getCatchRate()));
+    }
+
+    private static double extra(double actual, double oldBase) {
+        return Math.max(0.0, actual - oldBase);
+    }
+
+    public static void stampRev(ItemMeta meta) {
+        if (meta != null) {
+            meta.getPersistentDataContainer().set(ItemKeys.blueprintStatRev(), PersistentDataType.INTEGER, STAT_REV);
+        }
     }
 
     private static void scaleStats(ItemStats stats, double mul) {

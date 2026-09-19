@@ -187,7 +187,7 @@ public class PetGenerator {
 
         stats.setCoreValue(
                 stats.getCoreValue()
-                        * 2.0
+                        * de.aetherion.aethermobs.model.PetBalance.SHINY_MULTIPLIER
         );
 
         /*
@@ -209,7 +209,7 @@ public class PetGenerator {
 
             stats.setBonusStat(
                     capability,
-                    value * 2.0
+                    value * de.aetherion.aethermobs.model.PetBalance.SHINY_MULTIPLIER
             );
         }
     }
@@ -333,10 +333,10 @@ public class PetGenerator {
                     3;
 
             case MYTHIC ->
-                    6;
+                    3;
 
             case AETHERED ->
-                    8;
+                    4;
         };
     }
 
@@ -384,50 +384,50 @@ public class PetGenerator {
 
             case COMMON -> {
 
-                min = 2.0;
-                max = 5.0;
+                min = 1.5;
+                max = 3.0;
             }
 
             case UNCOMMON -> {
 
-                min = 4.0;
-                max = 8.0;
+                min = 2.5;
+                max = 4.5;
             }
 
             case RARE -> {
 
-                min = 6.0;
-                max = 11.0;
+                min = 4.0;
+                max = 7.0;
             }
 
             case EPIC -> {
 
-                min = 9.0;
-                max = 16.0;
+                min = 6.0;
+                max = 10.0;
             }
 
             case LEGENDARY -> {
 
-                min = 14.0;
-                max = 22.5;
+                min = 8.0;
+                max = 13.0;
             }
 
             case MYTHIC -> {
 
-                min = 22.5;
-                max = 37.5;
+                min = 10.0;
+                max = 16.0;
             }
 
             case AETHERED -> {
 
-                min = 35.0;
-                max = 55.0;
+                min = 12.0;
+                max = 18.0;
             }
 
             default -> {
 
-                min = 5.0;
-                max = 12.5;
+                min = 4.0;
+                max = 8.0;
             }
         }
 

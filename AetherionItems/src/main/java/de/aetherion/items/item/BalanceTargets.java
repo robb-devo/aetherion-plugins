@@ -8,15 +8,19 @@ package de.aetherion.items.item;
  * + max relevant domain skills @100 + typical booster load.
  *
  * <pre>
- *   Set (tool + 4 armor)     45%
- *   Pad (T3 domain charm)    14%
- *   Skills (domain @100)     21%
- *   Booster (typical load)   20%
+ *   Set (tool + 4 armor)     40%
+ *   Pad (T3 domain charm)    12%
+ *   Skills (domain @100)     18%
+ *   Booster (typical load)   18%
+ *   Pet (L100 good roll)     12%
  * </pre>
  *
  * <p>Typical booster load: 10 Diamond on the tool, 6 Diamond on the chest,
  * 4 Gold on each other armor piece. Whale ceiling (14 Diamond × 5 pieces) may
  * overshoot comfortable by ~25–35%; that is intentional, not the target.
+ * Wave 2 T5 set numbers stay (they land ~45% of the pre-pet band). Wave 3
+ * sizes pets to 12% of the same comfortable bands so a Mythic pet is a slice,
+ * not a second set. Blueprint T4 is a specialty T5-adjacent tool, not 3.8× T1.
  *
  * <p>Comfortable full-stack bands:
  * <ul>

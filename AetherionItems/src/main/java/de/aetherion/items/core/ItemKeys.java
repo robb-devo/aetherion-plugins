@@ -359,6 +359,14 @@ public final class ItemKeys {
         return key("farming_hoe_xp");
     }
 
+    public static NamespacedKey catcherRev() {
+        return key("catcher_rev");
+    }
+
+    public static NamespacedKey namedGearRev() {
+        return key("named_gear_rev");
+    }
+
     public static NamespacedKey catcherGaffLevel() {
         return key("catcher_gaff_level");
     }
@@ -582,6 +590,10 @@ public final class ItemKeys {
     /** Upgrade stone target tier (2–4). */
     public static NamespacedKey blueprintUpgradeStone() {
         return key("blueprint_upgrade_stone");
+    }
+
+    public static NamespacedKey blueprintStatRev() {
+        return key("blueprint_stat_rev");
     }
 
     /** Eldervale forge hammer / display props. */

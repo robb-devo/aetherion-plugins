@@ -21,7 +21,7 @@ import java.util.List;
 
 public final class ProgressionItems {
 
-    public static final int STAT_REV = 2;
+    public static final int STAT_REV = 3;
 
     private final ItemManager items;
 
@@ -57,9 +57,9 @@ public final class ProgressionItems {
 
     public ItemStack createCompressedOakChestplate() {
         ItemStats stats = new ItemStats();
-        stats.setDefense(14);
-        stats.setFortune(5);
-        stats.setHealth(10);
+        stats.setDefense(10);
+        stats.setFortune(12);
+        stats.setHealth(8);
         return leather(
                 Material.LEATHER_CHESTPLATE,
                 "compressed_oak_chestplate",
@@ -79,8 +79,8 @@ public final class ProgressionItems {
 
     public ItemStack createCompactedTimberAxe() {
         ItemStats stats = new ItemStats();
-        stats.setMiningPower(16);
-        stats.setFortune(18);
+        stats.setMiningPower(32);
+        stats.setFortune(50);
         stats.setSpeed(5);
         return tool(
                 Material.IRON_AXE,
@@ -100,8 +100,8 @@ public final class ProgressionItems {
 
     public ItemStack createCompressedStonePickaxe() {
         ItemStats stats = new ItemStats();
-        stats.setMiningPower(16);
-        stats.setFortune(28);
+        stats.setMiningPower(18);
+        stats.setFortune(32);
         stats.setSpread(2);
         return tool(
                 Material.STONE_PICKAXE,
@@ -121,9 +121,9 @@ public final class ProgressionItems {
 
     public ItemStack createCompactedCobbleHammer() {
         ItemStats stats = new ItemStats();
-        stats.setMiningPower(22);
-        stats.setFortune(12);
-        stats.setSpread(2);
+        stats.setMiningPower(26);
+        stats.setFortune(36);
+        stats.setSpread(4);
         return tool(
                 Material.IRON_PICKAXE,
                 "compacted_cobble_hammer",
@@ -164,9 +164,9 @@ public final class ProgressionItems {
     public ItemStack createCopperSword() {
         ItemStats stats = new ItemStats();
         stats.setDamage(18);
-        stats.setAttackSpread(35);
-        stats.setCritChance(4);
-        stats.setCritDamage(35);
+        stats.setAttackSpread(8);
+        stats.setCritChance(5);
+        stats.setCritDamage(40);
         return tool(
                 Material.GOLDEN_SWORD,
                 "copper_sword",
@@ -185,10 +185,10 @@ public final class ProgressionItems {
 
     public ItemStack createCompressedGoldSword() {
         ItemStats stats = new ItemStats();
-        stats.setDamage(28);
+        stats.setDamage(32);
         stats.setAttackSpread(8);
         stats.setCritChance(8);
-        stats.setCritDamage(40);
+        stats.setCritDamage(48);
         return tool(
                 Material.GOLDEN_SWORD,
                 "compressed_gold_sword",
@@ -207,9 +207,9 @@ public final class ProgressionItems {
 
     public ItemStack createCompactedMidasDagger() {
         ItemStats stats = new ItemStats();
-        stats.setDamage(36);
-        stats.setCritChance(12);
-        stats.setCritDamage(50);
+        stats.setDamage(40);
+        stats.setCritChance(10);
+        stats.setCritDamage(55);
         stats.setAttackSpread(8);
         return tool(
                 Material.GOLDEN_SWORD,
@@ -230,7 +230,7 @@ public final class ProgressionItems {
 
     public ItemStack createRedstoneInfusedBoots() {
         ItemStats stats = new ItemStats();
-        stats.setDefense(16);
+        stats.setDefense(18);
         stats.setSpeed(10);
         stats.setHealth(8);
         return leather(
@@ -252,7 +252,7 @@ public final class ProgressionItems {
 
     public ItemStack createLapisPendant() {
         ItemStats stats = new ItemStats();
-        stats.setHealth(25);
+        stats.setHealth(32);
         stats.setDefense(4);
         stats.setSpeed(3);
         return accessory(
@@ -273,8 +273,8 @@ public final class ProgressionItems {
 
     public ItemStack createCompactedDiamondChestplate() {
         ItemStats stats = new ItemStats();
-        stats.setDefense(54);
-        stats.setHealth(74);
+        stats.setDefense(38);
+        stats.setHealth(56);
         stats.setAttackSpread(6);
         return tool(
                 Material.DIAMOND_CHESTPLATE,
@@ -287,17 +287,17 @@ public final class ProgressionItems {
                         "§7If they hit you, they can have some back.",
                         "§7Reflects 10% melee damage.",
                         "",
-                        "§8T4-adjacent plate. Sparkles under pressure."
+                        "§8T4 plate. Sparkles under pressure."
                 )
         );
     }
 
     public ItemStack createCompactedDiamondSword() {
         ItemStats stats = new ItemStats();
-        stats.setDamage(72);
-        stats.setAttackSpread(18);
-        stats.setCritChance(14);
-        stats.setCritDamage(85);
+        stats.setDamage(64);
+        stats.setAttackSpread(14);
+        stats.setCritChance(12);
+        stats.setCritDamage(80);
         return tool(
                 Material.DIAMOND_SWORD,
                 "compacted_diamond_sword",
@@ -318,7 +318,7 @@ public final class ProgressionItems {
         ItemStats stats = new ItemStats();
         stats.setDefense(18);
         stats.setHealth(8);
-        stats.setCatchRate(25);
+        stats.setCatchRate(14);
         stats.setFortune(12);
         return tool(
                 Material.GOLDEN_HELMET,
@@ -329,7 +329,7 @@ public final class ProgressionItems {
                 stats,
                 List.of(
                         "§7Luck so loud the loot table can hear it.",
-                        "§7+25% Catch Rate. Rare eggs notice you.",
+                        "§7+14% Catch Rate. Rare eggs notice you.",
                         "",
                         "§8Wear it. Pretend it was earned."
                 )
@@ -338,9 +338,9 @@ public final class ProgressionItems {
 
     public ItemStack createCompactedEmeraldScythe() {
         ItemStats stats = new ItemStats();
-        stats.setDamage(64);
-        stats.setCritChance(16);
-        stats.setCritDamage(70);
+        stats.setDamage(56);
+        stats.setCritChance(12);
+        stats.setCritDamage(72);
         stats.setSpeed(6);
         stats.setFortune(10);
         return tool(
@@ -361,9 +361,9 @@ public final class ProgressionItems {
 
     public ItemStack createCompactedIronPickaxe() {
         ItemStats stats = new ItemStats();
-        stats.setMiningPower(46);
-        stats.setFortune(76);
-        stats.setSpread(6);
+        stats.setMiningPower(48);
+        stats.setFortune(74);
+        stats.setSpread(5);
         return tool(
                 Material.IRON_PICKAXE,
                 "compacted_iron_pickaxe",
@@ -375,16 +375,16 @@ public final class ProgressionItems {
                         "§7Smelted the waiting out of mining.",
                         "§72% chance to compact ores as you go.",
                         "",
-                        "§8Just under the T3 pick. Upgrade the stone one."
+                        "§8T3 pick stats. Upgrade the stone one."
                 )
         );
     }
 
     public ItemStack createCompactedDiamondPickaxe() {
         ItemStats stats = new ItemStats();
-        stats.setMiningPower(80);
-        stats.setFortune(130);
-        stats.setSpread(12);
+        stats.setMiningPower(96);
+        stats.setFortune(128);
+        stats.setSpread(8);
         return tool(
                 Material.DIAMOND_PICKAXE,
                 "compacted_diamond_pickaxe",
@@ -396,16 +396,16 @@ public final class ProgressionItems {
                         "§7The rock files for compressed status.",
                         "§74% chance to compact while mining.",
                         "",
-                        "§8Just under the T4 pick. Still jealous of mythic."
+                        "§8T4 pick stats. Still jealous of mythic."
                 )
         );
     }
 
     public ItemStack createVoided455() {
         ItemStats stats = new ItemStats();
-        stats.setMiningPower(220);
-        stats.setFortune(255);
-        stats.setSpread(24);
+        stats.setMiningPower(145);
+        stats.setFortune(270);
+        stats.setSpread(14);
         return tool(
                 Material.NETHERITE_PICKAXE,
                 "voided_455",
@@ -513,10 +513,27 @@ public final class ProgressionItems {
             return false;
         }
         return switch (id) {
-            case "compressed_stone_pickaxe" -> setPick(stats, 16, 28, 2);
-            case "compacted_iron_pickaxe" -> setPick(stats, 46, 76, 6);
-            case "compacted_diamond_pickaxe" -> setPick(stats, 80, 130, 12);
-            case "compacted_diamond_chestplate" -> setChest(stats, 54, 74, 6);
+            case "compressed_oak_chestplate" -> setArmor(stats, 10, 8, 12, 0);
+            case "compacted_timber_axe" -> {
+                setPick(stats, 32, 50, 0);
+                stats.setSpeed(5);
+                yield true;
+            }
+            case "compressed_stone_pickaxe" -> setPick(stats, 18, 32, 2);
+            case "compacted_cobble_hammer" -> setPick(stats, 26, 36, 4);
+            case "compressed_coal_ring" -> setArmor(stats, 8, 6, 0, 8);
+            case "copper_sword" -> setWeapon(stats, 18, 8, 5, 40);
+            case "compressed_gold_sword" -> setWeapon(stats, 32, 8, 8, 48);
+            case "compacted_midas_dagger" -> setWeapon(stats, 40, 8, 10, 55);
+            case "redstone_infused_boots" -> setArmor(stats, 18, 8, 0, 10);
+            case "lapis_pendant" -> setArmor(stats, 4, 32, 0, 3);
+            case "compacted_diamond_chestplate" -> setChest(stats, 38, 56, 6);
+            case "compacted_diamond_sword" -> setWeapon(stats, 64, 14, 12, 80);
+            case "emerald_crown" -> setCrown(stats, 18, 8, 14, 12);
+            case "compacted_emerald_scythe" -> setScythe(stats, 56, 12, 72, 6, 10);
+            case "compacted_iron_pickaxe" -> setPick(stats, 48, 74, 5);
+            case "compacted_diamond_pickaxe" -> setPick(stats, 96, 128, 8);
+            case "voided_455" -> setPick(stats, 145, 270, 14);
             default -> false;
         };
     }
@@ -532,6 +549,41 @@ public final class ProgressionItems {
         stats.setDefense(defense);
         stats.setHealth(health);
         stats.setAttackSpread(attackSpread);
+        return true;
+    }
+
+    private static boolean setArmor(ItemStats stats, double defense, double health, double fortune, double speed) {
+        stats.setDefense(defense);
+        stats.setHealth(health);
+        if (fortune > 0) {
+            stats.setFortune(fortune);
+        }
+        stats.setSpeed(speed);
+        return true;
+    }
+
+    private static boolean setWeapon(ItemStats stats, double damage, double attackSpread, double critChance, double critDamage) {
+        stats.setDamage(damage);
+        stats.setAttackSpread(attackSpread);
+        stats.setCritChance(critChance);
+        stats.setCritDamage(critDamage);
+        return true;
+    }
+
+    private static boolean setCrown(ItemStats stats, double defense, double health, double catchRate, double fortune) {
+        stats.setDefense(defense);
+        stats.setHealth(health);
+        stats.setCatchRate(catchRate);
+        stats.setFortune(fortune);
+        return true;
+    }
+
+    private static boolean setScythe(ItemStats stats, double damage, double critChance, double critDamage, double speed, double fortune) {
+        stats.setDamage(damage);
+        stats.setCritChance(critChance);
+        stats.setCritDamage(critDamage);
+        stats.setSpeed(speed);
+        stats.setFortune(fortune);
         return true;
     }
 }

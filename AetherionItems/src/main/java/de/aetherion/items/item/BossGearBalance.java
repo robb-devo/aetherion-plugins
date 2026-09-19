@@ -7,12 +7,13 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
 /**
- * REV1: rebase overworld boss weapons/armor/accessories onto the REV5 combat curve.
+ * REV2: Wave 3 — raid uniques sit at T5 × ~1.15, not a second endgame.
+
  * Existing items migrate on the next inventory refresh.
  */
 public final class BossGearBalance {
 
-    public static final int REV = 1;
+    public static final int REV = 2;
 
     /** Bridged Axe base life steal (core skillEffect multiplies on top). */
     public static final double BRIDGED_LIFESTEAL = 0.05d;
@@ -55,40 +56,46 @@ public final class BossGearBalance {
             return null;
         }
         return switch (itemId.toLowerCase()) {
-            case "warped_blade" -> weapon(52, 8, 9, 60);
-            case "gravwell_cleaver" -> weapon(115, 4, 13, 110);
-            case "bridged_axe" -> weapon(90, 14, 13, 90);
-            case "skuldugery_shortbow" -> weapon(88, 16, 12, 85);
-            case "aetherblade" -> weapon(155, 18, 20, 140);
-            case "staff_of_technical_difficulties" -> weapon(105, 10, 12, 72);
+            case "warped_blade" -> weapon(48, 8, 9, 62);
+            case "gravwell_cleaver" -> weapon(80, 8, 13, 96);
+            case "bridged_axe" -> weapon(80, 12, 13, 90);
+            case "skuldugery_shortbow" -> weapon(72, 14, 12, 88);
+            case "aetherblade" -> weapon(100, 16, 16, 115);
+            case "staff_of_technical_difficulties" -> weapon(72, 10, 12, 80);
             case "aetherion_void_stick" -> {
                 ItemStats stats = new ItemStats();
-                stats.setDamage(100);
+                stats.setDamage(72);
                 yield stats;
             }
             case "squids_boot" -> {
                 ItemStats stats = new ItemStats();
-                stats.setDefense(20);
-                stats.setHealth(24);
-                stats.setSpeed(6);
+                stats.setDefense(22);
+                stats.setHealth(34);
+                stats.setSpeed(8);
                 yield stats;
             }
-            case "aetherion_helmet" -> aetherion(70, 110, 22, 22, 6, 42, 2);
-            case "aetherion_chestplate" -> aetherion(140, 180, 42, 35, 12, 70, 3);
-            case "aetherion_leggings" -> aetherion(105, 145, 32, 28, 8, 55, 3);
-            case "aetherion_boots" -> aetherion(70, 110, 22, 20, 6, 42, 6);
+            case "aetherion_helmet" -> aetherion(42, 58, 14, 14, 8, 50, 3);
+            case "aetherion_chestplate" -> aetherion(70, 96, 26, 22, 16, 110, 4);
+            case "aetherion_leggings" -> aetherion(56, 72, 18, 18, 10, 68, 3);
+            case "aetherion_boots" -> aetherion(42, 50, 12, 12, 8, 50, 6);
             case "pickaxe_core_of_the_burrower" -> {
                 ItemStats stats = new ItemStats();
-                stats.setFortune(62);
-                stats.setMiningPower(28);
+                stats.setFortune(128);
+                stats.setMiningPower(96);
+                stats.setSpread(8);
                 stats.setDefense(14);
                 yield stats;
             }
             case "insolvent_ledger" -> {
                 ItemStats stats = new ItemStats();
-                stats.setDamage(20);
+                stats.setDamage(18);
                 yield stats;
             }
+            case "hollow_longbow" -> weapon(88, 12, 12, 85);
+            case "ironhide_helmet" -> tank(20, 36);
+            case "ironhide_chestplate" -> tank(38, 56);
+            case "ironhide_leggings" -> tank(30, 44);
+            case "ironhide_boots" -> tank(20, 34);
             default -> null;
         };
     }
@@ -99,6 +106,13 @@ public final class BossGearBalance {
         stats.setAttackSpread(attackSpread);
         stats.setCritChance(critChance);
         stats.setCritDamage(critDamage);
+        return stats;
+    }
+
+    private static ItemStats tank(double defense, double health) {
+        ItemStats stats = new ItemStats();
+        stats.setDefense(defense);
+        stats.setHealth(health);
         return stats;
     }
 
@@ -132,5 +146,6 @@ public final class BossGearBalance {
         target.setSpeed(base.getSpeed());
         target.setFortune(base.getFortune());
         target.setMiningPower(base.getMiningPower());
+        target.setSpread(base.getSpread());
     }
 }

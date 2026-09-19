@@ -71,33 +71,17 @@ public class PetStats {
         return total;
     }
 
-    private static final double PER_LEVEL = 0.01d;
-    /** Soft band: big pets still grow, without erasing gear tiers. */
-    private static final double SOFT_CAP = 48.0d;
-    private static final double OVER_CAP = 0.28d;
-
     public double getScaledCoreValue(
             int level
     ) {
-        return dampen(coreValue * levelMultiplier(level));
+        return PetBalance.dampen(coreStat, coreValue * PetBalance.levelMultiplier(level));
     }
 
     public double getScaledBonusStat(
             ItemCapability capability,
             int level
     ) {
-        return dampen(getBonusStat(capability) * levelMultiplier(level));
-    }
-
-    private static double levelMultiplier(int level) {
-        return 1.0 + (Math.max(0, level - 1) * PER_LEVEL);
-    }
-
-    private static double dampen(double value) {
-        if (value <= SOFT_CAP) {
-            return value;
-        }
-        return SOFT_CAP + ((value - SOFT_CAP) * OVER_CAP);
+        return PetBalance.dampen(capability, getBonusStat(capability) * PetBalance.levelMultiplier(level));
     }
 
     public double getScaledTotalStat(

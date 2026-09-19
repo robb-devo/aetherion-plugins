@@ -702,7 +702,7 @@ public class CustomItem {
         if (meta != null) {
             setItemId(meta, "hollow_longbow");
             ItemStats stats = new ItemStats();
-            stats.setDamage(165.0);
+            stats.setDamage(88.0);
             stats.setAttackSpread(12.0);
             stats.setCritChance(12.0);
             stats.setCritDamage(85.0);
@@ -714,7 +714,7 @@ public class CustomItem {
             meta.setLore(createLore(List.of(
                     "§7✦ §6LEGENDARY",
                     "",
-                    "§7⚔ Damage: §f+165.00",
+                    "§7⚔ Damage: §f+88.00",
                     "§7⚔ Attack Spread: §f+12.00",
                     "§7✧ Crit Chance: §f+12.00%",
                     "§7✧ Crit Damage: §f+85.00%",
@@ -1236,7 +1236,7 @@ public class CustomItem {
                 "§7Ironhide " + piece,
                 "§7Built to take a beating and ask for more.",
                 "",
-                "§8Full set: §7+20% Defense"
+                "§8Full set: §7+20 Defense"
         );
     }
 
@@ -1245,9 +1245,9 @@ public class CustomItem {
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
             setItemId(meta, "ironhide_helmet");
-            applyItemData(meta, Rarity.EPIC, ironhideStats(42.0, 30.0));
+            applyItemData(meta, Rarity.EPIC, ironhideStats(20.0, 36.0));
             meta.setDisplayName("§5Ironhide Helmet");
-            meta.setLore(createLore(ironhideLore("Helmet", "42.00", "30.00"), false, false, true));
+            meta.setLore(createLore(ironhideLore("Helmet", "20.00", "36.00"), false, false, true));
             meta.setCustomModelData(2501);
             meta.setUnbreakable(true);
             hideVanillaAttributes(meta);
@@ -1261,9 +1261,9 @@ public class CustomItem {
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
             setItemId(meta, "ironhide_chestplate");
-            applyItemData(meta, Rarity.EPIC, ironhideStats(64.0, 42.0));
+            applyItemData(meta, Rarity.EPIC, ironhideStats(38.0, 56.0));
             meta.setDisplayName("§5Ironhide Chestplate");
-            meta.setLore(createLore(ironhideLore("Chestplate", "64.00", "42.00"), false, false, true));
+            meta.setLore(createLore(ironhideLore("Chestplate", "38.00", "56.00"), false, false, true));
             meta.setCustomModelData(2502);
             meta.setUnbreakable(true);
             hideVanillaAttributes(meta);
@@ -1277,9 +1277,9 @@ public class CustomItem {
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
             setItemId(meta, "ironhide_leggings");
-            applyItemData(meta, Rarity.EPIC, ironhideStats(52.0, 36.0));
+            applyItemData(meta, Rarity.EPIC, ironhideStats(30.0, 44.0));
             meta.setDisplayName("§5Ironhide Leggings");
-            meta.setLore(createLore(ironhideLore("Leggings", "52.00", "36.00"), false, false, true));
+            meta.setLore(createLore(ironhideLore("Leggings", "30.00", "44.00"), false, false, true));
             meta.setCustomModelData(2503);
             meta.setUnbreakable(true);
             hideVanillaAttributes(meta);
@@ -1293,9 +1293,9 @@ public class CustomItem {
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
             setItemId(meta, "ironhide_boots");
-            applyItemData(meta, Rarity.EPIC, ironhideStats(34.0, 24.0));
+            applyItemData(meta, Rarity.EPIC, ironhideStats(20.0, 34.0));
             meta.setDisplayName("§5Ironhide Boots");
-            meta.setLore(createLore(ironhideLore("Boots", "34.00", "24.00"), false, false, true));
+            meta.setLore(createLore(ironhideLore("Boots", "20.00", "34.00"), false, false, true));
             meta.setCustomModelData(2504);
             meta.setUnbreakable(true);
             hideVanillaAttributes(meta);
@@ -4998,8 +4998,8 @@ public class CustomItem {
         if (meta != null) {
             setItemId(meta, "vein_siphon");
             ItemStats stats = new ItemStats();
-            stats.setMiningPower(40);
-            stats.setFortune(65);
+            stats.setMiningPower(48);
+            stats.setFortune(96);
             stats.setSpread(5);
             stats.setAttackSpread(0.0);
             stats.setHealth(0.0);
@@ -5011,8 +5011,8 @@ public class CustomItem {
                     "§7✦ §bRARE",
                     "§bBlueprint Tier: §fI/IV",
                     "",
-                    "§7⛏ Mining Power: §f+40",
-                    "§7💎 Fortune: §f+65",
+                    "§7⛏ Mining Power: §f+48",
+                    "§7💎 Fortune: §f+96",
                     "§7✦ Spread: §f+5.00",
                     "",
                     "§eAbility · Ore Vacuum",
@@ -5047,8 +5047,8 @@ public class CustomItem {
         if (meta != null) {
             setItemId(meta, "canopy_cleaver");
             ItemStats stats = new ItemStats();
-            stats.setFortune(55);
-            stats.setSpread(8);
+            stats.setFortune(72);
+            stats.setSpread(6);
             applyItemData(meta, Rarity.RARE, stats);
             de.aetherion.items.blueprint.BlueprintUpgrade.writeTier(meta, 1);
             meta.setDisplayName("§aCanopy Cleaver");
@@ -5056,8 +5056,8 @@ public class CustomItem {
                     "§7✦ §bRARE",
                     "§bBlueprint Tier: §fI/IV",
                     "",
-                    "§7💎 Fortune: §f+55",
-                    "§7✦ Spread: §f+8.00",
+                    "§7💎 Fortune: §f+72",
+                    "§7✦ Spread: §f+6.00",
                     "",
                     "§eAbility · Perfect Fell",
                     "§7Click the trunk base once —",
@@ -5090,8 +5090,8 @@ public class CustomItem {
             setItemId(meta, "bounty_hoe");
             ItemStats stats = new ItemStats();
             // Specialty = harvest spread, not god fortune (T5 hoe is 200/300).
-            stats.setFortune(40);
-            stats.setHarvestSpread(140);
+            stats.setFortune(80);
+            stats.setHarvestSpread(100);
             applyItemData(meta, Rarity.RARE, stats);
             de.aetherion.items.blueprint.BlueprintUpgrade.writeTier(meta, 1);
             meta.setDisplayName("§eBounty Hoe");
@@ -5099,8 +5099,8 @@ public class CustomItem {
                     "§7✦ §bRARE",
                     "§bBlueprint Tier: §fI/IV",
                     "",
-                    "§7💎 Fortune: §f+40",
-                    "§7✦ Harvest Spread: §f+140",
+                    "§7💎 Fortune: §f+80",
+                    "§7✦ Harvest Spread: §f+100",
                     "",
                     "§eAbility · Packed Harvest",
                     "§7Cuts more neighbouring mature crops.",
@@ -5130,7 +5130,7 @@ public class CustomItem {
         if (meta != null) {
             setItemId(meta, "wild_sight");
             ItemStats stats = new ItemStats();
-            stats.setCatchRate(14);
+            stats.setCatchRate(8);
             applyItemData(meta, Rarity.RARE, stats);
             de.aetherion.items.blueprint.BlueprintUpgrade.writeTier(meta, 1);
             meta.setDisplayName("§dWild Sight");
@@ -5138,7 +5138,7 @@ public class CustomItem {
                     "§7✦ §bRARE",
                     "§bBlueprint Tier: §fI/IV",
                     "",
-                    "§7☘ Catch Rate: §f+14.00%",
+                    "§7☘ Catch Rate: §f+8.00%",
                     "",
                     "§eAbility · Pet Sense",
                     "§7Hold to see nearby wild pets",
@@ -5169,9 +5169,9 @@ public class CustomItem {
         if (meta != null) {
             setItemId(meta, "tide_latch");
             ItemStats stats = new ItemStats();
-            stats.setFortune(40);
-            stats.setFishingSpeed(35);
-            stats.setFishingCatch(45);
+            stats.setFortune(72);
+            stats.setFishingSpeed(14);
+            stats.setFishingCatch(120);
             applyItemData(meta, Rarity.RARE, stats);
             de.aetherion.items.blueprint.BlueprintUpgrade.writeTier(meta, 1);
             meta.setDisplayName("§3Tide Latch");
@@ -5179,9 +5179,9 @@ public class CustomItem {
                     "§7✦ §bRARE",
                     "§bBlueprint Tier: §fI/IV",
                     "",
-                    "§7💎 Fortune: §f+40",
-                    "§7🌊 Fishing Speed: §f+35",
-                    "§7🎣 Fishing Catch: §f+45",
+                    "§7💎 Fortune: §f+72",
+                    "§7🌊 Fishing Speed: §f+14",
+                    "§7🎣 Fishing Catch: §f+120",
                     "",
                     "§eAbility · Aquatic Hook",
                     "§7Chance to reel aquatic pets,",
@@ -7801,10 +7801,10 @@ public class CustomItem {
         if (meta != null) {
             setItemId(meta, "resonance_scythe");
             ItemStats stats = new ItemStats();
-            stats.setDamage(96);
-            stats.setCritChance(16);
-            stats.setCritDamage(118);
-            stats.setAttackSpread(7);
+            stats.setDamage(36);
+            stats.setCritChance(8);
+            stats.setCritDamage(50);
+            stats.setAttackSpread(6);
             applyItemData(meta, Rarity.EPIC, stats);
             de.aetherion.items.blueprint.BlueprintUpgrade.writeTier(meta, 1);
             if (testStamp) {
@@ -7815,10 +7815,10 @@ public class CustomItem {
                     testStamp ? "§7✦ §5EPIC §8· §3Sandbox" : "§7✦ §5EPIC",
                     "§bBlueprint Tier: §fI/IV",
                     "",
-                    "§7⚔ Damage: §f+96.00",
-                    "§7⚔ Attack Spread: §f+7.00",
-                    "§7✧ Crit Chance: §f+16.00%",
-                    "§7✧ Crit Damage: §f+118.00%",
+                    "§7⚔ Damage: §f+36.00",
+                    "§7⚔ Attack Spread: §f+6.00",
+                    "§7✧ Crit Chance: §f+8.00%",
+                    "§7✧ Crit Damage: §f+50.00%",
                     "",
                     "§3✦ Resonance Wave",
                     "§7Right-click: fire a sonic line",
