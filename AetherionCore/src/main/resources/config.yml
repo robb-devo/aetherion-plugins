@@ -1,0 +1,29 @@
+# AetherionCore — shared library. No gameplay tick.
+#
+# wipe.* is used by /wipe beta and NetworkWipeWatch (Crafty multi-backend).
+# Empty / omitted keys keep historical production behavior:
+#   shared = <this-server>/../.. /shared
+#     e.g. /var/opt/minecraft/crafty/servers/<uuid>
+#       → /var/opt/minecraft/crafty/shared
+#   peers = every directory under <crafty>/servers/
+#   dry-run = false (real deletes + flag writes)
+
+wipe:
+  # Crafty shared folder (transfer/ + progress/ + shared wipe flag).
+  # Leave empty to derive from this backend's path (see above).
+  # Set explicitly if the layout is not .../crafty/servers/<id>/, for example:
+  #   shared-root: "/var/opt/minecraft/crafty/shared"
+  shared-root: ""
+
+  # Optional allowlist of wipe peers (Crafty server folder names or absolute paths).
+  # Empty = flag + peer-wipe every folder under crafty/servers/ (current production).
+  # Example:
+  #   servers:
+  #     - "a1b2c3d4-..."
+  #     - "/var/opt/minecraft/crafty/servers/other-uuid"
+  servers: []
+
+  # Log intended flag writes and deletes without changing files.
+  # false = real wipe (current production). Flags are also left untouched in dry-run
+  # so a later boot with dry-run: false still runs the pending wipe.
+  dry-run: false

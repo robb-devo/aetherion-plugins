@@ -13,8 +13,8 @@ import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.session.ClipboardHolder;
 import com.sk89q.worldedit.util.SideEffectSet;
 
+import de.aetherion.core.world.VoidChunkGenerator;
 import de.aetherion.farming.AetherionFarming;
-import de.aetherion.farming.world.VoidChunkGenerator;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;

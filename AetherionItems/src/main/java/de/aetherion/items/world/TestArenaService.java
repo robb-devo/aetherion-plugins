@@ -3,6 +3,7 @@ package de.aetherion.items.world;
 import de.aetherion.core.AetherKeys;
 import de.aetherion.core.api.AetherServices;
 import de.aetherion.core.api.BossSpawnAccess;
+import de.aetherion.core.world.VoidChunkGenerator;
 import de.aetherion.items.AetherionItems;
 
 import org.bukkit.Bukkit;

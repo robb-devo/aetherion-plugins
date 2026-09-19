@@ -4,7 +4,7 @@
 
 | Plugin | Owns | Does **not** own |
 |--------|------|------------------|
-| **AetherionCore** | PDC keys, entity identity helpers, hit flags, cross-plugin service interfaces (`de.aetherion.core.api`) | Game ticks, combat math, loot, quests |
+| **AetherionCore** | PDC keys, entity identity helpers, hit flags, cross-plugin service interfaces (`de.aetherion.core.api`), `VoidChunkGenerator`, FancyNpcs reflection facade, beta wipe paths | Game ticks, combat math, loot, quests |
 | **AetherionItems** | Custom items/recipes, economy (coins/shards/market), skills/loadouts, party, codex, combat stats | World regen, dungeon instances, boss AI |
 | **BossEngine** | Boss templates (YAML), phases/skills, spawners | Player economy, quests |
 | **AetherionQuests** | Quest state, NPCs, compass/markers, rewards hooks | Item definitions |
@@ -17,7 +17,7 @@
 ## Cross-plugin rules
 
 1. Shared “is this a pet/boss?” → Core keys / `AetherEntities`.  
-2. Soft features → register on `AetherServices` (Core) or use typed APIs (`BossEngineAPI`, `AetherionHubAPI`). Prefer that over new reflection bridges.  
+2. Soft features → register on `AetherServices` (Core) or use typed APIs (`BossEngineAPI`, `AetherionHubAPI`). Prefer that over new first-party reflection bridges. FancyNpcs stays on `FancyNpcFacade`.  
 3. New listener under Items only if it is items/economy/combat/social — otherwise put it in the owning plugin.  
 4. Content-as-data: BossEngine YAML first; avoid hardcoding new bosses in Java.
 

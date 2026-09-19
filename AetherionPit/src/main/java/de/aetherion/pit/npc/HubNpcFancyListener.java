@@ -1,15 +1,13 @@
 package de.aetherion.pit.npc;
 
+import de.aetherion.core.npc.FancyNpcFacade;
 import de.aetherion.pit.AetherionPit;
 
 import org.bukkit.Bukkit;
-import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.EventExecutor;
-
-import java.lang.reflect.Method;
 
 public final class HubNpcFancyListener {
 
@@ -18,26 +16,16 @@ public final class HubNpcFancyListener {
 
     public static void register(AetherionPit plugin, HubNpcService npcs) {
         try {
-            Class<? extends Event> eventClass = Class
-                    .forName("de.oliver.fancynpcs.api.events.NpcInteractEvent")
-                    .asSubclass(Event.class);
+            Class<? extends Event> eventClass = FancyNpcFacade.interactEventClass();
             EventExecutor executor = (listener, event) -> {
                 try {
-                    Method getPlayer = event.getClass().getMethod("getPlayer");
-                    Method getNpc = event.getClass().getMethod("getNpc");
-                    Player player = (Player) getPlayer.invoke(event);
-                    Object npc = getNpc.invoke(event);
-                    if (player == null || npc == null) {
+                    FancyNpcFacade.Interact click = FancyNpcFacade.readInteract(event);
+                    if (click.player() == null || click.name() == null) {
                         return;
                     }
-                    Object data = npc.getClass().getMethod("getData").invoke(npc);
-                    String name = String.valueOf(data.getClass().getMethod("getName").invoke(data));
-                    if (HubNpcService.isHubNpc(name)) {
-                        try {
-                            event.getClass().getMethod("setCancelled", boolean.class).invoke(event, true);
-                        } catch (ReflectiveOperationException ignored) {
-                        }
-                        npcs.handleClick(player, name);
+                    if (HubNpcService.isHubNpc(click.name())) {
+                        FancyNpcFacade.cancel(event);
+                        npcs.handleClick(click.player(), click.name());
                     }
                 } catch (ReflectiveOperationException ex) {
                     plugin.getLogger().warning("Hub NPC click failed: " + ex.getMessage());

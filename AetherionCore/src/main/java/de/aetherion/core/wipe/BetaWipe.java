@@ -28,12 +28,18 @@ public final class BetaWipe {
     private final File flag;
     private final File pluginsFolder;
     private final File serverRoot;
+    private final WipeLayout layout;
 
     public BetaWipe(JavaPlugin plugin) {
         this.plugin = plugin;
         this.flag = new File(plugin.getDataFolder(), FLAG_NAME);
         this.pluginsFolder = plugin.getDataFolder().getParentFile();
         this.serverRoot = pluginsFolder == null ? new File(".") : pluginsFolder.getParentFile();
+        this.layout = new WipeLayout(plugin, serverRoot);
+    }
+
+    public WipeLayout layout() {
+        return layout;
     }
 
     public File flagFile() {
@@ -41,6 +47,7 @@ public final class BetaWipe {
     }
 
     public void markPending() {
+        plugin.getLogger().warning("Wipe layout: " + layout.describe());
         writeFlag(flag);
         // Network: flag every Crafty backend + shared wipe dir so mmo-d wipes + NetworkWipeWatch stops it.
         int peers = 0;
@@ -72,6 +79,10 @@ public final class BetaWipe {
         if (target == null) {
             return;
         }
+        if (layout.dryRun()) {
+            plugin.getLogger().warning("[wipe dry-run] would write flag: " + target.getAbsolutePath());
+            return;
+        }
         File folder = target.getParentFile();
         if (folder != null && !folder.exists() && !folder.mkdirs()) {
             plugin.getLogger().warning("Could not create wipe flag folder: " + folder);
@@ -86,57 +97,28 @@ public final class BetaWipe {
     }
 
     private void deleteFlag(File target) {
-        if (target != null && target.isFile() && !target.delete()) {
+        if (target == null || !target.isFile()) {
+            return;
+        }
+        if (layout.dryRun()) {
+            plugin.getLogger().warning("[wipe dry-run] would remove flag: " + target.getAbsolutePath());
+            return;
+        }
+        if (!target.delete()) {
             plugin.getLogger().warning("Could not remove wipe flag: " + target.getAbsolutePath());
         }
     }
 
     private File sharedWipeFlag() {
-        File sharedRoot = sharedRoot();
-        if (sharedRoot == null) {
-            return null;
-        }
-        return new File(new File(sharedRoot, "wipe"), FLAG_NAME);
+        return layout.sharedWipeFlag(!layout.dryRun());
     }
 
     private File sharedRoot() {
-        // /var/opt/minecraft/crafty/shared  (sibling of servers/)
-        // serverRoot = .../crafty/servers/<uuid>
-        File servers = serverRoot == null ? null : serverRoot.getParentFile();
-        File crafty = servers == null ? null : servers.getParentFile();
-        if (crafty == null) {
-            return null;
-        }
-        File shared = new File(crafty, "shared");
-        return shared.isDirectory() || shared.mkdirs() ? shared : null;
+        return layout.sharedRoot(!layout.dryRun());
     }
 
     private List<File> networkFlagFiles() {
-        List<File> out = new ArrayList<>();
-        File shared = sharedWipeFlag();
-        if (shared != null) {
-            out.add(shared);
-        }
-        File serversDir = serverRoot == null ? null : serverRoot.getParentFile();
-        File crafty = serversDir == null ? null : serversDir.getParentFile();
-        File servers = crafty == null ? null : new File(crafty, "servers");
-        if (servers == null || !servers.isDirectory()) {
-            return out;
-        }
-        File[] children = servers.listFiles();
-        if (children == null) {
-            return out;
-        }
-        for (File server : children) {
-            if (!server.isDirectory()) {
-                continue;
-            }
-            File core = new File(server, "plugins/AetherionCore/" + FLAG_NAME);
-            if (!core.getAbsolutePath().equalsIgnoreCase(flag.getAbsolutePath())) {
-                out.add(core);
-            }
-        }
-        return out;
+        return layout.networkFlagFiles(flag);
     }
 
     private void wipeSharedTransfer() {
@@ -166,19 +148,13 @@ public final class BetaWipe {
     }
 
     private int wipePeerPlayerData() {
-        File serversDir = serverRoot == null ? null : serverRoot.getParentFile();
-        File crafty = serversDir == null ? null : serversDir.getParentFile();
-        File servers = crafty == null ? null : new File(crafty, "servers");
-        if (servers == null || !servers.isDirectory()) {
-            return 0;
-        }
-        File[] children = servers.listFiles();
-        if (children == null) {
+        List<File> peers = layout.peerServerFolders();
+        if (peers.isEmpty()) {
             return 0;
         }
         int removed = 0;
         File localItems = new File(pluginsFolder, "AetherionItems");
-        for (File server : children) {
+        for (File server : peers) {
             if (!server.isDirectory()) {
                 continue;
             }
@@ -206,7 +182,10 @@ public final class BetaWipe {
 
     public int run() {
         Logger log = plugin.getLogger();
-        log.warning("Beta wipe: resetting player data to zero.");
+        log.warning("Beta wipe: resetting player data to zero. " + layout.describe());
+        if (layout.dryRun()) {
+            log.warning("Beta wipe DRY-RUN: files and flags will not be changed.");
+        }
         int removed = 0;
 
         removed += wipePlugin("AetherionItems",
@@ -321,6 +300,9 @@ public final class BetaWipe {
         if (file == null || !file.exists()) {
             return 0;
         }
+        if (layout.dryRun()) {
+            return countWouldDelete(file);
+        }
         int removed = 0;
         if (file.isDirectory()) {
             File[] children = file.listFiles();
@@ -335,5 +317,19 @@ public final class BetaWipe {
         }
         plugin.getLogger().warning("Could not delete " + file.getAbsolutePath());
         return removed;
+    }
+
+    private int countWouldDelete(File file) {
+        int removed = 0;
+        if (file.isDirectory()) {
+            File[] children = file.listFiles();
+            if (children != null) {
+                for (File child : children) {
+                    removed += countWouldDelete(child);
+                }
+            }
+        }
+        plugin.getLogger().fine("[wipe dry-run] would delete " + file.getAbsolutePath());
+        return removed + 1;
     }
 }

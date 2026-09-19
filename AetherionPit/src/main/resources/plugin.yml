@@ -4,6 +4,8 @@ main: de.aetherion.pit.AetherionPit
 api-version: 1.21
 author: Aetherion
 description: Hub spawn safe-zone + Hypixel-Pit-lite combat outside the red line
+depend:
+  - AetherionCore
 softdepend: [WorldEdit, FastAsyncWorldEdit, FancyNpcs, PlaceholderAPI, DiscordSRV]
 
 commands:
