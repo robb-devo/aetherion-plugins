@@ -24,5 +24,10 @@
       <artifactId>AetherionCore</artifactId>
       <scope>provided</scope>
     </dependency>
+    <dependency>
+      <groupId>com.sk89q.worldedit</groupId>
+      <artifactId>worldedit-bukkit</artifactId>
+      <scope>provided</scope>
+    </dependency>
   </dependencies>
 </project>

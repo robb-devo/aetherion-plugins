@@ -95,6 +95,28 @@ spawns:
     unlocked-by-default: false
     discover-radius: 36
 
+# /aetherpaste — FAWE async Eldervale island schematics (console/ops).
+# Schems are loaded from plugins/FastAsyncWorldEdit/schematics or WorldEdit/schematics.
+aether-paste:
+  farming:
+    world: world
+    schematic: Farming-Eldervale-Island.schem
+    ignore-air: true
+    rotate-y: 0
+    paste:
+      x: -528
+      y: 90
+      z: 474
+  fishing:
+    world: world
+    schematic: Fishing-Eldervale-Island.schem
+    ignore-air: true
+    rotate-y: 0
+    paste:
+      x: -585
+      y: 90
+      z: -649
+
 # Island jump pads (Eldervale + Forage Isle)
 island-pads:
   enabled: true

@@ -10,6 +10,8 @@ depend:
 
 softdepend:
   - AetherionItems
+  - FastAsyncWorldEdit
+  - WorldEdit
 
 commands:
   spawn:
@@ -55,9 +57,16 @@ commands:
   hubadmin:
     description: Manage Aetherion spawn points
     permission: aetherionhub.admin
+  aetherpaste:
+    description: Async-paste Eldervale farming/fishing island schematics via FAWE
+    usage: /aetherpaste <farming|fishing> [x y z] [world]
+    permission: aetherion.paste
 
 permissions:
   aetherionhub.use:
     default: true
   aetherionhub.admin:
+    default: op
+  aetherion.paste:
+    description: Paste Eldervale island schematics asynchronously via FAWE
     default: op

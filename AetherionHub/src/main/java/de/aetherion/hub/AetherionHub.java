@@ -1,5 +1,6 @@
 package de.aetherion.hub;
 
+import de.aetherion.hub.command.AetherPasteCommand;
 import de.aetherion.hub.command.HubAdminCommand;
 import de.aetherion.hub.command.SpawnCommand;
 import de.aetherion.hub.command.SpawnGotoCommand;
@@ -57,6 +58,13 @@ public final class AetherionHub extends JavaPlugin {
             hubAdmin.setTabCompleter(adminCommand);
         }
 
+        PluginCommand aetherPaste = getCommand("aetherpaste");
+        if (aetherPaste != null) {
+            AetherPasteCommand pasteCommand = new AetherPasteCommand(this);
+            aetherPaste.setExecutor(pasteCommand);
+            aetherPaste.setTabCompleter(pasteCommand);
+        }
+
         getServer().getPluginManager().registerEvents(new HubListener(this, hub, menu, adminCommand), this);
         getServer().getPluginManager().registerEvents(new HomesteadListener(homesteadMarker), this);
         getServer().getPluginManager().registerEvents(launchPads, this);
@@ -65,7 +73,7 @@ public final class AetherionHub extends JavaPlugin {
         discover.start();
         hubAccess = new de.aetherion.hub.api.HubAccessImpl();
         de.aetherion.core.api.AetherServices.registerHub(hubAccess);
-        getLogger().info("AetherionHub enabled. /spawn and /hub teleport, /spawns opens the menu.");
+        getLogger().info("AetherionHub enabled. /spawn and /hub teleport, /spawns opens the menu, /aetherpaste pastes Eldervale islands.");
     }
 
     @Override
