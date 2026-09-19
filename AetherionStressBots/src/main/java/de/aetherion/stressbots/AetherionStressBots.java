@@ -5,13 +5,16 @@ import de.aetherion.stressbots.control.RunnerControlClient;
 import de.aetherion.stressbots.control.TestBotController;
 import de.aetherion.stressbots.report.BotActivityTracker;
 import de.aetherion.stressbots.report.BotReportBuilder;
+import de.aetherion.stressbots.role.BotLocations;
 import de.aetherion.stressbots.role.BotNicknames;
 import de.aetherion.stressbots.role.BotRoleRegistry;
 import de.aetherion.stressbots.safety.BotSafetyWatchdog;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.PluginCommand;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -50,6 +53,7 @@ public final class AetherionStressBots extends JavaPlugin {
         }
 
         AetherServices.registerTestBots(controller);
+        warnLegacyDeathAnchors();
         getLogger().info("Testbots ready (enabled=" + controller.enabled()
                 + ", runner=" + getConfig().getString("testbots.runner.host", "127.0.0.1")
                 + ":" + getConfig().getInt("testbots.runner.port", 18765)
@@ -75,6 +79,7 @@ public final class AetherionStressBots extends JavaPlugin {
         reloadConfig();
         wire();
         AetherServices.registerTestBots(controller);
+        warnLegacyDeathAnchors();
     }
 
     private void wire() {
@@ -108,6 +113,28 @@ public final class AetherionStressBots extends JavaPlugin {
 
     public TestBotController getController() {
         return controller;
+    }
+
+    private void warnLegacyDeathAnchors() {
+        warnIfAnchor("testbots.roles.catch", 500.5, -200.5,
+                "catch pad 500.5,-200.5 voids after TP — copy the new grove/return-platform anchors");
+        warnIfAnchor("testbots.roles.forage", 479.5, -240.5,
+                "forage pad 479.5,-240.5 is the jump-pad lip — copy grove/interior anchors");
+        warnIfAnchor("testbots.roles.roam", 220.5, 160.5,
+                "roam waypoint 220.5,160.5 is the husk/skeleton loop — remove borderlands from roam");
+    }
+
+    private void warnIfAnchor(String path, double x, double z, String message) {
+        ConfigurationSection section = getConfig().getConfigurationSection(path);
+        if (section == null) {
+            return;
+        }
+        for (Location anchor : BotLocations.readAnchors(section)) {
+            if (Math.abs(anchor.getX() - x) < 0.6 && Math.abs(anchor.getZ() - z) < 0.6) {
+                getLogger().warning("Live config still has " + message);
+                return;
+            }
+        }
     }
 
     public static boolean canControl(CommandSender sender) {
