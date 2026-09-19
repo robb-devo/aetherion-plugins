@@ -338,14 +338,16 @@ public final class RankBadgeService implements Listener {
     }
 
     private void paint(Player player) {
-        player.setDisplayName("§f" + player.getName());
         net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer hex =
                 net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.builder()
                         .character('&')
                         .hexColors()
                         .build();
+        // Same celestial / ultra nametag for chat displayName and TAB list.
         String raw = nametag(player).replace('§', '&');
-        player.playerListName(hex.deserialize(raw));
+        net.kyori.adventure.text.Component name = hex.deserialize(raw);
+        player.displayName(name);
+        player.playerListName(name);
     }
 
     private void syncGroups() {
