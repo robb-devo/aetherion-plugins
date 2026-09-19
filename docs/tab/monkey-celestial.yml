@@ -7,14 +7,15 @@
 # change-interval is milliseconds. 200ms ≈ Hypixel dye shimmer.
 Aetherion_Monkey:
   change-interval: 200
+  # Frames match CelestialDye.animationFrames() (letter colors shift; [] do not consume a hue).
   texts:
-    - "&#55FFFF[&#55FFFFM&#7CEBFFo&#B89AFFn&#FF7AEEk&#FF8A88e&#FFC15Ay&#55FFFF]"
-    - "&#7CEBFF[&#7CEBFFM&#B89AFFo&#FF7AEEn&#FF8A88k&#FFC15Ae&#FFE08Ay&#7CEBFF]"
-    - "&#B89AFF[&#B89AFFM&#FF7AEEo&#FF8A88n&#FFC15Ak&#FFE08Ae&#55FFFFy&#B89AFF]"
-    - "&#FF7AEE[&#FF7AEEM&#FF8A88o&#FFC15An&#FFE08Ak&#55FFFFe&#7CEBFFy&#FF7AEE]"
-    - "&#FF8A88[&#FF8A88M&#FFC15Ao&#FFE08An&#55FFFFk&#7CEBFFe&#B89AFFy&#FF8A88]"
-    - "&#FFC15A[&#FFC15AM&#FFE08Ao&#55FFFFn&#7CEBFFk&#B89AFFe&#FF7AEEy&#FFC15A]"
-    - "&#FFE08A[&#FFE08AM&#55FFFFo&#7CEBFFn&#B89AFFk&#FF7AEEe&#FF8A88y&#FFE08A]"
+    - "&#55FFFF[&#55FFFFM&#7CEBFFo&#B89AFFn&#FF7AEEk&#FF8A88e&#FFC15Ay&#FFE08A]"
+    - "&#7CEBFF[&#7CEBFFM&#B89AFFo&#FF7AEEn&#FF8A88k&#FFC15Ae&#FFE08Ay&#55FFFF]"
+    - "&#B89AFF[&#B89AFFM&#FF7AEEo&#FF8A88n&#FFC15Ak&#FFE08Ae&#55FFFFy&#7CEBFF]"
+    - "&#FF7AEE[&#FF7AEEM&#FF8A88o&#FFC15An&#FFE08Ak&#55FFFFe&#7CEBFFy&#B89AFF]"
+    - "&#FF8A88[&#FF8A88M&#FFC15Ao&#FFE08An&#55FFFFk&#7CEBFFe&#B89AFFy&#FF7AEE]"
+    - "&#FFC15A[&#FFC15AM&#FFE08Ao&#55FFFFn&#7CEBFFk&#B89AFFe&#FF7AEEy&#FF8A88]"
+    - "&#FFE08A[&#FFE08AM&#55FFFFo&#7CEBFFn&#B89AFFk&#FF7AEEe&#FF8A88y&#FFC15A]"
 
 # --- plugins/TAB/groups.yml (add / merge) ---
 # sorting-types GROUPS list: put monkey with staff ultras at the front.

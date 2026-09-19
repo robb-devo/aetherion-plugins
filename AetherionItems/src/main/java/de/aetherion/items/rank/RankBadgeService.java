@@ -38,6 +38,7 @@ public final class RankBadgeService implements Listener {
             new Rank("eternal", 86, "&8[&4✶&8] &f", "§4§lEternal"),
             new Rank("aetherion", 88, "&8[&5♛&8] &f", "§5§lAetherion"),
             new Rank("mvpplusplus", 90, "&6[MVP&c++&6] &f", "§6MVP§c++"),
+            // Ultra/staff extra — weight 95 (MVP++ 90 … Admin 100). Do not park at 50 next to mythwright.
             new Rank("monkey", 95, CelestialDye.monkeyPrefixStatic(), "§d§lMonkey"),
             new Rank("admin", 100, "&c[Admin] &f", "§cAdmin")
     );
