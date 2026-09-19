@@ -97,8 +97,10 @@ Same Skyblock-smooth ladder as the Wave 1 T5 pick fix. **1 previous piece + tier
 | T1 | Vanilla armor / tool | Unchanged |
 | T2 | Plus (` X / XCX / X `) or 2+2 mix | 4 vanilla / early mats |
 | T3 | Mix plus (` V / HCH / V `) | **2+2 Compressed** |
-| T4 | Mix plus | **2+2 Compacted** (same count as T3, quality jump) |
+| T4 | Diagonal cross (`A B / C / B A`) | **2+2 Compacted** — same count as T3, rarer mats, harder shape |
 | T5 | Peak (` S / SCS / P `) | **1 premium Compacted + 3 support Compacted** |
+
+Peter-constraint: **exactly one predecessor** (the previous-tier piece) in every T2–T5 craft. Never 2–3× the same pick/sword/armor in the center column. New mats each tier. Audited: no multi-predecessor sinks remain on Combat / Mining / Farming / Foraging / Fishing ladders.
 
 Charms T2/T3: 8-wrap → plus **4** Compressed / **4** Compacted. Catcher T3 stays 8 Compacted Feather (Wave 1). Compact 128/128 and fishing Compacted gate unchanged.
 
