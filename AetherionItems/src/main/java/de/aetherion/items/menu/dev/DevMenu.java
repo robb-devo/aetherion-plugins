@@ -2323,7 +2323,7 @@ public class DevMenu {
                 player.sendMessage("§cBot §f" + name + " §cis not online.");
                 return;
             }
-            player.sendMessage("§6" + bot.name() + " §8· §e" + bot.role());
+            player.sendMessage("§6" + bot.displayName() + " §8· §7" + bot.name() + " §8· §e" + bot.role());
             player.sendMessage("§7" + bot.world() + String.format(" %.1f %.1f %.1f", bot.x(), bot.y(), bot.z()));
             player.sendMessage("§7activity §f" + bot.activity() + " §8· §7held §f" + bot.heldItem()
                     + " §8· §7deaths §f" + bot.deaths());
@@ -2429,7 +2429,7 @@ public class DevMenu {
         String role = TESTBOT_ROLES[Math.max(0, Math.min(TESTBOT_ROLES.length - 1, index))];
         TestBotReport report = DevBridges.testBotsReport();
         inventory.setItem(4, button(roleIcon(role), "§b" + role + " bots", "page:TESTBOTS",
-                "§7Name · world xyz · held · activity"));
+                "§7Nickname · world xyz · held · activity"));
         int slot = 9;
         if (report != null) {
             for (TestBotView bot : report.bots()) {
@@ -2439,8 +2439,9 @@ public class DevMenu {
                 if (slot >= 44) {
                     break;
                 }
-                inventory.setItem(slot++, button(Material.PLAYER_HEAD, "§e" + bot.name(),
+                inventory.setItem(slot++, button(Material.PLAYER_HEAD, "§e" + bot.displayName(),
                         "testbot:view:" + bot.name(),
+                        "§8login §7" + bot.name(),
                         "§7" + bot.world() + String.format(" %.1f %.1f %.1f", bot.x(), bot.y(), bot.z()),
                         "§7activity §f" + bot.activity(),
                         "§7held §f" + bot.heldItem(),

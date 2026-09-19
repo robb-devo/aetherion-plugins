@@ -72,6 +72,7 @@ public final class BotProvisioner {
         player.getInventory().setArmorContents(null);
         handler.kit(player, custom);
         player.updateInventory();
+        plugin.getNicknames().applyLater(player, handler.role());
 
         Location destination = handler.destination(player);
         if (destination != null) {
@@ -84,6 +85,7 @@ public final class BotProvisioner {
         }
         plugin.getLogger().info("Provisioned " + handler.role().id()
                 + " bot " + player.getName()
+                + " nick=" + plugin.getNicknames().plain(player, handler.role())
                 + " prefix=" + handler.prefix()
                 + " @ " + BotLocations.format(destination));
     }

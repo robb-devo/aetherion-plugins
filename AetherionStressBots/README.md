@@ -40,8 +40,10 @@ Bots **throw spheres** at nearby living entities. They do **not** play the catch
 1. `/dev` / `/adev` / `/devmenu` (op or `aetherion.dev`)
 2. Next page (page 2) → **Testbots**
 3. Per role: set count (left/right ±1, shift ±5) → **Start** / **Stop**
-4. Click the role icon for a list (name, xyz, held item, activity)
+4. Click the role icon for a list (nickname, xyz, held item, activity)
 5. **Stop all** · **/botreport** book+chat
+
+Login names stay `QaMine01…` (Velocity). In chat, tab list, death messages, Dev menu, `/botreport`, and **Collection** top-3 they wear a quirky nickname (`Pickel-Ute`, `Ast-Anni`, `Kugel-Kai`, `Flaneur-Franz`, …). Edit `testbots.nicknames` in config. There is no Mysteries API — skipped.
 
 Counts clamp to `testbots.max-total`, `testbots.caps.<role>`, `max-per-start` (1–20 UI), and the server `max-players`.
 

@@ -5,6 +5,7 @@ import de.aetherion.core.api.TestBotRoleView;
 import de.aetherion.core.api.TestBotView;
 import de.aetherion.stressbots.AetherionStressBots;
 import de.aetherion.stressbots.control.TestBotController;
+import de.aetherion.stressbots.role.BotNicknames;
 import de.aetherion.stressbots.role.BotRole;
 import de.aetherion.stressbots.role.BotRoleHandler;
 
@@ -90,6 +91,16 @@ public final class BotReportBuilder {
         }
         Player player = Bukkit.getPlayerExact(name);
         if (player == null) {
+            for (Player online : Bukkit.getOnlinePlayers()) {
+                BotRoleHandler handler = plugin.getRegistry().byPlayer(online);
+                if (handler == null) {
+                    continue;
+                }
+                String nick = plugin.getNicknames().plain(online, handler.role());
+                if (name.equalsIgnoreCase(nick) || name.equalsIgnoreCase(online.getName())) {
+                    return toView(online, handler);
+                }
+            }
             return null;
         }
         BotRoleHandler handler = plugin.getRegistry().byPlayer(player);
@@ -136,7 +147,7 @@ public final class BotReportBuilder {
             out.append("  (none online)\n");
         }
         for (TestBotView bot : report.bots()) {
-            out.append("  - ").append(bot.name())
+            out.append("  - ").append(bot.label())
                     .append(" role=").append(bot.role())
                     .append(" @ ").append(bot.world())
                     .append(String.format(Locale.ROOT, " %.1f %.1f %.1f", bot.x(), bot.y(), bot.z()))
@@ -163,8 +174,11 @@ public final class BotReportBuilder {
         Location loc = player.getLocation();
         ItemStack held = player.getInventory().getItemInMainHand();
         BotActivityTracker.Runtime runtime = plugin.getActivity().snapshot(player);
+        BotNicknames nicks = plugin.getNicknames();
+        String display = nicks == null ? player.getName() : nicks.plain(player, handler.role());
         return new TestBotView(
                 player.getName(),
+                display,
                 handler.role().id(),
                 loc.getWorld() == null ? "?" : loc.getWorld().getName(),
                 loc.getX(),
@@ -195,7 +209,7 @@ public final class BotReportBuilder {
     private static String lastError(List<TestBotView> members) {
         for (TestBotView bot : members) {
             if (bot.lastError() != null && !bot.lastError().isBlank()) {
-                return bot.name() + ": " + bot.lastError();
+                return bot.label() + ": " + bot.lastError();
             }
         }
         return "";

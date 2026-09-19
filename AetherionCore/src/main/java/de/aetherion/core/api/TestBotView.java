@@ -7,6 +7,7 @@ import java.util.List;
  */
 public record TestBotView(
         String name,
+        String displayName,
         String role,
         String world,
         double x,
@@ -21,6 +22,7 @@ public record TestBotView(
 ) {
     public TestBotView {
         name = name == null ? "" : name;
+        displayName = displayName == null || displayName.isBlank() ? name : displayName;
         role = role == null ? "" : role;
         world = world == null ? "?" : world;
         activity = activity == null ? "idle" : activity;
@@ -28,5 +30,12 @@ public record TestBotView(
         lastAction = lastAction == null ? "" : lastAction;
         lastError = lastError == null ? "" : lastError;
         recentActions = recentActions == null ? List.of() : List.copyOf(recentActions);
+    }
+
+    public String label() {
+        if (displayName == null || displayName.isBlank() || displayName.equals(name)) {
+            return name;
+        }
+        return displayName + " (" + name + ")";
     }
 }

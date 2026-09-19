@@ -102,3 +102,9 @@ testbots:
       yaw: 0.0
       pitch: 0.0
       scatter-radius: 8
+
+  # Chat / tab / Collection leaderboard labels. Login names stay QaMine01 (Velocity).
+  nicknames:
+    enabled: true
+    # Optional. If a list is set, it replaces the built-in German/absurd pool for that role.
+    # mine: ["§bPickel-Ute", "§bErz-Ernie"]

@@ -5,6 +5,7 @@ import de.aetherion.stressbots.control.RunnerControlClient;
 import de.aetherion.stressbots.control.TestBotController;
 import de.aetherion.stressbots.report.BotActivityTracker;
 import de.aetherion.stressbots.report.BotReportBuilder;
+import de.aetherion.stressbots.role.BotNicknames;
 import de.aetherion.stressbots.role.BotRoleRegistry;
 
 import org.bukkit.Bukkit;
@@ -16,6 +17,7 @@ import org.bukkit.scheduler.BukkitTask;
 public final class AetherionStressBots extends JavaPlugin {
 
     private BotRoleRegistry registry;
+    private BotNicknames nicknames;
     private BotProvisioner provisioner;
     private BotActivityTracker activity;
     private TestBotController controller;
@@ -67,6 +69,7 @@ public final class AetherionStressBots extends JavaPlugin {
 
     private void wire() {
         registry = new BotRoleRegistry(this);
+        nicknames = new BotNicknames(this);
         provisioner = new BotProvisioner(this);
         BotReportBuilder reports = new BotReportBuilder(this);
         RunnerControlClient runner = new RunnerControlClient(this);
@@ -75,6 +78,10 @@ public final class AetherionStressBots extends JavaPlugin {
 
     public BotRoleRegistry getRegistry() {
         return registry;
+    }
+
+    public BotNicknames getNicknames() {
+        return nicknames;
     }
 
     public BotProvisioner getProvisioner() {
