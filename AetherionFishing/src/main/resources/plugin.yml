@@ -9,6 +9,5 @@ depend:
 
 softdepend:
   - AetherionItems
-  - AetherionQuests
 
 description: Fishing minigame, lure fish, and hook animations

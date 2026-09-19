@@ -10,7 +10,7 @@ Shared keys today: boss id/minion, pet, set minion + owner, dungeon mob/npc, que
 
 When two plugins copy the same key or the same “is this a pet?” check, move that copy here. Leave game logic where it lives.
 
-Other plugins: `depend: [AetherionCore]` and Maven `de.aetherion:AetherionCore:1.0.0` (provided). Register typed services on `AetherServices` instead of adding new first-party reflection bridges. FancyNpcs stays external — call `FancyNpcFacade` instead of copying `Class.forName`.
+Other plugins: `depend: [AetherionCore]` and Maven `de.aetherion:AetherionCore:1.0.0` (provided). **AetherionPit** (Hub backend) also hard-depends on Core for `FancyNpcFacade` — drop Core.jar on Hub, not only mmo-r / mmo-d. Register typed services on `AetherServices` instead of adding new first-party reflection bridges. FancyNpcs stays external — call `FancyNpcFacade` instead of copying `Class.forName`.
 
 ## Wipe paths (`config.yml`)
 

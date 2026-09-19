@@ -8,10 +8,8 @@ depend:
   - WorldGuard
 softdepend:
   - AetherionItems
-  - AetherionMining
   - WorldEdit
   - FancyNpcs
-  - PlaceholderAPI
 
 commands:
   forageadmin:
