@@ -12,6 +12,7 @@ import net.luckperms.api.node.types.WeightNode;
 
 import org.bukkit.Bukkit;
 
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
@@ -54,6 +55,56 @@ final class LuckPermsSilent {
             group.data().add(PermissionNode.builder("aetherion.rank.admin").value(true).build());
             api.getGroupManager().saveGroup(group);
         }));
+        api.getGroupManager().createAndLoadGroup("monkey").thenAccept(group -> {
+            if (group == null) {
+                return;
+            }
+            group.data().add(PermissionNode.builder("aetherion.rank.monkey").value(true).build());
+            grantContentKit(group);
+            api.getGroupManager().saveGroup(group);
+        });
+        for (String staff : List.of("moderator", "mod")) {
+            api.getGroupManager().loadGroup(staff).thenAccept(optional -> optional.ifPresent(group -> {
+                grantContentKit(group);
+                api.getGroupManager().saveGroup(group);
+            }));
+        }
+    }
+
+    /** Homie / Monkey content kit — not full admin. */
+    private static void grantContentKit(Group group) {
+        if (group == null) {
+            return;
+        }
+        for (String node : CONTENT_PERMISSIONS) {
+            group.data().add(PermissionNode.builder(node).value(true).build());
+        }
+    }
+
+    private static final String[] CONTENT_PERMISSIONS = {
+            "aetherion.npc.editor",
+            "aetherion.dev.content",
+            "aetherion.devmenu",
+            "aetherion.shards.admin",
+            "aetherion.flight",
+            "essentials.fly",
+            "essentials.fly.safelogin"
+    };
+
+    static void removeGroup(UUID playerId, String group) {
+        if (playerId == null || group == null || group.isBlank() || !available()) {
+            return;
+        }
+        LuckPerms api;
+        try {
+            api = LuckPermsProvider.get();
+        } catch (IllegalStateException ignored) {
+            return;
+        }
+        String key = group.toLowerCase(Locale.ROOT);
+        api.getUserManager().modifyUser(playerId, user ->
+                user.data().clear(NodeType.INHERITANCE.predicate(node ->
+                        key.equals(node.getGroupName().toLowerCase(Locale.ROOT)))));
     }
 
     static void applyUser(UUID playerId, String keepGroup, String extraGroup, Set<String> managedGroups) {

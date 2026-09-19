@@ -95,6 +95,21 @@ spawns:
     unlocked-by-default: false
     discover-radius: 36
 
+  fishing:
+    display-name: "Fishing Island"
+    description: "Fishing Eldervale pad — north side. Walk in to unlock."
+    icon: FISHING_ROD
+    slot: 22
+    unlocked-by-default: true
+    discover-radius: 36
+    location:
+      world: world
+      x: -379.5
+      y: 90
+      z: -838.5
+      yaw: 180
+      pitch: 0
+
 # /aetherpaste — FAWE async Eldervale island schematics (console/ops).
 # Schems are loaded from plugins/FastAsyncWorldEdit/schematics or WorldEdit/schematics.
 aether-paste:

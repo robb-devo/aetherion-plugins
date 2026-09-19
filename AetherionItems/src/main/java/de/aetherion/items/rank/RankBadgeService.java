@@ -38,10 +38,12 @@ public final class RankBadgeService implements Listener {
             new Rank("eternal", 86, "&8[&4✶&8] &f", "§4§lEternal"),
             new Rank("aetherion", 88, "&8[&5♛&8] &f", "§5§lAetherion"),
             new Rank("mvpplusplus", 90, "&6[MVP&c++&6] &f", "§6MVP§c++"),
+            new Rank("monkey", 50, "&2[Monkey] &f", "§aMonkey"),
             new Rank("admin", 100, "&c[Admin] &f", "§cAdmin")
     );
 
-    private static final Set<String> EXTRA = Set.of("mvpplusplus", "admin");
+    /** Staff / content extras sit on top of Aetherion progression (not XP ranks). */
+    private static final Set<String> EXTRA = Set.of("mvpplusplus", "admin", "monkey");
 
     private static final String DEFAULT_GROUP = "mvpplusplus";
     private static final String DEFAULT_PREFIX = "&6[MVP&c++&6] ";
@@ -165,6 +167,7 @@ public final class RankBadgeService implements Listener {
             prefix.append(switch (extra.group()) {
                 case "admin" -> "§c[Admin] ";
                 case "mvpplusplus" -> "§6[MVP§c++§6] ";
+                case "monkey" -> "§a[Monkey] ";
                 default -> "";
             });
         }
@@ -307,6 +310,27 @@ public final class RankBadgeService implements Listener {
         return null;
     }
 
+    /** Remove a staff/content extra (Monkey, MVP++, Admin) without touching XP progression. */
+    public boolean clearExtra(UUID playerId, String group) {
+        if (playerId == null || group == null || group.isBlank()) {
+            return false;
+        }
+        String key = group.toLowerCase(Locale.ROOT);
+        String stored = extras.get(playerId);
+        if (stored == null || !stored.equalsIgnoreCase(key)) {
+            return false;
+        }
+        extras.remove(playerId);
+        save();
+        LuckPermsSilent.removeGroup(playerId, key);
+        applyLuckPerms(playerId, aetherionGroup(playerId), extraFor(playerId));
+        Player online = Bukkit.getPlayer(playerId);
+        if (online != null && online.isOnline()) {
+            paint(online);
+        }
+        return true;
+    }
+
     private void paint(Player player) {
         player.setDisplayName("§f" + player.getName());
         player.setPlayerListName(nametag(player));
@@ -343,7 +367,10 @@ public final class RankBadgeService implements Listener {
     private Set<String> managedGroups() {
         Set<String> groups = new java.util.HashSet<>();
         for (Rank rank : RANKS) {
-            groups.add(rank.group());
+            // Monkey is grantable via Dev Menu / LP fallback and must not be wiped on XP sync.
+            if (!"monkey".equals(rank.group())) {
+                groups.add(rank.group());
+            }
         }
         groups.add(mvpGroup());
         groups.add("admin");

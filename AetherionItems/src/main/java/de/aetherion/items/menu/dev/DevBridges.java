@@ -247,9 +247,11 @@ public final class DevBridges {
             "capital",
             "forage_isle",
             "farm",
+            "farm_isle",
             "borderlands",
             "colosseum",
-            "eldervale"
+            "eldervale",
+            "fishing"
     );
 
     static List<NamedItem> spawnMarkers() {
@@ -339,6 +341,8 @@ public final class DevBridges {
             case "colosseum" -> "Proctor · Crypt T2 ring";
             case "borderlands" -> "Beyond Vex's gate";
             case "eldervale" -> "Mining island · slime jump";
+            case "farm_isle" -> "Shared fields · Millstone pantry";
+            case "fishing" -> "Fishing Eldervale · north pad";
             default -> null;
         };
         if (extra == null) {

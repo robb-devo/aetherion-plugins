@@ -54,6 +54,9 @@ commands:
   eldervale:
     description: Teleport to Eldervale if unlocked
     permission: aetherionhub.use
+  fishing:
+    description: Teleport to Fishing Island if unlocked
+    permission: aetherionhub.use
   hubadmin:
     description: Manage Aetherion spawn points
     permission: aetherionhub.admin

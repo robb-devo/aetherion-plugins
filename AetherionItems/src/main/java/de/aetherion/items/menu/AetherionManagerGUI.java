@@ -206,13 +206,22 @@ public class AetherionManagerGUI {
                     "§7Boosters still apply.");
         }
 
-        if (player.isOp() || player.hasPermission("aetherion.dev")) {
-            inventory.setItem(DEV_SLOT, button(
-                    Material.COMMAND_BLOCK,
-                    "§cDEV Menu",
-                    "§7Sets, items, bosses, animals,",
-                    "§7pets and NPCs. One click."
-            ));
+        if (de.aetherion.items.menu.dev.DevMenu.canUse(player)) {
+            if (de.aetherion.items.menu.dev.DevMenu.isFullDev(player)) {
+                inventory.setItem(DEV_SLOT, button(
+                        Material.COMMAND_BLOCK,
+                        "§cDEV Menu",
+                        "§7Sets, items, bosses, animals,",
+                        "§7pets and NPCs. One click."
+                ));
+            } else {
+                inventory.setItem(DEV_SLOT, button(
+                        Material.JUNGLE_SAPLING,
+                        "§aContent Kit",
+                        "§7Resources, shards, NPCs,",
+                        "§7spawn anchors, NPC editor."
+                ));
+            }
         }
 
         inventory.setItem(CLOSE_SLOT, button(

@@ -223,6 +223,9 @@ public class AetherionItems extends JavaPlugin {
                 return true;
             });
         }
+        if (getCommand("flight") != null) {
+            getCommand("flight").setExecutor(new de.aetherion.items.command.FlightCommand());
+        }
 
         registerCombatListeners();
         registerWorldFeatureListeners(animalZones, petHabitats);
