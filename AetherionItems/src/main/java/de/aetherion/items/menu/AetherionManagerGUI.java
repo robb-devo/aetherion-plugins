@@ -206,12 +206,15 @@ public class AetherionManagerGUI {
                     "§7Boosters still apply.");
         }
 
-        if (player.isOp() || player.hasPermission("aetherion.dev")) {
+        if (de.aetherion.items.menu.dev.DevMenu.canUse(player)) {
+            boolean full = de.aetherion.items.menu.dev.DevMenu.hasFullAccess(player);
             inventory.setItem(DEV_SLOT, button(
                     Material.COMMAND_BLOCK,
                     "§cDEV Menu",
-                    "§7Sets, items, bosses, animals,",
-                    "§7pets and NPCs. One click."
+                    full
+                            ? "§7Full tools + NPC / Quest Editor section."
+                            : "§7NPC / Quest editor.",
+                    full ? "§7Sets, items, bosses, animals, pets." : "§8Limited staff tools."
             ));
         }
 
