@@ -1,4 +1,5 @@
 import pathfinderPkg from 'mineflayer-pathfinder'
+import { applyIslandMovements, wanderOnIsland } from './safety.js'
 import { note } from './util.js'
 
 const { goals, Movements, pathfinder } = pathfinderPkg
@@ -15,14 +16,14 @@ export function createCombatLoop(bot, cfg, log) {
   let home = null
 
   async function tick() {
-    if (!bot.entity || bot.entity.isValid === false) return
+    if (!bot.entity || bot.entity.isValid === false || bot.qaSuspended) return
     if (!home) home = bot.entity.position.clone()
 
     if (!bot.pathfinder.movements) {
-      const movements = new Movements(bot)
-      movements.allowSprinting = true
-      movements.canDig = false
-      bot.pathfinder.setMovements(movements)
+      bot.pathfinder.setMovements(applyIslandMovements(new Movements(bot), {
+        canDig: false,
+        maxDrop: cfg.maxDrop ?? 3
+      }))
     }
 
     const target = nearestHostile(bot, searchRadius)
@@ -48,13 +49,8 @@ export function createCombatLoop(bot, cfg, log) {
     }
 
     bot.qaActivity = bot.pathfinder.isMoving() ? 'pathing' : 'idle'
-    // No mobs — light wander so chunk/entity systems stay warm
     if (!bot.pathfinder.isMoving()) {
-      const angle = Math.random() * Math.PI * 2
-      const dist = 4 + Math.random() * wanderRadius
-      const x = home.x + Math.cos(angle) * dist
-      const z = home.z + Math.sin(angle) * dist
-      bot.pathfinder.setGoal(new goals.GoalNear(x, home.y, z, 2))
+      wanderOnIsland(bot, home, Math.min(12, wanderRadius), goals)
     }
   }
 

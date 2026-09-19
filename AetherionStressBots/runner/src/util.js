@@ -74,11 +74,14 @@ export function findMatchingBlock(bot, nameSet, radius, yRange = 6) {
 
 export function wanderNear(bot, home, radius, goals) {
   if (!bot.pathfinder || bot.pathfinder.isMoving()) return
+  const leash = bot.qaLeash ?? Math.max(6, radius)
+  const origin = bot.qaHome || home
+  const cap = Math.min(Math.max(3, radius), leash)
   const angle = Math.random() * Math.PI * 2
-  const dist = 3 + Math.random() * Math.max(4, radius)
-  const x = home.x + Math.cos(angle) * dist
-  const z = home.z + Math.sin(angle) * dist
-  bot.pathfinder.setGoal(new goals.GoalNear(x, home.y, z, 2))
+  const dist = 2 + Math.random() * cap
+  const x = origin.x + Math.cos(angle) * dist
+  const z = origin.z + Math.sin(angle) * dist
+  bot.pathfinder.setGoal(new goals.GoalNear(x, origin.y, z, 1))
 }
 
 export function heldName(bot) {

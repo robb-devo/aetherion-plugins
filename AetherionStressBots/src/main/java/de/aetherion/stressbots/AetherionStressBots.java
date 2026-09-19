@@ -7,6 +7,7 @@ import de.aetherion.stressbots.report.BotActivityTracker;
 import de.aetherion.stressbots.report.BotReportBuilder;
 import de.aetherion.stressbots.role.BotNicknames;
 import de.aetherion.stressbots.role.BotRoleRegistry;
+import de.aetherion.stressbots.safety.BotSafetyWatchdog;
 
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
@@ -21,7 +22,9 @@ public final class AetherionStressBots extends JavaPlugin {
     private BotProvisioner provisioner;
     private BotActivityTracker activity;
     private TestBotController controller;
+    private BotSafetyWatchdog safety;
     private BukkitTask activityTask;
+    private BukkitTask safetyTask;
 
     @Override
     public void onEnable() {
@@ -30,7 +33,10 @@ public final class AetherionStressBots extends JavaPlugin {
         wire();
         Bukkit.getPluginManager().registerEvents(new BotListener(this), this);
         Bukkit.getPluginManager().registerEvents(activity, this);
+        safety = new BotSafetyWatchdog(this);
+        Bukkit.getPluginManager().registerEvents(safety, this);
         activityTask = Bukkit.getScheduler().runTaskTimer(this, activity, 20L, 10L);
+        safetyTask = Bukkit.getScheduler().runTaskTimer(this, safety, 20L, 5L);
 
         PluginCommand command = getCommand("stressbots");
         if (command != null) {
@@ -55,6 +61,10 @@ public final class AetherionStressBots extends JavaPlugin {
         if (activityTask != null) {
             activityTask.cancel();
             activityTask = null;
+        }
+        if (safetyTask != null) {
+            safetyTask.cancel();
+            safetyTask = null;
         }
         if (controller != null) {
             AetherServices.clearTestBots(controller);
@@ -90,6 +100,10 @@ public final class AetherionStressBots extends JavaPlugin {
 
     public BotActivityTracker getActivity() {
         return activity;
+    }
+
+    public BotSafetyWatchdog getSafety() {
+        return safety;
     }
 
     public TestBotController getController() {

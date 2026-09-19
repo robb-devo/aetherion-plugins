@@ -1,5 +1,11 @@
 package de.aetherion.stressbots;
 
+import de.aetherion.stressbots.role.BotLocations;
+import de.aetherion.stressbots.role.BotRoleHandler;
+import de.aetherion.stressbots.role.BotRoleRegistry;
+
+import org.bukkit.Location;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -27,9 +33,23 @@ public final class BotListener implements Listener {
         plugin.getProvisioner().scheduleSetup(player);
     }
 
-    @EventHandler(priority = EventPriority.MONITOR)
+    @EventHandler(priority = EventPriority.HIGH)
     public void onRespawn(PlayerRespawnEvent event) {
-        plugin.getProvisioner().scheduleSetup(event.getPlayer());
+        Player player = event.getPlayer();
+        BotRoleHandler handler = plugin.getRegistry().byPlayer(player);
+        if (handler == null) {
+            return;
+        }
+        Location dest = BotLocations.assignedAnchor(player, roleSection(handler));
+        if (dest == null) {
+            dest = handler.destination(player);
+        }
+        if (dest != null) {
+            event.setRespawnLocation(dest);
+            plugin.getActivity().markRecovering(player, "respawn " + BotLocations.format(dest));
+        }
+        int delay = Math.max(1, plugin.getConfig().getInt("testbots.safety.respawn-setup-ticks", 5));
+        plugin.getProvisioner().scheduleSetup(player, delay);
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -46,5 +66,12 @@ public final class BotListener implements Listener {
         event.setCancelled(true);
         player.setFoodLevel(20);
         player.setSaturation(20f);
+    }
+
+    private ConfigurationSection roleSection(BotRoleHandler handler) {
+        if (handler.role().wave1()) {
+            return BotRoleRegistry.roleSection(plugin, handler.role());
+        }
+        return plugin.getConfig().getConfigurationSection(handler.role().id());
     }
 }

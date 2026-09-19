@@ -48,6 +48,6 @@ public final class ForageRoleHandler implements BotRoleHandler {
 
     @Override
     public String description() {
-        return "Teleport to Forage Isle and chop logs (Kindling I axe).";
+        return "Teleport to Forage Isle grove/interior and chop logs (Kindling I axe).";
     }
 }

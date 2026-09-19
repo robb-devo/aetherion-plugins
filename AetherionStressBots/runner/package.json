@@ -10,7 +10,8 @@
   "scripts": {
     "start": "node src/index.js --listen",
     "start:listen": "node src/index.js --listen",
-    "start:default": "node src/index.js --combat 5 --mining 5"
+    "start:default": "node src/index.js --combat 5 --mining 5",
+    "test": "node --test src/safety.test.js"
   },
   "engines": {
     "node": ">=18"

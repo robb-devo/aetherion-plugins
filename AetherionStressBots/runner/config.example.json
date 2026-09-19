@@ -26,14 +26,24 @@
     "combat": 20,
     "mining": 20
   },
+  "safety": {
+    "voidFloorY": 40,
+    "leashRadius": 16,
+    "stuckMs": 10000,
+    "resumeDelayMs": 2800
+  },
   "combat": {
     "searchRadius": 28,
     "attackIntervalMs": 450,
-    "wanderRadius": 22
+    "wanderRadius": 10,
+    "leashRadius": 22,
+    "maxDrop": 3
   },
   "mining": {
-    "searchRadius": 20,
-    "digTimeoutMs": 12000,
+    "searchRadius": 12,
+    "digTimeoutMs": 10000,
+    "wanderRadius": 6,
+    "leashRadius": 16,
     "ores": [
       "coal_ore",
       "copper_ore",
@@ -48,8 +58,15 @@
     ]
   },
   "mine": {
-    "searchRadius": 22,
-    "digTimeoutMs": 12000,
+    "searchRadius": 12,
+    "digTimeoutMs": 10000,
+    "wanderRadius": 6,
+    "leashRadius": 16,
+    "anchors": [
+      { "x": 22.5, "y": 90.0, "z": 580.5 },
+      { "x": 80.5, "y": 92.0, "z": 530.5 },
+      { "x": 53.5, "y": 91.0, "z": 482.5 }
+    ],
     "ores": [
       "coal_ore",
       "copper_ore",
@@ -69,11 +86,29 @@
       "cobblestone",
       "deepslate",
       "cobbled_deepslate"
+    ],
+    "fallback": [
+      "stone",
+      "cobblestone",
+      "deepslate",
+      "cobbled_deepslate",
+      "andesite",
+      "diorite",
+      "granite",
+      "tuff"
     ]
   },
   "forage": {
-    "searchRadius": 22,
-    "digTimeoutMs": 12000,
+    "searchRadius": 12,
+    "digTimeoutMs": 10000,
+    "wanderRadius": 6,
+    "leashRadius": 16,
+    "anchors": [
+      { "x": 560.5, "y": 91.0, "z": -200.5 },
+      { "x": 559.5, "y": 90.0, "z": -208.5 },
+      { "x": 677.5, "y": 91.0, "z": -116.5 },
+      { "x": 560.5, "y": 90.0, "z": -160.5 }
+    ],
     "logs": [
       "oak_log",
       "spruce_log",
@@ -87,18 +122,42 @@
       "oak_wood",
       "spruce_wood",
       "birch_wood"
+    ],
+    "fallback": [
+      "oak_leaves",
+      "spruce_leaves",
+      "birch_leaves",
+      "azalea_leaves",
+      "dirt",
+      "grass_block",
+      "rooted_dirt"
     ]
   },
   "catch": {
-    "searchRadius": 24,
-    "wanderRadius": 16,
-    "throwCooldownMs": 2500
+    "searchRadius": 10,
+    "wanderRadius": 5,
+    "throwCooldownMs": 1800,
+    "leashRadius": 12,
+    "maxDrop": 1,
+    "anchors": [
+      { "x": 560.5, "y": 91.0, "z": -200.5 },
+      { "x": 559.5, "y": 90.0, "z": -208.5 },
+      { "x": 560.5, "y": 90.0, "z": -160.5 },
+      { "x": 22.5, "y": 90.0, "z": 580.5 }
+    ]
   },
   "roam": {
+    "maxHop": 12,
+    "fleeRadius": 8,
+    "wanderRadius": 6,
+    "leashRadius": 14,
     "waypoints": [
       { "x": 22.5, "y": 56.0, "z": 305.5 },
-      { "x": 220.5, "y": 58.0, "z": 160.5 },
-      { "x": 438.5, "y": 56.0, "z": -233.5 }
+      { "x": 18.5, "y": 56.0, "z": 301.5 },
+      { "x": 26.5, "y": 56.0, "z": 309.5 },
+      { "x": 438.5, "y": 56.0, "z": -233.5 },
+      { "x": 434.5, "y": 56.0, "z": -229.5 },
+      { "x": 442.5, "y": 56.0, "z": -237.5 }
     ]
   }
 }
