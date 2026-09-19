@@ -13,6 +13,11 @@ import org.bukkit.event.Listener;
 
 import static org.bukkit.event.Event.Result.ALLOW;
 
+/**
+ * Sole {@code MiningListener}: WorldGuard allow, farm-isle mining off,
+ * ore seal/regen. Fortune, XP, break-speed, and tool gates live in Items
+ * {@code HarvestListener} via {@link de.aetherion.core.api.HarvestAccess}.
+ */
 public class MiningListener implements Listener {
 
     /*
@@ -88,7 +93,7 @@ public class MiningListener implements Listener {
             quests.noteBroken(event.getPlayer(), material, 1);
         }
         BlockData original = block.getBlockData().clone();
-        seal(event.getPlayer(), block, original, getRespawnTime(material));
+        seal(event.getPlayer(), block, original, MiningRespawnTimes.seconds(material));
         event.setCancelled(true);
     }
 
@@ -139,28 +144,8 @@ public class MiningListener implements Listener {
         if (AetherionMining.getInstance() == null) {
             return;
         }
-        seal(player, block, original.clone(), getRespawnTime(original.getMaterial()));
+        seal(player, block, original.clone(), MiningRespawnTimes.seconds(original.getMaterial()));
     }
-
-
-    /*
-     * =========================================================
-     * RESPAWNZEITEN
-     * =========================================================
-     *
-     * Kohle       = 10 Sekunden
-     * Kupfer      = 15 Sekunden
-     * Eisen       = 20 Sekunden
-     * Gold        = 25 Sekunden
-     * Redstone    = 15 Sekunden
-     * Lapis       = 20 Sekunden
-     * Diamant     = 40 Sekunden
-     * Emerald     = 45 Sekunden
-     * Ancient     = 60 Sekunden
-     *
-     * Stone       = 10 Sekunden
-     * =========================================================
-     */
 
     private static boolean veinsEvent(BreakBlockEvent event) {
         if (veins(event.getCause().getFirstBlock())) {
@@ -205,97 +190,5 @@ public class MiningListener implements Listener {
 
     private static boolean isBuildWorld(Block block) {
         return block != null && SharedWorldGuard.isBuildWorld(block.getWorld());
-    }
-
-    private static long getRespawnTime(Material material) {
-
-        switch (material) {
-
-            case COAL_ORE:
-            case DEEPSLATE_COAL_ORE:
-                return 10;
-
-
-            case COPPER_ORE:
-            case DEEPSLATE_COPPER_ORE:
-                return 15;
-
-
-            case IRON_ORE:
-            case DEEPSLATE_IRON_ORE:
-                return 20;
-
-
-            case GOLD_ORE:
-            case DEEPSLATE_GOLD_ORE:
-                return 25;
-
-
-            case REDSTONE_ORE:
-            case DEEPSLATE_REDSTONE_ORE:
-                return 15;
-
-
-            case LAPIS_ORE:
-            case DEEPSLATE_LAPIS_ORE:
-                return 20;
-
-
-            case DIAMOND_ORE:
-            case DEEPSLATE_DIAMOND_ORE:
-                return 40;
-
-
-            case EMERALD_ORE:
-            case DEEPSLATE_EMERALD_ORE:
-                return 45;
-
-
-            case ANCIENT_DEBRIS:
-                return 60;
-
-            case NETHER_QUARTZ_ORE:
-            case NETHER_GOLD_ORE:
-                return 20;
-
-            case AMETHYST_CLUSTER:
-                return 30;
-
-            case COAL_BLOCK:
-                return 25;
-
-            case RAW_COPPER_BLOCK:
-            case COPPER_BLOCK:
-                return 30;
-
-            case RAW_IRON_BLOCK:
-            case IRON_BLOCK:
-                return 35;
-
-            case REDSTONE_BLOCK:
-                return 30;
-
-            case RAW_GOLD_BLOCK:
-            case GOLD_BLOCK:
-            case QUARTZ_BLOCK:
-                return 40;
-
-            case LAPIS_BLOCK:
-                return 40;
-
-            case DIAMOND_BLOCK:
-                return 70;
-
-            case EMERALD_BLOCK:
-                return 80;
-
-            case NETHERITE_BLOCK:
-                return 100;
-
-            case DEEPSLATE:
-            case STONE:
-            default:
-                return 10;
-        }
     }
 }

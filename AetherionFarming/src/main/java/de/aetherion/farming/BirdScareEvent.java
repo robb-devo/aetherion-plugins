@@ -43,6 +43,7 @@ import java.util.concurrent.ThreadLocalRandom;
 /**
  * Optional crop-field event: birds land on a crop patch. Click them to shoo.
  * Success: temporary Fortune + Harvest. Fail/ignore: no debuff.
+ * Owned by AetherionFarming (scare events); Items only supplies StatProvider.
  */
 public final class BirdScareEvent implements Listener, StatProvider, Runnable {
 

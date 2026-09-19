@@ -16,8 +16,12 @@ public final class HarvestRules {
         if (world == null) {
             return false;
         }
-        Plugin mining = Bukkit.getPluginManager().getPlugin("AetherionMining");
-        if (mining instanceof JavaPlugin javaPlugin && mining.isEnabled()) {
+        de.aetherion.core.api.MiningAccess mining = de.aetherion.core.api.AetherServices.mining();
+        if (mining != null) {
+            return mining.isVeinsWorld(world);
+        }
+        Plugin plugin = Bukkit.getPluginManager().getPlugin("AetherionMining");
+        if (plugin instanceof JavaPlugin javaPlugin && plugin.isEnabled()) {
             String name = javaPlugin.getConfig().getString("veins.world", "aether_veins");
             return world.getName().equalsIgnoreCase(name);
         }

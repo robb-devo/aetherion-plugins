@@ -100,16 +100,16 @@ public final class VeinSiphonListener implements Listener {
         player.playSound(player.getLocation(), Sound.BLOCK_BEACON_ACTIVATE, 0.55f, 1.55f);
         player.getWorld().spawnParticle(Particle.CLOUD, player.getEyeLocation(), 12, 0.35, 0.2, 0.35, 0.02);
 
-        MiningListener mining = AetherionItems.getInstance() == null
+        HarvestListener harvest = AetherionItems.getInstance() == null
                 ? null
-                : AetherionItems.getInstance().getMiningListener();
+                : AetherionItems.getInstance().getHarvestListener();
 
         for (Block block : ores) {
             Material type = block.getType();
             BlockData data = block.getBlockData().clone();
             Location from = block.getLocation().add(0.5, 0.5, 0.5);
-            if (mining != null) {
-                mining.vacuumHarvest(player, block);
+            if (harvest != null) {
+                harvest.vacuumHarvest(player, block);
             } else {
                 block.setType(Material.BEDROCK, false);
             }
@@ -129,7 +129,7 @@ public final class VeinSiphonListener implements Listener {
         int cy = center.getBlockY();
         int cz = center.getBlockZ();
         double power = 0;
-        if (AetherionItems.getInstance() != null && AetherionItems.getInstance().getMiningListener() != null) {
+        if (AetherionItems.getInstance() != null && AetherionItems.getInstance().getHarvestListener() != null) {
             power = new de.aetherion.items.manager.ActiveEquipmentStats(itemManager)
                     .getStat(player, de.aetherion.items.model.ItemCapability.MINING_POWER);
         }

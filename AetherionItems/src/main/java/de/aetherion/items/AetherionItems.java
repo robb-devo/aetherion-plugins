@@ -23,7 +23,7 @@ import de.aetherion.items.listener.HealthListener;
 import de.aetherion.items.listener.ItemProtectionListener;
 import de.aetherion.items.listener.LoadoutListener;
 import de.aetherion.items.listener.LongbowListener;
-import de.aetherion.items.listener.MiningListener;
+import de.aetherion.items.listener.HarvestListener;
 import de.aetherion.items.listener.PickupDropsListener;
 import de.aetherion.items.listener.PersistenceFlushListener;
 import de.aetherion.items.listener.RecipeBookListener;
@@ -66,7 +66,8 @@ public class AetherionItems extends JavaPlugin {
     private RecipeBookGUI recipeBookGUI;
     private BukkitRecipeService recipeService;
     private HealthListener healthListener;
-    private MiningListener miningListener;
+    private HarvestListener harvestListener;
+    private de.aetherion.core.api.HarvestAccess harvestAccess;
     private de.aetherion.items.mining.OreTrollListener oreTrollListener;
     private de.aetherion.items.blueprint.SurveyorGui surveyorGui;
     private StorageInventory storageInventory;
@@ -223,6 +224,22 @@ public class AetherionItems extends JavaPlugin {
             });
         }
 
+        registerCombatListeners();
+        registerWorldFeatureListeners(animalZones, petHabitats);
+        registerEconomyListeners();
+        registerFarmStations();
+        registerHarvestListeners();
+        registerProgressionAndSocial();
+        registerStorageAndLoadout(aetherionStorage);
+        registerMenusAndPlayerCommands();
+        registerIntegrations();
+
+        getLogger().info("AetherionItems enabled!");
+        getLogger().info("Registered Aetherion recipes: " + recipeManager.getRecipeCount());
+    }
+
+    /** Combat / unique gear listeners. Order matches the former inline onEnable block. */
+    private void registerCombatListeners() {
         getServer().getPluginManager().registerEvents(new AnvilBoosterListener(itemManager), this);
         PvpGuardListener pvpGuard = new PvpGuardListener(this);
         getServer().getPluginManager().registerEvents(pvpGuard, this);
@@ -254,6 +271,12 @@ public class AetherionItems extends JavaPlugin {
         new de.aetherion.items.listener.HealerSetListener(this, itemManager);
         new de.aetherion.items.dungeon.DungeonGearListener(this, itemManager, customItem);
         getServer().getPluginManager().registerEvents(new CrossbowListener(itemManager), this);
+    }
+
+    private void registerWorldFeatureListeners(
+            de.aetherion.items.world.AnimalZoneService animalZones,
+            de.aetherion.items.world.PetHabitatZoneService petHabitats
+    ) {
         getServer().getPluginManager().registerEvents(
                 new de.aetherion.items.world.AnimalAnchorListener(animalZones),
                 this
@@ -297,6 +320,9 @@ public class AetherionItems extends JavaPlugin {
         new de.aetherion.items.item.GearTooltip(this, itemManager);
         de.aetherion.items.world.WildlifeLooks.register(this);
         de.aetherion.items.world.BorderlandsLightPass.schedule(this);
+    }
+
+    private void registerEconomyListeners() {
         getServer().getPluginManager().registerEvents(new PickupDropsListener(itemValues), this);
         getServer().getPluginManager().registerEvents(new de.aetherion.items.listener.AutoPickupListener(this), this);
         getServer().getPluginManager().registerEvents(trader, this);
@@ -313,6 +339,9 @@ public class AetherionItems extends JavaPlugin {
         getServer().getPluginManager().registerEvents(casino, this);
         getServer().getPluginManager().registerEvents(new de.aetherion.items.casino.CasinoCabinet(), this);
         getServer().getPluginManager().registerEvents(new de.aetherion.items.casino.RouletteCabinet(), this);
+    }
+
+    private void registerFarmStations() {
         millstoneRitual = new de.aetherion.items.farm.MillstoneRitual(this);
         getServer().getPluginManager().registerEvents(new de.aetherion.items.farm.MillstoneCabinet(this, millstoneRitual), this);
         getServer().getPluginManager().registerEvents(new de.aetherion.items.farm.MillstoneWindmill(this), this);
@@ -322,9 +351,13 @@ public class AetherionItems extends JavaPlugin {
                 new de.aetherion.items.menu.dev.DevMenuListener(devMenu),
                 this
         );
+    }
 
-        miningListener = new MiningListener(itemManager);
-        getServer().getPluginManager().registerEvents(miningListener, this);
+    private void registerHarvestListeners() {
+        harvestListener = new HarvestListener(itemManager);
+        harvestAccess = new de.aetherion.items.api.HarvestAccessImpl(harvestListener);
+        de.aetherion.core.api.AetherServices.registerHarvest(harvestAccess);
+        getServer().getPluginManager().registerEvents(harvestListener, this);
         oreTrollListener = new de.aetherion.items.mining.OreTrollListener(this, itemManager);
         getServer().getPluginManager().registerEvents(oreTrollListener, this);
         surveyorGui = new de.aetherion.items.blueprint.SurveyorGui(this);
@@ -342,7 +375,9 @@ public class AetherionItems extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new de.aetherion.items.listener.EstateLiquidatorListener(this, itemManager, coins), this);
         getServer().getPluginManager().registerEvents(new de.aetherion.items.listener.JoinWelcomeListener(this), this);
         new de.aetherion.items.listener.DivingGearListener(this, itemManager);
+    }
 
+    private void registerProgressionAndSocial() {
         healthListener = new HealthListener(this, itemManager);
         getServer().getPluginManager().registerEvents(healthListener, this);
         if (skills != null) {
@@ -362,7 +397,9 @@ public class AetherionItems extends JavaPlugin {
             getCommand("party").setExecutor(partyCommand);
             getCommand("party").setTabCompleter(partyCommand);
         }
+    }
 
+    private void registerStorageAndLoadout(AetherionStorage aetherionStorage) {
         storageListener = new StorageListener(aetherionStorage, storageInventory);
         getServer().getPluginManager().registerEvents(storageListener, this);
 
@@ -371,7 +408,9 @@ public class AetherionItems extends JavaPlugin {
 
         loadoutListener = new LoadoutListener();
         getServer().getPluginManager().registerEvents(loadoutListener, this);
+    }
 
+    private void registerMenusAndPlayerCommands() {
         recipeBookGUI = new RecipeBookGUI(recipeManager);
         codex = new CodexService(this);
         manager = new AetherionManager(
@@ -447,7 +486,9 @@ public class AetherionItems extends JavaPlugin {
                 new RecipeBookListener(recipeBookGUI, itemManager),
                 this
         );
+    }
 
+    private void registerIntegrations() {
         if (getServer().getPluginManager().isPluginEnabled("PlaceholderAPI")) {
             new de.aetherion.items.placeholder.CoinPlaceholderExpansion(this, coins).register();
             getLogger().info("PlaceholderAPI coin placeholders registered.");
@@ -458,9 +499,6 @@ public class AetherionItems extends JavaPlugin {
         // DiscordSRV JDA may not be ready at enable — retry a few times
         getServer().getScheduler().runTaskLater(this, discordGuide::tryHook, 40L);
         getServer().getScheduler().runTaskLater(this, discordGuide::tryHook, 100L);
-
-        getLogger().info("AetherionItems enabled!");
-        getLogger().info("Registered Aetherion recipes: " + recipeManager.getRecipeCount());
     }
 
     @Override
@@ -536,6 +574,10 @@ public class AetherionItems extends JavaPlugin {
         if (itemFactoryAccess != null) {
             de.aetherion.core.api.AetherServices.clearItems(itemFactoryAccess);
             itemFactoryAccess = null;
+        }
+        if (harvestAccess != null) {
+            de.aetherion.core.api.AetherServices.clearHarvest(harvestAccess);
+            harvestAccess = null;
         }
 
         getLogger().info("AetherionItems disabled!");
@@ -645,8 +687,14 @@ public class AetherionItems extends JavaPlugin {
         return testArena;
     }
 
-    public MiningListener getMiningListener() {
-        return miningListener;
+    public HarvestListener getHarvestListener() {
+        return harvestListener;
+    }
+
+    /** @deprecated use {@link #getHarvestListener()} or {@link de.aetherion.core.api.AetherServices#harvest()}. */
+    @Deprecated
+    public HarvestListener getMiningListener() {
+        return harvestListener;
     }
 
     public de.aetherion.items.mining.OreTrollListener getOreTrollListener() {

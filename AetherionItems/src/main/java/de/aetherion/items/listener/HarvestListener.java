@@ -1,12 +1,13 @@
 package de.aetherion.items.listener;
 
+import de.aetherion.core.api.AetherServices;
+import de.aetherion.core.api.MiningAccess;
 import de.aetherion.items.manager.ActiveEquipmentStats;
 import de.aetherion.items.manager.ItemManager;
 import de.aetherion.items.mining.HarvestRules;
 import de.aetherion.items.model.ItemCapability;
 import de.aetherion.items.util.InventoryDrops;
 
-import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -37,7 +38,11 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class MiningListener implements Listener {
+/**
+ * Items harvest payouts: fortune, skill XP, break-speed, tool gates.
+ * World/WG/ore-seal regen is {@code de.aetherion.mining.MiningListener}.
+ */
+public class HarvestListener implements Listener {
 
     private final ItemManager itemManager;
     private final ActiveEquipmentStats equipmentStats;
@@ -45,7 +50,7 @@ public class MiningListener implements Listener {
     private final NamespacedKey breakSpeedKey = new NamespacedKey("aetherion", "aetherion_break_speed");
     private final Map<UUID, Long> lastPowerHint = new ConcurrentHashMap<>();
 
-    public MiningListener(ItemManager itemManager) {
+    public HarvestListener(ItemManager itemManager) {
         this.itemManager = itemManager;
         this.equipmentStats = new ActiveEquipmentStats(itemManager);
     }
@@ -220,7 +225,7 @@ public class MiningListener implements Listener {
             }
             long seconds = vacuumRespawnSeconds(material);
             org.bukkit.Bukkit.getScheduler().runTaskLater(
-                    JavaPlugin.getProvidingPlugin(MiningListener.class),
+                    JavaPlugin.getProvidingPlugin(HarvestListener.class),
                     () -> {
                         if (block.getType() == Material.BEDROCK) {
                             block.setBlockData(original, false);
@@ -232,25 +237,19 @@ public class MiningListener implements Listener {
     }
 
     private static boolean sealViaMining(Player player, Block block, org.bukkit.block.data.BlockData original) {
-        org.bukkit.plugin.Plugin mining = Bukkit.getPluginManager().getPlugin("AetherionMining");
-        if (mining == null || !mining.isEnabled()) {
+        MiningAccess mining = AetherServices.mining();
+        if (mining == null) {
             return false;
         }
-        try {
-            Class<?> clazz = Class.forName("de.aetherion.mining.MiningListener");
-            clazz.getMethod(
-                    "sealForVacuum",
-                    Player.class,
-                    Block.class,
-                    org.bukkit.block.data.BlockData.class
-            ).invoke(null, player, block, original);
-            return true;
-        } catch (ReflectiveOperationException | NoClassDefFoundError ignored) {
-            return false;
-        }
+        mining.sealForVacuum(player, block, original);
+        return true;
     }
 
     private static long vacuumRespawnSeconds(Material material) {
+        MiningAccess mining = AetherServices.mining();
+        if (mining != null) {
+            return mining.respawnSeconds(material);
+        }
         return switch (material) {
             case COAL_ORE, DEEPSLATE_COAL_ORE -> 10L;
             case COPPER_ORE, DEEPSLATE_COPPER_ORE -> 15L;
@@ -530,7 +529,7 @@ public class MiningListener implements Listener {
     }
 
     private void scheduleUpdate(Player player) {
-        JavaPlugin plugin = JavaPlugin.getProvidingPlugin(MiningListener.class);
+        JavaPlugin plugin = JavaPlugin.getProvidingPlugin(HarvestListener.class);
         plugin.getServer().getScheduler().runTask(plugin, () -> {
             stripLegacyEfficiency(player);
             clearBreakSpeed(player);

@@ -662,6 +662,10 @@ public class EmeraldSpreadListener implements Listener {
                 return -1;
             }
         }
+        de.aetherion.core.api.MiningAccess mining = de.aetherion.core.api.AetherServices.mining();
+        if (mining != null) {
+            return mining.respawnSeconds(material);
+        }
 
         switch (material) {
 

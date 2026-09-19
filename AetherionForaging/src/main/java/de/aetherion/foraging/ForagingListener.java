@@ -266,7 +266,7 @@ public class ForagingListener implements Listener {
         event.setCancelled(false);
         // Harbour: force oak. Forage Isle: typed wood matching the log.
         event.setDropItems(false);
-        // Cancel so MiningListener (HIGHEST) does not also pay out this log at the player.
+        // Cancel so HarvestListener (HIGHEST) does not also pay out this log at the player.
         event.setCancelled(true);
         Material drop = forcedDropOr(start.getType(), start.getLocation());
         give(player, new ItemStack(drop, 1), start.getLocation());
@@ -1285,11 +1285,15 @@ public class ForagingListener implements Listener {
 
     private static double fortune(Player player) {
         try {
+            de.aetherion.core.api.HarvestAccess harvest = de.aetherion.core.api.AetherServices.harvest();
+            if (harvest != null) {
+                return Math.max(0.0d, harvest.fortuneOf(player));
+            }
             AetherionItems items = AetherionItems.getInstance();
-            if (items == null || items.getMiningListener() == null) {
+            if (items == null || items.getHarvestListener() == null) {
                 return 0.0d;
             }
-            return Math.max(0.0d, items.getMiningListener().fortuneOf(player));
+            return Math.max(0.0d, items.getHarvestListener().fortuneOf(player));
         } catch (Throwable ignored) {
             return 0.0d;
         }
@@ -1347,9 +1351,14 @@ public class ForagingListener implements Listener {
 
     private static boolean payWood(Player player, Material material) {
         try {
+            de.aetherion.core.api.HarvestAccess harvest = de.aetherion.core.api.AetherServices.harvest();
+            if (harvest != null) {
+                harvest.payWood(player, material);
+                return true;
+            }
             AetherionItems items = AetherionItems.getInstance();
-            if (items != null && items.getMiningListener() != null) {
-                items.getMiningListener().payWood(player, material);
+            if (items != null && items.getHarvestListener() != null) {
+                items.getHarvestListener().payWood(player, material);
                 return true;
             }
         } catch (NoClassDefFoundError ignored) {
