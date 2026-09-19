@@ -73,15 +73,42 @@ export function findMatchingBlock(bot, nameSet, radius, yRange = 6) {
 }
 
 export function wanderNear(bot, home, radius, goals) {
-  if (!bot.pathfinder || bot.pathfinder.isMoving()) return
-  const leash = bot.qaLeash ?? Math.max(6, radius)
+  if (!bot.pathfinder || bot.pathfinder.isMoving() || !home) return
   const origin = bot.qaHome || home
+  const leash = bot.qaLeash ?? Math.max(6, radius)
   const cap = Math.min(Math.max(3, radius), leash)
-  const angle = Math.random() * Math.PI * 2
-  const dist = 2 + Math.random() * cap
-  const x = origin.x + Math.cos(angle) * dist
-  const z = origin.z + Math.sin(angle) * dist
-  bot.pathfinder.setGoal(new goals.GoalNear(x, origin.y, z, 1))
+  for (let i = 0; i < 12; i++) {
+    const angle = Math.random() * Math.PI * 2
+    const dist = 2 + Math.random() * cap
+    const x = origin.x + Math.cos(angle) * dist
+    const z = origin.z + Math.sin(angle) * dist
+    const y = origin.y
+    if (columnHasFloor(bot, x, y, z)) {
+      bot.pathfinder.setGoal(new goals.GoalNear(x, y, z, 1))
+      return
+    }
+  }
+}
+
+function columnHasFloor(bot, x, y, z) {
+  if (!bot.blockAt || !bot.entity?.position?.offset) return false
+  const origin = bot.entity.position
+  for (const dy of [0, 1, -1, 2, -2]) {
+    const feet = origin.offset(0, 0, 0)
+    feet.x = x
+    feet.y = y + dy
+    feet.z = z
+    const below = bot.blockAt(feet.offset(0, -1, 0).floored())
+    const at = bot.blockAt(feet.floored())
+    const head = bot.blockAt(feet.offset(0, 1, 0).floored())
+    if (!below || !below.name) continue
+    const n = below.name.toLowerCase()
+    if (n === 'air' || n.includes('water') || n.includes('lava')) continue
+    if (at && at.boundingBox === 'block') continue
+    if (head && head.boundingBox === 'block') continue
+    return true
+  }
+  return false
 }
 
 export function heldName(bot) {
