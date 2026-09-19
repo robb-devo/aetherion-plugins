@@ -2240,6 +2240,7 @@ public class DevMenu {
                     "§8LuckPerms group: §7" + rank.group()
             ));
         }
+        // Ultra row (Peter): Homie cosmetics go here with MVP++ / Admin / Monkey — not in progression[].
         inventory.setItem(33, button(
                 rankIcon("mvpplusplus"),
                 (extra != null && extra.group().equals("mvpplusplus") ? "§a▶ " : "") + "§6MVP§c++",

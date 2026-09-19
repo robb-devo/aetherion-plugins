@@ -43,7 +43,12 @@ public final class RankBadgeService implements Listener {
             new Rank("admin", 100, "&c[Admin] &f", "§cAdmin")
     );
 
-    /** Staff / content extras sit on top of Aetherion progression (not XP ranks). */
+    /**
+     * Staff / Homie cosmetic extras sit on top of Aetherion XP ranks.
+     * Standing rule (Peter): every future Homie special rank copies Monkey —
+     * EXTRA + high TAB weight (near admin / mvpplusplus) + Dev Menu ultra slot.
+     * Never add them to the Adventurer→Aetherion progression row.
+     */
     private static final Set<String> EXTRA = Set.of("mvpplusplus", "admin", "monkey");
 
     private static final String DEFAULT_GROUP = "mvpplusplus";
