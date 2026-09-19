@@ -3,7 +3,7 @@ package de.aetherion.guilds.service;
 import de.aetherion.guilds.model.Guild;
 import de.aetherion.guilds.model.IslandTiers;
 import de.aetherion.guilds.world.IslandBuilder;
-import de.aetherion.guilds.world.VoidChunkGenerator;
+import de.aetherion.core.world.VoidChunkGenerator;
 
 import org.bukkit.Bukkit;
 import org.bukkit.GameRule;

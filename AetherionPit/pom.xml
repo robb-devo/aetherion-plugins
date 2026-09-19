@@ -21,6 +21,11 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
+      <groupId>de.aetherion</groupId>
+      <artifactId>AetherionCore</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
       <groupId>me.clip</groupId>
       <artifactId>placeholderapi</artifactId>
       <scope>provided</scope>

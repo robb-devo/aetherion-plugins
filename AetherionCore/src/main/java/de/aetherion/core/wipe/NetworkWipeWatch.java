@@ -12,8 +12,9 @@ import java.util.List;
 
 /**
  * When {@code /wipe} runs on another backend, {@link BetaWipe#markPending()} drops a flag
- * into this server's {@code plugins/AetherionCore/}. Poll that file and shut down the same
- * way the initiating server does, so mmo-d / mmo-r both clear data on next boot.
+ * into this server's {@code plugins/AetherionCore/} (and optionally Crafty peers / shared,
+ * see {@code wipe.*} in AetherionCore {@code config.yml}). Poll that file and shut down
+ * the same way the initiating server does, so mmo-d / mmo-r both clear data on next boot.
  */
 public final class NetworkWipeWatch {
 

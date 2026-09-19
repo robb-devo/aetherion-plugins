@@ -1,6 +1,7 @@
 package de.aetherion.dungeons.npc;
 
 import de.aetherion.core.AetherKeys;
+import de.aetherion.core.npc.FancyNpcFacade;
 import de.aetherion.dungeons.AetherionDungeons;
 import de.aetherion.dungeons.menu.DungeonGuideGUI;
 
@@ -20,12 +21,10 @@ import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Constructor;
 import java.util.List;
 import java.util.UUID;
 
@@ -155,15 +154,12 @@ public final class DungeonGuideService {
     }
 
     private static boolean fancyReady() {
-        Plugin fancy = Bukkit.getPluginManager().getPlugin("FancyNpcs");
-        if (fancy == null || !fancy.isEnabled()) {
+        if (!FancyNpcFacade.isAvailable()) {
             return true;
         }
         try {
-            Object api = Class.forName("de.oliver.fancynpcs.api.FancyNpcsPlugin").getMethod("get").invoke(null);
-            Object manager = api.getClass().getMethod("getNpcManager").invoke(api);
-            return Boolean.TRUE.equals(manager.getClass().getMethod("isLoaded").invoke(manager));
-        } catch (Throwable ignored) {
+            return FancyNpcFacade.isManagerLoaded(FancyNpcFacade.manager());
+        } catch (ReflectiveOperationException ignored) {
             return true;
         }
     }
@@ -242,90 +238,41 @@ public final class DungeonGuideService {
     }
 
     private boolean spawnFancy(Location location) {
-        Plugin fancy = Bukkit.getPluginManager().getPlugin("FancyNpcs");
-        if (fancy == null || !fancy.isEnabled()) {
+        if (!FancyNpcFacade.isAvailable()) {
             return false;
         }
         try {
-            Object api = Class.forName("de.oliver.fancynpcs.api.FancyNpcsPlugin").getMethod("get").invoke(null);
-            Object manager = api.getClass().getMethod("getNpcManager").invoke(api);
-            Object existing = getFancy(manager, FANCY_NAME);
+            Object manager = FancyNpcFacade.manager();
+            Object existing = FancyNpcFacade.getNpc(manager, FANCY_NAME);
             if (existing != null) {
-                Object data = existing.getClass().getMethod("getData").invoke(existing);
+                Object data = FancyNpcFacade.data(existing);
                 if (data != null) {
-                    try {
-                        data.getClass().getMethod("setLocation", Location.class).invoke(data, location.clone());
-                    } catch (NoSuchMethodException ignored) {
-                    }
+                    FancyNpcFacade.invokeQuiet(data, "setLocation", Location.class, location.clone());
                 }
-                try {
-                    existing.getClass().getMethod("setSaveToFile", boolean.class).invoke(existing, true);
-                } catch (NoSuchMethodException ignored) {
-                }
-                try {
-                    existing.getClass().getMethod("moveForAll").invoke(existing);
-                } catch (NoSuchMethodException ignored) {
-                }
-                existing.getClass().getMethod("spawnForAll").invoke(existing);
-                saveFancy(manager);
+                FancyNpcFacade.invokeQuiet(existing, "setSaveToFile", boolean.class, true);
+                FancyNpcFacade.moveForAll(existing);
+                FancyNpcFacade.spawnForAll(existing);
+                FancyNpcFacade.saveNpcs(manager, true);
                 return true;
             }
-            Class<?> dataClass = Class.forName("de.oliver.fancynpcs.api.NpcData");
-            Constructor<?> ctor = dataClass.getConstructor(String.class, UUID.class, Location.class);
-            Object data = ctor.newInstance(FANCY_NAME, new UUID(0L, 1L), location.clone());
-            dataClass.getMethod("setDisplayName", String.class).invoke(data, "§5§l" + DISPLAY_NAME);
-            dataClass.getMethod("setType", EntityType.class).invoke(data, EntityType.PLAYER);
-            dataClass.getMethod("setShowInTab", boolean.class).invoke(data, false);
-            dataClass.getMethod("setCollidable", boolean.class).invoke(data, false);
-            dataClass.getMethod("setTurnToPlayer", boolean.class).invoke(data, true);
-            try {
-                dataClass.getMethod("setSpawnEntity", boolean.class).invoke(data, true);
-            } catch (NoSuchMethodException ignored) {
-            }
-            @SuppressWarnings("unchecked")
-            java.util.function.Function<Object, Object> adapter =
-                    (java.util.function.Function<Object, Object>) api.getClass()
-                            .getMethod("getNpcAdapter").invoke(api);
-            Object npc = adapter.apply(data);
-            try {
-                npc.getClass().getMethod("setSaveToFile", boolean.class).invoke(npc, true);
-            } catch (NoSuchMethodException ignored) {
-            }
-            npc.getClass().getMethod("create").invoke(npc);
-            Class<?> npcIface = Class.forName("de.oliver.fancynpcs.api.Npc");
-            manager.getClass().getMethod("registerNpc", npcIface).invoke(manager, npc);
-            npc.getClass().getMethod("spawnForAll").invoke(npc);
-            saveFancy(manager);
+            Object data = FancyNpcFacade.createNpcData(FANCY_NAME, new UUID(0L, 1L), location.clone());
+            FancyNpcFacade.invoke(data, "setDisplayName", String.class, "§5§l" + DISPLAY_NAME);
+            FancyNpcFacade.invoke(data, "setType", EntityType.class, EntityType.PLAYER);
+            FancyNpcFacade.invoke(data, "setShowInTab", boolean.class, false);
+            FancyNpcFacade.invoke(data, "setCollidable", boolean.class, false);
+            FancyNpcFacade.invoke(data, "setTurnToPlayer", boolean.class, true);
+            FancyNpcFacade.invokeQuiet(data, "setSpawnEntity", boolean.class, true);
+            Object npc = FancyNpcFacade.adapt(data);
+            FancyNpcFacade.invokeQuiet(npc, "setSaveToFile", boolean.class, true);
+            FancyNpcFacade.create(npc);
+            FancyNpcFacade.register(manager, npc);
+            FancyNpcFacade.spawnForAll(npc);
+            FancyNpcFacade.saveNpcs(manager, true);
             return true;
         } catch (Throwable ex) {
             plugin.getLogger().warning("FancyNPC Dungeon Scribe failed: " + ex.getMessage());
             return false;
         }
-    }
-
-    private static void saveFancy(Object manager) {
-        try {
-            manager.getClass().getMethod("saveNpcs", boolean.class).invoke(manager, true);
-        } catch (ReflectiveOperationException ignored) {
-            try {
-                manager.getClass().getMethod("saveNpcs").invoke(manager);
-            } catch (ReflectiveOperationException ignored2) {
-            }
-        }
-    }
-
-    private static Object getFancy(Object manager, String name) {
-        // String overload only — getNpc(int) throws argument type mismatch.
-        for (String method : List.of("getNpc", "getNpcById")) {
-            try {
-                Object npc = manager.getClass().getMethod(method, String.class).invoke(manager, name);
-                if (npc != null) {
-                    return npc;
-                }
-            } catch (ReflectiveOperationException ignored) {
-            }
-        }
-        return null;
     }
 
     public void despawnAll() {
@@ -402,27 +349,21 @@ public final class DungeonGuideService {
 
     private void removeFancyQuiet(boolean persist) {
         try {
-            Plugin fancy = Bukkit.getPluginManager().getPlugin("FancyNpcs");
-            if (fancy == null || !fancy.isEnabled()) {
+            if (!FancyNpcFacade.isAvailable()) {
                 return;
             }
-            Object api = Class.forName("de.oliver.fancynpcs.api.FancyNpcsPlugin").getMethod("get").invoke(null);
-            Object manager = api.getClass().getMethod("getNpcManager").invoke(api);
-            Object npc = getFancy(manager, FANCY_NAME);
+            Object manager = FancyNpcFacade.manager();
+            Object npc = FancyNpcFacade.getNpc(manager, FANCY_NAME);
             if (npc == null) {
                 return;
             }
+            FancyNpcFacade.removeFromPlayersQuiet(npc);
             try {
-                npc.getClass().getMethod("removeForAll").invoke(npc);
-            } catch (NoSuchMethodException ignored) {
-            }
-            try {
-                Class<?> npcIface = Class.forName("de.oliver.fancynpcs.api.Npc");
-                manager.getClass().getMethod("removeNpc", npcIface).invoke(manager, npc);
+                FancyNpcFacade.unregister(manager, npc);
             } catch (ReflectiveOperationException ignored) {
             }
             if (persist) {
-                saveFancy(manager);
+                FancyNpcFacade.saveNpcs(manager, true);
             }
         } catch (Throwable ignored) {
         }

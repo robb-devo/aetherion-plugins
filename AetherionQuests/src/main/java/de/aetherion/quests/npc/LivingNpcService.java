@@ -1,25 +1,23 @@
 package de.aetherion.quests.npc;
 
+import de.aetherion.core.npc.FancyNpcFacade;
 import de.aetherion.quests.AetherionQuests;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.EntityType;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.plugin.Plugin;
 
 import java.io.File;
 import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.util.Collection;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
 
 /**
  * Packet NPCs via FancyNpcs — player model, turn-to-player (short range), no glow.
@@ -47,8 +45,7 @@ public final class LivingNpcService {
     }
 
     public boolean available() {
-        Plugin fancy = Bukkit.getPluginManager().getPlugin("FancyNpcs");
-        return fancy != null && fancy.isEnabled();
+        return FancyNpcFacade.isAvailable();
     }
 
     public boolean isSpawned(String npcId) {
@@ -81,12 +78,7 @@ public final class LivingNpcService {
             return null;
         }
         try {
-            Object data = npc.getClass().getMethod("getData").invoke(npc);
-            if (data == null) {
-                return null;
-            }
-            Object loc = data.getClass().getMethod("getLocation").invoke(data);
-            return loc instanceof Location location ? location.clone() : null;
+            return FancyNpcFacade.locationOf(npc);
         } catch (ReflectiveOperationException ex) {
             plugin.getLogger().warning("Living NPC location failed: " + ex.getMessage());
             return null;
@@ -103,18 +95,14 @@ public final class LivingNpcService {
             return false;
         }
         try {
-            Object data = npc.getClass().getMethod("getData").invoke(npc);
+            Object data = FancyNpcFacade.data(npc);
             if (data == null) {
                 return false;
             }
-            data.getClass().getMethod("setLocation", Location.class).invoke(data, location.clone());
+            FancyNpcFacade.setLocation(data, location.clone());
             // CRITICAL: moveForAll() without args uses isSwingArmOnUpdate() → bottle spam.
             // Always pass false so the NPC walks without punching.
-            try {
-                npc.getClass().getMethod("moveForAll", boolean.class).invoke(npc, false);
-            } catch (NoSuchMethodException missing) {
-                npc.getClass().getMethod("moveForAll").invoke(npc);
-            }
+            FancyNpcFacade.moveForAll(npc, false);
             return true;
         } catch (ReflectiveOperationException ex) {
             plugin.getLogger().warning("Living NPC moveTo failed: " + ex.getMessage());
@@ -257,22 +245,15 @@ public final class LivingNpcService {
             return;
         }
         try {
-            Object data = npc.getClass().getMethod("getData").invoke(npc);
+            Object data = FancyNpcFacade.data(npc);
             if (data == null) {
                 return;
             }
-            Class<?> slotClass = Class.forName("de.oliver.fancynpcs.api.utils.NpcEquipmentSlot");
-            Object slot = Enum.valueOf(slotClass.asSubclass(Enum.class), "MAINHAND");
+            Class<?> slotClass = FancyNpcFacade.equipmentSlotClass();
+            Object slot = FancyNpcFacade.equipmentSlot("MAINHAND");
             ItemStack use = item == null ? new ItemStack(org.bukkit.Material.AIR) : item.clone();
             data.getClass().getMethod("addEquipment", slotClass, ItemStack.class).invoke(data, slot, use);
-            try {
-                npc.getClass().getMethod("updateForAll", boolean.class).invoke(npc, false);
-            } catch (NoSuchMethodException ignored) {
-                try {
-                    npc.getClass().getMethod("updateForAll").invoke(npc);
-                } catch (NoSuchMethodException ignored2) {
-                }
-            }
+            FancyNpcFacade.updateForAll(npc, false);
         } catch (ReflectiveOperationException ex) {
             plugin.getLogger().warning("Living NPC setMainHand failed: " + ex.getMessage());
         }
@@ -287,15 +268,12 @@ public final class LivingNpcService {
             return;
         }
         try {
-            Object data = npc.getClass().getMethod("getData").invoke(npc);
+            Object data = FancyNpcFacade.data(npc);
             if (data == null) {
                 return;
             }
-            invoke(data, "setTurnToPlayer", boolean.class, enabled);
-            try {
-                npc.getClass().getMethod("updateForAll", boolean.class).invoke(npc, false);
-            } catch (NoSuchMethodException ignored) {
-            }
+            FancyNpcFacade.invoke(data, "setTurnToPlayer", boolean.class, enabled);
+            FancyNpcFacade.invokeQuiet(npc, "updateForAll", boolean.class, false);
         } catch (ReflectiveOperationException ex) {
             plugin.getLogger().warning("Living NPC turnToPlayer failed: " + ex.getMessage());
         }
@@ -357,38 +335,28 @@ public final class LivingNpcService {
             String fancyName = fancyName(questNpc.getId());
             UUID creator = new UUID(0L, 0L);
 
-            Class<?> npcDataClass = Class.forName("de.oliver.fancynpcs.api.NpcData");
-            Object data = npcDataClass
-                    .getConstructor(String.class, UUID.class, Location.class)
-                    .newInstance(fancyName, creator, location.clone());
+            Object data = FancyNpcFacade.createNpcData(fancyName, creator, location.clone());
 
-            invoke(data, "setDisplayName", String.class, "<empty>");
-            invoke(data, "setType", EntityType.class, EntityType.PLAYER);
-            invoke(data, "setShowInTab", boolean.class, false);
-            invoke(data, "setCollidable", boolean.class, false);
-            invoke(data, "setGlowing", boolean.class, false);
-            invoke(data, "setTurnToPlayer", boolean.class, true);
-            invoke(data, "setTurnToPlayerDistance", int.class, LOOK_RADIUS);
-            invoke(data, "setVisibilityDistance", int.class, VISIBILITY_DISTANCE);
-            invoke(data, "setInteractionCooldown", float.class, 0.5f);
-            invoke(data, "setSpawnEntity", boolean.class, true);
+            FancyNpcFacade.invoke(data, "setDisplayName", String.class, "<empty>");
+            FancyNpcFacade.invoke(data, "setType", EntityType.class, EntityType.PLAYER);
+            FancyNpcFacade.invoke(data, "setShowInTab", boolean.class, false);
+            FancyNpcFacade.invoke(data, "setCollidable", boolean.class, false);
+            FancyNpcFacade.invoke(data, "setGlowing", boolean.class, false);
+            FancyNpcFacade.invoke(data, "setTurnToPlayer", boolean.class, true);
+            FancyNpcFacade.invoke(data, "setTurnToPlayerDistance", int.class, LOOK_RADIUS);
+            FancyNpcFacade.invoke(data, "setVisibilityDistance", int.class, VISIBILITY_DISTANCE);
+            FancyNpcFacade.invoke(data, "setInteractionCooldown", float.class, 0.5f);
+            FancyNpcFacade.invoke(data, "setSpawnEntity", boolean.class, true);
             // Skins applied async — FancyNpcs getByUsername blocks main thread + hits broken API.
             applyGear(data, questNpc.getId());
 
-            Object fancyPlugin = Class.forName("de.oliver.fancynpcs.api.FancyNpcsPlugin")
-                    .getMethod("get")
-                    .invoke(null);
-            @SuppressWarnings("unchecked")
-            Function<Object, Object> adapter =
-                    (Function<Object, Object>) fancyPlugin.getClass().getMethod("getNpcAdapter").invoke(fancyPlugin);
-            Object fancy = adapter.apply(data);
-            fancy.getClass().getMethod("setSaveToFile", boolean.class).invoke(fancy, false);
-            fancy.getClass().getMethod("create").invoke(fancy);
+            Object fancy = FancyNpcFacade.adapt(data);
+            FancyNpcFacade.setSaveToFile(fancy, false);
+            FancyNpcFacade.create(fancy);
 
-            Object manager = fancyPlugin.getClass().getMethod("getNpcManager").invoke(fancyPlugin);
-            manager.getClass().getMethod("registerNpc", Class.forName("de.oliver.fancynpcs.api.Npc"))
-                    .invoke(manager, fancy);
-            fancy.getClass().getMethod("spawnForAll").invoke(fancy);
+            Object manager = FancyNpcFacade.manager();
+            FancyNpcFacade.register(manager, fancy);
+            FancyNpcFacade.spawnForAll(fancy);
 
             scheduleMojangSkin(fancy, questNpc.getId());
 
@@ -420,13 +388,9 @@ public final class LivingNpcService {
         boolean removed = false;
         try {
             if (existing != null) {
-                existing.getClass().getMethod("removeForAll").invoke(existing);
-                Object fancyPlugin = Class.forName("de.oliver.fancynpcs.api.FancyNpcsPlugin")
-                        .getMethod("get")
-                        .invoke(null);
-                Object manager = fancyPlugin.getClass().getMethod("getNpcManager").invoke(fancyPlugin);
-                manager.getClass().getMethod("removeNpc", Class.forName("de.oliver.fancynpcs.api.Npc"))
-                        .invoke(manager, existing);
+                FancyNpcFacade.removeForAll(existing);
+                Object manager = FancyNpcFacade.manager();
+                FancyNpcFacade.unregister(manager, existing);
                 removed = true;
             }
         } catch (ReflectiveOperationException ex) {
@@ -500,9 +464,9 @@ public final class LivingNpcService {
             Object skinData = skinDataClass
                     .getConstructor(String.class, variantClass, String.class, String.class)
                     .newInstance(username, variant, textures.value(), textures.signature());
-            Object data = fancy.getClass().getMethod("getData").invoke(fancy);
+            Object data = FancyNpcFacade.data(fancy);
             data.getClass().getMethod("setSkinData", skinDataClass).invoke(data, skinData);
-            fancy.getClass().getMethod("updateForAll").invoke(fancy);
+            FancyNpcFacade.updateForAll(fancy);
         } catch (ReflectiveOperationException | RuntimeException ex) {
             plugin.getLogger().fine("Skin apply failed for " + npcId + ": " + ex.getMessage());
         }
@@ -513,24 +477,24 @@ public final class LivingNpcService {
         if (profile == null) {
             return;
         }
-        Class<?> slotClass = Class.forName("de.oliver.fancynpcs.api.utils.NpcEquipmentSlot");
+        Class<?> slotClass = FancyNpcFacade.equipmentSlotClass();
         Method add = data.getClass().getMethod("addEquipment", slotClass, ItemStack.class);
 
         ItemStack hand = profile.handItem();
         if (hand != null) {
-            add.invoke(data, Enum.valueOf(slotClass.asSubclass(Enum.class), "MAINHAND"), hand);
+            add.invoke(data, FancyNpcFacade.equipmentSlot("MAINHAND"), hand);
         }
         ItemStack chest = profile.chestItem();
         if (chest != null) {
-            add.invoke(data, Enum.valueOf(slotClass.asSubclass(Enum.class), "CHEST"), chest);
+            add.invoke(data, FancyNpcFacade.equipmentSlot("CHEST"), chest);
         }
         ItemStack legs = profile.legsItem();
         if (legs != null) {
-            add.invoke(data, Enum.valueOf(slotClass.asSubclass(Enum.class), "LEGS"), legs);
+            add.invoke(data, FancyNpcFacade.equipmentSlot("LEGS"), legs);
         }
         ItemStack boots = profile.bootsItem();
         if (boots != null) {
-            add.invoke(data, Enum.valueOf(slotClass.asSubclass(Enum.class), "FEET"), boots);
+            add.invoke(data, FancyNpcFacade.equipmentSlot("FEET"), boots);
         }
     }
 
@@ -563,65 +527,37 @@ public final class LivingNpcService {
             return null;
         }
         try {
-            Object fancyPlugin = Class.forName("de.oliver.fancynpcs.api.FancyNpcsPlugin")
-                    .getMethod("get")
-                    .invoke(null);
-            Object manager = fancyPlugin.getClass().getMethod("getNpcManager").invoke(fancyPlugin);
+            Object manager = FancyNpcFacade.manager();
             String expected = fancyName(npcId);
             String known = fancyNames.getOrDefault(npcId.toLowerCase(Locale.ROOT), expected);
 
-            Object found = tryGetNpc(manager, known);
+            Object found = FancyNpcFacade.tryGetNpc(manager, known);
             if (found != null) {
                 return found;
             }
             if (!known.equals(expected)) {
-                found = tryGetNpc(manager, expected);
+                found = FancyNpcFacade.tryGetNpc(manager, expected);
                 if (found != null) {
                     return found;
                 }
             }
 
-            Object all = manager.getClass().getMethod("getAllNpcs").invoke(manager);
-            if (all instanceof Collection<?> npcs) {
-                for (Object npc : npcs) {
-                    if (npc == null) {
-                        continue;
-                    }
-                    Object data = npc.getClass().getMethod("getData").invoke(npc);
-                    if (data == null) {
-                        continue;
-                    }
-                    Object name = data.getClass().getMethod("getName").invoke(data);
-                    Object id = data.getClass().getMethod("getId").invoke(data);
-                    if (expected.equalsIgnoreCase(String.valueOf(name))
-                            || expected.equalsIgnoreCase(String.valueOf(id))) {
-                        return npc;
-                    }
+            for (Object npc : FancyNpcFacade.allNpcs(manager)) {
+                Object data = FancyNpcFacade.data(npc);
+                if (data == null) {
+                    continue;
+                }
+                Object name = data.getClass().getMethod("getName").invoke(data);
+                Object id = data.getClass().getMethod("getId").invoke(data);
+                if (expected.equalsIgnoreCase(String.valueOf(name))
+                        || expected.equalsIgnoreCase(String.valueOf(id))) {
+                    return npc;
                 }
             }
         } catch (ReflectiveOperationException ex) {
             plugin.getLogger().warning("Living NPC lookup failed: " + ex.getMessage());
         }
         return null;
-    }
-
-    private static Object tryGetNpc(Object manager, String name) throws ReflectiveOperationException {
-        for (String method : java.util.List.of("getNpc", "getNpcById")) {
-            try {
-                Method m = manager.getClass().getMethod(method, String.class);
-                Object npc = m.invoke(manager, name);
-                if (npc != null) {
-                    return npc;
-                }
-            } catch (NoSuchMethodException ignored) {
-            }
-        }
-        return null;
-    }
-
-    private static void invoke(Object target, String method, Class<?> type, Object value)
-            throws ReflectiveOperationException {
-        target.getClass().getMethod(method, type).invoke(target, value);
     }
 
     private static String fancyName(String npcId) {

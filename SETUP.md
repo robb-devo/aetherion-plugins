@@ -4,12 +4,24 @@ Laptop / Homie-Wochenende. Soft-deps optional, aber empfohlen.
 
 ## Load order (hard)
 
-1. **AetherionCore** (`load: STARTUP`) — shared keys only
+1. **AetherionCore** (`load: STARTUP`) — shared keys, wipe paths, FancyNpcs facade
 2. **AetherionItems** — economy, combat, recipes, party, skills
 3. **BossEngine** — bosses / spawners
 4. Everything else (any order after the three above)
 
 Suggested folders drop: `plugins/AetherionCore.jar` first, then Items, BossEngine, then the rest.
+
+Hub / Pit backends also need **AetherionCore** (Pit `depend`s on it for `FancyNpcFacade`).
+
+## Wipe (Crafty)
+
+AetherionCore `config.yml` → `wipe.*` (defaults = current production):
+
+- `wipe.shared-root` empty = derive `…/crafty/servers/<id>` → `…/crafty/shared` (prod: `/var/opt/minecraft/crafty/shared`)
+- `wipe.servers: []` = flag/peer-wipe every folder under `crafty/servers/`
+- `wipe.dry-run: false` = real deletes. `true` only logs.
+
+See `AetherionCore/README.md` and the comments in Core `config.yml`.
 
 ## Soft depends (install when you use the feature)
 
@@ -21,7 +33,7 @@ Suggested folders drop: `plugins/AetherionCore.jar` first, then Items, BossEngin
 | AetherionGuilds | Items, Hub, PlaceholderAPI |
 | AetherionMining / Farming / Foraging | WorldGuard (+ Items soft) |
 | BossEngine | Items, AetherMobs, Quests, WorldGuard |
-| AetherMobs | PlaceholderAPI |
+| AetherionPit | WorldEdit/FAWE, FancyNpcs, PlaceholderAPI, DiscordSRV (hard-depend AetherionCore) |
 
 ## Smoke test (every deploy)
 

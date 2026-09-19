@@ -9,7 +9,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import de.aetherion.dungeons.world.VoidChunkGenerator;
+import de.aetherion.core.world.VoidChunkGenerator;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -341,7 +341,7 @@ final class DungeonWarmPool {
         File folder = new File(Bukkit.getWorldContainer(), ENDLESS_BASE);
         if (folder.isDirectory()) {
             WorldCreator creator = new WorldCreator(ENDLESS_BASE);
-            creator.generator(new VoidChunkGenerator());
+            creator.generator(VoidChunkGenerator.forDungeons());
             creator.generateStructures(false);
             creator.environment(World.Environment.NORMAL);
             World world = creator.createWorld();

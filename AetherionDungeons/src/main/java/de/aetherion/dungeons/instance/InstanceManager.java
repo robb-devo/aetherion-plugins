@@ -1,7 +1,7 @@
 package de.aetherion.dungeons.instance;
 
 import de.aetherion.dungeons.bridge.BossEngineBridge;
-import de.aetherion.dungeons.world.VoidChunkGenerator;
+import de.aetherion.core.world.VoidChunkGenerator;
 
 import org.bukkit.Bukkit;
 import org.bukkit.GameRule;
@@ -763,7 +763,7 @@ public final class InstanceManager {
     /** Shared by live instances and the warm pool. */
     public static World createSlimVoidWorld(String name) {
         WorldCreator creator = new WorldCreator(name);
-        creator.generator(new VoidChunkGenerator());
+        creator.generator(VoidChunkGenerator.forDungeons());
         creator.generateStructures(false);
         creator.environment(World.Environment.NORMAL);
         World world = creator.createWorld();

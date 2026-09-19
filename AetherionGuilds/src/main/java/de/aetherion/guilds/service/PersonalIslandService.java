@@ -1,12 +1,12 @@
 package de.aetherion.guilds.service;
 
+import de.aetherion.core.world.VoidChunkGenerator;
 import de.aetherion.guilds.model.IslandBiome;
 import de.aetherion.guilds.model.IslandTiers;
 import de.aetherion.guilds.model.PersonalIsland;
 import de.aetherion.guilds.model.QuarryMinion;
 import de.aetherion.guilds.util.AetherionItemsAccess;
 import de.aetherion.guilds.world.IslandBuilder;
-import de.aetherion.guilds.world.VoidChunkGenerator;
 
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;

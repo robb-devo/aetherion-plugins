@@ -25,6 +25,8 @@ public final class AetherionCore extends JavaPlugin {
     @Override
     public void onLoad() {
         instance = this;
+        saveDefaultConfig();
+        reloadConfig();
         betaWipe = new BetaWipe(this);
         if (betaWipe.isPending()) {
             betaWipe.run();
@@ -37,6 +39,7 @@ public final class AetherionCore extends JavaPlugin {
         if (betaWipe == null) {
             betaWipe = new BetaWipe(this);
         }
+        getLogger().info("Wipe paths: " + betaWipe.layout().describe());
         networkWipeWatch = new NetworkWipeWatch(this, betaWipe);
         WipeCommand wipeCommand = new WipeCommand(this, betaWipe, networkWipeWatch);
         PluginCommand wipe = getCommand("wipe");
