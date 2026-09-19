@@ -16,9 +16,9 @@ public enum AetherSkill {
             Category.COMBAT,
             Material.IRON_SWORD,
             "Your punches file complaints.",
-            "The mobs have started a petition. You are winning.",
+            "+7 Damage. The mobs have started a petition.",
             Flag.NONE,
-            bonus(ItemCapability.DAMAGE, 5.5)
+            bonus(ItemCapability.DAMAGE, 6.5)
     ),
     MEAN_STREAK(
             "mean_streak",
@@ -26,9 +26,9 @@ public enum AetherSkill {
             Category.COMBAT,
             Material.BIRCH_LOG,
             "Luck, but personally offended.",
-            "+8% Crit Chance. The dice are on your side, reluctantly.",
+            "+5% Crit Chance. The dice are on your side, reluctantly.",
             Flag.NONE,
-            bonus(ItemCapability.CRIT_CHANCE, 4.5)
+            bonus(ItemCapability.CRIT_CHANCE, 5.0)
     ),
     SHARP_INVOICE(
             "sharp_invoice",
@@ -36,9 +36,9 @@ public enum AetherSkill {
             Category.COMBAT,
             Material.OAK_LOG,
             "The follow-up email has an edge.",
-            "+12% Crit Damage. Paperwork that bleeds.",
+            "+10% Crit Damage. Paperwork that bleeds.",
             Flag.NONE,
-            bonus(ItemCapability.CRIT_DAMAGE, 6.5)
+            bonus(ItemCapability.CRIT_DAMAGE, 10)
     ),
     WIDE_SWING(
             "wide_swing",
@@ -46,9 +46,9 @@ public enum AetherSkill {
             Category.COMBAT,
             Material.REDSTONE,
             "Personal space is a rumor.",
-            "+20 Attack Spread. Neighbors included.",
+            "+14 Attack Spread. Neighbors included.",
             Flag.NONE,
-            bonus(ItemCapability.ATTACK_SPREAD, 11)
+            bonus(ItemCapability.ATTACK_SPREAD, 14)
     ),
     THICK_SKIN(
             "thick_skin",
@@ -56,9 +56,9 @@ public enum AetherSkill {
             Category.COMBAT,
             Material.SHIELD,
             "Insults bounce. So do arrows, slightly.",
-            "+12 Defense. Feelings not included.",
+            "+8 Defense. Feelings not included.",
             Flag.NONE,
-            bonus(ItemCapability.DEFENSE, 6.5)
+            bonus(ItemCapability.DEFENSE, 8)
     ),
     SECOND_WIND(
             "second_wind",
@@ -66,9 +66,9 @@ public enum AetherSkill {
             Category.COMBAT,
             Material.GOLDEN_APPLE,
             "You were not done being difficult.",
-            "+16 Health. The intermission was optional.",
+            "+10 Health. The intermission was optional.",
             Flag.NONE,
-            bonus(ItemCapability.HEALTH, 9)
+            bonus(ItemCapability.HEALTH, 10)
     ),
     BOSS_GRUDGE(
             "boss_grudge",
@@ -103,10 +103,10 @@ public enum AetherSkill {
             Category.COMBAT,
             Material.DIAMOND_SWORD,
             "You get the last hit. And the last remark.",
-            "+8 Damage and +6% Crit Chance.",
+            "+4 Damage and +4% Crit Chance.",
             Flag.NONE,
-            bonus(ItemCapability.DAMAGE, 4.5),
-            bonus(ItemCapability.CRIT_CHANCE, 3.5)
+            bonus(ItemCapability.DAMAGE, 3.8),
+            bonus(ItemCapability.CRIT_CHANCE, 4.0)
     ),
     LONG_ARM(
             "long_arm",
@@ -114,9 +114,9 @@ public enum AetherSkill {
             Category.COMBAT,
             Material.TRIDENT,
             "Your personal space has suburbs.",
-            "+25 Attack Spread. Bring a seating chart.",
+            "+16 Attack Spread. Bring a seating chart.",
             Flag.NONE,
-            bonus(ItemCapability.ATTACK_SPREAD, 14)
+            bonus(ItemCapability.ATTACK_SPREAD, 16)
     ),
 
     ROCK_WHISPER(
@@ -127,7 +127,7 @@ public enum AetherSkill {
             "The cobble whispers. You pretend not to hear.",
             "+12 Mining Power. The rocks still talk.",
             Flag.NONE,
-            bonus(ItemCapability.MINING_POWER, 6.5)
+            bonus(ItemCapability.MINING_POWER, 12)
     ),
     EXTRA_POCKET(
             "extra_pocket",
@@ -135,9 +135,9 @@ public enum AetherSkill {
             Category.MINING,
             Material.GOLD_INGOT,
             "The extra pocket is a moral failing.",
-            "+14 Fortune. Ethics pending.",
+            "+22 Fortune. Ethics pending.",
             Flag.NONE,
-            bonus(ItemCapability.FORTUNE, 7.5)
+            bonus(ItemCapability.FORTUNE, 22)
     ),
     PACK_RAT(
             "pack_rat",
@@ -164,10 +164,10 @@ public enum AetherSkill {
             Category.MINING,
             Material.IRON_PICKAXE,
             "Please. Thank you. Mine that.",
-            "+8 Mining Power and +6 Fortune.",
+            "+10 Mining Power and +14 Fortune.",
             Flag.NONE,
-            bonus(ItemCapability.MINING_POWER, 4.5),
-            bonus(ItemCapability.FORTUNE, 3.5)
+            bonus(ItemCapability.MINING_POWER, 10),
+            bonus(ItemCapability.FORTUNE, 13.5)
     ),
     CAVE_SENSE(
             "cave_sense",
@@ -194,9 +194,9 @@ public enum AetherSkill {
             Category.FORAGING,
             Material.OAK_LOG,
             "Oak has started taking it personally.",
-            "+12 Fortune. Trees hate this one trick.",
+            "+18 Fortune. Trees hate this one trick.",
             Flag.NONE,
-            bonus(ItemCapability.FORTUNE, 6.5)
+            bonus(ItemCapability.FORTUNE, 18)
     ),
     TIMBER_TAX(
             "timber_tax",
@@ -213,9 +213,9 @@ public enum AetherSkill {
             Category.FORAGING,
             Material.OAK_SAPLING,
             "Plants trust you. Rocks are considering it.",
-            "+8 Fortune. Speed stays on boots / pets / gear.",
+            "+11 Fortune. Speed stays on boots / pets / gear.",
             Flag.NONE,
-            bonus(ItemCapability.FORTUNE, 4.5)
+            bonus(ItemCapability.FORTUNE, 11)
     ),
 
     CROP_GOSSIP(
@@ -224,9 +224,10 @@ public enum AetherSkill {
             Category.FARMING,
             Material.WHEAT,
             "The wheat has started a group chat.",
-            "+12 Fortune. The field is talking. You are taking notes.",
+            "+22 Fortune and +8 Harvest. The field is talking.",
             Flag.NONE,
-            bonus(ItemCapability.FORTUNE, 6.5)
+            bonus(ItemCapability.FORTUNE, 22),
+            bonus(ItemCapability.HARVEST_SPREAD, 8)
     ),
     WIDE_FURROW(
             "wide_furrow",
@@ -234,9 +235,10 @@ public enum AetherSkill {
             Category.FARMING,
             Material.IRON_HOE,
             "Your personal space includes the next three rows.",
-            "+22 Harvest. Neighbors included. Professionally.",
+            "+24 Harvest and +10 Fortune. Neighbors included.",
             Flag.NONE,
-            bonus(ItemCapability.HARVEST_SPREAD, 22)
+            bonus(ItemCapability.HARVEST_SPREAD, 24),
+            bonus(ItemCapability.FORTUNE, 10)
     ),
     SEED_LEDGER(
             "seed_ledger",
@@ -254,9 +256,10 @@ public enum AetherSkill {
             Category.FISHING,
             Material.COD,
             "The fish started the argument. You finished it.",
-            "+25 Fish Catch. Extra bites, professionally.",
+            "+30 Fish Catch and +18 Fortune. Extra bites, professionally.",
             Flag.NONE,
-            bonus(ItemCapability.FISHING_CATCH, 14)
+            bonus(ItemCapability.FISHING_CATCH, 30),
+            bonus(ItemCapability.FORTUNE, 18)
     ),
     SHORT_CAST(
             "short_cast",
@@ -264,9 +267,11 @@ public enum AetherSkill {
             Category.FISHING,
             Material.FISHING_ROD,
             "Wait times were a suggestion.",
-            "+12 Fish Speed. The bobber clocks in early.",
+            "+8 Fish Speed, +15 Fish Catch, +10 Fortune.",
             Flag.NONE,
-            bonus(ItemCapability.FISHING_SPEED, 6.5)
+            bonus(ItemCapability.FISHING_SPEED, 8),
+            bonus(ItemCapability.FISHING_CATCH, 15),
+            bonus(ItemCapability.FORTUNE, 10)
     ),
     FISH_LEDGER(
             "fish_ledger",
@@ -312,10 +317,10 @@ public enum AetherSkill {
             Category.UTILITY,
             Material.IRON_CHESTPLATE,
             "You don't announce the tanking. You just tank.",
-            "+6 Defense and +8 Health.",
+            "+5 Defense and +6 Health.",
             Flag.NONE,
-            bonus(ItemCapability.DEFENSE, 3.5),
-            bonus(ItemCapability.HEALTH, 4.5)
+            bonus(ItemCapability.DEFENSE, 5),
+            bonus(ItemCapability.HEALTH, 6)
     ),
     PINCH_PENNY(
             "pinch_penny",
@@ -341,9 +346,9 @@ public enum AetherSkill {
             Category.UTILITY,
             Material.COOKED_BEEF,
             "Lunch was a threat. You won.",
-            "+20 Health. The menu lost.",
+            "+8 Health. The menu lost.",
             Flag.NONE,
-            bonus(ItemCapability.HEALTH, 11)
+            bonus(ItemCapability.HEALTH, 8)
     ),
     GOLDEN_HOUR(
             "golden_hour",
@@ -370,9 +375,9 @@ public enum AetherSkill {
             Category.DUNGEON,
             Material.IRON_CHESTPLATE,
             "The walls tried first.",
-            "+14 Defense in dungeons only.",
+            "+10 Defense in dungeons only.",
             Flag.NONE,
-            bonus(ItemCapability.DEFENSE, 7.5)
+            bonus(ItemCapability.DEFENSE, 10)
     ),
     RELIC_APPETITE(
             "relic_appetite",

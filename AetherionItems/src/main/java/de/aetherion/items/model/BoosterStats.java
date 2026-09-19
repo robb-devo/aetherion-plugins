@@ -17,39 +17,44 @@ public class BoosterStats {
      * Percent stacking exploded once items already had big stats.
      */
 
+    /**
+     * Wave 2: sized so a typical load (10◆ tool + 6◆ chest + 4 Gold ×3)
+     * is ~20% of the comfortable full-stack band. 14 Mythic Diamond on a
+     * T5 tool is ~+35% of that piece — rewarding, not a second set.
+     */
     public static double getCoreFlat(BoosterType boosterType, Rarity rarity) {
         return switch (boosterType) {
             case COAL -> switch (rarity) {
-                case COMMON -> 1.0;
-                case UNCOMMON -> 1.5;
-                case RARE -> 2.0;
-                case EPIC -> 2.5;
-                case LEGENDARY -> 3.0;
-                case MYTHIC, AETHERED -> 4.0;
+                case COMMON -> 0.8;
+                case UNCOMMON -> 1.2;
+                case RARE -> 1.6;
+                case EPIC -> 2.0;
+                case LEGENDARY -> 2.4;
+                case MYTHIC, AETHERED -> 3.0;
             };
             case IRON -> switch (rarity) {
-                case COMMON -> 1.5;
-                case UNCOMMON -> 2.25;
-                case RARE -> 3.0;
-                case EPIC -> 4.0;
-                case LEGENDARY -> 5.0;
-                case MYTHIC, AETHERED -> 6.0;
+                case COMMON -> 1.2;
+                case UNCOMMON -> 1.8;
+                case RARE -> 2.4;
+                case EPIC -> 3.2;
+                case LEGENDARY -> 4.0;
+                case MYTHIC, AETHERED -> 4.8;
             };
             case GOLD -> switch (rarity) {
-                case COMMON -> 2.5;
-                case UNCOMMON -> 3.5;
-                case RARE -> 5.0;
-                case EPIC -> 6.5;
-                case LEGENDARY -> 8.0;
-                case MYTHIC, AETHERED -> 10.0;
+                case COMMON -> 2.0;
+                case UNCOMMON -> 2.8;
+                case RARE -> 3.6;
+                case EPIC -> 4.6;
+                case LEGENDARY -> 5.6;
+                case MYTHIC, AETHERED -> 7.0;
             };
             case DIAMOND -> switch (rarity) {
-                case COMMON -> 3.5;
-                case UNCOMMON -> 5.0;
-                case RARE -> 7.0;
-                case EPIC -> 9.0;
-                case LEGENDARY -> 11.0;
-                case MYTHIC, AETHERED -> 14.0;
+                case COMMON -> 2.8;
+                case UNCOMMON -> 3.8;
+                case RARE -> 5.0;
+                case EPIC -> 6.2;
+                case LEGENDARY -> 7.4;
+                case MYTHIC, AETHERED -> 9.0;
             };
             case EMERALD, REDSTONE, LAPIS, GLOWSTONE, WHEAT, CARROT, OAK, BIRCH -> 0.0;
         };
@@ -87,12 +92,12 @@ public class BoosterStats {
 
             case EMERALD -> switch (rarity) {
 
-                case COMMON -> 4.0;
-                case UNCOMMON -> 6.0;
-                case RARE -> 9.0;
-                case EPIC -> 12.0;
-                case LEGENDARY -> 16.0;
-                case MYTHIC, AETHERED -> 20.0;
+                case COMMON -> 3.0;
+                case UNCOMMON -> 4.5;
+                case RARE -> 6.5;
+                case EPIC -> 9.0;
+                case LEGENDARY -> 12.0;
+                case MYTHIC, AETHERED -> 15.0;
             };
 
 
@@ -106,12 +111,12 @@ public class BoosterStats {
 
             case REDSTONE -> switch (rarity) {
 
-                case COMMON -> 4.0;
-                case UNCOMMON -> 6.0;
-                case RARE -> 9.0;
-                case EPIC -> 12.0;
-                case LEGENDARY -> 16.0;
-                case MYTHIC, AETHERED -> 20.0;
+                case COMMON -> 3.0;
+                case UNCOMMON -> 4.5;
+                case RARE -> 6.5;
+                case EPIC -> 9.0;
+                case LEGENDARY -> 12.0;
+                case MYTHIC, AETHERED -> 15.0;
             };
 
 
@@ -125,67 +130,67 @@ public class BoosterStats {
 
             case LAPIS -> switch (rarity) {
 
-                case COMMON -> 4.0;
-                case UNCOMMON -> 6.0;
-                case RARE -> 9.0;
-                case EPIC -> 12.0;
-                case LEGENDARY -> 16.0;
-                case MYTHIC, AETHERED -> 20.0;
+                case COMMON -> 3.0;
+                case UNCOMMON -> 4.5;
+                case RARE -> 6.5;
+                case EPIC -> 9.0;
+                case LEGENDARY -> 12.0;
+                case MYTHIC, AETHERED -> 15.0;
             };
 
 
             case GLOWSTONE -> switch (rarity) {
 
-                case COMMON -> 1.0;
-                case UNCOMMON -> 1.5;
-                case RARE -> 2.0;
-                case EPIC -> 2.5;
-                case LEGENDARY -> 3.0;
-                case MYTHIC, AETHERED -> 4.0;
+                case COMMON -> 0.8;
+                case UNCOMMON -> 1.2;
+                case RARE -> 1.5;
+                case EPIC -> 1.8;
+                case LEGENDARY -> 2.2;
+                case MYTHIC, AETHERED -> 2.8;
             };
 
 
             case WHEAT -> switch (rarity) {
 
-                case COMMON -> 1.0;
-                case UNCOMMON -> 1.5;
-                case RARE -> 2.0;
-                case EPIC -> 3.0;
-                case LEGENDARY -> 4.0;
-                case MYTHIC, AETHERED -> 5.0;
+                case COMMON -> 0.8;
+                case UNCOMMON -> 1.2;
+                case RARE -> 1.6;
+                case EPIC -> 2.2;
+                case LEGENDARY -> 2.8;
+                case MYTHIC, AETHERED -> 3.5;
             };
 
 
             case CARROT -> switch (rarity) {
 
-                case COMMON -> 4.0;
-                case UNCOMMON -> 6.0;
-                case RARE -> 9.0;
-                case EPIC -> 12.0;
-                case LEGENDARY -> 16.0;
-                case MYTHIC, AETHERED -> 20.0;
+                case COMMON -> 3.0;
+                case UNCOMMON -> 4.5;
+                case RARE -> 6.5;
+                case EPIC -> 9.0;
+                case LEGENDARY -> 12.0;
+                case MYTHIC, AETHERED -> 15.0;
             };
 
 
             case OAK -> switch (rarity) {
 
-                case COMMON -> 4.0;
-                case UNCOMMON -> 6.0;
-                case RARE -> 9.0;
-                case EPIC -> 12.0;
-                case LEGENDARY -> 16.0;
-                case MYTHIC, AETHERED -> 20.0;
+                case COMMON -> 3.0;
+                case UNCOMMON -> 4.5;
+                case RARE -> 6.5;
+                case EPIC -> 9.0;
+                case LEGENDARY -> 12.0;
+                case MYTHIC, AETHERED -> 15.0;
             };
 
 
             case BIRCH -> switch (rarity) {
 
-                case COMMON -> 0.5;
-                case UNCOMMON -> 0.75;
-                case RARE -> 1.0;
-                case EPIC -> 1.5;
-                case LEGENDARY -> 2.0;
-                case MYTHIC, AETHERED -> 2.5;
+                case COMMON -> 0.4;
+                case UNCOMMON -> 0.6;
+                case RARE -> 0.8;
+                case EPIC -> 1.1;
+                case LEGENDARY -> 1.5;
+                case MYTHIC, AETHERED -> 1.8;
             };
 
 

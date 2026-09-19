@@ -49,6 +49,12 @@ VANILLA = {
     "OAK_LOG": 1,
     "BIRCH_LOG": 1,
     "SPRUCE_LOG": 1,
+    "JUNGLE_LOG": 1,
+    "ACACIA_LOG": 1,
+    "DARK_OAK_LOG": 1,
+    "MANGROVE_LOG": 1,
+    "CHERRY_LOG": 1,
+    "BAMBOO_BLOCK": 1,
     "OAK_PLANKS": 1,
     "STICK": 1,
     "COAL": 2,
@@ -125,6 +131,12 @@ RESOURCES = {
     "pufferfish": "PUFFERFISH",
     "birch_log": "BIRCH_LOG",
     "spruce_log": "SPRUCE_LOG",
+    "jungle_log": "JUNGLE_LOG",
+    "acacia_log": "ACACIA_LOG",
+    "dark_oak_log": "DARK_OAK_LOG",
+    "mangrove_log": "MANGROVE_LOG",
+    "cherry_log": "CHERRY_LOG",
+    "bamboo_block": "BAMBOO_BLOCK",
     "sugar_cane": "SUGAR_CANE",
     "nether_wart": "NETHER_WART",
     "prismarine_shard": "PRISMARINE_SHARD",
@@ -188,39 +200,36 @@ combat_t1 = {
 for k, n in combat_t1.items():
     items[k] = craft(n * V("COBBLESTONE"), MARGIN[1])
 
-# Combat T2: wrap 8 iron + T1
+# Wave 2 / Peter: T2 mix 2+2 · T3 mix 2+2 compressed · T4 cross 2+2 compacted · T5 peak 1+3
 for piece in combat_t1:
-    items[f"{piece}_2"] = craft(items[piece] + 8 * V("IRON_INGOT"), MARGIN[2])
+    items[f"{piece}_2"] = craft(items[piece] + 2 * V("IRON_INGOT") + 2 * V("BONE"), MARGIN[2])
 
-# Combat T3: 4 bone C + 4 rotten C + T2
 for piece in combat_t1:
     items[f"{piece}_3"] = craft(
-        items[f"{piece}_2"] + 4 * C("bone") + 4 * C("rotten_flesh"), MARGIN[3]
+        items[f"{piece}_2"] + 2 * C("bone") + 2 * C("rotten_flesh"), MARGIN[3]
     )
 
-# Combat T4: 4 gold D + 4 bone D + T3
 for piece in combat_t1:
     items[f"{piece}_4"] = craft(
-        items[f"{piece}_3"] + 4 * D("raw_gold") + 4 * D("bone"), MARGIN[4]
+        items[f"{piece}_3"] + 2 * D("raw_gold") + 2 * D("bone"), MARGIN[4]
     )
 
-# Combat T5: 4 diamond D + 4 emerald D + T4
 for piece in combat_t1:
     items[f"{piece}_5"] = craft(
-        items[f"{piece}_4"] + 4 * D("diamond") + 4 * D("emerald"), MARGIN[5]
+        items[f"{piece}_4"] + 1 * D("diamond") + 3 * D("emerald"), MARGIN[5]
     )
 
 # Combat sword T1: 2 cobble + stick
 items["combat_sword"] = craft(2 * V("COBBLESTONE") + V("STICK"), MARGIN[1])
-items["combat_sword_2"] = craft(items["combat_sword"] + 8 * V("IRON_INGOT"), MARGIN[2])
+items["combat_sword_2"] = craft(items["combat_sword"] + 2 * V("IRON_INGOT") + 2 * V("BONE"), MARGIN[2])
 items["combat_sword_3"] = craft(
-    items["combat_sword_2"] + 4 * C("bone") + 4 * C("rotten_flesh"), MARGIN[3]
+    items["combat_sword_2"] + 2 * C("bone") + 2 * C("rotten_flesh"), MARGIN[3]
 )
 items["combat_sword_4"] = craft(
-    items["combat_sword_3"] + 4 * D("raw_gold") + 4 * D("bone"), MARGIN[4]
+    items["combat_sword_3"] + 2 * D("raw_gold") + 2 * D("bone"), MARGIN[4]
 )
 items["combat_sword_5"] = craft(
-    items["combat_sword_4"] + 4 * D("diamond") + 4 * D("emerald"), MARGIN[5]
+    items["combat_sword_4"] + 1 * D("diamond") + 3 * D("emerald"), MARGIN[5]
 )
 
 # Mining armor T1 copper shapes (same counts as combat)
@@ -233,21 +242,21 @@ mining_t1 = {
 for k, n in mining_t1.items():
     items[k] = craft(n * V("COPPER_INGOT"), MARGIN[1])
 for piece in mining_t1:
-    items[f"{piece}_2"] = craft(items[piece] + 8 * V("IRON_INGOT"), MARGIN[2])
-# T3: iron C + coal C mixed
+    items[f"{piece}_2"] = craft(items[piece] + 2 * V("IRON_INGOT") + 2 * V("COAL"), MARGIN[2])
+# T3: 2+2 iron C + coal C
 for piece in mining_t1:
     items[f"{piece}_3"] = craft(
-        items[f"{piece}_2"] + 4 * C("raw_iron") + 4 * C("coal"), MARGIN[3]
+        items[f"{piece}_2"] + 2 * C("raw_iron") + 2 * C("coal"), MARGIN[3]
     )
-# T4: copper D + coal D
+# T4: 2+2 copper D + coal D
 for piece in mining_t1:
     items[f"{piece}_4"] = craft(
-        items[f"{piece}_3"] + 4 * D("raw_copper") + 4 * D("coal"), MARGIN[4]
+        items[f"{piece}_3"] + 2 * D("raw_copper") + 2 * D("coal"), MARGIN[4]
     )
-# T5: diamond + redstone dual
+# T5: 1 diamond D + 3 redstone D
 for piece in mining_t1:
     items[f"{piece}_5"] = craft(
-        items[f"{piece}_4"] + 4 * D("diamond") + 4 * D("redstone"), MARGIN[5]
+        items[f"{piece}_4"] + 1 * D("diamond") + 3 * D("redstone"), MARGIN[5]
     )
 
 # simple pick + mining pick ladder
@@ -255,13 +264,13 @@ items["simple_pickaxe"] = craft(3 * V("COBBLESTONE") + 2 * V("STICK"), MARGIN[1]
 # mining_pickaxe T1 often coal wrap on simple — treat as simple + coal surround
 items["mining_pickaxe"] = craft(items["simple_pickaxe"] + 8 * V("COAL"), MARGIN[1])
 items["mining_pickaxe_2"] = craft(
-    items["mining_pickaxe"] + 4 * V("IRON_INGOT") + 4 * V("COAL"), MARGIN[2]
+    items["mining_pickaxe"] + 2 * V("IRON_INGOT") + 2 * V("COAL"), MARGIN[2]
 )
 items["mining_pickaxe_3"] = craft(
-    items["mining_pickaxe_2"] + 4 * C("raw_copper") + 4 * C("raw_iron"), MARGIN[3]
+    items["mining_pickaxe_2"] + 2 * C("raw_copper") + 2 * C("raw_iron"), MARGIN[3]
 )
 items["mining_pickaxe_4"] = craft(
-    items["mining_pickaxe_3"] + 4 * D("raw_copper") + 4 * D("coal"), MARGIN[4]
+    items["mining_pickaxe_3"] + 2 * D("raw_copper") + 2 * D("coal"), MARGIN[4]
 )
 items["mining_pickaxe_5"] = craft(
     items["mining_pickaxe_4"] + D("diamond") + 3 * D("redstone"), MARGIN[5]
@@ -281,24 +290,27 @@ for k, n in farm_t1.items():
     items[k] = craft(n * V("WHEAT"), MARGIN[1])
 items["farming_hoe"] = craft(2 * V("WHEAT") + 2 * V("STICK"), MARGIN[1])
 for piece in list(farm_t1) + ["farming_hoe"]:
-    wrap = V("CARROT")
-    items[f"{piece}_2"] = craft(items[piece] + 8 * wrap, MARGIN[2])
+    items[f"{piece}_2"] = craft(items[piece] + 2 * V("CARROT") + 2 * V("WHEAT"), MARGIN[2])
 for piece in farm_t1:
-    items[f"{piece}_3"] = craft(items[f"{piece}_2"] + 8 * C("potato"), MARGIN[3])
-items["farming_hoe_3"] = craft(items["farming_hoe_2"] + 8 * C("wheat"), MARGIN[3])
+    items[f"{piece}_3"] = craft(
+        items[f"{piece}_2"] + 2 * C("potato") + 2 * C("wheat"), MARGIN[3]
+    )
+items["farming_hoe_3"] = craft(
+    items["farming_hoe_2"] + 2 * C("potato") + 2 * C("wheat"), MARGIN[3]
+)
 for piece in farm_t1:
     items[f"{piece}_4"] = craft(
-        items[f"{piece}_3"] + 4 * D("sugar_cane") + 4 * D("carrot"), MARGIN[4]
+        items[f"{piece}_3"] + 2 * D("sugar_cane") + 2 * D("carrot"), MARGIN[4]
     )
 items["farming_hoe_4"] = craft(
-    items["farming_hoe_3"] + 4 * D("sugar_cane") + 4 * D("wheat"), MARGIN[4]
+    items["farming_hoe_3"] + 2 * D("sugar_cane") + 2 * D("wheat"), MARGIN[4]
 )
 for piece in farm_t1:
     items[f"{piece}_5"] = craft(
-        items[f"{piece}_4"] + 4 * D("nether_wart") + 4 * D("potato"), MARGIN[5]
+        items[f"{piece}_4"] + 1 * D("nether_wart") + 3 * D("potato"), MARGIN[5]
     )
 items["farming_hoe_5"] = craft(
-    items["farming_hoe_4"] + 4 * D("nether_wart") + 4 * D("wheat"), MARGIN[5]
+    items["farming_hoe_4"] + 1 * D("nether_wart") + 3 * D("wheat"), MARGIN[5]
 )
 
 # Foraging
@@ -312,22 +324,24 @@ for k, n in forage_t1.items():
     items[k] = craft(n * V("SPRUCE_LOG"), MARGIN[1])
 items["foraging_axe"] = craft(3 * V("SPRUCE_LOG") + 2 * V("STICK"), MARGIN[1])
 for piece in list(forage_t1) + ["foraging_axe"]:
-    items[f"{piece}_2"] = craft(items[piece] + 8 * V("BIRCH_LOG"), MARGIN[2])
+    items[f"{piece}_2"] = craft(items[piece] + 2 * V("BIRCH_LOG") + 2 * V("SPRUCE_LOG"), MARGIN[2])
 for piece in list(forage_t1) + ["foraging_axe"]:
-    items[f"{piece}_3"] = craft(items[f"{piece}_2"] + 8 * C("oak_log"), MARGIN[3])
+    items[f"{piece}_3"] = craft(
+        items[f"{piece}_2"] + 2 * C("jungle_log") + 2 * C("acacia_log"), MARGIN[3]
+    )
 for piece in forage_t1:
     items[f"{piece}_4"] = craft(
-        items[f"{piece}_3"] + 4 * D("spruce_log") + 4 * D("birch_log"), MARGIN[4]
+        items[f"{piece}_3"] + 2 * D("dark_oak_log") + 2 * D("mangrove_log"), MARGIN[4]
     )
 items["foraging_axe_4"] = craft(
-    items["foraging_axe_3"] + 4 * D("spruce_log") + 4 * D("birch_log"), MARGIN[4]
+    items["foraging_axe_3"] + 2 * D("dark_oak_log") + 2 * D("mangrove_log"), MARGIN[4]
 )
 for piece in forage_t1:
     items[f"{piece}_5"] = craft(
-        items[f"{piece}_4"] + 4 * D("oak_log") + 4 * D("birch_log"), MARGIN[5]
+        items[f"{piece}_4"] + 1 * D("cherry_log") + 3 * D("bamboo_block"), MARGIN[5]
     )
 items["foraging_axe_5"] = craft(
-    items["foraging_axe_4"] + 4 * D("oak_log") + 4 * D("birch_log"), MARGIN[5]
+    items["foraging_axe_4"] + 1 * D("cherry_log") + 3 * D("bamboo_block"), MARGIN[5]
 )
 
 # Fishing
@@ -341,22 +355,24 @@ for k, n in fish_t1.items():
     items[k] = craft(n * V("COD"), MARGIN[1])
 items["fishing_rod"] = craft(2 * V("COD") + 2 * V("STICK") + V("STRING"), MARGIN[1])
 for piece in list(fish_t1) + ["fishing_rod"]:
-    items[f"{piece}_2"] = craft(items[piece] + 8 * V("SALMON"), MARGIN[2])
+    items[f"{piece}_2"] = craft(items[piece] + 2 * V("SALMON") + 2 * V("COD"), MARGIN[2])
 for piece in list(fish_t1) + ["fishing_rod"]:
-    items[f"{piece}_3"] = craft(items[f"{piece}_2"] + 8 * C("pufferfish"), MARGIN[3])
+    items[f"{piece}_3"] = craft(
+        items[f"{piece}_2"] + 2 * C("pufferfish") + 2 * C("salmon"), MARGIN[3]
+    )
 for piece in fish_t1:
     items[f"{piece}_4"] = craft(
-        items[f"{piece}_3"] + 4 * D("prismarine_shard") + 4 * D("salmon"), MARGIN[4]
+        items[f"{piece}_3"] + 2 * D("prismarine_shard") + 2 * D("salmon"), MARGIN[4]
     )
 items["fishing_rod_4"] = craft(
-    items["fishing_rod_3"] + 4 * D("prismarine_shard") + 4 * D("salmon"), MARGIN[4]
+    items["fishing_rod_3"] + 2 * D("prismarine_shard") + 2 * D("salmon"), MARGIN[4]
 )
 for piece in fish_t1:
     items[f"{piece}_5"] = craft(
-        items[f"{piece}_4"] + 4 * D("prismarine_shard") + 4 * D("pufferfish"), MARGIN[5]
+        items[f"{piece}_4"] + 1 * D("prismarine_shard") + 3 * D("pufferfish"), MARGIN[5]
     )
 items["fishing_rod_5"] = craft(
-    items["fishing_rod_4"] + 4 * D("prismarine_shard") + 4 * D("pufferfish"), MARGIN[5]
+    items["fishing_rod_4"] + 1 * D("prismarine_shard") + 3 * D("pufferfish"), MARGIN[5]
 )
 
 # Charms T1: 2x2 vanilla domain
@@ -370,26 +386,27 @@ charm_t1_mats = {
 }
 for k, s in charm_t1_mats.items():
     items[k] = craft(s, CHARM[1])
+# Matches RecipeRegistry.registerCharms (1 previous + 4 compressed / compacted).
 charm_t2 = {
     "charm_combat_2": ("charm_combat", "bone"),
-    "charm_mining_2": ("charm_mining", "coal"),
+    "charm_mining_2": ("charm_mining", "raw_copper"),
     "charm_foraging_2": ("charm_foraging", "oak_log"),
-    "charm_farming_2": ("charm_farming", "wheat"),
+    "charm_farming_2": ("charm_farming", "carrot"),
     "charm_fishing_2": ("charm_fishing", "cod"),
-    "charm_utility_2": ("charm_utility", "raw_iron"),
+    "charm_utility_2": ("charm_utility", "lapis"),
 }
 for k, (prev, mat) in charm_t2.items():
-    items[k] = craft(items[prev] + 8 * C(mat), CHARM[2])
+    items[k] = craft(items[prev] + 4 * C(mat), CHARM[2])
 charm_t3 = {
-    "charm_combat_3": ("charm_combat_2", "bone"),
-    "charm_mining_3": ("charm_mining_2", "coal"),
+    "charm_combat_3": ("charm_combat_2", "gunpowder"),
+    "charm_mining_3": ("charm_mining_2", "raw_iron"),
     "charm_foraging_3": ("charm_foraging_2", "oak_log"),
-    "charm_farming_3": ("charm_farming_2", "wheat"),
+    "charm_farming_3": ("charm_farming_2", "potato"),
     "charm_fishing_3": ("charm_fishing_2", "cod"),
-    "charm_utility_3": ("charm_utility_2", "raw_iron"),
+    "charm_utility_3": ("charm_utility_2", "lapis"),
 }
 for k, (prev, mat) in charm_t3.items():
-    items[k] = craft(items[prev] + 8 * D(mat), CHARM[3])
+    items[k] = craft(items[prev] + 4 * D(mat), CHARM[3])
 
 # Special charms
 items["charm_shiny"] = craft(4 * C("diamond") + 4 * C("emerald"), CHARM[2])
@@ -615,7 +632,7 @@ for k in [
 print(f"\nTotal item entries: {len(items)}")
 
 # Emit yml
-out = Path(r"C:\Users\Robbi\IdeaProjects\AetherionItems\src\main\resources\economy.yml")
+out = Path(__file__).resolve().parent.parent / "src" / "main" / "resources" / "economy.yml"
 
 def section(title: str, keys: list[str]) -> str:
     lines = [f"  # --- {title} ---"]
@@ -666,5 +683,8 @@ drops:
 {chr(10).join(f'  {k}: {items[k]}' for k in drop_keys)}
 """
 
-out.write_text(yml, encoding="utf-8")
-print(f"Wrote {out}")
+if __import__("os").environ.get("GEN_ECONOMY_WRITE") == "1":
+    out.write_text(yml, encoding="utf-8")
+    print(f"Wrote {out}")
+else:
+    print(f"Dry-run (set GEN_ECONOMY_WRITE=1 to write {out})")

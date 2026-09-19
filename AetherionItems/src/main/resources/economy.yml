@@ -188,53 +188,53 @@ crafted:
   catcher_leggings_2: 2105
   catcher_leggings_3: 457131
   charm_combat: 5
-  charm_combat_2: 2084
-  charm_combat_3: 470948
+  charm_combat_2: 1045
+  charm_combat_3: 235479
   charm_estate: 19
   charm_farming: 5
-  charm_farming_2: 2084
-  charm_farming_3: 470948
+  charm_farming_2: 1045
+  charm_farming_3: 235479
   charm_fishing: 5
-  charm_fishing_2: 2084
-  charm_fishing_3: 470948
+  charm_fishing_2: 1045
+  charm_fishing_3: 235479
   charm_foraging: 5
-  charm_foraging_2: 2084
-  charm_foraging_3: 470948
+  charm_foraging_2: 1045
+  charm_foraging_3: 235479
   charm_forge: 704847
   charm_mining: 10
-  charm_mining_2: 4167
-  charm_mining_3: 941894
+  charm_mining_2: 2091
+  charm_mining_3: 470960
   charm_shiny: 14552
   charm_utility: 15
-  charm_utility_2: 6263
-  charm_utility_3: 1415473
+  charm_utility_2: 3142
+  charm_utility_3: 707754
   coal_booster: 219
   combat_boots: 5
-  combat_boots_2: 38
-  combat_boots_3: 2132
-  combat_boots_4: 1138929
-  combat_boots_5: 5825098
+  combat_boots_2: 17
+  combat_boots_3: 1063
+  combat_boots_4: 569460
+  combat_boots_5: 2781577
   combat_chestplate: 10
-  combat_chestplate_2: 44
-  combat_chestplate_3: 2140
-  combat_chestplate_4: 1138942
-  combat_chestplate_5: 5825123
+  combat_chestplate_2: 23
+  combat_chestplate_3: 1072
+  combat_chestplate_4: 569474
+  combat_chestplate_5: 2781604
   combat_helmet: 6
-  combat_helmet_2: 39
-  combat_helmet_3: 2133
-  combat_helmet_4: 1138931
-  combat_helmet_5: 5825102
+  combat_helmet_2: 18
+  combat_helmet_3: 1064
+  combat_helmet_4: 569461
+  combat_helmet_5: 2781579
   combat_leggings: 8
-  combat_leggings_2: 42
-  combat_leggings_3: 2137
-  combat_leggings_4: 1138937
-  combat_leggings_5: 5825113
+  combat_leggings_2: 21
+  combat_leggings_3: 1069
+  combat_leggings_4: 569469
+  combat_leggings_5: 2781594
   combat_sack: 3956
   combat_sword: 4
-  combat_sword_2: 36
-  combat_sword_3: 2129
-  combat_sword_4: 1138924
-  combat_sword_5: 5825088
+  combat_sword_2: 16
+  combat_sword_3: 1061
+  combat_sword_4: 569456
+  combat_sword_5: 2781570
   compacted_cobble_hammer: 106544
   compacted_diamond_chestplate: 1707034
   compacted_diamond_pickaxe: 859405
@@ -258,82 +258,82 @@ crafted:
   emerald_booster: 656
   emerald_crown: 1599612
   farming_boots: 5
-  farming_boots_2: 17
-  farming_boots_3: 2101
-  farming_boots_4: 457124
-  farming_boots_5: 1652126
+  farming_boots_2: 12
+  farming_boots_3: 1056
+  farming_boots_4: 228571
+  farming_boots_5: 760781
   farming_chestplate: 10
-  farming_chestplate_2: 23
-  farming_chestplate_3: 2110
-  farming_chestplate_4: 457139
-  farming_chestplate_5: 1652154
+  farming_chestplate_2: 18
+  farming_chestplate_3: 1064
+  farming_chestplate_4: 228584
+  farming_chestplate_5: 760806
   farming_helmet: 6
-  farming_helmet_2: 18
-  farming_helmet_3: 2102
-  farming_helmet_4: 457126
-  farming_helmet_5: 1652130
+  farming_helmet_2: 13
+  farming_helmet_3: 1057
+  farming_helmet_4: 228573
+  farming_helmet_5: 760785
   farming_hoe: 5
-  farming_hoe_2: 17
-  farming_hoe_3: 2101
-  farming_hoe_4: 457124
-  farming_hoe_5: 1652126
+  farming_hoe_2: 12
+  farming_hoe_3: 1056
+  farming_hoe_4: 228571
+  farming_hoe_5: 760781
   farming_leggings: 8
-  farming_leggings_2: 21
-  farming_leggings_3: 2107
-  farming_leggings_4: 457134
-  farming_leggings_5: 1652145
+  farming_leggings_2: 16
+  farming_leggings_3: 1061
+  farming_leggings_4: 228579
+  farming_leggings_5: 760796
   farming_sack: 3956
   fishing_boots: 5
-  fishing_boots_2: 27
-  fishing_boots_3: 6280
-  fishing_boots_4: 917677
-  fishing_boots_5: 3051030
+  fishing_boots_2: 14
+  fishing_boots_3: 2619
+  fishing_boots_4: 457979
+  fishing_boots_5: 1589546
   fishing_chestplate: 10
-  fishing_chestplate_2: 34
-  fishing_chestplate_3: 6290
-  fishing_chestplate_4: 917694
-  fishing_chestplate_5: 3051062
+  fishing_chestplate_2: 21
+  fishing_chestplate_3: 2629
+  fishing_chestplate_4: 457995
+  fishing_chestplate_5: 1589576
   fishing_helmet: 6
-  fishing_helmet_2: 29
-  fishing_helmet_3: 6283
-  fishing_helmet_4: 917682
-  fishing_helmet_5: 3051039
+  fishing_helmet_2: 16
+  fishing_helmet_3: 2622
+  fishing_helmet_4: 457984
+  fishing_helmet_5: 1589555
   fishing_leggings: 8
-  fishing_leggings_2: 31
-  fishing_leggings_3: 6286
-  fishing_leggings_4: 917687
-  fishing_leggings_5: 3051048
+  fishing_leggings_2: 18
+  fishing_leggings_3: 2624
+  fishing_leggings_4: 457987
+  fishing_leggings_5: 1589561
   fishing_rod: 6
-  fishing_rod_2: 29
-  fishing_rod_3: 6283
-  fishing_rod_4: 917682
-  fishing_rod_5: 3051039
+  fishing_rod_2: 16
+  fishing_rod_3: 2622
+  fishing_rod_4: 457984
+  fishing_rod_5: 1589555
   fishing_sack: 3956
   foraging_axe: 6
-  foraging_axe_2: 18
-  foraging_axe_3: 2102
-  foraging_axe_4: 457126
-  foraging_axe_5: 1390933
+  foraging_axe_2: 13
+  foraging_axe_3: 1057
+  foraging_axe_4: 228573
+  foraging_axe_5: 695486
   foraging_boots: 5
-  foraging_boots_2: 17
-  foraging_boots_3: 2101
-  foraging_boots_4: 457124
-  foraging_boots_5: 1390929
+  foraging_boots_2: 12
+  foraging_boots_3: 1056
+  foraging_boots_4: 228571
+  foraging_boots_5: 695482
   foraging_chestplate: 10
-  foraging_chestplate_2: 23
-  foraging_chestplate_3: 2110
-  foraging_chestplate_4: 457139
-  foraging_chestplate_5: 1390958
+  foraging_chestplate_2: 18
+  foraging_chestplate_3: 1064
+  foraging_chestplate_4: 228584
+  foraging_chestplate_5: 695506
   foraging_helmet: 6
-  foraging_helmet_2: 18
-  foraging_helmet_3: 2102
-  foraging_helmet_4: 457126
-  foraging_helmet_5: 1390933
+  foraging_helmet_2: 13
+  foraging_helmet_3: 1057
+  foraging_helmet_4: 228573
+  foraging_helmet_5: 695486
   foraging_leggings: 8
-  foraging_leggings_2: 21
-  foraging_leggings_3: 2107
-  foraging_leggings_4: 457134
-  foraging_leggings_5: 1390948
+  foraging_leggings_2: 16
+  foraging_leggings_3: 1061
+  foraging_leggings_4: 228579
+  foraging_leggings_5: 695497
   foraging_sack: 3956
   frost_shard: 2094
   glowstone_booster: 24
@@ -352,30 +352,30 @@ crafted:
   lapis_pendant: 4447
   mender_staff: 780
   mining_boots: 5
-  mining_boots_2: 38
-  mining_boots_3: 5252
-  mining_boots_4: 689152
-  mining_boots_5: 3663078
+  mining_boots_2: 20
+  mining_boots_3: 2627
+  mining_boots_4: 344578
+  mining_boots_5: 1373719
   mining_chestplate: 10
-  mining_chestplate_2: 44
-  mining_chestplate_3: 5261
-  mining_chestplate_4: 689167
-  mining_chestplate_5: 3663107
+  mining_chestplate_2: 26
+  mining_chestplate_3: 2636
+  mining_chestplate_4: 344593
+  mining_chestplate_5: 1373748
   mining_helmet: 6
-  mining_helmet_2: 39
-  mining_helmet_3: 5253
-  mining_helmet_4: 689154
-  mining_helmet_5: 3663082
+  mining_helmet_2: 21
+  mining_helmet_3: 2629
+  mining_helmet_4: 344581
+  mining_helmet_5: 1373725
   mining_leggings: 8
-  mining_leggings_2: 42
-  mining_leggings_3: 5258
-  mining_leggings_4: 689162
-  mining_leggings_5: 3663097
+  mining_leggings_2: 23
+  mining_leggings_3: 2632
+  mining_leggings_4: 344586
+  mining_leggings_5: 1373734
   mining_pickaxe: 26
-  mining_pickaxe_2: 60
-  mining_pickaxe_3: 4246
-  mining_pickaxe_4: 687492
-  mining_pickaxe_5: 2025256
+  mining_pickaxe_2: 47
+  mining_pickaxe_3: 2147
+  mining_pickaxe_4: 343786
+  mining_pickaxe_5: 1372214
   mining_sack: 4189
   oak_booster: 12
   obsidian_maul: 170125

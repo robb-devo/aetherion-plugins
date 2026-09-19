@@ -1,8 +1,8 @@
 # Aetherion — Balance- & Progressions-Audit (Read-First)
 
-**Stand:** 19. September 2026 · Branch `cursor/balance-audit-2b34`  
-**Scope:** alle Quellen für Stats und Ressourcen. **Keine Zahlen geändert.** Compile unberührt.  
-**Methode:** Rezepte, `CompressedResource`, `EconomyCurve`/`economy.yml`, `BalanceTargets` REV 5, Skill-Kurven, Boss-YAML, Dungeon-Loot, Pet-Tabellen, Quarry/Minions, Shops.  
+**Stand:** 19. September 2026 · Wave 2 on `cursor/balance-wave2-stacking-cb8a` (audit origin: `cursor/balance-audit-2b34`)  
+**Scope:** Audit is read-first; **Wave 1 + Wave 2 numbers are applied** (see sections below).  
+**Methode:** Rezepte, `CompressedResource`, `EconomyCurve`/`economy.yml`, `BalanceTargets` REV 6, Skill-Kurven, Boss-YAML, Dungeon-Loot, Pet-Tabellen, Quarry/Minions, Shops.  
 **Skyblock-Maßstab:** Enchanted ≈ 160→1 (hier 128 = 2×64), Super-Compact ≈ gleiche Ratio nochmal, Tiers ×~1.6–2.0, Unique-Drops selten und an den richtigen Boss gebunden.
 
 ---
@@ -27,12 +27,125 @@ Not in this PR: Hollow Lurker, F1 relic pool / F2 HP, Blood Tax / Account softca
 
 ---
 
+## Wave 2 applied (`cursor/balance-wave2-stacking-cb8a`)
+
+Numbers / recipes / curves only. Item IDs unchanged. Compact 128/128 and the fishing Compacted-crate gate are untouched.
+
+### Stacking budget (endgame comfortable)
+
+Hobby-server, Hypixel-inspired structure — **not** Hypixel-endgame saturation. Full stack = best T5 set + T3 domain charm (pad) + max relevant domain skills @100 + typical booster load.
+
+Typical booster load (gathering): **10 Diamond on the tool**, **6 Diamond on the chest**, **4 Gold on each other armor piece**. Combat damage typical is tool-heavy (10 Diamond on the sword); armor cores go to Defense / Health.
+
+| Slice | Share |
+|-------|-------|
+| Set (tool + 4 armor) | **45%** |
+| Pad (T3 domain charm) | **14%** |
+| Skills (domain @100) | **21%** |
+| Booster (typical load) | **20%** |
+
+| Domain · primary | Comfortable full stack | Set 45% | Pad 14% | Skills 21% | Booster 20% |
+|------------------|------------------------|---------|---------|------------|-------------|
+| Mining Fortune | **1100** | 495 | 150 | 231 | 228 |
+| Mining Power | **480** (T5 set 252 ≥ Debris 250) | — | — | — | — |
+| Farming Fortune | **1000** | 442 | 135 | 208 | ~200 |
+| Farming Harvest | **1200** | 532 | 160 | ~247 | ~240 |
+| Foraging Fortune | **900** | 405 | 120 | 189 | ~180 |
+| Fishing Fortune | **900** | 405 | 120 | 182 | ~180 |
+| Fishing Catch | **1400** | 620 | 190 | 293 | ~280 |
+| Combat Damage | **320–360** | 144 | 42 | 67 | ~90 (sword 10◆) |
+| Combat Health | **560** | 222 | 52 | 117 | lapis typical |
+| Combat Defense | **420** | 172 | — | Thick Skin / Quiet Pride | core flats |
+
+REV5 T5 Mining set-alone was **860 Fortune** — already the entire comfortable stack before pad/skills/boosters. A Hypixel-raw **~8900 set-alone** is rejected; Wave 2 T5 Mining set is **495 Fortune** (pick 250 + armor 245). Full stack lands ~1100.
+
+Whale ceiling (14 Mythic Diamond × 5 pieces) may overshoot comfortable by ~25–35%. That is a ceiling, not the target.
+
+### T5 set key stats before → after (REV5 → REV6)
+
+| Piece / set | REV5 | REV6 |
+|-------------|------|------|
+| Mining pick MP / Fort / Spread | 160 / **260** / 22 | 130 / **250** / 12 |
+| Mining helm Fort | 125 | 52 |
+| Mining chest Fort | 190 | 80 |
+| Mining legs Fort | 160 | 64 |
+| Mining boots Fort | 125 | 49 |
+| **Mining set Fortune** | **860** | **495** |
+| Mining set MP | 522 | **252** (Debris 250) |
+| Combat sword Dmg / AS / CC / CD | 130 / 22 / 18 / 110 | **88** / 18 / 15 / 102 |
+| Combat set Damage (sword+armor) | 196 | **144** |
+| Combat set Health | 395 | **222** |
+| Farming hoe Fort / Harvest | 200 / 300 | **210** / 260 |
+| Farming set Fortune | 638 | **442** |
+| Foraging axe MP / Fort | 110 / 200 | 96 / **180** |
+| Foraging set Fortune | 638 | **405** |
+| Fishing rod Fort / FS / FC | 200 / 38 / 340 | 180 / 32 / **320** |
+| Fishing set Fortune / Catch | 638 / 905 | **405** / **620** |
+| Mining charm T3 Fort | 30 | **150** |
+| Combat charm T3 Dmg | 22 | **42** |
+
+Tool is ~50% of the set primary (was ~30% on mining fortune — armor was overweight). T1 combat/mining entry stats stay close so early game does not collapse. T4 pick MP **96** still clears diamond ore (**80**).
+
+`BalanceTargets.LADDER_REV = 6`. `StarterSetBalance` snapshots REV5 so live items rebase without keeping inflated Fortune.
+
+### Recipe pattern (all Combat / Mining / Farming / Foraging / Fishing T1–T5)
+
+Same Skyblock-smooth ladder as the Wave 1 T5 pick fix. **1 previous piece + tier mats.** No 8-compacted / 4+4 dual-wrap sinks. **Never 2–3× the same predecessor.**
+
+| Tier | Shape | Mats |
+|------|-------|------|
+| T1 | Vanilla armor / tool | Unchanged |
+| T2 | Mix (` V / HCH / V `) | **2+2 vanilla / early** (Combat iron+bone, Mining iron+coal, Farming carrot+wheat, Foraging birch+spruce, Fishing salmon+cod) |
+| T3 | Mix plus (` V / HCH / V `) | **2+2 Compressed** |
+| T4 | Diagonal cross (`A B / C / B A`) | **2+2 Compacted** — same count as T3, rarer mats, harder shape |
+| T5 | Peak (` S / SCS / P `) | **1 premium Compacted + 3 support Compacted** |
+
+Peter-constraint (audit, 19 Sep 2026): **exactly one predecessor** (the previous-tier piece) in every T2–T5 craft. Never 2–3× the same pick/sword/armor in the center column. New mats each tier. Helpers (`registerLadderMix` / `Cross` / `Peak`) place the predecessor only in the center slot.
+
+#### Mining pickaxe ladder (the example Peter called out)
+
+| ID | Shape | Predecessor | New mats |
+|----|-------|-------------|----------|
+| `simple_pickaxe` | `CCC / S / S` | — | 3 coal + 2 stick |
+| `mining_pickaxe` | 8-wrap around center | **1** Simple Pick | 8 coal |
+| `mining_pickaxe_2` | mix plus | **1** T1 pick | 2 iron + 2 coal |
+| `mining_pickaxe_3` | mix plus | **1** T2 pick | 2 Compressed Copper + 2 Compressed Iron |
+| `mining_pickaxe_4` | diagonal cross | **1** T3 pick | 2 Compacted Copper + 2 Compacted Coal |
+| `mining_pickaxe_5` | peak | **1** T4 pick | 1 Compacted Diamond + 3 Compacted Redstone |
+
+Same one-predecessor pattern on every Combat / Mining / Farming / Foraging / Fishing armor piece, sword, hoe, axe, and rod. Sidegrades (`compacted_iron_pickaxe`, midas dagger) also use at most one previous tool. Catcher T3 stays 8 Compacted Feather (Wave 1). Compact 128/128 and fishing Compacted gate unchanged.
+
+Charms T2/T3: 8-wrap → plus **4** Compressed / **4** Compacted.
+
+`economy.yml` crafted listings for the ladders were recomputed from the new ingredient counts (T5 sword 5.83M → 2.78M, T5 pick 2.03M → 1.37M). Estate / Siphon / Catcher-T3 Wave 1 listings kept.
+
+### Skills + boosters
+
+| | REV5 / Wave 1 | Wave 2 |
+|--|---------------|--------|
+| Effect mult | 1.00 @1 · 2.46 @50 · **6.28 @100** (early already fat) | **1.00 @1 · 1.33 @25 · 1.66 @50 · 2.84 @75 · 6.50 @100** |
+| XP to 100 | 338 601 | **346 768** (wall is 50–100: +70/lvl after 50, +110/lvl after 75) |
+| Compact chance | 0.6–2.8% | unchanged |
+| Extra Pocket | 7.5 Fort | **22** Fort (143 @100) |
+| Quarry Manners | 4.5 MP / 3.5 Fort | **10 MP / 13.5 Fort** |
+| Crop Gossip / Wide Furrow | Fort 6.5 / Harvest 22 | Fort **22+10** / Harvest **8+24** |
+| Bite Me / Short Cast | Catch 14 / Speed 6.5 | Catch **30+15**, Fort **18+10**, Speed 8 |
+| Blood Tax @100 | **185%** HP | **60%** HP |
+| Mythic Diamond core | **+14** | **+9** |
+| Mythic Gold core | +10 | **+7** |
+| Special mythic (Emerald/Lapis/…) | +20 | **+15** |
+
+14 Mythic Diamond on a T5 pick (250 Fort) is **+126 / +50%** of that piece — inside the old “20–35% per piece” intent for a fully socketed tool, not a second set.
+
+---
+
+
 ## A) Kurzfazit
 
 ### Was schon gut wirkt
 
 - **Skill-Leitern T1–T5** (`BalanceTargets` REV 5) sind intern stimmig: primäre Stats grob ×1.80 pro Stufe, Crit langsam, Crit-Damage steiler. Combat/Mining/Farming/Foraging/Fishing folgen derselben Kurve.
-- **Rezept-Form** der Leitern ist Skyblock-nah: T1 Vanilla-Form, T2 Eisen/Karotte/Lachs-Wrap, T3 Compressed-Mix, T4 Compacted-Mix, T5 Dual-Wrap (4 Ecken + 4 Kanten Compacted). Vorgänger-Gates (`CraftedPredecessorRequirement`) verhindern das Überspringen.
+- **Rezept-Form** der Leitern (Wave 2 / Peter): T1 Vanilla, T2 2+2 Mix, T3 Compressed-Mix, T4 Diagonal-Kreuz Compacted, T5 Peak (1 Premium + 3 Support). Genau **ein** Vorgänger pro Craft. Vorgänger-Gates (`CraftedPredecessorRequirement`) verhindern das Überspringen.
 - **Foraging-Holzleiter** ist die sauberste Ressourcen-Story: Oak → Birch+Spruce → Jungle+Acacia compressed → Dark Oak+Mangrove compacted → Cherry+Bamboo compacted (`RecipeRegistry` Kommentar Zeile 1017).
 - **Skill-Compact-Procs** sind bewusst flach (1,2 % → 5,5 %) — das ist der richtige Ton: Compact bleibt Helfer, nicht Drucker.
 - **Account-Level** ist einfach (100 XP = 1 Level) und als Langzeit-Leiter lesbar. Titel-Meilensteine und +1 Damage/+1 Health alle 5 Level sind nachvollziehbar.
@@ -403,7 +516,7 @@ Die letzten drei sind **keine Senken**, sondern Drucker, solange der Gear-Trader
 
 ## F) Priorisierte Unbalance-Liste
 
-Gruppe nach einem Patch, nicht einzeln anfassen. **F1–F4, F7–F8, F12 (diamond MP) plus fishing/skill-proc feedback: siehe Applied in PR oben.** F5–F6, F9–F11, F13–F20 still open.
+Gruppe nach einem Patch, nicht einzeln anfassen. **F1–F4, F7–F8, F12 (diamond MP) plus fishing/skill-proc feedback: siehe Applied in PR oben.** **F9 Blood Tax + skill-mult/XP: Wave 2.** F5–F6, F10–F11, F13–F20 still open. Account-stat softcap still open.
 
 | # | Gewicht | Ist | Soll-Vorschlag (Skyblock-glatt) | Datei / Symbol |
 |---|---------|-----|----------------------------------|----------------|
@@ -415,7 +528,7 @@ Gruppe nach einem Patch, nicht einzeln anfassen. **F1–F4, F7–F8, F12 (diamon
 | 6 | **4** | F1 Victory 8 % Relic-Pool inkl. Aetherblade; F1→F2 HP ×15,5 | F1-Relics: Vestige/Schematic/Core T1 only. Relic-Pool ab F3 oder Welt-Raid. F2-HP Richtung 35–50k **oder** F2-Rewards (garantierter Core T2 + 4–8 Compressed). | `DungeonLootFx`, `ItemLootBridge.BOSS_ITEMS`, `dungeon_frostbound.yml` |
 | 7 | **4** | Compacted Diamond Chest 8 Compacted für Def 58; Sword 1 Compacted für T4-Dmg | Chest: 3–4 Compacted, Stats näher T4-Brust (HP 70+). Sword: 3 Compacted + Scrap **oder** Dmg 48–55 (zwischen T3/T4). | `RecipeRegistry.registerMaterialProgression`, `ProgressionItems` |
 | 8 | **4** | Material-Picks schwächer als Leiter bei höherem Compact-Cost | Stone Pick ≤ Simple/T1-Kosten oder Stats ≥ T1. Iron Pick = T3-Äquivalent oder Rezept auf Compressed. Diamond Pick ≈ T4-1, Rezept 2 Compacted nicht 3+Cobble. | `ProgressionItems`, Rezepte |
-| 9 | **4** | Blood Tax @100 = 185 % HP-Coins; Account +1/5 bis +1000 | Blood Tax Decke ~40–60 % HP. Account-Stat Softcap (z. B. +1/5 bis 100, dann +1/25). Skill-Mult @100 Richtung 3,5–4,0× statt 6,3× **oder** Slot-Budget 3 Combat-Skills. | `SkillService.bloodTaxCurve`, `AetherionLevel`, `SkillProgression` |
+| 9 | **4** | Blood Tax @100 = 185 % HP-Coins; Account +1/5 bis +1000 | **Wave 2:** Blood Tax **60% @100**. Skill curve late-weighted (1.66× @50 / 6.50× @100) + steeper XP. Account-stat softcap still open. | `SkillService.bloodTaxCurve`, `AetherionLevel`, `SkillProgression` |
 | 10 | **3** | Uncommon-Spawn-Gewicht 56 &gt; Common 30 | Common 55 / Unc 30 / Rare 10 / Epic 3 / Leg 0,4 / Myth 0,05 (Summe ≈100). | `PetFactory` Konstanten |
 | 11 | **3** | T3 Brute Compressed 28 % &gt; T4 8 % | T2 3 % / T3 8 % / T4 12 % + Compacted 2–3 %. | `WildlifeLooks` T2/T3/T4_COMPRESSED |
 | 12 | **3** | T4-Pick 88 MP &lt; Diamond 95 | T4-Pick 100–110 **oder** Diamond-Erz 80. T5-Rezept darf nicht hinter einem Solo-Pick-Gate liegen. | `BalanceTargets.MINING_PICK`, `HarvestRules.requiredPower` |

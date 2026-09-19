@@ -9,16 +9,18 @@ public final class SkillProgression {
     public static final int RARITY_EVERY = 20;
     /**
      * Effect curve (base bonuses stay flat; this scales them).
-     * Gentle to ~50, then climbs hard so skills matter past ~60 and feel earned at 100.
-     * ~1.0× @1 · ~2.5× @50 · ~3.3× @60 · ~6.3× @100.
+     * Wave 2: early levels stay modest so T1 gear is the power spike;
+     * mid is a slow climb; 75–100 is where skills become a real stack slice.
+     * ~1.00× @1 · ~1.24× @25 · ~1.50× @50 · ~2.60× @75 · ~6.50× @100 (incl. rarity).
      */
-    public static final double PER_LEVEL = 0.024d;
-    public static final double PER_LEVEL_AFTER_50 = 0.068d;
-    public static final double PER_RARITY = 0.14d;
+    public static final double PER_LEVEL = 0.0102d;
+    public static final double PER_LEVEL_AFTER_50 = 0.044d;
+    public static final double PER_LEVEL_AFTER_75 = 0.140d;
+    public static final double PER_RARITY = 0.08d;
 
-    /** Compact proc chance at skill level 1 — modest early helper. */
+    /** Compact proc chance at skill level 1 — modest early helper. Wave 1. */
     public static final double COMPACT_CHANCE_BASE = 0.006d;
-    /** Compact proc chance at skill level {@link #MAX_LEVEL} — rewarding, not a printer. */
+    /** Compact proc chance at skill level {@link #MAX_LEVEL} — rewarding, not a printer. Wave 1. */
     public static final double COMPACT_CHANCE_MAX = 0.028d;
 
     private SkillProgression() {
@@ -50,10 +52,12 @@ public final class SkillProgression {
     public static double effectMultiplier(int level) {
         int clamped = clampLevel(level);
         int early = Math.min(clamped, 50);
-        int late = Math.max(0, clamped - 50);
+        int mid = Math.min(Math.max(0, clamped - 50), 25);
+        int late = Math.max(0, clamped - 75);
         return 1.0d
                 + ((early - 1) * PER_LEVEL)
-                + (late * PER_LEVEL_AFTER_50)
+                + (mid * PER_LEVEL_AFTER_50)
+                + (late * PER_LEVEL_AFTER_75)
                 + (rarityTier(clamped) * PER_RARITY);
     }
 
@@ -78,14 +82,21 @@ public final class SkillProgression {
         return (int) Math.round(rarityTier(level) * PER_RARITY * 100.0d);
     }
 
+    /**
+     * XP to reach {@code level + 1}. Early is still snack-sized; 50–100 is the wall
+     * so late levels feel earned and the 6.5× multiplier is not a free gift.
+     */
     public static int xpToNext(int level) {
         if (level >= MAX_LEVEL) {
             return 0;
         }
         int current = clampLevel(level);
-        int xp = 30 + (12 * current) + ((current * current * 2) / 3);
+        int xp = 32 + (11 * current) + ((current * current) / 2);
         if (current >= 50) {
-            xp += (current - 49) * 45;
+            xp += (current - 49) * 70;
+        }
+        if (current >= 75) {
+            xp += (current - 74) * 110;
         }
         return xp;
     }

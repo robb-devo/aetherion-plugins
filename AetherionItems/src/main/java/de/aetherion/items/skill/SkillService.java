@@ -568,13 +568,13 @@ public final class SkillService implements StatProvider, Listener {
 
     /**
      * Coins-per-kill as a fraction of victim max HP.
-     * Stronger early, then climbs hard past mid levels:
-     * ~22% @1 · ~40% @25 · ~70% @50 · ~120% @75 · ~185% @100.
+     * Wave 2: late levels still pay, but 185% @100 was a coin printer.
+     * ~18% @1 · ~28% @25 · ~38% @50 · ~48% @75 · ~60% @100.
      */
     public static double bloodTaxCurve(int level) {
         int clamped = SkillProgression.clampLevel(level);
         double t = (clamped - 1) / (double) (SkillProgression.MAX_LEVEL - 1);
-        return 0.22d + (0.40d * t) + (1.23d * t * t);
+        return 0.18d + (0.20d * t) + (0.22d * t * t);
     }
 
     public double lifeAbsorbFactor(Player player) {
