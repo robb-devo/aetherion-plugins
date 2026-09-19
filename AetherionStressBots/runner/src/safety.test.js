@@ -2,10 +2,13 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import {
   clampToLeash,
+  goalProgress,
   horizontalDistance,
   isBelowFloor,
   nearestAnchor,
   readAnchors,
+  shouldCancelStuck,
+  stuckTimeoutMs,
   withinLeash
 } from './safety.js'
 
@@ -45,5 +48,52 @@ describe('island safety helpers', () => {
     assert.equal(readAnchors({ anchors: [{ x: 1, y: 2, z: 3 }] }).length, 1)
     assert.equal(readAnchors({ waypoints: [{ x: '8', y: 9, z: 10 }] })[0].x, 8)
     assert.equal(readAnchors({}).length, 0)
+  })
+})
+
+describe('forage stuck cancel', () => {
+  it('gives diggers a longer freeze window than roamers', () => {
+    assert.equal(stuckTimeoutMs({ stuckMs: 10_000 }), 10_000)
+    assert.equal(stuckTimeoutMs({ gathering: true, gatherStuckMs: 18_000, stuckMs: 10_000 }), 18_000)
+    assert.equal(stuckTimeoutMs({ digging: true, digStuckMs: 28_000, stuckMs: 10_000 }), 28_000)
+  })
+
+  it('does not cancel a still-approaching dig path', () => {
+    assert.equal(shouldCancelStuck({
+      moved: false,
+      progressedTowardGoal: true,
+      gathering: true,
+      frozenMs: 20_000,
+      gatherStuckMs: 18_000
+    }), false)
+  })
+
+  it('does not cancel an active dig before digStuckMs', () => {
+    assert.equal(shouldCancelStuck({
+      moved: false,
+      digging: true,
+      frozenMs: 12_000,
+      stuckMs: 10_000,
+      digStuckMs: 28_000
+    }), false)
+  })
+
+  it('cancels when frozen with no goal progress past the gather window', () => {
+    assert.equal(shouldCancelStuck({
+      moved: false,
+      progressedTowardGoal: false,
+      gathering: true,
+      frozenMs: 19_000,
+      gatherStuckMs: 18_000
+    }), true)
+  })
+
+  it('treats shrinking distance to the log as progress', () => {
+    const first = goalProgress({ x: 10, y: 90, z: 0 }, { x: 0, y: 90, z: 0 }, undefined)
+    assert.equal(first.progressed, true)
+    const closer = goalProgress({ x: 8, y: 90, z: 0 }, { x: 0, y: 90, z: 0 }, first.dist)
+    assert.equal(closer.progressed, true)
+    const same = goalProgress({ x: 8, y: 90, z: 0 }, { x: 0, y: 90, z: 0 }, closer.dist)
+    assert.equal(same.progressed, false)
   })
 })

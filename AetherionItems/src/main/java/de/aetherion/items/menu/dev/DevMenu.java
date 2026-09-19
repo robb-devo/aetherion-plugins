@@ -859,9 +859,8 @@ public class DevMenu {
                     "§8Y≤24 · Rotten Miner / Cave Scrapper / Dust Digger."));
             inventory.setItem(20, button(Material.POTION, "§cBorderlands Spirits", "page:BORDERLANDS_SPIRITS", "§7Ritual vials."));
             inventory.setItem(21, button(Material.PLAYER_HEAD, "§bTestbots", "page:TESTBOTS",
-                    "§7QA bots · mine / forage / catch / roam.",
-                    "§7Start/stop from here. §f/botreport",
-                    "§8Wave 1 — no AH, quests, or jump pads."));
+                    "§7QA bots · Wave 1 + combat/fish/trade/quest/pad.",
+                    "§7Start/stop from here. §f/botreport"));
         }
 
         drawBorderNav(inventory, page, 2, "ROOT");
@@ -916,7 +915,7 @@ public class DevMenu {
             return;
         }
         if (page == Page.TESTBOTS) {
-            drawTestbots(inventory);
+            drawTestbots(inventory, index);
             return;
         }
         if (page == Page.TESTBOTS_LIST) {
@@ -2263,12 +2262,24 @@ public class DevMenu {
         inventory.setItem(49, button(Material.BARRIER, "§cClose", "close"));
     }
 
-    private static final String[] TESTBOT_ROLES = {"mine", "forage", "catch", "roam"};
+    private static final int TESTBOT_PER_PAGE = 4;
+
+    private static String[] testbotRoles() {
+        de.aetherion.core.api.TestBotsAccess access = DevBridges.testBots();
+        if (access != null) {
+            java.util.List<String> ids = access.startableRoles();
+            if (ids != null && !ids.isEmpty()) {
+                return ids.toArray(String[]::new);
+            }
+        }
+        return new String[] {"mine", "forage", "catch", "roam", "combat", "fish", "trade", "quest", "pad"};
+    }
 
     private void handleTestbots(Player player, String action, ClickType click) {
         String spec = action.substring("testbot:".length());
+        int pageIndex = holderIndex(player);
         if (spec.equals("refresh")) {
-            open(player, Page.TESTBOTS);
+            open(player, Page.TESTBOTS, null, pageIndex);
             player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.7f, 1.2f);
             return;
         }
@@ -2301,14 +2312,15 @@ public class DevMenu {
             int next = DevBridges.testBotsAdjust(role, delta);
             player.sendMessage("§7" + role + " desired count: §f" + next);
             player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.6f, 1.4f);
-            open(player, Page.TESTBOTS);
+            open(player, Page.TESTBOTS, null, pageIndex);
             return;
         }
         if (spec.startsWith("list:")) {
             String role = spec.substring("list:".length());
+            String[] roles = testbotRoles();
             int index = 0;
-            for (int i = 0; i < TESTBOT_ROLES.length; i++) {
-                if (TESTBOT_ROLES[i].equalsIgnoreCase(role)) {
+            for (int i = 0; i < roles.length; i++) {
+                if (roles[i].equalsIgnoreCase(role)) {
                     index = i;
                     break;
                 }
@@ -2341,6 +2353,7 @@ public class DevMenu {
     }
 
     private void runTestbotIo(Player player, java.util.function.Supplier<String> work, Page returnTo) {
+        int pageIndex = holderIndex(player);
         player.sendMessage("§7Contacting testbot runner…");
         AetherionItems plugin = AetherionItems.getInstance();
         if (plugin == null) {
@@ -2352,14 +2365,14 @@ public class DevMenu {
             Bukkit.getScheduler().runTask(plugin, () -> {
                 if (player.isOnline()) {
                     player.sendMessage(message);
-                    open(player, returnTo);
+                    open(player, returnTo, null, pageIndex);
                     player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.8f, 1.1f);
                 }
             });
         });
     }
 
-    private void drawTestbots(Inventory inventory) {
+    private void drawTestbots(Inventory inventory, int pageIndex) {
         TestBotReport report = DevBridges.testBotsReport();
         if (report == null) {
             inventory.setItem(4, button(Material.BARRIER, "§cStressBots offline", "back",
@@ -2369,7 +2382,11 @@ public class DevMenu {
             inventory.setItem(49, button(Material.BARRIER, "§cClose", "close"));
             return;
         }
-        inventory.setItem(4, button(Material.PLAYER_HEAD, "§bTestbots", "testbot:refresh",
+        String[] roles = testbotRoles();
+        int pages = Math.max(1, (roles.length + TESTBOT_PER_PAGE - 1) / TESTBOT_PER_PAGE);
+        int page = Math.max(0, Math.min(pages - 1, pageIndex));
+        inventory.setItem(4, button(Material.PLAYER_HEAD, "§bTestbots §8· §7p" + (page + 1) + "/" + pages,
+                "testbot:refresh",
                 "§7enabled: " + (report.enabled() ? "§ayes" : "§cno"),
                 "§7runner: " + (report.runnerReachable() ? "§aup" : "§cdown"),
                 "§8" + report.runnerDetail(),
@@ -2377,26 +2394,29 @@ public class DevMenu {
                         + " §8· §7online §f" + report.onlineTotal() + "§7/§f" + report.maxTotal(),
                 "",
                 "§eClick to refresh",
-                "§8Wave 1: no AH, quests, jump pads."));
+                "§8Wave 1 + combat / fish / trade / quest / pad."));
 
         int[] statusSlots = {10, 19, 28, 37};
         int[] countSlots = {11, 20, 29, 38};
         int[] startSlots = {12, 21, 30, 39};
         int[] stopSlots = {13, 22, 31, 40};
-        Material[] icons = {Material.IRON_PICKAXE, Material.IRON_AXE, Material.SNOWBALL, Material.LEATHER_BOOTS};
-        String[] labels = {"§bMine", "§2Forage", "§dCatch", "§eRoam"};
         java.util.Map<String, TestBotRoleView> byId = new HashMap<>();
         for (TestBotRoleView role : report.roles()) {
             byId.put(role.id(), role);
         }
-        for (int i = 0; i < TESTBOT_ROLES.length; i++) {
-            String id = TESTBOT_ROLES[i];
+        int from = page * TESTBOT_PER_PAGE;
+        for (int i = 0; i < TESTBOT_PER_PAGE; i++) {
+            int roleIndex = from + i;
+            if (roleIndex >= roles.length) {
+                break;
+            }
+            String id = roles[roleIndex];
             TestBotRoleView role = byId.get(id);
             int online = role == null ? 0 : role.online();
             int desired = role == null ? 0 : role.desired();
             int cap = role == null ? 20 : role.cap();
             String hint = role == null ? "offline" : role.activityHint();
-            inventory.setItem(statusSlots[i], button(icons[i], labels[i] + " §8· §f" + online,
+            inventory.setItem(statusSlots[i], button(roleIcon(id), roleLabel(id) + " §8· §f" + online,
                     "testbot:list:" + id,
                     "§7online §f" + online + " §8/ §7desired §f" + desired + " §8/ §7cap §f" + cap,
                     "§7activity §f" + hint,
@@ -2421,12 +2441,22 @@ public class DevMenu {
         inventory.setItem(25, button(Material.WRITTEN_BOOK, "§e/botreport", "testbot:report",
                 "§7Chat dump + book copy."));
         inventory.setItem(34, button(Material.CLOCK, "§eRefresh", "testbot:refresh"));
-        inventory.setItem(45, button(Material.ARROW, "§eBack", "back"));
+        if (page > 0) {
+            inventory.setItem(45, button(Material.ARROW, "§ePrevious roles", "pageidx:TESTBOTS:" + (page - 1),
+                    "§7Page §f" + page));
+        } else {
+            inventory.setItem(45, button(Material.ARROW, "§eBack", "back"));
+        }
         inventory.setItem(49, button(Material.BARRIER, "§cClose", "close"));
+        if (page + 1 < pages) {
+            inventory.setItem(53, button(Material.ARROW, "§eMore roles", "pageidx:TESTBOTS:" + (page + 1),
+                    "§7combat · fish · trade · quest · pad"));
+        }
     }
 
     private void drawTestbotList(Inventory inventory, int index) {
-        String role = TESTBOT_ROLES[Math.max(0, Math.min(TESTBOT_ROLES.length - 1, index))];
+        String[] roles = testbotRoles();
+        String role = roles[Math.max(0, Math.min(roles.length - 1, index))];
         TestBotReport report = DevBridges.testBotsReport();
         inventory.setItem(4, button(roleIcon(role), "§b" + role + " bots", "page:TESTBOTS",
                 "§7Nickname · world xyz · held · activity"));
@@ -2464,8 +2494,35 @@ public class DevMenu {
             case "mine" -> Material.IRON_PICKAXE;
             case "forage" -> Material.IRON_AXE;
             case "catch" -> Material.SNOWBALL;
+            case "combat" -> Material.IRON_SWORD;
+            case "fish" -> Material.FISHING_ROD;
+            case "trade" -> Material.GOLD_INGOT;
+            case "quest" -> Material.WRITABLE_BOOK;
+            case "pad" -> Material.SLIME_BLOCK;
             default -> Material.LEATHER_BOOTS;
         };
+    }
+
+    private static String roleLabel(String role) {
+        return switch (role) {
+            case "mine" -> "§bMine";
+            case "forage" -> "§2Forage";
+            case "catch" -> "§dCatch";
+            case "roam" -> "§eRoam";
+            case "combat" -> "§cCombat";
+            case "fish" -> "§3Fish";
+            case "trade" -> "§6Trade";
+            case "quest" -> "§dQuest";
+            case "pad" -> "§aPad";
+            default -> "§f" + role;
+        };
+    }
+
+    private int holderIndex(Player player) {
+        if (player.getOpenInventory().getTopInventory().getHolder() instanceof Holder holder) {
+            return holder.index();
+        }
+        return 0;
     }
 
     private void drawDungeons(Inventory inventory) {

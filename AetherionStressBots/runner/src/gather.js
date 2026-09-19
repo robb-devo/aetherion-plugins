@@ -3,22 +3,26 @@ import {
   applyIslandMovements,
   cancelPath,
   sampleSolidNear,
+  setGoal,
   withinLeash,
   wanderOnIsland
 } from './safety.js'
-import { findMatchingBlock, inventoryAlmostFull, markError, note, tossJunk, waitUntil, sleep } from './util.js'
+import { findMatchingBlock, inventoryAlmostFull, jitter, markError, note, tossJunk, waitUntil, sleep } from './util.js'
 
 const { goals, Movements, pathfinder } = pathfinderPkg
 
 /**
  * Shared dig loop: path to matching blocks and break them (mine = ores, forage = logs).
  * Stays leashed to the role pad so Skyblock edges are not path goals.
+ * Forage trees often look motionless while pathing/breaking — safety retargets instead of freezing on activity=stuck.
  */
 export function createDigLoop(bot, cfg, log, { activity, names, searchRadius, yRange, canDig = false, fallback = [] }) {
   bot.loadPlugin(pathfinder)
 
   const leash = cfg.leashRadius ?? bot.qaLeash ?? 16
-  const radius = Math.max(leash, searchRadius ?? cfg.searchRadius ?? 16)
+  const searchLeashBonus = Number(cfg.searchLeashBonus ?? (activity === 'foraging' ? 6 : 2))
+  const pickLeash = leash + Math.max(0, searchLeashBonus)
+  const radius = Math.max(pickLeash, searchRadius ?? cfg.searchRadius ?? 16)
   const digTimeoutMs = cfg.digTimeoutMs ?? 10_000
   const nameSet = new Set((names || cfg.blocks || cfg.ores || []).map((s) => s.toLowerCase()))
   const fallbackSet = new Set((fallback.length ? fallback : (cfg.fallback || [])).map((s) => s.toLowerCase()))
@@ -32,22 +36,38 @@ export function createDigLoop(bot, cfg, log, { activity, names, searchRadius, yR
   }
 
   function pickBlock() {
-    const primary = findMatchingBlock(bot, nameSet, radius, yRange ?? 6)
-    if (primary && withinLeash(primary.position.offset(0.5, 0.5, 0.5), home(), leash)) {
+    const origin = home() || bot.entity?.position
+    const primary = findMatchingBlock(bot, nameSet, radius, yRange ?? 6, origin)
+    if (primary && withinLeash(primary.position.offset(0.5, 0.5, 0.5), home(), pickLeash)) {
       return primary
     }
     if (fallbackSet.size === 0) {
       return null
     }
-    const filler = findMatchingBlock(bot, fallbackSet, leash, Math.min(yRange ?? 6, 5))
-    if (filler && withinLeash(filler.position.offset(0.5, 0.5, 0.5), home(), leash)) {
+    const filler = findMatchingBlock(bot, fallbackSet, Math.min(radius, pickLeash), Math.min(yRange ?? 6, 5), origin)
+    if (filler && withinLeash(filler.position.offset(0.5, 0.5, 0.5), home(), pickLeash)) {
       return filler
     }
     return null
   }
 
+  function aborted() {
+    return !!(bot.qaSuspended || bot.qaNeedRetarget)
+  }
+
   async function tick() {
     if (!bot.entity || busy || bot.qaSuspended) return
+    if (bot.qaNeedRetarget) {
+      bot.qaNeedRetarget = false
+      bot.qaDigging = false
+      bot.qaGathering = false
+      setGoal(bot, null)
+      cancelPath(bot)
+      note(bot, 'retarget after stuck/leash', 'idle')
+      wanderOnIsland(bot, home(), wanderRadius, goals)
+      await sleep(jitter(400, 0.5))
+      return
+    }
     if (!home()) {
       bot.qaHome = { x: bot.entity.position.x, y: bot.entity.position.y, z: bot.entity.position.z }
     }
@@ -65,11 +85,15 @@ export function createDigLoop(bot, cfg, log, { activity, names, searchRadius, yR
 
     const block = pickBlock()
     if (!block) {
+      bot.qaGathering = false
+      bot.qaDigging = false
+      setGoal(bot, null)
       bot.qaActivity = bot.pathfinder.isMoving() ? 'pathing' : 'idle'
       if (!bot.pathfinder.isMoving()) {
         const pad = sampleSolidNear(bot, home(), wanderRadius)
         if (pad) {
           note(bot, 'scan hop', 'pathing')
+          setGoal(bot, pad)
           bot.pathfinder.setGoal(new goals.GoalNear(pad.x, pad.y, pad.z, 1))
         } else {
           wanderOnIsland(bot, home(), wanderRadius, goals)
@@ -79,23 +103,28 @@ export function createDigLoop(bot, cfg, log, { activity, names, searchRadius, yR
     }
 
     busy = true
+    bot.qaGathering = true
     try {
       const dest = block.position.offset(0.5, 0.5, 0.5)
+      setGoal(bot, dest)
       const dist = bot.entity.position.distanceTo(dest)
       if (dist > 3.2) {
         note(bot, `path to ${block.name}`, 'pathing')
         bot.pathfinder.setGoal(new goals.GoalNear(block.position.x, block.position.y, block.position.z, 2))
         await waitUntil(() => {
-          if (bot.qaSuspended) return true
+          if (aborted()) return true
           return bot.entity.position.distanceTo(block.position.offset(0.5, 0.5, 0.5)) <= 3.2
-        }, 6000)
+        }, 9000)
       }
-      if (bot.qaSuspended) {
+      if (aborted()) {
         cancelPath(bot)
+        setGoal(bot, null)
         return
       }
       bot.pathfinder.setGoal(null)
+      bot.qaDigging = true
       note(bot, `dig ${block.name}`, activity)
+      await sleep(jitter(180, 0.6))
       await bot.lookAt(block.position.offset(0.5, 0.5, 0.5), true)
       await Promise.race([
         bot.dig(block),
@@ -109,7 +138,11 @@ export function createDigLoop(bot, cfg, log, { activity, names, searchRadius, yR
       }
       try { bot.stopDigging() } catch { /* ignore */ }
       cancelPath(bot)
+      setGoal(bot, null)
+      wanderOnIsland(bot, home(), wanderRadius, goals)
     } finally {
+      bot.qaDigging = false
+      bot.qaGathering = false
       busy = false
     }
   }
@@ -127,7 +160,7 @@ export function createDigLoop(bot, cfg, log, { activity, names, searchRadius, yR
         markError(bot, err)
         log(bot.stressName, `${activity} tick: ${err.message}`)
       })
-    }, 280)
+    }, jitter(280, 0.15))
     bot.once('end', () => clearInterval(handle))
   }
 }
@@ -150,7 +183,7 @@ export function createForageLoop(bot, cfg, log) {
   return createDigLoop(bot, cfg, log, {
     activity: 'foraging',
     names: cfg.logs || cfg.blocks,
-    searchRadius: cfg.searchRadius ?? 16,
+    searchRadius: cfg.searchRadius ?? 22,
     yRange: 8,
     canDig: false,
     fallback: cfg.fallback || [

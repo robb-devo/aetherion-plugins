@@ -54,7 +54,7 @@ Jars land in each module `target/*.jar`. Install **AetherionCore** before anythi
 
 ## Test bots (Wave 1)
 
-QA Mineflayer bots (mine / forage / catch / roam) live in **AetherionStressBots**. They only **start from Dev menu / commands** when `plugins/AetherionStressBots/config.yml` has `testbots.enabled: true`.
+QA Mineflayer bots (mine / forage / catch / roam / combat / fish / trade / quest / pad) live in **AetherionStressBots**. They only **start from Dev menu / commands** when `plugins/AetherionStressBots/config.yml` has `testbots.enabled: true`.
 
 1. On the host: `cd AetherionStressBots/runner && cp config.example.json config.json` — set `velocitySecret` locally, never commit it. After island-safety updates, merge `testbots.safety` + new role anchors into the live plugin YAML (jar defaults do not overwrite) and matching `anchors` into `runner/config.json`.
 2. `npm start -- --listen` (HTTP control on `127.0.0.1:18765`).

@@ -92,6 +92,53 @@ export function cancelPath(bot) {
   }
 }
 
+export function setGoal(bot, goal) {
+  if (!bot) return
+  if (!goal || !Number.isFinite(goal.x) || !Number.isFinite(goal.z)) {
+    bot.qaGoal = null
+    bot.qaGoalDist = null
+    return
+  }
+  bot.qaGoal = { x: goal.x, y: goal.y, z: goal.z }
+  const pos = bot.entity?.position
+  bot.qaGoalDist = pos ? horizontalDistance(pos, bot.qaGoal) : null
+}
+
+export function goalProgress(pos, goal, previousDist) {
+  if (!pos || !goal) return { progressed: false, dist: previousDist }
+  const dist = horizontalDistance(pos, goal)
+  if (!Number.isFinite(previousDist)) {
+    return { progressed: true, dist }
+  }
+  return { progressed: dist < previousDist - 0.25, dist }
+}
+
+/**
+ * Dig/path-to-block often looks motionless (tree approach, looking at a log, breaking).
+ * Cancel only when there is no movement AND no progress toward the dig target.
+ */
+export function stuckTimeoutMs({ digging = false, gathering = false, stuckMs = 10_000, digStuckMs = 28_000, gatherStuckMs = 18_000 } = {}) {
+  if (digging) return digStuckMs
+  if (gathering) return gatherStuckMs
+  return stuckMs
+}
+
+export function shouldCancelStuck({
+  moved = false,
+  progressedTowardGoal = false,
+  digging = false,
+  frozenMs = 0,
+  stuckMs = 10_000,
+  digStuckMs = 28_000,
+  gatherStuckMs = 18_000,
+  gathering = false
+} = {}) {
+  if (moved || progressedTowardGoal) return false
+  if (digging && frozenMs < (digStuckMs ?? 28_000)) return false
+  const limit = stuckTimeoutMs({ digging, gathering, stuckMs, digStuckMs, gatherStuckMs })
+  return frozenMs > limit
+}
+
 export function blockIsSolid(block) {
   if (!block || !block.name) return false
   const name = block.name.toLowerCase()
@@ -160,7 +207,11 @@ export function attachSafety(bot, opts = {}) {
   bot.qaVoidFloorY = voidFloorY
   bot.qaSuspended = !!bot.qaSuspended
   bot.qaLastSafe = null
+  bot.qaLastMoved = null
   bot.qaStuckSince = 0
+  bot.qaNeedRetarget = false
+  bot.qaGoal = bot.qaGoal || null
+  bot.qaGoalDist = null
 
   const hold = (reason, activity) => {
     cancelPath(bot)
@@ -207,6 +258,9 @@ export function attachSafety(bot, opts = {}) {
 
     if (bot.qaHome && !withinLeash(pos, bot.qaHome, leash + 3)) {
       cancelPath(bot)
+      bot.qaNeedRetarget = true
+      bot.qaGoal = null
+      bot.qaGoalDist = null
       note(bot, 'leash pull', 'recovering')
       if (bot.pathfinder && !bot.qaSuspended) {
         const pull = clampToLeash(pos, bot.qaHome, Math.max(2, leash * 0.35))
@@ -221,16 +275,41 @@ export function attachSafety(bot, opts = {}) {
       }
     }
 
-    const moved = !bot.qaLastSafe || pos.distanceTo(bot.qaLastSafe) > 0.4
-    if (moved) {
-      bot.qaStuckSince = 0
+    if (!bot.qaLastSafe || horizontalDistance(pos, bot.qaLastSafe) > 0.8 || Math.abs(pos.y - bot.qaLastSafe.y) > 1.5) {
       bot.qaLastSafe = { x: pos.x, y: pos.y, z: pos.z }
+    }
+
+    const moved = !bot.qaLastMoved || pos.distanceTo(bot.qaLastMoved) > 0.35
+    const progress = goalProgress(pos, bot.qaGoal, bot.qaGoalDist)
+    if (progress.dist != null) bot.qaGoalDist = progress.dist
+    const digging = !!bot.qaDigging
+    const gathering = !!bot.qaGathering || bot.qaActivity === 'foraging' || bot.qaActivity === 'mining' || bot.qaActivity === 'fishing'
+    if (moved || progress.progressed) {
+      bot.qaStuckSince = 0
+      bot.qaLastMoved = { x: pos.x, y: pos.y, z: pos.z }
     } else if (!bot.qaSuspended) {
       bot.qaStuckSince = bot.qaStuckSince || Date.now()
-      if (Date.now() - bot.qaStuckSince > (opts.stuckMs ?? 10_000)) {
+      const frozenMs = Date.now() - bot.qaStuckSince
+      if (shouldCancelStuck({
+        moved: false,
+        progressedTowardGoal: false,
+        digging,
+        gathering,
+        frozenMs,
+        stuckMs: opts.stuckMs ?? 10_000,
+        digStuckMs: opts.digStuckMs ?? 28_000,
+        gatherStuckMs: opts.gatherStuckMs ?? 18_000
+      })) {
         cancelPath(bot)
-        note(bot, 'stuck — cancel path', 'stuck')
+        bot.qaNeedRetarget = true
+        bot.qaGoal = null
+        bot.qaGoalDist = null
         bot.qaStuckSince = Date.now()
+        const pad = bot.qaHome
+        note(bot, 'stuck — cancel and retarget', 'idle')
+        if (pad && opts.goals && !bot.qaSuspended) {
+          wanderOnIsland(bot, pad, Math.min(6, Math.max(3, (opts.leashRadius ?? 16) * 0.35)), opts.goals)
+        }
       }
     }
   }

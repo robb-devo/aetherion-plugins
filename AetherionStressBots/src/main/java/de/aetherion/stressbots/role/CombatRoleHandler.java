@@ -8,9 +8,13 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.PlayerInventory;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
-/** Phase 1 Borderlands combat bots ({@code StressC*}). */
+/**
+ * Wave 2 combat ({@code QaCombat*}). Legacy {@code StressC*} still matches as an alias.
+ */
 public final class CombatRoleHandler implements BotRoleHandler {
 
     private final AetherionStressBots plugin;
@@ -26,7 +30,18 @@ public final class CombatRoleHandler implements BotRoleHandler {
 
     @Override
     public String prefix() {
-        return BotRoleRegistry.prefixOf(plugin, BotRole.COMBAT, "StressC");
+        return BotRoleRegistry.prefixOf(plugin, BotRole.COMBAT, "QaCombat");
+    }
+
+    @Override
+    public List<String> prefixes() {
+        List<String> out = new ArrayList<>();
+        out.add(prefix());
+        String legacy = plugin.getConfig().getString("prefixes.combat", "StressC");
+        if (legacy != null && !legacy.isBlank() && !legacy.equalsIgnoreCase(prefix())) {
+            out.add(legacy.toLowerCase(java.util.Locale.ROOT));
+        }
+        return out;
     }
 
     @Override
@@ -47,15 +62,19 @@ public final class CombatRoleHandler implements BotRoleHandler {
 
     @Override
     public Location destination(Player player) {
-        ConfigurationSection section = plugin.getConfig().getConfigurationSection("combat");
-        if (section == null) {
+        ConfigurationSection wave = BotRoleRegistry.roleSection(plugin, BotRole.COMBAT);
+        if (wave != null && !BotLocations.readAnchors(wave).isEmpty()) {
+            return BotLocations.pickAnchor(player, wave);
+        }
+        ConfigurationSection legacy = plugin.getConfig().getConfigurationSection("combat");
+        if (legacy == null) {
             return null;
         }
-        return BotLocations.scatter(BotLocations.readPoint(section), section.getDouble("scatter-radius", 18), ThreadLocalRandom.current());
+        return BotLocations.scatter(BotLocations.readPoint(legacy), legacy.getDouble("scatter-radius", 8), ThreadLocalRandom.current());
     }
 
     @Override
     public String description() {
-        return "Legacy stress: Borderlands combat wander/attack loop.";
+        return "Wave 2: leash + attack hostiles near the combat pad (QaCombat). StressC alias still kits.";
     }
 }

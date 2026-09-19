@@ -166,7 +166,7 @@ public final class BotReportBuilder {
             }
         }
         out.append('\n');
-        out.append("Wave 1 limits: no AH/Bazaar, no quest NPC dialogue, no jump-pad pathing, no spawn unlocks, no equip UI.\n");
+        out.append("Limits: AH/Bazaar needs TRADER unlock; quests right-click only (no dialogue); fishing skips strike minigame; pad hops use plugin TP for far islands.\n");
         return out.toString();
     }
 
@@ -217,6 +217,6 @@ public final class BotReportBuilder {
 
     private static boolean isWave1(String id) {
         BotRole role = BotRole.fromId(id);
-        return role != null && role.wave1();
+        return role != null && role.startable();
     }
 }

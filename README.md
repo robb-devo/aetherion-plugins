@@ -23,7 +23,7 @@ Crafty layout: `/var/opt/minecraft/crafty/` (`servers/<id>/` backends, `shared/`
 - [ARCHITECTURE.md](ARCHITECTURE.md) — who owns what
 - [docs/OWNERSHIP.md](docs/OWNERSHIP.md) — gather vs Items
 - [docs/DUPING_CHECKLIST.md](docs/DUPING_CHECKLIST.md) — economy / transfer checks
-- [AetherionStressBots/README.md](AetherionStressBots/README.md) — QA/stress Mineflayer bots (Wave 1: mine/forage/catch/roam + Dev menu)
+- [AetherionStressBots/README.md](AetherionStressBots/README.md) — QA/stress Mineflayer bots (Wave 1 + combat/fish/trade/quest/pad)
 
 ## Build
 

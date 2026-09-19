@@ -31,7 +31,7 @@ public final class TestBotController implements TestBotsAccess {
         this.plugin = plugin;
         this.runner = runner;
         this.reports = reports;
-        for (BotRoleHandler handler : plugin.getRegistry().wave1()) {
+        for (BotRoleHandler handler : plugin.getRegistry().startable()) {
             desired.put(handler.role(), 0);
         }
     }
@@ -39,6 +39,15 @@ public final class TestBotController implements TestBotsAccess {
     @Override
     public boolean enabled() {
         return plugin.getConfig().getBoolean("testbots.enabled", false);
+    }
+
+    @Override
+    public List<String> startableRoles() {
+        List<String> ids = new ArrayList<>();
+        for (BotRoleHandler handler : plugin.getRegistry().startable()) {
+            ids.add(handler.role().id());
+        }
+        return ids;
     }
 
     @Override
@@ -55,9 +64,9 @@ public final class TestBotController implements TestBotsAccess {
         if (!enabled()) {
             return "§cTestbots disabled. Set §ftestbots.enabled: true §cin AetherionStressBots/config.yml.";
         }
-        BotRole role = requireWave1(roleId);
+        BotRole role = requireStartable(roleId);
         if (role == null) {
-            return "§cUnknown role. Wave 1: mine, forage, catch, roam.";
+            return "§cUnknown role. Startable: mine, forage, catch, roam, combat, fish, trade, quest, pad.";
         }
         BotRoleHandler handler = plugin.getRegistry().handler(role);
         int clamped = clampCount(role, count <= 0 ? Math.max(1, desired.getOrDefault(role, 1)) : count);
@@ -119,7 +128,7 @@ public final class TestBotController implements TestBotsAccess {
 
     @Override
     public int adjustDesired(String roleId, int delta) {
-        BotRole role = requireWave1(roleId);
+        BotRole role = requireStartable(roleId);
         if (role == null) {
             return 0;
         }
@@ -178,9 +187,9 @@ public final class TestBotController implements TestBotsAccess {
         return Math.max(0, Math.min(requested, hard));
     }
 
-    private BotRole requireWave1(String roleId) {
+    private BotRole requireStartable(String roleId) {
         BotRole role = BotRole.fromId(roleId);
-        if (role == null || !role.wave1()) {
+        if (role == null || !role.startable()) {
             return null;
         }
         return role;

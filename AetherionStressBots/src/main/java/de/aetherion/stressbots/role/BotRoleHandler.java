@@ -21,4 +21,8 @@ public interface BotRoleHandler {
     Location destination(Player player);
 
     String description();
+
+    default java.util.List<String> prefixes() {
+        return java.util.List.of(prefix());
+    }
 }

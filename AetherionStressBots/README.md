@@ -1,6 +1,6 @@
 # Aetherion Stress / Test Bots
 
-Mineflayer clients that join **mmo-r** like real players. Wave 1 adds QA roles with **Dev-menu** start/stop and **`/botreport`**. Phase 1 combat/mining stress still works.
+Mineflayer clients that join **mmo-r** like real players. Wave 1 + Wave 2 QA roles start from the **Dev menu** and **`/stressbots start`**. `/botreport` dumps activity. Phase 1 `StressM*` mining still works; `StressC*` still kits as a combat alias.
 
 ## Plugin or commands?
 
@@ -29,7 +29,25 @@ Bots connect **offline to MMO-R** `127.0.0.1:25567` with Velocity modern-forward
 | `catch` | `QaCatch01…` | Stay on solid habitat pads, throw catch spheres (no void chase) | Catcher I + common spheres |
 | `roam` | `QaRoam01…` | Local hops on Origin slime pads + plugin pad-hop; flees husks/skeletons | Combat I |
 
-**Not in wave 1:** Auction House / Bazaar, quest NPC dialogue, jump pads as pathing, spawn unlocks, equip-swap UI, full progression.
+## Wave 2 roles
+
+| Role | Names | Does | Kit |
+|------|-------|------|-----|
+| `combat` | `QaCombat01…` | Leashed wander/attack near the combat pad (default Borderlands). **Velocity offline auth uses `QaCombat` like other Qa* names.** Set `prefixes.combat: StressC` only if you still want the Phase 1 names; `StressC*` still auto-kits as an alias. | Combat I |
+| `fish` | `QaFish01…` | Walk to water near forage/origin pads, cast/reel a Nibble rod | Fishing I |
+| `trade` | `QaTrade01…` | Chat `/ah` and `/bazaar`, else right-click AH/Bazaar NPCs | Combat I |
+| `quest` | `QaQuest01…` | Walk to known FancyNPC pads (Maren / Twig / Eldervale) and right-click | Combat I |
+| `pad` | `QaPad01…` | Stand on Origin/Eldervale jump-pad coords; plugin TPs between far pads | Combat I |
+
+### Residual risks / limits
+
+- **AH / Bazaar:** `/ah` and `/bazaar` exist on AetherionItems but are gated by the **TRADER** progression flag. Fresh bots usually get a hint instead of the GUI. Right-clicking the villager still needs the live NPC to be in range of the configured Origin pads. Bots do **not** create listings, bid, or click GUI slots.
+- **Quests:** Right-click only. No dialogue-tree / click-option automation. NPC xyz in YAML are **hints** — live FancyNPC positions may differ; retune `testbots.roles.quest` if they stand in the wrong place.
+- **Fishing:** Vanilla cast/reel. Aetherion's strike minigame is **not** played, so many casts miss. Water is scanned near grove/origin pads — if the dock has no water in range, they idle-wander. Add `anchors` next to real water.
+- **Combat:** Default pad is Borderlands `220.5 58 160.5` (hostiles). That zone killed **roam** bots; combat bots are geared for it but can still die if they walk off the waste. `StressC*` still matches as an alias.
+- **Pads:** The Forage Isle jump-pad lip `479.5 74 -240.5` stays **omitted** (void after wander). Pad bots hop Origin slime pads + Eldervale landing; far islands are plugin teleports.
+- **Forage stuck (fixed):** Safety used to mark `activity=stuck` after ~10s of no movement and cancel the dig path while the bot was approaching a log. Dig/path-to-block now uses a longer freeze window, ignores still-closing distance to the target, and **retargets / wanderOnIsland** instead of staying stuck. Forage leash is 20; logs outside that disk are not chosen (`searchLeashBonus` only expands search within the island).
+- Still not automated: spawn unlocks, equip-swap UI, full progression.
 
 ### Catch limits (wave 1)
 
@@ -39,7 +57,7 @@ Bots **throw spheres** at nearby living entities. They do **not** play the catch
 
 1. `/dev` / `/adev` / `/devmenu` (op or `aetherion.dev`)
 2. Next page (page 2) → **Testbots**
-3. Per role: set count (left/right ±1, shift ±5) → **Start** / **Stop**
+3. Per role: set count (left/right ±1, shift ±5) → **Start** / **Stop**. **More roles** pages combat / fish / trade / quest / pad.
 4. Click the role icon for a list (nickname, xyz, held item, activity)
 5. **Stop all** · **/botreport** book+chat
 
@@ -50,7 +68,7 @@ Counts clamp to `testbots.max-total`, `testbots.caps.<role>`, `max-per-start` (1
 ## Commands
 
 ```
-/stressbots start <mine|forage|catch|roam> [count]
+/stressbots start <mine|forage|catch|roam|combat|fish|trade|quest|pad> [count]
 /stressbots stop <role|all>
 /stressbots stopall
 /stressbots list
@@ -76,12 +94,13 @@ npm start -- --listen
 
 # or CLI
 node src/index.js --mine 5 --forage 3 --catch 2 --roam 5
-node src/index.js --combat 5 --mining 5    # Phase 1 StressC / StressM
+node src/index.js --combat 3 --fish 2 --trade 2 --quest 2 --pad 2
+node src/index.js --mining 5    # Phase 1 StressM
 ```
 
 Control HTTP: `http://127.0.0.1:18765` (`/health`, `/desired`, `/stop`, `/stop-all`). Optional `control.token` must match plugin `testbots.runner.token`.
 
-Plugin YAML anchors (Eldervale / Forage Isle / Origin pads) should stay in sync with `runner/config.json` mine/forage/catch/roam sections.
+Plugin YAML anchors should stay in sync with `runner/config.json` mine/forage/catch/roam/combat/fish/trade/quest/pad sections.
 
 ## Island safety / tuning
 
@@ -99,14 +118,15 @@ Copy `testbots.safety` + the new `roles.*.anchors` into the **live** `plugins/Ae
 | Key | Safe starting point | Notes |
 |-----|---------------------|-------|
 | `scatter-radius` | 3–5 | Random disk, **solid-ground samples only**. 12–16 walks bots off pad lips |
-| `leash-radius` | 12–16 | Plugin TPs back if farther from every role pad |
+| `leash-radius` | 12–20 | Plugin TPs back if farther from every role pad. Forage default **20** so nearby logs count |
 | `void-floor-y` | 40 | Runner holds + plugin TPs. Raise only if a real pad is lower |
 | `idle-reanchor-ticks` | 240 | Idle mine/forage/catch hop to another pad (~12s) |
-| `pad-hop-ticks` | 1600 | Roam plugin-teleports between Origin pads (~80s). `0` disables |
+| `pad-hop-ticks` | 1600 | Roam **and pad** plugin-teleport between Origin pads (~80s). `0` disables |
+| `gatherStuckMs` / `digStuckMs` | 18s / 28s | Runner: freeze window while pathing-to-block / breaking. Do not treat digging as stuck |
 
-`/botreport` activity now includes `void`, `recovering`, and `stuck` besides idle/pathing/mining/foraging/catching/roaming.
+`/botreport` activity: idle / pathing / mining / foraging / catching / roaming / fighting / fishing / trading / questing / hopping / void / recovering / stuck.
 
-**Do not** add far cross-island roam waypoints expecting the runner to walk them. The runner only hops `maxHop` (12) blocks; distant pads are plugin teleports.
+**Do not** add far cross-island roam/pad waypoints expecting the runner to walk them. The runner only hops `maxHop` blocks; distant pads are plugin teleports.
 
 ## In-game (legacy)
 
@@ -116,7 +136,7 @@ Copy `testbots.safety` + the new `roles.*.anchors` into the **live** `plugins/Ae
 /stressbots reload
 ```
 
-Names: `StressC01…` / `StressM01…` still auto-kit on join.
+Names: `QaCombat01…` (Wave 2) and `StressC01…` (alias) / `StressM01…` still auto-kit on join.
 
 ## Layout
 
@@ -130,5 +150,6 @@ Names: `StressC01…` / `StressM01…` still auto-kit on join.
 
 | Wave | Scope |
 |------|--------|
-| **1 (this)** | Foundation: role interface, registry, report DTO, Dev menu, `/botreport`, mine / forage / catch / roam |
-| Later | AH/Bazaar trading, quest NPC talks, jump pads as primary pathing, spawn unlocks, equip swapping, full progression play |
+| **1** | Foundation: role interface, registry, report DTO, Dev menu, `/botreport`, mine / forage / catch / roam |
+| **2 (this)** | Forage stuck/leash fix; combat (QaCombat), fish, trade/AH, quest NPC click, jump-pad hops |
+| Later | AH listings, quest dialogue trees, spawn unlocks, equip swapping, full progression play |
