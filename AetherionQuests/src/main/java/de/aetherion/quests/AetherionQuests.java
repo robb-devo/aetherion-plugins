@@ -68,6 +68,8 @@ public final class AetherionQuests extends JavaPlugin {
 
     private LivingNpcService livingNpcService;
 
+    private de.aetherion.quests.editor.NpcEditor npcEditor;
+
     private de.aetherion.core.api.QuestProgressAccess questAccess;
 
 
@@ -205,6 +207,9 @@ public final class AetherionQuests extends JavaPlugin {
             );
 
         }
+
+        npcEditor = new de.aetherion.quests.editor.NpcEditor(this);
+        npcEditor.enable();
 
         de.aetherion.quests.lang.LangMenu.register(this);
         de.aetherion.quests.lang.LangPack.reload();
@@ -381,6 +386,9 @@ public final class AetherionQuests extends JavaPlugin {
                 return;
             }
             restoreQuestNpcs();
+            if (npcEditor != null) {
+                npcEditor.restore();
+            }
         }, 100L);
         Bukkit.getScheduler().runTaskLater(this, () -> {
             if (isDungeonBackend()) {
@@ -488,6 +496,10 @@ public final class AetherionQuests extends JavaPlugin {
             playerQuestStorage.flush();
         }
 
+        if (npcEditor != null) {
+            npcEditor.disable();
+        }
+
         if (questAccess != null) {
             de.aetherion.core.api.AetherServices.clearQuests(questAccess);
             questAccess = null;
@@ -572,6 +584,10 @@ public final class AetherionQuests extends JavaPlugin {
 
     public LivingNpcService getLivingNpcService() {
         return livingNpcService;
+    }
+
+    public de.aetherion.quests.editor.NpcEditor getNpcEditor() {
+        return npcEditor;
     }
 
 

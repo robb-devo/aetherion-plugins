@@ -27,7 +27,7 @@ public final class LivingNpcService {
     private static final String FANCY_PREFIX = "ae_living_";
     private static final int LOOK_RADIUS = 5;
     /** Packet visibility — high enough that hub pop-in mostly disappears. */
-    private static final int VISIBILITY_DISTANCE = 96;
+    private static final int DEFAULT_VISIBILITY_DISTANCE = 96;
 
     private final Map<String, UUID> sentinels = new ConcurrentHashMap<>();
     private final Map<String, String> fancyNames = new ConcurrentHashMap<>();
@@ -46,6 +46,11 @@ public final class LivingNpcService {
 
     public boolean available() {
         return FancyNpcFacade.isAvailable();
+    }
+
+    /** Hub living hosts stay far-visible; do not lower this toward forage defaults. */
+    public int visibilityDistance() {
+        return Math.max(16, plugin.getConfig().getInt("living-npc-visibility-distance", DEFAULT_VISIBILITY_DISTANCE));
     }
 
     public boolean isSpawned(String npcId) {
@@ -344,7 +349,7 @@ public final class LivingNpcService {
             FancyNpcFacade.invoke(data, "setGlowing", boolean.class, false);
             FancyNpcFacade.invoke(data, "setTurnToPlayer", boolean.class, true);
             FancyNpcFacade.invoke(data, "setTurnToPlayerDistance", int.class, LOOK_RADIUS);
-            FancyNpcFacade.invoke(data, "setVisibilityDistance", int.class, VISIBILITY_DISTANCE);
+            FancyNpcFacade.applyVisibility(data, visibilityDistance());
             FancyNpcFacade.invoke(data, "setInteractionCooldown", float.class, 0.5f);
             FancyNpcFacade.invoke(data, "setSpawnEntity", boolean.class, true);
             // Skins applied async — FancyNpcs getByUsername blocks main thread + hits broken API.

@@ -17,15 +17,15 @@ import java.util.UUID;
  * Direct Mojang profile + session texture fetch.
  * FancyNpcs' UUIDFetcher hits a broken {@code api.minecraftservices.com?...&at=} URL (404).
  */
-final class MojangSkinFetcher {
+public final class MojangSkinFetcher {
 
     private MojangSkinFetcher() {
     }
 
-    record Textures(String value, String signature) {
+    public record Textures(String value, String signature) {
     }
 
-    static Textures fetch(String username) {
+    public static Textures fetch(String username) {
         if (username == null || username.isBlank()) {
             return null;
         }

@@ -253,6 +253,7 @@ public final class IsleGuideNpc implements Listener {
                 Object data = FancyNpcFacade.data(existing);
                 FancyNpcFacade.setLocation(data, at.clone());
                 FancyNpcFacade.invoke(data, "setDisplayName", String.class, display);
+                FancyNpcFacade.applyVisibility(data, visibilityDistance());
                 applySkin(data);
                 FancyNpcFacade.moveForAll(existing);
                 FancyNpcFacade.updateForAll(existing);
@@ -269,6 +270,7 @@ public final class IsleGuideNpc implements Listener {
             FancyNpcFacade.invokeQuiet(data, "setShowInTab", boolean.class, false);
             FancyNpcFacade.invokeQuiet(data, "setCollidable", boolean.class, false);
             FancyNpcFacade.invokeQuiet(data, "setTurnToPlayer", boolean.class, true);
+            FancyNpcFacade.applyVisibility(data, visibilityDistance());
             applySkin(data);
             Object npc = FancyNpcFacade.adapt(data);
             FancyNpcFacade.invokeQuiet(npc, "setSaveToFile", boolean.class, true);
@@ -283,6 +285,11 @@ public final class IsleGuideNpc implements Listener {
         } catch (Throwable t) {
             plugin.getLogger().warning(DISPLAY + " FancyNpc spawn failed: " + t.getMessage());
         }
+    }
+
+    /** Fancy default is ~10 blocks — raise so the isle teacher reads from the pad. */
+    private int visibilityDistance() {
+        return Math.max(16, plugin.getConfig().getInt("isle-guide.visibility-distance", 48));
     }
 
     private void applySkin(Object data) {

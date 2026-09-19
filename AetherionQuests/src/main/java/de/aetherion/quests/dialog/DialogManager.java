@@ -220,6 +220,26 @@ public class DialogManager implements Listener {
         showQuestOptions(player, npc);
     }
 
+    /**
+     * Offer an existing quest from a moderator-created NPC.
+     * Does not register a story NPC — richer quest authoring can replace this later.
+     */
+    public void offerQuestById(Player player, String speakerName, String questId) {
+        if (player == null || questId == null || questId.isBlank()) {
+            return;
+        }
+        String name = speakerName == null || speakerName.isBlank() ? "NPC" : speakerName;
+        QuestNPC temp = new QuestNPC(
+                "editor_offer",
+                name,
+                de.aetherion.quests.npc.NPCType.QUEST,
+                questId,
+                "",
+                null
+        );
+        showQuestOptions(player, temp);
+    }
+
     /** True while lines are still being typed out (before Accept/Decline). */
     public boolean isSpeaking(Player player) {
         return player != null && activeDialogs.containsKey(player.getUniqueId());

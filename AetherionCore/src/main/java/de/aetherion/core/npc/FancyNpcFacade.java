@@ -147,6 +147,20 @@ public final class FancyNpcFacade {
         npcData.getClass().getMethod("setLocation", Location.class).invoke(npcData, location.clone());
     }
 
+    /**
+     * Packet reveal distance. FancyNpcs defaults ~10 blocks on some builds —
+     * Miss Canopy / forage pads pop in late unless this is raised.
+     * Hub living NPCs already use a high value; keep that unless you pass lower.
+     */
+    public static void applyVisibility(Object npcData, int blocks) {
+        if (npcData == null) {
+            return;
+        }
+        int distance = Math.max(16, blocks);
+        invokeQuiet(npcData, "setVisibilityDistance", int.class, distance);
+        invokeQuiet(npcData, "setShowDistance", int.class, distance);
+    }
+
     public static void invoke(Object target, String method, Class<?> type, Object value)
             throws ReflectiveOperationException {
         target.getClass().getMethod(method, type).invoke(target, value);
