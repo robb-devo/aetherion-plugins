@@ -1,10 +1,13 @@
 import pathfinderPkg from 'mineflayer-pathfinder'
+import { applyIslandMovements, cancelPath, horizontalDistance, nearestAnchor, wanderOnIsland } from './safety.js'
 import { markError, note } from './util.js'
 
 const { goals, Movements, pathfinder } = pathfinderPkg
 
+const HOSTILE = ['zombie', 'husk', 'skeleton', 'stray', 'creeper', 'spider', 'drowned', 'witch', 'pillager', 'phantom']
+
 /**
- * Walk configured waypoints (capital/hub pads) with occasional jump/look/swing.
+ * Local pad hops + fidgets. Distant waypoints are plugin teleports, not void walks.
  */
 export function createRoamLoop(bot, cfg, log) {
   bot.loadPlugin(pathfinder)
@@ -15,18 +18,42 @@ export function createRoamLoop(bot, cfg, log) {
     z: Number(p.z)
   })).filter((p) => Number.isFinite(p.x) && Number.isFinite(p.y) && Number.isFinite(p.z))
 
+  const maxHop = cfg.maxHop ?? 12
+  const fleeRadius = cfg.fleeRadius ?? 8
+  const hopRadius = cfg.wanderRadius ?? 6
   let running = false
-  let index = 0
   let lastFidget = 0
+  let lastHop = 0
+
+  function home() {
+    if (bot.qaHome) return bot.qaHome
+    const pos = bot.entity?.position
+    const nearest = nearestAnchor(pos, waypoints)
+    return nearest || pos
+  }
 
   async function tick() {
-    if (!bot.entity) return
+    if (!bot.entity || bot.qaSuspended) return
 
     if (!bot.pathfinder.movements) {
-      const movements = new Movements(bot)
-      movements.allowSprinting = true
-      movements.canDig = false
-      bot.pathfinder.setMovements(movements)
+      bot.pathfinder.setMovements(applyIslandMovements(new Movements(bot), {
+        canDig: false,
+        maxDrop: cfg.maxDrop ?? 2
+      }))
+    }
+
+    const pad = home()
+    if (!bot.qaHome && pad) {
+      bot.qaHome = { x: pad.x, y: pad.y, z: pad.z }
+    }
+
+    const hostile = nearestHostile(bot, fleeRadius)
+    if (hostile) {
+      cancelPath(bot)
+      note(bot, `flee ${hostile.name || 'mob'}`, 'recovering')
+      wanderOnIsland(bot, pad, Math.min(4, hopRadius), goals)
+      fidget(bot)
+      return
     }
 
     if (waypoints.length === 0) {
@@ -35,23 +62,26 @@ export function createRoamLoop(bot, cfg, log) {
       return
     }
 
-    const target = waypoints[index % waypoints.length]
-    const dist = Math.hypot(bot.entity.position.x - target.x, bot.entity.position.z - target.z)
-    if (dist < 3.5) {
-      index = (index + 1) % waypoints.length
-      note(bot, `reached roam wp ${index}`, 'roaming')
-      fidget(bot)
-      return
-    }
-
-    if (!bot.pathfinder.isMoving()) {
-      note(bot, `walk to ${target.x.toFixed(0)} ${target.z.toFixed(0)}`, 'pathing')
-      bot.pathfinder.setGoal(new goals.GoalNear(target.x, target.y, target.z, 2))
+    if (bot.pathfinder.isMoving()) {
+      bot.qaActivity = 'roaming'
+    } else if (Date.now() - lastHop > 1400) {
+      lastHop = Date.now()
+      const nearby = waypoints.filter((wp) => horizontalDistance(bot.entity.position, wp) <= maxHop)
+      const dest = nearby.length > 0 && Math.random() < 0.35
+        ? nearby[Math.floor(Math.random() * nearby.length)]
+        : null
+      if (dest) {
+        note(bot, `pad hop ${dest.x.toFixed(0)} ${dest.z.toFixed(0)}`, 'roaming')
+        bot.pathfinder.setGoal(new goals.GoalNear(dest.x, dest.y, dest.z, 2))
+      } else {
+        note(bot, 'local hop', 'roaming')
+        wanderOnIsland(bot, pad, hopRadius, goals)
+      }
     } else {
-      bot.qaActivity = 'pathing'
+      bot.qaActivity = 'roaming'
     }
 
-    if (Date.now() - lastFidget > 8000) {
+    if (Date.now() - lastFidget > 3500) {
       lastFidget = Date.now()
       fidget(bot)
     }
@@ -60,15 +90,15 @@ export function createRoamLoop(bot, cfg, log) {
   function fidget(botRef) {
     const roll = Math.random()
     try {
-      if (roll < 0.33) {
+      if (roll < 0.34) {
         botRef.setControlState('jump', true)
-        setTimeout(() => botRef.setControlState('jump', false), 250)
+        setTimeout(() => botRef.setControlState('jump', false), 220)
         note(botRef, 'jump', 'roaming')
-      } else if (roll < 0.66) {
+      } else if (roll < 0.67) {
         botRef.swingArm()
         note(botRef, 'swing', 'roaming')
       } else {
-        botRef.look(Math.random() * Math.PI * 2, (Math.random() - 0.5) * 0.4, true).catch(() => {})
+        botRef.look(Math.random() * Math.PI * 2, (Math.random() - 0.5) * 0.5, true).catch(() => {})
         note(botRef, 'look around', 'roaming')
       }
     } catch (err) {
@@ -79,14 +109,31 @@ export function createRoamLoop(bot, cfg, log) {
   return function start() {
     if (running) return
     running = true
-    log(bot.stressName, `roam loop start (${waypoints.length} waypoints)`)
+    log(bot.stressName, `roam loop start (${waypoints.length} local waypoints, hop<=${maxHop})`)
     note(bot, 'roam loop start', 'roaming')
     const handle = setInterval(() => {
       tick().catch((err) => {
         markError(bot, err)
         log(bot.stressName, `roam tick: ${err.message}`)
       })
-    }, 500)
+    }, 380)
     bot.once('end', () => clearInterval(handle))
   }
+}
+
+function nearestHostile(bot, radius) {
+  let best = null
+  let bestDist = radius
+  for (const entity of Object.values(bot.entities)) {
+    if (!entity || entity === bot.entity) continue
+    const name = (entity.name || entity.displayName || '').toLowerCase()
+    if (!name) continue
+    if (!HOSTILE.some((key) => name.includes(key))) continue
+    const dist = bot.entity.position.distanceTo(entity.position)
+    if (dist < bestDist) {
+      best = entity
+      bestDist = dist
+    }
+  }
+  return best
 }

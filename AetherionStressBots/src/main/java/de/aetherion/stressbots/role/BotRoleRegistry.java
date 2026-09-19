@@ -104,7 +104,7 @@ public final class BotRoleRegistry {
         return Math.max(0, Math.min(configured, maxStart));
     }
 
-    static ConfigurationSection roleSection(AetherionStressBots plugin, BotRole role) {
+    public static ConfigurationSection roleSection(AetherionStressBots plugin, BotRole role) {
         ConfigurationSection section = plugin.getConfig().getConfigurationSection("testbots.roles." + role.id());
         if (section != null) {
             return section;

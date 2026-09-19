@@ -47,6 +47,6 @@ public final class RoamRoleHandler implements BotRoleHandler {
 
     @Override
     public String description() {
-        return "Walk Origin/capital pad paths with occasional jump/look/swing. Baseline hub load.";
+        return "Local hops on Origin slime pads with jump/look/swing. Plugin pad-hops; flees hostiles.";
     }
 }

@@ -4,6 +4,7 @@ import { createMiningLoop, createForageLoop } from './gather.js'
 import { createCatchLoop } from './catch.js'
 import { createRoamLoop } from './roam.js'
 import { attachVelocityForwarding } from './velocity.js'
+import { attachSafety, readAnchors } from './safety.js'
 import { fmtPos, heldName, note, sleep } from './util.js'
 
 const WAVE1 = ['mine', 'forage', 'catch', 'roam']
@@ -49,11 +50,27 @@ export function createFleet({ config, log }) {
 
   function startLoop(bot, role) {
     const cfg = roleConfig(role)
+    const safety = config.safety || {}
+    attachSafety(bot, {
+      voidFloorY: cfg.voidFloorY ?? safety.voidFloorY ?? 40,
+      leashRadius: cfg.leashRadius ?? safety.leashRadius ?? defaultLeash(role),
+      anchors: readAnchors(cfg),
+      stuckMs: safety.stuckMs ?? 10_000,
+      resumeDelayMs: safety.resumeDelayMs ?? 2800,
+      log
+    })
     if (role === 'combat') return createCombatLoop(bot, cfg, log)
     if (role === 'forage') return createForageLoop(bot, cfg, log)
     if (role === 'catch') return createCatchLoop(bot, cfg, log)
     if (role === 'roam') return createRoamLoop(bot, cfg, log)
     return createMiningLoop(bot, cfg, log)
+  }
+
+  function defaultLeash(role) {
+    if (role === 'catch') return 12
+    if (role === 'roam') return 14
+    if (role === 'combat') return 22
+    return 16
   }
 
   function spawnBot(name, role) {
@@ -86,9 +103,10 @@ export function createFleet({ config, log }) {
     })
     bot.on('death', () => {
       bot.qaDeaths = (bot.qaDeaths || 0) + 1
-      note(bot, 'died', 'error')
+      bot.qaSuspended = true
+      note(bot, 'died', 'recovering')
       bot.qaLastError = 'died'
-      log(name, 'died — waiting for respawn/setup')
+      log(name, 'died — holding for plugin re-anchor')
     })
     bot.on('kicked', (reason) => {
       const text = stringify(reason)

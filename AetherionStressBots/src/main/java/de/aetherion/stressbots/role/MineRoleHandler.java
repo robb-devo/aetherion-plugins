@@ -48,6 +48,6 @@ public final class MineRoleHandler implements BotRoleHandler {
 
     @Override
     public String description() {
-        return "Path/teleport to the mining isle (Eldervale) and break ores with a starter pick.";
+        return "Teleport to Eldervale interior pads and break ores/stone with a starter pick.";
     }
 }

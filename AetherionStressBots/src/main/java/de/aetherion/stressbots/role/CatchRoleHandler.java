@@ -78,6 +78,6 @@ public final class CatchRoleHandler implements BotRoleHandler {
 
     @Override
     public String description() {
-        return "Roam a pet habitat and throw catch spheres. Catch timing minigame is not automated (wave 1).";
+        return "Throw catch spheres from a solid habitat pad. No void chase; timing minigame is not automated.";
     }
 }

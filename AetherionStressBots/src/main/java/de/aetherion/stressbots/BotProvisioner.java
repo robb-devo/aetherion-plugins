@@ -29,11 +29,16 @@ public final class BotProvisioner {
     }
 
     public void scheduleSetup(Player player) {
+        int delay = Math.max(1, plugin.getConfig().getInt("setup-delay-ticks", 40));
+        scheduleSetup(player, delay);
+    }
+
+    public void scheduleSetup(Player player, int delayTicks) {
         BotRoleHandler handler = plugin.getRegistry().byPlayer(player);
         if (handler == null) {
             return;
         }
-        int delay = Math.max(1, plugin.getConfig().getInt("setup-delay-ticks", 40));
+        int delay = Math.max(1, delayTicks);
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             if (!player.isOnline()) {
                 return;

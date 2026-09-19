@@ -19,7 +19,8 @@ combat:
   z: 160.5
   yaw: 0.0
   pitch: 0.0
-  scatter-radius: 18
+  scatter-radius: 12
+  leash-radius: 22
 
 mining:
   world: world
@@ -32,13 +33,18 @@ mining:
     - { x: 20.5, y: 50.5, z: 231.5 }
   yaw: 0.0
   pitch: 0.0
-  scatter-radius: 10
+  scatter-radius: 6
+  leash-radius: 16
 
 # ---------------------------------------------------------------------------
 # Wave 1 QA testbots (Dev menu + /botreport + /stressbots start)
 # Bots only spawn from the plugin when enabled is true.
 # The Mineflayer runner still needs to be running (control HTTP).
 # Velocity forwarding secret stays in runner/config.json — do not put it here.
+#
+# Island safety: keep scatter small, leash near the assigned pad, and prefer
+# interior anchors over jump-pad lip / canopy / borderlands death spots.
+# Live servers must copy these keys — saveDefaultConfig does not overwrite.
 # ---------------------------------------------------------------------------
 testbots:
   enabled: false
@@ -59,49 +65,72 @@ testbots:
     forage: 20
     catch: 20
     roam: 20
+  safety:
+    # Paper watchdog + Mineflayer hold. Tune if pads sit lower than Y 56.
+    void-floor-y: 40
+    leash-radius: 18
+    recover-cooldown-ms: 1500
+    respawn-setup-ticks: 5
+    # Teleport idle mine/forage/catch bots to another role pad (12s).
+    idle-reanchor-ticks: 240
+    # Roam: plugin pad-hop between origin pads (80s). 0 disables.
+    pad-hop-ticks: 1600
   roles:
-    # Mining isle (Eldervale) — Hub pad landing + nearby vein-ish spots on mmo-r world.
+    # Eldervale interior first (paste center), then mid-isle, then landing lip.
+    # Do not scatter off the slime-pad ledge — leash stays on the assigned patch.
     mine:
       world: world
       anchors:
-        - { x: 53.5, y: 91.0, z: 482.5 }
-        - { x: 80.5, y: 92.0, z: 530.5 }
         - { x: 22.5, y: 90.0, z: 580.5 }
+        - { x: 80.5, y: 92.0, z: 530.5 }
+        - { x: 53.5, y: 91.0, z: 482.5 }
       yaw: 0.0
       pitch: 20.0
-      scatter-radius: 12
-    # Forage Isle — pad landing + schematic interior.
+      scatter-radius: 5
+      leash-radius: 16
+    # Grove / return platform / paste center. Removed jump-pad lip 479.5 74 -240.5
+    # (Canopy-Kalle death loop) and any canopy-edge scatter.
     forage:
       world: world
       anchors:
-        - { x: 479.5, y: 74.0, z: -240.5 }
-        - { x: 560.5, y: 90.0, z: -160.5 }
+        - { x: 560.5, y: 91.0, z: -200.5 }
+        - { x: 559.5, y: 90.0, z: -208.5 }
         - { x: 677.5, y: 91.0, z: -116.5 }
+        - { x: 560.5, y: 90.0, z: -160.5 }
       yaw: 90.0
       pitch: 10.0
-      scatter-radius: 14
-    # Pet habitats: forage-isle canopy + Eldervale disk fallback.
+      scatter-radius: 5
+      leash-radius: 16
+    # Solid habitat pads only. Removed 500.5 80 -200.5 (immediate void after TP).
     catch:
       world: world
       spheres: [common]
       sphere-count: 16
       anchors:
-        - { x: 500.5, y: 80.0, z: -200.5 }
+        - { x: 560.5, y: 91.0, z: -200.5 }
+        - { x: 559.5, y: 90.0, z: -208.5 }
         - { x: 560.5, y: 90.0, z: -160.5 }
-        - { x: 53.5, y: 91.0, z: 482.5 }
+        - { x: 22.5, y: 90.0, z: 580.5 }
       yaw: 0.0
       pitch: 0.0
-      scatter-radius: 16
-    # Origin / capital approach paths (pads + borderlands gate). Adjust if Hub spawn coords differ.
+      scatter-radius: 4
+      leash-radius: 12
+    # Origin slime pads only. Removed borderlands 220.5 58 160.5 (husk/skeleton loop).
+    # Runner hops locally; plugin pad-hops between these two islands. Do not add
+    # far waypoints unless you want the plugin to teleport — bots will not walk the void.
     roam:
       world: world
       waypoints:
         - { x: 22.5, y: 56.0, z: 305.5 }
-        - { x: 220.5, y: 58.0, z: 160.5 }
+        - { x: 18.5, y: 56.0, z: 301.5 }
+        - { x: 26.5, y: 56.0, z: 309.5 }
         - { x: 438.5, y: 56.0, z: -233.5 }
+        - { x: 434.5, y: 56.0, z: -229.5 }
+        - { x: 442.5, y: 56.0, z: -237.5 }
       yaw: 0.0
       pitch: 0.0
-      scatter-radius: 8
+      scatter-radius: 3
+      leash-radius: 14
 
   # Chat / tab / Collection leaderboard labels. Login names stay QaMine01 (Velocity).
   nicknames:

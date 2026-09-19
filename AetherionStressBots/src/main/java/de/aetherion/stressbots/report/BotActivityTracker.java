@@ -26,7 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 /**
- * Rough activity + death/error history for online bots (idle/mining/pathing/error).
+ * Rough activity + death/error history for online bots (idle/mining/pathing/void/recovering/stuck).
  */
 public final class BotActivityTracker implements Listener, Runnable {
 
@@ -37,6 +37,9 @@ public final class BotActivityTracker implements Listener, Runnable {
     public static final String PATHING = "pathing";
     public static final String ROAMING = "roaming";
     public static final String ERROR = "error";
+    public static final String VOID = "void";
+    public static final String RECOVERING = "recovering";
+    public static final String STUCK = "stuck";
 
     private final AetherionStressBots plugin;
     private final Map<UUID, Runtime> runtimes = new ConcurrentHashMap<>();
@@ -59,7 +62,7 @@ public final class BotActivityTracker implements Listener, Runnable {
         }
         Runtime runtime = runtime(player);
         runtime.deaths++;
-        runtime.activity = ERROR;
+        runtime.activity = RECOVERING;
         runtime.lastError = "died";
         runtime.note("died");
         plugin.getLogger().info("Testbot " + player.getName() + " died");
@@ -125,6 +128,17 @@ public final class BotActivityTracker implements Listener, Runnable {
             }
             Runtime runtime = runtime(player);
             Location loc = player.getLocation();
+            double floor = plugin.getConfig().getDouble("testbots.safety.void-floor-y", 40);
+            if (loc.getY() < floor) {
+                runtime.activity = VOID;
+                runtime.lastSample = loc.clone();
+                continue;
+            }
+            if (now - runtime.lastRecoverMs < 2500) {
+                runtime.activity = RECOVERING;
+                runtime.lastSample = loc.clone();
+                continue;
+            }
             if (runtime.lastSample != null && runtime.lastSample.getWorld() == loc.getWorld()) {
                 double dist = runtime.lastSample.distanceSquared(loc);
                 if (dist > 0.35) {
@@ -135,8 +149,12 @@ public final class BotActivityTracker implements Listener, Runnable {
                         runtime.activity = PATHING;
                     }
                     runtime.lastActionMs = now;
-                } else if (now - runtime.lastActionMs > 8000 && !ERROR.equals(runtime.activity)) {
-                    runtime.activity = IDLE;
+                } else if (now - runtime.lastActionMs > 12_000 && !ERROR.equals(runtime.activity)
+                        && !VOID.equals(runtime.activity) && !RECOVERING.equals(runtime.activity)) {
+                    runtime.activity = STUCK.equals(runtime.activity) ? STUCK : IDLE;
+                    if (now - runtime.lastActionMs > 16_000) {
+                        runtime.activity = STUCK;
+                    }
                 }
             }
             runtime.lastSample = loc.clone();
@@ -164,6 +182,27 @@ public final class BotActivityTracker implements Listener, Runnable {
         Runtime runtime = runtime(player);
         runtime.note(action);
         runtime.lastActionMs = System.currentTimeMillis();
+    }
+
+    public void markRecovering(Player player, String action) {
+        if (player == null) {
+            return;
+        }
+        Runtime runtime = runtime(player);
+        runtime.activity = RECOVERING;
+        runtime.lastRecoverMs = System.currentTimeMillis();
+        runtime.lastActionMs = runtime.lastRecoverMs;
+        runtime.lastError = "";
+        runtime.note("recover " + (action == null ? "" : action));
+    }
+
+    public void markVoid(Player player, String action) {
+        if (player == null) {
+            return;
+        }
+        Runtime runtime = runtime(player);
+        runtime.activity = VOID;
+        runtime.note(action == null ? "void" : action);
     }
 
     private Runtime runtime(Player player) {
@@ -194,6 +233,7 @@ public final class BotActivityTracker implements Listener, Runnable {
         private volatile String lastError = "";
         private volatile int deaths;
         private volatile long lastActionMs = System.currentTimeMillis();
+        private volatile long lastRecoverMs;
         private volatile Location lastSample;
         private final ConcurrentLinkedDeque<String> recent = new ConcurrentLinkedDeque<>();
 
