@@ -178,6 +178,11 @@ body {
   display: none;
 }
 
+.bank-details[open] .bank-closed,
+.bank-details:not([open]) .bank-open {
+  display: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

@@ -10,9 +10,7 @@ export default function MapGallery() {
           Drei Orte, die du kennen wirst
         </SectionTitle>
         <p className="mt-4 max-w-2xl text-sm leading-relaxed text-mist/70">
-          Die Galerie ist vorbereitet. Aktuell liegen stilisierte Platzhalter in{' '}
-          <code className="rounded bg-white/10 px-1.5 py-0.5 text-cyan">website/public/maps/</code> —
-          gleiche Dateinamen, echte Screenshots, fertig.
+          Drei Orte aus der Welt. Die Rahmen stehen — echte Ingame-Screenshots kommen nach.
         </p>
       </Reveal>
 

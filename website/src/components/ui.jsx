@@ -1,30 +1,81 @@
-import { useEffect, useRef, useState } from 'react'
+import { createContext, useContext, useEffect, useRef, useState } from 'react'
+
+const ToastContext = createContext((message) => {
+  void message
+})
+
+export function ToastProvider({ children }) {
+  const [message, setMessage] = useState('')
+  const timer = useRef(0)
+
+  function showToast(next) {
+    setMessage(next)
+    window.clearTimeout(timer.current)
+    timer.current = window.setTimeout(() => setMessage(''), 2400)
+  }
+
+  useEffect(() => () => window.clearTimeout(timer.current), [])
+
+  return (
+    <ToastContext.Provider value={showToast}>
+      {children}
+      <div
+        role="status"
+        aria-live="polite"
+        className={`pointer-events-none fixed inset-x-0 bottom-6 z-50 flex justify-center px-4 transition ${
+          message ? 'translate-y-0 opacity-100' : 'translate-y-3 opacity-0'
+        }`}
+      >
+        {message ? (
+          <p className="rounded-full border border-cyan/35 bg-void/95 px-4 py-2.5 text-sm font-bold text-white shadow-[0_12px_40px_rgba(0,0,0,0.45)] backdrop-blur">
+            {message}
+          </p>
+        ) : null}
+      </div>
+    </ToastContext.Provider>
+  )
+}
+
+function writeClipboard(value) {
+  if (navigator.clipboard?.writeText) {
+    void navigator.clipboard.writeText(value).catch(() => fallbackCopy(value))
+    return
+  }
+  fallbackCopy(value)
+}
+
+function fallbackCopy(value) {
+  const ta = document.createElement('textarea')
+  ta.value = value
+  ta.setAttribute('readonly', '')
+  ta.style.position = 'fixed'
+  ta.style.left = '-9999px'
+  document.body.appendChild(ta)
+  ta.select()
+  try {
+    document.execCommand('copy')
+  } catch {
+    // Clipboard can be blocked in some browsers; the toast still confirms intent.
+  }
+  ta.remove()
+}
 
 export function CopyButton({
   value,
   children,
   copiedLabel = 'Kopiert!',
+  toast = 'Kopiert',
   className = '',
   title,
 }) {
+  const showToast = useContext(ToastContext)
   const [copied, setCopied] = useState(false)
 
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(value)
-    } catch {
-      const ta = document.createElement('textarea')
-      ta.value = value
-      ta.setAttribute('readonly', '')
-      ta.style.position = 'fixed'
-      ta.style.left = '-9999px'
-      document.body.appendChild(ta)
-      ta.select()
-      document.execCommand('copy')
-      ta.remove()
-    }
+  function copy() {
+    writeClipboard(value)
     setCopied(true)
-    window.setTimeout(() => setCopied(false), 1800)
+    showToast(toast)
+    window.setTimeout(() => setCopied(false), 2200)
   }
 
   return (

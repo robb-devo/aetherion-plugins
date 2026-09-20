@@ -26,12 +26,14 @@ export default function Support() {
   return (
     <Section id="support">
       <Reveal>
-        <div className="mb-8 rounded-2xl border border-gold/35 bg-gold/10 px-4 py-4 sm:px-6">
-          <p className="text-sm font-extrabold tracking-wide text-gold uppercase">Klartext</p>
-          <p className="mt-1 text-base font-semibold text-white">
-            Support ist ein Prototyp-Danke. Kein Pay-to-Win. Nicht nötig zum Spielen.
+        <div className="mb-8 rounded-2xl border-2 border-gold/55 bg-gradient-to-r from-gold/15 to-amethyst/10 px-4 py-5 sm:px-6">
+          <p className="text-sm font-extrabold tracking-[0.18em] text-gold uppercase">
+            Optional · Kein Pay-to-Win
           </p>
-          <p className="mt-1 text-sm text-mist/80">
+          <p className="mt-2 text-base font-semibold text-white">
+            Support ist ein Prototyp-Danke. Nicht nötig zum Spielen. Niemand muss zahlen, um stark zu sein.
+          </p>
+          <p className="mt-1 text-sm text-white/80">
             Shards kaufen keine Power, keine Dungeon-Wins, keine Skill-Level. Wer nicht spendet, spielt
             denselben Server.
           </p>
@@ -138,7 +140,10 @@ export default function Support() {
         <details className="bank-details glass rounded-2xl">
           <summary className="flex cursor-pointer items-center justify-between gap-3 px-5 py-4 text-sm font-semibold text-white sm:px-6">
             <span>Banküberweisung — nur für Freunde</span>
-            <span className="text-xs font-bold tracking-wide text-mist/60 uppercase">Aufklappen</span>
+            <span className="text-xs font-bold tracking-wide text-mist/60 uppercase">
+              <span className="bank-closed">Aufklappen</span>
+              <span className="bank-open">Zuklappen</span>
+            </span>
           </summary>
           <div className="border-t border-white/10 px-5 py-4 sm:px-6">
             <p className="text-sm text-mist/75">
@@ -149,6 +154,7 @@ export default function Support() {
               value={SITE.iban.replaceAll(' ', '')}
               className="btn btn-ghost mt-3 !py-2 text-xs"
               copiedLabel="IBAN kopiert"
+              toast="IBAN kopiert"
             >
               IBAN kopieren
             </CopyButton>

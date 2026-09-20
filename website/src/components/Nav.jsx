@@ -51,6 +51,7 @@ export default function Nav() {
             value={SITE.ip}
             className="btn btn-ghost !px-3.5 !py-2 text-xs"
             copiedLabel="IP kopiert"
+            toast="IP kopiert — in Minecraft einfügen"
           >
             {SITE.ip}
           </CopyButton>
@@ -61,7 +62,7 @@ export default function Nav() {
 
         <button
           type="button"
-          className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/5 md:hidden"
+          className="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-white/15 bg-white/5 md:hidden"
           aria-expanded={open}
           aria-label={open ? 'Menü schließen' : 'Menü öffnen'}
           onClick={() => setOpen((v) => !v)}
@@ -76,8 +77,8 @@ export default function Nav() {
       </div>
 
       {open ? (
-        <div className="border-t border-white/10 bg-void/95 px-4 py-5 md:hidden">
-          <nav className="flex flex-col gap-3" aria-label="Mobilnavigation">
+        <div className="fixed inset-x-0 top-[57px] bottom-0 z-40 overflow-y-auto border-t border-white/10 bg-void px-4 py-5 md:hidden">
+          <nav className="mx-auto flex max-w-6xl flex-col gap-3" aria-label="Mobilnavigation">
             {NAV.map((item) => (
               <a
                 key={item.href}
@@ -92,6 +93,7 @@ export default function Nav() {
               value={SITE.ip}
               className="btn btn-ghost mt-2 w-full"
               copiedLabel="IP kopiert"
+              toast="IP kopiert — in Minecraft einfügen"
             >
               IP kopieren · {SITE.ip}
             </CopyButton>

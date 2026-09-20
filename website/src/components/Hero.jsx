@@ -54,27 +54,31 @@ export default function Hero() {
           A Paper MMO prototype — optional support, never pay-to-win.
         </p>
 
-        <div className="mt-8 flex w-full max-w-lg flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-center">
+        <div className="mt-8 flex w-full max-w-lg items-center justify-between gap-4 rounded-2xl px-4 py-3 text-left sm:min-w-[280px] glass">
+          <span className="flex min-w-0 flex-col">
+            <span className="text-[0.65rem] font-bold tracking-[0.18em] text-cyan uppercase">
+              Java · {SITE.proxy} :{SITE.port}
+            </span>
+            <span className="truncate font-mono text-lg font-bold text-white">{SITE.ip}</span>
+          </span>
           <CopyButton
             value={SITE.ip}
-            className="glass flex items-center justify-between gap-4 rounded-2xl px-4 py-3 text-left sm:min-w-[280px]"
-            copiedLabel="IP kopiert — in Minecraft einfügen"
+            copiedLabel="Kopiert!"
+            toast="IP kopiert — in Minecraft einfügen"
             title="Server-IP kopieren"
+            className="shrink-0 rounded-full bg-cyan/20 px-3 py-1.5 text-xs font-bold text-white"
           >
-            <span className="flex min-w-0 flex-col">
-              <span className="text-[0.65rem] font-bold tracking-[0.18em] text-cyan uppercase">
-                Java · {SITE.proxy} :{SITE.port}
-              </span>
-              <span className="truncate font-mono text-lg font-bold text-white">{SITE.ip}</span>
-            </span>
-            <span className="shrink-0 rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-white">
-              Kopieren
-            </span>
+            Kopieren
           </CopyButton>
         </div>
 
         <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-          <CopyButton value={SITE.ip} className="btn btn-primary" copiedLabel="IP kopiert">
+          <CopyButton
+            value={SITE.ip}
+            className="btn btn-primary"
+            copiedLabel="IP kopiert"
+            toast="IP kopiert — in Minecraft einfügen"
+          >
             Beitreten
           </CopyButton>
           <a
