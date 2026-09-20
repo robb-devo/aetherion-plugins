@@ -16,11 +16,11 @@ import org.bukkit.inventory.InventoryHolder;
 
 public final class MainMenu implements Listener {
 
-    private static final int CREATE = 11;
-    private static final int NEARBY = 13;
-    private static final int LIST = 15;
-    private static final int WAND = 21;
-    private static final int HELP = 23;
+    private static final int CREATE = 20;
+    private static final int NEARBY = 22;
+    private static final int LIST = 24;
+    private static final int WAND = 38;
+    private static final int HELP = 40;
 
     private final NpcEditor editor;
 
@@ -32,20 +32,25 @@ public final class MainMenu implements Listener {
     public static void open(Player player) {
         Inventory inventory = Bukkit.createInventory(
                 new Holder(),
-                27,
+                54,
                 EditorItems.title(player, "npc_editor", "§8NPC Editor")
         );
-        EditorItems.fill(inventory);
+        EditorItems.chrome(inventory);
         inventory.setItem(4, EditorItems.button(
                 Material.NETHER_STAR,
                 "§bNPC Editor",
                 "§7Create FancyNPCs with dialogue.",
-                "§7Story NPCs stay untouched."
+                "§7Story NPCs stay untouched.",
+                "§8/aethernpc · /npceditor",
+                "§8FancyNpcs keeps /npc"
         ));
+        inventory.setItem(8, EditorItems.saved(false));
+        inventory.setItem(18, EditorItems.section("NPCs", "§7Create, find, list."));
         inventory.setItem(CREATE, EditorItems.button(
                 Material.EMERALD_BLOCK,
                 "§aCreate NPC",
                 "§7Name in chat, then place at your feet.",
+                "§7Starts as §bDialog-only§7.",
                 "§eClick to start."
         ));
         inventory.setItem(NEARBY, EditorItems.button(
@@ -57,20 +62,25 @@ public final class MainMenu implements Listener {
         inventory.setItem(LIST, EditorItems.button(
                 Material.BOOK,
                 "§6List NPCs",
-                "§7Every moderator NPC you created."
+                "§7Every moderator NPC you created.",
+                "§8Dialog vs Quest shown on each row"
         ));
+        inventory.setItem(36, EditorItems.section("Tools", "§7Wand + help."));
         inventory.setItem(WAND, EditorItems.button(
                 Material.BLAZE_ROD,
                 "§6Get wand",
                 "§7Right-click air — this menu.",
                 "§7Right-click an editor NPC — edit.",
-                "§7Sneak-click — delete confirm."
+                "§7Sneak-click — delete confirm.",
+                "§8Content Kit opens this same wand."
         ));
         inventory.setItem(HELP, EditorItems.button(
                 Material.KNOWLEDGE_BOOK,
                 "§fHelp",
-                "§7Commands, permissions, storage."
+                "§7Commands, permissions, storage.",
+                "§7Mode, quest path, rewards."
         ));
+        inventory.setItem(49, EditorItems.button(Material.BARRIER, "§cClose"));
         player.openInventory(inventory);
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.45f, 1.2f);
     }
@@ -101,6 +111,7 @@ public final class MainMenu implements Listener {
             case LIST -> ListMenu.open(player, 0);
             case WAND -> editor.giveWand(player);
             case HELP -> HelpMenu.open(player);
+            case 49 -> player.closeInventory();
             default -> {
             }
         }

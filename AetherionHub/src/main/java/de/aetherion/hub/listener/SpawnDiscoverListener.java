@@ -26,7 +26,7 @@ import java.util.Set;
 public final class SpawnDiscoverListener implements Listener, Runnable {
 
     private static final Set<String> ORGANIC = Set.of(
-            "ore_ridge", "farm", "farm_isle", "capital", "borderlands", "eldervale"
+            "ore_ridge", "farm", "farm_isle", "capital", "borderlands", "eldervale", "fishing", "amethyst"
     );
 
     private final AetherionHub plugin;
@@ -67,6 +67,16 @@ public final class SpawnDiscoverListener implements Listener, Runnable {
         // Farm Isle unlocks by standing on the island world (portal entry).
         if ("farm_isle".equalsIgnoreCase(spawn.id())) {
             if (here.getWorld() != null && "aether_farm_island".equalsIgnoreCase(here.getWorld().getName())) {
+                if (hub.unlockNew(player.getUniqueId(), spawn.id())) {
+                    announce(player, spawn);
+                }
+            }
+            return;
+        }
+        // Amethyst Mines unlocks by visiting aether_veins (Crystal Hollows / beacon hub).
+        // Never Main Island — world is aether_veins only.
+        if ("amethyst".equalsIgnoreCase(spawn.id())) {
+            if (here.getWorld() != null && "aether_veins".equalsIgnoreCase(here.getWorld().getName())) {
                 if (hub.unlockNew(player.getUniqueId(), spawn.id())) {
                     announce(player, spawn);
                 }
@@ -165,6 +175,12 @@ public final class SpawnDiscoverListener implements Listener, Runnable {
             return 36.0;
         }
         if ("eldervale".equalsIgnoreCase(spawnId)) {
+            return 36.0;
+        }
+        if ("fishing".equalsIgnoreCase(spawnId)) {
+            return 36.0;
+        }
+        if ("amethyst".equalsIgnoreCase(spawnId)) {
             return 36.0;
         }
         return 0;

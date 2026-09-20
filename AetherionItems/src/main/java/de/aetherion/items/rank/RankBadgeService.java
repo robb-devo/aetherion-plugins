@@ -38,10 +38,27 @@ public final class RankBadgeService implements Listener {
             new Rank("eternal", 86, "&8[&4✶&8] &f", "§4§lEternal"),
             new Rank("aetherion", 88, "&8[&5♛&8] &f", "§5§lAetherion"),
             new Rank("mvpplusplus", 90, "&6[MVP&c++&6] &f", "§6MVP§c++"),
+            // Ultra extras — high TAB, never parked at 50 next to mythwright.
+            // Beta 93 (cosmetic only) · Monkey 95 (content + celestial) · Admin 100.
+            new Rank("beta", 93, RainbowDye.prefixStatic(), "§d§lBeta Tester"),
+            new Rank("monkey", 95, CelestialDye.monkeyPrefixStatic(), "§b§lMonkey"),
             new Rank("admin", 100, "&c[Admin] &f", "§cAdmin")
     );
 
-    private static final Set<String> EXTRA = Set.of("mvpplusplus", "admin");
+    /**
+     * Staff / Homie cosmetic extras sit on top of Aetherion XP ranks.
+     * Standing rule (Peter): every future Homie special rank copies Monkey —
+     * EXTRA + high TAB weight (near admin / mvpplusplus) + Dev Menu ultra slot.
+     * Never add them to the Adventurer→Aetherion progression row.
+     * <p>
+     * Monkey = content tools + celestial #B2FFFF. Beta = rainbow cosmetics only.
+     * TAB GROUPS order (Monkey first among Homie cosmetics):
+     * {@code admin, monkey, beta, mvpplusplus, …progression}.
+     * <p>
+     * Ultras stay until Peter removes them — XP progression sync never
+     * overwrites or wipes these groups.
+     */
+    private static final Set<String> EXTRA = Set.of("admin", "monkey", "beta", "mvpplusplus");
 
     private static final String DEFAULT_GROUP = "mvpplusplus";
     private static final String DEFAULT_PREFIX = "&6[MVP&c++&6] ";
@@ -71,6 +88,8 @@ public final class RankBadgeService implements Listener {
                 service.applyTo(player);
             }
         }, 40L);
+        // Compact player-list / chat nametag shimmer — same #B2FFFF dye as hold-TAB.
+        plugin.getServer().getScheduler().runTaskTimer(plugin, service::paintOnlineDyed, 80L, 8L);
         return service;
     }
 
@@ -118,11 +137,47 @@ public final class RankBadgeService implements Listener {
     }
 
     public boolean isExtra(String group) {
+        return isPermanentExtra(group);
+    }
+
+    /** Ultra extras Peter grants — never part of XP progression wipe. */
+    public static boolean isPermanentExtra(String group) {
         if (group == null || group.isBlank()) {
             return false;
         }
         String key = group.toLowerCase(Locale.ROOT);
         return EXTRA.contains(key) || key.equals("owner");
+    }
+
+    /** LuckPerms groups XP sync may replace. Extras are never in this set. */
+    public static Set<String> xpManagedGroups() {
+        Set<String> groups = new java.util.LinkedHashSet<>();
+        for (Rank rank : RANKS) {
+            if (!isPermanentExtra(rank.group())) {
+                groups.add(rank.group());
+            }
+        }
+        return Set.copyOf(groups);
+    }
+
+    public static Set<String> extraGroups() {
+        return EXTRA;
+    }
+
+    public static int rankWeight(String group) {
+        if (group == null || group.isBlank()) {
+            return 0;
+        }
+        String key = group.toLowerCase(Locale.ROOT);
+        if (key.equals("owner")) {
+            key = "admin";
+        }
+        for (Rank rank : RANKS) {
+            if (rank.group().equals(key)) {
+                return rank.weight();
+            }
+        }
+        return 0;
     }
 
     public String displayTitle(Player player) {
@@ -139,6 +194,20 @@ public final class RankBadgeService implements Listener {
     }
 
     public String ultraTitle(Player player) {
+        String group = player == null ? null : cosmeticGroup(player);
+        if (group == null || group.isBlank()) {
+            Rank extra = extraRank(player);
+            if (extra == null) {
+                return "";
+            }
+            group = extra.group();
+        }
+        if ("monkey".equalsIgnoreCase(group)) {
+            return CelestialDye.monkeyBadge().trim();
+        }
+        if ("beta".equalsIgnoreCase(group)) {
+            return RainbowDye.badge().trim();
+        }
         Rank extra = extraRank(player);
         return extra == null ? "" : extra.display();
     }
@@ -160,20 +229,61 @@ public final class RankBadgeService implements Listener {
             return "§f";
         }
         StringBuilder prefix = new StringBuilder();
-        Rank extra = extraRank(player);
-        if (extra != null) {
-            prefix.append(switch (extra.group()) {
-                case "admin" -> "§c[Admin] ";
-                case "mvpplusplus" -> "§6[MVP§c++§6] ";
-                default -> "";
-            });
-        }
+        String cosmetic = cosmeticGroup(player);
+        prefix.append(dyePrefix(cosmetic));
         de.aetherion.items.AetherionItems items = de.aetherion.items.AetherionItems.getInstance();
         if (items != null && items.getSkills() != null) {
             prefix.append(items.getSkills().accountTag(player)).append(" ");
         }
         prefix.append("§f");
         return prefix.toString();
+    }
+
+    /**
+     * Chat / compact TAB / nametag dye. Beta is never {@link CelestialDye}.
+     * {@code beta} → rainbow letters; {@code monkey} → #B2FFFF only.
+     */
+    public static String dyePrefix(String extraGroup) {
+        if (extraGroup == null || extraGroup.isBlank()) {
+            return "";
+        }
+        return switch (extraGroup.toLowerCase(Locale.ROOT)) {
+            case "admin" -> "§c[Admin] ";
+            case "mvpplusplus" -> "§6[MVP§c++§6] ";
+            case "monkey" -> CelestialDye.monkeyBadge();
+            case "beta" -> RainbowDye.badge();
+            default -> "";
+        };
+    }
+
+    /** Offline / test variant — no tick, never runs CelestialDye for beta. */
+    public static String dyePrefixStatic(String extraGroup) {
+        if (extraGroup == null || extraGroup.isBlank()) {
+            return "";
+        }
+        return switch (extraGroup.toLowerCase(Locale.ROOT)) {
+            case "admin" -> "§c[Admin] ";
+            case "mvpplusplus" -> "§6[MVP§c++§6] ";
+            case "monkey" -> CelestialDye.monkeyPrefixStatic();
+            case "beta" -> RainbowDye.prefixStatic();
+            default -> "";
+        };
+    }
+
+    /**
+     * Live cosmetic ultra. If LuckPerms says Beta and not Monkey, that wins
+     * even when {@code extras} is still a stale Monkey grant.
+     */
+    public String cosmeticGroup(Player player) {
+        if (player == null) {
+            return null;
+        }
+        refreshExtraFromLuckPerms(player);
+        Rank extra = extraFor(player.getUniqueId());
+        if (hasBeta(player) && !hasMonkey(player)) {
+            return "beta";
+        }
+        return extra == null ? null : extra.group();
     }
 
     public String nametag(Player player) {
@@ -187,6 +297,7 @@ public final class RankBadgeService implements Listener {
         if (player == null || !player.isOnline()) {
             return;
         }
+        adoptDetectedExtra(player);
         if (forced.contains(player.getUniqueId())) {
             applyTo(player);
             return;
@@ -194,6 +305,10 @@ public final class RankBadgeService implements Listener {
         String wanted = de.aetherion.items.skill.AetherionLevel.rankGroup(level);
         Rank current = rankByGroup(aetherionGroup(player.getUniqueId()));
         Rank next = rankByGroup(wanted);
+        if (isPermanentExtra(next.group()) || isPermanentExtra(wanted)) {
+            applyTo(player);
+            return;
+        }
         if (next.weight() >= current.weight() && !next.group().equals(current.group())) {
             setAetherionGroup(player.getUniqueId(), next.group(), false);
         } else {
@@ -227,6 +342,10 @@ public final class RankBadgeService implements Listener {
         }
         Rank rank = rankByGroup(group);
         if (isExtra(rank.group())) {
+            String previous = extras.get(playerId);
+            if (previous != null && !previous.equalsIgnoreCase(rank.group())) {
+                LuckPermsSilent.removeGroup(playerId, previous);
+            }
             extras.put(playerId, rank.group());
             save();
             applyLuckPerms(playerId, aetherionGroup(playerId), rank);
@@ -278,6 +397,8 @@ public final class RankBadgeService implements Listener {
         if (player == null || !player.isOnline()) {
             return;
         }
+        refreshExtraFromLuckPerms(player);
+        adoptDetectedExtra(player);
         applyLuckPerms(player.getUniqueId(), aetherionGroup(player.getUniqueId()), extraFor(player.getUniqueId()));
         paint(player);
     }
@@ -291,15 +412,23 @@ public final class RankBadgeService implements Listener {
             return null;
         }
         Player player = Bukkit.getPlayer(playerId);
-        if (player != null && player.isOnline()
-                && (player.isOp()
-                || player.hasPermission("group.admin")
-                || player.hasPermission("aetherion.rank.admin"))) {
-            return rankByGroup("admin");
+        // Live Beta (no Monkey group) beats a stale extras:monkey so chat/TAB
+        // cannot keep painting CelestialDye after Peter grants Beta.
+        if (player != null && player.isOnline() && hasBeta(player) && !hasMonkey(player)) {
+            return rankByGroup("beta");
         }
         String stored = extras.get(playerId);
-        if (stored != null && isExtra(stored)) {
+        if (stored != null && isPermanentExtra(stored)) {
             return rankByGroup(stored);
+        }
+        if (player != null && player.isOnline()) {
+            String detected = detectPermissionExtra(player);
+            if (detected != null) {
+                return rankByGroup(detected);
+            }
+            if (player.isOp()) {
+                return rankByGroup("admin");
+            }
         }
         if (isMvpPlusPlus(playerId)) {
             return rankByGroup(mvpGroup());
@@ -307,9 +436,117 @@ public final class RankBadgeService implements Listener {
         return null;
     }
 
+    /**
+     * Persist an LP-granted ultra into {@code extras} so later XP sync cannot
+     * drop it. Ops are not auto-stored as Admin.
+     */
+    public void adoptDetectedExtra(Player player) {
+        if (player == null) {
+            return;
+        }
+        UUID playerId = player.getUniqueId();
+        if (extras.containsKey(playerId)) {
+            return;
+        }
+        String detected = detectPermissionExtra(player);
+        if (detected == null) {
+            return;
+        }
+        extras.put(playerId, detected);
+        save();
+    }
+
+    /**
+     * If LP says Beta (and not Monkey), overwrite a stale Monkey extra so
+     * chat / compact TAB stop painting {@link CelestialDye}.
+     */
+    public void refreshExtraFromLuckPerms(Player player) {
+        if (player == null) {
+            return;
+        }
+        UUID playerId = player.getUniqueId();
+        String stored = extras.get(playerId);
+        if (hasBeta(player) && !hasMonkey(player) && !"beta".equalsIgnoreCase(stored)) {
+            extras.put(playerId, "beta");
+            save();
+        }
+    }
+
+    public static boolean hasBeta(Player player) {
+        return player != null && (player.hasPermission("group.beta")
+                || player.hasPermission("aetherion.rank.beta"));
+    }
+
+    public static boolean hasMonkey(Player player) {
+        return player != null && (player.hasPermission("group.monkey")
+                || player.hasPermission("aetherion.rank.monkey"));
+    }
+
+    private static String detectPermissionExtra(Player player) {
+        if (player == null) {
+            return null;
+        }
+        // Weight order: Admin → Monkey → Beta → MVP++ (Monkey first Homie cosmetic).
+        if (player.hasPermission("group.admin") || player.hasPermission("aetherion.rank.admin")) {
+            return "admin";
+        }
+        if (player.hasPermission("group.monkey") || player.hasPermission("aetherion.rank.monkey")) {
+            return "monkey";
+        }
+        if (player.hasPermission("group.beta") || player.hasPermission("aetherion.rank.beta")) {
+            return "beta";
+        }
+        if (player.hasPermission("group.mvpplusplus") || player.hasPermission("aetherion.rank.mvpplusplus")) {
+            return "mvpplusplus";
+        }
+        return null;
+    }
+
+    /** Remove a staff/content extra (Monkey, MVP++, Admin) without touching XP progression. */
+    public boolean clearExtra(UUID playerId, String group) {
+        if (playerId == null || group == null || group.isBlank()) {
+            return false;
+        }
+        String key = group.toLowerCase(Locale.ROOT);
+        String stored = extras.get(playerId);
+        if (stored == null || !stored.equalsIgnoreCase(key)) {
+            return false;
+        }
+        extras.remove(playerId);
+        save();
+        LuckPermsSilent.removeGroup(playerId, key);
+        applyLuckPerms(playerId, aetherionGroup(playerId), extraFor(playerId));
+        Player online = Bukkit.getPlayer(playerId);
+        if (online != null && online.isOnline()) {
+            paint(online);
+        }
+        return true;
+    }
+
     private void paint(Player player) {
-        player.setDisplayName("§f" + player.getName());
-        player.setPlayerListName(nametag(player));
+        net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer hex =
+                net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.builder()
+                        .character('&')
+                        .hexColors()
+                        .build();
+        // Same celestial / ultra nametag for chat, compact player list, and TAB.
+        String raw = nametag(player).replace('§', '&');
+        net.kyori.adventure.text.Component name = hex.deserialize(raw);
+        player.displayName(name);
+        player.playerListName(name);
+        player.customName(name);
+    }
+
+    private void paintOnlineDyed() {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            Rank extra = extraFor(player.getUniqueId());
+            if (extra == null) {
+                continue;
+            }
+            if (CelestialDye.isCelestialGroup(extra.group()) || RainbowDye.isRainbowGroup(extra.group())) {
+                paint(player);
+            }
+        }
     }
 
     private void syncGroups() {
@@ -341,14 +578,8 @@ public final class RankBadgeService implements Listener {
     }
 
     private Set<String> managedGroups() {
-        Set<String> groups = new java.util.HashSet<>();
-        for (Rank rank : RANKS) {
-            groups.add(rank.group());
-        }
-        groups.add(mvpGroup());
-        groups.add("admin");
-        groups.add("owner");
-        return groups;
+        // XP ranks only. Monkey / Beta / MVP++ / Admin are never wiped here.
+        return xpManagedGroups();
     }
 
     public void reloadFromDisk() {
@@ -365,7 +596,9 @@ public final class RankBadgeService implements Listener {
         if (section != null && section.contains(key)) {
             try {
                 String group = rankByGroup(section.getString(key, "adventurer")).group();
-                if (!isExtra(group)) {
+                if (isPermanentExtra(group)) {
+                    extras.put(playerId, group);
+                } else {
                     assigned.put(playerId, group);
                 }
             } catch (RuntimeException ignored) {
@@ -398,8 +631,11 @@ public final class RankBadgeService implements Listener {
             for (String key : section.getKeys(false)) {
                 try {
                     String group = rankByGroup(section.getString(key, "adventurer")).group();
-                    if (!isExtra(group)) {
-                        assigned.put(UUID.fromString(key), group);
+                    UUID id = UUID.fromString(key);
+                    if (isPermanentExtra(group)) {
+                        extras.put(id, group);
+                    } else {
+                        assigned.put(id, group);
                     }
                 } catch (IllegalArgumentException ignored) {
                 }

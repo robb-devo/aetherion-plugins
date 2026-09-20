@@ -15,8 +15,8 @@ import org.bukkit.inventory.InventoryHolder;
 
 public final class ConfirmMenu implements Listener {
 
-    private static final int YES = 11;
-    private static final int NO = 15;
+    private static final int YES = 20;
+    private static final int NO = 24;
 
     private final NpcEditor editor;
 
@@ -28,18 +28,29 @@ public final class ConfirmMenu implements Listener {
     public static void open(Player player, CustomNpc npc) {
         Inventory inventory = Bukkit.createInventory(
                 new Holder(npc.getId()),
-                27,
+                54,
                 EditorItems.title(player, "npc_confirm", "§8Confirm")
         );
-        EditorItems.fill(inventory);
+        EditorItems.chrome(inventory);
         inventory.setItem(4, EditorItems.button(
                 Material.TNT,
                 "§cDelete §f" + npc.getName() + "§c?",
                 "§7id §f" + npc.getId(),
+                npc.isQuestNpc() ? "§aQuest NPC" : "§bDialog-only",
                 "§cThis cannot be undone."
         ));
-        inventory.setItem(YES, EditorItems.button(Material.LIME_CONCRETE, "§a§lDelete"));
-        inventory.setItem(NO, EditorItems.button(Material.RED_CONCRETE, "§c§lKeep"));
+        inventory.setItem(18, EditorItems.section("Confirm", "§7Asks once. Same as before."));
+        inventory.setItem(YES, EditorItems.button(
+                Material.LIME_CONCRETE,
+                "§a§lDelete",
+                "§7Removes the FancyNPC + editor save."
+        ));
+        inventory.setItem(NO, EditorItems.button(
+                Material.RED_CONCRETE,
+                "§c§lKeep",
+                "§7Back to edit."
+        ));
+        inventory.setItem(49, EditorItems.button(Material.ARROW, "§7Back"));
         player.openInventory(inventory);
     }
 
@@ -56,7 +67,8 @@ public final class ConfirmMenu implements Listener {
             return;
         }
         CustomNpc npc = editor.storage().get(holder.npcId());
-        if (event.getRawSlot() == NO) {
+        int slot = event.getRawSlot();
+        if (slot == NO || slot == 49) {
             if (npc != null) {
                 EditMenu.open(player, npc);
             } else {
@@ -64,7 +76,7 @@ public final class ConfirmMenu implements Listener {
             }
             return;
         }
-        if (event.getRawSlot() == YES) {
+        if (slot == YES) {
             editor.delete(player, npc);
             player.closeInventory();
             MainMenu.open(player);

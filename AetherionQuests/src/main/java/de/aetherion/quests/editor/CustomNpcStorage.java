@@ -133,6 +133,7 @@ public final class CustomNpcStorage {
         yaml.set(path + ".yaw", npc.getYaw());
         yaml.set(path + ".pitch", npc.getPitch());
         yaml.set(path + ".quest", npc.getLinkedQuestId());
+        yaml.set(path + ".mode", npc.getMode().id());
         yaml.set(path + ".start", npc.getStartPage());
         for (CustomNpc.DialoguePage page : npc.pages().values()) {
             String pagePath = path + ".pages." + page.id();
@@ -165,6 +166,7 @@ public final class CustomNpcStorage {
                 (float) section.getDouble("pitch")
         );
         npc.setLinkedQuestId(section.getString("quest"));
+        npc.setMode(NpcMode.parse(section.getString("mode"), npc.hasLinkedQuest()));
         npc.setStartPage(section.getString("start", CustomNpc.START_PAGE));
         ConfigurationSection pages = section.getConfigurationSection("pages");
         if (pages != null) {

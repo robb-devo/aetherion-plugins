@@ -135,7 +135,119 @@ public class DevMenu {
     }
 
     public static boolean canUse(Player player) {
+        return isFullDev(player) || hasContentKit(player);
+    }
+
+    public static boolean isFullDev(Player player) {
         return player != null && (player.isOp() || player.hasPermission("aetherion.dev"));
+    }
+
+    public static boolean hasContentKit(Player player) {
+        return player != null && player.hasPermission("aetherion.dev.content");
+    }
+
+    /**
+     * Content-only users (Monkey / Homie / moderator) must see Content Kit even
+     * if a leftover {@code aetherion.dev} node is still on the group. Ops,
+     * Admin extras, and intentional {@code aetherion.dev} builders keep the
+     * full DEV tree. ({@code aetherion.dev} already children-grants content.)
+     */
+    public static boolean preferContentKit(Player player) {
+        if (player == null || player.isOp()) {
+            return false;
+        }
+        if (player.hasPermission("group.admin") || player.hasPermission("aetherion.rank.admin")) {
+            return false;
+        }
+        if (isContentRole(player)) {
+            return true;
+        }
+        return hasContentKit(player) && !player.hasPermission("aetherion.dev");
+    }
+
+    private static boolean isContentRole(Player player) {
+        if (player.hasPermission("group.monkey")
+                || player.hasPermission("aetherion.rank.monkey")
+                || player.hasPermission("group.moderator")
+                || player.hasPermission("group.mod")) {
+            return true;
+        }
+        de.aetherion.items.AetherionItems items = de.aetherion.items.AetherionItems.getInstance();
+        if (items != null && items.ranks() != null) {
+            RankBadgeService.Rank extra = items.ranks().extraRank(player);
+            return extra != null && "monkey".equals(extra.group());
+        }
+        return false;
+    }
+
+    private static boolean contentOnly(Player player) {
+        return preferContentKit(player) || !isFullDev(player);
+    }
+
+    private static boolean canOpenPage(Player player, Page page) {
+        if (page == null) {
+            return false;
+        }
+        if (page == Page.RANKS) {
+            return isFullDev(player) && !preferContentKit(player);
+        }
+        if (preferContentKit(player)) {
+            return isContentPage(page);
+        }
+        if (isFullDev(player)) {
+            return true;
+        }
+        return hasContentKit(player) && isContentPage(page);
+    }
+
+    private static boolean isContentPage(Page page) {
+        return page == Page.ROOT || page == Page.RESOURCES || page == Page.SHARDS;
+    }
+
+    private static boolean contentActionAllowed(Player player, String action) {
+        if (action == null || action.isBlank()) {
+            return false;
+        }
+        if (action.equals("close") || action.equals("back") || action.equals("noop")
+                || action.equals("root") || action.equals("npc-wand") || action.equals("flight-toggle")) {
+            return true;
+        }
+        if (action.startsWith("page:")) {
+            try {
+                return canOpenPage(player, Page.valueOf(action.substring(5)));
+            } catch (IllegalArgumentException ignored) {
+                return false;
+            }
+        }
+        if (action.startsWith("pageidx:")) {
+            String name = action.substring("pageidx:".length()).split(":")[0];
+            try {
+                return canOpenPage(player, Page.valueOf(name));
+            } catch (IllegalArgumentException ignored) {
+                return false;
+            }
+        }
+        return action.startsWith("shard-player:") || action.startsWith("shard-add:");
+    }
+
+    /** Opens the Aetherion FancyNPC + quest creator. FancyNpcs owns {@code /npc}. */
+    private void giveNpcWand(Player player) {
+        if (!player.hasPermission("aetherion.npc.editor") && !isFullDev(player) && !player.isOp()) {
+            player.sendMessage("§cNeed §faetherion.npc.editor §c(Monkey / moderator / admin).");
+            return;
+        }
+        player.closeInventory();
+        if (player.performCommand("aethernpc")) {
+            return;
+        }
+        if (player.performCommand("npceditor")) {
+            return;
+        }
+        if (player.performCommand("aethernpc wand")) {
+            player.sendMessage("§eWand given. Use §f/aethernpc §efor the creator menu.");
+            return;
+        }
+        player.sendMessage("§c/aethernpc failed. Is AetherionQuests loaded? (FancyNpcs keeps /npc.)");
     }
 
     public void open(Player player) {
@@ -155,10 +267,17 @@ public class DevMenu {
             player.sendMessage("§cDEV only.");
             return;
         }
+        if (!canOpenPage(player, page)) {
+            player.sendMessage("§cContent kit cannot open that page.");
+            return;
+        }
+        if (page == Page.SHARDS && contentOnly(player) && target == null) {
+            target = player.getUniqueId();
+        }
         Inventory inventory = Bukkit.createInventory(new Holder(page, target, index), 54, TITLE);
         fill(inventory);
         if (page == Page.ROOT) {
-            drawRoot(inventory, Math.max(0, index));
+            drawRoot(inventory, player, Math.max(0, index));
         } else if (page == Page.ISLE_WEATHER) {
             drawIsleWeather(inventory, player);
         } else {
@@ -184,11 +303,15 @@ public class DevMenu {
             }
             return;
         }
+        if (contentOnly(player) && !contentActionAllowed(player, action)) {
+            player.sendMessage("§cContent kit cannot use that.");
+            return;
+        }
         if (action.equals("close")) {
             de.aetherion.items.util.ManagerNav.openManager(player);
             return;
         }
-        if (action.equals("back")) {
+        if (action.equals("back") || action.equals("root")) {
             open(player, Page.ROOT);
             return;
         }
@@ -204,19 +327,60 @@ public class DevMenu {
                     index = Integer.parseInt(parts[1]);
                 } catch (NumberFormatException ignored) {
                 }
-                open(player, Page.valueOf(parts[0]), holderTarget(player), index);
+                Page next;
+                try {
+                    next = Page.valueOf(parts[0]);
+                } catch (IllegalArgumentException ignored) {
+                    return;
+                }
+                if (!canOpenPage(player, next)) {
+                    player.sendMessage("§cContent kit cannot open that page.");
+                    return;
+                }
+                open(player, next, holderTarget(player), index);
             }
             return;
         }
         if (action.startsWith("page:")) {
-            open(player, Page.valueOf(action.substring(5)));
+            Page next;
+            try {
+                next = Page.valueOf(action.substring(5));
+            } catch (IllegalArgumentException ignored) {
+                return;
+            }
+            if (!canOpenPage(player, next)) {
+                player.sendMessage("§cContent kit cannot open that page.");
+                return;
+            }
+            if (next == Page.SHARDS && contentOnly(player)) {
+                open(player, next, player.getUniqueId());
+                return;
+            }
+            open(player, next);
+            return;
+        }
+        if (action.equals("npc-wand")) {
+            giveNpcWand(player);
+            return;
+        }
+        if (action.equals("flight-toggle")) {
+            player.closeInventory();
+            player.performCommand("flight");
             return;
         }
         if (action.startsWith("rank-player:")) {
+            if (!isFullDev(player)) {
+                player.sendMessage("§cOnly full DEV / op can grant ranks.");
+                return;
+            }
             open(player, Page.RANKS, UUID.fromString(action.substring("rank-player:".length())));
             return;
         }
         if (action.startsWith("rank-set:")) {
+            if (!isFullDev(player)) {
+                player.sendMessage("§cOnly full DEV / op can grant ranks.");
+                return;
+            }
             UUID target = holderTarget(player);
             RankBadgeService ranks = ranks();
             if (target == null || ranks == null) {
@@ -224,14 +388,26 @@ public class DevMenu {
                 return;
             }
             String group = action.substring("rank-set:".length());
-            ranks.setRank(target, group);
             OfflinePlayer targetPlayer = Bukkit.getOfflinePlayer(target);
-            player.sendMessage("§aRank set: §f" + nameOf(targetPlayer) + " §7→ " + ranks.rankByGroup(group).display());
+            RankBadgeService.Rank extra = ranks.extraFor(target);
+            if (ranks.isExtra(group)
+                    && extra != null && extra.group().equalsIgnoreCase(group)) {
+                ranks.clearExtra(target, group);
+                player.sendMessage("§eCleared " + ranks.rankByGroup(group).display() + " §efrom §f" + nameOf(targetPlayer)
+                        + "§e. Fallback: §f/lp user " + nameOf(targetPlayer) + " parent remove " + group.toLowerCase());
+            } else {
+                ranks.setRank(target, group);
+                player.sendMessage("§aRank set: §f" + nameOf(targetPlayer) + " §7→ " + ranks.rankByGroup(group).display());
+            }
             player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.8f, 1.3f);
             open(player, Page.RANKS, target);
             return;
         }
         if (action.equals("rank-sync")) {
+            if (!isFullDev(player)) {
+                player.sendMessage("§cOnly full DEV / op can grant ranks.");
+                return;
+            }
             UUID target = holderTarget(player);
             RankBadgeService ranks = ranks();
             if (target == null || ranks == null) {
@@ -240,14 +416,20 @@ public class DevMenu {
             }
             ranks.syncToLevel(target);
             OfflinePlayer targetPlayer = Bukkit.getOfflinePlayer(target);
-            player.sendMessage("§aRank matched to account level: §f" + nameOf(targetPlayer)
+            player.sendMessage("§aXP rank matched to account level: §f" + nameOf(targetPlayer)
                     + " §7→ " + ranks.rankByGroup(ranks.rankOf(target)).display());
+            player.sendMessage("§7Ultra ranks (Monkey / Beta / MVP++ / Admin) stay until you remove them.");
             player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.8f, 1.15f);
             open(player, Page.RANKS, target);
             return;
         }
         if (action.startsWith("shard-player:")) {
-            open(player, Page.SHARDS, UUID.fromString(action.substring("shard-player:".length())));
+            UUID picked = UUID.fromString(action.substring("shard-player:".length()));
+            if (contentOnly(player) && !player.getUniqueId().equals(picked)) {
+                player.sendMessage("§cContent kit can only give shards to yourself.");
+                return;
+            }
+            open(player, Page.SHARDS, picked);
             return;
         }
         if (action.startsWith("shard-add:")) {
@@ -255,6 +437,10 @@ public class DevMenu {
             ShardService shards = shards();
             if (target == null || shards == null) {
                 player.sendMessage("§cPick a player first.");
+                return;
+            }
+            if (contentOnly(player) && !player.getUniqueId().equals(target)) {
+                player.sendMessage("§cContent kit can only give shards to yourself.");
                 return;
             }
             long amount;
@@ -793,8 +979,13 @@ public class DevMenu {
         }
     }
 
-    private void drawRoot(Inventory inventory, int index) {
+    private void drawRoot(Inventory inventory, Player player, int index) {
+        if (preferContentKit(player) || !isFullDev(player)) {
+            drawContentRoot(inventory);
+            return;
+        }
         int page = Math.max(0, Math.min(1, index));
+        inventory.setItem(3, npcEditorButton());
         inventory.setItem(4, button(Material.NETHER_STAR, "§6§lDEV Menu", "root",
                 "§7Page §f" + (page + 1) + "§7 / §f2",
                 "§8One glass ring · no edge clutter."));
@@ -864,6 +1055,31 @@ public class DevMenu {
         }
 
         drawBorderNav(inventory, page, 2, "ROOT");
+    }
+
+    private void drawContentRoot(Inventory inventory) {
+        inventory.setItem(4, button(Material.JUNGLE_SAPLING, "§a§lContent Kit", "root",
+                "§7Monkey / Homie tools.",
+                "§7Flight · NPC editor · Resources · self shards.",
+                "§8Not full admin."));
+        inventory.setItem(19, button(Material.PLAYER_HEAD, "§7Resources", "page:RESOURCES",
+                "§7Compressed / compacted mats."));
+        inventory.setItem(20, button(Material.AMETHYST_SHARD, "§bAether Shards", "page:SHARDS",
+                "§7Give yourself shards."));
+        inventory.setItem(21, npcEditorButton());
+        inventory.setItem(22, button(Material.FEATHER, "§aToggle /flight", "flight-toggle",
+                "§7Same as EssentialsX fly.",
+                "§8essentials.fly · aetherion.flight"));
+        inventory.setItem(45, button(Material.ARROW, "§eClose", "close", "§7Leave content kit."));
+        inventory.setItem(49, button(Material.BARRIER, "§cClose", "close"));
+    }
+
+    private ItemStack npcEditorButton() {
+        return button(Material.BLAZE_ROD, "§6§lNPC Editor", "npc-wand",
+                "§7FancyNPC + quest creator.",
+                "§7Opens §f/aethernpc §7(alias §f/npceditor§7).",
+                "§8FancyNpcs keeps §f/npc§8.",
+                "§8Permission: §faetherion.npc.editor");
     }
 
     /** Bottom nav: far-left 45 · center Close 49 · far-right 53. */
@@ -2085,26 +2301,59 @@ public class DevMenu {
                     "§8LuckPerms group: §7" + rank.group()
             ));
         }
-        inventory.setItem(33, button(
-                rankIcon("mvpplusplus"),
-                (extra != null && extra.group().equals("mvpplusplus") ? "§a▶ " : "") + "§6MVP§c++",
-                "rank-set:mvpplusplus",
-                "§7Ultra rank. Stays on top of the",
-                "§7Aetherion title."
-        ));
-        inventory.setItem(34, button(
+        // Ultra row (Peter): Admin · Monkey · Beta · MVP++ on one row. Content Kit never opens this page.
+        boolean adminOn = extra != null && extra.group().equals("admin");
+        boolean monkeyOn = extra != null && extra.group().equals("monkey");
+        boolean betaOn = extra != null && extra.group().equals("beta");
+        boolean mvpOn = extra != null && extra.group().equals("mvpplusplus");
+        inventory.setItem(37, button(
                 rankIcon("admin"),
-                (extra != null && extra.group().equals("admin") ? "§a▶ " : "") + "§cAdmin",
+                (adminOn ? "§a▶ " : "") + "§cAdmin",
                 "rank-set:admin",
-                "§7Ultra rank. Stays on top of the",
-                "§7Aetherion title."
+                "§7Ultra rank (weight 100).",
+                "§7Stays until you click again.",
+                adminOn ? "§eClick again to remove." : "§7Click to grant."
+        ));
+        inventory.setItem(38, button(
+                rankIcon("monkey"),
+                (monkeyOn ? "§a▶ " : "") + "§b§lMonkey §8· celestial",
+                "rank-set:monkey",
+                "§7Ultra rank (weight 95) — first Homie hub.",
+                "§7Celestial dye #B2FFFF everywhere",
+                "§7(TAB + compact list + chat + nametag).",
+                "§7Content tools: flight, /aethernpc, Resources, shards.",
+                "§7Not full admin. Never overwritten by XP.",
+                monkeyOn ? "§eClick again to remove." : "§7Click to grant.",
+                "§8Fallback: §7/lp user <name> parent set monkey"
+        ));
+        inventory.setItem(39, button(
+                rankIcon("beta"),
+                (betaOn ? "§a▶ " : "") + "§d§lBeta Tester §8· rainbow",
+                "rank-set:beta",
+                "§7Ultra rank (weight 93) — same EXTRA path.",
+                "§7Original rainbow letters (cyan/pink/gold).",
+                "§7Not Monkey's #B2FFFF celestial.",
+                "§7Cosmetic only — no extra permissions.",
+                "§7Never overwritten by XP.",
+                betaOn ? "§eClick again to remove." : "§7Click to grant.",
+                "§8Fallback: §7/lp user <name> parent set beta"
         ));
         inventory.setItem(40, button(
+                rankIcon("mvpplusplus"),
+                (mvpOn ? "§a▶ " : "") + "§6MVP§c++",
+                "rank-set:mvpplusplus",
+                "§7Ultra rank (weight 90).",
+                "§7Stays on top of the Aetherion title.",
+                "§7Never overwritten by XP.",
+                mvpOn ? "§eClick again to remove." : "§7Click to grant."
+        ));
+        inventory.setItem(41, button(
                 Material.EXPERIENCE_BOTTLE,
                 "§eMatch account level",
                 "rank-sync",
-                "§7Clear the DEV override.",
-                "§7Rank follows XP again."
+                "§7XP progression only.",
+                "§7Does §fnot §7remove Monkey / Beta /",
+                "§7MVP++ / Admin. Click those to remove."
         ));
     }
 
@@ -2646,6 +2895,8 @@ public class DevMenu {
             case "eternal" -> Material.ECHO_SHARD;
             case "aetherion" -> Material.DRAGON_EGG;
             case "mvpplusplus" -> Material.NETHER_STAR;
+            case "monkey" -> Material.LIGHT_BLUE_DYE;
+            case "beta" -> Material.MAGENTA_DYE;
             case "admin" -> Material.BARRIER;
             default -> Material.GRAY_DYE;
         };

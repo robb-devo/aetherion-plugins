@@ -46,8 +46,9 @@ public final class AetherionHub extends JavaPlugin {
         bind("spawn", spawnCommand);
         bind("spawns", spawnCommand);
         for (String label : SpawnGotoCommand.COMMAND_TO_SPAWN.keySet()) {
-            if ("ore_ridge".equals(label)) {
-                continue; // alias only
+            // Alias-only labels — plugin.yml aliases bind them to the primary command.
+            if ("ore_ridge".equals(label) || "amethystmines".equals(label)) {
+                continue;
             }
             bind(label, gotoCommand);
         }

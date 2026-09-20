@@ -25,6 +25,40 @@ public final class EditorItems {
         }
     }
 
+    /** Double-chest chrome: gray fill, dark header/footer. */
+    public static void chrome(Inventory inventory) {
+        fill(inventory);
+        if (inventory.getSize() < 54) {
+            return;
+        }
+        ItemStack dark = button(Material.BLACK_STAINED_GLASS_PANE, " ");
+        for (int i = 0; i < 9; i++) {
+            inventory.setItem(i, dark.clone());
+            inventory.setItem(45 + i, dark.clone());
+        }
+    }
+
+    public static ItemStack section(String name, String... lore) {
+        return button(Material.LIGHT_BLUE_STAINED_GLASS_PANE, "§b§l" + name, lore);
+    }
+
+    public static ItemStack saved(boolean dirty) {
+        if (dirty) {
+            return button(
+                    Material.ORANGE_CONCRETE,
+                    "§eUnsaved",
+                    "§7Type in chat, then it saves.",
+                    "§8or §fcancel"
+            );
+        }
+        return button(
+                Material.LIME_CONCRETE,
+                "§aSaved",
+                "§7editor-npcs.yml",
+                "§7editor-quests.yml"
+        );
+    }
+
     public static ItemStack button(Material material, String name, String... lore) {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();

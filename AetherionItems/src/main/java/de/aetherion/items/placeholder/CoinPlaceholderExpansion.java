@@ -72,8 +72,14 @@ public final class CoinPlaceholderExpansion extends PlaceholderExpansion {
                     ? "§71"
                     : de.aetherion.items.skill.AetherionLevel.coloredLevel(plugin.getSkills().accountLevel(player));
             case "level_tag", "aether_level_tag" -> plugin.getSkills() == null ? "§7[1]" : plugin.getSkills().accountTag(player);
-            case "tab_prefix", "nametag_prefix", "chat_prefix" -> plugin.ranks() == null ? "§f" : plugin.ranks().tabPrefix(player);
-            case "nametag" -> plugin.ranks() == null ? (player.getName()) : plugin.ranks().nametag(player);
+            case "tab_prefix", "nametag_prefix", "chat_prefix",
+                    "list_prefix", "playerlist_prefix", "scoreboard_prefix" ->
+                    plugin.ranks() == null ? "§f" : plugin.ranks().tabPrefix(player);
+            case "monkey_badge", "celestial_monkey" -> de.aetherion.items.rank.CelestialDye.monkeyBadge();
+            case "beta_badge", "rainbow_beta", "celestial_beta" -> de.aetherion.items.rank.RainbowDye.badge();
+            case "celestial_badge" -> de.aetherion.items.rank.CelestialDye.badge("[Celestial]");
+            case "nametag", "list_name", "playerlist_name" ->
+                    plugin.ranks() == null ? player.getName() : plugin.ranks().nametag(player);
             case "level_xp", "aether_level_xp" -> plugin.getSkills() == null ? "0" : Long.toString(plugin.getSkills().accountXp(player));
             case "level_into", "aether_level_into", "level_xp_into" -> {
                 if (plugin.getSkills() == null) {

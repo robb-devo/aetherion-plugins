@@ -10,6 +10,11 @@ import org.bukkit.inventory.ItemStack;
 /**
  * The Veins world + ore seal/regen. Implemented by AetherionMining.
  * Pickaxe stats and harvest payouts stay in AetherionItems ({@link HarvestAccess}).
+ *
+ * <p>Elder Vale / Quests NPC entry into Amethyst Mines (Crystal Hollows try):
+ * call {@link #teleportToVeinsHub(Player)} (mining-level gate + hub unlock),
+ * or teleport yourself then {@code AetherServices.hub().unlock(player, "amethyst")}.
+ * Players can then {@code /amethyst}. Existing {@code /deepmines} also enters veins.
  */
 public interface MiningAccess {
 
@@ -28,4 +33,23 @@ public interface MiningAccess {
 
     /** Ore/mineral regen delay in seconds. Unknown materials return the stone default (10). */
     long respawnSeconds(Material material);
+
+    /**
+     * Teleport the player to the Amethyst Mines beacon hub in {@code aether_veins}
+     * and unlock the hub spawn {@code amethyst} (announces on first unlock).
+     * Does not enforce the mining-level gate — callers should check
+     * {@link #meetsVeinsMiningLevel(Player)} first for NPC / quest entry.
+     *
+     * @return true if teleport succeeded
+     */
+    boolean teleportToVeinsHub(Player player);
+
+    /**
+     * Whether the player meets {@code veins.min-mining-level} (default 30)
+     * on their mining skill. Used by the Foreman NPC and Elder Vale gates.
+     */
+    boolean meetsVeinsMiningLevel(Player player);
+
+    /** Configured minimum mining skill for veins entry (default 30). */
+    int veinsMinMiningLevel();
 }

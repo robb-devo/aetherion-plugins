@@ -33,7 +33,7 @@ public final class DialogueMenu implements Listener {
                 54,
                 EditorItems.title(player, "npc_dialogue", "§8Dialogue")
         );
-        EditorItems.fill(inventory);
+        EditorItems.chrome(inventory);
         inventory.setItem(4, EditorItems.button(
                 Material.WRITABLE_BOOK,
                 "§dDialogue tree",
@@ -70,7 +70,7 @@ public final class DialogueMenu implements Listener {
                 54,
                 "§8Page · " + page.id()
         );
-        EditorItems.fill(inventory);
+        EditorItems.chrome(inventory);
         inventory.setItem(4, EditorItems.button(
                 Material.BOOK,
                 "§e" + page.id(),
@@ -115,20 +115,22 @@ public final class DialogueMenu implements Listener {
         CustomNpc.DialogueChoice choice = page.choices().get(index);
         Inventory inventory = Bukkit.createInventory(
                 new Holder(Kind.CHOICE, npc.getId(), page.id(), index),
-                27,
+                54,
                 "§8Choice"
         );
-        EditorItems.fill(inventory);
+        EditorItems.chrome(inventory);
         inventory.setItem(4, EditorItems.button(Material.OAK_SIGN, "§e" + choice.text(), "§7Click to rewrite."));
-        inventory.setItem(11, EditorItems.button(Material.REPEATER, "§6Action", "§f" + choice.action().label(), "§7Click to cycle."));
-        inventory.setItem(13, EditorItems.button(
+        inventory.setItem(8, EditorItems.saved(false));
+        inventory.setItem(18, EditorItems.section("Choice", "§7What the player clicks."));
+        inventory.setItem(20, EditorItems.button(Material.REPEATER, "§6Action", "§f" + choice.action().label(), "§7Click to cycle."));
+        inventory.setItem(22, EditorItems.button(
                 Material.COMPASS,
                 "§bTarget",
                 choice.target().isBlank() ? "§8empty" : "§f" + choice.target(),
                 targetHint(choice.action())
         ));
-        inventory.setItem(15, EditorItems.button(Material.BARRIER, "§cRemove choice"));
-        inventory.setItem(22, EditorItems.button(Material.ARROW, "§7Back"));
+        inventory.setItem(24, EditorItems.button(Material.BARRIER, "§cRemove choice"));
+        inventory.setItem(49, EditorItems.button(Material.ARROW, "§7Back"));
         player.openInventory(inventory);
     }
 
@@ -246,7 +248,7 @@ public final class DialogueMenu implements Listener {
         }
         CustomNpc.DialogueChoice choice = page.choices().get(holder.choiceIndex());
         editor.sessions().of(player).setChoiceIndex(holder.choiceIndex());
-        if (slot == 22) {
+        if (slot == 49) {
             openPage(player, npc, page.id());
             return;
         }
@@ -254,7 +256,7 @@ public final class DialogueMenu implements Listener {
             editor.prompt(player, EditorSessions.Prompt.CHOICE_TEXT, "Type the choice label the player sees");
             return;
         }
-        if (slot == 11) {
+        if (slot == 20) {
             DialogueAction[] all = DialogueAction.values();
             int next = (choice.action().ordinal() + 1) % all.length;
             choice.setAction(all[next]);
@@ -262,7 +264,7 @@ public final class DialogueMenu implements Listener {
             openChoice(player, npc, page.id(), holder.choiceIndex());
             return;
         }
-        if (slot == 13) {
+        if (slot == 22) {
             switch (choice.action()) {
                 case PAGE -> editor.prompt(player, EditorSessions.Prompt.PAGE_ID, "Type the page id to open");
                 case RUN_CONSOLE, RUN_PLAYER ->
@@ -273,7 +275,7 @@ public final class DialogueMenu implements Listener {
             }
             return;
         }
-        if (slot == 15) {
+        if (slot == 24) {
             page.choices().remove(holder.choiceIndex());
             editor.persistQuiet(npc);
             openPage(player, npc, page.id());

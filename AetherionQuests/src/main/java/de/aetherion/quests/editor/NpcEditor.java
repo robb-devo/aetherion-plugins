@@ -6,10 +6,15 @@ import de.aetherion.quests.editor.gui.AppearanceMenu;
 import de.aetherion.quests.editor.gui.ConfirmMenu;
 import de.aetherion.quests.editor.gui.DialogueMenu;
 import de.aetherion.quests.editor.gui.EditMenu;
+import de.aetherion.quests.editor.gui.GatherItemMenu;
 import de.aetherion.quests.editor.gui.HelpMenu;
 import de.aetherion.quests.editor.gui.ListMenu;
 import de.aetherion.quests.editor.gui.MainMenu;
+import de.aetherion.quests.editor.gui.ObjectiveMenu;
+import de.aetherion.quests.editor.gui.QuestEditMenu;
 import de.aetherion.quests.editor.gui.QuestLinkMenu;
+import de.aetherion.quests.editor.gui.RequirementsMenu;
+import de.aetherion.quests.editor.gui.RewardsMenu;
 import de.aetherion.quests.npc.LivingNpcProfile;
 import de.aetherion.quests.npc.QuestNPCRegistry;
 
@@ -43,6 +48,7 @@ public final class NpcEditor {
     private final CustomNpcService service;
     private final DialogueRuntime runtime;
     private final EditorSessions sessions;
+    private final EditorQuestStorage editorQuests;
     private final NamespacedKey wandKey;
     private final Map<UUID, Integer> lastClickTick = new ConcurrentHashMap<>();
 
@@ -52,14 +58,16 @@ public final class NpcEditor {
         this.service = new CustomNpcService(plugin, storage);
         this.runtime = new DialogueRuntime(plugin, storage);
         this.sessions = new EditorSessions();
+        this.editorQuests = new EditorQuestStorage(plugin);
         this.wandKey = new NamespacedKey(plugin, "npc_editor_wand");
     }
 
     public void enable() {
         NpcEditorCommand command = new NpcEditorCommand(this);
-        if (plugin.getCommand("npc") != null) {
-            plugin.getCommand("npc").setExecutor(command);
-            plugin.getCommand("npc").setTabCompleter(command);
+        // Primary is aethernpc — /npc belongs to FancyNpcs on live.
+        if (plugin.getCommand("aethernpc") != null) {
+            plugin.getCommand("aethernpc").setExecutor(command);
+            plugin.getCommand("aethernpc").setTabCompleter(command);
         }
         new NpcEditorListener(this);
         new MainMenu(this);
@@ -68,6 +76,11 @@ public final class NpcEditor {
         new AppearanceMenu(this);
         new DialogueMenu(this);
         new QuestLinkMenu(this);
+        new QuestEditMenu(this);
+        new RewardsMenu(this);
+        new RequirementsMenu(this);
+        new ObjectiveMenu(this);
+        new GatherItemMenu(this);
         new ConfirmMenu(this);
         new HelpMenu(this);
         CustomNpcInteractListener.register(this);
@@ -101,8 +114,35 @@ public final class NpcEditor {
         return sessions;
     }
 
+    public EditorQuestStorage editorQuests() {
+        return editorQuests;
+    }
+
+    public void loadEditorQuests() {
+        editorQuests.reload();
+        editorQuests.registerAll(plugin.getQuestManager());
+    }
+
+    public de.aetherion.quests.model.Quest createAndLinkQuest(Player player, CustomNpc npc, String title) {
+        if (npc == null) {
+            return null;
+        }
+        de.aetherion.quests.model.Quest quest = editorQuests.createAndSave(title, npc.getId(), plugin.getQuestManager());
+        npc.setLinkedQuestId(quest.getId());
+        npc.setMode(NpcMode.QUEST);
+        persistQuiet(npc);
+        if (player != null) {
+            sessions.of(player).setDirty(false);
+            player.sendMessage("§aCreated and linked §f" + quest.getTitle() + " §7(§f" + quest.getId() + "§7).");
+            player.sendMessage("§7Talk stub. Edit rewards / gather next.");
+        }
+        return quest;
+    }
+
     public static boolean allowed(Player player) {
-        return player != null && player.hasPermission(PERMISSION);
+        return player != null && (player.hasPermission(PERMISSION)
+                || player.isOp()
+                || player.hasPermission("aetherion.dev"));
     }
 
     public void openMain(Player player) {
@@ -270,6 +310,7 @@ public final class NpcEditor {
     public void prompt(Player player, EditorSessions.Prompt prompt, String hint) {
         EditorSessions.Session session = sessions.of(player);
         session.setPrompt(prompt);
+        session.setDirty(true);
         player.closeInventory();
         player.sendMessage("§a" + hint + " §7(or type §fcancel§7).");
         player.sendTitle("§aNPC Editor", "§7Type in chat", 5, 60, 8);

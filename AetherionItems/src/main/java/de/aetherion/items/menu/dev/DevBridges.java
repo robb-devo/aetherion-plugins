@@ -149,6 +149,7 @@ public final class DevBridges {
                  "colossus_scholar", "veil_priest", "patch_intern", "void_janitor",
                  "fuse", "claims_adjuster", "repo_agent", "arena_proctor" -> NpcBucket.BOSS;
             case "foreman", "surveyor", "ore_ledger", "eldervale_welcome", "eldervale_upgrade",
+                 "amethyst_mines_guide",
                  "farm_isle_guide", "forage_pad_guide", "canopy_clerk", "isle_clerk", "dungeon_gate",
                  "miss_canopy" -> NpcBucket.WORLD;
             default -> NpcBucket.WORLD;
@@ -247,9 +248,12 @@ public final class DevBridges {
             "capital",
             "forage_isle",
             "farm",
+            "farm_isle",
             "borderlands",
             "colosseum",
-            "eldervale"
+            "eldervale",
+            "fishing",
+            "amethyst"
     );
 
     static List<NamedItem> spawnMarkers() {
@@ -339,6 +343,9 @@ public final class DevBridges {
             case "colosseum" -> "Proctor · Crypt T2 ring";
             case "borderlands" -> "Beyond Vex's gate";
             case "eldervale" -> "Mining island · slime jump";
+            case "farm_isle" -> "Shared fields · Millstone pantry";
+            case "fishing" -> "Fishing Eldervale · north pad";
+            case "amethyst" -> "aether_veins beacon hub · Amethyst Mines";
             default -> null;
         };
         if (extra == null) {

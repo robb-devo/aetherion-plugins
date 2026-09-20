@@ -1107,6 +1107,19 @@ public class QuestManager {
 
 
             if (material == null) {
+                de.aetherion.core.api.ItemFactoryAccess items =
+                        de.aetherion.core.api.AetherServices.items();
+                if (items != null) {
+                    ItemStack custom = items.create(rewardName);
+                    if (custom == null) {
+                        custom = items.create(rewardName.toLowerCase(java.util.Locale.ROOT));
+                    }
+                    if (custom != null) {
+                        custom.setAmount(Math.max(1, amount));
+                        giveItem(player, custom, rewardName);
+                        continue;
+                    }
+                }
 
                 Bukkit.getLogger().warning(
                         "[AetherionQuests] "

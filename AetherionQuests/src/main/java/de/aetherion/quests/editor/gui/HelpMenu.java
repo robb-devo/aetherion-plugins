@@ -14,7 +14,7 @@ import org.bukkit.inventory.InventoryHolder;
 
 public final class HelpMenu implements Listener {
 
-    private static final int BACK = 22;
+    private static final int BACK = 49;
 
     public HelpMenu(NpcEditor editor) {
         editor.plugin().getServer().getPluginManager().registerEvents(this, editor.plugin());
@@ -23,19 +23,26 @@ public final class HelpMenu implements Listener {
     public static void open(Player player) {
         Inventory inventory = Bukkit.createInventory(
                 new Holder(),
-                27,
+                54,
                 EditorItems.title(player, "npc_help", "§8NPC Help")
         );
-        EditorItems.fill(inventory);
+        EditorItems.chrome(inventory);
+        inventory.setItem(4, EditorItems.button(
+                Material.KNOWLEDGE_BOOK,
+                "§fNPC Editor help",
+                "§7Double chest. Same buttons as before.",
+                "§8German-friendly short English."
+        ));
         inventory.setItem(10, EditorItems.button(
                 Material.COMMAND_BLOCK,
                 "§eCommands",
-                "§f/npc §7— this menu",
-                "§f/npc create [name]",
-                "§f/npc edit §7| §fnearby §7| §flist",
-                "§f/npc move §7| §fduplicate §7| §fdelete",
-                "§f/npc wand §7| §fhelp",
-                "§8Aliases: /aethernpc /npceditor"
+                "§f/aethernpc §7— this menu",
+                "§f/aethernpc create [name]",
+                "§f/aethernpc edit §7| §fnearby §7| §flist",
+                "§f/aethernpc move §7| §fduplicate §7| §fdelete",
+                "§f/aethernpc wand §7| §fhelp",
+                "§8Alias: /npceditor",
+                "§8FancyNpcs keeps §f/npc"
         ));
         inventory.setItem(12, EditorItems.button(
                 Material.BLAZE_ROD,
@@ -43,21 +50,62 @@ public final class HelpMenu implements Listener {
                 "§7Right-click air — menu.",
                 "§7Right-click an editor NPC — edit.",
                 "§7Sneak + right-click — delete confirm.",
-                "§8Story NPCs are never deleted here."
+                "§8Story NPCs are never deleted here.",
+                "§8Content Kit still opens this wand."
         ));
         inventory.setItem(14, EditorItems.button(
                 Material.CHEST,
                 "§bStorage",
                 "§7plugins/AetherionQuests/editor-npcs.yml",
-                "§7Survives restart. Jar never overwrites it.",
+                "§7plugins/AetherionQuests/editor-quests.yml",
+                "§7Survives restart. Jar never overwrites them.",
                 "§7Story cast stays in npcs.yml."
         ));
         inventory.setItem(16, EditorItems.button(
                 Material.NAME_TAG,
                 "§aPermission",
                 "§faetherion.npc.editor",
-                "§7LuckPerms group §fmoderator",
-                "§7Not the same as §faetherionquests.admin"
+                "§7LuckPerms §fmonkey §7(Homie ultra, weight 95)",
+                "§7Grant: Dev Menu → Ranks → Monkey",
+                "§8Fallback: /lp user <name> parent set monkey",
+                "§7Beta Tester is rainbow cosmetics only.",
+                "§7Not the same as §faetherionquests.admin",
+                "§8Monkey Content Kit cannot open Ranks."
+        ));
+        inventory.setItem(28, EditorItems.button(
+                Material.WRITABLE_BOOK,
+                "§dDialogue pages",
+                "§7A page is one conversation screen:",
+                "§7NPC text, then the player's choices.",
+                "§7Each choice can open another page,",
+                "§7run a command, or offer / start /",
+                "§7turn in a linked quest.",
+                "§7Start page is usually §fgreeting§7.",
+                "§7Add page → type an id → wire choices."
+        ));
+        inventory.setItem(30, EditorItems.button(
+                Material.LIME_DYE,
+                "§aNPC mode",
+                "§bDialog-only §7— just talks.",
+                "§aQuest NPC §7— linked quest.",
+                "§7Toggle on the edit row.",
+                "§7Saved as mode: in editor-npcs.yml."
+        ));
+        inventory.setItem(32, EditorItems.button(
+                Material.WRITABLE_BOOK,
+                "§aCreate quest path",
+                "§7Link Quest → Create new quest.",
+                "§7Type a title in chat.",
+                "§7Talk-to-this-NPC stub, then edit",
+                "§7rewards / requirements / gather."
+        ));
+        inventory.setItem(34, EditorItems.button(
+                Material.GOLD_INGOT,
+                "§6Rewards & gather",
+                "§7Coins, XP, items — click amounts.",
+                "§7Optional: prior quest, level, item.",
+                "§7Gather: click an item, no IDs.",
+                "§8Editor quests only — not story."
         ));
         inventory.setItem(BACK, EditorItems.button(Material.ARROW, "§7Back"));
         player.openInventory(inventory);

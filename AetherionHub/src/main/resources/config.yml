@@ -95,8 +95,42 @@ spawns:
     unlocked-by-default: false
     discover-radius: 36
 
+  fishing:
+    display-name: "Fishing Island"
+    description: "Fishing Eldervale pad — north side. Walk in to unlock."
+    icon: FISHING_ROD
+    slot: 22
+    unlocked-by-default: true
+    discover-radius: 36
+    location:
+      world: world
+      x: -379.5
+      y: 90
+      z: -838.5
+      yaw: 180
+      pitch: 0
+
+  # Amethyst Mines = aether_veins beacon hub (Crystal Hollows try). NEVER paste onto Main Island.
+  # Unlocks on first visit to aether_veins or when Elder Vale / Mining NPC teleports the player.
+  # Hook: AetherServices.mining().teleportToVeinsHub(player) or AetherServices.hub().unlock(player, "amethyst") after TP.
+  amethyst:
+    display-name: "Amethyst Mines"
+    description: "Beacon hub in aether_veins (Amethyst Mines). Unlocks on first visit or Elder Vale NPC teleport. NEVER paste onto Main Island."
+    icon: AMETHYST_CLUSTER
+    slot: 23
+    unlocked-by-default: false
+    discover-radius: 36
+    location:
+      world: aether_veins
+      x: -119.5
+      y: 220
+      z: -100.5
+      yaw: 0
+      pitch: 0
+
 # /aetherpaste — FAWE async Eldervale island schematics (console/ops).
 # Schems are loaded from plugins/FastAsyncWorldEdit/schematics or WorldEdit/schematics.
+# Do NOT add amethyst here — that pastes onto Main Island. Amethyst is aether_veins only.
 aether-paste:
   farming:
     world: world

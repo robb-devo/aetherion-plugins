@@ -21,7 +21,14 @@ public final class EditorSessions {
         SKIN,
         COMMAND,
         PAGE_ID,
-        QUEST_ID
+        QUEST_ID,
+        QUEST_TITLE,
+        REWARD_AMOUNT,
+        REWARD_NAME,
+        REQUIRE_LEVEL,
+        REQUIRE_PRIOR,
+        OBJECTIVE_AMOUNT,
+        REQUIRE_ITEM_AMOUNT
     }
 
     public static final class Session {
@@ -31,6 +38,9 @@ public final class EditorSessions {
         private int choiceIndex = -1;
         private int listPage;
         private boolean confirmDelete;
+        private boolean dirty;
+        private int rewardIndex = -1;
+        private String extra;
 
         public Prompt prompt() {
             return prompt;
@@ -86,6 +96,30 @@ public final class EditorSessions {
 
         public void clearPrompt() {
             this.prompt = Prompt.NONE;
+        }
+
+        public boolean dirty() {
+            return dirty;
+        }
+
+        public void setDirty(boolean dirty) {
+            this.dirty = dirty;
+        }
+
+        public int rewardIndex() {
+            return rewardIndex;
+        }
+
+        public void setRewardIndex(int rewardIndex) {
+            this.rewardIndex = rewardIndex;
+        }
+
+        public String extra() {
+            return extra;
+        }
+
+        public void setExtra(String extra) {
+            this.extra = extra;
         }
     }
 

@@ -65,7 +65,10 @@ commands:
     aliases:
       - adev
       - aetheriondev
-    permission: aetherion.dev
+    permission: aetherion.devmenu
+  flight:
+    description: Toggle flight (content helpers / Monkey)
+    permission: aetherion.flight
 
   bazaar:
     description: Open the resource Bazaar
@@ -146,8 +149,26 @@ permissions:
   aetherion.shardshop:
     description: Open the Aether Shard shop
     default: true
+  aetherion.devmenu:
+    description: Open the Dev Kit (full DEV or content helper)
+    default: op
   aetherion.dev:
-    description: Access the DEV menu and animal anchors
+    description: Access the full DEV menu and animal anchors
+    default: op
+    children:
+      aetherion.devmenu: true
+      aetherion.dev.content: true
+      aetherion.npc.editor: true
+  aetherion.dev.content:
+    description: Content helper kit (Resources, self shards, NPC editor, flight)
+    default: false
+    children:
+      aetherion.devmenu: true
+  aetherion.npc.editor:
+    description: FancyNPC + quest creator (/aethernpc; FancyNpcs keeps /npc)
+    default: false
+  aetherion.flight:
+    description: Toggle /flight
     default: op
   aetherion.shards.admin:
     description: Give and take Aether Shards
@@ -157,4 +178,10 @@ permissions:
     default: op
   aetherion.rank.mvpplusplus:
     description: Exclusive MVP++ homage rank
+    default: false
+  aetherion.rank.monkey:
+    description: Monkey content rank (NPC / quest helper + celestial dye)
+    default: false
+  aetherion.rank.beta:
+    description: Beta Tester ultra rank (rainbow cosmetics only, no tools)
     default: false

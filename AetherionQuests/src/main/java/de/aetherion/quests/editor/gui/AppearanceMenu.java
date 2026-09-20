@@ -19,8 +19,8 @@ public final class AppearanceMenu implements Listener {
 
     private static final int SKIN = 4;
     private static final int SLIM = 6;
-    private static final int BACK = 22;
-    private static final int PRESET_START = 9;
+    private static final int BACK = 49;
+    private static final int PRESET_START = 19;
 
     private final NpcEditor editor;
 
@@ -32,10 +32,10 @@ public final class AppearanceMenu implements Listener {
     public static void open(Player player, CustomNpc npc) {
         Inventory inventory = Bukkit.createInventory(
                 new Holder(npc.getId()),
-                27,
+                54,
                 EditorItems.title(player, "npc_appear", "§8Appearance")
         );
-        EditorItems.fill(inventory);
+        EditorItems.chrome(inventory);
         inventory.setItem(SKIN, EditorItems.head(
                 npc.getSkinUsername(),
                 "§eSkin username",
@@ -47,8 +47,10 @@ public final class AppearanceMenu implements Listener {
                 npc.isSlim() ? "§aSlim arms" : "§7Wide arms",
                 "§7Click to toggle."
         ));
+        inventory.setItem(8, EditorItems.saved(false));
+        inventory.setItem(18, EditorItems.section("Presets", "§7Leather look + skin hint."));
         AppearancePreset[] presets = AppearancePreset.values();
-        for (int i = 0; i < presets.length && i < 10; i++) {
+        for (int i = 0; i < presets.length && i < 18; i++) {
             AppearancePreset preset = presets[i];
             boolean selected = preset == npc.getPreset();
             inventory.setItem(PRESET_START + i, EditorItems.button(
@@ -90,6 +92,7 @@ public final class AppearanceMenu implements Listener {
         if (slot == SLIM) {
             npc.setSlim(!npc.isSlim());
             editor.persist(npc);
+            editor.sessions().of(player).setDirty(false);
             open(player, npc);
             return;
         }
@@ -101,6 +104,7 @@ public final class AppearanceMenu implements Listener {
             npc.setSlim(preset.slim());
             npc.setSkinUsername(preset.skinUsername());
             editor.persist(npc);
+            editor.sessions().of(player).setDirty(false);
             player.sendMessage("§aAppearance §f" + preset.label());
             open(player, npc);
         }

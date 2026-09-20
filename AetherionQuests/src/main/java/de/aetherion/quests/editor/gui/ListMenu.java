@@ -18,10 +18,10 @@ import java.util.List;
 
 public final class ListMenu implements Listener {
 
-    private static final int PAGE_SIZE = 45;
-    private static final int PREV = 45;
+    private static final int PAGE_SIZE = 36;
+    private static final int PREV = 48;
     private static final int BACK = 49;
-    private static final int NEXT = 53;
+    private static final int NEXT = 50;
 
     private final NpcEditor editor;
 
@@ -45,23 +45,32 @@ public final class ListMenu implements Listener {
                 54,
                 EditorItems.title(player, "npc_list", "§8NPC List")
         );
-        EditorItems.fill(inventory);
+        EditorItems.chrome(inventory);
+        inventory.setItem(4, EditorItems.button(
+                Material.BOOK,
+                "§6Editor NPCs",
+                "§7" + all.size() + " saved",
+                "§8Dialog vs Quest on each head"
+        ));
         int start = safe * PAGE_SIZE;
         for (int i = 0; i < PAGE_SIZE; i++) {
             int index = start + i;
+            int slot = 9 + i;
             if (index >= all.size()) {
-                inventory.setItem(i, null);
+                inventory.setItem(slot, null);
                 continue;
             }
             CustomNpc npc = all.get(index);
             String where = npc.getWorld() == null
                     ? "§8unplaced"
                     : "§7" + npc.getWorld() + " §f" + (int) npc.getX() + " " + (int) npc.getY() + " " + (int) npc.getZ();
-            inventory.setItem(i, EditorItems.head(
+            inventory.setItem(slot, EditorItems.head(
                     npc.getSkinUsername(),
                     "§b" + npc.getName(),
                     "§8" + npc.getId(),
                     where,
+                    npc.isQuestNpc() ? "§aQuest NPC" : "§bDialog-only",
+                    npc.hasLinkedQuest() ? "§7" + npc.getLinkedQuestId() : "§8no quest",
                     "§eClick to edit"
             ));
         }
@@ -96,11 +105,11 @@ public final class ListMenu implements Listener {
             open(player, holder.page() + 1);
             return;
         }
-        if (slot < 0 || slot >= PAGE_SIZE) {
+        if (slot < 9 || slot > 44) {
             return;
         }
         List<CustomNpc> all = new ArrayList<>(editor.storage().all());
-        int index = holder.page() * PAGE_SIZE + slot;
+        int index = holder.page() * PAGE_SIZE + (slot - 9);
         if (index < 0 || index >= all.size()) {
             return;
         }

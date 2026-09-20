@@ -53,6 +53,8 @@ public final class QuestStoryGate {
             "forage_pad_guide",
             // Eldervale welcome — pad is blueprint-gated; NPC is flavor only.
             "eldervale_welcome",
+            // Amethyst Mines guide — mining-skill gated teleport; talk anytime.
+            "amethyst_mines_guide",
             // Harbour flavor — XP tip + casino host + crystal desk + coin desk
             "bar_whisper",
             "vince",
@@ -152,6 +154,10 @@ public final class QuestStoryGate {
         }
         // Eldervale welcome: pad is blueprint-gated; talk anytime.
         if ("eldervale_welcome".equalsIgnoreCase(npcId)) {
+            return false;
+        }
+        // Amethyst Mines guide: mining-skill gated teleport — never tutorial.
+        if ("amethyst_mines_guide".equalsIgnoreCase(npcId)) {
             return false;
         }
         return !tutorialDone(player, questManager);
