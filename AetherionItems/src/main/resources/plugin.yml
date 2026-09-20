@@ -158,11 +158,15 @@ permissions:
     children:
       aetherion.devmenu: true
       aetherion.dev.content: true
+      aetherion.npc.editor: true
   aetherion.dev.content:
-    description: Content helper Dev Kit (Resources, Shards, NPCs, Spawn Anchors)
+    description: Content helper kit (Resources, self shards, NPC editor, flight)
     default: false
     children:
       aetherion.devmenu: true
+  aetherion.npc.editor:
+    description: FancyNPC + quest creator (/npc)
+    default: false
   aetherion.flight:
     description: Toggle /flight
     default: op
@@ -176,5 +180,8 @@ permissions:
     description: Exclusive MVP++ homage rank
     default: false
   aetherion.rank.monkey:
-    description: Monkey content rank (NPC / quest helper)
+    description: Monkey content rank (NPC / quest helper + celestial dye)
+    default: false
+  aetherion.rank.beta:
+    description: Beta Tester ultra rank (celestial cosmetics only, no tools)
     default: false

@@ -38,7 +38,9 @@ public final class RankBadgeService implements Listener {
             new Rank("eternal", 86, "&8[&4✶&8] &f", "§4§lEternal"),
             new Rank("aetherion", 88, "&8[&5♛&8] &f", "§5§lAetherion"),
             new Rank("mvpplusplus", 90, "&6[MVP&c++&6] &f", "§6MVP§c++"),
-            // Ultra/staff extra — weight 95 (MVP++ 90 … Admin 100). Do not park at 50 next to mythwright.
+            // Ultra extras — high TAB, never parked at 50 next to mythwright.
+            // Beta 94 (cosmetic only) · Monkey 95 (content + celestial) · Admin 100.
+            new Rank("beta", 94, CelestialDye.betaPrefixStatic(), "§b§lBeta Tester"),
             new Rank("monkey", 95, CelestialDye.monkeyPrefixStatic(), "§d§lMonkey"),
             new Rank("admin", 100, "&c[Admin] &f", "§cAdmin")
     );
@@ -48,8 +50,13 @@ public final class RankBadgeService implements Listener {
      * Standing rule (Peter): every future Homie special rank copies Monkey —
      * EXTRA + high TAB weight (near admin / mvpplusplus) + Dev Menu ultra slot.
      * Never add them to the Adventurer→Aetherion progression row.
+     * <p>
+     * Monkey = content tools + celestial dye. Beta = celestial cosmetics only.
      */
-    private static final Set<String> EXTRA = Set.of("mvpplusplus", "admin", "monkey");
+    private static final Set<String> EXTRA = Set.of("mvpplusplus", "admin", "monkey", "beta");
+
+    /** LP-fallback extras: do not wipe on XP sync (Dev Menu / {@code /lp parent add}). */
+    private static final Set<String> LP_FALLBACK_EXTRAS = Set.of("monkey", "beta");
 
     private static final String DEFAULT_GROUP = "mvpplusplus";
     private static final String DEFAULT_PREFIX = "&6[MVP&c++&6] ";
@@ -151,8 +158,8 @@ public final class RankBadgeService implements Listener {
         if (extra == null) {
             return "";
         }
-        if ("monkey".equals(extra.group())) {
-            return CelestialDye.monkeyBadge().trim();
+        if (CelestialDye.isCelestialGroup(extra.group())) {
+            return CelestialDye.badgeForGroup(extra.group()).trim();
         }
         return extra.display();
     }
@@ -179,7 +186,7 @@ public final class RankBadgeService implements Listener {
             prefix.append(switch (extra.group()) {
                 case "admin" -> "§c[Admin] ";
                 case "mvpplusplus" -> "§6[MVP§c++§6] ";
-                case "monkey" -> CelestialDye.monkeyBadge();
+                case "monkey", "beta" -> CelestialDye.badgeForGroup(extra.group());
                 default -> "";
             });
         }
@@ -242,6 +249,10 @@ public final class RankBadgeService implements Listener {
         }
         Rank rank = rankByGroup(group);
         if (isExtra(rank.group())) {
+            String previous = extras.get(playerId);
+            if (previous != null && !previous.equalsIgnoreCase(rank.group())) {
+                LuckPermsSilent.removeGroup(playerId, previous);
+            }
             extras.put(playerId, rank.group());
             save();
             applyLuckPerms(playerId, aetherionGroup(playerId), rank);
@@ -387,8 +398,8 @@ public final class RankBadgeService implements Listener {
     private Set<String> managedGroups() {
         Set<String> groups = new java.util.HashSet<>();
         for (Rank rank : RANKS) {
-            // Monkey is grantable via Dev Menu / LP fallback and must not be wiped on XP sync.
-            if (!"monkey".equals(rank.group())) {
+            // Monkey / Beta are grantable via Dev Menu / LP fallback and must not be wiped on XP sync.
+            if (!LP_FALLBACK_EXTRAS.contains(rank.group())) {
                 groups.add(rank.group());
             }
         }

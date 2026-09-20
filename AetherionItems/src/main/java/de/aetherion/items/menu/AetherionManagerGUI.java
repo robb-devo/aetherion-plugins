@@ -207,19 +207,20 @@ public class AetherionManagerGUI {
         }
 
         if (de.aetherion.items.menu.dev.DevMenu.canUse(player)) {
-            if (de.aetherion.items.menu.dev.DevMenu.isFullDev(player)) {
+            if (de.aetherion.items.menu.dev.DevMenu.preferContentKit(player)
+                    || !de.aetherion.items.menu.dev.DevMenu.isFullDev(player)) {
+                inventory.setItem(DEV_SLOT, button(
+                        Material.JUNGLE_SAPLING,
+                        "§aContent Kit",
+                        "§7Resources, self shards,",
+                        "§7NPC editor, flight."
+                ));
+            } else {
                 inventory.setItem(DEV_SLOT, button(
                         Material.COMMAND_BLOCK,
                         "§cDEV Menu",
                         "§7Sets, items, bosses, animals,",
                         "§7pets and NPCs. One click."
-                ));
-            } else {
-                inventory.setItem(DEV_SLOT, button(
-                        Material.JUNGLE_SAPLING,
-                        "§aContent Kit",
-                        "§7Resources, shards, NPCs,",
-                        "§7spawn anchors, NPC editor."
                 ));
             }
         }

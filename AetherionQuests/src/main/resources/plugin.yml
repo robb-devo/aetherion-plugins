@@ -42,6 +42,11 @@ permissions:
   aetherion.npc.editor:
     description: Create and edit FancyNPCs with dialogue (moderator / content helper)
     default: false
+  aetherion.dev:
+    description: Full DEV (inherits NPC editor so Admin root can open /npc)
+    default: op
+    children:
+      aetherion.npc.editor: true
   aetherionquests.admin:
     description: Admin quest NPC tools (/questnpc, anchors)
     default: op

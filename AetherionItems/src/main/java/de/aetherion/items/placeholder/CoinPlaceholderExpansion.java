@@ -74,6 +74,8 @@ public final class CoinPlaceholderExpansion extends PlaceholderExpansion {
             case "level_tag", "aether_level_tag" -> plugin.getSkills() == null ? "§7[1]" : plugin.getSkills().accountTag(player);
             case "tab_prefix", "nametag_prefix", "chat_prefix" -> plugin.ranks() == null ? "§f" : plugin.ranks().tabPrefix(player);
             case "monkey_badge", "celestial_monkey" -> de.aetherion.items.rank.CelestialDye.monkeyBadge();
+            case "beta_badge", "celestial_beta" -> de.aetherion.items.rank.CelestialDye.betaBadge();
+            case "celestial_badge" -> de.aetherion.items.rank.CelestialDye.badge("[Celestial]");
             case "nametag" -> plugin.ranks() == null ? (player.getName()) : plugin.ranks().nametag(player);
             case "level_xp", "aether_level_xp" -> plugin.getSkills() == null ? "0" : Long.toString(plugin.getSkills().accountXp(player));
             case "level_into", "aether_level_into", "level_xp_into" -> {

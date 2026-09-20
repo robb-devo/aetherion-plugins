@@ -1,0 +1,73 @@
+# Copy-paste for live TAB + LuckPerms (MMO-R).
+# Shared celestial dye for ultra ranks Monkey (content + dye) and Beta (dye only).
+# Primary Hypixel Celestial Dye: #B2FFFF (Peter). Shimmer stays in the ice-cyan family.
+# In-game prefix also comes from %aetherion_tab_prefix% (AetherionItems RankBadgeService)
+# which cycles the same hex via CelestialDye.
+
+# --- plugins/TAB/animations.yml ---
+# change-interval is milliseconds. 200ms ≈ Hypixel dye shimmer.
+# Frames match CelestialDye.animationFrames(label) (letter colors shift; [] do not consume a hue).
+Aetherion_Celestial:
+  change-interval: 200
+  texts:
+    - "&#6EE8F2[&#6EE8F2M&#8CF4FCo&#B2FFFFn&#C8FFFFk&#DCFFFFe&#A6FBFFy&#7EF0F8]"
+    - "&#8CF4FC[&#8CF4FCM&#B2FFFFo&#C8FFFFn&#DCFFFFk&#A6FBFFe&#7EF0F8y&#6EE8F2]"
+    - "&#B2FFFF[&#B2FFFFM&#C8FFFFo&#DCFFFFn&#A6FBFFk&#7EF0F8e&#6EE8F2y&#8CF4FC]"
+    - "&#C8FFFF[&#C8FFFFM&#DCFFFFo&#A6FBFFn&#7EF0F8k&#6EE8F2e&#8CF4FCy&#B2FFFF]"
+    - "&#DCFFFF[&#DCFFFFM&#A6FBFFo&#7EF0F8n&#6EE8F2k&#8CF4FCe&#B2FFFFy&#C8FFFF]"
+    - "&#A6FBFF[&#A6FBFFM&#7EF0F8o&#6EE8F2n&#8CF4FCk&#B2FFFFe&#C8FFFFy&#DCFFFF]"
+    - "&#7EF0F8[&#7EF0F8M&#6EE8F2o&#8CF4FCn&#B2FFFFk&#C8FFFFe&#DCFFFFy&#A6FBFF]"
+
+# Optional second animation if TAB groups.yml wants a [Beta] label (same palette).
+Aetherion_Celestial_Beta:
+  change-interval: 200
+  texts:
+    - "&#6EE8F2[&#6EE8F2B&#8CF4FCe&#B2FFFFt&#C8FFFFa&#DCFFFF]"
+    - "&#8CF4FC[&#8CF4FCB&#B2FFFFe&#C8FFFFt&#DCFFFFa&#A6FBFF]"
+    - "&#B2FFFF[&#B2FFFFB&#C8FFFFe&#DCFFFFt&#A6FBFFa&#7EF0F8]"
+    - "&#C8FFFF[&#C8FFFFB&#DCFFFFe&#A6FBFFt&#7EF0F8a&#6EE8F2]"
+    - "&#DCFFFF[&#DCFFFFB&#A6FBFFe&#7EF0F8t&#6EE8F2a&#8CF4FC]"
+    - "&#A6FBFF[&#A6FBFFB&#7EF0F8e&#6EE8F2t&#8CF4FCa&#B2FFFF]"
+    - "&#7EF0F8[&#7EF0F8B&#6EE8F2e&#8CF4FCt&#B2FFFFa&#C8FFFF]"
+
+# Backward-compatible alias — older live TAB configs used this name.
+Aetherion_Monkey:
+  change-interval: 200
+  texts:
+    - "&#6EE8F2[&#6EE8F2M&#8CF4FCo&#B2FFFFn&#C8FFFFk&#DCFFFFe&#A6FBFFy&#7EF0F8]"
+    - "&#8CF4FC[&#8CF4FCM&#B2FFFFo&#C8FFFFn&#DCFFFFk&#A6FBFFe&#7EF0F8y&#6EE8F2]"
+    - "&#B2FFFF[&#B2FFFFM&#C8FFFFo&#DCFFFFn&#A6FBFFk&#7EF0F8e&#6EE8F2y&#8CF4FC]"
+    - "&#C8FFFF[&#C8FFFFM&#DCFFFFo&#A6FBFFn&#7EF0F8k&#6EE8F2e&#8CF4FCy&#B2FFFF]"
+    - "&#DCFFFF[&#DCFFFFM&#A6FBFFo&#7EF0F8n&#6EE8F2k&#8CF4FCe&#B2FFFFy&#C8FFFF]"
+    - "&#A6FBFF[&#A6FBFFM&#7EF0F8o&#6EE8F2n&#8CF4FCk&#B2FFFFe&#C8FFFFy&#DCFFFF]"
+    - "&#7EF0F8[&#7EF0F8M&#6EE8F2o&#8CF4FCn&#B2FFFFk&#C8FFFFe&#DCFFFFy&#A6FBFF]"
+
+# --- plugins/TAB/groups.yml (add / merge) ---
+# sorting-types GROUPS list: staff ultras at the front.
+# Example: groups: [admin, monkey, beta, mvpplusplus, aetherion, eternal, ...]
+#
+# monkey:
+#   tabprefix: "%animation:Aetherion_Celestial% "
+#   # or, if the global layout already uses PlaceholderAPI:
+#   # tabprefix: "%aetherion_tab_prefix%"
+#   tabsuffix: ""
+#
+# beta:
+#   tabprefix: "%animation:Aetherion_Celestial_Beta% "
+#   tabsuffix: ""
+
+# --- LuckPerms ---
+# Monkey (content tools + celestial):
+#   Preferred: Dev Menu → Ranks → Monkey
+#   Fallback: /lp user <name> parent set monkey
+#   /lp group monkey setweight 95
+#   Sync on enable also DENIES aetherion.dev (full admin) on the monkey group.
+#
+# Beta Tester (celestial cosmetics only — no tools):
+#   Preferred: Dev Menu → Ranks → Beta Tester
+#   Fallback: /lp user <name> parent set beta
+#   /lp group beta setweight 94
+#   No aetherion.dev / aetherion.dev.content / flight / npc.editor.
+#
+# Palette (shimmer of #B2FFFF):
+#   #6EE8F2 #8CF4FC #B2FFFF #C8FFFF #DCFFFF #A6FBFF #7EF0F8

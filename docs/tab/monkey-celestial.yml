@@ -1,41 +1,4 @@
-# Copy-paste for live TAB + LuckPerms (MMO-R).
-# Monkey is an ULTRA rank (same path as MVP++ / Admin), weight 95.
-# In-game prefix also comes from %aetherion_tab_prefix% (AetherionItems RankBadgeService)
-# which already cycles celestial hex via CelestialDye.
-
-# --- plugins/TAB/animations.yml ---
-# change-interval is milliseconds. 200ms ≈ Hypixel dye shimmer.
-Aetherion_Monkey:
-  change-interval: 200
-  # Frames match CelestialDye.animationFrames() (letter colors shift; [] do not consume a hue).
-  texts:
-    - "&#55FFFF[&#55FFFFM&#7CEBFFo&#B89AFFn&#FF7AEEk&#FF8A88e&#FFC15Ay&#FFE08A]"
-    - "&#7CEBFF[&#7CEBFFM&#B89AFFo&#FF7AEEn&#FF8A88k&#FFC15Ae&#FFE08Ay&#55FFFF]"
-    - "&#B89AFF[&#B89AFFM&#FF7AEEo&#FF8A88n&#FFC15Ak&#FFE08Ae&#55FFFFy&#7CEBFF]"
-    - "&#FF7AEE[&#FF7AEEM&#FF8A88o&#FFC15An&#FFE08Ak&#55FFFFe&#7CEBFFy&#B89AFF]"
-    - "&#FF8A88[&#FF8A88M&#FFC15Ao&#FFE08An&#55FFFFk&#7CEBFFe&#B89AFFy&#FF7AEE]"
-    - "&#FFC15A[&#FFC15AM&#FFE08Ao&#55FFFFn&#7CEBFFk&#B89AFFe&#FF7AEEy&#FF8A88]"
-    - "&#FFE08A[&#FFE08AM&#55FFFFo&#7CEBFFn&#B89AFFk&#FF7AEEe&#FF8A88y&#FFC15A]"
-
-# --- plugins/TAB/groups.yml (add / merge) ---
-# sorting-types GROUPS list: put monkey with staff ultras at the front.
-# Example: groups: [admin, monkey, mvpplusplus, aetherion, eternal, ...]
+# Moved to celestial-dye.yml — shared #B2FFFF dye for Monkey + Beta Tester.
+# This stub stays so older PR / deploy notes keep resolving.
 #
-# monkey:
-#   tabprefix: "%animation:Aetherion_Monkey% "
-#   # or, if the global layout already uses PlaceholderAPI:
-#   # tabprefix: "%aetherion_tab_prefix%"
-#   tabsuffix: ""
-
-# --- LuckPerms (if TAB groups.yml is not updated this restart) ---
-# Preferred grant is Dev Menu → Ranks → Monkey.
-# Fallback:
-#   /lp user <name> parent set monkey
-#   /lp user <name> parent add monkey
-#
-# Group meta (AetherionItems LuckPermsSilent also writes weight 95 + celestial prefix on enable):
-#   /lp group monkey setweight 95
-#   /lp group monkey meta setprefix 95 "&#55FFFF[&#55FFFFM&#7CEBFFo&#B89AFFn&#FF7AEEk&#FF8A88e&#FFC15Ay&#55FFFF] "
-#
-# Palette (cyan → pink → purple → gold):
-#   #55FFFF #7CEBFF #B89AFF #FF7AEE #FF8A88 #FFC15A #FFE08A
+# See: docs/tab/celestial-dye.yml

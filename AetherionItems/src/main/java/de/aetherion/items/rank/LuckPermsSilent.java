@@ -23,6 +23,30 @@ final class LuckPermsSilent {
     private LuckPermsSilent() {
     }
 
+    /**
+     * Homie / Monkey content kit — never {@code aetherion.dev} (full admin).
+     * Tools only: Content Kit UI, NPC editor, self shards, flight.
+     */
+    static final String[] CONTENT_PERMISSIONS = {
+            "aetherion.npc.editor",
+            "aetherion.dev.content",
+            "aetherion.devmenu",
+            "aetherion.shards.admin",
+            "aetherion.flight",
+            "essentials.fly",
+            "essentials.fly.safelogin"
+    };
+
+    private static final String FULL_DEV = "aetherion.dev";
+
+    static {
+        for (String node : CONTENT_PERMISSIONS) {
+            if (FULL_DEV.equalsIgnoreCase(node)) {
+                throw new IllegalStateException("CONTENT_PERMISSIONS must not include aetherion.dev");
+            }
+        }
+    }
+
     static boolean available() {
         return Bukkit.getPluginManager().isPluginEnabled("LuckPerms");
     }
@@ -53,6 +77,7 @@ final class LuckPermsSilent {
         }));
         api.getGroupManager().loadGroup("admin").thenAccept(optional -> optional.ifPresent(group -> {
             group.data().add(PermissionNode.builder("aetherion.rank.admin").value(true).build());
+            group.data().add(PermissionNode.builder("aetherion.npc.editor").value(true).build());
             api.getGroupManager().saveGroup(group);
         }));
         api.getGroupManager().createAndLoadGroup("monkey").thenAccept(group -> {
@@ -61,11 +86,25 @@ final class LuckPermsSilent {
             }
             group.data().add(PermissionNode.builder("aetherion.rank.monkey").value(true).build());
             grantContentKit(group);
+            denyFullDev(group);
+            api.getGroupManager().saveGroup(group);
+        });
+        // Cosmetic-only ultra. Same celestial dye as Monkey. No tools.
+        api.getGroupManager().createAndLoadGroup("beta").thenAccept(group -> {
+            if (group == null) {
+                return;
+            }
+            group.data().add(PermissionNode.builder("aetherion.rank.beta").value(true).build());
+            // Cosmetic only: strip accidental grants, but do not negate aetherion.dev
+            // (an admin who also has Beta must keep the full DEV tree).
+            stripFullDevGrant(group);
+            stripContentKitGrants(group);
             api.getGroupManager().saveGroup(group);
         });
         for (String staff : List.of("moderator", "mod")) {
             api.getGroupManager().loadGroup(staff).thenAccept(optional -> optional.ifPresent(group -> {
                 grantContentKit(group);
+                denyFullDev(group);
                 api.getGroupManager().saveGroup(group);
             }));
         }
@@ -79,17 +118,39 @@ final class LuckPermsSilent {
         for (String node : CONTENT_PERMISSIONS) {
             group.data().add(PermissionNode.builder(node).value(true).build());
         }
+        denyFullDev(group);
     }
 
-    private static final String[] CONTENT_PERMISSIONS = {
-            "aetherion.npc.editor",
-            "aetherion.dev.content",
-            "aetherion.devmenu",
-            "aetherion.shards.admin",
-            "aetherion.flight",
-            "essentials.fly",
-            "essentials.fly.safelogin"
-    };
+    /**
+     * Strip leftover manual {@code aetherion.dev} and plant an explicit deny
+     * so Monkey / content kit cannot inherit the full Dev Menu.
+     */
+    private static void denyFullDev(Group group) {
+        if (group == null) {
+            return;
+        }
+        stripFullDevGrant(group);
+        group.data().add(PermissionNode.builder(FULL_DEV).value(false).build());
+    }
+
+    private static void stripFullDevGrant(Group group) {
+        if (group == null) {
+            return;
+        }
+        group.data().clear(NodeType.PERMISSION.predicate(node ->
+                FULL_DEV.equalsIgnoreCase(node.getKey()) && node.getValue()));
+    }
+
+    /** Beta is celestial cosmetics only — never pick up content-kit nodes. */
+    private static void stripContentKitGrants(Group group) {
+        if (group == null) {
+            return;
+        }
+        for (String node : CONTENT_PERMISSIONS) {
+            group.data().clear(NodeType.PERMISSION.predicate(existing ->
+                    node.equalsIgnoreCase(existing.getKey()) && existing.getValue()));
+        }
+    }
 
     static void removeGroup(UUID playerId, String group) {
         if (playerId == null || group == null || group.isBlank() || !available()) {
