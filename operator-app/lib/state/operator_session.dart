@@ -38,9 +38,16 @@ class OperatorSession extends ChangeNotifier {
 
   Future<void> bootstrap() async {
     accounts = await persistence.load();
+    final seed = OperatorAccount.seedOperator();
     if (accounts.isEmpty) {
-      accounts = [OperatorAccount.seedOperator()];
+      accounts = [seed];
       await persistence.save(accounts);
+    } else {
+      final i = accounts.indexWhere((a) => a.id == seed.id);
+      if (i >= 0 && !accounts[i].hasPin) {
+        accounts = [...accounts]..[i] = seed;
+        await persistence.save(accounts);
+      }
     }
     await _loadLocale();
     notifyListeners();

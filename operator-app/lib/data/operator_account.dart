@@ -44,6 +44,7 @@ class OperatorAccount {
     return OperatorAccount(
       id: 'seed-operator',
       name: 'Operator',
+      pinHash: hashPin('04206951'),
       createdAt: DateTime.utc(2026, 1, 1),
     );
   }

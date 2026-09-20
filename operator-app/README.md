@@ -6,7 +6,7 @@ MVP is local and mock-backed. **No Crafty credentials are hardcoded.**
 
 ## Screens
 
-1. **Login** — local operator list. Seed account `Operator` has no PIN. Add teammate names (1–16 `[A-Za-z0-9_]`) with an optional PIN (SHA-256, device-local).
+1. **Login** — local operator list. Seed account `Operator` requires a PIN (hashed locally at seed time). Add teammate names (1–16 `[A-Za-z0-9_]`) with an optional PIN (SHA-256, device-local).
 2. **Dashboard** — Velocity + Hub + mmo-r / mmo-d / mmo-c placeholders: online/offline, players, TPS. Gold **Mock data** badge until Crafty is enabled.
 3. **DevKit** — command console with history, target server, **Soft restart** (confirm → log), **Whitelist note** (local until Crafty whitelist exists).
 4. **Links** — `play.donnernet.de`, https://donnernet.de, Discord https://discord.gg/7BWHJaZChb.

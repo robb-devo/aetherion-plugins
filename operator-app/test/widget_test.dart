@@ -7,6 +7,8 @@ import 'package:operator_app/data/operator_account.dart';
 import 'package:operator_app/state/operator_session.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+const _seedPin = '04206951';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -39,6 +41,16 @@ void main() {
 
     await tester.tap(find.byKey(const Key('signin-Operator')));
     await tester.pumpAndSettle();
+    expect(find.byKey(const Key('pin-input')), findsOneWidget);
+
+    await tester.enterText(find.byKey(const Key('pin-input')), '0000');
+    await tester.tap(find.byKey(const Key('pin-continue')));
+    await tester.pumpAndSettle();
+    expect(find.text('That PIN does not match.'), findsOneWidget);
+
+    await tester.enterText(find.byKey(const Key('pin-input')), _seedPin);
+    await tester.tap(find.byKey(const Key('pin-continue')));
+    await tester.pumpAndSettle();
 
     expect(find.text('Hub'), findsWidgets);
     expect(find.text('mmo-r'), findsOneWidget);
@@ -52,7 +64,8 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
 
     final session = await boot();
-    session.signIn(OperatorAccount.seedOperator());
+    expect(session.signIn(OperatorAccount.seedOperator()), 'pin');
+    expect(session.signIn(OperatorAccount.seedOperator(), pin: _seedPin), isNull);
     await tester.pumpWidget(OperatorApp(session: session));
     await tester.pumpAndSettle();
 
