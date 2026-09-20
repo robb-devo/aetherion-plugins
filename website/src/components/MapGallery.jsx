@@ -6,7 +6,7 @@ export default function MapGallery() {
     <Section id="karten">
       <Reveal>
         <Kicker>Karten</Kicker>
-        <SectionTitle en="Placeholder frames — drop real screenshots into public/maps/ later.">
+        <SectionTitle en="Eldervale · Crystal Hollows · Harbour">
           Drei Orte, die du kennen wirst
         </SectionTitle>
         <p className="mt-4 max-w-2xl text-sm leading-relaxed text-mist/70">

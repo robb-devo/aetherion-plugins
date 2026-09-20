@@ -12,8 +12,8 @@
   --color-gold: #f5c56b;
 }
 
-html {
-  scroll-behavior: smooth;
+section[id] {
+  scroll-margin-top: 5.75rem;
 }
 
 body {
