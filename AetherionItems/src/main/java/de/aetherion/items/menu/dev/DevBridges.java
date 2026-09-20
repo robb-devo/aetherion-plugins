@@ -149,6 +149,7 @@ public final class DevBridges {
                  "colossus_scholar", "veil_priest", "patch_intern", "void_janitor",
                  "fuse", "claims_adjuster", "repo_agent", "arena_proctor" -> NpcBucket.BOSS;
             case "foreman", "surveyor", "ore_ledger", "eldervale_welcome", "eldervale_upgrade",
+                 "amethyst_mines_guide",
                  "farm_isle_guide", "forage_pad_guide", "canopy_clerk", "isle_clerk", "dungeon_gate",
                  "miss_canopy" -> NpcBucket.WORLD;
             default -> NpcBucket.WORLD;

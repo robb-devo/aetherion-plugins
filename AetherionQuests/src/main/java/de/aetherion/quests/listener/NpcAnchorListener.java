@@ -38,7 +38,8 @@ public final class NpcAnchorListener implements Listener {
         String name = npc == null ? npcId : npc.getName();
         String boss = QuestNPCRegistry.linkedBoss(npcId);
 
-        ItemStack item = new ItemStack(Material.IRON_PICKAXE);
+        Material material = anchorMaterial(npcId);
+        ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
             meta.setDisplayName(boss == null
@@ -47,6 +48,11 @@ public final class NpcAnchorListener implements Listener {
             java.util.ArrayList<String> lore = new java.util.ArrayList<>();
             lore.add("§7Right-click a block to place");
             lore.add("§f" + name + "§7 there.");
+            if ("amethyst_mines_guide".equalsIgnoreCase(npcId)) {
+                lore.add("§8FancyNPC · Elder Vale Mining Island");
+                lore.add("§7Mining skill gate → Amethyst Mines hub");
+                lore.add("§8Unlocks §f/amethyst §8after first visit");
+            }
             if (boss != null) {
                 lore.add("§8Boss hunt: §f" + boss);
             }
@@ -60,6 +66,20 @@ public final class NpcAnchorListener implements Listener {
             item.setItemMeta(meta);
         }
         return item;
+    }
+
+    private static Material anchorMaterial(String npcId) {
+        if (npcId == null) {
+            return Material.IRON_PICKAXE;
+        }
+        return switch (npcId.toLowerCase(java.util.Locale.ROOT)) {
+            case "amethyst_mines_guide" -> Material.AMETHYST_CLUSTER;
+            case "farm_isle_guide" -> Material.WHEAT;
+            case "forage_pad_guide" -> Material.SPRUCE_SAPLING;
+            case "eldervale_welcome" -> Material.IRON_PICKAXE;
+            case "eldervale_upgrade" -> Material.ANVIL;
+            default -> Material.IRON_PICKAXE;
+        };
     }
 
     public static String npcId(ItemStack item) {

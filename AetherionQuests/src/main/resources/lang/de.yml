@@ -164,6 +164,9 @@ dialogs:
   eldervale_welcome_intro:
     - "Willkommen auf Eldervale."
     - "Mining-Insel. Tiefengestein. Nicht runterfallen."
+  amethyst_mines_guide_intro:
+    - "Amethyst Mines — The Veins unter Eldervale. Crystal Hollows Try."
+    - "Mining Skill dreißig. Ich schicke dich zum Beacon-Hub. Dann unlockt /amethyst."
 
 completed:
   egon:

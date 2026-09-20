@@ -898,6 +898,17 @@ public class QuestNPCRegistry {
                 ""
         ));
 
+        // Amethyst Mines guide — FancyNPC on Elder Vale Mining Island.
+        // Mining skill gate → teleportToVeinsHub (aether_veins) → unlocks /amethyst.
+        registerNPC(new QuestNPC(
+                "amethyst_mines_guide",
+                "Crystal Guide",
+                NPCType.FLAVOR,
+                "",
+                "amethyst_mines_guide_intro",
+                ""
+        ));
+
         // Eldervale blueprint forge — upgrade stones.
         registerNPC(new QuestNPC(
                 "eldervale_upgrade",
