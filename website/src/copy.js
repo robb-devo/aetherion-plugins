@@ -151,7 +151,7 @@ export const COPY = {
       ibanCopied: 'IBAN copied',
     },
     footer: {
-      blurb: 'Paper MMO / Skyblock network by {owner}. Website {site} · join Minecraft at {ip}',
+      blurb: 'Paper MMO / Skyblock network by {owner}. Join Minecraft at {ip}.',
       shop: 'Support shop',
       maps: 'Maps',
       legal:
@@ -315,7 +315,7 @@ export const COPY = {
       ibanCopied: 'IBAN kopiert',
     },
     footer: {
-      blurb: 'Paper-MMO / Skyblock-Netzwerk von {owner}. Website {site} · Minecraft: {ip}',
+      blurb: 'Paper-MMO / Skyblock-Netzwerk von {owner}. Minecraft: {ip}.',
       shop: 'Support-Shop',
       maps: 'Karten',
       legal:
