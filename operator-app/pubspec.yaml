@@ -1,7 +1,7 @@
 name: operator_app
 description: Aetherion Operator companion for Windows and Android.
 publish_to: "none"
-version: 0.2.4+6
+version: 0.2.5+7
 
 environment:
   sdk: ^3.13.4
@@ -11,12 +11,16 @@ dependencies:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
+  archive: ^4.0.7
   crypto: ^3.0.6
   cupertino_icons: ^1.0.8
   flutter_secure_storage: ^9.2.4
   flutter_svg: ^2.2.0
   http: ^1.5.0
   intl: any
+  open_filex: ^4.7.0
+  path: ^1.9.1
+  path_provider: ^2.1.5
   shared_preferences: ^2.5.3
   url_launcher: ^6.3.2
 

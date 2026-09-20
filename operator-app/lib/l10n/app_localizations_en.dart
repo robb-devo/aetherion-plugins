@@ -394,7 +394,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get updateHowTo =>
-      'On start the app checks https://donnernet.de/operator-app/latest.json (public, no token). Host latest.json + APK there. GitHub Releases is a fallback if you save a token.';
+      'On start the app checks https://donnernet.de/operator-app/latest.json. Tap Install update to download and install in the app (APK on Android, zip on Windows). GitHub Releases is only a fallback if you save a token.';
 
   @override
   String get checkUpdates => 'Check for updates';
@@ -415,17 +415,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String updateBody(String current, String next) {
-    return 'You are on $current. Release $next is on GitHub.';
+    return 'You are on $current. Version $next can be installed in the app.';
   }
 
   @override
   String get later => 'Later';
 
   @override
-  String get updateNow => 'Open release';
+  String get updateNow => 'Install update';
 
   @override
-  String get updateCheckFailed => 'Could not reach GitHub Releases.';
+  String get updateDownloading => 'Downloading update…';
+
+  @override
+  String get updateInstalling => 'Installing update…';
+
+  @override
+  String updateFailed(String error) {
+    return 'Update failed: $error';
+  }
+
+  @override
+  String get updateCheckFailed => 'Could not reach the update channel.';
 
   @override
   String get upToDate => 'No newer operator-app release.';

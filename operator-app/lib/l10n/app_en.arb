@@ -172,7 +172,7 @@
       "stamp": { "type": "String" }
     }
   },
-  "updateHowTo": "On start the app checks https://donnernet.de/operator-app/latest.json (public, no token). Host latest.json + APK there. GitHub Releases is a fallback if you save a token.",
+  "updateHowTo": "On start the app checks https://donnernet.de/operator-app/latest.json. Tap Install update to download and install in the app (APK on Android, zip on Windows). GitHub Releases is only a fallback if you save a token.",
   "checkUpdates": "Check for updates",
   "githubTokenHint": "GitHub token (private repo)",
   "githubTokenSet": "GitHub token saved — leave blank to keep it",
@@ -183,7 +183,7 @@
       "version": { "type": "String" }
     }
   },
-  "updateBody": "You are on {current}. Release {next} is on GitHub.",
+  "updateBody": "You are on {current}. Version {next} can be installed in the app.",
   "@updateBody": {
     "placeholders": {
       "current": { "type": "String" },
@@ -191,8 +191,16 @@
     }
   },
   "later": "Later",
-  "updateNow": "Open release",
-  "updateCheckFailed": "Could not reach GitHub Releases.",
+  "updateNow": "Install update",
+  "updateDownloading": "Downloading update…",
+  "updateInstalling": "Installing update…",
+  "updateFailed": "Update failed: {error}",
+  "@updateFailed": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "updateCheckFailed": "Could not reach the update channel.",
   "upToDate": "No newer operator-app release.",
   "linksTitle": "Links",
   "linksBody": "Public join address, site, and Discord.",

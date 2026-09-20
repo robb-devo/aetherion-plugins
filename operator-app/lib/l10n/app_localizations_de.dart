@@ -399,7 +399,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get updateHowTo =>
-      'Beim Start prüft die App https://donnernet.de/operator-app/latest.json (öffentlich, ohne Token). Dort latest.json + APK ablegen. GitHub-Releases sind Fallback, wenn du einen Token speicherst.';
+      'Beim Start prüft die App https://donnernet.de/operator-app/latest.json. Tippe auf Update installieren — Download und Installation laufen in der App (APK auf Android, Zip auf Windows). GitHub-Releases sind nur Fallback, wenn du einen Token speicherst.';
 
   @override
   String get checkUpdates => 'Nach Updates suchen';
@@ -421,17 +421,28 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String updateBody(String current, String next) {
-    return 'Du bist auf $current. Release $next liegt auf GitHub.';
+    return 'Du bist auf $current. Version $next kann in der App installiert werden.';
   }
 
   @override
   String get later => 'Später';
 
   @override
-  String get updateNow => 'Release öffnen';
+  String get updateNow => 'Update installieren';
 
   @override
-  String get updateCheckFailed => 'GitHub-Releases nicht erreichbar.';
+  String get updateDownloading => 'Update wird geladen…';
+
+  @override
+  String get updateInstalling => 'Update wird installiert…';
+
+  @override
+  String updateFailed(String error) {
+    return 'Update fehlgeschlagen: $error';
+  }
+
+  @override
+  String get updateCheckFailed => 'Update-Kanal nicht erreichbar.';
 
   @override
   String get upToDate => 'Kein neueres operator-app-Release.';

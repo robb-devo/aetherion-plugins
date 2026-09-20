@@ -803,7 +803,7 @@ abstract class AppLocalizations {
   /// No description provided for @updateHowTo.
   ///
   /// In en, this message translates to:
-  /// **'On start the app checks https://donnernet.de/operator-app/latest.json (public, no token). Host latest.json + APK there. GitHub Releases is a fallback if you save a token.'**
+  /// **'On start the app checks https://donnernet.de/operator-app/latest.json. Tap Install update to download and install in the app (APK on Android, zip on Windows). GitHub Releases is only a fallback if you save a token.'**
   String get updateHowTo;
 
   /// No description provided for @checkUpdates.
@@ -839,7 +839,7 @@ abstract class AppLocalizations {
   /// No description provided for @updateBody.
   ///
   /// In en, this message translates to:
-  /// **'You are on {current}. Release {next} is on GitHub.'**
+  /// **'You are on {current}. Version {next} can be installed in the app.'**
   String updateBody(String current, String next);
 
   /// No description provided for @later.
@@ -851,13 +851,31 @@ abstract class AppLocalizations {
   /// No description provided for @updateNow.
   ///
   /// In en, this message translates to:
-  /// **'Open release'**
+  /// **'Install update'**
   String get updateNow;
+
+  /// No description provided for @updateDownloading.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading update…'**
+  String get updateDownloading;
+
+  /// No description provided for @updateInstalling.
+  ///
+  /// In en, this message translates to:
+  /// **'Installing update…'**
+  String get updateInstalling;
+
+  /// No description provided for @updateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Update failed: {error}'**
+  String updateFailed(String error);
 
   /// No description provided for @updateCheckFailed.
   ///
   /// In en, this message translates to:
-  /// **'Could not reach GitHub Releases.'**
+  /// **'Could not reach the update channel.'**
   String get updateCheckFailed;
 
   /// No description provided for @upToDate.

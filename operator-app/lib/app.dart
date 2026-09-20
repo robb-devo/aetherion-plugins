@@ -63,10 +63,10 @@ class _OperatorAppState extends State<OperatorApp> {
         ],
       ),
     );
-    // Keep pendingUpdate so Settings can still open the release.
+    // Keep pendingUpdate so Settings can still install the release.
     widget.session.snoozeUpdatePrompt();
-    if (go == true) {
-      await openOperatorRelease(release);
+    if (go == true && _nav.currentContext != null) {
+      await applyOperatorUpdate(_nav.currentContext!, release);
     }
   }
 

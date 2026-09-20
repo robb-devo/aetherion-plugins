@@ -210,8 +210,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   if (pending != null)
                     FilledButton.icon(
                       key: const Key('open-release'),
-                      onPressed: () => openOperatorRelease(pending),
-                      icon: const Icon(Icons.open_in_new, size: 18),
+                      onPressed: () => applyOperatorUpdate(context, pending),
+                      icon: const Icon(Icons.system_update, size: 18),
                       label: Text(l10n.updateNow),
                     ),
                 ],

@@ -4,11 +4,11 @@ The phone checks this **public** URL on every start — **no GitHub token**:
 
 `https://donnernet.de/operator-app/latest.json`
 
-## One-time: install the new APK
+## One-time: install 0.2.5 (or newer)
 
-The APK you already have on the phone **cannot** check this URL (old build).
-Install `operator_app_0.2.2_release.apk` once by hand. After that, every newer
-`latest.json` on the site will show “Update available”.
+Older builds only opened GitHub. Install `operator_app_0.2.5` **once** by hand
+(or from the site). From then on, “Install update” downloads and installs inside
+the app — no GitHub redirect.
 
 ## Upload to the server
 
@@ -51,10 +51,10 @@ sudo cp operator_app_release.apk /var/www/operator-app/
 ## Push a new update later
 
 1. Bump `pubspec.yaml` + `lib/app_version.dart` (`kOperatorAppVersion` / `kOperatorBuildStamp`).
-2. `flutter build apk --release`
-3. Replace `operator_app_release.apk` on the server.
+2. Tag `operator-app-x.y.z` (CI builds APK + Windows zip) **or** `flutter build apk --release` locally.
+3. Replace `operator_app_release.apk` / `operator_app_windows.zip` on the server.
 4. Edit `latest.json` so `"version"` is **higher** than what operators already have.
-5. Operators open the app → dialog → download APK.
+5. Operators open the app → dialog → **Install update** → download + system installer (Android) / auto-swap (Windows).
 
 ## Verify
 
