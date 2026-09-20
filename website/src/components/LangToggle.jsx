@@ -51,19 +51,22 @@ export function FadeLang({ children, className = '', as: Comp = 'div' }) {
   const { lang } = useLang()
   const reduced = useReducedMotion()
   const MotionComp = Comp === 'span' ? motion.span : motion.div
+  const Wrapper = Comp === 'span' ? 'span' : 'div'
 
   return (
-    <AnimatePresence mode="wait" initial={false}>
-      <MotionComp
-        key={lang}
-        className={className}
-        initial={reduced ? { opacity: 0 } : { opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={reduced ? { opacity: 0 } : { opacity: 0, y: -6 }}
-        transition={{ duration: reduced ? 0.16 : 0.28, ease: easeOut }}
-      >
-        {children}
-      </MotionComp>
-    </AnimatePresence>
+    <Wrapper className={Comp === 'span' ? 'inline-grid max-w-full min-w-0' : 'grid min-w-0 w-full'}>
+      <AnimatePresence initial={false}>
+        <MotionComp
+          key={lang}
+          className={`col-start-1 row-start-1 min-w-0 ${className}`}
+          initial={reduced ? { opacity: 0 } : { opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={reduced ? { opacity: 0 } : { opacity: 0, y: -4 }}
+          transition={{ duration: reduced ? 0.15 : 0.28, ease: easeOut }}
+        >
+          {children}
+        </MotionComp>
+      </AnimatePresence>
+    </Wrapper>
   )
 }

@@ -1,5 +1,6 @@
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { createContext, useContext, useEffect, useRef, useState } from 'react'
+import { useLang } from '../i18n.jsx'
 import { easeOut, hoverLift, springSoft, tapPress } from '../motion.js'
 
 const ToastContext = createContext((message) => {
@@ -84,8 +85,9 @@ export function CopyButton({
   const showToast = useContext(ToastContext)
   const [copied, setCopied] = useState(false)
   const reduced = useReducedMotion()
+  const { lang, copy: labels } = useLang()
 
-  function copy() {
+  function copyValue() {
     writeClipboard(value)
     setCopied(true)
     showToast(toast)
@@ -95,9 +97,9 @@ export function CopyButton({
   return (
     <motion.button
       type="button"
-      onClick={copy}
+      onClick={copyValue}
       className={`cursor-pointer ${className}`}
-      title={title ?? `Kopiert ${value}`}
+      title={title ?? `${labels.ui.copy} ${value}`}
       whileHover={reduced ? undefined : { y: -1, scale: 1.03 }}
       whileTap={reduced ? undefined : tapPress}
       transition={springSoft}
@@ -105,7 +107,7 @@ export function CopyButton({
       <span className="inline-grid place-items-center">
         <AnimatePresence mode="popLayout" initial={false}>
           <motion.span
-            key={copied ? 'copied' : 'idle'}
+            key={`${lang}-${copied ? 'copied' : 'idle'}`}
             className="col-start-1 row-start-1 inline-flex items-center gap-2"
             initial={reduced ? { opacity: 0 } : { opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}

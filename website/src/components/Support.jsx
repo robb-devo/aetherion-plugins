@@ -102,7 +102,7 @@ export default function Support() {
                       {formatEuro(pack.euros, lang)}
                     </p>
                     <p className="mt-2 text-2xl font-extrabold text-amethyst">
-                      {formatShards(pack.shards, lang)} Shards
+                      {formatShards(pack.shards, lang)} {copy.support.shards}
                     </p>
                     <p className="mt-1 text-sm text-mist/65">{labels.hint}</p>
                   </FadeLang>

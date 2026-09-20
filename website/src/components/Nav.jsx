@@ -81,7 +81,7 @@ export default function Nav() {
                 {SITE.ip}
               </CopyButton>
               <MotionLink href="#support" className="btn btn-primary !px-4 !py-2 text-xs">
-                {copy.nav.support}
+                <FadeLang as="span">{copy.nav.support}</FadeLang>
               </MotionLink>
             </div>
             <motion.button
@@ -127,7 +127,7 @@ export default function Nav() {
                   variants={reduced ? undefined : fadeUpSafe}
                   onClick={() => setOpen(false)}
                 >
-                  {copy.nav[item.key]}
+                  <FadeLang as="span">{copy.nav[item.key]}</FadeLang>
                 </motion.a>
               ))}
               <CopyButton
