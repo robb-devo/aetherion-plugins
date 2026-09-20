@@ -5,12 +5,13 @@ import de.aetherion.quests.model.ObjectiveType;
 import de.aetherion.quests.model.Quest;
 import de.aetherion.quests.reward.Reward;
 
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
 /**
- * Minimal create-then-link quests for the NPC editor.
- * Talk-to-this-NPC stub; Peter can expand objectives later.
+ * Create-then-link quests for the NPC editor.
+ * Talk stub by default; Peter can switch to gather + edit rewards.
  */
 public final class EditorQuestFactory {
 
@@ -55,8 +56,75 @@ public final class EditorQuestFactory {
         );
         quest.setServiceId("editor");
         quest.addObjective(new Objective(ObjectiveType.TALK, talkTarget, 1));
+        applyDefaultRewards(quest);
+        return quest;
+    }
+
+    public static void applyDefaultRewards(Quest quest) {
+        if (quest == null) {
+            return;
+        }
+        quest.clearRewards();
         quest.addReward(new Reward("XP", 25));
         quest.addReward(new Reward("Coins", 50));
-        return quest;
+    }
+
+    public static void setRewards(Quest quest, List<Reward> rewards) {
+        if (quest == null) {
+            return;
+        }
+        quest.clearRewards();
+        if (rewards == null) {
+            return;
+        }
+        for (Reward reward : rewards) {
+            if (reward != null && reward.getName() != null && !reward.getName().isBlank() && reward.getAmount() > 0) {
+                quest.addReward(reward);
+            }
+        }
+    }
+
+    public static void setObjective(Quest quest, ObjectiveType type, String target, int amount) {
+        if (quest == null) {
+            return;
+        }
+        ObjectiveType safeType = type == null ? ObjectiveType.TALK : type;
+        String safeTarget = target == null || target.isBlank() ? quest.getId() : target.trim();
+        quest.clearObjectives();
+        quest.addObjective(new Objective(safeType, safeTarget, Math.max(1, amount)));
+        if (isGatherType(safeType)) {
+            quest.setServiceId("editor");
+        }
+    }
+
+    public static boolean isGatherType(ObjectiveType type) {
+        return type == ObjectiveType.COLLECT
+                || type == ObjectiveType.MINE
+                || type == ObjectiveType.BREAK
+                || type == ObjectiveType.HARVEST
+                || type == ObjectiveType.DELIVER
+                || type == ObjectiveType.FISH;
+    }
+
+    public static boolean isCurrencyReward(String name) {
+        if (name == null) {
+            return false;
+        }
+        String key = name.trim();
+        return key.equalsIgnoreCase("Coins")
+                || key.equalsIgnoreCase("Coin")
+                || key.equalsIgnoreCase("XP")
+                || key.equalsIgnoreCase("Exp")
+                || key.equalsIgnoreCase("Experience");
+    }
+
+    public static int bumpAmount(String rewardName, int current, int delta) {
+        int step = isCurrencyReward(rewardName) ? 10 : 1;
+        if (Math.abs(delta) >= 10) {
+            step *= 5;
+            delta = delta > 0 ? 1 : -1;
+        }
+        int next = current + (delta * step);
+        return Math.max(1, Math.min(1_000_000, next));
     }
 }

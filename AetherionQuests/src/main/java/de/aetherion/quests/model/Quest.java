@@ -92,6 +92,9 @@ public class Quest {
     private String requiredSkillId;
     private int requiredSkillLevel;
     private int requiredAccountLevel;
+    private String requiredPriorQuestId;
+    private String requiredItemId;
+    private int requiredItemAmount;
 
 
     /*
@@ -253,6 +256,11 @@ public class Quest {
     }
 
 
+    public void clearRewards() {
+        rewards.clear();
+    }
+
+
     public List<Reward> getRewards() {
 
         return Collections.unmodifiableList(
@@ -276,6 +284,11 @@ public class Quest {
                 objective
         );
 
+    }
+
+
+    public void clearObjectives() {
+        objectives.clear();
     }
 
 
@@ -449,6 +462,53 @@ public class Quest {
 
     public int getRequiredAccountLevel() {
         return requiredAccountLevel;
+    }
+
+
+    public void requirePriorQuest(String questId) {
+        this.requiredPriorQuestId = questId == null || questId.isBlank() ? null : questId.trim();
+    }
+
+
+    public String getRequiredPriorQuestId() {
+        return requiredPriorQuestId;
+    }
+
+
+    public boolean hasPriorQuestRequirement() {
+        return requiredPriorQuestId != null && !requiredPriorQuestId.isBlank();
+    }
+
+
+    public void requireItem(String itemId, int amount) {
+        this.requiredItemId = itemId == null || itemId.isBlank() ? null : itemId.trim();
+        this.requiredItemAmount = this.requiredItemId == null ? 0 : Math.max(1, amount);
+    }
+
+
+    public void clearItemRequirement() {
+        this.requiredItemId = null;
+        this.requiredItemAmount = 0;
+    }
+
+
+    public String getRequiredItemId() {
+        return requiredItemId;
+    }
+
+
+    public int getRequiredItemAmount() {
+        return requiredItemAmount;
+    }
+
+
+    public boolean hasItemRequirement() {
+        return requiredItemId != null && !requiredItemId.isBlank() && requiredItemAmount > 0;
+    }
+
+
+    public boolean hasRequirement() {
+        return hasSkillRequirement() || hasPriorQuestRequirement() || hasItemRequirement();
     }
 
 }

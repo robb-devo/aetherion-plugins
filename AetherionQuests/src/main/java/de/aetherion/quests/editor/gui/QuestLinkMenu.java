@@ -28,6 +28,7 @@ public final class QuestLinkMenu implements Listener {
     private static final int PREV = 48;
     private static final int BACK = 49;
     private static final int NEXT = 50;
+    private static final int EDIT = 51;
 
     private final NpcEditor editor;
 
@@ -46,15 +47,17 @@ public final class QuestLinkMenu implements Listener {
                 54,
                 EditorItems.title(player, "npc_quest", "§8Link Quest")
         );
-        EditorItems.fill(inventory);
+        EditorItems.chrome(inventory);
         inventory.setItem(4, EditorItems.button(
                 Material.MAP,
                 "§aLink or create a quest",
                 npc.hasLinkedQuest() ? "§7Current §f" + npc.getLinkedQuestId() : "§7None linked",
                 "§7Click a quest below to link it.",
-                "§7Or §fCreate new quest §7then link.",
+                "§7Or §fCreate new quest §7— type a title.",
+                "§7Then edit rewards / gather.",
                 "§7Offer/start/turn-in from dialogue."
         ));
+        inventory.setItem(8, EditorItems.saved(false));
         int start = safe * PAGE_SIZE;
         for (int i = 0; i < PAGE_SIZE; i++) {
             int index = start + i;
@@ -85,6 +88,17 @@ public final class QuestLinkMenu implements Listener {
         inventory.setItem(PREV, EditorItems.button(Material.ARROW, "§7Previous"));
         inventory.setItem(BACK, EditorItems.button(Material.ARROW, "§7Back"));
         inventory.setItem(NEXT, EditorItems.button(Material.ARROW, "§7Next"));
+        boolean editorQuest = npc.hasLinkedQuest()
+                && editor != null
+                && editor.editorQuests().get(npc.getLinkedQuestId()) != null;
+        inventory.setItem(EDIT, EditorItems.button(
+                editorQuest ? Material.GOLD_INGOT : Material.GRAY_DYE,
+                editorQuest ? "§6Edit this quest" : "§8Edit this quest",
+                editorQuest
+                        ? "§7Rewards, requirements, gather."
+                        : "§7Create a new path to edit.",
+                "§8Story quests stay read-only"
+        ));
         player.openInventory(inventory);
     }
 
@@ -150,6 +164,14 @@ public final class QuestLinkMenu implements Listener {
             editor.prompt(player, EditorSessions.Prompt.QUEST_ID, "Type an existing quest id");
             return;
         }
+        if (slot == EDIT) {
+            if (editor.editorQuests().get(npc.getLinkedQuestId()) == null) {
+                player.sendMessage("§eCreate a new quest path to edit rewards.");
+                return;
+            }
+            QuestEditMenu.open(player, npc);
+            return;
+        }
         if (slot < 9 || slot > 44) {
             return;
         }
@@ -160,6 +182,7 @@ public final class QuestLinkMenu implements Listener {
         }
         Quest quest = quests.get(index);
         npc.setLinkedQuestId(quest.getId());
+        npc.setMode(de.aetherion.quests.editor.NpcMode.QUEST);
         editor.persistQuiet(npc);
         player.sendMessage("§aLinked §f" + quest.getTitle() + " §7(§f" + quest.getId() + "§7).");
         player.sendMessage("§7Empty-choice pages will offer this quest. Or add an Offer-quest choice.");

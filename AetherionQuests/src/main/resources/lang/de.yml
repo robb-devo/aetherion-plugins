@@ -23,6 +23,11 @@ ui:
   npc_quest: "§8Quest verknüpfen"
   npc_confirm: "§8Bestätigen"
   npc_help: "§8NPC-Hilfe"
+  npc_quest_edit: "§8Quest bearbeiten"
+  npc_rewards: "§8Belohnungen"
+  npc_requirements: "§8Voraussetzungen"
+  npc_objective: "§8Ziel"
+  npc_gather: "§8Item wählen"
 
 progress:
   catch_pet: "Fang ein Pet"

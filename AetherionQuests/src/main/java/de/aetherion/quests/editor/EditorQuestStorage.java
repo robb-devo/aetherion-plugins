@@ -12,7 +12,9 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.logging.Level;
@@ -108,22 +110,28 @@ public final class EditorQuestStorage {
         return quests.get(id.toLowerCase(Locale.ROOT));
     }
 
+    public synchronized boolean isEditorQuest(String id) {
+        return get(id) != null;
+    }
+
+    public synchronized void persist(Quest quest, QuestManager manager) {
+        if (quest == null || quest.getId() == null || quest.getId().isBlank()) {
+            return;
+        }
+        quests.put(quest.getId().toLowerCase(Locale.ROOT), quest);
+        save();
+        if (manager != null) {
+            manager.registerQuest(quest);
+        }
+    }
+
     private synchronized void save() {
         YamlConfiguration yaml = new YamlConfiguration();
         yaml.options().header("""
                 Quests created from the NPC Editor (Link Quest → Create).
                 """);
         for (Quest quest : quests.values()) {
-            String path = "quests." + quest.getId();
-            yaml.set(path + ".title", quest.getTitle());
-            yaml.set(path + ".description", quest.getDescription());
-            yaml.set(path + ".service", quest.getServiceId());
-            if (!quest.getObjectives().isEmpty()) {
-                Objective objective = quest.getObjectives().get(0);
-                yaml.set(path + ".objective", objective.getType().name());
-                yaml.set(path + ".target", objective.getTarget());
-                yaml.set(path + ".amount", objective.getAmount());
-            }
+            write(yaml, quest);
         }
         try {
             yaml.save(file);
@@ -132,22 +140,125 @@ public final class EditorQuestStorage {
         }
     }
 
-    private static Quest read(String id, ConfigurationSection section) {
+    static void write(YamlConfiguration yaml, Quest quest) {
+        String path = "quests." + quest.getId();
+        yaml.set(path + ".title", quest.getTitle());
+        yaml.set(path + ".description", quest.getDescription());
+        yaml.set(path + ".service", quest.getServiceId());
+        if (quest.getRequiredAccountLevel() > 0) {
+            yaml.set(path + ".requireAccountLevel", quest.getRequiredAccountLevel());
+        }
+        if (quest.hasPriorQuestRequirement()) {
+            yaml.set(path + ".requirePriorQuest", quest.getRequiredPriorQuestId());
+        }
+        if (quest.hasItemRequirement()) {
+            yaml.set(path + ".requireItem", quest.getRequiredItemId());
+            yaml.set(path + ".requireItemAmount", quest.getRequiredItemAmount());
+        }
+        List<Map<String, Object>> rewards = new ArrayList<>();
+        for (Reward reward : quest.getRewards()) {
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("name", reward.getName());
+            row.put("amount", reward.getAmount());
+            rewards.add(row);
+        }
+        yaml.set(path + ".rewards", rewards);
+        List<Map<String, Object>> objectives = new ArrayList<>();
+        for (Objective objective : quest.getObjectives()) {
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("type", objective.getType().name());
+            row.put("target", objective.getTarget());
+            row.put("amount", objective.getAmount());
+            objectives.add(row);
+        }
+        yaml.set(path + ".objectives", objectives);
+        if (!quest.getObjectives().isEmpty()) {
+            Objective first = quest.getObjectives().get(0);
+            yaml.set(path + ".objective", first.getType().name());
+            yaml.set(path + ".target", first.getTarget());
+            yaml.set(path + ".amount", first.getAmount());
+        }
+    }
+
+    static Quest read(String id, ConfigurationSection section) {
         String title = section.getString("title", id);
         String description = section.getString("description", "Talk to this NPC. Created in the NPC Editor.");
-        String npcId = section.getString("target", id);
         Quest quest = new Quest(id.toLowerCase(Locale.ROOT), title, description);
         quest.setServiceId(section.getString("service", "editor"));
-        String typeName = section.getString("objective", "TALK");
-        ObjectiveType type;
-        try {
-            type = ObjectiveType.valueOf(typeName.toUpperCase(Locale.ROOT));
-        } catch (IllegalArgumentException ignored) {
-            type = ObjectiveType.TALK;
+        quest.requireAccountLevel(section.getInt("requireAccountLevel", 0));
+        quest.requirePriorQuest(section.getString("requirePriorQuest"));
+        String requireItem = section.getString("requireItem");
+        if (requireItem != null && !requireItem.isBlank()) {
+            quest.requireItem(requireItem, section.getInt("requireItemAmount", 1));
         }
-        quest.addObjective(new Objective(type, npcId, section.getInt("amount", 1)));
-        quest.addReward(new Reward("XP", 25));
-        quest.addReward(new Reward("Coins", 50));
+        List<Map<?, ?>> rewardRows = section.getMapList("rewards");
+        if (rewardRows.isEmpty()) {
+            EditorQuestFactory.applyDefaultRewards(quest);
+        } else {
+            for (Map<?, ?> raw : rewardRows) {
+                if (raw == null) {
+                    continue;
+                }
+                String name = stringOf(raw.get("name"), "Coins");
+                int amount = intOf(raw.get("amount"), 1);
+                if (amount > 0) {
+                    quest.addReward(new Reward(name, amount));
+                }
+            }
+            if (quest.getRewards().isEmpty()) {
+                EditorQuestFactory.applyDefaultRewards(quest);
+            }
+        }
+        List<Map<?, ?>> objectiveRows = section.getMapList("objectives");
+        if (!objectiveRows.isEmpty()) {
+            for (Map<?, ?> raw : objectiveRows) {
+                if (raw == null) {
+                    continue;
+                }
+                quest.addObjective(new Objective(
+                        parseType(stringOf(raw.get("type"), "TALK")),
+                        stringOf(raw.get("target"), id),
+                        intOf(raw.get("amount"), 1)
+                ));
+            }
+        } else {
+            String npcId = section.getString("target", id);
+            quest.addObjective(new Objective(
+                    parseType(section.getString("objective", "TALK")),
+                    npcId,
+                    section.getInt("amount", 1)
+            ));
+        }
         return quest;
+    }
+
+    private static ObjectiveType parseType(String typeName) {
+        try {
+            return ObjectiveType.valueOf(typeName.toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException ignored) {
+            return ObjectiveType.TALK;
+        }
+    }
+
+    private static String stringOf(Object value, String fallback) {
+        if (value == null) {
+            return fallback;
+        }
+        String text = String.valueOf(value);
+        return text.isBlank() ? fallback : text;
+    }
+
+    private static int intOf(Object value, int fallback) {
+        if (value instanceof Number number) {
+            return number.intValue();
+        }
+        if (value == null) {
+            return fallback;
+        }
+        try {
+            return Integer.parseInt(String.valueOf(value));
+        } catch (NumberFormatException ignored) {
+            return fallback;
+        }
     }
 }

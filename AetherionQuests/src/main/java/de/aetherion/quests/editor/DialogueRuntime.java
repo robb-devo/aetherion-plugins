@@ -103,7 +103,7 @@ public final class DialogueRuntime implements Listener, EditorQuestHook {
             ChoiceMenu.open(player, npc, page);
             return;
         }
-        if (npc.hasLinkedQuest()) {
+        if (npc.isQuestNpc() && npc.hasLinkedQuest()) {
             advanceTalk(player, npc);
             offer(player, npc, npc.getLinkedQuestId());
         }
