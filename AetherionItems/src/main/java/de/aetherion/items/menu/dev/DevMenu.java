@@ -2272,7 +2272,7 @@ public class DevMenu {
                 return ids.toArray(String[]::new);
             }
         }
-        return new String[] {"mine", "forage", "catch", "roam", "combat", "fish", "trade", "quest", "pad"};
+        return new String[] {"mine", "forage", "catch", "roam", "combat", "fish", "farm", "trade", "quest", "pad"};
     }
 
     private void handleTestbots(Player player, String action, ClickType click) {
@@ -2387,14 +2387,7 @@ public class DevMenu {
         int page = Math.max(0, Math.min(pages - 1, pageIndex));
         inventory.setItem(4, button(Material.PLAYER_HEAD, "§bTestbots §8· §7p" + (page + 1) + "/" + pages,
                 "testbot:refresh",
-                "§7enabled: " + (report.enabled() ? "§ayes" : "§cno"),
-                "§7runner: " + (report.runnerReachable() ? "§aup" : "§cdown"),
-                "§8" + report.runnerDetail(),
-                "§7TPS §f" + (report.tps() < 0 ? "n/a" : String.format("%.1f", report.tps()))
-                        + " §8· §7online §f" + report.onlineTotal() + "§7/§f" + report.maxTotal(),
-                "",
-                "§eClick to refresh",
-                "§8Wave 1 + combat / fish / trade / quest / pad."));
+                headerLore(report)));
 
         int[] statusSlots = {10, 19, 28, 37};
         int[] countSlots = {11, 20, 29, 38};
@@ -2450,7 +2443,7 @@ public class DevMenu {
         inventory.setItem(49, button(Material.BARRIER, "§cClose", "close"));
         if (page + 1 < pages) {
             inventory.setItem(53, button(Material.ARROW, "§eMore roles", "pageidx:TESTBOTS:" + (page + 1),
-                    "§7combat · fish · trade · quest · pad"));
+                    "§7combat · fish · farm · trade · quest · pad"));
         }
     }
 
@@ -2496,6 +2489,7 @@ public class DevMenu {
             case "catch" -> Material.SNOWBALL;
             case "combat" -> Material.IRON_SWORD;
             case "fish" -> Material.FISHING_ROD;
+            case "farm" -> Material.GOLDEN_HOE;
             case "trade" -> Material.GOLD_INGOT;
             case "quest" -> Material.WRITABLE_BOOK;
             case "pad" -> Material.SLIME_BLOCK;
@@ -2511,11 +2505,32 @@ public class DevMenu {
             case "roam" -> "§eRoam";
             case "combat" -> "§cCombat";
             case "fish" -> "§3Fish";
+            case "farm" -> "§6Farm";
             case "trade" -> "§6Trade";
             case "quest" -> "§dQuest";
             case "pad" -> "§aPad";
             default -> "§f" + role;
         };
+    }
+
+    private static String[] headerLore(TestBotReport report) {
+        java.util.List<String> lines = new java.util.ArrayList<>();
+        lines.add("§7enabled: " + (report.enabled() ? "§ayes" : "§cno"));
+        lines.add("§7runner: " + (report.runnerReachable() ? "§aup" : "§cdown"));
+        lines.add("§8" + report.runnerDetail());
+        lines.add("§7TPS §f" + (report.tps() < 0 ? "n/a" : String.format("%.1f", report.tps()))
+                + " §8· §7online §f" + report.onlineTotal() + "§7/§f" + report.maxTotal());
+        de.aetherion.core.api.TestBotsAccess access = DevBridges.testBots();
+        if (access != null) {
+            java.util.List<String> extra = access.reportLore();
+            if (extra != null) {
+                lines.addAll(extra);
+            }
+        }
+        lines.add("");
+        lines.add("§eClick to refresh");
+        lines.add("§8mine forage catch roam · combat fish farm trade quest pad");
+        return lines.toArray(String[]::new);
     }
 
     private int holderIndex(Player player) {

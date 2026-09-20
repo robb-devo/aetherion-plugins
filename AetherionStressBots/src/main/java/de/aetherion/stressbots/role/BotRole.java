@@ -5,7 +5,7 @@ import java.util.Locale;
 /**
  * All Mineflayer bot identities this plugin kits.
  * Wave 1 QA roles: {@link #MINE}, {@link #FORAGE}, {@link #CATCH}, {@link #ROAM}.
- * Wave 2 QA roles: {@link #COMBAT}, {@link #FISH}, {@link #TRADE}, {@link #QUEST}, {@link #PAD}.
+ * Wave 2 QA roles: {@link #COMBAT}, {@link #FISH}, {@link #FARM}, {@link #TRADE}, {@link #QUEST}, {@link #PAD}.
  * {@link #MINING} stays as the Phase 1 {@code StressM*} prefix.
  */
 public enum BotRole {
@@ -15,6 +15,7 @@ public enum BotRole {
     ROAM("roam", 1),
     COMBAT("combat", 2),
     FISH("fish", 2),
+    FARM("farm", 2),
     TRADE("trade", 2),
     QUEST("quest", 2),
     PAD("pad", 2),
@@ -76,6 +77,10 @@ public enum BotRole {
         }
         if ("fishing".equals(key) || "angler".equals(key) || "rod".equals(key)) {
             return FISH;
+        }
+        if ("farm".equals(key) || "farming".equals(key) || "hoe".equals(key) || "crops".equals(key)
+                || "harvest".equals(key)) {
+            return FARM;
         }
         if ("ah".equals(key) || "auction".equals(key) || "auction-house".equals(key)
                 || "bazaar".equals(key) || "market".equals(key) || "trader".equals(key)) {

@@ -75,7 +75,7 @@ public final class TestBotController implements TestBotsAccess {
         }
         BotRole role = requireStartable(roleId);
         if (role == null) {
-            return "§cUnknown role. Wave 1: mine, forage, catch, roam. Wave 2: combat, fish, trade, quest, pad.";
+            return "§cUnknown role. Wave 1: mine, forage, catch, roam. Wave 2: combat, fish, farm, trade, quest, pad.";
         }
         BotRoleHandler handler = plugin.getRegistry().handler(role);
         int clamped = clampCount(role, count <= 0 ? Math.max(1, desired.getOrDefault(role, 1)) : count);
@@ -172,6 +172,11 @@ public final class TestBotController implements TestBotsAccess {
     @Override
     public TestBotView bot(String name) {
         return reports.bot(name);
+    }
+
+    @Override
+    public java.util.List<String> reportLore() {
+        return reports.loreLines();
     }
 
     public boolean runnerReachable() {

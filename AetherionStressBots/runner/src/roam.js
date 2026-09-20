@@ -1,5 +1,6 @@
 import pathfinderPkg from 'mineflayer-pathfinder'
 import { applyIslandMovements, cancelPath, horizontalDistance, nearestAnchor, wanderOnIsland } from './safety.js'
+import { assignGait, idleFidget, setNearGoal, tunePathfinder } from './motion.js'
 import { markError, note } from './util.js'
 
 const { goals, Movements, pathfinder } = pathfinderPkg
@@ -11,6 +12,7 @@ const HOSTILE = ['zombie', 'husk', 'skeleton', 'stray', 'creeper', 'spider', 'dr
  */
 export function createRoamLoop(bot, cfg, log) {
   bot.loadPlugin(pathfinder)
+  assignGait(bot)
 
   const waypoints = (cfg.waypoints || []).map((p) => ({
     x: Number(p.x),
@@ -36,10 +38,10 @@ export function createRoamLoop(bot, cfg, log) {
     if (!bot.entity || bot.qaSuspended) return
 
     if (!bot.pathfinder.movements) {
-      bot.pathfinder.setMovements(applyIslandMovements(new Movements(bot), {
+      bot.pathfinder.setMovements(tunePathfinder(bot, applyIslandMovements(new Movements(bot), {
         canDig: false,
         maxDrop: cfg.maxDrop ?? 2
-      }))
+      }), { maxDrop: cfg.maxDrop ?? 2, sprint: bot.qaSprint }))
     }
 
     const pad = home()
@@ -52,19 +54,19 @@ export function createRoamLoop(bot, cfg, log) {
       cancelPath(bot)
       note(bot, `flee ${hostile.name || 'mob'}`, 'recovering')
       wanderOnIsland(bot, pad, Math.min(4, hopRadius), goals)
-      fidget(bot)
+      idleFidget(bot, 'recovering')
       return
     }
 
     if (waypoints.length === 0) {
       note(bot, 'roam idle (no waypoints)', 'idle')
-      fidget(bot)
+      idleFidget(bot, 'idle')
       return
     }
 
     if (bot.pathfinder.isMoving()) {
       bot.qaActivity = 'roaming'
-    } else if (Date.now() - lastHop > 1400 || bot.qaNeedNewGoal) {
+    } else if (Date.now() - lastHop > 2400 || bot.qaNeedNewGoal) {
       bot.qaNeedNewGoal = false
       lastHop = Date.now()
       const nearby = waypoints.filter((wp) => horizontalDistance(bot.entity.position, wp) <= maxHop)
@@ -73,7 +75,7 @@ export function createRoamLoop(bot, cfg, log) {
         : null
       if (dest) {
         note(bot, `pad hop ${dest.x.toFixed(0)} ${dest.z.toFixed(0)}`, 'roaming')
-        bot.pathfinder.setGoal(new goals.GoalNear(dest.x, dest.y, dest.z, 2))
+        setNearGoal(bot, goals, dest, 2)
       } else {
         note(bot, 'local hop', 'roaming')
         wanderOnIsland(bot, pad, hopRadius, goals)
@@ -82,28 +84,9 @@ export function createRoamLoop(bot, cfg, log) {
       bot.qaActivity = 'roaming'
     }
 
-    if (Date.now() - lastFidget > 3500) {
+    if (Date.now() - lastFidget > 4500) {
       lastFidget = Date.now()
-      fidget(bot)
-    }
-  }
-
-  function fidget(botRef) {
-    const roll = Math.random()
-    try {
-      if (roll < 0.34) {
-        botRef.setControlState('jump', true)
-        setTimeout(() => botRef.setControlState('jump', false), 220)
-        note(botRef, 'jump', 'roaming')
-      } else if (roll < 0.67) {
-        botRef.swingArm()
-        note(botRef, 'swing', 'roaming')
-      } else {
-        botRef.look(Math.random() * Math.PI * 2, (Math.random() - 0.5) * 0.5, true).catch(() => {})
-        note(botRef, 'look around', 'roaming')
-      }
-    } catch (err) {
-      markError(botRef, err)
+      idleFidget(bot, 'roaming')
     }
   }
 
