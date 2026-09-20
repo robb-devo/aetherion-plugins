@@ -125,7 +125,7 @@ abstract class AppLocalizations {
   /// No description provided for @loginBody.
   ///
   /// In en, this message translates to:
-  /// **'Local operator list — add teammate names, optional PIN. No OAuth in this MVP.'**
+  /// **'Local operator list — add teammate names, optional PIN. Stay signed in until you sign out.'**
   String get loginBody;
 
   /// No description provided for @signIn.
@@ -254,6 +254,12 @@ abstract class AppLocalizations {
   /// **'Team'**
   String get navTeam;
 
+  /// No description provided for @navSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get navSettings;
+
   /// No description provided for @signOut.
   ///
   /// In en, this message translates to:
@@ -365,7 +371,7 @@ abstract class AppLocalizations {
   /// No description provided for @extensionHint.
   ///
   /// In en, this message translates to:
-  /// **'Swap MockCraftyClient for HttpCraftyClient when CRAFTY_BASE_URL and CRAFTY_API_TOKEN are set. No credentials live in source.'**
+  /// **'Live Crafty binds from Settings (URL + API token) or dart-define. No credentials live in source.'**
   String get extensionHint;
 
   /// No description provided for @devkitTitle.
@@ -377,7 +383,7 @@ abstract class AppLocalizations {
   /// No description provided for @devkitBody.
   ///
   /// In en, this message translates to:
-  /// **'Command console against the selected backend. Soft restart and whitelist notes are placeholders until Crafty is wired.'**
+  /// **'Command console against the selected backend. Restart, start/stop, logs, and whitelist go to Crafty when live.'**
   String get devkitBody;
 
   /// No description provided for @targetServer.
@@ -422,11 +428,47 @@ abstract class AppLocalizations {
   /// **'Queue a soft restart for {server}? Mock mode only logs the intent.'**
   String softRestartConfirm(String server);
 
+  /// No description provided for @softRestartConfirmLive.
+  ///
+  /// In en, this message translates to:
+  /// **'Queue a Crafty restart for {server}?'**
+  String softRestartConfirmLive(String server);
+
   /// No description provided for @confirm.
   ///
   /// In en, this message translates to:
   /// **'Confirm'**
   String get confirm;
+
+  /// No description provided for @startServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get startServer;
+
+  /// No description provided for @startServerConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Start {server}?'**
+  String startServerConfirm(String server);
+
+  /// No description provided for @stopServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get stopServer;
+
+  /// No description provided for @stopServerConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop {server}?'**
+  String stopServerConfirm(String server);
+
+  /// No description provided for @loadLogs.
+  ///
+  /// In en, this message translates to:
+  /// **'Load logs'**
+  String get loadLogs;
 
   /// No description provided for @whitelistNote.
   ///
@@ -437,7 +479,7 @@ abstract class AppLocalizations {
   /// No description provided for @whitelistNoteHint.
   ///
   /// In en, this message translates to:
-  /// **'Who / why — stored locally until Crafty whitelist is wired'**
+  /// **'Who / why — stored locally; live Crafty also runs whitelist add <name>'**
   String get whitelistNoteHint;
 
   /// No description provided for @whitelistSaved.
@@ -445,6 +487,126 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Note saved locally.'**
   String get whitelistSaved;
+
+  /// No description provided for @whitelistSynced.
+  ///
+  /// In en, this message translates to:
+  /// **'Note saved and whitelist add sent to Crafty.'**
+  String get whitelistSynced;
+
+  /// No description provided for @settingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get settingsTitle;
+
+  /// No description provided for @settingsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Crafty Controller URL and API token stay on this device. Token prefers secure storage.'**
+  String get settingsBody;
+
+  /// No description provided for @usingLive.
+  ///
+  /// In en, this message translates to:
+  /// **'Live Crafty'**
+  String get usingLive;
+
+  /// No description provided for @usingMock.
+  ///
+  /// In en, this message translates to:
+  /// **'Mock Crafty — add URL and token to go live'**
+  String get usingMock;
+
+  /// No description provided for @craftyUrlHint.
+  ///
+  /// In en, this message translates to:
+  /// **'https://crafty-host:8443'**
+  String get craftyUrlHint;
+
+  /// No description provided for @craftyTokenHint.
+  ///
+  /// In en, this message translates to:
+  /// **'API token'**
+  String get craftyTokenHint;
+
+  /// No description provided for @craftyTokenSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Token saved — leave blank to keep it'**
+  String get craftyTokenSet;
+
+  /// No description provided for @allowInsecureTls.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow self-signed TLS'**
+  String get allowInsecureTls;
+
+  /// No description provided for @savedSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Crafty settings saved.'**
+  String get savedSettings;
+
+  /// No description provided for @testConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'Test connection'**
+  String get testConnection;
+
+  /// No description provided for @currentVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Version {version}'**
+  String currentVersion(String version);
+
+  /// No description provided for @updateHowTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Updates are GitHub Releases tagged operator-app-x.y.z. Bump pubspec and lib/app_version.dart together.'**
+  String get updateHowTo;
+
+  /// No description provided for @checkUpdates.
+  ///
+  /// In en, this message translates to:
+  /// **'Check for updates'**
+  String get checkUpdates;
+
+  /// No description provided for @updateAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Update {version} available'**
+  String updateAvailable(String version);
+
+  /// No description provided for @updateBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You are on {current}. Release {next} is on GitHub.'**
+  String updateBody(String current, String next);
+
+  /// No description provided for @later.
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get later;
+
+  /// No description provided for @updateNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Open release'**
+  String get updateNow;
+
+  /// No description provided for @updateCheckFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not reach GitHub Releases.'**
+  String get updateCheckFailed;
+
+  /// No description provided for @upToDate.
+  ///
+  /// In en, this message translates to:
+  /// **'No newer operator-app release.'**
+  String get upToDate;
 
   /// No description provided for @linksTitle.
   ///
@@ -521,7 +683,7 @@ abstract class AppLocalizations {
   /// No description provided for @teamBody.
   ///
   /// In en, this message translates to:
-  /// **'Names live on this device. Optional PIN is hashed locally — never sent anywhere in MVP.'**
+  /// **'Names live on this device. Optional PIN is hashed locally. Session stays until you sign out.'**
   String get teamBody;
 
   /// No description provided for @nameRequired.

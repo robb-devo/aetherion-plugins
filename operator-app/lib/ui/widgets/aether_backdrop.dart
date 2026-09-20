@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../theme/aether_colors.dart';
 
@@ -39,43 +40,18 @@ class AetherBackdrop extends StatelessWidget {
 class AetherMark extends StatelessWidget {
   const AetherMark({super.key, this.size = 36});
 
+  /// Live site mark from https://donnernet.de/favicon.svg
+  static const assetPath = 'assets/brand/favicon.svg';
+
   final double size;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
+    return SvgPicture.asset(
+      assetPath,
       width: size,
       height: size,
-      child: CustomPaint(painter: _GemPainter()),
+      semanticsLabel: 'Aetherion',
     );
   }
-}
-
-class _GemPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final gem = Path()
-      ..moveTo(size.width * 0.5, size.height * 0.08)
-      ..lineTo(size.width * 0.88, size.height * 0.38)
-      ..lineTo(size.width * 0.5, size.height * 0.92)
-      ..lineTo(size.width * 0.12, size.height * 0.38)
-      ..close();
-    final fill = Paint()
-      ..shader = const LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [AetherColors.amethyst, AetherColors.cyan],
-      ).createShader(Offset.zero & size);
-    canvas.drawPath(gem, fill);
-    canvas.drawPath(
-      gem,
-      Paint()
-        ..color = const Color(0x66FFFFFF)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.2,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

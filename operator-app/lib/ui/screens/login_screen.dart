@@ -94,7 +94,7 @@ class LoginScreen extends StatelessWidget {
                           pin = await showPinDialog(context, account);
                           if (pin == null) return;
                         }
-                        session.signIn(account, pin: pin);
+                        await session.signIn(account, pin: pin);
                       },
                     ),
                   ),

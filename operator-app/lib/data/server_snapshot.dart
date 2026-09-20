@@ -27,6 +27,7 @@ class ServerSnapshot {
     bool? online,
     int? players,
     double? tps,
+    int? maxPlayers,
   }) {
     return ServerSnapshot(
       id: id,
@@ -34,7 +35,7 @@ class ServerSnapshot {
       role: role,
       online: online ?? this.online,
       players: players ?? this.players,
-      maxPlayers: maxPlayers,
+      maxPlayers: maxPlayers ?? this.maxPlayers,
       tps: tps ?? this.tps,
       craftyId: craftyId,
     );

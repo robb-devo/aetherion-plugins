@@ -1,25 +1,44 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../app_version.dart';
 import '../crafty/crafty_client.dart';
 import '../crafty/crafty_config.dart';
 import '../data/account_store.dart';
 import '../data/console_line.dart';
+import '../data/crafty_secrets.dart';
 import '../data/operator_account.dart';
 import '../data/pin.dart';
 import '../data/server_snapshot.dart';
+import '../data/session_store.dart';
+import '../updates/update_checker.dart';
 
 class OperatorSession extends ChangeNotifier {
   OperatorSession({
     AccountPersistence? persistence,
+    SessionStore? sessionStore,
+    CraftySecrets? secrets,
     CraftyClient? crafty,
+    UpdateChecker? updates,
     this.now,
+    this.appVersion = kOperatorAppVersion,
   }) : persistence = persistence ?? SharedPrefsAccountPersistence(),
-       crafty = crafty ?? createCraftyClient(CraftyConfig.fromEnvironment());
+       sessionStore = sessionStore ?? PrefsSessionStore(),
+       secrets = secrets ?? DeviceCraftySecrets(),
+       updates = updates ?? GithubReleaseChecker(),
+       _lockedCrafty = crafty != null,
+       _crafty = crafty ?? createCraftyClient();
 
   final AccountPersistence persistence;
-  final CraftyClient crafty;
+  final SessionStore sessionStore;
+  final CraftySecrets secrets;
+  final UpdateChecker updates;
   final DateTime Function()? now;
+  final String appVersion;
+  final bool _lockedCrafty;
+
+  CraftyClient _crafty;
+  CraftyClient get crafty => _crafty;
 
   DateTime _now() => now?.call() ?? DateTime.now();
 
@@ -35,6 +54,17 @@ class OperatorSession extends ChangeNotifier {
   final List<ConsoleLine> console = [];
   final List<WhitelistNote> whitelistNotes = [];
   bool sendingCommand = false;
+  bool loadingLogs = false;
+
+  StoredCraftySettings craftySettings = const StoredCraftySettings();
+  bool savingCrafty = false;
+  String? craftyTestMessage;
+  bool? craftyTestOk;
+
+  AppRelease? pendingUpdate;
+  bool updateCheckFailed = false;
+
+  bool get craftyLive => !_crafty.mock;
 
   Future<void> bootstrap() async {
     accounts = await persistence.load();
@@ -50,7 +80,33 @@ class OperatorSession extends ChangeNotifier {
       }
     }
     await _loadLocale();
+    craftySettings = await secrets.load();
+    if (!_lockedCrafty) {
+      _crafty = createCraftyClient(_resolveConfig());
+    }
+    await _restoreSession();
     notifyListeners();
+    if (current != null) {
+      await refreshNetwork();
+    }
+    await checkForUpdate();
+  }
+
+  CraftyConfig _resolveConfig() {
+    if (craftySettings.isConfigured) return craftySettings.toConfig();
+    return CraftyConfig.fromEnvironment();
+  }
+
+  Future<void> _restoreSession() async {
+    final id = await sessionStore.readAccountId();
+    if (id == null) return;
+    for (final account in accounts) {
+      if (account.id == id) {
+        current = account;
+        return;
+      }
+    }
+    await sessionStore.clear();
   }
 
   Future<void> _loadLocale() async {
@@ -58,9 +114,7 @@ class OperatorSession extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       final code = prefs.getString('aetherion.operator.locale');
       if (code == 'de') locale = LocaleOption.de;
-    } catch (_) {
-      // Tests without plugin binding keep EN.
-    }
+    } catch (_) {}
   }
 
   Future<void> setLocale(LocaleOption next) async {
@@ -95,25 +149,73 @@ class OperatorSession extends ChangeNotifier {
 
   Future<void> removeAccount(String id) async {
     accounts = accounts.where((a) => a.id != id).toList();
-    if (current?.id == id) current = null;
+    if (current?.id == id) {
+      current = null;
+      await sessionStore.clear();
+    }
     await persistence.save(accounts);
     notifyListeners();
   }
 
-  String? signIn(OperatorAccount account, {String? pin}) {
+  Future<String?> signIn(OperatorAccount account, {String? pin}) async {
     if (account.hasPin) {
       if (pin == null || !account.checkPin(pin)) {
         return 'pin';
       }
     }
     current = account;
+    await sessionStore.writeAccountId(account.id);
     notifyListeners();
     refreshNetwork();
     return null;
   }
 
-  void signOut() {
+  Future<void> signOut() async {
     current = null;
+    await sessionStore.clear();
+    notifyListeners();
+  }
+
+  Future<void> saveCraftySettings({
+    required String baseUrl,
+    required String apiToken,
+    required bool allowInsecureTls,
+  }) async {
+    savingCrafty = true;
+    craftyTestMessage = null;
+    craftyTestOk = null;
+    notifyListeners();
+    final token = apiToken.trim().isEmpty
+        ? craftySettings.apiToken
+        : apiToken.trim();
+    await secrets.save(
+      baseUrl: baseUrl,
+      apiToken: token,
+      allowInsecureTls: allowInsecureTls,
+    );
+    craftySettings = await secrets.load();
+    if (!_lockedCrafty) {
+      _crafty = createCraftyClient(_resolveConfig());
+    }
+    savingCrafty = false;
+    notifyListeners();
+    await refreshNetwork();
+  }
+
+  Future<void> testCraftyConnection() async {
+    craftyTestMessage = null;
+    craftyTestOk = null;
+    notifyListeners();
+    try {
+      final snap = await _crafty.fetchNetwork();
+      craftyTestOk = true;
+      craftyTestMessage =
+          '${snap.servers.length} server(s) · ${snap.mock ? 'mock' : 'live'}';
+      network = snap;
+    } catch (e) {
+      craftyTestOk = false;
+      craftyTestMessage = e.toString();
+    }
     notifyListeners();
   }
 
@@ -122,7 +224,7 @@ class OperatorSession extends ChangeNotifier {
     networkError = null;
     notifyListeners();
     try {
-      network = await crafty.fetchNetwork();
+      network = await _crafty.fetchNetwork();
       if (network!.servers.isNotEmpty &&
           !network!.servers.any((s) => s.id == selectedServerId)) {
         selectedServerId = network!.servers.first.id;
@@ -162,7 +264,7 @@ class OperatorSession extends ChangeNotifier {
     );
     notifyListeners();
     try {
-      final result = await crafty.sendCommand(
+      final result = await _crafty.sendCommand(
         serverId: selectedServerId,
         command: trimmed,
       );
@@ -190,17 +292,32 @@ class OperatorSession extends ChangeNotifier {
   }
 
   Future<void> queueSoftRestart() async {
+    await _runAction('soft restart', (id) => _crafty.softRestart(serverId: id));
+  }
+
+  Future<void> queueStart() async {
+    await _runAction('start', (id) => _crafty.startServer(serverId: id));
+  }
+
+  Future<void> queueStop() async {
+    await _runAction('stop', (id) => _crafty.stopServer(serverId: id));
+  }
+
+  Future<void> _runAction(
+    String label,
+    Future<CommandResult> Function(String id) run,
+  ) async {
     final target = selectedServerId;
     console.add(
       ConsoleLine(
         kind: ConsoleKind.system,
-        text: 'soft restart → $target',
+        text: '$label → $target',
         at: _now(),
         serverId: target,
       ),
     );
     notifyListeners();
-    final result = await crafty.softRestart(serverId: target);
+    final result = await run(target);
     console.add(
       ConsoleLine(
         kind: result.ok ? ConsoleKind.response : ConsoleKind.error,
@@ -212,7 +329,47 @@ class OperatorSession extends ChangeNotifier {
     notifyListeners();
   }
 
-  void addWhitelistNote(String text) {
+  Future<void> loadRemoteLogs() async {
+    loadingLogs = true;
+    notifyListeners();
+    try {
+      final lines = await _crafty.fetchLogs(serverId: selectedServerId);
+      for (final line in lines) {
+        console.add(
+          ConsoleLine(
+            kind: ConsoleKind.response,
+            text: line,
+            at: _now(),
+            serverId: selectedServerId,
+          ),
+        );
+      }
+      if (lines.isEmpty) {
+        console.add(
+          ConsoleLine(
+            kind: ConsoleKind.system,
+            text: 'no remote log lines',
+            at: _now(),
+            serverId: selectedServerId,
+          ),
+        );
+      }
+    } catch (e) {
+      console.add(
+        ConsoleLine(
+          kind: ConsoleKind.error,
+          text: e.toString(),
+          at: _now(),
+          serverId: selectedServerId,
+        ),
+      );
+    } finally {
+      loadingLogs = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> addWhitelistNote(String text) async {
     final trimmed = text.trim();
     if (trimmed.isEmpty) return;
     whitelistNotes.add(
@@ -230,6 +387,26 @@ class OperatorSession extends ChangeNotifier {
         serverId: selectedServerId,
       ),
     );
+    notifyListeners();
+    final name = trimmed.split(RegExp(r'\s+')).first;
+    if (OperatorAccount.namePattern.hasMatch(name) && !_crafty.mock) {
+      await submitCommand('whitelist add $name');
+    }
+  }
+
+  Future<void> checkForUpdate() async {
+    updateCheckFailed = false;
+    try {
+      pendingUpdate = await updates.latestNewerThan(appVersion);
+    } catch (_) {
+      updateCheckFailed = true;
+      pendingUpdate = null;
+    }
+    notifyListeners();
+  }
+
+  void dismissUpdate() {
+    pendingUpdate = null;
     notifyListeners();
   }
 }

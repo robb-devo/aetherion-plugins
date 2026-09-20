@@ -1,0 +1,194 @@
+import 'package:flutter/material.dart';
+
+import '../../app_version.dart';
+import '../../l10n/app_localizations.dart';
+import '../../state/session_scope.dart';
+import '../../theme/aether_colors.dart';
+import '../widgets/dialogs.dart';
+import '../widgets/glass_card.dart';
+
+class SettingsScreen extends StatefulWidget {
+  const SettingsScreen({super.key});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  final _url = TextEditingController();
+  final _token = TextEditingController();
+  bool _insecure = true;
+  var _primed = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_primed) return;
+    _primed = true;
+    final session = SessionScope.of(context);
+    _url.text = session.craftySettings.baseUrl;
+    _insecure = session.craftySettings.allowInsecureTls;
+  }
+
+  @override
+  void dispose() {
+    _url.dispose();
+    _token.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final session = SessionScope.of(context);
+    final live = session.craftyLive;
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+      children: [
+        SectionHeader(title: l10n.settingsTitle, body: l10n.settingsBody),
+        const SizedBox(height: 16),
+        GlassCard(
+          accent: live ? AetherColors.cyan : AetherColors.gold,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    live ? Icons.cloud_done_outlined : Icons.science_outlined,
+                    color: live ? AetherColors.cyan : AetherColors.gold,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      live ? l10n.usingLive : l10n.usingMock,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                key: const Key('crafty-url'),
+                controller: _url,
+                keyboardType: TextInputType.url,
+                decoration: InputDecoration(hintText: l10n.craftyUrlHint),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                key: const Key('crafty-token'),
+                controller: _token,
+                obscureText: true,
+                decoration: InputDecoration(
+                  hintText: session.craftySettings.apiToken.isEmpty
+                      ? l10n.craftyTokenHint
+                      : l10n.craftyTokenSet,
+                ),
+              ),
+              Material(
+                color: Colors.transparent,
+                child: SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(l10n.allowInsecureTls),
+                  value: _insecure,
+                  onChanged: (v) => setState(() => _insecure = v),
+                ),
+              ),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  FilledButton(
+                    key: const Key('crafty-save'),
+                    onPressed: session.savingCrafty
+                        ? null
+                        : () async {
+                            await session.saveCraftySettings(
+                              baseUrl: _url.text,
+                              apiToken: _token.text,
+                              allowInsecureTls: _insecure,
+                            );
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(l10n.savedSettings)),
+                              );
+                            }
+                          },
+                    child: Text(l10n.save),
+                  ),
+                  OutlinedButton(
+                    key: const Key('crafty-test'),
+                    onPressed: session.testCraftyConnection,
+                    child: Text(l10n.testConnection),
+                  ),
+                ],
+              ),
+              if (session.craftyTestMessage != null) ...[
+                const SizedBox(height: 10),
+                Text(
+                  session.craftyTestMessage!,
+                  style: TextStyle(
+                    color: session.craftyTestOk == false
+                        ? AetherColors.offline
+                        : AetherColors.online,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        GlassCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.currentVersion(session.appVersion),
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                l10n.updateHowTo,
+                style: const TextStyle(color: AetherColors.mist, height: 1.35),
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                key: const Key('check-updates'),
+                onPressed: session.checkForUpdate,
+                icon: const Icon(Icons.system_update_alt, size: 18),
+                label: Text(l10n.checkUpdates),
+              ),
+              if (session.pendingUpdate != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  l10n.updateAvailable(session.pendingUpdate!.version),
+                  style: const TextStyle(color: AetherColors.gold),
+                ),
+              ] else if (session.updateCheckFailed)
+                Text(
+                  l10n.updateCheckFailed,
+                  style: const TextStyle(color: AetherColors.mist),
+                )
+              else
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    l10n.upToDate,
+                    style: const TextStyle(color: AetherColors.mist),
+                  ),
+                ),
+              const SizedBox(height: 8),
+              Text(
+                'github.com/$kOperatorGithubRepo',
+                style: const TextStyle(
+                  color: AetherColors.mist,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}

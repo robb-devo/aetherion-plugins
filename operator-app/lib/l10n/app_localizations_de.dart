@@ -23,7 +23,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get loginBody =>
-      'Lokale Operator-Liste — Teamnamen hinzufügen, PIN optional. Kein OAuth in diesem MVP.';
+      'Lokale Operator-Liste — Teamnamen hinzufügen, PIN optional. Angemeldet bleiben bis zur Abmeldung.';
 
   @override
   String get signIn => 'Anmelden';
@@ -96,6 +96,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get navTeam => 'Team';
 
   @override
+  String get navSettings => 'Einstellungen';
+
+  @override
   String get signOut => 'Abmelden';
 
   @override
@@ -153,14 +156,14 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get extensionHint =>
-      'MockCraftyClient durch HttpCraftyClient ersetzen, sobald CRAFTY_BASE_URL und CRAFTY_API_TOKEN gesetzt sind. Keine Zugangsdaten im Quellcode.';
+      'Live-Crafty kommt aus den Einstellungen (URL + API-Token) oder dart-define. Keine Zugangsdaten im Quellcode.';
 
   @override
   String get devkitTitle => 'DevKit';
 
   @override
   String get devkitBody =>
-      'Befehls-Konsole gegen das gewählte Backend. Soft-Restart und Whitelist-Notizen sind Platzhalter, bis Crafty angebunden ist.';
+      'Befehls-Konsole gegen das gewählte Backend. Restart, Start/Stop, Logs und Whitelist gehen live an Crafty.';
 
   @override
   String get targetServer => 'Ziel';
@@ -186,17 +189,112 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String softRestartConfirmLive(String server) {
+    return 'Crafty-Restart für $server einreihen?';
+  }
+
+  @override
   String get confirm => 'Bestätigen';
+
+  @override
+  String get startServer => 'Starten';
+
+  @override
+  String startServerConfirm(String server) {
+    return '$server starten?';
+  }
+
+  @override
+  String get stopServer => 'Stoppen';
+
+  @override
+  String stopServerConfirm(String server) {
+    return '$server stoppen?';
+  }
+
+  @override
+  String get loadLogs => 'Logs laden';
 
   @override
   String get whitelistNote => 'Whitelist-Notiz';
 
   @override
   String get whitelistNoteHint =>
-      'Wer / warum — lokal, bis Crafty-Whitelist angebunden ist';
+      'Wer / warum — lokal gespeichert; live sendet Crafty whitelist add <name>';
 
   @override
   String get whitelistSaved => 'Notiz lokal gespeichert.';
+
+  @override
+  String get whitelistSynced =>
+      'Notiz gespeichert und whitelist add an Crafty gesendet.';
+
+  @override
+  String get settingsTitle => 'Einstellungen';
+
+  @override
+  String get settingsBody =>
+      'Crafty-Controller-URL und API-Token bleiben auf diesem Gerät. Token bevorzugt sicheren Speicher.';
+
+  @override
+  String get usingLive => 'Live-Crafty';
+
+  @override
+  String get usingMock =>
+      'Mock-Crafty — URL und Token eintragen, um live zu gehen';
+
+  @override
+  String get craftyUrlHint => 'https://crafty-host:8443';
+
+  @override
+  String get craftyTokenHint => 'API-Token';
+
+  @override
+  String get craftyTokenSet =>
+      'Token gespeichert — leer lassen, um ihn zu behalten';
+
+  @override
+  String get allowInsecureTls => 'Selbstsigniertes TLS erlauben';
+
+  @override
+  String get savedSettings => 'Crafty-Einstellungen gespeichert.';
+
+  @override
+  String get testConnection => 'Verbindung testen';
+
+  @override
+  String currentVersion(String version) {
+    return 'Version $version';
+  }
+
+  @override
+  String get updateHowTo =>
+      'Updates sind GitHub-Releases mit Tag operator-app-x.y.z. pubspec und lib/app_version.dart gemeinsam erhöhen.';
+
+  @override
+  String get checkUpdates => 'Nach Updates suchen';
+
+  @override
+  String updateAvailable(String version) {
+    return 'Update $version verfügbar';
+  }
+
+  @override
+  String updateBody(String current, String next) {
+    return 'Du bist auf $current. Release $next liegt auf GitHub.';
+  }
+
+  @override
+  String get later => 'Später';
+
+  @override
+  String get updateNow => 'Release öffnen';
+
+  @override
+  String get updateCheckFailed => 'GitHub-Releases nicht erreichbar.';
+
+  @override
+  String get upToDate => 'Kein neueres operator-app-Release.';
 
   @override
   String get linksTitle => 'Links';
@@ -238,7 +336,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get teamBody =>
-      'Namen liegen auf diesem Gerät. Optionale PIN wird lokal gehasht — im MVP nirgendwohin gesendet.';
+      'Namen liegen auf diesem Gerät. Optionale PIN wird lokal gehasht. Sitzung bleibt bis zur Abmeldung.';
 
   @override
   String get nameRequired => 'Bitte einen Namen eingeben.';

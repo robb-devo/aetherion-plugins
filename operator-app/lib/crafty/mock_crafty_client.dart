@@ -101,8 +101,27 @@ class MockCraftyClient implements CraftyClient {
   @override
   Future<CommandResult> softRestart({required String serverId}) async {
     await Future<void>.delayed(const Duration(milliseconds: 120));
-    return CommandResult.ok(
-      '[mock:$serverId] soft restart queued — Crafty action not wired',
-    );
+    return CommandResult.ok('[mock:$serverId] soft restart queued');
+  }
+
+  @override
+  Future<CommandResult> startServer({required String serverId}) async {
+    return CommandResult.ok('[mock:$serverId] start queued');
+  }
+
+  @override
+  Future<CommandResult> stopServer({required String serverId}) async {
+    return CommandResult.ok('[mock:$serverId] stop queued');
+  }
+
+  @override
+  Future<List<String>> fetchLogs({
+    required String serverId,
+    int lines = 80,
+  }) async {
+    return [
+      '[mock:$serverId] Done (20.00s)! For help, type "help"',
+      '[mock:$serverId] There are 3 of a max of 40 players online',
+    ].take(lines).toList();
   }
 }

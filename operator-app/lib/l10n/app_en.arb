@@ -4,7 +4,7 @@
   "appTagline": "donnernet companion",
   "networkName": "Aetherion",
   "loginHeadline": "Sign in by name",
-  "loginBody": "Local operator list — add teammate names, optional PIN. No OAuth in this MVP.",
+  "loginBody": "Local operator list — add teammate names, optional PIN. Stay signed in until you sign out.",
   "signIn": "Sign in",
   "signedInAs": "Signed in as {name}",
   "@signedInAs": {
@@ -41,6 +41,7 @@
   "navDevkit": "DevKit",
   "navLinks": "Links",
   "navTeam": "Team",
+  "navSettings": "Settings",
   "signOut": "Sign out",
   "languageEn": "EN",
   "languageDe": "DE",
@@ -64,9 +65,9 @@
   "serverRoleCapital": "Capital",
   "serverRoleDungeons": "Dungeons",
   "serverRoleAshes": "Ashes",
-  "extensionHint": "Swap MockCraftyClient for HttpCraftyClient when CRAFTY_BASE_URL and CRAFTY_API_TOKEN are set. No credentials live in source.",
+  "extensionHint": "Live Crafty binds from Settings (URL + API token) or dart-define. No credentials live in source.",
   "devkitTitle": "DevKit",
-  "devkitBody": "Command console against the selected backend. Soft restart and whitelist notes are placeholders until Crafty is wired.",
+  "devkitBody": "Command console against the selected backend. Restart, start/stop, logs, and whitelist go to Crafty when live.",
   "targetServer": "Target",
   "consoleHint": "Command — e.g. list, whitelist add Name",
   "send": "Send",
@@ -79,10 +80,67 @@
       "server": { "type": "String" }
     }
   },
+  "softRestartConfirmLive": "Queue a Crafty restart for {server}?",
+  "@softRestartConfirmLive": {
+    "placeholders": {
+      "server": { "type": "String" }
+    }
+  },
   "confirm": "Confirm",
+  "startServer": "Start",
+  "startServerConfirm": "Start {server}?",
+  "@startServerConfirm": {
+    "placeholders": {
+      "server": { "type": "String" }
+    }
+  },
+  "stopServer": "Stop",
+  "stopServerConfirm": "Stop {server}?",
+  "@stopServerConfirm": {
+    "placeholders": {
+      "server": { "type": "String" }
+    }
+  },
+  "loadLogs": "Load logs",
   "whitelistNote": "Whitelist note",
-  "whitelistNoteHint": "Who / why — stored locally until Crafty whitelist is wired",
+  "whitelistNoteHint": "Who / why — stored locally; live Crafty also runs whitelist add <name>",
   "whitelistSaved": "Note saved locally.",
+  "whitelistSynced": "Note saved and whitelist add sent to Crafty.",
+  "settingsTitle": "Settings",
+  "settingsBody": "Crafty Controller URL and API token stay on this device. Token prefers secure storage.",
+  "usingLive": "Live Crafty",
+  "usingMock": "Mock Crafty — add URL and token to go live",
+  "craftyUrlHint": "https://crafty-host:8443",
+  "craftyTokenHint": "API token",
+  "craftyTokenSet": "Token saved — leave blank to keep it",
+  "allowInsecureTls": "Allow self-signed TLS",
+  "savedSettings": "Crafty settings saved.",
+  "testConnection": "Test connection",
+  "currentVersion": "Version {version}",
+  "@currentVersion": {
+    "placeholders": {
+      "version": { "type": "String" }
+    }
+  },
+  "updateHowTo": "Updates are GitHub Releases tagged operator-app-x.y.z. Bump pubspec and lib/app_version.dart together.",
+  "checkUpdates": "Check for updates",
+  "updateAvailable": "Update {version} available",
+  "@updateAvailable": {
+    "placeholders": {
+      "version": { "type": "String" }
+    }
+  },
+  "updateBody": "You are on {current}. Release {next} is on GitHub.",
+  "@updateBody": {
+    "placeholders": {
+      "current": { "type": "String" },
+      "next": { "type": "String" }
+    }
+  },
+  "later": "Later",
+  "updateNow": "Open release",
+  "updateCheckFailed": "Could not reach GitHub Releases.",
+  "upToDate": "No newer operator-app release.",
   "linksTitle": "Links",
   "linksBody": "Public join address, site, and Discord.",
   "copyAddress": "Copy",
@@ -100,7 +158,7 @@
   "discordLabel": "Discord",
   "discordHint": "Operator + player invite",
   "teamTitle": "Operator list",
-  "teamBody": "Names live on this device. Optional PIN is hashed locally — never sent anywhere in MVP.",
+  "teamBody": "Names live on this device. Optional PIN is hashed locally. Session stays until you sign out.",
   "nameRequired": "Enter a name.",
   "nameTaken": "That name is already on the list.",
   "nameInvalid": "Use 1–16 letters, numbers, or underscore."

@@ -1,7 +1,7 @@
 name: operator_app
 description: Aetherion Operator companion for Windows and Android.
 publish_to: "none"
-version: 0.1.0+1
+version: 0.2.0+2
 
 environment:
   sdk: ^3.13.4
@@ -13,6 +13,8 @@ dependencies:
     sdk: flutter
   crypto: ^3.0.6
   cupertino_icons: ^1.0.8
+  flutter_secure_storage: ^9.2.4
+  flutter_svg: ^2.2.0
   http: ^1.5.0
   intl: any
   shared_preferences: ^2.5.3
@@ -22,10 +24,13 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
 
 flutter:
   generate: true
   uses-material-design: true
+  assets:
+    - assets/brand/
   fonts:
     - family: Manrope
       fonts:
@@ -33,3 +38,18 @@ flutter:
     - family: Cinzel
       fonts:
         - asset: fonts/Cinzel.ttf
+
+flutter_launcher_icons:
+  android: true
+  image_path: assets/brand/aetherion_mark.png
+  adaptive_icon_background: "#0a0814"
+  adaptive_icon_foreground: assets/brand/aetherion_mark.png
+  windows:
+    generate: true
+    image_path: assets/brand/aetherion_mark.png
+    icon_size: 256
+  web:
+    generate: true
+    image_path: assets/brand/aetherion_mark.png
+    background_color: "#0a0814"
+    theme_color: "#07060f"

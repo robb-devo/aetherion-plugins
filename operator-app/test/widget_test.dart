@@ -3,8 +3,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:operator_app/app.dart';
 import 'package:operator_app/crafty/mock_crafty_client.dart';
 import 'package:operator_app/data/account_store.dart';
+import 'package:operator_app/data/crafty_secrets.dart';
 import 'package:operator_app/data/operator_account.dart';
+import 'package:operator_app/data/session_store.dart';
 import 'package:operator_app/state/operator_session.dart';
+import 'package:operator_app/updates/update_checker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const _seedPin = '04206951';
@@ -21,7 +24,10 @@ void main() {
       persistence: MemoryAccountPersistence(
         seed: [OperatorAccount.seedOperator()],
       ),
+      sessionStore: MemorySessionStore(),
+      secrets: MemoryCraftySecrets(),
       crafty: MockCraftyClient(jitter: false),
+      updates: const NoopUpdateChecker(),
     );
     await session.bootstrap();
     return session;
@@ -64,8 +70,11 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
 
     final session = await boot();
-    expect(session.signIn(OperatorAccount.seedOperator()), 'pin');
-    expect(session.signIn(OperatorAccount.seedOperator(), pin: _seedPin), isNull);
+    expect(await session.signIn(OperatorAccount.seedOperator()), 'pin');
+    expect(
+      await session.signIn(OperatorAccount.seedOperator(), pin: _seedPin),
+      isNull,
+    );
     await tester.pumpWidget(OperatorApp(session: session));
     await tester.pumpAndSettle();
 
@@ -105,5 +114,27 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('Signed in as Staff'), findsOneWidget);
+  });
+
+  testWidgets('Settings shows mock Crafty and app version', (tester) async {
+    tester.view.physicalSize = const Size(1400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    final session = await boot();
+    expect(
+      await session.signIn(OperatorAccount.seedOperator(), pin: _seedPin),
+      isNull,
+    );
+    await tester.pumpWidget(OperatorApp(session: session));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Settings'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Mock Crafty'), findsOneWidget);
+    expect(find.textContaining('Version 0.2.0'), findsOneWidget);
+    expect(find.byKey(const Key('crafty-url')), findsOneWidget);
+    expect(find.byKey(const Key('check-updates')), findsOneWidget);
   });
 }

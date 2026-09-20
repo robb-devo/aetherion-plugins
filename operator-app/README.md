@@ -2,15 +2,16 @@
 
 Flutter companion for the Aetherion network on **Windows** and **Android**. Dark glass UI aligned with [donnernet.de](https://donnernet.de) (void / amethyst / cyan, Cinzel + Manrope). English by default, German toggle on every screen.
 
-MVP is local and mock-backed. **No Crafty credentials are hardcoded.**
+**No Crafty credentials are hardcoded.** Session stays signed in after PIN until you sign out. Live Crafty is optional (Settings or dart-define).
 
 ## Screens
 
-1. **Login** — local operator list. Seed account `Operator` requires a PIN (hashed locally at seed time). Add teammate names (1–16 `[A-Za-z0-9_]`) with an optional PIN (SHA-256, device-local).
-2. **Dashboard** — Velocity + Hub + mmo-r / mmo-d / mmo-c placeholders: online/offline, players, TPS. Gold **Mock data** badge until Crafty is enabled.
-3. **DevKit** — command console with history, target server, **Soft restart** (confirm → log), **Whitelist note** (local until Crafty whitelist exists).
+1. **Login** — local operator list. Seed account `Operator` requires a PIN (hashed locally at seed time). Add teammate names (1–16 `[A-Za-z0-9_]`) with an optional PIN (SHA-256, device-local). After a successful PIN, the account id is remembered on this device.
+2. **Dashboard** — Velocity + Hub + mmo-r / mmo-d / mmo-c: online/offline, players, TPS. Gold **Mock data** badge until Crafty is configured.
+3. **DevKit** — command console, **Soft restart**, live **Start** / **Stop**, **Load logs**, **Whitelist note** (local; live Crafty also sends `whitelist add <name>`).
 4. **Links** — `play.donnernet.de`, https://donnernet.de, Discord https://discord.gg/7BWHJaZChb.
 5. **Team** — add / remove names on this device.
+6. **Settings** — Crafty URL + API token (token prefers secure storage, XOR-obfuscated prefs fallback), self-signed TLS toggle, test connection, version + GitHub update check.
 
 ## Run
 
@@ -58,11 +59,22 @@ flutter test
 flutter analyze
 ```
 
-## Crafty later
+## Crafty
 
-Default client is `MockCraftyClient` (`lib/crafty/mock_crafty_client.dart`).
+Default client is `MockCraftyClient` until Settings (or dart-define) supply both a base URL and an API token.
 
-To point at a live Crafty Controller **without putting tokens in git**:
+### Settings (preferred)
+
+Open **Settings** after sign-in:
+
+- Controller URL, e.g. `https://crafty-host:8443`
+- API token (stored in platform secure storage when available)
+- **Allow self-signed TLS** (on by default for typical Crafty installs)
+- **Test connection** hits `GET /api/v2/servers`
+
+Empty token field on save keeps the previously stored token.
+
+### dart-define (used only when Settings are empty)
 
 ```bash
 flutter run -d windows --dart-define=CRAFTY_ENABLED=true \
@@ -70,16 +82,35 @@ flutter run -d windows --dart-define=CRAFTY_ENABLED=true \
   --dart-define=CRAFTY_API_TOKEN=YOUR-TOKEN
 ```
 
-`createCraftyClient()` in `lib/crafty/crafty_client.dart` then returns `HttpCraftyClient`, which calls:
+`createCraftyClient()` in `lib/crafty/crafty_client.dart` then returns `HttpCraftyClient`:
 
 | Action | Request |
 |--------|---------|
-| Status | `GET /api/v2/servers` |
-| Console | `POST /api/v2/servers/{id}/stdin` `{"command":"..."}` |
-| Soft restart | `POST /api/v2/servers/{id}/action` `{"action":"restart_server"}` |
+| Status | `GET /api/v2/servers` (+ `/stats` per id) |
+| Logs | `GET /api/v2/servers/{id}/logs` |
+| Console | `POST /api/v2/servers/{id}/stdin` |
+| Restart / start / stop | `POST /api/v2/servers/{id}/action/{name}` |
 
-JSON mapping is loose (`lib/crafty/http_crafty_client.dart`) so field names can be adjusted once a real Controller response is captured. Keep tokens in CI secrets or a private local script — never in source.
+JSON mapping is loose (`lib/crafty/http_crafty_client.dart`) so field names can be adjusted against a real Controller. Keep tokens in CI secrets or a private local script — never in source.
+
+## Updates
+
+Version is `0.2.0+2` in `pubspec.yaml` and `kOperatorAppVersion` in `lib/app_version.dart` — keep those in lockstep.
+
+1. Bump both.
+2. Tag a GitHub Release `operator-app-x.y.z` (optional `v` prefix) on `robb-devo/aetherion-plugins`.
+3. Attach an APK named `*.apk` for Android; Windows opens the release page.
+
+The app checks `GET /repos/robb-devo/aetherion-plugins/releases` on bootstrap and from Settings. Only tags matching `operator-app-` are considered.
 
 ## Branding
 
-Palette copied from donnernet.de CSS variables: void `#07060F`, ink `#0C0A18`, mist `#C9C2DE`, amethyst `#C084FC` / `#7C3AED`, cyan `#22D3EE`, gold `#F5C56B`. Fonts bundled under `fonts/` (Manrope, Cinzel — SIL OFL).
+App icon and in-app mark are the live website favicon: [donnernet.de/favicon.svg](https://donnernet.de/favicon.svg), stored at `assets/brand/favicon.svg` (raster `aetherion_mark.png` for launchers).
+
+Regenerate Android mipmaps + Windows ICO:
+
+```bash
+dart run flutter_launcher_icons
+```
+
+Palette from donnernet.de CSS variables: void `#07060F`, ink `#0C0A18`, mist `#C9C2DE`, amethyst `#C084FC` / `#7C3AED`, cyan `#22D3EE`, gold `#F5C56B`. Fonts bundled under `fonts/` (Manrope, Cinzel — SIL OFL).

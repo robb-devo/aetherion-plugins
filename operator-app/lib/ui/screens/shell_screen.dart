@@ -10,6 +10,7 @@ import '../widgets/glass_card.dart';
 import 'dashboard_screen.dart';
 import 'devkit_screen.dart';
 import 'links_screen.dart';
+import 'settings_screen.dart';
 import 'team_screen.dart';
 
 class ShellScreen extends StatefulWidget {
@@ -31,12 +32,14 @@ class _ShellScreenState extends State<ShellScreen> {
       (Icons.terminal_outlined, Icons.terminal, l10n.navDevkit),
       (Icons.link_outlined, Icons.link, l10n.navLinks),
       (Icons.group_outlined, Icons.group, l10n.navTeam),
+      (Icons.settings_outlined, Icons.settings, l10n.navSettings),
     ];
     final pages = const [
       DashboardScreen(),
       DevkitScreen(),
       LinksScreen(),
       TeamScreen(),
+      SettingsScreen(),
     ];
 
     return AetherBackdrop(

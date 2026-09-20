@@ -108,36 +108,74 @@ class _DevkitScreenState extends State<DevkitScreen> {
             children: [
               FilledButton.tonalIcon(
                 key: const Key('soft-restart'),
-                onPressed: () async {
-                  final ok = await showDialog<bool>(
-                    context: context,
-                    builder: (ctx) => AlertDialog(
-                      title: Text(l10n.softRestart),
-                      content: Text(
-                        l10n.softRestartConfirm(
+                onPressed: () => _confirmAction(
+                  context,
+                  title: l10n.softRestart,
+                  body: session.craftyLive
+                      ? l10n.softRestartConfirmLive(
+                          session.selectedServer?.displayName ??
+                              session.selectedServerId,
+                        )
+                      : l10n.softRestartConfirm(
                           session.selectedServer?.displayName ??
                               session.selectedServerId,
                         ),
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(ctx, false),
-                          child: Text(l10n.cancel),
-                        ),
-                        FilledButton(
-                          key: const Key('soft-restart-confirm'),
-                          onPressed: () => Navigator.pop(ctx, true),
-                          child: Text(l10n.confirm),
-                        ),
-                      ],
-                    ),
-                  );
-                  if (ok == true && context.mounted) {
-                    await session.queueSoftRestart();
-                  }
-                },
+                  onConfirm: session.queueSoftRestart,
+                ),
                 icon: const Icon(Icons.restart_alt, size: 18),
                 label: Text(l10n.softRestart),
+              ),
+              OutlinedButton.icon(
+                key: const Key('start-server'),
+                onPressed: session.craftyLive
+                    ? () => _confirmAction(
+                        context,
+                        title: l10n.startServer,
+                        body: l10n.startServerConfirm(
+                          session.selectedServer?.displayName ??
+                              session.selectedServerId,
+                        ),
+                        onConfirm: session.queueStart,
+                      )
+                    : null,
+                icon: const Icon(Icons.play_arrow, size: 18),
+                label: Text(l10n.startServer),
+              ),
+              OutlinedButton.icon(
+                key: const Key('stop-server'),
+                onPressed: session.craftyLive
+                    ? () => _confirmAction(
+                        context,
+                        title: l10n.stopServer,
+                        body: l10n.stopServerConfirm(
+                          session.selectedServer?.displayName ??
+                              session.selectedServerId,
+                        ),
+                        onConfirm: session.queueStop,
+                      )
+                    : null,
+                icon: const Icon(Icons.stop, size: 18),
+                label: Text(l10n.stopServer),
+              ),
+              OutlinedButton.icon(
+                key: const Key('load-logs'),
+                onPressed: session.loadingLogs
+                    ? null
+                    : () async {
+                        await session.loadRemoteLogs();
+                        await Future<void>.delayed(
+                          const Duration(milliseconds: 30),
+                        );
+                        if (_scroll.hasClients) {
+                          await _scroll.animateTo(
+                            _scroll.position.maxScrollExtent,
+                            duration: const Duration(milliseconds: 280),
+                            curve: Curves.easeOutCubic,
+                          );
+                        }
+                      },
+                icon: const Icon(Icons.receipt_long_outlined, size: 18),
+                label: Text(l10n.loadLogs),
               ),
               OutlinedButton.icon(
                 key: const Key('whitelist-note'),
@@ -221,10 +259,49 @@ class _DevkitScreenState extends State<DevkitScreen> {
       hint: l10n.whitelistNoteHint,
     );
     if (note != null && note.trim().isNotEmpty && context.mounted) {
-      SessionScope.of(context).addWhitelistNote(note);
+      await SessionScope.of(context).addWhitelistNote(note);
+      if (!context.mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(l10n.whitelistSaved)));
+      ).showSnackBar(
+        SnackBar(
+          content: Text(
+            SessionScope.of(context).craftyLive
+                ? l10n.whitelistSynced
+                : l10n.whitelistSaved,
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _confirmAction(
+    BuildContext context, {
+    required String title,
+    required String body,
+    required Future<void> Function() onConfirm,
+  }) async {
+    final l10n = AppLocalizations.of(context);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(title),
+        content: Text(body),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            key: const Key('soft-restart-confirm'),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l10n.confirm),
+          ),
+        ],
+      ),
+    );
+    if (ok == true && context.mounted) {
+      await onConfirm();
     }
   }
 }

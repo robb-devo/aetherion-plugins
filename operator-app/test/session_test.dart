@@ -1,9 +1,28 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:operator_app/crafty/mock_crafty_client.dart';
 import 'package:operator_app/data/account_store.dart';
+import 'package:operator_app/data/crafty_secrets.dart';
 import 'package:operator_app/data/operator_account.dart';
 import 'package:operator_app/data/pin.dart';
+import 'package:operator_app/data/session_store.dart';
 import 'package:operator_app/state/operator_session.dart';
+import 'package:operator_app/updates/update_checker.dart';
+
+OperatorSession _session({
+  AccountPersistence? persistence,
+  SessionStore? sessionStore,
+  CraftySecrets? secrets,
+}) {
+  return OperatorSession(
+    persistence:
+        persistence ??
+        MemoryAccountPersistence(seed: [OperatorAccount.seedOperator()]),
+    sessionStore: sessionStore ?? MemorySessionStore(),
+    secrets: secrets ?? MemoryCraftySecrets(),
+    crafty: MockCraftyClient(jitter: false),
+    updates: const NoopUpdateChecker(),
+  );
+}
 
 void main() {
   test('PIN hash is stable and not stored in the clear', () {
@@ -26,7 +45,7 @@ void main() {
   });
 
   test('bootstrap hashes a legacy seed Operator that had no PIN', () async {
-    final session = OperatorSession(
+    final session = _session(
       persistence: MemoryAccountPersistence(
         seed: [
           OperatorAccount(
@@ -36,37 +55,70 @@ void main() {
           ),
         ],
       ),
-      crafty: MockCraftyClient(jitter: false),
     );
     await session.bootstrap();
     expect(session.accounts.single.hasPin, isTrue);
-    expect(session.signIn(session.accounts.single), 'pin');
-    expect(session.signIn(session.accounts.single, pin: '04206951'), isNull);
+    expect(await session.signIn(session.accounts.single), 'pin');
+    expect(await session.signIn(session.accounts.single, pin: '04206951'), isNull);
   });
 
   test('session add/remove names and optional PIN', () async {
-    final session = OperatorSession(
-      persistence: MemoryAccountPersistence(seed: []),
-      crafty: MockCraftyClient(jitter: false),
-    );
+    final session = _session();
     await session.bootstrap();
     expect(session.accounts.single.name, 'Operator');
     expect(session.accounts.single.hasPin, isTrue);
-    expect(session.signIn(session.accounts.single), 'pin');
-    expect(session.signIn(session.accounts.single, pin: '04206951'), isNull);
-    session.signOut();
+    expect(await session.signIn(session.accounts.single), 'pin');
+    expect(await session.signIn(session.accounts.single, pin: '04206951'), isNull);
+    await session.signOut();
 
     expect(await session.addAccount(name: 'bad name'), 'invalid');
     expect(await session.addAccount(name: 'Ledger', pin: '1111'), isNull);
     expect(session.accounts.where((a) => a.name == 'Ledger').single.hasPin, isTrue);
 
-    expect(session.signIn(session.accounts.last), 'pin');
-    expect(session.signIn(session.accounts.last, pin: '1111'), isNull);
+    expect(await session.signIn(session.accounts.last), 'pin');
+    expect(await session.signIn(session.accounts.last, pin: '1111'), isNull);
     expect(session.current?.name, 'Ledger');
 
     await session.removeAccount(session.current!.id);
     expect(session.current, isNull);
     expect(session.accounts.any((a) => a.name == 'Ledger'), isFalse);
+  });
+
+  test('session stays signed in across bootstrap until sign-out', () async {
+    final persistence = MemoryAccountPersistence(
+      seed: [OperatorAccount.seedOperator()],
+    );
+    final store = MemorySessionStore();
+    final secrets = MemoryCraftySecrets();
+
+    final first = _session(
+      persistence: persistence,
+      sessionStore: store,
+      secrets: secrets,
+    );
+    await first.bootstrap();
+    expect(first.current, isNull);
+    expect(
+      await first.signIn(first.accounts.single, pin: '04206951'),
+      isNull,
+    );
+
+    final restored = _session(
+      persistence: persistence,
+      sessionStore: store,
+      secrets: secrets,
+    );
+    await restored.bootstrap();
+    expect(restored.current?.name, 'Operator');
+
+    await restored.signOut();
+    final afterSignOut = _session(
+      persistence: persistence,
+      sessionStore: store,
+      secrets: secrets,
+    );
+    await afterSignOut.bootstrap();
+    expect(afterSignOut.current, isNull);
   });
 
   test('mock Crafty feed exposes Hub / mmo backends', () async {

@@ -1,12 +1,9 @@
 import '../data/server_snapshot.dart';
 import 'crafty_config.dart';
 import 'http_crafty_client.dart';
+import 'http_factory.dart';
 import 'mock_crafty_client.dart';
 
-/// Extension point for Crafty Controller.
-///
-/// MVP ships [MockCraftyClient]. When [CraftyConfig.isConfigured] is true,
-/// [createCraftyClient] returns [HttpCraftyClient] instead.
 abstract class CraftyClient {
   bool get mock;
 
@@ -18,11 +15,20 @@ abstract class CraftyClient {
   });
 
   Future<CommandResult> softRestart({required String serverId});
+
+  Future<CommandResult> startServer({required String serverId});
+
+  Future<CommandResult> stopServer({required String serverId});
+
+  Future<List<String>> fetchLogs({required String serverId, int lines = 80});
 }
 
 CraftyClient createCraftyClient([CraftyConfig config = CraftyConfig.unset]) {
   if (config.isConfigured) {
-    return HttpCraftyClient(config: config);
+    return HttpCraftyClient(
+      config: config,
+      httpClient: createHttpClient(allowInsecureTls: config.allowInsecureTls),
+    );
   }
   return MockCraftyClient();
 }
