@@ -27,9 +27,10 @@ class LoginScreen extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(24, 36, 24, 32),
               children: [
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const AetherMark(size: 42),
-                    const SizedBox(width: 12),
+                    const AetherMark(size: 52),
+                    const SizedBox(width: 14),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -39,17 +40,18 @@ class LoginScreen extends StatelessWidget {
                             style: const TextStyle(
                               fontFamily: AetherTheme.cinzel,
                               fontWeight: FontWeight.w900,
-                              fontSize: 28,
-                              letterSpacing: 3.2,
-                              height: 1.05,
+                              fontSize: 32,
+                              letterSpacing: 3.6,
+                              height: 1.02,
                             ),
                           ),
+                          const SizedBox(height: 4),
                           Text(
                             l10n.appTagline,
-                            style: const TextStyle(
-                              color: AetherColors.mist,
+                            style: TextStyle(
+                              color: AetherColors.mist.withValues(alpha: 0.92),
                               fontSize: 13,
-                              letterSpacing: 0.4,
+                              letterSpacing: 0.55,
                             ),
                           ),
                         ],
@@ -58,14 +60,14 @@ class LoginScreen extends StatelessWidget {
                     const LanguageToggle(),
                   ],
                 ),
-                const SizedBox(height: 36),
+                const SizedBox(height: 40),
                 Text(
                   l10n.loginHeadline,
                   style: const TextStyle(
                     fontFamily: AetherTheme.cinzel,
-                    fontSize: 22,
+                    fontSize: 20,
                     fontWeight: FontWeight.w700,
-                    letterSpacing: 1.1,
+                    letterSpacing: 1.0,
                   ),
                 ),
                 const SizedBox(height: 8),

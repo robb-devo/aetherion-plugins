@@ -86,6 +86,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navDashboard => 'Dashboard';
 
   @override
+  String get navPlayers => 'Players';
+
+  @override
   String get navDevkit => 'DevKit';
 
   @override
@@ -125,7 +128,66 @@ class AppLocalizationsEn extends AppLocalizations {
   String get players => 'Players';
 
   @override
+  String get playersTitle => 'Players';
+
+  @override
+  String get playersBody =>
+      'Network-wide roster from Crafty stats. Pull to refresh or open actions on a name.';
+
+  @override
+  String get playersEmpty => 'No players online right now.';
+
+  @override
+  String get playersSearch => 'Search players or servers';
+
+  @override
+  String get actionRestricted => 'That action is not allowed for this account.';
+
+  @override
+  String playerOnServer(String server) {
+    return 'on $server';
+  }
+
+  @override
+  String get playerActions => 'Operator actions';
+
+  @override
+  String playerActionConfirm(String action, String player) {
+    return 'Run $action on $player?';
+  }
+
+  @override
+  String get playerReasonHint => 'Reason (optional)';
+
+  @override
+  String get playerMsgHint => 'Message text';
+
+  @override
+  String get playerTpTargetHint => 'Target player name';
+
+  @override
+  String get playerTpCoordsHint => 'x y z';
+
+  @override
+  String get playerNameHint => 'Player name';
+
+  @override
   String get tps => 'TPS';
+
+  @override
+  String get cpu => 'CPU';
+
+  @override
+  String get ram => 'RAM';
+
+  @override
+  String get world => 'World';
+
+  @override
+  String get version => 'Version';
+
+  @override
+  String get softRefresh => 'Auto-refresh network every 15s while signed in';
 
   @override
   String get serversOnline => 'Online';
@@ -175,6 +237,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get devkitPlayers => 'Players';
 
   @override
+  String get devkitChat => 'Chat';
+
+  @override
+  String get devkitModeration => 'Moderation';
+
+  @override
+  String get devkitMaintenance => 'Maintenance';
+
+  @override
   String get devkitPower => 'Power';
 
   @override
@@ -191,6 +262,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get serverTabOverview => 'Overview';
+
+  @override
+  String get serverTabPlayers => 'Players';
 
   @override
   String get serverTabTerminal => 'Terminal';
@@ -254,6 +328,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get toolListPlayersHint => 'Runs /list on the target';
 
   @override
+  String get toolJumpPlayersHint => 'Use the Players tab for the full roster';
+
+  @override
   String get toolDay => 'Set day';
 
   @override
@@ -270,6 +347,138 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get toolClearWeatherHint => 'weather clear';
+
+  @override
+  String get toolRain => 'Rain';
+
+  @override
+  String get toolRainHint => 'weather rain';
+
+  @override
+  String get toolThunder => 'Thunder';
+
+  @override
+  String get toolThunderHint => 'weather thunder';
+
+  @override
+  String get toolDifficultyPeaceful => 'Peaceful';
+
+  @override
+  String get toolDifficultyEasy => 'Easy';
+
+  @override
+  String get toolDifficultyNormal => 'Normal';
+
+  @override
+  String get toolDifficultyHard => 'Hard';
+
+  @override
+  String get toolKeepInvOn => 'Keep inventory on';
+
+  @override
+  String get toolKeepInvOff => 'Keep inventory off';
+
+  @override
+  String get toolSay => 'Say';
+
+  @override
+  String get toolSayHint => 'Broadcast a chat message';
+
+  @override
+  String get toolTitle => 'Title';
+
+  @override
+  String get toolTitleHint => 'Show a title to all players';
+
+  @override
+  String get toolKick => 'Kick';
+
+  @override
+  String get toolKickHint => 'Kick a player';
+
+  @override
+  String get toolBan => 'Ban';
+
+  @override
+  String get toolBanHint => 'Ban a player';
+
+  @override
+  String get toolPardon => 'Pardon';
+
+  @override
+  String get toolPardonHint => 'Unban a player';
+
+  @override
+  String get toolOp => 'Op';
+
+  @override
+  String get toolOpHint => 'Grant operator';
+
+  @override
+  String get toolDeop => 'Deop';
+
+  @override
+  String get toolDeopHint => 'Revoke operator';
+
+  @override
+  String get toolGamemodeSurvival => 'Survival';
+
+  @override
+  String get toolGamemodeCreative => 'Creative';
+
+  @override
+  String get toolGamemodeAdventure => 'Adventure';
+
+  @override
+  String get toolGamemodeSpectator => 'Spectator';
+
+  @override
+  String get toolMsg => 'Message';
+
+  @override
+  String get toolMsgHint => 'Private message';
+
+  @override
+  String get toolKill => 'Kill';
+
+  @override
+  String get toolKillHint => 'Kill the player';
+
+  @override
+  String get toolClear => 'Clear inventory';
+
+  @override
+  String get toolClearHint => 'clear inventory';
+
+  @override
+  String get toolWhitelistAdd => 'Whitelist add';
+
+  @override
+  String get toolWhitelistAddHint => 'whitelist add';
+
+  @override
+  String get toolWhitelistRemove => 'Whitelist remove';
+
+  @override
+  String get toolWhitelistRemoveHint => 'whitelist remove';
+
+  @override
+  String get toolWhitelistOn => 'Whitelist on';
+
+  @override
+  String get toolWhitelistOff => 'Whitelist off';
+
+  @override
+  String get toolTpPlayer => 'TP to player';
+
+  @override
+  String get toolTpPlayerHint => 'Teleport to another player';
+
+  @override
+  String get toolTpCoords => 'TP coords';
+
+  @override
+  String get toolTpCoordsHint => 'Teleport to coordinates';
 
   @override
   String get toolSaveAll => 'Save-all';
@@ -491,4 +700,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get nameInvalid => 'Use 1–16 letters, numbers, or underscore.';
+
+  @override
+  String get roleRestricted =>
+      'Your account can look around and use mild tools — not power or moderation.';
+
+  @override
+  String get observerBanner =>
+      'Observer mode — browse freely, change weather/time, view players. Heavy actions stay locked.';
+
+  @override
+  String get observerRoleLabel => 'Observer';
 }

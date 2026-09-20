@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -10,7 +12,10 @@ import '../../theme/aether_colors.dart';
 import '../../theme/aether_theme.dart';
 import '../widgets/aether_backdrop.dart';
 import '../widgets/chrome.dart';
+import '../widgets/dialogs.dart';
 import '../widgets/glass_card.dart';
+import '../widgets/player_actions_sheet.dart';
+import '../widgets/role_chrome.dart';
 import '../widgets/sky_tile.dart';
 
 /// Server detail opened from the network dashboard.
@@ -36,18 +41,42 @@ class _ServerDetailScreenState extends State<ServerDetailScreen>
   late final TabController _tabs;
   final _input = TextEditingController();
   final _scroll = ScrollController();
+  Timer? _tailTimer;
+
+  static const _terminalTab = 2;
 
   @override
   void initState() {
     super.initState();
-    _tabs = TabController(length: 4, vsync: this);
+    _tabs = TabController(length: 5, vsync: this);
+    _tabs.addListener(_onTab);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       SessionScope.of(context).selectServer(widget.serverId);
     });
   }
 
+  void _onTab() {
+    if (_tabs.indexIsChanging) return;
+    _syncTail();
+  }
+
+  void _syncTail() {
+    _tailTimer?.cancel();
+    _tailTimer = null;
+    if (_tabs.index != _terminalTab) return;
+    _tailTimer = Timer.periodic(const Duration(seconds: 8), (_) {
+      if (!mounted || _tabs.index != _terminalTab) return;
+      final session = SessionScope.of(context);
+      if (!session.loadingLogs) {
+        session.loadRemoteLogs(serverId: widget.serverId);
+      }
+    });
+  }
+
   @override
   void dispose() {
+    _tailTimer?.cancel();
+    _tabs.removeListener(_onTab);
     _tabs.dispose();
     _input.dispose();
     _scroll.dispose();
@@ -107,6 +136,34 @@ class _ServerDetailScreenState extends State<ServerDetailScreen>
     if (ok == true && context.mounted) await onConfirm();
   }
 
+  Future<void> _runTool(BuildContext context, String command) async {
+    final l10n = AppLocalizations.of(context);
+    await SessionScope.of(context).submitCommand(
+      command,
+      serverId: widget.serverId,
+    );
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.toolCommandSent(command))),
+      );
+    }
+  }
+
+  Future<void> _promptTool(
+    BuildContext context, {
+    required String title,
+    required String hint,
+    required String Function(String v) build,
+  }) async {
+    final value = await showNoteDialog(
+      context: context,
+      title: title,
+      hint: hint,
+    );
+    if (value == null || value.trim().isEmpty || !context.mounted) return;
+    await _runTool(context, build(value.trim()));
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -140,6 +197,7 @@ class _ServerDetailScreenState extends State<ServerDetailScreen>
             unselectedLabelColor: AetherColors.mist,
             tabs: [
               Tab(text: l10n.serverTabOverview),
+              Tab(text: l10n.serverTabPlayers),
               Tab(text: l10n.serverTabTerminal),
               Tab(text: l10n.serverTabPower),
               Tab(text: l10n.serverTabTools),
@@ -156,7 +214,18 @@ class _ServerDetailScreenState extends State<ServerDetailScreen>
             : TabBarView(
                 controller: _tabs,
                 children: [
-                  _OverviewTab(server: server, l10n: l10n),
+                  _OverviewTab(
+                    server: server,
+                    l10n: l10n,
+                    onConfirm: _confirm,
+                    onSay: () => _promptTool(
+                      context,
+                      title: l10n.toolSay,
+                      hint: l10n.toolSayHint,
+                      build: (v) => 'say $v',
+                    ),
+                  ),
+                  _PlayersTab(server: server, l10n: l10n),
                   _TerminalTab(
                     serverId: widget.serverId,
                     input: _input,
@@ -173,7 +242,9 @@ class _ServerDetailScreenState extends State<ServerDetailScreen>
                   _ToolsTab(
                     serverId: widget.serverId,
                     l10n: l10n,
-                    onJumpTerminal: () => _tabs.animateTo(1),
+                    onJumpTerminal: () => _tabs.animateTo(_terminalTab),
+                    onRun: (cmd) => _runTool(context, cmd),
+                    onPrompt: _promptTool,
                   ),
                 ],
               ),
@@ -183,10 +254,23 @@ class _ServerDetailScreenState extends State<ServerDetailScreen>
 }
 
 class _OverviewTab extends StatelessWidget {
-  const _OverviewTab({required this.server, required this.l10n});
+  const _OverviewTab({
+    required this.server,
+    required this.l10n,
+    required this.onConfirm,
+    required this.onSay,
+  });
 
   final ServerSnapshot server;
   final AppLocalizations l10n;
+  final Future<void> Function(
+    BuildContext context, {
+    required String title,
+    required String body,
+    required Future<void> Function() onConfirm,
+  })
+  onConfirm;
+  final VoidCallback onSay;
 
   String _role() {
     return switch (server.role) {
@@ -200,11 +284,19 @@ class _OverviewTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final session = SessionScope.of(context);
     final tps = server.role == ServerRole.proxy
         ? '—'
         : server.online
         ? server.tps.toStringAsFixed(2)
         : '0.00';
+    final cpu = server.cpuPercent == null
+        ? '—'
+        : '${server.cpuPercent!.toStringAsFixed(0)}%';
+    final ram = server.memPercent == null
+        ? '—'
+        : '${server.memPercent!.toStringAsFixed(0)}%';
+
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
       children: [
@@ -232,24 +324,37 @@ class _OverviewTab extends StatelessWidget {
                 runSpacing: 10,
                 children: [
                   SkyStatChip(
-                    label: l10n.players,
-                    value: '${server.players}/${server.maxPlayers}',
-                    accent: AetherColors.cyan,
+                    label: l10n.cpu,
+                    value: cpu,
+                    accent: AetherColors.gold,
+                  ),
+                  SkyStatChip(
+                    label: l10n.ram,
+                    value: ram,
+                    accent: AetherColors.amethyst,
                   ),
                   SkyStatChip(
                     label: l10n.tps,
                     value: tps,
-                    accent: AetherColors.amethyst,
+                    accent: AetherColors.cyan,
                   ),
                   SkyStatChip(
-                    label: l10n.statusOnline,
-                    value: server.online
-                        ? l10n.statusOnline
-                        : l10n.statusOffline,
-                    accent: server.online
-                        ? AetherColors.online
-                        : AetherColors.offline,
+                    label: l10n.players,
+                    value: '${server.players}/${server.maxPlayers}',
+                    accent: AetherColors.online,
                   ),
+                  if (server.worldName != null)
+                    SkyStatChip(
+                      label: l10n.world,
+                      value: server.worldName!,
+                      accent: AetherColors.gold,
+                    ),
+                  if (server.version != null)
+                    SkyStatChip(
+                      label: l10n.version,
+                      value: server.version!,
+                      accent: AetherColors.mist,
+                    ),
                 ],
               ),
             ],
@@ -257,11 +362,143 @@ class _OverviewTab extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         SkySectionLabel(l10n.serverQuickNav, accent: AetherColors.cyan),
-        Text(
-          l10n.serverOverviewHint,
-          style: const TextStyle(color: AetherColors.mist, fontSize: 13),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            FilledButton.tonalIcon(
+              onPressed: () {
+                if (!session.canPower) {
+                  showRoleRestrictedSnack(context);
+                  return;
+                }
+                if (!session.craftyLive) return;
+                onConfirm(
+                  context,
+                  title: l10n.startServer,
+                  body: l10n.startServerConfirm(server.displayName),
+                  onConfirm: () => session.queueStart(serverId: server.id),
+                );
+              },
+              icon: const Icon(Icons.play_arrow, size: 18),
+              label: Text(l10n.startServer),
+            ),
+            OutlinedButton.icon(
+              onPressed: () {
+                if (!session.canPower) {
+                  showRoleRestrictedSnack(context);
+                  return;
+                }
+                if (!session.craftyLive) return;
+                onConfirm(
+                  context,
+                  title: l10n.stopServer,
+                  body: l10n.stopServerConfirm(server.displayName),
+                  onConfirm: () => session.queueStop(serverId: server.id),
+                );
+              },
+              icon: const Icon(Icons.stop, size: 18),
+              label: Text(l10n.stopServer),
+            ),
+            OutlinedButton.icon(
+              onPressed: () {
+                if (!session.canPower) {
+                  showRoleRestrictedSnack(context);
+                  return;
+                }
+                onConfirm(
+                  context,
+                  title: l10n.softRestart,
+                  body: session.craftyLive
+                      ? l10n.softRestartConfirmLive(server.displayName)
+                      : l10n.softRestartConfirm(server.displayName),
+                  onConfirm: () =>
+                      session.queueSoftRestart(serverId: server.id),
+                );
+              },
+              icon: const Icon(Icons.restart_alt, size: 18),
+              label: Text(l10n.softRestart),
+            ),
+            OutlinedButton.icon(
+              onPressed: onSay,
+              icon: const Icon(Icons.campaign_outlined, size: 18),
+              label: Text(l10n.toolSay),
+            ),
+          ],
         ),
       ],
+    );
+  }
+}
+
+class _PlayersTab extends StatelessWidget {
+  const _PlayersTab({required this.server, required this.l10n});
+
+  final ServerSnapshot server;
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    final session = SessionScope.of(context);
+    final players = server.onlinePlayers;
+    return RefreshIndicator(
+      color: AetherColors.cyan,
+      onRefresh: () => session.refreshPlayersViaList(serverId: server.id),
+      child: players.isEmpty
+          ? ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(20, 48, 20, 28),
+              children: [
+                Text(
+                  l10n.playersEmpty,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: AetherColors.mist),
+                ),
+              ],
+            )
+          : ListView.separated(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+              itemCount: players.length,
+              separatorBuilder: (_, _) => const SizedBox(height: 8),
+              itemBuilder: (context, i) {
+                final p = players[i];
+                return GlassCard(
+                  padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+                  accent: AetherColors.cyan,
+                  onTap: () => showPlayerActionsSheet(context, player: p),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        backgroundColor: AetherColors.cyan.withValues(
+                          alpha: 0.18,
+                        ),
+                        foregroundColor: AetherColors.cyan,
+                        child: Text(
+                          p.name.isEmpty ? '?' : p.name[0].toUpperCase(),
+                          style: const TextStyle(fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          p.name,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ),
+                      const Icon(
+                        Icons.tune_rounded,
+                        color: AetherColors.mist,
+                        size: 20,
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
     );
   }
 }
@@ -382,13 +619,15 @@ class _PowerTab extends StatelessWidget {
           title: l10n.startServer,
           subtitle: l10n.serverPowerStartHint,
           accent: AetherColors.online,
-          enabled: live,
-          onTap: () => onConfirm(
-            context,
-            title: l10n.startServer,
-            body: l10n.startServerConfirm(server.displayName),
-            onConfirm: () => session.queueStart(serverId: server.id),
-          ),
+          enabled: live && session.canPower,
+          onTap: live && session.canPower
+              ? () => onConfirm(
+                  context,
+                  title: l10n.startServer,
+                  body: l10n.startServerConfirm(server.displayName),
+                  onConfirm: () => session.queueStart(serverId: server.id),
+                )
+              : null,
         ),
         const SizedBox(height: 10),
         SkyTile(
@@ -396,13 +635,15 @@ class _PowerTab extends StatelessWidget {
           title: l10n.stopServer,
           subtitle: l10n.serverPowerStopHint,
           accent: AetherColors.offline,
-          enabled: live,
-          onTap: () => onConfirm(
-            context,
-            title: l10n.stopServer,
-            body: l10n.stopServerConfirm(server.displayName),
-            onConfirm: () => session.queueStop(serverId: server.id),
-          ),
+          enabled: live && session.canPower,
+          onTap: live && session.canPower
+              ? () => onConfirm(
+                  context,
+                  title: l10n.stopServer,
+                  body: l10n.stopServerConfirm(server.displayName),
+                  onConfirm: () => session.queueStop(serverId: server.id),
+                )
+              : null,
         ),
         const SizedBox(height: 10),
         SkyTile(
@@ -410,14 +651,18 @@ class _PowerTab extends StatelessWidget {
           title: l10n.softRestart,
           subtitle: l10n.serverPowerRestartHint,
           accent: AetherColors.cyan,
-          onTap: () => onConfirm(
-            context,
-            title: l10n.softRestart,
-            body: live
-                ? l10n.softRestartConfirmLive(server.displayName)
-                : l10n.softRestartConfirm(server.displayName),
-            onConfirm: () => session.queueSoftRestart(serverId: server.id),
-          ),
+          enabled: session.canPower,
+          onTap: session.canPower
+              ? () => onConfirm(
+                  context,
+                  title: l10n.softRestart,
+                  body: live
+                      ? l10n.softRestartConfirmLive(server.displayName)
+                      : l10n.softRestartConfirm(server.displayName),
+                  onConfirm: () =>
+                      session.queueSoftRestart(serverId: server.id),
+                )
+              : null,
         ),
         const SizedBox(height: 10),
         SkyTile(
@@ -437,71 +682,50 @@ class _ToolsTab extends StatelessWidget {
     required this.serverId,
     required this.l10n,
     required this.onJumpTerminal,
+    required this.onRun,
+    required this.onPrompt,
   });
 
   final String serverId;
   final AppLocalizations l10n;
   final VoidCallback onJumpTerminal;
+  final Future<void> Function(String command) onRun;
+  final Future<void> Function(
+    BuildContext context, {
+    required String title,
+    required String hint,
+    required String Function(String v) build,
+  })
+  onPrompt;
 
-  Future<void> _run(BuildContext context, String command) async {
-    await SessionScope.of(context).submitCommand(
-      command,
-      serverId: serverId,
+  Widget _grid(List<Widget> tiles) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final wide = constraints.maxWidth > 420;
+        if (!wide) {
+          return Column(
+            children: [
+              for (var i = 0; i < tiles.length; i++) ...[
+                if (i > 0) const SizedBox(height: 8),
+                tiles[i],
+              ],
+            ],
+          );
+        }
+        final half = (constraints.maxWidth - 8) / 2;
+        return Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final t in tiles) SizedBox(width: half, child: t),
+          ],
+        );
+      },
     );
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.toolCommandSent(command))),
-      );
-    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final tools = <(IconData, String, String, String, Color)>[
-      (
-        Icons.people_outline,
-        l10n.toolListPlayers,
-        'list',
-        l10n.toolListPlayersHint,
-        AetherColors.cyan,
-      ),
-      (
-        Icons.wb_sunny_outlined,
-        l10n.toolDay,
-        'time set day',
-        l10n.toolDayHint,
-        AetherColors.gold,
-      ),
-      (
-        Icons.nights_stay_outlined,
-        l10n.toolNight,
-        'time set night',
-        l10n.toolNightHint,
-        AetherColors.amethyst,
-      ),
-      (
-        Icons.cloud_off_outlined,
-        l10n.toolClearWeather,
-        'weather clear',
-        l10n.toolClearWeatherHint,
-        AetherColors.cyan,
-      ),
-      (
-        Icons.save_outlined,
-        l10n.toolSaveAll,
-        'save-all',
-        l10n.toolSaveAllHint,
-        AetherColors.online,
-      ),
-      (
-        Icons.bolt_outlined,
-        l10n.toolTps,
-        'tps',
-        l10n.toolTpsHint,
-        AetherColors.amethystDeep,
-      ),
-    ];
-
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
       children: [
@@ -511,23 +735,98 @@ class _ToolsTab extends StatelessWidget {
           style: const TextStyle(color: AetherColors.mist, fontSize: 13),
         ),
         const SizedBox(height: 14),
-        for (final t in tools) ...[
+        SkySectionLabel(l10n.devkitWorld, accent: AetherColors.gold),
+        _grid([
           SkyTile(
-            icon: t.$1,
-            title: t.$2,
-            subtitle: t.$4,
-            accent: t.$5,
-            onTap: () => _run(context, t.$3),
+            icon: Icons.wb_sunny_outlined,
+            title: l10n.toolDay,
+            subtitle: l10n.toolDayHint,
+            accent: AetherColors.gold,
+            onTap: () => onRun('time set day'),
           ),
-          const SizedBox(height: 10),
-        ],
-        SkyTile(
-          icon: Icons.terminal_rounded,
-          title: l10n.serverOpenTerminal,
-          subtitle: l10n.serverOpenTerminalHint,
-          accent: AetherColors.gold,
-          onTap: onJumpTerminal,
-        ),
+          SkyTile(
+            icon: Icons.nights_stay_outlined,
+            title: l10n.toolNight,
+            subtitle: l10n.toolNightHint,
+            accent: AetherColors.amethyst,
+            onTap: () => onRun('time set night'),
+          ),
+          SkyTile(
+            icon: Icons.cloud_off_outlined,
+            title: l10n.toolClearWeather,
+            subtitle: l10n.toolClearWeatherHint,
+            accent: AetherColors.cyan,
+            onTap: () => onRun('weather clear'),
+          ),
+          SkyTile(
+            icon: Icons.water_drop_outlined,
+            title: l10n.toolRain,
+            subtitle: l10n.toolRainHint,
+            accent: AetherColors.cyan,
+            onTap: () => onRun('weather rain'),
+          ),
+          SkyTile(
+            icon: Icons.thunderstorm_outlined,
+            title: l10n.toolThunder,
+            subtitle: l10n.toolThunderHint,
+            accent: AetherColors.amethystDeep,
+            onTap: () => onRun('weather thunder'),
+          ),
+          SkyTile(
+            icon: Icons.save_outlined,
+            title: l10n.toolSaveAll,
+            subtitle: l10n.toolSaveAllHint,
+            accent: AetherColors.online,
+            onTap: () => onRun('save-all'),
+          ),
+          SkyTile(
+            icon: Icons.bolt_outlined,
+            title: l10n.toolTps,
+            subtitle: l10n.toolTpsHint,
+            accent: AetherColors.amethystDeep,
+            onTap: () => onRun('tps'),
+          ),
+          SkyTile(
+            icon: Icons.lock_outline,
+            title: l10n.toolWhitelistOn,
+            subtitle: 'whitelist on',
+            accent: AetherColors.gold,
+            onTap: () => onRun('whitelist on'),
+          ),
+          SkyTile(
+            icon: Icons.lock_open_outlined,
+            title: l10n.toolWhitelistOff,
+            subtitle: 'whitelist off',
+            accent: AetherColors.mist,
+            onTap: () => onRun('whitelist off'),
+          ),
+          SkyTile(
+            icon: Icons.campaign_outlined,
+            title: l10n.toolSay,
+            subtitle: l10n.toolSayHint,
+            accent: AetherColors.cyan,
+            onTap: () => onPrompt(
+              context,
+              title: l10n.toolSay,
+              hint: l10n.toolSayHint,
+              build: (v) => 'say $v',
+            ),
+          ),
+          SkyTile(
+            icon: Icons.people_outline,
+            title: l10n.toolListPlayers,
+            subtitle: l10n.toolListPlayersHint,
+            accent: AetherColors.cyan,
+            onTap: () => onRun('list'),
+          ),
+          SkyTile(
+            icon: Icons.terminal_rounded,
+            title: l10n.serverOpenTerminal,
+            subtitle: l10n.serverOpenTerminalHint,
+            accent: AetherColors.gold,
+            onTap: onJumpTerminal,
+          ),
+        ]),
       ],
     );
   }

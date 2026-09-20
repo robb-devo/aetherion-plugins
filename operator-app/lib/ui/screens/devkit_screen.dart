@@ -7,6 +7,7 @@ import '../../state/session_scope.dart';
 import '../../theme/aether_colors.dart';
 import '../widgets/dialogs.dart';
 import '../widgets/glass_card.dart';
+import '../widgets/role_chrome.dart';
 import '../widgets/sky_tile.dart';
 import 'server_detail_screen.dart';
 
@@ -32,8 +33,13 @@ class _DevkitScreenState extends State<DevkitScreen> {
   Future<void> _send() async {
     final text = _input.text;
     if (text.trim().isEmpty) return;
+    final session = SessionScope.of(context);
+    if (!session.canCommand(text)) {
+      showRoleRestrictedSnack(context);
+      return;
+    }
     _input.clear();
-    await SessionScope.of(context).submitCommand(text);
+    await session.submitCommand(text);
     await Future<void>.delayed(const Duration(milliseconds: 30));
     if (_scroll.hasClients) {
       await _scroll.animateTo(
@@ -46,10 +52,59 @@ class _DevkitScreenState extends State<DevkitScreen> {
 
   Future<void> _runTool(String command) async {
     final l10n = AppLocalizations.of(context);
-    await SessionScope.of(context).submitCommand(command);
+    final session = SessionScope.of(context);
+    if (!session.canCommand(command)) {
+      showRoleRestrictedSnack(context);
+      return;
+    }
+    final err = await session.submitCommand(command);
     if (!mounted) return;
+    if (err == 'restricted') {
+      showRoleRestrictedSnack(context);
+      return;
+    }
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(l10n.toolCommandSent(command))),
+    );
+  }
+
+  Future<void> _promptCommand({
+    required String title,
+    required String hint,
+    required String Function(String value) build,
+  }) async {
+    final value = await showNoteDialog(
+      context: context,
+      title: title,
+      hint: hint,
+    );
+    if (value == null || value.trim().isEmpty || !mounted) return;
+    await _runTool(build(value.trim()));
+  }
+
+  Widget _tileGrid(List<Widget> tiles) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final wide = constraints.maxWidth > 420;
+        if (!wide) {
+          return Column(
+            children: [
+              for (var i = 0; i < tiles.length; i++) ...[
+                if (i > 0) const SizedBox(height: 8),
+                tiles[i],
+              ],
+            ],
+          );
+        }
+        final half = (constraints.maxWidth - 8) / 2;
+        return Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final t in tiles) SizedBox(width: half, child: t),
+          ],
+        );
+      },
     );
   }
 
@@ -132,46 +187,221 @@ class _DevkitScreenState extends State<DevkitScreen> {
             padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
             children: [
               SkySectionLabel(l10n.devkitWorld, accent: AetherColors.gold),
-              SkyTile(
-                icon: Icons.wb_sunny_outlined,
-                title: l10n.toolDay,
-                subtitle: l10n.toolDayHint,
-                accent: AetherColors.gold,
-                onTap: () => _runTool('time set day'),
-              ),
-              const SizedBox(height: 8),
-              SkyTile(
-                icon: Icons.nights_stay_outlined,
-                title: l10n.toolNight,
-                subtitle: l10n.toolNightHint,
-                accent: AetherColors.amethyst,
-                onTap: () => _runTool('time set night'),
-              ),
-              const SizedBox(height: 8),
-              SkyTile(
-                icon: Icons.cloud_off_outlined,
-                title: l10n.toolClearWeather,
-                subtitle: l10n.toolClearWeatherHint,
-                accent: AetherColors.cyan,
-                onTap: () => _runTool('weather clear'),
-              ),
+              _tileGrid([
+                SkyTile(
+                  icon: Icons.wb_sunny_outlined,
+                  title: l10n.toolDay,
+                  subtitle: l10n.toolDayHint,
+                  accent: AetherColors.gold,
+                  onTap: () => _runTool('time set day'),
+                ),
+                SkyTile(
+                  icon: Icons.nights_stay_outlined,
+                  title: l10n.toolNight,
+                  subtitle: l10n.toolNightHint,
+                  accent: AetherColors.amethyst,
+                  onTap: () => _runTool('time set night'),
+                ),
+                SkyTile(
+                  icon: Icons.cloud_off_outlined,
+                  title: l10n.toolClearWeather,
+                  subtitle: l10n.toolClearWeatherHint,
+                  accent: AetherColors.cyan,
+                  onTap: () => _runTool('weather clear'),
+                ),
+                SkyTile(
+                  icon: Icons.water_drop_outlined,
+                  title: l10n.toolRain,
+                  subtitle: l10n.toolRainHint,
+                  accent: AetherColors.cyan,
+                  onTap: () => _runTool('weather rain'),
+                ),
+                SkyTile(
+                  icon: Icons.thunderstorm_outlined,
+                  title: l10n.toolThunder,
+                  subtitle: l10n.toolThunderHint,
+                  accent: AetherColors.amethystDeep,
+                  onTap: () => _runTool('weather thunder'),
+                ),
+                SkyTile(
+                  icon: Icons.spa_outlined,
+                  title: l10n.toolDifficultyPeaceful,
+                  subtitle: 'difficulty peaceful',
+                  accent: AetherColors.online,
+                  onTap: () => _runTool('difficulty peaceful'),
+                ),
+                SkyTile(
+                  icon: Icons.sentiment_satisfied_outlined,
+                  title: l10n.toolDifficultyEasy,
+                  subtitle: 'difficulty easy',
+                  accent: AetherColors.gold,
+                  onTap: () => _runTool('difficulty easy'),
+                ),
+                SkyTile(
+                  icon: Icons.sentiment_neutral_outlined,
+                  title: l10n.toolDifficultyNormal,
+                  subtitle: 'difficulty normal',
+                  accent: AetherColors.cyan,
+                  onTap: () => _runTool('difficulty normal'),
+                ),
+                SkyTile(
+                  icon: Icons.sentiment_very_dissatisfied_outlined,
+                  title: l10n.toolDifficultyHard,
+                  subtitle: 'difficulty hard',
+                  accent: AetherColors.offline,
+                  onTap: () => _runTool('difficulty hard'),
+                ),
+                SkyTile(
+                  icon: Icons.inventory_2_outlined,
+                  title: l10n.toolKeepInvOn,
+                  subtitle: 'keepInventory true',
+                  accent: AetherColors.online,
+                  onTap: () => _runTool('gamerule keepInventory true'),
+                ),
+                SkyTile(
+                  icon: Icons.inventory_outlined,
+                  title: l10n.toolKeepInvOff,
+                  subtitle: 'keepInventory false',
+                  accent: AetherColors.mist,
+                  onTap: () => _runTool('gamerule keepInventory false'),
+                ),
+              ]),
+              const SizedBox(height: 16),
+              SkySectionLabel(l10n.devkitChat, accent: AetherColors.cyan),
+              _tileGrid([
+                SkyTile(
+                  icon: Icons.campaign_outlined,
+                  title: l10n.toolSay,
+                  subtitle: l10n.toolSayHint,
+                  accent: AetherColors.cyan,
+                  onTap: () => _promptCommand(
+                    title: l10n.toolSay,
+                    hint: l10n.toolSayHint,
+                    build: (v) => 'say $v',
+                  ),
+                ),
+                SkyTile(
+                  icon: Icons.title_rounded,
+                  title: l10n.toolTitle,
+                  subtitle: l10n.toolTitleHint,
+                  accent: AetherColors.gold,
+                  onTap: () => _promptCommand(
+                    title: l10n.toolTitle,
+                    hint: l10n.toolTitleHint,
+                    build: (v) => 'title @a title {"text":"$v"}',
+                  ),
+                ),
+              ]),
               const SizedBox(height: 16),
               SkySectionLabel(l10n.devkitPlayers, accent: AetherColors.cyan),
-              SkyTile(
-                icon: Icons.people_outline,
-                title: l10n.toolListPlayers,
-                subtitle: l10n.toolListPlayersHint,
-                accent: AetherColors.cyan,
-                onTap: () => _runTool('list'),
-              ),
-              const SizedBox(height: 8),
-              SkyTile(
-                icon: Icons.note_add_outlined,
-                title: l10n.whitelistNote,
-                subtitle: l10n.whitelistNoteHint,
-                accent: AetherColors.online,
-                onTap: () => _whitelistNote(context),
-              ),
+              _tileGrid([
+                SkyTile(
+                  icon: Icons.people_outline,
+                  title: l10n.toolListPlayers,
+                  subtitle: l10n.toolListPlayersHint,
+                  accent: AetherColors.cyan,
+                  onTap: () async {
+                    final messenger = ScaffoldMessenger.of(context);
+                    final sent = l10n.toolCommandSent('list');
+                    await session.refreshPlayersViaList();
+                    if (!mounted) return;
+                    messenger.showSnackBar(SnackBar(content: Text(sent)));
+                  },
+                ),
+                SkyTile(
+                  icon: Icons.person_search_outlined,
+                  title: l10n.navPlayers,
+                  subtitle: l10n.toolJumpPlayersHint,
+                  accent: AetherColors.amethyst,
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(l10n.toolJumpPlayersHint)),
+                    );
+                  },
+                ),
+                SkyTile(
+                  icon: Icons.note_add_outlined,
+                  title: l10n.whitelistNote,
+                  subtitle: l10n.whitelistNoteHint,
+                  accent: AetherColors.online,
+                  enabled: session.canPower,
+                  onTap: session.canPower ? () => _whitelistNote(context) : null,
+                ),
+              ]),
+              const SizedBox(height: 16),
+              SkySectionLabel(l10n.devkitModeration, accent: AetherColors.offline),
+              _tileGrid([
+                SkyTile(
+                  icon: Icons.logout_rounded,
+                  title: l10n.toolKick,
+                  subtitle: l10n.toolKickHint,
+                  accent: AetherColors.gold,
+                  enabled: session.canCommand('kick x'),
+                  onTap: session.canCommand('kick x')
+                      ? () => _promptCommand(
+                          title: l10n.toolKick,
+                          hint: l10n.playerNameHint,
+                          build: (v) => 'kick $v',
+                        )
+                      : null,
+                ),
+                SkyTile(
+                  icon: Icons.gavel_rounded,
+                  title: l10n.toolBan,
+                  subtitle: l10n.toolBanHint,
+                  accent: AetherColors.offline,
+                  enabled: session.canCommand('ban x'),
+                  onTap: session.canCommand('ban x')
+                      ? () => _promptCommand(
+                          title: l10n.toolBan,
+                          hint: l10n.playerNameHint,
+                          build: (v) => 'ban $v',
+                        )
+                      : null,
+                ),
+                SkyTile(
+                  icon: Icons.healing_outlined,
+                  title: l10n.toolPardon,
+                  subtitle: l10n.toolPardonHint,
+                  accent: AetherColors.online,
+                  enabled: session.canCommand('pardon x'),
+                  onTap: session.canCommand('pardon x')
+                      ? () => _promptCommand(
+                          title: l10n.toolPardon,
+                          hint: l10n.playerNameHint,
+                          build: (v) => 'pardon $v',
+                        )
+                      : null,
+                ),
+                SkyTile(
+                  icon: Icons.playlist_add_check,
+                  title: l10n.toolWhitelistAdd,
+                  subtitle: l10n.toolWhitelistAddHint,
+                  accent: AetherColors.online,
+                  enabled: session.canCommand('whitelist add x'),
+                  onTap: session.canCommand('whitelist add x')
+                      ? () => _promptCommand(
+                          title: l10n.toolWhitelistAdd,
+                          hint: l10n.playerNameHint,
+                          build: (v) => 'whitelist add $v',
+                        )
+                      : null,
+                ),
+                SkyTile(
+                  icon: Icons.playlist_remove,
+                  title: l10n.toolWhitelistRemove,
+                  subtitle: l10n.toolWhitelistRemoveHint,
+                  accent: AetherColors.offline,
+                  enabled: session.canCommand('whitelist remove x'),
+                  onTap: session.canCommand('whitelist remove x')
+                      ? () => _promptCommand(
+                          title: l10n.toolWhitelistRemove,
+                          hint: l10n.playerNameHint,
+                          build: (v) => 'whitelist remove $v',
+                        )
+                      : null,
+                ),
+              ]),
               const SizedBox(height: 16),
               SkySectionLabel(l10n.devkitPower, accent: AetherColors.offline),
               Wrap(
@@ -180,52 +410,68 @@ class _DevkitScreenState extends State<DevkitScreen> {
                 children: [
                   FilledButton.tonalIcon(
                     key: const Key('soft-restart'),
-                    onPressed: () => _confirmAction(
-                      context,
-                      title: l10n.softRestart,
-                      body: session.craftyLive
-                          ? l10n.softRestartConfirmLive(
-                              session.selectedServer?.displayName ??
-                                  session.selectedServerId,
-                            )
-                          : l10n.softRestartConfirm(
-                              session.selectedServer?.displayName ??
-                                  session.selectedServerId,
-                            ),
-                      onConfirm: session.queueSoftRestart,
-                    ),
+                    onPressed: () {
+                      if (!session.canPower) {
+                        showRoleRestrictedSnack(context);
+                        return;
+                      }
+                      _confirmAction(
+                        context,
+                        title: l10n.softRestart,
+                        body: session.craftyLive
+                            ? l10n.softRestartConfirmLive(
+                                session.selectedServer?.displayName ??
+                                    session.selectedServerId,
+                              )
+                            : l10n.softRestartConfirm(
+                                session.selectedServer?.displayName ??
+                                    session.selectedServerId,
+                              ),
+                        onConfirm: session.queueSoftRestart,
+                      );
+                    },
                     icon: const Icon(Icons.restart_alt, size: 18),
                     label: Text(l10n.softRestart),
                   ),
                   OutlinedButton.icon(
                     key: const Key('start-server'),
-                    onPressed: session.craftyLive
-                        ? () => _confirmAction(
-                            context,
-                            title: l10n.startServer,
-                            body: l10n.startServerConfirm(
-                              session.selectedServer?.displayName ??
-                                  session.selectedServerId,
-                            ),
-                            onConfirm: session.queueStart,
-                          )
-                        : null,
+                    onPressed: () {
+                      if (!session.canPower) {
+                        showRoleRestrictedSnack(context);
+                        return;
+                      }
+                      if (!session.craftyLive) return;
+                      _confirmAction(
+                        context,
+                        title: l10n.startServer,
+                        body: l10n.startServerConfirm(
+                          session.selectedServer?.displayName ??
+                              session.selectedServerId,
+                        ),
+                        onConfirm: session.queueStart,
+                      );
+                    },
                     icon: const Icon(Icons.play_arrow, size: 18),
                     label: Text(l10n.startServer),
                   ),
                   OutlinedButton.icon(
                     key: const Key('stop-server'),
-                    onPressed: session.craftyLive
-                        ? () => _confirmAction(
-                            context,
-                            title: l10n.stopServer,
-                            body: l10n.stopServerConfirm(
-                              session.selectedServer?.displayName ??
-                                  session.selectedServerId,
-                            ),
-                            onConfirm: session.queueStop,
-                          )
-                        : null,
+                    onPressed: () {
+                      if (!session.canPower) {
+                        showRoleRestrictedSnack(context);
+                        return;
+                      }
+                      if (!session.craftyLive) return;
+                      _confirmAction(
+                        context,
+                        title: l10n.stopServer,
+                        body: l10n.stopServerConfirm(
+                          session.selectedServer?.displayName ??
+                              session.selectedServerId,
+                        ),
+                        onConfirm: session.queueStop,
+                      );
+                    },
                     icon: const Icon(Icons.stop, size: 18),
                     label: Text(l10n.stopServer),
                   ),
@@ -242,6 +488,38 @@ class _DevkitScreenState extends State<DevkitScreen> {
                   ),
                 ],
               ),
+              const SizedBox(height: 16),
+              SkySectionLabel(l10n.devkitMaintenance, accent: AetherColors.amethyst),
+              _tileGrid([
+                SkyTile(
+                  icon: Icons.save_outlined,
+                  title: l10n.toolSaveAll,
+                  subtitle: l10n.toolSaveAllHint,
+                  accent: AetherColors.online,
+                  onTap: () => _runTool('save-all'),
+                ),
+                SkyTile(
+                  icon: Icons.lock_outline,
+                  title: l10n.toolWhitelistOn,
+                  subtitle: 'whitelist on',
+                  accent: AetherColors.gold,
+                  onTap: () => _runTool('whitelist on'),
+                ),
+                SkyTile(
+                  icon: Icons.lock_open_outlined,
+                  title: l10n.toolWhitelistOff,
+                  subtitle: 'whitelist off',
+                  accent: AetherColors.mist,
+                  onTap: () => _runTool('whitelist off'),
+                ),
+                SkyTile(
+                  icon: Icons.bolt_outlined,
+                  title: l10n.toolTps,
+                  subtitle: l10n.toolTpsHint,
+                  accent: AetherColors.amethystDeep,
+                  onTap: () => _runTool('tps'),
+                ),
+              ]),
               const SizedBox(height: 16),
               Row(
                 children: [

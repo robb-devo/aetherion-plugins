@@ -21,10 +21,12 @@ class OperatorApp extends StatefulWidget {
 class _OperatorAppState extends State<OperatorApp> {
   final _nav = GlobalKey<NavigatorState>();
   var _prompted = false;
+  LocaleOption? _locale;
 
   @override
   void initState() {
     super.initState();
+    _locale = widget.session.locale;
     widget.session.addListener(_onSession);
     WidgetsBinding.instance.addPostFrameCallback((_) => _maybePrompt());
   }
@@ -36,7 +38,12 @@ class _OperatorAppState extends State<OperatorApp> {
   }
 
   void _onSession() {
-    if (mounted) _maybePrompt();
+    if (!mounted) return;
+    // Rebuild MaterialApp only when locale changes — not on every console tick.
+    if (_locale != widget.session.locale) {
+      setState(() => _locale = widget.session.locale);
+    }
+    _maybePrompt();
   }
 
   Future<void> _maybePrompt() async {
@@ -63,7 +70,6 @@ class _OperatorAppState extends State<OperatorApp> {
         ],
       ),
     );
-    // Keep pendingUpdate so Settings can still install the release.
     widget.session.snoozeUpdatePrompt();
     if (go == true && _nav.currentContext != null) {
       await applyOperatorUpdate(_nav.currentContext!, release);
@@ -73,21 +79,22 @@ class _OperatorAppState extends State<OperatorApp> {
   @override
   Widget build(BuildContext context) {
     final session = widget.session;
+    final locale = _locale ?? session.locale;
     return SessionScope(
       session: session,
-      child: AnimatedBuilder(
-        animation: session,
-        builder: (context, _) {
-          return MaterialApp(
-            navigatorKey: _nav,
-            title: 'Aetherion Operator',
-            debugShowCheckedModeBanner: false,
-            theme: AetherTheme.dark(),
-            locale: Locale(session.locale.code),
-            supportedLocales: AppLocalizations.supportedLocales,
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            home: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 420),
+      child: MaterialApp(
+        navigatorKey: _nav,
+        title: 'Aetherion Operator',
+        debugShowCheckedModeBanner: false,
+        theme: AetherTheme.dark(),
+        locale: Locale(locale.code),
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        home: ListenableBuilder(
+          listenable: session,
+          builder: (context, _) {
+            return AnimatedSwitcher(
+              duration: const Duration(milliseconds: 320),
               switchInCurve: Curves.easeOutCubic,
               switchOutCurve: Curves.easeInCubic,
               transitionBuilder: (child, anim) =>
@@ -95,9 +102,9 @@ class _OperatorAppState extends State<OperatorApp> {
               child: session.current == null
                   ? const LoginScreen(key: ValueKey('login'))
                   : const ShellScreen(key: ValueKey('shell')),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }

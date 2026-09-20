@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import '../data/server_snapshot.dart';
 import 'crafty_client.dart';
 import 'crafty_config.dart';
+import 'player_list_parser.dart';
 
 /// Crafty Controller v2 client.
 ///
@@ -62,20 +63,26 @@ class HttpCraftyClient implements CraftyClient {
       );
     }
     final list = _asList(jsonDecode(response.body));
-    final servers = <ServerSnapshot>[];
+    final mapped = <ServerSnapshot>[];
     for (final raw in list) {
       if (raw is! Map) continue;
-      var server = _mapServer(Map<String, dynamic>.from(raw));
-      try {
-        final stats = await _get('/api/v2/servers/${server.id}/stats');
-        if (stats.statusCode < 400) {
-          server = _mergeStats(server, jsonDecode(stats.body));
-        }
-      } catch (_) {}
-      servers.add(server);
+      mapped.add(_mapServer(Map<String, dynamic>.from(raw)));
     }
+
+    final enriched = await Future.wait(
+      mapped.map((server) async {
+        try {
+          final stats = await _get('/api/v2/servers/${server.id}/stats');
+          if (stats.statusCode < 400) {
+            return _mergeStats(server, jsonDecode(stats.body));
+          }
+        } catch (_) {}
+        return server;
+      }),
+    );
+
     return NetworkSnapshot(
-      servers: servers,
+      servers: enriched,
       mock: false,
       fetchedAt: DateTime.now(),
     );
@@ -193,11 +200,15 @@ class HttpCraftyClient implements CraftyClient {
         raw['running'] == true ||
         '${raw['status']}'.toLowerCase() == 'running' ||
         '${raw['status']}'.toLowerCase() == 'online';
-    final players = _asInt(
-      raw['player_count'] ??
-          (raw['online'] is bool ? 0 : raw['online']) ??
-          raw['players'],
-    );
+    final playersRaw = raw['players'];
+    final nameList = parsePlayerNames(playersRaw);
+    final players = nameList.isNotEmpty
+        ? nameList.length
+        : _asInt(
+            raw['player_count'] ??
+                (raw['online'] is bool ? 0 : raw['online']) ??
+                (playersRaw is num ? playersRaw : 0),
+          );
     final max = _asInt(raw['max'] ?? raw['max_players'] ?? 0);
     final tps = _asDouble(raw['tps'] ?? raw['mspt']);
     return ServerSnapshot(
@@ -209,6 +220,11 @@ class HttpCraftyClient implements CraftyClient {
       maxPlayers: max,
       tps: tps,
       craftyId: id,
+      onlinePlayers: playersOnServer(
+        serverId: id,
+        serverName: name,
+        names: nameList,
+      ),
     );
   }
 
@@ -221,6 +237,8 @@ class HttpCraftyClient implements CraftyClient {
       } else {
         data = decoded;
       }
+    } else if (decoded is Map) {
+      data = Map<String, dynamic>.from(decoded);
     }
     if (data == null) return server;
     final stats = data['stats'] is Map
@@ -232,20 +250,62 @@ class HttpCraftyClient implements CraftyClient {
         '${data['status']}'.toLowerCase() == 'online' ||
         '${stats['status']}'.toLowerCase() == 'online' ||
         '${data['status']}'.toLowerCase() == 'running';
-    final players = _asInt(
-      data['online'] ??
-          data['players'] ??
-          data['player_count'] ??
-          stats['online'] ??
-          stats['players'],
-    );
+
+    final playersRaw =
+        data['online_players'] ??
+        stats['online_players'] ??
+        data['players'] ??
+        stats['players'];
+    final nameList = parsePlayerNames(playersRaw);
+
+    var players = nameList.isNotEmpty
+        ? nameList.length
+        : _asInt(
+            data['online'] ??
+                data['player_count'] ??
+                stats['online'] ??
+                (playersRaw is num ? playersRaw : null),
+          );
+    if (players == 0 && nameList.isEmpty) {
+      players = server.players;
+    }
+
     final max = _asInt(data['max'] ?? data['max_players'] ?? server.maxPlayers);
     final tps = _asDouble(data['tps'] ?? stats['tps'] ?? server.tps);
+    final cpu = _asDoubleOrNull(
+      data['cpu'] ?? stats['cpu'] ?? data['cpu_usage'] ?? stats['cpu_usage'],
+    );
+    final mem = _asDoubleOrNull(
+      data['mem_percent'] ??
+          stats['mem_percent'] ??
+          data['memory_percent'] ??
+          stats['memory_percent'] ??
+          data['mem'] ??
+          stats['mem'],
+    );
+    final world = _asString(
+      data['world_name'] ?? stats['world_name'] ?? data['world'] ?? stats['world'],
+    );
+    final version = _asString(
+      data['version'] ?? stats['version'] ?? data['mc_version'],
+    );
+
     return server.copyWith(
       online: onlineFlag || server.online,
       players: players,
       tps: tps,
       maxPlayers: max == 0 ? server.maxPlayers : max,
+      cpuPercent: cpu ?? server.cpuPercent,
+      memPercent: mem ?? server.memPercent,
+      worldName: world ?? server.worldName,
+      version: version ?? server.version,
+      onlinePlayers: nameList.isEmpty
+          ? server.onlinePlayers
+          : playersOnServer(
+              serverId: server.id,
+              serverName: server.displayName,
+              names: nameList,
+            ),
     );
   }
 
@@ -253,13 +313,29 @@ class HttpCraftyClient implements CraftyClient {
     if (value is int) return value;
     if (value is num) return value.toInt();
     if (value is bool) return 0;
+    if (value is List) return value.length;
     return int.tryParse('$value') ?? 0;
   }
 
   double _asDouble(dynamic value) {
     if (value is double) return value;
     if (value is num) return value.toDouble();
-    return double.tryParse('$value') ?? 0;
+    // Crafty sometimes returns "12.3 %"
+    final cleaned = '$value'.replaceAll('%', '').trim();
+    return double.tryParse(cleaned) ?? 0;
+  }
+
+  double? _asDoubleOrNull(dynamic value) {
+    if (value == null) return null;
+    if (value is String && value.trim().isEmpty) return null;
+    final v = _asDouble(value);
+    return v;
+  }
+
+  String? _asString(dynamic value) {
+    if (value == null) return null;
+    final s = '$value'.trim();
+    return s.isEmpty || s == 'null' ? null : s;
   }
 }
 

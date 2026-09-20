@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import '../../platform/platform_info.dart';
 import '../../theme/aether_colors.dart';
 import '../../theme/aether_theme.dart';
 
@@ -29,6 +31,8 @@ class SkyTile extends StatefulWidget {
 class _SkyTileState extends State<SkyTile> {
   bool _hot = false;
 
+  bool get _cheapHover => !kIsWeb && isWindowsDesktop;
+
   @override
   Widget build(BuildContext context) {
     final enabled = widget.enabled && widget.onTap != null;
@@ -36,29 +40,35 @@ class _SkyTileState extends State<SkyTile> {
     return MouseRegion(
       onEnter: enabled ? (_) => setState(() => _hot = true) : null,
       onExit: enabled ? (_) => setState(() => _hot = false) : null,
-      child: GestureDetector(
-        onTap: enabled ? widget.onTap : null,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: enabled ? widget.onTap : null,
+          borderRadius: BorderRadius.circular(14),
+          child: AnimatedContainer(
+          duration: Duration(milliseconds: _cheapHover ? 80 : 180),
           curve: Curves.easeOutCubic,
           padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+          constraints: const BoxConstraints(minHeight: 56),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
             color: _hot
                 ? AetherColors.glassFillStrong
-                : const Color(0xFF12101C),
+                : AetherColors.surface,
             border: Border.all(
               color: _hot
                   ? accent.withValues(alpha: 0.55)
                   : AetherColors.glassStroke,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: accent.withValues(alpha: _hot ? 0.22 : 0.06),
-                blurRadius: _hot ? 16 : 8,
-                offset: const Offset(0, 6),
-              ),
-            ],
+            boxShadow: _cheapHover
+                ? const []
+                : [
+                    BoxShadow(
+                      color: accent.withValues(alpha: _hot ? 0.22 : 0.06),
+                      blurRadius: _hot ? 16 : 8,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
           ),
           child: Row(
             children: [
@@ -121,6 +131,7 @@ class _SkyTileState extends State<SkyTile> {
             ],
           ),
         ),
+        ),
       ),
     );
   }
@@ -182,7 +193,7 @@ class SkyStatChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        color: const Color(0xFF12101C),
+        color: AetherColors.surface,
         border: Border.all(color: AetherColors.glassStroke),
       ),
       child: Column(

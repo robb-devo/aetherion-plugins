@@ -1,9 +1,9 @@
 {
-  "version": "0.2.5",
+  "version": "0.2.6",
   "buildStamp": "20260920",
-  "tag": "operator-app-0.2.5",
+  "tag": "operator-app-0.2.6",
   "apkUrl": "https://donnernet.de/operator-app/operator_app_release.apk",
   "windowsUrl": "https://donnernet.de/operator-app/operator_app_windows.zip",
   "htmlUrl": "https://donnernet.de/operator-app/",
-  "notes": "In-app update install (download + install without leaving the app)"
+  "notes": "Players roster + full DevKit, Lime observer (browse + mild tools), Windows perf, AAA polish"
 }

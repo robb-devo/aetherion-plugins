@@ -4,6 +4,7 @@ import 'package:operator_app/data/account_store.dart';
 import 'package:operator_app/data/crafty_secrets.dart';
 import 'package:operator_app/data/github_token_store.dart';
 import 'package:operator_app/data/operator_account.dart';
+import 'package:operator_app/data/operator_capabilities.dart';
 import 'package:operator_app/data/pin.dart';
 import 'package:operator_app/data/session_store.dart';
 import 'package:operator_app/state/operator_session.dart';
@@ -26,6 +27,9 @@ OperatorSession _session({
   );
 }
 
+OperatorAccount _byName(OperatorSession session, String name) =>
+    session.accounts.singleWhere((a) => a.name == name);
+
 void main() {
   test('PIN hash is stable and not stored in the clear', () {
     final a = hashPin('2468');
@@ -46,6 +50,29 @@ void main() {
     expect(seed.checkPin('0000'), isFalse);
   });
 
+  test('seed Lime stores citrus PIN hash', () {
+    final seed = OperatorAccount.seedLime();
+    expect(seed.id, 'seed-lime');
+    expect(seed.name, 'Lime');
+    expect(seed.hasPin, isTrue);
+    expect(seed.pinHash, hashPin('citrus'));
+    expect(seed.pinHash!.contains('citrus'), isFalse);
+    expect(seed.checkPin('citrus'), isTrue);
+    expect(seed.checkPin('04206951'), isFalse);
+    expect(seed.role, OperatorRole.observer);
+  });
+
+  test('bootstrap ensures Operator and Lime coexist', () async {
+    final session = _session(
+      persistence: MemoryAccountPersistence(
+        seed: [OperatorAccount.seedOperator()],
+      ),
+    );
+    await session.bootstrap();
+    expect(session.accounts.map((a) => a.name), containsAll(['Operator', 'Lime']));
+    expect(_byName(session, 'Lime').checkPin('citrus'), isTrue);
+  });
+
   test('bootstrap hashes a legacy seed Operator that had no PIN', () async {
     final session = _session(
       persistence: MemoryAccountPersistence(
@@ -59,18 +86,19 @@ void main() {
       ),
     );
     await session.bootstrap();
-    expect(session.accounts.single.hasPin, isTrue);
-    expect(await session.signIn(session.accounts.single), 'pin');
-    expect(await session.signIn(session.accounts.single, pin: '04206951'), isNull);
+    final op = _byName(session, 'Operator');
+    expect(op.hasPin, isTrue);
+    expect(await session.signIn(op), 'pin');
+    expect(await session.signIn(op, pin: '04206951'), isNull);
   });
 
   test('session add/remove names and optional PIN', () async {
     final session = _session();
     await session.bootstrap();
-    expect(session.accounts.single.name, 'Operator');
-    expect(session.accounts.single.hasPin, isTrue);
-    expect(await session.signIn(session.accounts.single), 'pin');
-    expect(await session.signIn(session.accounts.single, pin: '04206951'), isNull);
+    final op = _byName(session, 'Operator');
+    expect(op.hasPin, isTrue);
+    expect(await session.signIn(op), 'pin');
+    expect(await session.signIn(op, pin: '04206951'), isNull);
     await session.signOut();
 
     expect(await session.addAccount(name: 'bad name'), 'invalid');
@@ -101,7 +129,7 @@ void main() {
     await first.bootstrap();
     expect(first.current, isNull);
     expect(
-      await first.signIn(first.accounts.single, pin: '04206951'),
+      await first.signIn(_byName(first, 'Operator'), pin: '04206951'),
       isNull,
     );
 
@@ -129,9 +157,21 @@ void main() {
     expect(snap.mock, isTrue);
     expect(snap.servers.map((s) => s.id), containsAll(['velocity', 'hub', 'mmo-r', 'mmo-d', 'mmo-c']));
     expect(snap.servers.firstWhere((s) => s.id == 'mmo-c').online, isFalse);
+    expect(snap.allPlayers, isNotEmpty);
 
     final cmd = await client.sendCommand(serverId: 'hub', command: 'list');
     expect(cmd.ok, isTrue);
-    expect(cmd.message, contains('list'));
+    expect(cmd.message, contains('players online'));
+    expect(cmd.message, contains('Nova'));
+  });
+
+  test('console is capped at 200 lines', () async {
+    final session = _session();
+    await session.bootstrap();
+    await session.signIn(_byName(session, 'Operator'), pin: '04206951');
+    for (var i = 0; i < 220; i++) {
+      await session.submitCommand('echo $i');
+    }
+    expect(session.console.length, lessThanOrEqualTo(200));
   });
 }

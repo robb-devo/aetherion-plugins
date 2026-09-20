@@ -47,6 +47,58 @@ abstract final class AetherTheme {
           color: AetherColors.white,
         ),
       ),
+      cardTheme: CardThemeData(
+        color: AetherColors.surface,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: AetherColors.glassStroke),
+        ),
+      ),
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: AetherColors.ink,
+        modalBackgroundColor: AetherColors.ink,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+        ),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        height: 72,
+        backgroundColor: AetherColors.ink.withValues(alpha: 0.94),
+        indicatorColor: AetherColors.cyan.withValues(alpha: 0.2),
+        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+          final selected = states.contains(WidgetState.selected);
+          return TextStyle(
+            fontFamily: manrope,
+            fontSize: 11,
+            fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+            color: selected ? AetherColors.cyan : AetherColors.mist,
+          );
+        }),
+        iconTheme: WidgetStateProperty.resolveWith((states) {
+          final selected = states.contains(WidgetState.selected);
+          return IconThemeData(
+            size: 22,
+            color: selected ? AetherColors.cyan : AetherColors.mist,
+          );
+        }),
+      ),
+      navigationRailTheme: NavigationRailThemeData(
+        backgroundColor: Colors.transparent,
+        indicatorColor: AetherColors.cyan.withValues(alpha: 0.18),
+        selectedIconTheme: const IconThemeData(color: AetherColors.cyan),
+        unselectedIconTheme: const IconThemeData(color: AetherColors.mist),
+        selectedLabelTextStyle: const TextStyle(
+          color: AetherColors.cyan,
+          fontWeight: FontWeight.w700,
+          fontSize: 12,
+        ),
+        unselectedLabelTextStyle: const TextStyle(
+          color: AetherColors.mist,
+          fontSize: 12,
+        ),
+      ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AetherColors.glassFill,
@@ -78,6 +130,7 @@ abstract final class AetherTheme {
           backgroundColor: AetherColors.cyan,
           foregroundColor: AetherColors.voidBg,
           elevation: 0,
+          minimumSize: const Size(48, 48),
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
@@ -92,6 +145,7 @@ abstract final class AetherTheme {
         style: OutlinedButton.styleFrom(
           foregroundColor: AetherColors.mist,
           side: const BorderSide(color: AetherColors.glassStroke),
+          minimumSize: const Size(48, 48),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),

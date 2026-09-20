@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import '../../platform/platform_info.dart';
 import '../../theme/aether_colors.dart';
 
 class GlassCard extends StatefulWidget {
@@ -23,37 +25,47 @@ class GlassCard extends StatefulWidget {
 class _GlassCardState extends State<GlassCard> {
   bool _hot = false;
 
+  bool get _cheapHover => !kIsWeb && isWindowsDesktop;
+
   @override
   Widget build(BuildContext context) {
     final accent = widget.accent ?? AetherColors.amethyst;
     final border = _hot ? accent.withValues(alpha: 0.55) : AetherColors.glassStroke;
     final card = AnimatedContainer(
-      duration: const Duration(milliseconds: 220),
+      duration: Duration(milliseconds: _cheapHover ? 90 : 220),
       curve: Curves.easeOutCubic,
       padding: widget.padding,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
         color: _hot ? AetherColors.glassFillStrong : AetherColors.glassFill,
         border: Border.all(color: border),
-        boxShadow: [
-          BoxShadow(
-            color: accent.withValues(alpha: _hot ? 0.18 : 0.08),
-            blurRadius: _hot ? 22 : 12,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        boxShadow: _cheapHover
+            ? const []
+            : [
+                BoxShadow(
+                  color: accent.withValues(alpha: _hot ? 0.18 : 0.08),
+                  blurRadius: _hot ? 22 : 12,
+                  offset: const Offset(0, 8),
+                ),
+              ],
       ),
       child: widget.child,
     );
 
-    final interactive = MouseRegion(
+    return MouseRegion(
       onEnter: (_) => setState(() => _hot = true),
       onExit: (_) => setState(() => _hot = false),
       child: widget.onTap == null
           ? card
-          : GestureDetector(onTap: widget.onTap, child: card),
+          : Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: widget.onTap,
+                borderRadius: BorderRadius.circular(18),
+                child: card,
+              ),
+            ),
     );
-    return interactive;
   }
 }
 

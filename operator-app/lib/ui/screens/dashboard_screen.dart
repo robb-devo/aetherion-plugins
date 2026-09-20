@@ -200,6 +200,10 @@ class _ServerRow extends StatelessWidget {
         : server.online
         ? server.tps.toStringAsFixed(2)
         : '0.00';
+    final meta = <String>[
+      if (server.worldName != null) server.worldName!,
+      if (server.version != null) server.version!,
+    ].join(' · ');
     return GlassCard(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
       accent: server.online ? AetherColors.cyan : AetherColors.offline,
@@ -215,12 +219,15 @@ class _ServerRow extends StatelessWidget {
                     Text(
                       server.displayName,
                       style: const TextStyle(
+                        fontFamily: AetherTheme.cinzel,
                         fontWeight: FontWeight.w800,
                         fontSize: 16,
+                        letterSpacing: 0.6,
                       ),
                     ),
+                    const SizedBox(height: 2),
                     Text(
-                      _role(),
+                      meta.isEmpty ? _role() : '${_role()} · $meta',
                       style: const TextStyle(
                         color: AetherColors.mist,
                         fontSize: 12,
@@ -247,6 +254,10 @@ class _ServerRow extends StatelessWidget {
               _mini(l10n.players, '${server.players}/${server.maxPlayers}'),
               const SizedBox(width: 16),
               _mini(l10n.tps, tpsLabel),
+              if (server.cpuPercent != null) ...[
+                const SizedBox(width: 16),
+                _mini(l10n.cpu, '${server.cpuPercent!.toStringAsFixed(0)}%'),
+              ],
               const SizedBox(width: 16),
               Expanded(
                 child: _TpsBar(

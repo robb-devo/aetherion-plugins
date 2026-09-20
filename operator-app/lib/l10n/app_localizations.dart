@@ -236,6 +236,12 @@ abstract class AppLocalizations {
   /// **'Dashboard'**
   String get navDashboard;
 
+  /// No description provided for @navPlayers.
+  ///
+  /// In en, this message translates to:
+  /// **'Players'**
+  String get navPlayers;
+
   /// No description provided for @navDevkit.
   ///
   /// In en, this message translates to:
@@ -314,11 +320,119 @@ abstract class AppLocalizations {
   /// **'Players'**
   String get players;
 
+  /// No description provided for @playersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Players'**
+  String get playersTitle;
+
+  /// No description provided for @playersBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Network-wide roster from Crafty stats. Pull to refresh or open actions on a name.'**
+  String get playersBody;
+
+  /// No description provided for @playersEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No players online right now.'**
+  String get playersEmpty;
+
+  /// No description provided for @playersSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search players or servers'**
+  String get playersSearch;
+
+  /// No description provided for @actionRestricted.
+  ///
+  /// In en, this message translates to:
+  /// **'That action is not allowed for this account.'**
+  String get actionRestricted;
+
+  /// No description provided for @playerOnServer.
+  ///
+  /// In en, this message translates to:
+  /// **'on {server}'**
+  String playerOnServer(String server);
+
+  /// No description provided for @playerActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Operator actions'**
+  String get playerActions;
+
+  /// No description provided for @playerActionConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Run {action} on {player}?'**
+  String playerActionConfirm(String action, String player);
+
+  /// No description provided for @playerReasonHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason (optional)'**
+  String get playerReasonHint;
+
+  /// No description provided for @playerMsgHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Message text'**
+  String get playerMsgHint;
+
+  /// No description provided for @playerTpTargetHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Target player name'**
+  String get playerTpTargetHint;
+
+  /// No description provided for @playerTpCoordsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'x y z'**
+  String get playerTpCoordsHint;
+
+  /// No description provided for @playerNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Player name'**
+  String get playerNameHint;
+
   /// No description provided for @tps.
   ///
   /// In en, this message translates to:
   /// **'TPS'**
   String get tps;
+
+  /// No description provided for @cpu.
+  ///
+  /// In en, this message translates to:
+  /// **'CPU'**
+  String get cpu;
+
+  /// No description provided for @ram.
+  ///
+  /// In en, this message translates to:
+  /// **'RAM'**
+  String get ram;
+
+  /// No description provided for @world.
+  ///
+  /// In en, this message translates to:
+  /// **'World'**
+  String get world;
+
+  /// No description provided for @version.
+  ///
+  /// In en, this message translates to:
+  /// **'Version'**
+  String get version;
+
+  /// No description provided for @softRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-refresh network every 15s while signed in'**
+  String get softRefresh;
 
   /// No description provided for @serversOnline.
   ///
@@ -404,6 +518,24 @@ abstract class AppLocalizations {
   /// **'Players'**
   String get devkitPlayers;
 
+  /// No description provided for @devkitChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat'**
+  String get devkitChat;
+
+  /// No description provided for @devkitModeration.
+  ///
+  /// In en, this message translates to:
+  /// **'Moderation'**
+  String get devkitModeration;
+
+  /// No description provided for @devkitMaintenance.
+  ///
+  /// In en, this message translates to:
+  /// **'Maintenance'**
+  String get devkitMaintenance;
+
   /// No description provided for @devkitPower.
   ///
   /// In en, this message translates to:
@@ -439,6 +571,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Overview'**
   String get serverTabOverview;
+
+  /// No description provided for @serverTabPlayers.
+  ///
+  /// In en, this message translates to:
+  /// **'Players'**
+  String get serverTabPlayers;
 
   /// No description provided for @serverTabTerminal.
   ///
@@ -554,6 +692,12 @@ abstract class AppLocalizations {
   /// **'Runs /list on the target'**
   String get toolListPlayersHint;
 
+  /// No description provided for @toolJumpPlayersHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the Players tab for the full roster'**
+  String get toolJumpPlayersHint;
+
   /// No description provided for @toolDay.
   ///
   /// In en, this message translates to:
@@ -589,6 +733,270 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'weather clear'**
   String get toolClearWeatherHint;
+
+  /// No description provided for @toolRain.
+  ///
+  /// In en, this message translates to:
+  /// **'Rain'**
+  String get toolRain;
+
+  /// No description provided for @toolRainHint.
+  ///
+  /// In en, this message translates to:
+  /// **'weather rain'**
+  String get toolRainHint;
+
+  /// No description provided for @toolThunder.
+  ///
+  /// In en, this message translates to:
+  /// **'Thunder'**
+  String get toolThunder;
+
+  /// No description provided for @toolThunderHint.
+  ///
+  /// In en, this message translates to:
+  /// **'weather thunder'**
+  String get toolThunderHint;
+
+  /// No description provided for @toolDifficultyPeaceful.
+  ///
+  /// In en, this message translates to:
+  /// **'Peaceful'**
+  String get toolDifficultyPeaceful;
+
+  /// No description provided for @toolDifficultyEasy.
+  ///
+  /// In en, this message translates to:
+  /// **'Easy'**
+  String get toolDifficultyEasy;
+
+  /// No description provided for @toolDifficultyNormal.
+  ///
+  /// In en, this message translates to:
+  /// **'Normal'**
+  String get toolDifficultyNormal;
+
+  /// No description provided for @toolDifficultyHard.
+  ///
+  /// In en, this message translates to:
+  /// **'Hard'**
+  String get toolDifficultyHard;
+
+  /// No description provided for @toolKeepInvOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep inventory on'**
+  String get toolKeepInvOn;
+
+  /// No description provided for @toolKeepInvOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep inventory off'**
+  String get toolKeepInvOff;
+
+  /// No description provided for @toolSay.
+  ///
+  /// In en, this message translates to:
+  /// **'Say'**
+  String get toolSay;
+
+  /// No description provided for @toolSayHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Broadcast a chat message'**
+  String get toolSayHint;
+
+  /// No description provided for @toolTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get toolTitle;
+
+  /// No description provided for @toolTitleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Show a title to all players'**
+  String get toolTitleHint;
+
+  /// No description provided for @toolKick.
+  ///
+  /// In en, this message translates to:
+  /// **'Kick'**
+  String get toolKick;
+
+  /// No description provided for @toolKickHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Kick a player'**
+  String get toolKickHint;
+
+  /// No description provided for @toolBan.
+  ///
+  /// In en, this message translates to:
+  /// **'Ban'**
+  String get toolBan;
+
+  /// No description provided for @toolBanHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Ban a player'**
+  String get toolBanHint;
+
+  /// No description provided for @toolPardon.
+  ///
+  /// In en, this message translates to:
+  /// **'Pardon'**
+  String get toolPardon;
+
+  /// No description provided for @toolPardonHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Unban a player'**
+  String get toolPardonHint;
+
+  /// No description provided for @toolOp.
+  ///
+  /// In en, this message translates to:
+  /// **'Op'**
+  String get toolOp;
+
+  /// No description provided for @toolOpHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Grant operator'**
+  String get toolOpHint;
+
+  /// No description provided for @toolDeop.
+  ///
+  /// In en, this message translates to:
+  /// **'Deop'**
+  String get toolDeop;
+
+  /// No description provided for @toolDeopHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Revoke operator'**
+  String get toolDeopHint;
+
+  /// No description provided for @toolGamemodeSurvival.
+  ///
+  /// In en, this message translates to:
+  /// **'Survival'**
+  String get toolGamemodeSurvival;
+
+  /// No description provided for @toolGamemodeCreative.
+  ///
+  /// In en, this message translates to:
+  /// **'Creative'**
+  String get toolGamemodeCreative;
+
+  /// No description provided for @toolGamemodeAdventure.
+  ///
+  /// In en, this message translates to:
+  /// **'Adventure'**
+  String get toolGamemodeAdventure;
+
+  /// No description provided for @toolGamemodeSpectator.
+  ///
+  /// In en, this message translates to:
+  /// **'Spectator'**
+  String get toolGamemodeSpectator;
+
+  /// No description provided for @toolMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Message'**
+  String get toolMsg;
+
+  /// No description provided for @toolMsgHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Private message'**
+  String get toolMsgHint;
+
+  /// No description provided for @toolKill.
+  ///
+  /// In en, this message translates to:
+  /// **'Kill'**
+  String get toolKill;
+
+  /// No description provided for @toolKillHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Kill the player'**
+  String get toolKillHint;
+
+  /// No description provided for @toolClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear inventory'**
+  String get toolClear;
+
+  /// No description provided for @toolClearHint.
+  ///
+  /// In en, this message translates to:
+  /// **'clear inventory'**
+  String get toolClearHint;
+
+  /// No description provided for @toolWhitelistAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Whitelist add'**
+  String get toolWhitelistAdd;
+
+  /// No description provided for @toolWhitelistAddHint.
+  ///
+  /// In en, this message translates to:
+  /// **'whitelist add'**
+  String get toolWhitelistAddHint;
+
+  /// No description provided for @toolWhitelistRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Whitelist remove'**
+  String get toolWhitelistRemove;
+
+  /// No description provided for @toolWhitelistRemoveHint.
+  ///
+  /// In en, this message translates to:
+  /// **'whitelist remove'**
+  String get toolWhitelistRemoveHint;
+
+  /// No description provided for @toolWhitelistOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Whitelist on'**
+  String get toolWhitelistOn;
+
+  /// No description provided for @toolWhitelistOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Whitelist off'**
+  String get toolWhitelistOff;
+
+  /// No description provided for @toolTpPlayer.
+  ///
+  /// In en, this message translates to:
+  /// **'TP to player'**
+  String get toolTpPlayer;
+
+  /// No description provided for @toolTpPlayerHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Teleport to another player'**
+  String get toolTpPlayerHint;
+
+  /// No description provided for @toolTpCoords.
+  ///
+  /// In en, this message translates to:
+  /// **'TP coords'**
+  String get toolTpCoords;
+
+  /// No description provided for @toolTpCoordsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Teleport to coordinates'**
+  String get toolTpCoordsHint;
 
   /// No description provided for @toolSaveAll.
   ///
@@ -979,6 +1387,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Use 1–16 letters, numbers, or underscore.'**
   String get nameInvalid;
+
+  /// No description provided for @roleRestricted.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account can look around and use mild tools — not power or moderation.'**
+  String get roleRestricted;
+
+  /// No description provided for @observerBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Observer mode — browse freely, change weather/time, view players. Heavy actions stay locked.'**
+  String get observerBanner;
+
+  /// No description provided for @observerRoleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Observer'**
+  String get observerRoleLabel;
 }
 
 class _AppLocalizationsDelegate

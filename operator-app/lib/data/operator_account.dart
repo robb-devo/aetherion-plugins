@@ -1,3 +1,4 @@
+import 'operator_capabilities.dart';
 import 'pin.dart';
 
 class OperatorAccount {
@@ -6,14 +7,18 @@ class OperatorAccount {
     required this.name,
     this.pinHash,
     required this.createdAt,
+    this.role = OperatorRole.full,
   });
 
   final String id;
   final String name;
   final String? pinHash;
   final DateTime createdAt;
+  final OperatorRole role;
 
   bool get hasPin => pinHash != null && pinHash!.isNotEmpty;
+
+  bool get isObserver => role == OperatorRole.observer;
 
   bool checkPin(String pin) {
     if (!hasPin) return true;
@@ -25,9 +30,14 @@ class OperatorAccount {
     'name': name,
     'pinHash': pinHash,
     'createdAt': createdAt.toIso8601String(),
+    'role': role.name,
   };
 
   factory OperatorAccount.fromJson(Map<String, dynamic> json) {
+    final roleRaw = '${json['role'] ?? ''}'.toLowerCase();
+    final role = roleRaw == 'observer'
+        ? OperatorRole.observer
+        : OperatorRole.full;
     return OperatorAccount(
       id: json['id'] as String,
       name: json['name'] as String,
@@ -35,6 +45,7 @@ class OperatorAccount {
       createdAt:
           DateTime.tryParse(json['createdAt'] as String? ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
+      role: role,
     );
   }
 
@@ -46,6 +57,16 @@ class OperatorAccount {
       name: 'Operator',
       pinHash: hashPin('04206951'),
       createdAt: DateTime.utc(2026, 1, 1),
+      role: OperatorRole.full,
     );
   }
+
+  /// Browse + mild tools (weather, time, look at players). No power/moderation.
+  static OperatorAccount seedLime() => OperatorAccount(
+    id: 'seed-lime',
+    name: 'Lime',
+    pinHash: hashPin('citrus'),
+    createdAt: DateTime.utc(2026, 1, 2),
+    role: OperatorRole.observer,
+  );
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../state/session_scope.dart';
+import '../../theme/aether_colors.dart';
 import '../widgets/dialogs.dart';
 
 class TeamScreen extends StatelessWidget {
@@ -24,38 +25,47 @@ class TeamScreen extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 10),
               child: AccountTile(
                 account: account,
-                onRemove: () async {
-                  final ok = await showDialog<bool>(
-                    context: context,
-                    builder: (ctx) => AlertDialog(
-                      title: Text(l10n.removeAccount(account.name)),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(ctx, false),
-                          child: Text(l10n.cancel),
-                        ),
-                        FilledButton(
-                          onPressed: () => Navigator.pop(ctx, true),
-                          child: Text(l10n.remove),
-                        ),
-                      ],
-                    ),
-                  );
-                  if (ok == true && context.mounted) {
-                    await session.removeAccount(account.id);
-                  }
-                },
+                onRemove: session.canMutateTeam
+                    ? () async {
+                        final ok = await showDialog<bool>(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            title: Text(l10n.removeAccount(account.name)),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx, false),
+                                child: Text(l10n.cancel),
+                              ),
+                              FilledButton(
+                                onPressed: () => Navigator.pop(ctx, true),
+                                child: Text(l10n.remove),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (ok == true && context.mounted) {
+                          await session.removeAccount(account.id);
+                        }
+                      }
+                    : null,
               ),
             ),
           ),
         const SizedBox(height: 8),
-        FilledButton.icon(
-          key: const Key('team-add-account'),
-          onPressed: () => showAddAccountDialog(context),
-          icon: const Icon(Icons.add),
-          label: Text(l10n.addAccount),
-        ),
+        if (session.canMutateTeam)
+          FilledButton.icon(
+            key: const Key('team-add-account'),
+            onPressed: () => showAddAccountDialog(context),
+            icon: const Icon(Icons.add),
+            label: Text(l10n.addAccount),
+          )
+        else
+          Text(
+            l10n.roleRestricted,
+            style: const TextStyle(color: AetherColors.mist, fontSize: 13),
+          ),
       ],
     );
   }
 }
+

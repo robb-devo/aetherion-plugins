@@ -8,6 +8,7 @@ import '../../theme/aether_colors.dart';
 import '../../updates/open_release.dart';
 import '../widgets/dialogs.dart';
 import '../widgets/glass_card.dart';
+import '../widgets/role_chrome.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -110,16 +111,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     onPressed: session.savingCrafty
                         ? null
                         : () async {
-                            await session.saveCraftySettings(
+                            if (!session.canEditCrafty) {
+                              showRoleRestrictedSnack(context);
+                              return;
+                            }
+                            final err = await session.saveCraftySettings(
                               baseUrl: _url.text,
                               apiToken: _token.text,
                               allowInsecureTls: _insecure,
                             );
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text(l10n.savedSettings)),
-                              );
+                            if (!context.mounted) return;
+                            if (err == 'restricted') {
+                              showRoleRestrictedSnack(context);
+                              return;
                             }
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(l10n.savedSettings)),
+                            );
                           },
                     child: Text(l10n.save),
                   ),
@@ -130,6 +138,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ],
               ),
+              if (!session.canEditCrafty) ...[
+                const SizedBox(height: 10),
+                Text(
+                  l10n.roleRestricted,
+                  style: const TextStyle(
+                    color: AetherColors.mist,
+                    fontSize: 12.5,
+                  ),
+                ),
+              ],
               if (session.craftyTestMessage != null) ...[
                 const SizedBox(height: 10),
                 Text(
@@ -184,13 +202,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     onPressed: session.savingGithubToken
                         ? null
                         : () async {
-                            await session.saveGithubToken(_githubToken.text);
-                            _githubToken.clear();
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text(l10n.savedGithubToken)),
-                              );
+                            if (!session.canEditCrafty) {
+                              showRoleRestrictedSnack(context);
+                              return;
                             }
+                            final err = await session.saveGithubToken(
+                              _githubToken.text,
+                            );
+                            if (!context.mounted) return;
+                            if (err == 'restricted') {
+                              showRoleRestrictedSnack(context);
+                              return;
+                            }
+                            _githubToken.clear();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(l10n.savedGithubToken)),
+                            );
                           },
                     child: Text(l10n.save),
                   ),
