@@ -159,6 +159,16 @@ dialogs:
   eldervale_welcome_intro:
     - "Willkommen auf Eldervale."
     - "Mining-Insel. Tiefengestein. Nicht runterfallen."
+  amethyst_mines_guide_intro:
+    - "Amethyst-Minen. Tiefer Kristall unter Eldervale — nicht der Inselstein."
+    - "Mining-Skill reicht. Ich schick dich in den Hub."
+    - "Drinnen bringt dich §e/amethyst §fzurück."
+  amethyst_mines_guide_locked:
+    - "Amethyst-Minen. Tiefer Kristall, nicht der Inselstein."
+    - "Türpolitik: Mining-Skill. Du bist noch nicht soweit."
+    - "Grab weiter. Komm zurück, wenn der Stein dich respektiert."
+  amethyst_mines_guide_sealed:
+    - "Die Amethyst-Minen sind gerade versiegelt. Komm wieder, wenn der Foreman Schicht hat."
 
 completed:
   egon:

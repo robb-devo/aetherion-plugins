@@ -212,11 +212,12 @@ public final class VeinsListener implements Listener {
             return;
         }
 
-        if (!hasMiningAccess(player)) {
+        int required = miningLevelRequired();
+        if (!meetsMiningLevel(player)) {
             playForemanDialog(player, List.of(
                     "Name's the Foreman. I don't dig. I point.",
                     "I ship people into §eThe Veins§f — the big mine.",
-                    "Door policy is simple: §aMining Skill 30§f on at least one mining skill.",
+                    "Door policy is simple: §aMining Skill " + required + "§f on at least one mining skill.",
                     "§cYou? Not yet. Dig more. Come back when the dirt respects you."
             ), null);
             return;
@@ -225,7 +226,7 @@ public final class VeinsListener implements Listener {
         playForemanDialog(player, List.of(
                 "Name's the Foreman. I don't dig. I point.",
                 "I ship people into §eThe Veins§f — the big mine.",
-                "Door policy is simple: §aMining Skill 30§f on at least one mining skill.",
+                "Door policy is simple: §aMining Skill " + required + "§f on at least one mining skill.",
                 "§aYou're cleared. Try not to become a cautionary tale."
         ), () -> veins.enter(player));
     }
@@ -271,21 +272,14 @@ public final class VeinsListener implements Listener {
         }
     }
 
-    private static boolean hasMiningAccess(Player player) {
-        org.bukkit.plugin.Plugin items = org.bukkit.Bukkit.getPluginManager().getPlugin("AetherionItems");
-        if (items == null || !items.isEnabled()) {
-            return true;
-        }
-        try {
-            Object skills = items.getClass().getMethod("getSkills").invoke(items);
-            if (skills == null) {
-                return true;
-            }
-            Object level = skills.getClass().getMethod("miningLevel", Player.class).invoke(skills, player);
-            return level instanceof Number number && number.intValue() >= 30;
-        } catch (ReflectiveOperationException ignored) {
-            return true;
-        }
+    private static boolean meetsMiningLevel(Player player) {
+        de.aetherion.core.api.MiningAccess mining = de.aetherion.core.api.AetherServices.mining();
+        return mining == null || mining.meetsVeinsMiningLevel(player);
+    }
+
+    private static int miningLevelRequired() {
+        de.aetherion.core.api.MiningAccess mining = de.aetherion.core.api.AetherServices.mining();
+        return mining == null ? 30 : mining.veinsMiningLevelRequired();
     }
 
     private static boolean admin(Player player) {

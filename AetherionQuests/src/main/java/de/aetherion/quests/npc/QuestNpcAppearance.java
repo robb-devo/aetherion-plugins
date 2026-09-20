@@ -185,6 +185,7 @@ public final class QuestNpcAppearance {
             case "eldervale_upgrade" -> new Look(Villager.Type.SAVANNA, Material.ANVIL);
             case "isle_clerk" -> new Look(Villager.Type.PLAINS, Material.OAK_SAPLING);
             case "dungeon_gate" -> new Look(Villager.Type.SNOW, Material.ENDER_PEARL);
+            case "amethyst_mines_guide" -> new Look(Villager.Type.TAIGA, Material.AMETHYST_SHARD);
             default -> new Look(Villager.Type.PLAINS, Material.STICK);
         };
     }

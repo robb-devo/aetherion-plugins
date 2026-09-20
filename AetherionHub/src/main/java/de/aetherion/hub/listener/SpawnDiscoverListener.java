@@ -4,17 +4,12 @@ import de.aetherion.hub.AetherionHub;
 import de.aetherion.hub.model.HubSpawn;
 import de.aetherion.hub.service.HubService;
 
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
-import net.kyori.adventure.title.Title;
-
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.Plugin;
 
-import java.time.Duration;
 import java.util.Collection;
 import java.util.Locale;
 import java.util.Set;
@@ -26,7 +21,7 @@ import java.util.Set;
 public final class SpawnDiscoverListener implements Listener, Runnable {
 
     private static final Set<String> ORGANIC = Set.of(
-            "ore_ridge", "farm", "farm_isle", "capital", "borderlands", "eldervale"
+            "ore_ridge", "farm", "farm_isle", "capital", "borderlands", "eldervale", "amethyst"
     );
 
     private final AetherionHub plugin;
@@ -67,9 +62,18 @@ public final class SpawnDiscoverListener implements Listener, Runnable {
         // Farm Isle unlocks by standing on the island world (portal entry).
         if ("farm_isle".equalsIgnoreCase(spawn.id())) {
             if (here.getWorld() != null && "aether_farm_island".equalsIgnoreCase(here.getWorld().getName())) {
-                if (hub.unlockNew(player.getUniqueId(), spawn.id())) {
-                    announce(player, spawn);
-                }
+                hub.unlockAndAnnounce(player, spawn.id());
+            }
+            return;
+        }
+        // Amethyst Mines unlocks by visiting The Veins world (Crystal Guide TP or first walk-in).
+        if ("amethyst".equalsIgnoreCase(spawn.id())) {
+            de.aetherion.core.api.MiningAccess mining = de.aetherion.core.api.AetherServices.mining();
+            boolean inVeins = mining != null
+                    ? mining.isVeinsWorld(here.getWorld())
+                    : (here.getWorld() != null && "aether_veins".equalsIgnoreCase(here.getWorld().getName()));
+            if (inVeins) {
+                hub.unlockAndAnnounce(player, spawn.id());
             }
             return;
         }
@@ -81,10 +85,9 @@ public final class SpawnDiscoverListener implements Listener, Runnable {
         if (!near && !insideAreaMarker(here, spawn.id())) {
             return;
         }
-        if (!hub.unlockNew(player.getUniqueId(), spawn.id())) {
+        if (!hub.unlockAndAnnounce(player, spawn.id())) {
             return;
         }
-        announce(player, spawn);
     }
 
     private boolean nearHubPoint(Location here, HubSpawn spawn) {
@@ -168,28 +171,5 @@ public final class SpawnDiscoverListener implements Listener, Runnable {
             return 36.0;
         }
         return 0;
-    }
-
-    private void announce(Player player, HubSpawn spawn) {
-        String name = spawn.displayName();
-        player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1f, 1.15f);
-        player.showTitle(Title.title(
-                LegacyComponentSerializer.legacySection().deserialize(
-                        "§b§lNEW AREA · " + name.toUpperCase(Locale.ROOT)
-                ),
-                LegacyComponentSerializer.legacySection().deserialize(
-                        "§7teleport unlocked · " + name
-                ),
-                Title.Times.times(Duration.ofMillis(200), Duration.ofMillis(2400), Duration.ofMillis(500))
-        ));
-        player.sendActionBar(LegacyComponentSerializer.legacySection().deserialize(
-                "§b✦ §f" + name + " §7· teleport unlocked"
-        ));
-        player.sendMessage("§b✦ §eNew area: §f" + name + "§e.");
-        player.sendMessage("§7Teleport unlocked — Manager → Teleports.");
-        de.aetherion.core.api.ProgressAccess progress = de.aetherion.core.api.AetherServices.progress();
-        if (progress != null) {
-            progress.unlock(player, "SPAWN_UNLOCKER", "Teleports", "Manager → Teleports");
-        }
     }
 }

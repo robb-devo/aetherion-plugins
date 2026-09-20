@@ -29,7 +29,8 @@ public final class SpawnGotoCommand implements CommandExecutor {
             Map.entry("farmisle", "farm_isle"),
             Map.entry("borderlands", "borderlands"),
             Map.entry("colosseum", "colosseum"),
-            Map.entry("eldervale", "eldervale")
+            Map.entry("eldervale", "eldervale"),
+            Map.entry("amethyst", "amethyst")
     );
 
     private final HubService hub;
@@ -62,5 +63,23 @@ public final class SpawnGotoCommand implements CommandExecutor {
 
         hub.teleport(player, spawn);
         return true;
+    }
+
+    /** Shortest /command label for a spawn id, or null if none is registered. */
+    public static String shortcutCommand(String spawnId) {
+        if (spawnId == null || spawnId.isBlank()) {
+            return null;
+        }
+        String want = spawnId.toLowerCase(Locale.ROOT);
+        String best = null;
+        for (Map.Entry<String, String> entry : COMMAND_TO_SPAWN.entrySet()) {
+            if (!want.equals(entry.getValue())) {
+                continue;
+            }
+            if (best == null || entry.getKey().length() < best.length()) {
+                best = entry.getKey();
+            }
+        }
+        return best;
     }
 }

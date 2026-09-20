@@ -209,6 +209,13 @@ public class NpcListener implements Listener {
             return;
         }
 
+        // Crystal Guide — Mining 30 → Amethyst Mines / The Veins.
+        if ("amethyst_mines_guide".equalsIgnoreCase(npc.getId())) {
+            dialogManager.clearPendingChoice(player);
+            dialogManager.startDialog(player, npc);
+            return;
+        }
+
         if (npc.getType() == NPCType.QUEST) {
 
             handleQuestNPC(

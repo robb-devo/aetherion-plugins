@@ -68,6 +68,8 @@ public final class AetherionQuests extends JavaPlugin {
 
     private LivingNpcService livingNpcService;
 
+    private NpcListener npcListener;
+
     private de.aetherion.quests.editor.NpcEditor npcEditor;
 
     private de.aetherion.core.api.QuestProgressAccess questAccess;
@@ -272,7 +274,7 @@ public final class AetherionQuests extends JavaPlugin {
 
         livingNpcService = new LivingNpcService(this);
 
-        NpcListener npcListener = new NpcListener(
+        npcListener = new NpcListener(
                 questManager,
                 dialogManager
         );
@@ -584,6 +586,10 @@ public final class AetherionQuests extends JavaPlugin {
 
     public LivingNpcService getLivingNpcService() {
         return livingNpcService;
+    }
+
+    public NpcListener getNpcListener() {
+        return npcListener;
     }
 
     public de.aetherion.quests.editor.NpcEditor getNpcEditor() {

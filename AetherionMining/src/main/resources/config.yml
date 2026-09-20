@@ -25,6 +25,8 @@ veins:
   hub-y: 220
   reset-hours: 24
   keep-inventory: true
+  # Crystal Guide / Foreman door policy. Live override: veins.min-mining-level
+  min-mining-level: 30
 
 # Mining Eldervale Island (Blocky Verse) — paste south of Origin slime pad.
 eldervale:

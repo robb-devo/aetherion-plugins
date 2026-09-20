@@ -928,6 +928,16 @@ public class QuestNPCRegistry {
                 ""
         ));
 
+        // Eldervale Crystal Guide — Amethyst Mines / The Veins (Mining 30).
+        registerNPC(new QuestNPC(
+                "amethyst_mines_guide",
+                "Crystal Guide",
+                NPCType.FLAVOR,
+                "",
+                "amethyst_mines_guide_intro",
+                ""
+        ));
+
         // FancyNpcs living hosts — visual prototypes (villagers untouched).
         registerNPC(new QuestNPC(
                 "living_test",

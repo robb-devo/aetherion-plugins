@@ -51,6 +51,8 @@ public final class QuestStoryGate {
             "farm_isle_guide",
             // Harbour forage pad guide — soft hint to the isle clerk.
             "forage_pad_guide",
+            // Eldervale Crystal Guide — Mining-skill gated only.
+            "amethyst_mines_guide",
             // Eldervale welcome — pad is blueprint-gated; NPC is flavor only.
             "eldervale_welcome",
             // Harbour flavor — XP tip + casino host + crystal desk + coin desk
@@ -148,6 +150,10 @@ public final class QuestStoryGate {
         }
         // Forage pad guide: soft hint to island clerk — talk anytime.
         if ("forage_pad_guide".equalsIgnoreCase(npcId)) {
+            return false;
+        }
+        // Crystal Guide: Mining skill only — never tutorial.
+        if ("amethyst_mines_guide".equalsIgnoreCase(npcId)) {
             return false;
         }
         // Eldervale welcome: pad is blueprint-gated; talk anytime.

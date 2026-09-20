@@ -411,11 +411,32 @@ public final class LivingNpcService {
     }
 
     public String questIdFromFancyName(String fancyName) {
-        if (fancyName == null || !fancyName.startsWith(FANCY_PREFIX)) {
+        if (fancyName == null || fancyName.isBlank()) {
             return null;
         }
-        String id = fancyName.substring(FANCY_PREFIX.length());
-        return isLiving(id) ? id : null;
+        String name = fancyName.trim();
+        String stripped = stripFancyPrefix(name);
+        QuestNPC byStripped = QuestNPCRegistry.getNPC(stripped);
+        if (byStripped != null) {
+            return byStripped.getId();
+        }
+        QuestNPC byName = QuestNPCRegistry.getNPC(name);
+        if (byName != null) {
+            return byName.getId();
+        }
+        return isLiving(stripped) ? stripped : null;
+    }
+
+    private static String stripFancyPrefix(String fancyName) {
+        String living = "ae_living_";
+        String editor = "ae_editor_";
+        if (fancyName.regionMatches(true, 0, living, 0, living.length())) {
+            return fancyName.substring(living.length());
+        }
+        if (fancyName.regionMatches(true, 0, editor, 0, editor.length())) {
+            return fancyName.substring(editor.length());
+        }
+        return fancyName;
     }
 
     private static final java.util.concurrent.atomic.AtomicInteger SKIN_SLOT =
