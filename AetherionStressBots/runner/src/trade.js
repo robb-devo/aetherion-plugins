@@ -12,8 +12,9 @@ import {
   windowTitle
 } from './gui.js'
 import { applyIslandMovements, wanderOnIsland } from './safety.js'
-import { markError, note, sleep } from './util.js'
-import { ACTIVITIES, fidget } from './playstyle.js'
+import { assignGait, idleFidget, tunePathfinder } from './motion.js'
+import { markError, note, sleep, tossJunk } from './util.js'
+import { ACTIVITIES } from './playstyle.js'
 import { maybeOpenBooster } from './minigame.js'
 
 const { goals, Movements, pathfinder } = pathfinderPkg
@@ -30,7 +31,14 @@ function isResourceItem(item) {
   if (!item?.name) return false
   const n = item.name.toLowerCase()
   return n.includes('coal') || n.includes('cobble') || n.includes('log') || n.includes('oak')
-    || n.includes('iron') || n.includes('dirt') || n.includes('stone')
+    || n.includes('iron') || n.includes('dirt') || n.includes('stone') || n.includes('wheat')
+    || n.includes('carrot') || n.includes('potato')
+}
+
+function isSpareGear(item, held) {
+  if (!isGearItem(item)) return false
+  if (held && item.slot === held.slot) return false
+  return true
 }
 
 async function openMarket(bot, command, predicate, activity) {
@@ -43,15 +51,39 @@ async function openMarket(bot, command, predicate, activity) {
 async function listHeld(bot, activity) {
   await clickSlot(bot, SLOTS.marketList)
   await waitForWindow(bot, isListPriceWindow, 3500)
-  await clickSlot(bot, SLOTS.priceSuggested)
+  const priceSlot = Math.random() < 0.7 ? SLOTS.priceSuggested : (Math.random() < 0.5 ? 1 : 3)
+  await clickSlot(bot, priceSlot)
   note(bot, activity === ACTIVITIES.ah ? 'ah list' : 'bazaar sell', activity)
   await sleep(400)
 }
 
+async function collectSales(bot, activity) {
+  try {
+    await clickSlot(bot, SLOTS.marketCollect)
+    note(bot, activity === ACTIVITIES.ah ? 'ah collect' : 'bazaar collect', activity)
+    await sleep(350)
+  } catch {
+    /* empty mailbox */
+  }
+}
+
+async function maybeNextPage(bot) {
+  if (Math.random() > 0.35) return
+  try {
+    await clickSlot(bot, SLOTS.marketNext)
+    note(bot, 'market next page', bot.qaActivity)
+    await sleep(280)
+  } catch {
+    /* last page */
+  }
+}
+
 async function buyListing(bot, activity) {
+  await maybeNextPage(bot)
   const listings = findClickableSlots(bot, { skipChrome: true }).filter((entry) => entry.slot < 45)
   if (listings.length === 0) {
     note(bot, activity === ACTIVITIES.ah ? 'ah buy fail (empty)' : 'bazaar buy fail (empty)', activity)
+    await collectSales(bot, activity)
     await closeWindow(bot)
     return false
   }
@@ -66,15 +98,23 @@ async function buyListing(bot, activity) {
 
 async function equipSurplus(bot, predicate) {
   const held = bot.heldItem
-  if (held && predicate(held)) return true
-  const item = (bot.inventory.items() || []).find(predicate)
-  if (!item) return false
+  if (held && predicate(held) && !(bot.role === 'trade' && isGearItem(held) && !isSpareGear(held, null))) {
+    if (held && predicate(held)) return true
+  }
+  const item = (bot.inventory.items() || []).find((stack) => predicate(stack) && (!isGearItem(stack) || isSpareGear(stack, bot.heldItem)))
+  if (!item) {
+    const any = (bot.inventory.items() || []).find(predicate)
+    if (!any) return false
+    await bot.equip(any, 'hand')
+    return true
+  }
   await bot.equip(item, 'hand')
   return true
 }
 
 export function createTradeLoop(bot, cfg, log) {
   bot.loadPlugin(pathfinder)
+  assignGait(bot)
   const wanderRadius = cfg.wanderRadius ?? 5
   let running = false
   let step = 0
@@ -87,6 +127,7 @@ export function createTradeLoop(bot, cfg, log) {
       return
     }
     await openMarket(bot, '/ah', isAuctionWindow, ACTIVITIES.ah)
+    await collectSales(bot, ACTIVITIES.ah)
     await listHeld(bot, ACTIVITIES.ah)
     await closeWindow(bot)
   }
@@ -103,6 +144,7 @@ export function createTradeLoop(bot, cfg, log) {
       return
     }
     await openMarket(bot, '/bazaar', isBazaarWindow, ACTIVITIES.bazaar)
+    await collectSales(bot, ACTIVITIES.bazaar)
     await listHeld(bot, ACTIVITIES.bazaar)
     await closeWindow(bot)
   }
@@ -113,18 +155,19 @@ export function createTradeLoop(bot, cfg, log) {
     await closeWindow(bot)
   }
 
-  const steps = [runAhList, runAhBuy, runBazaarSell, runBazaarBuy]
+  const steps = [runAhList, runAhBuy, runBazaarSell, runBazaarBuy, runAhBuy, runBazaarSell]
 
   async function tick() {
     if (!bot.entity || bot.qaSuspended || busy) return
     busy = true
     try {
       if (!bot.pathfinder.movements) {
-        bot.pathfinder.setMovements(applyIslandMovements(new Movements(bot), { canDig: false, maxDrop: 2 }))
+        bot.pathfinder.setMovements(tunePathfinder(bot, applyIslandMovements(new Movements(bot), { canDig: false, maxDrop: 2 })))
       }
       if (bot.currentWindow && !isAuctionWindow(windowTitle(bot)) && !isBazaarWindow(windowTitle(bot))) {
         return
       }
+      tossJunk(bot, { keepResources: true })
       const action = steps[step % steps.length]
       step++
       try {
@@ -146,9 +189,9 @@ export function createTradeLoop(bot, cfg, log) {
       }
       if (Date.now() - lastFidget > 5000) {
         lastFidget = Date.now()
-        fidget(bot, ACTIVITIES.trading)
+        idleFidget(bot, ACTIVITIES.trading)
       }
-      await sleep(cfg.actionGapMs ?? 3500)
+      await sleep(cfg.actionGapMs ?? 4200)
     } finally {
       busy = false
     }

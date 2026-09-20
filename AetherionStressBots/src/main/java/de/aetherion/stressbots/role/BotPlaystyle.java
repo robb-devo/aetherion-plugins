@@ -143,6 +143,16 @@ public final class BotPlaystyle {
         BotRoleRegistry.giveSpare(inv, items.fishing().rod(Math.max(1, t - 1)));
     }
 
+    public static void kitFarming(PlayerInventory inv, CustomItem items, int tier) {
+        int t = clamp(tier, 1, 5);
+        inv.setHelmet(items.farming().helmet(t));
+        inv.setChestplate(items.farming().chestplate(t));
+        inv.setLeggings(items.farming().leggings(t));
+        inv.setBoots(items.farming().boots(t));
+        inv.setItemInMainHand(items.farming().hoe(t));
+        BotRoleRegistry.giveSpare(inv, items.farming().hoe(Math.max(1, t - 1)));
+    }
+
     public static void kitCatcher(PlayerInventory inv, CustomItem items, int tier) {
         int t = clamp(tier, 1, 3);
         inv.setHelmet(items.catcher().helmet(t));
@@ -233,20 +243,22 @@ public final class BotPlaystyle {
         }
         coins.add(player, want - have);
         plugin.getActivity().markAction(player, "starter coins +" + (want - have));
+        plugin.getActivity().economy().grantStarter(player, want - have);
     }
 
     private static void unlockStarterSpawns(AetherionStressBots plugin, Player player, BotRole role) {
         if (!plugin.getConfig().getBoolean("testbots.playstyle.unlock-spawns", true)) {
             return;
         }
-        if (role != BotRole.TRADE && role != BotRole.QUEST && role != BotRole.PAD && role != BotRole.ROAM) {
+        if (role != BotRole.TRADE && role != BotRole.QUEST && role != BotRole.PAD
+                && role != BotRole.ROAM && role != BotRole.FARM) {
             return;
         }
         HubAccess hub = AetherServices.hub();
         if (hub == null) {
             return;
         }
-        for (String id : new String[] {"harbour", "eldervale", "forage_isle", "capital"}) {
+        for (String id : new String[] {"harbour", "eldervale", "forage_isle", "capital", "farm_isle"}) {
             if (hub.unlockNew(player.getUniqueId(), id)) {
                 plugin.getActivity().markAction(player, "spawn unlock " + id);
             }
@@ -259,6 +271,7 @@ public final class BotPlaystyle {
             case FORAGE -> kitForaging(inv, items, tier);
             case CATCH -> kitCatcher(inv, items, tier);
             case FISH -> kitFishing(inv, items, tier);
+            case FARM -> kitFarming(inv, items, tier);
             case COMBAT -> kitCombat(inv, items, tier, true);
             default -> kitCombat(inv, items, Math.min(3, tier), false);
         }
@@ -302,6 +315,7 @@ public final class BotPlaystyle {
             case MINE, MINING -> index % 2 == 0 ? BoosterType.COAL : BoosterType.EMERALD;
             case FORAGE -> index % 2 == 0 ? BoosterType.IRON : BoosterType.EMERALD;
             case FISH -> BoosterType.GOLD;
+            case FARM -> BoosterType.WHEAT;
             case CATCH -> BoosterType.WHEAT;
             case COMBAT -> index % 2 == 0 ? BoosterType.REDSTONE : BoosterType.OAK;
             default -> index % 2 == 0 ? BoosterType.LAPIS : BoosterType.GLOWSTONE;
@@ -334,6 +348,9 @@ public final class BotPlaystyle {
             case FISH -> alt
                     ? new AetherSkill[] {AetherSkill.BITE_ME, AetherSkill.SHORT_CAST, AetherSkill.FISH_LEDGER}
                     : new AetherSkill[] {AetherSkill.SHORT_CAST, AetherSkill.BITE_ME, AetherSkill.QUICK_HANDS};
+            case FARM -> alt
+                    ? new AetherSkill[] {AetherSkill.CROP_GOSSIP, AetherSkill.WIDE_FURROW, AetherSkill.SEED_LEDGER}
+                    : new AetherSkill[] {AetherSkill.WIDE_FURROW, AetherSkill.CROP_GOSSIP, AetherSkill.GREEN_THUMB};
             case COMBAT -> alt
                     ? new AetherSkill[] {AetherSkill.HEAVY_HANDS, AetherSkill.MEAN_STREAK, AetherSkill.BLOOD_TAX}
                     : new AetherSkill[] {AetherSkill.HEAVY_HANDS, AetherSkill.LIFE_ABSORB, AetherSkill.THICK_SKIN};
@@ -370,6 +387,9 @@ public final class BotPlaystyle {
             default -> 40L + index * 15L;
         };
         itemsPlugin.getCoins().add(player, amount);
+        if (plugin.getActivity() != null) {
+            plugin.getActivity().economy().grantStarter(player, amount);
+        }
     }
 
     private static void maybePet(AetherionStressBots plugin, Player player, BotRole role, int index) {
@@ -412,6 +432,7 @@ public final class BotPlaystyle {
             case MINE, MINING -> "bat";
             case FORAGE -> "pig";
             case FISH -> "cod";
+            case FARM -> "pig";
             case CATCH -> "wolf";
             case COMBAT -> "wolf";
             default -> "cow";

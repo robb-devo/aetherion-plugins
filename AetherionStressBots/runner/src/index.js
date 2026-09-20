@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url'
 import net from 'node:net'
 import { createFleet } from './fleet.js'
 import { startControlServer } from './control.js'
-import { sleep } from './util.js'
+import { mergeMissing, sleep } from './util.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const configPath = path.join(__dirname, '..', 'config.json')
@@ -16,7 +16,11 @@ if (!fs.existsSync(configPath)) {
   process.exit(1)
 }
 
-const baseConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'))
+const liveConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'))
+const exampleConfig = fs.existsSync(examplePath)
+  ? JSON.parse(fs.readFileSync(examplePath, 'utf8'))
+  : {}
+const baseConfig = mergeMissing(liveConfig, exampleConfig)
 
 function parseArgs(argv) {
   const out = {
@@ -27,6 +31,7 @@ function parseArgs(argv) {
     catch: 0,
     roam: 0,
     fish: 0,
+    farm: 0,
     trade: 0,
     quest: 0,
     pad: 0,
@@ -50,6 +55,7 @@ function parseArgs(argv) {
     else if (arg === '--catch' && next != null) takeNum('catch')
     else if (arg === '--roam' && next != null) takeNum('roam')
     else if (arg === '--fish' && next != null) takeNum('fish')
+    else if (arg === '--farm' && next != null) takeNum('farm')
     else if ((arg === '--trade' || arg === '--ah') && next != null) takeNum('trade')
     else if (arg === '--quest' && next != null) takeNum('quest')
     else if (arg === '--pad' && next != null) takeNum('pad')
@@ -72,10 +78,10 @@ async function main() {
   if (args.help) {
     console.log(`Usage:
   node src/index.js [--listen] [--mine N] [--forage N] [--catch N] [--roam N]
-                    [--combat N] [--fish N] [--trade N] [--quest N] [--pad N] [--mining N]
+                    [--combat N] [--fish N] [--farm N] [--trade N] [--quest N] [--pad N] [--mining N]
 
 Wave 1 QA: --mine / --forage / --catch / --roam
-Wave 2 QA: --combat (QaCombat) / --fish / --trade / --quest / --pad
+Wave 2 QA: --combat (QaCombat) / --fish / --farm / --trade / --quest / --pad
 Legacy:    --mining (StressM). --combat uses QaCombat unless prefixes.combat is StressC.
 
 --listen   start with 0 bots and keep the HTTP control server up (Dev menu)
@@ -116,6 +122,7 @@ Stop with Ctrl+C.`)
     roam: args.roam,
     combat: args.combat,
     fish: args.fish,
+    farm: args.farm,
     trade: args.trade,
     quest: args.quest,
     pad: args.pad,

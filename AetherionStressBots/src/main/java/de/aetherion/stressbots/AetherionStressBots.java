@@ -28,10 +28,12 @@ public final class AetherionStressBots extends JavaPlugin {
     private BotSafetyWatchdog safety;
     private BukkitTask activityTask;
     private BukkitTask safetyTask;
+    private BukkitTask upkeepTask;
 
     @Override
     public void onEnable() {
         saveDefaultConfig();
+        applyJarDefaults();
         activity = new BotActivityTracker(this);
         wire();
         Bukkit.getPluginManager().registerEvents(new BotListener(this), this);
@@ -40,6 +42,7 @@ public final class AetherionStressBots extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(safety, this);
         activityTask = Bukkit.getScheduler().runTaskTimer(this, activity, 20L, 10L);
         safetyTask = Bukkit.getScheduler().runTaskTimer(this, safety, 20L, 5L);
+        upkeepTask = Bukkit.getScheduler().runTaskTimer(this, new BotUpkeep(this), 20L * 40, 20L * 90);
 
         PluginCommand command = getCommand("stressbots");
         if (command != null) {
@@ -66,6 +69,10 @@ public final class AetherionStressBots extends JavaPlugin {
             activityTask.cancel();
             activityTask = null;
         }
+        if (upkeepTask != null) {
+            upkeepTask.cancel();
+            upkeepTask = null;
+        }
         if (safetyTask != null) {
             safetyTask.cancel();
             safetyTask = null;
@@ -77,9 +84,19 @@ public final class AetherionStressBots extends JavaPlugin {
 
     public void reloadAssist() {
         reloadConfig();
+        applyJarDefaults();
         wire();
         AetherServices.registerTestBots(controller);
         warnLegacyDeathAnchors();
+    }
+
+    private void applyJarDefaults() {
+        java.util.List<String> added = BotConfigDefaults.mergeMissingFromJar(this);
+        if (!added.isEmpty()) {
+            getLogger().info("Filled " + added.size()
+                    + " missing config keys from jar defaults (live YAML not overwritten). e.g. "
+                    + added.get(0));
+        }
     }
 
     private void wire() {

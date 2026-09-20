@@ -37,9 +37,12 @@ public final class TradeRoleHandler implements BotRoleHandler {
         PlayerInventory inv = player.getInventory();
         BotPlaystyle.kitCombat(inv, items, BotPlaystyle.gearTier(player), false);
         BotRoleRegistry.giveSpare(inv, items.createMiningPickaxe());
+        BotRoleRegistry.giveSpare(inv, items.createCombatSword());
         inv.addItem(new ItemStack(Material.COAL, 32));
-        inv.addItem(new ItemStack(Material.COBBLESTONE, 32));
+        inv.addItem(new ItemStack(Material.COBBLESTONE, 24));
         inv.addItem(new ItemStack(Material.OAK_LOG, 16));
+        inv.addItem(new ItemStack(Material.WHEAT, 16));
+        inv.addItem(new ItemStack(Material.IRON_INGOT, 8));
     }
 
     @Override

@@ -22,6 +22,11 @@ describe('pad hop selection', () => {
     assert.notEqual(next.id, 'origin_to_mining')
   })
 
+  it('refuses distant cross-island pads so bots do not walk the void', () => {
+    const next = pickNextPad({ x: 22.5, y: 56, z: 305.5 }, pads, 'origin_to_mining', { minHop: 4, maxHop: 16 })
+    assert.equal(next, null)
+  })
+
   it('still returns a pad when only one exists', () => {
     const one = pickNextPad({ x: 0, y: 56, z: 0 }, [pads[0]], 'origin_to_mining')
     assert.equal(one.id, 'origin_to_mining')

@@ -185,6 +185,33 @@ export function wanderOnIsland(bot, home, radius, goals) {
   return true
 }
 
+export function maybeBreakSpin(bot) {
+  const entity = bot?.entity
+  if (!entity) return false
+  const pos = entity.position
+  const yaw = entity.yaw
+  if (yaw == null || !pos) return false
+  const samples = bot.qaYawSamples || (bot.qaYawSamples = [])
+  samples.push({ t: Date.now(), yaw, x: pos.x, z: pos.z })
+  if (samples.length > 8) samples.shift()
+  if (samples.length < 6) return false
+  const moved = Math.hypot(pos.x - samples[0].x, pos.z - samples[0].z)
+  let yawTravel = 0
+  for (let i = 1; i < samples.length; i++) {
+    let delta = Math.abs(samples[i].yaw - samples[i - 1].yaw)
+    if (delta > Math.PI) delta = Math.PI * 2 - delta
+    yawTravel += delta
+  }
+  if (moved >= 0.5 || yawTravel <= Math.PI * 1.55) return false
+  cancelPath(bot)
+  bot.qaNeedNewGoal = true
+  bot.qaGoal = null
+  bot.qaGoalDist = null
+  bot.qaYawSamples = []
+  note(bot, 'break spin', 'idle')
+  return true
+}
+
 export function resolveHome(bot, anchors) {
   const pos = bot.entity?.position
   if (!pos) return null
@@ -283,9 +310,13 @@ export function attachSafety(bot, opts = {}) {
     const progress = goalProgress(pos, bot.qaGoal, bot.qaGoalDist)
     if (progress.dist != null) bot.qaGoalDist = progress.dist
     const digging = !!bot.qaDigging
-    const gathering = !!bot.qaGathering || bot.qaActivity === 'foraging' || bot.qaActivity === 'mining' || bot.qaActivity === 'fishing'
+    const gathering = !!bot.qaGathering || bot.qaActivity === 'foraging' || bot.qaActivity === 'mining'
+      || bot.qaActivity === 'farming' || bot.qaActivity === 'fishing'
+    if (bot.qaActivity !== 'pad_hop') {
+      maybeBreakSpin(bot)
+    }
     const working = digging || gathering || !!bot.targetDigBlock
-      || ['mining', 'foraging', 'pathing', 'catching', 'fishing', 'ah', 'bazaar', 'quest_dialog', 'minigame', 'pad_hop', 'combat', 'trading', 'fighting']
+      || ['mining', 'foraging', 'farming', 'pathing', 'catching', 'fishing', 'ah', 'bazaar', 'quest_dialog', 'minigame', 'pad_hop', 'combat', 'trading', 'fighting']
         .includes(bot.qaActivity)
       || bot.pathfinder?.isMoving?.()
     if (moved || progress.progressed) {

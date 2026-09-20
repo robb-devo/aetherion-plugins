@@ -38,6 +38,7 @@ public final class BotActivityTracker implements Listener, Runnable {
     public static final String IDLE = "idle";
     public static final String MINING = "mining";
     public static final String FORAGING = "foraging";
+    public static final String FARMING = "farming";
     public static final String CATCHING = "catching";
     public static final String PATHING = "pathing";
     public static final String ROAMING = "roaming";
@@ -60,9 +61,14 @@ public final class BotActivityTracker implements Listener, Runnable {
 
     private final AetherionStressBots plugin;
     private final Map<UUID, Runtime> runtimes = new ConcurrentHashMap<>();
+    private final BotEconomyTracker economy = new BotEconomyTracker();
 
     public BotActivityTracker(AetherionStressBots plugin) {
         this.plugin = plugin;
+    }
+
+    public BotEconomyTracker economy() {
+        return economy;
     }
 
     public void onJoin(Player player) {
@@ -97,6 +103,9 @@ public final class BotActivityTracker implements Listener, Runnable {
         if (name.contains("log") || name.contains("stem") || name.contains("wood") || name.contains("bamboo")) {
             runtime.activity = FORAGING;
             runtime.note("broke " + name);
+        } else if (BotEconomyTracker.isCropName(name)) {
+            runtime.activity = FARMING;
+            runtime.note("harvest " + name);
         } else if (name.contains("ore") || name.contains("stone") || name.contains("deepslate")) {
             runtime.activity = MINING;
             runtime.note("broke " + name);
@@ -217,9 +226,11 @@ public final class BotActivityTracker implements Listener, Runnable {
         if (lower.contains("auction")) {
             runtime.activity = AH;
             runtime.note("ah click " + event.getRawSlot());
+            economy.noteMarketClick(AH, event.getRawSlot());
         } else if (lower.contains("bazaar")) {
             runtime.activity = BAZAAR;
             runtime.note("bazaar click " + event.getRawSlot());
+            economy.noteMarketClick(BAZAAR, event.getRawSlot());
         } else if (lower.contains("quest")) {
             runtime.activity = QUEST_DIALOG;
             runtime.note("quest click " + event.getRawSlot());
@@ -254,6 +265,7 @@ public final class BotActivityTracker implements Listener, Runnable {
             return;
         }
         runtime(player).note("quit");
+        economy.forget(player.getUniqueId());
     }
 
     @Override
@@ -290,6 +302,8 @@ public final class BotActivityTracker implements Listener, Runnable {
                         runtime.activity = TRADING;
                     } else if (role == BotRole.COMBAT) {
                         runtime.activity = FIGHTING;
+                    } else if (role == BotRole.FARM) {
+                        runtime.activity = FARMING;
                     } else if (now - runtime.lastActionMs > 1500) {
                         runtime.activity = PATHING;
                     }
@@ -305,7 +319,28 @@ public final class BotActivityTracker implements Listener, Runnable {
                 }
             }
             runtime.lastSample = loc.clone();
+            economy.sample(player, runtime.activity, false);
         }
+    }
+
+    public BotEconomyTracker.Snapshot economySnapshot() {
+        int deaths = 0;
+        int stuck = 0;
+        int online = 0;
+        Map<String, Integer> mix = new java.util.LinkedHashMap<>();
+        for (Player player : plugin.getServer().getOnlinePlayers()) {
+            if (!isBot(player)) {
+                continue;
+            }
+            online++;
+            Runtime runtime = runtime(player);
+            deaths += runtime.deaths();
+            mix.merge(runtime.activity(), 1, Integer::sum);
+            if (STUCK.equals(runtime.activity()) || VOID.equals(runtime.activity())) {
+                stuck++;
+            }
+        }
+        return economy.snapshot(deaths, stuck, mix, online);
     }
 
     public Runtime snapshot(Player player) {
@@ -353,7 +388,7 @@ public final class BotActivityTracker implements Listener, Runnable {
     }
 
     private static long stuckAfter(BotRole role) {
-        if (role == BotRole.FORAGE || role == BotRole.MINE || role == BotRole.FISH) {
+        if (role == BotRole.FORAGE || role == BotRole.MINE || role == BotRole.FISH || role == BotRole.FARM) {
             return 24_000;
         }
         return 12_000;
@@ -362,6 +397,7 @@ public final class BotActivityTracker implements Listener, Runnable {
     private static boolean busyActivity(String activity) {
         return FORAGING.equals(activity)
                 || MINING.equals(activity)
+                || FARMING.equals(activity)
                 || FISHING.equals(activity)
                 || CATCHING.equals(activity)
                 || FIGHTING.equals(activity)
