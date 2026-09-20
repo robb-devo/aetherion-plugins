@@ -330,31 +330,67 @@ public final class CustomNpcService {
         if (npc == null || at == null || at.getWorld() == null) {
             return;
         }
-        removeHologram(npc.getId());
+        if (!at.getChunk().isLoaded()) {
+            return;
+        }
         Location textAt = at.clone().add(0, 2.15, 0);
+        TextDisplay existing = null;
+        UUID known = holograms.get(npc.getId().toLowerCase(Locale.ROOT));
+        if (known != null) {
+            Entity entity = Bukkit.getEntity(known);
+            if (entity instanceof TextDisplay display && display.isValid() && !display.isDead()) {
+                existing = display;
+            }
+        }
+        for (Entity entity : at.getWorld().getNearbyEntities(textAt, 3, 3, 3)) {
+            if (!(entity instanceof TextDisplay display) || !display.getScoreboardTags().contains(HOLO_TAG)) {
+                continue;
+            }
+            String tagged = display.getPersistentDataContainer().get(nameKey, PersistentDataType.STRING);
+            if (!npc.getId().equalsIgnoreCase(tagged) && tagged != null) {
+                continue;
+            }
+            if (existing == null) {
+                existing = display;
+            } else if (display != existing) {
+                display.remove();
+            }
+        }
         float view = Math.max(0.4f, visibilityDistance() / 64.0f);
-        TextDisplay holo = at.getWorld().spawn(textAt, TextDisplay.class, text -> {
-            text.text(Component.text(npc.getName(), NamedTextColor.AQUA, TextDecoration.BOLD)
-                    .append(Component.newline())
-                    .append(Component.text(npc.getSubtitle(), NamedTextColor.GRAY)));
-            text.setBillboard(Display.Billboard.CENTER);
-            text.setAlignment(TextDisplay.TextAlignment.CENTER);
-            text.setSeeThrough(false);
-            text.setShadowed(true);
-            text.setDefaultBackground(false);
-            text.setBackgroundColor(Color.fromARGB(40, 0, 0, 0));
-            text.setViewRange(view);
-            text.setTransformation(new Transformation(
-                    new Vector3f(0, 0, 0),
-                    new AxisAngle4f(0, 0, 0, 1),
-                    new Vector3f(1f, 1f, 1f),
-                    new AxisAngle4f(0, 0, 0, 1)
-            ));
-            text.addScoreboardTag(HOLO_TAG);
-            text.getPersistentDataContainer().set(nameKey, PersistentDataType.STRING, npc.getId());
-            text.setPersistent(false);
-        });
+        if (existing != null && existing.isValid()) {
+            styleEditorHologram(existing, npc, view);
+            if (existing.getLocation().distanceSquared(textAt) > 0.01) {
+                existing.teleport(textAt);
+            }
+            holograms.put(npc.getId().toLowerCase(Locale.ROOT), existing.getUniqueId());
+            return;
+        }
+        TextDisplay holo = at.getWorld().spawn(textAt, TextDisplay.class, text -> styleEditorHologram(text, npc, view));
         holograms.put(npc.getId().toLowerCase(Locale.ROOT), holo.getUniqueId());
+    }
+
+    private void styleEditorHologram(TextDisplay text, CustomNpc npc, float view) {
+        text.text(Component.text(npc.getName(), NamedTextColor.AQUA, TextDecoration.BOLD)
+                .append(Component.newline())
+                .append(Component.text(npc.getSubtitle(), NamedTextColor.GRAY)));
+        text.setBillboard(Display.Billboard.CENTER);
+        text.setAlignment(TextDisplay.TextAlignment.CENTER);
+        text.setSeeThrough(false);
+        text.setShadowed(true);
+        text.setDefaultBackground(false);
+        text.setBackgroundColor(Color.fromARGB(40, 0, 0, 0));
+        text.setViewRange(view);
+        text.setTransformation(new Transformation(
+                new Vector3f(0, 0, 0),
+                new AxisAngle4f(0, 0, 0, 1),
+                new Vector3f(1f, 1f, 1f),
+                new AxisAngle4f(0, 0, 0, 1)
+        ));
+        text.addScoreboardTag(HOLO_TAG);
+        text.getPersistentDataContainer().set(nameKey, PersistentDataType.STRING, npc.getId());
+        text.setPersistent(false);
+        text.setGravity(false);
+        text.setInvulnerable(true);
     }
 
     private void removeHologram(String npcId) {

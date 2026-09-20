@@ -33,7 +33,6 @@ import org.bukkit.util.Transformation;
 import org.joml.Vector3f;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -51,6 +50,7 @@ public class QuestMarkerManager implements Listener {
     private static final float VIEW_RANGE = 28.0f / 64.0f;
     private static final double MAX_VIEW_DISTANCE = 28.0;
     private static final double MAX_VIEW_DISTANCE_SQUARED = MAX_VIEW_DISTANCE * MAX_VIEW_DISTANCE;
+    private static final int MAX_MARKERS_PER_PLAYER = 12;
 
 
     private final AetherionQuests plugin;
@@ -297,7 +297,14 @@ public class QuestMarkerManager implements Listener {
 
         kindsForPlayer.put(npc.getId(), kind);
 
+        if (playerMarkers.size() >= MAX_MARKERS_PER_PLAYER && display == null) {
+            dropFarthestMarker(player, playerMarkers, kindsForPlayer, location);
+        }
+
         if (display == null || !display.isValid() || display.isDead()) {
+            if (display != null) {
+                removeDisplay(display);
+            }
             display = spawn(player, npc, location, kind);
             playerMarkers.put(npc.getId(), display);
             return;
@@ -434,15 +441,14 @@ public class QuestMarkerManager implements Listener {
                 ? markerLocation(npc, 2.35)
                 : markerLocation(npc, 2.15);
 
-        // Always scrub orphan nametags (stacked = opaque black background).
-        purgeNameDisplays(npc.getId());
         TextDisplay kept = nameDisplays.get(npc.getId());
         if (kept != null && (!kept.isValid() || kept.isDead())) {
+            removeDisplay(kept);
             nameDisplays.remove(npc.getId());
             kept = null;
         }
 
-        if (location == null) {
+        if (location == null || !anyPlayerNear(location)) {
             if (kept != null) {
                 removeDisplay(kept);
                 nameDisplays.remove(npc.getId());
@@ -450,12 +456,19 @@ public class QuestMarkerManager implements Listener {
             return;
         }
 
+        cullNameNear(location, npc.getId(), kept);
+
         TextDisplay display = kept;
+        if (display == null) {
+            display = findExisting(location, nameKey, npc.getId());
+        }
         if (display == null) {
             display = spawnName(npc, location);
             nameDisplays.put(npc.getId(), display);
             return;
         }
+
+        nameDisplays.put(npc.getId(), display);
 
         if (display.getWorld() != location.getWorld()
                 || display.getLocation().distanceSquared(location) > 0.08) {
@@ -475,7 +488,15 @@ public class QuestMarkerManager implements Listener {
             MarkerKind kind
     ) {
 
-        TextDisplay display = location.getWorld().spawn(location, TextDisplay.class, textDisplay -> {
+        TextDisplay display = findOrphan(location, markerKey, npc.getId());
+        if (display != null) {
+            display.text(markerText(kind, blinkOn));
+            applyMarkerStyle(display);
+            player.showEntity(plugin, display);
+            return display;
+        }
+
+        display = location.getWorld().spawn(location, TextDisplay.class, textDisplay -> {
 
             textDisplay.setPersistent(false);
             textDisplay.setVisibleByDefault(false);
@@ -524,28 +545,101 @@ public class QuestMarkerManager implements Listener {
     }
 
 
-    private void purgeNameDisplays(String npcId) {
-        if (npcId == null || npcId.isBlank()) {
+    private void cullNameNear(Location location, String npcId, TextDisplay keep) {
+        if (location == null || location.getWorld() == null || npcId == null) {
             return;
         }
-        TextDisplay kept = nameDisplays.get(npcId);
-        for (World world : Bukkit.getWorlds()) {
-            for (Entity entity : List.copyOf(world.getEntities())) {
-                if (!(entity instanceof TextDisplay display)) {
-                    continue;
-                }
-                if (kept != null && display.equals(kept)) {
-                    continue;
-                }
-                String stored = display.getPersistentDataContainer().get(nameKey, PersistentDataType.STRING);
-                if (npcId.equalsIgnoreCase(stored)) {
-                    removeDisplay(display);
-                }
+        for (Entity entity : location.getWorld().getNearbyEntities(location, 2.5, 3.5, 2.5)) {
+            if (!(entity instanceof TextDisplay display) || display.equals(keep)) {
+                continue;
+            }
+            String stored = display.getPersistentDataContainer().get(nameKey, PersistentDataType.STRING);
+            if (npcId.equalsIgnoreCase(stored)) {
+                removeDisplay(display);
             }
         }
     }
 
+    private TextDisplay findOrphan(Location location, NamespacedKey key, String npcId) {
+        TextDisplay found = findExisting(location, key, npcId);
+        if (found == null) {
+            return null;
+        }
+        for (Map<String, TextDisplay> owned : markers.values()) {
+            if (owned.containsValue(found)) {
+                return null;
+            }
+        }
+        if (nameDisplays.containsValue(found)) {
+            return null;
+        }
+        return found;
+    }
+
+    private TextDisplay findExisting(Location location, NamespacedKey key, String npcId) {
+        if (location == null || location.getWorld() == null || npcId == null) {
+            return null;
+        }
+        for (Entity entity : location.getWorld().getNearbyEntities(location, 2.5, 3.5, 2.5)) {
+            if (!(entity instanceof TextDisplay display) || !display.isValid()) {
+                continue;
+            }
+            String stored = display.getPersistentDataContainer().get(key, PersistentDataType.STRING);
+            if (npcId.equalsIgnoreCase(stored)) {
+                return display;
+            }
+        }
+        return null;
+    }
+
+    private boolean anyPlayerNear(Location location) {
+        if (location == null || location.getWorld() == null) {
+            return false;
+        }
+        for (Player player : location.getWorld().getPlayers()) {
+            if (isInViewRange(player, location)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void dropFarthestMarker(
+            Player player,
+            Map<String, TextDisplay> playerMarkers,
+            Map<String, MarkerKind> kindsForPlayer,
+            Location incoming
+    ) {
+        String farthestId = null;
+        double farthest = -1;
+        for (Map.Entry<String, TextDisplay> entry : playerMarkers.entrySet()) {
+            TextDisplay display = entry.getValue();
+            if (display == null || !display.isValid()) {
+                farthestId = entry.getKey();
+                break;
+            }
+            double dist = display.getLocation().distanceSquared(incoming);
+            if (dist > farthest) {
+                farthest = dist;
+                farthestId = entry.getKey();
+            }
+        }
+        if (farthestId == null) {
+            return;
+        }
+        TextDisplay dropped = playerMarkers.remove(farthestId);
+        kindsForPlayer.remove(farthestId);
+        removeDisplay(dropped);
+    }
+
     private TextDisplay spawnName(QuestNPC npc, Location location) {
+
+        TextDisplay existing = findOrphan(location, nameKey, npc.getId());
+        if (existing != null) {
+            existing.text(nameComponent(npc));
+            applyNameStyle(existing);
+            return existing;
+        }
 
         return location.getWorld().spawn(location, TextDisplay.class, textDisplay -> {
 
@@ -608,8 +702,12 @@ public class QuestMarkerManager implements Listener {
 
     private void removeDisplay(TextDisplay display) {
 
-        if (display != null && display.isValid()) {
+        if (display == null) {
+            return;
+        }
+        try {
             display.remove();
+        } catch (Throwable ignored) {
         }
 
     }

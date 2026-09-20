@@ -146,7 +146,7 @@ public final class WorldMapService {
             spawned.setLineWidth(1024);
             spawned.setSeeThrough(false);
             spawned.setShadowed(false);
-            spawned.setPersistent(true);
+            spawned.setPersistent(false);
             spawned.setGravity(false);
             spawned.setInvulnerable(true);
             spawned.setBackgroundColor(Color.fromARGB(180, 8, 10, 14));
@@ -169,7 +169,7 @@ public final class WorldMapService {
             spawned.setText("§6Aetherion §8· §7Spawn atlas\n§8~" + RADIUS + " blocks");
             spawned.setBillboard(Display.Billboard.CENTER);
             spawned.setSeeThrough(false);
-            spawned.setPersistent(true);
+            spawned.setPersistent(false);
             spawned.setBackgroundColor(Color.fromARGB(120, 12, 10, 8));
             spawned.getPersistentDataContainer().set(
                     ItemKeys.worldMapDisplay(),
@@ -353,13 +353,44 @@ public final class WorldMapService {
             if (!at.getChunk().isLoaded()) {
                 continue;
             }
-            if (framesHealthy(map)) {
+            if (framesHealthy(map) || reclaimFrames(map, world, at)) {
                 continue;
             }
             removeDisplay(map);
             spawnDisplay(map);
             save();
         }
+    }
+
+    private boolean reclaimFrames(PlacedMap map, World world, Location at) {
+        TextDisplay mosaic = null;
+        TextDisplay label = null;
+        for (Entity entity : world.getNearbyEntities(at, 6, 6, 6)) {
+            if (!(entity instanceof TextDisplay display)) {
+                continue;
+            }
+            String id = display.getPersistentDataContainer().get(
+                    ItemKeys.worldMapDisplay(), PersistentDataType.STRING);
+            if (id == null || !id.equals(map.id().toString())) {
+                continue;
+            }
+            if (display.getScoreboardTags().contains("aetherion_world_map")
+                    && display.getBillboard() == Display.Billboard.FIXED
+                    && mosaic == null) {
+                mosaic = display;
+            } else if (label == null) {
+                label = display;
+            } else {
+                entity.remove();
+            }
+        }
+        if (mosaic == null || label == null) {
+            return false;
+        }
+        map.frames().clear();
+        map.frames().add(mosaic.getUniqueId());
+        map.labelId(label.getUniqueId());
+        return true;
     }
 
     private boolean framesHealthy(PlacedMap map) {

@@ -14,7 +14,7 @@ import java.util.List;
 
 /**
  * Soft invisible {@link Material#LIGHT} fill for the forage isle AABB.
- * Batched — safe to re-run (skips existing LIGHT).
+ * Batched — safe to re-run (skips existing LIGHT). Blocks only; never entities.
  */
 public final class ForageIsleLight {
 
