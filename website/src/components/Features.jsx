@@ -1,6 +1,6 @@
 import { FEATURES } from '../content.js'
 import { FeatureIcon } from './icons.jsx'
-import { Kicker, Reveal, Section, SectionTitle } from './ui.jsx'
+import { Kicker, MotionCard, Reveal, Section, SectionTitle } from './ui.jsx'
 
 export default function Features() {
   return (
@@ -14,8 +14,8 @@ export default function Features() {
 
       <div className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-6">
         {FEATURES.map((feature, i) => (
-          <Reveal key={feature.id} className={feature.span} delay={i * 50}>
-            <article className="glass glass-hover h-full rounded-2xl p-5 sm:p-6">
+          <Reveal key={feature.id} className={feature.span} delay={i * 55}>
+            <MotionCard className="rounded-2xl p-5 sm:p-6">
               <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-white/5 text-amethyst">
                 <FeatureIcon id={feature.id} />
               </div>
@@ -24,7 +24,7 @@ export default function Features() {
                 {feature.en}
               </p>
               <p className="mt-3 text-sm leading-relaxed text-mist/75">{feature.body}</p>
-            </article>
+            </MotionCard>
           </Reveal>
         ))}
       </div>

@@ -12,6 +12,10 @@
   --color-gold: #f5c56b;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 section[id] {
   scroll-margin-top: 5.75rem;
 }
@@ -51,21 +55,6 @@ body {
   backdrop-filter: blur(18px);
 }
 
-.glass-hover {
-  transition:
-    transform 0.35s ease,
-    border-color 0.35s ease,
-    box-shadow 0.35s ease;
-}
-
-.glass-hover:hover {
-  transform: translateY(-3px);
-  border-color: color-mix(in oklab, var(--color-amethyst) 45%, transparent);
-  box-shadow:
-    0 0 0 1px color-mix(in oklab, var(--color-cyan) 18%, transparent),
-    0 22px 50px color-mix(in oklab, var(--color-amethyst-deep) 28%, transparent);
-}
-
 .btn {
   display: inline-flex;
   align-items: center;
@@ -78,19 +67,14 @@ body {
   text-decoration: none;
   cursor: pointer;
   border: 0;
-  transition:
-    transform 0.2s ease,
-    filter 0.2s ease,
-    background 0.2s ease,
-    border-color 0.2s ease;
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
 }
 
-.btn:hover {
-  transform: translateY(-1px);
-}
-
-.btn:active {
-  transform: translateY(0);
+.btn > * {
+  position: relative;
+  z-index: 1;
 }
 
 .btn-primary {
@@ -99,10 +83,40 @@ body {
   box-shadow: 0 10px 30px color-mix(in oklab, var(--color-cyan) 28%, transparent);
 }
 
+.btn-primary::after,
+.btn-gold::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    115deg,
+    transparent 25%,
+    color-mix(in oklab, white 38%, transparent),
+    transparent 75%
+  );
+  transform: translateX(-130%);
+  transition: transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.btn-primary:hover::after,
+.btn-gold:hover::after {
+  transform: translateX(130%);
+}
+
 .btn-ghost {
   color: #f6f1ff;
   background: color-mix(in oklab, white 6%, transparent);
   border: 1px solid color-mix(in oklab, white 16%, transparent);
+  transition:
+    border-color 0.35s ease,
+    background 0.35s ease;
+}
+
+.btn-ghost:hover {
+  border-color: color-mix(in oklab, white 28%, transparent);
+  background: color-mix(in oklab, white 10%, transparent);
 }
 
 .btn-gold {
@@ -111,17 +125,9 @@ body {
   box-shadow: 0 10px 28px color-mix(in oklab, var(--color-gold) 22%, transparent);
 }
 
-.reveal {
-  opacity: 0;
-  transform: translateY(18px);
-  transition:
-    opacity 0.75s ease,
-    transform 0.75s ease;
-}
-
-.reveal.is-visible {
-  opacity: 1;
-  transform: none;
+.hero-word {
+  background-size: 180% 180%;
+  animation: gradient-shift 10s ease-in-out infinite;
 }
 
 .aurora {
@@ -170,17 +176,18 @@ body {
   }
 }
 
-.bank-details > summary {
-  list-style: none;
+@keyframes gradient-shift {
+  0%,
+  100% {
+    background-position: 0% 40%;
+  }
+  50% {
+    background-position: 100% 60%;
+  }
 }
 
-.bank-details > summary::-webkit-details-marker {
-  display: none;
-}
-
-.bank-details[open] .bank-closed,
-.bank-details:not([open]) .bank-open {
-  display: none;
+.pack-card {
+  cursor: pointer;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -188,13 +195,14 @@ body {
     scroll-behavior: auto;
   }
 
-  .reveal,
   .float-slow,
   .pulse-glow,
-  .glass-hover {
+  .hero-word,
+  .btn-primary::after,
+  .btn-gold::after {
     animation: none;
+    transition: none;
     opacity: 1;
     transform: none;
-    transition: none;
   }
 }

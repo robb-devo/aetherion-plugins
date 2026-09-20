@@ -1,4 +1,4 @@
-import { Kicker, Reveal, Section, SectionTitle } from './ui.jsx'
+import { Kicker, MotionCard, Reveal, Section, SectionTitle } from './ui.jsx'
 
 const PILLARS = [
   {
@@ -33,11 +33,11 @@ export default function Vision() {
       <div className="mt-10 grid gap-4 md:grid-cols-3">
         {PILLARS.map((pillar, i) => (
           <Reveal key={pillar.title} delay={i * 80}>
-            <article className="glass glass-hover h-full rounded-2xl p-5 sm:p-6">
+            <MotionCard className="rounded-2xl p-5 sm:p-6">
               <p className="text-cyan/90">✦</p>
               <h3 className="mt-2 text-lg font-bold text-white">{pillar.title}</h3>
               <p className="mt-2 text-sm leading-relaxed text-mist/75">{pillar.body}</p>
-            </article>
+            </MotionCard>
           </Reveal>
         ))}
       </div>

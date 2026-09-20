@@ -1,6 +1,8 @@
+import { motion, useReducedMotion } from 'framer-motion'
 import { SITE } from '../content.js'
+import { fadeUp, heroStagger } from '../motion.js'
 import { DiscordIcon } from './icons.jsx'
-import { CopyButton } from './ui.jsx'
+import { CopyButton, MotionLink } from './ui.jsx'
 
 function Crystal({ className, gid }) {
   return (
@@ -19,6 +21,10 @@ function Crystal({ className, gid }) {
 }
 
 export default function Hero() {
+  const reduced = useReducedMotion()
+  const enter = reduced ? { hidden: {}, show: {} } : heroStagger
+  const item = reduced ? { hidden: { opacity: 1, y: 0 }, show: { opacity: 1, y: 0 } } : fadeUp
+
   return (
     <section id="top" className="aurora starfield relative overflow-hidden px-4 pt-28 pb-20 sm:px-6 sm:pt-32 sm:pb-28">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,#07060f_78%)]" />
@@ -36,25 +42,39 @@ export default function Hero() {
         aria-hidden="true"
       />
 
-      <div className="relative mx-auto flex max-w-6xl flex-col items-center text-center">
-        <p className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/5 px-3 py-1 text-[0.7rem] font-bold tracking-[0.2em] text-mist/90 uppercase">
+      <motion.div
+        className="relative mx-auto flex max-w-6xl flex-col items-center text-center"
+        variants={enter}
+        initial="hidden"
+        animate="show"
+      >
+        <motion.p
+          variants={item}
+          className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/5 px-3 py-1 text-[0.7rem] font-bold tracking-[0.2em] text-mist/90 uppercase"
+        >
           Pre-Pre-Beta · Freundes-Netzwerk
-        </p>
+        </motion.p>
 
-        <h1 className="font-display text-[clamp(2.6rem,12vw,7.4rem)] leading-[0.92] font-black tracking-[0.16em] text-white">
-          <span className="bg-gradient-to-br from-white via-amethyst to-cyan bg-clip-text text-transparent">
+        <motion.h1
+          variants={item}
+          className="font-display text-[clamp(2.6rem,12vw,7.4rem)] leading-[0.92] font-black tracking-[0.16em] text-white"
+        >
+          <span className="hero-word bg-gradient-to-br from-white via-amethyst to-cyan bg-clip-text text-transparent">
             AETHERION
           </span>
-        </h1>
+        </motion.h1>
 
-        <p className="mt-6 max-w-2xl text-lg font-medium text-white/90 sm:text-xl">
+        <motion.p variants={item} className="mt-6 max-w-2xl text-lg font-medium text-white/90 sm:text-xl">
           Hypixel-Feeling. Skyblock-Inseln. Eigene Skills.
-        </p>
-        <p className="mt-2 max-w-xl text-sm text-mist/75 sm:text-base">
+        </motion.p>
+        <motion.p variants={item} className="mt-2 max-w-xl text-sm text-mist/75 sm:text-base">
           A Paper MMO prototype — optional support, never pay-to-win.
-        </p>
+        </motion.p>
 
-        <div className="mt-8 flex w-full max-w-lg items-center justify-between gap-4 rounded-2xl px-4 py-3 text-left sm:min-w-[280px] glass">
+        <motion.div
+          variants={item}
+          className="glass mt-8 flex w-full max-w-lg items-center justify-between gap-4 rounded-2xl px-4 py-3 text-left sm:min-w-[280px]"
+        >
           <span className="flex min-w-0 flex-col">
             <span className="text-[0.65rem] font-bold tracking-[0.18em] text-cyan uppercase">
               Java · {SITE.proxy} :{SITE.port}
@@ -70,9 +90,9 @@ export default function Hero() {
           >
             Kopieren
           </CopyButton>
-        </div>
+        </motion.div>
 
-        <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+        <motion.div variants={item} className="mt-5 flex flex-col gap-3 sm:flex-row">
           <CopyButton
             value={SITE.ip}
             className="btn btn-primary"
@@ -81,23 +101,18 @@ export default function Hero() {
           >
             Beitreten
           </CopyButton>
-          <a
-            href={SITE.discord}
-            className="btn btn-ghost"
-            target="_blank"
-            rel="noreferrer"
-          >
+          <MotionLink href={SITE.discord} className="btn btn-ghost" target="_blank" rel="noreferrer">
             <DiscordIcon className="h-4 w-4" />
             Discord
-          </a>
-        </div>
+          </MotionLink>
+        </motion.div>
 
-        <p className="mt-8 max-w-lg text-xs leading-relaxed text-mist/60">
+        <motion.p variants={item} className="mt-8 max-w-lg text-xs leading-relaxed text-mist/60">
           Minecraft Java Edition → Mehrspieler → Direktverbindung →{' '}
           <span className="text-white/80">{SITE.ip}</span>
           . Support ist optional. Shards kaufen keine Power.
-        </p>
-      </div>
+        </motion.p>
+      </motion.div>
     </section>
   )
 }

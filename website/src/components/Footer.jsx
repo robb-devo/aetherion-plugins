@@ -1,4 +1,5 @@
 import { SITE } from '../content.js'
+import { MotionLink } from './ui.jsx'
 
 export default function Footer() {
   return (
@@ -12,15 +13,20 @@ export default function Footer() {
           </p>
         </div>
         <div className="flex flex-col gap-2 text-sm">
-          <a href={SITE.discord} className="text-mist/80 no-underline hover:text-white" target="_blank" rel="noreferrer">
+          <MotionLink
+            href={SITE.discord}
+            className="w-fit text-mist/80 no-underline hover:text-white"
+            target="_blank"
+            rel="noreferrer"
+          >
             Discord
-          </a>
-          <a href="#support" className="text-mist/80 no-underline hover:text-white">
+          </MotionLink>
+          <MotionLink href="#support" className="w-fit text-mist/80 no-underline hover:text-white">
             Support-Shop
-          </a>
-          <a href="#karten" className="text-mist/80 no-underline hover:text-white">
+          </MotionLink>
+          <MotionLink href="#karten" className="w-fit text-mist/80 no-underline hover:text-white">
             Karten
-          </a>
+          </MotionLink>
         </div>
       </div>
       <p className="mx-auto mt-10 max-w-6xl text-xs leading-relaxed text-mist/50">
