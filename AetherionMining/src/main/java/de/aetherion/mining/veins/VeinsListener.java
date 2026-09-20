@@ -97,7 +97,9 @@ public final class VeinsListener implements Listener {
         location.setYaw(player.getLocation().getYaw());
         location.setPitch(0f);
         npcs.spawnEntrance(location);
-        player.sendMessage("§aAnchored §fForeman§a. Players click him to enter The Veins §7(Mining Skill 30+)§a.");
+        int minLevel = veinsMinLevel();
+        player.sendMessage("§aAnchored §fForeman§a. Players click him to enter The Veins §7(Mining Skill "
+                + minLevel + "+)§a.");
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
