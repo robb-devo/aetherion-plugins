@@ -163,6 +163,8 @@ void main() {
           'buildStamp': '20260921',
           'tag': 'operator-app-0.3.0',
           'apkUrl': 'https://donnernet.de/operator-app/operator_app_release.apk',
+          'windowsUrl':
+              'https://donnernet.de/operator-app/operator_app_windows.zip',
           'htmlUrl': 'https://donnernet.de/operator-app/',
           'notes': 'test',
         }),
@@ -178,6 +180,7 @@ void main() {
     final release = await checker.latestNewerThan('0.2.2');
     expect(release?.version, '0.3.0');
     expect(release?.apkUrl, contains('operator_app_release.apk'));
+    expect(release?.windowsUrl, contains('operator_app_windows.zip'));
     expect(
       await checker.latestNewerThan('0.3.0', buildStamp: '20260921'),
       isNull,

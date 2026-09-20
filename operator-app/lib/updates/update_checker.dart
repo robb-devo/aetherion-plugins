@@ -10,6 +10,7 @@ class AppRelease {
     required this.version,
     required this.htmlUrl,
     this.apkUrl,
+    this.windowsUrl,
     this.publishedAt,
     this.kind = OperatorReleaseKind.semver,
     this.notes,
@@ -20,6 +21,8 @@ class AppRelease {
   final String version;
   final String htmlUrl;
   final String? apkUrl;
+  /// Zipped Windows release folder (`operator_app_windows.zip`).
+  final String? windowsUrl;
   final DateTime? publishedAt;
   final OperatorReleaseKind kind;
   final String? notes;
@@ -104,6 +107,7 @@ class CascadingUpdateChecker implements UpdateChecker {
 ///   "buildStamp": "20260921",
 ///   "tag": "operator-app-0.2.3",
 ///   "apkUrl": "https://donnernet.de/operator-app/operator_app_release.apk",
+///   "windowsUrl": "https://donnernet.de/operator-app/operator_app_windows.zip",
 ///   "htmlUrl": "https://donnernet.de/operator-app/",
 ///   "notes": "Optional changelog"
 /// }
@@ -166,6 +170,8 @@ AppRelease? releaseFromManifest(
   final rawTag = '${raw['tag'] ?? ''}'.trim();
   final tag = rawTag.isEmpty ? 'operator-app-$version' : rawTag;
   final apkUrl = '${raw['apkUrl'] ?? raw['apk_url'] ?? ''}'.trim();
+  final windowsUrl =
+      '${raw['windowsUrl'] ?? raw['windows_url'] ?? ''}'.trim();
   final htmlUrl =
       '${raw['htmlUrl'] ?? raw['html_url'] ?? kOperatorUpdateManifestUrl}'
           .trim();
@@ -176,13 +182,16 @@ AppRelease? releaseFromManifest(
       stamp.isNotEmpty &&
       (int.tryParse(stamp) ?? 0) > (int.tryParse(buildStamp) ?? 0);
   if (!newerBySemver && !newerByStamp) return null;
-  if (!apkUrl.startsWith('http')) return null;
+  final hasApk = apkUrl.startsWith('http');
+  final hasWindows = windowsUrl.startsWith('http');
+  if (!hasApk && !hasWindows) return null;
 
   return AppRelease(
     tag: tag,
     version: version,
     htmlUrl: htmlUrl.startsWith('http') ? htmlUrl : kOperatorUpdateManifestUrl,
-    apkUrl: apkUrl,
+    apkUrl: hasApk ? apkUrl : null,
+    windowsUrl: hasWindows ? windowsUrl : null,
     publishedAt: DateTime.tryParse('${raw['publishedAt'] ?? ''}'),
     kind: OperatorReleaseKind.semver,
     notes: notes.isEmpty ? null : notes,

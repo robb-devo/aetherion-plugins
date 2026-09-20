@@ -29,7 +29,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (_primed) return;
     _primed = true;
     final session = SessionScope.of(context);
-    _url.text = session.craftySettings.baseUrl;
+    _url.text = session.craftySettings.baseUrl.isEmpty
+        ? 'https://135.181.18.162:8443/'
+        : session.craftySettings.baseUrl;
     _insecure = session.craftySettings.allowInsecureTls;
   }
 

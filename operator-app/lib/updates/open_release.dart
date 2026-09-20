@@ -5,8 +5,13 @@ import '../platform/platform_info.dart';
 import 'update_checker.dart';
 
 Future<void> openOperatorRelease(AppRelease release) async {
-  final apk = release.apkUrl;
-  final useApk = apk != null && !kIsWeb && !isWindowsDesktop;
-  final target = useApk ? apk : release.htmlUrl;
+  final String target;
+  if (!kIsWeb && isWindowsDesktop) {
+    final win = release.windowsUrl;
+    target = (win != null && win.startsWith('http')) ? win : release.htmlUrl;
+  } else {
+    final apk = release.apkUrl;
+    target = (apk != null && apk.startsWith('http')) ? apk : release.htmlUrl;
+  }
   await launchUrl(Uri.parse(target), mode: LaunchMode.externalApplication);
 }

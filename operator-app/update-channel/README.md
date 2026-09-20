@@ -12,12 +12,15 @@ Install `operator_app_0.2.2_release.apk` once by hand. After that, every newer
 
 ## Upload to the server
 
-Put these two files on the host that serves `donnernet.de` (nginx or Cloudflare R2/Pages), **as real static files** (not the SPA `index.html` fallback):
+Put these files on the host that serves `donnernet.de` (nginx or Cloudflare R2/Pages), **as real static files** (not the SPA `index.html` fallback):
 
 | File | URL |
 |------|-----|
 | `latest.json` (this folder) | `https://donnernet.de/operator-app/latest.json` |
 | `operator_app_release.apk` | `https://donnernet.de/operator-app/operator_app_release.apk` |
+| `operator_app_windows.zip` | `https://donnernet.de/operator-app/operator_app_windows.zip` |
+
+Windows: unzip anywhere and run `operator_app.exe`. Login is remembered on this PC after the first sign-in.
 
 ### nginx example
 
