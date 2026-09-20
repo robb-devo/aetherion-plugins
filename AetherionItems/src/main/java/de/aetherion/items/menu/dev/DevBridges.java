@@ -251,7 +251,8 @@ public final class DevBridges {
             "borderlands",
             "colosseum",
             "eldervale",
-            "fishing"
+            "fishing",
+            "amethyst"
     );
 
     static List<NamedItem> spawnMarkers() {
@@ -343,6 +344,7 @@ public final class DevBridges {
             case "eldervale" -> "Mining island · slime jump";
             case "farm_isle" -> "Shared fields · Millstone pantry";
             case "fishing" -> "Fishing Eldervale · north pad";
+            case "amethyst" -> "aether_veins beacon hub · Amethyst Mines";
             default -> null;
         };
         if (extra == null) {

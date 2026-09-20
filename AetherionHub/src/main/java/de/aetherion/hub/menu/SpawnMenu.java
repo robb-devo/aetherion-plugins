@@ -43,6 +43,7 @@ public final class SpawnMenu {
             case "eldervale" -> 20;
             case "borderlands" -> 21;
             case "fishing" -> 22;
+            case "amethyst" -> 23;
             default -> spawn.slot();
         };
     }
@@ -65,7 +66,7 @@ public final class SpawnMenu {
                         "§cRed §7= locked · walk there or finish the quest.",
                         "",
                         "§7Harbour → Ore Ridge → Mines → Capital",
-                        "§7Forage · Farm · Farm Isle · Eldervale · Fishing",
+                        "§7Forage · Farm · Farm Isle · Eldervale · Fishing · Amethyst",
                         "",
                         "§eLeft-click §7→ set /spawn",
                         "§eRight-click §7→ teleport now"
@@ -147,7 +148,8 @@ public final class SpawnMenu {
             lore.add("§cLocked");
             if ("farm".equalsIgnoreCase(spawn.id()) || "capital".equalsIgnoreCase(spawn.id())
                     || "borderlands".equalsIgnoreCase(spawn.id()) || "ore_ridge".equalsIgnoreCase(spawn.id())
-                    || "eldervale".equalsIgnoreCase(spawn.id()) || "fishing".equalsIgnoreCase(spawn.id())) {
+                    || "eldervale".equalsIgnoreCase(spawn.id()) || "fishing".equalsIgnoreCase(spawn.id())
+                    || "amethyst".equalsIgnoreCase(spawn.id())) {
                 lore.add("§7Walk there to unlock.");
             } else {
                 lore.add("§7Unlock through the story,");
