@@ -1,0 +1,107 @@
+{
+  "@@locale": "en",
+  "appTitle": "Aetherion Operator",
+  "appTagline": "donnernet companion",
+  "networkName": "Aetherion",
+  "loginHeadline": "Sign in by name",
+  "loginBody": "Local operator list — add teammate names, optional PIN. No OAuth in this MVP.",
+  "signIn": "Sign in",
+  "signedInAs": "Signed in as {name}",
+  "@signedInAs": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "noPin": "No PIN",
+  "pinProtected": "PIN",
+  "enterPin": "Enter PIN for {name}",
+  "@enterPin": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "pinHint": "PIN",
+  "pinWrong": "That PIN does not match.",
+  "cancel": "Cancel",
+  "continueAction": "Continue",
+  "addAccount": "Add teammate",
+  "addAccountTitle": "Add operator name",
+  "accountNameHint": "Minecraft / operator name",
+  "optionalPinHint": "Optional PIN",
+  "save": "Save",
+  "remove": "Remove",
+  "removeAccount": "Remove {name}?",
+  "@removeAccount": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "emptyTeam": "No operators yet. Add a name to start.",
+  "navDashboard": "Dashboard",
+  "navDevkit": "DevKit",
+  "navLinks": "Links",
+  "navTeam": "Team",
+  "signOut": "Sign out",
+  "languageEn": "EN",
+  "languageDe": "DE",
+  "statusOnline": "Online",
+  "statusOffline": "Offline",
+  "mockBadge": "Mock data",
+  "craftyLive": "Crafty",
+  "networkOverview": "Network",
+  "players": "Players",
+  "tps": "TPS",
+  "serversOnline": "Online",
+  "refresh": "Refresh",
+  "lastFetched": "Updated {time}",
+  "@lastFetched": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
+  "serverRoleProxy": "Proxy",
+  "serverRoleHub": "Hub",
+  "serverRoleCapital": "Capital",
+  "serverRoleDungeons": "Dungeons",
+  "serverRoleAshes": "Ashes",
+  "extensionHint": "Swap MockCraftyClient for HttpCraftyClient when CRAFTY_BASE_URL and CRAFTY_API_TOKEN are set. No credentials live in source.",
+  "devkitTitle": "DevKit",
+  "devkitBody": "Command console against the selected backend. Soft restart and whitelist notes are placeholders until Crafty is wired.",
+  "targetServer": "Target",
+  "consoleHint": "Command — e.g. list, whitelist add Name",
+  "send": "Send",
+  "consoleEmpty": "No commands yet. Type above and press Send.",
+  "quickActions": "Quick actions",
+  "softRestart": "Soft restart",
+  "softRestartConfirm": "Queue a soft restart for {server}? Mock mode only logs the intent.",
+  "@softRestartConfirm": {
+    "placeholders": {
+      "server": { "type": "String" }
+    }
+  },
+  "confirm": "Confirm",
+  "whitelistNote": "Whitelist note",
+  "whitelistNoteHint": "Who / why — stored locally until Crafty whitelist is wired",
+  "whitelistSaved": "Note saved locally.",
+  "linksTitle": "Links",
+  "linksBody": "Public join address, site, and Discord.",
+  "copyAddress": "Copy",
+  "copied": "Copied {value}",
+  "@copied": {
+    "placeholders": {
+      "value": { "type": "String" }
+    }
+  },
+  "openLink": "Open",
+  "playAddress": "play.donnernet.de",
+  "playAddressHint": "Minecraft Java · Velocity :25565",
+  "siteLabel": "donnernet.de",
+  "siteHint": "Public site",
+  "discordLabel": "Discord",
+  "discordHint": "Operator + player invite",
+  "teamTitle": "Operator list",
+  "teamBody": "Names live on this device. Optional PIN is hashed locally — never sent anywhere in MVP.",
+  "nameRequired": "Enter a name.",
+  "nameTaken": "That name is already on the list.",
+  "nameInvalid": "Use 1–16 letters, numbers, or underscore."
+}

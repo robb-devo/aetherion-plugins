@@ -24,6 +24,7 @@ Crafty layout: `/var/opt/minecraft/crafty/` (`servers/<id>/` backends, `shared/`
 - [docs/OWNERSHIP.md](docs/OWNERSHIP.md) — gather vs Items
 - [docs/DUPING_CHECKLIST.md](docs/DUPING_CHECKLIST.md) — economy / transfer checks
 - [AetherionStressBots/README.md](AetherionStressBots/README.md) — QA/stress Mineflayer bots (Wave 1 + combat/fish/trade/quest/pad)
+- [operator-app/README.md](operator-app/README.md) — Operator companion (Flutter, Windows + Android)
 
 ## Build
 
