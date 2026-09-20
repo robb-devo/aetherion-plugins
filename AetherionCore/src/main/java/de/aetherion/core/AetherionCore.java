@@ -48,7 +48,7 @@ public final class AetherionCore extends JavaPlugin {
             wipe.setTabCompleter(wipeCommand);
         }
         networkWipeWatch.start();
-        getLogger().info("Shared keys and hit flags ready. Game plugins keep the loop.");
+        getLogger().info("Shared keys, display helpers, and hit flags ready. Game plugins keep the loop.");
     }
 
     @Override

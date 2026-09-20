@@ -4,7 +4,7 @@ main: de.aetherion.core.AetherionCore
 api-version: 1.21
 author: Aetherion
 load: STARTUP
-description: Shared keys, entity identity, and hit flags. No game loop.
+description: Shared keys, entity identity, display helpers, and hit flags. No game loop.
 
 commands:
   aethercore:

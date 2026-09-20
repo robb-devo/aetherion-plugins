@@ -17,6 +17,10 @@ import java.util.function.Function;
 /**
  * Thin FancyNpcs reflection glue. Plugin-specific NPC setup (skins, holograms,
  * villager fallbacks, display names) stays in the owning plugin.
+ *
+ * <p>Skins: never pass Mojang usernames through {@code setSkin} — use
+ * {@link FancyNpcSkins} (signed texture value, URL identifier). Username
+ * lookups 404-loop UUIDFetcher every ~2s and feel like client lag at TPS 20.
  */
 public final class FancyNpcFacade {
 

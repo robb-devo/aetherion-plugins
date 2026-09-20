@@ -273,6 +273,7 @@ public final class CustomNpcService {
         Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, () -> {
             MojangSkinFetcher.Textures textures = MojangSkinFetcher.fetch(username);
             if (textures == null) {
+                // Do not fall back to FancyNpcs setSkin(username) — UUIDFetcher 404-loops.
                 return;
             }
             Bukkit.getScheduler().runTask(plugin, () -> applyTextures(fancy, username, textures, slim));
@@ -296,12 +297,7 @@ public final class CustomNpcService {
             data.getClass().getMethod("setSkinData", skinDataClass).invoke(data, skinData);
             FancyNpcFacade.updateForAll(fancy);
         } catch (ReflectiveOperationException | RuntimeException ignored) {
-            try {
-                Object data = FancyNpcFacade.data(fancy);
-                data.getClass().getMethod("setSkin", String.class).invoke(data, username);
-                FancyNpcFacade.updateForAll(fancy);
-            } catch (ReflectiveOperationException ignoredAgain) {
-            }
+            // Leave the NPC unskinned rather than setSkin(username) → UUIDFetcher loop.
         }
     }
 
