@@ -1,7 +1,10 @@
 import { motion, useReducedMotion } from 'framer-motion'
 import { SITE } from '../content.js'
+import { interpolate, SITE_VARS } from '../copy.js'
+import { useLang } from '../i18n.jsx'
 import { fadeUp, heroStagger } from '../motion.js'
 import { DiscordIcon } from './icons.jsx'
+import { FadeLang } from './LangToggle.jsx'
 import { CopyButton, MotionLink } from './ui.jsx'
 
 function Crystal({ className, gid }) {
@@ -22,6 +25,7 @@ function Crystal({ className, gid }) {
 
 export default function Hero() {
   const reduced = useReducedMotion()
+  const { copy } = useLang()
   const enter = reduced ? { hidden: {}, show: {} } : heroStagger
   const item = reduced ? { hidden: { opacity: 1, y: 0 }, show: { opacity: 1, y: 0 } } : fadeUp
 
@@ -52,7 +56,7 @@ export default function Hero() {
           variants={item}
           className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/5 px-3 py-1 text-[0.7rem] font-bold tracking-[0.2em] text-mist/90 uppercase"
         >
-          Pre-Pre-Beta · Freundes-Netzwerk
+          <FadeLang as="span">{copy.hero.badge}</FadeLang>
         </motion.p>
 
         <motion.h1
@@ -65,10 +69,10 @@ export default function Hero() {
         </motion.h1>
 
         <motion.p variants={item} className="mt-6 max-w-2xl text-lg font-medium text-white/90 sm:text-xl">
-          Hypixel-Feeling. Skyblock-Inseln. Eigene Skills.
+          <FadeLang as="span">{copy.hero.line}</FadeLang>
         </motion.p>
         <motion.p variants={item} className="mt-2 max-w-xl text-sm text-mist/75 sm:text-base">
-          A Paper MMO prototype — optional support, never pay-to-win.
+          <FadeLang as="span">{copy.hero.sub}</FadeLang>
         </motion.p>
 
         <motion.div
@@ -83,12 +87,12 @@ export default function Hero() {
           </span>
           <CopyButton
             value={SITE.ip}
-            copiedLabel="Kopiert!"
-            toast="IP kopiert — in Minecraft einfügen"
-            title="Server-IP kopieren"
+            copiedLabel={copy.hero.copied}
+            toast={copy.hero.ipCopied}
+            title={copy.hero.copyTitle}
             className="shrink-0 rounded-full bg-cyan/20 px-3 py-1.5 text-xs font-bold text-white"
           >
-            Kopieren
+            {copy.hero.copy}
           </CopyButton>
         </motion.div>
 
@@ -96,10 +100,10 @@ export default function Hero() {
           <CopyButton
             value={SITE.ip}
             className="btn btn-primary"
-            copiedLabel="IP kopiert"
-            toast="IP kopiert — in Minecraft einfügen"
+            copiedLabel={copy.hero.copied}
+            toast={copy.hero.ipCopied}
           >
-            Beitreten
+            {copy.hero.join}
           </CopyButton>
           <MotionLink href={SITE.discord} className="btn btn-ghost" target="_blank" rel="noreferrer">
             <DiscordIcon className="h-4 w-4" />
@@ -108,9 +112,7 @@ export default function Hero() {
         </motion.div>
 
         <motion.p variants={item} className="mt-8 max-w-lg text-xs leading-relaxed text-mist/60">
-          Minecraft Java Edition → Mehrspieler → Direktverbindung →{' '}
-          <span className="text-white/80">{SITE.ip}</span>
-          . Support ist optional. Shards kaufen keine Power.
+          <FadeLang as="span">{interpolate(copy.hero.howTo, SITE_VARS)}</FadeLang>
         </motion.p>
       </motion.div>
     </section>

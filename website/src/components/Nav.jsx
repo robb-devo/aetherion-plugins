@@ -1,7 +1,9 @@
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { useEffect, useState } from 'react'
-import { NAV, SITE } from '../content.js'
+import { NAV_LINKS, SITE } from '../content.js'
+import { useLang } from '../i18n.jsx'
 import { easeOut, listStagger } from '../motion.js'
+import LangToggle, { FadeLang } from './LangToggle.jsx'
 import { CopyButton, MotionLink } from './ui.jsx'
 
 export default function Nav() {
@@ -9,6 +11,7 @@ export default function Nav() {
   const [scrolled, setScrolled] = useState(false)
   const [hovered, setHovered] = useState('')
   const reduced = useReducedMotion()
+  const { copy } = useLang()
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12)
@@ -37,7 +40,7 @@ export default function Nav() {
         }}
         transition={{ duration: 0.35, ease: easeOut }}
       >
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <a href="#top" className="flex items-center gap-2.5 no-underline" onClick={() => setOpen(false)}>
             <img src="/favicon.svg" alt="" className="h-8 w-8" />
             <span className="font-display text-sm font-bold tracking-[0.22em] text-white">
@@ -45,8 +48,8 @@ export default function Nav() {
             </span>
           </a>
 
-          <nav className="hidden items-center gap-7 md:flex" aria-label="Hauptnavigation">
-            {NAV.map((item) => (
+          <nav className="hidden items-center gap-7 md:flex" aria-label={copy.nav.main}>
+            {NAV_LINKS.map((item) => (
               <a
                 key={item.href}
                 href={item.href}
@@ -54,7 +57,7 @@ export default function Nav() {
                 onMouseEnter={() => setHovered(item.href)}
                 onMouseLeave={() => setHovered('')}
               >
-                {item.label}
+                <FadeLang as="span">{copy.nav[item.key]}</FadeLang>
                 {hovered === item.href ? (
                   <motion.span
                     layoutId="nav-ink"
@@ -66,35 +69,37 @@ export default function Nav() {
             ))}
           </nav>
 
-          <div className="hidden items-center gap-2 md:flex">
-            <CopyButton
-              value={SITE.ip}
-              className="btn btn-ghost !px-3.5 !py-2 text-xs"
-              copiedLabel="IP kopiert"
-              toast="IP kopiert — in Minecraft einfügen"
+          <div className="flex items-center gap-2">
+            <LangToggle />
+            <div className="hidden items-center gap-2 md:flex">
+              <CopyButton
+                value={SITE.ip}
+                className="btn btn-ghost !px-3.5 !py-2 text-xs"
+                copiedLabel={copy.hero.copied}
+                toast={copy.hero.ipCopied}
+              >
+                {SITE.ip}
+              </CopyButton>
+              <MotionLink href="#support" className="btn btn-primary !px-4 !py-2 text-xs">
+                {copy.nav.support}
+              </MotionLink>
+            </div>
+            <motion.button
+              type="button"
+              className="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-white/15 bg-white/5 md:hidden"
+              aria-expanded={open}
+              aria-label={open ? copy.nav.menuClose : copy.nav.menuOpen}
+              onClick={() => setOpen((v) => !v)}
+              whileTap={reduced ? undefined : { scale: 0.94 }}
             >
-              {SITE.ip}
-            </CopyButton>
-            <MotionLink href="#support" className="btn btn-primary !px-4 !py-2 text-xs">
-              Support
-            </MotionLink>
+              <span className="sr-only">{copy.nav.menu}</span>
+              <span className="flex flex-col gap-1.5">
+                <span className={`block h-0.5 w-4 bg-white transition duration-300 ${open ? 'translate-y-2 rotate-45' : ''}`} />
+                <span className={`block h-0.5 w-4 bg-white transition duration-300 ${open ? 'opacity-0' : ''}`} />
+                <span className={`block h-0.5 w-4 bg-white transition duration-300 ${open ? '-translate-y-2 -rotate-45' : ''}`} />
+              </span>
+            </motion.button>
           </div>
-
-          <motion.button
-            type="button"
-            className="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-white/15 bg-white/5 md:hidden"
-            aria-expanded={open}
-            aria-label={open ? 'Menü schließen' : 'Menü öffnen'}
-            onClick={() => setOpen((v) => !v)}
-            whileTap={reduced ? undefined : { scale: 0.94 }}
-          >
-            <span className="sr-only">Menü</span>
-            <span className="flex flex-col gap-1.5">
-              <span className={`block h-0.5 w-4 bg-white transition duration-300 ${open ? 'translate-y-2 rotate-45' : ''}`} />
-              <span className={`block h-0.5 w-4 bg-white transition duration-300 ${open ? 'opacity-0' : ''}`} />
-              <span className={`block h-0.5 w-4 bg-white transition duration-300 ${open ? '-translate-y-2 -rotate-45' : ''}`} />
-            </span>
-          </motion.button>
         </div>
       </motion.header>
 
@@ -102,19 +107,19 @@ export default function Nav() {
         {open ? (
           <motion.div
             className="fixed inset-0 z-40 bg-void pt-16 md:hidden"
-            initial={reduced ? { opacity: 0 } : { opacity: 0 }}
+            initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.28, ease: easeOut }}
           >
             <motion.nav
               className="mx-auto flex h-full max-w-6xl flex-col gap-3 overflow-y-auto px-4 py-5"
-              aria-label="Mobilnavigation"
+              aria-label={copy.nav.mobile}
               variants={reduced ? undefined : listStagger}
               initial={reduced ? false : 'hidden'}
               animate="show"
             >
-              {NAV.map((item) => (
+              {NAV_LINKS.map((item) => (
                 <motion.a
                   key={item.href}
                   href={item.href}
@@ -122,16 +127,16 @@ export default function Nav() {
                   variants={reduced ? undefined : fadeUpSafe}
                   onClick={() => setOpen(false)}
                 >
-                  {item.label}
+                  {copy.nav[item.key]}
                 </motion.a>
               ))}
               <CopyButton
                 value={SITE.ip}
                 className="btn btn-ghost mt-2 w-full"
-                copiedLabel="IP kopiert"
-                toast="IP kopiert — in Minecraft einfügen"
+                copiedLabel={copy.hero.copied}
+                toast={copy.hero.ipCopied}
               >
-                IP kopieren · {SITE.ip}
+                {copy.nav.copyIp} · {SITE.ip}
               </CopyButton>
             </motion.nav>
           </motion.div>

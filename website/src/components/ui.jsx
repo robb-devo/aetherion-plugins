@@ -76,8 +76,8 @@ function fallbackCopy(value) {
 export function CopyButton({
   value,
   children,
-  copiedLabel = 'Kopiert!',
-  toast = 'Kopiert',
+  copiedLabel = 'Copied!',
+  toast = 'Copied',
   className = '',
   title,
 }) {
@@ -182,13 +182,13 @@ export function Kicker({ children }) {
   )
 }
 
-export function SectionTitle({ children, en }) {
+export function SectionTitle({ children, sub }) {
   return (
     <div className="max-w-3xl">
       <h2 className="font-display text-3xl font-bold tracking-wide text-white sm:text-4xl lg:text-5xl">
         {children}
       </h2>
-      {en ? <p className="mt-2 text-sm text-mist/70">{en}</p> : null}
+      {sub ? <p className="mt-2 text-sm text-mist/70">{sub}</p> : null}
     </div>
   )
 }

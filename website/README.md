@@ -1,6 +1,8 @@
 # Aetherion Website
 
-Statische Marketing- + Support-Seite für **Aetherion** (Vite, React, Tailwind). Ein One-Pager, kein CMS, kein Backend.
+Statische Marketing- + Support-Seite für **Aetherion** (Vite, React, Tailwind, Framer Motion). Ein One-Pager, kein CMS, kein Backend.
+
+English is the default. A header toggle switches **EN / DE**; the choice is stored in `localStorage` (`aetherion-lang`). Copy lives in `src/copy.js`.
 
 ## Lokal
 

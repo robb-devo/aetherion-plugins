@@ -6,21 +6,24 @@ import Nav from './components/Nav.jsx'
 import Support from './components/Support.jsx'
 import Vision from './components/Vision.jsx'
 import { ToastProvider } from './components/ui.jsx'
+import { LanguageProvider } from './i18n.jsx'
 
 export default function App() {
   return (
-    <ToastProvider>
-      <div className="min-h-screen bg-void text-white">
-        <Nav />
-        <main>
-          <Hero />
-          <Vision />
-          <Features />
-          <MapGallery />
-          <Support />
-        </main>
-        <Footer />
-      </div>
-    </ToastProvider>
+    <LanguageProvider>
+      <ToastProvider>
+        <div className="min-h-screen bg-void text-white">
+          <Nav />
+          <main>
+            <Hero />
+            <Vision />
+            <Features />
+            <MapGallery />
+            <Support />
+          </main>
+          <Footer />
+        </div>
+      </ToastProvider>
+    </LanguageProvider>
   )
 }
