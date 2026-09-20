@@ -22,6 +22,20 @@ public final class BotLocations {
     private BotLocations() {
     }
 
+    /** Hardcoded pad when live YAML is missing this role's anchors. */
+    public static Location fallback(Player player, double x, double y, double z, double scatter) {
+        World world = player != null && player.getWorld() != null
+                ? player.getWorld()
+                : Bukkit.getWorld("world");
+        if (world == null && !Bukkit.getWorlds().isEmpty()) {
+            world = Bukkit.getWorlds().get(0);
+        }
+        if (world == null) {
+            return null;
+        }
+        return scatter(new Location(world, x, y, z), scatter, ThreadLocalRandom.current());
+    }
+
     public static Location pickAnchor(Player player, ConfigurationSection section) {
         Location assigned = assignedAnchor(player, section);
         if (assigned == null) {

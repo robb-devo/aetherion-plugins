@@ -1,3 +1,27 @@
+/** Fill keys that exist on {@code example} but are missing from {@code live}. Arrays/scalars already present stay. */
+export function mergeMissing(live, example, skip = []) {
+  if (example == null || typeof example !== 'object' || Array.isArray(example)) {
+    return live
+  }
+  if (live == null || typeof live !== 'object' || Array.isArray(live)) {
+    return live
+  }
+  const skipSet = new Set(skip)
+  const out = { ...live }
+  for (const [key, value] of Object.entries(example)) {
+    if (skipSet.has(key)) continue
+    if (!(key in out) || out[key] == null) {
+      out[key] = value
+      continue
+    }
+    if (value && typeof value === 'object' && !Array.isArray(value)
+        && out[key] && typeof out[key] === 'object' && !Array.isArray(out[key])) {
+      out[key] = mergeMissing(out[key], value, skip)
+    }
+  }
+  return out
+}
+
 export function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }

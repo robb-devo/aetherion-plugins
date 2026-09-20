@@ -36,7 +36,11 @@ public final class FarmRoleHandler implements BotRoleHandler {
 
     @Override
     public Location destination(Player player) {
-        return BotLocations.pickAnchor(player, BotRoleRegistry.roleSection(plugin, BotRole.FARM));
+        Location pick = BotLocations.pickAnchor(player, BotRoleRegistry.roleSection(plugin, BotRole.FARM));
+        if (pick != null) {
+            return pick;
+        }
+        return BotLocations.fallback(player, -600.5, 90.0, 427.5, 4);
     }
 
     @Override

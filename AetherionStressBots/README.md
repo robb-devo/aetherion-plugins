@@ -127,7 +127,7 @@ Skyblock pads are small. Wave 1 defaults now **refuse jump-pad lips, canopy-edge
 | roam `220.5 58 160.5` husk/skeleton | Removed. Roam stays on Origin slime pads; plugin pad-hops, runner does not walk the void |
 | death → world spawn `298 63 -400` → die again | Respawn location is the role pad immediately; void/fall damage cancelled; Y-floor watchdog TPs back |
 
-Copy `testbots.safety` + the new `roles.*.anchors` into the **live** `plugins/AetherionStressBots/config.yml` (jar defaults do not overwrite an existing file), then `/stressbots reload`. Merge the matching `anchors` / `waypoints` into `runner/config.json` and restart `--listen`.
+On enable/reload the plugin **fills missing keys** from the jar in memory (it does not overwrite live values, and it will not set `testbots.enabled: true` for you). The runner does the same from `config.example.json` into `config.json` in memory (it will not replace `velocitySecret`). Copy `testbots.safety` + new `roles.*.anchors` into the live YAML if you still have the 2026-09-19 death pads, then `/stressbots reload`. Restart `--listen` after updating runner sources.
 
 | Key | Safe starting point | Notes |
 |-----|---------------------|-------|

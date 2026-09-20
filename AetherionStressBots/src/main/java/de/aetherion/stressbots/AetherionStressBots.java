@@ -33,6 +33,7 @@ public final class AetherionStressBots extends JavaPlugin {
     @Override
     public void onEnable() {
         saveDefaultConfig();
+        applyJarDefaults();
         activity = new BotActivityTracker(this);
         wire();
         Bukkit.getPluginManager().registerEvents(new BotListener(this), this);
@@ -83,9 +84,19 @@ public final class AetherionStressBots extends JavaPlugin {
 
     public void reloadAssist() {
         reloadConfig();
+        applyJarDefaults();
         wire();
         AetherServices.registerTestBots(controller);
         warnLegacyDeathAnchors();
+    }
+
+    private void applyJarDefaults() {
+        java.util.List<String> added = BotConfigDefaults.mergeMissingFromJar(this);
+        if (!added.isEmpty()) {
+            getLogger().info("Filled " + added.size()
+                    + " missing config keys from jar defaults (live YAML not overwritten). e.g. "
+                    + added.get(0));
+        }
     }
 
     private void wire() {
