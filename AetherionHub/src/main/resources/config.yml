@@ -122,9 +122,9 @@ spawns:
     discover-radius: 36
     location:
       world: aether_veins
-      x: 0
+      x: -119.5
       y: 220
-      z: 0
+      z: -100.5
       yaw: 0
       pitch: 0
 

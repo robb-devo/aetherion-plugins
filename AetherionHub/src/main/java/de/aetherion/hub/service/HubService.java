@@ -43,13 +43,13 @@ public final class HubService {
     private static final float FISHING_DEFAULT_YAW = 180f;
 
     /**
-     * Placeholder Amethyst Mines beacon hub in {@code aether_veins} (matches Mining veins.hub-y).
-     * Live ops replace coords via /hubadmin set — never paste onto Main Island.
+     * Amethyst Mines beacon hub in {@code aether_veins} (live Mining spawn).
+     * Ops can still override via /hubadmin set — never paste onto Main Island.
      */
     private static final String AMETHYST_DEFAULT_WORLD = "aether_veins";
-    private static final double AMETHYST_DEFAULT_X = 0.0;
+    private static final double AMETHYST_DEFAULT_X = -119.5;
     private static final double AMETHYST_DEFAULT_Y = 220.0;
-    private static final double AMETHYST_DEFAULT_Z = 0.0;
+    private static final double AMETHYST_DEFAULT_Z = -100.5;
     private static final float AMETHYST_DEFAULT_YAW = 0f;
 
     private static final String[] RETIRED_SPAWN_IDS = {
