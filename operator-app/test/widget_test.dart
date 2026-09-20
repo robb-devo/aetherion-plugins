@@ -66,7 +66,7 @@ void main() {
     expect(find.textContaining('Signed in as Operator'), findsOneWidget);
   });
 
-  testWidgets('DevKit console records command history', (tester) async {
+  testWidgets('DevKit tools send console commands', (tester) async {
     tester.view.physicalSize = const Size(1400, 900);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -83,12 +83,33 @@ void main() {
     await tester.tap(find.text('DevKit'));
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.byKey(const Key('console-input')), 'list');
-    await tester.tap(find.byKey(const Key('console-send')));
+    await tester.tap(find.text('List players'));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('queued: list'), findsOneWidget);
-    expect(find.textContaining('❯'), findsWidgets);
+    expect(find.textContaining('Sent: list'), findsOneWidget);
+    expect(session.console.any((l) => l.text.contains('list')), isTrue);
+  });
+
+  testWidgets('Dashboard opens server detail', (tester) async {
+    tester.view.physicalSize = const Size(1400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    final session = await boot();
+    expect(
+      await session.signIn(OperatorAccount.seedOperator(), pin: _seedPin),
+      isNull,
+    );
+    await tester.pumpWidget(OperatorApp(session: session));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Hub').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Overview'), findsOneWidget);
+    expect(find.text('Terminal'), findsOneWidget);
+    expect(find.text('Power'), findsWidgets);
+    expect(find.text('Tools'), findsOneWidget);
   });
 
   testWidgets('PIN gate rejects a wrong PIN then accepts the right one', (
@@ -135,7 +156,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('Mock Crafty'), findsOneWidget);
-    expect(find.textContaining('Version 0.2.3'), findsOneWidget);
+    expect(find.textContaining('Version 0.2.4'), findsOneWidget);
     expect(find.byKey(const Key('crafty-url')), findsOneWidget);
     expect(find.byKey(const Key('check-updates')), findsOneWidget);
   });

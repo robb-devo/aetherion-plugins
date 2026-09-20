@@ -264,22 +264,24 @@ class OperatorSession extends ChangeNotifier {
     return servers.isEmpty ? null : servers.first;
   }
 
-  Future<void> submitCommand(String command) async {
+  Future<void> submitCommand(String command, {String? serverId}) async {
     final trimmed = command.trim();
     if (trimmed.isEmpty) return;
+    final target = serverId ?? selectedServerId;
+    if (serverId != null) selectedServerId = serverId;
     sendingCommand = true;
     console.add(
       ConsoleLine(
         kind: ConsoleKind.command,
         text: trimmed,
         at: _now(),
-        serverId: selectedServerId,
+        serverId: target,
       ),
     );
     notifyListeners();
     try {
       final result = await _crafty.sendCommand(
-        serverId: selectedServerId,
+        serverId: target,
         command: trimmed,
       );
       console.add(
@@ -287,7 +289,7 @@ class OperatorSession extends ChangeNotifier {
           kind: result.ok ? ConsoleKind.response : ConsoleKind.error,
           text: result.message,
           at: _now(),
-          serverId: selectedServerId,
+          serverId: target,
         ),
       );
     } catch (e) {
@@ -296,7 +298,7 @@ class OperatorSession extends ChangeNotifier {
           kind: ConsoleKind.error,
           text: e.toString(),
           at: _now(),
-          serverId: selectedServerId,
+          serverId: target,
         ),
       );
     } finally {
@@ -305,23 +307,37 @@ class OperatorSession extends ChangeNotifier {
     }
   }
 
-  Future<void> queueSoftRestart() async {
-    await _runAction('soft restart', (id) => _crafty.softRestart(serverId: id));
+  Future<void> queueSoftRestart({String? serverId}) async {
+    await _runAction(
+      'soft restart',
+      (id) => _crafty.softRestart(serverId: id),
+      serverId: serverId,
+    );
   }
 
-  Future<void> queueStart() async {
-    await _runAction('start', (id) => _crafty.startServer(serverId: id));
+  Future<void> queueStart({String? serverId}) async {
+    await _runAction(
+      'start',
+      (id) => _crafty.startServer(serverId: id),
+      serverId: serverId,
+    );
   }
 
-  Future<void> queueStop() async {
-    await _runAction('stop', (id) => _crafty.stopServer(serverId: id));
+  Future<void> queueStop({String? serverId}) async {
+    await _runAction(
+      'stop',
+      (id) => _crafty.stopServer(serverId: id),
+      serverId: serverId,
+    );
   }
 
   Future<void> _runAction(
     String label,
-    Future<CommandResult> Function(String id) run,
-  ) async {
-    final target = selectedServerId;
+    Future<CommandResult> Function(String id) run, {
+    String? serverId,
+  }) async {
+    final target = serverId ?? selectedServerId;
+    if (serverId != null) selectedServerId = serverId;
     console.add(
       ConsoleLine(
         kind: ConsoleKind.system,
@@ -341,20 +357,23 @@ class OperatorSession extends ChangeNotifier {
       ),
     );
     notifyListeners();
+    await refreshNetwork();
   }
 
-  Future<void> loadRemoteLogs() async {
+  Future<void> loadRemoteLogs({String? serverId}) async {
+    final target = serverId ?? selectedServerId;
+    if (serverId != null) selectedServerId = serverId;
     loadingLogs = true;
     notifyListeners();
     try {
-      final lines = await _crafty.fetchLogs(serverId: selectedServerId);
+      final lines = await _crafty.fetchLogs(serverId: target);
       for (final line in lines) {
         console.add(
           ConsoleLine(
             kind: ConsoleKind.response,
             text: line,
             at: _now(),
-            serverId: selectedServerId,
+            serverId: target,
           ),
         );
       }
@@ -364,7 +383,7 @@ class OperatorSession extends ChangeNotifier {
             kind: ConsoleKind.system,
             text: 'no remote log lines',
             at: _now(),
-            serverId: selectedServerId,
+            serverId: target,
           ),
         );
       }
@@ -374,7 +393,7 @@ class OperatorSession extends ChangeNotifier {
           kind: ConsoleKind.error,
           text: e.toString(),
           at: _now(),
-          serverId: selectedServerId,
+          serverId: target,
         ),
       );
     } finally {
@@ -382,6 +401,9 @@ class OperatorSession extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  List<ConsoleLine> consoleFor(String serverId) =>
+      console.where((l) => l.serverId == null || l.serverId == serverId).toList();
 
   Future<void> addWhitelistNote(String text) async {
     final trimmed = text.trim();

@@ -165,6 +165,130 @@ class AppLocalizationsEn extends AppLocalizations {
       'Command console against the selected backend. Restart, start/stop, logs, and whitelist go to Crafty when live.';
 
   @override
+  String get devkitSkyBody =>
+      'SkyCrypt-style operator tools — pick a server, run world/player actions, or open the full server page.';
+
+  @override
+  String get devkitWorld => 'World';
+
+  @override
+  String get devkitPlayers => 'Players';
+
+  @override
+  String get devkitPower => 'Power';
+
+  @override
+  String get devkitConsole => 'Console';
+
+  @override
+  String get showConsole => 'Show console';
+
+  @override
+  String get hideConsole => 'Hide console';
+
+  @override
+  String get serverOpenDetail => 'Open server';
+
+  @override
+  String get serverTabOverview => 'Overview';
+
+  @override
+  String get serverTabTerminal => 'Terminal';
+
+  @override
+  String get serverTabPower => 'Power';
+
+  @override
+  String get serverTabTools => 'Tools';
+
+  @override
+  String get serverMissing => 'Server not in the current network snapshot.';
+
+  @override
+  String get serverQuickNav => 'Control';
+
+  @override
+  String get serverOverviewHint =>
+      'Use Terminal for commands, Power for start/stop/restart, Tools for common operator shortcuts.';
+
+  @override
+  String get serverPowerTitle => 'Power & lifecycle';
+
+  @override
+  String get serverPowerLiveHint =>
+      'These actions talk to Crafty Controller for this server.';
+
+  @override
+  String get serverPowerMockHint =>
+      'Mock mode — start/stop need live Crafty. Soft restart still logs locally.';
+
+  @override
+  String get serverPowerStartHint => 'Boot the process via Crafty';
+
+  @override
+  String get serverPowerStopHint => 'Graceful stop via Crafty';
+
+  @override
+  String get serverPowerRestartHint => 'Crafty soft restart / restart_server';
+
+  @override
+  String get serverPowerRefreshHint => 'Refresh network stats from Crafty';
+
+  @override
+  String get serverToolsTitle => 'Operator tools';
+
+  @override
+  String get serverToolsHint =>
+      'One-tap console commands for this backend (SkyCrypt-style tiles).';
+
+  @override
+  String get serverOpenTerminal => 'Open terminal tab';
+
+  @override
+  String get serverOpenTerminalHint => 'Jump to the live command console';
+
+  @override
+  String get toolListPlayers => 'List players';
+
+  @override
+  String get toolListPlayersHint => 'Runs /list on the target';
+
+  @override
+  String get toolDay => 'Set day';
+
+  @override
+  String get toolDayHint => 'time set day';
+
+  @override
+  String get toolNight => 'Set night';
+
+  @override
+  String get toolNightHint => 'time set night';
+
+  @override
+  String get toolClearWeather => 'Clear weather';
+
+  @override
+  String get toolClearWeatherHint => 'weather clear';
+
+  @override
+  String get toolSaveAll => 'Save-all';
+
+  @override
+  String get toolSaveAllHint => 'Force a world save';
+
+  @override
+  String get toolTps => 'TPS probe';
+
+  @override
+  String get toolTpsHint => 'Send tps (plugin-dependent)';
+
+  @override
+  String toolCommandSent(String command) {
+    return 'Sent: $command';
+  }
+
+  @override
   String get targetServer => 'Target';
 
   @override

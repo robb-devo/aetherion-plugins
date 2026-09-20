@@ -386,6 +386,240 @@ abstract class AppLocalizations {
   /// **'Command console against the selected backend. Restart, start/stop, logs, and whitelist go to Crafty when live.'**
   String get devkitBody;
 
+  /// No description provided for @devkitSkyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'SkyCrypt-style operator tools — pick a server, run world/player actions, or open the full server page.'**
+  String get devkitSkyBody;
+
+  /// No description provided for @devkitWorld.
+  ///
+  /// In en, this message translates to:
+  /// **'World'**
+  String get devkitWorld;
+
+  /// No description provided for @devkitPlayers.
+  ///
+  /// In en, this message translates to:
+  /// **'Players'**
+  String get devkitPlayers;
+
+  /// No description provided for @devkitPower.
+  ///
+  /// In en, this message translates to:
+  /// **'Power'**
+  String get devkitPower;
+
+  /// No description provided for @devkitConsole.
+  ///
+  /// In en, this message translates to:
+  /// **'Console'**
+  String get devkitConsole;
+
+  /// No description provided for @showConsole.
+  ///
+  /// In en, this message translates to:
+  /// **'Show console'**
+  String get showConsole;
+
+  /// No description provided for @hideConsole.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide console'**
+  String get hideConsole;
+
+  /// No description provided for @serverOpenDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Open server'**
+  String get serverOpenDetail;
+
+  /// No description provided for @serverTabOverview.
+  ///
+  /// In en, this message translates to:
+  /// **'Overview'**
+  String get serverTabOverview;
+
+  /// No description provided for @serverTabTerminal.
+  ///
+  /// In en, this message translates to:
+  /// **'Terminal'**
+  String get serverTabTerminal;
+
+  /// No description provided for @serverTabPower.
+  ///
+  /// In en, this message translates to:
+  /// **'Power'**
+  String get serverTabPower;
+
+  /// No description provided for @serverTabTools.
+  ///
+  /// In en, this message translates to:
+  /// **'Tools'**
+  String get serverTabTools;
+
+  /// No description provided for @serverMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Server not in the current network snapshot.'**
+  String get serverMissing;
+
+  /// No description provided for @serverQuickNav.
+  ///
+  /// In en, this message translates to:
+  /// **'Control'**
+  String get serverQuickNav;
+
+  /// No description provided for @serverOverviewHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Use Terminal for commands, Power for start/stop/restart, Tools for common operator shortcuts.'**
+  String get serverOverviewHint;
+
+  /// No description provided for @serverPowerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Power & lifecycle'**
+  String get serverPowerTitle;
+
+  /// No description provided for @serverPowerLiveHint.
+  ///
+  /// In en, this message translates to:
+  /// **'These actions talk to Crafty Controller for this server.'**
+  String get serverPowerLiveHint;
+
+  /// No description provided for @serverPowerMockHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Mock mode — start/stop need live Crafty. Soft restart still logs locally.'**
+  String get serverPowerMockHint;
+
+  /// No description provided for @serverPowerStartHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Boot the process via Crafty'**
+  String get serverPowerStartHint;
+
+  /// No description provided for @serverPowerStopHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Graceful stop via Crafty'**
+  String get serverPowerStopHint;
+
+  /// No description provided for @serverPowerRestartHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Crafty soft restart / restart_server'**
+  String get serverPowerRestartHint;
+
+  /// No description provided for @serverPowerRefreshHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh network stats from Crafty'**
+  String get serverPowerRefreshHint;
+
+  /// No description provided for @serverToolsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Operator tools'**
+  String get serverToolsTitle;
+
+  /// No description provided for @serverToolsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'One-tap console commands for this backend (SkyCrypt-style tiles).'**
+  String get serverToolsHint;
+
+  /// No description provided for @serverOpenTerminal.
+  ///
+  /// In en, this message translates to:
+  /// **'Open terminal tab'**
+  String get serverOpenTerminal;
+
+  /// No description provided for @serverOpenTerminalHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Jump to the live command console'**
+  String get serverOpenTerminalHint;
+
+  /// No description provided for @toolListPlayers.
+  ///
+  /// In en, this message translates to:
+  /// **'List players'**
+  String get toolListPlayers;
+
+  /// No description provided for @toolListPlayersHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Runs /list on the target'**
+  String get toolListPlayersHint;
+
+  /// No description provided for @toolDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Set day'**
+  String get toolDay;
+
+  /// No description provided for @toolDayHint.
+  ///
+  /// In en, this message translates to:
+  /// **'time set day'**
+  String get toolDayHint;
+
+  /// No description provided for @toolNight.
+  ///
+  /// In en, this message translates to:
+  /// **'Set night'**
+  String get toolNight;
+
+  /// No description provided for @toolNightHint.
+  ///
+  /// In en, this message translates to:
+  /// **'time set night'**
+  String get toolNightHint;
+
+  /// No description provided for @toolClearWeather.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear weather'**
+  String get toolClearWeather;
+
+  /// No description provided for @toolClearWeatherHint.
+  ///
+  /// In en, this message translates to:
+  /// **'weather clear'**
+  String get toolClearWeatherHint;
+
+  /// No description provided for @toolSaveAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Save-all'**
+  String get toolSaveAll;
+
+  /// No description provided for @toolSaveAllHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Force a world save'**
+  String get toolSaveAllHint;
+
+  /// No description provided for @toolTps.
+  ///
+  /// In en, this message translates to:
+  /// **'TPS probe'**
+  String get toolTps;
+
+  /// No description provided for @toolTpsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Send tps (plugin-dependent)'**
+  String get toolTpsHint;
+
+  /// No description provided for @toolCommandSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent: {command}'**
+  String toolCommandSent(String command);
+
   /// No description provided for @targetServer.
   ///
   /// In en, this message translates to:

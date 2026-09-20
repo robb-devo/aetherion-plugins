@@ -9,6 +9,7 @@ import '../../theme/aether_theme.dart';
 import '../widgets/chrome.dart';
 import '../widgets/dialogs.dart';
 import '../widgets/glass_card.dart';
+import 'server_detail_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -202,6 +203,7 @@ class _ServerRow extends StatelessWidget {
     return GlassCard(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
       accent: server.online ? AetherColors.cyan : AetherColors.offline,
+      onTap: () => ServerDetailScreen.open(context, server.id),
       child: Column(
         children: [
           Row(
@@ -231,6 +233,11 @@ class _ServerRow extends StatelessWidget {
                 online: server.online,
                 onlineLabel: l10n.statusOnline,
                 offlineLabel: l10n.statusOffline,
+              ),
+              const SizedBox(width: 6),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: AetherColors.mist,
               ),
             ],
           ),

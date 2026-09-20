@@ -166,6 +166,131 @@ class AppLocalizationsDe extends AppLocalizations {
       'Befehls-Konsole gegen das gewählte Backend. Restart, Start/Stop, Logs und Whitelist gehen live an Crafty.';
 
   @override
+  String get devkitSkyBody =>
+      'SkyCrypt-artige Operator-Tools — Server wählen, Welt/Spieler-Aktionen oder die Server-Seite öffnen.';
+
+  @override
+  String get devkitWorld => 'Welt';
+
+  @override
+  String get devkitPlayers => 'Spieler';
+
+  @override
+  String get devkitPower => 'Power';
+
+  @override
+  String get devkitConsole => 'Konsole';
+
+  @override
+  String get showConsole => 'Konsole zeigen';
+
+  @override
+  String get hideConsole => 'Konsole ausblenden';
+
+  @override
+  String get serverOpenDetail => 'Server öffnen';
+
+  @override
+  String get serverTabOverview => 'Übersicht';
+
+  @override
+  String get serverTabTerminal => 'Terminal';
+
+  @override
+  String get serverTabPower => 'Power';
+
+  @override
+  String get serverTabTools => 'Tools';
+
+  @override
+  String get serverMissing =>
+      'Server ist nicht im aktuellen Netzwerk-Snapshot.';
+
+  @override
+  String get serverQuickNav => 'Steuerung';
+
+  @override
+  String get serverOverviewHint =>
+      'Terminal für Befehle, Power für Start/Stop/Restart, Tools für häufige Operator-Shortcuts.';
+
+  @override
+  String get serverPowerTitle => 'Power & Lifecycle';
+
+  @override
+  String get serverPowerLiveHint =>
+      'Diese Aktionen gehen an den Crafty Controller für diesen Server.';
+
+  @override
+  String get serverPowerMockHint =>
+      'Mock-Modus — Start/Stop brauchen Live-Crafty. Soft-Restart loggt lokal.';
+
+  @override
+  String get serverPowerStartHint => 'Prozess über Crafty starten';
+
+  @override
+  String get serverPowerStopHint => 'Sauber stoppen über Crafty';
+
+  @override
+  String get serverPowerRestartHint => 'Crafty Soft-Restart / restart_server';
+
+  @override
+  String get serverPowerRefreshHint => 'Netzwerk-Stats von Crafty neu laden';
+
+  @override
+  String get serverToolsTitle => 'Operator-Tools';
+
+  @override
+  String get serverToolsHint =>
+      'Ein-Tipp-Konsolenbefehle für dieses Backend (SkyCrypt-Style).';
+
+  @override
+  String get serverOpenTerminal => 'Terminal-Tab öffnen';
+
+  @override
+  String get serverOpenTerminalHint => 'Zur Live-Befehlskonsole springen';
+
+  @override
+  String get toolListPlayers => 'Spieler listen';
+
+  @override
+  String get toolListPlayersHint => 'Führt /list auf dem Ziel aus';
+
+  @override
+  String get toolDay => 'Tag setzen';
+
+  @override
+  String get toolDayHint => 'time set day';
+
+  @override
+  String get toolNight => 'Nacht setzen';
+
+  @override
+  String get toolNightHint => 'time set night';
+
+  @override
+  String get toolClearWeather => 'Wetter klar';
+
+  @override
+  String get toolClearWeatherHint => 'weather clear';
+
+  @override
+  String get toolSaveAll => 'Save-all';
+
+  @override
+  String get toolSaveAllHint => 'Welt speichern erzwingen';
+
+  @override
+  String get toolTps => 'TPS-Probe';
+
+  @override
+  String get toolTpsHint => 'tps senden (pluginabhängig)';
+
+  @override
+  String toolCommandSent(String command) {
+    return 'Gesendet: $command';
+  }
+
+  @override
   String get targetServer => 'Ziel';
 
   @override

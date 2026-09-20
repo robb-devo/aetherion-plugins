@@ -1,9 +1,9 @@
 {
-  "version": "0.2.3",
+  "version": "0.2.4",
   "buildStamp": "20260920",
-  "tag": "operator-app-0.2.3",
+  "tag": "operator-app-0.2.4",
   "apkUrl": "https://donnernet.de/operator-app/operator_app_release.apk",
   "windowsUrl": "https://donnernet.de/operator-app/operator_app_windows.zip",
   "htmlUrl": "https://donnernet.de/operator-app/",
-  "notes": "Windows desktop build + shared OTA channel (Android APK + Windows zip)"
+  "notes": "Server detail pages (terminal/power/tools) + SkyCrypt-style DevKit"
 }
