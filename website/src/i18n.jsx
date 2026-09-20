@@ -28,8 +28,12 @@ export function LanguageProvider({ children }) {
     document.title = meta.title
     const description = document.querySelector('meta[name="description"]')
     if (description) description.setAttribute('content', meta.description)
+    const ogTitle = document.querySelector('meta[property="og:title"]')
+    if (ogTitle) ogTitle.setAttribute('content', meta.title)
     const og = document.querySelector('meta[property="og:description"]')
     if (og) og.setAttribute('content', meta.description)
+    const ogLocale = document.querySelector('meta[property="og:locale"]')
+    if (ogLocale) ogLocale.setAttribute('content', lang === 'de' ? 'de_DE' : 'en_US')
     try {
       window.localStorage.setItem(STORAGE_KEY, lang)
     } catch {

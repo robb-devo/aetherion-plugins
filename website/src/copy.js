@@ -3,9 +3,9 @@ import { SITE } from './content.js'
 export const COPY = {
   en: {
     meta: {
-      title: 'Aetherion — Paper MMO · play.donnernet.de',
+      title: 'Aetherion — Paper MMO · donnernet.de',
       description:
-        'Aetherion — a Hypixel-style Paper MMO / Skyblock network. play.donnernet.de · Optional support, never pay-to-win.',
+        'Aetherion on donnernet.de — a Hypixel-style Paper MMO / Skyblock network. Join play.donnernet.de · Optional support, never pay-to-win.',
     },
     nav: {
       vision: 'Vision',
@@ -151,7 +151,7 @@ export const COPY = {
       ibanCopied: 'IBAN copied',
     },
     footer: {
-      blurb: 'Paper MMO / Skyblock network by {owner}. Join {ip}',
+      blurb: 'Paper MMO / Skyblock network by {owner}. Website {site} · join Minecraft at {ip}',
       shop: 'Support shop',
       maps: 'Maps',
       legal:
@@ -167,9 +167,9 @@ export const COPY = {
   },
   de: {
     meta: {
-      title: 'Aetherion — Paper MMO · play.donnernet.de',
+      title: 'Aetherion — Paper MMO · donnernet.de',
       description:
-        'Aetherion — Hypixel-artiges Paper-MMO / Skyblock-Netzwerk. play.donnernet.de · Optionaler Support, kein Pay-to-Win.',
+        'Aetherion auf donnernet.de — Hypixel-artiges Paper-MMO / Skyblock-Netzwerk. Join play.donnernet.de · Optionaler Support, kein Pay-to-Win.',
     },
     nav: {
       vision: 'Vision',
@@ -315,7 +315,7 @@ export const COPY = {
       ibanCopied: 'IBAN kopiert',
     },
     footer: {
-      blurb: 'Paper-MMO / Skyblock-Netzwerk von {owner}. Join {ip}',
+      blurb: 'Paper-MMO / Skyblock-Netzwerk von {owner}. Website {site} · Minecraft: {ip}',
       shop: 'Support-Shop',
       maps: 'Karten',
       legal:
@@ -339,4 +339,5 @@ export const SITE_VARS = {
   ip: SITE.ip,
   email: SITE.paypalEmail,
   owner: SITE.owner,
+  site: SITE.origin.replace(/^https:\/\//, ''),
 }

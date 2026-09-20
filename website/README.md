@@ -30,17 +30,17 @@ Preview des Builds:
 npm run preview
 ```
 
-## Deploy (static)
+## Domain (donnernet.de)
 
-Beliebiger Static-Host. Build-Command `npm run build`, Publish-Directory `dist`, Root-Directory `website` wenn das Repo der Monorepo-Root ist.
+The public site is **https://donnernet.de** (and **www.donnernet.de**). Players still join Minecraft at **play.donnernet.de** — do not change the `play` DNS record.
 
-| Host | Hinweis |
-|------|---------|
-| Cloudflare Pages / Netlify / Vercel | Framework preset Static / Vite. Output `dist`. |
-| nginx / Apache / Caddy | Inhalt von `dist/` in den DocumentRoot kopieren. |
-| GitHub Pages (Project-Site) | In `vite.config.js` `base: '/REPO/'` setzen, dann `dist/` als Pages-Artifact. |
+### Point Cloudflare at the static host (3 steps)
 
-`base` ist standardmäßig `'/'` (Domain-Root). Keine Server-Routes, keine API, keine Env-Secrets.
+1. Deploy this folder to **Vercel**, **Netlify**, or **Cloudflare Pages**: root directory `website`, build `npm run build`, output `dist`.
+2. In that host, add custom domains `donnernet.de` and `www.donnernet.de`. Copy the **A** / **CNAME** values it shows.
+3. In **Cloudflare → DNS** for donnernet.de, paste those values for `@` (the apex) and `www`. Leave **`play`** exactly as it is.
+
+Deutsch kurz: Seite = donnernet.de / www. Static-Host nehmen, A/CNAME abschreiben, in Cloudflare bei `@` und `www` einsetzen. Den Eintrag **play** nicht anfassen.
 
 PayPal-Links und Discord sind hart im Frontend (`src/content.js`). Shard-Gutschrift bleibt **manuell** (Spieler-DM mit IGN + Beleg).
 

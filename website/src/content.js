@@ -1,5 +1,10 @@
 export const SITE = {
   name: 'Aetherion',
+  /** Public website. www is an alias; canonical is the apex. */
+  origin: 'https://donnernet.de',
+  canonical: 'https://donnernet.de/',
+  www: 'https://www.donnernet.de',
+  /** Minecraft Java join address — not the website. Do not reuse for web DNS. */
   ip: 'play.donnernet.de',
   port: '25565',
   edition: 'Java',

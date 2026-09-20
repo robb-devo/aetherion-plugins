@@ -12,10 +12,11 @@ export default function Footer() {
       <div className="mx-auto flex max-w-6xl flex-col gap-8 md:flex-row md:items-start md:justify-between">
         <div>
           <p className="font-display text-sm font-bold tracking-[0.22em] text-white">AETHERION</p>
+          <p className="mt-1 text-xs font-semibold tracking-[0.14em] text-mist/55 uppercase">
+            {SITE_VARS.site}
+          </p>
           <FadeLang>
-            <p className="mt-2 max-w-sm text-sm text-mist/70">
-              {interpolate(copy.footer.blurb, { ...SITE_VARS, ip: SITE.ip })}
-            </p>
+            <p className="mt-2 max-w-sm text-sm text-mist/70">{interpolate(copy.footer.blurb, SITE_VARS)}</p>
           </FadeLang>
         </div>
         <div className="flex flex-col gap-2 text-sm">
