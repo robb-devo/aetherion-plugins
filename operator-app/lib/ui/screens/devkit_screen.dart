@@ -48,6 +48,7 @@ class _DevkitScreenState extends State<DevkitScreen> {
     final servers = session.network?.servers ?? const [];
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),

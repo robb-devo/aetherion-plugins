@@ -9,24 +9,28 @@ class AetherBackdrop extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: const BoxDecoration(
+    return SizedBox.expand(
+      child: ColoredBox(
         color: AetherColors.voidBg,
-        gradient: RadialGradient(
-          center: Alignment(-0.7, -0.85),
-          radius: 1.15,
-          colors: [Color(0x667C3AED), Color(0x0007060F)],
-        ),
-      ),
-      child: DecoratedBox(
-        decoration: const BoxDecoration(
-          gradient: RadialGradient(
-            center: Alignment(0.95, 0.9),
-            radius: 1.05,
-            colors: [Color(0x4022D3EE), Color(0x0007060F)],
+        child: DecoratedBox(
+          decoration: const BoxDecoration(
+            gradient: RadialGradient(
+              center: Alignment(-0.7, -0.85),
+              radius: 1.2,
+              colors: [Color(0x667C3AED), Color(0x0007060F)],
+            ),
+          ),
+          child: DecoratedBox(
+            decoration: const BoxDecoration(
+              gradient: RadialGradient(
+                center: Alignment(0.95, 0.95),
+                radius: 1.1,
+                colors: [Color(0x4022D3EE), Color(0x0007060F)],
+              ),
+            ),
+            child: child,
           ),
         ),
-        child: child,
       ),
     );
   }

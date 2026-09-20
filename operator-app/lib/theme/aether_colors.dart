@@ -13,8 +13,8 @@ abstract final class AetherColors {
   static const online = Color(0xFF34D399);
   static const offline = Color(0xFFF87171);
 
-  static const glassFill = Color(0x14FFFFFF);
-  static const glassFillStrong = Color(0x1FFFFFFF);
+  static const glassFill = Color(0x1AFFFFFF);
+  static const glassFillStrong = Color(0x26FFFFFF);
   static const glassStroke = Color(0x26FFFFFF);
   static const glassStrokeHot = Color(0x59FFFFFF);
 }

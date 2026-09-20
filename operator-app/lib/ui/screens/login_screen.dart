@@ -7,6 +7,7 @@ import '../../theme/aether_theme.dart';
 import '../widgets/aether_backdrop.dart';
 import '../widgets/chrome.dart';
 import '../widgets/dialogs.dart';
+import '../widgets/glass_card.dart';
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
@@ -73,6 +74,10 @@ class LoginScreen extends StatelessWidget {
                   style: const TextStyle(color: AetherColors.mist, height: 1.4),
                 ),
                 const SizedBox(height: 22),
+                GlassCard(
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                  child: Column(
+                    children: [
                 if (session.accounts.isEmpty)
                   Text(
                     l10n.emptyTeam,
@@ -94,12 +99,15 @@ class LoginScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 4),
                 OutlinedButton.icon(
                   key: const Key('add-account'),
                   onPressed: () => showAddAccountDialog(context),
                   icon: const Icon(Icons.add),
                   label: Text(l10n.addAccount),
+                ),
+                    ],
+                  ),
                 ),
               ],
             ),
