@@ -101,6 +101,18 @@ class CelestialDyeTest {
         assertFalse(beta.contains(CelestialDye.hex(CelestialDye.PRIMARY)), beta);
     }
 
+    @Test
+    void tabPrefixDyeNeverAppliesCelestialToBeta() {
+        String monkey = RankBadgeService.dyePrefixStatic("monkey");
+        String beta = RankBadgeService.dyePrefixStatic("beta");
+        assertTrue(monkey.contains(CelestialDye.hex(CelestialDye.PRIMARY)), monkey);
+        assertFalse(monkey.contains("&#FF7AEE"), monkey);
+        assertTrue(beta.contains("&#FF7AEE") || beta.contains("&#FFC15A"), beta);
+        assertFalse(beta.contains(CelestialDye.hex(CelestialDye.PRIMARY)),
+                "tabPrefix/chat/list must not paint Beta with #B2FFFF: " + beta);
+        assertFalse(CelestialDye.isCelestialGroup("beta"));
+    }
+
     private static String prefixOf(String group) {
         return RankBadgeService.RANKS.stream()
                 .filter(rank -> rank.group().equals(group))

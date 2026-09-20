@@ -76,7 +76,7 @@ public final class CoinPlaceholderExpansion extends PlaceholderExpansion {
                     "list_prefix", "playerlist_prefix", "scoreboard_prefix" ->
                     plugin.ranks() == null ? "§f" : plugin.ranks().tabPrefix(player);
             case "monkey_badge", "celestial_monkey" -> de.aetherion.items.rank.CelestialDye.monkeyBadge();
-            case "beta_badge", "rainbow_beta" -> de.aetherion.items.rank.RainbowDye.badge();
+            case "beta_badge", "rainbow_beta", "celestial_beta" -> de.aetherion.items.rank.RainbowDye.badge();
             case "celestial_badge" -> de.aetherion.items.rank.CelestialDye.badge("[Celestial]");
             case "nametag", "list_name", "playerlist_name" ->
                     plugin.ranks() == null ? player.getName() : plugin.ranks().nametag(player);

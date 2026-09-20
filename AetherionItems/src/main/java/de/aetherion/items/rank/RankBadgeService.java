@@ -194,17 +194,22 @@ public final class RankBadgeService implements Listener {
     }
 
     public String ultraTitle(Player player) {
-        Rank extra = extraRank(player);
-        if (extra == null) {
-            return "";
+        String group = player == null ? null : cosmeticGroup(player);
+        if (group == null || group.isBlank()) {
+            Rank extra = extraRank(player);
+            if (extra == null) {
+                return "";
+            }
+            group = extra.group();
         }
-        if (CelestialDye.isCelestialGroup(extra.group())) {
-            return CelestialDye.badgeForGroup(extra.group()).trim();
+        if ("monkey".equalsIgnoreCase(group)) {
+            return CelestialDye.monkeyBadge().trim();
         }
-        if (RainbowDye.isRainbowGroup(extra.group())) {
+        if ("beta".equalsIgnoreCase(group)) {
             return RainbowDye.badge().trim();
         }
-        return extra.display();
+        Rank extra = extraRank(player);
+        return extra == null ? "" : extra.display();
     }
 
     public boolean hasUltra(Player player) {
@@ -224,22 +229,61 @@ public final class RankBadgeService implements Listener {
             return "§f";
         }
         StringBuilder prefix = new StringBuilder();
-        Rank extra = extraRank(player);
-        if (extra != null) {
-            prefix.append(switch (extra.group()) {
-                case "admin" -> "§c[Admin] ";
-                case "mvpplusplus" -> "§6[MVP§c++§6] ";
-                case "monkey" -> CelestialDye.badgeForGroup(extra.group());
-                case "beta" -> RainbowDye.badge();
-                default -> "";
-            });
-        }
+        String cosmetic = cosmeticGroup(player);
+        prefix.append(dyePrefix(cosmetic));
         de.aetherion.items.AetherionItems items = de.aetherion.items.AetherionItems.getInstance();
         if (items != null && items.getSkills() != null) {
             prefix.append(items.getSkills().accountTag(player)).append(" ");
         }
         prefix.append("§f");
         return prefix.toString();
+    }
+
+    /**
+     * Chat / compact TAB / nametag dye. Beta is never {@link CelestialDye}.
+     * {@code beta} → rainbow letters; {@code monkey} → #B2FFFF only.
+     */
+    public static String dyePrefix(String extraGroup) {
+        if (extraGroup == null || extraGroup.isBlank()) {
+            return "";
+        }
+        return switch (extraGroup.toLowerCase(Locale.ROOT)) {
+            case "admin" -> "§c[Admin] ";
+            case "mvpplusplus" -> "§6[MVP§c++§6] ";
+            case "monkey" -> CelestialDye.monkeyBadge();
+            case "beta" -> RainbowDye.badge();
+            default -> "";
+        };
+    }
+
+    /** Offline / test variant — no tick, never runs CelestialDye for beta. */
+    public static String dyePrefixStatic(String extraGroup) {
+        if (extraGroup == null || extraGroup.isBlank()) {
+            return "";
+        }
+        return switch (extraGroup.toLowerCase(Locale.ROOT)) {
+            case "admin" -> "§c[Admin] ";
+            case "mvpplusplus" -> "§6[MVP§c++§6] ";
+            case "monkey" -> CelestialDye.monkeyPrefixStatic();
+            case "beta" -> RainbowDye.prefixStatic();
+            default -> "";
+        };
+    }
+
+    /**
+     * Live cosmetic ultra. If LuckPerms says Beta and not Monkey, that wins
+     * even when {@code extras} is still a stale Monkey grant.
+     */
+    public String cosmeticGroup(Player player) {
+        if (player == null) {
+            return null;
+        }
+        refreshExtraFromLuckPerms(player);
+        Rank extra = extraFor(player.getUniqueId());
+        if (hasBeta(player) && !hasMonkey(player)) {
+            return "beta";
+        }
+        return extra == null ? null : extra.group();
     }
 
     public String nametag(Player player) {
@@ -353,6 +397,7 @@ public final class RankBadgeService implements Listener {
         if (player == null || !player.isOnline()) {
             return;
         }
+        refreshExtraFromLuckPerms(player);
         adoptDetectedExtra(player);
         applyLuckPerms(player.getUniqueId(), aetherionGroup(player.getUniqueId()), extraFor(player.getUniqueId()));
         paint(player);
@@ -366,11 +411,16 @@ public final class RankBadgeService implements Listener {
         if (playerId == null) {
             return null;
         }
+        Player player = Bukkit.getPlayer(playerId);
+        // Live Beta (no Monkey group) beats a stale extras:monkey so chat/TAB
+        // cannot keep painting CelestialDye after Peter grants Beta.
+        if (player != null && player.isOnline() && hasBeta(player) && !hasMonkey(player)) {
+            return rankByGroup("beta");
+        }
         String stored = extras.get(playerId);
         if (stored != null && isPermanentExtra(stored)) {
             return rankByGroup(stored);
         }
-        Player player = Bukkit.getPlayer(playerId);
         if (player != null && player.isOnline()) {
             String detected = detectPermissionExtra(player);
             if (detected != null) {
@@ -404,6 +454,32 @@ public final class RankBadgeService implements Listener {
         }
         extras.put(playerId, detected);
         save();
+    }
+
+    /**
+     * If LP says Beta (and not Monkey), overwrite a stale Monkey extra so
+     * chat / compact TAB stop painting {@link CelestialDye}.
+     */
+    public void refreshExtraFromLuckPerms(Player player) {
+        if (player == null) {
+            return;
+        }
+        UUID playerId = player.getUniqueId();
+        String stored = extras.get(playerId);
+        if (hasBeta(player) && !hasMonkey(player) && !"beta".equalsIgnoreCase(stored)) {
+            extras.put(playerId, "beta");
+            save();
+        }
+    }
+
+    public static boolean hasBeta(Player player) {
+        return player != null && (player.hasPermission("group.beta")
+                || player.hasPermission("aetherion.rank.beta"));
+    }
+
+    public static boolean hasMonkey(Player player) {
+        return player != null && (player.hasPermission("group.monkey")
+                || player.hasPermission("aetherion.rank.monkey"));
     }
 
     private static String detectPermissionExtra(Player player) {
