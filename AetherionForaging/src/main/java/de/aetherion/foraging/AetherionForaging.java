@@ -2,6 +2,7 @@ package de.aetherion.foraging;
 
 import de.aetherion.foraging.command.ForageCommand;
 import de.aetherion.foraging.habitat.ForageHabitatService;
+import de.aetherion.foraging.island.ForageDisplayGuard;
 import de.aetherion.foraging.npc.IsleGuideFancyListener;
 import de.aetherion.foraging.npc.IsleGuideNpc;
 import de.aetherion.foraging.ritual.GroveRitualService;
@@ -20,6 +21,7 @@ public class AetherionForaging extends JavaPlugin {
     private IsleWeatherService weather;
     private GroveRitualService grove;
     private IsleGuideNpc guide;
+    private ForageDisplayGuard displays;
     private de.aetherion.core.api.ForageAccess forageAccess;
 
     public static AetherionForaging getInstance() {
@@ -70,6 +72,7 @@ public class AetherionForaging extends JavaPlugin {
         weather = new IsleWeatherService(this);
         grove = new GroveRitualService(this);
         guide = new IsleGuideNpc(this);
+        displays = new ForageDisplayGuard(this);
         IsleGuideFancyListener.register(this, guide);
         ForagingListener foragingListener = new ForagingListener(this);
         this.listener = foragingListener;
@@ -173,6 +176,12 @@ public class AetherionForaging extends JavaPlugin {
     public void onDisable() {
         if (listener != null) {
             listener.shutdown();
+        }
+        if (guide != null) {
+            guide.shutdown();
+        }
+        if (displays != null) {
+            displays.shutdown();
         }
         if (forageAccess != null) {
             de.aetherion.core.api.AetherServices.clearForaging(forageAccess);
