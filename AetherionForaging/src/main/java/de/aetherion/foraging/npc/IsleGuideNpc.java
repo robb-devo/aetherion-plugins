@@ -1,5 +1,6 @@
 package de.aetherion.foraging.npc;
 
+import de.aetherion.core.entity.DisplayEntities;
 import de.aetherion.core.npc.FancyNpcFacade;
 import de.aetherion.foraging.AetherionForaging;
 import de.aetherion.foraging.ForageKeys;
@@ -49,7 +50,7 @@ public final class IsleGuideNpc implements Listener {
     public static final String TITLE = "Foraging Teacher";
 
     private static final String HIDE_TEAM = "ae_forage_hide_npc";
-    private static final String HOLO_TAG = "ae_miss_canopy_holo";
+    public static final String HOLO_TAG = "ae_miss_canopy_holo";
     private static final long BRIEFING_DELAY_TICKS = 28L;
 
     private final AetherionForaging plugin;
@@ -61,7 +62,7 @@ public final class IsleGuideNpc implements Listener {
         new IsleGuideBriefingGUI(plugin);
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
         Bukkit.getScheduler().runTaskLater(plugin, this::ensureIfPlaced, 100L);
-        Bukkit.getScheduler().runTaskTimer(plugin, this::tickHologram, 20L, 10L);
+        Bukkit.getScheduler().runTaskTimer(plugin, this::tickHologram, 40L, 80L);
     }
 
     public void reload() {
@@ -143,6 +144,10 @@ public final class IsleGuideNpc implements Listener {
         if (player != null) {
             player.sendMessage("§e" + DISPLAY + " §7despawned. Re-place with DEV anchor.");
         }
+    }
+
+    public void shutdown() {
+        removeHologram();
     }
 
     private Location guideLocation() {
@@ -307,28 +312,48 @@ public final class IsleGuideNpc implements Listener {
         if (at == null || at.getWorld() == null) {
             return;
         }
-        removeHologram();
+        if (!at.getChunk().isLoaded()) {
+            return;
+        }
         Location textAt = at.clone().add(0, 2.15, 0);
-        TextDisplay holo = at.getWorld().spawn(textAt, TextDisplay.class, text -> {
-            text.text(Component.text(DISPLAY, NamedTextColor.GREEN, TextDecoration.BOLD)
-                    .append(Component.newline())
-                    .append(Component.text(TITLE, NamedTextColor.GRAY)));
-            text.setBillboard(org.bukkit.entity.Display.Billboard.CENTER);
-            text.setAlignment(TextDisplay.TextAlignment.CENTER);
-            text.setSeeThrough(false);
-            text.setShadowed(true);
-            text.setDefaultBackground(false);
-            text.setBackgroundColor(org.bukkit.Color.fromARGB(0, 0, 0, 0));
-            text.setTransformation(new Transformation(
-                    new Vector3f(0, 0, 0),
-                    new AxisAngle4f(0, 0, 0, 1),
-                    new Vector3f(1f, 1f, 1f),
-                    new AxisAngle4f(0, 0, 0, 1)
-            ));
-            text.addScoreboardTag(HOLO_TAG);
-            text.setPersistent(true);
-        });
-        hologramId = holo.getUniqueId();
+        TextDisplay holo = livingHologram();
+        if (holo == null) {
+            holo = DisplayEntities.findTagged(textAt, HOLO_TAG, 4.0);
+        }
+        cullTaggedNear(textAt, holo);
+        if (holo != null && holo.isValid() && !holo.isDead()) {
+            hologramId = holo.getUniqueId();
+            styleHologram(holo);
+            if (holo.getLocation().distanceSquared(textAt) > 0.01) {
+                holo.teleport(textAt);
+            }
+            return;
+        }
+        TextDisplay spawned = at.getWorld().spawn(textAt, TextDisplay.class, this::styleHologram);
+        hologramId = spawned.getUniqueId();
+    }
+
+    private void styleHologram(TextDisplay text) {
+        text.text(Component.text(DISPLAY, NamedTextColor.GREEN, TextDecoration.BOLD)
+                .append(Component.newline())
+                .append(Component.text(TITLE, NamedTextColor.GRAY)));
+        text.setBillboard(org.bukkit.entity.Display.Billboard.CENTER);
+        text.setAlignment(TextDisplay.TextAlignment.CENTER);
+        text.setSeeThrough(false);
+        text.setShadowed(true);
+        text.setDefaultBackground(false);
+        text.setBackgroundColor(org.bukkit.Color.fromARGB(0, 0, 0, 0));
+        text.setTransformation(new Transformation(
+                new Vector3f(0, 0, 0),
+                new AxisAngle4f(0, 0, 0, 1),
+                new Vector3f(1f, 1f, 1f),
+                new AxisAngle4f(0, 0, 0, 1)
+        ));
+        text.addScoreboardTag(HOLO_TAG);
+        // Plugin respawns on load — persistence stacked copies across restarts.
+        text.setPersistent(false);
+        text.setGravity(false);
+        text.setInvulnerable(true);
     }
 
     private void tickHologram() {
@@ -336,11 +361,11 @@ public final class IsleGuideNpc implements Listener {
             return;
         }
         Location at = guideLocation();
-        if (at == null) {
+        if (at == null || at.getWorld() == null || !at.getChunk().isLoaded()) {
             return;
         }
-        TextDisplay holo = hologram();
-        if (holo == null || holo.isDead()) {
+        TextDisplay holo = livingHologram();
+        if (holo == null || holo.isDead() || !holo.isValid()) {
             ensureHologram(at);
             return;
         }
@@ -348,38 +373,58 @@ public final class IsleGuideNpc implements Listener {
         if (holo.getLocation().distanceSquared(want) > 0.01) {
             holo.teleport(want);
         }
+        cullTaggedNear(want, holo);
     }
 
-    private TextDisplay hologram() {
-        if (hologramId == null) {
-            Location at = guideLocation();
-            if (at == null || at.getWorld() == null) {
-                return null;
+    private TextDisplay livingHologram() {
+        if (hologramId != null) {
+            Entity entity = Bukkit.getEntity(hologramId);
+            if (entity instanceof TextDisplay display && display.isValid() && !display.isDead()) {
+                return display;
             }
-            for (Entity entity : at.getWorld().getNearbyEntities(at, 3, 4, 3)) {
-                if (entity instanceof TextDisplay display && display.getScoreboardTags().contains(HOLO_TAG)) {
-                    hologramId = display.getUniqueId();
-                    return display;
-                }
-            }
+        }
+        Location at = guideLocation();
+        if (at == null || at.getWorld() == null || !at.getChunk().isLoaded()) {
             return null;
         }
-        Entity entity = Bukkit.getEntity(hologramId);
-        return entity instanceof TextDisplay display ? display : null;
+        TextDisplay found = DisplayEntities.findTagged(at.clone().add(0, 2.15, 0), HOLO_TAG, 4.0);
+        if (found != null) {
+            hologramId = found.getUniqueId();
+        }
+        return found;
     }
 
     private void removeHologram() {
-        TextDisplay holo = hologram();
+        TextDisplay holo = livingHologram();
         if (holo != null) {
-            holo.remove();
+            DisplayEntities.discard(holo);
         }
         hologramId = null;
         Location at = guideLocation();
-        if (at != null && at.getWorld() != null) {
-            for (Entity entity : at.getWorld().getNearbyEntities(at.clone().add(0, 2, 0), 2, 3, 2)) {
-                if (entity instanceof TextDisplay display && display.getScoreboardTags().contains(HOLO_TAG)) {
-                    display.remove();
-                }
+        if (at == null || at.getWorld() == null) {
+            return;
+        }
+        Location textAt = at.clone().add(0, 2.15, 0);
+        if (!textAt.getChunk().isLoaded()) {
+            return;
+        }
+        for (Entity entity : at.getWorld().getNearbyEntities(textAt, 6, 5, 6)) {
+            if (entity instanceof TextDisplay display && display.getScoreboardTags().contains(HOLO_TAG)) {
+                DisplayEntities.discard(display);
+            }
+        }
+    }
+
+    private static void cullTaggedNear(Location at, TextDisplay keep) {
+        if (at == null || at.getWorld() == null) {
+            return;
+        }
+        for (Entity entity : at.getWorld().getNearbyEntities(at, 4, 4, 4)) {
+            if (!(entity instanceof TextDisplay display) || display == keep) {
+                continue;
+            }
+            if (display.getScoreboardTags().contains(HOLO_TAG)) {
+                DisplayEntities.discard(display);
             }
         }
     }
