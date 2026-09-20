@@ -288,8 +288,8 @@ public class DialogManager implements Listener {
                 npc.getDialogId();
 
 
-        if (dialogId == null
-                || dialogId.isEmpty()) {
+        if ((dialogId == null || dialogId.isEmpty())
+                && !"amethyst_mines_guide".equalsIgnoreCase(npc.getId())) {
 
             return;
 
@@ -368,6 +368,12 @@ public class DialogManager implements Listener {
             return;
         }
 
+        // Crystal Guide: Mining 30 → The Veins hub + unlock /amethyst.
+        if ("amethyst_mines_guide".equalsIgnoreCase(npc.getId())) {
+            startAmethystGuideDialog(player, npc);
+            return;
+        }
+
         // Colosseum Proctor: first Crypt vial → one-time walk. After that → point at the pad.
         if ("arena_proctor".equalsIgnoreCase(npc.getId())) {
             boolean taught = isColosseumTaught(player);
@@ -433,6 +439,51 @@ public class DialogManager implements Listener {
                 offerQuest
         );
 
+    }
+
+    /** Crystal Guide on Eldervale — Mining skill gate, then The Veins hub. */
+    private void startAmethystGuideDialog(Player player, QuestNPC npc) {
+        de.aetherion.core.api.MiningAccess mining = de.aetherion.core.api.AetherServices.mining();
+        int required = mining == null ? 30 : mining.veinsMiningLevelRequired();
+        boolean allowed = mining != null && mining.meetsVeinsMiningLevel(player);
+        if (mining == null) {
+            String[] sealed = cleanLines(de.aetherion.quests.lang.LangPack.dialogs(
+                    player,
+                    "amethyst_mines_guide_sealed",
+                    new String[] {
+                            "Amethyst Mines are sealed right now. Come back when the Foreman is on shift."
+                    }
+            ));
+            playDialog(player, npc, sealed, false);
+            return;
+        }
+        if (!allowed) {
+            String[] blocked = cleanLines(de.aetherion.quests.lang.LangPack.dialogs(
+                    player,
+                    "amethyst_mines_guide_locked",
+                    new String[] {
+                            "Amethyst Mines. Deep crystal, not the island rock.",
+                            "Door policy: §aMining Skill " + required + "§f. You're not there yet.",
+                            "Dig more. Come back when the stone respects you."
+                    }
+            ));
+            playDialog(player, npc, blocked, false);
+            return;
+        }
+        String[] lines = cleanLines(de.aetherion.quests.lang.LangPack.dialogs(
+                player,
+                "amethyst_mines_guide_intro",
+                new String[] {
+                        "Amethyst Mines. Deep crystal under Eldervale — not the island rock.",
+                        "Mining " + required + " — you're cleared. I'll ship you into the hub.",
+                        "Once you're in, §e/amethyst §fbrings you back."
+                }
+        ));
+        playDialog(player, npc, lines, false, () -> {
+            if (player.isOnline()) {
+                mining.teleportToVeinsHub(player);
+            }
+        });
     }
 
 
@@ -523,7 +574,7 @@ public class DialogManager implements Listener {
             QuestNPC npc,
             String[] lines
     ) {
-        playDialog(player, npc, lines, true);
+        playDialog(player, npc, lines, true, null);
     }
 
 
@@ -532,6 +583,17 @@ public class DialogManager implements Listener {
             QuestNPC npc,
             String[] lines,
             boolean offerQuest
+    ) {
+        playDialog(player, npc, lines, offerQuest, null);
+    }
+
+
+    private void playDialog(
+            Player player,
+            QuestNPC npc,
+            String[] lines,
+            boolean offerQuest,
+            Runnable onDone
     ) {
 
         UUID playerId = player.getUniqueId();
@@ -556,6 +618,8 @@ public class DialogManager implements Listener {
                     cancel();
                     if (offerQuest) {
                         showQuestOptions(player, npc);
+                    } else if (onDone != null) {
+                        onDone.run();
                     } else if (npc != null && "merchant".equalsIgnoreCase(npc.getId())) {
                         unlockMerchantChests(player);
                     }
@@ -1844,6 +1908,14 @@ public class DialogManager implements Listener {
             return new String[] {
                     "That portal's the Dungeon Gate. It drops you on the dungeon hub — instances, floors, keepers.",
                     "Walk through when you're geared. The other side sends you back to Capital."
+            };
+        }
+
+        if (dialogId.equalsIgnoreCase("amethyst_mines_guide_intro")) {
+            return new String[] {
+                    "Amethyst Mines. Deep crystal under Eldervale — not the island rock.",
+                    "Door policy is Mining 30. Click me when you're ready and I'll ship you in.",
+                    "Once you're there, /amethyst brings you back."
             };
         }
 

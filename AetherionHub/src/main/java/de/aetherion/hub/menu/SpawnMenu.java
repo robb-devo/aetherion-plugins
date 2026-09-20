@@ -41,6 +41,7 @@ public final class SpawnMenu {
             case "farm_isle" -> 16;
             case "colosseum" -> 19;
             case "eldervale" -> 20;
+            case "amethyst" -> 22;
             case "borderlands" -> 21;
             default -> spawn.slot();
         };
@@ -65,6 +66,7 @@ public final class SpawnMenu {
                         "",
                         "§7Harbour → Ore Ridge → Mines → Capital",
                         "§7Forage · Farm · Farm Isle · Borderlands",
+                        "§7Eldervale · Amethyst Mines",
                         "",
                         "§eLeft-click §7→ set /spawn",
                         "§eRight-click §7→ teleport now"
@@ -145,8 +147,12 @@ public final class SpawnMenu {
         if (!unlocked) {
             lore.add("§cLocked");
             if ("farm".equalsIgnoreCase(spawn.id()) || "capital".equalsIgnoreCase(spawn.id())
-                    || "borderlands".equalsIgnoreCase(spawn.id()) || "ore_ridge".equalsIgnoreCase(spawn.id())) {
+                    || "borderlands".equalsIgnoreCase(spawn.id()) || "ore_ridge".equalsIgnoreCase(spawn.id())
+                    || "eldervale".equalsIgnoreCase(spawn.id())) {
                 lore.add("§7Walk there to unlock.");
+            } else if ("amethyst".equalsIgnoreCase(spawn.id())) {
+                lore.add("§7Crystal Guide on Eldervale (Mining 30).");
+                lore.add("§7Then /amethyst.");
             } else {
                 lore.add("§7Unlock through the story,");
                 lore.add("§7or discover it in the world.");

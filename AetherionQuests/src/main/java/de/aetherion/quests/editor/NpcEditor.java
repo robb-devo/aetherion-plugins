@@ -339,6 +339,14 @@ public final class NpcEditor {
             openEdit(player, npc);
             return;
         }
+        de.aetherion.quests.npc.QuestNPC story = de.aetherion.quests.npc.QuestNPCRegistry.getNPC(id);
+        if (story != null) {
+            de.aetherion.quests.listener.NpcListener listener = plugin.getNpcListener();
+            if (listener != null) {
+                listener.handleLivingClick(player, story);
+                return;
+            }
+        }
         runtime.talk(player, npc);
     }
 

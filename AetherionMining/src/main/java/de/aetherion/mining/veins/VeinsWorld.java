@@ -145,6 +145,7 @@ public final class VeinsWorld {
         player.setFallDistance(0f);
         player.sendMessage("§7The Veins. §8Mine everything but the hub. Corners have favorites.");
         player.playSound(spawn, org.bukkit.Sound.ENTITY_ENDERMAN_TELEPORT, 1f, 0.7f);
+        unlockAmethystHub(player);
         return true;
     }
 
@@ -212,6 +213,18 @@ public final class VeinsWorld {
             }
         }, 100L);
         plugin.getLogger().info("The Veins reset. Generation " + generation + ".");
+    }
+
+    /** First visit to aether_veins unlocks hub spawn {@code amethyst} + /amethyst. */
+    public static void unlockAmethystHub(Player player) {
+        if (player == null) {
+            return;
+        }
+        de.aetherion.core.api.HubAccess hub = de.aetherion.core.api.AetherServices.hub();
+        if (hub == null) {
+            return;
+        }
+        hub.unlockAndAnnounce(player, "amethyst");
     }
 
     public void rescueIfBuried(Player player) {

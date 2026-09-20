@@ -37,6 +37,12 @@ public final class HubAccessImpl implements HubAccess {
     }
 
     @Override
+    public boolean unlockAndAnnounce(Player player, String spawnId) {
+        HubService hub = hub();
+        return hub != null && hub.unlockAndAnnounce(player, spawnId);
+    }
+
+    @Override
     public Location location(String spawnId) {
         return AetherionHubAPI.location(spawnId);
     }

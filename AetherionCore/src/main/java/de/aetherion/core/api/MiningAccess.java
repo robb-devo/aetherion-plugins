@@ -1,5 +1,6 @@
 package de.aetherion.core.api;
 
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -19,6 +20,25 @@ public interface MiningAccess {
     String veinsWorldName();
 
     boolean isVeinsWorld(World world);
+
+    /**
+     * Mining skill gate for Amethyst Mines / The Veins (default 30).
+     * Admins with {@code aetherion.mines.admin} pass. Missing Items plugin
+     * is treated as a pass so the world still works in isolation.
+     */
+    boolean meetsVeinsMiningLevel(Player player);
+
+    /** Configured minimum mining skill (default 30). */
+    int veinsMiningLevelRequired();
+
+    /**
+     * Teleport into the veins hub. Remembers the overworld exit, loads the
+     * world if needed, and unlocks hub spawn {@code amethyst} on first visit.
+     */
+    boolean teleportToVeinsHub(Player player);
+
+    /** Veins hub stand point after {@link #teleportToVeinsHub}, or null. */
+    Location veinsHubLocation();
 
     /**
      * Seal an ore for vacuum/spread harvest without firing {@code BlockBreakEvent}.

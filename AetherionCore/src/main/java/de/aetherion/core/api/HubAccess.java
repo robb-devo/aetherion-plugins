@@ -18,6 +18,14 @@ public interface HubAccess {
 
     boolean unlockNew(UUID uuid, String spawnId);
 
+    /**
+     * Unlock a spawn and, if this call is the first unlock, play the new-area
+     * title / chat (including a {@code /command} hint when one exists).
+     *
+     * @return true only when this call newly unlocked the spawn
+     */
+    boolean unlockAndAnnounce(Player player, String spawnId);
+
     Location location(String spawnId);
 
     int unlockAll(UUID uuid);

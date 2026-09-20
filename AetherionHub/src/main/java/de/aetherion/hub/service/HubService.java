@@ -5,12 +5,16 @@ import de.aetherion.hub.data.PlayerHubData;
 import de.aetherion.hub.data.PlayerHubStorage;
 import de.aetherion.hub.model.HubSpawn;
 
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import net.kyori.adventure.title.Title;
+
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 
+import java.time.Duration;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -31,7 +35,8 @@ public final class HubService {
             "farm_isle",
             "borderlands",
             "colosseum",
-            "eldervale"
+            "eldervale",
+            "amethyst"
     );
 
     private static final String[] RETIRED_SPAWN_IDS = {
@@ -84,6 +89,7 @@ public final class HubService {
         changed |= ensureSpawn("borderlands", "Borderlands", "Beyond Vex's gate. Hostile wastes.", "COARSE_DIRT", 21);
         changed |= ensureSpawn("colosseum", "Colosseum", "Proctor's ring — Crypt vials, T2 bosses. Unlocks with the Proctor.", "SANDSTONE", 19);
         changed |= ensureSpawn("eldervale", "Eldervale", "Mining island past the slime jump pad. Walk in to unlock.", "DEEPSLATE_DIAMOND_ORE", 20);
+        changed |= ensureSpawn("amethyst", "Amethyst Mines", "Crystal Guide on Eldervale. Mining 30. /amethyst.", "AMETHYST_CLUSTER", 22);
 
         if (plugin.getConfig().getConfigurationSection("spawns.harbour") != null
                 && !plugin.getConfig().getBoolean("spawns.harbour.unlocked-by-default", false)) {
@@ -118,6 +124,7 @@ public final class HubService {
         changed |= applyLayout("borderlands", "Borderlands", "Beyond Vex's gate. Hostile wastes. Walk in to unlock.", "COARSE_DIRT", 21, false);
         changed |= applyLayout("colosseum", "Colosseum", "Proctor's ring — Crypt vials, T2 bosses. Unlocks with the Proctor.", "SANDSTONE", 19, false);
         changed |= applyLayout("eldervale", "Eldervale", "Mining island past the slime jump pad. Walk in to unlock.", "DEEPSLATE_DIAMOND_ORE", 20, false);
+        changed |= applyLayout("amethyst", "Amethyst Mines", "Crystal Guide on Eldervale. Mining 30. /amethyst.", "AMETHYST_CLUSTER", 22, false);
         changed |= ensureDiscoverRadius("ore_ridge", 40);
         changed |= ensureDiscoverRadius("capital", 48);
         changed |= ensureDiscoverRadius("farm", 28);
@@ -355,6 +362,53 @@ public final class HubService {
         return true;
     }
 
+    /**
+     * Unlock and, on first unlock, play the new-area title + command hint.
+     *
+     * @return true only when this call newly unlocked the spawn
+     */
+    public boolean unlockAndAnnounce(Player player, String spawnId) {
+        if (player == null) {
+            return false;
+        }
+        if (!unlockNew(player.getUniqueId(), spawnId)) {
+            return false;
+        }
+        HubSpawn spawn = spawn(spawnId);
+        if (spawn != null) {
+            announceUnlock(player, spawn);
+        }
+        return true;
+    }
+
+    public void announceUnlock(Player player, HubSpawn spawn) {
+        if (player == null || spawn == null) {
+            return;
+        }
+        String name = spawn.displayName();
+        String command = de.aetherion.hub.command.SpawnGotoCommand.shortcutCommand(spawn.id());
+        String hint = command == null ? "Manager → Teleports" : "/" + command;
+        player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1f, 1.15f);
+        player.showTitle(Title.title(
+                LegacyComponentSerializer.legacySection().deserialize(
+                        "§b§lNEW AREA · " + name.toUpperCase(Locale.ROOT)
+                ),
+                LegacyComponentSerializer.legacySection().deserialize(
+                        "§7teleport unlocked · " + hint
+                ),
+                Title.Times.times(Duration.ofMillis(200), Duration.ofMillis(2400), Duration.ofMillis(500))
+        ));
+        player.sendActionBar(LegacyComponentSerializer.legacySection().deserialize(
+                "§b✦ §f" + name + " §7· " + hint
+        ));
+        player.sendMessage("§b✦ §eNew area: §f" + name + "§e.");
+        player.sendMessage("§7Teleport unlocked — §e" + hint + "§7.");
+        de.aetherion.core.api.ProgressAccess progress = de.aetherion.core.api.AetherServices.progress();
+        if (progress != null) {
+            progress.unlock(player, "SPAWN_UNLOCKER", "Teleports", hint);
+        }
+    }
+
     public int unlockAll(UUID uuid) {
         if (uuid == null) {
             return 0;
@@ -483,6 +537,15 @@ public final class HubService {
     public Location resolveLocation(HubSpawn spawn) {
         if (spawn == null) {
             return null;
+        }
+        if ("amethyst".equalsIgnoreCase(spawn.id())) {
+            de.aetherion.core.api.MiningAccess mining = de.aetherion.core.api.AetherServices.mining();
+            if (mining != null) {
+                Location veins = mining.veinsHubLocation();
+                if (veins != null) {
+                    return veins;
+                }
+            }
         }
         Location location = spawn.toLocation();
         if (location != null) {

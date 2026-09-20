@@ -95,6 +95,13 @@ spawns:
     unlocked-by-default: false
     discover-radius: 36
 
+  amethyst:
+    display-name: "Amethyst Mines"
+    description: "Crystal Guide on Eldervale. Mining 30. /amethyst."
+    icon: AMETHYST_CLUSTER
+    slot: 22
+    unlocked-by-default: false
+
 # /aetherpaste — FAWE async Eldervale island schematics (console/ops).
 # Schems are loaded from plugins/FastAsyncWorldEdit/schematics or WorldEdit/schematics.
 aether-paste:

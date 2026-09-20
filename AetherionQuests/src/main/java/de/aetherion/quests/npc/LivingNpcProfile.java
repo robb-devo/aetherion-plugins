@@ -232,6 +232,9 @@ public final class LivingNpcProfile {
         put(p("dungeon_gate", "Dungeon Gate", NamedTextColor.DARK_PURPLE, "§5")
                 .hand(Material.ENDER_PEARL).leather(Color.fromRGB(55, 30, 80)).fullLeather()
                 .skinFile("mystic.png"));
+        put(p("amethyst_mines_guide", "Amethyst Mines", NamedTextColor.LIGHT_PURPLE, "§d")
+                .hand(Material.AMETHYST_SHARD).leather(Color.fromRGB(90, 40, 130)).fullLeather()
+                .slim().skinFile("mystic.png"));
 
         // Prototypes
         put(p("living_test", "Prototype", NamedTextColor.AQUA, "§b")
