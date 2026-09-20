@@ -23,6 +23,7 @@ public final class QuestLinkMenu implements Listener {
 
     private static final int PAGE_SIZE = 36;
     private static final int CLEAR = 45;
+    private static final int CREATE = 46;
     private static final int TYPE = 47;
     private static final int PREV = 48;
     private static final int BACK = 49;
@@ -48,10 +49,11 @@ public final class QuestLinkMenu implements Listener {
         EditorItems.fill(inventory);
         inventory.setItem(4, EditorItems.button(
                 Material.MAP,
-                "§aLink an existing quest",
+                "§aLink or create a quest",
                 npc.hasLinkedQuest() ? "§7Current §f" + npc.getLinkedQuestId() : "§7None linked",
-                "§7Offer/start/turn-in from dialogue.",
-                "§8No visual quest designer in this tool."
+                "§7Click a quest below to link it.",
+                "§7Or §fCreate new quest §7then link.",
+                "§7Offer/start/turn-in from dialogue."
         ));
         int start = safe * PAGE_SIZE;
         for (int i = 0; i < PAGE_SIZE; i++) {
@@ -71,6 +73,14 @@ public final class QuestLinkMenu implements Listener {
             ));
         }
         inventory.setItem(CLEAR, EditorItems.button(Material.BARRIER, "§cClear link"));
+        inventory.setItem(CREATE, EditorItems.button(
+                Material.WRITABLE_BOOK,
+                "§aCreate new quest",
+                "§7Type a title in chat.",
+                "§7Creates a talk-to-this-NPC quest",
+                "§7and links it here.",
+                "§8Saved in editor-quests.yml"
+        ));
         inventory.setItem(TYPE, EditorItems.button(Material.NAME_TAG, "§eType quest id", "§7If you know the id."));
         inventory.setItem(PREV, EditorItems.button(Material.ARROW, "§7Previous"));
         inventory.setItem(BACK, EditorItems.button(Material.ARROW, "§7Back"));
@@ -126,6 +136,12 @@ public final class QuestLinkMenu implements Listener {
             npc.setLinkedQuestId(null);
             editor.persistQuiet(npc);
             open(player, npc, holder.page());
+            return;
+        }
+        if (slot == CREATE) {
+            editor.sessions().of(player).setNpcId(npc.getId());
+            editor.sessions().of(player).setChoiceIndex(-1);
+            editor.prompt(player, EditorSessions.Prompt.QUEST_TITLE, "Type a title for the new quest");
             return;
         }
         if (slot == TYPE) {

@@ -165,6 +165,20 @@ public final class NpcEditorListener implements Listener {
                 editor.persistQuiet(npc);
                 DialogueMenu.openPage(player, npc, page.id());
             }
+            case QUEST_TITLE -> {
+                CustomNpc npc = editor.storage().get(session.npcId());
+                if (npc == null) {
+                    player.sendMessage("§cNPC gone.");
+                    return;
+                }
+                if (message.isBlank()) {
+                    player.sendMessage("§cTitle cannot be empty.");
+                    QuestLinkMenu.open(player, npc, 0);
+                    return;
+                }
+                editor.createAndLinkQuest(player, npc, message);
+                QuestLinkMenu.open(player, npc, 0);
+            }
             case QUEST_ID -> {
                 CustomNpc npc = editor.storage().get(session.npcId());
                 if (npc == null) {

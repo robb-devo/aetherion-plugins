@@ -1,6 +1,13 @@
 package de.aetherion.items.listener;
 
 import de.aetherion.items.AetherionItems;
+import de.aetherion.items.rank.CelestialDye;
+
+import io.papermc.paper.event.player.AsyncChatEvent;
+
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -8,7 +15,17 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 
+/**
+ * Chat and compact list share the same prefix as hold-TAB
+ * ({@code %aetherion_tab_prefix%} / CelestialDye {@code #B2FFFF}).
+ * LuckPerms rainbow prefixes are not used.
+ */
 public final class ChatFormatListener implements Listener {
+
+    private static final LegacyComponentSerializer HEX = LegacyComponentSerializer.builder()
+            .character('&')
+            .hexColors()
+            .build();
 
     private final AetherionItems plugin;
 
@@ -17,13 +34,44 @@ public final class ChatFormatListener implements Listener {
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    public void onChat(AsyncPlayerChatEvent event) {
+    public void onChat(AsyncChatEvent event) {
+        Player player = event.getPlayer();
+        Component prefix = prefixComponent(player);
+        event.renderer((source, sourceDisplayName, message, viewer) -> Component.empty()
+                .append(prefix)
+                .append(Component.text(source.getName(), NamedTextColor.WHITE))
+                .append(Component.text(": ", NamedTextColor.GRAY))
+                .append(message.colorIfAbsent(NamedTextColor.WHITE)));
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onLegacyChat(AsyncPlayerChatEvent event) {
+        // Fallback if another plugin still reads the deprecated format string.
+        // Hex &#RRGGBB is kept so Paper/LPC render CelestialDye, not an LP rainbow.
         Player player = event.getPlayer();
         String prefix = plugin.ranks() == null ? "§f" : plugin.ranks().tabPrefix(player);
-        event.setFormat(escape(prefix) + "%s§7: §f%s");
+        // Use the plain name so displayName (already prefixed) cannot double, and so
+        // LuckPerms rainbow prefixes never appear in the format string.
+        event.setFormat(escape(prefix) + escape(player.getName()) + "§7: §f%s");
+    }
+
+    private Component prefixComponent(Player player) {
+        if (plugin.ranks() == null) {
+            return Component.empty();
+        }
+        String raw = plugin.ranks().tabPrefix(player);
+        if (raw == null || raw.isBlank()) {
+            return Component.empty();
+        }
+        return HEX.deserialize(raw.replace('§', '&'));
     }
 
     private static String escape(String value) {
         return value == null ? "" : value.replace("%", "%%");
+    }
+
+    /** Exposed for tests — chat must not fall back to a rainbow LP prefix. */
+    public static boolean usesCelestialForGroup(String group) {
+        return CelestialDye.isCelestialGroup(group);
     }
 }

@@ -58,4 +58,28 @@ class CelestialDyeTest {
         assertTrue(joined.contains("aetherion.flight"));
         assertFalse(joined.contains("aetherion.dev,") || joined.endsWith("aetherion.dev"));
     }
+
+    @Test
+    void extrasAreNeverXpManaged() {
+        for (String extra : RankBadgeService.extraGroups()) {
+            assertTrue(RankBadgeService.isPermanentExtra(extra), extra);
+            assertFalse(RankBadgeService.xpManagedGroups().contains(extra),
+                    "XP sync must not manage ultra " + extra);
+        }
+        assertTrue(RankBadgeService.isPermanentExtra("owner"));
+        assertTrue(RankBadgeService.xpManagedGroups().contains("adventurer"));
+        assertTrue(RankBadgeService.xpManagedGroups().contains("aetherion"));
+        assertFalse(RankBadgeService.xpManagedGroups().contains("monkey"));
+        assertFalse(RankBadgeService.xpManagedGroups().contains("beta"));
+        assertFalse(RankBadgeService.xpManagedGroups().contains("admin"));
+        assertFalse(RankBadgeService.xpManagedGroups().contains("mvpplusplus"));
+    }
+
+    @Test
+    void tabSortPutsMonkeyFirstAmongHomieCosmetics() {
+        assertTrue(RankBadgeService.rankWeight("admin") > RankBadgeService.rankWeight("monkey"));
+        assertTrue(RankBadgeService.rankWeight("monkey") > RankBadgeService.rankWeight("beta"));
+        assertTrue(RankBadgeService.rankWeight("beta") > RankBadgeService.rankWeight("mvpplusplus"));
+        assertTrue(RankBadgeService.rankWeight("monkey") > RankBadgeService.rankWeight("aetherion"));
+    }
 }

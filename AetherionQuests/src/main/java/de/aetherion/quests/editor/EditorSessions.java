@@ -21,7 +21,8 @@ public final class EditorSessions {
         SKIN,
         COMMAND,
         PAGE_ID,
-        QUEST_ID
+        QUEST_ID,
+        QUEST_TITLE
     }
 
     public static final class Session {

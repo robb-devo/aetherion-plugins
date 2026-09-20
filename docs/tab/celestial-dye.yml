@@ -43,18 +43,28 @@ Aetherion_Monkey:
     - "&#7EF0F8[&#7EF0F8M&#6EE8F2o&#8CF4FCn&#B2FFFFk&#C8FFFFe&#DCFFFFy&#A6FBFF]"
 
 # --- plugins/TAB/groups.yml (add / merge) ---
-# sorting-types GROUPS list: staff ultras at the front.
-# Example: groups: [admin, monkey, beta, mvpplusplus, aetherion, eternal, ...]
+# sorting-types GROUPS list: Monkey is the first Homie hub (after Admin is fine).
+# Required order:
+#   groups: [admin, monkey, beta, mvpplusplus, aetherion, eternal, empyrean, ascendant,
+#            sovereign, celestine, aetherborn, mythwright, legend, champion, veteran, adventurer]
+#
+# Use the SAME celestial prefix for hold-TAB, compact/right player list, and scoreboard.
+# Do NOT use %luckperms_prefix% for Monkey/Beta — that can still be the old rainbow LP node.
 #
 # monkey:
 #   tabprefix: "%animation:Aetherion_Celestial% "
-#   # or, if the global layout already uses PlaceholderAPI:
-#   # tabprefix: "%aetherion_tab_prefix%"
-#   tabsuffix: ""
+#   tagprefix: "%animation:Aetherion_Celestial% "
+#   customtabname: "%aetherion_list_name%"
+#   # compact / layout / scoreboard player list:
+#   #   %aetherion_tab_prefix%  or  %aetherion_list_prefix%  or  %aetherion_nametag%
 #
 # beta:
 #   tabprefix: "%animation:Aetherion_Celestial_Beta% "
-#   tabsuffix: ""
+#   tagprefix: "%animation:Aetherion_Celestial_Beta% "
+#   customtabname: "%aetherion_list_name%"
+#
+# Chat is owned by AetherionItems ChatFormatListener (Adventure + CelestialDye #B2FFFF).
+# LP group prefix is also rewritten to CelestialDye on plugin enable — not rainbow.
 
 # --- LuckPerms ---
 # Monkey (content tools + celestial):

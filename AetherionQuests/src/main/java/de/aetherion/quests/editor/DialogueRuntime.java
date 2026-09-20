@@ -5,6 +5,8 @@ import de.aetherion.quests.dialog.DialogManager;
 import de.aetherion.quests.dialog.DialogPace;
 import de.aetherion.quests.manager.QuestManager;
 import de.aetherion.quests.editor.gui.EditorItems;
+import de.aetherion.quests.model.Objective;
+import de.aetherion.quests.model.ObjectiveType;
 import de.aetherion.quests.model.Quest;
 import de.aetherion.quests.model.QuestState;
 
@@ -102,6 +104,7 @@ public final class DialogueRuntime implements Listener, EditorQuestHook {
             return;
         }
         if (npc.hasLinkedQuest()) {
+            advanceTalk(player, npc);
             offer(player, npc, npc.getLinkedQuestId());
         }
     }
@@ -175,6 +178,28 @@ public final class DialogueRuntime implements Listener, EditorQuestHook {
             return;
         }
         player.sendMessage("§7You don't have §f" + quest.getTitle() + " §7active.");
+    }
+
+    private void advanceTalk(Player player, CustomNpc npc) {
+        QuestManager quests = plugin.getQuestManager();
+        if (quests == null || player == null || npc == null) {
+            return;
+        }
+        String questId = npc.getLinkedQuestId();
+        Quest quest = quests.getQuest(questId);
+        if (quest == null || quests.getQuestState(player, quest) != QuestState.ACTIVE) {
+            return;
+        }
+        for (Objective objective : quest.getObjectives()) {
+            if (objective == null || objective.getType() != ObjectiveType.TALK) {
+                continue;
+            }
+            String target = objective.getTarget();
+            if (target != null && (target.equalsIgnoreCase(npc.getId()) || target.equalsIgnoreCase(npc.getName()))) {
+                quests.addProgress(player, quest.getId(), target, 1);
+                return;
+            }
+        }
     }
 
     private void runCommand(Player player, String raw, boolean console) {

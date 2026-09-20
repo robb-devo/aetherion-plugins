@@ -188,6 +188,9 @@ public class DevMenu {
         if (page == null) {
             return false;
         }
+        if (page == Page.RANKS) {
+            return isFullDev(player) && !preferContentKit(player);
+        }
         if (preferContentKit(player)) {
             return isContentPage(page);
         }
@@ -366,10 +369,18 @@ public class DevMenu {
             return;
         }
         if (action.startsWith("rank-player:")) {
+            if (!isFullDev(player)) {
+                player.sendMessage("§cOnly full DEV / op can grant ranks.");
+                return;
+            }
             open(player, Page.RANKS, UUID.fromString(action.substring("rank-player:".length())));
             return;
         }
         if (action.startsWith("rank-set:")) {
+            if (!isFullDev(player)) {
+                player.sendMessage("§cOnly full DEV / op can grant ranks.");
+                return;
+            }
             UUID target = holderTarget(player);
             RankBadgeService ranks = ranks();
             if (target == null || ranks == null) {
@@ -379,7 +390,7 @@ public class DevMenu {
             String group = action.substring("rank-set:".length());
             OfflinePlayer targetPlayer = Bukkit.getOfflinePlayer(target);
             RankBadgeService.Rank extra = ranks.extraFor(target);
-            if (de.aetherion.items.rank.CelestialDye.isCelestialGroup(group)
+            if (ranks.isExtra(group)
                     && extra != null && extra.group().equalsIgnoreCase(group)) {
                 ranks.clearExtra(target, group);
                 player.sendMessage("§eCleared " + ranks.rankByGroup(group).display() + " §efrom §f" + nameOf(targetPlayer)
@@ -393,6 +404,10 @@ public class DevMenu {
             return;
         }
         if (action.equals("rank-sync")) {
+            if (!isFullDev(player)) {
+                player.sendMessage("§cOnly full DEV / op can grant ranks.");
+                return;
+            }
             UUID target = holderTarget(player);
             RankBadgeService ranks = ranks();
             if (target == null || ranks == null) {
@@ -401,8 +416,9 @@ public class DevMenu {
             }
             ranks.syncToLevel(target);
             OfflinePlayer targetPlayer = Bukkit.getOfflinePlayer(target);
-            player.sendMessage("§aRank matched to account level: §f" + nameOf(targetPlayer)
+            player.sendMessage("§aXP rank matched to account level: §f" + nameOf(targetPlayer)
                     + " §7→ " + ranks.rankByGroup(ranks.rankOf(target)).display());
+            player.sendMessage("§7Ultra ranks (Monkey / Beta / MVP++ / Admin) stay until you remove them.");
             player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.8f, 1.15f);
             open(player, Page.RANKS, target);
             return;
@@ -2285,51 +2301,57 @@ public class DevMenu {
                     "§8LuckPerms group: §7" + rank.group()
             ));
         }
-        // Ultra row (Peter): Homie cosmetics go here with MVP++ / Admin / Monkey — not in progression[].
-        inventory.setItem(33, button(
-                rankIcon("mvpplusplus"),
-                (extra != null && extra.group().equals("mvpplusplus") ? "§a▶ " : "") + "§6MVP§c++",
-                "rank-set:mvpplusplus",
-                "§7Ultra rank. Stays on top of the",
-                "§7Aetherion title."
-        ));
-        inventory.setItem(34, button(
-                rankIcon("admin"),
-                (extra != null && extra.group().equals("admin") ? "§a▶ " : "") + "§cAdmin",
-                "rank-set:admin",
-                "§7Ultra rank. Stays on top of the",
-                "§7Aetherion title."
-        ));
+        // Ultra row (Peter): Admin · Monkey · Beta · MVP++ on one row. Content Kit never opens this page.
+        boolean adminOn = extra != null && extra.group().equals("admin");
         boolean monkeyOn = extra != null && extra.group().equals("monkey");
-        inventory.setItem(35, button(
+        boolean betaOn = extra != null && extra.group().equals("beta");
+        boolean mvpOn = extra != null && extra.group().equals("mvpplusplus");
+        inventory.setItem(37, button(
+                rankIcon("admin"),
+                (adminOn ? "§a▶ " : "") + "§cAdmin",
+                "rank-set:admin",
+                "§7Ultra rank (weight 100).",
+                "§7Stays until you click again.",
+                adminOn ? "§eClick again to remove." : "§7Click to grant."
+        ));
+        inventory.setItem(38, button(
                 rankIcon("monkey"),
                 (monkeyOn ? "§a▶ " : "") + "§d§lMonkey §8· celestial",
                 "rank-set:monkey",
-                "§7Ultra rank (weight 95) — above MVP++.",
-                "§7Celestial dye TAB prefix (#B2FFFF).",
+                "§7Ultra rank (weight 95) — first Homie hub.",
+                "§7Celestial dye #B2FFFF (TAB + chat + list).",
                 "§7Content tools: flight, /aethernpc, Resources, shards.",
-                "§7Not full admin. Stays on top of XP title.",
+                "§7Not full admin. Never overwritten by XP.",
                 monkeyOn ? "§eClick again to remove." : "§7Click to grant.",
                 "§8Fallback: §7/lp user <name> parent set monkey"
         ));
-        boolean betaOn = extra != null && extra.group().equals("beta");
         inventory.setItem(39, button(
                 rankIcon("beta"),
                 (betaOn ? "§a▶ " : "") + "§b§lBeta Tester §8· celestial",
                 "rank-set:beta",
-                "§7Ultra rank (weight 93) — above MVP++.",
+                "§7Ultra rank (weight 93) — same EXTRA path.",
                 "§7Same celestial dye as Monkey (#B2FFFF).",
                 "§7Cosmetic only — no extra permissions.",
-                "§7Stays on top of the Aetherion title.",
+                "§7Never overwritten by XP.",
                 betaOn ? "§eClick again to remove." : "§7Click to grant.",
                 "§8Fallback: §7/lp user <name> parent set beta"
         ));
         inventory.setItem(40, button(
+                rankIcon("mvpplusplus"),
+                (mvpOn ? "§a▶ " : "") + "§6MVP§c++",
+                "rank-set:mvpplusplus",
+                "§7Ultra rank (weight 90).",
+                "§7Stays on top of the Aetherion title.",
+                "§7Never overwritten by XP.",
+                mvpOn ? "§eClick again to remove." : "§7Click to grant."
+        ));
+        inventory.setItem(41, button(
                 Material.EXPERIENCE_BOTTLE,
                 "§eMatch account level",
                 "rank-sync",
-                "§7Clear the DEV override.",
-                "§7Rank follows XP again."
+                "§7XP progression only.",
+                "§7Does §fnot §7remove Monkey / Beta /",
+                "§7MVP++ / Admin. Click those to remove."
         ));
     }
 

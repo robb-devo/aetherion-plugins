@@ -43,6 +43,7 @@ public final class NpcEditor {
     private final CustomNpcService service;
     private final DialogueRuntime runtime;
     private final EditorSessions sessions;
+    private final EditorQuestStorage editorQuests;
     private final NamespacedKey wandKey;
     private final Map<UUID, Integer> lastClickTick = new ConcurrentHashMap<>();
 
@@ -52,6 +53,7 @@ public final class NpcEditor {
         this.service = new CustomNpcService(plugin, storage);
         this.runtime = new DialogueRuntime(plugin, storage);
         this.sessions = new EditorSessions();
+        this.editorQuests = new EditorQuestStorage(plugin);
         this.wandKey = new NamespacedKey(plugin, "npc_editor_wand");
     }
 
@@ -100,6 +102,29 @@ public final class NpcEditor {
 
     public EditorSessions sessions() {
         return sessions;
+    }
+
+    public EditorQuestStorage editorQuests() {
+        return editorQuests;
+    }
+
+    public void loadEditorQuests() {
+        editorQuests.reload();
+        editorQuests.registerAll(plugin.getQuestManager());
+    }
+
+    public de.aetherion.quests.model.Quest createAndLinkQuest(Player player, CustomNpc npc, String title) {
+        if (npc == null) {
+            return null;
+        }
+        de.aetherion.quests.model.Quest quest = editorQuests.createAndSave(title, npc.getId(), plugin.getQuestManager());
+        npc.setLinkedQuestId(quest.getId());
+        persistQuiet(npc);
+        if (player != null) {
+            player.sendMessage("§aCreated and linked §f" + quest.getTitle() + " §7(§f" + quest.getId() + "§7).");
+            player.sendMessage("§7Talk-to-this-NPC quest. Empty-choice pages offer it.");
+        }
+        return quest;
     }
 
     public static boolean allowed(Player player) {

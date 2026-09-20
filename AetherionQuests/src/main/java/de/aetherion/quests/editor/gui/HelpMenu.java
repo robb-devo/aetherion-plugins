@@ -14,7 +14,7 @@ import org.bukkit.inventory.InventoryHolder;
 
 public final class HelpMenu implements Listener {
 
-    private static final int BACK = 22;
+    private static final int BACK = 31;
 
     public HelpMenu(NpcEditor editor) {
         editor.plugin().getServer().getPluginManager().registerEvents(this, editor.plugin());
@@ -23,7 +23,7 @@ public final class HelpMenu implements Listener {
     public static void open(Player player) {
         Inventory inventory = Bukkit.createInventory(
                 new Holder(),
-                27,
+                36,
                 EditorItems.title(player, "npc_help", "§8NPC Help")
         );
         EditorItems.fill(inventory);
@@ -60,7 +60,19 @@ public final class HelpMenu implements Listener {
                 "§7LuckPerms §fmonkey §7(Homie ultra, weight 95)",
                 "§7Grant: Dev Menu → Ranks → Monkey",
                 "§8Fallback: /lp user <name> parent set monkey",
-                "§7Not the same as §faetherionquests.admin"
+                "§7Not the same as §faetherionquests.admin",
+                "§8Monkey Content Kit cannot open Ranks."
+        ));
+        inventory.setItem(22, EditorItems.button(
+                Material.WRITABLE_BOOK,
+                "§dDialogue pages",
+                "§7A page is one conversation screen:",
+                "§7NPC text, then the player's choices.",
+                "§7Each choice can open another page,",
+                "§7run a command, or offer / start /",
+                "§7turn in a linked quest.",
+                "§7Start page is usually §fgreeting§7.",
+                "§7Add page → type an id → wire choices."
         ));
         inventory.setItem(BACK, EditorItems.button(Material.ARROW, "§7Back"));
         player.openInventory(inventory);

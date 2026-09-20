@@ -5,9 +5,9 @@ import org.bukkit.entity.Player;
 /**
  * Quest hooks for moderator-created NPCs.
  * <p>
- * This PR only links an <em>existing</em> quest id (offer / start / turn-in).
- * A later visual quest author can implement this interface without rewriting
- * the dialogue editor.
+ * Links an existing quest id, or a quest just created from Link Quest → Create
+ * (offer / start / turn-in). A later visual quest author can implement this
+ * interface without rewriting the dialogue editor.
  */
 public interface EditorQuestHook {
 

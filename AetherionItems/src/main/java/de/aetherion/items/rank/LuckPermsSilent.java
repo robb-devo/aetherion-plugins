@@ -194,9 +194,17 @@ final class LuckPermsSilent {
     }
 
     private static void paintUser(User user, String keep, String extra, Set<String> managed) {
-        user.data().clear(NodeType.INHERITANCE.predicate(node -> managed.contains(node.getGroupName().toLowerCase(Locale.ROOT))));
+        // Wipe XP progression groups only. Ultra extras stay until Peter removes them.
+        user.data().clear(NodeType.INHERITANCE.predicate(node -> {
+            String name = node.getGroupName().toLowerCase(Locale.ROOT);
+            return managed.contains(name) && !RankBadgeService.isPermanentExtra(name);
+        }));
         user.data().add(InheritanceNode.builder(keep).build());
         if (extra != null && !extra.equals(keep)) {
+            user.data().clear(NodeType.INHERITANCE.predicate(node -> {
+                String name = node.getGroupName().toLowerCase(Locale.ROOT);
+                return RankBadgeService.isPermanentExtra(name) && !name.equals(extra);
+            }));
             user.data().add(InheritanceNode.builder(extra).build());
         }
     }
