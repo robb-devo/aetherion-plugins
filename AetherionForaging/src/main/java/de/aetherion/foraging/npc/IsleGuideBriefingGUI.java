@@ -50,7 +50,7 @@ public final class IsleGuideBriefingGUI implements Listener {
         inventory.setItem(4, button(
                 Material.OAK_SAPLING,
                 "§aIsle Guide",
-                "§7Click a topic. Easy mode.",
+                "§7Click a topic.",
                 "§8" + who + " · " + IsleGuideNpc.TITLE
         ));
         inventory.setItem(SLOT_HABITATS, button(

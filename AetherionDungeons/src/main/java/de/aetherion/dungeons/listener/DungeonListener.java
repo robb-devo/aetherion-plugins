@@ -348,7 +348,7 @@ public final class DungeonListener implements Listener {
             return;
         }
         menuCooldown.put(player.getUniqueId(), now);
-        player.sendMessage("§5Dungeon Keeper§7: The void still hungers. Choose a floor.");
+        player.sendMessage("§5Dungeon Keeper§7: The void's hungry. Pick a floor.");
         player.closeInventory();
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
             if (player.isOnline()) {

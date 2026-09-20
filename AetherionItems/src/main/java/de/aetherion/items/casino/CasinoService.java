@@ -48,10 +48,10 @@ public final class CasinoService implements Listener {
     static final int LOBBY_CLOSE_SLOT = 22;
 
     private static final String[] FLAVOR = {
-            "Casino's right behind me. Pick a machine. Don't cry on the felt.",
-            "Slots and roulette. Coins go in. Dignity stays out.",
+            "Casino's behind me. Pick a machine. Don't cry on the felt.",
+            "Slots. Roulette. Coins in. Dignity stays in your pocket.",
             "I don't deal. I commentate. Machines do the dirty work.",
-            "Hungry? The glass is. Feed it. Then blame me."
+            "The glass is hungrier than you. Feed it anyway."
     };
 
     private static final String[] BIG_WIN_TAUNTS = {
