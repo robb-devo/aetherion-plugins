@@ -53,23 +53,17 @@ public final class CelestialDye {
         return "monkey".equalsIgnoreCase(group);
     }
 
-    /** Animated badge for a known ultra group, e.g. {@code monkey} → {@code [Monkey]}. */
+    /** Animated badge. Monkey only — Beta must use {@link RainbowDye}. */
     public static String badgeForGroup(String group) {
-        return badge(labelForGroup(group));
+        return monkeyBadge();
     }
 
     public static String prefixStaticForGroup(String group) {
-        return prefixStatic(labelForGroup(group));
+        return monkeyPrefixStatic();
     }
 
     public static String labelForGroup(String group) {
-        if (group == null || group.isBlank()) {
-            return "[Celestial]";
-        }
-        return switch (group.toLowerCase(java.util.Locale.ROOT)) {
-            case "monkey" -> "[Monkey]";
-            default -> "[" + Character.toUpperCase(group.charAt(0)) + group.substring(1).toLowerCase(java.util.Locale.ROOT) + "]";
-        };
+        return "[Monkey]";
     }
 
     public static String badge(String label) {
@@ -95,18 +89,6 @@ public final class CelestialDye {
 
     public static String monkeyPrefixStatic() {
         return prefixStatic("[Monkey]");
-    }
-
-    public static String betaBadge() {
-        return badge("[Beta]");
-    }
-
-    public static String betaBadge(int frame) {
-        return badge("[Beta]", frame);
-    }
-
-    public static String betaPrefixStatic() {
-        return prefixStatic("[Beta]");
     }
 
     /**
@@ -152,7 +134,7 @@ public final class CelestialDye {
         int tick = 0;
         try {
             tick = Bukkit.getCurrentTick();
-        } catch (IllegalStateException ignored) {
+        } catch (IllegalStateException | ExceptionInInitializerError | NullPointerException ignored) {
         }
         return Math.floorDiv(Math.max(0, tick), 4);
     }

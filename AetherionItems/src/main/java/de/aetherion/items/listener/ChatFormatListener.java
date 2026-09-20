@@ -48,7 +48,7 @@ public final class ChatFormatListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onLegacyChat(AsyncPlayerChatEvent event) {
         // Fallback if another plugin still reads the deprecated format string.
-        // Hex &#RRGGBB is kept so Paper/LPC render CelestialDye, not an LP rainbow.
+        // Hex &#RRGGBB comes from tabPrefix: Monkey celestial / Beta RainbowDye.
         Player player = event.getPlayer();
         String prefix = plugin.ranks() == null ? "§f" : plugin.ranks().tabPrefix(player);
         // Use the plain name so displayName (already prefixed) cannot double, and so

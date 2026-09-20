@@ -41,6 +41,8 @@ class CelestialDyeTest {
         assertFalse(CelestialDye.isCelestialGroup("BETA"), "Beta must not use CelestialDye");
         assertFalse(CelestialDye.isCelestialGroup("admin"));
         assertEquals(CelestialDye.prefixStatic("[Monkey]"), CelestialDye.monkeyPrefixStatic());
+        assertEquals(CelestialDye.monkeyBadge(), CelestialDye.badgeForGroup("beta"));
+        assertTrue(CelestialDye.badgeForGroup("beta").contains(CelestialDye.hex(CelestialDye.PRIMARY)));
         assertTrue(RainbowDye.isRainbowGroup("beta"));
         assertFalse(RainbowDye.isRainbowGroup("monkey"));
         String rainbow = RainbowDye.rainbow("[Beta]", 0);

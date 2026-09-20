@@ -2895,8 +2895,8 @@ public class DevMenu {
             case "eternal" -> Material.ECHO_SHARD;
             case "aetherion" -> Material.DRAGON_EGG;
             case "mvpplusplus" -> Material.NETHER_STAR;
-            case "monkey" -> Material.MAGENTA_DYE;
-            case "beta" -> Material.LIGHT_BLUE_DYE;
+            case "monkey" -> Material.LIGHT_BLUE_DYE;
+            case "beta" -> Material.MAGENTA_DYE;
             case "admin" -> Material.BARRIER;
             default -> Material.GRAY_DYE;
         };

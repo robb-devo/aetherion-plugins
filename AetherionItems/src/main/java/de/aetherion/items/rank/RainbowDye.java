@@ -73,7 +73,7 @@ public final class RainbowDye {
         int tick = 0;
         try {
             tick = Bukkit.getCurrentTick();
-        } catch (IllegalStateException ignored) {
+        } catch (IllegalStateException | ExceptionInInitializerError | NullPointerException ignored) {
         }
         return Math.floorDiv(Math.max(0, tick), 4);
     }
