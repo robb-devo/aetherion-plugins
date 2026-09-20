@@ -78,7 +78,7 @@
   "testConnection": "Verbindung testen",
   "currentVersion": "Version {version}",
   "buildStamp": "Build {stamp}",
-  "updateHowTo": "Updates kommen von GitHub-Releases: operator-app-x.y.z oder operator-app-apk-YYYYMMDD mit angehängter APK. Private Repos brauchen unten einen Read-only-GitHub-Token. pubspec, app_version.dart und kOperatorBuildStamp gemeinsam erhöhen.",
+  "updateHowTo": "Beim Start prüft die App https://donnernet.de/operator-app/latest.json (öffentlich, ohne Token). Dort latest.json + APK ablegen. GitHub-Releases sind Fallback, wenn du einen Token speicherst.",
   "checkUpdates": "Nach Updates suchen",
   "githubTokenHint": "GitHub-Token (privates Repo)",
   "githubTokenSet": "GitHub-Token gespeichert — leer lassen, um ihn zu behalten",

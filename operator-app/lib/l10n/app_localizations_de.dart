@@ -274,7 +274,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get updateHowTo =>
-      'Updates kommen von GitHub-Releases: operator-app-x.y.z oder operator-app-apk-YYYYMMDD mit angehängter APK. Private Repos brauchen unten einen Read-only-GitHub-Token. pubspec, app_version.dart und kOperatorBuildStamp gemeinsam erhöhen.';
+      'Beim Start prüft die App https://donnernet.de/operator-app/latest.json (öffentlich, ohne Token). Dort latest.json + APK ablegen. GitHub-Releases sind Fallback, wenn du einen Token speicherst.';
 
   @override
   String get checkUpdates => 'Nach Updates suchen';

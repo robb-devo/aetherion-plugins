@@ -1,0 +1,8 @@
+{
+  "version": "0.2.2",
+  "buildStamp": "20260920",
+  "tag": "operator-app-0.2.2",
+  "apkUrl": "https://donnernet.de/operator-app/operator_app_release.apk",
+  "htmlUrl": "https://donnernet.de/operator-app/",
+  "notes": "Discord channel icon, Crafty settings, auto-update via donnernet.de"
+}

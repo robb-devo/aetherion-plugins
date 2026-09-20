@@ -569,7 +569,7 @@ abstract class AppLocalizations {
   /// No description provided for @updateHowTo.
   ///
   /// In en, this message translates to:
-  /// **'Updates come from GitHub Releases: operator-app-x.y.z or operator-app-apk-YYYYMMDD with an attached APK. Private repos need a read-only GitHub token below. Bump pubspec, app_version.dart, and kOperatorBuildStamp together.'**
+  /// **'On start the app checks https://donnernet.de/operator-app/latest.json (public, no token). Host latest.json + APK there. GitHub Releases is a fallback if you save a token.'**
   String get updateHowTo;
 
   /// No description provided for @checkUpdates.

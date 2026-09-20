@@ -95,41 +95,21 @@ JSON mapping is loose (`lib/crafty/http_crafty_client.dart`) so field names can 
 
 ## Updates
 
-Version is `0.2.1+3` in `pubspec.yaml`, `kOperatorAppVersion` / `kOperatorBuildStamp` in `lib/app_version.dart` — bump all three when shipping.
+Version is `0.2.2+4` in `pubspec.yaml` and `kOperatorAppVersion` / `kOperatorBuildStamp` in `lib/app_version.dart`.
 
-### How the app checks
+### How the phone checks (no GitHub token)
 
-On bootstrap and from **Settings → Check for updates**, the app calls GitHub Releases and looks for tags:
+On every start the app fetches the **public** file:
 
-| Tag | Display | Newer when… |
-|-----|---------|-------------|
-| `operator-app-x.y.z` / `operator-app-vx.y.z` | `x.y.z` | semver &gt; installed version |
-| `operator-app-apk-YYYYMMDD` | `YYYY.MM.DD` | date &gt; `kOperatorBuildStamp` |
+`https://donnernet.de/operator-app/latest.json`
 
-Draft releases are ignored. An APK asset is required for date builds (preferred name contains `operator`). Android opens the APK download URL; Windows / web open the release page.
+If `version` (or `buildStamp`) is newer than the installed app, it shows an update dialog and opens the `apkUrl`. Files to upload live in [`update-channel/`](update-channel/README.md) — nginx or Cloudflare static hosting.
 
-A one-shot dialog appears when a newer release is found; **Later** keeps it visible in Settings with **Open release**.
+GitHub Releases (`operator-app-x.y.z` / `operator-app-apk-YYYYMMDD`) remain a **fallback** when a PAT is saved in Settings (private repo).
 
-### Private repository
+### First install
 
-`robb-devo/aetherion-plugins` is private. Unauthenticated GitHub API calls return 404, so update checks need a **read-only GitHub PAT** (classic `repo` or fine-grained Contents: Read) saved under Settings, or `--dart-define=GITHUB_TOKEN=...` at build/run time. The token is stored like the Crafty API token (secure storage / obfuscated prefs fallback).
-
-### Ship a build
-
-1. Bump `pubspec.yaml`, `kOperatorAppVersion`, and `kOperatorBuildStamp` (YYYYMMDD).
-2. Tag and publish a GitHub Release, e.g. `operator-app-0.2.1` or `operator-app-apk-20260921`.
-3. Attach `operator_app_release.apk` (and optionally a Windows zip).
-
-Or run the **Operator app release** workflow (`workflow_dispatch`) which builds the APK and creates the release.
-
-```bash
-cd operator-app
-flutter pub get
-flutter test && flutter analyze
-flutter build apk --release
-# → build/app/outputs/flutter-apk/app-release.apk
-```
-
+The APK already on your phone is too old to use this channel. Install the new `0.2.2` APK **once**, upload `latest.json` + APK to the domain, then every later bump of `latest.json` will prompt operators automatically.
 ## Branding
 
 This plugins repo has no `website/` tree and no Discord brand pack (only Minecraft item textures).

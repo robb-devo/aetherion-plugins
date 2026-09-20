@@ -46,3 +46,6 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# Large APKs for the public update channel (upload to donnernet.de, do not commit)
+/update-channel/*.apk

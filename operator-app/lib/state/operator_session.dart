@@ -28,7 +28,7 @@ class OperatorSession extends ChangeNotifier {
        sessionStore = sessionStore ?? PrefsSessionStore(),
        secrets = secrets ?? DeviceCraftySecrets(),
        githubTokens = githubTokens ?? DeviceGithubTokenStore(),
-       updates = updates ?? GithubReleaseChecker(),
+       updates = updates ?? CascadingUpdateChecker(),
        _lockedCrafty = crafty != null,
        _crafty = crafty ?? createCraftyClient();
 

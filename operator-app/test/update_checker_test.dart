@@ -153,4 +153,69 @@ void main() {
     expect(release?.version, '2026.09.21');
     expect(release?.apkUrl, 'https://example/next.apk');
   });
+
+  test('PublicManifestUpdateChecker reads donnernet-style latest.json', () async {
+    final httpClient = MockClient((request) async {
+      expect(request.url.path, '/operator-app/latest.json');
+      return http.Response(
+        jsonEncode({
+          'version': '0.3.0',
+          'buildStamp': '20260921',
+          'tag': 'operator-app-0.3.0',
+          'apkUrl': 'https://donnernet.de/operator-app/operator_app_release.apk',
+          'htmlUrl': 'https://donnernet.de/operator-app/',
+          'notes': 'test',
+        }),
+        200,
+        headers: {'content-type': 'application/json'},
+      );
+    });
+
+    final checker = PublicManifestUpdateChecker(
+      httpClient: httpClient,
+      manifestUrl: Uri.parse('https://donnernet.de/operator-app/latest.json'),
+    );
+    final release = await checker.latestNewerThan('0.2.2');
+    expect(release?.version, '0.3.0');
+    expect(release?.apkUrl, contains('operator_app_release.apk'));
+    expect(
+      await checker.latestNewerThan('0.3.0', buildStamp: '20260921'),
+      isNull,
+    );
+  });
+
+  test('PublicManifestUpdateChecker rejects SPA HTML fallback', () async {
+    final httpClient = MockClient((request) async {
+      return http.Response(
+        '<!doctype html><html></html>',
+        200,
+        headers: {'content-type': 'text/html'},
+      );
+    });
+    final checker = PublicManifestUpdateChecker(
+      httpClient: httpClient,
+      manifestUrl: Uri.parse('https://donnernet.de/operator-app/latest.json'),
+    );
+    expect(checker.latestNewerThan('0.2.2'), throwsA(isA<StateError>()));
+  });
+
+  test('CascadingUpdateChecker prefers the public manifest', () async {
+    final httpClient = MockClient((request) async {
+      if (request.url.host.contains('donnernet')) {
+        return http.Response(
+          jsonEncode({
+            'version': '0.9.0',
+            'apkUrl': 'https://donnernet.de/operator-app/x.apk',
+            'htmlUrl': 'https://donnernet.de/operator-app/',
+          }),
+          200,
+          headers: {'content-type': 'application/json'},
+        );
+      }
+      return http.Response('[]', 200);
+    });
+    final checker = CascadingUpdateChecker(httpClient: httpClient);
+    final release = await checker.latestNewerThan('0.2.2');
+    expect(release?.version, '0.9.0');
+  });
 }

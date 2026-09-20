@@ -12,15 +12,17 @@ class AppRelease {
     this.apkUrl,
     this.publishedAt,
     this.kind = OperatorReleaseKind.semver,
+    this.notes,
   });
 
   final String tag;
-  /// Display label: `0.2.1` or `2026.09.20`.
+  /// Display label: `0.2.2` or `2026.09.20`.
   final String version;
   final String htmlUrl;
   final String? apkUrl;
   final DateTime? publishedAt;
   final OperatorReleaseKind kind;
+  final String? notes;
 }
 
 enum OperatorReleaseKind { semver, dateBuild }
@@ -43,6 +45,148 @@ class NoopUpdateChecker implements UpdateChecker {
     String? githubToken,
   }) async =>
       null;
+}
+
+/// Tries the public site manifest first (no auth), then GitHub Releases.
+class CascadingUpdateChecker implements UpdateChecker {
+  CascadingUpdateChecker({
+    UpdateChecker? primary,
+    UpdateChecker? fallback,
+    http.Client? httpClient,
+  }) : primary =
+           primary ??
+           PublicManifestUpdateChecker(
+             httpClient: httpClient,
+             manifestUrl: Uri.parse(kOperatorUpdateManifestUrl),
+           ),
+       fallback = fallback ?? GithubReleaseChecker(httpClient: httpClient);
+
+  final UpdateChecker primary;
+  final UpdateChecker fallback;
+
+  @override
+  Future<AppRelease?> latestNewerThan(
+    String currentVersion, {
+    String buildStamp = kOperatorBuildStamp,
+    String? githubToken,
+  }) async {
+    Object? primaryError;
+    try {
+      final fromSite = await primary.latestNewerThan(
+        currentVersion,
+        buildStamp: buildStamp,
+        githubToken: githubToken,
+      );
+      if (fromSite != null) return fromSite;
+    } catch (e) {
+      primaryError = e;
+    }
+    try {
+      return await fallback.latestNewerThan(
+        currentVersion,
+        buildStamp: buildStamp,
+        githubToken: githubToken,
+      );
+    } catch (e) {
+      // Public channel already answered "no update" — ignore private GitHub 404.
+      if (primaryError == null) return null;
+      throw primaryError;
+    }
+  }
+}
+
+/// Reads a public JSON file hosted on donnernet.de / Cloudflare.
+///
+/// Example `latest.json`:
+/// ```json
+/// {
+///   "version": "0.2.3",
+///   "buildStamp": "20260921",
+///   "tag": "operator-app-0.2.3",
+///   "apkUrl": "https://donnernet.de/operator-app/operator_app_release.apk",
+///   "htmlUrl": "https://donnernet.de/operator-app/",
+///   "notes": "Optional changelog"
+/// }
+/// ```
+class PublicManifestUpdateChecker implements UpdateChecker {
+  PublicManifestUpdateChecker({
+    http.Client? httpClient,
+    Uri? manifestUrl,
+  }) : _http = httpClient ?? http.Client(),
+       manifestUrl = manifestUrl ?? Uri.parse(kOperatorUpdateManifestUrl);
+
+  final http.Client _http;
+  final Uri manifestUrl;
+
+  @override
+  Future<AppRelease?> latestNewerThan(
+    String currentVersion, {
+    String buildStamp = kOperatorBuildStamp,
+    String? githubToken,
+  }) async {
+    final response = await _http.get(
+      manifestUrl,
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'aetherion-operator-app',
+        'Cache-Control': 'no-cache',
+      },
+    );
+    if (response.statusCode >= 400) {
+      throw StateError(
+        'Update manifest ${response.statusCode}: ${response.body}',
+      );
+    }
+    // SPA fallback often returns HTML with 200 — reject that.
+    final contentType = response.headers['content-type'] ?? '';
+    final body = response.body.trimLeft();
+    if (contentType.contains('text/html') || body.startsWith('<!')) {
+      throw StateError(
+        'Update manifest is HTML (SPA fallback). Host a real latest.json.',
+      );
+    }
+    final decoded = jsonDecode(response.body);
+    if (decoded is! Map) return null;
+    return releaseFromManifest(
+      Map<String, dynamic>.from(decoded),
+      currentVersion: currentVersion,
+      buildStamp: buildStamp,
+    );
+  }
+}
+
+AppRelease? releaseFromManifest(
+  Map<String, dynamic> raw, {
+  required String currentVersion,
+  required String buildStamp,
+}) {
+  final version = '${raw['version'] ?? ''}'.trim();
+  if (version.isEmpty) return null;
+  final stamp = '${raw['buildStamp'] ?? raw['build_stamp'] ?? ''}'.trim();
+  final rawTag = '${raw['tag'] ?? ''}'.trim();
+  final tag = rawTag.isEmpty ? 'operator-app-$version' : rawTag;
+  final apkUrl = '${raw['apkUrl'] ?? raw['apk_url'] ?? ''}'.trim();
+  final htmlUrl =
+      '${raw['htmlUrl'] ?? raw['html_url'] ?? kOperatorUpdateManifestUrl}'
+          .trim();
+  final notes = '${raw['notes'] ?? ''}'.trim();
+
+  final newerBySemver = isVersionNewer(version, currentVersion);
+  final newerByStamp =
+      stamp.isNotEmpty &&
+      (int.tryParse(stamp) ?? 0) > (int.tryParse(buildStamp) ?? 0);
+  if (!newerBySemver && !newerByStamp) return null;
+  if (!apkUrl.startsWith('http')) return null;
+
+  return AppRelease(
+    tag: tag,
+    version: version,
+    htmlUrl: htmlUrl.startsWith('http') ? htmlUrl : kOperatorUpdateManifestUrl,
+    apkUrl: apkUrl,
+    publishedAt: DateTime.tryParse('${raw['publishedAt'] ?? ''}'),
+    kind: OperatorReleaseKind.semver,
+    notes: notes.isEmpty ? null : notes,
+  );
 }
 
 class GithubReleaseChecker implements UpdateChecker {
