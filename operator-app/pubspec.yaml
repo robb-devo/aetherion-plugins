@@ -41,15 +41,13 @@ flutter:
 
 flutter_launcher_icons:
   android: true
-  image_path: assets/brand/aetherion_mark.png
-  adaptive_icon_background: "#0a0814"
-  adaptive_icon_foreground: assets/brand/aetherion_mark.png
+  image_path: assets/brand/discord_guild_icon_1024.png
+  adaptive_icon_background: "#000000"
+  adaptive_icon_foreground: assets/brand/discord_guild_icon_1024.png
+  adaptive_icon_foreground_inset: 0
   windows:
     generate: true
-    image_path: assets/brand/aetherion_mark.png
+    image_path: assets/brand/discord_guild_icon_1024.png
     icon_size: 256
   web:
-    generate: true
-    image_path: assets/brand/aetherion_mark.png
-    background_color: "#0a0814"
-    theme_color: "#07060f"
+    generate: false

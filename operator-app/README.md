@@ -105,7 +105,11 @@ The app checks `GET /repos/robb-devo/aetherion-plugins/releases` on bootstrap an
 
 ## Branding
 
-App icon and in-app mark are the live website favicon: [donnernet.de/favicon.svg](https://donnernet.de/favicon.svg), stored at `assets/brand/favicon.svg` (raster `aetherion_mark.png` for launchers).
+This plugins repo has no `website/` tree and no Discord brand pack (only Minecraft item textures).
+
+**App icon** (Android launcher + adaptive + Windows `.ico`) is the Aetherion Discord guild / channel icon from invite `https://discord.gg/7BWHJaZChb` (`cdn.discordapp.com/icons/1550245657816600647/…`, original `assets/brand/discord_guild_icon.png`). Discord only stores that upload at 64×64; `discord_guild_icon_1024.png` is a Lanczos upscale used by `flutter_launcher_icons`.
+
+**In-app mark** is the live site header SVG [donnernet.de/favicon.svg](https://donnernet.de/favicon.svg) at `assets/brand/favicon.svg` (amethyst–cyan gem). Web debug favicon stays that SVG.
 
 Regenerate Android mipmaps + Windows ICO:
 
