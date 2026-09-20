@@ -157,7 +157,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('Mock Crafty'), findsOneWidget);
-    expect(find.textContaining('Version 0.2.6'), findsOneWidget);
+    expect(find.textContaining('Version 0.2.7'), findsOneWidget);
     expect(find.byKey(const Key('crafty-url')), findsOneWidget);
     expect(find.byKey(const Key('check-updates')), findsOneWidget);
   });

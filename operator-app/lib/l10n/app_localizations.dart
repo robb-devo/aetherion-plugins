@@ -1405,6 +1405,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Observer'**
   String get observerRoleLabel;
+
+  /// No description provided for @mockConnectTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Not connected to Crafty'**
+  String get mockConnectTitle;
+
+  /// No description provided for @mockConnectBody.
+  ///
+  /// In en, this message translates to:
+  /// **'These servers are demo placeholders — not your network. In Settings paste your Crafty URL (https://135.181.18.162:8443) and API token, keep insecure TLS on, then Save + Test.'**
+  String get mockConnectBody;
+
+  /// No description provided for @mockConnectAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Settings'**
+  String get mockConnectAction;
+
+  /// No description provided for @updateFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Update stalled'**
+  String get updateFailedTitle;
+
+  /// No description provided for @updateInstallerOpened.
+  ///
+  /// In en, this message translates to:
+  /// **'Installer opened — confirm install on the next screen.'**
+  String get updateInstallerOpened;
+
+  /// No description provided for @updateOpenBrowser.
+  ///
+  /// In en, this message translates to:
+  /// **'Open download in browser'**
+  String get updateOpenBrowser;
 }
 
 class _AppLocalizationsDelegate

@@ -8,6 +8,7 @@ import 'package:open_filex/open_filex.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
+import '../platform/android_install.dart';
 import '../platform/platform_info.dart';
 import 'update_checker.dart';
 
@@ -44,6 +45,16 @@ class InAppUpdater {
       throw StateError('No download URL for this platform in the release.');
     }
 
+    if (Platform.isAndroid) {
+      final allowed = await AndroidInstallPermission.canInstall();
+      if (!allowed) {
+        await AndroidInstallPermission.openSettings();
+        throw StateError(
+          'Allow “Install unknown apps” for Aetherion Operator, then tap Update again.',
+        );
+      }
+    }
+
     onProgress?.call(
       const UpdateProgress(fraction: 0, label: 'download'),
     );
@@ -61,12 +72,17 @@ class InAppUpdater {
       onProgress?.call(
         const UpdateProgress(fraction: 1, label: 'install'),
       );
+      // Prefer external cache so FileProvider can share the APK cleanly.
       final result = await OpenFilex.open(
         file.path,
         type: 'application/vnd.android.package-archive',
       );
       if (result.type != ResultType.done) {
-        throw StateError(result.message);
+        throw StateError(
+          result.message.isEmpty
+              ? 'Could not open the package installer.'
+              : result.message,
+        );
       }
       return;
     }
@@ -77,11 +93,22 @@ class InAppUpdater {
   String? _artifactUrl(AppRelease release) {
     if (isWindowsDesktop) {
       final win = release.windowsUrl;
-      if (win != null && win.startsWith('http')) return win;
+      if (win != null && win.startsWith('http')) {
+        return _cacheBust(win, release.version);
+      }
     }
     final apk = release.apkUrl;
-    if (apk != null && apk.startsWith('http')) return apk;
+    if (apk != null && apk.startsWith('http')) {
+      return _cacheBust(apk, release.version);
+    }
     return null;
+  }
+
+  String _cacheBust(String url, String version) {
+    final uri = Uri.parse(url);
+    final q = Map<String, String>.from(uri.queryParameters);
+    q.putIfAbsent('v', () => version);
+    return uri.replace(queryParameters: q).toString();
   }
 
   Future<File> _download(
@@ -91,13 +118,22 @@ class InAppUpdater {
     final request = http.Request('GET', Uri.parse(url));
     request.headers['User-Agent'] = 'aetherion-operator-app';
     request.headers['Cache-Control'] = 'no-cache';
+    request.headers['Pragma'] = 'no-cache';
     final response = await _http.send(request);
     if (response.statusCode >= 400) {
       throw StateError('Download failed (${response.statusCode}).');
     }
 
     final total = response.contentLength ?? 0;
-    final dir = await getTemporaryDirectory();
+    final Directory dir;
+    if (Platform.isAndroid) {
+      dir = await getExternalCacheDirectories().then(
+            (dirs) => dirs?.isNotEmpty == true ? dirs!.first : null,
+          ) ??
+          await getTemporaryDirectory();
+    } else {
+      dir = await getTemporaryDirectory();
+    }
     final name = isWindowsDesktop
         ? 'operator_app_windows_update.zip'
         : 'operator_app_update.apk';
@@ -119,7 +155,7 @@ class InAppUpdater {
           );
         } else {
           onProgress?.call(
-            UpdateProgress(
+            const UpdateProgress(
               fraction: -1,
               label: 'download',
             ),
@@ -131,8 +167,11 @@ class InAppUpdater {
       await sink.close();
     }
 
-    if (await out.length() < 1024) {
-      throw StateError('Downloaded file looks empty or incomplete.');
+    final length = await out.length();
+    if (length < 1024 * 100) {
+      throw StateError(
+        'Downloaded file looks incomplete ($length bytes).',
+      );
     }
     return out;
   }
@@ -150,7 +189,6 @@ class InAppUpdater {
 
     await extractFileToDisk(zipFile.path, staging.path);
 
-    // If the zip wrapped a single folder, unwrap it.
     final children = staging.listSync();
     var payload = staging;
     if (children.length == 1 && children.first is Directory) {
@@ -177,7 +215,6 @@ class InAppUpdater {
       mode: ProcessStartMode.detached,
       workingDirectory: appDir.path,
     );
-    // Give the helper a moment to spawn, then leave so files can be replaced.
     await Future<void>.delayed(const Duration(milliseconds: 400));
     exit(0);
   }

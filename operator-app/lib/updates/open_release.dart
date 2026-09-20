@@ -6,7 +6,8 @@ import '../platform/platform_info.dart';
 import 'in_app_updater.dart';
 import 'update_checker.dart';
 
-/// Prefer in-app download + install. Falls back to opening the artifact URL.
+/// Prefer in-app download + install. Falls back to opening the artifact URL
+/// only after showing the error (so the user knows why).
 Future<void> applyOperatorUpdate(
   BuildContext context,
   AppRelease release,
@@ -66,23 +67,47 @@ Future<void> applyOperatorUpdate(
     );
     if (context.mounted) {
       Navigator.of(context, rootNavigator: true).pop();
+      messenger?.showSnackBar(
+        SnackBar(content: Text(l10n.updateInstallerOpened)),
+      );
     }
-    // Windows exits the process after staging; Android opens the installer.
   } catch (e) {
     if (context.mounted) {
       Navigator.of(context, rootNavigator: true).pop();
     }
-    // Last resort: open the direct download URL (donnernet, not GitHub).
-    final fallback = _fallbackUrl(release);
-    if (fallback != null) {
-      try {
-        await launchUrl(Uri.parse(fallback), mode: LaunchMode.externalApplication);
-        return;
-      } catch (_) {}
+    final message = '$e'.replaceFirst('StateError: ', '');
+    if (context.mounted) {
+      final openBrowser = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(l10n.updateFailedTitle),
+          content: Text(l10n.updateFailed(message)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(l10n.cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(l10n.updateOpenBrowser),
+            ),
+          ],
+        ),
+      );
+      if (openBrowser == true) {
+        final fallback = _fallbackUrl(release);
+        if (fallback != null) {
+          await launchUrl(
+            Uri.parse(fallback),
+            mode: LaunchMode.externalApplication,
+          );
+        }
+      }
+    } else {
+      messenger?.showSnackBar(
+        SnackBar(content: Text(l10n.updateFailed(message))),
+      );
     }
-    messenger?.showSnackBar(
-      SnackBar(content: Text(l10n.updateFailed('$e'))),
-    );
   } finally {
     progress.dispose();
   }

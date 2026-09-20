@@ -7,7 +7,7 @@
 /// GitHub tags still understood as fallback:
 /// - `operator-app-x.y.z` / `operator-app-vx.y.z`
 /// - `operator-app-apk-YYYYMMDD`
-const kOperatorAppVersion = '0.2.6';
+const kOperatorAppVersion = '0.2.7';
 
 /// YYYYMMDD stamp for this binary. Used when comparing date-tagged builds.
 const kOperatorBuildStamp = '20260920';

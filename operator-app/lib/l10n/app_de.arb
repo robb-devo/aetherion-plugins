@@ -217,5 +217,11 @@
   "nameInvalid": "1–16 Zeichen: Buchstaben, Zahlen oder Unterstrich.",
   "roleRestricted": "Dein Account darf sich umschauen und milde Tools nutzen — keine Power- oder Mod-Aktionen.",
   "observerBanner": "Beobachter-Modus — frei umschauen, Wetter/Zeit, Spieler ansehen. Schwere Aktionen bleiben gesperrt.",
-  "observerRoleLabel": "Beobachter"
+  "observerRoleLabel": "Beobachter",
+  "mockConnectTitle": "Nicht mit Crafty verbunden",
+  "mockConnectBody": "Das sind Demo-Platzhalter — nicht dein Netzwerk. Unter Einstellungen Crafty-URL (https://135.181.18.162:8443) + API-Token einfügen, unsicheres TLS anlassen, Speichern + Testen.",
+  "mockConnectAction": "Einstellungen öffnen",
+  "updateFailedTitle": "Update hängt",
+  "updateInstallerOpened": "Installer geöffnet — Installation auf dem nächsten Screen bestätigen.",
+  "updateOpenBrowser": "Download im Browser öffnen"
 }

@@ -69,6 +69,18 @@ class _ShellScreenState extends State<ShellScreen> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final session = SessionScope.of(context);
+    final tabReq = session.shellTabRequest;
+    if (tabReq != null && tabReq != _index) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        setState(() => _index = tabReq);
+        session.consumeShellTabRequest();
+      });
+    } else if (tabReq != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        session.consumeShellTabRequest();
+      });
+    }
     final destinations = [
       (Icons.dashboard_outlined, Icons.dashboard, l10n.navDashboard),
       (Icons.people_outline, Icons.people, l10n.navPlayers),

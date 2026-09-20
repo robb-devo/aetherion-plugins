@@ -60,6 +60,11 @@ class DashboardScreen extends StatelessWidget {
           style: const TextStyle(color: AetherColors.mist, fontSize: 12),
         ),
         const SizedBox(height: 16),
+        if (session.craftyLive == false)
+          _MockConnectCard(
+            onOpenSettings: () => session.requestShellTab(5),
+          ),
+        if (session.craftyLive == false) const SizedBox(height: 16),
         if (session.networkError != null)
           Padding(
             padding: const EdgeInsets.only(bottom: 12),
@@ -129,6 +134,60 @@ class DashboardScreen extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _MockConnectCard extends StatelessWidget {
+  const _MockConnectCard({required this.onOpenSettings});
+
+  final VoidCallback onOpenSettings;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return GlassCard(
+      accent: AetherColors.gold,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.cloud_off_outlined,
+                color: AetherColors.gold.withValues(alpha: 0.95),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  l10n.mockConnectTitle,
+                  style: const TextStyle(
+                    fontFamily: AetherTheme.cinzel,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 16,
+                    letterSpacing: 0.6,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            l10n.mockConnectBody,
+            style: const TextStyle(
+              color: AetherColors.mist,
+              height: 1.4,
+              fontSize: 13.5,
+            ),
+          ),
+          const SizedBox(height: 14),
+          FilledButton.icon(
+            onPressed: onOpenSettings,
+            icon: const Icon(Icons.settings_outlined, size: 18),
+            label: Text(l10n.mockConnectAction),
+          ),
+        ],
+      ),
     );
   }
 }

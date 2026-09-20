@@ -30,8 +30,7 @@ abstract final class OperatorCapabilities {
 
   static bool allowsTeamMutate(OperatorRole role) => role == OperatorRole.full;
 
-  static bool allowsCraftySettings(OperatorRole role) =>
-      role == OperatorRole.full;
+  static bool allowsCraftySettings(OperatorRole role) => true;
 
   static bool allowsPlayerAction(OperatorRole role, PlayerAction action) {
     if (role == OperatorRole.full) return true;

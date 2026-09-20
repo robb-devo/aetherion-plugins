@@ -80,6 +80,9 @@ class OperatorSession extends ChangeNotifier {
   bool checkingUpdates = false;
   var updateChecked = false;
 
+  /// Shell tab index request (e.g. open Settings from mock banner).
+  int? shellTabRequest;
+
   Timer? _softRefreshTimer;
   bool _softRefreshWanted = false;
 
@@ -652,6 +655,15 @@ class OperatorSession extends ChangeNotifier {
   /// Clear a snoozed prompt only — Settings still shows [pendingUpdate].
   void snoozeUpdatePrompt() {
     notifyListeners();
+  }
+
+  void requestShellTab(int index) {
+    shellTabRequest = index;
+    notifyListeners();
+  }
+
+  void consumeShellTabRequest() {
+    shellTabRequest = null;
   }
 
   void dismissUpdate() {

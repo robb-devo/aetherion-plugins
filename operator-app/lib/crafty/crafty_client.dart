@@ -30,5 +30,5 @@ CraftyClient createCraftyClient([CraftyConfig config = CraftyConfig.unset]) {
       httpClient: createHttpClient(allowInsecureTls: config.allowInsecureTls),
     );
   }
-  return MockCraftyClient();
+  return MockCraftyClient(jitter: false);
 }

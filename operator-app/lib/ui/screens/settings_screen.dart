@@ -148,6 +148,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
               ],
+              if (!session.craftyLive) ...[
+                const SizedBox(height: 12),
+                Text(
+                  l10n.mockConnectBody,
+                  style: const TextStyle(
+                    color: AetherColors.gold,
+                    fontSize: 12.5,
+                    height: 1.35,
+                  ),
+                ),
+              ],
               if (session.craftyTestMessage != null) ...[
                 const SizedBox(height: 10),
                 Text(

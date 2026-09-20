@@ -720,4 +720,24 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get observerRoleLabel => 'Beobachter';
+
+  @override
+  String get mockConnectTitle => 'Nicht mit Crafty verbunden';
+
+  @override
+  String get mockConnectBody =>
+      'Das sind Demo-Platzhalter — nicht dein Netzwerk. Unter Einstellungen Crafty-URL (https://135.181.18.162:8443) + API-Token einfügen, unsicheres TLS anlassen, Speichern + Testen.';
+
+  @override
+  String get mockConnectAction => 'Einstellungen öffnen';
+
+  @override
+  String get updateFailedTitle => 'Update hängt';
+
+  @override
+  String get updateInstallerOpened =>
+      'Installer geöffnet — Installation auf dem nächsten Screen bestätigen.';
+
+  @override
+  String get updateOpenBrowser => 'Download im Browser öffnen';
 }

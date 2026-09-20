@@ -304,5 +304,11 @@
   "nameInvalid": "Use 1–16 letters, numbers, or underscore.",
   "roleRestricted": "Your account can look around and use mild tools — not power or moderation.",
   "observerBanner": "Observer mode — browse freely, change weather/time, view players. Heavy actions stay locked.",
-  "observerRoleLabel": "Observer"
+  "observerRoleLabel": "Observer",
+  "mockConnectTitle": "Not connected to Crafty",
+  "mockConnectBody": "These servers are demo placeholders — not your network. In Settings paste your Crafty URL (https://135.181.18.162:8443) and API token, keep insecure TLS on, then Save + Test.",
+  "mockConnectAction": "Open Settings",
+  "updateFailedTitle": "Update stalled",
+  "updateInstallerOpened": "Installer opened — confirm install on the next screen.",
+  "updateOpenBrowser": "Open download in browser"
 }
