@@ -173,7 +173,7 @@ public final class IsleGuideNpc implements Listener {
         }
         coolUntil.put(player.getUniqueId(), now + 3500L);
         player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_YES, 0.55f, 1.25f);
-        player.sendMessage("§a" + DISPLAY + " §8» §fHey — short tour of the isle?");
+        player.sendMessage("§a" + DISPLAY + " §8» §fHey. Short tour of the isle?");
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             if (player.isOnline()) {
                 IsleGuideBriefingGUI.open(player, DISPLAY);

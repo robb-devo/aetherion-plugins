@@ -161,7 +161,7 @@ public final class QuestStoryGate {
         return new String[] {
                 "Complete the tutorial first.",
                 "Harbour → Mine → Temper → Miss Ledger → Fields. Then Ledger stamps you free.",
-                "Come back when orientation is filed. This desk isn't for rookies mid-lesson."
+                "Come back when she's stamped you. This desk isn't for rookies mid-lesson."
         };
     }
 
@@ -241,11 +241,11 @@ public final class QuestStoryGate {
         }
         String name = speakerName == null || speakerName.isBlank() ? "Someone" : speakerName;
         player.sendMessage("");
-        npcSay(player, name, "Complete the tutorial first.");
+        npcSay(player, name, "redirect.tutorial", "Complete the tutorial first.");
 
         QuestManager qm = questManager();
         if (qm == null) {
-            npcSay(player, name, "§eMiss Ledger §fcloses orientation after the Fields.");
+            npcSay(player, name, "redirect.ledger_fields", "§eMiss Ledger §fcloses orientation after the Fields.");
             player.sendMessage("");
             QuestHint.show(player, "ledger", "Miss Ledger");
             return;
@@ -253,7 +253,7 @@ public final class QuestStoryGate {
 
         // Soft spine: Harbour (Egon) → QM → Mine → Temper → Ledger → Fields → Ledger.
         if (!questCompleted(player, qm, "gather_wood")) {
-            npcSay(player, name, "§aEgon §fat the pier — oak first. Then the Quartermaster.");
+            npcSay(player, name, "redirect.egon", "§aEgon §fat the pier — oak first. Then the Quartermaster.");
             player.sendMessage("");
             QuestHint.show(player, "egon", "Egon");
             player.sendActionBar(net.kyori.adventure.text.Component.text(
@@ -263,7 +263,7 @@ public final class QuestStoryGate {
             return;
         }
         if (!questCompleted(player, qm, "forge_coal")) {
-            npcSay(player, name, "§eQuartermaster §fpast the little market — coal run next.");
+            npcSay(player, name, "redirect.qm", "§eQuartermaster §fpast the little market — coal run next.");
             player.sendMessage("");
             QuestHint.show(player, "quartermaster", "Quartermaster");
             player.sendActionBar(net.kyori.adventure.text.Component.text(
@@ -273,7 +273,7 @@ public final class QuestStoryGate {
             return;
         }
         if (!questCompleted(player, qm, "first_shift")) {
-            npcSay(player, name, "§eShaft Foreman §fat Shabby Mine — finish his shift.");
+            npcSay(player, name, "redirect.foreman", "§eShaft Foreman §fat Shabby Mine — finish his shift.");
             player.sendMessage("");
             QuestHint.show(player, "foreman", "Shaft Foreman");
             player.sendActionBar(net.kyori.adventure.text.Component.text(
@@ -283,7 +283,7 @@ public final class QuestStoryGate {
             return;
         }
         if (!questCompleted(player, qm, "lesson_boost")) {
-            npcSay(player, name, "§eTemper §f— Booster Tutor. Fuse one booster, then keep going.");
+            npcSay(player, name, "redirect.temper", "§eTemper §f— Booster Tutor. Fuse one booster, then keep going.");
             player.sendMessage("");
             QuestHint.show(player, "booster_tutor", "Temper");
             player.sendActionBar(net.kyori.adventure.text.Component.text(
@@ -293,7 +293,7 @@ public final class QuestStoryGate {
             return;
         }
         if (!questCompleted(player, qm, "lesson_manager")) {
-            npcSay(player, name, "§dMiss Ledger §fat Capital — Skills in the Manager.");
+            npcSay(player, name, "redirect.ledger_skills", "§dMiss Ledger §fat Capital — Skills in the Manager.");
             player.sendMessage("");
             QuestHint.show(player, "ledger", "Miss Ledger");
             player.sendActionBar(net.kyori.adventure.text.Component.text(
@@ -303,7 +303,7 @@ public final class QuestStoryGate {
             return;
         }
         if (!questCompleted(player, qm, "farm_hand")) {
-            npcSay(player, name, "§eFarmer §fat the Fields — wheat next.");
+            npcSay(player, name, "redirect.farmer", "§eFarmer §fat the Fields — wheat next.");
             player.sendMessage("");
             QuestHint.show(player, "farmer", "Farmer");
             player.sendActionBar(net.kyori.adventure.text.Component.text(
@@ -313,7 +313,7 @@ public final class QuestStoryGate {
             return;
         }
         if (!questCompleted(player, qm, "pocket_zoo")) {
-            npcSay(player, name, "§dLark §fat the fence — one catch for his collection.");
+            npcSay(player, name, "redirect.lark", "§dLark §fat the fence — one catch for his collection.");
             player.sendMessage("");
             QuestHint.show(player, "lark", "Lark");
             player.sendActionBar(net.kyori.adventure.text.Component.text(
@@ -323,7 +323,7 @@ public final class QuestStoryGate {
             return;
         }
 
-        npcSay(player, name, "§dMiss Ledger §fcloses orientation. Go get stamped.");
+        npcSay(player, name, "redirect.stamp", "§dMiss Ledger §fcloses orientation. Go get stamped.");
         player.sendMessage("");
         QuestHint.show(player, "ledger", "Miss Ledger");
         player.sendActionBar(net.kyori.adventure.text.Component.text(
@@ -381,8 +381,8 @@ public final class QuestStoryGate {
             return;
         }
         player.sendMessage("");
-        npcSay(player, name, "You're early. The waste doesn't hand out spirits to soft gear.");
-        npcSay(player, name, "§eTemper §fat the harbour — fuse a booster. Then keep orientation going.");
+        npcSay(player, name, "redirect.rite_early", "You're early. The waste doesn't hand out spirits to soft gear.");
+        npcSay(player, name, "redirect.rite_temper", "§eTemper §fat the harbour — fuse a booster. Then keep orientation going.");
         player.sendMessage("");
         QuestHint.show(player, "booster_tutor", "Temper");
         player.sendActionBar(net.kyori.adventure.text.Component.text(
@@ -394,7 +394,7 @@ public final class QuestStoryGate {
     public static String[] riteKeeperBlockedLines() {
         return new String[] {
                 "Locked. Finish orientation first — Fields, then Miss Ledger stamps you free.",
-                "Temper, Ledger, wheat, one pet. Then we discuss spirits and the powder altar.",
+                "Temper, Ledger, wheat, one pet. Then we talk spirits.",
                 "Miss Ledger closes the tutorial. Come back when she has."
         };
     }
@@ -420,8 +420,8 @@ public final class QuestStoryGate {
         }
         String name = ledgerName == null || ledgerName.isBlank() ? "Miss Ledger" : ledgerName;
         player.sendMessage("");
-        npcSay(player, name, "You're early. Skills aren't open yet.");
-        npcSay(player, name, "§eShaft Foreman §fat the Mines — do his shift. Then come back.");
+        npcSay(player, name, "redirect.ledger_early", "You're early. Skills aren't open yet.");
+        npcSay(player, name, "redirect.ledger_foreman", "§eShaft Foreman §fat the Mines — do his shift. Then come back.");
         player.sendMessage("");
         QuestHint.show(player, "foreman", "Shaft Foreman");
         player.sendActionBar(net.kyori.adventure.text.Component.text(
@@ -435,7 +435,7 @@ public final class QuestStoryGate {
         return new String[] {
                 "You're early. Skills stay locked until the mine shift is done.",
                 "Shaft Foreman at the Mines. Finish his shift — then come back.",
-                "Then I'll unlock the Manager Skills tab. Not before."
+                "Then I unlock the Manager Skills tab. Not before."
         };
     }
 
@@ -451,6 +451,10 @@ public final class QuestStoryGate {
             return;
         }
         LivingNpcProfile.say(player, null, name, line);
+    }
+
+    private static void npcSay(Player player, String speakerName, String key, String english) {
+        npcSay(player, speakerName, de.aetherion.quests.lang.LangPack.msg(player, "say." + key, english));
     }
 
 

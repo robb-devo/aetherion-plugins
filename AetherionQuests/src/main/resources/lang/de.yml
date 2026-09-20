@@ -1,5 +1,5 @@
 # Aetherion Quests — German pre-pre-beta language pack
-# Missing keys fall back to English. Quests & hints only.
+# Missing keys fall back to English. English in Java is source of truth.
 
 ui:
   hint: "Hinweis"
@@ -37,6 +37,11 @@ msg:
   tutorial_blocked: "Mach zuerst das Tutorial fertig."
   language_saved_de: "Sprache gespeichert · Deutsch (experimentell)"
   language_saved_en: "Language saved · English"
+  done_fallback: "Wir sind durch. Belästige jemand anderes' Clipboard."
+  chests_unlocked: "§aKisten frei. §7Sample neben dem Merchant + Welt-Kisten sind live."
+  deliver_not_me: "Hübsche Beute. Abliefern bei §e{0}§f — nicht bei mir."
+
+done_fallback: "Wir sind durch. Belästige jemand anderes' Clipboard."
 
 quests:
   gather_wood:
@@ -76,89 +81,120 @@ dialogs:
   tutorial_blocked:
     - "Mach zuerst das Tutorial fertig."
     - "Hafen → Mine → Temper → Miss Ledger → Felder. Dann stempelt Ledger dich frei."
-    - "Komm zurück, wenn die Orientierung abgelegt ist. Dieser Schreibtisch ist nichts für Rookies mitten in der Lektion."
+    - "Komm zurück, wenn sie gestempelt hat. Dieser Schreibtisch ist nichts für Rookies mitten in der Lektion."
+  ledger_blocked:
+    - "Zu früh. Skills bleiben zu, bis die Minen-Schicht durch ist."
+    - "Shaft Foreman an den Minen. Schicht fertig — dann komm zurück."
+    - "Dann schalte ich den Manager-Tab Skills frei. Nicht früher."
+  rite_keeper_blocked:
+    - "Zu. Erst Orientierung — Felder, dann stempelt Miss Ledger dich frei."
+    - "Temper, Ledger, Weizen, ein Pet. Dann reden wir über Geister."
+    - "Miss Ledger schließt das Tutorial. Komm zurück, wenn sie's getan hat."
   egon_intro:
-    - "Egon. Hafen-Ausrüster. Ich brauche Eiche — du holst sie."
-    - "Der Forager am Hügel leiht die Axt und zeigt das Chop-Minispiel. Zehn Eichenstämme zurück hierher."
-    - "§eGelber Pfeil oben§f zeigt die Richtung. Für diesen Auftrag siehst du auch kurz einen Funkel-Pfad am Boden."
+    - "Egon. Hafen-Kit. Ich brauche Eiche — du holst sie."
+    - "Der Forager am Hügel leiht die Axt und zeigt das Chop-Minispiel. Zehn Eichenstämme, zurück zu mir."
+    - "§eGelber Pfeil oben§f ist dein Kompass. Für diesen Job gibt's auch einen Funkel-Pfad am Boden."
   lumberjack_intro:
-    - "Egon braucht wieder Eiche."
-    - "Nimm die Simple Axe. Linksklick auf einen §eleuchtenden Stamm§f startet die Chop-Leiste."
-    - "Wenn die Leiste §aCHOP§f (grün) zeigt: nochmal linksklick. Verfehlst du's, setzt der Baum zurück."
-    - "Zehn Eichenstämme → abliefern bei §eEgon am Pier§f, nicht bei mir."
+    - "Egon braucht Eiche. Wieder."
+    - "Simple Axe. Linksklick auf einen §eleuchtenden Stamm§f — das ist die Chop-Leiste."
+    - "Wenn's §aCHOP§f (grün) zeigt: nochmal Linksklick. Verfehlst du's, setzt der Baum zurück."
+    - "Zehn Eichenstämme → §eEgon am Pier§f. Nicht bei mir."
   quartermaster_intro:
-    - "Ich brauche Kohle für die Schmiede. Zwanzig Stück von der Oberfläche."
-    - "§eErzgrat§f ist der Hügel hinter dem kleinen Markt — Kohleadern im Freien. Zwanzig abbauen, zu mir zurücklaufen."
-    - "Achte auf den §egelben Pfeil oben§f — der trackt den Auftrag."
+    - "Die Schmiede hat Hunger. Zwanzig Kohle von der Oberfläche."
+    - "§eErzgrat§f — Hügel hinter dem kleinen Markt. Kohleadern im Freien. Zwanzig abbauen, zu mir zurück."
+    - "Der §egelbe Pfeil oben§f trackt den Auftrag."
   craftsman_intro:
-    - "Hey. Craftsman. Crafting ist freigeschaltet — Recipe Book im Manager."
-    - "Nether Star (Hotbar §e9§f) → §agrünes Buch§f anklicken. Da sind alle Blaupausen."
-    - "Craft eine §fMining Pickaxe§f: Simple Pickaxe in der Mitte, Kohle drumrum. Bring die Spitzhacke zu mir zurück."
+    - "Crafting ist frei. Recipe Book sitzt im Manager."
+    - "Nether Star (Hotbar §e9§f) → §agrünes Buch§f. Da sind alle Blaupausen."
+    - "Craft eine §fMining Pickaxe§f: Simple Pickaxe in der Mitte, Kohle drumrum. Bring die Spitzhacke zu mir."
   foreman_intro:
-    - "Schäbige Mine — die Höhle hinter mir. Darin §eErze§f abbauen: Kohle, Kupfer, Eisen, was fällt."
-    - "Brich §e32 Erz-Blöcke§f (kein Stein-Füllmaterial). Wenn der Zähler fertig ist, zurück zu mir."
+    - "Schäbige Mine — Höhle hinter mir. Bau §eKohle, Kupfer, Eisen§f ab. Brich §e32 Erz-Blöcke§f, dann zurück."
     - "Mining-Pickaxe und etwas Rüstung helfen. Recipe Book im Manager, falls du noch craften musst."
   booster_tutor_intro:
-    - "Temper. Boosters sind kleine Upgrades zum Fusen auf Gear — mehr Mining Power, Fortune, Damage, sowas."
-    - "Manager öffnen (Nether Star, Slot 9) → §eAnvil§f. Gear §alinks§f, Booster §arechts§f, fused Piece rausnehmen."
-    - "Hier: Emerald Booster. Einmal auf irgendein Armor/Tool fusen. Dann sind wir durch — weiche Stats vor den nächsten Lektionen."
+    - "Temper. Boosters fusen auf Gear — Mining Power, Fortune, Damage."
+    - "Manager → §eAnvil§f: Gear links, Booster rechts. Hier: Emerald — einmal fusen. Rezepte bleiben im §eRecipe Book§f."
   ledger_intro:
-    - "Miss Ledger. Ich kümmere mich um Skills — und ich schließe die Orientierung, wenn du fertig bist."
-    - "Hotbar Slot §e9§f — Nether Star → Manager → Tab §dSkills§f (blinkt). Rüste §eirgendeinen§f Skill aus."
-    - "Komm zurück, wenn der Skill ausgerüstet ist."
+    - "Miss Ledger. Skills — und ich stemple die Orientierung zu, wenn du fertig bist."
+    - "Hotbar §e9§f — Nether Star → Manager → Tab §dSkills§f (blinkt). Rüste §eirgendeinen§f Skill aus."
+    - "Komm zurück, wenn er ausgerüstet ist."
   farmer_intro:
-    - "Ich brauche Weizen von diesen Feldern — und die Vögel von den Pflanzen fern."
-    - "Weizen abbauen bis §e48 Weizen§f. Wenn Vögel landen: §eLinksklick§f — Bossbar zählt die Verscheucher."
+    - "Weizen von diesen Feldern. Vögel von den Pflanzen."
+    - "Weizen abbauen bis §e48§f. Vögel landen? §eKlick§f — die Bossbar zählt die Verscheucher."
     - "§eLark§f ist danach in der gleichen Area für Pets. Anderer Quest — der Pfeil wandert, wenn's soweit ist."
   lark_intro:
-    - "Hey. Die Felder sind Jagdgebiet — wilde Tiere, nicht mein Papagei."
-    - "Catch Spheres: eine halten, Tier ansehen, §eRechtsklick§f werfen. Fang §eeins§f, dann wieder mit mir reden."
-    - "Nach dem Fang zeig ich dirs §eAusrüsten§f. Ein Schritt nach dem anderen."
+    - "Die Felder sind Jagdgebiet. Wilde Tiere — nicht mein Papagei."
+    - "Catch Sphere halten, Tier ansehen, §eRechtsklick§f werfen. Fang §eeins§f, dann wieder mit mir reden."
+    - "Danach zeig ich dirs §eAusrüsten§f. Ein Schritt nach dem anderen."
   vex_intro:
     - "Sergeant Vex. Tor zu den §cBorderlands§f — Ödland hinter der Mauer."
     - "Erste Lektion: zehn Gegner. Töten. Husk, Stray, Crawler — egal welche."
-    - "Wenn's schwer wird: Combat-Set aus dem Recipe Book, Boosters am Amboss. Weicheres Gear. Härtere Treffer. Beweg dich."
+    - "Zu hart? Combat-Set aus dem Recipe Book, Boosters am Amboss. Weicheres Gear. Härtere Treffer. Beweg dich."
   fisher_intro:
-    - "Angeln ist einfach: wirf die Leine ins Wasser, warte auf den Biss, und hole ein wenn die Leiste grün wird."
-    - "Verpasst du das Grünfenster, ist der Fisch weg. Brauchst eine Rute? Kauf eine beim Fishmonger — fünf Fische und fertig."
+    - "Leine ins Wasser. Warten auf den Biss. §eREEL§f, wenn die Leiste grün wird."
+    - "Verpasst du das Fenster, ist der Fisch weg. Fang §efünf§f, dann wieder mit mir reden."
   bar_whisper_intro:
-    - "Siehst du die Leiste unten am Bildschirm? Das ist dein §bAetherion Level§f."
-    - "Stats, Unlocks, neue Areas — viel von dieser Welt läuft darüber."
-    - "Spiel weiter. Die Leiste merkt sich das."
+    - "Unten am Bildschirm: §bAetherion Level§f."
+    - "Stats, Unlocks, neue Areas — viel von dieser Welt läuft über diese Leiste."
+    - "Spiel weiter. Sie merkt sich das."
   vince_intro:
-    - "Casino ist direkt hinter mir. Such dir 'ne Maschine. Nicht auf dem Filz heulen."
-    - "Slots und Roulette. Münzen rein. Würde bleibt draußen."
+    - "Casino ist hinter mir. Such dir 'ne Maschine. Nicht auf dem Filz heulen."
+    - "Slots. Roulette. Münzen rein. Würde bleibt in der Tasche."
     - "Ich deal nicht. Ich kommentiere. Die Maschinen machen den Dreck."
-    - "Hungrig? Das Glas ist's. Fütter's. Dann gib mir die Schuld."
+    - "Das Glas ist hungriger als du. Fütter's trotzdem."
   fishmonger_intro:
-    - "Shop. Rute. Rüstung. Bargeld willkommen."
-    - "Dock Pass von Tackle? Gut. Kauf eine T1-Rute, zurück zu ihm für die Lektion."
+    - "Shop. Ruten. Rüstung. Münzen willkommen."
   rite_keeper_intro:
-    - "Rite Warden. Borderlands-Vertrag — T1-Bosse, kein Sightseeing."
-    - "Töte Gegner. Spirit-Fläschchen: §c5%§f T1 · §c10%§f Sturdy · §c15%§f Elites. Die §eBeacon-Säule§f ist der Altar."
+    - "Rite Warden. T1-Bosse. Kein Sightseeing."
+    - "Töte Gegner für Spirit-Fläschchen: §c5%§f T1 · §c10%§f Sturdy · §c15%§f Elites. Die §eBeacon-Säule§f ist der Altar."
     - "Rechtsklick auf hellgraues Pulver mit dem Fläschchen. Zehn Sekunden. Donner. Dann läuft er. Einmal töten — Ritus bestanden."
   arena_proctor_intro:
-    - "Proctor. Dieser Ring bedeutete mal etwas. Dann wurden die Leute vorsichtig."
-    - "Ich hab von Fläschchen alter Borderlands-Bosse gehört — und von einer stärkeren Variante in der Crypt."
-    - "Bring mir eins von den stärkeren. Ich will es untersuchen. Vorsichtig. Wahrscheinlich."
+    - "Proctor. Dieser Ring bedeutete mal etwas."
+    - "Borderlands-Fläschchen sind die Übung. Crypt-Fläschchen sind der Ernstfall."
+    - "Bring mir ein Crypt-Fläschchen. Ich will es untersuchen. Vorsichtig. Wahrscheinlich."
   arena_proctor_vial:
-    - "Da ist es. Stärker als die Borderlands-Variante."
+    - "Da ist es. Stärker als das Borderlands-Zeug."
     - "Komm — wir schauen uns den Ring an. Ich prüfe das Fläschchen unterwegs."
-    - "Nicht dran rumschütteln. Und nicht zu nah atmen."
+    - "Nicht schütteln. Nicht dran schnüffeln."
   arena_proctor_self:
     - "Du hast den Spill gesehen. Ich mach keine Encore-Spaziergänge."
-    - "Nimm das Fläschchen zur leuchtenden Markierung im Ring. Rechtsklick selbst."
+    - "Fläschchen zur leuchtenden Markierung im Ring. Rechtsklick selbst."
     - "Gleicher Donner. Gleiche zehn Sekunden. Weniger meiner Schritte."
   arena_proctor_done:
     - "Ring ist offen. Crypt-Fläschchen auf die leuchtende Markierung — nicht in meine Hand."
-    - "Einmal durchgespielt. Das war der Lehrplan."
-    - "Bring ein neues, wenn du eins hast. Oder auch nicht. Der Pathwarden ist nicht wählerisch."
+    - "Einmal durchgespielt. Das war die Lektion."
+    - "Bring ein neues, wenn du eins hast. Der Pathwarden ist nicht wählerisch."
   farm_isle_guide_intro:
-    - "Portal goes to the Farm Isle — shared fields off the hub farm."
-    - "Farming ten to enter. Same portal brings you back."
+    - "Portal geht zur Farm Isle — geteilte Felder neben der Hub-Farm."
+    - "Farming 10 zum Betreten. Dasselbe Portal bringt dich zurück."
+  forage_pad_guide_intro:
+    - "Schleim-Pad → Forage Isle. Spring. Nicht nachdenken."
+    - "Bäume droppen, was sie sind. Fichte ist Fichte. Birke ist Birke."
+    - "Canopy Clerk auf der Insel will komprimierte Samples. Folge dem Pfeil."
   eldervale_welcome_intro:
     - "Willkommen auf Eldervale."
     - "Mining-Insel. Tiefengestein. Nicht runterfallen."
+  eldervale_upgrade_intro:
+    - "Blaupausen-Schmiede. Tool plus Upgrade Stone. Mehr ist's nicht."
+    - "Tier II, III, IV — Steine werden teuer. Schnell."
+  isle_clerk_intro:
+    - "Persönliche Insel: Aetherion Level 20."
+    - "Nether Star, Slot 9 → Island-Tab. Dort claimen. Ich mach keinen Papierkram."
+  liquidator_intro:
+    - "Kristall-Schreibtisch. Kaufen, verkaufen, oder Mats zu Aether Crystals schmelzen."
+    - "Crystals kommen aus dem offiziellen Shop — oder als Level-Belohnung."
+  merchant_intro:
+    - "Welt-Kisten. Nicht nur diese hier — die spawnen überall."
+    - "Seltenere Kiste, besseres Loot. Entdecken zahlt sich aus."
+    - "Mit mir reden schaltet sie frei. Sample-Kiste neben mir, jederzeit."
+  surveyor_intro:
+    - "Erz-Trolle droppen jetzt Blaupausen. Weiche Erze: Kohle, Eisen, Kupfer."
+    - "Bring eine Seite. Ich stemple sie hier in ein Tool."
+  canopy_clerk_intro:
+    - "Ich will Insel-Holz — komprimiert. Keine Hafen-Reste."
+    - "Foraging 5. Dann ein Compressed Oak, ein Birch, ein Spruce."
+    - "Drei Samples. Fette Auszahlung. Dann geh hacken."
+  root_cellar_intro:
+    - "Mühlstein-Vorrat. Compacted Crops rein. Refined Pantry-Waren raus."
 
 completed:
   egon:
@@ -169,30 +205,126 @@ completed:
     - "Egon hat sein Holz. Behalt die Axt."
     - "Folge dem Pfeil zurück zu §eEgon§f am Pier."
   quartermaster:
-    - "Danke — Kohle erhalten."
-    - "Teleports: Ort einmal freischalten (hinlaufen oder Homestead Marker). Dann /spawns — oder z.B. §e/harbour§f, §e/mines§f."
-    - "Als Nächstes: §eShaft Foreman§f an den Minen. Der gelbe Pfeil oben trackt ihn."
+    - "Kohle ist durch. Mines-Teleport bleibt offen — §e/mines§f."
+    - "Der Foreman wohnt weiter an den Minen, falls du ihn brauchst."
   craftsman:
     - "Schöne Spitzhacke. Du bist bereit für die Minen."
-    - "Als Nächstes: §eShaft Foreman§f. Recipe Book im Blick behalten — später kommt neues Zeug."
+    - "Als Nächstes: §eShaft Foreman§f. Recipe Book im Blick behalten."
   foreman:
     - "Schicht zu. Als Nächstes: §eTemper§f auf dem Weg zum Hub — Booster Tutor."
-    - "Einmal am Amboss fusen, bevor Skills. Weiche Stats zuerst."
+    - "Einmal am Amboss fusen, bevor Skills."
   booster_tutor:
-    - "Amboss gelernt. Booster fused. Gut."
-    - "Als Nächstes: §eMiss Ledger§f in der Capital — Skills im Manager. Dann die Felder."
+    - "Booster fused. Gut. Rezepte bleiben im §eRecipe Book§f."
+    - "Als Nächstes: §eMiss Ledger§f in der Capital — Skills. Dann die Felder."
   ledger:
     - "Skill ausgerüstet. Gut."
-    - "Als Nächstes: die Felder — §eFarmer§f (Weizen) und §eLark§f (Pets) in der gleichen Area."
+    - "Als Nächstes: die Felder — §eFarmer§f (Weizen) und §eLark§f (Pets), gleiche Area."
     - "Komm nach beiden zurück. Ich schließe das Tutorial — und ich hab ein Hilfemenü, wenn du's brauchst."
   farmer:
     - "Weizen erledigt. Gute Arbeit."
-    - "Später neugierig: Farm-Guide + Portal zur Farm Isle am anderen Ende der Scheune."
-    - "§eLark§f fertig machen, falls noch offen — dann zurück zu §eMiss Ledger§f für den Stempel."
+    - "§eLark§f fertig machen, falls noch offen — dann §eMiss Ledger§f, oder §e/capital§f."
   lark:
     - "Fang erledigt. Pets sind klar."
-    - "§eMiss Ledger§f schließt die Orientierung. Hol dir den Stempel — Fragen an ihren Schreibtisch, nicht an mich."
+    - "§eMiss Ledger§f schließt die Orientierung — oder §e/capital§f. Fragen an ihren Schreibtisch."
   vex:
-    - "Zehn erledigt. Tor bleibt offen."
-    - "Kleiner Tipp — Combat-Set und Boosters erst etwas pushen, bevor's härter wird."
-    - "Willst Bosse? Rite Warden im Ödland. Oder verschwinde produktiv."
+    - "Zehn erledigt. Stahl abgeheftet. Du bist weniger ein Risiko."
+    - "Kleiner Tipp — Combat-Set und Boosters, bevor's härter wird."
+    - "Willst Bosse? Rite Warden im Ödland. Oder lass. Die Map gehört dir."
+  fisher:
+    - "Fang gezählt. Leine klar."
+    - "Schau dir irgendwann die Rute an — manches Tool hier levelt."
+  merchant:
+    - "Kisten bleiben frei. Sample neben mir, mehr draußen. Seltenere Kiste, besseres Loot."
+  surveyor:
+    - "Schreibtisch bleibt offen. Sammlung oben, Blaupause unten ins Tool stempeln."
+    - "Trolle kriechen jede Ader in dieser Mine. Grab, wenn du Seiten willst."
+  canopy_clerk:
+    - "Samples abgeheftet. Eiche, Birke, Fichte — Canopy sagt ja."
+    - "Komm zurück, wenn die Insel einen vierten Baum erfindet. Bis dahin: hacken."
+
+say:
+  lumberjack:
+    egon_first: "Erst mit Egon am Pier reden. Dann hacken wir."
+    lesson: "Egon braucht Eiche. Hier kommt die Axt-Lektion."
+    take_axe: "Nimm die Axt. Einmal zuschauen — langsam — dann hackst du."
+    replay: "Immer noch dran? Nochmal — warte auf grünes CHOP."
+    click_trunk: "Linksklick auf einen leuchtenden Stamm — wenn CHOP grün ist, nochmal klicken."
+    ten_oak: "Zehn Eichenstämme zu §eEgon §fam Pier."
+    demo_chop: "Linksklick auf einen leuchtenden Stamm — grünes CHOP, dann schwingen."
+    demo_egon: "Zehn Eichenstämme zu Egon am Pier."
+  lark:
+    nice_catch: "Schöner Fang. Die Tasche quietscht."
+    equip_now: "Jetzt ausrüsten: §eManager → Pets§f (blinkt). Öffnen, Fang wählen, ausrüsten. Dann sind wir durch."
+    catch_ok: "Fang erledigt. Pets sind klar."
+    farmer_left: "§eFarmer§f will noch Weizen, falls du ihn übersprungen hast — gleiche Area."
+  craftsman:
+    pick_ok: "Da ist sie — Mining Pickaxe. Gute Arbeit."
+  surveyor:
+    got_page: "Seite da. Schreibtisch ist deins — stemple sie in ein Tool."
+    trolls: "Trolle kriechen jetzt durch die Adern. Jagt sie — sie droppen Blaupausen."
+    bring_page: "Bring eine Seite. Ich stemple sie hier in ein Tool."
+  eldervale_upgrade:
+    open: "Schmiede ist heiß. Blaupausen-Tool + Upgrade Stone. Ich öffne den Tisch."
+  root_cellar:
+    first: "Mühlstein-Vorrat. Compacted Crops rein. Refined Pantry-Waren raus."
+  quartermaster:
+    coal_ok: "Kohle verbucht. Danke."
+    mines_tp: "Mines-Teleport ist offen — Manager → Teleports, oder §e/mines§f."
+    next_foreman: "Als Nächstes: §eShaft Foreman§f an den Minen. Gelber Pfeil oben trackt ihn."
+  foreman:
+    shift_done: "Schicht zu. Richtung Hub — Stopp bei §eTemper§f (Booster Tutor) unterwegs."
+  ledger:
+    skill_ok: "Skill ausgerüstet. Gut."
+    next_fields: "Als Nächstes: die Felder. §eFarmer§f braucht Weizen. §eLark§f ist in der gleichen Area für Pets. Dann zurück zu mir."
+    farmer_hint: "Wenn du soweit bist: die Felder. §eFarmer§f braucht Weizen — ernten und Vögel verscheuchen."
+    lark_hint: "§eLark§f ist in der gleichen Area für Pets — Catch Spheres, dann ausrüsten. Am Zaun mit ihm reden."
+    come_back: "§aKomm nach Farmer und Lark zurück. §fIch schließe die Orientierung — und ich hab ein Hilfemenü, wenn du hängen bleibst."
+    refresh: "Auffrischung? Hier ist der Schreibtisch."
+    graduated: "Gut gemacht. Orientierung abgeheftet — die Map gehört dir."
+    arrow_habit: "Eine Gewohnheit: immer den §egelben Pfeil oben§f im Blick. Der zeigt den aktuellen Job."
+    hint_vex: "§cSergeant Vex§f am Borderlands-Tor könnte spannend sein. Hilfe später? Red mit mir."
+    hint_rite: "§cRite Warden§f im Ödland könnte spannend sein. Hilfe später? Red mit mir."
+    hint_help: "Hilfe später? Red mit mir."
+  vex:
+    ten_down: "Zehn erledigt. Stahl abgeheftet. Du bist weniger ein Risiko."
+    gear_tip: "§7Kleiner Tipp — härte dein Gear etwas, bevor du tiefer gehst. Recipe Book + Amboss helfen."
+    rite_hint: "Optional als Nächstes — §cRite Warden§f. Borderlands-Bosse, Pulver-Altar. Kein Papierkram von mir."
+  booster:
+    next_ledger: "Als Nächstes — §dMiss Ledger§f in der Capital. Skills."
+    fused: "Booster fused. Amboss bleibt im Manager."
+  farmer:
+    wheat_ok: "Weizen erledigt. Gute Arbeit."
+    isle_peek: "Anderes Ende der Scheune — NPC und Portal zur Farm Isle. Irgendwann einen Blick wert."
+  fields:
+    back_ledger: "Zurück zu §dMiss Ledger§f — sie schließt die Orientierung. Oder §e/capital§f."
+    done_ledger: "§aFelder erledigt. §f§dMiss Ledger§f stempelt das Tutorial zu. Fragen gehen an sie."
+  rite:
+    logged: "Ritus verbucht. Der Altar bleibt. Halt die Fläschchen fließend."
+    free: "Du bist frei. Ödland, Schreibtische, whatever. Keine Leine von mir."
+  fisher:
+    catch_ok: "Fang gezählt. Leine klar."
+    rod_tip: "Schau dir irgendwann die Rute an — manches Tool hier levelt."
+  egon:
+    logs_ok: "Holz erhalten. Kit bleibt deins — nicht verlieren."
+    next_qm: "Der Quartiermeister sitzt hinter dem kleinen Markt — als Nächstes mit ihm reden."
+  proctor:
+    had_tour: "Die Tour hattest du. Nutze die leuchtende Markierung."
+    bring_vial: "Bring das Crypt-Fläschchen, wenn du soweit bist."
+    walk: "Wir schauen uns den Ring an. Ich prüfe das Fläschchen unterwegs."
+    nope: "Nein. Gefahrenzulage ist ein Mythos. §fDas ist ein §cdu§f-Problem. Tschüss."
+  redirect:
+    tutorial: "Mach zuerst das Tutorial fertig."
+    ledger_fields: "§eMiss Ledger §fschließt die Orientierung nach den Feldern."
+    egon: "§aEgon §fam Pier — erst Eiche. Dann der Quartiermeister."
+    qm: "§eQuartiermeister §fhinter dem kleinen Markt — als Nächstes Kohle."
+    foreman: "§eShaft Foreman §fan der Schäbigen Mine — seine Schicht fertig machen."
+    temper: "§eTemper §f— Booster Tutor. Einmal fusen, dann weiter."
+    ledger_skills: "§dMiss Ledger §fin der Capital — Skills im Manager."
+    farmer: "§eFarmer §fauf den Feldern — als Nächstes Weizen."
+    lark: "§dLark §fam Zaun — ein Fang für seine Sammlung."
+    stamp: "§dMiss Ledger §fschließt die Orientierung. Hol dir den Stempel."
+    rite_early: "Zu früh. Das Ödland verteilt keine Geister an weiches Gear."
+    rite_temper: "§eTemper §fam Hafen — einmal Booster fusen. Dann Orientierung weiter."
+    ledger_early: "Zu früh. Skills sind noch zu."
+    ledger_foreman: "§eShaft Foreman §fan den Minen — seine Schicht. Dann komm zurück."
+  bring_items: "Bring erst die Items."

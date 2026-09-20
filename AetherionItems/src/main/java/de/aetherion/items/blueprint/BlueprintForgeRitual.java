@@ -267,7 +267,7 @@ public final class BlueprintForgeRitual implements Listener {
             clearPending(player.getUniqueId());
             forgehandSay(player, "Caught you — Tier "
                     + BlueprintUpgrade.roman(BlueprintUpgrade.tier(pending))
-                    + " finished while you were gone.");
+                    + ". Still warm.");
         }, 40L);
     }
 
