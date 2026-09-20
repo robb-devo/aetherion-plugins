@@ -24,8 +24,8 @@ messages:
   missing-location: "§cThat spawn has no location yet. An admin must stand there and run §f/hubadmin set {id}§c."
   no-spawn: "§cNo spawn is set. An admin should stand at the harbour and run §f/hubadmin set harbour§c."
 
-# Menu: left/right edge columns stay glass. Content row slots 10–16.
-# Capital / Farm / Borderlands / Ore Ridge unlock by walking near (discover-radius + title popup).
+# Menu: left/right edge columns stay glass. Content row slots 10–16, plus 19–22.
+# Capital / Farm / Borderlands / Ore Ridge / Eldervale / Fishing Isle unlock by walking near.
 spawns:
   harbour:
     display-name: "Harbour"
@@ -94,6 +94,21 @@ spawns:
     slot: 20
     unlocked-by-default: false
     discover-radius: 36
+
+  fishing:
+    display-name: "Fishing Isle"
+    description: "Fishing Isle north of Main. Walk in after the jump pad to unlock."
+    icon: FISHING_ROD
+    slot: 22
+    unlocked-by-default: false
+    discover-radius: 80
+    location:
+      world: world
+      x: -365.5
+      y: 63.0
+      z: -487.5
+      yaw: 0
+      pitch: 0
 
 # /aetherpaste — FAWE async Eldervale island schematics (console/ops).
 # Schems are loaded from plugins/FastAsyncWorldEdit/schematics or WorldEdit/schematics.
