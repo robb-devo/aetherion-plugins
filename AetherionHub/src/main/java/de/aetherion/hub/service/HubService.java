@@ -31,7 +31,8 @@ public final class HubService {
             "farm_isle",
             "borderlands",
             "colosseum",
-            "eldervale"
+            "eldervale",
+            "fishing"
     );
 
     private static final String[] RETIRED_SPAWN_IDS = {
@@ -84,6 +85,7 @@ public final class HubService {
         changed |= ensureSpawn("borderlands", "Borderlands", "Beyond Vex's gate. Hostile wastes.", "COARSE_DIRT", 21);
         changed |= ensureSpawn("colosseum", "Colosseum", "Proctor's ring — Crypt vials, T2 bosses. Unlocks with the Proctor.", "SANDSTONE", 19);
         changed |= ensureSpawn("eldervale", "Eldervale", "Mining island past the slime jump pad. Walk in to unlock.", "DEEPSLATE_DIAMOND_ORE", 20);
+        changed |= ensureSpawn("fishing", "Fishing Isle", "Fishing Isle north of Main. Walk in after the jump pad to unlock.", "FISHING_ROD", 22);
 
         if (plugin.getConfig().getConfigurationSection("spawns.harbour") != null
                 && !plugin.getConfig().getBoolean("spawns.harbour.unlocked-by-default", false)) {
@@ -96,6 +98,8 @@ public final class HubService {
         changed |= ensureDiscoverRadius("farm", 28);
         changed |= ensureDiscoverRadius("borderlands", 36);
         changed |= ensureDiscoverRadius("eldervale", 36);
+        changed |= ensureDiscoverRadius("fishing", 80);
+        changed |= ensureDefaultLocation("fishing", "world", -365.5, 63.0, -487.5, 0f, 0f);
         // Colosseum: no walk-in discover — soft gate until Proctor unlocks it.
 
         if (changed) {
@@ -118,11 +122,14 @@ public final class HubService {
         changed |= applyLayout("borderlands", "Borderlands", "Beyond Vex's gate. Hostile wastes. Walk in to unlock.", "COARSE_DIRT", 21, false);
         changed |= applyLayout("colosseum", "Colosseum", "Proctor's ring — Crypt vials, T2 bosses. Unlocks with the Proctor.", "SANDSTONE", 19, false);
         changed |= applyLayout("eldervale", "Eldervale", "Mining island past the slime jump pad. Walk in to unlock.", "DEEPSLATE_DIAMOND_ORE", 20, false);
+        changed |= applyLayout("fishing", "Fishing Isle", "Fishing Isle north of Main. Walk in after the jump pad to unlock.", "FISHING_ROD", 22, false);
         changed |= ensureDiscoverRadius("ore_ridge", 40);
         changed |= ensureDiscoverRadius("capital", 48);
         changed |= ensureDiscoverRadius("farm", 28);
         changed |= ensureDiscoverRadius("borderlands", 36);
         changed |= ensureDiscoverRadius("eldervale", 36);
+        changed |= ensureDiscoverRadius("fishing", 80);
+        changed |= ensureDefaultLocation("fishing", "world", -365.5, 63.0, -487.5, 0f, 0f);
         if (changed) {
             plugin.saveConfig();
             reload();
@@ -139,6 +146,30 @@ public final class HubService {
         return true;
     }
 
+    /** Plant a teleport only when the spawn has no location yet (fresh install / post-purge). */
+    private boolean ensureDefaultLocation(
+            String id,
+            String world,
+            double x,
+            double y,
+            double z,
+            float yaw,
+            float pitch
+    ) {
+        String path = "spawns." + id + ".location";
+        if (plugin.getConfig().getConfigurationSection(path) != null
+                || plugin.getConfig().contains(path + ".world")) {
+            return false;
+        }
+        plugin.getConfig().set(path + ".world", world);
+        plugin.getConfig().set(path + ".x", x);
+        plugin.getConfig().set(path + ".y", y);
+        plugin.getConfig().set(path + ".z", z);
+        plugin.getConfig().set(path + ".yaw", (double) yaw);
+        plugin.getConfig().set(path + ".pitch", (double) pitch);
+        return true;
+    }
+
     /** Keep discover-radius on HubSpawn so /hubadmin set does not wipe it via saveSpawns. */
     private void stampDiscoverRadii() {
         stampDiscover("ore_ridge", 40);
@@ -146,6 +177,7 @@ public final class HubService {
         stampDiscover("farm", 28);
         stampDiscover("borderlands", 36);
         stampDiscover("eldervale", 36);
+        stampDiscover("fishing", 80);
     }
 
     private void stampDiscover(String id, double fallback) {

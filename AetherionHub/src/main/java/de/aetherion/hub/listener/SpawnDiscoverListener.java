@@ -26,7 +26,7 @@ import java.util.Set;
 public final class SpawnDiscoverListener implements Listener, Runnable {
 
     private static final Set<String> ORGANIC = Set.of(
-            "ore_ridge", "farm", "farm_isle", "capital", "borderlands", "eldervale"
+            "ore_ridge", "farm", "farm_isle", "capital", "borderlands", "eldervale", "fishing"
     );
 
     private final AetherionHub plugin;
@@ -166,6 +166,9 @@ public final class SpawnDiscoverListener implements Listener, Runnable {
         }
         if ("eldervale".equalsIgnoreCase(spawnId)) {
             return 36.0;
+        }
+        if ("fishing".equalsIgnoreCase(spawnId)) {
+            return 80.0;
         }
         return 0;
     }
