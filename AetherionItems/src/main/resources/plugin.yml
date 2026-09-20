@@ -183,5 +183,5 @@ permissions:
     description: Monkey content rank (NPC / quest helper + celestial dye)
     default: false
   aetherion.rank.beta:
-    description: Beta Tester ultra rank (celestial cosmetics only, no tools)
+    description: Beta Tester ultra rank (rainbow cosmetics only, no tools)
     default: false

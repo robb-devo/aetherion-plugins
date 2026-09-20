@@ -2,6 +2,7 @@ package de.aetherion.items.listener;
 
 import de.aetherion.items.AetherionItems;
 import de.aetherion.items.rank.CelestialDye;
+import de.aetherion.items.rank.RainbowDye;
 
 import io.papermc.paper.event.player.AsyncChatEvent;
 
@@ -16,9 +17,9 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 
 /**
- * Chat and compact list share the same prefix as hold-TAB
- * ({@code %aetherion_tab_prefix%} / CelestialDye {@code #B2FFFF}).
- * LuckPerms rainbow prefixes are not used.
+ * Chat and compact list share {@code %aetherion_tab_prefix%}:
+ * Monkey = {@link de.aetherion.items.rank.CelestialDye} {@code #B2FFFF},
+ * Beta = {@link de.aetherion.items.rank.RainbowDye} (original rainbow).
  */
 public final class ChatFormatListener implements Listener {
 
@@ -70,8 +71,11 @@ public final class ChatFormatListener implements Listener {
         return value == null ? "" : value.replace("%", "%%");
     }
 
-    /** Exposed for tests — chat must not fall back to a rainbow LP prefix. */
     public static boolean usesCelestialForGroup(String group) {
         return CelestialDye.isCelestialGroup(group);
+    }
+
+    public static boolean usesRainbowForGroup(String group) {
+        return RainbowDye.isRainbowGroup(group);
     }
 }

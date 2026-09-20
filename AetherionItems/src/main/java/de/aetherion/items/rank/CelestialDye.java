@@ -5,7 +5,7 @@ import org.bukkit.Bukkit;
 /**
  * Reusable Hypixel SkyBlock–style celestial dye. Anchored on Peter's
  * primary hex {@link #PRIMARY} ({@code #B2FFFF}) with cyan shimmer variants —
- * not a rainbow. Shared by Monkey, Beta Tester, and any future ultra rank.
+ * not a rainbow. <strong>Monkey only</strong> — Beta uses {@link RainbowDye}.
  * <p>
  * Output uses TAB / LuckPerms hex ({@code &#RRGGBB}) so
  * {@code %aetherion_tab_prefix%} and TAB animations render the same palette.
@@ -50,10 +50,7 @@ public final class CelestialDye {
         if (group == null || group.isBlank()) {
             return false;
         }
-        return switch (group.toLowerCase(java.util.Locale.ROOT)) {
-            case "monkey", "beta" -> true;
-            default -> false;
-        };
+        return "monkey".equalsIgnoreCase(group);
     }
 
     /** Animated badge for a known ultra group, e.g. {@code monkey} → {@code [Monkey]}. */
@@ -71,7 +68,6 @@ public final class CelestialDye {
         }
         return switch (group.toLowerCase(java.util.Locale.ROOT)) {
             case "monkey" -> "[Monkey]";
-            case "beta" -> "[Beta]";
             default -> "[" + Character.toUpperCase(group.charAt(0)) + group.substring(1).toLowerCase(java.util.Locale.ROOT) + "]";
         };
     }

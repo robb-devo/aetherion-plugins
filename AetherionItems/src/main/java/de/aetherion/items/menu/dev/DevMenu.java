@@ -2316,10 +2316,11 @@ public class DevMenu {
         ));
         inventory.setItem(38, button(
                 rankIcon("monkey"),
-                (monkeyOn ? "§a▶ " : "") + "§d§lMonkey §8· celestial",
+                (monkeyOn ? "§a▶ " : "") + "§b§lMonkey §8· celestial",
                 "rank-set:monkey",
                 "§7Ultra rank (weight 95) — first Homie hub.",
-                "§7Celestial dye #B2FFFF (TAB + chat + list).",
+                "§7Celestial dye #B2FFFF everywhere",
+                "§7(TAB + compact list + chat + nametag).",
                 "§7Content tools: flight, /aethernpc, Resources, shards.",
                 "§7Not full admin. Never overwritten by XP.",
                 monkeyOn ? "§eClick again to remove." : "§7Click to grant.",
@@ -2327,10 +2328,11 @@ public class DevMenu {
         ));
         inventory.setItem(39, button(
                 rankIcon("beta"),
-                (betaOn ? "§a▶ " : "") + "§b§lBeta Tester §8· celestial",
+                (betaOn ? "§a▶ " : "") + "§d§lBeta Tester §8· rainbow",
                 "rank-set:beta",
                 "§7Ultra rank (weight 93) — same EXTRA path.",
-                "§7Same celestial dye as Monkey (#B2FFFF).",
+                "§7Original rainbow letters (cyan/pink/gold).",
+                "§7Not Monkey's #B2FFFF celestial.",
                 "§7Cosmetic only — no extra permissions.",
                 "§7Never overwritten by XP.",
                 betaOn ? "§eClick again to remove." : "§7Click to grant.",

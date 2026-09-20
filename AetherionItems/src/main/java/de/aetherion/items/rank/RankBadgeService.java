@@ -40,8 +40,8 @@ public final class RankBadgeService implements Listener {
             new Rank("mvpplusplus", 90, "&6[MVP&c++&6] &f", "§6MVP§c++"),
             // Ultra extras — high TAB, never parked at 50 next to mythwright.
             // Beta 93 (cosmetic only) · Monkey 95 (content + celestial) · Admin 100.
-            new Rank("beta", 93, CelestialDye.betaPrefixStatic(), "§b§lBeta Tester"),
-            new Rank("monkey", 95, CelestialDye.monkeyPrefixStatic(), "§d§lMonkey"),
+            new Rank("beta", 93, RainbowDye.prefixStatic(), "§d§lBeta Tester"),
+            new Rank("monkey", 95, CelestialDye.monkeyPrefixStatic(), "§b§lMonkey"),
             new Rank("admin", 100, "&c[Admin] &f", "§cAdmin")
     );
 
@@ -51,7 +51,7 @@ public final class RankBadgeService implements Listener {
      * EXTRA + high TAB weight (near admin / mvpplusplus) + Dev Menu ultra slot.
      * Never add them to the Adventurer→Aetherion progression row.
      * <p>
-     * Monkey = content tools + celestial dye. Beta = celestial cosmetics only.
+     * Monkey = content tools + celestial #B2FFFF. Beta = rainbow cosmetics only.
      * TAB GROUPS order (Monkey first among Homie cosmetics):
      * {@code admin, monkey, beta, mvpplusplus, …progression}.
      * <p>
@@ -89,7 +89,7 @@ public final class RankBadgeService implements Listener {
             }
         }, 40L);
         // Compact player-list / chat nametag shimmer — same #B2FFFF dye as hold-TAB.
-        plugin.getServer().getScheduler().runTaskTimer(plugin, service::paintOnlineCelestial, 80L, 8L);
+        plugin.getServer().getScheduler().runTaskTimer(plugin, service::paintOnlineDyed, 80L, 8L);
         return service;
     }
 
@@ -201,6 +201,9 @@ public final class RankBadgeService implements Listener {
         if (CelestialDye.isCelestialGroup(extra.group())) {
             return CelestialDye.badgeForGroup(extra.group()).trim();
         }
+        if (RainbowDye.isRainbowGroup(extra.group())) {
+            return RainbowDye.badge().trim();
+        }
         return extra.display();
     }
 
@@ -226,7 +229,8 @@ public final class RankBadgeService implements Listener {
             prefix.append(switch (extra.group()) {
                 case "admin" -> "§c[Admin] ";
                 case "mvpplusplus" -> "§6[MVP§c++§6] ";
-                case "monkey", "beta" -> CelestialDye.badgeForGroup(extra.group());
+                case "monkey" -> CelestialDye.badgeForGroup(extra.group());
+                case "beta" -> RainbowDye.badge();
                 default -> "";
             });
         }
@@ -457,10 +461,13 @@ public final class RankBadgeService implements Listener {
         player.customName(name);
     }
 
-    private void paintOnlineCelestial() {
+    private void paintOnlineDyed() {
         for (Player player : Bukkit.getOnlinePlayers()) {
             Rank extra = extraFor(player.getUniqueId());
-            if (extra != null && CelestialDye.isCelestialGroup(extra.group())) {
+            if (extra == null) {
+                continue;
+            }
+            if (CelestialDye.isCelestialGroup(extra.group()) || RainbowDye.isRainbowGroup(extra.group())) {
                 paint(player);
             }
         }

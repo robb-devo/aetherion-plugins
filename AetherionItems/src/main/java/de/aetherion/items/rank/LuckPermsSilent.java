@@ -89,7 +89,7 @@ final class LuckPermsSilent {
             denyFullDev(group);
             api.getGroupManager().saveGroup(group);
         });
-        // Cosmetic-only ultra. Same celestial dye as Monkey. No tools.
+        // Cosmetic-only ultra. Rainbow letters (not Monkey celestial). No tools.
         api.getGroupManager().createAndLoadGroup("beta").thenAccept(group -> {
             if (group == null) {
                 return;

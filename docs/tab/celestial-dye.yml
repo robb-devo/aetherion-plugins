@@ -1,12 +1,16 @@
 # Copy-paste for live TAB + LuckPerms (MMO-R).
-# Shared celestial dye for ultra ranks Monkey (content + dye) and Beta (dye only).
-# Primary Hypixel Celestial Dye: #B2FFFF (Peter). Shimmer stays in the ice-cyan family.
-# In-game prefix also comes from %aetherion_tab_prefix% (AetherionItems RankBadgeService)
-# which cycles the same hex via CelestialDye.
+#
+# Monkey  = Hypixel Celestial Dye #B2FFFF (ice-cyan shimmer). EVERYWHERE.
+# Beta    = original Homie rainbow (cyan → pink → purple → gold). EVERYWHERE.
+# Never mix: Monkey must not use rainbow. Beta must not use #B2FFFF CelestialDye.
+#
+# In-game prefixes come from %aetherion_tab_prefix% (RankBadgeService.tabPrefix):
+#   monkey → CelestialDye
+#   beta   → RainbowDye
+# ChatFormatListener, compact/right player list, and nametag use the same method.
 
 # --- plugins/TAB/animations.yml ---
 # change-interval is milliseconds. 200ms ≈ Hypixel dye shimmer.
-# Frames match CelestialDye.animationFrames(label) (letter colors shift; [] do not consume a hue).
 Aetherion_Celestial:
   change-interval: 200
   texts:
@@ -18,19 +22,19 @@ Aetherion_Celestial:
     - "&#A6FBFF[&#A6FBFFM&#7EF0F8o&#6EE8F2n&#8CF4FCk&#B2FFFFe&#C8FFFFy&#DCFFFF]"
     - "&#7EF0F8[&#7EF0F8M&#6EE8F2o&#8CF4FCn&#B2FFFFk&#C8FFFFe&#DCFFFFy&#A6FBFF]"
 
-# Optional second animation if TAB groups.yml wants a [Beta] label (same palette).
-Aetherion_Celestial_Beta:
+# Beta rainbow — original Monkey flashy letters. Not #B2FFFF.
+Aetherion_Rainbow:
   change-interval: 200
   texts:
-    - "&#6EE8F2[&#6EE8F2B&#8CF4FCe&#B2FFFFt&#C8FFFFa&#DCFFFF]"
-    - "&#8CF4FC[&#8CF4FCB&#B2FFFFe&#C8FFFFt&#DCFFFFa&#A6FBFF]"
-    - "&#B2FFFF[&#B2FFFFB&#C8FFFFe&#DCFFFFt&#A6FBFFa&#7EF0F8]"
-    - "&#C8FFFF[&#C8FFFFB&#DCFFFFe&#A6FBFFt&#7EF0F8a&#6EE8F2]"
-    - "&#DCFFFF[&#DCFFFFB&#A6FBFFe&#7EF0F8t&#6EE8F2a&#8CF4FC]"
-    - "&#A6FBFF[&#A6FBFFB&#7EF0F8e&#6EE8F2t&#8CF4FCa&#B2FFFF]"
-    - "&#7EF0F8[&#7EF0F8B&#6EE8F2e&#8CF4FCt&#B2FFFFa&#C8FFFF]"
+    - "&#55FFFF[&#55FFFFB&#7CEBFFe&#B89AFFt&#FF7AEEa&#FF8A88]"
+    - "&#7CEBFF[&#7CEBFFB&#B89AFFe&#FF7AEEt&#FF8A88a&#FFC15A]"
+    - "&#B89AFF[&#B89AFFB&#FF7AEEe&#FF8A88t&#FFC15Aa&#FFE08A]"
+    - "&#FF7AEE[&#FF7AEEB&#FF8A88e&#FFC15At&#FFE08Aa&#55FFFF]"
+    - "&#FF8A88[&#FF8A88B&#FFC15Ae&#FFE08At&#55FFFFa&#7CEBFF]"
+    - "&#FFC15A[&#FFC15AB&#FFE08Ae&#55FFFFt&#7CEBFFa&#B89AFF]"
+    - "&#FFE08A[&#FFE08AB&#55FFFFe&#7CEBFFt&#B89AFFa&#FF7AEE]"
 
-# Backward-compatible alias — older live TAB configs used this name.
+# Backward-compatible alias — older live TAB configs used this name for Monkey.
 Aetherion_Monkey:
   change-interval: 200
   texts:
@@ -44,40 +48,32 @@ Aetherion_Monkey:
 
 # --- plugins/TAB/groups.yml (add / merge) ---
 # sorting-types GROUPS list: Monkey is the first Homie hub (after Admin is fine).
-# Required order:
 #   groups: [admin, monkey, beta, mvpplusplus, aetherion, eternal, empyrean, ascendant,
 #            sovereign, celestine, aetherborn, mythwright, legend, champion, veteran, adventurer]
 #
-# Use the SAME celestial prefix for hold-TAB, compact/right player list, and scoreboard.
-# Do NOT use %luckperms_prefix% for Monkey/Beta — that can still be the old rainbow LP node.
+# Prefer PlaceholderAPI so chat / compact list / hold-TAB stay in lockstep:
+#   tabprefix: "%aetherion_tab_prefix%"
+#   tagprefix: "%aetherion_tab_prefix%"
+#   customtabname: "%aetherion_list_name%"
 #
+# Or animations (must stay split — do not give Beta Aetherion_Celestial):
 # monkey:
 #   tabprefix: "%animation:Aetherion_Celestial% "
 #   tagprefix: "%animation:Aetherion_Celestial% "
-#   customtabname: "%aetherion_list_name%"
-#   # compact / layout / scoreboard player list:
-#   #   %aetherion_tab_prefix%  or  %aetherion_list_prefix%  or  %aetherion_nametag%
-#
 # beta:
-#   tabprefix: "%animation:Aetherion_Celestial_Beta% "
-#   tagprefix: "%animation:Aetherion_Celestial_Beta% "
-#   customtabname: "%aetherion_list_name%"
+#   tabprefix: "%animation:Aetherion_Rainbow% "
+#   tagprefix: "%animation:Aetherion_Rainbow% "
 #
-# Chat is owned by AetherionItems ChatFormatListener (Adventure + CelestialDye #B2FFFF).
-# LP group prefix is also rewritten to CelestialDye on plugin enable — not rainbow.
+# Do NOT use %luckperms_prefix% for these ultras if the live LP node is stale.
 
 # --- LuckPerms ---
-# Monkey (content tools + celestial):
-#   Preferred: Dev Menu → Ranks → Monkey
-#   Fallback: /lp user <name> parent set monkey
+# Monkey (content tools + celestial #B2FFFF):
+#   Dev Menu → Ranks → Monkey
 #   /lp group monkey setweight 95
-#   Sync on enable also DENIES aetherion.dev (full admin) on the monkey group.
+#   Prefix rewritten to CelestialDye on plugin enable.
 #
-# Beta Tester (celestial cosmetics only — no tools):
-#   Preferred: Dev Menu → Ranks → Beta Tester
-#   Fallback: /lp user <name> parent set beta
+# Beta Tester (rainbow cosmetics only — no tools):
+#   Dev Menu → Ranks → Beta Tester
 #   /lp group beta setweight 93
+#   Prefix rewritten to RainbowDye on plugin enable.
 #   No aetherion.dev / aetherion.dev.content / flight / npc.editor.
-#
-# Palette (shimmer of #B2FFFF):
-#   #6EE8F2 #8CF4FC #B2FFFF #C8FFFF #DCFFFF #A6FBFF #7EF0F8

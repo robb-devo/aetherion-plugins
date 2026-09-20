@@ -37,13 +37,19 @@ class CelestialDyeTest {
     @Test
     void reusableLabels() {
         assertEquals("[Monkey]", CelestialDye.labelForGroup("monkey"));
-        assertEquals("[Beta]", CelestialDye.labelForGroup("beta"));
         assertTrue(CelestialDye.isCelestialGroup("monkey"));
-        assertTrue(CelestialDye.isCelestialGroup("BETA"));
+        assertFalse(CelestialDye.isCelestialGroup("BETA"), "Beta must not use CelestialDye");
         assertFalse(CelestialDye.isCelestialGroup("admin"));
-        assertEquals(7, CelestialDye.animationFrames("[Beta]").length);
         assertEquals(CelestialDye.prefixStatic("[Monkey]"), CelestialDye.monkeyPrefixStatic());
-        assertEquals(CelestialDye.prefixStatic("[Beta]"), CelestialDye.betaPrefixStatic());
+        assertTrue(RainbowDye.isRainbowGroup("beta"));
+        assertFalse(RainbowDye.isRainbowGroup("monkey"));
+        String rainbow = RainbowDye.rainbow("[Beta]", 0);
+        assertTrue(rainbow.contains("&#FF7AEE") || rainbow.contains("&#FFC15A"), rainbow);
+        assertFalse(rainbow.contains(CelestialDye.hex(CelestialDye.PRIMARY)),
+                "Beta rainbow must not be #B2FFFF celestial: " + rainbow);
+        String monkey = CelestialDye.shimmer("[Monkey]", 0);
+        assertTrue(monkey.contains(CelestialDye.hex(CelestialDye.PRIMARY)), monkey);
+        assertFalse(monkey.contains("&#FF7AEE"), "Monkey must not use rainbow pink: " + monkey);
     }
 
     @Test
@@ -81,5 +87,23 @@ class CelestialDyeTest {
         assertTrue(RankBadgeService.rankWeight("monkey") > RankBadgeService.rankWeight("beta"));
         assertTrue(RankBadgeService.rankWeight("beta") > RankBadgeService.rankWeight("mvpplusplus"));
         assertTrue(RankBadgeService.rankWeight("monkey") > RankBadgeService.rankWeight("aetherion"));
+    }
+
+    @Test
+    void storedPrefixesStaySplit() {
+        String monkey = prefixOf("monkey");
+        String beta = prefixOf("beta");
+        assertTrue(monkey.contains(CelestialDye.hex(CelestialDye.PRIMARY)), monkey);
+        assertFalse(monkey.contains("&#FF7AEE"), monkey);
+        assertTrue(beta.contains("&#FF7AEE") || beta.contains("&#FFC15A"), beta);
+        assertFalse(beta.contains(CelestialDye.hex(CelestialDye.PRIMARY)), beta);
+    }
+
+    private static String prefixOf(String group) {
+        return RankBadgeService.RANKS.stream()
+                .filter(rank -> rank.group().equals(group))
+                .findFirst()
+                .orElseThrow()
+                .prefix();
     }
 }
