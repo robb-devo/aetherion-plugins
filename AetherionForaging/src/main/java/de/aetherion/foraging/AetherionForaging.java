@@ -1,5 +1,6 @@
 package de.aetherion.foraging;
 
+import de.aetherion.core.npc.FancyNpcSkins;
 import de.aetherion.foraging.command.ForageCommand;
 import de.aetherion.foraging.habitat.ForageHabitatService;
 import de.aetherion.foraging.island.ForageDisplayGuard;
@@ -153,6 +154,10 @@ public class AetherionForaging extends JavaPlugin {
         }
         if (!getConfig().contains("isle-guide.visibility-distance")) {
             getConfig().set("isle-guide.visibility-distance", 48);
+        }
+        String guideSkin = getConfig().getString("isle-guide.skin", "");
+        if (FancyNpcSkins.needsRewrite(guideSkin)) {
+            getConfig().set("isle-guide.skin", FancyNpcSkins.DEFAULT_TEXTURE_URL);
         }
         if (!getConfig().contains("rituals.placed")) {
             getConfig().set("rituals.placed", false);

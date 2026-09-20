@@ -2,6 +2,7 @@ package de.aetherion.foraging.npc;
 
 import de.aetherion.core.entity.DisplayEntities;
 import de.aetherion.core.npc.FancyNpcFacade;
+import de.aetherion.core.npc.FancyNpcSkins;
 import de.aetherion.foraging.AetherionForaging;
 import de.aetherion.foraging.ForageKeys;
 
@@ -36,6 +37,10 @@ import net.kyori.adventure.text.format.TextDecoration;
 import org.joml.AxisAngle4f;
 import org.joml.Vector3f;
 
+import java.io.File;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -59,11 +64,15 @@ public final class IsleGuideNpc implements Listener {
     private final Map<UUID, Long> coolUntil = new ConcurrentHashMap<>();
     private UUID hologramId;
     private volatile boolean helperLogged;
+    private volatile boolean skinFixLogged;
 
     public IsleGuideNpc(AetherionForaging plugin) {
         this.plugin = plugin;
+        extractBundledSkin();
         new IsleGuideBriefingGUI(plugin);
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
+        // Patch mhf_oak off the persisted FancyNpc before the 5s full ensure.
+        Bukkit.getScheduler().runTaskLater(plugin, this::patchPersistedSkin, 20L);
         Bukkit.getScheduler().runTaskLater(plugin, this::ensureIfPlaced, 100L);
         Bukkit.getScheduler().runTaskTimer(plugin, this::tickHologram, 40L, 40L);
     }
@@ -97,6 +106,33 @@ public final class IsleGuideNpc implements Listener {
             return;
         }
         spawnFancy(at);
+    }
+
+    /** Overwrite a persisted {@code MHF_Oak} identifier as soon as FancyNpcs is loaded. */
+    private void patchPersistedSkin() {
+        if (!plugin.getConfig().getBoolean("isle-guide.placed", false)) {
+            return;
+        }
+        if (!FancyNpcFacade.isAvailable()) {
+            return;
+        }
+        try {
+            Object manager = FancyNpcFacade.manager();
+            if (!FancyNpcFacade.isManagerLoaded(manager)) {
+                Bukkit.getScheduler().runTaskLater(plugin, this::patchPersistedSkin, 20L);
+                return;
+            }
+            Object existing = FancyNpcFacade.getNpc(manager, FANCY_NAME);
+            if (existing == null) {
+                return;
+            }
+            Object data = FancyNpcFacade.data(existing);
+            if (applySkin(data)) {
+                FancyNpcFacade.updateForAll(existing);
+                FancyNpcFacade.saveNpcs(manager, true);
+            }
+        } catch (Throwable ignored) {
+        }
     }
 
     public static ItemStack createAnchor() {
@@ -291,10 +327,14 @@ public final class IsleGuideNpc implements Listener {
                 FancyNpcFacade.setLocation(data, at.clone());
                 FancyNpcFacade.invoke(data, "setDisplayName", String.class, display);
                 FancyNpcFacade.applyVisibility(data, visibilityDistance());
-                applySkin(data);
+                boolean skinChanged = applySkin(data);
+                FancyNpcFacade.invokeQuiet(existing, "setSaveToFile", boolean.class, true);
                 FancyNpcFacade.moveForAll(existing);
                 FancyNpcFacade.updateForAll(existing);
                 FancyNpcFacade.spawnForAll(existing);
+                if (skinChanged) {
+                    FancyNpcFacade.saveNpcs(manager, true);
+                }
                 hideVanillaNametag(existing);
                 ensureHologram(at);
                 return;
@@ -314,7 +354,7 @@ public final class IsleGuideNpc implements Listener {
             FancyNpcFacade.create(npc);
             FancyNpcFacade.register(manager, npc);
             FancyNpcFacade.spawnForAll(npc);
-            FancyNpcFacade.saveNpcs(manager, false);
+            FancyNpcFacade.saveNpcs(manager, true);
             hideVanillaNametag(npc);
             ensureHologram(at);
             plugin.getLogger().info(DISPLAY + " spawned at "
@@ -329,14 +369,57 @@ public final class IsleGuideNpc implements Listener {
         return Math.max(16, plugin.getConfig().getInt("isle-guide.visibility-distance", 48));
     }
 
-    private void applySkin(Object data) {
+    /**
+     * Local texture URL / PNG — never {@code MHF_Oak}. FancyNpcs UUIDFetcher
+     * 404-loops that name every ~2s and hitch the client at TPS 20.
+     */
+    private boolean applySkin(Object data) {
         if (data == null) {
+            return false;
+        }
+        String requested = plugin.getConfig().getString(
+                "isle-guide.skin", FancyNpcSkins.DEFAULT_TEXTURE_URL);
+        String have = FancyNpcSkins.identifier(data);
+        String resolved = FancyNpcSkins.resolve(requested, bundledSkinFile());
+        if (FancyNpcSkins.isUsernameLookup(have)
+                || FancyNpcSkins.isBlocked(have)
+                || FancyNpcSkins.isUsernameLookup(requested)
+                || FancyNpcSkins.isBlocked(requested)) {
+            FancyNpcSkins.rememberFailure(have);
+            FancyNpcSkins.rememberFailure(requested);
+            if (!skinFixLogged) {
+                skinFixLogged = true;
+                plugin.getLogger().info(DISPLAY
+                        + " skin: using local texture instead of Mojang username '"
+                        + (requested == null || requested.isBlank() ? have : requested)
+                        + "' (stops FancyNpcs UUIDFetcher loop).");
+            }
+        } else if (FancyNpcSkins.same(have, resolved)) {
+            FancyNpcFacade.invokeQuiet(data, "setMirrorSkin", boolean.class, false);
+            return false;
+        }
+        return FancyNpcSkins.apply(data, resolved);
+    }
+
+    private File bundledSkinFile() {
+        File file = new File(plugin.getDataFolder(), "skins/" + FancyNpcSkins.DEFAULT_FILE_NAME);
+        return file.isFile() ? file : null;
+    }
+
+    private void extractBundledSkin() {
+        File dir = new File(plugin.getDataFolder(), "skins");
+        if (!dir.exists() && !dir.mkdirs()) {
             return;
         }
-        String skin = plugin.getConfig().getString("isle-guide.skin", "MHF_Oak");
-        try {
-            data.getClass().getMethod("setSkin", String.class).invoke(data, skin);
-        } catch (Throwable ignored) {
+        File out = new File(dir, FancyNpcSkins.DEFAULT_FILE_NAME);
+        try (InputStream in = plugin.getResource("skins/" + FancyNpcSkins.DEFAULT_FILE_NAME)) {
+            if (in == null) {
+                return;
+            }
+            Files.copy(in, out.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        } catch (Exception ex) {
+            plugin.getLogger().warning(DISPLAY + " could not extract skin "
+                    + FancyNpcSkins.DEFAULT_FILE_NAME + ": " + ex.getMessage());
         }
     }
 

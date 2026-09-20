@@ -94,6 +94,9 @@ isle-guide:
   placed: false
   # FancyNPC packet reveal (blocks). Default Fancy is ~10; 48 reads from the pad.
   visibility-distance: 48
+  # Texture URL / PNG / UUID — NEVER a Mojang username. MHF_Oak 404-loops
+  # FancyNpcs UUIDFetcher every ~2s (client hitch at TPS 20).
+  skin: "https://textures.minecraft.net/texture/f163d98f20f7b8dec6ecc7a314f82e33f4d4105919dfd287080627979a957933"
 hotspots:
   enabled: false
   interval-seconds: 480
