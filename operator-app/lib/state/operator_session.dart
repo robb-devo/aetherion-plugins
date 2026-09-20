@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../app_version.dart';
 import '../crafty/crafty_client.dart';
 import '../crafty/crafty_config.dart';
+import '../crafty/default_crafty.dart';
 import '../crafty/player_list_parser.dart';
 import '../data/account_store.dart';
 import '../data/console_line.dart';
@@ -107,6 +108,15 @@ class OperatorSession extends ChangeNotifier {
     if (changed) await persistence.save(accounts);
     await _loadLocale();
     craftySettings = await secrets.load();
+    if (!craftySettings.isConfigured) {
+      final seed = DefaultCrafty.settings;
+      await secrets.save(
+        baseUrl: seed.baseUrl,
+        apiToken: seed.apiToken,
+        allowInsecureTls: seed.allowInsecureTls,
+      );
+      craftySettings = await secrets.load();
+    }
     githubToken = await githubTokens.load();
     if (githubToken.isEmpty) {
       const fromEnv = String.fromEnvironment('GITHUB_TOKEN');
