@@ -11,7 +11,6 @@ export const SITE = {
   proxy: 'Velocity',
   discord: 'https://discord.gg/7BWHJaZChb',
   paypalEmail: 'mr.minecraft0604@gmail.com',
-  owner: 'Peter',
   iban: 'DE23 1001 0178 9795 5314 74',
 }
 
@@ -34,7 +33,7 @@ export const FEATURES = [
 
 export const MAPS = [
   { id: 'eldervale', title: 'Eldervale', image: '/maps/eldervale.svg', placeholder: true },
-  { id: 'crystal-hollows', title: 'Crystal Hollows', image: '/maps/crystal-hollows.svg', placeholder: true },
+  { id: 'amethyst-mines', title: 'Amethyst Mines', image: '/maps/amethyst-mines.svg', placeholder: true },
   { id: 'harbour', title: 'Harbour', image: '/maps/harbour.svg', placeholder: true },
 ]
 

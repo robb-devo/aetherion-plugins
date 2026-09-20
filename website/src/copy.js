@@ -5,7 +5,7 @@ export const COPY = {
     meta: {
       title: 'Aetherion — Paper MMO · donnernet.de',
       description:
-        'Aetherion on donnernet.de — a Hypixel-style Paper MMO / Skyblock network. Join play.donnernet.de · Optional support, never pay-to-win.',
+        'Aetherion on donnernet.de — a Paper MMO / island network. Join play.donnernet.de · Optional support, never pay-to-win.',
     },
     nav: {
       vision: 'Vision',
@@ -21,7 +21,7 @@ export const COPY = {
     },
     hero: {
       badge: 'Pre-pre-beta · Friend network',
-      line: 'Hypixel energy. Skyblock islands. Real skills.',
+      line: 'Paper MMO. Island worlds. Real skills.',
       sub: 'A Paper MMO prototype — optional support, never pay-to-win.',
       copy: 'Copy',
       copied: 'Copied!',
@@ -34,12 +34,12 @@ export const COPY = {
     vision: {
       kicker: 'Vision',
       title: 'Not a company. A server.',
-      sub: 'A Hypixel-style Paper MMO, built as a friend prototype.',
-      body: 'Aetherion is Peter’s Paper MMO in Skyblock style: skills, islands, Auction House, Bazaar, jump pads, and dungeons. It grows with us. The support shop is an optional thank-you — not the way to get stronger.',
+      sub: 'A Paper MMO / island network, built as a friend prototype.',
+      body: 'Aetherion is our Paper MMO on an island network: skills, islands, Auction House, Bazaar, jump pads, and dungeons. It grows with us. The support shop is an optional thank-you — not the way to get stronger.',
       pillars: [
         {
           title: 'An honest prototype',
-          body: 'No publisher. No season-pass circus. Peter builds Aetherion for friends — feature by feature, edges still visible.',
+          body: 'No publisher. No season-pass circus. We build Aetherion for friends — feature by feature, edges still visible.',
         },
         {
           title: 'Play before shop',
@@ -67,8 +67,8 @@ export const COPY = {
           body: 'Eldervale and the satellite isles: fields, fishing grounds, Forage Isle, the mining island. Each loop has a reason to come back.',
         },
         amethyst: {
-          title: 'Amethyst mines',
-          sub: 'Crystal Hollows · The Veins',
+          title: 'Amethyst Mines',
+          sub: 'The Veins',
           body: 'Deep veins, amethyst clusters, The Veins. Mining is not just hitting stone — it is the crystal spine of the server.',
         },
         quests: {
@@ -84,7 +84,7 @@ export const COPY = {
         pads: {
           title: 'Jump pads',
           sub: 'Slime arcs between islands',
-          body: 'From Origin to Eldervale, Forage Isle, Harbour. Pads are the backbone of island travel — short, loud, Skyblock.',
+          body: 'From Origin to Eldervale, Forage Isle, Harbour. Pads are the backbone of travel — short, loud hops between islands.',
         },
         dungeons: {
           title: 'Dungeons',
@@ -96,20 +96,23 @@ export const COPY = {
     maps: {
       kicker: 'Maps',
       title: 'Three places you will know',
-      sub: 'Eldervale · Crystal Hollows · Harbour',
+      sub: 'Eldervale · Amethyst Mines · Harbour',
       intro: 'Three places from the world. The frames are ready — real in-game screenshots come later.',
       placeholder: 'Placeholder',
       items: {
         eldervale: {
+          title: 'Eldervale',
           sub: 'The island cluster',
           caption:
-            'Farming, fishing, foraging, and mining islands past the jump pads. The heart of the Skyblock loop.',
+            'Farming, fishing, foraging, and mining islands past the jump pads. The heart of the island loop.',
         },
-        'crystal-hollows': {
-          sub: 'Amethyst mines',
-          caption: 'Amethyst mines & The Veins. Crystal halls, deep veins, pickaxe on.',
+        'amethyst-mines': {
+          title: 'Amethyst Mines',
+          sub: 'The Veins',
+          caption: 'Amethyst Mines & The Veins. Crystal halls, deep veins, pickaxe on.',
         },
         harbour: {
+          title: 'Harbour',
           sub: 'Spawn & market docks',
           caption: 'Anker Harbour — Egon, the market, and the docks. Everyone starts here. This is the port.',
         },
@@ -138,8 +141,8 @@ export const COPY = {
       fulfillTitle: 'Credit v1 — manual after PayPal',
       fulfill: [
         'Send a pack or amount via PayPal to {email}.',
-        'Open Discord and DM {owner}: Minecraft name (IGN) + PayPal receipt.',
-        'Peter credits Shards by hand. There is no auto-shop and no webhooks yet.',
+        'Open Discord and DM the team: Minecraft name (IGN) + PayPal receipt.',
+        'We credit Shards by hand. There is no auto-shop and no webhooks yet.',
       ],
       toDiscord: 'To Discord',
       bankTitle: 'Bank transfer — friends only',
@@ -151,7 +154,7 @@ export const COPY = {
       ibanCopied: 'IBAN copied',
     },
     footer: {
-      blurb: 'Paper MMO / Skyblock network by {owner}. Join Minecraft at {ip}.',
+      blurb: 'Paper MMO / island network from the team. Join Minecraft at {ip}.',
       shop: 'Support shop',
       maps: 'Maps',
       legal:
@@ -169,7 +172,7 @@ export const COPY = {
     meta: {
       title: 'Aetherion — Paper MMO · donnernet.de',
       description:
-        'Aetherion auf donnernet.de — Hypixel-artiges Paper-MMO / Skyblock-Netzwerk. Join play.donnernet.de · Optionaler Support, kein Pay-to-Win.',
+        'Aetherion auf donnernet.de — Paper-MMO / Insel-Netzwerk. Join play.donnernet.de · Optionaler Support, kein Pay-to-Win.',
     },
     nav: {
       vision: 'Vision',
@@ -185,7 +188,7 @@ export const COPY = {
     },
     hero: {
       badge: 'Pre-Pre-Beta · Freundes-Netzwerk',
-      line: 'Hypixel-Feeling. Skyblock-Inseln. Eigene Skills.',
+      line: 'Paper-MMO. Inselwelten. Eigene Skills.',
       sub: 'Ein Paper-MMO-Prototyp — optionaler Support, kein Pay-to-Win.',
       copy: 'Kopieren',
       copied: 'Kopiert!',
@@ -198,12 +201,12 @@ export const COPY = {
     vision: {
       kicker: 'Vision',
       title: 'Kein Konzern. Ein Server.',
-      sub: 'Ein Hypixel-artiges Paper-MMO, gebaut als Freundes-Prototyp.',
-      body: 'Aetherion ist Peters Paper-MMO im Skyblock-Stil: Skills, Inseln, Auction House, Bazaar, Jump-Pads und Dungeons. Es wächst mit uns. Der Support-Shop ist ein optionales Danke — nicht der Weg, stärker zu werden.',
+      sub: 'Ein Paper-MMO / Insel-Netzwerk, gebaut als Freundes-Prototyp.',
+      body: 'Aetherion ist unser Paper-MMO im Insel-Netzwerk: Skills, Inseln, Auction House, Bazaar, Jump-Pads und Dungeons. Es wächst mit uns. Der Support-Shop ist ein optionales Danke — nicht der Weg, stärker zu werden.',
       pillars: [
         {
           title: 'Prototyp, ehrlich',
-          body: 'Kein Publisher, kein Season-Pass-Zirkus. Peter baut Aetherion für Freunde — Feature für Feature, mit sichtbaren Kanten.',
+          body: 'Kein Publisher, kein Season-Pass-Zirkus. Wir bauen Aetherion für Freunde — Feature für Feature, mit sichtbaren Kanten.',
         },
         {
           title: 'Spiel vor Shop',
@@ -232,7 +235,7 @@ export const COPY = {
         },
         amethyst: {
           title: 'Amethyst-Minen',
-          sub: 'Crystal Hollows · The Veins',
+          sub: 'The Veins',
           body: 'Tiefe Adern, Amethyst-Cluster, The Veins. Mining ist nicht nur Stein klopfen — es ist die Kristallader des Servers.',
         },
         quests: {
@@ -248,7 +251,7 @@ export const COPY = {
         pads: {
           title: 'Jump-Pads',
           sub: 'Slime-Bögen zwischen Inseln',
-          body: 'Von Origin nach Eldervale, Forage Isle, Harbour. Pads sind das Rückgrat der Insel-Navigation — kurz, laut, Skyblock.',
+          body: 'Von Origin nach Eldervale, Forage Isle, Harbour. Pads sind das Rückgrat der Navigation — kurze, laute Bögen von Insel zu Insel.',
         },
         dungeons: {
           title: 'Dungeons',
@@ -260,20 +263,23 @@ export const COPY = {
     maps: {
       kicker: 'Karten',
       title: 'Drei Orte, die du kennen wirst',
-      sub: 'Eldervale · Crystal Hollows · Harbour',
+      sub: 'Eldervale · Amethyst-Minen · Harbour',
       intro: 'Drei Orte aus der Welt. Die Rahmen stehen — echte Ingame-Screenshots kommen nach.',
       placeholder: 'Platzhalter',
       items: {
         eldervale: {
+          title: 'Eldervale',
           sub: 'Der Insel-Cluster',
           caption:
-            'Farming-, Fishing-, Foraging- und Mining-Inseln hinter den Jump-Pads. Das Herz der Skyblock-Schleife.',
+            'Farming-, Fishing-, Foraging- und Mining-Inseln hinter den Jump-Pads. Das Herz der Insel-Schleife.',
         },
-        'crystal-hollows': {
-          sub: 'Amethyst-Minen',
+        'amethyst-mines': {
+          title: 'Amethyst-Minen',
+          sub: 'The Veins',
           caption: 'Amethyst-Minen & The Veins. Kristallhallen, tiefe Adern, Spitzhacke an.',
         },
         harbour: {
+          title: 'Harbour',
           sub: 'Spawn & Marktdocks',
           caption: 'Anker Harbour — Egon, Markt und Docks. Hier startet jeder. Hier liegt der Hafen.',
         },
@@ -302,8 +308,8 @@ export const COPY = {
       fulfillTitle: 'Gutschrift v1 — manuell nach PayPal',
       fulfill: [
         'Pack oder Betrag per PayPal an {email} senden.',
-        'Discord öffnen und {owner} per DM schreiben: Minecraft-Name (IGN) + PayPal-Beleg.',
-        'Peter bucht die Shards von Hand. Es gibt noch keinen Auto-Shop und keine Webhooks.',
+        'Discord öffnen und dem Team per DM schreiben: Minecraft-Name (IGN) + PayPal-Beleg.',
+        'Wir buchen die Shards von Hand. Es gibt noch keinen Auto-Shop und keine Webhooks.',
       ],
       toDiscord: 'Zum Discord',
       bankTitle: 'Banküberweisung — nur für Freunde',
@@ -315,7 +321,7 @@ export const COPY = {
       ibanCopied: 'IBAN kopiert',
     },
     footer: {
-      blurb: 'Paper-MMO / Skyblock-Netzwerk von {owner}. Minecraft: {ip}.',
+      blurb: 'Paper-MMO / Insel-Netzwerk vom Team. Minecraft: {ip}.',
       shop: 'Support-Shop',
       maps: 'Karten',
       legal:
@@ -338,6 +344,5 @@ export function interpolate(text, vars = {}) {
 export const SITE_VARS = {
   ip: SITE.ip,
   email: SITE.paypalEmail,
-  owner: SITE.owner,
   site: SITE.origin.replace(/^https:\/\//, ''),
 }

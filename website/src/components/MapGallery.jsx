@@ -27,7 +27,7 @@ export default function MapGallery() {
                 <div className="relative aspect-[16/10] overflow-hidden bg-ink">
                   <motion.img
                     src={map.image}
-                    alt={map.title}
+                    alt={item.title}
                     className="h-full w-full object-cover"
                     width={1200}
                     height={750}
@@ -41,7 +41,9 @@ export default function MapGallery() {
                   ) : null}
                 </div>
                 <figcaption className="p-5">
-                  <h3 className="font-display text-xl font-bold tracking-wide text-white">{map.title}</h3>
+                  <h3 className="font-display text-xl font-bold tracking-wide text-white">
+                    <FadeLang as="span">{item.title}</FadeLang>
+                  </h3>
                   <FadeLang>
                     <p className="mt-1 text-xs font-semibold tracking-wide text-cyan/80 uppercase">{item.sub}</p>
                     <p className="mt-2 text-sm leading-relaxed text-mist/75">{item.caption}</p>
