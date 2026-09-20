@@ -71,7 +71,7 @@ public final class IsleGuideNpc implements Listener {
         extractBundledSkin();
         new IsleGuideBriefingGUI(plugin);
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
-        // Patch mhf_oak off the persisted FancyNpc before the 5s full ensure.
+        // Fill the persisted FancyNpc skin before the 5s full ensure.
         Bukkit.getScheduler().runTaskLater(plugin, this::patchPersistedSkin, 20L);
         Bukkit.getScheduler().runTaskLater(plugin, this::ensureIfPlaced, 100L);
         Bukkit.getScheduler().runTaskTimer(plugin, this::tickHologram, 40L, 40L);
@@ -108,7 +108,7 @@ public final class IsleGuideNpc implements Listener {
         spawnFancy(at);
     }
 
-    /** Overwrite a persisted {@code MHF_Oak} identifier as soon as FancyNpcs is loaded. */
+    /** Write signed local textures onto the persisted FancyNpc as soon as it is loaded. */
     private void patchPersistedSkin() {
         if (!plugin.getConfig().getBoolean("isle-guide.placed", false)) {
             return;
@@ -370,40 +370,34 @@ public final class IsleGuideNpc implements Listener {
     }
 
     /**
-     * Local texture URL / PNG — never {@code MHF_Oak}. FancyNpcs UUIDFetcher
-     * 404-loops that name every ~2s and hitch the client at TPS 20.
+     * Signed local SkinData only — never {@code setSkin(username)}. That path
+     * is FancyNpcs UUIDFetcher and leaves an empty skin block in npcs.yml.
      */
     private boolean applySkin(Object data) {
         if (data == null) {
             return false;
         }
-        String requested = plugin.getConfig().getString(
-                "isle-guide.skin", FancyNpcSkins.DEFAULT_TEXTURE_URL);
-        String have = FancyNpcSkins.identifier(data);
-        String resolved = FancyNpcSkins.resolve(requested, bundledSkinFile());
-        if (FancyNpcSkins.isUsernameLookup(have)
-                || FancyNpcSkins.isBlocked(have)
-                || FancyNpcSkins.isUsernameLookup(requested)
-                || FancyNpcSkins.isBlocked(requested)) {
-            FancyNpcSkins.rememberFailure(have);
+        String requested = plugin.getConfig().getString("isle-guide.skin", "");
+        if (FancyNpcSkins.isUsernameLookup(requested) || FancyNpcSkins.isBlocked(requested)) {
             FancyNpcSkins.rememberFailure(requested);
-            if (!skinFixLogged) {
-                skinFixLogged = true;
-                plugin.getLogger().info(DISPLAY
-                        + " skin: using local texture instead of Mojang username '"
-                        + (requested == null || requested.isBlank() ? have : requested)
-                        + "' (stops FancyNpcs UUIDFetcher loop).");
-            }
-        } else if (FancyNpcSkins.same(have, resolved)) {
+        }
+        String have = FancyNpcSkins.identifier(data);
+        if (FancyNpcSkins.isUsernameLookup(have) || FancyNpcSkins.isBlocked(have)) {
+            FancyNpcSkins.rememberFailure(have);
+        }
+        if (FancyNpcSkins.hasCompleteLocalTextures(data)) {
             FancyNpcFacade.invokeQuiet(data, "setMirrorSkin", boolean.class, false);
             return false;
         }
-        return FancyNpcSkins.apply(data, resolved);
-    }
-
-    private File bundledSkinFile() {
-        File file = new File(plugin.getDataFolder(), "skins/" + FancyNpcSkins.DEFAULT_FILE_NAME);
-        return file.isFile() ? file : null;
+        boolean changed = FancyNpcSkins.applyLocal(data);
+        if (changed && !skinFixLogged) {
+            skinFixLogged = true;
+            plugin.getLogger().info(DISPLAY + " skin: applied bundled local textures (no Mojang username).");
+        }
+        if (!changed && !FancyNpcSkins.hasCompleteLocalTextures(data)) {
+            plugin.getLogger().warning(DISPLAY + " skin: could not apply local SkinData.");
+        }
+        return changed;
     }
 
     private void extractBundledSkin() {

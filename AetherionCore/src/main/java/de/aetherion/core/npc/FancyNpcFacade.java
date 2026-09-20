@@ -19,8 +19,8 @@ import java.util.function.Function;
  * villager fallbacks, display names) stays in the owning plugin.
  *
  * <p>Skins: never pass Mojang usernames through {@code setSkin} — use
- * {@link FancyNpcSkins} (texture URL / file / UUID). {@code MHF_Oak} 404-loops
- * UUIDFetcher every ~2s and feels like client lag at TPS 20.
+ * {@link FancyNpcSkins} (signed texture value, URL identifier). Username
+ * lookups 404-loop UUIDFetcher every ~2s and feel like client lag at TPS 20.
  */
 public final class FancyNpcFacade {
 
