@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../app_version.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/session_scope.dart';
 import '../../theme/aether_colors.dart';
+import '../../updates/open_release.dart';
 import '../widgets/dialogs.dart';
 import '../widgets/glass_card.dart';
 
@@ -17,6 +19,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   final _url = TextEditingController();
   final _token = TextEditingController();
+  final _githubToken = TextEditingController();
   bool _insecure = true;
   var _primed = false;
 
@@ -34,6 +37,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void dispose() {
     _url.dispose();
     _token.dispose();
+    _githubToken.dispose();
     super.dispose();
   }
 
@@ -42,6 +46,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final l10n = AppLocalizations.of(context);
     final session = SessionScope.of(context);
     final live = session.craftyLive;
+    final pending = session.pendingUpdate;
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
       children: [
@@ -146,30 +151,91 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 l10n.currentVersion(session.appVersion),
                 style: const TextStyle(fontWeight: FontWeight.w700),
               ),
+              const SizedBox(height: 4),
+              Text(
+                l10n.buildStamp(kOperatorBuildStamp),
+                style: const TextStyle(color: AetherColors.mist, fontSize: 12),
+              ),
               const SizedBox(height: 6),
               Text(
                 l10n.updateHowTo,
                 style: const TextStyle(color: AetherColors.mist, height: 1.35),
               ),
               const SizedBox(height: 12),
-              OutlinedButton.icon(
-                key: const Key('check-updates'),
-                onPressed: session.checkForUpdate,
-                icon: const Icon(Icons.system_update_alt, size: 18),
-                label: Text(l10n.checkUpdates),
+              TextField(
+                key: const Key('github-token'),
+                controller: _githubToken,
+                obscureText: true,
+                decoration: InputDecoration(
+                  hintText: session.githubToken.isEmpty
+                      ? l10n.githubTokenHint
+                      : l10n.githubTokenSet,
+                ),
               ),
-              if (session.pendingUpdate != null) ...[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  OutlinedButton(
+                    key: const Key('github-token-save'),
+                    onPressed: session.savingGithubToken
+                        ? null
+                        : () async {
+                            await session.saveGithubToken(_githubToken.text);
+                            _githubToken.clear();
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(l10n.savedGithubToken)),
+                              );
+                            }
+                          },
+                    child: Text(l10n.save),
+                  ),
+                  OutlinedButton.icon(
+                    key: const Key('check-updates'),
+                    onPressed:
+                        session.checkingUpdates ? null : session.checkForUpdate,
+                    icon: session.checkingUpdates
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.system_update_alt, size: 18),
+                    label: Text(l10n.checkUpdates),
+                  ),
+                  if (pending != null)
+                    FilledButton.icon(
+                      key: const Key('open-release'),
+                      onPressed: () => openOperatorRelease(pending),
+                      icon: const Icon(Icons.open_in_new, size: 18),
+                      label: Text(l10n.updateNow),
+                    ),
+                ],
+              ),
+              if (pending != null) ...[
                 const SizedBox(height: 8),
                 Text(
-                  l10n.updateAvailable(session.pendingUpdate!.version),
+                  l10n.updateAvailable(pending.version),
                   style: const TextStyle(color: AetherColors.gold),
                 ),
-              ] else if (session.updateCheckFailed)
                 Text(
-                  l10n.updateCheckFailed,
-                  style: const TextStyle(color: AetherColors.mist),
+                  pending.tag,
+                  style: const TextStyle(
+                    color: AetherColors.mist,
+                    fontSize: 12,
+                  ),
+                ),
+              ] else if (session.updateCheckFailed)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    l10n.updateCheckFailed,
+                    style: const TextStyle(color: AetherColors.mist),
+                  ),
                 )
-              else
+              else if (session.updateChecked)
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
                   child: Text(
@@ -178,11 +244,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
               const SizedBox(height: 8),
-              Text(
-                'github.com/$kOperatorGithubRepo',
-                style: const TextStyle(
-                  color: AetherColors.mist,
-                  fontSize: 12,
+              InkWell(
+                onTap: () => launchUrl(
+                  Uri.parse(
+                    'https://github.com/$kOperatorGithubRepo/releases',
+                  ),
+                  mode: LaunchMode.externalApplication,
+                ),
+                child: Text(
+                  'github.com/$kOperatorGithubRepo/releases',
+                  style: const TextStyle(
+                    color: AetherColors.cyan,
+                    fontSize: 12,
+                    decoration: TextDecoration.underline,
+                  ),
                 ),
               ),
             ],

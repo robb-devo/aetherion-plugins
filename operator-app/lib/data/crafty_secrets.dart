@@ -164,6 +164,10 @@ class DeviceCraftySecrets implements CraftySecrets {
 
   static final _obfKey = sha256.convert(utf8.encode('aetherion-operator-vault-v1')).bytes;
 
+  static String obfuscatePublic(String value) => _obfuscate(value);
+
+  static String deobfuscatePublic(String raw) => _deobfuscate(raw);
+
   static String _obfuscate(String value) {
     if (value.isEmpty) return '';
     final data = utf8.encode(value);

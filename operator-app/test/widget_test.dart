@@ -4,6 +4,7 @@ import 'package:operator_app/app.dart';
 import 'package:operator_app/crafty/mock_crafty_client.dart';
 import 'package:operator_app/data/account_store.dart';
 import 'package:operator_app/data/crafty_secrets.dart';
+import 'package:operator_app/data/github_token_store.dart';
 import 'package:operator_app/data/operator_account.dart';
 import 'package:operator_app/data/session_store.dart';
 import 'package:operator_app/state/operator_session.dart';
@@ -26,6 +27,7 @@ void main() {
       ),
       sessionStore: MemorySessionStore(),
       secrets: MemoryCraftySecrets(),
+      githubTokens: MemoryGithubTokenStore(),
       crafty: MockCraftyClient(jitter: false),
       updates: const NoopUpdateChecker(),
     );
@@ -133,7 +135,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('Mock Crafty'), findsOneWidget);
-    expect(find.textContaining('Version 0.2.0'), findsOneWidget);
+    expect(find.textContaining('Version 0.2.1'), findsOneWidget);
     expect(find.byKey(const Key('crafty-url')), findsOneWidget);
     expect(find.byKey(const Key('check-updates')), findsOneWidget);
   });

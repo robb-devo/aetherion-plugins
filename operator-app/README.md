@@ -95,13 +95,40 @@ JSON mapping is loose (`lib/crafty/http_crafty_client.dart`) so field names can 
 
 ## Updates
 
-Version is `0.2.0+2` in `pubspec.yaml` and `kOperatorAppVersion` in `lib/app_version.dart` — keep those in lockstep.
+Version is `0.2.1+3` in `pubspec.yaml`, `kOperatorAppVersion` / `kOperatorBuildStamp` in `lib/app_version.dart` — bump all three when shipping.
 
-1. Bump both.
-2. Tag a GitHub Release `operator-app-x.y.z` (optional `v` prefix) on `robb-devo/aetherion-plugins`.
-3. Attach an APK named `*.apk` for Android; Windows opens the release page.
+### How the app checks
 
-The app checks `GET /repos/robb-devo/aetherion-plugins/releases` on bootstrap and from Settings. Only tags matching `operator-app-` are considered.
+On bootstrap and from **Settings → Check for updates**, the app calls GitHub Releases and looks for tags:
+
+| Tag | Display | Newer when… |
+|-----|---------|-------------|
+| `operator-app-x.y.z` / `operator-app-vx.y.z` | `x.y.z` | semver &gt; installed version |
+| `operator-app-apk-YYYYMMDD` | `YYYY.MM.DD` | date &gt; `kOperatorBuildStamp` |
+
+Draft releases are ignored. An APK asset is required for date builds (preferred name contains `operator`). Android opens the APK download URL; Windows / web open the release page.
+
+A one-shot dialog appears when a newer release is found; **Later** keeps it visible in Settings with **Open release**.
+
+### Private repository
+
+`robb-devo/aetherion-plugins` is private. Unauthenticated GitHub API calls return 404, so update checks need a **read-only GitHub PAT** (classic `repo` or fine-grained Contents: Read) saved under Settings, or `--dart-define=GITHUB_TOKEN=...` at build/run time. The token is stored like the Crafty API token (secure storage / obfuscated prefs fallback).
+
+### Ship a build
+
+1. Bump `pubspec.yaml`, `kOperatorAppVersion`, and `kOperatorBuildStamp` (YYYYMMDD).
+2. Tag and publish a GitHub Release, e.g. `operator-app-0.2.1` or `operator-app-apk-20260921`.
+3. Attach `operator_app_release.apk` (and optionally a Windows zip).
+
+Or run the **Operator app release** workflow (`workflow_dispatch`) which builds the APK and creates the release.
+
+```bash
+cd operator-app
+flutter pub get
+flutter test && flutter analyze
+flutter build apk --release
+# → build/app/outputs/flutter-apk/app-release.apk
+```
 
 ## Branding
 

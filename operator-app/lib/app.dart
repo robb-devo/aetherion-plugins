@@ -1,16 +1,13 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import 'l10n/app_localizations.dart';
-import 'platform/platform_info.dart';
 import 'state/operator_session.dart';
 import 'state/session_scope.dart';
 import 'theme/aether_theme.dart';
 import 'ui/screens/login_screen.dart';
 import 'ui/screens/shell_screen.dart';
 import 'ui/widgets/glass_card.dart';
-import 'updates/update_checker.dart';
+import 'updates/open_release.dart';
 
 class OperatorApp extends StatefulWidget {
   const OperatorApp({super.key, required this.session});
@@ -66,7 +63,8 @@ class _OperatorAppState extends State<OperatorApp> {
         ],
       ),
     );
-    widget.session.dismissUpdate();
+    // Keep pendingUpdate so Settings can still open the release.
+    widget.session.snoozeUpdatePrompt();
     if (go == true) {
       await openOperatorRelease(release);
     }
@@ -104,11 +102,3 @@ class _OperatorAppState extends State<OperatorApp> {
     );
   }
 }
-
-Future<void> openOperatorRelease(AppRelease release) async {
-  final apk = release.apkUrl;
-  final useApk = apk != null && !kIsWeb && !isWindowsDesktop;
-  final target = useApk ? apk : release.htmlUrl;
-  await launchUrl(Uri.parse(target), mode: LaunchMode.externalApplication);
-}
-

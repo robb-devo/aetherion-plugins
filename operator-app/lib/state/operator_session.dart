@@ -7,6 +7,7 @@ import '../crafty/crafty_config.dart';
 import '../data/account_store.dart';
 import '../data/console_line.dart';
 import '../data/crafty_secrets.dart';
+import '../data/github_token_store.dart';
 import '../data/operator_account.dart';
 import '../data/pin.dart';
 import '../data/server_snapshot.dart';
@@ -18,6 +19,7 @@ class OperatorSession extends ChangeNotifier {
     AccountPersistence? persistence,
     SessionStore? sessionStore,
     CraftySecrets? secrets,
+    GithubTokenStore? githubTokens,
     CraftyClient? crafty,
     UpdateChecker? updates,
     this.now,
@@ -25,6 +27,7 @@ class OperatorSession extends ChangeNotifier {
   }) : persistence = persistence ?? SharedPrefsAccountPersistence(),
        sessionStore = sessionStore ?? PrefsSessionStore(),
        secrets = secrets ?? DeviceCraftySecrets(),
+       githubTokens = githubTokens ?? DeviceGithubTokenStore(),
        updates = updates ?? GithubReleaseChecker(),
        _lockedCrafty = crafty != null,
        _crafty = crafty ?? createCraftyClient();
@@ -32,6 +35,7 @@ class OperatorSession extends ChangeNotifier {
   final AccountPersistence persistence;
   final SessionStore sessionStore;
   final CraftySecrets secrets;
+  final GithubTokenStore githubTokens;
   final UpdateChecker updates;
   final DateTime Function()? now;
   final String appVersion;
@@ -61,8 +65,13 @@ class OperatorSession extends ChangeNotifier {
   String? craftyTestMessage;
   bool? craftyTestOk;
 
+  String githubToken = '';
+  bool savingGithubToken = false;
+
   AppRelease? pendingUpdate;
   bool updateCheckFailed = false;
+  bool checkingUpdates = false;
+  var updateChecked = false;
 
   bool get craftyLive => !_crafty.mock;
 
@@ -81,6 +90,11 @@ class OperatorSession extends ChangeNotifier {
     }
     await _loadLocale();
     craftySettings = await secrets.load();
+    githubToken = await githubTokens.load();
+    if (githubToken.isEmpty) {
+      const fromEnv = String.fromEnvironment('GITHUB_TOKEN');
+      if (fromEnv.isNotEmpty) githubToken = fromEnv;
+    }
     if (!_lockedCrafty) {
       _crafty = createCraftyClient(_resolveConfig());
     }
@@ -394,14 +408,44 @@ class OperatorSession extends ChangeNotifier {
     }
   }
 
+  Future<void> saveGithubToken(String token) async {
+    savingGithubToken = true;
+    notifyListeners();
+    final trimmed = token.trim();
+    // Empty field keeps the previously stored token.
+    if (trimmed.isNotEmpty) {
+      await githubTokens.save(trimmed);
+      githubToken = trimmed;
+    } else {
+      githubToken = await githubTokens.load();
+    }
+    savingGithubToken = false;
+    notifyListeners();
+    await checkForUpdate();
+  }
+
   Future<void> checkForUpdate() async {
+    checkingUpdates = true;
     updateCheckFailed = false;
+    notifyListeners();
     try {
-      pendingUpdate = await updates.latestNewerThan(appVersion);
+      pendingUpdate = await updates.latestNewerThan(
+        appVersion,
+        buildStamp: kOperatorBuildStamp,
+        githubToken: githubToken.isEmpty ? null : githubToken,
+      );
     } catch (_) {
       updateCheckFailed = true;
       pendingUpdate = null;
+    } finally {
+      checkingUpdates = false;
+      updateChecked = true;
+      notifyListeners();
     }
+  }
+
+  /// Clear a snoozed prompt only — Settings still shows [pendingUpdate].
+  void snoozeUpdatePrompt() {
     notifyListeners();
   }
 

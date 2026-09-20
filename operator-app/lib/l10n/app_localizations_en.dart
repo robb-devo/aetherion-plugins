@@ -264,11 +264,25 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String buildStamp(String stamp) {
+    return 'Build $stamp';
+  }
+
+  @override
   String get updateHowTo =>
-      'Updates are GitHub Releases tagged operator-app-x.y.z. Bump pubspec and lib/app_version.dart together.';
+      'Updates come from GitHub Releases: operator-app-x.y.z or operator-app-apk-YYYYMMDD with an attached APK. Private repos need a read-only GitHub token below. Bump pubspec, app_version.dart, and kOperatorBuildStamp together.';
 
   @override
   String get checkUpdates => 'Check for updates';
+
+  @override
+  String get githubTokenHint => 'GitHub token (private repo)';
+
+  @override
+  String get githubTokenSet => 'GitHub token saved — leave blank to keep it';
+
+  @override
+  String get savedGithubToken => 'GitHub token saved.';
 
   @override
   String updateAvailable(String version) {

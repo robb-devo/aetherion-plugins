@@ -268,11 +268,26 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String buildStamp(String stamp) {
+    return 'Build $stamp';
+  }
+
+  @override
   String get updateHowTo =>
-      'Updates sind GitHub-Releases mit Tag operator-app-x.y.z. pubspec und lib/app_version.dart gemeinsam erhöhen.';
+      'Updates kommen von GitHub-Releases: operator-app-x.y.z oder operator-app-apk-YYYYMMDD mit angehängter APK. Private Repos brauchen unten einen Read-only-GitHub-Token. pubspec, app_version.dart und kOperatorBuildStamp gemeinsam erhöhen.';
 
   @override
   String get checkUpdates => 'Nach Updates suchen';
+
+  @override
+  String get githubTokenHint => 'GitHub-Token (privates Repo)';
+
+  @override
+  String get githubTokenSet =>
+      'GitHub-Token gespeichert — leer lassen, um ihn zu behalten';
+
+  @override
+  String get savedGithubToken => 'GitHub-Token gespeichert.';
 
   @override
   String updateAvailable(String version) {

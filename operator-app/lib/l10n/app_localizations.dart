@@ -560,10 +560,16 @@ abstract class AppLocalizations {
   /// **'Version {version}'**
   String currentVersion(String version);
 
+  /// No description provided for @buildStamp.
+  ///
+  /// In en, this message translates to:
+  /// **'Build {stamp}'**
+  String buildStamp(String stamp);
+
   /// No description provided for @updateHowTo.
   ///
   /// In en, this message translates to:
-  /// **'Updates are GitHub Releases tagged operator-app-x.y.z. Bump pubspec and lib/app_version.dart together.'**
+  /// **'Updates come from GitHub Releases: operator-app-x.y.z or operator-app-apk-YYYYMMDD with an attached APK. Private repos need a read-only GitHub token below. Bump pubspec, app_version.dart, and kOperatorBuildStamp together.'**
   String get updateHowTo;
 
   /// No description provided for @checkUpdates.
@@ -571,6 +577,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Check for updates'**
   String get checkUpdates;
+
+  /// No description provided for @githubTokenHint.
+  ///
+  /// In en, this message translates to:
+  /// **'GitHub token (private repo)'**
+  String get githubTokenHint;
+
+  /// No description provided for @githubTokenSet.
+  ///
+  /// In en, this message translates to:
+  /// **'GitHub token saved — leave blank to keep it'**
+  String get githubTokenSet;
+
+  /// No description provided for @savedGithubToken.
+  ///
+  /// In en, this message translates to:
+  /// **'GitHub token saved.'**
+  String get savedGithubToken;
 
   /// No description provided for @updateAvailable.
   ///

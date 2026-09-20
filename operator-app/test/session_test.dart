@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:operator_app/crafty/mock_crafty_client.dart';
 import 'package:operator_app/data/account_store.dart';
 import 'package:operator_app/data/crafty_secrets.dart';
+import 'package:operator_app/data/github_token_store.dart';
 import 'package:operator_app/data/operator_account.dart';
 import 'package:operator_app/data/pin.dart';
 import 'package:operator_app/data/session_store.dart';
@@ -19,6 +20,7 @@ OperatorSession _session({
         MemoryAccountPersistence(seed: [OperatorAccount.seedOperator()]),
     sessionStore: sessionStore ?? MemorySessionStore(),
     secrets: secrets ?? MemoryCraftySecrets(),
+    githubTokens: MemoryGithubTokenStore(),
     crafty: MockCraftyClient(jitter: false),
     updates: const NoopUpdateChecker(),
   );
