@@ -57,9 +57,10 @@ public final class NpcEditor {
 
     public void enable() {
         NpcEditorCommand command = new NpcEditorCommand(this);
-        if (plugin.getCommand("npc") != null) {
-            plugin.getCommand("npc").setExecutor(command);
-            plugin.getCommand("npc").setTabCompleter(command);
+        // Primary is aethernpc — /npc belongs to FancyNpcs on live.
+        if (plugin.getCommand("aethernpc") != null) {
+            plugin.getCommand("aethernpc").setExecutor(command);
+            plugin.getCommand("aethernpc").setTabCompleter(command);
         }
         new NpcEditorListener(this);
         new MainMenu(this);

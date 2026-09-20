@@ -66,7 +66,7 @@ Aetherion_Monkey:
 # Beta Tester (celestial cosmetics only — no tools):
 #   Preferred: Dev Menu → Ranks → Beta Tester
 #   Fallback: /lp user <name> parent set beta
-#   /lp group beta setweight 94
+#   /lp group beta setweight 93
 #   No aetherion.dev / aetherion.dev.content / flight / npc.editor.
 #
 # Palette (shimmer of #B2FFFF):

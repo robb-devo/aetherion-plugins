@@ -39,8 +39,8 @@ public final class RankBadgeService implements Listener {
             new Rank("aetherion", 88, "&8[&5♛&8] &f", "§5§lAetherion"),
             new Rank("mvpplusplus", 90, "&6[MVP&c++&6] &f", "§6MVP§c++"),
             // Ultra extras — high TAB, never parked at 50 next to mythwright.
-            // Beta 94 (cosmetic only) · Monkey 95 (content + celestial) · Admin 100.
-            new Rank("beta", 94, CelestialDye.betaPrefixStatic(), "§b§lBeta Tester"),
+            // Beta 93 (cosmetic only) · Monkey 95 (content + celestial) · Admin 100.
+            new Rank("beta", 93, CelestialDye.betaPrefixStatic(), "§b§lBeta Tester"),
             new Rank("monkey", 95, CelestialDye.monkeyPrefixStatic(), "§d§lMonkey"),
             new Rank("admin", 100, "&c[Admin] &f", "§cAdmin")
     );

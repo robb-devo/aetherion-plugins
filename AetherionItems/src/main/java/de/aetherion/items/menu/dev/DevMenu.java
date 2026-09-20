@@ -227,24 +227,24 @@ public class DevMenu {
         return action.startsWith("shard-player:") || action.startsWith("shard-add:");
     }
 
-    /** Opens the FancyNPC + quest creator ({@code /npc}). Wand is inside that menu. */
+    /** Opens the Aetherion FancyNPC + quest creator. FancyNpcs owns {@code /npc}. */
     private void giveNpcWand(Player player) {
         if (!player.hasPermission("aetherion.npc.editor") && !isFullDev(player) && !player.isOp()) {
             player.sendMessage("§cNeed §faetherion.npc.editor §c(Monkey / moderator / admin).");
             return;
         }
         player.closeInventory();
-        if (player.performCommand("npc")) {
+        if (player.performCommand("aethernpc")) {
             return;
         }
-        if (player.performCommand("aethernpc") || player.performCommand("npceditor")) {
+        if (player.performCommand("npceditor")) {
             return;
         }
-        if (player.performCommand("npc wand")) {
-            player.sendMessage("§eWand given. Use §f/npc §efor the creator menu.");
+        if (player.performCommand("aethernpc wand")) {
+            player.sendMessage("§eWand given. Use §f/aethernpc §efor the creator menu.");
             return;
         }
-        player.sendMessage("§c/npc failed. Is AetherionQuests loaded?");
+        player.sendMessage("§c/aethernpc failed. Is AetherionQuests loaded? (FancyNpcs keeps /npc.)");
     }
 
     public void open(Player player) {
@@ -1061,7 +1061,8 @@ public class DevMenu {
     private ItemStack npcEditorButton() {
         return button(Material.BLAZE_ROD, "§6§lNPC Editor", "npc-wand",
                 "§7FancyNPC + quest creator.",
-                "§7Opens §f/npc §7(same as §f/npc wand§7).",
+                "§7Opens §f/aethernpc §7(alias §f/npceditor§7).",
+                "§8FancyNpcs keeps §f/npc§8.",
                 "§8Permission: §faetherion.npc.editor");
     }
 
@@ -2306,7 +2307,7 @@ public class DevMenu {
                 "rank-set:monkey",
                 "§7Ultra rank (weight 95) — above MVP++.",
                 "§7Celestial dye TAB prefix (#B2FFFF).",
-                "§7Content tools: flight, /npc, Resources, shards.",
+                "§7Content tools: flight, /aethernpc, Resources, shards.",
                 "§7Not full admin. Stays on top of XP title.",
                 monkeyOn ? "§eClick again to remove." : "§7Click to grant.",
                 "§8Fallback: §7/lp user <name> parent set monkey"
@@ -2316,7 +2317,7 @@ public class DevMenu {
                 rankIcon("beta"),
                 (betaOn ? "§a▶ " : "") + "§b§lBeta Tester §8· celestial",
                 "rank-set:beta",
-                "§7Ultra rank (weight 94) — above MVP++.",
+                "§7Ultra rank (weight 93) — above MVP++.",
                 "§7Same celestial dye as Monkey (#B2FFFF).",
                 "§7Cosmetic only — no extra permissions.",
                 "§7Stays on top of the Aetherion title.",

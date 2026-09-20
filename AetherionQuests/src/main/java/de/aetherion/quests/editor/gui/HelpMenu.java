@@ -30,12 +30,13 @@ public final class HelpMenu implements Listener {
         inventory.setItem(10, EditorItems.button(
                 Material.COMMAND_BLOCK,
                 "§eCommands",
-                "§f/npc §7— this menu",
-                "§f/npc create [name]",
-                "§f/npc edit §7| §fnearby §7| §flist",
-                "§f/npc move §7| §fduplicate §7| §fdelete",
-                "§f/npc wand §7| §fhelp",
-                "§8Aliases: /aethernpc /npceditor"
+                "§f/aethernpc §7— this menu",
+                "§f/aethernpc create [name]",
+                "§f/aethernpc edit §7| §fnearby §7| §flist",
+                "§f/aethernpc move §7| §fduplicate §7| §fdelete",
+                "§f/aethernpc wand §7| §fhelp",
+                "§8Alias: /npceditor",
+                "§8FancyNpcs keeps §f/npc"
         ));
         inventory.setItem(12, EditorItems.button(
                 Material.BLAZE_ROD,

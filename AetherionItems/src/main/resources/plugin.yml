@@ -165,7 +165,7 @@ permissions:
     children:
       aetherion.devmenu: true
   aetherion.npc.editor:
-    description: FancyNPC + quest creator (/npc)
+    description: FancyNPC + quest creator (/aethernpc; FancyNpcs keeps /npc)
     default: false
   aetherion.flight:
     description: Toggle /flight

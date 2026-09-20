@@ -32,10 +32,10 @@ commands:
     usage: /language [en|de]
     aliases: [lang, sprache, sprachewahl]
 
-  npc:
-    description: In-game FancyNPC creator for moderators
-    usage: /npc
-    aliases: [aethernpc, npceditor]
+  aethernpc:
+    description: Aetherion FancyNPC + quest creator (FancyNpcs keeps /npc)
+    usage: /aethernpc
+    aliases: [npceditor]
     permission: aetherion.npc.editor
 
 permissions:
@@ -43,7 +43,7 @@ permissions:
     description: Create and edit FancyNPCs with dialogue (moderator / content helper)
     default: false
   aetherion.dev:
-    description: Full DEV (inherits NPC editor so Admin root can open /npc)
+    description: Full DEV (inherits NPC editor so Admin root can open /aethernpc)
     default: op
     children:
       aetherion.npc.editor: true
