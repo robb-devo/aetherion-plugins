@@ -62,7 +62,7 @@ public final class HelpMenu implements Listener {
                 "§8Fallback: /lp user <name> parent set monkey",
                 "§7Beta Tester is rainbow cosmetics only.",
                 "§7Not the same as §faetherionquests.admin",
-                "§8Monkey Content Kit cannot open Ranks.")
+                "§8Monkey Content Kit cannot open Ranks."
         ));
         inventory.setItem(22, EditorItems.button(
                 Material.WRITABLE_BOOK,
