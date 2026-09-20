@@ -1,0 +1,195 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Cinzel", ui-serif, Georgia, "Times New Roman", serif;
+  --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --color-void: #07060f;
+  --color-ink: #0c0a18;
+  --color-mist: #c9c2de;
+  --color-amethyst: #c084fc;
+  --color-amethyst-deep: #7c3aed;
+  --color-cyan: #22d3ee;
+  --color-gold: #f5c56b;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--color-void);
+  color: #efeafc;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: color-mix(in oklab, var(--color-amethyst) 55%, transparent);
+  color: #fff;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.glass {
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, white 8%, transparent),
+    color-mix(in oklab, white 2.5%, transparent)
+  );
+  border: 1px solid color-mix(in oklab, #e9d5ff 16%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, black 35%, transparent),
+    0 18px 50px color-mix(in oklab, black 38%, transparent);
+  backdrop-filter: blur(18px);
+}
+
+.glass-hover {
+  transition:
+    transform 0.35s ease,
+    border-color 0.35s ease,
+    box-shadow 0.35s ease;
+}
+
+.glass-hover:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in oklab, var(--color-amethyst) 45%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--color-cyan) 18%, transparent),
+    0 22px 50px color-mix(in oklab, var(--color-amethyst-deep) 28%, transparent);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  border-radius: 999px;
+  padding: 0.8rem 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  cursor: pointer;
+  border: 0;
+  transition:
+    transform 0.2s ease,
+    filter 0.2s ease,
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+.btn-primary {
+  color: #071018;
+  background: linear-gradient(120deg, #e9d5ff 0%, var(--color-cyan) 100%);
+  box-shadow: 0 10px 30px color-mix(in oklab, var(--color-cyan) 28%, transparent);
+}
+
+.btn-ghost {
+  color: #f6f1ff;
+  background: color-mix(in oklab, white 6%, transparent);
+  border: 1px solid color-mix(in oklab, white 16%, transparent);
+}
+
+.btn-gold {
+  color: #1a1204;
+  background: linear-gradient(120deg, #ffe7a8, var(--color-gold));
+  box-shadow: 0 10px 28px color-mix(in oklab, var(--color-gold) 22%, transparent);
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 0.75s ease,
+    transform 0.75s ease;
+}
+
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+.aurora {
+  background:
+    radial-gradient(900px 500px at 85% -10%, color-mix(in oklab, var(--color-amethyst) 28%, transparent), transparent 60%),
+    radial-gradient(700px 420px at 5% 10%, color-mix(in oklab, var(--color-cyan) 16%, transparent), transparent 55%),
+    radial-gradient(600px 400px at 50% 120%, color-mix(in oklab, var(--color-amethyst-deep) 22%, transparent), transparent 50%),
+    var(--color-void);
+}
+
+.starfield {
+  background-image:
+    radial-gradient(1.2px 1.2px at 12% 18%, rgba(255, 255, 255, 0.55), transparent),
+    radial-gradient(1px 1px at 28% 72%, rgba(34, 211, 238, 0.55), transparent),
+    radial-gradient(1.4px 1.4px at 67% 24%, rgba(192, 132, 252, 0.7), transparent),
+    radial-gradient(1px 1px at 81% 64%, rgba(255, 255, 255, 0.4), transparent),
+    radial-gradient(1.1px 1.1px at 44% 40%, rgba(255, 255, 255, 0.35), transparent),
+    radial-gradient(1px 1px at 91% 12%, rgba(34, 211, 238, 0.45), transparent);
+}
+
+.float-slow {
+  animation: float-slow 9s ease-in-out infinite;
+}
+
+.pulse-glow {
+  animation: pulse-glow 3.6s ease-in-out infinite;
+}
+
+@keyframes float-slow {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes pulse-glow {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
+.bank-details > summary {
+  list-style: none;
+}
+
+.bank-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .reveal,
+  .float-slow,
+  .pulse-glow,
+  .glass-hover {
+    animation: none;
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
