@@ -15,19 +15,20 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Eldervale mining island: more enclosed ore hotspots and soft lights in dark cuts.
- * Does not strip existing ores and does not carpet the surface.
- * Coal / copper / iron are common; gold, redstone, and lapis are occasional;
- * diamond is a rare hotspot. Veins are irregular 16–40 block walks.
- * About one seed per 12 columns (~4× the first pass). A short exclusion
- * radius keeps hotspots apart; this pass does not strip ore already in the ground.
+ * Eldervale mining island: separate 10–40 block pockets of every overworld ore
+ * the mining loop uses, plus soft lights in dark cuts.
+ * v2 left a tight scatter, so this pass thins those overworld ores back to host
+ * rock inside the zone, then places the pockets. Lights, stone builds, and
+ * nether ores (ancient debris, quartz, nether gold) are left alone.
  */
 public final class EldervaleMinePrep {
 
-    /** Was 48. */
-    private static final int SEED_EVERY_COLUMNS = 12;
-    /** Blocks: skip a seed when ore is already this close. Was 7. */
-    private static final int ORE_GAP = 5;
+    /** One seed attempt per this many columns. Spacing comes from {@link #CLUSTER_GAP}. */
+    private static final int SEED_EVERY_COLUMNS = 48;
+    /** Do not start a pocket when ore is already this close. */
+    private static final int CLUSTER_GAP = 18;
+    /** Walk stays inside this radius so the pocket reads as one cluster. */
+    private static final int CLUSTER_RADIUS = 4;
     private static final int LIGHT_STEP = 4;
 
     private EldervaleMinePrep() {
@@ -54,7 +55,7 @@ public final class EldervaleMinePrep {
         }
         if (sender != null) {
             sender.sendMessage("§eEldervale enrich: §f" + zones.size()
-                    + " §ezones — dark-cut lights + denser ore hotspots…");
+                    + " §ezones — lights, clear scatter, spaced 10–40 progression clusters…");
         }
         int[] left = {zones.size()};
         for (AreaZone zone : zones) {
@@ -87,6 +88,7 @@ public final class EldervaleMinePrep {
             }
         }
         final int[] lights = {0};
+        final int[] thinned = {0};
         final int[] veins = {0};
         final int[] ores = {0};
         final int[] index = {0};
@@ -99,6 +101,39 @@ public final class EldervaleMinePrep {
                     world.getChunkAt(x >> 4, z >> 4);
                 }
                 lights[0] += lightColumn(world, zone, x, z);
+                thinned[0] += thinColumn(world, zone, x, z);
+            }
+            index[0] = end;
+            if (index[0] >= columns.size()) {
+                task.cancel();
+                seedColumns(plugin, sender, world, zone, columns, cx, cz, lights[0], thinned[0], veins, ores, onDone);
+            }
+        }, 1L, 1L);
+    }
+
+    private static void seedColumns(
+            AetherionItems plugin,
+            CommandSender sender,
+            World world,
+            AreaZone zone,
+            List<int[]> columns,
+            int cx,
+            int cz,
+            int lights,
+            int thinned,
+            int[] veins,
+            int[] ores,
+            Runnable onDone
+    ) {
+        final int[] index = {0};
+        Bukkit.getScheduler().runTaskTimer(plugin, task -> {
+            int end = Math.min(index[0] + 36, columns.size());
+            for (int i = index[0]; i < end; i++) {
+                int x = columns.get(i)[0];
+                int z = columns.get(i)[1];
+                if (!world.isChunkLoaded(x >> 4, z >> 4)) {
+                    world.getChunkAt(x >> 4, z >> 4);
+                }
                 int placed = seedColumn(world, zone, x, z);
                 if (placed > 0) {
                     veins[0]++;
@@ -111,14 +146,36 @@ public final class EldervaleMinePrep {
                 if (sender != null) {
                     sender.sendMessage("§aEldervale §f" + zone.getType().display()
                             + " §7@ §f" + cx + " " + (int) zone.getY() + " " + cz
-                            + " §8· §e" + veins[0] + " hotspots (§f" + ores[0] + "§e)"
-                            + " §8· §a+" + lights[0] + " lights");
+                            + " §8· §7thinned §f" + thinned
+                            + " §8· §e" + veins[0] + " clusters (§f" + ores[0] + "§e)"
+                            + " §8· §a+" + lights + " lights");
                 }
                 if (onDone != null) {
                     onDone.run();
                 }
             }
         }, 1L, 1L);
+    }
+
+    /** Overworld progression ores only. Leaves lights, builds, and nether ores. */
+    private static int thinColumn(World world, AreaZone zone, int x, int z) {
+        int changed = 0;
+        int surface = world.getHighestBlockYAt(x, z, HeightMap.MOTION_BLOCKING_NO_LEAVES);
+        int minY = Math.max(world.getMinHeight() + 1, surface - 72);
+        int maxY = Math.min(world.getMaxHeight() - 2, surface - 2);
+        for (int y = minY; y <= maxY; y++) {
+            if (!zone.contains(new org.bukkit.Location(world, x + 0.5, y + 0.5, z + 0.5))) {
+                continue;
+            }
+            Block block = world.getBlockAt(x, y, z);
+            Material type = block.getType();
+            if (!isProgressionOre(type)) {
+                continue;
+            }
+            block.setType(hostRockFor(type), false);
+            changed++;
+        }
+        return changed;
     }
 
     private static int lightColumn(World world, AreaZone zone, int x, int z) {
@@ -183,7 +240,7 @@ public final class EldervaleMinePrep {
             if (!replaceableHost(block.getType())) {
                 continue;
             }
-            if (oreNearby(world, x, y, z, ORE_GAP)) {
+            if (oreNearby(world, x, y, z, CLUSTER_GAP)) {
                 continue;
             }
             if (openToSky(world, x, y, z, surface)) {
@@ -191,8 +248,8 @@ public final class EldervaleMinePrep {
             }
             Material ore = pickOre(rng);
             block.setType(variantFor(block.getType(), ore), false);
-            int size = 16 + rng.nextInt(25); // 16–40
-            return 1 + NaturalVeins.grow(x, y, z, size - 1, (px, py, pz) -> {
+            int size = 10 + rng.nextInt(31); // 10–40
+            return 1 + NaturalVeins.cluster(x, y, z, size - 1, CLUSTER_RADIUS, (px, py, pz) -> {
                 if (!zone.contains(new org.bukkit.Location(world, px + 0.5, py + 0.5, pz + 0.5))) {
                     return false;
                 }
@@ -248,27 +305,50 @@ public final class EldervaleMinePrep {
         return name.endsWith("_ORE") || name.equals("ANCIENT_DEBRIS");
     }
 
+    /**
+     * Every overworld ore the mining loop uses, as a whole cluster.
+     * Commons are a bit more frequent; diamond and emerald are still full pockets.
+     */
     private static Material pickOre(ThreadLocalRandom rng) {
         int roll = rng.nextInt(100);
-        if (roll < 34) {
+        if (roll < 16) {
             return Material.COAL_ORE;
         }
-        if (roll < 62) {
+        if (roll < 30) {
             return Material.COPPER_ORE;
         }
-        if (roll < 84) {
+        if (roll < 46) {
             return Material.IRON_ORE;
         }
-        if (roll < 92) {
+        if (roll < 58) {
             return Material.GOLD_ORE;
         }
-        if (roll < 96) {
+        if (roll < 70) {
             return Material.REDSTONE_ORE;
         }
-        if (roll < 99) {
+        if (roll < 80) {
             return Material.LAPIS_ORE;
         }
-        return Material.DIAMOND_ORE;
+        if (roll < 90) {
+            return Material.DIAMOND_ORE;
+        }
+        return Material.EMERALD_ORE;
+    }
+
+    private static boolean isProgressionOre(Material type) {
+        return switch (type) {
+            case COAL_ORE, COPPER_ORE, IRON_ORE, GOLD_ORE, REDSTONE_ORE, LAPIS_ORE, DIAMOND_ORE, EMERALD_ORE,
+                    DEEPSLATE_COAL_ORE, DEEPSLATE_COPPER_ORE, DEEPSLATE_IRON_ORE, DEEPSLATE_GOLD_ORE,
+                    DEEPSLATE_REDSTONE_ORE, DEEPSLATE_LAPIS_ORE, DEEPSLATE_DIAMOND_ORE, DEEPSLATE_EMERALD_ORE -> true;
+            default -> false;
+        };
+    }
+
+    private static Material hostRockFor(Material ore) {
+        if (ore.name().startsWith("DEEPSLATE_")) {
+            return Material.DEEPSLATE;
+        }
+        return Material.STONE;
     }
 
     private static Material variantFor(Material host, Material ore) {
@@ -286,6 +366,7 @@ public final class EldervaleMinePrep {
             case REDSTONE_ORE -> Material.DEEPSLATE_REDSTONE_ORE;
             case LAPIS_ORE -> Material.DEEPSLATE_LAPIS_ORE;
             case DIAMOND_ORE -> Material.DEEPSLATE_DIAMOND_ORE;
+            case EMERALD_ORE -> Material.DEEPSLATE_EMERALD_ORE;
             default -> ore;
         };
     }

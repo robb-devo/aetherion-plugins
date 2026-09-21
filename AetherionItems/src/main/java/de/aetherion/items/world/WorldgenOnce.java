@@ -11,7 +11,7 @@ import java.io.IOException;
 /**
  * One boot after this build applies Shabby Mine and Eldervale mining passes.
  * Flags live in the plugin folder so a later restart does not redo the world.
- * v2 keys ignore the first (too sparse) pass so density lands without deleting the file.
+ * v3 keys ignore earlier passes so the spaced-cluster layout lands without deleting the file.
  * Manual commands still run on demand.
  */
 public final class WorldgenOnce {
@@ -24,8 +24,8 @@ public final class WorldgenOnce {
         YamlConfiguration yaml = file.exists()
                 ? YamlConfiguration.loadConfiguration(file)
                 : new YamlConfiguration();
-        boolean shabby = !yaml.getBoolean("shabby-mine-applied-v2", false);
-        boolean eldervale = !yaml.getBoolean("eldervale-ores-applied-v2", false);
+        boolean shabby = !yaml.getBoolean("shabby-mine-applied-v3", false);
+        boolean eldervale = !yaml.getBoolean("eldervale-ores-applied-v3", false);
         if (!shabby && !eldervale) {
             return;
         }
@@ -39,8 +39,8 @@ public final class WorldgenOnce {
                     plugin.getLogger().info("Eldervale ore pass waiting — no Eldervale area yet.");
                     return;
                 }
-                plugin.getLogger().info("Eldervale mining pass v2 (lights + denser ore hotspots)…");
-                EldervaleMinePrep.run(Bukkit.getConsoleSender(), () -> mark(plugin, file, "eldervale-ores-applied-v2"));
+                plugin.getLogger().info("Eldervale mining pass v3 (spaced 10–40 progression clusters)…");
+                EldervaleMinePrep.run(Bukkit.getConsoleSender(), () -> mark(plugin, file, "eldervale-ores-applied-v3"));
             };
             if (!shabby) {
                 elder.run();
@@ -52,9 +52,9 @@ public final class WorldgenOnce {
                 elder.run();
                 return;
             }
-            plugin.getLogger().info("Shabby Mine ore pass v2 (denser coal / iron / copper veins)…");
+            plugin.getLogger().info("Shabby Mine ore pass v3 (spaced 10–40 coal / iron / copper clusters)…");
             ShabbyMinePrep.run(Bukkit.getConsoleSender(), () -> {
-                mark(plugin, file, "shabby-mine-applied-v2");
+                mark(plugin, file, "shabby-mine-applied-v3");
                 elder.run();
             });
         }, 200L);

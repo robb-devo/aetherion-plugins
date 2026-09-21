@@ -16,9 +16,8 @@ import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Softlight + ore balance for {@link AreaType#SHABBY_MINE}:
- * majority stone, rich irregular 16–48 mono veins (coal / copper / iron only).
- * About one seed per 8 columns (~4× the first pass) so clusters are common
- * without turning the host rock into a carpet.
+ * majority stone, separate mono pockets of coal / copper / iron (10–40 blocks).
+ * Seeds are sparse and rejected when ore is already nearby, so pockets stay apart.
  */
 public final class ShabbyMinePrep {
 
@@ -34,8 +33,12 @@ public final class ShabbyMinePrep {
             Material.DEEPSLATE_IRON_ORE
     };
 
-    /** ~1 cluster seed per this many columns (after thinning). Was 32. */
-    private static final int SEED_EVERY_COLUMNS = 8;
+    /** One seed attempt per this many columns. Spacing comes from {@link #CLUSTER_GAP}. */
+    private static final int SEED_EVERY_COLUMNS = 48;
+    /** Do not start a pocket when ore is already this close. */
+    private static final int CLUSTER_GAP = 18;
+    /** Walk stays inside this radius so the pocket reads as one cluster. */
+    private static final int CLUSTER_RADIUS = 4;
 
     private ShabbyMinePrep() {
     }
@@ -62,7 +65,7 @@ public final class ShabbyMinePrep {
         }
         if (sender != null) {
             sender.sendMessage("§eShabby Mine prep: §f" + zones.size()
-                    + " §ezones — thin ores → rich 16–48 coal/iron/copper veins…");
+                    + " §ezones — thin ores → spaced 10–40 coal/iron/copper clusters…");
         }
         int[] left = {zones.size()};
         for (AreaZone zone : zones) {
@@ -104,7 +107,7 @@ public final class ShabbyMinePrep {
                 }
                 phase1.add(new int[]{2, x, z}); // thin ores → stone
                 phase1.add(new int[]{1, x, z}); // leftover sponges
-                phase2.add(new int[]{3, x, z}); // cluster seeds
+                phase2.add(new int[]{3, x, z}); // spaced cluster seeds
             }
         }
 
@@ -244,7 +247,7 @@ public final class ShabbyMinePrep {
         return changed;
     }
 
-    /** Rare leftover sponges → one 16–48 mono vein. */
+    /** Rare leftover sponges → one 10–40 mono cluster. */
     private static int[] spongeColumn(World world, AreaZone zone, int x, int z) {
         int sponges = 0;
         int ores = 0;
@@ -267,7 +270,7 @@ public final class ShabbyMinePrep {
         return new int[]{sponges, ores};
     }
 
-    /** Most columns skip; hits place one irregular 16–48 mono vein. */
+    /** Most columns skip; a hit places one 10–40 mono pocket, away from other ore. */
     private static int seedClusterColumn(World world, AreaZone zone, int x, int z) {
         ThreadLocalRandom rng = ThreadLocalRandom.current();
         if (rng.nextInt(SEED_EVERY_COLUMNS) != 0) {
@@ -288,6 +291,9 @@ public final class ShabbyMinePrep {
             if (!replaceableHost(host)) {
                 continue;
             }
+            if (oreNearby(world, x, y, z, CLUSTER_GAP)) {
+                continue;
+            }
             Material ore = pickOre(y);
             block.setType(variantFor(host, ore), false);
             return 1 + growCluster(world, zone, x, y, z, ore, clusterSize() - 1);
@@ -296,12 +302,12 @@ public final class ShabbyMinePrep {
     }
 
     private static int clusterSize() {
-        return 16 + ThreadLocalRandom.current().nextInt(33); // 16–48
+        return 10 + ThreadLocalRandom.current().nextInt(31); // 10–40
     }
 
-    /** Irregular walk, not a filled cube and not a grid. */
+    /** One lumpy pocket, not a filled cube and not a grid. */
     private static int growCluster(World world, AreaZone zone, int ox, int oy, int oz, Material ore, int extra) {
-        return NaturalVeins.grow(ox, oy, oz, extra, (x, y, z) -> {
+        return NaturalVeins.cluster(ox, oy, oz, extra, CLUSTER_RADIUS, (x, y, z) -> {
             if (dist2(x + 0.5, y + 0.5, z + 0.5, zone) > zone.getRadius() * zone.getRadius()) {
                 return false;
             }
@@ -313,6 +319,31 @@ public final class ShabbyMinePrep {
             block.setType(variantFor(host, ore), false);
             return true;
         });
+    }
+
+    private static boolean oreNearby(World world, int cx, int cy, int cz, int radius) {
+        int limit = radius * radius;
+        for (int dx = -radius; dx <= radius; dx += 2) {
+            for (int dy = -radius; dy <= radius; dy += 2) {
+                for (int dz = -radius; dz <= radius; dz += 2) {
+                    if (dx * dx + dy * dy + dz * dz > limit) {
+                        continue;
+                    }
+                    if (isOre(world.getBlockAt(cx + dx, cy + dy, cz + dz).getType())) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    private static boolean isOre(Material type) {
+        if (type == null) {
+            return false;
+        }
+        String name = type.name();
+        return name.endsWith("_ORE") || name.equals("ANCIENT_DEBRIS");
     }
 
     private static boolean isRareOre(Material type) {

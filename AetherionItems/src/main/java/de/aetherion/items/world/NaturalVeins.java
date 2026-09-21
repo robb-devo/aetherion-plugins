@@ -16,6 +16,48 @@ final class NaturalVeins {
     private NaturalVeins() {
     }
 
+    /**
+     * Lumpy pocket around the origin. The walk is pulled back inside {@code radius}
+     * so 10–40 ores stay one cluster instead of a long snake.
+     */
+    static int cluster(int ox, int oy, int oz, int extra, int radius, Placer placer) {
+        if (extra <= 0 || placer == null || radius < 1) {
+            return 0;
+        }
+        ThreadLocalRandom rng = ThreadLocalRandom.current();
+        int placed = 0;
+        int x = ox;
+        int y = oy;
+        int z = oz;
+        int limit = radius * radius;
+        int budget = extra * 24;
+        int spins = 0;
+        while (placed < extra && spins < budget) {
+            spins++;
+            int nx = x + rng.nextInt(3) - 1;
+            int ny = y + rng.nextInt(3) - 1;
+            int nz = z + rng.nextInt(3) - 1;
+            if (dist2(nx, ny, nz, ox, oy, oz) > limit) {
+                nx = x + Integer.signum(ox - x);
+                ny = y + Integer.signum(oy - y);
+                nz = z + Integer.signum(oz - z);
+            }
+            x = nx;
+            y = ny;
+            z = nz;
+            int jx = x + rng.nextInt(3) - 1;
+            int jz = z + rng.nextInt(3) - 1;
+            if (dist2(jx, y, jz, ox, oy, oz) > limit) {
+                jx = x;
+                jz = z;
+            }
+            if (placer.tryPlace(jx, y, jz)) {
+                placed++;
+            }
+        }
+        return placed;
+    }
+
     static int grow(int ox, int oy, int oz, int extra, Placer placer) {
         if (extra <= 0 || placer == null) {
             return 0;
@@ -62,5 +104,12 @@ final class NaturalVeins {
 
     private static int clamp(int value) {
         return Math.max(-1, Math.min(1, value));
+    }
+
+    private static int dist2(int x, int y, int z, int ox, int oy, int oz) {
+        int dx = x - ox;
+        int dy = y - oy;
+        int dz = z - oz;
+        return dx * dx + dy * dy + dz * dz;
     }
 }
