@@ -16,7 +16,9 @@ import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Softlight + ore balance for {@link AreaType#SHABBY_MINE}:
- * majority stone, sparse irregular 10–40 mono veins (coal / copper / iron only).
+ * majority stone, rich irregular 16–48 mono veins (coal / copper / iron only).
+ * About one seed per 8 columns (~4× the first pass) so clusters are common
+ * without turning the host rock into a carpet.
  */
 public final class ShabbyMinePrep {
 
@@ -32,8 +34,8 @@ public final class ShabbyMinePrep {
             Material.DEEPSLATE_IRON_ORE
     };
 
-    /** ~1 cluster seed per this many columns (after thinning). */
-    private static final int SEED_EVERY_COLUMNS = 32;
+    /** ~1 cluster seed per this many columns (after thinning). Was 32. */
+    private static final int SEED_EVERY_COLUMNS = 8;
 
     private ShabbyMinePrep() {
     }
@@ -60,7 +62,7 @@ public final class ShabbyMinePrep {
         }
         if (sender != null) {
             sender.sendMessage("§eShabby Mine prep: §f" + zones.size()
-                    + " §ezones — thin ores → sparse 10–40 coal/iron/copper veins…");
+                    + " §ezones — thin ores → rich 16–48 coal/iron/copper veins…");
         }
         int[] left = {zones.size()};
         for (AreaZone zone : zones) {
@@ -102,7 +104,7 @@ public final class ShabbyMinePrep {
                 }
                 phase1.add(new int[]{2, x, z}); // thin ores → stone
                 phase1.add(new int[]{1, x, z}); // leftover sponges
-                phase2.add(new int[]{3, x, z}); // sparse cluster seeds
+                phase2.add(new int[]{3, x, z}); // cluster seeds
             }
         }
 
@@ -222,7 +224,7 @@ public final class ShabbyMinePrep {
         return true;
     }
 
-    /** Wipe starter/rare ores back to host rock so clusters stay sparse. */
+    /** Wipe starter/rare ores back to host rock so the reseed does not stack on the last pass. */
     private static int thinColumn(World world, AreaZone zone, int x, int z) {
         int changed = 0;
         int minY = Math.max(world.getMinHeight() + 1, (int) Math.floor(zone.getY()) - zone.getRadius());
@@ -242,7 +244,7 @@ public final class ShabbyMinePrep {
         return changed;
     }
 
-    /** Rare leftover sponges → one 10–40 mono vein. */
+    /** Rare leftover sponges → one 16–48 mono vein. */
     private static int[] spongeColumn(World world, AreaZone zone, int x, int z) {
         int sponges = 0;
         int ores = 0;
@@ -265,7 +267,7 @@ public final class ShabbyMinePrep {
         return new int[]{sponges, ores};
     }
 
-    /** Sparse seeds: most columns skip; hits place one irregular 10–40 mono vein. */
+    /** Most columns skip; hits place one irregular 16–48 mono vein. */
     private static int seedClusterColumn(World world, AreaZone zone, int x, int z) {
         ThreadLocalRandom rng = ThreadLocalRandom.current();
         if (rng.nextInt(SEED_EVERY_COLUMNS) != 0) {
@@ -294,7 +296,7 @@ public final class ShabbyMinePrep {
     }
 
     private static int clusterSize() {
-        return 10 + ThreadLocalRandom.current().nextInt(31); // 10–40
+        return 16 + ThreadLocalRandom.current().nextInt(33); // 16–48
     }
 
     /** Irregular walk, not a filled cube and not a grid. */

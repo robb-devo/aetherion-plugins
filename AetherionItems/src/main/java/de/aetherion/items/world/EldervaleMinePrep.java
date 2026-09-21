@@ -18,11 +18,16 @@ import java.util.concurrent.ThreadLocalRandom;
  * Eldervale mining island: more enclosed ore hotspots and soft lights in dark cuts.
  * Does not strip existing ores and does not carpet the surface.
  * Coal / copper / iron are common; gold, redstone, and lapis are occasional;
- * diamond is a rare hotspot. Veins are irregular 12–32 block walks.
+ * diamond is a rare hotspot. Veins are irregular 16–40 block walks.
+ * About one seed per 12 columns (~4× the first pass). A short exclusion
+ * radius keeps hotspots apart; this pass does not strip ore already in the ground.
  */
 public final class EldervaleMinePrep {
 
-    private static final int SEED_EVERY_COLUMNS = 48;
+    /** Was 48. */
+    private static final int SEED_EVERY_COLUMNS = 12;
+    /** Blocks: skip a seed when ore is already this close. Was 7. */
+    private static final int ORE_GAP = 5;
     private static final int LIGHT_STEP = 4;
 
     private EldervaleMinePrep() {
@@ -49,7 +54,7 @@ public final class EldervaleMinePrep {
         }
         if (sender != null) {
             sender.sendMessage("§eEldervale enrich: §f" + zones.size()
-                    + " §ezones — dark-cut lights + scattered ore hotspots…");
+                    + " §ezones — dark-cut lights + denser ore hotspots…");
         }
         int[] left = {zones.size()};
         for (AreaZone zone : zones) {
@@ -178,7 +183,7 @@ public final class EldervaleMinePrep {
             if (!replaceableHost(block.getType())) {
                 continue;
             }
-            if (oreNearby(world, x, y, z, 7)) {
+            if (oreNearby(world, x, y, z, ORE_GAP)) {
                 continue;
             }
             if (openToSky(world, x, y, z, surface)) {
@@ -186,7 +191,7 @@ public final class EldervaleMinePrep {
             }
             Material ore = pickOre(rng);
             block.setType(variantFor(block.getType(), ore), false);
-            int size = 12 + rng.nextInt(21); // 12–32
+            int size = 16 + rng.nextInt(25); // 16–40
             return 1 + NaturalVeins.grow(x, y, z, size - 1, (px, py, pz) -> {
                 if (!zone.contains(new org.bukkit.Location(world, px + 0.5, py + 0.5, pz + 0.5))) {
                     return false;
