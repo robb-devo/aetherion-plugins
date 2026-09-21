@@ -338,3 +338,30 @@ spawn-items:
     consume: true
     cooldown-seconds: 3
     require-altar: false
+
+  ashen_sheath_anchor:
+    boss: ashen_sheath
+    mode: SET_SPAWN
+    material: IRON_SWORD
+    display-name: "&d&lAshen Sheath Anchor"
+    lore:
+      - "&7Right-click a block to lock the samurai arena."
+      - "&7He spawns there for sparring / events."
+      - "&8Admin · BossEngine · Forage Isle"
+    glowing: true
+    consume: false
+    cooldown-seconds: 1
+    require-altar: false
+
+  ashen_sheath_core:
+    boss: ashen_sheath
+    mode: SUMMON
+    material: NETHERITE_SWORD
+    display-name: "&dAshen Sheath Core"
+    lore:
+      - "&7Right-click to summon The Ashen Sheath here."
+      - "&8Test-Item · BossEngine"
+    glowing: true
+    consume: true
+    cooldown-seconds: 3
+    require-altar: false

@@ -261,6 +261,7 @@ public class AetherionItems extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new BridgedAxeListener(this, itemManager), this);
         getServer().getPluginManager().registerEvents(new WarpedBladeListener(itemManager), this);
         getServer().getPluginManager().registerEvents(new de.aetherion.items.listener.GravwellCleaverListener(this, itemManager), this);
+        getServer().getPluginManager().registerEvents(new de.aetherion.items.listener.AshenKatanaListener(this, itemManager), this);
         T2UniqueListener t2Uniques = new T2UniqueListener(itemManager);
         getServer().getPluginManager().registerEvents(t2Uniques, this);
         getServer().getScheduler().runTaskTimer(this, t2Uniques, 10L, 10L);
@@ -504,6 +505,7 @@ public class AetherionItems extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        de.aetherion.items.listener.AshenKatanaListener.shutdown();
         // Close open GUIs so AH/Bazaar/trade/sack holders return or persist items
         // before YAML flush. Server is stopping; this is not a gameplay change.
         for (org.bukkit.entity.Player player : getServer().getOnlinePlayers()) {

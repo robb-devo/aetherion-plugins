@@ -35,7 +35,7 @@ public class TemplateManager {
                 "bridge_troll.yml", "squidward.yml", "aetherion.yml", "dungeon_sentinel.yml",
                 "dungeon_frostbound.yml", "dungeon_aetherion.yml", "sir_balthazar.yml",
                 "lobby_cleaner.yml", "sparky.yml", "baron_von_wurm.yml", "insolvent_wither.yml",
-                "pathwarden.yml",
+                "pathwarden.yml", "ashen_sheath.yml",
                 "test_echo.yml", "test_parity.yml", "test_curator.yml", "test_nullspace.yml",
                 "test_loadbearing.yml", "test_softlock.yml", "test_heartbeat.yml", "test_broker.yml",
                 "test_afterimage.yml", "test_gravity.yml", "test_quiet.yml", "test_petjury.yml"

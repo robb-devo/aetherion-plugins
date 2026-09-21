@@ -68,6 +68,7 @@ public final class ItemFlavor {
             case "voided_455" -> "§8One catalyst short. Then the inventory learned gravity.";
             case "warped_blade" -> "§7It skipped the hallway. The hallway filed a complaint.";
             case "gravwell_cleaver" -> "§7The Pathwarden's toll booth. Still accepting souls.";
+            case "ashen_katana" -> "§7Sheathed until the grove asks. Then it does not ask.";
             case "staff_of_technical_difficulties" -> "§7The patch notes were a suggestion.";
             case "void_vacuum_charm" -> "§7Drops report to the hopper. You do not.";
             case "thermal_core" -> "§7Faster. Warmer. Slightly your problem.";
