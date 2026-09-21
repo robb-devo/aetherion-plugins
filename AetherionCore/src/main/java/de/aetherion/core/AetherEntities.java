@@ -7,6 +7,14 @@ import org.bukkit.persistence.PersistentDataType;
 
 /**
  * Identity checks for tagged Aetherion entities. Read-only. No spawning, no ticks.
+ *
+ * <p><b>Persistent / intentional</b> (never bulk-removed): quest NPCs, dungeon NPCs,
+ * bosses, fishing encounters, set minions, jump-pad labels owned by Hub, configured
+ * custom entities, and the single marker each area / habitat / mob zone keeps.
+ * <p><b>Temporary / runtime</b> (must despawn): wild and equipped pet displays,
+ * wildlife HP labels, ambient animals, lure fish, boss FX. They are non-persistent
+ * and dropped on area leave, logout, death, teleport, and chunk unload.
+ * See {@code docs/ENTITY_LIFECYCLE.md}.
  */
 public final class AetherEntities {
 

@@ -181,6 +181,7 @@ public class AetherionItems extends JavaPlugin {
         de.aetherion.items.world.PetHabitatZoneService petHabitats =
                 new de.aetherion.items.world.PetHabitatZoneService(this);
         areas = new de.aetherion.items.world.AreaService(this);
+        de.aetherion.items.world.WorldgenOnce.schedule(this);
         de.aetherion.items.world.ColosseumArena.ensureArea(this, areas);
         worldMaps = new de.aetherion.items.world.WorldMapService(this);
         cryptHolograms = new de.aetherion.items.world.CryptHologramService(this);

@@ -33,6 +33,7 @@ import net.kyori.adventure.text.format.TextDecoration;
 import org.joml.AxisAngle4f;
 import org.joml.Vector3f;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -336,18 +337,55 @@ public final class IsleGuideNpc implements Listener {
             return;
         }
         Location at = guideLocation();
-        if (at == null) {
+        if (at == null || at.getWorld() == null) {
             return;
         }
-        TextDisplay holo = hologram();
-        if (holo == null || holo.isDead()) {
+        // Unloaded chunk: Bukkit.getEntity is null even though the saved hologram
+        // is still in the chunk. Spawning here force-loads it and stacks another
+        // persistent TextDisplay. Forage players leave the guide chunk; Capital does not.
+        if (!at.getChunk().isLoaded()) {
+            return;
+        }
+        TextDisplay holo = adoptHologram(at);
+        if (holo == null) {
             ensureHologram(at);
             return;
         }
+        hologramId = holo.getUniqueId();
         Location want = at.clone().add(0, 2.15, 0);
         if (holo.getLocation().distanceSquared(want) > 0.01) {
             holo.teleport(want);
         }
+    }
+
+    /** Keep one isle-guide label. Extras are the old respawn-while-unloaded leak. */
+    private TextDisplay adoptHologram(Location at) {
+        List<TextDisplay> found = new ArrayList<>();
+        if (hologramId != null) {
+            Entity entity = Bukkit.getEntity(hologramId);
+            if (entity instanceof TextDisplay display
+                    && display.isValid()
+                    && display.getScoreboardTags().contains(HOLO_TAG)) {
+                found.add(display);
+            }
+        }
+        for (Entity entity : at.getChunk().getEntities()) {
+            if (entity instanceof TextDisplay display
+                    && display.isValid()
+                    && display.getScoreboardTags().contains(HOLO_TAG)
+                    && display.getLocation().distanceSquared(at) <= 64
+                    && !found.contains(display)) {
+                found.add(display);
+            }
+        }
+        if (found.isEmpty()) {
+            return null;
+        }
+        TextDisplay keep = found.get(0);
+        for (int i = 1; i < found.size(); i++) {
+            found.get(i).remove();
+        }
+        return keep;
     }
 
     private TextDisplay hologram() {

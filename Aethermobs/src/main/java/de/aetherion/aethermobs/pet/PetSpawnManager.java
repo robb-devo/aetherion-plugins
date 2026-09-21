@@ -3093,11 +3093,13 @@ public class PetSpawnManager {
         activePets.removeIf(
                 pet -> {
 
-                    if (
-                            pet == null
-                                    || !pet.isSpawned()
-                    ) {
+                    if (pet == null) {
+                        return true;
+                    }
 
+                    if (!pet.isSpawned()) {
+                        // Dropping the tracker without remove() left the nameplate behind.
+                        pet.remove();
                         return true;
                     }
 
