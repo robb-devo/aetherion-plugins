@@ -32,10 +32,10 @@ commands:
     usage: /language [en|de]
     aliases: [lang, sprache, sprachewahl]
 
-  npc:
-    description: In-game FancyNPC creator for moderators
-    usage: /npc
-    aliases: [aethernpc, npceditor]
+  aethernpc:
+    description: NPC and quest editor for content helpers
+    usage: /aethernpc
+    aliases: [npceditor]
     permission: aetherion.npc.editor
 
 permissions:

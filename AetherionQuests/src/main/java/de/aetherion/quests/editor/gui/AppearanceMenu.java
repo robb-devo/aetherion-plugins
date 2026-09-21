@@ -2,6 +2,7 @@ package de.aetherion.quests.editor.gui;
 
 import de.aetherion.quests.editor.AppearancePreset;
 import de.aetherion.quests.editor.CustomNpc;
+import de.aetherion.quests.editor.EditorScreen;
 import de.aetherion.quests.editor.EditorSessions;
 import de.aetherion.quests.editor.NpcEditor;
 
@@ -18,9 +19,8 @@ import org.bukkit.inventory.InventoryHolder;
 public final class AppearanceMenu implements Listener {
 
     private static final int SKIN = 4;
-    private static final int SLIM = 6;
-    private static final int BACK = 22;
-    private static final int PRESET_START = 9;
+    private static final int SLIM = 8;
+    private static final int PRESET_START = 19;
 
     private final NpcEditor editor;
 
@@ -32,20 +32,26 @@ public final class AppearanceMenu implements Listener {
     public static void open(Player player, CustomNpc npc) {
         Inventory inventory = Bukkit.createInventory(
                 new Holder(npc.getId()),
-                27,
-                EditorItems.title(player, "npc_appear", "§8Appearance")
+                54,
+                EditorItems.title(player, "npc_appear", "§8Look")
         );
-        EditorItems.fill(inventory);
+        EditorItems.chrome(inventory);
         inventory.setItem(SKIN, EditorItems.head(
                 npc.getSkinUsername(),
-                "§eSkin username",
-                "§7Currently §f" + npc.getSkinUsername(),
-                "§7Click and type a Mojang name."
+                EditorItems.ui(player, "editor_skin", "§eUse a Minecraft skin"),
+                "§7" + npc.getSkinUsername(),
+                EditorItems.ui(player, "editor_skin_hint", "§7Click and type a username.")
         ));
         inventory.setItem(SLIM, EditorItems.button(
                 npc.isSlim() ? Material.LIME_DYE : Material.GRAY_DYE,
-                npc.isSlim() ? "§aSlim arms" : "§7Wide arms",
-                "§7Click to toggle."
+                npc.isSlim()
+                        ? EditorItems.ui(player, "editor_slim_on", "§aSlim arms")
+                        : EditorItems.ui(player, "editor_slim_off", "§7Wide arms"),
+                EditorItems.ui(player, "editor_slim_hint", "§7Click to toggle.")
+        ));
+        inventory.setItem(18, EditorItems.section(
+                EditorItems.ui(player, "editor_presets", "Presets"),
+                EditorItems.ui(player, "editor_presets_hint", "§7One click. Outfit + skin hint.")
         ));
         AppearancePreset[] presets = AppearancePreset.values();
         for (int i = 0; i < presets.length && i < 10; i++) {
@@ -54,11 +60,12 @@ public final class AppearanceMenu implements Listener {
             inventory.setItem(PRESET_START + i, EditorItems.button(
                     preset.icon(),
                     (selected ? "§a" : "§e") + preset.label(),
-                    "§7Skin hint §f" + preset.skinUsername(),
-                    selected ? "§aSelected" : "§7Click to apply"
+                    selected
+                            ? EditorItems.ui(player, "editor_selected", "§aSelected")
+                            : EditorItems.ui(player, "editor_preset_click", "§7Click to apply")
             ));
         }
-        inventory.setItem(BACK, EditorItems.button(Material.ARROW, "§7Back"));
+        inventory.setItem(EditorItems.BACK, EditorItems.back(player));
         player.openInventory(inventory);
     }
 
@@ -67,11 +74,8 @@ public final class AppearanceMenu implements Listener {
         if (!(event.getInventory().getHolder() instanceof Holder holder)) {
             return;
         }
-        event.setCancelled(true);
-        if (!(event.getWhoClicked() instanceof Player player) || !NpcEditor.allowed(player)) {
-            return;
-        }
-        if (event.getClickedInventory() == null || event.getClickedInventory() != event.getView().getTopInventory()) {
+        Player player = EditorItems.editorClick(event);
+        if (player == null) {
             return;
         }
         CustomNpc npc = editor.storage().get(holder.npcId());
@@ -79,12 +83,15 @@ public final class AppearanceMenu implements Listener {
             return;
         }
         int slot = event.getRawSlot();
-        if (slot == BACK) {
+        if (slot == EditorItems.BACK) {
             EditMenu.open(player, npc);
             return;
         }
         if (slot == SKIN) {
-            editor.prompt(player, EditorSessions.Prompt.SKIN, "Type a Minecraft username for the skin");
+            editor.sessions().of(player).setNpcId(npc.getId());
+            editor.prompt(player, EditorSessions.Prompt.SKIN, EditorScreen.APPEARANCE,
+                    EditorItems.ui(player, "editor_prompt_skin", "Type a Minecraft username for the skin"),
+                    npc.getSkinUsername());
             return;
         }
         if (slot == SLIM) {
@@ -101,7 +108,6 @@ public final class AppearanceMenu implements Listener {
             npc.setSlim(preset.slim());
             npc.setSkinUsername(preset.skinUsername());
             editor.persist(npc);
-            player.sendMessage("§aAppearance §f" + preset.label());
             open(player, npc);
         }
     }

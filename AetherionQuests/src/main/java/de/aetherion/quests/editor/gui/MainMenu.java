@@ -16,11 +16,12 @@ import org.bukkit.inventory.InventoryHolder;
 
 public final class MainMenu implements Listener {
 
-    private static final int CREATE = 11;
-    private static final int NEARBY = 13;
-    private static final int LIST = 15;
-    private static final int WAND = 21;
-    private static final int HELP = 23;
+    private static final int CREATE = 22;
+    private static final int NEARBY = 20;
+    private static final int LIST = 24;
+    private static final int WAND = 38;
+    private static final int STEPS = 40;
+    private static final int HELP = 42;
 
     private final NpcEditor editor;
 
@@ -32,45 +33,63 @@ public final class MainMenu implements Listener {
     public static void open(Player player) {
         Inventory inventory = Bukkit.createInventory(
                 new Holder(),
-                27,
-                EditorItems.title(player, "npc_editor", "§8NPC Editor")
+                54,
+                EditorItems.title(player, "npc_editor", "§8NPC & Quest Editor")
         );
-        EditorItems.fill(inventory);
+        EditorItems.chrome(inventory);
         inventory.setItem(4, EditorItems.button(
                 Material.NETHER_STAR,
-                "§bNPC Editor",
-                "§7Create FancyNPCs with dialogue.",
-                "§7Story NPCs stay untouched."
+                EditorItems.ui(player, "editor_home_title", "§bNPC & Quest Editor"),
+                EditorItems.ui(player, "editor_home_l1", "§7Create a talking NPC in under a minute."),
+                EditorItems.ui(player, "editor_home_l2", "§7Story NPCs stay untouched."),
+                "§8/aethernpc"
+        ));
+        inventory.setItem(18, EditorItems.section(
+                EditorItems.ui(player, "editor_sec_start", "Start"),
+                EditorItems.ui(player, "editor_sec_start_hint", "§7Create, find, or list.")
         ));
         inventory.setItem(CREATE, EditorItems.button(
                 Material.EMERALD_BLOCK,
-                "§aCreate NPC",
-                "§7Name in chat, then place at your feet.",
-                "§eClick to start."
+                EditorItems.ui(player, "editor_create", "§a§lCreate NPC"),
+                EditorItems.ui(player, "editor_create_l1", "§7Name them in chat."),
+                EditorItems.ui(player, "editor_create_l2", "§7They appear at your feet."),
+                EditorItems.ui(player, "editor_create_l3", "§eClick to start.")
         ));
         inventory.setItem(NEARBY, EditorItems.button(
                 Material.COMPASS,
-                "§eEdit nearby",
-                "§7Opens the closest editor NPC",
-                "§7within 8 blocks."
+                EditorItems.ui(player, "editor_nearby", "§eEdit nearby"),
+                EditorItems.ui(player, "editor_nearby_l1", "§7Closest editor NPC"),
+                EditorItems.ui(player, "editor_nearby_l2", "§7within 8 blocks.")
         ));
         inventory.setItem(LIST, EditorItems.button(
                 Material.BOOK,
-                "§6List NPCs",
-                "§7Every moderator NPC you created."
+                EditorItems.ui(player, "editor_list", "§6Your NPCs"),
+                EditorItems.ui(player, "editor_list_l1", "§7Every NPC this tool created.")
+        ));
+        inventory.setItem(36, EditorItems.section(
+                EditorItems.ui(player, "editor_sec_tools", "Tools"),
+                EditorItems.ui(player, "editor_sec_tools_hint", "§7Wand and a 3-step recap.")
         ));
         inventory.setItem(WAND, EditorItems.button(
                 Material.BLAZE_ROD,
-                "§6Get wand",
-                "§7Right-click air — this menu.",
-                "§7Right-click an editor NPC — edit.",
-                "§7Sneak-click — delete confirm."
+                EditorItems.ui(player, "editor_wand", "§6Get wand"),
+                EditorItems.ui(player, "editor_wand_l1", "§7Right-click air — this menu."),
+                EditorItems.ui(player, "editor_wand_l2", "§7Right-click an editor NPC — edit.")
+        ));
+        inventory.setItem(STEPS, EditorItems.button(
+                Material.MAP,
+                EditorItems.ui(player, "editor_steps", "§f60-second start"),
+                EditorItems.ui(player, "editor_steps_l1", "§e1. §7Create NPC"),
+                EditorItems.ui(player, "editor_steps_l2", "§e2. §7Write what they say"),
+                EditorItems.ui(player, "editor_steps_l3", "§e3. §7Optional: give them a quest"),
+                EditorItems.ui(player, "editor_steps_l4", "§8That's the whole simple path.")
         ));
         inventory.setItem(HELP, EditorItems.button(
                 Material.KNOWLEDGE_BOOK,
-                "§fHelp",
-                "§7Commands, permissions, storage."
+                EditorItems.ui(player, "editor_tips", "§fTips"),
+                EditorItems.ui(player, "editor_tips_l1", "§7Wand, commands, what's safe.")
         ));
+        inventory.setItem(EditorItems.BACK, EditorItems.close(player));
         player.openInventory(inventory);
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.45f, 1.2f);
     }
@@ -80,11 +99,8 @@ public final class MainMenu implements Listener {
         if (!(event.getInventory().getHolder() instanceof Holder)) {
             return;
         }
-        event.setCancelled(true);
-        if (!(event.getWhoClicked() instanceof Player player) || !NpcEditor.allowed(player)) {
-            return;
-        }
-        if (event.getClickedInventory() == null || event.getClickedInventory() != event.getView().getTopInventory()) {
+        Player player = EditorItems.editorClick(event);
+        if (player == null) {
             return;
         }
         switch (event.getRawSlot()) {
@@ -92,15 +108,22 @@ public final class MainMenu implements Listener {
             case NEARBY -> {
                 CustomNpc npc = editor.service().nearby(player, 8);
                 if (npc == null) {
-                    player.sendMessage("§eNo editor NPC within 8 blocks.");
-                    player.sendMessage("§7Story NPCs cannot be edited with this tool.");
+                    player.sendMessage(EditorItems.ui(player, "editor_none_nearby", "§eNo editor NPC nearby."));
+                    player.sendMessage(EditorItems.ui(player, "editor_story_safe",
+                            "§7Story NPCs (Egon, Twig, Miss Canopy) stay untouched."));
                     return;
                 }
                 editor.openEdit(player, npc);
             }
             case LIST -> ListMenu.open(player, 0);
             case WAND -> editor.giveWand(player);
+            case STEPS -> {
+                player.sendMessage(EditorItems.ui(player, "editor_steps_l1", "§e1. §7Create NPC"));
+                player.sendMessage(EditorItems.ui(player, "editor_steps_l2", "§e2. §7Write what they say"));
+                player.sendMessage(EditorItems.ui(player, "editor_steps_l3", "§e3. §7Optional: give them a quest"));
+            }
             case HELP -> HelpMenu.open(player);
+            case EditorItems.BACK -> player.closeInventory();
             default -> {
             }
         }

@@ -30,6 +30,8 @@ public final class CustomNpc {
     private float yaw;
     private float pitch;
     private String linkedQuestId;
+    private NpcMode mode = NpcMode.DIALOG;
+    private boolean autoQuest = true;
     private String startPage = START_PAGE;
     private final Map<String, DialoguePage> pages = new LinkedHashMap<>();
 
@@ -158,6 +160,26 @@ public final class CustomNpc {
         return linkedQuestId != null && !linkedQuestId.isBlank();
     }
 
+    public NpcMode getMode() {
+        return mode == null ? NpcMode.DIALOG : mode;
+    }
+
+    public void setMode(NpcMode mode) {
+        this.mode = mode == null ? NpcMode.DIALOG : mode;
+    }
+
+    public boolean isQuestNpc() {
+        return getMode() == NpcMode.QUEST;
+    }
+
+    public boolean isAutoQuest() {
+        return autoQuest;
+    }
+
+    public void setAutoQuest(boolean autoQuest) {
+        this.autoQuest = autoQuest;
+    }
+
     public String getStartPage() {
         if (startPage != null && pages.containsKey(startPage)) {
             return startPage;
@@ -211,6 +233,8 @@ public final class CustomNpc {
         copy.yaw = this.yaw;
         copy.pitch = this.pitch;
         copy.linkedQuestId = this.linkedQuestId;
+        copy.mode = this.mode;
+        copy.autoQuest = this.autoQuest;
         copy.startPage = this.startPage;
         copy.pages.clear();
         for (Map.Entry<String, DialoguePage> entry : pages.entrySet()) {

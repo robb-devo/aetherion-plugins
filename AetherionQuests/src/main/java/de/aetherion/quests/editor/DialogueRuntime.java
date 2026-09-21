@@ -101,9 +101,54 @@ public final class DialogueRuntime implements Listener, EditorQuestHook {
             ChoiceMenu.open(player, npc, page);
             return;
         }
-        if (npc.hasLinkedQuest()) {
-            offer(player, npc, npc.getLinkedQuestId());
+        if (npc.isQuestNpc() && npc.hasLinkedQuest() && npc.isAutoQuest()) {
+            handleAutoQuest(player, npc);
         }
+    }
+
+    private void handleAutoQuest(Player player, CustomNpc npc) {
+        String questId = npc.getLinkedQuestId();
+        QuestManager quests = plugin.getQuestManager();
+        if (quests == null || questId == null || questId.isBlank()) {
+            return;
+        }
+        Quest quest = quests.getQuest(questId);
+        if (quest == null) {
+            return;
+        }
+        QuestState state = quests.getQuestState(player, quest);
+        if (state == QuestState.COMPLETED) {
+            return;
+        }
+        if (state == QuestState.READY) {
+            turnIn(player, npc, questId);
+            return;
+        }
+        if (state == QuestState.ACTIVE) {
+            if (isTalkTarget(quest, npc)) {
+                quests.completeQuest(player, quest);
+                return;
+            }
+            player.sendMessage("§eCome back when the job is done.");
+            return;
+        }
+        offer(player, npc, questId);
+    }
+
+    private static boolean isTalkTarget(Quest quest, CustomNpc npc) {
+        if (quest == null || npc == null) {
+            return false;
+        }
+        for (de.aetherion.quests.model.Objective objective : quest.getObjectives()) {
+            if (objective == null || objective.getType() != de.aetherion.quests.model.ObjectiveType.TALK) {
+                continue;
+            }
+            String target = objective.getTarget();
+            if (target != null && (target.equalsIgnoreCase(npc.getId()) || target.equalsIgnoreCase(npc.getName()))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public void runChoice(Player player, CustomNpc npc, CustomNpc.DialogueChoice choice) {
@@ -272,7 +317,7 @@ public final class DialogueRuntime implements Listener, EditorQuestHook {
             inventory.setItem(4, EditorItems.button(
                     org.bukkit.Material.BOOK,
                     "§b" + npc.getName(),
-                    "§7Pick a line."
+                    "§7What do you say?"
             ));
             int slot = 10;
             for (CustomNpc.DialogueChoice choice : page.choices()) {

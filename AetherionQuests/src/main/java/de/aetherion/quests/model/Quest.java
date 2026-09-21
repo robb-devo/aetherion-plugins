@@ -253,6 +253,11 @@ public class Quest {
     }
 
 
+    public void clearRewards() {
+        rewards.clear();
+    }
+
+
     public List<Reward> getRewards() {
 
         return Collections.unmodifiableList(
@@ -276,6 +281,11 @@ public class Quest {
                 objective
         );
 
+    }
+
+
+    public void clearObjectives() {
+        objectives.clear();
     }
 
 

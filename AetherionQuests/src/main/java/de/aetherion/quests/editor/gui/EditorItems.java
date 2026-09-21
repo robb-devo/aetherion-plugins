@@ -1,9 +1,11 @@
 package de.aetherion.quests.editor.gui;
 
+import de.aetherion.quests.editor.NpcEditor;
 import de.aetherion.quests.lang.LangPack;
 
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
@@ -15,6 +17,8 @@ import java.util.List;
 
 public final class EditorItems {
 
+    public static final int BACK = 49;
+
     private EditorItems() {
     }
 
@@ -25,6 +29,42 @@ public final class EditorItems {
         }
     }
 
+    /** Double-chest chrome: gray fill, dark header/footer. */
+    public static void chrome(Inventory inventory) {
+        fill(inventory);
+        if (inventory.getSize() < 54) {
+            return;
+        }
+        ItemStack dark = button(Material.BLACK_STAINED_GLASS_PANE, " ");
+        for (int i = 0; i < 9; i++) {
+            inventory.setItem(i, dark.clone());
+            inventory.setItem(45 + i, dark.clone());
+        }
+    }
+
+    public static ItemStack section(String name, String... lore) {
+        return button(Material.LIGHT_BLUE_STAINED_GLASS_PANE, "§b§l" + name, lore);
+    }
+
+    public static ItemStack dangerSection(String name, String... lore) {
+        return button(Material.RED_STAINED_GLASS_PANE, "§c§l" + name, lore);
+    }
+
+    public static ItemStack back(Player player) {
+        return button(
+                Material.ARROW,
+                LangPack.ui(player, "editor_back", "§7Back"),
+                LangPack.ui(player, "editor_back_hint", "§8Return to the previous screen")
+        );
+    }
+
+    public static ItemStack close(Player player) {
+        return button(
+                Material.BARRIER,
+                LangPack.ui(player, "editor_close", "§cClose")
+        );
+    }
+
     public static ItemStack button(Material material, String name, String... lore) {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
@@ -33,7 +73,7 @@ public final class EditorItems {
             if (lore != null && lore.length > 0) {
                 List<String> lines = new ArrayList<>();
                 for (String line : lore) {
-                    if (line != null) {
+                    if (line != null && !line.isBlank()) {
                         lines.add(line);
                     }
                 }
@@ -61,5 +101,24 @@ public final class EditorItems {
 
     public static String title(Player player, String key, String english) {
         return LangPack.ui(player, key, english);
+    }
+
+    public static String ui(Player player, String key, String english) {
+        return LangPack.ui(player, key, english);
+    }
+
+    /**
+     * Cancel the click and return the editor player, or {@code null} if this event
+     * should be ignored.
+     */
+    public static Player editorClick(InventoryClickEvent event) {
+        event.setCancelled(true);
+        if (!(event.getWhoClicked() instanceof Player player) || !NpcEditor.allowed(player)) {
+            return null;
+        }
+        if (event.getClickedInventory() == null || event.getClickedInventory() != event.getView().getTopInventory()) {
+            return null;
+        }
+        return player;
     }
 }

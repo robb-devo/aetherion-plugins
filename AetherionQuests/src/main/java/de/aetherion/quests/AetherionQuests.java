@@ -231,6 +231,9 @@ public final class AetherionQuests extends JavaPlugin {
         QuestRegistry.registerAll(
                 questManager
         );
+        if (npcEditor != null) {
+            npcEditor.loadQuests();
+        }
 
 
 

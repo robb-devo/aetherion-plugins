@@ -547,6 +547,17 @@ public class DevMenu {
             give(player, buildingBanners.createTool(kind));
             return;
         }
+        if (action.equals("open:aethernpc")) {
+            player.closeInventory();
+            if (!player.hasPermission("aetherion.npc.editor")) {
+                player.sendMessage("§cYou need the NPC editor permission.");
+                return;
+            }
+            if (!player.performCommand("aethernpc")) {
+                player.sendMessage("§cCould not open /aethernpc. Is AetherionQuests loaded?");
+            }
+            return;
+        }
         if (action.equals("give:npcremover")) {
             give(player, NpcRemoverListener.create());
             return;
@@ -982,6 +993,11 @@ public class DevMenu {
                 "§eOre Ledger, Dock Scaler, Larder…"));
         inventory.setItem(16, button(Material.EMERALD, "§6Services & Tools", "page:NPCS_SERVICES",
                 "§7Traders, bazaar, remover, chests."));
+        inventory.setItem(22, button(Material.WRITABLE_BOOK, "§dNPC & Quest Editor", "open:aethernpc",
+                "§7Create a talking NPC in under a minute.",
+                "§7Optional: give them a simple quest.",
+                "§8Story NPCs stay untouched.",
+                "§eOpens /aethernpc"));
         inventory.setItem(45, button(Material.ARROW, "§eBack", "back"));
         inventory.setItem(49, button(Material.BARRIER, "§cClose", "close"));
     }

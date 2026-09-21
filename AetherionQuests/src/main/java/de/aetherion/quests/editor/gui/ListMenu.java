@@ -18,9 +18,8 @@ import java.util.List;
 
 public final class ListMenu implements Listener {
 
-    private static final int PAGE_SIZE = 45;
+    private static final int PAGE_SIZE = 28;
     private static final int PREV = 45;
-    private static final int BACK = 49;
     private static final int NEXT = 53;
 
     private final NpcEditor editor;
@@ -43,31 +42,45 @@ public final class ListMenu implements Listener {
         Inventory inventory = Bukkit.createInventory(
                 new Holder(safe),
                 54,
-                EditorItems.title(player, "npc_list", "§8NPC List")
+                EditorItems.title(player, "npc_list", "§8Your NPCs")
         );
-        EditorItems.fill(inventory);
+        EditorItems.chrome(inventory);
+        inventory.setItem(4, EditorItems.button(
+                Material.BOOK,
+                EditorItems.ui(player, "editor_list", "§6Your NPCs"),
+                all.isEmpty()
+                        ? EditorItems.ui(player, "editor_list_empty", "§7None yet. Create one from the home screen.")
+                        : "§7" + all.size()
+        ));
         int start = safe * PAGE_SIZE;
         for (int i = 0; i < PAGE_SIZE; i++) {
             int index = start + i;
+            int slot = 10 + (i % 7) + (i / 7) * 9;
             if (index >= all.size()) {
-                inventory.setItem(i, null);
+                inventory.setItem(slot, null);
                 continue;
             }
             CustomNpc npc = all.get(index);
             String where = npc.getWorld() == null
-                    ? "§8unplaced"
+                    ? EditorItems.ui(player, "editor_unplaced", "§8unplaced")
                     : "§7" + npc.getWorld() + " §f" + (int) npc.getX() + " " + (int) npc.getY() + " " + (int) npc.getZ();
-            inventory.setItem(i, EditorItems.head(
+            inventory.setItem(slot, EditorItems.head(
                     npc.getSkinUsername(),
                     "§b" + npc.getName(),
-                    "§8" + npc.getId(),
+                    npc.isQuestNpc()
+                            ? EditorItems.ui(player, "editor_mode_quest", "§aGives a quest")
+                            : EditorItems.ui(player, "editor_mode_talk", "§bJust talks"),
                     where,
-                    "§eClick to edit"
+                    EditorItems.ui(player, "editor_click_edit", "§eClick to edit")
             ));
         }
-        inventory.setItem(PREV, EditorItems.button(Material.ARROW, "§7Previous", "§8Page " + (safe + 1) + "/" + pages));
-        inventory.setItem(BACK, EditorItems.button(Material.BARRIER, "§cBack"));
-        inventory.setItem(NEXT, EditorItems.button(Material.ARROW, "§7Next", "§8Page " + (safe + 1) + "/" + pages));
+        inventory.setItem(PREV, EditorItems.button(Material.ARROW,
+                EditorItems.ui(player, "editor_prev", "§7Previous"),
+                "§8" + (safe + 1) + "/" + pages));
+        inventory.setItem(EditorItems.BACK, EditorItems.back(player));
+        inventory.setItem(NEXT, EditorItems.button(Material.ARROW,
+                EditorItems.ui(player, "editor_next", "§7Next"),
+                "§8" + (safe + 1) + "/" + pages));
         player.openInventory(inventory);
     }
 
@@ -76,15 +89,12 @@ public final class ListMenu implements Listener {
         if (!(event.getInventory().getHolder() instanceof Holder holder)) {
             return;
         }
-        event.setCancelled(true);
-        if (!(event.getWhoClicked() instanceof Player player) || !NpcEditor.allowed(player)) {
-            return;
-        }
-        if (event.getClickedInventory() == null || event.getClickedInventory() != event.getView().getTopInventory()) {
+        Player player = EditorItems.editorClick(event);
+        if (player == null) {
             return;
         }
         int slot = event.getRawSlot();
-        if (slot == BACK) {
+        if (slot == EditorItems.BACK) {
             MainMenu.open(player);
             return;
         }
@@ -96,15 +106,22 @@ public final class ListMenu implements Listener {
             open(player, holder.page() + 1);
             return;
         }
-        if (slot < 0 || slot >= PAGE_SIZE) {
-            return;
-        }
         List<CustomNpc> all = new ArrayList<>(editor.storage().all());
-        int index = holder.page() * PAGE_SIZE + slot;
+        int index = indexFromSlot(slot, holder.page());
         if (index < 0 || index >= all.size()) {
             return;
         }
         editor.openEdit(player, all.get(index));
+    }
+
+    private static int indexFromSlot(int slot, int page) {
+        for (int i = 0; i < PAGE_SIZE; i++) {
+            int candidate = 10 + (i % 7) + (i / 7) * 9;
+            if (candidate == slot) {
+                return page * PAGE_SIZE + i;
+            }
+        }
+        return -1;
     }
 
     @EventHandler

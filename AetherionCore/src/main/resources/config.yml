@@ -27,3 +27,9 @@ wipe:
   # false = real wipe (current production). Flags are also left untouched in dry-run
   # so a later boot with dry-run: false still runs the pending wipe.
   dry-run: false
+
+# Content-deploy restart warning. Console: aetherrestart [countdown] [eta]
+# Example before a Crafty jar swap on MMO-R: aetherrestart 5 45
+restart:
+  countdown-seconds: 5
+  eta-seconds: 45

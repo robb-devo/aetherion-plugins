@@ -551,6 +551,7 @@ public class QuestManager {
             gateFail = de.aetherion.quests.util.QuestStoryGate.riteKeeperFailReason(player, this);
         }
         if (gateFail == null
+                && !de.aetherion.quests.editor.EditorQuestFactory.isEditorQuest(quest)
                 && !de.aetherion.quests.util.QuestStoryGate.tutorialDone(player, this)
                 && !de.aetherion.quests.util.QuestStoryGate.isTutorialQuest(quest.getId())) {
             gateFail = "§eComplete the tutorial first. §7Miss Ledger closes orientation after the Fields.";

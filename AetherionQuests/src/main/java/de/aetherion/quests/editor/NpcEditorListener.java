@@ -3,7 +3,12 @@ package de.aetherion.quests.editor;
 import de.aetherion.quests.editor.gui.AppearanceMenu;
 import de.aetherion.quests.editor.gui.DialogueMenu;
 import de.aetherion.quests.editor.gui.EditMenu;
-import de.aetherion.quests.editor.gui.QuestLinkMenu;
+import de.aetherion.quests.editor.gui.GatherItemMenu;
+import de.aetherion.quests.editor.gui.QuestHubMenu;
+import de.aetherion.quests.editor.gui.RewardsMenu;
+import de.aetherion.quests.lang.LangPack;
+import de.aetherion.quests.model.Quest;
+import de.aetherion.quests.reward.Reward;
 
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -15,6 +20,10 @@ import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.EquipmentSlot;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 
 /**
  * Wand use + chat prompts for the NPC editor.
@@ -67,13 +76,8 @@ public final class NpcEditorListener implements Listener {
     private void handlePrompt(Player player, EditorSessions.Session session, String message) {
         if (isCancel(message)) {
             session.clearPrompt();
-            player.sendMessage("§7Cancelled.");
-            CustomNpc npc = editor.storage().get(session.npcId());
-            if (npc != null) {
-                editor.openEdit(player, npc);
-            } else {
-                editor.openMain(player);
-            }
+            player.sendMessage(LangPack.ui(player, "editor_cancelled", "§7Cancelled. You're back."));
+            editor.reopen(player);
             return;
         }
         EditorSessions.Prompt prompt = session.prompt();
@@ -83,12 +87,13 @@ public final class NpcEditorListener implements Listener {
             case RENAME -> {
                 CustomNpc npc = editor.storage().get(session.npcId());
                 if (npc == null) {
-                    player.sendMessage("§cNPC gone.");
+                    player.sendMessage(LangPack.ui(player, "editor_npc_gone", "§cNPC not found."));
                     return;
                 }
                 npc.setName(NpcEditor.colorSafe(message));
                 editor.persist(npc);
-                player.sendMessage("§aRenamed to §f" + npc.getName());
+                player.sendMessage(LangPack.format(player, "msg.editor_renamed",
+                        "§aRenamed to §f{0}", npc.getName()));
                 EditMenu.open(player, npc);
             }
             case SUBTITLE -> {
@@ -107,7 +112,8 @@ public final class NpcEditorListener implements Listener {
                 }
                 npc.setSkinUsername(message.replaceAll("[^A-Za-z0-9_]", ""));
                 editor.persist(npc);
-                player.sendMessage("§aSkin set to §f" + npc.getSkinUsername());
+                player.sendMessage(LangPack.format(player, "msg.editor_skin",
+                        "§aSkin set to §f{0}", npc.getSkinUsername()));
                 AppearanceMenu.open(player, npc);
             }
             case LINE -> {
@@ -116,7 +122,21 @@ public final class NpcEditorListener implements Listener {
                 if (page == null) {
                     return;
                 }
-                page.lines().add(message);
+                if (page.lines().size() == 1 && "…".equals(page.lines().get(0))) {
+                    page.lines().set(0, message);
+                } else {
+                    page.lines().add(message);
+                }
+                editor.persistQuiet(npc);
+                DialogueMenu.openPage(player, npc, page.id());
+            }
+            case LINE_EDIT -> {
+                CustomNpc npc = editor.storage().get(session.npcId());
+                CustomNpc.DialoguePage page = npc == null ? null : npc.page(session.pageId());
+                if (page == null || session.choiceIndex() < 0 || session.choiceIndex() >= page.lines().size()) {
+                    return;
+                }
+                page.lines().set(session.choiceIndex(), message);
                 editor.persistQuiet(npc);
                 DialogueMenu.openPage(player, npc, page.id());
             }
@@ -137,7 +157,8 @@ public final class NpcEditorListener implements Listener {
                     return;
                 }
                 if (DialogueRuntime.sanitize(player, message) == null) {
-                    player.sendMessage("§cThat command is blocked (op/stop/lp/…). Try something safer.");
+                    player.sendMessage(LangPack.ui(player, "editor_command_blocked",
+                            "§cThat command is blocked (op/stop/lp/…). Try something safer."));
                     DialogueMenu.openChoice(player, npc, page.id(), session.choiceIndex());
                     return;
                 }
@@ -165,20 +186,36 @@ public final class NpcEditorListener implements Listener {
                 editor.persistQuiet(npc);
                 DialogueMenu.openPage(player, npc, page.id());
             }
+            case QUEST_TITLE -> {
+                CustomNpc npc = editor.storage().get(session.npcId());
+                if (npc == null) {
+                    return;
+                }
+                Quest quest = editor.editorQuests().createAndSave(message, npc.getId(), editor.plugin().getQuestManager());
+                npc.setLinkedQuestId(quest.getId());
+                npc.setMode(NpcMode.QUEST);
+                editor.persistQuiet(npc);
+                player.sendMessage(LangPack.format(player, "msg.editor_quest_created",
+                        "§aCreated job §f{0}", quest.getTitle()));
+                player.sendMessage(LangPack.ui(player, "editor_quest_created_next",
+                        "§7Players get this after talking. Edit rewards if you want."));
+                QuestHubMenu.open(player, npc);
+            }
             case QUEST_ID -> {
                 CustomNpc npc = editor.storage().get(session.npcId());
                 if (npc == null) {
                     return;
                 }
-                String id = message.toLowerCase().replace(' ', '_');
+                String id = message.toLowerCase(Locale.ROOT).replace(' ', '_');
                 if (editor.plugin().getQuestManager() == null
                         || editor.plugin().getQuestManager().getQuest(id) == null) {
-                    player.sendMessage("§cUnknown quest id: §f" + id);
+                    player.sendMessage(LangPack.format(player, "msg.editor_quest_unknown",
+                            "§cUnknown quest: §f{0}", id));
                     CustomNpc.DialoguePage page = npc.page(session.pageId());
                     if (page != null && session.choiceIndex() >= 0) {
                         DialogueMenu.openChoice(player, npc, page.id(), session.choiceIndex());
                     } else {
-                        QuestLinkMenu.open(player, npc, 0);
+                        QuestHubMenu.openPick(player, npc, 0);
                     }
                     return;
                 }
@@ -192,18 +229,60 @@ public final class NpcEditorListener implements Listener {
                     return;
                 }
                 npc.setLinkedQuestId(id);
+                npc.setMode(NpcMode.QUEST);
                 editor.persistQuiet(npc);
-                player.sendMessage("§aLinked quest §f" + id);
-                QuestLinkMenu.open(player, npc, 0);
+                player.sendMessage(LangPack.format(player, "msg.editor_quest_linked",
+                        "§aLinked quest §f{0}", id));
+                QuestHubMenu.open(player, npc);
+            }
+            case REWARD_NAME -> {
+                CustomNpc npc = editor.storage().get(session.npcId());
+                if (npc == null) {
+                    return;
+                }
+                Quest quest = editor.editorQuests().get(npc.getLinkedQuestId());
+                if (quest == null) {
+                    QuestHubMenu.open(player, npc);
+                    return;
+                }
+                List<Reward> rewards = new ArrayList<>(quest.getRewards());
+                String name = message.trim();
+                if (name.equalsIgnoreCase("xp") || name.equalsIgnoreCase("exp")) {
+                    name = "XP";
+                } else if (name.equalsIgnoreCase("coin") || name.equalsIgnoreCase("coins")) {
+                    name = "Coins";
+                }
+                rewards.add(new Reward(name, EditorQuestFactory.isCurrencyReward(name) ? 25 : 1));
+                EditorQuestFactory.setRewards(quest, rewards);
+                editor.editorQuests().persist(quest, editor.plugin().getQuestManager());
+                RewardsMenu.open(player, npc);
+            }
+            case ITEM_SEARCH -> {
+                CustomNpc npc = editor.storage().get(session.npcId());
+                if (npc == null) {
+                    return;
+                }
+                session.setItemFilter(message);
+                session.setListPage(0);
+                session.setReturnTo(EditorScreen.GATHER);
+                GatherItemMenu.reopen(player, npc, session);
             }
             default -> {
             }
         }
     }
 
-    private static boolean isCancel(String message) {
-        return message.equalsIgnoreCase("cancel")
-                || message.equalsIgnoreCase("abbrechen")
-                || message.equalsIgnoreCase("abort");
+    static boolean isCancel(String message) {
+        if (message == null) {
+            return false;
+        }
+        String key = message.trim().toLowerCase(Locale.ROOT);
+        return key.equals("cancel")
+                || key.equals("abbrechen")
+                || key.equals("abort")
+                || key.equals("stop")
+                || key.equals("back")
+                || key.equals("abbruch")
+                || key.equals("exit");
     }
 }
