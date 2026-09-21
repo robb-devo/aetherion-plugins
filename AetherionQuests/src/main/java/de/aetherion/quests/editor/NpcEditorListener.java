@@ -3,6 +3,7 @@ package de.aetherion.quests.editor;
 import de.aetherion.quests.editor.gui.AppearanceMenu;
 import de.aetherion.quests.editor.gui.DialogueMenu;
 import de.aetherion.quests.editor.gui.EditMenu;
+import de.aetherion.quests.editor.gui.GatherItemMenu;
 import de.aetherion.quests.editor.gui.QuestHubMenu;
 import de.aetherion.quests.editor.gui.RewardsMenu;
 import de.aetherion.quests.lang.LangPack;
@@ -255,6 +256,16 @@ public final class NpcEditorListener implements Listener {
                 EditorQuestFactory.setRewards(quest, rewards);
                 editor.editorQuests().persist(quest, editor.plugin().getQuestManager());
                 RewardsMenu.open(player, npc);
+            }
+            case ITEM_SEARCH -> {
+                CustomNpc npc = editor.storage().get(session.npcId());
+                if (npc == null) {
+                    return;
+                }
+                session.setItemFilter(message);
+                session.setListPage(0);
+                session.setReturnTo(EditorScreen.GATHER);
+                GatherItemMenu.reopen(player, npc, session);
             }
             default -> {
             }

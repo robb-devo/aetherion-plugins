@@ -13,5 +13,6 @@ public enum EditorScreen {
     QUEST_HUB,
     QUEST_PICK,
     REWARDS,
-    OBJECTIVE
+    OBJECTIVE,
+    GATHER
 }

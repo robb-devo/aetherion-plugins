@@ -200,6 +200,13 @@ public final class NpcEditor {
                     MainMenu.open(player);
                 }
             }
+            case GATHER -> {
+                if (npc != null) {
+                    GatherItemMenu.reopen(player, npc, session);
+                } else {
+                    MainMenu.open(player);
+                }
+            }
             case EDIT -> {
                 if (npc != null) {
                     EditMenu.open(player, npc);
@@ -399,6 +406,7 @@ public final class NpcEditor {
             case PAGE_ID -> "§aPage name";
             case QUEST_ID, QUEST_TITLE -> "§aQuest";
             case REWARD_NAME -> "§aReward";
+            case ITEM_SEARCH -> "§aSearch";
             default -> "§aNPC Editor";
         };
         player.sendTitle(title, "§7Type in chat · §fcancel §7to go back", 5, 70, 8);

@@ -25,7 +25,8 @@ public final class EditorSessions {
         PAGE_ID,
         QUEST_ID,
         QUEST_TITLE,
-        REWARD_NAME
+        REWARD_NAME,
+        ITEM_SEARCH
     }
 
     public static final class Session {
@@ -40,6 +41,9 @@ public final class EditorSessions {
         private String promptHint;
         private BukkitTask promptWatch;
         private long promptUntilMs;
+        private String gatherPurpose;
+        private String gatherKind;
+        private String itemFilter;
 
         public Prompt prompt() {
             return prompt;
@@ -131,6 +135,30 @@ public final class EditorSessions {
 
         public void setPromptUntilMs(long promptUntilMs) {
             this.promptUntilMs = promptUntilMs;
+        }
+
+        public String gatherPurpose() {
+            return gatherPurpose;
+        }
+
+        public void setGatherPurpose(String gatherPurpose) {
+            this.gatherPurpose = gatherPurpose;
+        }
+
+        public String gatherKind() {
+            return gatherKind;
+        }
+
+        public void setGatherKind(String gatherKind) {
+            this.gatherKind = gatherKind;
+        }
+
+        public String itemFilter() {
+            return itemFilter;
+        }
+
+        public void setItemFilter(String itemFilter) {
+            this.itemFilter = itemFilter;
         }
 
         public void clearPrompt() {
