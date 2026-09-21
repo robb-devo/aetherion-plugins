@@ -65,6 +65,7 @@ public class DevMenu {
         WEAPONS_T1,
         WEAPONS_T2,
         WEAPONS_DUNGEON,
+        WEAPONS_SPECIAL,
         WEAPONS_GOD,
         SETS,
         BOOSTERS,
@@ -960,7 +961,8 @@ public class DevMenu {
 
     private String backAction(Page page) {
         return switch (page) {
-            case WEAPONS_STARTER, WEAPONS_BOWS, WEAPONS_PROGRESSION, WEAPONS_T1, WEAPONS_T2, WEAPONS_DUNGEON, WEAPONS_GOD
+            case WEAPONS_STARTER, WEAPONS_BOWS, WEAPONS_PROGRESSION, WEAPONS_T1, WEAPONS_T2, WEAPONS_DUNGEON,
+                    WEAPONS_SPECIAL, WEAPONS_GOD
                     -> "page:WEAPONS";
             case NPCS_STARTER, NPCS_BOSSES, NPCS_WORLD, NPCS_SERVICES
                     -> "page:NPCS";
@@ -1041,6 +1043,9 @@ public class DevMenu {
                 "§7Cores and relic weapons."));
         inventory.setItem(16, button(Material.NETHERITE_SWORD, "§6Test Extras", "page:WEAPONS_GOD",
                 "§7Void stick / leftovers."));
+        inventory.setItem(22, button(Material.CHERRY_LEAVES, "§dSpecial Weapons", "page:WEAPONS_SPECIAL",
+                "§7Boss-drop showpieces.",
+                "§dAshen Katana"));
         inventory.setItem(45, button(Material.ARROW, "§eBack", "back"));
         inventory.setItem(49, button(Material.BARRIER, "§cClose", "close"));
     }
@@ -1374,6 +1379,9 @@ public class DevMenu {
                 items.add(itemButton(customItem.createThermalCore(), "thermal_core"));
                 items.add(itemButton(customItem.createPickaxeCoreOfTheBurrower(), "pickaxe_core_of_the_burrower"));
                 items.add(itemButton(customItem.createInsolventLedger(), "insolvent_ledger"));
+            }
+            case WEAPONS_SPECIAL -> {
+                items.add(itemButton(customItem.createAshenKatana(), "ashen_katana"));
             }
             case WEAPONS_DUNGEON -> {
                 items.add(itemButton(customItem.createDungeonCore(), "dungeon_core"));
@@ -1816,6 +1824,7 @@ public class DevMenu {
             case "bridged_axe" -> customItem.createBridgedAxe();
             case "warped_blade" -> customItem.createWarpedBlade();
             case "gravwell_cleaver" -> customItem.createGravwellCleaver();
+            case "ashen_katana" -> customItem.createAshenKatana();
             case "staff_of_technical_difficulties" -> customItem.createStaffOfTechnicalDifficulties();
             case "void_vacuum_charm" -> customItem.createVoidVacuumCharm();
             case "thermal_core" -> customItem.createThermalCore();
