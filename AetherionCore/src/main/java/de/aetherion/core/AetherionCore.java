@@ -1,6 +1,8 @@
 package de.aetherion.core;
 
+import de.aetherion.core.command.RestartCommand;
 import de.aetherion.core.command.WipeCommand;
+import de.aetherion.core.restart.RestartCountdown;
 import de.aetherion.core.wipe.BetaWipe;
 import de.aetherion.core.wipe.NetworkWipeWatch;
 
@@ -17,6 +19,7 @@ public final class AetherionCore extends JavaPlugin {
     private static AetherionCore instance;
     private BetaWipe betaWipe;
     private NetworkWipeWatch networkWipeWatch;
+    private RestartCountdown restartCountdown;
 
     public static AetherionCore get() {
         return instance;
@@ -48,11 +51,25 @@ public final class AetherionCore extends JavaPlugin {
             wipe.setTabCompleter(wipeCommand);
         }
         networkWipeWatch.start();
+        restartCountdown = new RestartCountdown(this);
+        RestartCommand restartCommand = new RestartCommand(this, restartCountdown);
+        PluginCommand restart = getCommand("aetherrestart");
+        if (restart != null) {
+            restart.setExecutor(restartCommand);
+            restart.setTabCompleter(restartCommand);
+        }
         getLogger().info("Shared keys and hit flags ready. Game plugins keep the loop.");
+    }
+
+    public RestartCountdown restartCountdown() {
+        return restartCountdown;
     }
 
     @Override
     public void onDisable() {
+        if (restartCountdown != null) {
+            restartCountdown.cancel();
+        }
         if (networkWipeWatch != null) {
             networkWipeWatch.stop();
         }

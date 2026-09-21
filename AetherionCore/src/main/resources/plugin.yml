@@ -15,6 +15,12 @@ commands:
     description: Shut down, reset all player data, then restart
     permission: aetherion.wipe
     usage: /wipe beta confirm
+  aetherrestart:
+    description: Warn players, then shut down for a content deploy
+    aliases:
+      - arestart
+    permission: aetherion.restart
+    usage: /aetherrestart [seconds] [etaSeconds]
 
 permissions:
   aetherion.core.admin:
@@ -22,4 +28,7 @@ permissions:
     default: op
   aetherion.wipe:
     description: Run a full beta player-data wipe
+    default: op
+  aetherion.restart:
+    description: Run the content-deploy restart countdown
     default: op
