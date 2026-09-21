@@ -37,6 +37,10 @@ public class PetEntity {
 
     public static final NamespacedKey PET_ENTITY_KEY = AetherKeys.PET_ENTITY;
 
+    /** Ties a temporary nameplate to its ItemDisplay so a respawn can drop the old one. */
+    private static final NamespacedKey NAMEPLATE_OWNER =
+            AetherKeys.namespaced("aethermobs", "pet_nameplate_owner");
+
     public static final PersistentDataType<Byte, Byte>
             PET_ENTITY_KEY_TYPE =
             PersistentDataType.BYTE;
@@ -583,7 +587,7 @@ public class PetEntity {
 
                         if (!isSpawned()) {
 
-                            cancel();
+                            remove();
 
                             return;
                         }
@@ -654,7 +658,7 @@ public class PetEntity {
 
                         if (!isSpawned()) {
 
-                            cancel();
+                            remove();
 
                             return;
                         }
@@ -1461,7 +1465,7 @@ public class PetEntity {
 
                         if (!isSpawned()) {
 
-                            cancel();
+                            remove();
 
                             return;
                         }
@@ -4562,6 +4566,26 @@ public class PetEntity {
     }
 
 
+    /** Nameplates are temporary. A stale !isValid() ref must not leave the old display up. */
+    private void purgeOrphanNameplates() {
+        if (entity == null || !entity.isValid() || entity.getWorld() == null) {
+            return;
+        }
+        String id = entity.getUniqueId().toString();
+        for (org.bukkit.entity.Entity nearby : entity.getWorld().getNearbyEntities(entity.getLocation(), 4, 4, 4)) {
+            if (!(nearby instanceof TextDisplay display) || !display.isValid()) {
+                continue;
+            }
+            if (nameplate != null && display.getUniqueId().equals(nameplate.getUniqueId())) {
+                continue;
+            }
+            String owner = display.getPersistentDataContainer().get(NAMEPLATE_OWNER, PersistentDataType.STRING);
+            if (id.equals(owner)) {
+                display.remove();
+            }
+        }
+    }
+
     private void spawnNameplate() {
 
         if (!isSpawned()
@@ -4575,6 +4599,8 @@ public class PetEntity {
 
             return;
         }
+
+        purgeOrphanNameplates();
 
         nameplate =
                 entity.getWorld()
@@ -4642,6 +4668,12 @@ public class PetEntity {
                                                     PET_ENTITY_KEY,
                                                     PET_ENTITY_KEY_TYPE,
                                                     (byte) 1
+                                            );
+                                    display.getPersistentDataContainer()
+                                            .set(
+                                                    NAMEPLATE_OWNER,
+                                                    PersistentDataType.STRING,
+                                                    entity.getUniqueId().toString()
                                             );
                                 }
                         );

@@ -16,7 +16,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Softlight + ore balance for {@link AreaType#SHABBY_MINE}:
- * majority stone, sparse 15–30 mono clusters (coal / copper / iron).
+ * majority stone, sparse irregular 10–40 mono veins (coal / copper / iron only).
  */
 public final class ShabbyMinePrep {
 
@@ -40,6 +40,10 @@ public final class ShabbyMinePrep {
 
     /** Reflection entry: {@code ShabbyMinePrep.run(sender)}. */
     public static void run(CommandSender sender) {
+        run(sender, null);
+    }
+
+    public static void run(CommandSender sender, Runnable onDone) {
         AetherionItems plugin = AetherionItems.getInstance();
         if (plugin == null || plugin.getAreas() == null) {
             if (sender != null) {
@@ -56,16 +60,24 @@ public final class ShabbyMinePrep {
         }
         if (sender != null) {
             sender.sendMessage("§eShabby Mine prep: §f" + zones.size()
-                    + " §ezones — thin ores → sparse 15–30 clusters…");
+                    + " §ezones — thin ores → sparse 10–40 coal/iron/copper veins…");
         }
+        int[] left = {zones.size()};
         for (AreaZone zone : zones) {
-            prepZone(plugin, sender, zone);
+            prepZone(plugin, sender, zone, () -> {
+                if (--left[0] == 0 && onDone != null) {
+                    onDone.run();
+                }
+            });
         }
     }
 
-    private static void prepZone(AetherionItems plugin, CommandSender sender, AreaZone zone) {
+    private static void prepZone(AetherionItems plugin, CommandSender sender, AreaZone zone, Runnable onDone) {
         World world = Bukkit.getWorld(zone.getWorldName());
         if (world == null) {
+            if (onDone != null) {
+                onDone.run();
+            }
             return;
         }
         int cx = (int) Math.floor(zone.getX());
@@ -124,9 +136,12 @@ public final class ShabbyMinePrep {
                 sender.sendMessage("§aShabby Mine §f" + zone.getType().display()
                         + " §7@ §f" + cx + " " + cy + " " + cz
                         + " §8· §7thinned §f" + thinned[0]
-                        + " §8· §e" + clusters[0] + " clusters (§f" + clusterOres[0] + "§e)"
+                        + " §8· §e" + clusters[0] + " veins (§f" + clusterOres[0] + "§e)"
                         + " §8· §7sponges §f" + sponges[0] + "→" + spongeOres[0]
                         + " §8· §a+" + lights[0] + " lights");
+            }
+            if (onDone != null) {
+                onDone.run();
             }
         }));
     }
@@ -227,7 +242,7 @@ public final class ShabbyMinePrep {
         return changed;
     }
 
-    /** Rare leftover sponges → one 15–30 mono cluster. */
+    /** Rare leftover sponges → one 10–40 mono vein. */
     private static int[] spongeColumn(World world, AreaZone zone, int x, int z) {
         int sponges = 0;
         int ores = 0;
@@ -250,7 +265,7 @@ public final class ShabbyMinePrep {
         return new int[]{sponges, ores};
     }
 
-    /** Sparse seeds: most columns skip; hits place one 15–30 mono clump. */
+    /** Sparse seeds: most columns skip; hits place one irregular 10–40 mono vein. */
     private static int seedClusterColumn(World world, AreaZone zone, int x, int z) {
         ThreadLocalRandom rng = ThreadLocalRandom.current();
         if (rng.nextInt(SEED_EVERY_COLUMNS) != 0) {
@@ -279,37 +294,23 @@ public final class ShabbyMinePrep {
     }
 
     private static int clusterSize() {
-        return 15 + ThreadLocalRandom.current().nextInt(16); // 15–30
+        return 10 + ThreadLocalRandom.current().nextInt(31); // 10–40
     }
 
-    /** Place up to {@code extra} mono ore blocks near the seed (stone hosts only). */
+    /** Irregular walk, not a filled cube and not a grid. */
     private static int growCluster(World world, AreaZone zone, int ox, int oy, int oz, Material ore, int extra) {
-        if (extra <= 0) {
-            return 0;
-        }
-        ThreadLocalRandom rng = ThreadLocalRandom.current();
-        int placed = 0;
-        int attempts = Math.max(extra * 24, 80);
-        for (int i = 0; i < attempts && placed < extra; i++) {
-            // Tight vein blob around seed
-            int x = ox + rng.nextInt(5) - 2;
-            int y = oy + rng.nextInt(5) - 2;
-            int z = oz + rng.nextInt(5) - 2;
-            if (x == ox && y == oy && z == oz) {
-                continue;
-            }
+        return NaturalVeins.grow(ox, oy, oz, extra, (x, y, z) -> {
             if (dist2(x + 0.5, y + 0.5, z + 0.5, zone) > zone.getRadius() * zone.getRadius()) {
-                continue;
+                return false;
             }
             Block block = world.getBlockAt(x, y, z);
             Material host = block.getType();
             if (!replaceableHost(host)) {
-                continue;
+                return false;
             }
             block.setType(variantFor(host, ore), false);
-            placed++;
-        }
-        return placed;
+            return true;
+        });
     }
 
     private static boolean isRareOre(Material type) {
