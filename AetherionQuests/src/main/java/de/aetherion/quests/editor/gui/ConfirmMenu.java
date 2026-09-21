@@ -15,8 +15,8 @@ import org.bukkit.inventory.InventoryHolder;
 
 public final class ConfirmMenu implements Listener {
 
-    private static final int YES = 11;
-    private static final int NO = 15;
+    private static final int KEEP = 20;
+    private static final int DELETE = 24;
 
     private final NpcEditor editor;
 
@@ -28,18 +28,25 @@ public final class ConfirmMenu implements Listener {
     public static void open(Player player, CustomNpc npc) {
         Inventory inventory = Bukkit.createInventory(
                 new Holder(npc.getId()),
-                27,
-                EditorItems.title(player, "npc_confirm", "§8Confirm")
+                54,
+                EditorItems.title(player, "npc_confirm", "§8Delete?")
         );
-        EditorItems.fill(inventory);
+        EditorItems.chrome(inventory);
         inventory.setItem(4, EditorItems.button(
                 Material.TNT,
-                "§cDelete §f" + npc.getName() + "§c?",
-                "§7id §f" + npc.getId(),
-                "§cThis cannot be undone."
+                EditorItems.ui(player, "editor_delete_ask", "§cDelete this NPC?"),
+                "§f" + npc.getName(),
+                EditorItems.ui(player, "editor_delete_undo", "§cThis cannot be undone.")
         ));
-        inventory.setItem(YES, EditorItems.button(Material.LIME_CONCRETE, "§a§lDelete"));
-        inventory.setItem(NO, EditorItems.button(Material.RED_CONCRETE, "§c§lKeep"));
+        inventory.setItem(KEEP, EditorItems.button(
+                Material.LIME_CONCRETE,
+                EditorItems.ui(player, "editor_keep", "§a§lKeep them")
+        ));
+        inventory.setItem(DELETE, EditorItems.button(
+                Material.RED_CONCRETE,
+                EditorItems.ui(player, "editor_delete_confirm", "§c§lDelete")
+        ));
+        inventory.setItem(EditorItems.BACK, EditorItems.back(player));
         player.openInventory(inventory);
     }
 
@@ -48,15 +55,13 @@ public final class ConfirmMenu implements Listener {
         if (!(event.getInventory().getHolder() instanceof Holder holder)) {
             return;
         }
-        event.setCancelled(true);
-        if (!(event.getWhoClicked() instanceof Player player) || !NpcEditor.allowed(player)) {
-            return;
-        }
-        if (event.getClickedInventory() == null || event.getClickedInventory() != event.getView().getTopInventory()) {
+        Player player = EditorItems.editorClick(event);
+        if (player == null) {
             return;
         }
         CustomNpc npc = editor.storage().get(holder.npcId());
-        if (event.getRawSlot() == NO) {
+        int slot = event.getRawSlot();
+        if (slot == KEEP || slot == EditorItems.BACK) {
             if (npc != null) {
                 EditMenu.open(player, npc);
             } else {
@@ -64,9 +69,8 @@ public final class ConfirmMenu implements Listener {
             }
             return;
         }
-        if (event.getRawSlot() == YES) {
+        if (slot == DELETE) {
             editor.delete(player, npc);
-            player.closeInventory();
             MainMenu.open(player);
         }
     }

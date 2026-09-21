@@ -2,6 +2,7 @@ package de.aetherion.quests.editor;
 
 import de.aetherion.quests.editor.gui.HelpMenu;
 import de.aetherion.quests.editor.gui.ListMenu;
+import de.aetherion.quests.lang.LangPack;
 
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -29,7 +30,8 @@ public final class NpcEditorCommand implements CommandExecutor, TabCompleter {
             return true;
         }
         if (!NpcEditor.allowed(player)) {
-            player.sendMessage("§cYou need §faetherion.npc.editor §cto use the NPC creator.");
+            player.sendMessage(LangPack.ui(player, "editor_no_perm",
+                    "§cYou need permission to use the NPC editor."));
             return true;
         }
         if (args.length == 0) {
@@ -51,8 +53,10 @@ public final class NpcEditorCommand implements CommandExecutor, TabCompleter {
                         ? editor.resolve(args[1])
                         : editor.service().nearby(player, 8);
                 if (npc == null) {
-                    player.sendMessage("§eNo editor NPC " + (args.length >= 2 ? "named §f" + args[1] : "nearby") + "§e.");
-                    player.sendMessage("§7Story NPCs (Egon, Twig, Miss Canopy) are not editable here.");
+                    player.sendMessage(LangPack.ui(player, "editor_none_nearby",
+                            "§eNo editor NPC nearby."));
+                    player.sendMessage(LangPack.ui(player, "editor_story_safe",
+                            "§7Story NPCs (Egon, Twig, Miss Canopy) stay untouched."));
                 } else {
                     editor.openEdit(player, npc);
                 }
@@ -67,7 +71,8 @@ public final class NpcEditorCommand implements CommandExecutor, TabCompleter {
                         ? editor.resolve(args[1])
                         : editor.service().nearby(player, 6);
                 if (npc == null) {
-                    player.sendMessage("§eNothing to delete. Stand close or pass an id.");
+                    player.sendMessage(LangPack.ui(player, "editor_delete_none",
+                            "§eNothing to delete. Stand close or pass a name."));
                 } else {
                     editor.delete(player, npc);
                 }
@@ -78,7 +83,8 @@ public final class NpcEditorCommand implements CommandExecutor, TabCompleter {
                         ? editor.resolve(args[1])
                         : editor.service().nearby(player, 8);
                 if (npc == null) {
-                    player.sendMessage("§eNo editor NPC to move.");
+                    player.sendMessage(LangPack.ui(player, "editor_move_none",
+                            "§eNo editor NPC to move."));
                 } else {
                     editor.moveHere(player, npc);
                 }
@@ -89,7 +95,8 @@ public final class NpcEditorCommand implements CommandExecutor, TabCompleter {
                         ? editor.resolve(args[1])
                         : editor.service().nearby(player, 8);
                 if (npc == null) {
-                    player.sendMessage("§eNo editor NPC to duplicate.");
+                    player.sendMessage(LangPack.ui(player, "editor_copy_none",
+                            "§eNo editor NPC to copy."));
                 } else {
                     editor.duplicate(player, npc);
                 }

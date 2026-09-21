@@ -6,10 +6,14 @@ import de.aetherion.quests.editor.gui.AppearanceMenu;
 import de.aetherion.quests.editor.gui.ConfirmMenu;
 import de.aetherion.quests.editor.gui.DialogueMenu;
 import de.aetherion.quests.editor.gui.EditMenu;
+import de.aetherion.quests.editor.gui.GatherItemMenu;
 import de.aetherion.quests.editor.gui.HelpMenu;
 import de.aetherion.quests.editor.gui.ListMenu;
 import de.aetherion.quests.editor.gui.MainMenu;
-import de.aetherion.quests.editor.gui.QuestLinkMenu;
+import de.aetherion.quests.editor.gui.ObjectiveMenu;
+import de.aetherion.quests.editor.gui.QuestHubMenu;
+import de.aetherion.quests.editor.gui.RewardsMenu;
+import de.aetherion.quests.lang.LangPack;
 import de.aetherion.quests.npc.LivingNpcProfile;
 import de.aetherion.quests.npc.QuestNPCRegistry;
 
@@ -22,6 +26,7 @@ import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.scheduler.BukkitTask;
 
 import java.util.List;
 import java.util.Locale;
@@ -31,18 +36,20 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * In-game FancyNPC creator for content helpers (moderators).
+ * In-game FancyNPC + quest creator for content helpers.
  * Permission: {@link #PERMISSION}. Does not touch story NPCs in {@code npcs.yml}.
  */
 public final class NpcEditor {
 
     public static final String PERMISSION = "aetherion.npc.editor";
+    public static final long PROMPT_TIMEOUT_MS = 60_000L;
 
     private final AetherionQuests plugin;
     private final CustomNpcStorage storage;
     private final CustomNpcService service;
     private final DialogueRuntime runtime;
     private final EditorSessions sessions;
+    private final EditorQuestStorage editorQuests;
     private final NamespacedKey wandKey;
     private final Map<UUID, Integer> lastClickTick = new ConcurrentHashMap<>();
 
@@ -52,14 +59,15 @@ public final class NpcEditor {
         this.service = new CustomNpcService(plugin, storage);
         this.runtime = new DialogueRuntime(plugin, storage);
         this.sessions = new EditorSessions();
+        this.editorQuests = new EditorQuestStorage(plugin);
         this.wandKey = new NamespacedKey(plugin, "npc_editor_wand");
     }
 
     public void enable() {
         NpcEditorCommand command = new NpcEditorCommand(this);
-        if (plugin.getCommand("npc") != null) {
-            plugin.getCommand("npc").setExecutor(command);
-            plugin.getCommand("npc").setTabCompleter(command);
+        if (plugin.getCommand("aethernpc") != null) {
+            plugin.getCommand("aethernpc").setExecutor(command);
+            plugin.getCommand("aethernpc").setTabCompleter(command);
         }
         new NpcEditorListener(this);
         new MainMenu(this);
@@ -67,10 +75,17 @@ public final class NpcEditor {
         new ListMenu(this);
         new AppearanceMenu(this);
         new DialogueMenu(this);
-        new QuestLinkMenu(this);
+        new QuestHubMenu(this);
         new ConfirmMenu(this);
         new HelpMenu(this);
+        new RewardsMenu(this);
+        new ObjectiveMenu(this);
+        new GatherItemMenu(this);
         CustomNpcInteractListener.register(this);
+    }
+
+    public void loadQuests() {
+        editorQuests.registerAll(plugin.getQuestManager());
     }
 
     public void restore() {
@@ -101,40 +116,118 @@ public final class NpcEditor {
         return sessions;
     }
 
+    public EditorQuestStorage editorQuests() {
+        return editorQuests;
+    }
+
     public static boolean allowed(Player player) {
         return player != null && player.hasPermission(PERMISSION);
     }
 
     public void openMain(Player player) {
+        cancelPrompt(player);
         MainMenu.open(player);
     }
 
     public void openEdit(Player player, CustomNpc npc) {
         if (npc == null) {
-            player.sendMessage("§cNPC not found.");
+            player.sendMessage(LangPack.ui(player, "editor_npc_gone", "§cNPC not found."));
             return;
         }
+        cancelPrompt(player);
         sessions.of(player).setNpcId(npc.getId());
         EditMenu.open(player, npc);
     }
 
+    public void reopen(Player player) {
+        EditorSessions.Session session = sessions.of(player);
+        CustomNpc npc = storage.get(session.npcId());
+        switch (session.returnTo()) {
+            case MAIN -> MainMenu.open(player);
+            case APPEARANCE -> {
+                if (npc != null) {
+                    AppearanceMenu.open(player, npc);
+                } else {
+                    MainMenu.open(player);
+                }
+            }
+            case DIALOGUE_TREE -> {
+                if (npc != null) {
+                    DialogueMenu.openTree(player, npc);
+                } else {
+                    MainMenu.open(player);
+                }
+            }
+            case DIALOGUE_PAGE -> {
+                if (npc != null) {
+                    DialogueMenu.openPage(player, npc, session.pageId());
+                } else {
+                    MainMenu.open(player);
+                }
+            }
+            case CHOICE -> {
+                if (npc != null) {
+                    DialogueMenu.openChoice(player, npc, session.pageId(), session.choiceIndex());
+                } else {
+                    MainMenu.open(player);
+                }
+            }
+            case QUEST_HUB -> {
+                if (npc != null) {
+                    QuestHubMenu.open(player, npc);
+                } else {
+                    MainMenu.open(player);
+                }
+            }
+            case QUEST_PICK -> {
+                if (npc != null) {
+                    QuestHubMenu.openPick(player, npc, 0);
+                } else {
+                    MainMenu.open(player);
+                }
+            }
+            case REWARDS -> {
+                if (npc != null) {
+                    RewardsMenu.open(player, npc);
+                } else {
+                    MainMenu.open(player);
+                }
+            }
+            case OBJECTIVE -> {
+                if (npc != null) {
+                    ObjectiveMenu.open(player, npc);
+                } else {
+                    MainMenu.open(player);
+                }
+            }
+            case EDIT -> {
+                if (npc != null) {
+                    EditMenu.open(player, npc);
+                } else {
+                    MainMenu.open(player);
+                }
+            }
+        }
+    }
+
     public void beginCreate(Player player) {
         EditorSessions.Session session = sessions.of(player);
-        session.setPrompt(EditorSessions.Prompt.NAME);
         session.setNpcId(null);
-        player.closeInventory();
-        player.sendMessage("§aType a name for the new NPC §7(or §fcancel§7).");
-        player.sendTitle("§aNPC name", "§7Type in chat", 5, 80, 10);
+        session.setReturnTo(EditorScreen.MAIN);
+        prompt(player, EditorSessions.Prompt.NAME, EditorScreen.MAIN,
+                LangPack.ui(player, "editor_prompt_name", "Type a name for the new NPC"),
+                null);
     }
 
     public CustomNpc createAt(Player player, String name) {
         if (!service.available()) {
-            player.sendMessage("§cFancyNpcs is not loaded. Ask an admin to install it, then restart.");
+            player.sendMessage(LangPack.ui(player, "editor_no_fancy",
+                    "§cFancyNpcs is not loaded. Ask an admin to install it, then restart."));
             return null;
         }
         String display = colorSafe(name);
         if (display.isBlank()) {
-            player.sendMessage("§cName cannot be empty.");
+            player.sendMessage(LangPack.ui(player, "editor_name_empty", "§cName cannot be empty."));
             return null;
         }
         String id = nextId(display);
@@ -144,10 +237,14 @@ public final class NpcEditor {
         npc.setLocation(at);
         storage.save(npc);
         if (service.spawn(npc) == null) {
-            player.sendMessage("§cCould not spawn the FancyNPC. Check the console.");
+            player.sendMessage(LangPack.ui(player, "editor_spawn_fail",
+                    "§cCould not spawn the FancyNPC. Check the console."));
             return npc;
         }
-        player.sendMessage("§aCreated §f" + npc.getName() + " §7(§f" + npc.getId() + "§7) at your feet.");
+        player.sendMessage(LangPack.format(player, "msg.editor_created",
+                "§aPlaced §f{0} §aat your feet.", npc.getName()));
+        player.sendMessage(LangPack.ui(player, "editor_created_next",
+                "§7Next: write what they say — or you're already done."));
         player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.4f);
         openEdit(player, npc);
         return npc;
@@ -158,9 +255,10 @@ public final class NpcEditor {
         at.setPitch(0f);
         boolean ok = service.move(npc, at);
         if (ok) {
-            player.sendMessage("§aMoved §f" + npc.getName() + " §ato your feet.");
+            player.sendMessage(LangPack.format(player, "msg.editor_moved",
+                    "§aMoved §f{0} §ato your feet.", npc.getName()));
         } else {
-            player.sendMessage("§cCould not move that NPC.");
+            player.sendMessage(LangPack.ui(player, "editor_move_fail", "§cCould not move that NPC."));
         }
         return ok;
     }
@@ -175,7 +273,8 @@ public final class NpcEditor {
         look.setPitch(0f);
         boolean ok = service.move(npc, look);
         if (ok) {
-            player.sendMessage("§a" + npc.getName() + " §7now faces you.");
+            player.sendMessage(LangPack.format(player, "msg.editor_look",
+                    "§a{0} §7now faces you.", npc.getName()));
         }
         return ok;
     }
@@ -191,7 +290,8 @@ public final class NpcEditor {
         copy.setLocation(at);
         storage.save(copy);
         service.spawn(copy);
-        player.sendMessage("§aDuplicated §f" + source.getName() + " §7→ §f" + copy.getId());
+        player.sendMessage(LangPack.format(player, "msg.editor_duplicated",
+                "§aCopied §f{0} §7beside you.", source.getName()));
         openEdit(player, copy);
         return copy;
     }
@@ -203,7 +303,8 @@ public final class NpcEditor {
         service.removeLive(npc.getId());
         storage.delete(npc.getId());
         if (player != null) {
-            player.sendMessage("§eDeleted §f" + npc.getName() + "§e.");
+            player.sendMessage(LangPack.format(player, "msg.editor_deleted",
+                    "§eDeleted §f{0}§e.", npc.getName()));
         }
         return true;
     }
@@ -243,11 +344,11 @@ public final class NpcEditor {
         if (meta != null) {
             meta.setDisplayName("§6NPC Editor Wand");
             meta.setLore(List.of(
-                    "§7Right-click §fair §7— open the menu.",
-                    "§7Right-click §fan editor NPC §7— edit.",
-                    "§7Sneak + right-click §7— delete confirm.",
+                    "§7Right-click air — open the editor.",
+                    "§7Right-click an editor NPC — edit them.",
+                    "§7Sneak + right-click — ask to delete.",
                     "",
-                    "§8Does not edit story NPCs (Egon, Twig, …)."
+                    "§8Story NPCs (Egon, Twig, …) stay safe."
             ));
             meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
             meta.getPersistentDataContainer().set(wandKey, PersistentDataType.BYTE, (byte) 1);
@@ -264,15 +365,72 @@ public final class NpcEditor {
 
     public void giveWand(Player player) {
         player.getInventory().addItem(wand());
-        player.sendMessage("§aNPC Editor Wand §7given. Right-click air for the menu.");
+        player.sendMessage(LangPack.ui(player, "editor_wand_given",
+                "§aWand given. §7Right-click air to open the editor."));
     }
 
     public void prompt(Player player, EditorSessions.Prompt prompt, String hint) {
+        prompt(player, prompt, EditorScreen.EDIT, hint, null);
+    }
+
+    public void prompt(Player player, EditorSessions.Prompt prompt, EditorScreen returnTo, String hint, String preview) {
         EditorSessions.Session session = sessions.of(player);
+        session.clearPrompt();
         session.setPrompt(prompt);
+        session.setReturnTo(returnTo);
+        session.setPromptHint(hint);
+        session.setPromptPreview(preview);
+        session.setPromptUntilMs(System.currentTimeMillis() + PROMPT_TIMEOUT_MS);
         player.closeInventory();
-        player.sendMessage("§a" + hint + " §7(or type §fcancel§7).");
-        player.sendTitle("§aNPC Editor", "§7Type in chat", 5, 60, 8);
+        player.sendMessage("§a" + hint);
+        if (preview != null && !preview.isBlank()) {
+            player.sendMessage(LangPack.format(player, "msg.editor_prompt_now",
+                    "§7Currently: §f{0}", preview));
+        }
+        player.sendMessage(LangPack.ui(player, "editor_prompt_cancel",
+                "§8Type §fcancel §8· §fabort §8· §fstop §8· or wait 60s."));
+        String title = switch (prompt) {
+            case NAME, RENAME -> "§aName";
+            case SUBTITLE -> "§aSubtitle";
+            case LINE, LINE_EDIT -> "§aDialogue line";
+            case CHOICE_TEXT -> "§aReply button";
+            case SKIN -> "§aSkin";
+            case COMMAND -> "§aCommand";
+            case PAGE_ID -> "§aPage name";
+            case QUEST_ID, QUEST_TITLE -> "§aQuest";
+            case REWARD_NAME -> "§aReward";
+            default -> "§aNPC Editor";
+        };
+        player.sendTitle(title, "§7Type in chat · §fcancel §7to go back", 5, 70, 8);
+        startPromptWatch(player, session);
+    }
+
+    public void cancelPrompt(Player player) {
+        EditorSessions.Session session = sessions.peek(player);
+        if (session != null) {
+            session.clearPrompt();
+        }
+    }
+
+    private void startPromptWatch(Player player, EditorSessions.Session session) {
+        BukkitTask task = plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
+            if (!player.isOnline() || !session.prompting()) {
+                session.clearPrompt();
+                return;
+            }
+            if (System.currentTimeMillis() >= session.promptUntilMs()) {
+                session.clearPrompt();
+                player.sendMessage(LangPack.ui(player, "editor_prompt_timeout",
+                        "§7Timed out. Type §fcancel §7was also an option — you're back."));
+                reopen(player);
+                return;
+            }
+            String hint = session.promptHint() == null ? "Type in chat" : session.promptHint();
+            player.sendActionBar(net.kyori.adventure.text.Component.text(
+                    hint + "  ·  cancel to go back"
+            ));
+        }, 10L, 40L);
+        session.setPromptWatch(task);
     }
 
     public String nextId(String name) {

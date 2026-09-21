@@ -1,6 +1,7 @@
 package de.aetherion.quests.editor;
 
 import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitTask;
 
 import java.util.Map;
 import java.util.UUID;
@@ -17,11 +18,14 @@ public final class EditorSessions {
         RENAME,
         SUBTITLE,
         LINE,
+        LINE_EDIT,
         CHOICE_TEXT,
         SKIN,
         COMMAND,
         PAGE_ID,
-        QUEST_ID
+        QUEST_ID,
+        QUEST_TITLE,
+        REWARD_NAME
     }
 
     public static final class Session {
@@ -31,6 +35,11 @@ public final class EditorSessions {
         private int choiceIndex = -1;
         private int listPage;
         private boolean confirmDelete;
+        private EditorScreen returnTo = EditorScreen.EDIT;
+        private String promptPreview;
+        private String promptHint;
+        private BukkitTask promptWatch;
+        private long promptUntilMs;
 
         public Prompt prompt() {
             return prompt;
@@ -84,8 +93,55 @@ public final class EditorSessions {
             this.confirmDelete = confirmDelete;
         }
 
+        public EditorScreen returnTo() {
+            return returnTo == null ? EditorScreen.EDIT : returnTo;
+        }
+
+        public void setReturnTo(EditorScreen returnTo) {
+            this.returnTo = returnTo == null ? EditorScreen.EDIT : returnTo;
+        }
+
+        public String promptPreview() {
+            return promptPreview;
+        }
+
+        public void setPromptPreview(String promptPreview) {
+            this.promptPreview = promptPreview;
+        }
+
+        public String promptHint() {
+            return promptHint;
+        }
+
+        public void setPromptHint(String promptHint) {
+            this.promptHint = promptHint;
+        }
+
+        public BukkitTask promptWatch() {
+            return promptWatch;
+        }
+
+        public void setPromptWatch(BukkitTask promptWatch) {
+            this.promptWatch = promptWatch;
+        }
+
+        public long promptUntilMs() {
+            return promptUntilMs;
+        }
+
+        public void setPromptUntilMs(long promptUntilMs) {
+            this.promptUntilMs = promptUntilMs;
+        }
+
         public void clearPrompt() {
             this.prompt = Prompt.NONE;
+            this.promptPreview = null;
+            this.promptHint = null;
+            this.promptUntilMs = 0L;
+            if (promptWatch != null) {
+                promptWatch.cancel();
+                promptWatch = null;
+            }
         }
     }
 
@@ -101,7 +157,10 @@ public final class EditorSessions {
 
     public void forget(UUID playerId) {
         if (playerId != null) {
-            sessions.remove(playerId);
+            Session session = sessions.remove(playerId);
+            if (session != null) {
+                session.clearPrompt();
+            }
         }
     }
 }

@@ -147,8 +147,13 @@ permissions:
     description: Open the Aether Shard shop
     default: true
   aetherion.dev:
-    description: Access the DEV menu and animal anchors
+    description: Access the DEV menu and animal anchors (includes the NPC editor)
     default: op
+    children:
+      aetherion.npc.editor: true
+  aetherion.npc.editor:
+    description: Open the in-game NPC and quest editor
+    default: false
   aetherion.shards.admin:
     description: Give and take Aether Shards
     default: op
