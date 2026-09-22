@@ -203,8 +203,7 @@ public class AetherionManagerGUI {
                     Material.ANVIL, "§eAnvil",
                     progress == null ? "§7Talk to Temper first." : progress.hint(ProgressionService.Flag.ANVIL),
                     "§7Open booster sockets.",
-                    "§714 slots. Swap anytime.",
-                    "§7Vanilla anvil is top-right.");
+                    "§714 slots. Swap anytime.");
         }
 
         if (player.isOp() || player.hasPermission("aetherion.dev")) {
@@ -509,7 +508,6 @@ public class AetherionManagerGUI {
                     "§eAnvil",
                     "§7Open booster sockets.",
                     "§714 slots. Swap anytime.",
-                    "§7Vanilla anvil is top-right.",
                     "",
                     "§eClick to open"
             );
@@ -523,7 +521,6 @@ public class AetherionManagerGUI {
             meta.setLore(java.util.List.of(
                     "§e§lUNLOCKED",
                     "§f14 booster sockets. Swap anytime.",
-                    "§7Vanilla anvil is top-right.",
                     "",
                     "§eClick to open"
             ));

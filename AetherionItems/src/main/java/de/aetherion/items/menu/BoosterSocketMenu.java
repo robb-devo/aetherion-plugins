@@ -449,8 +449,9 @@ public final class BoosterSocketMenu implements Listener {
     private ItemStack vanillaAnvil() {
         return named(Material.ANVIL, "§fVanilla Anvil",
                 "§7Normaler Amboss",
-                "§7Rename and repair.",
-                "§7Opens the normal Minecraft anvil.");
+                "§7Dungeon cores, rename, and repair.",
+                "§7Opens the normal Minecraft anvil.",
+                "§8Boosters stay in the sockets.");
     }
 
     private ItemStack named(Material material, String name, String... lore) {
