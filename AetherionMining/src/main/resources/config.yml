@@ -35,13 +35,16 @@ veins:
   spawn-pitch: 0
   # Cannot break inside this horizontal radius of hub spawn. Place is denied world-wide.
   spawn-protect-radius: 20
-  # Solid dig cube half-extent (XZ). Schematic sits flush in the middle — no air-gap clearance.
+  # Solid dig cube half-extent (XZ). Dig paints ONLY outside schematic columns.
   dig-half-extent: 180
   dig-depth: 48
   dig-height: 28
+  # Columns within this radius of spawn that contain non-air are frozen as schematic.
+  dig-hub-scan: 120
   # Fixed seed → identical structure/ores on every 24h reset.
   dig-seed: 20260922
-  softlight-on-paint: true
+  # Softlight writes LIGHT into air — keep OFF so schematic rooms stay 1:1.
+  softlight-on-paint: false
   softlight-min: 7
   softlight-step: 5
   softlight-level: 10

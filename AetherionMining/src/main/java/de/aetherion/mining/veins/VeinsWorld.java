@@ -31,7 +31,8 @@ public final class VeinsWorld {
     public static final String DEFAULT_NAME = "aether_veins";
     /** Dig-zone Crystal Hollows polish around live hub — not the old Deep Veins megamap. */
     /** Dig layout: solid flush cube (no clearance air gap). */
-    public static final int LAYOUT = 6;
+    /** Dig layout: footprint-safe paint (never overwrite schematic columns). */
+    public static final int LAYOUT = 7;
 
     private final AetherionMining plugin;
     private final ConcurrentHashMap<UUID, Location> exits = new ConcurrentHashMap<>();
@@ -93,6 +94,11 @@ public final class VeinsWorld {
 
     public int digHeight() {
         return Math.max(8, plugin.getConfig().getInt("veins.dig-height", 28));
+    }
+
+    /** Horizontal scan for schematic columns around spawn (footprint freeze). */
+    public int digHubScan() {
+        return Math.max(32, plugin.getConfig().getInt("veins.dig-hub-scan", 120));
     }
 
     /** @deprecated Clearance air-gap is retired — schematic footprint is skipped by voxel mask. */
@@ -245,6 +251,17 @@ public final class VeinsWorld {
         final CommandSender out = sender != null ? sender : Bukkit.getConsoleSender();
         painting = true;
         digZonesReady = false;
+        // Stale snapshots from the broken painter may contain hub overwrites — drop on force.
+        if (force) {
+            File stale = VeinsDigSnapshot.file(plugin.getDataFolder());
+            if (stale.isFile()) {
+                if (stale.delete()) {
+                    out.sendMessage("§7Cleared stale dig snapshot (hub-safe re-paint).");
+                } else {
+                    plugin.getLogger().warning("Could not delete stale dig snapshot before safe re-paint.");
+                }
+            }
+        }
         VeinsDigZones.paintAsync(
                 plugin,
                 target,
@@ -254,6 +271,7 @@ public final class VeinsWorld {
                 digHalfExtent(),
                 digDepth(),
                 digHeight(),
+                digHubScan(),
                 digSeed(),
                 out,
                 plugin.getDataFolder(),
@@ -376,7 +394,16 @@ public final class VeinsWorld {
             try {
                 world = current;
                 applyWorld(current);
-                int restored = VeinsDigSnapshot.restore(current, plugin.getDataFolder(), console);
+                // Prefer hub-safe re-paint. Old v1 snapshots may contain schematic overwrites.
+                File snap = VeinsDigSnapshot.file(plugin.getDataFolder());
+                int restored = -1;
+                if (snap.isFile() && layout >= LAYOUT) {
+                    restored = VeinsDigSnapshot.restore(current, plugin.getDataFolder(), console);
+                } else if (snap.isFile()) {
+                    if (snap.delete()) {
+                        console.sendMessage("§7Dropped pre-safe dig snapshot (would risk hub).");
+                    }
+                }
                 if (restored < 0) {
                     digZonesReady = false;
                     ensureDigZones(console, true);
@@ -384,9 +411,9 @@ public final class VeinsWorld {
                     digZonesReady = true;
                     layout = LAYOUT;
                     saveData();
+                    purgeNpcs(current);
                     if (spawn != null) {
                         VeinsGuard.protectSpawn(current, spawn, spawnProtectRadius());
-                        scheduleSoftLight(console, spawn);
                     }
                 }
                 plugin.getLogger().info("Amethyst dig zones restored. Generation " + generation + ".");
@@ -457,7 +484,8 @@ public final class VeinsWorld {
         if (spawn == null || spawn.getWorld() == null) {
             return;
         }
-        if (!plugin.getConfig().getBoolean("veins.softlight-on-paint", true)) {
+        // Softlight places LIGHT blocks in air — never auto-run over the schematic.
+        if (!plugin.getConfig().getBoolean("veins.softlight-on-paint", false)) {
             return;
         }
         Bukkit.getScheduler().runTaskLater(plugin, () -> runSoftLight(

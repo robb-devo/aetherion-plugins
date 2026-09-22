@@ -1,66 +1,60 @@
 # Amethyst Area (aether_veins) — admin
 
-Finished BreadBuilds hub stays **1:1**. Dig volume is one solid cube flush against the schematic outer surface (no clearance air gap). Never delete the world folder to “reset”.
+Finished BreadBuilds hub stays **block-for-block 1:1**. Dig paint **never** writes schematic voxels.
+
+## Critical paint rule
+
+1. Freeze every non-air voxel in the dig volume at paint start.
+2. Freeze every **column** within `dig-hub-scan` of spawn that contains hub non-air (entire column off-limits — rooms/doors cannot flood).
+3. Dig stone/ores/tunnels only in **non-hub columns**, flush against the footprint.
+4. Paint log must show `schematicOverwrites=0`.
+
+`loosenPriorDigFill` / clearance-gap / flood-into-rooms logic is **gone**.
 
 ## Layout
 
 | Piece | Behavior |
 | --- | --- |
-| Hub (center schematic) | Untouched. Skipped by non-air footprint + enclosed-air mask. |
-| Dig volume | One solid cube (`dig-half-extent` × depth/height) with four themed quadrants inside. |
-| Flush | Dig stone fills exterior air right up to schematic solids — zero air ring. |
-| Ore regen | **None** while playing (mined = gone). |
-| Daily reset | Restores dig snapshot (identical). Hub skipped. |
-| Soft light | Transparent `LIGHT` via Hub `SoftLightPass`. |
+| Hub schematic | Untouched. Frozen columns + frozen non-air. |
+| Dig volume | Solid fill outside footprint; four themed quadrants. |
+| Softlight | **Off** by default (`softlight-on-paint: false`) — LIGHT would alter schematic air. |
 
 ## Rules
 
 | Action | Rule |
 | --- | --- |
-| Break | Allowed everywhere **except** ~20 spawn protect (`VeinsListener` + WG `veins_spawn_protect`). |
-| Place | **Denied everywhere** in `aether_veins` (plugin + WG `__global__` `BLOCK_PLACE=DENY`). Creative+admin exempt. |
-| NPCs | **None** in Amethyst. Foreman never auto-restored into `aether_veins`; leftovers purged on enable (+ delayed sweeps). `/deepmines npc` admin-only elsewhere. |
-| Vanilla mobs | Off world-wide (`DO_MOB_SPAWNING=false`, spawn flags off, WG `MOB_SPAWNING=DENY`, creature-spawn cancel). |
-| Pets | Custom spawns OK in dark digs; blocked on open-sky island surface. |
+| Break | OK except ~20 spawn protect. |
+| Place | Denied everywhere in `aether_veins`. |
+| NPCs | None — Foreman never restored into Amethyst. |
+| Vanilla mobs | Off. |
 
-Config: `plugins/AetherionMining/config.yml` → `veins.*`
+## After restoring a clean Zip world
 
-Defaults: spawn `8.5 / 18 / 8.5`, `spawn-protect-radius: 20`, `dig-half-extent: 180`, `dig-depth: 48`, `dig-height: 28`, `reset-hours: 24`, `dig-seed: 20260922`.
-
-## Re-paint (closes air gap / rebuilds dig flush)
+1. Deploy new `AetherionMining.jar`.
+2. Delete `plugins/AetherionMining/veins-dig-snapshot.bin.gz` if present (old snapshots may be corrupt).
+3. Run:
 
 ```
 /deepmines zones force
 ```
 
-Batched fill — watch console progress. Schematic voxels are never overwritten.
+Confirm log: `schematicOverwrites=0`.
 
-Check / first paint:
+## Soft light (optional, dig-only care)
 
-```
-/deepmines zones
-```
+Do **not** softlight the hub. Prefer off. Manual dig softlight only if operators stay outside schematic columns.
 
-## Soft light
-
-Auto after paint when `veins.softlight-on-paint: true`.
-
-```
-/deepmines softlight [radius]
-/hubadmin softlight veins
-```
-
-## 24h reset / force restore
+## 24h reset
 
 ```
 /deepmines reset
 /deepmines time
 ```
 
-Restores `plugins/AetherionMining/veins-dig-snapshot.bin.gz`. Does **not** unload/delete `aether_veins`.
+Snapshot is dig-only (hub excluded).
 
 ## Do not
 
-- Do not delete `aether_veins` or restore Deep Veins prototype.
-- Do not use old `dig-hub-clearance` air-gap thinking — footprint mask only.
-- Do not touch WildlifeLooks / MobZone idle / entity lifecycle freeze.
+- Do not delete `aether_veins` to “fix” digs.
+- Do not restore Deep Veins prototype.
+- Do not touch WildlifeLooks / MobZone idle.

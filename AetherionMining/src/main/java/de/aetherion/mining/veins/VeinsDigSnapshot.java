@@ -25,8 +25,8 @@ import java.util.zip.GZIPOutputStream;
  */
 public final class VeinsDigSnapshot {
 
-    private static final int MAGIC = 0xAE7D1601;
-    private static final int VERSION = 1;
+    private static final int MAGIC = 0xAE7D1602;
+    private static final int VERSION = 2;
 
     private VeinsDigSnapshot() {
     }

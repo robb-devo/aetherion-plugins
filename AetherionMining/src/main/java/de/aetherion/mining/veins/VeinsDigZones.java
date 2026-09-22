@@ -9,20 +9,20 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
-import java.util.HashSet;
 
 /**
- * One solid Crystal Hollows dig volume with four themed quadrants.
- * BreadBuilds schematic stays 1:1 — never overwrites hub solids or enclosed hub air.
- * Dig stone presses flush against schematic outer voxels (no clearance air gap).
+ * Crystal Hollows dig volume around the finished BreadBuilds Amethyst schematic.
+ *
+ * <p><b>Non-negotiable:</b> never writes into schematic occupancy. Hub columns
+ * (any XZ column that contains non-air in the hub scan) are frozen block-for-block —
+ * dig stone/ores/tunnels exist only in columns outside that footprint, flush against it.
  */
 public final class VeinsDigZones {
 
@@ -38,11 +38,17 @@ public final class VeinsDigZones {
     private final int half;
     private final int yMin;
     private final int yMax;
+    private final int hubScan;
     private final long seed;
     private final CommandSender progress;
     private final File dataFolder;
     private final Map<Long, VeinsDigSnapshot.Entry> recorded = new LinkedHashMap<>(65536);
-    private final Set<Long> hubMask = new HashSet<>();
+    /** Packed XZ columns that contain schematic non-air — never paint these columns. */
+    private final Set<Long> hubColumns = new HashSet<>();
+    /** Exact non-air voxels frozen at paint start (belt-and-suspenders). */
+    private final Set<Long> frozenNonAir = new HashSet<>();
+    private int digWrites;
+    private int schematicSkips;
 
     private VeinsDigZones(
             JavaPlugin plugin,
@@ -53,6 +59,7 @@ public final class VeinsDigZones {
             int half,
             int digDepth,
             int digHeight,
+            int hubScan,
             long seed,
             CommandSender progress,
             File dataFolder
@@ -65,14 +72,40 @@ public final class VeinsDigZones {
         this.half = Math.max(48, half);
         this.yMin = Math.max(world.getMinHeight() + 1, spawnY - Math.max(16, digDepth));
         this.yMax = Math.min(world.getMaxHeight() - 2, spawnY + Math.max(8, digHeight));
+        this.hubScan = Math.max(32, Math.min(hubScan, half));
         this.seed = seed;
         this.progress = progress;
         this.dataFolder = dataFolder;
     }
 
-    /**
-     * Paint the solid dig cube asynchronously (batched), then run {@code onDone}.
-     */
+    public static void paintAsync(
+            JavaPlugin plugin,
+            World world,
+            int spawnX,
+            int spawnY,
+            int spawnZ,
+            int half,
+            int digDepth,
+            int digHeight,
+            int hubScan,
+            long seed,
+            CommandSender progress,
+            File dataFolder,
+            Runnable onDone
+    ) {
+        if (world == null || plugin == null) {
+            if (onDone != null) {
+                onDone.run();
+            }
+            return;
+        }
+        new VeinsDigZones(
+                plugin, world, spawnX, spawnY, spawnZ, half, digDepth, digHeight, hubScan, seed, progress, dataFolder
+        ).runAsync(onDone);
+    }
+
+    /** @deprecated Prefer overload with hubScan. */
+    @Deprecated
     public static void paintAsync(
             JavaPlugin plugin,
             World world,
@@ -87,15 +120,7 @@ public final class VeinsDigZones {
             File dataFolder,
             Runnable onDone
     ) {
-        if (world == null || plugin == null) {
-            if (onDone != null) {
-                onDone.run();
-            }
-            return;
-        }
-        new VeinsDigZones(
-                plugin, world, spawnX, spawnY, spawnZ, half, digDepth, digHeight, seed, progress, dataFolder
-        ).runAsync(onDone);
+        paintAsync(plugin, world, spawnX, spawnY, spawnZ, half, digDepth, digHeight, 120, seed, progress, dataFolder, onDone);
     }
 
     public static Style styleAt(int x, int z, int spawnX, int spawnZ) {
@@ -113,29 +138,35 @@ public final class VeinsDigZones {
         return Style.CINDER;
     }
 
+    /** True if this column is schematic footprint — dig must never write here. */
+    public static boolean isHubColumn(int x, int z, Set<Long> hubColumns) {
+        return hubColumns.contains(packColumn(x, z));
+    }
+
     private void runAsync(Runnable onDone) {
-        msg("§eAmethyst dig: solid volume flush to schematic (§f"
-                + (half * 2) + "§ex§f" + (yMax - yMin + 1) + "§e)…");
+        digWrites = 0;
+        schematicSkips = 0;
+        msg("§eAmethyst dig: paint OUTSIDE schematic footprint only (flush, zero hub overwrites)…");
         preload();
-        buildHubMask();
-        msg("§7Hub footprint protected: §f" + hubMask.size() + " §7voxels (solids + enclosed air).");
+        freezeSchematicFootprint();
+        msg("§7Schematic columns frozen: §f" + hubColumns.size()
+                + " §7| non-air voxels frozen: §f" + frozenNonAir.size());
 
         List<int[]> fillJobs = new ArrayList<>();
         for (int x = spawnX - half; x <= spawnX + half; x++) {
             for (int z = spawnZ - half; z <= spawnZ + half; z++) {
+                if (hubColumns.contains(packColumn(x, z))) {
+                    continue;
+                }
                 for (int y = yMin; y <= yMax; y++) {
-                    if (hubMask.contains(key(x, y, z))) {
-                        continue;
-                    }
                     fillJobs.add(new int[]{x, y, z});
                 }
             }
         }
-        msg("§7Filling §f" + fillJobs.size() + " §7dig cells…");
+        msg("§7Dig fill cells (outside footprint): §f" + fillJobs.size());
 
         final int batch = 6000;
         final int[] index = {0};
-        final int[] written = {0};
 
         Bukkit.getScheduler().runTaskTimer(plugin, task -> {
             int end = Math.min(index[0] + batch, fillJobs.size());
@@ -143,20 +174,28 @@ public final class VeinsDigZones {
                 int[] p = fillJobs.get(i);
                 Style style = styleAt(p[0], p[2], spawnX, spawnZ);
                 Random cellRng = rng((((long) p[0]) << 20) ^ (((long) p[1]) << 10) ^ p[2]);
-                written[0] += set(p[0], p[1], p[2], oreOrBase(style, p[1], cellRng));
+                setDig(p[0], p[1], p[2], oreOrBase(style, p[1], cellRng));
             }
             index[0] = end;
             if (index[0] < fillJobs.size()) {
                 if (index[0] % (batch * 20) < batch) {
                     int pct = (int) ((index[0] * 100L) / Math.max(1, fillJobs.size()));
-                    msg("§7Dig fill… §f" + pct + "%");
+                    msg("§7Dig fill… §f" + pct + "% §8(schematic skips §f" + schematicSkips + "§8)");
                 }
                 return;
             }
             task.cancel();
-            written[0] += carveAll();
+            carveAll();
             saveSnapshot();
-            msg("§aDig volume ready. §f" + written[0] + " §awrites. Schematic flush / untouched.");
+            msg("§aDig paint done. writes=§f" + digWrites
+                    + " §aschematicOverwrites=§f" + schematicSkips
+                    + (schematicSkips == 0 ? " §a✓" : " §c✗ FAIL"));
+            if (schematicSkips != 0) {
+                plugin.getLogger().severe(
+                        "Amethyst dig paint reported " + schematicSkips
+                                + " schematic overwrite attempts — blocked. Hub must stay 1:1."
+                );
+            }
             if (onDone != null) {
                 onDone.run();
             }
@@ -176,178 +215,61 @@ public final class VeinsDigZones {
     }
 
     /**
-     * Protect schematic solids and air enclosed by them (rooms).
-     * Exterior air (including old clearance gaps) is diggable fill — flush to solids.
+     * Freeze schematic footprint before any write:
+     * <ul>
+     *   <li>Every non-air voxel in the dig volume is frozen (never overwritten).</li>
+     *   <li>Any column within hubScan of spawn that contains non-air is a hub column —
+     *       the entire column (all Y in dig range) is off-limits, so open rooms/doors
+     *       cannot be flooded by exterior dig fill.</li>
+     * </ul>
+     * Dig paints only in non-hub columns → flush against schematic outer columns.
      */
-    private void buildHubMask() {
-        hubMask.clear();
-        int minX = spawnX - half;
-        int maxX = spawnX + half;
-        int minZ = spawnZ - half;
-        int maxZ = spawnZ + half;
+    private void freezeSchematicFootprint() {
+        hubColumns.clear();
+        frozenNonAir.clear();
+        int scanMinX = spawnX - hubScan;
+        int scanMaxX = spawnX + hubScan;
+        int scanMinZ = spawnZ - hubScan;
+        int scanMaxZ = spawnZ + hubScan;
+        // Hub Y band: island body around spawn (not the full dig depth — avoids marking
+        // distant underground stone as "schematic", but still catches the BreadBuilds hub).
+        int hubYMin = Math.max(yMin, spawnY - 40);
+        int hubYMax = Math.min(yMax, spawnY + 48);
 
-        for (int x = minX; x <= maxX; x++) {
-            for (int z = minZ; z <= maxZ; z++) {
+        for (int x = spawnX - half; x <= spawnX + half; x++) {
+            for (int z = spawnZ - half; z <= spawnZ + half; z++) {
                 for (int y = yMin; y <= yMax; y++) {
                     Material type = world.getBlockAt(x, y, z).getType();
-                    if (!type.isAir()) {
-                        hubMask.add(key(x, y, z));
+                    if (!type.isAir() && type != Material.LIGHT && type != Material.CAVE_AIR && type != Material.VOID_AIR) {
+                        frozenNonAir.add(key(x, y, z));
+                        if (x >= scanMinX && x <= scanMaxX && z >= scanMinZ && z <= scanMaxZ
+                                && y >= hubYMin && y <= hubYMax) {
+                            hubColumns.add(packColumn(x, z));
+                        }
                     }
                 }
             }
         }
-
-        // Flood exterior air from the dig-volume boundary.
-        Set<Long> exteriorAir = new HashSet<>();
-        Queue<long[]> queue = new ArrayDeque<>();
-        seedBoundaryAir(minX, maxX, minZ, maxZ, queue, exteriorAir);
-        while (!queue.isEmpty()) {
-            long[] n = queue.poll();
-            int x = (int) n[0];
-            int y = (int) n[1];
-            int z = (int) n[2];
-            tryEnqueue(x + 1, y, z, minX, maxX, minZ, maxZ, exteriorAir, queue);
-            tryEnqueue(x - 1, y, z, minX, maxX, minZ, maxZ, exteriorAir, queue);
-            tryEnqueue(x, y + 1, z, minX, maxX, minZ, maxZ, exteriorAir, queue);
-            tryEnqueue(x, y - 1, z, minX, maxX, minZ, maxZ, exteriorAir, queue);
-            tryEnqueue(x, y, z + 1, minX, maxX, minZ, maxZ, exteriorAir, queue);
-            tryEnqueue(x, y, z - 1, minX, maxX, minZ, maxZ, exteriorAir, queue);
-        }
-
-        // Enclosed air (schematic interiors) joins the hub mask — never fill rooms.
-        for (int x = minX; x <= maxX; x++) {
-            for (int z = minZ; z <= maxZ; z++) {
-                for (int y = yMin; y <= yMax; y++) {
-                    long k = key(x, y, z);
-                    if (hubMask.contains(k)) {
-                        continue;
-                    }
-                    if (world.getBlockAt(x, y, z).getType().isAir() && !exteriorAir.contains(k)) {
-                        hubMask.add(k);
-                    }
-                }
-            }
-        }
-
-        // Only rewrite prior dig filler when a snapshot already exists (force re-paint).
-        // First paint only fills exterior air — flush to schematic without eating hub stone.
-        if (dataFolder != null && VeinsDigSnapshot.exists(dataFolder)) {
-            loosenPriorDigFill(minX, maxX, minZ, maxZ);
-        }
     }
 
-    private void seedBoundaryAir(
-            int minX, int maxX, int minZ, int maxZ, Queue<long[]> queue, Set<Long> exteriorAir
-    ) {
-        for (int x = minX; x <= maxX; x++) {
-            for (int y = yMin; y <= yMax; y++) {
-                offerAir(x, y, minZ, exteriorAir, queue);
-                offerAir(x, y, maxZ, exteriorAir, queue);
-            }
-        }
-        for (int z = minZ; z <= maxZ; z++) {
-            for (int y = yMin; y <= yMax; y++) {
-                offerAir(minX, y, z, exteriorAir, queue);
-                offerAir(maxX, y, z, exteriorAir, queue);
-            }
-        }
-        for (int x = minX; x <= maxX; x++) {
-            for (int z = minZ; z <= maxZ; z++) {
-                offerAir(x, yMin, z, exteriorAir, queue);
-                offerAir(x, yMax, z, exteriorAir, queue);
-            }
-        }
-    }
-
-    private void offerAir(int x, int y, int z, Set<Long> exteriorAir, Queue<long[]> queue) {
-        if (!inVolume(x, y, z)) {
-            return;
-        }
-        if (!world.getBlockAt(x, y, z).getType().isAir()) {
-            return;
-        }
-        long k = key(x, y, z);
-        if (exteriorAir.add(k)) {
-            queue.add(new long[]{x, y, z});
-        }
-    }
-
-    private void tryEnqueue(
-            int x, int y, int z,
-            int minX, int maxX, int minZ, int maxZ,
-            Set<Long> exteriorAir,
-            Queue<long[]> queue
-    ) {
-        if (x < minX || x > maxX || z < minZ || z > maxZ || y < yMin || y > yMax) {
-            return;
-        }
-        if (hubMask.contains(key(x, y, z))) {
-            return;
-        }
-        if (!world.getBlockAt(x, y, z).getType().isAir()) {
-            return;
-        }
-        long k = key(x, y, z);
-        if (exteriorAir.add(k)) {
-            queue.add(new long[]{x, y, z});
-        }
-    }
-
-    /**
-     * Unmask prior dig filler (stone/ores we place) so force re-paint rebuilds the solid
-     * volume. Leaves schematic materials (amethyst, bricks, wood, etc.) protected.
-     */
-    private void loosenPriorDigFill(int minX, int maxX, int minZ, int maxZ) {
-        List<Long> drop = new ArrayList<>();
-        for (Long k : hubMask) {
-            int[] pos = decode(k);
-            Material type = world.getBlockAt(pos[0], pos[1], pos[2]).getType();
-            if (!type.isAir() && isPriorDigFill(type)) {
-                drop.add(k);
-            }
-        }
-        hubMask.removeAll(drop);
-    }
-
-    /** Bulk dig materials this painter places — safe to rewrite on force. Not schematic amethyst. */
-    private static boolean isPriorDigFill(Material type) {
-        if (type == null) {
-            return false;
-        }
-        return switch (type) {
-            case STONE, DEEPSLATE, COBBLESTONE, ANDESITE, DIORITE, GRANITE, TUFF, CALCITE,
-                    SMOOTH_BASALT, MOSS_BLOCK, MOSSY_COBBLESTONE, CLAY, ROOTED_DIRT,
-                    NETHERRACK, BLACKSTONE, BASALT, SOUL_SOIL, SPRUCE_PLANKS,
-                    COAL_ORE, DEEPSLATE_COAL_ORE, IRON_ORE, DEEPSLATE_IRON_ORE,
-                    COPPER_ORE, DEEPSLATE_COPPER_ORE, GOLD_ORE, DEEPSLATE_GOLD_ORE,
-                    REDSTONE_ORE, DEEPSLATE_REDSTONE_ORE, LAPIS_ORE, DEEPSLATE_LAPIS_ORE,
-                    DIAMOND_ORE, DEEPSLATE_DIAMOND_ORE, EMERALD_ORE, DEEPSLATE_EMERALD_ORE,
-                    NETHER_QUARTZ_ORE, NETHER_GOLD_ORE, ANCIENT_DEBRIS -> true;
-            default -> false;
-        };
-    }
-
-    private int carveAll() {
-        int written = 0;
+    private void carveAll() {
         for (Style style : Style.values()) {
-            written += carveGalleries(style);
+            carveGalleries(style);
         }
-        written += paintCorridors();
-        return written;
+        paintCorridors();
     }
 
-    private int paintCorridors() {
-        int written = 0;
+    private void paintCorridors() {
         int roadY = Math.max(yMin + 2, spawnY - 2);
-        // Start flush against schematic: first dig cell outside hub mask along each diagonal.
         for (Style style : Style.values()) {
             int[] dir = direction(style);
             Random rng = rng(900L + style.ordinal());
+            // Start at first non-hub column along this diagonal (flush to footprint).
             int start = 1;
             for (int along = 1; along < half - 4; along++) {
                 int cx = spawnX + dir[0] * along;
                 int cz = spawnZ + dir[1] * along;
-                if (!hubMask.contains(key(cx, roadY, cz))) {
+                if (!hubColumns.contains(packColumn(cx, cz))) {
                     start = along;
                     break;
                 }
@@ -361,30 +283,35 @@ public final class VeinsDigZones {
                 for (int w = -1; w <= 1; w++) {
                     int x = cx - dir[1] * w;
                     int z = cz + dir[0] * w;
-                    if (!inVolume(x, floor, z) || hubMask.contains(key(x, floor, z))) {
+                    if (!inVolume(x, floor, z) || hubColumns.contains(packColumn(x, z))) {
                         continue;
                     }
                     for (int head = 0; head <= 3; head++) {
-                        written += set(x, floor + head, z, Material.AIR);
+                        setDig(x, floor + head, z, Material.AIR);
                     }
-                    written += set(x, floor - 1, z, along % 7 == 0 ? Material.SPRUCE_PLANKS : Material.COBBLESTONE);
+                    setDig(x, floor - 1, z, along % 7 == 0 ? Material.SPRUCE_PLANKS : Material.COBBLESTONE);
                     if (w != 0 && along % 5 == 0 && rng.nextBoolean()) {
-                        written += set(x, floor + 3, z, Material.LANTERN);
+                        setDig(x, floor + 3, z, Material.LANTERN);
                     }
                 }
             }
         }
-        return written;
     }
 
-    private int carveGalleries(Style style) {
+    private void carveGalleries(Style style) {
         int[] offset = offset(style);
         int zx = spawnX + offset[0];
         int zz = spawnZ + offset[1];
+        // Push gallery centers outside hub scan so they don't target schematic columns.
+        if (Math.abs(offset[0]) < hubScan + 8) {
+            zx = spawnX + Integer.signum(offset[0]) * (hubScan + 24);
+        }
+        if (Math.abs(offset[1]) < hubScan + 8) {
+            zz = spawnZ + Integer.signum(offset[1]) * (hubScan + 24);
+        }
         int zoneR = Math.max(24, half / 2 - 8);
         Random rng = rng(style.ordinal() * 31L + 7L);
         int yMid = Math.max(yMin + 8, spawnY - 6);
-        int written = 0;
         int tunnels = 8;
         for (int t = 0; t < tunnels; t++) {
             double angle = (Math.PI * 2.0 * t) / tunnels + style.ordinal() * 0.35;
@@ -398,6 +325,9 @@ public final class VeinsDigZones {
                 if (styleAt(x, z, spawnX, spawnZ) != style || !inVolume(x, floor, z)) {
                     continue;
                 }
+                if (hubColumns.contains(packColumn(x, z))) {
+                    continue;
+                }
                 for (int w = -1; w <= 1; w++) {
                     for (int d = -1; d <= 1; d++) {
                         if (Math.abs(w) + Math.abs(d) > 2) {
@@ -405,33 +335,31 @@ public final class VeinsDigZones {
                         }
                         int bx = x + w;
                         int bz = z + d;
-                        if (!inVolume(bx, floor, bz) || hubMask.contains(key(bx, floor, bz))) {
+                        if (!inVolume(bx, floor, bz) || hubColumns.contains(packColumn(bx, bz))) {
                             continue;
                         }
                         for (int head = 0; head <= 3; head++) {
-                            written += set(bx, floor + head, bz, Material.AIR);
+                            setDig(bx, floor + head, bz, Material.AIR);
                         }
                         if (w == 0 && d == 0) {
-                            written += set(bx, floor - 1, bz, floorFlavor(style, rng));
+                            setDig(bx, floor - 1, bz, floorFlavor(style, rng));
                         } else if (rng.nextInt(8) == 0) {
                             Material ore = style == Style.CRYSTAL && rng.nextInt(3) == 0
                                     ? Material.AMETHYST_CLUSTER
                                     : featured(style, rng);
-                            written += set(bx, floor + 1, bz, ore);
+                            setDig(bx, floor + 1, bz, ore);
                         }
                     }
                 }
                 if (along > 8 && along % 14 == 0) {
-                    written += carveRoom(x, floor, z, style, rng);
+                    carveRoom(x, floor, z, style, rng);
                 }
             }
         }
-        written += scatterPockets(zx, zz, zoneR, yMid, style, rng);
-        return written;
+        scatterPockets(zx, zz, zoneR, yMid, style, rng);
     }
 
-    private int carveRoom(int cx, int floor, int cz, Style style, Random rng) {
-        int written = 0;
+    private void carveRoom(int cx, int floor, int cz, Style style, Random rng) {
         int r = 3 + rng.nextInt(2);
         for (int x = cx - r; x <= cx + r; x++) {
             for (int z = cz - r; z <= cz + r; z++) {
@@ -440,23 +368,21 @@ public final class VeinsDigZones {
                 if (dx * dx + dz * dz > r * r) {
                     continue;
                 }
-                if (!inVolume(x, floor, z) || hubMask.contains(key(x, floor, z))) {
+                if (!inVolume(x, floor, z) || hubColumns.contains(packColumn(x, z))) {
                     continue;
                 }
                 for (int head = 0; head <= 4; head++) {
-                    written += set(x, floor + head, z, Material.AIR);
+                    setDig(x, floor + head, z, Material.AIR);
                 }
-                written += set(x, floor - 1, z, floorFlavor(style, rng));
+                setDig(x, floor - 1, z, floorFlavor(style, rng));
                 if (dx * dx + dz * dz >= (r - 1) * (r - 1) && rng.nextInt(3) == 0) {
-                    written += set(x, floor + 1, z, featured(style, rng));
+                    setDig(x, floor + 1, z, featured(style, rng));
                 }
             }
         }
-        return written;
     }
 
-    private int scatterPockets(int zx, int zz, int zoneR, int yMid, Style style, Random rng) {
-        int written = 0;
+    private void scatterPockets(int zx, int zz, int zoneR, int yMid, Style style, Random rng) {
         for (int i = 0; i < 56; i++) {
             double angle = rng.nextDouble() * Math.PI * 2.0;
             double dist = 6 + rng.nextDouble() * (zoneR - 8);
@@ -466,7 +392,7 @@ public final class VeinsDigZones {
             if (styleAt(x, z, spawnX, spawnZ) != style || !inVolume(x, y, z)) {
                 continue;
             }
-            if (hubMask.contains(key(x, y, z))) {
+            if (hubColumns.contains(packColumn(x, z))) {
                 continue;
             }
             int size = 2 + rng.nextInt(3);
@@ -477,15 +403,15 @@ public final class VeinsDigZones {
                         if (dx * dx + dy * dy * 2 + dz * dz > size * size) {
                             continue;
                         }
-                        if (!inVolume(x + dx, y + dy, z + dz) || hubMask.contains(key(x + dx, y + dy, z + dz))) {
+                        if (!inVolume(x + dx, y + dy, z + dz)
+                                || hubColumns.contains(packColumn(x + dx, z + dz))) {
                             continue;
                         }
-                        written += set(x + dx, y + dy, z + dz, ore);
+                        setDig(x + dx, y + dy, z + dz, ore);
                     }
                 }
             }
         }
-        return written;
     }
 
     private boolean inVolume(int x, int y, int z) {
@@ -494,16 +420,31 @@ public final class VeinsDigZones {
                 && y >= yMin && y <= yMax;
     }
 
-    private int set(int x, int y, int z, Material material) {
-        if (!inVolume(x, y, z) || hubMask.contains(key(x, y, z))) {
-            return 0;
+    /**
+     * Only writer for dig terrain. Never mutates schematic columns or frozen non-air.
+     */
+    private void setDig(int x, int y, int z, Material material) {
+        if (!inVolume(x, y, z)) {
+            return;
+        }
+        long k = key(x, y, z);
+        if (hubColumns.contains(packColumn(x, z)) || frozenNonAir.contains(k)) {
+            schematicSkips++;
+            return;
         }
         Block block = world.getBlockAt(x, y, z);
-        if (block.getType() != material) {
+        // Final guard: never replace a non-air that existed at freeze time.
+        Material now = block.getType();
+        if (!now.isAir() && now != Material.CAVE_AIR && now != Material.VOID_AIR && now != Material.LIGHT
+                && frozenNonAir.contains(k)) {
+            schematicSkips++;
+            return;
+        }
+        if (now != material) {
             block.setType(material, false);
         }
-        recorded.put(key(x, y, z), VeinsDigSnapshot.Entry.of(x, y, z, material));
-        return 1;
+        recorded.put(k, VeinsDigSnapshot.Entry.of(x, y, z, material));
+        digWrites++;
     }
 
     private void saveSnapshot() {
@@ -512,7 +453,7 @@ public final class VeinsDigZones {
         }
         try {
             VeinsDigSnapshot.save(dataFolder, new ArrayList<>(recorded.values()));
-            msg("§7Snapshot saved (§f" + recorded.size() + "§7 blocks) for identical 24h reset.");
+            msg("§7Snapshot saved (§f" + recorded.size() + "§7 dig-only blocks). Hub excluded.");
         } catch (IOException e) {
             msg("§cCould not save dig snapshot: " + e.getMessage());
         }
@@ -526,6 +467,13 @@ public final class VeinsDigZones {
         if (progress != null) {
             progress.sendMessage(line);
         }
+        if (plugin != null) {
+            plugin.getLogger().info(line.replace('§', '&').replaceAll("&[0-9a-fk-or]", ""));
+        }
+    }
+
+    private static long packColumn(int x, int z) {
+        return (((long) (x + 1_048_576) & 0x3FFFFFL) << 22) | ((long) (z + 1_048_576) & 0x3FFFFFL);
     }
 
     private static long key(int x, int y, int z) {
@@ -534,15 +482,8 @@ public final class VeinsDigZones {
                 | ((long) (z + 1_048_576) & 0x3FFFFFL);
     }
 
-    private static int[] decode(long k) {
-        int x = (int) ((k >> 42) & 0x3FFFFFL) - 1_048_576;
-        int y = (int) ((k >> 22) & 0xFFFFFL) - 512;
-        int z = (int) (k & 0x3FFFFFL) - 1_048_576;
-        return new int[]{x, y, z};
-    }
-
     private static int[] offset(Style style) {
-        int d = 70;
+        int d = 96;
         return switch (style) {
             case CRYSTAL -> new int[]{d, -d};
             case LUSH -> new int[]{-d, -d};
