@@ -1,5 +1,16 @@
 # AetherionCore — shared library. No gameplay tick.
 #
+# network: which Velocity backend this jar is running on.
+# Blank this-server uses the Velocity GetServer reply, then the live port map
+# (hub 25566, mmo-r 25567, mmo-d 25568, mmo-c 25569).
+# Warps that belong on the main world connect to main-server unless this backend IS mmo-r.
+
+network:
+  this-server: ""
+  main-server: mmo-r
+  # Empty = Crafty shared/transfer (same folder AetherionDungeons already uses).
+  shared-dir: ""
+
 # wipe.* is used by /wipe beta and NetworkWipeWatch (Crafty multi-backend).
 # Empty / omitted keys keep historical production behavior:
 #   shared = <this-server>/../.. /shared

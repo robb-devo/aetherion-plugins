@@ -19,8 +19,10 @@ softdepend:
 
 commands:
   aquest:
-    description: Main AetherionQuests command
+    description: Admin quest tools (players use NPCs)
     usage: /aquest
+    permission: aetherionquests.admin
+    permission-message: "§cQuests are handled by NPCs."
 
   questnpc:
     description: Manage Aetherion quest NPCs

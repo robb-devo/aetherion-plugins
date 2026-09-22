@@ -17,6 +17,9 @@ public interface ProgressAccess {
 
     void reloadAfterImport(Player player);
 
+    /** Mirror imported skill XP onto the vanilla level bar. */
+    void syncAccountLevel(Player player);
+
     void resetLoadoutRuntime(Player player);
 
     boolean island(Player player);

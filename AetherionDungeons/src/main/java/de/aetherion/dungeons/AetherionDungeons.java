@@ -3,7 +3,7 @@ package de.aetherion.dungeons;
 import de.aetherion.dungeons.bridge.DungeonTpsProbe;
 import de.aetherion.dungeons.bridge.HubPortalBridge;
 import de.aetherion.dungeons.bridge.RemoteServerBridge;
-import de.aetherion.dungeons.bridge.TransferSnapshotStore;
+import de.aetherion.core.network.TransferSnapshotStore;
 import de.aetherion.dungeons.command.DungeonCommand;
 import de.aetherion.dungeons.instance.DungeonProgressHud;
 import de.aetherion.dungeons.instance.DungeonSession;
@@ -49,7 +49,14 @@ public final class AetherionDungeons extends JavaPlugin {
     public void onEnable() {
         instance = this;
         saveDefaultConfig();
-        snapshots = new TransferSnapshotStore(this);
+        de.aetherion.core.AetherionCore core = de.aetherion.core.AetherionCore.get();
+        snapshots = core != null && core.snapshots() != null
+                ? core.snapshots()
+                : new TransferSnapshotStore(this);
+        String shared = getConfig().getString("remote-transfer.shared-dir", "");
+        if (shared != null && !shared.isBlank()) {
+            snapshots.relocate(new java.io.File(shared.trim()));
+        }
         remote = new RemoteServerBridge(this, snapshots);
         tpsProbe = new DungeonTpsProbe(this);
         instances = new InstanceManager(this);
@@ -82,6 +89,10 @@ public final class AetherionDungeons extends JavaPlugin {
             dhub.setExecutor((sender, cmd, label, args) -> {
                 if (!(sender instanceof Player player)) {
                     sender.sendMessage("Players only.");
+                    return true;
+                }
+                if (!player.hasPermission("aetherion.dungeon.admin")) {
+                    player.sendMessage("§cNo permission.");
                     return true;
                 }
                 if (!sendToDungeonHub(player)) {

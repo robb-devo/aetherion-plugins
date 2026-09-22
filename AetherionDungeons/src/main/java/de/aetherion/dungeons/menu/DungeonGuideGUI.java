@@ -73,7 +73,7 @@ public final class DungeonGuideGUI implements Listener {
         inventory.setItem(SLOT_LEAVE, button(
                 Material.OAK_DOOR,
                 "§bLeave & hub",
-                "§7/dungeon leave or §e/dhub§7 anytime.",
+                "§7/dungeon leave §7exits. Gear stays.",
                 "§7Exit portal after the boss also works."
         ));
         inventory.setItem(SLOT_LOOT, button(
@@ -111,7 +111,7 @@ public final class DungeonGuideGUI implements Listener {
                     "§7Pick Floor 1 / 2 / 3.",
                     "§7Fill the clearance bar (or clear rooms),",
                     "§7beat the boss, grab the chest,",
-                    "§7then walk the §5exit portal§7 — or §e/dhub§7."
+                    "§7then walk the §5exit portal§7 — or §e/dungeon leave§7."
             );
             case SLOT_FLOORS -> button(
                     Material.IRON_BARS,
@@ -131,10 +131,10 @@ public final class DungeonGuideGUI implements Listener {
             case SLOT_LEAVE -> button(
                     Material.OAK_DOOR,
                     "§bLeave & hub",
-                    "§e/dungeon leave§7 — exit the instance.",
-                    "§e/dhub§7 — dungeon hub from anywhere",
-                    "§7(even from the capital via Velocity).",
-                    "§7Hub return portal → capital (mmo-r)."
+                    "§e/dungeon leave§7 — exit the instance. Gear stays.",
+                    "§e/dungeon return§7 — main world, then Capital.",
+                    "§7Neither command clears your inventory.",
+                    "§7Hub return portal does the same handoff."
             );
             case SLOT_LOOT -> button(
                     Material.CHEST,

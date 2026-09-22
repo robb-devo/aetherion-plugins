@@ -69,6 +69,9 @@ public final class RecipeBookCrafter {
             }
             previousTemplate = expected;
             previousItem = findInStorage(player.getInventory(), expected, itemManager);
+            if (previousItem != null) {
+                previousItem = previousItem.clone();
+            }
             break;
         }
 

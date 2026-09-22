@@ -1,5 +1,7 @@
 package de.aetherion.dungeons.bridge;
 
+import de.aetherion.core.network.TransferSnapshotStore;
+
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
@@ -90,26 +92,55 @@ public final class RemoteServerBridge implements PluginMessageListener {
             player.sendMessage("§cRemote dungeon transfer is disabled (config).");
             return false;
         }
-        if (snapshots != null) {
-            snapshots.save(player, pendingFloor, bossOnly);
-        }
+        long savedAt = snapshots == null ? -1L : snapshots.save(player, pendingFloor, bossOnly, null);
         if (pendingFloor > 0) {
             player.sendMessage("§5Dungeon Gate§7: Crossing to §f" + targetServer
                     + "§7 · Floor §f" + pendingFloor + "§7…");
         } else {
             player.sendMessage("§5Dungeon Gate§7: Crossing to §f" + targetServer + "§7…");
         }
-        return connect(player, targetServer);
+        return finishTransfer(player, savedAt, targetServer);
     }
 
+    /** Return portal: main world, default capital-side arrival. Does not clear inventory. */
     public boolean transferHome(Player player) {
+        return transferToMain(player, null);
+    }
+
+    /**
+     * Dungeon hub / instance → main MMORPG server, then the named hub spawn
+     * ({@code capital}, {@code harbour}, …). Inventory and level stay in the snapshot.
+     */
+    public boolean transferToMain(Player player, String spawnId) {
+        de.aetherion.core.AetherionCore core = de.aetherion.core.AetherionCore.get();
+        if (core != null && core.link() != null) {
+            return core.link().handoff(player, spawnId);
+        }
         if (player == null || !player.isOnline()) {
             return false;
         }
-        if (snapshots != null) {
-            snapshots.save(player, 0, false);
+        long savedAt = snapshots == null ? -1L : snapshots.save(player, 0, false, spawnId);
+        return finishTransfer(player, savedAt, returnServer);
+    }
+
+    private boolean finishTransfer(Player player, long savedAt, String server) {
+        boolean sent = connect(player, server);
+        if (!sent) {
+            if (snapshots != null) {
+                snapshots.discardIfUnclaimed(player.getUniqueId(), savedAt);
+            }
+            return false;
         }
-        return connect(player, returnServer);
+        java.util.UUID id = player.getUniqueId();
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            Player still = Bukkit.getPlayer(id);
+            if (still != null && still.isOnline() && snapshots != null) {
+                snapshots.discardIfUnclaimed(id, savedAt);
+                plugin.getLogger().info("Transfer to " + server + " did not move " + still.getName()
+                        + " — snapshot discarded, inventory left in place.");
+            }
+        }, 300L);
+        return true;
     }
 
     public boolean connect(Player player, String server) {

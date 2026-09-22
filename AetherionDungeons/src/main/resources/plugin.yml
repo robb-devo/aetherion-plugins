@@ -16,16 +16,24 @@ softdepend:
 
 commands:
   dungeon:
-    description: Dungeon admin and leave
-    usage: /dungeon <give|remove|leave|enter|boss|home|dhub>
+    description: Leave a dungeon or return to the main world. Never clears inventory.
+    usage: /dungeon <leave|return>
     aliases: [dungeons, aedungeon]
+    permission: aetherion.dungeon.use
+    permission-message: You cannot use dungeon commands.
   dhub:
-    description: Teleport to the dungeon hub from anywhere
+    description: Admin teleport to the dungeon hub. Does not clear inventory.
     usage: /dhub
     aliases: [dungeonhub, dh]
+    permission: aetherion.dungeon.admin
+    permission-message: You cannot use that.
 
 permissions:
   aetherion.dungeon.use:
+    description: Leave a dungeon or return to the main world
     default: true
   aetherion.dungeon.admin:
+    description: Dungeon admin tools (dhub, give, remove, enter, boss)
     default: op
+    children:
+      aetherion.dungeon.use: true

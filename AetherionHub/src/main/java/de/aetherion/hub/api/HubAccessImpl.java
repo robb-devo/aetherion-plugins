@@ -42,6 +42,19 @@ public final class HubAccessImpl implements HubAccess {
     }
 
     @Override
+    public boolean teleport(Player player, String spawnId) {
+        HubService hub = hub();
+        if (hub == null || player == null || spawnId == null || spawnId.isBlank()) {
+            return false;
+        }
+        HubSpawn spawn = hub.spawn(spawnId);
+        if (spawn == null) {
+            return false;
+        }
+        return hub.teleport(player, spawn);
+    }
+
+    @Override
     public int unlockAll(UUID uuid) {
         return AetherionHubAPI.unlockAll(uuid);
     }

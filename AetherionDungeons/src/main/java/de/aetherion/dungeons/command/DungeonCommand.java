@@ -49,19 +49,17 @@ public final class DungeonCommand implements CommandExecutor, TabCompleter {
 
         String action = args[0].toLowerCase(Locale.ROOT);
         switch (action) {
-            case "leave" -> {
-                if (instances.sessionOf(player) == null && !instances.isDungeonWorld(player.getWorld())) {
-                    if (AetherionDungeons.getInstance() != null
-                            && AetherionDungeons.getInstance().sendToDungeonHub(player)) {
-                        return true;
-                    }
-                    player.sendMessage("§cYou are not in a dungeon. Use §e/dhub§c for the dungeon hub.");
-                    return true;
-                }
-                instances.leave(player, false);
-                player.sendMessage("§7Tip: §e/dhub §7returns to the dungeon hub anytime.");
+            case "leave" -> leave(player);
+            case "return" -> safeReturn(player);
+            case "home" -> {
+                player.sendMessage("§c/dungeon home is disabled.");
+                player.sendMessage("§7Use §e/dungeon return§7. Your inventory was not touched.");
             }
             case "dhub", "hub" -> {
+                if (!player.hasPermission("aetherion.dungeon.admin")) {
+                    player.sendMessage("§cNo permission.");
+                    return true;
+                }
                 if (AetherionDungeons.getInstance() == null
                         || !AetherionDungeons.getInstance().sendToDungeonHub(player)) {
                     player.sendMessage("§cCould not reach the dungeon hub.");
@@ -129,13 +127,6 @@ public final class DungeonCommand implements CommandExecutor, TabCompleter {
                     player.sendMessage("§cEnable remote-transfer in AetherionDungeons config.");
                 }
             }
-            case "home", "return" -> {
-                if (remote == null) {
-                    player.sendMessage("§cNo remote bridge.");
-                    return true;
-                }
-                remote.transferHome(player);
-            }
             case "portal" -> {
                 if (!player.hasPermission("aetherion.dungeon.admin")) {
                     player.sendMessage("§cNo permission.");
@@ -170,11 +161,43 @@ public final class DungeonCommand implements CommandExecutor, TabCompleter {
         return true;
     }
 
+    /**
+     * Exit the current instance. Teleport only — inventory, level, and XP stay on the player.
+     */
+    private void leave(Player player) {
+        if (instances.sessionOf(player) == null && !instances.isDungeonWorld(player.getWorld())) {
+            player.sendMessage("§cYou are not in a dungeon.");
+            player.sendMessage("§7Use §e/dungeon return§7 for the main world. Your inventory was not touched.");
+            return;
+        }
+        instances.leave(player, false);
+        player.sendMessage("§7Your gear stayed with you. §e/dungeon return §7goes to the main world.");
+    }
+
+    /**
+     * Main-world handoff. Snapshots level and inventory without clearing, then connects.
+     * A failed connect discards the snapshot so the player keeps what they are holding.
+     */
+    private void safeReturn(Player player) {
+        boolean inInstance = instances.sessionOf(player) != null
+                || (player.getWorld() != null && instances.isDungeonWorld(player.getWorld()));
+        de.aetherion.core.AetherionCore core = de.aetherion.core.AetherionCore.get();
+        if (core != null && core.link() != null && core.link().handoff(player, "capital")) {
+            return;
+        }
+        if (inInstance) {
+            instances.leave(player, false);
+            player.sendMessage("§7Left the dungeon. Your gear stayed with you.");
+        }
+        player.sendMessage("§7You are on the main world. Use §e/capital§7.");
+        player.sendMessage("§7Your inventory was not touched.");
+    }
+
     private void usage(Player player) {
-        player.sendMessage("§5/dungeon leave §7- leave your instance");
-        player.sendMessage("§5/dhub §7- teleport to the dungeon hub (anywhere)");
-        player.sendMessage("§5/dungeon home §7- Velocity return to capital (mmo-r)");
+        player.sendMessage("§5/dungeon leave §7- leave your instance (keeps your gear)");
+        player.sendMessage("§5/dungeon return §7- main world, then Capital (keeps your gear)");
         if (player.hasPermission("aetherion.dungeon.admin")) {
+            player.sendMessage("§5/dungeon dhub §7- dungeon hub (admin)");
             player.sendMessage("§5/dungeon give §7- Keeper anchor");
             player.sendMessage("§5/dungeon guide §7- Scribe anchor (briefing menu)");
             player.sendMessage("§5/dungeon remove §7- despawn the Dungeon Keeper");
@@ -189,10 +212,11 @@ public final class DungeonCommand implements CommandExecutor, TabCompleter {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            Stream<String> options = Stream.of("leave", "home", "return", "dhub", "hub");
+            Stream<String> options = Stream.of("leave", "return");
             if (sender.hasPermission("aetherion.dungeon.admin")) {
                 options = Stream.concat(options, Stream.of(
-                        "give", "guide", "remove", "enter", "boss", "transfer", "mmod", "portal", "cleanup"));
+                        "dhub", "hub", "give", "guide", "remove", "enter", "boss",
+                        "transfer", "mmod", "portal", "cleanup"));
             }
             String prefix = args[0].toLowerCase(Locale.ROOT);
             return options.filter(option -> option.startsWith(prefix)).toList();

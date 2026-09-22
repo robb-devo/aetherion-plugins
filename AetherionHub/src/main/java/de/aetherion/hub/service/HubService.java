@@ -419,6 +419,13 @@ public final class HubService {
             return false;
         }
 
+        // Any backend that is not mmo-r shares these coordinates but is not Capital.
+        // Connect to mmo-r first. Unlock is enforced only after the player is there.
+        de.aetherion.core.AetherionCore core = de.aetherion.core.AetherionCore.get();
+        if (core != null && core.link() != null && core.link().handoff(player, spawn.id())) {
+            return true;
+        }
+
         if (!isUnlocked(player, spawn.id()) && !player.hasPermission("aetherionhub.admin")) {
             player.sendMessage(format("messages.locked", spawn));
             player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1f, 1f);

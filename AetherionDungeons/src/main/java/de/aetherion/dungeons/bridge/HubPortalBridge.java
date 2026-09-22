@@ -1,5 +1,7 @@
 package de.aetherion.dungeons.bridge;
 
+import de.aetherion.core.network.TransferSnapshotStore;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -169,7 +171,7 @@ public final class HubPortalBridge implements Listener {
                     player.teleport(dest);
                 }
                 player.sendMessage("§5Dungeon Hub§7: Welcome — gear synced.");
-                player.sendMessage("§7Tip: §e/dhub §7teleports here from anywhere.");
+                player.sendMessage("§7Tip: §e/dungeon return §7goes back to the main world. Your gear stays.");
                 if (result.pendingFloor() > 0) {
                     int floor = result.pendingFloor();
                     boolean bossOnly = result.bossOnly();
@@ -186,11 +188,18 @@ public final class HubPortalBridge implements Listener {
                     }, 15L);
                 }
             } else if (remote != null && remote.isHubRole()) {
-                Location dest = hubArrival.toLocation();
-                if (dest != null) {
-                    player.teleport(dest);
+                boolean warped = false;
+                String warp = result.pendingWarp();
+                if (warp != null && !warp.isBlank()) {
+                    warped = landOnMainSpawn(player, warp);
                 }
-                player.sendMessage("§5Capital§7: Welcome back — gear synced.");
+                if (!warped) {
+                    Location dest = hubArrival.toLocation();
+                    if (dest != null) {
+                        player.teleport(dest);
+                    }
+                }
+                player.sendMessage("§5Main world§7: Welcome back — gear and level synced.");
             }
         }, 8L);
     }
@@ -234,6 +243,28 @@ public final class HubPortalBridge implements Listener {
 
     public Location dungeonHubLocation() {
         return dungeonArrival.toLocation();
+    }
+
+    /**
+     * Arrival is already the main world. Teleport to the requested hub spawn.
+     * Amethyst uses the mining gate, same as {@code /amethyst} on mmo-r.
+     */
+    private boolean landOnMainSpawn(Player player, String warp) {
+        if ("amethyst".equalsIgnoreCase(warp)) {
+            de.aetherion.core.api.MiningAccess mining = de.aetherion.core.api.AetherServices.mining();
+            de.aetherion.core.api.HubAccess hub = de.aetherion.core.api.AetherServices.hub();
+            boolean unlocked = hub != null && hub.isUnlocked(player, "amethyst");
+            if (!unlocked && mining != null && !mining.meetsVeinsMiningLevel(player)) {
+                int need = mining.veinsMinMiningLevel();
+                player.sendMessage("§cNeed Mining Skill " + need + " for Amethyst Mines.");
+                return false;
+            }
+            if (mining != null) {
+                return mining.teleportToVeinsHub(player);
+            }
+        }
+        de.aetherion.core.api.HubAccess hub = de.aetherion.core.api.AetherServices.hub();
+        return hub != null && hub.teleport(player, warp);
     }
 
 

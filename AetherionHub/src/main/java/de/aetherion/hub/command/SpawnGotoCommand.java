@@ -57,6 +57,11 @@ public final class SpawnGotoCommand implements CommandExecutor {
             return true;
         }
 
+        de.aetherion.core.AetherionCore core = de.aetherion.core.AetherionCore.get();
+        if (core != null && core.link() != null && core.link().handoff(player, spawnId)) {
+            return true;
+        }
+
         if ("amethyst".equals(spawnId)) {
             return teleportAmethyst(player);
         }

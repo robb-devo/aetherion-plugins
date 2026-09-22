@@ -316,7 +316,7 @@ public final class InstanceManager {
             for (Player member : party) {
                 member.sendMessage("§bFloor 2 · Frostbound §7· fill the §cred clearance bar §7(~§f75%§7 kills).");
                 member.sendMessage("§7Red gate drops when the bar is full — §bFrostbound §7waits beyond.");
-                member.sendMessage("§e/dungeon leave §7or §e/dhub §7to exit to the dungeon hub.");
+                member.sendMessage("§e/dungeon leave §7exits. §e/dungeon return §7goes to the main world. Gear stays.");
             }
             return;
         }
@@ -329,14 +329,14 @@ public final class InstanceManager {
                 BossEngineBridge.spawn(at, initiator, BossEngineBridge.AETHERION, false);
                 for (Player member : party) {
                     member.sendMessage("§5Boss test. Aetherion is already in the ash arena.");
-                    member.sendMessage("§7Tip: §e/dhub §7anytime → dungeon hub.");
+                    member.sendMessage("§7Tip: §e/dungeon leave §7exits. Gear stays.");
                 }
                 return;
             }
             for (Player member : party) {
                 member.sendMessage("§5Floor 3 · Throne of Ashes §7· fill the §cred clearance bar §7(~§f75%§7 kills).");
                 member.sendMessage("§7Barrier drops when the bar is full — §5Aetherion §7waits in the arena.");
-                member.sendMessage("§e/dungeon leave §7or §e/dhub §7to exit to the dungeon hub.");
+                member.sendMessage("§e/dungeon leave §7exits. §e/dungeon return §7goes to the main world. Gear stays.");
             }
             return;
         }
@@ -665,7 +665,7 @@ public final class InstanceManager {
         for (Player occupant : session.world().getPlayers()) {
             occupant.sendTitle(bossFallTitle(session.floorNumber()), "§760s until the instance closes", 10, 50, 15);
             occupant.sendMessage(bossFallTitle(session.floorNumber()) + "§7. Right-click the reward chest — one item each — then walk into the §5exit portal§7.");
-            occupant.sendMessage("§7Or type §e/dhub §7/ §e/dungeon leave §7to return to the dungeon hub.");
+            occupant.sendMessage("§7Or type §e/dungeon leave §7to exit. Your gear stays.");
             occupant.sendMessage("§8The instance closes automatically in §f60 seconds§8.");
             occupant.playSound(occupant.getLocation(), org.bukkit.Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.8f, 0.8f);
         }

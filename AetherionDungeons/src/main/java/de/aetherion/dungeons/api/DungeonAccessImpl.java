@@ -1,6 +1,8 @@
 package de.aetherion.dungeons.api;
 
+import de.aetherion.core.AetherionCore;
 import de.aetherion.core.api.DungeonAccess;
+import de.aetherion.core.network.MainWorldLink;
 import de.aetherion.dungeons.AetherionDungeons;
 
 import org.bukkit.NamespacedKey;
@@ -53,5 +55,36 @@ public final class DungeonAccessImpl implements DungeonAccess {
         }
         plugin.despawnDungeonKeeper();
         return true;
+    }
+
+    @Override
+    public boolean needsMainWorld(Player player) {
+        MainWorldLink link = link();
+        return link != null && !link.isMainWorld();
+    }
+
+    @Override
+    public void leaveInstance(Player player) {
+        if (player == null || plugin == null || plugin.getInstances() == null) {
+            return;
+        }
+        var instances = plugin.getInstances();
+        if (instances.sessionOf(player) != null || instances.isDungeonWorld(player.getWorld())) {
+            instances.leave(player, false);
+        }
+    }
+
+    @Override
+    public boolean transferToMainSpawn(Player player, String spawnId) {
+        MainWorldLink link = link();
+        if (link == null || player == null) {
+            return false;
+        }
+        return link.handoff(player, spawnId);
+    }
+
+    private static MainWorldLink link() {
+        AetherionCore core = AetherionCore.get();
+        return core == null ? null : core.link();
     }
 }

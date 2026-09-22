@@ -42,6 +42,11 @@ public class PetTestCommand implements CommandExecutor {
             return true;
         }
 
+        if (!player.hasPermission("aethermobs.admin")) {
+            player.sendMessage("§cUse §f/pets§c.");
+            return true;
+        }
+
         if (args.length > 0
                 && args[0].equalsIgnoreCase("collection")) {
 

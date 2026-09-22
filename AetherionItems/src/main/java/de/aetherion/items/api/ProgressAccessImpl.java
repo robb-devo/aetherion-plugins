@@ -135,6 +135,14 @@ public final class ProgressAccessImpl implements ProgressAccess {
     }
 
     @Override
+    public void syncAccountLevel(Player player) {
+        if (player == null || plugin == null || plugin.xpBarSync() == null) {
+            return;
+        }
+        plugin.xpBarSync().sync(player);
+    }
+
+    @Override
     public void resetLoadoutRuntime(Player player) {
         if (plugin == null || plugin.getLoadoutListener() == null) {
             return;

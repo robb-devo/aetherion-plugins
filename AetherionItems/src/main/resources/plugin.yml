@@ -24,7 +24,8 @@ softdepend:
 commands:
 
   aetheriontest:
-    description: Gives a test Aetherion item
+    description: DEV — gives a test Aetherion item
+    permission: aetherion.dev
 
   atrecipes:
     description: Opens the Aetherion Recipe Book
@@ -34,7 +35,8 @@ commands:
       - recipebook
 
   aetherionitems:
-    description: Aetherion item commands
+    description: DEV — give Aetherion items and kits
+    permission: aetherion.dev
     aliases:
       - kit1
       - kit2

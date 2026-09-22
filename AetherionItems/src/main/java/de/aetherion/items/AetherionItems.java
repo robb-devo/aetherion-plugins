@@ -241,6 +241,8 @@ public class AetherionItems extends JavaPlugin {
     /** Combat / unique gear listeners. Order matches the former inline onEnable block. */
     private void registerCombatListeners() {
         getServer().getPluginManager().registerEvents(new AnvilBoosterListener(itemManager), this);
+        getServer().getPluginManager().registerEvents(new de.aetherion.items.menu.BoosterSocketMenu(itemManager), this);
+        getServer().getPluginManager().registerEvents(new de.aetherion.items.listener.OffhandCharmListener(this, itemManager), this);
         PvpGuardListener pvpGuard = new PvpGuardListener(this);
         getServer().getPluginManager().registerEvents(pvpGuard, this);
         pvpGuard.applyToLoadedWorlds();

@@ -33,6 +33,11 @@ public class QuestCommand implements CommandExecutor {
          * =========================================================
          */
 
+        if (!sender.hasPermission("aetherionquests.admin")) {
+            sender.sendMessage("§cQuests are handled by NPCs.");
+            return true;
+        }
+
         if (args.length == 0) {
 
             sender.sendMessage("§bAetherionQuests");
