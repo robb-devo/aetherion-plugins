@@ -1523,7 +1523,7 @@ public class RecipeRegistry {
                 charms.charm(AccessoryItems.Charm.COMBAT, 1),
                 Rarity.UNCOMMON,
                 List.of("MB", "BM"),
-                createMixedIngredients('M', new ItemStack(Material.MAGMA_CREAM), 'B', new ItemStack(Material.BONE))
+                createMixedIngredients('M', new ItemStack(Material.GUNPOWDER), 'B', new ItemStack(Material.BONE))
         );
         registerSimple(
                 "charm_mining",
@@ -1539,7 +1539,7 @@ public class RecipeRegistry {
                 charms.charm(AccessoryItems.Charm.FORAGING, 1),
                 Rarity.UNCOMMON,
                 List.of("SA", "AS"),
-                createMixedIngredients('S', new ItemStack(Material.OAK_SAPLING), 'A', new ItemStack(Material.APPLE))
+                createMixedIngredients('S', new ItemStack(Material.OAK_LOG), 'A', new ItemStack(Material.BIRCH_LOG))
         );
         registerSimple(
                 "charm_farming",
@@ -1547,7 +1547,7 @@ public class RecipeRegistry {
                 charms.charm(AccessoryItems.Charm.FARMING, 1),
                 Rarity.UNCOMMON,
                 List.of("WB", "BW"),
-                createMixedIngredients('W', new ItemStack(Material.WHEAT_SEEDS), 'B', new ItemStack(Material.BONE_MEAL))
+                createMixedIngredients('W', new ItemStack(Material.WHEAT), 'B', new ItemStack(Material.CARROT))
         );
         registerSimple(
                 "charm_fishing",
@@ -1555,7 +1555,7 @@ public class RecipeRegistry {
                 charms.charm(AccessoryItems.Charm.FISHING, 1),
                 Rarity.UNCOMMON,
                 List.of("CS", "SC"),
-                createMixedIngredients('C', new ItemStack(Material.COD), 'S', new ItemStack(Material.STRING))
+                createMixedIngredients('C', new ItemStack(Material.COD), 'S', new ItemStack(Material.SALMON))
         );
         registerSimple(
                 "charm_utility",
@@ -1563,7 +1563,7 @@ public class RecipeRegistry {
                 charms.charm(AccessoryItems.Charm.UTILITY, 1),
                 Rarity.UNCOMMON,
                 List.of("AG", "GA"),
-                createMixedIngredients('A', new ItemStack(Material.AMETHYST_CLUSTER), 'G', new ItemStack(Material.GLOWSTONE_DUST))
+                createMixedIngredients('A', new ItemStack(Material.LAPIS_LAZULI), 'G', new ItemStack(Material.REDSTONE))
         );
 
         registerLadderPlus(
@@ -1619,7 +1619,7 @@ public class RecipeRegistry {
 
         Map<Character, ItemStack> forge = new LinkedHashMap<>();
         forge.put('C', CompressedResource.COBBLESTONE.compacted());
-        forge.put('F', new ItemStack(Material.BLAST_FURNACE));
+        forge.put('F', CompressedResource.COAL.compressed());
         forge.put('I', CompressedResource.RAW_IRON.compressed());
         forge.put('O', CompressedResource.OAK_LOG.compressed());
         registerSimple(
@@ -1632,7 +1632,7 @@ public class RecipeRegistry {
         );
 
         Map<Character, ItemStack> estate = new LinkedHashMap<>();
-        estate.put('S', new ItemStack(Material.SPYGLASS));
+        estate.put('S', CompressedResource.COBBLESTONE.compressed());
         estate.put('L', new ItemStack(Material.LEATHER));
         estate.put('B', new ItemStack(Material.BONE));
         estate.put('G', new ItemStack(Material.GOLD_INGOT));
@@ -1729,7 +1729,7 @@ public class RecipeRegistry {
     private void registerSacks() {
         Map<Character, ItemStack> resource = new LinkedHashMap<>();
         resource.put('L', new ItemStack(Material.LEATHER));
-        resource.put('C', new ItemStack(Material.CHEST));
+        resource.put('C', new ItemStack(Material.OAK_LOG, 2));
         resource.put('S', new ItemStack(Material.STRING));
         registerSimple(
                 "resource_sack",
@@ -1742,7 +1742,7 @@ public class RecipeRegistry {
 
         Map<Character, ItemStack> booster = new LinkedHashMap<>();
         booster.put('L', new ItemStack(Material.LEATHER));
-        booster.put('C', new ItemStack(Material.CHEST));
+        booster.put('C', new ItemStack(Material.OAK_LOG, 2));
         booster.put('G', new ItemStack(Material.GOLD_INGOT));
         registerSimple(
                 "booster_sack",
@@ -1810,7 +1810,7 @@ public class RecipeRegistry {
                 gear.createCompressedCoalRing(),
                 Rarity.UNCOMMON,
                 List.of("CCC", "CNC", "CCC"),
-                createMixedIngredients('C', CompressedResource.COAL.compressed(), 'N', new ItemStack(Material.GOLD_NUGGET))
+                createMixedIngredients('C', CompressedResource.COAL.compressed(), 'N', new ItemStack(Material.GOLD_INGOT))
         );
         registerSimple(
                 "copper_sword",
@@ -1858,7 +1858,7 @@ public class RecipeRegistry {
                 gear.createLapisPendant(),
                 Rarity.RARE,
                 List.of("LLL", "LAL", "LLL"),
-                createMixedIngredients('L', CompressedResource.LAPIS.compressed(), 'A', new ItemStack(Material.AMETHYST_CLUSTER))
+                createMixedIngredients('L', CompressedResource.LAPIS.compressed(), 'A', new ItemStack(Material.EMERALD))
         );
         {
             Map<Character, ItemStack> diamondChest = new LinkedHashMap<>();

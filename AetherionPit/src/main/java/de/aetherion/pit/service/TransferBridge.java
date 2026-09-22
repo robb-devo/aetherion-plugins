@@ -27,6 +27,16 @@ public final class TransferBridge implements PluginMessageListener {
         if (player == null || !player.isOnline()) {
             return;
         }
+        de.aetherion.core.AetherionCore core = de.aetherion.core.AetherionCore.get();
+        if (core != null && core.link() != null) {
+            if (core.link().isMainWorld()) {
+                player.sendMessage("§7You are already on the main world. Use §e/capital§7.");
+                return;
+            }
+            if (core.link().handoff(player, "capital")) {
+                return;
+            }
+        }
         player.sendMessage("§5Aetherion§7: Crossing to §f" + target + "§7…");
         try {
             ByteArrayOutputStream bytes = new ByteArrayOutputStream();

@@ -68,6 +68,9 @@ public final class AetherionPit extends JavaPlugin {
                     sender.sendMessage("Players only.");
                     return true;
                 }
+                if (sendHubWarp(player)) {
+                    return true;
+                }
                 org.bukkit.Location spawn = safeZone.spawn();
                 if (spawn == null) {
                     player.sendMessage("§cSpawn not configured.");
@@ -95,6 +98,26 @@ public final class AetherionPit extends JavaPlugin {
         }
         getLogger().info("AetherionPit enabled — safe box " + safeZone.describe() + ", Pit outside.");
         de.aetherion.pit.world.HubSchemPaster.maybePaste(this);
+    }
+
+    /**
+     * /hub on the velocity lobby stays at the pit safe spawn.
+     * From mmo-d, mmo-c, or mmo-r it uses the main-world harbour warp
+     * (snapshot + connect when this backend is not mmo-r).
+     */
+    private boolean sendHubWarp(org.bukkit.entity.Player player) {
+        de.aetherion.core.AetherionCore core = de.aetherion.core.AetherionCore.get();
+        if (core == null || core.link() == null) {
+            return false;
+        }
+        if (de.aetherion.core.network.ServerNames.HUB.equalsIgnoreCase(core.link().serverName())) {
+            return false;
+        }
+        de.aetherion.core.api.HubAccess hub = de.aetherion.core.api.AetherServices.hub();
+        if (hub != null && hub.teleport(player, "harbour")) {
+            return true;
+        }
+        return core.link().handoff(player, "harbour");
     }
 
     /** Keep live hub configs updated when new keys appear in the jar default. */

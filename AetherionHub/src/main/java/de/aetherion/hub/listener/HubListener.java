@@ -37,7 +37,7 @@ public final class HubListener implements Listener {
         de.aetherion.core.AetherionCore core = de.aetherion.core.AetherionCore.get();
         boolean mainWorld = core != null && core.link() != null && core.link().isMainWorld();
         boolean incomingTransfer = mainWorld && core.snapshots() != null
-                && core.snapshots().hasSnapshot(player.getUniqueId());
+                && core.snapshots().isAddressedHere(player.getUniqueId());
         if (mainWorld && plugin.getConfig().getBoolean("join-at-selected-spawn", true) && !incomingTransfer) {
             // 1 tick later so login/chunk plugins settle, then land on selected spawn.
             plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
@@ -110,9 +110,18 @@ public final class HubListener implements Listener {
                 return;
             }
         }
+        // Pending warps already crossed servers. Unlock is a walk-in gate on mmo-r;
+        // hub.teleport would refuse Capital and also hand off again if the server
+        // name is still unresolved. Land on the real spawn point.
         de.aetherion.hub.model.HubSpawn spawn = hub.spawn(warp);
-        if (spawn != null) {
-            hub.teleport(player, spawn);
+        org.bukkit.Location location = hub.resolveLocation(spawn);
+        if (location == null && !"harbour".equalsIgnoreCase(warp)) {
+            spawn = hub.spawn("harbour");
+            location = hub.resolveLocation(spawn);
+        }
+        if (location != null) {
+            player.teleport(location);
+            player.setFallDistance(0f);
         }
         player.sendMessage("§5Main world§7: Welcome back — gear and level synced.");
     }

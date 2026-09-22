@@ -17,11 +17,13 @@ commands:
   stressbots:
     description: Stress/test-bot assist controls
     usage: /stressbots <reload|setup|list|start|stop|stopall|report>
+    permission: aetherion.stressbots.admin
     permission-message: No permission.
   botreport:
     description: Dump online test-bot status for QA
     usage: /botreport
     aliases: [testbotreport]
+    permission: aetherion.stressbots.admin
     permission-message: No permission.
 
 permissions:

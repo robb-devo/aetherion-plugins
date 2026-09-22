@@ -82,7 +82,7 @@ public final class TransferSnapshotStore {
      * @return snapshot timestamp, or {@code -1} if nothing was written
      */
     public long save(Player player, int pendingFloor, boolean bossOnly) {
-        return save(player, pendingFloor, bossOnly, null);
+        return save(player, pendingFloor, bossOnly, null, null);
     }
 
     /**
@@ -91,9 +91,14 @@ public final class TransferSnapshotStore {
      * connect must leave the player holding their gear.
      *
      * @param pendingWarp hub spawn id applied on the main world (e.g. {@code capital}); null = default arrival
+     * @param toServer Velocity name that may apply this snapshot; null = any backend (legacy)
      * @return snapshot timestamp, or {@code -1} if nothing was written
      */
     public long save(Player player, int pendingFloor, boolean bossOnly, String pendingWarp) {
+        return save(player, pendingFloor, bossOnly, pendingWarp, null);
+    }
+
+    public long save(Player player, int pendingFloor, boolean bossOnly, String pendingWarp, String toServer) {
         if (player == null || !player.isOnline()) {
             return -1L;
         }
@@ -106,6 +111,9 @@ public final class TransferSnapshotStore {
         yaml.set("name", player.getName());
         yaml.set("saved-at", savedAt);
         yaml.set("from-server", currentServerName());
+        if (toServer != null && !toServer.isBlank()) {
+            yaml.set("to-server", toServer.trim().toLowerCase(java.util.Locale.ROOT));
+        }
         yaml.set("pending-floor", Math.max(0, pendingFloor));
         yaml.set("pending-boss-only", bossOnly);
         if (pendingWarp != null && !pendingWarp.isBlank()) {
@@ -133,11 +141,21 @@ public final class TransferSnapshotStore {
         yaml.set("held-slot", player.getInventory().getHeldItemSlot());
 
         PlayerInventory inv = player.getInventory();
-        yaml.set("inventory-b64", encodeItems(inv.getContents()));
-        yaml.set("armor-b64", encodeItems(inv.getArmorContents()));
-        yaml.set("extra-b64", encodeItems(inv.getExtraContents()));
-        yaml.set("enderchest-b64", encodeItems(player.getEnderChest().getContents()));
-        yaml.set("cursor-b64", encodeItem(player.getItemOnCursor()));
+        List<String> inventory = encodeItems(inv.getContents());
+        List<String> armor = encodeItems(inv.getArmorContents());
+        List<String> extra = encodeItems(inv.getExtraContents());
+        List<String> ender = encodeItems(player.getEnderChest().getContents());
+        String cursor = encodeItem(player.getItemOnCursor());
+        if (inventory == null || armor == null || extra == null || ender == null || cursor == null) {
+            plugin.getLogger().warning("Refusing transfer snapshot for " + player.getName()
+                    + " — an item failed to serialize. Inventory was not touched.");
+            return -1L;
+        }
+        yaml.set("inventory-b64", inventory);
+        yaml.set("armor-b64", armor);
+        yaml.set("extra-b64", extra);
+        yaml.set("enderchest-b64", ender);
+        yaml.set("cursor-b64", cursor);
 
         List<String> effects = new ArrayList<>();
         for (PotionEffect effect : player.getActivePotionEffects()) {
@@ -194,6 +212,22 @@ public final class TransferSnapshotStore {
         return applyDetailed(player).applied();
     }
 
+    /** True when a snapshot on disk is meant for this backend (or is legacy and unaddressed). */
+    public boolean isAddressedHere(UUID id) {
+        File peek = peekFile(id);
+        if (peek == null) {
+            return false;
+        }
+        String to = YamlConfiguration.loadConfiguration(peek).getString("to-server");
+        String here = currentServerName();
+        if (to == null || to.isBlank()
+                || here == null || here.isBlank()
+                || "unknown".equalsIgnoreCase(here)) {
+            return true;
+        }
+        return to.equalsIgnoreCase(here);
+    }
+
     public ApplyResult applyDetailed(Player player) {
         if (player == null || !player.isOnline()) {
             return ApplyResult.none();
@@ -202,6 +236,25 @@ public final class TransferSnapshotStore {
         File live = fileFor(id);
         File claimed = claimedFileFor(id);
         de.aetherion.core.persist.AtomicYaml.recoverTemp(live, plugin.getLogger());
+        File peek = live.isFile() ? live : (claimed.isFile() ? claimed : null);
+        if (peek != null && peek.isFile()) {
+            YamlConfiguration preview = YamlConfiguration.loadConfiguration(peek);
+            TransferIntent.Action action = TransferIntent.decide(
+                    preview.getString("to-server"),
+                    preview.getString("from-server"),
+                    currentServerName()
+            );
+            if (action == TransferIntent.Action.LEAVE) {
+                return ApplyResult.none();
+            }
+            if (action == TransferIntent.Action.DISCARD) {
+                discardFile(live);
+                discardFile(claimed);
+                plugin.getLogger().info("Discarded transfer snapshot for " + player.getName()
+                        + " — still on " + currentServerName() + ", inventory left in place.");
+                return ApplyResult.none();
+            }
+        }
         File source = claimSnapshot(live, claimed, id);
         if (source == null || !source.isFile()) {
             return ApplyResult.none();
@@ -389,6 +442,27 @@ public final class TransferSnapshotStore {
         return "unknown";
     }
 
+    private void discardFile(File file) {
+        if (file == null || !file.isFile()) {
+            return;
+        }
+        if (!file.delete()) {
+            plugin.getLogger().warning("Could not discard transfer snapshot: " + file.getAbsolutePath());
+        }
+    }
+
+    private File peekFile(UUID id) {
+        if (id == null || dir == null) {
+            return null;
+        }
+        File live = fileFor(id);
+        if (live.isFile()) {
+            return live;
+        }
+        File claimed = claimedFileFor(id);
+        return claimed.isFile() ? claimed : null;
+    }
+
     private File fileFor(UUID id) {
         return new File(dir, id.toString() + ".yml");
     }
@@ -430,17 +504,23 @@ public final class TransferSnapshotStore {
         return null;
     }
 
+    /** {@code null} when any slot fails to serialize — callers must abort the snapshot. */
     private static List<String> encodeItems(ItemStack[] items) {
         List<String> out = new ArrayList<>(items == null ? 0 : items.length);
         if (items == null) {
             return out;
         }
         for (ItemStack item : items) {
-            out.add(encodeItem(item));
+            String encoded = encodeItem(item);
+            if (encoded == null) {
+                return null;
+            }
+            out.add(encoded);
         }
         return out;
     }
 
+    /** Empty string is an empty slot. {@code null} means serialize failed. */
     private static String encodeItem(ItemStack item) {
         if (item == null || item.getType().isAir()) {
             return "";
@@ -448,7 +528,7 @@ public final class TransferSnapshotStore {
         try {
             return Base64.getEncoder().encodeToString(item.serializeAsBytes());
         } catch (Exception ex) {
-            return "";
+            return null;
         }
     }
 

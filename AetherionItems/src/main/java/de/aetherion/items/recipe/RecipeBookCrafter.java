@@ -63,16 +63,30 @@ public final class RecipeBookCrafter {
 
         ItemStack previousTemplate = null;
         ItemStack previousItem = null;
+        ItemStack resourceTemplate = null;
+        ItemStack resourceItem = null;
         for (ItemStack expected : recipe.getIngredients().values()) {
             if (!itemManager.isAetherionItem(expected)) {
                 continue;
             }
-            previousTemplate = expected;
-            previousItem = findInStorage(player.getInventory(), expected, itemManager);
-            if (previousItem != null) {
-                previousItem = previousItem.clone();
+            ItemStack found = findInStorage(player.getInventory(), expected, itemManager);
+            if (found == null) {
+                continue;
             }
+            if (CraftSource.isResourceId(itemManager.getItemId(expected))) {
+                if (resourceItem == null) {
+                    resourceTemplate = expected;
+                    resourceItem = found.clone();
+                }
+                continue;
+            }
+            previousTemplate = expected;
+            previousItem = found.clone();
             break;
+        }
+        if (previousItem == null) {
+            previousTemplate = resourceTemplate;
+            previousItem = resourceItem;
         }
 
         for (ItemStack required : flattenRequirements(recipe)) {

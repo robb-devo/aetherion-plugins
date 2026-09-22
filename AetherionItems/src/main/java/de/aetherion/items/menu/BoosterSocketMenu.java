@@ -150,6 +150,9 @@ public final class BoosterSocketMenu implements Listener {
             }
             return;
         }
+        if (holder.inventory == null) {
+            return;
+        }
         if (gear == null && items.isAetherionItem(stack) && items.getBoosterType(stack) == null) {
             ItemStack placed = stack.clone();
             placed.setAmount(1);
@@ -161,6 +164,9 @@ public final class BoosterSocketMenu implements Listener {
     }
 
     private void clickGear(Player player, Holder holder, ItemStack cursor) {
+        if (holder.inventory == null) {
+            return;
+        }
         ItemStack gear = gear(holder);
         if (cursor != null && !cursor.getType().isAir() && DungeonCore.isCore(cursor) && gear != null) {
             ItemStack infused = DungeonCoreInfusion.infuse(items, gear, cursor);
@@ -237,7 +243,7 @@ public final class BoosterSocketMenu implements Listener {
     }
 
     private boolean insert(Player player, Holder holder, ItemStack gear, BoosterType type, int index) {
-        if (gear == null || type == null) {
+        if (holder == null || holder.inventory == null || gear == null || type == null) {
             return false;
         }
         BoosterType[] slots = BoosterSockets.read(items, gear);
@@ -286,6 +292,9 @@ public final class BoosterSocketMenu implements Listener {
 
     private void paint(Holder holder) {
         Inventory inventory = holder.inventory;
+        if (inventory == null) {
+            return;
+        }
         ItemStack gear = gear(holder);
         BoosterType[] slots = BoosterSockets.read(items, gear);
         for (int i = 0; i < SIZE; i++) {

@@ -13,6 +13,9 @@
 
   <artifactId>AetherionStressBots</artifactId>
   <name>AetherionStressBots</name>
+  <build>
+    <finalName>AetherionStressBots</finalName>
+  </build>
   <description>Mineflayer test/stress bots — kits, teleports, Dev-menu control, /botreport</description>
 
   <dependencies>

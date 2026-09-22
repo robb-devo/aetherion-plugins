@@ -37,6 +37,25 @@ public final class ServerNames {
         return name != null && MAIN.equalsIgnoreCase(name.trim());
     }
 
+    /**
+     * Config name, else a known live port, else the Velocity GetServer reply.
+     * A mapped port wins over GetServer so a late or odd proxy name cannot
+     * send /capital on mmo-r back through Velocity.
+     */
+    public static String resolve(String configured, int port, String velocityName) {
+        if (configured != null && !configured.isBlank()) {
+            return configured.trim();
+        }
+        String fromPort = fromPort(port);
+        if (!fromPort.isBlank()) {
+            return fromPort;
+        }
+        if (velocityName != null && !velocityName.isBlank()) {
+            return velocityName.trim();
+        }
+        return "unknown";
+    }
+
     /** Shared transfer folder. Explicit config wins, then Crafty {@code shared/transfer}. */
     public static File snapshotDir(Plugin plugin) {
         String configured = plugin == null ? "" : plugin.getConfig().getString("network.shared-dir", "");
