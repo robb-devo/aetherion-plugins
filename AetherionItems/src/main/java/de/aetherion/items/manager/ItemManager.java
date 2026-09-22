@@ -563,6 +563,7 @@ public class ItemManager {
         boolean gaffProgress = de.aetherion.items.item.CatcherGaffProgress.canLevel(previousItem);
 
         if (oldActual.getTotalBoosters() <= 0 && !hoeProgress && !rodProgress && !axeProgress && !gaffProgress) {
+            de.aetherion.items.model.BoosterSockets.copyOnto(this, previousItem, result);
             return result;
         }
 
@@ -591,6 +592,7 @@ public class ItemManager {
         de.aetherion.items.item.FishingRodProgress.copy(previousItem, result);
         de.aetherion.items.item.ForagingAxeProgress.copy(previousItem, result);
         de.aetherion.items.item.CatcherGaffProgress.copy(previousItem, result);
+        de.aetherion.items.model.BoosterSockets.copyOnto(this, previousItem, result);
         return result;
     }
 

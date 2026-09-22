@@ -20,4 +20,7 @@
       <scope>provided</scope>
     </dependency>
   </dependencies>
+  <build>
+    <finalName>AetherionCore</finalName>
+  </build>
 </project>

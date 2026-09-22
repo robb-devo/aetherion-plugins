@@ -58,30 +58,49 @@ public final class TransferSnapshotStore {
     }
 
     public void save(Player player) {
-        save(player, 0, false);
+        save(player, 0, false, null);
     }
 
     /**
      * @param pendingFloor 1–3 (or 6 endless) to auto-enter on mmo-d after sync; 0 = hub only
+     * @return snapshot timestamp, or {@code -1} if nothing was written
      */
-    public void save(Player player, int pendingFloor, boolean bossOnly) {
+    public long save(Player player, int pendingFloor, boolean bossOnly) {
+        return save(player, pendingFloor, bossOnly, null);
+    }
+
+    /**
+     * One snapshot of the live player: inventory, vanilla/Aetherion level bar, ender chest,
+     * and flushed skills/coins/progress. Inventory is never cleared — a failed proxy
+     * connect must leave the player holding their gear.
+     *
+     * @param pendingWarp hub spawn id applied on the main world (e.g. {@code capital}); null = default arrival
+     * @return snapshot timestamp, or {@code -1} if nothing was written
+     */
+    public long save(Player player, int pendingFloor, boolean bossOnly, String pendingWarp) {
         if (player == null || !player.isOnline()) {
-            return;
+            return -1L;
         }
         UUID id = player.getUniqueId();
         File file = fileFor(id);
         YamlConfiguration yaml = new YamlConfiguration();
-        yaml.set("version", 4);
+        long savedAt = System.currentTimeMillis();
+        yaml.set("version", 5);
         yaml.set("uuid", id.toString());
         yaml.set("name", player.getName());
-        yaml.set("saved-at", System.currentTimeMillis());
+        yaml.set("saved-at", savedAt);
         yaml.set("from-server", plugin.getConfig().getString("role", "unknown"));
         yaml.set("pending-floor", Math.max(0, pendingFloor));
         yaml.set("pending-boss-only", bossOnly);
+        if (pendingWarp != null && !pendingWarp.isBlank()) {
+            yaml.set("pending-warp", pendingWarp.trim().toLowerCase(java.util.Locale.ROOT));
+        }
         yaml.set("network-data", networkData.exportAll(player));
         yaml.set("level", player.getLevel());
         yaml.set("exp", (double) player.getExp());
         yaml.set("total-exp", player.getTotalExperience());
+        yaml.set("aetherion-level", player.getLevel());
+        yaml.set("aetherion-exp", (double) player.getExp());
         yaml.set("health", player.getHealth());
         double maxHealth = 20.0;
         if (player.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null) {
@@ -117,20 +136,41 @@ public final class TransferSnapshotStore {
 
         try {
             de.aetherion.core.persist.AtomicYaml.save(yaml, file, plugin.getLogger());
-            plugin.getLogger().info("Saved transfer snapshot v4 for " + player.getName()
-                    + " floor=" + pendingFloor + " (" + file.length() + " bytes)");
+            plugin.getLogger().info("Saved transfer snapshot v5 for " + player.getName()
+                    + " level=" + player.getLevel()
+                    + " floor=" + pendingFloor
+                    + " warp=" + (pendingWarp == null ? "-" : pendingWarp)
+                    + " (" + file.length() + " bytes)");
         } catch (IOException ex) {
             plugin.getLogger().log(Level.WARNING, "Failed to save transfer snapshot for " + player.getName(), ex);
-            return;
+            return -1L;
         }
-
-        // So this backend's player.dat does not keep a stale full inventory after Velocity move.
-        clearLivingInventory(player);
+        return savedAt;
     }
 
-    public record ApplyResult(boolean applied, int pendingFloor, boolean bossOnly) {
+    /** Drop a snapshot that never left this server (connect failed or the player stayed online). */
+    public void discardIfUnclaimed(UUID id, long savedAt) {
+        if (id == null || savedAt < 0L) {
+            return;
+        }
+        File live = fileFor(id);
+        if (!live.isFile()) {
+            return;
+        }
+        YamlConfiguration yaml = YamlConfiguration.loadConfiguration(live);
+        if (yaml.getLong("saved-at", -1L) != savedAt) {
+            return;
+        }
+        if (!live.delete()) {
+            plugin.getLogger().warning("Could not discard unused transfer snapshot: " + live.getAbsolutePath());
+        } else {
+            plugin.getLogger().info("Discarded unused transfer snapshot for " + id);
+        }
+    }
+
+    public record ApplyResult(boolean applied, int pendingFloor, boolean bossOnly, String pendingWarp) {
         public static ApplyResult none() {
-            return new ApplyResult(false, 0, false);
+            return new ApplyResult(false, 0, false, null);
         }
     }
 
@@ -153,21 +193,19 @@ public final class TransferSnapshotStore {
         YamlConfiguration yaml = YamlConfiguration.loadConfiguration(source);
         int pendingFloor = yaml.getInt("pending-floor", 0);
         boolean bossOnly = yaml.getBoolean("pending-boss-only", false);
+        String pendingWarp = yaml.getString("pending-warp");
+        ItemStack[] inventory = decodeItems(yaml.getStringList("inventory-b64"));
+        ItemStack[] armor = decodeItems(yaml.getStringList("armor-b64"));
+        ItemStack[] extra = decodeItems(yaml.getStringList("extra-b64"));
+        ItemStack[] ender = decodeItems(yaml.getStringList("enderchest-b64"));
+        ItemStack cursor = decodeItem(yaml.getString("cursor-b64"));
+        ItemStack[] invBackup = cloneItems(player.getInventory().getContents());
+        ItemStack[] armorBackup = cloneItems(player.getInventory().getArmorContents());
+        ItemStack[] extraBackup = cloneItems(player.getInventory().getExtraContents());
+        ItemStack[] enderBackup = cloneItems(player.getEnderChest().getContents());
         try {
             player.closeInventory();
             player.setItemOnCursor(null);
-            player.getInventory().clear();
-            player.getEnderChest().clear();
-            for (PotionEffect effect : player.getActivePotionEffects()) {
-                player.removePotionEffect(effect.getType());
-            }
-
-            ItemStack[] inventory = decodeItems(yaml.getStringList("inventory-b64"));
-            ItemStack[] armor = decodeItems(yaml.getStringList("armor-b64"));
-            ItemStack[] extra = decodeItems(yaml.getStringList("extra-b64"));
-            ItemStack[] ender = decodeItems(yaml.getStringList("enderchest-b64"));
-            ItemStack cursor = decodeItem(yaml.getString("cursor-b64"));
-
             if (inventory != null) {
                 player.getInventory().setContents(inventory);
             }
@@ -189,8 +227,14 @@ public final class TransferSnapshotStore {
                 player.getInventory().setHeldItemSlot(held);
             }
 
-            player.setLevel(yaml.getInt("level", player.getLevel()));
-            player.setExp((float) yaml.getDouble("exp", player.getExp()));
+            for (PotionEffect effect : new ArrayList<>(player.getActivePotionEffects())) {
+                player.removePotionEffect(effect.getType());
+            }
+
+            int level = yaml.getInt("aetherion-level", yaml.getInt("level", player.getLevel()));
+            float exp = (float) yaml.getDouble("aetherion-exp", yaml.getDouble("exp", player.getExp()));
+            player.setLevel(level);
+            player.setExp(exp);
             player.setTotalExperience(yaml.getInt("total-exp", player.getTotalExperience()));
             player.setFoodLevel(yaml.getInt("food", player.getFoodLevel()));
             player.setSaturation((float) yaml.getDouble("saturation", player.getSaturation()));
@@ -224,22 +268,26 @@ public final class TransferSnapshotStore {
 
             player.updateInventory();
             java.util.Map<String, Object> networkMap = NetworkPlayerDataSync.toPlainMap(yaml.get("network-data"));
+            boolean skillsImported = networkMap.containsKey("yaml:skills.yml");
             if (!networkMap.isEmpty()) {
                 networkData.importAll(player, networkMap);
             } else {
                 plugin.getLogger().warning("Transfer snapshot for " + player.getName()
                         + " had no usable network-data (pets/skills/level may stay local).");
             }
+            assertLevel(player, level, exp, skillsImported);
             networkData.resetLoadoutRuntime(player);
             if (!source.delete() && source.exists()) {
                 plugin.getLogger().warning("Could not delete used snapshot: " + source.getAbsolutePath());
             }
             live.delete();
             appliedThisSession.add(id);
-            // Re-assert inventory after loadout/join hooks (tick 25).
             final ItemStack[] invCopy = inventory == null ? null : inventory.clone();
             final ItemStack[] armorCopy = armor == null ? null : armor.clone();
             final ItemStack[] extraCopy = extra == null ? null : extra.clone();
+            final boolean skills = skillsImported;
+            final int levelCopy = level;
+            final float expCopy = exp;
             plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
                 if (!player.isOnline()) {
                     return;
@@ -254,24 +302,67 @@ public final class TransferSnapshotStore {
                 if (extraCopy != null) {
                     player.getInventory().setExtraContents(extraCopy);
                 }
+                assertLevel(player, levelCopy, expCopy, skills);
                 player.updateInventory();
-            }, 25L);
-            plugin.getLogger().info("Applied transfer snapshot v4 for " + player.getName()
-                    + " pendingFloor=" + pendingFloor);
-            return new ApplyResult(true, pendingFloor, bossOnly);
+            }, 30L);
+            plugin.getLogger().info("Applied transfer snapshot v5 for " + player.getName()
+                    + " level=" + level
+                    + " skills=" + skillsImported
+                    + " pendingFloor=" + pendingFloor
+                    + " warp=" + (pendingWarp == null ? "-" : pendingWarp));
+            return new ApplyResult(true, pendingFloor, bossOnly, pendingWarp);
         } catch (Exception ex) {
-            plugin.getLogger().log(Level.WARNING, "Failed to apply transfer snapshot for " + player.getName(), ex);
+            plugin.getLogger().log(Level.WARNING, "Failed to apply transfer snapshot for " + player.getName()
+                    + " — restoring the inventory they joined with.", ex);
+            restore(player, invBackup, armorBackup, extraBackup, enderBackup);
             return ApplyResult.none();
         }
     }
 
-    private static void clearLivingInventory(Player player) {
-        player.closeInventory();
-        player.setItemOnCursor(null);
-        player.getInventory().clear();
-        player.getInventory().setArmorContents(null);
-        player.getInventory().setExtraContents(null);
+    /**
+     * Skills import owns the Aetherion level bar. If the snapshot had no skills
+     * section, keep the level that was on the player when the snapshot was written.
+     */
+    private static void assertLevel(Player player, int level, float exp, boolean skillsImported) {
+        if (skillsImported) {
+            de.aetherion.core.api.ProgressAccess progress = de.aetherion.core.api.AetherServices.progress();
+            if (progress != null) {
+                progress.syncAccountLevel(player);
+                return;
+            }
+        }
+        player.setLevel(Math.max(0, level));
+        player.setExp(Math.max(0f, Math.min(1f, exp)));
+    }
+
+    private static void restore(Player player, ItemStack[] inventory, ItemStack[] armor, ItemStack[] extra, ItemStack[] ender) {
+        if (player == null || !player.isOnline()) {
+            return;
+        }
+        if (inventory != null) {
+            player.getInventory().setContents(inventory);
+        }
+        if (armor != null) {
+            player.getInventory().setArmorContents(armor);
+        }
+        if (extra != null) {
+            player.getInventory().setExtraContents(extra);
+        }
+        if (ender != null) {
+            player.getEnderChest().setContents(ender);
+        }
         player.updateInventory();
+    }
+
+    private static ItemStack[] cloneItems(ItemStack[] items) {
+        if (items == null) {
+            return null;
+        }
+        ItemStack[] copy = new ItemStack[items.length];
+        for (int i = 0; i < items.length; i++) {
+            copy[i] = items[i] == null ? null : items[i].clone();
+        }
+        return copy;
     }
 
     private File fileFor(UUID id) {

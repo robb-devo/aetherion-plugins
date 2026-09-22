@@ -29,6 +29,10 @@ public class AetherionCommand implements CommandExecutor {
         if (!(sender instanceof Player player)) {
             return true;
         }
+        if (!player.hasPermission("aetherion.dev")) {
+            player.sendMessage("§cDEV only.");
+            return true;
+        }
 
 
         /*

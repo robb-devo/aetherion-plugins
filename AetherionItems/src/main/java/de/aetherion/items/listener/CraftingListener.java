@@ -232,7 +232,7 @@ public class CraftingListener implements Listener {
 
             for (ItemStack slot : matrix) {
                 if (itemManager.isSameAetherionItem(slot, expected)) {
-                    previousItem = slot;
+                    previousItem = slot.clone();
                     break;
                 }
             }

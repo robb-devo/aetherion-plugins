@@ -54,4 +54,27 @@ public final class DungeonAccessImpl implements DungeonAccess {
         plugin.despawnDungeonKeeper();
         return true;
     }
+
+    @Override
+    public boolean needsMainWorld(Player player) {
+        return plugin != null && plugin.getRemote() != null && plugin.getRemote().isDungeonRole();
+    }
+
+    @Override
+    public boolean transferToMainSpawn(Player player, String spawnId) {
+        if (player == null || plugin == null || plugin.getRemote() == null || !plugin.getRemote().isDungeonRole()) {
+            return false;
+        }
+        if (plugin.getInstances() != null) {
+            var instances = plugin.getInstances();
+            if (instances.sessionOf(player) != null || instances.isDungeonWorld(player.getWorld())) {
+                instances.leave(player, false);
+            }
+        }
+        boolean sent = plugin.getRemote().transferToMain(player, spawnId);
+        if (!sent) {
+            player.sendMessage("§cCould not reach the main world. Your inventory was not touched.");
+        }
+        return true;
+    }
 }

@@ -20,6 +20,12 @@ public interface HubAccess {
 
     Location location(String spawnId);
 
+    /**
+     * Teleport on this server, enforcing unlock rules.
+     * @return false when the spawn is missing or still locked
+     */
+    boolean teleport(Player player, String spawnId);
+
     int unlockAll(UUID uuid);
 
     int unlockAll(Player player);

@@ -419,6 +419,14 @@ public final class HubService {
             return false;
         }
 
+        // Dungeon backend shares coordinate names with Capital but it is not the main world.
+        // Proxy first; the main server enforces unlock after the snapshot applies.
+        de.aetherion.core.api.DungeonAccess dungeons = de.aetherion.core.api.AetherServices.dungeons();
+        if (dungeons != null && dungeons.needsMainWorld(player)) {
+            dungeons.transferToMainSpawn(player, spawn.id());
+            return true;
+        }
+
         if (!isUnlocked(player, spawn.id()) && !player.hasPermission("aetherionhub.admin")) {
             player.sendMessage(format("messages.locked", spawn));
             player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1f, 1f);

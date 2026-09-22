@@ -3,11 +3,8 @@ package de.aetherion.items.listener;
 import com.destroystokyo.paper.event.block.AnvilDamagedEvent;
 
 import de.aetherion.items.blueprint.BlueprintUpgrade;
-import de.aetherion.items.core.ItemKeys;
 import de.aetherion.items.item.DungeonCore;
 import de.aetherion.items.manager.ItemManager;
-import de.aetherion.items.model.BoosterApplier;
-import de.aetherion.items.model.BoosterType;
 import de.aetherion.items.util.QuestProgressHook;
 
 import org.bukkit.entity.Player;
@@ -19,9 +16,7 @@ import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.inventory.PrepareAnvilEvent;
 import org.bukkit.inventory.AnvilInventory;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.view.AnvilView;
-import org.bukkit.persistence.PersistentDataType;
 
 public class AnvilBoosterListener implements Listener {
 
@@ -84,27 +79,11 @@ public class AnvilBoosterListener implements Listener {
             return;
         }
 
-        if (!itemManager.isAetherionItem(left)) {
-            return;
-        }
-
-        BoosterType boosterType = itemManager.getBoosterType(right);
-
-        // Stacks are allowed. The anvil result consumes one booster from the right slot.
-        if (boosterType == null || right.getAmount() < 1) {
+        // Boosters socket through Manager → Anvil. The vanilla result slot no longer consumes them.
+        if (itemManager.getBoosterType(left) != null || itemManager.getBoosterType(right) != null) {
             event.setResult(null);
             setRepairCost(anvil, anvilView);
-            return;
         }
-
-        ItemStack result = left.clone();
-        if (BoosterApplier.apply(itemManager, result, boosterType) != BoosterApplier.Status.APPLIED) {
-            event.setResult(null);
-            setRepairCost(anvil, anvilView);
-            return;
-        }
-        event.setResult(result);
-        setRepairCost(anvil, anvilView);
     }
 
     private boolean tryDungeonCoreInfuse(
@@ -120,67 +99,15 @@ public class AnvilBoosterListener implements Listener {
             weapon = right;
             core = left;
         }
-        if (!DungeonCore.isCore(core) || !itemManager.isAetherionItem(weapon)) {
+        ItemStack result = de.aetherion.items.item.DungeonCoreInfusion.infuse(itemManager, weapon, core);
+        if (result == null) {
+            if (DungeonCore.isCore(core) || DungeonCore.isCore(left)) {
+                event.setResult(null);
+                setRepairCost(anvil, anvilView);
+                return true;
+            }
             return false;
         }
-        if (core.getAmount() != 1) {
-            event.setResult(null);
-            setRepairCost(anvil, anvilView);
-            return true;
-        }
-
-        String itemId = itemManager.getItemId(weapon);
-        if (!DungeonCore.canInfuse(itemId)) {
-            event.setResult(null);
-            setRepairCost(anvil, anvilView);
-            return true;
-        }
-
-        int nextTier = DungeonCore.tier(weapon) + 1;
-        if (nextTier > DungeonCore.MAX_TIER) {
-            event.setResult(null);
-            setRepairCost(anvil, anvilView);
-            return true;
-        }
-        if (DungeonCore.coreGrade(core) != nextTier) {
-            event.setResult(null);
-            setRepairCost(anvil, anvilView);
-            return true;
-        }
-
-        ItemStack result = weapon.clone();
-        ItemMeta meta = result.getItemMeta();
-        if (meta == null) {
-            event.setResult(null);
-            setRepairCost(anvil, anvilView);
-            return true;
-        }
-
-        DungeonCore.writeTier(meta, nextTier);
-        DungeonCore.applyInfusionRarity(meta, nextTier);
-        if (itemId != null && itemId.toLowerCase().contains("shortbow")) {
-            meta.getPersistentDataContainer().set(
-                    ItemKeys.shortbowInterval(),
-                    PersistentDataType.INTEGER,
-                    DungeonCore.shortbowIntervalTicks(nextTier)
-            );
-        }
-        if (itemId != null && itemId.toLowerCase().contains("longbow")) {
-            meta.getPersistentDataContainer().set(
-                    ItemKeys.longbowCharge(),
-                    PersistentDataType.INTEGER,
-                    DungeonCore.longbowChargeTicks(nextTier)
-            );
-        }
-        DungeonCore.patchLore(meta, itemId, nextTier);
-        result.setItemMeta(meta);
-        de.aetherion.items.dungeon.DungeonGearProgress.ensure(result, itemManager);
-        ItemMeta polished = result.getItemMeta();
-        if (polished != null) {
-            de.aetherion.items.item.ItemPresentation.polish(polished);
-            result.setItemMeta(polished);
-        }
-        de.aetherion.items.item.GearTooltip.finish(result, itemManager, true);
         event.setResult(result);
         setRepairCost(anvil, anvilView);
         return true;

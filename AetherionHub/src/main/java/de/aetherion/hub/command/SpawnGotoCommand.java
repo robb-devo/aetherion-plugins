@@ -57,6 +57,12 @@ public final class SpawnGotoCommand implements CommandExecutor {
             return true;
         }
 
+        de.aetherion.core.api.DungeonAccess dungeons = de.aetherion.core.api.AetherServices.dungeons();
+        if (dungeons != null && dungeons.needsMainWorld(player)) {
+            dungeons.transferToMainSpawn(player, spawnId);
+            return true;
+        }
+
         if ("amethyst".equals(spawnId)) {
             return teleportAmethyst(player);
         }

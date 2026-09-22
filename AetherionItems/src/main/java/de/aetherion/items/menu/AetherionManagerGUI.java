@@ -202,8 +202,8 @@ public class AetherionManagerGUI {
             put(inventory, ANVIL_SLOT, anvilUnlocked,
                     Material.ANVIL, "§eAnvil",
                     progress == null ? "§7Talk to Temper first." : progress.hint(ProgressionService.Flag.ANVIL),
-                    "§7Open a portable anvil.",
-                    "§7Boosters still apply.");
+                    "§7Open booster sockets.",
+                    "§714 slots. Swap anytime.");
         }
 
         if (player.isOp() || player.hasPermission("aetherion.dev")) {
@@ -506,8 +506,8 @@ public class AetherionManagerGUI {
             return button(
                     Material.ANVIL,
                     "§eAnvil",
-                    "§7Open a portable anvil.",
-                    "§7Boosters still apply.",
+                    "§7Open booster sockets.",
+                    "§714 slots. Swap anytime.",
                     "",
                     "§eClick to open"
             );
@@ -520,7 +520,7 @@ public class AetherionManagerGUI {
             meta.setDisplayName(name);
             meta.setLore(java.util.List.of(
                     "§e§lUNLOCKED",
-                    "§fPortable anvil — Manager only.",
+                    "§f14 booster sockets. Swap anytime.",
                     "",
                     "§eClick to open"
             ));

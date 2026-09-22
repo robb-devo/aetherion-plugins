@@ -38,7 +38,8 @@ public final class StationCommand implements CommandExecutor {
                 player.sendMessage(progress.hint(ProgressionService.Flag.ANVIL));
                 return true;
             }
-            Bukkit.getScheduler().runTask(plugin, () -> player.openAnvil(player.getLocation(), true));
+            Bukkit.getScheduler().runTask(plugin, () ->
+                    de.aetherion.items.menu.BoosterSocketMenu.open(player));
             return true;
         }
         if (progress != null && !progress.craftingTable(player)) {

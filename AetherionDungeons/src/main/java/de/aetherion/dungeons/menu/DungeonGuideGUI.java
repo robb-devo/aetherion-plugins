@@ -131,10 +131,10 @@ public final class DungeonGuideGUI implements Listener {
             case SLOT_LEAVE -> button(
                     Material.OAK_DOOR,
                     "§bLeave & hub",
-                    "§e/dungeon leave§7 — exit the instance.",
-                    "§e/dhub§7 — dungeon hub from anywhere",
-                    "§7(even from the capital via Velocity).",
-                    "§7Hub return portal → capital (mmo-r)."
+                    "§e/dungeon leave§7 — exit the instance. Gear stays.",
+                    "§e/dhub§7 — dungeon hub.",
+                    "§e/capital§7 — main world, then Capital.",
+                    "§7Hub return portal does the same handoff."
             );
             case SLOT_LOOT -> button(
                     Material.CHEST,

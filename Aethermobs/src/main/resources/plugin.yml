@@ -12,8 +12,9 @@ softdepend:
 commands:
 
   pet:
-    description: AetherMobs pet test command
+    description: DEV pet spawner
     usage: /pet <shiny|collection|sphere|beta>
+    permission: aethermobs.admin
 
   pets:
     description: Open your pet collection
@@ -22,3 +23,8 @@ commands:
   aetherlex:
     description: Open the Aetherlex pet encyclopedia
     usage: /aetherlex
+
+permissions:
+  aethermobs.admin:
+    description: Spawn test pets
+    default: op

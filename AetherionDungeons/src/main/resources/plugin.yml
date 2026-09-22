@@ -16,11 +16,11 @@ softdepend:
 
 commands:
   dungeon:
-    description: Dungeon admin and leave
-    usage: /dungeon <give|remove|leave|enter|boss|home|dhub>
+    description: Leave a dungeon instance. Admin tools require aetherion.dungeon.admin.
+    usage: /dungeon <leave|dhub>
     aliases: [dungeons, aedungeon]
   dhub:
-    description: Teleport to the dungeon hub from anywhere
+    description: Teleport to the dungeon hub (does not clear inventory)
     usage: /dhub
     aliases: [dungeonhub, dh]
 

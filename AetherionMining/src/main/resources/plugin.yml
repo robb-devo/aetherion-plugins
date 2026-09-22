@@ -20,7 +20,8 @@ commands:
     description: Admin tools for the Amethyst Area dig world (player entry is /amethyst)
     usage: /deepmines [enter|leave|time|npc|reset|eldervale]
     aliases: [veins]
-    permission: aetherion.mines.use
+    permission: aetherion.mines.admin
+    permission-message: "§7Use /amethyst or the Crystal Guide."
 
 permissions:
   aetherion.mines.use:

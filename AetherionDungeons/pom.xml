@@ -30,4 +30,7 @@
       <scope>provided</scope>
     </dependency>
   </dependencies>
+  <build>
+    <finalName>AetherionDungeons</finalName>
+  </build>
 </project>

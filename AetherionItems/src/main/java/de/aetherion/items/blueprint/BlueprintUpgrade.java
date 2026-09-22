@@ -187,6 +187,7 @@ public final class BlueprintUpgrade {
             result.setItemMeta(polished);
         }
         GearTooltip.finish(result, items, true);
+        de.aetherion.items.model.BoosterSockets.copyOnto(items, tool, result);
         return result;
     }
 

@@ -590,12 +590,13 @@ public class ItemStats {
         return merged;
     }
 
+    /**
+     * Keep booster flats as an additive extra on the new base.
+     * A zero old base used to return only {@code newBase} and strip booster-only stats.
+     */
     private static double scaleCore(double oldActual, double oldBase, double newBase) {
-        if (oldBase <= 0.0) {
-            return newBase;
-        }
-
-        return newBase * (oldActual / oldBase);
+        double extra = Math.max(0.0, oldActual - Math.max(0.0, oldBase));
+        return newBase + extra;
     }
 
     private static double extra(double oldActual, double oldBase) {

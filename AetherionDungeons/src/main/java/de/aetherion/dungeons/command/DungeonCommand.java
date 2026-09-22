@@ -130,11 +130,10 @@ public final class DungeonCommand implements CommandExecutor, TabCompleter {
                 }
             }
             case "home", "return" -> {
-                if (remote == null) {
-                    player.sendMessage("§cNo remote bridge.");
-                    return true;
-                }
-                remote.transferHome(player);
+                // Removed. This used to snapshot-and-clear inventory before a proxy connect.
+                // Players who stayed on the same server (or whose connect failed) lost their gear.
+                player.sendMessage("§c/dungeon home was removed — it could wipe your inventory.");
+                player.sendMessage("§7Leave a floor with §e/dungeon leave§7. Return to the main world with §e/capital§7.");
             }
             case "portal" -> {
                 if (!player.hasPermission("aetherion.dungeon.admin")) {
@@ -171,9 +170,9 @@ public final class DungeonCommand implements CommandExecutor, TabCompleter {
     }
 
     private void usage(Player player) {
-        player.sendMessage("§5/dungeon leave §7- leave your instance");
-        player.sendMessage("§5/dhub §7- teleport to the dungeon hub (anywhere)");
-        player.sendMessage("§5/dungeon home §7- Velocity return to capital (mmo-r)");
+        player.sendMessage("§5/dungeon leave §7- leave your instance (keeps your gear)");
+        player.sendMessage("§5/dhub §7- dungeon hub");
+        player.sendMessage("§5/capital §7- main world, then Capital");
         if (player.hasPermission("aetherion.dungeon.admin")) {
             player.sendMessage("§5/dungeon give §7- Keeper anchor");
             player.sendMessage("§5/dungeon guide §7- Scribe anchor (briefing menu)");
@@ -189,7 +188,7 @@ public final class DungeonCommand implements CommandExecutor, TabCompleter {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            Stream<String> options = Stream.of("leave", "home", "return", "dhub", "hub");
+            Stream<String> options = Stream.of("leave", "dhub", "hub");
             if (sender.hasPermission("aetherion.dungeon.admin")) {
                 options = Stream.concat(options, Stream.of(
                         "give", "guide", "remove", "enter", "boss", "transfer", "mmod", "portal", "cleanup"));
