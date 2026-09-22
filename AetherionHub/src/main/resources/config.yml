@@ -21,7 +21,7 @@ messages:
   teleported: "§aTeleported to §f{name}§a."
   selected: "§aYour spawn is now §f{name}§a. Use /spawn to go there."
   locked: "§cYou have not unlocked §f{name} §cyet."
-  missing-location: "§cThat spawn has no location yet. An admin must stand there and run §f/hubadmin set {id}§c."
+  missing-location: "§cThat spawn has no location yet. An admin must stand there and run §f/hubadmin set {id}§c — or place the Dev Menu spawn anchor."
   no-spawn: "§cNo spawn is set. An admin should stand at the harbour and run §f/hubadmin set harbour§c."
 
 # Menu: left/right edge columns stay glass. Content row slots 10–16.
@@ -95,8 +95,20 @@ spawns:
     unlocked-by-default: false
     discover-radius: 36
 
+  # Amethyst Mines = Amethyst Area dig zone in aether_veins. NEVER paste onto Main Island.
+  # No default coords — place Dev Menu "Amethyst Mines Anchor" (or /hubadmin set amethyst) once.
+  # Then /amethyst and the Crystal Guide use that planted spawn. Unlocks on first visit / Guide / first /amethyst.
+  amethyst:
+    display-name: "Amethyst Mines"
+    description: "Amethyst Area dig zone (aether_veins). Place the spawn anchor once — then /amethyst and the Crystal Guide use it. NEVER paste onto Main Island."
+    icon: AMETHYST_CLUSTER
+    slot: 23
+    unlocked-by-default: false
+    discover-radius: 36
+
 # /aetherpaste — FAWE async Eldervale island schematics (console/ops).
 # Schems are loaded from plugins/FastAsyncWorldEdit/schematics or WorldEdit/schematics.
+# Do NOT add amethyst here — that pastes onto Main Island. Amethyst is aether_veins only.
 aether-paste:
   farming:
     world: world

@@ -182,6 +182,7 @@ public final class QuestNpcAppearance {
             case "farm_isle_guide" -> new Look(Villager.Type.PLAINS, Material.WHEAT);
             case "forage_pad_guide" -> new Look(Villager.Type.TAIGA, Material.SPRUCE_SAPLING);
             case "eldervale_welcome" -> new Look(Villager.Type.TAIGA, Material.IRON_PICKAXE);
+            case "amethyst_mines_guide" -> new Look(Villager.Type.SNOW, Material.AMETHYST_CLUSTER);
             case "eldervale_upgrade" -> new Look(Villager.Type.SAVANNA, Material.ANVIL);
             case "isle_clerk" -> new Look(Villager.Type.PLAINS, Material.OAK_SAPLING);
             case "dungeon_gate" -> new Look(Villager.Type.SNOW, Material.ENDER_PEARL);

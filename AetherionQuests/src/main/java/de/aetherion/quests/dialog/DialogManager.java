@@ -1826,6 +1826,13 @@ public class DialogManager implements Listener {
             };
         }
 
+        if (dialogId.equalsIgnoreCase("amethyst_mines_guide_intro")) {
+            return new String[] {
+                    "Amethyst Mines — the dig zone under Eldervale. Center map, rock all around.",
+                    "Mining skill thirty. I send you to the planted spawn. Then /amethyst works."
+            };
+        }
+
         if (dialogId.equalsIgnoreCase("eldervale_upgrade_intro")) {
             return new String[] {
                     "Blueprint forge. Tool plus Upgrade Stone.",

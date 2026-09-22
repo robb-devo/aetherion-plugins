@@ -223,6 +223,10 @@ public final class LivingNpcProfile {
         put(p("eldervale_welcome", "Eldervale Host", NamedTextColor.AQUA, "§b")
                 .hand(Material.IRON_PICKAXE).leather(Color.fromRGB(70, 85, 95)).chest().boots()
                 .skinFile("worker.png"));
+        // Amethyst Mines (aether_veins) guide — place on Elder Vale Mining Island (FancyNPC).
+        put(p("amethyst_mines_guide", "Amethyst Mines", NamedTextColor.LIGHT_PURPLE, "§d")
+                .hand(Material.AMETHYST_CLUSTER).leather(Color.fromRGB(90, 40, 130)).fullLeather()
+                .slim().skinFile("mystic.png"));
         put(p("eldervale_upgrade", "Blueprint Forge", NamedTextColor.GOLD, "§6")
                 .hand(Material.ANVIL).leather(Color.fromRGB(90, 70, 45)).fullLeather()
                 .skinFile("worker.png"));

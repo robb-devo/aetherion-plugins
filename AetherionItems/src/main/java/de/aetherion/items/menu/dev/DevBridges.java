@@ -86,7 +86,9 @@ public final class DevBridges {
                 String boss = linkedBoss(id);
                 String online = entityId == null ? " §8(offline)" : " §a●";
                 String label;
-                if (flavor) {
+                if ("amethyst_mines_guide".equalsIgnoreCase(id)) {
+                    label = "§dCrystal Guide §8· §7Amethyst Mines" + online;
+                } else if (flavor) {
                     label = "§7" + name + " §8· flavor" + online;
                 } else if (boss == null) {
                     label = "§b" + name + online;
@@ -149,6 +151,7 @@ public final class DevBridges {
                  "colossus_scholar", "veil_priest", "patch_intern", "void_janitor",
                  "fuse", "claims_adjuster", "repo_agent", "arena_proctor" -> NpcBucket.BOSS;
             case "foreman", "surveyor", "ore_ledger", "eldervale_welcome", "eldervale_upgrade",
+                 "amethyst_mines_guide",
                  "farm_isle_guide", "forage_pad_guide", "canopy_clerk", "isle_clerk", "dungeon_gate",
                  "miss_canopy" -> NpcBucket.WORLD;
             default -> NpcBucket.WORLD;
@@ -163,6 +166,7 @@ public final class DevBridges {
                 filtered.add(entry);
             }
         }
+        filtered.sort((a, b) -> a.name().compareToIgnoreCase(b.name()));
         return filtered;
     }
 
@@ -249,7 +253,8 @@ public final class DevBridges {
             "farm",
             "borderlands",
             "colosseum",
-            "eldervale"
+            "eldervale",
+            "amethyst"
     );
 
     static List<NamedItem> spawnMarkers() {
@@ -339,6 +344,7 @@ public final class DevBridges {
             case "colosseum" -> "Proctor · Crypt T2 ring";
             case "borderlands" -> "Beyond Vex's gate";
             case "eldervale" -> "Mining island · slime jump";
+            case "amethyst" -> "PLACE THIS · Amethyst Area spawn for /amethyst";
             default -> null;
         };
         if (extra == null) {

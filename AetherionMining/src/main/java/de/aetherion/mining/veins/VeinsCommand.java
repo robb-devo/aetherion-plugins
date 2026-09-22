@@ -14,6 +14,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Admin / legacy tools for the Amethyst Area dig world ({@code aether_veins}).
+ * Player entry is {@code /amethyst} or the Crystal Guide — not this command.
+ */
 public final class VeinsCommand implements CommandExecutor, TabCompleter {
 
     private final AetherionMining plugin;
@@ -29,26 +33,37 @@ public final class VeinsCommand implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 0) {
-            if (!(sender instanceof Player player)) {
-                sender.sendMessage("§cPlayers only.");
-                return true;
-            }
-            if (veins.isVeins(player.getWorld())) {
-                veins.leave(player);
-            } else {
-                veins.enter(player);
-            }
+            redirectPlayers(sender);
             return true;
         }
         String sub = args[0].toLowerCase(Locale.ROOT);
         if (sub.equals("leave")) {
-            if (sender instanceof Player player) {
-                veins.leave(player);
+            if (!(sender instanceof Player player)) {
+                sender.sendMessage("§cPlayers only.");
+                return true;
             }
+            if (!player.hasPermission("aetherion.mines.admin")) {
+                redirectPlayers(sender);
+                return true;
+            }
+            veins.leave(player);
+            return true;
+        }
+        if (sub.equals("enter")) {
+            if (!(sender instanceof Player player)) {
+                sender.sendMessage("§cPlayers only.");
+                return true;
+            }
+            if (!player.hasPermission("aetherion.mines.admin")) {
+                redirectPlayers(sender);
+                return true;
+            }
+            veins.enter(player);
+            sender.sendMessage("§7Admin enter — players use §f/amethyst §7or the Crystal Guide.");
             return true;
         }
         if (sub.equals("time")) {
-            sender.sendMessage("§7The Veins reset in §f" + untilReset() + "§7.");
+            sender.sendMessage("§7Amethyst Area reset in §f" + untilReset() + "§7.");
             return true;
         }
         if (sub.equals("npc")) {
@@ -57,7 +72,7 @@ public final class VeinsCommand implements CommandExecutor, TabCompleter {
                 return true;
             }
             player.getInventory().addItem(VeinsNpcs.anchor());
-            player.sendMessage("§7Place the lantern. Sneak-click to remove.");
+            player.sendMessage("§7Legacy Foreman lantern (admin). Players use the Crystal Guide.");
             return true;
         }
         if (sub.equals("reset")) {
@@ -65,7 +80,7 @@ public final class VeinsCommand implements CommandExecutor, TabCompleter {
                 sender.sendMessage("§cAdmin only.");
                 return true;
             }
-            veins.reset("The Veins closed. Stone is new again.");
+            veins.reset("The Amethyst Area closed. Stone is new again.");
             sender.sendMessage("§7Reset started.");
             return true;
         }
@@ -82,16 +97,26 @@ public final class VeinsCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage("§7/deepmines eldervale paste");
             return true;
         }
-        sender.sendMessage("§7/deepmines §8· §7/deepmines leave §8· §7/deepmines time");
+        redirectPlayers(sender);
         return true;
+    }
+
+    private static void redirectPlayers(CommandSender sender) {
+        sender.sendMessage("§eDeep Mines player entry is retired.");
+        sender.sendMessage("§7Use §f/amethyst §7or talk to the §dCrystal Guide §7on Elder Vale.");
+        if (sender.hasPermission("aetherion.mines.admin")) {
+            sender.sendMessage("§8Admin: /deepmines enter|leave|time|npc|reset|eldervale");
+        }
     }
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 1) {
-            List<String> out = new ArrayList<>(List.of("leave", "time"));
+            List<String> out = new ArrayList<>();
             if (sender.hasPermission("aetherion.mines.admin")) {
-                out.addAll(List.of("npc", "reset", "eldervale"));
+                out.addAll(List.of("enter", "leave", "time", "npc", "reset", "eldervale"));
+            } else {
+                out.add("time");
             }
             return out;
         }
