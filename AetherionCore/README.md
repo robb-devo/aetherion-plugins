@@ -23,3 +23,20 @@ Other plugins: `depend: [AetherionCore]` and Maven `de.aetherion:AetherionCore:1
 | `wipe.dry-run` | `false` | Log intended flag writes / deletes; do not change files. Pending flags are left in place. |
 
 Do not set `dry-run: true` on live backends unless you are probing paths.
+
+## Restart countdown
+
+`/aenet restart [seconds] [eta]` (permission `aetherion.core.admin`, default 10 seconds, ETA `about a minute`) broadcasts a chat countdown and then calls `Bukkit.shutdown()`.
+
+Paper's disable hook is too late to wait 10 seconds, and a Crafty Stop / SIGTERM cannot be delayed inside the JVM. Operators should send the command **before** the process is killed:
+
+- Crafty console, or the server's pre-stop command: `aenet restart 10 about a minute`
+- Host wrapper (install on the box, do not commit it into Crafty itself):
+
+```bash
+sudo install -m 0755 ops/aetherion-restart-mmo /usr/local/bin/aetherion-restart-mmo
+```
+
+Optional `/etc/aetherion/restart.env` picks how the script reaches the console (`AETHERION_RCON_*`, `AETHERION_SCREEN`, `AETHERION_TMUX`, or `AETHERION_STDIN`). The script only sends the countdown. The plugin stops the backend when the countdown ends. Do not SIGTERM the process until that happens.
+
+Same command works on every Velocity backend that has AetherionCore, not only mmo-r. The script name is the mmo-r wrapper; point `restart.env` at whichever server you are stopping.

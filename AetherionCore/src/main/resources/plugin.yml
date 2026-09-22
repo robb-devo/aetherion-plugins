@@ -11,6 +11,10 @@ commands:
     description: Core status
     permission: aetherion.core.admin
     usage: /aethercore
+  aenet:
+    description: Broadcast a restart countdown, then shut this backend down
+    permission: aetherion.core.admin
+    usage: /aenet restart [seconds] [eta]
   wipe:
     description: Shut down, reset all player data, then restart
     permission: aetherion.wipe

@@ -1,5 +1,6 @@
 package de.aetherion.core;
 
+import de.aetherion.core.command.NetworkRestartCommand;
 import de.aetherion.core.command.WipeCommand;
 import de.aetherion.core.network.MainWorldLink;
 import de.aetherion.core.network.TransferSnapshotStore;
@@ -50,6 +51,12 @@ public final class AetherionCore extends JavaPlugin {
         if (wipe != null) {
             wipe.setExecutor(wipeCommand);
             wipe.setTabCompleter(wipeCommand);
+        }
+        NetworkRestartCommand restartCommand = new NetworkRestartCommand(this);
+        PluginCommand aenet = getCommand("aenet");
+        if (aenet != null) {
+            aenet.setExecutor(restartCommand);
+            aenet.setTabCompleter(restartCommand);
         }
         networkWipeWatch.start();
         snapshots = new TransferSnapshotStore(this);

@@ -534,6 +534,8 @@ public class AetherionItems extends JavaPlugin {
         if (millstoneRitual != null) {
             millstoneRitual.shutdown();
         }
+        de.aetherion.items.world.BorderlandsRiteService.shutdownActive();
+        de.aetherion.items.world.WildlifeLooks.shutdown();
         if (codex != null) {
             codex.save();
         }
