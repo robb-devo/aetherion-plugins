@@ -126,6 +126,21 @@ public class BossCombatListener implements Listener {
             }
         }
 
+        if (instance.ashenAwaitsStrike()) {
+            event.setCancelled(true);
+            if (striker != null) {
+                instance.tryAshenParry(striker);
+            } else if (instance.getEntity() != null && instance.getEntity().getWorld() != null) {
+                instance.getEntity().getWorld().playSound(
+                        instance.getEntity().getLocation(),
+                        Sound.ITEM_SHIELD_BLOCK,
+                        0.7f,
+                        1.6f
+                );
+            }
+            return;
+        }
+
         if (instance.frostReflects()) {
             event.setCancelled(true);
             if (striker != null) {
