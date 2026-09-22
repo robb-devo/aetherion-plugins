@@ -18,6 +18,15 @@ class ServerNamesTest {
     }
 
     @Test
+    void mappedPortBeatsALateProxyName() {
+        assertEquals("mmo-r", ServerNames.resolve("", 25567, "lobby"));
+        assertEquals("hub", ServerNames.resolve("", 25566, ""));
+        assertEquals("mmo-d", ServerNames.resolve("mmo-d", 25567, "mmo-r"));
+        assertEquals("mmo-c", ServerNames.resolve(null, 25565, "mmo-c"));
+        assertEquals("unknown", ServerNames.resolve("  ", 25565, " "));
+    }
+
+    @Test
     void onlyMainWorldKeepsLocalWarps() {
         assertTrue(ServerNames.isMain("mmo-r"));
         assertTrue(ServerNames.isMain("MMO-R"));

@@ -61,14 +61,7 @@ public final class MainWorldLink implements PluginMessageListener, Listener {
      * Config name, else the Velocity GetServer answer, else the live port map.
      */
     public String serverName() {
-        if (!configuredServer.isBlank()) {
-            return configuredServer;
-        }
-        if (velocityServer != null && !velocityServer.isBlank()) {
-            return velocityServer;
-        }
-        String fromPort = ServerNames.fromPort(Bukkit.getPort());
-        return fromPort.isBlank() ? "unknown" : fromPort;
+        return ServerNames.resolve(configuredServer, Bukkit.getPort(), velocityServer);
     }
 
     public boolean isMainWorld() {
@@ -110,7 +103,8 @@ public final class MainWorldLink implements PluginMessageListener, Listener {
             dungeons.leaveInstance(player);
         }
         String warp = spawnId == null ? "" : spawnId.trim().toLowerCase(Locale.ROOT);
-        long savedAt = snapshots == null ? -1L : snapshots.save(player, 0, false, warp.isBlank() ? null : warp);
+        long savedAt = snapshots == null ? -1L : snapshots.save(
+                player, 0, false, warp.isBlank() ? null : warp, mainServer);
         if (savedAt < 0L) {
             player.sendMessage("§cCould not save your gear for the transfer. Your inventory was not touched.");
             return true;

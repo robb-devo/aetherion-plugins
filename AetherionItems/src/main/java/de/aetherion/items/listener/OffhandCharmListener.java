@@ -10,6 +10,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.ItemStack;
@@ -84,9 +85,36 @@ public final class OffhandCharmListener implements Listener {
         }
     }
 
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onDrag(InventoryDragEvent event) {
+        if (!(event.getWhoClicked() instanceof Player player)) {
+            return;
+        }
+        boolean hitsOffhand = false;
+        for (int raw : event.getRawSlots()) {
+            if (event.getView().getInventory(raw) instanceof PlayerInventory
+                    && event.getView().convertSlot(raw) == 40) {
+                hitsOffhand = true;
+                break;
+            }
+        }
+        if (!hitsOffhand) {
+            return;
+        }
+        if (!isCharm(items, event.getOldCursor())) {
+            event.setCancelled(true);
+            player.sendMessage("§7Off-hand holds §dCharms §7only.");
+        }
+    }
+
     @EventHandler(priority = EventPriority.MONITOR)
     public void onJoin(PlayerJoinEvent event) {
-        plugin.getServer().getScheduler().runTask(plugin, () -> eject(event.getPlayer()));
+        Player player = event.getPlayer();
+        // Tick 1 catches the join inventory. Later passes catch transfer restores
+        // (snapshot apply ~8 ticks, inventory rewrite ~30 ticks).
+        plugin.getServer().getScheduler().runTask(plugin, () -> eject(player));
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> eject(player), 10L);
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> eject(player), 40L);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

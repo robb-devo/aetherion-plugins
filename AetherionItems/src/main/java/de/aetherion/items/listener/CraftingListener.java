@@ -220,26 +220,50 @@ public class CraftingListener implements Listener {
         if (recipe.hasStackedIngredients()) {
             return result;
         }
-        ItemStack previousTemplate = null;
-        ItemStack previousItem = null;
+        ItemStack[] carried = carryGear(recipe, matrix);
+        return itemManager.applyUpgradeProgress(result, carried[0], carried[1]);
+    }
 
+    /**
+     * {@code [live gear, recipe template]}. Compressed mats are Aetherion items and
+     * are listed first in ladder recipes; copying progress off them drops sockets.
+     */
+    private ItemStack[] carryGear(RecipeDefinition recipe, ItemStack[] matrix) {
+        ItemStack gear = null;
+        ItemStack gearTemplate = null;
+        ItemStack resource = null;
+        ItemStack resourceTemplate = null;
         for (ItemStack expected : recipe.getIngredients().values()) {
             if (!itemManager.isAetherionItem(expected)) {
                 continue;
             }
-
-            previousTemplate = expected;
-
-            for (ItemStack slot : matrix) {
-                if (itemManager.isSameAetherionItem(slot, expected)) {
-                    previousItem = slot.clone();
-                    break;
+            ItemStack found = null;
+            if (matrix != null) {
+                for (ItemStack slot : matrix) {
+                    if (itemManager.isSameAetherionItem(slot, expected)) {
+                        found = slot;
+                        break;
+                    }
                 }
             }
-
+            if (found == null) {
+                continue;
+            }
+            if (de.aetherion.items.recipe.CraftSource.isResourceId(itemManager.getItemId(expected))) {
+                if (resource == null) {
+                    resource = found.clone();
+                    resourceTemplate = expected;
+                }
+                continue;
+            }
+            gear = found.clone();
+            gearTemplate = expected;
             break;
         }
-
-        return itemManager.applyUpgradeProgress(result, previousItem, previousTemplate);
+        if (gear == null) {
+            gear = resource;
+            gearTemplate = resourceTemplate;
+        }
+        return new ItemStack[]{gear, gearTemplate};
     }
 }

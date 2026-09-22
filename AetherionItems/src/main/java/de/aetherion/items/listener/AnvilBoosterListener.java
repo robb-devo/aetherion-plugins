@@ -83,6 +83,14 @@ public class AnvilBoosterListener implements Listener {
         if (itemManager.getBoosterType(left) != null || itemManager.getBoosterType(right) != null) {
             event.setResult(null);
             setRepairCost(anvil, anvilView);
+            return;
+        }
+
+        // Vanilla repair/combine builds a new result and drops socket PDC.
+        // Rename (empty right slot) returns above and is left alone.
+        if (itemManager.isAetherionItem(left) || itemManager.isAetherionItem(right)) {
+            event.setResult(null);
+            setRepairCost(anvil, anvilView);
         }
     }
 

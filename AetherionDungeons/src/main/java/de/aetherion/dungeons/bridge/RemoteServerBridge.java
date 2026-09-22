@@ -92,7 +92,7 @@ public final class RemoteServerBridge implements PluginMessageListener {
             player.sendMessage("§cRemote dungeon transfer is disabled (config).");
             return false;
         }
-        long savedAt = snapshots == null ? -1L : snapshots.save(player, pendingFloor, bossOnly, null);
+        long savedAt = snapshots == null ? -1L : snapshots.save(player, pendingFloor, bossOnly, null, targetServer);
         if (pendingFloor > 0) {
             player.sendMessage("§5Dungeon Gate§7: Crossing to §f" + targetServer
                     + "§7 · Floor §f" + pendingFloor + "§7…");
@@ -119,7 +119,7 @@ public final class RemoteServerBridge implements PluginMessageListener {
         if (player == null || !player.isOnline()) {
             return false;
         }
-        long savedAt = snapshots == null ? -1L : snapshots.save(player, 0, false, spawnId);
+        long savedAt = snapshots == null ? -1L : snapshots.save(player, 0, false, spawnId, returnServer);
         return finishTransfer(player, savedAt, returnServer);
     }
 

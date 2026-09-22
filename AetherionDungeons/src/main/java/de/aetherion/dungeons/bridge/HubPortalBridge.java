@@ -264,7 +264,19 @@ public final class HubPortalBridge implements Listener {
             }
         }
         de.aetherion.core.api.HubAccess hub = de.aetherion.core.api.AetherServices.hub();
-        return hub != null && hub.teleport(player, warp);
+        if (hub == null) {
+            return false;
+        }
+        Location location = hub.location(warp);
+        if (location == null && !"harbour".equalsIgnoreCase(warp)) {
+            location = hub.location("harbour");
+        }
+        if (location == null) {
+            return false;
+        }
+        player.teleport(location);
+        player.setFallDistance(0f);
+        return true;
     }
 
 
