@@ -235,7 +235,7 @@ public class BoosterStats {
         }
 
         lore.add("");
-        lore.add("§8" + BoosterLimits.MAX_TOTAL + " boosters total per item.");
+        lore.add("§8Cap: §7" + BoosterLimits.MAX_TOTAL + " boosters on one item.");
         return lore;
     }
 

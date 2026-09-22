@@ -90,7 +90,8 @@ public class AnvilBoosterListener implements Listener {
 
         BoosterType boosterType = itemManager.getBoosterType(right);
 
-        if (boosterType == null || right.getAmount() != 1) {
+        // Stacks are allowed. The anvil result consumes one booster from the right slot.
+        if (boosterType == null || right.getAmount() < 1) {
             event.setResult(null);
             setRepairCost(anvil, anvilView);
             return;

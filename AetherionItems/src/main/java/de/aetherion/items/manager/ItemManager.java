@@ -325,6 +325,7 @@ public class ItemManager {
         BoosterType booster = getBoosterType(item);
         if (booster != null) {
             meta.setLore(BoosterStats.createItemLore(booster));
+            meta.setMaxStackSize(de.aetherion.items.item.BoosterItems.MAX_STACK);
         } else {
             ItemProfile profile = getProfile(item);
             if (profile != ItemProfile.UNKNOWN && meta.getLore() != null) {

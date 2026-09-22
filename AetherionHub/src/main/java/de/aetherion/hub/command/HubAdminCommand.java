@@ -25,7 +25,7 @@ public final class HubAdminCommand implements CommandExecutor, TabCompleter {
 
     private static final List<String> SUBS = List.of(
             "set", "list", "unlock", "lock", "name", "icon", "slot", "default", "hint", "give",
-            "softlight", "shabbymine", "reload", "reloadpads"
+            "softlight", "shabbymine", "oregen", "reload", "reloadpads"
     );
 
     private final AetherionHub plugin;
@@ -63,6 +63,7 @@ public final class HubAdminCommand implements CommandExecutor, TabCompleter {
             case "give" -> give(sender, args);
             case "softlight" -> softlight(sender, args);
             case "shabbymine" -> shabbymine(sender);
+            case "oregen" -> oregen(sender, args);
             case "reload" -> {
                 hub.reload();
                 if (plugin.getLaunchPads() != null) {
@@ -355,12 +356,26 @@ public final class HubAdminCommand implements CommandExecutor, TabCompleter {
     }
 
     private void shabbymine(CommandSender sender) {
+        oregenReflect(sender, "shabby", false);
+    }
+
+    private void oregen(CommandSender sender, String[] args) {
+        if (args.length >= 2 && args[1].equalsIgnoreCase("reset")) {
+            String which = args.length >= 3 ? args[2] : "both";
+            oregenReflect(sender, which, true);
+            return;
+        }
+        String which = args.length >= 2 ? args[1] : "both";
+        oregenReflect(sender, which, false);
+    }
+
+    private void oregenReflect(CommandSender sender, String which, boolean reset) {
         try {
             Class.forName("de.aetherion.items.world.ShabbyMinePrep")
-                    .getMethod("run", CommandSender.class)
-                    .invoke(null, sender);
+                    .getMethod("admin", CommandSender.class, String.class, boolean.class)
+                    .invoke(null, sender, which, reset);
         } catch (ReflectiveOperationException | NoClassDefFoundError e) {
-            sender.sendMessage("§cShabby Mine prep needs AetherionItems loaded.");
+            sender.sendMessage("§cOre pass needs AetherionItems loaded.");
         }
     }
 
@@ -377,7 +392,10 @@ public final class HubAdminCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage("§7/hubadmin hint [player]");
         sender.sendMessage("§7/hubadmin give [player] [spawnId]");
         sender.sendMessage("§7/hubadmin softlight [radius|mines] …");
-        sender.sendMessage("§7/hubadmin shabbymine §8- dense lights + sponge→ores in Shabby Mine");
+        sender.sendMessage("§7/hubadmin shabbymine §8- re-pass Shabby Mine wall ores");
+        sender.sendMessage("§7/hubadmin oregen [shabby|eldervale|both]");
+        sender.sendMessage("§7/hubadmin oregen reset <shabby|eldervale|both>");
+        sender.sendMessage("§8Flags: plugins/AetherionItems/worldgen-flags.yml");
         sender.sendMessage("§7/hubadmin reload");
         sender.sendMessage("§7/hubadmin reloadpads §8- reload island jump pads");
     }
@@ -389,6 +407,12 @@ public final class HubAdminCommand implements CommandExecutor, TabCompleter {
         }
         if (args.length == 1) {
             return filter(SUBS, args[0]);
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("oregen")) {
+            return filter(List.of("shabby", "eldervale", "both", "reset"), args[1]);
+        }
+        if (args.length == 3 && args[0].equalsIgnoreCase("oregen") && args[1].equalsIgnoreCase("reset")) {
+            return filter(List.of("shabby", "eldervale", "both"), args[2]);
         }
         if (args.length == 2 && List.of("set", "name", "icon", "slot", "default").contains(args[0].toLowerCase(Locale.ROOT))) {
             return filter(hub.spawns().stream().map(HubSpawn::id).toList(), args[1]);

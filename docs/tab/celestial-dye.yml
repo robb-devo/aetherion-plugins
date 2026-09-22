@@ -1,0 +1,77 @@
+# Copy-paste for live TAB + LuckPerms (MMO-R).
+#
+# Citrus  = lime / yellow / orange shimmer. Cosmetic only.
+# Monkey  = Hypixel Celestial Dye #B2FFFF (ice-cyan shimmer).
+# Beta    = original Homie rainbow (cyan → pink → purple → gold).
+# Never mix the three palettes.
+#
+# %aetherion_tab_prefix% and %aetherion_chat_prefix% both call RankBadgeService.tabPrefix:
+#   [Citrus|Monkey|Beta|Admin|MVP++] dye, then the account level tag [n], then §f.
+# The level title (Adventurer, Veteran, …) stays on %aetherion_level_title%.
+# The dye does not replace that title.
+
+# --- plugins/TAB/animations.yml ---
+# change-interval is milliseconds. 200ms ≈ Hypixel dye shimmer.
+Aetherion_Citrus:
+  change-interval: 200
+  texts:
+    - "&#C6F24A[&#C6F24AC&#D8FF55i&#FFE14At&#FFD23Ar&#FFB703u&#FF9F1Cs&#F4E34A]"
+    - "&#D8FF55[&#D8FF55C&#FFE14Ai&#FFD23At&#FFB703r&#FF9F1Cu&#F4E34As&#C6F24A]"
+    - "&#FFE14A[&#FFE14AC&#FFD23Ai&#FFB703t&#FF9F1Cr&#F4E34Au&#C6F24As&#D8FF55]"
+    - "&#FFD23A[&#FFD23AC&#FFB703i&#FF9F1Ct&#F4E34Ar&#C6F24Au&#D8FF55s&#FFE14A]"
+    - "&#FFB703[&#FFB703C&#FF9F1Ci&#F4E34At&#C6F24Ar&#D8FF55u&#FFE14As&#FFD23A]"
+    - "&#FF9F1C[&#FF9F1CC&#F4E34Ai&#C6F24At&#D8FF55r&#FFE14Au&#FFD23As&#FFB703]"
+    - "&#F4E34A[&#F4E34AC&#C6F24Ai&#D8FF55t&#FFE14Ar&#FFD23Au&#FFB703s&#FF9F1C]"
+
+Aetherion_Celestial:
+  change-interval: 200
+  texts:
+    - "&#6EE8F2[&#6EE8F2M&#8CF4FCo&#B2FFFFn&#C8FFFFk&#DCFFFFe&#A6FBFFy&#7EF0F8]"
+    - "&#8CF4FC[&#8CF4FCM&#B2FFFFo&#C8FFFFn&#DCFFFFk&#A6FBFFe&#7EF0F8y&#6EE8F2]"
+    - "&#B2FFFF[&#B2FFFFM&#C8FFFFo&#DCFFFFn&#A6FBFFk&#7EF0F8e&#6EE8F2y&#8CF4FC]"
+    - "&#C8FFFF[&#C8FFFFM&#DCFFFFo&#A6FBFFn&#7EF0F8k&#6EE8F2e&#8CF4FCy&#B2FFFF]"
+    - "&#DCFFFF[&#DCFFFFM&#A6FBFFo&#7EF0F8n&#6EE8F2k&#8CF4FCe&#B2FFFFy&#C8FFFF]"
+    - "&#A6FBFF[&#A6FBFFM&#7EF0F8o&#6EE8F2n&#8CF4FCk&#B2FFFFe&#C8FFFFy&#DCFFFF]"
+    - "&#7EF0F8[&#7EF0F8M&#6EE8F2o&#8CF4FCn&#B2FFFFk&#C8FFFFe&#DCFFFFy&#A6FBFF]"
+
+Aetherion_Rainbow:
+  change-interval: 200
+  texts:
+    - "&#55FFFF[&#55FFFFB&#7CEBFFe&#B89AFFt&#FF7AEEa&#FF8A88]"
+    - "&#7CEBFF[&#7CEBFFB&#B89AFFe&#FF7AEEt&#FF8A88a&#FFC15A]"
+    - "&#B89AFF[&#B89AFFB&#FF7AEEe&#FF8A88t&#FFC15Aa&#FFE08A]"
+    - "&#FF7AEE[&#FF7AEEB&#FF8A88e&#FFC15At&#FFE08Aa&#55FFFF]"
+    - "&#FF8A88[&#FF8A88B&#FFC15Ae&#FFE08At&#55FFFFa&#7CEBFF]"
+    - "&#FFC15A[&#FFC15AB&#FFE08Ae&#55FFFFt&#7CEBFFa&#B89AFF]"
+    - "&#FFE08A[&#FFE08AB&#55FFFFe&#7CEBFFt&#B89AFFa&#FF7AEE]"
+
+# Backward-compatible alias — older live TAB configs used this name for Monkey.
+Aetherion_Monkey:
+  change-interval: 200
+  texts:
+    - "&#6EE8F2[&#6EE8F2M&#8CF4FCo&#B2FFFFn&#C8FFFFk&#DCFFFFe&#A6FBFFy&#7EF0F8]"
+    - "&#8CF4FC[&#8CF4FCM&#B2FFFFo&#C8FFFFn&#DCFFFFk&#A6FBFFe&#7EF0F8y&#6EE8F2]"
+    - "&#B2FFFF[&#B2FFFFM&#C8FFFFo&#DCFFFFn&#A6FBFFk&#7EF0F8e&#6EE8F2y&#8CF4FC]"
+    - "&#C8FFFF[&#C8FFFFM&#DCFFFFo&#A6FBFFn&#7EF0F8k&#6EE8F2e&#8CF4FCy&#B2FFFF]"
+    - "&#DCFFFF[&#DCFFFFM&#A6FBFFo&#7EF0F8n&#6EE8F2k&#8CF4FCe&#B2FFFFy&#C8FFFF]"
+    - "&#A6FBFF[&#A6FBFFM&#7EF0F8o&#6EE8F2n&#8CF4FCk&#B2FFFFe&#C8FFFFy&#DCFFFF]"
+    - "&#7EF0F8[&#7EF0F8M&#6EE8F2o&#8CF4FCn&#B2FFFFk&#C8FFFFe&#DCFFFFy&#A6FBFF]"
+
+# --- plugins/TAB/groups.yml ---
+# sorting-types GROUPS (Monkey stays the first Homie cosmetic):
+#   groups: [admin, monkey, citrus, beta, mvpplusplus, aetherion, eternal, empyrean, ascendant,
+#            sovereign, celestine, aetherborn, mythwright, legend, champion, veteran, adventurer]
+#
+# Prefer PlaceholderAPI so chat / compact list / hold-TAB stay in lockstep:
+#   tabprefix: "%aetherion_tab_prefix%"
+#   tagprefix: "%aetherion_tab_prefix%"
+# LuckPerms chat / LPC:
+#   %aetherion_chat_prefix%
+#
+# Do NOT use %luckperms_prefix% for these ultras if the live LP node is stale.
+
+# --- LuckPerms (rewritten on plugin enable) ---
+# Citrus (cosmetic only, weight 94): /lp group citrus setweight 94
+# Monkey (content + celestial #B2FFFF, weight 95): /lp group monkey setweight 95
+# Beta (rainbow cosmetics only, weight 93): /lp group beta setweight 93
+# Dev Menu → Ranks grants the same extras. XP sync does not remove them.
