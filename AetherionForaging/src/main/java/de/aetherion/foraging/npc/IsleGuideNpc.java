@@ -33,6 +33,7 @@ import net.kyori.adventure.text.format.TextDecoration;
 import org.joml.AxisAngle4f;
 import org.joml.Vector3f;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -336,18 +337,82 @@ public final class IsleGuideNpc implements Listener {
             return;
         }
         Location at = guideLocation();
-        if (at == null) {
+        if (at == null || at.getWorld() == null) {
             return;
         }
-        TextDisplay holo = hologram();
-        if (holo == null || holo.isDead()) {
+        // Idle when nobody is on/near the isle — stop ensure ticks that stack TextDisplays.
+        if (!playersNearIsle(at)) {
+            return;
+        }
+        // Unloaded chunk: Bukkit.getEntity is null even though the saved hologram
+        // is still in the chunk. Spawning here force-loads it and stacks another
+        // persistent TextDisplay.
+        if (!at.getChunk().isLoaded()) {
+            return;
+        }
+        TextDisplay holo = adoptHologram(at);
+        if (holo == null) {
             ensureHologram(at);
             return;
         }
+        hologramId = holo.getUniqueId();
         Location want = at.clone().add(0, 2.15, 0);
         if (holo.getLocation().distanceSquared(want) > 0.01) {
             holo.teleport(want);
         }
+    }
+
+    private boolean playersNearIsle(Location at) {
+        World world = at.getWorld();
+        if (world == null) {
+            return false;
+        }
+        double reachSq = 96.0 * 96.0;
+        for (Player player : world.getPlayers()) {
+            if (player.getLocation().distanceSquared(at) <= reachSq) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Keep one isle-guide label. Extras are the old respawn-while-unloaded leak. */
+    private TextDisplay adoptHologram(Location at) {
+        List<TextDisplay> found = new ArrayList<>();
+        if (hologramId != null) {
+            Entity entity = Bukkit.getEntity(hologramId);
+            if (entity instanceof TextDisplay display
+                    && display.isValid()
+                    && display.getScoreboardTags().contains(HOLO_TAG)) {
+                found.add(display);
+            }
+        }
+        for (Entity entity : at.getChunk().getEntities()) {
+            if (entity instanceof TextDisplay display
+                    && display.isValid()
+                    && display.getScoreboardTags().contains(HOLO_TAG)
+                    && display.getLocation().distanceSquared(at) <= 64
+                    && !found.contains(display)) {
+                found.add(display);
+            }
+        }
+        // Also collapse orphans near the pad that landed in a neighbor chunk.
+        for (Entity entity : at.getWorld().getNearbyEntities(at.clone().add(0, 2.15, 0), 4, 4, 4)) {
+            if (entity instanceof TextDisplay display
+                    && display.isValid()
+                    && display.getScoreboardTags().contains(HOLO_TAG)
+                    && !found.contains(display)) {
+                found.add(display);
+            }
+        }
+        if (found.isEmpty()) {
+            return null;
+        }
+        TextDisplay keep = found.get(0);
+        for (int i = 1; i < found.size(); i++) {
+            found.get(i).remove();
+        }
+        return keep;
     }
 
     private TextDisplay hologram() {
