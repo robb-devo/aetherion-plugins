@@ -93,13 +93,21 @@ public final class VeinsListener implements Listener {
         if (block == null) {
             return;
         }
+        if (veins.isVeins(block.getWorld())) {
+            npcs.clearAllInWorld(block.getWorld());
+            player.sendMessage("§cNo NPCs in Amethyst Mines — Foreman stays out of aether_veins.");
+            return;
+        }
         Location location = block.getRelative(event.getBlockFace()).getLocation().add(0.5, 0, 0.5);
         location.setYaw(player.getLocation().getYaw());
         location.setPitch(0f);
-        npcs.spawnEntrance(location);
+        if (!npcs.spawnEntrance(location)) {
+            player.sendMessage("§cCould not place Foreman here.");
+            return;
+        }
         int minLevel = veinsMinLevel();
-        player.sendMessage("§aAnchored §fForeman§a (legacy admin lantern).");
-        player.sendMessage("§7Players enter via §f/amethyst §7or the §dCrystal Guide§7 (Mining "
+        player.sendMessage("§aAnchored §fForeman§a (legacy admin lantern — not for Amethyst).");
+        player.sendMessage("§7Players enter Amethyst via §f/amethyst §7or the §dCrystal Guide§7 (Mining "
                 + minLevel + "+).");
     }
 

@@ -19,7 +19,7 @@ Finished BreadBuilds hub stays **1:1**. Dig volume is one solid cube flush again
 | --- | --- |
 | Break | Allowed everywhere **except** ~20 spawn protect (`VeinsListener` + WG `veins_spawn_protect`). |
 | Place | **Denied everywhere** in `aether_veins` (plugin + WG `__global__` `BLOCK_PLACE=DENY`). Creative+admin exempt. |
-| NPCs | **None** in Amethyst Mines — Foreman/exit NPCs purged on load/paint. |
+| NPCs | **None** in Amethyst. Foreman never auto-restored into `aether_veins`; leftovers purged on enable (+ delayed sweeps). `/deepmines npc` admin-only elsewhere. |
 | Vanilla mobs | Off world-wide (`DO_MOB_SPAWNING=false`, spawn flags off, WG `MOB_SPAWNING=DENY`, creature-spawn cancel). |
 | Pets | Custom spawns OK in dark digs; blocked on open-sky island surface. |
 

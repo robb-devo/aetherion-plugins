@@ -39,7 +39,19 @@ public class AetherionMining extends JavaPlugin {
 
         getServer().getScheduler().runTask(this, () -> {
             veins.ensureLoaded();
+            // Never restore Foreman into aether_veins; purge leftovers then optional elsewhere.
             npcs.loadEntrance();
+            // Persistent villagers may load with chunks after first tick — sweep again.
+            getServer().getScheduler().runTaskLater(this, () -> {
+                if (veins.world() != null) {
+                    npcs.clearAllInWorld(veins.world());
+                }
+            }, 40L);
+            getServer().getScheduler().runTaskLater(this, () -> {
+                if (veins.world() != null) {
+                    npcs.clearAllInWorld(veins.world());
+                }
+            }, 200L);
             if (getConfig().getBoolean("eldervale.auto-paste-once", false)) {
                 getConfig().set("eldervale.auto-paste-once", false);
                 saveConfig();

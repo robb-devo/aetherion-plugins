@@ -75,7 +75,7 @@ public final class VeinsCommand implements CommandExecutor, TabCompleter {
                 return true;
             }
             player.getInventory().addItem(VeinsNpcs.anchor());
-            player.sendMessage("§7Legacy Foreman lantern (admin). Players use the Crystal Guide.");
+            player.sendMessage("§7Legacy Foreman lantern (admin). §cNot for Amethyst Mines§7 — place elsewhere only.");
             return true;
         }
         if (sub.equals("reset")) {
