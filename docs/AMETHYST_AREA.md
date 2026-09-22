@@ -4,10 +4,10 @@ Finished BreadBuilds hub stays **block-for-block 1:1**. Dig paint **never** writ
 
 ## Critical paint rule
 
-1. Freeze every non-air voxel in the dig volume at paint start.
-2. Freeze every **column** within `dig-hub-scan` of spawn that contains hub non-air (entire column off-limits — rooms/doors cannot flood).
-3. Dig stone/ores/tunnels only in **non-hub columns**, flush against the footprint.
-4. Paint log must show `schematicOverwrites=0`.
+1. Any dig-volume column with non-air = hub column → **never queued** for dig fill/carve.
+2. Dig jobs = air cells in exterior columns only (hub/frozen never iterated).
+3. Log must show `schematicOverwrites=0` (not “attempt then block”).
+4. Auto softlight off.
 
 `loosenPriorDigFill` / clearance-gap / flood-into-rooms logic is **gone**.
 

@@ -20,9 +20,10 @@ import java.util.Set;
 /**
  * Crystal Hollows dig volume around the finished BreadBuilds Amethyst schematic.
  *
- * <p><b>Non-negotiable:</b> never writes into schematic occupancy. Hub columns
- * (any XZ column that contains non-air in the hub scan) are frozen block-for-block —
- * dig stone/ores/tunnels exist only in columns outside that footprint, flush against it.
+ * <p><b>Non-negotiable:</b> schematic voxels are never dig candidates.
+ * Any XZ column that contains non-air in the dig volume is a hub column — excluded
+ * from fill/carve iteration entirely. Dig only paints empty exterior columns, flush
+ * against the footprint. Target log: {@code schematicOverwrites=0}.
  */
 public final class VeinsDigZones {
 
@@ -146,24 +147,34 @@ public final class VeinsDigZones {
     private void runAsync(Runnable onDone) {
         digWrites = 0;
         schematicSkips = 0;
-        msg("§eAmethyst dig: paint OUTSIDE schematic footprint only (flush, zero hub overwrites)…");
+        msg("§eAmethyst dig: exterior columns only — hub footprint never iterated…");
         preload();
         freezeSchematicFootprint();
-        msg("§7Schematic columns frozen: §f" + hubColumns.size()
-                + " §7| non-air voxels frozen: §f" + frozenNonAir.size());
+        msg("§7Hub columns excluded: §f" + hubColumns.size()
+                + " §7| frozen non-air: §f" + frozenNonAir.size());
 
+        // Dig candidates = air cells in NON-hub columns only.
+        // Hub columns / frozen non-air are never queued — no attempt-then-block.
         List<int[]> fillJobs = new ArrayList<>();
+        int exteriorColumns = 0;
         for (int x = spawnX - half; x <= spawnX + half; x++) {
             for (int z = spawnZ - half; z <= spawnZ + half; z++) {
                 if (hubColumns.contains(packColumn(x, z))) {
                     continue;
                 }
+                exteriorColumns++;
                 for (int y = yMin; y <= yMax; y++) {
+                    if (frozenNonAir.contains(key(x, y, z))) {
+                        continue;
+                    }
+                    if (!isPaintAbleAir(world.getBlockAt(x, y, z).getType())) {
+                        continue;
+                    }
                     fillJobs.add(new int[]{x, y, z});
                 }
             }
         }
-        msg("§7Dig fill cells (outside footprint): §f" + fillJobs.size());
+        msg("§7Exterior columns: §f" + exteriorColumns + " §7| dig air cells: §f" + fillJobs.size());
 
         final int batch = 6000;
         final int[] index = {0};
@@ -180,21 +191,23 @@ public final class VeinsDigZones {
             if (index[0] < fillJobs.size()) {
                 if (index[0] % (batch * 20) < batch) {
                     int pct = (int) ((index[0] * 100L) / Math.max(1, fillJobs.size()));
-                    msg("§7Dig fill… §f" + pct + "% §8(schematic skips §f" + schematicSkips + "§8)");
+                    msg("§7Dig fill… §f" + pct + "%");
                 }
                 return;
             }
             task.cancel();
             carveAll();
             saveSnapshot();
+            String status = schematicSkips == 0 ? "§a✓" : "§c✗ FAIL";
             msg("§aDig paint done. writes=§f" + digWrites
-                    + " §aschematicOverwrites=§f" + schematicSkips
-                    + (schematicSkips == 0 ? " §a✓" : " §c✗ FAIL"));
+                    + " §aschematicOverwrites=§f" + schematicSkips + " " + status);
             if (schematicSkips != 0) {
                 plugin.getLogger().severe(
-                        "Amethyst dig paint reported " + schematicSkips
-                                + " schematic overwrite attempts — blocked. Hub must stay 1:1."
+                        "BUG: dig paint attempted " + schematicSkips
+                                + " hub writes — mask still wrong."
                 );
+            } else {
+                plugin.getLogger().info("Amethyst dig paint: schematicOverwrites=0 (hub never iterated).");
             }
             if (onDone != null) {
                 onDone.run();
@@ -215,41 +228,43 @@ public final class VeinsDigZones {
     }
 
     /**
-     * Freeze schematic footprint before any write:
-     * <ul>
-     *   <li>Every non-air voxel in the dig volume is frozen (never overwritten).</li>
-     *   <li>Any column within hubScan of spawn that contains non-air is a hub column —
-     *       the entire column (all Y in dig range) is off-limits, so open rooms/doors
-     *       cannot be flooded by exterior dig fill.</li>
-     * </ul>
-     * Dig paints only in non-hub columns → flush against schematic outer columns.
+     * Any column with non-air in the dig volume is hub footprint — never iterated for dig.
+     * (Clean Zip: only the BreadBuilds island has solids; exterior is air.)
      */
     private void freezeSchematicFootprint() {
         hubColumns.clear();
         frozenNonAir.clear();
-        int scanMinX = spawnX - hubScan;
-        int scanMaxX = spawnX + hubScan;
-        int scanMinZ = spawnZ - hubScan;
-        int scanMaxZ = spawnZ + hubScan;
-        // Hub Y band: island body around spawn (not the full dig depth — avoids marking
-        // distant underground stone as "schematic", but still catches the BreadBuilds hub).
-        int hubYMin = Math.max(yMin, spawnY - 40);
-        int hubYMax = Math.min(yMax, spawnY + 48);
-
         for (int x = spawnX - half; x <= spawnX + half; x++) {
             for (int z = spawnZ - half; z <= spawnZ + half; z++) {
+                boolean solid = false;
                 for (int y = yMin; y <= yMax; y++) {
                     Material type = world.getBlockAt(x, y, z).getType();
-                    if (!type.isAir() && type != Material.LIGHT && type != Material.CAVE_AIR && type != Material.VOID_AIR) {
+                    if (isOccupyingSolid(type)) {
                         frozenNonAir.add(key(x, y, z));
-                        if (x >= scanMinX && x <= scanMaxX && z >= scanMinZ && z <= scanMaxZ
-                                && y >= hubYMin && y <= hubYMax) {
-                            hubColumns.add(packColumn(x, z));
-                        }
+                        solid = true;
                     }
+                }
+                if (solid) {
+                    hubColumns.add(packColumn(x, z));
                 }
             }
         }
+    }
+
+    private static boolean isOccupyingSolid(Material type) {
+        if (type == null || type.isAir()) {
+            return false;
+        }
+        // LIGHT is dig softlight / not schematic occupancy for column marking.
+        return type != Material.LIGHT
+                && type != Material.CAVE_AIR
+                && type != Material.VOID_AIR;
+    }
+
+    private static boolean isPaintAbleAir(Material type) {
+        return type == Material.AIR
+                || type == Material.CAVE_AIR
+                || type == Material.VOID_AIR;
     }
 
     private void carveAll() {
@@ -421,7 +436,8 @@ public final class VeinsDigZones {
     }
 
     /**
-     * Only writer for dig terrain. Never mutates schematic columns or frozen non-air.
+     * Only writer for dig terrain. Hub columns / frozen non-air must never be passed here.
+     * Exterior dig stone we placed may be re-carved (tunnels).
      */
     private void setDig(int x, int y, int z, Material material) {
         if (!inVolume(x, y, z)) {
@@ -433,14 +449,7 @@ public final class VeinsDigZones {
             return;
         }
         Block block = world.getBlockAt(x, y, z);
-        // Final guard: never replace a non-air that existed at freeze time.
-        Material now = block.getType();
-        if (!now.isAir() && now != Material.CAVE_AIR && now != Material.VOID_AIR && now != Material.LIGHT
-                && frozenNonAir.contains(k)) {
-            schematicSkips++;
-            return;
-        }
-        if (now != material) {
+        if (block.getType() != material) {
             block.setType(material, false);
         }
         recorded.put(k, VeinsDigSnapshot.Entry.of(x, y, z, material));
