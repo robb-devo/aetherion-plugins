@@ -1473,6 +1473,14 @@ public enum ItemProfile {
             ItemCapability.CRIT_DAMAGE
     ),
 
+    ASHEN_KATANA(
+            "ashen_katana",
+            ItemCapability.DAMAGE,
+            ItemCapability.ATTACK_SPREAD,
+            ItemCapability.CRIT_CHANCE,
+            ItemCapability.CRIT_DAMAGE
+    ),
+
     STORMCALLER_MAUL(
             "stormcaller_maul",
             ItemCapability.DAMAGE,
