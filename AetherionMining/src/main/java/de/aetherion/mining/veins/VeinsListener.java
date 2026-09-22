@@ -98,8 +98,9 @@ public final class VeinsListener implements Listener {
         location.setPitch(0f);
         npcs.spawnEntrance(location);
         int minLevel = veinsMinLevel();
-        player.sendMessage("§aAnchored §fForeman§a. Players click him to enter The Veins §7(Mining Skill "
-                + minLevel + "+)§a.");
+        player.sendMessage("§aAnchored §fForeman§a (legacy admin lantern).");
+        player.sendMessage("§7Players enter via §f/amethyst §7or the §dCrystal Guide§7 (Mining "
+                + minLevel + "+).");
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
@@ -214,24 +215,14 @@ public final class VeinsListener implements Listener {
             return;
         }
 
-        if (!hasMiningAccess(player)) {
-            int minLevel = veinsMinLevel();
-            playForemanDialog(player, List.of(
-                    "Name's the Foreman. I don't dig. I point.",
-                    "I ship people into §eThe Veins§f — the big mine.",
-                    "Door policy is simple: §aMining Skill " + minLevel + "§f on at least one mining skill.",
-                    "§cYou? Not yet. Dig more. Come back when the dirt respects you."
-            ), null);
-            return;
-        }
-
+        // Player entry into the Amethyst Area is /amethyst or the Crystal Guide — not this lantern.
         int minLevel = veinsMinLevel();
         playForemanDialog(player, List.of(
                 "Name's the Foreman. I don't dig. I point.",
-                "I ship people into §eThe Veins§f — the big mine.",
-                "Door policy is simple: §aMining Skill " + minLevel + "§f on at least one mining skill.",
-                "§aYou're cleared. Try not to become a cautionary tale."
-        ), () -> veins.enter(player));
+                "The Amethyst Area is the dig now — not the old Deep Mines door.",
+                "Talk to the §dCrystal Guide §fon Elder Vale, or use §f/amethyst§f.",
+                "Door policy still stands: §aMining Skill " + minLevel + "§f."
+        ), null);
     }
 
     private void playForemanDialog(Player player, List<String> lines, Runnable after) {
@@ -275,37 +266,12 @@ public final class VeinsListener implements Listener {
         }
     }
 
-    private boolean hasMiningAccess(Player player) {
-        de.aetherion.core.api.MiningAccess mining = de.aetherion.core.api.AetherServices.mining();
-        if (mining != null) {
-            return mining.meetsVeinsMiningLevel(player);
-        }
-        return miningLevelFallback(player) >= veinsMinLevel();
-    }
-
     private int veinsMinLevel() {
         de.aetherion.core.api.MiningAccess mining = de.aetherion.core.api.AetherServices.mining();
         if (mining != null) {
             return mining.veinsMinMiningLevel();
         }
         return Math.max(1, plugin.getConfig().getInt("veins.min-mining-level", 30));
-    }
-
-    private static int miningLevelFallback(Player player) {
-        org.bukkit.plugin.Plugin items = org.bukkit.Bukkit.getPluginManager().getPlugin("AetherionItems");
-        if (items == null || !items.isEnabled()) {
-            return Integer.MAX_VALUE;
-        }
-        try {
-            Object skills = items.getClass().getMethod("getSkills").invoke(items);
-            if (skills == null) {
-                return Integer.MAX_VALUE;
-            }
-            Object level = skills.getClass().getMethod("miningLevel", Player.class).invoke(skills, player);
-            return level instanceof Number number ? number.intValue() : 0;
-        } catch (ReflectiveOperationException ignored) {
-            return Integer.MAX_VALUE;
-        }
     }
 
     private static boolean admin(Player player) {

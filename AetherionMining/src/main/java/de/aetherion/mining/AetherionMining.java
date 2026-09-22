@@ -48,7 +48,7 @@ public class AetherionMining extends JavaPlugin {
             }
         });
         getServer().getScheduler().runTaskTimer(this, veins::tickReset, 20L * 60L, 20L * 60L * 5L);
-        getLogger().info("The Veins ready. /deepmines");
+        getLogger().info("Amethyst Area dig world ready. Players: /amethyst. Admin: /deepmines.");
         miningAccess = new de.aetherion.mining.api.MiningAccessImpl();
         de.aetherion.core.api.AetherServices.registerMining(miningAccess);
     }

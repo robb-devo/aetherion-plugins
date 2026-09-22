@@ -145,30 +145,7 @@ public final class VeinsWorld {
         player.setFallDistance(0f);
         player.sendMessage("§7The Veins. §8Mine everything but the hub. Corners have favorites.");
         player.playSound(spawn, org.bukkit.Sound.ENTITY_ENDERMAN_TELEPORT, 1f, 0.7f);
-        unlockAmethystSpawn(player);
         return true;
-    }
-
-    /**
-     * First visit to aether_veins unlocks the hub spawn {@code amethyst} so players can {@code /amethyst}.
-     * Elder Vale / Quests may also call {@code AetherServices.hub().unlock(player, "amethyst")} after TP,
-     * or {@code AetherServices.mining().teleportToVeinsHub(player)} which uses this path.
-     */
-    private void unlockAmethystSpawn(Player player) {
-        de.aetherion.core.api.HubAccess hub = de.aetherion.core.api.AetherServices.hub();
-        if (hub == null || player == null) {
-            return;
-        }
-        if (!hub.unlockNew(player.getUniqueId(), "amethyst")) {
-            return;
-        }
-        player.playSound(player.getLocation(), org.bukkit.Sound.UI_TOAST_CHALLENGE_COMPLETE, 1f, 1.15f);
-        player.sendMessage("§b✦ §eNew area: §fAmethyst Mines§e.");
-        player.sendMessage("§7Teleport unlocked — §f/amethyst §7or Manager → Teleports.");
-        de.aetherion.core.api.ProgressAccess progress = de.aetherion.core.api.AetherServices.progress();
-        if (progress != null) {
-            progress.unlock(player, "SPAWN_UNLOCKER", "Teleports", "Manager → Teleports");
-        }
     }
 
     public boolean leave(Player player) {

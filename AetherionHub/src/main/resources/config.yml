@@ -21,7 +21,7 @@ messages:
   teleported: "§aTeleported to §f{name}§a."
   selected: "§aYour spawn is now §f{name}§a. Use /spawn to go there."
   locked: "§cYou have not unlocked §f{name} §cyet."
-  missing-location: "§cThat spawn has no location yet. An admin must stand there and run §f/hubadmin set {id}§c."
+  missing-location: "§cThat spawn has no location yet. An admin must stand there and run §f/hubadmin set {id}§c — or place the Dev Menu spawn anchor."
   no-spawn: "§cNo spawn is set. An admin should stand at the harbour and run §f/hubadmin set harbour§c."
 
 # Menu: left/right edge columns stay glass. Content row slots 10–16.
@@ -95,23 +95,16 @@ spawns:
     unlocked-by-default: false
     discover-radius: 36
 
-  # Amethyst Mines = aether_veins beacon hub (Crystal Hollows try). NEVER paste onto Main Island.
-  # Unlocks on first visit to aether_veins or when Elder Vale / Mining NPC teleports the player.
-  # Hook: AetherServices.mining().teleportToVeinsHub(player) or AetherServices.hub().unlock(player, "amethyst") after TP.
+  # Amethyst Mines = Amethyst Area dig zone in aether_veins. NEVER paste onto Main Island.
+  # No default coords — place Dev Menu "Amethyst Mines Anchor" (or /hubadmin set amethyst) once.
+  # Then /amethyst and the Crystal Guide use that planted spawn. Unlocks on first visit / Guide / first /amethyst.
   amethyst:
     display-name: "Amethyst Mines"
-    description: "Beacon hub in aether_veins (Amethyst Mines). Unlocks on first visit or Elder Vale NPC teleport. NEVER paste onto Main Island."
+    description: "Amethyst Area dig zone (aether_veins). Place the spawn anchor once — then /amethyst and the Crystal Guide use it. NEVER paste onto Main Island."
     icon: AMETHYST_CLUSTER
     slot: 23
     unlocked-by-default: false
     discover-radius: 36
-    location:
-      world: aether_veins
-      x: -119.5
-      y: 220
-      z: -100.5
-      yaw: 0
-      pitch: 0
 
 # /aetherpaste — FAWE async Eldervale island schematics (console/ops).
 # Schems are loaded from plugins/FastAsyncWorldEdit/schematics or WorldEdit/schematics.

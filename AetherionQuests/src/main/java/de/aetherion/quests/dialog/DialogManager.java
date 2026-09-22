@@ -1828,8 +1828,8 @@ public class DialogManager implements Listener {
 
         if (dialogId.equalsIgnoreCase("amethyst_mines_guide_intro")) {
             return new String[] {
-                    "Amethyst Mines — The Veins under Eldervale. Crystal Hollows try.",
-                    "Mining skill thirty. I ship you to the beacon hub. Then /amethyst unlocks."
+                    "Amethyst Mines — the dig zone under Eldervale. Center map, rock all around.",
+                    "Mining skill thirty. I send you to the planted spawn. Then /amethyst works."
             };
         }
 

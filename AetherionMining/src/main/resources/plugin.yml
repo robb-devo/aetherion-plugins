@@ -17,8 +17,8 @@ description: Mining areas and The Veins
 
 commands:
   deepmines:
-    description: Enter The Veins (Eldervale deep mine), or admin tools
-    usage: /deepmines [leave|time|npc|reset|eldervale]
+    description: Admin tools for the Amethyst Area dig world (player entry is /amethyst)
+    usage: /deepmines [enter|leave|time|npc|reset|eldervale]
     aliases: [veins]
     permission: aetherion.mines.use
 

@@ -23,13 +23,13 @@ veins:
   world: aether_veins
   radius: 250
   hub-y: 220
-  # Minimum mining skill for Foreman / Crystal Guide entry into The Veins (Amethyst Mines).
+  # Minimum mining skill for Crystal Guide / first-time /amethyst into the Amethyst Area.
   min-mining-level: 30
   reset-hours: 24
   keep-inventory: true
 
 # Mining Eldervale Island (Blocky Verse) — paste south of Origin slime pad.
-# Amethyst Mines (aether_veins) is NOT pasted here — use VeinsWorld / /deepmines / teleportToVeinsHub.
+# Amethyst Area (aether_veins) player entry is /amethyst or Crystal Guide — not /deepmines.
 eldervale:
   world: world
   schematic: Mining-Eldervale-Island.schem

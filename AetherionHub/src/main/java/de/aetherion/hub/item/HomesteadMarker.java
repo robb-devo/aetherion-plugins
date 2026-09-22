@@ -58,15 +58,27 @@ public final class HomesteadMarker {
         ItemStack item = new ItemStack(anchor ? Material.LODESTONE : Material.CAMPFIRE);
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
-            meta.setDisplayName(anchor ? "§cDEV §6" + name + " §8Anchor" : "§6" + name + " §8Marker");
+            boolean amethyst = "amethyst".equalsIgnoreCase(id);
+            meta.setDisplayName(anchor
+                    ? (amethyst ? "§cDEV §dAmethyst Mines §8Spawn Anchor" : "§cDEV §6" + name + " §8Anchor")
+                    : "§6" + name + " §8Marker");
             meta.setLore(anchor
+                    ? (amethyst
                     ? List.of(
+                            "§7Stand where players should appear",
+                            "§7in the Amethyst Area (§faether_veins§7).",
+                            "§eRight-click §7to save §f/amethyst§7.",
+                            "§7Crystal Guide uses the same point.",
+                            "",
+                            "§8Sneak-click keeps this item."
+                    )
+                    : List.of(
                             "§7Right-click to save this",
                             "§7teleport for §f" + name + "§7.",
                             "",
                             "§8Players unlock it via quests.",
                             "§eDoes not consume if sneak-held."
-                    )
+                    ))
                     : List.of(
                             "§7Right-click to unlock",
                             "§f" + name + "§7 as a spawn.",
@@ -122,7 +134,11 @@ public final class HomesteadMarker {
             }
             player.playSound(player.getLocation(), Sound.BLOCK_BEACON_ACTIVATE, 0.7f, 1.35f);
             player.sendMessage("§aSaved teleport for §f" + spawn.displayName() + "§a.");
-            player.sendMessage("§7Boss quests unlock this camp in Manager → Spawns.");
+            if ("amethyst".equalsIgnoreCase(spawn.id())) {
+                player.sendMessage("§7Players use §f/amethyst §7or the Crystal Guide to arrive here.");
+            } else {
+                player.sendMessage("§7Boss quests unlock this camp in Manager → Spawns.");
+            }
             return !player.isSneaking();
         }
 

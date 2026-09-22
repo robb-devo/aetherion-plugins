@@ -35,16 +35,6 @@ public final class HubService {
             "amethyst"
     );
 
-    /**
-     * Amethyst Mines beacon hub in {@code aether_veins} (live Mining spawn).
-     * Ops can still override via /hubadmin set — never paste onto Main Island.
-     */
-    private static final String AMETHYST_DEFAULT_WORLD = "aether_veins";
-    private static final double AMETHYST_DEFAULT_X = -119.5;
-    private static final double AMETHYST_DEFAULT_Y = 220.0;
-    private static final double AMETHYST_DEFAULT_Z = -100.5;
-    private static final float AMETHYST_DEFAULT_YAW = 0f;
-
     private static final String[] RETIRED_SPAWN_IDS = {
             "veil", "ruins", "spawn", "lurker_camp",
             "royal_palace", "ticket_hall", "trash_chute",
@@ -96,7 +86,7 @@ public final class HubService {
         changed |= ensureSpawn("colosseum", "Colosseum", "Proctor's ring — Crypt vials, T2 bosses. Unlocks with the Proctor.", "SANDSTONE", 19);
         changed |= ensureSpawn("eldervale", "Eldervale", "Mining island past the slime jump pad. Walk in to unlock.", "DEEPSLATE_DIAMOND_ORE", 20);
         changed |= ensureSpawn("amethyst", "Amethyst Mines",
-                "Beacon hub in aether_veins (Amethyst Mines). Unlocks on first visit or Elder Vale NPC teleport. NEVER paste onto Main Island.",
+                "Amethyst Area dig zone (aether_veins). Place the spawn anchor once — then /amethyst and the Crystal Guide use it. NEVER paste onto Main Island.",
                 "AMETHYST_CLUSTER", 23);
 
         if (plugin.getConfig().getConfigurationSection("spawns.harbour") != null
@@ -111,8 +101,7 @@ public final class HubService {
         changed |= ensureDiscoverRadius("borderlands", 36);
         changed |= ensureDiscoverRadius("eldervale", 36);
         changed |= ensureDiscoverRadius("amethyst", 36);
-        changed |= ensureDefaultLocation("amethyst", AMETHYST_DEFAULT_WORLD,
-                AMETHYST_DEFAULT_X, AMETHYST_DEFAULT_Y, AMETHYST_DEFAULT_Z, AMETHYST_DEFAULT_YAW, 0f);
+        // Amethyst: no default coords — Robb places the spawn anchor (or /hubadmin set amethyst).
         // Colosseum: no walk-in discover — soft gate until Proctor unlocks it.
 
         if (changed) {
@@ -136,7 +125,7 @@ public final class HubService {
         changed |= applyLayout("colosseum", "Colosseum", "Proctor's ring — Crypt vials, T2 bosses. Unlocks with the Proctor.", "SANDSTONE", 19, false);
         changed |= applyLayout("eldervale", "Eldervale", "Mining island past the slime jump pad. Walk in to unlock.", "DEEPSLATE_DIAMOND_ORE", 20, false);
         changed |= applyLayout("amethyst", "Amethyst Mines",
-                "Beacon hub in aether_veins (Amethyst Mines). Unlocks on first visit or Elder Vale NPC teleport. NEVER paste onto Main Island.",
+                "Amethyst Area dig zone (aether_veins). Place the spawn anchor once — then /amethyst and the Crystal Guide use it. NEVER paste onto Main Island.",
                 "AMETHYST_CLUSTER", 23, false);
         changed |= ensureDiscoverRadius("ore_ridge", 40);
         changed |= ensureDiscoverRadius("capital", 48);
@@ -144,30 +133,11 @@ public final class HubService {
         changed |= ensureDiscoverRadius("borderlands", 36);
         changed |= ensureDiscoverRadius("eldervale", 36);
         changed |= ensureDiscoverRadius("amethyst", 36);
-        changed |= ensureDefaultLocation("amethyst", AMETHYST_DEFAULT_WORLD,
-                AMETHYST_DEFAULT_X, AMETHYST_DEFAULT_Y, AMETHYST_DEFAULT_Z, AMETHYST_DEFAULT_YAW, 0f);
         if (changed) {
             plugin.saveConfig();
             reload();
         }
         stampDiscoverRadii();
-    }
-
-    /** Writes a default teleport only when the spawn has no location yet (keeps live /hubadmin sets). */
-    private boolean ensureDefaultLocation(String id, String world, double x, double y, double z, float yaw, float pitch) {
-        String path = "spawns." + id + ".location";
-        if (plugin.getConfig().isConfigurationSection(path)
-                && plugin.getConfig().getString(path + ".world") != null
-                && !plugin.getConfig().getString(path + ".world", "").isBlank()) {
-            return false;
-        }
-        plugin.getConfig().set(path + ".world", world);
-        plugin.getConfig().set(path + ".x", x);
-        plugin.getConfig().set(path + ".y", y);
-        plugin.getConfig().set(path + ".z", z);
-        plugin.getConfig().set(path + ".yaw", yaw);
-        plugin.getConfig().set(path + ".pitch", pitch);
-        return true;
     }
 
     private boolean ensureDiscoverRadius(String id, double radius) {

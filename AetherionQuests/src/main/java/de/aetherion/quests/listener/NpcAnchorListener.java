@@ -50,8 +50,8 @@ public final class NpcAnchorListener implements Listener {
             lore.add("§f" + name + "§7 there.");
             if ("amethyst_mines_guide".equalsIgnoreCase(npcId)) {
                 lore.add("§8FancyNPC · Elder Vale Mining Island");
-                lore.add("§7Mining skill gate → Amethyst Mines hub");
-                lore.add("§8Unlocks §f/amethyst §8after first visit");
+                lore.add("§7Mining skill gate → Amethyst Area spawn");
+                lore.add("§8Uses the planted §f/amethyst §8anchor");
             }
             if (boss != null) {
                 lore.add("§8Boss hunt: §f" + boss);

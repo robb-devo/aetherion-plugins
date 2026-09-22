@@ -987,7 +987,7 @@ public class DevMenu {
                 "§7World boss quest NPCs."));
         inventory.setItem(14, button(Material.OAK_SAPLING, "§aWorld & Flavor", "page:NPCS_WORLD",
                 "§7Skill-gated, pantry, pets, gossip.",
-                "§eCrystal Guide · Amethyst Mines",
+                "§dAmethyst spawn anchor + Crystal Guide",
                 "§eOre Ledger, Dock Scaler, Larder…"));
         inventory.setItem(16, button(Material.EMERALD, "§6Services & Tools", "page:NPCS_SERVICES",
                 "§7Traders, bazaar, remover, chests."));
@@ -1555,8 +1555,21 @@ public class DevMenu {
                     .forEach(entry -> items.add(tagged(named(entry.icon().clone(), entry.name()), "npc:" + entry.id())));
             case NPCS_BOSSES -> DevBridges.npcs(DevBridges.NpcBucket.BOSS)
                     .forEach(entry -> items.add(tagged(named(entry.icon().clone(), entry.name()), "npc:" + entry.id())));
-            case NPCS_WORLD -> DevBridges.npcs(DevBridges.NpcBucket.WORLD)
-                    .forEach(entry -> items.add(tagged(named(entry.icon().clone(), entry.name()), "npc:" + entry.id())));
+            case NPCS_WORLD -> {
+                ItemStack amethystSpawn = DevBridges.spawnAnchor("amethyst");
+                if (amethystSpawn != null) {
+                    items.add(tagged(named(amethystSpawn.clone(), "§dAmethyst Mines §8Spawn Anchor"),
+                            "give:homestead:amethyst"));
+                } else {
+                    items.add(button(Material.AMETHYST_CLUSTER, "§dAmethyst Mines §8Spawn Anchor",
+                            "give:homestead:amethyst",
+                            "§7Stand in the Amethyst Area.",
+                            "§eRight-click §7to save §f/amethyst§7.",
+                            "§8Load AetherionHub if this fails."));
+                }
+                DevBridges.npcs(DevBridges.NpcBucket.WORLD)
+                        .forEach(entry -> items.add(tagged(named(entry.icon().clone(), entry.name()), "npc:" + entry.id())));
+            }
             case NPCS_SERVICES -> {
                 items.add(button(Material.ENDER_CHEST, "§6Merchant Sample Chest", "give:merchant-chest",
                         "§7Place beside the merchant.",

@@ -1,13 +1,18 @@
 package de.aetherion.mining.api;
 
+import de.aetherion.core.api.AetherServices;
+import de.aetherion.core.api.HubAccess;
 import de.aetherion.core.api.MiningAccess;
+import de.aetherion.core.api.ProgressAccess;
 import de.aetherion.mining.AetherionMining;
 import de.aetherion.mining.MiningListener;
 import de.aetherion.mining.MiningRespawnTimes;
 import de.aetherion.mining.veins.VeinsNpcs;
 import de.aetherion.mining.veins.VeinsWorld;
 
+import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.BlockData;
@@ -15,15 +20,14 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 /**
- * Mining API surface for Quests / Elder Vale NPC / Hub unlocks.
+ * Mining API for Quests / Crystal Guide / Hub {@code /amethyst}.
  *
- * <p>Elder Vale NPC entry into Amethyst Mines:
+ * <p>Player entry into the Amethyst Area:
  * <pre>{@code
  * MiningAccess mining = AetherServices.mining();
  * if (mining != null && mining.meetsVeinsMiningLevel(player)) {
- *     mining.teleportToVeinsHub(player); // TPs + unlocks /amethyst
+ *     mining.teleportToVeinsHub(player); // Hub spawn amethyst + unlock
  * }
- * // Or after your own TP: AetherServices.hub().unlock(player, "amethyst");
  * }</pre>
  */
 public final class MiningAccessImpl implements MiningAccess {
@@ -63,12 +67,55 @@ public final class MiningAccessImpl implements MiningAccess {
 
     @Override
     public boolean teleportToVeinsHub(Player player) {
-        AetherionMining plugin = AetherionMining.getInstance();
-        if (plugin == null || player == null) {
+        if (player == null) {
             return false;
         }
-        VeinsWorld veins = plugin.getVeins();
-        return veins != null && veins.enter(player);
+        HubAccess hub = AetherServices.hub();
+        if (hub == null) {
+            player.sendMessage("§cHub is offline — cannot reach Amethyst Mines.");
+            return false;
+        }
+        Location spawn = hub.location("amethyst");
+        if (spawn == null || spawn.getWorld() == null) {
+            player.sendMessage("§cAmethyst Mines spawn is not planted yet.");
+            player.sendMessage("§7Admin: Dev Menu → Spawn Markers → §dAmethyst Mines Spawn Anchor");
+            player.sendMessage("§7Or stand there and run §f/hubadmin set amethyst§7.");
+            return false;
+        }
+
+        AetherionMining plugin = AetherionMining.getInstance();
+        if (plugin != null) {
+            VeinsWorld veins = plugin.getVeins();
+            if (veins != null) {
+                veins.ensureLoaded();
+                veins.rememberExit(player);
+            }
+        }
+
+        if (player.getGameMode() == org.bukkit.GameMode.ADVENTURE) {
+            player.setGameMode(org.bukkit.GameMode.SURVIVAL);
+        }
+
+        boolean first = hub.unlockNew(player.getUniqueId(), "amethyst");
+        if (!hub.isUnlocked(player, "amethyst")) {
+            hub.unlock(player, "amethyst");
+        }
+
+        player.teleport(spawn);
+        player.setFallDistance(0f);
+        player.playSound(spawn, Sound.ENTITY_ENDERMAN_TELEPORT, 1f, 0.7f);
+        player.sendMessage("§7Amethyst Mines. §8Dig the zone. Hub stay put.");
+
+        if (first) {
+            player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1f, 1.15f);
+            player.sendMessage("§b✦ §eNew area: §fAmethyst Mines§e.");
+            player.sendMessage("§7Teleport unlocked — §f/amethyst §7or Manager → Teleports.");
+            ProgressAccess progress = AetherServices.progress();
+            if (progress != null) {
+                progress.unlock(player, "SPAWN_UNLOCKER", "Teleports", "Manager → Teleports");
+            }
+        }
+        return true;
     }
 
     @Override

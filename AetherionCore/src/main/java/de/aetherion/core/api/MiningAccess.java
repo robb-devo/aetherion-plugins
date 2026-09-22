@@ -8,19 +8,19 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 /**
- * The Veins world + ore seal/regen. Implemented by AetherionMining.
+ * Amethyst Area dig zone ({@code aether_veins}) + ore seal/regen. Implemented by AetherionMining.
  * Pickaxe stats and harvest payouts stay in AetherionItems ({@link HarvestAccess}).
  *
- * <p>Elder Vale / Quests NPC entry into Amethyst Mines (Crystal Hollows try):
- * call {@link #teleportToVeinsHub(Player)} (mining-level gate + hub unlock),
- * or teleport yourself then {@code AetherServices.hub().unlock(player, "amethyst")}.
- * Players can then {@code /amethyst}. Existing {@code /deepmines} also enters veins.
+ * <p>Player entry is {@code /amethyst} or the Crystal Guide NPC — both call
+ * {@link #teleportToVeinsHub(Player)} after the mining-level check. That teleports to the
+ * Hub spawn {@code amethyst} planted by Robb's spawn anchor (never hardcoded coords).
+ * Old {@code /deepmines} is retired as a player entry.
  */
 public interface MiningAccess {
 
     ItemStack veinsForemanAnchor();
 
-    /** Configured veins world name (default {@code aether_veins}). */
+    /** Configured Amethyst Area world name (default {@code aether_veins}). */
     String veinsWorldName();
 
     boolean isVeinsWorld(World world);
@@ -35,10 +35,11 @@ public interface MiningAccess {
     long respawnSeconds(Material material);
 
     /**
-     * Teleport the player to the Amethyst Mines beacon hub in {@code aether_veins}
-     * and unlock the hub spawn {@code amethyst} (announces on first unlock).
-     * Does not enforce the mining-level gate — callers should check
-     * {@link #meetsVeinsMiningLevel(Player)} first for NPC / quest entry.
+     * Teleport the player to the Amethyst Area spawn (Hub id {@code amethyst}) and unlock
+     * that spawn on first arrival. Location must already be planted via the Amethyst Mines
+     * spawn anchor or {@code /hubadmin set amethyst}. Does not enforce the mining-level gate —
+     * callers should check {@link #meetsVeinsMiningLevel(Player)} first for NPC / first
+     * {@code /amethyst} entry.
      *
      * @return true if teleport succeeded
      */
@@ -46,10 +47,10 @@ public interface MiningAccess {
 
     /**
      * Whether the player meets {@code veins.min-mining-level} (default 30)
-     * on their mining skill. Used by the Foreman NPC and the Crystal Guide.
+     * on their mining skill. Used by the Crystal Guide and first-time {@code /amethyst}.
      */
     boolean meetsVeinsMiningLevel(Player player);
 
-    /** Configured minimum mining skill for veins entry (default 30). */
+    /** Configured minimum mining skill for Amethyst Area entry (default 30). */
     int veinsMinMiningLevel();
 }

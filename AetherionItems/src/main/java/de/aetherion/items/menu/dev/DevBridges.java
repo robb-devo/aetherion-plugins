@@ -166,6 +166,7 @@ public final class DevBridges {
                 filtered.add(entry);
             }
         }
+        filtered.sort((a, b) -> a.name().compareToIgnoreCase(b.name()));
         return filtered;
     }
 
@@ -343,7 +344,7 @@ public final class DevBridges {
             case "colosseum" -> "Proctor · Crypt T2 ring";
             case "borderlands" -> "Beyond Vex's gate";
             case "eldervale" -> "Mining island · slime jump";
-            case "amethyst" -> "aether_veins beacon hub · Amethyst Mines";
+            case "amethyst" -> "PLACE THIS · Amethyst Area spawn for /amethyst";
             default -> null;
         };
         if (extra == null) {

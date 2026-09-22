@@ -888,7 +888,7 @@ public class NpcListener implements Listener {
 
         if (!allowed) {
             LivingNpcProfile.say(player, npc,
-                    "Amethyst Mines — The Veins. Crystal Hollows try under Eldervale.");
+                    "Amethyst Mines — the dig under Eldervale. Center map, ore all around.");
             LivingNpcProfile.say(player, npc,
                     "Door policy: §aMining Skill " + required + "§f. Dig more, then come back.");
             player.sendActionBar(net.kyori.adventure.text.Component.text(
@@ -899,7 +899,7 @@ public class NpcListener implements Listener {
         }
 
         LivingNpcProfile.say(player, npc,
-                "Cleared. Beacon hub in The Veins — then §f/amethyst §7unlocks for next time.");
+                "Cleared. Heading to the Amethyst spawn — then §f/amethyst §7unlocks for next time.");
         AetherionQuests plugin = AetherionQuests.getInstance();
         Runnable teleport = () -> {
             if (!player.isOnline()) {
