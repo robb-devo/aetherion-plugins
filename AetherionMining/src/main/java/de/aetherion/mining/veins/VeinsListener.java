@@ -124,13 +124,34 @@ public final class VeinsListener implements Listener {
         if (!veins.isVeins(event.getBlock().getWorld())) {
             return;
         }
-        if (!veins.isProtected(event.getBlock().getLocation())) {
-            return;
-        }
         if (admin(event.getPlayer())) {
             return;
         }
+        // Place denied everywhere in aether_veins (spawn protect + digs).
         event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onCreatureSpawn(org.bukkit.event.entity.CreatureSpawnEvent event) {
+        if (!veins.isVeins(event.getLocation().getWorld())) {
+            return;
+        }
+        org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason reason = event.getSpawnReason();
+        // Vanilla monsters/animals off world-wide.
+        if (reason != org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.CUSTOM
+                && reason != org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.DEFAULT
+                && reason != org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.COMMAND
+                && reason != org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.SPAWNER_EGG) {
+            event.setCancelled(true);
+            return;
+        }
+        // Custom/plugin pets: allow in digs (dark), block on island surface (open sky).
+        if (reason == org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.CUSTOM
+                || reason == org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.DEFAULT) {
+            if (event.getLocation().getBlock().getLightFromSky() >= 8) {
+                event.setCancelled(true);
+            }
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)

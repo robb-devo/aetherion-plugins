@@ -30,7 +30,8 @@ public final class VeinsWorld {
 
     public static final String DEFAULT_NAME = "aether_veins";
     /** Dig-zone Crystal Hollows polish around live hub — not the old Deep Veins megamap. */
-    public static final int LAYOUT = 5;
+    /** Dig layout: solid flush cube (no clearance air gap). */
+    public static final int LAYOUT = 6;
 
     private final AetherionMining plugin;
     private final ConcurrentHashMap<UUID, Location> exits = new ConcurrentHashMap<>();
@@ -40,6 +41,7 @@ public final class VeinsWorld {
     private int generation;
     private int layout;
     private boolean digZonesReady;
+    private boolean painting;
     private World world;
     private boolean resetting;
 
@@ -71,16 +73,36 @@ public final class VeinsWorld {
         return Math.max(4, plugin.getConfig().getInt("veins.spawn-protect-radius", 20));
     }
 
+    /** Half-extent of the solid dig cube in X/Z (schematic sits flush in the middle). */
+    public int digHalfExtent() {
+        int configured = plugin.getConfig().getInt("veins.dig-half-extent", 0);
+        if (configured > 0) {
+            return Math.max(48, configured);
+        }
+        // Legacy keys → treat outer radius as half-extent; ignore old clearance gap.
+        int outer = plugin.getConfig().getInt("veins.dig-outer-radius", 0);
+        if (outer > 0) {
+            return Math.max(48, outer);
+        }
+        return Math.max(48, radius() - 20);
+    }
+
+    public int digDepth() {
+        return Math.max(16, plugin.getConfig().getInt("veins.dig-depth", 48));
+    }
+
+    public int digHeight() {
+        return Math.max(8, plugin.getConfig().getInt("veins.dig-height", 28));
+    }
+
+    /** @deprecated Clearance air-gap is retired — schematic footprint is skipped by voxel mask. */
+    @Deprecated
     public int digHubClearance() {
-        return Math.max(spawnProtectRadius() + 8, plugin.getConfig().getInt("veins.dig-hub-clearance", 64));
+        return 0;
     }
 
     public int digOuterRadius() {
-        int configured = plugin.getConfig().getInt("veins.dig-outer-radius", 0);
-        if (configured > 0) {
-            return Math.max(digHubClearance() + 32, configured);
-        }
-        return Math.max(digHubClearance() + 32, radius() - 20);
+        return digHalfExtent();
     }
 
     public long digSeed() {
@@ -193,7 +215,8 @@ public final class VeinsWorld {
     }
 
     /**
-     * Paint dig zones once when layout is behind, or force re-paint for admin / 24h reset.
+     * Paint dig volume once when layout is behind, or force re-paint for admin.
+     * Returns 1 if a paint job started, 0 if skipped / already running.
      */
     public int ensureDigZones(CommandSender sender, boolean force) {
         World target = world != null ? world : Bukkit.getWorld(worldName());
@@ -204,6 +227,13 @@ public final class VeinsWorld {
             return 0;
         }
         world = target;
+        purgeNpcs(target);
+        if (painting) {
+            if (sender != null) {
+                sender.sendMessage("§eDig paint already running…");
+            }
+            return 0;
+        }
         if (!force && digZonesReady && layout >= LAYOUT) {
             return 0;
         }
@@ -211,26 +241,40 @@ public final class VeinsWorld {
         if (spawn == null) {
             spawn = configSpawn(target);
         }
-        int written = VeinsDigZones.paint(
+        final Location paintSpawn = spawn;
+        final CommandSender out = sender != null ? sender : Bukkit.getConsoleSender();
+        painting = true;
+        digZonesReady = false;
+        VeinsDigZones.paintAsync(
+                plugin,
                 target,
-                spawn.getBlockX(),
-                spawn.getBlockY(),
-                spawn.getBlockZ(),
-                digHubClearance(),
-                digOuterRadius(),
+                paintSpawn.getBlockX(),
+                paintSpawn.getBlockY(),
+                paintSpawn.getBlockZ(),
+                digHalfExtent(),
+                digDepth(),
+                digHeight(),
                 digSeed(),
-                sender != null ? sender : Bukkit.getConsoleSender(),
-                plugin.getDataFolder()
+                out,
+                plugin.getDataFolder(),
+                () -> {
+                    digZonesReady = true;
+                    layout = LAYOUT;
+                    painting = false;
+                    saveData();
+                    VeinsGuard.open(target);
+                    VeinsGuard.protectSpawn(target, paintSpawn, spawnProtectRadius());
+                    purgeNpcs(target);
+                    scheduleSoftLight(out, paintSpawn);
+                }
         );
-        digZonesReady = true;
-        layout = LAYOUT;
-        saveData();
-        VeinsGuard.protectSpawn(target, spawn, spawnProtectRadius());
+        return 1;
+    }
+
+    private void purgeNpcs(World target) {
         if (npcs != null) {
-            npcs.spawnExit(target, spawn);
+            npcs.clearAllInWorld(target);
         }
-        scheduleSoftLight(sender != null ? sender : Bukkit.getConsoleSender(), spawn);
-        return written;
     }
 
     public void rememberExit(Player player) {
@@ -386,6 +430,7 @@ public final class VeinsWorld {
             VeinsGuard.protectSpawn(target, spawn, spawnProtectRadius());
         }
         VeinsGuard.open(target);
+        purgeNpcs(target);
         target.setGameRule(GameRule.DO_MOB_SPAWNING, false);
         target.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
         target.setGameRule(GameRule.DO_WEATHER_CYCLE, false);

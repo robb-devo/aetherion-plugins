@@ -37,9 +37,11 @@ public final class VeinsGuard {
             ProtectedRegion global = manager.getRegion("__global__");
             if (global != null) {
                 global.setFlag(Flags.PASSTHROUGH, StateFlag.State.ALLOW);
-                global.setFlag(Flags.BUILD, StateFlag.State.ALLOW);
+                // Break open for digs; place denied world-wide (plugin also enforces).
+                global.setFlag(Flags.BUILD, StateFlag.State.DENY);
                 global.setFlag(Flags.BLOCK_BREAK, StateFlag.State.ALLOW);
-                global.setFlag(Flags.BLOCK_PLACE, StateFlag.State.ALLOW);
+                global.setFlag(Flags.BLOCK_PLACE, StateFlag.State.DENY);
+                global.setFlag(Flags.MOB_SPAWNING, StateFlag.State.DENY);
             }
         } catch (RuntimeException ignored) {
         }

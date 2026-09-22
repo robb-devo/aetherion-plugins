@@ -117,25 +117,28 @@ public final class VeinsNpcs {
         save();
     }
 
-    /** Exit Foreman near hub spawn — never hardcodes the old Y~220 prototype pad. */
-    public void spawnExit(World world, Location spawn) {
-        if (world == null || spawn == null) {
-            return;
-        }
-        removeHub(world);
-        Location location = spawn.clone().add(3.0, 0.0, -4.0);
-        location.setYaw(180f);
-        location.setPitch(0f);
-        spawnAt(location, true);
-    }
-
-    /** @deprecated Prefer {@link #spawnExit(World, Location)}. */
-    @Deprecated
-    public void spawnExit(World world, int hubY) {
+    /** Remove every Foreman / veins NPC in this world — Amethyst Mines has no NPCs. */
+    public void clearAllInWorld(World world) {
         if (world == null) {
             return;
         }
-        spawnExit(world, new Location(world, 8.5, hubY + 1, 8.5, 180f, 0f));
+        for (Entity entity : List.copyOf(world.getEntities())) {
+            if (isNpc(entity)) {
+                entity.remove();
+            }
+        }
+    }
+
+    /** @deprecated Amethyst Mines has no exit NPC — use {@link #clearAllInWorld(World)}. */
+    @Deprecated
+    public void spawnExit(World world, Location spawn) {
+        clearAllInWorld(world);
+    }
+
+    /** @deprecated Amethyst Mines has no exit NPC. */
+    @Deprecated
+    public void spawnExit(World world, int hubY) {
+        clearAllInWorld(world);
     }
 
     public void removeEntrance() {

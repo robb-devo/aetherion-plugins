@@ -148,8 +148,11 @@ public final class SharedWorldGuard implements Listener {
         if (isDungeonWorld(world)) {
             return true;
         }
-        // Veins hub protect + Nether place rules stay in their own listeners.
-        if (isVeins(world) || world.getEnvironment() == World.Environment.NETHER) {
+        // Veins: place denied world-wide (VeinsListener + WG). Nether stays open here.
+        if (isVeins(world)) {
+            return true;
+        }
+        if (world.getEnvironment() == World.Environment.NETHER) {
             return false;
         }
         return true;

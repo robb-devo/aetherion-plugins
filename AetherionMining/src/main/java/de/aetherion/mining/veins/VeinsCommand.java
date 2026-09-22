@@ -94,9 +94,11 @@ public final class VeinsCommand implements CommandExecutor, TabCompleter {
             }
             boolean force = args.length >= 2 && args[1].equalsIgnoreCase("force");
             veins.ensureLoaded();
-            int written = veins.ensureDigZones(sender, force || !veins.isDigZonesReady());
-            if (written == 0 && veins.isDigZonesReady() && !force) {
-                sender.sendMessage("§7Dig zones already painted. Use §f/deepmines zones force §7to re-paint.");
+            int started = veins.ensureDigZones(sender, force || !veins.isDigZonesReady());
+            if (started == 0 && veins.isDigZonesReady() && !force) {
+                sender.sendMessage("§7Dig volume already painted. Use §f/deepmines zones force §7to re-paint flush.");
+            } else if (started > 0) {
+                sender.sendMessage("§7Solid dig paint started (schematic footprint skipped — no air-gap clearance).");
             }
             return true;
         }

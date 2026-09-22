@@ -19,39 +19,37 @@ mine:
     DIAMOND_ORE:
       respawn: 120
 
-# Amethyst Area = finished BreadBuilds hub in aether_veins + four dig zones around it.
+# Amethyst Area = finished BreadBuilds hub in aether_veins + one solid dig cube around it.
 # Dig specialty: NO per-block ore regen — full identical restore every reset-hours.
+# Place denied everywhere. Break ok outside ~20 spawn protect. No NPCs. No vanilla mobs.
 veins:
   world: aether_veins
   radius: 250
   # hub-y is ignored (stale Deep Veins prototype). Spawn Y below is authoritative.
   hub-y: 18
   # Default entry when Hub spawn "amethyst" is not planted yet.
-  # /hubadmin set amethyst (or Dev Menu spawn anchor) overrides this.
   spawn-x: 8.5
   spawn-y: 18
   spawn-z: 8.5
   spawn-yaw: 0
   spawn-pitch: 0
-  # Cannot break/place inside this horizontal radius of hub spawn.
+  # Cannot break inside this horizontal radius of hub spawn. Place is denied world-wide.
   spawn-protect-radius: 20
-  # Dig-zone painter never writes inside this radius — BreadBuilds hub stays 1:1.
-  dig-hub-clearance: 64
-  # Outer ring for the four themed dig zones (defaults to radius-20 when 0).
-  dig-outer-radius: 230
+  # Solid dig cube half-extent (XZ). Schematic sits flush in the middle — no air-gap clearance.
+  dig-half-extent: 180
+  dig-depth: 48
+  dig-height: 28
   # Fixed seed → identical structure/ores on every 24h reset.
   dig-seed: 20260922
   softlight-on-paint: true
   softlight-min: 7
   softlight-step: 5
   softlight-level: 10
-  # Minimum mining skill for Crystal Guide / first-time /amethyst into the Amethyst Area.
   min-mining-level: 30
   reset-hours: 24
   keep-inventory: true
 
 # Mining Eldervale Island (Blocky Verse) — paste south of Origin slime pad.
-# Amethyst Area (aether_veins) player entry is /amethyst or Crystal Guide — not /deepmines.
 eldervale:
   world: world
   schematic: Mining-Eldervale-Island.schem
