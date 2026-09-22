@@ -54,6 +54,10 @@ commands:
   eldervale:
     description: Teleport to Eldervale if unlocked
     permission: aetherionhub.use
+  amethyst:
+    description: Teleport to Amethyst Mines (aether_veins beacon hub) if unlocked
+    aliases: [amethystmines]
+    permission: aetherionhub.use
   hubadmin:
     description: Manage Aetherion spawn points
     permission: aetherionhub.admin

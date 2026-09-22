@@ -987,6 +987,7 @@ public class DevMenu {
                 "§7World boss quest NPCs."));
         inventory.setItem(14, button(Material.OAK_SAPLING, "§aWorld & Flavor", "page:NPCS_WORLD",
                 "§7Skill-gated, pantry, pets, gossip.",
+                "§eCrystal Guide · Amethyst Mines",
                 "§eOre Ledger, Dock Scaler, Larder…"));
         inventory.setItem(16, button(Material.EMERALD, "§6Services & Tools", "page:NPCS_SERVICES",
                 "§7Traders, bazaar, remover, chests."));

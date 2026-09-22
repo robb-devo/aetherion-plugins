@@ -97,7 +97,9 @@ public final class VeinsListener implements Listener {
         location.setYaw(player.getLocation().getYaw());
         location.setPitch(0f);
         npcs.spawnEntrance(location);
-        player.sendMessage("§aAnchored §fForeman§a. Players click him to enter The Veins §7(Mining Skill 30+)§a.");
+        int minLevel = veinsMinLevel();
+        player.sendMessage("§aAnchored §fForeman§a. Players click him to enter The Veins §7(Mining Skill "
+                + minLevel + "+)§a.");
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
@@ -213,19 +215,21 @@ public final class VeinsListener implements Listener {
         }
 
         if (!hasMiningAccess(player)) {
+            int minLevel = veinsMinLevel();
             playForemanDialog(player, List.of(
                     "Name's the Foreman. I don't dig. I point.",
                     "I ship people into §eThe Veins§f — the big mine.",
-                    "Door policy is simple: §aMining Skill 30§f on at least one mining skill.",
+                    "Door policy is simple: §aMining Skill " + minLevel + "§f on at least one mining skill.",
                     "§cYou? Not yet. Dig more. Come back when the dirt respects you."
             ), null);
             return;
         }
 
+        int minLevel = veinsMinLevel();
         playForemanDialog(player, List.of(
                 "Name's the Foreman. I don't dig. I point.",
                 "I ship people into §eThe Veins§f — the big mine.",
-                "Door policy is simple: §aMining Skill 30§f on at least one mining skill.",
+                "Door policy is simple: §aMining Skill " + minLevel + "§f on at least one mining skill.",
                 "§aYou're cleared. Try not to become a cautionary tale."
         ), () -> veins.enter(player));
     }
@@ -271,20 +275,36 @@ public final class VeinsListener implements Listener {
         }
     }
 
-    private static boolean hasMiningAccess(Player player) {
+    private boolean hasMiningAccess(Player player) {
+        de.aetherion.core.api.MiningAccess mining = de.aetherion.core.api.AetherServices.mining();
+        if (mining != null) {
+            return mining.meetsVeinsMiningLevel(player);
+        }
+        return miningLevelFallback(player) >= veinsMinLevel();
+    }
+
+    private int veinsMinLevel() {
+        de.aetherion.core.api.MiningAccess mining = de.aetherion.core.api.AetherServices.mining();
+        if (mining != null) {
+            return mining.veinsMinMiningLevel();
+        }
+        return Math.max(1, plugin.getConfig().getInt("veins.min-mining-level", 30));
+    }
+
+    private static int miningLevelFallback(Player player) {
         org.bukkit.plugin.Plugin items = org.bukkit.Bukkit.getPluginManager().getPlugin("AetherionItems");
         if (items == null || !items.isEnabled()) {
-            return true;
+            return Integer.MAX_VALUE;
         }
         try {
             Object skills = items.getClass().getMethod("getSkills").invoke(items);
             if (skills == null) {
-                return true;
+                return Integer.MAX_VALUE;
             }
             Object level = skills.getClass().getMethod("miningLevel", Player.class).invoke(skills, player);
-            return level instanceof Number number && number.intValue() >= 30;
+            return level instanceof Number number ? number.intValue() : 0;
         } catch (ReflectiveOperationException ignored) {
-            return true;
+            return Integer.MAX_VALUE;
         }
     }
 

@@ -191,6 +191,12 @@ public class NpcListener implements Listener {
             return;
         }
 
+        // Amethyst Mines guide (FancyNPC on Elder Vale) — mining gate → aether_veins hub.
+        if ("amethyst_mines_guide".equalsIgnoreCase(npc.getId())) {
+            handleAmethystMinesGuide(player, npc);
+            return;
+        }
+
         // Farm Isle pantry / mill — Forgehand-style service (no quest).
         if ("root_cellar".equalsIgnoreCase(npc.getId())) {
             handleRootCellarVisit(player, npc);
@@ -869,6 +875,50 @@ public class NpcListener implements Listener {
                 },
                 40L
         );
+    }
+
+    /**
+     * FancyNPC on Elder Vale Mining Island. Mining skill gate →
+     * {@code AetherServices.mining().teleportToVeinsHub(player)} (aether_veins beacon hub + /amethyst unlock).
+     */
+    private void handleAmethystMinesGuide(Player player, QuestNPC npc) {
+        de.aetherion.core.api.MiningAccess mining = de.aetherion.core.api.AetherServices.mining();
+        int required = mining != null ? mining.veinsMinMiningLevel() : 30;
+        boolean allowed = mining == null || mining.meetsVeinsMiningLevel(player);
+
+        if (!allowed) {
+            LivingNpcProfile.say(player, npc,
+                    "Amethyst Mines — The Veins. Crystal Hollows try under Eldervale.");
+            LivingNpcProfile.say(player, npc,
+                    "Door policy: §aMining Skill " + required + "§f. Dig more, then come back.");
+            player.sendActionBar(net.kyori.adventure.text.Component.text(
+                    "Need Mining " + required + " · Amethyst Mines",
+                    net.kyori.adventure.text.format.NamedTextColor.RED
+            ));
+            return;
+        }
+
+        LivingNpcProfile.say(player, npc,
+                "Cleared. Beacon hub in The Veins — then §f/amethyst §7unlocks for next time.");
+        AetherionQuests plugin = AetherionQuests.getInstance();
+        Runnable teleport = () -> {
+            if (!player.isOnline()) {
+                return;
+            }
+            de.aetherion.core.api.MiningAccess access = de.aetherion.core.api.AetherServices.mining();
+            if (access == null) {
+                LivingNpcProfile.say(player, npc, "The Veins aren't answering. Try again later.");
+                return;
+            }
+            if (!access.teleportToVeinsHub(player)) {
+                LivingNpcProfile.say(player, npc, "Couldn't open The Veins. Ask an admin.");
+            }
+        };
+        if (plugin == null) {
+            teleport.run();
+            return;
+        }
+        Bukkit.getScheduler().runTaskLater(plugin, teleport, 30L);
     }
 
     private void handleRootCellarVisit(Player player, QuestNPC npc) {
