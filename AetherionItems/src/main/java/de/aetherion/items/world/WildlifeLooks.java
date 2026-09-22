@@ -714,9 +714,11 @@ public final class WildlifeLooks implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onEntityRemove(com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent event) {
-        if (event.getEntity() instanceof LivingEntity living && !(living instanceof Player)) {
-            removeLabel(living);
+        if (!(event.getEntity() instanceof LivingEntity living) || living instanceof Player) {
+            return;
         }
+        // Fired while Paper is updating a chunk section. entity.remove() is rejected there.
+        deferLabelDiscard(wildlifeLabelIds(living));
     }
 
     @EventHandler
@@ -724,11 +726,46 @@ public final class WildlifeLooks implements Listener {
         if (event.getChunk() == null) {
             return;
         }
+        List<UUID> labels = new ArrayList<>();
         for (Entity entity : event.getChunk().getEntities()) {
             if (entity instanceof TextDisplay display && orphanWildlifeLabel(display)) {
-                display.remove();
+                labels.add(display.getUniqueId());
             }
         }
+        deferLabelDiscard(labels);
+    }
+
+    private static List<UUID> wildlifeLabelIds(LivingEntity entity) {
+        List<UUID> labels = new ArrayList<>();
+        if (entity == null) {
+            return labels;
+        }
+        for (Entity passenger : entity.getPassengers()) {
+            if (passenger instanceof TextDisplay
+                    && passenger.getPersistentDataContainer().has(ItemKeys.wildlifeLabel(), PersistentDataType.STRING)) {
+                labels.add(passenger.getUniqueId());
+            }
+        }
+        return labels;
+    }
+
+    /**
+     * Paper throws if a display is removed during chunk section status updates.
+     * Capture ids now and discard on the next tick, and only if the mob is still gone.
+     */
+    private void deferLabelDiscard(List<UUID> labels) {
+        if (labels == null || labels.isEmpty() || !plugin.isEnabled()) {
+            return;
+        }
+        List<UUID> pending = List.copyOf(labels);
+        plugin.getServer().getScheduler().runTask(plugin, () -> {
+            for (UUID id : pending) {
+                Entity entity = Bukkit.getEntity(id);
+                if (entity instanceof TextDisplay display && orphanWildlifeLabel(display)) {
+                    display.remove();
+                }
+            }
+        });
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
