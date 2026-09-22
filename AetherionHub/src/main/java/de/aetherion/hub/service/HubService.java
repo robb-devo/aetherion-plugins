@@ -419,11 +419,10 @@ public final class HubService {
             return false;
         }
 
-        // Dungeon backend shares coordinate names with Capital but it is not the main world.
-        // Proxy first; the main server enforces unlock after the snapshot applies.
-        de.aetherion.core.api.DungeonAccess dungeons = de.aetherion.core.api.AetherServices.dungeons();
-        if (dungeons != null && dungeons.needsMainWorld(player)) {
-            dungeons.transferToMainSpawn(player, spawn.id());
+        // Any backend that is not mmo-r shares these coordinates but is not Capital.
+        // Connect to mmo-r first. Unlock is enforced only after the player is there.
+        de.aetherion.core.AetherionCore core = de.aetherion.core.AetherionCore.get();
+        if (core != null && core.link() != null && core.link().handoff(player, spawn.id())) {
             return true;
         }
 

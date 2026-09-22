@@ -1,4 +1,4 @@
-package de.aetherion.dungeons.bridge;
+package de.aetherion.core.network;
 
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;

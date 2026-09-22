@@ -1,6 +1,8 @@
 package de.aetherion.dungeons.api;
 
+import de.aetherion.core.AetherionCore;
 import de.aetherion.core.api.DungeonAccess;
+import de.aetherion.core.network.MainWorldLink;
 import de.aetherion.dungeons.AetherionDungeons;
 
 import org.bukkit.NamespacedKey;
@@ -57,24 +59,32 @@ public final class DungeonAccessImpl implements DungeonAccess {
 
     @Override
     public boolean needsMainWorld(Player player) {
-        return plugin != null && plugin.getRemote() != null && plugin.getRemote().isDungeonRole();
+        MainWorldLink link = link();
+        return link != null && !link.isMainWorld();
+    }
+
+    @Override
+    public void leaveInstance(Player player) {
+        if (player == null || plugin == null || plugin.getInstances() == null) {
+            return;
+        }
+        var instances = plugin.getInstances();
+        if (instances.sessionOf(player) != null || instances.isDungeonWorld(player.getWorld())) {
+            instances.leave(player, false);
+        }
     }
 
     @Override
     public boolean transferToMainSpawn(Player player, String spawnId) {
-        if (player == null || plugin == null || plugin.getRemote() == null || !plugin.getRemote().isDungeonRole()) {
+        MainWorldLink link = link();
+        if (link == null || player == null) {
             return false;
         }
-        if (plugin.getInstances() != null) {
-            var instances = plugin.getInstances();
-            if (instances.sessionOf(player) != null || instances.isDungeonWorld(player.getWorld())) {
-                instances.leave(player, false);
-            }
-        }
-        boolean sent = plugin.getRemote().transferToMain(player, spawnId);
-        if (!sent) {
-            player.sendMessage("§cCould not reach the main world. Your inventory was not touched.");
-        }
-        return true;
+        return link.handoff(player, spawnId);
+    }
+
+    private static MainWorldLink link() {
+        AetherionCore core = AetherionCore.get();
+        return core == null ? null : core.link();
     }
 }

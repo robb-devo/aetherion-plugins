@@ -16,11 +16,18 @@ public interface DungeonAccess {
     boolean despawnKeeper(Entity entity);
 
     /**
-     * True on the dungeon backend (mmo-d). Hub warps must proxy to the main world
+     * True when this backend is not the main world (mmo-r). Hub warps must proxy
      * before teleporting — local coordinates there are not Capital.
      */
     default boolean needsMainWorld(Player player) {
         return false;
+    }
+
+    /**
+     * Leave a dungeon instance without touching inventory. No-op when the player
+     * is already in the dungeon hub or on the main world.
+     */
+    default void leaveInstance(Player player) {
     }
 
     /**

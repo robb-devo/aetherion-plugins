@@ -181,11 +181,8 @@ public final class DungeonCommand implements CommandExecutor, TabCompleter {
     private void safeReturn(Player player) {
         boolean inInstance = instances.sessionOf(player) != null
                 || (player.getWorld() != null && instances.isDungeonWorld(player.getWorld()));
-        if (remote != null && remote.isDungeonRole()) {
-            if (inInstance) {
-                instances.leave(player, false);
-            }
-            remote.transferToMain(player, "capital");
+        de.aetherion.core.AetherionCore core = de.aetherion.core.AetherionCore.get();
+        if (core != null && core.link() != null && core.link().handoff(player, "capital")) {
             return;
         }
         if (inInstance) {

@@ -1,6 +1,8 @@
 package de.aetherion.core;
 
 import de.aetherion.core.command.WipeCommand;
+import de.aetherion.core.network.MainWorldLink;
+import de.aetherion.core.network.TransferSnapshotStore;
 import de.aetherion.core.wipe.BetaWipe;
 import de.aetherion.core.wipe.NetworkWipeWatch;
 
@@ -17,6 +19,8 @@ public final class AetherionCore extends JavaPlugin {
     private static AetherionCore instance;
     private BetaWipe betaWipe;
     private NetworkWipeWatch networkWipeWatch;
+    private MainWorldLink link;
+    private TransferSnapshotStore snapshots;
 
     public static AetherionCore get() {
         return instance;
@@ -48,7 +52,17 @@ public final class AetherionCore extends JavaPlugin {
             wipe.setTabCompleter(wipeCommand);
         }
         networkWipeWatch.start();
+        snapshots = new TransferSnapshotStore(this);
+        link = new MainWorldLink(this, snapshots);
         getLogger().info("Shared keys and hit flags ready. Game plugins keep the loop.");
+    }
+
+    public MainWorldLink link() {
+        return link;
+    }
+
+    public TransferSnapshotStore snapshots() {
+        return snapshots;
     }
 
     @Override

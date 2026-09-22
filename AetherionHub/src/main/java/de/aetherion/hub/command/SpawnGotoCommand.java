@@ -57,9 +57,8 @@ public final class SpawnGotoCommand implements CommandExecutor {
             return true;
         }
 
-        de.aetherion.core.api.DungeonAccess dungeons = de.aetherion.core.api.AetherServices.dungeons();
-        if (dungeons != null && dungeons.needsMainWorld(player)) {
-            dungeons.transferToMainSpawn(player, spawnId);
+        de.aetherion.core.AetherionCore core = de.aetherion.core.AetherionCore.get();
+        if (core != null && core.link() != null && core.link().handoff(player, spawnId)) {
             return true;
         }
 

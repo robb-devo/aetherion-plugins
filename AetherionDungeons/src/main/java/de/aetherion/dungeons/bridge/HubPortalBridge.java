@@ -1,5 +1,7 @@
 package de.aetherion.dungeons.bridge;
 
+import de.aetherion.core.network.TransferSnapshotStore;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;

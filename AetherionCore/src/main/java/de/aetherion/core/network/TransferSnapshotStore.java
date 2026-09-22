@@ -1,4 +1,4 @@
-package de.aetherion.dungeons.bridge;
+package de.aetherion.core.network;
 
 import org.bukkit.GameMode;
 import org.bukkit.attribute.Attribute;
@@ -30,21 +30,37 @@ import java.util.logging.Level;
 public final class TransferSnapshotStore {
 
     private final Plugin plugin;
-    private final File dir;
+    private File dir;
     private final NetworkPlayerDataSync networkData;
     private final Set<UUID> appliedThisSession = ConcurrentHashMap.newKeySet();
 
     public TransferSnapshotStore(Plugin plugin) {
         this.plugin = plugin;
         this.networkData = new NetworkPlayerDataSync(plugin);
-        String configured = plugin.getConfig().getString("remote-transfer.shared-dir", "");
-        if (configured == null || configured.isBlank()) {
-            this.dir = new File(plugin.getDataFolder(), "transfer-snapshots");
-        } else {
-            File candidate = new File(configured);
-            this.dir = candidate.isAbsolute()
-                    ? candidate
-                    : new File(plugin.getDataFolder(), configured);
+        this.dir = ServerNames.snapshotDir(plugin);
+        ensureDir();
+    }
+
+    /** Point both backends at the same Crafty shared folder. */
+    public void relocate(File newDir) {
+        if (newDir == null) {
+            return;
+        }
+        this.dir = newDir;
+        ensureDir();
+    }
+
+    public boolean hasSnapshot(java.util.UUID id) {
+        if (id == null || dir == null) {
+            return false;
+        }
+        return new File(dir, id.toString() + ".yml").isFile()
+                || new File(dir, id.toString() + ".claimed.yml").isFile();
+    }
+
+    private void ensureDir() {
+        if (dir == null) {
+            return;
         }
         if (!dir.exists() && !dir.mkdirs()) {
             plugin.getLogger().warning("Could not create transfer snapshot dir: " + dir.getAbsolutePath());
@@ -89,7 +105,7 @@ public final class TransferSnapshotStore {
         yaml.set("uuid", id.toString());
         yaml.set("name", player.getName());
         yaml.set("saved-at", savedAt);
-        yaml.set("from-server", plugin.getConfig().getString("role", "unknown"));
+        yaml.set("from-server", currentServerName());
         yaml.set("pending-floor", Math.max(0, pendingFloor));
         yaml.set("pending-boss-only", bossOnly);
         if (pendingWarp != null && !pendingWarp.isBlank()) {
@@ -363,6 +379,14 @@ public final class TransferSnapshotStore {
             copy[i] = items[i] == null ? null : items[i].clone();
         }
         return copy;
+    }
+
+    private static String currentServerName() {
+        de.aetherion.core.AetherionCore core = de.aetherion.core.AetherionCore.get();
+        if (core != null && core.link() != null) {
+            return core.link().serverName();
+        }
+        return "unknown";
     }
 
     private File fileFor(UUID id) {

@@ -1,5 +1,7 @@
 package de.aetherion.dungeons.bridge;
 
+import de.aetherion.core.network.TransferSnapshotStore;
+
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
@@ -110,16 +112,14 @@ public final class RemoteServerBridge implements PluginMessageListener {
      * ({@code capital}, {@code harbour}, …). Inventory and level stay in the snapshot.
      */
     public boolean transferToMain(Player player, String spawnId) {
+        de.aetherion.core.AetherionCore core = de.aetherion.core.AetherionCore.get();
+        if (core != null && core.link() != null) {
+            return core.link().handoff(player, spawnId);
+        }
         if (player == null || !player.isOnline()) {
             return false;
         }
-        if (!enabled) {
-            player.sendMessage("§cThe main world link is offline. Your inventory was not touched.");
-            return false;
-        }
         long savedAt = snapshots == null ? -1L : snapshots.save(player, 0, false, spawnId);
-        String where = spawnId == null || spawnId.isBlank() ? "the main world" : spawnId;
-        player.sendMessage("§5Gate§7: Crossing to the main world · §f" + where + "§7…");
         return finishTransfer(player, savedAt, returnServer);
     }
 

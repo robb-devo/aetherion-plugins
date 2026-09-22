@@ -34,7 +34,11 @@ public final class HubListener implements Listener {
         Player player = event.getPlayer();
         hub.data(player.getUniqueId());
 
-        if (plugin.getConfig().getBoolean("join-at-selected-spawn", true)) {
+        de.aetherion.core.AetherionCore core = de.aetherion.core.AetherionCore.get();
+        boolean mainWorld = core != null && core.link() != null && core.link().isMainWorld();
+        boolean incomingTransfer = mainWorld && core.snapshots() != null
+                && core.snapshots().hasSnapshot(player.getUniqueId());
+        if (mainWorld && plugin.getConfig().getBoolean("join-at-selected-spawn", true) && !incomingTransfer) {
             // 1 tick later so login/chunk plugins settle, then land on selected spawn.
             plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
                 if (!player.isOnline()) {
@@ -45,6 +49,9 @@ public final class HubListener implements Listener {
                     player.teleport(location);
                 }
             }, 1L);
+        }
+        if (mainWorld && incomingTransfer) {
+            plugin.getServer().getScheduler().runTaskLater(plugin, () -> landFromTransfer(player), 12L);
         }
 
         // FIND EGON waits until the language menu is closed (LangMenu → Hub API).
@@ -70,6 +77,46 @@ public final class HubListener implements Listener {
         }, delay);
     }
 
+    /**
+     * mmo-r arrival when Dungeons is not the plugin that consumed the snapshot.
+     * Inventory and level are restored here; the pending warp is a local teleport.
+     */
+    private void landFromTransfer(Player player) {
+        if (player == null || !player.isOnline()) {
+            return;
+        }
+        de.aetherion.core.AetherionCore core = de.aetherion.core.AetherionCore.get();
+        if (core == null || core.snapshots() == null || core.link() == null || !core.link().isMainWorld()) {
+            return;
+        }
+        de.aetherion.core.network.TransferSnapshotStore.ApplyResult result =
+                core.snapshots().applyDetailed(player);
+        if (!result.applied()) {
+            return;
+        }
+        String warp = result.pendingWarp();
+        if (warp == null || warp.isBlank()) {
+            warp = "capital";
+        }
+        if ("amethyst".equalsIgnoreCase(warp)) {
+            de.aetherion.core.api.MiningAccess mining = de.aetherion.core.api.AetherServices.mining();
+            boolean unlocked = hub.isUnlocked(player, "amethyst");
+            if (!unlocked && mining != null && !mining.meetsVeinsMiningLevel(player)) {
+                int need = mining.veinsMinMiningLevel();
+                player.sendMessage("§cNeed Mining Skill " + need + " for Amethyst Mines.");
+            } else if (mining != null) {
+                mining.teleportToVeinsHub(player);
+                player.sendMessage("§5Main world§7: Welcome back — gear and level synced.");
+                return;
+            }
+        }
+        de.aetherion.hub.model.HubSpawn spawn = hub.spawn(warp);
+        if (spawn != null) {
+            hub.teleport(player, spawn);
+        }
+        player.sendMessage("§5Main world§7: Welcome back — gear and level synced.");
+    }
+
     private static boolean languageAlreadyChosen(Player player) {
         try {
             Object yes = Class.forName("de.aetherion.quests.lang.PlayerLang")
@@ -88,6 +135,10 @@ public final class HubListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onRespawn(PlayerRespawnEvent event) {
+        de.aetherion.core.AetherionCore core = de.aetherion.core.AetherionCore.get();
+        if (core != null && core.link() != null && !core.link().isMainWorld()) {
+            return;
+        }
         if (!plugin.getConfig().getBoolean("respawn-at-selected-spawn", true)) {
             return;
         }

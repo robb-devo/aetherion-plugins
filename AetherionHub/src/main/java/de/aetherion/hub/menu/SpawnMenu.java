@@ -114,15 +114,15 @@ public final class SpawnMenu {
             return;
         }
 
-        if (!hub.isUnlocked(player, clicked.id())) {
-            player.sendMessage(hub.format("messages.locked", clicked));
-            player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1f, 1f);
-            return;
-        }
-
         if (rightClick) {
             player.closeInventory();
             hub.teleport(player, clicked);
+            return;
+        }
+
+        if (!hub.isUnlocked(player, clicked.id())) {
+            player.sendMessage(hub.format("messages.locked", clicked));
+            player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1f, 1f);
             return;
         }
 
