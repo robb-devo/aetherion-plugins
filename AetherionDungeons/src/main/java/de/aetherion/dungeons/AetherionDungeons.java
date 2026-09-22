@@ -84,6 +84,10 @@ public final class AetherionDungeons extends JavaPlugin {
                     sender.sendMessage("Players only.");
                     return true;
                 }
+                if (!player.hasPermission("aetherion.dungeon.admin")) {
+                    player.sendMessage("§cNo permission.");
+                    return true;
+                }
                 if (!sendToDungeonHub(player)) {
                     player.sendMessage("§cCould not reach the dungeon hub.");
                 }

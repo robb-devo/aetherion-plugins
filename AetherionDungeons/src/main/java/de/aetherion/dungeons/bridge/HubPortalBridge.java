@@ -169,7 +169,7 @@ public final class HubPortalBridge implements Listener {
                     player.teleport(dest);
                 }
                 player.sendMessage("§5Dungeon Hub§7: Welcome — gear synced.");
-                player.sendMessage("§7Tip: §e/dhub §7teleports here from anywhere.");
+                player.sendMessage("§7Tip: §e/dungeon return §7goes back to the main world. Your gear stays.");
                 if (result.pendingFloor() > 0) {
                     int floor = result.pendingFloor();
                     boolean bossOnly = result.bossOnly();
