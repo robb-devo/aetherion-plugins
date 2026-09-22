@@ -19,6 +19,9 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 public final class BoosterItems {
 
+    /** Same cap for every booster, craft or quest. Vanilla block stacks are 64. */
+    public static final int MAX_STACK = 64;
+
     public ItemStack byId(String id) {
         if (id == null) {
             return null;
@@ -161,6 +164,6 @@ public final class BoosterItems {
                 PersistentDataType.STRING,
                 boosterType.name()
         );
-        meta.setMaxStackSize(1);
+        meta.setMaxStackSize(MAX_STACK);
     }
 }
