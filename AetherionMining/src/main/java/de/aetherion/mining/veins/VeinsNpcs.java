@@ -84,13 +84,33 @@ public final class VeinsNpcs {
         return "anchor".equals(tag);
     }
 
+    /**
+     * Restore optional admin Foreman elsewhere — never in Amethyst Mines ({@code aether_veins}).
+     * If the saved entrance was in the veins world, purge it and drop the save.
+     */
     public void loadEntrance() {
+        World veinsWorld = veinsWorld();
+        if (veinsWorld != null) {
+            clearAllInWorld(veinsWorld);
+        }
         if (!file.exists()) {
             return;
         }
         FileConfiguration config = YamlConfiguration.loadConfiguration(file);
         String worldName = config.getString("entrance.world");
         if (worldName == null) {
+            return;
+        }
+        if (isVeinsWorldName(worldName)) {
+            // Legacy save pointed at Amethyst — zero NPCs there.
+            if (veinsWorld != null) {
+                clearAllInWorld(veinsWorld);
+            }
+            if (!file.delete()) {
+                plugin.getLogger().warning("Could not delete Amethyst Foreman save in npcs.yml.");
+            }
+            entrance = null;
+            plugin.getLogger().info("Cleared Foreman from aether_veins (Amethyst has zero NPCs).");
             return;
         }
         World world = plugin.getServer().getWorld(worldName);
@@ -105,25 +125,99 @@ public final class VeinsNpcs {
                 (float) config.getDouble("entrance.yaw"),
                 (float) config.getDouble("entrance.pitch")
         );
-        // Always clear first — persistent villagers stack on every reload otherwise.
         removeAllEntrances(world);
         spawnAt(entrance, false);
     }
 
-    public void spawnEntrance(Location location) {
+    /**
+     * Admin placement only — refused in Amethyst Mines.
+     *
+     * @return false if the world is aether_veins
+     */
+    public boolean spawnEntrance(Location location) {
+        if (location == null || location.getWorld() == null) {
+            return false;
+        }
+        if (isVeinsWorld(location.getWorld())) {
+            clearAllInWorld(location.getWorld());
+            return false;
+        }
         removeAround(entrance);
         entrance = location.clone();
         spawnAt(entrance, false);
         save();
+        return true;
     }
 
-    public void spawnExit(World world, int hubY) {
+    /** Remove every Foreman / veins NPC in this world — Amethyst Mines has no NPCs. */
+    public void clearAllInWorld(World world) {
         if (world == null) {
             return;
         }
-        removeHub(world);
-        Location location = new Location(world, 3.5, hubY + 1, -7.5, 180f, 0f);
-        spawnAt(location, true);
+        int removed = 0;
+        for (Entity entity : List.copyOf(world.getEntities())) {
+            if (isNpc(entity) || isOrphanForeman(entity)) {
+                entity.remove();
+                removed++;
+            }
+        }
+        if (removed > 0) {
+            plugin.getLogger().info("Removed " + removed + " Foreman/veins NPC entit(y/ies) from " + world.getName() + ".");
+        }
+        if (entrance != null && entrance.getWorld() != null
+                && entrance.getWorld().getUID().equals(world.getUID())) {
+            entrance = null;
+            if (file.exists() && !file.delete()) {
+                plugin.getLogger().warning("Could not delete veins NPC save after Amethyst purge.");
+            }
+        }
+    }
+
+    /** Match leftover persistent villagers named Foreman even if PDC was lost. */
+    private static boolean isOrphanForeman(Entity entity) {
+        if (!(entity instanceof Villager) && !(entity instanceof Interaction)) {
+            return false;
+        }
+        if (entity.getScoreboardTags().contains(ID)) {
+            return true;
+        }
+        String name = entity.getCustomName();
+        return name != null && name.contains(DISPLAY);
+    }
+
+    private World veinsWorld() {
+        AetherionMining mining = AetherionMining.getInstance();
+        if (mining == null || mining.getVeins() == null) {
+            String name = plugin.getConfig().getString("veins.world", "aether_veins");
+            return plugin.getServer().getWorld(name);
+        }
+        return mining.getVeins().world() != null
+                ? mining.getVeins().world()
+                : plugin.getServer().getWorld(mining.getVeins().worldName());
+    }
+
+    private boolean isVeinsWorld(World world) {
+        return world != null && isVeinsWorldName(world.getName());
+    }
+
+    private boolean isVeinsWorldName(String worldName) {
+        if (worldName == null) {
+            return false;
+        }
+        String configured = plugin.getConfig().getString("veins.world", "aether_veins");
+        return worldName.equalsIgnoreCase(configured) || worldName.equalsIgnoreCase("aether_veins");
+    }
+
+    /** @deprecated Amethyst Mines has no exit NPC — use {@link #clearAllInWorld(World)}. */
+    @Deprecated
+    public void spawnExit(World world, Location spawn) {
+        clearAllInWorld(world);
+    }
+
+    /** @deprecated Amethyst Mines has no exit NPC. */
+    @Deprecated
+    public void spawnExit(World world, int hubY) {
+        clearAllInWorld(world);
     }
 
     public void removeEntrance() {

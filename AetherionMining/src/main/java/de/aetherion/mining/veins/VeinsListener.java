@@ -93,13 +93,21 @@ public final class VeinsListener implements Listener {
         if (block == null) {
             return;
         }
+        if (veins.isVeins(block.getWorld())) {
+            npcs.clearAllInWorld(block.getWorld());
+            player.sendMessage("§cNo NPCs in Amethyst Mines — Foreman stays out of aether_veins.");
+            return;
+        }
         Location location = block.getRelative(event.getBlockFace()).getLocation().add(0.5, 0, 0.5);
         location.setYaw(player.getLocation().getYaw());
         location.setPitch(0f);
-        npcs.spawnEntrance(location);
+        if (!npcs.spawnEntrance(location)) {
+            player.sendMessage("§cCould not place Foreman here.");
+            return;
+        }
         int minLevel = veinsMinLevel();
-        player.sendMessage("§aAnchored §fForeman§a (legacy admin lantern).");
-        player.sendMessage("§7Players enter via §f/amethyst §7or the §dCrystal Guide§7 (Mining "
+        player.sendMessage("§aAnchored §fForeman§a (legacy admin lantern — not for Amethyst).");
+        player.sendMessage("§7Players enter Amethyst via §f/amethyst §7or the §dCrystal Guide§7 (Mining "
                 + minLevel + "+).");
     }
 
@@ -108,16 +116,14 @@ public final class VeinsListener implements Listener {
         if (!veins.isVeins(event.getBlock().getWorld())) {
             return;
         }
-        if (VeinsHub.protectedSpot(event.getBlock().getLocation(), veins.hubY())) {
+        if (veins.isProtected(event.getBlock().getLocation())) {
             if (!admin(event.getPlayer())) {
                 event.setCancelled(true);
+                event.setDropItems(false);
             }
             return;
         }
-        // Soft dirt/sand/gravel is not mineable — SharedWorldGuard owns that cancel.
-        if (de.aetherion.mining.SharedWorldGuard.isSoftTerrain(event.getBlock().getType())) {
-            return;
-        }
+        // Outside spawn protect: mine everything (incl. amethyst). No per-block regen here.
         event.setCancelled(false);
     }
 
@@ -126,13 +132,34 @@ public final class VeinsListener implements Listener {
         if (!veins.isVeins(event.getBlock().getWorld())) {
             return;
         }
-        if (!VeinsHub.protectedSpot(event.getBlock().getLocation(), veins.hubY())) {
-            return;
-        }
         if (admin(event.getPlayer())) {
             return;
         }
+        // Place denied everywhere in aether_veins (spawn protect + digs).
         event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onCreatureSpawn(org.bukkit.event.entity.CreatureSpawnEvent event) {
+        if (!veins.isVeins(event.getLocation().getWorld())) {
+            return;
+        }
+        org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason reason = event.getSpawnReason();
+        // Vanilla monsters/animals off world-wide.
+        if (reason != org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.CUSTOM
+                && reason != org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.DEFAULT
+                && reason != org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.COMMAND
+                && reason != org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.SPAWNER_EGG) {
+            event.setCancelled(true);
+            return;
+        }
+        // Custom/plugin pets: allow in digs (dark), block on island surface (open sky).
+        if (reason == org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.CUSTOM
+                || reason == org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.DEFAULT) {
+            if (event.getLocation().getBlock().getLightFromSky() >= 8) {
+                event.setCancelled(true);
+            }
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)

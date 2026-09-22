@@ -9,7 +9,8 @@
 
 | Concern | Owner | Notes |
 |---------|-------|-------|
-| The Veins world, `/mines`, reset timer, exit locations | **AetherionMining** | Persist exits; flush on disable |
+| Amethyst Area (`aether_veins`), dig zones, spawn protect, 24h dig snapshot reset | **AetherionMining** | Hub BreadBuilds untouched; see `docs/AMETHYST_AREA.md` |
+| Soft light (`LIGHT` blocks) for hub / veins | **AetherionHub** `SoftLightPass` | `/hubadmin softlight` / `/deepmines softlight` |
 | Ore seal / regen / WorldGuard mining allow | **AetherionMining** `MiningListener` | Sole class named `MiningListener`. Respawn table: `MiningRespawnTimes` via `MiningAccess` |
 | Ore/log “is this a tracked block?” helpers used by Items combat/codex | **AetherionItems** `HarvestRules` (helpers) | `openMine` delegates to `AetherServices.mining()` |
 | `openMine(world)` / veins world name | **AetherionMining** (source of truth) | `MiningAccess.isVeinsWorld` / `veinsWorldName` |

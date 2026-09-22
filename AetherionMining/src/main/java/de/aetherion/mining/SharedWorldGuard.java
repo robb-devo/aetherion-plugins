@@ -127,8 +127,9 @@ public final class SharedWorldGuard implements Listener {
             return true;
         }
         if (isVeins(world)) {
-            // Open mine — only soft terrain stays put (VeinsListener owns the rest).
-            return isSoftTerrain(block.getType());
+            // Open dig outside spawn protect — VeinsListener owns hub protect.
+            // Soft terrain is mineable here (Crystal Hollows specialty vs other mines).
+            return false;
         }
         return !allowsGatherBreak(block);
     }
@@ -147,8 +148,11 @@ public final class SharedWorldGuard implements Listener {
         if (isDungeonWorld(world)) {
             return true;
         }
-        // Veins hub protect + Nether place rules stay in their own listeners.
-        if (isVeins(world) || world.getEnvironment() == World.Environment.NETHER) {
+        // Veins: place denied world-wide (VeinsListener + WG). Nether stays open here.
+        if (isVeins(world)) {
+            return true;
+        }
+        if (world.getEnvironment() == World.Environment.NETHER) {
             return false;
         }
         return true;

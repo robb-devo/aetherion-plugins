@@ -39,7 +39,19 @@ public class AetherionMining extends JavaPlugin {
 
         getServer().getScheduler().runTask(this, () -> {
             veins.ensureLoaded();
+            // Never restore Foreman into aether_veins; purge leftovers then optional elsewhere.
             npcs.loadEntrance();
+            // Persistent villagers may load with chunks after first tick — sweep again.
+            getServer().getScheduler().runTaskLater(this, () -> {
+                if (veins.world() != null) {
+                    npcs.clearAllInWorld(veins.world());
+                }
+            }, 40L);
+            getServer().getScheduler().runTaskLater(this, () -> {
+                if (veins.world() != null) {
+                    npcs.clearAllInWorld(veins.world());
+                }
+            }, 200L);
             if (getConfig().getBoolean("eldervale.auto-paste-once", false)) {
                 getConfig().set("eldervale.auto-paste-once", false);
                 saveConfig();
@@ -59,7 +71,7 @@ public class AetherionMining extends JavaPlugin {
         if (worldName != null && worldName.equalsIgnoreCase(name)) {
             return new de.aetherion.mining.veins.VeinsChunkGenerator(
                     Math.max(16, getConfig().getInt("veins.radius", 250)),
-                    getConfig().getInt("veins.hub-y", 220)
+                    (int) Math.floor(getConfig().getDouble("veins.spawn-y", 18.0))
             );
         }
         return null;
