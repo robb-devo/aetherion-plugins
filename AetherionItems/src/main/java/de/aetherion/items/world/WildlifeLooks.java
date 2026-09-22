@@ -57,6 +57,7 @@ import org.bukkit.event.entity.EntityRegainHealthEvent;
 import org.bukkit.event.entity.EntityShootBowEvent;
 import org.bukkit.event.entity.PotionSplashEvent;
 import org.bukkit.event.world.ChunkLoadEvent;
+import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.PotionMeta;
@@ -76,6 +77,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -145,6 +147,14 @@ public final class WildlifeLooks implements Listener {
         plugin.getServer().getScheduler().runTaskLater(plugin, looks::purgeOrphans, 80L);
         plugin.getServer().getScheduler().runTaskLater(plugin, looks::cullManagedAnimals, 100L);
         plugin.getServer().getScheduler().runTaskTimer(plugin, looks::tick, 40L, 40L);
+        plugin.getServer().getScheduler().runTaskTimer(plugin, looks::sweepOrphanLabels, 100L, 200L);
+    }
+
+    /** Drop wildlife HP labels whose mob is already gone. Does not touch quest nametags. */
+    public static void shutdown() {
+        if (INSTANCE != null) {
+            INSTANCE.sweepOrphanLabels();
+        }
     }
 
     public static void discard(LivingEntity entity) {
@@ -699,6 +709,25 @@ public final class WildlifeLooks implements Listener {
     public void onHeal(EntityRegainHealthEvent event) {
         if (event.getEntity() instanceof LivingEntity living) {
             plugin.getServer().getScheduler().runTask(plugin, () -> refreshLabel(living));
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onEntityRemove(com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent event) {
+        if (event.getEntity() instanceof LivingEntity living && !(living instanceof Player)) {
+            removeLabel(living);
+        }
+    }
+
+    @EventHandler
+    public void onChunkUnload(ChunkUnloadEvent event) {
+        if (event.getChunk() == null) {
+            return;
+        }
+        for (Entity entity : event.getChunk().getEntities()) {
+            if (entity instanceof TextDisplay display && orphanWildlifeLabel(display)) {
+                display.remove();
+            }
         }
     }
 
@@ -1518,6 +1547,43 @@ public final class WildlifeLooks implements Listener {
                 && !name.startsWith("aether_island")
                 && !name.equals("aether_test")
                 && !name.startsWith("aether_test_");
+    }
+
+    /**
+     * Wildlife HP labels store the mob UUID. If that mob is gone, the display is junk.
+     * Quest nametags use a different key and are not removed here.
+     */
+    private void sweepOrphanLabels() {
+        int removed = 0;
+        for (World world : Bukkit.getWorlds()) {
+            for (Entity entity : List.copyOf(world.getEntitiesByClass(TextDisplay.class))) {
+                if (entity instanceof TextDisplay display && orphanWildlifeLabel(display)) {
+                    display.remove();
+                    removed++;
+                }
+            }
+        }
+        if (removed > 0) {
+            plugin.getLogger().info("Removed " + removed + " orphan wildlife labels.");
+        }
+    }
+
+    private static boolean orphanWildlifeLabel(TextDisplay display) {
+        if (display == null || !display.isValid()) {
+            return false;
+        }
+        String raw = display.getPersistentDataContainer().get(ItemKeys.wildlifeLabel(), PersistentDataType.STRING);
+        if (raw == null || raw.isBlank()) {
+            return false;
+        }
+        UUID id;
+        try {
+            id = UUID.fromString(raw);
+        } catch (IllegalArgumentException ex) {
+            return true;
+        }
+        Entity target = Bukkit.getEntity(id);
+        return !(target instanceof LivingEntity living) || !living.isValid() || living.isDead();
     }
 
     private void purgeOrphans() {

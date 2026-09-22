@@ -263,31 +263,52 @@ public final class TransferSnapshotStore {
         int pendingFloor = yaml.getInt("pending-floor", 0);
         boolean bossOnly = yaml.getBoolean("pending-boss-only", false);
         String pendingWarp = yaml.getString("pending-warp");
-        ItemStack[] inventory = decodeItems(yaml.getStringList("inventory-b64"));
-        ItemStack[] armor = decodeItems(yaml.getStringList("armor-b64"));
-        ItemStack[] extra = decodeItems(yaml.getStringList("extra-b64"));
-        ItemStack[] ender = decodeItems(yaml.getStringList("enderchest-b64"));
-        ItemStack cursor = decodeItem(yaml.getString("cursor-b64"));
+        SlotDecode inventory = decodeSlots(yaml.getStringList("inventory-b64"));
+        SlotDecode armor = decodeSlots(yaml.getStringList("armor-b64"));
+        SlotDecode extra = decodeSlots(yaml.getStringList("extra-b64"));
+        SlotDecode ender = decodeSlots(yaml.getStringList("enderchest-b64"));
+        String cursorRaw = yaml.getString("cursor-b64");
+        ItemStack cursor = null;
+        boolean cursorIntact = true;
+        if (cursorRaw != null && !cursorRaw.isBlank()) {
+            cursor = decodeItem(cursorRaw);
+            cursorIntact = cursor != null;
+        }
+        boolean applyInventory = TransferProgressGuard.applyItemSection(
+                inventory.occupied(), occupied(player.getInventory().getContents()), inventory.intact());
+        boolean applyArmor = TransferProgressGuard.applyItemSection(
+                armor.occupied(), occupied(player.getInventory().getArmorContents()), armor.intact());
+        boolean applyExtra = TransferProgressGuard.applyItemSection(
+                extra.occupied(), occupied(player.getInventory().getExtraContents()), extra.intact());
+        boolean applyEnder = TransferProgressGuard.applyItemSection(
+                ender.occupied(), occupied(player.getEnderChest().getContents()), ender.intact());
+        if (!applyInventory || !applyArmor || !applyExtra || !applyEnder || !cursorIntact) {
+            plugin.getLogger().warning("Kept live gear for " + player.getName()
+                    + " — snapshot inventory was empty or only partly readable"
+                    + " (inv=" + applyInventory + " armor=" + applyArmor
+                    + " extra=" + applyExtra + " ender=" + applyEnder
+                    + " cursor=" + cursorIntact + ").");
+        }
         ItemStack[] invBackup = cloneItems(player.getInventory().getContents());
         ItemStack[] armorBackup = cloneItems(player.getInventory().getArmorContents());
         ItemStack[] extraBackup = cloneItems(player.getInventory().getExtraContents());
         ItemStack[] enderBackup = cloneItems(player.getEnderChest().getContents());
+        ItemStack cursorBackup = player.getItemOnCursor() == null ? null : player.getItemOnCursor().clone();
         try {
             player.closeInventory();
-            player.setItemOnCursor(null);
-            if (inventory != null) {
-                player.getInventory().setContents(inventory);
+            if (applyInventory) {
+                player.getInventory().setContents(inventory.items());
             }
-            if (armor != null) {
-                player.getInventory().setArmorContents(armor);
+            if (applyArmor) {
+                player.getInventory().setArmorContents(armor.items());
             }
-            if (extra != null) {
-                player.getInventory().setExtraContents(extra);
+            if (applyExtra) {
+                player.getInventory().setExtraContents(extra.items());
             }
-            if (ender != null) {
-                player.getEnderChest().setContents(ender);
+            if (applyEnder) {
+                player.getEnderChest().setContents(ender.items());
             }
-            if (cursor != null && !cursor.getType().isAir()) {
+            if (cursorIntact) {
                 player.setItemOnCursor(cursor);
             }
 
@@ -300,11 +321,24 @@ public final class TransferSnapshotStore {
                 player.removePotionEffect(effect.getType());
             }
 
-            int level = yaml.getInt("aetherion-level", yaml.getInt("level", player.getLevel()));
+            int snapshotLevel = yaml.getInt("aetherion-level", yaml.getInt("level", player.getLevel()));
+            int liveLevel = player.getLevel();
             float exp = (float) yaml.getDouble("aetherion-exp", yaml.getDouble("exp", player.getExp()));
-            player.setLevel(level);
-            player.setExp(exp);
-            player.setTotalExperience(yaml.getInt("total-exp", player.getTotalExperience()));
+            java.util.Map<String, Object> networkPreview = NetworkPlayerDataSync.toPlainMap(yaml.get("network-data"));
+            boolean skillsInSnapshot = NetworkDataKeys.lookupYaml(networkPreview, NetworkDataKeys.SKILLS_FILE) != null;
+            boolean sharedRich = sharedSkillsRich(id);
+            boolean writeSnapshotLevel = TransferProgressGuard.applySnapshotLevel(
+                    snapshotLevel, liveLevel, skillsInSnapshot, sharedRich);
+            if (!writeSnapshotLevel) {
+                plugin.getLogger().warning("Kept live level " + liveLevel + " for " + player.getName()
+                        + " — snapshot level " + snapshotLevel
+                        + " skillsInSnapshot=" + skillsInSnapshot
+                        + " sharedRich=" + sharedRich);
+            } else {
+                player.setLevel(snapshotLevel);
+                player.setExp(exp);
+                player.setTotalExperience(yaml.getInt("total-exp", player.getTotalExperience()));
+            }
             player.setFoodLevel(yaml.getInt("food", player.getFoodLevel()));
             player.setSaturation((float) yaml.getDouble("saturation", player.getSaturation()));
             player.setExhaustion((float) yaml.getDouble("exhaustion", player.getExhaustion()));
@@ -336,26 +370,27 @@ public final class TransferSnapshotStore {
             }
 
             player.updateInventory();
-            java.util.Map<String, Object> networkMap = NetworkPlayerDataSync.toPlainMap(yaml.get("network-data"));
-            boolean skillsImported = networkMap.containsKey("yaml:skills.yml");
+            java.util.Map<String, Object> networkMap = networkPreview;
+            boolean skillsImported = skillsInSnapshot;
             if (!networkMap.isEmpty()) {
                 networkData.importAll(player, networkMap);
             } else {
                 plugin.getLogger().warning("Transfer snapshot for " + player.getName()
                         + " had no usable network-data (pets/skills/level may stay local).");
             }
-            assertLevel(player, level, exp, skillsImported);
+            boolean syncFromSkills = skillsImported || sharedRich || !writeSnapshotLevel;
+            assertLevel(player, writeSnapshotLevel ? snapshotLevel : liveLevel, exp, syncFromSkills);
             networkData.resetLoadoutRuntime(player);
             if (!source.delete() && source.exists()) {
                 plugin.getLogger().warning("Could not delete used snapshot: " + source.getAbsolutePath());
             }
             live.delete();
             appliedThisSession.add(id);
-            final ItemStack[] invCopy = inventory == null ? null : inventory.clone();
-            final ItemStack[] armorCopy = armor == null ? null : armor.clone();
-            final ItemStack[] extraCopy = extra == null ? null : extra.clone();
-            final boolean skills = skillsImported;
-            final int levelCopy = level;
+            final ItemStack[] invCopy = applyInventory && inventory.items() != null ? inventory.items().clone() : null;
+            final ItemStack[] armorCopy = applyArmor && armor.items() != null ? armor.items().clone() : null;
+            final ItemStack[] extraCopy = applyExtra && extra.items() != null ? extra.items().clone() : null;
+            final boolean skills = syncFromSkills;
+            final int levelCopy = writeSnapshotLevel ? snapshotLevel : liveLevel;
             final float expCopy = exp;
             plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
                 if (!player.isOnline()) {
@@ -375,8 +410,11 @@ public final class TransferSnapshotStore {
                 player.updateInventory();
             }, 30L);
             plugin.getLogger().info("Applied transfer snapshot v5 for " + player.getName()
-                    + " level=" + level
+                    + " level=" + (writeSnapshotLevel ? snapshotLevel : liveLevel)
+                    + " snapshotLevel=" + snapshotLevel
                     + " skills=" + skillsImported
+                    + " keptLiveLevel=" + !writeSnapshotLevel
+                    + " keptLiveInv=" + !applyInventory
                     + " pendingFloor=" + pendingFloor
                     + " warp=" + (pendingWarp == null ? "-" : pendingWarp));
             return new ApplyResult(true, pendingFloor, bossOnly, pendingWarp);
@@ -384,6 +422,13 @@ public final class TransferSnapshotStore {
             plugin.getLogger().log(Level.WARNING, "Failed to apply transfer snapshot for " + player.getName()
                     + " — restoring the inventory they joined with.", ex);
             restore(player, invBackup, armorBackup, extraBackup, enderBackup);
+            if (player.isOnline()) {
+                if (cursorBackup == null || cursorBackup.getType().isAir()) {
+                    player.setItemOnCursor(null);
+                } else {
+                    player.setItemOnCursor(cursorBackup);
+                }
+            }
             return ApplyResult.none();
         }
     }
@@ -504,6 +549,71 @@ public final class TransferSnapshotStore {
         return null;
     }
 
+    private boolean sharedSkillsRich(UUID id) {
+        if (id == null) {
+            return false;
+        }
+        org.bukkit.plugin.Plugin items = org.bukkit.Bukkit.getPluginManager().getPlugin("AetherionItems");
+        if (items == null) {
+            return false;
+        }
+        File file = new File(items.getDataFolder(), "skills.yml");
+        if (!file.isFile()) {
+            return false;
+        }
+        org.bukkit.configuration.file.YamlConfiguration yaml =
+                org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(file);
+        Object section = yaml.get("players." + id);
+        if (section == null) {
+            return false;
+        }
+        return TransferProgressGuard.richness(NetworkPlayerDataSync.toPlainMap(section)) > 0L;
+    }
+
+    private record SlotDecode(ItemStack[] items, boolean intact, int occupied) {
+        static SlotDecode failed() {
+            return new SlotDecode(null, false, 0);
+        }
+    }
+
+    /** Empty list is an intact empty inventory. A non-blank slot that will not decode is not intact. */
+    private static SlotDecode decodeSlots(java.util.List<String> encoded) {
+        if (encoded == null) {
+            return SlotDecode.failed();
+        }
+        ItemStack[] items = new ItemStack[encoded.size()];
+        int occupied = 0;
+        for (int i = 0; i < encoded.size(); i++) {
+            String raw = encoded.get(i);
+            if (raw == null || raw.isBlank()) {
+                items[i] = null;
+                continue;
+            }
+            ItemStack item = decodeItem(raw);
+            if (item == null) {
+                return SlotDecode.failed();
+            }
+            items[i] = item;
+            if (!item.getType().isAir()) {
+                occupied++;
+            }
+        }
+        return new SlotDecode(items, true, occupied);
+    }
+
+    private static int occupied(ItemStack[] items) {
+        if (items == null) {
+            return 0;
+        }
+        int count = 0;
+        for (ItemStack item : items) {
+            if (item != null && !item.getType().isAir()) {
+                count++;
+            }
+        }
+        return count;
+    }
+
     /** {@code null} when any slot fails to serialize — callers must abort the snapshot. */
     private static List<String> encodeItems(ItemStack[] items) {
         List<String> out = new ArrayList<>(items == null ? 0 : items.length);
@@ -530,17 +640,6 @@ public final class TransferSnapshotStore {
         } catch (Exception ex) {
             return null;
         }
-    }
-
-    private static ItemStack[] decodeItems(List<String> encoded) {
-        if (encoded == null) {
-            return null;
-        }
-        ItemStack[] items = new ItemStack[encoded.size()];
-        for (int i = 0; i < encoded.size(); i++) {
-            items[i] = decodeItem(encoded.get(i));
-        }
-        return items;
     }
 
     private static ItemStack decodeItem(String encoded) {

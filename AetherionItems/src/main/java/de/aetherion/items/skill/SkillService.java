@@ -1,5 +1,6 @@
 package de.aetherion.items.skill;
 
+import de.aetherion.core.network.TransferProgressGuard;
 import de.aetherion.core.persist.AtomicYaml;
 import de.aetherion.items.AetherionItems;
 import de.aetherion.items.economy.CoinService;
@@ -53,6 +54,8 @@ public final class SkillService implements StatProvider, Listener {
     /** Earliest pre-batch account level to announce when the batch closes. */
     private final ConcurrentHashMap<UUID, Integer> deferredAccountFrom = new ConcurrentHashMap<>();
     private volatile boolean dirty;
+    /** Intentional resets (boot wipe) may replace a rich disk profile with a fresh one. */
+    private final Set<UUID> allowFreshOverwrite = ConcurrentHashMap.newKeySet();
     private HealthListener health;
 
     public SkillService(AetherionItems plugin, CoinService coins) {
@@ -649,6 +652,18 @@ public final class SkillService implements StatProvider, Listener {
                 : new YamlConfiguration();
         data.forEach((id, skills) -> {
             String path = "players." + id;
+            boolean fresh = TransferProgressGuard.isFreshProfile(
+                    skills.bonusXp,
+                    skills.claimedShardLevel,
+                    skills.bonusSlots,
+                    hasSkillProgress(skills)
+            );
+            if (TransferProgressGuard.refuseFreshSkillOverwrite(fresh, diskHasProgress(config, path))
+                    && !allowFreshOverwrite.remove(id)) {
+                plugin.getLogger().warning("Refusing to replace richer skills for " + id
+                        + " with a fresh profile.");
+                return;
+            }
             config.set(path, null);
             List<String> slots = new ArrayList<>(SLOT_COUNT);
             for (int i = 0; i < SLOT_COUNT; i++) {
@@ -1036,6 +1051,9 @@ public final class SkillService implements StatProvider, Listener {
                 skills.bonusSlots = 0;
                 skills.levels.clear();
                 skills.xp.clear();
+                skills.bonusXp = 0L;
+                skills.claimedShardLevel = 0;
+                allowFreshOverwrite.add(id);
                 wiped++;
             } catch (IllegalArgumentException ignored) {
             }
@@ -1048,6 +1066,32 @@ public final class SkillService implements StatProvider, Listener {
         if (!pending.delete()) {
             plugin.getLogger().warning("Could not delete wipe-skills-on-boot.yml — remove it manually.");
         }
+    }
+
+    private static boolean hasSkillProgress(PlayerSkills skills) {
+        for (AetherSkill skill : AetherSkill.values()) {
+            if (skills.level(skill) > 1 || skills.xp(skill) > 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean diskHasProgress(YamlConfiguration config, String path) {
+        if (config == null || !config.contains(path)) {
+            return false;
+        }
+        if (config.getLong(path + ".bonusXp") > 0L) {
+            return true;
+        }
+        if (config.getInt(path + ".claimedShardLevel") > 0) {
+            return true;
+        }
+        if (config.getInt(path + ".bonusSlots") > 0) {
+            return true;
+        }
+        ConfigurationSection progress = config.getConfigurationSection(path + ".progress");
+        return progress != null && !progress.getKeys(false).isEmpty();
     }
 
     private static boolean isWood(Material material) {
