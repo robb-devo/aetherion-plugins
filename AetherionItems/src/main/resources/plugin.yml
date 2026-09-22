@@ -56,8 +56,11 @@ commands:
       - boots
       - booster
 
+  # Player menu on purpose. No permission node: a default-op node would hide it,
+  # and LuckPerms has ignored default:true before (see shardshop).
+  # Give paths stay on aetherionitems / aetheriontest. DEV stays on devmenu (aetherion.dev).
   aetherion:
-    description: Opens the Aetherion Manager
+    description: Opens the Aetherion Manager for every player
     aliases:
       - amanager
       - aethermanager

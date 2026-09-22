@@ -20,21 +20,36 @@ import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 public class AetherionManagerListener implements Listener {
 
     public static final int HOTBAR_SLOT = 8;
 
+    /**
+     * Hub applies a transfer at tick 12 and rewrites the inventory 30 ticks later (tick 42).
+     * A later pass puts the manager back without racing that rewrite.
+     */
+    private static final long POST_TRANSFER_GIVE_TICKS = 50L;
+
     private static AetherionManagerListener instance;
 
     private final AetherionManager manager;
+
+    /** Real stacks taken out of slot 8 before the transfer rewrite has landed. */
+    private final Map<UUID, ItemStack> parkedSlot = new HashMap<>();
+
+    private final Map<UUID, Integer> joinedTick = new HashMap<>();
 
     public AetherionManagerListener(AetherionManager manager) {
         this.manager = manager;
@@ -203,8 +218,75 @@ public class AetherionManagerListener implements Listener {
             player.setItemOnCursor(null);
         }
 
+        ItemStack previous = inventory.getItem(HOTBAR_SLOT);
         boolean dungeon = player.getWorld() != null && player.getWorld().getName().startsWith("aedun_");
         inventory.setItem(HOTBAR_SLOT, dungeon ? dungeonMapOrFallback(player) : createManagerItem(player));
+        relocateDisplaced(player, previous);
+    }
+
+    /**
+     * Slot 8 is overwritten with the star or the dungeon map. Anything else goes back
+     * into the inventory. During the first 50 ticks after join the stack is only parked:
+     * a transfer rewrite (hub tick 12, plus 30) would otherwise duplicate a returned copy.
+     * The live dungeon map carries the manager marker, so it is replaced in place.
+     */
+    private void relocateDisplaced(Player player, ItemStack previous) {
+        boolean empty = previous == null || previous.getType().isAir();
+        UUID id = player.getUniqueId();
+        if (!ManagerSlotGuard.displace(empty, isManagerItem(previous))) {
+            if (!rewriteMayStillLand(player)) {
+                giveBack(player, parkedSlot.remove(id));
+            }
+            return;
+        }
+        if (rewriteMayStillLand(player)) {
+            parkedSlot.put(id, previous.clone());
+            return;
+        }
+        ItemStack parked = parkedSlot.remove(id);
+        if (ManagerSlotGuard.parkedAlreadyInSlot(false, false, stacksMatch(parked, previous), true)) {
+            parked = null;
+        }
+        giveBack(player, previous);
+        giveBack(player, parked);
+    }
+
+    private boolean rewriteMayStillLand(Player player) {
+        Integer tick = joinedTick.get(player.getUniqueId());
+        return tick != null && Bukkit.getCurrentTick() - tick < POST_TRANSFER_GIVE_TICKS;
+    }
+
+    private void giveBack(Player player, ItemStack stack) {
+        if (stack == null || stack.getType().isAir()) {
+            return;
+        }
+        Map<Integer, ItemStack> leftover = player.getInventory().addItem(stack);
+        for (ItemStack extra : leftover.values()) {
+            drop(player, extra);
+        }
+    }
+
+    private static boolean stacksMatch(ItemStack parked, ItemStack slot) {
+        if (parked == null || slot == null || slot.getType().isAir()) {
+            return false;
+        }
+        return parked.getAmount() == slot.getAmount() && parked.isSimilar(slot);
+    }
+
+    private static ItemStack firstReal(Map<Integer, ItemStack> stacks) {
+        for (ItemStack stack : stacks.values()) {
+            if (stack != null && !stack.getType().isAir()) {
+                return stack;
+            }
+        }
+        return null;
+    }
+
+    private static void drop(Player player, ItemStack stack) {
+        if (stack == null || stack.getType().isAir() || player.getWorld() == null) {
+            return;
+        }
+        player.getWorld().dropItemNaturally(player.getLocation(), stack);
     }
 
     private ItemStack dungeonMapOrFallback(Player player) {
@@ -239,20 +321,39 @@ public class AetherionManagerListener implements Listener {
 
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
-        giveManagerLater(event.getPlayer(), 5L);
-        giveManagerLater(event.getPlayer(), 20L);
+        joinedTick.put(event.getPlayer().getUniqueId(), Bukkit.getCurrentTick());
+        scheduleManager(event.getPlayer());
     }
 
     @EventHandler
     public void onRespawn(PlayerRespawnEvent event) {
-        giveManagerLater(event.getPlayer(), 5L);
-        giveManagerLater(event.getPlayer(), 20L);
+        scheduleManager(event.getPlayer());
     }
 
     @EventHandler
     public void onWorldChange(PlayerChangedWorldEvent event) {
-        giveManagerLater(event.getPlayer(), 5L);
-        giveManagerLater(event.getPlayer(), 20L);
+        scheduleManager(event.getPlayer());
+    }
+
+    @EventHandler
+    public void onQuit(PlayerQuitEvent event) {
+        Player player = event.getPlayer();
+        joinedTick.remove(player.getUniqueId());
+        ItemStack waiting = parkedSlot.remove(player.getUniqueId());
+        if (waiting == null || waiting.getType().isAir()) {
+            return;
+        }
+        Map<Integer, ItemStack> left = player.getInventory().addItem(waiting);
+        ItemStack rest = firstReal(left);
+        if (rest != null) {
+            player.getInventory().setItem(HOTBAR_SLOT, rest);
+        }
+    }
+
+    private void scheduleManager(Player player) {
+        giveManagerLater(player, 5L);
+        giveManagerLater(player, 20L);
+        giveManagerLater(player, POST_TRANSFER_GIVE_TICKS);
     }
 
     private void giveManagerLater(Player player, long delayTicks) {
