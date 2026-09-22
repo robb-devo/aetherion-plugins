@@ -23,6 +23,13 @@ veins:
   world: aether_veins
   radius: 250
   hub-y: 220
+  # Default Amethyst Area entry when Hub spawn "amethyst" is not planted yet.
+  # Robb's spawn anchor / /hubadmin set amethyst overrides this later.
+  spawn-x: -119.5
+  spawn-y: 220
+  spawn-z: -100.5
+  spawn-yaw: 0
+  spawn-pitch: 0
   # Minimum mining skill for Crystal Guide / first-time /amethyst into the Amethyst Area.
   min-mining-level: 30
   reset-hours: 24

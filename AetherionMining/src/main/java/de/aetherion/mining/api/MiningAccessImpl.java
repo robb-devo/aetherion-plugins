@@ -70,35 +70,34 @@ public final class MiningAccessImpl implements MiningAccess {
         if (player == null) {
             return false;
         }
-        HubAccess hub = AetherServices.hub();
-        if (hub == null) {
-            player.sendMessage("§cHub is offline — cannot reach Amethyst Mines.");
-            return false;
-        }
-        Location spawn = hub.location("amethyst");
-        if (spawn == null || spawn.getWorld() == null) {
-            player.sendMessage("§cAmethyst Mines spawn is not planted yet.");
-            player.sendMessage("§7Admin: Dev Menu → Spawn Markers → §dAmethyst Mines Spawn Anchor");
-            player.sendMessage("§7Or stand there and run §f/hubadmin set amethyst§7.");
-            return false;
-        }
 
         AetherionMining plugin = AetherionMining.getInstance();
-        if (plugin != null) {
-            VeinsWorld veins = plugin.getVeins();
-            if (veins != null) {
-                veins.ensureLoaded();
-                veins.rememberExit(player);
-            }
+        VeinsWorld veins = plugin == null ? null : plugin.getVeins();
+        if (veins != null) {
+            veins.ensureLoaded();
+            veins.rememberExit(player);
+        }
+
+        HubAccess hub = AetherServices.hub();
+        Location spawn = hub == null ? null : hub.location("amethyst");
+        if (spawn == null || spawn.getWorld() == null) {
+            spawn = defaultVeinsSpawn(veins);
+        }
+        if (spawn == null || spawn.getWorld() == null) {
+            player.sendMessage("§cAmethyst Mines world is not loaded.");
+            return false;
         }
 
         if (player.getGameMode() == org.bukkit.GameMode.ADVENTURE) {
             player.setGameMode(org.bukkit.GameMode.SURVIVAL);
         }
 
-        boolean first = hub.unlockNew(player.getUniqueId(), "amethyst");
-        if (!hub.isUnlocked(player, "amethyst")) {
-            hub.unlock(player, "amethyst");
+        boolean first = false;
+        if (hub != null) {
+            first = hub.unlockNew(player.getUniqueId(), "amethyst");
+            if (!hub.isUnlocked(player, "amethyst")) {
+                hub.unlock(player, "amethyst");
+            }
         }
 
         player.teleport(spawn);
@@ -118,12 +117,30 @@ public final class MiningAccessImpl implements MiningAccess {
         return true;
     }
 
+    /** Hub planted amethyst spawn overrides this. Used until Robb places the anchor. */
+    private Location defaultVeinsSpawn(VeinsWorld veins) {
+        AetherionMining plugin = AetherionMining.getInstance();
+        World world = veins == null ? null : veins.world();
+        if (world == null && plugin != null) {
+            world = org.bukkit.Bukkit.getWorld(veinsWorldName());
+        }
+        if (world == null) {
+            return null;
+        }
+        double x = plugin == null ? -119.5 : plugin.getConfig().getDouble("veins.spawn-x", -119.5);
+        double y = plugin == null ? 220.0 : plugin.getConfig().getDouble("veins.spawn-y", 220.0);
+        double z = plugin == null ? -100.5 : plugin.getConfig().getDouble("veins.spawn-z", -100.5);
+        float yaw = plugin == null ? 0f : (float) plugin.getConfig().getDouble("veins.spawn-yaw", 0);
+        float pitch = plugin == null ? 0f : (float) plugin.getConfig().getDouble("veins.spawn-pitch", 0);
+        return new Location(world, x, y, z, yaw, pitch);
+    }
+
     @Override
     public boolean meetsVeinsMiningLevel(Player player) {
         if (player == null) {
             return false;
         }
-        if (player.hasPermission("aetherion.mines.admin")) {
+        if (player.isOp() || player.hasPermission("aetherion.mines.admin")) {
             return true;
         }
         int required = veinsMinMiningLevel();

@@ -13,8 +13,9 @@ import org.bukkit.inventory.ItemStack;
  *
  * <p>Player entry is {@code /amethyst} or the Crystal Guide NPC — both call
  * {@link #teleportToVeinsHub(Player)} after the mining-level check. That teleports to the
- * Hub spawn {@code amethyst} planted by Robb's spawn anchor (never hardcoded coords).
- * Old {@code /deepmines} is retired as a player entry.
+ * Hub spawn {@code amethyst} planted by Robb's spawn anchor when set; otherwise the
+ * Mining config {@code veins.spawn-*} default in {@code aether_veins}. Old {@code /deepmines}
+ * is retired as a player entry.
  */
 public interface MiningAccess {
 
@@ -35,11 +36,11 @@ public interface MiningAccess {
     long respawnSeconds(Material material);
 
     /**
-     * Teleport the player to the Amethyst Area spawn (Hub id {@code amethyst}) and unlock
-     * that spawn on first arrival. Location must already be planted via the Amethyst Mines
-     * spawn anchor or {@code /hubadmin set amethyst}. Does not enforce the mining-level gate —
-     * callers should check {@link #meetsVeinsMiningLevel(Player)} first for NPC / first
-     * {@code /amethyst} entry.
+     * Teleport the player to the Amethyst Area spawn and unlock Hub spawn {@code amethyst}
+     * on first arrival. Prefers a planted Hub location ({@code /hubadmin set amethyst} or
+     * Dev Menu spawn anchor); falls back to Mining {@code veins.spawn-*} in {@code aether_veins}.
+     * Does not enforce the mining-level gate — callers should check
+     * {@link #meetsVeinsMiningLevel(Player)} first for NPC / first {@code /amethyst} entry.
      *
      * @return true if teleport succeeded
      */
