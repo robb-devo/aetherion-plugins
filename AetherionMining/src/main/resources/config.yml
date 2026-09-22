@@ -19,17 +19,32 @@ mine:
     DIAMOND_ORE:
       respawn: 120
 
+# Amethyst Area = finished BreadBuilds hub in aether_veins + four dig zones around it.
+# Dig specialty: NO per-block ore regen — full identical restore every reset-hours.
 veins:
   world: aether_veins
   radius: 250
-  hub-y: 220
-  # Default Amethyst Area entry when Hub spawn "amethyst" is not planted yet.
-  # Robb's spawn anchor / /hubadmin set amethyst overrides this later.
-  spawn-x: -119.5
-  spawn-y: 220
-  spawn-z: -100.5
+  # hub-y is ignored (stale Deep Veins prototype). Spawn Y below is authoritative.
+  hub-y: 18
+  # Default entry when Hub spawn "amethyst" is not planted yet.
+  # /hubadmin set amethyst (or Dev Menu spawn anchor) overrides this.
+  spawn-x: 8.5
+  spawn-y: 18
+  spawn-z: 8.5
   spawn-yaw: 0
   spawn-pitch: 0
+  # Cannot break/place inside this horizontal radius of hub spawn.
+  spawn-protect-radius: 20
+  # Dig-zone painter never writes inside this radius — BreadBuilds hub stays 1:1.
+  dig-hub-clearance: 64
+  # Outer ring for the four themed dig zones (defaults to radius-20 when 0).
+  dig-outer-radius: 230
+  # Fixed seed → identical structure/ores on every 24h reset.
+  dig-seed: 20260922
+  softlight-on-paint: true
+  softlight-min: 7
+  softlight-step: 5
+  softlight-level: 10
   # Minimum mining skill for Crystal Guide / first-time /amethyst into the Amethyst Area.
   min-mining-level: 30
   reset-hours: 24
@@ -46,4 +61,3 @@ eldervale:
     x: 22
     y: 90
     z: 580
-

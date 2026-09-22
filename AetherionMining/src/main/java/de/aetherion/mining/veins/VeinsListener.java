@@ -108,16 +108,14 @@ public final class VeinsListener implements Listener {
         if (!veins.isVeins(event.getBlock().getWorld())) {
             return;
         }
-        if (VeinsHub.protectedSpot(event.getBlock().getLocation(), veins.hubY())) {
+        if (veins.isProtected(event.getBlock().getLocation())) {
             if (!admin(event.getPlayer())) {
                 event.setCancelled(true);
+                event.setDropItems(false);
             }
             return;
         }
-        // Soft dirt/sand/gravel is not mineable — SharedWorldGuard owns that cancel.
-        if (de.aetherion.mining.SharedWorldGuard.isSoftTerrain(event.getBlock().getType())) {
-            return;
-        }
+        // Outside spawn protect: mine everything (incl. amethyst). No per-block regen here.
         event.setCancelled(false);
     }
 
@@ -126,7 +124,7 @@ public final class VeinsListener implements Listener {
         if (!veins.isVeins(event.getBlock().getWorld())) {
             return;
         }
-        if (!VeinsHub.protectedSpot(event.getBlock().getLocation(), veins.hubY())) {
+        if (!veins.isProtected(event.getBlock().getLocation())) {
             return;
         }
         if (admin(event.getPlayer())) {

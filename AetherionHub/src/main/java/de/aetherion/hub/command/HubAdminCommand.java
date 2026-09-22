@@ -303,16 +303,22 @@ public final class HubAdminCommand implements CommandExecutor, TabCompleter {
     }
 
     /**
-     * /hubadmin softlight [radius|mines] [minLight] [step]
+     * /hubadmin softlight [radius|mines|veins|amethyst] [minLight] [step]
      * Default: radius 450, place where light ≤ 7, grid every 5 blocks.
+     * {@code veins}/{@code amethyst} soft-lights aether_veins around hub spawn.
      */
     private void softlight(CommandSender sender, String[] args) {
-        if (!(sender instanceof Player player)) {
-            sender.sendMessage("§cRun in-game from the hub (centers on you).");
-            return;
-        }
         if (args.length >= 2 && args[1].equalsIgnoreCase("mines")) {
             shabbymine(sender);
+            return;
+        }
+        if (args.length >= 2
+                && (args[1].equalsIgnoreCase("veins") || args[1].equalsIgnoreCase("amethyst"))) {
+            softlightVeins(sender);
+            return;
+        }
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage("§cRun in-game from the hub (centers on you), or use §fsoftlight veins§c.");
             return;
         }
         int radius = 450;
@@ -322,7 +328,7 @@ public final class HubAdminCommand implements CommandExecutor, TabCompleter {
             try {
                 radius = Integer.parseInt(args[1]);
             } catch (NumberFormatException e) {
-                sender.sendMessage("§cUsage: /hubadmin softlight [radius|mines] [minLight] [step]");
+                sender.sendMessage("§cUsage: /hubadmin softlight [radius|mines|veins] [minLight] [step]");
                 return;
             }
         }
@@ -330,7 +336,7 @@ public final class HubAdminCommand implements CommandExecutor, TabCompleter {
             try {
                 minLight = Integer.parseInt(args[2]);
             } catch (NumberFormatException e) {
-                sender.sendMessage("§cUsage: /hubadmin softlight [radius|mines] [minLight] [step]");
+                sender.sendMessage("§cUsage: /hubadmin softlight [radius|mines|veins] [minLight] [step]");
                 return;
             }
         }
@@ -338,7 +344,7 @@ public final class HubAdminCommand implements CommandExecutor, TabCompleter {
             try {
                 step = Integer.parseInt(args[3]);
             } catch (NumberFormatException e) {
-                sender.sendMessage("§cUsage: /hubadmin softlight [radius|mines] [minLight] [step]");
+                sender.sendMessage("§cUsage: /hubadmin softlight [radius|mines|veins] [minLight] [step]");
                 return;
             }
         }
@@ -353,6 +359,33 @@ public final class HubAdminCommand implements CommandExecutor, TabCompleter {
                 step,
                 12
         );
+    }
+
+    private void softlightVeins(CommandSender sender) {
+        org.bukkit.World world = Bukkit.getWorld("aether_veins");
+        de.aetherion.core.api.MiningAccess mining = de.aetherion.core.api.AetherServices.mining();
+        if (mining != null && mining.veinsWorldName() != null) {
+            org.bukkit.World named = Bukkit.getWorld(mining.veinsWorldName());
+            if (named != null) {
+                world = named;
+            }
+        }
+        if (world == null) {
+            sender.sendMessage("§cAmethyst Area world (aether_veins) is not loaded.");
+            return;
+        }
+        int cx = 8;
+        int cz = 8;
+        HubSpawn amethyst = hub.spawn("amethyst");
+        if (amethyst != null && amethyst.hasLocation()) {
+            org.bukkit.Location planted = amethyst.toLocation();
+            if (planted != null && planted.getWorld() != null
+                    && planted.getWorld().getUID().equals(world.getUID())) {
+                cx = planted.getBlockX();
+                cz = planted.getBlockZ();
+            }
+        }
+        SoftLightPass.run(plugin, sender, world, cx, cz, 250, 7, 5, 10);
     }
 
     private void shabbymine(CommandSender sender) {
@@ -391,7 +424,7 @@ public final class HubAdminCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage("§7/hubadmin default <id> true|false");
         sender.sendMessage("§7/hubadmin hint [player]");
         sender.sendMessage("§7/hubadmin give [player] [spawnId]");
-        sender.sendMessage("§7/hubadmin softlight [radius|mines] …");
+        sender.sendMessage("§7/hubadmin softlight [radius|mines|veins] …");
         sender.sendMessage("§7/hubadmin shabbymine §8- re-pass Shabby Mine wall ores");
         sender.sendMessage("§7/hubadmin oregen [shabby|eldervale|both]");
         sender.sendMessage("§7/hubadmin oregen reset <shabby|eldervale|both>");
@@ -407,6 +440,9 @@ public final class HubAdminCommand implements CommandExecutor, TabCompleter {
         }
         if (args.length == 1) {
             return filter(SUBS, args[0]);
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("softlight")) {
+            return filter(List.of("mines", "veins", "amethyst"), args[1]);
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("oregen")) {
             return filter(List.of("shabby", "eldervale", "both", "reset"), args[1]);

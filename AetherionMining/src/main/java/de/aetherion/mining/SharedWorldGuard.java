@@ -127,8 +127,9 @@ public final class SharedWorldGuard implements Listener {
             return true;
         }
         if (isVeins(world)) {
-            // Open mine — only soft terrain stays put (VeinsListener owns the rest).
-            return isSoftTerrain(block.getType());
+            // Open dig outside spawn protect — VeinsListener owns hub protect.
+            // Soft terrain is mineable here (Crystal Hollows specialty vs other mines).
+            return false;
         }
         return !allowsGatherBreak(block);
     }

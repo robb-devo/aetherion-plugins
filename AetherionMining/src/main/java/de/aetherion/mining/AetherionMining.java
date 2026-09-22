@@ -59,7 +59,7 @@ public class AetherionMining extends JavaPlugin {
         if (worldName != null && worldName.equalsIgnoreCase(name)) {
             return new de.aetherion.mining.veins.VeinsChunkGenerator(
                     Math.max(16, getConfig().getInt("veins.radius", 250)),
-                    getConfig().getInt("veins.hub-y", 220)
+                    (int) Math.floor(getConfig().getDouble("veins.spawn-y", 18.0))
             );
         }
         return null;

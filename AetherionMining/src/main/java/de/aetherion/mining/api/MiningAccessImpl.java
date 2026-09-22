@@ -127,9 +127,9 @@ public final class MiningAccessImpl implements MiningAccess {
         if (world == null) {
             return null;
         }
-        double x = plugin == null ? -119.5 : plugin.getConfig().getDouble("veins.spawn-x", -119.5);
-        double y = plugin == null ? 220.0 : plugin.getConfig().getDouble("veins.spawn-y", 220.0);
-        double z = plugin == null ? -100.5 : plugin.getConfig().getDouble("veins.spawn-z", -100.5);
+        double x = plugin == null ? 8.5 : plugin.getConfig().getDouble("veins.spawn-x", 8.5);
+        double y = plugin == null ? 18.0 : plugin.getConfig().getDouble("veins.spawn-y", 18.0);
+        double z = plugin == null ? 8.5 : plugin.getConfig().getDouble("veins.spawn-z", 8.5);
         float yaw = plugin == null ? 0f : (float) plugin.getConfig().getDouble("veins.spawn-yaw", 0);
         float pitch = plugin == null ? 0f : (float) plugin.getConfig().getDouble("veins.spawn-pitch", 0);
         return new Location(world, x, y, z, yaw, pitch);

@@ -14,8 +14,11 @@ import org.bukkit.inventory.ItemStack;
  * <p>Player entry is {@code /amethyst} or the Crystal Guide NPC — both call
  * {@link #teleportToVeinsHub(Player)} after the mining-level check. That teleports to the
  * Hub spawn {@code amethyst} planted by Robb's spawn anchor when set; otherwise the
- * Mining config {@code veins.spawn-*} default in {@code aether_veins}. Old {@code /deepmines}
- * is retired as a player entry.
+ * Mining config {@code veins.spawn-*} default ({@code 8.5/18/8.5}) in {@code aether_veins}.
+ * Old {@code /deepmines} is retired as a player entry.
+ *
+ * <p>Amethyst Area specialty: no per-block ore regen while playing; dig zones restore
+ * identically every {@code veins.reset-hours} (default 24). Hub BreadBuilds stays untouched.
  */
 public interface MiningAccess {
 

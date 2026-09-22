@@ -117,13 +117,25 @@ public final class VeinsNpcs {
         save();
     }
 
+    /** Exit Foreman near hub spawn — never hardcodes the old Y~220 prototype pad. */
+    public void spawnExit(World world, Location spawn) {
+        if (world == null || spawn == null) {
+            return;
+        }
+        removeHub(world);
+        Location location = spawn.clone().add(3.0, 0.0, -4.0);
+        location.setYaw(180f);
+        location.setPitch(0f);
+        spawnAt(location, true);
+    }
+
+    /** @deprecated Prefer {@link #spawnExit(World, Location)}. */
+    @Deprecated
     public void spawnExit(World world, int hubY) {
         if (world == null) {
             return;
         }
-        removeHub(world);
-        Location location = new Location(world, 3.5, hubY + 1, -7.5, 180f, 0f);
-        spawnAt(location, true);
+        spawnExit(world, new Location(world, 8.5, hubY + 1, 8.5, 180f, 0f));
     }
 
     public void removeEntrance() {
