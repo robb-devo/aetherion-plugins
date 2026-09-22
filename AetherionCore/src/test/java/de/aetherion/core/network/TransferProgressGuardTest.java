@@ -24,6 +24,15 @@ class TransferProgressGuardTest {
     }
 
     @Test
+    void untrustedDefaultBarIsNeverApplied() {
+        assertFalse(TransferProgressGuard.levelFieldTrusted(1, true));
+        assertTrue(TransferProgressGuard.levelFieldTrusted(1, false));
+        assertTrue(TransferProgressGuard.levelFieldTrusted(275, true));
+        assertFalse(TransferProgressGuard.applySnapshotLevel(1, 275, false, true, false));
+        assertFalse(TransferProgressGuard.applySnapshotLevel(1, 1, false, false, false));
+    }
+
+    @Test
     void freshArrivalStillAcceptsLevelOne() {
         assertTrue(TransferProgressGuard.applySnapshotLevel(1, 1, false, false));
         assertTrue(TransferProgressGuard.applySnapshotLevel(12, 12, false, false));

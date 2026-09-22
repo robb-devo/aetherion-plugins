@@ -23,6 +23,24 @@ public final class TransferProgressGuard {
             boolean skillsImported,
             boolean sharedProfileIsRich
     ) {
+        return applySnapshotLevel(snapshotLevel, liveLevel, skillsImported, sharedProfileIsRich, true);
+    }
+
+    /**
+     * {@code levelTrusted} is false when the vanilla bar was still the default
+     * (level 1) while shared or exported skills were already richer. That is the
+     * LimePuppet / A3therion {@code level=1 skills=false} snapshot.
+     */
+    public static boolean applySnapshotLevel(
+            int snapshotLevel,
+            int liveLevel,
+            boolean skillsImported,
+            boolean sharedProfileIsRich,
+            boolean levelTrusted
+    ) {
+        if (!levelTrusted) {
+            return false;
+        }
         if (skillsImported) {
             return false;
         }
@@ -33,6 +51,11 @@ public final class TransferProgressGuard {
             return false;
         }
         return true;
+    }
+
+    /** A vanilla bar of 1 is not the account level when skills already have progress. */
+    public static boolean levelFieldTrusted(int vanillaLevel, boolean skillsAreRich) {
+        return vanillaLevel > 1 || !skillsAreRich;
     }
 
     /**

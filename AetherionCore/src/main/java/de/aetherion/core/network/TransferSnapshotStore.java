@@ -119,12 +119,17 @@ public final class TransferSnapshotStore {
         if (pendingWarp != null && !pendingWarp.isBlank()) {
             yaml.set("pending-warp", pendingWarp.trim().toLowerCase(java.util.Locale.ROOT));
         }
-        yaml.set("network-data", networkData.exportAll(player));
-        yaml.set("level", player.getLevel());
+        java.util.Map<String, Object> network = networkData.exportAll(player);
+        yaml.set("network-data", network);
+        int barLevel = player.getLevel();
+        boolean skillsRich = exportedSkillsRich(network) || sharedSkillsRich(id);
+        boolean levelTrusted = TransferProgressGuard.levelFieldTrusted(barLevel, skillsRich);
+        yaml.set("level", barLevel);
         yaml.set("exp", (double) player.getExp());
         yaml.set("total-exp", player.getTotalExperience());
-        yaml.set("aetherion-level", player.getLevel());
+        yaml.set("aetherion-level", barLevel);
         yaml.set("aetherion-exp", (double) player.getExp());
+        yaml.set("level-trusted", levelTrusted);
         yaml.set("health", player.getHealth());
         double maxHealth = 20.0;
         if (player.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null) {
@@ -151,6 +156,8 @@ public final class TransferSnapshotStore {
                     + " — an item failed to serialize. Inventory was not touched.");
             return -1L;
         }
+        int invSlots = occupiedEncoded(inventory);
+        yaml.set("inventory-occupied", invSlots);
         yaml.set("inventory-b64", inventory);
         yaml.set("armor-b64", armor);
         yaml.set("extra-b64", extra);
@@ -171,7 +178,10 @@ public final class TransferSnapshotStore {
         try {
             de.aetherion.core.persist.AtomicYaml.save(yaml, file, plugin.getLogger());
             plugin.getLogger().info("Saved transfer snapshot v5 for " + player.getName()
-                    + " level=" + player.getLevel()
+                    + " level=" + barLevel
+                    + " levelTrusted=" + levelTrusted
+                    + " skillsRich=" + skillsRich
+                    + " invSlots=" + invSlots
                     + " floor=" + pendingFloor
                     + " warp=" + (pendingWarp == null ? "-" : pendingWarp)
                     + " (" + file.length() + " bytes)");
@@ -327,8 +337,9 @@ public final class TransferSnapshotStore {
             java.util.Map<String, Object> networkPreview = NetworkPlayerDataSync.toPlainMap(yaml.get("network-data"));
             boolean skillsInSnapshot = NetworkDataKeys.lookupYaml(networkPreview, NetworkDataKeys.SKILLS_FILE) != null;
             boolean sharedRich = sharedSkillsRich(id);
+            boolean levelTrusted = !yaml.contains("level-trusted") || yaml.getBoolean("level-trusted");
             boolean writeSnapshotLevel = TransferProgressGuard.applySnapshotLevel(
-                    snapshotLevel, liveLevel, skillsInSnapshot, sharedRich);
+                    snapshotLevel, liveLevel, skillsInSnapshot, sharedRich, levelTrusted);
             if (!writeSnapshotLevel) {
                 plugin.getLogger().warning("Kept live level " + liveLevel + " for " + player.getName()
                         + " — snapshot level " + snapshotLevel
@@ -412,6 +423,7 @@ public final class TransferSnapshotStore {
             plugin.getLogger().info("Applied transfer snapshot v5 for " + player.getName()
                     + " level=" + (writeSnapshotLevel ? snapshotLevel : liveLevel)
                     + " snapshotLevel=" + snapshotLevel
+                    + " levelTrusted=" + levelTrusted
                     + " skills=" + skillsImported
                     + " keptLiveLevel=" + !writeSnapshotLevel
                     + " keptLiveInv=" + !applyInventory
@@ -547,6 +559,45 @@ public final class TransferSnapshotStore {
             return claimed;
         }
         return null;
+    }
+
+    private static int occupiedEncoded(List<String> encoded) {
+        if (encoded == null) {
+            return 0;
+        }
+        int count = 0;
+        for (String slot : encoded) {
+            if (slot != null && !slot.isBlank()) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private static boolean exportedSkillsRich(java.util.Map<String, Object> network) {
+        if (network == null || network.isEmpty()) {
+            return false;
+        }
+        Object raw = NetworkDataKeys.lookupYaml(network, NetworkDataKeys.SKILLS_FILE);
+        if (raw == null) {
+            return false;
+        }
+        Object node = raw;
+        if (raw instanceof String text) {
+            try {
+                org.bukkit.configuration.file.YamlConfiguration parsed =
+                        new org.bukkit.configuration.file.YamlConfiguration();
+                parsed.loadFromString(text);
+                node = NetworkPlayerDataSync.toPlainMap(parsed);
+            } catch (Exception ex) {
+                return false;
+            }
+        }
+        long score = 0L;
+        for (Object section : TransferProgressGuard.playerSections(node).values()) {
+            score += TransferProgressGuard.richness(section);
+        }
+        return score > 0L;
     }
 
     private boolean sharedSkillsRich(UUID id) {
