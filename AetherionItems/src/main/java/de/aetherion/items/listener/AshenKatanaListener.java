@@ -47,22 +47,46 @@ import java.util.concurrent.CopyOnWriteArrayList;
 /**
  * Ashen Katana — dash, rise, a real cherry-leaf hover, then a slam shockwave.
  * Hostiles only. One commitment, not a spam button.
+ * Lift, hang, and slam are teleports. Client velocity after the glide never clears the ground.
  */
 public final class AshenKatanaListener implements Listener {
 
     private static final int COOLDOWN_TICKS = 160;
+    /** Horizontal glide. Unchanged wall-stop teleport, yaw kept, no look snap. */
+    private static final int DASH_TICKS = 8;
+    /**
+     * Ease-out lift. The steps sum to 4.2 blocks — a few blocks, not a hop.
+     */
+    private static final double[] RISE_STEP = {0.86, 0.76, 0.66, 0.56, 0.46, 0.36, 0.28, 0.26};
+    private static final int RISE_END = DASH_TICKS + RISE_STEP.length;
+    /** 16 ticks at the apex is 0.8s: long enough to read, short enough to leave. */
+    private static final int HANG_TICKS = 16;
+    private static final int HANG_END = RISE_END + HANG_TICKS;
+    private static final int SLAM_LIMIT = 18;
+    private static final double SLAM_STEP = 1.42;
+    private static final double RISE_FORWARD = 0.20;
     private static final LegacyComponentSerializer TEXT = LegacyComponentSerializer.legacySection();
 
     private final JavaPlugin plugin;
     private final ItemManager itemManager;
     private final ActiveEquipmentStats equipmentStats;
     private static final List<List<BlockDisplay>> LIVE = new CopyOnWriteArrayList<>();
+    /** Gravity before the aerial arc, restored if the plugin stops mid-hang. */
+    private static final Map<UUID, Boolean> SUSPENDED_GRAVITY = new ConcurrentHashMap<>();
 
     private final Map<UUID, Long> nextUseTick = new ConcurrentHashMap<>();
     private final Set<UUID> busy = ConcurrentHashMap.newKeySet();
 
-    /** Plugin disable: every hovering leaf display goes with it. */
+    /** Plugin disable: hovering players get gravity back, and every leaf display is removed. */
     public static void shutdown() {
+        for (Map.Entry<UUID, Boolean> entry : SUSPENDED_GRAVITY.entrySet()) {
+            Player player = Bukkit.getPlayer(entry.getKey());
+            if (player != null) {
+                player.setGravity(Boolean.TRUE.equals(entry.getValue()));
+                player.setFallDistance(0f);
+            }
+        }
+        SUSPENDED_GRAVITY.clear();
         for (List<BlockDisplay> leaves : LIVE) {
             clear(leaves);
         }
@@ -136,12 +160,15 @@ public final class AshenKatanaListener implements Listener {
 
         List<BlockDisplay> leaves = new ArrayList<>();
         LIVE.add(leaves);
+        final double feetY = player.getLocation().getY();
         new BukkitRunnable() {
             int tickCount;
             int slamAt = -1;
             final Set<UUID> dashed = new HashSet<>();
             boolean slammed;
-            boolean gravityWas = player.hasGravity();
+            boolean lifted;
+            final boolean gravityWas = player.hasGravity();
+            Location apex;
 
             @Override
             public void run() {
@@ -153,7 +180,7 @@ public final class AshenKatanaListener implements Listener {
                 player.setFallDistance(0);
                 World world = player.getWorld();
 
-                if (tickCount <= 8) {
+                if (tickCount <= DASH_TICKS) {
                     stepDash(player, dash);
                     slash(world, player.getLocation().add(0, 1.0, 0), dash);
                     strikeNear(player, dashDamage, 2.1, dashed);
@@ -162,32 +189,43 @@ public final class AshenKatanaListener implements Listener {
                     }
                     return;
                 }
-                if (tickCount <= 14) {
-                    player.setVelocity(new Vector(dash.getX() * 0.12, 0.62, dash.getZ() * 0.12));
+                if (tickCount <= RISE_END) {
+                    suspend();
+                    int step = tickCount - DASH_TICKS - 1;
+                    double lift = RISE_STEP[Math.max(0, Math.min(step, RISE_STEP.length - 1))];
+                    if (!stepRise(player, dash, lift)) {
+                        tickCount = RISE_END;
+                    }
                     world.spawnParticle(Particle.CHERRY_LEAVES, player.getLocation().add(0, 0.4, 0), 4, 0.25, 0.2, 0.25, 0.02);
-                    if (tickCount == 14) {
+                    if (tickCount == RISE_END) {
                         world.playSound(player.getLocation(), Sound.ITEM_TRIDENT_RIPTIDE_2, 0.55f, 1.4f);
                     }
                     return;
                 }
-                if (tickCount <= 32) {
-                    player.setGravity(false);
-                    player.setVelocity(new Vector(0, 0.02, 0));
-                    if (leaves.isEmpty()) {
-                        spawnLeaves(world, player.getLocation(), leaves, 14);
+                if (tickCount <= HANG_END) {
+                    suspend();
+                    if (apex == null) {
+                        apex = player.getLocation().clone();
                     }
-                    spin(player.getLocation(), leaves, tickCount, 2.3, 0.28);
-                    if (tickCount % 6 == 0) {
-                        world.playSound(player.getLocation(), Sound.BLOCK_CHERRY_LEAVES_BREAK, 0.55f, 0.7f);
-                        player.sendActionBar(TEXT.deserialize("§dFalling Blossoms"));
+                    int hangFor = apex.getY() - feetY >= 1.25 ? HANG_TICKS : 4;
+                    if (tickCount <= RISE_END + hangFor) {
+                        holdApex(player, apex);
+                        if (leaves.isEmpty()) {
+                            spawnLeaves(world, player.getLocation(), leaves, 14);
+                        }
+                        spin(player.getLocation(), leaves, tickCount, 2.3, 0.28);
+                        if (tickCount % 6 == 0) {
+                            world.playSound(player.getLocation(), Sound.BLOCK_CHERRY_LEAVES_BREAK, 0.55f, 0.7f);
+                            player.sendActionBar(TEXT.deserialize("§dFalling Blossoms"));
+                        }
+                        return;
                     }
-                    return;
                 }
                 if (!slammed) {
-                    player.setGravity(true);
-                    player.setVelocity(new Vector(dash.getX() * 0.05, -1.7, dash.getZ() * 0.05));
+                    boolean landed = stepSlam(player);
                     spin(player.getLocation(), leaves, tickCount, 1.5, 0.34);
-                    if ((player.isOnGround() && tickCount > 36) || tickCount >= 50) {
+                    if (landed || tickCount >= HANG_END + SLAM_LIMIT) {
+                        restore();
                         slammed = true;
                         slamAt = tickCount;
                         impact(player, slamDamage);
@@ -201,11 +239,27 @@ public final class AshenKatanaListener implements Listener {
                 }
             }
 
+            private void suspend() {
+                if (lifted) {
+                    return;
+                }
+                lifted = true;
+                SUSPENDED_GRAVITY.put(player.getUniqueId(), gravityWas);
+                player.setGravity(false);
+            }
+
+            private void restore() {
+                player.setGravity(gravityWas);
+                SUSPENDED_GRAVITY.remove(player.getUniqueId());
+                lifted = false;
+            }
+
             private void finish() {
                 if (player.isOnline()) {
                     player.setGravity(gravityWas);
                     player.setFallDistance(0);
                 }
+                SUSPENDED_GRAVITY.remove(player.getUniqueId());
                 clear(leaves);
                 LIVE.remove(leaves);
                 busy.remove(player.getUniqueId());
@@ -260,6 +314,90 @@ public final class AshenKatanaListener implements Listener {
         }
         player.teleport(next);
         player.setFallDistance(0);
+    }
+
+    /**
+     * @return false when a ceiling ends the lift early so the hang still plays
+     */
+    private static boolean stepRise(Player player, Vector dash, double lift) {
+        Location now = player.getLocation();
+        Location arched = now.clone().add(dash.getX() * RISE_FORWARD, lift, dash.getZ() * RISE_FORWARD);
+        look(arched, now);
+        if (bodyClear(arched)) {
+            place(player, arched);
+            return true;
+        }
+        Location up = now.clone().add(0, lift, 0);
+        look(up, now);
+        if (bodyClear(up)) {
+            place(player, up);
+            return true;
+        }
+        player.setVelocity(new Vector(0, 0, 0));
+        player.setFallDistance(0f);
+        return false;
+    }
+
+    /** Keep the player on the apex. Look direction stays theirs — the camera is not pulled. */
+    private static void holdApex(Player player, Location apex) {
+        Location now = player.getLocation();
+        Location lock = apex.clone();
+        look(lock, now);
+        place(player, lock);
+    }
+
+    /**
+     * @return true when the feet meet ground
+     */
+    private static boolean stepSlam(Player player) {
+        Location now = player.getLocation();
+        World world = now.getWorld();
+        if (world != null && now.getY() <= world.getMinHeight() + 0.5) {
+            player.setFallDistance(0f);
+            return true;
+        }
+        if (!now.clone().add(0, -0.15, 0).getBlock().isPassable()) {
+            player.setVelocity(new Vector(0, -0.35, 0));
+            player.setFallDistance(0f);
+            return true;
+        }
+        double remaining = SLAM_STEP;
+        Location cursor = now.clone();
+        while (remaining > 0.001) {
+            double dy = Math.min(0.25, remaining);
+            Location next = cursor.clone().add(0, -dy, 0);
+            look(next, now);
+            if (!bodyClear(next)) {
+                look(cursor, now);
+                if (cursor.getY() < now.getY() - 0.02) {
+                    place(player, cursor);
+                } else {
+                    player.setVelocity(new Vector(0, -0.45, 0));
+                    player.setFallDistance(0f);
+                }
+                return true;
+            }
+            cursor = next;
+            remaining -= dy;
+        }
+        look(cursor, now);
+        place(player, cursor);
+        return false;
+    }
+
+    private static void look(Location to, Location from) {
+        to.setYaw(from.getYaw());
+        to.setPitch(from.getPitch());
+    }
+
+    private static void place(Player player, Location next) {
+        player.teleport(next);
+        player.setVelocity(new Vector(0, 0, 0));
+        player.setFallDistance(0f);
+    }
+
+    private static boolean bodyClear(Location feet) {
+        return feet.getBlock().isPassable() && feet.clone().add(0, 1, 0).getBlock().isPassable();
     }
 
     private static void slash(World world, Location at, Vector dir) {
