@@ -134,23 +134,26 @@ public final class InstanceManager {
             }
         }
 
-        if (endless && !EndlessSchemBuilder.worldEditPresent()) {
-            player.sendMessage("§cEndless test needs WorldEdit on this server.");
-            return;
-        }
-
         String worldName;
         World world = null;
         DungeonWarmPool.WarmEndless warmEndless = null;
         DungeonWarmPool.WarmAshes warmAshes = null;
+        boolean floor2WasWarm = endless && warmPool.hasWarmEndless();
         if (endless) {
-            warmEndless = warmPool.takeEndless();
-            if (warmEndless != null) {
-                world = warmEndless.world();
-                worldName = world.getName();
-            } else {
-                worldName = WORLD_PREFIX + UUID.randomUUID().toString().replace("-", "").substring(0, 12);
+            if (!floor2WasWarm) {
+                player.sendMessage("§bOpening Floor 2 · Frostbound...");
             }
+            warmEndless = warmPool.acquireEndless();
+            if (warmEndless == null || warmEndless.world() == null) {
+                if (!EndlessSchemBuilder.worldEditPresent()) {
+                    player.sendMessage("§cFloor 2 needs WorldEdit before the map can be built.");
+                } else {
+                    player.sendMessage("§cCould not prepare the Floor 2 map.");
+                }
+                return;
+            }
+            world = warmEndless.world();
+            worldName = world.getName();
         } else if (ashes) {
             warmAshes = warmPool.takeAshes();
             if (warmAshes != null) {
@@ -186,15 +189,17 @@ public final class InstanceManager {
         }
         session.setScalingPlayers(party.size());
 
-        player.sendMessage(endless
-                ? (warmEndless != null
-                    ? "§bEntering Floor 2 · Frostbound..."
-                    : "§bOpening Floor 2 · Frostbound...")
-                : ashes
-                    ? (warmAshes != null
-                        ? "§5Entering Floor 3 · Throne of Ashes..."
-                        : "§5Opening Floor 3 · Throne of Ashes...")
-                    : "§5Opening a temporary dungeon instance...");
+        if (endless) {
+            if (floor2WasWarm) {
+                player.sendMessage("§bEntering Floor 2 · Frostbound...");
+            }
+        } else if (ashes) {
+            player.sendMessage(warmAshes != null
+                    ? "§5Entering Floor 3 · Throne of Ashes..."
+                    : "§5Opening Floor 3 · Throne of Ashes...");
+        } else {
+            player.sendMessage("§5Opening a temporary dungeon instance...");
+        }
         player.closeInventory();
 
         if (world == null) {
@@ -233,26 +238,20 @@ public final class InstanceManager {
         Location spawn;
         try {
             if (endless) {
-                if (warmEndless != null) {
-                    EndlessSchemBuilder.PasteResult pasted = warmEndless.paste();
-                    layout = pasted.layout();
-                    spawn = EndlessEncounter.begin(
-                            plugin,
-                            world,
-                            session,
-                            pasted.minX(),
-                            pasted.maxX(),
-                            pasted.minY(),
-                            pasted.maxY(),
-                            pasted.minZ(),
-                            pasted.maxZ(),
-                            warmEndless.prep()
-                    );
-                } else {
-                    EndlessSchemBuilder.BuildResult built = EndlessSchemBuilder.build(plugin, world, session);
-                    layout = built.layout();
-                    spawn = built.spawn();
-                }
+                EndlessSchemBuilder.PasteResult pasted = warmEndless.paste();
+                layout = pasted.layout();
+                spawn = EndlessEncounter.begin(
+                        plugin,
+                        world,
+                        session,
+                        pasted.minX(),
+                        pasted.maxX(),
+                        pasted.minY(),
+                        pasted.maxY(),
+                        pasted.minZ(),
+                        pasted.maxZ(),
+                        warmEndless.prep()
+                );
             } else if (ashes) {
                 AshesEncounter.Prep prep = warmAshes != null
                         ? warmAshes.prep()
