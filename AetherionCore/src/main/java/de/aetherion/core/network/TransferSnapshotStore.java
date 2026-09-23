@@ -110,7 +110,9 @@ public final class TransferSnapshotStore {
         yaml.set("uuid", id.toString());
         yaml.set("name", player.getName());
         yaml.set("saved-at", savedAt);
-        yaml.set("from-server", currentServerName());
+        String fromServer = currentServerName();
+        boolean omitInventory = InventoryTransfer.omit(fromServer, transferInventoryFromHub(), ignoreInventoryFrom());
+        yaml.set("from-server", fromServer);
         if (toServer != null && !toServer.isBlank()) {
             yaml.set("to-server", toServer.trim().toLowerCase(java.util.Locale.ROOT));
         }
@@ -145,24 +147,31 @@ public final class TransferSnapshotStore {
         yaml.set("fire-ticks", player.getFireTicks());
         yaml.set("held-slot", player.getInventory().getHeldItemSlot());
 
-        PlayerInventory inv = player.getInventory();
-        List<String> inventory = encodeItems(inv.getContents());
-        List<String> armor = encodeItems(inv.getArmorContents());
-        List<String> extra = encodeItems(inv.getExtraContents());
-        List<String> ender = encodeItems(player.getEnderChest().getContents());
-        String cursor = encodeItem(player.getItemOnCursor());
-        if (inventory == null || armor == null || extra == null || ender == null || cursor == null) {
-            plugin.getLogger().warning("Refusing transfer snapshot for " + player.getName()
-                    + " — an item failed to serialize. Inventory was not touched.");
-            return -1L;
+        int invSlots = 0;
+        if (omitInventory) {
+            yaml.set("inventory-omitted", true);
+            plugin.getLogger().info("Omitting inventory blobs for " + player.getName()
+                    + " from " + fromServer + " (hub/ignored source). Warp and routing still saved.");
+        } else {
+            PlayerInventory inv = player.getInventory();
+            List<String> inventory = encodeItems(inv.getContents());
+            List<String> armor = encodeItems(inv.getArmorContents());
+            List<String> extra = encodeItems(inv.getExtraContents());
+            List<String> ender = encodeItems(player.getEnderChest().getContents());
+            String cursor = encodeItem(player.getItemOnCursor());
+            if (inventory == null || armor == null || extra == null || ender == null || cursor == null) {
+                plugin.getLogger().warning("Refusing transfer snapshot for " + player.getName()
+                        + " — an item failed to serialize. Inventory was not touched.");
+                return -1L;
+            }
+            invSlots = occupiedEncoded(inventory);
+            yaml.set("inventory-occupied", invSlots);
+            yaml.set("inventory-b64", inventory);
+            yaml.set("armor-b64", armor);
+            yaml.set("extra-b64", extra);
+            yaml.set("enderchest-b64", ender);
+            yaml.set("cursor-b64", cursor);
         }
-        int invSlots = occupiedEncoded(inventory);
-        yaml.set("inventory-occupied", invSlots);
-        yaml.set("inventory-b64", inventory);
-        yaml.set("armor-b64", armor);
-        yaml.set("extra-b64", extra);
-        yaml.set("enderchest-b64", ender);
-        yaml.set("cursor-b64", cursor);
 
         List<String> effects = new ArrayList<>();
         for (PotionEffect effect : player.getActivePotionEffects()) {
@@ -181,7 +190,7 @@ public final class TransferSnapshotStore {
                     + " level=" + barLevel
                     + " levelTrusted=" + levelTrusted
                     + " skillsRich=" + skillsRich
-                    + " invSlots=" + invSlots
+                    + (omitInventory ? " inv=omitted" : " invSlots=" + invSlots)
                     + " floor=" + pendingFloor
                     + " warp=" + (pendingWarp == null ? "-" : pendingWarp)
                     + " (" + file.length() + " bytes)");
@@ -273,31 +282,56 @@ public final class TransferSnapshotStore {
         int pendingFloor = yaml.getInt("pending-floor", 0);
         boolean bossOnly = yaml.getBoolean("pending-boss-only", false);
         String pendingWarp = yaml.getString("pending-warp");
-        SlotDecode inventory = decodeSlots(yaml.getStringList("inventory-b64"));
-        SlotDecode armor = decodeSlots(yaml.getStringList("armor-b64"));
-        SlotDecode extra = decodeSlots(yaml.getStringList("extra-b64"));
-        SlotDecode ender = decodeSlots(yaml.getStringList("enderchest-b64"));
-        String cursorRaw = yaml.getString("cursor-b64");
+        boolean omitInventory = InventoryTransfer.omitSnapshot(
+                yaml.getString("from-server"),
+                yaml.getBoolean("inventory-omitted", false),
+                transferInventoryFromHub(),
+                ignoreInventoryFrom());
+        SlotDecode inventory = null;
+        SlotDecode armor = null;
+        SlotDecode extra = null;
+        SlotDecode ender = null;
         ItemStack cursor = null;
-        boolean cursorIntact = true;
-        if (cursorRaw != null && !cursorRaw.isBlank()) {
-            cursor = decodeItem(cursorRaw);
-            cursorIntact = cursor != null;
-        }
-        boolean applyInventory = TransferProgressGuard.applyItemSection(
-                inventory.occupied(), occupied(player.getInventory().getContents()), inventory.intact());
-        boolean applyArmor = TransferProgressGuard.applyItemSection(
-                armor.occupied(), occupied(player.getInventory().getArmorContents()), armor.intact());
-        boolean applyExtra = TransferProgressGuard.applyItemSection(
-                extra.occupied(), occupied(player.getInventory().getExtraContents()), extra.intact());
-        boolean applyEnder = TransferProgressGuard.applyItemSection(
-                ender.occupied(), occupied(player.getEnderChest().getContents()), ender.intact());
-        if (!applyInventory || !applyArmor || !applyExtra || !applyEnder || !cursorIntact) {
-            plugin.getLogger().warning("Kept live gear for " + player.getName()
-                    + " — snapshot inventory was empty or only partly readable"
-                    + " (inv=" + applyInventory + " armor=" + applyArmor
-                    + " extra=" + applyExtra + " ender=" + applyEnder
-                    + " cursor=" + cursorIntact + ").");
+        boolean applyInventory;
+        boolean applyArmor;
+        boolean applyExtra;
+        boolean applyEnder;
+        boolean cursorIntact;
+        if (omitInventory) {
+            applyInventory = false;
+            applyArmor = false;
+            applyExtra = false;
+            applyEnder = false;
+            cursorIntact = false;
+            plugin.getLogger().info("Leaving inventory in place for " + player.getName()
+                    + " — snapshot from " + yaml.getString("from-server")
+                    + " does not carry gear. Warp and routing still apply.");
+        } else {
+            inventory = decodeSlots(yaml.getStringList("inventory-b64"));
+            armor = decodeSlots(yaml.getStringList("armor-b64"));
+            extra = decodeSlots(yaml.getStringList("extra-b64"));
+            ender = decodeSlots(yaml.getStringList("enderchest-b64"));
+            String cursorRaw = yaml.getString("cursor-b64");
+            cursorIntact = true;
+            if (cursorRaw != null && !cursorRaw.isBlank()) {
+                cursor = decodeItem(cursorRaw);
+                cursorIntact = cursor != null;
+            }
+            applyInventory = TransferProgressGuard.applyItemSection(
+                    inventory.occupied(), occupied(player.getInventory().getContents()), inventory.intact());
+            applyArmor = TransferProgressGuard.applyItemSection(
+                    armor.occupied(), occupied(player.getInventory().getArmorContents()), armor.intact());
+            applyExtra = TransferProgressGuard.applyItemSection(
+                    extra.occupied(), occupied(player.getInventory().getExtraContents()), extra.intact());
+            applyEnder = TransferProgressGuard.applyItemSection(
+                    ender.occupied(), occupied(player.getEnderChest().getContents()), ender.intact());
+            if (!applyInventory || !applyArmor || !applyExtra || !applyEnder || !cursorIntact) {
+                plugin.getLogger().warning("Kept live gear for " + player.getName()
+                        + " — snapshot inventory was empty or only partly readable"
+                        + " (inv=" + applyInventory + " armor=" + applyArmor
+                        + " extra=" + applyExtra + " ender=" + applyEnder
+                        + " cursor=" + cursorIntact + ").");
+            }
         }
         ItemStack[] invBackup = cloneItems(player.getInventory().getContents());
         ItemStack[] armorBackup = cloneItems(player.getInventory().getArmorContents());
@@ -322,9 +356,11 @@ public final class TransferSnapshotStore {
                 player.setItemOnCursor(cursor);
             }
 
-            int held = yaml.getInt("held-slot", player.getInventory().getHeldItemSlot());
-            if (held >= 0 && held <= 8) {
-                player.getInventory().setHeldItemSlot(held);
+            if (!omitInventory) {
+                int held = yaml.getInt("held-slot", player.getInventory().getHeldItemSlot());
+                if (held >= 0 && held <= 8) {
+                    player.getInventory().setHeldItemSlot(held);
+                }
             }
 
             for (PotionEffect effect : new ArrayList<>(player.getActivePotionEffects())) {
@@ -427,6 +463,7 @@ public final class TransferSnapshotStore {
                     + " skills=" + skillsImported
                     + " keptLiveLevel=" + !writeSnapshotLevel
                     + " keptLiveInv=" + !applyInventory
+                    + " inventoryOmitted=" + omitInventory
                     + " pendingFloor=" + pendingFloor
                     + " warp=" + (pendingWarp == null ? "-" : pendingWarp));
             return new ApplyResult(true, pendingFloor, bossOnly, pendingWarp);
@@ -489,6 +526,24 @@ public final class TransferSnapshotStore {
             copy[i] = items[i] == null ? null : items[i].clone();
         }
         return copy;
+    }
+
+    private boolean transferInventoryFromHub() {
+        return networkConfig().getBoolean("network.transfer-inventory-from-hub", false);
+    }
+
+    private java.util.List<String> ignoreInventoryFrom() {
+        java.util.List<String> listed = networkConfig().getStringList("network.ignore-inventory-from");
+        return listed == null ? java.util.List.of() : listed;
+    }
+
+    /** Core config, even when Dungeons constructed this store with its own plugin. */
+    private org.bukkit.configuration.Configuration networkConfig() {
+        de.aetherion.core.AetherionCore core = de.aetherion.core.AetherionCore.get();
+        if (core != null) {
+            return core.getConfig();
+        }
+        return plugin.getConfig();
     }
 
     private static String currentServerName() {

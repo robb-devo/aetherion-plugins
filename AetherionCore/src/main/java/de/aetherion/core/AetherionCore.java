@@ -61,6 +61,10 @@ public final class AetherionCore extends JavaPlugin {
         networkWipeWatch.start();
         snapshots = new TransferSnapshotStore(this);
         link = new MainWorldLink(this, snapshots);
+        boolean carryHubInventory = getConfig().getBoolean("network.transfer-inventory-from-hub", false);
+        java.util.List<String> ignoreInventoryFrom = getConfig().getStringList("network.ignore-inventory-from");
+        getLogger().info("Inventory transfer from hub: " + (carryHubInventory ? "ON" : "OFF (join/pit only)")
+                + (ignoreInventoryFrom.isEmpty() ? "" : " ignore-inventory-from=" + ignoreInventoryFrom));
         getLogger().info("Shared keys and hit flags ready. Game plugins keep the loop.");
     }
 

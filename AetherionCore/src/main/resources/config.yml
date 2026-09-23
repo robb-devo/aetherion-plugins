@@ -10,6 +10,14 @@ network:
   main-server: mmo-r
   # Empty = Crafty shared/transfer (same folder AetherionDungeons already uses).
   shared-dir: ""
+  # Hub is join + pit. false (also the default when this key is absent) means
+  # snapshots whose from-server is hub do not write inventory, armor, ender chest,
+  # cursor, or extra slots, and destinations do not apply those blobs.
+  # Warp, floor, and to-server routing still apply. MMO-R ↔ MMO-D is unchanged.
+  # Set true only if Hub gear should overwrite the destination inventory.
+  transfer-inventory-from-hub: false
+  # Extra Velocity names treated the same way. Hub itself follows the flag above.
+  ignore-inventory-from: []
 
 # wipe.* is used by /wipe beta and NetworkWipeWatch (Crafty multi-backend).
 # Empty / omitted keys keep historical production behavior:
