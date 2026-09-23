@@ -513,6 +513,7 @@ final class DungeonWarmPool {
                     prep = AshesEncounter.prepare(plugin, world);
                     saveAshesPrep(prep);
                 }
+                AshesEncounter.adoptLootChests(plugin, world);
                 parkWorld(world);
                 world.setSpawnLocation(new Location(
                         world,
