@@ -31,6 +31,11 @@ public final class BossGearBalance {
         if (itemId == null || stats == null || meta == null) {
             return false;
         }
+        if ("ashen_katana".equalsIgnoreCase(itemId) && legacyAshenKatana(stats)) {
+            copyCombat(stats, base(itemId));
+            stamp(meta);
+            return true;
+        }
         Integer revision = meta.getPersistentDataContainer().get(ItemKeys.bossGearRev(), PersistentDataType.INTEGER);
         if (revision != null && revision >= REV) {
             return false;
@@ -58,6 +63,7 @@ public final class BossGearBalance {
         return switch (itemId.toLowerCase()) {
             case "warped_blade" -> weapon(48, 8, 9, 62);
             case "gravwell_cleaver" -> weapon(80, 8, 13, 96);
+            case "ashen_katana" -> weapon(90, 9, 80, 140);
             case "bridged_axe" -> weapon(80, 12, 13, 90);
             case "skuldugery_shortbow" -> weapon(72, 14, 12, 88);
             case "aetherblade" -> weapon(100, 16, 16, 115);
@@ -134,6 +140,18 @@ public final class BossGearBalance {
         stats.setCritDamage(critDamage);
         stats.setSpeed(speed);
         return stats;
+    }
+
+    /** Pre-polish Dev Menu katana: 68 damage, 9 spread, 15% crit, 108% crit damage. */
+    private static boolean legacyAshenKatana(ItemStats stats) {
+        return near(stats.getDamage(), 68)
+                && near(stats.getAttackSpread(), 9)
+                && near(stats.getCritChance(), 15)
+                && near(stats.getCritDamage(), 108);
+    }
+
+    private static boolean near(double actual, double expected) {
+        return Math.abs(actual - expected) < 0.05;
     }
 
     private static void copyCombat(ItemStats target, ItemStats base) {
