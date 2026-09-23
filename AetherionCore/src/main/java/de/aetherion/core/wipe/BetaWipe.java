@@ -1,5 +1,7 @@
 package de.aetherion.core.wipe;
 
+import de.aetherion.core.playtime.PlaytimePaths;
+
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -29,6 +31,7 @@ public final class BetaWipe {
     private final File pluginsFolder;
     private final File serverRoot;
     private final WipeLayout layout;
+    private final File playtimeStore;
 
     public BetaWipe(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -36,6 +39,7 @@ public final class BetaWipe {
         this.pluginsFolder = plugin.getDataFolder().getParentFile();
         this.serverRoot = pluginsFolder == null ? new File(".") : pluginsFolder.getParentFile();
         this.layout = new WipeLayout(plugin, serverRoot);
+        this.playtimeStore = PlaytimePaths.resolve(plugin);
     }
 
     public WipeLayout layout() {
@@ -128,6 +132,7 @@ public final class BetaWipe {
             return;
         }
         plugin.getLogger().warning("Wiping shared progress at " + shared.getAbsolutePath());
+        // shared/playtime is lifetime online time (PlaytimePaths) and stays in place.
         int removed = deleteChildren(new File(shared, "transfer"));
         removed += deleteChildren(new File(shared, "progress"));
         // Explicit nested folders (junction targets under progress/AetherionItems etc.)
@@ -183,6 +188,7 @@ public final class BetaWipe {
     public int run() {
         Logger log = plugin.getLogger();
         log.warning("Beta wipe: resetting player data to zero. " + layout.describe());
+        log.warning("Playtime store is kept: " + playtimeStore.getAbsolutePath());
         if (layout.dryRun()) {
             log.warning("Beta wipe DRY-RUN: files and flags will not be changed.");
         }
@@ -298,6 +304,10 @@ public final class BetaWipe {
 
     private int deleteRecursively(File file) {
         if (file == null || !file.exists()) {
+            return 0;
+        }
+        if (PlaytimePaths.isInside(playtimeStore, file)) {
+            plugin.getLogger().warning("Skipping playtime data: " + file.getAbsolutePath());
             return 0;
         }
         if (layout.dryRun()) {

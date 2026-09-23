@@ -4,7 +4,7 @@
 
 | Plugin | Owns | Does **not** own |
 |--------|------|------------------|
-| **AetherionCore** | PDC keys, entity identity helpers, hit flags, cross-plugin service interfaces (`de.aetherion.core.api`), `VoidChunkGenerator`, FancyNpcs reflection facade, beta wipe paths | Game ticks, combat math, loot, quests |
+| **AetherionCore** | PDC keys, entity identity helpers, hit flags, cross-plugin service interfaces (`de.aetherion.core.api`), `VoidChunkGenerator`, FancyNpcs reflection facade, beta wipe paths, wipe-safe playtime (`/playtime`) | Game ticks, combat math, loot, quests |
 | **AetherionItems** | Custom items/recipes, economy (coins/shards/market), skills/loadouts, party, codex, combat stats | World regen, dungeon instances, boss AI |
 | **BossEngine** | Boss templates (YAML), phases/skills, spawners | Player economy, quests |
 | **AetherionQuests** | Quest state, NPCs, compass/markers, rewards hooks | Item definitions |

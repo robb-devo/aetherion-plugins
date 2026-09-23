@@ -23,6 +23,7 @@ public final class AetherServices {
     private static volatile HarvestAccess harvest;
     private static volatile DungeonAccess dungeons;
     private static volatile TestBotsAccess testBots;
+    private static volatile PlaytimeAccess playtime;
 
     private AetherServices() {
     }
@@ -83,6 +84,10 @@ public final class AetherServices {
         testBots = access;
     }
 
+    public static void registerPlaytime(PlaytimeAccess access) {
+        playtime = access;
+    }
+
     public static PartyAccess party() {
         return party;
     }
@@ -137,6 +142,10 @@ public final class AetherServices {
 
     public static TestBotsAccess testBots() {
         return testBots;
+    }
+
+    public static PlaytimeAccess playtime() {
+        return playtime;
     }
 
     public static void clearParty(PartyAccess access) {
@@ -220,6 +229,12 @@ public final class AetherServices {
     public static void clearTestBots(TestBotsAccess access) {
         if (testBots == access) {
             testBots = null;
+        }
+    }
+
+    public static void clearPlaytime(PlaytimeAccess access) {
+        if (playtime == access) {
+            playtime = null;
         }
     }
 }
