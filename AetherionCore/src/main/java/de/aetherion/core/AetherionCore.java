@@ -1,5 +1,6 @@
 package de.aetherion.core;
 
+import de.aetherion.core.command.NetworkRestartCommand;
 import de.aetherion.core.command.WipeCommand;
 import de.aetherion.core.wipe.BetaWipe;
 import de.aetherion.core.wipe.NetworkWipeWatch;
@@ -46,6 +47,14 @@ public final class AetherionCore extends JavaPlugin {
         if (wipe != null) {
             wipe.setExecutor(wipeCommand);
             wipe.setTabCompleter(wipeCommand);
+        }
+        NetworkRestartCommand restartCommand = new NetworkRestartCommand(this);
+        PluginCommand aenet = getCommand("aenet");
+        if (aenet != null) {
+            aenet.setExecutor(restartCommand);
+            aenet.setTabCompleter(restartCommand);
+        } else {
+            getLogger().warning("Command aenet is missing from plugin.yml — Crafty console restart will not work.");
         }
         networkWipeWatch.start();
         getLogger().info("Shared keys and hit flags ready. Game plugins keep the loop.");
