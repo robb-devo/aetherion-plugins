@@ -23,6 +23,15 @@ AetherionCore `config.yml` → `wipe.*` (defaults = current production):
 
 See `AetherionCore/README.md` and the comments in Core `config.yml`.
 
+## Restart countdown (Crafty)
+
+`aenet restart [seconds] [reason]` on the console (no leading slash). Default **10** seconds. Chat shows even seconds only (`10`, `8`, `6`, `4`, `2`).
+
+- Manual: `aenet restart 10` — countdown only.
+- With a reason: `aenet restart 10 Patch Ashen-Katana-Restore` — one English opening line, then the countdown.
+
+The plugin calls `Bukkit.shutdown()` when the countdown ends. Send it before Crafty Stop / SIGTERM. Details and the host wrapper: `AetherionCore/README.md`.
+
 ## Soft depends (install when you use the feature)
 
 | Plugin | Soft-deps |
