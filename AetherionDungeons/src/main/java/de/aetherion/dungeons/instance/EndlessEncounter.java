@@ -253,6 +253,10 @@ public final class EndlessEncounter {
         for (int[] xyz : prep.doorBlocks) {
             world.getBlockAt(xyz[0], xyz[1], xyz[2]).setType(DOOR_GLASS, false);
         }
+        Block reward = world.getBlockAt(BOSS_X + 3, BOSS_Y, BOSS_Z);
+        if (DungeonLootFx.isLootChest(reward)) {
+            reward.setType(Material.AIR, false);
+        }
         BossEngineBridge.despawnInWorld(world);
         plugin.getLogger().info("Endless base recycled (" + world.getName() + ").");
     }
