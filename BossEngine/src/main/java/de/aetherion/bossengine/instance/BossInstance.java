@@ -753,7 +753,18 @@ public class BossInstance {
             if (transition.isFreezeAi() && entity instanceof Mob mob) {
                 mob.setAI(false);
             }
-            if (transition.getShape() == TransitionShape.HOVER_STORM) {
+            if (ashenSheathDirector.isAshen()) {
+                // Cherry wood and leaves only. A bad shape must not play the shredder beacon.
+                if (transition.getShape() == TransitionShape.CHERRY_TORNADO) {
+                    entity.getWorld().playSound(entity.getLocation(), Sound.BLOCK_CHERRY_LEAVES_BREAK, 1.15f, 0.55f);
+                    entity.getWorld().playSound(entity.getLocation(), Sound.ITEM_TRIDENT_THUNDER, 0.7f, 1.45f);
+                    entity.getWorld().playSound(entity.getLocation(), Sound.BLOCK_CHERRY_WOOD_STEP, 0.8f, 0.6f);
+                } else {
+                    entity.getWorld().playSound(entity.getLocation(), Sound.BLOCK_CHERRY_WOOD_STEP, 1.0f, 0.6f);
+                    entity.getWorld().playSound(entity.getLocation(), Sound.BLOCK_CHERRY_LEAVES_BREAK, 1.05f, 0.7f);
+                    entity.getWorld().playSound(entity.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, 0.7f, 0.55f);
+                }
+            } else if (transition.getShape() == TransitionShape.HOVER_STORM) {
                 // Walk phase keeps gravity/AI feel; lift starts once he reaches center.
                 entity.setGlowing(true);
                 entity.setFallDistance(0);
@@ -781,14 +792,6 @@ public class BossInstance {
             } else if (transition.getShape() == TransitionShape.VOID_TORNADO) {
                 entity.getWorld().playSound(entity.getLocation(), Sound.ENTITY_ENDERMAN_STARE, 1.2f, 0.55f);
                 entity.getWorld().playSound(entity.getLocation(), Sound.BLOCK_PORTAL_TRIGGER, 0.85f, 0.6f);
-            } else if (transition.getShape() == TransitionShape.CHERRY_TORNADO) {
-                entity.getWorld().playSound(entity.getLocation(), Sound.BLOCK_CHERRY_LEAVES_BREAK, 1.15f, 0.55f);
-                entity.getWorld().playSound(entity.getLocation(), Sound.ITEM_TRIDENT_THUNDER, 0.7f, 1.45f);
-                entity.getWorld().playSound(entity.getLocation(), Sound.BLOCK_BEACON_ACTIVATE, 0.65f, 1.6f);
-            } else if (transition.getShape() == TransitionShape.PETAL_DRAW) {
-                entity.getWorld().playSound(entity.getLocation(), Sound.BLOCK_CHERRY_WOOD_STEP, 1.0f, 0.6f);
-                entity.getWorld().playSound(entity.getLocation(), Sound.BLOCK_CHERRY_LEAVES_BREAK, 1.05f, 0.7f);
-                entity.getWorld().playSound(entity.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, 0.7f, 0.55f);
             } else if (transition.getShape() == TransitionShape.BEAM_SPIN) {
                 entity.getWorld().playSound(entity.getLocation(), Sound.BLOCK_BEACON_ACTIVATE, 1.15f, 0.55f);
                 entity.getWorld().playSound(entity.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 0.8f, 0.7f);
@@ -823,15 +826,17 @@ public class BossInstance {
         } else if (transition.getShape() == TransitionShape.BLACK_HOLE) {
             tickPhaseReturn(progress);
             dragonDirector.tickBlackHole(transition, transitionTick, transition.getDurationTicks());
+        } else if (ashenSheathDirector.isAshen()) {
+            // Ashen Sheath never falls through to the crystal beams or the portal tornado.
+            tickPhaseReturn(progress);
+            if (transition.getShape() == TransitionShape.CHERRY_TORNADO) {
+                ashenSheathDirector.tickCherryTornado(hazardFocus(transitionTick <= 1), transitionTick, transition.getDurationTicks());
+            } else {
+                ashenSheathDirector.tickPetalDraw(hazardFocus(transitionTick <= 1), transitionTick, transition.getDurationTicks());
+            }
         } else if (transition.getShape() == TransitionShape.VOID_TORNADO) {
             tickPhaseReturn(progress);
             spectacles.tickVoidTornado(transition, transitionTick, transition.getDurationTicks());
-        } else if (transition.getShape() == TransitionShape.CHERRY_TORNADO) {
-            tickPhaseReturn(progress);
-            ashenSheathDirector.tickCherryTornado(hazardFocus(transitionTick <= 1), transitionTick, transition.getDurationTicks());
-        } else if (transition.getShape() == TransitionShape.PETAL_DRAW) {
-            tickPhaseReturn(progress);
-            ashenSheathDirector.tickPetalDraw(hazardFocus(transitionTick <= 1), transitionTick, transition.getDurationTicks());
         } else if (transition.getShape() == TransitionShape.BEAM_SPIN) {
             tickPhaseReturn(progress);
             spectacles.tickBeamSpin(transition, transitionTick, transition.getDurationTicks());

@@ -1,7 +1,9 @@
 # ============================================================
 # The Ashen Sheath – Forage / Dojo specialty boss
-# Same kit as live — readable windups, real cherry-leaf tornado.
 # Combat: AshenSheathDirector. Spawn: /boss spawn ashen_sheath
+# First flashy tell is Iaido (the opening cut): a bamboo sheath, a dark blade
+# sliding along one ground line, and flat cherry-leaf blocks falling onto that line.
+# Falling Blossoms repeats the same draw. No crystals, end rods, portal spiral, or beam spin.
 # Drop: ashen_katana
 # ============================================================
 
@@ -106,7 +108,7 @@ phases:
         particle: CHERRY_LEAVES
         count: 48
         radius: 10
-        sound: BLOCK_BEACON_ACTIVATE
+        sound: ITEM_TRIDENT_RETURN
       - type: DIALOG
         trigger: ON_PHASE
         broadcast: true

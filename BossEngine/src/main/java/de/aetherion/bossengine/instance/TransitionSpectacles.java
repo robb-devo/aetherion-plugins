@@ -23,7 +23,8 @@ import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Lobby Cleaner phase FX only: purple tornado, then four spinning crystal beams.
- * The Ashen Sheath does not call these. Its early tell is PETAL_DRAW.
+ * BossInstance never routes the Ashen Sheath here. Its tells are a straight petal draw
+ * and a vertical cherry column.
  */
 final class TransitionSpectacles {
 
