@@ -227,6 +227,11 @@ public final class ItemKeys {
         return key("wildlife_label");
     }
 
+    /** Label TextDisplay UUID stored on the mob. One HP label per mob. */
+    public static NamespacedKey wildlifeLabelEntity() {
+        return key("wildlife_label_entity");
+    }
+
     public static NamespacedKey wildlifeTitle() {
         return key("wildlife_title");
     }

@@ -54,9 +54,11 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityPotionEffectEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
+import org.bukkit.event.entity.EntityRemoveEvent;
 import org.bukkit.event.entity.EntityShootBowEvent;
 import org.bukkit.event.entity.PotionSplashEvent;
 import org.bukkit.event.world.ChunkLoadEvent;
+import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.PotionMeta;
@@ -73,9 +75,12 @@ import org.joml.Vector3f;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -95,6 +100,9 @@ public final class WildlifeLooks implements Listener {
     public static final byte TIER_BRUTE = 2;
     /** T4 Crypt (750–1000 HP, deep names). */
     public static final byte TIER_CRYPT = 3;
+
+    /** One floating HP label. Counted by {@code /aedisplays}. */
+    public static final String WILDLIFE_LABEL_TAG = "aetherion_wildlife_hp";
 
     private static final byte STURDY = TIER_STURDY;
     private static final double STURDY_CHANCE = 0.16;
@@ -133,6 +141,8 @@ public final class WildlifeLooks implements Listener {
     private static WildlifeLooks INSTANCE;
 
     private final JavaPlugin plugin;
+    /** Coalesce chunk-event cleanups into one next-tick sweep. */
+    private boolean sweepQueued;
 
     private WildlifeLooks(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -142,9 +152,16 @@ public final class WildlifeLooks implements Listener {
         WildlifeLooks looks = new WildlifeLooks(plugin);
         INSTANCE = looks;
         plugin.getServer().getPluginManager().registerEvents(looks, plugin);
-        plugin.getServer().getScheduler().runTaskLater(plugin, looks::purgeOrphans, 80L);
+        plugin.getServer().getScheduler().runTaskLater(plugin, looks::sweepOrphanLabels, 80L);
         plugin.getServer().getScheduler().runTaskLater(plugin, looks::cullManagedAnimals, 100L);
         plugin.getServer().getScheduler().runTaskTimer(plugin, looks::tick, 40L, 40L);
+        plugin.getServer().getScheduler().runTaskTimer(plugin, looks::sweepOrphanLabels, 200L, 200L);
+    }
+
+    public static void shutdown() {
+        if (INSTANCE != null) {
+            INSTANCE.sweepOrphanLabels();
+        }
     }
 
     public static void discard(LivingEntity entity) {
@@ -502,9 +519,50 @@ public final class WildlifeLooks implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onChunkLoad(ChunkLoadEvent event) {
+        boolean strayLabel = false;
         for (Entity entity : event.getChunk().getEntities()) {
             if (entity instanceof LivingEntity living) {
                 attach(living, false);
+            } else if (entity instanceof TextDisplay display && isWildlifeLabel(display)) {
+                strayLabel = true;
+            }
+        }
+        if (strayLabel) {
+            queueSweep();
+        }
+    }
+
+    /**
+     * Death, despawn, and unload. Paper rejects {@code remove()} while the chunk
+     * section is still updating, so the label ids are discarded on the next tick.
+     * Passengers are often already ejected by then — the id stored on the mob
+     * is what keeps the orphan from being missed.
+     */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onOwnerRemoved(EntityRemoveEvent event) {
+        if (!(event.getEntity() instanceof LivingEntity living) || living instanceof Player) {
+            return;
+        }
+        List<UUID> ids = labelIds(living);
+        if (ids.isEmpty() || !plugin.isEnabled()) {
+            return;
+        }
+        plugin.getServer().getScheduler().runTask(plugin, () -> discardLabels(ids, false));
+    }
+
+    @EventHandler
+    public void onChunkUnload(ChunkUnloadEvent event) {
+        if (event.getChunk() == null) {
+            return;
+        }
+        for (Entity entity : event.getChunk().getEntities()) {
+            if (entity instanceof TextDisplay display && isWildlifeLabel(display)) {
+                try {
+                    display.setPersistent(false);
+                } catch (Throwable ignored) {
+                }
+                queueSweep();
+                return;
             }
         }
     }
@@ -1304,12 +1362,63 @@ public final class WildlifeLooks implements Listener {
         if (entity == null) {
             return;
         }
+        discardLabels(labelIds(entity), true);
         entity.getPersistentDataContainer().remove(ItemKeys.wildlifeLabel());
-        for (Entity passenger : entity.getPassengers()) {
-            if (passenger instanceof TextDisplay
-                    && passenger.getPersistentDataContainer().has(ItemKeys.wildlifeLabel(), PersistentDataType.STRING)) {
-                passenger.remove();
+        entity.getPersistentDataContainer().remove(ItemKeys.wildlifeLabelEntity());
+    }
+
+    private List<UUID> labelIds(LivingEntity entity) {
+        List<UUID> ids = new ArrayList<>();
+        if (entity == null) {
+            return ids;
+        }
+        String stored = entity.getPersistentDataContainer().get(
+                ItemKeys.wildlifeLabelEntity(),
+                PersistentDataType.STRING
+        );
+        if (stored != null && !stored.isBlank()) {
+            try {
+                ids.add(UUID.fromString(stored));
+            } catch (IllegalArgumentException ignored) {
             }
+        }
+        for (Entity passenger : List.copyOf(entity.getPassengers())) {
+            if (passenger instanceof TextDisplay display && isWildlifeLabel(display)) {
+                UUID id = display.getUniqueId();
+                if (!ids.contains(id)) {
+                    ids.add(id);
+                }
+            }
+        }
+        return ids;
+    }
+
+    /**
+     * @param allowDefer when false, a rejected remove is left for the periodic sweep
+     *                    so a chunk-update failure cannot reschedule itself forever
+     */
+    private void discardLabels(List<UUID> ids, boolean allowDefer) {
+        if (ids == null || ids.isEmpty()) {
+            return;
+        }
+        List<UUID> deferred = allowDefer ? new ArrayList<>() : null;
+        for (UUID id : ids) {
+            Entity entity = Bukkit.getEntity(id);
+            if (!(entity instanceof TextDisplay display) || !isWildlifeLabel(display)) {
+                continue;
+            }
+            try {
+                display.setPersistent(false);
+                display.remove();
+            } catch (Throwable ex) {
+                if (deferred != null) {
+                    deferred.add(id);
+                }
+            }
+        }
+        if (deferred != null && !deferred.isEmpty() && plugin.isEnabled()) {
+            List<UUID> pending = List.copyOf(deferred);
+            plugin.getServer().getScheduler().runTask(plugin, () -> discardLabels(pending, false));
         }
     }
 
@@ -1338,19 +1447,47 @@ public final class WildlifeLooks implements Listener {
         if (label == null || !label.isValid()) {
             label = spawnLabel(entity, text);
         } else {
+            stampLabel(label, entity);
             label.text(LegacyComponentSerializer.legacySection().deserialize(text));
             label.setSeeThrough(false);
             // Passenger attach is already near the head — keep a tiny lift only.
             label.setTransformation(labelTransform(entity));
+            if (label.getVehicle() != entity) {
+                entity.addPassenger(label);
+            }
+            rememberLabel(entity, label);
         }
     }
 
+    /**
+     * The mob's one label: current passenger, or the display id stored on the mob.
+     * Does not spawn. Extra passengers are not removed here — chunk load runs this,
+     * and Paper rejects remove during chunk updates. {@link #sweepOrphanLabels()} keeps one.
+     */
     private TextDisplay labelOf(LivingEntity entity) {
-        for (Entity passenger : entity.getPassengers()) {
-            if (passenger instanceof TextDisplay display
-                    && display.getPersistentDataContainer().has(ItemKeys.wildlifeLabel(), PersistentDataType.STRING)) {
+        TextDisplay passengerLabel = null;
+        for (Entity passenger : List.copyOf(entity.getPassengers())) {
+            if (passenger instanceof TextDisplay display && isWildlifeLabel(display) && display.isValid()) {
+                passengerLabel = display;
+                break;
+            }
+        }
+        if (passengerLabel != null) {
+            return passengerLabel;
+        }
+        String stored = entity.getPersistentDataContainer().get(
+                ItemKeys.wildlifeLabelEntity(),
+                PersistentDataType.STRING
+        );
+        if (stored == null || stored.isBlank()) {
+            return null;
+        }
+        try {
+            Entity tracked = Bukkit.getEntity(UUID.fromString(stored));
+            if (tracked instanceof TextDisplay display && display.isValid() && isWildlifeLabel(display)) {
                 return display;
             }
+        } catch (IllegalArgumentException ignored) {
         }
         return null;
     }
@@ -1360,6 +1497,8 @@ public final class WildlifeLooks implements Listener {
         if (world == null) {
             return null;
         }
+        // Drop the previous label first so a missed passenger cannot stack a second one.
+        removeLabel(entity);
         TextDisplay label = world.spawn(entity.getLocation(), TextDisplay.class, display -> {
             display.text(LegacyComponentSerializer.legacySection().deserialize(text));
             display.setBillboard(Display.Billboard.CENTER);
@@ -1370,14 +1509,56 @@ public final class WildlifeLooks implements Listener {
             display.setPersistent(false);
             display.setGravity(false);
             display.setTransformation(labelTransform(entity));
-            display.getPersistentDataContainer().set(
-                    ItemKeys.wildlifeLabel(),
-                    PersistentDataType.STRING,
-                    entity.getUniqueId().toString()
-            );
+            stampLabel(display, entity);
         });
+        label.setPersistent(false);
+        stampLabel(label, entity);
         entity.addPassenger(label);
+        rememberLabel(entity, label);
         return label;
+    }
+
+    private static void stampLabel(TextDisplay label, LivingEntity owner) {
+        label.setPersistent(false);
+        label.addScoreboardTag(WILDLIFE_LABEL_TAG);
+        label.getPersistentDataContainer().set(
+                ItemKeys.wildlifeLabel(),
+                PersistentDataType.STRING,
+                owner.getUniqueId().toString()
+        );
+    }
+
+    private static void rememberLabel(LivingEntity entity, TextDisplay label) {
+        entity.getPersistentDataContainer().set(
+                ItemKeys.wildlifeLabelEntity(),
+                PersistentDataType.STRING,
+                label.getUniqueId().toString()
+        );
+    }
+
+    private static boolean isWildlifeLabel(TextDisplay display) {
+        if (display == null) {
+            return false;
+        }
+        if (display.getScoreboardTags().contains(WILDLIFE_LABEL_TAG)) {
+            return true;
+        }
+        return display.getPersistentDataContainer().has(ItemKeys.wildlifeLabel(), PersistentDataType.STRING);
+    }
+
+    private static UUID ownerId(TextDisplay display) {
+        if (display == null) {
+            return null;
+        }
+        String raw = display.getPersistentDataContainer().get(ItemKeys.wildlifeLabel(), PersistentDataType.STRING);
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        try {
+            return UUID.fromString(raw);
+        } catch (IllegalArgumentException ex) {
+            return null;
+        }
     }
 
     /**
@@ -1436,11 +1617,16 @@ public final class WildlifeLooks implements Listener {
         if (display.getPersistentDataContainer().has(AetherKeys.PET_ENTITY, PersistentDataType.BYTE)) {
             return false;
         }
-        Entity vehicle = display.getVehicle();
-        if (display.getPersistentDataContainer().has(ItemKeys.wildlifeLabel(), PersistentDataType.STRING)) {
-            return !(vehicle instanceof LivingEntity living) || !eligible(living);
+        if (isWildlifeLabel(display)) {
+            UUID owner = ownerId(display);
+            Entity target = owner == null ? null : Bukkit.getEntity(owner);
+            if (!(target instanceof LivingEntity living) || !living.isValid() || living.isDead() || !eligible(living)) {
+                return true;
+            }
+            TextDisplay keeper = labelOf(living);
+            return keeper != null && !keeper.getUniqueId().equals(display.getUniqueId());
         }
-        return isStrayHpLabel(display) && vehicle == null;
+        return isStrayHpLabel(display) && display.getVehicle() == null;
     }
 
     private int populatePulse;
@@ -1520,19 +1706,125 @@ public final class WildlifeLooks implements Listener {
                 && !name.startsWith("aether_test_");
     }
 
-    private void purgeOrphans() {
-        int labels = 0;
+    private void queueSweep() {
+        if (sweepQueued || !plugin.isEnabled()) {
+            return;
+        }
+        sweepQueued = true;
+        plugin.getServer().getScheduler().runTask(plugin, () -> {
+            sweepQueued = false;
+            sweepOrphanLabels();
+        });
+    }
+
+    /**
+     * One label per live mob. Every other wildlife HP display is removed:
+     * owner UUID gone, owner dead, or a second label for an owner that already
+     * has one. Startup used to delete every label once; that cleared the pile
+     * on restart and left the spawn path free to fill it again.
+     */
+    private void sweepOrphanLabels() {
+        Map<UUID, List<TextDisplay>> byOwner = new HashMap<>();
+        int removed = 0;
         for (World world : Bukkit.getWorlds()) {
             for (Entity entity : List.copyOf(world.getEntitiesByClass(TextDisplay.class))) {
-                TextDisplay display = (TextDisplay) entity;
-                if (display.getPersistentDataContainer().has(ItemKeys.wildlifeLabel(), PersistentDataType.STRING)
-                        || isStrayHpLabel(display)) {
-                    display.remove();
-                    labels++;
+                if (!(entity instanceof TextDisplay display) || !display.isValid()) {
+                    continue;
+                }
+                if (display.getPersistentDataContainer().has(AetherKeys.PET_ENTITY, PersistentDataType.BYTE)) {
+                    continue;
+                }
+                if (!isWildlifeLabel(display)) {
+                    if (isStrayHpLabel(display) && display.getVehicle() == null) {
+                        if (tryRemoveLabel(display)) {
+                            removed++;
+                        }
+                    }
+                    continue;
+                }
+                UUID owner = ownerId(display);
+                if (owner == null) {
+                    if (tryRemoveLabel(display)) {
+                        removed++;
+                    }
+                    continue;
+                }
+                byOwner.computeIfAbsent(owner, ignored -> new ArrayList<>()).add(display);
+            }
+        }
+        for (Map.Entry<UUID, List<TextDisplay>> entry : byOwner.entrySet()) {
+            Entity owner = Bukkit.getEntity(entry.getKey());
+            List<TextDisplay> labels = entry.getValue();
+            if (!(owner instanceof LivingEntity living) || !living.isValid() || living.isDead() || !eligible(living)) {
+                for (TextDisplay display : labels) {
+                    if (tryRemoveLabel(display)) {
+                        removed++;
+                    }
+                }
+                continue;
+            }
+            TextDisplay keep = chooseKeeper(living, labels);
+            if (keep != null && keep.getWorld() != living.getWorld()) {
+                if (tryRemoveLabel(keep)) {
+                    removed++;
+                }
+                keep = null;
+            }
+            if (keep != null) {
+                stampLabel(keep, living);
+                rememberLabel(living, keep);
+                keep.setPersistent(false);
+                if (keep.getVehicle() != living) {
+                    living.addPassenger(keep);
+                }
+            }
+            for (TextDisplay display : labels) {
+                if (display != keep && tryRemoveLabel(display)) {
+                    removed++;
                 }
             }
         }
-        plugin.getLogger().info("Cleared " + labels + " leftover HP labels.");
+        if (removed > 0) {
+            plugin.getLogger().info("Removed " + removed + " orphan wildlife HP labels.");
+        }
+    }
+
+    private static TextDisplay chooseKeeper(LivingEntity living, List<TextDisplay> labels) {
+        String tracked = living.getPersistentDataContainer().get(
+                ItemKeys.wildlifeLabelEntity(),
+                PersistentDataType.STRING
+        );
+        if (tracked != null) {
+            for (TextDisplay display : labels) {
+                if (tracked.equals(display.getUniqueId().toString()) && display.isValid()) {
+                    return display;
+                }
+            }
+        }
+        for (TextDisplay display : labels) {
+            if (display.isValid() && display.getVehicle() == living) {
+                return display;
+            }
+        }
+        for (TextDisplay display : labels) {
+            if (display.isValid()) {
+                return display;
+            }
+        }
+        return null;
+    }
+
+    private static boolean tryRemoveLabel(TextDisplay display) {
+        if (display == null || !display.isValid()) {
+            return false;
+        }
+        try {
+            display.setPersistent(false);
+            display.remove();
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
     }
 
     /**

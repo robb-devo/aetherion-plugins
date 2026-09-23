@@ -32,7 +32,8 @@ import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.world.ChunkLoadEvent;
+import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
@@ -42,15 +43,10 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionType;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
-import org.bukkit.util.Transformation;
 
-import org.joml.AxisAngle4f;
-import org.joml.Vector3f;
-
-import java.util.HashSet;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -102,10 +98,8 @@ public final class BorderlandsRiteService implements Listener {
     private final Map<UUID, Long> ritualBusyUntil = new ConcurrentHashMap<>();
     /** Active boss arenas: no T1–T3 spawn / walk-in while the boss lives. */
     private final List<BossBubble> activeBossBubbles = new CopyOnWriteArrayList<>();
-    /** Players currently seeing the glowing altar outline (vial held). */
-    private final Set<UUID> altarOutlineViewers = ConcurrentHashMap.newKeySet();
-    private UUID altarOutlineEntityId;
-    private int altarOutlineColorTick;
+    /** Chunk load/unload only queues one sweep; the scan itself stays on the scheduler. */
+    private boolean outlineSweepQueued;
     private volatile double riteNpcX = 251.5;
     private volatile double riteNpcY = 65.0;
     private volatile double riteNpcZ = 173.5;
@@ -120,10 +114,12 @@ public final class BorderlandsRiteService implements Listener {
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
         // Particle column only — no beacon/blocks. One-shot cleanup if an old buried beacon remains.
         plugin.getServer().getScheduler().runTaskLater(plugin, this::cleanupAltarBeaconBlocks, 40L);
-        plugin.getServer().getScheduler().runTaskLater(plugin, this::scrubOrphanAltarOutlines, 60L);
+        // Outline block displays are not spawned. A startup sweep alone looked like a
+        // fix after restart; the 5-tick task kept appending invisible displays overnight.
+        plugin.getServer().getScheduler().runTaskLater(plugin, this::sweepAltarOutlines, 60L);
+        plugin.getServer().getScheduler().runTaskTimer(plugin, this::sweepAltarOutlines, 200L, 200L);
         plugin.getServer().getScheduler().runTask(plugin, BorderlandsRiteService::purgeOutlineTeams);
         plugin.getServer().getScheduler().runTaskTimer(plugin, this::tickAltarBeams, 20L, 5L);
-        plugin.getServer().getScheduler().runTaskTimer(plugin, this::tickAltarVialOutline, 10L, 5L);
         plugin.getServer().getScheduler().runTaskTimer(plugin, this::refreshRiteNpcCenter, 60L, 100L);
         plugin.getServer().getScheduler().runTaskTimer(plugin, this::tickBossBubbles, 20L, 20L);
         refreshRiteNpcCenter();
@@ -330,164 +326,140 @@ public final class BorderlandsRiteService implements Listener {
         }
     }
 
-    private static final String OUTLINE_TAG = "aetherion_altar_outline";
+    /** Invisible powder BlockDisplay. Nothing in the plugin spawns this anymore. */
+    public static final String OUTLINE_TAG = "aetherion_altar_outline";
     private static final String OUTLINE_TEAM_PREFIX = "ae_altar_";
-    private static final NamedTextColor[] OUTLINE_COLORS = {
-            NamedTextColor.AQUA,
-            NamedTextColor.LIGHT_PURPLE,
-            NamedTextColor.RED,
-            NamedTextColor.GOLD
-    };
 
     /**
-     * Pet-style glowing block outline: BlockDisplay of the powder + scoreboard team color,
-     * visible through walls. Only shown to players holding a Borderlands spirit vial
-     * while inside the Borderlands. Color cycles aqua → purple → red → gold.
+     * Spawn contract: there is none.
+     * <p>
+     * The altar is a normal enchantment table. The old outline was a BlockDisplay
+     * with {@code setVisibleByDefault(false)} — players never saw a glow. A task
+     * every 5 ticks called {@code ensureAltarOutline}, and whenever the tracked
+     * UUID was missing it spawned another display and tried to delete "the others".
+     * That delete did not keep the set at one, so the task appended about four
+     * displays a second (~230k over 16 hours). Restart only ran a one-shot scrub
+     * of whatever was already loaded.
+     * <p>
+     * Ritual VFX stays on the particle column in {@link #tickAltarBeams()}. This
+     * sweep deletes every leftover {@code aetherion_altar_outline}. It does not
+     * spawn a replacement.
      */
-    private void tickAltarVialOutline() {
-        World world = Bukkit.getWorld(ALTAR_WORLD);
-        if (world == null) {
-            return;
-        }
-        BlockDisplay outline = ensureAltarOutline(world);
-        if (outline == null) {
-            return;
-        }
-
-        altarOutlineColorTick++;
-        if (altarOutlineColorTick % 8 == 0) {
-            applyOutlineColor(outline, OUTLINE_COLORS[(altarOutlineColorTick / 8) % OUTLINE_COLORS.length]);
-        }
-
-        Set<UUID> want = new HashSet<>();
-        for (Player player : world.getPlayers()) {
-            if (!playerHoldsBorderlandsSpirit(player)) {
-                continue;
-            }
-            if (mobZones == null || !mobZones.containsBorderlands(player.getLocation())) {
-                continue;
-            }
-            want.add(player.getUniqueId());
-            if (altarOutlineViewers.add(player.getUniqueId())) {
-                try {
-                    player.showEntity(plugin, outline);
-                } catch (Throwable ignored) {
-                }
-            }
-        }
-        for (UUID id : List.copyOf(altarOutlineViewers)) {
-            if (want.contains(id)) {
-                continue;
-            }
-            altarOutlineViewers.remove(id);
-            Player player = Bukkit.getPlayer(id);
-            if (player != null && player.isOnline()) {
-                try {
-                    player.hideEntity(plugin, outline);
-                } catch (Throwable ignored) {
-                }
-            }
+    private void sweepAltarOutlines() {
+        int removed = discardAltarOutlines();
+        if (removed > 0) {
+            purgeOutlineTeams();
+            plugin.getLogger().info(
+                    "Removed " + removed + " altar outline block displays (no outline is spawned)."
+            );
         }
     }
 
-    private BlockDisplay ensureAltarOutline(World world) {
-        if (altarOutlineEntityId != null) {
-            Entity existing = Bukkit.getEntity(altarOutlineEntityId);
-            if (existing instanceof BlockDisplay display && display.isValid()) {
-                return display;
-            }
-            altarOutlineEntityId = null;
-            altarOutlineViewers.clear();
-        }
-        scrubOrphanAltarOutlines();
-        int bx = (int) Math.floor(ALTAR_X);
-        int by = (int) Math.floor(ALTAR_Y);
-        int bz = (int) Math.floor(ALTAR_Z);
-        // BlockDisplay origin is the block corner.
-        Location at = new Location(world, bx, by, bz);
-        BlockDisplay spawned;
-        try {
-            spawned = world.spawn(at, BlockDisplay.class, display -> {
-                display.setBlock(Material.LIGHT_GRAY_CONCRETE_POWDER.createBlockData());
-                display.setGravity(false);
-                display.setPersistent(false);
-                display.setInvulnerable(true);
-                display.setGlowing(true);
-                display.addScoreboardTag(OUTLINE_TAG);
-                // Slightly oversized so the glow sits around the real powder block.
-                display.setTransformation(new Transformation(
-                        new Vector3f(-0.02f, -0.02f, -0.02f),
-                        new AxisAngle4f(0f, 0f, 0f, 1f),
-                        new Vector3f(1.04f, 1.04f, 1.04f),
-                        new AxisAngle4f(0f, 0f, 0f, 1f)
-                ));
-                display.setInterpolationDuration(0);
-                display.setTeleportDuration(0);
-                try {
-                    display.setVisibleByDefault(false);
-                } catch (Throwable ignored) {
+    /**
+     * Deletes every loaded altar outline. Paper sometimes rejects {@code remove()}
+     * during a chunk update; those ids are retried on the next tick. Nothing is spawned.
+     */
+    private int discardAltarOutlines() {
+        List<UUID> pending = new ArrayList<>();
+        int removed = 0;
+        for (World world : Bukkit.getWorlds()) {
+            for (Entity entity : List.copyOf(world.getEntitiesByClass(BlockDisplay.class))) {
+                if (!isAltarOutline(entity)) {
+                    continue;
                 }
-                try {
-                    display.setBrightness(new org.bukkit.entity.Display.Brightness(15, 15));
-                } catch (Throwable ignored) {
+                if (tryRemoveOutline(entity)) {
+                    removed++;
+                } else {
+                    pending.add(entity.getUniqueId());
+                }
+            }
+        }
+        if (!pending.isEmpty() && plugin.isEnabled()) {
+            List<UUID> ids = List.copyOf(pending);
+            plugin.getServer().getScheduler().runTask(plugin, () -> {
+                int later = 0;
+                for (UUID id : ids) {
+                    Entity entity = Bukkit.getEntity(id);
+                    if (isAltarOutline(entity) && tryRemoveOutline(entity)) {
+                        later++;
+                    }
+                }
+                if (later > 0) {
+                    purgeOutlineTeams();
+                    plugin.getLogger().info(
+                            "Removed " + later + " altar outline block displays after chunk update."
+                    );
                 }
             });
-        } catch (Throwable ignored) {
-            return null;
         }
-        altarOutlineEntityId = spawned.getUniqueId();
-        applyOutlineColor(spawned, OUTLINE_COLORS[0]);
-        return spawned;
+        return removed;
     }
 
-    private void scrubOrphanAltarOutlines() {
-        World world = Bukkit.getWorld(ALTAR_WORLD);
-        if (world == null) {
-            return;
-        }
-        for (Entity entity : world.getEntitiesByClass(BlockDisplay.class)) {
-            if (!entity.getScoreboardTags().contains(OUTLINE_TAG)) {
-                continue;
-            }
-            if (altarOutlineEntityId != null && entity.getUniqueId().equals(altarOutlineEntityId)) {
-                continue;
-            }
+    private static boolean tryRemoveOutline(Entity entity) {
+        try {
+            entity.setPersistent(false);
             entity.remove();
+            return true;
+        } catch (Throwable ignored) {
+            return false;
         }
-        // Leftover shulker outlines from an earlier attempt.
-        for (Entity entity : world.getEntities()) {
-            if (entity.getScoreboardTags().contains(OUTLINE_TAG) && !(entity instanceof BlockDisplay)) {
-                entity.remove();
-            }
-        }
+    }
+
+    private static boolean isAltarOutline(Entity entity) {
+        return entity != null && entity.getScoreboardTags().contains(OUTLINE_TAG);
+    }
+
+    public void shutdown() {
+        sweepAltarOutlines();
         purgeOutlineTeams();
     }
 
-    private static void applyOutlineColor(Entity entity, NamedTextColor color) {
-        if (entity == null || color == null) {
+    public static void shutdownActive() {
+        BorderlandsRiteService service = instance;
+        if (service != null) {
+            service.shutdown();
+        }
+    }
+
+    @EventHandler
+    public void onChunkLoadDropAltarOutlines(ChunkLoadEvent event) {
+        if (event.getChunk() == null || !chunkHasAltarOutline(event.getChunk().getEntities())) {
             return;
         }
-        Scoreboard board = Bukkit.getScoreboardManager().getMainScoreboard();
-        for (Team team : board.getTeams()) {
-            if (team.getName().startsWith(OUTLINE_TEAM_PREFIX)) {
-                removeEntityEntry(team, entity);
+        queueOutlineSweep();
+    }
+
+    @EventHandler
+    public void onChunkUnloadDropAltarOutlines(ChunkUnloadEvent event) {
+        if (event.getChunk() == null || !chunkHasAltarOutline(event.getChunk().getEntities())) {
+            return;
+        }
+        // remove() during chunk unload is rejected. Drop them on the next tick
+        // if they are still loaded, and again when the chunk loads.
+        queueOutlineSweep();
+    }
+
+    private void queueOutlineSweep() {
+        if (outlineSweepQueued || !plugin.isEnabled()) {
+            return;
+        }
+        outlineSweepQueued = true;
+        plugin.getServer().getScheduler().runTask(plugin, () -> {
+            outlineSweepQueued = false;
+            sweepAltarOutlines();
+        });
+    }
+
+    private static boolean chunkHasAltarOutline(Entity[] entities) {
+        if (entities == null) {
+            return false;
+        }
+        for (Entity entity : entities) {
+            if (isAltarOutline(entity)) {
+                return true;
             }
         }
-        String name = OUTLINE_TEAM_PREFIX + color.toString().toLowerCase(java.util.Locale.ROOT);
-        if (name.length() > 16) {
-            name = name.substring(0, 16);
-        }
-        Team team = board.getTeam(name);
-        if (team == null) {
-            team = board.registerNewTeam(name);
-            team.color(color);
-            team.setOption(Team.Option.COLLISION_RULE, Team.OptionStatus.NEVER);
-            team.setCanSeeFriendlyInvisibles(false);
-        } else {
-            team.color(color);
-        }
-        addEntityEntry(team, entity);
-        entity.setGlowing(true);
+        return false;
     }
 
     /**
@@ -508,42 +480,6 @@ public final class BorderlandsRiteService implements Listener {
                 team.removeEntry(entry);
             }
         }
-    }
-
-    private static void addEntityEntry(Team team, Entity entity) {
-        try {
-            team.addEntity(entity);
-            return;
-        } catch (Throwable ignored) {
-        }
-        String id = entity.getUniqueId().toString();
-        if (!team.hasEntry(id)) {
-            team.addEntry(id);
-        }
-        String dollar = "$" + id;
-        if (!team.hasEntry(dollar)) {
-            team.addEntry(dollar);
-        }
-    }
-
-    private static void removeEntityEntry(Team team, Entity entity) {
-        try {
-            team.removeEntity(entity);
-        } catch (Throwable ignored) {
-        }
-        String id = entity.getUniqueId().toString();
-        team.removeEntry(id);
-        team.removeEntry("$" + id);
-    }
-
-    private static boolean playerHoldsBorderlandsSpirit(Player player) {
-        return isSpirit(player.getInventory().getItemInMainHand())
-                || isSpirit(player.getInventory().getItemInOffHand());
-    }
-
-    @EventHandler
-    public void onQuitClearOutline(PlayerQuitEvent event) {
-        altarOutlineViewers.remove(event.getPlayer().getUniqueId());
     }
 
     private boolean ritualActiveNearAltar() {
@@ -931,7 +867,6 @@ public final class BorderlandsRiteService implements Listener {
                     "",
                     "§eRight-click §7the light-gray powder altar",
                     "§7in the Borderlands to begin the rite.",
-                    "§8Holding this outlines the altar (glow).",
                     "§8Not drinkable. Not for sale."
             ));
             meta.setColor(boss.color());

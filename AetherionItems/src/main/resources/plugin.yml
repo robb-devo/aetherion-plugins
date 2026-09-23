@@ -142,12 +142,21 @@ commands:
       - helpme
       - whatnext
 
+  aedisplays:
+    description: Count block_display and text_display entities by Aetherion tag
+    aliases:
+      - aetherdisplays
+    permission: aetherion.displays
+
 permissions:
   aetherion.shardshop:
     description: Open the Aether Shard shop
     default: true
   aetherion.dev:
     description: Access the DEV menu and animal anchors
+    default: op
+  aetherion.displays:
+    description: Print block_display and text_display counts by Aetherion tag
     default: op
   aetherion.shards.admin:
     description: Give and take Aether Shards
