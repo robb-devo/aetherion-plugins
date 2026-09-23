@@ -84,7 +84,7 @@ public final class DisplayAuditCommand implements CommandExecutor {
         sendAlways(sender, "text", WildlifeLooks.WILDLIFE_LABEL_TAG, textByTag);
         sender.sendMessage("§7  wildlife_label pdc §f" + wildlifePdc);
         sendPositive(sender, "text", textByTag, WildlifeLooks.WILDLIFE_LABEL_TAG);
-        sender.sendMessage("§8Altar outlines should stay §f0§8. Wildlife labels should stay near one per live mob.");
+        sender.sendMessage("§8Altar outlines: §f0 §8with no vial session, else §f1§8. Wildlife labels: about one per live mob.");
         return true;
     }
 

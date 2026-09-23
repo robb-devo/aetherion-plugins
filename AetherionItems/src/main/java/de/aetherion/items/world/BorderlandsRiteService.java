@@ -384,7 +384,9 @@ public final class BorderlandsRiteService implements Listener {
         }
         altarOutlineEntityId = outline.getUniqueId();
         outline.setPersistent(false);
+        styleOutline(outline);
         paintOutline(outline);
+        // showEntity every pass. The first call on the spawn tick often never reaches the client.
         syncOutlineViewers(outline, want);
     }
 
@@ -477,9 +479,7 @@ public final class BorderlandsRiteService implements Listener {
     }
 
     private void seatOutline(World world, BlockDisplay display) {
-        display.setPersistent(false);
-        display.setGravity(false);
-        display.setInvulnerable(true);
+        styleOutline(display);
         Location at = altarCorner(world);
         if (at.getWorld() != null && display.getWorld().equals(at.getWorld())) {
             if (display.getLocation().distanceSquared(at) > 0.05) {
@@ -519,6 +519,7 @@ public final class BorderlandsRiteService implements Listener {
                 display.setTeleportDuration(0);
                 try {
                     display.setVisibleByDefault(false);
+                    display.setViewRange(8f);
                 } catch (Throwable ignored) {
                 }
                 try {
@@ -583,9 +584,7 @@ public final class BorderlandsRiteService implements Listener {
 
     private void syncOutlineViewers(BlockDisplay outline, Set<UUID> want) {
         for (UUID id : want) {
-            if (!altarOutlineViewers.add(id)) {
-                continue;
-            }
+            altarOutlineViewers.add(id);
             Player player = Bukkit.getPlayer(id);
             if (player == null) {
                 continue;
@@ -682,6 +681,22 @@ public final class BorderlandsRiteService implements Listener {
             });
         }
         return removed;
+    }
+
+    /** Per-player glow. Not visible by default, so only the live session is shown the entity. */
+    private static void styleOutline(BlockDisplay display) {
+        display.setPersistent(false);
+        display.setGravity(false);
+        display.setInvulnerable(true);
+        display.setGlowing(true);
+        if (!display.getScoreboardTags().contains(OUTLINE_TAG)) {
+            display.addScoreboardTag(OUTLINE_TAG);
+        }
+        try {
+            display.setVisibleByDefault(false);
+            display.setViewRange(8f);
+        } catch (Throwable ignored) {
+        }
     }
 
     private static boolean tryRemoveOutline(Entity entity) {
