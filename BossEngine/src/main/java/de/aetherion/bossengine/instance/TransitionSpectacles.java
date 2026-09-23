@@ -22,7 +22,8 @@ import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Lobby Cleaner phase FX: purple tornado, then four spinning crystal beams.
+ * Lobby Cleaner phase FX only: purple tornado, then four spinning crystal beams.
+ * The Ashen Sheath does not call these. Its early tell is PETAL_DRAW.
  */
 final class TransitionSpectacles {
 

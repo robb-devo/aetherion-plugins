@@ -77,6 +77,8 @@ public class BossInstance {
     private final SparkyDirector sparkyDirector = new SparkyDirector(this);
     private final FrostboundDirector frostboundDirector = new FrostboundDirector(this);
     private final PathwardenDirector pathwardenDirector = new PathwardenDirector(this);
+    private final AshenSheathDirector ashenSheathDirector = new AshenSheathDirector(this);
+    private int ashenParries;
     private final SignatureDirector signatureDirector = new SignatureDirector(this);
     private final SandboxDirector sandboxDirector = new SandboxDirector(this);
     private final TransitionSpectacles spectacles = new TransitionSpectacles(this);
@@ -262,6 +264,7 @@ public class BossInstance {
             dragonDirector.onBind();
             frostboundDirector.onBind();
             pathwardenDirector.onBind();
+            ashenSheathDirector.onBind();
             sandboxDirector.onBind();
         } catch (RuntimeException exception) {
             plugin.getLogger().log(Level.SEVERE, "Boss '" + template.getId() + "' failed to apply stats", exception);
@@ -299,6 +302,7 @@ public class BossInstance {
             dragonDirector.onBind();
             frostboundDirector.onBind();
             pathwardenDirector.onBind();
+            ashenSheathDirector.onBind();
             sandboxDirector.onBind();
             // Soft-arena bosses stay where they were — never blink home on rebind.
             if (!refusesHardArenaSnap()) {
@@ -376,6 +380,7 @@ public class BossInstance {
     public boolean isCinematicDying() {
         return state == BossState.ALIVE && (dragonDirector.isDying() || sparkyDirector.isDying()
                 || frostboundDirector.isDying() || pathwardenDirector.isDying()
+                || ashenSheathDirector.isDying()
                 || signatureDirector.isDying());
     }
 
@@ -384,6 +389,7 @@ public class BossInstance {
         sparkyDirector.abort();
         frostboundDirector.abort();
         pathwardenDirector.abort();
+        ashenSheathDirector.abort();
         signatureDirector.abort();
         sandboxDirector.abort();
     }
@@ -423,6 +429,7 @@ public class BossInstance {
         lightningStormActive = false;
         blackHoleActive = false;
         spectacles.finish();
+        ashenSheathDirector.abort();
         de.aetherion.bossengine.skill.t2.T2Mechanics.clearInstanceProps(this);
     }
 
@@ -454,6 +461,7 @@ public class BossInstance {
                 || sparkyDirector.isDying()
                 || frostboundDirector.isDying()
                 || pathwardenDirector.isDying()
+                || ashenSheathDirector.isDying()
                 || signatureDirector.isDying()
                 || sandboxDirector.blocksDamage()
                 || de.aetherion.bossengine.skill.t2.T2Mechanics.isBurrowing(this);
@@ -500,6 +508,7 @@ public class BossInstance {
         de.aetherion.bossengine.skill.t2.T2Mechanics.clearInstanceProps(this);
         if (dragonDirector.beginDeath() || sparkyDirector.beginDeath()
                 || frostboundDirector.beginDeath() || pathwardenDirector.beginDeath()
+                || ashenSheathDirector.beginDeath()
                 || signatureDirector.beginDeath()) {
             return true;
         }
@@ -588,6 +597,10 @@ public class BossInstance {
             ticksAlive++;
             return pathwardenDirector.tick();
         }
+        if (ashenSheathDirector.isDying()) {
+            ticksAlive++;
+            return ashenSheathDirector.tick();
+        }
         if (signatureDirector.isDying()) {
             ticksAlive++;
             return signatureDirector.tick();
@@ -605,6 +618,7 @@ public class BossInstance {
         unstickIfNeeded();
         frostboundDirector.tick();
         pathwardenDirector.tick();
+        ashenSheathDirector.tick();
         sandboxDirector.tick();
         if (ticksAlive == 20 || ticksAlive == 100) {
             SkeletonUtil.prepareBoss(entity);
@@ -767,6 +781,14 @@ public class BossInstance {
             } else if (transition.getShape() == TransitionShape.VOID_TORNADO) {
                 entity.getWorld().playSound(entity.getLocation(), Sound.ENTITY_ENDERMAN_STARE, 1.2f, 0.55f);
                 entity.getWorld().playSound(entity.getLocation(), Sound.BLOCK_PORTAL_TRIGGER, 0.85f, 0.6f);
+            } else if (transition.getShape() == TransitionShape.CHERRY_TORNADO) {
+                entity.getWorld().playSound(entity.getLocation(), Sound.BLOCK_CHERRY_LEAVES_BREAK, 1.15f, 0.55f);
+                entity.getWorld().playSound(entity.getLocation(), Sound.ITEM_TRIDENT_THUNDER, 0.7f, 1.45f);
+                entity.getWorld().playSound(entity.getLocation(), Sound.BLOCK_BEACON_ACTIVATE, 0.65f, 1.6f);
+            } else if (transition.getShape() == TransitionShape.PETAL_DRAW) {
+                entity.getWorld().playSound(entity.getLocation(), Sound.BLOCK_CHERRY_WOOD_STEP, 1.0f, 0.6f);
+                entity.getWorld().playSound(entity.getLocation(), Sound.BLOCK_CHERRY_LEAVES_BREAK, 1.05f, 0.7f);
+                entity.getWorld().playSound(entity.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, 0.7f, 0.55f);
             } else if (transition.getShape() == TransitionShape.BEAM_SPIN) {
                 entity.getWorld().playSound(entity.getLocation(), Sound.BLOCK_BEACON_ACTIVATE, 1.15f, 0.55f);
                 entity.getWorld().playSound(entity.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 0.8f, 0.7f);
@@ -804,6 +826,12 @@ public class BossInstance {
         } else if (transition.getShape() == TransitionShape.VOID_TORNADO) {
             tickPhaseReturn(progress);
             spectacles.tickVoidTornado(transition, transitionTick, transition.getDurationTicks());
+        } else if (transition.getShape() == TransitionShape.CHERRY_TORNADO) {
+            tickPhaseReturn(progress);
+            ashenSheathDirector.tickCherryTornado(hazardFocus(transitionTick <= 1), transitionTick, transition.getDurationTicks());
+        } else if (transition.getShape() == TransitionShape.PETAL_DRAW) {
+            tickPhaseReturn(progress);
+            ashenSheathDirector.tickPetalDraw(hazardFocus(transitionTick <= 1), transitionTick, transition.getDurationTicks());
         } else if (transition.getShape() == TransitionShape.BEAM_SPIN) {
             tickPhaseReturn(progress);
             spectacles.tickBeamSpin(transition, transitionTick, transition.getDurationTicks());
@@ -816,6 +844,7 @@ public class BossInstance {
                 finishHoverStorm(transition);
             }
             spectacles.finish();
+            ashenSheathDirector.clearLeafTornado();
             explodeTransition(transition);
             completePhase(pendingPhase);
         }
@@ -949,13 +978,20 @@ public class BossInstance {
         if (world == null) {
             return;
         }
-        world.playSound(center, Sound.ENTITY_GENERIC_EXPLODE, 1.35f, 0.7f);
-        world.playSound(center, Sound.BLOCK_ANVIL_LAND, 1.15f, 0.65f);
-        world.playSound(center, Sound.ITEM_FIRECHARGE_USE, 1.2f, 0.55f);
+        boolean blossoms = transition.getShape() == TransitionShape.CHERRY_TORNADO;
+        world.playSound(center, blossoms ? Sound.ITEM_TRIDENT_THUNDER : Sound.ENTITY_GENERIC_EXPLODE, 1.05f, blossoms ? 1.35f : 0.7f);
+        world.playSound(center, blossoms ? Sound.BLOCK_CHERRY_LEAVES_BREAK : Sound.BLOCK_ANVIL_LAND, 1.15f, blossoms ? 0.5f : 0.65f);
+        world.playSound(center, blossoms ? Sound.ENTITY_PLAYER_ATTACK_SWEEP : Sound.ITEM_FIRECHARGE_USE, 1.2f, blossoms ? 0.45f : 0.55f);
         world.spawnParticle(Particle.EXPLOSION_EMITTER, center, 1, 0, 0, 0, 0);
-        world.spawnParticle(Particle.FLAME, center, 90, 1.1, 1.1, 1.1, 0.08);
-        world.spawnParticle(Particle.LAVA, center, 28, 0.9, 0.9, 0.9, 0);
-        world.spawnParticle(Particle.ELECTRIC_SPARK, center, 40, 1.4, 0.4, 1.4, 0.15);
+        if (blossoms) {
+            world.spawnParticle(Particle.CHERRY_LEAVES, center, 80, 1.3, 1.1, 1.3, 0.08);
+            world.spawnParticle(Particle.CHERRY_LEAVES, center.clone().add(0, 1.6, 0), 36, 0.6, 0.9, 0.6, 0.04);
+            world.spawnParticle(Particle.FLASH, center, 1, 0, 0, 0, 0);
+        } else {
+            world.spawnParticle(Particle.FLAME, center, 90, 1.1, 1.1, 1.1, 0.08);
+            world.spawnParticle(Particle.LAVA, center, 28, 0.9, 0.9, 0.9, 0);
+            world.spawnParticle(Particle.ELECTRIC_SPARK, center, 40, 1.4, 0.4, 1.4, 0.15);
+        }
 
         double radius = transition.getExplodeRadius();
         drawShockwaveRing(center, radius, transition.getParticle());
@@ -1802,7 +1838,7 @@ public class BossInstance {
         if (entity instanceof org.bukkit.entity.Wither wither && wither.getInvulnerabilityTicks() > 0) {
             wither.setInvulnerabilityTicks(0);
         }
-        if (frostboundDirector.reflecting() && entity instanceof Mob mob) {
+        if ((frostboundDirector.reflecting() || ashenSheathDirector.holdsBody()) && entity instanceof Mob mob) {
             mob.setAI(false);
             mob.setAware(false);
             return;
@@ -1811,6 +1847,7 @@ public class BossInstance {
                 || de.aetherion.bossengine.skill.t2.T2Mechanics.isBurrowing(this)
                 || frostboundDirector.isDying()
                 || pathwardenDirector.isDying()
+                || ashenSheathDirector.isDying()
                 || sparkyDirector.isDying()
                 || signatureDirector.isDying()
                 || dragonDirector.isDying();
@@ -2353,6 +2390,26 @@ public class BossInstance {
 
     public boolean frostReflects() {
         return frostboundDirector.reflecting();
+    }
+
+    void resetAshenParries() {
+        ashenParries = 0;
+    }
+
+    int ashenParries() {
+        return ashenParries;
+    }
+
+    public boolean ashenAwaitsStrike() {
+        return ashenSheathDirector.parrying();
+    }
+
+    public boolean tryAshenParry(Player striker) {
+        if (!ashenSheathDirector.tryParry(striker)) {
+            return false;
+        }
+        ashenParries++;
+        return true;
     }
 
     public void reflectFrost(Player player, double incoming) {

@@ -9,5 +9,7 @@ public enum TransitionShape {
     LIGHTNING_STORM,
     BLACK_HOLE,
     VOID_TORNADO,
+    CHERRY_TORNADO,
+    PETAL_DRAW,
     BEAM_SPIN
 }
