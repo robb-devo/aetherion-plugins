@@ -68,6 +68,7 @@ public final class BossEngine extends JavaPlugin {
         saveResourceIfMissing("bosses/baron_von_wurm.yml");
         saveResourceIfMissing("bosses/insolvent_wither.yml");
         saveResourceIfMissing("bosses/pathwarden.yml");
+        saveResourceIfMissing("bosses/ashen_sheath.yml");
 
         keys = new BossKeys(this);
         skillRegistry = new SkillRegistry(getLogger());

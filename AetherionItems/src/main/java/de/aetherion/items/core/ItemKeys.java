@@ -227,6 +227,11 @@ public final class ItemKeys {
         return key("wildlife_label");
     }
 
+    /** Label TextDisplay UUID stored on the mob. One HP label per mob. */
+    public static NamespacedKey wildlifeLabelEntity() {
+        return key("wildlife_label_entity");
+    }
+
     public static NamespacedKey wildlifeTitle() {
         return key("wildlife_title");
     }
@@ -293,6 +298,11 @@ public final class ItemKeys {
 
     public static NamespacedKey rarity() {
         return key("rarity");
+    }
+
+    /** Comma-separated booster sockets (14). Empty slot is {@code -}. */
+    public static NamespacedKey boosterSockets() {
+        return key("booster_sockets");
     }
 
     public static NamespacedKey boosterType() {

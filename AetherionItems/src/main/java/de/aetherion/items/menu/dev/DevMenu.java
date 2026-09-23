@@ -65,6 +65,7 @@ public class DevMenu {
         WEAPONS_T1,
         WEAPONS_T2,
         WEAPONS_DUNGEON,
+        WEAPONS_SPECIAL,
         WEAPONS_GOD,
         SETS,
         BOOSTERS,
@@ -224,9 +225,17 @@ public class DevMenu {
                 return;
             }
             String group = action.substring("rank-set:".length());
-            ranks.setRank(target, group);
             OfflinePlayer targetPlayer = Bukkit.getOfflinePlayer(target);
-            player.sendMessage("§aRank set: §f" + nameOf(targetPlayer) + " §7→ " + ranks.rankByGroup(group).display());
+            RankBadgeService.Rank extra = ranks.extraFor(target);
+            if (ranks.isExtra(group)
+                    && extra != null && extra.group().equalsIgnoreCase(group)) {
+                ranks.clearExtra(target, group);
+                player.sendMessage("§eCleared " + ranks.rankByGroup(group).display() + " §efrom §f" + nameOf(targetPlayer));
+            } else if (!ranks.setRank(target, group)) {
+                player.sendMessage("§cAdmin is Robb's cosmetic rank. OP does not grant it.");
+            } else {
+                player.sendMessage("§aRank set: §f" + nameOf(targetPlayer) + " §7→ " + ranks.rankByGroup(group).display());
+            }
             player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.8f, 1.3f);
             open(player, Page.RANKS, target);
             return;
@@ -242,6 +251,7 @@ public class DevMenu {
             OfflinePlayer targetPlayer = Bukkit.getOfflinePlayer(target);
             player.sendMessage("§aRank matched to account level: §f" + nameOf(targetPlayer)
                     + " §7→ " + ranks.rankByGroup(ranks.rankOf(target)).display());
+            player.sendMessage("§7Ultra ranks (Citrus / Monkey / Beta / MVP++ / Admin) stay until you remove them.");
             player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.8f, 1.15f);
             open(player, Page.RANKS, target);
             return;
@@ -960,7 +970,8 @@ public class DevMenu {
 
     private String backAction(Page page) {
         return switch (page) {
-            case WEAPONS_STARTER, WEAPONS_BOWS, WEAPONS_PROGRESSION, WEAPONS_T1, WEAPONS_T2, WEAPONS_DUNGEON, WEAPONS_GOD
+            case WEAPONS_STARTER, WEAPONS_BOWS, WEAPONS_PROGRESSION, WEAPONS_T1, WEAPONS_T2, WEAPONS_DUNGEON,
+                    WEAPONS_SPECIAL, WEAPONS_GOD
                     -> "page:WEAPONS";
             case NPCS_STARTER, NPCS_BOSSES, NPCS_WORLD, NPCS_SERVICES
                     -> "page:NPCS";
@@ -1041,6 +1052,9 @@ public class DevMenu {
                 "§7Cores and relic weapons."));
         inventory.setItem(16, button(Material.NETHERITE_SWORD, "§6Test Extras", "page:WEAPONS_GOD",
                 "§7Void stick / leftovers."));
+        inventory.setItem(22, button(Material.CHERRY_LEAVES, "§dSpecial Weapons", "page:WEAPONS_SPECIAL",
+                "§7Boss-drop showpieces.",
+                "§dAshen Katana"));
         inventory.setItem(45, button(Material.ARROW, "§eBack", "back"));
         inventory.setItem(49, button(Material.BARRIER, "§cClose", "close"));
     }
@@ -1374,6 +1388,9 @@ public class DevMenu {
                 items.add(itemButton(customItem.createThermalCore(), "thermal_core"));
                 items.add(itemButton(customItem.createPickaxeCoreOfTheBurrower(), "pickaxe_core_of_the_burrower"));
                 items.add(itemButton(customItem.createInsolventLedger(), "insolvent_ledger"));
+            }
+            case WEAPONS_SPECIAL -> {
+                items.add(itemButton(customItem.createAshenKatana(), "ashen_katana"));
             }
             case WEAPONS_DUNGEON -> {
                 items.add(itemButton(customItem.createDungeonCore(), "dungeon_core"));
@@ -1816,6 +1833,7 @@ public class DevMenu {
             case "bridged_axe" -> customItem.createBridgedAxe();
             case "warped_blade" -> customItem.createWarpedBlade();
             case "gravwell_cleaver" -> customItem.createGravwellCleaver();
+            case "ashen_katana" -> customItem.createAshenKatana();
             case "staff_of_technical_difficulties" -> customItem.createStaffOfTechnicalDifficulties();
             case "void_vacuum_charm" -> customItem.createVoidVacuumCharm();
             case "thermal_core" -> customItem.createThermalCore();
@@ -2085,26 +2103,62 @@ public class DevMenu {
                     "§8LuckPerms group: §7" + rank.group()
             ));
         }
-        inventory.setItem(33, button(
-                rankIcon("mvpplusplus"),
-                (extra != null && extra.group().equals("mvpplusplus") ? "§a▶ " : "") + "§6MVP§c++",
-                "rank-set:mvpplusplus",
-                "§7Ultra rank. Stays on top of the",
-                "§7Aetherion title."
-        ));
-        inventory.setItem(34, button(
+        boolean adminOn = extra != null && extra.group().equals("admin");
+        boolean monkeyOn = extra != null && extra.group().equals("monkey");
+        boolean citrusOn = extra != null && extra.group().equals("citrus");
+        boolean betaOn = extra != null && extra.group().equals("beta");
+        boolean mvpOn = extra != null && extra.group().equals("mvpplusplus");
+        inventory.setItem(37, button(
                 rankIcon("admin"),
-                (extra != null && extra.group().equals("admin") ? "§a▶ " : "") + "§cAdmin",
+                (adminOn ? "§a▶ " : "") + "§cAdmin",
                 "rank-set:admin",
-                "§7Ultra rank. Stays on top of the",
-                "§7Aetherion title."
+                "§7Ultra rank (weight 100).",
+                "§7Robb only. Cosmetic — OP does not grant this.",
+                "§7Sits in front of the level tag.",
+                adminOn ? "§eClick again to remove." : "§7Click to grant."
+        ));
+        inventory.setItem(38, button(
+                rankIcon("monkey"),
+                (monkeyOn ? "§a▶ " : "") + "§b§lMonkey §8· celestial",
+                "rank-set:monkey",
+                "§7Ultra rank (weight 95).",
+                "§7Celestial dye #B2FFFF, then the level tag.",
+                "§7Does not replace the level title.",
+                monkeyOn ? "§eClick again to remove." : "§7Click to grant."
+        ));
+        inventory.setItem(39, button(
+                rankIcon("citrus"),
+                (citrusOn ? "§a▶ " : "") + "§e§lCitrus",
+                "rank-set:citrus",
+                "§7Ultra rank (weight 94).",
+                "§7Citrus dye, then the level tag.",
+                "§7Cosmetic only. Does not replace the level title.",
+                citrusOn ? "§eClick again to remove." : "§7Click to grant."
         ));
         inventory.setItem(40, button(
+                rankIcon("beta"),
+                (betaOn ? "§a▶ " : "") + "§d§lBeta Tester §8· rainbow",
+                "rank-set:beta",
+                "§7Ultra rank (weight 93).",
+                "§7Rainbow letters, then the level tag.",
+                "§7Not Monkey #B2FFFF. Cosmetic only.",
+                betaOn ? "§eClick again to remove." : "§7Click to grant."
+        ));
+        inventory.setItem(41, button(
+                rankIcon("mvpplusplus"),
+                (mvpOn ? "§a▶ " : "") + "§6MVP§c++",
+                "rank-set:mvpplusplus",
+                "§7Ultra rank (weight 90).",
+                "§7Stays in front of the level tag.",
+                mvpOn ? "§eClick again to remove." : "§7Click to grant."
+        ));
+        inventory.setItem(42, button(
                 Material.EXPERIENCE_BOTTLE,
                 "§eMatch account level",
                 "rank-sync",
-                "§7Clear the DEV override.",
-                "§7Rank follows XP again."
+                "§7XP progression only.",
+                "§7Does not remove Citrus / Monkey / Beta /",
+                "§7MVP++ / Admin. Click those to remove."
         ));
     }
 
@@ -2647,6 +2701,9 @@ public class DevMenu {
             case "aetherion" -> Material.DRAGON_EGG;
             case "mvpplusplus" -> Material.NETHER_STAR;
             case "admin" -> Material.BARRIER;
+            case "monkey" -> Material.LIGHT_BLUE_DYE;
+            case "citrus" -> Material.LIME_DYE;
+            case "beta" -> Material.MAGENTA_DYE;
             default -> Material.GRAY_DYE;
         };
     }
