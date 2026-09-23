@@ -352,6 +352,12 @@ public class BossSpawnItemService {
         changed |= ensureItem(root, "insolvent_wither_anchor", "insolvent_wither", "SET_SPAWN",
                 "NETHER_STAR", "&8&lInsolvent Wither Anchor",
                 List.of("&7Right-click a block to lock the foreclosure.", "&8Admin · BossEngine · T2"), false);
+        changed |= ensureItem(root, "ashen_sheath_anchor", "ashen_sheath", "SET_SPAWN",
+                "IRON_SWORD", "&d&lAshen Sheath Anchor",
+                List.of("&7Right-click a block to lock the samurai arena.", "&8Admin · BossEngine"), false);
+        changed |= ensureItem(root, "ashen_sheath_core", "ashen_sheath", "SUMMON",
+                "NETHERITE_SWORD", "&dAshen Sheath Core",
+                List.of("&7Right-click to summon The Ashen Sheath here.", "&8Test-Item · BossEngine"), true);
         changed |= ensureItem(root, "insolvent_wither_core", "insolvent_wither", "SUMMON",
                 "GOLD_INGOT", "&8Insolvent Wither Core",
                 List.of("&7Right-click to summon him here (test).", "&8Test-Item · BossEngine · T2"), true);
