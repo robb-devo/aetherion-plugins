@@ -5,7 +5,7 @@ import java.util.Arrays;
 /**
  * {@code aenet restart [seconds] [reason...]}.
  * Seconds default to 10. A non-numeric token is the start of an optional reason.
- * No reason means a manual restart: countdown only, no invented patch line.
+ * No reason means a manual restart: a generic English opening line, never an invented patch name.
  */
 public final class RestartPlan {
 

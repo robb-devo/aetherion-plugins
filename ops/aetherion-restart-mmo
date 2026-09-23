@@ -10,8 +10,8 @@
 #   aenet restart 10
 #   aenet restart 10 Patch Ashen-Katana-Restore
 #
-# No reason words: the plugin broadcasts only the even countdown.
-# Reason words: one English opening line, then that same countdown.
+# No reason words: one generic English line ("Server is restarting…"), then the even countdown.
+# Reason words: one English line naming that patch, then the same countdown.
 #
 # Optional /etc/aetherion/restart.env:
 #   AETHERION_RCON_HOST=127.0.0.1

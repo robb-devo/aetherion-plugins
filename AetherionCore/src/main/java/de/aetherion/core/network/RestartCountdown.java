@@ -65,16 +65,22 @@ public final class RestartCountdown {
         return Integer.toString(remainingSeconds);
     }
 
+    /**
+     * One English opening line.
+     * No reason: a generic restart notice, never an invented patch name.
+     * With a reason: that patch or message, then the same countdown.
+     */
     public static String openLine(String reason) {
+        if (reason == null || reason.isBlank()) {
+            return "Server is restarting — we'll be back shortly. Expected back in about 1 minute.";
+        }
         return reason + " goes live — server will reset. Expected back in about 1 minute.";
     }
 
-    /** Opening line (only when a reason was passed) followed by the even countdown. */
+    /** One opening line, then the even countdown. */
     public static List<String> playerLines(String reason, int totalSeconds) {
         List<String> lines = new ArrayList<>();
-        if (reason != null && !reason.isBlank()) {
-            lines.add(openLine(reason));
-        }
+        lines.add(openLine(reason));
         for (int second : evenTicks(totalSeconds)) {
             lines.add(countdownLine(second));
         }

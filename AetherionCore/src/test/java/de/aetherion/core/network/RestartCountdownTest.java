@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class RestartCountdownTest {
@@ -24,11 +25,18 @@ class RestartCountdownTest {
     }
 
     @Test
-    void manualRestartIsCountdownOnly() {
+    void manualRestartHasAGenericOpenLineThenTheCountdown() {
+        List<String> lines = RestartCountdown.playerLines(null, 10);
+        assertEquals(
+                "Server is restarting — we'll be back shortly. Expected back in about 1 minute.",
+                lines.get(0)
+        );
+        assertFalse(lines.get(0).contains("Patch"));
         assertEquals(
                 List.of("10", "8", "6", "4", "2"),
-                RestartCountdown.playerLines(null, 10)
+                lines.subList(1, lines.size())
         );
+        assertEquals(6, lines.size());
     }
 
     @Test

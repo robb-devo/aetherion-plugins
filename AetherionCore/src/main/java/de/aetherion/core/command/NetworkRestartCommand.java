@@ -41,7 +41,7 @@ public final class NetworkRestartCommand implements CommandExecutor, TabComplete
         if (args.length == 0 || !"restart".equalsIgnoreCase(args[0])) {
             sender.sendMessage("§7Usage: §f" + label + " restart [seconds] [reason]");
             sender.sendMessage("§8Default is 10 seconds. Chat ticks every 2 seconds: 10, 8, 6, 4, 2.");
-            sender.sendMessage("§8No reason: countdown only. With a reason, one opening line, then the countdown.");
+            sender.sendMessage("§8No reason: one short restart line, then the countdown. A reason names the patch instead.");
             sender.sendMessage("§8Example: §f" + label + " restart 10 Patch Ashen-Katana-Restore");
             return true;
         }
@@ -63,9 +63,7 @@ public final class NetworkRestartCommand implements CommandExecutor, TabComplete
                     + "s (" + reason + ").");
         }
         sender.sendMessage("§aRestart countdown started (" + seconds + "s). This backend will stop itself.");
-        if (reason != null) {
-            Bukkit.broadcast(Component.text(RestartCountdown.openLine(reason), NamedTextColor.YELLOW));
-        }
+        Bukkit.broadcast(Component.text(RestartCountdown.openLine(reason), NamedTextColor.YELLOW));
         RestartCountdown countdown = new RestartCountdown(seconds);
         task = plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
             if (countdown.stopped()) {

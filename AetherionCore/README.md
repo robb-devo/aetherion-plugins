@@ -30,10 +30,10 @@ Do not set `dry-run: true` on live backends unless you are probing paths.
 
 Chat ticks every 2 seconds, and only on even remaining seconds. A 10 second restart shows `10`, `8`, `6`, `4`, `2`, then the backend stops. An odd duration still announces only the even remainders (15 → 14, 12, …, 2).
 
-The reason is optional:
+Both paths send one English opening line, then that countdown:
 
-- `aenet restart 10` — countdown only. Nothing invents a patch name.
-- `aenet restart 10 Patch Ashen-Katana-Restore` — one English line, then the same countdown: `Patch Ashen-Katana-Restore goes live — server will reset. Expected back in about 1 minute.`
+- `aenet restart 10` — `Server is restarting — we'll be back shortly. Expected back in about 1 minute.` No patch name is invented.
+- `aenet restart 10 Patch Ashen-Katana-Restore` — `Patch Ashen-Katana-Restore goes live — server will reset. Expected back in about 1 minute.`
 
 Paper's disable hook is too late to wait 10 seconds, and a Crafty Stop / SIGTERM cannot be delayed inside the JVM. Send the command **before** the process is killed. Host wrapper (install on the box, do not commit it into Crafty itself):
 
