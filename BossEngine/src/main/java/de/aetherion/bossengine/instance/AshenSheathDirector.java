@@ -48,9 +48,10 @@ import java.util.concurrent.ThreadLocalRandom;
 /**
  * The Ashen Sheath: sheathed wither-skeleton samurai.
  * Quiet steel, then falling blossoms, then ashen moon.
- * Early tell is a cherry-leaf draw on the ground. It does not use the Lobby Cleaner's
- * crystal beams, portal spiral, or end rods. Windups ease the blade out of the sheath.
- * Death and the moon phase spin real cherry-leaf blocks.
+ * The first flashy tell is Iaido: a sheath, a blade sliding along one line, and flat
+ * cherry-leaf blocks falling onto that line. Falling Blossoms repeats the same draw.
+ * Nothing orbits like the Lobby Cleaner's beams or portal spiral. Death lifts a
+ * vertical column of those leaves.
  */
 final class AshenSheathDirector {
 
@@ -58,7 +59,6 @@ final class AshenSheathDirector {
     private static final Color ASH = Color.fromRGB(90, 70, 95);
     private static final Color MOON = Color.fromRGB(210, 230, 255);
     private static final Color BLOOD = Color.fromRGB(160, 30, 50);
-    private static final Color STEEL = Color.fromRGB(220, 225, 235);
 
     private static final int IAIDO_CD_P1 = 160;
     private static final int IAIDO_CD_P2 = 120;
@@ -90,6 +90,9 @@ final class AshenSheathDirector {
     private final List<BlockDisplay> leaves = new ArrayList<>();
 
     private ItemDisplay katana;
+    private ItemDisplay hipSheath;
+    private ItemDisplay lineBlade;
+    private boolean openingCut = true;
     private boolean drawn;
     private Move move = Move.NONE;
     private int actionTick;
@@ -148,6 +151,7 @@ final class AshenSheathDirector {
         dressSensei(entity);
         spawnKatana(entity);
         drawn = false;
+        openingCut = true;
         move = Move.NONE;
         actionTick = 0;
         iaidoCd = 80;
@@ -193,7 +197,7 @@ final class AshenSheathDirector {
         if (entity != null && entity.isValid()) {
             entity.setInvulnerable(true);
             entity.setGravity(false);
-            entity.setGlowing(true);
+            entity.setGlowing(false);
             entity.setVelocity(new Vector(0, 0, 0));
             if (entity instanceof Mob mob) {
                 mob.setAI(false);
@@ -202,7 +206,7 @@ final class AshenSheathDirector {
         }
         World world = deathFocus.getWorld();
         world.playSound(deathFocus, Sound.ITEM_TRIDENT_RETURN, 1.2f, 0.55f);
-        world.playSound(deathFocus, Sound.BLOCK_BEACON_DEACTIVATE, 0.9f, 0.7f);
+        world.playSound(deathFocus, Sound.BLOCK_CHERRY_WOOD_STEP, 0.9f, 0.55f);
         world.playSound(deathFocus, Sound.BLOCK_CHERRY_LEAVES_BREAK, 1.0f, 0.5f);
         shout("&d&lAshen Sheath&7: &f…the cut was always meant for me.");
         titleNear(deathFocus, "&dSHEATHED", "&7The grove takes the blade back.");
@@ -278,7 +282,8 @@ final class AshenSheathDirector {
     }
 
     /**
-     * Real cherry-leaf column. Caller must {@link #clearLeafTornado()} when the beat ends.
+     * Vertical cherry column. Petals bob in place. They do not helix like a portal tornado.
+     * Caller must {@link #clearLeafTornado()} when the beat ends.
      */
     void tickCherryTornado(Location focus, int tick, int duration) {
         if (focus == null || focus.getWorld() == null) {
@@ -288,7 +293,7 @@ final class AshenSheathDirector {
         ensureLeaves(focus.getWorld(), focus, LEAF_COUNT);
         double progress = tick / (double) Math.max(1, duration);
         double height = 2.6 + progress * 3.6;
-        spinLeaves(focus, tick, height, 0.22);
+        spinLeaves(focus, tick, height, 0.18);
         World world = focus.getWorld();
         if (tick % 10 == 0) {
             world.playSound(focus, Sound.BLOCK_CHERRY_LEAVES_BREAK, 0.65f, 0.55f + (float) progress * 0.5f);
@@ -300,8 +305,10 @@ final class AshenSheathDirector {
     }
 
     /**
-     * Falling Blossoms telegraph. A shrinking ring of real cherry leaves and one
-     * ground line that fills in front of the sheath. Not the Lobby Cleaner beam spin.
+     * Falling Blossoms, and the same picture as the opening Iaido.
+     * The bamboo sheath stays on the back. A dark blade slides forward along one line.
+     * Flat cherry-leaf blocks fall onto the ground the blade has already crossed.
+     * Nothing orbits, and nothing draws an end-rod or portal beam.
      */
     void tickPetalDraw(Location focus, int tick, int duration) {
         if (focus == null || focus.getWorld() == null) {
@@ -309,10 +316,9 @@ final class AshenSheathDirector {
             return;
         }
         World world = focus.getWorld();
-        ensureLeaves(world, focus, 16);
-        double progress = tick / (double) Math.max(1, duration);
-        double radius = 6.5 + (1.2 - 6.5) * progress;
-        spinRing(focus, tick, radius);
+        if (tick <= 1) {
+            clearLeafTornado();
+        }
         LivingEntity entity = instance.getEntity();
         Vector facing = entity != null && entity.isValid()
                 ? entity.getLocation().getDirection().clone().setY(0)
@@ -321,28 +327,24 @@ final class AshenSheathDirector {
             facing = new Vector(0, 0, 1);
         }
         facing.normalize();
-        int steps = 16;
-        int filled = Math.max(1, (int) Math.round(progress * steps));
-        for (int i = 0; i <= filled; i++) {
-            Location point = focus.clone().add(facing.clone().multiply(0.6 + i * 0.42)).add(0, 0.16, 0);
-            world.spawnParticle(Particle.CHERRY_LEAVES, point, 1, 0.04, 0.02, 0.04, 0.01);
-            world.spawnParticle(
-                    Particle.DUST,
-                    point,
-                    1,
-                    0.02,
-                    0.01,
-                    0.02,
-                    0,
-                    new Particle.DustOptions(mix(PETAL, BLOOD, progress), 1.05f)
-            );
-        }
+        double progress = tick / (double) Math.max(1, duration);
+        double length = 7.4;
+        ensureLeaves(world, focus, 14);
+        layPetals(focus, facing, progress, length, tick);
+        slideDrawLine(focus, facing, progress, length);
         if (entity != null && entity.isValid()) {
             poseDraw(entity, progress);
+            Location look = entity.getLocation().clone();
+            look.setDirection(facing);
+            entity.setRotation(look.getYaw(), 6.0f);
         }
         if (tick % 8 == 0) {
             world.playSound(focus, Sound.BLOCK_CHERRY_LEAVES_BREAK, 0.45f, 0.6f + (float) progress * 0.5f);
             world.playSound(focus, Sound.BLOCK_CHERRY_WOOD_STEP, 0.35f, 0.8f + (float) progress * 0.3f);
+        }
+        if (tick == Math.max(2, duration - 6)) {
+            world.playSound(focus, Sound.ITEM_TRIDENT_THROW, 0.8f, 1.45f);
+            world.playSound(focus, Sound.ENTITY_PLAYER_ATTACK_SWEEP, 0.7f, 0.55f);
         }
     }
 
@@ -353,6 +355,7 @@ final class AshenSheathDirector {
             }
         }
         leaves.clear();
+        clearDrawLine();
     }
 
     /**
@@ -370,9 +373,12 @@ final class AshenSheathDirector {
             return false;
         }
         if (instance.isTransitioning()) {
-            if (move == Move.NONE) {
-                syncKatana(entity);
+            if (move != Move.NONE) {
+                clearLeafTornado();
+                move = Move.NONE;
+                actionTick = 0;
             }
+            syncKatana(entity);
             return false;
         }
         tickCooldowns();
@@ -426,6 +432,11 @@ final class AshenSheathDirector {
         if (target == null) {
             return;
         }
+        if (openingCut) {
+            openingCut = false;
+            beginIaido(entity, target);
+            return;
+        }
         double pct = instance.healthPercent();
         int roll = ThreadLocalRandom.current().nextInt(100);
         if (pct <= 33.0 && !frenzyArmed && iaidoCd <= 0) {
@@ -476,17 +487,29 @@ final class AshenSheathDirector {
         World world = entity.getWorld();
         if (actionTick <= IAIDO_WINDUP) {
             drawn = false;
-            if (iaidoFrom != null && iaidoTo != null) {
-                paintIaidoLine(iaidoFrom, iaidoTo, actionTick / (double) IAIDO_WINDUP);
+            double charge = actionTick / (double) IAIDO_WINDUP;
+            if (actionTick == 1) {
+                clearLeafTornado();
+            }
+            if (iaidoFrom != null && iaidoTo != null && iaidoDir != null) {
+                double length = Math.max(3.5, iaidoFrom.distance(iaidoTo));
+                ensureLeaves(world, iaidoFrom, 12);
+                layPetals(iaidoFrom, iaidoDir, charge, length, actionTick);
+                slideDrawLine(iaidoFrom, iaidoDir, charge, length);
+                paintIaidoLine(iaidoFrom, iaidoTo, charge);
             }
             if (iaidoDir != null) {
                 Location look = entity.getLocation().clone();
                 look.setDirection(iaidoDir);
                 entity.setRotation(look.getYaw(), 8.0f);
             }
-            poseDraw(entity, actionTick / (double) IAIDO_WINDUP);
+            poseDraw(entity, charge);
+            if (actionTick % 10 == 0) {
+                actionBarNear(entity, 18, "&dPetals mark the cut. &7Step off the line.");
+            }
             if (actionTick % 8 == 0) {
-                world.playSound(entity.getLocation(), Sound.BLOCK_NOTE_BLOCK_HAT, 0.32f, 0.5f + actionTick * 0.018f);
+                world.playSound(entity.getLocation(), Sound.BLOCK_CHERRY_LEAVES_BREAK, 0.28f, 0.7f + actionTick * 0.012f);
+                world.playSound(entity.getLocation(), Sound.BLOCK_CHERRY_WOOD_STEP, 0.22f, 0.8f + actionTick * 0.01f);
             }
             if (actionTick == IAIDO_WINDUP) {
                 world.playSound(entity.getLocation(), Sound.ITEM_TRIDENT_THROW, 1.25f, 1.65f);
@@ -496,6 +519,7 @@ final class AshenSheathDirector {
             return;
         }
         if (actionTick == IAIDO_WINDUP + 1) {
+            clearLeafTornado();
             drawn = true;
             Location land = iaidoTo == null ? entity.getLocation() : iaidoTo.clone();
             if (iaidoDir != null) {
@@ -509,7 +533,7 @@ final class AshenSheathDirector {
             poseDraw(entity, 1.0);
             if (iaidoFrom != null) {
                 world.spawnParticle(Particle.CHERRY_LEAVES, iaidoFrom.clone().add(0, 1.2, 0), 8, 0.2, 0.3, 0.2, 0.02);
-                slashSweep(iaidoFrom.clone().add(0, 1.15, 0), land.clone().add(0, 1.15, 0), STEEL);
+                slashSweep(iaidoFrom.clone().add(0, 1.15, 0), land.clone().add(0, 1.15, 0), PETAL);
                 hitLine(entity, iaidoFrom, land, 1.45, powerForPhase(48, 58, 70));
                 petalBurst(iaidoFrom.clone().add(0, 1, 0), 28);
             }
@@ -535,7 +559,7 @@ final class AshenSheathDirector {
         }
         World world = entity.getWorld();
         world.playSound(entity.getLocation(), Sound.ITEM_SHIELD_BLOCK, 0.7f, 1.8f);
-        world.playSound(entity.getLocation(), Sound.BLOCK_BEACON_ACTIVATE, 0.55f, 1.8f);
+        world.playSound(entity.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.55f, 1.6f);
         shout("&d&lAshen Sheath&7: &fCome.");
         titleNear(entity.getLocation(), "&fCOME", "&7The sheath is listening.");
     }
@@ -792,7 +816,7 @@ final class AshenSheathDirector {
             mob.setTarget(target);
         }
         World world = entity.getWorld();
-        world.playSound(honorCenter, Sound.BLOCK_BEACON_ACTIVATE, 1.1f, 1.35f);
+        world.playSound(honorCenter, Sound.BLOCK_AMETHYST_BLOCK_RESONATE, 0.8f, 1.2f);
         world.playSound(honorCenter, Sound.ITEM_TRIDENT_THUNDER, 0.55f, 1.7f);
         world.playSound(honorCenter, Sound.BLOCK_CHERRY_LEAVES_PLACE, 0.9f, 0.8f);
         shout("&d&lAshen Sheath&7: &fHonor circle. &cStep in — or burn outside.");
@@ -857,7 +881,7 @@ final class AshenSheathDirector {
             }
         }
         if (honorTicks == 0) {
-            world.playSound(honorCenter, Sound.BLOCK_BEACON_DEACTIVATE, 0.9f, 0.8f);
+            world.playSound(honorCenter, Sound.BLOCK_CHERRY_WOOD_STEP, 0.8f, 0.7f);
             world.playSound(honorCenter, Sound.BLOCK_CHERRY_LEAVES_BREAK, 0.7f, 1.1f);
             honorCenter = null;
             honorTarget = null;
@@ -875,8 +899,8 @@ final class AshenSheathDirector {
             mob.setTarget(target);
         }
         World world = entity.getWorld();
-        world.playSound(entity.getLocation(), Sound.ENTITY_WITHER_SPAWN, 0.45f, 1.7f);
-        world.playSound(entity.getLocation(), Sound.BLOCK_BEACON_POWER_SELECT, 0.7f, 1.6f);
+        world.playSound(entity.getLocation(), Sound.ITEM_TRIDENT_THUNDER, 0.55f, 1.35f);
+        world.playSound(entity.getLocation(), Sound.BLOCK_CHERRY_LEAVES_BREAK, 1.0f, 0.5f);
         shout("&5&lAshen Sheath&7: &4Ashen Moon — &fno hesitation.");
         titleNear(entity.getLocation(), "&5ASHEN MOON", "&7Three cuts. Watch the line.");
     }
@@ -903,18 +927,24 @@ final class AshenSheathDirector {
             return;
         }
         if (cycle < 14) {
-            if (frenzyAimed && iaidoFrom != null && iaidoTo != null) {
-                paintIaidoLine(iaidoFrom, iaidoTo, cycle / 14.0);
-                poseDraw(entity, cycle / 14.0);
-                if (iaidoDir != null) {
-                    Location look = entity.getLocation().clone();
-                    look.setDirection(iaidoDir);
-                    entity.setRotation(look.getYaw(), 6.0f);
+            if (frenzyAimed && iaidoFrom != null && iaidoTo != null && iaidoDir != null) {
+                if (cycle == 1) {
+                    clearLeafTornado();
                 }
+                double charge = cycle / 14.0;
+                double length = Math.max(3.5, iaidoFrom.distance(iaidoTo));
+                ensureLeaves(entity.getWorld(), iaidoFrom, 10);
+                layPetals(iaidoFrom, iaidoDir, charge, length, cycle);
+                slideDrawLine(iaidoFrom, iaidoDir, charge, length);
+                poseDraw(entity, charge);
+                Location look = entity.getLocation().clone();
+                look.setDirection(iaidoDir);
+                entity.setRotation(look.getYaw(), 6.0f);
             }
             return;
         }
         if (cycle == 14 && frenzyAimed && iaidoFrom != null && iaidoTo != null) {
+            clearLeafTornado();
             Location land = iaidoTo.clone();
             if (iaidoDir != null) {
                 land.setDirection(iaidoDir);
@@ -1012,7 +1042,7 @@ final class AshenSheathDirector {
             meleeCd = 40;
             drawn = true;
             syncKatana(entity);
-            slashArc(entity, target.getLocation(), STEEL);
+            slashArc(entity, target.getLocation(), PETAL);
             if (vulnerable(target)) {
                 BossHits.hurt(target, entity, powerForPhase(32, 38, 45));
             }
@@ -1039,11 +1069,11 @@ final class AshenSheathDirector {
                 deathBlade.teleport(bladeAt);
                 deathBlade.setTransformation(katanaTransform(0.55f + (float) t * 0.35f, true));
             }
-            ringPetals(deathFocus, 2.0 + t * 3.2, 16);
+            ringPetals(deathFocus, 1.4 + t * 0.8, 10);
             if (leaves.isEmpty()) {
                 ensureLeaves(world, deathFocus, LEAF_COUNT);
             }
-            spinRing(deathFocus, deathTicks, 1.6 + t * 2.4);
+            spinLeaves(deathFocus, deathTicks, 1.1 + t * 2.6, 0.16);
             if (deathTicks % 6 == 0) {
                 world.playSound(deathFocus, Sound.BLOCK_CHERRY_LEAVES_BREAK, 0.7f, 0.6f + (float) t);
                 world.spawnParticle(Particle.CHERRY_LEAVES, deathFocus.clone().add(0, 1.0, 0), 6, 0.5, 0.4, 0.5, 0.02);
@@ -1054,7 +1084,7 @@ final class AshenSheathDirector {
             double t = (deathTicks - 25) / 45.0;
             if (entity != null && entity.isValid()) {
                 entity.setInvisible(t > 0.35);
-                entity.setGlowing(t < 0.7);
+                entity.setGlowing(false);
                 entity.teleport(deathFocus.clone().add(0, -0.35 * t, 0));
             }
             if (leaves.isEmpty()) {
@@ -1084,7 +1114,7 @@ final class AshenSheathDirector {
             if (leaves.isEmpty()) {
                 ensureLeaves(world, deathFocus, LEAF_COUNT);
             }
-            spinRing(deathFocus, deathTicks, 2.2 + t * 1.4);
+            spinLeaves(deathFocus, deathTicks, 2.6 + t * 2.4, 0.14);
             if (deathTicks % 5 == 0) {
                 world.playSound(deathFocus, Sound.BLOCK_NOTE_BLOCK_CHIME, 0.35f, 1.35f + (float) t);
                 world.playSound(deathFocus, Sound.BLOCK_CHERRY_LEAVES_BREAK, 0.35f, 1.1f);
@@ -1103,7 +1133,6 @@ final class AshenSheathDirector {
                 deathBlade.remove();
                 deathBlade = null;
             }
-            spinRing(deathFocus, deathTicks, 4.6);
             if (deathTicks % 4 == 0) {
                 world.spawnParticle(Particle.CHERRY_LEAVES, deathFocus.clone().add(0, 0.4, 0), 8, 1.3, 0.35, 1.3, 0.03);
             }
@@ -1168,6 +1197,7 @@ final class AshenSheathDirector {
             instance.getKeys().tagBeamFx(display, instance.getInstanceId());
         });
         props.add(katana);
+        spawnHipSheath(entity);
     }
 
     private ItemDisplay spawnGhostKatana(Location at) {
@@ -1176,8 +1206,8 @@ final class AshenSheathDirector {
             display.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
             display.setBillboard(Display.Billboard.FIXED);
             display.setTransformation(katanaTransform(0.55f, false));
-            display.setGlowColorOverride(ASH);
-            display.setGlowing(true);
+            display.setGlowColorOverride(PETAL);
+            display.setGlowing(false);
             display.setBrightness(new Display.Brightness(8, 8));
             display.setPersistent(false);
             instance.getKeys().tagBeamFx(display, instance.getInstanceId());
@@ -1195,15 +1225,11 @@ final class AshenSheathDirector {
             display.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
             display.setBillboard(Display.Billboard.FIXED);
             display.setTransformation(katanaTransform(0.55f, true));
-            display.setGlowColorOverride(MOON);
-            display.setGlowing(true);
             display.setPersistent(false);
+            display.setGlowing(false);
             instance.getKeys().tagBeamFx(display, instance.getInstanceId());
         });
-        if (katana != null && katana.isValid()) {
-            katana.remove();
-        }
-        katana = null;
+        removeKatana();
     }
 
     private static ItemStack katanaItem() {
@@ -1261,13 +1287,125 @@ final class AshenSheathDirector {
         katana.setRotation(entity.getLocation().getYaw() + (drawn ? 95.0f : -25.0f), drawn ? -25.0f : -70.0f);
         katana.setTransformation(katanaTransform(drawn ? 0.78f : 0.62f, !drawn));
         katana.setGlowColorOverride(drawn ? BLOOD : PETAL);
+        syncHipSheath(entity);
     }
 
     private void removeKatana() {
-        if (katana != null && katana.isValid()) {
-            katana.remove();
-        }
+        dropProp(katana);
         katana = null;
+        dropProp(hipSheath);
+        hipSheath = null;
+    }
+
+    private void spawnHipSheath(LivingEntity entity) {
+        dropProp(hipSheath);
+        hipSheath = null;
+        World world = entity.getWorld();
+        hipSheath = world.spawn(sheathAnchor(entity), ItemDisplay.class, display -> prepareProp(display, sheathItem(), false));
+        props.add(hipSheath);
+    }
+
+    private void syncHipSheath(LivingEntity entity) {
+        if (entity == null || !entity.isValid()) {
+            return;
+        }
+        if (hipSheath == null || !hipSheath.isValid()) {
+            spawnHipSheath(entity);
+        }
+        hipSheath.teleport(sheathAnchor(entity));
+        hipSheath.setRotation(entity.getLocation().getYaw() - 16.0f, -74.0f);
+        hipSheath.setTransformation(sheathTransform());
+    }
+
+    private Location sheathAnchor(LivingEntity entity) {
+        Location base = entity.getLocation().clone().add(0, entity.getHeight() * 0.52, 0);
+        float yaw = base.getYaw();
+        double rad = Math.toRadians(yaw);
+        Vector right = new Vector(-Math.cos(rad), 0, -Math.sin(rad));
+        Vector forward = new Vector(-Math.sin(rad), 0, Math.cos(rad));
+        if (right.lengthSquared() > 0.01) {
+            right.normalize();
+        }
+        if (forward.lengthSquared() > 0.01) {
+            forward.normalize();
+        }
+        return base.clone().add(right.multiply(-0.42)).add(forward.multiply(-0.18)).add(0, 0.15, 0);
+    }
+
+    private static ItemStack sheathItem() {
+        ItemStack stack = new ItemStack(Material.BAMBOO);
+        ItemMeta meta = stack.getItemMeta();
+        if (meta != null) {
+            meta.setDisplayName("§dSheath");
+            meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
+            stack.setItemMeta(meta);
+        }
+        return stack;
+    }
+
+    private static Transformation sheathTransform() {
+        return new Transformation(
+                new Vector3f(0.0f, 0.0f, 0.0f),
+                new AxisAngle4f(0.0f, 0.0f, 1.0f, 0.0f),
+                new Vector3f(0.42f, 1.35f, 0.42f),
+                new AxisAngle4f(0.0f, 0.0f, 1.0f, 0.0f)
+        );
+    }
+
+    private void prepareProp(ItemDisplay display, ItemStack item, boolean blade) {
+        display.setItemStack(item);
+        display.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
+        display.setBillboard(Display.Billboard.FIXED);
+        display.setInterpolationDuration(2);
+        display.setTeleportDuration(2);
+        display.setBrightness(new Display.Brightness(10, 10));
+        display.setGlowing(false);
+        display.setPersistent(false);
+        display.setTransformation(blade ? katanaTransform(0.7f, true) : sheathTransform());
+        instance.getKeys().tagBeamFx(display, instance.getInstanceId());
+    }
+
+    private void slideDrawLine(Location origin, Vector facing, double progress, double length) {
+        if (origin == null || origin.getWorld() == null || facing == null) {
+            return;
+        }
+        Vector dir = facing.clone().setY(0);
+        if (dir.lengthSquared() < 0.01) {
+            dir = new Vector(0, 0, 1);
+        }
+        dir.normalize();
+        progress = Math.max(0.0, Math.min(1.0, progress));
+        World world = origin.getWorld();
+        if (lineBlade == null || !lineBlade.isValid()) {
+            lineBlade = world.spawn(origin.clone().add(0, 0.9, 0), ItemDisplay.class, display -> prepareProp(display, katanaItem(), true));
+            props.add(lineBlade);
+        }
+        float yaw = yawOf(dir);
+        double reach = 0.45 + progress * Math.max(2.5, length);
+        Location bladeAt = origin.clone().add(dir.multiply(reach)).add(0, 0.4 + (1.0 - progress) * 0.7, 0);
+        lineBlade.teleport(bladeAt);
+        float pitch = (float) (-78.0 + progress * 68.0);
+        lineBlade.setRotation(yaw, pitch);
+        lineBlade.setTransformation(katanaTransform(0.74f, progress < 0.22));
+    }
+
+    private void clearDrawLine() {
+        dropProp(lineBlade);
+        lineBlade = null;
+    }
+
+    private void dropProp(ItemDisplay display) {
+        if (display == null) {
+            return;
+        }
+        if (display.isValid()) {
+            display.remove();
+        }
+        props.remove(display);
+    }
+
+    private static float yawOf(Vector facing) {
+        return (float) Math.toDegrees(Math.atan2(-facing.getX(), facing.getZ()));
     }
 
     /**
@@ -1285,68 +1423,101 @@ final class AshenSheathDirector {
         if (!leaves.isEmpty() || world == null || focus == null) {
             return;
         }
-        float size = 0.46f;
+        float wide = 0.78f;
+        float thick = 0.12f;
         for (int i = 0; i < count; i++) {
-            int index = i;
             BlockDisplay display = world.spawn(focus, BlockDisplay.class, spawned -> {
                 spawned.setBlock(cherryLeafBlock());
                 spawned.setTransformation(new Transformation(
-                        new Vector3f(-size / 2f, -size / 2f, -size / 2f),
-                        new AxisAngle4f(),
-                        new Vector3f(size, size, size),
+                        new Vector3f(-wide / 2f, -thick / 2f, -wide / 2f),
+                        new AxisAngle4f(0.4f, 1f, 0.15f, 0f),
+                        new Vector3f(wide, thick, wide * 0.72f),
                         new AxisAngle4f()
                 ));
-                spawned.setBrightness(new Display.Brightness(12, 12));
+                spawned.setBrightness(new Display.Brightness(15, 12));
                 spawned.setTeleportDuration(2);
                 spawned.setInterpolationDuration(2);
                 spawned.setBillboard(Display.Billboard.FIXED);
-                spawned.setGlowing(true);
-                spawned.setGlowColorOverride(index % 3 == 0 ? PETAL : MOON);
+                spawned.setGlowing(false);
                 spawned.setPersistent(false);
                 spawned.setGravity(false);
                 instance.getKeys().tagBeamFx(spawned, instance.getInstanceId());
             });
             leaves.add(display);
         }
-        world.playSound(focus, Sound.BLOCK_CHERRY_LEAVES_PLACE, 0.9f, 0.6f);
-        world.playSound(focus, Sound.ITEM_TRIDENT_RIPTIDE_2, 0.45f, 1.35f);
+        world.playSound(focus, Sound.BLOCK_CHERRY_LEAVES_PLACE, 0.75f, 0.6f);
     }
 
-    private void spinLeaves(Location focus, int tick, double height, double spin) {
+    /**
+     * Petals ahead of the draw hang in the air. Petals the blade has passed sit on the ground.
+     * Offsets keep them from lining up into a rod.
+     */
+    private void layPetals(Location origin, Vector facing, double progress, double length, int tick) {
+        int count = leaves.size();
+        if (count == 0 || origin == null || facing == null) {
+            return;
+        }
+        Vector dir = facing.clone().setY(0);
+        if (dir.lengthSquared() < 0.01) {
+            dir = new Vector(0, 0, 1);
+        }
+        dir.normalize();
+        Vector side = new Vector(-dir.getZ(), 0, dir.getX());
+        progress = Math.max(0.0, Math.min(1.0, progress));
+        double span = Math.max(2.5, length);
+        for (int i = 0; i < count; i++) {
+            BlockDisplay leaf = leaves.get(i);
+            if (leaf == null || !leaf.isValid()) {
+                continue;
+            }
+            double slot = (i + 1) / (double) count;
+            double along = 0.7 + slot * span;
+            double fall = slot <= progress ? 0.0 : (slot - progress);
+            double sway = Math.sin(i * 1.7) * 0.42 + Math.sin(tick * 0.25 + i) * 0.08 * fall;
+            Location at = origin.clone()
+                    .add(dir.clone().multiply(along))
+                    .add(side.clone().multiply(sway))
+                    .add(0, 0.16 + fall * 3.3, 0);
+            posePetal(leaf, at, i, tick, fall <= 0.02);
+        }
+    }
+
+    /** Vertical column with a small sway. Not a widening helix and not a spinning ring. */
+    private void spinLeaves(Location focus, int tick, double height, double sway) {
         int count = leaves.size();
         if (count == 0 || focus == null) {
             return;
         }
-        double column = Math.max(1.2, height);
+        double column = Math.max(1.4, height);
+        double drift = 0.18 + Math.max(0.0, sway);
         for (int i = 0; i < count; i++) {
             BlockDisplay leaf = leaves.get(i);
             if (leaf == null || !leaf.isValid()) {
                 continue;
             }
             double along = i / (double) count;
-            double y = (along * column + tick * 0.055) % column;
-            double arm = (i % 4) * (Math.PI / 2.0);
-            double yaw = tick * spin + arm + y * 0.85;
-            double radius = 0.7 + y * 0.36;
-            leaf.teleport(focus.clone().add(Math.cos(yaw) * radius, 0.2 + y, Math.sin(yaw) * radius));
+            double y = (along * column + tick * 0.035) % column;
+            double x = Math.sin(tick * 0.07 + i * 0.8) * drift;
+            double z = Math.cos(tick * 0.06 + i * 0.55) * drift;
+            posePetal(leaf, focus.clone().add(x, 0.2 + y, z), i, tick, false);
         }
     }
 
-    /** Flat ring of the same cherry-leaf blocks. Used for the draw tell and the death settle. */
-    private void spinRing(Location focus, int tick, double radius) {
-        int count = leaves.size();
-        if (count == 0 || focus == null) {
-            return;
-        }
-        for (int i = 0; i < count; i++) {
-            BlockDisplay leaf = leaves.get(i);
-            if (leaf == null || !leaf.isValid()) {
-                continue;
-            }
-            double yaw = tick * 0.07 + (Math.PI * 2 * i) / count;
-            double bob = Math.sin(tick * 0.16 + i) * 0.1;
-            leaf.teleport(focus.clone().add(Math.cos(yaw) * radius, 0.32 + bob, Math.sin(yaw) * radius));
-        }
+    private void posePetal(BlockDisplay leaf, Location at, int index, int tick, boolean settled) {
+        leaf.teleport(at);
+        float tumble = settled
+                ? (float) (index * 0.55)
+                : (float) ((tick * 0.2 + index * 0.65) % (Math.PI * 2));
+        float wide = 0.8f;
+        float thick = settled ? 0.1f : 0.12f;
+        leaf.setInterpolationDuration(2);
+        leaf.setInterpolationDelay(0);
+        leaf.setTransformation(new Transformation(
+                new Vector3f(-wide / 2f, -thick / 2f, -wide / 2f),
+                new AxisAngle4f(tumble, 1f, 0.18f, 0.04f),
+                new Vector3f(wide, thick, wide * 0.7f),
+                new AxisAngle4f()
+        ));
     }
 
     private void scatterLeaves(Location focus) {
@@ -1360,8 +1531,14 @@ final class AshenSheathDirector {
                 continue;
             }
             double ang = (Math.PI * 2 * i) / count;
-            double radius = 3.1 + (i % 4) * 0.4;
-            leaf.teleport(focus.clone().add(Math.cos(ang) * radius, 0.55 + (i % 5) * 0.32, Math.sin(ang) * radius));
+            double radius = 2.2 + (i % 5) * 0.45;
+            posePetal(
+                    leaf,
+                    focus.clone().add(Math.cos(ang) * radius, 0.2 + (i % 4) * 0.18, Math.sin(ang) * radius),
+                    i,
+                    0,
+                    true
+            );
         }
     }
 
@@ -1406,24 +1583,21 @@ final class AshenSheathDirector {
         }
     }
 
+    /** Sparse petals only. The block displays are the line. A dust rod reads as a beam. */
     private void paintIaidoLine(Location from, Location to, double charge) {
         World world = from.getWorld();
         if (world == null || to == null) {
             return;
         }
-        int steps = 24;
-        Color color = mix(ASH, BLOOD, charge);
+        int steps = 8;
         for (int i = 0; i <= steps; i++) {
             double t = i / (double) steps;
-            Location point = lerp(from, to, t).add(0, 0.12, 0);
-            world.spawnParticle(Particle.DUST, point, 1, 0.02, 0.02, 0.02, 0, new Particle.DustOptions(color, 1.2f));
-            if (i % 3 == 0 && t <= charge + 0.04) {
-                world.spawnParticle(Particle.CHERRY_LEAVES, point, 1, 0.05, 0.04, 0.05, 0.01);
+            if (t > charge + 0.05) {
+                continue;
             }
+            Location point = lerp(from, to, t).add(0, 0.2, 0);
+            world.spawnParticle(Particle.CHERRY_LEAVES, point, 1, 0.08, 0.05, 0.08, 0.01);
         }
-        world.spawnParticle(Particle.CHERRY_LEAVES, from.clone().add(0, 0.25, 0), 2, 0.08, 0.05, 0.08, 0.01);
-        Location tip = lerp(from, to, charge).add(0, 0.25, 0);
-        world.spawnParticle(Particle.CHERRY_LEAVES, tip, 2, 0.06, 0.04, 0.06, 0.01);
     }
 
     private void poseDraw(LivingEntity entity, double charge) {
@@ -1431,13 +1605,14 @@ final class AshenSheathDirector {
             return;
         }
         charge = Math.max(0.0, Math.min(1.0, charge));
+        syncHipSheath(entity);
         Location anchor = katanaAnchor(entity).add(0, 0.18 * charge, 0);
         katana.teleport(anchor);
         float yaw = entity.getLocation().getYaw() + (float) (-25.0 + charge * 120.0);
         float pitch = (float) (-70.0 + charge * 46.0);
         katana.setRotation(yaw, pitch);
         katana.setTransformation(katanaTransform(0.62f + (float) charge * 0.16f, charge > 0.78));
-        katana.setGlowColorOverride(charge > 0.7 ? STEEL : PETAL);
+        katana.setGlowColorOverride(charge > 0.7 ? BLOOD : PETAL);
     }
 
     /** One clean crescent, not a portal beam. */
@@ -1689,15 +1864,6 @@ final class AshenSheathDirector {
     private static Location lerp(Location a, Location b, double t) {
         t = Math.max(0.0, Math.min(1.0, t));
         return a.clone().add((b.getX() - a.getX()) * t, (b.getY() - a.getY()) * t, (b.getZ() - a.getZ()) * t);
-    }
-
-    private static Color mix(Color a, Color b, double t) {
-        t = Math.max(0.0, Math.min(1.0, t));
-        return Color.fromRGB(
-                (int) (a.getRed() + (b.getRed() - a.getRed()) * t),
-                (int) (a.getGreen() + (b.getGreen() - a.getGreen()) * t),
-                (int) (a.getBlue() + (b.getBlue() - a.getBlue()) * t)
-        );
     }
 
     private static final class Afterimage {
