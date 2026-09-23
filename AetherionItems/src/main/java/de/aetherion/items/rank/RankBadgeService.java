@@ -375,10 +375,13 @@ public final class RankBadgeService implements Listener {
             String previous = extras.get(playerId);
             if (previous != null && !previous.equalsIgnoreCase(rank.group())) {
                 LuckPermsSilent.removeGroup(playerId, previous);
+                if ("monkey".equalsIgnoreCase(previous)) {
+                    LuckPermsSilent.revokeContentKitFromUser(playerId);
+                }
             }
             extras.put(playerId, rank.group());
             save();
-            applyLuckPerms(playerId, aetherionGroup(playerId), rank);
+            applyLuckPerms(playerId, aetherionGroup(playerId));
             Player online = Bukkit.getPlayer(playerId);
             if (online != null && online.isOnline()) {
                 paint(online);
@@ -409,7 +412,7 @@ public final class RankBadgeService implements Listener {
             forced.remove(playerId);
         }
         save();
-        applyLuckPerms(playerId, rank.group(), extraFor(playerId));
+        applyLuckPerms(playerId, rank.group());
         Player online = Bukkit.getPlayer(playerId);
         if (online != null && online.isOnline()) {
             paint(online);
@@ -427,7 +430,8 @@ public final class RankBadgeService implements Listener {
         if (player == null || !player.isOnline()) {
             return;
         }
-        applyLuckPerms(player.getUniqueId(), aetherionGroup(player.getUniqueId()), extraFor(player.getUniqueId()));
+        // Stored Dev Menu row only. Do not read LuckPerms parents or permission nodes.
+        applyLuckPerms(player.getUniqueId(), aetherionGroup(player.getUniqueId()));
         paint(player);
     }
 
@@ -495,7 +499,10 @@ public final class RankBadgeService implements Listener {
         extras.remove(playerId);
         save();
         LuckPermsSilent.removeGroup(playerId, key);
-        applyLuckPerms(playerId, aetherionGroup(playerId), extraFor(playerId));
+        if ("monkey".equals(key)) {
+            LuckPermsSilent.revokeContentKitFromUser(playerId);
+        }
+        applyLuckPerms(playerId, aetherionGroup(playerId));
         Player online = Bukkit.getPlayer(playerId);
         if (online != null && online.isOnline()) {
             paint(online);
@@ -529,45 +536,30 @@ public final class RankBadgeService implements Listener {
     }
 
     private void syncGroups() {
-        Set<String> managed = managedGroups();
+        // XP group metadata only. Does not read LuckPerms users, permission nodes,
+        // or ranks.mvpplusplus.players into player-ranks.yml or the badge.
         LuckPermsSilent.syncGroups(RANKS, mvpGroup());
-        // Config MVP++ UUIDs are not a cosmetic grant. Only a stored Dev Menu extra is mirrored.
-        for (UUID playerId : mvpPlayers()) {
-            String extraName = luckPermsExtraName(extraFor(playerId));
-            if (extraName != null) {
-                LuckPermsSilent.applyUser(playerId, aetherionGroup(playerId), extraName, managed);
-            }
-        }
-        if (!isMvpPlusPlus(DAVID)) {
-            LuckPermsSilent.applyUser(DAVID, aetherionGroup(DAVID), luckPermsExtraName(extraFor(DAVID)), managed);
-        }
     }
 
-    private void applyLuckPerms(UUID playerId, String aetherionGroup, Rank extra) {
+    /**
+     * Mirrors the XP progression parent into LuckPerms and strips cosmetic parents.
+     * A stored Dev Menu extra is never attached as a LuckPerms group.
+     */
+    private void applyLuckPerms(UUID playerId, String aetherionGroup) {
         if (playerId == null || aetherionGroup == null) {
             return;
         }
         LuckPermsSilent.applyUser(
                 playerId,
                 rankByGroup(aetherionGroup).group(),
-                luckPermsExtraName(extra),
                 managedGroups()
         );
-    }
-
-    /**
-     * LuckPerms may mirror Monkey, Citrus, Beta, and MVP++.
-     * Admin is display-only and is never written as a parent group.
-     */
-    private static String luckPermsExtraName(Rank extra) {
-        if (extra == null || "admin".equalsIgnoreCase(extra.group())) {
-            return null;
+        if ("monkey".equalsIgnoreCase(extras.get(playerId))) {
+            LuckPermsSilent.grantContentKitToUser(playerId);
         }
-        return extra.group();
     }
 
     private Set<String> managedGroups() {
-        // XP ranks only. Citrus / Monkey / Beta / MVP++ / Admin are never wiped here.
         return xpManagedGroups();
     }
 

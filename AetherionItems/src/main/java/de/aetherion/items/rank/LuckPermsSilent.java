@@ -12,11 +12,12 @@ import net.luckperms.api.node.types.WeightNode;
 
 import org.bukkit.Bukkit;
 
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
+import java.util.function.Consumer;
 
 final class LuckPermsSilent {
 
@@ -52,6 +53,12 @@ final class LuckPermsSilent {
         return Bukkit.getPluginManager().isPluginEnabled("LuckPerms");
     }
 
+    /**
+     * XP progression groups keep weight and prefix.
+     * Cosmetic groups (monkey, citrus, beta, mvpplusplus, admin, owner) are never
+     * created here and never receive a prefix or {@code aetherion.rank.*} node.
+     * Those nodes used to be read back on join and written into {@code player-ranks.yml}.
+     */
     static void syncGroups(Iterable<RankBadgeService.Rank> ranks, String mvpGroup) {
         if (!available()) {
             return;
@@ -63,6 +70,9 @@ final class LuckPermsSilent {
             return;
         }
         for (RankBadgeService.Rank rank : ranks) {
+            if (RankBadgeService.isPermanentExtra(rank.group())) {
+                continue;
+            }
             api.getGroupManager().createAndLoadGroup(rank.group()).thenAccept(group -> {
                 if (group == null) {
                     return;
@@ -71,39 +81,22 @@ final class LuckPermsSilent {
                 api.getGroupManager().saveGroup(group);
             });
         }
-        String mvp = mvpGroup == null ? "mvpplusplus" : mvpGroup.toLowerCase(Locale.ROOT);
-        api.getGroupManager().loadGroup(mvp).thenAccept(optional -> optional.ifPresent(group -> {
-            group.data().add(PermissionNode.builder("aetherion.rank.mvpplusplus").value(true).build());
-            api.getGroupManager().saveGroup(group);
-        }));
-        api.getGroupManager().loadGroup("admin").thenAccept(optional -> optional.ifPresent(group -> {
-            group.data().clear(NodeType.PREFIX.predicate(node -> true));
-            group.data().clear(NodeType.PERMISSION.predicate(node ->
-                    "aetherion.rank.admin".equalsIgnoreCase(node.getKey())));
-            group.data().add(PermissionNode.builder("aetherion.npc.editor").value(true).build());
-            api.getGroupManager().saveGroup(group);
-        }));
-        api.getGroupManager().createAndLoadGroup("monkey").thenAccept(group -> {
-            if (group == null) {
-                return;
-            }
-            group.data().add(PermissionNode.builder("aetherion.rank.monkey").value(true).build());
-            grantContentKit(group);
-            denyFullDev(group);
-            api.getGroupManager().saveGroup(group);
-        });
-        // Cosmetic-only ultras. No tools. Do not negate aetherion.dev — an admin
-        // who also wears Citrus or Beta must keep the full DEV tree.
-        for (String cosmetic : List.of("citrus", "beta")) {
-            api.getGroupManager().createAndLoadGroup(cosmetic).thenAccept(group -> {
-                if (group == null) {
-                    return;
+        for (String cosmetic : cosmeticGroupNames(mvpGroup)) {
+            api.getGroupManager().loadGroup(cosmetic).thenAccept(optional -> optional.ifPresent(group -> {
+                stripCosmeticDisplay(group);
+                if ("monkey".equalsIgnoreCase(cosmetic)) {
+                    grantContentKit(group);
+                    denyFullDev(group);
+                } else if ("admin".equalsIgnoreCase(cosmetic)) {
+                    group.data().add(PermissionNode.builder("aetherion.npc.editor").value(true).build());
+                } else {
+                    // Citrus, Beta, MVP++, owner: cosmetics only. Do not negate aetherion.dev
+                    // on the user — an admin who also wears one must keep the full DEV tree.
+                    stripFullDevGrant(group);
+                    stripContentKitGrants(group);
                 }
-                group.data().add(PermissionNode.builder("aetherion.rank." + cosmetic).value(true).build());
-                stripFullDevGrant(group);
-                stripContentKitGrants(group);
                 api.getGroupManager().saveGroup(group);
-            });
+            }));
         }
         for (String staff : List.of("moderator", "mod")) {
             api.getGroupManager().loadGroup(staff).thenAccept(optional -> optional.ifPresent(group -> {
@@ -112,6 +105,73 @@ final class LuckPermsSilent {
                 api.getGroupManager().saveGroup(group);
             }));
         }
+    }
+
+    /**
+     * Cosmetic parent this apply would add. Always {@code null}: special ranks
+     * are not copied from LuckPerms, permission nodes, or a detected group.
+     */
+    static String cosmeticParentToAttach(String storedOrDetected) {
+        return null;
+    }
+
+    /** Progression parent written to LuckPerms. Cosmetic names fall back to adventurer. */
+    static String progressionParentToAttach(String keepGroup) {
+        if (keepGroup == null || keepGroup.isBlank() || RankBadgeService.isPermanentExtra(keepGroup)) {
+            return "adventurer";
+        }
+        return keepGroup.toLowerCase(Locale.ROOT);
+    }
+
+    /**
+     * Inheritance removed on every user apply. Cosmetic extras are included so a
+     * wiped {@code player-ranks.yml} cannot leave LimePuppet in {@code citrus}.
+     * The {@code admin} staff group is left in place; its prefix is cleared so it
+     * cannot paint [Admin].
+     */
+    static Set<String> parentsClearedOnApply(Set<String> managedGroups) {
+        Set<String> drop = new LinkedHashSet<>();
+        if (managedGroups != null) {
+            for (String group : managedGroups) {
+                if (group == null || group.isBlank()) {
+                    continue;
+                }
+                String key = group.toLowerCase(Locale.ROOT);
+                if (!RankBadgeService.isPermanentExtra(key)) {
+                    drop.add(key);
+                }
+            }
+        }
+        for (String extra : RankBadgeService.extraGroups()) {
+            if ("admin".equalsIgnoreCase(extra)) {
+                continue;
+            }
+            drop.add(extra.toLowerCase(Locale.ROOT));
+        }
+        drop.add("owner");
+        return Set.copyOf(drop);
+    }
+
+    private static Set<String> cosmeticGroupNames(String mvpGroup) {
+        Set<String> names = new LinkedHashSet<>(RankBadgeService.extraGroups());
+        if (mvpGroup != null && !mvpGroup.isBlank()) {
+            names.add(mvpGroup.toLowerCase(Locale.ROOT));
+        }
+        names.add("owner");
+        return names;
+    }
+
+    /** Drop prefix and rank-permission nodes so LuckPerms cannot paint a special rank. */
+    private static void stripCosmeticDisplay(Group group) {
+        if (group == null) {
+            return;
+        }
+        group.data().clear(NodeType.PREFIX.predicate(node -> true));
+        group.data().clear(NodeType.PERMISSION.predicate(node -> isRankPermission(node.getKey())));
+    }
+
+    private static boolean isRankPermission(String key) {
+        return key != null && key.toLowerCase(Locale.ROOT).startsWith("aetherion.rank.");
     }
 
     /** Homie / Monkey content kit — not full admin. */
@@ -172,7 +232,10 @@ final class LuckPermsSilent {
                         key.equals(node.getGroupName().toLowerCase(Locale.ROOT)))));
     }
 
-    static void applyUser(UUID playerId, String keepGroup, String extraGroup, Set<String> managedGroups) {
+    /**
+     * Writes the XP progression parent only. Cosmetic parents are removed and never re-added.
+     */
+    static void applyUser(UUID playerId, String keepGroup, Set<String> managedGroups) {
         if (playerId == null || keepGroup == null || !available()) {
             return;
         }
@@ -182,38 +245,56 @@ final class LuckPermsSilent {
         } catch (IllegalStateException ignored) {
             return;
         }
-        Set<String> managed = managedGroups.stream()
-                .map(value -> value.toLowerCase(Locale.ROOT))
-                .collect(Collectors.toSet());
-        String keep = keepGroup.toLowerCase(Locale.ROOT);
-        String extra = extraGroup == null ? null : extraGroup.toLowerCase(Locale.ROOT);
-        api.getUserManager().modifyUser(playerId, user -> paintUser(user, keep, extra, managed));
+        String keep = progressionParentToAttach(keepGroup);
+        Set<String> clear = parentsClearedOnApply(managedGroups);
+        api.getUserManager().modifyUser(playerId, user -> paintUser(user, keep, clear));
+    }
+
+    /** Dev Menu monkey row: content tools on the user, not a cosmetic parent group. */
+    static void grantContentKitToUser(UUID playerId) {
+        modifyUser(playerId, user -> {
+            for (String node : CONTENT_PERMISSIONS) {
+                user.data().add(PermissionNode.builder(node).value(true).build());
+            }
+        });
+    }
+
+    /** Dev Menu removed monkey. Does not touch {@code aetherion.dev}. */
+    static void revokeContentKitFromUser(UUID playerId) {
+        modifyUser(playerId, user -> {
+            for (String node : CONTENT_PERMISSIONS) {
+                user.data().clear(NodeType.PERMISSION.predicate(existing ->
+                        node.equalsIgnoreCase(existing.getKey()) && existing.getValue()));
+            }
+        });
+    }
+
+    private static void modifyUser(UUID playerId, Consumer<User> editor) {
+        if (playerId == null || editor == null || !available()) {
+            return;
+        }
+        LuckPerms api;
+        try {
+            api = LuckPermsProvider.get();
+        } catch (IllegalStateException ignored) {
+            return;
+        }
+        api.getUserManager().modifyUser(playerId, editor::accept);
     }
 
     private static void writeGroupMeta(Group group, RankBadgeService.Rank rank) {
         group.data().clear(NodeType.WEIGHT.predicate(node -> true));
         group.data().clear(NodeType.PREFIX.predicate(node -> true));
-        group.data().add(WeightNode.builder(rank.weight()).build());
-        // Admin text is painted by RankBadgeService for Robb only. A LuckPerms prefix
-        // on the admin group would show [Admin] for anyone who has the permission group.
-        if (!"admin".equalsIgnoreCase(rank.group())) {
-            group.data().add(PrefixNode.builder(rank.prefix(), rank.weight()).build());
+        if (RankBadgeService.isPermanentExtra(rank.group())) {
+            return;
         }
+        group.data().add(WeightNode.builder(rank.weight()).build());
+        group.data().add(PrefixNode.builder(rank.prefix(), rank.weight()).build());
     }
 
-    private static void paintUser(User user, String keep, String extra, Set<String> managed) {
-        // Wipe XP progression groups only. Ultra extras stay until removed.
-        user.data().clear(NodeType.INHERITANCE.predicate(node -> {
-            String name = node.getGroupName().toLowerCase(Locale.ROOT);
-            return managed.contains(name) && !RankBadgeService.isPermanentExtra(name);
-        }));
+    private static void paintUser(User user, String keep, Set<String> clearParents) {
+        user.data().clear(NodeType.INHERITANCE.predicate(node ->
+                clearParents.contains(node.getGroupName().toLowerCase(Locale.ROOT))));
         user.data().add(InheritanceNode.builder(keep).build());
-        if (extra != null && !extra.equals(keep)) {
-            user.data().clear(NodeType.INHERITANCE.predicate(node -> {
-                String name = node.getGroupName().toLowerCase(Locale.ROOT);
-                return RankBadgeService.isPermanentExtra(name) && !name.equals(extra);
-            }));
-            user.data().add(InheritanceNode.builder(extra).build());
-        }
     }
 }

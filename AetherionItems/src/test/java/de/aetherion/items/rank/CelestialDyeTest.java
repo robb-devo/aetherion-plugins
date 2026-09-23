@@ -6,10 +6,12 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CelestialDyeTest {
@@ -214,6 +216,24 @@ class CelestialDyeTest {
         assertEquals("admin", RankBadgeService.storedDisplayGroup(RankBadgeService.ROBB, "admin"));
         assertEquals("admin", RankBadgeService.storedDisplayGroup(RankBadgeService.ROBB, "owner"));
         assertEquals(null, RankBadgeService.storedDisplayGroup(RankBadgeService.ROBB, null));
+    }
+
+    @Test
+    void luckPermsApplyDropsCosmeticParentsAndNeverReattachesThem() {
+        Set<String> cleared = LuckPermsSilent.parentsClearedOnApply(RankBadgeService.xpManagedGroups());
+        for (String extra : new String[] {"monkey", "citrus", "beta", "mvpplusplus", "owner"}) {
+            assertTrue(cleared.contains(extra), extra);
+            assertNull(LuckPermsSilent.cosmeticParentToAttach(extra));
+        }
+        assertFalse(cleared.contains("admin"));
+        assertNull(LuckPermsSilent.cosmeticParentToAttach("admin"));
+        assertNull(LuckPermsSilent.cosmeticParentToAttach(null));
+        assertNull(LuckPermsSilent.cosmeticParentToAttach("LimePuppet"));
+        assertEquals("veteran", LuckPermsSilent.progressionParentToAttach("Veteran"));
+        assertEquals("adventurer", LuckPermsSilent.progressionParentToAttach("citrus"));
+        assertEquals("adventurer", LuckPermsSilent.progressionParentToAttach("admin"));
+        assertEquals("adventurer", LuckPermsSilent.progressionParentToAttach(null));
+        assertFalse(cleared.contains("not-a-rank"));
     }
 
     private static String prefixOf(String group) {
