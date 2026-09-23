@@ -26,6 +26,12 @@ import java.util.logging.Level;
 /**
  * Same-host inventory/XP sync between Velocity backends.
  * Uses Paper {@link ItemStack#serializeAsBytes()} so custom NBT/components survive.
+ *
+ * <p>Apply contract: {@code inventory-omitted}, missing inventory blobs, and a
+ * Core v5 hub/ignored source mean <b>keep the destination inventory</b>
+ * (storage, armor, offhand, ender chest, cursor). They are not an empty
+ * inventory. Present blobs from MMO↔MMO and from Dungeons v4 still replace gear.
+ * See {@link InventorySnapshotPolicy}.
  */
 public final class TransferSnapshotStore {
 
@@ -153,40 +159,64 @@ public final class TransferSnapshotStore {
         YamlConfiguration yaml = YamlConfiguration.loadConfiguration(source);
         int pendingFloor = yaml.getInt("pending-floor", 0);
         boolean bossOnly = yaml.getBoolean("pending-boss-only", false);
+        int version = yaml.getInt("version", 4);
+        boolean keepDestinationInventory = InventorySnapshotPolicy.keepDestination(
+                version,
+                yaml.getBoolean("inventory-omitted", false),
+                yaml.getString("from-server"),
+                inventoryBlobsPresent(yaml),
+                transferInventoryFromHub(),
+                ignoreInventoryFrom());
         try {
             player.closeInventory();
-            player.setItemOnCursor(null);
-            player.getInventory().clear();
-            player.getEnderChest().clear();
             for (PotionEffect effect : player.getActivePotionEffects()) {
                 player.removePotionEffect(effect.getType());
             }
 
-            ItemStack[] inventory = decodeItems(yaml.getStringList("inventory-b64"));
-            ItemStack[] armor = decodeItems(yaml.getStringList("armor-b64"));
-            ItemStack[] extra = decodeItems(yaml.getStringList("extra-b64"));
-            ItemStack[] ender = decodeItems(yaml.getStringList("enderchest-b64"));
-            ItemStack cursor = decodeItem(yaml.getString("cursor-b64"));
+            ItemStack[] inventory = null;
+            ItemStack[] armor = null;
+            ItemStack[] extra = null;
+            if (keepDestinationInventory) {
+                // Omit / missing blobs / Core v5 hub source: do not clear or replace
+                // storage, armor, offhand, ender chest, or cursor. Destination gear stays.
+                plugin.getLogger().info("Leaving inventory in place for " + player.getName()
+                        + " — snapshot v" + version + " from " + yaml.getString("from-server", "?")
+                        + " omitted gear (inventory-omitted, missing blobs, or hub/ignored source).");
+            } else {
+                player.getInventory().clear();
+                player.getEnderChest().clear();
 
-            if (inventory != null) {
-                player.getInventory().setContents(inventory);
-            }
-            if (armor != null) {
-                player.getInventory().setArmorContents(armor);
-            }
-            if (extra != null) {
-                player.getInventory().setExtraContents(extra);
-            }
-            if (ender != null) {
-                player.getEnderChest().setContents(ender);
-            }
-            if (cursor != null && !cursor.getType().isAir()) {
-                player.setItemOnCursor(cursor);
-            }
+                inventory = decodeItems(yaml.getStringList("inventory-b64"));
+                armor = decodeItems(yaml.getStringList("armor-b64"));
+                extra = decodeItems(yaml.getStringList("extra-b64"));
+                ItemStack[] ender = decodeItems(yaml.getStringList("enderchest-b64"));
+                // A missing cursor key is not an empty cursor. Only a written key replaces it.
+                ItemStack cursor = null;
+                if (yaml.contains("cursor-b64")) {
+                    player.setItemOnCursor(null);
+                    cursor = decodeItem(yaml.getString("cursor-b64"));
+                }
 
-            int held = yaml.getInt("held-slot", player.getInventory().getHeldItemSlot());
-            if (held >= 0 && held <= 8) {
-                player.getInventory().setHeldItemSlot(held);
+                if (inventory != null) {
+                    player.getInventory().setContents(inventory);
+                }
+                if (armor != null) {
+                    player.getInventory().setArmorContents(armor);
+                }
+                if (extra != null) {
+                    player.getInventory().setExtraContents(extra);
+                }
+                if (ender != null) {
+                    player.getEnderChest().setContents(ender);
+                }
+                if (cursor != null && !cursor.getType().isAir()) {
+                    player.setItemOnCursor(cursor);
+                }
+
+                int held = yaml.getInt("held-slot", player.getInventory().getHeldItemSlot());
+                if (held >= 0 && held <= 8) {
+                    player.getInventory().setHeldItemSlot(held);
+                }
             }
 
             player.setLevel(yaml.getInt("level", player.getLevel()));
@@ -236,7 +266,8 @@ public final class TransferSnapshotStore {
             }
             live.delete();
             appliedThisSession.add(id);
-            // Re-assert inventory after loadout/join hooks (tick 25).
+            // Re-assert applied blobs after loadout/join hooks (tick 25).
+            // Omitted snapshots pass null and must not overwrite destination gear.
             final ItemStack[] invCopy = inventory == null ? null : inventory.clone();
             final ItemStack[] armorCopy = armor == null ? null : armor.clone();
             final ItemStack[] extraCopy = extra == null ? null : extra.clone();
@@ -256,13 +287,48 @@ public final class TransferSnapshotStore {
                 }
                 player.updateInventory();
             }, 25L);
-            plugin.getLogger().info("Applied transfer snapshot v4 for " + player.getName()
-                    + " pendingFloor=" + pendingFloor);
+            plugin.getLogger().info("Applied transfer snapshot v" + version + " for " + player.getName()
+                    + " pendingFloor=" + pendingFloor
+                    + (keepDestinationInventory ? " inv=omitted kept-destination" : " inv=applied"));
             return new ApplyResult(true, pendingFloor, bossOnly);
         } catch (Exception ex) {
             plugin.getLogger().log(Level.WARNING, "Failed to apply transfer snapshot for " + player.getName(), ex);
             return ApplyResult.none();
         }
+    }
+
+    /**
+     * Core v5 omit leaves these keys out. A missing key is not an empty list:
+     * {@code getStringList} would decode that as zero slots and wipe gear.
+     */
+    private static boolean inventoryBlobsPresent(YamlConfiguration yaml) {
+        return yaml.contains("inventory-b64")
+                && yaml.contains("armor-b64")
+                && yaml.contains("extra-b64")
+                && yaml.contains("enderchest-b64");
+    }
+
+    /** Default false: Hub snapshots do not overwrite destination gear. */
+    private boolean transferInventoryFromHub() {
+        if (plugin.getConfig().isSet("network.transfer-inventory-from-hub")) {
+            return plugin.getConfig().getBoolean("network.transfer-inventory-from-hub");
+        }
+        de.aetherion.core.AetherionCore core = de.aetherion.core.AetherionCore.get();
+        if (core != null && core.getConfig().isSet("network.transfer-inventory-from-hub")) {
+            return core.getConfig().getBoolean("network.transfer-inventory-from-hub");
+        }
+        return false;
+    }
+
+    private java.util.List<String> ignoreInventoryFrom() {
+        if (plugin.getConfig().isSet("network.ignore-inventory-from")) {
+            return plugin.getConfig().getStringList("network.ignore-inventory-from");
+        }
+        de.aetherion.core.AetherionCore core = de.aetherion.core.AetherionCore.get();
+        if (core != null && core.getConfig().isSet("network.ignore-inventory-from")) {
+            return core.getConfig().getStringList("network.ignore-inventory-from");
+        }
+        return java.util.List.of();
     }
 
     private static void clearLivingInventory(Player player) {

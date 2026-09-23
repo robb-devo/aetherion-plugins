@@ -40,7 +40,8 @@ public final class AshesEncounter {
 
     public static final String FLOOR_ID = "prototype_ashes_3";
     public static final String MOB_TAG = "ashes_trash";
-    public static final int PREP_VERSION = 1;
+    /** Bump when spot rules change — warm pool rebuilds spots on the existing base. */
+    public static final int PREP_VERSION = 2;
 
     /** Entrance spawn (Multiverse mark on mmo-c). */
     public static final int SPAWN_X = 0;
@@ -69,7 +70,12 @@ public final class AshesEncounter {
 
     private static final Material DOOR = Material.RED_STAINED_GLASS;
     private static final double CLEAR_RATIO = 0.75;
-    private static final int MOB_WANT_MAX = 64;
+    /** Floor 3 trash cap (was 64). Clearance stays 75% of whatever actually spawns. */
+    private static final int MOB_WANT_MAX = 160;
+    /** Standable-spot spacing in blocks (was 4). Tighter so the higher cap can fill. */
+    private static final int SPOT_STRIDE = 2;
+    /** Mobs per stagger tick. 160 at 8 stays near the old 64-at-4 spawn window. */
+    private static final int SPAWN_WAVE = 8;
     private static final int SPAWN_SAFE = 12;
 
     private static final Map<String, AshesState> BY_WORLD = new ConcurrentHashMap<>();
@@ -364,7 +370,7 @@ public final class AshesEncounter {
                 }
                 return;
             }
-            for (int n = 0; n < 4 && cursor[0] < queue.size(); n++) {
+            for (int n = 0; n < SPAWN_WAVE && cursor[0] < queue.size(); n++) {
                 int[] xyz = queue.get(cursor[0]++);
                 Location at = new Location(world, xyz[0] + 0.5, xyz[1] + 1, xyz[2] + 0.5);
                 if (cursor[0] % 3 == 0) {
@@ -454,8 +460,8 @@ public final class AshesEncounter {
         int maxX = GATE_X - 2;
         int minZ = Math.min(sz - 40, GATE_Z_MIN - 40);
         int maxZ = Math.max(sz + 40, GATE_Z_MAX + 20);
-        for (int x = minX; x <= maxX; x += 4) {
-            for (int z = minZ; z <= maxZ; z += 4) {
+        for (int x = minX; x <= maxX; x += SPOT_STRIDE) {
+            for (int z = minZ; z <= maxZ; z += SPOT_STRIDE) {
                 if (Math.abs(x - sx) + Math.abs(z - sz) < SPAWN_SAFE) {
                     continue;
                 }
