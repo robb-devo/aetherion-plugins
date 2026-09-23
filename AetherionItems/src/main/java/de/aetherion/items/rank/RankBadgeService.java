@@ -304,13 +304,12 @@ public final class RankBadgeService implements Listener {
     }
 
     /**
-     * Live cosmetic ultra. LuckPerms permission order wins over a stale extras row.
+     * Live cosmetic ultra. The Dev Menu row in {@code player-ranks.yml} is the only source.
      */
     public String cosmeticGroup(Player player) {
         if (player == null) {
             return null;
         }
-        refreshExtraFromLuckPerms(player);
         Rank extra = extraFor(player.getUniqueId());
         return extra == null ? null : extra.group();
     }
@@ -326,7 +325,6 @@ public final class RankBadgeService implements Listener {
         if (player == null || !player.isOnline()) {
             return;
         }
-        adoptDetectedExtra(player);
         if (forced.contains(player.getUniqueId())) {
             applyTo(player);
             return;
@@ -429,8 +427,6 @@ public final class RankBadgeService implements Listener {
         if (player == null || !player.isOnline()) {
             return;
         }
-        refreshExtraFromLuckPerms(player);
-        adoptDetectedExtra(player);
         applyLuckPerms(player.getUniqueId(), aetherionGroup(player.getUniqueId()), extraFor(player.getUniqueId()));
         paint(player);
     }
@@ -441,32 +437,37 @@ public final class RankBadgeService implements Listener {
 
     /**
      * Cosmetic extra for display.
-     * OP, {@code group.admin}, and {@code aetherion.rank.admin} never select Admin.
-     * Admin is only the rank-menu row stored for {@link #ROBB}.
-     * Monkey, Citrus, Beta, and MVP++ still come from that menu row, then from their own nodes.
+     * Only the Dev Menu → Ranks row stored in {@code player-ranks.yml}.
+     * LuckPerms groups, permission nodes, join, OP, and {@code ranks.mvpplusplus.players}
+     * do not paint a badge. Admin is that stored row for {@link #ROBB} only.
      */
     public Rank extraFor(UUID playerId) {
         if (playerId == null) {
             return null;
         }
-        String stored = extras.get(playerId);
-        if (isStoredAdmin(playerId, stored)) {
-            return rankByGroup("admin");
+        String group = storedDisplayGroup(playerId, extras.get(playerId));
+        return group == null ? null : rankByGroup(group);
+    }
+
+    /**
+     * Group name to paint, or null when nothing was stored from Dev Menu.
+     * OP and permission checks are intentionally not inputs.
+     */
+    static String storedDisplayGroup(UUID playerId, String stored) {
+        if (playerId == null || stored == null || stored.isBlank()) {
+            return null;
         }
-        Player player = Bukkit.getPlayer(playerId);
-        if (player != null && player.isOnline()) {
-            String detected = detectPermissionExtra(player);
-            if (detected != null) {
-                return rankByGroup(detected);
-            }
+        String key = stored.toLowerCase(Locale.ROOT);
+        if ("owner".equals(key)) {
+            key = "admin";
         }
-        if (isDisplayableExtra(playerId, stored)) {
-            return rankByGroup(stored);
+        if (!EXTRA.contains(key)) {
+            return null;
         }
-        if (isMvpPlusPlus(playerId)) {
-            return rankByGroup(mvpGroup());
+        if ("admin".equals(key) && !isRobb(playerId)) {
+            return null;
         }
-        return null;
+        return key;
     }
 
     /** Robb / A3therion. The Admin cosmetic is exclusive to this profile. */
@@ -474,98 +475,11 @@ public final class RankBadgeService implements Listener {
         return playerId != null && ROBB.equals(playerId);
     }
 
-    private static boolean isStoredAdmin(UUID playerId, String stored) {
-        return stored != null && "admin".equalsIgnoreCase(stored) && isRobb(playerId);
-    }
-
     private static boolean isDisplayableExtra(UUID playerId, String stored) {
         if (stored == null || !isPermanentExtra(stored)) {
             return false;
         }
         return !"admin".equalsIgnoreCase(stored) || isRobb(playerId);
-    }
-
-    /**
-     * Persist an LP-granted ultra into {@code extras} so later XP sync cannot
-     * drop it. Ops are not auto-stored as Admin.
-     */
-    public void adoptDetectedExtra(Player player) {
-        if (player == null) {
-            return;
-        }
-        UUID playerId = player.getUniqueId();
-        if (extras.containsKey(playerId)) {
-            return;
-        }
-        String detected = detectPermissionExtra(player);
-        if (detected == null) {
-            return;
-        }
-        extras.put(playerId, detected);
-        save();
-    }
-
-    /**
-     * If LuckPerms says a different ultra than the stored extras row, the live
-     * group wins. That is how a Beta grant stops a stale Monkey celestial paint,
-     * and how Citrus / Monkey / Beta stay in front of the level tag.
-     */
-    public void refreshExtraFromLuckPerms(Player player) {
-        if (player == null) {
-            return;
-        }
-        UUID playerId = player.getUniqueId();
-        String stored = extras.get(playerId);
-        if (stored == null) {
-            return;
-        }
-        if ("admin".equalsIgnoreCase(stored) && isRobb(playerId)) {
-            return;
-        }
-        String detected = detectPermissionExtra(player);
-        if (detected == null || detected.equalsIgnoreCase(stored)) {
-            return;
-        }
-        if (isPermanentExtra(detected)) {
-            extras.put(playerId, detected);
-            save();
-        }
-    }
-
-    public static boolean hasBeta(Player player) {
-        return player != null && (player.hasPermission("group.beta")
-                || player.hasPermission("aetherion.rank.beta"));
-    }
-
-    public static boolean hasCitrus(Player player) {
-        return player != null && (player.hasPermission("group.citrus")
-                || player.hasPermission("aetherion.rank.citrus"));
-    }
-
-    public static boolean hasMonkey(Player player) {
-        return player != null && (player.hasPermission("group.monkey")
-                || player.hasPermission("aetherion.rank.monkey"));
-    }
-
-    private static String detectPermissionExtra(Player player) {
-        if (player == null) {
-            return null;
-        }
-        // Weight order: Monkey → Citrus → Beta → MVP++.
-        // Admin is intentionally absent. OP and admin permission nodes must not change cosmetics.
-        if (player.hasPermission("group.monkey") || player.hasPermission("aetherion.rank.monkey")) {
-            return "monkey";
-        }
-        if (player.hasPermission("group.citrus") || player.hasPermission("aetherion.rank.citrus")) {
-            return "citrus";
-        }
-        if (player.hasPermission("group.beta") || player.hasPermission("aetherion.rank.beta")) {
-            return "beta";
-        }
-        if (player.hasPermission("group.mvpplusplus") || player.hasPermission("aetherion.rank.mvpplusplus")) {
-            return "mvpplusplus";
-        }
-        return null;
     }
 
     /** Remove a staff/content extra without touching XP progression. */
@@ -617,12 +531,9 @@ public final class RankBadgeService implements Listener {
     private void syncGroups() {
         Set<String> managed = managedGroups();
         LuckPermsSilent.syncGroups(RANKS, mvpGroup());
+        // Config MVP++ UUIDs are not a cosmetic grant. Only a stored Dev Menu extra is mirrored.
         for (UUID playerId : mvpPlayers()) {
-            Rank extra = extraFor(playerId);
-            String extraName = luckPermsExtraName(extra);
-            if (extraName == null && (extra == null || !"admin".equalsIgnoreCase(extra.group()))) {
-                extraName = mvpGroup();
-            }
+            String extraName = luckPermsExtraName(extraFor(playerId));
             if (extraName != null) {
                 LuckPermsSilent.applyUser(playerId, aetherionGroup(playerId), extraName, managed);
             }
