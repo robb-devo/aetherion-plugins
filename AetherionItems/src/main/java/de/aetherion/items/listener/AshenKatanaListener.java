@@ -162,10 +162,14 @@ public final class AshenKatanaListener implements Listener {
                     }
                     return;
                 }
-                if (tickCount <= 14) {
-                    player.setVelocity(new Vector(dash.getX() * 0.12, 0.62, dash.getZ() * 0.12));
+                if (tickCount <= 16) {
+                    // Dash ticks 1–8 stay the wall-stopped stepDash. This is only the jump after it.
+                    // Gravity off so the launch is not pulled back into the ground; 0.85 reapplied
+                    // for these eight ticks is about seven blocks, then the same brief hover.
+                    player.setGravity(false);
+                    player.setVelocity(new Vector(dash.getX() * 0.12, 0.85, dash.getZ() * 0.12));
                     world.spawnParticle(Particle.CHERRY_LEAVES, player.getLocation().add(0, 0.4, 0), 4, 0.25, 0.2, 0.25, 0.02);
-                    if (tickCount == 14) {
+                    if (tickCount == 16) {
                         world.playSound(player.getLocation(), Sound.ITEM_TRIDENT_RIPTIDE_2, 0.55f, 1.4f);
                     }
                     return;
