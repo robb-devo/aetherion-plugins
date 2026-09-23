@@ -20,6 +20,7 @@ softdepend:
   - LuckPerms
   - WorldGuard
   - DiscordSRV
+  - TAB
 
 commands:
 

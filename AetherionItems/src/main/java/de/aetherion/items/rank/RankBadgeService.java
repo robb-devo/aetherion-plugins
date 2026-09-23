@@ -95,6 +95,7 @@ public final class RankBadgeService implements Listener {
             service.syncGroups();
             for (Player player : Bukkit.getOnlinePlayers()) {
                 service.applyTo(player);
+                service.scheduleScoreboardRebind(player);
             }
         }, 40L);
         plugin.getServer().getScheduler().runTaskTimer(plugin, service::paintOnlineDyed, 80L, 8L);
@@ -385,6 +386,7 @@ public final class RankBadgeService implements Listener {
             Player online = Bukkit.getPlayer(playerId);
             if (online != null && online.isOnline()) {
                 paint(online);
+                scheduleScoreboardRebind(online);
             }
             return true;
         }
@@ -423,7 +425,11 @@ public final class RankBadgeService implements Listener {
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
-        plugin.getServer().getScheduler().runTaskLater(plugin, () -> applyTo(player), 40L);
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            applyTo(player);
+            // Stored extra is readable now. Rechecks also land after TAB's 2500ms join delay.
+            scheduleScoreboardRebind(player);
+        }, 40L);
     }
 
     public void applyTo(Player player) {
@@ -506,8 +512,17 @@ public final class RankBadgeService implements Listener {
         Player online = Bukkit.getPlayer(playerId);
         if (online != null && online.isOnline()) {
             paint(online);
+            scheduleScoreboardRebind(online);
         }
         return true;
+    }
+
+    /**
+     * TAB may already have locked {@code main} for this player. Recheck so
+     * {@code %aetherion_has_ultra%=yes} can select the {@code ultra} board.
+     */
+    private void scheduleScoreboardRebind(Player player) {
+        TabScoreboardRebind.schedule(plugin, player);
     }
 
     private void paint(Player player) {
