@@ -4,7 +4,7 @@ main: de.aetherion.core.AetherionCore
 api-version: 1.21
 author: Aetherion
 load: STARTUP
-description: Shared keys, entity identity, and hit flags. No game loop.
+description: Shared keys, entity identity, hit flags, and wipe-safe playtime.
 
 commands:
   aethercore:
@@ -15,6 +15,12 @@ commands:
     description: Shut down, reset all player data, then restart
     permission: aetherion.wipe
     usage: /wipe beta confirm
+  playtime:
+    description: Show your wipe-safe total playtime
+    usage: /playtime [player]
+  fullplaytimereset:
+    description: Reset wipe-safe playtime for yourself, or another player with permission
+    usage: /fullplaytimereset [player]
 
 permissions:
   aetherion.core.admin:
@@ -22,4 +28,13 @@ permissions:
     default: op
   aetherion.wipe:
     description: Run a full beta player-data wipe
+    default: op
+  aetherion.playtime.others:
+    description: View another player's wipe-safe playtime
+    default: op
+  aetherion.playtime.reset.self:
+    description: Reset your own wipe-safe playtime (/fullplaytimereset)
+    default: op
+  aetherion.playtime.reset.others:
+    description: Reset another player's wipe-safe playtime
     default: op
