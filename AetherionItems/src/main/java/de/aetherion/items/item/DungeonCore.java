@@ -32,6 +32,7 @@ public final class DungeonCore {
     private static final Set<String> INFUSABLE = Set.of(
             "warped_blade",
             "gravwell_cleaver",
+            "ashen_katana",
             "skuldugery_shortbow",
             "aetherblade",
             "bridged_axe",

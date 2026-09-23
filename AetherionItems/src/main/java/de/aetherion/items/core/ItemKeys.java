@@ -300,6 +300,11 @@ public final class ItemKeys {
         return key("rarity");
     }
 
+    /** Comma-separated booster sockets (14). Empty slot is {@code -}. */
+    public static NamespacedKey boosterSockets() {
+        return key("booster_sockets");
+    }
+
     public static NamespacedKey boosterType() {
         return key("booster_type");
     }
