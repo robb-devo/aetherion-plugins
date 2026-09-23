@@ -197,6 +197,25 @@ class CelestialDyeTest {
         assertFalse(RankBadgeService.isRobb(null));
     }
 
+    @Test
+    void specialRanksPaintOnlyAStoredDevMenuRow() {
+        UUID lemon = UUID.fromString("88dd645b-bada-4042-bd48-261ddbe4c1dc");
+        assertEquals(null, RankBadgeService.storedDisplayGroup(lemon, null));
+        assertEquals(null, RankBadgeService.storedDisplayGroup(lemon, ""));
+        assertEquals(null, RankBadgeService.storedDisplayGroup(lemon, "adventurer"));
+        assertEquals(null, RankBadgeService.storedDisplayGroup(null, "monkey"));
+        assertEquals("monkey", RankBadgeService.storedDisplayGroup(lemon, "monkey"));
+        assertEquals("citrus", RankBadgeService.storedDisplayGroup(lemon, "Citrus"));
+        assertEquals("beta", RankBadgeService.storedDisplayGroup(lemon, "beta"));
+        assertEquals("mvpplusplus", RankBadgeService.storedDisplayGroup(lemon, "mvpplusplus"));
+        assertEquals(null, RankBadgeService.storedDisplayGroup(lemon, "admin"));
+        assertEquals(null, RankBadgeService.storedDisplayGroup(lemon, "owner"));
+        assertEquals(null, RankBadgeService.storedDisplayGroup(RankBadgeService.DAVID, "admin"));
+        assertEquals("admin", RankBadgeService.storedDisplayGroup(RankBadgeService.ROBB, "admin"));
+        assertEquals("admin", RankBadgeService.storedDisplayGroup(RankBadgeService.ROBB, "owner"));
+        assertEquals(null, RankBadgeService.storedDisplayGroup(RankBadgeService.ROBB, null));
+    }
+
     private static String prefixOf(String group) {
         return RankBadgeService.RANKS.stream()
                 .filter(rank -> rank.group().equals(group))
