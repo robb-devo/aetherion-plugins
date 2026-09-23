@@ -434,6 +434,9 @@ public class AetherionItems extends JavaPlugin {
             getCommand("guide").setExecutor(guide);
             getCommand("guide").setTabCompleter(guide);
         }
+        if (getCommand("aedisplays") != null) {
+            getCommand("aedisplays").setExecutor(new de.aetherion.items.command.DisplayAuditCommand());
+        }
         getCommand("aetherion").setExecutor((sender, command, label, args) -> {
             if (sender instanceof Player player) {
                 manager.open(player);
@@ -503,6 +506,9 @@ public class AetherionItems extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        // Drop leaked displays while worlds are still ticking. Restart is not the fix.
+        de.aetherion.items.world.BorderlandsRiteService.shutdownActive();
+        de.aetherion.items.world.WildlifeLooks.shutdown();
         // Close open GUIs so AH/Bazaar/trade/sack holders return or persist items
         // before YAML flush. Server is stopping; this is not a gameplay change.
         for (org.bukkit.entity.Player player : getServer().getOnlinePlayers()) {
