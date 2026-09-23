@@ -7753,6 +7753,44 @@ public class CustomItem {
         return item;
     }
 
+    public ItemStack createAshenKatana() {
+        ItemStack item = new ItemStack(Material.NETHERITE_SWORD);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            setItemId(meta, "ashen_katana");
+            ItemStats stats = BossGearBalance.base("ashen_katana");
+            applyItemData(meta, Rarity.LEGENDARY, stats);
+            BossGearBalance.stamp(meta);
+            BossWeaponLook.apply(meta, "ashen_katana");
+            meta.setDisplayName("§dAshen Katana");
+            meta.setLore(createLore(List.of(
+                    "§7✦ §6LEGENDARY",
+                    "",
+                    "§7⚔ Damage: §f+" + String.format(java.util.Locale.US, "%.2f", stats.getDamage()),
+                    "§7⚔ Attack Spread: §f+" + String.format(java.util.Locale.US, "%.2f", stats.getAttackSpread()),
+                    "§7✧ Crit Chance: §f+" + String.format(java.util.Locale.US, "%.2f", stats.getCritChance()) + "%",
+                    "§7✧ Crit Damage: §f+" + String.format(java.util.Locale.US, "%.2f", stats.getCritDamage()) + "%",
+                    "",
+                    "§dOne draw. The grove finishes the sentence.",
+                    "",
+                    "§d✦ Falling Blossoms",
+                    "§7Right-click: a clean dash, a short",
+                    "§7cherry-leaf hover, then a slam.",
+                    "§7The shockwave hits hostiles only.",
+                    "§8Players & pets ignored. §7CD §f8s§7.",
+                    DungeonCore.BOSS_CORE_HINT,
+                    "",
+                    "§8Drawn from the Ashen Sheath"
+            ), false, true, false));
+            meta.setCustomModelData(3310);
+            meta.setUnbreakable(true);
+            meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE);
+            hideVanillaAttributes(meta);
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
     public ItemStack createStormcallerMaul() {
         ItemStack item = new ItemStack(Material.MACE);
         ItemMeta meta = item.getItemMeta();

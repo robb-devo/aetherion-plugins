@@ -260,6 +260,7 @@ public class AetherionItems extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new BridgedAxeListener(this, itemManager), this);
         getServer().getPluginManager().registerEvents(new WarpedBladeListener(itemManager), this);
         getServer().getPluginManager().registerEvents(new de.aetherion.items.listener.GravwellCleaverListener(this, itemManager), this);
+        getServer().getPluginManager().registerEvents(new de.aetherion.items.listener.AshenKatanaListener(this, itemManager), this);
         T2UniqueListener t2Uniques = new T2UniqueListener(itemManager);
         getServer().getPluginManager().registerEvents(t2Uniques, this);
         getServer().getScheduler().runTaskTimer(this, t2Uniques, 10L, 10L);
@@ -516,6 +517,7 @@ public class AetherionItems extends JavaPlugin {
         }
         // Prevent StatProvider stacking across soft reloads (SPEED / pets / skills).
         de.aetherion.items.manager.ActiveEquipmentStats.clearProviders();
+        de.aetherion.items.listener.AshenKatanaListener.shutdown();
         if (progress != null) {
             progress.save();
         }

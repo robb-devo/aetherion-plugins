@@ -1270,6 +1270,17 @@ final class AshenSheathDirector {
         katana = null;
     }
 
+    /**
+     * Default leaf data is distance 7 and not persistent, so clients skip the model on a display.
+     */
+    private static org.bukkit.block.data.BlockData cherryLeafBlock() {
+        org.bukkit.block.data.type.Leaves leaves =
+                (org.bukkit.block.data.type.Leaves) Material.CHERRY_LEAVES.createBlockData();
+        leaves.setPersistent(true);
+        leaves.setDistance(1);
+        return leaves;
+    }
+
     private void ensureLeaves(World world, Location focus, int count) {
         if (!leaves.isEmpty() || world == null || focus == null) {
             return;
@@ -1278,7 +1289,7 @@ final class AshenSheathDirector {
         for (int i = 0; i < count; i++) {
             int index = i;
             BlockDisplay display = world.spawn(focus, BlockDisplay.class, spawned -> {
-                spawned.setBlock(Material.CHERRY_LEAVES.createBlockData());
+                spawned.setBlock(cherryLeafBlock());
                 spawned.setTransformation(new Transformation(
                         new Vector3f(-size / 2f, -size / 2f, -size / 2f),
                         new AxisAngle4f(),
