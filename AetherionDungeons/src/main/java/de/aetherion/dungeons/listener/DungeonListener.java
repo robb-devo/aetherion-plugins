@@ -3,6 +3,7 @@ package de.aetherion.dungeons.listener;
 import de.aetherion.core.AetherKeys;
 import de.aetherion.dungeons.AetherionDungeons;
 import de.aetherion.dungeons.bridge.BossEngineBridge;
+import de.aetherion.dungeons.instance.AshesChestIds;
 import de.aetherion.dungeons.instance.AshesEncounter;
 import de.aetherion.dungeons.instance.DungeonLootFx;
 import de.aetherion.dungeons.instance.DungeonProgressHud;
@@ -246,9 +247,8 @@ public final class DungeonListener implements Listener {
             return;
         }
         if (action == Action.RIGHT_CLICK_BLOCK && event.getClickedBlock() != null
-                && DungeonLootFx.isLootChest(event.getClickedBlock())) {
+                && openAshesOrLootChest(event.getPlayer(), event.getClickedBlock())) {
             event.setCancelled(true);
-            instances.tryLootChest(event.getPlayer(), event.getClickedBlock());
             return;
         }
         Entity target = event.getPlayer().getTargetEntity(5);
@@ -269,14 +269,13 @@ public final class DungeonListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
     public void onTradeOpen(InventoryOpenEvent event) {
-        if (event.getInventory().getType() == InventoryType.CHEST
-                && event.getInventory().getHolder() instanceof org.bukkit.block.Chest chest
-                && DungeonLootFx.isLootChest(chest.getBlock())) {
-            event.setCancelled(true);
-            if (event.getPlayer() instanceof Player player) {
-                instances.tryLootChest(player, chest.getBlock());
+        if (event.getInventory().getType() == InventoryType.CHEST) {
+            Block chestBlock = DungeonLootFx.chestBlock(event.getInventory());
+            if (chestBlock != null && event.getPlayer() instanceof Player player
+                    && openAshesOrLootChest(player, chestBlock)) {
+                event.setCancelled(true);
+                return;
             }
-            return;
         }
         if (event.getInventory().getType() != InventoryType.MERCHANT) {
             return;
@@ -534,8 +533,40 @@ public final class DungeonListener implements Listener {
         }
     }
 
+    /**
+     * Floor 3 map chests are vanilla until tagged. Other floors only handle chests
+     * already placed as loot caches. Cancelling is the caller's job.
+     *
+     * @return true when this block is (or just became) a dungeon loot chest
+     */
+    private boolean openAshesOrLootChest(Player player, Block block) {
+        if (player == null || block == null) {
+            return false;
+        }
+        if (!DungeonLootFx.isLootChest(block)
+                && AshesEncounter.isAshesWorld(block.getWorld())
+                && DungeonLootFx.isStorageChest(block)
+                && AshesChestIds.inScan(block.getX(), block.getZ())) {
+            DungeonLootFx.adoptMapChest(plugin, block, AshesChestIds.FLOOR);
+        }
+        if (!DungeonLootFx.isLootChest(block)) {
+            return false;
+        }
+        instances.tryLootChest(player, block);
+        return true;
+    }
+
     @EventHandler
     public void onChunkLoad(ChunkLoadEvent event) {
+        if (AshesEncounter.isAshesWorld(event.getWorld())) {
+            // Next tick so a synchronous boot scan can count newly tagged chests first.
+            org.bukkit.Chunk chunk = event.getChunk();
+            plugin.getServer().getScheduler().runTask(plugin, () -> {
+                if (chunk.isLoaded()) {
+                    AshesEncounter.adoptChunk(plugin, chunk);
+                }
+            });
+        }
         org.bukkit.Location saved = keeper.getSaved();
         for (Entity entity : event.getChunk().getEntities()) {
             if (!DungeonKeeperService.isKeeper(plugin, entity)) {

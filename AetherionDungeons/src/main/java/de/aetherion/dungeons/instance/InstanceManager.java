@@ -259,6 +259,7 @@ public final class InstanceManager {
                         : AshesEncounter.prepare(plugin, world);
                 if (warmAshes == null) {
                     warmPool.claimColdAshes(world, prep);
+                    AshesEncounter.adoptLootChests(plugin, world);
                 }
                 layout = AshesEncounter.layoutShell();
                 spawn = AshesEncounter.begin(plugin, world, session, prep);

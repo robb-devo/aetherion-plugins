@@ -15,8 +15,10 @@ import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.block.Chest;
 import org.bukkit.block.TileState;
+import org.bukkit.block.data.type.Chest.Type;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Player;
@@ -31,7 +33,9 @@ import org.joml.Vector3f;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 
 public final class DungeonLootFx {
@@ -44,6 +48,7 @@ public final class DungeonLootFx {
     private static final NamespacedKey CHEST_FLOOR = new NamespacedKey("aetheriondungeons", "loot_floor");
     private static final NamespacedKey CHEST_VICTORY = new NamespacedKey("aetheriondungeons", "loot_victory");
     private static final NamespacedKey CHEST_VESTIGE = new NamespacedKey("aetheriondungeons", "loot_vestige");
+    private static final Set<String> SPINNING = ConcurrentHashMap.newKeySet();
 
     private DungeonLootFx() {
     }
@@ -75,6 +80,66 @@ public final class DungeonLootFx {
 
     public static boolean isLootChest(Block block) {
         return chestId(block) != null;
+    }
+
+    public static boolean isStorageChest(Block block) {
+        if (block == null) {
+            return false;
+        }
+        Material type = block.getType();
+        return type == Material.CHEST || type == Material.TRAPPED_CHEST;
+    }
+
+    /**
+     * Block behind a chest inventory, including the left half of a double chest.
+     */
+    public static Block chestBlock(org.bukkit.inventory.Inventory inventory) {
+        if (inventory == null) {
+            return null;
+        }
+        org.bukkit.inventory.InventoryHolder holder = inventory.getHolder();
+        if (holder instanceof Chest chest) {
+            return chest.getBlock();
+        }
+        if (holder instanceof org.bukkit.block.DoubleChest doubleChest) {
+            org.bukkit.inventory.InventoryHolder left = doubleChest.getLeftSide();
+            if (left instanceof Chest chest) {
+                return chest.getBlock();
+            }
+            org.bukkit.inventory.InventoryHolder right = doubleChest.getRightSide();
+            if (right instanceof Chest chest) {
+                return chest.getBlock();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Turn one vanilla (or trapped) chest into a Floor 3 combat cache.
+     * Double chests share one id. Victory caches are left alone.
+     *
+     * @return true when this call newly tagged a vanilla chest
+     */
+    public static boolean adoptMapChest(Plugin plugin, Block block, int floor) {
+        if (!isStorageChest(block) || !(block.getBlockData() instanceof org.bukkit.block.data.type.Chest data)) {
+            return false;
+        }
+        Block partner = partnerChest(block, data);
+        if (isVictory(block) || isVictory(partner)) {
+            return false;
+        }
+        Integer existing = firstId(block, partner);
+        boolean fresh = existing == null;
+        Block anchor = anchor(block, partner);
+        int id = fresh
+                ? AshesChestIds.id(anchor.getX(), anchor.getY(), anchor.getZ())
+                : existing;
+        tagLoot(block, id, floor, false, false);
+        if (partner != null) {
+            tagLoot(partner, id, floor, false, false);
+        }
+        present(plugin, anchor, id, floor, false, false);
+        return fresh;
     }
 
     public static void tryLoot(Plugin plugin, DungeonSession session, Player player, Block block) {
@@ -130,50 +195,125 @@ public final class DungeonLootFx {
     private static void place(Plugin plugin, World world, int x, int y, int z, int chestId, int floor, boolean victory, boolean vestige) {
         Block block = world.getBlockAt(x, y, z);
         block.setType(Material.CHEST, false);
-        if (block.getState() instanceof Chest chest) {
-            chest.getSnapshotInventory().clear();
-            chest.getPersistentDataContainer().set(CHEST_ID, PersistentDataType.INTEGER, chestId);
-            chest.getPersistentDataContainer().set(CHEST_FLOOR, PersistentDataType.INTEGER, floor);
-            chest.getPersistentDataContainer().set(CHEST_VICTORY, PersistentDataType.BYTE, victory ? (byte) 1 : (byte) 0);
-            chest.getPersistentDataContainer().set(CHEST_VESTIGE, PersistentDataType.BYTE, vestige ? (byte) 1 : (byte) 0);
-            chest.update(true, false);
+        tagLoot(block, chestId, floor, victory, vestige);
+        present(plugin, block, chestId, floor, victory, vestige);
+    }
+
+    private static void tagLoot(Block block, int chestId, int floor, boolean victory, boolean vestige) {
+        asPlainChest(block);
+        if (!(block.getState() instanceof Chest chest)) {
+            return;
         }
-        Location spinAt = new Location(world, x + 0.5, y + 1.15, z + 0.5);
-        Location textAt = new Location(world, x + 0.5, y + 1.65, z + 0.5);
+        Integer have = chest.getPersistentDataContainer().get(CHEST_ID, PersistentDataType.INTEGER);
+        Integer haveFloor = chest.getPersistentDataContainer().get(CHEST_FLOOR, PersistentDataType.INTEGER);
+        Byte haveVictory = chest.getPersistentDataContainer().get(CHEST_VICTORY, PersistentDataType.BYTE);
+        Byte haveVestige = chest.getPersistentDataContainer().get(CHEST_VESTIGE, PersistentDataType.BYTE);
+        boolean tagged = have != null && have == chestId
+                && haveFloor != null && haveFloor == floor
+                && haveVictory != null && haveVictory == (victory ? (byte) 1 : (byte) 0)
+                && haveVestige != null && haveVestige == (vestige ? (byte) 1 : (byte) 0);
+        boolean empty = isEmpty(chest);
+        if (tagged && empty) {
+            return;
+        }
+        chest.getSnapshotInventory().clear();
+        chest.getPersistentDataContainer().set(CHEST_ID, PersistentDataType.INTEGER, chestId);
+        chest.getPersistentDataContainer().set(CHEST_FLOOR, PersistentDataType.INTEGER, floor);
+        chest.getPersistentDataContainer().set(CHEST_VICTORY, PersistentDataType.BYTE, victory ? (byte) 1 : (byte) 0);
+        chest.getPersistentDataContainer().set(CHEST_VESTIGE, PersistentDataType.BYTE, vestige ? (byte) 1 : (byte) 0);
+        chest.update(true, false);
+    }
+
+    private static boolean isEmpty(Chest chest) {
+        for (ItemStack stack : chest.getSnapshotInventory().getContents()) {
+            if (stack != null && !stack.getType().isAir()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static void asPlainChest(Block block) {
+        if (block.getType() != Material.TRAPPED_CHEST) {
+            return;
+        }
+        org.bukkit.block.data.type.Chest old = block.getBlockData() instanceof org.bukkit.block.data.type.Chest data
+                ? data
+                : null;
+        block.setType(Material.CHEST, false);
+        if (old != null && block.getBlockData() instanceof org.bukkit.block.data.type.Chest next) {
+            next.setFacing(old.getFacing());
+            next.setType(old.getType());
+            next.setWaterlogged(old.isWaterlogged());
+            block.setBlockData(next, false);
+        }
+    }
+
+    private static void present(Plugin plugin, Block block, int chestId, int floor, boolean victory, boolean vestige) {
+        World world = block.getWorld();
+        int x = block.getX();
+        int y = block.getY();
+        int z = block.getZ();
         List<ItemStack> pool = vestige ? vestigePool() : showcasePool(floor, victory);
-        ItemStack first = pool.isEmpty() ? new ItemStack(Material.CHEST) : pool.get(0);
-        ItemDisplay spinner = world.spawn(spinAt, ItemDisplay.class, display -> {
-            display.setItemStack(first);
-            display.setPersistent(true);
-            display.setInvulnerable(true);
-            display.setGravity(false);
-            display.setBillboard(Display.Billboard.CENTER);
-            display.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.GUI);
-            display.setBrightness(new Display.Brightness(15, 15));
-            display.setShadowRadius(0f);
-            display.setTransformation(spinPose(0f, 0.55f));
-            display.addScoreboardTag(SPIN_TAG);
-            display.getPersistentDataContainer().set(CHEST_ID, PersistentDataType.INTEGER, chestId);
-        });
-        world.spawn(textAt, TextDisplay.class, text -> {
-            String headline = vestige ? "Warden vestige cache" : "Right-click to loot";
-            String sub = vestige ? "Guaranteed set piece" : "One item each";
-            text.text(Component.text(headline)
-                    .color(vestige ? NamedTextColor.LIGHT_PURPLE : NamedTextColor.GOLD)
-                    .decoration(TextDecoration.ITALIC, false)
-                    .append(Component.newline())
-                    .append(Component.text(sub).color(NamedTextColor.DARK_GRAY).decoration(TextDecoration.ITALIC, false)));
-            text.setBillboard(Display.Billboard.CENTER);
-            text.setAlignment(TextDisplay.TextAlignment.CENTER);
-            text.setSeeThrough(false);
-            text.setShadowed(true);
-            text.setBackgroundColor(Color.fromARGB(90, 0, 0, 0));
-            text.setPersistent(true);
-            text.setGravity(false);
-            text.addScoreboardTag(LABEL_TAG);
-            text.getPersistentDataContainer().set(CHEST_ID, PersistentDataType.INTEGER, chestId);
-        });
-        if (plugin == null) {
+        ItemDisplay spinner = spinnerAt(block);
+        if (spinner != null) {
+            Integer shown = spinner.getPersistentDataContainer().get(CHEST_ID, PersistentDataType.INTEGER);
+            if (shown == null || shown != chestId) {
+                spinner.remove();
+                spinner = null;
+                TextDisplay stale = labelAt(block);
+                if (stale != null) {
+                    stale.remove();
+                }
+            }
+        }
+        if (spinner == null) {
+            Location spinAt = new Location(world, x + 0.5, y + 1.15, z + 0.5);
+            ItemStack first = pool.isEmpty() ? new ItemStack(Material.CHEST) : pool.get(0);
+            spinner = world.spawn(spinAt, ItemDisplay.class, display -> {
+                display.setItemStack(first);
+                display.setPersistent(true);
+                display.setInvulnerable(true);
+                display.setGravity(false);
+                display.setBillboard(Display.Billboard.CENTER);
+                display.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.GUI);
+                display.setBrightness(new Display.Brightness(15, 15));
+                display.setShadowRadius(0f);
+                display.setTransformation(spinPose(0f, 0.55f));
+                display.addScoreboardTag(SPIN_TAG);
+                display.getPersistentDataContainer().set(CHEST_ID, PersistentDataType.INTEGER, chestId);
+            });
+        }
+        if (labelAt(block) == null) {
+            Location textAt = new Location(world, x + 0.5, y + 1.65, z + 0.5);
+            world.spawn(textAt, TextDisplay.class, text -> {
+                String headline = vestige ? "Warden vestige cache" : "Right-click to loot";
+                String sub = vestige ? "Guaranteed set piece" : "One item each";
+                text.text(Component.text(headline)
+                        .color(vestige ? NamedTextColor.LIGHT_PURPLE : NamedTextColor.GOLD)
+                        .decoration(TextDecoration.ITALIC, false)
+                        .append(Component.newline())
+                        .append(Component.text(sub).color(NamedTextColor.DARK_GRAY).decoration(TextDecoration.ITALIC, false)));
+                text.setBillboard(Display.Billboard.CENTER);
+                text.setAlignment(TextDisplay.TextAlignment.CENTER);
+                text.setSeeThrough(false);
+                text.setShadowed(true);
+                text.setBackgroundColor(Color.fromARGB(90, 0, 0, 0));
+                text.setPersistent(true);
+                text.setGravity(false);
+                text.addScoreboardTag(LABEL_TAG);
+                text.getPersistentDataContainer().set(CHEST_ID, PersistentDataType.INTEGER, chestId);
+            });
+        }
+        ensureSpin(plugin, world, chestId, spinner, pool);
+    }
+
+    private static void ensureSpin(Plugin plugin, World world, int chestId, ItemDisplay spinner, List<ItemStack> pool) {
+        if (plugin == null || spinner == null || world == null) {
+            return;
+        }
+        String key = world.getUID() + ":" + chestId;
+        if (!SPINNING.add(key)) {
             return;
         }
         new BukkitRunnable() {
@@ -182,6 +322,7 @@ public final class DungeonLootFx {
             @Override
             public void run() {
                 if (!spinner.isValid() || world.getPlayers().isEmpty()) {
+                    SPINNING.remove(key);
                     cancel();
                     return;
                 }
@@ -199,6 +340,96 @@ public final class DungeonLootFx {
                 spinner.setTransformation(spinPose(step * 18f, 0.55f));
             }
         }.runTaskTimer(plugin, 10L, 8L);
+    }
+
+    private static boolean isVictory(Block block) {
+        if (block == null || !(block.getState() instanceof TileState state)) {
+            return false;
+        }
+        Byte flag = state.getPersistentDataContainer().get(CHEST_VICTORY, PersistentDataType.BYTE);
+        return flag != null && flag == (byte) 1;
+    }
+
+    private static Integer firstId(Block block, Block partner) {
+        Integer id = chestId(block);
+        if (id != null) {
+            return id;
+        }
+        return partner == null ? null : chestId(partner);
+    }
+
+    private static Block anchor(Block block, Block partner) {
+        if (partner == null) {
+            return block;
+        }
+        if (partner.getX() < block.getX()) {
+            return partner;
+        }
+        if (partner.getX() == block.getX() && partner.getZ() < block.getZ()) {
+            return partner;
+        }
+        if (partner.getX() == block.getX() && partner.getZ() == block.getZ() && partner.getY() < block.getY()) {
+            return partner;
+        }
+        return block;
+    }
+
+    /**
+     * Other half of a double chest. Vanilla puts LEFT's partner clockwise of facing
+     * and RIGHT's partner counter-clockwise. If that block is not the pair, take the
+     * single horizontal neighbor that is the opposite half.
+     */
+    private static Block partnerChest(Block block, org.bukkit.block.data.type.Chest data) {
+        Type type = data.getType();
+        if (type == Type.SINGLE) {
+            return null;
+        }
+        BlockFace facing = data.getFacing();
+        Type want = type == Type.LEFT ? Type.RIGHT : Type.LEFT;
+        BlockFace preferred = type == Type.LEFT ? clockwise(facing) : counterClockwise(facing);
+        Block preferredBlock = block.getRelative(preferred);
+        if (isPartner(preferredBlock, facing, want)) {
+            return preferredBlock;
+        }
+        Block found = null;
+        for (BlockFace face : new BlockFace[]{BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST}) {
+            Block adjacent = block.getRelative(face);
+            if (!isPartner(adjacent, facing, want)) {
+                continue;
+            }
+            if (found != null) {
+                return null;
+            }
+            found = adjacent;
+        }
+        return found;
+    }
+
+    private static boolean isPartner(Block adjacent, BlockFace facing, Type want) {
+        if (!isStorageChest(adjacent) || !(adjacent.getBlockData() instanceof org.bukkit.block.data.type.Chest other)) {
+            return false;
+        }
+        return other.getFacing() == facing && other.getType() == want;
+    }
+
+    private static BlockFace clockwise(BlockFace face) {
+        return switch (face) {
+            case NORTH -> BlockFace.EAST;
+            case EAST -> BlockFace.SOUTH;
+            case SOUTH -> BlockFace.WEST;
+            case WEST -> BlockFace.NORTH;
+            default -> face;
+        };
+    }
+
+    private static BlockFace counterClockwise(BlockFace face) {
+        return switch (face) {
+            case NORTH -> BlockFace.WEST;
+            case WEST -> BlockFace.SOUTH;
+            case SOUTH -> BlockFace.EAST;
+            case EAST -> BlockFace.NORTH;
+            default -> face;
+        };
     }
 
     private static void spin(

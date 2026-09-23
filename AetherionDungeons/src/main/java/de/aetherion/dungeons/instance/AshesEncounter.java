@@ -11,7 +11,9 @@ import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
+import org.bukkit.Chunk;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
@@ -131,6 +133,82 @@ public final class AshesEncounter {
         return session != null && FLOOR_ID.equals(session.floorId());
     }
 
+    public static boolean isAshesWorld(World world) {
+        return world != null && DungeonWarmPool.ASHES_BASE.equals(world.getName());
+    }
+
+    /**
+     * Replace vanilla / trapped chests in the throne footprint with Floor 3 combat caches
+     * (same spin loot as other floors: cores, boosters, compressed mats). Already-tagged
+     * chests only get their display refreshed. The boss victory cache is not rewritten.
+     *
+     * @return how many chests were newly tagged
+     */
+    public static int adoptLootChests(Plugin plugin, World world) {
+        if (plugin == null || world == null) {
+            return 0;
+        }
+        int minCx = AshesChestIds.minX() >> 4;
+        int maxCx = AshesChestIds.maxX() >> 4;
+        int minCz = AshesChestIds.minZ() >> 4;
+        int maxCz = AshesChestIds.maxZ() >> 4;
+        int fresh = 0;
+        int chunks = 0;
+        for (int cx = minCx; cx <= maxCx; cx++) {
+            for (int cz = minCz; cz <= maxCz; cz++) {
+                if (!world.isChunkGenerated(cx, cz)) {
+                    continue;
+                }
+                chunks++;
+                fresh += adoptChunk(plugin, world.getChunkAt(cx, cz));
+            }
+        }
+        plugin.getLogger().info("Ashes Floor 3 chests → T3 caches: tagged=" + fresh
+                + " generatedChunks=" + chunks
+                + " box=" + AshesChestIds.minX() + ".." + AshesChestIds.maxX()
+                + "," + AshesChestIds.minZ() + ".." + AshesChestIds.maxZ());
+        return fresh;
+    }
+
+    /** Re-tag loaded chunks after a recycle wiped the floating loot displays. */
+    public static void refreshLoadedChests(Plugin plugin, World world) {
+        if (plugin == null || world == null) {
+            return;
+        }
+        int fresh = 0;
+        for (Chunk chunk : world.getLoadedChunks()) {
+            fresh += adoptChunk(plugin, chunk);
+        }
+        if (fresh > 0) {
+            plugin.getLogger().info("Ashes Floor 3 tagged " + fresh + " chest(s) on entry.");
+        }
+    }
+
+    public static int adoptChunk(Plugin plugin, Chunk chunk) {
+        if (plugin == null || chunk == null || !isAshesWorld(chunk.getWorld())) {
+            return 0;
+        }
+        int fresh = 0;
+        try {
+            for (BlockState state : chunk.getTileEntities()) {
+                Material type = state.getType();
+                if (type != Material.CHEST && type != Material.TRAPPED_CHEST) {
+                    continue;
+                }
+                if (!AshesChestIds.inScan(state.getX(), state.getZ())) {
+                    continue;
+                }
+                if (DungeonLootFx.adoptMapChest(plugin, state.getBlock(), AshesChestIds.FLOOR)) {
+                    fresh++;
+                }
+            }
+        } catch (Throwable exception) {
+            plugin.getLogger().warning("Ashes chest adopt failed in chunk "
+                    + chunk.getX() + "," + chunk.getZ() + ": " + exception.getMessage());
+        }
+        return fresh;
+    }
+
     public static DungeonLayout layoutShell() {
         return DungeonLayout.schemShell(ARENA_MIN_X - 40, ARENA_MAX_X + 10, ARENA_MIN_Z - 10, ARENA_MAX_Z + 40);
     }
@@ -208,6 +286,7 @@ public final class AshesEncounter {
         }
 
         staggerSpawn(plugin, world, state, prep.mobSpots(), planned);
+        refreshLoadedChests(plugin, world);
         plugin.getLogger().info("Ashes Floor 3 live. spawn=" + SPAWN_X + "," + SPAWN_Y + "," + SPAWN_Z
                 + " need=" + killsNeeded + "/" + planned);
         return spawn;
