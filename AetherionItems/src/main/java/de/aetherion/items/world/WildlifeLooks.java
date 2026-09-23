@@ -1497,8 +1497,27 @@ public final class WildlifeLooks implements Listener {
         if (world == null) {
             return null;
         }
-        // Drop the previous label first so a missed passenger cannot stack a second one.
+        // Reuse a label that is still loaded. Spawning while one exists is how orphans stacked.
+        TextDisplay existing = labelOf(entity);
+        if (existing == null) {
+            for (UUID id : labelIds(entity)) {
+                Entity found = Bukkit.getEntity(id);
+                if (found instanceof TextDisplay display && display.isValid() && isWildlifeLabel(display)) {
+                    existing = display;
+                    break;
+                }
+            }
+        }
+        if (existing != null && existing.isValid()) {
+            reuseLabel(existing, entity, text);
+            return existing;
+        }
         removeLabel(entity);
+        existing = labelOf(entity);
+        if (existing != null && existing.isValid()) {
+            reuseLabel(existing, entity, text);
+            return existing;
+        }
         TextDisplay label = world.spawn(entity.getLocation(), TextDisplay.class, display -> {
             display.text(LegacyComponentSerializer.legacySection().deserialize(text));
             display.setBillboard(Display.Billboard.CENTER);
@@ -1516,6 +1535,26 @@ public final class WildlifeLooks implements Listener {
         entity.addPassenger(label);
         rememberLabel(entity, label);
         return label;
+    }
+
+    /** In-place update. Extra labels for this mob are discarded, not left beside the keeper. */
+    private void reuseLabel(TextDisplay label, LivingEntity entity, String text) {
+        stampLabel(label, entity);
+        label.text(LegacyComponentSerializer.legacySection().deserialize(text));
+        label.setSeeThrough(false);
+        label.setTransformation(labelTransform(entity));
+        label.setPersistent(false);
+        if (label.getVehicle() != entity) {
+            entity.addPassenger(label);
+        }
+        rememberLabel(entity, label);
+        List<UUID> extras = new ArrayList<>();
+        for (UUID id : labelIds(entity)) {
+            if (!id.equals(label.getUniqueId())) {
+                extras.add(id);
+            }
+        }
+        discardLabels(extras, true);
     }
 
     private static void stampLabel(TextDisplay label, LivingEntity owner) {
