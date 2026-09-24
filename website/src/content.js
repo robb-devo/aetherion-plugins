@@ -46,16 +46,17 @@ export const ARSENAL = [
 ]
 
 /**
- * Real in-game screenshots live in public/world/. Places without one show an
- * honest "screenshot coming soon" slot — drop a 16:10 JPG in and set `image`.
+ * Images live in public/world/. Places without one show a "screenshot coming
+ * soon" slot — drop a 16:9 JPG in and set `image`.
  */
 export const WORLD = [
-  { id: 'harbour', image: '/world/harbour.jpg', item: 'fishing_rod_5' },
-  { id: 'eldervale', image: null, item: 'farming_hoe_5' },
-  { id: 'amethyst', image: null, item: 'charm_mining_3' },
+  { id: 'harbour', image: '/world/harbour-spawn.jpg', item: 'fishing_rod_5' },
+  { id: 'eldervale', image: '/world/eldervale.jpg', item: 'farming_hoe_5' },
+  { id: 'amethyst', image: '/world/amethyst-mines.jpg', item: 'charm_mining_3' },
+  { id: 'throne', image: '/world/throne-of-ashes.jpg', item: 'ashen_katana' },
 ]
 
-export const HERO_IMAGE = '/world/harbour.jpg'
+export const HERO_IMAGE = '/world/harbour-spawn.jpg'
 
 export const SHARD_PACKS = [
   { id: 'starter', euros: 1, shards: 1000, featured: false },

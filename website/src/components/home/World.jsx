@@ -6,7 +6,7 @@ function Place({ place, large = false }) {
   const { copy } = useLang()
   const text = copy.world.items[place.id]
   return (
-    <figure className={`panel group relative isolate h-full overflow-hidden ${large ? 'min-h-[26rem]' : 'min-h-[15rem]'}`}>
+    <figure className={`panel group relative isolate h-full overflow-hidden ${large ? 'min-h-[26rem]' : 'min-h-[13rem]'}`}>
       {place.image ? (
         <>
           <img
@@ -43,7 +43,7 @@ export default function World() {
         <SectionHeading kicker={copy.world.kicker} title={copy.world.title} sub={copy.world.sub} />
       </Reveal>
       <div className="mt-12 grid gap-4 lg:grid-cols-[1.6fr_1fr]">
-        <Reveal className="lg:row-span-2">
+        <Reveal className="lg:row-span-3">
           <Place place={first} large />
         </Reveal>
         {rest.map((place, i) => (

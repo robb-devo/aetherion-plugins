@@ -106,13 +106,18 @@ const en = {
   world: {
     kicker: 'The world',
     title: 'Places you will know by heart',
-    sub: 'Taken on the live server.',
+    sub: 'From your first step at the harbour to the throne of the third floor.',
     soon: 'Screenshot coming soon',
     items: {
       harbour: {
         title: 'Anker Harbour',
         sub: 'Spawn · docks · market',
         caption: 'Everyone starts here. Egon waits on the pier, the market is up the stairs, the islands are across the water.',
+      },
+      throne: {
+        title: 'Throne of Ashes',
+        sub: 'Dungeon · Floor 3',
+        caption: 'Lava halls, ash and a boss that does not give up its katana easily.',
       },
       eldervale: {
         title: 'Eldervale',
@@ -517,13 +522,18 @@ const de = {
   world: {
     kicker: 'Die Welt',
     title: 'Orte, die du bald auswendig kennst',
-    sub: 'Aufgenommen auf dem Live-Server.',
+    sub: 'Vom ersten Schritt am Hafen bis zum Thron im dritten Floor.',
     soon: 'Screenshot folgt',
     items: {
       harbour: {
         title: 'Anker Harbour',
         sub: 'Spawn · Docks · Markt',
         caption: 'Hier startet jeder. Egon wartet am Steg, der Markt liegt die Treppe hoch, die Inseln hinter dem Wasser.',
+      },
+      throne: {
+        title: 'Throne of Ashes',
+        sub: 'Dungeon · Floor 3',
+        caption: 'Lavahallen, Asche und ein Boss, der sein Katana nicht einfach hergibt.',
       },
       eldervale: {
         title: 'Eldervale',
