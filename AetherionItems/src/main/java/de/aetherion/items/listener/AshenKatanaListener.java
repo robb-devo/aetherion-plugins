@@ -255,15 +255,32 @@ public final class AshenKatanaListener implements Listener {
         }
     }
 
+    /** Eight ticks × 1.25 ≈ 10 blocks forward (old teleport was 8×0.9≈7.2). */
+    private static final double DASH_SPEED = 1.25;
+
+    /**
+     * Horizontal velocity glide. Yaw and pitch stay as the player is looking.
+     * Speed is cut to the last clear sample so the body stops at a wall.
+     */
     private static void stepDash(Player player, Vector dash) {
-        Location next = player.getLocation().clone().add(dash.clone().multiply(0.9));
-        next.setYaw(player.getLocation().getYaw());
-        next.setPitch(8f);
-        if (!next.getBlock().isPassable() || !next.clone().add(0, 1, 0).getBlock().isPassable()) {
-            return;
-        }
-        player.teleport(next);
+        double speed = clearDash(player.getLocation(), dash, DASH_SPEED);
+        player.setGravity(false);
+        player.setVelocity(new Vector(dash.getX() * speed, 0.0, dash.getZ() * speed));
         player.setFallDistance(0);
+    }
+
+    private static double clearDash(Location from, Vector dash, double want) {
+        final double sample = 0.3;
+        double safe = 0.0;
+        for (double dist = sample; dist <= want + 1.0E-4; dist += sample) {
+            double at = Math.min(want, dist);
+            Location feet = from.clone().add(dash.getX() * at, 0.0, dash.getZ() * at);
+            if (!feet.getBlock().isPassable() || !feet.clone().add(0, 1, 0).getBlock().isPassable()) {
+                break;
+            }
+            safe = at;
+        }
+        return safe;
     }
 
     private static void slash(World world, Location at, Vector dir) {
