@@ -25,7 +25,10 @@ export function LanguageProvider({ children }) {
   useEffect(() => {
     document.documentElement.lang = lang
     const meta = COPY[lang].meta
-    document.title = meta.title
+    // Pages set their own titles; only swap the generic site title.
+    if (!document.title || Object.values(COPY).some((entry) => entry.meta.title === document.title)) {
+      document.title = meta.title
+    }
     const description = document.querySelector('meta[name="description"]')
     if (description) description.setAttribute('content', meta.description)
     const ogTitle = document.querySelector('meta[property="og:title"]')

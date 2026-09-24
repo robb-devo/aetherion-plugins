@@ -14,6 +14,18 @@ npm run dev
 
 Öffnet den Dev-Server (Vite, meist `http://localhost:5173`).
 
+## Platform (accounts + servers)
+
+`/login`, `/register`, `/servers`, `/servers/new`, `/servers/:id` talk to `/api/web` on the same origin. nginx on the Hetzner host proxies `/api/web/` to the Aetherion Control API (`aetherion-control` repo, `artifacts/api-server/src/routes/web.ts`). In dev, Vite proxies `/api` to `AETHERION_API` (default `http://127.0.0.1:5056`).
+
+## Real world imagery
+
+Screenshots live in `public/world/`, item icons (from the Aetherion resource pack) in `public/items/`. To add a place screenshot, drop a 16:10 JPG into `public/world/` and set `image` for that entry in `WORLD` in `src/content.js`.
+
+## Deploy
+
+Build, then replace `assets/`, `items/`, `world/`, `index.html`, `favicon.svg` in `/var/www/donnernet.de` — keep `launcher/` and the launcher `.exe`.
+
 ## Build
 
 ```bash
