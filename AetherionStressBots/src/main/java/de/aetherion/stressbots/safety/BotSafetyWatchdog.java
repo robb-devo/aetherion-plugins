@@ -97,7 +97,8 @@ public final class BotSafetyWatchdog implements Listener, Runnable {
             }
 
             String activity = plugin.getActivity().snapshot(player).activity();
-            boolean idle = "idle".equals(activity) || "stuck".equals(activity);
+            boolean idle = ("idle".equals(activity) || "stuck".equals(activity))
+                    && !gathersInPlace(handler.role());
             if (idle) {
                 idleSince.putIfAbsent(player.getUniqueId(), now);
             } else {
@@ -183,6 +184,15 @@ public final class BotSafetyWatchdog implements Listener, Runnable {
             return fallback;
         }
         return section.getDouble("leash-radius", fallback);
+    }
+
+    /** Mine, forage, fish, and catch work a small pad. Idle teleports were cancelling their path mid-step. */
+    private static boolean gathersInPlace(BotRole role) {
+        return role == BotRole.MINE
+                || role == BotRole.MINING
+                || role == BotRole.FORAGE
+                || role == BotRole.FISH
+                || role == BotRole.CATCH;
     }
 
     private static boolean isMob(DamageCause cause) {

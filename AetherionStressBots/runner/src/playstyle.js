@@ -1,4 +1,5 @@
 import { applyIslandMovements } from './safety.js'
+import { avoidRailBlocks } from './move.js'
 import { fidget as utilFidget, jitter, note, sleep, tossJunk } from './util.js'
 
 const MENU_COMMANDS = ['skills', 'pets', 'guide', 'trades']
@@ -130,7 +131,15 @@ export function applyPathfinderDefaults(bot, movements) {
       bot.pathfinder.tickTimeout = Math.max(bot.pathfinder.tickTimeout, 40)
     }
   }
-  return applyIslandMovements(movements, { canDig: false, maxDrop: 2 })
+  const canDig = movements?.canDig === true
+  const sprint = movements?.allowSprinting === true
+  const tuned = applyIslandMovements(movements, {
+    canDig,
+    maxDrop: movements?.maxDropDown ?? 2,
+    bot,
+    sprint
+  })
+  return avoidRailBlocks(tuned, bot)
 }
 
 export function fidget(bot, activity = 'idle') {
@@ -144,7 +153,7 @@ export function fidget(bot, activity = 'idle') {
   }
   const roll = Math.random()
   try {
-    if (roll < 0.34) {
+    if (!bot?.pathfinder && roll < 0.34) {
       bot.setControlState('jump', true)
       setTimeout(() => bot.setControlState('jump', false), 180)
       note(bot, 'fidget jump', activity)

@@ -129,6 +129,8 @@ describe('dashboard', () => {
     const html = dashboardHtml()
     assert.match(html, /Stress Bots/)
     assert.match(html, /fetch\('status'/)
+    assert.match(html, /id="start"/)
+    assert.match(html, /stop-all/)
 
     const fleet = {
       size: () => 0,
@@ -152,6 +154,12 @@ describe('dashboard', () => {
       const ok = await get(port, '/status', { 'x-testbots-token': 'secret' })
       assert.equal(ok.status, 200)
       assert.match(ok.body, /"bots":\[\]/)
+      const minted = await post(port, '/session', { hours: 1 }, { 'x-testbots-token': 'secret' })
+      assert.equal(minted.status, 200)
+      const session = JSON.parse(minted.body).token
+      assert.ok(session)
+      const withSession = await get(port, '/status?token=' + encodeURIComponent(session))
+      assert.equal(withSession.status, 200)
     } finally {
       await new Promise((resolve, reject) => server.close((err) => err ? reject(err) : resolve()))
     }
@@ -166,5 +174,24 @@ function get(port, path, headers = {}) {
       res.on('end', () => resolve({ status: res.statusCode, body: Buffer.concat(chunks).toString('utf8') }))
     })
     req.on('error', reject)
+  })
+}
+
+function post(port, path, body, headers = {}) {
+  return new Promise((resolve, reject) => {
+    const payload = JSON.stringify(body || {})
+    const req = http.request({
+      host: '127.0.0.1',
+      port,
+      path,
+      method: 'POST',
+      headers: { ...headers, 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload) }
+    }, (res) => {
+      const chunks = []
+      res.on('data', (chunk) => chunks.push(chunk))
+      res.on('end', () => resolve({ status: res.statusCode, body: Buffer.concat(chunks).toString('utf8') }))
+    })
+    req.on('error', reject)
+    req.end(payload)
   })
 }

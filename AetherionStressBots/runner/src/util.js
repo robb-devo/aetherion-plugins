@@ -11,7 +11,8 @@ export function jitter(base, spread = 0.35) {
 export function fidget(bot, activity) {
   const roll = Math.random()
   try {
-    if (roll < 0.34) {
+    // Pathfinder owns jump. An extra jump key makes the bot hop in place and float in tunnels.
+    if (!bot?.pathfinder && roll < 0.34) {
       bot.setControlState('jump', true)
       setTimeout(() => bot.setControlState('jump', false), jitter(220, 0.3))
       note(bot, 'jump', activity)

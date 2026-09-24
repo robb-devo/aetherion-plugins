@@ -120,7 +120,9 @@ Open **`http://127.0.0.1:18765/`** on the machine running the runner (same bind 
 ssh -L 18765:127.0.0.1:18765 <host>
 ```
 
-Then open `http://127.0.0.1:18765/`. If `control.token` is set, use `http://127.0.0.1:18765/?token=<token>` so the page can call `/status`. The page polls every 2s: name, role, personality, activity, goal, location, health, estimated coins, inventory, uptime, deaths, last error, and fleet economy totals.
+Then open `http://127.0.0.1:18765/`. If `control.token` is set, use `http://127.0.0.1:18765/?token=<token>` so the page can call `/status`.
+
+In game, `/stressbots dashboard` (alias `link`) posts a **clickable** chat URL. Set `testbots.dashboard.public-url` to the address players can actually open (a reverse proxy, or `http://HOST:18765` if that port is reachable). Each command asks the runner for a new session token (`testbots.dashboard.session-hours`, default 12) and appends `?token=`. The permanent `testbots.runner.token` is not put in chat. The runner still binds `127.0.0.1` until `control.bind` is changed or a proxy forwards the public URL. The page can start, stop, and set a role count as well as show the fleet. The page polls every 2s: name, role, personality, activity, goal, location, health, estimated coins, inventory, uptime, deaths, last error, and fleet economy totals.
 
 ## How a bot decides
 

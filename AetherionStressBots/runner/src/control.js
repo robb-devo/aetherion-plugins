@@ -1,15 +1,41 @@
 import http from 'node:http'
+import { randomBytes } from 'node:crypto'
 import { dashboardHtml } from './dashboard.js'
 
 /**
  * Localhost-only control plane for the Dev menu / plugin.
  * Does not expose the Velocity secret.
  */
-export function startControlServer({ host, port, token, fleet, log }) {
+export function createSessionStore(ttlMs = 12 * 60 * 60 * 1000) {
+  const sessions = new Map()
+  return {
+    mint(now = Date.now(), hours) {
+      const life = Number.isFinite(hours) && hours > 0 ? hours * 60 * 60 * 1000 : ttlMs
+      const session = randomBytes(18).toString('base64url')
+      const expiresAt = now + life
+      sessions.set(session, expiresAt)
+      return { token: session, expiresAt }
+    },
+    valid(session, now = Date.now()) {
+      if (!session) return false
+      const expiresAt = sessions.get(session)
+      if (!expiresAt) return false
+      if (now > expiresAt) {
+        sessions.delete(session)
+        return false
+      }
+      return true
+    }
+  }
+}
+
+export function startControlServer({ host, port, token, fleet, log, sessionTtlMs } = {}) {
+  const sessions = createSessionStore(sessionTtlMs)
   const server = http.createServer(async (req, res) => {
     try {
       const url = new URL(req.url || '/', `http://${host}:${port}`)
-      const authed = !token || req.headers['x-testbots-token'] === token || url.searchParams.get('token') === token
+      const presented = req.headers['x-testbots-token'] || url.searchParams.get('token') || ''
+      const authed = !token || presented === token || sessions.valid(presented)
       if (req.method === 'GET' && (url.pathname === '/' || url.pathname === '/dashboard')) {
         sendHtml(res, 200, dashboardHtml())
         return
@@ -27,6 +53,12 @@ export function startControlServer({ host, port, token, fleet, log }) {
         return
       }
       const body = await readBody(req)
+      if (req.method === 'POST' && url.pathname === '/session') {
+        const hours = Number(body.hours)
+        const minted = sessions.mint(Date.now(), Number.isFinite(hours) ? hours : undefined)
+        send(res, 200, { ok: true, token: minted.token, expiresAt: minted.expiresAt, message: 'dashboard session' })
+        return
+      }
       if (req.method === 'POST' && url.pathname === '/desired') {
         const role = String(body.role || '').toLowerCase()
         const count = Number(body.count)

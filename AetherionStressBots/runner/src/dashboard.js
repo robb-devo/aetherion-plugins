@@ -2,6 +2,13 @@
  * Localhost dashboard shell. Live numbers come from GET /status.
  * No external assets — the control server is often reached over an SSH tunnel.
  */
+export function dashboardUrl(base, token) {
+  const root = String(base || '').trim().replace(/\/+$/, '')
+  if (!root.startsWith('http://') && !root.startsWith('https://')) return ''
+  if (!token) return `${root}/`
+  return `${root}/?token=${encodeURIComponent(token)}`
+}
+
 export function dashboardHtml() {
   return `<!DOCTYPE html>
 <html lang="en">
@@ -54,7 +61,10 @@ export function dashboardHtml() {
   .tag.bad { color: var(--bad); background: #2d1c1a; }
   .muted { color: var(--muted); }
   .err { color: var(--bad); }
-  button { background: #243024; color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; cursor: pointer; }
+  button, select, input { background: #243024; color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; }
+  button { cursor: pointer; }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px; }
+  .controls label { color: var(--muted); font-size: 12px; }
   .empty { padding: 28px; color: var(--muted); }
 </style>
 </head>
@@ -67,6 +77,18 @@ export function dashboardHtml() {
   <button id="refresh" type="button">Refresh</button>
 </header>
 <main>
+  <form class="controls" id="controls">
+    <label>Role <select id="role" name="role">
+      <option>mine</option><option>forage</option><option>catch</option><option>roam</option>
+      <option>combat</option><option>fish</option><option>trade</option><option>quest</option>
+      <option>pad</option><option>mining</option>
+    </select></label>
+    <label>Count <input id="count" name="count" type="number" min="0" max="40" value="2" /></label>
+    <button type="submit" id="start" data-action="start">Start</button>
+    <button type="button" id="stop" data-action="stop">Stop</button>
+    <button type="button" id="stopall" data-action="stop-all">Stop all</button>
+    <span class="muted" id="controlMsg"></span>
+  </form>
   <section class="cards" id="cards"></section>
   <div id="table"></div>
 </main>
@@ -146,6 +168,36 @@ async function load() {
     document.getElementById('meta').textContent = 'offline (' + err.message + ')';
   }
 }
+async function post(path, body) {
+  const res = await fetch(path, {
+    method: 'POST',
+    headers: { ...headers, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body || {})
+  });
+  const text = await res.text();
+  let payload = {};
+  try { payload = JSON.parse(text); } catch { payload = { message: text }; }
+  document.getElementById('controlMsg').textContent = payload.message || (res.ok ? 'ok' : ('http ' + res.status));
+  if (res.ok) load();
+}
+document.getElementById('controls').addEventListener('submit', (event) => {
+  event.preventDefault();
+  const role = document.getElementById('role').value;
+  const count = Number(document.getElementById('count').value);
+  post('desired', { role, count }).catch((err) => {
+    document.getElementById('controlMsg').textContent = err.message;
+  });
+});
+document.getElementById('stop').onclick = () => {
+  post('stop', { role: document.getElementById('role').value }).catch((err) => {
+    document.getElementById('controlMsg').textContent = err.message;
+  });
+};
+document.getElementById('stopall').onclick = () => {
+  post('stop-all', {}).catch((err) => {
+    document.getElementById('controlMsg').textContent = err.message;
+  });
+};
 document.getElementById('refresh').onclick = load;
 load();
 setInterval(load, 2000);

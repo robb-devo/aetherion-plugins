@@ -56,6 +56,11 @@ testbots:
     port: 18765
     # Optional. Empty = no header. If set, must match runner config.json control.token.
     token: ""
+  # Clickable /stressbots dashboard link. The runner stays on 127.0.0.1 unless you proxy it
+  # or set runner control.bind. public-url is what players open; each command mints a fresh token.
+  dashboard:
+    public-url: ""
+    session-hours: 12
   prefixes:
     mine: QaMine
     forage: QaForage

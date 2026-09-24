@@ -10,6 +10,7 @@ import {
 import { findMatchingBlock, inventoryAlmostFull, jitter, markError, note, tossJunk, waitUntil, sleep } from './util.js'
 import { applyPathfinderDefaults, fidget, takeIdleGoal } from './playstyle.js'
 import { isLingering, shouldYield } from './mind.js'
+import { assignGoal, forgetGoal, hasDigApproach, isFailedBlock, isFooting, rememberFailure } from './move.js'
 
 const { goals, Movements, pathfinder } = pathfinderPkg
 
@@ -32,28 +33,44 @@ export function createDigLoop(bot, cfg, log, { activity, names, searchRadius, yR
 
   let running = false
   let busy = false
+  let cached = null
 
   function home() {
     return bot.qaHome || bot.entity?.position
   }
 
+  function approachable(block) {
+    if (!block?.position) return false
+    if (isFooting(bot.entity?.position, block)) return false
+    if (isFailedBlock(bot, block.position)) return false
+    if (!withinLeash(block.position.offset(0.5, 0.5, 0.5), home(), pickLeash)) return false
+    return hasDigApproach(
+      (x, y, z) => bot.blockAt(block.position.offset(x - block.position.x, y - block.position.y, z - block.position.z)),
+      block.position.x,
+      block.position.y,
+      block.position.z
+    )
+  }
+
   function pickBlock() {
-    const origin = home() || bot.entity?.position
+    const now = Date.now()
+    if (cached && now < cached.until) {
+      const held = bot.blockAt(cached.pos)
+      if (held && approachable(held) && (nameSet.has(held.name) || fallbackSet.has(held.name))) return held
+      cached = null
+    }
+    const origin = bot.entity?.position || home()
     const primary = findMatchingBlock(bot, nameSet, radius, yRange ?? 6, origin)
-    const focus = bot.qaPersona?.focus ?? 0.6
-    const clumsy = bot.qaPersona?.clumsiness ?? 0
-    if (primary && withinLeash(primary.position.offset(0.5, 0.5, 0.5), home(), pickLeash)) {
-      if (Math.random() < clumsy * 0.22) return null
+    if (primary && approachable(primary)) {
+      cached = { pos: primary.position, until: now + 5000 }
       return primary
     }
-    if (fallbackSet.size === 0) {
-      return null
-    }
-    if (Math.random() < focus * 0.4) {
-      return null
-    }
+    if (fallbackSet.size === 0) return null
+    const focus = bot.qaPersona?.focus ?? 0.6
+    if (Math.random() < focus * 0.25) return null
     const filler = findMatchingBlock(bot, fallbackSet, Math.min(radius, pickLeash), Math.min(yRange ?? 6, 5), origin)
-    if (filler && withinLeash(filler.position.offset(0.5, 0.5, 0.5), home(), pickLeash)) {
+    if (filler && approachable(filler)) {
+      cached = { pos: filler.position, until: now + 4000 }
       return filler
     }
     return null
@@ -87,7 +104,9 @@ export function createDigLoop(bot, cfg, log, { activity, names, searchRadius, yR
     if (!bot.pathfinder.movements) {
       const moves = applyIslandMovements(new Movements(bot), {
         canDig,
-        maxDrop: cfg.maxDrop ?? 2
+        maxDrop: cfg.maxDrop ?? 2,
+        bot,
+        sprint: false
       })
       bot.pathfinder.setMovements(moves)
       applyPathfinderDefaults(bot, moves)
@@ -102,19 +121,22 @@ export function createDigLoop(bot, cfg, log, { activity, names, searchRadius, yR
     if (!block || needGoal) {
       bot.qaGathering = false
       bot.qaDigging = false
-      setGoal(bot, null)
-      bot.qaActivity = bot.pathfinder.isMoving() ? 'pathing' : 'idle'
+      if (needGoal) {
+        cached = null
+        forgetGoal(bot)
+      }
+      bot.qaActivity = bot.pathfinder.isMoving() ? 'pathing' : 'mining'
       if (!bot.pathfinder.isMoving()) {
-        const reach = wanderRadius * (bot.qaPersona?.wanderMul ?? 1)
+        const reach = Math.min(wanderRadius, (bot.qaPersona?.wanderMul ?? 1) * 4)
         const pad = sampleSolidNear(bot, home(), reach)
-        if (pad) {
-          note(bot, needGoal ? 'new goal hop' : 'scan hop', 'pathing')
-          setGoal(bot, pad)
-          bot.pathfinder.setGoal(new goals.GoalNear(pad.x, pad.y, pad.z, 1))
-        } else {
-          wanderOnIsland(bot, home(), wanderRadius, goals)
+        const issued = pad
+          ? assignGoal(bot, goals, pad, 1.8, { minIntervalMs: 2500 })
+          : wanderOnIsland(bot, home(), wanderRadius, goals)
+        if (issued) {
+          note(bot, needGoal ? 'new spot' : 'looking for ore', 'pathing')
+          setGoal(bot, pad || bot.qaMoveGoal)
         }
-        if (Math.random() < 0.25) fidget(bot, activity)
+        if (Math.random() < 0.12) fidget(bot, activity)
       }
       return
     }
@@ -127,7 +149,12 @@ export function createDigLoop(bot, cfg, log, { activity, names, searchRadius, yR
       const dist = bot.entity.position.distanceTo(dest)
       if (dist > 3.2) {
         note(bot, `path to ${block.name}`, 'pathing')
-        bot.pathfinder.setGoal(new goals.GoalNear(block.position.x, block.position.y, block.position.z, 2))
+        const stand = block.position.offset(
+          Math.sign((bot.entity.position.x - block.position.x) || 1),
+          0,
+          Math.sign((bot.entity.position.z - block.position.z) || 0)
+        )
+        assignGoal(bot, goals, { x: stand.x + 0.5, y: bot.entity.position.y, z: stand.z + 0.5 }, 1.4, { force: true })
         await waitUntil(() => {
           if (aborted()) return true
           return bot.entity.position.distanceTo(block.position.offset(0.5, 0.5, 0.5)) <= 3.2
@@ -158,9 +185,12 @@ export function createDigLoop(bot, cfg, log, { activity, names, searchRadius, yR
         markError(bot, err)
       }
       try { bot.stopDigging() } catch { /* ignore */ }
+      rememberFailure(bot, block?.position)
+      cached = null
       cancelPath(bot)
+      forgetGoal(bot)
       setGoal(bot, null)
-      wanderOnIsland(bot, home(), wanderRadius, goals)
+      wanderOnIsland(bot, home(), Math.min(4, wanderRadius), goals)
     } finally {
       bot.qaDigging = false
       bot.qaGathering = false

@@ -94,11 +94,7 @@ export function createRoamLoop(bot, cfg, log) {
   function fidget(botRef) {
     const roll = Math.random()
     try {
-      if (roll < 0.34) {
-        botRef.setControlState('jump', true)
-        setTimeout(() => botRef.setControlState('jump', false), 220)
-        note(botRef, 'jump', 'roaming')
-      } else if (roll < 0.67) {
+      if (roll < 0.5) {
         botRef.swingArm()
         note(botRef, 'swing', 'roaming')
       } else {
