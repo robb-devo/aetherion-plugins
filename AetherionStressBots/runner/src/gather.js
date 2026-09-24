@@ -9,6 +9,7 @@ import {
 } from './safety.js'
 import { findMatchingBlock, inventoryAlmostFull, jitter, markError, note, tossJunk, waitUntil, sleep } from './util.js'
 import { applyPathfinderDefaults, fidget, takeIdleGoal } from './playstyle.js'
+import { isLingering, shouldYield } from './mind.js'
 
 const { goals, Movements, pathfinder } = pathfinderPkg
 
@@ -39,10 +40,16 @@ export function createDigLoop(bot, cfg, log, { activity, names, searchRadius, yR
   function pickBlock() {
     const origin = home() || bot.entity?.position
     const primary = findMatchingBlock(bot, nameSet, radius, yRange ?? 6, origin)
+    const focus = bot.qaPersona?.focus ?? 0.6
+    const clumsy = bot.qaPersona?.clumsiness ?? 0
     if (primary && withinLeash(primary.position.offset(0.5, 0.5, 0.5), home(), pickLeash)) {
+      if (Math.random() < clumsy * 0.22) return null
       return primary
     }
     if (fallbackSet.size === 0) {
+      return null
+    }
+    if (Math.random() < focus * 0.4) {
       return null
     }
     const filler = findMatchingBlock(bot, fallbackSet, Math.min(radius, pickLeash), Math.min(yRange ?? 6, 5), origin)
@@ -58,6 +65,10 @@ export function createDigLoop(bot, cfg, log, { activity, names, searchRadius, yR
 
   async function tick() {
     if (!bot.entity || busy || bot.qaSuspended) return
+    if (shouldYield(bot)) {
+      if (isLingering(bot)) note(bot, 'taking a break', 'lingering')
+      return
+    }
     if (bot.qaNeedRetarget) {
       bot.qaNeedRetarget = false
       bot.qaDigging = false
@@ -94,7 +105,8 @@ export function createDigLoop(bot, cfg, log, { activity, names, searchRadius, yR
       setGoal(bot, null)
       bot.qaActivity = bot.pathfinder.isMoving() ? 'pathing' : 'idle'
       if (!bot.pathfinder.isMoving()) {
-        const pad = sampleSolidNear(bot, home(), wanderRadius)
+        const reach = wanderRadius * (bot.qaPersona?.wanderMul ?? 1)
+        const pad = sampleSolidNear(bot, home(), reach)
         if (pad) {
           note(bot, needGoal ? 'new goal hop' : 'scan hop', 'pathing')
           setGoal(bot, pad)

@@ -285,7 +285,7 @@ export function attachSafety(bot, opts = {}) {
     const digging = !!bot.qaDigging
     const gathering = !!bot.qaGathering || bot.qaActivity === 'foraging' || bot.qaActivity === 'mining' || bot.qaActivity === 'fishing'
     const working = digging || gathering || !!bot.targetDigBlock
-      || ['mining', 'foraging', 'pathing', 'catching', 'fishing', 'ah', 'bazaar', 'quest_dialog', 'minigame', 'pad_hop', 'combat', 'trading', 'fighting']
+      || ['mining', 'foraging', 'pathing', 'catching', 'fishing', 'ah', 'bazaar', 'quest_dialog', 'minigame', 'pad_hop', 'combat', 'trading', 'fighting', 'eating', 'retreating', 'selling']
         .includes(bot.qaActivity)
       || bot.pathfinder?.isMoving?.()
     if (moved || progress.progressed) {

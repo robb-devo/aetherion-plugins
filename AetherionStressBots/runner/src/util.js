@@ -54,6 +54,7 @@ export function markError(bot, err) {
   const message = err && err.message ? err.message : String(err || 'error')
   bot.qaActivity = 'error'
   bot.qaLastError = message
+  bot.qaErrorAt = Date.now()
   note(bot, `error: ${message}`, 'error')
 }
 

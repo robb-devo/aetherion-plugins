@@ -212,8 +212,9 @@ testbots:
       scatter-radius: 1
       leash-radius: 72
 
-  # Chat / tab / Collection leaderboard labels. Login names stay QaMine01 (Velocity).
+  # Chat / tab / Collection labels. Login names stay QaMine01 (Velocity).
+  # Built-in pool is ordinary Minecraft-style names (MapleReed, IronWade, …), offset per role.
   nicknames:
     enabled: true
-    # Optional. If a list is set, it replaces the built-in German/absurd pool for that role.
-    # mine: ["§bPickel-Ute", "§bErz-Ernie"]
+    # Optional. If a list is set, it replaces the built-in pool for that role.
+    # mine: ["MapleReed", "IronWade"]

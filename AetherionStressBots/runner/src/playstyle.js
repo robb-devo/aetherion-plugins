@@ -4,7 +4,7 @@ import { fidget as utilFidget, jitter, note, sleep, tossJunk } from './util.js'
 const MENU_COMMANDS = ['skills', 'pets', 'guide', 'trades']
 const BUSY = new Set([
   'fighting', 'combat', 'catching', 'fishing', 'mining', 'foraging', 'questing',
-  'quest_dialog', 'ah', 'bazaar', 'minigame', 'pad_hop', 'trading'
+  'quest_dialog', 'ah', 'bazaar', 'minigame', 'pad_hop', 'trading', 'eating', 'retreating'
 ])
 
 export const FLAGS = {

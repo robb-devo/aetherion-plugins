@@ -1,4 +1,5 @@
 import http from 'node:http'
+import { dashboardHtml } from './dashboard.js'
 
 /**
  * Localhost-only control plane for the Dev menu / plugin.
@@ -7,11 +8,16 @@ import http from 'node:http'
 export function startControlServer({ host, port, token, fleet, log }) {
   const server = http.createServer(async (req, res) => {
     try {
-      if (token && req.headers['x-testbots-token'] !== token) {
+      const url = new URL(req.url || '/', `http://${host}:${port}`)
+      const authed = !token || req.headers['x-testbots-token'] === token || url.searchParams.get('token') === token
+      if (req.method === 'GET' && (url.pathname === '/' || url.pathname === '/dashboard')) {
+        sendHtml(res, 200, dashboardHtml())
+        return
+      }
+      if (!authed) {
         send(res, 401, { ok: false, message: 'unauthorized' })
         return
       }
-      const url = new URL(req.url || '/', `http://${host}:${port}`)
       if (req.method === 'GET' && url.pathname === '/health') {
         send(res, 200, { ok: true, message: `fleet ${fleet.size()} bots` })
         return
@@ -47,12 +53,21 @@ export function startControlServer({ host, port, token, fleet, log }) {
   })
 
   server.listen(port, host, () => {
-    log('control', `listening on http://${host}:${port}`)
+    log('control', `listening on http://${host}:${port}  dashboard http://${host}:${port}/`)
   })
   server.on('error', (err) => {
     log('control', `bind failed: ${err.message}`)
   })
   return server
+}
+
+function sendHtml(res, status, html) {
+  res.writeHead(status, {
+    'Content-Type': 'text/html; charset=utf-8',
+    'Content-Length': Buffer.byteLength(html),
+    'Cache-Control': 'no-store'
+  })
+  res.end(html)
 }
 
 function send(res, status, payload) {
