@@ -1,9 +1,10 @@
 # ============================================================
 # The Ashen Sheath – Forage / Dojo specialty boss
 # Combat: AshenSheathDirector. Spawn: /boss spawn ashen_sheath
-# First flashy tell is Iaido (the opening cut): a bamboo sheath, a dark blade
-# sliding along one ground line, and flat cherry-leaf blocks falling onto that line.
-# Falling Blossoms repeats the same draw. No crystals, end rods, portal spiral, or beam spin.
+# Tells share one picture: a bamboo sheath, a dark blade, and a cherry-leaf snake
+# (a weaving ground line, a ring, or a narrow standing braid). Falling Blossoms
+# repeats the Iaido draw. Death keeps the leaf column and grows a cherry sphere
+# that bursts into leaves. No crystals, end rods, portal spiral, or beam spin.
 # Drop: ashen_katana
 # ============================================================
 
