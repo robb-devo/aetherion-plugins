@@ -64,6 +64,10 @@ export const api = {
   updateServer: (id, patch) => request(`/servers/${encodeURIComponent(id)}`, { method: 'PATCH', body: patch }),
   deleteServer: (id) => request(`/servers/${encodeURIComponent(id)}`, { method: 'DELETE' }),
   action: (id, action) => request(`/servers/${encodeURIComponent(id)}/${action}`, { method: 'POST' }),
+  addons: (id) => request(`/servers/${encodeURIComponent(id)}/addons`),
+  installAddon: (id, versionId) => request(`/servers/${encodeURIComponent(id)}/addons`, { method: 'POST', body: { versionId } }),
+  removeAddon: (id, file) =>
+    request(`/servers/${encodeURIComponent(id)}/addons/${encodeURIComponent(file)}`, { method: 'DELETE' }),
   console: (id, lines = 250) => request(`/servers/${encodeURIComponent(id)}/console?lines=${lines}`),
   command: (id, command) => request(`/servers/${encodeURIComponent(id)}/console`, { method: 'POST', body: { command } }),
 }

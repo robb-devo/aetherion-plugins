@@ -2,15 +2,15 @@ import { FEATURES } from '../../content.js'
 import { useLang } from '../../i18n.jsx'
 import { ItemSlot, Reveal, Section, SectionHeading } from '../ui.jsx'
 
-export function Pillars() {
+export function Facts() {
   const { copy } = useLang()
   return (
     <div className="border-y hairline bg-obsidian/70">
-      <div className="mx-auto grid max-w-6xl gap-px bg-white/5 sm:grid-cols-3">
-        {copy.pillars.map((pillar) => (
-          <div key={pillar.title} className="bg-obsidian px-6 py-7">
-            <p className="text-sm font-bold text-white">{pillar.title}</p>
-            <p className="mt-1.5 text-sm leading-relaxed text-mist/65">{pillar.body}</p>
+      <div className="mx-auto grid max-w-6xl grid-cols-2 gap-px bg-white/5 lg:grid-cols-4">
+        {copy.facts.map((fact) => (
+          <div key={fact.label} className="bg-obsidian px-6 py-6">
+            <p className="font-display text-3xl font-bold text-white">{fact.value}</p>
+            <p className="mt-1 text-xs font-bold tracking-[0.14em] text-ash uppercase">{fact.label}</p>
           </div>
         ))}
       </div>

@@ -67,7 +67,7 @@ export function RamTierPicker({ tiers, value, onChange, disabled = false, name =
               onChange={() => onChange(tier.ramMb)}
             />
             <span className={`text-[0.62rem] font-extrabold tracking-[0.16em] uppercase ${RARITY_TEXT[tier.rarity]}`}>
-              {copy.arsenal.rarity[tier.rarity]}
+              {copy.rarity[tier.rarity]}
             </span>
             <span className="mt-1 text-xl font-extrabold text-white">{formatRam(tier.ramMb)}</span>
             <span className="mt-1 text-xs leading-snug text-mist/60">{copy.app.create.tiers[tier.ramMb]}</span>

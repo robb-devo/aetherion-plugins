@@ -3,6 +3,7 @@ import { useAuth } from '../auth.jsx'
 import { AppShell, BackLink, PageHeader } from '../components/app/AppShell.jsx'
 import { RamChip, RamTierPicker, ServerGlyph } from '../components/app/ServerBits.jsx'
 import { Notice, Skeleton, Spinner } from '../components/ui.jsx'
+import { SITE } from '../content.js'
 import { interpolate } from '../copy.js'
 import { useLang } from '../i18n.jsx'
 import { api, errorMessage } from '../lib/api.js'
@@ -171,6 +172,7 @@ export default function CreateServer() {
                     <option key={item} value={item}>
                       {item}
                       {index === 0 ? ` (${t.latest})` : ''}
+                      {item === SITE.minecraft ? ' · Aetherion' : ''}
                     </option>
                   ))}
                 </select>

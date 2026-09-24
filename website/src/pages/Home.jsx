@@ -1,6 +1,5 @@
 import { useEffect } from 'react'
-import Arsenal from '../components/home/Arsenal.jsx'
-import Features, { Pillars } from '../components/home/Features.jsx'
+import Features, { Facts } from '../components/home/Features.jsx'
 import Finale from '../components/home/Finale.jsx'
 import Hero from '../components/home/Hero.jsx'
 import Playground from '../components/home/Playground.jsx'
@@ -17,9 +16,8 @@ export default function Home() {
   return (
     <main>
       <Hero />
-      <Pillars />
+      <Facts />
       <Features />
-      <Arsenal />
       <World />
       <Playground />
       <Support />

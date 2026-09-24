@@ -33,18 +33,6 @@ export const FEATURES = [
   { id: 'market', item: 'charm_shiny' },
 ]
 
-/** Names and rarities as defined in AetherionItems (CustomItem.java). */
-export const ARSENAL = [
-  { id: 'aetherblade', name: 'Aetherblade', rarity: 'mythic', kind: 'boss' },
-  { id: 'ashen_katana', name: 'Ashen Katana', rarity: 'mythic', kind: 'boss' },
-  { id: 'mining_pickaxe_5', name: 'Mythic Mining Pickaxe', rarity: 'mythic', kind: 'skill' },
-  { id: 'gravwell_cleaver', name: 'Gravwell Cleaver', rarity: 'legendary', kind: 'boss' },
-  { id: 'stormcaller_maul', name: 'Stormcaller Maul', rarity: 'legendary', kind: 'boss' },
-  { id: 'resonance_scythe', name: 'Resonance Scythe', rarity: 'epic', kind: 'craft' },
-  { id: 'warped_blade', name: 'Warped Blade', rarity: 'epic', kind: 'boss' },
-  { id: 'catch_sphere_legendary', name: 'Legendary Catch Sphere', rarity: 'legendary', kind: 'pets' },
-]
-
 /**
  * Images live in public/world/. Places without one show a "screenshot coming
  * soon" slot — drop a 16:9 JPG in and set `image`.

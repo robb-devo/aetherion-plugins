@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../auth.jsx'
 import { AppShell, BackLink } from '../components/app/AppShell.jsx'
+import AddonsPanel from '../components/app/AddonsPanel.jsx'
 import ConsolePanel from '../components/app/ConsolePanel.jsx'
 import { ServerActionButton } from '../components/app/ServerCard.jsx'
 import { RamChip, ServerGlyph, SoftwareLabel } from '../components/app/ServerBits.jsx'
@@ -357,7 +358,7 @@ export default function ServerDashboard({ id }) {
         <div className="grid gap-6 lg:grid-cols-[1fr_18rem]">
           <section className="panel p-4 sm:p-5">
             <div className="mb-4 flex gap-1" role="tablist">
-              {['console', 'settings'].map((key) => (
+              {['console', 'addons', 'settings'].map((key) => (
                 <button
                   key={key}
                   type="button"
@@ -368,12 +369,14 @@ export default function ServerDashboard({ id }) {
                   }`}
                   onClick={() => setTab(key)}
                 >
-                  {t.tabs[key]}
+                  {key === 'addons' ? (server.software === 'fabric' ? t.addons.mods : t.addons.plugins) : t.tabs[key]}
                 </button>
               ))}
             </div>
             {tab === 'console' ? (
               <ConsolePanel server={server} username={user?.username ?? 'Steve'} />
+            ) : tab === 'addons' ? (
+              <AddonsPanel server={server} />
             ) : (
               <SettingsPanel server={server} tiers={tiers} onSaved={applyServer} />
             )}
