@@ -47,6 +47,7 @@ import org.bukkit.util.Transformation;
 import org.joml.AxisAngle4f;
 import org.joml.Vector3f;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -105,6 +106,13 @@ public final class BorderlandsRiteService implements Listener {
     /** Players currently seeing the glowing altar outline (vial held). */
     private final Set<UUID> altarOutlineViewers = ConcurrentHashMap.newKeySet();
     private UUID altarOutlineEntityId;
+    /** Live display while the altar chunk is loaded. A chunk scan wins over this reference. */
+    private BlockDisplay altarOutline;
+    private boolean altarChunkTicketHeld;
+    private long altarOutlineSpawnRetryAtMs;
+    private boolean loggedOutlineSpawnFailure;
+    private boolean loggedOutlineColorFailure;
+    private boolean loggedTicketFailure;
     private int altarOutlineColorTick;
     private volatile double riteNpcX = 251.5;
     private volatile double riteNpcY = 65.0;
@@ -127,6 +135,15 @@ public final class BorderlandsRiteService implements Listener {
         plugin.getServer().getScheduler().runTaskTimer(plugin, this::refreshRiteNpcCenter, 60L, 100L);
         plugin.getServer().getScheduler().runTaskTimer(plugin, this::tickBossBubbles, 20L, 20L);
         refreshRiteNpcCenter();
+    }
+
+    /** Drops the altar outline and releases its chunk ticket. Called from plugin disable. */
+    public static void shutdownAltarOutline() {
+        BorderlandsRiteService service = instance;
+        if (service == null) {
+            return;
+        }
+        service.endOutlineSession(Bukkit.getWorld(ALTAR_WORLD));
     }
 
     public static boolean isMobSafeZone(Location location) {
@@ -343,36 +360,60 @@ public final class BorderlandsRiteService implements Listener {
      * Pet-style glowing block outline: BlockDisplay of the powder + scoreboard team color,
      * visible through walls. Only shown to players holding a Borderlands spirit vial
      * while inside the Borderlands. Color cycles aqua → purple → red → gold.
+     * <p>
+     * Nothing is spawned unless one of those players is online. With no viewer the
+     * single outline is removed, so an unloaded chunk cannot discard-and-respawn it.
      */
     private void tickAltarVialOutline() {
         World world = Bukkit.getWorld(ALTAR_WORLD);
         if (world == null) {
+            if (altarChunkTicketHeld || altarOutline != null || altarOutlineEntityId != null) {
+                endOutlineSession(null);
+            }
+            return;
+        }
+        Set<UUID> want = outlineViewers(world);
+        if (want.isEmpty()) {
+            if (altarOutline != null || altarOutlineEntityId != null || !altarOutlineViewers.isEmpty()) {
+                endOutlineSession(world);
+            } else if (altarChunkTicketHeld) {
+                releaseAltarChunkTicket(world);
+            }
             return;
         }
         BlockDisplay outline = ensureAltarOutline(world);
         if (outline == null) {
             return;
         }
+        if (altarOutlineEntityId == null || !altarOutlineEntityId.equals(outline.getUniqueId())) {
+            altarOutlineViewers.clear();
+        }
+        altarOutline = outline;
+        altarOutlineEntityId = outline.getUniqueId();
 
         altarOutlineColorTick++;
         if (altarOutlineColorTick % 8 == 0) {
-            applyOutlineColor(outline, OUTLINE_COLORS[(altarOutlineColorTick / 8) % OUTLINE_COLORS.length]);
+            try {
+                applyOutlineColor(outline, OUTLINE_COLORS[(altarOutlineColorTick / 8) % OUTLINE_COLORS.length]);
+            } catch (Throwable failure) {
+                if (!loggedOutlineColorFailure) {
+                    loggedOutlineColorFailure = true;
+                    plugin.getLogger().warning("Altar outline color failed: " + failure.getMessage());
+                }
+            }
         }
 
-        Set<UUID> want = new HashSet<>();
-        for (Player player : world.getPlayers()) {
-            if (!playerHoldsBorderlandsSpirit(player)) {
+        for (UUID id : want) {
+            if (!altarOutlineViewers.add(id)) {
                 continue;
             }
-            if (mobZones == null || !mobZones.containsBorderlands(player.getLocation())) {
+            Player player = Bukkit.getPlayer(id);
+            if (player == null) {
                 continue;
             }
-            want.add(player.getUniqueId());
-            if (altarOutlineViewers.add(player.getUniqueId())) {
-                try {
-                    player.showEntity(plugin, outline);
-                } catch (Throwable ignored) {
-                }
+            try {
+                player.showEntity(plugin, outline);
+            } catch (Throwable ignored) {
             }
         }
         for (UUID id : List.copyOf(altarOutlineViewers)) {
@@ -390,77 +431,445 @@ public final class BorderlandsRiteService implements Listener {
         }
     }
 
-    private BlockDisplay ensureAltarOutline(World world) {
-        if (altarOutlineEntityId != null) {
-            Entity existing = Bukkit.getEntity(altarOutlineEntityId);
-            if (existing instanceof BlockDisplay display && display.isValid()) {
-                return display;
+    private Set<UUID> outlineViewers(World world) {
+        Set<UUID> want = new HashSet<>();
+        for (Player player : world.getPlayers()) {
+            if (!player.isOnline() || !playerHoldsBorderlandsSpirit(player)) {
+                continue;
             }
-            altarOutlineEntityId = null;
-            altarOutlineViewers.clear();
+            if (mobZones == null || !mobZones.containsBorderlands(player.getLocation())) {
+                continue;
+            }
+            want.add(player.getUniqueId());
         }
-        scrubOrphanAltarOutlines();
-        int bx = (int) Math.floor(ALTAR_X);
-        int by = (int) Math.floor(ALTAR_Y);
-        int bz = (int) Math.floor(ALTAR_Z);
-        // BlockDisplay origin is the block corner.
-        Location at = new Location(world, bx, by, bz);
+        return want;
+    }
+
+    /**
+     * Reuse the one loaded outline, or spawn it once the altar chunk is actually loaded.
+     * Never calls {@code world.spawn} for an unloaded chunk or when a tagged display is already loaded.
+     */
+    private BlockDisplay ensureAltarOutline(World world) {
+        if (!holdAltarChunk(world)) {
+            return null;
+        }
+        BlockDisplay existing = findLoadedOutline(world);
+        if (existing != null) {
+            BlockDisplay kept = collapseOutlines(world, existing);
+            if (kept == null) {
+                if (isTaggedOutline(existing)) {
+                    seatAtAltar(world, existing);
+                    return existing;
+                }
+                forgetOutline();
+                return null;
+            }
+            seatAtAltar(world, kept);
+            return kept;
+        }
+        forgetOutline();
+        if (System.currentTimeMillis() < altarOutlineSpawnRetryAtMs) {
+            return null;
+        }
+        collapseOutlines(world, null);
+        scrubNonDisplayTagged(world);
+        if (countTagged(world) > 0) {
+            altarOutlineSpawnRetryAtMs = System.currentTimeMillis() + 1000L;
+            return null;
+        }
+        BlockDisplay spawned = spawnAltarOutline(world);
+        if (spawned == null) {
+            return null;
+        }
+        BlockDisplay capped = collapseOutlines(world, spawned);
+        if (capped == null || countTagged(world) != 1) {
+            collapseOutlines(world, null);
+            scrubNonDisplayTagged(world);
+            forgetOutline();
+            altarOutlineSpawnRetryAtMs = System.currentTimeMillis() + 1000L;
+            return null;
+        }
+        altarOutlineSpawnRetryAtMs = 0L;
+        loggedOutlineSpawnFailure = false;
+        seatAtAltar(world, capped);
+        try {
+            applyOutlineColor(capped, OUTLINE_COLORS[0]);
+        } catch (Throwable failure) {
+            if (!loggedOutlineColorFailure) {
+                loggedOutlineColorFailure = true;
+                plugin.getLogger().warning("Altar outline color failed: " + failure.getMessage());
+            }
+        }
+        return capped;
+    }
+
+    private BlockDisplay spawnAltarOutline(World world) {
+        if (!altarChunkLoaded(world) || countTagged(world) > 0) {
+            return null;
+        }
+        Location at = altarCorner(world);
+        BlockDisplay[] seen = new BlockDisplay[1];
         BlockDisplay spawned;
         try {
             spawned = world.spawn(at, BlockDisplay.class, display -> {
-                display.setBlock(Material.LIGHT_GRAY_CONCRETE_POWDER.createBlockData());
-                display.setGravity(false);
-                display.setPersistent(false);
-                display.setInvulnerable(true);
-                display.setGlowing(true);
-                display.addScoreboardTag(OUTLINE_TAG);
-                // Slightly oversized so the glow sits around the real powder block.
-                display.setTransformation(new Transformation(
-                        new Vector3f(-0.02f, -0.02f, -0.02f),
-                        new AxisAngle4f(0f, 0f, 0f, 1f),
-                        new Vector3f(1.04f, 1.04f, 1.04f),
-                        new AxisAngle4f(0f, 0f, 0f, 1f)
-                ));
-                display.setInterpolationDuration(0);
-                display.setTeleportDuration(0);
-                try {
-                    display.setVisibleByDefault(false);
-                } catch (Throwable ignored) {
-                }
-                try {
-                    display.setBrightness(new org.bukkit.entity.Display.Brightness(15, 15));
-                } catch (Throwable ignored) {
-                }
+                seen[0] = display;
+                prepareOutline(display);
             });
-        } catch (Throwable ignored) {
+        } catch (Throwable failure) {
+            discardSpawnAttempt(world, seen[0]);
+            logSpawnFailure(failure);
             return null;
         }
-        altarOutlineEntityId = spawned.getUniqueId();
-        applyOutlineColor(spawned, OUTLINE_COLORS[0]);
+        if (spawned == null || !spawned.isValid() || !spawned.getScoreboardTags().contains(OUTLINE_TAG)) {
+            discardSpawnAttempt(world, spawned != null ? spawned : seen[0]);
+            logSpawnFailure(new IllegalStateException("altar outline spawn did not leave a tagged display"));
+            return null;
+        }
         return spawned;
     }
 
+    private void prepareOutline(BlockDisplay display) {
+        display.setBlock(Material.LIGHT_GRAY_CONCRETE_POWDER.createBlockData());
+        display.setGravity(false);
+        display.setPersistent(false);
+        display.setInvulnerable(true);
+        display.setGlowing(true);
+        display.addScoreboardTag(OUTLINE_TAG);
+        // Slightly oversized so the glow sits around the real powder block.
+        display.setTransformation(new Transformation(
+                new Vector3f(-0.02f, -0.02f, -0.02f),
+                new AxisAngle4f(0f, 0f, 0f, 1f),
+                new Vector3f(1.04f, 1.04f, 1.04f),
+                new AxisAngle4f(0f, 0f, 0f, 1f)
+        ));
+        display.setInterpolationDuration(0);
+        display.setTeleportDuration(0);
+        try {
+            display.setVisibleByDefault(false);
+        } catch (Throwable ignored) {
+        }
+        try {
+            display.setBrightness(new org.bukkit.entity.Display.Brightness(15, 15));
+        } catch (Throwable ignored) {
+        }
+    }
+
+    /** Startup: load the altar chunk once and delete every tagged outline. Does not spawn. */
     private void scrubOrphanAltarOutlines() {
         World world = Bukkit.getWorld(ALTAR_WORLD);
         if (world == null) {
             return;
         }
-        for (Entity entity : world.getEntitiesByClass(BlockDisplay.class)) {
-            if (!entity.getScoreboardTags().contains(OUTLINE_TAG)) {
-                continue;
+        int cx = altarChunkX();
+        int cz = altarChunkZ();
+        try {
+            if (!world.isChunkLoaded(cx, cz)) {
+                world.getChunkAt(cx, cz);
             }
-            if (altarOutlineEntityId != null && entity.getUniqueId().equals(altarOutlineEntityId)) {
-                continue;
-            }
-            entity.remove();
+        } catch (Throwable failure) {
+            plugin.getLogger().warning("Altar outline startup scrub could not load the altar chunk: "
+                    + failure.getMessage());
         }
-        // Leftover shulker outlines from an earlier attempt.
-        for (Entity entity : world.getEntities()) {
-            if (entity.getScoreboardTags().contains(OUTLINE_TAG) && !(entity instanceof BlockDisplay)) {
-                entity.remove();
-            }
-        }
+        int before = countTagged(world);
+        collapseOutlines(world, null);
+        scrubNonDisplayTagged(world);
+        forgetOutline();
+        altarOutlineViewers.clear();
         purgeOutlineTeams();
+        int left = countTagged(world);
+        int removed = Math.max(0, before - left);
+        if (removed > 0) {
+            plugin.getLogger().info("Removed " + removed + " orphan altar outline(s).");
+        }
+        if (left > 0) {
+            plugin.getLogger().warning("Altar outline startup scrub left " + left + " tagged display(s).");
+        }
+        if (outlineViewers(world).isEmpty()) {
+            // Tickets survive restarts. Drop one left behind by a crashed session.
+            releaseAltarChunkTicket(world, true);
+        }
+    }
+
+    private void endOutlineSession(World world) {
+        hideTrackedViewers(altarOutline);
+        if (world != null) {
+            collapseOutlines(world, null);
+            scrubNonDisplayTagged(world);
+        }
+        forgetOutline();
+        altarOutlineViewers.clear();
+        releaseAltarChunkTicket(world, true);
+        purgeOutlineTeams();
+    }
+
+    private void hideTrackedViewers(BlockDisplay outline) {
+        if (outline == null) {
+            return;
+        }
+        for (UUID id : altarOutlineViewers) {
+            Player player = Bukkit.getPlayer(id);
+            if (player == null || !player.isOnline()) {
+                continue;
+            }
+            try {
+                player.hideEntity(plugin, outline);
+            } catch (Throwable ignored) {
+            }
+        }
+    }
+
+    /**
+     * @param keep tagged outline to retain, or null to delete every loaded one
+     * @return the retained outline when exactly one remains
+     */
+    private BlockDisplay collapseOutlines(World world, BlockDisplay keep) {
+        UUID keepId = (keep != null && isTaggedOutline(keep)) ? keep.getUniqueId() : null;
+        for (BlockDisplay display : snapshotDisplays(world)) {
+            if (keepId != null && display.getUniqueId().equals(keepId)) {
+                continue;
+            }
+            if (isTaggedOutline(display) || isCornerLeftover(display)) {
+                removeQuiet(display);
+            }
+        }
+        scrubTaggedNonDisplays(world, keepId);
+        Set<UUID> seen = new HashSet<>();
+        BlockDisplay survivor = null;
+        for (BlockDisplay display : snapshotDisplays(world)) {
+            if (!isTaggedOutline(display) || !seen.add(display.getUniqueId())) {
+                continue;
+            }
+            if (survivor == null) {
+                survivor = display;
+            }
+        }
+        if (seen.size() > 1) {
+            for (BlockDisplay display : snapshotDisplays(world)) {
+                if (isTaggedOutline(display)) {
+                    removeQuiet(display);
+                }
+            }
+            return null;
+        }
+        return seen.size() == 1 ? survivor : null;
+    }
+
+    private BlockDisplay findLoadedOutline(World world) {
+        BlockDisplay preferred = null;
+        BlockDisplay first = null;
+        UUID preferId = altarOutline != null ? altarOutline.getUniqueId() : altarOutlineEntityId;
+        for (BlockDisplay display : snapshotDisplays(world)) {
+            if (!isTaggedOutline(display)) {
+                continue;
+            }
+            if (first == null) {
+                first = display;
+            }
+            if (preferId != null && display.getUniqueId().equals(preferId)) {
+                preferred = display;
+            }
+        }
+        if (preferred != null) {
+            return preferred;
+        }
+        if (first != null) {
+            return first;
+        }
+        if (altarOutline != null && isTaggedOutline(altarOutline) && world.equals(altarOutline.getWorld())) {
+            return altarOutline;
+        }
+        return null;
+    }
+
+    private int countTagged(World world) {
+        Set<UUID> seen = new HashSet<>();
+        for (BlockDisplay display : snapshotDisplays(world)) {
+            if (isTaggedOutline(display)) {
+                seen.add(display.getUniqueId());
+            }
+        }
+        return seen.size();
+    }
+
+    private List<BlockDisplay> snapshotDisplays(World world) {
+        List<BlockDisplay> list = new ArrayList<>(world.getEntitiesByClass(BlockDisplay.class));
+        if (!altarChunkLoaded(world)) {
+            return list;
+        }
+        for (Entity entity : world.getChunkAt(altarChunkX(), altarChunkZ()).getEntities()) {
+            if (entity instanceof BlockDisplay display) {
+                list.add(display);
+            }
+        }
+        return list;
+    }
+
+    private void scrubTaggedNonDisplays(World world, UUID keepId) {
+        if (!altarChunkLoaded(world)) {
+            return;
+        }
+        for (Entity entity : world.getChunkAt(altarChunkX(), altarChunkZ()).getEntities()) {
+            if (entity instanceof BlockDisplay) {
+                continue;
+            }
+            if (keepId != null && entity.getUniqueId().equals(keepId)) {
+                continue;
+            }
+            if (entity.getScoreboardTags().contains(OUTLINE_TAG)) {
+                removeQuiet(entity);
+            }
+        }
+    }
+
+    /** Shulker leftovers from an earlier attempt, in any loaded chunk. */
+    private void scrubNonDisplayTagged(World world) {
+        for (Entity entity : List.copyOf(world.getEntities())) {
+            if (entity instanceof BlockDisplay) {
+                continue;
+            }
+            if (entity.getScoreboardTags().contains(OUTLINE_TAG)) {
+                removeQuiet(entity);
+            }
+        }
+    }
+
+    private void discardSpawnAttempt(World world, BlockDisplay partial) {
+        if (partial != null) {
+            removeQuiet(partial);
+        }
+        for (BlockDisplay display : snapshotDisplays(world)) {
+            if (isTaggedOutline(display) || isAltarCorner(display.getLocation())) {
+                removeQuiet(display);
+            }
+        }
+        altarOutlineSpawnRetryAtMs = System.currentTimeMillis() + 1000L;
+    }
+
+    private void logSpawnFailure(Throwable failure) {
+        altarOutlineSpawnRetryAtMs = System.currentTimeMillis() + 1000L;
+        if (loggedOutlineSpawnFailure) {
+            return;
+        }
+        loggedOutlineSpawnFailure = true;
+        plugin.getLogger().warning("Altar outline spawn failed: " + failure.getMessage());
+    }
+
+    private boolean holdAltarChunk(World world) {
+        int cx = altarChunkX();
+        int cz = altarChunkZ();
+        try {
+            world.addPluginChunkTicket(cx, cz, plugin);
+            altarChunkTicketHeld = true;
+        } catch (Throwable failure) {
+            if (!loggedTicketFailure) {
+                loggedTicketFailure = true;
+                plugin.getLogger().warning("Altar outline chunk ticket failed: " + failure.getMessage());
+            }
+            return world.isChunkLoaded(cx, cz);
+        }
+        return world.isChunkLoaded(cx, cz);
+    }
+
+    private void releaseAltarChunkTicket(World world) {
+        releaseAltarChunkTicket(world, false);
+    }
+
+    private void releaseAltarChunkTicket(World world, boolean force) {
+        if (!force && !altarChunkTicketHeld) {
+            return;
+        }
+        if (world == null) {
+            altarChunkTicketHeld = false;
+            return;
+        }
+        try {
+            world.removePluginChunkTicket(altarChunkX(), altarChunkZ(), plugin);
+            altarChunkTicketHeld = false;
+        } catch (Throwable failure) {
+            if (!loggedTicketFailure) {
+                loggedTicketFailure = true;
+                plugin.getLogger().warning("Altar outline chunk ticket release failed: " + failure.getMessage());
+            }
+        }
+    }
+
+    private void forgetOutline() {
+        altarOutline = null;
+        altarOutlineEntityId = null;
+    }
+
+    private static void seatAtAltar(World world, BlockDisplay display) {
+        display.setPersistent(false);
+        Location at = altarCorner(world);
+        try {
+            if (display.getWorld() == null || !world.equals(display.getWorld())
+                    || display.getLocation().distanceSquared(at) > 0.05) {
+                display.teleport(at);
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private static boolean removeQuiet(Entity entity) {
+        if (entity == null) {
+            return false;
+        }
+        try {
+            entity.setPersistent(false);
+            entity.remove();
+            return !entity.isValid();
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    private static boolean isTaggedOutline(Entity entity) {
+        return entity instanceof BlockDisplay display
+                && display.isValid()
+                && !display.isDead()
+                && display.getScoreboardTags().contains(OUTLINE_TAG);
+    }
+
+    /** Untagged powder (or a glowing non-persistent display) sitting on the altar block corner. */
+    private static boolean isCornerLeftover(BlockDisplay display) {
+        if (display == null || !display.isValid() || display.getScoreboardTags().contains(OUTLINE_TAG)) {
+            return false;
+        }
+        if (!isAltarCorner(display.getLocation())) {
+            return false;
+        }
+        boolean powder = false;
+        try {
+            powder = display.getBlock() != null
+                    && display.getBlock().getMaterial() == Material.LIGHT_GRAY_CONCRETE_POWDER;
+        } catch (Throwable ignored) {
+        }
+        return powder || (display.isGlowing() && !display.isPersistent());
+    }
+
+    private static boolean isAltarCorner(Location loc) {
+        if (loc == null || loc.getWorld() == null || !ALTAR_WORLD.equalsIgnoreCase(loc.getWorld().getName())) {
+            return false;
+        }
+        return Math.abs(loc.getX() - Math.floor(ALTAR_X)) < 0.001
+                && Math.abs(loc.getY() - Math.floor(ALTAR_Y)) < 0.001
+                && Math.abs(loc.getZ() - Math.floor(ALTAR_Z)) < 0.001;
+    }
+
+    private static Location altarCorner(World world) {
+        return new Location(world, Math.floor(ALTAR_X), Math.floor(ALTAR_Y), Math.floor(ALTAR_Z));
+    }
+
+    private static int altarChunkX() {
+        return ((int) Math.floor(ALTAR_X)) >> 4;
+    }
+
+    private static int altarChunkZ() {
+        return ((int) Math.floor(ALTAR_Z)) >> 4;
+    }
+
+    private static boolean altarChunkLoaded(World world) {
+        return world.isChunkLoaded(altarChunkX(), altarChunkZ());
     }
 
     private static void applyOutlineColor(Entity entity, NamedTextColor color) {
