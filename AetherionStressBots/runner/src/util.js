@@ -78,7 +78,7 @@ export function tossJunk(bot) {
   }
 }
 
-export function findMatchingBlock(bot, nameSet, radius, yRange = 6, origin = bot.entity?.position) {
+export function findMatchingBlock(bot, nameSet, radius, yRange = 6, origin = bot.entity?.position, accept = null) {
   if (!bot?.entity?.position || !origin) return null
   const originVec = bot.entity.position.offset(0, 0, 0)
   originVec.x = origin.x
@@ -96,6 +96,7 @@ export function findMatchingBlock(bot, nameSet, radius, yRange = 6, origin = bot
         const block = bot.blockAt(pos)
         if (!block || !block.name) continue
         if (!nameSet.has(block.name.toLowerCase())) continue
+        if (accept && !accept(block)) continue
         const prefer = block.name.includes('ore') || block.name.includes('log') ? -2 : 0
         const score = dist + prefer
         if (score < bestDist) {

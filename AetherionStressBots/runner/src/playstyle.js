@@ -1,12 +1,8 @@
 import { applyIslandMovements } from './safety.js'
-import { avoidRailBlocks } from './move.js'
+import { avoidRailBlocks, shouldPeekMenu } from './move.js'
 import { fidget as utilFidget, jitter, note, sleep, tossJunk } from './util.js'
 
 const MENU_COMMANDS = ['skills', 'pets', 'guide', 'trades']
-const BUSY = new Set([
-  'fighting', 'combat', 'catching', 'fishing', 'mining', 'foraging', 'questing',
-  'quest_dialog', 'ah', 'bazaar', 'minigame', 'pad_hop', 'trading', 'eating', 'retreating'
-])
 
 export const FLAGS = {
   TRADER: 'TRADER'
@@ -53,20 +49,26 @@ export function attachPlaystyle(bot, log) {
     if (!bot.entity || bot.qaSuspended) return
     const now = Date.now()
     const activity = bot.qaActivity || 'idle'
-    const busy = BUSY.has(activity) || bot.qaDigging || bot.qaGathering
+    const moving = !!bot.pathfinder?.isMoving?.()
+    const menus = shouldPeekMenu({
+      activity,
+      digging: !!bot.qaDigging,
+      gathering: !!bot.qaGathering,
+      moving
+    })
 
-    if (!busy && now - lastFidget > jitter(7000, 0.4)) {
+    if (menus && now - lastFidget > jitter(7000, 0.4)) {
       lastFidget = now
       if (Math.random() < 0.55) fidget(bot, activity)
     }
 
-    if (now - lastInv > jitter(18_000, 0.45)) {
+    if (menus && now - lastInv > jitter(18_000, 0.45)) {
       lastInv = now
       tossJunk(bot)
       if (Math.random() < 0.2) cycleHotbar(bot)
     }
 
-    if (!busy && now - lastMenu > jitter(48_000, 0.35)) {
+    if (menus && now - lastMenu > jitter(48_000, 0.35)) {
       lastMenu = now
       const cmd = MENU_COMMANDS[Math.floor(Math.random() * MENU_COMMANDS.length)]
       note(bot, `/${cmd}`, activity === 'idle' ? 'browsing' : activity)

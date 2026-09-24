@@ -1,6 +1,6 @@
 import Vec3 from 'vec3'
 import { note } from './util.js'
-import { assignGoal, avoidRailBlocks, forgetGoal, releaseJump } from './move.js'
+import { assignGoal, avoidRailBlocks, floorY, forgetGoal, pathIsStalled, releaseJump } from './move.js'
 
 /**
  * Island leash + void hold for Skyblock-style pads.
@@ -176,7 +176,10 @@ export function sampleSolidNear(bot, home, radius, attempts = 12) {
       }
     }
   }
-  return { x: home.x, y: home.y, z: home.z }
+  if (standingIsSafe(bot, home.x, home.y, home.z)) {
+    return { x: home.x, y: home.y, z: home.z }
+  }
+  return null
 }
 
 export function wanderOnIsland(bot, home, radius, goals) {
@@ -244,10 +247,12 @@ export function attachSafety(bot, opts = {}) {
       return
     }
 
-    if (bot.qaLastSafe && (horizontalDistance(pos, bot.qaLastSafe) > 24 || Math.abs(pos.y - bot.qaLastSafe.y) > 8)) {
+    if (bot.qaLastSafe && horizontalDistance(pos, bot.qaLastSafe) > 8) {
       cancelPath(bot)
+      forgetGoal(bot)
       bot.qaHome = resolveHome(bot, anchors)
       bot.qaLastSafe = { x: pos.x, y: pos.y, z: pos.z }
+      bot.qaNeedRetarget = true
       note(bot, `re-anchored @ ${pos.x.toFixed(1)} ${pos.y.toFixed(1)} ${pos.z.toFixed(1)}`, 'recovering')
     }
 
@@ -257,24 +262,25 @@ export function attachSafety(bot, opts = {}) {
       bot.qaHome = resolveHome(bot, anchors)
     }
 
-    if (releaseJump(bot)) {
+    if (!bot.qaDigging && !bot.targetDigBlock && releaseJump(bot)) {
       cancelPath(bot)
       forgetGoal(bot)
-      note(bot, 'released stuck jump', 'idle')
+      note(bot, 'released stuck jump', bot.qaActivity === 'idle' ? 'mining' : (bot.qaActivity || 'mining'))
     }
 
-    if (bot.qaHome && !withinLeash(pos, bot.qaHome, leash + 3) && bot.qaActivity !== 'pad_hop') {
+    const leashEdge = Math.max(3, leash - 1)
+    if (!bot.qaDigging && bot.qaHome && !withinLeash(pos, bot.qaHome, leashEdge) && bot.qaActivity !== 'pad_hop') {
       const now = Date.now()
       if (!bot.qaPullSince || now - bot.qaPullSince > 2000) {
         bot.qaPullSince = now
         cancelPath(bot)
         forgetGoal(bot)
-        bot.qaNeedRetarget = true
         bot.qaGoal = null
         bot.qaGoalDist = null
         note(bot, 'leash pull', 'recovering')
-        const pull = clampToLeash(pos, bot.qaHome, Math.max(2, leash * 0.35))
-        assignGoal(bot, opts.goals, { x: pull.x, y: bot.qaHome.y, z: pull.z }, 1.6, { force: true })
+        const pull = clampToLeash(pos, bot.qaHome, Math.max(2, leash * 0.55))
+        const y = floorY(pos.y, bot.qaHome.y)
+        assignGoal(bot, opts.goals, { x: pull.x, y, z: pull.z }, 1.6, { force: true })
       }
     } else {
       bot.qaPullSince = 0
@@ -282,6 +288,30 @@ export function attachSafety(bot, opts = {}) {
 
     if (!bot.qaLastSafe || horizontalDistance(pos, bot.qaLastSafe) > 0.8 || Math.abs(pos.y - bot.qaLastSafe.y) > 1.5) {
       bot.qaLastSafe = { x: pos.x, y: pos.y, z: pos.z }
+    }
+
+    const outsideLeash = bot.qaHome && !withinLeash(pos, bot.qaHome, leashEdge)
+    if (!bot.qaDigging && !bot.targetDigBlock && !outsideLeash && bot.qaActivity !== 'recovering' && bot.pathfinder?.isMoving?.()) {
+      const now = Date.now()
+      if (!bot.qaStallFrom || pos.distanceTo(bot.qaStallFrom) >= 0.4) {
+        bot.qaStallFrom = { x: pos.x, y: pos.y, z: pos.z }
+        bot.qaStallSince = now
+      } else if (pathIsStalled({
+        moving: true,
+        shifted: pos.distanceTo(bot.qaStallFrom),
+        stalledMs: now - (bot.qaStallSince || now)
+      })) {
+        bot.qaStallSince = now
+        bot.qaStallFrom = { x: pos.x, y: pos.y, z: pos.z }
+        cancelPath(bot)
+        forgetGoal(bot)
+        bot.qaNeedRetarget = true
+        const keep = bot.qaActivity && bot.qaActivity !== 'idle' ? bot.qaActivity : 'mining'
+        note(bot, 'stuck — drop target', keep)
+      }
+    } else {
+      bot.qaStallFrom = null
+      bot.qaStallSince = 0
     }
 
     const moved = !bot.qaLastMoved || pos.distanceTo(bot.qaLastMoved) > 0.35
@@ -301,7 +331,7 @@ export function attachSafety(bot, opts = {}) {
       bot.qaStuckSince = bot.qaStuckSince || Date.now()
       const frozenMs = Date.now() - bot.qaStuckSince
       const keepJob = working && ['ah', 'bazaar', 'quest_dialog', 'minigame', 'pad_hop'].includes(bot.qaActivity)
-      if (shouldCancelStuck({
+      if (!digging && !bot.targetDigBlock && bot.qaActivity !== 'recovering' && shouldCancelStuck({
         moved: false,
         progressedTowardGoal: false,
         digging,
@@ -320,7 +350,8 @@ export function attachSafety(bot, opts = {}) {
           bot.qaNeedNewGoal = true
           bot.qaGoal = null
           bot.qaGoalDist = null
-          note(bot, working ? 'stuck — cancel and retarget' : 'stuck — cancel path', working ? 'idle' : 'stuck')
+          const keep = bot.qaActivity && bot.qaActivity !== 'idle' ? bot.qaActivity : 'mining'
+          note(bot, working ? 'stuck — drop target' : 'stuck — cancel path', working ? keep : 'stuck')
           forgetGoal(bot)
         }
       }

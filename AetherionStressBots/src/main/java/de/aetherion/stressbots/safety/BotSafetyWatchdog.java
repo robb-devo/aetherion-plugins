@@ -84,7 +84,10 @@ public final class BotSafetyWatchdog implements Listener, Runnable {
                 plugin.getActivity().markActivity(player, "pad_hop", "mid-hop");
                 continue;
             }
-            if (home != null && BotLocations.horizontalDistance(loc, home) > leash) {
+            // Gather roles turn around inside the leash. A one-block overshoot used to
+            // teleport them from the rail cut back up to the pad, which restarted the hop.
+            double leashLimit = gathersInPlace(handler.role()) ? leash + 2 : leash;
+            if (home != null && BotLocations.horizontalDistance(loc, home) > leashLimit) {
                 Location nearest = BotLocations.nearestAnchor(loc, section);
                 if (nearest == null || BotLocations.horizontalDistance(loc, nearest) > leash) {
                     recover(player, handler, "leash", false);

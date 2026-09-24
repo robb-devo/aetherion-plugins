@@ -2,13 +2,19 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import {
   alreadyThere,
+  canDigFrom,
+  floorY,
   hasDigApproach,
   isFailedBlock,
   isFooting,
   isRailName,
+  pathIsStalled,
+  planDig,
   rememberFailure,
   shouldIssueGoal,
-  shouldReleaseJump
+  shouldPeekMenu,
+  shouldReleaseJump,
+  standFeet
 } from './move.js'
 import { dashboardUrl } from './dashboard.js'
 
@@ -82,6 +88,85 @@ describe('dig targets that cause corner jumps', () => {
   })
 })
 
+describe('elder rail dig plans', () => {
+  const bot = { x: 68.2, y: 76.0, z: 525.4 }
+  const home = { x: 80.5, y: 92, z: 530.5 }
+  const stand = { x: 69.5, y: 76, z: 525.5 }
+
+  it('digs deepslate that is already in reach instead of pathing to it', () => {
+    assert.equal(canDigFrom(bot, { x: 70, y: 76, z: 525 }), true)
+    assert.equal(planDig({
+      pos: bot,
+      blockPos: { x: 70, y: 76, z: 525 },
+      stand,
+      home,
+      leash: 16,
+      primary: false
+    }), 'dig')
+  })
+
+  it('does not path across the tunnel to filler', () => {
+    assert.equal(planDig({
+      pos: bot,
+      blockPos: { x: 72, y: 76, z: 528 },
+      stand: { x: 71.5, y: 76, z: 528.5 },
+      home,
+      leash: 16,
+      primary: false
+    }), 'skip')
+  })
+
+  it('walks to a nearby ore and refuses a shaft back up to the pad', () => {
+    assert.equal(planDig({
+      pos: bot,
+      blockPos: { x: 74, y: 76, z: 525 },
+      stand: { x: 73.5, y: 76, z: 525.5 },
+      home,
+      leash: 16,
+      primary: true
+    }), 'walk')
+    assert.equal(planDig({
+      pos: bot,
+      blockPos: { x: 74, y: 90, z: 525 },
+      stand: { x: 73.5, y: 90, z: 525.5 },
+      home,
+      leash: 16,
+      primary: true
+    }), 'skip')
+  })
+
+  it('keeps the stand cell inside the plugin leash', () => {
+    assert.equal(planDig({
+      pos: bot,
+      blockPos: { x: 64, y: 76, z: 510 },
+      stand: { x: 63.5, y: 76, z: 510.5 },
+      home,
+      leash: 16,
+      primary: true
+    }), 'skip')
+  })
+
+  it('picks the open face toward the bot, at foot level', () => {
+    const blockAt = (x, y, z) => {
+      if (x === 71 && y === 75 && z === 525) return 'deepslate'
+      if (x === 71 && y >= 76 && z === 525) return 'air'
+      return 'deepslate'
+    }
+    assert.deepEqual(standFeet(blockAt, 70, 76, 525, bot), { x: 71.5, y: 76, z: 525.5 })
+  })
+
+  it('uses the rail floor, not the pad, for the next step', () => {
+    assert.equal(floorY(76, 92), 76)
+    assert.equal(floorY(91.2, 92), 92)
+  })
+
+  it('drops a path that only twitches', () => {
+    assert.equal(pathIsStalled({ moving: true, shifted: 0.2, stalledMs: 1000 }), true)
+    assert.equal(pathIsStalled({ moving: true, shifted: 1.2, stalledMs: 1000 }), false)
+    assert.equal(pathIsStalled({ moving: false, shifted: 0, stalledMs: 5000 }), false)
+  })
+})
+
 describe('stuck jump / rail float', () => {
   it('releases jump only after a hover, not during a normal hop', () => {
     assert.equal(shouldReleaseJump({ onGround: false, velocityY: 0.4, airMs: 200, horizontalSpeed: 0.2 }), false)
@@ -93,6 +178,23 @@ describe('stuck jump / rail float', () => {
     assert.equal(isRailName('powered_rail'), true)
     assert.equal(isRailName('minecraft:rail'), true)
     assert.equal(isRailName('stone'), false)
+  })
+
+  it('does not treat standing on a rail as a hover that needs a new path', () => {
+    assert.equal(shouldReleaseJump({
+      onGround: false,
+      velocityY: 0,
+      airMs: 2000,
+      horizontalSpeed: 0,
+      support: 'rail'
+    }), false)
+  })
+
+  it('does not open skill menus while a miner is pathing or digging', () => {
+    assert.equal(shouldPeekMenu({ activity: 'pathing' }), false)
+    assert.equal(shouldPeekMenu({ activity: 'mining', digging: true }), false)
+    assert.equal(shouldPeekMenu({ activity: 'idle', moving: true }), false)
+    assert.equal(shouldPeekMenu({ activity: 'idle' }), true)
   })
 })
 

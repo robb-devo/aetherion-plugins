@@ -131,6 +131,8 @@ describe('dashboard', () => {
     assert.match(html, /fetch\('status'/)
     assert.match(html, /id="start"/)
     assert.match(html, /stop-all/)
+    assert.match(html, /id="roles"/)
+    assert.match(html, /lastAction/)
 
     const fleet = {
       size: () => 0,

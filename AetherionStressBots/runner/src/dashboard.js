@@ -66,6 +66,8 @@ export function dashboardHtml() {
   .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px; }
   .controls label { color: var(--muted); font-size: 12px; }
   .empty { padding: 28px; color: var(--muted); }
+  .roles { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; }
+  .roles b { font-weight: 600; }
 </style>
 </head>
 <body>
@@ -90,6 +92,7 @@ export function dashboardHtml() {
     <span class="muted" id="controlMsg"></span>
   </form>
   <section class="cards" id="cards"></section>
+  <div class="roles" id="roles"></div>
   <div id="table"></div>
 </main>
 <script>
@@ -136,8 +139,14 @@ function render(data) {
     ['Chats', data.chats || 0]
   ];
   document.getElementById('cards').innerHTML = cards.map(([k,v]) => '<div class="card"><b>' + esc(v) + '</b><span>' + esc(k) + '</span></div>').join('');
+  const roles = data.roles || {};
+  const roleBits = Object.keys(roles).filter((role) => (roles[role].online || 0) > 0 || (roles[role].desired || 0) > 0).map((role) => {
+    const row = roles[role] || {};
+    return '<span class="tag">' + esc(role) + ' <b>' + esc(row.online || 0) + '</b>/' + esc(row.desired || 0) + '</span>';
+  }).join('');
+  document.getElementById('roles').innerHTML = roleBits;
   if (!bots.length) {
-    document.getElementById('table').innerHTML = '<div class="empty">No bots online. Start a role from the dev menu or the runner CLI. This page polls /status every 2s.</div>';
+    document.getElementById('table').innerHTML = '<div class="empty">No bots online. Choose a role and count, then Start. This page polls /status every 2s.</div>';
     return;
   }
   const rows = bots.map((b) => {
@@ -146,7 +155,7 @@ function render(data) {
     const err = b.lastError ? '<div class="err">' + esc(b.lastError) + '</div>' : '';
     return '<tr>'
       + '<td><b>' + esc(b.name) + '</b><div class="muted">' + esc(b.role) + ' · ' + esc(p.combatStyle || '') + ' / ' + esc(p.economyStyle || '') + '</div></td>'
-      + '<td>' + tag(b.activity) + '<div class="muted">' + esc(b.goal || '') + '</div></td>'
+      + '<td>' + tag(b.activity) + '<div class="muted">' + esc(b.goal || '') + '</div><div class="muted">' + esc(b.lastAction || '') + '</div></td>'
       + '<td>' + esc(pos(b.position)) + '<div class="muted">' + esc(b.world || '') + '</div></td>'
       + '<td>' + esc(b.health == null ? '—' : Math.round(b.health) + ' hp') + '<div class="muted">' + esc(b.food == null ? '' : b.food + ' food') + '</div></td>'
       + '<td>' + esc(purse(b.economy || {})) + '<div class="muted">L' + (b.economy?.listed||0) + ' B' + (b.economy?.bought||0) + ' +' + (b.economy?.earned||0) + '</div></td>'
