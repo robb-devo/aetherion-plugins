@@ -256,9 +256,9 @@ public final class AshenKatanaListener implements Listener {
     }
 
     private static void stepDash(Player player, Vector dash) {
-        Location next = player.getLocation().clone().add(dash.clone().multiply(0.9));
+        Location next = player.getLocation().clone().add(dash.clone().multiply(1.05));
         next.setYaw(player.getLocation().getYaw());
-        next.setPitch(8f);
+        next.setPitch(player.getLocation().getPitch());
         if (!next.getBlock().isPassable() || !next.clone().add(0, 1, 0).getBlock().isPassable()) {
             return;
         }
