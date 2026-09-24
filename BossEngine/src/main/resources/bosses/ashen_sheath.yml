@@ -1,10 +1,11 @@
 # ============================================================
 # The Ashen Sheath – Forage / Dojo specialty boss
 # Combat: AshenSheathDirector. Spawn: /boss spawn ashen_sheath
-# Tells share one picture: a bamboo sheath, a dark blade, and a cherry-leaf snake
-# (a weaving ground line, a ring, or a narrow standing braid). Falling Blossoms
-# repeats the Iaido draw. Death keeps the leaf column and grows a cherry sphere
-# that bursts into leaves. No crystals, end rods, portal spiral, or beam spin.
+# Quiet Steel: sheathed between cuts. Iaido is one straight line of falling cherry leaves.
+# Falling Blossoms: the blade stays drawn. A still honor ring and traveling moon arcs.
+# Ashen Moon: the blade reads blood-red. Three aimed lines. The phase change is a leaf column.
+# Death keeps that column and grows a cherry sphere that bursts into leaves.
+# No crystals, end rods, portal spiral, or beam spin.
 # Drop: ashen_katana
 # ============================================================
 
