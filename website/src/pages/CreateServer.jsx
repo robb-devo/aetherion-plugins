@@ -10,17 +10,22 @@ import { api, errorMessage } from '../lib/api.js'
 import { formatRam, SOFTWARE_LABEL } from '../lib/format.js'
 import { useRouter } from '../router.jsx'
 
+const HOMELAB_NODE = 'ad15-homelab'
+
 export default function CreateServer() {
   const { copy } = useLang()
   const t = copy.app.create
   const { expire } = useAuth()
-  const { navigate } = useRouter()
+  const { navigate, search } = useRouter()
   const nameId = useId()
   const versionId = useId()
+
+  const initialNode = new URLSearchParams(search).get('node') === HOMELAB_NODE ? HOMELAB_NODE : 'hetzner-hel'
 
   const [options, setOptions] = useState(null)
   const [holder, setHolder] = useState(null)
   const [loadError, setLoadError] = useState(null)
+  const [nodeId, setNodeId] = useState(initialNode)
   const [name, setName] = useState('')
   const [ramMb, setRamMb] = useState(1024)
   const [software, setSoftware] = useState('paper')
@@ -61,9 +66,11 @@ export default function CreateServer() {
     [options, software],
   )
 
+  const homelabNode = options?.nodes?.find((node) => node.id === HOMELAB_NODE)
+  const homelabOnline = Boolean(homelabNode?.available)
   const trimmed = name.trim() || t.namePlaceholder
   const nameValid = trimmed.length >= 2 && trimmed.length <= 32
-  const canSubmit = options && nameValid && version && !busy
+  const canSubmit = options && nameValid && version && !busy && !(nodeId === HOMELAB_NODE && !homelabOnline)
   const selectedTier = options?.tiers.find((tier) => tier.ramMb === ramMb)
   const poolLow = options && options.pool.freeMb < ramMb
 
@@ -73,7 +80,14 @@ export default function CreateServer() {
     setBusy(true)
     setError(null)
     try {
-      const server = await api.createServer({ name: trimmed, ramMb, software, version, startNow: startNow && !holder })
+      const server = await api.createServer({
+        name: trimmed,
+        ramMb,
+        software,
+        version,
+        startNow: startNow && !holder,
+        nodeId,
+      })
       navigate(`/servers/${server.id}?setup=1`)
     } catch (err) {
       if (err?.status === 401) expire()
@@ -100,6 +114,45 @@ export default function CreateServer() {
       ) : (
         <form className="mt-8 grid items-start gap-6 lg:grid-cols-[1fr_20rem]" onSubmit={submit} noValidate>
           <div className="panel space-y-8 p-6 sm:p-7">
+            <fieldset>
+              <legend className="label">{t.network}</legend>
+              <div role="radiogroup" className="grid gap-2 sm:grid-cols-2">
+                <label
+                  className={`flex cursor-pointer items-start gap-3 rounded-md border bg-black/25 p-3 transition-colors ${
+                    nodeId !== HOMELAB_NODE ? 'border-amethyst/60 bg-white/[0.04]' : 'border-white/8 hover:border-white/16'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="network"
+                    className="mt-1 accent-[#7c4dff]"
+                    checked={nodeId !== HOMELAB_NODE}
+                    onChange={() => setNodeId('hetzner-hel')}
+                  />
+                  <span className="block text-sm font-bold text-white">{t.networkCloud}</span>
+                </label>
+                <label
+                  className={`flex cursor-pointer items-start gap-3 rounded-md border bg-black/25 p-3 transition-colors ${
+                    nodeId === HOMELAB_NODE ? 'border-[#c4b5fd]/70 bg-white/[0.04]' : 'border-white/8 hover:border-white/16'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="network"
+                    className="mt-1 accent-[#c4b5fd]"
+                    checked={nodeId === HOMELAB_NODE}
+                    onChange={() => setNodeId(HOMELAB_NODE)}
+                  />
+                  <span className="block text-sm font-bold text-white">{t.networkHomelab}</span>
+                </label>
+              </div>
+              {nodeId === HOMELAB_NODE && !homelabOnline ? (
+                <div className="mt-3">
+                  <Notice tone="info">{t.networkHomelabOffline}</Notice>
+                </div>
+              ) : null}
+            </fieldset>
+
             <div>
               <label className="label" htmlFor={nameId}>
                 {t.name}
@@ -197,39 +250,41 @@ export default function CreateServer() {
           </div>
 
           <aside className="panel p-6 lg:sticky lg:top-24">
-            <p className="label">{t.summary}</p>
-            <div className="mt-3 flex items-center gap-3">
-              <ServerGlyph name={trimmed} tier={selectedTier?.rarity} />
+            <p className="text-[0.68rem] font-extrabold tracking-[0.18em] text-ash uppercase">{t.summary}</p>
+            <div className="mt-4 flex items-center gap-3">
+              <ServerGlyph name={trimmed} tier={selectedTier?.rarity} size="h-12 w-12 text-lg" />
               <div className="min-w-0">
                 <p className="truncate font-bold text-white">{trimmed}</p>
-                <div className="mt-1 flex items-center gap-2">
-                  <RamChip ramMb={ramMb} tier={selectedTier?.rarity} />
-                  <span className="text-xs text-ash">
-                    {SOFTWARE_LABEL[software]} {version}
-                  </span>
-                </div>
+                <p className="text-xs text-mist/65">
+                  {SOFTWARE_LABEL[software]} · {version || '—'} · <RamChip ramMb={ramMb} />
+                </p>
+                <p className="mt-1 text-[0.7rem] font-semibold tracking-wide text-ash uppercase">
+                  {nodeId === HOMELAB_NODE ? t.networkHomelab : t.networkCloud}
+                </p>
               </div>
             </div>
-            <ul className="mt-5 space-y-2 border-t hairline pt-4 text-xs leading-relaxed text-mist/65">
+            <ul className="mt-5 space-y-2 text-xs text-mist/70">
               <li>{t.summaryLimit}</li>
               {options.idleStopMinutes ? <li>{interpolate(t.summaryIdle, { n: options.idleStopMinutes })}</li> : null}
-              <li>
-                {formatRam(ramMb)} · {selectedTier?.cpuCores} CPU
-              </li>
+              {poolLow && nodeId !== HOMELAB_NODE ? <li className="text-gold">{t.poolLow}</li> : null}
             </ul>
-            {poolLow ? (
-              <div className="mt-4">
-                <Notice tone="warn">{t.poolLow}</Notice>
-              </div>
-            ) : null}
             {error ? (
-              <div className="mt-4">
+              <div className="mt-5">
                 <Notice tone="error">{errorMessage(error, copy)}</Notice>
               </div>
             ) : null}
-            <button type="submit" className="btn btn-primary btn-lg notch mt-6 w-full" disabled={!canSubmit}>
-              {busy ? <Spinner /> : null}
-              {busy ? t.submitting : t.submit}
+            <button
+              type="submit"
+              className={`btn btn-lg notch mt-6 w-full ${nodeId === HOMELAB_NODE ? 'btn-homelab' : 'btn-primary'}`}
+              disabled={!canSubmit}
+            >
+              {busy ? (
+                <span className="inline-flex items-center gap-2">
+                  <Spinner /> {t.submitting}
+                </span>
+              ) : (
+                t.submit
+              )}
             </button>
           </aside>
         </form>

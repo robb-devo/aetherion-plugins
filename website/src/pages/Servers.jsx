@@ -50,9 +50,11 @@ function EmptyState() {
       </div>
       <h2 className="mt-6 text-xl font-bold text-white">{t.emptyTitle}</h2>
       <p className="mt-2 max-w-sm text-sm text-mist/65">{t.emptyBody}</p>
-      <Link to="/servers/new" className="btn btn-primary btn-lg notch mt-7">
-        {t.emptyCta}
-      </Link>
+      <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
+        <Link to="/servers/new" className="btn btn-primary btn-lg notch">
+          {t.emptyCta}
+        </Link>
+      </div>
     </div>
   )
 }
