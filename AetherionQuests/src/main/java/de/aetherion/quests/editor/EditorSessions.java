@@ -7,85 +7,73 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Per-player editor state: chat prompts and which NPC / page is open.
+ * Per-player studio state: pending chat input, list positions, picker filters and the "back to editor" spot.
  */
 public final class EditorSessions {
 
-    public enum Prompt {
-        NONE,
-        NAME,
-        RENAME,
-        SUBTITLE,
-        LINE,
-        CHOICE_TEXT,
-        SKIN,
-        COMMAND,
-        PAGE_ID,
-        QUEST_ID
-    }
-
     public static final class Session {
-        private Prompt prompt = Prompt.NONE;
-        private String npcId;
-        private String pageId;
-        private int choiceIndex = -1;
-        private int listPage;
-        private boolean confirmDelete;
+        private TextInput input;
+        private int homePage;
+        private int questPage;
+        private String questSearch;
+        private boolean showTutorialQuests;
+        private Runnable returnTo;
 
-        public Prompt prompt() {
-            return prompt;
-        }
-
-        public void setPrompt(Prompt prompt) {
-            this.prompt = prompt == null ? Prompt.NONE : prompt;
+        public TextInput input() {
+            return input;
         }
 
         public boolean prompting() {
-            return prompt != Prompt.NONE;
+            return input != null;
         }
 
-        public String npcId() {
-            return npcId;
+        void setInput(TextInput input) {
+            this.input = input;
         }
 
-        public void setNpcId(String npcId) {
-            this.npcId = npcId;
+        public void clearInput() {
+            this.input = null;
         }
 
-        public String pageId() {
-            return pageId;
+        public int homePage() {
+            return homePage;
         }
 
-        public void setPageId(String pageId) {
-            this.pageId = pageId;
+        public void setHomePage(int homePage) {
+            this.homePage = Math.max(0, homePage);
         }
 
-        public int choiceIndex() {
-            return choiceIndex;
+        public int questPage() {
+            return questPage;
         }
 
-        public void setChoiceIndex(int choiceIndex) {
-            this.choiceIndex = choiceIndex;
+        public void setQuestPage(int questPage) {
+            this.questPage = Math.max(0, questPage);
         }
 
-        public int listPage() {
-            return listPage;
+        public String questSearch() {
+            return questSearch;
         }
 
-        public void setListPage(int listPage) {
-            this.listPage = Math.max(0, listPage);
+        public void setQuestSearch(String questSearch) {
+            this.questSearch = questSearch == null || questSearch.isBlank() ? null : questSearch.trim();
         }
 
-        public boolean confirmDelete() {
-            return confirmDelete;
+        public boolean showTutorialQuests() {
+            return showTutorialQuests;
         }
 
-        public void setConfirmDelete(boolean confirmDelete) {
-            this.confirmDelete = confirmDelete;
+        public void setShowTutorialQuests(boolean showTutorialQuests) {
+            this.showTutorialQuests = showTutorialQuests;
         }
 
-        public void clearPrompt() {
-            this.prompt = Prompt.NONE;
+        /** Screen to reopen from chat links ("Back to editor") after a preview or input. */
+        public Runnable returnTo() {
+            return returnTo;
+        }
+
+        public void setReturnTo(Runnable returnTo) {
+            this.returnTo = returnTo;
         }
     }
 
@@ -97,6 +85,10 @@ public final class EditorSessions {
 
     public Session peek(Player player) {
         return player == null ? null : sessions.get(player.getUniqueId());
+    }
+
+    public Map<UUID, Session> all() {
+        return sessions;
     }
 
     public void forget(UUID playerId) {

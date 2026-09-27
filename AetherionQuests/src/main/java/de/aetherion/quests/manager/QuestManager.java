@@ -689,10 +689,10 @@ public class QuestManager {
         if ("a_simple_craft".equalsIgnoreCase(quest.getId())) {
             unlockProgressFeature(player, "WORKBENCH", "Crafting + Recipes", "Manager → green Recipe Book");
         }
-        // Harbour onboarding: Forager hands out the Simple Axe once.
+        // Harbour onboarding: Forager hands out the Simple Axe once (handoff scene from his hands).
         if ("gather_wood".equalsIgnoreCase(quest.getId())) {
             if (claimStarterKit(player, quest.getId())) {
-                StarterGearReward.giveSimpleAxe(player);
+                StarterGearReward.giveSimpleAxe(player, "lumberjack");
             }
         }
         // Fishing rod / coin rewards wait until turn-in (see completeQuest).
