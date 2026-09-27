@@ -369,6 +369,14 @@ public final class StarterKitCeremony implements Listener {
 
     /** Land every piece now — no show. Safe to call any time. */
     private void flush(UUID playerId) {
+        flush(playerId, plugin.getServer().getPlayer(playerId));
+    }
+
+    /**
+     * Prefer {@code preferred} (e.g. {@link PlayerQuitEvent#getPlayer()}) — on quit
+     * {@code getPlayer(uuid)} is often already null while the event player still has an inventory.
+     */
+    private void flush(UUID playerId, Player preferred) {
         Run run = running.remove(playerId);
         if (run == null) {
             return;
@@ -377,7 +385,7 @@ public final class StarterKitCeremony implements Listener {
             run.task.cancel();
             run.task = null;
         }
-        Player player = plugin.getServer().getPlayer(playerId);
+        Player player = preferred != null ? preferred : plugin.getServer().getPlayer(playerId);
         for (Piece piece : run.pieces) {
             removeDisplay(piece);
             if (!piece.granted && player != null) {
@@ -392,12 +400,12 @@ public final class StarterKitCeremony implements Listener {
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onQuit(PlayerQuitEvent event) {
-        flush(event.getPlayer().getUniqueId());
+        flush(event.getPlayer().getUniqueId(), event.getPlayer());
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onWorldChange(PlayerChangedWorldEvent event) {
-        flush(event.getPlayer().getUniqueId());
+        flush(event.getPlayer().getUniqueId(), event.getPlayer());
     }
 
     /* =========================================================
