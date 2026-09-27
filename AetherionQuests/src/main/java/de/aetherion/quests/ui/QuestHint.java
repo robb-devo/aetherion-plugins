@@ -100,6 +100,18 @@ public final class QuestHint {
         return npcLocation(hint.npcId());
     }
 
+    /** NPC id the soft hint currently points at (visible or remembered), or null. */
+    public static String targetNpcId(Player player) {
+        if (player == null) {
+            return null;
+        }
+        Hint hint = HINTS.get(player.getUniqueId());
+        if (hint == null) {
+            hint = PENDING.get(player.getUniqueId());
+        }
+        return hint == null ? null : hint.npcId();
+    }
+
     public static void tickAll(QuestManager questManager) {
         if (questManager == null) {
             return;
@@ -140,6 +152,13 @@ public final class QuestHint {
             return false;
         }
         String npc = pending.npcId().toLowerCase(Locale.ROOT);
+        // After the stamp, a pinned open road stays until that road is filed (Craftsman included).
+        if (de.aetherion.quests.util.QuestStoryGate.tutorialDone(player, questManager)) {
+            de.aetherion.quests.util.OpenRoads.Road road = roadFor(npc);
+            if (road != null) {
+                return !de.aetherion.quests.util.OpenRoads.done(player, questManager, road);
+            }
+        }
         // Orientation trail drops after stamp — except Miss Ledger (graduation visit).
         if (de.aetherion.quests.util.QuestStoryGate.tutorialDone(player, questManager)
                 && isTutorialTrailNpc(npc)
@@ -149,7 +168,11 @@ public final class QuestHint {
         return switch (npc) {
             case "egon", "lumberjack" -> stillNeeds(questManager, player, "gather_wood");
             case "quartermaster" -> stillNeeds(questManager, player, "forge_coal");
-            case "foreman", "craftsman" -> stillNeeds(questManager, player, "first_shift");
+            case "foreman" -> stillNeeds(questManager, player, "first_shift");
+            // Craftsman: en route to the Mines, or while his side job is unpaid.
+            case "craftsman" -> stillNeeds(questManager, player, "first_shift")
+                    || !de.aetherion.quests.util.OpenRoads.done(player, questManager,
+                            de.aetherion.quests.util.OpenRoads.Road.CRAFT);
             case "booster_tutor" -> stillNeeds(questManager, player, "lesson_boost");
             case "ledger" -> stillNeeds(questManager, player, "lesson_manager")
                     || de.aetherion.quests.util.QuestStoryGate.tutorialDone(player, questManager);
@@ -169,6 +192,15 @@ public final class QuestHint {
         return state != de.aetherion.quests.model.QuestState.ACTIVE
                 && state != de.aetherion.quests.model.QuestState.READY
                 && state != de.aetherion.quests.model.QuestState.COMPLETED;
+    }
+
+    private static de.aetherion.quests.util.OpenRoads.Road roadFor(String npcId) {
+        for (de.aetherion.quests.util.OpenRoads.Road road : de.aetherion.quests.util.OpenRoads.Road.values()) {
+            if (road.npcId() != null && road.npcId().equals(npcId)) {
+                return road;
+            }
+        }
+        return null;
     }
 
     private static boolean isTutorialTrailNpc(String npcId) {

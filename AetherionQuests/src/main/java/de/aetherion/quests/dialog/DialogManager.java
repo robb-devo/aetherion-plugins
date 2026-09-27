@@ -2196,8 +2196,9 @@ public class DialogManager implements Listener {
     private String[] craftsmanIntroLines(Player player) {
         return new String[] {
                 "Hey. Craftsman. Crafting is unlocked — Recipe Book lives in the Manager.",
-                "Nether Star (hotbar §e9§f) → click the §agreen book§f. Every blueprint is there.",
-                "Craft a §fMining Pickaxe§f: Simple Pickaxe in the middle, coal around it. Bring that pick back to me to finish."
+                "Nether Star (hotbar §e9§f) → click the §agreen book§f. What you know sits up front; the rest you'll find.",
+                "§7Side job, not on Ledger's list:§f craft a §fMining Pickaxe§f — Simple Pickaxe in the middle, coal around it.",
+                "Show it to me whenever. I pay for proof. No clipboard, no deadline."
         };
     }
 

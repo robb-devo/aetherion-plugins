@@ -34,11 +34,18 @@ public final class GuideAdvice {
         public final String header;
         public final List<String> tips;
         public final boolean tutorial;
+        /** Orientation filed — tips lead with Ledger's open roads (Vex, Rite Warden, …). */
+        public final boolean roads;
 
         public Result(String header, List<String> tips, boolean tutorial) {
+            this(header, tips, tutorial, false);
+        }
+
+        public Result(String header, List<String> tips, boolean tutorial, boolean roads) {
             this.header = header;
             this.tips = tips;
             this.tutorial = tutorial;
+            this.roads = roads;
         }
     }
 
@@ -55,6 +62,12 @@ public final class GuideAdvice {
         }
 
         List<String> tips = new ArrayList<>();
+        // After Miss Ledger's stamp: the open roads first, so /guide never drops into "go do dungeons".
+        List<String> roads = questRoadTips(player);
+        boolean hasRoads = roads != null && !roads.isEmpty();
+        if (hasRoads) {
+            tips.addAll(stripAll(roads));
+        }
         ProgressionService progress = AetherionItems.getInstance() == null
                 ? null : AetherionItems.getInstance().progress();
         if (progress != null) {
@@ -86,7 +99,7 @@ public final class GuideAdvice {
             tips.add("Explore dungeons, upgrade gear, and keep leveling skills.");
             tips.add("Use /atrecipes for crafting and /aetherion for the Manager.");
         }
-        return new Result(header, tips, false);
+        return new Result(header, tips, false, hasRoads);
     }
 
     public static Result nextOnlineOrNull(UUID uuid) {
@@ -151,6 +164,24 @@ public final class GuideAdvice {
             }
         } catch (Throwable ignored) {
             // Quests API missing / old jar
+        }
+        return List.of();
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<String> questRoadTips(Player player) {
+        if (!Bukkit.getPluginManager().isPluginEnabled("AetherionQuests")) {
+            return List.of();
+        }
+        try {
+            Class<?> gate = Class.forName("de.aetherion.quests.util.QuestStoryGate");
+            Method m = gate.getMethod("roadTips", Player.class);
+            Object raw = m.invoke(null, player);
+            if (raw instanceof List<?> list) {
+                return (List<String>) list;
+            }
+        } catch (Throwable ignored) {
+            // Older Quests jar without roads — fall back to unlock tips.
         }
         return List.of();
     }

@@ -77,15 +77,20 @@ public final class GuideCommand implements CommandExecutor, TabCompleter {
                 + " §7" + AetherionLevel.coloredTitle(level));
         if (result.tutorial) {
             player.sendMessage(PREFIX + "§aOrientation §7— one step at a time:");
+        } else if (result.roads) {
+            player.sendMessage(PREFIX + "§dOrientation filed §7— open roads, pick any:");
         } else {
             player.sendMessage(PREFIX + "Suggested next steps:");
         }
         int shown = 0;
+        int cap = result.roads ? 6 : 4;
         for (String tip : result.tips) {
-            if (shown >= 4) {
+            if (shown >= cap) {
                 break;
             }
-            player.sendMessage("  §6› §7" + tip);
+            // First road is the suggestion — give it the weight, keep the rest quiet.
+            String bullet = result.roads && shown == 0 ? "  §e➜ §f" : "  §6› §7";
+            player.sendMessage(bullet + tip);
             shown++;
         }
         player.sendMessage(PREFIX + "Craft: §e/guide craft <item> §8· §7Discord: §fguide §7in #guide");

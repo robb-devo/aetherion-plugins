@@ -36,16 +36,21 @@ public final class NpcPresence {
     /** Previous shared cue — every living NPC without its own voice keeps it. */
     private static final Voice DEFAULT_VOICE = new Voice(Sound.BLOCK_NOTE_BLOCK_HAT, 1.35f, 0.35f);
 
-    /** Spine NPCs get a voice you can recognise with your eyes closed. */
-    private static final Map<String, Voice> VOICES = Map.of(
-            "egon", new Voice(Sound.BLOCK_NOTE_BLOCK_BIT, 0.84f, 0.26f),
-            "lumberjack", new Voice(Sound.BLOCK_NOTE_BLOCK_XYLOPHONE, 0.92f, 0.30f),
-            "quartermaster", new Voice(Sound.BLOCK_NOTE_BLOCK_BIT, 1.06f, 0.24f),
-            "foreman", new Voice(Sound.BLOCK_NOTE_BLOCK_BASS, 1.30f, 0.40f),
-            "ledger", new Voice(Sound.BLOCK_NOTE_BLOCK_CHIME, 1.62f, 0.20f),
-            "booster_tutor", new Voice(Sound.BLOCK_NOTE_BLOCK_IRON_XYLOPHONE, 1.18f, 0.24f),
-            "farmer", new Voice(Sound.BLOCK_NOTE_BLOCK_BANJO, 1.10f, 0.26f),
-            "lark", new Voice(Sound.BLOCK_NOTE_BLOCK_FLUTE, 1.45f, 0.26f)
+    /** Early-cast NPCs get a voice you can recognise with your eyes closed. */
+    private static final Map<String, Voice> VOICES = Map.ofEntries(
+            Map.entry("egon", new Voice(Sound.BLOCK_NOTE_BLOCK_BIT, 0.84f, 0.26f)),
+            Map.entry("lumberjack", new Voice(Sound.BLOCK_NOTE_BLOCK_XYLOPHONE, 0.92f, 0.30f)),
+            Map.entry("quartermaster", new Voice(Sound.BLOCK_NOTE_BLOCK_BIT, 1.06f, 0.24f)),
+            Map.entry("foreman", new Voice(Sound.BLOCK_NOTE_BLOCK_BASS, 1.30f, 0.40f)),
+            Map.entry("ledger", new Voice(Sound.BLOCK_NOTE_BLOCK_CHIME, 1.62f, 0.20f)),
+            Map.entry("booster_tutor", new Voice(Sound.BLOCK_NOTE_BLOCK_IRON_XYLOPHONE, 1.18f, 0.24f)),
+            Map.entry("farmer", new Voice(Sound.BLOCK_NOTE_BLOCK_BANJO, 1.10f, 0.26f)),
+            Map.entry("lark", new Voice(Sound.BLOCK_NOTE_BLOCK_FLUTE, 1.45f, 0.26f)),
+            // Past the pier: the drill sergeant barks low, the Warden hums, the forge clinks.
+            Map.entry("vex", new Voice(Sound.BLOCK_NOTE_BLOCK_BASEDRUM, 0.78f, 0.34f)),
+            Map.entry("rite_keeper", new Voice(Sound.BLOCK_NOTE_BLOCK_DIDGERIDOO, 0.72f, 0.26f)),
+            Map.entry("craftsman", new Voice(Sound.BLOCK_NOTE_BLOCK_COW_BELL, 1.12f, 0.20f)),
+            Map.entry("surveyor", new Voice(Sound.BLOCK_NOTE_BLOCK_PLING, 1.28f, 0.16f))
     );
 
     private NpcPresence() {

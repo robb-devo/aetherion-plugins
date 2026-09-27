@@ -16,6 +16,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.scheduler.BukkitTask;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -58,6 +59,8 @@ public class AetherionManagerGUI {
 
     private final AetherionManager manager;
     private final StorageInventory storageInventory;
+    /** Slots of the lock that opens next — set per open() (main thread only). */
+    private final java.util.Set<Integer> nextSlots = new java.util.HashSet<>();
 
     public AetherionManagerGUI(AetherionManager manager, StorageInventory storageInventory) {
         this.manager = manager;
@@ -71,10 +74,40 @@ public class AetherionManagerGUI {
                 ? null
                 : AetherionItems.getInstance().progress();
 
+        // Early on most of this is locked. Say how far along you are, light up the one
+        // lock that opens next, and let the far-future ones (journal, island, guild) recede.
+        List<Gate> gates = gates(player, progress);
+        nextSlots.clear();
+        int open = 0;
+        Gate next = null;
+        for (Gate gate : gates) {
+            if (gate.open()) {
+                open++;
+            } else if (next == null) {
+                next = gate;
+            }
+        }
+        if (next != null) {
+            for (Gate gate : gates) {
+                if (!gate.open() && gate.group().equals(next.group())) {
+                    nextSlots.add(gate.slot());
+                }
+            }
+        }
+        List<String> headerLore = new java.util.ArrayList<>();
+        headerLore.add("§7Your hub. It grows as you do.");
+        if (!gates.isEmpty()) {
+            headerLore.add("");
+            headerLore.add("§7Open: §f" + open + "§7/§f" + gates.size() + "  " + bar(open, gates.size()));
+            if (next != null) {
+                headerLore.add("§7Next: §e" + next.name());
+                headerLore.add(next.hint());
+            }
+        }
         inventory.setItem(4, button(
                 Material.NETHER_STAR,
                 "§6Aetherion Manager",
-                "§7Your hub. It grows as you do."
+                headerLore.toArray(String[]::new)
         ));
 
         inventory.setItem(SHOP_SLOT, button(
@@ -602,6 +635,33 @@ public class AetherionManagerGUI {
             inventory.setItem(slot, button(material, name, unlockedLore));
             return;
         }
+        if (nextSlots.contains(slot)) {
+            // The one lock worth reading right now.
+            ItemStack next = button(
+                    Material.LIME_DYE,
+                    "§e" + strip(name) + " §8· next",
+                    "§e➜ Opens next",
+                    "",
+                    lockedHint
+            );
+            ItemMeta meta = next.getItemMeta();
+            if (meta != null) {
+                meta.addEnchant(Enchantment.UNBREAKING, 1, true);
+                meta.addItemFlags(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ATTRIBUTES);
+                next.setItemMeta(meta);
+            }
+            inventory.setItem(slot, next);
+            return;
+        }
+        if (slot == JOURNAL_SLOT || slot == ISLAND_SLOT || slot == GUILD_SLOT) {
+            // Far future: a quiet silhouette, not another grey "nope".
+            inventory.setItem(slot, button(
+                    Material.LIGHT_GRAY_STAINED_GLASS_PANE,
+                    "§8" + strip(name) + " · later",
+                    lockedHint
+            ));
+            return;
+        }
         inventory.setItem(slot, button(
                 Material.GRAY_DYE,
                 "§8" + strip(name),
@@ -610,6 +670,63 @@ public class AetherionManagerGUI {
                 lockedHint,
                 "§8It will make sense later."
         ));
+    }
+
+    /** One lockable tab: its slot, whether it's open, the unlock it belongs to, and how to open it. */
+    private record Gate(int slot, boolean open, String group, String name, String hint) {
+    }
+
+    /**
+     * Lockable tabs in the order a new player actually opens them (the harbour spine first,
+     * mid–late game last). Tabs whose plugin is missing are left out, not counted as locked.
+     */
+    private List<Gate> gates(Player player, ProgressionService progress) {
+        List<Gate> gates = new java.util.ArrayList<>();
+        if (progress == null || player == null) {
+            return gates;
+        }
+        String workbench = progress.hint(ProgressionService.Flag.WORKBENCH);
+        gates.add(new Gate(CRAFT_SLOT, progress.craftingTable(player), "workbench", "Crafting + Recipes", workbench));
+        gates.add(new Gate(RECIPE_SLOT, progress.recipeBook(player), "workbench", "Crafting + Recipes", workbench));
+        gates.add(new Gate(ANVIL_SLOT, progress.anvil(player), "anvil", "Anvil",
+                progress.hint(ProgressionService.Flag.ANVIL)));
+        gates.add(new Gate(SKILLS_SLOT, progress.skills(player), "skills", "Skills",
+                progress.hint(ProgressionService.Flag.SKILLS)));
+        if (manager.hasPetMenu()) {
+            gates.add(new Gate(PETS_SLOT, progress.pets(player), "pets", "Pets",
+                    progress.hint(ProgressionService.Flag.PETS)));
+        }
+        if (Bukkit.getPluginManager().isPluginEnabled("AetherionHub")) {
+            gates.add(new Gate(SPAWN_SLOT, progress.spawns(player), "spawns", "Spawns",
+                    progress.hint(ProgressionService.Flag.SPAWN_UNLOCKER)));
+        }
+        String trader = progress.hint(ProgressionService.Flag.TRADER);
+        gates.add(new Gate(BAZAAR_SLOT, progress.bazaar(player), "trader", "Bazaar + Auction House", trader));
+        gates.add(new Gate(AUCTION_SLOT, progress.auction(player), "trader", "Bazaar + Auction House", trader));
+        gates.add(new Gate(COLLECTION_SLOT, progress.collection(player), "collection", "Collection",
+                progress.collectionHint()));
+        gates.add(new Gate(BESTIARY_SLOT, progress.bestiary(player), "bestiary", "Bestiary",
+                progress.bestiaryHint()));
+        gates.add(new Gate(JOURNAL_SLOT, progress.journal(player), "journal", "Dungeon Journal",
+                progress.journalHint()));
+        if (Bukkit.getPluginManager().isPluginEnabled("AetherionGuilds")) {
+            gates.add(new Gate(ISLAND_SLOT, progress.island(player), "island", "Island", progress.islandHint()));
+            gates.add(new Gate(GUILD_SLOT, progress.guild(player), "guild", "Guild", progress.guildHint()));
+        }
+        return gates;
+    }
+
+    private static String bar(int have, int of) {
+        int cells = 10;
+        int filled = of <= 0 ? 0 : (int) Math.round(cells * (have / (double) of));
+        StringBuilder out = new StringBuilder("§a");
+        for (int i = 0; i < cells; i++) {
+            if (i == filled) {
+                out.append("§8");
+            }
+            out.append('▮');
+        }
+        return out.toString();
     }
 
     private static String strip(String name) {
@@ -624,9 +741,18 @@ public class AetherionManagerGUI {
             meta.setDisplayName(" ");
             pane.setItemMeta(meta);
         }
+        // Dark top and bottom rails frame the tabs so the page reads as a panel, not a pile of glass.
+        ItemStack rail = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
+        ItemMeta railMeta = rail.getItemMeta();
+        if (railMeta != null) {
+            railMeta.setDisplayName(" ");
+            rail.setItemMeta(railMeta);
+        }
 
-        for (int slot = 0; slot < inventory.getSize(); slot++) {
-            inventory.setItem(slot, pane.clone());
+        int size = inventory.getSize();
+        for (int slot = 0; slot < size; slot++) {
+            boolean edge = slot < 9 || slot >= size - 9;
+            inventory.setItem(slot, edge ? rail.clone() : pane.clone());
         }
     }
 

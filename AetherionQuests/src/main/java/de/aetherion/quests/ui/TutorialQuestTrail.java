@@ -4,8 +4,13 @@ import de.aetherion.quests.AetherionQuests;
 import de.aetherion.quests.data.NPCDataStorage;
 import de.aetherion.quests.manager.QuestManager;
 import de.aetherion.quests.model.Quest;
+import de.aetherion.quests.model.QuestState;
+import de.aetherion.quests.npc.LivingNpcProfile;
+import de.aetherion.quests.npc.NpcPresence;
 import de.aetherion.quests.npc.QuestNPC;
 import de.aetherion.quests.npc.QuestNPCRegistry;
+
+import net.kyori.adventure.text.format.NamedTextColor;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
@@ -28,6 +33,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -40,6 +46,14 @@ import java.util.UUID;
  * Near the player: a few painted dock chevrons on the planks (per-player BlockDisplays),
  * a slow pulse rolling forward through them. Beyond them: the old gold dust, so the
  * far end of the route still reads. Same corners, same quests — just better paint.
+ * <p>
+ * Past the pier (Quartermaster → Foreman → Temper → Miss Ledger → Fields, and the open
+ * road Ledger pins after the stamp) there are no authored corners, so the same paint
+ * works as a compass: a short run of chevrons from where you stand toward whoever the
+ * yellow arrow points at, only on walkable ground with headroom (it stops rather than
+ * climb a wall), and a thin beacon in that NPC's colour over their head once they're
+ * within sight. The target is the one {@link QuestHint} already chose — or the turn-in
+ * NPC once a quest is READY — never a second navigation system.
  */
 public final class TutorialQuestTrail {
 
@@ -68,6 +82,21 @@ public final class TutorialQuestTrail {
 
     private static final BlockData PAINT = Material.YELLOW_CONCRETE.createBlockData();
 
+    /** Compass mode: NPCs the painted trail may lead to past the pier (Egon/Forager have the authored route). */
+    private static final Set<String> COMPASS_NPCS = Set.of(
+            "quartermaster", "foreman", "craftsman", "booster_tutor", "ledger",
+            "farmer", "lark", "vex", "rite_keeper", "surveyor"
+    );
+    /** Beacon over the target NPC reads from this far. */
+    private static final double BEACON_RANGE = 64.0;
+    /** Compass chevrons only for targets within this range (same world). */
+    private static final double COMPASS_RANGE = 420.0;
+    /** Drift further than this off the compass line and it re-anchors where you stand. */
+    private static final double COMPASS_REANCHOR = 6.0;
+    /** Walkable-ground limits between neighbouring compass chevrons. */
+    private static final double STEP_UP = 1.3;
+    private static final double STEP_DOWN = 2.6;
+
     /** Harbour path corners (same world as Egon / Forager). */
     private static final double[][] CORNERS = {
             {300.5, 63.15, -379.5},
@@ -80,6 +109,8 @@ public final class TutorialQuestTrail {
     private final Particle.DustOptions dust =
             new Particle.DustOptions(Color.fromRGB(255, 214, 90), 1.05f);
     private final Map<UUID, Crumbs> crumbs = new HashMap<>();
+    private final Map<UUID, Anchor> anchors = new HashMap<>();
+    private long anchorSerial;
 
     private BukkitTask task;
     private int phase;
@@ -106,6 +137,7 @@ public final class TutorialQuestTrail {
             set.removeAll();
         }
         crumbs.clear();
+        anchors.clear();
     }
 
     private void tick() {
@@ -118,8 +150,12 @@ public final class TutorialQuestTrail {
             }
             List<Location> nodes = pathFor(player);
             if (nodes == null || nodes.size() < 2) {
+                if (compass(player)) {
+                    painted.add(player.getUniqueId());
+                }
                 continue;
             }
+            anchors.remove(player.getUniqueId());
             Path path = new Path(nodes);
             Location feet = player.getLocation();
             Path.Hit here = path.project(feet);
@@ -129,7 +165,7 @@ public final class TutorialQuestTrail {
             double dustFrom = here.s();
             if (!arrived && here.distance() <= CHEVRON_OFF_PATH) {
                 String key = trackedId(player);
-                double lastChevron = paintChevrons(player, path, here.s(), key);
+                double lastChevron = paintChevrons(player, path, here.s(), key, false);
                 if (lastChevron > 0.0) {
                     painted.add(player.getUniqueId());
                     dustFrom = lastChevron + CHEVRON_GAP * 0.5;
@@ -140,6 +176,7 @@ public final class TutorialQuestTrail {
                 player.spawnParticle(Particle.END_ROD, end.clone().add(0, 0.35, 0), 1, 0.1, 0.15, 0.1, 0.0);
             }
         }
+        anchors.keySet().removeIf(id -> Bukkit.getPlayer(id) == null);
         // Off route, quest moved on, or logged out → chevrons go.
         Iterator<Map.Entry<UUID, Crumbs>> it = crumbs.entrySet().iterator();
         while (it.hasNext()) {
@@ -225,7 +262,7 @@ public final class TutorialQuestTrail {
      *
      * @return arc length of the furthest chevron placed, or 0 if none
      */
-    private double paintChevrons(Player player, Path path, double s0, String key) {
+    private double paintChevrons(Player player, Path path, double s0, String key, boolean strictGround) {
         long firstSlot = (long) Math.ceil((s0 + CHEVRON_LEAD) / CHEVRON_GAP);
         double maxS = path.length() - CHEVRON_END_MARGIN;
         Crumbs set = crumbs.computeIfAbsent(player.getUniqueId(), id -> new Crumbs());
@@ -234,14 +271,32 @@ public final class TutorialQuestTrail {
             set.key = key;
             set.firstSlot = firstSlot;
             World world = player.getWorld();
+            double previousTop = player.getLocation().getY();
+            boolean blocked = false;
             for (int i = 0; i < CHEVRONS; i++) {
                 double s = (firstSlot + i) * CHEVRON_GAP;
-                if (s > maxS) {
+                if (s > maxS || blocked) {
                     set.clear(i);
                     continue;
                 }
                 Location point = path.pointAt(s);
+                if (strictGround) {
+                    // Compass line ignores terrain: follow the ground you'd actually walk on.
+                    point.setY(previousTop + 0.5);
+                }
                 double groundTop = groundTop(world, point);
+                if (strictGround) {
+                    if (Double.isNaN(groundTop)
+                            || groundTop - previousTop > STEP_UP
+                            || previousTop - groundTop > STEP_DOWN
+                            || !headroom(world, point, groundTop)) {
+                        // A wall, a drop, a roof: stop here rather than paint over it.
+                        blocked = true;
+                        set.clear(i);
+                        continue;
+                    }
+                    previousTop = groundTop;
+                }
                 point.setY(Double.isNaN(groundTop) ? point.getY() - 0.12 : groundTop + 0.02);
                 point.setYaw(0f);
                 point.setPitch(0f);
@@ -293,6 +348,130 @@ public final class TutorialQuestTrail {
             }
         }
         return Double.NaN;
+    }
+
+    /** Two passable blocks above a painted spot — nobody walks through a ceiling. */
+    private static boolean headroom(World world, Location at, double groundTop) {
+        int bx = at.getBlockX();
+        int bz = at.getBlockZ();
+        int y = (int) Math.ceil(groundTop - 0.01);
+        return world.getBlockAt(bx, y, bz).isPassable() && world.getBlockAt(bx, y + 1, bz).isPassable();
+    }
+
+    /* =========================================================
+     * COMPASS (past the pier)
+     * ========================================================= */
+
+    /**
+     * Chevrons + beacon toward the NPC the yellow arrow points at.
+     *
+     * @return true if chevrons are standing for this player
+     */
+    private boolean compass(Player player) {
+        String npcId = compassTarget(player);
+        if (npcId == null) {
+            anchors.remove(player.getUniqueId());
+            return false;
+        }
+        World world = player.getWorld();
+        Location target = NpcPresence.locate(npcId);
+        if (world == null || target == null || target.getWorld() == null || !world.equals(target.getWorld())
+                || isFarmIsland(world)) {
+            anchors.remove(player.getUniqueId());
+            return false;
+        }
+        Location feet = player.getLocation();
+        double dx = target.getX() - feet.getX();
+        double dz = target.getZ() - feet.getZ();
+        double flat = Math.sqrt(dx * dx + dz * dz);
+        if (flat <= ARRIVED + 1.0 || flat > COMPASS_RANGE) {
+            anchors.remove(player.getUniqueId());
+            return false;
+        }
+        beacon(player, npcId, target, flat);
+
+        Location end = ground(target);
+        Anchor anchor = anchors.get(player.getUniqueId());
+        if (anchor == null || !anchor.npcId.equals(npcId) || anchor.from.getWorld() != world) {
+            anchor = newAnchor(npcId, feet);
+            anchors.put(player.getUniqueId(), anchor);
+        }
+        Path path = new Path(List.of(anchor.from, end));
+        Path.Hit here = path.project(feet);
+        if (here.distance() > COMPASS_REANCHOR) {
+            anchor = newAnchor(npcId, feet);
+            anchors.put(player.getUniqueId(), anchor);
+            path = new Path(List.of(anchor.from, end));
+            here = path.project(feet);
+        }
+        return paintChevrons(player, path, here.s(), "npc:" + npcId + "#" + anchor.serial, true) > 0.0;
+    }
+
+    private Anchor newAnchor(String npcId, Location feet) {
+        Location from = feet.clone();
+        from.setYaw(0f);
+        from.setPitch(0f);
+        return new Anchor(npcId, from, ++anchorSerial);
+    }
+
+    /**
+     * Who the paint should lead to: the turn-in NPC while a quest is READY, else the soft
+     * hint (never while objectives are still being worked — the quest bar owns that).
+     */
+    private String compassTarget(Player player) {
+        if (questManager == null) {
+            return null;
+        }
+        Quest tracked = questManager.getTrackedQuest(player);
+        Quest active = tracked != null ? tracked : questManager.findActiveOrReadyQuest(player);
+        if (active != null) {
+            if (questManager.getQuestState(player, active) != QuestState.READY) {
+                return null;
+            }
+            String turnIn = null;
+            if (active.hasTurnInNpc()) {
+                turnIn = active.getTurnInNpcId();
+            } else {
+                QuestNPC npc = QuestNPCRegistry.findForQuest(active);
+                turnIn = npc == null ? null : npc.getId();
+            }
+            return guided(turnIn);
+        }
+        return guided(QuestHint.targetNpcId(player));
+    }
+
+    private static String guided(String npcId) {
+        if (npcId == null) {
+            return null;
+        }
+        String id = npcId.toLowerCase(Locale.ROOT);
+        return COMPASS_NPCS.contains(id) ? id : null;
+    }
+
+    /** Thin rising column in the NPC's name colour, player-only, once they're within sight. */
+    private void beacon(Player player, String npcId, Location target, double flat) {
+        if (flat > BEACON_RANGE || phase % 2 != 0) {
+            return;
+        }
+        LivingNpcProfile profile = LivingNpcProfile.of(npcId);
+        NamedTextColor tone = profile != null ? profile.nameColor() : NamedTextColor.YELLOW;
+        Particle.DustOptions mote = new Particle.DustOptions(Color.fromRGB(tone.red(), tone.green(), tone.blue()), 0.85f);
+        double rise = (pulse % 4) * 0.14;
+        Location head = target.clone().add(0.0, 2.45 + rise, 0.0);
+        for (int i = 0; i < 7; i++) {
+            player.spawnParticle(Particle.DUST, head.clone().add(0.0, i * 0.55, 0.0), 1, 0.015, 0.04, 0.015, 0.0, mote);
+        }
+        if (phase == 0) {
+            player.spawnParticle(Particle.END_ROD, head.clone().add(0.0, 4.1, 0.0), 1, 0.05, 0.1, 0.05, 0.0);
+        }
+    }
+
+    private static boolean isFarmIsland(World world) {
+        String name = world.getName().toLowerCase(Locale.ROOT);
+        return name.equals("aether_farm_island") || name.startsWith("aether_farm_");
+    }
+
+    private record Anchor(String npcId, Location from, long serial) {
     }
 
     /**

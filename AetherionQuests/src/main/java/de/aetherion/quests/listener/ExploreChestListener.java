@@ -56,7 +56,7 @@ public final class ExploreChestListener implements Listener {
             meta.setLore(List.of(
                     "§7DEV · exploration crate.",
                     "§7Each player, this crate, every §f12h§7.",
-                    "§8Spin animation — no vanilla inventory.",
+                    "§8Authored prop · lid, spin and idle per rarity.",
                     "",
                     "§eRight-click a block §7to place.",
                     "§eSneak + click the chest §7to remove."

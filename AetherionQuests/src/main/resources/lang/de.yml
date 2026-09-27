@@ -40,6 +40,40 @@ ui:
   gate_market_action: "→ Forager · dann bei Egon abgeben"
   gate_rescue_chat: "§7Ganz ruhig — zurück auf dem Pier. Erst mit §eEgon §7reden."
 
+  # Early Game — offene Wege nach dem Stempel, Abschluss, Craftsman, Vex
+  graduation_filed: "✔ Orientierung abgelegt · die Karte gehört dir"
+  craftsman_paid: "Da ist sie — Mining Pickaxe. Beweis angenommen, Münzen bezahlt."
+  craftsman_nudge: "Hab's bis hier gehört. Bring die Mining Pickaxe an die Schmiede — ich zahle für Beweise."
+  vex_primer_kill: "Einer. Der Zähler steht oben in deiner Leiste. Noch neun, dann reden wir."
+  roads:
+    tip_next: "Nächster Weg:"
+    steel_where: "Tor zu den Borderlands"
+    steel_pitch: "Zehn Feinde. Lern, wie ein Treffer hier sitzt."
+    rites_where: "Die Ödnis · Pulver-Altar"
+    rites_pitch: "Entzünde einen Geist. Triff etwas Größeres."
+    craft_where: "Markt-Schmiede"
+    craft_pitch: "Nebenjob: zeig ihm eine Mining Pickaxe. Er zahlt."
+    survey_where: "Blaupausen-Tisch"
+    survey_pitch: "Troll-Seiten aus den Adern werden zu Werkzeugen."
+    wilds_where: "Abseits der Wege"
+    wilds_pitch: "Neue Gebiete schalten Teleports frei. Truhen verstecken sich, wo keine Wege sind."
+    wilds_action: "Die Karte gehört dir · achte auf ein Glitzern abseits des Weges"
+    gui_title: "§8Miss Ledger · Offene Wege"
+    gui_header: "§dOffene Wege"
+    gui_header_1: "§7Orientierung abgelegt. Nichts davon ist Pflicht."
+    gui_header_2: "§7Wähl einen Weg — ich richte den Pfeil aus."
+    gui_filed: "Wege abgelegt"
+    gui_briefing: "§eBriefing-Themen"
+    gui_briefing_1: "§7Manager, Booster, Pets, Lager…"
+    gui_briefing_2: "§7Der Auffrischungs-Tisch."
+    card_filed: "§a✔ Abgelegt. Jederzeit wieder hin."
+    card_next: "§e➜ Empfohlen als Nächstes"
+    card_click: "§eKlick §7— der Pfeil zeigt dorthin."
+    card_click_wilds: "§eKlick §7— kein Pfeil. Einfach los."
+    ledger_wilds: "Dafür gibt's keinen Pfeil. Achte auf ein Glitzern abseits des Weges."
+    ledger_pin: "Pfeil zeigt auf {0}. Na los."
+    ledger_return: "Die Wege liegen auf dem Tisch. Such dir einen aus."
+
 progress:
   catch_pet: "Fang ein Pet"
   talk_to_lark: "Sprich mit Lark"
@@ -116,8 +150,19 @@ dialogs:
     - "Achte auf den §egelben Pfeil oben§f — der trackt den Auftrag."
   craftsman_intro:
     - "Hey. Craftsman. Crafting ist freigeschaltet — Recipe Book im Manager."
-    - "Nether Star (Hotbar §e9§f) → §agrünes Buch§f anklicken. Da sind alle Blaupausen."
-    - "Craft eine §fMining Pickaxe§f: Simple Pickaxe in der Mitte, Kohle drumrum. Bring die Spitzhacke zu mir zurück."
+    - "Nether Star (Hotbar §e9§f) → §agrünes Buch§f anklicken. Was du kennst, liegt vorne; den Rest findest du."
+    - "§7Nebenjob, nicht auf Ledgers Liste:§f craft eine §fMining Pickaxe§f — Simple Pickaxe in der Mitte, Kohle drumrum."
+    - "Zeig sie mir, wann du willst. Ich zahle für Beweise. Kein Klemmbrett, keine Frist."
+  craftsman_after_shift:
+    - "Die Spitzhacke hält? Gut."
+    - "Das Recipe Book wächst mit dir — neue Seiten kommen aus der Ödnis, den Adern und vom Tisch des Surveyors."
+  ledger_graduation:
+    - "Gestempelt. Orientierung abgelegt — die Karte gehört dir."
+    - "Eine Gewohnheit: der §egelbe Pfeil oben§f folgt dem, was du anheftest. Heft was an."
+    - "Die Wege liegen auf meinem Tisch. Ich markiere den, den die meisten Rookies zuerst nehmen."
+  vex_primer_hit:
+    - "§7(vom Tor)§f Siehst du die Zahl, die von ihm abspringt? Das bist du. Kein Raten."
+    - "Goldene §6✦§f sind Crits — merk dir, welche Schwünge sie machen. Weiß ist ehrliche Arbeit."
   foreman_intro:
     - "Schäbige Mine — die Höhle hinter mir. Darin §eErze§f abbauen: Kohle, Kupfer, Eisen, was fällt."
     - "Brich §e32 Erz-Blöcke§f (kein Stein-Füllmaterial). Wenn der Zähler fertig ist, zurück zu mir."

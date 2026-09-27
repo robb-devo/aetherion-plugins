@@ -32,6 +32,12 @@ import java.util.function.Supplier;
  * First-hour spine (Egon, Forager, Foreman, Miss Ledger): one shared slow loop.
  * Particles are small and constant; sounds are rare, quiet, and only for players
  * standing nearby — the NPC is busy with their own job when you walk up.
+ * <p>
+ * Past the pier the same loop carries the rest of the early cast, each at their own
+ * trade: the Quartermaster's crates, the Craftsman's hammer (sparks only when it lands),
+ * Temper's heated metal, the Farmer's chaff and hens, Sergeant Vex drilling at the
+ * Borderlands gate in blown ash, the Rite Warden's spores and soul-sighs, the Surveyor's
+ * spyglass. Same budget: tiny particles only when someone is watching, sounds rare.
  */
 public final class LivingNpcAtmosphere {
 
@@ -41,8 +47,12 @@ public final class LivingNpcAtmosphere {
     private static volatile BukkitTask liquidatorFx;
     private static volatile Location liquidatorAt;
 
-    /** Spine NPCs with an ambient loop (Egon → Forager → Foreman → Ledger). */
-    private static final Set<String> SPINE = Set.of("egon", "lumberjack", "foreman", "ledger");
+    /** Early cast with an ambient loop (pier spine + the stops after it). */
+    private static final Set<String> SPINE = Set.of(
+            "egon", "lumberjack", "foreman", "ledger",
+            "quartermaster", "craftsman", "booster_tutor", "farmer",
+            "vex", "rite_keeper", "surveyor"
+    );
     private static final double SPINE_VIEW = 20.0;
     private static final double SPINE_EAR = 14.0;
     private static final long SPINE_PERIOD = 10L;
@@ -53,6 +63,11 @@ public final class LivingNpcAtmosphere {
     private static final BlockData OAK_CHIPS = Material.OAK_LOG.createBlockData();
     private static final Particle.DustOptions LEDGER_INK =
             new Particle.DustOptions(Color.fromRGB(92, 48, 64), 0.55f);
+    private static final BlockData CHAFF = Material.HAY_BLOCK.createBlockData();
+    private static final Particle.DustOptions HOT_METAL =
+            new Particle.DustOptions(Color.fromRGB(255, 142, 52), 0.5f);
+    private static final Particle.DustOptions BLUEPRINT_INK =
+            new Particle.DustOptions(Color.fromRGB(70, 130, 200), 0.45f);
 
     private LivingNpcAtmosphere() {
     }
@@ -235,7 +250,13 @@ public final class LivingNpcAtmosphere {
                 case "lumberjack" -> foragerAmbient(world, at, rng);
                 case "foreman" -> foremanAmbient(world, at, rng);
                 case "ledger" -> ledgerAmbient(world, at, rng);
+                case "booster_tutor" -> temperAmbient(world, at, rng);
+                case "farmer" -> farmerAmbient(world, at, rng);
+                case "vex" -> vexAmbient(world, at, rng);
+                case "rite_keeper" -> riteAmbient(world, at, rng);
+                case "surveyor" -> surveyorAmbient(world, at, rng);
                 default -> {
+                    // Quartermaster / Craftsman: sound-led, no idle particles.
                 }
             }
             if (soundDue(id, rng)) {
@@ -272,6 +293,47 @@ public final class LivingNpcAtmosphere {
     private static void ledgerAmbient(World world, Location at, ThreadLocalRandom rng) {
         if (spineCycle % 2 == 0 && rng.nextDouble() < 0.6) {
             world.spawnParticle(Particle.DUST, at.clone().add(0.0, 1.1, 0.0), 1, 0.18, 0.06, 0.18, 0.0, LEDGER_INK);
+        }
+    }
+
+    /** Temper: metal still warm from the last fuse — a glint, a heat mote. */
+    private static void temperAmbient(World world, Location at, ThreadLocalRandom rng) {
+        if (rng.nextDouble() < 0.22) {
+            world.spawnParticle(Particle.DUST, at.clone().add(0.0, 1.1, 0.0), 1, 0.16, 0.06, 0.16, 0.0, HOT_METAL);
+        } else if (rng.nextDouble() < 0.08) {
+            world.spawnParticle(Particle.WAX_ON, at.clone().add(0.0, 1.15, 0.0), 1, 0.2, 0.1, 0.2, 0.0);
+        }
+    }
+
+    /** Farmer: chaff in the breeze around his boots. */
+    private static void farmerAmbient(World world, Location at, ThreadLocalRandom rng) {
+        if (rng.nextDouble() < 0.25) {
+            world.spawnParticle(Particle.BLOCK, at.clone().add(0.0, 0.35, 0.0), 2, 0.55, 0.1, 0.55, 0.0, CHAFF);
+        }
+    }
+
+    /** Sergeant Vex: the waste blows ash through the gate. */
+    private static void vexAmbient(World world, Location at, ThreadLocalRandom rng) {
+        if (rng.nextDouble() < 0.55) {
+            world.spawnParticle(Particle.WHITE_ASH, at.clone().add(0.0, 1.4, 0.0), 3, 1.6, 0.8, 1.6, 0.0);
+        }
+    }
+
+    /** Rite Warden: crimson spores hang in the air; now and then a soul lifts off the altar dust. */
+    private static void riteAmbient(World world, Location at, ThreadLocalRandom rng) {
+        if (rng.nextDouble() < 0.45) {
+            world.spawnParticle(Particle.CRIMSON_SPORE, at.clone().add(0.0, 1.2, 0.0), 2, 0.9, 0.6, 0.9, 0.0);
+        }
+        if (rng.nextDouble() < 0.04) {
+            world.spawnParticle(Particle.SOUL, at.clone().add(rng.nextDouble(-0.8, 0.8), 0.2, rng.nextDouble(-0.8, 0.8)),
+                    1, 0.0, 0.0, 0.0, 0.015);
+        }
+    }
+
+    /** Surveyor: blueprint ink on the fingers. */
+    private static void surveyorAmbient(World world, Location at, ThreadLocalRandom rng) {
+        if (spineCycle % 2 == 1 && rng.nextDouble() < 0.4) {
+            world.spawnParticle(Particle.DUST, at.clone().add(0.0, 1.1, 0.0), 1, 0.18, 0.06, 0.18, 0.0, BLUEPRINT_INK);
         }
     }
 
@@ -319,8 +381,57 @@ public final class LivingNpcAtmosphere {
                 plugin.getServer().getScheduler().runTaskLater(plugin,
                         () -> play(ears, hands, Sound.BLOCK_NOTE_BLOCK_BASEDRUM, SoundCategory.NEUTRAL, 0.22f, 0.62f), 7L);
             }
+            case "quartermaster" -> {
+                // A crate lid, then the tally.
+                if (rng.nextBoolean()) {
+                    play(ears, hands, Sound.BLOCK_BARREL_CLOSE, SoundCategory.NEUTRAL, 0.2f, 0.9f);
+                } else {
+                    play(ears, hands, Sound.ITEM_BOOK_PAGE_TURN, SoundCategory.NEUTRAL, 0.22f, 0.9f);
+                }
+            }
+            case "craftsman" -> {
+                // Two hammer taps; sparks jump only when the hammer lands.
+                craftsmanTap(ears, hands, 1.45f);
+                plugin.getServer().getScheduler().runTaskLater(plugin, () -> craftsmanTap(ears, hands, 1.6f), 6L);
+            }
+            case "booster_tutor" -> play(ears, hands, Sound.BLOCK_SMITHING_TABLE_USE, SoundCategory.NEUTRAL, 0.14f, 1.25f);
+            case "farmer" -> {
+                if (rng.nextBoolean()) {
+                    play(ears, hands, Sound.ITEM_HOE_TILL, SoundCategory.NEUTRAL, 0.2f, 1.05f);
+                } else {
+                    Location coop = at.clone().add(rng.nextDouble(-5.0, 5.0), 0.3, rng.nextDouble(-5.0, 5.0));
+                    play(ears, coop, Sound.ENTITY_CHICKEN_AMBIENT, SoundCategory.AMBIENT, 0.18f, 1.1f);
+                }
+            }
+            case "vex" -> {
+                if (rng.nextBoolean()) {
+                    // Whetstone along the blade.
+                    play(ears, hands, Sound.BLOCK_GRINDSTONE_USE, SoundCategory.NEUTRAL, 0.12f, 1.45f);
+                } else {
+                    // Drill cadence — two low beats.
+                    play(ears, hands, Sound.BLOCK_NOTE_BLOCK_BASEDRUM, SoundCategory.NEUTRAL, 0.24f, 0.5f);
+                    plugin.getServer().getScheduler().runTaskLater(plugin,
+                            () -> play(ears, hands, Sound.BLOCK_NOTE_BLOCK_BASEDRUM, SoundCategory.NEUTRAL, 0.24f, 0.5f), 8L);
+                }
+            }
+            case "rite_keeper" -> {
+                if (rng.nextBoolean()) {
+                    play(ears, hands, Sound.PARTICLE_SOUL_ESCAPE, SoundCategory.AMBIENT, 0.5f, 0.8f);
+                } else {
+                    play(ears, hands, Sound.BLOCK_RESPAWN_ANCHOR_AMBIENT, SoundCategory.AMBIENT, 0.16f, 0.7f);
+                }
+            }
+            case "surveyor" -> play(ears, hands, Sound.ITEM_SPYGLASS_USE, SoundCategory.NEUTRAL, 0.3f, 1.0f);
             default -> {
             }
+        }
+    }
+
+    private static void craftsmanTap(List<Player> ears, Location hands, float pitch) {
+        play(ears, hands, Sound.BLOCK_ANVIL_USE, SoundCategory.NEUTRAL, 0.08f, pitch);
+        World world = hands.getWorld();
+        if (world != null) {
+            world.spawnParticle(Particle.CRIT, hands.clone().add(0.0, -0.1, 0.0), 3, 0.08, 0.04, 0.08, 0.12);
         }
     }
 
