@@ -47,7 +47,8 @@ final class DragonDirector {
     }
 
     boolean isDragon() {
-        return instance.getEntity() instanceof EnderDragon;
+        return instance.getEntity() instanceof EnderDragon
+                && (instance.getTemplate() == null || !"dungeon_aetherion".equalsIgnoreCase(instance.getTemplate().getId()));
     }
 
     boolean isDying() {

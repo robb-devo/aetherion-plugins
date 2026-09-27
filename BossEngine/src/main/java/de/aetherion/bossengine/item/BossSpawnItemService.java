@@ -355,6 +355,44 @@ public class BossSpawnItemService {
         changed |= ensureItem(root, "insolvent_wither_core", "insolvent_wither", "SUMMON",
                 "GOLD_INGOT", "&8Insolvent Wither Core",
                 List.of("&7Right-click to summon him here (test).", "&8Test-Item · BossEngine · T2"), true);
+        changed |= ensureItem(root, "hollow_sun_anchor", "hollow_sun", "SET_SPAWN",
+                "RESPAWN_ANCHOR", "&6&lHollow Sun Anchor",
+                List.of("&7Right-click the arena's center to mark where the star falls.", "&8Admin · BossEngine"), false);
+        changed |= ensureItem(root, "hollow_sun_core", "hollow_sun", "SUMMON",
+                "NETHER_STAR", "&6Hollow Sun Core",
+                List.of("&7Right-click to call the fallen star down here.", "&8Test-Item · BossEngine"), true);
+        changed |= ensureItem(root, "dungeon_aetherion_anchor", "dungeon_aetherion", "SET_SPAWN",
+                "DRAGON_EGG", "&5&lSovereign Anchor",
+                List.of(
+                        "&7Right-click to lock where Aetherion, Sovereign of Ash lands.",
+                        "&7Use this to place the Throne of Ashes boss spawn.",
+                        "&8Admin · BossEngine · Floor 3"
+                ), false);
+        changed |= ensureItem(root, "dungeon_aetherion_core", "dungeon_aetherion", "SUMMON",
+                "DRAGON_BREATH", "&5Sovereign Core",
+                List.of("&7Right-click to summon Aetherion here (test).", "&8Test-Item · BossEngine · Floor 3"), true);
+        changed |= ensureItem(root, "ashen_chainwarden_anchor", "ashen_chainwarden", "SET_SPAWN",
+                "CHAIN", "&8&lChainwarden Anchor",
+                List.of("&7Right-click a block to set the Chainwarden's cell.", "&8Admin · BossEngine · Floor 3 elite"), false);
+        changed |= ensureItem(root, "ashen_chainwarden_core", "ashen_chainwarden", "SUMMON",
+                "TRIAL_KEY", "&8Chainwarden Core",
+                List.of("&7Right-click to summon the Chainwarden here (test).", "&8Test-Item · BossEngine · Floor 3 elite"), true);
+        changed |= ensureItem(root, "cinder_herald_anchor", "cinder_herald", "SET_SPAWN",
+                "BLAZE_ROD", "&6&lCinder Herald Anchor",
+                List.of("&7Right-click a block to set where the Herald rises.", "&8Admin · BossEngine · Floor 3 elite"), false);
+        changed |= ensureItem(root, "cinder_herald_core", "cinder_herald", "SUMMON",
+                "BLAZE_POWDER", "&6Cinder Herald Core",
+                List.of("&7Right-click to summon the Cinder Herald here (test).", "&8Test-Item · BossEngine · Floor 3 elite"), true);
+        changed |= ensureItem(root, "hanging_saint_anchor", "hanging_saint", "SET_SPAWN",
+                "GOLDEN_APPLE", "&f&lHanging Saint Anchor",
+                List.of(
+                        "&7Right-click to lock the Gilded Proscenium spawn.",
+                        "&7Build the stage first with &f/boss stage build&7 if you want it permanent.",
+                        "&8Admin · BossEngine"
+                ), false);
+        changed |= ensureItem(root, "hanging_saint_core", "hanging_saint", "SUMMON",
+                "STRING", "&fHanging Saint Core",
+                List.of("&7Right-click to summon Seraphine here (test).", "&8Test-Item · BossEngine"), true);
 
         // Sandbox / Test Arena prototypes (no live anchors)
         changed |= ensureItem(root, "test_echo_core", "test_echo", "SUMMON",

@@ -1,0 +1,114 @@
+# ============================================================
+# Cinder Herald · Floor 3 (Throne of Ashes) elite
+# Voice of the Burned Sky. Spawns before the gate (AshesEncounter ~70%).
+# Mini-boss scale: far below Pathwarden (52k) / Sovereign (115k). Placeholder numbers.
+# Mechanics live in AshesEliteDirector (hovers, AI off, director-driven):
+#   Ember Bolt  - short orange line + ring on one player
+#   Cinder Rain - staggered orange circles, embers fall, white strobe -> impact
+#   Burned Sky  - at 70% / 30%: red field r12, only two BLUE soul wards are safe
+#   Ember Lance - (below 50%) crimson lane toward a player
+# Spawn: /boss give cinder_herald_anchor   Test: /boss give cinder_herald_core
+# ============================================================
+
+id: cinder_herald
+display-name: "&6&lCinder Herald"
+entity-type: BLAZE
+model-engine-id: ""
+
+attributes:
+  max-health: 12000
+  movement-speed: 0.2
+  attack-damage: 30
+  scale: 2.0
+  follow-range: 28
+  knockback-resistance: 1.0
+
+equipment:
+  helmet: AIR
+  chestplate: AIR
+  leggings: AIR
+  boots: AIR
+  main-hand: AIR
+  off-hand: AIR
+  drop-chance: 0.0
+
+options:
+  glowing: false
+  custom-name-visible: true
+  silent: false
+  invulnerable-spawn-ticks: 30
+  persistent: true
+  remove-when-far-away: false
+  prevent-item-pickup: true
+
+conditions:
+  max-instances: 48
+  leash-radius: 16
+  leash-action: TELEPORT
+
+phases:
+  - id: herald
+    health-percent: 100
+    display-name: "&6&lCinder Herald"
+    skills: []
+
+  - id: ashfall
+    health-percent: 50
+    display-name: "&6&lCinder Herald &7(&cAshfall&7)"
+    transition:
+      duration-ticks: 50
+      invulnerable: true
+      freeze-ai: true
+      start-radius: 1.2
+      end-radius: 6.0
+      particle: FLAME
+      extra-particle: WHITE_ASH
+      points: 48
+      height: 0.15
+    skills:
+      - type: SOUND
+        trigger: ON_PHASE
+        sound: ENTITY_BLAZE_AMBIENT
+        volume: 1.5
+        pitch: 0.4
+
+skills:
+  - type: SOUND
+    trigger: ON_SPAWN
+    sound: ENTITY_BLAZE_AMBIENT
+    volume: 1.5
+    pitch: 0.45
+
+  - type: SOUND
+    trigger: ON_SPAWN
+    sound: BLOCK_BELL_RESONATE
+    volume: 1.2
+    pitch: 0.6
+
+  - type: DIALOG
+    trigger: ON_SPAWN
+    broadcast: false
+    radius: 64
+    message: "&6&lCinder Herald &7rises before the gate. &e\"The Sovereign does not receive the unburned.\""
+
+  - type: DIALOG
+    trigger: ON_DEATH
+    broadcast: false
+    radius: 64
+    message: "&6&lCinder Herald &7gutters out. &6+Clearance"
+
+loot:
+  damage-based: true
+  participation-threshold-percent: 5.0
+  experience: 0
+  killer-bonus: []
+  rank-loot: {}
+  top-damagers:
+    count: 1
+    items:
+      - source: AETHERION
+        item-id: random_booster
+        amount: 1
+        chance: 0.10
+  shared: []
+  per-damager:

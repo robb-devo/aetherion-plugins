@@ -10,6 +10,7 @@ depend:
 
 softdepend:
   - AetherionItems
+  - AetherionDungeons
   - AetherMobs
   - AetherionQuests
   - WorldGuard
