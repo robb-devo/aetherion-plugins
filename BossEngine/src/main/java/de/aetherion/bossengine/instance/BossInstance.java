@@ -377,6 +377,11 @@ public class BossInstance {
         return entity != null && entity.isValid() && !entity.isDead();
     }
 
+    /** Hanging Saint only: floor center of her built stage (the loot music box lands there), else null. */
+    public Location getSaintStageCenter() {
+        return saintDirector.stageCenter();
+    }
+
     public boolean isCinematicDying() {
         return state == BossState.ALIVE && (dragonDirector.isDying() || sparkyDirector.isDying()
                 || frostboundDirector.isDying() || pathwardenDirector.isDying()

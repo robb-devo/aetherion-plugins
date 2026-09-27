@@ -12,8 +12,8 @@ Do **not** rework the fight choreography. Do **not** deploy/restart live servers
 |--------|--------|
 | Fight + arena (`BossEngine/.../instance/saint/`) | Done |
 | Follow-spot / matrix flicker fix / Act III denser / Hand frames her | Done (latest commit on this branch) |
-| **4. Armor + weapon drops** | **Open** |
-| **5. Music-box loot chest** | **Open** |
+| 4. Armor + weapon drops | Done: The Mended Saint set + Severance (`SeraphineGearListener`), ids in `hanging_saint.yml` |
+| 5. Music-box loot chest | Done: `loot/SeraphineMusicBox` + `LootService.grantToChest`, stage held via `SaintStage.hold` |
 
 Boss id: `hanging_saint`  
 Display: Seraphine, the Hanging Saint  

@@ -69,7 +69,35 @@ public class LootService {
         }
 
         Map<UUID, Integer> xp = grantExperience(event);
-        sendRecap(event, xp);
+        sendRecap(event, xp, false);
+    }
+
+    /**
+     * Chest payout (Seraphine's music box): XP and the recap land now, the items do not.
+     * Returns each player's bundle for the chest prop to hand out, or nothing when a listener
+     * turned drops off.
+     */
+    public Map<UUID, List<ItemStack>> grantToChest(BossDeathEvent event) {
+        Map<UUID, List<ItemStack>> bundles = new LinkedHashMap<>();
+        if (event == null) {
+            return bundles;
+        }
+        if (event.isDropLoot()) {
+            event.getLootByPlayer().forEach((playerId, items) -> {
+                List<ItemStack> kept = new ArrayList<>();
+                for (ItemStack item : items) {
+                    if (item != null && !item.getType().isAir()) {
+                        kept.add(item);
+                    }
+                }
+                if (!kept.isEmpty()) {
+                    bundles.put(playerId, kept);
+                }
+            });
+        }
+        Map<UUID, Integer> xp = grantExperience(event);
+        sendRecap(event, xp, true);
+        return bundles;
     }
 
     public Map<UUID, List<ItemStack>> distribute(BossInstance instance, Player killer) {
@@ -210,7 +238,7 @@ public class LootService {
         }
     }
 
-    private void sendRecap(BossDeathEvent event, Map<UUID, Integer> xp) {
+    private void sendRecap(BossDeathEvent event, Map<UUID, Integer> xp, boolean chest) {
         Map<UUID, Double> damage = event.getDamageMap();
         List<Map.Entry<UUID, Double>> ranking = new ArrayList<>(damage.entrySet());
         ranking.sort(Map.Entry.<UUID, Double>comparingByValue().reversed());
@@ -264,9 +292,9 @@ public class LootService {
                             + (myXp > 0 ? "  &8|  &a+" + formatDamage(myXp) + " XP" : "")
             ));
             if (!ranking.isEmpty() && playerId.equals(ranking.getFirst().getKey())) {
-                player.sendMessage(TextUtil.component(de
-                        ? "&7#1-Bonus liegt in deinem Inventar."
-                        : "&7#1 bonus is in your inventory."));
+                player.sendMessage(TextUtil.component(chest
+                        ? (de ? "&7#1-Bonus wartet in der Beute-Truhe." : "&7#1 bonus waits in the loot chest.")
+                        : (de ? "&7#1-Bonus liegt in deinem Inventar." : "&7#1 bonus is in your inventory.")));
             }
         }
     }
@@ -329,7 +357,7 @@ public class LootService {
         bundles.computeIfAbsent(playerId, ignored -> new ArrayList<>()).add(item);
     }
 
-    private static void giveLootItem(Player player, ItemStack item) {
+    static void giveLootItem(Player player, ItemStack item) {
         try {
             Class<?> delivery = Class.forName("de.aetherion.items.storage.BoosterDelivery");
             delivery.getMethod("giveReward", Player.class, ItemStack.class).invoke(null, player, item);

@@ -7287,6 +7287,167 @@ public class CustomItem {
 
     /*
      * =========================================================
+     * THE MENDED SAINT (Seraphine, the Hanging Saint)
+     * =========================================================
+     *
+     * Her boss drops. Porcelain glaze with gold kintsugi seams (leather dyed to her glaze,
+     * gold BOLT trim via ArmorAppearance), the bell skirt and pointe of the doll, and the
+     * needle she cut her own strings with. Ability + set bonus: SeraphineGearListener.
+     */
+
+    /** The cool white of her porcelain (SaintBody WHITE, a shade warmer on leather). */
+    private static final Color SERAPHINE_GLAZE = Color.fromRGB(246, 241, 230);
+
+    public ItemStack createRandomSeraphineArmor() {
+        return switch (ThreadLocalRandom.current().nextInt(4)) {
+            case 0 -> createSeraphineVeil();
+            case 1 -> createSeraphineBodice();
+            case 2 -> createSeraphineBellSkirt();
+            default -> createSeraphinePointeSlippers();
+        };
+    }
+
+    public ItemStack createSeraphineVeil() {
+        return createSeraphineArmor(
+                Material.LEATHER_HELMET,
+                "seraphine_veil",
+                "Kintsugi Veil",
+                3341,
+                List.of(
+                        "§fGlass over a face that never learned to frown.",
+                        "§7Behind it, a small gold halo still turns."
+                )
+        );
+    }
+
+    public ItemStack createSeraphineBodice() {
+        return createSeraphineArmor(
+                Material.LEATHER_CHESTPLATE,
+                "seraphine_bodice",
+                "Porcelain Bodice",
+                3342,
+                List.of(
+                        "§fGlazed white. Cracked where the Hand gripped.",
+                        "§7Every crack was mended in gold."
+                )
+        );
+    }
+
+    public ItemStack createSeraphineBellSkirt() {
+        return createSeraphineArmor(
+                Material.LEATHER_LEGGINGS,
+                "seraphine_bell_skirt",
+                "Marionette Bell Skirt",
+                3343,
+                List.of(
+                        "§fEight hinged porcelain panels, gold at the hem.",
+                        "§7They flare when you spin. You will spin."
+                )
+        );
+    }
+
+    public ItemStack createSeraphinePointeSlippers() {
+        return createSeraphineArmor(
+                Material.LEATHER_BOOTS,
+                "seraphine_pointe_slippers",
+                "Gilt Pointe Slippers",
+                3344,
+                List.of(
+                        "§fShe never walked. She was carried, toes on the boards.",
+                        "§7Gold-tipped, for a stage that floats."
+                )
+        );
+    }
+
+    private ItemStack createSeraphineArmor(
+            Material material,
+            String itemId,
+            String name,
+            int modelData,
+            List<String> story
+    ) {
+        ItemStack item = new ItemStack(material);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            setItemId(meta, itemId);
+            ItemStats stats = BossGearBalance.base(itemId);
+            applyItemData(meta, Rarity.LEGENDARY, stats);
+            BossGearBalance.stamp(meta);
+            meta.setDisplayName("§6✦ §f" + name);
+            List<String> lore = new ArrayList<>();
+            lore.add("§7✦ §6LEGENDARY §8· §fThe Mended Saint");
+            lore.add("");
+            lore.add("§7🛡 Defense: §f+" + formatAetherionStat(stats.getDefense()));
+            lore.add("§7❤ Health: §f+" + formatAetherionStat(stats.getHealth()));
+            lore.add("§7⚔ Damage: §f+" + formatAetherionStat(stats.getDamage()));
+            lore.add("§7⚔ Attack Spread: §f+" + formatAetherionStat(stats.getAttackSpread()));
+            lore.add("§7✧ Crit Chance: §f+" + formatAetherionStat(stats.getCritChance()) + "%");
+            lore.add("§7✧ Crit Damage: §f+" + formatAetherionStat(stats.getCritDamage()) + "%");
+            lore.add("§7✦ Speed: §f+" + formatAetherionStat(stats.getSpeed()) + "%");
+            lore.add("");
+            lore.addAll(story);
+            lore.add("");
+            lore.add("§6Full Set §8· §fStrung");
+            lore.add("§7A golden thread from the flies");
+            lore.add("§7catches every fall. You never land hard.");
+            lore.add("");
+            lore.add("§8Fallen from the Gilded Proscenium");
+            meta.setLore(createLore(itemId, lore, stats));
+            meta.setCustomModelData(modelData);
+            meta.setUnbreakable(true);
+            applyArmorColor(meta, SERAPHINE_GLAZE);
+            hideVanillaAttributes(meta);
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    public ItemStack createSeraphineNeedle() {
+        ItemStack item = new ItemStack(Material.IRON_SWORD);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            setItemId(meta, "seraphine_needle");
+            ItemStats stats = BossGearBalance.base("seraphine_needle");
+            applyItemData(meta, Rarity.LEGENDARY, stats);
+            BossGearBalance.stamp(meta);
+            BossWeaponLook.apply(meta, "seraphine_needle");
+            meta.setDisplayName("§6✦ §fSeverance§7, the Saint's Needle");
+            meta.setLore(createLore(List.of(
+                    "§7✦ §6LEGENDARY §8· §fThe Mended Saint",
+                    "",
+                    "§7⚔ Damage: §f+84.00",
+                    "§7⚔ Attack Spread: §f+10.00",
+                    "§7✧ Crit Chance: §f+14.00%",
+                    "§7✧ Crit Damage: §f+100.00%",
+                    "",
+                    "§fShe cut her own strings with this.",
+                    "§7The Hand above still flinches at it.",
+                    "",
+                    "§6✦ Five Strings §8· §eRight-click",
+                    "§7Five fingertips part the clouds and drop",
+                    "§7golden threads on up to §f5 §7foes. Hoisted,",
+                    "§7jerked in stop-motion to her lullaby, then",
+                    "§7cut loose to fall like dropped porcelain.",
+                    "§8Players & pets ignored. §7CD §f14s§7.",
+                    "",
+                    "§6✦ Kintsugi Stitch §8· §7Passive",
+                    "§7Every §f5th §7hit on one foe sews a gold",
+                    "§7seam through it and plays her next note.",
+                    "",
+                    "§8Drawn from Seraphine, the Hanging Saint"
+            ), false, true, false));
+            meta.setCustomModelData(3340);
+            meta.setUnbreakable(true);
+            meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE);
+            hideVanillaAttributes(meta);
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+
+    /*
+     * =========================================================
      * CATCHER SET
      * =========================================================
      */

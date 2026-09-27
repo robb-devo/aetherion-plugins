@@ -49,6 +49,11 @@ public final class ArmorAppearance {
             return new ArmorTrim(TrimMaterial.AMETHYST, TrimPattern.FLOW);
         }
 
+        if (id.startsWith("seraphine_")) {
+            // Porcelain glaze, gold lightning seams: kintsugi, like the cracks she mends in the fight.
+            return new ArmorTrim(TrimMaterial.GOLD, TrimPattern.BOLT);
+        }
+
         if (id.startsWith("rotten_")) {
             return new ArmorTrim(TrimMaterial.EMERALD, TrimPattern.RIB);
         }

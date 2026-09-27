@@ -1,13 +1,16 @@
 package de.aetherion.bossengine.manager;
 
 import de.aetherion.bossengine.api.SpawnCause;
+import de.aetherion.bossengine.event.BossDeathEvent;
 import de.aetherion.bossengine.event.BossDespawnEvent;
 import de.aetherion.bossengine.event.BossSpawnEvent;
 import de.aetherion.bossengine.hud.BossBarHud;
 import de.aetherion.bossengine.instance.BossInstance;
 import de.aetherion.bossengine.instance.BossState;
+import de.aetherion.bossengine.instance.saint.HangingSaintDirector;
 import de.aetherion.bossengine.integration.worldguard.WorldGuardSpawnGuard;
 import de.aetherion.bossengine.loot.LootService;
+import de.aetherion.bossengine.loot.SeraphineMusicBox;
 import de.aetherion.bossengine.model.BossTemplate;
 import de.aetherion.bossengine.model.LeashAction;
 import de.aetherion.bossengine.model.SpawnCondition;
@@ -23,6 +26,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.CreatureSpawnEvent;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -37,6 +41,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class BossManager {
+
+    /** Seraphine's music box starts coming down this long after her curtain call. */
+    private static final int MUSIC_BOX_DELAY_TICKS = 40;
 
     private final JavaPlugin plugin;
     private final TemplateManager templates;
@@ -371,8 +378,40 @@ public class BossManager {
         if (killer == null) {
             killer = instance.getDamageTracker().topDamager().orElse(null);
         }
-        lootService.grant(lootService.buildDeathEvent(instance, killer));
+        BossDeathEvent event = lootService.buildDeathEvent(instance, killer);
+        if (!payIntoMusicBox(instance, event)) {
+            lootService.grant(event);
+        }
         onDeath(instance);
+        return true;
+    }
+
+    /**
+     * Hanging Saint: XP and the recap land now; the items are lowered onto her stage in a music
+     * box and claimed there per player. The box holds the stage until it is gone. False (plain
+     * payout) when there is no standing stage to land on.
+     */
+    private boolean payIntoMusicBox(BossInstance instance, BossDeathEvent event) {
+        if (!HangingSaintDirector.ID.equalsIgnoreCase(instance.getTemplate().getId())) {
+            return false;
+        }
+        Location stage = instance.getSaintStageCenter();
+        if (stage == null || stage.getWorld() == null) {
+            return false;
+        }
+        Map<UUID, List<ItemStack>> bundles = lootService.grantToChest(event);
+        if (bundles.isEmpty()) {
+            return true;
+        }
+        retainChunks(stage);
+        SeraphineMusicBox.place(
+                plugin,
+                stage,
+                instance.getTemplate().getDisplayName(),
+                bundles,
+                MUSIC_BOX_DELAY_TICKS,
+                () -> releaseChunks(stage)
+        );
         return true;
     }
 

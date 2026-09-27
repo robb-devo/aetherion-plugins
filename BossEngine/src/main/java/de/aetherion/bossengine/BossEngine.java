@@ -118,6 +118,10 @@ public final class BossEngine extends JavaPlugin {
                 new de.aetherion.bossengine.listener.BossHudListener(bossManager.getHud()),
                 this
         );
+        getServer().getPluginManager().registerEvents(
+                new de.aetherion.bossengine.listener.SeraphineMusicBoxListener(),
+                this
+        );
         getServer().getScheduler().runTask(this, () -> {
             for (org.bukkit.entity.Player player : getServer().getOnlinePlayers()) {
                 de.aetherion.bossengine.skill.t2.T2Mechanics.clearInvert(player);
@@ -170,9 +174,12 @@ public final class BossEngine extends JavaPlugin {
         if (spawnerManager != null) {
             spawnerManager.stop();
         }
+        // Unclaimed shares are delivered before the boxes (and their stages) come down.
+        de.aetherion.bossengine.loot.SeraphineMusicBox.clearAll();
         if (bossManager != null) {
             bossManager.stop();
         }
+        de.aetherion.bossengine.instance.saint.SaintStage.strikeAwaiting(this);
         getLogger().info("BossEngine disabled.");
     }
 

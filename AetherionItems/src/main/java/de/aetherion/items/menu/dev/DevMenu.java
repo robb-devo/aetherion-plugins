@@ -1374,6 +1374,11 @@ public class DevMenu {
                 items.add(itemButton(customItem.createThermalCore(), "thermal_core"));
                 items.add(itemButton(customItem.createPickaxeCoreOfTheBurrower(), "pickaxe_core_of_the_burrower"));
                 items.add(itemButton(customItem.createInsolventLedger(), "insolvent_ledger"));
+                items.add(itemButton(customItem.createSeraphineNeedle(), "seraphine_needle"));
+                items.add(itemButton(customItem.createSeraphineVeil(), "seraphine_veil"));
+                items.add(itemButton(customItem.createSeraphineBodice(), "seraphine_bodice"));
+                items.add(itemButton(customItem.createSeraphineBellSkirt(), "seraphine_bell_skirt"));
+                items.add(itemButton(customItem.createSeraphinePointeSlippers(), "seraphine_pointe_slippers"));
             }
             case WEAPONS_DUNGEON -> {
                 items.add(itemButton(customItem.createDungeonCore(), "dungeon_core"));
@@ -1821,6 +1826,11 @@ public class DevMenu {
             case "thermal_core" -> customItem.createThermalCore();
             case "pickaxe_core_of_the_burrower" -> customItem.createPickaxeCoreOfTheBurrower();
             case "insolvent_ledger" -> customItem.createInsolventLedger();
+            case "seraphine_needle" -> customItem.createSeraphineNeedle();
+            case "seraphine_veil" -> customItem.createSeraphineVeil();
+            case "seraphine_bodice" -> customItem.createSeraphineBodice();
+            case "seraphine_bell_skirt" -> customItem.createSeraphineBellSkirt();
+            case "seraphine_pointe_slippers" -> customItem.createSeraphinePointeSlippers();
             case "dungeon_core" -> customItem.createDungeonCore();
             case "dungeon_core_2" -> customItem.createDungeonCore2();
             case "dungeon_core_3" -> customItem.createDungeonCore3();

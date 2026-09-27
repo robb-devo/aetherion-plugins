@@ -1173,6 +1173,65 @@ public enum ItemProfile {
 
     /*
      * =========================================================
+     * THE MENDED SAINT (Seraphine, the Hanging Saint)
+     * =========================================================
+     */
+
+    SERAPHINE_NEEDLE(
+            "seraphine_needle",
+            ItemCapability.DAMAGE,
+            ItemCapability.ATTACK_SPREAD,
+            ItemCapability.CRIT_CHANCE,
+            ItemCapability.CRIT_DAMAGE
+    ),
+
+    SERAPHINE_VEIL(
+            "seraphine_veil",
+            ItemCapability.DAMAGE,
+            ItemCapability.DEFENSE,
+            ItemCapability.HEALTH,
+            ItemCapability.ATTACK_SPREAD,
+            ItemCapability.CRIT_CHANCE,
+            ItemCapability.CRIT_DAMAGE,
+            ItemCapability.SPEED
+    ),
+
+    SERAPHINE_BODICE(
+            "seraphine_bodice",
+            ItemCapability.DAMAGE,
+            ItemCapability.DEFENSE,
+            ItemCapability.HEALTH,
+            ItemCapability.ATTACK_SPREAD,
+            ItemCapability.CRIT_CHANCE,
+            ItemCapability.CRIT_DAMAGE,
+            ItemCapability.SPEED
+    ),
+
+    SERAPHINE_BELL_SKIRT(
+            "seraphine_bell_skirt",
+            ItemCapability.DAMAGE,
+            ItemCapability.DEFENSE,
+            ItemCapability.HEALTH,
+            ItemCapability.ATTACK_SPREAD,
+            ItemCapability.CRIT_CHANCE,
+            ItemCapability.CRIT_DAMAGE,
+            ItemCapability.SPEED
+    ),
+
+    SERAPHINE_POINTE_SLIPPERS(
+            "seraphine_pointe_slippers",
+            ItemCapability.DAMAGE,
+            ItemCapability.DEFENSE,
+            ItemCapability.HEALTH,
+            ItemCapability.ATTACK_SPREAD,
+            ItemCapability.CRIT_CHANCE,
+            ItemCapability.CRIT_DAMAGE,
+            ItemCapability.SPEED
+    ),
+
+
+    /*
+     * =========================================================
      * IRONHIDE SET (Tank)
      * =========================================================
      */

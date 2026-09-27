@@ -10,7 +10,7 @@
 # dedicated permanent arena call SaintStage.buildPermanent(plugin, loc)
 # once; later spawns on that spot reuse it and never tear it down.
 #
-# Balance / loot below are placeholders.
+# Balance / loot chances below are placeholders.
 # ============================================================
 
 id: hanging_saint
@@ -71,7 +71,68 @@ phases:
 
 skills: []
 
+# Paid into her music box (loot/SeraphineMusicBox): lowered onto the stage on golden
+# threads after the curtain call; each player right-clicks it for their own share.
+# Chances / amounts are placeholders.
 loot:
   damage-based: true
   participation-threshold-percent: 5.0
   experience: 1000
+
+  killer-bonus: []
+
+  # The Mended Saint: Severance (needle) + Kintsugi Veil / Porcelain Bodice /
+  # Marionette Bell Skirt / Gilt Pointe Slippers (random_seraphine_armor = one piece).
+  rank-loot:
+    1:
+      - source: AETHERION
+        item-id: seraphine_needle
+        amount: 1
+        chance: 0.10
+      - source: AETHERION
+        item-id: random_seraphine_armor
+        amount: 1
+        chance: 1.0
+    2:
+      - source: AETHERION
+        item-id: seraphine_needle
+        amount: 1
+        chance: 0.04
+      - source: AETHERION
+        item-id: random_seraphine_armor
+        amount: 1
+        chance: 0.70
+    3:
+      - source: AETHERION
+        item-id: seraphine_needle
+        amount: 1
+        chance: 0.02
+      - source: AETHERION
+        item-id: random_seraphine_armor
+        amount: 1
+        chance: 0.35
+
+  top-damagers:
+    count: 0
+    items: []
+
+  shared: []
+
+  per-damager:
+    - source: AETHERION
+      item-id: random_seraphine_armor
+      amount: 1
+      chance: 0.05
+    # Gold from her seams.
+    - source: VANILLA
+      material: GOLD_NUGGET
+      min-amount: 8
+      max-amount: 24
+      chance: 1.0
+      scale-with-damage: true
+    - source: VANILLA
+      material: EXPERIENCE_BOTTLE
+      min-amount: 10
+      max-amount: 20
+      chance: 1.0
+      scale-with-damage: true

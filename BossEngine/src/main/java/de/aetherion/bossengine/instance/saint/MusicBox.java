@@ -8,19 +8,20 @@ import org.bukkit.Sound;
  * <p>The same eight bars recur through the fight: slow and sweet in the intro, spun fast
  * during the pirouette, detuned while she cuts her strings, and winding down (each note later
  * and flatter than the last) as she dies. The Severed Waltz lands its cuts on the downbeats,
- * so the melody itself teaches the combo's rhythm.
+ * so the melody itself teaches the combo's rhythm. After the curtain the loot music box
+ * (loot.SeraphineMusicBox) plays the same theme.
  */
-final class MusicBox {
+public final class MusicBox {
 
     /** Semitones on the note-block scale (0 = F#). -1 = rest. Three beats per bar. */
-    static final int[] THEME = {
+    public static final int[] THEME = {
             22, 18, 15, 17, 14, 17,
             18, 15, 10, 12, -1, -1,
             22, 18, 15, 20, 17, 14,
             15, 13, 10, 10, -1, -1,
     };
     /** Harp root for each bar, played on beat one. */
-    static final int[] ROOTS = {3, 10, 3, 10};
+    public static final int[] ROOTS = {3, 10, 3, 10};
 
     private final SaintFx fx;
     private boolean playing;

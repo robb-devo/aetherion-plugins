@@ -53,6 +53,12 @@ public class AetherionItemHook implements AetherionItemBridge.ItemFactory {
             case "aetherion_leggings" -> customItem.createAetherionLeggings();
             case "aetherion_boots" -> customItem.createAetherionBoots();
             case "aetherion_void_stick", "void_stick" -> customItem.createAetherionVoidStick();
+            case "seraphine_needle", "severance" -> customItem.createSeraphineNeedle();
+            case "random_seraphine_armor", "seraphine_armor" -> customItem.createRandomSeraphineArmor();
+            case "seraphine_veil" -> customItem.createSeraphineVeil();
+            case "seraphine_bodice" -> customItem.createSeraphineBodice();
+            case "seraphine_bell_skirt" -> customItem.createSeraphineBellSkirt();
+            case "seraphine_pointe_slippers" -> customItem.createSeraphinePointeSlippers();
             case "random_dungeon_relic_t2", "dungeon_relic_t2" -> customItem.createRandomDungeonRelicT2();
             case "random_dungeon_relic_t3", "dungeon_relic_t3" -> customItem.createRandomDungeonRelicT3();
             case "weapon_schematic" -> customItem.createWeaponSchematic();

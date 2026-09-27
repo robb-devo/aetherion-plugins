@@ -92,6 +92,12 @@ public final class BossGearBalance {
                 yield stats;
             }
             case "hollow_longbow" -> weapon(88, 12, 12, 85);
+            // The Mended Saint (Seraphine, the Hanging Saint). Placeholder balance: crit + speed, lighter plate.
+            case "seraphine_needle" -> weapon(84, 10, 14, 100);
+            case "seraphine_veil" -> aetherion(34, 46, 10, 8, 10, 55, 3);
+            case "seraphine_bodice" -> aetherion(58, 80, 20, 14, 14, 90, 3);
+            case "seraphine_bell_skirt" -> aetherion(46, 62, 14, 12, 10, 64, 5);
+            case "seraphine_pointe_slippers" -> aetherion(32, 42, 8, 8, 8, 45, 10);
             case "ironhide_helmet" -> tank(20, 36);
             case "ironhide_chestplate" -> tank(38, 56);
             case "ironhide_leggings" -> tank(30, 44);

@@ -68,6 +68,11 @@ public final class ItemFlavor {
             case "voided_455" -> "§8One catalyst short. Then the inventory learned gravity.";
             case "warped_blade" -> "§7It skipped the hallway. The hallway filed a complaint.";
             case "gravwell_cleaver" -> "§7The Pathwarden's toll booth. Still accepting souls.";
+            case "seraphine_needle" -> "§7Sharp enough to cut a god's strings. Mind yours.";
+            case "seraphine_veil" -> "§7Glass veil. Porcelain nerves.";
+            case "seraphine_bodice" -> "§7Broke once. Mended in gold. Better for it.";
+            case "seraphine_bell_skirt" -> "§7Eight hinged panels. Spins on request.";
+            case "seraphine_pointe_slippers" -> "§7En pointe forever. The ankles filed a complaint.";
             case "staff_of_technical_difficulties" -> "§7The patch notes were a suggestion.";
             case "void_vacuum_charm" -> "§7Drops report to the hopper. You do not.";
             case "thermal_core" -> "§7Faster. Warmer. Slightly your problem.";

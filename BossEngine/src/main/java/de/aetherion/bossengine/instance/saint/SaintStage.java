@@ -58,6 +58,14 @@ public final class SaintStage {
 
     private static final String MARKER = "saint_stage";
     private static final Map<String, SaintStage> ACTIVE = new HashMap<>();
+    /** Post-show performers still on a stage (the loot music box), by stage key. */
+    private static final Map<String, Integer> HOLDS = new HashMap<>();
+    /** Temporary stages whose curtain is down, waiting to be struck. */
+    private static final Set<SaintStage> AWAITING = new HashSet<>();
+    /** A released stage stays up this long so the last prop can finish leaving. */
+    private static final int RELEASE_GRACE_TICKS = 100;
+    /** Never wait longer than this for a hold to let go. */
+    private static final int HOLD_CAP_TICKS = 20 * 60 * 10;
 
     record Cell(int x, int y, int z, BlockData data, float order) {
     }
@@ -108,6 +116,33 @@ public final class SaintStage {
         SaintStage stage = new SaintStage(c, true, true);
         stage.strikeByLayout();
         stage.clearMarker(plugin);
+    }
+
+    /**
+     * Something still performs on the stage centered at {@code center} after the fight (the loot
+     * music box): a temporary stage is not struck until every hold is released.
+     */
+    public static void hold(Location center) {
+        if (center != null && center.getWorld() != null) {
+            HOLDS.merge(key(center), 1, Integer::sum);
+        }
+    }
+
+    public static void release(Location center) {
+        if (center != null && center.getWorld() != null) {
+            HOLDS.computeIfPresent(key(center), (k, n) -> n > 1 ? n - 1 : null);
+        }
+    }
+
+    /** Plugin disable: every set still waiting for its strike comes down now. */
+    public static void strikeAwaiting(Plugin plugin) {
+        for (SaintStage stage : new ArrayList<>(AWAITING)) {
+            if (!stage.superseded()) {
+                stage.strike(true, plugin);
+            }
+        }
+        AWAITING.clear();
+        HOLDS.clear();
     }
 
     /* ------------------------------------------------------------------ claim */
@@ -277,6 +312,45 @@ public final class SaintStage {
             placed.add(b);
             placedAs.add(c.data().getMaterial());
         }
+    }
+
+    /**
+     * End of show for a temporary stage: struck {@code delayTicks} after the curtain, but never
+     * while something still holds it (the loot music box), plus a short grace once it lets go.
+     * A new fight that claims the stage meanwhile inherits it and it is left standing.
+     */
+    void strikeAfterCurtain(Plugin plugin, int delayTicks) {
+        AWAITING.add(this);
+        int[] waited = {0};
+        int[] free = {0};
+        Bukkit.getScheduler().runTaskTimer(plugin, task -> {
+            if (!plugin.isEnabled() || !AWAITING.contains(this)) {
+                task.cancel();
+                return;
+            }
+            if (superseded()) {
+                AWAITING.remove(this);
+                task.cancel();
+                return;
+            }
+            waited[0] += 20;
+            free[0] = held() ? 0 : free[0] + 20;
+            if ((waited[0] >= delayTicks && free[0] >= RELEASE_GRACE_TICKS) || waited[0] >= HOLD_CAP_TICKS) {
+                AWAITING.remove(this);
+                task.cancel();
+                strike(false, plugin);
+            }
+        }, 20L, 20L);
+    }
+
+    private boolean held() {
+        return HOLDS.containsKey(key(center));
+    }
+
+    /** A later fight has claimed this spot: its stage object owns the set now. */
+    private boolean superseded() {
+        SaintStage current = ACTIVE.get(key(center));
+        return current != null && current != this;
     }
 
     /** End of show. Temporary stages come down; permanent ones only lose their temp blocks. */

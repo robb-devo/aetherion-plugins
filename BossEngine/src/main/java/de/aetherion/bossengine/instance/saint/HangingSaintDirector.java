@@ -202,6 +202,11 @@ public final class HangingSaintDirector {
         return isMine() && act == Act.DYING;
     }
 
+    /** Floor center of her standing set, where the loot music box lands; null if none was built. */
+    public Location stageCenter() {
+        return isMine() && stage != null && stage.built() ? stage.center() : null;
+    }
+
     public boolean blocksDamage() {
         return isMine() && (act == Act.RAISING || act == Act.INTRO || act == Act.DYING || hiddenBody);
     }
@@ -303,7 +308,8 @@ public final class HangingSaintDirector {
                 SaintStage s = stage;
                 org.bukkit.plugin.Plugin plugin = instance.getPlugin();
                 if (plugin.isEnabled()) {
-                    Bukkit.getScheduler().runTaskLater(plugin, () -> s.strike(false, plugin), STRIKE_DELAY_TICKS);
+                    // Waits out the loot music box too (SaintStage.hold).
+                    s.strikeAfterCurtain(plugin, STRIKE_DELAY_TICKS);
                 } else {
                     s.strike(true, plugin);
                 }
