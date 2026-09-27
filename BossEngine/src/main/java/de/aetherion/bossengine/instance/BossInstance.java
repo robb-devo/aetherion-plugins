@@ -79,6 +79,8 @@ public class BossInstance {
     private final PathwardenDirector pathwardenDirector = new PathwardenDirector(this);
     private final SignatureDirector signatureDirector = new SignatureDirector(this);
     private final SandboxDirector sandboxDirector = new SandboxDirector(this);
+    private final de.aetherion.bossengine.instance.saint.HangingSaintDirector saintDirector =
+            new de.aetherion.bossengine.instance.saint.HangingSaintDirector(this);
     private final TransitionSpectacles spectacles = new TransitionSpectacles(this);
     private final Map<AbstractBossSkill, Long> lastCastTick = new IdentityHashMap<>();
     private final Set<String> announced = new HashSet<>();
@@ -263,6 +265,7 @@ public class BossInstance {
             frostboundDirector.onBind();
             pathwardenDirector.onBind();
             sandboxDirector.onBind();
+            saintDirector.onBind();
         } catch (RuntimeException exception) {
             plugin.getLogger().log(Level.SEVERE, "Boss '" + template.getId() + "' failed to apply stats", exception);
         }
@@ -300,6 +303,7 @@ public class BossInstance {
             frostboundDirector.onBind();
             pathwardenDirector.onBind();
             sandboxDirector.onBind();
+            saintDirector.onBind();
             // Soft-arena bosses stay where they were — never blink home on rebind.
             if (!refusesHardArenaSnap()) {
                 snapToArena();
@@ -376,7 +380,7 @@ public class BossInstance {
     public boolean isCinematicDying() {
         return state == BossState.ALIVE && (dragonDirector.isDying() || sparkyDirector.isDying()
                 || frostboundDirector.isDying() || pathwardenDirector.isDying()
-                || signatureDirector.isDying());
+                || signatureDirector.isDying() || saintDirector.isDying());
     }
 
     public void abortCinematic() {
@@ -386,6 +390,7 @@ public class BossInstance {
         pathwardenDirector.abort();
         signatureDirector.abort();
         sandboxDirector.abort();
+        saintDirector.abort();
     }
 
     public boolean isEncounterActive() {
@@ -424,6 +429,7 @@ public class BossInstance {
         blackHoleActive = false;
         spectacles.finish();
         de.aetherion.bossengine.skill.t2.T2Mechanics.clearInstanceProps(this);
+        saintDirector.clear();
     }
 
     public void despawnMinions(List<UUID> ids) {
@@ -455,6 +461,7 @@ public class BossInstance {
                 || frostboundDirector.isDying()
                 || pathwardenDirector.isDying()
                 || signatureDirector.isDying()
+                || saintDirector.blocksDamage()
                 || sandboxDirector.blocksDamage()
                 || de.aetherion.bossengine.skill.t2.T2Mechanics.isBurrowing(this);
     }
@@ -500,6 +507,7 @@ public class BossInstance {
         de.aetherion.bossengine.skill.t2.T2Mechanics.clearInstanceProps(this);
         if (dragonDirector.beginDeath() || sparkyDirector.beginDeath()
                 || frostboundDirector.beginDeath() || pathwardenDirector.beginDeath()
+                || saintDirector.beginDeath()
                 || signatureDirector.beginDeath()) {
             return true;
         }
@@ -592,6 +600,10 @@ public class BossInstance {
             ticksAlive++;
             return signatureDirector.tick();
         }
+        if (saintDirector.isDying()) {
+            ticksAlive++;
+            return saintDirector.tick();
+        }
         if (!isAlive()) {
             return false;
         }
@@ -606,6 +618,7 @@ public class BossInstance {
         frostboundDirector.tick();
         pathwardenDirector.tick();
         sandboxDirector.tick();
+        saintDirector.tick();
         if (ticksAlive == 20 || ticksAlive == 100) {
             SkeletonUtil.prepareBoss(entity);
             if (entity instanceof org.bukkit.entity.PiglinAbstract piglin) {
@@ -739,6 +752,10 @@ public class BossInstance {
             if (transition.isFreezeAi() && entity instanceof Mob mob) {
                 mob.setAI(false);
             }
+            if (saintDirector.ownsTransition()) {
+                // Hanging Saint stages its own transitions (sound, motion, props).
+                return;
+            }
             if (transition.getShape() == TransitionShape.HOVER_STORM) {
                 // Walk phase keeps gravity/AI feel; lift starts once he reaches center.
                 entity.setGlowing(true);
@@ -788,7 +805,9 @@ public class BossInstance {
         }
         transitionTick++;
         double progress = (double) transitionTick / Math.max(1, transition.getDurationTicks());
-        if (transition.getShape() == TransitionShape.HOVER_STORM) {
+        if (saintDirector.ownsTransition()) {
+            // Choreography runs inside HangingSaintDirector.tick(); only the timer lives here.
+        } else if (transition.getShape() == TransitionShape.HOVER_STORM) {
             tickHoverStorm(transition, progress);
         } else if (transition.getShape() == TransitionShape.INK_SPIN) {
             tickInkSpin(transition, progress);
@@ -1808,6 +1827,7 @@ public class BossInstance {
             return;
         }
         boolean locked = isTransitioning()
+                || saintDirector.ownsBody()
                 || de.aetherion.bossengine.skill.t2.T2Mechanics.isBurrowing(this)
                 || frostboundDirector.isDying()
                 || pathwardenDirector.isDying()
@@ -2283,7 +2303,7 @@ public class BossInstance {
     }
 
     private void unstickIfNeeded() {
-        if (entity == null || !entity.isValid()) {
+        if (entity == null || !entity.isValid() || saintDirector.ownsBody()) {
             return;
         }
         if (isHollowLurker()) {
