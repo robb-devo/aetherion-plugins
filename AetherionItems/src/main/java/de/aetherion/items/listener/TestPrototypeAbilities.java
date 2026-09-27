@@ -12,6 +12,8 @@ import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.entity.Animals;
 import org.bukkit.entity.ArmorStand;
+import org.bukkit.entity.BlockDisplay;
+import org.bukkit.entity.Display;
 import org.bukkit.entity.Enemy;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.FallingBlock;
@@ -26,7 +28,11 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.RayTraceResult;
+import org.bukkit.util.Transformation;
 import org.bukkit.util.Vector;
+import org.joml.Matrix3f;
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -59,14 +65,6 @@ final class TestPrototypeAbilities implements Listener {
             Material.GLASS
     };
 
-    private static final Material[] WIND_DEBRIS = {
-            Material.WHITE_WOOL,
-            Material.LIGHT_GRAY_WOOL,
-            Material.SANDSTONE,
-            Material.SMOOTH_SANDSTONE,
-            Material.TERRACOTTA
-    };
-
     private final JavaPlugin plugin;
     private final Set<UUID> gravityBusy = new HashSet<>();
     private final Set<UUID> stormBusy = new HashSet<>();
@@ -75,6 +73,13 @@ final class TestPrototypeAbilities implements Listener {
     private final Set<UUID> tornadoBusy = new HashSet<>();
     private final Set<UUID> prismBusy = new HashSet<>();
     private final Set<UUID> cascadeBusy = new HashSet<>();
+    private final Set<UUID> meteorBusy = new HashSet<>();
+    private final Set<UUID> cataclysmBusy = new HashSet<>();
+    private final Set<UUID> runeSigilBusy = new HashSet<>();
+    private final Set<UUID> worldSplitterBusy = new HashSet<>();
+    private final Set<UUID> vesperBusy = new HashSet<>();
+    private final Set<UUID> deepsongBusy = new HashSet<>();
+    private final Set<UUID> terminusBusy = new HashSet<>();
 
     TestPrototypeAbilities(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -107,6 +112,35 @@ final class TestPrototypeAbilities implements Listener {
 
     boolean isCascadeBusy(UUID id) {
         return cascadeBusy.contains(id);
+    }
+
+    boolean isMeteorBusy(UUID id) {
+        return meteorBusy.contains(id);
+    }
+
+    boolean isCataclysmBusy(UUID id) {
+        return cataclysmBusy.contains(id);
+    }
+
+    boolean isRuneSigilBusy(UUID id) {
+        return runeSigilBusy.contains(id);
+    }
+
+    boolean isWorldSplitterBusy(UUID id) {
+        return worldSplitterBusy.contains(id);
+    }
+
+    boolean isVesperBusy(UUID id) {
+        return vesperBusy.contains(id);
+    }
+
+    boolean isDeepsongBusy(UUID id) {
+        return deepsongBusy.contains(id);
+    }
+
+    /** Busy for this caster, or anyone: the world has one edge, so only one Terminus runs at a time. */
+    boolean isTerminusBusy(UUID id) {
+        return terminusBusy.contains(id) || TerminusEdge.isRunning();
     }
 
     /** Prototype weapons skip CDs inside the Test Arena. */
@@ -146,15 +180,18 @@ final class TestPrototypeAbilities implements Listener {
         List<FallingBlock> debris = new ArrayList<>();
         Set<UUID> latched = new HashSet<>();
         double boomDamage = Math.max(160.0, weaponDamage * 3.8 + 55.0);
+        HorizonFx horizon = new HorizonFx(world, focus, player.getEyeLocation().getDirection());
 
         new BukkitRunnable() {
             int tick = 0;
             final int chargeTicks = 55;
+            final int collapseTicks = 10;
 
             @Override
             public void run() {
                 if (!player.isOnline() || world != focus.getWorld()) {
                     clearDebris(debris);
+                    horizon.remove();
                     gravityBusy.remove(id);
                     cancel();
                     return;
@@ -163,14 +200,21 @@ final class TestPrototypeAbilities implements Listener {
                 double progress = tick / (double) chargeTicks;
 
                 if (tick <= chargeTicks) {
-                    drawRing(world, focus, 2.2 + (1.0 - progress) * 7.5, tick);
-                    world.spawnParticle(Particle.REVERSE_PORTAL, focus, 18, 0.35, 0.35, 0.35, 0.35);
-                    world.spawnParticle(Particle.SQUID_INK, focus, 10, 0.55, 0.55, 0.55, 0.02);
-                    world.spawnParticle(Particle.DUST, focus, 8, 0.9, 0.7, 0.9, 0,
-                            new Particle.DustOptions(Color.fromRGB(90, 40, 160), 1.35f));
+                    double collapse = Math.max(0.0, (tick - (chargeTicks - collapseTicks)) / (double) collapseTicks);
+                    horizon.pose(tick, progress, collapse);
+                    horizon.inflow(tick, progress);
+                    if (tick % 2 == 0) {
+                        horizon.tethers(player, tick);
+                    }
                     if (tick % 7 == 0) {
-                        world.playSound(focus, Sound.BLOCK_PORTAL_AMBIENT, 0.45f, 0.5f + (float) progress * 0.6f);
+                        if (collapse <= 0.0) {
+                            world.playSound(focus, Sound.BLOCK_PORTAL_AMBIENT, 0.45f, 0.5f + (float) progress * 0.6f);
+                        }
                         spawnDebris(world, focus, debris, VOID_DEBRIS, false);
+                    }
+                    if (tick == chargeTicks - collapseTicks) {
+                        world.playSound(focus, Sound.BLOCK_BEACON_DEACTIVATE, 1.0f, 0.6f);
+                        world.playSound(focus, Sound.ITEM_TRIDENT_RIPTIDE_3, 0.8f, 0.5f);
                     }
                     pullDebris(focus, debris, 0.16 + progress * 0.28);
                     latchAndPull(player, focus, latched, 11.5, 0.14 + progress * 0.26);
@@ -179,12 +223,27 @@ final class TestPrototypeAbilities implements Listener {
 
                 clearDebris(debris);
                 spitDebris(world, focus, VOID_DEBRIS);
-                world.spawnParticle(Particle.EXPLOSION_EMITTER, focus, 5, 1.0, 0.55, 1.0, 0);
-                world.spawnParticle(Particle.FLASH, focus, 4, 0.5, 0.4, 0.5, 0);
+                horizon.detonate();
+                world.spawnParticle(Particle.EXPLOSION_EMITTER, focus, 1, 0, 0, 0, 0);
+                world.spawnParticle(Particle.FLASH, focus, 1, 0, 0, 0, 0);
                 world.spawnParticle(Particle.SONIC_BOOM, focus, 1, 0, 0, 0, 0);
                 world.playSound(focus, Sound.ENTITY_GENERIC_EXPLODE, 1.15f, 0.55f);
                 world.playSound(focus, Sound.ENTITY_WITHER_BREAK_BLOCK, 0.55f, 0.7f);
                 world.playSound(focus, Sound.BLOCK_RESPAWN_ANCHOR_DEPLETE, 0.9f, 0.45f);
+                world.playSound(focus, Sound.ENTITY_WARDEN_SONIC_BOOM, 0.6f, 0.7f);
+                new BukkitRunnable() {
+                    int after = 0;
+
+                    @Override
+                    public void run() {
+                        after++;
+                        horizon.aftermath(after);
+                        if (after >= 14) {
+                            horizon.remove();
+                            cancel();
+                        }
+                    }
+                }.runTaskTimer(plugin, 1L, 1L);
 
                 for (Entity entity : world.getNearbyEntities(focus, 12.0, 10.0, 12.0)) {
                     if (!isCombatTarget(entity)) {
@@ -210,6 +269,7 @@ final class TestPrototypeAbilities implements Listener {
         }.runTaskTimer(plugin, 0L, 1L);
     }
 
+    /** Stormcaller Maul; the cloud, strokes, hits and scars live in {@link StormcallerTempest}. */
     void castStorm(Player player, double weaponDamage) {
         UUID id = player.getUniqueId();
         if (!stormBusy.add(id)) {
@@ -217,191 +277,96 @@ final class TestPrototypeAbilities implements Listener {
         }
         double strikeDamage = Math.max(42.0, weaponDamage * 0.85 + 18.0);
         player.sendMessage("§e✦ Stormcaller §7— thunder rolls for §f6s§7.");
-        Location origin = player.getLocation();
-        World world = origin.getWorld();
-        if (world == null) {
-            stormBusy.remove(id);
+        StormcallerTempest.cast(plugin, player, strikeDamage, () -> stormBusy.remove(id));
+    }
+
+    /** Meteor Mace; the fissure, eruption, meteor, crater and hits live in {@link MeteorMaceCrash}. */
+    void castMeteor(Player player, double weaponDamage) {
+        UUID id = player.getUniqueId();
+        if (!meteorBusy.add(id)) {
             return;
         }
-        world.playSound(origin, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.22f, 1.55f);
-        world.playSound(origin, Sound.ITEM_TRIDENT_THUNDER, 0.35f, 1.2f);
-
-        new BukkitRunnable() {
-            int tick = 0;
-            final int duration = 120;
-
-            @Override
-            public void run() {
-                if (!player.isOnline()) {
-                    stormBusy.remove(id);
-                    cancel();
-                    return;
-                }
-                tick++;
-                Location center = player.getLocation();
-                World w = center.getWorld();
-                if (w == null) {
-                    stormBusy.remove(id);
-                    cancel();
-                    return;
-                }
-                if (tick % 5 == 0) {
-                    w.spawnParticle(Particle.CLOUD, center.clone().add(0, 8, 0), 10, 4.5, 0.6, 4.5, 0.01);
-                    w.spawnParticle(Particle.ELECTRIC_SPARK, center.clone().add(0, 3, 0), 8, 3.5, 2.0, 3.5, 0.02);
-                }
-                if (tick % 8 == 0) {
-                    LivingEntity target = pickStormTarget(player, 14.0);
-                    if (target != null) {
-                        strikeQuiet(w, target, player, strikeDamage);
-                    } else {
-                        Location stray = center.clone().add(
-                                ThreadLocalRandom.current().nextDouble(-8, 8),
-                                0,
-                                ThreadLocalRandom.current().nextDouble(-8, 8)
-                        );
-                        stray.setY(w.getHighestBlockYAt(stray) + 1.0);
-                        w.strikeLightningEffect(stray);
-                        w.playSound(stray, Sound.ENTITY_LIGHTNING_BOLT_IMPACT, 0.28f, 1.35f);
-                    }
-                }
-                if (tick >= duration) {
-                    stormBusy.remove(id);
-                    cancel();
-                }
-            }
-        }.runTaskTimer(plugin, 0L, 1L);
+        double launch = Math.max(24.0, weaponDamage * 0.35 + 8.0);
+        double impact = Math.max(175.0, weaponDamage * 4.0 + 60.0);
+        double burn = Math.max(10.0, weaponDamage * 0.1);
+        player.sendMessage("§c✦ Meteor Mace §7— the ground answers…");
+        MeteorMaceCrash.cast(plugin, player, launch, impact, burn, () -> meteorBusy.remove(id));
     }
 
+    /** Cataclysm Rod; bolt flight + Absolute Nova live in {@link CataclysmRodNova}. */
+    void castCataclysm(Player player, double weaponDamage) {
+        UUID id = player.getUniqueId();
+        if (!cataclysmBusy.add(id)) {
+            return;
+        }
+        double splash = Math.max(80.0, weaponDamage * 2.2 + 30.0);
+        CataclysmRodNova.cast(plugin, player, splash, () -> cataclysmBusy.remove(id));
+    }
+
+    /** Rune Sigil; azure seal, pillar judgment, heal/damage live in {@link RuneSigilRite}. */
+    void castRuneSigil(Player player, double weaponDamage) {
+        UUID id = player.getUniqueId();
+        if (!runeSigilBusy.add(id)) {
+            return;
+        }
+        double judgment = Math.max(220.0, weaponDamage * 5.5 + 80.0);
+        RuneSigilRite.cast(plugin, player, judgment, () -> runeSigilBusy.remove(id));
+    }
+
+    /** World Splitter; reality-rift illusion lives in {@link WorldSplitterRift}. */
+    void castWorldSplitter(Player player, double weaponDamage) {
+        UUID id = player.getUniqueId();
+        if (!worldSplitterBusy.add(id)) {
+            return;
+        }
+        double splash = Math.max(90.0, weaponDamage * 2.4 + 40.0);
+        WorldSplitterRift.cast(plugin, player, splash, () -> worldSplitterBusy.remove(id));
+    }
+
+    /** Vesper Bell; basilica, hymn, rapture and shatter live in {@link VesperBellBasilica}. */
+    void castVesperBell(Player player, double weaponDamage) {
+        UUID id = player.getUniqueId();
+        if (!vesperBusy.add(id)) {
+            return;
+        }
+        double judgment = Math.max(200.0, weaponDamage * 5.0 + 80.0);
+        VesperBellBasilica.cast(plugin, player, judgment, () -> vesperBusy.remove(id));
+    }
+
+    /** Deepsong Conch; the stone sea, breach and spout live in {@link DeepsongLeviathan}. */
+    void castDeepsong(Player player, double weaponDamage) {
+        UUID id = player.getUniqueId();
+        if (!deepsongBusy.add(id)) {
+            return;
+        }
+        double impact = Math.max(160.0, weaponDamage * 3.2 + 60.0);
+        DeepsongLeviathan.cast(plugin, player, impact, () -> deepsongBusy.remove(id));
+    }
+
+    /** Terminus; the edge, the survey, the core sample and the tower live in {@link TerminusEdge}. */
+    void castTerminus(Player player, double weaponDamage) {
+        UUID id = player.getUniqueId();
+        if (!terminusBusy.add(id)) {
+            return;
+        }
+        double fall = Math.max(320.0, weaponDamage * 6.0 + 100.0);
+        TerminusEdge.cast(plugin, player, fall, () -> terminusBusy.remove(id));
+    }
+
+    /** Resonance Scythe; the wave, its hits and its visuals live in {@link ResonanceScytheWave}. */
     void castSonic(Player player, double weaponDamage) {
-        World world = player.getWorld();
-        Location eye = player.getEyeLocation();
-        Vector dir = eye.getDirection().normalize();
-        double damage = Math.max(28.0, weaponDamage * 0.72 + 12.0);
-        Set<UUID> hit = new HashSet<>();
-
-        world.playSound(eye, Sound.ENTITY_WARDEN_SONIC_BOOM, 0.45f, 1.55f);
-        world.playSound(eye, Sound.ENTITY_PLAYER_ATTACK_SWEEP, 0.7f, 0.65f);
-        player.sendActionBar(net.kyori.adventure.text.Component.text("§3Resonance Wave"));
-
-        new BukkitRunnable() {
-            int step = 0;
-            final int maxSteps = 14;
-
-            @Override
-            public void run() {
-                if (step >= maxSteps || !player.isOnline()) {
-                    cancel();
-                    return;
-                }
-                Location at = eye.clone().add(dir.clone().multiply(1.15 * (step + 1)));
-                world.spawnParticle(Particle.SONIC_BOOM, at, 1, 0, 0, 0, 0);
-                world.spawnParticle(Particle.SWEEP_ATTACK, at, 2, 0.15, 0.1, 0.15, 0);
-                world.spawnParticle(Particle.CLOUD, at, 4, 0.25, 0.15, 0.25, 0.01);
-                if (step % 2 == 0) {
-                    world.playSound(at, Sound.BLOCK_NOTE_BLOCK_BASS, 0.35f, 0.5f + step * 0.04f);
-                }
-                for (Entity entity : world.getNearbyEntities(at, 1.85, 1.6, 1.85)) {
-                    if (!isCombatTarget(entity) || !hit.add(entity.getUniqueId())) {
-                        continue;
-                    }
-                    LivingEntity living = (LivingEntity) entity;
-                    abilityDamage(living, damage, player);
-                    living.setVelocity(dir.clone().multiply(0.55).setY(0.28));
-                    world.spawnParticle(Particle.CRIT, living.getLocation().add(0, 1, 0), 8, 0.25, 0.3, 0.25, 0.02);
-                }
-                step++;
-            }
-        }.runTaskTimer(plugin, 0L, 1L);
+        ResonanceScytheWave.cast(plugin, player, weaponDamage);
     }
 
-    /** Tracking beacon beam → green→red → nuke (Pathwarden-ish). */
+    /** Judgment Staff; the seal, swords, pillar, hits and visuals live in {@link JudgmentVerdict}. */
     void castJudgmentBeam(Player player, double weaponDamage) {
         UUID id = player.getUniqueId();
         if (!beamBusy.add(id)) {
             return;
         }
-        World world = player.getWorld();
-        player.sendMessage("§a✦ Judgment Beam §7locking…");
-        world.playSound(player.getLocation(), Sound.BLOCK_BEACON_ACTIVATE, 0.9f, 1.4f);
-
         double boom = Math.max(140.0, weaponDamage * 3.2 + 40.0);
-        final Location[] focus = {rayAim(player, 28.0)};
-
-        new BukkitRunnable() {
-            int tick = 0;
-            final int seek = 50; // 2.5s track
-            final int pulse = 12; // pulse before fire
-            final int fire = 8;
-
-            @Override
-            public void run() {
-                if (!player.isOnline()) {
-                    beamBusy.remove(id);
-                    cancel();
-                    return;
-                }
-                tick++;
-                Location from = player.getEyeLocation().add(player.getEyeLocation().getDirection().multiply(0.6));
-                World w = from.getWorld();
-                if (w == null) {
-                    beamBusy.remove(id);
-                    cancel();
-                    return;
-                }
-
-                if (tick <= seek) {
-                    focus[0] = lerp(focus[0], rayAim(player, 28.0), 0.18);
-                    double t = tick / (double) seek;
-                    Color color = mix(Color.fromRGB(40, 220, 90), Color.fromRGB(220, 40, 50), t);
-                    boolean pulsing = tick > seek - pulse;
-                    if (pulsing && tick % 2 == 0) {
-                        color = tick % 4 == 0 ? Color.fromRGB(255, 80, 80) : Color.fromRGB(255, 200, 200);
-                    }
-                    drawBeam(w, from, focus[0], color, pulsing ? 2.2f : 1.4f);
-                    drawZone(w, focus[0], color, pulsing);
-                    if (tick % 8 == 0) {
-                        w.playSound(focus[0], Sound.BLOCK_BEACON_AMBIENT, 0.35f, 0.8f + (float) t * 0.7f);
-                    }
-                    if (pulsing && tick % 3 == 0) {
-                        w.playSound(focus[0], Sound.BLOCK_NOTE_BLOCK_PLING, 0.45f, 0.7f + (float) ((tick % 6) * 0.12));
-                    }
-                    return;
-                }
-
-                int fireTick = tick - seek;
-                if (fireTick == 1) {
-                    drawBeam(w, from, focus[0], Color.fromRGB(255, 30, 40), 2.8f);
-                    w.spawnParticle(Particle.EXPLOSION_EMITTER, focus[0].clone().add(0, 0.4, 0), 3, 0.6, 0.3, 0.6, 0);
-                    w.spawnParticle(Particle.FLASH, focus[0], 3, 0.4, 0.3, 0.4, 0);
-                    w.spawnParticle(Particle.END_ROD, focus[0], 40, 0.8, 0.4, 0.8, 0.05);
-                    w.playSound(focus[0], Sound.ENTITY_WARDEN_SONIC_BOOM, 0.85f, 0.55f);
-                    w.playSound(focus[0], Sound.ENTITY_GENERIC_EXPLODE, 1.05f, 0.5f);
-                    w.playSound(from, Sound.BLOCK_BEACON_DEACTIVATE, 0.8f, 0.7f);
-                    spitDebris(w, focus[0], STORM_DEBRIS);
-                    for (Entity entity : w.getNearbyEntities(focus[0], 5.5, 4.5, 5.5)) {
-                        if (!isCombatTarget(entity)) {
-                            continue;
-                        }
-                        LivingEntity living = (LivingEntity) entity;
-                        abilityDamage(living, boom, player);
-                        Vector away = living.getLocation().toVector().subtract(focus[0].toVector());
-                        if (away.lengthSquared() < 0.01) {
-                            away = new Vector(0, 1, 0);
-                        } else {
-                            away.normalize();
-                        }
-                        living.setVelocity(away.multiply(2.2).setY(1.05));
-                    }
-                    player.sendMessage("§c✦ Judgment §7fired.");
-                } else if (fireTick <= fire) {
-                    drawBeam(w, from, focus[0], Color.fromRGB(255, 60, 60), 2.0f);
-                }
-                if (fireTick >= fire) {
-                    beamBusy.remove(id);
-                    cancel();
-                }
-            }
-        }.runTaskTimer(plugin, 0L, 1L);
+        player.sendMessage("§6✦ Judgment §7— the seal is drawn…");
+        JudgmentVerdict.cast(plugin, player, boom, () -> beamBusy.remove(id));
     }
 
     /** Real forward dash (~5 blocks), not a teleport. */
@@ -443,96 +408,15 @@ final class TestPrototypeAbilities implements Listener {
         }.runTaskTimer(plugin, 0L, 1L);
     }
 
-    /** Spin enemies in a tornado, then fling them out. */
+    /** Cyclone Rod; the funnel, orbit, fling and visuals live in {@link CycloneRodTempest}. */
     void castTornado(Player player, double weaponDamage) {
         UUID id = player.getUniqueId();
         if (!tornadoBusy.add(id)) {
             return;
         }
-        World world = player.getWorld();
-        player.sendMessage("§f✦ Cyclone §7whips up…");
-        world.playSound(player.getLocation(), Sound.ENTITY_BREEZE_WHIRL, 0.7f, 0.85f);
-        world.playSound(player.getLocation(), Sound.ITEM_ELYTRA_FLYING, 0.35f, 0.6f);
-
         double tipDamage = Math.max(55.0, weaponDamage * 1.1 + 20.0);
-        Set<UUID> caught = new HashSet<>();
-
-        new BukkitRunnable() {
-            int tick = 0;
-            final int spin = 55;
-            double angle = 0;
-
-            @Override
-            public void run() {
-                if (!player.isOnline()) {
-                    tornadoBusy.remove(id);
-                    cancel();
-                    return;
-                }
-                tick++;
-                Location center = player.getLocation().add(0, 0.2, 0);
-                World w = center.getWorld();
-                if (w == null) {
-                    tornadoBusy.remove(id);
-                    cancel();
-                    return;
-                }
-
-                if (tick <= spin) {
-                    angle += 0.55;
-                    double radius = 2.2 + (tick / (double) spin) * 4.0;
-                    drawTornado(w, center, radius, angle, tick);
-                    if (tick % 4 == 0) {
-                        w.playSound(center, Sound.ENTITY_BREEZE_IDLE_GROUND, 0.25f, 0.7f + tick * 0.01f);
-                    }
-                    for (Entity entity : w.getNearbyEntities(center, 7.5, 6.0, 7.5)) {
-                        if (!isCombatTarget(entity)) {
-                            continue;
-                        }
-                        LivingEntity living = (LivingEntity) entity;
-                        caught.add(living.getUniqueId());
-                        Vector rel = living.getLocation().toVector().subtract(center.toVector());
-                        double dist = Math.max(0.8, Math.min(radius, rel.clone().setY(0).length()));
-                        double yaw = Math.atan2(rel.getZ(), rel.getX()) + 0.55;
-                        double lift = 0.35 + (tick / (double) spin) * 0.55;
-                        Location want = center.clone().add(Math.cos(yaw) * dist, Math.min(3.2, 0.6 + tick * 0.04), Math.sin(yaw) * dist);
-                        Vector push = want.toVector().subtract(living.getLocation().toVector());
-                        if (push.lengthSquared() > 0.01) {
-                            living.setVelocity(push.multiply(0.28).setY(lift * 0.15));
-                        }
-                        living.setFallDistance(0f);
-                    }
-                    return;
-                }
-
-                // Fling
-                spitDebris(w, center.clone().add(0, 1.5, 0), WIND_DEBRIS);
-                w.spawnParticle(Particle.EXPLOSION_EMITTER, center.clone().add(0, 1.2, 0), 2, 0.5, 0.3, 0.5, 0);
-                w.playSound(center, Sound.ENTITY_GENERIC_EXPLODE, 0.75f, 0.85f);
-                w.playSound(center, Sound.ENTITY_BREEZE_SHOOT, 0.8f, 0.7f);
-                for (Entity entity : w.getNearbyEntities(center, 9.0, 8.0, 9.0)) {
-                    if (!isCombatTarget(entity)) {
-                        continue;
-                    }
-                    LivingEntity living = (LivingEntity) entity;
-                    if (!caught.contains(living.getUniqueId())
-                            && living.getLocation().distanceSquared(center) > 64) {
-                        continue;
-                    }
-                    abilityDamage(living, tipDamage, player);
-                    Vector away = living.getLocation().toVector().subtract(center.toVector());
-                    if (away.lengthSquared() < 0.01) {
-                        away = new Vector(ThreadLocalRandom.current().nextDouble(-1, 1), 0.5,
-                                ThreadLocalRandom.current().nextDouble(-1, 1));
-                    }
-                    away.normalize().multiply(2.8).setY(1.35);
-                    living.setVelocity(away);
-                }
-                player.sendMessage("§f✦ Cyclone §7dispersed.");
-                tornadoBusy.remove(id);
-                cancel();
-            }
-        }.runTaskTimer(plugin, 0L, 1L);
+        player.sendMessage("§f✦ Cyclone §7— the air starts to turn…");
+        CycloneRodTempest.cast(plugin, player, tipDamage, () -> tornadoBusy.remove(id));
     }
 
     /** Two half-buried colored cubes orbit opposite ways → shrink/spin → big bang. */
@@ -638,83 +522,15 @@ final class TestPrototypeAbilities implements Listener {
         }.runTaskTimer(plugin, 0L, 1L);
     }
 
-    /** Big bolt that chains up to 10 enemies. Attack spread ignored. */
+    /** Big bolt that chains up to 10 enemies. Attack spread ignored. Hops and visuals live in {@link CascadeTorrent}. */
     void castCascadeBolt(Player player, double weaponDamage) {
         UUID id = player.getUniqueId();
         if (!cascadeBusy.add(id)) {
             return;
         }
-        World world = player.getWorld();
         double perHit = Math.max(38.0, weaponDamage * 0.95 + 16.0);
-        Set<UUID> hit = new HashSet<>();
-        Location[] cursor = {player.getEyeLocation().clone()};
-        Vector aim = player.getEyeLocation().getDirection().normalize();
-
-        // Prefer first target in look cone
-        LivingEntity first = null;
-        double best = 22.0 * 22.0;
-        for (Entity entity : world.getNearbyEntities(player.getLocation(), 22, 12, 22)) {
-            if (!isCombatTarget(entity)) {
-                continue;
-            }
-            Vector to = ((LivingEntity) entity).getEyeLocation().toVector().subtract(player.getEyeLocation().toVector());
-            if (to.lengthSquared() < 0.01) {
-                continue;
-            }
-            double dist = to.lengthSquared();
-            if (to.normalize().dot(aim) < 0.35) {
-                continue;
-            }
-            if (dist < best) {
-                best = dist;
-                first = (LivingEntity) entity;
-            }
-        }
-
         player.sendMessage("§6✦ Cascade Bolt");
-        world.playSound(player.getLocation(), Sound.ENTITY_ARROW_SHOOT, 1.0f, 0.55f);
-        world.playSound(player.getLocation(), Sound.ITEM_CROSSBOW_SHOOT, 0.8f, 0.7f);
-
-        LivingEntity[] current = {first};
-        int[] hop = {0};
-
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                if (!player.isOnline() || hop[0] >= 10) {
-                    cascadeBusy.remove(id);
-                    cancel();
-                    return;
-                }
-                LivingEntity target = current[0];
-                if (target == null || !target.isValid() || target.isDead()) {
-                    target = nearestCascade(player, cursor[0], hit, 14.0);
-                    current[0] = target;
-                }
-                if (target == null) {
-                    cascadeBusy.remove(id);
-                    cancel();
-                    return;
-                }
-                Location dest = target.getEyeLocation();
-                drawCascadeTrail(world, cursor[0], dest, hop[0]);
-                world.playSound(dest, Sound.ENTITY_ARROW_HIT, 0.7f, 1.1f + hop[0] * 0.05f);
-                world.playSound(dest, Sound.ENTITY_PLAYER_ATTACK_CRIT, 0.55f, 1.3f);
-                world.spawnParticle(Particle.CRIT, dest, 18, 0.3, 0.3, 0.3, 0.08);
-                world.spawnParticle(Particle.END_ROD, dest, 8, 0.15, 0.15, 0.15, 0.02);
-                world.spawnParticle(Particle.FLASH, dest, 1, 0, 0, 0, 0);
-                abilityDamage(target, perHit, player);
-                hit.add(target.getUniqueId());
-                cursor[0] = dest.clone();
-                hop[0]++;
-                current[0] = nearestCascade(player, cursor[0], hit, 12.0);
-                if (current[0] == null || hop[0] >= 10) {
-                    world.spawnParticle(Particle.SONIC_BOOM, cursor[0], 1, 0, 0, 0, 0);
-                    cascadeBusy.remove(id);
-                    cancel();
-                }
-            }
-        }.runTaskTimer(plugin, 0L, 3L);
+        CascadeTorrent.cast(plugin, player, perHit, () -> cascadeBusy.remove(id));
     }
 
     private static org.bukkit.entity.BlockDisplay spawnPrism(World world, Location at, Material mat, float scale) {
@@ -750,46 +566,6 @@ final class TestPrototypeAbilities implements Listener {
         ));
     }
 
-    private static LivingEntity nearestCascade(Player player, Location from, Set<UUID> hit, double range) {
-        LivingEntity best = null;
-        double bestDist = range * range;
-        World world = from.getWorld();
-        if (world == null) {
-            return null;
-        }
-        for (Entity entity : world.getNearbyEntities(from, range, range, range)) {
-            if (!isCombatTarget(entity) || hit.contains(entity.getUniqueId())) {
-                continue;
-            }
-            double d = entity.getLocation().distanceSquared(from);
-            if (d < bestDist) {
-                bestDist = d;
-                best = (LivingEntity) entity;
-            }
-        }
-        return best;
-    }
-
-    private static void drawCascadeTrail(World world, Location from, Location to, int hop) {
-        Vector delta = to.toVector().subtract(from.toVector());
-        double len = delta.length();
-        if (len < 0.1) {
-            return;
-        }
-        Vector step = delta.normalize().multiply(0.55);
-        Location cursor = from.clone();
-        int steps = Math.min(40, (int) (len / 0.55));
-        Color color = hop % 2 == 0 ? Color.fromRGB(255, 170, 40) : Color.fromRGB(255, 80, 40);
-        Particle.DustOptions dust = new Particle.DustOptions(color, 1.8f);
-        for (int i = 0; i < steps; i++) {
-            cursor.add(step);
-            world.spawnParticle(Particle.DUST, cursor, 1, 0, 0, 0, 0, dust);
-            if (i % 2 == 0) {
-                world.spawnParticle(Particle.FLAME, cursor, 1, 0.02, 0.02, 0.02, 0);
-            }
-        }
-    }
-
     static boolean isCombatTarget(Entity entity) {
         if (!(entity instanceof LivingEntity) || entity instanceof Player || entity instanceof ArmorStand) {
             return false;
@@ -823,30 +599,6 @@ final class TestPrototypeAbilities implements Listener {
         return aim;
     }
 
-    private static Location rayAim(Player player, double max) {
-        World world = player.getWorld();
-        Location eye = player.getEyeLocation();
-        RayTraceResult hit = world.rayTraceBlocks(eye, eye.getDirection(), max);
-        if (hit != null && hit.getHitPosition() != null) {
-            return hit.getHitPosition().toLocation(world).add(0, 0.2, 0);
-        }
-        return eye.clone().add(eye.getDirection().normalize().multiply(max));
-    }
-
-    private static Location lerp(Location from, Location to, double t) {
-        if (from == null) {
-            return to.clone();
-        }
-        if (to == null || from.getWorld() != to.getWorld()) {
-            return from.clone();
-        }
-        return from.clone().add(
-                (to.getX() - from.getX()) * t,
-                (to.getY() - from.getY()) * t,
-                (to.getZ() - from.getZ()) * t
-        );
-    }
-
     private static Color mix(Color a, Color b, double t) {
         t = Math.max(0, Math.min(1, t));
         return Color.fromRGB(
@@ -854,53 +606,6 @@ final class TestPrototypeAbilities implements Listener {
                 (int) (a.getGreen() + (b.getGreen() - a.getGreen()) * t),
                 (int) (a.getBlue() + (b.getBlue() - a.getBlue()) * t)
         );
-    }
-
-    private static void drawBeam(World world, Location from, Location to, Color color, float size) {
-        Vector delta = to.toVector().subtract(from.toVector());
-        double len = delta.length();
-        if (len < 0.1) {
-            return;
-        }
-        Vector step = delta.normalize().multiply(0.45);
-        Location cursor = from.clone();
-        int steps = Math.min(80, (int) (len / 0.45));
-        Particle.DustOptions dust = new Particle.DustOptions(color, size);
-        for (int i = 0; i < steps; i++) {
-            cursor.add(step);
-            world.spawnParticle(Particle.DUST, cursor, 1, 0, 0, 0, 0, dust);
-            if (i % 3 == 0) {
-                world.spawnParticle(Particle.END_ROD, cursor, 1, 0.02, 0.02, 0.02, 0);
-            }
-        }
-    }
-
-    private static void drawZone(World world, Location at, Color color, boolean pulse) {
-        double r = pulse ? 2.6 : 2.2;
-        Particle.DustOptions dust = new Particle.DustOptions(color, pulse ? 1.6f : 1.1f);
-        for (int i = 0; i < 18; i++) {
-            double a = (Math.PI * 2 * i) / 18.0;
-            Location p = at.clone().add(Math.cos(a) * r, 0.05, Math.sin(a) * r);
-            world.spawnParticle(Particle.DUST, p, 1, 0, 0, 0, 0, dust);
-        }
-    }
-
-    private static void drawTornado(World world, Location center, double radius, double angle, int tick) {
-        for (int layer = 0; layer < 5; layer++) {
-            double y = layer * 0.7;
-            double r = radius * (0.35 + layer * 0.14);
-            for (int i = 0; i < 8; i++) {
-                double a = angle + i * (Math.PI / 4) + layer * 0.4;
-                Location p = center.clone().add(Math.cos(a) * r, y, Math.sin(a) * r);
-                world.spawnParticle(Particle.CLOUD, p, 1, 0.05, 0.05, 0.05, 0.01);
-                if (i % 2 == 0) {
-                    world.spawnParticle(Particle.WHITE_SMOKE, p, 1, 0.05, 0.05, 0.05, 0.01);
-                }
-            }
-        }
-        if (tick % 5 == 0) {
-            world.spawnParticle(Particle.SWEEP_ATTACK, center.clone().add(0, 1.5, 0), 2, 0.8, 0.6, 0.8, 0);
-        }
     }
 
     private void latchAndPull(Player caster, Location focus, Set<UUID> latched, double radius, double strength) {
@@ -1004,19 +709,7 @@ final class TestPrototypeAbilities implements Listener {
         debris.clear();
     }
 
-    private static void drawRing(World world, Location core, double radius, int tick) {
-        int points = 26;
-        for (int i = 0; i < points; i++) {
-            double angle = (Math.PI * 2 * i) / points + tick * 0.14;
-            Location p = core.clone().add(Math.cos(angle) * radius, Math.sin(tick * 0.08) * 0.35, Math.sin(angle) * radius);
-            world.spawnParticle(Particle.SQUID_INK, p, 1, 0, 0, 0, 0);
-            if (i % 2 == 0) {
-                world.spawnParticle(Particle.REVERSE_PORTAL, p, 1, 0, 0, 0, 0);
-            }
-        }
-    }
-
-    private static LivingEntity pickStormTarget(Player player, double range) {
+    static LivingEntity pickStormTarget(Player player, double range) {
         LivingEntity best = null;
         double bestDist = range * range;
         Location origin = player.getLocation();
@@ -1041,19 +734,320 @@ final class TestPrototypeAbilities implements Listener {
         return best;
     }
 
-    private static void strikeQuiet(World world, LivingEntity target, Player caster, double damage) {
-        Location at = target.getLocation().add(0, 0.2, 0);
-        world.strikeLightningEffect(at);
-        world.spawnParticle(Particle.ELECTRIC_SPARK, at.clone().add(0, 1, 0), 28, 0.35, 1.1, 0.35, 0.08);
-        world.spawnParticle(Particle.FLASH, at.clone().add(0, 1.4, 0), 1, 0, 0, 0, 0);
-        world.playSound(at, Sound.ENTITY_LIGHTNING_BOLT_IMPACT, 0.28f, 1.4f);
-        world.playSound(at, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.18f, 1.65f);
-        abilityDamage(target, damage, caster);
-        target.setFireTicks(0);
-    }
-
     /** Marks the hit as scripted so BossEngine does not treat it as spam melee. */
     private static void abilityDamage(LivingEntity target, double amount, Player caster) {
         de.aetherion.items.combat.ScriptedHits.run(() -> target.damage(amount, caster));
+    }
+
+    /**
+     * Event Horizon visuals only; pull and damage stay in {@link #castGravwell}.
+     * A black shell core, a fast hot inner disk and a slower glass outer disk tilted toward the caster,
+     * a lensed halo, inflow arms and tethers, then collapse, white inversion, shockwave and polar jets.
+     */
+    private static final class HorizonFx {
+
+        private static final int INNER = 10;
+        private static final int OUTER = 18;
+        private static final Color STREAM_OUT = Color.fromRGB(70, 20, 130);
+        private static final Color STREAM_IN = Color.fromRGB(235, 200, 255);
+        private static final Color VOID_EDGE = Color.fromRGB(35, 5, 60);
+        private static final Color HALO = Color.fromRGB(245, 225, 255);
+        private static final Color JET = Color.fromRGB(215, 190, 255);
+        private static final Color WHITE = Color.fromRGB(255, 255, 255);
+        private static final Quaternionf[] SHELL = {
+                new Quaternionf(),
+                new Quaternionf().rotateY((float) Math.toRadians(45.0)).rotateX((float) Math.toRadians(35.26)),
+                new Quaternionf().rotateX((float) Math.toRadians(45.0)).rotateZ((float) Math.toRadians(45.0))
+        };
+
+        private final World world;
+        private final Location core;
+        private final Vector normal;
+        private final Vector u;
+        private final Vector v;
+        private final Vector side;
+        private final List<BlockDisplay> shell = new ArrayList<>();
+        private final List<BlockDisplay> inner = new ArrayList<>();
+        private final List<BlockDisplay> outer = new ArrayList<>();
+        private double innerSpin;
+        private double outerSpin;
+        private double coreSpin;
+        private float coreScale = 0.35f;
+        private double innerRadius = 0.55;
+        private double outerRadius = 1.0;
+
+        HorizonFx(World world, Location core, Vector view) {
+            this.world = world;
+            this.core = core.clone();
+            Vector flat = view.clone().setY(0);
+            if (flat.lengthSquared() < 0.01) {
+                flat = new Vector(0, 0, 1);
+            }
+            flat.normalize();
+            side = new Vector(-flat.getZ(), 0, flat.getX());
+            double tilt = Math.toRadians(20.0);
+            normal = new Vector(0, 1, 0).multiply(Math.cos(tilt))
+                    .subtract(flat.clone().multiply(Math.sin(tilt)))
+                    .normalize();
+            u = side.clone();
+            v = normal.getCrossProduct(u).normalize();
+            for (int i = 0; i < SHELL.length; i++) {
+                add(shell, Material.BLACK_CONCRETE, 0, true);
+            }
+            for (int i = 0; i < INNER; i++) {
+                add(inner, Material.PEARLESCENT_FROGLIGHT, 15, false);
+            }
+            for (int i = 0; i < OUTER; i++) {
+                add(outer, i % 2 == 0 ? Material.PURPLE_STAINED_GLASS : Material.MAGENTA_STAINED_GLASS, 15, false);
+            }
+        }
+
+        /** Grows the silhouette with the charge; {@code collapse} 0→1 swallows the disk into the core. */
+        void pose(int tick, double progress, double collapse) {
+            double grow = progress * progress * (3.0 - 2.0 * progress);
+            double squeeze = 1.0 - 0.75 * collapse;
+            coreScale = (float) ((0.35 + grow * 1.05) * (1.0 - 0.65 * collapse) * (1.0 + 0.03 * Math.sin(tick * 0.7)));
+            float innerWide = (float) ((0.2 + grow * 0.17) * squeeze + 0.04);
+            float outerWide = (float) ((0.3 + grow * 0.5) * squeeze + 0.05);
+            innerRadius = (0.55 + grow * 0.9) * squeeze;
+            outerRadius = innerRadius + innerWide / 2.0 + outerWide / 2.0 + 0.08;
+            coreSpin += 0.05;
+            innerSpin += 0.07 + progress * 0.07;
+            outerSpin += 0.035 + progress * 0.04;
+            for (int i = 0; i < shell.size(); i++) {
+                apply(shell.get(i), shellTransform(i, coreScale), 2);
+            }
+            float innerLen = (float) (Math.PI * 2 * innerRadius / INNER * 1.05);
+            for (int i = 0; i < inner.size(); i++) {
+                apply(inner.get(i), segment(innerSpin + Math.PI * 2 * i / INNER, innerRadius, innerLen, innerWide, 0.05f), 2);
+            }
+            float outerLen = (float) (Math.PI * 2 * outerRadius / OUTER * 1.02);
+            for (int i = 0; i < outer.size(); i++) {
+                apply(outer.get(i), segment(outerSpin + Math.PI * 2 * i / OUTER, outerRadius, outerLen, outerWide, 0.04f), 2);
+            }
+        }
+
+        /** Spiral arms flowing into the disk, the closing infall ring, portal streaks, and the lensed halo. */
+        void inflow(int tick, double progress) {
+            double reach = outerRadius + 3.0 + progress * 1.5;
+            int arms = 3;
+            int beads = 7;
+            for (int a = 0; a < arms; a++) {
+                for (int k = 0; k < beads; k++) {
+                    double s = ((k + 0.5) / beads + tick * 0.03) % 1.0;
+                    double r = reach - (reach - innerRadius) * s;
+                    double ang = outerSpin * 1.4 + a * (Math.PI * 2 / arms) + s * 2.2;
+                    world.spawnParticle(Particle.DUST, onDisk(ang, r), 1, 0, 0, 0, 0,
+                            new Particle.DustOptions(mix(STREAM_OUT, STREAM_IN, s), (float) (1.25 - s * 0.5)));
+                }
+            }
+            if (tick % 3 == 0) {
+                double r = 2.2 + (1.0 - progress) * 7.5;
+                Particle.DustOptions edge = new Particle.DustOptions(VOID_EDGE, 1.5f);
+                for (int i = 0; i < 28; i++) {
+                    world.spawnParticle(Particle.DUST, onDisk(Math.PI * 2 * i / 28 - tick * 0.05, r), 1, 0, 0, 0, 0, edge);
+                }
+            }
+            ThreadLocalRandom random = ThreadLocalRandom.current();
+            for (int i = 0; i < 3; i++) {
+                double ang = random.nextDouble(Math.PI * 2);
+                double dist = 5.0 + random.nextDouble(4.5);
+                Vector off = u.clone().multiply(Math.cos(ang) * dist)
+                        .add(v.clone().multiply(Math.sin(ang) * dist))
+                        .add(normal.clone().multiply(random.nextDouble(-0.6, 0.6)));
+                world.spawnParticle(Particle.PORTAL, core, 0, off.getX(), off.getY(), off.getZ(), 1.0);
+            }
+            if (tick % 2 == 0) {
+                double halo = coreScale * 0.8 + 0.14;
+                Particle.DustOptions ring = new Particle.DustOptions(HALO, 0.65f);
+                for (int i = 0; i < 22; i++) {
+                    double ang = Math.PI * 2 * i / 22;
+                    Location at = core.clone()
+                            .add(side.clone().multiply(Math.cos(ang) * halo))
+                            .add(0, Math.sin(ang) * halo, 0);
+                    world.spawnParticle(Particle.DUST, at, 1, 0, 0, 0, 0, ring);
+                }
+            }
+        }
+
+        /** Beads flowing from every pulled target into the core. */
+        void tethers(Player caster, int tick) {
+            for (Entity entity : world.getNearbyEntities(core, 11.5, 11.5, 11.5)) {
+                if (!isCombatTarget(entity) || entity.equals(caster)) {
+                    continue;
+                }
+                Location from = entity.getLocation().add(0, entity.getHeight() * 0.55, 0);
+                Vector span = core.toVector().subtract(from.toVector());
+                if (span.lengthSquared() < 1.0) {
+                    continue;
+                }
+                for (int k = 0; k < 5; k++) {
+                    double t = (k / 5.0 + tick * 0.045) % 1.0;
+                    world.spawnParticle(Particle.DUST, from.clone().add(span.clone().multiply(t)), 1, 0, 0, 0, 0,
+                            new Particle.DustOptions(mix(STREAM_OUT, STREAM_IN, t), (float) (1.1 - t * 0.4)));
+                }
+            }
+        }
+
+        /** The inversion beat: the black core flashes white and swells, the disk shatters outward. */
+        void detonate() {
+            for (int i = 0; i < shell.size(); i++) {
+                BlockDisplay display = shell.get(i);
+                if (display == null || !display.isValid()) {
+                    continue;
+                }
+                display.setBlock(Material.WHITE_CONCRETE.createBlockData());
+                display.setBrightness(new Display.Brightness(15, 15));
+                display.setGlowColorOverride(Color.fromRGB(230, 205, 255));
+                apply(display, shellTransform(i, 2.6f), 3);
+            }
+            fling(inner, innerSpin, INNER, innerRadius * 3.5, 0.05f);
+            fling(outer, outerSpin, OUTER, outerRadius * 3.0, 0.04f);
+        }
+
+        /** Shockwave in the disk plane, a ground ring, and two polar jets. {@code t} counts from 1. */
+        void aftermath(int t) {
+            double k = Math.min(1.0, t / 12.0);
+            double ease = 1.0 - Math.pow(1.0 - k, 3);
+            if (t <= 12) {
+                double r = 0.8 + ease * 9.5;
+                Particle.DustOptions wave = new Particle.DustOptions(mix(WHITE, STREAM_OUT, k), (float) (1.7 - k * 0.7));
+                int points = 44;
+                for (int i = 0; i < points; i++) {
+                    world.spawnParticle(Particle.DUST, onDisk(Math.PI * 2 * i / points, r), 1, 0, 0, 0, 0, wave);
+                }
+            }
+            double ground = world.getHighestBlockYAt(core) + 1.1;
+            if (t <= 10 && t % 2 == 0 && core.getY() > ground && core.getY() - ground < 6.0) {
+                double r = 0.6 + ease * 8.0;
+                Particle.DustOptions dust = new Particle.DustOptions(mix(HALO, STREAM_OUT, k), 1.3f);
+                int points = 40;
+                for (int i = 0; i < points; i++) {
+                    double ang = Math.PI * 2 * i / points;
+                    Location at = core.clone();
+                    at.setY(ground);
+                    world.spawnParticle(Particle.DUST, at.add(Math.cos(ang) * r, 0, Math.sin(ang) * r), 1, 0, 0, 0, 0, dust);
+                }
+            }
+            if (t <= 7) {
+                double len = 1.0 + t * 0.9;
+                Particle.DustOptions beam = new Particle.DustOptions(JET, 1.2f);
+                Particle.DustOptions hot = new Particle.DustOptions(WHITE, 0.6f);
+                for (int sign = -1; sign <= 1; sign += 2) {
+                    Vector axis = normal.clone().multiply(sign);
+                    int step = 0;
+                    for (double d = 0.5; d <= len; d += 0.35, step++) {
+                        Location at = core.clone().add(axis.clone().multiply(d));
+                        world.spawnParticle(Particle.DUST, at, 1, 0.03, 0.03, 0.03, 0, beam);
+                        if (step % 2 == 0) {
+                            world.spawnParticle(Particle.DUST, at, 1, 0, 0, 0, 0, hot);
+                        }
+                    }
+                    Location tip = core.clone().add(axis.clone().multiply(len));
+                    world.spawnParticle(Particle.END_ROD, tip, 0, axis.getX(), axis.getY(), axis.getZ(), 0.25);
+                }
+            }
+            if (t == 1) {
+                for (int i = 0; i < 24; i++) {
+                    double ang = Math.PI * 2 * i / 24;
+                    Vector out = u.clone().multiply(Math.cos(ang)).add(v.clone().multiply(Math.sin(ang)));
+                    world.spawnParticle(Particle.END_ROD, core, 0, out.getX(), out.getY(), out.getZ(), 0.55);
+                }
+            }
+            if (t == 3) {
+                for (int i = 0; i < shell.size(); i++) {
+                    apply(shell.get(i), shellTransform(i, 0.01f), 3);
+                }
+            }
+            if (t == 6) {
+                removeAll(inner);
+                removeAll(outer);
+            }
+        }
+
+        void remove() {
+            removeAll(shell);
+            removeAll(inner);
+            removeAll(outer);
+        }
+
+        private void fling(List<BlockDisplay> ring, double spin, int count, double radius, float thick) {
+            float length = (float) (Math.PI * 2 * radius / count * 0.35);
+            for (int i = 0; i < ring.size(); i++) {
+                apply(ring.get(i), segment(spin + Math.PI * 2 * i / count, radius, length, 0.3f, thick), 5);
+            }
+        }
+
+        private Location onDisk(double angle, double radius) {
+            return core.clone()
+                    .add(u.clone().multiply(Math.cos(angle) * radius))
+                    .add(v.clone().multiply(Math.sin(angle) * radius));
+        }
+
+        private Transformation shellTransform(int index, float scale) {
+            Quaternionf rot = new Quaternionf()
+                    .rotateAxis((float) coreSpin, (float) normal.getX(), (float) normal.getY(), (float) normal.getZ())
+                    .mul(SHELL[index]);
+            Vector3f half = rot.transform(new Vector3f(scale / 2f, scale / 2f, scale / 2f));
+            return new Transformation(half.negate(), rot, new Vector3f(scale, scale, scale), new Quaternionf());
+        }
+
+        /** One flat disk tile, centered on the ring at {@code angle}, long side along the orbit. */
+        private Transformation segment(double angle, double radius, float length, float width, float thick) {
+            Vector radial = u.clone().multiply(Math.cos(angle)).add(v.clone().multiply(Math.sin(angle)));
+            Vector tangent = u.clone().multiply(-Math.sin(angle)).add(v.clone().multiply(Math.cos(angle)));
+            Vector3f x = new Vector3f((float) tangent.getX(), (float) tangent.getY(), (float) tangent.getZ());
+            Vector3f y = new Vector3f((float) normal.getX(), (float) normal.getY(), (float) normal.getZ());
+            Vector3f z = new Vector3f(x).cross(y);
+            Quaternionf rot = new Quaternionf().setFromNormalized(new Matrix3f(x, y, z));
+            Vector3f half = rot.transform(new Vector3f(length / 2f, thick / 2f, width / 2f));
+            Vector3f center = new Vector3f(
+                    (float) (radial.getX() * radius),
+                    (float) (radial.getY() * radius),
+                    (float) (radial.getZ() * radius)
+            );
+            return new Transformation(center.sub(half), rot, new Vector3f(length, thick, width), new Quaternionf());
+        }
+
+        private void add(List<BlockDisplay> into, Material material, int light, boolean horizon) {
+            try {
+                into.add(world.spawn(core, BlockDisplay.class, spawned -> {
+                    spawned.setBlock(material.createBlockData());
+                    spawned.setPersistent(false);
+                    spawned.setBrightness(new Display.Brightness(light, light));
+                    spawned.setInterpolationDuration(2);
+                    spawned.setTeleportDuration(2);
+                    spawned.setTransformation(new Transformation(
+                            new Vector3f(),
+                            new Quaternionf(),
+                            new Vector3f(0.01f, 0.01f, 0.01f),
+                            new Quaternionf()
+                    ));
+                    if (horizon) {
+                        spawned.setGlowing(true);
+                        spawned.setGlowColorOverride(Color.fromRGB(80, 10, 140));
+                    }
+                }));
+            } catch (Throwable ignored) {
+            }
+        }
+
+        private static void apply(BlockDisplay display, Transformation transformation, int ticks) {
+            if (display == null || !display.isValid()) {
+                return;
+            }
+            display.setInterpolationDuration(ticks);
+            display.setInterpolationDelay(0);
+            display.setTransformation(transformation);
+        }
+
+        private static void removeAll(List<BlockDisplay> displays) {
+            for (BlockDisplay display : displays) {
+                if (display != null && display.isValid()) {
+                    display.remove();
+                }
+            }
+            displays.clear();
+        }
     }
 }

@@ -109,6 +109,7 @@ public class AetherionItems extends JavaPlugin {
     private de.aetherion.items.blueprint.BlueprintForgeStation blueprintForgeStation;
     private de.aetherion.items.blueprint.BlueprintForgeRitual blueprintForgeRitual;
     private de.aetherion.items.farm.MillstoneRitual millstoneRitual;
+    private de.aetherion.items.dev.prop.AmbientProps ambientProps;
 
     @Override
     public void onEnable() {
@@ -146,6 +147,20 @@ public class AetherionItems extends JavaPlugin {
         if (getCommand("ct") != null) {
             getCommand("ct").setExecutor(new de.aetherion.items.command.StationCommand(
                     de.aetherion.items.command.StationCommand.Station.WORKBENCH));
+        }
+        de.aetherion.items.world.BloodstoneArena bloodstoneArena = new de.aetherion.items.world.BloodstoneArena(this);
+        de.aetherion.items.command.BloodstoneArenaCommand bloodstoneCmd =
+                new de.aetherion.items.command.BloodstoneArenaCommand(bloodstoneArena);
+        if (getCommand("bloodstonearena") != null) {
+            getCommand("bloodstonearena").setExecutor(bloodstoneCmd);
+            getCommand("bloodstonearena").setTabCompleter(bloodstoneCmd);
+        }
+        de.aetherion.items.world.AshenVoidArena ashenVoidArena = new de.aetherion.items.world.AshenVoidArena(this);
+        de.aetherion.items.command.AshenVoidCommand ashenVoidCmd =
+                new de.aetherion.items.command.AshenVoidCommand(ashenVoidArena);
+        if (getCommand("ashenvoid") != null) {
+            getCommand("ashenvoid").setExecutor(ashenVoidCmd);
+            getCommand("ashenvoid").setTabCompleter(ashenVoidCmd);
         }
         shardShop = new de.aetherion.items.shop.ShardShopMenu(shards);
         getServer().getPluginManager().registerEvents(shardShop, this);
@@ -241,6 +256,7 @@ public class AetherionItems extends JavaPlugin {
     /** Combat / unique gear listeners. Order matches the former inline onEnable block. */
     private void registerCombatListeners() {
         getServer().getPluginManager().registerEvents(new AnvilBoosterListener(itemManager), this);
+        getServer().getPluginManager().registerEvents(new de.aetherion.items.menu.BoosterSocketMenu(itemManager), this);
         PvpGuardListener pvpGuard = new PvpGuardListener(this);
         getServer().getPluginManager().registerEvents(pvpGuard, this);
         pvpGuard.applyToLoadedWorlds();
@@ -258,14 +274,19 @@ public class AetherionItems extends JavaPlugin {
 
         getServer().getPluginManager().registerEvents(new AetherbladeListener(this, itemManager), this);
         getServer().getPluginManager().registerEvents(new BridgedAxeListener(this, itemManager), this);
-        getServer().getPluginManager().registerEvents(new WarpedBladeListener(itemManager), this);
+        getServer().getPluginManager().registerEvents(new WarpedBladeListener(this, itemManager), this);
         getServer().getPluginManager().registerEvents(new de.aetherion.items.listener.GravwellCleaverListener(this, itemManager), this);
+        getServer().getPluginManager().registerEvents(new de.aetherion.items.listener.AshenKatanaListener(this, itemManager), this);
+        getServer().getPluginManager().registerEvents(new de.aetherion.items.listener.SeraphineGearListener(this, itemManager), this);
         T2UniqueListener t2Uniques = new T2UniqueListener(itemManager);
         getServer().getPluginManager().registerEvents(t2Uniques, this);
         getServer().getScheduler().runTaskTimer(this, t2Uniques, 10L, 10L);
         getServer().getPluginManager().registerEvents(new de.aetherion.items.listener.TestGearListener(this, itemManager), this);
+        getServer().getPluginManager().registerEvents(new de.aetherion.items.listener.PortalGunPortals(this), this);
         new SquidsBootListener(this, itemManager);
         getServer().getPluginManager().registerEvents(new AetherionSetListener(this, itemManager), this);
+        // After DamageListener: Sunmark / Heat read the rewritten hit at the same priority.
+        getServer().getPluginManager().registerEvents(new de.aetherion.items.listener.HollowSunSetListener(this, itemManager), this);
         new VoidStickListener(this, itemManager);
         new WandListener(this, itemManager);
         new de.aetherion.items.listener.HealerSetListener(this, itemManager);
@@ -344,9 +365,11 @@ public class AetherionItems extends JavaPlugin {
     private void registerFarmStations() {
         millstoneRitual = new de.aetherion.items.farm.MillstoneRitual(this);
         getServer().getPluginManager().registerEvents(new de.aetherion.items.farm.MillstoneCabinet(this, millstoneRitual), this);
+        ambientProps = new de.aetherion.items.dev.prop.AmbientProps(this);
         getServer().getPluginManager().registerEvents(new de.aetherion.items.farm.MillstoneWindmill(this), this);
         getServer().getPluginManager().registerEvents(new de.aetherion.items.farm.MillstoneListener(), this);
         getServer().getPluginManager().registerEvents(new de.aetherion.items.farm.RootCellarListener(), this);
+        getServer().getPluginManager().registerEvents(new de.aetherion.items.farm.MarketStallListener(), this);
         getServer().getPluginManager().registerEvents(
                 new de.aetherion.items.menu.dev.DevMenuListener(devMenu),
                 this
@@ -503,6 +526,28 @@ public class AetherionItems extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        de.aetherion.items.listener.AshenKatanaListener.shutdown();
+        de.aetherion.items.listener.SeraphineGearListener.clearAll();
+        de.aetherion.items.listener.AetherbladeListener.shutdown();
+        de.aetherion.items.listener.WarpedBladeListener.shutdown();
+        de.aetherion.items.listener.ShortbowListener.shutdown();
+        de.aetherion.items.listener.ResonanceScytheWave.shutdown();
+        de.aetherion.items.listener.VeinSiphonListener.shutdown();
+        de.aetherion.items.listener.StormcallerTempest.shutdown();
+        de.aetherion.items.listener.MeteorMaceCrash.shutdown();
+        de.aetherion.items.listener.JudgmentVerdict.shutdown();
+        de.aetherion.items.listener.CycloneRodTempest.shutdown();
+        de.aetherion.items.listener.CataclysmRodNova.shutdown();
+        de.aetherion.items.listener.RuneSigilRite.shutdown();
+        de.aetherion.items.listener.WorldSplitterRift.shutdown();
+        de.aetherion.items.listener.VesperBellBasilica.shutdown();
+        de.aetherion.items.listener.DeepsongLeviathan.shutdown();
+        de.aetherion.items.listener.TerminusEdge.shutdown();
+        de.aetherion.items.listener.PortalGunPortals.shutdown();
+        de.aetherion.items.listener.EchoBladeAfterimage.shutdown();
+        de.aetherion.items.listener.VoidStickListener.shutdown();
+        de.aetherion.items.listener.BridgedAxeListener.shutdown();
+        de.aetherion.items.listener.HollowSunSetListener.shutdown();
         // Close open GUIs so AH/Bazaar/trade/sack holders return or persist items
         // before YAML flush. Server is stopping; this is not a gameplay change.
         for (org.bukkit.entity.Player player : getServer().getOnlinePlayers()) {
@@ -593,6 +638,10 @@ public class AetherionItems extends JavaPlugin {
 
     public de.aetherion.items.farm.MillstoneRitual getMillstoneRitual() {
         return millstoneRitual;
+    }
+
+    public de.aetherion.items.dev.prop.AmbientProps ambientProps() {
+        return ambientProps;
     }
 
     public de.aetherion.items.blueprint.BlueprintForgeStation getBlueprintForgeStation() {
