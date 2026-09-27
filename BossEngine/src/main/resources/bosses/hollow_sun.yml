@@ -1,0 +1,148 @@
+# ============================================================
+# The Hollow Sun – Fallen Star showcase boss (Bloodstone arena)
+# Combat: HollowSunDirector (+ HollowProps floor language,
+#   HollowAccretion collapse disk, HollowSky). Spawn: /boss spawn hollow_sun
+# Tells: a sun glyph on the floor = it lands here; its star touches the
+#   rim on the hit. Gold / flare-red / blue-white (inward rays) by phase.
+#   White = now. Crimson = never stand here. Green ring = he is spent.
+# Main Sequence: a gold star-knight. Swipe, lance, slam, starcall, corona.
+# Ignition: a red photosphere closes around the knight, the floor splits,
+#   the sky goes to dusk.
+# Red Giant: he floats inside his own star. Flare beams (the white edge
+#   leads), prominence loops from the forge's rim, the floor boils.
+# Starfall (66% -> 33%): he rises, swells into a red sun, implodes (the
+#   sky cuts to night, every sound stops), and falls. Leave the crimson sun.
+# Collapse: black core, blue-white photon shell, an accretion disk torn
+#   out of the Bloodstone floor. Ejecta, wells, folds, and at 15% the
+#   Last Light: break the core or everyone burns.
+# Death: the plates fall back into their holes, the armor bursts, the core
+#   returns to the sky as a supernova.
+# Every floor change is client-side or a display, restored on death,
+#   abort, despawn and plugin disable.
+# ============================================================
+
+id: hollow_sun
+display-name: "&6&lThe Hollow Sun"
+entity-type: WITHER_SKELETON
+model-engine-id: ""
+
+attributes:
+  max-health: 120000
+  movement-speed: 0.26
+  attack-damage: 34
+  scale: 1.4
+  follow-range: 40
+  knockback-resistance: 1.0
+
+equipment:
+  helmet: NETHERITE_HELMET
+  chestplate: NETHERITE_CHESTPLATE
+  leggings: NETHERITE_LEGGINGS
+  boots: NETHERITE_BOOTS
+  main-hand: AIR
+  off-hand: AIR
+  drop-chance: 0.0
+
+options:
+  glowing: false
+  custom-name-visible: true
+  silent: true
+  invulnerable-spawn-ticks: 30
+  persistent: true
+  remove-when-far-away: false
+  prevent-item-pickup: true
+
+conditions:
+  max-instances: 1
+  leash-radius: 40
+  leash-action: TELEPORT
+
+phases:
+  - id: main_sequence
+    health-percent: 100
+    display-name: "&6&lThe Hollow Sun &8· &eMain Sequence"
+    skills: []
+
+  - id: red_giant
+    health-percent: 66
+    display-name: "&c&lThe Hollow Sun &8· &4Red Giant"
+    transition:
+      duration-ticks: 100
+      invulnerable: true
+      freeze-ai: true
+      explode: false
+    skills:
+      - type: DIALOG
+        trigger: ON_PHASE
+        broadcast: true
+        message: "&6&lThe Hollow Sun&7: &fI burned for ten thousand years. &cI can burn brighter."
+
+  - id: collapse
+    health-percent: 33
+    display-name: "&f&lThe Hollow Sun &8· &bCollapse"
+    transition:
+      duration-ticks: 240
+      invulnerable: true
+      freeze-ai: true
+      explode: false
+    skills:
+      - type: DIALOG
+        trigger: ON_PHASE
+        broadcast: true
+        message: "&f&lThe Hollow Sun&7: &bEvery star falls. &fFall with me."
+
+skills:
+  - type: DIALOG
+    trigger: ON_DEATH
+    broadcast: true
+    message: "&6&lThe Hollow Sun &7has returned to the sky."
+
+loot:
+  damage-based: true
+  participation-threshold-percent: 5.0
+  experience: 9000
+
+  killer-bonus:
+    - source: VANILLA
+      material: NETHER_STAR
+      amount: 1
+      chance: 1.0
+
+  rank-loot:
+    1:
+      - source: AETHERION
+        item-id: random_booster
+        amount: 2
+        chance: 0.75
+    2:
+      - source: AETHERION
+        item-id: random_booster
+        amount: 1
+        chance: 0.55
+    3:
+      - source: AETHERION
+        item-id: random_booster
+        amount: 1
+        chance: 0.35
+
+  top-damagers:
+    count: 3
+    items:
+      - source: AETHERION
+        item-id: random_booster
+        amount: 1
+        chance: 0.70
+
+  shared:
+    - source: VANILLA
+      material: GLOWSTONE_DUST
+      min-amount: 8
+      max-amount: 16
+      chance: 1.0
+    - source: VANILLA
+      material: CRYING_OBSIDIAN
+      min-amount: 2
+      max-amount: 6
+      chance: 1.0
+
+  per-damager:
