@@ -23,6 +23,56 @@ ui:
   npc_quest: "§8Quest verknüpfen"
   npc_confirm: "§8Bestätigen"
   npc_help: "§8NPC-Hilfe"
+  # Harbour Hour — Ankunft, Egon, Kit-Übergabe
+  arrival_title: "ANKER-HAFEN"
+  arrival_subtitle: "§7Aetherion · §fVorsicht auf den Planken, Rookie"
+  find_egon_title: "FINDE EGON"
+  find_egon_subtitle: "Grünes Leuchten am Pier · Rechtsklick auf ihn"
+  egon_nudge: "Egon wartet noch am Pier · folg dem grünen Leuchten"
+  egon_greet_action: "→ Rechtsklick auf Egon"
+  kit_reward_line: "§b✦ §3Reward: §fEgons Starter-Kit §7— Spitzhacke, Schwert, Hacke, Rüstung"
+  kit_landed_worn: "✔ Kit ausgegeben · Rüstung sitzt, Werkzeug ist im Inventar"
+  kit_landed: "✔ Kit ausgegeben · schau ins Inventar"
+  kit_axe_landed: "✔ Simple Axe · gehört dir"
+  gate_pier_chat: "§eEgon §7steht direkt hier am Pier — sprich zuerst mit ihm."
+  gate_pier_action: "→ Sprich mit Egon"
+  gate_market_chat: "§7Der Markt bleibt zu, bis §eEgon §7sein Eichenholz hat."
+  gate_market_action: "→ Forager · dann bei Egon abgeben"
+  gate_rescue_chat: "§7Ganz ruhig — zurück auf dem Pier. Erst mit §eEgon §7reden."
+
+  # Early Game — offene Wege nach dem Stempel, Abschluss, Craftsman, Vex
+  graduation_filed: "✔ Orientierung abgelegt · die Karte gehört dir"
+  craftsman_paid: "Da ist sie — Mining Pickaxe. Beweis angenommen, Münzen bezahlt."
+  craftsman_nudge: "Hab's bis hier gehört. Bring die Mining Pickaxe an die Schmiede — ich zahle für Beweise."
+  vex_primer_kill: "Einer. Der Zähler steht oben in deiner Leiste. Noch neun, dann reden wir."
+  roads:
+    tip_next: "Nächster Weg:"
+    steel_where: "Tor zu den Borderlands"
+    steel_pitch: "Zehn Feinde. Lern, wie ein Treffer hier sitzt."
+    rites_where: "Die Ödnis · Pulver-Altar"
+    rites_pitch: "Entzünde einen Geist. Triff etwas Größeres."
+    craft_where: "Markt-Schmiede"
+    craft_pitch: "Nebenjob: zeig ihm eine Mining Pickaxe. Er zahlt."
+    survey_where: "Blaupausen-Tisch"
+    survey_pitch: "Troll-Seiten aus den Adern werden zu Werkzeugen."
+    wilds_where: "Abseits der Wege"
+    wilds_pitch: "Neue Gebiete schalten Teleports frei. Truhen verstecken sich, wo keine Wege sind."
+    wilds_action: "Die Karte gehört dir · achte auf ein Glitzern abseits des Weges"
+    gui_title: "§8Miss Ledger · Offene Wege"
+    gui_header: "§dOffene Wege"
+    gui_header_1: "§7Orientierung abgelegt. Nichts davon ist Pflicht."
+    gui_header_2: "§7Wähl einen Weg — ich richte den Pfeil aus."
+    gui_filed: "Wege abgelegt"
+    gui_briefing: "§eBriefing-Themen"
+    gui_briefing_1: "§7Manager, Booster, Pets, Lager…"
+    gui_briefing_2: "§7Der Auffrischungs-Tisch."
+    card_filed: "§a✔ Abgelegt. Jederzeit wieder hin."
+    card_next: "§e➜ Empfohlen als Nächstes"
+    card_click: "§eKlick §7— der Pfeil zeigt dorthin."
+    card_click_wilds: "§eKlick §7— kein Pfeil. Einfach los."
+    ledger_wilds: "Dafür gibt's keinen Pfeil. Achte auf ein Glitzern abseits des Weges."
+    ledger_pin: "Pfeil zeigt auf {0}. Na los."
+    ledger_return: "Die Wege liegen auf dem Tisch. Such dir einen aus."
 
 progress:
   catch_pet: "Fang ein Pet"
@@ -80,7 +130,15 @@ dialogs:
   egon_intro:
     - "Egon. Hafen-Ausrüster. Ich brauche Eiche — du holst sie."
     - "Der Forager am Hügel leiht die Axt und zeigt das Chop-Minispiel. Zehn Eichenstämme zurück hierher."
-    - "§eGelber Pfeil oben§f zeigt die Richtung. Für diesen Auftrag siehst du auch kurz einen Funkel-Pfad am Boden."
+    - "§eGelber Pfeil oben§f zeigt die Richtung. Die Planken hab ich dir auch bemalt. Gern geschehen."
+  egon_arrival_call:
+    - "Hey — neues Gesicht! Hier drüben, beim grünen Leuchten."
+  egon_greet_near:
+    - "Das bin ich. Rechtsklick — ich beiße nicht, ich rüste aus."
+  egon_kit_handoff:
+    - "Holz erhalten. Hier ist dein Kit — Spitzhacke, Schwert, Hacke, Rüstung."
+    - "Die Rüstung ist gebraucht. Vorbesitzer ist in Rente. Größtenteils friedlich."
+    - "§eQuartiermeister§f ist hinter dem kleinen Markt — sprich als Nächstes mit ihm."
   lumberjack_intro:
     - "Egon braucht wieder Eiche."
     - "Nimm die Simple Axe. Linksklick auf einen §eleuchtenden Stamm§f startet die Chop-Leiste."
@@ -92,8 +150,19 @@ dialogs:
     - "Achte auf den §egelben Pfeil oben§f — der trackt den Auftrag."
   craftsman_intro:
     - "Hey. Craftsman. Crafting ist freigeschaltet — Recipe Book im Manager."
-    - "Nether Star (Hotbar §e9§f) → §agrünes Buch§f anklicken. Da sind alle Blaupausen."
-    - "Craft eine §fMining Pickaxe§f: Simple Pickaxe in der Mitte, Kohle drumrum. Bring die Spitzhacke zu mir zurück."
+    - "Nether Star (Hotbar §e9§f) → §agrünes Buch§f anklicken. Was du kennst, liegt vorne; den Rest findest du."
+    - "§7Nebenjob, nicht auf Ledgers Liste:§f craft eine §fMining Pickaxe§f — Simple Pickaxe in der Mitte, Kohle drumrum."
+    - "Zeig sie mir, wann du willst. Ich zahle für Beweise. Kein Klemmbrett, keine Frist."
+  craftsman_after_shift:
+    - "Die Spitzhacke hält? Gut."
+    - "Das Recipe Book wächst mit dir — neue Seiten kommen aus der Ödnis, den Adern und vom Tisch des Surveyors."
+  ledger_graduation:
+    - "Gestempelt. Orientierung abgelegt — die Karte gehört dir."
+    - "Eine Gewohnheit: der §egelbe Pfeil oben§f folgt dem, was du anheftest. Heft was an."
+    - "Die Wege liegen auf meinem Tisch. Ich markiere den, den die meisten Rookies zuerst nehmen."
+  vex_primer_hit:
+    - "§7(vom Tor)§f Siehst du die Zahl, die von ihm abspringt? Das bist du. Kein Raten."
+    - "Goldene §6✦§f sind Crits — merk dir, welche Schwünge sie machen. Weiß ist ehrliche Arbeit."
   foreman_intro:
     - "Schäbige Mine — die Höhle hinter mir. Darin §eErze§f abbauen: Kohle, Kupfer, Eisen, was fällt."
     - "Brich §e32 Erz-Blöcke§f (kein Stein-Füllmaterial). Wenn der Zähler fertig ist, zurück zu mir."

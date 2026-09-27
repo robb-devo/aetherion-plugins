@@ -234,6 +234,14 @@ public final class QuestStoryGate {
         return tips;
     }
 
+    /**
+     * Plain tips after Miss Ledger's stamp — the open roads (Vex → Rite Warden → Craftsman →
+     * Surveyor → the wider map). Empty while orientation is still open.
+     */
+    public static java.util.List<String> roadTips(Player player) {
+        return OpenRoads.tips(player, questManager());
+    }
+
     /** Soft next stop while orientation is still open. */
     public static void redirectToTutorial(Player player, String speakerName) {
         if (player == null) {

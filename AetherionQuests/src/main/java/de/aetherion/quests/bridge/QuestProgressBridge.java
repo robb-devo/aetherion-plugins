@@ -146,6 +146,41 @@ public final class QuestProgressBridge {
                 manager.addProgress(player, quest.getId(), objective.getTarget(), amount);
             }
         }
+        craftsmanNudge(player, target);
+    }
+
+    /**
+     * Craftsman's side job has no quest bar — so when the pickaxe comes off the book,
+     * he says so once and the arrow remembers him (never forced over an active quest).
+     */
+    private static void craftsmanNudge(Player player, String target) {
+        if (!"mining_pickaxe".equalsIgnoreCase(target)) {
+            return;
+        }
+        AetherionQuests plugin = AetherionQuests.getInstance();
+        if (plugin == null || plugin.getPlayerQuestStorage() == null) {
+            return;
+        }
+        var storage = plugin.getPlayerQuestStorage();
+        java.util.UUID id = player.getUniqueId();
+        if (!storage.hasStarterKit(id, "craftsman_spoken")
+                || storage.hasStarterKit(id, "craftsman_mining_pick_gift")
+                || storage.hasStarterKit(id, "craftsman_pick_nudge")) {
+            return;
+        }
+        storage.markStarterKit(id, "craftsman_pick_nudge");
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            if (!player.isOnline()) {
+                return;
+            }
+            de.aetherion.quests.npc.LivingNpcProfile.say(player, "craftsman", "Craftsman",
+                    de.aetherion.quests.lang.LangPack.ui(player, "craftsman_nudge",
+                            "Heard that from here. Bring the Mining Pickaxe by the forge — I pay for proof."));
+            // Never steal the arrow from a spine stop or a pinned road.
+            if (de.aetherion.quests.ui.QuestHint.targetNpcId(player) == null) {
+                de.aetherion.quests.ui.QuestHint.remember(player, "craftsman", "Craftsman");
+            }
+        }, 20L);
     }
 
     /** Soft-query for other plugins (Manager Skills highlight, etc.). */

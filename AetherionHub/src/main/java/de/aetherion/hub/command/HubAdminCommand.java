@@ -266,18 +266,18 @@ public final class HubAdminCommand implements CommandExecutor, TabCompleter {
         );
         String subtitle = plugin.getConfig().getString(
                 "starter-hint.subtitle",
-                "§eGreen glow near spawn · talk to him"
+                "§eGreen glow on the pier · right-click him"
         );
         String actionbar = plugin.getConfig().getString(
                 "starter-hint.actionbar",
-                "§aLook for the green aura — Egon kits rookies"
+                "§aLook for the green glow — Egon kits rookies"
         );
 
         player.showTitle(net.kyori.adventure.title.Title.title(
                 net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection()
                         .deserialize(title == null ? "§6§lFIND EGON" : title),
                 net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection()
-                        .deserialize(subtitle == null ? "§eGreen glow near spawn" : subtitle),
+                        .deserialize(subtitle == null ? "§eGreen glow on the pier" : subtitle),
                 net.kyori.adventure.title.Title.Times.times(
                         java.time.Duration.ofMillis(300),
                         java.time.Duration.ofSeconds(4),

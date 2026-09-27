@@ -119,6 +119,10 @@ public final class AetherionQuests extends JavaPlugin {
                         this
                 );
 
+        // Starter kit / axe handoff scene (lands items; flushes on quit/disable).
+        de.aetherion.quests.reward.StarterKitCeremony.init(this);
+        de.aetherion.quests.ui.GraduationStamp.init(this);
+
 
         markerManager =
                 new QuestMarkerManager(
@@ -173,6 +177,7 @@ public final class AetherionQuests extends JavaPlugin {
                 );
 
         new EgonBriefingGUI(this);
+        new de.aetherion.quests.ui.OpenRoadsGUI(this);
 
 
 
@@ -460,6 +465,10 @@ public final class AetherionQuests extends JavaPlugin {
 
     @Override
     public void onDisable() {
+
+        // Land any kit still mid-handoff before player data is flushed.
+        de.aetherion.quests.reward.StarterKitCeremony.shutdown();
+        de.aetherion.quests.ui.GraduationStamp.shutdown();
 
         if (markerManager != null) {
             markerManager.shutdown();

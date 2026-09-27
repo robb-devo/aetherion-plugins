@@ -1041,6 +1041,11 @@ public class QuestObjectiveListener implements Listener {
     }
 
     private boolean isBorderlandsHostileKill(Entity entity) {
+        return isBorderlandsHostile(entity);
+    }
+
+    /** Same test {@code lesson_steel} counts kills with — shared so Vex's framing never disagrees. */
+    public static boolean isBorderlandsHostile(Entity entity) {
         if (!(entity instanceof org.bukkit.entity.Monster)) {
             return false;
         }

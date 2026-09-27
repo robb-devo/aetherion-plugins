@@ -28,7 +28,13 @@ public final class JoinWelcomeListener implements Listener {
     public void onJoin(PlayerJoinEvent event) {
         event.joinMessage(null);
         Player player = event.getPlayer();
-        plugin.getServer().getScheduler().runTaskLater(plugin, () -> show(player), 12L);
+        // First join belongs to the harbour: Quests plays the Anker Harbour arrival after the
+        // language pick. A plugin-name title here would just flash under the language menu.
+        boolean harbourArrival = !player.hasPlayedBefore()
+                && plugin.getServer().getPluginManager().isPluginEnabled("AetherionQuests");
+        if (!harbourArrival) {
+            plugin.getServer().getScheduler().runTaskLater(plugin, () -> show(player), 12L);
+        }
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
             if (player.isOnline()) {
                 de.aetherion.items.progress.ProgressionUnlock.syncFromCompletedQuests(player);
@@ -42,7 +48,7 @@ public final class JoinWelcomeListener implements Listener {
         }
         player.showTitle(Title.title(
                 Component.text("AETHERION", NamedTextColor.GOLD, TextDecoration.BOLD),
-                Component.text("welcome", NamedTextColor.YELLOW),
+                Component.text(player.hasPlayedBefore() ? "welcome back" : "welcome", NamedTextColor.YELLOW),
                 Title.Times.times(Duration.ofMillis(350), Duration.ofMillis(2200), Duration.ofMillis(650))
         ));
         player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.35f, 0.95f);

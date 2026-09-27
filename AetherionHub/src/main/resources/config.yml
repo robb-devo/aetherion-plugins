@@ -8,10 +8,11 @@ join-at-selected-spawn: true
 starter-hint:
   enabled: true
   # First join only (Minecraft hasPlayedBefore). Existing players can use /hubadmin hint.
+  # With AetherionQuests this is the second card of the harbour arrival (after "ANKER HARBOUR").
   delay-ticks: 60
   title: "§6§lFIND EGON"
-  subtitle: "§eGreen glow near harbour · talk to him"
-  actionbar: "§aLook for the green aura — Egon kits rookies"
+  subtitle: "§eGreen glow on the pier · right-click him"
+  actionbar: "§aLook for the green glow — Egon kits rookies"
   also-chat: false
   messages:
     - ""

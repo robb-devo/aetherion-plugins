@@ -792,6 +792,11 @@ public class NpcListener implements Listener {
             if (plugin != null && plugin.getPlayerQuestStorage() != null) {
                 plugin.getPlayerQuestStorage().markStarterKit(player.getUniqueId(), giftKey);
             }
+            // The side job gets its own small QUEST COMPLETE — never a silent "already done".
+            if (plugin != null && plugin.getQuestFeedback() != null) {
+                plugin.getQuestFeedback().playComplete(player,
+                        de.aetherion.quests.lang.LangPack.questTitle(player, "a_simple_craft", "Second Recipe"));
+            }
             // One contiguous reward block: quest rewards + craftsman bonus, then blank / level-ups.
             questManager.runRewardBlock(player, () -> {
                 Quest legacy = questManager.getQuest("a_simple_craft");
@@ -803,17 +808,48 @@ public class NpcListener implements Listener {
                 }
                 questManager.giftCoins(player, 1000);
             });
-            LivingNpcProfile.say(player, npc, "There it is — Mining Pickaxe. Good work.");
-            de.aetherion.quests.ui.QuestHint.clearPending(player);
-            de.aetherion.quests.ui.QuestHint.show(player, "foreman", "Shaft Foreman");
-            player.sendActionBar(net.kyori.adventure.text.Component.text(
-                    "→ Shaft Foreman · Mines",
-                    net.kyori.adventure.text.format.NamedTextColor.AQUA
-            ));
+            LivingNpcProfile.say(player, npc, de.aetherion.quests.lang.LangPack.ui(player,
+                    "craftsman_paid", "There it is — Mining Pickaxe. Proof accepted, coin paid."));
+            if (!de.aetherion.quests.util.QuestStoryGate.questCompleted(player, questManager, "first_shift")) {
+                // Mid-orientation: the pick is for the Mines — Foreman is still the job.
+                de.aetherion.quests.ui.QuestHint.clearPending(player);
+                de.aetherion.quests.ui.QuestHint.show(player, "foreman", "Shaft Foreman");
+                player.sendActionBar(net.kyori.adventure.text.Component.text(
+                        "→ Shaft Foreman · Mines",
+                        net.kyori.adventure.text.format.NamedTextColor.AQUA
+                ));
+            } else if (de.aetherion.quests.util.QuestStoryGate.tutorialDone(player, questManager)) {
+                // After the stamp: side job filed, the arrow moves to the next open road.
+                de.aetherion.quests.ui.QuestHint.clearPending(player);
+                de.aetherion.quests.util.OpenRoads.Road next =
+                        de.aetherion.quests.util.OpenRoads.next(player, questManager);
+                if (next != de.aetherion.quests.util.OpenRoads.Road.WILDS && plugin != null) {
+                    plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                        if (player.isOnline()) {
+                            de.aetherion.quests.util.OpenRoads.pin(player, next);
+                        }
+                    }, de.aetherion.quests.dialog.DialogPace.LINE_GAP_TICKS);
+                }
+            } else if ("craftsman".equals(de.aetherion.quests.ui.QuestHint.targetNpcId(player))) {
+                // Shift done, stamp not yet: the arrow was on him for the side job — let it go.
+                de.aetherion.quests.ui.QuestHint.clearPending(player);
+            }
+            // Otherwise the orientation arrow stays exactly where it was.
             return;
         }
 
         if (gifted) {
+            if (de.aetherion.quests.util.QuestStoryGate.questCompleted(player, questManager, "first_shift")) {
+                // "Next: Shaft Foreman" is only true before the shift — after it, talk shop.
+                String[] lines = de.aetherion.quests.lang.LangPack.dialogs(player, "craftsman_after_shift", new String[] {
+                        "Pick's holding up? Good.",
+                        "Recipe Book grows as you do — new pages come from the waste, the veins and the Surveyor's desk."
+                });
+                for (String line : lines) {
+                    LivingNpcProfile.say(player, npc, line);
+                }
+                return;
+            }
             dialogManager.startCompletedDialog(player, npc);
             return;
         }
@@ -1277,53 +1313,70 @@ public class NpcListener implements Listener {
         }
 
         if (!firstStamp) {
-            // Return visit — dialog first, short pause, then manager menu.
-            LivingNpcProfile.say(player, npc, "Need a refresher? Here's the desk.");
+            // Return visit — one line, short pause, then her desk: open roads (briefing one click away).
+            LivingNpcProfile.say(player, npc, de.aetherion.quests.lang.LangPack.ui(player,
+                    "roads.ledger_return", "Roads are on the desk. Pick one."));
             if (plugin != null) {
                 dialogManager.afterDialog(player, () ->
-                        de.aetherion.quests.ui.EgonBriefingGUI.open(player, "Miss Ledger"));
+                        de.aetherion.quests.ui.OpenRoadsGUI.open(player));
             } else {
-                de.aetherion.quests.ui.EgonBriefingGUI.open(player, "Miss Ledger");
+                de.aetherion.quests.ui.OpenRoadsGUI.open(player);
             }
             return;
         }
 
-        // Same QUEST COMPLETE block as every other turn-in, then rewards, blank, Ledger in her colour.
-        if (plugin != null && plugin.getQuestFeedback() != null) {
-            plugin.getQuestFeedback().playComplete(
-                    player,
-                    de.aetherion.quests.lang.LangPack.ui(player, "tutorial_name", "Tutorial")
-            );
+        // The stamp itself is the milestone: QUEST COMPLETE + rewards fire when it hits the slip.
+        Runnable stamped = () -> {
+            if (plugin != null && plugin.getQuestFeedback() != null) {
+                plugin.getQuestFeedback().playComplete(
+                        player,
+                        de.aetherion.quests.lang.LangPack.ui(player, "tutorial_name", "Tutorial")
+                );
+            }
+            questManager.giftTutorialGraduation(player);
+        };
+        boolean staged = de.aetherion.quests.ui.GraduationStamp.play(player, stamped);
+        if (!staged) {
+            stamped.run();
         }
-        questManager.giftTutorialGraduation(player);
-        LivingNpcProfile.say(player, npc, "Well done. Orientation's filed — map's yours.");
-        LivingNpcProfile.say(player, npc,
-                "One habit: always watch the §eyellow arrow up top§f. It points to your current job.");
 
         if (plugin == null) {
+            LivingNpcProfile.say(player, npc, "Well done. Orientation's filed — map's yours.");
             return;
         }
 
+        de.aetherion.quests.util.OpenRoads.Road next =
+                de.aetherion.quests.util.OpenRoads.next(player, questManager);
+        String[] lines = de.aetherion.quests.lang.LangPack.dialogs(player, "ledger_graduation", new String[] {
+                "Stamped. Orientation's filed — the map's yours.",
+                "One habit: the §eyellow arrow up top§f follows whatever you pin. Pin something.",
+                "Roads are on my desk. I'll mark the one most rookies take first."
+        });
+        long speakAt = staged ? 26L : 20L;
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
             if (!player.isOnline()) {
                 return;
             }
-            if (!de.aetherion.quests.util.QuestStoryGate.questCompleted(player, questManager, "lesson_steel")) {
-                LivingNpcProfile.say(player, npc,
-                        "§cSergeant Vex§f at the Borderlands gate could be interesting. Need help later? Talk to me.");
-                player.sendActionBar(net.kyori.adventure.text.Component.text(
-                        "Soft hint · Sergeant Vex",
-                        net.kyori.adventure.text.format.NamedTextColor.RED
-                ));
-                de.aetherion.quests.ui.QuestHint.show(player, "vex", "Sergeant Vex");
-            } else if (!de.aetherion.quests.util.QuestStoryGate.questCompleted(player, questManager, "border_rites")) {
-                LivingNpcProfile.say(player, npc,
-                        "§cRite Warden§f in the waste could be interesting. Need help later? Talk to me.");
-                de.aetherion.quests.ui.QuestHint.show(player, "rite_keeper", "Rite Warden");
-            } else {
-                LivingNpcProfile.say(player, npc, "Need help later? Talk to me.");
+            for (String line : lines) {
+                LivingNpcProfile.say(player, npc, line);
             }
-        }, 50L);
+        }, speakAt);
+
+        long afterLines = speakAt + de.aetherion.quests.dialog.DialogPace.LINE_GAP_TICKS * lines.length;
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            if (!player.isOnline()) {
+                return;
+            }
+            de.aetherion.quests.util.OpenRoads.pin(player, next);
+            org.bukkit.Location desk = de.aetherion.quests.npc.NpcPresence.locate("ledger");
+            boolean stillAtDesk = desk != null
+                    && desk.getWorld() != null
+                    && desk.getWorld().equals(player.getWorld())
+                    && desk.distanceSquared(player.getLocation()) <= 10.0 * 10.0;
+            if (stillAtDesk && player.getOpenInventory().getType() == org.bukkit.event.inventory.InventoryType.CRAFTING) {
+                de.aetherion.quests.ui.OpenRoadsGUI.open(player);
+            }
+        }, afterLines);
     }
 
 
@@ -1412,6 +1465,17 @@ public class NpcListener implements Listener {
                                 "Thread's yours now — waste, desks, whatever. No leash from me.");
                     }
                 }, 45L);
+                // No leash from him — but the arrow quietly moves to the next open road.
+                plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                    if (!player.isOnline()) {
+                        return;
+                    }
+                    de.aetherion.quests.util.OpenRoads.Road next =
+                            de.aetherion.quests.util.OpenRoads.next(player, questManager);
+                    if (next != de.aetherion.quests.util.OpenRoads.Road.WILDS) {
+                        de.aetherion.quests.util.OpenRoads.pin(player, next);
+                    }
+                }, 90L);
             } else {
                 npcSay(player, npc,
                         "Thread's yours now — waste, desks, whatever. No leash from me.");
@@ -1451,23 +1515,24 @@ public class NpcListener implements Listener {
         if ("gather_wood".equalsIgnoreCase(quest.getId())
                 || "egon".equalsIgnoreCase(npc.getId())) {
             AetherionQuests plugin = AetherionQuests.getInstance();
-            String name = npc.getName();
-            npcSay(player, npc, "Logs received. Kit stays yours — don't lose it.");
+            // The kit handoff scene (StarterKitCeremony) is already in the air —
+            // Egon talks over it, one DialogPace beat per line (say queue).
+            String[] lines = de.aetherion.quests.lang.LangPack.dialogs(player, "egon_kit_handoff", new String[] {
+                    "Logs received. Here's your kit — pickaxe, sword, hoe, armour.",
+                    "Armour's second-hand. Previous owner retired. Peacefully, mostly.",
+                    "§eQuartermaster§f is past the little market — talk to him next."
+            });
+            for (String line : lines) {
+                npcSay(player, npc, line);
+            }
             if (plugin != null) {
-                plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-                    if (player.isOnline()) {
-                        npcSay(player, npc,
-                                "Quartermaster's past the little market — talk to him next.");
-                    }
-                }, 45L);
+                long afterLast = de.aetherion.quests.dialog.DialogPace.LINE_GAP_TICKS * Math.max(0, lines.length - 1) + 25L;
                 plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
                     if (player.isOnline()) {
                         de.aetherion.quests.ui.QuestHint.show(player, "quartermaster", "Quartermaster");
                     }
-                }, 70L);
+                }, afterLast);
             } else {
-                npcSay(player, npc,
-                        "Quartermaster's past the little market — talk to him next.");
                 de.aetherion.quests.ui.QuestHint.show(player, "quartermaster", "Quartermaster");
             }
             return;

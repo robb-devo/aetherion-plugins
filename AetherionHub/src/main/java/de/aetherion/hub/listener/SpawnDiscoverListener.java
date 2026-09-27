@@ -9,7 +9,9 @@ import net.kyori.adventure.title.Title;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Particle;
 import org.bukkit.Sound;
+import org.bukkit.SoundCategory;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.Plugin;
@@ -173,6 +175,7 @@ public final class SpawnDiscoverListener implements Listener, Runnable {
     private void announce(Player player, HubSpawn spawn) {
         String name = spawn.displayName();
         player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1f, 1.15f);
+        worldNoticed(player);
         player.showTitle(Title.title(
                 LegacyComponentSerializer.legacySection().deserialize(
                         "§b§lNEW AREA · " + name.toUpperCase(Locale.ROOT)
@@ -191,5 +194,20 @@ public final class SpawnDiscoverListener implements Listener, Runnable {
         if (progress != null) {
             progress.unlock(player, "SPAWN_UNLOCKER", "Teleports", "Manager → Teleports");
         }
+    }
+
+    /**
+     * "The world noticed you": a ring of sparks rolls out from your feet and a few motes
+     * lift off — player-only, one beat, no entities.
+     */
+    private void worldNoticed(Player player) {
+        Location feet = player.getLocation().add(0.0, 0.15, 0.0);
+        for (int i = 0; i < 20; i++) {
+            double a = i * (Math.PI * 2.0 / 20.0);
+            // count 0 = the offsets become a velocity: sparks slide outward along the ground.
+            player.spawnParticle(Particle.FIREWORK, feet, 0, Math.cos(a), 0.02, Math.sin(a), 0.18);
+        }
+        player.spawnParticle(Particle.END_ROD, feet.clone().add(0.0, 0.6, 0.0), 10, 0.5, 0.4, 0.5, 0.03);
+        player.playSound(feet, Sound.BLOCK_AMETHYST_BLOCK_CHIME, SoundCategory.PLAYERS, 0.7f, 1.2f);
     }
 }
