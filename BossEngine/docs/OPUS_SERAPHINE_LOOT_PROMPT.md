@@ -17,10 +17,17 @@ Branch: **`claude/boss-hanging-saint`** (points 1–3 already pushed).
 
 Implement **only** the open handoff points:
 
-### 4. Seraphine drops
+### 4. Seraphine drops (her gear — must match the boss)
+These are **Seraphine’s boss rewards**, not generic legendaries. Armor + weapon must feel like they came off **her** fight and stage:
+
+- Visual / naming language: porcelain doll, gold kintsugi seams, sewing needles, golden threads, marionette / music-box / theatre / Gilded Proscenium
+- Look at her body + Hand + stage dressing for color and material cues — then invent the set in that world
 - Full armor set + signature weapon in **AetherionItems** (`CustomItem` factories + profiles + ability listener if the weapon has one)
+- Weapon ability fantasy should echo the fight (threads, needles, stop-motion, curtain/hand, etc.) — spectacle-grade, balance later
 - Wire loot ids so BossEngine can resolve them (`AetherionItemHook` / reflective `create…` naming)
 - Fill `hanging_saint.yml` loot table with those ids (placeholders OK for chances/amounts)
+
+Do **not** ship random neon / void / sun gear that could belong to another boss.
 
 ### 5. Music-box loot chest
 - BossEngine spectacle prop: music box on golden threads from the clouds, ballerina figure, per-player claim, dismantle finale

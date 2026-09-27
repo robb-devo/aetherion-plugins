@@ -41,14 +41,27 @@ So the clean path is:
 - Optional: Dev Menu / Test Gear exposure for playtest
 - Fill `hanging_saint.yml` `loot:` with `source: AETHERION` + your `item-id`s (killer / rank / shared / per-damager as fits the fantasy)
 
-### Design freedom
+### Theme lock — these are *her* drops
 
-Invent the set — porcelain / gold seams / needle / thread / music-box / marionette language. Spectacle-grade VFX on the weapon ability if it has one. Balance is **not** the goal; identity + look + feel are.
+Armor + weapon are **Seraphine’s boss loot**. They must read as belonging to this encounter only:
+
+| Cue from the fight | Carry into gear |
+|--------------------|-----------------|
+| Porcelain body, gold seams | Armor materials / lore / trim language |
+| Giant sewing needles | Weapon silhouette or ability tell |
+| Five golden threads / Hand Above | Ability VFX, particles, sound |
+| Music box / theatre / Gilded Proscenium | Names, lore, set identity |
+| Unstrung stop-motion Act III | Optional ability cadence / feel |
+
+Invent names and exact pieces freely, but **do not** make generic “cool legendary” gear that could drop from Hollow Sun or a dungeon. If you removed the name “Seraphine,” a player should still guess these came from the hanging doll boss.
+
+Spectacle-grade VFX on the weapon ability if it has one. Balance is **not** the goal; identity + look + feel are.
 
 Study craft only:
 
 - Blossom Blade / Gravwell Cleaver → how a signature weapon is stamped + listened (do not change them)
 - Hollow Sun loot YAML → how boss tables reference Aetherion ids
+- `instance/saint/*` → her visual language (read, don’t rewrite)
 
 ---
 
