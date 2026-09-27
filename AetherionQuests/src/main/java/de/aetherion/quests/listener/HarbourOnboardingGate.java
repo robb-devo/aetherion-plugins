@@ -1,6 +1,7 @@
 package de.aetherion.quests.listener;
 
 import de.aetherion.quests.AetherionQuests;
+import de.aetherion.quests.lang.LangPack;
 import de.aetherion.quests.manager.QuestManager;
 import de.aetherion.quests.model.Quest;
 import de.aetherion.quests.model.QuestState;
@@ -91,8 +92,8 @@ public final class HarbourOnboardingGate implements Listener {
                 Vector toward = towardPierInside(to);
                 shove(player, toward, depthOutsidePier(to));
                 hint(player, "egon", "Egon",
-                        "§eEgon §7is right here on the pier — talk to him first.",
-                        "→ Talk to Egon");
+                        LangPack.ui(player, "gate_pier_chat", "§eEgon §7is right here on the pier — talk to him first."),
+                        LangPack.ui(player, "gate_pier_action", "→ Talk to Egon"));
             }
             return;
         }
@@ -102,8 +103,8 @@ public final class HarbourOnboardingGate implements Listener {
             double depth = Math.max(0.0, MARKET_X - to.getX());
             shove(player, new Vector(1.0, 0.0, 0.0), depth);
             hint(player, "egon", "Egon",
-                    "§7Market stays closed until you bring §eEgon §7his oak.",
-                    "→ Forager · then turn in at Egon");
+                    LangPack.ui(player, "gate_market_chat", "§7Market stays closed until you bring §eEgon §7his oak."),
+                    LangPack.ui(player, "gate_market_action", "→ Forager · then turn in at Egon"));
         }
     }
 
@@ -131,13 +132,19 @@ public final class HarbourOnboardingGate implements Listener {
         player.setVelocity(new Vector(0, 0, 0));
         player.setFallDistance(0f);
         player.teleport(harbour);
-        player.sendMessage("§7Easy — back on the pier. Talk to §eEgon §7first.");
+        player.sendMessage(LangPack.ui(player, "gate_rescue_chat", "§7Easy — back on the pier. Talk to §eEgon §7first."));
         player.sendActionBar(net.kyori.adventure.text.Component.text(
-                "→ Talk to Egon",
+                LangPack.ui(player, "gate_pier_action", "→ Talk to Egon"),
                 net.kyori.adventure.text.format.NamedTextColor.GOLD
         ));
         player.playSound(harbour, Sound.ENTITY_PLAYER_SPLASH, 0.35f, 1.2f);
         QuestHint.show(player, "egon", "Egon");
+        // Dripping on the planks: Egon rings you over.
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            if (player.isOnline()) {
+                de.aetherion.quests.ui.HarbourArrival.flareEgon(player);
+            }
+        }, 12L);
     }
 
     private Location harbourSpawnLocation() {

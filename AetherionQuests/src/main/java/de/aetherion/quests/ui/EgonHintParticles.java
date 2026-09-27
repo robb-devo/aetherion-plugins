@@ -20,6 +20,9 @@ import org.bukkit.scheduler.BukkitTask;
 /**
  * Soft green aura only around Egon for players who have not yet
  * accepted Welcome Aboard. Per-player particles; disappears on accept.
+ * <p>
+ * Attractor: a thin green "lantern smoke" column over his head reads from the far
+ * end of the pier; walk up close and he tells you how to talk to him — once.
  */
 public final class EgonHintParticles {
 
@@ -27,11 +30,18 @@ public final class EgonHintParticles {
     private static final String QUEST_ID = "welcome_aboard";
     private static final double VIEW_DISTANCE = 22.0;
     private static final double VIEW_DISTANCE_SQUARED = VIEW_DISTANCE * VIEW_DISTANCE;
+    /** Column over his head — client culls plain particles past ~32 blocks anyway. */
+    private static final double BEACON_DISTANCE_SQUARED = 32.0 * 32.0;
+    private static final double GREET_DISTANCE_SQUARED = 5.5 * 5.5;
+    private static final long GREET_COOLDOWN_MS = 5L * 60L * 1000L;
 
     private final AetherionQuests plugin;
     private final QuestManager questManager;
     private final Particle.DustOptions dust =
             new Particle.DustOptions(Color.fromRGB(72, 210, 96), 1.05f);
+    private final Particle.DustOptions beacon =
+            new Particle.DustOptions(Color.fromRGB(120, 225, 130), 0.85f);
+    private final java.util.Map<java.util.UUID, Long> greeted = new java.util.concurrent.ConcurrentHashMap<>();
 
     private BukkitTask task;
     private int phase;
@@ -85,11 +95,23 @@ public final class EgonHintParticles {
         Location soft = base.clone().add(0.0, 1.05, 0.0);
         World world = base.getWorld();
 
+        // Rising column: one mote per tick, climbing 2.3 → 4.4 over eight ticks.
+        Location column = base.clone().add(0.0, 1.95 + (phase % 8) * 0.3, 0.0);
+
         for (Player player : world.getPlayers()) {
-            if (player.getLocation().distanceSquared(base) > VIEW_DISTANCE_SQUARED) {
+            double distanceSquared = player.getLocation().distanceSquared(base);
+            if (distanceSquared > BEACON_DISTANCE_SQUARED) {
                 continue;
             }
             if (questManager.getQuestState(player, quest) != QuestState.AVAILABLE) {
+                continue;
+            }
+
+            player.spawnParticle(Particle.DUST, column, 1, 0.03, 0.0, 0.03, 0.0, beacon);
+            if (distanceSquared <= GREET_DISTANCE_SQUARED) {
+                maybeGreet(player, egon);
+            }
+            if (distanceSquared > VIEW_DISTANCE_SQUARED) {
                 continue;
             }
 
@@ -99,6 +121,34 @@ public final class EgonHintParticles {
                 player.spawnParticle(Particle.HAPPY_VILLAGER, soft, 1, 0.12, 0.18, 0.12, 0.0);
             }
         }
+    }
+
+    /** Close enough to click but hasn't: Egon says how, once every few minutes. */
+    private void maybeGreet(Player player, QuestNPC egon) {
+        if (!de.aetherion.quests.lang.PlayerLang.hasChosen(player)
+                || HarbourArrival.isPlaying(player)
+                || de.aetherion.quests.util.QuestStoryGate.tutorialDone(player, questManager)) {
+            return;
+        }
+        if (plugin.getDialogManager() != null && plugin.getDialogManager().isSpeaking(player)) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        Long last = greeted.get(player.getUniqueId());
+        if (last != null && now - last < GREET_COOLDOWN_MS) {
+            return;
+        }
+        greeted.put(player.getUniqueId(), now);
+        String name = egon.getName() == null || egon.getName().isBlank() ? "Egon" : egon.getName();
+        for (String line : de.aetherion.quests.lang.LangPack.dialogs(player, "egon_greet_near", new String[] {
+                "That's me. Right-click — I don't bite, I kit."
+        })) {
+            de.aetherion.quests.npc.LivingNpcProfile.say(player, NPC_ID, name, line);
+        }
+        player.sendActionBar(net.kyori.adventure.text.Component.text(
+                de.aetherion.quests.lang.LangPack.ui(player, "egon_greet_action", "→ Right-click Egon"),
+                net.kyori.adventure.text.format.NamedTextColor.GOLD
+        ));
     }
 
     private Location resolveLocation(QuestNPC egon) {
