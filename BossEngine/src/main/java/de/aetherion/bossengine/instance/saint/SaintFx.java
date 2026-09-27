@@ -18,7 +18,9 @@ import org.bukkit.entity.Display;
 import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.util.Transformation;
 import org.joml.Matrix4f;
+import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 import java.time.Duration;
@@ -127,13 +129,29 @@ final class SaintFx {
         instance.getKeys().tagBeamFx(d, instance.getInstanceId());
     }
 
+    /**
+     * Every matrix in this package is built as translate * rotate * axis-aligned scale, so it is
+     * decomposed here directly (left rotation + scale, identity right rotation). Letting the server
+     * SVD-decompose it instead is ambiguous for boxes with two equal sides (spot beams, pools,
+     * threads, joints): consecutive frames could pick different rotation splits and the client
+     * interpolation then visibly spins the display between them.
+     */
     static void push(Display d, Matrix4f m, int interp) {
         if (d == null || !d.isValid()) {
             return;
         }
         d.setInterpolationDelay(0);
         d.setInterpolationDuration(Math.max(0, interp));
-        d.setTransformationMatrix(m);
+        d.setTransformation(transformation(m));
+    }
+
+    static Transformation transformation(Matrix4f m) {
+        Vector3f translation = m.getTranslation(new Vector3f());
+        Vector3f scale = m.getScale(new Vector3f());
+        Quaternionf rotation = scale.x < 1e-6f || scale.y < 1e-6f || scale.z < 1e-6f
+                ? new Quaternionf()
+                : m.getNormalizedRotation(new Quaternionf());
+        return new Transformation(translation, rotation, scale, new Quaternionf());
     }
 
     static void glow(Display d, Color color) {

@@ -147,6 +147,12 @@ public final class HangingSaintDirector {
     private final Vector3f handPos = new Vector3f();
     private float handYaw;
     private final Vector3f handGoal = new Vector3f();
+    /** Floor point the key follow-spot is aimed at (eased toward her). */
+    private final Vector3f spotAim = new Vector3f();
+    /** The key spot was switched on (once she is fully assembled). */
+    private boolean spotLit;
+    /** The key spot follows her (from the first moment of the fight). */
+    private boolean spotTracking;
     private float handFollow = 0.05f;
     private final float[] restLift = new float[5];
 
@@ -478,7 +484,10 @@ public final class HangingSaintDirector {
             dressing.pushCloudsNow(1);
         }
         dressing.skyNow(18000f);
-        dressing.key.set(true);
+        if (spotLit) {
+            dressing.key.set(true);
+            dressing.key.aim(spotAim, 0);
+        }
     }
 
     /* ================================================================== per-tick animation */
@@ -516,7 +525,12 @@ public final class HangingSaintDirector {
         }
 
         if (act != Act.DYING && dressing != null) {
-            dressing.key.aim(new Vector3f(pos.x, 0, pos.z), 3);
+            // The follow-spot only tracks once she is fully assembled. It trails her slightly,
+            // like an operator on a lamp, which also softens her stop-motion hops in Act III.
+            if (spotTracking) {
+                spotAim.lerp(new Vector3f(pos.x, 0f, pos.z), 0.3f);
+                dressing.key.aim(spotAim, 2);
+            }
             dressing.drift(new Vector3f(pos.x, pos.y, pos.z), fx.targets(), clock);
         }
         if (clock % 4 == 0 && !hiddenBody) {
@@ -689,10 +703,6 @@ public final class HangingSaintDirector {
         Skeleton rig = body.rig;
         handGoal.set(0, HAND_Y[0], 0);
         handFollow = 0.04f;
-        if (t == 8) {
-            dressing.key.set(true);
-            dressing.key.aim(new Vector3f(), 0);
-        }
         if (t == 22) {
             music.play(10f, 1f, 0.85f, false);
         }
@@ -729,6 +739,13 @@ public final class HangingSaintDirector {
                 th.pluck(0.3f);
             }
             fx.sound(pos, Sound.ITEM_CROSSBOW_LOADING_END, 1.2f, 0.5f);
+        }
+        if (t == 128) {
+            // Fully assembled: the follow-spot finds her (static until the fight starts).
+            spotLit = true;
+            spotAim.set(pos.x, 0f, pos.z);
+            dressing.key.set(true);
+            dressing.key.aim(spotAim, 0);
         }
         if (t == 124) {
             body.head.kick(-0.6f, 0, 0);
@@ -778,6 +795,12 @@ public final class HangingSaintDirector {
             actTick = 0;
             cooldown = 20;
             move = Move.IDLE;
+            if (!spotLit) {
+                spotLit = true;
+                dressing.key.set(true);
+            }
+            spotAim.set(pos.x, 0f, pos.z);
+            spotTracking = true;
             for (Skeleton.Piece p : rig.pieces()) {
                 p.free = false;
             }
@@ -818,6 +841,7 @@ public final class HangingSaintDirector {
         }
         if (move == Move.IDLE) {
             idle();
+            keepOutOfHand();
             if (--cooldown <= 0) {
                 chooseMove();
             }
@@ -840,6 +864,7 @@ public final class HangingSaintDirector {
             case STITCHES -> stitches(t);
             default -> finish(20);
         }
+        keepOutOfHand();
     }
 
     private void idle() {
@@ -867,12 +892,12 @@ public final class HangingSaintDirector {
             }
             body.haloLit(true);
         } else {
-            // Unstrung: stop-motion stalking, one staccato step every six ticks.
+            // Unstrung: stop-motion stalking, one staccato step every five ticks.
             body.poseWrong(clock);
             body.rig.frameStep = 3;
             body.rig.interp = 1;
-            if (clock % 6 == 0 && dist > 4f) {
-                Vector3f step = new Vector3f(goal.x - pos.x, 0, goal.z - pos.z).normalize(Math.min(1.1f, dist - 4f));
+            if (clock % 5 == 0 && dist > 4f) {
+                Vector3f step = new Vector3f(goal.x - pos.x, 0, goal.z - pos.z).normalize(Math.min(1.25f, dist - 4f));
                 pos.add(step);
                 fx.sound(new Vector3f(pos.x, 0.2f, pos.z), Sound.ENTITY_SKELETON_STEP, 1f, 0.55f);
                 fx.sound(new Vector3f(pos.x, 0.2f, pos.z), Sound.BLOCK_BAMBOO_WOOD_BUTTON_CLICK_OFF, 1f, 0.6f);
@@ -919,7 +944,7 @@ public final class HangingSaintDirector {
             option(bag, weight, Move.STITCHES, 3f);
             option(bag, weight, Move.LUNGE, 2f);
             option(bag, weight, Move.WALTZ, dist < 8f ? 2.5f : 0.6f);
-            option(bag, weight, Move.TRAPDOOR, stage.built() ? 1.2f : 0f);
+            option(bag, weight, Move.TRAPDOOR, stage.built() && freeTraps() >= 2 ? 1.2f : 0f);
         }
         float total = 0f;
         for (int i = 0; i < bag.size(); i++) {
@@ -963,7 +988,8 @@ public final class HangingSaintDirector {
         endMove();
         lastMove = move;
         move = Move.IDLE;
-        cooldown = cool;
+        // Act III keeps its stop-motion frame holds, but the dead air between moves is shorter.
+        cooldown = phase == 3 ? Math.max(6, Math.round(cool * 0.6f)) : cool;
         body.springs();
         body.haloLit(true);
         body.rig.frameStep = phase == 3 ? 2 : 1;
@@ -1632,6 +1658,11 @@ public final class HangingSaintDirector {
 
     /* ================================================================== move: LUNGE (Act III) */
 
+    /** Hop phase: three staccato hops, one every six ticks. */
+    private static final int LUNGE_HOPS = 18;
+    /** Needle drawn back before the thrust (the golden lane's life). */
+    private static final int LUNGE_DRAW = 11;
+
     /**
      * Three stop-motion hops toward you (each leaves a glass afterimage and a dry clack),
      * a drawn-back needle with a golden lane, then a thrust that crosses half the stage.
@@ -1640,11 +1671,11 @@ public final class HangingSaintDirector {
         int arm = mI % 2 == 0 ? SaintBody.R : SaintBody.L;
         Player p = currentTarget();
         Vector3f tp = p == null ? new Vector3f() : fx.stage(p.getLocation());
-        if (t < 24) {
+        if (t < LUNGE_HOPS) {
             body.poseWrong(clock);
             body.rig.frameStep = 4;
             body.rig.interp = 0;
-            if (t % 8 == 6) {
+            if (t % 6 == 4) {
                 props.add(new SaintProps.Afterimage(fx, body.rig, 14, false));
                 Vector3f step = new Vector3f(tp.x - pos.x, 0, tp.z - pos.z);
                 float d = step.length();
@@ -1660,7 +1691,7 @@ public final class HangingSaintDirector {
             }
             return;
         }
-        int w = t - 24;
+        int w = t - LUNGE_HOPS;
         if (w == 0) {
             body.rig.frameStep = 1;
             body.rig.interp = 1;
@@ -1669,15 +1700,15 @@ public final class HangingSaintDirector {
             Vector3f dir = new Vector3f((float) Math.sin(yaw), 0, (float) Math.cos(yaw));
             mB.set(pos).fma(8f, dir);
             clampArena(mB, ARENA + 1f);
-            props.add(new SaintProps.Lane(fx, new Vector3f(pos.x, 0, pos.z), new Vector3f(mB.x, 0, mB.z), 2.2f, 13, false));
+            props.add(new SaintProps.Lane(fx, new Vector3f(pos.x, 0, pos.z), new Vector3f(mB.x, 0, mB.z), 2.2f, LUNGE_DRAW, false));
             fx.sound(pos, Sound.ENTITY_VEX_CHARGE, 1.4f, 0.55f);
         }
-        if (w < 13) {
+        if (w < LUNGE_DRAW) {
             body.springsSharp();
-            body.poseDrawBack(arm, smooth(window(w, 0, 11)));
+            body.poseDrawBack(arm, smooth(window(w, 0, LUNGE_DRAW - 2)));
             return;
         }
-        int s = w - 13;
+        int s = w - LUNGE_DRAW;
         if (s == 0) {
             fx.sound(pos, Sound.ITEM_TRIDENT_THROW, 1.6f, 0.6f);
             fx.sound(pos, Sound.ENTITY_PLAYER_ATTACK_STRONG, 1.4f, 0.5f);
@@ -1695,7 +1726,7 @@ public final class HangingSaintDirector {
         if (s == 5) {
             body.haloLit(false);
         }
-        if (s >= 22) {
+        if (s >= 14) {
             if (phase == 3 && mI == 0 && instance.healthPercent() < 25) {
                 // Late Act III: a second lunge off the other arm.
                 mI = 1;
@@ -1719,6 +1750,11 @@ public final class HangingSaintDirector {
             mI = nearestTrap(pos, -1);
             mJ = nearestTrap(tp, mI);
             mA.set(pos);
+            if (mI < 0 || mJ < 0) {
+                // The fallen Hand covers the hatches she would need.
+                finish(6);
+                return;
+            }
         }
         Vector3f from = SaintStage.trapCenter(mI);
         Vector3f exit = SaintStage.trapCenter(mJ);
@@ -1755,7 +1791,7 @@ public final class HangingSaintDirector {
             stage.setTrap(mI, false);
             fx.sound(from, Sound.BLOCK_WOODEN_TRAPDOOR_CLOSE, 2f, 0.5f);
         }
-        if (t > 27 && t < 62) {
+        if (t > 27 && t < 50) {
             pos.set(exit.x, -3.5f, exit.z);
             if (t % 5 == 0) {
                 for (int i = 0; i < 4; i++) {
@@ -1773,7 +1809,7 @@ public final class HangingSaintDirector {
                 fx.sound(exit, open ? Sound.BLOCK_WOODEN_TRAPDOOR_OPEN : Sound.BLOCK_WOODEN_TRAPDOOR_CLOSE, 1.6f, 0.55f);
                 fx.dust(new Vector3f(exit.x, 0.3f, exit.z), GOLD, 1.5f, 6, 0.7);
             }
-            if (t == 42) {
+            if (t == 30) {
                 props.add(new SaintProps.Telegraph(fx, exit, 3.3f, 20, false));
                 for (int i = 0; i < 4; i++) {
                     if (i != mJ) {
@@ -1782,7 +1818,7 @@ public final class HangingSaintDirector {
                 }
             }
         }
-        if (t == 62) {
+        if (t == 50) {
             hiddenBody = false;
             stage.setTrap(mJ, true);
             body.crackTo(1f - (float) instance.healthPercent() / 100f);
@@ -1798,33 +1834,34 @@ public final class HangingSaintDirector {
                     new Material[]{Material.SPRUCE_TRAPDOOR, Material.DARK_OAK_PLANKS});
             hitSphere(new Vector3f(exit.x, 1f, exit.z), 3.4f, 150, exit, 0.5f, 1.25f, "trap", 30);
         }
-        if (t >= 62 && t < 68) {
-            pos.set(exit.x, lerp(-3.5f, 8f, outCubic(window(t, 62, 68))), exit.z);
+        if (t >= 50 && t < 56) {
+            pos.set(exit.x, lerp(-3.5f, 8f, outCubic(window(t, 50, 56))), exit.z);
             yaw += 0.6f;
         }
-        if (t >= 68 && t < 84) {
+        if (t >= 56 && t < 72) {
             Vector3f land = new Vector3f(exit).mul(0.62f);
-            float f = window(t, 68, 84);
+            float f = window(t, 56, 72);
             pos.set(lerp(exit.x, land.x, f), lerp(8f, SaintBody.STAND - 0.35f, inCubic(f)), lerp(exit.z, land.z, f));
             body.poseLanded();
         }
-        if (t == 76) {
+        if (t == 64) {
             stage.setTrap(mJ, false);
         }
-        if (t == 84) {
+        if (t == 72) {
             fx.sound(pos, Sound.ITEM_MACE_SMASH_GROUND, 1.2f, 0.8f);
             body.haloLit(false);
         }
-        if (t >= 100) {
+        if (t >= 86) {
             finish(18);
         }
     }
 
+    /** @return the closest free trapdoor, or -1 when every candidate lies under the fallen Hand */
     private int nearestTrap(Vector3f from, int exclude) {
-        int best = 0;
+        int best = -1;
         float bestD = Float.MAX_VALUE;
         for (int i = 0; i < 4; i++) {
-            if (i == exclude) {
+            if (i == exclude || trapUnderHand(i)) {
                 continue;
             }
             float d = SaintMath.horizontal(SaintStage.trapCenter(i), from);
@@ -1834,6 +1871,20 @@ public final class HangingSaintDirector {
             }
         }
         return best;
+    }
+
+    private boolean trapUnderHand(int i) {
+        return handPinned && insideHand(new Vector3f(SaintStage.trapCenter(i)).add(0, 0.5f, 0), 1.6f);
+    }
+
+    private int freeTraps() {
+        int free = 0;
+        for (int i = 0; i < 4; i++) {
+            if (!trapUnderHand(i)) {
+                free++;
+            }
+        }
+        return free;
     }
 
     /* ================================================================== move: WALTZ (Act III) */
@@ -1912,7 +1963,7 @@ public final class HangingSaintDirector {
             body.haloLit(false);
             music.stop();
         }
-        if (t >= spinAt + 44) {
+        if (t >= spinAt + 34) {
             finish(20);
         }
     }
@@ -1921,7 +1972,7 @@ public final class HangingSaintDirector {
 
     /** The Hand balls into a fist and hammers the stage three times, tracking you. */
     private void fist(int t) {
-        int each = 26;
+        int each = 22;
         int slam = t % each;
         int n = t / each;
         if (t == 0) {
@@ -1935,7 +1986,7 @@ public final class HangingSaintDirector {
             hand.open();
             handGoal.set(pos.x, HAND_Y[2], pos.z);
             handFollow = 0.05f;
-            if (t >= 3 * each + 16) {
+            if (t >= 3 * each + 12) {
                 finish(18);
             }
             return;
@@ -1947,21 +1998,21 @@ public final class HangingSaintDirector {
             Vector3f tp = p == null ? new Vector3f() : fx.stage(p.getLocation());
             clampArena(tp, ARENA);
             mA.set(tp.x, 0, tp.z);
-            props.add(new SaintProps.Telegraph(fx, mA, 4.4f, 20, false));
+            props.add(new SaintProps.Telegraph(fx, mA, 4.4f, 16, false));
             handFollow = 0.18f;
         }
-        if (slam < 16) {
+        if (slam < 12) {
             handGoal.set(mA.x, 20f, mA.z);
-        } else if (slam < 20) {
+        } else if (slam < 16) {
             handFollow = 1f;
-            handGoal.set(mA.x, lerp(20f, 7.4f, inCubic(window(slam, 16, 20))), mA.z);
+            handGoal.set(mA.x, lerp(20f, 7.4f, inCubic(window(slam, 12, 16))), mA.z);
         }
-        if (slam == 20) {
+        if (slam == 16) {
             slam(new Vector3f(mA), 4.4f, 160, 10f, 10);
             hitstop = 3;
             stageBounce(12f, 0.3f);
         }
-        if (slam > 20) {
+        if (slam > 16) {
             handFollow = 0.2f;
             handGoal.set(mA.x, 12f, mA.z);
         }
@@ -2073,18 +2124,18 @@ public final class HangingSaintDirector {
             dressing.third.set(true);
             dressing.hunter.set(false);
             mA.set(pos);
+            planEncore();
             fx.score(Sound.BLOCK_BELL_USE, 1f, 0.5f);
         }
         if (t < 20) {
             body.poseWrong(clock);
             if (t % 4 == 0) {
                 float f = smooth(window(t, 0, 19));
-                pos.x = lerp(mA.x, 4f, f);
-                pos.z = lerp(mA.z, 8.5f, f);
+                pos.x = lerp(mA.x, encoreSpot.x, f);
+                pos.z = lerp(mA.z, encoreSpot.z, f);
                 fx.sound(pos, Sound.ENTITY_SKELETON_STEP, 1.2f, 0.6f);
             }
-            handGoal.set(0f, 32f, -2f);
-            handYaw = HALF_PI;
+            handGoal.set(mB.x, 32f, mB.z);
             handFollow = 0.08f;
             dressing.third.aim(pos, 3);
             return;
@@ -2146,16 +2197,14 @@ public final class HangingSaintDirector {
             for (ThreadLine l : encoreLines) {
                 l.pluck(0.5f);
             }
-            mB.set(-13f, 1.25f, 0f);
         }
         if (t >= 60 && t < 80) {
             float f = inCubic(window(t, 62, 80));
             handFollow = 1f;
-            handYaw = HALF_PI;
             hand.flex(smooth(window(t, 60, 74)));
             hand.open();
-            hand.spread(1.4f);
-            handGoal.set(lerp(0f, mB.x, smooth(window(t, 60, 72))), lerp(32f, mB.y, f), lerp(-2f, mB.z, f));
+            hand.spread(ENCORE_SPREAD);
+            handGoal.set(mB.x, lerp(32f, mB.y, f), mB.z);
             int[] fingers = {HandBody.INDEX, HandBody.PINKY};
             for (int s = 0; s < 2; s++) {
                 encoreLines[s].update(body.needleBase(s), hand.fingertip(fingers[s]), 1);
@@ -2172,10 +2221,18 @@ public final class HangingSaintDirector {
             handPinned = true;
             // Settle the Hand into its exact final pose so the solid volume matches what is seen.
             hand.flex(1f);
+            hand.open();
+            hand.spread(ENCORE_SPREAD);
             hand.rig.rootPos.set(mB);
-            hand.rig.yaw = HALF_PI;
+            hand.rig.yaw = handYaw;
             hand.rig.snapAll();
             hand.rig.solve();
+            cacheHandVolumes();
+            // She stands exactly between the middle and ring fingertips: the Hand reached for her
+            // and closed around nothing. She flinches back from the impact.
+            pos.set(encoreSpot.x, pos.y, encoreSpot.z);
+            body.spine.kick(-0.35f, 0, 0);
+            body.head.kick(-0.5f, 0, 0);
             Vector3f palm = hand.palmUnder();
             for (Player p : fx.targets()) {
                 if (insideHand(fx.stage(p.getLocation()).add(0, 0.9f, 0), 0.6f)) {
@@ -2222,13 +2279,125 @@ public final class HangingSaintDirector {
         }
     }
 
+    /** Finger fan of the fallen Hand. */
+    private static final float ENCORE_SPREAD = 1.4f;
+    /** Radius from center at which she makes her stand for the Encore. */
+    private static final float ENCORE_RADIUS = 7.5f;
+    /** How far back from the fingertips (toward the palm) she stands in the finger gap. */
+    private static final float ENCORE_TIP_INSET = 0.3f;
+    /** Clearance kept between her (hitbox + skirt) and the Hand's solid volume. */
+    private static final float HAND_CLEARANCE = 1.25f;
+
+    /** Where she stands when the Hand lands: between its middle and ring fingertips. */
+    private final Vector3f encoreSpot = new Vector3f();
+
+    /** Pinned Hand volume, cached once at impact: inverse box matrix + box size per piece. */
+    private final List<Matrix4f> handInverse = new ArrayList<>();
+    private final List<Vector3f> handSize = new ArrayList<>();
+
+    /**
+     * Lays out the Encore so the Hand lands deliberately around her. A throwaway probe hand (no
+     * displays) is posed flat and measured, so the placement stays exact if the Hand's proportions
+     * ever change. She takes her stand on her side of the stage; the Hand lies across the stage
+     * center with its middle and ring fingers bracketing her.
+     */
+    private void planEncore() {
+        Vector3f out = new Vector3f(pos.x, 0f, pos.z);
+        if (out.lengthSquared() < 1f) {
+            out.set(0f, 0f, 1f);
+        }
+        out.normalize();
+        encoreSpot.set(out.x * ENCORE_RADIUS, 0f, out.z * ENCORE_RADIUS);
+
+        HandBody probe = new HandBody();
+        probe.flex(1f);
+        probe.open();
+        probe.spread(ENCORE_SPREAD);
+        probe.rig.snapAll();
+        probe.rig.solve();
+        Vector3f middle = probe.fingertip(HandBody.MIDDLE);
+        Vector3f ring = probe.fingertip(HandBody.RING);
+        // Local (yaw 0) offset from wrist to her spot: centered in the gap, just inside the tips.
+        Vector3f local = new Vector3f(middle).add(ring).mul(0.5f);
+        float inset = ENCORE_TIP_INSET / Math.max(0.01f, (float) Math.hypot(local.x, local.z));
+        local.set(local.x * (1f - inset), 0f, local.z * (1f - inset));
+
+        // Rotate so the wrist lies on the far side of center: the offset must point from the
+        // wrist toward her, i.e. along "out".
+        float localAngle = (float) Math.atan2(local.x, local.z);
+        handYaw = SaintMath.yawToward(out.x, out.z) - localAngle;
+        Vector3f world = new Vector3f(local).rotateY(handYaw);
+        mB.set(encoreSpot.x - world.x, 1.25f, encoreSpot.z - world.z);
+    }
+
+    private void cacheHandVolumes() {
+        handInverse.clear();
+        handSize.clear();
+        for (Skeleton.Piece piece : hand.rig.pieces()) {
+            if (!piece.group.equals("palm") && !piece.group.equals("finger")) {
+                continue;
+            }
+            handInverse.add(hand.rig.matrixOf(piece).invert());
+            handSize.add(new Vector3f(piece.size));
+        }
+    }
+
+    /** Live or cached hand volume: (inverse matrix, size) pairs for palm and finger boxes. */
+    private List<Matrix4f> handVolumes(List<Vector3f> sizes) {
+        if (handPinned && !handInverse.isEmpty()) {
+            sizes.addAll(handSize);
+            return handInverse;
+        }
+        List<Matrix4f> live = new ArrayList<>();
+        for (Skeleton.Piece piece : hand.rig.pieces()) {
+            if (!piece.group.equals("palm") && !piece.group.equals("finger")) {
+                continue;
+            }
+            live.add(hand.rig.matrixOf(piece).invert());
+            sizes.add(new Vector3f(piece.size));
+        }
+        return live;
+    }
+
+    /**
+     * Once the Hand lies on the stage she treats it as a wall: if any move or step would put her
+     * inside it, she is set down at the nearest clear spot along its edge.
+     */
+    private void keepOutOfHand() {
+        if (!handPinned || hiddenBody || handInverse.isEmpty() || !handCollides(pos)) {
+            return;
+        }
+        Vector3f base = new Vector3f(pos);
+        for (float r = 0.25f; r <= 12f; r += 0.25f) {
+            for (int k = 0; k < 24; k++) {
+                float a = k * TAU / 24f;
+                Vector3f probe = new Vector3f(base.x + (float) Math.sin(a) * r, base.y, base.z + (float) Math.cos(a) * r);
+                if (Math.hypot(probe.x, probe.z) > ARENA) {
+                    continue;
+                }
+                if (!handCollides(probe)) {
+                    pos.x = probe.x;
+                    pos.z = probe.z;
+                    return;
+                }
+            }
+        }
+    }
+
+    private boolean handCollides(Vector3f at) {
+        return insideHand(new Vector3f(at.x, 0.5f, at.z), HAND_CLEARANCE)
+                || insideHand(new Vector3f(at.x, 1.6f, at.z), HAND_CLEARANCE);
+    }
+
     /** The fallen Hand becomes solid: barrier blocks fill its palm and finger volumes. */
     private void placeHandBarriers() {
         hand.rig.solve();
-        List<Vector3f> players = new ArrayList<>();
+        List<Vector3f> keepClear = new ArrayList<>();
         for (Player p : fx.targets()) {
-            players.add(fx.stage(p.getLocation()));
+            keepClear.add(fx.stage(p.getLocation()));
         }
+        // Her hitbox must never end up inside a barrier either.
+        keepClear.add(new Vector3f(pos.x, 0f, pos.z));
         for (Skeleton.Piece piece : hand.rig.pieces()) {
             if (!piece.group.equals("palm") && !piece.group.equals("finger")) {
                 continue;
@@ -2252,7 +2421,7 @@ public final class HangingSaintDirector {
                             continue;
                         }
                         boolean occupied = false;
-                        for (Vector3f pp : players) {
+                        for (Vector3f pp : keepClear) {
                             if (Math.abs(pp.x - x) < 1.0f && Math.abs(pp.z - z) < 1.0f && pp.y < y + 1.5f && pp.y > y - 2f) {
                                 occupied = true;
                                 break;
@@ -2268,14 +2437,13 @@ public final class HangingSaintDirector {
     }
 
     private boolean insideHand(Vector3f point, float margin) {
-        for (Skeleton.Piece piece : hand.rig.pieces()) {
-            if (!piece.group.equals("palm") && !piece.group.equals("finger")) {
-                continue;
-            }
-            Matrix4f inv = hand.rig.matrixOf(piece).invert();
-            Vector3f local = inv.transformPosition(new Vector3f(point));
-            float mx = margin / Math.max(0.5f, piece.size.x);
-            float mz = margin / Math.max(0.5f, piece.size.z);
+        List<Vector3f> sizes = new ArrayList<>();
+        List<Matrix4f> volumes = handVolumes(sizes);
+        for (int i = 0; i < volumes.size(); i++) {
+            Vector3f size = sizes.get(i);
+            Vector3f local = volumes.get(i).transformPosition(new Vector3f(point));
+            float mx = margin / Math.max(0.5f, size.x);
+            float mz = margin / Math.max(0.5f, size.z);
             if (local.x > -mx && local.x < 1 + mx && local.y > -0.2f && local.y < 1.2f && local.z > -mz && local.z < 1 + mz) {
                 return true;
             }
@@ -2289,11 +2457,8 @@ public final class HangingSaintDirector {
             return 1f;
         }
         float best = 1f;
-        for (Skeleton.Piece piece : hand.rig.pieces()) {
-            if (!piece.group.equals("palm") && !piece.group.equals("finger")) {
-                continue;
-            }
-            Matrix4f inv = hand.rig.matrixOf(piece).invert();
+        List<Vector3f> sizes = new ArrayList<>();
+        for (Matrix4f inv : handVolumes(sizes)) {
             Vector3f la = inv.transformPosition(new Vector3f(a));
             Vector3f lb = inv.transformPosition(new Vector3f(b));
             Vector3f d = new Vector3f(lb).sub(la);
@@ -2338,12 +2503,12 @@ public final class HangingSaintDirector {
      */
     private void stitches(int t) {
         int waves = 4;
-        int gap = 11;
+        int gap = 9;
         if (t == 0) {
-            props.add(new SaintProps.Shockwave(fx, pos, 15f, 0.6f, 1.4f, 20, Material.GOLD_BLOCK, GOLD));
+            props.add(new SaintProps.Shockwave(fx, pos, 15f, 0.6f, 1.4f, 16, Material.GOLD_BLOCK, GOLD));
             fx.score(Sound.BLOCK_BEACON_ACTIVATE, 0.8f, 1.6f);
         }
-        if (t < 20) {
+        if (t < 16) {
             body.springsSharp();
             body.poseCrucifix();
             body.upper[SaintBody.R].target.z = -1.2f;
@@ -2355,7 +2520,7 @@ public final class HangingSaintDirector {
             body.needle[SaintBody.R].kick((float) Math.sin(t) * 0.05f, 0, 0);
             return;
         }
-        int w = t - 20;
+        int w = t - 16;
         if (w < waves * gap && w % gap == 0) {
             int k = w / gap;
             int count = 16;
@@ -2391,7 +2556,7 @@ public final class HangingSaintDirector {
                 }
             }
         }
-        if (w >= waves * gap + 30) {
+        if (w >= waves * gap + 20) {
             body.haloLit(false);
             finish(20);
         }
@@ -2826,6 +2991,8 @@ public final class HangingSaintDirector {
         // The Hand frees itself and reaches for her.
         if (t == 50) {
             handPinned = false;
+            handInverse.clear();
+            handSize.clear();
             stage.clearBarriers();
             hand.flex(0f);
             hand.open();
