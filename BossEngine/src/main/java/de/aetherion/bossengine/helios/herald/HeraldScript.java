@@ -371,6 +371,12 @@ public final class HeraldScript extends ActScript implements HeliosGuard.PropAwa
         return stunned > 0 ? amount * 1.5 : amount;
     }
 
+    /** Act I pays nothing: Act II's reliquary pays for both (Herald damage counts 30 % there). */
+    @Override
+    public boolean paysLoot() {
+        return false;
+    }
+
     @Override
     protected boolean paused() {
         return mirrorTick >= 0;

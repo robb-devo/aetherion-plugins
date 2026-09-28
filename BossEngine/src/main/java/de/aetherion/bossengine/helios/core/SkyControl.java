@@ -95,11 +95,17 @@ public final class SkyControl {
         apply(clock % 20 == 0);
     }
 
+    private final java.util.Map<UUID, Long> sent = new java.util.HashMap<>();
+
     private void apply(boolean full) {
         for (Player p : stage.audience()) {
             double f = freeze.applyAsDouble(p);
             long t = (long) (f >= 0.999 ? time : lastFor(p, f));
-            p.setPlayerTime(t, false);
+            Long last = sent.get(p.getUniqueId());
+            if (full || last == null || Math.abs(last - t) >= 2) {
+                p.setPlayerTime(t, false);
+                sent.put(p.getUniqueId(), t);
+            }
             if (full || !touched.contains(p.getUniqueId())) {
                 if (weather == null) {
                     p.resetPlayerWeather();
@@ -130,6 +136,7 @@ public final class SkyControl {
             p.resetPlayerWeather();
             touched.remove(p.getUniqueId());
             held.remove(p.getUniqueId());
+            sent.remove(p.getUniqueId());
         }
     }
 
@@ -143,6 +150,7 @@ public final class SkyControl {
         }
         touched.clear();
         held.clear();
+        sent.clear();
     }
 
     private static float norm(float t) {
