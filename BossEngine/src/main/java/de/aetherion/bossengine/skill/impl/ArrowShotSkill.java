@@ -58,7 +58,15 @@ public class ArrowShotSkill extends AbstractBossSkill {
             return;
         }
 
-        Arrow arrow = world.spawnArrow(from, direction, (float) speed, spread);
+        loose(context, from, direction, spread);
+        world.playSound(from, Sound.ENTITY_SKELETON_SHOOT, 1.15f, 1.15f);
+        world.spawnParticle(particle, from, 6, 0.12, 0.12, 0.12, 0.01);
+    }
+
+    /** One arrow with this skill's speed and damage. Staged volleys call this per arrow. */
+    public Arrow loose(SkillContext context, Location from, Vector direction, float spreadDegrees) {
+        LivingEntity boss = context.getEntity();
+        Arrow arrow = from.getWorld().spawnArrow(from, direction, (float) speed, spreadDegrees);
         arrow.setShooter(boss);
         arrow.setPickupStatus(AbstractArrow.PickupStatus.DISALLOWED);
         double damage = damageOverride > 0
@@ -69,9 +77,7 @@ public class ArrowShotSkill extends AbstractBossSkill {
             arrow.setFireTicks(120);
             arrow.setVisualFire(true);
         }
-
-        world.playSound(from, Sound.ENTITY_SKELETON_SHOOT, 1.15f, 1.15f);
-        world.spawnParticle(particle, from, 6, 0.12, 0.12, 0.12, 0.01);
+        return arrow;
     }
 
     private LivingEntity resolveTarget(LivingEntity boss) {

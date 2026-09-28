@@ -3,6 +3,8 @@
 # Combat T1 gear. Egg spam hurtful but not one-shotty.
 # Spawn-Punkt: /boss give mcnugget_anchor  (Rechtsklick auf Block)
 # Test-Spawn:  /boss give mcnugget_core
+# Polish (EarlyBossKit, BossEngine): arrival beat, attack tells and
+# no idle aura are code-side, so they hold on live copies of this file.
 # ============================================================
 
 id: mcnugget
@@ -120,14 +122,6 @@ skills:
     trigger: ON_SPAWN
     broadcast: true
     message: "&6&lMcNugget &7struts into the fight."
-
-  - type: PARTICLE_AURA
-    trigger: ON_TIMER
-    interval-ticks: 10
-    particle: CLOUD
-    count: 6
-    radius: 0.7
-    extra: 0.01
 
   - type: DIALOG
     trigger: ON_DEATH

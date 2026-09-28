@@ -679,16 +679,18 @@ public final class T2Mechanics {
                     return;
                 }
                 double radius = index * safeStep;
-                int points = Math.max(18, (int) (radius * 8));
-                for (int i = 0; i < points; i++) {
-                    double angle = (Math.PI * 2 * i) / points;
-                    Location rim = center.clone().add(Math.cos(angle) * radius, 0.2, Math.sin(angle) * radius);
-                    puff(world, used, rim, 2, 0.08, 0.12, 0.08, 0.01);
-                    if (index == safeWaves) {
-                        world.spawnParticle(Particle.CRIT, rim.clone().add(0, 0.4, 0), 1, 0, 0, 0, 0);
+                if (!instance.earlyKit().ringWave(center, radius, index, safeWaves)) {
+                    int points = Math.max(18, (int) (radius * 8));
+                    for (int i = 0; i < points; i++) {
+                        double angle = (Math.PI * 2 * i) / points;
+                        Location rim = center.clone().add(Math.cos(angle) * radius, 0.2, Math.sin(angle) * radius);
+                        puff(world, used, rim, 2, 0.08, 0.12, 0.08, 0.01);
+                        if (index == safeWaves) {
+                            world.spawnParticle(Particle.CRIT, rim.clone().add(0, 0.4, 0), 1, 0, 0, 0, 0);
+                        }
                     }
+                    world.playSound(center, Sound.ENTITY_GENERIC_EXPLODE, 0.35f, 0.55f + index * 0.12f);
                 }
-                world.playSound(center, Sound.ENTITY_GENERIC_EXPLODE, 0.35f, 0.55f + index * 0.12f);
                 if (index == safeWaves) {
                     de.aetherion.bossengine.fx.CombatTheatrics.ringClimax(instance, center, radius);
                 }

@@ -2,6 +2,8 @@
 # Hollow Lurker – T1 rite / tutorial boss (solo ~3k HP)
 # Combat T1 gear. BossHits ~32 ≈ soft chunk, not one-shot.
 # Spawn-Punkt: /boss give hollow_lurker_anchor  (Rechtsklick auf Block)
+# Polish (EarlyBossKit, BossEngine): arrival beat, attack tells and
+# no idle aura are code-side, so they hold on live copies of this file.
 # ============================================================
 
 id: hollow_lurker
@@ -99,14 +101,6 @@ skills:
     broadcast: false
     radius: 48
     message: "&8&lHollow Lurker &7stirs in the dark."
-
-  - type: PARTICLE_AURA
-    trigger: ON_TIMER
-    interval-ticks: 10
-    particle: SOUL
-    count: 10
-    radius: 0.7
-    extra: 0.01
 
   - type: DIALOG
     trigger: ON_DEATH

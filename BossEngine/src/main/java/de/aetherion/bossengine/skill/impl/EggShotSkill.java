@@ -59,7 +59,15 @@ public class EggShotSkill extends AbstractBossSkill {
         look.setDirection(direction);
         boss.teleport(look);
 
-        Egg egg = boss.launchProjectile(Egg.class, direction.multiply(speed));
+        loose(context, from, direction);
+        from.getWorld().playSound(from, Sound.ENTITY_EGG_THROW, 1.1f, 0.85f);
+        from.getWorld().spawnParticle(Particle.CLOUD, from, 4, 0.1, 0.1, 0.1, 0.01);
+    }
+
+    /** One egg along {@code direction} with this skill's damage. Staged bursts call this per egg. */
+    public Egg loose(SkillContext context, Location from, Vector direction) {
+        LivingEntity boss = context.getEntity();
+        Egg egg = boss.launchProjectile(Egg.class, direction.clone().normalize().multiply(speed));
         egg.setShooter(boss);
         double damage = damageOverride > 0
                 ? context.getInstance().scaleDamage(damageOverride)
@@ -67,9 +75,7 @@ public class EggShotSkill extends AbstractBossSkill {
         BossKeys keys = context.getInstance().getKeys();
         egg.getPersistentDataContainer().set(keys.eggDamageKey(), PersistentDataType.DOUBLE, damage);
         egg.getPersistentDataContainer().set(keys.eggKnockbackKey(), PersistentDataType.DOUBLE, knockback);
-
-        from.getWorld().playSound(from, Sound.ENTITY_EGG_THROW, 1.1f, 0.85f);
-        from.getWorld().spawnParticle(Particle.CLOUD, from, 4, 0.1, 0.1, 0.1, 0.01);
+        return egg;
     }
 
     private LivingEntity resolveTarget(LivingEntity boss) {

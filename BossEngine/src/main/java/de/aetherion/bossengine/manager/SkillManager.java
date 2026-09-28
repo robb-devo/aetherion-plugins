@@ -60,6 +60,9 @@ public class SkillManager {
             if (!skill.canExecute(context) && trigger != SkillTrigger.ON_DEATH) {
                 continue;
             }
+            if (instance.earlyKit().intercept(skill, context)) {
+                continue;
+            }
             skill.execute(context);
             instance.markCast(skill);
         }

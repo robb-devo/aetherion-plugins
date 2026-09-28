@@ -4,6 +4,8 @@
 # Arrow damage is vanilla-scaled — keep low vs T1 gear.
 # Spawn-Punkt: /boss give skuldugery_anchor  (Rechtsklick auf Block)
 # Test-Spawn:  /boss give skuldugery_core
+# Polish (EarlyBossKit, BossEngine): arrival beat, attack tells and
+# no idle aura are code-side, so they hold on live copies of this file.
 # ============================================================
 
 id: skuldugery
@@ -122,14 +124,6 @@ skills:
     trigger: ON_SPAWN
     broadcast: true
     message: "&6&lSkuldugery &7draws a flaming bow."
-
-  - type: PARTICLE_AURA
-    trigger: ON_TIMER
-    interval-ticks: 8
-    particle: FLAME
-    count: 14
-    radius: 0.55
-    extra: 0.02
 
   - type: DIALOG
     trigger: ON_DEATH

@@ -201,7 +201,7 @@ final class SignatureDirector {
                 world.spawnParticle(Particle.DUST, root.clone().add(reach.clone().multiply(i)), 1, 0.03, 0.03, 0.03, ink);
             }
         }
-        if (deathTicks > 80) {
+        if (deathTicks > 80 && deathTicks % 2 == 0) {
             double roll = 1.5 + (deathTicks - 80) * 0.4;
             for (int i = 0; i < 20; i++) {
                 double angle = Math.PI * 2 * i / 20.0;
@@ -212,15 +212,20 @@ final class SignatureDirector {
                 world.playSound(core, Sound.BLOCK_SCULK_SENSOR_CLICKING_STOP, 0.6f, 0.5f);
             }
         }
-        world.spawnParticle(Particle.SOUL, core, 14, 0.5, 0.35, 0.5, 0.02);
-        world.spawnParticle(Particle.SCULK_SOUL, core.clone().add(0, -0.4, 0), 8, 0.4, 0.15, 0.4, 0.01);
-        double ring = Math.max(0.6, 4.2 - deathTicks * 0.045);
-        int points = 16;
-        for (int i = 0; i < points; i++) {
-            double angle = (Math.PI * 2 * i) / points;
-            world.spawnParticle(Particle.SOUL_FIRE_FLAME,
-                    core.clone().add(Math.cos(angle) * ring, -0.7, Math.sin(angle) * ring),
-                    1, 0, 0, 0, 0);
+        // A thin closing ring and a trickle of souls; the sink and the heartbeat carry it.
+        if (deathTicks % 2 == 0) {
+            world.spawnParticle(Particle.SOUL, core, 2, 0.4, 0.3, 0.4, 0.01);
+            world.spawnParticle(Particle.SCULK_SOUL, core.clone().add(0, -0.4, 0), 1, 0.3, 0.1, 0.3, 0.01);
+        }
+        if (deathTicks % 3 == 0) {
+            double ring = Math.max(0.6, 4.2 - deathTicks * 0.045);
+            int points = 16;
+            for (int i = 0; i < points; i++) {
+                double angle = (Math.PI * 2 * i) / points;
+                world.spawnParticle(Particle.SOUL_FIRE_FLAME,
+                        core.clone().add(Math.cos(angle) * ring, -0.7, Math.sin(angle) * ring),
+                        1, 0, 0, 0, 0);
+            }
         }
         if (deathTicks % 10 == 0) {
             world.playSound(core, Sound.ENTITY_WARDEN_HEARTBEAT, 0.55f, 0.7f - deathTicks * 0.004f);
@@ -252,13 +257,13 @@ final class SignatureDirector {
             }
         }
         if (deathTicks > 88) {
-            world.spawnParticle(Particle.WHITE_ASH, core.clone().add(0, 3.0, 0), 30, 3.5, 0.6, 3.5, 0);
-            world.spawnParticle(Particle.SMALL_FLAME, core.clone().add(0, -0.6, 0), 3, 1.4, 0.1, 1.4, 0.01);
+            world.spawnParticle(Particle.WHITE_ASH, core.clone().add(0, 3.0, 0), 6, 3.5, 0.6, 3.5, 0);
+            world.spawnParticle(Particle.SMALL_FLAME, core.clone().add(0, -0.6, 0), 1, 1.4, 0.1, 1.4, 0.01);
             if (deathTicks % 6 == 0) {
                 world.playSound(core, Sound.BLOCK_FIRE_AMBIENT, 0.7f, 0.6f);
             }
         }
-        world.spawnParticle(Particle.FLAME, core, 10, 0.6, 0.5, 0.6, 0.02);
+        world.spawnParticle(Particle.FLAME, core, 2, 0.5, 0.4, 0.5, 0.01);
         if (deathTicks % 5 == 0) {
             double yaw = ThreadLocalRandom.current().nextDouble() * Math.PI * 2;
             Location from = core.clone().add(Math.cos(yaw) * 7.5, 3.5 + ThreadLocalRandom.current().nextDouble(), Math.sin(yaw) * 7.5);
@@ -280,8 +285,10 @@ final class SignatureDirector {
     }
 
     private void nugget(World world, Location core, LivingEntity entity) {
-        world.spawnParticle(Particle.CLOUD, core, 8, 0.6, 0.4, 0.6, 0.02);
-        world.spawnParticle(Particle.ITEM, core, 6, 0.5, 0.4, 0.5, 0.04, new ItemStack(Material.FEATHER));
+        if (deathTicks % 2 == 0) {
+            world.spawnParticle(Particle.CLOUD, core, 1, 0.5, 0.3, 0.5, 0.01);
+            world.spawnParticle(Particle.ITEM, core, 1, 0.5, 0.4, 0.5, 0.04, new ItemStack(Material.FEATHER));
+        }
         double inflate = startScale * (1.0 + Math.min(1.15, deathTicks / 55.0));
         AttributeUtil.setBase(entity, AttributeUtil.scale(), inflate);
         if (deathTicks % 8 == 0) {
@@ -318,7 +325,7 @@ final class SignatureDirector {
 
     private void troll(World world, Location core, LivingEntity entity) {
         if (deathTicks < 36) {
-            world.spawnParticle(Particle.ELECTRIC_SPARK, core, 8, 0.5, 0.6, 0.5, 0.03);
+            world.spawnParticle(Particle.ELECTRIC_SPARK, core, 2, 0.4, 0.5, 0.4, 0.02);
             if (deathTicks % 6 == 0) {
                 toss(core, Material.GOLD_NUGGET, 0.35, 0.55);
                 world.playSound(core, Sound.ENTITY_PIGLIN_BRUTE_AMBIENT, 0.5f, 0.7f);
@@ -329,8 +336,8 @@ final class SignatureDirector {
             world.spawnParticle(Particle.GUST, focus.clone().add(0, 0.2, 0), 3, 0.4, 0.05, 0.4, 0);
             world.spawnParticle(Particle.ITEM, focus, 24, 0.9, 0.3, 0.9, 0.12, new ItemStack(Material.GOLD_INGOT));
             FakeDestruction.blockBurst(world, focus, Material.GOLD_BLOCK, 12);
-        } else {
-            world.spawnParticle(Particle.CRIT, core, 6, 0.5, 0.2, 0.5, 0.04);
+        } else if (deathTicks % 3 == 0) {
+            world.spawnParticle(Particle.CRIT, core, 1, 0.4, 0.2, 0.4, 0.03);
         }
     }
 
