@@ -271,11 +271,25 @@ public final class Arena {
         return true;
     }
 
+    /** Reverts a temporary block. If the cell has been destroyed since (air), it stays gone. */
     public void clearTemp(int dx, int dy, int dz) {
         long k = ArenaLayout.key(dx, dy, dz);
         BlockData before = temp.remove(k);
-        if (before != null) {
-            world.getBlockAt(cx + dx, cy + dy, cz + dz).setBlockData(before, false);
+        if (before == null) {
+            return;
+        }
+        Block b = world.getBlockAt(cx + dx, cy + dy, cz + dz);
+        boolean layoutCell = ArenaLayout.at(dx, dy, dz) != null;
+        if (layoutCell && b.getType() == Material.AIR) {
+            return;
+        }
+        b.setBlockData(before, false);
+    }
+
+    /** Drops temp records for cells about to be removed (they are restored from the layout later). */
+    public void revertTempsIn(List<ArenaLayout.Cell> cells) {
+        for (ArenaLayout.Cell c : cells) {
+            temp.remove(ArenaLayout.key(c.dx(), c.dy(), c.dz()));
         }
     }
 

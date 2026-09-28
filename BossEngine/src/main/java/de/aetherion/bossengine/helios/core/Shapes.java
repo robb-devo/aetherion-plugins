@@ -246,6 +246,15 @@ public final class Shapes {
             }
         }
 
+        /** A filled circle on any plane: {@code orient} rotates the flat disc (its normal is local +Y). */
+        public void set(Vector3fc center, float radius, float thick, Quaternionf orient, float spin, int interp) {
+            float side = radius * 2f * 0.9659f;
+            for (int i = 0; i < parts.length; i++) {
+                Quaternionf rot = new Quaternionf(orient).rotateY(spin + i * HMath.PI / 6f);
+                stage.push(parts[i], HeliosStage.box(center, new Vector3f(side, thick, side), rot), interp);
+            }
+        }
+
         public void hide(Vector3fc at, int interp) {
             for (BlockDisplay d : parts) {
                 stage.push(d, HeliosStage.gone(at), interp);
