@@ -405,6 +405,17 @@ public final class SkillService implements StatProvider, Listener {
         announceAccountLevel(player, before);
     }
 
+    /**
+     * Admin/test grant straight into one skill (equipped or not). Runs the normal level-up path,
+     * so every moment (line, rarity title, stage, Mastered) fires exactly as in play.
+     */
+    public void grantXpDirect(Player player, AetherSkill skill, int amount) {
+        if (player == null || skill == null || amount <= 0) {
+            return;
+        }
+        addXp(player, skill, amount);
+    }
+
     public int highestLevel(Player player, AetherSkill.Category category) {
         if (player == null || category == null) {
             return 1;

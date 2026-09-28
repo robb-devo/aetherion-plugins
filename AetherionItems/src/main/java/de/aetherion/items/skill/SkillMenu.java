@@ -681,9 +681,9 @@ public final class SkillMenu implements Listener {
     private static String loopHint(AetherSkill.Category category) {
         return switch (category) {
             case MINING -> "Mining Power opens harder ore.\nFortune multiplies what breaks.";
-            case FORAGING -> "Clean fells pay bonus XP; Perfect pays more.\nLv. 50 widens the CHOP window.\nFortune raises each tree's wood cap.";
+            case FORAGING -> "Perfect fells and streaks pay bonus XP.\nLv. 50 widens the CHOP window.\nFortune raises each tree's wood cap.";
             case FARMING -> "Harvest breaks extra crops per swing.\nClearing birds boosts the whole field.\nHigher Farming holds the boost longer.";
-            case FISHING -> "Fish Catch widens the green zone.\nFish Speed shortens the wait.\nPerfect reels pay bonus XP.";
+            case FISHING -> "Fish Catch widens the green zone.\nFish Speed shortens the wait.\nPerfect reels and streaks pay bonus XP.";
             default -> null;
         };
     }
