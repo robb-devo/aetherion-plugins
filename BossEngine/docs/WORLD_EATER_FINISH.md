@@ -107,11 +107,51 @@ per-player shares, expiry delivery, plugin-disable delivery, `onFinish` → site
   all 16 eaten worlds burst out of the skull as slabs, circle it once, then implode into the
   shrinking head. The black point lands with a violet double shock ring across the island and a
   sonic boom, then "Generating world" as before. No camera moves.
-- **Not done:** signature armor/weapon + pack CMDs (budget). Loot is unchanged, and no CMD ids
-  are claimed.
+- **Signature gear:** see "Nihil's gear" below.
 
 **Test:** `/boss worldeater reset` → `/boss worldeater open` → step onto the island → fight (or
 lower `max-health` in `world_eater.yml` temporarily) → watch the burst/implosion at the end of
 the death, then the vault bloom after "Saved the game". Right-click it for the share, and wait for
 the unload plus the 20 s site reset. Quick check away from the site: `/boss spawn world_eater` in
 a test world. The vault then generates where the boss was summoned.
+
+## Nihil's gear (Worldhide + Worldbite)
+
+| Item id | Name | Base | CMD |
+|---|---|---|---|
+| `worldhide_helmet` | Worldhide Crown | NETHERITE_HELMET | 4101 |
+| `worldhide_chestplate` | Worldhide Carapace | NETHERITE_CHESTPLATE | 4102 |
+| `worldhide_leggings` | Worldhide Coils | NETHERITE_LEGGINGS | 4103 |
+| `worldhide_boots` | Worldhide Treads | NETHERITE_BOOTS | 4104 |
+| `worldbite` | Worldbite | NETHERITE_SWORD | 4105 |
+
+`random_worldhide_armor` gives one random piece. The CMD range 4101-4105 was unused (fishing
+uses 29xx, bows/tools 21xx-23xx).
+
+- **Code (AetherionItems):** factories in `item/CustomItem.java` (WORLDHIDE section; BossEngine
+  resolves the ids by reflection, `create<Id>()`), stats in `BossGearBalance.base` (one step over
+  the Aetherion set, MYTHIC, stamped for migration), profiles in `model/ItemProfile.java`, glow in
+  `BossWeaponLook`, flavor in `ItemFlavor`. Abilities are in `listener/WorldEaterGearListener.java`
+  (registered next to `VoidStickListener`):
+  - **Worldbite: Devour** (right-click, 8 s cooldown). An F3+G chunk-border square snaps down
+    five blocks ahead, mobs inside are pulled to its center, then bitten for 60 magic damage;
+    15% of it heals you (capped at 40). It never touches players, pets, bosses or boss minions
+    (same rules as the Void Stick).
+  - **Worldhide full set: Last Seed.** Standing on grass, moss or podzol gives Regeneration I and
+    Absorption I, refreshed every 2 s.
+- **Looks:** the armor wears an **amethyst eye armor trim** (vanilla; tooltip hidden), so the
+  worn model is distinct without shaders. The inventory icons are hand-made 16x16 textures: a
+  void hide with an amethyst rim, an ender eye on the crown, a spine of eaten-world colors on the
+  carapace, sculk accents on the coils, grass tufts under the treads, and a void fang with an
+  amethyst edge, a grass-block guard and an eye pommel for Worldbite.
+- **Pack:** `AetherionItems/resourcepack/assets/minecraft/textures/item/worldhide_*.png` and
+  `worldbite.png`, models `models/item/worldhide_*.json` and `worldbite.json`, and overrides
+  appended to `netherite_{helmet,chestplate,leggings,boots,sword}.json`. Rebuild and redeploy
+  the pack the usual way.
+- **Loot (`bosses/world_eater.yml`):** rank 1 gets Worldbite 12% plus one Worldhide piece 100%,
+  rank 2 gets 5% / 70%, rank 3 gets 2% / 35%, and every damager has a 5% chance at a piece.
+  Boosters, the nether star and the vanilla extras stay. It all lands in the Seed Vault. The
+  server only writes this YAML if it is missing, so **copy the `loot:` section into the live
+  `plugins/BossEngine/bosses/world_eater.yml`**.
+- **Quick test:** `/boss give` doesn't cover these (they aren't spawn items). Use the existing
+  AetherionItems admin give if it accepts ids, or kill Nihil at low HP.

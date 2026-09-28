@@ -74,6 +74,12 @@ public final class BossGearBalance {
                 stats.setSpeed(8);
                 yield stats;
             }
+            // Worldhide / Worldbite (World Eater): raid-unique tier, a step over Aetherion.
+            case "worldbite" -> weapon(108, 16, 17, 120);
+            case "worldhide_helmet" -> aetherion(46, 64, 15, 14, 9, 54, 3);
+            case "worldhide_chestplate" -> aetherion(76, 104, 28, 22, 17, 118, 4);
+            case "worldhide_leggings" -> aetherion(60, 78, 19, 18, 11, 72, 3);
+            case "worldhide_boots" -> aetherion(46, 54, 13, 12, 9, 54, 7);
             case "aetherion_helmet" -> aetherion(42, 58, 14, 14, 8, 50, 3);
             case "aetherion_chestplate" -> aetherion(70, 96, 26, 22, 16, 110, 4);
             case "aetherion_leggings" -> aetherion(56, 72, 18, 18, 10, 68, 3);

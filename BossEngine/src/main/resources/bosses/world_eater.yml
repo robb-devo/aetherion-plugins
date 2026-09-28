@@ -104,18 +104,45 @@ loot:
       amount: 1
       chance: 1.0
 
+  # Nihil's own gear (AetherionItems): Worldbite (weapon, right-click Devour) and the
+  # Worldhide set (random_worldhide_armor = one piece; full set = Last Seed regen).
+  # Pack CMDs 4101-4105. Chances are placeholders.
   rank-loot:
     1:
+      - source: AETHERION
+        item-id: worldbite
+        amount: 1
+        chance: 0.12
+      - source: AETHERION
+        item-id: random_worldhide_armor
+        amount: 1
+        chance: 1.0
       - source: AETHERION
         item-id: random_booster
         amount: 2
         chance: 0.8
     2:
       - source: AETHERION
+        item-id: worldbite
+        amount: 1
+        chance: 0.05
+      - source: AETHERION
+        item-id: random_worldhide_armor
+        amount: 1
+        chance: 0.7
+      - source: AETHERION
         item-id: random_booster
         amount: 1
         chance: 0.6
     3:
+      - source: AETHERION
+        item-id: worldbite
+        amount: 1
+        chance: 0.02
+      - source: AETHERION
+        item-id: random_worldhide_armor
+        amount: 1
+        chance: 0.35
       - source: AETHERION
         item-id: random_booster
         amount: 1
@@ -147,6 +174,10 @@ loot:
       chance: 1.0
 
   per-damager:
+    - source: AETHERION
+      item-id: random_worldhide_armor
+      amount: 1
+      chance: 0.05
     - source: VANILLA
       material: EXPERIENCE_BOTTLE
       min-amount: 10
