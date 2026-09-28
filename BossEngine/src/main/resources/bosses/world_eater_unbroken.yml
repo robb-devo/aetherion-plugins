@@ -12,7 +12,7 @@
 #
 # Bedrock: blades do 30% unless it is cracked open (after Hammerfall,
 # Strata, and all through the Weight). At 50% its left arm shatters.
-# Balance / loot below are placeholders.
+# HP tuned for a short gate fight (~12k); crack windows still matter.
 # ============================================================
 
 id: world_eater_unbroken
@@ -22,7 +22,7 @@ entity-type: IRON_GOLEM
 model-engine-id: ""
 
 attributes:
-  max-health: 50000
+  max-health: 12000
   movement-speed: 0.0
   attack-damage: 0
   scale: 2.2

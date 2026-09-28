@@ -2041,8 +2041,11 @@ public class BossInstance {
                 mob.setAI(false);
                 mob.setAware(false);
             }
-            if (entity.isCollidable()) {
-                entity.setCollidable(false);
+            // Must stay collidable: arrows/projectiles otherwise pass through the
+            // invisible hitbox while melee still registers. AI-off + zero velocity
+            // already keeps them from shoving players around.
+            if (!entity.isCollidable()) {
+                entity.setCollidable(true);
             }
             return;
         }
@@ -2501,9 +2504,15 @@ public class BossInstance {
     private void applySlimeSize() {
         if (entity instanceof org.bukkit.entity.MagmaCube cube) {
             // Size drives the real collision box; keep Sparky wide enough to hit from mid-range.
-            int size = "sparky".equalsIgnoreCase(template.getId())
-                    ? Math.max(7, (int) Math.round(template.getAttributes().getScale() * 2.4))
-                    : Math.max(6, (int) Math.round(template.getAttributes().getScale() * 2.8));
+            // World Eater's hitbox rides the skull — a bit wider so bows can actually land.
+            int size;
+            if ("sparky".equalsIgnoreCase(template.getId())) {
+                size = Math.max(7, (int) Math.round(template.getAttributes().getScale() * 2.4));
+            } else if ("world_eater".equalsIgnoreCase(template.getId())) {
+                size = Math.max(8, (int) Math.round(template.getAttributes().getScale() * 4.0));
+            } else {
+                size = Math.max(6, (int) Math.round(template.getAttributes().getScale() * 2.8));
+            }
             cube.setSize(size);
         } else if (entity instanceof org.bukkit.entity.Slime slime) {
             slime.setSize(Math.max(5, (int) Math.round(template.getAttributes().getScale() * 2.4)));

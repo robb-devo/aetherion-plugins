@@ -202,12 +202,12 @@ public final class WorldEaterDirector {
         return act == Act.FIGHT && serpent != null && exposeTicks <= 0 && serpent.skullCenter().y < -4.5f;
     }
 
-    /** Its hide is made of worlds: only a bite or a swallow opens it up. */
+    /** Its hide is made of worlds: exposed windows and Ouroboros take full hits. */
     public double scaleIncoming(double amount) {
         if (!isMine()) {
             return amount;
         }
-        return exposeTicks > 0 || phase >= 4 ? amount : amount * 0.35;
+        return exposeTicks > 0 || phase >= 4 ? amount : amount * 0.7;
     }
 
     public void onDamaged(double amount) {

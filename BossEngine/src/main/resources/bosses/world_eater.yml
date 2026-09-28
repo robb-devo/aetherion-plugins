@@ -16,10 +16,10 @@
 #    15%  Ouroboros  it becomes the edge of the world (world border)
 #   death            "Generating world" -> the Bonus Chest
 #
-# Its hide takes 35% from blades unless it is exposed: jaws stuck in the
+# Its hide takes 70% from blades unless it is exposed: jaws stuck in the
 # island after a Lunge, swallowing after Devour, inhaling, coughing after
 # a Spit, and all through Ouroboros.
-# Balance / loot below are placeholders.
+# HP / hide tuned down from placeholders so bows and melee both land.
 # ============================================================
 
 id: world_eater
@@ -29,7 +29,7 @@ entity-type: MAGMA_CUBE
 model-engine-id: ""
 
 attributes:
-  max-health: 150000
+  max-health: 45000
   movement-speed: 0.0
   attack-damage: 0
   scale: 1.0
