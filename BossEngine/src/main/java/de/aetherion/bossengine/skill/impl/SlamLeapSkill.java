@@ -29,6 +29,10 @@ public class SlamLeapSkill extends AbstractBossSkill {
         this.slamDamage = section == null ? 8.0 : Math.max(1.0, section.getDouble("slam-damage", 8.0));
     }
 
+    public double getSlamRadius() {
+        return slamRadius;
+    }
+
     @Override
     public void execute(SkillContext context) {
         BossInstance instance = context.getInstance();

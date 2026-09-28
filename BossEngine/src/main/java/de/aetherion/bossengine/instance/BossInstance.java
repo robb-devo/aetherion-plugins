@@ -77,6 +77,7 @@ public class BossInstance {
     private final SparkyDirector sparkyDirector = new SparkyDirector(this);
     private final FrostboundDirector frostboundDirector = new FrostboundDirector(this);
     private final PathwardenDirector pathwardenDirector = new PathwardenDirector(this);
+    private final EarlyBossKit earlyKit = new EarlyBossKit(this);
     private final AshesEliteDirector eliteDirector = new AshesEliteDirector(this);
     private final AshenSheathDirector ashenSheathDirector = new AshenSheathDirector(this);
     private int ashenParries;
@@ -479,6 +480,7 @@ public class BossInstance {
         }
         minions.clear();
         clearBoilingZones();
+        earlyKit.abort();
         lightningStormActive = false;
         blackHoleActive = false;
         spectacles.finish();
@@ -538,6 +540,10 @@ public class BossInstance {
         return sandboxDirector;
     }
 
+    public EarlyBossKit earlyKit() {
+        return earlyKit;
+    }
+
     public boolean isInternalTeleport() {
         return internalTeleportDepth > 0;
     }
@@ -572,6 +578,7 @@ public class BossInstance {
         if (isCinematicDying()) {
             return true;
         }
+        earlyKit.abort();
         de.aetherion.bossengine.skill.t2.T2Mechanics.clearInstanceProps(this);
         if (dragonDirector.beginDeath() || sparkyDirector.beginDeath()
                 || frostboundDirector.beginDeath() || pathwardenDirector.beginDeath()
@@ -732,6 +739,7 @@ public class BossInstance {
         saintDirector.tick();
         unbrokenDirector.tick();
         worldEaterDirector.tick();
+        earlyKit.tick();
         if (ticksAlive == 20 || ticksAlive == 100) {
             SkeletonUtil.prepareBoss(entity);
             if (entity instanceof org.bukkit.entity.PiglinAbstract piglin) {
@@ -1157,7 +1165,7 @@ public class BossInstance {
             world.spawnParticle(Particle.ELECTRIC_SPARK, center, 40, 1.4, 0.4, 1.4, 0.15);
         }
 
-        double radius = transition.getExplodeRadius();
+        double radius = earlyKit.explodeRadius(transition.getExplodeRadius());
         if (!quiet) {
             drawShockwaveRing(center, radius, transition.getParticle());
         }
@@ -1424,6 +1432,9 @@ public class BossInstance {
 
     private void drawSlamTelegraph(Location center) {
         if (center == null || center.getWorld() == null || slamRadius <= 0) {
+            return;
+        }
+        if (earlyKit.drawSlamTelegraph(center, slamRadius)) {
             return;
         }
         World world = center.getWorld();

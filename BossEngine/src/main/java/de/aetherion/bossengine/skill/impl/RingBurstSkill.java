@@ -24,6 +24,14 @@ public class RingBurstSkill extends AbstractBossSkill {
         this.particle = parse(section == null ? "SWEEP_ATTACK" : section.getString("particle", "SWEEP_ATTACK"));
     }
 
+    public int getWaves() {
+        return waves;
+    }
+
+    public double getStep() {
+        return step;
+    }
+
     @Override
     public void execute(SkillContext context) {
         T2Mechanics.ringBurst(context.getInstance(), waves, step, damage, particle);

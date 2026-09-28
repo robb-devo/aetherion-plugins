@@ -3,6 +3,8 @@
 # Combat T1 gear. Slam/storm chunky, not wipe.
 # Spawn-Punkt: /boss give bridge_troll_anchor  (Rechtsklick auf Block)
 # Test-Spawn:  /boss give bridge_troll_core
+# Polish (EarlyBossKit, BossEngine): arrival beat, attack tells and
+# no idle aura are code-side, so they hold on live copies of this file.
 # ============================================================
 
 id: bridge_troll
@@ -72,7 +74,7 @@ phases:
       height: 0.2
       explode: true
       explode-damage: 32
-      explode-radius: 28
+      explode-radius: 10
       explode-knockback: 1.1
     attributes:
       movement-speed: 0.30
@@ -106,14 +108,6 @@ skills:
     trigger: ON_SPAWN
     broadcast: true
     message: "&6&lBridge Troll &7stomps onto the crossing."
-
-  - type: PARTICLE_AURA
-    trigger: ON_TIMER
-    interval-ticks: 12
-    particle: CRIT
-    count: 4
-    radius: 0.55
-    extra: 0.01
 
   - type: DIALOG
     trigger: ON_DEATH

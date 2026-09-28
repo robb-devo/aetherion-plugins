@@ -11,6 +11,8 @@ import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.World;
+import org.bukkit.entity.Display;
+import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
@@ -22,7 +24,10 @@ import org.bukkit.inventory.meta.trim.TrimMaterial;
 import org.bukkit.inventory.meta.trim.TrimPattern;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.util.Transformation;
 import org.bukkit.util.Vector;
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -68,6 +73,8 @@ final class PathwardenDirector {
     private Location deathCrimsonStart;
     private Vector deathAzureVel;
     private Vector deathCrimsonVel;
+    private ItemDisplay azureBlade;
+    private ItemDisplay crimsonBlade;
     private int smashCd;
 
     PathwardenDirector(BossInstance instance) {
@@ -233,7 +240,7 @@ final class PathwardenDirector {
             at.setYaw(spinYaw);
             entity.setVelocity(new Vector(0, 0, 0));
             entity.teleport(at);
-            tornado(at);
+            bladeSweep(at);
             if (active % 5 == 0) {
                 ringParticles(at, SPIN_RADIUS, CRIMSON, AZURE, 28);
             }
@@ -399,8 +406,11 @@ final class PathwardenDirector {
             bladeCrimson = deathCrimsonStart.clone().add(0, form * 0.6, 0);
             paintEnergyBlade(bladeAzure, toward(bladeAzure, strike), AZURE, 0.55f + (float) form * 0.7f, false);
             paintEnergyBlade(bladeCrimson, toward(bladeCrimson, strike), CRIMSON, 0.55f + (float) form * 0.7f, false);
-            world.spawnParticle(Particle.FLASH, deathAzureStart, deathTicks == 1 ? 1 : 0, 0, 0, 0, 0);
-            world.spawnParticle(Particle.FLASH, deathCrimsonStart, deathTicks == 1 ? 1 : 0, 0, 0, 0, 0);
+            if (deathTicks == 1) {
+                // Count 0 would still spawn one flash per tick; only the first frame flashes.
+                world.spawnParticle(Particle.FLASH, deathAzureStart, 1, 0, 0, 0, 0);
+                world.spawnParticle(Particle.FLASH, deathCrimsonStart, 1, 0, 0, 0, 0);
+            }
             if (deathTicks == 1 || deathTicks == 8) {
                 world.playSound(deathFocus, Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 1.0f, 0.55f + deathTicks * 0.04f);
                 world.playSound(deathFocus, Sound.ITEM_TRIDENT_RETURN, 0.9f, 1.4f);
@@ -479,6 +489,9 @@ final class PathwardenDirector {
 
         // 103-end: aftermath storm
         if (deathTicks < DEATH_TICKS) {
+            if (deathTicks == 104) {
+                removeBlades();
+            }
             aftermathStorm(world, strike, (deathTicks - 103) / (double) (DEATH_TICKS - 103));
             if (deathTicks == DEATH_TICKS - 12) {
                 pathOpens(world);
@@ -556,14 +569,10 @@ final class PathwardenDirector {
     private void smashImpact(LivingEntity entity) {
         World world = entity.getWorld();
         Location at = entity.getLocation();
-        for (int i = 0; i < 36; i++) {
-            double ang = Math.PI * 2 * i / 36.0;
-            Location p = at.clone().add(Math.cos(ang) * SMASH_RADIUS, 0.15, Math.sin(ang) * SMASH_RADIUS);
-            world.spawnParticle(Particle.BLOCK, p, 2, 0.1, 0.05, 0.1, 0.05, Material.IRON_BLOCK.createBlockData());
-            world.spawnParticle(Particle.DUST, p, 1, 0, 0, 0, new Particle.DustOptions(i % 2 == 0 ? AZURE : CRIMSON, 1.5f));
-        }
-        world.spawnParticle(Particle.CRIT, at.clone().add(0, 0.6, 0), 30, 1.6, 0.3, 1.6, 0.2);
-        world.spawnParticle(Particle.EXPLOSION, at.clone().add(0, 0.4, 0), 1, 0, 0, 0, 0);
+        // The edge flashes once where the blades landed; the dent is a small iron spray.
+        ringParticles(at, SMASH_RADIUS, AZURE, CRIMSON, 28);
+        world.spawnParticle(Particle.BLOCK, at.clone().add(0, 0.2, 0), 14, 1.6, 0.05, 1.6, 0.08,
+                Material.IRON_BLOCK.createBlockData());
         world.playSound(at, Sound.ITEM_MACE_SMASH_GROUND, 1.0f, 0.6f);
     }
 
@@ -651,6 +660,20 @@ final class PathwardenDirector {
         deathCrimsonVel = left.clone().normalize().multiply(1.45).add(new Vector(0, 1.3, -0.25));
         bladeAzure = deathAzureStart.clone();
         bladeCrimson = deathCrimsonStart.clone();
+        removeBlades();
+        azureBlade = spawnBlade(deathAzureStart, Material.DIAMOND_SWORD, AZURE);
+        crimsonBlade = spawnBlade(deathCrimsonStart, Material.NETHERITE_SWORD, CRIMSON);
+    }
+
+    private void removeBlades() {
+        if (azureBlade != null && azureBlade.isValid()) {
+            azureBlade.remove();
+        }
+        if (crimsonBlade != null && crimsonBlade.isValid()) {
+            crimsonBlade.remove();
+        }
+        azureBlade = null;
+        crimsonBlade = null;
     }
 
     private static Vector toward(Location from, Location to) {
@@ -674,48 +697,52 @@ final class PathwardenDirector {
     /**
      * Pure light-blade: tip points along tipDir, butt trails behind.
      */
+    /**
+     * The blade is a real shape: a glowing sword display, tip along tipDir.
+     * Particles only mark the tip.
+     */
     private void paintEnergyBlade(Location tip, Vector tipDir, Color color, float power, boolean charged) {
         if (tip == null || tip.getWorld() == null) {
             return;
         }
         World world = tip.getWorld();
+        boolean azure = color.getBlue() > color.getRed();
+        ItemDisplay blade = azure ? azureBlade : crimsonBlade;
         Vector dir = tipDir.clone().normalize();
-        double length = 3.6 + power * 0.45;
-        Location butt = tip.clone().subtract(dir.clone().multiply(length));
-        int steps = 18;
-        for (int i = 0; i <= steps; i++) {
-            double t = i / (double) steps;
-            Location p = lerp(butt, tip, t);
-            float size = (0.85f + (float) t * 1.15f) * Math.max(0.7f, power);
-            world.spawnParticle(Particle.DUST, p, charged ? 3 : 2, 0.03, 0.03, 0.03, new Particle.DustOptions(color, size));
-            if (i % 2 == 0) {
-                world.spawnParticle(Particle.END_ROD, p, 1, 0.01, 0.01, 0.01, 0);
-            }
-            if (charged && i % 3 == 0) {
-                world.spawnParticle(Particle.DUST, p, 1, 0.05, 0.05, 0.05, new Particle.DustOptions(WHITE, size * 0.7f));
-            }
-            if (color.getBlue() > color.getRed()) {
-                if (i % 2 == 0) {
-                    world.spawnParticle(Particle.SOUL_FIRE_FLAME, p, 1, 0.02, 0.02, 0.02, 0.001);
-                }
-            } else if (i % 2 == 0) {
-                world.spawnParticle(Particle.FLAME, p, 1, 0.02, 0.02, 0.02, 0.001);
-            }
+        float scale = 3.6f + power * 0.9f;
+        if (blade != null && blade.isValid()) {
+            // Item swords run corner to corner; 45 degrees on Z stands the blade up, then aim it.
+            Quaternionf aim = new Quaternionf()
+                    .rotationTo(new Vector3f(0, 1, 0), new Vector3f((float) dir.getX(), (float) dir.getY(), (float) dir.getZ()))
+                    .mul(new Quaternionf().rotationZ((float) (Math.PI / 4)));
+            Location center = tip.clone().subtract(dir.clone().multiply(scale * 0.6));
+            blade.teleport(center);
+            blade.setInterpolationDelay(0);
+            blade.setTransformation(new Transformation(new Vector3f(), aim, new Vector3f(scale, scale, scale), new Quaternionf()));
+            // Charged: the glow flickers toward white instead of strobing flashes.
+            boolean flicker = charged && deathTicks % 3 == 0;
+            blade.setGlowColorOverride(flicker ? WHITE : color);
         }
-        // Crossguard flare
-        Vector side = dir.clone().crossProduct(new Vector(0, 1, 0));
-        if (side.lengthSquared() < 1.0e-4) {
-            side = new Vector(1, 0, 0);
+        world.spawnParticle(Particle.DUST, tip, 1, 0.02, 0.02, 0.02, new Particle.DustOptions(color, 1.4f));
+        if (charged && deathTicks % 2 == 0) {
+            world.spawnParticle(Particle.ELECTRIC_SPARK, tip, 1, 0.05, 0.05, 0.05, 0.01);
         }
-        side.normalize().multiply(0.55 + power * 0.12);
-        world.spawnParticle(Particle.DUST, butt.clone().add(side), 4, 0.05, 0.05, 0.05, new Particle.DustOptions(color, 1.4f * power));
-        world.spawnParticle(Particle.DUST, butt.clone().subtract(side), 4, 0.05, 0.05, 0.05, new Particle.DustOptions(color, 1.4f * power));
-        // Tip star
-        world.spawnParticle(Particle.GLOW, tip, charged ? 8 : 3, 0.08, 0.08, 0.08, 0);
-        world.spawnParticle(Particle.ELECTRIC_SPARK, tip, charged ? 10 : 3, 0.1, 0.1, 0.1, 0.01);
-        if (charged) {
-            world.spawnParticle(Particle.FLASH, tip, 1, 0, 0, 0, 0);
-        }
+    }
+
+    private ItemDisplay spawnBlade(Location at, Material material, Color glow) {
+        return at.getWorld().spawn(at, ItemDisplay.class, display -> {
+            display.setItemStack(new ItemStack(material));
+            display.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.NONE);
+            display.setBrightness(new Display.Brightness(15, 15));
+            display.setTeleportDuration(2);
+            display.setInterpolationDuration(2);
+            display.setBillboard(Display.Billboard.FIXED);
+            display.setViewRange(2.0f);
+            display.setShadowRadius(0f);
+            display.setPersistent(false);
+            display.setGlowing(true);
+            display.setGlowColorOverride(glow);
+        });
     }
 
     private void trailBurst(Location at, Color color) {
@@ -723,8 +750,7 @@ final class PathwardenDirector {
         if (world == null) {
             return;
         }
-        world.spawnParticle(Particle.DUST, at, 8, 0.15, 0.15, 0.15, new Particle.DustOptions(color, 1.5f));
-        world.spawnParticle(Particle.END_ROD, at, 2, 0.08, 0.08, 0.08, 0.01);
+        world.spawnParticle(Particle.DUST, at, 2, 0.1, 0.1, 0.1, new Particle.DustOptions(color, 1.3f));
     }
 
     private void guillotineImpact(World world, Location strike) {
@@ -732,10 +758,10 @@ final class PathwardenDirector {
         world.playSound(strike, Sound.ENTITY_WITHER_BREAK_BLOCK, 1.15f, 0.5f);
         world.playSound(strike, Sound.ENTITY_GENERIC_EXPLODE, 1.05f, 0.55f);
         world.playSound(strike, Sound.ITEM_TRIDENT_THUNDER, 1.0f, 0.75f);
-        world.spawnParticle(Particle.FLASH, strike, 3, 0.2, 0.3, 0.2, 0);
+        world.spawnParticle(Particle.FLASH, strike, 1, 0, 0, 0, 0);
         world.spawnParticle(Particle.EXPLOSION_EMITTER, strike, 1, 0, 0, 0, 0);
-        world.spawnParticle(Particle.DUST, strike, 80, 0.7, 0.9, 0.7, new Particle.DustOptions(AZURE, 2.0f));
-        world.spawnParticle(Particle.DUST, strike, 80, 0.7, 0.9, 0.7, new Particle.DustOptions(CRIMSON, 2.0f));
+        world.spawnParticle(Particle.DUST, strike, 20, 0.6, 0.8, 0.6, new Particle.DustOptions(AZURE, 1.8f));
+        world.spawnParticle(Particle.DUST, strike, 20, 0.6, 0.8, 0.6, new Particle.DustOptions(CRIMSON, 1.8f));
         bloodBurst(world, strike);
         // Shock ring
         for (int i = 0; i < 36; i++) {
@@ -767,14 +793,13 @@ final class PathwardenDirector {
         shout("&8&o…the iron gives way. &7The path is &fopen&7.");
     }
 
+    /** After the cut: quiet. A few energy shreds drift down, the blades fade out. */
     private void aftermathStorm(World world, Location strike, double t) {
-        bloodBurst(world, strike.clone().add(0, -0.4 + t * 0.2, 0));
-        world.spawnParticle(Particle.DUST, strike, 24, 1.1, 1.4, 1.1, new Particle.DustOptions(AZURE, 1.6f));
-        world.spawnParticle(Particle.DUST, strike, 24, 1.1, 1.4, 1.1, new Particle.DustOptions(CRIMSON, 1.6f));
-        world.spawnParticle(Particle.SOUL, strike, 6, 0.7, 1.0, 0.7, 0.01);
-        world.spawnParticle(Particle.DAMAGE_INDICATOR, strike, 12, 0.8, 1.0, 0.8, 0);
-        if (deathTicks % 5 == 0) {
-            world.playSound(strike, Sound.BLOCK_LAVA_POP, 0.5f, 0.4f);
+        if (deathTicks % 3 == 0) {
+            world.spawnParticle(Particle.SOUL, strike, 1, 0.6, 0.8, 0.6, 0.01);
+        }
+        if (deathTicks % 6 == 0) {
+            world.playSound(strike, Sound.BLOCK_LAVA_POP, 0.35f, 0.4f);
         }
         // Falling energy shreds
         for (int i = 0; i < 6; i++) {
@@ -791,29 +816,19 @@ final class PathwardenDirector {
         if (world == null) {
             return;
         }
-        double radius = pulsing ? BEAM_ZONE * (1.0 + 0.06 * Math.sin(beamTick * 0.5)) : BEAM_ZONE;
-        int points = pulsing ? 28 : 20;
+        // The edge is the whole message: one crisp ring, a slow turn once it locks.
+        if (!pulsing && beamTick % 2 != 0) {
+            return;
+        }
+        double radius = BEAM_ZONE;
+        int points = 26;
+        Particle.DustOptions dust = new Particle.DustOptions(color, pulsing ? 1.5f : 1.2f);
         for (int i = 0; i < points; i++) {
-            double ang = (Math.PI * 2 * i) / points + (pulsing ? beamTick * 0.08 : 0);
+            double ang = (Math.PI * 2 * i) / points + (pulsing ? beamTick * 0.05 : 0);
             double x = center.getX() + Math.cos(ang) * radius;
             double z = center.getZ() + Math.sin(ang) * radius;
-            world.spawnParticle(Particle.DUST, x, center.getY() + 0.08, z, 1, 0, 0, 0, new Particle.DustOptions(color, pulsing ? 1.55f : 1.25f));
-            if (i % 2 == 0) {
-                world.spawnParticle(Particle.END_ROD, x, center.getY() + 0.12, z, 1, 0, 0, 0, 0);
-            }
+            world.spawnParticle(Particle.DUST, x, center.getY() + 0.1, z, 1, 0, 0, 0, dust);
         }
-        // Soft floor fill so the escape circle reads as a field.
-        world.spawnParticle(
-                Particle.DUST,
-                center.getX(),
-                center.getY() + 0.05,
-                center.getZ(),
-                pulsing ? 18 : 10,
-                radius * 0.35,
-                0.02,
-                radius * 0.35,
-                new Particle.DustOptions(color, 1.1f)
-        );
     }
 
     private void drawSeekBeam(Location from, Location to, Color color) {
@@ -821,20 +836,15 @@ final class PathwardenDirector {
         if (world == null) {
             return;
         }
+        // Thin sight line from his crown to the mark; the ring does the warning.
         Vector delta = to.toVector().subtract(from.toVector());
-        int steps = 26;
+        int steps = Math.max(10, (int) (delta.length() / 0.9));
+        Particle.DustOptions dust = new Particle.DustOptions(color, 1.0f);
         for (int i = 0; i <= steps; i++) {
             Location p = from.clone().add(delta.clone().multiply(i / (double) steps));
-            world.spawnParticle(Particle.DUST, p, 2, 0.04, 0.04, 0.04, new Particle.DustOptions(color, 1.45f));
-            if (i % 2 == 0) {
-                world.spawnParticle(Particle.END_ROD, p, 1, 0.01, 0.01, 0.01, 0);
-            }
-            if (i % 4 == 0) {
-                world.spawnParticle(Particle.ELECTRIC_SPARK, p, 1, 0.02, 0.02, 0.02, 0);
-            }
+            world.spawnParticle(Particle.DUST, p, 1, 0, 0, 0, dust);
         }
-        world.spawnParticle(Particle.DUST, to.clone().add(0, 0.15, 0), 14, 0.35, 0.08, 0.35, new Particle.DustOptions(color, 1.7f));
-        world.spawnParticle(Particle.GLOW, to.clone().add(0, 0.25, 0), 6, 0.2, 0.1, 0.2, 0);
+        world.spawnParticle(Particle.DUST, to.clone().add(0, 0.15, 0), 3, 0.12, 0.02, 0.12, new Particle.DustOptions(color, 1.6f));
     }
 
     private void drawFireBeam(Location from, Location to) {
@@ -842,59 +852,53 @@ final class PathwardenDirector {
         if (world == null) {
             return;
         }
+        // Solid crimson bar with a white core; it thins out as the blast fades.
         Vector delta = to.toVector().subtract(from.toVector());
-        for (int i = 0; i <= 32; i++) {
-            Location p = from.clone().add(delta.clone().multiply(i / 32.0));
-            world.spawnParticle(Particle.DUST, p, 5, 0.1, 0.1, 0.1, new Particle.DustOptions(CRIMSON, 2.1f));
-            world.spawnParticle(Particle.FLAME, p, 2, 0.06, 0.06, 0.06, 0.015);
-            if (i % 3 == 0) {
-                world.spawnParticle(Particle.LAVA, p, 1, 0, 0, 0, 0);
+        int steps = Math.max(12, (int) (delta.length() / 0.6));
+        float fade = 1.0f - Math.min(0.6f, beamTick / (float) BEAM_FIRE * 0.6f);
+        Particle.DustOptions bar = new Particle.DustOptions(CRIMSON, 2.0f * fade);
+        Particle.DustOptions core = new Particle.DustOptions(WHITE, 0.9f * fade);
+        for (int i = 0; i <= steps; i++) {
+            Location p = from.clone().add(delta.clone().multiply(i / (double) steps));
+            world.spawnParticle(Particle.DUST, p, 1, 0.03, 0.03, 0.03, bar);
+            if (i % 2 == 0) {
+                world.spawnParticle(Particle.DUST, p, 1, 0, 0, 0, core);
             }
         }
-        world.spawnParticle(Particle.FLASH, to.clone().add(0, 0.5, 0), 2, 0, 0, 0, 0);
-        world.spawnParticle(Particle.EXPLOSION, to.clone().add(0, 0.3, 0), 2, 0.2, 0.1, 0.2, 0);
+        if (beamTick == 1) {
+            world.spawnParticle(Particle.FLASH, to.clone().add(0, 0.5, 0), 1, 0, 0, 0, 0);
+        }
     }
 
-    private void tornado(Location at) {
+    /**
+     * Two blades sweep the real hit radius at player height, a fainter echo trailing each.
+     * The shape is the hitbox; no cone of noise above it.
+     */
+    private void bladeSweep(Location at) {
         World world = at.getWorld();
         if (world == null) {
             return;
         }
-        // Fat dual-helix cone: narrow feet, roaring crown.
-        double height = 8.4;
-        int layers = 12;
-        for (int layer = 0; layer < layers; layer++) {
-            double t = layer / (double) (layers - 1);
-            double y = at.getY() + 0.2 + height * t;
-            double radius = 1.15 + t * 5.2;
-            int points = 10 + layer * 2;
-            for (int i = 0; i < points; i++) {
-                double ang = Math.toRadians(spinYaw * 1.85 + i * (360.0 / points) + layer * 18);
-                double x = at.getX() + Math.cos(ang) * radius;
-                double z = at.getZ() + Math.sin(ang) * radius;
-                Color c = (i + layer) % 2 == 0 ? AZURE : CRIMSON;
-                world.spawnParticle(Particle.DUST, x, y, z, 1, 0, 0, 0, new Particle.DustOptions(c, 1.45f));
-                if (i % 3 == 0) {
-                    world.spawnParticle(Particle.END_ROD, x, y, z, 1, 0, 0, 0, 0);
-                }
-                if (layer > 7 && i % 4 == 0) {
-                    world.spawnParticle(c.getBlue() > c.getRed() ? Particle.SOUL_FIRE_FLAME : Particle.FLAME, x, y, z, 1, 0, 0, 0, 0.001);
-                }
-            }
-            // Counter-helix
-            double ang2 = Math.toRadians(-spinYaw * 1.5 + layer * 40);
-            world.spawnParticle(
-                    Particle.DUST,
-                    at.getX() + Math.cos(ang2) * (radius * 0.72),
-                    y,
-                    at.getZ() + Math.sin(ang2) * (radius * 0.72),
-                    2, 0.05, 0.05, 0.05,
-                    new Particle.DustOptions(layer % 2 == 0 ? CRIMSON : AZURE, 1.25f)
-            );
+        double sweep = Math.toRadians(spinYaw * 3.0);
+        for (int blade = 0; blade < 2; blade++) {
+            double ang = sweep + blade * Math.PI;
+            Color color = blade == 0 ? AZURE : CRIMSON;
+            sweepLine(world, at, ang, color, 1.35f);
+            sweepLine(world, at, ang - 0.32, color, 0.8f);
+            double tipX = at.getX() + Math.cos(ang) * SPIN_RADIUS;
+            double tipZ = at.getZ() + Math.sin(ang) * SPIN_RADIUS;
+            world.spawnParticle(Particle.SWEEP_ATTACK, tipX, at.getY() + 1.1, tipZ, 1, 0, 0, 0, 0);
         }
-        // Ground scrape ring
-        world.spawnParticle(Particle.CLOUD, at.clone().add(0, 0.15, 0), 6, 1.4, 0.05, 1.4, 0.01);
-        world.spawnParticle(Particle.SWEEP_ATTACK, at.clone().add(0, 1.2, 0), 2, 1.8, 0.4, 1.8, 0);
+    }
+
+    private void sweepLine(World world, Location at, double ang, Color color, float size) {
+        Particle.DustOptions dust = new Particle.DustOptions(color, size);
+        double cos = Math.cos(ang);
+        double sin = Math.sin(ang);
+        for (double r = 1.4; r <= SPIN_RADIUS; r += 0.55) {
+            world.spawnParticle(Particle.DUST, at.getX() + cos * r, at.getY() + 1.1, at.getZ() + sin * r,
+                    1, 0, 0, 0, dust);
+        }
     }
 
     private void ringParticles(Location at, double radius, Color a, Color b, int points) {
@@ -935,11 +939,10 @@ final class PathwardenDirector {
         }
     }
 
+    /** One spray at the cut, never per tick. */
     private void bloodBurst(World world, Location at) {
-        world.spawnParticle(Particle.DUST, at, 90, 0.9, 1.2, 0.9, new Particle.DustOptions(CRIMSON, 2.0f));
-        world.spawnParticle(Particle.DAMAGE_INDICATOR, at, 40, 0.8, 1.0, 0.8, 0);
-        world.spawnParticle(Particle.BLOCK, at, 70, 0.7, 0.9, 0.7, 0.08, Material.REDSTONE_BLOCK.createBlockData());
-        world.spawnParticle(Particle.BLOCK, at, 35, 0.5, 0.7, 0.5, 0.04, Material.RED_CONCRETE.createBlockData());
+        world.spawnParticle(Particle.DUST, at, 24, 0.7, 0.9, 0.7, new Particle.DustOptions(CRIMSON, 1.8f));
+        world.spawnParticle(Particle.BLOCK, at, 28, 0.6, 0.8, 0.6, 0.08, Material.REDSTONE_BLOCK.createBlockData());
         world.playSound(at, Sound.ENTITY_PLAYER_HURT, 1.2f, 0.5f);
     }
 
@@ -1038,6 +1041,7 @@ final class PathwardenDirector {
     }
 
     private void clearProps() {
+        removeBlades();
         bladeAzure = null;
         bladeCrimson = null;
         deathAzureStart = null;
