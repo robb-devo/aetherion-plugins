@@ -421,15 +421,20 @@ public final class WorldEaterDirector {
         return 4;
     }
 
-    /** The hitbox rides the skull. */
+    /** The hitbox rides the skull — mid-mass between brow and snout, not just the eye sockets. */
     private void placeHitbox() {
         LivingEntity entity = instance.getEntity();
         if (entity == null || !entity.isValid() || fx == null || serpent == null || !serpent.spawned()) {
             return;
         }
         Vector3f skull = serpent.skullCenter();
-        float feet = skull.y - (float) entity.getHeight() * 0.5f;
-        Location at = fx.at(skull.x, feet, skull.z);
+        Vector3f mouth = serpent.mouth();
+        // Bias slightly toward the snout so the AABB covers the full forward head, not only eyes.
+        float hx = (skull.x * 0.55f) + (mouth.x * 0.45f);
+        float hy = (skull.y * 0.7f) + (mouth.y * 0.3f);
+        float hz = (skull.z * 0.55f) + (mouth.z * 0.45f);
+        float feet = hy - (float) entity.getHeight() * 0.5f;
+        Location at = fx.at(hx, feet, hz);
         at.setYaw((float) Math.toDegrees(-WeMath.yawToward(serpent.fwd.x, serpent.fwd.z)));
         at.setPitch(0f);
         Location current = entity.getLocation();

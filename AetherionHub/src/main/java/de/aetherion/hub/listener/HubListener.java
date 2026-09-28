@@ -58,6 +58,12 @@ public final class HubListener implements Listener {
         if (hub.hintShown(player.getUniqueId())) {
             return;
         }
+        // Decide now, not in 3s: if the language menu is about to open, Quests' harbour
+        // arrival fires FIND EGON after the pick. Checking later raced a fast click and
+        // cut the arrival card short.
+        if (!languageAlreadyChosen(player)) {
+            return;
+        }
         long delay = Math.max(1L, plugin.getConfig().getLong("starter-hint.delay-ticks", 60L));
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
             if (!player.isOnline() || hub.hintShown(player.getUniqueId())) {

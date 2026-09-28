@@ -1,0 +1,10 @@
+{
+  "heartbeat":     { "sounds": ["helios:heartbeat"] },
+  "star_hum":      { "sounds": ["helios:star_hum"] },
+  "seismic_whine": { "sounds": ["helios:seismic_whine"] },
+  "seismic_boom":  { "sounds": ["helios:seismic_boom"] },
+  "lance_charge":  { "sounds": ["helios:lance_charge"] },
+  "portal_open":   { "sounds": ["helios:portal_open"] },
+  "supernova":     { "sounds": ["helios:supernova"] },
+  "requiem_pad":   { "sounds": ["helios:requiem_pad"] }
+}

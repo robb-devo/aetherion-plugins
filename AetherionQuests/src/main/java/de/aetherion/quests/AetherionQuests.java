@@ -119,6 +119,9 @@ public final class AetherionQuests extends JavaPlugin {
                         this
                 );
 
+        // Starter kit / axe handoff scene (lands items; flushes on quit/disable).
+        de.aetherion.quests.reward.StarterKitCeremony.init(this);
+
 
         markerManager =
                 new QuestMarkerManager(
@@ -460,6 +463,9 @@ public final class AetherionQuests extends JavaPlugin {
 
     @Override
     public void onDisable() {
+
+        // Land any kit still mid-handoff before player data is flushed.
+        de.aetherion.quests.reward.StarterKitCeremony.shutdown();
 
         if (markerManager != null) {
             markerManager.shutdown();

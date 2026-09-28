@@ -146,10 +146,20 @@ public class BossCombatListener implements Listener {
             return;
         }
 
+        // BossEngine often enables before AetherionItems (soft cycle), so at HIGHEST we can still see
+        // vanilla chip damage (~1) even though Items will rewrite the event a moment later.
+        // Always take the larger of the event value and the player's live Aetherion DAMAGE stat.
         double incoming = Math.max(event.getDamage(), event.getFinalDamage());
         Player player = event instanceof EntityDamageByEntityEvent byEntity
                 ? damager(byEntity.getDamager())
                 : null;
+        if (player != null
+                && event instanceof EntityDamageByEntityEvent byEntity
+                && !(byEntity.getDamager() instanceof Projectile)
+                && (event.getCause() == EntityDamageEvent.DamageCause.ENTITY_ATTACK
+                || event.getCause() == EntityDamageEvent.DamageCause.ENTITY_SWEEP_ATTACK)) {
+            incoming = Math.max(incoming, aetherionMeleeDamage(player));
+        }
 
         if (player != null && instance.sandbox() != null && instance.sandbox().active()) {
             double modified = instance.sandbox().modifyIncoming(player, incoming);
@@ -593,6 +603,30 @@ public class BossCombatListener implements Listener {
 
     private BossInstance resolve(Entity entity) {
         return bossManager.getByEntity(entity).orElse(null);
+    }
+
+    /**
+     * Live Aetherion weapon DAMAGE via reflection. BossEngine can enable before Items, so the
+     * EntityDamage event may still carry vanilla chip values when we absorb — this reads the
+     * real MMO damage the Items listener is about to write (or already wrote).
+     */
+    private static double aetherionMeleeDamage(Player player) {
+        if (player == null || !Bukkit.getPluginManager().isPluginEnabled("AetherionItems")) {
+            return 0.0;
+        }
+        try {
+            Object items = Bukkit.getPluginManager().getPlugin("AetherionItems");
+            Object itemManager = items.getClass().getMethod("getItemManager").invoke(items);
+            Class<?> statsClass = Class.forName("de.aetherion.items.manager.ActiveEquipmentStats");
+            Object stats = statsClass.getConstructor(itemManager.getClass()).newInstance(itemManager);
+            Class<?> capClass = Class.forName("de.aetherion.items.model.ItemCapability");
+            @SuppressWarnings({"unchecked", "rawtypes"})
+            Object damageCap = Enum.valueOf((Class<? extends Enum>) capClass, "DAMAGE");
+            Object value = statsClass.getMethod("getStat", Player.class, capClass).invoke(stats, player, damageCap);
+            return value instanceof Number number ? Math.max(0.0, number.doubleValue()) : 0.0;
+        } catch (ReflectiveOperationException | ClassCastException ignored) {
+            return 0.0;
+        }
     }
 
     private Player damager(Entity damager) {

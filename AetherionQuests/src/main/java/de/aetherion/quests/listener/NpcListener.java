@@ -1451,23 +1451,24 @@ public class NpcListener implements Listener {
         if ("gather_wood".equalsIgnoreCase(quest.getId())
                 || "egon".equalsIgnoreCase(npc.getId())) {
             AetherionQuests plugin = AetherionQuests.getInstance();
-            String name = npc.getName();
-            npcSay(player, npc, "Logs received. Kit stays yours — don't lose it.");
+            // The kit handoff scene (StarterKitCeremony) is already in the air —
+            // Egon talks over it, one DialogPace beat per line (say queue).
+            String[] lines = de.aetherion.quests.lang.LangPack.dialogs(player, "egon_kit_handoff", new String[] {
+                    "Logs received. Here's your kit — pickaxe, sword, hoe, armour.",
+                    "Armour's second-hand. Previous owner retired. Peacefully, mostly.",
+                    "§eQuartermaster§f is past the little market — talk to him next."
+            });
+            for (String line : lines) {
+                npcSay(player, npc, line);
+            }
             if (plugin != null) {
-                plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-                    if (player.isOnline()) {
-                        npcSay(player, npc,
-                                "Quartermaster's past the little market — talk to him next.");
-                    }
-                }, 45L);
+                long afterLast = de.aetherion.quests.dialog.DialogPace.LINE_GAP_TICKS * Math.max(0, lines.length - 1) + 25L;
                 plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
                     if (player.isOnline()) {
                         de.aetherion.quests.ui.QuestHint.show(player, "quartermaster", "Quartermaster");
                     }
-                }, 70L);
+                }, afterLast);
             } else {
-                npcSay(player, npc,
-                        "Quartermaster's past the little market — talk to him next.");
                 de.aetherion.quests.ui.QuestHint.show(player, "quartermaster", "Quartermaster");
             }
             return;
