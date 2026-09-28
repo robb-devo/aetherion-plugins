@@ -402,6 +402,7 @@ public final class LivingNpcProfile {
         LivingNpcProfile profile = of(npcId);
         if (profile != null) {
             player.sendMessage(profile.formatChatLine(displayName, line));
+            NpcPresence.cue(player, npcId);
             return;
         }
         String name = displayName == null || displayName.isBlank() ? "NPC" : displayName;

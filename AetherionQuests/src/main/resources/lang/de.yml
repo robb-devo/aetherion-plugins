@@ -23,6 +23,22 @@ ui:
   npc_quest: "§8Quest verknüpfen"
   npc_confirm: "§8Bestätigen"
   npc_help: "§8NPC-Hilfe"
+  # Harbour Hour — Ankunft, Egon, Kit-Übergabe
+  arrival_title: "ANKER-HAFEN"
+  arrival_subtitle: "§7Aetherion · §fVorsicht auf den Planken, Rookie"
+  find_egon_title: "FINDE EGON"
+  find_egon_subtitle: "Grünes Leuchten am Pier · Rechtsklick auf ihn"
+  egon_nudge: "Egon wartet noch am Pier · folg dem grünen Leuchten"
+  egon_greet_action: "→ Rechtsklick auf Egon"
+  kit_reward_line: "§b✦ §3Reward: §fEgons Starter-Kit §7— Spitzhacke, Schwert, Hacke, Rüstung"
+  kit_landed_worn: "✔ Kit ausgegeben · Rüstung sitzt, Werkzeug ist im Inventar"
+  kit_landed: "✔ Kit ausgegeben · schau ins Inventar"
+  kit_axe_landed: "✔ Simple Axe · gehört dir"
+  gate_pier_chat: "§eEgon §7steht direkt hier am Pier — sprich zuerst mit ihm."
+  gate_pier_action: "→ Sprich mit Egon"
+  gate_market_chat: "§7Der Markt bleibt zu, bis §eEgon §7sein Eichenholz hat."
+  gate_market_action: "→ Forager · dann bei Egon abgeben"
+  gate_rescue_chat: "§7Ganz ruhig — zurück auf dem Pier. Erst mit §eEgon §7reden."
 
 progress:
   catch_pet: "Fang ein Pet"
@@ -80,7 +96,15 @@ dialogs:
   egon_intro:
     - "Egon. Hafen-Ausrüster. Ich brauche Eiche — du holst sie."
     - "Der Forager am Hügel leiht die Axt und zeigt das Chop-Minispiel. Zehn Eichenstämme zurück hierher."
-    - "§eGelber Pfeil oben§f zeigt die Richtung. Für diesen Auftrag siehst du auch kurz einen Funkel-Pfad am Boden."
+    - "§eGelber Pfeil oben§f zeigt die Richtung. Die Planken hab ich dir auch bemalt. Gern geschehen."
+  egon_arrival_call:
+    - "Hey — neues Gesicht! Hier drüben, beim grünen Leuchten."
+  egon_greet_near:
+    - "Das bin ich. Rechtsklick — ich beiße nicht, ich rüste aus."
+  egon_kit_handoff:
+    - "Holz erhalten. Hier ist dein Kit — Spitzhacke, Schwert, Hacke, Rüstung."
+    - "Die Rüstung ist gebraucht. Vorbesitzer ist in Rente. Größtenteils friedlich."
+    - "§eQuartiermeister§f ist hinter dem kleinen Markt — sprich als Nächstes mit ihm."
   lumberjack_intro:
     - "Egon braucht wieder Eiche."
     - "Nimm die Simple Axe. Linksklick auf einen §eleuchtenden Stamm§f startet die Chop-Leiste."

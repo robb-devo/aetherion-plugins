@@ -20,7 +20,6 @@ import net.md_5.bungee.api.chat.TextComponent;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.event.EventHandler;
@@ -590,7 +589,8 @@ public class DialogManager implements Listener {
         if (player == null || npc == null || !LivingNpcProfile.isLiving(npc.getId())) {
             return;
         }
-        player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_HAT, 0.35f, 1.35f);
+        // Per-NPC voice + speech motes (was one shared hat tick for everyone).
+        de.aetherion.quests.npc.NpcPresence.cue(player, npc.getId());
     }
 
 
@@ -1420,7 +1420,7 @@ public class DialogManager implements Listener {
             return new String[] {
                     "Egon. Harbour kit man. I need oak — you're fetching it.",
                     "Forager is up the hill. He lends the axe and shows the chop minigame. Bring ten oak logs back here.",
-                    "§eYellow arrow up top§f points the way. You'll also see a short sparkle trail on the ground for this job."
+                    "§eYellow arrow up top§f points the way. I've had the planks painted for you, too. You're welcome."
             };
 
         }
