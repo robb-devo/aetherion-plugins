@@ -12,14 +12,25 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * The fell bar owns the top of the screen while a chop is live. Holds a named QuestBars
+ * lease so a fishing bar or farm event can't hand the screen back mid-swing.
+ */
 final class ForagingHud {
+
+    static final String LEASE = "fell";
 
     private final Map<UUID, BossBar> bars = new ConcurrentHashMap<>();
 
+    /** Tutorial / legacy shape — no streak, no ready tell. */
     void striking(Player player, int marker, int zoneStart, int zoneSize, boolean hot) {
+        striking(player, marker, zoneStart, zoneSize, hot, false, 0);
+    }
+
+    void striking(Player player, int marker, int zoneStart, int zoneSize, boolean hot, boolean ready, int streak) {
         paint(
                 player,
-                ForagingStrike.title(marker, zoneStart, zoneSize, hot),
+                ForagingStrike.title(marker, zoneStart, zoneSize, hot, ready, streak),
                 ForagingStrike.progress(marker),
                 hot ? BarColor.GREEN : BarColor.YELLOW
         );
@@ -36,19 +47,16 @@ final class ForagingHud {
             return;
         }
         BossBar bar = bars.remove(playerId);
-        if (bar == null) {
-            QuestBars.unsuppress(playerId);
-            return;
+        if (bar != null) {
+            Player player = Bukkit.getPlayer(playerId);
+            if (player != null) {
+                bar.removePlayer(player);
+            }
+            bar.removeAll();
+            bar.setVisible(false);
         }
-        Player player = Bukkit.getPlayer(playerId);
-        if (player != null) {
-            bar.removePlayer(player);
-            QuestBars.unsuppress(player);
-        } else {
-            QuestBars.unsuppress(playerId);
-        }
-        bar.removeAll();
-        bar.setVisible(false);
+        // Only our lease — never un-hides the quest bar over someone else's HUD.
+        QuestBars.release(playerId, LEASE);
     }
 
     void hideAll() {
@@ -64,12 +72,11 @@ final class ForagingHud {
         BossBar bar = bars.computeIfAbsent(player.getUniqueId(), id -> {
             BossBar created = Bukkit.createBossBar(title, color, BarStyle.SEGMENTED_20);
             created.setVisible(true);
-            QuestBars.suppress(player);
             return created;
         });
         if (!bar.getPlayers().contains(player)) {
+            QuestBars.suppress(player, LEASE);
             bar.addPlayer(player);
-            QuestBars.suppress(player);
         }
         bar.setTitle(title);
         bar.setProgress(Math.max(0.0d, Math.min(1.0d, progress)));
