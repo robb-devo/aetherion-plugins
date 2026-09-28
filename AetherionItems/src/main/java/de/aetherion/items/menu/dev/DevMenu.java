@@ -826,7 +826,9 @@ public class DevMenu {
             inventory.setItem(13, button(Material.IRON_AXE, "§2Foraging Sets", "page:FORAGING", "§7Armor + axe."));
             inventory.setItem(14, button(Material.FISHING_ROD, "§bFishing Sets", "page:FISHING", "§7Armor + rod."));
             inventory.setItem(15, button(Material.IRON_HOE, "§dCatcher Sets", "page:CATCHER", "§7Armor + gaff."));
-            inventory.setItem(16, button(Material.NETHERITE_HELMET, "§5Special Sets", "page:SETS", "§7Aetherion / dungeon / god."));
+            inventory.setItem(16, button(Material.NETHERITE_HELMET, "§5Special Sets", "page:SETS",
+                    "§7Dungeon · Aetherion · Hollow Sun · God.",
+                    "§ePage 2 §7has Hollow Sun / Dawnbearer."));
 
             // Row 2 — gear / crafting
             inventory.setItem(19, button(Material.NETHERITE_SWORD, "§cWeapons", "page:WEAPONS", "§7Starter → god."));
@@ -848,7 +850,7 @@ public class DevMenu {
             inventory.setItem(33, button(Material.ROTTEN_FLESH, "§cMob Anchor", "give:mob", "§7Place combat zone."));
             inventory.setItem(34, button(Material.COARSE_DIRT, "§6Borderlands", "give:borderlands", "§7Waste combat zone."));
 
-            // Row 4 — more world
+            // Row 4 — inner columns only (10–16 style: slots 37–43). Never col 0/8.
             inventory.setItem(37, button(Material.MOSS_BLOCK, "§aPet Habitats", "page:PET_HABITATS", "§7Wild pet biotopes."));
             inventory.setItem(38, button(Material.SANDSTONE, "§6Colosseum Spawn", "give:colosseum", "§7Hub ring teleport."));
             inventory.setItem(39, button(Material.RECOVERY_COMPASS, "§8Boss Anchors", "page:BOSS_ANCHORS", "§7Place spawn points."));
@@ -861,11 +863,8 @@ public class DevMenu {
             inventory.setItem(43, button(Material.GRINDSTONE, "§6Millstone", "page:MILLSTONE",
                     "§7Farm Isle mill + pantry loop.",
                     "§7Anchor · crops · spheres · treats · NPC."));
-            inventory.setItem(44, button(Material.WHITE_BANNER, "§bIsle Weather", "page:ISLE_WEATHER",
-                    "§7Force fog / rain / snow for ~75s.",
-                    "§7Test only — then ambient again."));
         } else {
-            // Page 2 — admin / test
+            // Page 2 — admin / test (inner columns 10–16 / 19–25 only)
             inventory.setItem(10, button(Material.NAME_TAG, "§6Ranks", "page:RANKS", "§7Account ranks."));
             inventory.setItem(11, button(Material.AMETHYST_SHARD, "§bAether Shards", "page:SHARDS", "§7Give shards."));
             inventory.setItem(12, button(Material.DEEPSLATE_BRICKS, "§5Dungeons", "page:DUNGEONS", "§7Start / skip boss."));
@@ -874,13 +873,16 @@ public class DevMenu {
             inventory.setItem(15, button(Material.WRITABLE_BOOK, "§eReset Quests", "quests:reset-all", "§7Wipe quest progress."));
             inventory.setItem(16, button(Material.BOOK, "§aTutorial Done", "quests:tutorial-done",
                     "§7Complete orientation quests.", "§7Unlock Manager flags for testing."));
-            inventory.setItem(17, button(Material.STRUCTURE_BLOCK, "§d✦ Test Arena", "page:TEST_ARENA", "§7Void sandbox + bosses."));
-            inventory.setItem(19, button(Material.DEEPSLATE_IRON_ORE, "§bEldervale Deep Marker", "give:eldervale-mobs",
+            inventory.setItem(19, button(Material.STRUCTURE_BLOCK, "§d✦ Test Arena", "page:TEST_ARENA", "§7Void sandbox + bosses."));
+            inventory.setItem(20, button(Material.WHITE_BANNER, "§bIsle Weather", "page:ISLE_WEATHER",
+                    "§7Force fog / rain / snow for ~75s.",
+                    "§7Test only — then ambient again."));
+            inventory.setItem(21, button(Material.DEEPSLATE_IRON_ORE, "§bEldervale Deep Marker", "give:eldervale-mobs",
                     "§7Optional · zone already in mob-zones.yml.",
                     "§7Only re-place if the deep pack is missing.",
                     "§8Y≤24 · Rotten Miner / Cave Scrapper / Dust Digger."));
-            inventory.setItem(20, button(Material.POTION, "§cBorderlands Spirits", "page:BORDERLANDS_SPIRITS", "§7Ritual vials."));
-            inventory.setItem(21, button(Material.PLAYER_HEAD, "§bTestbots", "page:TESTBOTS",
+            inventory.setItem(22, button(Material.POTION, "§cBorderlands Spirits", "page:BORDERLANDS_SPIRITS", "§7Ritual vials."));
+            inventory.setItem(23, button(Material.PLAYER_HEAD, "§bTestbots", "page:TESTBOTS",
                     "§7QA bots · Wave 1 + combat/fish/trade/quest/pad.",
                     "§7Start/stop from here. §f/botreport"));
         }
@@ -955,7 +957,7 @@ public class DevMenu {
         if (page == Page.COMBAT || page == Page.MINING || page == Page.SETS
                 || page == Page.FARMING || page == Page.FORAGING || page == Page.FISHING
                 || page == Page.CATCHER) {
-            drawSetGrid(inventory, page);
+            drawSetGrid(inventory, page, index);
             return;
         }
         List<ItemStack> contents = contents(page);
@@ -1067,19 +1069,43 @@ public class DevMenu {
         inventory.setItem(49, button(Material.BARRIER, "§cClose", "close"));
     }
 
-    private void drawSetGrid(Inventory inventory, Page page) {
+    private void drawSetGrid(Inventory inventory, Page page, int index) {
         List<ItemStack[]> columns = setColumns(page);
-        int maxCols = Math.min(columns.size(), 9);
-        for (int col = 0; col < maxCols; col++) {
-            ItemStack[] pieces = columns.get(col);
-            for (int row = 0; row < pieces.length && row < 5; row++) {
+        // Inner columns only (slots col 1–7). SETS: 6/page so page 2 holds late sets + Dawnbearer.
+        final int colsPerPage = page == Page.SETS ? 6 : 7;
+        int pageIndex = Math.max(0, index);
+        int start = pageIndex * colsPerPage;
+        if (start >= columns.size() && pageIndex > 0) {
+            pageIndex = (columns.size() - 1) / colsPerPage;
+            start = pageIndex * colsPerPage;
+        }
+        int end = Math.min(columns.size(), start + colsPerPage);
+        final int[] fifthSlots = {46, 47, 48, 50, 51, 52};
+        for (int i = start; i < end; i++) {
+            int col = i - start;
+            ItemStack[] pieces = columns.get(i);
+            int armorRows = Math.min(pieces.length, 4);
+            for (int row = 0; row < armorRows; row++) {
                 if (pieces[row] != null) {
-                    inventory.setItem(row * 9 + col, pieces[row]);
+                    inventory.setItem((row + 1) * 9 + (col + 1), pieces[row]);
                 }
             }
+            if (pieces.length > 4 && pieces[4] != null && col < fifthSlots.length) {
+                inventory.setItem(fifthSlots[col], pieces[4]);
+            }
         }
-        inventory.setItem(45, button(Material.ARROW, "§eBack", "back"));
+        if (start > 0) {
+            inventory.setItem(45, button(Material.ARROW, "§ePrevious page", "pageidx:" + page.name() + ":" + (pageIndex - 1),
+                    "§7Page §f" + pageIndex));
+        } else {
+            inventory.setItem(45, button(Material.ARROW, "§eBack", "back"));
+        }
         inventory.setItem(49, button(Material.BARRIER, "§cClose", "close"));
+        if (end < columns.size()) {
+            inventory.setItem(53, button(Material.ARROW, "§eNext page", "pageidx:" + page.name() + ":" + (pageIndex + 1),
+                    "§7Page §f" + (pageIndex + 2),
+                    "§7Hollow Sun · Worldhide · Aetherion · God kits."));
+        }
     }
 
     private List<ItemStack[]> setColumns(Page page) {
@@ -1256,6 +1282,17 @@ public class DevMenu {
                 columns.add(armorColumn("§dAetherion", "aetherion",
                         customItem.createAetherionHelmet(), customItem.createAetherionChestplate(),
                         customItem.createAetherionLeggings(), customItem.createAetherionBoots()));
+                columns.add(armorColumn("§5Worldhide", "worldhide",
+                        customItem.createWorldhideHelmet(), customItem.createWorldhideChestplate(),
+                        customItem.createWorldhideLeggings(), customItem.createWorldhideBoots()));
+                columns.get(columns.size() - 1)[4] = tagged(customItem.createWorldbite(), "item:worldbite");
+                columns.add(armorColumn("§6Hollow Sun", "hollow_sun",
+                        customItem.createHollowSunHelmet(), customItem.createHollowSunChestplate(),
+                        customItem.createHollowSunLeggings(), customItem.createHollowSunBoots()));
+                columns.add(armorColumn("§eDawnbearer", "helios",
+                        customItem.createHeliosCrown(), customItem.createHeliosHeartplate(),
+                        customItem.createHeliosOrbitGreaves(), customItem.createHeliosDawnTreads()));
+                columns.get(columns.size() - 1)[4] = tagged(customItem.createHeliosSolstice(), "item:helios_solstice");
                 columns.add(new ItemStack[]{
                         setButton(Material.GOLDEN_CHESTPLATE, "§6God Kit I", "god1"),
                         setButton(Material.NETHERITE_CHESTPLATE, "§6God Kit II", "god2"),
@@ -1418,6 +1455,9 @@ public class DevMenu {
                 items.add(setButton(Material.IRON_CHESTPLATE, "§5Ironhide Set", "ironhide"));
                 items.add(setButton(Material.LEATHER_CHESTPLATE, "§aHealer Set", "healer"));
                 items.add(setButton(Material.NETHERITE_CHESTPLATE, "§d✦✦✦ Aetherion Set", "aetherion"));
+                items.add(setButton(Material.NETHERITE_CHESTPLATE, "§5✦✦✦ Worldhide Set", "worldhide"));
+                items.add(setButton(Material.NETHERITE_CHESTPLATE, "§6✦✦✦ Hollow Sun Set", "hollow_sun"));
+                items.add(setButton(Material.NETHERITE_CHESTPLATE, "§e✦✦✦ Dawnbearer Set", "helios"));
                 items.add(setButton(Material.LEATHER_CHESTPLATE, "§7Dungeon Vestige", "dungeon_vestige"));
                 items.add(itemButton(customItem.createDungeonRelic(de.aetherion.items.dungeon.DungeonGearTier.T2, de.aetherion.items.dungeon.DungeonPiece.CHESTPLATE), "dungeon_relic_t2_chestplate"));
                 items.add(itemButton(customItem.createDungeonWeaponRelic(de.aetherion.items.dungeon.DungeonGearTier.T2), "dungeon_relic_t2_weapon"));
@@ -1760,6 +1800,13 @@ public class DevMenu {
                     customItem.createDungeonWeaponRelic(de.aetherion.items.dungeon.DungeonGearTier.T3));
             case "aetherion" -> giveAll(player, customItem.createAetherionHelmet(), customItem.createAetherionChestplate(),
                     customItem.createAetherionLeggings(), customItem.createAetherionBoots());
+            case "worldhide" -> giveAll(player, customItem.createWorldhideHelmet(), customItem.createWorldhideChestplate(),
+                    customItem.createWorldhideLeggings(), customItem.createWorldhideBoots());
+            case "hollow_sun" -> giveAll(player, customItem.createHollowSunHelmet(), customItem.createHollowSunChestplate(),
+                    customItem.createHollowSunLeggings(), customItem.createHollowSunBoots());
+            case "helios" -> giveAll(player, customItem.createHeliosCrown(), customItem.createHeliosHeartplate(),
+                    customItem.createHeliosOrbitGreaves(), customItem.createHeliosDawnTreads(),
+                    customItem.createHeliosSolstice());
             case "catcher" -> giveAll(player, customItem.catcher().helmet(1), customItem.catcher().chestplate(1),
                     customItem.catcher().leggings(1), customItem.catcher().boots(1), customItem.catcher().gaff(1));
             case "catcher1" -> giveAll(player, customItem.catcher().helmet(1), customItem.catcher().chestplate(1),

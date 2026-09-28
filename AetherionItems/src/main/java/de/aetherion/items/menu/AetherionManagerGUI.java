@@ -5,6 +5,9 @@ import de.aetherion.items.progress.ProgressionService;
 import de.aetherion.items.storage.StorageInventory;
 import de.aetherion.items.util.QuestProgressHook;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
@@ -22,7 +25,12 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class AetherionManagerGUI {
 
-    public static final String TITLE = "§8Aetherion Manager";
+    /**
+     * Manager-only chest overlay via pack font bitmap.
+     * {@code \uE005} = -48px nudge, {@code \uE004} = GUI texture (vanilla-aligned).
+     * Must be Adventure Component — Paper 1.21 String titles are deprecated and can drop PUA glyphs.
+     */
+    public static final Component TITLE = Component.text("\uE005\uE004", NamedTextColor.WHITE);
 
     public static final int SHOP_SLOT = 10;
     public static final int BAZAAR_SLOT = 12;
@@ -65,7 +73,7 @@ public class AetherionManagerGUI {
     }
 
     public void open(Player player) {
-        Inventory inventory = Bukkit.createInventory(new Holder(), 54, TITLE);
+        Inventory inventory = Bukkit.createInventory(new Holder(), 54, TITLE); // Component title → font overlay
         fill(inventory);
         ProgressionService progress = AetherionItems.getInstance() == null
                 ? null

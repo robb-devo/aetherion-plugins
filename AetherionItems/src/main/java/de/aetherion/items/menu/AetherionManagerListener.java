@@ -135,6 +135,7 @@ public class AetherionManagerListener implements Listener {
             }
             meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
             meta.setMaxStackSize(1);
+            meta.setCustomModelData(3500);
             meta.getPersistentDataContainer().set(
                     ItemKeys.manager(),
                     PersistentDataType.BYTE,
