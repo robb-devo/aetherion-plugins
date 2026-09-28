@@ -153,5 +153,5 @@ uses 29xx, bows/tools 21xx-23xx).
   Boosters, the nether star and the vanilla extras stay. It all lands in the Seed Vault. The
   server only writes this YAML if it is missing, so **copy the `loot:` section into the live
   `plugins/BossEngine/bosses/world_eater.yml`**.
-- **Quick test:** `/boss give` doesn't cover these (they aren't spawn items). Use the existing
-  AetherionItems admin give if it accepts ids, or kill Nihil at low HP.
+- **Quick test:** `/aetherionitems worldeaterkit` (the full set plus Worldbite) or
+  `/aetherionitems worldbite`. Stand on grass for the set bonus, and right-click near mobs for Devour.
