@@ -2,6 +2,7 @@ package de.aetherion.items.listener;
 
 import de.aetherion.items.AetherionItems;
 import de.aetherion.items.farming.Crops;
+import de.aetherion.items.farming.FarmIsleHook;
 import de.aetherion.items.item.FarmingHoeProgress;
 import de.aetherion.items.manager.ActiveEquipmentStats;
 import de.aetherion.items.manager.ItemManager;
@@ -55,7 +56,8 @@ public class CropHarvestListener implements Listener {
             return;
         }
         Player player = event.getPlayer();
-        double fortune = Math.max(0, equipmentStats.getStat(player, ItemCapability.FORTUNE));
+        double fortune = Math.max(0, equipmentStats.getStat(player, ItemCapability.FORTUNE))
+                + FarmIsleHook.cropFortune(player, event.getBlockState().getType());
         event.setCancelled(true);
 
         InventoryDrops.setDropAt(event.getBlock().getLocation());
@@ -75,7 +77,7 @@ public class CropHarvestListener implements Listener {
                     }
                     paidPrimary = true;
                     giveFlatFortuned(player, stack, fortune);
-                    giveFeaturedBonus(player, stack);
+                    giveHarvestBonus(player, stack, event.getBlock().getLocation());
                     continue;
                 }
                 // Rare extras (poisonous potato, …) — keep, no fortune stack abuse.
@@ -86,12 +88,12 @@ public class CropHarvestListener implements Listener {
         }
     }
 
-    private void giveFeaturedBonus(Player player, ItemStack drop) {
-        de.aetherion.core.api.FarmAccess farm = de.aetherion.core.api.AetherServices.farming();
-        if (farm == null || drop == null) {
+    /** Featured crop / Bee Bloom extras from AetherionFarming — whole crops, no Fortune stacking. */
+    private void giveHarvestBonus(Player player, ItemStack drop, org.bukkit.Location at) {
+        if (drop == null) {
             return;
         }
-        int bonus = farm.featuredCropBonus(drop.getType());
+        int bonus = FarmIsleHook.harvestBonus(player, drop.getType(), at);
         for (int i = 0; i < bonus; i++) {
             ItemStack one = drop.clone();
             one.setAmount(1);
@@ -99,9 +101,9 @@ public class CropHarvestListener implements Listener {
             InventoryDrops.give(player, compressed != null ? compressed : one);
         }
         if (bonus > 0) {
-            String name = farm.featuredCropName();
+            String label = FarmIsleHook.harvestBonusLabel(player, at);
             player.sendActionBar(net.kyori.adventure.text.Component.text(
-                    "Featured" + (name == null ? "" : " " + name) + " +" + bonus,
+                    (label == null ? "Bonus" : label) + " +" + bonus,
                     net.kyori.adventure.text.format.NamedTextColor.GOLD
             ));
         }

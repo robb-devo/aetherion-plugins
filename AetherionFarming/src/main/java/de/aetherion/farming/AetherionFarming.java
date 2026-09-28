@@ -5,6 +5,7 @@ import de.aetherion.farming.dev.FarmDistrictMarker;
 import de.aetherion.farming.dev.HayWagonProp;
 import de.aetherion.farming.dev.ScarecrowProp;
 import de.aetherion.farming.island.FarmIsleSeeder;
+import de.aetherion.farming.isle.FarmIsle;
 import de.aetherion.farming.island.FarmIslandAmbience;
 import de.aetherion.farming.island.FarmIslandService;
 import de.aetherion.farming.portal.FarmPortalListener;
@@ -33,6 +34,7 @@ public class AetherionFarming extends JavaPlugin {
     private HayWagonProp hayWagon;
     private ScarecrowEvent scarecrowEvent;
     private FarmIsleSeeder seeder;
+    private FarmIsle farmIsle;
     private NamespacedKey portalToolKey;
     private de.aetherion.core.api.FarmAccess farmAccess;
 
@@ -100,6 +102,9 @@ public class AetherionFarming extends JavaPlugin {
             scarecrowEvent = new ScarecrowEvent(this);
             scarecrowEvent.start();
             getLogger().info("Bird scare crop event enabled (hub farm + Farm Isle zones).");
+            // Eldervale loops need Items (skills, coins, stats) — same gate as the bird scare.
+            farmIsle = new FarmIsle(this);
+            farmIsle.start();
         } else {
             getLogger().warning("AetherionItems missing — bird scare event disabled.");
         }
@@ -109,6 +114,10 @@ public class AetherionFarming extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (farmIsle != null) {
+            farmIsle.shutdown();
+            farmIsle = null;
+        }
         if (birdScare != null) {
             birdScare.shutdown();
             birdScare = null;
@@ -178,6 +187,19 @@ public class AetherionFarming extends JavaPlugin {
 
     public FarmIsleSeeder seeder() {
         return seeder;
+    }
+
+    /** Eldervale loops (rhythm, prizes, mastery, orders, cast…). Null without AetherionItems. */
+    public FarmIsle farmIsle() {
+        return farmIsle;
+    }
+
+    public BirdScareEvent birdScare() {
+        return birdScare;
+    }
+
+    public ScarecrowEvent scarecrowEvent() {
+        return scarecrowEvent;
     }
 
     public NamespacedKey portalToolKey() {

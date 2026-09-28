@@ -206,6 +206,34 @@ public final class ScarecrowEvent implements Listener, StatProvider, Runnable {
         begin(candidates.get(ThreadLocalRandom.current().nextInt(candidates.size())));
     }
 
+    /** DEV: start a wave at the nearest placed scarecrow (within 64 blocks), ignoring the timer. */
+    public String devStart(Player player) {
+        ScarecrowProp prop = plugin.scarecrow();
+        if (prop == null) {
+            return "§cNo scarecrow prop service.";
+        }
+        if (active) {
+            endEvent(false);
+        }
+        Location best = null;
+        double bestDistance = 64.0d * 64.0d;
+        for (Location anchor : prop.anchors()) {
+            if (anchor.getWorld() == null || !anchor.getWorld().equals(player.getWorld())) {
+                continue;
+            }
+            double distance = anchor.distanceSquared(player.getLocation());
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                best = anchor;
+            }
+        }
+        if (best == null) {
+            return "§cNo scarecrow within 64 blocks. Place one from DEV → Farming Island → Props.";
+        }
+        begin(best);
+        return "§aScarecrow wave started §7(" + birdsTotal + " birds).";
+    }
+
     private void begin(Location anchor) {
         List<Player> watching = nearbyPlayers(anchor, viewRange());
         if (watching.isEmpty()) {
@@ -289,17 +317,18 @@ public final class ScarecrowEvent implements Listener, StatProvider, Runnable {
         if (!active) {
             return;
         }
-        long until = System.currentTimeMillis() + (BOOST_TICKS / 20L) * 1000L;
+        long now = System.currentTimeMillis();
         Set<UUID> rewarded = new HashSet<>(helpers);
         for (Player nearby : nearbyPlayers(center, viewRange())) {
             rewarded.add(nearby.getUniqueId());
         }
         Location pulse = center;
         for (UUID id : rewarded) {
-            boostUntil.put(id, until);
             Player player = Bukkit.getPlayer(id);
+            int seconds = BOOST_TICKS / 20 + (player == null ? 0 : BirdScareEvent.birdLawSeconds(player));
+            boostUntil.put(id, now + seconds * 1000L);
             if (player != null && player.isOnline()) {
-                grantBoostFeedback(player);
+                grantBoostFeedback(player, seconds);
             }
         }
         if (pulse != null && pulse.getWorld() != null) {
@@ -311,9 +340,9 @@ public final class ScarecrowEvent implements Listener, StatProvider, Runnable {
         endEvent(true);
     }
 
-    private void grantBoostFeedback(Player player) {
-        player.sendMessage("§6Golden Hour! §7+50 Fortune, +50 Harvest for 60s.");
-        player.sendActionBar(Component.text("Golden Hour · +50 Fortune · +50 Harvest  (60s)", NamedTextColor.GOLD));
+    private void grantBoostFeedback(Player player, int seconds) {
+        player.sendMessage("§6Golden Hour! §7+50 Fortune, +50 Harvest for " + seconds + "s.");
+        player.sendActionBar(Component.text("Golden Hour · +50 Fortune · +50 Harvest  (" + seconds + "s)", NamedTextColor.GOLD));
         player.showTitle(net.kyori.adventure.title.Title.title(
                 Component.text("Golden Hour", NamedTextColor.GOLD),
                 Component.text("+50 Fortune · +50 Harvest", NamedTextColor.YELLOW),

@@ -4,11 +4,17 @@ import de.aetherion.core.api.FarmAccess;
 import de.aetherion.farming.AetherionFarming;
 import de.aetherion.farming.FeaturedCropService;
 import de.aetherion.farming.dev.FarmDistrictMarker;
+import de.aetherion.farming.island.FarmIsleZones;
+import de.aetherion.farming.isle.FarmIsle;
 import de.aetherion.farming.portal.FarmPortalAPI;
 
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+
+import java.util.List;
+import java.util.Map;
 
 public final class FarmAccessImpl implements FarmAccess {
 
@@ -104,6 +110,61 @@ public final class FarmAccessImpl implements FarmAccess {
             return 0;
         }
         return featured.bonusAmount();
+    }
+
+    // ------------------------------------------------------------------ Eldervale expansion
+
+    private static FarmIsle isle() {
+        AetherionFarming plugin = AetherionFarming.getInstance();
+        return plugin == null ? null : plugin.farmIsle();
+    }
+
+    @Override
+    public boolean onFarmIsle(Location at) {
+        AetherionFarming plugin = AetherionFarming.getInstance();
+        return plugin != null && at != null && FarmIsleZones.inFarmIsleFootprint(plugin, at);
+    }
+
+    @Override
+    public double cropFortuneBonus(Player player, Material crop) {
+        FarmIsle isle = isle();
+        return isle == null ? 0.0d : isle.cropFortune(player, crop);
+    }
+
+    @Override
+    public int harvestBonus(Player player, Material yield, Location at) {
+        FarmIsle isle = isle();
+        return isle == null ? featuredCropBonus(yield) : isle.harvestBonus(player, yield, at);
+    }
+
+    @Override
+    public String harvestBonusLabel(Player player, Location at) {
+        FarmIsle isle = isle();
+        return isle == null ? FarmAccess.super.harvestBonusLabel(player, at) : isle.harvestBonusLabel(player, at);
+    }
+
+    @Override
+    public String devAction(Player player, String action) {
+        FarmIsle isle = isle();
+        return isle == null ? "§cEldervale loops offline (AetherionItems missing?)." : isle.dev().action(player, action);
+    }
+
+    @Override
+    public Map<String, ItemStack> devItems(String group) {
+        FarmIsle isle = isle();
+        return isle == null ? Map.of() : isle.dev().items(group);
+    }
+
+    @Override
+    public List<String> devStatus() {
+        FarmIsle isle = isle();
+        return isle == null ? List.of("§cEldervale loops offline.") : isle.dev().status();
+    }
+
+    @Override
+    public Map<String, Location> devSpots() {
+        FarmIsle isle = isle();
+        return isle == null ? Map.of() : isle.dev().spots(null, false);
     }
 
     @Override

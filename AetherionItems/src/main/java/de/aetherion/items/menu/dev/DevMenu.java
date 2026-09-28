@@ -99,7 +99,13 @@ public class DevMenu {
         PET_HABITATS,
         BLUEPRINTS,
         MILLSTONE,
-        ISLE_WEATHER
+        ISLE_WEATHER,
+        FARM_ISLE,
+        FARM_ISLE_SPOTS,
+        FARM_ISLE_NPCS,
+        FARM_ISLE_PROPS,
+        FARM_ISLE_EVENTS,
+        FARM_ISLE_PROGRESS
     }
 
     private final CustomItem customItem;
@@ -111,6 +117,7 @@ public class DevMenu {
     private final WorldMapService worldMaps;
     private final CryptHologramService cryptHolograms;
     private final BuildingBannerService buildingBanners;
+    private final FarmIsleDevPages farmIsle;
 
     public DevMenu(
             CustomItem customItem,
@@ -132,6 +139,7 @@ public class DevMenu {
         this.worldMaps = worldMaps;
         this.cryptHolograms = cryptHolograms;
         this.buildingBanners = buildingBanners;
+        this.farmIsle = new FarmIsleDevPages(customItem);
     }
 
     public static boolean canUse(Player player) {
@@ -161,6 +169,8 @@ public class DevMenu {
             drawRoot(inventory, Math.max(0, index));
         } else if (page == Page.ISLE_WEATHER) {
             drawIsleWeather(inventory, player);
+        } else if (FarmIsleDevPages.owns(page)) {
+            farmIsle.draw(inventory, page, player);
         } else {
             drawPage(inventory, page, target, Math.max(0, index));
         }
@@ -194,6 +204,15 @@ public class DevMenu {
         }
         if (action.startsWith("testbot:")) {
             handleTestbots(player, action, click);
+            return;
+        }
+        if (action.startsWith(FarmIsleDevPages.PREFIX)) {
+            Page current = player.getOpenInventory().getTopInventory().getHolder() instanceof Holder holder
+                    ? holder.page() : Page.FARM_ISLE;
+            Page reopen = farmIsle.handle(player, action, click, current);
+            if (reopen != null) {
+                open(player, reopen);
+            }
             return;
         }
         if (action.startsWith("pageidx:")) {
@@ -835,7 +854,10 @@ public class DevMenu {
             inventory.setItem(39, button(Material.RECOVERY_COMPASS, "§8Boss Anchors", "page:BOSS_ANCHORS", "§7Place spawn points."));
             inventory.setItem(40, button(Material.NETHER_STAR, "§5Boss Cores", "page:BOSS_CORES", "§7Summon for tests."));
             inventory.setItem(41, button(Material.FILLED_MAP, "§eArea Tools", "page:AREAS", "§7Map · hologram · markers."));
-            inventory.setItem(42, button(Material.END_PORTAL_FRAME, "§dPortals", "page:PORTALS", "§7Farm island portal."));
+            inventory.setItem(42, button(Material.HAY_BLOCK, "§a§lFarming Island", "page:FARM_ISLE",
+                    "§7Eldervale hub: teleports · NPC cast ·",
+                    "§7props · events · skills · resets.",
+                    "§8Legacy portal tools live inside."));
             inventory.setItem(43, button(Material.GRINDSTONE, "§6Millstone", "page:MILLSTONE",
                     "§7Farm Isle mill + pantry loop.",
                     "§7Anchor · crops · spheres · treats · NPC."));
@@ -2228,7 +2250,7 @@ public class DevMenu {
                 "§7Full-grown crops, soft lights,",
                 "§7reseed ambient animals + farm pets.",
                 "§8Safe on an already-pasted island."));
-        inventory.setItem(45, button(Material.ARROW, "§eBack", "root"));
+        inventory.setItem(45, button(Material.ARROW, "§eBack", "page:FARM_ISLE"));
         inventory.setItem(49, button(Material.BARRIER, "§cClose", "close"));
     }
 

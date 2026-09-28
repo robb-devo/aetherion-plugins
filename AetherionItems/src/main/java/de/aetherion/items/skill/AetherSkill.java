@@ -249,6 +249,54 @@ public enum AetherSkill {
             "+0.6% chance to compact crops while farming (up to ~2.8% at max).",
             Flag.SEED_LEDGER
     ),
+    SOIL_SENSE(
+            "soil_sense",
+            "Soil Sense",
+            Category.FARMING,
+            Material.ROOTED_DIRT,
+            "Eldervale dirt knows your boots.",
+            "+18 Fortune and +12 Harvest on the Farm Isle only.",
+            Flag.SOIL_SENSE,
+            bonus(ItemCapability.FORTUNE, 18),
+            bonus(ItemCapability.HARVEST_SPREAD, 12)
+    ),
+    ROW_RHYTHM(
+            "row_rhythm",
+            "Row Rhythm",
+            Category.FARMING,
+            Material.NOTE_BLOCK,
+            "You harvest in four-four. The wheat keeps time.",
+            "Harvest Rhythm builds faster and holds longer. +6 Fortune.",
+            Flag.ROW_RHYTHM,
+            bonus(ItemCapability.FORTUNE, 6)
+    ),
+    BLUE_RIBBON(
+            "blue_ribbon",
+            "Blue Ribbon",
+            Category.FARMING,
+            Material.GOLDEN_CARROT,
+            "You can smell a prize carrot through a wall.",
+            "Prize Crops turn up more often, and heavier.",
+            Flag.BLUE_RIBBON
+    ),
+    BIRD_LAW(
+            "bird_law",
+            "Bird Law",
+            Category.FARMING,
+            Material.FEATHER,
+            "You read the crows their rights.",
+            "Bold crows leave on the first shoo. Golden Hour lasts longer.",
+            Flag.BIRD_LAW
+    ),
+    MARKET_DAY(
+            "market_day",
+            "Market Day",
+            Category.FARMING,
+            Material.BARREL,
+            "Every turnip is a negotiation.",
+            "Harvest Orders pay more coins.",
+            Flag.MARKET_DAY
+    ),
 
     BITE_ME(
             "bite_me",
@@ -429,6 +477,11 @@ public enum AetherSkill {
         PACK_RAT,
         TIMBER_TAX,
         SEED_LEDGER,
+        SOIL_SENSE,
+        ROW_RHYTHM,
+        BLUE_RIBBON,
+        BIRD_LAW,
+        MARKET_DAY,
         FISH_LEDGER,
         QUICK_HANDS,
         BOSS_GRUDGE,

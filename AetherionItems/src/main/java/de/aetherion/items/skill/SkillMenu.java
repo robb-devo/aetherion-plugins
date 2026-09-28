@@ -631,6 +631,17 @@ public final class SkillMenu implements Listener {
             case PACK_RAT -> compactLines(lines, "Mining Compact", "Compacted Upgrade", level, tier, "drops");
             case TIMBER_TAX -> compactLines(lines, "Oak Compact", "Compacted Oak", level, tier, "oak");
             case SEED_LEDGER -> compactLines(lines, "Crop Compact", "Compacted Crops", level, tier, "crops");
+            case SOIL_SENSE -> lines.add(Effect.hint("Stats apply on the Farm Isle only."));
+            case ROW_RHYTHM -> {
+                lines.add(Effect.stat("Rhythm per harvest", 1.0 + 0.5 * scale, "+", ""));
+                lines.add(Effect.stat("Rhythm hold", 40.0 * scale, "+", "%"));
+            }
+            case BLUE_RIBBON -> lines.add(Effect.stat("Prize Crop chance", 50.0 * scale, "+", "%"));
+            case BIRD_LAW -> {
+                lines.add(Effect.hint("Bold crows leave on the first shoo."));
+                lines.add(Effect.stat("Golden Hour", Math.round(8.0 * scale), "+", "s"));
+            }
+            case MARKET_DAY -> lines.add(Effect.stat("Order coins", Math.min(60.0, 15.0 * scale), "+", "%"));
             case FISH_LEDGER -> compactLines(lines, "Cod Compact", "Compacted Cod", level, tier, "cod");
             case QUICK_HANDS -> lines.add(Effect.stat("Ability Cooldown",
                     100.0 - (Math.max(0.70, 1.0 - 0.10 * scale) * 100.0), "-", "%"));
@@ -682,7 +693,7 @@ public final class SkillMenu implements Listener {
         return switch (category) {
             case MINING -> "Mining Power opens harder ore.\nFortune multiplies what breaks.";
             case FORAGING -> "Perfect fells and streaks pay bonus XP.\nLv. 50 widens the CHOP window.\nFortune raises each tree's wood cap.";
-            case FARMING -> "Harvest breaks extra crops per swing.\nClearing birds boosts the whole field.\nHigher Farming holds the boost longer.";
+            case FARMING -> "Harvest breaks extra crops per swing.\nClearing birds boosts the whole field.\nOn the Farm Isle: Rhythm, Prize Crops, Orders.";
             case FISHING -> "Fish Catch widens the green zone.\nFish Speed shortens the wait.\nPerfect reels and streaks pay bonus XP.";
             default -> null;
         };

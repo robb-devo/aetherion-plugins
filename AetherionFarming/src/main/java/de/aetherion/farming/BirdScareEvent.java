@@ -346,6 +346,24 @@ public final class BirdScareEvent implements Listener, StatProvider, Runnable {
     private record Candidate(Player player, Location crop, boolean isle) {
     }
 
+    /** Golden Hour seconds added by an equipped Bird Law skill. */
+    static int birdLawSeconds(Player player) {
+        return (int) Math.round(8.0d * FarmingSkills.scale(player, FarmingSkills.BIRD_LAW));
+    }
+
+    /** DEV: land a flock on the nearest mature crops to {@code player}; farm zones ignored. */
+    public String devStart(Player player) {
+        if (phase != Phase.IDLE) {
+            endEvent(false, true);
+        }
+        Location crop = nearCrops(player.getLocation(), SCAN_RADIUS);
+        if (crop == null) {
+            return "§cNo mature crops within " + SCAN_RADIUS + " blocks.";
+        }
+        begin(player, crop, isIsle(player.getLocation()));
+        return "§aBird scare incoming" + (isle ? " §7(bold isle flock)" : "") + "§a.";
+    }
+
     /** Telegraph: the flock circles first. Birds land when the bar fills. */
     private void begin(Player host, Location crop, boolean onIsle) {
         phase = Phase.INCOMING;
@@ -444,7 +462,8 @@ public final class BirdScareEvent implements Listener, StatProvider, Runnable {
             return;
         }
         Integer hits = entity.getPersistentDataContainer().get(boldKey, PersistentDataType.INTEGER);
-        if (hits != null && hits > 1) {
+        // Bird Law: bold crows leave on the first shoo.
+        if (hits != null && hits > 1 && !FarmingSkills.has(player, FarmingSkills.BIRD_LAW)) {
             hopBold(player, entity, hits - 1, now);
             return;
         }
@@ -504,7 +523,8 @@ public final class BirdScareEvent implements Listener, StatProvider, Runnable {
             }
             int seconds = (isle ? ISLE_BOOST_SECONDS : BASE_BOOST_SECONDS)
                     + (sweep ? CLEAN_SWEEP_BONUS_SECONDS : 0)
-                    + FarmingSkills.boostTier(player) * SKILL_BOOST_SECONDS_PER_TIER;
+                    + FarmingSkills.boostTier(player) * SKILL_BOOST_SECONDS_PER_TIER
+                    + birdLawSeconds(player);
             boostUntil.put(id, nowMs + seconds * 1000L);
             fadeWarned.remove(id);
             grantBoostFeedback(player, field, seconds, sweep, helpers.contains(id));

@@ -205,6 +205,46 @@ public final class SkillFlavor {
                     "Accounting learned to mill.",
                     "The loaf is a quarterly report."
             };
+            case SOIL_SENSE -> new String[] {
+                    "Eldervale dirt knows your boots.",
+                    "The furrows wave when you land.",
+                    "You can hear which row is ripe.",
+                    "The isle files you under family.",
+                    "Topsoil asks for your opinion.",
+                    "The island is your home field. It agrees."
+            };
+            case ROW_RHYTHM -> new String[] {
+                    "You harvest in four-four. The wheat keeps time.",
+                    "The carrots started clapping on two and four.",
+                    "Every row is a bar. You never miss a beat.",
+                    "The field hums along. Off-key, loyally.",
+                    "Scarecrows tap their feet now.",
+                    "The harvest is a song, and you wrote it."
+            };
+            case BLUE_RIBBON -> new String[] {
+                    "You can smell a prize carrot through a wall.",
+                    "Judges start sweating when you arrive.",
+                    "Potatoes pose when you walk past.",
+                    "The ribbon committee sends you a calendar.",
+                    "Pumpkins hold their breath to look bigger.",
+                    "The county fair renamed itself after you."
+            };
+            case BIRD_LAW -> new String[] {
+                    "You read the crows their rights.",
+                    "The flock hired a lawyer. He left too.",
+                    "Crows cross the street to avoid you.",
+                    "The scarecrow calls you boss.",
+                    "Feathers settle out of court.",
+                    "The sky is a no-fly zone. By statute."
+            };
+            case MARKET_DAY -> new String[] {
+                    "Every turnip is a negotiation.",
+                    "Hattie keeps the good orders in a drawer for you.",
+                    "Your beets arrive with a sales pitch.",
+                    "Merchants round up when you smile.",
+                    "The order board has your handwriting on it.",
+                    "The market opens when you do."
+            };
             case BITE_ME -> new String[] {
                     "The fish started the argument. You finished it.",
                     "Extra bites, professionally.",

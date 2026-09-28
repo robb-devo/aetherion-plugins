@@ -100,3 +100,124 @@ farm-island:
   pasted: false
   ambience-ready: false
   # hub-portal / island-exit filled by Dev → Portals
+
+# ---------------------------------------------------------------------------
+# Eldervale expansion — every loop below only runs inside farm-isle-footprint.
+# ---------------------------------------------------------------------------
+
+# Combo meter for harvesting without pauses. Tiers pay crop-only Fortune + Harvest.
+harvest-rhythm:
+  enabled: true
+
+# Rare giant crop that pops out of a harvest. Base chance per mature harvest (1/450),
+# multiplied by Blue Ribbon, Harvest Moon, Golden Harvest Pie and crop mastery.
+prize-crops:
+  chance: 0.0022
+
+# Lifetime harvest ledger per crop. Isle harvests count this many times.
+crop-mastery:
+  isle-weight: 2
+
+# Bee Bloom / Harvest Moon — rolled on a timer while survival players farm the isle.
+isle-events:
+  enabled: true
+  # 20 real-time minutes between rolls
+  interval-ticks: 24000
+  first-delay-ticks: 6000
+  bloom-bees: 8
+
+# Named areas (discovery, Bee Bloom fields, wayfinder). Circles are "x z radius" in world
+# coordinates, measured from Farming-Eldervale-Island.schem at the live paste
+# (world = -481 + x, y - 92, 420 + z). Landmarks win over water, water over fields.
+farm-isle-plots:
+  enabled: true
+  plots:
+    harvest_hall:
+      name: Harvest Hall
+      kind: landmark
+      blurb: Arrivals · Field Warden
+      # Second circle covers the jump-pad landing so the first step on the isle is a discovery.
+      circles: ["-302 501 16", "-303 485 8"]
+    oven_house:
+      name: Oven House
+      kind: landmark
+      blurb: Bram bakes farming food
+      circles: ["-327 530 13"]
+    hive_lodge:
+      name: Hive Lodge
+      kind: landmark
+      blurb: Old Wren · isle events
+      circles: ["-271 547 12"]
+    market_barn:
+      name: Market Barn
+      kind: landmark
+      blurb: Hattie · Harvest Orders
+      circles: ["-380 559 12"]
+    old_granary:
+      name: Old Granary
+      kind: landmark
+      blurb: Gus · Crop Mastery
+      circles: ["-388 631 13"]
+    southfield_hamlet:
+      name: Southfield Hamlet
+      kind: landmark
+      blurb: Where the farmhands live
+      circles: ["-278 699 20"]
+    mirror_pond:
+      name: Mirror Pond
+      kind: water
+      blurb: The still heart of the isle
+      circles: ["-303 616 16"]
+    dew_pond:
+      name: Dew Pond
+      kind: water
+      blurb: Beet-side water
+      circles: ["-246 567 15"]
+    heron_lake:
+      name: Heron Lake
+      kind: water
+      blurb: East shore, quiet water
+      circles: ["-166 642 26", "-180 671 16"]
+    beet_terraces:
+      name: Beet Terraces
+      kind: field
+      blurb: Beetroot · the north slopes
+      circles: ["-294 467 17", "-270 489 18", "-267 534 25", "-307 566 26"]
+    market_beds:
+      name: Market Beds
+      kind: field
+      blurb: Beetroot · by the barn
+      circles: ["-370 545 34"]
+    windward_wheat:
+      name: Windward Wheat
+      kind: field
+      blurb: Wheat · the west arc
+      circles: ["-397 614 46"]
+    sunwheat_rise:
+      name: Sunwheat Rise
+      kind: field
+      blurb: Wheat · the east arc
+      circles: ["-229 517 32", "-193 572 33", "-223 598 24"]
+    carrot_belt:
+      name: Carrot Belt
+      kind: field
+      blurb: Carrots · the west belt
+      circles: ["-390 563 29", "-349 592 27", "-343 636 24", "-377 675 25"]
+    potato_hollows:
+      name: Potato Hollows
+      kind: field
+      blurb: Potatoes · the low middle
+      circles: ["-339 677 26", "-312 644 31", "-270 599 30", "-248 643 34"]
+
+# Eldervale cast preset spots (door fronts measured from the schematic).
+# DEV → Farming Island → NPCs places them here; anchors can put them anywhere.
+isle-cast:
+  presets:
+    warden: {world: world, x: -302.5, y: 109.0, z: 486.5, yaw: 180.0}
+    clerk: {world: world, x: -378.5, y: 91.0, z: 572.5, yaw: 0.0}
+    baker: {world: world, x: -340.5, y: 107.0, z: 528.5, yaw: 90.0}
+    granary: {world: world, x: -374.5, y: 107.0, z: 632.5, yaw: -90.0}
+    beekeeper: {world: world, x: -269.5, y: 93.0, z: 555.5, yaw: 0.0}
+    pip: {world: world, x: -277.5, y: 125.0, z: 689.5, yaw: 180.0}
+    marta: {world: world, x: -276.5, y: 124.0, z: 715.5, yaw: 0.0}
+    tobias: {world: world, x: -388.5, y: 110.0, z: 612.5, yaw: 180.0}

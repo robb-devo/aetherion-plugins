@@ -59,6 +59,17 @@ public final class FeaturedCropService implements Runnable {
         return featured;
     }
 
+    /** Seconds until the featured crop rotates (0 when disabled). */
+    public long secondsLeft() {
+        return Math.max(0L, (hourEndsAtMs - System.currentTimeMillis()) / 1000L);
+    }
+
+    /** DEV: pick a new featured crop now and announce it on the isle. */
+    public String reroll() {
+        roll(false);
+        return "§aFeatured crop is now §e" + prettyName() + "§a.";
+    }
+
     public boolean isFeatured(Material material) {
         if (material == null || featured == null) {
             return false;
