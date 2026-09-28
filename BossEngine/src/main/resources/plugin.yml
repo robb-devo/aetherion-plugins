@@ -8,6 +8,11 @@ description: Modular custom-mob and boss engine for Aetherion
 depend:
   - AetherionCore
 
+# Multiverse loads worlds at enable-time. Without this, MV can load world_eater
+# before BossEngine registers BossEngine:worldeater and new chunks become vanilla.
+loadbefore:
+  - Multiverse-Core
+
 softdepend:
   - AetherionItems
   - AetherionDungeons
@@ -17,6 +22,7 @@ softdepend:
   - WorldGuardExtraFlagsPlus
   - DeluxeHub
   - MythicMobs
+  - Multiverse-Core
 
 commands:
   boss:
