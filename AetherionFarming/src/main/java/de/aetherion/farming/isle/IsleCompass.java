@@ -123,7 +123,11 @@ public final class IsleCompass {
 
     private void enter(Player player, IslePlots.Plot plot, boolean announce) {
         IsleProfiles.Profile profile = isle.profiles().of(player);
+        boolean firstVisit = profile.plots.isEmpty();
         if (profile.plots.add(plot.id())) {
+            if (firstVisit) {
+                welcome(player);
+            }
             isle.profiles().markDirty();
             int found = countKnown(profile);
             int total = isle.plots().size();
@@ -148,6 +152,21 @@ public final class IsleCompass {
         }
         if (announce) {
             IsleText.bar(player, plot.colored() + (plot.blurb().isBlank() ? "" : " §8· §7" + plot.blurb()));
+        }
+    }
+
+    /** First step on Eldervale: say hello and walk them to the Field Warden. */
+    private void welcome(Player player) {
+        player.sendMessage("§a✦ Welcome to Eldervale. §7Every field here pays better than the hub farm —"
+                + " and there's more going on than wheat.");
+        Location warden = isle.cast().whereabouts(IsleRole.WARDEN);
+        if (warden != null && isle.cast().isPlaced(IsleRole.WARDEN)) {
+            player.sendMessage("§7Say hi to §a" + IsleRole.WARDEN.display() + "§7, the Field Warden — follow the arrow.");
+            Bukkit.getScheduler().runTaskLater(isle.plugin(), () -> {
+                if (player.isOnline()) {
+                    guide(player, IsleRole.WARDEN.display() + " §7(Field Warden)", warden);
+                }
+            }, 50L);
         }
     }
 

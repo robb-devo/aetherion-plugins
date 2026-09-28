@@ -7,19 +7,63 @@ import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
 import java.util.List;
 
-/** "Is this on Eldervale?" and "who is on Eldervale?" — one place for every isle loop. */
+/**
+ * "Is this on Eldervale?" and "who is on Eldervale?" — one place for every isle loop.
+ * The footprint box is cached: isle checks run per harvest, per tick and inside stat lookups.
+ */
 public final class IsleWorld {
+
+    private record Box(boolean enabled, String world, double minX, double maxX, double minZ, double maxZ) {
+        boolean contains(Location at) {
+            return enabled
+                    && at.getWorld().getName().equalsIgnoreCase(world)
+                    && at.getX() >= minX && at.getX() <= maxX
+                    && at.getZ() >= minZ && at.getZ() <= maxZ;
+        }
+    }
+
+    /** Null = not cached yet, or the footprint uses the radius form (FarmIsleZones decides). */
+    private static volatile Box box;
+    private static volatile boolean cached;
 
     private IsleWorld() {
     }
 
+    /** Re-read {@code farm-isle-footprint} (after a config reload). */
+    public static void refresh(AetherionFarming plugin) {
+        ConfigurationSection section = plugin == null ? null : plugin.getConfig().getConfigurationSection("farm-isle-footprint");
+        if (section == null) {
+            box = new Box(false, "", 0, 0, 0, 0);
+        } else if (section.contains("min-x")) {
+            box = new Box(
+                    section.getBoolean("enabled", true),
+                    section.getString("world", "world"),
+                    Math.min(section.getDouble("min-x"), section.getDouble("max-x")),
+                    Math.max(section.getDouble("min-x"), section.getDouble("max-x")),
+                    Math.min(section.getDouble("min-z"), section.getDouble("max-z")),
+                    Math.max(section.getDouble("min-z"), section.getDouble("max-z"))
+            );
+        } else {
+            box = null;
+        }
+        cached = true;
+    }
+
     public static boolean onIsle(AetherionFarming plugin, Location at) {
-        return at != null && FarmIsleZones.inFarmIsleFootprint(plugin, at);
+        if (at == null || at.getWorld() == null) {
+            return false;
+        }
+        if (!cached) {
+            refresh(plugin);
+        }
+        Box current = box;
+        return current != null ? current.contains(at) : FarmIsleZones.inFarmIsleFootprint(plugin, at);
     }
 
     public static boolean onIsle(AetherionFarming plugin, Player player) {

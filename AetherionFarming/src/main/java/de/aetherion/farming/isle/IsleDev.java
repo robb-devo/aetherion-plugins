@@ -83,7 +83,17 @@ public final class IsleDev {
     // ------------------------------------------------------------------ groups
 
     private String teleport(Player player, String key) {
-        Location target = spots(player.getWorld(), true).get(key);
+        Location target = spots(player.getWorld(), false).get(key);
+        IslePlots.Plot plot = null;
+        for (IslePlots.Plot candidate : isle.plots().all()) {
+            if (candidate.name().equals(key)) {
+                plot = candidate;
+            }
+        }
+        if (plot != null && target != null) {
+            // Only the chosen plot pays for a surface lookup.
+            target = plot.center(target.getWorld());
+        }
         if (target == null) {
             return "§cUnknown spot: " + key;
         }

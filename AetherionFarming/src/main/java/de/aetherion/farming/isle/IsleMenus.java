@@ -98,7 +98,7 @@ public final class IsleMenus implements Listener {
                 "§8Row Rhythm skill + Sweetcane Cordial help."
         ), null);
 
-        double chance = isle.prizes().chance(player, IsleCrop.CARROT, false);
+        double chance = isle.prizes().chance(player, IsleCrop.CARROT);
         set(holder, 11, Material.GOLDEN_CARROT, "§6✦ Prize Crops", lines(
                 "§7Now and then a harvest throws out a",
                 "§7giant glowing crop. §eClick it fast§7 —",

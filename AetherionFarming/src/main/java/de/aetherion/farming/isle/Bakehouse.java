@@ -253,6 +253,8 @@ public final class Bakehouse implements Listener {
         try {
             var component = meta.getFood();
             component.setCanAlwaysEat(true);
+            component.setNutrition(food.minutes >= 15 ? 8 : 5);
+            component.setSaturation(food.minutes >= 15 ? 9.6f : 6.0f);
             meta.setFood(component);
         } catch (Throwable ignored) {
             // Older API without food components — still edible when hungry.

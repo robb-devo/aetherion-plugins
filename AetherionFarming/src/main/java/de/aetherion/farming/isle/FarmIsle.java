@@ -26,7 +26,7 @@ import org.bukkit.event.player.PlayerQuitEvent;
  * <pre>
  *   mature crop broken ─┬─ Crop Mastery    (everywhere; isle counts ×2)
  *                       └─ on the isle ───┬─ Harvest Rhythm   (by hand only)
- *                                         ├─ Prize Crops      (rare giant find)
+ *                                         ├─ Prize Crops      (by hand only, rare giant find)
  *                                         ├─ Isle events      (Bee Bloom XP / tally)
  *                                         └─ Bakehouse XP food
  * </pre>
@@ -105,6 +105,7 @@ public final class FarmIsle implements Listener, StatProvider {
     /** Reload config-driven parts (plots, presets) without touching player data. */
     public String reload() {
         plugin.reloadConfig();
+        IsleWorld.refresh(plugin);
         plots.reload();
         return "§aFarming config reloaded §8· §7" + plots.size() + " plots";
     }
@@ -133,8 +134,8 @@ public final class FarmIsle implements Listener, StatProvider {
         boolean spread = block.hasMetadata(SPREAD_METADATA);
         if (!spread) {
             rhythm.onHarvest(player, at);
+            prizes.roll(player, crop, at);
         }
-        prizes.roll(player, crop, at, spread);
         events.onHarvest(player, at);
         int foodXp = bakehouse.xpPerHarvest(player);
         if (foodXp > 0) {

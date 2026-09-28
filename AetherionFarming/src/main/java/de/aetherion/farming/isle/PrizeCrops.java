@@ -60,6 +60,8 @@ public final class PrizeCrops implements Listener {
     private static final int FINDER_TICKS = 20 * 4;
     private static final int LIFE_TICKS = 20 * 8;
     private static final long BASE_VALUE = 320L;
+    /** Minimum gap between two prizes for the same finder. */
+    private static final long COOLDOWN_MS = 20_000L;
 
     private final FarmIsle isle;
     private final NamespacedKey prizeKey;
@@ -67,6 +69,7 @@ public final class PrizeCrops implements Listener {
     private final NamespacedKey partKey;
     private final Map<UUID, Pop> popsByPart = new ConcurrentHashMap<>();
     private final Map<UUID, Pop> popsByFinder = new ConcurrentHashMap<>();
+    private final Map<UUID, Long> lastPrizeAt = new ConcurrentHashMap<>();
 
     private final class Pop {
         final UUID finder;
@@ -107,8 +110,9 @@ public final class PrizeCrops implements Listener {
         return Math.max(0.0d, isle.plugin().getConfig().getDouble("prize-crops.chance", 1.0d / 450.0d));
     }
 
-    public double chance(Player player, IsleCrop crop, boolean spread) {
-        double chance = baseChance() * (spread ? 0.5d : 1.0d);
+    /** Chance for one hand harvest; Harvest-spread neighbours never roll (keeps prizes a moment). */
+    public double chance(Player player, IsleCrop crop) {
+        double chance = baseChance();
         chance *= 1.0d + 0.5d * FarmingSkills.scale(player, FarmingSkills.BLUE_RIBBON);
         chance *= isle.events().prizeMultiplier();
         chance *= isle.bakehouse().prizeMultiplier(player);
@@ -116,13 +120,18 @@ public final class PrizeCrops implements Listener {
         return Math.min(0.25d, chance);
     }
 
-    void roll(Player player, IsleCrop crop, Location block, boolean spread) {
+    void roll(Player player, IsleCrop crop, Location block) {
         if (crop == null || popsByFinder.containsKey(player.getUniqueId())) {
             return;
         }
-        if (ThreadLocalRandom.current().nextDouble() >= chance(player, crop, spread)) {
+        Long last = lastPrizeAt.get(player.getUniqueId());
+        if (last != null && System.currentTimeMillis() - last < COOLDOWN_MS) {
             return;
         }
+        if (ThreadLocalRandom.current().nextDouble() >= chance(player, crop)) {
+            return;
+        }
+        lastPrizeAt.put(player.getUniqueId(), System.currentTimeMillis());
         spawn(player, crop, rollKg(player, crop), block);
     }
 

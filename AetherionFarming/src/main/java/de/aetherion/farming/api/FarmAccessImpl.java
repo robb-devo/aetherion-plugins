@@ -4,7 +4,6 @@ import de.aetherion.core.api.FarmAccess;
 import de.aetherion.farming.AetherionFarming;
 import de.aetherion.farming.FeaturedCropService;
 import de.aetherion.farming.dev.FarmDistrictMarker;
-import de.aetherion.farming.island.FarmIsleZones;
 import de.aetherion.farming.isle.FarmIsle;
 import de.aetherion.farming.portal.FarmPortalAPI;
 
@@ -122,7 +121,7 @@ public final class FarmAccessImpl implements FarmAccess {
     @Override
     public boolean onFarmIsle(Location at) {
         AetherionFarming plugin = AetherionFarming.getInstance();
-        return plugin != null && at != null && FarmIsleZones.inFarmIsleFootprint(plugin, at);
+        return plugin != null && at != null && de.aetherion.farming.isle.IsleWorld.onIsle(plugin, at);
     }
 
     @Override
