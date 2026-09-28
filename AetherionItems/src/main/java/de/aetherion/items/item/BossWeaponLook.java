@@ -12,6 +12,7 @@ public final class BossWeaponLook {
             "bridged_axe",
             "skuldugery_shortbow",
             "aetherion_void_stick",
+            "worldbite",
             "warped_blade",
             "gravwell_cleaver",
             "staff_of_technical_difficulties",

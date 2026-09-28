@@ -155,6 +155,111 @@ spawn-items:
     cooldown-seconds: 3
     require-altar: false
 
+  hollow_sun_anchor:
+    boss: hollow_sun
+    mode: SET_SPAWN
+    material: RESPAWN_ANCHOR
+    display-name: "&6&lHollow Sun Anchor"
+    lore:
+      - "&7Right-click the arena's center to mark where the star falls."
+      - "&8Admin · BossEngine"
+    glowing: true
+    consume: false
+    cooldown-seconds: 1
+    require-altar: false
+
+  hollow_sun_core:
+    boss: hollow_sun
+    mode: SUMMON
+    material: NETHER_STAR
+    display-name: "&6Hollow Sun Core"
+    lore:
+      - "&7Right-click to call the fallen star down here."
+      - "&8Test-Item · BossEngine"
+    glowing: true
+    consume: true
+    cooldown-seconds: 3
+    require-altar: false
+
+  ashen_chainwarden_anchor:
+    boss: ashen_chainwarden
+    mode: SET_SPAWN
+    material: CHAIN
+    display-name: "&8&lChainwarden Anchor"
+    lore:
+      - "&7Right-click a block to set the Chainwarden's cell."
+      - "&8Admin · BossEngine · Floor 3 elite"
+    glowing: true
+    consume: false
+    cooldown-seconds: 1
+    require-altar: false
+
+  ashen_chainwarden_core:
+    boss: ashen_chainwarden
+    mode: SUMMON
+    material: TRIAL_KEY
+    display-name: "&8Chainwarden Core"
+    lore:
+      - "&7Right-click to summon the Chainwarden here (test)."
+      - "&8Test-Item · BossEngine · Floor 3 elite"
+    glowing: true
+    consume: true
+    cooldown-seconds: 3
+    require-altar: false
+
+  cinder_herald_anchor:
+    boss: cinder_herald
+    mode: SET_SPAWN
+    material: BLAZE_ROD
+    display-name: "&6&lCinder Herald Anchor"
+    lore:
+      - "&7Right-click a block to set where the Herald rises."
+      - "&8Admin · BossEngine · Floor 3 elite"
+    glowing: true
+    consume: false
+    cooldown-seconds: 1
+    require-altar: false
+
+  cinder_herald_core:
+    boss: cinder_herald
+    mode: SUMMON
+    material: BLAZE_POWDER
+    display-name: "&6Cinder Herald Core"
+    lore:
+      - "&7Right-click to summon the Cinder Herald here (test)."
+      - "&8Test-Item · BossEngine · Floor 3 elite"
+    glowing: true
+    consume: true
+    cooldown-seconds: 3
+    require-altar: false
+
+  dungeon_aetherion_anchor:
+    boss: dungeon_aetherion
+    mode: SET_SPAWN
+    material: DRAGON_EGG
+    display-name: "&5&lSovereign Anchor"
+    lore:
+      - "&7Right-click to lock where Aetherion, Sovereign of Ash lands."
+      - "&7Use this to place the Throne of Ashes boss spawn."
+      - "&8Admin · BossEngine · Floor 3"
+    glowing: true
+    consume: false
+    cooldown-seconds: 1
+    require-altar: false
+
+  dungeon_aetherion_core:
+    boss: dungeon_aetherion
+    mode: SUMMON
+    material: DRAGON_BREATH
+    display-name: "&5Sovereign Core"
+    lore:
+      - "&7Right-click to summon Aetherion here (test)."
+      - "&8Test-Item · BossEngine · Floor 3"
+    glowing: true
+    consume: true
+    cooldown-seconds: 3
+    require-altar: false
+
   squidward_anchor:
     boss: squidward
     mode: SET_SPAWN

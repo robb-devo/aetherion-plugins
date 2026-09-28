@@ -194,6 +194,15 @@ public class BossBarHud {
         if (instance.script() != null && instance.script().ownsBossBar()) {
             return false;
         }
+        // Last Seed: whole dedicated world is the arena — always show boss HP, never quest HUD.
+        String id = instance.getTemplate().getId();
+        if ("world_eater".equalsIgnoreCase(id) || "world_eater_unbroken".equalsIgnoreCase(id)) {
+            de.aetherion.bossengine.instance.worldeater.WorldEaterSite site =
+                    de.aetherion.bossengine.instance.worldeater.WorldEaterSite.get();
+            if (site != null && site.isSiteWorld(player.getWorld())) {
+                return true;
+            }
+        }
         double distSq = player.getLocation().distanceSquared(entity.getLocation());
         boolean nearby = distSq <= VIEW_RADIUS * VIEW_RADIUS;
         boolean recent = instance.getDamageTracker().hitRecently(player.getUniqueId(), COMBAT_MEMORY_MS);

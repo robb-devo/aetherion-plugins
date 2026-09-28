@@ -1170,6 +1170,58 @@ public enum ItemProfile {
             ItemCapability.DAMAGE
     ),
 
+    WORLDHIDE_HELMET(
+            "worldhide_helmet",
+            ItemCapability.DAMAGE,
+            ItemCapability.DEFENSE,
+            ItemCapability.HEALTH,
+            ItemCapability.ATTACK_SPREAD,
+            ItemCapability.CRIT_CHANCE,
+            ItemCapability.CRIT_DAMAGE,
+            ItemCapability.SPEED
+    ),
+
+    WORLDHIDE_CHESTPLATE(
+            "worldhide_chestplate",
+            ItemCapability.DAMAGE,
+            ItemCapability.DEFENSE,
+            ItemCapability.HEALTH,
+            ItemCapability.ATTACK_SPREAD,
+            ItemCapability.CRIT_CHANCE,
+            ItemCapability.CRIT_DAMAGE,
+            ItemCapability.SPEED
+    ),
+
+    WORLDHIDE_LEGGINGS(
+            "worldhide_leggings",
+            ItemCapability.DAMAGE,
+            ItemCapability.DEFENSE,
+            ItemCapability.HEALTH,
+            ItemCapability.ATTACK_SPREAD,
+            ItemCapability.CRIT_CHANCE,
+            ItemCapability.CRIT_DAMAGE,
+            ItemCapability.SPEED
+    ),
+
+    WORLDHIDE_BOOTS(
+            "worldhide_boots",
+            ItemCapability.DAMAGE,
+            ItemCapability.DEFENSE,
+            ItemCapability.HEALTH,
+            ItemCapability.ATTACK_SPREAD,
+            ItemCapability.CRIT_CHANCE,
+            ItemCapability.CRIT_DAMAGE,
+            ItemCapability.SPEED
+    ),
+
+    WORLDBITE(
+            "worldbite",
+            ItemCapability.DAMAGE,
+            ItemCapability.ATTACK_SPREAD,
+            ItemCapability.CRIT_CHANCE,
+            ItemCapability.CRIT_DAMAGE
+    ),
+
 
     /*
      * =========================================================

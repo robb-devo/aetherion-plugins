@@ -180,6 +180,38 @@ final class SignatureDirector {
     }
 
     private void lurker(World world, Location core, LivingEntity entity) {
+        // Eyes linger above the sinking body, glancing side to side.
+        if (deathTicks < 70) {
+            double glance = Math.sin(deathTicks * 0.18) * 0.35;
+            Location eyes = core.clone().add(0, 1.0 + deathTicks * 0.032, 0);
+            Particle.DustOptions eye = new Particle.DustOptions(Color.fromRGB(90, 230, 255), 1.1f);
+            world.spawnParticle(Particle.DUST, eyes.clone().add(glance - 0.22, 0, 0), 1, 0, 0, 0, eye);
+            world.spawnParticle(Particle.DUST, eyes.clone().add(glance + 0.22, 0, 0), 1, 0, 0, 0, eye);
+        }
+        if (deathTicks == 20) {
+            world.playSound(core, Sound.BLOCK_SCULK_SHRIEKER_SHRIEK, 0.9f, 0.6f);
+        }
+        // Tendrils claw back up out of the floor toward the core.
+        if (deathTicks > 24 && deathTicks < 78 && deathTicks % 3 == 0) {
+            double yaw = ThreadLocalRandom.current().nextDouble() * Math.PI * 2;
+            Location root = core.clone().add(Math.cos(yaw) * 3.6, -1.2, Math.sin(yaw) * 3.6);
+            Vector reach = core.toVector().subtract(root.toVector()).multiply(1.0 / 8);
+            Particle.DustOptions ink = new Particle.DustOptions(Color.fromRGB(12, 30, 36), 1.3f);
+            for (int i = 0; i < 8; i++) {
+                world.spawnParticle(Particle.DUST, root.clone().add(reach.clone().multiply(i)), 1, 0.03, 0.03, 0.03, ink);
+            }
+        }
+        if (deathTicks > 80) {
+            double roll = 1.5 + (deathTicks - 80) * 0.4;
+            for (int i = 0; i < 20; i++) {
+                double angle = Math.PI * 2 * i / 20.0;
+                world.spawnParticle(Particle.SQUID_INK, core.clone().add(Math.cos(angle) * roll, -0.9, Math.sin(angle) * roll),
+                        1, 0.05, 0.02, 0.05, 0);
+            }
+            if (deathTicks % 4 == 0) {
+                world.playSound(core, Sound.BLOCK_SCULK_SENSOR_CLICKING_STOP, 0.6f, 0.5f);
+            }
+        }
         world.spawnParticle(Particle.SOUL, core, 14, 0.5, 0.35, 0.5, 0.02);
         world.spawnParticle(Particle.SCULK_SOUL, core.clone().add(0, -0.4, 0), 8, 0.4, 0.15, 0.4, 0.01);
         double ring = Math.max(0.6, 4.2 - deathTicks * 0.045);
@@ -202,6 +234,30 @@ final class SignatureDirector {
     }
 
     private void skull(World world, Location core, LivingEntity entity) {
+        // Bones orbit tighter as the last volleys come home.
+        if (deathTicks < 88) {
+            double orbit = 2.6 - deathTicks * 0.022;
+            for (int i = 0; i < 4; i++) {
+                double angle = deathTicks * 0.22 + i * Math.PI / 2;
+                world.spawnParticle(Particle.ITEM, core.clone().add(Math.cos(angle) * orbit, 0.3 * Math.sin(deathTicks * 0.3 + i), Math.sin(angle) * orbit),
+                        1, 0, 0, 0, 0, new ItemStack(Material.BONE));
+            }
+        }
+        if (deathTicks >= 56 && deathTicks < 88) {
+            Location skullAt = core.clone().add(0, 1.1, 0);
+            world.spawnParticle(Particle.SOUL_FIRE_FLAME, skullAt.clone().add(0.18, 0, 0), 1, 0.01, 0.01, 0.01, 0);
+            world.spawnParticle(Particle.SOUL_FIRE_FLAME, skullAt.clone().add(-0.18, 0, 0), 1, 0.01, 0.01, 0.01, 0);
+            if (deathTicks == 56) {
+                world.playSound(core, Sound.ENTITY_WITHER_SKELETON_AMBIENT, 1.0f, 0.5f);
+            }
+        }
+        if (deathTicks > 88) {
+            world.spawnParticle(Particle.WHITE_ASH, core.clone().add(0, 3.0, 0), 30, 3.5, 0.6, 3.5, 0);
+            world.spawnParticle(Particle.SMALL_FLAME, core.clone().add(0, -0.6, 0), 3, 1.4, 0.1, 1.4, 0.01);
+            if (deathTicks % 6 == 0) {
+                world.playSound(core, Sound.BLOCK_FIRE_AMBIENT, 0.7f, 0.6f);
+            }
+        }
         world.spawnParticle(Particle.FLAME, core, 10, 0.6, 0.5, 0.6, 0.02);
         if (deathTicks % 5 == 0) {
             double yaw = ThreadLocalRandom.current().nextDouble() * Math.PI * 2;
@@ -217,6 +273,8 @@ final class SignatureDirector {
             world.spawnParticle(Particle.ITEM, core, 28, 0.8, 0.6, 0.8, 0.12, new ItemStack(Material.BONE));
             world.playSound(core, Sound.ENTITY_BLAZE_DEATH, 1.1f, 0.55f);
             world.playSound(core, Sound.ENTITY_SKELETON_DEATH, 1.0f, 0.5f);
+            world.playSound(core, Sound.BLOCK_BONE_BLOCK_BREAK, 1.2f, 0.6f);
+            FakeDestruction.blockBurst(world, core, Material.BONE_BLOCK, 12);
         }
         scaleToward(entity, 0.5);
     }
@@ -228,6 +286,25 @@ final class SignatureDirector {
         AttributeUtil.setBase(entity, AttributeUtil.scale(), inflate);
         if (deathTicks % 8 == 0) {
             world.playSound(core, Sound.ENTITY_CHICKEN_AMBIENT, 0.8f, 0.55f + deathTicks * 0.006f);
+        }
+        // Fryer timer: oil spits, beeps speed up until the DING.
+        if (deathTicks < 82) {
+            world.spawnParticle(Particle.DRIPPING_HONEY, core.clone().add(0, -0.3, 0), 2, 0.8, 0.3, 0.8, 0);
+            if (deathTicks % 7 == 0) {
+                world.playSound(core, Sound.BLOCK_FIRE_EXTINGUISH, 0.35f, 1.8f);
+            }
+            int beepGap = deathTicks < 50 ? 12 : deathTicks < 70 ? 6 : 3;
+            if (deathTicks % beepGap == 0) {
+                world.playSound(core, Sound.BLOCK_NOTE_BLOCK_BIT, 0.7f, 1.2f + deathTicks * 0.008f);
+            }
+        }
+        if (deathTicks == 82) {
+            world.playSound(core, Sound.BLOCK_NOTE_BLOCK_BELL, 1.4f, 1.9f);
+            world.spawnParticle(Particle.ITEM, core, 24, 0.8, 0.6, 0.8, 0.18, new ItemStack(Material.GOLD_NUGGET));
+        }
+        if (deathTicks > 82) {
+            world.spawnParticle(Particle.ITEM, core.clone().add(0, 2.2, 0), 3, 1.6, 0.3, 1.6, 0.0, new ItemStack(Material.FEATHER));
+            world.spawnParticle(Particle.WAX_ON, core, 2, 0.8, 0.5, 0.8, 0.02);
         }
         if (deathTicks == 82) {
             world.spawnParticle(Particle.CLOUD, core, 40, 1.1, 0.8, 1.1, 0.08);
@@ -567,7 +644,9 @@ final class SignatureDirector {
         static Theme of(String id) {
             String key = id == null ? "" : id.toLowerCase(Locale.ROOT);
             return switch (key) {
-                case "aetherion", "dungeon_aetherion", "sparky", "dungeon_frostbound", "pathwarden" -> NONE;
+                case "aetherion", "dungeon_aetherion", "sparky", "dungeon_frostbound", "pathwarden",
+                        "hollow_sun", "hanging_saint",
+                        AshesEliteDirector.CHAINWARDEN, AshesEliteDirector.HERALD -> NONE;
                 case "aether_colossus" -> COLOSSUS;
                 case "hollow_lurker" -> LURKER;
                 case "skuldugery" -> SKULL;

@@ -77,8 +77,19 @@ public class BossInstance {
     private final SparkyDirector sparkyDirector = new SparkyDirector(this);
     private final FrostboundDirector frostboundDirector = new FrostboundDirector(this);
     private final PathwardenDirector pathwardenDirector = new PathwardenDirector(this);
+    private final AshesEliteDirector eliteDirector = new AshesEliteDirector(this);
+    private final AshenSheathDirector ashenSheathDirector = new AshenSheathDirector(this);
+    private int ashenParries;
+    private final HollowSunDirector hollowSunDirector = new HollowSunDirector(this);
+    private final AshenSovereignDirector sovereignDirector = new AshenSovereignDirector(this);
     private final SignatureDirector signatureDirector = new SignatureDirector(this);
     private final SandboxDirector sandboxDirector = new SandboxDirector(this);
+    private final de.aetherion.bossengine.instance.saint.HangingSaintDirector saintDirector =
+            new de.aetherion.bossengine.instance.saint.HangingSaintDirector(this);
+    private final de.aetherion.bossengine.instance.worldeater.UnbrokenDirector unbrokenDirector =
+            new de.aetherion.bossengine.instance.worldeater.UnbrokenDirector(this);
+    private final de.aetherion.bossengine.instance.worldeater.WorldEaterDirector worldEaterDirector =
+            new de.aetherion.bossengine.instance.worldeater.WorldEaterDirector(this);
     private final TransitionSpectacles spectacles = new TransitionSpectacles(this);
     /** Fully scripted encounter body (see {@link BossScript}); null for classic YAML bosses. */
     private final BossScript script;
@@ -119,6 +130,11 @@ public class BossInstance {
     private int missingBodyTicks;
     private long suppressBodyRestoreUntilMs;
     private boolean bodyUnloaded;
+    /** Wall-clock of last real combat damage. Idle regen starts after {@link #IDLE_REGEN_AFTER_MS}. */
+    private long lastDamagedAtMs = System.currentTimeMillis();
+    private static final long IDLE_REGEN_AFTER_MS = 30_000L;
+    /** ~0.5% of max HP per second while idle. */
+    private static final double IDLE_REGEN_PER_TICK = 0.005 / 20.0;
     private static final ThreadLocal<BossInstance> STORM_BOLT_SOURCE = new ThreadLocal<>();
     private static final ThreadLocal<Double> STORM_BOLT_DAMAGE = new ThreadLocal<>();
 
@@ -291,7 +307,14 @@ public class BossInstance {
             dragonDirector.onBind();
             frostboundDirector.onBind();
             pathwardenDirector.onBind();
+            eliteDirector.onBind();
+            ashenSheathDirector.onBind();
+            hollowSunDirector.onBind();
+            sovereignDirector.onBind();
             sandboxDirector.onBind();
+            saintDirector.onBind();
+            unbrokenDirector.onBind();
+            worldEaterDirector.onBind();
             if (script != null) {
                 script.onBind();
             }
@@ -331,12 +354,19 @@ public class BossInstance {
             dragonDirector.onBind();
             frostboundDirector.onBind();
             pathwardenDirector.onBind();
+            eliteDirector.onBind();
+            ashenSheathDirector.onBind();
+            hollowSunDirector.onBind();
+            sovereignDirector.onBind();
             sandboxDirector.onBind();
+            saintDirector.onBind();
+            unbrokenDirector.onBind();
+            worldEaterDirector.onBind();
             if (script != null) {
                 script.onBind();
             }
             // Soft-arena bosses stay where they were — never blink home on rebind.
-            if (script == null && !refusesHardArenaSnap()) {
+            if (script == null && !refusesHardArenaSnap() && !saintDirector.isMine() && !ownsWorldEaterBody()) {
                 snapToArena();
             }
             clearBodyUnloaded();
@@ -408,10 +438,32 @@ public class BossInstance {
         return entity != null && entity.isValid() && !entity.isDead();
     }
 
+    /** World Eater only: where the Bonus Chest generates once it has eaten itself, else null. */
+    public Location getWorldEaterChestSpot() {
+        return worldEaterDirector.chestSpot();
+    }
+
+    /** The Unbroken and the World Eater fly their own bodies: no snaps, leashes or unsticking. */
+    private boolean ownsWorldEaterBody() {
+        return unbrokenDirector.isMine() || worldEaterDirector.isMine();
+    }
+
+    /** Hanging Saint only: floor center of her built stage (loot music box lands there), else null. */
+    public Location getSaintStageCenter() {
+        return saintDirector.stageCenter();
+    }
+
     public boolean isCinematicDying() {
         return state == BossState.ALIVE && (dragonDirector.isDying() || sparkyDirector.isDying()
                 || frostboundDirector.isDying() || pathwardenDirector.isDying()
+                || eliteDirector.isDying()
+                || ashenSheathDirector.isDying()
+                || hollowSunDirector.isDying()
+                || sovereignDirector.isDying()
                 || signatureDirector.isDying()
+                || saintDirector.isDying()
+                || unbrokenDirector.isDying()
+                || worldEaterDirector.isDying()
                 || (script != null && script.isDying()));
     }
 
@@ -420,8 +472,15 @@ public class BossInstance {
         sparkyDirector.abort();
         frostboundDirector.abort();
         pathwardenDirector.abort();
+        eliteDirector.abort();
+        ashenSheathDirector.abort();
+        hollowSunDirector.abort();
+        sovereignDirector.abort();
         signatureDirector.abort();
         sandboxDirector.abort();
+        saintDirector.abort();
+        unbrokenDirector.abort();
+        worldEaterDirector.abort();
         if (script != null) {
             script.abort();
         }
@@ -462,7 +521,14 @@ public class BossInstance {
         lightningStormActive = false;
         blackHoleActive = false;
         spectacles.finish();
+        ashenSheathDirector.abort();
+        hollowSunDirector.abort();
+        sovereignDirector.abort();
+        eliteDirector.clearFx();
         de.aetherion.bossengine.skill.t2.T2Mechanics.clearInstanceProps(this);
+        saintDirector.clear();
+        unbrokenDirector.clear();
+        worldEaterDirector.clear();
         if (script != null) {
             script.abort();
         }
@@ -496,7 +562,16 @@ public class BossInstance {
                 || sparkyDirector.isDying()
                 || frostboundDirector.isDying()
                 || pathwardenDirector.isDying()
+                || eliteDirector.isDying()
+                || ashenSheathDirector.isDying()
+                || hollowSunDirector.isDying()
+                || hollowSunDirector.blocksDamage()
+                || sovereignDirector.isDying()
+                || sovereignDirector.blocksDamage()
                 || signatureDirector.isDying()
+                || saintDirector.blocksDamage()
+                || unbrokenDirector.blocksDamage()
+                || worldEaterDirector.blocksDamage()
                 || sandboxDirector.blocksDamage()
                 || (script != null && (script.isDying() || script.blocksDamage()))
                 || de.aetherion.bossengine.skill.t2.T2Mechanics.isBurrowing(this);
@@ -546,6 +621,13 @@ public class BossInstance {
         }
         if (dragonDirector.beginDeath() || sparkyDirector.beginDeath()
                 || frostboundDirector.beginDeath() || pathwardenDirector.beginDeath()
+                || eliteDirector.beginDeath()
+                || ashenSheathDirector.beginDeath()
+                || hollowSunDirector.beginDeath()
+                || sovereignDirector.beginDeath()
+                || saintDirector.beginDeath()
+                || unbrokenDirector.beginDeath()
+                || worldEaterDirector.beginDeath()
                 || signatureDirector.beginDeath()) {
             return true;
         }
@@ -565,6 +647,15 @@ public class BossInstance {
         if (isDamageBlocked()) {
             return false;
         }
+        amount = hollowSunDirector.scaleIncoming(amount);
+        hollowSunDirector.onDamaged(amount);
+        amount = sovereignDirector.scaleIncoming(amount);
+        sovereignDirector.onDamaged(amount);
+        amount = unbrokenDirector.scaleIncoming(amount);
+        unbrokenDirector.onDamaged(amount);
+        amount = worldEaterDirector.scaleIncoming(amount);
+        worldEaterDirector.onDamaged(amount);
+        lastDamagedAtMs = System.currentTimeMillis();
 
         BossPhase next = nextSequentialPhase();
         if (next != null) {
@@ -642,9 +733,37 @@ public class BossInstance {
             ticksAlive++;
             return pathwardenDirector.tick();
         }
+        if (eliteDirector.isDying()) {
+            ticksAlive++;
+            return eliteDirector.tick();
+        }
+        if (ashenSheathDirector.isDying()) {
+            ticksAlive++;
+            return ashenSheathDirector.tick();
+        }
+        if (hollowSunDirector.isDying()) {
+            ticksAlive++;
+            return hollowSunDirector.tick();
+        }
+        if (sovereignDirector.isDying()) {
+            ticksAlive++;
+            return sovereignDirector.tick();
+        }
         if (signatureDirector.isDying()) {
             ticksAlive++;
             return signatureDirector.tick();
+        }
+        if (saintDirector.isDying()) {
+            ticksAlive++;
+            return saintDirector.tick();
+        }
+        if (unbrokenDirector.isDying()) {
+            ticksAlive++;
+            return unbrokenDirector.tick();
+        }
+        if (worldEaterDirector.isDying()) {
+            ticksAlive++;
+            return worldEaterDirector.tick();
         }
         if (!isAlive()) {
             return false;
@@ -659,7 +778,14 @@ public class BossInstance {
         unstickIfNeeded();
         frostboundDirector.tick();
         pathwardenDirector.tick();
+        eliteDirector.tick();
+        ashenSheathDirector.tick();
+        hollowSunDirector.tick();
+        sovereignDirector.tick();
         sandboxDirector.tick();
+        saintDirector.tick();
+        unbrokenDirector.tick();
+        worldEaterDirector.tick();
         if (ticksAlive == 20 || ticksAlive == 100) {
             SkeletonUtil.prepareBoss(entity);
             if (entity instanceof org.bukkit.entity.PiglinAbstract piglin) {
@@ -687,6 +813,7 @@ public class BossInstance {
         tickLightningStorm();
         tickBlackHole();
         tickOverheat();
+        tickIdleRegen();
         de.aetherion.bossengine.skill.t2.T2Mechanics.tickBurrow(this);
         checkPhase();
         tickTimerSkills();
@@ -716,6 +843,22 @@ public class BossInstance {
             checkPhase();
         }
         return finished;
+    }
+
+    private void tickIdleRegen() {
+        if (ownsWorldEaterBody()) {
+            return;
+        }
+        if (isCinematicDying() || isTransitioning() || isDamageBlocked()) {
+            return;
+        }
+        if (combatHealth >= combatMaxHealth - 0.01) {
+            return;
+        }
+        if (System.currentTimeMillis() - lastDamagedAtMs < IDLE_REGEN_AFTER_MS) {
+            return;
+        }
+        healCombat(combatMaxHealth * IDLE_REGEN_PER_TICK);
     }
 
     public void armSlam(double radius, double damage) {
@@ -821,7 +964,26 @@ public class BossInstance {
             if (transition.isFreezeAi() && entity instanceof Mob mob) {
                 mob.setAI(false);
             }
-            if (transition.getShape() == TransitionShape.HOVER_STORM) {
+            if (saintDirector.ownsTransition() || unbrokenDirector.ownsTransition() || worldEaterDirector.ownsTransition()) {
+                // Hanging Saint, the Unbroken and the World Eater stage their own transitions.
+                return;
+            }
+            if (hollowSunDirector.isMine()) {
+                hollowSunDirector.beginTransition(next);
+            } else if (sovereignDirector.isMine()) {
+                sovereignDirector.beginTransition(next);
+            } else if (ashenSheathDirector.isAshen()) {
+                // Cherry wood and leaves only. A bad shape must not play the shredder beacon.
+                if (transition.getShape() == TransitionShape.CHERRY_TORNADO) {
+                    entity.getWorld().playSound(entity.getLocation(), Sound.BLOCK_CHERRY_LEAVES_BREAK, 1.15f, 0.55f);
+                    entity.getWorld().playSound(entity.getLocation(), Sound.ITEM_TRIDENT_THUNDER, 0.7f, 1.45f);
+                    entity.getWorld().playSound(entity.getLocation(), Sound.BLOCK_CHERRY_WOOD_STEP, 0.8f, 0.6f);
+                } else {
+                    entity.getWorld().playSound(entity.getLocation(), Sound.BLOCK_CHERRY_WOOD_STEP, 1.0f, 0.6f);
+                    entity.getWorld().playSound(entity.getLocation(), Sound.BLOCK_CHERRY_LEAVES_BREAK, 1.05f, 0.7f);
+                    entity.getWorld().playSound(entity.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, 0.7f, 0.55f);
+                }
+            } else if (transition.getShape() == TransitionShape.HOVER_STORM) {
                 // Walk phase keeps gravity/AI feel; lift starts once he reaches center.
                 entity.setGlowing(true);
                 entity.setFallDistance(0);
@@ -852,7 +1014,7 @@ public class BossInstance {
             } else if (transition.getShape() == TransitionShape.BEAM_SPIN) {
                 entity.getWorld().playSound(entity.getLocation(), Sound.BLOCK_BEACON_ACTIVATE, 1.15f, 0.55f);
                 entity.getWorld().playSound(entity.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 0.8f, 0.7f);
-            } else {
+            } else if (!de.aetherion.bossengine.fx.CombatTheatrics.transitionStart(this, entity.getLocation())) {
                 entity.getWorld().playSound(entity.getLocation(), Sound.ENTITY_WITHER_SPAWN, 0.85f, 0.55f);
             }
         }
@@ -870,8 +1032,18 @@ public class BossInstance {
         }
         transitionTick++;
         double progress = (double) transitionTick / Math.max(1, transition.getDurationTicks());
-        if (transition.getShape() == TransitionShape.HOVER_STORM) {
+        if (saintDirector.ownsTransition() || unbrokenDirector.ownsTransition() || worldEaterDirector.ownsTransition()) {
+            // Choreography runs inside the director's tick(); only the timer lives here.
+        } else if (hollowSunDirector.isMine()) {
+            // The director flies the body for the whole transition; no phase-return snap.
+            hollowSunDirector.tickTransition(transitionTick, transition.getDurationTicks());
+        } else if (sovereignDirector.isMine()) {
+            sovereignDirector.tickTransition(transitionTick, transition.getDurationTicks());
+        } else if (transition.getShape() == TransitionShape.HOVER_STORM) {
             tickHoverStorm(transition, progress);
+            if (entity != null && de.aetherion.bossengine.fx.TierPhaseShow.owns(this)) {
+                de.aetherion.bossengine.fx.CombatTheatrics.transitionPulse(this, entity.getLocation(), transitionTick, transition.getDurationTicks());
+            }
         } else if (transition.getShape() == TransitionShape.INK_SPIN) {
             tickInkSpin(transition, progress);
         } else if (transition.getShape() == TransitionShape.FIRE_SPIRAL) {
@@ -883,6 +1055,14 @@ public class BossInstance {
         } else if (transition.getShape() == TransitionShape.BLACK_HOLE) {
             tickPhaseReturn(progress);
             dragonDirector.tickBlackHole(transition, transitionTick, transition.getDurationTicks());
+        } else if (ashenSheathDirector.isAshen()) {
+            // Ashen Sheath never falls through to the crystal beams or the portal tornado.
+            tickPhaseReturn(progress);
+            if (transition.getShape() == TransitionShape.CHERRY_TORNADO) {
+                ashenSheathDirector.tickCherryTornado(hazardFocus(transitionTick <= 1), transitionTick, transition.getDurationTicks());
+            } else {
+                ashenSheathDirector.tickPetalDraw(hazardFocus(transitionTick <= 1), transitionTick, transition.getDurationTicks());
+            }
         } else if (transition.getShape() == TransitionShape.VOID_TORNADO) {
             tickPhaseReturn(progress);
             spectacles.tickVoidTornado(transition, transitionTick, transition.getDurationTicks());
@@ -891,13 +1071,25 @@ public class BossInstance {
             spectacles.tickBeamSpin(transition, transitionTick, transition.getDurationTicks());
         } else {
             tickPhaseReturn(progress);
-            drawTransition(transition, progress);
+            if (!de.aetherion.bossengine.fx.TierPhaseShow.owns(this)) {
+                drawTransition(transition, progress);
+            }
+            if (entity != null) {
+                de.aetherion.bossengine.fx.CombatTheatrics.transitionPulse(this, entity.getLocation(), transitionTick, transition.getDurationTicks());
+            }
         }
         if (transitionTick >= transition.getDurationTicks()) {
             if (transition.getShape() == TransitionShape.HOVER_STORM) {
                 finishHoverStorm(transition);
             }
+            if (entity != null) {
+                de.aetherion.bossengine.fx.CombatTheatrics.transitionEnd(this, entity.getLocation());
+            }
+            de.aetherion.bossengine.fx.TierPhaseShow.clear(this);
             spectacles.finish();
+            ashenSheathDirector.clearLeafTornado();
+            hollowSunDirector.finishTransition();
+            sovereignDirector.finishTransition();
             explodeTransition(transition);
             completePhase(pendingPhase);
         }
@@ -916,7 +1108,7 @@ public class BossInstance {
             }
             if (isTransitioning()) {
                 if (finished == null || !finished.isExplode()) {
-                    if (!(entity instanceof org.bukkit.entity.EnderDragon)) {
+                    if (!(entity instanceof org.bukkit.entity.EnderDragon) && !hollowSunDirector.isMine() && !ownsWorldEaterBody()) {
                         entity.getWorld().playSound(entity.getLocation(), Sound.ENTITY_ZOMBIE_BREAK_WOODEN_DOOR, 1.2f, 0.55f);
                     }
                 }
@@ -1031,16 +1223,26 @@ public class BossInstance {
         if (world == null) {
             return;
         }
-        world.playSound(center, Sound.ENTITY_GENERIC_EXPLODE, 1.35f, 0.7f);
-        world.playSound(center, Sound.BLOCK_ANVIL_LAND, 1.15f, 0.65f);
-        world.playSound(center, Sound.ITEM_FIRECHARGE_USE, 1.2f, 0.55f);
+        boolean blossoms = transition.getShape() == TransitionShape.CHERRY_TORNADO;
+        world.playSound(center, blossoms ? Sound.ITEM_TRIDENT_THUNDER : Sound.ENTITY_GENERIC_EXPLODE, 1.05f, blossoms ? 1.35f : 0.7f);
+        world.playSound(center, blossoms ? Sound.BLOCK_CHERRY_LEAVES_BREAK : Sound.BLOCK_ANVIL_LAND, 1.15f, blossoms ? 0.5f : 0.65f);
+        world.playSound(center, blossoms ? Sound.ENTITY_PLAYER_ATTACK_SWEEP : Sound.ITEM_FIRECHARGE_USE, 1.2f, blossoms ? 0.45f : 0.55f);
         world.spawnParticle(Particle.EXPLOSION_EMITTER, center, 1, 0, 0, 0, 0);
-        world.spawnParticle(Particle.FLAME, center, 90, 1.1, 1.1, 1.1, 0.08);
-        world.spawnParticle(Particle.LAVA, center, 28, 0.9, 0.9, 0.9, 0);
-        world.spawnParticle(Particle.ELECTRIC_SPARK, center, 40, 1.4, 0.4, 1.4, 0.15);
+        boolean quiet = de.aetherion.bossengine.fx.TierPhaseShow.owns(this);
+        if (blossoms) {
+            world.spawnParticle(Particle.CHERRY_LEAVES, center, 80, 1.3, 1.1, 1.3, 0.08);
+            world.spawnParticle(Particle.CHERRY_LEAVES, center.clone().add(0, 1.6, 0), 36, 0.6, 0.9, 0.6, 0.04);
+            world.spawnParticle(Particle.FLASH, center, 1, 0, 0, 0, 0);
+        } else if (!quiet) {
+            world.spawnParticle(Particle.FLAME, center, 90, 1.1, 1.1, 1.1, 0.08);
+            world.spawnParticle(Particle.LAVA, center, 28, 0.9, 0.9, 0.9, 0);
+            world.spawnParticle(Particle.ELECTRIC_SPARK, center, 40, 1.4, 0.4, 1.4, 0.15);
+        }
 
         double radius = transition.getExplodeRadius();
-        drawShockwaveRing(center, radius, transition.getParticle());
+        if (!quiet) {
+            drawShockwaveRing(center, radius, transition.getParticle());
+        }
         double damage = scaleDamage(transition.getExplodeDamage());
         double knockback = transition.getExplodeKnockback();
         double radiusSq = radius * radius;
@@ -1125,9 +1327,11 @@ public class BossInstance {
             entity.setFallDistance(0);
 
             Location aura = dest.clone().add(0, entity.getHeight() * 0.55, 0);
-            world.spawnParticle(Particle.ELECTRIC_SPARK, aura, 10, 0.55, 0.7, 0.55, 0.08);
-            world.spawnParticle(Particle.END_ROD, aura, 3, 0.35, 0.45, 0.35, 0.01);
-            world.spawnParticle(Particle.SOUL_FIRE_FLAME, dest.clone().add(0, 0.2, 0), 4, 0.4, 0.1, 0.4, 0.01);
+            if (!de.aetherion.bossengine.fx.TierPhaseShow.owns(this)) {
+                world.spawnParticle(Particle.ELECTRIC_SPARK, aura, 10, 0.55, 0.7, 0.55, 0.08);
+                world.spawnParticle(Particle.END_ROD, aura, 3, 0.35, 0.45, 0.35, 0.01);
+                world.spawnParticle(Particle.SOUL_FIRE_FLAME, dest.clone().add(0, 0.2, 0), 4, 0.4, 0.1, 0.4, 0.01);
+            }
 
             int hoverStart = Math.max(1, (int) Math.round(transition.getDurationTicks() * 0.38));
             int hoverEnd = Math.max(hoverStart + 8, (int) Math.round(transition.getDurationTicks() * 0.82));
@@ -1884,15 +2088,59 @@ public class BossInstance {
         if (entity instanceof org.bukkit.entity.Wither wither && wither.getInvulnerabilityTicks() > 0) {
             wither.setInvulnerabilityTicks(0);
         }
-        if (frostboundDirector.reflecting() && entity instanceof Mob mob) {
+        if ((frostboundDirector.reflecting() || ashenSheathDirector.holdsBody()) && entity instanceof Mob mob) {
             mob.setAI(false);
             mob.setAware(false);
             return;
         }
+        if (hollowSunDirector.holdsBody()) {
+            if (entity instanceof Mob mob) {
+                mob.setAI(false);
+                mob.setAware(false);
+            }
+            if (!isTransitioning() && phaseArmorTicks <= 0 && !hollowSunDirector.isDying() && entity.isInvulnerable()) {
+                entity.setInvulnerable(false);
+            }
+            return;
+        }
+        if (sovereignDirector.holdsBody()) {
+            // Wings only animate with AI on; awareness off keeps vanilla from steering.
+            if (entity instanceof Mob mob) {
+                mob.setAware(false);
+            }
+            if (!isTransitioning() && phaseArmorTicks <= 0 && !sovereignDirector.isDying()
+                    && !sovereignDirector.blocksDamage() && entity.isInvulnerable()) {
+                entity.setInvulnerable(false);
+            }
+            return;
+        }
+        if (saintDirector.ownsBody()) {
+            if (entity instanceof Mob mob) {
+                mob.setAI(false);
+                mob.setAware(false);
+            }
+            return;
+        }
+        if (unbrokenDirector.ownsBody() || worldEaterDirector.ownsBody()) {
+            if (entity instanceof Mob mob) {
+                mob.setAI(false);
+                mob.setAware(false);
+            }
+            // Must stay collidable: arrows/projectiles otherwise pass through the
+            // invisible hitbox while melee still registers. AI-off + zero velocity
+            // already keeps them from shoving players around.
+            if (!entity.isCollidable()) {
+                entity.setCollidable(true);
+            }
+            return;
+        }
         boolean locked = isTransitioning()
+                || saintDirector.ownsBody()
                 || de.aetherion.bossengine.skill.t2.T2Mechanics.isBurrowing(this)
                 || frostboundDirector.isDying()
                 || pathwardenDirector.isDying()
+                || eliteDirector.isDying()
+                || ashenSheathDirector.isDying()
                 || sparkyDirector.isDying()
                 || signatureDirector.isDying()
                 || dragonDirector.isDying();
@@ -2017,6 +2265,14 @@ public class BossInstance {
             // Cave boss: zero leash, zero pulls, zero ports.
             return;
         }
+        if (saintDirector.isMine()) {
+            // Stage fight: the director owns her seat; leash would yank the husk off the boards.
+            return;
+        }
+        if (ownsWorldEaterBody()) {
+            // The body is only a hitbox riding the director's animation.
+            return;
+        }
         if (isTransitioning()) {
             return;
         }
@@ -2049,6 +2305,11 @@ public class BossInstance {
      * These bosses must never blink home (cave walls / bridge falls used to
      * call {@link #snapToArena()} and look identical to a leash warp).
      */
+    /** Vanilla body contact must not hit: every hit from this boss comes from a telegraphed move. */
+    public boolean suppressesContactHits() {
+        return sovereignDirector.isMine();
+    }
+
     private boolean refusesHardArenaSnap() {
         if (template == null) {
             return false;
@@ -2095,7 +2356,8 @@ public class BossInstance {
         if (entity != null) {
             lastSeenLocation = entity.getLocation().clone();
         }
-        suppressBodyRestore(2_500L);
+        // Hold long enough that leave/rejoin can reload the same body before any replacement.
+        suppressBodyRestore(8_000L);
     }
 
     public boolean isBodyUnloaded() {
@@ -2327,9 +2589,15 @@ public class BossInstance {
     private void applySlimeSize() {
         if (entity instanceof org.bukkit.entity.MagmaCube cube) {
             // Size drives the real collision box; keep Sparky wide enough to hit from mid-range.
-            int size = "sparky".equalsIgnoreCase(template.getId())
-                    ? Math.max(7, (int) Math.round(template.getAttributes().getScale() * 2.4))
-                    : Math.max(6, (int) Math.round(template.getAttributes().getScale() * 2.8));
+            // World Eater's hitbox rides the skull — a bit wider so bows can actually land.
+            int size;
+            if ("sparky".equalsIgnoreCase(template.getId())) {
+                size = Math.max(7, (int) Math.round(template.getAttributes().getScale() * 2.4));
+            } else if ("world_eater".equalsIgnoreCase(template.getId())) {
+                size = Math.max(8, (int) Math.round(template.getAttributes().getScale() * 4.0));
+            } else {
+                size = Math.max(6, (int) Math.round(template.getAttributes().getScale() * 2.8));
+            }
             cube.setSize(size);
         } else if (entity instanceof org.bukkit.entity.Slime slime) {
             slime.setSize(Math.max(5, (int) Math.round(template.getAttributes().getScale() * 2.4)));
@@ -2365,7 +2633,8 @@ public class BossInstance {
     }
 
     private void unstickIfNeeded() {
-        if (entity == null || !entity.isValid()) {
+        if (entity == null || !entity.isValid() || sovereignDirector.holdsBody() || saintDirector.ownsBody()
+                || unbrokenDirector.ownsBody() || worldEaterDirector.ownsBody()) {
             return;
         }
         if (isHollowLurker()) {
@@ -2435,6 +2704,26 @@ public class BossInstance {
 
     public boolean frostReflects() {
         return frostboundDirector.reflecting();
+    }
+
+    void resetAshenParries() {
+        ashenParries = 0;
+    }
+
+    int ashenParries() {
+        return ashenParries;
+    }
+
+    public boolean ashenAwaitsStrike() {
+        return ashenSheathDirector.parrying();
+    }
+
+    public boolean tryAshenParry(Player striker) {
+        if (!ashenSheathDirector.tryParry(striker)) {
+            return false;
+        }
+        ashenParries++;
+        return true;
     }
 
     public void reflectFrost(Player player, double incoming) {
