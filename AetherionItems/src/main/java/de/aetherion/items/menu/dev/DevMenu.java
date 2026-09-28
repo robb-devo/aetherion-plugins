@@ -105,7 +105,12 @@ public class DevMenu {
         FARM_ISLE_NPCS,
         FARM_ISLE_PROPS,
         FARM_ISLE_EVENTS,
-        FARM_ISLE_PROGRESS
+        FARM_ISLE_PROGRESS,
+        FISH_ISLE,
+        FISH_ISLE_SPOTS,
+        FISH_ISLE_NPCS,
+        FISH_ISLE_EVENTS,
+        FISH_ISLE_PROGRESS
     }
 
     private final CustomItem customItem;
@@ -118,6 +123,7 @@ public class DevMenu {
     private final CryptHologramService cryptHolograms;
     private final BuildingBannerService buildingBanners;
     private final FarmIsleDevPages farmIsle;
+    private final FishIsleDevPages fishIsle;
 
     public DevMenu(
             CustomItem customItem,
@@ -140,6 +146,7 @@ public class DevMenu {
         this.cryptHolograms = cryptHolograms;
         this.buildingBanners = buildingBanners;
         this.farmIsle = new FarmIsleDevPages(customItem);
+        this.fishIsle = new FishIsleDevPages(customItem);
     }
 
     public static boolean canUse(Player player) {
@@ -171,6 +178,8 @@ public class DevMenu {
             drawIsleWeather(inventory, player);
         } else if (FarmIsleDevPages.owns(page)) {
             farmIsle.draw(inventory, page, player);
+        } else if (FishIsleDevPages.owns(page)) {
+            fishIsle.draw(inventory, page, player);
         } else {
             drawPage(inventory, page, target, Math.max(0, index));
         }
@@ -210,6 +219,15 @@ public class DevMenu {
             Page current = player.getOpenInventory().getTopInventory().getHolder() instanceof Holder holder
                     ? holder.page() : Page.FARM_ISLE;
             Page reopen = farmIsle.handle(player, action, click, current);
+            if (reopen != null) {
+                open(player, reopen);
+            }
+            return;
+        }
+        if (action.startsWith(FishIsleDevPages.PREFIX)) {
+            Page current = player.getOpenInventory().getTopInventory().getHolder() instanceof Holder holder
+                    ? holder.page() : Page.FISH_ISLE;
+            Page reopen = fishIsle.handle(player, action, click, current);
             if (reopen != null) {
                 open(player, reopen);
             }
@@ -860,9 +878,10 @@ public class DevMenu {
                     "§7Eldervale hub: teleports · NPC cast ·",
                     "§7props · events · skills · resets.",
                     "§8Legacy portal tools live inside."));
-            inventory.setItem(43, button(Material.GRINDSTONE, "§6Millstone", "page:MILLSTONE",
-                    "§7Farm Isle mill + pantry loop.",
-                    "§7Anchor · crops · spheres · treats · NPC."));
+            inventory.setItem(43, button(Material.FISHING_ROD, "§b§lFishing Island", "page:FISH_ISLE",
+                    "§7Eldervale lake: teleports · NPC cast ·",
+                    "§7shoal · lake events · the line · Log.",
+                    "§8Millstone moved to page 2."));
         } else {
             // Page 2 — admin / test (inner columns 10–16 / 19–25 only)
             inventory.setItem(10, button(Material.NAME_TAG, "§6Ranks", "page:RANKS", "§7Account ranks."));
@@ -885,6 +904,10 @@ public class DevMenu {
             inventory.setItem(23, button(Material.PLAYER_HEAD, "§bTestbots", "page:TESTBOTS",
                     "§7QA bots · Wave 1 + combat/fish/trade/quest/pad.",
                     "§7Start/stop from here. §f/botreport"));
+            inventory.setItem(24, button(Material.GRINDSTONE, "§6Millstone", "page:MILLSTONE",
+                    "§7Farm Isle mill + pantry loop.",
+                    "§7Anchor · crops · spheres · treats · NPC.",
+                    "§8Also inside Farming Island."));
         }
 
         drawBorderNav(inventory, page, 2, "ROOT");

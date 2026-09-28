@@ -643,6 +643,21 @@ public final class SkillMenu implements Listener {
             }
             case MARKET_DAY -> lines.add(Effect.stat("Order coins", Math.min(60.0, 15.0 * scale), "+", "%"));
             case FISH_LEDGER -> compactLines(lines, "Cod Compact", "Compacted Cod", level, tier, "cod");
+            case LAKE_SENSE -> lines.add(Effect.hint("Stats apply on Fishing Eldervale only."));
+            case STEADY_LINE -> {
+                lines.add(Effect.hint("Gold cell two wide on Fishing Eldervale."));
+                lines.add(Effect.stat("Boiling streak save", 25.0 + 25.0 * Math.min(1.0, scale / 3.0), "", "%"));
+            }
+            case TALL_TALES -> {
+                lines.add(Effect.stat("Rare & legendary bites", 50.0 * Math.min(1.0, scale / 3.0), "+", "%"));
+                lines.add(Effect.hint(scale >= 1.5 ? "Fish weigh in heavier (extra weight roll)."
+                        : "Extra weight roll from about Lv. 40."));
+            }
+            case TIDE_READER -> {
+                lines.add(Effect.stat("Shoal wait", 24.0 * Math.min(1.0, scale / 3.0), "-", "%"));
+                lines.add(Effect.hint("On top of the shoal's own half wait."));
+                lines.add(Effect.hint("Wake arrow to the shoal while you hold a rod."));
+            }
             case QUICK_HANDS -> lines.add(Effect.stat("Ability Cooldown",
                     100.0 - (Math.max(0.70, 1.0 - 0.10 * scale) * 100.0), "-", "%"));
             case BOSS_GRUDGE -> lines.add(Effect.stat("Boss Damage", 10.0 * scale, "+", "%"));

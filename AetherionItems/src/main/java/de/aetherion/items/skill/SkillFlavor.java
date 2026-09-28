@@ -269,6 +269,38 @@ public final class SkillFlavor {
                     "Accounting learned to swim.",
                     "The catch is a quarterly report."
             };
+            case LAKE_SENSE -> new String[] {
+                    "Eldervale water knows your line.",
+                    "The lake saves you a seat.",
+                    "Ripples point at your bobber.",
+                    "The fish call you by name. Rudely.",
+                    "The tide checks your schedule first.",
+                    "The lake is your home water. It agrees."
+            };
+            case STEADY_LINE -> new String[] {
+                    "Your hands stop shaking. The fish don't.",
+                    "The rod stopped arguing with you.",
+                    "Gold is a wider place now.",
+                    "Your line has a pulse. It's calm.",
+                    "Fish sense the patience. Resent it.",
+                    "The strike bar waits for you."
+            };
+            case TALL_TALES -> new String[] {
+                    "Every fish you talk about gets heavier. Some really are.",
+                    "The one that got away was this big.",
+                    "The scales at the Trophy House sweat.",
+                    "Your stories have a waiting list.",
+                    "Legends ask for your autograph.",
+                    "The lake started believing you."
+            };
+            case TIDE_READER -> new String[] {
+                    "You can hear a shoal from the other pier.",
+                    "Bubbles gossip. You listen.",
+                    "The water tells you where it's boiling.",
+                    "Shoals check if you're coming.",
+                    "Gulls follow you now.",
+                    "The tide files its plans with you."
+            };
             case QUICK_HANDS -> new String[] {
                     "Cooldowns were a suggestion.",
                     "The boots are watching.",

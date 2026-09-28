@@ -815,6 +815,10 @@ public final class SkillService implements StatProvider, Listener {
                     && !de.aetherion.items.farming.FarmIsleHook.onIsle(player)) {
                 continue;
             }
+            if (skill.flag() == AetherSkill.Flag.LAKE_SENSE
+                    && !de.aetherion.items.fishing.FishIsleHook.onIsle(player)) {
+                continue;
+            }
             double scale = multiplier(player, skill);
             total += skill.bonus(capability) * scale;
             if (dark && capability == ItemCapability.MINING_POWER && skill.flag() == AetherSkill.Flag.CAVE_SENSE) {

@@ -330,6 +330,44 @@ public enum AetherSkill {
             "+0.6% chance to compact cod while fishing (up to ~2.8% at max).",
             Flag.FISH_LEDGER
     ),
+    LAKE_SENSE(
+            "lake_sense",
+            "Lake Sense",
+            Category.FISHING,
+            Material.HEART_OF_THE_SEA,
+            "Eldervale water knows your line.",
+            "+20 Fish Catch and +8 Fish Speed on Fishing Eldervale only.",
+            Flag.LAKE_SENSE,
+            bonus(ItemCapability.FISHING_CATCH, 20),
+            bonus(ItemCapability.FISHING_SPEED, 8)
+    ),
+    STEADY_LINE(
+            "steady_line",
+            "Steady Line",
+            Category.FISHING,
+            Material.STRING,
+            "Your hands stop shaking. The fish don't.",
+            "Gold perfect cell is two wide on Fishing Eldervale. Boiling streaks can survive a miss.",
+            Flag.STEADY_LINE
+    ),
+    TALL_TALES(
+            "tall_tales",
+            "Tall Tales",
+            Category.FISHING,
+            Material.NAUTILUS_SHELL,
+            "Every fish you talk about gets heavier. Some really are.",
+            "Rare and legendary bites more often on Fishing Eldervale, and fish weigh in heavier.",
+            Flag.TALL_TALES
+    ),
+    TIDE_READER(
+            "tide_reader",
+            "Tide Reader",
+            Category.FISHING,
+            Material.PRISMARINE_CRYSTALS,
+            "You can hear a shoal from the other pier.",
+            "Shoals bite faster for you, and a wake arrow points to the shoal.",
+            Flag.TIDE_READER
+    ),
 
     QUICK_HANDS(
             "quick_hands",
@@ -483,6 +521,10 @@ public enum AetherSkill {
         BIRD_LAW,
         MARKET_DAY,
         FISH_LEDGER,
+        LAKE_SENSE,
+        STEADY_LINE,
+        TALL_TALES,
+        TIDE_READER,
         QUICK_HANDS,
         BOSS_GRUDGE,
         BLOOD_TAX,
