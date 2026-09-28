@@ -87,3 +87,31 @@ and client-side paint only, no block edits.
   (only onto safe ground). Anti-cheat plugins may complain.
 - The site edits only the dedicated world. Nothing in production worlds is touched unless someone
   names a production world in `world-eater.world`. Don't.
+
+## Ending polish (Seed Vault + death climax)
+
+**Files:** `loot/WorldEaterBonusChest.java` (visuals rewritten; the contract is unchanged:
+per-player shares, expiry delivery, plugin-disable delivery, `onFinish` → site reset) and
+`instance/worldeater/WorldEaterDirector.java` (`burstWorlds` / `tickRelics` inside `tickDeath`).
+
+- **Seed Vault** (the Bonus Chest): a void pool opens inside an F3+G chunk border (yellow/cyan).
+  A miniature chunk of the Last Seed generates bottom-up (bedrock → deepslate → stone with ores →
+  dirt → a grass lid split in four), and four end rods ("torches of the End") are placed around
+  it, lighting the podzol with client-side light blocks. **Bloom (reward beat):** the grass petals
+  fold open, a 40-block beam of starlight goes up, the ender eye rises out of a sculk heart, a
+  sapling sprouts, and the beacon activate, amethyst resonance and toast sounds play. Right-click →
+  the heart pulses and a stream of end-rod stars flies to the player with the share. Unload:
+  the rods go out, the petals close, the chunk de-generates top-down and the pool closes.
+  No chest sounds, no oak.
+- **Death climax** (~2.5 s, inside the existing self-eating window, so total length is unchanged):
+  all 16 eaten worlds burst out of the skull as slabs, circle it once, then implode into the
+  shrinking head. The black point lands with a violet double shock ring across the island and a
+  sonic boom, then "Generating world" as before. No camera moves.
+- **Not done:** signature armor/weapon + pack CMDs (budget). Loot is unchanged, and no CMD ids
+  are claimed.
+
+**Test:** `/boss worldeater reset` → `/boss worldeater open` → step onto the island → fight (or
+lower `max-health` in `world_eater.yml` temporarily) → watch the burst/implosion at the end of
+the death, then the vault bloom after "Saved the game". Right-click it for the share, and wait for
+the unload plus the 20 s site reset. Quick check away from the site: `/boss spawn world_eater` in
+a test world. The vault then generates where the boss was summoned.
