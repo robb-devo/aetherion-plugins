@@ -62,6 +62,10 @@ public final class FishingEncounterListener implements Listener {
     private final Map<UUID, UUID> liveByPlayer = new ConcurrentHashMap<>();
     private final Map<UUID, Long> aloneSince = new ConcurrentHashMap<>();
     private final java.util.Set<UUID> liveEncounters = ConcurrentHashMap.newKeySet();
+    /** Anglers whose encounter is surfacing (telegraph running) — no double pulls. */
+    private final java.util.Set<UUID> surfacing = ConcurrentHashMap.newKeySet();
+    /** Ticks of bubbling before the mob breaks the surface. */
+    private static final long SURFACE_DELAY_TICKS = 24L;
     private ActiveEquipmentStats equipment;
 
     FishingEncounterListener(AetherionFishing plugin) {
@@ -87,7 +91,7 @@ public final class FishingEncounterListener implements Listener {
         if (isDungeonWorld(player.getWorld())) {
             return;
         }
-        if (hasLive(player.getUniqueId())) {
+        if (hasLive(player.getUniqueId()) || surfacing.contains(player.getUniqueId())) {
             return;
         }
         double catchStat = catchStat(player);
@@ -96,7 +100,46 @@ public final class FishingEncounterListener implements Listener {
             return;
         }
         Location at = event.getHook() != null ? event.getHook().getLocation() : player.getLocation();
-        spawn(player, at);
+        telegraph(player, at);
+    }
+
+    /**
+     * Telegraph → the water boils where it will surface, the angler hears it, then it lands.
+     * Cancelled quietly if the angler leaves the world or wanders off in the meantime.
+     */
+    private void telegraph(Player player, Location hook) {
+        Location spot = findSpot(hook);
+        if (spot == null || spot.getWorld() == null) {
+            return;
+        }
+        UUID id = player.getUniqueId();
+        surfacing.add(id);
+        player.playSound(spot, Sound.ENTITY_DROWNED_AMBIENT_WATER, 0.8f, 0.7f);
+        player.sendMessage("§3The line's still pulling… §8something heavier is coming up.");
+        for (long delay = 0L; delay < SURFACE_DELAY_TICKS; delay += 6L) {
+            long at = delay;
+            plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                if (!surfacing.contains(id) || spot.getWorld() == null) {
+                    return;
+                }
+                double lift = 0.2d + at * 0.02d;
+                spot.getWorld().spawnParticle(Particle.BUBBLE_COLUMN_UP, spot.clone().add(0, 0.2, 0),
+                        6, 0.18, lift, 0.18, 0.02);
+                spot.getWorld().spawnParticle(Particle.BUBBLE_POP, spot.clone().add(0, 0.6, 0),
+                        4, 0.25, 0.05, 0.25, 0.01);
+            }, delay);
+        }
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            if (!surfacing.remove(id)) {
+                return;
+            }
+            Player angler = Bukkit.getPlayer(id);
+            if (angler == null || !angler.isOnline() || angler.getWorld() != spot.getWorld()
+                    || angler.getLocation().distanceSquared(spot) > 48.0d * 48.0d) {
+                return;
+            }
+            spawnAt(angler, spot);
+        }, SURFACE_DELAY_TICKS);
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
@@ -135,10 +178,11 @@ public final class FishingEncounterListener implements Listener {
             skills.grantFromFish(killer, 4 + tier.lootQuality() * 2);
         }
         killer.playSound(killer.getLocation(), Sound.ENTITY_DROWNED_DEATH, 0.55f, 1.15f);
-        killer.sendActionBar(net.kyori.adventure.text.Component.text(
-                tier.displayName() + " sank. Something useful floated up.",
-                net.kyori.adventure.text.format.NamedTextColor.AQUA
-        ));
+        killer.playSound(killer.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, 0.5f, 1.5f);
+        String credit = FishingSkills.credit(killer);
+        killer.sendActionBar(net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection()
+                .deserialize("§b" + tier.displayName() + " sank. §7Something useful floated up."
+                        + (credit == null ? "" : "  §8│  " + credit)));
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
@@ -167,6 +211,7 @@ public final class FishingEncounterListener implements Listener {
     public void onQuit(PlayerQuitEvent event) {
         // Owner leaving does not wipe the mob — tickEncounters despawns after alone timeout.
         liveByPlayer.remove(event.getPlayer().getUniqueId());
+        surfacing.remove(event.getPlayer().getUniqueId());
     }
 
     void shutdown() {
@@ -179,17 +224,14 @@ public final class FishingEncounterListener implements Listener {
         liveByPlayer.clear();
         liveEncounters.clear();
         aloneSince.clear();
+        surfacing.clear();
     }
 
-    private void spawn(Player player, Location at) {
-        if (at == null || at.getWorld() == null) {
+    private void spawnAt(Player player, Location spot) {
+        if (spot == null || spot.getWorld() == null) {
             return;
         }
-        World world = at.getWorld();
-        Location spot = findSpot(at);
-        if (spot == null) {
-            return;
-        }
+        World world = spot.getWorld();
         int level = fishingLevel(player);
         FishingEncounterTier tier = FishingEncounterTier.forFishingLevel(level);
         Class<? extends LivingEntity> type = livingClass(tier);
@@ -213,7 +255,7 @@ public final class FishingEncounterListener implements Listener {
         liveByPlayer.put(player.getUniqueId(), entity.getUniqueId());
         liveEncounters.add(entity.getUniqueId());
         aloneSince.remove(entity.getUniqueId());
-        player.sendMessage("§bSomething angry took the bait. §f" + tier.displayName() + "§b.");
+        player.sendMessage("§bSomething angry took the bait. " + tier.coloredName() + "§b.");
         player.playSound(player.getLocation(), Sound.ENTITY_DROWNED_AMBIENT, 0.7f, 0.85f);
         world.spawnParticle(Particle.SPLASH, spot.clone().add(0, 0.4, 0), 24, 0.35, 0.2, 0.35, 0.05);
         world.spawnParticle(Particle.BUBBLE, spot, 16, 0.25, 0.2, 0.25, 0.02);

@@ -31,6 +31,8 @@ final class CastSession {
     int waitTotal;
     int waitLeft;
     int lastRemaining;
+    /** Approach telegraph fired ("ready…") — plays its cue once. */
+    boolean readyCued;
 
     CastSession(UUID hookId, LureSchool school) {
         this.hookId = hookId;
@@ -43,11 +45,11 @@ final class CastSession {
         this.approachLimit = Math.max(16, approachLimit);
     }
 
-    void beginStrike(double catchStat, int strikeLimit) {
+    void beginStrike(double catchStat, int strikeLimit, int streak) {
         this.phase = Phase.STRIKE;
         this.strikeTicks = 0;
         this.strikeLimit = strikeLimit;
-        this.zoneSize = StrikeBar.zoneSize(catchStat);
+        this.zoneSize = StrikeBar.zoneSize(catchStat, streak);
         this.zoneStart = StrikeBar.randomZoneStart(zoneSize, ThreadLocalRandom.current());
         this.marker = 0;
         this.direction = 1;
@@ -67,5 +69,9 @@ final class CastSession {
 
     boolean inZone() {
         return StrikeBar.inZone(marker, zoneStart, zoneSize);
+    }
+
+    boolean onPerfect() {
+        return phase == Phase.STRIKE && marker == StrikeBar.perfectCell(zoneStart, zoneSize);
     }
 }

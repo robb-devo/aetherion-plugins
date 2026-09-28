@@ -14,35 +14,56 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * The cast owns the top bar while it lives. Quest bar is held off with a named lease so a
+ * fell bar or farm event on the same player can't hand the screen back early.
+ */
 final class FishingHud {
+
+    static final String LEASE = "fishing";
 
     private final Map<UUID, BossBar> bars = new ConcurrentHashMap<>();
 
-    void waiting(Player player, double progress, int remainingTicks) {
-        paint(player, StrikeBar.waitTitle(remainingTicks), clamp(progress), BarColor.BLUE, BarStyle.SEGMENTED_20);
+    void waiting(Player player, double progress, int remainingTicks, int streak) {
+        paint(player, StrikeBar.waitTitle(remainingTicks, streak), clamp(progress), BarColor.BLUE, BarStyle.SEGMENTED_20);
     }
 
-    void approaching(Player player, int ticks) {
-        double pulse = 0.46d + Math.sin(ticks * 0.22d) * 0.22d;
-        paint(player, StrikeBar.approachTitle(), clamp(pulse), BarColor.BLUE, BarStyle.SOLID);
-    }
-
-    void striking(Player player, int marker, int zoneStart, int zoneSize, boolean hot) {
+    void approaching(Player player, int ticks, double closeness, boolean ready, int streak) {
+        // Bar fills as the biter closes in; a small shimmer keeps it alive while it circles.
+        double shimmer = Math.sin(ticks * 0.35d) * 0.04d;
         paint(
                 player,
-                StrikeBar.strikeTitle(marker, zoneStart, zoneSize, hot),
+                StrikeBar.approachTitle(ready, streak),
+                clamp(closeness + shimmer),
+                ready ? BarColor.YELLOW : BarColor.BLUE,
+                BarStyle.SOLID
+        );
+    }
+
+    void striking(Player player, int marker, int zoneStart, int zoneSize, boolean hot, int streak) {
+        paint(
+                player,
+                StrikeBar.strikeTitle(marker, zoneStart, zoneSize, hot, streak),
                 StrikeBar.strikeProgress(marker),
                 hot ? BarColor.GREEN : BarColor.YELLOW,
                 BarStyle.SEGMENTED_20
         );
     }
 
+    /** Hide the bar and wipe any stale cast line from the action bar. */
     void hide(Player player) {
         if (player == null) {
             return;
         }
         hide(player.getUniqueId());
         player.sendActionBar(Component.empty());
+    }
+
+    /** Hide the bar only — the caller is about to write its own result line. */
+    void hideBarOnly(Player player) {
+        if (player != null) {
+            hide(player.getUniqueId());
+        }
     }
 
     void hide(UUID playerId) {
@@ -58,7 +79,8 @@ final class FishingHud {
             bar.removeAll();
             bar.setVisible(false);
         }
-        QuestBars.unsuppress(playerId);
+        // Only releases our own lease — never un-hides the quest bar for someone else's HUD.
+        QuestBars.release(playerId, LEASE);
     }
 
     void hideAll() {
@@ -78,7 +100,7 @@ final class FishingHud {
             return created;
         });
         if (!bar.getPlayers().contains(player)) {
-            QuestBars.suppress(player);
+            QuestBars.suppress(player, LEASE);
             bar.addPlayer(player);
         }
         bar.setTitle(title);

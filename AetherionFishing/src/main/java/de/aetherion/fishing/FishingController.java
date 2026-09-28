@@ -2,6 +2,7 @@ package de.aetherion.fishing;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.title.Title;
 
 import org.bukkit.Bukkit;
@@ -31,6 +32,7 @@ import java.lang.reflect.Field;
 import java.time.Duration;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
@@ -43,7 +45,12 @@ public final class FishingController implements Listener {
             Duration.ofMillis(120)
     );
 
+    private static final LegacyComponentSerializer LEGACY = LegacyComponentSerializer.legacySection();
     private static final int HARD_WAIT_TICKS = 20 * 14;
+    /** Bonus Fishing XP for reeling on the gold cell (base catch is 8, paid by Items). */
+    private static final int PERFECT_BONUS_XP = 4;
+    /** Streak bonus: +1 per two clean catches, capped — engagement, not a printer. */
+    private static final int STREAK_BONUS_CAP = 3;
     /** Bobber must hit water within this window or the cast is discarded. */
     private static final int WATER_SETTLE_TICKS = 36;
     private final AetherionFishing plugin;
@@ -51,6 +58,9 @@ public final class FishingController implements Listener {
     private final FishingHud hud = new FishingHud();
     private final NamespacedKey lureKey;
     private final Map<UUID, CastSession> sessions = new ConcurrentHashMap<>();
+    private final CatchStreak streaks = new CatchStreak();
+    /** One "equip a Fishing skill" nudge per player per boot. */
+    private final Set<UUID> tipped = ConcurrentHashMap.newKeySet();
     private final int baseStrikeTicks;
     private final int approachTicks;
     private static volatile Field nibbleField;
@@ -159,6 +169,7 @@ public final class FishingController implements Listener {
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
         abort(event.getPlayer(), false);
+        streaks.clear(event.getPlayer().getUniqueId());
     }
 
     @EventHandler
@@ -225,7 +236,7 @@ public final class FishingController implements Listener {
                 suppressVanillaWait(hook, session.waitLeft);
                 int remaining = Math.max(0, Math.min(HARD_WAIT_TICKS, session.waitLeft));
                 double progress = session.waitTotal <= 0 ? 0.0d : 1.0d - (remaining / (double) session.waitTotal);
-                hud.waiting(player, progress, session.waitTotal <= 0 ? -1 : remaining);
+                hud.waiting(player, progress, session.waitTotal <= 0 ? -1 : remaining, streaks.current(entry.getKey()));
                 if (session.ticks % 12 == 0) {
                     bubbles(hook.getLocation(), 6);
                 }
@@ -241,7 +252,21 @@ public final class FishingController implements Listener {
                 session.school.chooseBiter(hook.getLocation());
                 session.approachTicks++;
                 boolean arrived = session.school.tick(hook.getLocation(), LureSchool.Swim.APPROACH);
-                hud.approaching(player, session.approachTicks);
+                // Telegraph: the bar fills as the biter closes in, then reads "ready…" with a tick.
+                double distance = session.school.biterDistance(hook.getLocation());
+                double closeness = distance < 0.0d
+                        ? session.approachTicks / (double) Math.max(1, session.approachLimit)
+                        : 1.0d - Math.min(1.0d, distance / 4.5d);
+                boolean ready = (distance >= 0.0d && distance < 1.3d)
+                        || session.approachTicks >= session.approachLimit - 8;
+                if (ready && !session.readyCued) {
+                    session.readyCued = true;
+                    player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_HAT, 0.5f, 1.4f);
+                }
+                if (session.approachTicks % 4 == 0) {
+                    wake(session.school.biterLocation(hook.getLocation()));
+                }
+                hud.approaching(player, session.approachTicks, closeness, ready, streaks.current(entry.getKey()));
                 if (arrived || session.approachTicks >= session.approachLimit || session.school.isEmpty()) {
                     startStrike(player, session, hook);
                 }
@@ -260,7 +285,8 @@ public final class FishingController implements Listener {
             if (!hot) {
                 session.enteredZone = false;
             }
-            hud.striking(player, session.marker, session.zoneStart, session.zoneSize, hot);
+            hud.striking(player, session.marker, session.zoneStart, session.zoneSize, hot,
+                    streaks.current(entry.getKey()));
             spark(hook.getLocation(), hot);
             if (session.strikeTicks >= session.strikeLimit) {
                 miss(player, session, hook, true);
@@ -270,6 +296,7 @@ public final class FishingController implements Listener {
 
     void shutdown() {
         hud.hideAll();
+        streaks.clearAll();
         for (CastSession session : sessions.values()) {
             session.school.clear();
         }
@@ -334,10 +361,10 @@ public final class FishingController implements Listener {
         double speed = stats.speed(player);
         double catchStat = stats.catchBonus(player);
         int limit = Math.min(110, baseStrikeTicks + (int) Math.round(speed * 0.28d));
-        session.beginStrike(catchStat, limit);
+        session.beginStrike(catchStat, limit, streaks.current(player.getUniqueId()));
         player.showTitle(Title.title(
                 Component.text("Bite!", NamedTextColor.AQUA),
-                Component.text("Reel on green", NamedTextColor.GRAY),
+                LEGACY.deserialize("§7Reel on green §8· §6gold is perfect"),
                 BITE_TIMES
         ));
         player.playSound(player.getLocation(), Sound.ENTITY_FISHING_BOBBER_SPLASH, 0.7f, 1.25f);
@@ -350,27 +377,76 @@ public final class FishingController implements Listener {
     private void land(Player player, CastSession session, FishHook hook) {
         session.resolved = true;
         sessions.remove(player.getUniqueId());
-        hud.hide(player);
+        hud.hideBarOnly(player);
+        boolean perfect = session.onPerfect();
+        int streak = streaks.bump(player.getUniqueId());
         Location at = hook != null ? hook.getLocation() : player.getLocation();
         plugin.getServer().getScheduler().runTaskLater(plugin, session.school::clear, 50L);
-        player.sendActionBar(Component.text("On the line.", NamedTextColor.AQUA));
+        player.sendActionBar(LEGACY.deserialize(resultWord(perfect) + StrikeBar.streakTag(streak)));
         player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.18f, 1.8f);
         player.playSound(player.getLocation(), Sound.ENTITY_FISHING_BOBBER_RETRIEVE, 0.7f, 1.35f);
+        if (perfect) {
+            player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, 0.6f, 2.0f);
+            player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.45f, 1.35f);
+        }
         if (hook != null) {
             splash(at);
             hook.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, at.clone().add(0, 0.2, 0), 6, 0.2, 0.15, 0.2, 0.01);
+            if (perfect) {
+                hook.getWorld().spawnParticle(Particle.WAX_ON, at.clone().add(0, 0.35, 0), 8, 0.25, 0.2, 0.25, 0.0);
+            }
+        }
+        announceStreak(player, streak);
+        UUID id = player.getUniqueId();
+        // Items pays the catch + base XP at MONITOR this tick — land the reward line after it.
+        plugin.getServer().getScheduler().runTask(plugin, () -> rewardBeat(id, perfect, streak));
+    }
+
+    /** Reward beat: bonus XP, then the result line with the focus Fishing skill's bar. */
+    private void rewardBeat(UUID id, boolean perfect, int streak) {
+        Player player = Bukkit.getPlayer(id);
+        if (player == null || !player.isOnline()) {
+            return;
+        }
+        int bonus = (perfect ? PERFECT_BONUS_XP : 0) + Math.min(STREAK_BONUS_CAP, streak / 2);
+        FishingSkills.bonus(player, bonus);
+        String credit = FishingSkills.credit(player);
+        StringBuilder line = new StringBuilder(resultWord(perfect)).append(StrikeBar.streakTag(streak));
+        if (credit != null) {
+            line.append("  §8│  ").append(credit);
+        }
+        player.sendActionBar(LEGACY.deserialize(line.toString()));
+        if (credit == null && tipped.add(id)) {
+            player.sendMessage("§8Tip: equip a Fishing skill in §7/skills fishing §8— it levels on every catch,"
+                    + " and perfect reels pay extra.");
+        }
+    }
+
+    private static String resultWord(boolean perfect) {
+        return perfect ? "§6Perfect reel." : "§bOn the line.";
+    }
+
+    private static void announceStreak(Player player, int streak) {
+        if (streak == StrikeBar.HOT_STREAK) {
+            player.sendMessage("§6✦ Hot water. §7Five clean in a row — the window's a cell wider and the fish noticed.");
+            player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BELL, 0.7f, 1.5f);
+        } else if (streak > StrikeBar.HOT_STREAK && streak % 10 == 0) {
+            player.sendMessage("§6✦ " + streak + " clean catches. §7The dock is taking bets on you.");
+            player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BELL, 0.7f, 1.7f);
         }
     }
 
     private void miss(Player player, CastSession session, FishHook hook, boolean timeout) {
         session.resolved = true;
         sessions.remove(player.getUniqueId());
-        hud.hide(player);
+        hud.hideBarOnly(player);
+        int lost = streaks.reset(player.getUniqueId());
         Location at = hook != null ? hook.getLocation() : player.getLocation();
         session.school.scatter(at);
         plugin.getServer().getScheduler().runTaskLater(plugin, session.school::clear, 16L);
         String line = timeout ? "It let go." : tooSoonOrLate(session);
-        player.sendActionBar(Component.text(line, NamedTextColor.GRAY));
+        String lostTag = lost >= 2 ? " §8· §7streak §e✦" + lost + " §7lost" : "";
+        player.sendActionBar(LEGACY.deserialize("§7" + line + lostTag));
         player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 0.55f, timeout ? 0.6f : 0.45f);
         player.playSound(player.getLocation(), Sound.ENTITY_FISH_SWIM, 0.8f, 1.1f);
         if (hook != null && hook.isValid()) {
@@ -381,10 +457,12 @@ public final class FishingController implements Listener {
 
     private void abort(Player player, boolean message) {
         CastSession session = sessions.remove(player.getUniqueId());
-        hud.hide(player);
         if (session == null) {
+            // Nothing live — drop bar/lease only, keep the last catch's reward line readable.
+            hud.hide(player.getUniqueId());
             return;
         }
+        hud.hide(player);
         session.school.clear();
         if (message) {
             player.sendActionBar(Component.empty());
@@ -396,7 +474,7 @@ public final class FishingController implements Listener {
             return;
         }
         session.schoolSpawned = true;
-        int count = 1;
+        int count = streaks.current(player.getUniqueId()) >= StrikeBar.HOT_STREAK ? 2 : 1;
         double catchStat = stats.catchBonus(player);
         if (catchStat >= 20.0d) {
             count++;
@@ -560,6 +638,14 @@ public final class FishingController implements Listener {
         }
         at.getWorld().spawnParticle(Particle.BUBBLE, at.clone().add(0, 0.1, 0), count, 0.18, 0.08, 0.18, 0.02);
         at.getWorld().spawnParticle(Particle.BUBBLE_POP, at, Math.max(2, count / 3), 0.12, 0.05, 0.12, 0.01);
+    }
+
+    /** Small wake behind the biter while it closes in. */
+    private static void wake(Location at) {
+        if (at == null || at.getWorld() == null) {
+            return;
+        }
+        at.getWorld().spawnParticle(Particle.BUBBLE, at, 2, 0.06, 0.04, 0.06, 0.01);
     }
 
     private static void splash(Location at) {

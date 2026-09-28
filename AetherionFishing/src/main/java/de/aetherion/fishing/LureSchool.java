@@ -54,7 +54,7 @@ final class LureSchool {
             return;
         }
         World world = hook.getWorld();
-        int n = Math.max(1, Math.min(3, count));
+        int n = Math.max(1, Math.min(4, count));
         for (int i = 0; i < n; i++) {
             Location at = waterNear(hook, i);
             if (at == null) {
@@ -127,6 +127,32 @@ final class LureSchool {
             }
         }
         return arrived;
+    }
+
+    /**
+     * Distance from the chosen biter to the bobber, or {@code -1} with no biter yet.
+     * Drives the approach telegraph ("closing in" → "ready").
+     */
+    double biterDistance(Location hook) {
+        Lure lure = biter();
+        if (lure == null || hook == null) {
+            return -1.0d;
+        }
+        ItemDisplay fish = alive(hook, lure);
+        if (fish == null) {
+            return -1.0d;
+        }
+        return fish.getLocation().distance(hook.clone().add(0, -0.12d, 0));
+    }
+
+    /** Where the biter is right now (for a small wake trail), or {@code null}. */
+    Location biterLocation(Location hook) {
+        Lure lure = biter();
+        if (lure == null) {
+            return null;
+        }
+        ItemDisplay fish = alive(hook, lure);
+        return fish == null ? null : fish.getLocation();
     }
 
     void scatter(Location from) {
