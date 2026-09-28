@@ -26,7 +26,19 @@ commands:
       - bossengine
       - be
 
+  helios:
+    description: Helios Requiem (enter / leave; admin tools with helios.admin)
+    usage: /helios <enter|leave>
+    aliases:
+      - requiem
+
 permissions:
+  helios.admin:
+    description: Helios Requiem admin tools (start, debug, skip, hp, attack, abort, restore)
+    default: op
+  helios.bypass:
+    description: Exempt from Helios movement rules (pearls, flight, block edits)
+    default: op
   bossengine.admin:
     description: Full BossEngine admin access
     default: op

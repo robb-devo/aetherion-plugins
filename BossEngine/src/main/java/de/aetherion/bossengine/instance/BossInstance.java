@@ -80,6 +80,8 @@ public class BossInstance {
     private final SignatureDirector signatureDirector = new SignatureDirector(this);
     private final SandboxDirector sandboxDirector = new SandboxDirector(this);
     private final TransitionSpectacles spectacles = new TransitionSpectacles(this);
+    /** Fully scripted encounter body (see {@link BossScript}); null for classic YAML bosses. */
+    private final BossScript script;
     private final Map<AbstractBossSkill, Long> lastCastTick = new IdentityHashMap<>();
     private final Set<String> announced = new HashSet<>();
 
@@ -138,6 +140,33 @@ public class BossInstance {
         this.conditions = conditions == null ? template.getConditions() : conditions;
         this.combatMaxHealth = Math.max(1, template.getAttributes().getMaxHealth());
         this.combatHealth = combatMaxHealth;
+        this.script = BossScripts.create(this);
+    }
+
+    /** The scripted body driving this encounter, or null. */
+    public BossScript script() {
+        return script;
+    }
+
+    /**
+     * Explicit scaling for scripted encounters that size themselves (party size, config curves).
+     * Resets combat HP to the new maximum, so call it before the fight starts.
+     */
+    public void applyCustomScale(int players, double healthMul, double damageMul) {
+        this.raidPlayers = Math.max(1, players);
+        this.raidHealthMul = Math.max(0.05, healthMul);
+        this.raidDamageMul = Math.max(0.05, damageMul);
+        this.combatMaxHealth = Math.max(1.0, template.getAttributes().getMaxHealth() * raidHealthMul);
+        this.combatHealth = combatMaxHealth;
+        syncVanillaHealth();
+    }
+
+    /** Admin/testing: set combat HP to a percentage without crossing phase gates on the way. */
+    public void setCombatHealthPercent(double percent) {
+        double p = Math.max(0.1, Math.min(100.0, percent));
+        this.combatHealth = Math.max(1.0, combatMaxHealth * p / 100.0);
+        syncVanillaHealth();
+        template.phaseForHealth(p).ifPresent(this::forcePhase);
     }
 
     public UUID getInstanceId() {
@@ -263,6 +292,9 @@ public class BossInstance {
             frostboundDirector.onBind();
             pathwardenDirector.onBind();
             sandboxDirector.onBind();
+            if (script != null) {
+                script.onBind();
+            }
         } catch (RuntimeException exception) {
             plugin.getLogger().log(Level.SEVERE, "Boss '" + template.getId() + "' failed to apply stats", exception);
         }
@@ -300,8 +332,11 @@ public class BossInstance {
             frostboundDirector.onBind();
             pathwardenDirector.onBind();
             sandboxDirector.onBind();
+            if (script != null) {
+                script.onBind();
+            }
             // Soft-arena bosses stay where they were — never blink home on rebind.
-            if (!refusesHardArenaSnap()) {
+            if (script == null && !refusesHardArenaSnap()) {
                 snapToArena();
             }
             clearBodyUnloaded();
@@ -376,7 +411,8 @@ public class BossInstance {
     public boolean isCinematicDying() {
         return state == BossState.ALIVE && (dragonDirector.isDying() || sparkyDirector.isDying()
                 || frostboundDirector.isDying() || pathwardenDirector.isDying()
-                || signatureDirector.isDying());
+                || signatureDirector.isDying()
+                || (script != null && script.isDying()));
     }
 
     public void abortCinematic() {
@@ -386,6 +422,9 @@ public class BossInstance {
         pathwardenDirector.abort();
         signatureDirector.abort();
         sandboxDirector.abort();
+        if (script != null) {
+            script.abort();
+        }
     }
 
     public boolean isEncounterActive() {
@@ -424,6 +463,9 @@ public class BossInstance {
         blackHoleActive = false;
         spectacles.finish();
         de.aetherion.bossengine.skill.t2.T2Mechanics.clearInstanceProps(this);
+        if (script != null) {
+            script.abort();
+        }
     }
 
     public void despawnMinions(List<UUID> ids) {
@@ -456,6 +498,7 @@ public class BossInstance {
                 || pathwardenDirector.isDying()
                 || signatureDirector.isDying()
                 || sandboxDirector.blocksDamage()
+                || (script != null && (script.isDying() || script.blocksDamage()))
                 || de.aetherion.bossengine.skill.t2.T2Mechanics.isBurrowing(this);
     }
 
@@ -498,6 +541,9 @@ public class BossInstance {
             return true;
         }
         de.aetherion.bossengine.skill.t2.T2Mechanics.clearInstanceProps(this);
+        if (script != null && script.beginDeath()) {
+            return true;
+        }
         if (dragonDirector.beginDeath() || sparkyDirector.beginDeath()
                 || frostboundDirector.beginDeath() || pathwardenDirector.beginDeath()
                 || signatureDirector.beginDeath()) {
@@ -526,6 +572,11 @@ public class BossInstance {
             if (combatHealth - amount <= gate) {
                 combatHealth = Math.max(1, gate - Math.max(1.0, combatMaxHealth * 0.002));
                 syncVanillaHealth();
+                if (script != null) {
+                    // The script stages its own interlude; the engine only moves the phase.
+                    forcePhase(next);
+                    return false;
+                }
                 PhaseTransition transition = resolveTransition(next);
                 if (transition.isEnabled()) {
                     beginTransition(next);
@@ -571,6 +622,9 @@ public class BossInstance {
      * @return {@code true} when a death cinematic finished and loot should be paid
      */
     public boolean tick() {
+        if (script != null) {
+            return tickScripted();
+        }
         if (dragonDirector.isDying()) {
             ticksAlive++;
             tickDragon();
@@ -640,6 +694,30 @@ public class BossInstance {
         return false;
     }
 
+    /** Scripted bodies: the engine keeps HP, phases and bookkeeping; the script does everything else. */
+    private boolean tickScripted() {
+        if (script.isDying()) {
+            ticksAlive++;
+            return script.tick();
+        }
+        if (!isAlive()) {
+            return false;
+        }
+        ticksAlive++;
+        if (phaseArmorTicks > 0) {
+            phaseArmorTicks--;
+        }
+        rememberBodyLocation();
+        if (entity != null && entity.getFireTicks() > 0) {
+            entity.setFireTicks(0);
+        }
+        boolean finished = script.tick();
+        if (!finished && !script.isDying()) {
+            checkPhase();
+        }
+        return finished;
+    }
+
     public void armSlam(double radius, double damage) {
         if (entity == null) {
             return;
@@ -691,6 +769,10 @@ public class BossInstance {
         BossPhaseChangeEvent event = new BossPhaseChangeEvent(this, currentPhase, next);
         Bukkit.getPluginManager().callEvent(event);
         if (event.isCancelled()) {
+            return;
+        }
+        if (script != null) {
+            forcePhase(next);
             return;
         }
 

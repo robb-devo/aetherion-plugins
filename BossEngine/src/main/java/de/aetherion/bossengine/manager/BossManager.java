@@ -17,7 +17,9 @@ import de.aetherion.bossengine.util.TextUtil;
 
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
+import de.aetherion.bossengine.event.BossDeathEvent;
 import org.bukkit.Location;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
@@ -163,6 +165,7 @@ public class BossManager {
         skills.execute(instance, SkillTrigger.ON_SPAWN, initiator, 0);
 
         if (plugin.getConfig().getBoolean("announce-spawn", true)
+                && instance.script() == null
                 && (location.getWorld() == null || !location.getWorld().getName().startsWith("aedun_"))
                 && tryGlobalSpawnAnnounce(template.getId())) {
             double reach = 48.0;
@@ -371,9 +374,41 @@ public class BossManager {
         if (killer == null) {
             killer = instance.getDamageTracker().topDamager().orElse(null);
         }
-        lootService.grant(lootService.buildDeathEvent(instance, killer));
+        de.aetherion.bossengine.instance.BossScript script = instance.script();
+        if (script != null && !script.paysLoot()) {
+            // An act that is not the finale: no loot, no recap.
+            onDeath(instance);
+            return true;
+        }
+        BossDeathEvent event = lootService.buildDeathEvent(instance, killer);
+        if (script != null && event.isDropLoot()) {
+            Map<UUID, List<ItemStack>> bundles = lootService.grantToChest(event);
+            if (!script.handLoot(bundles)) {
+                payDirectly(bundles, instance.getSpawnLocation());
+            }
+        } else {
+            lootService.grant(event);
+        }
         onDeath(instance);
         return true;
+    }
+
+    /** Safety net: if a script cannot take the loot, the shares still reach their owners. */
+    private void payDirectly(Map<UUID, List<ItemStack>> bundles, Location at) {
+        bundles.forEach((playerId, items) -> {
+            Player player = Bukkit.getPlayer(playerId);
+            for (ItemStack item : items) {
+                if (item == null || item.getType().isAir()) {
+                    continue;
+                }
+                if (player != null && player.isOnline()) {
+                    player.getInventory().addItem(item.clone()).values()
+                            .forEach(left -> player.getWorld().dropItemNaturally(player.getLocation(), left));
+                } else if (at != null && at.getWorld() != null) {
+                    at.getWorld().dropItemNaturally(at, item.clone());
+                }
+            }
+        });
     }
 
     private static boolean isSandboxWorld(BossInstance instance) {

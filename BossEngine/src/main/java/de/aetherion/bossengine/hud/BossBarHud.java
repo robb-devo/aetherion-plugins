@@ -191,6 +191,9 @@ public class BossBarHud {
         if (!player.getWorld().equals(entity.getWorld())) {
             return false;
         }
+        if (instance.script() != null && instance.script().ownsBossBar()) {
+            return false;
+        }
         double distSq = player.getLocation().distanceSquared(entity.getLocation());
         boolean nearby = distSq <= VIEW_RADIUS * VIEW_RADIUS;
         boolean recent = instance.getDamageTracker().hitRecently(player.getUniqueId(), COMBAT_MEMORY_MS);

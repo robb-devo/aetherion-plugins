@@ -151,6 +151,15 @@ public class BossCombatListener implements Listener {
                 ? damager(byEntity.getDamager())
                 : null;
 
+        if (player != null && instance.script() != null) {
+            double modified = instance.script().incoming(player, incoming);
+            if (modified < 0) {
+                event.setCancelled(true);
+                return;
+            }
+            incoming = modified;
+        }
+
         if (player != null && instance.sandbox() != null && instance.sandbox().active()) {
             double modified = instance.sandbox().modifyIncoming(player, incoming);
             if (modified < 0) {

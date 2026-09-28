@@ -1,0 +1,140 @@
+# ============================================================
+# HELIOS REQUIEM - the dying star (two acts)
+#
+# Encounter config. Boss HP and phase gates live in
+#   bosses/helios_herald.yml    (Act I, the Herald)
+#   bosses/helios_requiem.yml   (Act II, Helios)
+# Everything else (timings, damage, tempo, safety, performance) is here.
+# /helios reload re-reads this file; running fights keep their snapshot.
+#
+# Damage values are BossEngine "power" (BossHits): a hit takes a share of
+# the player's max HP, reduced by DEFENSE. ~40 = light, ~70 = heavy, ~100 = brutal.
+# ============================================================
+
+enabled: true
+
+world:
+  # Own void world. The main worlds are never touched.
+  name: helios_requiem
+  keep-inventory: true
+  arena-y: 160
+  # Instances are this many blocks apart on the X axis (beyond tracking and hearing range).
+  slot-spacing: 1024
+  max-instances: 3
+
+entry:
+  # Permission needed for /helios enter (empty = everyone).
+  permission: ""
+  # Party members (AetherionItems party) within this radius of the leader come along.
+  radius: 16
+  min-players: 1
+  max-players: 8
+  cooldown-seconds: 0
+  # Used when a player's saved return point is gone: "world,x,y,z,yaw,pitch". Empty = that world's spawn.
+  fallback-return: ""
+
+scaling:
+  # Extra HP / damage per player beyond the first.
+  health-per-extra-player: 0.45
+  damage-per-extra-player: 0.06
+  max-scaled-players: 8
+
+damage:
+  # Global multiplier on every Helios hit.
+  multiplier: 1.0
+
+void:
+  # RESCUE: the star pulls you back onto solid ground (hard hit). DEATH: the void kills.
+  mode: RESCUE
+  rescue-power: 70
+  # Blocks below the floor that count as "fallen".
+  kill-plane: 14
+
+echo:
+  # Dead players come back as echoes (spectators bound to the arena) until the fight ends.
+  enabled: true
+
+enrage:
+  herald-seconds: 420
+  helios-seconds: 780
+  # Damage ramp every 10 s after enrage starts.
+  ramp-per-10s: 0.10
+
+performance:
+  display-cap: 420
+  spawns-per-tick: 48
+  # HIGH | MEDIUM | LOW. Drops a level on its own while the server runs above degrade-mspt.
+  quality: HIGH
+  degrade-mspt: 45
+  build-blocks-per-tick: 2500
+  clear-blocks-per-tick: 60000
+
+# The star's heartbeat is the fight's clock (beats per minute).
+tempo:
+  herald: 90
+  interlude: 60
+  corona: 100
+  decay: 108
+  singularity: 80
+  requiem: 120
+
+herald:
+  blink:
+    power: 70
+  swarm:
+    power: 55
+  cage:
+    power: 35
+    duration-beats: 18
+    spacing: 7.0
+    min-spacing: 4.6
+  platform:
+    power: 80
+    crack-beats: 4
+    regrow-seconds: 14
+  lance:
+    power: 32
+    charge-beats: 6
+    sweep-beats: 10
+    degrees: 210
+  mirror:
+    clones: 3
+    punish-power: 60
+    window-seconds: 30
+
+helios:
+  portals:
+    power: 45
+    count-min: 3
+    count-max: 5
+  plasma:
+    power: 50
+  flares:
+    power: 65
+  wind:
+    push: 1.15
+  meteors:
+    power: 70
+    count: 7
+  cage:
+    power: 40
+  seismic:
+    power: 90
+    radius: 20
+  singularity:
+    pull: 0.085
+    horizon-start: 7.5
+    horizon-end: 3.0
+    horizon-power: 45
+  requiem:
+    window-seconds: 12
+    damage-multiplier: 2.5
+
+sounds:
+  master-volume: 1.0
+  # Swap any vanilla sound the fight uses for a resource pack sound:
+  #   entity.warden.heartbeat: helios:heartbeat
+  overrides: {}
+
+reward:
+  claim-seconds: 180
