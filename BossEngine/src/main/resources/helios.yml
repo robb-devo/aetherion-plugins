@@ -1,0 +1,168 @@
+# helios-version: 3 (files with an older version are backed up to .bak and replaced on start)
+# ============================================================
+# HELIOS REQUIEM - the dying star (two acts)
+#
+# Encounter config. Boss HP and phase gates live in
+#   bosses/helios_herald.yml    (Act I, the Herald)
+#   bosses/helios_requiem.yml   (Act II, Helios)
+# Everything else (timings, damage, tempo, safety, performance) is here.
+# /helios reload re-reads this file; running fights keep their snapshot.
+#
+# Damage values are BossEngine "power" (BossHits): a hit takes a share of
+# the player's max HP, reduced by DEFENSE. ~40 = light, ~70 = heavy, ~100 = brutal.
+# ============================================================
+
+enabled: true
+
+world:
+  # Own void world. The main worlds are never touched.
+  name: helios_requiem
+  keep-inventory: true
+  arena-y: 160
+  # Instances are this many blocks apart on the X axis (beyond tracking and hearing range).
+  slot-spacing: 1024
+  max-instances: 3
+
+entry:
+  # Permission needed for /helios enter (empty = everyone).
+  permission: ""
+  # Party members (AetherionItems party) within this radius of the leader come along.
+  radius: 16
+  min-players: 1
+  max-players: 8
+  cooldown-seconds: 0
+  # Used when a player's saved return point is gone: "world,x,y,z,yaw,pitch". Empty = that world's spawn.
+  fallback-return: ""
+
+scaling:
+  # Extra HP / damage per player beyond the first.
+  health-per-extra-player: 0.45
+  damage-per-extra-player: 0.05
+  max-scaled-players: 8
+
+damage:
+  # Global multiplier on every Helios hit.
+  multiplier: 1.0
+
+pacing:
+  # After every flurry the boss is spent: it starts nothing for this many beats and takes extra damage.
+  opening-beats: 6
+  opening-damage-multiplier: 1.35
+
+knockback:
+  # Every Helios knockback is scaled and capped, and never shoves anyone over an edge.
+  scale: 0.4
+  max-horizontal: 0.4
+  max-vertical: 0.3
+
+death:
+  # Players who die come back on the arena floor in survival, untouchable for this long.
+  respawn-grace-seconds: 4
+
+void:
+  # RESCUE: the star catches you, lifts you over solid ground and lets you float down. DEATH: the void kills.
+  mode: RESCUE
+  rescue-power: 35
+  rescue-grace-seconds: 3
+  # Blocks below the floor that count as "fallen".
+  kill-plane: 14
+
+echo:
+  # true = dead players watch as spectators instead of respawning in the arena.
+  enabled: false
+
+enrage:
+  herald-seconds: 420
+  helios-seconds: 780
+  # Damage ramp every 10 s after enrage starts.
+  ramp-per-10s: 0.10
+
+performance:
+  display-cap: 420
+  spawns-per-tick: 48
+  # HIGH | MEDIUM | LOW. Drops a level on its own while the server runs above degrade-mspt.
+  quality: HIGH
+  degrade-mspt: 45
+  build-blocks-per-tick: 2500
+  clear-blocks-per-tick: 60000
+
+# The star's heartbeat is the fight's clock (beats per minute).
+tempo:
+  herald: 78
+  interlude: 60
+  corona: 88
+  decay: 96
+  singularity: 72
+  requiem: 112
+
+herald:
+  blink:
+    power: 55
+  swarm:
+    power: 42
+  cage:
+    power: 26
+    duration-beats: 16
+    spacing: 7.5
+    min-spacing: 5.2
+  platform:
+    power: 60
+    crack-beats: 5
+    regrow-seconds: 12
+  lance:
+    power: 24
+    charge-beats: 7
+    sweep-beats: 12
+    degrees: 180
+  mirror:
+    clones: 3
+    punish-power: 45
+    window-seconds: 30
+
+helios:
+  portals:
+    power: 36
+    count-min: 3
+    count-max: 5
+  plasma:
+    power: 34
+  flares:
+    power: 50
+  wind:
+    power: 16
+    push: 0.5
+  meteors:
+    power: 52
+    count: 6
+  cage:
+    power: 30
+  seismic:
+    power: 62
+    radius: 20
+  singularity:
+    # Pull per tick (it breathes: full on beats 1-2 of each bar, 30 % on 3-4). Sneaking resists.
+    pull: 0.045
+    # Inward speed cap; a sprint outward beats it.
+    max-inward: 0.24
+    horizon-start: 6.0
+    horizon-end: 2.5
+    horizon-power: 30
+  requiem:
+    window-seconds: 14
+    damage-multiplier: 2.5
+  supernova:
+    # Light floods the floor out to this radius before the detonation.
+    floor-glow-radius: 30
+
+resourcepack:
+  # Optional full-screen glyph from your pack's font for flashes (e.g. "\uE000"). Empty = light pulse only.
+  flash-glyph: ""
+
+sounds:
+  master-volume: 1.0
+  # Swap any vanilla sound the fight uses for a resource pack sound:
+  #   entity.warden.heartbeat: helios:heartbeat
+  overrides: {}
+
+reward:
+  claim-seconds: 180

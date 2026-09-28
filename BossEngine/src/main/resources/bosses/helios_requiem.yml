@@ -1,0 +1,150 @@
+# helios-version: 3 (files with an older version are backed up to .bak and replaced on start)
+# ============================================================
+# HELIOS REQUIEM - Act II: Helios
+# The dying star, an armillary sphere around a porcelain-gold mask.
+# The whole fight lives in
+#   de.aetherion.bossengine.helios.requiem.HeliosScript
+# This file supplies HP, phase gates, the hitbox (its heart) and the loot.
+# Timings, damage and tempo: helios.yml (helios.*).
+#
+#   100%  Korona        Portal Beams, Plasma Rings, Flares, Solar Wind
+#    60%  Zerfall       the Corona ring burns away; + Meteors, Geometry Cages, Seismic Bombs
+#                       (at 40% a supernova wave tears the Course into islands)
+#    25%  Singularitaet the black hole; pull, shrinking event horizon, time dilation
+#     6%  Requiem       silence, then the last rhythm; survive it to reach the heart
+#   death            slow motion, supernova, the arena rebuilds from light,
+#                    one starseed capsule glides down for each participant
+#
+# Act I damage counts 30% toward this loot (so both acts matter).
+# ============================================================
+
+id: helios_requiem
+display-name: "&c&lHelios"
+# Invisible hitbox around its heart.
+entity-type: SLIME
+model-engine-id: ""
+
+attributes:
+  max-health: 52000
+  movement-speed: 0.0
+  attack-damage: 0
+  # Slime size 5 (engine minimum) = a 2.6 block cube; no extra scale on top.
+  scale: 1.0
+  follow-range: 64
+  knockback-resistance: 1.0
+
+options:
+  glowing: false
+  custom-name-visible: false
+  silent: true
+  invulnerable-spawn-ticks: 0
+  persistent: false
+  remove-when-far-away: false
+  prevent-item-pickup: true
+
+conditions:
+  max-instances: 8
+  leash-radius: 0
+  leash-action: TELEPORT
+
+phases:
+  - id: korona
+    health-percent: 100
+    display-name: "&c&lHelios"
+    skills: []
+  - id: zerfall
+    health-percent: 60
+    display-name: "&c&lHelios &8· &6Decay"
+    skills: []
+  - id: singularitaet
+    health-percent: 25
+    display-name: "&c&lHelios &8· &5Singularity"
+    skills: []
+  - id: requiem
+    health-percent: 6
+    display-name: "&f&lHelios &8· &fRequiem"
+    skills: []
+
+skills: []
+
+# Paid into the Starseed Reliquary (one capsule per participant).
+# Helios's gear (AetherionItems): Solstice (sword, right-click Constellation) and the Dawnbearer set
+# (random_helios_armor = one piece; full set = Second Dawn). Pack CMDs 4201-4205.
+loot:
+  damage-based: true
+  participation-threshold-percent: 4.0
+  experience: 15000
+
+  killer-bonus:
+    - source: VANILLA
+      material: NETHER_STAR
+      amount: 1
+      chance: 1.0
+
+  rank-loot:
+    1:
+      - source: AETHERION
+        item-id: helios_solstice
+        amount: 1
+        chance: 0.15
+      - source: AETHERION
+        item-id: random_helios_armor
+        amount: 1
+        chance: 1.0
+      - source: AETHERION
+        item-id: random_booster
+        amount: 2
+        chance: 0.8
+    2:
+      - source: AETHERION
+        item-id: helios_solstice
+        amount: 1
+        chance: 0.07
+      - source: AETHERION
+        item-id: random_helios_armor
+        amount: 1
+        chance: 0.75
+      - source: AETHERION
+        item-id: random_booster
+        amount: 1
+        chance: 0.6
+    3:
+      - source: AETHERION
+        item-id: helios_solstice
+        amount: 1
+        chance: 0.03
+      - source: AETHERION
+        item-id: random_helios_armor
+        amount: 1
+        chance: 0.4
+      - source: AETHERION
+        item-id: random_booster
+        amount: 1
+        chance: 0.4
+
+  top-damagers:
+    count: 3
+    items:
+      - source: AETHERION
+        item-id: random_booster
+        amount: 1
+        chance: 0.5
+
+  shared:
+    - source: VANILLA
+      material: GLOWSTONE_DUST
+      min-amount: 8
+      max-amount: 16
+      chance: 1.0
+
+  per-damager:
+    - source: AETHERION
+      item-id: random_helios_armor
+      amount: 1
+      chance: 0.06
+    - source: VANILLA
+      material: EXPERIENCE_BOTTLE
+      min-amount: 10
+      max-amount: 24
+      chance: 1.0
+      scale-with-damage: true

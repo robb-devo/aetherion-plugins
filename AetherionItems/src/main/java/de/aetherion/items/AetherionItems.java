@@ -268,6 +268,7 @@ public class AetherionItems extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new AetherionSetListener(this, itemManager), this);
         new VoidStickListener(this, itemManager);
         new de.aetherion.items.listener.WorldEaterGearListener(this, itemManager);
+        new de.aetherion.items.listener.HeliosGearListener(this, itemManager);
         new WandListener(this, itemManager);
         new de.aetherion.items.listener.HealerSetListener(this, itemManager);
         new de.aetherion.items.dungeon.DungeonGearListener(this, itemManager, customItem);

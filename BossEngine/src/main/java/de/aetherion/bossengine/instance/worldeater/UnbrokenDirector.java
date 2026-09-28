@@ -1493,18 +1493,39 @@ public final class UnbrokenDirector {
             }
         }
         if (t >= 132 && t < 150) {
-            // It turns its head toward the gate and the sky beyond it: where the Eater will come from.
-            body.head.target.set(-0.6f, PI * 0.9f, 0f);
-            body.neck.target.set(-0.3f, 0.6f, 0f);
+            // It bows its head, kneeling as it knelt for an age before anyone came.
+            body.springsHeavy();
+            body.head.target.set(0.6f, 0f, 0f);
+            body.neck.target.set(0.4f, 0f, 0f);
         }
         if (t == 150) {
             breakFloor();
         }
         if (t > 150 && t < 214) {
-            float f = inCubic(window(t, 150, 212));
-            pos.y = lerp(UnbrokenBody.KNEEL, -34f, f);
-            body.springsSlack();
-            body.poseFall(smooth(window(t, 150, 170)));
+            // One rigid body, no ringing: it sinks to the lip of the crater reaching up for its
+            // gate; the leaves slam down over its hands (t 184) and knock it into the void.
+            if (t < 184) {
+                body.springsHeavy();
+                pos.y = lerp(UnbrokenBody.KNEEL, -1.4f, smooth(window(t, 150, 182)));
+                body.poseReach(smooth(window(t, 152, 178)));
+                if (t % 6 == 0) {
+                    fx.blockDust(new Vector3f(pos.x, 0.2f, pos.z), Material.DEEPSLATE, 12, 2.4);
+                }
+            } else {
+                if (t == 184) {
+                    // Struck: arms buckle, head snaps down, a short hold before the drop.
+                    body.springsFast();
+                    body.chest.kick(0.2f, 0f, 0f);
+                    hitstop = 3;
+                    fx.score(Sound.ENTITY_IRON_GOLEM_DEATH, 0.9f, 0.5f);
+                } else {
+                    body.springs();
+                }
+                body.poseReach(1f - smooth(window(t, 184, 194)) * 0.85f);
+                body.head.target.x = 0.7f;
+                float f = inCubic(window(t, 186, 212));
+                pos.y = lerp(-1.4f, -34f, f);
+            }
             if (chains != null && t == 158) {
                 for (GateProps.ChainLine c : chains) {
                     c.extraSlack = 0f;

@@ -1,0 +1,30 @@
+name: Helios jars
+
+# Builds the deployable BossEngine + AetherionItems jars for the Helios polish branch and keeps them
+# as a downloadable artifact (Actions run page -> Artifacts -> helios-jars).
+on:
+  push:
+    branches:
+      - claude/helios-polish
+  workflow_dispatch:
+
+jobs:
+  jars:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - name: Package BossEngine + AetherionItems
+        run: mvn -B -DskipTests -pl BossEngine,AetherionItems -am package
+      - uses: actions/upload-artifact@v4
+        with:
+          name: helios-jars
+          path: |
+            BossEngine/target/BossEngine-*.jar
+            AetherionItems/target/AetherionItems-*.jar
+          if-no-files-found: error
+          retention-days: 30

@@ -166,6 +166,13 @@ final class UnbrokenBody {
         }
     }
 
+    /** Near-critically damped: heavy, deliberate, no ringing (its last moments). */
+    void springsHeavy() {
+        for (WeRig.Bone b : rig.bones()) {
+            b.spring(0.06f, 0.45f);
+        }
+    }
+
     /* ------------------------------------------------------------------ poses */
 
     void clearPose() {
@@ -382,6 +389,24 @@ final class UnbrokenBody {
     }
 
     /** Falling backward into the dark, arms reaching up. */
+    /**
+     * Still kneeling as it knelt for an age, it reaches up for the gate it kept: arms overhead,
+     * face lifted. Built on the kneel so the legs never unfold.
+     */
+    void poseReach(float w) {
+        poseKneel(0f);
+        spine.aim(WeMath.lerp(0.28f, -0.12f, w), 0, 0);
+        chest.aim(WeMath.lerp(0.22f, -0.08f, w), 0, 0);
+        neck.aim(WeMath.lerp(0.25f, -0.2f, w), 0, 0);
+        head.aim(WeMath.lerp(0.38f, -0.4f, w), 0, 0);
+        for (int s = 0; s < 2; s++) {
+            float side = s == R ? -1f : 1f;
+            upper[s].aim(WeMath.lerp(-0.64f, -2.45f, w), 0, 0.18f * side * w + 0.1f * side * (1f - w));
+            fore[s].aim(WeMath.lerp(-0.22f, -0.3f, w), 0, 0);
+            fist[s].aim(WeMath.lerp(0.45f, 0.15f, w), 0, 0);
+        }
+    }
+
     void poseFall(float w) {
         clearPose();
         spine.aim(-0.4f * w, 0, 0);

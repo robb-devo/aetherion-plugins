@@ -1,0 +1,61 @@
+# helios-version: 3 (files with an older version are backed up to .bak and replaced on start)
+# ============================================================
+# HELIOS REQUIEM - Act I: the Herald
+# Warden of the dying star. The whole fight lives in
+#   de.aetherion.bossengine.helios.herald.HeraldScript
+# This file only supplies HP, the phase gate and an invisible hitbox.
+# Timings, damage and tempo: helios.yml (herald.*).
+#
+#   100%  Herald     Blink-Strike, Blade Swarm, Laser Cage, Platform Fall, Sun Lance
+#    50%  Mirror     three light clones; only one beats in time with the star
+#   death            pulled into the star (no loot: Act II pays for both)
+#
+# Only spawns inside a Helios instance (/helios enter). A /boss spawn
+# outside an instance despawns itself.
+# ============================================================
+
+id: helios_herald
+display-name: "&6&lThe Herald"
+# Invisible hitbox; the body is ~40 block displays.
+entity-type: ZOMBIE
+model-engine-id: ""
+
+attributes:
+  max-health: 26000
+  movement-speed: 0.0
+  attack-damage: 0
+  # ~0.9 x 2.9 blocks: matches the display body.
+  scale: 1.5
+  follow-range: 48
+  knockback-resistance: 1.0
+
+options:
+  glowing: false
+  custom-name-visible: false
+  silent: true
+  invulnerable-spawn-ticks: 0
+  persistent: false
+  remove-when-far-away: false
+  prevent-item-pickup: true
+
+conditions:
+  max-instances: 8
+  leash-radius: 0
+  leash-action: TELEPORT
+
+phases:
+  - id: herald
+    health-percent: 100
+    display-name: "&6&lThe Herald"
+    skills: []
+  - id: mirror
+    health-percent: 50
+    display-name: "&6&lThe Herald &8· &eMirror"
+    skills: []
+
+skills: []
+
+loot:
+  damage-based: true
+  participation-threshold-percent: 0.0
+  experience: 0

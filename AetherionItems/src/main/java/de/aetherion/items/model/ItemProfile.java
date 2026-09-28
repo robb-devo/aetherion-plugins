@@ -1222,6 +1222,59 @@ public enum ItemProfile {
             ItemCapability.CRIT_DAMAGE
     ),
 
+    HELIOS_CROWN(
+            "helios_crown",
+            ItemCapability.DAMAGE,
+            ItemCapability.DEFENSE,
+            ItemCapability.HEALTH,
+            ItemCapability.ATTACK_SPREAD,
+            ItemCapability.CRIT_CHANCE,
+            ItemCapability.CRIT_DAMAGE,
+            ItemCapability.SPEED
+    ),
+
+    HELIOS_HEARTPLATE(
+            "helios_heartplate",
+            ItemCapability.DAMAGE,
+            ItemCapability.DEFENSE,
+            ItemCapability.HEALTH,
+            ItemCapability.ATTACK_SPREAD,
+            ItemCapability.CRIT_CHANCE,
+            ItemCapability.CRIT_DAMAGE,
+            ItemCapability.SPEED
+    ),
+
+    HELIOS_ORBIT_GREAVES(
+            "helios_orbit_greaves",
+            ItemCapability.DAMAGE,
+            ItemCapability.DEFENSE,
+            ItemCapability.HEALTH,
+            ItemCapability.ATTACK_SPREAD,
+            ItemCapability.CRIT_CHANCE,
+            ItemCapability.CRIT_DAMAGE,
+            ItemCapability.SPEED
+    ),
+
+    HELIOS_DAWN_TREADS(
+            "helios_dawn_treads",
+            ItemCapability.DAMAGE,
+            ItemCapability.DEFENSE,
+            ItemCapability.HEALTH,
+            ItemCapability.ATTACK_SPREAD,
+            ItemCapability.CRIT_CHANCE,
+            ItemCapability.CRIT_DAMAGE,
+            ItemCapability.SPEED
+    ),
+
+    HELIOS_SOLSTICE(
+            "helios_solstice",
+            ItemCapability.DAMAGE,
+            ItemCapability.ATTACK_SPREAD,
+            ItemCapability.CRIT_CHANCE,
+            ItemCapability.CRIT_DAMAGE
+    ),
+
+
 
     /*
      * =========================================================

@@ -191,6 +191,9 @@ public class BossBarHud {
         if (!player.getWorld().equals(entity.getWorld())) {
             return false;
         }
+        if (instance.script() != null && instance.script().ownsBossBar()) {
+            return false;
+        }
         // Last Seed: whole dedicated world is the arena — always show boss HP, never quest HUD.
         String id = instance.getTemplate().getId();
         if ("world_eater".equalsIgnoreCase(id) || "world_eater_unbroken".equalsIgnoreCase(id)) {

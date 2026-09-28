@@ -22,7 +22,9 @@ import de.aetherion.bossengine.util.TextUtil;
 
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
+import de.aetherion.bossengine.event.BossDeathEvent;
 import org.bukkit.Location;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
@@ -185,6 +187,7 @@ public class BossManager {
             skills.execute(instance, SkillTrigger.ON_SPAWN, initiator, 0);
 
             if (plugin.getConfig().getBoolean("announce-spawn", true)
+                    && instance.script() == null
                     && (location.getWorld() == null || !location.getWorld().getName().startsWith("aedun_"))
                     && tryGlobalSpawnAnnounce(template.getId())) {
                 double reach = 48.0;
@@ -527,8 +530,19 @@ public class BossManager {
         if (killer == null) {
             killer = instance.getDamageTracker().topDamager().orElse(null);
         }
+        de.aetherion.bossengine.instance.BossScript script = instance.script();
+        if (script != null && !script.paysLoot()) {
+            // An act that is not the finale: no loot, no recap.
+            onDeath(instance);
+            return true;
+        }
         BossDeathEvent event = lootService.buildDeathEvent(instance, killer);
-        if (!payIntoMusicBox(instance, event) && !payIntoReliquary(instance, event) && !payIntoBonusChest(instance, event)) {
+        if (script != null && event.isDropLoot()) {
+            Map<UUID, List<ItemStack>> bundles = lootService.grantToChest(event);
+            if (!script.handLoot(bundles)) {
+                payDirectly(bundles, instance.getSpawnLocation());
+            }
+        } else if (!payIntoMusicBox(instance, event) && !payIntoReliquary(instance, event) && !payIntoBonusChest(instance, event)) {
             lootService.grant(event);
         }
         onDeath(instance);
@@ -641,7 +655,7 @@ public class BossManager {
                 if (player != null && player.isOnline()) {
                     player.getInventory().addItem(item.clone()).values()
                             .forEach(left -> player.getWorld().dropItemNaturally(player.getLocation(), left));
-                } else if (at.getWorld() != null) {
+                } else if (at != null && at.getWorld() != null) {
                     at.getWorld().dropItemNaturally(at, item.clone());
                 }
             }

@@ -13,6 +13,7 @@ public final class BossWeaponLook {
             "skuldugery_shortbow",
             "aetherion_void_stick",
             "worldbite",
+            "helios_solstice",
             "warped_blade",
             "gravwell_cleaver",
             "staff_of_technical_difficulties",
