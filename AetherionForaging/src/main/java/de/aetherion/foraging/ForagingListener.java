@@ -9,6 +9,7 @@ import de.aetherion.items.world.AreaType;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.Tag;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -23,6 +24,7 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockDamageEvent;
 import org.bukkit.event.player.PlayerAnimationEvent;
 import org.bukkit.event.player.PlayerAnimationType;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.EquipmentSlot;
@@ -55,6 +57,11 @@ public class ForagingListener implements Listener {
     private static final int MAX_HORIZONTAL = 8;
     private static final int MAX_VERTICAL = 28;
     private static final double COLLAPSE_AT = 0.80d;
+    /** Bonus Foraging XP for a Perfect fell (a tree pays ~40–60 XP in logs on its own). */
+    private static final int PERFECT_BONUS_XP = 12;
+    /** Streak bonus: +2 XP per clean fell beyond the first, capped. */
+    private static final int STREAK_BONUS_STEP = 2;
+    private static final int STREAK_BONUS_CAP = 8;
 
     private static final BlockFace[] FACES = {
             BlockFace.UP, BlockFace.DOWN, BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST
@@ -71,6 +78,11 @@ public class ForagingListener implements Listener {
     private final Map<UUID, Long> canopyCleaverUntil = new ConcurrentHashMap<>();
     /** Players whose tree is collapsing — suppress arm swing / dig spam. */
     private final Set<UUID> collapsingPlayers = ConcurrentHashMap.newKeySet();
+    private final FellStreak streaks = new FellStreak();
+    /** One "equip a Foraging skill" nudge per player per boot. */
+    private final Set<UUID> tipped = ConcurrentHashMap.newKeySet();
+    /** First miss per boot explains the cooldown in chat; later misses stay on the action bar. */
+    private final Set<UUID> taughtMiss = ConcurrentHashMap.newKeySet();
 
     public ForagingListener(AetherionForaging plugin) {
         this.plugin = plugin;
@@ -275,6 +287,7 @@ public class ForagingListener implements Listener {
         maybeIsleHeartwood(player, drop);
         QuestProgressHook.noteBroken(player, drop, 1);
         job.woodPaid++;
+        job.lastDrop = drop;
         job.touchedTick = Bukkit.getCurrentTick();
         regenerating.add(startKey);
         start.setType(Material.AIR, false);
@@ -387,8 +400,21 @@ public class ForagingListener implements Listener {
             missChop(pulse);
         }
         collapsingPlayers.remove(id);
+        streaks.clear(id);
+        canopyCleaverUntil.remove(id);
         hud.hide(event.getPlayer());
         ForagerChopDemo.releaseOnQuit(event.getPlayer());
+    }
+
+    /** Teleporting away mid-swing is not a miss — drop the bar, keep the tree and streak. */
+    @EventHandler
+    public void onWorldChange(PlayerChangedWorldEvent event) {
+        UUID id = event.getPlayer().getUniqueId();
+        FellPulse pulse = pulses.get(id);
+        if (pulse != null) {
+            cancelChop(pulse);
+        }
+        hud.hide(id);
     }
 
     private static void denyChop(Player player) {
@@ -426,7 +452,11 @@ public class ForagingListener implements Listener {
                 continue;
             }
             boolean timedOut = pulse.tick();
-            hud.striking(player, pulse.marker, pulse.zoneStart, pulse.zoneSize, pulse.hot());
+            if (pulse.readyEdge()) {
+                ForagingFx.creak(player);
+            }
+            hud.striking(player, pulse.marker, pulse.zoneStart, pulse.zoneSize, pulse.hot(), pulse.ready(),
+                    streaks.current(pulse.playerId));
             if (timedOut) {
                 resolveChop(pulse);
             }
@@ -445,11 +475,20 @@ public class ForagingListener implements Listener {
             // Partial chop abandoned — put the tree back and drop map entries.
             restore(job);
         }
+        // Per-tree miss locks and cleaver cooldowns are short-lived — don't let them pile up.
+        long nowMs = System.currentTimeMillis();
+        chopMissUntil.values().removeIf(until -> until <= nowMs);
+        canopyCleaverUntil.values().removeIf(until -> until <= nowMs);
     }
 
     void shutdown() {
+        for (FellPulse pulse : List.copyOf(pulses.values())) {
+            pulse.job.pulse = null;
+            pulse.job.felling = false;
+        }
         hud.hideAll();
         pulses.clear();
+        streaks.clearAll();
     }
 
     private void afterBreak(TreeJob job) {
@@ -498,11 +537,27 @@ public class ForagingListener implements Listener {
             cancelChop(existing); // switching trees is free — no miss lock
         }
         job.felling = true;
-        FellPulse pulse = new FellPulse(player, job, plugin.fellStrikeTicks(), plugin.fellZoneSize());
+        int streak = streaks.current(player.getUniqueId());
+        FellPulse pulse = new FellPulse(player, job, plugin.fellStrikeTicks(), fellZoneFor(player, streak));
         job.pulse = pulse;
         pulses.put(player.getUniqueId(), pulse);
-        ForagingFx.start(player);
-        hud.striking(player, pulse.marker, pulse.zoneStart, pulse.zoneSize, pulse.hot());
+        ForagingFx.start(player, job.fellLocation());
+        hud.striking(player, pulse.marker, pulse.zoneStart, pulse.zoneSize, pulse.hot(), pulse.ready(), streak);
+    }
+
+    /**
+     * Midgame growth: the window is config size, +1 once the best Foraging skill reaches
+     * {@link ForagingStrike#WIDE_WINDOW_LEVEL}, +1 while on a hot streak.
+     */
+    private int fellZoneFor(Player player, int streak) {
+        int zone = plugin.fellZoneSize();
+        if (ForagingSkills.bestLevel(player) >= ForagingStrike.WIDE_WINDOW_LEVEL) {
+            zone++;
+        }
+        if (streak >= ForagingStrike.HOT_STREAK) {
+            zone++;
+        }
+        return zone;
     }
 
     private void tryCanopyCleaver(Player player, TreeJob job) {
@@ -543,6 +598,9 @@ public class ForagingListener implements Listener {
                 net.kyori.adventure.text.format.NamedTextColor.GREEN
         ));
         collapse(job);
+        // The Cleaver skips the bar — no streak step, no timing bonus, but the fall still tallies.
+        scheduleTally(job, player.getUniqueId(), "§6Perfect Fell §8(Cleaver)",
+                streaks.current(player.getUniqueId()), 0);
     }
 
     private static long canopyCleaverCooldownMs(ItemStack item) {
@@ -593,14 +651,72 @@ public class ForagingListener implements Listener {
         hud.hide(pulse.playerId);
         // Stop dig/swing spam while the tree comes down.
         collapsingPlayers.add(pulse.playerId);
+        boolean perfect = pulse.perfectHit();
+        int streak = streaks.bump(pulse.playerId);
         if (player != null) {
             ensureWoodCap(pulse.job, player);
-            ForagingFx.success(player, at);
+            ForagingFx.success(player, at, perfect, streak);
+            announceStreak(player, streak);
             // Release held dig so the client stops flailing the axe.
             player.clearActiveItem();
             tryForestDragonFromChop(player);
         }
         collapse(pulse.job);
+        int bonus = (perfect ? PERFECT_BONUS_XP : 0)
+                + Math.min(STREAK_BONUS_CAP, Math.max(0, streak - 1) * STREAK_BONUS_STEP);
+        scheduleTally(pulse.job, pulse.playerId, ForagingFx.word(perfect), streak, bonus);
+    }
+
+    /**
+     * Reward beat after the canopy is down: result, wood paid against the tree's cap, and the
+     * focus Foraging skill's level bar (bonus XP lands first so the bar shows it).
+     */
+    private void scheduleTally(TreeJob job, UUID playerId, String word, int streak, int bonusXp) {
+        if (job == null || job.noLoot || playerId == null) {
+            return;
+        }
+        long wait = job.logs.size() + 3L;
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            Player player = Bukkit.getPlayer(playerId);
+            if (player == null || !player.isOnline()) {
+                return;
+            }
+            ForagingSkills.bonus(player, bonusXp);
+            StringBuilder line = new StringBuilder(word).append(ForagingStrike.streakTag(streak));
+            if (job.woodCap > 0) {
+                line.append(" §8· §f").append(job.woodPaid).append("§8/§7").append(job.woodCap)
+                        .append(" §7").append(woodName(job.lastDrop));
+            }
+            String credit = ForagingSkills.credit(player);
+            if (credit != null) {
+                line.append("  §8│  ").append(credit);
+            } else if (tipped.add(playerId)) {
+                player.sendMessage("§8Tip: equip a Foraging skill in §7/skills foraging §8— it levels on every log,"
+                        + " and Perfect fells pay extra.");
+            }
+            ForagingFx.tally(player, line.toString());
+        }, wait);
+    }
+
+    private static void announceStreak(Player player, int streak) {
+        if (streak == ForagingStrike.HOT_STREAK) {
+            player.sendMessage("§6✦ Five clean fells. §7The grove is giving you a wider window. Don't waste it.");
+            player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BELL, 0.7f, 1.5f);
+        } else if (streak > ForagingStrike.HOT_STREAK && streak % 10 == 0) {
+            player.sendMessage("§6✦ " + streak + " clean fells. §7The trees have started a support group.");
+            player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BELL, 0.7f, 1.7f);
+        }
+    }
+
+    private static String woodName(Material drop) {
+        if (drop == null) {
+            return "wood";
+        }
+        String name = drop.name().toLowerCase(Locale.ROOT)
+                .replace("_log", "")
+                .replace("_stem", "")
+                .replace("_block", "");
+        return name.replace('_', ' ');
     }
 
     private void missChop(FellPulse pulse) {
@@ -612,11 +728,14 @@ public class ForagingListener implements Listener {
         // Keep fell mark — only this player is locked from THIS tree briefly.
         // Other trees stay instantly available (no global chop cooldown).
         markMissCooldown(pulse.playerId, pulse.job);
+        int lost = streaks.reset(pulse.playerId);
         Player player = Bukkit.getPlayer(pulse.playerId);
         hud.hide(pulse.playerId);
         if (player != null && player.isOnline()) {
-            ForagingFx.miss(player);
-            player.sendMessage("§7Missed the timing. §fThat trunk§7 cools ~1 min — other trees are free.");
+            ForagingFx.miss(player, pulse.missReason(), lost, CHOP_MISS_COOLDOWN_MS / 1000L);
+            if (taughtMiss.add(pulse.playerId)) {
+                player.sendMessage("§7Missed the timing. §fThat trunk§7 cools ~1 min — other trees are free.");
+            }
         }
     }
 
@@ -1236,6 +1355,7 @@ public class ForagingListener implements Listener {
             maybeIsleHeartwood(player, drop);
             QuestProgressHook.noteBroken(player, drop, 1);
             job.woodPaid++;
+            job.lastDrop = drop;
             return;
         }
         if (at.getWorld() != null) {
@@ -1431,6 +1551,8 @@ public class ForagingListener implements Listener {
         /** Soft wood payout cap for this fell (0 = unset). */
         int woodCap;
         int woodPaid;
+        /** Last wood type paid out — names the tally ("12/14 spruce"). */
+        Material lastDrop;
         UUID breaker;
         UUID suppressSwing;
         Snapshot fellLog;

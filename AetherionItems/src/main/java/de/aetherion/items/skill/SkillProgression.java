@@ -11,7 +11,10 @@ public final class SkillProgression {
      * Effect curve (base bonuses stay flat; this scales them).
      * Wave 2: early levels stay modest so T1 gear is the power spike;
      * mid is a slow climb; 75–100 is where skills become a real stack slice.
-     * ~1.00× @1 · ~1.24× @25 · ~1.50× @50 · ~2.60× @75 · ~6.50× @100 (incl. rarity).
+     * Curve only: ~1.00× @1 · ~1.24× @25 · ~1.50× @50 · ~2.60× @75 · ~6.10× @100.
+     * With rarity: ~1.33× @25 · ~1.66× @50 · ~2.84× @75 · ~6.50× @100.
+     * Midgame pass kept these numbers (Wave-2 intent holds) and made them readable
+     * instead: see {@link Stage} — Apprentice / Journeyman / Master in the menu.
      */
     public static final double PER_LEVEL = 0.0102d;
     public static final double PER_LEVEL_AFTER_50 = 0.044d;
@@ -112,5 +115,137 @@ public final class SkillProgression {
 
     public static boolean isMax(int level) {
         return clampLevel(level) >= MAX_LEVEL;
+    }
+
+    /** Where the curve starts to bend — MID uses {@link #PER_LEVEL_AFTER_50}. */
+    public static final int MID_FROM = 50;
+    /** Steepest stretch — LATE uses {@link #PER_LEVEL_AFTER_75}. */
+    public static final int LATE_FROM = 75;
+
+    /**
+     * Player-facing read of the effect curve so nobody has to know the constants.
+     * Apprentice climbs gently, Journeyman bends upward, Master is the steep wall.
+     */
+    public enum Stage {
+        APPRENTICE("§f", "Apprentice", "gentle climb — gear is your power spike"),
+        JOURNEYMAN("§e", "Journeyman", "bonuses climb faster from here"),
+        MASTER("§6", "Master", "steepest stretch — every level shows"),
+        MASTERED("§d", "Mastered", "nothing left to prove");
+
+        private final String color;
+        private final String title;
+        private final String hint;
+
+        Stage(String color, String title, String hint) {
+            this.color = color;
+            this.title = title;
+            this.hint = hint;
+        }
+
+        public String color() {
+            return color;
+        }
+
+        public String title() {
+            return title;
+        }
+
+        public String hint() {
+            return hint;
+        }
+
+        public String colored() {
+            return color + title;
+        }
+    }
+
+    public static Stage stage(int level) {
+        int clamped = clampLevel(level);
+        if (clamped >= MAX_LEVEL) {
+            return Stage.MASTERED;
+        }
+        if (clamped >= LATE_FROM) {
+            return Stage.MASTER;
+        }
+        if (clamped >= MID_FROM) {
+            return Stage.JOURNEYMAN;
+        }
+        return Stage.APPRENTICE;
+    }
+
+    /** Level range label for a stage, e.g. {@code 50–74}. */
+    public static String stageRange(Stage stage) {
+        return switch (stage) {
+            case APPRENTICE -> "1–" + (MID_FROM - 1);
+            case JOURNEYMAN -> MID_FROM + "–" + (LATE_FROM - 1);
+            case MASTER -> LATE_FROM + "–" + (MAX_LEVEL - 1);
+            case MASTERED -> Integer.toString(MAX_LEVEL);
+        };
+    }
+
+    /** Level that unlocks the next rarity, or {@code -1} at Mythic. */
+    public static int nextRarityLevel(int level) {
+        int tier = rarityTier(level);
+        if (tier >= 5) {
+            return -1;
+        }
+        return Math.min(MAX_LEVEL, (tier + 1) * RARITY_EVERY);
+    }
+
+    /** XP still missing from {@code level}/{@code xp} to reach {@code target}. */
+    public static long xpUntil(int level, int xp, int target) {
+        int from = clampLevel(level);
+        int to = clampLevel(target);
+        if (to <= from) {
+            return 0L;
+        }
+        long total = -Math.max(0, xp);
+        for (int current = from; current < to; current++) {
+            total += xpToNext(current);
+        }
+        return Math.max(0L, total);
+    }
+
+    /** 0–1 fill of the current level. */
+    public static double levelFill(int level, int xp) {
+        if (isMax(level)) {
+            return 1.0d;
+        }
+        int needed = xpToNext(level);
+        if (needed <= 0) {
+            return 1.0d;
+        }
+        return Math.max(0.0d, Math.min(1.0d, xp / (double) needed));
+    }
+
+    /** Pane color that matches a rarity — used for the loadout strip. */
+    public static org.bukkit.Material rarityPane(Rarity rarity) {
+        if (rarity == null) {
+            return org.bukkit.Material.GRAY_STAINED_GLASS_PANE;
+        }
+        return switch (rarity) {
+            case UNCOMMON -> org.bukkit.Material.LIME_STAINED_GLASS_PANE;
+            case RARE -> org.bukkit.Material.LIGHT_BLUE_STAINED_GLASS_PANE;
+            case EPIC -> org.bukkit.Material.PURPLE_STAINED_GLASS_PANE;
+            case LEGENDARY -> org.bukkit.Material.ORANGE_STAINED_GLASS_PANE;
+            case MYTHIC -> org.bukkit.Material.MAGENTA_STAINED_GLASS_PANE;
+            case AETHERED -> org.bukkit.Material.RED_STAINED_GLASS_PANE;
+            default -> org.bukkit.Material.WHITE_STAINED_GLASS_PANE;
+        };
+    }
+
+    /** Rarity name for copy: {@code LEGENDARY} → {@code Legendary}. */
+    public static String rarityName(Rarity rarity) {
+        if (rarity == null) {
+            return "Common";
+        }
+        String raw = rarity.name().toLowerCase(java.util.Locale.ROOT);
+        return Character.toUpperCase(raw.charAt(0)) + raw.substring(1);
+    }
+
+    /** Compact 10-cell bar for action bars / lore: {@code ▮▮▮▮▯▯▯▯▯▯}. */
+    public static String miniBar(double fill, String onColor) {
+        int filled = (int) Math.floor(Math.max(0.0d, Math.min(1.0d, fill)) * 10.0d);
+        return onColor + "▮".repeat(filled) + "§8" + "▮".repeat(10 - filled);
     }
 }

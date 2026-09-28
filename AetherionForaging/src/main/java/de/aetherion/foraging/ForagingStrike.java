@@ -2,15 +2,25 @@ package de.aetherion.foraging;
 
 import java.util.concurrent.ThreadLocalRandom;
 
+/**
+ * Fell bar vocabulary — same shape as the fishing strike bar:
+ * {@code Fell  [──██▓██──]  WORD}. Green is the window, the gold middle cell is Perfect,
+ * {@code ✦N} is the running streak.
+ */
 final class ForagingStrike {
 
     static final int SIZE = 21;
+    /** Streak that widens the window by one cell — same number as fishing's hot water. */
+    static final int HOT_STREAK = 5;
+    /** Best Foraging skill level that permanently widens the window by one cell. */
+    static final int WIDE_WINDOW_LEVEL = 50;
+    private static final int MAX_ZONE = 8;
 
     private ForagingStrike() {
     }
 
     static int zoneSize(int configured) {
-        return Math.max(3, Math.min(6, configured));
+        return Math.max(3, Math.min(MAX_ZONE, configured));
     }
 
     /**
@@ -32,12 +42,25 @@ final class ForagingStrike {
         return marker >= zoneStart && marker < zoneStart + zoneSize;
     }
 
+    static int perfectCell(int zoneStart, int zoneSize) {
+        return zoneStart + Math.max(0, zoneSize) / 2;
+    }
+
+    /** Tutorial / legacy shape — no streak, no ready tell. */
     static String title(int marker, int zoneStart, int zoneSize, boolean hot) {
+        return title(marker, zoneStart, zoneSize, hot, false, 0);
+    }
+
+    static String title(int marker, int zoneStart, int zoneSize, boolean hot, boolean ready, int streak) {
         StringBuilder out = new StringBuilder("§2Fell  §8[");
         int zoneEnd = zoneStart + zoneSize;
+        int perfect = perfectCell(zoneStart, zoneSize);
+        boolean onPerfect = marker == perfect;
         for (int i = 0; i < SIZE; i++) {
             if (i == marker) {
-                out.append(hot ? "§f◆" : "§e◇");
+                out.append(onPerfect ? "§6◆" : hot ? "§f◆" : "§e◇");
+            } else if (i == perfect) {
+                out.append(hot ? "§6█" : "§e█");
             } else if (i >= zoneStart && i < zoneEnd) {
                 out.append(hot ? "§a█" : "§2█");
             } else {
@@ -45,8 +68,24 @@ final class ForagingStrike {
             }
         }
         out.append("§8]  ");
-        out.append(hot ? "§aCHOP" : "§7hit green");
+        if (onPerfect) {
+            out.append("§6NOW");
+        } else if (hot) {
+            out.append("§aCHOP");
+        } else if (ready) {
+            out.append("§eready");
+        } else {
+            out.append("§7hit green");
+        }
+        out.append(streakTag(streak));
         return out.toString();
+    }
+
+    static String streakTag(int streak) {
+        if (streak < 2) {
+            return "";
+        }
+        return (streak >= HOT_STREAK ? "  §6✦" : "  §e✦") + streak;
     }
 
     static double progress(int marker) {

@@ -37,13 +37,23 @@ public final class SkillCommand implements CommandExecutor, TabCompleter {
             }
             return true;
         }
+        AetherSkill.Category page = category(args[0]);
+        if (page != null && args.length == 1) {
+            // /skills fishing — jump straight to a page.
+            if (sender instanceof Player player) {
+                menu.open(player, page);
+            } else {
+                sender.sendMessage("Usage: /skills [category]");
+            }
+            return true;
+        }
         if (!sender.hasPermission("aetherion.skills.admin")) {
             sender.sendMessage("§cNo permission.");
             return true;
         }
         String action = args[0].toLowerCase(Locale.ROOT);
         if (args.length < 2) {
-            sender.sendMessage("§cUsage: /skills <unlock|reset|setlevel> <player> ...");
+            sender.sendMessage("§cUsage: /skills <unlock|reset|wipe|setlevel|xp> <player> ...");
             return true;
         }
         Player target = Bukkit.getPlayerExact(args[1]);
@@ -54,7 +64,7 @@ public final class SkillCommand implements CommandExecutor, TabCompleter {
         if (action.equals("unlock") || action.equals("grant")) {
             skills.grantAllSlots(target);
             sender.sendMessage("§aUnlocked all skill slots for §f" + target.getName() + "§a.");
-            target.sendMessage("§aAll six skill slots just opened. Don't make it weird.");
+            target.sendMessage("§aAll seven skill slots just opened. Don't make it weird.");
             return true;
         }
         if (action.equals("reset")) {
@@ -71,7 +81,7 @@ public final class SkillCommand implements CommandExecutor, TabCompleter {
         }
         if (action.equals("setlevel") || action.equals("level")) {
             if (args.length < 4) {
-                sender.sendMessage("§cUsage: /skills setlevel <player> <skill|all> <1-60>");
+                sender.sendMessage("§cUsage: /skills setlevel <player> <skill|all> <1-" + SkillProgression.MAX_LEVEL + ">");
                 return true;
             }
             int level;
@@ -98,16 +108,53 @@ public final class SkillCommand implements CommandExecutor, TabCompleter {
             target.sendMessage("§a" + skill.displayName() + " §7is now §fLv. " + level + "§7.");
             return true;
         }
-        sender.sendMessage("§cUsage: /skills <unlock|reset|setlevel> <player> ...");
+        if (action.equals("xp") || action.equals("addxp")) {
+            if (args.length < 4) {
+                sender.sendMessage("§cUsage: /skills xp <player> <skill> <amount>");
+                return true;
+            }
+            AetherSkill skill = AetherSkill.byId(args[2]);
+            if (skill == null) {
+                sender.sendMessage("§cUnknown skill.");
+                return true;
+            }
+            int amount;
+            try {
+                amount = Integer.parseInt(args[3]);
+            } catch (NumberFormatException exception) {
+                sender.sendMessage("§cNot a number.");
+                return true;
+            }
+            skills.grantXpDirect(target, skill, Math.max(1, amount));
+            sender.sendMessage("§aGave §f" + amount + " XP §ato §f" + skill.displayName()
+                    + " §afor §f" + target.getName() + "§a (normal level-up path).");
+            return true;
+        }
+        sender.sendMessage("§cUsage: /skills <unlock|reset|wipe|setlevel|xp> <player> ...");
         return true;
+    }
+
+    private static AetherSkill.Category category(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        for (AetherSkill.Category category : AetherSkill.Category.values()) {
+            if (category.name().equalsIgnoreCase(raw)) {
+                return category;
+            }
+        }
+        return null;
     }
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            Stream<String> options = Stream.of("open");
+            Stream<String> options = Stream.concat(
+                    Stream.of("open"),
+                    Arrays.stream(AetherSkill.Category.values()).map(c -> c.name().toLowerCase(Locale.ROOT))
+            );
             if (sender.hasPermission("aetherion.skills.admin")) {
-                options = Stream.concat(options, Stream.of("unlock", "reset", "wipe", "setlevel"));
+                options = Stream.concat(options, Stream.of("unlock", "reset", "wipe", "setlevel", "xp"));
             }
             return options
                     .filter(option -> option.startsWith(args[0].toLowerCase(Locale.ROOT)))
@@ -119,7 +166,8 @@ public final class SkillCommand implements CommandExecutor, TabCompleter {
                     .filter(name -> name.toLowerCase(Locale.ROOT).startsWith(args[1].toLowerCase(Locale.ROOT)))
                     .toList();
         }
-        if (args.length == 3 && args[0].equalsIgnoreCase("setlevel") && sender.hasPermission("aetherion.skills.admin")) {
+        if (args.length == 3 && (args[0].equalsIgnoreCase("setlevel") || args[0].equalsIgnoreCase("xp"))
+                && sender.hasPermission("aetherion.skills.admin")) {
             return Stream.concat(
                             Stream.of("all"),
                             Arrays.stream(AetherSkill.values()).map(AetherSkill::id)

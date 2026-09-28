@@ -1,0 +1,93 @@
+# ============================================================
+# The Unbroken – keeper of the gate of the Last Seed
+# Pre-boss of the World Eater encounter. The whole fight lives in
+#   de.aetherion.bossengine.instance.worldeater.UnbrokenDirector
+# This file only supplies HP gates, the transition window and a hitbox.
+#
+# At the site (world "world_eater", built with /boss worldeater build) it is
+# woken by the site when someone steps onto the plaza: a bedrock statue
+# chained to the gate. Its death tears the gate open. Spawned anywhere
+# else (/boss spawn world_eater_unbroken) it rises out of the ground and
+# fights without touching the world.
+#
+# Bedrock: blades do 30% unless it is cracked open (after Hammerfall,
+# Strata, and all through the Weight). At 50% its left arm shatters.
+# HP tuned for a short gate fight (~12k); crack windows still matter.
+# ============================================================
+
+id: world_eater_unbroken
+display-name: "&7&lThe Unbroken"
+# Silhouette only: invisible hitbox. The body is ~40 BlockDisplays.
+entity-type: IRON_GOLEM
+model-engine-id: ""
+
+attributes:
+  max-health: 12000
+  movement-speed: 0.0
+  attack-damage: 0
+  scale: 2.2
+  follow-range: 32
+  knockback-resistance: 1.0
+
+options:
+  glowing: false
+  custom-name-visible: false
+  silent: true
+  invulnerable-spawn-ticks: 0
+  # The site rebuilds itself after a restart; a saved body would be an orphan.
+  persistent: false
+  remove-when-far-away: false
+  prevent-item-pickup: true
+
+conditions:
+  max-instances: 1
+  leash-radius: 24
+  leash-action: TELEPORT
+
+phases:
+  - id: the_floor
+    health-percent: 100
+    display-name: "&7&lThe Unbroken"
+    skills: []
+
+  # The arm breaks. Authored at 120 ticks; other values rescale the timeline.
+  - id: one_arm
+    health-percent: 50
+    display-name: "&7&lThe Unbroken &8· &5Cracked"
+    transition:
+      duration-ticks: 120
+      invulnerable: true
+      freeze-ai: true
+      explode: false
+    skills: []
+
+skills: []
+
+# Paid the normal way. The real reward is behind the gate.
+loot:
+  damage-based: true
+  participation-threshold-percent: 5.0
+  experience: 1500
+
+  killer-bonus: []
+
+  rank-loot:
+    1:
+      - source: AETHERION
+        item-id: random_booster
+        amount: 1
+        chance: 0.25
+
+  top-damagers:
+    count: 0
+    items: []
+
+  shared: []
+
+  per-damager:
+    - source: VANILLA
+      material: CRYING_OBSIDIAN
+      min-amount: 2
+      max-amount: 6
+      chance: 1.0
+      scale-with-damage: true

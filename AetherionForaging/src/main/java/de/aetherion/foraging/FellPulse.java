@@ -15,7 +15,12 @@ final class FellPulse {
     private int direction = 1;
     private int ticks;
     private boolean resolved;
+    private boolean chopped;
     private boolean hit;
+    private boolean perfectHit;
+    private boolean early;
+    /** Ready tell already played on this pass toward the window. */
+    private boolean readyCued;
 
     FellPulse(Player player, ForagingListener.TreeJob job, int strikeTicks, int zoneSize) {
         this.playerId = player.getUniqueId();
@@ -48,7 +53,11 @@ final class FellPulse {
             return false;
         }
         resolved = true;
+        chopped = true;
         hit = ForagingStrike.inZone(marker, zoneStart, zoneSize);
+        perfectHit = marker == ForagingStrike.perfectCell(zoneStart, zoneSize);
+        // The marker bounces: "early" means it hadn't reached the window on its current pass.
+        early = direction > 0 ? marker < zoneStart : marker >= zoneStart + zoneSize;
         return true;
     }
 
@@ -56,7 +65,44 @@ final class FellPulse {
         return ForagingStrike.inZone(marker, zoneStart, zoneSize);
     }
 
+    /** Marker is within two cells of the window and heading into it — the creak tell. */
+    boolean ready() {
+        if (hot()) {
+            return false;
+        }
+        int zoneEnd = zoneStart + zoneSize;
+        if (direction > 0) {
+            return marker >= zoneStart - 2 && marker < zoneStart;
+        }
+        return marker >= zoneEnd && marker <= zoneEnd + 1;
+    }
+
+    /** True once per pass, the tick the marker becomes {@link #ready()}. */
+    boolean readyEdge() {
+        boolean ready = ready();
+        if (ready && !readyCued) {
+            readyCued = true;
+            return true;
+        }
+        if (!ready && !hot()) {
+            readyCued = false;
+        }
+        return false;
+    }
+
     boolean hit() {
         return hit;
+    }
+
+    boolean perfectHit() {
+        return hit && perfectHit;
+    }
+
+    /** Why it missed, for the fail line: early, late, or never swung. */
+    String missReason() {
+        if (!chopped) {
+            return "too slow";
+        }
+        return early ? "early" : "late";
     }
 }

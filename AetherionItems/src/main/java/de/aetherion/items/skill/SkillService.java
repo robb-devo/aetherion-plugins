@@ -52,6 +52,15 @@ public final class SkillService implements StatProvider, Listener {
     private final ConcurrentHashMap<UUID, Integer> rewardBatchDepth = new ConcurrentHashMap<>();
     /** Earliest pre-batch account level to announce when the batch closes. */
     private final ConcurrentHashMap<UUID, Integer> deferredAccountFrom = new ConcurrentHashMap<>();
+    /** Skill level-ups collected this tick — flushed as one line so seven skills don't spam seven. */
+    private final ConcurrentHashMap<UUID, List<LevelBeat>> pendingBeats = new ConcurrentHashMap<>();
+    private final Set<UUID> beatFlushQueued = ConcurrentHashMap.newKeySet();
+    /** Per-player cue throttles ({@code uuid|key} → until millis). Cleared on quit. */
+    private final ConcurrentHashMap<String, Long> cueUntil = new ConcurrentHashMap<>();
+    /** Last boss Boss Grudge announced for — one cue per fight, not per hit. */
+    private final ConcurrentHashMap<UUID, UUID> grudgeTarget = new ConcurrentHashMap<>();
+    /** Cave Sense currently lit (dark) — cue only on the dark transition. */
+    private final Set<UUID> caveSenseLit = ConcurrentHashMap.newKeySet();
     private volatile boolean dirty;
     private HealthListener health;
 
@@ -80,14 +89,32 @@ public final class SkillService implements StatProvider, Listener {
 
     public int unlockedSlots(Player player) {
         PlayerSkills skills = of(player);
+        return Math.min(SLOT_COUNT, coinSlots(player) + skills.bonusSlots);
+    }
+
+    /** Slots opened by lifetime Legacy coins alone (ignores admin / bot bonus slots). */
+    public int coinSlots(Player player) {
         int unlocked = 1;
-        long lifetime = coins == null ? 0L : coins.lifetime(player);
+        long lifetime = lifetimeCoins(player);
         for (int i = 1; i < SLOT_COUNT; i++) {
             if (lifetime >= COIN_UNLOCK[i]) {
                 unlocked = i + 1;
             }
         }
-        return Math.min(SLOT_COUNT, unlocked + skills.bonusSlots);
+        return unlocked;
+    }
+
+    public long lifetimeCoins(Player player) {
+        return coins == null || player == null ? 0L : coins.lifetime(player);
+    }
+
+    /** Lifetime-coin mark for the next slot, or {@code -1} once all seven are open. */
+    public long nextSlotCost(Player player) {
+        if (unlockedSlots(player) >= SLOT_COUNT) {
+            return -1L;
+        }
+        int next = coinSlots(player);
+        return next >= SLOT_COUNT ? -1L : COIN_UNLOCK[next];
     }
 
     public String unlockHint(int slotIndex) {
@@ -378,6 +405,17 @@ public final class SkillService implements StatProvider, Listener {
         announceAccountLevel(player, before);
     }
 
+    /**
+     * Admin/test grant straight into one skill (equipped or not). Runs the normal level-up path,
+     * so every moment (line, rarity title, stage, Mastered) fires exactly as in play.
+     */
+    public void grantXpDirect(Player player, AetherSkill skill, int amount) {
+        if (player == null || skill == null || amount <= 0) {
+            return;
+        }
+        addXp(player, skill, amount);
+    }
+
     public int highestLevel(Player player, AetherSkill.Category category) {
         if (player == null || category == null) {
             return 1;
@@ -471,6 +509,69 @@ public final class SkillService implements StatProvider, Listener {
     }
 
     /**
+     * Minigame bonus XP (perfect timing, streaks, cleared events). Goes to equipped skills of
+     * {@code category} (Utility at half, like every grant). No pet share — the base grant
+     * already fed pets once for this action.
+     */
+    public void grantGatherBonus(Player player, AetherSkill.Category category, int amount) {
+        if (!canEarnXp(player) || category == null || amount <= 0) {
+            return;
+        }
+        grant(player, category, amount);
+    }
+
+    /** Highest-level equipped skill of a category — the one a gathering loop credits. */
+    public AetherSkill focusSkill(Player player, AetherSkill.Category category) {
+        if (player == null || category == null) {
+            return null;
+        }
+        AetherSkill best = null;
+        int bestLevel = 0;
+        for (AetherSkill skill : equipped(player)) {
+            if (skill.category() != category) {
+                continue;
+            }
+            int skillLevel = level(player, skill);
+            if (best == null || skillLevel > bestLevel) {
+                best = skill;
+                bestLevel = skillLevel;
+            }
+        }
+        return best;
+    }
+
+    /** Skill name in its current rarity color. */
+    public String coloredName(Player player, AetherSkill skill) {
+        if (skill == null) {
+            return "";
+        }
+        return SkillProgression.rarity(level(player, skill)).getChatColor() + skill.displayName();
+    }
+
+    /**
+     * Compact progress read for action bars: {@code Bite Me 34 ▮▮▮▮▯▯▯▯▯▯}.
+     * Gathering loops append this to their success beat so growth is visible per catch/fell.
+     */
+    public String progressLine(Player player, AetherSkill skill) {
+        if (player == null || skill == null) {
+            return "";
+        }
+        int skillLevel = level(player, skill);
+        String name = coloredName(player, skill);
+        if (SkillProgression.isMax(skillLevel)) {
+            return name + " §dMAX";
+        }
+        return name + " §f" + skillLevel + " "
+                + SkillProgression.miniBar(SkillProgression.levelFill(skillLevel, xp(player, skill)), "§a");
+    }
+
+    /** {@link #progressLine} for the focus skill of a category, or {@code null} with none equipped. */
+    public String loopCredit(Player player, AetherSkill.Category category) {
+        AetherSkill focus = focusSkill(player, category);
+        return focus == null ? null : progressLine(player, focus);
+    }
+
+    /**
      * Domain-scoped compact chance from player skills.
      * Mining / foraging / farming / fishing each only boost their own drops.
      */
@@ -526,6 +627,83 @@ public final class SkillService implements StatProvider, Listener {
 
     public static int compactedChancePercent(int rarityTier) {
         return (int) Math.round(compactedChanceForTier(rarityTier) * 100.0d);
+    }
+
+    /**
+     * A compact proc the ledger skill earned (caller attributes by chance share).
+     * Always a soft click; the named chat line at most once a minute per skill.
+     */
+    public void noteCompactProc(Player player, boolean mining, boolean oak, boolean wheat, boolean fish) {
+        AetherSkill.Flag flag;
+        String line;
+        if (mining) {
+            flag = AetherSkill.Flag.PACK_RAT;
+            line = "compacted that one. The rocks didn't object.";
+        } else if (oak) {
+            flag = AetherSkill.Flag.TIMBER_TAX;
+            line = "taxed that log into a bundle.";
+        } else if (wheat) {
+            flag = AetherSkill.Flag.SEED_LEDGER;
+            line = "filed that harvest as a bale.";
+        } else if (fish) {
+            flag = AetherSkill.Flag.FISH_LEDGER;
+            line = "itemized that catch. Compacted.";
+        } else {
+            return;
+        }
+        AetherSkill skill = equippedWithFlag(player, flag);
+        if (skill == null || !player.isOnline()) {
+            return;
+        }
+        int tier = SkillProgression.rarityTier(level(player, skill));
+        player.playSound(player.getLocation(), Sound.ITEM_BUNDLE_INSERT, 0.55f, 1.05f + tier * 0.08f);
+        if (cueReady(player, "compact_" + flag.name(), 60_000L)) {
+            player.sendMessage("§8⌁ " + coloredName(player, skill) + " §7" + line);
+        }
+    }
+
+    /**
+     * First hit on a new boss with Boss Grudge equipped: one line, one thud. Not per hit.
+     * Quiet inside dungeons — floors run their own chat.
+     */
+    public void noteBossHit(Player attacker, LivingEntity boss) {
+        if (attacker == null || boss == null || !hasFlag(attacker, AetherSkill.Flag.BOSS_GRUDGE)) {
+            return;
+        }
+        if (de.aetherion.items.dungeon.DungeonArmor.inDungeon(attacker)) {
+            return;
+        }
+        UUID previous = grudgeTarget.put(attacker.getUniqueId(), boss.getUniqueId());
+        if (boss.getUniqueId().equals(previous)) {
+            return;
+        }
+        AetherSkill skill = equippedWithFlag(attacker, AetherSkill.Flag.BOSS_GRUDGE);
+        double bonus = 10.0d * multiplier(attacker, AetherSkill.Flag.BOSS_GRUDGE);
+        String name = boss.getName();
+        attacker.sendMessage("§8⌁ " + coloredName(attacker, skill) + " §8· §f" + name
+                + " §7goes on the list. §8+" + de.aetherion.items.item.ItemLore.formatStat(bonus) + "% damage");
+        attacker.playSound(attacker.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASEDRUM, 0.7f, 0.6f);
+    }
+
+    /** Short chat tag for coin lines Blood Tax paid into, e.g. {@code  · Blood Tax}. */
+    public String bloodTaxTag(Player player) {
+        AetherSkill skill = equippedWithFlag(player, AetherSkill.Flag.BLOOD_TAX);
+        return skill == null ? "" : " §8· " + coloredName(player, skill);
+    }
+
+    /** True at most once per {@code cooldownMs} per player + key. */
+    private boolean cueReady(Player player, String key, long cooldownMs) {
+        if (player == null) {
+            return false;
+        }
+        long now = System.currentTimeMillis();
+        String id = player.getUniqueId() + "|" + key;
+        Long until = cueUntil.get(id);
+        if (until != null && until > now) {
+            return false;
+        }
+        cueUntil.put(id, now + cooldownMs);
+        return true;
     }
 
     public double coinMultiplier(Player player) {
@@ -659,6 +837,7 @@ public final class SkillService implements StatProvider, Listener {
             config.set(path + ".bonusSlots", skills.bonusSlots);
             config.set(path + ".bonusXp", skills.bonusXp);
             config.set(path + ".claimedShardLevel", skills.claimedShardLevel);
+            config.set(path + ".seenSlots", skills.seenSlots);
             for (AetherSkill skill : AetherSkill.values()) {
                 int level = skills.level(skill);
                 int xp = skills.xp(skill);
@@ -763,12 +942,11 @@ public final class SkillService implements StatProvider, Listener {
         int xp = data.xp(skill) + amount;
         int needed = SkillProgression.xpToNext(level);
         boolean leveled = false;
+        int startLevel = level;
         while (xp >= needed && needed > 0 && level < SkillProgression.MAX_LEVEL) {
             xp -= needed;
-            int previous = level;
             level++;
             leveled = true;
-            announceSkillLevel(player, skill, previous, level);
             needed = SkillProgression.xpToNext(level);
         }
         if (SkillProgression.isMax(level)) {
@@ -777,27 +955,173 @@ public final class SkillService implements StatProvider, Listener {
         data.levels.put(skill, level);
         data.xp.put(skill, xp);
         dirty = true;
+        if (leveled) {
+            queueLevelBeat(player, skill, startLevel, level);
+        }
         announceAccountLevel(player, accountBefore);
         if (leveled) {
             refresh(player);
         }
     }
 
-    private void announceSkillLevel(Player player, AetherSkill skill, int previous, int level) {
-        Rarity before = SkillProgression.rarity(previous);
-        Rarity after = SkillProgression.rarity(level);
-        String color = after.getChatColor().toString();
-        player.sendMessage("§d" + skill.displayName() + " §7reached §fLv. " + level
-                + " §8· " + color + after.name());
-        if (level % 10 == 9 || level % 10 == 0) {
-            player.sendMessage("§7" + SkillFlavor.tagline(skill, level));
+    /**
+     * Level-ups land next tick as one beat: every skill that moved on one line, plus at most
+     * one headline moment (Mastered › new rarity › curve stage) with its own sound/title.
+     */
+    private void queueLevelBeat(Player player, AetherSkill skill, int from, int to) {
+        if (player == null || skill == null || to <= from) {
+            return;
         }
-        if (before != after) {
-            player.sendMessage("§6New rarity. The skill has thoughts now. +"
-                    + SkillProgression.rarityBonusPercent(level) + "% effect.");
-            player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.7f, 1.3f);
+        UUID id = player.getUniqueId();
+        List<LevelBeat> beats = pendingBeats.computeIfAbsent(id, ignored -> new ArrayList<>());
+        LevelBeat existing = null;
+        for (LevelBeat beat : beats) {
+            if (beat.skill == skill) {
+                existing = beat;
+                break;
+            }
+        }
+        if (existing != null) {
+            existing.from = Math.min(existing.from, from);
+            existing.to = Math.max(existing.to, to);
         } else {
-            player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.4f, 1.6f);
+            beats.add(new LevelBeat(skill, from, to));
+        }
+        if (beatFlushQueued.add(id)) {
+            plugin.getServer().getScheduler().runTask(plugin, () -> flushLevelBeats(id));
+        }
+    }
+
+    private void flushLevelBeats(UUID id) {
+        beatFlushQueued.remove(id);
+        List<LevelBeat> beats = pendingBeats.remove(id);
+        Player player = Bukkit.getPlayer(id);
+        if (beats == null || beats.isEmpty() || player == null || !player.isOnline()) {
+            return;
+        }
+        StringBuilder line = new StringBuilder("§d▲ ");
+        for (int i = 0; i < beats.size(); i++) {
+            LevelBeat beat = beats.get(i);
+            if (i > 0) {
+                line.append(" §8· ");
+            }
+            line.append(coloredName(player, beat.skill)).append(" §f").append(beat.to);
+            if (beat.to - beat.from > 1) {
+                line.append(" §7(+").append(beat.to - beat.from).append(')');
+            }
+        }
+        player.sendMessage(line.toString());
+
+        LevelBeat headline = null;
+        int headlineRank = 0;
+        for (LevelBeat beat : beats) {
+            int rank = beat.rank();
+            if (rank > headlineRank) {
+                headline = beat;
+                headlineRank = rank;
+            }
+        }
+        if (headline == null) {
+            // Decade marks keep the old flavor habit, minus the ceremony.
+            for (LevelBeat beat : beats) {
+                if (beat.to / 10 > beat.from / 10) {
+                    player.sendMessage("§8“" + SkillFlavor.tagline(beat.skill, beat.to) + "”");
+                    break;
+                }
+            }
+            player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.35f, 1.6f);
+            return;
+        }
+        playHeadline(player, headline);
+    }
+
+    private void playHeadline(Player player, LevelBeat beat) {
+        AetherSkill skill = beat.skill;
+        Rarity rarity = SkillProgression.rarity(beat.to);
+        String name = rarity.getChatColor() + skill.displayName();
+        switch (beat.rank()) {
+            case LevelBeat.RANK_MASTERED -> {
+                player.sendMessage("§d✦ " + name + " §dMASTERED§7. It has nothing left to prove.");
+                player.sendMessage("§8“" + SkillFlavor.tagline(skill, beat.to) + "”");
+                showTitle(player, "§dMastered", name + " §8· §7Lv. " + SkillProgression.MAX_LEVEL);
+                player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.8f, 1.0f);
+                player.playSound(player.getLocation(), Sound.ENTITY_FIREWORK_ROCKET_TWINKLE, 0.6f, 1.2f);
+                rarityRing(player, rarity);
+            }
+            case LevelBeat.RANK_RARITY -> {
+                String rarityName = SkillProgression.rarityName(rarity);
+                player.sendMessage("§6✦ " + name + " §7is now " + rarity.getChatColor() + rarityName
+                        + "§7. §8+" + SkillProgression.rarityBonusPercent(beat.to) + "% effect from rarity");
+                player.sendMessage("§8“" + SkillFlavor.tagline(skill, beat.to) + "”");
+                showTitle(player, name, "§7now " + rarity.getChatColor() + rarityName);
+                player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.65f, 1.3f);
+                player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.7f, 1.2f);
+                rarityRing(player, rarity);
+            }
+            default -> {
+                SkillProgression.Stage stage = SkillProgression.stage(beat.to);
+                player.sendMessage("§e» " + name + " §7reached " + stage.colored()
+                        + "§7 — " + stage.hint() + ".");
+                player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BELL, 0.6f, 1.2f);
+                player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.3f, 1.4f);
+            }
+        }
+    }
+
+    private static void showTitle(Player player, String title, String subtitle) {
+        var legacy = net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection();
+        player.showTitle(net.kyori.adventure.title.Title.title(
+                legacy.deserialize(title),
+                legacy.deserialize(subtitle),
+                net.kyori.adventure.title.Title.Times.times(
+                        java.time.Duration.ofMillis(120),
+                        java.time.Duration.ofMillis(1700),
+                        java.time.Duration.ofMillis(400)
+                )
+        ));
+    }
+
+    /** Personal ring of rarity-colored dust — only the player sees it. */
+    private static void rarityRing(Player player, Rarity rarity) {
+        org.bukkit.Location base = player.getLocation().add(0, 0.15, 0);
+        org.bukkit.Particle.DustOptions dust = new org.bukkit.Particle.DustOptions(rarity.getArmorColor(), 1.1f);
+        for (int i = 0; i < 18; i++) {
+            double angle = (Math.PI * 2.0d * i) / 18.0d;
+            player.spawnParticle(
+                    org.bukkit.Particle.DUST,
+                    base.clone().add(Math.cos(angle) * 0.9d, 0.0d, Math.sin(angle) * 0.9d),
+                    1, 0.0d, 0.02d, 0.0d, 0.0d, dust
+            );
+        }
+    }
+
+    private static final class LevelBeat {
+        static final int RANK_NONE = 0;
+        static final int RANK_STAGE = 1;
+        static final int RANK_RARITY = 2;
+        static final int RANK_MASTERED = 3;
+
+        final AetherSkill skill;
+        int from;
+        int to;
+
+        LevelBeat(AetherSkill skill, int from, int to) {
+            this.skill = skill;
+            this.from = from;
+            this.to = to;
+        }
+
+        int rank() {
+            if (SkillProgression.isMax(to) && !SkillProgression.isMax(from)) {
+                return RANK_MASTERED;
+            }
+            if (SkillProgression.rarityTier(to) > SkillProgression.rarityTier(from)) {
+                return RANK_RARITY;
+            }
+            if (SkillProgression.stage(to) != SkillProgression.stage(from)) {
+                return RANK_STAGE;
+            }
+            return RANK_NONE;
         }
     }
 
@@ -889,6 +1213,13 @@ public final class SkillService implements StatProvider, Listener {
 
     @EventHandler
     public void onQuit(org.bukkit.event.player.PlayerQuitEvent event) {
+        UUID id = event.getPlayer().getUniqueId();
+        pendingBeats.remove(id);
+        beatFlushQueued.remove(id);
+        grudgeTarget.remove(id);
+        caveSenseLit.remove(id);
+        String prefix = id + "|";
+        cueUntil.keySet().removeIf(key -> key.startsWith(prefix));
         saveIfDirty();
     }
 
@@ -944,10 +1275,78 @@ public final class SkillService implements StatProvider, Listener {
 
     private void tick() {
         for (Player player : Bukkit.getOnlinePlayers()) {
-            if (hasFlag(player, AetherSkill.Flag.NIGHT_OWL) || hasFlag(player, AetherSkill.Flag.CAVE_SENSE)) {
+            boolean caveSense = hasFlag(player, AetherSkill.Flag.CAVE_SENSE);
+            if (caveSense || hasFlag(player, AetherSkill.Flag.NIGHT_OWL)) {
                 refresh(player);
             }
+            tickCaveSense(player, caveSense);
+            checkSlotUnlocks(player);
         }
+    }
+
+    /** Cave Sense speaks up once when the dark starts paying — then stays quiet a while. */
+    private void tickCaveSense(Player player, boolean equipped) {
+        UUID id = player.getUniqueId();
+        if (!equipped || player.getGameMode() == GameMode.SPECTATOR) {
+            caveSenseLit.remove(id);
+            return;
+        }
+        if (!WorldLight.isDark(player)) {
+            caveSenseLit.remove(id);
+            return;
+        }
+        if (!caveSenseLit.add(id) || !cueReady(player, "cave_sense", 120_000L)) {
+            return;
+        }
+        AetherSkill skill = equippedWithFlag(player, AetherSkill.Flag.CAVE_SENSE);
+        double power = 10.0d * multiplier(player, AetherSkill.Flag.CAVE_SENSE);
+        var legacy = net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection();
+        player.sendActionBar(legacy.deserialize(coloredName(player, skill)
+                + " §8· §7the dark is paying §8(+"
+                + de.aetherion.items.item.ItemLore.formatStat(power) + " Mining Power)"));
+        player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_RESONATE, 0.4f, 0.8f);
+    }
+
+    /**
+     * Lifetime coins open slots silently in the math — this makes the moment land.
+     * {@code seenSlots < 0} means "never measured" (existing players after this update):
+     * record quietly instead of replaying every old unlock.
+     */
+    private void checkSlotUnlocks(Player player) {
+        PlayerSkills skills = of(player);
+        int now = unlockedSlots(player);
+        if (skills.seenSlots < 0 || now < skills.seenSlots) {
+            skills.seenSlots = now;
+            dirty = true;
+            return;
+        }
+        if (now == skills.seenSlots) {
+            return;
+        }
+        int from = skills.seenSlots;
+        skills.seenSlots = now;
+        dirty = true;
+        announceSlotUnlock(player, from, now);
+    }
+
+    private void announceSlotUnlock(Player player, int from, int now) {
+        var legacy = net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection();
+        String which = now - from > 1 ? "Slots " + (from + 1) + "–" + now : "Slot " + now;
+        showTitle(player, "§a" + which.toUpperCase(Locale.ROOT) + " OPEN",
+                now >= SLOT_COUNT ? "§7All seven. The locker room is yours." : "§7Room for one more opinion.");
+        player.sendMessage("§a✚ Skill " + which + " unlocked §8· §7Legacy coins did the talking.");
+        long next = nextSlotCost(player);
+        if (next > 0L) {
+            player.sendMessage("§8   Next slot at §f" + String.format(Locale.US, "%,d", next)
+                    + " §8lifetime coins.");
+        }
+        player.sendMessage(legacy.deserialize("§8   ")
+                .append(legacy.deserialize("§e[Open Skills]")
+                        .clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand("/skills"))
+                        .hoverEvent(net.kyori.adventure.text.event.HoverEvent.showText(
+                                legacy.deserialize("§7Fill the new slot")))));
+        player.playSound(player.getLocation(), Sound.BLOCK_IRON_TRAPDOOR_OPEN, 0.8f, 1.1f);
+        player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.55f, 1.2f);
     }
 
     public void reloadFromDisk() {
@@ -991,6 +1390,7 @@ public final class SkillService implements StatProvider, Listener {
             skills.bonusSlots = section.getInt(key + ".bonusSlots");
             skills.bonusXp = section.getLong(key + ".bonusXp");
             skills.claimedShardLevel = section.getInt(key + ".claimedShardLevel");
+            skills.seenSlots = section.getInt(key + ".seenSlots", -1);
             ConfigurationSection progress = section.getConfigurationSection(key + ".progress");
             if (progress != null) {
                 for (String skillId : progress.getKeys(false)) {
@@ -1109,6 +1509,8 @@ public final class SkillService implements StatProvider, Listener {
         private int bonusSlots;
         private long bonusXp;
         private int claimedShardLevel;
+        /** Slot count the player has already been told about; -1 = not yet measured. */
+        private int seenSlots = -1;
 
         private PlayerSkills() {
             java.util.Arrays.fill(slots, "");

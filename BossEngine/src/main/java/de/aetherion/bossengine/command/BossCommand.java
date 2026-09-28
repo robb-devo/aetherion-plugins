@@ -4,11 +4,14 @@ import de.aetherion.bossengine.BossEngine;
 import de.aetherion.bossengine.api.SpawnCause;
 import de.aetherion.bossengine.event.BossDespawnEvent;
 import de.aetherion.bossengine.instance.BossInstance;
+import de.aetherion.bossengine.instance.saint.SaintStage;
+import de.aetherion.bossengine.instance.worldeater.WorldEaterSite;
 import de.aetherion.bossengine.item.SpawnItemDefinition;
 import de.aetherion.bossengine.model.BossTemplate;
 import de.aetherion.bossengine.util.TextUtil;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -47,6 +50,8 @@ public class BossCommand implements CommandExecutor, TabCompleter {
             case "reload" -> reload(sender);
             case "give" -> give(sender, args);
             case "info" -> info(sender, args);
+            case "stage" -> stage(sender, args);
+            case "worldeater" -> worldEater(sender, args);
             default -> sendHelp(sender);
         }
         return true;
@@ -182,6 +187,88 @@ public class BossCommand implements CommandExecutor, TabCompleter {
                 + " &7" + boss.getConditions().getLeashAction().name()));
     }
 
+    private void stage(CommandSender sender, String[] args) {
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage(TextUtil.component("&cPlayers only."));
+            return;
+        }
+        if (args.length < 2) {
+            sender.sendMessage(TextUtil.component("&cUsage: /boss stage <build|remove>"));
+            return;
+        }
+        String action = args[1].toLowerCase(Locale.ROOT);
+        Location at = player.getLocation();
+        switch (action) {
+            case "build" -> {
+                Location center = SaintStage.buildPermanent(plugin, at);
+                sender.sendMessage(TextUtil.component(
+                        "&aGilded Proscenium built at &f"
+                                + center.getBlockX() + " " + center.getBlockY() + " " + center.getBlockZ()
+                                + " &7(permanent — later Saint fights reuse it)."
+                ));
+            }
+            case "remove" -> {
+                SaintStage.strikePermanent(plugin, at);
+                sender.sendMessage(TextUtil.component("&aStruck the permanent stage at your feet (layout-matched)."));
+            }
+            default -> sender.sendMessage(TextUtil.component("&cUsage: /boss stage <build|remove>"));
+        }
+    }
+
+    /** The Last Seed: the World Eater's dedicated void world and its encounter. */
+    private void worldEater(CommandSender sender, String[] args) {
+        WorldEaterSite site = WorldEaterSite.get();
+        if (site == null) {
+            sender.sendMessage(TextUtil.component("&cThe World Eater site is not running."));
+            return;
+        }
+        String action = args.length < 2 ? "status" : args[1].toLowerCase(Locale.ROOT);
+        switch (action) {
+            case "create" -> {
+                if (site.createWorld() == null) {
+                    sender.sendMessage(TextUtil.component("&cCould not create or load world &f" + site.worldName() + "&c."));
+                    return;
+                }
+                sender.sendMessage(TextUtil.component("&5World Eater &8» &aWorld &f" + site.worldName()
+                        + " &aloaded. &7Next: &f/boss worldeater build"));
+            }
+            case "build" -> {
+                if (!site.build(sender)) {
+                    sender.sendMessage(TextUtil.component("&cWorld &f" + site.worldName() + " &cis not loaded. &7(/boss worldeater create)"));
+                    return;
+                }
+                sender.sendMessage(TextUtil.component("&5World Eater &8» &7Building the Last Seed over the next few seconds…"));
+            }
+            case "reset" -> {
+                if (!site.reset(sender)) {
+                    sender.sendMessage(TextUtil.component("&cWorld &f" + site.worldName() + " &cis not loaded."));
+                    return;
+                }
+                sender.sendMessage(TextUtil.component("&5World Eater &8» &7Resetting: bosses removed, the site is rebuilt to its layout."));
+            }
+            case "go" -> {
+                if (!(sender instanceof Player player)) {
+                    sender.sendMessage(TextUtil.component("&cPlayers only."));
+                    return;
+                }
+                Location arrival = site.arrival();
+                if (arrival == null) {
+                    sender.sendMessage(TextUtil.component("&cWorld &f" + site.worldName() + " &cis not loaded. &7(/boss worldeater create)"));
+                    return;
+                }
+                player.teleport(arrival);
+            }
+            case "open" -> {
+                if (!site.openGate()) {
+                    sender.sendMessage(TextUtil.component("&cThe site is not built."));
+                    return;
+                }
+                sender.sendMessage(TextUtil.component("&5World Eater &8» &7Gate opened without the Unbroken (test shortcut)."));
+            }
+            default -> sender.sendMessage(TextUtil.component("&5World Eater &8» " + site.status()));
+        }
+    }
+
     private void sendHelp(CommandSender sender) {
         sender.sendMessage(TextUtil.component("&5BossEngine"));
         sender.sendMessage(TextUtil.component("&8/boss spawn <id> &7- spawn at your location"));
@@ -189,7 +276,9 @@ public class BossCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(TextUtil.component("&8/boss list"));
         sender.sendMessage(TextUtil.component("&8/boss info <id>"));
         sender.sendMessage(TextUtil.component("&8/boss give [player] [item] &7- spawn/anchor items"));
-        sender.sendMessage(TextUtil.component("&8  hollow_lurker_anchor &7locks his cave home"));
+        sender.sendMessage(TextUtil.component("&8  hanging_saint_core &7/ &fhanging_saint_anchor"));
+        sender.sendMessage(TextUtil.component("&8/boss stage <build|remove> &7- Gilded Proscenium"));
+        sender.sendMessage(TextUtil.component("&8/boss worldeater <create|build|go|reset|open|status> &7- the Last Seed"));
         sender.sendMessage(TextUtil.component("&8/boss reload"));
     }
 
@@ -199,7 +288,7 @@ public class BossCommand implements CommandExecutor, TabCompleter {
             return List.of();
         }
         if (args.length == 1) {
-            return filter(args[0], List.of("spawn", "kill", "list", "reload", "give", "info"));
+            return filter(args[0], List.of("spawn", "kill", "list", "reload", "give", "info", "stage", "worldeater"));
         }
         if (args.length == 2 && (args[0].equalsIgnoreCase("spawn") || args[0].equalsIgnoreCase("info") || args[0].equalsIgnoreCase("kill"))) {
             List<String> ids = new ArrayList<>();
@@ -208,6 +297,12 @@ public class BossCommand implements CommandExecutor, TabCompleter {
                 ids.add("all");
             }
             return filter(args[1], ids);
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("stage")) {
+            return filter(args[1], List.of("build", "remove"));
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("worldeater")) {
+            return filter(args[1], List.of("create", "build", "go", "reset", "open", "status"));
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("give")) {
             List<String> names = new ArrayList<>();

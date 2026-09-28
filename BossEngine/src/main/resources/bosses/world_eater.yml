@@ -1,0 +1,186 @@
+# ============================================================
+# Nihil, the World Eater – the Last Seed
+# Showcase boss. The whole fight lives in
+#   de.aetherion.bossengine.instance.worldeater.WorldEaterDirector
+# This file only supplies HP gates, transition windows and a hitbox
+# that rides its skull.
+#
+# At the site it arrives when someone sets foot on the island after the
+# Unbroken fell. Spawned anywhere else (/boss spawn world_eater) the same
+# fight plays out around you as displays and client-side paint: nothing
+# in that world is edited.
+#
+#   100%  Hunger     Lunge / Sweep / Devour (a whole chunk is eaten)
+#    70%  Starless   it drinks the stars (+ Inhale, Void Breath)
+#    40%  Unmade     "Can't keep up!" (+ Spit a world, Unmake)
+#    15%  Ouroboros  it becomes the edge of the world (world border)
+#   death            "Generating world" -> the Bonus Chest
+#
+# Full damage on the skull whenever FIGHT is active (phase shifts still block).
+# No hide tax. Idle regen is off for this encounter.
+# ============================================================
+
+id: world_eater
+display-name: "&5&lNihil&7, &8the World Eater"
+# Silhouette only: invisible hitbox. The body is ~150 displays.
+entity-type: MAGMA_CUBE
+model-engine-id: ""
+
+attributes:
+  max-health: 45000
+  movement-speed: 0.0
+  attack-damage: 0
+  scale: 1.0
+  follow-range: 48
+  knockback-resistance: 1.0
+
+options:
+  glowing: false
+  custom-name-visible: false
+  silent: true
+  invulnerable-spawn-ticks: 0
+  # The site rebuilds itself after a restart; a saved body would be an orphan.
+  persistent: false
+  remove-when-far-away: false
+  prevent-item-pickup: true
+
+conditions:
+  max-instances: 1
+  # Away from the site this is the radius of the fight.
+  leash-radius: 32
+  leash-action: TELEPORT
+
+phases:
+  - id: hunger
+    health-percent: 100
+    display-name: "&5&lNihil&7, &8the World Eater"
+    skills: []
+
+  # It drinks the stars. Authored at 200 ticks; other values rescale the timeline.
+  - id: starless
+    health-percent: 70
+    display-name: "&5&lNihil &8· &7Starless"
+    transition:
+      duration-ticks: 200
+      invulnerable: true
+      freeze-ai: true
+      explode: false
+    skills: []
+
+  # It eats the rules. Authored at 200 ticks.
+  - id: unmade
+    health-percent: 40
+    display-name: "&d&lNihil &8· &dUnmade"
+    transition:
+      duration-ticks: 200
+      invulnerable: true
+      freeze-ai: true
+      explode: false
+    skills: []
+
+  # It becomes the edge of the world. Authored at 220 ticks.
+  - id: ouroboros
+    health-percent: 15
+    display-name: "&4&lNihil &8· &cOuroboros"
+    transition:
+      duration-ticks: 220
+      invulnerable: true
+      freeze-ai: true
+      explode: false
+    skills: []
+
+skills: []
+
+# Paid into the Bonus Chest (loot/WorldEaterBonusChest) that generates at the
+# heart of the regenerated island. Chances / amounts are placeholders.
+loot:
+  damage-based: true
+  participation-threshold-percent: 5.0
+  experience: 12000
+
+  killer-bonus:
+    - source: VANILLA
+      material: NETHER_STAR
+      amount: 1
+      chance: 1.0
+
+  # Nihil's own gear (AetherionItems): Worldbite (weapon, right-click Devour) and the
+  # Worldhide set (random_worldhide_armor = one piece; full set = Last Seed regen).
+  # Pack CMDs 4101-4105. Chances are placeholders.
+  rank-loot:
+    1:
+      - source: AETHERION
+        item-id: worldbite
+        amount: 1
+        chance: 0.12
+      - source: AETHERION
+        item-id: random_worldhide_armor
+        amount: 1
+        chance: 1.0
+      - source: AETHERION
+        item-id: random_booster
+        amount: 2
+        chance: 0.8
+    2:
+      - source: AETHERION
+        item-id: worldbite
+        amount: 1
+        chance: 0.05
+      - source: AETHERION
+        item-id: random_worldhide_armor
+        amount: 1
+        chance: 0.7
+      - source: AETHERION
+        item-id: random_booster
+        amount: 1
+        chance: 0.6
+    3:
+      - source: AETHERION
+        item-id: worldbite
+        amount: 1
+        chance: 0.02
+      - source: AETHERION
+        item-id: random_worldhide_armor
+        amount: 1
+        chance: 0.35
+      - source: AETHERION
+        item-id: random_booster
+        amount: 1
+        chance: 0.4
+
+  top-damagers:
+    count: 3
+    items:
+      - source: AETHERION
+        item-id: random_booster
+        amount: 1
+        chance: 0.5
+
+  # A bonus chest's worth: the first sapling of a new world, and what it left behind.
+  shared:
+    - source: VANILLA
+      material: OAK_SAPLING
+      amount: 1
+      chance: 1.0
+    - source: VANILLA
+      material: ENDER_EYE
+      min-amount: 2
+      max-amount: 4
+      chance: 1.0
+    - source: VANILLA
+      material: AMETHYST_SHARD
+      min-amount: 8
+      max-amount: 16
+      chance: 1.0
+
+  per-damager:
+    - source: AETHERION
+      item-id: random_worldhide_armor
+      amount: 1
+      chance: 0.05
+    - source: VANILLA
+      material: EXPERIENCE_BOTTLE
+      min-amount: 10
+      max-amount: 24
+      chance: 1.0
+      scale-with-damage: true

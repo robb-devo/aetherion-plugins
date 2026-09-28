@@ -14,6 +14,10 @@ bird-scare:
     z: 183.5
     # Player + crop must both sit inside this radius of the farm center.
     radius: 90
+  # Midgame: the shared Farm Isle (farm-island.world) also hosts the flock —
+  # bigger (3-5 birds), always one Bold Crow, 14s timer, 75s base boost.
+  farm-island:
+    enabled: true
 
 # Shared communal farm island (void world + nether portal link).
 farm-island:

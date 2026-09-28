@@ -7287,6 +7287,107 @@ public class CustomItem {
 
     /*
      * =========================================================
+     * WORLDHIDE SET + WORLDBITE (Nihil, the World Eater)
+     * =========================================================
+     * Cut from the hide of the thing that ate sixteen worlds. Each piece
+     * carries the eye it could not eat (amethyst eye trim) and the pack
+     * icons at CMD 4101-4105.
+     */
+
+    public ItemStack createRandomWorldhideArmor() {
+        return switch (ThreadLocalRandom.current().nextInt(4)) {
+            case 0 -> createWorldhideHelmet();
+            case 1 -> createWorldhideChestplate();
+            case 2 -> createWorldhideLeggings();
+            default -> createWorldhideBoots();
+        };
+    }
+
+    public ItemStack createWorldhideHelmet() {
+        return worldhidePiece(Material.NETHERITE_HELMET, "worldhide_helmet", "§5✦✦✦ §dWorldhide Crown", 4101,
+                "§8The brow it stared with.");
+    }
+
+    public ItemStack createWorldhideChestplate() {
+        return worldhidePiece(Material.NETHERITE_CHESTPLATE, "worldhide_chestplate", "§5✦✦✦ §dWorldhide Carapace", 4102,
+                "§8Sixteen worlds, stitched shut.");
+    }
+
+    public ItemStack createWorldhideLeggings() {
+        return worldhidePiece(Material.NETHERITE_LEGGINGS, "worldhide_leggings", "§5✦✦✦ §dWorldhide Coils", 4103,
+                "§8It lay around the world in these.");
+    }
+
+    public ItemStack createWorldhideBoots() {
+        return worldhidePiece(Material.NETHERITE_BOOTS, "worldhide_boots", "§5✦✦✦ §dWorldhide Treads", 4104,
+                "§8They leave grass where they step.");
+    }
+
+    private ItemStack worldhidePiece(Material material, String itemId, String displayName, int modelData, String flavor) {
+        ItemStack item = new ItemStack(material);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            setItemId(meta, itemId);
+            ItemStats stats = BossGearBalance.base(itemId);
+            applyItemData(meta, Rarity.MYTHIC, stats);
+            BossGearBalance.stamp(meta);
+            meta.setDisplayName(displayName);
+            meta.setLore(createLore(itemId, List.of(
+                    "§7✦ §5MYTHIC",
+                    "",
+                    "§5Full Set: Last Seed",
+                    "§7Where you stand, the world grows back:",
+                    "§7regenerate and gain absorption",
+                    "§7while standing on grass or moss.",
+                    "",
+                    flavor,
+                    "§8Loot of Nihil, the World Eater"
+            ), stats));
+            meta.setCustomModelData(modelData);
+            meta.setUnbreakable(true);
+            if (meta instanceof org.bukkit.inventory.meta.ArmorMeta armor) {
+                armor.setTrim(new org.bukkit.inventory.meta.trim.ArmorTrim(
+                        org.bukkit.inventory.meta.trim.TrimMaterial.AMETHYST,
+                        org.bukkit.inventory.meta.trim.TrimPattern.EYE));
+                meta.addItemFlags(ItemFlag.HIDE_ARMOR_TRIM);
+            }
+            hideVanillaAttributes(meta);
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    public ItemStack createWorldbite() {
+        ItemStack item = new ItemStack(Material.NETHERITE_SWORD);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            setItemId(meta, "worldbite");
+            ItemStats stats = BossGearBalance.base("worldbite");
+            applyItemData(meta, Rarity.MYTHIC, stats);
+            BossGearBalance.stamp(meta);
+            meta.setDisplayName("§5✦✦✦ §dWorldbite");
+            meta.setLore(createLore("worldbite", List.of(
+                    "§7✦ §5MYTHIC",
+                    "",
+                    "§5✦ Devour",
+                    "§7Right-click: a chunk border snaps",
+                    "§7shut ahead of you. Everything inside",
+                    "§7is pulled in, bitten and drained.",
+                    "§8Cooldown 8s.",
+                    "",
+                    "§8Its last fang. Still hungry.",
+                    "§8Loot of Nihil, the World Eater"
+            ), stats));
+            meta.setCustomModelData(4105);
+            meta.setUnbreakable(true);
+            hideVanillaAttributes(meta);
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    /*
+     * =========================================================
      * CATCHER SET
      * =========================================================
      */

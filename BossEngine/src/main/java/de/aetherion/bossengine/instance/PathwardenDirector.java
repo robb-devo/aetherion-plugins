@@ -40,6 +40,9 @@ final class PathwardenDirector {
     private static final int SPIN_COOLDOWN = 160;
     private static final int SPIN_WINDUP = 35;
     private static final int SPIN_ACTIVE = 70;
+    private static final double SPIN_RADIUS = 5.8;
+    private static final double SMASH_RADIUS = 4.4;
+    private static final int SMASH_TELL = 8;
     private static final int BEAM_SEEK = 80;
     private static final int BEAM_LOCK = 45;
     private static final int BEAM_FIRE = 14;
@@ -183,7 +186,7 @@ final class PathwardenDirector {
             return;
         }
         beamUsed[idx] = true;
-        beginBeam(entity);
+        beginBeam(entity, idx);
     }
 
     private void beginSpin(LivingEntity entity) {
@@ -203,12 +206,24 @@ final class PathwardenDirector {
         Location at = entity.getLocation();
         if (spinPhase <= SPIN_WINDUP) {
             double t = spinPhase / (double) SPIN_WINDUP;
-            spinYaw += 1.2f;
+            spinYaw += 1.2f + (float) (t * 2.4);
             at.setYaw(spinYaw);
             entity.teleport(at);
-            ringParticles(at, 2.2 + t * 1.5, AZURE, CRIMSON, 8);
+            // Outer ring is the real hit edge; inner ring fills toward it as the clock.
+            boolean strobe = SPIN_WINDUP - spinPhase < 6;
+            if (strobe) {
+                ringParticles(at, SPIN_RADIUS, WHITE, WHITE, 40);
+            } else if (spinPhase % 2 == 0) {
+                ringParticles(at, SPIN_RADIUS, CRIMSON, CRIMSON, 32);
+            }
+            ringParticles(at, 1.2 + t * (SPIN_RADIUS - 1.2), AZURE, CRIMSON, 18);
+            if (spinPhase % 7 == 0) {
+                world.playSound(at, Sound.BLOCK_NOTE_BLOCK_BASS, 0.9f, 0.5f + (float) t * 1.2f);
+            }
             if (spinPhase == SPIN_WINDUP) {
                 world.playSound(at, Sound.ENTITY_ENDER_DRAGON_FLAP, 0.9f, 0.55f);
+                world.playSound(at, Sound.ITEM_TRIDENT_RIPTIDE_3, 1.0f, 0.7f);
+                world.spawnParticle(Particle.FLASH, at.clone().add(0, 2.5, 0), 1, 0, 0, 0, 0);
             }
             return;
         }
@@ -220,7 +235,14 @@ final class PathwardenDirector {
             entity.teleport(at);
             tornado(at);
             if (active % 5 == 0) {
-                hitAround(entity, 5.8, 280);
+                ringParticles(at, SPIN_RADIUS, CRIMSON, AZURE, 28);
+            }
+            if (active == SPIN_ACTIVE) {
+                world.playSound(at, Sound.ENTITY_IRON_GOLEM_REPAIR, 0.9f, 0.6f);
+                world.spawnParticle(Particle.CLOUD, at.clone().add(0, 0.3, 0), 30, 2.2, 0.1, 2.2, 0.04);
+            }
+            if (active % 5 == 0) {
+                hitAround(entity, SPIN_RADIUS, 280);
                 world.playSound(at, Sound.ENTITY_PLAYER_ATTACK_SWEEP, 0.7f, 0.65f);
             }
             return;
@@ -232,7 +254,7 @@ final class PathwardenDirector {
         }
     }
 
-    private void beginBeam(LivingEntity entity) {
+    private void beginBeam(LivingEntity entity, int idx) {
         beamPhase = 0;
         beamTick = 0;
         beamTarget = null;
@@ -246,7 +268,11 @@ final class PathwardenDirector {
         World world = entity.getWorld();
         world.playSound(entity.getLocation(), Sound.BLOCK_BEACON_ACTIVATE, 1.2f, 1.35f);
         world.playSound(entity.getLocation(), Sound.ENTITY_ELDER_GUARDIAN_CURSE, 0.8f, 1.1f);
-        shout("&4&lPathwarden&7 draws a &bjudgment line&7.");
+        shout(switch (idx) {
+            case 0 -> "&4&lPathwarden&7 draws a &bjudgment line&7.";
+            case 1 -> "&4&lPathwarden&7: &fNone pass unweighed. &8(&bjudgment line&8)";
+            default -> "&4&lPathwarden&7: &cThen I judge you all. &8(&bfinal judgment line&8)";
+        });
     }
 
     private void tickBeam(LivingEntity entity) {
@@ -283,10 +309,18 @@ final class PathwardenDirector {
             // Zone freezes — leave the circle or eat the blast.
             double t = beamTick / (double) BEAM_LOCK;
             Color mix = mix(AZURE, CRIMSON, t);
+            boolean firing = BEAM_LOCK - beamTick < 10;
+            Color zone = firing && beamTick % 2 == 0 ? WHITE : mix;
             drawSeekBeam(from, beamFocus.clone().add(0, 0.2, 0), mix);
-            drawDangerZone(beamFocus, mix, true);
+            drawDangerZone(beamFocus, zone, true);
+            if (firing) {
+                world.spawnParticle(Particle.END_ROD, beamFocus.clone().add(0, 1.5, 0), 4, 0.08, 1.4, 0.08, 0);
+            }
             if (beamTick % 6 == 0) {
                 world.playSound(beamFocus, Sound.BLOCK_NOTE_BLOCK_PLING, 0.4f, (float) (0.7 + t));
+            }
+            if (beamTick == BEAM_LOCK - 10) {
+                world.playSound(beamFocus, Sound.BLOCK_BEACON_POWER_SELECT, 1.2f, 1.6f);
             }
             if (beamTick >= BEAM_LOCK) {
                 beamPhase = 2;
@@ -301,6 +335,8 @@ final class PathwardenDirector {
             if (beamTick == 1) {
                 fireNuke(entity);
             }
+            double wave = BEAM_BLAST + (beamTick / (double) BEAM_FIRE) * 4.5;
+            ringParticles(beamFocus, wave, CRIMSON, WHITE, 36);
             if (beamTick >= BEAM_FIRE) {
                 beamPhase = -1;
                 beamTick = 0;
@@ -314,8 +350,9 @@ final class PathwardenDirector {
     private void fireNuke(LivingEntity entity) {
         World world = entity.getWorld();
         world.spawnParticle(Particle.EXPLOSION_EMITTER, beamFocus.clone().add(0, 0.4, 0), 1, 0, 0, 0, 0);
-        world.spawnParticle(Particle.DUST, beamFocus.clone().add(0, 0.2, 0), 90, 0.85, 0.2, 0.85, new Particle.DustOptions(CRIMSON, 1.9f));
-        world.spawnParticle(Particle.END_ROD, beamFocus.clone().add(0, 0.3, 0), 24, 0.55, 0.15, 0.55, 0.02);
+        ringParticles(beamFocus, BEAM_BLAST, CRIMSON, WHITE, 40);
+        ringParticles(beamFocus, BEAM_BLAST * 0.45, AZURE, WHITE, 20);
+        world.spawnParticle(Particle.END_ROD, beamFocus.clone().add(0, 1.2, 0), 6, 0.08, 0.6, 0.08, 0.01);
         boolean hitAnyone = false;
         double r2 = BEAM_BLAST * BEAM_BLAST;
         for (Player player : world.getPlayers()) {
@@ -443,6 +480,9 @@ final class PathwardenDirector {
         // 103-end: aftermath storm
         if (deathTicks < DEATH_TICKS) {
             aftermathStorm(world, strike, (deathTicks - 103) / (double) (DEATH_TICKS - 103));
+            if (deathTicks == DEATH_TICKS - 12) {
+                pathOpens(world);
+            }
             if (entity != null && entity.isValid()) {
                 entity.teleport(deathFocus.clone().add(0, -0.05, 0));
             }
@@ -481,9 +521,13 @@ final class PathwardenDirector {
             });
         } else {
             entity.setRotation(look.getYaw(), 0f);
+            if (smashCd > 0 && smashCd <= SMASH_TELL) {
+                smashTell(entity);
+            }
             if (smashCd <= 0) {
                 smashCd = 28;
-                hitAround(entity, 4.4, 420);
+                hitAround(entity, SMASH_RADIUS, 420);
+                smashImpact(entity);
                 entity.getWorld().playSound(entity.getLocation(), Sound.ENTITY_PLAYER_ATTACK_CRIT, 1.0f, 0.45f);
                 entity.getWorld().playSound(entity.getLocation(), Sound.ENTITY_IRON_GOLEM_ATTACK, 0.85f, 0.55f);
             }
@@ -493,6 +537,34 @@ final class PathwardenDirector {
             mob.setAI(false);
             mob.setAware(true);
         }
+    }
+
+    /** Blades lift: crimson edge of the smash, white on the last beat. */
+    private void smashTell(LivingEntity entity) {
+        World world = entity.getWorld();
+        Location at = entity.getLocation();
+        boolean last = smashCd <= 2;
+        double t = 1.0 - (smashCd - 1) / (double) SMASH_TELL;
+        ringParticles(at, SMASH_RADIUS, last ? WHITE : CRIMSON, last ? WHITE : CRIMSON, 26);
+        ringParticles(at, 0.8 + t * (SMASH_RADIUS - 0.8), CRIMSON, AZURE, 14);
+        if (smashCd == SMASH_TELL) {
+            world.playSound(at, Sound.ITEM_ARMOR_EQUIP_IRON, 1.1f, 0.5f);
+            world.playSound(at, Sound.BLOCK_GRINDSTONE_USE, 0.6f, 0.55f);
+        }
+    }
+
+    private void smashImpact(LivingEntity entity) {
+        World world = entity.getWorld();
+        Location at = entity.getLocation();
+        for (int i = 0; i < 36; i++) {
+            double ang = Math.PI * 2 * i / 36.0;
+            Location p = at.clone().add(Math.cos(ang) * SMASH_RADIUS, 0.15, Math.sin(ang) * SMASH_RADIUS);
+            world.spawnParticle(Particle.BLOCK, p, 2, 0.1, 0.05, 0.1, 0.05, Material.IRON_BLOCK.createBlockData());
+            world.spawnParticle(Particle.DUST, p, 1, 0, 0, 0, new Particle.DustOptions(i % 2 == 0 ? AZURE : CRIMSON, 1.5f));
+        }
+        world.spawnParticle(Particle.CRIT, at.clone().add(0, 0.6, 0), 30, 1.6, 0.3, 1.6, 0.2);
+        world.spawnParticle(Particle.EXPLOSION, at.clone().add(0, 0.4, 0), 1, 0, 0, 0, 0);
+        world.playSound(at, Sound.ITEM_MACE_SMASH_GROUND, 1.0f, 0.6f);
     }
 
     private void dressIronGate(LivingEntity entity) {
@@ -678,6 +750,21 @@ final class PathwardenDirector {
                     new Particle.DustOptions(i % 2 == 0 ? AZURE : CRIMSON, 1.6f)
             );
         }
+    }
+
+    /** Final beat: the gate he guarded unlatches. */
+    private void pathOpens(World world) {
+        Location floor = deathFocus.clone().add(0, 0.2, 0);
+        world.playSound(floor, Sound.BLOCK_IRON_DOOR_OPEN, 1.4f, 0.5f);
+        world.playSound(floor, Sound.BLOCK_BELL_RESONATE, 1.0f, 0.8f);
+        world.playSound(floor, Sound.BLOCK_BEACON_DEACTIVATE, 0.8f, 1.3f);
+        for (int i = 0; i < 48; i++) {
+            double ang = Math.PI * 2 * i / 48.0;
+            world.spawnParticle(Particle.END_ROD, floor.clone().add(Math.cos(ang) * 3.2, 0, Math.sin(ang) * 3.2),
+                    0, Math.cos(ang) * 0.25, 0.02, Math.sin(ang) * 0.25, 1);
+        }
+        world.spawnParticle(Particle.SOUL, floor.clone().add(0, 1.0, 0), 20, 0.6, 1.4, 0.6, 0.03);
+        shout("&8&o…the iron gives way. &7The path is &fopen&7.");
     }
 
     private void aftermathStorm(World world, Location strike, double t) {
