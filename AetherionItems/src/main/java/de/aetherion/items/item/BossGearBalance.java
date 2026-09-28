@@ -76,6 +76,12 @@ public final class BossGearBalance {
             }
             // Worldhide / Worldbite (World Eater): raid-unique tier, a step over Aetherion.
             case "worldbite" -> weapon(108, 16, 17, 120);
+            // Dawnbearer / Solstice (Helios Requiem): the two-act raid, one step over Worldhide.
+            case "helios_solstice" -> weapon(114, 16, 18, 126);
+            case "helios_crown" -> aetherion(48, 66, 16, 15, 10, 58, 3);
+            case "helios_heartplate" -> aetherion(80, 110, 29, 23, 18, 124, 4);
+            case "helios_orbit_greaves" -> aetherion(63, 82, 20, 19, 12, 76, 3);
+            case "helios_dawn_treads" -> aetherion(48, 57, 14, 13, 10, 58, 8);
             case "worldhide_helmet" -> aetherion(46, 64, 15, 14, 9, 54, 3);
             case "worldhide_chestplate" -> aetherion(76, 104, 28, 22, 17, 118, 4);
             case "worldhide_leggings" -> aetherion(60, 78, 19, 18, 11, 72, 3);

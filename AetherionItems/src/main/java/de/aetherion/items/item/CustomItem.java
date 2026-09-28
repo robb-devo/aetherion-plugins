@@ -7388,6 +7388,109 @@ public class CustomItem {
 
     /*
      * =========================================================
+     * DAWNBEARER SET + SOLSTICE (Helios Requiem)
+     * =========================================================
+     * Forged from what the supernova gave back: gold that remembers being
+     * a star. Pack icons at CMD 4201-4205. Full set: Second Dawn.
+     */
+
+    public ItemStack createRandomHeliosArmor() {
+        return switch (ThreadLocalRandom.current().nextInt(4)) {
+            case 0 -> createHeliosCrown();
+            case 1 -> createHeliosHeartplate();
+            case 2 -> createHeliosOrbitGreaves();
+            default -> createHeliosDawnTreads();
+        };
+    }
+
+    public ItemStack createHeliosCrown() {
+        return heliosPiece(Material.NETHERITE_HELMET, "helios_crown", "§6✦✦✦ §eDawnbearer Crown", 4201,
+                "§8Seven rays. One of them still warm.");
+    }
+
+    public ItemStack createHeliosHeartplate() {
+        return heliosPiece(Material.NETHERITE_CHESTPLATE, "helios_heartplate", "§6✦✦✦ §eDawnbearer Heartplate", 4202,
+                "§8It beats. Not always in time with you.");
+    }
+
+    public ItemStack createHeliosOrbitGreaves() {
+        return heliosPiece(Material.NETHERITE_LEGGINGS, "helios_orbit_greaves", "§6✦✦✦ §eDawnbearer Orbit Greaves", 4203,
+                "§8Four rings, and you in the middle.");
+    }
+
+    public ItemStack createHeliosDawnTreads() {
+        return heliosPiece(Material.NETHERITE_BOOTS, "helios_dawn_treads", "§6✦✦✦ §eDawnbearer Treads", 4204,
+                "§8Every step lands on the beat.");
+    }
+
+    private ItemStack heliosPiece(Material material, String itemId, String displayName, int modelData, String flavor) {
+        ItemStack item = new ItemStack(material);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            setItemId(meta, itemId);
+            ItemStats stats = BossGearBalance.base(itemId);
+            applyItemData(meta, Rarity.MYTHIC, stats);
+            BossGearBalance.stamp(meta);
+            meta.setDisplayName(displayName);
+            meta.setLore(createLore(itemId, List.of(
+                    "§7✦ §6MYTHIC",
+                    "",
+                    "§6Full Set: Second Dawn",
+                    "§7When you fall below §c30%§7 health,",
+                    "§7you go supernova: heal §a30%§7, gain",
+                    "§7absorption, and blast nearby enemies.",
+                    "§8Cooldown 120s.",
+                    "",
+                    flavor,
+                    "§8Loot of Helios, the Dying Star"
+            ), stats));
+            meta.setCustomModelData(modelData);
+            meta.setUnbreakable(true);
+            if (meta instanceof org.bukkit.inventory.meta.ArmorMeta armor) {
+                armor.setTrim(new org.bukkit.inventory.meta.trim.ArmorTrim(
+                        org.bukkit.inventory.meta.trim.TrimMaterial.GOLD,
+                        org.bukkit.inventory.meta.trim.TrimPattern.SILENCE));
+                meta.addItemFlags(ItemFlag.HIDE_ARMOR_TRIM);
+            }
+            hideVanillaAttributes(meta);
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    public ItemStack createHeliosSolstice() {
+        ItemStack item = new ItemStack(Material.NETHERITE_SWORD);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            setItemId(meta, "helios_solstice");
+            ItemStats stats = BossGearBalance.base("helios_solstice");
+            applyItemData(meta, Rarity.MYTHIC, stats);
+            BossGearBalance.stamp(meta);
+            meta.setDisplayName("§6✦✦✦ §eSolstice");
+            meta.setLore(createLore("helios_solstice", List.of(
+                    "§7✦ §6MYTHIC",
+                    "",
+                    "§6✦ Constellation",
+                    "§7Right-click: open a portal at your hand",
+                    "§7and its twin above your target. Your",
+                    "§7light enters one and falls from the",
+                    "§7other: a lance of sunlight on everything",
+                    "§7below. Burns.",
+                    "§8Cooldown 10s.",
+                    "",
+                    "§8The Herald's fourth blade. It came back.",
+                    "§8Loot of Helios, the Dying Star"
+            ), stats));
+            meta.setCustomModelData(4205);
+            meta.setUnbreakable(true);
+            hideVanillaAttributes(meta);
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    /*
+     * =========================================================
      * CATCHER SET
      * =========================================================
      */

@@ -68,7 +68,8 @@ phases:
 skills: []
 
 # Paid into the Starseed Reliquary (one capsule per participant).
-# Chances / amounts are placeholders: plug in the real Helios loot here.
+# Helios's gear (AetherionItems): Solstice (sword, right-click Constellation) and the Dawnbearer set
+# (random_helios_armor = one piece; full set = Second Dawn). Pack CMDs 4201-4205.
 loot:
   damage-based: true
   participation-threshold-percent: 4.0
@@ -83,19 +84,43 @@ loot:
   rank-loot:
     1:
       - source: AETHERION
+        item-id: helios_solstice
+        amount: 1
+        chance: 0.15
+      - source: AETHERION
+        item-id: random_helios_armor
+        amount: 1
+        chance: 1.0
+      - source: AETHERION
         item-id: random_booster
         amount: 2
-        chance: 0.9
+        chance: 0.8
     2:
       - source: AETHERION
-        item-id: random_booster
+        item-id: helios_solstice
         amount: 1
-        chance: 0.7
-    3:
+        chance: 0.07
+      - source: AETHERION
+        item-id: random_helios_armor
+        amount: 1
+        chance: 0.75
       - source: AETHERION
         item-id: random_booster
         amount: 1
-        chance: 0.5
+        chance: 0.6
+    3:
+      - source: AETHERION
+        item-id: helios_solstice
+        amount: 1
+        chance: 0.03
+      - source: AETHERION
+        item-id: random_helios_armor
+        amount: 1
+        chance: 0.4
+      - source: AETHERION
+        item-id: random_booster
+        amount: 1
+        chance: 0.4
 
   top-damagers:
     count: 3
@@ -113,6 +138,10 @@ loot:
       chance: 1.0
 
   per-damager:
+    - source: AETHERION
+      item-id: random_helios_armor
+      amount: 1
+      chance: 0.06
     - source: VANILLA
       material: EXPERIENCE_BOTTLE
       min-amount: 10
