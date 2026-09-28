@@ -415,6 +415,11 @@ public class PetSpawnManager {
 
         if (pet.isSpawned()) {
 
+            // Fade in over ~0.7s so the wild fills without visible pop-in.
+            pet.materialize(
+                    14
+            );
+
             activePets.add(
                     pet
             );
@@ -444,6 +449,7 @@ public class PetSpawnManager {
         if (!pet.isSpawned()) {
             return false;
         }
+        pet.materialize(10);
         registerTestPet(pet);
         return true;
     }

@@ -5,8 +5,10 @@ import de.aetherion.aethermobs.listener.FarmingDragonListener;
 import de.aetherion.aethermobs.listener.FishingDragonListener;
 import de.aetherion.aethermobs.listener.ForagingDragonListener;
 import de.aetherion.aethermobs.listener.DragonAscensionListener;
+import de.aetherion.aethermobs.listener.HabitatDiscovery;
 import de.aetherion.aethermobs.listener.PetCatchListener;
 import de.aetherion.aethermobs.listener.PetExperienceListener;
+import de.aetherion.aethermobs.listener.WildPresence;
 import de.aetherion.aethermobs.menu.PetMenu;
 import de.aetherion.aethermobs.pet.ActivePetManager;
 import de.aetherion.aethermobs.pet.BetaSphereManager;
@@ -58,6 +60,9 @@ public final class AetherMobs extends JavaPlugin implements Listener {
     private PetSkillManager petSkillManager;
     private Object petStatProvider;
     private PetExperienceListener petExperienceListener;
+    private PetCatchListener petCatchListener;
+    private HabitatDiscovery habitatDiscovery;
+    private WildPresence wildPresence;
     private de.aetherion.core.api.PetAccess petAccess;
 
     private final Map<UUID, PlayerPetCollection> playerPetCollections =
@@ -685,14 +690,45 @@ public final class AetherMobs extends JavaPlugin implements Listener {
                         this
                 );
 
+        petCatchListener =
+                new PetCatchListener(
+                        this
+                );
+
         getServer()
                 .getPluginManager()
                 .registerEvents(
-                        new PetCatchListener(
-                                this
-                        ),
+                        petCatchListener,
                         this
                 );
+
+        habitatDiscovery =
+                new HabitatDiscovery(
+                        this
+                );
+
+        getServer()
+                .getPluginManager()
+                .registerEvents(
+                        habitatDiscovery,
+                        this
+                );
+
+        habitatDiscovery.start();
+
+        wildPresence =
+                new WildPresence(
+                        this
+                );
+
+        getServer()
+                .getPluginManager()
+                .registerEvents(
+                        wildPresence,
+                        this
+                );
+
+        wildPresence.start();
 
         getServer()
                 .getPluginManager()
@@ -819,6 +855,14 @@ public final class AetherMobs extends JavaPlugin implements Listener {
         if (petSkillManager != null) {
 
             petSkillManager.stop();
+        }
+
+        if (habitatDiscovery != null) {
+            habitatDiscovery.stop();
+        }
+
+        if (wildPresence != null) {
+            wildPresence.stop();
         }
 
         try {
@@ -1095,6 +1139,16 @@ public final class AetherMobs extends JavaPlugin implements Listener {
     public PetSkillManager getPetSkillManager() {
 
         return petSkillManager;
+    }
+
+    public PetCatchListener getPetCatchListener() {
+
+        return petCatchListener;
+    }
+
+    public HabitatDiscovery getHabitatDiscovery() {
+
+        return habitatDiscovery;
     }
 
 
