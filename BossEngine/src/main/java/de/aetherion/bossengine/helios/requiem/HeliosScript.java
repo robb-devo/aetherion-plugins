@@ -82,6 +82,10 @@ public final class HeliosScript extends ActScript {
         return rig;
     }
 
+    Singularity singularity() {
+        return singularity;
+    }
+
     double power(String key, double def) {
         return enc.config().power("helios." + key, def);
     }
@@ -116,6 +120,52 @@ public final class HeliosScript extends ActScript {
         }
         arena.swap(dx, -1, dz, Material.MAGMA_BLOCK);
         molten.add(new int[]{dx, dz, clock + ticks});
+    }
+
+    /* ------------------------------------------------------------------ torn floor that grows back */
+
+    private final List<Object[]> regrow = new ArrayList<>();
+
+    /**
+     * Floor torn out by an attack grows back after {@code ticks}, unless its sector has been destroyed for
+     * good in the meantime (burned Corona, shattered or fallen Course), or it is the seam between Crown and
+     * Course after the shatter: restoring those would leave floating fragments or re-bridge the islands.
+     */
+    void regrowLater(List<ArenaLayout.Cell> cells, int ticks) {
+        if (cells != null && !cells.isEmpty()) {
+            regrow.add(new Object[]{new ArrayList<>(cells), clock + Math.max(20, ticks)});
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void tickRegrow() {
+        if (regrow.isEmpty()) {
+            return;
+        }
+        Arena arena = enc.arena();
+        for (Iterator<Object[]> it = regrow.iterator(); it.hasNext(); ) {
+            Object[] r = it.next();
+            if (clock < (int) r[1]) {
+                continue;
+            }
+            it.remove();
+            List<ArenaLayout.Cell> back = new ArrayList<>();
+            for (ArenaLayout.Cell c : (List<ArenaLayout.Cell>) r[0]) {
+                if (arena.ringGone(c.ring()) || arena.state(c.ring(), c.sector()) != Arena.SectorState.INTACT) {
+                    continue;
+                }
+                if (shattered && c.ring() == 1 && c.radius() < ArenaLayout.RING_IN[1] + 0.5f) {
+                    continue;
+                }
+                back.add(c);
+            }
+            if (!back.isEmpty()) {
+                arena.restore(back);
+                Vector3f at = new Vector3f(back.get(0).dx() + 0.5f, 0.2f, back.get(0).dz() + 0.5f);
+                enc.score().at(at, Sound.BLOCK_AMETHYST_CLUSTER_PLACE, 0.8f, 0.7f);
+                enc.stage().blockDust(at, Material.DEEPSLATE, 8, 0.6);
+            }
+        }
     }
 
     /** The Corona has burned away (or the Course shattered): its rubble keeps circling the arena. */
@@ -251,6 +301,7 @@ public final class HeliosScript extends ActScript {
         String phase = phaseId();
         double hp = instance.healthPercent();
         tickMolten();
+        tickRegrow();
         if (debris != null) {
             debris.tick();
         }
@@ -297,10 +348,23 @@ public final class HeliosScript extends ActScript {
             return;
         }
         if (singularity != null) {
-            orbit += 0.004f;
-            Vector3f to = new Vector3f(Singularity.CENTER).add(HMath.ring(13.5f, orbit, 1.2f));
-            glideTo(to, 0.05f);
-            lookAtParty(0.1f);
+            // Herding: it hangs just OUTSIDE the party, so they stand between Helios and the hole. To hit
+            // it you walk away from the pull; to get away from it you walk into the pull. Every four beats
+            // it swoops round to cut off whoever tries to slip away along the rim.
+            if (modeTick >= stationAt) {
+                Vector3f c = partyCentroid();
+                float a = HMath.angleOf(c.x - Singularity.CENTER.x, c.z - Singularity.CENTER.z)
+                        + (ThreadLocalRandom.current().nextFloat() - 0.5f) * 0.9f;
+                float partyR = HMath.horizontal(new Vector3f(c).sub(Singularity.CENTER));
+                float r = HMath.clamp(partyR + 3.5f, 11f, 19f);
+                station.set(Singularity.CENTER).add(HMath.ring(r, a, 0f));
+                station.y = 3.4f;
+                stationAt = modeTick + enc.tempo().ticks(4);
+                orbit = a;
+            }
+            glideTo(station, 0.06f);
+            rig.center.y += 0.03f * (float) Math.sin(clock * 0.09f);
+            lookAtParty(0.12f);
             return;
         }
         if (modeTick >= stationAt) {
@@ -358,8 +422,9 @@ public final class HeliosScript extends ActScript {
         if (rig == null) {
             return;
         }
+        // Even ticks (the star takes the odd ones), one tick of interpolation overlap: no freeze on a late packet.
         if (clock % 2 == 0) {
-            rig.render(2);
+            rig.render(HeliosStage.SMOOTH_2);
         }
         hitbox.set(rig.center).sub(0f, 1.3f, 0f);
     }
@@ -388,6 +453,7 @@ public final class HeliosScript extends ActScript {
                 rig.black(true);
                 rig.crack(0.6f);
                 singularity = new Singularity(this);
+                stationAt = 0;
                 enc.score().dilation(singularity::dilation);
                 enc.sky().freeze(singularity::skyRate);
                 holdScheduler(enc.tempo().ticks(4));
@@ -475,7 +541,11 @@ public final class HeliosScript extends ActScript {
     protected List<Choice> choices() {
         String phase = phaseId().toLowerCase(java.util.Locale.ROOT);
         List<Choice> out = new ArrayList<>();
-        out.add(new Choice("portals", () -> new PortalBeams(this, 0), 4, 20, Attack.Family.SWEEP));
+        out.add(new Choice("portals", () -> new PortalBeams(this, 0, true), singularity != null ? 2 : 4, 20, Attack.Family.SWEEP));
+        if (singularity != null) {
+            // The hole pulls; Helios hunts with it.
+            out.add(new Choice("tether", () -> new GravityTether(this), 4, 10, Attack.Family.BODY));
+        }
         out.add(new Choice("plasma", () -> new PlasmaRings(this, 2 + ThreadLocalRandom.current().nextInt(2), null), 3, 16, Attack.Family.GROUND));
         out.add(new Choice("flares", () -> new SolarFlares(this, 4), 3, 14, Attack.Family.SKY));
         if (singularity == null) {
@@ -492,8 +562,10 @@ public final class HeliosScript extends ActScript {
     @Override
     protected List<Choice> allChoices() {
         List<Choice> out = new ArrayList<>();
-        out.add(new Choice("portals", () -> new PortalBeams(this, 0), 1, 1, Attack.Family.SWEEP));
-        out.add(new Choice("portals5", () -> new PortalBeams(this, 5), 1, 1, Attack.Family.SWEEP));
+        out.add(new Choice("portals", () -> new PortalBeams(this, 0, true), 1, 1, Attack.Family.SWEEP));
+        out.add(new Choice("portals5", () -> new PortalBeams(this, 5, true), 1, 1, Attack.Family.SWEEP));
+        out.add(new Choice("portals-short", () -> new PortalBeams(this, 4), 1, 1, Attack.Family.SWEEP));
+        out.add(new Choice("tether", () -> new GravityTether(this), 1, 1, Attack.Family.BODY));
         out.add(new Choice("plasma", () -> new PlasmaRings(this, 4, null), 1, 1, Attack.Family.GROUND));
         out.add(new Choice("flares", () -> new SolarFlares(this, 3), 1, 1, Attack.Family.SKY));
         out.add(new Choice("wind", () -> new SolarWind(this, 3), 1, 1, Attack.Family.ARENA));

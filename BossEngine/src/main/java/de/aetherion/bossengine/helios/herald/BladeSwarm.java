@@ -111,7 +111,8 @@ final class BladeSwarm extends Attack {
             case FAN -> fan();
             case PINCER -> pincer();
         };
-        s.rig().renderBladesOnly(1);
+        // No blade push here: the rig pushes every tick after the attacks ran (free blades at interp 1).
+        // Pushing here as well gave the blades two different interpolations per tick: that was the jitter.
         return done;
     }
 

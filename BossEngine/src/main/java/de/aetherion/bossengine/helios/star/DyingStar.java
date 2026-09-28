@@ -27,7 +27,9 @@ import java.util.List;
  *
  * Its heartbeat is the fight's {@link Tempo}: every beat the heart swells ("lub"), then a smaller "dub".
  * Scripts drive its moods (dormant, burning, agitated), crack it, tear it open, collapse it and finally
- * hand its debris out as meteors. Pushed every second tick with a 3-tick interpolation: smooth, cheap.
+ * hand its debris out as meteors. Pushed every second tick (the odd ones, so it never shares a packet
+ * burst with the bodies) with a 3-tick interpolation: one tick of overlap, so a late packet never freezes
+ * the belt. Spin changes glide instead of jumping, so the orbiting rock never lurches.
  */
 public final class DyingStar {
 
@@ -54,11 +56,14 @@ public final class DyingStar {
     private final Vector3f center = new Vector3f(CENTER);
 
     private int clock;
+    /** Accumulated spin phase. (It used to be clock * spinRate: any spin change made the whole star jump.) */
+    private float phase;
     private float scale = 0f;
     private float scaleTarget = 1f;
     private float scaleRate = 0.02f;
     private float pulseAmp = 0.35f;
     private float spinRate = 1f;
+    private float spinTarget = 1f;
     private float coronaRadius = 1f;
     private float open;
     private float openTarget;
@@ -66,7 +71,7 @@ public final class DyingStar {
     private boolean heartVisible = true;
     private boolean shellsVisible = true;
     private boolean coronaVisible = true;
-    private int interp = 2;
+    private int interp = HeliosStage.SMOOTH_2;
 
     public DyingStar(HeliosStage stage, Tempo tempo) {
         this.stage = stage;
@@ -135,8 +140,14 @@ public final class DyingStar {
         this.pulseAmp = amp;
     }
 
+    /** Target spin; the star eases into it (a jump would make every orbit lurch). */
     public void spin(float rate) {
+        this.spinTarget = rate;
+    }
+
+    public void spinNow(float rate) {
         this.spinRate = rate;
+        this.spinTarget = rate;
     }
 
     public void coronaRadius(float r) {
@@ -229,6 +240,11 @@ public final class DyingStar {
 
     public void tick() {
         clock++;
+        if (spinRate != spinTarget) {
+            float d = spinTarget - spinRate;
+            spinRate = Math.abs(d) <= 0.02f ? spinTarget : spinRate + Math.signum(d) * 0.02f;
+        }
+        phase += 0.05f * spinRate;
         if (scale != scaleTarget) {
             float d = scaleTarget - scale;
             scale = Math.abs(d) <= scaleRate ? scaleTarget : scale + Math.signum(d) * scaleRate;
@@ -243,13 +259,13 @@ public final class DyingStar {
                 d.tumble += d.spin * spinRate;
             }
         }
-        if (clock % 2 == 0) {
+        if (clock % 2 == 1) {
             render();
         }
     }
 
     private void render() {
-        float t = clock * 0.05f * spinRate;
+        float t = phase;
         float beat = HMath.heartbeat(tempo.phase()) * pulseAmp;
         float s = scale;
         for (int i = 0; i < heart.length; i++) {

@@ -1,4 +1,4 @@
-# helios-version: 3 (files with an older version are backed up to .bak and replaced on start)
+# helios-version: 4 (files with an older version are backed up to .bak and replaced on start)
 # ============================================================
 # HELIOS REQUIEM - the dying star (two acts)
 #
@@ -88,7 +88,7 @@ performance:
 
 # The star's heartbeat is the fight's clock (beats per minute).
 tempo:
-  herald: 78
+  herald: 84
   interlude: 60
   corona: 88
   decay: 96
@@ -96,8 +96,17 @@ tempo:
   requiem: 112
 
 herald:
+  pacing:
+    # The Herald's Opening after each flurry (bonus damage window; he is never untouchable in the fight).
+    opening-beats: 4
   blink:
     power: 55
+  starfall:
+    # He leaps into the star's light, hunts one player with a floor ring, locks and dives.
+    power: 60
+    # The flat shockwave rolling out from the crater (jump it).
+    wave:
+      power: 30
   swarm:
     power: 42
   cage:
@@ -124,6 +133,22 @@ helios:
     power: 36
     count-min: 3
     count-max: 5
+    # The signature's hunt: the floor beam chases a player (weighty: it turns late).
+    hunt-beats: 8
+    hunt-speed-start: 0.16
+    # Just under a sprint (0.28): sprint and turn to shake it.
+    hunt-speed-end: 0.27
+    hunt-accel: 0.024
+    hunt:
+      power: 36
+    # The scar erupts along its whole length afterwards; every third point tears a hole that grows back.
+    tear:
+      power: 44
+    tear-regrow-seconds: 9
+  tether:
+    # Singularity: Helios binds a player to the hole (extra pull per tick; a sprint outward still holds).
+    power: 14
+    pull: 0.03
   plasma:
     power: 34
   flares:

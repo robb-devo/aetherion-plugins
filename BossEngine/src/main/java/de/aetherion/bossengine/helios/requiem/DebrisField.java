@@ -85,7 +85,7 @@ final class DebrisField {
                 at.lerp(pull, HMath.inCubic(collapse));
             }
             Quaternionf rot = new Quaternionf().rotateXYZ(t * r.spin, t * r.spin * 0.7f, r.a);
-            stage.push(r.d, HeliosStage.cube(at, r.size * (1f - 0.9f * collapse), rot), 2);
+            stage.push(r.d, HeliosStage.cube(at, r.size * (1f - 0.9f * collapse), rot), HeliosStage.SMOOTH_2);
         }
     }
 

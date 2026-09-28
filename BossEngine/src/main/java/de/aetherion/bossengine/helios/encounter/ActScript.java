@@ -247,6 +247,11 @@ public abstract class ActScript implements BossScript {
         return 3;
     }
 
+    /** Beats between two moves of a flurry (after the next beat boundary). 0 = straight on the next beat. */
+    protected int breathBeats() {
+        return 1;
+    }
+
     /* ================================================================== scheduler */
 
     protected void enterFight() {
@@ -342,7 +347,7 @@ public abstract class ActScript implements BossScript {
             nextPickAt = Integer.MAX_VALUE / 2;
         } else {
             // The next move counts in on the beat after a short breath.
-            nextPickAt = clock + enc.tempo().ticksUntil(1);
+            nextPickAt = clock + enc.tempo().ticksUntil(breathBeats());
         }
     }
 
@@ -401,6 +406,15 @@ public abstract class ActScript implements BossScript {
     protected void onOpening(boolean open) {
     }
 
+    /**
+     * Does the Opening wait until every hazard has finished? (Helios: yes, its hazards are the fight.)
+     * When false it opens as soon as the body is free, and long hazards (a cage) keep running meanwhile:
+     * no dead stretch where the boss idles and nothing happens.
+     */
+    protected boolean openingWaitsForHazards() {
+        return true;
+    }
+
     private boolean hazardsRunning() {
         for (Attack a : running) {
             if (a.family() != Attack.Family.ARENA) {
@@ -411,7 +425,7 @@ public abstract class ActScript implements BossScript {
     }
 
     private void tickOpening() {
-        if (openingPending && !paused() && !hazardsRunning()) {
+        if (openingPending && !paused() && (openingWaitsForHazards() ? !hazardsRunning() : !bodyBusy())) {
             openingPending = false;
             openingLen = Math.max(20, enc.tempo().ticks(openingBeats()));
             openingUntil = clock + openingLen;

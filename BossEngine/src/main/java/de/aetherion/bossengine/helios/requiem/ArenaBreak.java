@@ -1,6 +1,7 @@
 package de.aetherion.bossengine.helios.requiem;
 
 import de.aetherion.bossengine.helios.core.HMath;
+import de.aetherion.bossengine.helios.core.HeliosStage;
 import de.aetherion.bossengine.helios.core.Shapes;
 import de.aetherion.bossengine.helios.core.SkyControl;
 import de.aetherion.bossengine.helios.encounter.Attack;
@@ -234,7 +235,7 @@ final class ArenaBreak extends Attack {
             Quaternionf tip = new Quaternionf().rotateAxis(HMath.inQuad(f) * 1.2f, axis.x, axis.y, axis.z);
             Vector3f offset = new Vector3f(out).mul(f * 5f).add(0f, -HMath.inQuad(f) * 40f, 0f);
             if (age % 2 == 0) {
-                r.pose(tip, offset, 1f - 0.35f * f, 2);
+                r.pose(tip, offset, 1f - 0.35f * f, HeliosStage.SMOOTH_2);
             }
             if (age == 62) {
                 r.pose(tip, offset, 0.001f, 0);

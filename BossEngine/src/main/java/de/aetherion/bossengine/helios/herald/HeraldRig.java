@@ -208,9 +208,13 @@ public final class HeraldRig {
     private float blend = 0.25f;
     private int clock;
     private boolean visible = true;
+    /** Free blades (flying for an attack or the intro) show on their own, even while the body is hidden. */
+    private boolean bladesVisible = true;
     private float scale = 1f;
     private boolean ghost;
     private float coreHeat = 0.6f;
+    /** Next push is a cut (no interpolation): the rig jumped (mirror shuffle / reveal) and must not smear. */
+    private boolean cutNext;
 
     /* assembly: every part flies in from its own start point */
     private float assemble = 1f;
@@ -288,8 +292,17 @@ public final class HeraldRig {
         this.visible = on;
     }
 
+    /** The next render places everything instantly (a jump cut instead of a slide across the arena). */
+    public void cut() {
+        this.cutNext = true;
+    }
+
     public boolean visible() {
         return visible;
+    }
+
+    public void bladesVisible(boolean on) {
+        this.bladesVisible = on;
     }
 
     public void scale(float s) {
@@ -350,11 +363,17 @@ public final class HeraldRig {
     /* ================================================================== solve + push */
 
     /**
-     * Solve and push. {@code interp} is the interpolation per push; call every tick for snappy moves,
-     * every second tick (interp 3) when idle.
+     * Solve and push. {@code interp} is the body's interpolation per push: call every tick with
+     * {@link HeliosStage#SMOOTH_1} (idle glide) or 1 (snappy strikes); clones every second tick with
+     * {@link HeliosStage#SMOOTH_2}. Free blades are always pushed at 1: attacks steer them tick by tick and
+     * their hit tests must match what you see.
      */
     public void render(int interp) {
         clock++;
+        if (cutNext) {
+            cutNext = false;
+            interp = 0;
+        }
         pose.approach(target, blend);
         solve();
         for (int i = 0; i < parts.size(); i++) {
@@ -453,7 +472,7 @@ public final class HeraldRig {
             place(gauntlet[side], elbow, fa, 0f, -0.62f * s, 0f);
 
             Vector3f hipJoint = new Quaternionf(body).transform(new Vector3f(0.2f * sx * s, -0.06f * s, 0f)).add(hip);
-            float thighPitch = pose.crouch * 1.05f + 0.12f * (1f - pose.crouch) * (float) Math.sin(clock * 0.05f + side);
+            float thighPitch = pose.crouch * 1.05f + 0.12f * (1f - pose.crouch) * (float) Math.sin(clock * 0.025f + side);
             Quaternionf th = new Quaternionf(body).rotateX(-thighPitch);
             place(thigh[side], hipJoint, th, 0f, -0.33f * s, 0f);
             Vector3f knee = new Quaternionf(th).transform(new Vector3f(0f, -0.66f * s, 0f)).add(hipJoint);
@@ -479,7 +498,7 @@ public final class HeraldRig {
         Quaternionf headRot = new Quaternionf(head.worldRot);
         Vector3f at = headRot.transform(new Vector3f(0f, 0.1f * scale, -0.32f * scale)).add(head.worldCenter);
         Quaternionf orient = new Quaternionf(headRot).rotateX(HMath.HALF_PI);
-        halo.pose(at, orient, 0.52f * scale, 0.05f, 0.05f, clock * 0.02f, 0f, 0f, interp);
+        halo.pose(at, orient, 0.52f * scale, 0.05f, 0.05f, clock * 0.01f, 0f, 0f, interp);
     }
 
     private void renderBlades(int interp) {
@@ -490,19 +509,19 @@ public final class HeraldRig {
             if (!b.free) {
                 // Wings: two blades each side, fanned up and out behind the shoulders, breathing.
                 float sx = i < 2 ? -1f : 1f;
-                float spread = (i % 2 == 0 ? 0.55f : 1.05f) + 0.06f * (float) Math.sin(clock * 0.07f + i);
+                float spread = (i % 2 == 0 ? 0.55f : 1.05f) + 0.06f * (float) Math.sin(clock * 0.035f + i);
                 Quaternionf r = new Quaternionf(body).rotateZ(sx * spread).rotateX(-0.25f);
                 b.rot.set(r);
                 b.pos.set(new Quaternionf(body).transform(new Vector3f(sx * (0.35f + (i % 2) * 0.12f), -0.2f, -0.1f)).add(back));
                 b.scale = scale * 0.85f;
                 b.hot = false;
             }
-            pushBlade(b, interp);
+            pushBlade(b, b.free && interp > 0 ? 1 : interp);
         }
     }
 
     private void pushBlade(Blade b, int interp) {
-        boolean show = visible && assemble >= 0.9f && b.scale > 0.01f;
+        boolean show = (b.free ? bladesVisible : visible && assemble >= 0.9f) && b.scale > 0.01f;
         if (!show) {
             stage.push(b.grip, HeliosStage.gone(b.pos), interp);
             stage.push(b.guard, HeliosStage.gone(b.pos), interp);

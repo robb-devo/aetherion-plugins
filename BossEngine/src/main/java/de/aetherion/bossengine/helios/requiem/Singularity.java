@@ -61,6 +61,8 @@ final class Singularity {
     private boolean quiet;
     private int nextIsland;
     private final List<Tear> tears = new ArrayList<>();
+    /** Players Helios has bound to the hole (GravityTether): extra pull per tick. */
+    private final java.util.Map<java.util.UUID, Float> tethers = new java.util.HashMap<>();
 
     private static final class Rock {
         BlockDisplay d;
@@ -138,6 +140,18 @@ final class Singularity {
         strength = s;
     }
 
+    /** Helios binds {@code p} to the hole: {@code pull} extra per tick on top of gravity (0 releases). */
+    void tether(Player p, float pull) {
+        if (p == null) {
+            return;
+        }
+        if (pull <= 0f) {
+            tethers.remove(p.getUniqueId());
+        } else {
+            tethers.put(p.getUniqueId(), pull);
+        }
+    }
+
     void tick() {
         t++;
         horizon = HMath.lerp(horizon, horizonTarget, 0.03f);
@@ -167,7 +181,7 @@ final class Singularity {
 
     private void render() {
         float spin = quiet ? 0f : t * 0.04f;
-        int interp = 2;
+        int interp = HeliosStage.SMOOTH_2;
         if (t % 2 != 0) {
             return;
         }
@@ -234,11 +248,14 @@ final class Singularity {
             if (p.isSneaking()) {
                 k *= 0.35;
             }
+            float bound = tethers.getOrDefault(p.getUniqueId(), 0f);
+            // Bound by Helios: the hole hauls harder (a sprint outward still just about holds).
+            k += bound * (p.isSneaking() ? 0.6 : 1.0);
             Vector swirl = new Vector(-rel.z, 0, rel.x).multiply(k * 0.25);
             Vector v = p.getVelocity().add(new Vector(rel.x * k, 0, rel.z * k)).add(swirl);
             // Never faster inward than a sprint can beat: skilled play escapes.
             double inward = v.getX() * rel.x + v.getZ() * rel.z;
-            double cap = enc.config().d("helios.singularity.max-inward", 0.24);
+            double cap = enc.config().d("helios.singularity.max-inward", 0.24) + (bound > 0f ? 0.03 : 0.0);
             if (inward > cap) {
                 v.subtract(new Vector(rel.x, 0, rel.z).multiply(inward - cap));
             }
@@ -345,6 +362,7 @@ final class Singularity {
     }
 
     void release() {
+        tethers.clear();
         for (Player p : enc.audience()) {
             enc.camera().vignette(p, 0f);
             p.removePotionEffect(PotionEffectType.SLOWNESS);

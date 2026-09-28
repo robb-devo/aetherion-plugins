@@ -38,7 +38,9 @@ final class BlinkStrike extends Attack {
     private final Vector3f landing = new Vector3f();
     private final Vector3f aim = new Vector3f();
     private Shapes.Line ghostLine;
+    private Shapes.Line streak;
     private Shapes.Line landLine;
+    private final Vector3f vanishedAt = new Vector3f();
     private final Shapes.Line[] fan = new Shapes.Line[3];
     private Shapes.Ring arc;
     private Shapes.Disc pad;
@@ -65,6 +67,7 @@ final class BlinkStrike extends Attack {
         mark = enc.tempo().ticks(2);
         recover = enc.tempo().ticks(1.5);
         ghostLine = new Shapes.Line(stage, g, Material.WHITE_CONCRETE, WHITE);
+        streak = new Shapes.Line(stage, g, Material.WHITE_STAINED_GLASS, WHITE);
         landLine = new Shapes.Line(stage, g, Material.WHITE_CONCRETE, WHITE);
         for (int i = 0; i < fan.length; i++) {
             fan[i] = new Shapes.Line(stage, g, Material.ORANGE_STAINED_GLASS, AMBER);
@@ -103,9 +106,15 @@ final class BlinkStrike extends Attack {
         if (local == t0) {
             lockLanding(rig);
             Vector3f old = new Vector3f(rig.root);
+            vanishedAt.set(old);
             ghostLine.set(old, new Vector3f(old).add(0f, 3.4f, 0f), 0.18f, 0);
-            ghostLine.set(old, new Vector3f(old).add(0f, 3.4f, 0f), 0.01f, 8);
+            // Collapse in place first; the (invisible) body only moves two ticks later, so it never
+            // smears across the arena on its way to the landing point.
             rig.visible(false);
+            // The path he takes: a white streak from where he stood to where he will land.
+            Vector3f from = new Vector3f(old).add(0f, 1.4f, 0f);
+            Vector3f to = new Vector3f(landing).add(0f, 1.4f, 0f);
+            streak.set(from, to, 0.09f, 0);
             enc.score().at(new Vector3f(old).add(0f, 1.5f, 0f), Sound.ENTITY_ENDERMAN_TELEPORT, 1f, 1.7f);
             landLine.set(landing, new Vector3f(landing).add(0f, 3.4f, 0f), 0.02f, 0);
             landLine.set(landing, new Vector3f(landing).add(0f, 3.4f, 0f), 0.08f, mark);
@@ -118,11 +127,34 @@ final class BlinkStrike extends Attack {
                 fan[i].set(new Vector3f(landing).add(0f, 0.04f, 0f), tip, 0.04f, 4);
             }
         }
+        if (local == t0 + 1) {
+            // The after-image thins out where he stood.
+            ghostLine.set(vanishedAt, new Vector3f(vanishedAt).add(0f, 3.4f, 0f), 0.01f, 8);
+        }
+        if (local == t0 + 2) {
+            // Invisible now: move to one step behind the landing point, facing the target.
+            Vector3f back = new Vector3f(landing).sub(aim);
+            back.y = 0f;
+            if (back.lengthSquared() < 1e-4f) {
+                back.set(0f, 0f, -1f);
+            }
+            back.normalize().mul(1.3f);
+            rig.root.set(landing).add(back);
+            rig.face = (float) Math.atan2(aim.x - landing.x, aim.z - landing.z);
+            streak.set(new Vector3f(landing).add(0f, 1.4f, 0f), new Vector3f(landing).add(0f, 1.4f, 0f), 0.01f, 6);
+        }
         if (local > t0 && local < t1 && (local - t0) % 3 == 0) {
             enc.score().at(new Vector3f(landing).add(0f, 1f, 0f), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.9f, 1.8f);
         }
         if (local == t1) {
             strike(rig);
+        }
+        if (local > t1 && local <= t1 + 2) {
+            // The lunge: he arrives a step short and drives through the cut.
+            rig.root.lerp(landing, 0.6f);
+        }
+        if (local == t1 + 2) {
+            rig.root.set(landing);
         }
         if (local == t1 + 3) {
             // Hitstop over: the arc flies out and dies.
@@ -130,6 +162,9 @@ final class BlinkStrike extends Attack {
             arc.arc(new Vector3f(landing).add(0f, 1.1f, 0f), new Quaternionf(), REACH + 1.4f, 0.05f, 0.05f,
                     yaw - HALF_CONE, yaw + HALF_CONE, 6);
             hideMarkers(4);
+        }
+        if (local == t1 + 7) {
+            // Follow-through held, then he gathers himself.
             rig.pose(HeraldRig.Pose.guard(), 0.2f);
         }
         if (local == t2) {
@@ -162,13 +197,13 @@ final class BlinkStrike extends Attack {
             landing.set(tf).sub(new Vector3f(dir).mul(2.4f));
             landing.y = 0f;
         }
-        rig.root.set(landing);
-        rig.face = (float) Math.atan2(aim.x - landing.x, aim.z - landing.z);
     }
 
     private void strike(HeraldRig rig) {
         rig.visible(true);
-        rig.snap(HeraldRig.Pose.slash());
+        // He appears mid-swing (wound up) and the lunge carries the cut through.
+        rig.snap(HeraldRig.Pose.slashWindup());
+        rig.pose(HeraldRig.Pose.slash(), 0.55f);
         rig.flare(15);
         for (int i = 0; i < 4; i++) {
             if (!rig.blade(i).free) {
@@ -181,6 +216,8 @@ final class BlinkStrike extends Attack {
         enc.score().at(landing, Sound.ENTITY_PLAYER_ATTACK_SWEEP, 1.2f, 0.6f);
         enc.score().at(landing, Sound.ITEM_TRIDENT_RIPTIDE_1, 1f, 1.3f);
         enc.score().at(landing, Sound.ENTITY_BREEZE_WIND_BURST, 0.7f, 0.8f);
+        enc.score().at(landing, Sound.ITEM_MACE_SMASH_AIR, 0.9f, 0.7f);
+        enc.camera().shakeFrom(landing, 8f, 6);
         stage.particle(org.bukkit.Particle.SWEEP_ATTACK, new Vector3f(landing).add(0f, 1.2f, 0f), 3, 0.8, 0);
         double power = s.power("blink", 70);
         for (Player p : enc.fighters()) {
@@ -211,12 +248,15 @@ final class BlinkStrike extends Attack {
             l.hide(landing, interp);
         }
         ghostLine.hide(landing, interp);
+        streak.hide(landing, interp);
     }
 
     private void hideAll(int interp) {
-        Vector3f o = new Vector3f();
+        // Hidden at his feet, not at the stage origin: the first tell then grows from him.
+        Vector3f o = new Vector3f(s.rig().root);
         landLine.hide(o, interp);
         ghostLine.hide(o, interp);
+        streak.hide(o, interp);
         pad.hide(o, interp);
         for (Shapes.Line l : fan) {
             l.hide(o, interp);

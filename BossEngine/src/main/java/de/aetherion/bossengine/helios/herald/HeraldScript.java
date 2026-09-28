@@ -3,6 +3,7 @@ package de.aetherion.bossengine.helios.herald;
 import de.aetherion.bossengine.helios.HeliosGuard;
 import de.aetherion.bossengine.helios.HeliosModule;
 import de.aetherion.bossengine.helios.core.HMath;
+import de.aetherion.bossengine.helios.core.HeliosStage;
 import de.aetherion.bossengine.helios.core.Score;
 import de.aetherion.bossengine.helios.core.Shapes;
 import de.aetherion.bossengine.helios.core.SkyControl;
@@ -39,7 +40,9 @@ import java.util.concurrent.ThreadLocalRandom;
  * <pre>
  *   INTRO   (240 t) blackout → the star ignites beat by beat → four blades fall and bite into the Course →
  *           armor flies in from the debris belt, feet first → the sun core ignites (white flash) → title
- *   FIGHT   90 BPM. Blink-Strike, Blade Swarm (spiral / fan / pincer), Laser Cage, Platform Fall, Sun Lance
+ *   FIGHT   84 BPM. Blink-Strike, Blade Swarm (spiral / fan / pincer), Laser Cage, Platform Fall, Sun Lance,
+ *           Starfall (he leaps into the star's light, hunts one player and dives: crater + shockwave).
+ *           Moves chain on the next beat, flurries of 3 (4 below half), a short Opening after each.
  *   MIRROR  (50 %) three clones; the real one's heart is audible on the beat; find it
  *   DEATH   (210 t) he kneels, blades fall; silence; gravity beam; stretched, swallowed; flash; heartbeat
  * </pre>
@@ -185,7 +188,6 @@ public final class HeraldScript extends ActScript implements HeliosGuard.PropAwa
                 b.pos.set(from).lerp(to, f);
                 b.rot.set(new Quaternionf().rotateX(HMath.PI).rotateZ((1f - f) * 3f));
             }
-            rig.renderBladesOnly(1);
             if (t == 110) {
                 for (int i = 0; i < 4; i++) {
                     Vector3f at = new Vector3f(rig.root).add(HMath.ring(3.2f, i * HMath.HALF_PI + HMath.PI / 4f, 0f));
@@ -230,7 +232,7 @@ public final class HeraldScript extends ActScript implements HeliosGuard.PropAwa
         if (t == 205) {
             for (Player p : enc.audience()) {
                 p.showTitle(net.kyori.adventure.title.Title.title(
-                        TextUtil.component("&6&lDER HEROLD"),
+                        TextUtil.component("&6&lTHE HERALD"),
                         TextUtil.component("&7Warden of the dying star"),
                         net.kyori.adventure.title.Title.Times.times(java.time.Duration.ofMillis(300),
                                 java.time.Duration.ofMillis(2600), java.time.Duration.ofMillis(700))));
@@ -337,13 +339,20 @@ public final class HeraldScript extends ActScript implements HeliosGuard.PropAwa
         if (rig == null) {
             return;
         }
+        // The Herald is pushed every tick: snappy (interp 1) while a move needs it, otherwise with one
+        // tick of overlap so his glide never freezes on a late packet. Clones every second tick.
         boolean fast = fastRender || mode == Mode.DYING || (mode == Mode.INTRO && modeTick > 110);
-        if (fast || clock % 2 == 0) {
-            rig.render(fast ? 1 : 2);
+        if (mirrorTick >= 0 && !fast) {
+            // Mirror: the real one moves exactly like the clones (same cadence), only its heart gives it away.
+            if (clock % 2 == 0) {
+                rig.render(HeliosStage.SMOOTH_2);
+            }
+        } else {
+            rig.render(fast ? 1 : HeliosStage.SMOOTH_1);
         }
         for (int i = 0; i < clones.size(); i++) {
             if (clock % 2 == i % 2) {
-                clones.get(i).render(2);
+                clones.get(i).render(HeliosStage.SMOOTH_2);
             }
         }
         if (mirrorTick >= 0 && realIndex >= 0 && realIndex < mirrorSpots.size()) {
@@ -395,12 +404,31 @@ public final class HeraldScript extends ActScript implements HeliosGuard.PropAwa
         if (enc.enraged()) {
             return 3;
         }
-        return hp > 50 ? 1 : 2;
+        // His own move plus one hazard of another family; below half, two hazards.
+        return hp > 50 ? 2 : 3;
     }
 
     @Override
     protected int flurryLength() {
-        return instance.healthPercent() > 50 ? 2 : 3;
+        return instance.healthPercent() > 50 ? 3 : 4;
+    }
+
+    /** He chains: the next move counts in on the very next beat. */
+    @Override
+    protected int breathBeats() {
+        return 0;
+    }
+
+    /** He opens as soon as his own move is done; a running cage or swarm keeps going around him. */
+    @Override
+    protected boolean openingWaitsForHazards() {
+        return false;
+    }
+
+    /** Short breather, not a nap: the Opening is a bonus-damage window, he is never untouchable. */
+    @Override
+    protected int openingBeats() {
+        return Math.max(2, cfgInt("pacing.opening-beats", 4));
     }
 
     /** Spent: he sinks to one knee, the blades droop, the core gutters. Hit him. */
@@ -436,8 +464,11 @@ public final class HeraldScript extends ActScript implements HeliosGuard.PropAwa
     protected List<Choice> choices() {
         double hp = instance.healthPercent();
         List<Choice> out = new ArrayList<>();
-        out.add(new Choice("blink", () -> new BlinkStrike(this, hp < 50 ? 2 : 1), 5, 8, Attack.Family.BODY));
-        out.add(new Choice("swarm", () -> new BladeSwarm(this, null), 4, 14, Attack.Family.SWEEP));
+        out.add(new Choice("blink", () -> new BlinkStrike(this, enc.enraged() ? 3 : hp < 50 ? 2 : 1), 5, 8, Attack.Family.BODY));
+        out.add(new Choice("swarm", () -> new BladeSwarm(this, null), 4, 12, Attack.Family.SWEEP));
+        if (hp < 90) {
+            out.add(new Choice("starfall", () -> new Starfall(this, enc.enraged() ? 3 : hp < 50 ? 2 : 1), 3, 22, Attack.Family.BODY));
+        }
         if (hp < 90) {
             out.add(new Choice("platform", () -> new PlatformFall(this), 3, 32, Attack.Family.ARENA));
         }
@@ -462,6 +493,8 @@ public final class HeraldScript extends ActScript implements HeliosGuard.PropAwa
         out.add(new Choice("cage", () -> new LaserCage(this), 1, 1, Attack.Family.GROUND));
         out.add(new Choice("platform", () -> new PlatformFall(this), 1, 1, Attack.Family.ARENA));
         out.add(new Choice("lance", () -> new SunLance(this), 1, 1, Attack.Family.BODY));
+        out.add(new Choice("starfall", () -> new Starfall(this, 1), 1, 1, Attack.Family.BODY));
+        out.add(new Choice("starfall2", () -> new Starfall(this, 2), 1, 1, Attack.Family.BODY));
         return out;
     }
 
@@ -570,6 +603,7 @@ public final class HeraldScript extends ActScript implements HeliosGuard.PropAwa
             r.root.set(spot);
             r.visible(true);
             r.snap(HeraldRig.Pose.guard());
+            r.cut();
         }
     }
 
@@ -641,9 +675,10 @@ public final class HeraldScript extends ActScript implements HeliosGuard.PropAwa
         }
         HeraldRig real = realRig();
         if (real != rig) {
-            // Swap: the body we keep is always "rig", so move it to where the real one stood.
+            // Swap: the body we keep is always "rig", so move it to where the real one stood (a cut, no slide).
             rig.root.set(real.root);
             rig.face = real.face;
+            rig.cut();
         }
         enc.score().play(Sound.BLOCK_GLASS_BREAK, 1f, 0.6f);
         enc.score().chord(Sound.BLOCK_NOTE_BLOCK_BELL, 0.9f, Score.semi(0), Score.semi(7));
