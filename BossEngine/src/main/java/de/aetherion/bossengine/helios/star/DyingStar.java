@@ -66,7 +66,7 @@ public final class DyingStar {
     private boolean heartVisible = true;
     private boolean shellsVisible = true;
     private boolean coronaVisible = true;
-    private int interp = 3;
+    private int interp = 2;
 
     public DyingStar(HeliosStage stage, Tempo tempo) {
         this.stage = stage;

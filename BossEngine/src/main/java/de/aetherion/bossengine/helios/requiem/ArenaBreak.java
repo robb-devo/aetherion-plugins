@@ -144,6 +144,7 @@ final class ArenaBreak extends Attack {
         animateFalling();
         if (dropIdx >= order.size() + 12) {
             arena.markRingGone(2);
+            h.rubble(22, 34f, 46f);
             return true;
         }
         return false;
@@ -213,6 +214,9 @@ final class ArenaBreak extends Attack {
             h.rig().ringScale(1f);
         }
         animateFalling();
+        if (t == fallAt + 70) {
+            h.rubble(10, 26f, 40f);
+        }
         return t > fallAt + 70;
     }
 

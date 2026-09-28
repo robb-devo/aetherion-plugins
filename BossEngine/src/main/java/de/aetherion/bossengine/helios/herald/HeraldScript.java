@@ -339,11 +339,11 @@ public final class HeraldScript extends ActScript implements HeliosGuard.PropAwa
         }
         boolean fast = fastRender || mode == Mode.DYING || (mode == Mode.INTRO && modeTick > 110);
         if (fast || clock % 2 == 0) {
-            rig.render(fast ? 2 : 3);
+            rig.render(fast ? 1 : 2);
         }
         for (int i = 0; i < clones.size(); i++) {
             if (clock % 2 == i % 2) {
-                clones.get(i).render(3);
+                clones.get(i).render(2);
             }
         }
         if (mirrorTick >= 0 && realIndex >= 0 && realIndex < mirrorSpots.size()) {

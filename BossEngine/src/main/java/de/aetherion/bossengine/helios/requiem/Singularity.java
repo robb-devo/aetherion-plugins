@@ -192,10 +192,16 @@ final class Singularity {
                 r.theta += w * 2f;
                 r.r -= 0.012f * (1f + 6f / Math.max(1f, r.r));
             }
+            int rockInterp = interp;
             if (r.r < horizon + 0.4f) {
-                // Swallowed: a flicker at the rim, then it comes back on the outside of the disk.
+                if (collapsing) {
+                    stage.push(r.d, HeliosStage.gone(CENTER), interp);
+                    continue;
+                }
+                // Swallowed: a flicker at the rim, then it reappears (no interpolation) on the outside.
                 enc.score().at(CENTER, Sound.BLOCK_RESPAWN_ANCHOR_DEPLETE, 0.4f, 1.8f);
                 r.r = horizon + 12f + HMath.hash((int) r.theta, t) * 5f;
+                rockInterp = 0;
             }
             Vector3f local = new Vector3f((float) Math.cos(r.theta) * r.r, r.y, (float) Math.sin(r.theta) * r.r);
             Vector3f at = new Quaternionf(tilt).transform(local).add(CENTER);
@@ -207,7 +213,7 @@ final class Singularity {
                 HeliosStage.material(r.d, m);
                 HeliosStage.brightness(r.d, 15);
             }
-            stage.push(r.d, HeliosStage.box(at, new Vector3f(r.size * 0.7f, r.size * 0.6f, r.size * stretch), along), interp);
+            stage.push(r.d, HeliosStage.box(at, new Vector3f(r.size * 0.7f, r.size * 0.6f, r.size * stretch), along), rockInterp);
         }
     }
 
@@ -348,10 +354,15 @@ final class Singularity {
     }
 
     /** Everything collapses into the core (death). */
+    private boolean collapsing;
+
     void collapse(float f) {
+        collapsing = true;
         horizonTarget = Math.max(0.1f, horizonTarget * (1f - f));
         for (Rock r : disk) {
+            // Spiral, don't slide: the orbit speeds up as it tightens.
             r.r = Math.max(0.2f, r.r * (1f - 0.08f * f));
+            r.theta += 0.05f + 0.25f * f;
         }
     }
 

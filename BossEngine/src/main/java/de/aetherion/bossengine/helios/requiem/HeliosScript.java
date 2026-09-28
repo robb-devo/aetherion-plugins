@@ -49,14 +49,13 @@ import java.util.concurrent.ThreadLocalRandom;
  *                                          at 40 % a supernova wave breaks the Course into islands
  *   III SINGULARITÄT  (25-6 %, 80 BPM)    the black hole; gravity, lensing, time dilation, islands torn away
  *   IV  REQUIEM       (6 %)               silence, then the last movement; survive it, then the heart
- *   DEATH (420 t)     slow motion · collapse · swell · SUPERNOVA · afterglow · dawn · the arena rebuilds
- *                     from light, ring by ring · one point of light stays
+ *   DEATH (~520 t)    last breath · collapse · the point · swell · SUPERNOVA · nebula + pulsar · dawn ·
+ *                     the arena rebuilds from light, ring by ring (see {@link Supernova})
  * </pre>
  */
 public final class HeliosScript extends ActScript {
 
     private static final int INTERLUDE = 320;
-    private static final int DEATH = 440;
     private static final Color WHITE = Color.fromRGB(255, 250, 235);
 
     private HeliosRig rig;
@@ -70,13 +69,8 @@ public final class HeliosScript extends ActScript {
     private final List<int[]> molten = new ArrayList<>();
     private int enragePulse;
 
-    /* death */
-    private final List<BlockDisplay> nova = new ArrayList<>();
-    private final List<Vector3f> novaDir = new ArrayList<>();
-    private Shapes.Ring[] shock;
-    private HeliosStage.Group deathGroup;
-    private List<ArenaLayout.Cell> rebuild;
-    private int rebuildCursor;
+    /* rubble of the burned Corona, orbiting outside the arena (after the burn) */
+    private DebrisField debris;
 
     public HeliosScript(HeliosModule module, BossInstance instance) {
         super(module, instance);
@@ -122,6 +116,14 @@ public final class HeliosScript extends ActScript {
         }
         arena.swap(dx, -1, dz, Material.MAGMA_BLOCK);
         molten.add(new int[]{dx, dz, clock + ticks});
+    }
+
+    /** The Corona has burned away (or the Course shattered): its rubble keeps circling the arena. */
+    void rubble(int count, float from, float to) {
+        if (debris == null) {
+            debris = new DebrisField(enc.stage());
+        }
+        debris.add(count, from, to);
     }
 
     void stopAttacks() {
@@ -249,6 +251,9 @@ public final class HeliosScript extends ActScript {
         String phase = phaseId();
         double hp = instance.healthPercent();
         tickMolten();
+        if (debris != null) {
+            debris.tick();
+        }
         if (singularity != null) {
             singularity.progress((float) ((25.0 - hp) / 19.0));
             singularity.tick();
@@ -353,7 +358,9 @@ public final class HeliosScript extends ActScript {
         if (rig == null) {
             return;
         }
-        rig.render(2);
+        if (clock % 2 == 0) {
+            rig.render(2);
+        }
         hitbox.set(rig.center).sub(0f, 1.3f, 0f);
     }
 
@@ -501,6 +508,8 @@ public final class HeliosScript extends ActScript {
 
     /* ================================================================== death */
 
+    private Supernova supernova;
+
     @Override
     protected void onDeathStart() {
         enc.cinematic(true);
@@ -511,210 +520,56 @@ public final class HeliosScript extends ActScript {
             singularity.release();
         }
         enc.score().stopVoices();
-        enc.stage().timeScale(0.25f);
         enc.sky().freeze(p -> 0.0);
-        rig.spin(0.25f);
-        rig.crack(1f);
         exposed = false;
-        deathGroup = enc.stage().group();
+        supernova = new Supernova(this);
     }
 
     @Override
     protected boolean tickDeath() {
-        int t = modeTick;
-        Score score = enc.score();
-        // 0-60: slow motion. The mask cracks through, the rings crawl, the heart stutters.
-        if (t < 60) {
-            if (t % 20 == 0) {
-                score.play(Sound.ENTITY_WARDEN_HEARTBEAT, 1.2f, 0.5f, true);
-            }
-            if (t == 5) {
-                score.play(Sound.BLOCK_GLASS_BREAK, 1f, 0.5f, true);
-            }
-            glideTo(new Vector3f(0f, 9f, 0f), 0.03f);
+        if (supernova == null) {
+            supernova = new Supernova(this);
         }
-        // 60-120: collapse. Everything is pulled into the heart.
-        if (t >= 60 && t < 120) {
-            float f = HMath.inCubic(HMath.window(t, 60, 118));
-            rig.collapse(f);
-            if (singularity != null) {
-                singularity.collapse(f);
-            }
-            enc.star().scale(1f - f, 0.05f);
-            if (t == 60) {
-                score.sweep(null, Sound.BLOCK_BEACON_DEACTIVATE, 1f, 0.4f, 2f, 0.5f, 58, 4);
-            }
+        // The world keeps turning (quietly) until it has fallen into the heart.
+        if (singularity != null) {
+            singularity.tick();
         }
-        if (t == 120) {
-            score.silence(30);
-            if (singularity != null) {
-                singularity.clear();
-                singularity = null;
-            }
-            rig.visible(false);
-            enc.star().clear();
-            enc.stage().timeScale(1f);
-            core = deathGroup.block(Material.WHITE_CONCRETE.createBlockData(), WHITE, 15, true);
-            coreGlass = deathGroup.block(Material.ORANGE_STAINED_GLASS.createBlockData(), null, 15, true);
-            enc.stage().push(core, HeliosStage.cube(rig.center, 0.25f, new Quaternionf()), 0);
-            enc.stage().push(coreGlass, HeliosStage.cube(rig.center, 0.01f, new Quaternionf()), 0);
+        if (debris != null) {
+            debris.tick();
         }
-        // 150-200: it swells. The screen edges burn red; the ground shakes harder and harder.
-        if (t >= 150 && t < 200) {
-            float f = HMath.window(t, 150, 200);
-            Quaternionf spin = new Quaternionf().rotateXYZ(t * 0.2f, t * 0.13f, t * 0.07f);
-            enc.stage().push(core, HeliosStage.cube(rig.center, 0.25f + 5f * HMath.inExpo(f), spin), 1);
-            enc.stage().push(coreGlass, HeliosStage.cube(rig.center, 0.4f + 7.5f * HMath.inExpo(f), new Quaternionf(spin).invert()), 1);
-            enc.camera().vignetteAll(0.2f + 0.7f * f);
-            if (t % 6 == 0) {
-                enc.camera().shakeAll(6, 2);
-            }
-            if (t == 150) {
-                score.play(Sound.BLOCK_END_PORTAL_SPAWN, 1.2f, 0.5f, true);
-                score.sweep(null, Sound.ENTITY_WARDEN_SONIC_CHARGE, 0.8f, 1.2f, 0.5f, 1.2f, 50, 5);
-            }
-        }
-        // 200: SUPERNOVA.
-        if (t == 200) {
-            supernova();
-        }
-        if (t > 200 && t < 300) {
-            tickNova(t - 200);
-        }
-        // 230-420: afterglow and dawn; the arena rebuilds from light, ring by ring.
-        if (t == 230) {
+        boolean done = supernova.tick(modeTick) || modeTick > Supernova.END + 300;
+        if (done) {
+            finishRestore();
+            supernova.clear();
+            rig.clear();
             enc.sky().freeze(null);
-            enc.sky().weather(null);
-            enc.sky().fog(false);
-            enc.sky().darken(false);
-            enc.sky().to(SkyControl.DAWN, 60f);
-            enc.camera().vignetteAll(0f);
-            beginRebuild();
-        }
-        if (t > 230) {
-            tickRebuild();
-        }
-        if (t == 330) {
-            enc.sky().to(200f, 25f);
-            score.chord(Sound.BLOCK_NOTE_BLOCK_CHIME, 0.8f, Score.semi(0), Score.semi(4), Score.semi(7), Score.semi(12));
-            score.play(Sound.BLOCK_AMETHYST_BLOCK_RESONATE, 1f, 1f);
-        }
-        if (t >= DEATH && rebuild != null && rebuildCursor >= rebuild.size()) {
-            finishRestore();
-            deathGroup.clear();
-            rig.clear();
             enc.heliosFallen();
-            return true;
         }
-        if (t >= DEATH + 200) {
-            // Failsafe: never hang on a slow rebuild.
-            finishRestore();
-            deathGroup.clear();
-            rig.clear();
-            enc.heliosFallen();
-            return true;
-        }
-        return false;
+        return done;
     }
 
-    private BlockDisplay core;
-    private BlockDisplay coreGlass;
-
-    private void supernova() {
-        Score score = enc.score();
-        score.unmute();
-        enc.camera().flash(6, 24);
-        enc.camera().shakeAll(30, 2);
-        score.play(Sound.ENTITY_GENERIC_EXPLODE, 2f, 0.5f, true);
-        score.play(Sound.ENTITY_GENERIC_EXPLODE, 2f, 0.7f, true);
-        score.play(Sound.ENTITY_WARDEN_SONIC_BOOM, 1.5f, 0.5f, true);
-        score.play(Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1.5f, 0.5f, true);
-        score.play(Sound.ITEM_TOTEM_USE, 1f, 0.6f, true);
-        enc.stage().push(core, HeliosStage.gone(rig.center), 4);
-        enc.stage().push(coreGlass, HeliosStage.cube(rig.center, 14f, new Quaternionf()), 4);
-        shock = new Shapes.Ring[4];
-        float[] tilt = {0f, 0.35f, -0.35f, HMath.HALF_PI};
-        for (int i = 0; i < shock.length; i++) {
-            shock[i] = new Shapes.Ring(enc.stage(), deathGroup, enc.stage().budget().scaled(36, 20),
-                    i == 0 ? Material.WHITE_CONCRETE : Material.ORANGE_STAINED_GLASS, i == 0 ? WHITE : null, 15, true);
+    /** Collapse (0..1): the singularity's disk, the star's remains and the debris all spiral into the heart. */
+    void collapseWorld(float f) {
+        if (singularity != null) {
+            singularity.collapse(f);
         }
-        int n = enc.stage().budget().scaled(26, 12);
-        Material[] mats = {Material.SHROOMLIGHT, Material.MAGMA_BLOCK, Material.OCHRE_FROGLIGHT, Material.ORANGE_STAINED_GLASS, Material.MAGENTA_STAINED_GLASS};
-        Vector3f[] dirs = HMath.sphere(n);
-        for (int i = 0; i < n; i++) {
-            BlockDisplay d = deathGroup.block(mats[i % mats.length].createBlockData(), null, 15, false);
-            if (d == null) {
-                break;
-            }
-            nova.add(d);
-            novaDir.add(dirs[i]);
-        }
-        for (Player p : enc.audience()) {
-            p.showTitle(net.kyori.adventure.title.Title.title(TextUtil.component(""),
-                    TextUtil.component("&f&oSupernova"),
-                    net.kyori.adventure.title.Title.Times.times(java.time.Duration.ofMillis(0),
-                            java.time.Duration.ofMillis(1500), java.time.Duration.ofMillis(1500))));
-            p.setVelocity(p.getVelocity().add(new Vector(0, 0.6, 0)));
+        enc.star().scale(Math.max(0f, 1f - f), 0.05f);
+        if (debris != null) {
+            debris.collapse(rig.center, f);
         }
     }
 
-    private void tickNova(int t) {
-        float f = HMath.outExpo(HMath.window(t, 0, 60));
-        float[] tilt = {0f, 0.35f, -0.35f, HMath.HALF_PI};
-        for (int i = 0; i < shock.length; i++) {
-            Quaternionf orient = new Quaternionf().rotateX(tilt[i]).rotateY(i * 0.7f);
-            float r = 2f + 60f * f * (1f - i * 0.12f);
-            float thick = 0.8f * (1f - f) + 0.05f;
-            shock[i].pose(rig.center, orient, r, thick, thick, t * 0.02f, 0f, 0f, 2);
+    /** The point: everything that fell in is gone. */
+    void releaseWorld() {
+        if (singularity != null) {
+            singularity.clear();
+            singularity = null;
         }
-        for (int i = 0; i < nova.size(); i++) {
-            Vector3f at = new Vector3f(novaDir.get(i)).mul(4f + 45f * f * (0.6f + HMath.hash(i, 3) * 0.6f)).add(rig.center);
-            float size = 1.2f * (1f - f) + 0.05f;
-            enc.stage().push(nova.get(i), HeliosStage.cube(at, size, new Quaternionf().rotateXYZ(t * 0.1f + i, t * 0.07f, 0f)), 2);
+        enc.star().clear();
+        if (debris != null) {
+            debris.clear();
+            debris = null;
         }
-        if (t == 20) {
-            enc.stage().push(coreGlass, HeliosStage.gone(rig.center), 40);
-        }
-        if (t == 60) {
-            for (Shapes.Ring r : shock) {
-                r.hide(rig.center, 10);
-            }
-            for (BlockDisplay d : nova) {
-                enc.stage().push(d, HeliosStage.gone(rig.center), 30);
-            }
-        }
-    }
-
-    /* ------------------------------------------------------------------ restore from light */
-
-    private void beginRebuild() {
-        Arena arena = enc.arena();
-        arena.revertTemps();
-        rebuild = new ArrayList<>(arena.damaged());
-        rebuild.sort(Comparator.comparingDouble(ArenaLayout.Cell::radius).thenComparingDouble(ArenaLayout.Cell::angle));
-        rebuildCursor = 0;
-        enc.score().sweep(null, Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.5f, 0.8f, 0.8f, 1.6f, 160, 5);
-    }
-
-    private void tickRebuild() {
-        if (rebuild == null || rebuildCursor >= rebuild.size()) {
-            return;
-        }
-        int per = Math.max(20, rebuild.size() / 140 + 1);
-        int end = Math.min(rebuild.size(), rebuildCursor + per);
-        List<ArenaLayout.Cell> batch = rebuild.subList(rebuildCursor, end);
-        enc.arena().restore(new ArrayList<>(batch));
-        // A thin sheet of light runs ahead of the rebuilt ground.
-        if (!batch.isEmpty() && modeTick % 3 == 0) {
-            ArenaLayout.Cell c = batch.get(batch.size() - 1);
-            BlockDisplay glint = deathGroup.block(Material.WHITE_STAINED_GLASS.createBlockData(), WHITE, 15, false);
-            if (glint != null) {
-                Vector3f at = new Vector3f(c.dx() + 0.5f, 0.1f, c.dz() + 0.5f);
-                enc.stage().push(glint, HeliosStage.cube(at, 1.1f, new Quaternionf()), 0);
-                enc.stage().push(glint, HeliosStage.gone(new Vector3f(at).add(0f, 3f, 0f)), 20);
-            }
-        }
-        rebuildCursor = end;
     }
 
     private void finishRestore() {
@@ -745,8 +600,12 @@ public final class HeliosScript extends ActScript {
             }
         }
         molten.clear();
-        if (deathGroup != null) {
-            deathGroup.clear();
+        if (supernova != null) {
+            supernova.clear();
+        }
+        if (debris != null) {
+            debris.clear();
+            debris = null;
         }
         if (rig != null) {
             rig.clear();

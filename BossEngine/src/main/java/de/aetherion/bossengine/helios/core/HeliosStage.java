@@ -310,14 +310,18 @@ public final class HeliosStage {
 
     /* ------------------------------------------------------------------ pushing */
 
-    /** Pushes a pose; the interpolation is stretched by the stage's slow motion. */
+    /**
+     * Pushes a pose. The interpolation must match how often the caller pushes: the client starts each
+     * new interpolation from the previous <i>target</i>, so a longer interpolation than the push cadence
+     * makes pieces snap and jitter. Slow motion is therefore done by the scripts (slower animation),
+     * never by stretching interpolation here.
+     */
     public void push(Display d, Transformation t, int interp) {
         if (d == null || !d.isValid()) {
             return;
         }
-        int scaled = timeScale >= 0.999f ? interp : Math.round(interp / timeScale);
         d.setInterpolationDelay(0);
-        d.setInterpolationDuration(Math.max(0, Math.min(200, scaled)));
+        d.setInterpolationDuration(Math.max(0, Math.min(200, interp)));
         d.setTransformation(t);
         budget.pushed();
     }
