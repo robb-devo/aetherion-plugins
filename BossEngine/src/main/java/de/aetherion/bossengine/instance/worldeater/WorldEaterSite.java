@@ -376,7 +376,7 @@ public final class WorldEaterSite {
             if (after != null) {
                 after.run();
             }
-        }, SiteLayout.ISLAND, SiteLayout.BRIDGE), null);
+        }, SiteLayout.ISLAND, SiteLayout.BRIDGE, SiteLayout.RIFT), null);
     }
 
     private void setState(State next) {

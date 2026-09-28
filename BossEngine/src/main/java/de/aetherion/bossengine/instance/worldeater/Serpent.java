@@ -78,6 +78,8 @@ final class Serpent {
         boolean hidden;
         boolean rising;
         float riseScale = 1f;
+        /** Ring mode: stretches the slab to fill its slot on the edge of the world. */
+        float ringMul = 1f;
         final Vector3f center = new Vector3f();
         final Quaternionf rot = new Quaternionf();
         Transformation sentTop;
@@ -93,12 +95,16 @@ final class Serpent {
             return size * 0.92f;
         }
 
-        void spawn() {
+        BlockData topData() {
             BlockData topData = world.top().createBlockData();
             if (world.snowy() && topData instanceof Snowable s) {
                 s.setSnowy(true);
             }
-            top = fx.block(topData, null, bright);
+            return topData;
+        }
+
+        void spawn() {
+            top = fx.block(topData(), null, bright);
             under = fx.block(world.under(), null, bright);
             if (world.feature() != null) {
                 feature = fx.block(world.feature(), null, bright);
@@ -123,9 +129,9 @@ final class Serpent {
         }
 
         void render(int interp) {
-            float s = size * riseScale;
+            float s = size * riseScale * ringMul;
             float h = s * 0.8f;
-            float l = length() * riseScale;
+            float l = length() * riseScale * ringMul;
             if (hidden) {
                 Transformation gone = WeFx.gone(center);
                 sentTop = push(top, gone, sentTop, interp);
@@ -178,6 +184,8 @@ final class Serpent {
     Mode mode = Mode.TRAIL;
     private float ringBlend;
     private float ringBlendGoal;
+    /** Ring mode: arc length each visible vertebra fills (0 = lay them at their trail offsets). */
+    private float ringSlot;
     private final RingPath ringPath = new RingPath();
 
     Serpent(WeFx fx, int worlds) {
@@ -635,6 +643,48 @@ final class Serpent {
         layoutOffsets(false);
     }
 
+    /**
+     * A world it just ate joins the body right behind the neck, starting in the throat and
+     * sliding down into place while the rest of the body makes room.
+     */
+    void grow(World w, float size) {
+        Vertebra v = new Vertebra(w, size);
+        int at = Math.min(NECK_SEGMENTS, body.size());
+        v.offset = at > 0 ? body.get(at - 1).offset : NECK_GAP;
+        v.riseScale = 0.4f;
+        body.add(at, v);
+        if (spawned) {
+            v.spawn();
+        }
+        layoutOffsets(false);
+    }
+
+    /** Grown vertebrae swell to full size over a second (call every tick). */
+    private void settleGrowth() {
+        for (Vertebra v : body) {
+            if (!v.rising && v.riseScale < 1f) {
+                v.riseScale = Math.min(1f, v.riseScale + 0.03f);
+            }
+        }
+    }
+
+    /** Head size (1 = normal). Used when it eats itself. */
+    void headScale(float s) {
+        head.scale = Math.max(0.001f, s);
+    }
+
+    /** Repaints one vertebra's surface block ({@code null} puts back its own world). */
+    void paintTop(int i, Material m) {
+        if (i < 0 || i >= body.size()) {
+            return;
+        }
+        Vertebra v = body.get(i);
+        if (v.top == null || !v.top.isValid()) {
+            return;
+        }
+        v.top.setBlock(m == null ? v.topData() : m.createBlockData());
+    }
+
     /* ================================================================== ring (ouroboros) */
 
     /**
@@ -645,6 +695,49 @@ final class Serpent {
         mode = Mode.RING;
         ringPath.set(center.x, center.z, side, floor, corner);
         ringBlendGoal = WeMath.clamp01(blendGoal);
+        ringSlot = 0f;
+    }
+
+    /**
+     * Lays the whole visible body around the edge of the world, head at {@code corner}, each
+     * vertebra stretched to an equal slot so the tail ends exactly in the mouth. From then on the
+     * ring's size follows the body: see {@link #ringFit()}.
+     */
+    void ringStart(Vector3f center, float side, float floor, int corner) {
+        mode = Mode.RING;
+        ringPath.set(center.x, center.z, side, floor, corner);
+        int n = Math.max(1, visibleCount());
+        ringSlot = Math.max(1.2f, (ringPath.perimeter() - NECK_GAP) / n);
+        ringBlendGoal = 1f;
+    }
+
+    /** Resizes the ring so its perimeter holds exactly the visible body. @return the new side */
+    float ringFit() {
+        if (ringSlot <= 0f) {
+            return ringPath.side;
+        }
+        float per = NECK_GAP + visibleCount() * ringSlot;
+        float r = 2.4f;
+        ringPath.side = Math.max(13.4f, (per - 2f * PI * r) / 4f + 2f * r);
+        return ringPath.side;
+    }
+
+    float ringSlot() {
+        return ringSlot;
+    }
+
+    Vector3f ringCenter() {
+        return new Vector3f(ringPath.cx, ringPath.floor, ringPath.cz);
+    }
+
+    int visibleCount() {
+        int n = 0;
+        for (Vertebra v : body) {
+            if (!v.hidden) {
+                n++;
+            }
+        }
+        return n;
     }
 
     void ringSide(float side) {
@@ -695,6 +788,7 @@ final class Serpent {
             jawSnap *= 0.7f;
         }
         crest.target.x = -Math.min(0.6f, speed * 0.35f);
+        settleGrowth();
         head.step(1f);
         head.render();
 
@@ -705,12 +799,18 @@ final class Serpent {
         Vector3f tan = new Vector3f();
         Vector3f rp = new Vector3f();
         Vector3f rf = new Vector3f();
+        int slot = 0;
         for (Vertebra v : body) {
             v.offset += (v.targetOffset - v.offset) * 0.18f;
             boolean ok = trail.sample(headS - v.offset, p, u, tan);
+            v.ringMul = 1f;
             if (ringBlend > 0f) {
-                ringPath.at(v.offset, rp, rf);
-                rp.y += v.size * 0.4f;
+                float ru = ringSlot > 0f ? NECK_GAP + (slot + 0.5f) * ringSlot : v.offset;
+                ringPath.at(ru, rp, rf);
+                if (ringSlot > 0f) {
+                    v.ringMul = WeMath.lerp(1f, ringSlot * 0.97f / Math.max(0.1f, v.length()), ringBlend);
+                }
+                rp.y += v.size * v.ringMul * 0.4f;
                 if (!ok) {
                     p.set(rp);
                     tan.set(rf);
@@ -720,9 +820,12 @@ final class Serpent {
                 WeMath.lerp(p, rp, ringBlend, p);
                 tan.lerp(rf, ringBlend);
                 u.lerp(new Vector3f(0f, 1f, 0f), ringBlend);
-                if (ringBlend >= 1f && v.offset > ringPerimeter() + 0.5f) {
+                if (ringBlend >= 1f && ru > ringPerimeter() + 0.5f) {
                     ok = false;
                 }
+            }
+            if (!v.hidden) {
+                slot++;
             }
             boolean show = ok && !bodyHidden;
             v.center.set(p);

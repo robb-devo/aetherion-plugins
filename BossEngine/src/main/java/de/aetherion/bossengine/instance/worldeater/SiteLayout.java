@@ -79,7 +79,9 @@ public final class SiteLayout {
     public static final Box WALL = new Box(-6, 84, -13, 53, 128, -10);
     public static final Box PLAZA = new Box(6, 76, -46, 42, 112, -14);
     public static final Box ROAD = new Box(8, 84, -130, 40, 112, -44);
-    public static final Box[] SITE = {ISLAND, BRIDGE, WALL, PLAZA, ROAD};
+    /** The sky beyond the island where Nihil tears through: end gateway blocks live here, only while it does. */
+    public static final Box RIFT = new Box(14, 120, 56, 34, 160, 60);
+    public static final Box[] SITE = {ISLAND, BRIDGE, WALL, PLAZA, ROAD, RIFT};
 
     /** Chunk the approach-road glimpse bites a corner out of (the desert fragment). */
     public static final Box ROAD_BITE = new Box(25, 93, -81, 28, 101, -78);
