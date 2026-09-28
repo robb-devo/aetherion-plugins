@@ -2,7 +2,6 @@ package de.aetherion.bossengine.helios.reward;
 
 import de.aetherion.bossengine.helios.core.HMath;
 import de.aetherion.bossengine.helios.core.HeliosStage;
-import de.aetherion.bossengine.helios.core.Lang;
 import de.aetherion.bossengine.helios.core.Score;
 import de.aetherion.bossengine.helios.core.Shapes;
 import de.aetherion.bossengine.helios.encounter.HeliosEncounter;
@@ -93,8 +92,7 @@ public final class StarseedReliquary {
                 if (!c.claimed) {
                     Player p = Bukkit.getPlayer(c.owner);
                     if (p != null) {
-                        p.sendActionBar(TextUtil.component(Lang.pick(p,
-                                "&6Deine Sternensaat wartet noch &f30s&6.", "&6Your starseed waits another &f30s&6.")));
+                        p.sendActionBar(TextUtil.component("&6Your starseed waits another &f30s&6."));
                     }
                 }
             }
@@ -121,8 +119,7 @@ public final class StarseedReliquary {
         for (Capsule c : capsules.values()) {
             if (c.hitbox != null && c.hitbox.equals(clicked)) {
                 if (!c.owner.equals(p.getUniqueId())) {
-                    p.sendActionBar(TextUtil.component(Lang.pick(p,
-                            "&7Diese Sternensaat gehört &f" + c.name + "&7.", "&7This starseed belongs to &f" + c.name + "&7.")));
+                    p.sendActionBar(TextUtil.component("&7This starseed belongs to &f" + c.name + "&7."));
                     return true;
                 }
                 if (c.landed && !c.claimed) {
@@ -151,8 +148,7 @@ public final class StarseedReliquary {
                 for (ItemStack i : c.items) {
                     PendingRewards.Delivery.give(p, i);
                 }
-                p.sendMessage(TextUtil.component(Lang.pick(p,
-                        "&6✦ &7Deine Sternensaat wurde dir nachgereicht.", "&6✦ &7Your starseed was delivered to you.")));
+                p.sendMessage(TextUtil.component("&6✦ &7Your starseed was delivered to you."));
             } else {
                 PendingRewards.store(c.owner, c.items);
             }
@@ -244,8 +240,7 @@ public final class StarseedReliquary {
             if (t % 40 == 0) {
                 Player p = Bukkit.getPlayer(owner);
                 if (p != null && p.getLocation().distanceSquared(stage.at(pos)) < 36) {
-                    p.sendActionBar(TextUtil.component(Lang.pick(p,
-                            "&6Rechtsklick: &fdeine Sternensaat öffnen", "&6Right-click: &fopen your starseed")));
+                    p.sendActionBar(TextUtil.component("&6Right-click: &fopen your starseed"));
                 }
             }
         }
@@ -280,7 +275,7 @@ public final class StarseedReliquary {
             for (ItemStack i : items) {
                 PendingRewards.Delivery.give(p, i);
                 String nm = i.hasItemMeta() && i.getItemMeta().hasDisplayName() ? i.getItemMeta().getDisplayName() : i.getType().name();
-                p.sendMessage(TextUtil.component("&6✦ &7Sternensaat &8» &f" + (i.getAmount() > 1 ? i.getAmount() + "x " : "") + nm));
+                p.sendMessage(TextUtil.component("&6✦ &7Starseed &8» &f" + (i.getAmount() > 1 ? i.getAmount() + "x " : "") + nm));
             }
             stage.world().spawnParticle(Particle.END_ROD, p.getLocation().add(0, 1, 0), 24, 0.4, 0.8, 0.4, 0.02, null, true);
             if (hitbox != null && hitbox.isValid()) {

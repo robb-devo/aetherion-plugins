@@ -1,6 +1,5 @@
 package de.aetherion.bossengine.helios;
 
-import de.aetherion.bossengine.helios.core.Lang;
 import de.aetherion.bossengine.helios.encounter.HeliosEncounter;
 import de.aetherion.bossengine.helios.encounter.Participants;
 import de.aetherion.bossengine.helios.world.HeliosWorld;
@@ -70,8 +69,7 @@ public final class HeliosGuard implements Listener {
                 || "CHORUS_FRUIT".equals(cause.name()) || "CONSUMABLE_EFFECT".equals(cause.name()))) {
             if (!exempt(p)) {
                 event.setCancelled(true);
-                p.sendActionBar(TextUtil.component(Lang.pick(p,
-                        "&8Der Stern hält dich fest.", "&8The star holds you in place.")));
+                p.sendActionBar(TextUtil.component("&8The star holds you in place."));
             }
             return;
         }
@@ -202,8 +200,7 @@ public final class HeliosGuard implements Listener {
         module.plugin().getServer().getScheduler().runTaskLater(module.plugin(), () -> recoverPlayer(module, p), 2L);
         module.plugin().getServer().getScheduler().runTaskLater(module.plugin(), () -> {
             if (p.isOnline() && de.aetherion.bossengine.helios.reward.PendingRewards.deliver(p) > 0) {
-                p.sendMessage(TextUtil.component(Lang.pick(p,
-                        "&6✦ &7Deine Sternensaat aus Helios wurde nachgeliefert.", "&6✦ &7Your starseed from Helios has been delivered.")));
+                p.sendMessage(TextUtil.component("&6✦ &7Your starseed from Helios has been delivered."));
             }
         }, 60L);
     }
@@ -229,8 +226,7 @@ public final class HeliosGuard implements Listener {
         }
         module.teleport(p, fallback(module, p));
         Participants.sendHome(p, null, module.fallbackReturn(), true);
-        p.sendMessage(TextUtil.component(Lang.pick(p,
-                "&6✦ &7Der Stern hat dich zurückgebracht.", "&6✦ &7The star brought you back.")));
+        p.sendMessage(TextUtil.component("&6✦ &7The star brought you back."));
     }
 
     private static Location fallback(HeliosModule module, Player p) {

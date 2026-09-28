@@ -3,7 +3,6 @@ package de.aetherion.bossengine.helios.requiem;
 import de.aetherion.bossengine.helios.HeliosModule;
 import de.aetherion.bossengine.helios.core.HMath;
 import de.aetherion.bossengine.helios.core.HeliosStage;
-import de.aetherion.bossengine.helios.core.Lang;
 import de.aetherion.bossengine.helios.core.Score;
 import de.aetherion.bossengine.helios.core.Shapes;
 import de.aetherion.bossengine.helios.core.SkyControl;
@@ -222,7 +221,7 @@ public final class HeliosScript extends ActScript {
             for (Player p : enc.audience()) {
                 p.showTitle(net.kyori.adventure.title.Title.title(
                         TextUtil.component("&c&lHELIOS"),
-                        TextUtil.component(Lang.pick(p, "&7Requiem eines sterbenden Sterns", "&7Requiem of a dying star")),
+                        TextUtil.component("&7Requiem of a dying star"),
                         net.kyori.adventure.title.Title.Times.times(java.time.Duration.ofMillis(400),
                                 java.time.Duration.ofMillis(3000), java.time.Duration.ofMillis(800))));
             }
@@ -326,11 +325,11 @@ public final class HeliosScript extends ActScript {
             return;
         }
         switch (phase.toLowerCase(java.util.Locale.ROOT)) {
-            case "zerfall" -> enc.bars().movement("&6II &8· &6Zerfall", (float) ((hp - 25.0) / 35.0), BossBar.Color.YELLOW);
-            case "singularitaet" -> enc.bars().movement("&5III &8· &dSingularität", (float) ((hp - 6.0) / 19.0), BossBar.Color.PURPLE);
-            case "requiem" -> enc.bars().movement(requiem != null && requiem.exposed() ? "&f&lIV &8· &f&lDas Herz" : "&fIV &8· &fRequiem",
+            case "zerfall" -> enc.bars().movement("&6II &8· &6Decay", (float) ((hp - 25.0) / 35.0), BossBar.Color.YELLOW);
+            case "singularitaet" -> enc.bars().movement("&5III &8· &dSingularity", (float) ((hp - 6.0) / 19.0), BossBar.Color.PURPLE);
+            case "requiem" -> enc.bars().movement(requiem != null && requiem.exposed() ? "&f&lIV &8· &f&lThe Heart" : "&fIV &8· &fRequiem",
                     requiem != null && requiem.exposed() ? requiem.windowProgress() : 1f, BossBar.Color.WHITE);
-            default -> enc.bars().movement("&cI &8· &6Korona", (float) ((hp - 60.0) / 40.0), BossBar.Color.RED);
+            default -> enc.bars().movement("&cI &8· &6Corona", (float) ((hp - 60.0) / 40.0), BossBar.Color.RED);
         }
     }
 
@@ -381,8 +380,7 @@ public final class HeliosScript extends ActScript {
                 enc.sky().freeze(singularity::skyRate);
                 holdScheduler(enc.tempo().ticks(4));
                 for (Player p : enc.audience()) {
-                    p.sendActionBar(TextUtil.component(Lang.pick(p,
-                            "&5Der Stern fällt in sich zusammen.", "&5The star falls into itself.")));
+                    p.sendActionBar(TextUtil.component("&5The star falls into itself."));
                 }
             }
             case "requiem" -> {
@@ -618,7 +616,7 @@ public final class HeliosScript extends ActScript {
         }
         for (Player p : enc.audience()) {
             p.showTitle(net.kyori.adventure.title.Title.title(TextUtil.component(""),
-                    TextUtil.component(Lang.pick(p, "&f&oSupernova", "&f&oSupernova")),
+                    TextUtil.component("&f&oSupernova"),
                     net.kyori.adventure.title.Title.Times.times(java.time.Duration.ofMillis(0),
                             java.time.Duration.ofMillis(1500), java.time.Duration.ofMillis(1500))));
             p.setVelocity(p.getVelocity().add(new Vector(0, 0.6, 0)));

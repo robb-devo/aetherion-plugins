@@ -75,8 +75,8 @@ public final class BossEngine extends JavaPlugin {
         saveResourceIfMissing("bosses/hanging_saint.yml");
         saveResourceIfMissing("bosses/world_eater_unbroken.yml");
         saveResourceIfMissing("bosses/world_eater.yml");
-        saveResourceIfMissing("bosses/helios_herald.yml");
-        saveResourceIfMissing("bosses/helios_requiem.yml");
+        de.aetherion.bossengine.helios.HeliosModule.syncResource(this, "bosses/helios_herald.yml");
+        de.aetherion.bossengine.helios.HeliosModule.syncResource(this, "bosses/helios_requiem.yml");
 
         keys = new BossKeys(this);
         skillRegistry = new SkillRegistry(getLogger());

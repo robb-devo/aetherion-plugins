@@ -1,3 +1,4 @@
+# helios-version: 2 (files with an older version are backed up to .bak and replaced on start)
 # ============================================================
 # HELIOS REQUIEM - Act I: the Herald
 # Warden of the dying star. The whole fight lives in
@@ -14,7 +15,7 @@
 # ============================================================
 
 id: helios_herald
-display-name: "&6&lDer Herold"
+display-name: "&6&lThe Herald"
 # Invisible hitbox; the body is ~40 block displays.
 entity-type: ZOMBIE
 model-engine-id: ""
@@ -45,11 +46,11 @@ conditions:
 phases:
   - id: herald
     health-percent: 100
-    display-name: "&6&lDer Herold"
+    display-name: "&6&lThe Herald"
     skills: []
   - id: mirror
     health-percent: 50
-    display-name: "&6&lDer Herold &8· &eSpiegel"
+    display-name: "&6&lThe Herald &8· &eMirror"
     skills: []
 
 skills: []

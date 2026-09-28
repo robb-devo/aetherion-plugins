@@ -1,3 +1,4 @@
+# helios-version: 2 (files with an older version are backed up to .bak and replaced on start)
 # ============================================================
 # HELIOS REQUIEM - Act II: Helios
 # The dying star, an armillary sphere around a porcelain-gold mask.
@@ -53,11 +54,11 @@ phases:
     skills: []
   - id: zerfall
     health-percent: 60
-    display-name: "&c&lHelios &8· &6Zerfall"
+    display-name: "&c&lHelios &8· &6Decay"
     skills: []
   - id: singularitaet
     health-percent: 25
-    display-name: "&c&lHelios &8· &5Singularität"
+    display-name: "&c&lHelios &8· &5Singularity"
     skills: []
   - id: requiem
     health-percent: 6

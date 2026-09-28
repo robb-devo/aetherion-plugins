@@ -80,7 +80,7 @@ final class ArenaBreak extends Attack {
             enc.sky().to(SkyControl.DUSK + 300f, 25f);
             for (Player p : enc.audience()) {
                 p.sendActionBar(de.aetherion.bossengine.util.TextUtil.component(
-                        de.aetherion.bossengine.helios.core.Lang.pick(p, "&6&lDie Korona verglüht! &eNach innen!", "&6&lThe Corona is burning away! &eMove inward!")));
+                        "&6&lThe Corona is burning away! &eMove inward!"));
             }
         } else {
             for (int s = 1; s < ArenaLayout.SECTORS[1]; s += 2) {

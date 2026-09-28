@@ -146,7 +146,15 @@ public final class HeliosConfig {
     }
 
     public boolean echoes() {
-        return b("echo.enabled", true);
+        return b("echo.enabled", false);
+    }
+
+    public int respawnGraceTicks() {
+        return Math.max(0, i("death.respawn-grace-seconds", 4) * 20);
+    }
+
+    public int rescueGraceTicks() {
+        return Math.max(0, i("void.rescue-grace-seconds", 3) * 20);
     }
 
     public int heraldEnrageTicks() {

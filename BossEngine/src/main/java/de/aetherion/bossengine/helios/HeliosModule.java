@@ -49,9 +49,7 @@ public final class HeliosModule {
     }
 
     public void enable() {
-        if (!new File(plugin.getDataFolder(), "helios.yml").exists()) {
-            plugin.saveResource("helios.yml", false);
-        }
+        syncResource(plugin, "helios.yml");
         config = HeliosConfig.load(new File(plugin.getDataFolder(), "helios.yml"));
         Participants.keys(plugin);
         de.aetherion.bossengine.helios.reward.PendingRewards.init(plugin.getDataFolder(), plugin.getLogger());
@@ -113,6 +111,59 @@ public final class HeliosModule {
         }
         BossScripts.unregister(HeliosEncounter.HERALD_ID);
         BossScripts.unregister(HeliosEncounter.HELIOS_ID);
+    }
+
+    /**
+     * Writes a bundled Helios resource when it is missing or carries an older {@code helios-version}
+     * than the jar. The old file is kept next to it as {@code <name>.v<old>.bak}, so live edits are never
+     * lost; balance changes still reach the server.
+     */
+    public static void syncResource(org.bukkit.plugin.java.JavaPlugin plugin, String path) {
+        File target = new File(plugin.getDataFolder(), path);
+        int bundled = versionOf(plugin.getResource(path));
+        if (!target.exists()) {
+            plugin.saveResource(path, false);
+            return;
+        }
+        int live;
+        try (java.io.InputStream in = new java.io.FileInputStream(target)) {
+            live = versionOf(in);
+        } catch (java.io.IOException e) {
+            live = 0;
+        }
+        if (bundled <= live) {
+            return;
+        }
+        File backup = new File(target.getParentFile(), target.getName() + ".v" + live + ".bak");
+        try {
+            java.nio.file.Files.copy(target.toPath(), backup.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            plugin.saveResource(path, true);
+            plugin.getLogger().info("[Helios] Updated " + path + " to v" + bundled + " (old copy: " + backup.getName() + ").");
+        } catch (java.io.IOException e) {
+            plugin.getLogger().warning("[Helios] Could not update " + path + ": " + e.getMessage());
+        }
+    }
+
+    private static int versionOf(java.io.InputStream in) {
+        if (in == null) {
+            return 0;
+        }
+        try (java.io.BufferedReader r = new java.io.BufferedReader(new java.io.InputStreamReader(in, java.nio.charset.StandardCharsets.UTF_8))) {
+            for (int i = 0; i < 5; i++) {
+                String line = r.readLine();
+                if (line == null) {
+                    break;
+                }
+                int at = line.indexOf("helios-version:");
+                if (at >= 0) {
+                    String rest = line.substring(at + 15).trim().split("\\s+")[0];
+                    return Integer.parseInt(rest);
+                }
+            }
+        } catch (java.io.IOException | NumberFormatException ignored) {
+            // treat as unversioned
+        }
+        return 0;
     }
 
     public void reload() {

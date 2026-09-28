@@ -1,7 +1,6 @@
 package de.aetherion.bossengine.helios.requiem;
 
 import de.aetherion.bossengine.helios.core.HMath;
-import de.aetherion.bossengine.helios.core.Lang;
 import de.aetherion.bossengine.helios.core.Score;
 import de.aetherion.bossengine.helios.encounter.HeliosEncounter;
 import de.aetherion.bossengine.util.TextUtil;
@@ -68,7 +67,7 @@ final class Requiem {
         enc.tempo().bpm(enc.config().bpm("requiem", 120), 0);
         enc.sky().darken(true);
         for (Player p : enc.audience()) {
-            p.sendActionBar(TextUtil.component(Lang.pick(p, "&f&oStille.", "&f&oSilence.")));
+            p.sendActionBar(TextUtil.component("&f&oSilence."));
         }
     }
 
@@ -185,7 +184,7 @@ final class Requiem {
         enc.camera().flash(1, 6);
         h.exposeHeart(true);
         for (Player p : enc.audience()) {
-            p.sendActionBar(TextUtil.component(Lang.pick(p, "&6&lDas Herz liegt offen!", "&6&lThe heart lies open!")));
+            p.sendActionBar(TextUtil.component("&6&lThe heart lies open!"));
         }
     }
 
@@ -201,7 +200,7 @@ final class Requiem {
             stage = Stage.CHART;
             startBeat = enc.tempo().beat() + 1;
             for (Player p : enc.audience()) {
-                p.sendActionBar(TextUtil.component(Lang.pick(p, "&cDas Requiem beginnt von vorn…", "&cThe requiem plays again…")));
+                p.sendActionBar(TextUtil.component("&cThe requiem plays again…"));
             }
         }
     }

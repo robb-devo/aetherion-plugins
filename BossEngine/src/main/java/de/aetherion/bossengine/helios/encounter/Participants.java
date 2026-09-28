@@ -35,6 +35,9 @@ public final class Participants {
         final boolean allowFlight;
         boolean echo;
         boolean gone;
+        int deaths;
+        /** Encounter clock until which this member cannot be hit (respawn, rescue). */
+        int graceUntil;
         /** Last stage point this member stood on solid ground (void rescue target). */
         final Vector3f lastGround = new Vector3f();
         int airTicks;

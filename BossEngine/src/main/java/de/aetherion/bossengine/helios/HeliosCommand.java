@@ -1,6 +1,5 @@
 package de.aetherion.bossengine.helios;
 
-import de.aetherion.bossengine.helios.core.Lang;
 import de.aetherion.bossengine.helios.encounter.ActScript;
 import de.aetherion.bossengine.helios.encounter.HeliosEncounter;
 import de.aetherion.bossengine.helios.world.ArenaSlots;
@@ -98,13 +97,13 @@ public final class HeliosCommand implements TabExecutor {
         String result = module.enter(p);
         String text = switch (result.split(":")[0]) {
             case "ok" -> null;
-            case "disabled" -> Lang.pick(p, "&cHelios ist gerade nicht verfügbar.", "&cHelios is not available right now.");
-            case "permission" -> Lang.pick(p, "&cDu kannst den sterbenden Stern noch nicht betreten.", "&cYou cannot enter the dying star yet.");
-            case "already" -> Lang.pick(p, "&cDu bist bereits im Kampf.", "&cYou are already in the fight.");
-            case "not-leader" -> Lang.pick(p, "&cNur die Gruppenleitung kann den Kampf beginnen.", "&cOnly the party leader can start the fight.");
-            case "min-players" -> Lang.pick(p, "&cIhr seid zu wenige.", "&cNot enough players.");
-            case "full" -> Lang.pick(p, "&cAlle Sternenbühnen sind belegt. Versuch es gleich noch einmal.", "&cEvery star stage is in use. Try again shortly.");
-            case "cooldown" -> Lang.pick(p, "&cDer Stern ruht noch &f" + result.split(":")[1] + "s&c.", "&cThe star rests for another &f" + result.split(":")[1] + "s&c.");
+            case "disabled" -> "&cHelios is not available right now.";
+            case "permission" -> "&cYou cannot enter the dying star yet.";
+            case "already" -> "&cYou are already in the fight.";
+            case "not-leader" -> "&cOnly the party leader can start the fight.";
+            case "min-players" -> "&cNot enough players.";
+            case "full" -> "&cEvery star stage is in use. Try again shortly.";
+            case "cooldown" -> "&cThe star rests for another &f" + result.split(":")[1] + "s&c.";
             default -> "&c" + result;
         };
         if (text != null) {
@@ -118,7 +117,7 @@ public final class HeliosCommand implements TabExecutor {
         }
         HeliosEncounter e = module.encounterOf(p);
         if (e == null) {
-            msg(p, Lang.pick(p, "&7Du bist in keinem Kampf.", "&7You are not in a fight."));
+            msg(p, "&7You are not in a fight.");
             return;
         }
         e.leave(p, true);

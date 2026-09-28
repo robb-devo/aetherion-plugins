@@ -8,7 +8,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.WorldBorder;
-import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
@@ -33,24 +32,17 @@ import java.util.concurrent.ThreadLocalRandom;
  * <ul>
  *   <li><b>Shake.</b> The client's own hurt tilt ({@code sendHurtAnimation}) without damage, re-fired
  *       on a decaying schedule. This is the only camera shake vanilla allows.</li>
- *   <li><b>Flash.</b> A block display cube with <i>negative</i> scale riding the player's head and shown
- *       only to them: inverted faces are visible from inside, so the whole view turns to that
- *       material. White concrete at full brightness is the white flash; it then thins into a
- *       translucent veil and collapses. (A resource pack full-screen glyph is cleaner; see docs.)</li>
+ *   <li><b>Flash.</b> A night-vision pulse: the night-time arena is flooded with light for a moment
+ *       (optionally a resource-pack full-screen glyph on top). Nothing is attached to the player.</li>
  *   <li><b>Blackout / Darkness.</b> Vanilla blindness and darkness effects, short and ambient-free.</li>
  *   <li><b>Vignette.</b> A private world border whose warning distance tints the screen edges red.</li>
  * </ul>
  */
 public final class Camera {
 
-    private static final float CUBE = 3.2f;
-    /** A rider sits on top of the player's head; the eye is this far below that. */
-    private static final float EYE_BELOW_MOUNT = 0.2f;
-
     private final Plugin plugin;
     private final HeliosStage stage;
     private final Map<UUID, Shake> shakes = new HashMap<>();
-    private final List<Veil> veils = new ArrayList<>();
     private final Map<UUID, WorldBorder> borders = new HashMap<>();
 
     public Camera(Plugin plugin, HeliosStage stage) {
@@ -63,11 +55,6 @@ public final class Camera {
             Map.Entry<UUID, Shake> e = it.next();
             Player p = Bukkit.getPlayer(e.getKey());
             if (p == null || e.getValue().tick(p)) {
-                it.remove();
-            }
-        }
-        for (Iterator<Veil> it = veils.iterator(); it.hasNext(); ) {
-            if (it.next().tick()) {
                 it.remove();
             }
         }
@@ -130,88 +117,53 @@ public final class Camera {
 
     /* ------------------------------------------------------------------ flash */
 
-    /** White-out: {@code hold} ticks of solid light, then a {@code fade}-tick veil that collapses. */
+    /**
+     * Resource pack full-screen glyph (config {@code resourcepack.flash-glyph}); empty = none.
+     * Without a pack the flash is light, not a prop: a night vision pulse floods the (night-time) arena
+     * with light for a moment. No display is ever attached to the player (an earlier inverted-cube
+     * trick rendered as a stray glass block over players' heads on real clients).
+     */
+    private String flashGlyph = "";
+
+    public void flashGlyph(String glyph) {
+        this.flashGlyph = glyph == null ? "" : glyph;
+    }
+
+    /** Light floods in for {@code hold} ticks and ebbs over {@code fade}. */
     public void flash(int hold, int fade) {
         for (Player p : stage.audience()) {
-            flash(p, Material.WHITE_CONCRETE, Material.WHITE_STAINED_GLASS, hold, fade);
+            flash(p, hold, fade);
         }
     }
 
-    /** A tinted flash (heat: orange, cold light: light blue), veil only. */
-    public void tint(Material glass, int hold, int fade) {
+    /** A softer, shorter pulse (heat, impacts). */
+    public void tint(Material ignored, int hold, int fade) {
         for (Player p : stage.audience()) {
-            flash(p, glass, glass, hold, fade);
+            flash(p, Math.max(1, hold / 2), Math.max(2, fade / 2));
         }
     }
 
-    public void flash(Player p, Material solid, Material veil, int hold, int fade) {
+    public void flash(Player p, Material ignoredSolid, Material ignoredVeil, int hold, int fade) {
+        flash(p, hold, fade);
+    }
+
+    public void flash(Player p, int hold, int fade) {
         if (p == null || !p.isOnline() || p.getWorld() != stage.world()) {
             return;
         }
-        Location at = p.getLocation();
-        BlockDisplay cube = p.getWorld().spawn(at, BlockDisplay.class, d -> {
-            d.setPersistent(false);
-            d.setVisibleByDefault(false);
-            d.setBlock(solid.createBlockData());
-            d.setBrightness(new Display.Brightness(15, 15));
-            d.setViewRange(1f);
-            d.setShadowRadius(0f);
-            d.setTransformation(inverted(CUBE));
-        });
-        p.showEntity(plugin, cube);
-        p.addPassenger(cube);
-        veils.add(new Veil(p.getUniqueId(), cube, veil, hold, fade));
-    }
-
-    private static Transformation inverted(float size) {
-        float h = size * 0.5f;
-        return new Transformation(new Vector3f(h, h - EYE_BELOW_MOUNT, h), new Quaternionf(),
-                new Vector3f(-size, -size, -size), new Quaternionf());
-    }
-
-    private final class Veil {
-        private final UUID player;
-        private final BlockDisplay cube;
-        private final Material veil;
-        private final int hold;
-        private final int fade;
-        private int t;
-
-        Veil(UUID player, BlockDisplay cube, Material veil, int hold, int fade) {
-            this.player = player;
-            this.cube = cube;
-            this.veil = veil;
-            this.hold = Math.max(1, hold);
-            this.fade = Math.max(1, fade);
-        }
-
-        boolean tick() {
-            t++;
-            Player p = Bukkit.getPlayer(player);
-            if (p == null || !cube.isValid() || !p.isOnline()) {
-                remove();
-                return true;
+        int total = Math.max(2, hold + fade);
+        p.addPotionEffect(new PotionEffect(PotionEffectType.NIGHT_VISION, total, 0, false, false, false));
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (p.isOnline()) {
+                PotionEffect nv = p.getPotionEffect(PotionEffectType.NIGHT_VISION);
+                if (nv != null && nv.getDuration() <= total && !nv.hasIcon()) {
+                    p.removePotionEffect(PotionEffectType.NIGHT_VISION);
+                }
             }
-            if (t == hold) {
-                cube.setBlock(veil.createBlockData());
-            }
-            if (t == hold + fade / 2) {
-                // Collapse through the eye: the veil wipes away instead of popping.
-                cube.setInterpolationDelay(0);
-                cube.setInterpolationDuration(Math.max(1, fade / 2));
-                cube.setTransformation(inverted(0.3f));
-            }
-            if (t >= hold + fade) {
-                remove();
-                return true;
-            }
-            return false;
-        }
-
-        void remove() {
-            if (cube.isValid()) {
-                cube.remove();
-            }
+        }, total);
+        if (!flashGlyph.isEmpty()) {
+            p.showTitle(Title.title(net.kyori.adventure.text.Component.text(flashGlyph), net.kyori.adventure.text.Component.empty(),
+                    Title.Times.times(Duration.ZERO, Duration.ofMillis(hold * 50L), Duration.ofMillis(fade * 50L))));
         }
     }
 
@@ -312,13 +264,6 @@ public final class Camera {
         if (borders.remove(p.getUniqueId()) != null) {
             p.setWorldBorder(null);
         }
-        for (Iterator<Veil> it = veils.iterator(); it.hasNext(); ) {
-            Veil v = it.next();
-            if (v.player.equals(p.getUniqueId())) {
-                v.remove();
-                it.remove();
-            }
-        }
         clearDark(p);
     }
 
@@ -331,9 +276,5 @@ public final class Camera {
         }
         borders.clear();
         shakes.clear();
-        for (Veil v : veils) {
-            v.remove();
-        }
-        veils.clear();
     }
 }

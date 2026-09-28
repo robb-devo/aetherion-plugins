@@ -3,7 +3,6 @@ package de.aetherion.bossengine.helios.herald;
 import de.aetherion.bossengine.helios.HeliosGuard;
 import de.aetherion.bossengine.helios.HeliosModule;
 import de.aetherion.bossengine.helios.core.HMath;
-import de.aetherion.bossengine.helios.core.Lang;
 import de.aetherion.bossengine.helios.core.Score;
 import de.aetherion.bossengine.helios.core.Shapes;
 import de.aetherion.bossengine.helios.core.SkyControl;
@@ -133,7 +132,7 @@ public final class HeraldScript extends ActScript implements HeliosGuard.PropAwa
         rig.snap(HeraldRig.Pose.idle());
         rig.visible(false);
         hitbox.set(rig.root).add(0f, 0.4f, 0f);
-        enc.bars().boss("&6✦ &e&lDER HEROLD &6✦", BossBar.Color.YELLOW, 50);
+        enc.bars().boss("&6✦ &e&lTHE HERALD &6✦", BossBar.Color.YELLOW, 50);
         enc.bars().visible(false);
         enc.tempo().bpm(enc.config().bpm("interlude", 60), 0);
         enc.star().pulse(0.2f);
@@ -232,7 +231,7 @@ public final class HeraldScript extends ActScript implements HeliosGuard.PropAwa
             for (Player p : enc.audience()) {
                 p.showTitle(net.kyori.adventure.title.Title.title(
                         TextUtil.component("&6&lDER HEROLD"),
-                        TextUtil.component(Lang.pick(p, "&7Wächter des sterbenden Sterns", "&7Warden of the dying star")),
+                        TextUtil.component("&7Warden of the dying star"),
                         net.kyori.adventure.title.Title.Times.times(java.time.Duration.ofMillis(300),
                                 java.time.Duration.ofMillis(2600), java.time.Duration.ofMillis(700))));
             }
@@ -466,8 +465,7 @@ public final class HeraldScript extends ActScript implements HeliosGuard.PropAwa
         enc.score().play(Sound.BLOCK_BEACON_POWER_SELECT, 1f, 0.5f);
         rig.pose(HeraldRig.Pose.raise(), 0.3f);
         for (Player p : enc.audience()) {
-            p.sendActionBar(TextUtil.component(Lang.pick(p,
-                    "&eNur einer schlägt im Takt des Sterns.", "&eOnly one of them beats in time with the star.")));
+            p.sendActionBar(TextUtil.component("&eOnly one of them beats in time with the star."));
         }
     }
 
@@ -597,8 +595,7 @@ public final class HeraldScript extends ActScript implements HeliosGuard.PropAwa
                 HeraldRig fake = allRigs().get(i);
                 MirrorVolley.shatter(this, fake);
                 MirrorVolley.nova(this, fake.root, power("mirror.punish", 60));
-                player.sendActionBar(TextUtil.component(Lang.pick(player,
-                        "&cFalsches Licht.", "&cFalse light.")));
+                player.sendActionBar(TextUtil.component("&cFalse light."));
                 shuffleMirror(true);
                 return true;
             }
@@ -627,8 +624,7 @@ public final class HeraldScript extends ActScript implements HeliosGuard.PropAwa
         endMirror();
         holdScheduler(enc.tempo().ticks(4));
         for (Player p : enc.audience()) {
-            p.sendActionBar(TextUtil.component(Lang.pick(p,
-                    "&6" + by.getName() + " &efand das echte Herz.", "&6" + by.getName() + " &efound the true heart.")));
+            p.sendActionBar(TextUtil.component("&6" + by.getName() + " &efound the true heart."));
         }
     }
 

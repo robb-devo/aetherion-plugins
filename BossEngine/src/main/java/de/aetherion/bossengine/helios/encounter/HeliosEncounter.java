@@ -10,7 +10,6 @@ import de.aetherion.bossengine.helios.core.Camera;
 import de.aetherion.bossengine.helios.core.DisplayBudget;
 import de.aetherion.bossengine.helios.core.HMath;
 import de.aetherion.bossengine.helios.core.HeliosStage;
-import de.aetherion.bossengine.helios.core.Lang;
 import de.aetherion.bossengine.helios.core.Score;
 import de.aetherion.bossengine.helios.core.SkyControl;
 import de.aetherion.bossengine.helios.core.Tempo;
@@ -101,6 +100,7 @@ public final class HeliosEncounter {
     private final Map<String, Integer> iframes = new HashMap<>();
     private final Map<UUID, Double> heraldDamage = new HashMap<>();
     private int builtAt = -1;
+    private int allDownTicks;
 
     private HeliosEncounter(HeliosModule module, int slot) {
         this.module = module;
@@ -262,9 +262,7 @@ public final class HeliosEncounter {
 
     private void prepare() {
         for (Player p : party.present()) {
-            p.sendMessage(TextUtil.component(Lang.pick(p,
-                    "&6✦ &eDer sterbende Stern ruft. &7Die Arena formt sich…",
-                    "&6✦ &eThe dying star calls. &7The arena is forming…")));
+            p.sendMessage(TextUtil.component("&6✦ &eThe dying star calls. &7The arena is forming…"));
         }
         ArenaBuilder builder = module.builder();
         builder.clear(world, cx, cy, cz, null);
@@ -280,6 +278,7 @@ public final class HeliosEncounter {
         tempo = new Tempo(cfg.bpm("herald", 90));
         score = new Score(stage, cfg.soundOverrides(), cfg.masterVolume());
         camera = new Camera(module.plugin(), stage);
+        camera.flashGlyph(cfg.s("resourcepack.flash-glyph", ""));
         sky = new SkyControl(stage);
         arena = new Arena(world, cx, cy, cz, stage);
         star = new DyingStar(stage, tempo);
@@ -306,6 +305,7 @@ public final class HeliosEncounter {
             to.setPitch(-8f);
             camera.blackout(p, 60);
             module.teleport(p, to);
+            hushHud(p);
             p.setFallDistance(0f);
             if (p.getGameMode() == GameMode.CREATIVE || p.getGameMode() == GameMode.SPECTATOR) {
                 // Staff testers keep their mode; everyone else fights in survival.
@@ -442,7 +442,7 @@ public final class HeliosEncounter {
         if (act == Act.PREPARING) {
             if (clock % 20 == 0) {
                 for (Player p : party.present()) {
-                    p.sendActionBar(TextUtil.component(Lang.pick(p, "&7Die Arena formt sich…", "&7The arena is forming…")));
+                    p.sendActionBar(TextUtil.component("&7The arena is forming…"));
                 }
             }
             if (clock > 20 * 60) {
@@ -473,7 +473,13 @@ public final class HeliosEncounter {
                 beginClosing(true);
             }
             if ((act == Act.HERALD || act == Act.HELIOS) && !victory && builtAt >= 0 && clock - builtAt > 60) {
-                if (party.alive().isEmpty()) {
+                boolean anyoneStanding = false;
+                for (Player p : party.present()) {
+                    Participants.Member m = party.get(p);
+                    anyoneStanding |= !p.isDead() && m != null && !m.echo;
+                }
+                allDownTicks = anyoneStanding ? 0 : allDownTicks + 1;
+                if (allDownTicks > 20 * 8) {
                     fail();
                 }
             }
@@ -548,7 +554,7 @@ public final class HeliosEncounter {
             return false;
         }
         Participants.Member m = party.get(p);
-        if (m == null || m.echo) {
+        if (m == null || m.echo || clock < m.graceUntil) {
             return false;
         }
         GameMode mode = p.getGameMode();
@@ -576,7 +582,11 @@ public final class HeliosEncounter {
     /* ================================================================== guard */
 
     private void guardPlayers() {
+        boolean hush = clock % 20 == 0;
         for (Player p : party.present()) {
+            if (hush && p.getWorld() == world) {
+                hushHud(p);
+            }
             Participants.Member m = party.get(p);
             if (m == null) {
                 continue;
@@ -615,26 +625,44 @@ public final class HeliosEncounter {
         }
     }
 
+    /**
+     * The star catches whoever falls: a gold beam reaches down, lifts them above the nearest solid
+     * ground and lets them float down onto it (slow falling), with a short grace. It hurts a little,
+     * it never chains into another hit.
+     */
     private void fellOff(Player p, Participants.Member m) {
         if (cfg.voidMode() == HeliosConfig.VoidMode.DEATH && !cinematic) {
             p.setHealth(0.0);
             return;
         }
         Vector3f safe = arena.safeSpot(m.lastGround);
-        Location to = stage.at(safe.x, 0.1f, safe.z);
+        Location to = stage.at(safe.x, 5.5f, safe.z);
         to.setYaw(p.getLocation().getYaw());
-        to.setPitch(20f);
+        to.setPitch(35f);
         module.teleport(p, to);
         p.setFallDistance(0f);
-        p.setVelocity(new Vector());
-        camera.flash(p, org.bukkit.Material.ORANGE_STAINED_GLASS, org.bukkit.Material.ORANGE_STAINED_GLASS, 2, 6);
-        score.to(p, Sound.ENTITY_WARDEN_SONIC_CHARGE, 0.8f, 1.6f);
-        score.to(p, Sound.BLOCK_RESPAWN_ANCHOR_DEPLETE, 1f, 0.7f);
+        p.setVelocity(new Vector(0, 0.15, 0));
+        p.addPotionEffect(new org.bukkit.potion.PotionEffect(org.bukkit.potion.PotionEffectType.SLOW_FALLING, 45, 0, false, false, false));
+        catchBeam(new Vector3f(safe.x, 5.5f, safe.z));
+        score.to(p, Sound.BLOCK_BEACON_POWER_SELECT, 1f, 1.6f);
+        score.to(p, Sound.ITEM_TRIDENT_RETURN, 1f, 0.8f);
         if (!cinematic) {
             hit(p, cfg.rescuePower(), "void", 20, null);
         }
-        p.sendActionBar(TextUtil.component(Lang.pick(p,
-                "&6Der Stern reißt dich zurück.", "&6The star drags you back.")));
+        grace(p, cfg.rescueGraceTicks());
+        p.sendActionBar(TextUtil.component("&6The star catches you."));
+    }
+
+    /** A brief gold tether from the star down to a rescued player. */
+    private void catchBeam(Vector3f to) {
+        HeliosStage.Group g = stage.group();
+        de.aetherion.bossengine.helios.core.Shapes.Beam beam = new de.aetherion.bossengine.helios.core.Shapes.Beam(
+                stage, g, org.bukkit.Material.WHITE_CONCRETE, org.bukkit.Material.YELLOW_STAINED_GLASS, DyingStar.GOLD);
+        Vector3f from = star.center();
+        beam.set(from, to, 0.05f, 0);
+        beam.set(from, to, 0.5f, 3);
+        Bukkit.getScheduler().runTaskLater(module.plugin(), () -> beam.thin(6), 6L);
+        Bukkit.getScheduler().runTaskLater(module.plugin(), g::clear, 16L);
     }
 
     private void keepEchoInside(Player p) {
@@ -660,34 +688,72 @@ public final class HeliosEncounter {
         if (m == null) {
             return;
         }
+        m.deaths++;
         if (cfg.echoes()) {
             m.echo = true;
         }
         for (Player o : audience()) {
-            o.sendMessage(TextUtil.component(Lang.pick(o,
-                    "&6✦ &7" + p.getName() + " &8verglüht. &7Ein Echo bleibt.",
-                    "&6✦ &7" + p.getName() + " &8burns away. &7An echo remains.")));
-        }
-        if (!cfg.echoes()) {
-            Bukkit.getScheduler().runTask(module.plugin(), () -> leave(p, true));
+            o.sendMessage(TextUtil.component("&6✦ &7" + p.getName() + " &8is scattered into light."));
         }
     }
 
-    /** Where a dead participant respawns (the overlook) or null to let vanilla decide. */
+    /**
+     * Where a dead participant comes back: on the arena floor, in survival, with a few seconds of grace
+     * (or the overlook as an echo, if echoes are enabled). Never out of the instance.
+     */
     public Location respawn(Player p) {
         Participants.Member m = party.get(p);
-        if (m == null || !m.echo) {
+        if (m == null) {
             return null;
         }
+        if (m.echo) {
+            Bukkit.getScheduler().runTask(module.plugin(), () -> {
+                if (p.isOnline() && party.contains(p)) {
+                    p.setGameMode(GameMode.SPECTATOR);
+                    p.sendTitlePart(net.kyori.adventure.title.TitlePart.TITLE, TextUtil.component("&7Echo"));
+                    p.sendTitlePart(net.kyori.adventure.title.TitlePart.SUBTITLE, TextUtil.component("&8You watch until the light fades."));
+                }
+            });
+            return overlook();
+        }
+        Vector3f safe = arena == null ? Arena.spawnPoint() : arena.safeSpot(HMath.ring(24f, HMath.HALF_PI, 0f));
+        Location to = stage.at(safe.x, 0.1f, safe.z);
+        to.setYaw((float) Math.toDegrees(HMath.yawToward(-safe.x, -safe.z)));
+        grace(p, cfg.respawnGraceTicks());
         Bukkit.getScheduler().runTask(module.plugin(), () -> {
             if (p.isOnline() && party.contains(p)) {
-                p.setGameMode(GameMode.SPECTATOR);
-                p.sendTitlePart(net.kyori.adventure.title.TitlePart.TITLE, TextUtil.component("&7Echo"));
-                p.sendTitlePart(net.kyori.adventure.title.TitlePart.SUBTITLE, TextUtil.component(Lang.pick(p,
-                        "&8Du siehst zu, bis das Licht verklingt.", "&8You watch until the light fades.")));
+                if (p.getGameMode() == GameMode.SPECTATOR) {
+                    p.setGameMode(GameMode.SURVIVAL);
+                }
+                p.addPotionEffect(new org.bukkit.potion.PotionEffect(org.bukkit.potion.PotionEffectType.RESISTANCE,
+                        cfg.respawnGraceTicks(), 4, false, false, false));
+                hushHud(p);
+                p.sendActionBar(TextUtil.component("&6The star lets you back in."));
             }
         });
-        return overlook();
+        return to;
+    }
+
+    /** No hits for {@code ticks} (respawn, rescue). */
+    public void grace(Player p, int ticks) {
+        Participants.Member m = party.get(p);
+        if (m != null) {
+            m.graceUntil = Math.max(m.graceUntil, clock + ticks);
+        }
+    }
+
+    /** Quest boss bar and NPC hints off while inside Helios (same as the World Eater site). */
+    static void hushHud(Player p) {
+        if (p == null) {
+            return;
+        }
+        de.aetherion.core.api.QuestBars.suppress(p);
+        try {
+            Class<?> hint = Class.forName("de.aetherion.quests.ui.QuestHint");
+            hint.getMethod("clear", Player.class).invoke(null, p);
+        } catch (ReflectiveOperationException | NoClassDefFoundError ignored) {
+            // Quests offline
+        }
     }
 
     /** A participant leaves (command, quit, other world). */
@@ -704,6 +770,7 @@ public final class HeliosEncounter {
             sky.release(p);
         }
         bars.hide(p);
+        de.aetherion.core.api.QuestBars.unsuppress(p);
         Participants.sendHome(p, m, module.fallbackReturn(), teleport);
         module.slots().players(slot, activeIds());
         if (party.present().isEmpty() && act != Act.CLOSED) {
@@ -738,8 +805,8 @@ public final class HeliosEncounter {
         star.scale(1.6f, 0.02f);
         for (Player p : audience()) {
             p.showTitle(net.kyori.adventure.title.Title.title(
-                    TextUtil.component(Lang.pick(p, "&4Das Licht erlischt", "&4The light goes out")),
-                    TextUtil.component(Lang.pick(p, "&8Niemand blieb, um zuzuhören.", "&8No one was left to listen."))));
+                    TextUtil.component("&4The light goes out"),
+                    TextUtil.component("&8No one was left to listen.")));
         }
         closeAt = clock + 100;
     }
@@ -795,6 +862,7 @@ public final class HeliosEncounter {
                 if (sky != null) {
                     sky.release(p);
                 }
+                de.aetherion.core.api.QuestBars.unsuppress(p);
                 Participants.sendHome(p, m, module.fallbackReturn(), true);
                 if (success) {
                     module.markCooldown(p);
