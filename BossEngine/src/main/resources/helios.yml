@@ -1,4 +1,4 @@
-# helios-version: 2 (files with an older version are backed up to .bak and replaced on start)
+# helios-version: 3 (files with an older version are backed up to .bak and replaced on start)
 # ============================================================
 # HELIOS REQUIEM - the dying star (two acts)
 #
@@ -37,23 +37,39 @@ entry:
 scaling:
   # Extra HP / damage per player beyond the first.
   health-per-extra-player: 0.45
-  damage-per-extra-player: 0.06
+  damage-per-extra-player: 0.05
   max-scaled-players: 8
 
 damage:
   # Global multiplier on every Helios hit.
   multiplier: 1.0
 
+pacing:
+  # After every flurry the boss is spent: it starts nothing for this many beats and takes extra damage.
+  opening-beats: 6
+  opening-damage-multiplier: 1.35
+
+knockback:
+  # Every Helios knockback is scaled and capped, and never shoves anyone over an edge.
+  scale: 0.4
+  max-horizontal: 0.4
+  max-vertical: 0.3
+
+death:
+  # Players who die come back on the arena floor in survival, untouchable for this long.
+  respawn-grace-seconds: 4
+
 void:
-  # RESCUE: the star pulls you back onto solid ground (hard hit). DEATH: the void kills.
+  # RESCUE: the star catches you, lifts you over solid ground and lets you float down. DEATH: the void kills.
   mode: RESCUE
-  rescue-power: 70
+  rescue-power: 35
+  rescue-grace-seconds: 3
   # Blocks below the floor that count as "fallen".
   kill-plane: 14
 
 echo:
-  # Dead players come back as echoes (spectators bound to the arena) until the fight ends.
-  enabled: true
+  # true = dead players watch as spectators instead of respawning in the arena.
+  enabled: false
 
 enrage:
   herald-seconds: 420
@@ -72,64 +88,75 @@ performance:
 
 # The star's heartbeat is the fight's clock (beats per minute).
 tempo:
-  herald: 90
+  herald: 78
   interlude: 60
-  corona: 100
-  decay: 108
-  singularity: 80
-  requiem: 120
+  corona: 88
+  decay: 96
+  singularity: 72
+  requiem: 112
 
 herald:
   blink:
-    power: 70
-  swarm:
     power: 55
+  swarm:
+    power: 42
   cage:
-    power: 35
-    duration-beats: 18
-    spacing: 7.0
-    min-spacing: 4.6
+    power: 26
+    duration-beats: 16
+    spacing: 7.5
+    min-spacing: 5.2
   platform:
-    power: 80
-    crack-beats: 4
-    regrow-seconds: 14
+    power: 60
+    crack-beats: 5
+    regrow-seconds: 12
   lance:
-    power: 32
-    charge-beats: 6
-    sweep-beats: 10
-    degrees: 210
+    power: 24
+    charge-beats: 7
+    sweep-beats: 12
+    degrees: 180
   mirror:
     clones: 3
-    punish-power: 60
+    punish-power: 45
     window-seconds: 30
 
 helios:
   portals:
-    power: 45
+    power: 36
     count-min: 3
     count-max: 5
   plasma:
-    power: 50
+    power: 34
   flares:
-    power: 65
+    power: 50
   wind:
-    push: 1.15
+    power: 16
+    push: 0.5
   meteors:
-    power: 70
-    count: 7
+    power: 52
+    count: 6
   cage:
-    power: 40
+    power: 30
   seismic:
-    power: 90
+    power: 62
     radius: 20
   singularity:
-    pull: 0.085
-    horizon-start: 7.5
-    horizon-end: 3.0
-    horizon-power: 45
+    # Pull per tick (it breathes: full on beats 1-2 of each bar, 30 % on 3-4). Sneaking resists.
+    pull: 0.045
+    # Inward speed cap; a sprint outward beats it.
+    max-inward: 0.24
+    horizon-start: 6.0
+    horizon-end: 2.5
+    horizon-power: 30
   requiem:
-    window-seconds: 12
+    window-seconds: 14
     damage-multiplier: 2.5
+  supernova:
+    # Light floods the floor out to this radius before the detonation.
+    floor-glow-radius: 30
+
+resourcepack:
+  # Optional full-screen glyph from your pack's font for flashes (e.g. "\uE000"). Empty = light pulse only.
+  flash-glyph: ""
 
 sounds:
   master-volume: 1.0

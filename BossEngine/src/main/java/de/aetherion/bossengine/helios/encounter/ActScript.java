@@ -121,6 +121,7 @@ public abstract class ActScript implements BossScript {
                 tickFight();
                 schedule();
                 stepAttacks();
+                tickOpening();
             }
             case INTERLUDE -> {
                 stepAttacks();
@@ -184,7 +185,11 @@ public abstract class ActScript implements BossScript {
         if (enc == null || !enc.party().contains(player)) {
             return -1;
         }
-        return reshape(player, amount);
+        double shaped = reshape(player, amount);
+        if (shaped > 0 && opening()) {
+            shaped *= enc.config().d("pacing.opening-damage-multiplier", 1.35);
+        }
+        return shaped;
     }
 
     /* ================================================================== act API */
@@ -328,7 +333,9 @@ public abstract class ActScript implements BossScript {
         flurry++;
         if (flurry >= flurryLength()) {
             flurry = 0;
-            nextPickAt = clock + enc.tempo().ticks(restBeats());
+            // End of a flurry: when the dust settles, the boss is spent and open (see tickOpening).
+            openingPending = true;
+            nextPickAt = Integer.MAX_VALUE / 2;
         } else {
             // The next move counts in on the beat after a short breath.
             nextPickAt = clock + enc.tempo().ticksUntil(1);
@@ -360,6 +367,91 @@ public abstract class ActScript implements BossScript {
             a.end();
         }
         running.clear();
+        cancelOpening();
+    }
+
+    /* ================================================================== openings */
+
+    private boolean openingPending;
+    private int openingUntil = -1;
+    private int openingLen;
+    private de.aetherion.bossengine.helios.core.HeliosStage.Group openingGroup;
+    private de.aetherion.bossengine.helios.core.Shapes.Ring openingRing;
+
+    /** The punish window: the boss is spent, starts nothing and takes extra damage. */
+    public boolean opening() {
+        return openingUntil > clock;
+    }
+
+    /** Beats the boss stays open after a flurry. */
+    protected int openingBeats() {
+        return enc.config().i("pacing.opening-beats", 6);
+    }
+
+    /** Where the opening's floor ring sits (stage coords, y ignored). */
+    protected Vector3f openingSpot() {
+        return new Vector3f(hitbox.x, 0f, hitbox.z);
+    }
+
+    /** Body reaction when a window opens (true) or closes (false). */
+    protected void onOpening(boolean open) {
+    }
+
+    private boolean hazardsRunning() {
+        for (Attack a : running) {
+            if (a.family() != Attack.Family.ARENA) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void tickOpening() {
+        if (openingPending && !paused() && !hazardsRunning()) {
+            openingPending = false;
+            openingLen = Math.max(20, enc.tempo().ticks(openingBeats()));
+            openingUntil = clock + openingLen;
+            openingGroup = enc.stage().group();
+            openingRing = new de.aetherion.bossengine.helios.core.Shapes.Ring(enc.stage(), openingGroup, 24,
+                    org.bukkit.Material.YELLOW_STAINED_GLASS, org.bukkit.Color.fromRGB(255, 215, 90), 15, true);
+            enc.score().chord(org.bukkit.Sound.BLOCK_NOTE_BLOCK_BELL, 0.9f, 1f, 1.26f, 1.5f);
+            enc.score().play(org.bukkit.Sound.BLOCK_AMETHYST_BLOCK_RESONATE, 1f, 1.2f);
+            for (Player p : enc.audience()) {
+                p.sendActionBar(de.aetherion.bossengine.util.TextUtil.component("&a&lOPENING &7- strike now!"));
+            }
+            onOpening(true);
+        }
+        if (openingUntil < 0) {
+            return;
+        }
+        if (clock >= openingUntil) {
+            closeOpening();
+            nextPickAt = clock + enc.tempo().ticksUntil(1);
+            return;
+        }
+        if (clock % 2 == 0 && openingRing != null) {
+            float left = (openingUntil - clock) / (float) openingLen;
+            float beat = de.aetherion.bossengine.helios.core.HMath.heartbeat(enc.tempo().phase());
+            Vector3f at = openingSpot().add(0f, 0.06f, 0f);
+            openingRing.flat(at, 0.8f + 3.4f * left, 0.14f + 0.08f * beat, 0.04f, clock * 0.03f, 2);
+        }
+    }
+
+    private void closeOpening() {
+        openingUntil = -1;
+        if (openingGroup != null) {
+            openingGroup.clear();
+            openingGroup = null;
+            openingRing = null;
+        }
+        onOpening(false);
+    }
+
+    private void cancelOpening() {
+        openingPending = false;
+        if (openingUntil >= 0) {
+            closeOpening();
+        }
     }
 
     public List<Attack> running() {

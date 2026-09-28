@@ -122,7 +122,7 @@ final class SolarWind extends Attack {
     }
 
     private void push(float r) {
-        double strength = enc.config().d("helios.wind.push", 1.15);
+        double strength = enc.config().d("helios.wind.push", 0.5);
         for (Player p : enc.fighters()) {
             Vector3f f = stage.feet(p);
             Vector3f out = new Vector3f(f).sub(origin);
@@ -136,10 +136,15 @@ final class SolarWind extends Attack {
                 enc.score().to(p, Sound.BLOCK_WOOL_PLACE, 0.4f, 1.4f);
                 continue;
             }
-            double k = p.isSneaking() ? 0.45 : 1.0;
-            Vector v = p.getVelocity().add(new Vector(out.x * strength * k, 0.28 * k, out.z * strength * k));
+            double k = p.isSneaking() ? 0.35 : 1.0;
+            Vector dir = new Vector(out.x, 0, out.z);
+            if (!enc.groundAhead(p, dir)) {
+                // Edge grip: at the brink the wind only staggers you.
+                k *= 0.12;
+            }
+            Vector v = p.getVelocity().add(new Vector(out.x * strength * k, 0.12 * k, out.z * strength * k));
             p.setVelocity(v);
-            enc.hit(p, h.power("wind", 20) * 0.5, "wind", 10, null);
+            enc.hit(p, h.power("wind", 16) * 0.5, "wind", 20, null);
         }
     }
 

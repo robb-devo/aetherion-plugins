@@ -286,6 +286,11 @@ public final class HeliosScript extends ActScript {
 
     /** Where Helios drifts between moves: low enough to reach, never on top of the party. */
     private void move(String phase) {
+        if (opening()) {
+            glideTo(openingAt, 0.08f);
+            lookAtParty(0.05f);
+            return;
+        }
         if (singularity != null) {
             orbit += 0.004f;
             Vector3f to = new Vector3f(Singularity.CENTER).add(HMath.ring(13.5f, orbit, 1.2f));
@@ -417,14 +422,44 @@ public final class HeliosScript extends ActScript {
     protected int maxConcurrent() {
         double hp = instance.healthPercent();
         if (enc.enraged()) {
-            return 4;
+            return 3;
         }
-        return hp > 80 ? 1 : hp > 40 ? 2 : 3;
+        return hp > 60 ? 1 : 2;
     }
 
     @Override
-    protected int restBeats() {
-        return singularity != null ? 3 : 4;
+    protected int flurryLength() {
+        return instance.healthPercent() > 60 ? 2 : 3;
+    }
+
+    /** Spent: the heart sinks to the Crown within sword reach, the rings open wide and slow. */
+    @Override
+    protected void onOpening(boolean open) {
+        if (open) {
+            Vector3f c = partyCentroid();
+            float a = HMath.angleOf(c.x, c.z);
+            Vector3f from = singularity != null ? Singularity.CENTER : new Vector3f();
+            openingAt.set(from).add(HMath.ring(singularity != null ? 11.5f : 11f, a, 0f));
+            openingAt.y = 2.5f;
+            rig.ringScale(1.9f);
+            rig.spin(0.3f);
+            rig.heartSize(0.8f);
+            enc.score().at(rig.center, Sound.BLOCK_BEACON_DEACTIVATE, 1f, 0.8f);
+            enc.score().at(rig.center, Sound.ENTITY_WARDEN_HEARTBEAT, 1f, 0.7f);
+        } else {
+            rig.ringScale(1f);
+            rig.spin(1f);
+            rig.heartSize(1f);
+            enc.score().at(rig.center, Sound.BLOCK_BEACON_POWER_SELECT, 1f, 1f);
+            stationAt = 0;
+        }
+    }
+
+    private final Vector3f openingAt = new Vector3f();
+
+    @Override
+    protected Vector3f openingSpot() {
+        return new Vector3f(rig.center.x, 0f, rig.center.z);
     }
 
     /* ================================================================== moves */
@@ -433,16 +468,16 @@ public final class HeliosScript extends ActScript {
     protected List<Choice> choices() {
         String phase = phaseId().toLowerCase(java.util.Locale.ROOT);
         List<Choice> out = new ArrayList<>();
-        out.add(new Choice("portals", () -> new PortalBeams(this, 0), 3, 14, Attack.Family.SWEEP));
-        out.add(new Choice("plasma", () -> new PlasmaRings(this, 3 + ThreadLocalRandom.current().nextInt(3), null), 4, 8, Attack.Family.GROUND));
-        out.add(new Choice("flares", () -> new SolarFlares(this, 3), 4, 10, Attack.Family.SKY));
+        out.add(new Choice("portals", () -> new PortalBeams(this, 0), 4, 20, Attack.Family.SWEEP));
+        out.add(new Choice("plasma", () -> new PlasmaRings(this, 2 + ThreadLocalRandom.current().nextInt(2), null), 3, 16, Attack.Family.GROUND));
+        out.add(new Choice("flares", () -> new SolarFlares(this, 4), 3, 14, Attack.Family.SKY));
         if (singularity == null) {
-            out.add(new Choice("wind", () -> new SolarWind(this, 3), 2, 20, Attack.Family.ARENA));
+            out.add(new Choice("wind", () -> new SolarWind(this, 2), 2, 30, Attack.Family.ARENA));
         }
         if (!"korona".equals(phase)) {
-            out.add(new Choice("meteors", () -> new MeteorRain(this, enc.config().i("helios.meteors.count", 7), 1.0), 3, 16, Attack.Family.SKY));
-            out.add(new Choice("cage", () -> new GeometryCage(this, null, 8), 3, 18, Attack.Family.SWEEP));
-            out.add(new Choice("seismic", () -> new SeismicBomb(this, null, 3), 3, 16, Attack.Family.GROUND));
+            out.add(new Choice("meteors", () -> new MeteorRain(this, enc.config().i("helios.meteors.count", 6), 1.0), 3, 20, Attack.Family.SKY));
+            out.add(new Choice("cage", () -> new GeometryCage(this, null, 10), 3, 24, Attack.Family.SWEEP));
+            out.add(new Choice("seismic", () -> new SeismicBomb(this, null, 4), 3, 22, Attack.Family.GROUND));
         }
         return out;
     }

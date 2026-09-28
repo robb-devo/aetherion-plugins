@@ -265,7 +265,9 @@ public final class HeraldScript extends ActScript implements HeliosGuard.PropAwa
             startMirror();
             return;
         }
-        if (!bodyBusy()) {
+        if (opening()) {
+            faceParty(0.03f);
+        } else if (!bodyBusy()) {
             idleMove();
         }
         // The star's heartbeat drives the core; the enrage speeds the whole piece up.
@@ -393,12 +395,39 @@ public final class HeraldScript extends ActScript implements HeliosGuard.PropAwa
         if (enc.enraged()) {
             return 3;
         }
-        return hp > 75 ? 1 : 2;
+        return hp > 50 ? 1 : 2;
     }
 
     @Override
-    protected int restBeats() {
-        return instance.healthPercent() > 50 ? 4 : 3;
+    protected int flurryLength() {
+        return instance.healthPercent() > 50 ? 2 : 3;
+    }
+
+    /** Spent: he sinks to one knee, the blades droop, the core gutters. Hit him. */
+    @Override
+    protected void onOpening(boolean open) {
+        if (open) {
+            HeraldRig.Pose p = HeraldRig.Pose.kneel();
+            p.crouch = 0.7f;
+            p.lean = 0.45f;
+            p.hover = 0.05f;
+            rig.pose(p, 0.2f);
+            rig.coreHeat(0.15f);
+            rig.flare(6);
+            rig.root.y = 0f;
+            enc.score().at(rig.chestPoint(), Sound.ENTITY_IRON_GOLEM_DAMAGE, 0.8f, 0.6f);
+            enc.score().at(rig.chestPoint(), Sound.BLOCK_BEACON_DEACTIVATE, 0.6f, 1.4f);
+        } else {
+            rig.pose(HeraldRig.Pose.guard(), 0.15f);
+            rig.coreHeat(0.6f);
+            rig.flare(15);
+            enc.score().at(rig.chestPoint(), Sound.BLOCK_BEACON_POWER_SELECT, 0.8f, 1.2f);
+        }
+    }
+
+    @Override
+    protected Vector3f openingSpot() {
+        return new Vector3f(rig.root.x, 0f, rig.root.z);
     }
 
     /* ================================================================== moves */
@@ -407,16 +436,16 @@ public final class HeraldScript extends ActScript implements HeliosGuard.PropAwa
     protected List<Choice> choices() {
         double hp = instance.healthPercent();
         List<Choice> out = new ArrayList<>();
-        out.add(new Choice("blink", () -> new BlinkStrike(this, hp < 50 ? 2 : 1), 5, 6, Attack.Family.BODY));
-        out.add(new Choice("swarm", () -> new BladeSwarm(this, null), 4, 10, Attack.Family.SWEEP));
+        out.add(new Choice("blink", () -> new BlinkStrike(this, hp < 50 ? 2 : 1), 5, 8, Attack.Family.BODY));
+        out.add(new Choice("swarm", () -> new BladeSwarm(this, null), 4, 14, Attack.Family.SWEEP));
         if (hp < 90) {
-            out.add(new Choice("platform", () -> new PlatformFall(this), 3, 24, Attack.Family.ARENA));
+            out.add(new Choice("platform", () -> new PlatformFall(this), 3, 32, Attack.Family.ARENA));
         }
         if (hp < 80) {
-            out.add(new Choice("cage", () -> new LaserCage(this), 3, 30, Attack.Family.GROUND));
+            out.add(new Choice("cage", () -> new LaserCage(this), 3, 36, Attack.Family.GROUND));
         }
         if (hp < 70) {
-            out.add(new Choice("lance", () -> new SunLance(this), 2, 40, Attack.Family.BODY));
+            out.add(new Choice("lance", () -> new SunLance(this), 2, 44, Attack.Family.BODY));
         }
         return out;
     }

@@ -573,9 +573,42 @@ public final class HeliosEncounter {
         LivingEntity source = boss == null ? null : boss.getEntity();
         BossHits.hurt(p, source, scaled);
         if (knock != null && knock.lengthSquared() > 0.0001) {
-            p.setVelocity(p.getVelocity().multiply(0.3).add(knock));
+            p.setVelocity(p.getVelocity().multiply(0.3).add(tameKnock(p, knock)));
         }
         camera.kick(p);
+        return true;
+    }
+
+    /**
+     * Knockback that keeps people on the platform: scaled and capped by config, and with no horizontal
+     * shove at all when it would carry the player over an edge (the floor ahead is gone).
+     */
+    public Vector tameKnock(Player p, Vector knock) {
+        double scale = cfg.d("knockback.scale", 0.4);
+        double cap = cfg.d("knockback.max-horizontal", 0.4);
+        Vector flat = new Vector(knock.getX(), 0, knock.getZ()).multiply(scale);
+        if (flat.length() > cap) {
+            flat.normalize().multiply(cap);
+        }
+        double up = Math.min(knock.getY() * scale + 0.08, cfg.d("knockback.max-vertical", 0.3));
+        if (flat.lengthSquared() > 1e-4 && !groundAhead(p, flat)) {
+            flat.zero();
+        }
+        return flat.setY(Math.max(0.0, up));
+    }
+
+    /** Is there floor about three blocks along {@code dir} from the player? */
+    public boolean groundAhead(Player p, Vector dir) {
+        if (arena == null || dir.lengthSquared() < 1e-6) {
+            return true;
+        }
+        Vector3f f = stage.feet(p);
+        Vector d = dir.clone().setY(0).normalize();
+        for (float step = 1.5f; step <= 3.5f; step += 1f) {
+            if (!arena.solidAt(f.x + (float) d.getX() * step, f.z + (float) d.getZ() * step)) {
+                return false;
+            }
+        }
         return true;
     }
 

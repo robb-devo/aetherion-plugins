@@ -61,9 +61,9 @@ final class BlinkStrike extends Attack {
 
     @Override
     public void start() {
-        windup = enc.tempo().ticks(1);
-        mark = enc.tempo().ticks(1.5);
-        recover = enc.tempo().ticks(1);
+        windup = enc.tempo().ticks(1.5);
+        mark = enc.tempo().ticks(2);
+        recover = enc.tempo().ticks(1.5);
         ghostLine = new Shapes.Line(stage, g, Material.WHITE_CONCRETE, WHITE);
         landLine = new Shapes.Line(stage, g, Material.WHITE_CONCRETE, WHITE);
         for (int i = 0; i < fan.length; i++) {

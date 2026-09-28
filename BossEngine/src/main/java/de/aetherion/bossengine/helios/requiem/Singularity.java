@@ -150,12 +150,17 @@ final class Singularity {
         if (t % 5 == 0) {
             senses();
         }
+        if (enc.tempo().onDownbeat()) {
+            // The haul: a deep pull you can hear and see coming every bar.
+            enc.score().play(Sound.BLOCK_NOTE_BLOCK_BASS, 1f, 0.5f);
+            enc.score().at(CENTER, Sound.ENTITY_WARDEN_SONIC_CHARGE, 0.6f, 0.5f);
+        }
         if (t % 40 == 0) {
             enc.score().at(CENTER, Sound.BLOCK_PORTAL_AMBIENT, 1.2f, 0.5f);
             enc.score().at(CENTER, Sound.ENTITY_WARDEN_HEARTBEAT, 0.7f, 0.5f);
         }
         if (t >= nextIsland) {
-            nextIsland = t + 20 * 9;
+            nextIsland = t + 20 * 14;
             tearIsland();
         }
     }
@@ -171,7 +176,8 @@ final class Singularity {
             Quaternionf rot = new Quaternionf().rotateXYZ(spin * (1 + i), spin * 0.7f, spin * 0.3f * i);
             stage.push(core[i], HeliosStage.cube(CENTER, Math.max(0.2f, s), rot), interp);
         }
-        floorMark.flat(new Vector3f(CENTER.x, 0.06f, CENTER.z), horizon, 0.18f, 0.04f, -spin * 2f, interp);
+        boolean haul = !quiet && enc.tempo().beatInBar() < 2;
+        floorMark.flat(new Vector3f(CENTER.x, 0.06f, CENTER.z), horizon + (haul ? 0.4f : 0f), haul ? 0.45f : 0.14f, 0.04f, -spin * 2f, interp);
         // Lensing arcs face the party: the far side of the disk, bent over the top and under the bottom.
         Vector3f c = h.partyCentroid();
         float view = HMath.angleOf(c.x - CENTER.x, c.z - CENTER.z);
@@ -206,8 +212,10 @@ final class Singularity {
     }
 
     private void gravity() {
-        double pull = enc.config().d("helios.singularity.pull", 0.085) * strength;
-        double horizonPower = h.power("singularity.horizon", 45);
+        // The hole breathes with the bar: it hauls on beats 1-2 and slackens on 3-4. Run on the slack.
+        boolean haul = enc.tempo().beatInBar() < 2;
+        double pull = enc.config().d("helios.singularity.pull", 0.045) * strength * (haul ? 1.0 : 0.3);
+        double horizonPower = h.power("singularity.horizon", 30);
         for (Player p : enc.fighters()) {
             Vector3f f = stage.feet(p);
             Vector3f rel = new Vector3f(CENTER.x - f.x, 0f, CENTER.z - f.z);
@@ -216,19 +224,21 @@ final class Singularity {
                 continue;
             }
             rel.div(dist);
-            double k = pull * HMath.clamp(22.0 / Math.max(1.0, dist), 0.35, 2.5);
+            double k = pull * HMath.clamp(20.0 / Math.max(1.0, dist), 0.35, 1.6);
             if (p.isSneaking()) {
-                k *= 0.55;
+                k *= 0.35;
             }
-            Vector swirl = new Vector(-rel.z, 0, rel.x).multiply(k * 0.35);
+            Vector swirl = new Vector(-rel.z, 0, rel.x).multiply(k * 0.25);
             Vector v = p.getVelocity().add(new Vector(rel.x * k, 0, rel.z * k)).add(swirl);
+            // Never faster inward than a sprint can beat: skilled play escapes.
             double inward = v.getX() * rel.x + v.getZ() * rel.z;
-            if (inward > 0.55) {
-                v.subtract(new Vector(rel.x, 0, rel.z).multiply(inward - 0.55));
+            double cap = enc.config().d("helios.singularity.max-inward", 0.24);
+            if (inward > cap) {
+                v.subtract(new Vector(rel.x, 0, rel.z).multiply(inward - cap));
             }
             p.setVelocity(v);
             if (dist < horizon) {
-                enc.hit(p, horizonPower, "horizon", 10, null);
+                enc.hit(p, horizonPower, "horizon", 16, null);
                 if (dist < 1.6f) {
                     spitOut(p);
                 }
@@ -238,12 +248,13 @@ final class Singularity {
 
     /** Touching the core: crushed to 1 HP and thrown back out onto solid ground. */
     private void spitOut(Player p) {
-        de.aetherion.bossengine.combat.BossHits.crush(p, h.instance().getEntity(), h.power("singularity.horizon", 45) * 2);
+        enc.hit(p, h.power("singularity.horizon", 30) * 1.5, "core", 40, null);
         Vector3f safe = enc.arena().safeSpot(HMath.ring(14f, HMath.angleOf(stage.feet(p).x, stage.feet(p).z) + HMath.PI, 0f));
         org.bukkit.Location to = stage.at(safe.x, 0.2f, safe.z);
         to.setYaw(p.getLocation().getYaw());
         enc.module().teleport(p, to);
-        enc.camera().flash(p, Material.BLACK_CONCRETE, Material.PURPLE_STAINED_GLASS, 4, 10);
+        enc.camera().darkness(p, 30);
+        enc.grace(p, 40);
         enc.score().to(p, Sound.ENTITY_ENDERMAN_TELEPORT, 1f, 0.5f);
     }
 
@@ -251,10 +262,10 @@ final class Singularity {
     private void senses() {
         for (Player p : enc.fighters()) {
             float dist = stage.feet(p).distance(CENTER);
-            float near = HMath.clamp01(1f - dist / 18f);
-            enc.camera().vignette(p, near * 0.85f);
-            if (dist < 10f) {
-                p.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 12, dist < 6f ? 1 : 0, false, false, false));
+            float near = HMath.clamp01(1f - dist / 16f);
+            enc.camera().vignette(p, near * 0.45f);
+            if (dist < 6f) {
+                p.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 12, 0, false, false, false));
             }
         }
     }
@@ -264,7 +275,7 @@ final class Singularity {
             return 0.6;
         }
         float dist = stage.feet(p).distance(CENTER);
-        return 1.0 - 0.45 * HMath.clamp01(1f - dist / 22f);
+        return 1.0 - 0.28 * HMath.clamp01(1f - dist / 22f);
     }
 
     double skyRate(Player p) {
@@ -281,7 +292,7 @@ final class Singularity {
                 intact.add(s);
             }
         }
-        if (intact.size() <= 3) {
+        if (intact.size() <= 4) {
             return;
         }
         // Prefer an island nobody is standing on.
