@@ -10,4 +10,4 @@ depend:
 softdepend:
   - AetherionItems
 
-description: Fishing minigame, lure fish, and hook animations
+description: Fishing minigame, lure fish, hook animations, and Fishing Eldervale (waters, species log, shoals, lake events, bait, trophies, cast)

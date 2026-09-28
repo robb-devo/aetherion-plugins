@@ -24,8 +24,8 @@ final class FishingHud {
 
     private final Map<UUID, BossBar> bars = new ConcurrentHashMap<>();
 
-    void waiting(Player player, double progress, int remainingTicks, int streak) {
-        paint(player, StrikeBar.waitTitle(remainingTicks, streak), clamp(progress), BarColor.BLUE, BarStyle.SEGMENTED_20);
+    void waiting(Player player, double progress, int remainingTicks, int streak, String tag) {
+        paint(player, StrikeBar.waitTitle(remainingTicks, streak, tag), clamp(progress), BarColor.BLUE, BarStyle.SEGMENTED_20);
     }
 
     void approaching(Player player, int ticks, double closeness, boolean ready, int streak) {
@@ -40,10 +40,10 @@ final class FishingHud {
         );
     }
 
-    void striking(Player player, int marker, int zoneStart, int zoneSize, boolean hot, int streak) {
+    void striking(Player player, int marker, int zoneStart, int zoneSize, int perfectWidth, boolean hot, int streak) {
         paint(
                 player,
-                StrikeBar.strikeTitle(marker, zoneStart, zoneSize, hot, streak),
+                StrikeBar.strikeTitle(marker, zoneStart, zoneSize, perfectWidth, hot, streak),
                 StrikeBar.strikeProgress(marker),
                 hot ? BarColor.GREEN : BarColor.YELLOW,
                 BarStyle.SEGMENTED_20

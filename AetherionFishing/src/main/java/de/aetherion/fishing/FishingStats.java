@@ -6,20 +6,20 @@ import de.aetherion.items.model.ItemCapability;
 
 import org.bukkit.entity.Player;
 
-final class FishingStats {
+public final class FishingStats {
 
     private final ActiveEquipmentStats equipment;
 
-    FishingStats() {
+    public FishingStats() {
         AetherionItems items = AetherionItems.getInstance();
         this.equipment = items == null ? null : new ActiveEquipmentStats(items.getItemManager());
     }
 
-    double speed(Player player) {
+    public double speed(Player player) {
         return stat(player, ItemCapability.FISHING_SPEED);
     }
 
-    double catchBonus(Player player) {
+    public double catchBonus(Player player) {
         return stat(player, ItemCapability.FISHING_CATCH);
     }
 

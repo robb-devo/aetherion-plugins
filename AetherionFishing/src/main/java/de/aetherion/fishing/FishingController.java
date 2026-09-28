@@ -63,6 +63,8 @@ public final class FishingController implements Listener {
     private final Set<UUID> tipped = ConcurrentHashMap.newKeySet();
     private final int baseStrikeTicks;
     private final int approachTicks;
+    /** Place hooks (Fishing Eldervale). Null = every cast plays like the harbour. */
+    private volatile CastHooks hooks;
     private static volatile Field nibbleField;
     private static volatile Field bitingField;
     private static volatile boolean nibbleLookupDone;
@@ -170,6 +172,32 @@ public final class FishingController implements Listener {
     public void onQuit(PlayerQuitEvent event) {
         abort(event.getPlayer(), false);
         streaks.clear(event.getPlayer().getUniqueId());
+        CastHooks current = hooks;
+        if (current != null) {
+            current.forget(event.getPlayer().getUniqueId());
+        }
+    }
+
+    void hooks(CastHooks hooks) {
+        this.hooks = hooks;
+    }
+
+    /** True while the player has a live cast (bobber out). */
+    public boolean casting(UUID playerId) {
+        return playerId != null && sessions.containsKey(playerId);
+    }
+
+    /** Clean catches in a row right now (0 when cooled off). */
+    public int streak(UUID playerId) {
+        return streaks.current(playerId);
+    }
+
+    /** DEV: set a streak outright (heat testing). */
+    public void setStreak(UUID playerId, int count) {
+        streaks.clear(playerId);
+        for (int i = 0; i < Math.max(0, count); i++) {
+            streaks.bump(playerId);
+        }
     }
 
     @EventHandler
@@ -201,6 +229,7 @@ public final class FishingController implements Listener {
                 if (inWater(hook)) {
                     session.waitingForWater = false;
                     session.ticks = 0;
+                    settle(player, session, hook);
                     suppressVanillaWait(hook, session.waitLeft);
                 } else if (session.ticks >= WATER_SETTLE_TICKS) {
                     session.school.clear();
@@ -236,7 +265,12 @@ public final class FishingController implements Listener {
                 suppressVanillaWait(hook, session.waitLeft);
                 int remaining = Math.max(0, Math.min(HARD_WAIT_TICKS, session.waitLeft));
                 double progress = session.waitTotal <= 0 ? 0.0d : 1.0d - (remaining / (double) session.waitTotal);
-                hud.waiting(player, progress, session.waitTotal <= 0 ? -1 : remaining, streaks.current(entry.getKey()));
+                int streakNow = streaks.current(entry.getKey());
+                CastHooks place = hooks;
+                if (place != null && session.ticks % 10 == 1) {
+                    session.hudTag = place.waitTag(player, session, hook.getLocation(), streakNow);
+                }
+                hud.waiting(player, progress, session.waitTotal <= 0 ? -1 : remaining, streakNow, session.hudTag);
                 if (session.ticks % 12 == 0) {
                     bubbles(hook.getLocation(), 6);
                 }
@@ -273,7 +307,7 @@ public final class FishingController implements Listener {
                 continue;
             }
             session.school.tick(hook.getLocation(), LureSchool.Swim.NIBBLE);
-            if (session.strikeTicks % 2 == 0) {
+            if (session.markerDue()) {
                 session.pulseMarker();
             }
             session.strikeTicks++;
@@ -285,7 +319,7 @@ public final class FishingController implements Listener {
             if (!hot) {
                 session.enteredZone = false;
             }
-            hud.striking(player, session.marker, session.zoneStart, session.zoneSize, hot,
+            hud.striking(player, session.marker, session.zoneStart, session.zoneSize, session.perfectWidth(), hot,
                     streaks.current(entry.getKey()));
             spark(hook.getLocation(), hot);
             if (session.strikeTicks >= session.strikeLimit) {
@@ -320,6 +354,27 @@ public final class FishingController implements Listener {
         session.waitLeft = session.waitTotal;
         sessions.put(player.getUniqueId(), session);
         suppressVanillaWait(hook, session.waitLeft);
+    }
+
+    /** Bobber is in the water: let the place scale the owned wait (shoals, runs, bait). */
+    private void settle(Player player, CastSession session, FishHook hook) {
+        CastHooks place = hooks;
+        if (place == null || hook == null) {
+            return;
+        }
+        double factor = 1.0d;
+        try {
+            factor = place.settle(player, session, hook.getLocation());
+            session.hudTag = place.waitTag(player, session, hook.getLocation(), streaks.current(player.getUniqueId()));
+        } catch (RuntimeException | LinkageError error) {
+            plugin.getLogger().warning("Cast hook (settle) failed: " + error);
+        }
+        if (!(factor > 0.0d) || Math.abs(factor - 1.0d) < 0.001d) {
+            return;
+        }
+        int scaled = (int) Math.round(session.waitTotal * Math.min(2.0d, factor));
+        session.waitTotal = Math.max(16, Math.min(HARD_WAIT_TICKS, scaled));
+        session.waitLeft = session.waitTotal;
     }
 
     private void startApproach(Player player, FishHook hook) {
@@ -361,14 +416,31 @@ public final class FishingController implements Listener {
         double speed = stats.speed(player);
         double catchStat = stats.catchBonus(player);
         int limit = Math.min(110, baseStrikeTicks + (int) Math.round(speed * 0.28d));
-        session.beginStrike(catchStat, limit, streaks.current(player.getUniqueId()));
-        player.showTitle(Title.title(
-                Component.text("Bite!", NamedTextColor.AQUA),
-                LEGACY.deserialize("§7Reel on green §8· §6gold is perfect"),
-                BITE_TIMES
-        ));
+        int streak = streaks.current(player.getUniqueId());
+        session.beginStrike(catchStat, limit, streak);
+        CastHooks place = hooks;
+        CastHooks.BiteCue cue = null;
+        if (place != null && hook != null) {
+            try {
+                cue = place.bite(player, session, hook.getLocation(), streak);
+            } catch (RuntimeException | LinkageError error) {
+                plugin.getLogger().warning("Cast hook (bite) failed: " + error);
+            }
+        }
+        if (cue == null) {
+            player.showTitle(Title.title(
+                    Component.text("Bite!", NamedTextColor.AQUA),
+                    LEGACY.deserialize("§7Reel on green §8· §6gold is perfect"),
+                    BITE_TIMES
+            ));
+            player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, 0.4f, 1.6f);
+        } else {
+            player.showTitle(Title.title(LEGACY.deserialize(cue.title()), LEGACY.deserialize(cue.subtitle()), BITE_TIMES));
+            if (cue.sound() != null) {
+                player.playSound(player.getLocation(), cue.sound(), 0.6f, cue.pitch());
+            }
+        }
         player.playSound(player.getLocation(), Sound.ENTITY_FISHING_BOBBER_SPLASH, 0.7f, 1.25f);
-        player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, 0.4f, 1.6f);
         if (hook != null) {
             splash(hook.getLocation());
         }
@@ -398,20 +470,33 @@ public final class FishingController implements Listener {
         }
         announceStreak(player, streak);
         UUID id = player.getUniqueId();
+        Location hookAt = at.clone();
         // Items pays the catch + base XP at MONITOR this tick — land the reward line after it.
-        plugin.getServer().getScheduler().runTask(plugin, () -> rewardBeat(id, perfect, streak));
+        plugin.getServer().getScheduler().runTask(plugin, () -> rewardBeat(id, session, hookAt, perfect, streak));
     }
 
-    /** Reward beat: bonus XP, then the result line with the focus Fishing skill's bar. */
-    private void rewardBeat(UUID id, boolean perfect, int streak) {
+    /** Reward beat: bonus XP, the place's catch line, then the focus Fishing skill's bar. */
+    private void rewardBeat(UUID id, CastSession session, Location hookAt, boolean perfect, int streak) {
         Player player = Bukkit.getPlayer(id);
         if (player == null || !player.isOnline()) {
             return;
         }
         int bonus = (perfect ? PERFECT_BONUS_XP : 0) + Math.min(STREAK_BONUS_CAP, streak / 2);
         FishingSkills.bonus(player, bonus);
+        String placeLine = null;
+        CastHooks place = hooks;
+        if (place != null) {
+            try {
+                placeLine = place.landed(player, session, hookAt, perfect, streak);
+            } catch (RuntimeException | LinkageError error) {
+                plugin.getLogger().warning("Cast hook (landed) failed: " + error);
+            }
+        }
         String credit = FishingSkills.credit(player);
         StringBuilder line = new StringBuilder(resultWord(perfect)).append(StrikeBar.streakTag(streak));
+        if (placeLine != null && !placeLine.isBlank()) {
+            line.append("  §8│  ").append(placeLine);
+        }
         if (credit != null) {
             line.append("  §8│  ").append(credit);
         }
@@ -440,12 +525,23 @@ public final class FishingController implements Listener {
         session.resolved = true;
         sessions.remove(player.getUniqueId());
         hud.hideBarOnly(player);
-        int lost = streaks.reset(player.getUniqueId());
         Location at = hook != null ? hook.getLocation() : player.getLocation();
+        boolean forgiven = false;
+        CastHooks place = hooks;
+        if (place != null) {
+            try {
+                forgiven = place.missed(player, session, at, timeout, streaks.current(player.getUniqueId()));
+            } catch (RuntimeException | LinkageError error) {
+                plugin.getLogger().warning("Cast hook (missed) failed: " + error);
+            }
+        }
+        int lost = forgiven ? 0 : streaks.reset(player.getUniqueId());
         session.school.scatter(at);
         plugin.getServer().getScheduler().runTaskLater(plugin, session.school::clear, 16L);
         String line = timeout ? "It let go." : tooSoonOrLate(session);
-        String lostTag = lost >= 2 ? " §8· §7streak §e✦" + lost + " §7lost" : "";
+        int kept = forgiven ? streaks.current(player.getUniqueId()) : 0;
+        String lostTag = kept >= 2 ? " §8· §7streak §e✦" + kept + " §akept"
+                : lost >= 2 ? " §8· §7streak §e✦" + lost + " §7lost" : "";
         player.sendActionBar(LEGACY.deserialize("§7" + line + lostTag));
         player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 0.55f, timeout ? 0.6f : 0.45f);
         player.playSound(player.getLocation(), Sound.ENTITY_FISH_SWIM, 0.8f, 1.1f);
@@ -475,6 +571,10 @@ public final class FishingController implements Listener {
         }
         session.schoolSpawned = true;
         int count = streaks.current(player.getUniqueId()) >= StrikeBar.HOT_STREAK ? 2 : 1;
+        CastHooks place = hooks;
+        if (place != null) {
+            count += Math.max(0, place.extraLures(player, session, hook.getLocation()));
+        }
         double catchStat = stats.catchBonus(player);
         if (catchStat >= 20.0d) {
             count++;

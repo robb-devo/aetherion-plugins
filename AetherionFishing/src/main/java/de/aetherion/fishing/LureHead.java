@@ -13,7 +13,7 @@ import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 /** Same fish-head textures pets already use — keeps lure visuals on-brand. */
-final class LureHead {
+public final class LureHead {
 
     private static final String COD =
             "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNGZlZWZmNGI3ZmNmY2U2OGIwZjc0ZGYwZGIwYWQwYzAxZjczMDFkMGM2ZDg5MzY5OWI0MDJiZDUwYmIzNzZiMCJ9fX0=";
@@ -25,9 +25,24 @@ final class LureHead {
     private LureHead() {
     }
 
-    static ItemStack random() {
+    public enum Look {
+        COD,
+        SALMON,
+        TROPICAL
+    }
+
+    public static ItemStack random() {
         int roll = ThreadLocalRandom.current().nextInt(3);
         return textured(roll == 0 ? COD : roll == 1 ? SALMON : TROPICAL);
+    }
+
+    /** One of the three fish heads, for trophies and leaping shoal fish. */
+    public static ItemStack of(Look look) {
+        return textured(switch (look) {
+            case COD -> COD;
+            case SALMON -> SALMON;
+            case TROPICAL -> TROPICAL;
+        });
     }
 
     private static ItemStack textured(String textureValue) {

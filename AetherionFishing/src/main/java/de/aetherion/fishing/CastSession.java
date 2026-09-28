@@ -3,7 +3,11 @@ package de.aetherion.fishing;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
-final class CastSession {
+/**
+ * One live cast. Package code drives the phases; {@link CastHooks} may reshape the strike bar
+ * (narrower window, faster marker, wider gold cell) and park per-cast data in {@link #tag()}.
+ */
+public final class CastSession {
 
     enum Phase {
         WAIT,
@@ -33,6 +37,13 @@ final class CastSession {
     int lastRemaining;
     /** Approach telegraph fired ("ready…") — plays its cue once. */
     boolean readyCued;
+    /** HUD suffix from the hooks, refreshed while waiting. */
+    String hudTag;
+    /** Gold cells in the middle of the window (1 normally). */
+    private int perfectWidth = 1;
+    /** Marker moves 2 cells every 3 ticks instead of 1 every 2. */
+    private boolean fastMarker;
+    private Object tag;
 
     CastSession(UUID hookId, LureSchool school) {
         this.hookId = hookId;
@@ -56,6 +67,11 @@ final class CastSession {
         this.enteredZone = false;
     }
 
+    /** True on the ticks the marker should step. */
+    boolean markerDue() {
+        return fastMarker ? strikeTicks % 3 != 2 : strikeTicks % 2 == 0;
+    }
+
     void pulseMarker() {
         marker += direction;
         if (marker >= StrikeBar.SIZE - 1) {
@@ -72,6 +88,51 @@ final class CastSession {
     }
 
     boolean onPerfect() {
-        return phase == Phase.STRIKE && marker == StrikeBar.perfectCell(zoneStart, zoneSize);
+        return phase == Phase.STRIKE && StrikeBar.onPerfect(marker, zoneStart, zoneSize, perfectWidth);
+    }
+
+    int perfectWidth() {
+        return perfectWidth;
+    }
+
+    // ------------------------------------------------------------------ hooks API
+
+    /** Current green window, in cells. */
+    public int zoneSize() {
+        return zoneSize;
+    }
+
+    /** Grow ({@code +}) or shrink ({@code -}) the green window; it stays at least two cells and on the bar. */
+    public void resizeZone(int delta) {
+        int size = Math.max(2, Math.min(StrikeBar.SIZE - 3, zoneSize + delta));
+        if (size == zoneSize) {
+            return;
+        }
+        zoneSize = size;
+        zoneStart = StrikeBar.randomZoneStart(zoneSize, ThreadLocalRandom.current());
+        perfectWidth = Math.min(perfectWidth, zoneSize);
+    }
+
+    /** Gold cells in the middle of the window (1–3). */
+    public void perfectWidth(int width) {
+        this.perfectWidth = Math.max(1, Math.min(Math.min(3, zoneSize), width));
+    }
+
+    /** A thrashing fish: the marker runs a third faster. */
+    public void fastMarker(boolean fast) {
+        this.fastMarker = fast;
+    }
+
+    public boolean fastMarker() {
+        return fastMarker;
+    }
+
+    /** Hook-owned data for this cast (e.g. what is on the line). */
+    public Object tag() {
+        return tag;
+    }
+
+    public void tag(Object value) {
+        this.tag = value;
     }
 }

@@ -44,11 +44,28 @@ final class StrikeBar {
         return zoneStart + Math.max(0, zoneSize) / 2;
     }
 
+    /** First gold cell when the perfect spot is {@code width} cells wide (always inside the window). */
+    static int perfectStart(int zoneStart, int zoneSize, int width) {
+        int w = Math.max(1, Math.min(width, zoneSize));
+        int start = perfectCell(zoneStart, zoneSize) - (w - 1) / 2;
+        return Math.max(zoneStart, Math.min(start, zoneStart + zoneSize - w));
+    }
+
+    static boolean onPerfect(int marker, int zoneStart, int zoneSize, int width) {
+        int start = perfectStart(zoneStart, zoneSize, width);
+        return marker >= start && marker < start + Math.max(1, Math.min(width, zoneSize));
+    }
+
     static String waitTitle(int remainingTicks, int streak) {
+        return waitTitle(remainingTicks, streak, null);
+    }
+
+    /** {@code tag} is a place suffix from the cast hooks (water name, shoal, heat) or null. */
+    static String waitTitle(int remainingTicks, int streak, String tag) {
         String body = remainingTicks < 0
                 ? "§3waiting"
                 : "§f" + String.format(Locale.US, "%.1fs", remainingTicks / 20.0d);
-        return "§bFishing §8• " + body + streakTag(streak);
+        return "§bFishing §8• " + body + streakTag(streak) + (tag == null || tag.isBlank() ? "" : "  §8· " + tag);
     }
 
     static String approachTitle(boolean ready, int streak) {
@@ -56,14 +73,19 @@ final class StrikeBar {
     }
 
     static String strikeTitle(int marker, int zoneStart, int zoneSize, boolean hot, int streak) {
+        return strikeTitle(marker, zoneStart, zoneSize, 1, hot, streak);
+    }
+
+    static String strikeTitle(int marker, int zoneStart, int zoneSize, int perfectWidth, boolean hot, int streak) {
         StringBuilder out = new StringBuilder("§bFishing  §8[");
         int zoneEnd = zoneStart + zoneSize;
-        int perfect = perfectCell(zoneStart, zoneSize);
-        boolean onPerfect = marker == perfect;
+        int perfectFrom = perfectStart(zoneStart, zoneSize, perfectWidth);
+        int perfectTo = perfectFrom + Math.max(1, Math.min(perfectWidth, zoneSize));
+        boolean onPerfect = marker >= perfectFrom && marker < perfectTo;
         for (int i = 0; i < SIZE; i++) {
             if (i == marker) {
                 out.append(onPerfect ? "§6◆" : hot ? "§f◆" : "§e◇");
-            } else if (i == perfect) {
+            } else if (i >= perfectFrom && i < perfectTo) {
                 out.append(hot ? "§6█" : "§e█");
             } else if (i >= zoneStart && i < zoneEnd) {
                 out.append(hot ? "§a█" : "§2█");
