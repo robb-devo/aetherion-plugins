@@ -267,6 +267,7 @@ public class AetherionItems extends JavaPlugin {
         new SquidsBootListener(this, itemManager);
         getServer().getPluginManager().registerEvents(new AetherionSetListener(this, itemManager), this);
         new VoidStickListener(this, itemManager);
+        new de.aetherion.items.listener.WorldEaterGearListener(this, itemManager);
         new WandListener(this, itemManager);
         new de.aetherion.items.listener.HealerSetListener(this, itemManager);
         new de.aetherion.items.dungeon.DungeonGearListener(this, itemManager, customItem);

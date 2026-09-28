@@ -77,6 +77,7 @@ public final class ItemFlavor {
             case "aetherblade" -> "§7A mythical blade. Origin still in committee.";
             case "bridged_axe" -> "§7The troll wanted a toll. This was the receipt.";
             case "aetherion_void_stick" -> "§7It drinks first. You can have the leftovers.";
+            case "worldbite" -> "§7It ate sixteen worlds with this. Yours is next on the menu.";
             case "squids_boot" -> "§7One boot. Several opinions. All damp.";
             case "bone_knife" -> "§7Calcium with a grudge.";
             case "obsidian_maul" -> "§7The door is you. The door hits back.";

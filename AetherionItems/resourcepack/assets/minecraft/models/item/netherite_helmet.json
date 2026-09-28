@@ -5,20 +5,34 @@
   },
   "overrides": [
     {
-      "predicate": { "custom_model_data": 2171 },
+      "predicate": {
+        "custom_model_data": 2171
+      },
       "model": "minecraft:item/combat_helmet"
     },
     {
-      "predicate": { "custom_model_data": 2172 },
+      "predicate": {
+        "custom_model_data": 2172
+      },
       "model": "minecraft:item/netherite_helmet_vanilla"
     },
     {
-      "predicate": { "custom_model_data": 2271 },
+      "predicate": {
+        "custom_model_data": 2271
+      },
       "model": "minecraft:item/mining_helmet"
     },
     {
-      "predicate": { "custom_model_data": 2272 },
+      "predicate": {
+        "custom_model_data": 2272
+      },
       "model": "minecraft:item/netherite_helmet_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 4101
+      },
+      "model": "minecraft:item/worldhide_helmet"
     }
   ]
 }
