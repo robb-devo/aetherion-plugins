@@ -16,10 +16,8 @@
 #    15%  Ouroboros  it becomes the edge of the world (world border)
 #   death            "Generating world" -> the Bonus Chest
 #
-# Its hide takes 70% from blades unless it is exposed: jaws stuck in the
-# island after a Lunge, swallowing after Devour, inhaling, coughing after
-# a Spit, and all through Ouroboros.
-# HP / hide tuned down from placeholders so bows and melee both land.
+# Full damage on the skull whenever FIGHT is active (phase shifts still block).
+# No hide tax. Idle regen is off for this encounter.
 # ============================================================
 
 id: world_eater

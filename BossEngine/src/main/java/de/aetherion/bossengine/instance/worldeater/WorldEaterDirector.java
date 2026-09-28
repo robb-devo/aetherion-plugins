@@ -191,23 +191,17 @@ public final class WorldEaterDirector {
         return isMine() && act == Act.DYING;
     }
 
-    /** Untouchable while it arrives, changes, dies, or swims beneath the island. */
+    /** Untouchable only while it arrives, changes phase, or dies. Head is always hittable in FIGHT. */
     public boolean blocksDamage() {
         if (!isMine()) {
             return false;
         }
-        if (act == Act.ARRIVING || act == Act.TRANSITION || act == Act.DYING) {
-            return true;
-        }
-        return act == Act.FIGHT && serpent != null && exposeTicks <= 0 && serpent.skullCenter().y < -4.5f;
+        return act == Act.ARRIVING || act == Act.TRANSITION || act == Act.DYING;
     }
 
-    /** Its hide is made of worlds: exposed windows and Ouroboros take full hits. */
+    /** Full damage always — no hide tax. Bows and blades hit the same. */
     public double scaleIncoming(double amount) {
-        if (!isMine()) {
-            return amount;
-        }
-        return exposeTicks > 0 || phase >= 4 ? amount : amount * 0.7;
+        return amount;
     }
 
     public void onDamaged(double amount) {
@@ -925,9 +919,6 @@ public final class WorldEaterDirector {
                     serpent.brow(true);
                     fx.sound(serpent.browPoint(), Sound.ENTITY_WARDEN_SNIFF, 2.5f, 0.5f);
                     fx.sound(serpent.browPoint(), Sound.ENTITY_ENDERMAN_STARE, 1.4f, 0.5f);
-                    if (p != null) {
-                        p.sendActionBar(de.aetherion.bossengine.util.TextUtil.component("&5It is looking at you."));
-                    }
                 }
                 float w = smooth(window(stepTick, 0, aim));
                 serpent.faceTo(new Vector3f(tp).sub(serpent.pos), 0.09f);
@@ -2598,7 +2589,7 @@ public final class WorldEaterDirector {
             if (local == 0) {
                 regenMark = props.add(new WeProps.ChunkMark(fx, c.x - 8f, c.z - 8f, 0f, 26));
                 regenLayer = SiteLayout.ISLAND.y0();
-                fx.actionBar("&7Preparing spawn area: &f" + (idx * 100 / REGEN.length) + "%");
+                fx.cinematicBar("&7Preparing spawn area: &f" + (idx * 100 / REGEN.length) + "%");
             }
             SiteTerrain t = terrain();
             if (t != null && regenLayer >= 0) {
@@ -2624,7 +2615,7 @@ public final class WorldEaterDirector {
         }
         int after = g - REGEN.length * per;
         if (after == 0) {
-            fx.actionBar("&7Preparing spawn area: &f100%");
+            fx.cinematicBar("&7Preparing spawn area: &f100%");
             java.util.Arrays.fill(eaten, false);
             eatenCount = 0;
         }
@@ -2643,7 +2634,7 @@ public final class WorldEaterDirector {
             fx.score(Sound.UI_TOAST_CHALLENGE_COMPLETE, 1f, 1f);
         }
         if (after == 100) {
-            fx.actionBar("&8A Bonus Chest was generated.");
+            fx.cinematicBar("&8A Bonus Chest was generated.");
         }
         if (after >= 124) {
             // The world is saved: hand over to the Bonus Chest.
@@ -2713,19 +2704,10 @@ public final class WorldEaterDirector {
         if (hp < lastHealth - 0.01 && clock - lastHitReact >= 4) {
             lastHitReact = clock;
             Vector3f skull = serpent.skullCenter();
-            if (exposeTicks > 0 || phase >= 4) {
-                fx.sound(skull, Sound.ENTITY_ENDER_DRAGON_HURT, 1.4f, 0.6f + ThreadLocalRandom.current().nextFloat() * 0.2f);
-                fx.sound(skull, Sound.BLOCK_AMETHYST_CLUSTER_BREAK, 1.2f, 0.5f);
-                fx.dust(skull, WeProps.VOID, 1.4f, 10, 0.8);
-                serpent.skull.kick(0.06f, 0f, 0f);
-            } else {
-                fx.sound(skull, Sound.BLOCK_SCULK_BREAK, 1.2f, 0.5f);
-                fx.sound(skull, Sound.ITEM_SHIELD_BLOCK, 0.8f, 0.6f);
-                fx.particle(Particle.CRIT, skull, 6, 0.6, 0.2);
-                if (taught.add("hide")) {
-                    fx.actionBar("&7Its hide is made of eaten worlds. &8Hit it when it bites, swallows or breathes in.");
-                }
-            }
+            fx.sound(skull, Sound.ENTITY_ENDER_DRAGON_HURT, 1.4f, 0.6f + ThreadLocalRandom.current().nextFloat() * 0.2f);
+            fx.sound(skull, Sound.BLOCK_AMETHYST_CLUSTER_BREAK, 1.2f, 0.5f);
+            fx.dust(skull, WeProps.VOID, 1.4f, 10, 0.8);
+            serpent.skull.kick(0.06f, 0f, 0f);
         }
         lastHealth = hp;
     }

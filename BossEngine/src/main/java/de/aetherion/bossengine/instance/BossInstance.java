@@ -768,6 +768,9 @@ public class BossInstance {
     }
 
     private void tickIdleRegen() {
+        if (ownsWorldEaterBody()) {
+            return;
+        }
         if (isCinematicDying() || isTransitioning() || isDamageBlocked()) {
             return;
         }

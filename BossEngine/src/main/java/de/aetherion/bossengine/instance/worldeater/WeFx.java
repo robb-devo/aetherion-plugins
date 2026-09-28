@@ -474,6 +474,11 @@ public final class WeFx {
     }
 
     public void actionBar(String text) {
+        // Last Seed arenas: boss HP only. No teach tips / mechanic hints on the action bar.
+    }
+
+    /** Death / arrival vanilla parody lines only — not mechanic teach tips. */
+    public void cinematicBar(String text) {
         for (Player p : audience()) {
             p.sendActionBar(TextUtil.component(text));
         }

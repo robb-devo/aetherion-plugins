@@ -1,6 +1,7 @@
 package de.aetherion.bossengine.listener;
 
 import de.aetherion.bossengine.instance.worldeater.WorldEaterSite;
+import de.aetherion.core.api.QuestBars;
 
 import org.bukkit.GameMode;
 import org.bukkit.World;
@@ -17,6 +18,7 @@ import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 
@@ -28,6 +30,7 @@ import org.bukkit.event.player.PlayerTeleportEvent;
  *   <li>The site cannot be built on or broken (admins in creative with {@code bossengine.admin} can).</li>
  *   <li>Fluids do not flow and gravity blocks do not fall there: the eaten island stays as eaten.</li>
  *   <li>The end gateway blocks of the rift in the sky never teleport anyone.</li>
+ *   <li>Inside the arena: quest bars / soft hints stay off — boss HP only.</li>
  * </ul>
  */
 public class WorldEaterSiteListener implements Listener {
@@ -41,14 +44,48 @@ public class WorldEaterSiteListener implements Listener {
         return player.getGameMode() == GameMode.CREATIVE && player.hasPermission("bossengine.admin");
     }
 
+    /** Quest bossbar + soft NPC hints off for the whole dedicated world. */
+    private static void hushHud(Player player) {
+        if (player == null) {
+            return;
+        }
+        QuestBars.suppress(player);
+        try {
+            Class<?> hint = Class.forName("de.aetherion.quests.ui.QuestHint");
+            hint.getMethod("clear", Player.class).invoke(null, player);
+        } catch (ReflectiveOperationException ignored) {
+            // Quests offline — fine.
+        }
+    }
+
+    private static void restoreHud(Player player) {
+        if (player == null) {
+            return;
+        }
+        QuestBars.unsuppress(player);
+    }
+
     @EventHandler(priority = EventPriority.MONITOR)
     public void onQuit(PlayerQuitEvent event) {
         WorldEaterSite.forget(event.getPlayer());
+        restoreHud(event.getPlayer());
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onJoin(PlayerJoinEvent event) {
+        if (siteWorld(event.getPlayer().getWorld())) {
+            hushHud(event.getPlayer());
+        }
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onWorldChange(PlayerChangedWorldEvent event) {
         WorldEaterSite.forget(event.getPlayer());
+        if (siteWorld(event.getPlayer().getWorld())) {
+            hushHud(event.getPlayer());
+        } else if (siteWorld(event.getFrom())) {
+            restoreHud(event.getPlayer());
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
