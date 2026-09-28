@@ -1,5 +1,10 @@
 package de.aetherion.farming;
 
+import de.aetherion.farming.dev.CanePatchTool;
+import de.aetherion.farming.dev.FarmDistrictMarker;
+import de.aetherion.farming.dev.HayWagonProp;
+import de.aetherion.farming.dev.ScarecrowProp;
+import de.aetherion.farming.island.FarmIsleSeeder;
 import de.aetherion.farming.island.FarmIslandAmbience;
 import de.aetherion.farming.island.FarmIslandService;
 import de.aetherion.farming.portal.FarmPortalListener;
@@ -20,6 +25,14 @@ public class AetherionFarming extends JavaPlugin {
     private FarmIslandService island;
     private FarmPortalService portals;
     private FarmIslandAmbience ambience;
+    private FeaturedCropService featuredCrop;
+    private FarmIsleAmbienceLoop isleAmbience;
+    private CanePatchTool canePatchTool;
+    private FarmDistrictMarker districtMarker;
+    private ScarecrowProp scarecrow;
+    private HayWagonProp hayWagon;
+    private ScarecrowEvent scarecrowEvent;
+    private FarmIsleSeeder seeder;
     private NamespacedKey portalToolKey;
     private de.aetherion.core.api.FarmAccess farmAccess;
 
@@ -28,6 +41,9 @@ public class AetherionFarming extends JavaPlugin {
         instance = this;
         worldGuard = WorldGuardPlugin.inst();
         saveDefaultConfig();
+        // Merge new keys without wiping live overrides.
+        getConfig().options().copyDefaults(true);
+        saveConfig();
         portalToolKey = new NamespacedKey(this, FarmPortalService.TOOL_KEY);
 
         FarmingListener farming = new FarmingListener();
@@ -40,6 +56,23 @@ public class AetherionFarming extends JavaPlugin {
         ambience.start();
         getServer().getPluginManager().registerEvents(new FarmPortalListener(portals), this);
         getServer().getPluginManager().registerEvents(new FarmPortalToolListener(portals), this);
+
+        canePatchTool = new CanePatchTool(this);
+        districtMarker = new FarmDistrictMarker(this);
+        scarecrow = new ScarecrowProp(this);
+        hayWagon = new HayWagonProp(this);
+        getServer().getPluginManager().registerEvents(canePatchTool, this);
+        getServer().getPluginManager().registerEvents(districtMarker, this);
+        getServer().getPluginManager().registerEvents(scarecrow, this);
+        getServer().getPluginManager().registerEvents(hayWagon, this);
+
+        seeder = new FarmIsleSeeder(this);
+        getServer().getScheduler().runTaskLater(this, seeder::autoSeed, 120L);
+
+        featuredCrop = new FeaturedCropService(this);
+        featuredCrop.start();
+        isleAmbience = new FarmIsleAmbienceLoop(this);
+        isleAmbience.start();
 
         getServer().getScheduler().runTaskLater(this, () -> {
             if (!getConfig().getBoolean("farm-island.enabled", true)) {
@@ -64,7 +97,9 @@ public class AetherionFarming extends JavaPlugin {
         if (getServer().getPluginManager().getPlugin("AetherionItems") != null) {
             birdScare = new BirdScareEvent(this);
             birdScare.start();
-            getLogger().info("Bird scare crop event enabled.");
+            scarecrowEvent = new ScarecrowEvent(this);
+            scarecrowEvent.start();
+            getLogger().info("Bird scare crop event enabled (hub farm + Farm Isle zones).");
         } else {
             getLogger().warning("AetherionItems missing — bird scare event disabled.");
         }
@@ -77,6 +112,22 @@ public class AetherionFarming extends JavaPlugin {
         if (birdScare != null) {
             birdScare.shutdown();
             birdScare = null;
+        }
+        if (scarecrowEvent != null) {
+            scarecrowEvent.shutdown();
+            scarecrowEvent = null;
+        }
+        if (seeder != null) {
+            seeder.shutdown();
+            seeder = null;
+        }
+        if (featuredCrop != null) {
+            featuredCrop.shutdown();
+            featuredCrop = null;
+        }
+        if (isleAmbience != null) {
+            isleAmbience.shutdown();
+            isleAmbience = null;
         }
         if (farmAccess != null) {
             de.aetherion.core.api.AetherServices.clearFarming(farmAccess);
@@ -103,6 +154,30 @@ public class AetherionFarming extends JavaPlugin {
 
     public FarmIslandAmbience ambience() {
         return ambience;
+    }
+
+    public FeaturedCropService featuredCrop() {
+        return featuredCrop;
+    }
+
+    public CanePatchTool canePatchTool() {
+        return canePatchTool;
+    }
+
+    public FarmDistrictMarker districtMarker() {
+        return districtMarker;
+    }
+
+    public ScarecrowProp scarecrow() {
+        return scarecrow;
+    }
+
+    public HayWagonProp hayWagon() {
+        return hayWagon;
+    }
+
+    public FarmIsleSeeder seeder() {
+        return seeder;
     }
 
     public NamespacedKey portalToolKey() {

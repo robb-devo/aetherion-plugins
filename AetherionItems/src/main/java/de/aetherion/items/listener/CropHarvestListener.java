@@ -75,6 +75,7 @@ public class CropHarvestListener implements Listener {
                     }
                     paidPrimary = true;
                     giveFlatFortuned(player, stack, fortune);
+                    giveFeaturedBonus(player, stack);
                     continue;
                 }
                 // Rare extras (poisonous potato, …) — keep, no fortune stack abuse.
@@ -82,6 +83,27 @@ public class CropHarvestListener implements Listener {
             }
         } finally {
             InventoryDrops.clearDropAt();
+        }
+    }
+
+    private void giveFeaturedBonus(Player player, ItemStack drop) {
+        de.aetherion.core.api.FarmAccess farm = de.aetherion.core.api.AetherServices.farming();
+        if (farm == null || drop == null) {
+            return;
+        }
+        int bonus = farm.featuredCropBonus(drop.getType());
+        for (int i = 0; i < bonus; i++) {
+            ItemStack one = drop.clone();
+            one.setAmount(1);
+            ItemStack compressed = ProgressionEffects.maybeCompress(player, itemManager, one);
+            InventoryDrops.give(player, compressed != null ? compressed : one);
+        }
+        if (bonus > 0) {
+            String name = farm.featuredCropName();
+            player.sendActionBar(net.kyori.adventure.text.Component.text(
+                    "Featured" + (name == null ? "" : " " + name) + " +" + bonus,
+                    net.kyori.adventure.text.format.NamedTextColor.GOLD
+            ));
         }
     }
 

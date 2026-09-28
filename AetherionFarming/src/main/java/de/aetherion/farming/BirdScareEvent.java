@@ -2,6 +2,7 @@ package de.aetherion.farming;
 
 import de.aetherion.core.api.QuestBars;
 import de.aetherion.farming.island.FarmIslandService;
+import de.aetherion.farming.island.FarmIsleZones;
 import de.aetherion.items.manager.ActiveEquipmentStats;
 import de.aetherion.items.manager.StatProvider;
 import de.aetherion.items.model.ItemCapability;
@@ -139,33 +140,28 @@ public final class BirdScareEvent implements Listener, StatProvider, Runnable {
         return Math.max(8.0d, plugin.getConfig().getDouble("bird-scare.view-range", DEFAULT_VIEW_RANGE));
     }
 
-    /** True when farm-zone is off, or the location is inside the configured farm bubble. */
+    /** True when anywhere-near-crops, or inside any configured farm / Farm Isle zone. */
     private boolean inFarmZone(Location at) {
-        if (at == null || at.getWorld() == null) {
-            return false;
-        }
-        if (!plugin.getConfig().getBoolean("bird-scare.farm-zone.enabled", true)) {
-            return true;
-        }
-        String worldName = plugin.getConfig().getString("bird-scare.farm-zone.world", "world");
-        if (!at.getWorld().getName().equalsIgnoreCase(worldName)) {
-            return false;
-        }
-        double fx = plugin.getConfig().getDouble("bird-scare.farm-zone.x", -211.5d);
-        double fz = plugin.getConfig().getDouble("bird-scare.farm-zone.z", 183.5d);
-        double radius = Math.max(16.0d, plugin.getConfig().getDouble("bird-scare.farm-zone.radius", 90.0d));
-        double dx = at.getX() - fx;
-        double dz = at.getZ() - fz;
-        return (dx * dx + dz * dz) <= radius * radius;
+        return FarmIsleZones.inBirdZone(plugin, at);
     }
 
-    /** The shared Farm Isle (midgame, Farming 10 portal) hosts the bolder flock. */
-    private boolean isIsle(World world) {
-        if (world == null || !plugin.getConfig().getBoolean("bird-scare.farm-island.enabled", true)) {
+    /**
+     * The Farm Isle hosts the bolder flock. Live Eldervale sits inside the hub world, so the
+     * footprint decides; the old void world only counts while {@code farm-island.enabled}.
+     */
+    private boolean isIsle(Location at) {
+        if (at == null || at.getWorld() == null
+                || !plugin.getConfig().getBoolean("bird-scare.farm-island.enabled", true)) {
+            return false;
+        }
+        if (FarmIsleZones.footprint(plugin) != null) {
+            return FarmIsleZones.inFarmIsleFootprint(plugin, at);
+        }
+        if (!plugin.getConfig().getBoolean("farm-island.enabled", true)) {
             return false;
         }
         String isleWorld = plugin.getConfig().getString("farm-island.world", FarmIslandService.DEFAULT_WORLD);
-        return world.getName().equalsIgnoreCase(isleWorld);
+        return at.getWorld().getName().equalsIgnoreCase(isleWorld);
     }
 
     void start() {
@@ -330,7 +326,7 @@ public final class BirdScareEvent implements Listener, StatProvider, Runnable {
             if (Crops.isDungeonWorld(player.getWorld())) {
                 continue;
             }
-            boolean onIsle = isIsle(player.getWorld());
+            boolean onIsle = isIsle(player.getLocation());
             if (!onIsle && !inFarmZone(player.getLocation())) {
                 continue;
             }
@@ -524,16 +520,17 @@ public final class BirdScareEvent implements Listener, StatProvider, Runnable {
     }
 
     private void grantBoostFeedback(Player player, Location field, int seconds, boolean sweep, boolean helper) {
+        // Golden Hour = the bird-scare success boost (name kept from the Farm Isle pass).
         String boost = "+" + (int) FORTUNE_BONUS + " Fortune · +" + (int) HARVEST_BONUS + " Harvest";
-        player.sendMessage((sweep ? "§6Clean sweep. " : "§aField clear. ")
+        player.sendMessage((sweep ? "§6Golden Hour · Clean sweep! " : "§6Golden Hour! ")
                 + "§7" + boost + " for §f" + seconds + "s§7."
                 + (sweep ? " §8(+" + CLEAN_SWEEP_BONUS_SECONDS + "s for speed)" : ""));
         player.showTitle(net.kyori.adventure.title.Title.title(
-                sweep ? Component.text("Clean sweep", NamedTextColor.GOLD) : Component.text("Field clear", NamedTextColor.GREEN),
-                LEGACY.deserialize("§6" + boost + " §8· §f" + seconds + "s"),
+                Component.text(sweep ? "Golden Hour · Clean sweep" : "Golden Hour", NamedTextColor.GOLD),
+                LEGACY.deserialize("§e" + boost + " §8· §f" + seconds + "s"),
                 net.kyori.adventure.title.Title.Times.times(
                         java.time.Duration.ofMillis(80),
-                        java.time.Duration.ofMillis(1400),
+                        java.time.Duration.ofMillis(1600),
                         java.time.Duration.ofMillis(220)
                 )
         ));
@@ -541,6 +538,7 @@ public final class BirdScareEvent implements Listener, StatProvider, Runnable {
         player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.55f, 1.4f);
         player.spawnParticle(Particle.HAPPY_VILLAGER, player.getLocation().add(0, 1.0, 0), 14, 0.35, 0.45, 0.35, 0.02);
         player.spawnParticle(Particle.END_ROD, player.getLocation().add(0, 1.1, 0), 8, 0.25, 0.35, 0.25, 0.01);
+        player.spawnParticle(Particle.FIREWORK, player.getLocation().add(0, 1.2, 0), 10, 0.4, 0.4, 0.4, 0.02);
         if (helper) {
             FarmingSkills.bonus(player, HELPER_XP + (sweep ? SWEEP_XP : 0));
         }
