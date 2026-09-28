@@ -1,77 +1,64 @@
-# Opus prompt — Polish Pass STEP 2 (Pets / Habitats)
+# Opus prompt — Polish Pass STEP 3-of-3 (Pets / Habitats)
 
-Copy everything below the line into the Cloud workspace chat **only after STEP 1 is merged or explicitly deferred by Robbi**.
+**Local agent.** Run **after rituals** (or if Robbi explicitly prioritizes pets next).  
+Impact order is Textures → Rituals → **Pets**.
+
+Copy everything below the line into the Opus chat.
 
 ---
 
-You are executing **Aetherion Polish Pass — STEP 2 only: Pets + Habitats**.
+You are a **local** Claude Opus agent executing **Aetherion Polish Pass — Pets + Habitats only**.
 
 ## First read (in order)
 
-1. `docs/OPUS_POLISH_PASS_AUDIT.md` — sections A2, B, C (STEP 2), D, F (STEP 2)
+1. `docs/OPUS_POLISH_PASS_AUDIT.md` — sections A2, B, C (pets), D, F (pets)
 2. Then open **only**:
    - `Aethermobs/.../pet/PetHabitat.java`
    - `Aethermobs/.../pet/PetHabitatZones.java`
    - `Aethermobs/.../pet/PetSpawnManager.java` (read — prefer not edit)
    - `Aethermobs/.../pet/PetWalkSurface.java` (read — prefer not edit)
+   - `Aethermobs/.../pet/PetEntity.java` (read — prefer not edit ambient feel)
    - `AetherionItems/.../world/PetHabitatZoneService.java`
    - `AetherionItems/.../world/CryptDiscoverListener.java` (**pattern to mirror**)
    - `AetherionHub/.../listener/SpawnDiscoverListener.java` (secondary pattern)
-   - `Aethermobs/.../pet/PetSpawnZones.java` (hub quiet bubbles — keep)
+   - `Aethermobs/.../pet/PetSpawnZones.java` (hub quiet bubbles — KEEP)
 
-Do **not** ingest the entire monorepo. Do **not** rewrite pet registration (`PetFactory`).
+Do **not** rewrite `PetFactory` / registration / weights.
+
+## Preflight (Robbi / ops)
+
+Before changing auto-detect thresholds: audit live `plugins/AetherionItems/pet-habitats.yml` coverage on Origin. If paint is thin, discovery still helps; do not retune thresholds blindly.
 
 ## You are NOT here to
 
-- Retune spawn weights, global caps, flee/bob feel, or catch timing “for fun”
-- Expand paint kinds to FARM / VILLAGE / SHORE (product rule: stay auto)
-- Merge forage habitats with pet habitats into one system
+- Retune spawn weights, caps, flee/bob, or catch timing “for fun”
+- Expand paint kinds to FARM / VILLAGE / SHORE (stay auto)
+- Merge forage habitats with pet habitats
 - Add new pets or combat skills
-- Touch showcase bosses, textures STEP 1 scope, or Borderlands rites
-- Touch locked systems (boosters, ranks, signature weapons, vials stack, anvil)
-- Wipe or rewrite live `pet-habitats.yml` blindly (file is runtime-only)
+- Touch showcase bosses, textures, or Borderlands/Colosseum rites
+- Touch locked systems; wipe live `pet-habitats.yml`
 
 ## You ARE here to
 
-Make habitats feel like **actual places** — not invisible spawn modifiers — with *small, deliberate* discovery polish.
+Make habitats feel like **actual places** with small discovery polish. Spawn/terrain already good — KEEP.
 
 ### Scope
 
 **P0 — Essential**
-1. **Player first-enter habitat discovery** — short title and/or actionbar when entering a dominant pet biotope for the first time. Mirror `CryptDiscoverListener` persistence + one-shot feel. Debounce borders so walking the edge does not spam.
-2. If live paint file content is unavailable in this environment, implement discovery against `PetHabitat.dominantAt` / painted+auto resolution already used by spawn, and document that Robbi should verify against production `pet-habitats.yml`.
+1. First-enter dominant habitat discovery (title/actionbar), persist UUID set, edge debounce — prefer new small listener in **Aethermobs**, mirror `CryptDiscoverListener`. Resolve via `PetHabitat.dominantAt` / painted+auto. Never spam hub quiet bubbles or dungeon hub.
 
 **P1 — Recommended**
-3. Optional **one-shot** soft enter FX per biotope kind (few particles + short sound) — never per-tick, never dense carpets.
-4. Keep staff marker workflow intact (`MarkerVisibilityListener` / Dev Menu sticks).
+2. Optional one-shot soft enter FX per biotope (few particles + short sound). Never per-tick carpets.
 
-**P2 — Optional / evidence-gated**
-5. Clarify Eldervale forage TAB vs pet `ELDERVALE` only if you find a concrete mismatch in code/config you can fix without redesign.
-6. Do **not** change density unless comments/playtest notes in-repo prove crowding.
-
-### Quality bar
-
-Reference craft (read-only scale): Crypt discover toast pacing, Hub spawn discover — not Seraphine spectacle.
-
-Habitats should feel organic; spawn/terrain logic is **already good** — KEEP it.
-
-### Hard technical rules
-
-- Prefer new small listener in **Aethermobs** (pet UX ownership) over bloating Items
-- Persist discovered UUIDs (yaml or existing storage style consistent with Crypt)
-- Never remove hub quiet 10-block bubbles
-- Never change `PetWalkSurface` canopy rules or `presentAt` thresholds without measured cause
-- BlockDisplay / particles: accents only; cleanup any spawned displays
+**P2 — Optional**
+3. Docs/messaging clarify Eldervale naming collisions (forage TAB vs pet `ELDERVALE` paint) if concrete mismatch.
+4. Density review only with playtest evidence.
 
 ## Branch
 
-Work on **`claude/polish-step2-habitats`** from `main` (or from STEP 1 branch if Robbi says so).  
-Commit + push. Then **STOP**.
+`claude/polish-step3-pets`. Commit. Push if possible. **STOP.**
 
 ## Deliverable
 
-- Habitat discovery UX shipped
-- Commit + push
-- Brief report: player-facing behavior, files, what you left alone, any live `pet-habitats.yml` ops note for Robbi
-
-Do not start STEP 3.
+- Discovery polish shipped
+- Report: files, hysteresis approach, what was left alone, any ops notes on live paint

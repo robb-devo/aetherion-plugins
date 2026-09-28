@@ -1,11 +1,13 @@
-# Aetherion Polish Pass — Audit (Textures → Pets/Habitats → Early Rituals)
+# Aetherion Polish Pass — Audit (local Opus agent)
 
-**Role of this doc:** Scout / architect / prep for Claude Opus.  
+**Role of this doc:** Scout / architect / prep for a **local** Claude Opus agent (not cloud).  
 **Not an implementation pass.** Do not treat this as permission to rewrite systems.
 
 **Quality principle:** Showcase encounters (Seraphine, Hollow Sun, World Eater) are **quality references**, not templates to copy. Prefer *small, deliberate, polished* over *huge, complicated, expensive*.
 
-**Date context:** Scouted from monorepo `robb-devo/aetherion-plugins` working tree (main + large local WIP). Opus should work from GitHub `main` + this doc set unless Robbi pins a branch.
+**Date context:** Re-scouted 2026-09-28 on monorepo `robb-devo/aetherion-plugins`. Local Opus may use this working tree; stay inside the STEP prompt’s file allowlist. Unrelated dirty WIP on `main` is **out of scope** — do not “clean up” harbour/midgame/World Eater while polishing.
+
+**Impact order (decided):** **1 Textures → 2 Early rituals → 3 Pets/habitats** (see §D).
 
 ---
 
@@ -13,15 +15,15 @@
 
 ### A1. Textures / progression equipment
 
-**Dual pack reality (critical):**
+**Dual / triple pack reality (critical):**
 
 | Pack | Path | Git | Role |
 |------|------|-----|------|
-| Plugin pack | `AetherionItems/resourcepack/` | **Tracked** (~36 PNGs) | What Opus can ship via repo |
-| Client extract | `Aetherion_texturepack_extract/` | **Gitignored** | Fuller live client pack (CIT Resewn armor, many 256× icons) |
-| Zip | `Aetherion_texturepack.zip` | **Gitignored** | Manual client delivery |
+| Plugin pack | `AetherionItems/resourcepack/` | **Tracked** (~31–36 PNGs) | **Canonical write target** for Opus |
+| Desktop live | `Desktop/Aetherion TexturePack/` | Outside repo | Often what clients load; has combat/mining **base overrides** the tracked pack lacks |
+| Client extract | `Aetherion_texturepack_extract/` | **Gitignored** | Fuller art/CIT; **reference only** for local Opus (do not depend as sole source) |
 
-Both packs: `pack_format: 34` (1.21.x).
+Both packs: `pack_format: 34` (1.21.x). Classic CMD overrides only (no ItemsAdder / `item_model` migration).
 
 **Registration pipeline (solid — do not redesign):**
 1. `CustomItem` / `ProgressionItems` factories build stacks
@@ -128,12 +130,14 @@ Combat T1–T5 swords / Mining T1–T5 picks already have stronger art in the **
 
 | ID | Change | Priority | Essential? |
 |----|--------|----------|------------|
+| T1.0 | **Port missing base overrides** into tracked pack from Desktop: `chainmail_{helmet,chestplate,leggings,boots}.json`, `stone_sword.json`, `stone_pickaxe.json` — without these, Combat/Mining T1 CMDs **never apply** if only the repo pack ships | P0 | **Essential** |
 | T1.1 | Fix `beginner_pickaxe.png` 1254² → power-of-two (prefer 64 or 256 NN) | P0 | **Essential** |
 | T1.2 | Unify `simple_*` tool+armor icons to one deliberate resolution (recommend **64×64** inventory readability; tools may stay 256 if already authored well) | P0 | **Essential** |
-| T1.3 | Decide **canonical pack**: ship polish into tracked `AetherionItems/resourcepack`; document that Robbi syncs gitignored extract / live client separately | P0 | **Essential** (process) |
+| T1.3 | Canonical write = tracked `AetherionItems/resourcepack`; Robbi syncs Desktop/extract after | P0 | **Essential** (process) |
 | T1.4 | Author ProgressionItems CMD **2701–2716** models+textures+base overrides (biggest empty shelf) | P1 | Recommended |
 | T1.5 | Raise combat/mining **armor** icons toward tool quality (plugin pack currently 64; extract often still 16 for armor) | P2 | Optional |
 | T1.6 | Wire missing base JSON (e.g. `golden_sword.json` for copper/midas line) without CMD reassignment | P1 | Recommended with T1.4 |
+| T1.7 | Fix leather `_vanilla` sentinel CMD collisions in Items `leather_*.json` | P1 | Recommended |
 
 **Per-change detail (T1.1–T1.2):**
 - **Files:** `AetherionItems/resourcepack/assets/minecraft/textures/item/{beginner_pickaxe,simple_*}.png` (+ matching `models/item/*.json` if needed)
@@ -208,31 +212,35 @@ Combat T1–T5 swords / Mining T1–T5 picks already have stronger art in the **
 
 ---
 
-## D. RECOMMENDED ORDER
+## D. RECOMMENDED ORDER (impact ranking)
 
-**Keep the proposed order: 1 Textures → 2 Pets/Habitats → 3 Rituals.**
+**Do this order: 1 Textures → 2 Early rituals → 3 Pets/habitats.**
 
-**Why not reorder:**
-- No hard code dependency between the three (different plugins/asset surfaces).
-- Textures are pure client art + pack overrides — lowest regression into game logic; establishes “authored” visual language for everything else.
-- Habitat discover UX benefits from a settled visual bar but does not require new item art.
-- Ritual polish is Items/BossEngine FX — best done after texture noise is out of the way so Opus sessions stay single-focus.
+Changed from the original proposal on **player impact**, not technical dependency (the three barely share code).
 
-**Exception / preflight only:** Before STEP 2 implementation, **ops-audit live `pet-habitats.yml`** (not a reorder — a gate).
+| Rank | Pass | Why first / later |
+|------|------|-------------------|
+| **1** | Textures / progression gear | Every player sees inventory/hotbar constantly from minute one. Tracked pack is **functionally incomplete** for Combat/Mining T1 (missing base overrides) + beginner 1254² looks broken. Highest “game feels unfinished” signal; lowest combat/quest regression. |
+| **2** | Early boss rituals | Peak early/mid moments (Borderlands → Colosseum). Colosseum Pathwarden summon is the clearest “particles → boss pops” gap vs Seraphine/WE quality bar. Concentrated in 1–2 services; big feel win for fewer files than textures. |
+| **3** | Pets / habitats | Spawn + terrain already feel organic (KEEP). Gap is first-enter discovery UX — valuable, but smaller delta than broken starter art or noisy Colosseum. Ops-audit live `pet-habitats.yml` before any auto-detect tune. |
 
-**Opus session slicing:** One STEP per Opus run. Do not ask Opus to do all three in one cloud session.
+**Do not** run all three in one Opus session. One STEP → stop → Robbi playtests → next STEP.
+
+**Local agent note:** Opus can read Desktop TexturePack as reference for T1.0 overrides; still **write** into `AetherionItems/resourcepack/`.
 
 ---
 
-## E. OPUS IMPLEMENTATION BRIEF
+## E. OPUS IMPLEMENTATION BRIEF (local agent)
 
-See companion files:
+Paste the matching prompt into a **local** Opus chat. Stay on one STEP.
 
-- `docs/OPUS_POLISH_PASS_PROMPT.md` — copy-paste prompt (**STEP 1 first**)
-- `docs/OPUS_POLISH_PASS_STEP2_PROMPT.md` — pets/habitats (after STEP 1 ships)
-- `docs/OPUS_POLISH_PASS_STEP3_PROMPT.md` — early rituals (after STEP 2)
+| Order | Prompt file | When |
+|-------|-------------|------|
+| 1 | `docs/OPUS_POLISH_PASS_PROMPT.md` | **Now** — textures |
+| 2 | `docs/OPUS_POLISH_PASS_STEP3_PROMPT.md` | After STEP 1 ships / Robbi OK |
+| 3 | `docs/OPUS_POLISH_PASS_STEP2_PROMPT.md` | After STEP 2 (rituals) or if Robbi defers rituals |
 
-Handoff summary for humans: this audit + prompts.
+Handoff: this audit + those three prompts. No giant rewrite.
 
 ---
 
@@ -290,10 +298,10 @@ Handoff summary for humans: this audit + prompts.
 
 ---
 
-## Repo readiness note (scout)
+## Repo readiness note (local agent)
 
-At audit time, local `main` had a **large dirty WIP** (~180+ modified tracked files + many untracked worktrees/patches) unrelated to this polish brief (harbour early-game, midgame, World Eater trees, etc.).
+Local `main` often has **large unrelated WIP** (harbour, midgame, World Eater worktrees, Core/Items churn). That is fine for a local Opus agent **if** the STEP prompt’s allowlist is respected.
 
-**For Opus:** Prefer a clean branch from **pushed `origin/main` + these docs**, not an accidental dump of mixed WIP.
+**For Opus:** New branch per STEP (e.g. `claude/polish-step1-textures`). Touch only listed paths. Do not “tidy” unrelated dirty files.
 
-**For Robbi:** Triage WIP separately (harbour branch already exists in `_wt_early_game` pattern). Do not require Opus to inherit an unclean mega-diff.
+**For Robbi:** Sync Desktop TexturePack after STEP 1 if that is what clients load. Live `pet-habitats.yml` stays server-side for STEP 3 (pets).
