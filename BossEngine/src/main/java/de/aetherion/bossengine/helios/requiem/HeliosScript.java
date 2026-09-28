@@ -414,7 +414,7 @@ public final class HeliosScript extends ActScript {
 
     @Override
     protected boolean shielded() {
-        return requiem != null && !requiem.exposed();
+        return false;
     }
 
     @Override

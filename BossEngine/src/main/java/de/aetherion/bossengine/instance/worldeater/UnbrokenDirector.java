@@ -157,12 +157,9 @@ public final class UnbrokenDirector {
         return isMine() && (act == Act.WAKING || act == Act.DYING || act == Act.BREAKING);
     }
 
-    /** Bedrock: blades barely scratch it unless it is cracked open. */
+    /** Full damage in the fight: no hidden damage limit on the crust. */
     public double scaleIncoming(double amount) {
-        if (!isMine()) {
-            return amount;
-        }
-        return exposeTicks > 0 ? amount : amount * 0.3;
+        return amount;
     }
 
     public void onDamaged(double amount) {

@@ -14,6 +14,7 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockBurnEvent;
 import org.bukkit.event.block.BlockFromToEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
@@ -76,6 +77,21 @@ public class WorldEaterSiteListener implements Listener {
         if (siteWorld(event.getPlayer().getWorld())) {
             hushHud(event.getPlayer());
         }
+    }
+
+    /** No natural mobs at the site: only plugin / command / egg spawns. */
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onCreatureSpawn(CreatureSpawnEvent event) {
+        if (!siteWorld(event.getLocation().getWorld())) {
+            return;
+        }
+        CreatureSpawnEvent.SpawnReason reason = event.getSpawnReason();
+        if (reason == CreatureSpawnEvent.SpawnReason.COMMAND
+                || reason == CreatureSpawnEvent.SpawnReason.CUSTOM
+                || reason == CreatureSpawnEvent.SpawnReason.SPAWNER_EGG) {
+            return;
+        }
+        event.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

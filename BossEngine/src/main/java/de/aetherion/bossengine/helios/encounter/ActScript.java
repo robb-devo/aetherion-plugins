@@ -165,7 +165,11 @@ public abstract class ActScript implements BossScript {
 
     @Override
     public boolean blocksDamage() {
-        return mode != Mode.FIGHT || shielded();
+        // Full damage in FIGHT. Invulnerable only for intro / interlude / dying and cinematics.
+        if (mode == Mode.INTRO || mode == Mode.INTERLUDE || mode == Mode.DYING || mode == Mode.DONE) {
+            return true;
+        }
+        return enc != null && enc.cinematic();
     }
 
     @Override
@@ -264,7 +268,7 @@ public abstract class ActScript implements BossScript {
     }
 
     private void schedule() {
-        if (clock < nextPickAt || enc.cinematic() || paused()) {
+        if (opening() || openingPending || clock < nextPickAt || enc.cinematic() || paused()) {
             return;
         }
         int cap = maxConcurrent();
@@ -417,7 +421,7 @@ public abstract class ActScript implements BossScript {
             enc.score().chord(org.bukkit.Sound.BLOCK_NOTE_BLOCK_BELL, 0.9f, 1f, 1.26f, 1.5f);
             enc.score().play(org.bukkit.Sound.BLOCK_AMETHYST_BLOCK_RESONATE, 1f, 1.2f);
             for (Player p : enc.audience()) {
-                p.sendActionBar(de.aetherion.bossengine.util.TextUtil.component("&a&lOPENING &7- strike now!"));
+                p.sendActionBar(de.aetherion.bossengine.util.TextUtil.component("&a&lOPENING &7- &fextra damage &7window (you can hit anytime)"));
             }
             onOpening(true);
         }
@@ -527,7 +531,7 @@ public abstract class ActScript implements BossScript {
         entity.setSilent(true);
         entity.setFireTicks(0);
         entity.setVelocity(new Vector());
-        entity.setCollidable(false);
+        entity.setCollidable(true);
         if (entity.getEquipment() != null) {
             entity.getEquipment().clear();
         }

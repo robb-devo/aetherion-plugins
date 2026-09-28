@@ -17,6 +17,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityToggleGlideEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
@@ -133,6 +134,21 @@ public final class HeliosGuard implements Listener {
         if (inWorld(event.getPlayer()) && !event.getPlayer().hasPermission(BYPASS)) {
             event.setCancelled(true);
         }
+    }
+
+    /** No natural mobs in the instance world: only plugin / command / egg spawns. */
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onCreatureSpawn(CreatureSpawnEvent event) {
+        if (!heliosWorld(module, event.getLocation().getWorld())) {
+            return;
+        }
+        CreatureSpawnEvent.SpawnReason reason = event.getSpawnReason();
+        if (reason == CreatureSpawnEvent.SpawnReason.COMMAND
+                || reason == CreatureSpawnEvent.SpawnReason.CUSTOM
+                || reason == CreatureSpawnEvent.SpawnReason.SPAWNER_EGG) {
+            return;
+        }
+        event.setCancelled(true);
     }
 
     /* ------------------------------------------------------------------ damage */
