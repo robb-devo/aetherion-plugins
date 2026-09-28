@@ -153,6 +153,9 @@ public final class WorldEaterDirector {
     private WeProps.ChunkMark regenMark;
     private int regenLayer = -1;
     private int generationAt = -1;
+    /** Death climax: every world it ever ate, thrown out of the skull and pulled back into nothing. */
+    private final List<BlockDisplay> relics = new ArrayList<>();
+    private final List<Vector3f> relicDir = new ArrayList<>();
     private boolean worldSavedShown;
 
     /* move scratch */
@@ -2526,7 +2529,9 @@ public final class WorldEaterDirector {
                 fx.particle(Particle.REVERSE_PORTAL, serpent.skullCenter(), 20, 1.5, 0.1);
                 if (u == 40) {
                     fx.score(Sound.BLOCK_PORTAL_TRIGGER, 1f, 0.5f);
+                    burstWorlds();
                 }
+                tickRelics(u - 40);
             }
             if (u == 90) {
                 serpent.hideHead(true);
@@ -2534,7 +2539,19 @@ public final class WorldEaterDirector {
                 point = fx.block(Material.BLACK_CONCRETE, WeProps.VOID, 15);
                 mD.set(serpent.skullCenter());
                 WeFx.push(point, WeFx.cube(mD, 0.3f, new Quaternionf()), 0);
+                for (BlockDisplay d : relics) {
+                    fx.kill(d);
+                }
+                relics.clear();
+                relicDir.clear();
                 fx.silence();
+                // The implosion lands: one violet shock across the island, one boom, then nothing.
+                fx.score(Sound.ENTITY_WARDEN_SONIC_BOOM, 1f, 0.5f);
+                fx.particle(Particle.SONIC_BOOM, mD, 1, 0.0, 0);
+                fx.particle(Particle.END_ROD, mD, 80, 0.2, 0.6);
+                Vector3f ground = new Vector3f(mD.x, 0.1f, mD.z);
+                props.add(new WeProps.Shockwave(fx, ground, 0.5f, 34f, 1.4f, 16, Material.PURPLE_STAINED_GLASS, WeProps.VOID));
+                props.add(new WeProps.Shockwave(fx, ground, 0.3f, 22f, 0.6f, 12, Material.BLACK_CONCRETE, WeProps.VOID));
             }
             if (u > 90 && u < 120 && point != null && u % 6 == 0) {
                 WeFx.push(point, WeFx.cube(mD, u % 12 == 0 ? 0.42f : 0.26f, new Quaternionf().rotateY(u * 0.3f)), 5);
@@ -2550,6 +2567,75 @@ public final class WorldEaterDirector {
             generating(t - generationAt);
         }
         return false;
+    }
+
+    /**
+     * The last thing it does: every world it ever ate bursts out of its skull at once, a ring of
+     * slabs (plains, desert, snow, the Nether, the End...) hanging around the head for a breath,
+     * and then all of it is pulled back in as the head folds into nothing.
+     */
+    private void burstWorlds() {
+        Vector3f c = serpent.skullCenter();
+        int n = Serpent.WORLDS.length;
+        for (int i = 0; i < n; i++) {
+            Serpent.World w = Serpent.WORLDS[i];
+            // Fibonacci sphere, flattened a little so the ring reads from the ground.
+            float y = 1f - (i + 0.5f) / n * 2f;
+            float r = (float) Math.sqrt(1f - y * y);
+            float a = i * 2.39996f;
+            relicDir.add(new Vector3f((float) Math.cos(a) * r, y * 0.55f, (float) Math.sin(a) * r).normalize());
+            BlockDisplay d = fx.block(w.top(), w.tint(), 15);
+            WeFx.push(d, WeFx.cube(c, 0.05f, new Quaternionf()), 0);
+            relics.add(d);
+        }
+        fx.score(Sound.ENTITY_ENDER_DRAGON_GROWL, 1f, 0.4f);
+        fx.score(Sound.ENTITY_WITHER_DEATH, 0.5f, 0.5f);
+        fx.particle(Particle.END_ROD, c, 60, 0.3, 0.35);
+        fx.particle(Particle.EXPLOSION, c, 3, 1.0, 0);
+    }
+
+    /** Relic timeline, {@code r} ticks after the burst (50 ticks to the black point). */
+    private void tickRelics(int r) {
+        if (relics.isEmpty() || r < 1 || r % 2 != 0) {
+            return;
+        }
+        Vector3f c = serpent.skullCenter();
+        for (int i = 0; i < relics.size(); i++) {
+            Vector3f dir = relicDir.get(i);
+            float spin = r * 0.05f + i;
+            Quaternionf rot = new Quaternionf().rotateXYZ(spin, spin * 1.3f, spin * 0.7f);
+            Vector3f at;
+            float size;
+            int interp;
+            if (r <= 10) {
+                // Out: thrown to a wide ring around the head.
+                float out = 7.5f * WeMath.outCubic(r / 10f);
+                at = new Vector3f(dir).mul(out).add(c);
+                size = 1.3f;
+                interp = 2;
+            } else if (r < 38) {
+                // Held: the worlds circle their eater one last time.
+                float swirl = (r - 10) * 0.035f;
+                Vector3f d = new Vector3f(dir).rotateY(swirl);
+                at = d.mul(7.5f - (r - 10) * 0.06f).add(c);
+                size = 1.3f;
+                interp = 2;
+            } else {
+                // In: everything collapses into the shrinking head.
+                float f = WeMath.inCubic(Math.min(1f, (r - 38) / 10f));
+                at = new Vector3f(dir).rotateY(0.98f).mul(5.8f * (1f - f)).add(c);
+                size = 1.3f * (1f - f) + 0.02f;
+                interp = 2;
+            }
+            WeFx.push(relics.get(i), WeFx.cube(at, size, rot), interp);
+        }
+        if (r == 38) {
+            fx.score(Sound.BLOCK_BEACON_DEACTIVATE, 1f, 0.5f);
+            fx.score(Sound.ENTITY_ENDERMAN_TELEPORT, 0.8f, 0.5f);
+        }
+        if (r > 38 && r % 4 == 0) {
+            fx.particle(Particle.REVERSE_PORTAL, c, 40, 3.0, 0.3);
+        }
     }
 
     /** Nothing is left. The world starts over. */
