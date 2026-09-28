@@ -82,21 +82,34 @@ public final class ProgressionEffects implements Listener, StatProvider {
         }
         String id = items.getItemId(player.getInventory().getItemInMainHand());
         double chance = compactChance(id, resource);
+        double skillChance = 0.0d;
         SkillService skills = skills();
         if (skills != null) {
-            chance += skills.compactBonus(
+            skillChance = skills.compactBonus(
                     player,
                     resource.isMiningDrop(),
                     resource.isForagingDrop(),
                     resource.isFarmingDrop(),
                     resource.isFishingDrop()
             );
+            chance += skillChance;
         }
         if (compactBonusSource != null) {
             chance += compactBonusSource.extraCompactChance(player, drop.getType());
         }
         if (chance <= 0 || ThreadLocalRandom.current().nextDouble() >= chance) {
             return null;
+        }
+        // Credit the ledger skill by its share of the roll — a Voided pick at 100% stays quiet.
+        if (skills != null && skillChance > 0.0d
+                && ThreadLocalRandom.current().nextDouble() < skillChance / chance) {
+            skills.noteCompactProc(
+                    player,
+                    resource.isMiningDrop(),
+                    resource.isForagingDrop(),
+                    resource.isFarmingDrop(),
+                    resource.isFishingDrop()
+            );
         }
         double upgrade = skills == null ? 0.0d : skills.compactedUpgradeChance(
                 player,
@@ -154,6 +167,10 @@ public final class ProgressionEffects implements Listener, StatProvider {
             }
             if (skills != null && isBoss(victim)) {
                 boss *= skills.bossBonus(attacker);
+                if (AetherEntities.isBoss(victim)) {
+                    // Named bosses only — set minions would turn the cue into a ticker.
+                    skills.noteBossHit(attacker, victim);
+                }
             }
             if (boss != 1.0d) {
                 event.setDamage(event.getDamage() * boss);
@@ -270,7 +287,7 @@ public final class ProgressionEffects implements Listener, StatProvider {
             return;
         }
         coins.add(killer, pay);
-        killer.sendMessage("§6+" + pay + " coins");
+        killer.sendMessage("§6+" + pay + " coins" + (bloodTax ? skills.bloodTaxTag(killer) : ""));
     }
 
     private void explodeCoins(Player player, LivingEntity center) {

@@ -37,6 +37,16 @@ public final class SkillCommand implements CommandExecutor, TabCompleter {
             }
             return true;
         }
+        AetherSkill.Category page = category(args[0]);
+        if (page != null && args.length == 1) {
+            // /skills fishing — jump straight to a page.
+            if (sender instanceof Player player) {
+                menu.open(player, page);
+            } else {
+                sender.sendMessage("Usage: /skills [category]");
+            }
+            return true;
+        }
         if (!sender.hasPermission("aetherion.skills.admin")) {
             sender.sendMessage("§cNo permission.");
             return true;
@@ -54,7 +64,7 @@ public final class SkillCommand implements CommandExecutor, TabCompleter {
         if (action.equals("unlock") || action.equals("grant")) {
             skills.grantAllSlots(target);
             sender.sendMessage("§aUnlocked all skill slots for §f" + target.getName() + "§a.");
-            target.sendMessage("§aAll six skill slots just opened. Don't make it weird.");
+            target.sendMessage("§aAll seven skill slots just opened. Don't make it weird.");
             return true;
         }
         if (action.equals("reset")) {
@@ -71,7 +81,7 @@ public final class SkillCommand implements CommandExecutor, TabCompleter {
         }
         if (action.equals("setlevel") || action.equals("level")) {
             if (args.length < 4) {
-                sender.sendMessage("§cUsage: /skills setlevel <player> <skill|all> <1-60>");
+                sender.sendMessage("§cUsage: /skills setlevel <player> <skill|all> <1-" + SkillProgression.MAX_LEVEL + ">");
                 return true;
             }
             int level;
@@ -102,10 +112,25 @@ public final class SkillCommand implements CommandExecutor, TabCompleter {
         return true;
     }
 
+    private static AetherSkill.Category category(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        for (AetherSkill.Category category : AetherSkill.Category.values()) {
+            if (category.name().equalsIgnoreCase(raw)) {
+                return category;
+            }
+        }
+        return null;
+    }
+
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            Stream<String> options = Stream.of("open");
+            Stream<String> options = Stream.concat(
+                    Stream.of("open"),
+                    Arrays.stream(AetherSkill.Category.values()).map(c -> c.name().toLowerCase(Locale.ROOT))
+            );
             if (sender.hasPermission("aetherion.skills.admin")) {
                 options = Stream.concat(options, Stream.of("unlock", "reset", "wipe", "setlevel"));
             }
