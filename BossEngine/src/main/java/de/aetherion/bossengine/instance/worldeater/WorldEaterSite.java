@@ -632,7 +632,23 @@ public final class WorldEaterSite {
         boolean empty = !anyoneNear(w, 24, 0, 100);
         if ((aftermathTicks <= 0 || empty && aftermathTicks < 20 * 60 * 4) && !someoneInTheWay(w)) {
             aftermathTicks = -1;
+            walkOut(w);
             build(null);
+        }
+    }
+
+    /** The gate closes again on reset: whoever is still on the island is set down on the plaza. */
+    private void walkOut(World w) {
+        for (Player p : w.getPlayers()) {
+            Location l = p.getLocation();
+            if (!SiteLayout.onIsland(l.getX(), l.getZ()) || l.getY() < SiteLayout.ISLAND_BOTTOM) {
+                continue;
+            }
+            Location to = SiteLayout.plazaSafe(w);
+            to.setYaw(180f);
+            p.teleport(to);
+            p.playSound(to, Sound.BLOCK_PORTAL_TRAVEL, SoundCategory.AMBIENT, 0.2f, 1.6f);
+            p.sendMessage(TextUtil.component("&8&oThe Last Seed closes behind you. It will need a keeper again."));
         }
     }
 

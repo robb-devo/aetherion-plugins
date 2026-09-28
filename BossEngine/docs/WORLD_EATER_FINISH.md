@@ -1,0 +1,89 @@
+# World Eater: finish notes
+
+**Encounter:** *The Last Seed.* A dead-end road through the leftovers of eaten worlds, a bedrock
+keeper chained to a gate, and behind it the last intact 3x3-chunk slab of an ordinary Minecraft
+world. **Nihil, the World Eater**, is a serpent whose vertebrae are chunk-slabs of the 16 worlds
+it already ate. It doesn't only eat blocks. It eats what players take for granted: chunks, the
+stars, the rules (missing textures, lag), and finally the world border. It dies by eating itself,
+and the world regenerates chunk by chunk, down to "Saving the game" and a **Bonus Chest**.
+
+## Ids
+
+| What | Id / path |
+|---|---|
+| Pre-boss template | `world_eater_unbroken` (`bosses/world_eater_unbroken.yml`, IRON_GOLEM hitbox) |
+| Main boss template | `world_eater` (`bosses/world_eater.yml`, MAGMA_CUBE hitbox riding the skull) |
+| Directors | `instance/worldeater/UnbrokenDirector`, `instance/worldeater/WorldEaterDirector` |
+| Site / world | `instance/worldeater/WorldEaterSite`, layout `SiteLayout`, generator `WorldEaterVoid` |
+| Loot prop | `loot/WorldEaterBonusChest` + `listener/WorldEaterChestListener` |
+| Site protection | `listener/WorldEaterSiteListener` |
+| World name | `world_eater` (config `world-eater.world`) |
+| Generator id | `BossEngine:worldeater` |
+
+## Setup (once)
+
+```
+/boss worldeater create     # creates/loads the void world (BossEngine supplies the generator)
+/boss worldeater build      # builds road, plaza, gate, island from the layout (~2 s)
+/boss worldeater go         # teleports you to the arrival point
+```
+
+`world-eater.auto-load: true` (default) reloads the world on startup if its folder exists.
+**Multiverse is optional.** If you want MV to own the world, import it *after* BossEngine is up:
+`/mv import world_eater normal -g BossEngine:worldeater`. MV loads worlds before BossEngine
+enables, so either keep `auto-load` on and leave the world out of MV, or add
+`loadbefore: [Multiverse-Core]` to BossEngine's `plugin.yml`. Without the generator, new chunks
+would generate as vanilla terrain. Set gamerules in-world if you want: the site already turns off
+mob spawning, daylight/weather cycles, fire tick, mob griefing and random ticks.
+
+## Test path
+
+1. `/boss worldeater go` in survival. Walk the road (+Z). Halfway down, something passes beneath
+   and bites the desert (plays once per build).
+2. Step onto the plaza: the statue wakes (**The Unbroken**). At 50% its arm breaks. Its death tears
+   the gate leaves out of the wall and daylight comes through.
+3. Cross the bridge onto the island: the sky tears, night falls in two seconds, **Nihil** pours out
+   of the tear and circles the island once. Fight: 100% Hunger → 70% Starless → 40% Unmade →
+   15% Ouroboros (the world border is its body).
+4. Death: it eats its tail, then itself; "Generating world", chunks regenerate, dawn,
+   "Saving the game", the Bonus Chest generates on the podzol. Right-click it for your share.
+5. 20 s after the chest unloads the site resets itself (anyone on the island is set down on the
+   plaza) and the statue kneels again.
+
+Shortcuts: `/boss worldeater open` opens the gate without the Unbroken. `/boss worldeater status`.
+`/boss worldeater reset` despawns both bosses and rebuilds everything. `/boss spawn world_eater` /
+`/boss spawn world_eater_unbroken` anywhere else runs a *foreign-mode* fight: same moves, displays
+and client-side paint only, no block edits.
+
+## Cleanup model
+
+- **Layout is truth.** Every real block edit (statue, doors, bites, trenches, eaten chunks, rift
+  gateway blocks) happens only inside the site boxes (`SiteLayout.SITE`, which now includes
+  `RIFT`). Reset, rebuild and crash recovery all mean "make the boxes match the layout" (a job
+  spread over ticks). No journals. The state is persisted in the world PDC; on startup any
+  non-dormant state rebuilds.
+- Aborted fight → director `clear()` (displays, paint, sky/border) and the site restores the island.
+- Per-player reality (time, weather, virtual world border, client paint) is released on
+  quit/world change (`WorldEaterSiteListener`), on fight end, and on plugin disable
+  (`Senses.releaseEverything`).
+- Bonus Chest shares are delivered on expiry and on plugin disable (same contract as the
+  reliquary and music box).
+
+## Residual risks (read before shipping)
+
+- **Not compiled with Maven and not run on a server.** repo.papermc.io was blocked here. All new
+  and changed code type-checks clean with `javac` against Paper **1.21.4** API sources + Maven
+  Central deps (full BossEngine tree; the only errors are pre-existing `GENERIC_MAX_HEALTH` uses in
+  `SandboxDirector`/`SandboxFx`, a constant renamed after 1.21.1). Differences between 1.21.1 and 1.21.4 that the checker can't see
+  are possible. Run `mvn -pl BossEngine -am package` first.
+- **Balance is placeholder:** HP (50k / 150k), `BossHits` powers, cooldowns, loot chances.
+- **Display load:** Nihil is about 150 displays (the body is sent every other tick). Watch
+  client FPS and bandwidth with several viewers.
+- **Per-player sky:** `setPlayerTime` updates are stepped on 1.21.1. The star-eating beat fades
+  via per-player weather in the `the_end` biome (black sky by design).
+- **Camera pans** (`Player#lookAt`) during the arrival may feel intrusive. They're easy to drop in
+  `tickArrive`.
+- **Rubber-band teleport** at the Unmade transition moves players to where they stood 3 s earlier
+  (only onto safe ground). Anti-cheat plugins may complain.
+- The site edits only the dedicated world. Nothing in production worlds is touched unless someone
+  names a production world in `world-eater.world`. Don't.
