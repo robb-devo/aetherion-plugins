@@ -5,11 +5,27 @@
   },
   "overrides": [
     {
-      "predicate": { "custom_model_data": 2181 },
-      "model": "minecraft:item/combat_sword"
+      "predicate": {
+        "custom_model_data": 2161
+      },
+      "model": "minecraft:item/combat_sword_4"
     },
     {
-      "predicate": { "custom_model_data": 2182 },
+      "predicate": {
+        "custom_model_data": 2162
+      },
+      "model": "minecraft:item/netherite_sword_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2181
+      },
+      "model": "minecraft:item/combat_sword_5"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2182
+      },
       "model": "minecraft:item/netherite_sword_vanilla"
     }
   ]

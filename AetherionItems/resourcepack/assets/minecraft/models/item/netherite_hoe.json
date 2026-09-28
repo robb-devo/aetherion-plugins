@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:item/handheld",
+  "textures": {
+    "layer0": "minecraft:item/netherite_hoe"
+  },
+  "overrides": [
+    {
+      "predicate": {
+        "custom_model_data": 2820
+      },
+      "model": "minecraft:item/farming_hoe_4"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2821
+      },
+      "model": "minecraft:item/netherite_hoe_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2825
+      },
+      "model": "minecraft:item/farming_hoe_5"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2826
+      },
+      "model": "minecraft:item/netherite_hoe_vanilla"
+    }
+  ]
+}

@@ -6,12 +6,1458 @@
   },
   "overrides": [
     {
-      "predicate": { "custom_model_data": 2003 },
+      "model": "minecraft:item/leather_leggings_quartz_trim",
+      "predicate": {
+        "trim_type": 0.1
+      }
+    },
+    {
+      "model": "minecraft:item/leather_leggings_iron_trim",
+      "predicate": {
+        "trim_type": 0.2
+      }
+    },
+    {
+      "model": "minecraft:item/leather_leggings_netherite_trim",
+      "predicate": {
+        "trim_type": 0.3
+      }
+    },
+    {
+      "model": "minecraft:item/leather_leggings_redstone_trim",
+      "predicate": {
+        "trim_type": 0.4
+      }
+    },
+    {
+      "model": "minecraft:item/leather_leggings_copper_trim",
+      "predicate": {
+        "trim_type": 0.5
+      }
+    },
+    {
+      "model": "minecraft:item/leather_leggings_gold_trim",
+      "predicate": {
+        "trim_type": 0.6
+      }
+    },
+    {
+      "model": "minecraft:item/leather_leggings_emerald_trim",
+      "predicate": {
+        "trim_type": 0.7
+      }
+    },
+    {
+      "model": "minecraft:item/leather_leggings_diamond_trim",
+      "predicate": {
+        "trim_type": 0.8
+      }
+    },
+    {
+      "model": "minecraft:item/leather_leggings_lapis_trim",
+      "predicate": {
+        "trim_type": 0.9
+      }
+    },
+    {
+      "model": "minecraft:item/leather_leggings_amethyst_trim",
+      "predicate": {
+        "trim_type": 1.0
+      }
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2003
+      },
       "model": "minecraft:item/simple_leggings"
     },
     {
-      "predicate": { "custom_model_data": 2004 },
+      "predicate": {
+        "custom_model_data": 2004
+      },
       "model": "minecraft:item/leather_leggings_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2004,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_leggings_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2004,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_leggings_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2004,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_leggings_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2004,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_leggings_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2004,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_leggings_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2004,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_leggings_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2004,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_leggings_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2004,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_leggings_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2004,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_leggings_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2004,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_leggings_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2803
+      },
+      "model": "minecraft:item/farming_leggings"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2804
+      },
+      "model": "minecraft:item/leather_leggings_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2804,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_leggings_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2804,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_leggings_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2804,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_leggings_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2804,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_leggings_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2804,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_leggings_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2804,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_leggings_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2804,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_leggings_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2804,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_leggings_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2804,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_leggings_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2804,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_leggings_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2808
+      },
+      "model": "minecraft:item/farming_leggings_2"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2809
+      },
+      "model": "minecraft:item/leather_leggings_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2809,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_leggings_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2809,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_leggings_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2809,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_leggings_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2809,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_leggings_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2809,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_leggings_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2809,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_leggings_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2809,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_leggings_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2809,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_leggings_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2809,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_leggings_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2809,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_leggings_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2813
+      },
+      "model": "minecraft:item/farming_leggings_3"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2814
+      },
+      "model": "minecraft:item/leather_leggings_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2814,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_leggings_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2814,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_leggings_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2814,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_leggings_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2814,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_leggings_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2814,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_leggings_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2814,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_leggings_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2814,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_leggings_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2814,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_leggings_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2814,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_leggings_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2814,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_leggings_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2818
+      },
+      "model": "minecraft:item/farming_leggings_4"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2819
+      },
+      "model": "minecraft:item/leather_leggings_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2819,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_leggings_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2819,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_leggings_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2819,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_leggings_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2819,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_leggings_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2819,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_leggings_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2819,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_leggings_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2819,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_leggings_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2819,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_leggings_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2819,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_leggings_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2819,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_leggings_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2823
+      },
+      "model": "minecraft:item/farming_leggings_5"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2824
+      },
+      "model": "minecraft:item/leather_leggings_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2824,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_leggings_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2824,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_leggings_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2824,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_leggings_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2824,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_leggings_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2824,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_leggings_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2824,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_leggings_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2824,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_leggings_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2824,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_leggings_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2824,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_leggings_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2824,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_leggings_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2903
+      },
+      "model": "minecraft:item/fishing_leggings"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2904
+      },
+      "model": "minecraft:item/leather_leggings_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2904,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_leggings_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2904,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_leggings_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2904,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_leggings_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2904,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_leggings_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2904,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_leggings_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2904,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_leggings_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2904,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_leggings_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2904,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_leggings_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2904,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_leggings_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2904,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_leggings_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2908
+      },
+      "model": "minecraft:item/fishing_leggings_2"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2909
+      },
+      "model": "minecraft:item/leather_leggings_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2909,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_leggings_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2909,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_leggings_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2909,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_leggings_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2909,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_leggings_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2909,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_leggings_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2909,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_leggings_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2909,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_leggings_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2909,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_leggings_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2909,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_leggings_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2909,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_leggings_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2913
+      },
+      "model": "minecraft:item/fishing_leggings_3"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2914
+      },
+      "model": "minecraft:item/leather_leggings_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2914,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_leggings_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2914,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_leggings_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2914,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_leggings_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2914,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_leggings_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2914,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_leggings_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2914,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_leggings_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2914,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_leggings_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2914,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_leggings_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2914,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_leggings_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2914,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_leggings_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2918
+      },
+      "model": "minecraft:item/fishing_leggings_4"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2919
+      },
+      "model": "minecraft:item/leather_leggings_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2919,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_leggings_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2919,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_leggings_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2919,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_leggings_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2919,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_leggings_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2919,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_leggings_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2919,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_leggings_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2919,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_leggings_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2919,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_leggings_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2919,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_leggings_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2919,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_leggings_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2923
+      },
+      "model": "minecraft:item/fishing_leggings_5"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2924
+      },
+      "model": "minecraft:item/leather_leggings_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2924,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_leggings_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2924,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_leggings_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2924,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_leggings_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2924,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_leggings_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2924,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_leggings_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2924,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_leggings_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2924,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_leggings_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2924,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_leggings_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2924,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_leggings_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2924,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_leggings_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2942
+      },
+      "model": "minecraft:item/diving_leggings"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2943
+      },
+      "model": "minecraft:item/leather_leggings_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2943,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_leggings_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2943,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_leggings_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2943,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_leggings_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2943,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_leggings_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2943,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_leggings_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2943,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_leggings_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2943,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_leggings_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2943,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_leggings_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2943,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_leggings_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2943,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_leggings_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3103
+      },
+      "model": "minecraft:item/foraging_leggings"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3104
+      },
+      "model": "minecraft:item/leather_leggings_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3104,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_leggings_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3104,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_leggings_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3104,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_leggings_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3104,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_leggings_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3104,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_leggings_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3104,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_leggings_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3104,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_leggings_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3104,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_leggings_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3104,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_leggings_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3104,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_leggings_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3108
+      },
+      "model": "minecraft:item/foraging_leggings_2"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3109
+      },
+      "model": "minecraft:item/leather_leggings_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3109,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_leggings_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3109,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_leggings_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3109,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_leggings_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3109,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_leggings_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3109,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_leggings_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3109,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_leggings_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3109,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_leggings_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3109,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_leggings_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3109,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_leggings_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3109,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_leggings_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3113
+      },
+      "model": "minecraft:item/foraging_leggings_3"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3114
+      },
+      "model": "minecraft:item/leather_leggings_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3114,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_leggings_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3114,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_leggings_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3114,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_leggings_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3114,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_leggings_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3114,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_leggings_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3114,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_leggings_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3114,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_leggings_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3114,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_leggings_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3114,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_leggings_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3114,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_leggings_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3118
+      },
+      "model": "minecraft:item/foraging_leggings_4"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3119
+      },
+      "model": "minecraft:item/leather_leggings_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3119,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_leggings_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3119,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_leggings_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3119,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_leggings_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3119,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_leggings_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3119,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_leggings_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3119,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_leggings_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3119,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_leggings_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3119,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_leggings_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3119,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_leggings_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3119,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_leggings_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3123
+      },
+      "model": "minecraft:item/foraging_leggings_5"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3124
+      },
+      "model": "minecraft:item/leather_leggings_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3124,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_leggings_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3124,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_leggings_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3124,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_leggings_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3124,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_leggings_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3124,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_leggings_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3124,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_leggings_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3124,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_leggings_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3124,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_leggings_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3124,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_leggings_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3124,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_leggings_amethyst_trim"
     }
   ]
 }

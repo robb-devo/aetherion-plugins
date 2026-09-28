@@ -1,0 +1,20 @@
+{
+  "parent": "minecraft:item/handheld",
+  "textures": {
+    "layer0": "minecraft:item/stone_pickaxe"
+  },
+  "overrides": [
+    {
+      "predicate": {
+        "custom_model_data": 1015
+      },
+      "model": "minecraft:item/mining_pickaxe"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 1016
+      },
+      "model": "minecraft:item/stone_pickaxe_vanilla"
+    }
+  ]
+}

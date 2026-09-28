@@ -6,12 +6,1458 @@
   },
   "overrides": [
     {
-      "predicate": { "custom_model_data": 2001 },
+      "model": "minecraft:item/leather_helmet_quartz_trim",
+      "predicate": {
+        "trim_type": 0.1
+      }
+    },
+    {
+      "model": "minecraft:item/leather_helmet_iron_trim",
+      "predicate": {
+        "trim_type": 0.2
+      }
+    },
+    {
+      "model": "minecraft:item/leather_helmet_netherite_trim",
+      "predicate": {
+        "trim_type": 0.3
+      }
+    },
+    {
+      "model": "minecraft:item/leather_helmet_redstone_trim",
+      "predicate": {
+        "trim_type": 0.4
+      }
+    },
+    {
+      "model": "minecraft:item/leather_helmet_copper_trim",
+      "predicate": {
+        "trim_type": 0.5
+      }
+    },
+    {
+      "model": "minecraft:item/leather_helmet_gold_trim",
+      "predicate": {
+        "trim_type": 0.6
+      }
+    },
+    {
+      "model": "minecraft:item/leather_helmet_emerald_trim",
+      "predicate": {
+        "trim_type": 0.7
+      }
+    },
+    {
+      "model": "minecraft:item/leather_helmet_diamond_trim",
+      "predicate": {
+        "trim_type": 0.8
+      }
+    },
+    {
+      "model": "minecraft:item/leather_helmet_lapis_trim",
+      "predicate": {
+        "trim_type": 0.9
+      }
+    },
+    {
+      "model": "minecraft:item/leather_helmet_amethyst_trim",
+      "predicate": {
+        "trim_type": 1.0
+      }
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2001
+      },
       "model": "minecraft:item/simple_helmet"
     },
     {
-      "predicate": { "custom_model_data": 2002 },
+      "predicate": {
+        "custom_model_data": 2002
+      },
       "model": "minecraft:item/leather_helmet_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2002,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_helmet_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2002,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_helmet_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2002,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_helmet_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2002,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_helmet_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2002,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_helmet_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2002,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_helmet_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2002,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_helmet_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2002,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_helmet_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2002,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_helmet_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2002,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_helmet_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2801
+      },
+      "model": "minecraft:item/farming_helmet"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2802
+      },
+      "model": "minecraft:item/leather_helmet_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2802,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_helmet_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2802,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_helmet_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2802,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_helmet_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2802,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_helmet_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2802,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_helmet_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2802,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_helmet_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2802,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_helmet_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2802,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_helmet_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2802,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_helmet_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2802,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_helmet_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2806
+      },
+      "model": "minecraft:item/farming_helmet_2"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2807
+      },
+      "model": "minecraft:item/leather_helmet_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2807,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_helmet_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2807,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_helmet_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2807,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_helmet_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2807,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_helmet_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2807,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_helmet_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2807,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_helmet_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2807,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_helmet_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2807,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_helmet_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2807,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_helmet_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2807,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_helmet_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2811
+      },
+      "model": "minecraft:item/farming_helmet_3"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2812
+      },
+      "model": "minecraft:item/leather_helmet_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2812,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_helmet_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2812,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_helmet_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2812,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_helmet_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2812,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_helmet_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2812,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_helmet_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2812,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_helmet_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2812,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_helmet_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2812,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_helmet_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2812,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_helmet_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2812,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_helmet_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2816
+      },
+      "model": "minecraft:item/farming_helmet_4"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2817
+      },
+      "model": "minecraft:item/leather_helmet_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2817,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_helmet_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2817,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_helmet_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2817,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_helmet_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2817,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_helmet_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2817,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_helmet_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2817,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_helmet_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2817,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_helmet_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2817,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_helmet_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2817,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_helmet_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2817,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_helmet_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2821
+      },
+      "model": "minecraft:item/farming_helmet_5"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2822
+      },
+      "model": "minecraft:item/leather_helmet_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2822,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_helmet_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2822,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_helmet_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2822,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_helmet_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2822,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_helmet_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2822,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_helmet_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2822,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_helmet_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2822,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_helmet_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2822,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_helmet_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2822,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_helmet_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2822,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_helmet_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2901
+      },
+      "model": "minecraft:item/fishing_helmet"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2902
+      },
+      "model": "minecraft:item/leather_helmet_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2902,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_helmet_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2902,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_helmet_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2902,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_helmet_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2902,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_helmet_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2902,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_helmet_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2902,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_helmet_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2902,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_helmet_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2902,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_helmet_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2902,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_helmet_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2902,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_helmet_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2906
+      },
+      "model": "minecraft:item/fishing_helmet_2"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2907
+      },
+      "model": "minecraft:item/leather_helmet_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2907,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_helmet_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2907,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_helmet_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2907,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_helmet_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2907,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_helmet_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2907,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_helmet_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2907,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_helmet_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2907,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_helmet_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2907,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_helmet_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2907,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_helmet_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2907,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_helmet_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2911
+      },
+      "model": "minecraft:item/fishing_helmet_3"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2912
+      },
+      "model": "minecraft:item/leather_helmet_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2912,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_helmet_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2912,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_helmet_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2912,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_helmet_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2912,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_helmet_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2912,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_helmet_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2912,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_helmet_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2912,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_helmet_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2912,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_helmet_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2912,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_helmet_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2912,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_helmet_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2916
+      },
+      "model": "minecraft:item/fishing_helmet_4"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2917
+      },
+      "model": "minecraft:item/leather_helmet_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2917,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_helmet_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2917,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_helmet_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2917,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_helmet_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2917,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_helmet_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2917,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_helmet_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2917,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_helmet_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2917,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_helmet_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2917,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_helmet_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2917,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_helmet_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2917,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_helmet_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2921
+      },
+      "model": "minecraft:item/fishing_helmet_5"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2922
+      },
+      "model": "minecraft:item/leather_helmet_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2922,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_helmet_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2922,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_helmet_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2922,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_helmet_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2922,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_helmet_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2922,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_helmet_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2922,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_helmet_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2922,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_helmet_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2922,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_helmet_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2922,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_helmet_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2922,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_helmet_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2940
+      },
+      "model": "minecraft:item/diving_helmet"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2941
+      },
+      "model": "minecraft:item/leather_helmet_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2941,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_helmet_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2941,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_helmet_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2941,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_helmet_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2941,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_helmet_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2941,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_helmet_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2941,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_helmet_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2941,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_helmet_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2941,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_helmet_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2941,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_helmet_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2941,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_helmet_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3101
+      },
+      "model": "minecraft:item/foraging_helmet"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3102
+      },
+      "model": "minecraft:item/leather_helmet_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3102,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_helmet_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3102,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_helmet_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3102,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_helmet_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3102,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_helmet_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3102,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_helmet_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3102,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_helmet_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3102,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_helmet_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3102,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_helmet_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3102,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_helmet_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3102,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_helmet_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3106
+      },
+      "model": "minecraft:item/foraging_helmet_2"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3107
+      },
+      "model": "minecraft:item/leather_helmet_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3107,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_helmet_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3107,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_helmet_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3107,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_helmet_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3107,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_helmet_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3107,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_helmet_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3107,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_helmet_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3107,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_helmet_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3107,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_helmet_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3107,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_helmet_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3107,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_helmet_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3111
+      },
+      "model": "minecraft:item/foraging_helmet_3"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3112
+      },
+      "model": "minecraft:item/leather_helmet_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3112,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_helmet_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3112,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_helmet_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3112,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_helmet_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3112,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_helmet_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3112,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_helmet_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3112,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_helmet_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3112,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_helmet_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3112,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_helmet_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3112,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_helmet_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3112,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_helmet_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3116
+      },
+      "model": "minecraft:item/foraging_helmet_4"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3117
+      },
+      "model": "minecraft:item/leather_helmet_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3117,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_helmet_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3117,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_helmet_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3117,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_helmet_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3117,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_helmet_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3117,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_helmet_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3117,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_helmet_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3117,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_helmet_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3117,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_helmet_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3117,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_helmet_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3117,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_helmet_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3121
+      },
+      "model": "minecraft:item/foraging_helmet_5"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3122
+      },
+      "model": "minecraft:item/leather_helmet_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3122,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_helmet_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3122,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_helmet_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3122,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_helmet_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3122,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_helmet_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3122,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_helmet_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3122,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_helmet_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3122,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_helmet_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3122,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_helmet_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3122,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_helmet_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3122,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_helmet_amethyst_trim"
     }
   ]
 }

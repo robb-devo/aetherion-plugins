@@ -9,6 +9,24 @@
         "custom_model_data": 1003
       },
       "model": "minecraft:item/simple_axe"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 1004
+      },
+      "model": "minecraft:item/wooden_axe_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3105
+      },
+      "model": "minecraft:item/foraging_axe"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3106
+      },
+      "model": "minecraft:item/wooden_axe_vanilla"
     }
   ]
 }

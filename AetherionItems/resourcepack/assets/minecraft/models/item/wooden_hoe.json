@@ -9,6 +9,24 @@
         "custom_model_data": 1005
       },
       "model": "minecraft:item/simple_hoe"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 1006
+      },
+      "model": "minecraft:item/wooden_hoe_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2805
+      },
+      "model": "minecraft:item/farming_hoe"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2806
+      },
+      "model": "minecraft:item/wooden_hoe_vanilla"
     }
   ]
 }

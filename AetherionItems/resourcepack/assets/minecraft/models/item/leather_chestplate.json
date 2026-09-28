@@ -6,12 +6,1458 @@
   },
   "overrides": [
     {
-      "predicate": { "custom_model_data": 2002 },
+      "model": "minecraft:item/leather_chestplate_quartz_trim",
+      "predicate": {
+        "trim_type": 0.1
+      }
+    },
+    {
+      "model": "minecraft:item/leather_chestplate_iron_trim",
+      "predicate": {
+        "trim_type": 0.2
+      }
+    },
+    {
+      "model": "minecraft:item/leather_chestplate_netherite_trim",
+      "predicate": {
+        "trim_type": 0.3
+      }
+    },
+    {
+      "model": "minecraft:item/leather_chestplate_redstone_trim",
+      "predicate": {
+        "trim_type": 0.4
+      }
+    },
+    {
+      "model": "minecraft:item/leather_chestplate_copper_trim",
+      "predicate": {
+        "trim_type": 0.5
+      }
+    },
+    {
+      "model": "minecraft:item/leather_chestplate_gold_trim",
+      "predicate": {
+        "trim_type": 0.6
+      }
+    },
+    {
+      "model": "minecraft:item/leather_chestplate_emerald_trim",
+      "predicate": {
+        "trim_type": 0.7
+      }
+    },
+    {
+      "model": "minecraft:item/leather_chestplate_diamond_trim",
+      "predicate": {
+        "trim_type": 0.8
+      }
+    },
+    {
+      "model": "minecraft:item/leather_chestplate_lapis_trim",
+      "predicate": {
+        "trim_type": 0.9
+      }
+    },
+    {
+      "model": "minecraft:item/leather_chestplate_amethyst_trim",
+      "predicate": {
+        "trim_type": 1.0
+      }
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2002
+      },
       "model": "minecraft:item/simple_chestplate"
     },
     {
-      "predicate": { "custom_model_data": 2003 },
+      "predicate": {
+        "custom_model_data": 2003
+      },
       "model": "minecraft:item/leather_chestplate_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2003,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_chestplate_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2003,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_chestplate_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2003,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_chestplate_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2003,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_chestplate_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2003,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_chestplate_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2003,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_chestplate_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2003,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_chestplate_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2003,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_chestplate_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2003,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_chestplate_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2003,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_chestplate_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2802
+      },
+      "model": "minecraft:item/farming_chestplate"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2803
+      },
+      "model": "minecraft:item/leather_chestplate_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2803,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_chestplate_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2803,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_chestplate_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2803,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_chestplate_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2803,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_chestplate_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2803,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_chestplate_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2803,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_chestplate_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2803,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_chestplate_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2803,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_chestplate_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2803,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_chestplate_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2803,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_chestplate_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2807
+      },
+      "model": "minecraft:item/farming_chestplate_2"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2808
+      },
+      "model": "minecraft:item/leather_chestplate_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2808,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_chestplate_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2808,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_chestplate_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2808,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_chestplate_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2808,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_chestplate_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2808,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_chestplate_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2808,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_chestplate_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2808,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_chestplate_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2808,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_chestplate_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2808,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_chestplate_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2808,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_chestplate_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2812
+      },
+      "model": "minecraft:item/farming_chestplate_3"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2813
+      },
+      "model": "minecraft:item/leather_chestplate_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2813,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_chestplate_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2813,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_chestplate_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2813,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_chestplate_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2813,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_chestplate_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2813,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_chestplate_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2813,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_chestplate_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2813,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_chestplate_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2813,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_chestplate_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2813,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_chestplate_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2813,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_chestplate_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2817
+      },
+      "model": "minecraft:item/farming_chestplate_4"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2818
+      },
+      "model": "minecraft:item/leather_chestplate_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2818,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_chestplate_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2818,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_chestplate_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2818,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_chestplate_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2818,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_chestplate_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2818,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_chestplate_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2818,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_chestplate_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2818,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_chestplate_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2818,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_chestplate_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2818,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_chestplate_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2818,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_chestplate_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2822
+      },
+      "model": "minecraft:item/farming_chestplate_5"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2823
+      },
+      "model": "minecraft:item/leather_chestplate_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2823,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_chestplate_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2823,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_chestplate_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2823,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_chestplate_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2823,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_chestplate_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2823,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_chestplate_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2823,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_chestplate_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2823,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_chestplate_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2823,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_chestplate_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2823,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_chestplate_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2823,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_chestplate_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2902
+      },
+      "model": "minecraft:item/fishing_chestplate"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2903
+      },
+      "model": "minecraft:item/leather_chestplate_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2903,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_chestplate_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2903,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_chestplate_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2903,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_chestplate_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2903,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_chestplate_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2903,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_chestplate_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2903,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_chestplate_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2903,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_chestplate_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2903,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_chestplate_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2903,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_chestplate_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2903,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_chestplate_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2907
+      },
+      "model": "minecraft:item/fishing_chestplate_2"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2908
+      },
+      "model": "minecraft:item/leather_chestplate_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2908,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_chestplate_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2908,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_chestplate_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2908,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_chestplate_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2908,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_chestplate_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2908,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_chestplate_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2908,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_chestplate_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2908,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_chestplate_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2908,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_chestplate_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2908,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_chestplate_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2908,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_chestplate_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2912
+      },
+      "model": "minecraft:item/fishing_chestplate_3"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2913
+      },
+      "model": "minecraft:item/leather_chestplate_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2913,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_chestplate_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2913,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_chestplate_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2913,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_chestplate_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2913,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_chestplate_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2913,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_chestplate_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2913,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_chestplate_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2913,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_chestplate_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2913,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_chestplate_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2913,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_chestplate_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2913,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_chestplate_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2917
+      },
+      "model": "minecraft:item/fishing_chestplate_4"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2918
+      },
+      "model": "minecraft:item/leather_chestplate_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2918,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_chestplate_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2918,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_chestplate_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2918,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_chestplate_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2918,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_chestplate_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2918,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_chestplate_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2918,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_chestplate_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2918,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_chestplate_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2918,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_chestplate_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2918,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_chestplate_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2918,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_chestplate_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2922
+      },
+      "model": "minecraft:item/fishing_chestplate_5"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2923
+      },
+      "model": "minecraft:item/leather_chestplate_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2923,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_chestplate_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2923,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_chestplate_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2923,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_chestplate_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2923,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_chestplate_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2923,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_chestplate_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2923,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_chestplate_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2923,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_chestplate_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2923,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_chestplate_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2923,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_chestplate_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2923,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_chestplate_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2941
+      },
+      "model": "minecraft:item/diving_chestplate"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2942
+      },
+      "model": "minecraft:item/leather_chestplate_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2942,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_chestplate_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2942,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_chestplate_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2942,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_chestplate_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2942,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_chestplate_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2942,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_chestplate_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2942,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_chestplate_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2942,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_chestplate_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2942,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_chestplate_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2942,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_chestplate_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2942,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_chestplate_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3102
+      },
+      "model": "minecraft:item/foraging_chestplate"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3103
+      },
+      "model": "minecraft:item/leather_chestplate_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3103,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_chestplate_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3103,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_chestplate_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3103,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_chestplate_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3103,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_chestplate_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3103,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_chestplate_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3103,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_chestplate_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3103,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_chestplate_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3103,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_chestplate_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3103,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_chestplate_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3103,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_chestplate_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3107
+      },
+      "model": "minecraft:item/foraging_chestplate_2"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3108
+      },
+      "model": "minecraft:item/leather_chestplate_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3108,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_chestplate_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3108,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_chestplate_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3108,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_chestplate_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3108,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_chestplate_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3108,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_chestplate_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3108,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_chestplate_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3108,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_chestplate_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3108,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_chestplate_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3108,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_chestplate_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3108,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_chestplate_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3112
+      },
+      "model": "minecraft:item/foraging_chestplate_3"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3113
+      },
+      "model": "minecraft:item/leather_chestplate_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3113,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_chestplate_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3113,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_chestplate_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3113,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_chestplate_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3113,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_chestplate_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3113,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_chestplate_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3113,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_chestplate_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3113,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_chestplate_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3113,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_chestplate_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3113,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_chestplate_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3113,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_chestplate_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3117
+      },
+      "model": "minecraft:item/foraging_chestplate_4"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3118
+      },
+      "model": "minecraft:item/leather_chestplate_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3118,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_chestplate_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3118,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_chestplate_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3118,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_chestplate_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3118,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_chestplate_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3118,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_chestplate_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3118,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_chestplate_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3118,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_chestplate_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3118,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_chestplate_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3118,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_chestplate_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3118,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_chestplate_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3122
+      },
+      "model": "minecraft:item/foraging_chestplate_5"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3123
+      },
+      "model": "minecraft:item/leather_chestplate_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3123,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_chestplate_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3123,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_chestplate_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3123,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_chestplate_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3123,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_chestplate_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3123,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_chestplate_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3123,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_chestplate_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3123,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_chestplate_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3123,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_chestplate_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3123,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_chestplate_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3123,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_chestplate_amethyst_trim"
     }
   ]
 }

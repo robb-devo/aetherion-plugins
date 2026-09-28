@@ -6,12 +6,1458 @@
   },
   "overrides": [
     {
-      "predicate": { "custom_model_data": 2004 },
+      "model": "minecraft:item/leather_boots_quartz_trim",
+      "predicate": {
+        "trim_type": 0.1
+      }
+    },
+    {
+      "model": "minecraft:item/leather_boots_iron_trim",
+      "predicate": {
+        "trim_type": 0.2
+      }
+    },
+    {
+      "model": "minecraft:item/leather_boots_netherite_trim",
+      "predicate": {
+        "trim_type": 0.3
+      }
+    },
+    {
+      "model": "minecraft:item/leather_boots_redstone_trim",
+      "predicate": {
+        "trim_type": 0.4
+      }
+    },
+    {
+      "model": "minecraft:item/leather_boots_copper_trim",
+      "predicate": {
+        "trim_type": 0.5
+      }
+    },
+    {
+      "model": "minecraft:item/leather_boots_gold_trim",
+      "predicate": {
+        "trim_type": 0.6
+      }
+    },
+    {
+      "model": "minecraft:item/leather_boots_emerald_trim",
+      "predicate": {
+        "trim_type": 0.7
+      }
+    },
+    {
+      "model": "minecraft:item/leather_boots_diamond_trim",
+      "predicate": {
+        "trim_type": 0.8
+      }
+    },
+    {
+      "model": "minecraft:item/leather_boots_lapis_trim",
+      "predicate": {
+        "trim_type": 0.9
+      }
+    },
+    {
+      "model": "minecraft:item/leather_boots_amethyst_trim",
+      "predicate": {
+        "trim_type": 1.0
+      }
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2004
+      },
       "model": "minecraft:item/simple_boots"
     },
     {
-      "predicate": { "custom_model_data": 2005 },
+      "predicate": {
+        "custom_model_data": 2005
+      },
       "model": "minecraft:item/leather_boots_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2005,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_boots_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2005,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_boots_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2005,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_boots_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2005,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_boots_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2005,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_boots_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2005,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_boots_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2005,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_boots_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2005,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_boots_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2005,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_boots_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2005,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_boots_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2804
+      },
+      "model": "minecraft:item/farming_boots"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2805
+      },
+      "model": "minecraft:item/leather_boots_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2805,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_boots_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2805,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_boots_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2805,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_boots_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2805,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_boots_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2805,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_boots_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2805,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_boots_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2805,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_boots_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2805,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_boots_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2805,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_boots_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2805,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_boots_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2809
+      },
+      "model": "minecraft:item/farming_boots_2"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2810
+      },
+      "model": "minecraft:item/leather_boots_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2810,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_boots_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2810,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_boots_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2810,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_boots_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2810,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_boots_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2810,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_boots_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2810,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_boots_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2810,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_boots_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2810,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_boots_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2810,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_boots_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2810,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_boots_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2814
+      },
+      "model": "minecraft:item/farming_boots_3"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2815
+      },
+      "model": "minecraft:item/leather_boots_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2815,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_boots_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2815,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_boots_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2815,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_boots_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2815,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_boots_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2815,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_boots_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2815,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_boots_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2815,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_boots_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2815,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_boots_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2815,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_boots_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2815,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_boots_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2819
+      },
+      "model": "minecraft:item/farming_boots_4"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2820
+      },
+      "model": "minecraft:item/leather_boots_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2820,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_boots_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2820,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_boots_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2820,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_boots_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2820,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_boots_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2820,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_boots_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2820,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_boots_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2820,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_boots_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2820,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_boots_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2820,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_boots_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2820,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_boots_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2824
+      },
+      "model": "minecraft:item/farming_boots_5"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2825
+      },
+      "model": "minecraft:item/leather_boots_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2825,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_boots_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2825,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_boots_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2825,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_boots_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2825,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_boots_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2825,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_boots_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2825,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_boots_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2825,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_boots_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2825,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_boots_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2825,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_boots_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2825,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_boots_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2904
+      },
+      "model": "minecraft:item/fishing_boots"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2905
+      },
+      "model": "minecraft:item/leather_boots_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2905,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_boots_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2905,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_boots_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2905,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_boots_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2905,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_boots_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2905,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_boots_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2905,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_boots_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2905,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_boots_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2905,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_boots_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2905,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_boots_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2905,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_boots_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2909
+      },
+      "model": "minecraft:item/fishing_boots_2"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2910
+      },
+      "model": "minecraft:item/leather_boots_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2910,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_boots_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2910,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_boots_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2910,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_boots_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2910,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_boots_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2910,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_boots_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2910,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_boots_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2910,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_boots_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2910,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_boots_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2910,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_boots_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2910,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_boots_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2914
+      },
+      "model": "minecraft:item/fishing_boots_3"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2915
+      },
+      "model": "minecraft:item/leather_boots_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2915,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_boots_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2915,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_boots_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2915,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_boots_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2915,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_boots_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2915,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_boots_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2915,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_boots_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2915,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_boots_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2915,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_boots_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2915,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_boots_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2915,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_boots_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2919
+      },
+      "model": "minecraft:item/fishing_boots_4"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2920
+      },
+      "model": "minecraft:item/leather_boots_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2920,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_boots_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2920,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_boots_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2920,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_boots_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2920,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_boots_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2920,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_boots_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2920,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_boots_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2920,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_boots_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2920,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_boots_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2920,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_boots_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2920,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_boots_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2924
+      },
+      "model": "minecraft:item/fishing_boots_5"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2925
+      },
+      "model": "minecraft:item/leather_boots_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2925,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_boots_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2925,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_boots_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2925,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_boots_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2925,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_boots_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2925,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_boots_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2925,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_boots_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2925,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_boots_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2925,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_boots_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2925,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_boots_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2925,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_boots_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2943
+      },
+      "model": "minecraft:item/diving_boots"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2944
+      },
+      "model": "minecraft:item/leather_boots_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2944,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_boots_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2944,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_boots_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2944,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_boots_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2944,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_boots_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2944,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_boots_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2944,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_boots_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2944,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_boots_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2944,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_boots_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2944,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_boots_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2944,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_boots_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3104
+      },
+      "model": "minecraft:item/foraging_boots"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3105
+      },
+      "model": "minecraft:item/leather_boots_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3105,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_boots_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3105,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_boots_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3105,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_boots_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3105,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_boots_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3105,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_boots_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3105,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_boots_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3105,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_boots_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3105,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_boots_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3105,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_boots_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3105,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_boots_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3109
+      },
+      "model": "minecraft:item/foraging_boots_2"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3110
+      },
+      "model": "minecraft:item/leather_boots_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3110,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_boots_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3110,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_boots_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3110,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_boots_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3110,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_boots_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3110,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_boots_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3110,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_boots_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3110,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_boots_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3110,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_boots_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3110,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_boots_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3110,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_boots_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3114
+      },
+      "model": "minecraft:item/foraging_boots_3"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3115
+      },
+      "model": "minecraft:item/leather_boots_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3115,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_boots_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3115,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_boots_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3115,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_boots_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3115,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_boots_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3115,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_boots_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3115,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_boots_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3115,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_boots_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3115,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_boots_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3115,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_boots_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3115,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_boots_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3119
+      },
+      "model": "minecraft:item/foraging_boots_4"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3120
+      },
+      "model": "minecraft:item/leather_boots_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3120,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_boots_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3120,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_boots_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3120,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_boots_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3120,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_boots_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3120,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_boots_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3120,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_boots_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3120,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_boots_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3120,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_boots_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3120,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_boots_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3120,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_boots_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3124
+      },
+      "model": "minecraft:item/foraging_boots_5"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3125
+      },
+      "model": "minecraft:item/leather_boots_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3125,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/leather_boots_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3125,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/leather_boots_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3125,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/leather_boots_netherite_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3125,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/leather_boots_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3125,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/leather_boots_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3125,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/leather_boots_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3125,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/leather_boots_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3125,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/leather_boots_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3125,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/leather_boots_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3125,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/leather_boots_amethyst_trim"
     }
   ]
 }

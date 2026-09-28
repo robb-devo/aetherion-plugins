@@ -9,6 +9,12 @@
         "custom_model_data": 1004
       },
       "model": "minecraft:item/simple_sword"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 1005
+      },
+      "model": "minecraft:item/wooden_sword_vanilla"
     }
   ]
 }

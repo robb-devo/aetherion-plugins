@@ -1,0 +1,109 @@
+{
+  "parent": "item/handheld_rod",
+  "textures": {
+    "layer0": "item/fishing_rod"
+  },
+  "overrides": [
+    {
+      "predicate": {
+        "cast": 1
+      },
+      "model": "item/fishing_rod_cast"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2905
+      },
+      "model": "minecraft:item/fishing_rod_t1"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2906
+      },
+      "model": "minecraft:item/fishing_rod_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2906,
+        "cast": 1
+      },
+      "model": "item/fishing_rod_cast"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2910
+      },
+      "model": "minecraft:item/fishing_rod_t2"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2911
+      },
+      "model": "minecraft:item/fishing_rod_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2911,
+        "cast": 1
+      },
+      "model": "item/fishing_rod_cast"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2915
+      },
+      "model": "minecraft:item/fishing_rod_t3"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2916
+      },
+      "model": "minecraft:item/fishing_rod_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2916,
+        "cast": 1
+      },
+      "model": "item/fishing_rod_cast"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2920
+      },
+      "model": "minecraft:item/fishing_rod_t4"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2921
+      },
+      "model": "minecraft:item/fishing_rod_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2921,
+        "cast": 1
+      },
+      "model": "item/fishing_rod_cast"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2925
+      },
+      "model": "minecraft:item/fishing_rod_t5"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2926
+      },
+      "model": "minecraft:item/fishing_rod_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2926,
+        "cast": 1
+      },
+      "model": "item/fishing_rod_cast"
+    }
+  ]
+}

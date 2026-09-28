@@ -5,20 +5,392 @@
   },
   "overrides": [
     {
-      "predicate": { "custom_model_data": 2172 },
-      "model": "minecraft:item/combat_chestplate"
+      "model": "minecraft:item/netherite_chestplate_quartz_trim",
+      "predicate": {
+        "trim_type": 0.1
+      }
     },
     {
-      "predicate": { "custom_model_data": 2173 },
+      "model": "minecraft:item/netherite_chestplate_iron_trim",
+      "predicate": {
+        "trim_type": 0.2
+      }
+    },
+    {
+      "model": "minecraft:item/netherite_chestplate_netherite_darker_trim",
+      "predicate": {
+        "trim_type": 0.3
+      }
+    },
+    {
+      "model": "minecraft:item/netherite_chestplate_redstone_trim",
+      "predicate": {
+        "trim_type": 0.4
+      }
+    },
+    {
+      "model": "minecraft:item/netherite_chestplate_copper_trim",
+      "predicate": {
+        "trim_type": 0.5
+      }
+    },
+    {
+      "model": "minecraft:item/netherite_chestplate_gold_trim",
+      "predicate": {
+        "trim_type": 0.6
+      }
+    },
+    {
+      "model": "minecraft:item/netherite_chestplate_emerald_trim",
+      "predicate": {
+        "trim_type": 0.7
+      }
+    },
+    {
+      "model": "minecraft:item/netherite_chestplate_diamond_trim",
+      "predicate": {
+        "trim_type": 0.8
+      }
+    },
+    {
+      "model": "minecraft:item/netherite_chestplate_lapis_trim",
+      "predicate": {
+        "trim_type": 0.9
+      }
+    },
+    {
+      "model": "minecraft:item/netherite_chestplate_amethyst_trim",
+      "predicate": {
+        "trim_type": 1.0
+      }
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2152
+      },
+      "model": "minecraft:item/combat_chestplate_4"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2153
+      },
       "model": "minecraft:item/netherite_chestplate_vanilla"
     },
     {
-      "predicate": { "custom_model_data": 2272 },
-      "model": "minecraft:item/mining_chestplate"
+      "predicate": {
+        "custom_model_data": 2153,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/netherite_chestplate_quartz_trim"
     },
     {
-      "predicate": { "custom_model_data": 2273 },
+      "predicate": {
+        "custom_model_data": 2153,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/netherite_chestplate_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2153,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/netherite_chestplate_netherite_darker_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2153,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/netherite_chestplate_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2153,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/netherite_chestplate_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2153,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/netherite_chestplate_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2153,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/netherite_chestplate_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2153,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/netherite_chestplate_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2153,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/netherite_chestplate_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2153,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/netherite_chestplate_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2172
+      },
+      "model": "minecraft:item/combat_chestplate_5"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2173
+      },
       "model": "minecraft:item/netherite_chestplate_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2173,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/netherite_chestplate_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2173,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/netherite_chestplate_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2173,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/netherite_chestplate_netherite_darker_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2173,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/netherite_chestplate_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2173,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/netherite_chestplate_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2173,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/netherite_chestplate_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2173,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/netherite_chestplate_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2173,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/netherite_chestplate_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2173,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/netherite_chestplate_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2173,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/netherite_chestplate_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2252
+      },
+      "model": "minecraft:item/mining_chestplate_4"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2253
+      },
+      "model": "minecraft:item/netherite_chestplate_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2253,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/netherite_chestplate_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2253,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/netherite_chestplate_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2253,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/netherite_chestplate_netherite_darker_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2253,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/netherite_chestplate_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2253,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/netherite_chestplate_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2253,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/netherite_chestplate_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2253,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/netherite_chestplate_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2253,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/netherite_chestplate_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2253,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/netherite_chestplate_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2253,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/netherite_chestplate_amethyst_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2272
+      },
+      "model": "minecraft:item/mining_chestplate_5"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2273
+      },
+      "model": "minecraft:item/netherite_chestplate_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2273,
+        "trim_type": 0.1
+      },
+      "model": "minecraft:item/netherite_chestplate_quartz_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2273,
+        "trim_type": 0.2
+      },
+      "model": "minecraft:item/netherite_chestplate_iron_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2273,
+        "trim_type": 0.3
+      },
+      "model": "minecraft:item/netherite_chestplate_netherite_darker_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2273,
+        "trim_type": 0.4
+      },
+      "model": "minecraft:item/netherite_chestplate_redstone_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2273,
+        "trim_type": 0.5
+      },
+      "model": "minecraft:item/netherite_chestplate_copper_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2273,
+        "trim_type": 0.6
+      },
+      "model": "minecraft:item/netherite_chestplate_gold_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2273,
+        "trim_type": 0.7
+      },
+      "model": "minecraft:item/netherite_chestplate_emerald_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2273,
+        "trim_type": 0.8
+      },
+      "model": "minecraft:item/netherite_chestplate_diamond_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2273,
+        "trim_type": 0.9
+      },
+      "model": "minecraft:item/netherite_chestplate_lapis_trim"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2273,
+        "trim_type": 1.0
+      },
+      "model": "minecraft:item/netherite_chestplate_amethyst_trim"
     }
   ]
 }

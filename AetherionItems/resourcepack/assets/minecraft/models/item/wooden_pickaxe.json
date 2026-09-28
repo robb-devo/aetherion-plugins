@@ -9,6 +9,12 @@
         "custom_model_data": 1002
       },
       "model": "minecraft:item/simple_pickaxe"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 1003
+      },
+      "model": "minecraft:item/wooden_pickaxe_vanilla"
     }
   ]
 }
