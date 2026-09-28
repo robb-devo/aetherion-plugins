@@ -12,6 +12,7 @@ import de.aetherion.bossengine.instance.saint.HangingSaintDirector;
 import de.aetherion.bossengine.loot.HollowReliquary;
 import de.aetherion.bossengine.loot.LootService;
 import de.aetherion.bossengine.loot.SeraphineMusicBox;
+import de.aetherion.bossengine.loot.WorldEaterBonusChest;
 import de.aetherion.bossengine.model.BossTemplate;
 import de.aetherion.bossengine.model.LeashAction;
 import de.aetherion.bossengine.model.SpawnCondition;
@@ -49,6 +50,10 @@ public class BossManager {
     private static final long RELIQUARY_DELAY_TICKS = 30L;
     /** Quiet beat after Seraphine's death before the music box lowers. */
     private static final int MUSIC_BOX_DELAY_TICKS = 40;
+    /** The World Eater pays through the Bonus Chest that generates once the world is saved. */
+    private static final String BONUS_CHEST_BOSS = de.aetherion.bossengine.instance.worldeater.WorldEaterSite.EATER_ID;
+    /** Beat after "Saved the game" before the Bonus Chest starts generating. */
+    private static final int BONUS_CHEST_DELAY_TICKS = 20;
 
     private final JavaPlugin plugin;
     private final TemplateManager templates;
@@ -523,7 +528,7 @@ public class BossManager {
             killer = instance.getDamageTracker().topDamager().orElse(null);
         }
         BossDeathEvent event = lootService.buildDeathEvent(instance, killer);
-        if (!payIntoMusicBox(instance, event) && !payIntoReliquary(instance, event)) {
+        if (!payIntoMusicBox(instance, event) && !payIntoReliquary(instance, event) && !payIntoBonusChest(instance, event)) {
             lootService.grant(event);
         }
         onDeath(instance);
@@ -556,6 +561,39 @@ public class BossManager {
                 bundles,
                 MUSIC_BOX_DELAY_TICKS,
                 () -> releaseChunks(stage)
+        );
+        return true;
+    }
+
+    /**
+     * The World Eater pays through a Bonus Chest that generates at the heart of the regenerated
+     * island (or where it was summoned): XP and the recap land now, the items wait in the chest.
+     * At the site, the chest closing lets the site reset itself.
+     */
+    private boolean payIntoBonusChest(BossInstance instance, BossDeathEvent event) {
+        if (instance.getTemplate() == null || !BONUS_CHEST_BOSS.equalsIgnoreCase(instance.getTemplate().getId())) {
+            return false;
+        }
+        Location spot = instance.getWorldEaterChestSpot();
+        if (spot == null) {
+            spot = instance.getSpawnLocation();
+        }
+        if (spot == null || spot.getWorld() == null) {
+            return false;
+        }
+        Map<UUID, List<ItemStack>> bundles = lootService.grantToChest(event);
+        Location at = spot.clone();
+        retainChunks(at);
+        WorldEaterBonusChest.place(
+                plugin,
+                at,
+                instance.getTemplate().getDisplayName(),
+                bundles,
+                BONUS_CHEST_DELAY_TICKS,
+                () -> {
+                    releaseChunks(at);
+                    de.aetherion.bossengine.instance.worldeater.WorldEaterSite.chestFinished();
+                }
         );
         return true;
     }

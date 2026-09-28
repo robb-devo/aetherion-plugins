@@ -615,7 +615,8 @@ public final class WorldEaterDirector {
             }
             d += 0.5f;
         }
-        return d + extra;
+        // A line that never crosses the island (someone standing off it) stays short.
+        return Math.min(60f, (entered ? d : 30f) + extra);
     }
 
     private int cornerNearest(Vector3f p) {

@@ -22,3 +22,10 @@ announce-death: false
 
 # Debug-Logs für Skills, Spawner und WorldGuard-Bypass.
 debug: false
+
+# World Eater: "the Last Seed", its own void world (approach road, the Unbroken's
+# gate, the island Nihil eats). /boss worldeater create|build|go|reset|open|status
+world-eater:
+  world: world_eater
+  # Load the world on startup if its folder exists (BossEngine supplies the generator).
+  auto-load: true

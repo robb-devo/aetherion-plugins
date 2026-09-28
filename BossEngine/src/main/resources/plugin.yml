@@ -21,7 +21,7 @@ softdepend:
 commands:
   boss:
     description: BossEngine admin command
-    usage: /boss <spawn|kill|list|reload|give|info>
+    usage: /boss <spawn|kill|list|reload|give|info|stage|worldeater>
     permission: bossengine.admin
     aliases:
       - bossengine

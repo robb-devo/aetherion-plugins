@@ -72,6 +72,8 @@ public final class BossEngine extends JavaPlugin {
         saveResourceIfMissing("bosses/ashen_chainwarden.yml");
         saveResourceIfMissing("bosses/cinder_herald.yml");
         saveResourceIfMissing("bosses/hanging_saint.yml");
+        saveResourceIfMissing("bosses/world_eater_unbroken.yml");
+        saveResourceIfMissing("bosses/world_eater.yml");
 
         keys = new BossKeys(this);
         skillRegistry = new SkillRegistry(getLogger());
@@ -129,6 +131,16 @@ public final class BossEngine extends JavaPlugin {
                 new de.aetherion.bossengine.listener.SeraphineMusicBoxListener(),
                 this
         );
+        getServer().getPluginManager().registerEvents(
+                new de.aetherion.bossengine.listener.WorldEaterChestListener(),
+                this
+        );
+        getServer().getPluginManager().registerEvents(
+                new de.aetherion.bossengine.listener.WorldEaterSiteListener(),
+                this
+        );
+        // The Last Seed: the World Eater's void world. Idle unless that world is loaded and built.
+        de.aetherion.bossengine.instance.worldeater.WorldEaterSite.start(this);
         getServer().getScheduler().runTask(this, () -> {
             for (org.bukkit.entity.Player player : getServer().getOnlinePlayers()) {
                 de.aetherion.bossengine.skill.t2.T2Mechanics.clearInvert(player);
@@ -207,7 +219,11 @@ public final class BossEngine extends JavaPlugin {
         // Hands out any share still sitting in a reliquary / music box, then strips displays.
         de.aetherion.bossengine.loot.HollowReliquary.clearAll();
         de.aetherion.bossengine.loot.SeraphineMusicBox.clearAll();
+        de.aetherion.bossengine.loot.WorldEaterBonusChest.clearAll();
         de.aetherion.bossengine.instance.saint.SaintStage.strikeAwaiting(this);
+        // Every player's own sky, weather and world border go back to normal.
+        de.aetherion.bossengine.instance.worldeater.WorldEaterSite.stop();
+        de.aetherion.bossengine.instance.worldeater.Senses.releaseEverything();
         getLogger().info("BossEngine disabled.");
     }
 
@@ -229,6 +245,19 @@ public final class BossEngine extends JavaPlugin {
             bossManager.reclaimOrphans(spawnerManager);
             spawnerManager.start();
         });
+    }
+
+    /**
+     * World generator for the World Eater's void world:
+     * {@code /mv create world_eater normal -g BossEngine:worldeater}, or {@code /boss worldeater create}.
+     */
+    @Override
+    public org.bukkit.generator.ChunkGenerator getDefaultWorldGenerator(String worldName, String id) {
+        if (id == null || id.isBlank()
+                || de.aetherion.bossengine.instance.worldeater.WorldEaterVoid.GENERATOR_ID.equalsIgnoreCase(id)) {
+            return new de.aetherion.bossengine.instance.worldeater.WorldEaterVoid();
+        }
+        return null;
     }
 
     public static BossEngine getInstance() {

@@ -109,7 +109,7 @@ public final class WorldEaterSite {
         }
         site = new WorldEaterSite(plugin);
         site.task = Bukkit.getScheduler().runTaskTimer(plugin, site::tick, 20L, 1L);
-        if (plugin.getConfig().getBoolean("world-eater.auto-load", false)
+        if (plugin.getConfig().getBoolean("world-eater.auto-load", true)
                 && new java.io.File(Bukkit.getWorldContainer(), site.worldName).isDirectory()) {
             Bukkit.getScheduler().runTask(plugin, () -> site.createWorld());
         }

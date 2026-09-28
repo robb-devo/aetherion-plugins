@@ -86,6 +86,10 @@ public class BossInstance {
     private final SandboxDirector sandboxDirector = new SandboxDirector(this);
     private final de.aetherion.bossengine.instance.saint.HangingSaintDirector saintDirector =
             new de.aetherion.bossengine.instance.saint.HangingSaintDirector(this);
+    private final de.aetherion.bossengine.instance.worldeater.UnbrokenDirector unbrokenDirector =
+            new de.aetherion.bossengine.instance.worldeater.UnbrokenDirector(this);
+    private final de.aetherion.bossengine.instance.worldeater.WorldEaterDirector worldEaterDirector =
+            new de.aetherion.bossengine.instance.worldeater.WorldEaterDirector(this);
     private final TransitionSpectacles spectacles = new TransitionSpectacles(this);
     private final Map<AbstractBossSkill, Long> lastCastTick = new IdentityHashMap<>();
     private final Set<String> announced = new HashSet<>();
@@ -280,6 +284,8 @@ public class BossInstance {
             sovereignDirector.onBind();
             sandboxDirector.onBind();
             saintDirector.onBind();
+            unbrokenDirector.onBind();
+            worldEaterDirector.onBind();
         } catch (RuntimeException exception) {
             plugin.getLogger().log(Level.SEVERE, "Boss '" + template.getId() + "' failed to apply stats", exception);
         }
@@ -322,8 +328,10 @@ public class BossInstance {
             sovereignDirector.onBind();
             sandboxDirector.onBind();
             saintDirector.onBind();
+            unbrokenDirector.onBind();
+            worldEaterDirector.onBind();
             // Soft-arena bosses stay where they were — never blink home on rebind.
-            if (!refusesHardArenaSnap() && !saintDirector.isMine()) {
+            if (!refusesHardArenaSnap() && !saintDirector.isMine() && !ownsWorldEaterBody()) {
                 snapToArena();
             }
             clearBodyUnloaded();
@@ -395,6 +403,16 @@ public class BossInstance {
         return entity != null && entity.isValid() && !entity.isDead();
     }
 
+    /** World Eater only: where the Bonus Chest generates once it has eaten itself, else null. */
+    public Location getWorldEaterChestSpot() {
+        return worldEaterDirector.chestSpot();
+    }
+
+    /** The Unbroken and the World Eater fly their own bodies: no snaps, leashes or unsticking. */
+    private boolean ownsWorldEaterBody() {
+        return unbrokenDirector.isMine() || worldEaterDirector.isMine();
+    }
+
     /** Hanging Saint only: floor center of her built stage (loot music box lands there), else null. */
     public Location getSaintStageCenter() {
         return saintDirector.stageCenter();
@@ -408,7 +426,9 @@ public class BossInstance {
                 || hollowSunDirector.isDying()
                 || sovereignDirector.isDying()
                 || signatureDirector.isDying()
-                || saintDirector.isDying());
+                || saintDirector.isDying()
+                || unbrokenDirector.isDying()
+                || worldEaterDirector.isDying());
     }
 
     public void abortCinematic() {
@@ -423,6 +443,8 @@ public class BossInstance {
         signatureDirector.abort();
         sandboxDirector.abort();
         saintDirector.abort();
+        unbrokenDirector.abort();
+        worldEaterDirector.abort();
     }
 
     public boolean isEncounterActive() {
@@ -466,6 +488,8 @@ public class BossInstance {
         eliteDirector.clearFx();
         de.aetherion.bossengine.skill.t2.T2Mechanics.clearInstanceProps(this);
         saintDirector.clear();
+        unbrokenDirector.clear();
+        worldEaterDirector.clear();
     }
 
     public void despawnMinions(List<UUID> ids) {
@@ -504,6 +528,8 @@ public class BossInstance {
                 || sovereignDirector.blocksDamage()
                 || signatureDirector.isDying()
                 || saintDirector.blocksDamage()
+                || unbrokenDirector.blocksDamage()
+                || worldEaterDirector.blocksDamage()
                 || sandboxDirector.blocksDamage()
                 || de.aetherion.bossengine.skill.t2.T2Mechanics.isBurrowing(this);
     }
@@ -554,6 +580,8 @@ public class BossInstance {
                 || hollowSunDirector.beginDeath()
                 || sovereignDirector.beginDeath()
                 || saintDirector.beginDeath()
+                || unbrokenDirector.beginDeath()
+                || worldEaterDirector.beginDeath()
                 || signatureDirector.beginDeath()) {
             return true;
         }
@@ -577,6 +605,10 @@ public class BossInstance {
         hollowSunDirector.onDamaged(amount);
         amount = sovereignDirector.scaleIncoming(amount);
         sovereignDirector.onDamaged(amount);
+        amount = unbrokenDirector.scaleIncoming(amount);
+        unbrokenDirector.onDamaged(amount);
+        amount = worldEaterDirector.scaleIncoming(amount);
+        worldEaterDirector.onDamaged(amount);
         lastDamagedAtMs = System.currentTimeMillis();
 
         BossPhase next = nextSequentialPhase();
@@ -671,6 +703,14 @@ public class BossInstance {
             ticksAlive++;
             return saintDirector.tick();
         }
+        if (unbrokenDirector.isDying()) {
+            ticksAlive++;
+            return unbrokenDirector.tick();
+        }
+        if (worldEaterDirector.isDying()) {
+            ticksAlive++;
+            return worldEaterDirector.tick();
+        }
         if (!isAlive()) {
             return false;
         }
@@ -690,6 +730,8 @@ public class BossInstance {
         sovereignDirector.tick();
         sandboxDirector.tick();
         saintDirector.tick();
+        unbrokenDirector.tick();
+        worldEaterDirector.tick();
         if (ticksAlive == 20 || ticksAlive == 100) {
             SkeletonUtil.prepareBoss(entity);
             if (entity instanceof org.bukkit.entity.PiglinAbstract piglin) {
@@ -837,8 +879,8 @@ public class BossInstance {
             if (transition.isFreezeAi() && entity instanceof Mob mob) {
                 mob.setAI(false);
             }
-            if (saintDirector.ownsTransition()) {
-                // Hanging Saint stages its own transitions (sound, motion, props).
+            if (saintDirector.ownsTransition() || unbrokenDirector.ownsTransition() || worldEaterDirector.ownsTransition()) {
+                // Hanging Saint, the Unbroken and the World Eater stage their own transitions.
                 return;
             }
             if (hollowSunDirector.isMine()) {
@@ -905,8 +947,8 @@ public class BossInstance {
         }
         transitionTick++;
         double progress = (double) transitionTick / Math.max(1, transition.getDurationTicks());
-        if (saintDirector.ownsTransition()) {
-            // Choreography runs inside HangingSaintDirector.tick(); only the timer lives here.
+        if (saintDirector.ownsTransition() || unbrokenDirector.ownsTransition() || worldEaterDirector.ownsTransition()) {
+            // Choreography runs inside the director's tick(); only the timer lives here.
         } else if (hollowSunDirector.isMine()) {
             // The director flies the body for the whole transition; no phase-return snap.
             hollowSunDirector.tickTransition(transitionTick, transition.getDurationTicks());
@@ -981,7 +1023,7 @@ public class BossInstance {
             }
             if (isTransitioning()) {
                 if (finished == null || !finished.isExplode()) {
-                    if (!(entity instanceof org.bukkit.entity.EnderDragon) && !hollowSunDirector.isMine()) {
+                    if (!(entity instanceof org.bukkit.entity.EnderDragon) && !hollowSunDirector.isMine() && !ownsWorldEaterBody()) {
                         entity.getWorld().playSound(entity.getLocation(), Sound.ENTITY_ZOMBIE_BREAK_WOODEN_DOOR, 1.2f, 0.55f);
                     }
                 }
@@ -1994,6 +2036,16 @@ public class BossInstance {
             }
             return;
         }
+        if (unbrokenDirector.ownsBody() || worldEaterDirector.ownsBody()) {
+            if (entity instanceof Mob mob) {
+                mob.setAI(false);
+                mob.setAware(false);
+            }
+            if (entity.isCollidable()) {
+                entity.setCollidable(false);
+            }
+            return;
+        }
         boolean locked = isTransitioning()
                 || saintDirector.ownsBody()
                 || de.aetherion.bossengine.skill.t2.T2Mechanics.isBurrowing(this)
@@ -2127,6 +2179,10 @@ public class BossInstance {
         }
         if (saintDirector.isMine()) {
             // Stage fight: the director owns her seat; leash would yank the husk off the boards.
+            return;
+        }
+        if (ownsWorldEaterBody()) {
+            // The body is only a hitbox riding the director's animation.
             return;
         }
         if (isTransitioning()) {
@@ -2483,7 +2539,8 @@ public class BossInstance {
     }
 
     private void unstickIfNeeded() {
-        if (entity == null || !entity.isValid() || sovereignDirector.holdsBody() || saintDirector.ownsBody()) {
+        if (entity == null || !entity.isValid() || sovereignDirector.holdsBody() || saintDirector.ownsBody()
+                || unbrokenDirector.ownsBody() || worldEaterDirector.ownsBody()) {
             return;
         }
         if (isHollowLurker()) {

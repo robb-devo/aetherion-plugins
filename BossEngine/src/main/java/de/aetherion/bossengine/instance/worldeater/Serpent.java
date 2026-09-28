@@ -179,6 +179,9 @@ final class Serpent {
     private float speed;
     /** Righting: how strongly "up" is pulled back toward the sky each tick. */
     float righting = 0.05f;
+    /** The body is sent every {@code bodyStep} ticks (interpolated in between); the head every tick. */
+    int bodyStep = 2;
+    private int bodyClock;
 
     /* ring (ouroboros) */
     Mode mode = Mode.TRAIL;
@@ -792,7 +795,15 @@ final class Serpent {
         head.step(1f);
         head.render();
 
-        // Body.
+        // Body: offsets ease every tick, the displays are sent every bodyStep ticks.
+        for (Vertebra v : body) {
+            v.offset += (v.targetOffset - v.offset) * 0.18f;
+        }
+        bodyClock++;
+        if (interp > 0 && bodyStep > 1 && bodyClock % bodyStep != 0) {
+            return;
+        }
+        int bodyInterp = interp == 0 ? 0 : Math.max(interp, bodyStep + 1);
         float headS = trail.newestS();
         Vector3f p = new Vector3f();
         Vector3f u = new Vector3f();
@@ -801,7 +812,6 @@ final class Serpent {
         Vector3f rf = new Vector3f();
         int slot = 0;
         for (Vertebra v : body) {
-            v.offset += (v.targetOffset - v.offset) * 0.18f;
             boolean ok = trail.sample(headS - v.offset, p, u, tan);
             v.ringMul = 1f;
             if (ringBlend > 0f) {
@@ -834,7 +844,7 @@ final class Serpent {
             if (!show) {
                 v.hidden = true;
             }
-            v.render(interp);
+            v.render(bodyInterp);
             if (!show) {
                 v.hidden = wasHidden;
             }
@@ -843,7 +853,7 @@ final class Serpent {
             trail.sample(headS - v.offset, p, u, tan);
             v.center.set(p);
             v.rot.set(WeMath.frame(tan, u));
-            v.render(interp);
+            v.render(bodyInterp);
         }
     }
 
