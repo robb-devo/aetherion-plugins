@@ -567,7 +567,7 @@ final class SignatureDirector {
         static Theme of(String id) {
             String key = id == null ? "" : id.toLowerCase(Locale.ROOT);
             return switch (key) {
-                case "aetherion", "dungeon_aetherion", "sparky", "dungeon_frostbound", "pathwarden" -> NONE;
+                case "aetherion", "dungeon_aetherion", "sparky", "dungeon_frostbound", "pathwarden", "ashen_sheath" -> NONE;
                 case "aether_colossus" -> COLOSSUS;
                 case "hollow_lurker" -> LURKER;
                 case "skuldugery" -> SKULL;

@@ -1,0 +1,208 @@
+# ============================================================
+# The Ashen Sheath – Forage / Dojo specialty boss
+# Same kit as live — readable windups, real cherry-leaf tornado.
+# Combat: AshenSheathDirector. Spawn: /boss spawn ashen_sheath
+# Drop: ashen_katana
+# ============================================================
+
+id: ashen_sheath
+display-name: "&d&lThe Ashen Sheath"
+entity-type: WITHER_SKELETON
+model-engine-id: ""
+
+attributes:
+  max-health: 5200
+  movement-speed: 0.28
+  attack-damage: 38
+  scale: 1.18
+  follow-range: 36
+  knockback-resistance: 0.92
+
+equipment:
+  helmet: NETHERITE_HELMET
+  chestplate: NETHERITE_CHESTPLATE
+  leggings: NETHERITE_LEGGINGS
+  boots: NETHERITE_BOOTS
+  main-hand: AIR
+  off-hand: AIR
+  drop-chance: 0.0
+
+options:
+  glowing: false
+  custom-name-visible: true
+  silent: true
+  invulnerable-spawn-ticks: 30
+  persistent: true
+  remove-when-far-away: false
+  prevent-item-pickup: true
+
+conditions:
+  max-instances: 1
+  leash-radius: 40
+  leash-action: TELEPORT
+
+phases:
+  - id: quiet_steel
+    health-percent: 100
+    display-name: "&d&lThe Ashen Sheath &8· &7First Form"
+    skills: []
+
+  - id: falling_blossoms
+    health-percent: 66
+    display-name: "&d&lThe Ashen Sheath &8· &cFalling Blossoms"
+    transition:
+      duration-ticks: 80
+      invulnerable: true
+      freeze-ai: true
+      start-radius: 6.5
+      end-radius: 1.2
+      shape: BEAM_SPIN
+      particle: CHERRY_LEAVES
+      extra-particle: END_ROD
+      points: 48
+      height: 2.4
+      explode: false
+      hover-height: 1.1
+    skills:
+      - type: SPECTACLE
+        trigger: ON_PHASE
+        title: "&dFALLING BLOSSOMS"
+        subtitle: "&7The sheath remembers how to cut."
+        lightning: 0
+        particle: CHERRY_LEAVES
+        count: 70
+        radius: 8
+        sound: ITEM_TRIDENT_RETURN
+      - type: DIALOG
+        trigger: ON_PHASE
+        broadcast: true
+        message: "&d&lAshen Sheath&7: &fI swore never to draw again. &cI lied."
+
+  - id: ashen_moon
+    health-percent: 33
+    display-name: "&5&lThe Ashen Sheath &8· &4Ashen Moon"
+    transition:
+      duration-ticks: 90
+      invulnerable: true
+      freeze-ai: true
+      start-radius: 7.2
+      end-radius: 0.9
+      shape: CHERRY_TORNADO
+      particle: CHERRY_LEAVES
+      extra-particle: END_ROD
+      points: 48
+      height: 3.4
+      explode: true
+      explode-damage: 8
+      explode-radius: 5.5
+      explode-knockback: 1.2
+      hover-height: 1.4
+    skills:
+      - type: SPECTACLE
+        trigger: ON_PHASE
+        title: "&5ASHEN MOON"
+        subtitle: "&cDo not blink. The cut already landed."
+        lightning: 0
+        particle: CHERRY_LEAVES
+        count: 48
+        radius: 10
+        sound: BLOCK_BEACON_ACTIVATE
+      - type: DIALOG
+        trigger: ON_PHASE
+        broadcast: true
+        message: "&d&lAshen Sheath&7: &4One form. One breath. One ending."
+
+skills:
+  - type: SOUND
+    trigger: ON_SPAWN
+    sound: ITEM_TRIDENT_THUNDER
+    volume: 0.7
+    pitch: 1.55
+
+  - type: SPECTACLE
+    trigger: ON_SPAWN
+    title: "&dTHE ASHEN SHEATH"
+    subtitle: "&7Blade still sheathed."
+    lightning: 0
+    particle: CHERRY_LEAVES
+    count: 36
+    radius: 5
+    sound: BLOCK_CHERRY_LEAVES_BREAK
+
+  - type: DIALOG
+    trigger: ON_SPAWN
+    broadcast: true
+    message: "&d&lThe Ashen Sheath &7steps from the blossom shadow — blade still sheathed."
+
+  - type: PARTICLE_AURA
+    trigger: ON_TIMER
+    interval-ticks: 16
+    particle: CHERRY_LEAVES
+    count: 3
+    radius: 1.2
+    offset-y: 1.1
+
+  - type: DIALOG
+    trigger: ON_DEATH
+    broadcast: true
+    message: "&d&lThe Ashen Sheath &7returns to the scabbard. The grove is quiet."
+
+loot:
+  damage-based: true
+  participation-threshold-percent: 5.0
+  experience: 5200
+
+  killer-bonus:
+    - source: AETHERION
+      item-id: ashen_katana
+      amount: 1
+      chance: 0.22
+    - source: VANILLA
+      material: CHERRY_SAPLING
+      min-amount: 2
+      max-amount: 5
+      chance: 1.0
+
+  rank-loot:
+    1:
+      - source: AETHERION
+        item-id: ashen_katana
+        amount: 1
+        chance: 0.14
+      - source: AETHERION
+        item-id: random_booster
+        amount: 1
+        chance: 0.55
+    2:
+      - source: AETHERION
+        item-id: ashen_katana
+        amount: 1
+        chance: 0.06
+    3:
+      - source: AETHERION
+        item-id: ashen_katana
+        amount: 1
+        chance: 0.03
+
+  top-damagers:
+    count: 3
+    items:
+      - source: AETHERION
+        item-id: random_booster
+        amount: 1
+        chance: 0.70
+
+  shared:
+    - source: VANILLA
+      material: CHERRY_LEAVES
+      min-amount: 8
+      max-amount: 16
+      chance: 1.0
+
+  per-damager:
+    - source: VANILLA
+      material: EXPERIENCE_BOTTLE
+      min-amount: 8
+      max-amount: 14
+      chance: 1.0
+      scale-with-damage: true
