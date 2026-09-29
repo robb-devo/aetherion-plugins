@@ -21,9 +21,6 @@ import java.util.regex.Pattern;
 
 public final class ItemPresentation {
 
-    private static final Pattern RARITY_LINE = Pattern.compile(
-            "(?i)^(?:§.)*(?:✦\\s*)?(?:§.)*(COMMON|UNCOMMON|RARE|EPIC|LEGENDARY|MYTHIC|AETHERED|GOD ITEM)\\b.*$"
-    );
     private static final Pattern STAT_NUMBER = Pattern.compile("(\\d+)[.,](\\d+)");
     private static final int[] RAINBOW = {
             0xFF5E7E, 0xFF9A5C, 0xFFD76A, 0x7DFFB3, 0x6AD5FF, 0x7B8CFF, 0xC9A7FF, 0xFF8AD4
@@ -142,11 +139,7 @@ public final class ItemPresentation {
     }
 
     private static boolean isRarityHeader(String line) {
-        if (line == null) {
-            return false;
-        }
-        String stripped = ChatColor.stripColor(line).trim();
-        return RARITY_LINE.matcher(stripped).matches();
+        return LoreLayout.isRarityFooter(line);
     }
 
     public static String reformatNumbers(String line) {

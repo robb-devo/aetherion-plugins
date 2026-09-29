@@ -221,7 +221,6 @@ public final class BoosterSackMenu {
                 continue;
             }
             int take = Math.min(room, Math.max(1, stack.getAmount()));
-            // Boosters do not stack in player inv, but be safe.
             holder.add(type, take);
             int left = stack.getAmount() - take;
             if (left <= 0) {
@@ -297,7 +296,7 @@ public final class BoosterSackMenu {
                     "§7Stored: §f" + amount + "§8/§f" + MAX_PER_TYPE,
                     "",
                     amount > 0 ? "§eClick §7to take 1" : "§8Empty",
-                    "§8Boosters stay unstacked in your inventory."
+                    "§8Same type stacks in your inventory."
             ));
             meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS);
             stack.setItemMeta(meta);

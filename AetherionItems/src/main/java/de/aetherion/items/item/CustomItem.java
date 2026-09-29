@@ -236,7 +236,7 @@ public class CustomItem {
                 boosterType.name()
         );
 
-        meta.setMaxStackSize(1);
+        meta.setMaxStackSize(BoosterItems.MAX_STACK);
     }
 
 

@@ -84,6 +84,7 @@ public class EmeraldSpreadListener implements Listener {
                         || source.isLiquid()
                         || Crops.isCrop(sourceMaterial)
                         || HarvestRules.log(sourceMaterial)
+                        || HarvestRules.plainIslandDrop(source)
         ) {
 
             return;

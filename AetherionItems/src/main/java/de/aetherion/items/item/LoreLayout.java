@@ -187,6 +187,10 @@ public final class LoreLayout {
             return false;
         }
         String stripped = ChatColor.stripColor(line).trim();
+        // Booster items list "COMMON: +2.8" per rarity. Those are stats, not the footer.
+        if (stripped.indexOf(':') >= 0) {
+            return false;
+        }
         return RARITY_FOOTER.matcher(stripped).matches();
     }
 

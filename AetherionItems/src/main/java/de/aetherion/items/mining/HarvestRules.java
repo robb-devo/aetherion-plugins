@@ -4,8 +4,11 @@ import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Tag;
 import org.bukkit.World;
+import org.bukkit.block.Block;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import java.util.Locale;
 
 public final class HarvestRules {
 
@@ -75,6 +78,39 @@ public final class HarvestRules {
         }
         String name = material.name();
         return name.endsWith("_ORE");
+    }
+
+    /**
+     * Personal islands, guild islands, and the test sandbox.
+     * Same worlds {@code SharedWorldGuard.isBuildWorld} treats as free build.
+     */
+    public static boolean buildWorld(World world) {
+        if (world == null) {
+            return false;
+        }
+        String name = world.getName().toLowerCase(Locale.ROOT);
+        return name.equals("aether_islands")
+                || name.equals("aether_guilds")
+                || name.startsWith("aether_island")
+                || name.startsWith("aether_guild")
+                || name.equals("aether_test")
+                || name.startsWith("aether_test_");
+    }
+
+    /** Ores and dense mineral blocks — the blocks the island fortune dupe uses. */
+    public static boolean bonusMineral(Material material) {
+        return ore(material) || fullMineralBlock(material);
+    }
+
+    /**
+     * On private/guild islands, ore and mineral blocks return the block itself once.
+     * No Fortune, no Spread, no compact. Covers blocks placed before this build
+     * (pistons and reload included) — island worlds are not a mining dimension.
+     */
+    public static boolean plainIslandDrop(Block block) {
+        return block != null
+                && buildWorld(block.getWorld())
+                && bonusMineral(block.getType());
     }
 
     public static boolean fullMineralBlock(Material material) {

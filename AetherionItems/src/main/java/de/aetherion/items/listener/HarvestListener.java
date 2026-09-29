@@ -151,6 +151,11 @@ public class HarvestListener implements Listener {
             hintPower(player, material);
             return;
         }
+        if (HarvestRules.plainIslandDrop(block)) {
+            event.setDropItems(false);
+            InventoryDrops.give(player, new ItemStack(material, 1));
+            return;
+        }
         event.setDropItems(false);
         var skills = de.aetherion.items.AetherionItems.getInstance() == null
                 ? null
@@ -189,6 +194,14 @@ public class HarvestListener implements Listener {
         boolean open = HarvestRules.openMine(block.getWorld());
         double miningPower = equipmentStats.getStat(player, ItemCapability.MINING_POWER);
         if (!open && !HarvestRules.canHarvest(material, miningPower)) {
+            return;
+        }
+        if (HarvestRules.plainIslandDrop(block)) {
+            InventoryDrops.give(player, new ItemStack(material, 1));
+            block.setType(Material.AIR, false);
+            if (player.isOnline()) {
+                player.sendBlockChange(block.getLocation(), Material.AIR.createBlockData());
+            }
             return;
         }
         org.bukkit.block.data.BlockData original = block.getBlockData().clone();
@@ -313,6 +326,11 @@ public class HarvestListener implements Listener {
     }
 
     private void payOut(Player player, Block block, Material material) {
+        if (HarvestRules.plainIslandDrop(block)) {
+            // Exactly the placed block. Fortune, compact, and smelt multipliers stay off.
+            InventoryDrops.give(player, new ItemStack(material, 1));
+            return;
+        }
         double fortune = Math.max(0, equipmentStats.getStat(player, ItemCapability.FORTUNE));
         if (material == Material.AMETHYST_CLUSTER) {
             giveFortuned(player, new ItemStack(Material.AMETHYST_CLUSTER), 0);

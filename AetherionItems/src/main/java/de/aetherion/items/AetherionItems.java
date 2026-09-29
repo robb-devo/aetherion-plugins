@@ -320,6 +320,7 @@ public class AetherionItems extends JavaPlugin {
         new de.aetherion.items.item.GearTooltip(this, itemManager);
         de.aetherion.items.world.WildlifeLooks.register(this);
         de.aetherion.items.world.BorderlandsLightPass.schedule(this);
+        de.aetherion.items.world.ShabbyMinePrep.schedulePending(this);
     }
 
     private void registerEconomyListeners() {
