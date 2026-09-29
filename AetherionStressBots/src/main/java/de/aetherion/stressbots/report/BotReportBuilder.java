@@ -125,6 +125,9 @@ public final class BotReportBuilder {
         }
         out.append(" online=").append(report.onlineTotal())
                 .append("/").append(report.maxTotal()).append('\n');
+        BotEconomyTracker.Snapshot economy = plugin.getActivity().economySnapshot();
+        out.append('\n');
+        out.append(plugin.getActivity().economy().format(economy));
         out.append('\n');
         out.append("Roles:\n");
         for (TestBotRoleView role : report.roles()) {
@@ -166,9 +169,14 @@ public final class BotReportBuilder {
             }
         }
         out.append('\n');
-        out.append("Activities: idle/pathing/mining/foraging/catching/roaming/combat/fishing/ah/bazaar/quest_dialog/minigame/pad_hop/void/recovering/stuck.\n");
-        out.append("Playstyle: mixed-tier kits + equipped skills + boosters + pets. AH/Bazaar click list/buy; quests click accept; fishing plays strike/reel; pad hops ride the arc.\n");
+        out.append("Activities: idle/pathing/mining/foraging/farming/catching/roaming/combat/fishing/ah/bazaar/quest_dialog/minigame/pad_hop/void/recovering/stuck.\n");
+        out.append("Playstyle: mixed-tier kits + equipped skills + boosters + pets. AH/Bazaar list/buy/collect; quests click accept; fishing strike/reel; farm harvests crops; pad hops ride the arc. Combat stays on the Borderlands pad (no dungeon instances).\n");
         return out.toString();
+    }
+
+    public List<String> loreLines() {
+        BotEconomyTracker.Snapshot snap = plugin.getActivity().economySnapshot();
+        return plugin.getActivity().economy().lore(snap);
     }
 
     private TestBotView toView(Player player, BotRoleHandler handler) {

@@ -51,6 +51,10 @@ public final class BotNicknames {
                     "§3Köder-Kai", "§3Nibble-Nora", "§3Angel-Ansgar", "§3Brassen-Berta", "§3Haken-Heinz",
                     "§3Tiden-Tine", "§3Kutter-Kurt", "§3Aetherköder", "§3Schnur-Sven", "§3Wellen-Wilma"
             )),
+            Map.entry(BotRole.FARM, List.of(
+                    "§6Furche-Frida", "§6Sense-Sepp", "§6Weizen-Willi", "§6Mist-Marga", "§6Acker-Anni",
+                    "§6Dresch-Dieter", "§6Karotte-Kai", "§6Aetherfurche", "§6Heu-Heike", "§6Traktor-Toni"
+            )),
             Map.entry(BotRole.TRADE, List.of(
                     "§6Markt-Marga", "§6Bazaar-Berti", "§6Auktions-Ute", "§6Händler-Hans", "§6Schatz-Susi",
                     "§6Gebot-Gerd", "§6Taler-Tanja", "§6Aethermarkt", "§6Schnäppchen", "§6Zahltag-Zack"

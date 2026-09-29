@@ -1,5 +1,6 @@
 import mineflayer from 'mineflayer'
 import pathfinderPkg from 'mineflayer-pathfinder'
+import { createFarmLoop } from './farm.js'
 import { createCombatLoop } from './combat.js'
 import { createMiningLoop, createForageLoop } from './gather.js'
 import { createCatchLoop } from './catch.js'
@@ -18,7 +19,7 @@ import { fmtPos, heldName, note, sleep } from './util.js'
 const { goals } = pathfinderPkg
 
 const WAVE1 = ['mine', 'forage', 'catch', 'roam']
-const WAVE2 = ['combat', 'fish', 'trade', 'quest', 'pad']
+const WAVE2 = ['combat', 'fish', 'farm', 'trade', 'quest', 'pad']
 const ALL_ROLES = [...WAVE1, ...WAVE2, 'mining']
 
 export function createFleet({ config, log }) {
@@ -40,6 +41,7 @@ export function createFleet({ config, log }) {
       roam: 'QaRoam',
       combat: 'QaCombat',
       fish: 'QaFish',
+      farm: 'QaFarm',
       trade: 'QaTrade',
       quest: 'QaQuest',
       pad: 'QaPad',
@@ -83,6 +85,7 @@ export function createFleet({ config, log }) {
     if (role === 'catch') return createCatchLoop(bot, cfg, log)
     if (role === 'roam') return createRoamLoop(bot, cfg, log)
     if (role === 'fish') return createFishLoop(bot, cfg, log)
+    if (role === 'farm') return createFarmLoop(bot, cfg, log)
     if (role === 'trade') return createTradeLoop(bot, cfg, log)
     if (role === 'quest') return createQuestLoop(bot, cfg, log)
     if (role === 'pad') return createPadLoop(bot, cfg, log)
@@ -91,7 +94,7 @@ export function createFleet({ config, log }) {
 
   function defaultLeash(role) {
     if (role === 'catch') return 12
-    if (role === 'roam' || role === 'fish' || role === 'trade' || role === 'quest') return 14
+    if (role === 'roam' || role === 'fish' || role === 'trade' || role === 'quest' || role === 'farm') return 14
     if (role === 'combat') return 22
     if (role === 'forage') return 20
     if (role === 'pad') return 72

@@ -1,8 +1,9 @@
 import pathfinderPkg from 'mineflayer-pathfinder'
 import { applyIslandMovements, cancelPath, horizontalDistance, nearestAnchor, standingIsSafe } from './safety.js'
+import { assignGait, idleFidget, setNearGoal, tunePathfinder } from './motion.js'
 import { pickNextPad, readPads } from './pads.js'
 import { markError, note, sleep } from './util.js'
-import { ACTIVITIES, fidget } from './playstyle.js'
+import { ACTIVITIES } from './playstyle.js'
 
 const { goals, Movements, pathfinder } = pathfinderPkg
 
@@ -17,6 +18,7 @@ export function isAirborne(bot) {
 
 export function createPadLoop(bot, cfg, log) {
   bot.loadPlugin(pathfinder)
+  assignGait(bot)
 
   const pads = readPads(cfg)
   const hopTimeoutMs = cfg.hopTimeoutMs ?? 9000
@@ -50,7 +52,7 @@ export function createPadLoop(bot, cfg, log) {
       return false
     }
     note(bot, `pad walk ${dest.id || dest.x.toFixed(0)}`, ACTIVITIES.padHop)
-    bot.pathfinder.setGoal(new goals.GoalNear(dest.x, dest.y, dest.z, 1.1))
+    setNearGoal(bot, goals, dest, 1.1)
     hopStarted = Date.now()
     const start = bot.entity.position.clone()
     const deadline = Date.now() + 7000
@@ -105,7 +107,7 @@ export function createPadLoop(bot, cfg, log) {
   async function tick() {
     if (!bot.entity || bot.qaSuspended) return
     if (!bot.pathfinder.movements) {
-      bot.pathfinder.setMovements(applyIslandMovements(new Movements(bot), { canDig: false, maxDrop: 3 }))
+      bot.pathfinder.setMovements(tunePathfinder(bot, applyIslandMovements(new Movements(bot), { canDig: false, maxDrop: 3 }), { maxDrop: 3 }))
     }
 
     if (isAirborne(bot)) {
@@ -117,13 +119,13 @@ export function createPadLoop(bot, cfg, log) {
     if (Date.now() - lastLand < 900) {
       if (Date.now() - lastFidget > 2000) {
         lastFidget = Date.now()
-        fidget(bot, ACTIVITIES.padHop)
+        idleFidget(bot, ACTIVITIES.padHop)
       }
       return
     }
 
     const slime = slimeNear(6)
-    const dest = pickNextPad(bot.entity.position, pads, lastId, { minHop: 8 })
+    const dest = pickNextPad(bot.entity.position, pads, lastId, { minHop: 4, maxHop: cfg.maxHop ?? 14 })
     let target = dest
     if (slime && dest && horizontalDistance(slime.position, dest) < 4) {
       target = { id: dest.id, x: slime.position.x + 0.5, y: slime.position.y + 1, z: slime.position.z + 0.5 }
@@ -132,7 +134,7 @@ export function createPadLoop(bot, cfg, log) {
     }
     if (!target) {
       note(bot, 'no pad nearby', 'idle')
-      fidget(bot, ACTIVITIES.padHop)
+      idleFidget(bot, ACTIVITIES.padHop)
       return
     }
     lastId = dest?.id || lastId

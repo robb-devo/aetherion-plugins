@@ -1,7 +1,8 @@
 import pathfinderPkg from 'mineflayer-pathfinder'
 import { applyIslandMovements, standingIsSafe, wanderOnIsland } from './safety.js'
+import { assignGait, idleFidget, setNearGoal, tunePathfinder } from './motion.js'
 import { markError, note, sleep } from './util.js'
-import { ACTIVITIES, fidget } from './playstyle.js'
+import { ACTIVITIES } from './playstyle.js'
 import { maybeOpenBooster } from './minigame.js'
 
 const { goals, Movements, pathfinder } = pathfinderPkg
@@ -25,6 +26,7 @@ export function findWater(bot, radius = 8) {
 
 export function createFishLoop(bot, cfg, log) {
   bot.loadPlugin(pathfinder)
+  assignGait(bot)
   const wanderRadius = cfg.wanderRadius ?? 5
   let running = false
   let lastCast = 0
@@ -69,7 +71,7 @@ export function createFishLoop(bot, cfg, log) {
   async function tick() {
     if (!bot.entity || bot.qaSuspended || casting) return
     if (!bot.pathfinder.movements) {
-      bot.pathfinder.setMovements(applyIslandMovements(new Movements(bot), { canDig: false, maxDrop: 2 }))
+      bot.pathfinder.setMovements(tunePathfinder(bot, applyIslandMovements(new Movements(bot), { canDig: false, maxDrop: 2 })))
     }
     if (!equipRod()) {
       note(bot, 'no fishing rod', 'idle')
@@ -86,18 +88,18 @@ export function createFishLoop(bot, cfg, log) {
       wanderOnIsland(bot, bot.qaHome || pos, wanderRadius, goals)
       if (Date.now() - lastFidget > 4000) {
         lastFidget = Date.now()
-        fidget(bot, ACTIVITIES.fishing)
+        idleFidget(bot, ACTIVITIES.fishing)
       }
       return
     }
     const dist = pos.distanceTo(water.position.offset(0.5, 0, 0.5))
     if (dist > 4.5) {
       note(bot, 'path to water', 'pathing')
-      bot.pathfinder.setGoal(new goals.GoalNear(water.position.x, pos.y, water.position.z, 2))
+      setNearGoal(bot, goals, { x: water.position.x, y: pos.y, z: water.position.z }, 2)
       return
     }
     bot.pathfinder.setGoal(null)
-    if (Date.now() - lastCast < (cfg.recastMs ?? 2200)) return
+    if (Date.now() - lastCast < (cfg.recastMs ?? cfg.castCooldownMs ?? 2200)) return
     await castAt(water)
     if (Math.random() < 0.12) {
       await maybeOpenBooster(bot)

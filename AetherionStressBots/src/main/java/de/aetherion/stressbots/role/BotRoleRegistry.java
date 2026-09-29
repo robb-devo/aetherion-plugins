@@ -27,6 +27,7 @@ public final class BotRoleRegistry {
         register(new RoamRoleHandler(plugin));
         register(new CombatRoleHandler(plugin));
         register(new FishRoleHandler(plugin));
+        register(new FarmRoleHandler(plugin));
         register(new TradeRoleHandler(plugin));
         register(new QuestRoleHandler(plugin));
         register(new PadRoleHandler(plugin));

@@ -18,6 +18,7 @@
     "catch": "QaCatch",
     "roam": "QaRoam",
     "fish": "QaFish",
+    "farm": "QaFarm",
     "trade": "QaTrade",
     "quest": "QaQuest",
     "pad": "QaPad"
@@ -29,6 +30,7 @@
     "roam": 8,
     "combat": 8,
     "fish": 8,
+    "farm": 6,
     "trade": 8,
     "quest": 8,
     "pad": 8,
@@ -191,7 +193,31 @@
       { "x": 560.5, "y": 91.0, "z": -200.5 },
       { "x": 559.5, "y": 90.0, "z": -208.5 },
       { "x": 560.5, "y": 90.0, "z": -160.5 },
-      { "x": 22.5, "y": 56.0, "z": 305.5 }
+      { "x": 22.5, "y": 56.0, "z": 305.5 },
+      { "x": -585.5, "y": 90.0, "z": -649.5 }
+    ]
+  },
+  "farm": {
+    "searchRadius": 16,
+    "wanderRadius": 6,
+    "leashRadius": 16,
+    "digTimeoutMs": 6000,
+    "maxDrop": 1,
+    "anchors": [
+      { "x": -600.5, "y": 90.0, "z": 427.5 },
+      { "x": -596.5, "y": 90.0, "z": 423.5 },
+      { "x": -604.5, "y": 90.0, "z": 431.5 }
+    ],
+    "crops": [
+      "wheat",
+      "carrots",
+      "potatoes",
+      "beetroots",
+      "nether_wart",
+      "cocoa",
+      "melon",
+      "pumpkin",
+      "sugar_cane"
     ]
   },
   "trade": {
@@ -222,17 +248,19 @@
     "npcs": [
       { "id": "eldervale_welcome", "name": "Maren", "x": 53.5, "y": 91.0, "z": 482.5 },
       { "id": "forage_pad_guide", "name": "Twig", "x": 438.5, "y": 56.0, "z": -233.5 },
-      { "id": "eldervale_upgrade", "name": "Forgehand", "x": 22.5, "y": 90.0, "z": 580.5 }
+      { "id": "eldervale_upgrade", "name": "Forgehand", "x": 22.5, "y": 90.0, "z": 580.5 },
+      { "id": "farm_isle_guide", "name": "Millstone", "x": -600.5, "y": 90.0, "z": 427.5 }
     ],
     "anchors": [
       { "x": 53.5, "y": 91.0, "z": 482.5 },
       { "x": 22.5, "y": 90.0, "z": 580.5 },
       { "x": 438.5, "y": 56.0, "z": -233.5 },
-      { "x": 560.5, "y": 91.0, "z": -200.5 }
+      { "x": 560.5, "y": 91.0, "z": -200.5 },
+      { "x": -600.5, "y": 90.0, "z": 427.5 }
     ]
   },
   "pad": {
-    "maxHop": 8,
+    "maxHop": 14,
     "wanderRadius": 4,
     "leashRadius": 72,
     "hopTimeoutMs": 9000,

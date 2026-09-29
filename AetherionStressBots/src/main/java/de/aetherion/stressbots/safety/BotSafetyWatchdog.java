@@ -114,8 +114,10 @@ public final class BotSafetyWatchdog implements Listener, Runnable {
             int hopTicks = plugin.getConfig().getInt("testbots.safety.pad-hop-ticks", 0);
             if ((handler.role() == BotRole.ROAM || handler.role() == BotRole.PAD) && hopTicks > 0) {
                 long last = lastHopAt.getOrDefault(player.getUniqueId(), 0L);
-                long interval = handler.role() == BotRole.PAD ? Math.max(400L, hopTicks * 20L) : hopTicks * 50L;
-                if (now - last > interval && handler.role() == BotRole.ROAM) {
+                long interval = handler.role() == BotRole.PAD
+                        ? Math.max(8_000L, hopTicks * 50L)
+                        : hopTicks * 50L;
+                if (now - last > interval) {
                     recover(player, handler, "pad-hop", true);
                 }
             }

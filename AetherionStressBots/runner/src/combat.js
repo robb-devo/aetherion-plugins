@@ -1,11 +1,13 @@
 import pathfinderPkg from 'mineflayer-pathfinder'
 import { applyIslandMovements, wanderOnIsland, withinLeash } from './safety.js'
-import { fidget, jitter, note } from './util.js'
+import { assignGait, followIfNeeded, idleFidget, lookToward, setNearGoal, tunePathfinder } from './motion.js'
+import { jitter, note } from './util.js'
 
 const { goals, Movements, pathfinder } = pathfinderPkg
 
 export function createCombatLoop(bot, cfg, log) {
   bot.loadPlugin(pathfinder)
+  assignGait(bot)
 
   const attackIntervalMs = cfg.attackIntervalMs ?? 450
   const searchRadius = cfg.searchRadius ?? 28
@@ -23,22 +25,28 @@ export function createCombatLoop(bot, cfg, log) {
   async function tick() {
     if (!bot.entity || bot.entity.isValid === false || bot.qaSuspended) return
     if (!bot.pathfinder.movements) {
-      bot.pathfinder.setMovements(applyIslandMovements(new Movements(bot), {
+      bot.pathfinder.setMovements(tunePathfinder(bot, applyIslandMovements(new Movements(bot), {
         canDig: false,
         maxDrop: cfg.maxDrop ?? 3
-      }))
+      }), { maxDrop: cfg.maxDrop ?? 3, sprint: true }))
     }
 
     const pad = home()
+    if ((bot.health ?? 20) < 7) {
+      note(bot, 'retreat low hp', 'recovering')
+      setNearGoal(bot, goals, pad, 2)
+      return
+    }
     const target = nearestHostile(bot, searchRadius, pad, leash)
     if (target) {
       const dist = bot.entity.position.distanceTo(target.position)
       note(bot, `combat ${target.name || 'mob'}`, 'combat')
-      bot.lookAt(target.position.offset(0, target.height * 0.85, 0), true).catch(() => {})
+      lookToward(bot, target.position)
       if (dist > 2.6) {
-        bot.pathfinder.setGoal(new goals.GoalFollow(target, 1.6), true)
+        followIfNeeded(bot, goals, target, 1.6)
       } else {
         bot.pathfinder.setGoal(null)
+        bot.qaFollowId = null
         const now = Date.now()
         if (now - lastAttack >= jitter(attackIntervalMs, 0.2)) {
           lastAttack = now
@@ -52,13 +60,14 @@ export function createCombatLoop(bot, cfg, log) {
       return
     }
 
+    bot.qaFollowId = null
     bot.qaActivity = bot.pathfinder.isMoving() ? 'pathing' : 'idle'
     if (!bot.pathfinder.isMoving()) {
       wanderOnIsland(bot, pad, Math.min(12, wanderRadius), goals)
     }
     if (Date.now() - lastFidget > 4000) {
       lastFidget = Date.now()
-      fidget(bot, bot.qaActivity)
+      idleFidget(bot, bot.qaActivity)
     }
   }
 

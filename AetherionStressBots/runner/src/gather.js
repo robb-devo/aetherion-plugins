@@ -7,8 +7,9 @@ import {
   withinLeash,
   wanderOnIsland
 } from './safety.js'
+import { assignGait, idleFidget, lookToward, setNearGoal, tunePathfinder } from './motion.js'
 import { findMatchingBlock, inventoryAlmostFull, jitter, markError, note, tossJunk, waitUntil, sleep } from './util.js'
-import { applyPathfinderDefaults, fidget, takeIdleGoal } from './playstyle.js'
+import { takeIdleGoal } from './playstyle.js'
 
 const { goals, Movements, pathfinder } = pathfinderPkg
 
@@ -19,6 +20,7 @@ const { goals, Movements, pathfinder } = pathfinderPkg
  */
 export function createDigLoop(bot, cfg, log, { activity, names, searchRadius, yRange, canDig = false, fallback = [] }) {
   bot.loadPlugin(pathfinder)
+  assignGait(bot)
 
   const leash = cfg.leashRadius ?? bot.qaLeash ?? 16
   const searchLeashBonus = Number(cfg.searchLeashBonus ?? (activity === 'foraging' ? 6 : 2))
@@ -74,12 +76,11 @@ export function createDigLoop(bot, cfg, log, { activity, names, searchRadius, yR
     }
 
     if (!bot.pathfinder.movements) {
-      const moves = applyIslandMovements(new Movements(bot), {
+      const moves = tunePathfinder(bot, applyIslandMovements(new Movements(bot), {
         canDig,
         maxDrop: cfg.maxDrop ?? 2
-      })
+      }), { canDig, maxDrop: cfg.maxDrop ?? 2, sprint: bot.qaSprint })
       bot.pathfinder.setMovements(moves)
-      applyPathfinderDefaults(bot, moves)
     }
 
     if (inventoryAlmostFull(bot)) {
@@ -102,7 +103,7 @@ export function createDigLoop(bot, cfg, log, { activity, names, searchRadius, yR
         } else {
           wanderOnIsland(bot, home(), wanderRadius, goals)
         }
-        if (Math.random() < 0.25) fidget(bot, activity)
+        if (Math.random() < 0.25) idleFidget(bot, activity)
       }
       return
     }
@@ -115,7 +116,8 @@ export function createDigLoop(bot, cfg, log, { activity, names, searchRadius, yR
       const dist = bot.entity.position.distanceTo(dest)
       if (dist > 3.2) {
         note(bot, `path to ${block.name}`, 'pathing')
-        bot.pathfinder.setGoal(new goals.GoalNear(block.position.x, block.position.y, block.position.z, 2))
+        setNearGoal(bot, goals, dest, 2)
+        lookToward(bot, dest)
         await waitUntil(() => {
           if (aborted()) return true
           return bot.entity.position.distanceTo(block.position.offset(0.5, 0.5, 0.5)) <= 3.2
@@ -141,6 +143,7 @@ export function createDigLoop(bot, cfg, log, { activity, names, searchRadius, yR
           throw new Error('dig timeout')
         })
       ])
+      await sleep(jitter(240, 0.45))
     } catch (err) {
       if (!String(err.message || err).includes('dig timeout') && !String(err.message || err).includes('wait timeout')) {
         markError(bot, err)

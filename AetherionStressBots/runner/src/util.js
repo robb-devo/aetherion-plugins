@@ -1,3 +1,27 @@
+/** Fill keys that exist on {@code example} but are missing from {@code live}. Arrays/scalars already present stay. */
+export function mergeMissing(live, example, skip = []) {
+  if (example == null || typeof example !== 'object' || Array.isArray(example)) {
+    return live
+  }
+  if (live == null || typeof live !== 'object' || Array.isArray(live)) {
+    return live
+  }
+  const skipSet = new Set(skip)
+  const out = { ...live }
+  for (const [key, value] of Object.entries(example)) {
+    if (skipSet.has(key)) continue
+    if (!(key in out) || out[key] == null) {
+      out[key] = value
+      continue
+    }
+    if (value && typeof value === 'object' && !Array.isArray(value)
+        && out[key] && typeof out[key] === 'object' && !Array.isArray(out[key])) {
+      out[key] = mergeMissing(out[key], value, skip)
+    }
+  }
+  return out
+}
+
 export function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
@@ -19,7 +43,9 @@ export function fidget(bot, activity) {
       bot.swingArm()
       note(bot, 'swing', activity)
     } else {
-      bot.look(Math.random() * Math.PI * 2, (Math.random() - 0.5) * 0.5, true).catch(() => {})
+      const yaw = (bot.entity?.yaw || 0) + (Math.random() - 0.5) * 0.8
+      const pitch = Math.max(-0.4, Math.min(0.4, (bot.entity?.pitch || 0) + (Math.random() - 0.5) * 0.3))
+      bot.look(yaw, pitch, true).catch(() => {})
       note(bot, 'look around', activity)
     }
   } catch {
@@ -62,21 +88,37 @@ export function inventoryAlmostFull(bot) {
   return empty < 4
 }
 
-export function tossJunk(bot) {
-  for (const item of bot.inventory.items()) {
+export function isMarketResource(name) {
+  const n = String(name || '').toLowerCase()
+  return n.includes('coal') || n.includes('log') || n.includes('oak') || n.includes('wheat')
+    || n.includes('carrot') || n.includes('potato') || n.includes('beet') || n.includes('iron_ingot')
+    || n.includes('copper_ingot') || n.includes('gold_ingot') || n.includes('emerald')
+    || n === 'cobblestone' || n.includes('raw_iron') || n.includes('raw_gold') || n.includes('raw_copper')
+}
+
+export function tossJunk(bot, opts = {}) {
+  const keepResources = opts.keepResources
+    ?? (bot.role === 'trade' || bot.role === 'farm')
+  const items = bot.inventory?.items?.() || []
+  const cobble = items.filter((item) => item.name.includes('cobble')).reduce((n, item) => n + item.count, 0)
+  for (const item of items) {
     const n = item.name
+    if (keepResources && isMarketResource(n) && !(n.includes('cobble') && cobble > 48)) {
+      continue
+    }
     if (
       n.includes('cobble') || n.includes('dirt') || n.includes('gravel') || n === 'stone'
       || n.includes('deepslate') || n.includes('netherrack') || n.includes('andesite')
       || n.includes('diorite') || n.includes('granite') || n.includes('tuff')
       || n.includes('rotten_flesh') || n === 'stick' || n.includes('poisonous')
+      || n.includes('seeds')
     ) {
       bot.tossStack(item).catch(() => {})
     }
   }
 }
 
-export function findMatchingBlock(bot, nameSet, radius, yRange = 6, origin = bot.entity?.position) {
+export function findMatchingBlock(bot, nameSet, radius, yRange = 6, origin = bot.entity?.position, predicate) {
   if (!bot?.entity?.position || !origin) return null
   const originVec = bot.entity.position.offset(0, 0, 0)
   originVec.x = origin.x
@@ -94,7 +136,8 @@ export function findMatchingBlock(bot, nameSet, radius, yRange = 6, origin = bot
         const block = bot.blockAt(pos)
         if (!block || !block.name) continue
         if (!nameSet.has(block.name.toLowerCase())) continue
-        const prefer = block.name.includes('ore') || block.name.includes('log') ? -2 : 0
+        if (typeof predicate === 'function' && !predicate(block)) continue
+        const prefer = block.name.includes('ore') || block.name.includes('log') || block.name === 'wheat' ? -2 : 0
         const score = dist + prefer
         if (score < bestDist) {
           best = block

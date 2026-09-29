@@ -35,6 +35,7 @@ describe('playstyle flags', () => {
     assert.equal(isWorkingActivity(ACTIVITIES.questDialog), true)
     assert.equal(isWorkingActivity(ACTIVITIES.minigame), true)
     assert.equal(isWorkingActivity(ACTIVITIES.padHop), true)
+    assert.equal(isWorkingActivity(ACTIVITIES.farming), true)
     assert.equal(isWorkingActivity(ACTIVITIES.idle), false)
   })
 })

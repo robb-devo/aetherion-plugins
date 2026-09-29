@@ -63,6 +63,7 @@ testbots:
     roam: QaRoam
     combat: QaCombat
     fish: QaFish
+    farm: QaFarm
     trade: QaTrade
     quest: QaQuest
     pad: QaPad
@@ -73,6 +74,7 @@ testbots:
     roam: 8
     combat: 8
     fish: 8
+    farm: 6
     quest: 8
     trade: 8
     pad: 8
@@ -90,7 +92,7 @@ testbots:
     leash-radius: 18
     recover-cooldown-ms: 1500
     respawn-setup-ticks: 5
-    # Teleport idle mine/forage/catch bots to another role pad (12s).
+    # Teleport idle gather bots to another role pad (12s).
     idle-reanchor-ticks: 240
     # Roam/pad: plugin pad-hop between origin pads (80s). 0 disables.
     pad-hop-ticks: 1600
@@ -171,10 +173,22 @@ testbots:
         - { x: 559.5, y: 90.0, z: -208.5 }
         - { x: 560.5, y: 90.0, z: -160.5 }
         - { x: 22.5, y: 56.0, z: 305.5 }
+        - { x: -585.5, y: 90.0, z: -649.5 }
       yaw: 90.0
       pitch: 20.0
       scatter-radius: 3
       leash-radius: 14
+    # Eldervale farm island paste origin (-600 90 427). Keep scatter small on the sky pad.
+    farm:
+      world: world
+      anchors:
+        - { x: -600.5, y: 90.0, z: 427.5 }
+        - { x: -596.5, y: 90.0, z: 423.5 }
+        - { x: -604.5, y: 90.0, z: 431.5 }
+      yaw: 0.0
+      pitch: 10.0
+      scatter-radius: 4
+      leash-radius: 16
     # Origin pads + /ah /bazaar. GUIs need the TRADER progression flag.
     trade:
       world: world
@@ -194,6 +208,7 @@ testbots:
         - { x: 22.5, y: 90.0, z: 580.5 }
         - { x: 438.5, y: 56.0, z: -233.5 }
         - { x: 560.5, y: 91.0, z: -200.5 }
+        - { x: -600.5, y: 90.0, z: 427.5 }
       yaw: 0.0
       pitch: 0.0
       scatter-radius: 3

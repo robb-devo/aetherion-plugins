@@ -1,6 +1,7 @@
 import pathfinderPkg from 'mineflayer-pathfinder'
 import { applyIslandMovements, cancelPath, standingIsSafe, withinLeash, wanderOnIsland } from './safety.js'
-import { fidget, markError, note } from './util.js'
+import { assignGait, followIfNeeded, idleFidget, lookToward, tunePathfinder } from './motion.js'
+import { markError, note } from './util.js'
 import { maybeSkip } from './playstyle.js'
 
 const { goals, Movements, pathfinder } = pathfinderPkg
@@ -11,6 +12,7 @@ const { goals, Movements, pathfinder } = pathfinderPkg
  */
 export function createCatchLoop(bot, cfg, log) {
   bot.loadPlugin(pathfinder)
+  assignGait(bot)
 
   const searchRadius = cfg.searchRadius ?? 10
   const throwCooldownMs = cfg.throwCooldownMs ?? 1800
@@ -35,10 +37,10 @@ export function createCatchLoop(bot, cfg, log) {
     }
 
     if (!bot.pathfinder.movements) {
-      bot.pathfinder.setMovements(applyIslandMovements(new Movements(bot), {
+      bot.pathfinder.setMovements(tunePathfinder(bot, applyIslandMovements(new Movements(bot), {
         canDig: false,
         maxDrop: cfg.maxDrop ?? 1
-      }))
+      }), { maxDrop: cfg.maxDrop ?? 1 }))
     }
 
     equipSphere(bot)
@@ -51,7 +53,7 @@ export function createCatchLoop(bot, cfg, log) {
     }
 
     const dist = bot.entity.position.distanceTo(target.position)
-    bot.lookAt(target.position.offset(0, target.height * 0.6, 0), true).catch(() => {})
+    lookToward(bot, target.position)
 
     if (dist > 5.5) {
       if (!withinLeash(target.position, home(), leash)) {
@@ -59,7 +61,7 @@ export function createCatchLoop(bot, cfg, log) {
         bot.pathfinder.setGoal(null)
       } else {
         note(bot, `approach ${target.name || 'entity'}`, 'pathing')
-        bot.pathfinder.setGoal(new goals.GoalFollow(target, 2.5), true)
+        followIfNeeded(bot, goals, target, 2.5)
         return
       }
     }
@@ -80,7 +82,7 @@ export function createCatchLoop(bot, cfg, log) {
     lastThrow = now
     if (maybeSkip(0.14)) {
       note(bot, 'hesitate throw', 'catching')
-      fidget(bot, 'catching')
+      idleFidget(bot, 'catching')
       return
     }
     try {

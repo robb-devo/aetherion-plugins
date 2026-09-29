@@ -1,9 +1,10 @@
 import { applyIslandMovements } from './safety.js'
+import { idleFidget } from './motion.js'
 import { fidget as utilFidget, jitter, note, sleep, tossJunk } from './util.js'
 
 const MENU_COMMANDS = ['skills', 'pets', 'guide', 'trades']
 const BUSY = new Set([
-  'fighting', 'combat', 'catching', 'fishing', 'mining', 'foraging', 'questing',
+  'fighting', 'combat', 'catching', 'fishing', 'mining', 'foraging', 'farming', 'questing',
   'quest_dialog', 'ah', 'bazaar', 'minigame', 'pad_hop', 'trading'
 ])
 
@@ -16,6 +17,7 @@ export const ACTIVITIES = {
   pathing: 'pathing',
   mining: 'mining',
   foraging: 'foraging',
+  farming: 'farming',
   catching: 'catching',
   roaming: 'roaming',
   combat: 'combat',
@@ -29,7 +31,7 @@ export const ACTIVITIES = {
 }
 
 const WORKING = new Set([
-  'mining', 'foraging', 'pathing', 'catching', 'fishing',
+  'mining', 'foraging', 'farming', 'pathing', 'catching', 'fishing',
   'ah', 'bazaar', 'quest_dialog', 'minigame', 'pad_hop', 'combat', 'trading',
   'fighting', 'questing', 'hopping'
 ])
@@ -61,8 +63,8 @@ export function attachPlaystyle(bot, log) {
 
     if (now - lastInv > jitter(18_000, 0.45)) {
       lastInv = now
-      tossJunk(bot)
-      if (Math.random() < 0.2) cycleHotbar(bot)
+      tossJunk(bot, { keepResources: bot.role === 'trade' || bot.role === 'farm' })
+      if (Math.random() < 0.2 && !busy) cycleHotbar(bot)
     }
 
     if (!busy && now - lastMenu > jitter(48_000, 0.35)) {
@@ -121,42 +123,26 @@ export function playstyleOf(role, cfg = {}) {
 
 export function applyPathfinderDefaults(bot, movements) {
   if (bot.pathfinder) {
-    if (Number.isFinite(bot.pathfinder.thinkTimeout)) {
-      bot.pathfinder.thinkTimeout = Math.max(bot.pathfinder.thinkTimeout, 800)
-    } else {
-      bot.pathfinder.thinkTimeout = 800
-    }
+    bot.pathfinder.thinkTimeout = Math.max(Number(bot.pathfinder.thinkTimeout) || 0, 2200)
     if (Number.isFinite(bot.pathfinder.tickTimeout)) {
-      bot.pathfinder.tickTimeout = Math.max(bot.pathfinder.tickTimeout, 40)
+      bot.pathfinder.tickTimeout = Math.max(bot.pathfinder.tickTimeout, 50)
+    } else {
+      bot.pathfinder.tickTimeout = 50
     }
   }
   return applyIslandMovements(movements, { canDig: false, maxDrop: 2 })
 }
 
 export function fidget(bot, activity = 'idle') {
-  if (typeof utilFidget === 'function') {
-    try {
-      utilFidget(bot, activity)
-      return
-    } catch {
-      /* fall through */
-    }
+  if (bot?.pathfinder && typeof bot.pathfinder.isMoving === 'function' && bot.pathfinder.isMoving()) {
+    return
   }
-  const roll = Math.random()
   try {
-    if (roll < 0.34) {
-      bot.setControlState('jump', true)
-      setTimeout(() => bot.setControlState('jump', false), 180)
-      note(bot, 'fidget jump', activity)
-    } else if (roll < 0.67) {
-      bot.swingArm()
-      note(bot, 'fidget swing', activity)
-    } else {
-      bot.look(Math.random() * Math.PI * 2, (Math.random() - 0.5) * 0.4, true).catch(() => {})
-      note(bot, 'fidget look', activity)
-    }
+    idleFidget(bot, activity)
   } catch {
-    /* ignore */
+    if (typeof utilFidget === 'function') {
+      try { utilFidget(bot, activity) } catch { /* ignore */ }
+    }
   }
 }
 

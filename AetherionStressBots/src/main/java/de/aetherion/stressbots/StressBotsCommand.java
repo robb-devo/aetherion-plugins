@@ -57,7 +57,7 @@ public final class StressBotsCommand implements CommandExecutor, TabCompleter {
             case "list" -> sender.sendMessage(plugin.getController().reportText().split("\n"));
             case "start" -> {
                 if (args.length < 2) {
-                    sender.sendMessage("§e/stressbots start <mine|forage|catch|roam|combat|fish|trade|quest|pad> [count]");
+                    sender.sendMessage("§e/stressbots start <mine|forage|catch|roam|combat|fish|farm|trade|quest|pad> [count]");
                     return true;
                 }
                 int count = args.length >= 3 ? parseInt(args[2], 1) : Math.max(1, plugin.getController().desired(args[1]));
@@ -80,7 +80,7 @@ public final class StressBotsCommand implements CommandExecutor, TabCompleter {
     private void help(CommandSender sender) {
         sender.sendMessage("§e/stressbots <reload|setup|list|start|stop|stopall|report>");
         sender.sendMessage("§7Wave 1: §f/stressbots start mine 3");
-        sender.sendMessage("§7Wave 2: §f/stressbots start trade 2 §7· fish · quest · pad · combat");
+        sender.sendMessage("§7Wave 2: §f/stressbots start farm 3 §7· trade · fish · quest · pad · combat");
         sender.sendMessage("§7Also: §f/botreport");
     }
 

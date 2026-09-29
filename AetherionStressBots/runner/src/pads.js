@@ -15,15 +15,17 @@ export function readPads(cfg) {
     .filter((p) => Number.isFinite(p.x) && Number.isFinite(p.y) && Number.isFinite(p.z))
 }
 
-export function pickNextPad(from, pads, lastId, { minHop = 6 } = {}) {
+export function pickNextPad(from, pads, lastId, { minHop = 6, maxHop = Infinity } = {}) {
   if (!pads.length) return null
   const others = pads.filter((pad) => pad.id !== lastId)
   const pool = others.length ? others : pads
   const reachable = pool.filter((pad) => {
     if (!from) return true
     const dist = horizontalDistance(from, pad)
-    return dist >= minHop || pool.length === 1
+    if (dist < minHop && pool.length > 1) return false
+    if (Number.isFinite(maxHop) && dist > maxHop) return false
+    return true
   })
-  const choices = reachable.length ? reachable : pool
-  return choices[Math.floor(Math.random() * choices.length)]
+  if (!reachable.length) return null
+  return reachable[Math.floor(Math.random() * reachable.length)]
 }

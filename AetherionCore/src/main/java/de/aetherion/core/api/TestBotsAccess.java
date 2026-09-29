@@ -62,4 +62,12 @@ public interface TestBotsAccess {
     String reportText();
 
     TestBotView bot(String name);
+
+    /**
+     * Extra Dev-menu header lines (TPS is already on {@link TestBotReport}).
+     * Default empty so older implementations stay valid.
+     */
+    default List<String> reportLore() {
+        return List.of();
+    }
 }
