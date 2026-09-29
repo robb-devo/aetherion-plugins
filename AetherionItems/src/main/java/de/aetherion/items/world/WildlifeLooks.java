@@ -1336,7 +1336,7 @@ public final class WildlifeLooks implements Listener {
         entity.setCustomNameVisible(false);
         TextDisplay label = labelOf(entity);
         if (label == null || !label.isValid()) {
-            label = spawnLabel(entity, text);
+            label = reuseOrSpawnLabel(entity, text);
         } else {
             label.text(LegacyComponentSerializer.legacySection().deserialize(text));
             label.setSeeThrough(false);
@@ -1353,6 +1353,42 @@ public final class WildlifeLooks implements Listener {
             }
         }
         return null;
+    }
+
+    private TextDisplay reuseOrSpawnLabel(LivingEntity entity, String text) {
+        World world = entity.getWorld();
+        if (world == null) {
+            return null;
+        }
+        String id = entity.getUniqueId().toString();
+        TextDisplay existing = null;
+        for (Entity nearby : world.getNearbyEntities(entity.getLocation(), 2.5, 3.0, 2.5)) {
+            if (!(nearby instanceof TextDisplay display)) {
+                continue;
+            }
+            String tagged = display.getPersistentDataContainer().get(
+                    ItemKeys.wildlifeLabel(), PersistentDataType.STRING);
+            if (!id.equals(tagged)) {
+                continue;
+            }
+            if (existing == null) {
+                existing = display;
+            } else {
+                display.remove();
+            }
+        }
+        if (existing != null && existing.isValid()) {
+            existing.text(LegacyComponentSerializer.legacySection().deserialize(text));
+            existing.setSeeThrough(false);
+            existing.setPersistent(false);
+            existing.setTransformation(labelTransform(entity));
+            if (existing.getVehicle() != entity) {
+                existing.leaveVehicle();
+                entity.addPassenger(existing);
+            }
+            return existing;
+        }
+        return spawnLabel(entity, text);
     }
 
     private TextDisplay spawnLabel(LivingEntity entity, String text) {

@@ -135,7 +135,7 @@ public final class CryptHologramService {
             spawned.setShadowed(true);
             spawned.setAlignment(TextDisplay.TextAlignment.CENTER);
             spawned.setBackgroundColor(Color.fromARGB(140, 18, 8, 28));
-            spawned.setPersistent(true);
+            spawned.setPersistent(false);
             spawned.setGravity(false);
             spawned.setInvulnerable(true);
             spawned.setTransformation(new Transformation(
@@ -190,9 +190,16 @@ public final class CryptHologramService {
             if (world == null) {
                 continue;
             }
+            Location at = holo.location(world);
+            if (!at.getChunk().isLoaded()) {
+                continue;
+            }
             Entity entity = holo.displayId() == null ? null : Bukkit.getEntity(holo.displayId());
-            if (entity instanceof TextDisplay display && entity.isValid()) {
-                // Kill extras that may have stacked on the same spot.
+            TextDisplay display = entity instanceof TextDisplay text && entity.isValid() ? text : null;
+            if (display == null) {
+                display = reclaim(holo, world, at);
+            }
+            if (display != null && display.isValid()) {
                 cullDuplicates(holo, display.getUniqueId());
                 display.text(LegacyComponentSerializer.legacySection().deserialize(
                         LINE_1 + "\n" + LINE_2
@@ -201,6 +208,31 @@ public final class CryptHologramService {
             }
             spawnDisplay(holo);
         }
+    }
+
+    private TextDisplay reclaim(PlacedHolo holo, World world, Location at) {
+        TextDisplay found = null;
+        for (Entity entity : world.getNearbyEntities(at, 3, 3, 3)) {
+            if (!(entity instanceof TextDisplay display)) {
+                continue;
+            }
+            String id = display.getPersistentDataContainer().get(
+                    ItemKeys.cryptHoloDisplay(), PersistentDataType.STRING);
+            boolean ours = holo.id().toString().equals(id)
+                    || display.getScoreboardTags().contains("aetherion_crypt_holo");
+            if (!ours) {
+                continue;
+            }
+            if (found == null) {
+                found = display;
+            } else {
+                display.remove();
+            }
+        }
+        if (found != null) {
+            holo.displayId(found.getUniqueId());
+        }
+        return found;
     }
 
     private void cullDuplicates(PlacedHolo holo, UUID keepId) {

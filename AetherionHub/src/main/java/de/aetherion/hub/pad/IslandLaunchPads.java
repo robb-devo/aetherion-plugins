@@ -1,5 +1,7 @@
 package de.aetherion.hub.pad;
 
+import de.aetherion.core.entity.DisplayEntities;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Color;
@@ -240,7 +242,9 @@ public final class IslandLaunchPads implements Listener {
                         || loc.getZ() < minZ || loc.getZ() > maxZ) {
                     continue;
                 }
-                display.remove();
+                if (isJumpPadLabel(display) || DisplayEntities.isJumpPadLabel(display)) {
+                    display.remove();
+                }
             }
         }
     }
@@ -272,9 +276,48 @@ public final class IslandLaunchPads implements Listener {
     }
 
     private void ensureSingleLabel(World world, Pad pad) {
-        wipePadLabelZone(world, pad);
         Location at = labelLocation(world, pad);
+        TextDisplay kept = null;
+        List<TextDisplay> extras = new ArrayList<>();
+        double minX = Math.min(pad.minX(), pad.maxX()) - 4.0;
+        double maxX = Math.max(pad.minX(), pad.maxX()) + 5.0;
+        double minZ = Math.min(pad.minZ(), pad.maxZ()) - 4.0;
+        double maxZ = Math.max(pad.minZ(), pad.maxZ()) + 5.0;
+        double minY = Math.min(pad.minY(), pad.maxY()) - 1.0;
+        double maxY = Math.max(pad.minY(), pad.maxY()) + 6.0;
+        for (Entity entity : world.getNearbyEntities(at, 8, 6, 8)) {
+            if (!(entity instanceof TextDisplay display)) {
+                continue;
+            }
+            Location loc = display.getLocation();
+            if (loc.getX() < minX || loc.getX() > maxX
+                    || loc.getY() < minY || loc.getY() > maxY
+                    || loc.getZ() < minZ || loc.getZ() > maxZ) {
+                continue;
+            }
+            if (!isJumpPadLabel(display)) {
+                continue;
+            }
+            if (kept == null) {
+                kept = display;
+            } else {
+                extras.add(display);
+            }
+        }
+        for (TextDisplay extra : extras) {
+            extra.remove();
+        }
         String title = labelTitle(pad.id());
+        if (kept != null && kept.isValid()) {
+            kept.text(Component.text(title, NamedTextColor.GREEN, TextDecoration.BOLD));
+            kept.setPersistent(false);
+            kept.addScoreboardTag(LABEL_TAG);
+            kept.addScoreboardTag(LABEL_TAG + "_" + pad.id().toLowerCase(Locale.ROOT));
+            if (kept.getLocation().distanceSquared(at) > 0.05) {
+                kept.teleport(at);
+            }
+            return;
+        }
         world.spawn(at, TextDisplay.class, display -> {
             display.text(Component.text(title, NamedTextColor.GREEN, TextDecoration.BOLD));
             display.setBillboard(Display.Billboard.CENTER);
