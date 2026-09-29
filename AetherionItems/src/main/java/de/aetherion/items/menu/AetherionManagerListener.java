@@ -320,39 +320,9 @@ public class AetherionManagerListener implements Listener {
             return;
         }
 
-        if (event.getView().getTopInventory().getHolder() instanceof de.aetherion.items.codex.BestiaryGUI.Holder) {
+        // Every Codex page (Collection, Bestiary, Journal, detail, hub) routes through CodexMenus.
+        if (event.getView().getTopInventory().getHolder() instanceof de.aetherion.items.codex.CodexView) {
             event.setCancelled(true);
-            if (event.getRawSlot() == de.aetherion.items.codex.CodexGui.BACK_SLOT) {
-                manager.open(player);
-                return;
-            }
-            if (manager.getBestiaryGUI() != null) {
-                manager.getBestiaryGUI().handleClick(player, event.getRawSlot());
-            }
-            return;
-        }
-
-        if (event.getView().getTopInventory().getHolder() instanceof de.aetherion.items.codex.CollectionGUI.Holder) {
-            event.setCancelled(true);
-            if (event.getRawSlot() == de.aetherion.items.codex.CodexGui.BACK_SLOT) {
-                manager.open(player);
-                return;
-            }
-            if (manager.getCollectionGUI() != null) {
-                manager.getCollectionGUI().handleClick(player, event.getRawSlot());
-            }
-            return;
-        }
-
-        if (event.getView().getTopInventory().getHolder() instanceof de.aetherion.items.codex.DungeonJournalGUI.Holder) {
-            event.setCancelled(true);
-            if (event.getRawSlot() == de.aetherion.items.codex.DungeonJournalGUI.BACK_SLOT) {
-                manager.open(player);
-                return;
-            }
-            if (manager.getJournalGUI() != null) {
-                manager.getJournalGUI().handleClick(player, event.getRawSlot());
-            }
             return;
         }
 
@@ -393,8 +363,7 @@ public class AetherionManagerListener implements Listener {
     public void onInventoryDrag(InventoryDragEvent event) {
         if (event.getView().getTopInventory().getHolder() instanceof AetherionManagerGUI.Holder
                 || event.getView().getTopInventory().getHolder() instanceof StatsOverviewGUI.Holder
-                || event.getView().getTopInventory().getHolder() instanceof de.aetherion.items.codex.BestiaryGUI.Holder
-                || event.getView().getTopInventory().getHolder() instanceof de.aetherion.items.codex.CollectionGUI.Holder) {
+                || event.getView().getTopInventory().getHolder() instanceof de.aetherion.items.codex.CodexView) {
             event.setCancelled(true);
             return;
         }

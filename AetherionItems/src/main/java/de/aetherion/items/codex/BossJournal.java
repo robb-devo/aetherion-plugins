@@ -29,7 +29,22 @@ public final class BossJournal {
     private BossJournal() {
     }
 
+    private static volatile List<Entry> cache = List.of();
+    private static volatile long cachedAt;
+
+    /** Live templates, re-read at most every 10 s (pages ask per card). */
     public static List<Entry> entries() {
+        long now = System.currentTimeMillis();
+        if (now - cachedAt < 10_000L) {
+            return new ArrayList<>(cache);
+        }
+        List<Entry> fresh = read();
+        cache = List.copyOf(fresh);
+        cachedAt = now;
+        return fresh;
+    }
+
+    private static List<Entry> read() {
         List<Entry> entries = new ArrayList<>();
         Plugin plugin = Bukkit.getPluginManager().getPlugin("BossEngine");
         if (plugin == null || !plugin.isEnabled()) {
@@ -62,10 +77,48 @@ public final class BossJournal {
                         experience
                 ));
             }
-        } catch (ReflectiveOperationException ignored) {
+        } catch (ReflectiveOperationException | RuntimeException ignored) {
+            // A half-loaded or newer BossEngine must never break the Codex — show what we have.
         }
         entries.sort((a, b) -> a.displayName().compareToIgnoreCase(b.displayName()));
         return entries;
+    }
+
+    /** The live template for one boss id, or null (BossEngine missing / id unknown). */
+    public static Entry entry(String id) {
+        if (id == null) {
+            return null;
+        }
+        for (Entry entry : entries()) {
+            if (entry.id().equalsIgnoreCase(id)) {
+                return entry;
+            }
+        }
+        return null;
+    }
+
+    /** Loot lines grouped by role ({@code Killer}, {@code Shared}, …), at most {@code max} drops. */
+    public static List<String> dropLines(Entry entry, int max) {
+        List<String> lines = new ArrayList<>();
+        if (entry == null || entry.drops().isEmpty()) {
+            lines.add("§8No listed loot.");
+            return lines;
+        }
+        String lastRole = "";
+        int shown = 0;
+        for (Drop drop : entry.drops()) {
+            if (shown >= max) {
+                lines.add("§8… and " + (entry.drops().size() - shown) + " more");
+                break;
+            }
+            if (!drop.role().equals(lastRole)) {
+                lines.add("§8" + drop.role());
+                lastRole = drop.role();
+            }
+            lines.add(" " + drop.line());
+            shown++;
+        }
+        return lines;
     }
 
     private static List<Drop> drops(Object loot) throws ReflectiveOperationException {

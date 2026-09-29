@@ -37,6 +37,33 @@ public final class SkillCommand implements CommandExecutor, TabCompleter {
             }
             return true;
         }
+        if (sender instanceof Player self) {
+            String sub = args[0].toLowerCase(Locale.ROOT);
+            if (sub.equals("overview") || sub.equals("all") || sub.equals("seals")) {
+                de.aetherion.items.skill.SkillOverviewGUI.open(self);
+                return true;
+            }
+            if (sub.equals("presets")) {
+                de.aetherion.items.skill.SkillPresetsGUI.open(self);
+                return true;
+            }
+            if (sub.equals("preset")) {
+                if (args.length < 2) {
+                    de.aetherion.items.skill.SkillPresetsGUI.open(self);
+                    return true;
+                }
+                try {
+                    int index = Integer.parseInt(args[1]) - 1;
+                    if (index < 0 || index >= SkillService.PRESET_COUNT) {
+                        throw new NumberFormatException();
+                    }
+                    de.aetherion.items.skill.SkillPresetsGUI.load(self, skills, index);
+                } catch (NumberFormatException exception) {
+                    self.sendMessage("§cUsage: /skills preset <1-" + SkillService.PRESET_COUNT + ">");
+                }
+                return true;
+            }
+        }
         AetherSkill.Category page = category(args[0]);
         if (page != null && args.length == 1) {
             // /skills fishing — jump straight to a page.
@@ -150,7 +177,7 @@ public final class SkillCommand implements CommandExecutor, TabCompleter {
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
             Stream<String> options = Stream.concat(
-                    Stream.of("open"),
+                    Stream.of("open", "overview", "presets", "preset"),
                     Arrays.stream(AetherSkill.Category.values()).map(c -> c.name().toLowerCase(Locale.ROOT))
             );
             if (sender.hasPermission("aetherion.skills.admin")) {
@@ -159,6 +186,9 @@ public final class SkillCommand implements CommandExecutor, TabCompleter {
             return options
                     .filter(option -> option.startsWith(args[0].toLowerCase(Locale.ROOT)))
                     .toList();
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("preset")) {
+            return List.of("1", "2", "3");
         }
         if (args.length == 2 && sender.hasPermission("aetherion.skills.admin")) {
             return Bukkit.getOnlinePlayers().stream()

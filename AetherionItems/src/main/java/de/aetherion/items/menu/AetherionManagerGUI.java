@@ -158,12 +158,16 @@ public class AetherionManagerGUI {
                 Material.BONE, "§6Bestiary",
                 progress == null ? "§7Make your first kill. The mobs are keeping score." : progress.bestiaryHint(),
                 "§7Every mob you have killed,",
-                "§7plus the top 3 hunters.");
+                "§7nine tiers each, plus leaderboards.",
+                codexLine(player, de.aetherion.items.codex.CodexBook.Ledger.BESTIARY),
+                "§8/bestiary");
         put(inventory, COLLECTION_SLOT, progress != null && progress.collection(player),
                 Material.IRON_PICKAXE, "§aCollection",
                 progress == null ? "§7Break one block. Paperwork follows." : progress.collectionHint(),
-                "§7Blocks you mined, grouped",
-                "§7by ores, wood, stone and more.");
+                "§7Ores, wood, crops, catches and",
+                "§7more — nine tiers each.",
+                codexLine(player, de.aetherion.items.codex.CodexBook.Ledger.COLLECTION),
+                "§8/collection · /codex");
         boolean petsUnlocked = manager.hasPetMenu() && (progress == null || progress.pets(player));
             boolean petsQuest = petsUnlocked && QuestProgressHook.shouldGuidePetsEquip(player);
         if (!manager.hasPetMenu()) {
@@ -184,7 +188,8 @@ public class AetherionManagerGUI {
                 Material.WRITABLE_BOOK, "§5Dungeon Journal",
                 progress == null ? "§7A dungeon boss. Then the receipts." : progress.journalHint(),
                 "§7Boss kills and what they",
-                "§7can drop. One page per boss.");
+                "§7can drop. One page per boss.",
+                "§8/codex journal");
         put(inventory, RECIPE_SLOT, progress != null && progress.recipeBook(player),
                 Material.KNOWLEDGE_BOOK, "§6Recipe Book",
                 progress == null ? "§7Craftsman unlocks this with Crafting." : progress.hint(ProgressionService.Flag.WORKBENCH),
@@ -672,6 +677,17 @@ public class AetherionManagerGUI {
             item.setItemMeta(meta);
         }
         return item;
+    }
+
+    /** "Level 12 · 3 to claim" for a Codex ledger button. */
+    private static String codexLine(Player player, de.aetherion.items.codex.CodexBook.Ledger ledger) {
+        AetherionItems plugin = AetherionItems.getInstance();
+        if (plugin == null || plugin.getCodex() == null) {
+            return "";
+        }
+        var summary = de.aetherion.items.codex.CodexBook.summary(plugin.getCodex(), player, ledger);
+        return "§7Level §f" + summary.level()
+                + (summary.claimableTiers() > 0 ? " §8· §e✦ " + summary.claimableTiers() + " to claim" : "");
     }
 
     private void put(

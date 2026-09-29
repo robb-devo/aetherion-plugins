@@ -197,6 +197,11 @@ public class HarvestListener implements Listener {
         }
         org.bukkit.block.data.BlockData original = block.getBlockData().clone();
         de.aetherion.items.mining.MineIsleHook.noteVacuum(player, material, block.getLocation());
+        // Vacuumed ore fires no break event — credit the Collection here or it never counts.
+        if (de.aetherion.items.AetherionItems.getInstance() != null
+                && de.aetherion.items.AetherionItems.getInstance().getCodex() != null) {
+            de.aetherion.items.AetherionItems.getInstance().getCodex().noteHarvest(player, material);
+        }
         var skills = de.aetherion.items.AetherionItems.getInstance() == null
                 ? null
                 : de.aetherion.items.AetherionItems.getInstance().getSkills();

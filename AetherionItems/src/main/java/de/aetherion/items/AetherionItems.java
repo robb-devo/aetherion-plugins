@@ -437,6 +437,17 @@ public class AetherionItems extends JavaPlugin {
         );
         getServer().getPluginManager().registerEvents(new CodexListener(codex), this);
         de.aetherion.items.codex.BossJournalListener.register(this, codex);
+        // Codex overhaul: one router for every Codex page, milestone perks, /codex /collection /bestiary.
+        getServer().getPluginManager().registerEvents(new de.aetherion.items.codex.CodexMenus(), this);
+        de.aetherion.items.manager.ActiveEquipmentStats.registerProvider(
+                new de.aetherion.items.codex.CodexPerks(codex, getConfig().getBoolean("codex-perks", true)));
+        de.aetherion.items.codex.CodexCommand codexCommand = new de.aetherion.items.codex.CodexCommand();
+        for (String name : new String[] {"codex", "collection", "bestiary"}) {
+            if (getCommand(name) != null) {
+                getCommand(name).setExecutor(codexCommand);
+                getCommand(name).setTabCompleter(codexCommand);
+            }
+        }
         de.aetherion.items.listener.CoreShardDropListener.register(this);
         getServer().getPluginManager().registerEvents(new AetherionManagerListener(manager), this);
         getServer().getScheduler().runTask(this, this::hookPetMenu);
