@@ -178,6 +178,63 @@ public enum AetherSkill {
             "+10 Mining Power in caves or after dark.",
             Flag.CAVE_SENSE
     ),
+    BEDROCK_BORN(
+            "bedrock_born",
+            "Bedrock Born",
+            Category.MINING,
+            Material.CHISELED_DEEPSLATE,
+            "Eldervale stone knows your boots.",
+            "+16 Fortune and +6 Spread on Mining Eldervale only.",
+            Flag.BEDROCK_BORN,
+            bonus(ItemCapability.FORTUNE, 16),
+            bonus(ItemCapability.SPREAD, 6)
+    ),
+    WORK_SONG(
+            "work_song",
+            "Work Song",
+            Category.MINING,
+            Material.BELL,
+            "You swing in four-four. The seam keeps time.",
+            "Strike Rhythm builds faster and holds longer. +6 Fortune.",
+            Flag.WORK_SONG,
+            bonus(ItemCapability.FORTUNE, 6)
+    ),
+    GEODE_NOSE(
+            "geode_nose",
+            "Geode Nose",
+            Category.MINING,
+            Material.AMETHYST_CLUSTER,
+            "You can smell a crystal through ten feet of granite.",
+            "Crystal Finds turn up more often, heavier, and crack faster.",
+            Flag.GEODE_NOSE
+    ),
+    UNION_CARD(
+            "union_card",
+            "Union Card",
+            Category.MINING,
+            Material.WRITABLE_BOOK,
+            "The Foreman pays union rates. Mostly to you.",
+            "Foreman Contracts pay more coins.",
+            Flag.UNION_CARD
+    ),
+    SEAM_READER(
+            "seam_reader",
+            "Seam Reader",
+            Category.MINING,
+            Material.SPYGLASS,
+            "You read ore like a newspaper. Bad news for the ore.",
+            "Seam Chains burst sooner. Nearby ore shimmers now and then.",
+            Flag.SEAM_READER
+    ),
+    DEPTH_GAUGE(
+            "depth_gauge",
+            "Depth Gauge",
+            Category.MINING,
+            Material.LANTERN,
+            "The deeper it gets, the better it pays.",
+            "Eldervale depth bonuses +50%. Pairs with Cave Sense.",
+            Flag.DEPTH_GAUGE
+    ),
 
     LIGHT_FOOT(
             "light_foot",
@@ -216,6 +273,60 @@ public enum AetherSkill {
             "+11 Fortune. Speed stays on boots / pets / gear.",
             Flag.NONE,
             bonus(ItemCapability.FORTUNE, 11)
+    ),
+    GROVE_BORN(
+            "grove_born",
+            "Grove Born",
+            Category.FORAGING,
+            Material.MOSS_BLOCK,
+            "The island's trees know your boots.",
+            "Foraging Eldervale: bigger wood cap, mastery grows faster.",
+            Flag.GROVE_BORN
+    ),
+    SAP_SENSE(
+            "sap_sense",
+            "Sap Sense",
+            Category.FORAGING,
+            Material.HONEYCOMB,
+            "You smell a Crown Find before it lets go.",
+            "Crown Finds turn up more often, and finer.",
+            Flag.SAP_SENSE
+    ),
+    STEADY_HANDS(
+            "steady_hands",
+            "Steady Hands",
+            Category.FORAGING,
+            Material.GOLDEN_AXE,
+            "The fell marker waits for you now.",
+            "CHOP window +1 on the isle, shorter miss cooldown.",
+            Flag.STEADY_HANDS
+    ),
+    DEADFALL_DANCER(
+            "deadfall_dancer",
+            "Deadfall Dancer",
+            Category.FORAGING,
+            Material.STRIPPED_DARK_OAK_LOG,
+            "Widowmakers keep missing. Rude of them.",
+            "Longer limb warning, half the hurt, double deadfall wood.",
+            Flag.DEADFALL_DANCER
+    ),
+    BOARD_RATES(
+            "board_rates",
+            "Board Rates",
+            Category.FORAGING,
+            Material.WRITABLE_BOOK,
+            "Pell pays union rates. Mostly to you.",
+            "Lumber Board orders pay more coins.",
+            Flag.BOARD_RATES
+    ),
+    HEART_HUNTER(
+            "heart_hunter",
+            "Heart Hunter",
+            Category.FORAGING,
+            Material.HEART_OF_THE_SEA,
+            "Heartwood hums when you walk past.",
+            "Heartwood turns up more often on Foraging Eldervale.",
+            Flag.HEART_HUNTER
     ),
 
     CROP_GOSSIP(
@@ -532,6 +643,18 @@ public enum AetherSkill {
         GOLDEN_HOUR,
         NIGHT_OWL,
         CAVE_SENSE,
+        BEDROCK_BORN,
+        WORK_SONG,
+        GEODE_NOSE,
+        UNION_CARD,
+        SEAM_READER,
+        DEPTH_GAUGE,
+        GROVE_BORN,
+        SAP_SENSE,
+        STEADY_HANDS,
+        DEADFALL_DANCER,
+        BOARD_RATES,
+        HEART_HUNTER,
         PINCH_PENNY,
         DIAMOND_SPINE,
         RELIC_APPETITE,

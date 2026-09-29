@@ -8,8 +8,11 @@ import org.bukkit.GameRule;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.WorldCreator;
+import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.IOException;
@@ -20,7 +23,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class VeinsWorld {
 
     public static final String DEFAULT_NAME = "aether_veins";
-    public static final int LAYOUT = 4;
+    /** Bump to force a one-time rebuild of the dig world (5 = Amethyst geodes). */
+    public static final int LAYOUT = 5;
 
     private final AetherionMining plugin;
     private final ConcurrentHashMap<UUID, Location> exits = new ConcurrentHashMap<>();
@@ -30,6 +34,8 @@ public final class VeinsWorld {
     private int generation;
     private int layout;
     private World world;
+    private boolean digZonesReady;
+    private boolean painting;
 
     public VeinsWorld(AetherionMining plugin) {
         this.plugin = plugin;
@@ -80,10 +86,174 @@ public final class VeinsWorld {
         return nextReset;
     }
 
+    /** Resets so far; bumps every daily reset (per-cycle tallies key off it). */
+    public int generation() {
+        return generation;
+    }
+
+    public boolean isDigZonesReady() {
+        return digZonesReady;
+    }
+
+    public int digHalfExtent() {
+        int configured = plugin.getConfig().getInt("veins.dig-half-extent", 0);
+        if (configured > 0) {
+            return Math.max(32, configured);
+        }
+        int outer = plugin.getConfig().getInt("veins.dig-outer-radius", 0);
+        return Math.max(32, outer > 0 ? outer : Math.max(64, radius() - 32));
+    }
+
+    public int digDepth() {
+        return Math.max(16, plugin.getConfig().getInt("veins.dig-depth", 48));
+    }
+
+    public int digHeight() {
+        return Math.max(8, plugin.getConfig().getInt("veins.dig-height", 28));
+    }
+
+    public int digHubScan() {
+        return Math.max(32, plugin.getConfig().getInt("veins.dig-hub-scan", 120));
+    }
+
+    public int digOuterRadius() {
+        return digHalfExtent();
+    }
+
+    public long digSeed() {
+        return plugin.getConfig().getLong("veins.dig-seed", 20260922L);
+    }
+
+    public int spawnProtectRadius() {
+        return Math.max(8, plugin.getConfig().getInt("veins.spawn-protect-radius", 24));
+    }
+
+    /**
+     * Live dig-volume paint (four zones). Kept from the richer live Mining jar — additive beside
+     * chunk-gen geodes. Returns 1 if a paint job started, 0 if already ready / busy / unavailable.
+     */
+    public int ensureDigZones(CommandSender sender, boolean force) {
+        World target = world != null && Bukkit.getWorld(world.getUID()) != null
+                ? world
+                : Bukkit.getWorld(worldName());
+        if (target == null) {
+            if (sender != null) {
+                sender.sendMessage("§cAmethyst Area world / spawn unavailable.");
+            }
+            return 0;
+        }
+        world = target;
+        Location spawn = hubSpawn();
+        if (spawn == null) {
+            if (sender != null) {
+                sender.sendMessage("§cAmethyst Area world / spawn unavailable.");
+            }
+            return 0;
+        }
+        if (painting) {
+            if (sender != null) {
+                sender.sendMessage("§eDig paint already running…");
+            }
+            return 0;
+        }
+        if (!force && digZonesReady && layout >= LAYOUT) {
+            return 0;
+        }
+        CommandSender out = sender != null ? sender : Bukkit.getConsoleSender();
+        Location paintSpawn = spawn;
+        painting = true;
+        digZonesReady = false;
+        if (force) {
+            File stale = VeinsDigSnapshot.file(plugin.getDataFolder());
+            if (stale.isFile() && !stale.delete()) {
+                plugin.getLogger().warning("Could not delete stale dig snapshot before safe re-paint.");
+            } else if (stale.isFile()) {
+                out.sendMessage("§7Cleared stale dig snapshot (hub-safe re-paint).");
+            }
+        }
+        VeinsDigZones.paintAsync(
+                plugin,
+                target,
+                paintSpawn.getBlockX(),
+                paintSpawn.getBlockY(),
+                paintSpawn.getBlockZ(),
+                digHalfExtent(),
+                digDepth(),
+                digHeight(),
+                digHubScan(),
+                digSeed(),
+                out,
+                plugin.getDataFolder(),
+                () -> {
+                    digZonesReady = true;
+                    layout = LAYOUT;
+                    painting = false;
+                    VeinsGuard.protectSpawn(target, paintSpawn, spawnProtectRadius());
+                    saveData();
+                    scheduleSoftLight(out, paintSpawn);
+                });
+        return 1;
+    }
+
+    public void runSoftLight(CommandSender sender, World target, int centerX, int centerZ, int softRadius) {
+        CommandSender out = sender != null ? sender : Bukkit.getConsoleSender();
+        if (target == null) {
+            out.sendMessage("§cNo world for softlight.");
+            return;
+        }
+        try {
+            Class<?> pass = Class.forName("de.aetherion.hub.util.SoftLightPass");
+            pass.getMethod(
+                            "run",
+                            JavaPlugin.class,
+                            CommandSender.class,
+                            World.class,
+                            int.class,
+                            int.class,
+                            int.class,
+                            int.class,
+                            int.class,
+                            int.class)
+                    .invoke(
+                            null,
+                            softLightPlugin(),
+                            out,
+                            target,
+                            centerX,
+                            centerZ,
+                            Math.max(64, softRadius),
+                            plugin.getConfig().getInt("veins.softlight-min", 7),
+                            plugin.getConfig().getInt("veins.softlight-step", 5),
+                            plugin.getConfig().getInt("veins.softlight-level", 10));
+        } catch (ReflectiveOperationException error) {
+            out.sendMessage("§cSoftlight needs AetherionHub loaded (SoftLightPass).");
+            plugin.getLogger().warning("SoftLightPass unavailable: " + error.getMessage());
+        }
+    }
+
+    private void scheduleSoftLight(CommandSender sender, Location spawn) {
+        if (spawn == null || spawn.getWorld() == null) {
+            return;
+        }
+        if (!plugin.getConfig().getBoolean("veins.softlight-on-paint", false)) {
+            return;
+        }
+        Bukkit.getScheduler().runTaskLater(
+                (Plugin) plugin,
+                () -> runSoftLight(sender, spawn.getWorld(), spawn.getBlockX(), spawn.getBlockZ(), digOuterRadius() + 16),
+                40L);
+    }
+
+    private JavaPlugin softLightPlugin() {
+        Plugin hub = Bukkit.getPluginManager().getPlugin("AetherionHub");
+        return hub instanceof JavaPlugin javaPlugin ? javaPlugin : plugin;
+    }
+
     public World ensureLoaded() {
         if (layout < LAYOUT) {
             rebuildNow();
             layout = LAYOUT;
+            digZonesReady = false;
             if (nextReset <= 0L) {
                 nextReset = System.currentTimeMillis() + resetMillis();
             }
@@ -91,6 +261,7 @@ public final class VeinsWorld {
         }
         if (world != null && Bukkit.getWorld(world.getUID()) != null) {
             applyWorld(world);
+            ensureDigZones(null, false);
             return world;
         }
         World existing = Bukkit.getWorld(worldName());
@@ -98,11 +269,13 @@ public final class VeinsWorld {
             world = existing;
             applyWorld(world);
             decorate();
+            ensureDigZones(null, false);
             return world;
         }
         world = create();
         if (world != null) {
             decorate();
+            ensureDigZones(null, false);
         }
         if (nextReset <= 0L) {
             nextReset = System.currentTimeMillis() + resetMillis();
@@ -143,7 +316,7 @@ public final class VeinsWorld {
         Location spawn = hubSpawn();
         player.teleport(spawn);
         player.setFallDistance(0f);
-        player.sendMessage("§7The Veins. §8Mine everything but the hub. Corners have favorites.");
+        player.sendMessage("§dThe Amethyst Mine §8(The Veins) §7· mine anything but the hub. Corners have favourites; geodes grow deeper down.");
         player.playSound(spawn, org.bukkit.Sound.ENTITY_ENDERMAN_TELEPORT, 1f, 0.7f);
         return true;
     }
@@ -169,7 +342,7 @@ public final class VeinsWorld {
         if (System.currentTimeMillis() < nextReset) {
             return;
         }
-        reset("The Veins closed. Stone is new again.");
+        reset("The Amethyst Mine closed for the night. Stone is new again, and so are the geodes.");
     }
 
     public void reset(String reason) {
@@ -330,6 +503,7 @@ public final class VeinsWorld {
         nextReset = yaml.getLong("next-reset", 0L);
         generation = yaml.getInt("generation", 0);
         layout = yaml.getInt("layout", 0);
+        digZonesReady = yaml.getBoolean("dig-zones-ready", layout >= LAYOUT);
         exits.clear();
         if (yaml.isConfigurationSection("exits")) {
             for (String key : yaml.getConfigurationSection("exits").getKeys(false)) {
@@ -362,6 +536,7 @@ public final class VeinsWorld {
         yaml.set("next-reset", nextReset);
         yaml.set("generation", generation);
         yaml.set("layout", layout);
+        yaml.set("dig-zones-ready", digZonesReady);
         exits.forEach((id, location) -> {
             if (location == null || location.getWorld() == null) {
                 return;

@@ -13,13 +13,23 @@ softdepend:
   - AetherionItems
   - WorldEdit
 
-description: Mining areas and The Veins
+description: Mining Eldervale, the Amethyst Mine (The Veins) and shared-world ore regen
 
 commands:
-  deepmines:
-    description: Enter The Veins (Eldervale deep mine), or admin tools
-    usage: /deepmines [leave|time|npc|reset|eldervale]
+  amethyst:
+    description: Enter the Amethyst Area dig world
+    usage: /amethyst
     aliases: [veins]
+    permission: aetherion.mines.use
+  deepmines:
+    description: Admin tools for the Amethyst Area dig world (player entry is /amethyst)
+    usage: /deepmines [leave|time|npc|reset|zones|softlight|eldervale]
+    permission: aetherion.mines.admin
+    permission-message: "Use /amethyst or the Crystal Guide."
+  mineisle:
+    description: "Mining Eldervale journal, compass and crew tour (admins: reload, dev)"
+    usage: "/mineisle [tour|go <place>|stop|map]"
+    aliases: [minejournal]
     permission: aetherion.mines.use
 
 permissions:

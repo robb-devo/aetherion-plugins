@@ -573,7 +573,7 @@ public class AetherionManagerListener implements Listener {
                 de.aetherion.items.util.QuestProgressHook.noteUsed(player, "AETHER_ANVIL");
                 player.closeInventory();
                 Bukkit.getScheduler().runTask(AetherionItems.getInstance(), () ->
-                        player.openAnvil(player.getLocation(), true));
+                        de.aetherion.items.menu.BoosterSocketMenu.open(player));
             }
             case AetherionManagerGUI.DEV_SLOT -> {
                 var dev = AetherionItems.getInstance().getDevMenu();

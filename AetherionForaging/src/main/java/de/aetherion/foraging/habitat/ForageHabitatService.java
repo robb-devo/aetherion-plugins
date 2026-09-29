@@ -81,6 +81,14 @@ public final class ForageHabitatService {
         if (location == null) {
             return null;
         }
+        // Foraging Eldervale's baked district map / named places — an array read, no block scans.
+        de.aetherion.foraging.isle.ForageIsle isle = de.aetherion.foraging.isle.ForageIsle.get();
+        if (isle != null) {
+            String label = isle.areaLabel(location);
+            if (label != null) {
+                return label;
+            }
+        }
         // Material / snow / mushroom sensing first (only inside forage footprint).
         if (sense != null && sense.enabled()) {
             String sensed = sense.detectDisplay(location);

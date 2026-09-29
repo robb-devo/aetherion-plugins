@@ -15,22 +15,49 @@ public class AetherionMining extends JavaPlugin {
     private WorldGuardPlugin worldGuard;
     private VeinsWorld veins;
     private de.aetherion.core.api.MiningAccess miningAccess;
+    private de.aetherion.mining.isle.MineIsle isle;
 
     @Override
     public void onEnable() {
         instance = this;
         worldGuard = WorldGuardPlugin.inst();
         saveDefaultConfig();
+        // Additive: merge new default keys (Mining Eldervale, Amethyst Mine) into an existing
+        // config.yml without touching values that are already set.
+        getConfig().options().copyDefaults(true);
+        saveConfig();
 
         veins = new VeinsWorld(this);
         VeinsNpcs npcs = new VeinsNpcs(this);
         veins.bind(npcs);
+
+        // Mining Eldervale first: its break router must see the strike before MiningListener seals it.
+        if (getConfig().getBoolean("mine-isle.enabled", true)) {
+            try {
+                isle = new de.aetherion.mining.isle.MineIsle(this);
+                isle.start();
+                PluginCommand mineisle = getCommand("mineisle");
+                if (mineisle != null) {
+                    de.aetherion.mining.isle.MineCommand isleCommand = new de.aetherion.mining.isle.MineCommand(isle);
+                    mineisle.setExecutor(isleCommand);
+                    mineisle.setTabCompleter(isleCommand);
+                }
+            } catch (LinkageError error) {
+                isle = null;
+                getLogger().warning("Mining Eldervale off: AetherionItems missing or too old (" + error.getClass().getSimpleName() + ").");
+            }
+        }
 
         getServer().getPluginManager().registerEvents(new MiningListener(), this);
         getServer().getPluginManager().registerEvents(new SharedWorldGuard(), this);
         getServer().getPluginManager().registerEvents(new VeinsListener(this, veins, npcs), this);
 
         VeinsCommand command = new VeinsCommand(this, veins, npcs);
+        PluginCommand amethyst = getCommand("amethyst");
+        if (amethyst != null) {
+            amethyst.setExecutor(command);
+            amethyst.setTabCompleter(command);
+        }
         PluginCommand deepmines = getCommand("deepmines");
         if (deepmines != null) {
             deepmines.setExecutor(command);
@@ -48,7 +75,7 @@ public class AetherionMining extends JavaPlugin {
             }
         });
         getServer().getScheduler().runTaskTimer(this, veins::tickReset, 20L * 60L, 20L * 60L * 5L);
-        getLogger().info("The Veins ready. /deepmines");
+        getLogger().info("Amethyst Area dig world ready. Players: /amethyst. Admin: /deepmines.");
         miningAccess = new de.aetherion.mining.api.MiningAccessImpl();
         de.aetherion.core.api.AetherServices.registerMining(miningAccess);
     }
@@ -67,6 +94,10 @@ public class AetherionMining extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (isle != null) {
+            isle.shutdown();
+            isle = null;
+        }
         if (veins != null) {
             veins.saveData();
         }
@@ -88,5 +119,10 @@ public class AetherionMining extends JavaPlugin {
 
     public VeinsWorld getVeins() {
         return veins;
+    }
+
+    /** Mining Eldervale router, or {@code null} when disabled. */
+    public de.aetherion.mining.isle.MineIsle getIsle() {
+        return isle;
     }
 }

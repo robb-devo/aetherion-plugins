@@ -86,7 +86,9 @@ public final class DevBridges {
                 String boss = linkedBoss(id);
                 String online = entityId == null ? " §8(offline)" : " §a●";
                 String label;
-                if (flavor) {
+                if ("amethyst_mines_guide".equalsIgnoreCase(id)) {
+                    label = "§dCrystal Guide §8· §7Amethyst Mines" + online;
+                } else if (flavor) {
                     label = "§7" + name + " §8· flavor" + online;
                 } else if (boss == null) {
                     label = "§b" + name + online;
@@ -150,7 +152,7 @@ public final class DevBridges {
                  "fuse", "claims_adjuster", "repo_agent", "arena_proctor" -> NpcBucket.BOSS;
             case "foreman", "surveyor", "ore_ledger", "eldervale_welcome", "eldervale_upgrade",
                  "farm_isle_guide", "forage_pad_guide", "canopy_clerk", "isle_clerk", "dungeon_gate",
-                 "miss_canopy" -> NpcBucket.WORLD;
+                 "miss_canopy", "field_warden", "root_cellar", "farm_market", "amethyst_mines_guide" -> NpcBucket.WORLD;
             default -> NpcBucket.WORLD;
         };
     }
@@ -247,9 +249,13 @@ public final class DevBridges {
             "capital",
             "forage_isle",
             "farm",
+            "farm_isle",
             "borderlands",
             "colosseum",
-            "eldervale"
+            "eldervale",
+            "fishing",
+            "bloodstone",
+            "amethyst"
     );
 
     static List<NamedItem> spawnMarkers() {
@@ -339,6 +345,10 @@ public final class DevBridges {
             case "colosseum" -> "Proctor · Crypt T2 ring";
             case "borderlands" -> "Beyond Vex's gate";
             case "eldervale" -> "Mining island · slime jump";
+            case "farm_isle" -> "Shared fields · Millstone pantry";
+            case "fishing" -> "Fishing Eldervale · north pad";
+            case "bloodstone" -> "Hollow Sun arena";
+            case "amethyst" -> "PLACE THIS · Amethyst Area spawn for /amethyst";
             default -> null;
         };
         if (extra == null) {
@@ -364,6 +374,59 @@ public final class DevBridges {
     static ItemStack farmPortalTool() {
         de.aetherion.core.api.FarmAccess farming = de.aetherion.core.api.AetherServices.farming();
         return farming == null ? null : farming.hubPortalTool();
+    }
+
+    static ItemStack canePatchTool() {
+        de.aetherion.core.api.FarmAccess farming = de.aetherion.core.api.AetherServices.farming();
+        return farming == null ? null : farming.canePatchTool();
+    }
+
+    static ItemStack districtMarker(String districtId) {
+        de.aetherion.core.api.FarmAccess farming = de.aetherion.core.api.AetherServices.farming();
+        return farming == null ? null : farming.districtMarker(districtId);
+    }
+
+    static ItemStack scarecrowTool() {
+        de.aetherion.core.api.FarmAccess farming = de.aetherion.core.api.AetherServices.farming();
+        if (farming == null) {
+            return null;
+        }
+        try {
+            return farming.scarecrowTool();
+        } catch (NoSuchMethodError | AbstractMethodError ignored) {
+            // Old AetherionCore on the server — Farm Isle props still work via Farming jar reflection.
+            return invokeFarmTool(farming, "scarecrowTool");
+        }
+    }
+
+    static ItemStack hayWagonTool() {
+        de.aetherion.core.api.FarmAccess farming = de.aetherion.core.api.AetherServices.farming();
+        if (farming == null) {
+            return null;
+        }
+        try {
+            return farming.hayWagonTool();
+        } catch (NoSuchMethodError | AbstractMethodError ignored) {
+            return invokeFarmTool(farming, "hayWagonTool");
+        }
+    }
+
+    private static ItemStack invokeFarmTool(Object farming, String method) {
+        try {
+            Object result = farming.getClass().getMethod(method).invoke(farming);
+            return result instanceof ItemStack stack ? stack : null;
+        } catch (ReflectiveOperationException ignored) {
+            return null;
+        }
+    }
+
+    static String farmIsleSeed(boolean force) {
+        de.aetherion.core.api.FarmAccess farming = de.aetherion.core.api.AetherServices.farming();
+        if (farming == null) {
+            return "§cAetherionFarming offline — seeder unavailable.";
+        }
+        String result = farming.seedFarmIsle(force);
+        return result == null ? "§cNo response." : result;
     }
 
     static void farmPortalSetIslandExit(Player player) {

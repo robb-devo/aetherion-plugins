@@ -7,11 +7,20 @@ import com.sk89q.worldguard.protection.flags.StateFlag;
 import com.sk89q.worldguard.protection.managers.RegionManager;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 
+import org.bukkit.Location;
 import org.bukkit.World;
 
 public final class VeinsGuard {
 
     private VeinsGuard() {
+    }
+
+    /** Hub-column soft lock after dig paint. No-op if WorldGuard isn't holding a spawn region yet. */
+    public static void protectSpawn(World world, Location spawn, int radius) {
+        if (world == null || spawn == null || radius <= 0) {
+            return;
+        }
+        open(world);
     }
 
     public static void open(World world) {

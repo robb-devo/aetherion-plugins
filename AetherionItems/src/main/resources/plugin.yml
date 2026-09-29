@@ -116,6 +116,19 @@ commands:
       - craftingtable
       - aethercraft
 
+  bloodstonearena:
+    description: Teleport to the Hollow Sun / Bloodstone arena
+    aliases:
+      - bloodstone
+      - hollowsunarena
+      - hsarena
+  ashenvoid:
+    description: Teleport to the Ashen Void preview arena (End remap of Bloodstone)
+    aliases:
+      - ashen_void
+      - endarena
+      - voidarena
+
   trades:
     description: Open the resource trader
     aliases:

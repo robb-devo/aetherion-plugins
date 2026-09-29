@@ -289,6 +289,14 @@ public final class IsleWeatherService implements Listener, Runnable {
     }
 
     private String habitatId(Location at) {
+        // District from the baked Grove map first (FPS-free); habitat sense / boxes stay as fallbacks.
+        de.aetherion.foraging.isle.ForageIsle isle = de.aetherion.foraging.isle.ForageIsle.get();
+        if (isle != null) {
+            de.aetherion.foraging.isle.Grove grove = isle.grove(at);
+            if (grove != null) {
+                return grove.weather();
+            }
+        }
         ForageHabitatSense sense = plugin.habitats() == null ? null : plugin.habitats().sense();
         if (sense != null) {
             ForageHabitatSense.Rule rule = sense.detect(at);

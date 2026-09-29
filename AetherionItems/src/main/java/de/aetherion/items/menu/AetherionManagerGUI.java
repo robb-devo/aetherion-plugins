@@ -19,6 +19,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.scheduler.BukkitTask;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -62,10 +63,19 @@ public class AetherionManagerGUI {
     private static final Map<UUID, BukkitTask> spawnsBlinkTasks = new ConcurrentHashMap<>();
     private static final Map<UUID, BukkitTask> petsBlinkTasks = new ConcurrentHashMap<>();
     private static final Map<UUID, BukkitTask> craftBlinkTasks = new ConcurrentHashMap<>();
-    private static final Map<UUID, BukkitTask> anvilBlinkTasks = new ConcurrentHashMap<>();
+
+    /** Every clickable hub tab, in layout order. Drives the header tally and click routing. */
+    private static final int[] TAB_SLOTS = {
+            SHOP_SLOT, BAZAAR_SLOT, SKILLS_SLOT, AUCTION_SLOT,
+            BESTIARY_SLOT, COLLECTION_SLOT, PETS_SLOT, JOURNAL_SLOT, RECIPE_SLOT,
+            GUILD_SLOT, STATS_SLOT, STORAGE_SLOT, LOADOUT_SLOT, SPAWN_SLOT, CRAFT_SLOT, ANVIL_SLOT,
+            ISLAND_SLOT
+    };
 
     private final AetherionManager manager;
     private final StorageInventory storageInventory;
+    /** Slots of the lock that opens next — set per open() (main thread only). */
+    private final java.util.Set<Integer> nextSlots = new java.util.HashSet<>();
 
     public AetherionManagerGUI(AetherionManager manager, StorageInventory storageInventory) {
         this.manager = manager;
@@ -79,18 +89,49 @@ public class AetherionManagerGUI {
                 ? null
                 : AetherionItems.getInstance().progress();
 
+        // Early on most of this is locked. Say how far along you are, light up the one
+        // lock that opens next, and let the far-future ones (journal, island, guild) recede.
+        List<Gate> gates = gates(player, progress);
+        nextSlots.clear();
+        int open = 0;
+        Gate next = null;
+        for (Gate gate : gates) {
+            if (gate.open()) {
+                open++;
+            } else if (next == null) {
+                next = gate;
+            }
+        }
+        if (next != null) {
+            for (Gate gate : gates) {
+                if (!gate.open() && gate.group().equals(next.group())) {
+                    nextSlots.add(gate.slot());
+                }
+            }
+        }
+        List<String> headerLore = new java.util.ArrayList<>();
+        headerLore.add("§7Your hub. It grows as you do.");
+        if (!gates.isEmpty()) {
+            headerLore.add("");
+            headerLore.add("§7Open: §f" + open + "§7/§f" + gates.size() + "  " + bar(open, gates.size()));
+            if (next != null) {
+                headerLore.add("§7Next: §e" + next.name());
+                headerLore.add(next.hint());
+            }
+        }
         inventory.setItem(4, button(
                 Material.NETHER_STAR,
                 "§6Aetherion Manager",
-                "§7Your hub. It grows as you do."
+                headerLore.toArray(String[]::new)
         ));
 
         inventory.setItem(SHOP_SLOT, button(
                 Material.AMETHYST_SHARD,
                 "§bAether Shop",
-                "§7Spend shards. Not coins.",
+                "§7Always open.",
+                "§7Spend Aether Crystals.",
                 "",
-                "§eClick or /shardshop"
+                "§eClick to open"
         ));
         put(inventory, BAZAAR_SLOT, progress != null && progress.bazaar(player),
                 Material.CHEST, "§6Bazaar",
@@ -155,13 +196,15 @@ public class AetherionManagerGUI {
                 !guildPlugin ? "§7Requires AetherionGuilds."
                         : (progress == null ? "§7Level 20. Your private plot." : progress.islandHint()),
                 "§7Your personal island, quarries",
-                "§7and friend visits.");
+                "§7and friend visits.",
+                "§8Opens in chat.");
         put(inventory, GUILD_SLOT, guildPlugin && (progress == null || progress.guild(player)),
                 Material.YELLOW_BANNER, "§6Guild",
                 !guildPlugin ? "§7Requires AetherionGuilds."
                         : (progress == null ? "§7Level 75. Mid–late game club." : progress.guildHint()),
                 "§7Shared island, invites, ranks",
-                "§7and guild quarries.");
+                "§7and guild quarries.",
+                "§8Opens in chat.");
         inventory.setItem(STATS_SLOT, button(
                 Material.EXPERIENCE_BOTTLE,
                 "§bStat Overview",
@@ -192,26 +235,19 @@ public class AetherionManagerGUI {
                     "§7Locked spots stay visible.");
         }
         boolean craftUnlocked = progress != null && progress.craftingTable(player);
+        put(inventory, CRAFT_SLOT, craftUnlocked,
+                Material.CRAFTING_TABLE, "§eCrafting Table",
+                progress == null ? "§7Craftsman unlocks this." : progress.hint(ProgressionService.Flag.WORKBENCH),
+                "§7Open a portable workbench.");
+        put(inventory, ANVIL_SLOT, progress != null && progress.anvil(player),
+                Material.ANVIL, "§eAnvil",
+                progress == null ? "§7Talk to Temper first." : progress.hint(ProgressionService.Flag.ANVIL),
+                "§7Open booster sockets.",
+                "§714 slots. Swap anytime.");
+        // Craft quest points at exactly one tab: the Recipe Book. No second highlight to chase.
         boolean craftQuest = craftUnlocked && QuestProgressHook.isQuestActive(player, CRAFT_QUEST_ID);
         if (craftQuest) {
-            inventory.setItem(CRAFT_SLOT, craftButton(true, true));
-        } else {
-            put(inventory, CRAFT_SLOT, craftUnlocked,
-                    Material.CRAFTING_TABLE, "§eCrafting Table",
-                    progress == null ? "§7Craftsman unlocks this." : progress.hint(ProgressionService.Flag.WORKBENCH),
-                    "§7Open a portable workbench.");
-        }
-        boolean anvilUnlocked = progress != null && progress.anvil(player);
-        // Soft blink right after unlock while craft quest still active, or always tip if unlocked this session — keep simple: blink while craft quest active and anvil unlocked
-        boolean anvilTip = anvilUnlocked && QuestProgressHook.isQuestActive(player, CRAFT_QUEST_ID);
-        if (anvilTip) {
-            inventory.setItem(ANVIL_SLOT, anvilButton(true, true));
-        } else {
-            put(inventory, ANVIL_SLOT, anvilUnlocked,
-                    Material.ANVIL, "§eAnvil",
-                    progress == null ? "§7Talk to Temper first." : progress.hint(ProgressionService.Flag.ANVIL),
-                    "§7Open a portable anvil.",
-                    "§7Boosters still apply.");
+            inventory.setItem(RECIPE_SLOT, recipeQuestButton(true));
         }
 
         if (player.isOp() || player.hasPermission("aetherion.dev")) {
@@ -228,6 +264,8 @@ public class AetherionManagerGUI {
                 "§cClose",
                 "§7Close this menu."
         ));
+
+        inventory.setItem(4, header(player, inventory));
 
         player.openInventory(inventory);
         if (skillsQuest) {
@@ -255,6 +293,93 @@ public class AetherionManagerGUI {
                     net.kyori.adventure.text.format.NamedTextColor.GOLD
             ));
         }
+    }
+
+    /** Built last so it can count the tabs that ended up unlocked. */
+    private ItemStack header(Player player, Inventory inventory) {
+        int open = 0;
+        for (int slot : TAB_SLOTS) {
+            ItemStack tab = inventory.getItem(slot);
+            Material type = tab == null ? Material.AIR : tab.getType();
+            if (type != Material.AIR && type != Material.GRAY_DYE && type != Material.BARRIER) {
+                open++;
+            }
+        }
+        return button(
+                Material.NETHER_STAR,
+                "§6" + player.getName(),
+                profileLines(player, open)
+        );
+    }
+
+    private String[] profileLines(Player player, int open) {
+        java.util.List<String> lines = new java.util.ArrayList<>();
+        AetherionItems plugin = AetherionItems.getInstance();
+        if (plugin != null && plugin.getSkills() != null) {
+            var skills = plugin.getSkills();
+            int level = skills.accountLevel(player);
+            lines.add(de.aetherion.items.skill.AetherionLevel.coloredTitle(level)
+                    + " §8· " + de.aetherion.items.skill.AetherionLevel.tag(level));
+            lines.add(de.aetherion.items.skill.AetherionLevel.bar(skills.accountXp(player)));
+            java.util.List<de.aetherion.items.skill.AetherSkill> equipped = skills.equipped(player);
+            if (equipped.isEmpty()) {
+                lines.add("§7Skills: §8none equipped");
+            } else if (equipped.size() == 1) {
+                lines.add("§7Skill: §f" + equipped.get(0).displayName());
+            } else {
+                lines.add("§7Skills: §f" + equipped.size() + " equipped");
+            }
+        }
+        if (plugin != null && plugin.getShards() != null) {
+            lines.add("§7Crystals: §b" + plugin.getShards().formatted(player));
+        }
+        lines.add("§7Pet: §f" + petLine(player));
+        lines.add("");
+        lines.add("§7Tabs open: §a" + open + "§7/§f" + TAB_SLOTS.length);
+        return lines.toArray(String[]::new);
+    }
+
+    private static String petLine(Player player) {
+        try {
+            var plugin = Bukkit.getPluginManager().getPlugin("AetherMobs");
+            if (plugin == null || !plugin.isEnabled()) {
+                return "unavailable";
+            }
+            Object manager = plugin.getClass().getMethod("getActivePetManager").invoke(plugin);
+            if (manager == null) {
+                return "none";
+            }
+            Object pet = manager.getClass().getMethod("getActivePet", Player.class).invoke(manager, player);
+            if (pet == null) {
+                return "none";
+            }
+            Object instance = pet.getClass().getMethod("getPetInstance").invoke(pet);
+            if (instance == null) {
+                return "equipped";
+            }
+            Object definition = instance.getClass().getMethod("getDefinition").invoke(instance);
+            if (definition == null) {
+                return "equipped";
+            }
+            Object name = definition.getClass().getMethod("getDisplayName").invoke(definition);
+            int level = (int) instance.getClass().getMethod("getLevel").invoke(instance);
+            return name + " §8Lv " + level;
+        } catch (ReflectiveOperationException ignored) {
+            return "none";
+        }
+    }
+
+    /** True for slots the hub actually reacts to — everything else is filler glass. */
+    public static boolean isActionSlot(int slot) {
+        if (slot == DEV_SLOT || slot == CLOSE_SLOT) {
+            return true;
+        }
+        for (int tab : TAB_SLOTS) {
+            if (tab == slot) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static void stopSkillsBlink(Player player) {
@@ -320,7 +445,7 @@ public class AetherionManagerGUI {
                     "§eClick to open"
             );
         }
-        Material material = pulseBright ? Material.SUNFLOWER : Material.COMPASS;
+        Material material = Material.COMPASS;
         String name = pulseBright ? "§6§l★ Spawns ★" : "§6§lSpawns";
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
@@ -333,7 +458,10 @@ public class AetherionManagerGUI {
                     "",
                     "§eClick to open"
             ));
-            meta.addEnchant(Enchantment.UNBREAKING, 1, true);
+            if (pulseBright) {
+                meta.addEnchant(Enchantment.UNBREAKING, 1, true);
+                meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+            }
             meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
             item.setItemMeta(meta);
         }
@@ -358,10 +486,14 @@ public class AetherionManagerGUI {
         if (task != null) {
             task.cancel();
         }
-        BukkitTask anvil = anvilBlinkTasks.remove(player.getUniqueId());
-        if (anvil != null) {
-            anvil.cancel();
-        }
+    }
+
+    /** Cancel every hub blink for this player — call on close and on quit. */
+    public static void stopAllBlinks(Player player) {
+        stopSkillsBlink(player);
+        stopPetsBlink(player);
+        stopCraftBlink(player);
+        stopSpawnsBlink(player);
     }
 
     private void startPetsBlink(Player player) {
@@ -420,15 +552,12 @@ public class AetherionManagerGUI {
             }
             bright[0] = !bright[0];
             player.getOpenInventory().getTopInventory().setItem(RECIPE_SLOT, recipeQuestButton(bright[0]));
-            if (progress != null && progress.anvil(player)) {
-                player.getOpenInventory().getTopInventory().setItem(ANVIL_SLOT, anvilButton(true, bright[0]));
-            }
         }, 8L, 8L);
         craftBlinkTasks.put(player.getUniqueId(), task);
     }
 
     private ItemStack recipeQuestButton(boolean pulseBright) {
-        Material material = pulseBright ? Material.KNOWLEDGE_BOOK : Material.LIME_DYE;
+        Material material = Material.KNOWLEDGE_BOOK;
         String name = pulseBright ? "§a§l★ Recipe Book ★" : "§a§lRecipe Book";
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
@@ -441,9 +570,11 @@ public class AetherionManagerGUI {
                     "",
                     "§eClick to open"
             ));
-            meta.addEnchant(Enchantment.UNBREAKING, 1, true);
+            if (pulseBright) {
+                meta.addEnchant(Enchantment.UNBREAKING, 1, true);
+                meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+            }
             meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
-            meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
             item.setItemMeta(meta);
         }
         return item;
@@ -459,7 +590,7 @@ public class AetherionManagerGUI {
                     "§eClick to open"
             );
         }
-        Material material = pulseBright ? Material.PINK_DYE : Material.LEAD;
+        Material material = Material.LEAD;
         String name = pulseBright ? "§d§l★ Pets ★" : "§d§lPets";
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
@@ -472,67 +603,10 @@ public class AetherionManagerGUI {
                     "",
                     "§eClick to open"
             ));
-            meta.addEnchant(Enchantment.UNBREAKING, 1, true);
-            meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
-            item.setItemMeta(meta);
-        }
-        return item;
-    }
-
-    private ItemStack craftButton(boolean highlight, boolean pulseBright) {
-        if (!highlight) {
-            return button(
-                    Material.CRAFTING_TABLE,
-                    "§eCrafting Table",
-                    "§7Open a portable workbench.",
-                    "",
-                    "§eClick to open"
-            );
-        }
-        Material material = pulseBright ? Material.CRAFTING_TABLE : Material.OAK_PLANKS;
-        String name = pulseBright ? "§e§l★ Crafting ★" : "§e§lCrafting";
-        ItemStack item = new ItemStack(material);
-        ItemMeta meta = item.getItemMeta();
-        if (meta != null) {
-            meta.setDisplayName(name);
-            meta.setLore(java.util.List.of(
-                    "§e§lQUEST TIP",
-                    "§fUse the §agreen Recipe Book§f →",
-                    "§fMining Pickaxe (Simple Pickaxe + coal).",
-                    "",
-                    "§eClick to open"
-            ));
-            meta.addEnchant(Enchantment.UNBREAKING, 1, true);
-            meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
-            item.setItemMeta(meta);
-        }
-        return item;
-    }
-
-    private ItemStack anvilButton(boolean highlight, boolean pulseBright) {
-        if (!highlight) {
-            return button(
-                    Material.ANVIL,
-                    "§eAnvil",
-                    "§7Open a portable anvil.",
-                    "§7Boosters still apply.",
-                    "",
-                    "§eClick to open"
-            );
-        }
-        Material material = pulseBright ? Material.ANVIL : Material.IRON_BLOCK;
-        String name = pulseBright ? "§e§l★ Anvil ★" : "§e§lAnvil";
-        ItemStack item = new ItemStack(material);
-        ItemMeta meta = item.getItemMeta();
-        if (meta != null) {
-            meta.setDisplayName(name);
-            meta.setLore(java.util.List.of(
-                    "§e§lUNLOCKED",
-                    "§fPortable anvil — Manager only.",
-                    "",
-                    "§eClick to open"
-            ));
-            meta.addEnchant(Enchantment.UNBREAKING, 1, true);
+            if (pulseBright) {
+                meta.addEnchant(Enchantment.UNBREAKING, 1, true);
+                meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+            }
             meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
             item.setItemMeta(meta);
         }
@@ -577,7 +651,7 @@ public class AetherionManagerGUI {
                     "§eClick to open"
             );
         }
-        Material material = pulseBright ? Material.AMETHYST_SHARD : Material.NETHERITE_SCRAP;
+        Material material = Material.NETHERITE_SCRAP;
         String name = pulseBright ? "§d§l★ Skills ★" : "§d§lSkills";
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
@@ -590,7 +664,10 @@ public class AetherionManagerGUI {
                     "",
                     "§eClick to open"
             ));
-            meta.addEnchant(Enchantment.UNBREAKING, 1, true);
+            if (pulseBright) {
+                meta.addEnchant(Enchantment.UNBREAKING, 1, true);
+                meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+            }
             meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
             item.setItemMeta(meta);
         }
@@ -610,14 +687,97 @@ public class AetherionManagerGUI {
             inventory.setItem(slot, button(material, name, unlockedLore));
             return;
         }
+        if (nextSlots.contains(slot)) {
+            // The one lock worth reading right now.
+            ItemStack next = button(
+                    Material.LIME_DYE,
+                    "§e" + strip(name) + " §8· next",
+                    "§e➜ Opens next",
+                    "",
+                    lockedHint
+            );
+            ItemMeta meta = next.getItemMeta();
+            if (meta != null) {
+                meta.addEnchant(Enchantment.UNBREAKING, 1, true);
+                meta.addItemFlags(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ATTRIBUTES);
+                next.setItemMeta(meta);
+            }
+            inventory.setItem(slot, next);
+            return;
+        }
+        if (slot == JOURNAL_SLOT || slot == ISLAND_SLOT || slot == GUILD_SLOT) {
+            // Far future: a quiet silhouette, not another grey "nope".
+            inventory.setItem(slot, button(
+                    Material.LIGHT_GRAY_STAINED_GLASS_PANE,
+                    "§8" + strip(name) + " · later",
+                    lockedHint
+            ));
+            return;
+        }
         inventory.setItem(slot, button(
                 Material.GRAY_DYE,
                 "§8" + strip(name),
                 "§7Locked",
                 "",
-                lockedHint,
-                "§8It will make sense later."
+                lockedHint
         ));
+    }
+
+    /** One lockable tab: its slot, whether it's open, the unlock it belongs to, and how to open it. */
+    private record Gate(int slot, boolean open, String group, String name, String hint) {
+    }
+
+    /**
+     * Lockable tabs in the order a new player actually opens them (the harbour spine first,
+     * mid–late game last). Tabs whose plugin is missing are left out, not counted as locked.
+     */
+    private List<Gate> gates(Player player, ProgressionService progress) {
+        List<Gate> gates = new java.util.ArrayList<>();
+        if (progress == null || player == null) {
+            return gates;
+        }
+        String workbench = progress.hint(ProgressionService.Flag.WORKBENCH);
+        gates.add(new Gate(CRAFT_SLOT, progress.craftingTable(player), "workbench", "Crafting + Recipes", workbench));
+        gates.add(new Gate(RECIPE_SLOT, progress.recipeBook(player), "workbench", "Crafting + Recipes", workbench));
+        gates.add(new Gate(ANVIL_SLOT, progress.anvil(player), "anvil", "Anvil",
+                progress.hint(ProgressionService.Flag.ANVIL)));
+        gates.add(new Gate(SKILLS_SLOT, progress.skills(player), "skills", "Skills",
+                progress.hint(ProgressionService.Flag.SKILLS)));
+        if (manager.hasPetMenu()) {
+            gates.add(new Gate(PETS_SLOT, progress.pets(player), "pets", "Pets",
+                    progress.hint(ProgressionService.Flag.PETS)));
+        }
+        if (Bukkit.getPluginManager().isPluginEnabled("AetherionHub")) {
+            gates.add(new Gate(SPAWN_SLOT, progress.spawns(player), "spawns", "Spawns",
+                    progress.hint(ProgressionService.Flag.SPAWN_UNLOCKER)));
+        }
+        String trader = progress.hint(ProgressionService.Flag.TRADER);
+        gates.add(new Gate(BAZAAR_SLOT, progress.bazaar(player), "trader", "Bazaar + Auction House", trader));
+        gates.add(new Gate(AUCTION_SLOT, progress.auction(player), "trader", "Bazaar + Auction House", trader));
+        gates.add(new Gate(COLLECTION_SLOT, progress.collection(player), "collection", "Collection",
+                progress.collectionHint()));
+        gates.add(new Gate(BESTIARY_SLOT, progress.bestiary(player), "bestiary", "Bestiary",
+                progress.bestiaryHint()));
+        gates.add(new Gate(JOURNAL_SLOT, progress.journal(player), "journal", "Dungeon Journal",
+                progress.journalHint()));
+        if (Bukkit.getPluginManager().isPluginEnabled("AetherionGuilds")) {
+            gates.add(new Gate(ISLAND_SLOT, progress.island(player), "island", "Island", progress.islandHint()));
+            gates.add(new Gate(GUILD_SLOT, progress.guild(player), "guild", "Guild", progress.guildHint()));
+        }
+        return gates;
+    }
+
+    private static String bar(int have, int of) {
+        int cells = 10;
+        int filled = of <= 0 ? 0 : (int) Math.round(cells * (have / (double) of));
+        StringBuilder out = new StringBuilder("§a");
+        for (int i = 0; i < cells; i++) {
+            if (i == filled) {
+                out.append("§8");
+            }
+            out.append('▮');
+        }
+        return out.toString();
     }
 
     private static String strip(String name) {
@@ -632,9 +792,18 @@ public class AetherionManagerGUI {
             meta.setDisplayName(" ");
             pane.setItemMeta(meta);
         }
+        // Dark top and bottom rails frame the tabs so the page reads as a panel, not a pile of glass.
+        ItemStack rail = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
+        ItemMeta railMeta = rail.getItemMeta();
+        if (railMeta != null) {
+            railMeta.setDisplayName(" ");
+            rail.setItemMeta(railMeta);
+        }
 
-        for (int slot = 0; slot < inventory.getSize(); slot++) {
-            inventory.setItem(slot, pane.clone());
+        int size = inventory.getSize();
+        for (int slot = 0; slot < size; slot++) {
+            boolean edge = slot < 9 || slot >= size - 9;
+            inventory.setItem(slot, edge ? rail.clone() : pane.clone());
         }
     }
 

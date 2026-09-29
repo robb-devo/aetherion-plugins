@@ -163,7 +163,7 @@ public class DamageListener implements Listener {
      *
      */
 
-    private final Set<UUID> spreadProcessing =
+    private static final Set<UUID> spreadProcessing =
             new HashSet<>();
 
 
@@ -996,4 +996,7 @@ public class DamageListener implements Listener {
         ));
     }
 
+    public static boolean isSpreadHit(UUID playerId) {
+        return playerId != null && spreadProcessing.contains(playerId);
+    }
 }

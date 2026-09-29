@@ -47,7 +47,9 @@ import org.bukkit.persistence.PersistentDataType;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class DevMenu {
 
@@ -65,6 +67,7 @@ public class DevMenu {
         WEAPONS_T1,
         WEAPONS_T2,
         WEAPONS_DUNGEON,
+        WEAPONS_SPECIAL,
         WEAPONS_GOD,
         SETS,
         BOOSTERS,
@@ -79,6 +82,7 @@ public class DevMenu {
         NPCS_BOSSES,
         NPCS_WORLD,
         NPCS_SERVICES,
+        NPC_EDITOR,
         RESOURCES,
         AREAS,
         RANKS,
@@ -110,7 +114,27 @@ public class DevMenu {
         FISH_ISLE_SPOTS,
         FISH_ISLE_NPCS,
         FISH_ISLE_EVENTS,
-        FISH_ISLE_PROGRESS
+        FISH_ISLE_PROGRESS,
+        MINE_ISLE,
+        MINE_ISLE_SPOTS,
+        MINE_ISLE_NPCS,
+        MINE_ISLE_EVENTS,
+        MINE_ISLE_PROGRESS,
+        AMBIENT,
+        PLAYER_WIPE,
+        // DEV // AETHERION command center — category hubs + power pages.
+        CAT_CONTENT,
+        CAT_COMBAT,
+        CAT_WORLDS,
+        CAT_PROGRESS,
+        CAT_ADMIN,
+        CAT_DANGER,
+        SEARCH,
+        LOADOUTS,
+        SKILL_GEAR,
+        STATUS,
+        CONFIRM,
+        CONTENT_KIT
     }
 
     private final CustomItem customItem;
@@ -124,6 +148,7 @@ public class DevMenu {
     private final BuildingBannerService buildingBanners;
     private final FarmIsleDevPages farmIsle;
     private final FishIsleDevPages fishIsle;
+    private final MineIsleDevPages mineIsle;
 
     public DevMenu(
             CustomItem customItem,
@@ -147,10 +172,146 @@ public class DevMenu {
         this.buildingBanners = buildingBanners;
         this.farmIsle = new FarmIsleDevPages(customItem);
         this.fishIsle = new FishIsleDevPages(customItem);
+        this.mineIsle = new MineIsleDevPages(customItem);
     }
 
     public static boolean canUse(Player player) {
+        return isFullDev(player) || hasContentKit(player);
+    }
+
+    public static boolean isFullDev(Player player) {
         return player != null && (player.isOp() || player.hasPermission("aetherion.dev"));
+    }
+
+    public static boolean hasContentKit(Player player) {
+        return player != null && player.hasPermission("aetherion.dev.content");
+    }
+
+    /**
+     * Monkey / Homie content role sees Content Kit, never the full admin tree —
+     * even if a leftover {@code aetherion.dev} node still exists. Ops and Robb Admin keep full DEV.
+     */
+    public static boolean preferContentKit(Player player) {
+        if (player == null || player.isOp()) {
+            return false;
+        }
+        if (DevRankBridge.isRobb(player.getUniqueId())) {
+            return false;
+        }
+        AetherionItems items = AetherionItems.getInstance();
+        if (items != null && items.ranks() != null) {
+            RankBadgeService.Rank extra = items.ranks().extraRank(player);
+            if (extra != null && "admin".equalsIgnoreCase(extra.group())) {
+                return false;
+            }
+        }
+        if (isContentRole(player)) {
+            return true;
+        }
+        return hasContentKit(player) && !player.hasPermission("aetherion.dev");
+    }
+
+    private static boolean isContentRole(Player player) {
+        if (player.hasPermission("group.monkey") || player.hasPermission("aetherion.rank.monkey")) {
+            return true;
+        }
+        AetherionItems items = AetherionItems.getInstance();
+        if (items != null && items.ranks() != null) {
+            RankBadgeService.Rank extra = items.ranks().extraRank(player);
+            return extra != null && "monkey".equalsIgnoreCase(extra.group());
+        }
+        return false;
+    }
+
+    private static boolean contentOnly(Player player) {
+        return preferContentKit(player) || !isFullDev(player);
+    }
+
+    private static boolean canOpenPage(Player player, Page page) {
+        if (page == null) {
+            return false;
+        }
+        if (preferContentKit(player)) {
+            return isContentPage(page);
+        }
+        if (isFullDev(player)) {
+            return true;
+        }
+        return hasContentKit(player) && isContentPage(page);
+    }
+
+    private static boolean isContentPage(Page page) {
+        return page == Page.ROOT
+                || page == Page.RESOURCES
+                || page == Page.SHARDS
+                || page == Page.AMBIENT
+                || page == Page.NPC_EDITOR;
+    }
+
+    private static boolean contentActionAllowed(Player player, String action) {
+        if (action == null || action.isBlank()) {
+            return false;
+        }
+        if (action.equals("close") || action.equals("back") || action.equals("noop")
+                || action.equals("root") || action.equals("npc-wand") || action.equals("flight-toggle")
+                || action.equals("npc-editor") || action.startsWith("npc-editor:") || action.equals("open:aethernpc")) {
+            return true;
+        }
+        if (action.startsWith("page:")) {
+            try {
+                return canOpenPage(player, Page.valueOf(action.substring(5)));
+            } catch (IllegalArgumentException ignored) {
+                return false;
+            }
+        }
+        if (action.startsWith("pageidx:")) {
+            String name = action.substring("pageidx:".length()).split(":")[0];
+            try {
+                return canOpenPage(player, Page.valueOf(name));
+            } catch (IllegalArgumentException ignored) {
+                return false;
+            }
+        }
+        return action.startsWith("shard-player:")
+                || action.startsWith("shard-add:")
+                || action.equals("give-page")
+                || action.startsWith("item:")
+                || action.startsWith("ambient:")
+                || action.equals("farmtool:scarecrow")
+                || action.equals("farmtool:haywagon");
+    }
+
+    /** Opens the FancyNPC + quest creator ({@code /npc}). */
+    private void giveNpcWand(Player player) {
+        if (!player.hasPermission("aetherion.npc.editor") && !isFullDev(player) && !player.isOp()) {
+            player.sendMessage("§cNeed §faetherion.npc.editor §c(Monkey / admin).");
+            return;
+        }
+        player.closeInventory();
+        if (player.performCommand("npc")) {
+            return;
+        }
+        if (player.performCommand("aethernpc") || player.performCommand("npceditor")) {
+            return;
+        }
+        if (player.performCommand("npc wand")) {
+            player.sendMessage("§eWand given. Use §f/npc §efor the creator menu.");
+            return;
+        }
+        player.sendMessage("§c/npc failed. Is AetherionQuests loaded?");
+    }
+
+    /** NPC / Quest editor section (cursor monkey-dev-menu): {@code /npc <sub>} from AetherionQuests. */
+    private void runNpcEditor(Player player, String sub) {
+        if (!player.hasPermission("aetherion.npc.editor") && !isFullDev(player)) {
+            player.sendMessage("§cYou need §faetherion.npc.editor §cto use the NPC editor.");
+            return;
+        }
+        player.closeInventory();
+        String command = sub == null || sub.isBlank() ? "npc" : "npc " + sub;
+        if (!player.performCommand(command)) {
+            player.sendMessage("§c/" + command + " failed. Is AetherionQuests loaded?");
+        }
     }
 
     public void open(Player player) {
@@ -166,24 +327,165 @@ public class DevMenu {
     }
 
     public void open(Player player, Page page, UUID target, int index) {
+        open(player, new Holder(page, target, index));
+    }
+
+    /** Opens a page from a full spec (search query, confirm payload, wipe arm timer ride along). */
+    void open(Player player, Holder spec) {
         if (!canUse(player)) {
             player.sendMessage("§cDEV only.");
             return;
         }
-        Inventory inventory = Bukkit.createInventory(new Holder(page, target, index), 54, TITLE);
-        fill(inventory);
-        if (page == Page.ROOT) {
-            drawRoot(inventory, Math.max(0, index));
+        Page page = spec.page();
+        if (!canOpenPage(player, page)) {
+            player.sendMessage("§cContent kit cannot open that page.");
+            return;
+        }
+        if (page == Page.SHARDS && contentOnly(player) && spec.target() == null) {
+            spec = new Holder(page, player.getUniqueId(), spec.index(), spec.query(), spec.payload(), spec.armedUntil());
+        }
+        Holder previous = currentHolder(player);
+        Page titlePage = page == Page.ROOT && contentOnly(player) ? Page.CONTENT_KIT : page;
+        Inventory inventory = Bukkit.createInventory(spec, 54, DevTheme.title(titlePage, titleSuffix(spec)));
+        render(inventory, spec, player);
+        player.openInventory(inventory);
+        if (previous == null || previous.page() != page) {
+            DevTheme.sound(player, page);
+        }
+    }
+
+    private String titleSuffix(Holder spec) {
+        if (spec.page() == Page.SEARCH && spec.query() != null) {
+            String query = spec.query().length() > 12 ? spec.query().substring(0, 12) + "…" : spec.query();
+            return "\"" + query + "\"";
+        }
+        if (spec.target() != null && (spec.page() == Page.RANKS || spec.page() == Page.SHARDS
+                || spec.page() == Page.PLAYER_WIPE)) {
+            String name = nameOf(Bukkit.getOfflinePlayer(spec.target()));
+            return "· " + (name.length() > 16 ? name.substring(0, 16) : name);
+        }
+        return null;
+    }
+
+    /** Draws a page into any inventory — used by {@link #open} and by the search harvester. */
+    void render(Inventory inventory, Holder spec, Player player) {
+        Page page = spec.page();
+        UUID target = spec.target();
+        int index = Math.max(0, spec.index());
+        boolean kitRoot = page == Page.CONTENT_KIT || (page == Page.ROOT && contentOnly(player));
+        DevTheme.paintFrame(inventory, kitRoot ? DevTheme.Cat.KIT : DevTheme.info(page).cat());
+        if (kitRoot) {
+            drawContentRoot(inventory);
+        } else if (page == Page.ROOT) {
+            DevHubs.drawDashboard(this, inventory, player);
+        } else if (page.name().startsWith("CAT_")) {
+            DevHubs.drawCategory(this, inventory, player, DevTheme.info(page).cat());
+        } else if (page == Page.SEARCH) {
+            DevHubs.drawSearch(this, inventory, player, spec);
+        } else if (page == Page.LOADOUTS) {
+            DevHubs.drawLoadouts(this, inventory, loadouts());
+        } else if (page == Page.SKILL_GEAR) {
+            DevHubs.drawSkillGear(inventory);
+        } else if (page == Page.STATUS) {
+            DevHubs.drawStatus(inventory, player);
+        } else if (page == Page.CONFIRM) {
+            DevHubs.drawConfirm(inventory, spec);
         } else if (page == Page.ISLE_WEATHER) {
             drawIsleWeather(inventory, player);
         } else if (FarmIsleDevPages.owns(page)) {
             farmIsle.draw(inventory, page, player);
         } else if (FishIsleDevPages.owns(page)) {
             fishIsle.draw(inventory, page, player);
+        } else if (MineIsleDevPages.owns(page)) {
+            mineIsle.draw(inventory, page, player);
+        } else if (page == Page.PLAYER_WIPE) {
+            drawPlayerWipe(inventory, target, spec.armedUntil());
         } else {
-            drawPage(inventory, page, target, Math.max(0, index));
+            drawPage(inventory, page, target, index);
         }
-        player.openInventory(inventory);
+        applyChrome(inventory, spec, player, kitRoot);
+    }
+
+    /**
+     * Uniform chrome after every draw: header fallback at 4, Go Back 45, Close 49, Search 53.
+     * Pages keep their own content; only the nav slots are normalised.
+     */
+    private void applyChrome(Inventory inventory, Holder spec, Player player, boolean kitRoot) {
+        Page page = spec.page();
+        DevTheme.Info info = DevTheme.info(page);
+        ItemStack header = inventory.getItem(DevTheme.HEADER);
+        // Only fill the header when the page left the frame's bar pane there (player heads stay).
+        if (header == null || header.getType().name().endsWith("STAINED_GLASS_PANE")) {
+            List<String> lore = new ArrayList<>();
+            lore.add("§8" + DevTheme.breadcrumb(page));
+            lore.add("");
+            lore.addAll(DevTheme.controls());
+            inventory.setItem(DevTheme.HEADER, DevItems.button(info.cat().icon,
+                    info.cat().accent + "§l" + DevTheme.pageName(page), "noop", lore.toArray(String[]::new)));
+        }
+        if (kitRoot) {
+            inventory.setItem(DevTheme.BACK, DevItems.button(Material.ARROW, "§a← Aetherion Manager", "close",
+                    "§7Leave the Content Kit."));
+            inventory.setItem(DevTheme.CLOSE, DevItems.button(Material.BARRIER, "§cClose", "close"));
+            if (page == Page.CONTENT_KIT) {
+                inventory.setItem(DevTheme.BACK, backButton(Page.CAT_ADMIN));
+            }
+            return;
+        }
+        if (page == Page.ROOT) {
+            inventory.setItem(DevTheme.BACK, DevItems.button(Material.ARROW, "§a← Aetherion Manager", "close",
+                    "§7Back to the player menu."));
+        } else if (contentOnly(player)) {
+            inventory.setItem(DevTheme.BACK, DevItems.button(Material.ARROW, "§a← Go Back", "back",
+                    "§7To §fContent Kit"));
+        } else {
+            inventory.setItem(DevTheme.BACK, backButton(backTarget(spec)));
+        }
+        inventory.setItem(DevTheme.CLOSE, DevItems.button(Material.BARRIER, "§cClose", "close",
+                "§7Back to the Aetherion Manager."));
+        if (!contentOnly(player)) {
+            inventory.setItem(DevTheme.SEARCH, DevItems.button(Material.OAK_SIGN, "§d§lSearch",
+                    "search",
+                    "§7Find any item, set, page, NPC or tool.",
+                    "§7Type the words in chat.",
+                    "",
+                    "§8Also: §f/devmenu <words>"));
+        }
+    }
+
+    private ItemStack backButton(Page parent) {
+        return DevItems.button(Material.ARROW, "§a← Go Back", "back",
+                "§7To §f" + DevTheme.pageName(parent == null ? Page.ROOT : parent));
+    }
+
+    /** Where Go Back lands: pickers step back to their list, confirm returns to its origin. */
+    private Page backTarget(Holder spec) {
+        Page page = spec.page();
+        if (spec.target() != null && (page == Page.RANKS || page == Page.SHARDS || page == Page.PLAYER_WIPE)) {
+            return page;
+        }
+        if (page == Page.CONFIRM) {
+            return confirmReturn(spec);
+        }
+        Page parent = DevTheme.info(page).parent();
+        return parent == null ? Page.ROOT : parent;
+    }
+
+    private void goBack(Player player) {
+        Holder current = currentHolder(player);
+        if (current == null || contentOnly(player)) {
+            open(player, Page.ROOT);
+            return;
+        }
+        open(player, backTarget(current));
+    }
+
+    Holder currentHolder(Player player) {
+        return player.getOpenInventory().getTopInventory().getHolder() instanceof Holder holder ? holder : null;
+    }
+
+    CustomItem customItem() {
+        return customItem;
     }
 
     public void handle(Player player, ItemStack clicked, int slot) {
@@ -194,6 +496,9 @@ public class DevMenu {
         if (clicked == null || !clicked.hasItemMeta()) {
             return;
         }
+        if (click == null) {
+            click = ClickType.LEFT;
+        }
         String action = clicked.getItemMeta().getPersistentDataContainer().get(ItemKeys.devAction(), PersistentDataType.STRING);
         if (action == null || action.isBlank()) {
             if (slot == 45) {
@@ -203,12 +508,122 @@ public class DevMenu {
             }
             return;
         }
+        if (contentOnly(player) && !contentActionAllowed(player, action)) {
+            player.sendMessage("§cContent kit cannot use that.");
+            return;
+        }
+        // Favorite / recent / search tiles are decorated clones — act on the pristine shelf item,
+        // never hand out (or cache) the clone with the extra lore.
+        if (DevItems.viaOf(clicked) != null) {
+            ItemStack pristine = DevIndex.icon(action);
+            if (pristine == null && action.startsWith("item:")) {
+                ItemStack resolved = resolveItem(action.substring("item:".length()));
+                pristine = resolved == null ? null : DevItems.tag(resolved.clone(), action);
+            }
+            if (pristine != null) {
+                clicked = pristine;
+            } else if (action.startsWith("item:") && click != ClickType.SWAP_OFFHAND) {
+                player.sendMessage("§7That pin is cold — open its shelf once (or §fSystem Status › rebuild index§7).");
+                return;
+            }
+        }
+        boolean pristineClick = DevItems.viaOf(clicked) == null;
+        if (click == ClickType.SWAP_OFFHAND) {
+            togglePin(player, action, clicked);
+            return;
+        }
+        if (requiresConfirm(action)) {
+            openConfirm(player, action);
+            return;
+        }
+        if (DevIndex.isRecentable(action) && !contentOnly(player)) {
+            DevPrefs.recordRecent(player, action);
+            if (pristineClick) {
+                DevIndex.remember(action, clicked);
+            }
+        }
+        dispatch(player, clicked, slot, click, action);
+    }
+
+    /** The action router. Reached only after the pin / confirm / recent pre-pass in {@link #handle}. */
+    private void dispatch(Player player, ItemStack clicked, int slot, ClickType click, String action) {
         if (action.equals("close")) {
             de.aetherion.items.util.ManagerNav.openManager(player);
             return;
         }
-        if (action.equals("back")) {
+        if (action.equals("root")) {
             open(player, Page.ROOT);
+            return;
+        }
+        if (action.equals("back")) {
+            goBack(player);
+            return;
+        }
+        if (action.equals("search")) {
+            promptSearch(player);
+            return;
+        }
+        if (action.equals("recents:clear")) {
+            DevPrefs.clearRecents(player);
+            player.playSound(player.getLocation(), Sound.ITEM_BUNDLE_DROP_CONTENTS, 0.7f, 1.2f);
+            open(player, Page.ROOT);
+            return;
+        }
+        if (action.equals("index:rebuild")) {
+            long started = System.nanoTime();
+            DevIndex.invalidate();
+            int size = DevIndex.catalog(this, player).size();
+            player.sendMessage("§d⌁ Search index rebuilt §8· §f" + size + " §7entries in §f"
+                    + ((System.nanoTime() - started) / 1_000_000L) + " ms§7.");
+            open(player, Page.STATUS);
+            return;
+        }
+        if (action.equals("give-page")) {
+            givePage(player);
+            return;
+        }
+        if (action.startsWith("loadout:")) {
+            giveLoadout(player, action.substring("loadout:".length()));
+            return;
+        }
+        if (action.startsWith("confirm:")) {
+            openConfirm(player, action.substring("confirm:".length()));
+            return;
+        }
+        if (action.equals("confirm-no")) {
+            Holder current = currentHolder(player);
+            player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.6f, 0.8f);
+            open(player, current == null ? Page.CAT_DANGER : confirmReturn(current));
+            return;
+        }
+        if (action.equals("confirm-yes")) {
+            runConfirmed(player);
+            return;
+        }
+        if (action.equals("npc-wand")) {
+            giveNpcWand(player);
+            return;
+        }
+        if (action.equals("flight-toggle")) {
+            player.closeInventory();
+            if (!player.performCommand("flight") && !player.performCommand("fly")) {
+                player.sendMessage("§cFlight command unavailable.");
+            }
+            return;
+        }
+        if (action.equals("npc-editor") || action.startsWith("npc-editor:")) {
+            runNpcEditor(player, action.equals("npc-editor") ? "" : action.substring("npc-editor:".length()));
+            return;
+        }
+        if (action.equals("open:aethernpc")) {
+            player.closeInventory();
+            if (!player.hasPermission("aetherion.npc.editor") && !isFullDev(player)) {
+                player.sendMessage("§cYou need the NPC editor permission.");
+                return;
+            }
+            if (!player.performCommand("aethernpc")) {
+                player.sendMessage("§cCould not open /aethernpc. Is AetherionQuests loaded?");
+            }
             return;
         }
         if (action.startsWith("testbot:")) {
@@ -233,6 +648,15 @@ public class DevMenu {
             }
             return;
         }
+        if (action.startsWith(MineIsleDevPages.PREFIX)) {
+            Page current = player.getOpenInventory().getTopInventory().getHolder() instanceof Holder holder
+                    ? holder.page() : Page.MINE_ISLE;
+            Page reopen = mineIsle.handle(player, action, click, current);
+            if (reopen != null) {
+                open(player, reopen);
+            }
+            return;
+        }
         if (action.startsWith("pageidx:")) {
             String[] parts = action.substring("pageidx:".length()).split(":");
             if (parts.length >= 2) {
@@ -241,12 +665,39 @@ public class DevMenu {
                     index = Integer.parseInt(parts[1]);
                 } catch (NumberFormatException ignored) {
                 }
-                open(player, Page.valueOf(parts[0]), holderTarget(player), index);
+                Page next;
+                try {
+                    next = Page.valueOf(parts[0]);
+                } catch (IllegalArgumentException ignored) {
+                    return;
+                }
+                if (!canOpenPage(player, next)) {
+                    player.sendMessage("§cContent kit cannot open that page.");
+                    return;
+                }
+                Holder current = currentHolder(player);
+                String query = current != null && current.page() == next ? current.query() : null;
+                player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 0.6f, 1.4f);
+                open(player, new Holder(next, holderTarget(player), index, query, null, 0L));
             }
             return;
         }
         if (action.startsWith("page:")) {
-            open(player, Page.valueOf(action.substring(5)));
+            Page next;
+            try {
+                next = Page.valueOf(action.substring(5));
+            } catch (IllegalArgumentException ignored) {
+                return;
+            }
+            if (!canOpenPage(player, next)) {
+                player.sendMessage("§cContent kit cannot open that page.");
+                return;
+            }
+            if (next == Page.SHARDS && contentOnly(player)) {
+                open(player, next, player.getUniqueId());
+                return;
+            }
+            open(player, next);
             return;
         }
         if (action.startsWith("rank-player:")) {
@@ -261,7 +712,37 @@ public class DevMenu {
                 return;
             }
             String group = action.substring("rank-set:".length());
-            ranks.setRank(target, group);
+            if (DevRankBridge.isHomieExtra(group) && !ranks.isExtra(group)) {
+                // This build's RankBadgeService does not know the group; setRank would force Adventurer.
+                player.sendMessage("§c" + group + " §7needs the special-rank backend (not in this build).");
+                player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 0.5f, 1f);
+                open(player, Page.RANKS, target);
+                return;
+            }
+            RankBadgeService.Rank extra = ranks.extraFor(target);
+            if (ranks.isExtra(group)
+                    && extra != null && extra.group().equalsIgnoreCase(group)) {
+                if (!DevRankBridge.clearExtra(ranks, target, group)) {
+                    player.sendMessage("§eThis build cannot remove ultras from the menu.");
+                    open(player, Page.RANKS, target);
+                    return;
+                }
+                player.sendMessage("§eUltra removed: §f" + nameOf(Bukkit.getOfflinePlayer(target))
+                        + " §7← " + ranks.rankByGroup(group).display());
+                player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.8f, 0.9f);
+                open(player, Page.RANKS, target);
+                return;
+            }
+            if (!ranks.setRank(target, group)) {
+                if ("admin".equalsIgnoreCase(group) && !DevRankBridge.isRobb(target)) {
+                    player.sendMessage("§cAdmin is Robb's cosmetic rank. OP does not grant it.");
+                } else {
+                    player.sendMessage("§cCould not set that rank.");
+                }
+                player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 0.5f, 1f);
+                open(player, Page.RANKS, target);
+                return;
+            }
             OfflinePlayer targetPlayer = Bukkit.getOfflinePlayer(target);
             player.sendMessage("§aRank set: §f" + nameOf(targetPlayer) + " §7→ " + ranks.rankByGroup(group).display());
             player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.8f, 1.3f);
@@ -279,12 +760,53 @@ public class DevMenu {
             OfflinePlayer targetPlayer = Bukkit.getOfflinePlayer(target);
             player.sendMessage("§aRank matched to account level: §f" + nameOf(targetPlayer)
                     + " §7→ " + ranks.rankByGroup(ranks.rankOf(target)).display());
+            player.sendMessage("§7Ultra ranks (Citrus / Monkey / Beta / MVP++ / Admin) stay until you remove them.");
             player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.8f, 1.15f);
             open(player, Page.RANKS, target);
             return;
         }
         if (action.startsWith("shard-player:")) {
-            open(player, Page.SHARDS, UUID.fromString(action.substring("shard-player:".length())));
+            UUID picked = UUID.fromString(action.substring("shard-player:".length()));
+            if (contentOnly(player) && !player.getUniqueId().equals(picked)) {
+                player.sendMessage("§cContent kit can only give shards to yourself.");
+                return;
+            }
+            open(player, Page.SHARDS, picked);
+            return;
+        }
+        if (action.startsWith("wipe-player:")) {
+            open(player, Page.PLAYER_WIPE, UUID.fromString(action.substring("wipe-player:".length())));
+            return;
+        }
+        if (action.equals("wipe-confirm")) {
+            UUID target = holderTarget(player);
+            if (target == null) {
+                player.sendMessage("§cPick a player first.");
+                return;
+            }
+            // Two-step: the first press only arms (8s window); the second, while armed, wipes.
+            Holder current = currentHolder(player);
+            if (current == null || current.armedUntil() < System.currentTimeMillis()) {
+                player.playSound(player.getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 0.9f, 0.6f);
+                player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 1f, 0.5f);
+                player.sendMessage("§4§l☠ ARMED §7— press §cCONFIRM §7again within §f8s §7to wipe §f"
+                        + nameOf(Bukkit.getOfflinePlayer(target)) + "§7.");
+                open(player, new Holder(Page.PLAYER_WIPE, target, 0, null, null,
+                        System.currentTimeMillis() + WIPE_ARM_MILLIS));
+                return;
+            }
+            player.closeInventory();
+            AetherionItems plugin = AetherionItems.getInstance();
+            if (plugin == null) {
+                player.sendMessage("§cAetherionItems not loaded.");
+                return;
+            }
+            PlayerWipeService.wipe(plugin, target, player);
+            player.playSound(player.getLocation(), Sound.ENTITY_GENERIC_EXPLODE, 0.55f, 0.7f);
+            return;
+        }
+        if (action.equals("wipe-cancel")) {
+            open(player, Page.PLAYER_WIPE);
             return;
         }
         if (action.startsWith("shard-add:")) {
@@ -292,6 +814,10 @@ public class DevMenu {
             ShardService shards = shards();
             if (target == null || shards == null) {
                 player.sendMessage("§cPick a player first.");
+                return;
+            }
+            if (contentOnly(player) && !player.getUniqueId().equals(target)) {
+                player.sendMessage("§cContent kit can only give shards to yourself.");
                 return;
             }
             long amount;
@@ -338,6 +864,14 @@ public class DevMenu {
             player.closeInventory();
             player.sendMessage(DevBridges.farmPortalEnsure(false));
             player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 0.9f, 1.3f);
+            return;
+        }
+        if (action.equals("forageisle:open")) {
+            // Forage Island's DEV hub lives in AetherionForaging (/grove dev) — this tile only opens it.
+            player.closeInventory();
+            if (!player.performCommand("grove dev")) {
+                player.sendMessage("§cAetherionForaging offline.");
+            }
             return;
         }
         if (action.startsWith("isle-weather:")) {
@@ -652,11 +1186,9 @@ public class DevMenu {
             return;
         }
         if (action.startsWith("item:")) {
-            ItemStack give = clicked.clone();
-            ItemMeta meta = give.getItemMeta();
-            if (meta != null) {
-                meta.getPersistentDataContainer().remove(ItemKeys.devAction());
-                give.setItemMeta(meta);
+            ItemStack give = clean(clicked);
+            if (click.isShiftClick() && !click.isRightClick() && give.getMaxStackSize() > 1) {
+                give.setAmount(give.getMaxStackSize());
             }
             give(player, give);
             return;
@@ -719,9 +1251,24 @@ public class DevMenu {
             }
             return;
         }
+        if (action.startsWith("ambient:")) {
+            String id = action.substring("ambient:".length());
+            var items = AetherionItems.getInstance();
+            ItemStack tool = items == null || items.ambientProps() == null
+                    ? null
+                    : items.ambientProps().tool(id);
+            if (tool == null) {
+                player.sendMessage("§cUnknown ambient prop.");
+                return;
+            }
+            give(player, tool);
+            return;
+        }
         if (action.startsWith("testgear:")) {
             String id = action.substring("testgear:".length());
-            for (ItemStack gear : TestGear.all()) {
+            java.util.List<ItemStack> gearPool = new java.util.ArrayList<>(TestGear.all());
+            gearPool.addAll(TestGear.flagships());
+            for (ItemStack gear : gearPool) {
                 String gearId = gear.hasItemMeta()
                         ? gear.getItemMeta().getPersistentDataContainer().get(
                         de.aetherion.core.AetherKeys.namespaced("aetherion", "test_gear"),
@@ -738,6 +1285,61 @@ public class DevMenu {
         }
         if (action.startsWith("npc:")) {
             giveNpc(player, action.substring(4));
+            return;
+        }
+        if (action.equals("farmtool:cane")) {
+            ItemStack cane = DevBridges.canePatchTool();
+            if (cane == null) {
+                player.sendMessage("§cAetherionFarming offline — cane patch unavailable.");
+                return;
+            }
+            give(player, cane);
+            return;
+        }
+        if (action.startsWith("farmtool:district:")) {
+            ItemStack marker = DevBridges.districtMarker(action.substring("farmtool:district:".length()));
+            if (marker == null) {
+                player.sendMessage("§cUnknown district marker.");
+                return;
+            }
+            give(player, marker);
+            return;
+        }
+        if (action.equals("farmtool:scarecrow")) {
+            ItemStack scarecrow = DevBridges.scarecrowTool();
+            if (scarecrow == null) {
+                player.sendMessage("§cAetherionFarming offline — scarecrow unavailable.");
+                return;
+            }
+            give(player, scarecrow);
+            return;
+        }
+        if (action.equals("farmtool:haywagon")) {
+            ItemStack wagon = DevBridges.hayWagonTool();
+            if (wagon == null) {
+                player.sendMessage("§cAetherionFarming offline — hay wagon unavailable.");
+                return;
+            }
+            give(player, wagon);
+            return;
+        }
+        if (action.startsWith("ambient:")) {
+            String id = action.substring("ambient:".length());
+            var items = AetherionItems.getInstance();
+            ItemStack tool = items == null || items.ambientProps() == null
+                    ? null
+                    : items.ambientProps().tool(id);
+            if (tool == null) {
+                player.sendMessage("§cUnknown ambient prop.");
+                return;
+            }
+            give(player, tool);
+            return;
+        }
+        if (action.equals("farmtool:seed-isle")) {
+            // Right-click forces a re-run after the first pass flagged the footprint.
+            boolean force = click != null && click.isRightClick();
+            player.sendMessage(DevBridges.farmIsleSeed(force));
             return;
         }
         if (action.startsWith("pet:")) {
@@ -830,102 +1432,62 @@ public class DevMenu {
         }
     }
 
-    private void drawRoot(Inventory inventory, int index) {
-        int page = Math.max(0, Math.min(1, index));
-        inventory.setItem(4, button(Material.NETHER_STAR, "§6§lDEV Menu", "root",
-                "§7Page §f" + (page + 1) + "§7 / §f2",
-                "§8One glass ring · no edge clutter."));
-
-        if (page == 0) {
-            // Row 1 — sets
-            inventory.setItem(10, button(Material.DIAMOND_CHESTPLATE, "§bCombat Sets", "page:COMBAT", "§7I – V + swords."));
-            inventory.setItem(11, button(Material.IRON_PICKAXE, "§aMining Sets", "page:MINING", "§7I – V + pickaxes."));
-            inventory.setItem(12, button(Material.GOLDEN_HOE, "§eFarming Sets", "page:FARMING", "§7Armor + levelable hoe."));
-            inventory.setItem(13, button(Material.IRON_AXE, "§2Foraging Sets", "page:FORAGING", "§7Armor + axe."));
-            inventory.setItem(14, button(Material.FISHING_ROD, "§bFishing Sets", "page:FISHING", "§7Armor + rod."));
-            inventory.setItem(15, button(Material.IRON_HOE, "§dCatcher Sets", "page:CATCHER", "§7Armor + gaff."));
-            inventory.setItem(16, button(Material.NETHERITE_HELMET, "§5Special Sets", "page:SETS",
-                    "§7Dungeon · Aetherion · Hollow Sun · God.",
-                    "§ePage 2 §7has Hollow Sun / Dawnbearer."));
-
-            // Row 2 — gear / crafting
-            inventory.setItem(19, button(Material.NETHERITE_SWORD, "§cWeapons", "page:WEAPONS", "§7Starter → god."));
-            inventory.setItem(20, button(Material.EMERALD, "§2Boosters", "page:BOOSTERS", "§7All booster types."));
-            inventory.setItem(21, button(Material.ANVIL, "§dBooster Lab", "page:BOOSTER_LAB", "§7Apply boosters."));
-            inventory.setItem(22, button(Material.CRAFTING_TABLE, "§eTools", "page:TOOLS", "§7Basics, storage, recipe book."));
-            inventory.setItem(23, button(Material.FILLED_MAP, "§bBlueprints", "page:BLUEPRINTS",
-                    "§7Blueprint + finished tool side by side.",
-                    "§7Vein Siphon · Ore Troll spawn."));
-            inventory.setItem(24, button(Material.PLAYER_HEAD, "§7Resources", "page:RESOURCES", "§7Compressed / compacted."));
-            inventory.setItem(25, button(Material.MAGMA_CREAM, "§dCharms", "page:CHARMS", "§7Off-hand accessories."));
-
-            // Row 3 — world placeables
-            inventory.setItem(28, button(Material.LEAD, "§dPets", "page:PETS", "§7Spawn / collect."));
-            inventory.setItem(29, button(Material.ENDER_EYE, "§dSpheres", "page:SPHERES", "§7Catch spheres."));
-            inventory.setItem(30, button(Material.VILLAGER_SPAWN_EGG, "§bNPCs", "page:NPCS", "§7Starter / bosses / world."));
-            inventory.setItem(31, button(Material.LODESTONE, "§6Spawn Anchors", "page:SPAWN_MARKERS", "§7Origin teleports."));
-            inventory.setItem(32, button(Material.HAY_BLOCK, "§aAnimal Anchor", "give:animal", "§7Place animal zone."));
-            inventory.setItem(33, button(Material.ROTTEN_FLESH, "§cMob Anchor", "give:mob", "§7Place combat zone."));
-            inventory.setItem(34, button(Material.COARSE_DIRT, "§6Borderlands", "give:borderlands", "§7Waste combat zone."));
-
-            // Row 4 — inner columns only (10–16 style: slots 37–43). Never col 0/8.
-            inventory.setItem(37, button(Material.MOSS_BLOCK, "§aPet Habitats", "page:PET_HABITATS", "§7Wild pet biotopes."));
-            inventory.setItem(38, button(Material.SANDSTONE, "§6Colosseum Spawn", "give:colosseum", "§7Hub ring teleport."));
-            inventory.setItem(39, button(Material.RECOVERY_COMPASS, "§8Boss Anchors", "page:BOSS_ANCHORS", "§7Place spawn points."));
-            inventory.setItem(40, button(Material.NETHER_STAR, "§5Boss Cores", "page:BOSS_CORES", "§7Summon for tests."));
-            inventory.setItem(41, button(Material.FILLED_MAP, "§eArea Tools", "page:AREAS", "§7Map · hologram · markers."));
-            inventory.setItem(42, button(Material.HAY_BLOCK, "§a§lFarming Island", "page:FARM_ISLE",
-                    "§7Eldervale hub: teleports · NPC cast ·",
-                    "§7props · events · skills · resets.",
-                    "§8Legacy portal tools live inside."));
-            inventory.setItem(43, button(Material.FISHING_ROD, "§b§lFishing Island", "page:FISH_ISLE",
-                    "§7Eldervale lake: teleports · NPC cast ·",
-                    "§7shoal · lake events · the line · Log.",
-                    "§8Millstone moved to page 2."));
-        } else {
-            // Page 2 — admin / test (inner columns 10–16 / 19–25 only)
-            inventory.setItem(10, button(Material.NAME_TAG, "§6Ranks", "page:RANKS", "§7Account ranks."));
-            inventory.setItem(11, button(Material.AMETHYST_SHARD, "§bAether Shards", "page:SHARDS", "§7Give shards."));
-            inventory.setItem(12, button(Material.DEEPSLATE_BRICKS, "§5Dungeons", "page:DUNGEONS", "§7Start / skip boss."));
-            inventory.setItem(13, button(Material.EXPERIENCE_BOTTLE, "§aMax Skills", "skills:max", "§7All skills Lv. 100."));
-            inventory.setItem(14, button(Material.TNT, "§cWipe Skills", "skills:wipe", "§7All skills → Lv. 1."));
-            inventory.setItem(15, button(Material.WRITABLE_BOOK, "§eReset Quests", "quests:reset-all", "§7Wipe quest progress."));
-            inventory.setItem(16, button(Material.BOOK, "§aTutorial Done", "quests:tutorial-done",
-                    "§7Complete orientation quests.", "§7Unlock Manager flags for testing."));
-            inventory.setItem(19, button(Material.STRUCTURE_BLOCK, "§d✦ Test Arena", "page:TEST_ARENA", "§7Void sandbox + bosses."));
-            inventory.setItem(20, button(Material.WHITE_BANNER, "§bIsle Weather", "page:ISLE_WEATHER",
-                    "§7Force fog / rain / snow for ~75s.",
-                    "§7Test only — then ambient again."));
-            inventory.setItem(21, button(Material.DEEPSLATE_IRON_ORE, "§bEldervale Deep Marker", "give:eldervale-mobs",
-                    "§7Optional · zone already in mob-zones.yml.",
-                    "§7Only re-place if the deep pack is missing.",
-                    "§8Y≤24 · Rotten Miner / Cave Scrapper / Dust Digger."));
-            inventory.setItem(22, button(Material.POTION, "§cBorderlands Spirits", "page:BORDERLANDS_SPIRITS", "§7Ritual vials."));
-            inventory.setItem(23, button(Material.PLAYER_HEAD, "§bTestbots", "page:TESTBOTS",
-                    "§7QA bots · Wave 1 + combat/fish/trade/quest/pad.",
-                    "§7Start/stop from here. §f/botreport"));
-            inventory.setItem(24, button(Material.GRINDSTONE, "§6Millstone", "page:MILLSTONE",
-                    "§7Farm Isle mill + pantry loop.",
-                    "§7Anchor · crops · spheres · treats · NPC.",
-                    "§8Also inside Farming Island."));
-        }
-
-        drawBorderNav(inventory, page, 2, "ROOT");
+    private void drawContentRoot(Inventory inventory) {
+        inventory.setItem(4, DevItems.glow(button(Material.JUNGLE_SAPLING, "§a§l✦ Content Kit ✦", "root",
+                "§7Monkey / Homie tools.",
+                "§7Flight · NPC · Resources · Props · self shards.",
+                "§8Not full admin.")));
+        inventory.setItem(20, button(Material.IRON_BLOCK, "§fResources", "page:RESOURCES",
+                "§7Compressed / compacted mats."));
+        inventory.setItem(21, button(Material.AMETHYST_SHARD, "§bAether Shards", "page:SHARDS",
+                "§7Give yourself shards."));
+        inventory.setItem(22, button(Material.ARMOR_STAND, "§dAmbient Props", "page:AMBIENT",
+                "§7BlockDisplay scenery — place freely.",
+                "§7Scarecrow · wagon · world props.",
+                "§8No tick · safe to place many."));
+        inventory.setItem(23, npcEditorButton());
+        inventory.setItem(24, button(Material.FEATHER, "§aToggle /flight", "flight-toggle",
+                "§7Same as EssentialsX fly.",
+                "§8essentials.fly · aetherion.flight"));
+        inventory.setItem(31, button(Material.WRITABLE_BOOK, "§b§lNPC / Quest Editor", "page:NPC_EDITOR",
+                "§7Create · nearby · wand · list · help",
+                "§7and §f/aethernpc§7."));
     }
 
-    /** Bottom nav: far-left 45 · center Close 49 · far-right 53. */
-    private void drawBorderNav(Inventory inventory, int page, int pageCount, String pageName) {
-        if (page > 0) {
-            inventory.setItem(45, button(Material.ARROW, "§ePrevious", "pageidx:" + pageName + ":" + (page - 1),
-                    "§7Page §f" + page));
-        } else {
-            inventory.setItem(45, button(Material.ARROW, "§eClose", "close", "§7Leave DEV menu."));
-        }
+    /** Cursor monkey-dev-menu NPC / Quest editor section, rebuilt on {@code /npc} subcommands. */
+    private void drawNpcEditorSection(Inventory inventory) {
+        inventory.setItem(4, button(Material.WRITABLE_BOOK, "§b§lNPC / Quest Editor", "root",
+                "§7Dedicated staff section.",
+                "§7Also §f/npc §7· §f/aethernpc",
+                "§8Story NPCs stay in npcs.yml."));
+        inventory.setItem(11, button(Material.NETHER_STAR, "§bOpen editor", "npc-editor",
+                "§7Full /npc menu.",
+                "§7Create, edit, list, wand."));
+        inventory.setItem(13, button(Material.EMERALD_BLOCK, "§aCreate NPC", "npc-editor:create",
+                "§7Name in chat, then place at your feet."));
+        inventory.setItem(15, button(Material.COMPASS, "§eEdit nearby", "npc-editor:nearby",
+                "§7Closest editor NPC within 8 blocks."));
+        inventory.setItem(21, button(Material.BLAZE_ROD, "§6Get wand", "npc-editor:wand",
+                "§7Right-click air — editor menu.",
+                "§7Right-click an editor NPC — edit."));
+        inventory.setItem(22, button(Material.WRITABLE_BOOK, "§dNPC & Quest Editor", "open:aethernpc",
+                "§7Create a talking NPC in under a minute.",
+                "§7Optional: give them a simple quest.",
+                "§8Story NPCs stay untouched.",
+                "§eOpens /aethernpc"));
+        inventory.setItem(23, button(Material.BOOK, "§6List NPCs", "npc-editor:list",
+                "§7Every editor NPC you created."));
+        inventory.setItem(31, button(Material.KNOWLEDGE_BOOK, "§fHelp", "npc-editor:help",
+                "§7Commands and permissions."));
+        inventory.setItem(45, button(Material.ARROW, "§eBack", "back", "§7Return to DEV menu."));
         inventory.setItem(49, button(Material.BARRIER, "§cClose", "close"));
-        if (page + 1 < pageCount) {
-            inventory.setItem(53, button(Material.ARROW, "§eNext page", "pageidx:" + pageName + ":" + (page + 1),
-                    "§7Page §f" + (page + 2)));
-        }
+    }
+
+    private ItemStack npcEditorButton() {
+        return button(Material.BLAZE_ROD, "§6§lNPC Editor", "npc-wand",
+                "§7FancyNPC + quest creator.",
+                "§7Opens §f/npc §7(same as §f/npc wand§7).",
+                "§8Permission: §faetherion.npc.editor");
     }
 
     private void drawPage(Inventory inventory, Page page, UUID target, int index) {
@@ -935,6 +1497,10 @@ public class DevMenu {
         }
         if (page == Page.SHARDS) {
             drawShards(inventory, target);
+            return;
+        }
+        if (page == Page.PLAYER_WIPE) {
+            drawPlayerWipe(inventory, target, 0L);
             return;
         }
         if (page == Page.WEAPONS) {
@@ -955,6 +1521,10 @@ public class DevMenu {
         }
         if (page == Page.NPCS) {
             drawNpcHub(inventory);
+            return;
+        }
+        if (page == Page.NPC_EDITOR) {
+            drawNpcEditorSection(inventory);
             return;
         }
         if (page == Page.TEST_ARENA) {
@@ -984,37 +1554,49 @@ public class DevMenu {
             return;
         }
         List<ItemStack> contents = contents(page);
-        int perPage = 45;
-        int start = Math.max(0, index) * perPage;
+        // Inner 7×4 only — outer ring stays glass (1 pane thick).
+        final int[] contentSlots = DevTheme.INNER;
+        int perPage = contentSlots.length;
+        int pages = Math.max(1, (contents.size() + perPage - 1) / perPage);
+        index = Math.min(Math.max(0, index), pages - 1);
+        int start = index * perPage;
         int end = Math.min(contents.size(), start + perPage);
-        int slot = 0;
         for (int i = start; i < end; i++) {
-            inventory.setItem(slot++, contents.get(i));
+            inventory.setItem(contentSlots[i - start], contents.get(i));
         }
-        if (start > 0) {
-            inventory.setItem(45, button(Material.ARROW, "§ePrevious page", "pageidx:" + page.name() + ":" + (index - 1),
-                    "§7Page §f" + index));
-        } else {
-            inventory.setItem(45, button(Material.ARROW, "§eBack", backAction(page)));
+        if (contents.isEmpty()) {
+            inventory.setItem(22, button(Material.GRAY_DYE, "§7Nothing on this shelf right now", "noop",
+                    "§8The plugin that fills it may be offline —",
+                    "§8check §9ADMIN › System Status§8."));
         }
-        inventory.setItem(49, button(Material.BARRIER, "§cClose", "close"));
-        if (end < contents.size()) {
-            inventory.setItem(53, button(Material.ARROW, "§eNext page", "pageidx:" + page.name() + ":" + (index + 1),
-                    "§7Page §f" + (index + 2),
-                    "§7" + (contents.size() - end) + " more on the next page."));
+        drawPager(inventory, page, index, pages, contents.size() - end);
+        int gives = 0;
+        for (int i = start; i < end; i++) {
+            if (isBatchGive(DevItems.actionOf(contents.get(i)))) {
+                gives++;
+            }
+        }
+        if (gives > 1) {
+            inventory.setItem(47, button(Material.HOPPER, "§a⇊ Give entire shelf", "give-page",
+                    "§7Everything giveable on this page:",
+                    "§f" + gives + " §7entries in one click.",
+                    "§8Overflow drops at your feet."));
         }
     }
 
-    private String backAction(Page page) {
-        return switch (page) {
-            case WEAPONS_STARTER, WEAPONS_BOWS, WEAPONS_PROGRESSION, WEAPONS_T1, WEAPONS_T2, WEAPONS_DUNGEON, WEAPONS_GOD
-                    -> "page:WEAPONS";
-            case NPCS_STARTER, NPCS_BOSSES, NPCS_WORLD, NPCS_SERVICES
-                    -> "page:NPCS";
-            case TEST_GEAR -> "page:TEST_ARENA";
-            case TESTBOTS_LIST -> "page:TESTBOTS";
-            default -> "back";
-        };
+    /** Page arrows live in the top bar (0 / 8) so the bottom row stays pure navigation. */
+    void drawPager(Inventory inventory, Page page, int index, int pages, int remaining) {
+        if (index > 0) {
+            inventory.setItem(DevTheme.PREV, button(Material.ARROW, "§e◀ Previous page",
+                    "pageidx:" + page.name() + ":" + (index - 1),
+                    "§7Page §f" + index + "§7 / §f" + pages));
+        }
+        if (index + 1 < pages) {
+            inventory.setItem(DevTheme.NEXT, button(Material.ARROW, "§eNext page ▶",
+                    "pageidx:" + page.name() + ":" + (index + 1),
+                    "§7Page §f" + (index + 2) + "§7 / §f" + pages,
+                    remaining > 0 ? "§8" + remaining + " more waiting." : "§8More waiting."));
+        }
     }
 
     private void drawNpcHub(Inventory inventory) {
@@ -1088,14 +1670,18 @@ public class DevMenu {
                 "§7Cores and relic weapons."));
         inventory.setItem(16, button(Material.NETHERITE_SWORD, "§6Test Extras", "page:WEAPONS_GOD",
                 "§7Void stick / leftovers."));
+        inventory.setItem(22, button(Material.CHERRY_LEAVES, "§dSpecial Weapons", "page:WEAPONS_SPECIAL",
+                "§7Boss-drop showpieces.",
+                "§dAshen Katana"));
         inventory.setItem(45, button(Material.ARROW, "§eBack", "back"));
         inventory.setItem(49, button(Material.BARRIER, "§cClose", "close"));
     }
 
     private void drawSetGrid(Inventory inventory, Page page, int index) {
         List<ItemStack[]> columns = setColumns(page);
-        // Inner columns only (slots col 1–7). SETS: 6/page so page 2 holds late sets + Dawnbearer.
-        final int colsPerPage = page == Page.SETS ? 6 : 7;
+        // Inner columns only. 6 per page everywhere: the bottom row has exactly six weapon slots
+        // (46–48 / 50–52), so a 7th column would silently lose its weapon.
+        final int colsPerPage = 6;
         int pageIndex = Math.max(0, index);
         int start = pageIndex * colsPerPage;
         if (start >= columns.size() && pageIndex > 0) {
@@ -1117,18 +1703,17 @@ public class DevMenu {
                 inventory.setItem(fifthSlots[col], pieces[4]);
             }
         }
-        if (start > 0) {
-            inventory.setItem(45, button(Material.ARROW, "§ePrevious page", "pageidx:" + page.name() + ":" + (pageIndex - 1),
-                    "§7Page §f" + pageIndex));
-        } else {
-            inventory.setItem(45, button(Material.ARROW, "§eBack", "back"));
-        }
-        inventory.setItem(49, button(Material.BARRIER, "§cClose", "close"));
-        if (end < columns.size()) {
-            inventory.setItem(53, button(Material.ARROW, "§eNext page", "pageidx:" + page.name() + ":" + (pageIndex + 1),
-                    "§7Page §f" + (pageIndex + 2),
-                    "§7Hollow Sun · Worldhide · Aetherion · God kits."));
-        }
+        int pages = Math.max(1, (columns.size() + colsPerPage - 1) / colsPerPage);
+        drawPager(inventory, page, pageIndex, pages, columns.size() - end);
+        List<String> lore = new ArrayList<>();
+        lore.add("§8" + DevTheme.breadcrumb(page));
+        lore.add("§7Each column is one set: helmet → boots,");
+        lore.add("§7weapon or §6full-set§7 button on the bottom row.");
+        lore.add("§7" + columns.size() + " sets §8· §7page §f" + (pageIndex + 1) + "§7/§f" + pages);
+        lore.add("");
+        lore.addAll(DevTheme.controls());
+        inventory.setItem(DevTheme.HEADER, button(DevTheme.info(page).cat().icon,
+                DevTheme.info(page).cat().accent + "§l" + DevTheme.pageName(page), "noop", lore.toArray(String[]::new)));
     }
 
     private List<ItemStack[]> setColumns(Page page) {
@@ -1275,6 +1860,10 @@ public class DevMenu {
                 columns.add(armorColumn("§fBone", "bone",
                         customItem.createBoneHelmet(), customItem.createBoneChestplate(),
                         customItem.createBoneLeggings(), customItem.createBoneBoots()));
+                // Webweave was only in the dead contents(SETS) list — surfaced here so it is reachable.
+                columns.add(armorColumn("§fWebweave", "webweave",
+                        customItem.createWebweaveHelmet(), customItem.createWebweaveChestplate(),
+                        customItem.createWebweaveLeggings(), customItem.createWebweaveBoots()));
                 columns.add(armorColumn("§5Ironhide", "ironhide",
                         customItem.createIronhideHelmet(), customItem.createIronhideChestplate(),
                         customItem.createIronhideLeggings(), customItem.createIronhideBoots()));
@@ -1450,7 +2039,21 @@ public class DevMenu {
                 items.add(itemButton(customItem.createAetherionVoidStick(), "void_stick"));
             }
             case WEAPONS_T2 -> {
+                items.add(itemButton(customItem.createAshenKatana(), "ashen_katana"));
+                items.add(itemButton(customItem.createWorldbite(), "worldbite"));
+                items.add(itemButton(customItem.createSeraphineNeedle(), "seraphine_needle"));
+                items.add(itemButton(customItem.createSeraphineVeil(), "seraphine_veil"));
+                items.add(itemButton(customItem.createSeraphineBodice(), "seraphine_bodice"));
+                items.add(itemButton(customItem.createSeraphineBellSkirt(), "seraphine_bell_skirt"));
+                items.add(itemButton(customItem.createSeraphinePointeSlippers(), "seraphine_pointe_slippers"));
                 items.add(itemButton(customItem.createGravwellCleaver(), "gravwell_cleaver"));
+                items.add(itemButton(customItem.createAshenKatana(), "ashen_katana"));
+                items.add(itemButton(customItem.createWorldbite(), "worldbite"));
+                items.add(itemButton(customItem.createSeraphineNeedle(), "seraphine_needle"));
+                items.add(itemButton(customItem.createSeraphineVeil(), "seraphine_veil"));
+                items.add(itemButton(customItem.createSeraphineBodice(), "seraphine_bodice"));
+                items.add(itemButton(customItem.createSeraphineBellSkirt(), "seraphine_bell_skirt"));
+                items.add(itemButton(customItem.createSeraphinePointeSlippers(), "seraphine_pointe_slippers"));
                 items.add(itemButton(customItem.createStaffOfTechnicalDifficulties(), "staff_of_technical_difficulties"));
                 items.add(itemButton(customItem.createVoidVacuumCharm(), "void_vacuum_charm"));
                 items.add(itemButton(customItem.createThermalCore(), "thermal_core"));
@@ -1465,6 +2068,9 @@ public class DevMenu {
                 items.add(itemButton(customItem.createDungeonWeaponRelic(de.aetherion.items.dungeon.DungeonGearTier.T3), "dungeon_relic_t3_weapon"));
                 items.add(itemButton(customItem.createWeaponSchematic(), "weapon_schematic"));
                 items.add(itemButton(customItem.createDungeonWeaponSchematic(1), "dungeon_weapon_schematic"));
+            }
+            case WEAPONS_SPECIAL -> {
+                items.add(itemButton(customItem.createAshenKatana(), "ashen_katana"));
             }
             case WEAPONS_GOD -> {
                 items.add(itemButton(customItem.createAetherionVoidStick(), "void_stick"));
@@ -1597,15 +2203,40 @@ public class DevMenu {
                         de.aetherion.items.farm.MillstoneWindmill.createAnchor().clone(),
                         "§6Millstone 2.0"
                 ), "npc:millstone_v2"));
+                ItemStack caneTool = DevBridges.canePatchTool();
+                items.add(tagged(named(
+                        caneTool != null ? caneTool : new ItemStack(Material.SUGAR_CANE),
+                        "§aCane Patch §8(DEV)"
+                ), "farmtool:cane"));
+                items.add(button(Material.SUGAR_CANE, "§aSeed Farm Isle", "farmtool:seed-isle",
+                        "§7Plants cane banks on sand by water",
+                        "§7and fills empty farmland with a",
+                        "§7wheat · carrot · potato · beet mix.",
+                        "§7Existing rows are never touched.",
+                        "",
+                        "§eLeft-click §7runs once.",
+                        "§eRight-click §7forces a re-run."));
+                for (String district : new String[]{"WHEAT_VALE", "ROOT_PATCH", "CANE_SHORE", "MILL_YARD"}) {
+                    ItemStack marker = DevBridges.districtMarker(district);
+                    items.add(tagged(
+                            marker != null ? marker : button(Material.OAK_SIGN, "§e" + district, "noop"),
+                            "farmtool:district:" + district
+                    ));
+                }
                 var wheat = de.aetherion.items.economy.CompressedResource.WHEAT;
                 var carrot = de.aetherion.items.economy.CompressedResource.CARROT;
                 var potato = de.aetherion.items.economy.CompressedResource.POTATO;
+                // Ready jar also shelved BEETROOT compressed/compacted — that resource exists only in
+                // main-checkout economy WIP, not this lineage's CompressedResource.
+                var caneRes = de.aetherion.items.economy.CompressedResource.SUGAR_CANE;
                 items.add(itemButton(wheat.compressed(), wheat.compressedId()));
                 items.add(itemButton(carrot.compressed(), carrot.compressedId()));
                 items.add(itemButton(potato.compressed(), potato.compressedId()));
+                items.add(itemButton(caneRes.compressed(), caneRes.compressedId()));
                 items.add(itemButton(wheat.compacted(), wheat.compactedId()));
                 items.add(itemButton(carrot.compacted(), carrot.compactedId()));
                 items.add(itemButton(potato.compacted(), potato.compactedId()));
+                items.add(itemButton(caneRes.compacted(), caneRes.compactedId()));
                 items.add(itemButton(wheat.refined(), wheat.refinedId()));
                 items.add(itemButton(carrot.refined(), carrot.refinedId()));
                 items.add(itemButton(potato.refined(), potato.refinedId()));
@@ -1620,9 +2251,42 @@ public class DevMenu {
                     }
                 }
                 items.add(tagged(named(
+                        new ItemStack(Material.WOODEN_HOE),
+                        "§aField Warden"
+                ), "npc:field_warden"));
+                items.add(tagged(named(
                         new ItemStack(Material.CARROT),
                         "§aRoot Cellar §8(Mill Keeper)"
                 ), "npc:root_cellar"));
+                items.add(tagged(named(
+                        new ItemStack(Material.WHEAT_SEEDS),
+                        "§aSeed Stall §8(Market)"
+                ), "npc:farm_market"));
+            }
+            case AMBIENT -> {
+                try {
+                    ItemStack scarecrow = DevBridges.scarecrowTool();
+                    items.add(tagged(named(
+                            scarecrow != null ? scarecrow : new ItemStack(Material.CARVED_PUMPKIN),
+                            "§6Scarecrow §8(DEV)"
+                    ), "farmtool:scarecrow"));
+                    ItemStack wagon = DevBridges.hayWagonTool();
+                    items.add(tagged(named(
+                            wagon != null ? wagon : new ItemStack(Material.HAY_BLOCK),
+                            "§6Hay Wagon §8(DEV)"
+                    ), "farmtool:haywagon"));
+                } catch (Throwable ignored) {
+                    items.add(tagged(named(new ItemStack(Material.CARVED_PUMPKIN), "§6Scarecrow §8(DEV)"), "farmtool:scarecrow"));
+                    items.add(tagged(named(new ItemStack(Material.HAY_BLOCK), "§6Hay Wagon §8(DEV)"), "farmtool:haywagon"));
+                }
+                var ambient = AetherionItems.getInstance() == null ? null : AetherionItems.getInstance().ambientProps();
+                if (ambient != null) {
+                    for (de.aetherion.items.dev.prop.AmbientProp prop : ambient.all()) {
+                        items.add(tagged(prop.create().clone(), "ambient:" + prop.id()));
+                    }
+                } else {
+                    items.add(button(Material.BARRIER, "§cAmbient offline", "noop", "§7Items prop registry missing."));
+                }
             }
             case NPCS -> {
                 // Hub is drawn separately.
@@ -1631,8 +2295,21 @@ public class DevMenu {
                     .forEach(entry -> items.add(tagged(named(entry.icon().clone(), entry.name()), "npc:" + entry.id())));
             case NPCS_BOSSES -> DevBridges.npcs(DevBridges.NpcBucket.BOSS)
                     .forEach(entry -> items.add(tagged(named(entry.icon().clone(), entry.name()), "npc:" + entry.id())));
-            case NPCS_WORLD -> DevBridges.npcs(DevBridges.NpcBucket.WORLD)
-                    .forEach(entry -> items.add(tagged(named(entry.icon().clone(), entry.name()), "npc:" + entry.id())));
+            case NPCS_WORLD -> {
+                ItemStack amethystSpawn = DevBridges.spawnAnchor("amethyst");
+                if (amethystSpawn != null) {
+                    items.add(tagged(named(amethystSpawn.clone(), "§dAmethyst Mines §8Spawn Anchor"),
+                            "give:homestead:amethyst"));
+                } else {
+                    items.add(button(Material.AMETHYST_CLUSTER, "§dAmethyst Mines §8Spawn Anchor",
+                            "give:homestead:amethyst",
+                            "§7Stand in the Amethyst Area.",
+                            "§eRight-click §7to save §f/amethyst§7.",
+                            "§8Load AetherionHub if this fails."));
+                }
+                DevBridges.npcs(DevBridges.NpcBucket.WORLD)
+                        .forEach(entry -> items.add(tagged(named(entry.icon().clone(), entry.name()), "npc:" + entry.id())));
+            }
             case NPCS_SERVICES -> {
                 items.add(button(Material.ENDER_CHEST, "§6Merchant Sample Chest", "give:merchant-chest",
                         "§7Place beside the merchant.",
@@ -1879,7 +2556,20 @@ public class DevMenu {
     }
 
     private void giveItem(Player player, String id) {
-        ItemStack item = switch (id) {
+        ItemStack item = resolveItem(id);
+        if (item == null) {
+            player.sendMessage("§cUnknown item.");
+            return;
+        }
+        give(player, item);
+    }
+
+    /** Item id → fresh stack. Backs pinned {@code item:} tiles whose icon is not cached yet. */
+    ItemStack resolveItem(String id) {
+        if (id == null) {
+            return null;
+        }
+        return switch (id) {
             case "simple_sword" -> customItem.createSimpleSword();
             case "dragon_ascension_vial" -> customItem.createDragonAscensionVial();
             case "splinter_glaive" -> customItem.createSplinterGlaive();
@@ -1908,6 +2598,17 @@ public class DevMenu {
             case "bridged_axe" -> customItem.createBridgedAxe();
             case "warped_blade" -> customItem.createWarpedBlade();
             case "gravwell_cleaver" -> customItem.createGravwellCleaver();
+            case "ashen_katana" -> customItem.createAshenKatana();
+            case "worldbite" -> customItem.createWorldbite();
+            case "worldhide_helmet" -> customItem.createWorldhideHelmet();
+            case "worldhide_chestplate" -> customItem.createWorldhideChestplate();
+            case "worldhide_leggings" -> customItem.createWorldhideLeggings();
+            case "worldhide_boots" -> customItem.createWorldhideBoots();
+            case "seraphine_needle" -> customItem.createSeraphineNeedle();
+            case "seraphine_veil" -> customItem.createSeraphineVeil();
+            case "seraphine_bodice" -> customItem.createSeraphineBodice();
+            case "seraphine_bell_skirt" -> customItem.createSeraphineBellSkirt();
+            case "seraphine_pointe_slippers" -> customItem.createSeraphinePointeSlippers();
             case "staff_of_technical_difficulties" -> customItem.createStaffOfTechnicalDifficulties();
             case "void_vacuum_charm" -> customItem.createVoidVacuumCharm();
             case "thermal_core" -> customItem.createThermalCore();
@@ -2020,11 +2721,6 @@ public class DevMenu {
                 yield heart != null ? heart : de.aetherion.items.economy.QuarryItems.fromId(id);
             }
         };
-        if (item == null) {
-            player.sendMessage("§cUnknown item.");
-            return;
-        }
-        give(player, item);
     }
 
     private void giveBoss(Player player, String id) {
@@ -2059,9 +2755,30 @@ public class DevMenu {
         if (item == null) {
             return;
         }
+        giveQuiet(player, item);
+        player.playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 0.7f, 1.2f);
+    }
+
+    /** @return stacks that did not fit and were dropped at the player's feet. */
+    private int giveQuiet(Player player, ItemStack item) {
+        if (item == null) {
+            return 0;
+        }
         HashMap<Integer, ItemStack> overflow = player.getInventory().addItem(item);
         overflow.values().forEach(left -> player.getWorld().dropItemNaturally(player.getLocation(), left));
-        player.playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 0.7f, 1.2f);
+        return overflow.size();
+    }
+
+    /** Shelf stack → the real item (DEV action tag and DEV decoration stripped). */
+    static ItemStack clean(ItemStack shelf) {
+        ItemStack give = shelf.clone();
+        ItemMeta meta = give.getItemMeta();
+        if (meta != null) {
+            meta.getPersistentDataContainer().remove(ItemKeys.devAction());
+            meta.getPersistentDataContainer().remove(DevItems.VIA);
+            give.setItemMeta(meta);
+        }
+        return give;
     }
 
     private ItemStack setButton(Material material, String name, String setId) {
@@ -2101,37 +2818,16 @@ public class DevMenu {
             meta.getPersistentDataContainer().set(ItemKeys.devAction(), PersistentDataType.STRING, action);
             item.setItemMeta(meta);
         }
+        DevIndex.remember(action, item);
         return item;
     }
 
     private ItemStack tagged(ItemStack item, String action) {
-        ItemMeta meta = item.getItemMeta();
-        if (meta != null) {
-            meta.getPersistentDataContainer().set(ItemKeys.devAction(), PersistentDataType.STRING, action);
-            item.setItemMeta(meta);
-        }
-        return item;
+        return DevItems.tag(item, action);
     }
 
     private ItemStack named(ItemStack item, String name) {
-        ItemMeta meta = item.getItemMeta();
-        if (meta != null) {
-            meta.setDisplayName(name);
-            item.setItemMeta(meta);
-        }
-        return item;
-    }
-
-    private void fill(Inventory inventory) {
-        ItemStack pane = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
-        ItemMeta meta = pane.getItemMeta();
-        if (meta != null) {
-            meta.setDisplayName(" ");
-            pane.setItemMeta(meta);
-        }
-        for (int slot = 0; slot < inventory.getSize(); slot++) {
-            inventory.setItem(slot, pane.clone());
-        }
+        return DevItems.named(item, name);
     }
 
     private void drawRanks(Inventory inventory, UUID target) {
@@ -2177,30 +2873,71 @@ public class DevMenu {
                     "§8LuckPerms group: §7" + rank.group()
             ));
         }
-        inventory.setItem(33, button(
-                rankIcon("mvpplusplus"),
-                (extra != null && extra.group().equals("mvpplusplus") ? "§a▶ " : "") + "§6MVP§c++",
-                "rank-set:mvpplusplus",
-                "§7Ultra rank. Stays on top of the",
-                "§7Aetherion title."
-        ));
-        inventory.setItem(34, button(
+        boolean adminOn = extra != null && extra.group().equals("admin");
+        boolean monkeyOn = extra != null && extra.group().equals("monkey");
+        boolean citrusOn = extra != null && extra.group().equals("citrus");
+        boolean betaOn = extra != null && extra.group().equals("beta");
+        boolean mvpOn = extra != null && extra.group().equals("mvpplusplus");
+        inventory.setItem(37, button(
                 rankIcon("admin"),
-                (extra != null && extra.group().equals("admin") ? "§a▶ " : "") + "§cAdmin",
+                (adminOn ? "§a▶ " : "") + "§cAdmin",
                 "rank-set:admin",
-                "§7Ultra rank. Stays on top of the",
-                "§7Aetherion title."
+                "§7Robb only. OP does not grant this.",
+                "§7Stays on top of the level tag.",
+                adminOn ? "§eClick again to remove." : "§7Click to grant."
         ));
-        inventory.setItem(40, button(
+        inventory.setItem(38, homieRankButton(ranks, "rank-set:monkey", monkeyOn, "§b§lMonkey §8· celestial",
+                "§7Celestial dye #B2FFFF, then the level tag.",
+                "§7Content Kit: flight, /npc, Resources,",
+                "§7Ambient Props, self shards — not full admin."));
+        inventory.setItem(39, homieRankButton(ranks, "rank-set:citrus", citrusOn, "§e§lCitrus",
+                "§7Citrus dye, then the level tag."));
+        inventory.setItem(40, homieRankButton(ranks, "rank-set:beta", betaOn, "§d§lBeta",
+                "§7Rainbow dye, then the level tag.",
+                "§7Not Monkey #B2FFFF. Cosmetic only."));
+        inventory.setItem(41, button(
+                rankIcon("mvpplusplus"),
+                (mvpOn ? "§a▶ " : "") + "§6MVP§c++",
+                "rank-set:mvpplusplus",
+                "§7Gold/red homage, then the level tag.",
+                mvpOn ? "§eClick again to remove." : "§7Click to grant."
+        ));
+        inventory.setItem(42, button(
                 Material.EXPERIENCE_BOTTLE,
                 "§eMatch account level",
                 "rank-sync",
-                "§7Clear the DEV override.",
-                "§7Rank follows XP again."
+                "§7Clear the DEV progression override.",
+                "§7Does not remove Citrus / Monkey / Beta /",
+                "§7MVP++ / Admin. Click those to remove."
         ));
     }
 
+    /** Ready-jar Homie ranks: live toggle when RankBadgeService knows the group, labelled stub otherwise. */
+    private ItemStack homieRankButton(RankBadgeService ranks, String action, boolean on, String name, String... lore) {
+        String group = action.substring("rank-set:".length());
+        List<String> lines = new ArrayList<>(List.of(lore));
+        if (ranks == null || !ranks.isExtra(group)) {
+            lines.add("");
+            lines.add("§8Needs the special-rank backend —");
+            lines.add("§8not in this build. Click does nothing.");
+            return button(Material.GRAY_DYE, "§8" + org.bukkit.ChatColor.stripColor(name), "noop",
+                    lines.toArray(String[]::new));
+        }
+        lines.add(on ? "§eClick again to remove." : "§7Click to grant.");
+        return button(rankIcon(group), (on ? "§a▶ " : "") + name, action, lines.toArray(String[]::new));
+    }
+
     private void drawTestGear(Inventory inventory) {
+        int flagshipSlot = 13;
+        for (ItemStack flagship : TestGear.flagships()) {
+            String id = flagship.hasItemMeta()
+                    ? flagship.getItemMeta().getPersistentDataContainer().get(
+                            de.aetherion.core.AetherKeys.namespaced("aetherion", "test_gear"),
+                            org.bukkit.persistence.PersistentDataType.STRING)
+                    : "terminus";
+            inventory.setItem(flagshipSlot++, tagged(flagship.clone(), "testgear:" + id));
+        }
+
         inventory.setItem(4, button(Material.NETHERITE_CHESTPLATE, "§d✦ Test Gear", "page:TEST_ARENA",
                 "§7Sandbox prototypes only.",
                 "§7Click to receive a piece."));
@@ -2229,27 +2966,31 @@ public class DevMenu {
     }
 
     private void drawTestArena(Inventory inventory, int index) {
-        inventory.setItem(4, button(Material.STRUCTURE_BLOCK, "§d✦ Test Arena", "root",
+        inventory.setItem(4, DevItems.glow(button(Material.STRUCTURE_BLOCK, "§d§l✦ Test Arena", "noop",
                 "§7Void world §f" + de.aetherion.items.world.TestArenaService.WORLD_NAME,
                 "§7Big flat pad. Spawn bosses here.",
-                "§8Sandbox only — not the live game."));
-        inventory.setItem(9, button(Material.ENDER_PEARL, "§aGo to arena", "test:goto",
+                "§8Sandbox only — not the live game.",
+                "",
+                "§7Row 1 §8· §farena controls",
+                "§7Rows 2–4 §8· §fclick a boss to spawn it here")));
+        // Row 1 — arena controls (inner 10–16, never the ring).
+        inventory.setItem(10, button(Material.ENDER_PEARL, "§a⚡ Go to arena", "test:goto",
                 "§7Creates the world if needed,",
                 "§7then teleports you to the pad."));
-        inventory.setItem(10, button(Material.OAK_DOOR, "§eLeave arena", "test:leave",
+        inventory.setItem(11, button(Material.OAK_DOOR, "§eLeave arena", "test:leave",
                 "§7Returns you to where you entered."));
-        inventory.setItem(11, button(Material.BRICKS, "§bRebuild pad", "test:rebuild",
+        inventory.setItem(12, button(Material.BRICKS, "§bRebuild pad", "test:rebuild",
                 "§7Re-lays the smooth-stone platform."));
-        inventory.setItem(12, button(Material.WITHER_SKELETON_SKULL, "§cClear bosses", "test:clear-bosses",
-                "§7Despawns BossEngine fights",
-                "§7inside the test world."));
-        inventory.setItem(13, button(Material.BARRIER, "§cClear all mobs", "test:clear-mobs",
-                "§7Removes every non-player entity."));
-        inventory.setItem(14, button(Material.ZOMBIE_HEAD, "§aSpawn test mobs", "test:spawn-dummies",
+        inventory.setItem(13, button(Material.ZOMBIE_HEAD, "§aSpawn test mobs", "test:spawn-dummies",
                 "§7Spawns simple zombies / skeletons",
                 "§7around you for ability testing.",
                 "§8/summon also works in this world."));
-        inventory.setItem(15, button(Material.NETHERITE_CHESTPLATE, "§d✦ Test Gear", "page:TEST_GEAR",
+        inventory.setItem(14, button(Material.WITHER_SKELETON_SKULL, "§cClear bosses", "test:clear-bosses",
+                "§7Despawns BossEngine fights",
+                "§7inside the test world."));
+        inventory.setItem(15, button(Material.BARRIER, "§cClear all mobs", "test:clear-mobs",
+                "§7Removes every non-player entity."));
+        inventory.setItem(16, button(Material.NETHERITE_CHESTPLATE, "§d✦ Flagships & Test Gear", "page:TEST_GEAR",
                 "§7Sandbox weapons / armor / charms.",
                 "§7Built for the prototype bosses."));
 
@@ -2269,26 +3010,22 @@ public class DevMenu {
             }
             bosses.add(tagged(entry.icon().clone(), "test:spawn:" + spawnId));
         }
-        int perPage = 27;
-        int start = Math.max(0, index) * perPage;
+        // Rows 2–4 — spawnable bosses, sandbox prototypes first (inner 21 per page).
+        final int[] bossSlots = java.util.Arrays.copyOfRange(DevTheme.INNER, 7, DevTheme.INNER.length);
+        int perPage = bossSlots.length;
+        int pages = Math.max(1, (bosses.size() + perPage - 1) / perPage);
+        index = Math.min(Math.max(0, index), pages - 1);
+        int start = index * perPage;
         int end = Math.min(bosses.size(), start + perPage);
-        int slot = 18;
         for (int i = start; i < end; i++) {
-            if (slot >= 45) {
-                break;
-            }
-            inventory.setItem(slot++, bosses.get(i));
+            inventory.setItem(bossSlots[i - start], bosses.get(i));
         }
-        if (start > 0) {
-            inventory.setItem(45, button(Material.ARROW, "§ePrevious", "pageidx:TEST_ARENA:" + (index - 1)));
-        } else {
-            inventory.setItem(45, button(Material.ARROW, "§eBack", "back"));
+        if (bosses.isEmpty()) {
+            inventory.setItem(31, button(Material.GRAY_DYE, "§7BossEngine offline", "noop",
+                    "§8No spawnable bosses registered.",
+                    "§8Controls above still work."));
         }
-        inventory.setItem(49, button(Material.BARRIER, "§cClose", "close"));
-        if (end < bosses.size()) {
-            inventory.setItem(53, button(Material.ARROW, "§eNext", "pageidx:TEST_ARENA:" + (index + 1),
-                    "§7" + (bosses.size() - end) + " more bosses."));
-        }
+        drawPager(inventory, Page.TEST_ARENA, index, pages, bosses.size() - end);
     }
 
     private void drawPortals(Inventory inventory) {
@@ -2364,7 +3101,7 @@ public class DevMenu {
                 return ids.toArray(String[]::new);
             }
         }
-        return new String[] {"mine", "forage", "catch", "roam", "combat", "fish", "trade", "quest", "pad"};
+        return new String[] {"mine", "forage", "catch", "roam", "combat", "fish", "trade", "quest", "pad", "general"};
     }
 
     private void handleTestbots(Player player, String action, ClickType click) {
@@ -2427,10 +3164,25 @@ public class DevMenu {
                 player.sendMessage("§cBot §f" + name + " §cis not online.");
                 return;
             }
-            player.sendMessage("§6" + bot.displayName() + " §8· §7" + bot.name() + " §8· §e" + bot.role());
+            // profile / state / hp / food / target / inv come from newer Core builds only.
+            String profile = DevRankBridge.botText(bot, "profile");
+            String state = DevRankBridge.botText(bot, "state");
+            double health = DevRankBridge.botNumber(bot, "health");
+            double food = DevRankBridge.botNumber(bot, "food");
+            String target = DevRankBridge.botText(bot, "target");
+            String inventorySummary = DevRankBridge.botText(bot, "inventorySummary");
+            player.sendMessage("§6" + bot.displayName() + " §8· §7" + bot.name() + " §8· §e" + bot.role()
+                    + (profile.isBlank() ? "" : " §8· §b" + profile));
             player.sendMessage("§7" + bot.world() + String.format(" %.1f %.1f %.1f", bot.x(), bot.y(), bot.z()));
-            player.sendMessage("§7activity §f" + bot.activity() + " §8· §7held §f" + bot.heldItem()
-                    + " §8· §7deaths §f" + bot.deaths());
+            player.sendMessage("§7activity §f" + bot.activity()
+                    + (state.isBlank() ? "" : " §8· §7state §f" + state)
+                    + (health < 0 ? "" : " §8· §7hp §f" + String.format("%.0f", health))
+                    + (food < 0 ? "" : " §8· §7food §f" + String.format("%.0f", food)));
+            player.sendMessage("§7held §f" + bot.heldItem() + " §8· §7deaths §f" + bot.deaths()
+                    + (target.isBlank() ? "" : " §8· §7target §f" + target));
+            if (!inventorySummary.isBlank()) {
+                player.sendMessage("§7inv §f" + inventorySummary);
+            }
             if (!bot.lastAction().isBlank()) {
                 player.sendMessage("§7last §f" + bot.lastAction());
             }
@@ -2486,7 +3238,7 @@ public class DevMenu {
                         + " §8· §7online §f" + report.onlineTotal() + "§7/§f" + report.maxTotal(),
                 "",
                 "§eClick to refresh",
-                "§8Wave 1 + combat / fish / trade / quest / pad."));
+                "§8Wave 1–3. general = mixed player who switches."));
 
         int[] statusSlots = {10, 19, 28, 37};
         int[] countSlots = {11, 20, 29, 38};
@@ -2514,7 +3266,7 @@ public class DevMenu {
                     "§7activity §f" + hint,
                     role != null && !role.lastError().isBlank() ? "§c" + role.lastError() : "§8no error",
                     "",
-                    "§eClick §7for bot list (name · loc · held)"));
+                    "§eClick §7for bot list (loc · hp · activity)"));
             inventory.setItem(countSlots[i], button(Material.PAPER, "§fCount §e" + desired,
                     "testbot:count:" + id,
                     "§7Left §a+1 §8· §7Right §c-1",
@@ -2534,15 +3286,12 @@ public class DevMenu {
                 "§7Chat dump + book copy."));
         inventory.setItem(34, button(Material.CLOCK, "§eRefresh", "testbot:refresh"));
         if (page > 0) {
-            inventory.setItem(45, button(Material.ARROW, "§ePrevious roles", "pageidx:TESTBOTS:" + (page - 1),
+            inventory.setItem(DevTheme.PREV, button(Material.ARROW, "§e◀ Previous roles", "pageidx:TESTBOTS:" + (page - 1),
                     "§7Page §f" + page));
-        } else {
-            inventory.setItem(45, button(Material.ARROW, "§eBack", "back"));
         }
-        inventory.setItem(49, button(Material.BARRIER, "§cClose", "close"));
         if (page + 1 < pages) {
-            inventory.setItem(53, button(Material.ARROW, "§eMore roles", "pageidx:TESTBOTS:" + (page + 1),
-                    "§7combat · fish · trade · quest · pad"));
+            inventory.setItem(DevTheme.NEXT, button(Material.ARROW, "§eMore roles ▶", "pageidx:TESTBOTS:" + (page + 1),
+                    "§7combat · fish · trade · quest · pad · general"));
         }
     }
 
@@ -2551,34 +3300,41 @@ public class DevMenu {
         String role = roles[Math.max(0, Math.min(roles.length - 1, index))];
         TestBotReport report = DevBridges.testBotsReport();
         inventory.setItem(4, button(roleIcon(role), "§b" + role + " bots", "page:TESTBOTS",
-                "§7Nickname · world xyz · held · activity"));
-        int slot = 9;
+                "§7Nickname · loc · hp · activity · profile"));
+        int shown = 0;
         if (report != null) {
             for (TestBotView bot : report.bots()) {
                 if (!role.equalsIgnoreCase(bot.role())) {
                     continue;
                 }
-                if (slot >= 44) {
+                if (shown >= DevTheme.INNER.length) {
                     break;
                 }
-                inventory.setItem(slot++, button(Material.PLAYER_HEAD, "§e" + bot.displayName(),
+                int slot = DevTheme.INNER[shown++];
+                double health = DevRankBridge.botNumber(bot, "health");
+                double food = DevRankBridge.botNumber(bot, "food");
+                String profile = DevRankBridge.botText(bot, "profile");
+                String target = DevRankBridge.botText(bot, "target");
+                String inventorySummary = DevRankBridge.botText(bot, "inventorySummary");
+                inventory.setItem(slot, button(Material.PLAYER_HEAD, "§e" + bot.displayName(),
                         "testbot:view:" + bot.name(),
                         "§8login §7" + bot.name(),
                         "§7" + bot.world() + String.format(" %.1f %.1f %.1f", bot.x(), bot.y(), bot.z()),
-                        "§7activity §f" + bot.activity(),
-                        "§7held §f" + bot.heldItem(),
+                        health < 0 ? "§8hp n/a on this Core" : "§7hp §f" + String.format("%.0f", health)
+                                + (food < 0 ? "" : " §8· §7food §f" + String.format("%.0f", food)),
+                        "§7activity §f" + bot.activity() + (profile.isBlank() ? "" : " §8· §b" + profile),
+                        target.isBlank() ? "§7held §f" + bot.heldItem() : "§7target §f" + target,
+                        inventorySummary.isBlank() ? "§7held §f" + bot.heldItem() : "§7inv §f" + inventorySummary,
                         "§7deaths §f" + bot.deaths(),
                         bot.lastAction().isBlank() ? "§8no recent action" : "§7last §f" + bot.lastAction(),
                         "",
                         "§eClick §7for a chat dump"));
             }
         }
-        if (slot == 9) {
+        if (shown == 0) {
             inventory.setItem(22, button(Material.GRAY_DYE, "§7None online", "page:TESTBOTS",
                     "§7Start this role from the overview."));
         }
-        inventory.setItem(45, button(Material.ARROW, "§eBack", "page:TESTBOTS"));
-        inventory.setItem(49, button(Material.BARRIER, "§cClose", "close"));
     }
 
     private static Material roleIcon(String role) {
@@ -2591,6 +3347,7 @@ public class DevMenu {
             case "trade" -> Material.GOLD_INGOT;
             case "quest" -> Material.WRITABLE_BOOK;
             case "pad" -> Material.SLIME_BLOCK;
+            case "general" -> Material.COMPASS;
             default -> Material.LEATHER_BOOTS;
         };
     }
@@ -2606,6 +3363,7 @@ public class DevMenu {
             case "trade" -> "§6Trade";
             case "quest" -> "§dQuest";
             case "pad" -> "§aPad";
+            case "general" -> "§fGeneral";
             default -> "§f" + role;
         };
     }
@@ -2670,6 +3428,60 @@ public class DevMenu {
         inventory.setItem(49, button(Material.BARRIER, "§cClose", "close"));
     }
 
+    private static final long WIPE_ARM_MILLIS = 8_000L;
+
+    private void drawPlayerWipe(Inventory inventory, UUID target, long armedUntil) {
+        if (target == null) {
+            inventory.setItem(4, DevItems.glow(button(Material.LAVA_BUCKET, "§4§l☠ Full Player Wipe", "noop",
+                    "§7Pick an online player.",
+                    "§7Wipes inventory, pads, skills, coins,",
+                    "§7quests, codex, recipes, pets, hub unlocks.",
+                    "§eOnline players are kicked after wipe.",
+                    "§aNo server restart.",
+                    "",
+                    "§6Special ranks are never touched.",
+                    "§8Pick → review → arm → confirm.")));
+            drawPlayerPicker(inventory, "wipe-player:", "§cClick to review a wipe for this player.");
+            return;
+        }
+        OfflinePlayer selected = Bukkit.getOfflinePlayer(target);
+        boolean online = selected.isOnline();
+        long left = armedUntil - System.currentTimeMillis();
+        boolean armed = left > 0;
+        inventory.setItem(4, playerHead(selected,
+                "§c" + nameOf(selected),
+                online ? "§aOnline §7— will be kicked after wipe." : "§7Offline §7— disk + RAM only.",
+                "§7This cannot be undone.",
+                "§6Special ranks in player-ranks.yml are kept."));
+        inventory.setItem(20, button(Material.LIME_CONCRETE, "§a§l✔ KEEP §7— cancel", "wipe-cancel",
+                "§7Back to the player list.",
+                "§7Nothing is touched."));
+        RankBadgeService ranks = ranks();
+        RankBadgeService.Rank extra = ranks == null ? null : ranks.extraFor(target);
+        inventory.setItem(22, button(Material.PAPER, "§fWhat gets zeroed", "noop",
+                "§c✖ §7Inventory · ender chest · XP",
+                "§c✖ §7Skills + loadout pads · storage",
+                "§c✖ §7Coins · shards · XP boosts",
+                "§c✖ §7Progress flags · codex · recipes · blueprints",
+                "§c✖ §7Quests · hub teleports · pets · colosseum",
+                "",
+                extra == null ? "§a✔ §7No special rank on file." : "§a✔ §7Kept: " + extra.display()
+                        + " §8(special ranks are exempt)",
+                "§a✔ §7Level rank follows the XP reset."));
+        if (armed) {
+            inventory.setItem(24, DevItems.glow(button(Material.RED_CONCRETE,
+                    "§4§l☠ CONFIRM WIPE §c— CLICK AGAIN", "wipe-confirm",
+                    "§cArmed §7· expires in §f" + Math.max(1, (left + 999) / 1000) + "s",
+                    "§7Zero everything for §f" + nameOf(selected) + "§7.",
+                    online ? "§eThen kick from this server." : "§7Player is offline.")));
+        } else {
+            inventory.setItem(24, button(Material.RED_CONCRETE, "§c§lARM WIPE §8(step 1 of 2)", "wipe-confirm",
+                    "§7Arms the wipe for §f8s§7.",
+                    "§7Click §cCONFIRM §7again to fire.",
+                    "§8Walk away and it disarms itself."));
+        }
+    }
+
     private void drawShards(Inventory inventory, UUID target) {
         ShardService shards = shards();
         inventory.setItem(45, button(Material.ARROW, "§eBack", target == null ? "back" : "page:SHARDS"));
@@ -2697,15 +3509,18 @@ public class DevMenu {
     }
 
     private void drawPlayerPicker(Inventory inventory, String actionPrefix, String hint) {
-        int slot = 0;
+        int shown = 0;
         for (Player online : Bukkit.getOnlinePlayers()) {
-            if (slot >= 45) {
+            if (shown >= DevTheme.INNER.length) {
                 break;
             }
-            inventory.setItem(slot++, tagged(
+            inventory.setItem(DevTheme.INNER[shown++], tagged(
                     playerHead(online, "§e" + online.getName(), hint),
                     actionPrefix + online.getUniqueId()
             ));
+        }
+        if (shown == 0) {
+            inventory.setItem(22, button(Material.GRAY_DYE, "§7Nobody online", "noop"));
         }
     }
 
@@ -2739,6 +3554,9 @@ public class DevMenu {
             case "aetherion" -> Material.DRAGON_EGG;
             case "mvpplusplus" -> Material.NETHER_STAR;
             case "admin" -> Material.BARRIER;
+            case "monkey" -> Material.LIGHT_BLUE_DYE;
+            case "citrus" -> Material.LIME_DYE;
+            case "beta" -> Material.MAGENTA_DYE;
             default -> Material.GRAY_DYE;
         };
     }
@@ -2859,21 +3677,17 @@ public class DevMenu {
         }
     }
 
+    /** Booster buttons flank the well column (13 → 22 → 31 stays clear); never the glass ring. */
+    private static final int[] LAB_SLOTS = {
+            19, 20, 21, 23, 24, 25,
+            28, 29, 30, 32, 33, 34,
+            37, 38, 39, 40, 41, 42, 43
+    };
+
     private void drawBoosterLab(Inventory inventory, ItemStack gear) {
         inventory.setItem(4, labInfo(gear));
         inventory.setItem(BOOSTER_WELL_SLOT, gear == null ? labPlaceholder() : gear);
-        int slot = 19;
-        for (BoosterType type : BoosterType.values()) {
-            if (slot == 22) {
-                slot = 23;
-            }
-            if (slot >= 36) {
-                break;
-            }
-            inventory.setItem(slot++, labBoosterButton(type, gear));
-        }
-        inventory.setItem(45, button(Material.ARROW, "§eBack", "back"));
-        inventory.setItem(49, button(Material.BARRIER, "§cClose", "close"));
+        drawLabButtons(inventory, gear);
     }
 
     private void refreshBoosterLab(Inventory inventory) {
@@ -2882,15 +3696,13 @@ public class DevMenu {
         if (gear == null) {
             inventory.setItem(BOOSTER_WELL_SLOT, labPlaceholder());
         }
-        int slot = 19;
-        for (BoosterType type : BoosterType.values()) {
-            if (slot == 22) {
-                slot = 23;
-            }
-            if (slot >= 36) {
-                break;
-            }
-            inventory.setItem(slot++, labBoosterButton(type, gear));
+        drawLabButtons(inventory, gear);
+    }
+
+    private void drawLabButtons(Inventory inventory, ItemStack gear) {
+        BoosterType[] types = BoosterType.values();
+        for (int i = 0; i < types.length && i < LAB_SLOTS.length; i++) {
+            inventory.setItem(LAB_SLOTS[i], labBoosterButton(types[i], gear));
         }
     }
 
@@ -2980,19 +3792,424 @@ public class DevMenu {
         return plugin == null ? null : plugin.getItemManager();
     }
 
+    // ------------------------------------------------------------------ pins · confirms · search · batch
+
+    /** Destructive actions. Wherever their buttons live, a click lands in the confirm modal first. */
+    static boolean requiresConfirm(String action) {
+        return switch (action) {
+            case "skills:wipe", "quests:reset-all", "testbot:stopall", "farmportal:rebuild",
+                 "farmisle:profile:reset", "farmisle:npcall:remove",
+                 "fishisle:profile:reset", "fishisle:npcall:remove",
+                 "mineisle:profile:reset", "mineisle:npcall:remove" -> true;
+            default -> false;
+        };
+    }
+
+    private void togglePin(Player player, String action, ItemStack shown) {
+        if (contentOnly(player) || !DevIndex.isPinnable(action)) {
+            player.sendMessage("§7That one can't be pinned.");
+            player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 0.4f, 1.2f);
+            return;
+        }
+        if (DevItems.viaOf(shown) == null) {
+            DevIndex.remember(action, shown);
+        }
+        String name = DevIndex.plainName(shown);
+        switch (DevPrefs.toggleFavorite(player, action)) {
+            case PINNED -> {
+                player.sendMessage("§e★ Pinned §f" + name + " §7— it's on your dashboard.");
+                player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.7f, 1.6f);
+            }
+            case UNPINNED -> {
+                player.sendMessage("§7☆ Unpinned §f" + name + "§7.");
+                player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.6f, 0.7f);
+            }
+            case FULL -> {
+                player.sendMessage("§c★ Dashboard full (" + DevPrefs.SLOTS + ") §7— press §eF §7on a pinned tile to free one.");
+                player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 0.5f, 1f);
+            }
+        }
+        Holder current = currentHolder(player);
+        if (current != null && current.page() == Page.ROOT) {
+            open(player, Page.ROOT);
+        }
+    }
+
+    private void openConfirm(Player player, String action) {
+        if (!requiresConfirm(action)) {
+            player.sendMessage("§cNothing to confirm for §f" + action + "§c.");
+            return;
+        }
+        Holder current = currentHolder(player);
+        // Search results would reopen without their query — land on DANGER instead.
+        Page back = current == null || current.page() == Page.CONFIRM || current.page() == Page.SEARCH
+                ? Page.CAT_DANGER : current.page();
+        player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 0.8f, 0.6f);
+        open(player, new Holder(Page.CONFIRM, null, 0, null, back.name() + "|" + action, 0L));
+    }
+
+    static Page confirmReturn(Holder holder) {
+        String payload = holder == null ? null : holder.payload();
+        if (payload == null || payload.indexOf('|') < 0) {
+            return Page.CAT_DANGER;
+        }
+        try {
+            return Page.valueOf(payload.substring(0, payload.indexOf('|')));
+        } catch (IllegalArgumentException ignored) {
+            return Page.CAT_DANGER;
+        }
+    }
+
+    static String confirmAction(Holder holder) {
+        String payload = holder == null ? null : holder.payload();
+        return payload == null || payload.indexOf('|') < 0 ? null : payload.substring(payload.indexOf('|') + 1);
+    }
+
+    private void runConfirmed(Player player) {
+        Holder current = currentHolder(player);
+        String action = current == null || current.page() != Page.CONFIRM ? null : confirmAction(current);
+        if (action == null || !requiresConfirm(action)) {
+            player.sendMessage("§cNothing to confirm.");
+            return;
+        }
+        Page back = confirmReturn(current);
+        player.playSound(player.getLocation(), Sound.ENTITY_GENERIC_EXPLODE, 0.35f, 1.3f);
+        // Reopen the origin first so handlers that "reopen current" land there, not on the modal.
+        open(player, back);
+        // Shift-left satisfies the legacy sneak-to-confirm handlers (portal rebuild, isle resets).
+        dispatch(player, DevItems.stub(Material.TNT, "§cconfirmed", action), -1, ClickType.SHIFT_LEFT, action);
+    }
+
+    private static final Map<UUID, Long> SEARCH_PROMPTS = new ConcurrentHashMap<>();
+    private static final long SEARCH_PROMPT_MILLIS = 60_000L;
+
+    void promptSearch(Player player) {
+        if (contentOnly(player)) {
+            player.sendMessage("§cSearch is DEV only.");
+            return;
+        }
+        player.closeInventory();
+        SEARCH_PROMPTS.put(player.getUniqueId(), System.currentTimeMillis() + SEARCH_PROMPT_MILLIS);
+        player.sendMessage("");
+        player.sendMessage("§d§l✎ DEV SEARCH §8» §7Type what you're after in chat.");
+        player.sendMessage("§8   items · sets · pages · NPCs · tools — try §fkatana§8, §fdawnbearer§8, §fweather");
+        player.sendMessage("§8   §7cancel §8to abort · open for 60s · also §f/devmenu <words>");
+        player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 0.8f, 1.0f);
+    }
+
+    /** Chat hook (async-safe): true if this player's next message is a pending search query. */
+    public boolean takeSearchPrompt(Player player) {
+        Long until = SEARCH_PROMPTS.remove(player.getUniqueId());
+        return until != null && until >= System.currentTimeMillis();
+    }
+
+    public void clearSearchPrompt(UUID playerId) {
+        SEARCH_PROMPTS.remove(playerId);
+    }
+
+    public void openSearch(Player player, String query) {
+        if (!canUse(player) || contentOnly(player)) {
+            player.sendMessage("§cSearch is DEV only.");
+            return;
+        }
+        String q = query == null ? "" : query.trim();
+        if (q.isEmpty() || q.equalsIgnoreCase("cancel")) {
+            player.sendMessage("§7Search cancelled.");
+            open(player, Page.ROOT);
+            return;
+        }
+        if (q.length() > 40) {
+            q = q.substring(0, 40);
+        }
+        open(player, new Holder(Page.SEARCH, null, 0, q, null, 0L));
+    }
+
+    /** Renders every indexable shelf off-screen and collects its tiles — search sees what pages show. */
+    List<DevIndex.Entry> harvestIndex(Player player) {
+        java.util.LinkedHashMap<String, DevIndex.Entry> found = new java.util.LinkedHashMap<>();
+        for (Page page : Page.values()) {
+            if (!indexable(page)) {
+                continue;
+            }
+            for (int index = 0; index < 12; index++) {
+                Holder spec = new Holder(page, null, index);
+                Inventory scratch = Bukkit.createInventory(spec, 54, "index");
+                try {
+                    render(scratch, spec, player);
+                } catch (RuntimeException | LinkageError error) {
+                    break; // one shelf with an offline plugin must not take search down
+                }
+                String path = DevTheme.breadcrumb(page);
+                for (int slot = 0; slot < scratch.getSize(); slot++) {
+                    if (slot == DevTheme.HEADER) {
+                        continue;
+                    }
+                    ItemStack item = scratch.getItem(slot);
+                    String action = DevItems.actionOf(item);
+                    if (action == null || DevIndex.isChrome(action) || found.containsKey(action)) {
+                        continue;
+                    }
+                    String entryPath = path;
+                    if (action.startsWith("page:")) {
+                        try {
+                            entryPath = DevTheme.breadcrumb(Page.valueOf(action.substring(5)));
+                        } catch (IllegalArgumentException ignored) {
+                        }
+                    }
+                    found.put(action, DevIndex.entry(action, item, entryPath));
+                    // Isle pages build their own stacks — cache them so their pins survive restarts.
+                    DevIndex.rememberIfAbsent(action, item);
+                }
+                String next = DevItems.actionOf(scratch.getItem(DevTheme.NEXT));
+                if (next == null || !next.startsWith("pageidx:")) {
+                    break;
+                }
+            }
+        }
+        return new ArrayList<>(found.values());
+    }
+
+    private static boolean indexable(Page page) {
+        return switch (page) {
+            case ROOT, SEARCH, CONFIRM, RANKS, SHARDS, PLAYER_WIPE, BOOSTER_LAB, TESTBOTS, TESTBOTS_LIST,
+                 STATUS, CONTENT_KIT -> false;
+            default -> true;
+        };
+    }
+
+    static boolean isBatchGive(String action) {
+        return action != null && (action.startsWith("item:") || action.startsWith("testgear:")
+                || action.startsWith("ambient:") || action.startsWith("sphere:"));
+    }
+
+    private void givePage(Player player) {
+        Holder current = currentHolder(player);
+        if (current == null) {
+            return;
+        }
+        List<ItemStack> shelf = new ArrayList<>();
+        if (current.page() == Page.SEARCH) {
+            for (DevIndex.Entry entry : DevIndex.search(this, player, current.query())) {
+                if (isBatchGive(entry.action()) && shelf.size() < DevHubs.SEARCH_BATCH_LIMIT) {
+                    shelf.add(entry.icon());
+                }
+            }
+        } else {
+            Inventory scratch = Bukkit.createInventory(current, 54, "batch");
+            render(scratch, current, player);
+            for (int slot = 9; slot < 54; slot++) {
+                int col = slot % 9;
+                boolean inner = slot < 45 && col > 0 && col < 8;
+                boolean weaponRow = slot > 45 && slot < 53 && slot != 49;
+                ItemStack item = scratch.getItem(slot);
+                if ((inner || weaponRow) && isBatchGive(DevItems.actionOf(item))) {
+                    shelf.add(item);
+                }
+            }
+        }
+        int given = 0;
+        int dropped = 0;
+        for (ItemStack shown : shelf) {
+            ItemStack stack = batchStack(DevItems.actionOf(shown), shown);
+            if (stack != null) {
+                given++;
+                dropped += giveQuiet(player, stack);
+            }
+        }
+        reportBatch(player, "§a⇊ Shelf", given, dropped);
+    }
+
+    /** One shelf entry → the stack it gives, or null. No sounds (batch plays one). */
+    private ItemStack batchStack(String action, ItemStack shown) {
+        if (action == null) {
+            return null;
+        }
+        if (action.startsWith("item:")) {
+            return clean(shown);
+        }
+        if (action.startsWith("testgear:")) {
+            return testGear(action.substring("testgear:".length()));
+        }
+        if (action.startsWith("ambient:")) {
+            return ambientTool(action.substring("ambient:".length()));
+        }
+        if (action.startsWith("sphere:")) {
+            return DevBridges.catchSphere(action.substring("sphere:".length()));
+        }
+        return null;
+    }
+
+    private void reportBatch(Player player, String label, int given, int dropped) {
+        if (given == 0) {
+            player.sendMessage("§7Nothing giveable there.");
+            return;
+        }
+        player.sendMessage(label + " §8» §f" + given + " §7item" + (given == 1 ? "" : "s") + " handed over"
+                + (dropped > 0 ? " §8· §e" + dropped + " dropped at your feet" : "") + "§7.");
+        player.playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 0.9f, 0.8f);
+        player.playSound(player.getLocation(), Sound.BLOCK_ENDER_CHEST_OPEN, 0.4f, 1.6f);
+    }
+
+    ItemStack testGear(String id) {
+        List<ItemStack> pool = new ArrayList<>(TestGear.all());
+        pool.addAll(TestGear.flagships());
+        for (ItemStack gear : pool) {
+            String gearId = gear.hasItemMeta()
+                    ? gear.getItemMeta().getPersistentDataContainer().get(
+                    de.aetherion.core.AetherKeys.namespaced("aetherion", "test_gear"), PersistentDataType.STRING)
+                    : null;
+            if (id.equals(gearId)) {
+                return gear.clone();
+            }
+        }
+        return null;
+    }
+
+    private ItemStack ambientTool(String id) {
+        var items = AetherionItems.getInstance();
+        return items == null || items.ambientProps() == null ? null : items.ambientProps().tool(id);
+    }
+
+    /** A named batch of real items. Built from the same factories the shelves use. */
+    record Loadout(String id, Material icon, String name, String blurb, java.util.function.Supplier<List<ItemStack>> items) {
+    }
+
+    List<Loadout> loadouts() {
+        List<Loadout> list = new ArrayList<>();
+        list.add(new Loadout("combat-starter", Material.DIAMOND_SWORD, "§b⚔ Combat Lab Starter",
+                "Combat V armor + sword, two T1 blades, a bow.",
+                () -> List.of(customItem.createCombatHelmet5(), customItem.createCombatChestplate5(),
+                        customItem.createCombatLeggings5(), customItem.createCombatBoots5(), customItem.createCombatSword5(),
+                        customItem.createAetherblade(), customItem.createWarpedBlade(), customItem.createSkuldugeryShortbow())));
+        list.add(new Loadout("endgame", Material.SUNFLOWER, "§e☀ Endgame Showcase",
+                "Dawnbearer + Solstice, Ashen Katana, Worldbite, every flagship.",
+                () -> {
+                    List<ItemStack> items = new ArrayList<>(List.of(customItem.createHeliosCrown(),
+                            customItem.createHeliosHeartplate(), customItem.createHeliosOrbitGreaves(),
+                            customItem.createHeliosDawnTreads(), customItem.createHeliosSolstice(),
+                            customItem.createAshenKatana(), customItem.createWorldbite()));
+                    items.addAll(TestGear.flagships());
+                    return items;
+                }));
+        list.add(new Loadout("hollow-sun", Material.NETHERITE_CHESTPLATE, "§6Hollow Sun Kit",
+                "Hollow Sun set + Gravwell Cleaver + Seraphine Needle.",
+                () -> List.of(customItem.createHollowSunHelmet(), customItem.createHollowSunChestplate(),
+                        customItem.createHollowSunLeggings(), customItem.createHollowSunBoots(),
+                        customItem.createGravwellCleaver(), customItem.createSeraphineNeedle())));
+        list.add(new Loadout("seraphine", Material.PINK_DYE, "§dSeraphine Ensemble",
+                "Veil · Bodice · Bell Skirt · Pointe Slippers · Needle.",
+                () -> List.of(customItem.createSeraphineVeil(), customItem.createSeraphineBodice(),
+                        customItem.createSeraphineBellSkirt(), customItem.createSeraphinePointeSlippers(),
+                        customItem.createSeraphineNeedle())));
+        list.add(new Loadout("worldhide", Material.NETHERITE_HELMET, "§5Worldhide + Worldbite",
+                "The full Worldhide set with its blade.",
+                () -> List.of(customItem.createWorldhideHelmet(), customItem.createWorldhideChestplate(),
+                        customItem.createWorldhideLeggings(), customItem.createWorldhideBoots(), customItem.createWorldbite())));
+        list.add(new Loadout("flagships", Material.NETHER_STAR, "§d✦ Flagship Rack",
+                "Every flagship + every sandbox prototype.",
+                () -> {
+                    List<ItemStack> items = new ArrayList<>(TestGear.flagships());
+                    items.addAll(TestGear.all());
+                    return items;
+                }));
+        list.add(new Loadout("t1", Material.WITHER_SKELETON_SKULL, "§5Every T1 Unique",
+                "The whole T1 shelf.", () -> shelf(Page.WEAPONS_T1)));
+        list.add(new Loadout("t2", Material.END_CRYSTAL, "§dEvery T2 Unique",
+                "The whole T2 shelf — Seraphine, Gravwell, cores, ledger.", () -> shelf(Page.WEAPONS_T2)));
+        list.add(new Loadout("gatherer", Material.NETHERITE_PICKAXE, "§aGatherer T5",
+                "Top tool of every skill: pick · hoe · axe · rod · gaff.",
+                () -> List.of(customItem.createMiningPickaxe5(), customItem.farming().hoe(5),
+                        customItem.foraging().axe(5), customItem.fishing().rod(5), customItem.catcher().gaff(3))));
+        list.add(new Loadout("blueprint-tools", Material.FILLED_MAP, "§bBlueprint Tools",
+                "All six finished blueprint tools.",
+                () -> List.of(customItem.createVeinSiphon(), customItem.createCanopyCleaver(), customItem.createBountyHoe(),
+                        customItem.createWildSight(), customItem.createTideLatch(), customItem.createResonanceScythe(false))));
+        list.add(new Loadout("dungeon", Material.HEART_OF_THE_SEA, "§3Dungeon Relic Run",
+                "Relic T2 + T3 sets and weapons, cores I – III.",
+                () -> List.of(
+                        customItem.createDungeonRelic(de.aetherion.items.dungeon.DungeonGearTier.T2, de.aetherion.items.dungeon.DungeonPiece.HELMET),
+                        customItem.createDungeonRelic(de.aetherion.items.dungeon.DungeonGearTier.T2, de.aetherion.items.dungeon.DungeonPiece.CHESTPLATE),
+                        customItem.createDungeonRelic(de.aetherion.items.dungeon.DungeonGearTier.T2, de.aetherion.items.dungeon.DungeonPiece.LEGGINGS),
+                        customItem.createDungeonRelic(de.aetherion.items.dungeon.DungeonGearTier.T2, de.aetherion.items.dungeon.DungeonPiece.BOOTS),
+                        customItem.createDungeonWeaponRelic(de.aetherion.items.dungeon.DungeonGearTier.T2),
+                        customItem.createDungeonRelic(de.aetherion.items.dungeon.DungeonGearTier.T3, de.aetherion.items.dungeon.DungeonPiece.HELMET),
+                        customItem.createDungeonRelic(de.aetherion.items.dungeon.DungeonGearTier.T3, de.aetherion.items.dungeon.DungeonPiece.CHESTPLATE),
+                        customItem.createDungeonRelic(de.aetherion.items.dungeon.DungeonGearTier.T3, de.aetherion.items.dungeon.DungeonPiece.LEGGINGS),
+                        customItem.createDungeonRelic(de.aetherion.items.dungeon.DungeonGearTier.T3, de.aetherion.items.dungeon.DungeonPiece.BOOTS),
+                        customItem.createDungeonWeaponRelic(de.aetherion.items.dungeon.DungeonGearTier.T3),
+                        customItem.createDungeonCore(), customItem.createDungeonCore2(), customItem.createDungeonCore3())));
+        list.add(new Loadout("boosters", Material.EMERALD, "§2Booster Crate",
+                "One of every booster type.", () -> shelf(Page.BOOSTERS)));
+        list.add(new Loadout("charms", Material.MAGMA_CREAM, "§dCharm Case",
+                "Every charm in every tier.", () -> shelf(Page.CHARMS)));
+        list.add(new Loadout("qol", Material.ENDER_CHEST, "§eStorage & QoL",
+                "Storage · recipe book · sacks · blood vial · dragon vial.",
+                () -> List.of(storage.createStorage(), customItem.createRecipeBook(),
+                        de.aetherion.items.storage.SackItems.create(de.aetherion.items.storage.SackType.RESOURCE),
+                        de.aetherion.items.storage.SackItems.create(de.aetherion.items.storage.SackType.BOOSTER),
+                        de.aetherion.items.shop.AetherBloodVial.create(), customItem.createDragonAscensionVial())));
+        return list;
+    }
+
+    private List<ItemStack> shelf(Page page) {
+        List<ItemStack> out = new ArrayList<>();
+        for (ItemStack shown : contents(page)) {
+            if (isBatchGive(DevItems.actionOf(shown))) {
+                out.add(clean(shown));
+            }
+        }
+        return out;
+    }
+
+    private void giveLoadout(Player player, String id) {
+        for (Loadout loadout : loadouts()) {
+            if (!loadout.id().equals(id)) {
+                continue;
+            }
+            List<ItemStack> items;
+            try {
+                items = loadout.items().get();
+            } catch (RuntimeException error) {
+                player.sendMessage("§cLoadout failed to build: §7" + error.getClass().getSimpleName());
+                return;
+            }
+            int given = 0;
+            int dropped = 0;
+            for (ItemStack item : items) {
+                if (item != null) {
+                    given++;
+                    dropped += giveQuiet(player, item.clone());
+                }
+            }
+            reportBatch(player, loadout.name(), given, dropped);
+            return;
+        }
+        player.sendMessage("§cUnknown loadout §f" + id + "§c.");
+    }
+
     public static final class Holder implements InventoryHolder {
         private final Page page;
         private final UUID target;
         private final int index;
+        private final String query;
+        private final String payload;
+        private final long armedUntil;
 
         Holder(Page page, UUID target) {
             this(page, target, 0);
         }
 
         Holder(Page page, UUID target, int index) {
+            this(page, target, index, null, null, 0L);
+        }
+
+        Holder(Page page, UUID target, int index, String query, String payload, long armedUntil) {
             this.page = page;
             this.target = target;
             this.index = index;
+            this.query = query;
+            this.payload = payload;
+            this.armedUntil = armedUntil;
         }
 
         public Page page() {
@@ -3007,9 +4224,25 @@ public class DevMenu {
             return index;
         }
 
+        /** SEARCH: the query shown. */
+        public String query() {
+            return query;
+        }
+
+        /** CONFIRM: {@code <RETURN_PAGE>|<action>}. */
+        public String payload() {
+            return payload;
+        }
+
+        /** PLAYER_WIPE: epoch millis until which CONFIRM fires instead of arming. */
+        public long armedUntil() {
+            return armedUntil;
+        }
+
         @Override
         public Inventory getInventory() {
             return null;
         }
     }
+
 }

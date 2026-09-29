@@ -18,6 +18,11 @@ commands:
     aliases: [forageadm]
     permission: aetherion.forage.admin
 
+  grove:
+    description: Foraging Eldervale journal, tour and wayfinder.
+    usage: /grove [tour|go <place>|stop|where|places|mastery|cabinet|board|bench|ledger]
+    aliases: [canopy, forestjournal]
+
 permissions:
   aetherion.forage.admin:
     description: Paste forage isle / admin forage tools

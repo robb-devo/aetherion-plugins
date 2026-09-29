@@ -36,6 +36,25 @@ final class ForagingHud {
         );
     }
 
+    /** One reused BossBar per player — look preview, never a second bar. */
+    void preview(Player player, int zoneStart, int zoneSize) {
+        paint(
+                player,
+                ForagingStrike.previewTitle(zoneStart, zoneSize),
+                0.0d,
+                BarColor.WHITE
+        );
+    }
+
+    void previewCooling(Player player, int zoneStart, int zoneSize, long secondsLeft) {
+        paint(
+                player,
+                ForagingStrike.coolingTitle(zoneStart, zoneSize, secondsLeft),
+                0.0d,
+                BarColor.RED
+        );
+    }
+
     void hide(Player player) {
         if (player != null) {
             hide(player.getUniqueId());

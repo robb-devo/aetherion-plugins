@@ -21,6 +21,7 @@ public class AetherionForaging extends JavaPlugin {
     private GroveRitualService grove;
     private IsleGuideNpc guide;
     private de.aetherion.core.api.ForageAccess forageAccess;
+    private de.aetherion.foraging.isle.ForageIsle isle;
 
     public static AetherionForaging getInstance() {
         return instance;
@@ -44,6 +45,11 @@ public class AetherionForaging extends JavaPlugin {
 
     public IsleGuideNpc guide() {
         return guide;
+    }
+
+    /** Foraging Eldervale loops (districts, mastery, finds, cast…). Null while disabled. */
+    public de.aetherion.foraging.isle.ForageIsle isle() {
+        return isle;
     }
 
     ForagingHud hud() {
@@ -75,6 +81,13 @@ public class AetherionForaging extends JavaPlugin {
         this.listener = foragingListener;
         Bukkit.getPluginManager().registerEvents(foragingListener, this);
         Bukkit.getScheduler().runTaskTimer(this, foragingListener::tick, 1L, 1L);
+
+        try {
+            isle = new de.aetherion.foraging.isle.ForageIsle(this);
+        } catch (RuntimeException | LinkageError ex) {
+            getLogger().log(java.util.logging.Level.SEVERE, "Foraging Eldervale failed to start — the chop loop still runs.", ex);
+            isle = null;
+        }
 
         ForageCommand forageCommand = new ForageCommand(this);
         var forageAdmin = getCommand("forageadmin");
@@ -173,6 +186,10 @@ public class AetherionForaging extends JavaPlugin {
     public void onDisable() {
         if (listener != null) {
             listener.shutdown();
+        }
+        if (isle != null) {
+            isle.shutdown();
+            isle = null;
         }
         if (forageAccess != null) {
             de.aetherion.core.api.AetherServices.clearForaging(forageAccess);

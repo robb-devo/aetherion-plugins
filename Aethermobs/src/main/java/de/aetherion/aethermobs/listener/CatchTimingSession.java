@@ -33,6 +33,10 @@ final class CatchTimingSession {
     boolean locked;
     boolean perfect;
 
+    private boolean wasHot;
+    private boolean justEntered;
+    private boolean closed;
+
     CatchTimingSession(Player player, PetEntity pet, double baseChance) {
         this.playerId = player.getUniqueId();
         this.pet = pet;
@@ -57,9 +61,16 @@ final class CatchTimingSession {
         }
         ticks++;
         boolean hot = inZone();
+        justEntered = hot && !wasHot && !locked;
+        wasHot = hot;
         bar.setColor(perfect ? BarColor.GREEN : (hot && !locked ? BarColor.YELLOW : BarColor.PURPLE));
         bar.setTitle(title(hot));
         bar.setProgress(Math.max(0.0d, 1.0d - ticks / (double) DURATION_TICKS));
+    }
+
+    /** True on the tick the marker slides into the green — the listener ticks a cue. */
+    boolean justEnteredZone() {
+        return justEntered;
     }
 
     boolean tryLock() {
@@ -86,6 +97,10 @@ final class CatchTimingSession {
     }
 
     void close() {
+        if (closed) {
+            return;
+        }
+        closed = true;
         bar.removeAll();
         bar.setVisible(false);
         Player player = Bukkit.getPlayer(playerId);
@@ -104,11 +119,11 @@ final class CatchTimingSession {
     private String title(boolean hot) {
         StringBuilder builder = new StringBuilder();
         if (perfect) {
-            builder.append("§a✦ Perfect catch window  ");
+            builder.append("§a✦ Perfect  ");
         } else if (locked) {
-            builder.append("§7Timing locked  ");
+            builder.append("§7Locked  ");
         } else {
-            builder.append(hot ? "§e✦ Click!  " : "§dCatch timing  ");
+            builder.append(hot ? "§e✦ Now  " : "§dHold it  ");
         }
         for (int i = 0; i < BAR_SIZE; i++) {
             boolean zone = i >= ZONE_START && i < ZONE_START + ZONE_SIZE;

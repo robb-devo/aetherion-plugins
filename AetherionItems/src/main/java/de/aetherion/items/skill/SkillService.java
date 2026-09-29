@@ -819,6 +819,10 @@ public final class SkillService implements StatProvider, Listener {
                     && !de.aetherion.items.fishing.FishIsleHook.onIsle(player)) {
                 continue;
             }
+            if (skill.flag() == AetherSkill.Flag.BEDROCK_BORN
+                    && !de.aetherion.items.mining.MineIsleHook.onIsle(player)) {
+                continue;
+            }
             double scale = multiplier(player, skill);
             total += skill.bonus(capability) * scale;
             if (dark && capability == ItemCapability.MINING_POWER && skill.flag() == AetherSkill.Flag.CAVE_SENSE) {
@@ -1532,4 +1536,31 @@ public final class SkillService implements StatProvider, Listener {
             return Math.max(0, xp.getOrDefault(skill, 0));
         }
     }
+
+
+    /** Full skill wipe for online or offline — RAM + skills.yml key removed. */
+    public void wipePlayer(UUID playerId) {
+        if (playerId == null) {
+            return;
+        }
+        Player online = org.bukkit.Bukkit.getPlayer(playerId);
+        if (online != null && online.isOnline()) {
+            wipeProgress(online);
+            data.remove(playerId);
+        } else {
+            data.remove(playerId);
+        }
+        YamlConfiguration config = file.exists()
+                ? YamlConfiguration.loadConfiguration(file)
+                : new YamlConfiguration();
+        config.set("players." + playerId, null);
+        try {
+            AtomicYaml.save(config, file, plugin.getLogger());
+            dirty = false;
+        } catch (Exception exception) {
+            plugin.getLogger().warning("Could not wipe skills for " + playerId + ": " + exception.getMessage());
+            dirty = true;
+        }
+    }
+
 }

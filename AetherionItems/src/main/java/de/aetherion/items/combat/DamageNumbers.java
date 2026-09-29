@@ -189,4 +189,7 @@ public final class DamageNumbers implements Listener {
         }
         return String.format(Locale.US, "%.1f", amount);
     }
+    public static boolean critThisTick(Player player) {
+        return player != null && wasCritThisTick(player);
+    }
 }

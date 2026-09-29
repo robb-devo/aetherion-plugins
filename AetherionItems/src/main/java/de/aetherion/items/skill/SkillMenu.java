@@ -671,6 +671,40 @@ public final class SkillMenu implements Listener {
                 // Speed is gear/pets/Lv.3 pace only — Night Owl no longer grants move speed.
             }
             case CAVE_SENSE -> lines.add(Effect.stat("Mining Power in the dark", 10.0 * scale, "+", ""));
+            case BEDROCK_BORN -> lines.add(Effect.hint("Stats apply on Mining Eldervale only."));
+            case WORK_SONG -> {
+                lines.add(Effect.stat("Rhythm per strike", 1.0 + 0.5 * scale, "+", ""));
+                lines.add(Effect.stat("Rhythm hold", 40.0 * scale, "+", "%"));
+            }
+            case GEODE_NOSE -> {
+                lines.add(Effect.stat("Crystal Find chance", 50.0 * scale, "+", "%"));
+                lines.add(Effect.hint("Rolls weight twice · one less crack."));
+            }
+            case UNION_CARD -> lines.add(Effect.stat("Contract coins", Math.min(60.0, 15.0 * scale), "+", "%"));
+            case SEAM_READER -> {
+                lines.add(Effect.stat("Seam Chain burst at", Math.max(4.0, 8.0 - Math.floor(scale * 1.5)), "", " strikes"));
+                lines.add(Effect.hint("Nearby ore shimmers every ~30s."));
+            }
+            case DEPTH_GAUGE -> lines.add(Effect.stat("Depth bonuses", 50.0 * scale, "+", "%"));
+            case GROVE_BORN -> {
+                lines.add(Effect.stat("Wood cap per tree", Math.round(Math.min(4.0, 2.0 * scale)), "+", ""));
+                lines.add(Effect.stat("Extra mastery count", Math.min(60.0, 25.0 * scale), "", "% chance"));
+                lines.add(Effect.hint("Applies on Foraging Eldervale only."));
+            }
+            case SAP_SENSE -> {
+                lines.add(Effect.stat("Crown Find chance", 50.0 * scale, "+", "%"));
+                lines.add(Effect.hint("Better grades — Heartsong included."));
+            }
+            case STEADY_HANDS -> {
+                lines.add(Effect.hint("CHOP window one cell wider on the isle."));
+                lines.add(Effect.stat("Miss cooldown", 25.0 * Math.min(2.0, scale), "-", "%"));
+            }
+            case DEADFALL_DANCER -> {
+                lines.add(Effect.hint("Widowmaker warning lasts half a second longer."));
+                lines.add(Effect.hint("Limbs hurt half · deadfall wood ×2."));
+            }
+            case BOARD_RATES -> lines.add(Effect.stat("Board order coins", Math.min(60.0, 15.0 * scale), "+", "%"));
+            case HEART_HUNTER -> lines.add(Effect.stat("Heartwood chance", 50.0 * scale, "+", "%"));
             case PINCH_PENNY -> lines.add(Effect.stat("Midas Cost",
                     Math.max(2L, 5L - tier), "", " coins"));
             case DIAMOND_SPINE -> lines.add(Effect.stat("Melee Reflect", 8.0 * scale, "+", "%"));
@@ -706,8 +740,8 @@ public final class SkillMenu implements Listener {
     /** How the category's stats touch its gathering loop. {@code null} for combat pages. */
     private static String loopHint(AetherSkill.Category category) {
         return switch (category) {
-            case MINING -> "Mining Power opens harder ore.\nFortune multiplies what breaks.";
-            case FORAGING -> "Perfect fells and streaks pay bonus XP.\nLv. 50 widens the CHOP window.\nFortune raises each tree's wood cap.";
+            case MINING -> "Mining Power opens harder ore.\nFortune multiplies what breaks.\nOn Mining Eldervale: Rhythm, Crystal Finds, Contracts.";
+            case FORAGING -> "Perfect fells and streaks pay bonus XP.\nLv. 50 widens the CHOP window.\nFortune raises each tree's wood cap.\nOn Foraging Eldervale: Mastery, Crown Finds, the Board.";
             case FARMING -> "Harvest breaks extra crops per swing.\nClearing birds boosts the whole field.\nOn the Farm Isle: Rhythm, Prize Crops, Orders.";
             case FISHING -> "Fish Catch widens the green zone.\nFish Speed shortens the wait.\nPerfect reels and streaks pay bonus XP.";
             default -> null;

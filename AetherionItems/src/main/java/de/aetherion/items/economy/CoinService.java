@@ -217,4 +217,29 @@ public final class CoinService implements de.aetherion.core.api.CoinAccess {
             }
         }
     }
+
+
+    /** Zero coins + lifetime and drop the YAML keys (shared network-safe). */
+    public void wipePlayer(UUID playerId) {
+        if (playerId == null) {
+            return;
+        }
+        balances.remove(playerId);
+        lifetime.remove(playerId);
+        synchronized (saveLock) {
+            AtomicYaml.recoverTemp(file, plugin.getLogger());
+            YamlConfiguration config = file.isFile()
+                    ? YamlConfiguration.loadConfiguration(file)
+                    : new YamlConfiguration();
+            config.set("players." + playerId, null);
+            config.set("lifetime." + playerId, null);
+            try {
+                AtomicYaml.save(config, file, plugin.getLogger());
+                savedEpoch = mutationEpoch.incrementAndGet();
+            } catch (IOException exception) {
+                plugin.getLogger().warning("Could not wipe coins for " + playerId + ": " + exception.getMessage());
+            }
+        }
+    }
+
 }

@@ -14,6 +14,7 @@ import org.bukkit.entity.AbstractArrow;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Enderman;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -33,6 +34,8 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.util.Vector;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -56,10 +59,18 @@ public class ShortbowListener implements Listener, Runnable {
     private final Map<UUID, Long> nextShotTick = new ConcurrentHashMap<>();
     private final Map<UUID, Long> pinnedEndermen = new ConcurrentHashMap<>();
     private final Set<UUID> forcingEndermanHit = ConcurrentHashMap.newKeySet();
+    private final SkuldugeryShortbowFx skuldugeryFx = new SkuldugeryShortbowFx();
+    private final CascadeTorrent.Shots cascadeFx = new CascadeTorrent.Shots();
 
     public ShortbowListener(ItemManager itemManager) {
         this.itemManager = itemManager;
         this.equipmentStats = new ActiveEquipmentStats(itemManager);
+    }
+
+    /** Plugin disable: removes Skuldugery calling cards and Cascade splash crowns still in the air. */
+    public static void shutdown() {
+        SkuldugeryShortbowFx.shutdown();
+        CascadeTorrent.shutdown();
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = false)
@@ -168,6 +179,8 @@ public class ShortbowListener implements Listener, Runnable {
         });
         long now = tick;
         pinnedEndermen.entrySet().removeIf(entry -> entry.getValue() == null || entry.getValue() < now);
+        skuldugeryFx.tick(now);
+        cascadeFx.tick();
     }
 
     private void tryFire(Player player, ItemStack bow, long tick) {
@@ -196,7 +209,9 @@ public class ShortbowListener implements Listener, Runnable {
 
     private void launch(Player player, ItemStack bow) {
         String itemId = itemManager.getItemId(bow);
-        int volley = "skuldugery_shortbow".equalsIgnoreCase(itemId == null ? "" : itemId)
+        boolean skuldugery = SkuldugeryShortbowFx.isSkuldugery(itemId);
+        boolean cascade = CascadeTorrent.isCascade(itemId);
+        int volley = skuldugery
                 ? DungeonCore.shortbowVolley(DungeonCore.tier(bow))
                 : 1;
         volley = Math.max(1, volley);
@@ -213,6 +228,7 @@ public class ShortbowListener implements Listener, Runnable {
             damage *= 1.0 + Math.max(0.0, critDamage) / 100.0;
         }
 
+        List<Vector> fan = new ArrayList<>(volley);
         for (int i = 0; i < volley; i++) {
             double offset = 0.0;
             if (volley == 2) {
@@ -220,17 +236,30 @@ public class ShortbowListener implements Listener, Runnable {
             } else if (volley >= 3) {
                 offset = (i - 1) * 0.12;
             }
-            spawnArrow(
+            Vector velocity = yawOffset(base, offset);
+            Arrow arrow = spawnArrow(
                     player,
-                    yawOffset(base, offset),
+                    velocity,
                     damage,
                     crit,
-                    "skuldugery_shortbow".equalsIgnoreCase(itemId == null ? "" : itemId)
-                            ? DungeonCore.tier(bow)
-                            : 0
+                    skuldugery ? DungeonCore.tier(bow) : 0
             );
+            if (skuldugery) {
+                skuldugeryFx.track(arrow, crit);
+                fan.add(velocity);
+            } else if (cascade) {
+                cascadeFx.track(arrow);
+            }
         }
 
+        if (skuldugery) {
+            skuldugeryFx.muzzle(player, fan, crit);
+            return;
+        }
+        if (cascade) {
+            cascadeFx.muzzle(player);
+            return;
+        }
         player.getWorld().playSound(
                 player.getEyeLocation(),
                 Sound.ENTITY_ARROW_SHOOT,
@@ -248,7 +277,7 @@ public class ShortbowListener implements Listener, Runnable {
         );
     }
 
-    private void spawnArrow(Player player, Vector velocity, double damage, boolean crit, int coreTier) {
+    private Arrow spawnArrow(Player player, Vector velocity, double damage, boolean crit, int coreTier) {
         Arrow arrow = player.launchProjectile(Arrow.class, velocity);
         arrow.setShooter(player);
         arrow.setPickupStatus(AbstractArrow.PickupStatus.DISALLOWED);
@@ -284,6 +313,7 @@ public class ShortbowListener implements Listener, Runnable {
                     (byte) 1
             );
         }
+        return arrow;
     }
 
     private boolean skuldugeryBow(Player player) {
@@ -300,6 +330,9 @@ public class ShortbowListener implements Listener, Runnable {
             return;
         }
         pinEnderman(enderman);
+        if (skuldugeryFx.isTracked(arrow)) {
+            skuldugeryFx.snare(enderman);
+        }
         if (!(arrow.getShooter() instanceof Player player)) {
             return;
         }
@@ -321,10 +354,35 @@ public class ShortbowListener implements Listener, Runnable {
         }
     }
 
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onSkuldugeryArrowHit(ProjectileHitEvent event) {
+        if (!(event.getEntity() instanceof Arrow arrow) || !skuldugeryFx.isTracked(arrow)) {
+            return;
+        }
+        if (event.getHitEntity() instanceof LivingEntity target) {
+            skuldugeryFx.impactEntity(arrow, target, Bukkit.getCurrentTick());
+        } else if (event.getHitBlock() != null) {
+            skuldugeryFx.impactBlock(arrow);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onCascadeArrowHit(ProjectileHitEvent event) {
+        if (!(event.getEntity() instanceof Arrow arrow) || !cascadeFx.isTracked(arrow)) {
+            return;
+        }
+        if (event.getHitEntity() instanceof LivingEntity) {
+            cascadeFx.impactEntity(arrow);
+        } else if (event.getHitBlock() != null) {
+            cascadeFx.impactBlock(arrow);
+        }
+    }
+
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEndermanEscape(com.destroystokyo.paper.event.entity.EndermanEscapeEvent event) {
         if (event.getEntity() != null && blockedBySkuldugery(event.getEntity())) {
             event.setCancelled(true);
+            skuldugeryFx.fizzle(event.getEntity(), Bukkit.getCurrentTick());
         }
     }
 
@@ -332,6 +390,7 @@ public class ShortbowListener implements Listener, Runnable {
     public void onEndermanTeleport(EntityTeleportEvent event) {
         if (event.getEntity() instanceof Enderman enderman && blockedBySkuldugery(enderman)) {
             event.setCancelled(true);
+            skuldugeryFx.fizzle(enderman, Bukkit.getCurrentTick());
         }
     }
 
