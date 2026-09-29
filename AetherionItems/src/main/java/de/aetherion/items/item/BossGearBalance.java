@@ -58,6 +58,7 @@ public final class BossGearBalance {
         return switch (itemId.toLowerCase()) {
             case "warped_blade" -> weapon(48, 8, 9, 62);
             case "gravwell_cleaver" -> weapon(80, 8, 13, 96);
+            case "ashen_katana" -> weapon(68, 9, 15, 108);
             case "bridged_axe" -> weapon(80, 12, 13, 90);
             case "skuldugery_shortbow" -> weapon(72, 14, 12, 88);
             case "aetherblade" -> weapon(100, 16, 16, 115);

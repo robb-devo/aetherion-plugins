@@ -2,7 +2,6 @@ package de.aetherion.items.listener;
 
 import de.aetherion.items.AetherionItems;
 
-import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -18,12 +17,12 @@ public final class ChatFormatListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onChat(AsyncPlayerChatEvent event) {
-        Player player = event.getPlayer();
-        String prefix = plugin.ranks() == null ? "§f" : plugin.ranks().tabPrefix(player);
-        event.setFormat(escape(prefix) + "%s§7: §f%s");
-    }
-
-    private static String escape(String value) {
-        return value == null ? "" : value.replace("%", "%%");
+        // Display name is already special rank + colored level + name.
+        // Prepending tabPrefix again would print the rank twice.
+        if (plugin.ranks() == null) {
+            event.setFormat("§f%s§7: §f%s");
+            return;
+        }
+        event.setFormat("%s§7: §f%s");
     }
 }

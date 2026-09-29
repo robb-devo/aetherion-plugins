@@ -14,6 +14,7 @@ public final class BossWeaponLook {
             "aetherion_void_stick",
             "warped_blade",
             "gravwell_cleaver",
+            "ashen_katana",
             "staff_of_technical_difficulties",
             "void_vacuum_charm",
             "thermal_core",
