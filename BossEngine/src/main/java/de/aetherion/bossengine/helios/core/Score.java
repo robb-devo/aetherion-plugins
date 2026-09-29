@@ -98,7 +98,8 @@ public final class Score {
         }
         String key = key(sound);
         for (Player p : stage.audience()) {
-            p.playSound(p.getLocation(), key, SoundCategory.HOSTILE, volume * master, pitch(p, pitch));
+            // MASTER — Hostile slider used to mute the whole Helios score.
+            p.playSound(p.getLocation(), key, SoundCategory.MASTER, volume * master, pitch(p, pitch));
         }
     }
 
@@ -114,7 +115,7 @@ public final class Score {
         String key = key(sound);
         Location src = stage.at(where);
         for (Player p : stage.audience()) {
-            p.playSound(src, key, SoundCategory.HOSTILE, volume * master, pitch(p, pitch));
+            p.playSound(src, key, SoundCategory.MASTER, volume * master, pitch(p, pitch));
         }
     }
 
@@ -133,14 +134,14 @@ public final class Score {
             Vector to = src.toVector().subtract(ear.toVector());
             double d = to.length();
             Location play = d > 8.0 ? ear.clone().add(to.multiply(8.0 / d)) : src;
-            p.playSound(play, key, SoundCategory.HOSTILE, volume * master, pitch(p, pitch));
+            p.playSound(play, key, SoundCategory.MASTER, volume * master, pitch(p, pitch));
         }
     }
 
     /** Only one player hears it (their own warnings). */
     public void to(Player p, Sound sound, float volume, float pitch) {
         if (p != null && !muted()) {
-            p.playSound(p.getLocation(), key(sound), SoundCategory.HOSTILE, volume * master, pitch(p, pitch));
+            p.playSound(p.getLocation(), key(sound), SoundCategory.MASTER, volume * master, pitch(p, pitch));
         }
     }
 
