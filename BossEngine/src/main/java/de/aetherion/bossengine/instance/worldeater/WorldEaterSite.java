@@ -711,8 +711,8 @@ public final class WorldEaterSite {
                 BossInstance source = state == State.FEAST ? eater : guardian;
                 BossHits.hurt(p, source == null ? null : source.getEntity(), 30);
             }
-            p.playSound(p.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, SoundCategory.HOSTILE, 1f, 0.5f);
-            p.playSound(p.getLocation(), Sound.BLOCK_PORTAL_TRAVEL, SoundCategory.HOSTILE, 0.25f, 1.8f);
+            p.playSound(p.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, SoundCategory.MASTER, 1f, 0.5f);
+            p.playSound(p.getLocation(), Sound.BLOCK_PORTAL_TRAVEL, SoundCategory.MASTER, 0.25f, 1.8f);
             w.spawnParticle(Particle.REVERSE_PORTAL, p.getLocation().add(0, 1, 0), 40, 0.4, 0.8, 0.4, 0.05);
             Long last = rescued.put(p.getUniqueId(), now);
             if (told.add(p.getUniqueId()) || last == null || now - last > 60_000L) {

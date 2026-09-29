@@ -384,7 +384,7 @@ public final class WeFx {
 
     public void sound(Vector3f at, Sound sound, float volume, float pitch) {
         if (world != null) {
-            world.playSound(at(at), sound, SoundCategory.HOSTILE, volume, pitch);
+            world.playSound(at(at), sound, SoundCategory.MASTER, volume, pitch);
         }
     }
 
@@ -406,7 +406,7 @@ public final class WeFx {
             Vector to = src.toVector().subtract(ear.toVector());
             double d = to.length();
             Location play = d > 8.0 ? ear.clone().add(to.multiply(8.0 / d)) : src;
-            p.playSound(play, sound, SoundCategory.HOSTILE, volume, pitch);
+            p.playSound(play, sound, SoundCategory.MASTER, volume, pitch);
         }
     }
 

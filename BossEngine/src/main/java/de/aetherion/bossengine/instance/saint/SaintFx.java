@@ -263,7 +263,7 @@ final class SaintFx {
     /* ------------------------------------------------------------------ sound */
 
     void sound(Vector3f at, Sound sound, float volume, float pitch) {
-        world.playSound(at(at), sound, SoundCategory.HOSTILE, volume, pitch);
+        world.playSound(at(at), sound, SoundCategory.MASTER, volume, pitch);
     }
 
     /** Non-positional, heard identically by every audience member (score, bells, silence breaks). */
