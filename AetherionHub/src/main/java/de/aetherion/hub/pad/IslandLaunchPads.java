@@ -198,7 +198,10 @@ public final class IslandLaunchPads implements Listener {
                 || plain.contains("eldervale jump")
                 || plain.contains("shabby mine jump")
                 || plain.contains("harbour jump")
-                || plain.contains("harbor jump");
+                || plain.contains("harbor jump")
+                || plain.contains("fishing island")
+                || plain.contains("farming island")
+                || plain.contains("jump pad to");
     }
 
     private static Location labelLocation(World world, Pad pad) {
@@ -292,24 +295,40 @@ public final class IslandLaunchPads implements Listener {
 
     private static String labelTitle(String id) {
         if (id == null || id.isBlank()) {
-            return "Jump pad";
+            return "Jump Pad";
         }
         String key = id.toLowerCase(Locale.ROOT);
-        if (key.contains("origin_to_forage")
-                || (key.contains("origin") && key.contains("forage") && key.indexOf("origin") < key.indexOf("forage"))) {
-            return "Forage Island jump pad";
+        if (returnsToOrigin(key, "fishing")
+                || returnsToOrigin(key, "farming")
+                || returnsToOrigin(key, "farm")
+                || returnsToOrigin(key, "forage")
+                || returnsToOrigin(key, "mining")) {
+            return "Jump Pad to Origin";
         }
-        if (key.contains("forage_to_origin") || key.startsWith("forage")) {
-            return "Harbour jump pad";
+        if (headsTo(key, "fishing")) {
+            return "Jump Pad to Fishing Island";
         }
-        if (key.contains("origin_to_mining")
-                || (key.contains("origin") && key.contains("mining") && key.indexOf("origin") < key.indexOf("mining"))) {
-            return "Eldervale jump pad";
+        if (headsTo(key, "farming") || headsTo(key, "farm")) {
+            return "Jump Pad to Farming Island";
         }
-        if (key.contains("mining_to_origin") || key.startsWith("mining")) {
-            return "Shabby Mine jump pad";
+        if (headsTo(key, "forage")) {
+            return "Jump Pad to Forage Island";
         }
-        return "Jump pad";
+        if (headsTo(key, "mining")) {
+            return "Jump Pad to Eldervale";
+        }
+        return "Jump Pad";
+    }
+
+    private static boolean returnsToOrigin(String key, String dest) {
+        return key.contains(dest + "_to_origin");
+    }
+
+    private static boolean headsTo(String key, String dest) {
+        return key.contains("origin_to_" + dest)
+                || key.equals(dest)
+                || key.startsWith(dest + "_")
+                || (key.contains("origin") && key.contains(dest) && key.indexOf("origin") < key.indexOf(dest));
     }
 
     @EventHandler

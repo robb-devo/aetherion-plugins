@@ -95,6 +95,10 @@ public final class HubAdminCommand implements CommandExecutor, TabCompleter {
         }
 
         HubSpawn spawn = hub.setLocation(args[1], player.getLocation(), true);
+        if (spawn == null) {
+            sender.sendMessage("§cThat spawn was retired. Origin map only.");
+            return;
+        }
         sender.sendMessage("§aSaved §f" + spawn.displayName() + " §7(" + spawn.id() + ") §aat your location.");
     }
 
