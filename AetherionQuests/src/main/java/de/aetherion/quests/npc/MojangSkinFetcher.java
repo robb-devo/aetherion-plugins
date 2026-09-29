@@ -5,19 +5,25 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import de.aetherion.core.npc.FancyNpcSkins;
+
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Direct Mojang profile + session texture fetch.
  * FancyNpcs' UUIDFetcher hits a broken {@code api.minecraftservices.com?...&at=} URL (404).
  */
 public final class MojangSkinFetcher {
+
+    private static final Set<String> MISSING = ConcurrentHashMap.newKeySet();
 
     private MojangSkinFetcher() {
     }
@@ -29,9 +35,14 @@ public final class MojangSkinFetcher {
         if (username == null || username.isBlank()) {
             return null;
         }
+        String key = username.trim().toLowerCase(Locale.ROOT);
+        if (FancyNpcSkins.isBlocked(key) || MISSING.contains(key)) {
+            return null;
+        }
         try {
             String id = fetchProfileId(username.trim());
             if (id == null || id.isBlank()) {
+                rememberMissing(key);
                 return null;
             }
             return fetchTextures(id);
@@ -40,12 +51,18 @@ public final class MojangSkinFetcher {
         }
     }
 
+    private static void rememberMissing(String key) {
+        MISSING.add(key);
+        FancyNpcSkins.rememberFailure(key);
+    }
+
     private static String fetchProfileId(String username) throws Exception {
         HttpURLConnection conn = open(
                 "https://api.mojang.com/users/profiles/minecraft/" + username
         );
         int code = conn.getResponseCode();
         if (code == 204 || code == 404) {
+            rememberMissing(username.trim().toLowerCase(Locale.ROOT));
             return null;
         }
         if (code != 200) {

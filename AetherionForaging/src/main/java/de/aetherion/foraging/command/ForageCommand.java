@@ -260,6 +260,13 @@ public final class ForageCommand implements CommandExecutor, TabCompleter {
             }
             return true;
         }
+        if (action.equals("ensure") || action.equals("respawn") || action.equals("holo")) {
+            if (plugin.guide() != null) {
+                plugin.guide().reensure();
+            }
+            sender.sendMessage("§aMiss Canopy hologram re-ensure requested.");
+            return true;
+        }
         if (action.equals("despawn") || action.equals("remove")) {
             if (!(sender instanceof Player player)) {
                 return true;
@@ -269,7 +276,7 @@ public final class ForageCommand implements CommandExecutor, TabCompleter {
             }
             return true;
         }
-        sender.sendMessage("§7/forageadmin guide give|talk|despawn §8· place via DEV menu");
+        sender.sendMessage("§7/forageadmin guide give|talk|ensure|despawn §8· place via DEV menu");
         return true;
     }
 
@@ -295,7 +302,7 @@ public final class ForageCommand implements CommandExecutor, TabCompleter {
             return filter(List.of("here", "set", "info", "table"), args[1]);
         }
         if (args.length == 2 && (args[0].equalsIgnoreCase("guide") || args[0].equalsIgnoreCase("npc"))) {
-            return filter(List.of("here", "set", "talk", "ensure"), args[1]);
+            return filter(List.of("here", "set", "talk", "ensure", "despawn"), args[1]);
         }
         if (args.length == 3 && args[0].equalsIgnoreCase("isle") && args[1].equalsIgnoreCase("paste")) {
             return filter(List.of("here"), args[2]);

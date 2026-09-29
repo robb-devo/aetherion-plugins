@@ -9,6 +9,11 @@ import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 
+/**
+ * Particle-only forage FX. Never spawn TextDisplay / ItemDisplay / ArmorStand —
+ * holograms live in {@link de.aetherion.foraging.npc.IsleGuideNpc} and are capped
+ * by {@link de.aetherion.foraging.island.ForageDisplayGuard}.
+ */
 final class ForagingFx {
 
     private ForagingFx() {
