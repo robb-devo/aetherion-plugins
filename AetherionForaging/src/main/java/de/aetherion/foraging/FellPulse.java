@@ -11,6 +11,9 @@ final class FellPulse {
     final int zoneStart;
     final int zoneSize;
     private final int strikeTicks;
+    /** Cells per tick (0.5 = the classic one cell every two ticks). */
+    private final double cellsPerTick;
+    private double travel;
     int marker;
     private int direction = 1;
     private int ticks;
@@ -23,11 +26,22 @@ final class FellPulse {
     private boolean readyCued;
 
     FellPulse(Player player, ForagingListener.TreeJob job, int strikeTicks, int zoneSize) {
+        this(player, job, strikeTicks, zoneSize, 1.0d);
+    }
+
+    /**
+     * @param speed marker speed multiplier — below 1 is slower (Keen Edge), above 1 faster (a Titan's
+     *              second cut). The time budget stretches with it so a pass count stays the same.
+     */
+    FellPulse(Player player, ForagingListener.TreeJob job, int strikeTicks, int zoneSize, double speed) {
         this.playerId = player.getUniqueId();
         this.job = job;
-        this.strikeTicks = Math.max(40, strikeTicks);
+        double s = Math.max(0.5d, Math.min(1.6d, speed));
+        this.cellsPerTick = 0.5d * s;
+        this.strikeTicks = (int) Math.round(Math.max(40, strikeTicks) / s);
         this.zoneSize = ForagingStrike.zoneSize(zoneSize);
-        this.zoneStart = ForagingStrike.randomZoneStart(this.zoneSize);
+        // Same window the look-preview already showed for this treeId.
+        this.zoneStart = ForagingStrike.zoneStartForTree(job.treeId, this.zoneSize);
     }
 
     boolean tick() {
@@ -35,7 +49,9 @@ final class FellPulse {
             return true;
         }
         ticks++;
-        if (ticks % 2 == 0) {
+        travel += cellsPerTick;
+        while (travel >= 1.0d) {
+            travel -= 1.0d;
             marker += direction;
             if (marker >= ForagingStrike.SIZE - 1) {
                 marker = ForagingStrike.SIZE - 1;

@@ -37,6 +37,7 @@ public final class SpawnMenu {
             case "mines" -> 12;
             case "capital" -> 13;
             case "forage_isle" -> 14;
+            case "fishing_eldervale" -> 22;
             case "farm" -> 15;
             case "farm_isle" -> 16;
             case "colosseum" -> 19;

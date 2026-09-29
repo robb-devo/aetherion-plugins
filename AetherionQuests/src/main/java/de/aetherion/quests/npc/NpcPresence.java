@@ -36,17 +36,57 @@ public final class NpcPresence {
     /** Previous shared cue — every living NPC without its own voice keeps it. */
     private static final Voice DEFAULT_VOICE = new Voice(Sound.BLOCK_NOTE_BLOCK_HAT, 1.35f, 0.35f);
 
-    /** Spine NPCs get a voice you can recognise with your eyes closed. */
-    private static final Map<String, Voice> VOICES = Map.of(
-            "egon", new Voice(Sound.BLOCK_NOTE_BLOCK_BIT, 0.84f, 0.26f),
-            "lumberjack", new Voice(Sound.BLOCK_NOTE_BLOCK_XYLOPHONE, 0.92f, 0.30f),
-            "quartermaster", new Voice(Sound.BLOCK_NOTE_BLOCK_BIT, 1.06f, 0.24f),
-            "foreman", new Voice(Sound.BLOCK_NOTE_BLOCK_BASS, 1.30f, 0.40f),
-            "ledger", new Voice(Sound.BLOCK_NOTE_BLOCK_CHIME, 1.62f, 0.20f),
-            "booster_tutor", new Voice(Sound.BLOCK_NOTE_BLOCK_IRON_XYLOPHONE, 1.18f, 0.24f),
-            "farmer", new Voice(Sound.BLOCK_NOTE_BLOCK_BANJO, 1.10f, 0.26f),
-            "lark", new Voice(Sound.BLOCK_NOTE_BLOCK_FLUTE, 1.45f, 0.26f)
+    /** Every placed living NPC gets a voice you can recognise with your eyes closed. */
+    private static final Map<String, Voice> VOICES = Map.ofEntries(
+            Map.entry("egon", new Voice(Sound.BLOCK_NOTE_BLOCK_BIT, 0.84f, 0.26f)),
+            Map.entry("lumberjack", new Voice(Sound.BLOCK_NOTE_BLOCK_XYLOPHONE, 0.92f, 0.30f)),
+            Map.entry("quartermaster", new Voice(Sound.BLOCK_NOTE_BLOCK_BIT, 1.06f, 0.24f)),
+            Map.entry("foreman", new Voice(Sound.BLOCK_NOTE_BLOCK_BASS, 1.30f, 0.40f)),
+            Map.entry("ledger", new Voice(Sound.BLOCK_NOTE_BLOCK_CHIME, 1.62f, 0.20f)),
+            Map.entry("booster_tutor", new Voice(Sound.BLOCK_NOTE_BLOCK_IRON_XYLOPHONE, 1.18f, 0.24f)),
+            Map.entry("farmer", new Voice(Sound.BLOCK_NOTE_BLOCK_BANJO, 1.10f, 0.26f)),
+            Map.entry("lark", new Voice(Sound.BLOCK_NOTE_BLOCK_FLUTE, 1.45f, 0.26f)),
+            Map.entry("craftsman", new Voice(Sound.BLOCK_NOTE_BLOCK_BASS, 0.95f, 0.36f)),
+            Map.entry("fisher", new Voice(Sound.BLOCK_NOTE_BLOCK_DIDGERIDOO, 1.05f, 0.28f)),
+            Map.entry("fishmonger", new Voice(Sound.BLOCK_NOTE_BLOCK_BANJO, 1.35f, 0.26f)),
+            Map.entry("vex", new Voice(Sound.BLOCK_NOTE_BLOCK_SNARE, 0.9f, 0.30f)),
+            Map.entry("rite_keeper", new Voice(Sound.BLOCK_NOTE_BLOCK_DIDGERIDOO, 0.6f, 0.30f)),
+            Map.entry("arena_proctor", new Voice(Sound.BLOCK_NOTE_BLOCK_COW_BELL, 0.8f, 0.20f)),
+            Map.entry("farm_isle_guide", new Voice(Sound.BLOCK_NOTE_BLOCK_GUITAR, 1.15f, 0.26f)),
+            Map.entry("surveyor", new Voice(Sound.BLOCK_NOTE_BLOCK_XYLOPHONE, 1.4f, 0.24f)),
+            Map.entry("vince", new Voice(Sound.BLOCK_NOTE_BLOCK_PLING, 0.85f, 0.22f)),
+            Map.entry("bar_whisper", new Voice(Sound.BLOCK_NOTE_BLOCK_CHIME, 0.7f, 0.16f)),
+            Map.entry("eldervale_welcome", new Voice(Sound.BLOCK_NOTE_BLOCK_FLUTE, 1.2f, 0.24f)),
+            Map.entry("eldervale_upgrade", new Voice(Sound.BLOCK_NOTE_BLOCK_BASS, 0.7f, 0.40f)),
+            Map.entry("merchant", new Voice(Sound.BLOCK_NOTE_BLOCK_GUITAR, 0.95f, 0.26f)),
+            Map.entry("isle_clerk", new Voice(Sound.BLOCK_NOTE_BLOCK_HAT, 1.1f, 0.30f)),
+            Map.entry("forage_pad_guide", new Voice(Sound.BLOCK_NOTE_BLOCK_BELL, 1.5f, 0.18f)),
+            Map.entry("liquidator", new Voice(Sound.BLOCK_AMETHYST_BLOCK_CHIME, 1.2f, 0.30f)),
+            Map.entry("canopy_clerk", new Voice(Sound.BLOCK_NOTE_BLOCK_XYLOPHONE, 1.1f, 0.26f)),
+            Map.entry("root_cellar", new Voice(Sound.BLOCK_NOTE_BLOCK_BANJO, 1.25f, 0.24f)),
+            Map.entry("town_crier", new Voice(Sound.BLOCK_NOTE_BLOCK_BELL, 0.8f, 0.30f)),
+            Map.entry("street_sweeper", new Voice(Sound.BLOCK_NOTE_BLOCK_HAT, 0.8f, 0.30f)),
+            Map.entry("lamp_lighter", new Voice(Sound.BLOCK_NOTE_BLOCK_CHIME, 1.1f, 0.20f))
     );
+
+    /**
+     * One syllable of typed speech (talk bubble typewriter). Quieter than {@link #cue},
+     * always from the NPC's mouth when they're near, with a little pitch wobble.
+     */
+    public static void blip(Player player, String npcId, float volume) {
+        if (player == null || !player.isOnline() || npcId == null) {
+            return;
+        }
+        String id = npcId.toLowerCase(Locale.ROOT).trim();
+        Voice voice = VOICES.getOrDefault(id, DEFAULT_VOICE);
+        Location at = locate(id);
+        Location from = at != null && at.getWorld() != null && at.getWorld().equals(player.getWorld())
+                && at.distanceSquared(player.getLocation()) <= VOICE_NEAR * VOICE_NEAR
+                ? at.clone().add(0.0, 1.6, 0.0)
+                : player.getLocation();
+        float wobble = (float) ThreadLocalRandom.current().nextDouble(-0.09, 0.09);
+        player.playSound(from, voice.sound(), Math.min(voice.volume(), volume), clampPitch(voice.pitch() + wobble));
+    }
 
     private NpcPresence() {
     }

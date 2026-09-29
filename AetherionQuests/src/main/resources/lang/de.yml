@@ -132,7 +132,7 @@ dialogs:
     - "Komm zurück, wenn der Skill ausgerüstet ist."
   farmer_intro:
     - "Ich brauche Weizen von diesen Feldern — und die Vögel von den Pflanzen fern."
-    - "Weizen abbauen bis §e48 Weizen§f. Wenn Vögel landen: §eLinksklick§f — Bossbar zählt die Verscheucher."
+    - "Weizen abbauen bis §e48 Weizen§f. Wenn Vögel landen: §eKlick§f — Bossbar zählt die Verscheucher."
     - "§eLark§f ist danach in der gleichen Area für Pets. Anderer Quest — der Pfeil wandert, wenn's soweit ist."
   lark_intro:
     - "Hey. Die Felder sind Jagdgebiet — wilde Tiere, nicht mein Papagei."
@@ -144,7 +144,7 @@ dialogs:
     - "Wenn's schwer wird: Combat-Set aus dem Recipe Book, Boosters am Amboss. Weicheres Gear. Härtere Treffer. Beweg dich."
   fisher_intro:
     - "Angeln ist einfach: wirf die Leine ins Wasser, warte auf den Biss, und hole ein wenn die Leiste grün wird."
-    - "Verpasst du das Grünfenster, ist der Fisch weg. Brauchst eine Rute? Kauf eine beim Fishmonger — fünf Fische und fertig."
+    - "Verpasst du das Grünfenster, ist der Fisch weg. Fang §efünf§f, dann wieder mit mir reden."
   bar_whisper_intro:
     - "Siehst du die Leiste unten am Bildschirm? Das ist dein §bAetherion Level§f."
     - "Stats, Unlocks, neue Areas — viel von dieser Welt läuft darüber."
@@ -156,7 +156,7 @@ dialogs:
     - "Hungrig? Das Glas ist's. Fütter's. Dann gib mir die Schuld."
   fishmonger_intro:
     - "Shop. Rute. Rüstung. Bargeld willkommen."
-    - "Dock Pass von Tackle? Gut. Kauf eine T1-Rute, zurück zu ihm für die Lektion."
+    - "Ruten, Rüstung, Fisch. Münzen willkommen."
   rite_keeper_intro:
     - "Rite Warden. Borderlands-Vertrag — T1-Bosse, kein Sightseeing."
     - "Töte Gegner. Spirit-Fläschchen: §c5%§f T1 · §c10%§f Sturdy · §c15%§f Elites. Die §eBeacon-Säule§f ist der Altar."
@@ -178,8 +178,8 @@ dialogs:
     - "Einmal durchgespielt. Das war der Lehrplan."
     - "Bring ein neues, wenn du eins hast. Oder auch nicht. Der Pathwarden ist nicht wählerisch."
   farm_isle_guide_intro:
-    - "Portal goes to the Farm Isle — shared fields off the hub farm."
-    - "Farming ten to enter. Same portal brings you back."
+    - "Das Portal führt zur Farm Isle — geteilte Felder neben der Hub-Farm."
+    - "Farming §e10§f zum Betreten. Dasselbe Portal bringt dich zurück."
   eldervale_welcome_intro:
     - "Willkommen auf Eldervale."
     - "Mining-Insel. Tiefengestein. Nicht runterfallen."

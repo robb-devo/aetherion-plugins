@@ -146,6 +146,7 @@ public final class BlueprintForgeRitual implements Listener {
 
         session.animTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> tickAnim(session), 0L, 28L);
         session.timerTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> tickTimer(session), 0L, 10L);
+        de.aetherion.items.mining.MineIsleHook.forgeStart(player, tier, itemAt);
         return true;
     }
 
@@ -235,6 +236,7 @@ public final class BlueprintForgeRitual implements Listener {
             clearPending(session.playerId);
             forgehandSay(player, "Done — Tier " + BlueprintUpgrade.roman(session.tier)
                     + ". Hot off the anvil.");
+            de.aetherion.items.mining.MineIsleHook.forged(player, session.tier, station.anvilCenter());
             player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_USE, 0.85f, 1.15f);
             player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.45f, 1.35f);
             Location at = station.anvilCenter();

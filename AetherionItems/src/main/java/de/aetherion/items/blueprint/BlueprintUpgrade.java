@@ -186,6 +186,8 @@ public final class BlueprintUpgrade {
             ItemPresentation.polish(polished);
             result.setItemMeta(polished);
         }
+        // Clone keeps PDC, but re-stamp sockets so lore/GUI never desync after polish.
+        de.aetherion.items.model.BoosterSockets.copyOnto(items, tool, result);
         GearTooltip.finish(result, items, true);
         return result;
     }

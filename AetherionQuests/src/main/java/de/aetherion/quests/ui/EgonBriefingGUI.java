@@ -216,6 +216,19 @@ public final class EgonBriefingGUI implements Listener {
         openDetail(player, holder.speaker(), slot);
     }
 
+    /** Topic title → lines, for the in-world help desk (same content as the chest). */
+    public static java.util.Map<String, String[]> talkTopics() {
+        java.util.Map<String, String[]> out = new java.util.LinkedHashMap<>();
+        for (int slot : new int[] {SLOT_MANAGER, SLOT_BOOSTERS, SLOT_PETS, SLOT_SKILLS, SLOT_RECIPES,
+                SLOT_MINING, SLOT_STORAGE, SLOT_DUNGEONS, SLOT_TRADER}) {
+            String[] lines = linesFor(slot);
+            if (lines != null) {
+                out.put(topicTitle(slot), lines.clone());
+            }
+        }
+        return out;
+    }
+
     private static String topicTitle(int slot) {
         return switch (slot) {
             case SLOT_MANAGER -> "Aetherion Manager";

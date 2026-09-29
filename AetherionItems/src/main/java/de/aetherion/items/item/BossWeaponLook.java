@@ -16,6 +16,8 @@ public final class BossWeaponLook {
             "helios_solstice",
             "warped_blade",
             "gravwell_cleaver",
+            "seraphine_needle",
+            "ashen_katana",
             "staff_of_technical_difficulties",
             "void_vacuum_charm",
             "thermal_core",

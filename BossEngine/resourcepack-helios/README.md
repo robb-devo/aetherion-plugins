@@ -1,5 +1,16 @@
 # Helios Requiem sound pack (optional)
 
+**Live note (2026-09-29):** the server-forced pack at
+`http://play.donnernet.de:8088/Aetherion_texturepack.zip` has **zero** `.ogg`
+files and **no** `helios` namespace. Custom Helios cues are therefore silent for
+anyone who only has the server pack. Robbi's local Desktop pack can still look
+fine while friends hear only vanilla (or nothing if Hostile is muted).
+
+Also: Hub / other backends still advertise the **old** SHA
+(`1d65390c…`) while the hosted zip is `446a98ab…` — clients fail the hash check
+there. Keep every `server.properties` `resource-pack-sha1` in sync with the
+hosted file before blaming Texture Pack settings.
+
 Put mono `.ogg` files into `assets/helios/sounds/` with the names from `sounds.json`
 (`heartbeat.ogg`, `star_hum.ogg`, ...), merge into your server pack, then map them in
 `plugins/BossEngine/helios.yml`:

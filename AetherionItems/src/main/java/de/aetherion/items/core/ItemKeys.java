@@ -299,6 +299,10 @@ public final class ItemKeys {
         return key("booster_type");
     }
 
+    public static NamespacedKey boosterSockets() {
+        return key("booster_sockets");
+    }
+
     public static NamespacedKey sackId() {
         return key("sack_id");
     }

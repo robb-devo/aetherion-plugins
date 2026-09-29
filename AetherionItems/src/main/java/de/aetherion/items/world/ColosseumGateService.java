@@ -203,4 +203,16 @@ public final class ColosseumGateService implements Listener, Runnable {
             plugin.getLogger().warning("Could not save colosseum-unlock.yml: " + exception.getMessage());
         }
     }
+
+
+    /** Revoke Colosseum unlock + taught flags for one player. */
+    public void wipePlayer(UUID playerId) {
+        if (playerId == null) {
+            return;
+        }
+        unlocked.remove(playerId);
+        taught.remove(playerId);
+        save();
+    }
+
 }

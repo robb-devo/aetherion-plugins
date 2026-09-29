@@ -43,6 +43,9 @@ public final class SkillService implements StatProvider, Listener {
 
     public static final int SLOT_COUNT = 7;
     public static final long[] COIN_UNLOCK = {0L, 5_000L, 25_000L, 80_000L, 200_000L, 500_000L, 1_250_000L};
+    /** Loadout presets per player; preset N opens at {@link #PRESET_UNLOCK}[N] Aetherion levels. */
+    public static final int PRESET_COUNT = 3;
+    public static final int[] PRESET_UNLOCK = {1, 10, 25};
 
     private final AetherionItems plugin;
     private final CoinService coins;
@@ -323,6 +326,84 @@ public final class SkillService implements StatProvider, Listener {
             }
         }
         return false;
+    }
+
+    // ------------------------------------------------------------------ presets
+
+    public enum PresetResult { LOADED, PARTIAL, EMPTY, LOCKED }
+
+    public boolean presetUnlocked(Player player, int index) {
+        return index >= 0 && index < PRESET_COUNT && accountLevel(player) >= PRESET_UNLOCK[index];
+    }
+
+    /** Skills saved in a preset, in slot order (unknown ids dropped). */
+    public List<AetherSkill> preset(Player player, int index) {
+        List<AetherSkill> out = new ArrayList<>();
+        if (index < 0 || index >= PRESET_COUNT) {
+            return out;
+        }
+        String raw = of(player).presets[index];
+        if (raw == null || raw.isBlank()) {
+            return out;
+        }
+        for (String id : raw.split(",")) {
+            AetherSkill skill = AetherSkill.byId(id.trim());
+            if (skill != null && !out.contains(skill)) {
+                out.add(skill);
+            }
+        }
+        return out;
+    }
+
+    /** Saves the current loadout into a preset. False when the loadout is empty or the preset is locked. */
+    public boolean savePreset(Player player, int index) {
+        if (player == null || !presetUnlocked(player, index)) {
+            return false;
+        }
+        List<String> ids = new ArrayList<>();
+        for (AetherSkill skill : equipped(player)) {
+            ids.add(skill.id());
+        }
+        if (ids.isEmpty()) {
+            return false;
+        }
+        of(player).presets[index] = String.join(",", ids);
+        dirty = true;
+        return true;
+    }
+
+    public void clearPreset(Player player, int index) {
+        if (player != null && index >= 0 && index < PRESET_COUNT) {
+            of(player).presets[index] = "";
+            dirty = true;
+        }
+    }
+
+    /**
+     * Swaps the loadout for a preset. Levels never move — only which skills sit in the slots.
+     * Skills beyond the unlocked slot count stay out ({@link PresetResult#PARTIAL}).
+     */
+    public PresetResult loadPreset(Player player, int index) {
+        if (player == null || !presetUnlocked(player, index)) {
+            return PresetResult.LOCKED;
+        }
+        List<AetherSkill> wanted = preset(player, index);
+        if (wanted.isEmpty()) {
+            return PresetResult.EMPTY;
+        }
+        String[] slots = of(player).slots;
+        java.util.Arrays.fill(slots, "");
+        int unlocked = unlockedSlots(player);
+        int placed = 0;
+        for (AetherSkill skill : wanted) {
+            if (placed >= unlocked) {
+                break;
+            }
+            slots[placed++] = skill.id();
+        }
+        dirty = true;
+        refresh(player);
+        return placed < wanted.size() ? PresetResult.PARTIAL : PresetResult.LOADED;
     }
 
     public boolean unequipSlot(Player player, int slotIndex) {
@@ -819,6 +900,10 @@ public final class SkillService implements StatProvider, Listener {
                     && !de.aetherion.items.fishing.FishIsleHook.onIsle(player)) {
                 continue;
             }
+            if (skill.flag() == AetherSkill.Flag.BEDROCK_BORN
+                    && !de.aetherion.items.mining.MineIsleHook.onIsle(player)) {
+                continue;
+            }
             double scale = multiplier(player, skill);
             total += skill.bonus(capability) * scale;
             if (dark && capability == ItemCapability.MINING_POWER && skill.flag() == AetherSkill.Flag.CAVE_SENSE) {
@@ -846,6 +931,16 @@ public final class SkillService implements StatProvider, Listener {
             config.set(path + ".bonusXp", skills.bonusXp);
             config.set(path + ".claimedShardLevel", skills.claimedShardLevel);
             config.set(path + ".seenSlots", skills.seenSlots);
+            List<String> presets = new ArrayList<>(PRESET_COUNT);
+            boolean anyPreset = false;
+            for (int i = 0; i < PRESET_COUNT; i++) {
+                String preset = skills.presets[i];
+                presets.add(preset == null ? "" : preset);
+                anyPreset |= preset != null && !preset.isBlank();
+            }
+            if (anyPreset) {
+                config.set(path + ".presets", presets);
+            }
             for (AetherSkill skill : AetherSkill.values()) {
                 int level = skills.level(skill);
                 int xp = skills.xp(skill);
@@ -962,6 +1057,7 @@ public final class SkillService implements StatProvider, Listener {
         }
         data.levels.put(skill, level);
         data.xp.put(skill, xp);
+        SkillSession.note(player, skill, amount, level - startLevel);
         dirty = true;
         if (leveled) {
             queueLevelBeat(player, skill, startLevel, level);
@@ -1057,6 +1153,7 @@ public final class SkillService implements StatProvider, Listener {
                 rarityRing(player, rarity);
             }
             case LevelBeat.RANK_RARITY -> {
+                sealButton(player, skill);
                 String rarityName = SkillProgression.rarityName(rarity);
                 player.sendMessage("§6✦ " + name + " §7is now " + rarity.getChatColor() + rarityName
                         + "§7. §8+" + SkillProgression.rarityBonusPercent(beat.to) + "% effect from rarity");
@@ -1074,6 +1171,16 @@ public final class SkillService implements StatProvider, Listener {
                 player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.3f, 1.4f);
             }
         }
+    }
+
+    /** Clickable claim line for a fresh rarity seal (the seal itself pays out from the Codex ledger). */
+    private static void sealButton(Player player, AetherSkill skill) {
+        var legacy = net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection();
+        player.sendMessage(legacy.deserialize("§8   ")
+                .append(legacy.deserialize("§e§l[CLAIM RARITY SEAL]")
+                        .clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand("/codex claim s:" + skill.id()))
+                        .hoverEvent(net.kyori.adventure.text.event.HoverEvent.showText(
+                                legacy.deserialize("§7Coins and Aether Shards, once per rarity.\n§eClick to claim")))));
     }
 
     private static void showTitle(Player player, String title, String subtitle) {
@@ -1226,6 +1333,7 @@ public final class SkillService implements StatProvider, Listener {
         beatFlushQueued.remove(id);
         grudgeTarget.remove(id);
         caveSenseLit.remove(id);
+        SkillSession.forget(id);
         String prefix = id + "|";
         cueUntil.keySet().removeIf(key -> key.startsWith(prefix));
         saveIfDirty();
@@ -1399,6 +1507,10 @@ public final class SkillService implements StatProvider, Listener {
             skills.bonusXp = section.getLong(key + ".bonusXp");
             skills.claimedShardLevel = section.getInt(key + ".claimedShardLevel");
             skills.seenSlots = section.getInt(key + ".seenSlots", -1);
+            List<String> presets = section.getStringList(key + ".presets");
+            for (int i = 0; i < PRESET_COUNT && i < presets.size(); i++) {
+                skills.presets[i] = presets.get(i) == null ? "" : presets.get(i);
+            }
             ConfigurationSection progress = section.getConfigurationSection(key + ".progress");
             if (progress != null) {
                 for (String skillId : progress.getKeys(false)) {
@@ -1519,6 +1631,8 @@ public final class SkillService implements StatProvider, Listener {
         private int claimedShardLevel;
         /** Slot count the player has already been told about; -1 = not yet measured. */
         private int seenSlots = -1;
+        /** Saved loadouts: comma-joined skill ids per preset ({@code ""} = empty). */
+        private final String[] presets = new String[PRESET_COUNT];
 
         private PlayerSkills() {
             java.util.Arrays.fill(slots, "");
@@ -1532,4 +1646,31 @@ public final class SkillService implements StatProvider, Listener {
             return Math.max(0, xp.getOrDefault(skill, 0));
         }
     }
+
+
+    /** Full skill wipe for online or offline — RAM + skills.yml key removed. */
+    public void wipePlayer(UUID playerId) {
+        if (playerId == null) {
+            return;
+        }
+        Player online = org.bukkit.Bukkit.getPlayer(playerId);
+        if (online != null && online.isOnline()) {
+            wipeProgress(online);
+            data.remove(playerId);
+        } else {
+            data.remove(playerId);
+        }
+        YamlConfiguration config = file.exists()
+                ? YamlConfiguration.loadConfiguration(file)
+                : new YamlConfiguration();
+        config.set("players." + playerId, null);
+        try {
+            AtomicYaml.save(config, file, plugin.getLogger());
+            dirty = false;
+        } catch (Exception exception) {
+            plugin.getLogger().warning("Could not wipe skills for " + playerId + ": " + exception.getMessage());
+            dirty = true;
+        }
+    }
+
 }

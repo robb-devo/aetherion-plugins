@@ -1,11 +1,17 @@
 package de.aetherion.items.menu.dev;
 
+import de.aetherion.items.AetherionItems;
+
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.player.AsyncPlayerChatEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 
 public class DevMenuListener implements Listener {
 
@@ -53,5 +59,30 @@ public class DevMenuListener implements Listener {
             return;
         }
         menu.returnLabItem(player, event.getInventory());
+    }
+
+    /** DEV search prompt: the next chat line after "Search" is the query, never broadcast. */
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onSearchChat(AsyncPlayerChatEvent event) {
+        Player player = event.getPlayer();
+        if (!menu.takeSearchPrompt(player)) {
+            return;
+        }
+        event.setCancelled(true);
+        String query = event.getMessage();
+        AetherionItems plugin = AetherionItems.getInstance();
+        if (plugin == null) {
+            return;
+        }
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (player.isOnline()) {
+                menu.openSearch(player, query);
+            }
+        });
+    }
+
+    @EventHandler
+    public void onQuit(PlayerQuitEvent event) {
+        menu.clearSearchPrompt(event.getPlayer().getUniqueId());
     }
 }

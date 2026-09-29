@@ -32,6 +32,14 @@ public class RecipeBookGUI {
     private static final String RECIPE_LIST_TITLE = "§8Aetherion Recipes";
     private static final String RECIPE_DETAIL_TITLE = "§8Recipe Details";
 
+    /** Categories page: extra cards in the two free category cells. */
+    public static final int READY_SLOT = 40;
+    public static final int SOURCES_SLOT = 42;
+    /** List views: "+N more to discover" sits in the bottom rail. */
+    private static final int MORE_SLOT = 49;
+    /** Undiscovered silhouettes shown per flat category before the rest fold away. */
+    private static final int LOCKED_PREVIEW = 7;
+
     private final RecipeManager recipeManager;
 
     public RecipeBookGUI(RecipeManager recipeManager) {
@@ -53,6 +61,23 @@ public class RecipeBookGUI {
 
         fillBackground(inventory);
 
+        RecipeCategory[] categories = RecipeCategory.values();
+        int knownTotal = 0;
+        int allTotal = 0;
+        int[] known = new int[categories.length];
+        int[] total = new int[categories.length];
+        for (int i = 0; i < categories.length; i++) {
+            for (RecipeDefinition recipe : recipeManager.getRecipesByCategory(categories[i])) {
+                total[i]++;
+                if (recipe.isUnlocked(player)) {
+                    known[i]++;
+                }
+            }
+            knownTotal += known[i];
+            allTotal += total[i];
+        }
+        List<RecipeDefinition> ready = readyRecipes(player);
+
         inventory.setItem(
                 RecipeBookLayout.HEADER_SLOT,
                 createSimpleItem(
@@ -60,21 +85,36 @@ public class RecipeBookGUI {
                         "§6Aetherion Recipe Book",
                         List.of(
                                 "",
+                                "§7Known: §f" + knownTotal + "§7/§f" + allTotal + "  " + progressBar(knownTotal, allTotal),
+                                "",
                                 "§7Choose a category."
                         )
                 )
         );
-
-        RecipeCategory[] categories = RecipeCategory.values();
 
         for (int i = 0; i < categories.length && i < RecipeBookLayout.CATEGORY_SLOTS.length; i++) {
             RecipeCategory category = categories[i];
 
             inventory.setItem(
                     RecipeBookLayout.CATEGORY_SLOTS[i],
-                    createCategoryItem(category, isCategoryUnlocked(player, category))
+                    createCategoryItem(category, isCategoryUnlocked(player, category), known[i], total[i])
             );
         }
+
+        // Early on the book is mostly locks — lead with what you can actually do.
+        inventory.setItem(READY_SLOT, readyButton(ready));
+        inventory.setItem(SOURCES_SLOT, createSimpleItem(
+                Material.WRITABLE_BOOK,
+                "§eWhere recipes come from",
+                List.of(
+                        "",
+                        "§7Pages open as you go: skill levels,",
+                        "§7bosses, the Surveyor's blueprints,",
+                        "§7and things found off the road.",
+                        "",
+                        "§7Hover a §8???§7 to see its condition."
+                )
+        ));
 
         inventory.setItem(
                 RecipeBookLayout.BACK_SLOT,
@@ -113,7 +153,14 @@ public class RecipeBookGUI {
             return;
         }
 
-        List<RecipeDefinition> recipes = getRecipes(player, category);
+        List<RecipeDefinition> recipes = visibleRecipes(player, category);
+        int hidden = hiddenLockedCount(player, category);
+        int knownHere = 0;
+        for (RecipeDefinition recipe : recipes) {
+            if (recipe.isUnlocked(player)) {
+                knownHere++;
+            }
+        }
 
         int pageSize = RecipeBookLayout.RECIPE_SLOTS.length;
         int totalPages = Math.max(1, (int) Math.ceil(recipes.size() / (double) pageSize));
@@ -127,16 +174,31 @@ public class RecipeBookGUI {
 
         fillBackground(inventory);
 
+        List<String> headerLore = new ArrayList<>();
+        headerLore.add("");
+        headerLore.add(knownHere == 0
+                ? "§8Nothing learned here yet."
+                : "§7Known here: §f" + knownHere);
+        headerLore.add("§eClick §7to return to categories.");
+        if (totalPages > 1) {
+            headerLore.add("");
+            headerLore.add("§7Page §f" + currentPage + "§7/§f" + totalPages);
+        }
         inventory.setItem(
                 RecipeBookLayout.HEADER_SLOT,
                 createCategoryIcon(
                         category,
                         "§6" + category.getIcon() + " " + category.getDisplayName(),
-                        totalPages > 1
-                                ? List.of("", "§7Recipes in this category", "§eClick §7to return to categories.", "", "§7Page §f" + currentPage + "§7/§f" + totalPages)
-                                : List.of("", "§7Recipes in this category", "§eClick §7to return to categories.")
+                        headerLore
                 )
         );
+        if (hidden > 0) {
+            inventory.setItem(MORE_SLOT, createSimpleItem(
+                    Material.FIREWORK_STAR,
+                    "§8+ " + hidden + " more to discover",
+                    List.of("", "§7Known recipes sit up front.", "§7The rest stay folded until they matter.")
+            ));
+        }
 
         int startIndex = (currentPage - 1) * pageSize;
         int endIndex = Math.min(startIndex + pageSize, recipes.size());
@@ -195,6 +257,14 @@ public class RecipeBookGUI {
         fillBackground(inventory);
 
         List<String> headerLore = new ArrayList<>(gearCategoryLore(category));
+        int knownGear = 0;
+        for (RecipeDefinition recipe : recipeManager.getRecipesByCategory(category)) {
+            if (recipe.isUnlocked(player)) {
+                knownGear++;
+            }
+        }
+        headerLore.add("");
+        headerLore.add(knownGear == 0 ? "§8Nothing learned here yet." : "§7Known here: §f" + knownGear);
         if (totalPages > 1) {
             headerLore.add("");
             headerLore.add("§7Page §f" + currentPage + "§7/§f" + totalPages);
@@ -293,6 +363,10 @@ public class RecipeBookGUI {
     }
 
     public void openRecipe(Player player, RecipeDefinition recipe, int page) {
+        openRecipe(player, recipe, page, false);
+    }
+
+    public void openRecipe(Player player, RecipeDefinition recipe, int page, boolean fromReady) {
         if (recipe == null) {
             return;
         }
@@ -304,7 +378,7 @@ public class RecipeBookGUI {
         }
 
         Inventory inventory = Bukkit.createInventory(
-                new RecipeBookHolder(GUIType.RECIPE_DETAIL, recipe.getCategory(), recipe, page),
+                new RecipeBookHolder(GUIType.RECIPE_DETAIL, recipe.getCategory(), recipe, page, fromReady),
                 RecipeBookLayout.SIZE,
                 RECIPE_DETAIL_TITLE
         );
@@ -435,6 +509,166 @@ public class RecipeBookGUI {
             return 2;
         }
         return 3;
+    }
+
+    /**
+     * Flat categories: known recipes first, then one row of undiscovered silhouettes;
+     * the rest fold into a "+N more" card. The listener maps clicks through this same list.
+     */
+    public List<RecipeDefinition> visibleRecipes(Player player, RecipeCategory category) {
+        List<RecipeDefinition> all = getRecipes(player, category);
+        if (player == null) {
+            return all;
+        }
+        List<RecipeDefinition> known = new ArrayList<>();
+        List<RecipeDefinition> locked = new ArrayList<>();
+        for (RecipeDefinition recipe : all) {
+            (recipe.isUnlocked(player) ? known : locked).add(recipe);
+        }
+        List<RecipeDefinition> out = new ArrayList<>(known);
+        out.addAll(locked.subList(0, Math.min(LOCKED_PREVIEW, locked.size())));
+        return out;
+    }
+
+    private int hiddenLockedCount(Player player, RecipeCategory category) {
+        if (player == null) {
+            return 0;
+        }
+        int locked = 0;
+        for (RecipeDefinition recipe : recipeManager.getRecipesByCategory(category)) {
+            if (!recipe.isUnlocked(player)) {
+                locked++;
+            }
+        }
+        return Math.max(0, locked - LOCKED_PREVIEW);
+    }
+
+    /** Every known recipe the player's inventory can pay for right now, in book order. */
+    public List<RecipeDefinition> readyRecipes(Player player) {
+        List<RecipeDefinition> ready = new ArrayList<>();
+        if (player == null) {
+            return ready;
+        }
+        ItemManager itemManager = AetherionItems.getInstance() == null
+                ? null
+                : AetherionItems.getInstance().getItemManager();
+        if (itemManager == null) {
+            return ready;
+        }
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        for (RecipeCategory category : RecipeCategory.values()) {
+            if (!isCategoryUnlocked(player, category)) {
+                continue;
+            }
+            for (RecipeDefinition recipe : getRecipes(player, category)) {
+                if (recipe == null || recipe.getId() == null || !seen.add(recipe.getId())) {
+                    continue;
+                }
+                if (recipe.isUnlocked(player) && RecipeBookCrafter.canCraft(player, recipe, itemManager)) {
+                    ready.add(recipe);
+                }
+            }
+        }
+        return ready;
+    }
+
+    public void openReady(Player player, int page) {
+        syncOwned(player);
+        List<RecipeDefinition> ready = readyRecipes(player);
+        int pageSize = RecipeBookLayout.RECIPE_SLOTS.length;
+        int totalPages = Math.max(1, (int) Math.ceil(ready.size() / (double) pageSize));
+        int currentPage = Math.max(1, Math.min(page, totalPages));
+
+        Inventory inventory = Bukkit.createInventory(
+                new RecipeBookHolder(GUIType.READY, null, null, currentPage),
+                RecipeBookLayout.SIZE,
+                "§8Recipes · Ready to craft"
+        );
+        fillBackground(inventory);
+
+        List<String> headerLore = new ArrayList<>();
+        headerLore.add("");
+        headerLore.add("§7Everything your bag can make");
+        headerLore.add("§7right now. Click one to craft.");
+        if (totalPages > 1) {
+            headerLore.add("");
+            headerLore.add("§7Page §f" + currentPage + "§7/§f" + totalPages);
+        }
+        inventory.setItem(RecipeBookLayout.HEADER_SLOT,
+                createSimpleItem(Material.CRAFTING_TABLE, "§a§lReady to craft", headerLore));
+
+        if (ready.isEmpty()) {
+            inventory.setItem(22, createSimpleItem(
+                    Material.BUNDLE,
+                    "§7Nothing yet — the bag is light",
+                    List.of("", "§7Gather a little, then look again.", "§7Known recipes live in the categories.")
+            ));
+        } else {
+            int start = (currentPage - 1) * pageSize;
+            int end = Math.min(start + pageSize, ready.size());
+            for (int i = start; i < end; i++) {
+                inventory.setItem(RecipeBookLayout.RECIPE_SLOTS[i - start], createRecipeItem(ready.get(i), true));
+            }
+        }
+
+        inventory.setItem(RecipeBookLayout.BACK_SLOT,
+                createSimpleItem(Material.ARROW, "§eBack", List.of("§7Return to categories")));
+        if (totalPages > 1 && currentPage > 1) {
+            inventory.setItem(RecipeBookLayout.PREV_PAGE_SLOT, createSimpleItem(
+                    Material.ARROW, "§ePrevious Page", List.of("", "§7Page " + (currentPage - 1) + " / " + totalPages)));
+        }
+        if (totalPages > 1 && currentPage < totalPages) {
+            inventory.setItem(RecipeBookLayout.NEXT_PAGE_SLOT, createSimpleItem(
+                    Material.ARROW, "§eNext Page", List.of("", "§7Page " + (currentPage + 1) + " / " + totalPages)));
+        }
+        player.openInventory(inventory);
+        playBookSound(player);
+    }
+
+    private ItemStack readyButton(List<RecipeDefinition> ready) {
+        List<String> lore = new ArrayList<>();
+        lore.add("");
+        if (ready.isEmpty()) {
+            lore.add("§8Nothing your bag can pay for yet.");
+            return createSimpleItem(Material.CRAFTING_TABLE, "§7Ready to craft", lore);
+        }
+        lore.add("§7You can make §a" + ready.size() + "§7 right now:");
+        for (int i = 0; i < ready.size() && i < 3; i++) {
+            lore.add("§8· §f" + stripColor(getDisplayName(ready.get(i).getResult())));
+        }
+        if (ready.size() > 3) {
+            lore.add("§8· …");
+        }
+        lore.add("");
+        lore.add("§eClick §7to see them.");
+        ItemStack item = createSimpleItem(Material.CRAFTING_TABLE, "§a§lReady to craft", lore);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            meta.addEnchant(org.bukkit.enchantments.Enchantment.UNBREAKING, 1, true);
+            meta.addItemFlags(org.bukkit.inventory.ItemFlag.HIDE_ENCHANTS);
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    private static String progressBar(int have, int of) {
+        int cells = 10;
+        int filled = of <= 0 ? 0 : (int) Math.round(cells * (have / (double) of));
+        if (have > 0 && filled == 0) {
+            filled = 1;
+        }
+        StringBuilder bar = new StringBuilder("§a");
+        for (int i = 0; i < cells; i++) {
+            if (i == filled) {
+                bar.append("§8");
+            }
+            bar.append('▮');
+        }
+        return bar.toString();
+    }
+
+    private static String stripColor(String text) {
+        return text == null ? "" : text.replaceAll("§.", "");
     }
 
     public boolean isCategoryUnlocked(Player player, RecipeCategory category) {
@@ -739,7 +973,7 @@ public class RecipeBookGUI {
         return order.length;
     }
 
-    private ItemStack createCategoryItem(RecipeCategory category, boolean unlocked) {
+    private ItemStack createCategoryItem(RecipeCategory category, boolean unlocked, int known, int total) {
         if (!unlocked) {
             UnlockRequirement requirement = new AetherMobsUnlockRequirement();
             List<String> lore = new ArrayList<>();
@@ -766,10 +1000,19 @@ public class RecipeBookGUI {
             );
         }
 
+        if (known == 0) {
+            // Nothing learned yet: quieter name, honest lore — still clickable to peek.
+            return createCategoryIcon(
+                    category,
+                    "§7" + category.getIcon() + " " + category.getDisplayName(),
+                    List.of("", "§8Nothing learned here yet.", "§8" + total + " to discover.", "", "§7Click to peek.")
+            );
+        }
         return createCategoryIcon(
                 category,
                 "§6" + category.getIcon() + " " + category.getDisplayName(),
-                List.of("", "§7Click to view recipes.")
+                List.of("", "§a" + known + " §7known §8· " + Math.max(0, total - known) + " to discover", "",
+                        "§7Click to view recipes.")
         );
     }
 
@@ -792,7 +1035,7 @@ public class RecipeBookGUI {
         if (!unlocked) {
             List<String> lore = new ArrayList<>();
             lore.add("");
-            lore.add("§c§lLOCKED");
+            lore.add("§7§lUNDISCOVERED");
             lore.add("");
 
             String unlockText = recipe.getUnlockDisplayText();
@@ -802,10 +1045,10 @@ public class RecipeBookGUI {
             }
 
             lore.add("");
-            lore.add("§8Complete the required");
-            lore.add("§8progression to unlock this.");
+            lore.add("§8Not learned yet.");
 
-            return createSimpleItem(Material.BARRIER, "§c§l???", lore);
+            // A silhouette, not a stop sign — locked is "later", not "wrong".
+            return createSimpleItem(Material.FIREWORK_STAR, "§8???", lore);
         }
 
         ItemStack result = recipe.getResult();
@@ -988,7 +1231,9 @@ public class RecipeBookGUI {
     public enum GUIType {
         CATEGORIES,
         RECIPE_LIST,
-        RECIPE_DETAIL
+        RECIPE_DETAIL,
+        /** "Ready to craft" — every known recipe the bag can pay for right now. */
+        READY
     }
 
     public static class RecipeBookHolder implements InventoryHolder {
@@ -997,16 +1242,27 @@ public class RecipeBookGUI {
         private final RecipeCategory category;
         private final RecipeDefinition recipe;
         private final int page;
+        private final boolean fromReady;
 
         public RecipeBookHolder(GUIType type, RecipeCategory category, RecipeDefinition recipe) {
             this(type, category, recipe, 1);
         }
 
         public RecipeBookHolder(GUIType type, RecipeCategory category, RecipeDefinition recipe, int page) {
+            this(type, category, recipe, page, false);
+        }
+
+        public RecipeBookHolder(GUIType type, RecipeCategory category, RecipeDefinition recipe, int page, boolean fromReady) {
             this.type = type;
             this.category = category;
             this.recipe = recipe;
             this.page = Math.max(1, page);
+            this.fromReady = fromReady;
+        }
+
+        /** Detail opened from the Ready list — Back returns there. */
+        public boolean isFromReady() {
+            return fromReady;
         }
 
         public GUIType getType() {

@@ -560,8 +560,12 @@ public class ItemManager {
         boolean rodProgress = de.aetherion.items.item.FishingRodProgress.canLevel(previousItem);
         boolean axeProgress = de.aetherion.items.item.ForagingAxeProgress.isAxe(previousItem);
         boolean gaffProgress = de.aetherion.items.item.CatcherGaffProgress.canLevel(previousItem);
+        int socketed = de.aetherion.items.model.BoosterSockets.filled(
+                de.aetherion.items.model.BoosterSockets.read(this, previousItem)
+        );
 
-        if (oldActual.getTotalBoosters() <= 0 && !hoeProgress && !rodProgress && !axeProgress && !gaffProgress) {
+        if (oldActual.getTotalBoosters() <= 0 && socketed <= 0
+                && !hoeProgress && !rodProgress && !axeProgress && !gaffProgress) {
             return result;
         }
 
@@ -586,6 +590,8 @@ public class ItemManager {
         meta.setLore(lore);
         de.aetherion.items.item.ItemPresentation.polish(meta);
         result.setItemMeta(meta);
+        // Counts alone are not enough — socket GUI reads boosterSockets PDC first.
+        de.aetherion.items.model.BoosterSockets.copyOnto(this, previousItem, result);
         de.aetherion.items.item.FarmingHoeProgress.copy(previousItem, result);
         de.aetherion.items.item.FishingRodProgress.copy(previousItem, result);
         de.aetherion.items.item.ForagingAxeProgress.copy(previousItem, result);

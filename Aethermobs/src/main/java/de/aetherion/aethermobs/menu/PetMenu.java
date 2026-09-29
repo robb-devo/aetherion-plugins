@@ -1,7 +1,9 @@
 package de.aetherion.aethermobs.menu;
 
 import de.aetherion.aethermobs.AetherMobs;
+import de.aetherion.aethermobs.model.PetVariant;
 import de.aetherion.aethermobs.pet.ActivePetManager;
+import de.aetherion.aethermobs.pet.HabitatPresentation;
 import de.aetherion.aethermobs.pet.PetDefinition;
 import de.aetherion.aethermobs.pet.PetFlavor;
 import de.aetherion.aethermobs.pet.PetHabitat;
@@ -31,6 +33,9 @@ import org.bukkit.persistence.PersistentDataType;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class PetMenu implements Listener {
 
@@ -93,6 +98,18 @@ public class PetMenu implements Listener {
     private final NamespacedKey petIndexKey;
 
     private final NamespacedKey pageKey;
+
+    /** Release asks twice: the first click arms it for a few seconds. */
+    private static final long RELEASE_CONFIRM_MS = 5_000L;
+
+    private final Map<UUID, PendingRelease> pendingRelease =
+            new ConcurrentHashMap<>();
+
+    private record PendingRelease(
+            PetInstance pet,
+            long expiresAt
+    ) {
+    }
 
     public PetMenu(
             AetherMobs plugin
@@ -188,17 +205,26 @@ public class PetMenu implements Listener {
                         pets.size()
                 );
 
+        // Display order only — every item still carries its real collection index.
+        List<Integer> order =
+                displayOrder(
+                        collection
+                );
+
         for (
-                int index = startIndex;
-                index < endIndex;
-                index++
+                int position = startIndex;
+                position < endIndex;
+                position++
         ) {
+
+            int index =
+                    order.get(position);
 
             PetInstance pet =
                     pets.get(index);
 
             int slot =
-                    index - startIndex;
+                    position - startIndex;
 
             inventory.setItem(
                     slot,
@@ -307,11 +333,53 @@ public class PetMenu implements Listener {
         );
     }
 
+    /** Equipped first, then rarest, highest level, shiny, name. */
+    private List<Integer> displayOrder(
+            PlayerPetCollection collection
+    ) {
+
+        List<PetInstance> pets =
+                collection.getPets();
+
+        List<Integer> order =
+                new ArrayList<>();
+
+        for (int index = 0; index < pets.size(); index++) {
+            order.add(index);
+        }
+
+        order.sort(
+                Comparator
+                        .comparing((Integer index) -> !collection.isEquipped(pets.get(index)))
+                        .thenComparing(index -> -rarityRank(pets.get(index)))
+                        .thenComparing(index -> -pets.get(index).getLevel())
+                        .thenComparing(index -> pets.get(index).getVariant() != PetVariant.SHINY)
+                        .thenComparing(index -> pets.get(index).getDefinition() == null
+                                ? ""
+                                : pets.get(index).getDefinition().getDisplayName())
+        );
+
+        return order;
+    }
+
+    private static int rarityRank(
+            PetInstance pet
+    ) {
+
+        return pet.getRarity() == null
+                ? 0
+                : pet.getRarity().ordinal();
+    }
+
     private void openDetails(
             Player player,
             PetInstance pet,
             int petIndex
     ) {
+
+        pendingRelease.remove(
+                player.getUniqueId()
+        );
 
         PlayerPetCollection collection =
                 plugin.getPetCollection(
@@ -324,6 +392,10 @@ public class PetMenu implements Listener {
                         INVENTORY_SIZE,
                         DETAILS_TITLE
                 );
+
+        fillDetailsBackground(
+                inventory
+        );
 
         /*
          * =====================================================
@@ -382,7 +454,8 @@ public class PetMenu implements Listener {
                         "§c§lRelease Pet",
                         "§7Permanently release this pet.",
                         "",
-                        "§cThis cannot be undone."
+                        "§cThis cannot be undone.",
+                        "§8Asks once more before it happens."
                 )
         );
 
@@ -836,6 +909,38 @@ public class PetMenu implements Listener {
         }
     }
 
+    private void fillDetailsBackground(
+            Inventory inventory
+    ) {
+
+        ItemStack filler =
+                new ItemStack(
+                        Material.BLACK_STAINED_GLASS_PANE
+                );
+
+        ItemMeta meta =
+                filler.getItemMeta();
+
+        if (meta != null) {
+
+            meta.setDisplayName(
+                    " "
+            );
+
+            filler.setItemMeta(
+                    meta
+            );
+        }
+
+        for (int slot = 0; slot < INVENTORY_SIZE; slot++) {
+
+            inventory.setItem(
+                    slot,
+                    filler
+            );
+        }
+    }
+
     private enum StoragePage {
         COLLECTION,
         AETHERLEX_LANDS,
@@ -869,6 +974,14 @@ public class PetMenu implements Listener {
                         : "§7Active: §a"
                         + equipped.getDefinition().getDisplayName();
 
+        int biotopes =
+                plugin.getHabitatDiscovery() == null
+                        ? 0
+                        : plugin.getHabitatDiscovery()
+                        .discoveredCount(
+                                player.getUniqueId()
+                        );
+
         inventory.setItem(
                 COLLECTION_TAB_SLOT,
                 createTabItem(
@@ -878,7 +991,11 @@ public class PetMenu implements Listener {
                         "§7Open your caught pets.",
                         "§7Equip or release them here.",
                         "",
-                        equippedLine
+                        equippedLine,
+                        "§7Biotopes found §f"
+                                + biotopes
+                                + "§8/§7"
+                                + HabitatPresentation.discoverableCount()
                 )
         );
 
@@ -890,7 +1007,9 @@ public class PetMenu implements Listener {
                         currentPage == StoragePage.AETHERLEX_LANDS,
                         "§7Lands and caves.",
                         "§7See every known surface",
-                        "§7and cave pet."
+                        "§7and cave pet.",
+                        "",
+                        progressLine(collection, StoragePage.AETHERLEX_LANDS)
                 )
         );
 
@@ -902,7 +1021,9 @@ public class PetMenu implements Listener {
                         currentPage == StoragePage.AETHERLEX_DEPTHS,
                         "§7Oceans and Aetherion.",
                         "§7Aquatic pets plus the",
-                        "§7last dragon."
+                        "§7last dragon.",
+                        "",
+                        progressLine(collection, StoragePage.AETHERLEX_DEPTHS)
                 )
         );
 
@@ -913,7 +1034,9 @@ public class PetMenu implements Listener {
                         "§b§lAetherlex Sky",
                         currentPage == StoragePage.AETHERLEX_SKY,
                         "§7Open sky.",
-                        "§7See every flying pet."
+                        "§7See every flying pet.",
+                        "",
+                        progressLine(collection, StoragePage.AETHERLEX_SKY)
                 )
         );
 
@@ -924,7 +1047,9 @@ public class PetMenu implements Listener {
                         "§c§lAetherlex Nether",
                         currentPage == StoragePage.AETHERLEX_NETHER,
                         "§7The Nether.",
-                        "§7Wither and nether pets."
+                        "§7Wither and nether pets.",
+                        "",
+                        progressLine(collection, StoragePage.AETHERLEX_NETHER)
                 )
         );
 
@@ -936,7 +1061,9 @@ public class PetMenu implements Listener {
                         currentPage == StoragePage.AETHERLEX_DUNGEON,
                         "§7Dungeon floors.",
                         "§7Pets that only appear",
-                        "§7inside dungeon instances."
+                        "§7inside dungeon instances.",
+                        "",
+                        progressLine(collection, StoragePage.AETHERLEX_DUNGEON)
                 )
         );
 
@@ -989,6 +1116,49 @@ public class PetMenu implements Listener {
                     )
             );
         }
+    }
+
+    /** "Caught 3/10 · Seen 5" for one Aetherlex page. */
+    private String progressLine(
+            PlayerPetCollection collection,
+            StoragePage page
+    ) {
+
+        List<PetDefinition> entries =
+                getAetherlexPets(
+                        page
+                );
+
+        int caught = 0;
+        int seen = 0;
+
+        for (PetDefinition definition : entries) {
+
+            if (collection == null) {
+                continue;
+            }
+
+            if (collection.hasCaught(definition.getId())) {
+                caught++;
+                seen++;
+            } else if (collection.hasSighted(definition.getId())) {
+                seen++;
+            }
+        }
+
+        String caughtColor =
+                caught >= entries.size()
+                        && !entries.isEmpty()
+                        ? "§6"
+                        : "§a";
+
+        return "§7Caught "
+                + caughtColor
+                + caught
+                + "§8/§7"
+                + entries.size()
+                + " §8· §7Seen §e"
+                + seen;
     }
 
     private ItemStack createTabItem(
@@ -1249,6 +1419,27 @@ public class PetMenu implements Listener {
                 "§6§lHabitat"
         );
 
+        PetHabitat biotope =
+                definition.getHabitat();
+
+        if (biotope != PetHabitat.ANY
+                && !definition.isShopExclusive()) {
+
+            boolean found =
+                    collection != null
+                            && plugin.getHabitatDiscovery() != null
+                            && plugin.getHabitatDiscovery()
+                            .hasDiscovered(
+                                    collection.getOwner(),
+                                    biotope
+                            );
+
+            lore.add(
+                    HabitatPresentation.coloredName(biotope)
+                            + (found ? "" : " §8· not yet found")
+            );
+        }
+
         lore.add(
                 "§7"
                         + formatHabitat(
@@ -1270,11 +1461,11 @@ public class PetMenu implements Listener {
                 );
             } else {
                 lore.add(
-                        "§8Find it in the world"
+                        "§8Spot it up close in the wild"
                 );
 
                 lore.add(
-                        "§8or hit it with a catch sphere."
+                        "§8to fill this page."
                 );
             }
 
@@ -1857,7 +2048,7 @@ public class PetMenu implements Listener {
                         selectedPet
                 );
 
-                activePetManager.unequip(
+                activePetManager.dismiss(
                         player
                 );
 
@@ -1866,19 +2057,20 @@ public class PetMenu implements Listener {
                                 collection
                         );
 
-                player.sendMessage(
-                        "§e✦ §f"
-                                + selectedPet
-                                .getDefinition()
-                                .getDisplayName()
-                                + " §7has been unequipped."
+                player.sendActionBar(
+                        net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
+                                .legacySection()
+                                .deserialize(
+                                        "§7"
+                                                + selectedPet
+                                                .getDefinition()
+                                                .getDisplayName()
+                                                + " §8rests in your collection."
+                                )
                 );
 
-                player.playSound(
-                        player.getLocation(),
-                        Sound.UI_BUTTON_CLICK,
-                        0.8f,
-                        0.9f
+                open(
+                        player
                 );
 
             } else {
@@ -1887,29 +2079,30 @@ public class PetMenu implements Listener {
                         selectedPet
                 );
 
-                activePetManager.equip(
-                        player,
-                        selectedPet
-                );
-
                 plugin.getPetDataManager()
                         .save(
                                 collection
                         );
 
-                player.sendMessage(
-                        "§a✦ §f"
-                                + selectedPet
-                                .getDefinition()
-                                .getDisplayName()
-                                + " §7is now equipped!"
+                // Close first so the player actually sees their pet arrive.
+                player.closeInventory();
+
+                activePetManager.summon(
+                        player,
+                        selectedPet
                 );
 
-                player.playSound(
-                        player.getLocation(),
-                        Sound.ENTITY_PLAYER_LEVELUP,
-                        0.7f,
-                        1.4f
+                player.sendActionBar(
+                        net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
+                                .legacySection()
+                                .deserialize(
+                                        "§a✦ "
+                                                + getRarityColor(selectedPet.getRarity())
+                                                + selectedPet
+                                                .getDefinition()
+                                                .getDisplayName()
+                                                + " §7is with you."
+                                )
                 );
 
                 de.aetherion.core.api.QuestProgressAccess quests = de.aetherion.core.api.AetherServices.quests();
@@ -1918,14 +2111,60 @@ public class PetMenu implements Listener {
                 }
             }
 
-            open(
-                    player
-            );
-
             return;
         }
 
         if (slot == RELEASE_SLOT) {
+
+            PendingRelease pending =
+                    pendingRelease.get(
+                            player.getUniqueId()
+                    );
+
+            boolean confirmed =
+                    pending != null
+                            && pending.pet() == selectedPet
+                            && System.currentTimeMillis() <= pending.expiresAt();
+
+            if (!confirmed) {
+
+                pendingRelease.put(
+                        player.getUniqueId(),
+                        new PendingRelease(
+                                selectedPet,
+                                System.currentTimeMillis() + RELEASE_CONFIRM_MS
+                        )
+                );
+
+                player.getOpenInventory()
+                        .getTopInventory()
+                        .setItem(
+                                RELEASE_SLOT,
+                                createActionItem(
+                                        Material.RED_CONCRETE,
+                                        "§c§lClick again to release",
+                                        "§7"
+                                                + getRarityColor(selectedPet.getRarity())
+                                                + selectedPet.getDefinition().getDisplayName()
+                                                + " §7will be gone for good.",
+                                        "",
+                                        "§8Expires in 5 seconds."
+                                )
+                        );
+
+                player.playSound(
+                        player.getLocation(),
+                        Sound.BLOCK_NOTE_BLOCK_BASS,
+                        0.6f,
+                        0.7f
+                );
+
+                return;
+            }
+
+            pendingRelease.remove(
+                    player.getUniqueId()
+            );
 
             boolean wasEquipped =
                     collection.isEquipped(

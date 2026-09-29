@@ -970,6 +970,37 @@ public class QuestNPCRegistry {
                 ""
         ));
 
+        // Idea NPCs — not placed. /questnpc extras hands out anchors; place one to try it.
+        registerNPC(new QuestNPC(
+                "town_crier",
+                "Hollis",
+                NPCType.FLAVOR,
+                "",
+                "town_crier_intro",
+                ""
+        ));
+        registerNPC(new QuestNPC(
+                "street_sweeper",
+                "Bram",
+                NPCType.FLAVOR,
+                "",
+                "street_sweeper_intro",
+                ""
+        ));
+        registerNPC(new QuestNPC(
+                "lamp_lighter",
+                "Wick",
+                NPCType.FLAVOR,
+                "",
+                "lamp_lighter_intro",
+                ""
+        ));
+
+    }
+
+    /** Invented ambient NPCs offered on the /questnpc extras page (none are placed by default). */
+    public static java.util.List<String> ideaNpcIds() {
+        return java.util.List.of("town_crier", "street_sweeper", "lamp_lighter");
     }
 
     public static String linkedBoss(String npcId) {

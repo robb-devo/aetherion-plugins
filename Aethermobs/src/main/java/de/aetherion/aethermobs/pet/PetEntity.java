@@ -92,6 +92,13 @@ public class PetEntity {
 
     private static final double SHINY_PARTICLE_HEIGHT = 0.35;
 
+    private static final float BODY_SCALE = 0.82f;
+
+    private static final float NAMEPLATE_SCALE = 0.75f;
+
+    /** Display view range is a multiplier on ~64 blocks: wild names read from ~24. */
+    private static final float WILD_NAMEPLATE_VIEW_RANGE = 0.38f;
+
     private static final Particle.DustOptions AETHERION_AURA =
             new Particle.DustOptions(
                     Color.fromRGB(168, 92, 255),
@@ -421,19 +428,8 @@ public class PetEntity {
         );
 
         entity.setTransformation(
-                new Transformation(
-                        new Vector3f(
-                                0f,
-                                0.42f,
-                                0f
-                        ),
-                        new Quaternionf(),
-                        new Vector3f(
-                                0.82f,
-                                0.82f,
-                                0.82f
-                        ),
-                        new Quaternionf()
+                bodyTransform(
+                        BODY_SCALE
                 )
         );
 
@@ -4313,7 +4309,7 @@ public class PetEntity {
                 .spawnParticle(
                         Particle.DUST,
                         location,
-                        3,
+                        2,
                         0.16,
                         0.16,
                         0.16,
@@ -4321,16 +4317,20 @@ public class PetEntity {
                         dust
                 );
 
-        entity.getWorld()
-                .spawnParticle(
-                        Particle.END_ROD,
-                        location,
-                        1,
-                        0.08,
-                        0.12,
-                        0.08,
-                        0.0
-                );
+        // A glint, not a fountain: the rod sparkle only every other pulse.
+        if ((shinyParticleStep / SHINY_PARTICLE_INTERVAL) % 2 == 0) {
+
+            entity.getWorld()
+                    .spawnParticle(
+                            Particle.END_ROD,
+                            location,
+                            1,
+                            0.08,
+                            0.12,
+                            0.08,
+                            0.0
+                    );
+        }
     }
 
 
@@ -4621,20 +4621,17 @@ public class PetEntity {
                                     );
 
                                     display.setTransformation(
-                                            new Transformation(
-                                                    new Vector3f(
-                                                            0f,
-                                                            0.82f,
-                                                            0f
-                                                    ),
-                                                    new Quaternionf(),
-                                                    new Vector3f(
-                                                            0.75f,
-                                                            0.75f,
-                                                            0.75f
-                                                    ),
-                                                    new Quaternionf()
+                                            nameplateTransform(
+                                                    NAMEPLATE_SCALE
                                             )
+                                    );
+
+                                    // Names surface as you approach instead of
+                                    // hanging over the whole landscape.
+                                    display.setViewRange(
+                                            isEquipped()
+                                                    ? 1.0f
+                                                    : WILD_NAMEPLATE_VIEW_RANGE
                                     );
 
                                     display.getPersistentDataContainer()
@@ -4978,7 +4975,152 @@ public class PetEntity {
             nameplate.setSeeThrough(
                     enabled
             );
+
+            nameplate.setViewRange(
+                    enabled
+                            ? 1.0f
+                            : WILD_NAMEPLATE_VIEW_RANGE
+            );
         }
+    }
+
+
+    /*
+     * =========================================================
+     * MATERIALIZE / VANISH
+     * =========================================================
+     *
+     * Pets arrive and leave by scale, not by popping. One
+     * interpolated transformation each way; no particles.
+     */
+
+    public void materialize(
+            int ticks
+    ) {
+
+        if (!isSpawned()) {
+            return;
+        }
+
+        entity.setInterpolationDelay(0);
+        entity.setInterpolationDuration(0);
+        entity.setTransformation(bodyTransform(0.001f));
+
+        if (nameplate != null
+                && nameplate.isValid()) {
+
+            nameplate.setInterpolationDelay(0);
+            nameplate.setInterpolationDuration(0);
+            nameplate.setTransformation(nameplateTransform(0.001f));
+        }
+
+        AetherMobs plugin = getPlugin();
+        if (plugin == null || !plugin.isEnabled()) {
+            entity.setTransformation(bodyTransform(BODY_SCALE));
+            return;
+        }
+
+        // Clients need one tick with the tiny scale before the grow can interpolate.
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (!isSpawned()) {
+                return;
+            }
+            entity.setInterpolationDelay(0);
+            entity.setInterpolationDuration(ticks);
+            entity.setTransformation(bodyTransform(BODY_SCALE));
+            if (nameplate != null
+                    && nameplate.isValid()) {
+                nameplate.setInterpolationDelay(0);
+                nameplate.setInterpolationDuration(ticks);
+                nameplate.setTransformation(nameplateTransform(NAMEPLATE_SCALE));
+            }
+        }, 2L);
+    }
+
+    /**
+     * Shrink away, then remove. Movement stops at once; the entity lingers
+     * only for the shrink. Callers must already have dropped it from registries.
+     */
+    public void vanish(
+            int ticks
+    ) {
+
+        if (movementTask != null) {
+
+            movementTask.cancel();
+
+            movementTask = null;
+        }
+
+        if (nameplate != null) {
+
+            nameplate.remove();
+
+            nameplate = null;
+        }
+
+        AetherMobs plugin = getPlugin();
+
+        if (!isSpawned()
+                || plugin == null
+                || !plugin.isEnabled()) {
+
+            remove();
+            return;
+        }
+
+        entity.setInterpolationDelay(0);
+        entity.setInterpolationDuration(ticks);
+        entity.setTransformation(bodyTransform(0.001f));
+
+        ItemDisplay shrinking = entity;
+        entity = null;
+
+        Bukkit.getScheduler().runTaskLater(
+                plugin,
+                shrinking::remove,
+                ticks + 1L
+        );
+    }
+
+    private static Transformation bodyTransform(
+            float scale
+    ) {
+
+        return new Transformation(
+                new Vector3f(
+                        0f,
+                        0.42f * (scale / BODY_SCALE),
+                        0f
+                ),
+                new Quaternionf(),
+                new Vector3f(
+                        scale,
+                        scale,
+                        scale
+                ),
+                new Quaternionf()
+        );
+    }
+
+    private static Transformation nameplateTransform(
+            float scale
+    ) {
+
+        return new Transformation(
+                new Vector3f(
+                        0f,
+                        0.82f * (scale / NAMEPLATE_SCALE),
+                        0f
+                ),
+                new Quaternionf(),
+                new Vector3f(
+                        scale,
+                        scale,
+                        scale
+                ),
+                new Quaternionf()
+        );
     }
 
 

@@ -2,16 +2,23 @@ package de.aetherion.foraging;
 
 import com.sk89q.worldguard.bukkit.event.block.BreakBlockEvent;
 
+import de.aetherion.foraging.isle.FellContext;
+import de.aetherion.foraging.isle.ForageBridge;
+import de.aetherion.foraging.isle.ForageIsle;
+import de.aetherion.foraging.isle.ForageText;
+import de.aetherion.foraging.isle.Wood;
 import de.aetherion.items.AetherionItems;
 import de.aetherion.items.util.InventoryDrops;
 import de.aetherion.items.world.AreaType;
 
 import org.bukkit.Bukkit;
+import org.bukkit.FluidCollisionMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.Tag;
 import org.bukkit.World;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.BlockData;
@@ -29,6 +36,7 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.persistence.PersistentDataType;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -62,6 +70,10 @@ public class ForagingListener implements Listener {
     /** Streak bonus: +2 XP per clean fell beyond the first, capped. */
     private static final int STREAK_BONUS_STEP = 2;
     private static final int STREAK_BONUS_CAP = 8;
+    /** Soft look-cache so collectLogs is not re-run every tick while staring at one block. */
+    private static final int LOOK_CACHE_TICKS = 8;
+    private static final int NEWCOMER_HINT_CHOPS = 10;
+    private static final int NEWCOMER_HINT_INTERVAL_TICKS = 60;
 
     private static final BlockFace[] FACES = {
             BlockFace.UP, BlockFace.DOWN, BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST
@@ -83,6 +95,10 @@ public class ForagingListener implements Listener {
     private final Set<UUID> tipped = ConcurrentHashMap.newKeySet();
     /** First miss per boot explains the cooldown in chat; later misses stay on the action bar. */
     private final Set<UUID> taughtMiss = ConcurrentHashMap.newKeySet();
+    /** Players currently shown a look-preview bar (not an active FellPulse). */
+    private final Set<UUID> previewing = ConcurrentHashMap.newKeySet();
+    private final Map<UUID, LookCache> lookCache = new ConcurrentHashMap<>();
+    private final Map<UUID, Integer> lastHintTick = new ConcurrentHashMap<>();
 
     public ForagingListener(AetherionForaging plugin) {
         this.plugin = plugin;
@@ -252,16 +268,19 @@ public class ForagingListener implements Listener {
                 return;
             }
         }
-        // Fell-mark log: axe starts CHOP. Hand / non-axe can break it normally (no minigame).
-        if (job.fellLog != null && !job.fellSpent && job.fellLog.key().equals(startKey)) {
+        // Any stem of a living tree with axe starts CHOP (preview shows the same green window).
+        // Hand / non-axe on the fell-mark stump can break it normally (no minigame).
+        if (job.fellLog != null && !job.fellSpent) {
             if (isAxe(player.getInventory().getItemInMainHand())) {
                 event.setCancelled(true);
                 startChop(player, job);
                 return;
             }
-            job.fellSpent = true;
-            job.fellLog = null;
-            job.fellMarks.clear();
+            if (job.fellLog.key().equals(startKey)) {
+                job.fellSpent = true;
+                job.fellLog = null;
+                job.fellMarks.clear();
+            }
         }
         job.breaker = player.getUniqueId();
         ensureWoodCap(job, player);
@@ -376,9 +395,7 @@ public class ForagingListener implements Listener {
         if (job == null || job.collapsing || job.fellSpent || job.fellLog == null) {
             return;
         }
-        if (!job.fellLog.key().equals(key(block))) {
-            return;
-        }
+        // Any log of this tree — not only the bottom fell-mark.
         if (!QuestProgressHook.canChopTrees(player)) {
             event.setCancelled(true);
             denyChop(player);
@@ -402,6 +419,7 @@ public class ForagingListener implements Listener {
         collapsingPlayers.remove(id);
         streaks.clear(id);
         canopyCleaverUntil.remove(id);
+        clearLookPreview(id);
         hud.hide(event.getPlayer());
         ForagerChopDemo.releaseOnQuit(event.getPlayer());
     }
@@ -435,13 +453,13 @@ public class ForagingListener implements Listener {
 
     void tick() {
         int now = Bukkit.getCurrentTick();
-        if (jobs.isEmpty() && pulses.isEmpty()) {
-            return;
+        // Look-preview runs even with empty jobs — never createJob / entities from staring.
+        if (now % 2 == 0) {
+            tickLookPreviews(now);
         }
         if (!jobs.isEmpty() && now % 100 == 0) {
             pruneIdleJobs(now);
         }
-        // No continuous spark particles — they tank FPS on the leafy isle.
         if (pulses.isEmpty()) {
             return;
         }
@@ -461,6 +479,179 @@ public class ForagingListener implements Listener {
                 resolveChop(pulse);
             }
         }
+    }
+
+    /**
+     * Soft look-ahead: axe + reach raycast + living canopy → one BossBar.
+     * Does not register TreeJobs (no map spam / idle restore churn from glancing).
+     */
+    private void tickLookPreviews(int now) {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            UUID id = player.getUniqueId();
+            if (pulses.containsKey(id) || collapsingPlayers.contains(id)) {
+                // Active chop owns the bar; drop preview bookkeeping only.
+                previewing.remove(id);
+                lookCache.remove(id);
+                continue;
+            }
+            if (player.getGameMode() == org.bukkit.GameMode.CREATIVE
+                    || player.getGameMode() == org.bukkit.GameMode.SPECTATOR) {
+                clearLookPreview(id);
+                continue;
+            }
+            if (!isAxe(player.getInventory().getItemInMainHand())) {
+                clearLookPreview(id);
+                continue;
+            }
+            World world = player.getWorld();
+            if (world == null || !isForagingMinigameWorld(world)) {
+                clearLookPreview(id);
+                continue;
+            }
+            if (!QuestProgressHook.canChopTrees(player)) {
+                clearLookPreview(id);
+                continue;
+            }
+            Block target = lookTarget(player);
+            if (target == null || !isLog(target.getType())) {
+                clearLookPreview(id);
+                continue;
+            }
+            String startKey = key(target);
+            if (regenerating.contains(startKey)) {
+                clearLookPreview(id);
+                continue;
+            }
+
+            LookCache cached = lookCache.get(id);
+            String treeId;
+            int zoneSize;
+            int zoneStart;
+            if (cached != null && cached.blockKey.equals(startKey) && cached.expiresAt > now) {
+                treeId = cached.treeId;
+                zoneStart = cached.zoneStart;
+                zoneSize = cached.zoneSize;
+            } else {
+                TreeJob job = jobs.get(startKey);
+                if (job != null) {
+                    if (job.collapsing || job.fellSpent || job.fellLog == null || job.treeId == null) {
+                        clearLookPreview(id);
+                        continue;
+                    }
+                    treeId = job.treeId;
+                } else {
+                    treeId = peekTreeId(target);
+                    if (treeId == null) {
+                        clearLookPreview(id);
+                        continue;
+                    }
+                }
+                // Same window rule as startChop — skills, streak and isle marks included.
+                zoneSize = ForagingStrike.zoneSize(zoneFor(player, streaks.current(id), dropLog(target.getType()),
+                        target.getLocation(), false));
+                zoneStart = ForagingStrike.zoneStartForTree(treeId, zoneSize);
+                lookCache.put(id, new LookCache(startKey, treeId, zoneStart, zoneSize, now + LOOK_CACHE_TICKS));
+            }
+
+            long missLeft = missCooldownLeftMs(id, treeId);
+            if (missLeft > 0L) {
+                hud.previewCooling(player, zoneStart, zoneSize, (missLeft + 999L) / 1000L);
+            } else {
+                hud.preview(player, zoneStart, zoneSize);
+                maybeNewcomerHint(player, now);
+            }
+            previewing.add(id);
+        }
+    }
+
+    private void clearLookPreview(UUID playerId) {
+        if (playerId == null) {
+            return;
+        }
+        lookCache.remove(playerId);
+        lastHintTick.remove(playerId);
+        if (previewing.remove(playerId) && !pulses.containsKey(playerId)) {
+            hud.hide(playerId);
+        }
+    }
+
+    private void maybeNewcomerHint(Player player, int now) {
+        if (player == null || chopHintsDone(player) >= NEWCOMER_HINT_CHOPS) {
+            return;
+        }
+        Integer last = lastHintTick.get(player.getUniqueId());
+        if (last != null && now - last < NEWCOMER_HINT_INTERVAL_TICKS) {
+            return;
+        }
+        lastHintTick.put(player.getUniqueId(), now);
+        player.sendActionBar(net.kyori.adventure.text.Component.text(
+                "Any stem · LMB when ◆ is on green",
+                net.kyori.adventure.text.format.NamedTextColor.GOLD
+        ));
+    }
+
+    private static int chopHintsDone(Player player) {
+        Integer n = player.getPersistentDataContainer().get(
+                ForageKeys.chopHintCount(), PersistentDataType.INTEGER);
+        return n == null ? 0 : Math.max(0, n);
+    }
+
+    private static void bumpChopHints(Player player) {
+        if (player == null) {
+            return;
+        }
+        int n = chopHintsDone(player);
+        if (n >= NEWCOMER_HINT_CHOPS) {
+            return;
+        }
+        player.getPersistentDataContainer().set(
+                ForageKeys.chopHintCount(), PersistentDataType.INTEGER, n + 1);
+    }
+
+    /**
+     * Resolve stable treeId without registering a TreeJob (look-only, no leaks).
+     */
+    private static String peekTreeId(Block start) {
+        List<Block> logs = collectLogs(start);
+        if (logs.isEmpty() || collectConnectedCanopy(logs).isEmpty()) {
+            return null;
+        }
+        return logs.stream().map(ForagingListener::key).sorted().findFirst().orElse(null);
+    }
+
+    private static Block lookTarget(Player player) {
+        double reach = 4.5d;
+        try {
+            var attr = player.getAttribute(Attribute.PLAYER_BLOCK_INTERACTION_RANGE);
+            if (attr != null) {
+                reach = attr.getValue();
+            }
+        } catch (Throwable ignored) {
+        }
+        int dist = Math.max(3, (int) Math.ceil(reach));
+        return player.getTargetBlockExact(dist, FluidCollisionMode.NEVER);
+    }
+
+    /** Worlds where the fell minigame (preview + chop) is active. */
+    private static boolean isForagingMinigameWorld(World world) {
+        if (world == null) {
+            return false;
+        }
+        String worldName = world.getName().toLowerCase(Locale.ROOT);
+        if (worldName.startsWith("aedun_") || worldName.startsWith("ae_dun")) {
+            return false;
+        }
+        if (worldName.equals("aether_farm_island") || worldName.startsWith("aether_farm_")) {
+            return false;
+        }
+        // Personal/guild islands: permanent vanilla chop — no seal-regen / minigame.
+        if (worldName.equals("aether_islands")
+                || worldName.equals("aether_guilds")
+                || worldName.equals("aether_test")
+                || worldName.startsWith("aether_test_")) {
+            return false;
+        }
+        return true;
     }
 
     private void pruneIdleJobs(int now) {
@@ -486,6 +677,9 @@ public class ForagingListener implements Listener {
             pulse.job.pulse = null;
             pulse.job.felling = false;
         }
+        previewing.clear();
+        lookCache.clear();
+        lastHintTick.clear();
         hud.hideAll();
         pulses.clear();
         streaks.clearAll();
@@ -524,9 +718,12 @@ public class ForagingListener implements Listener {
         }
         if (isChopMissCooling(player, job)) {
             long left = missCooldownLeftMs(player, job);
-            player.sendMessage("§cThat trunk needs a moment (§f"
-                    + Math.max(1, (left + 999L) / 1000L)
-                    + "s§c). Try another tree.");
+            long sec = Math.max(1L, (left + 999L) / 1000L);
+            player.sendMessage("§cThat trunk needs a moment (§f" + sec + "s§c). Try another tree.");
+            player.sendActionBar(net.kyori.adventure.text.Component.text(
+                    "This tree · " + sec + "s — other trees free",
+                    net.kyori.adventure.text.format.NamedTextColor.RED
+            ));
             return;
         }
         FellPulse existing = pulses.get(player.getUniqueId());
@@ -536,13 +733,38 @@ public class ForagingListener implements Listener {
             }
             cancelChop(existing); // switching trees is free — no miss lock
         }
+        // Preview bookkeeping yields the bar to the live pulse (same BossBar instance).
+        previewing.remove(player.getUniqueId());
+        lookCache.remove(player.getUniqueId());
         job.felling = true;
         int streak = streaks.current(player.getUniqueId());
-        FellPulse pulse = new FellPulse(player, job, plugin.fellStrikeTicks(), fellZoneFor(player, streak));
+        Location base = job.baseLocation();
+        FellPulse pulse = new FellPulse(player, job, plugin.fellStrikeTicks(),
+                zoneFor(player, streak, job.family, base, job.notched), speedFor(player, base, job.notched));
         job.pulse = pulse;
         pulses.put(player.getUniqueId(), pulse);
         ForagingFx.start(player, job.fellLocation());
         hud.striking(player, pulse.marker, pulse.zoneStart, pulse.zoneSize, pulse.hot(), pulse.ready(), streak);
+    }
+
+    /**
+     * Full CHOP window: {@link #fellZoneFor} plus Foraging Eldervale's marks, skills, mastery and Frostlit
+     * (isle only). A Titan's second cut is one cell tighter.
+     */
+    private int zoneFor(Player player, int streak, Material wood, Location at, boolean titanCut) {
+        int zone = fellZoneFor(player, streak);
+        ForageIsle isle = ForageIsle.get();
+        if (isle != null) {
+            zone += isle.zoneBonus(player, wood, at);
+        }
+        return titanCut ? zone - 1 : zone;
+    }
+
+    /** Marker speed: Keen Edge slows it on the isle, a Titan's second cut is quicker. */
+    private static double speedFor(Player player, Location at, boolean titanCut) {
+        ForageIsle isle = ForageIsle.get();
+        double slow = isle == null ? 1.0d : isle.strikeFactor(player, at);
+        return (titanCut ? 1.15d : 1.0d) / slow;
     }
 
     /**
@@ -580,6 +802,8 @@ public class ForagingListener implements Listener {
         if (existing != null) {
             cancelChop(existing);
         }
+        previewing.remove(player.getUniqueId());
+        lookCache.remove(player.getUniqueId());
         canopyCleaverUntil.put(player.getUniqueId(), now + cooldownMs);
         Location at = job.anchor();
         job.pulse = null;
@@ -598,6 +822,7 @@ public class ForagingListener implements Listener {
                 net.kyori.adventure.text.format.NamedTextColor.GREEN
         ));
         collapse(job);
+        fellHook(player, job, true, streaks.current(player.getUniqueId()), true);
         // The Cleaver skips the bar — no streak step, no timing bonus, but the fall still tallies.
         scheduleTally(job, player.getUniqueId(), "§6Perfect Fell §8(Cleaver)",
                 streaks.current(player.getUniqueId()), 0);
@@ -640,6 +865,12 @@ public class ForagingListener implements Listener {
         if (pulse == null || !pulses.remove(pulse.playerId, pulse)) {
             return;
         }
+        ForageIsle isle = ForageIsle.get();
+        Player cutter = Bukkit.getPlayer(pulse.playerId);
+        if (cutter != null && isle != null && !pulse.job.notched && isle.titan(pulse.job.baseLocation(), pulse.job.logs.size())) {
+            notchTitan(cutter, pulse);
+            return;
+        }
         Location at = pulse.job.anchor();
         pulse.job.pulse = null;
         pulse.job.felling = false;
@@ -660,11 +891,54 @@ public class ForagingListener implements Listener {
             // Release held dig so the client stops flailing the axe.
             player.clearActiveItem();
             tryForestDragonFromChop(player);
+            bumpChopHints(player);
         }
         collapse(pulse.job);
+        fellHook(player, pulse.job, perfect, streak, false);
         int bonus = (perfect ? PERFECT_BONUS_XP : 0)
                 + Math.min(STREAK_BONUS_CAP, Math.max(0, streak - 1) * STREAK_BONUS_STEP);
         scheduleTally(pulse.job, pulse.playerId, ForagingFx.word(perfect), streak, bonus);
+    }
+
+    /**
+     * Foraging Eldervale Titans (giant trees) take two clean cuts. The first notches the trunk; the bar
+     * comes straight back, one cell tighter and a little quicker. A miss keeps the notch.
+     */
+    private void notchTitan(Player player, FellPulse pulse) {
+        TreeJob job = pulse.job;
+        job.pulse = null;
+        job.felling = false;
+        job.notched = true;
+        clearMissCooldown(pulse.playerId, job);
+        hud.hide(pulse.playerId);
+        Location at = job.baseLocation();
+        player.playSound(player.getLocation(), Sound.ENTITY_ZOMBIE_BREAK_WOODEN_DOOR, 0.6f, 0.6f);
+        player.playSound(player.getLocation(), Sound.BLOCK_WOOD_BREAK, 1.0f, 0.5f);
+        if (at != null && at.getWorld() != null) {
+            at.getWorld().spawnParticle(org.bukkit.Particle.BLOCK, at.clone().add(0.0, 0.8, 0.0), 30, 0.5, 0.6, 0.5, 0.1,
+                    job.family.createBlockData());
+        }
+        ForageText.bar(player, "§6✦ Notched! §7The Titan groans — §fone more cut.");
+        player.clearActiveItem();
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (player.isOnline() && !job.collapsing && !job.fellSpent && job.fellLog != null) {
+                startChop(player, job);
+            }
+        }, 8L);
+    }
+
+    /** Hands a finished fell to the Foraging Eldervale router (no-op off the isle / for demo trees). */
+    private void fellHook(Player player, TreeJob job, boolean perfect, int streak, boolean cleaver) {
+        ForageIsle isle = ForageIsle.get();
+        if (isle == null || player == null || job == null || job.noLoot) {
+            return;
+        }
+        try {
+            isle.onFell(player, new FellContext(job.baseLocation(), job.crownLocation(), job.logs.size(),
+                    Wood.of(job.family), perfect, streak, cleaver, job.notched));
+        } catch (RuntimeException ex) {
+            plugin.getLogger().warning("Foraging Eldervale fell hook failed: " + ex);
+        }
     }
 
     /**
@@ -695,6 +969,16 @@ public class ForagingListener implements Listener {
                         + " and Perfect fells pay extra.");
             }
             ForagingFx.tally(player, line.toString());
+            ForageText.hold(player, 3000L);
+            ForageIsle isle = ForageIsle.get();
+            String mastery = isle == null ? null : isle.masteryLine(player, job.family, job.baseLocation());
+            if (mastery != null) {
+                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    if (player.isOnline()) {
+                        ForageText.bar(player, "§2Grove Mastery §8· " + mastery);
+                    }
+                }, 40L);
+            }
         }, wait);
     }
 
@@ -728,11 +1012,16 @@ public class ForagingListener implements Listener {
         // Keep fell mark — only this player is locked from THIS tree briefly.
         // Other trees stay instantly available (no global chop cooldown).
         markMissCooldown(pulse.playerId, pulse.job);
-        int lost = streaks.reset(pulse.playerId);
         Player player = Bukkit.getPlayer(pulse.playerId);
+        ForageIsle isle = ForageIsle.get();
+        boolean secondWind = player != null && isle != null && isle.secondWind(player, pulse.job.baseLocation());
+        int lost = secondWind ? 0 : streaks.reset(pulse.playerId);
         hud.hide(pulse.playerId);
         if (player != null && player.isOnline()) {
-            ForagingFx.miss(player, pulse.missReason(), lost, CHOP_MISS_COOLDOWN_MS / 1000L);
+            ForagingFx.miss(player, pulse.missReason(), lost, missCooldownMs(pulse.playerId, pulse.job) / 1000L);
+            if (secondWind) {
+                player.sendMessage("§b✦ Second Wind §8· §7Sure Grip kept your streak alive.");
+            }
             if (taughtMiss.add(pulse.playerId)) {
                 player.sendMessage("§7Missed the timing. §fThat trunk§7 cools ~1 min — other trees are free.");
             }
@@ -761,7 +1050,14 @@ public class ForagingListener implements Listener {
         if (player == null || job == null || job.treeId == null) {
             return 0L;
         }
-        Long until = chopMissUntil.get(missKey(player.getUniqueId(), job.treeId));
+        return missCooldownLeftMs(player.getUniqueId(), job.treeId);
+    }
+
+    private long missCooldownLeftMs(UUID playerId, String treeId) {
+        if (playerId == null || treeId == null) {
+            return 0L;
+        }
+        Long until = chopMissUntil.get(missKey(playerId, treeId));
         if (until == null) {
             return 0L;
         }
@@ -772,7 +1068,17 @@ public class ForagingListener implements Listener {
         if (playerId == null || job == null || job.treeId == null) {
             return;
         }
-        chopMissUntil.put(missKey(playerId, job.treeId), System.currentTimeMillis() + CHOP_MISS_COOLDOWN_MS);
+        chopMissUntil.put(missKey(playerId, job.treeId), System.currentTimeMillis() + missCooldownMs(playerId, job));
+    }
+
+    /** One minute, shortened on the isle by the Sure Grip mark and the Steady Hands skill. */
+    private static long missCooldownMs(UUID playerId, TreeJob job) {
+        ForageIsle isle = ForageIsle.get();
+        Player player = playerId == null ? null : Bukkit.getPlayer(playerId);
+        if (isle == null || player == null || job == null) {
+            return CHOP_MISS_COOLDOWN_MS;
+        }
+        return isle.missCooldown(player, job.baseLocation(), CHOP_MISS_COOLDOWN_MS);
     }
 
     private void clearMissCooldown(UUID playerId, TreeJob job) {
@@ -932,8 +1238,26 @@ public class ForagingListener implements Listener {
         for (Block decor : collectTreeDecor(logs, leaves)) {
             job.decor.add(Snapshot.of(decor));
         }
+        job.family = dominantWood(job.logs);
         markBase(job, skipMark);
         return job;
+    }
+
+    /** Most common typed drop in the trunk — custom trees mix woods, the majority names the tree. */
+    private static Material dominantWood(List<Snapshot> logs) {
+        Map<Material, Integer> counts = new java.util.EnumMap<>(Material.class);
+        for (Snapshot log : logs) {
+            counts.merge(dropLog(log.data().getMaterial()), 1, Integer::sum);
+        }
+        Material best = Material.OAK_LOG;
+        int most = 0;
+        for (Map.Entry<Material, Integer> e : counts.entrySet()) {
+            if (e.getValue() > most) {
+                most = e.getValue();
+                best = e.getKey();
+            }
+        }
+        return best;
     }
 
     private void markBase(TreeJob job, Block breaking) {
@@ -1367,11 +1691,13 @@ public class ForagingListener implements Listener {
      * Soft start balance: whole tree falls, but wood payout is hard-capped.
      * Base 10, +1 per 10 Foraging skill levels, +floor(Fortune/25).
      */
-    private static void ensureWoodCap(TreeJob job, Player player) {
+    private void ensureWoodCap(TreeJob job, Player player) {
         if (job == null || job.woodCap > 0) {
             return;
         }
-        job.woodCap = woodCapFor(player);
+        int base = woodCapFor(player);
+        ForageIsle isle = ForageIsle.get();
+        job.woodCap = isle == null ? base : isle.woodCap(player, job.family, job.baseLocation(), base, job.notched);
     }
 
     private static int woodCapFor(Player player) {
@@ -1503,6 +1829,10 @@ public class ForagingListener implements Listener {
             return;
         }
         double chance = plugin.getConfig().getDouble("isle-heartwood.chance", 0.03);
+        ForageIsle isle = ForageIsle.get();
+        if (isle != null) {
+            chance = isle.heartwoodChance(player, drop, chance);
+        }
         if (chance <= 0 || java.util.concurrent.ThreadLocalRandom.current().nextDouble() >= chance) {
             return;
         }
@@ -1532,10 +1862,16 @@ public class ForagingListener implements Listener {
             }
         } catch (NoClassDefFoundError ignored) {
         }
+        // The break event is cancelled (we pay the wood ourselves), so the Codex never heard it — file it here.
+        ForageBridge.codexWood(player, material);
     }
 
     private static String key(Block block) {
         return block.getWorld().getUID() + ":" + block.getX() + ":" + block.getY() + ":" + block.getZ();
+    }
+
+    /** Soft cache for look-preview — never creates entities or TreeJobs. */
+    private record LookCache(String blockKey, String treeId, int zoneStart, int zoneSize, int expiresAt) {
     }
 
     static final class TreeJob {
@@ -1543,7 +1879,7 @@ public class ForagingListener implements Listener {
         private final List<Snapshot> leaves = new ArrayList<>();
         private final List<Snapshot> decor = new ArrayList<>();
         /** Stable id for per-player miss cooldown (lowest log key). */
-        private String treeId;
+        String treeId;
         private boolean collapsing;
         private boolean felling;
         private boolean fellSpent;
@@ -1553,6 +1889,10 @@ public class ForagingListener implements Listener {
         int woodPaid;
         /** Last wood type paid out — names the tally ("12/14 spruce"). */
         Material lastDrop;
+        /** Majority typed wood of the trunk (mastery, finds, Titan dust). */
+        Material family = Material.OAK_LOG;
+        /** Foraging Eldervale Titan: the first clean cut landed. */
+        boolean notched;
         UUID breaker;
         UUID suppressSwing;
         Snapshot fellLog;
@@ -1577,6 +1917,49 @@ public class ForagingListener implements Listener {
 
         Location fellLocation() {
             return fellLog == null ? null : fellLog.block().getLocation();
+        }
+
+        /** The stump: lowest log of the trunk. */
+        Location baseLocation() {
+            Snapshot low = null;
+            for (Snapshot log : logs) {
+                if (low == null || log.y < low.y) {
+                    low = log;
+                }
+            }
+            return low == null ? null : new Location(low.world(), low.x() + 0.5, low.y(), low.z() + 0.5);
+        }
+
+        /** Top of the crown, centred over the top layer of leaves (where Crown Finds let go). */
+        Location crownLocation() {
+            if (leaves.isEmpty()) {
+                Location base = baseLocation();
+                if (base == null) {
+                    return null;
+                }
+                int top = base.getBlockY();
+                for (Snapshot log : logs) {
+                    top = Math.max(top, log.y);
+                }
+                return new Location(base.getWorld(), base.getX(), top + 2.0, base.getZ());
+            }
+            int topY = Integer.MIN_VALUE;
+            for (Snapshot leaf : leaves) {
+                topY = Math.max(topY, leaf.y);
+            }
+            double sx = 0;
+            double sz = 0;
+            int n = 0;
+            World world = null;
+            for (Snapshot leaf : leaves) {
+                if (leaf.y >= topY - 1) {
+                    sx += leaf.x();
+                    sz += leaf.z();
+                    n++;
+                    world = leaf.world();
+                }
+            }
+            return new Location(world, sx / n + 0.5, topY + 0.8, sz / n + 0.5);
         }
     }
 

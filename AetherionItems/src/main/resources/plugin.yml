@@ -103,6 +103,23 @@ commands:
       - aetherskills
       - aetherskill
 
+  codex:
+    description: Open the Aetherion Codex (Collection, Bestiary, Journal, Milestones)
+    aliases:
+      - aecodex
+      - aethercodex
+
+  collection:
+    description: Open your Collection
+    aliases:
+      - collections
+      - aecollection
+
+  bestiary:
+    description: Open your Bestiary
+    aliases:
+      - aebestiary
+
   av:
     description: Open a portable anvil (after unlocking one in the world)
     aliases:
@@ -115,6 +132,19 @@ commands:
       - craft
       - craftingtable
       - aethercraft
+
+  bloodstonearena:
+    description: Teleport to the Hollow Sun / Bloodstone arena
+    aliases:
+      - bloodstone
+      - hollowsunarena
+      - hsarena
+  ashenvoid:
+    description: Teleport to the Ashen Void preview arena (End remap of Bloodstone)
+    aliases:
+      - ashen_void
+      - endarena
+      - voidarena
 
   trades:
     description: Open the resource trader

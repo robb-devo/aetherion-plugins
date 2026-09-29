@@ -30,7 +30,7 @@ import java.util.Map;
  * /skills — the loadout locker.
  *
  * <pre>
- * row 0  [ ][ ][Readout][ ][Profile][ ][Next slot][ ][Guide]
+ * row 0  [Codex][Overview][Readout][Presets][Profile][Seals][Next slot][Session][Guide]
  * row 1  [ ][ 1 ][ 2 ][ 3 ][ 4 ][ 5 ][ 6 ][ 7 ][ ]      loadout
  * row 2  [ ][▬▬▬▬▬▬▬ rarity strip under each slot ▬▬▬▬▬▬▬][ ]
  * row 3  [|][Cmb][Min][For][Frm][Fsh][Utl][Dun][|]       categories (never move)
@@ -48,6 +48,11 @@ public final class SkillMenu implements Listener {
     private static final int INFO_SLOT = 4;
     private static final int NEXT_SLOT_SLOT = 6;
     private static final int GUIDE_SLOT = 8;
+    private static final int CODEX_SLOT = 0;
+    private static final int OVERVIEW_SLOT = 1;
+    private static final int PRESETS_SLOT = 3;
+    private static final int SEALS_SLOT = 5;
+    private static final int SESSION_SLOT = 7;
     private static final int FIRST_LOADOUT = 10;
     private static final int FIRST_STRIP = 19;
     /** Categories stay here permanently — never swapped for skills. */
@@ -97,6 +102,11 @@ public final class SkillMenu implements Listener {
         inventory.setItem(INFO_SLOT, profileIcon(player));
         inventory.setItem(NEXT_SLOT_SLOT, nextSlotIcon(player, unlocked));
         inventory.setItem(GUIDE_SLOT, guideIcon());
+        inventory.setItem(CODEX_SLOT, codexIcon(player));
+        inventory.setItem(OVERVIEW_SLOT, overviewIcon(player));
+        inventory.setItem(PRESETS_SLOT, presetsIcon(player));
+        inventory.setItem(SEALS_SLOT, sealsIcon(player));
+        inventory.setItem(SESSION_SLOT, sessionIcon(player));
 
         for (int i = 0; i < SkillService.SLOT_COUNT; i++) {
             inventory.setItem(FIRST_LOADOUT + i, slotIcon(player, i, unlocked));
@@ -144,6 +154,26 @@ public final class SkillMenu implements Listener {
             de.aetherion.items.util.ManagerNav.openManager(player);
             return;
         }
+        if (slot == CODEX_SLOT) {
+            click(player, Sound.ITEM_BOOK_PAGE_TURN, 1.0f);
+            de.aetherion.items.codex.CodexMenus.openHub(player);
+            return;
+        }
+        if (slot == OVERVIEW_SLOT || slot == SEALS_SLOT) {
+            if (slot == SEALS_SLOT && event.isShiftClick()) {
+                claimAllSeals(player);
+                render(top, player, holder.category);
+                return;
+            }
+            click(player, Sound.ITEM_BOOK_PAGE_TURN, 1.0f);
+            SkillOverviewGUI.open(player);
+            return;
+        }
+        if (slot == PRESETS_SLOT) {
+            click(player, Sound.ITEM_BOOK_PAGE_TURN, 1.0f);
+            SkillPresetsGUI.open(player);
+            return;
+        }
         if (slot >= FIRST_LOADOUT && slot < FIRST_LOADOUT + SkillService.SLOT_COUNT) {
             int index = slot - FIRST_LOADOUT;
             if (index >= skills.unlockedSlots(player)) {
@@ -183,6 +213,11 @@ public final class SkillMenu implements Listener {
             return;
         }
         AetherSkill skill = pool.get(poolIndex);
+        if (event.isShiftClick() && SkillSeals.ready(skills, codex(), player, skill) > 0) {
+            SkillSeals.claim(player, skill, true);
+            render(top, player, holder.category);
+            return;
+        }
         int equippedSlot = skills.slotOf(player, skill);
         if (equippedSlot >= 0) {
             if (skills.unequip(player, skill)) {
@@ -364,6 +399,131 @@ public final class SkillMenu implements Listener {
         );
     }
 
+    private static de.aetherion.items.codex.CodexService codex() {
+        de.aetherion.items.AetherionItems plugin = de.aetherion.items.AetherionItems.getInstance();
+        return plugin == null ? null : plugin.getCodex();
+    }
+
+    private ItemStack codexIcon(Player player) {
+        int ready = de.aetherion.items.codex.CodexRewards.claimableTotal(player);
+        List<String> lore = new ArrayList<>();
+        lore.add("§8Collection, Bestiary, Journal and Milestones.");
+        lore.add("§7Codex score §d" + de.aetherion.items.codex.CodexHubGUI.score(player));
+        if (ready > 0) {
+            lore.add("§e✦ " + ready + " reward" + (ready == 1 ? "" : "s") + " to claim");
+        }
+        lore.add("");
+        lore.add("§eClick to open");
+        ItemStack item = named(Material.ENCHANTED_BOOK, "§dAetherion Codex", lore);
+        return ready > 0 ? glint(item) : item;
+    }
+
+    private ItemStack overviewIcon(Player player) {
+        int total = 0;
+        int mastered = 0;
+        for (AetherSkill skill : AetherSkill.values()) {
+            int level = skills.level(player, skill);
+            total += level;
+            if (SkillProgression.isMax(level)) {
+                mastered++;
+            }
+        }
+        int count = AetherSkill.values().length;
+        return named(Material.KNOWLEDGE_BOOK, "§bSkill Overview",
+                "§8All " + count + " skills on one page.",
+                "",
+                "§7Skill average §f" + String.format(Locale.US, "%.1f", total / (double) count),
+                "§7Mastered §d" + mastered + "§8/§7" + count,
+                "",
+                "§eClick to open");
+    }
+
+    private ItemStack presetsIcon(Player player) {
+        int saved = 0;
+        int open = 0;
+        for (int i = 0; i < SkillService.PRESET_COUNT; i++) {
+            if (skills.presetUnlocked(player, i)) {
+                open++;
+                if (!skills.preset(player, i).isEmpty()) {
+                    saved++;
+                }
+            }
+        }
+        return named(Material.ARMOR_STAND, "§bLoadout Presets",
+                "§8Swap whole loadouts in one click.",
+                "",
+                "§7Saved §f" + saved + "§8/§7" + open + " §8open (" + SkillService.PRESET_COUNT + " total)",
+                "§7Chat: §f/skills preset <1-3>",
+                "",
+                "§eClick to open");
+    }
+
+    private ItemStack sealsIcon(Player player) {
+        de.aetherion.items.codex.CodexService codex = codex();
+        int ready = codex == null ? 0 : SkillSeals.readyTiers(skills, codex, player);
+        int[] reached = SkillSeals.reachedByRarity(skills, player);
+        List<String> lore = new ArrayList<>();
+        lore.add("§8A one-off reward each time a skill");
+        lore.add("§8reaches a new rarity.");
+        lore.add("");
+        lore.add("§7Reached §aU" + reached[1] + " §bR" + reached[2] + " §5E" + reached[3]
+                + " §6L" + reached[4] + " §dM" + reached[5]);
+        lore.add("");
+        if (ready > 0) {
+            lore.add("§e§l✦ " + ready + " seal" + (ready == 1 ? "" : "s") + " ready");
+            lore.add("§eShift-click §7to claim all · §eClick §7for the overview");
+        } else {
+            lore.add("§eClick §7for the overview");
+        }
+        ItemStack item = named(ready > 0 ? Material.CHEST_MINECART : Material.AMETHYST_SHARD,
+                "§dRarity Seals" + (ready > 0 ? " §8(§e" + ready + "§8)" : ""), lore);
+        return ready > 0 ? glint(item) : item;
+    }
+
+    private ItemStack sessionIcon(Player player) {
+        SkillSession.Snapshot snap = SkillSession.of(player);
+        List<String> lore = new ArrayList<>();
+        lore.add("§8Since you logged in (" + snap.minutes() + " min).");
+        lore.add("");
+        lore.add("§7Skill XP §f" + String.format(Locale.US, "%,d", snap.xp()));
+        lore.add("§7Level-ups §f" + snap.levels());
+        if (snap.perHour() > 0L) {
+            lore.add("§7Pace §f" + String.format(Locale.US, "%,d", snap.perHour()) + " XP/h");
+        }
+        if (snap.top() != null) {
+            lore.add("§7Top §f" + skills.coloredName(player, snap.top()) + " §8+"
+                    + String.format(Locale.US, "%,d", snap.topXp()));
+        }
+        return named(Material.CLOCK, "§eThis Session", lore);
+    }
+
+    private void claimAllSeals(Player player) {
+        de.aetherion.items.codex.CodexService codex = codex();
+        if (codex == null) {
+            return;
+        }
+        int paid = 0;
+        boolean batch = skills.beginRewardBatch(player);
+        try {
+            for (AetherSkill skill : SkillSeals.ready(skills, codex, player)) {
+                paid += SkillSeals.claim(player, skill, true);
+            }
+        } finally {
+            if (batch) {
+                skills.endRewardBatch(player);
+            }
+        }
+        if (paid <= 0) {
+            player.sendMessage("§7No seals ready. §8Level a skill to its next rarity.");
+            click(player, Sound.BLOCK_NOTE_BLOCK_BASS, 0.6f);
+        }
+    }
+
+    /** Dungeon page gate (Floor 1 cleared) — shared with the overview's quick equip. */
+    public static boolean dungeonUnlocked(Player player) {
+        return categoryUnlocked(player, AetherSkill.Category.DUNGEON);
+    }
+
     // ------------------------------------------------------------------ loadout row
 
     private ItemStack slotIcon(Player player, int index, int unlocked) {
@@ -538,6 +698,13 @@ public final class SkillMenu implements Listener {
         if (inLoop != null) {
             lore.add("§3" + inLoop);
         }
+        de.aetherion.items.codex.CodexService codex = codex();
+        if (codex != null) {
+            lore.add(SkillSeals.pips(skills, codex, player, skill));
+            if (SkillSeals.ready(skills, codex, player, skill) > 0) {
+                lore.add("§e§l✦ Rarity seal ready §8— §eShift-click §7to claim");
+            }
+        }
         if (skill.category() == AetherSkill.Category.DUNGEON) {
             lore.add("§5Dungeon only — asleep in the overworld.");
         }
@@ -671,6 +838,40 @@ public final class SkillMenu implements Listener {
                 // Speed is gear/pets/Lv.3 pace only — Night Owl no longer grants move speed.
             }
             case CAVE_SENSE -> lines.add(Effect.stat("Mining Power in the dark", 10.0 * scale, "+", ""));
+            case BEDROCK_BORN -> lines.add(Effect.hint("Stats apply on Mining Eldervale only."));
+            case WORK_SONG -> {
+                lines.add(Effect.stat("Rhythm per strike", 1.0 + 0.5 * scale, "+", ""));
+                lines.add(Effect.stat("Rhythm hold", 40.0 * scale, "+", "%"));
+            }
+            case GEODE_NOSE -> {
+                lines.add(Effect.stat("Crystal Find chance", 50.0 * scale, "+", "%"));
+                lines.add(Effect.hint("Rolls weight twice · one less crack."));
+            }
+            case UNION_CARD -> lines.add(Effect.stat("Contract coins", Math.min(60.0, 15.0 * scale), "+", "%"));
+            case SEAM_READER -> {
+                lines.add(Effect.stat("Seam Chain burst at", Math.max(4.0, 8.0 - Math.floor(scale * 1.5)), "", " strikes"));
+                lines.add(Effect.hint("Nearby ore shimmers every ~30s."));
+            }
+            case DEPTH_GAUGE -> lines.add(Effect.stat("Depth bonuses", 50.0 * scale, "+", "%"));
+            case GROVE_BORN -> {
+                lines.add(Effect.stat("Wood cap per tree", Math.round(Math.min(4.0, 2.0 * scale)), "+", ""));
+                lines.add(Effect.stat("Extra mastery count", Math.min(60.0, 25.0 * scale), "", "% chance"));
+                lines.add(Effect.hint("Applies on Foraging Eldervale only."));
+            }
+            case SAP_SENSE -> {
+                lines.add(Effect.stat("Crown Find chance", 50.0 * scale, "+", "%"));
+                lines.add(Effect.hint("Better grades — Heartsong included."));
+            }
+            case STEADY_HANDS -> {
+                lines.add(Effect.hint("CHOP window one cell wider on the isle."));
+                lines.add(Effect.stat("Miss cooldown", 25.0 * Math.min(2.0, scale), "-", "%"));
+            }
+            case DEADFALL_DANCER -> {
+                lines.add(Effect.hint("Widowmaker warning lasts half a second longer."));
+                lines.add(Effect.hint("Limbs hurt half · deadfall wood ×2."));
+            }
+            case BOARD_RATES -> lines.add(Effect.stat("Board order coins", Math.min(60.0, 15.0 * scale), "+", "%"));
+            case HEART_HUNTER -> lines.add(Effect.stat("Heartwood chance", 50.0 * scale, "+", "%"));
             case PINCH_PENNY -> lines.add(Effect.stat("Midas Cost",
                     Math.max(2L, 5L - tier), "", " coins"));
             case DIAMOND_SPINE -> lines.add(Effect.stat("Melee Reflect", 8.0 * scale, "+", "%"));
@@ -706,8 +907,8 @@ public final class SkillMenu implements Listener {
     /** How the category's stats touch its gathering loop. {@code null} for combat pages. */
     private static String loopHint(AetherSkill.Category category) {
         return switch (category) {
-            case MINING -> "Mining Power opens harder ore.\nFortune multiplies what breaks.";
-            case FORAGING -> "Perfect fells and streaks pay bonus XP.\nLv. 50 widens the CHOP window.\nFortune raises each tree's wood cap.";
+            case MINING -> "Mining Power opens harder ore.\nFortune multiplies what breaks.\nOn Mining Eldervale: Rhythm, Crystal Finds, Contracts.";
+            case FORAGING -> "Perfect fells and streaks pay bonus XP.\nLv. 50 widens the CHOP window.\nFortune raises each tree's wood cap.\nOn Foraging Eldervale: Mastery, Crown Finds, the Board.";
             case FARMING -> "Harvest breaks extra crops per swing.\nClearing birds boosts the whole field.\nOn the Farm Isle: Rhythm, Prize Crops, Orders.";
             case FISHING -> "Fish Catch widens the green zone.\nFish Speed shortens the wait.\nPerfect reels and streaks pay bonus XP.";
             default -> null;

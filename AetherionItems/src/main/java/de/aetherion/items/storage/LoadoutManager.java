@@ -11,6 +11,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.io.File;
 import java.io.IOException;
 import java.util.Base64;
+import java.util.UUID;
 
 public class LoadoutManager {
 
@@ -753,4 +754,20 @@ public class LoadoutManager {
 
         return item.clone();
     }
+
+
+    /** Delete every saved pad/loadout for this player (RAM cache is file-backed). */
+    public void wipePlayer(UUID playerId) {
+        if (playerId == null) {
+            return;
+        }
+        File file = new File(
+                plugin.getDataFolder(),
+                "loadouts" + File.separator + playerId + ".yml"
+        );
+        if (file.exists() && !file.delete()) {
+            plugin.getLogger().warning("Could not delete loadouts for " + playerId);
+        }
+    }
+
 }

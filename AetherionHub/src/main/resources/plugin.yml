@@ -54,6 +54,14 @@ commands:
   eldervale:
     description: Teleport to Eldervale if unlocked
     permission: aetherionhub.use
+  mining:
+    description: Teleport to Mining Eldervale if unlocked
+    aliases: [miningisle]
+    permission: aetherionhub.use
+  fishing:
+    description: Teleport to Fishing Eldervale if unlocked
+    aliases: [fishingisle]
+    permission: aetherionhub.use
   hubadmin:
     description: Manage Aetherion spawn points
     permission: aetherionhub.admin

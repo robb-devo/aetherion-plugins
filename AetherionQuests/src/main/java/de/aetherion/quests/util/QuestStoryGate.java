@@ -159,9 +159,9 @@ public final class QuestStoryGate {
 
     public static String[] tutorialBlockedLines() {
         return new String[] {
-                "Complete the tutorial first.",
+                "Not yet, {player}. Orientation first.",
                 "Harbour → Mine → Temper → Miss Ledger → Fields. Then Ledger stamps you free.",
-                "Come back when orientation is filed. This desk isn't for rookies mid-lesson."
+                "Come back when you're filed. This desk isn't for rookies mid-lesson."
         };
     }
 
@@ -393,7 +393,7 @@ public final class QuestStoryGate {
 
     public static String[] riteKeeperBlockedLines() {
         return new String[] {
-                "Locked. Finish orientation first — Fields, then Miss Ledger stamps you free.",
+                "Not yet, {player}. The waste doesn't take rookies mid-lesson.",
                 "Temper, Ledger, wheat, one pet. Then we discuss spirits and the powder altar.",
                 "Miss Ledger closes the tutorial. Come back when she has."
         };
@@ -433,9 +433,9 @@ public final class QuestStoryGate {
 
     public static String[] ledgerBlockedLines() {
         return new String[] {
-                "You're early. Skills stay locked until the mine shift is done.",
+                "You're early, {player}. Skills stay locked until the mine shift's done.",
                 "Shaft Foreman at the Mines. Finish his shift — then come back.",
-                "Then I'll unlock the Manager Skills tab. Not before."
+                "Then I unlock the Skills tab. Not a minute before."
         };
     }
 

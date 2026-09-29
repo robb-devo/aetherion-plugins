@@ -268,6 +268,25 @@ public final class CustomNpcService {
         if (username == null || username.isBlank()) {
             return;
         }
+        // Presets (and old preset defaults that were creators' accounts) wear an anonymous
+        // cast skin. Only a username a moderator typed on purpose goes to Mojang.
+        String castId = de.aetherion.quests.npc.LivingNpcSkins.castIdForEditorSkin(username);
+        if (castId != null) {
+            de.aetherion.quests.npc.LivingNpcSkins skins = de.aetherion.quests.npc.LivingNpcSkins.get();
+            if (skins != null) {
+                try {
+                    Object data = FancyNpcFacade.data(fancy);
+                    if (data != null) {
+                        skins.apply(data, castId);
+                        FancyNpcFacade.removeFromPlayersQuiet(fancy);
+                        FancyNpcFacade.spawnForAll(fancy);
+                    }
+                } catch (ReflectiveOperationException | RuntimeException ex) {
+                    plugin.getLogger().fine("Editor cast skin failed: " + ex.getMessage());
+                }
+            }
+            return;
+        }
         long delay = 4L + (SKIN_SLOT.getAndIncrement() % 20) * 6L;
         boolean slim = npc.isSlim();
         Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, () -> {

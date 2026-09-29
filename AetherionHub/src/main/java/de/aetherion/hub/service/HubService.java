@@ -31,7 +31,8 @@ public final class HubService {
             "farm_isle",
             "borderlands",
             "colosseum",
-            "eldervale"
+            "eldervale",
+            "fishing_eldervale"
     );
 
     private static final String[] RETIRED_SPAWN_IDS = {
@@ -83,7 +84,8 @@ public final class HubService {
         changed |= ensureSpawn("farm_isle", "Farm Isle", "Shared fields + Millstone pantry. Farming 10 portal.", "WHEAT", 16);
         changed |= ensureSpawn("borderlands", "Borderlands", "Beyond Vex's gate. Hostile wastes.", "COARSE_DIRT", 21);
         changed |= ensureSpawn("colosseum", "Colosseum", "Proctor's ring — Crypt vials, T2 bosses. Unlocks with the Proctor.", "SANDSTONE", 19);
-        changed |= ensureSpawn("eldervale", "Eldervale", "Mining island past the slime jump pad. Walk in to unlock.", "DEEPSLATE_DIAMOND_ORE", 20);
+        changed |= ensureSpawn("eldervale", "Mining Eldervale", "Quarries, shafts, the Deep Forge. Past the slime jump pad. Walk in to unlock.", "DEEPSLATE_DIAMOND_ORE", 20);
+        changed |= ensureSpawn("fishing_eldervale", "Fishing Eldervale", "Lake isle - The Line, shoals, and the Angler's Log.", "FISHING_ROD", 22);
 
         if (plugin.getConfig().getConfigurationSection("spawns.harbour") != null
                 && !plugin.getConfig().getBoolean("spawns.harbour.unlocked-by-default", false)) {
@@ -117,7 +119,8 @@ public final class HubService {
         changed |= applyLayout("farm_isle", "Farm Isle", "Shared fields + Millstone pantry. Farming 10 portal.", "WHEAT", 16, false);
         changed |= applyLayout("borderlands", "Borderlands", "Beyond Vex's gate. Hostile wastes. Walk in to unlock.", "COARSE_DIRT", 21, false);
         changed |= applyLayout("colosseum", "Colosseum", "Proctor's ring — Crypt vials, T2 bosses. Unlocks with the Proctor.", "SANDSTONE", 19, false);
-        changed |= applyLayout("eldervale", "Eldervale", "Mining island past the slime jump pad. Walk in to unlock.", "DEEPSLATE_DIAMOND_ORE", 20, false);
+        changed |= applyLayout("eldervale", "Mining Eldervale", "Quarries, shafts, the Deep Forge. Past the slime jump pad. Walk in to unlock.", "DEEPSLATE_DIAMOND_ORE", 20, false);
+        changed |= applyLayout("fishing_eldervale", "Fishing Eldervale", "Lake isle - The Line, shoals, and the Angler's Log.", "FISHING_ROD", 22, false);
         changed |= ensureDiscoverRadius("ore_ridge", 40);
         changed |= ensureDiscoverRadius("capital", 48);
         changed |= ensureDiscoverRadius("farm", 28);

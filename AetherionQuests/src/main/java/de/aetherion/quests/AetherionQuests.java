@@ -176,6 +176,7 @@ public final class AetherionQuests extends JavaPlugin {
                 );
 
         new EgonBriefingGUI(this);
+        new de.aetherion.quests.ui.IdeaNpcMenu(this);
 
 
 
@@ -265,6 +266,17 @@ public final class AetherionQuests extends JavaPlugin {
 
         npcDataStorage.loadNPCs();
 
+        /*
+         * =========================================================
+         * NPC LIFE — memory, anonymous cast skins, talk UX, routines
+         * =========================================================
+         * Skins before the living service so the first restore already
+         * dresses NPCs in their own (signed) skins.
+         */
+        de.aetherion.quests.npc.NpcMemory.start(this);
+        de.aetherion.quests.npc.LivingNpcSkins.start(this);
+        de.aetherion.quests.talk.TalkUx.start(this);
+
 
 
         /*
@@ -274,6 +286,21 @@ public final class AetherionQuests extends JavaPlugin {
          */
 
         livingNpcService = new LivingNpcService(this);
+        de.aetherion.quests.npc.LivingNpcSkins skins = de.aetherion.quests.npc.LivingNpcSkins.get();
+        if (skins != null) {
+            skins.onSigned(id -> {
+                if (livingNpcService != null) {
+                    livingNpcService.onCastSkinSigned(id);
+                }
+            });
+        }
+        de.aetherion.quests.npc.LivingNpcLife.start(this);
+        de.aetherion.quests.npc.LivingNpcAtmosphere.startSocial(this);
+        if (getCommand("npctalk") != null) {
+            de.aetherion.quests.command.TalkCommand talkCommand = new de.aetherion.quests.command.TalkCommand(this);
+            getCommand("npctalk").setExecutor(talkCommand);
+            getCommand("npctalk").setTabCompleter(talkCommand);
+        }
 
         NpcListener npcListener = new NpcListener(
                 questManager,
@@ -466,6 +493,18 @@ public final class AetherionQuests extends JavaPlugin {
 
         // Land any kit still mid-handoff before player data is flushed.
         de.aetherion.quests.reward.StarterKitCeremony.shutdown();
+
+        // Talk bubbles / reply chips / emotes are client-only displays — clear them first.
+        de.aetherion.quests.npc.LivingNpcAtmosphere.stopSocial();
+        if (de.aetherion.quests.npc.LivingNpcLife.get() != null) {
+            de.aetherion.quests.npc.LivingNpcLife.get().shutdown();
+        }
+        if (de.aetherion.quests.talk.TalkUx.get() != null) {
+            de.aetherion.quests.talk.TalkUx.get().shutdown();
+        }
+        if (de.aetherion.quests.npc.NpcMemory.get() != null) {
+            de.aetherion.quests.npc.NpcMemory.get().flush();
+        }
 
         if (markerManager != null) {
             markerManager.shutdown();

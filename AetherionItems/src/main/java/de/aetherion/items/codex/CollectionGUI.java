@@ -1,11 +1,12 @@
 package de.aetherion.items.codex;
 
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.InventoryHolder;
+import org.bukkit.event.inventory.ClickType;
 
-import java.util.List;
-
+/**
+ * Collection — everything gathered: ores, stone, wood, dirt, crops, catches, Nether blocks and
+ * oddities. The page itself is a {@link CodexBrowser}; this keeps the Manager's entry points.
+ */
 public final class CollectionGUI {
 
     public static final String TITLE = "§8Collection";
@@ -17,66 +18,28 @@ public final class CollectionGUI {
     }
 
     public void open(Player player) {
-        open(player, CodexCatalog.BLOCK_ORES, 1);
+        open(player, null, 1);
     }
 
     public void open(Player player, String category, int page) {
-        String selected = CodexCatalog.BLOCK_CATEGORIES.contains(category) ? category : CodexCatalog.BLOCK_ORES;
-        List<CodexCatalog.Entry> entries = CodexCatalog.blocks(selected);
-        int pages = Math.max(1, (int) Math.ceil(entries.size() / (double) CodexGui.ENTRY_SLOTS.length));
-        int safePage = Math.min(Math.max(page, 1), pages);
-        Holder holder = new Holder(selected, safePage);
-        CodexGui.openPaged(
-                player,
-                holder,
-                TITLE,
-                org.bukkit.Material.IRON_PICKAXE,
-                "§aCollection",
-                "§7Blocks you mined, grouped by category.",
-                CodexCatalog.BLOCK_CATEGORIES,
-                selected,
-                entries,
-                safePage,
-                service,
-                false
-        );
+        if (player == null || service == null) {
+            return;
+        }
+        CodexBrowser browser = CodexBrowser.forLedger(player, CodexBook.Ledger.COLLECTION, category);
+        browser.open(player);
     }
 
+    /** Legacy entry point: clicks on the page now route through {@link CodexMenus}. */
     public void handleClick(Player player, int slot) {
-        if (!(player.getOpenInventory().getTopInventory().getHolder() instanceof Holder holder)) {
-            return;
-        }
-        if (slot == CodexGui.BACK_SLOT) {
-            return;
-        }
-        if (slot == CodexGui.PREV_SLOT) {
-            open(player, holder.category, Math.max(1, holder.page - 1));
-            return;
-        }
-        if (slot == CodexGui.NEXT_SLOT) {
-            open(player, holder.category, holder.page + 1);
-            return;
-        }
-        for (int i = 0; i < CodexGui.CATEGORY_SLOTS.length && i < CodexCatalog.BLOCK_CATEGORIES.size(); i++) {
-            if (slot == CodexGui.CATEGORY_SLOTS[i]) {
-                open(player, CodexCatalog.BLOCK_CATEGORIES.get(i), 1);
-                return;
-            }
+        if (player != null && player.getOpenInventory().getTopInventory().getHolder() instanceof Holder holder) {
+            holder.click(player, slot, ClickType.LEFT);
         }
     }
 
-    public static final class Holder implements InventoryHolder {
-        private final String category;
-        private final int page;
+    public static final class Holder extends CodexBrowser {
 
         public Holder(String category, int page) {
-            this.category = category;
-            this.page = page;
-        }
-
-        @Override
-        public Inventory getInventory() {
-            return null;
+            super(CodexBook.Ledger.COLLECTION, category, page);
         }
     }
 }

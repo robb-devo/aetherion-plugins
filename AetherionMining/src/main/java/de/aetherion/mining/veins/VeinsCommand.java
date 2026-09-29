@@ -48,7 +48,7 @@ public final class VeinsCommand implements CommandExecutor, TabCompleter {
             return true;
         }
         if (sub.equals("time")) {
-            sender.sendMessage("§7The Veins reset in §f" + untilReset() + "§7.");
+            sender.sendMessage("§7The Amethyst Mine (The Veins) resets in §f" + untilReset() + "§7.");
             return true;
         }
         if (sub.equals("npc")) {
@@ -65,8 +65,46 @@ public final class VeinsCommand implements CommandExecutor, TabCompleter {
                 sender.sendMessage("§cAdmin only.");
                 return true;
             }
-            veins.reset("The Veins closed. Stone is new again.");
-            sender.sendMessage("§7Reset started.");
+            veins.reset("Amethyst Area closed. Dig zones restored from snapshot seed.");
+            sender.sendMessage("§7Dig-zone reset started (hub untouched).");
+            return true;
+        }
+        if (sub.equals("zones")) {
+            if (!sender.hasPermission("aetherion.mines.admin")) {
+                sender.sendMessage("§cAdmin only.");
+                return true;
+            }
+            boolean force = args.length >= 2 && args[1].equalsIgnoreCase("force");
+            veins.ensureLoaded();
+            int started = veins.ensureDigZones(sender, force || !veins.isDigZonesReady());
+            if (started == 0 && veins.isDigZonesReady() && !force) {
+                sender.sendMessage("§7Dig volume already painted. Use §f/deepmines zones force §7to re-paint flush.");
+            } else if (started > 0) {
+                sender.sendMessage("§7Solid dig paint started (schematic footprint skipped — no air-gap clearance).");
+            }
+            return true;
+        }
+        if (sub.equals("softlight")) {
+            if (!sender.hasPermission("aetherion.mines.admin")) {
+                sender.sendMessage("§cAdmin only.");
+                return true;
+            }
+            org.bukkit.World world = veins.ensureLoaded();
+            org.bukkit.Location spawn = veins.hubSpawn();
+            if (world == null || spawn == null) {
+                sender.sendMessage("§cAmethyst Area world / spawn unavailable.");
+                return true;
+            }
+            int radius = veins.digOuterRadius() + 16;
+            if (args.length >= 2) {
+                try {
+                    radius = Integer.parseInt(args[1]);
+                } catch (NumberFormatException ignored) {
+                    sender.sendMessage("§cUsage: /deepmines softlight [radius]");
+                    return true;
+                }
+            }
+            veins.runSoftLight(sender, world, spawn.getBlockX(), spawn.getBlockZ(), radius);
             return true;
         }
         if (sub.equals("eldervale")) {
@@ -82,7 +120,10 @@ public final class VeinsCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage("§7/deepmines eldervale paste");
             return true;
         }
-        sender.sendMessage("§7/deepmines §8· §7/deepmines leave §8· §7/deepmines time");
+        sender.sendMessage("§7/amethyst §8· §7/deepmines leave|time");
+        if (sender.hasPermission("aetherion.mines.admin")) {
+            sender.sendMessage("§8Admin: /deepmines npc|reset|zones|softlight|eldervale");
+        }
         return true;
     }
 
@@ -91,9 +132,14 @@ public final class VeinsCommand implements CommandExecutor, TabCompleter {
         if (args.length == 1) {
             List<String> out = new ArrayList<>(List.of("leave", "time"));
             if (sender.hasPermission("aetherion.mines.admin")) {
-                out.addAll(List.of("npc", "reset", "eldervale"));
+                out.addAll(List.of("npc", "reset", "zones", "softlight", "eldervale"));
             }
             return out;
+        }
+        if (args.length == 2
+                && args[0].equalsIgnoreCase("zones")
+                && sender.hasPermission("aetherion.mines.admin")) {
+            return List.of("force");
         }
         if (args.length == 2
                 && args[0].equalsIgnoreCase("eldervale")

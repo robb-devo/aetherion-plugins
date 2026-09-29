@@ -1,0 +1,576 @@
+package de.aetherion.items.listener;
+
+import de.aetherion.items.combat.AbilityCooldownHud;
+import de.aetherion.items.combat.ScriptedHits;
+import de.aetherion.items.manager.ActiveEquipmentStats;
+import de.aetherion.items.manager.ItemManager;
+import de.aetherion.items.model.ItemCapability;
+
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import net.kyori.adventure.title.Title;
+
+import org.bukkit.Bukkit;
+import org.bukkit.Color;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.Particle;
+import org.bukkit.Sound;
+import org.bukkit.World;
+import org.bukkit.entity.BlockDisplay;
+import org.bukkit.entity.Display;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.ItemDisplay;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.util.Transformation;
+import org.bukkit.util.Vector;
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
+
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+
+/**
+ * Blossom Blade (id ashen_katana) — dash, rise, blossom-crown hover, slam shockwave.
+ * LOCKED: abilities/VFX/feel — do not change unless Robbi explicitly requests.
+ * Hostiles only. One commitment, not a spam button.
+ * The hover crown is pink-petal blossoms orbiting the waist and glowing cherry-leaf blades
+ * counter-orbiting above; the slam stamps a sakura crest at the exact hit radius.
+ */
+public final class AshenKatanaListener implements Listener {
+
+    private static final int COOLDOWN_TICKS = 160;
+    private static final LegacyComponentSerializer TEXT = LegacyComponentSerializer.legacySection();
+    private static final int BLOSSOMS = 8;
+    private static final int BLADES = 6;
+    private static final double SLAM_RADIUS = 4.8;
+    private static final Color BLOSSOM = Color.fromRGB(255, 120, 190);
+    private static final Color PETAL = Color.fromRGB(255, 176, 204);
+    private static final Color ASHEN = Color.fromRGB(70, 60, 78);
+    private static final Color GLINT = Color.fromRGB(255, 240, 248);
+
+    private final JavaPlugin plugin;
+    private final ItemManager itemManager;
+    private final ActiveEquipmentStats equipmentStats;
+    private static final List<List<Display>> LIVE = new CopyOnWriteArrayList<>();
+
+    private final Map<UUID, Long> nextUseTick = new ConcurrentHashMap<>();
+    private final Set<UUID> busy = ConcurrentHashMap.newKeySet();
+
+    /** Plugin disable: every hovering blossom display goes with it. */
+    public static void shutdown() {
+        for (List<Display> crown : LIVE) {
+            clear(crown);
+        }
+        LIVE.clear();
+    }
+
+    public AshenKatanaListener(JavaPlugin plugin, ItemManager itemManager) {
+        this.plugin = plugin;
+        this.itemManager = itemManager;
+        this.equipmentStats = new ActiveEquipmentStats(itemManager);
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = false)
+    public void onInteract(PlayerInteractEvent event) {
+        if (event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK) {
+            return;
+        }
+        if (event.getHand() != null && event.getHand() != EquipmentSlot.HAND) {
+            return;
+        }
+        Player player = event.getPlayer();
+        ItemStack item = player.getInventory().getItemInMainHand();
+        if (!"ashen_katana".equalsIgnoreCase(itemManager.getItemId(item))) {
+            return;
+        }
+        event.setCancelled(true);
+        event.setUseItemInHand(org.bukkit.event.Event.Result.DENY);
+        event.setUseInteractedBlock(org.bukkit.event.Event.Result.DENY);
+
+        if (!busy.add(player.getUniqueId())) {
+            player.sendActionBar(TEXT.deserialize("§dBlossom Blade §7is already drawn…"));
+            return;
+        }
+
+        long tick = Bukkit.getCurrentTick();
+        int cooldown = ProgressionEffects.cooldownTicks(player, itemManager, COOLDOWN_TICKS);
+        Long next = nextUseTick.get(player.getUniqueId());
+        if (next != null && tick < next) {
+            busy.remove(player.getUniqueId());
+            long left = Math.max(1, (next - tick + 19) / 20);
+            player.sendActionBar(TEXT.deserialize("§dBlossom Blade §7recharging… §f" + left + "s"));
+            return;
+        }
+        nextUseTick.put(player.getUniqueId(), tick + cooldown);
+        player.setCooldown(item.getType(), cooldown);
+        AbilityCooldownHud.arm(player, "ashen_katana", "Blossom Blade", tick + cooldown, item);
+
+        double weapon = Math.max(24.0, equipmentStats.getStat(player, ItemCapability.DAMAGE));
+        double dashDamage = Math.min(48.0, weapon * 0.45);
+        double slam = Math.min(110.0, weapon * 1.15);
+        double critChance = equipmentStats.getStat(player, ItemCapability.CRIT_CHANCE);
+        double critDamage = equipmentStats.getStat(player, ItemCapability.CRIT_DAMAGE);
+        if (critChance > 0.0 && Math.random() * 100.0 < critChance) {
+            slam = Math.min(130.0, slam * (1.0 + Math.min(0.75, Math.max(0.0, critDamage) / 100.0)));
+        }
+        double slamDamage = slam;
+
+        Vector flat = player.getLocation().getDirection().clone().setY(0);
+        if (flat.lengthSquared() < 0.01) {
+            flat = new Vector(0, 0, 1);
+        }
+        flat.normalize();
+        Vector dash = flat.clone();
+
+        player.showTitle(Title.title(
+                TEXT.deserialize("§dASHEN DRAW"),
+                TEXT.deserialize("§7The grove answers."),
+                Title.Times.times(Duration.ofMillis(80), Duration.ofMillis(700), Duration.ofMillis(220))
+        ));
+        player.getWorld().playSound(player.getLocation(), Sound.ITEM_ARMOR_EQUIP_IRON, 0.9f, 0.6f);
+        player.getWorld().playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, 0.6f, 0.7f);
+
+        List<Display> crown = new ArrayList<>();
+        LIVE.add(crown);
+        new BukkitRunnable() {
+            int tickCount;
+            int slamAt = -1;
+            Location slamPoint;
+            final Set<UUID> dashed = new HashSet<>();
+            boolean slammed;
+            boolean gravityWas = player.hasGravity();
+
+            @Override
+            public void run() {
+                if (!player.isOnline() || player.isDead()) {
+                    finish();
+                    return;
+                }
+                tickCount++;
+                player.setFallDistance(0);
+                World world = player.getWorld();
+
+                if (tickCount <= 8) {
+                    stepDash(player, dash);
+                    slash(world, player.getLocation().add(0, 1.0, 0), dash, tickCount);
+                    strikeNear(player, dashDamage, 2.1, dashed);
+                    if (tickCount % 2 == 0) {
+                        world.playSound(player.getLocation(), Sound.ENTITY_PLAYER_ATTACK_SWEEP, 0.35f, 1.45f);
+                    }
+                    return;
+                }
+                if (tickCount <= 16) {
+                    // Dash ticks 1–8 stay the wall-stopped stepDash. This is only the jump after it.
+                    // Gravity off so the launch is not pulled back into the ground; 0.85 reapplied
+                    // for these eight ticks is about seven blocks, then the same brief hover.
+                    player.setGravity(false);
+                    player.setVelocity(new Vector(dash.getX() * 0.12, 0.85, dash.getZ() * 0.12));
+                    riseHelix(world, player.getLocation(), tickCount);
+                    if (tickCount == 16) {
+                        world.playSound(player.getLocation(), Sound.ITEM_TRIDENT_RIPTIDE_2, 0.55f, 1.4f);
+                    }
+                    return;
+                }
+                if (tickCount <= 32) {
+                    player.setGravity(false);
+                    player.setVelocity(new Vector(0, 0.02, 0));
+                    if (crown.isEmpty()) {
+                        spawnCrown(world, player.getLocation(), crown);
+                        world.playSound(player.getLocation(), Sound.BLOCK_CHERRY_LEAVES_PLACE, 0.8f, 1.2f);
+                    }
+                    double gather = Math.max(0.0, Math.min(1.0, (tickCount - 26) / 6.0));
+                    bloom(player.getLocation(), crown, tickCount, gather);
+                    hoverFx(world, player.getLocation(), tickCount, gather);
+                    if (tickCount % 6 == 0) {
+                        world.playSound(player.getLocation(), Sound.BLOCK_CHERRY_LEAVES_BREAK, 0.55f, 0.7f);
+                        player.sendActionBar(TEXT.deserialize("§dFalling Blossoms"));
+                    }
+                    return;
+                }
+                if (!slammed) {
+                    player.setGravity(true);
+                    player.setVelocity(new Vector(dash.getX() * 0.05, -1.7, dash.getZ() * 0.05));
+                    fallTrail(world, player.getLocation(), crown, tickCount);
+                    if ((player.isOnGround() && tickCount > 36) || tickCount >= 50) {
+                        slammed = true;
+                        slamAt = tickCount;
+                        slamPoint = player.getLocation().clone();
+                        impact(player, slamDamage);
+                    }
+                    return;
+                }
+                int wave = tickCount - slamAt;
+                expandShockwave(slamPoint, crown, wave);
+                if (wave >= 14) {
+                    finish();
+                }
+            }
+
+            private void finish() {
+                if (player.isOnline()) {
+                    player.setGravity(gravityWas);
+                    player.setFallDistance(0);
+                }
+                clear(crown);
+                LIVE.remove(crown);
+                busy.remove(player.getUniqueId());
+                cancel();
+            }
+        }.runTaskTimer(plugin, 0L, 1L);
+    }
+
+    private void impact(Player player, double damage) {
+        World world = player.getWorld();
+        Location at = player.getLocation();
+        world.playSound(at, Sound.ENTITY_PLAYER_ATTACK_SWEEP, 1.15f, 0.45f);
+        world.playSound(at, Sound.ITEM_TRIDENT_THUNDER, 0.55f, 1.55f);
+        world.playSound(at, Sound.BLOCK_CHERRY_LEAVES_BREAK, 1.0f, 0.5f);
+        world.playSound(at, Sound.BLOCK_AMETHYST_BLOCK_BREAK, 0.7f, 0.6f);
+        world.spawnParticle(Particle.FLASH, at.clone().add(0, 0.3, 0), 1, 0, 0, 0, 0);
+        world.spawnParticle(Particle.CHERRY_LEAVES, at.clone().add(0, 0.4, 0), 28, 1.1, 0.3, 1.1, 0.05);
+        world.spawnParticle(Particle.BLOCK, at.clone().add(0, 0.15, 0), 36, 1.6, 0.1, 1.6, 0.1, cherryLeaves());
+        world.spawnParticle(Particle.ASH, at.clone().add(0, 0.8, 0), 40, 1.8, 0.6, 1.8, 0.02);
+        float turn = (float) Math.toRadians(player.getLocation().getYaw());
+        crest(world, at, SLAM_RADIUS, turn, new Particle.DustOptions(BLOSSOM, 1.35f));
+        crest(world, at, SLAM_RADIUS * 0.5, turn + (float) (Math.PI / 5.0), new Particle.DustOptions(ASHEN, 1.1f));
+        Set<UUID> hit = new HashSet<>();
+        strikeNear(player, damage, 4.8, hit);
+        for (Entity entity : world.getNearbyEntities(at, 4.8, 3.2, 4.8)) {
+            if (!(entity instanceof LivingEntity living) || !hit.contains(living.getUniqueId())) {
+                continue;
+            }
+            Vector away = living.getLocation().toVector().subtract(at.toVector());
+            if (away.lengthSquared() < 0.04) {
+                away = new Vector(0.2, 0.4, 0.2);
+            } else {
+                away.normalize().multiply(0.75).setY(0.42);
+            }
+            living.setVelocity(away);
+        }
+        player.sendActionBar(TEXT.deserialize("§dShockwave"));
+    }
+
+    private void strikeNear(Player player, double damage, double radius, Set<UUID> already) {
+        for (Entity entity : player.getNearbyEntities(radius, radius, radius)) {
+            if (!TestPrototypeAbilities.isCombatTarget(entity) || already.contains(entity.getUniqueId())) {
+                continue;
+            }
+            already.add(entity.getUniqueId());
+            LivingEntity living = (LivingEntity) entity;
+            ScriptedHits.run(() -> living.damage(damage, player));
+            living.getWorld().spawnParticle(Particle.SWEEP_ATTACK, living.getLocation().add(0, 1, 0), 1, 0, 0, 0, 0);
+        }
+    }
+
+    /** Eight ticks × 1.25 ≈ 10 blocks forward (old teleport was 8×0.9≈7.2). */
+    private static final double DASH_SPEED = 1.25;
+
+    /**
+     * Horizontal velocity glide. Yaw and pitch stay as the player is looking.
+     * Speed is cut to the last clear sample so the body stops at a wall.
+     */
+    private static void stepDash(Player player, Vector dash) {
+        double speed = clearDash(player.getLocation(), dash, DASH_SPEED);
+        player.setGravity(false);
+        player.setVelocity(new Vector(dash.getX() * speed, 0.0, dash.getZ() * speed));
+        player.setFallDistance(0);
+    }
+
+    private static double clearDash(Location from, Vector dash, double want) {
+        final double sample = 0.3;
+        double safe = 0.0;
+        for (double dist = sample; dist <= want + 1.0E-4; dist += sample) {
+            double at = Math.min(want, dist);
+            Location feet = from.clone().add(dash.getX() * at, 0.0, dash.getZ() * at);
+            if (!feet.getBlock().isPassable() || !feet.clone().add(0, 1, 0).getBlock().isPassable()) {
+                break;
+            }
+            safe = at;
+        }
+        return safe;
+    }
+
+    /** Dash ribbon: two blossom-to-ash streamers behind the body and a white glint on the blade line. */
+    private static void slash(World world, Location at, Vector dir, int tick) {
+        Vector side = new Vector(-dir.getZ(), 0, dir.getX());
+        Particle.DustTransition ribbon = new Particle.DustTransition(BLOSSOM, ASHEN, 1.1f);
+        for (int i = 0; i < 4; i++) {
+            Location back = at.clone().subtract(dir.clone().multiply(0.35 * i));
+            world.spawnParticle(Particle.DUST_COLOR_TRANSITION,
+                    back.clone().add(side.clone().multiply(0.3)).add(0, 0.12, 0), 1, 0, 0, 0, 0, ribbon);
+            world.spawnParticle(Particle.DUST_COLOR_TRANSITION,
+                    back.clone().subtract(side.clone().multiply(0.3)).subtract(0, 0.22, 0), 1, 0, 0, 0, 0, ribbon);
+        }
+        Location tip = at.clone().add(dir.clone().multiply(1.1));
+        world.spawnParticle(Particle.DUST, tip, 1, 0, 0, 0, 0, new Particle.DustOptions(GLINT, 0.8f));
+        if (tick == 1 || tick == 4 || tick == 8) {
+            world.spawnParticle(Particle.SWEEP_ATTACK, tip, 1, 0, 0, 0, 0);
+        }
+        if (tick % 2 == 0) {
+            world.spawnParticle(Particle.CHERRY_LEAVES, at.clone().subtract(dir.clone().multiply(0.6)), 1, 0.12, 0.12, 0.12, 0);
+        }
+    }
+
+    /** Launch: a blossom/ash double helix left behind under the feet. */
+    private static void riseHelix(World world, Location feet, int tick) {
+        Particle.DustTransition pink = new Particle.DustTransition(BLOSSOM, ASHEN, 1.0f);
+        Particle.DustTransition ash = new Particle.DustTransition(ASHEN, PETAL, 1.0f);
+        double ang = tick * 0.9;
+        for (int h = 0; h < 2; h++) {
+            double a = ang + h * Math.PI;
+            Location point = feet.clone().add(Math.cos(a) * 0.6, 0.2, Math.sin(a) * 0.6);
+            world.spawnParticle(Particle.DUST_COLOR_TRANSITION, point, 1, 0, 0, 0, 0, h == 0 ? pink : ash);
+        }
+        world.spawnParticle(Particle.CHERRY_LEAVES, feet.clone().add(0, 0.4, 0), 2, 0.25, 0.2, 0.25, 0.02);
+    }
+
+    /**
+     * Hover crown. The first {@link #BLOSSOMS} entries are pink-petal sprites, the rest glowing
+     * cherry-leaf blades. Both are spawned tiny and grown by {@link #bloom}.
+     */
+    private static void spawnCrown(World world, Location at, List<Display> crown) {
+        for (int i = 0; i < BLOSSOMS; i++) {
+            crown.add(world.spawn(at, ItemDisplay.class, spawned -> {
+                spawned.setItemStack(new ItemStack(Material.PINK_PETALS));
+                spawned.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
+                prepare(spawned);
+                spawned.setBrightness(new Display.Brightness(15, 15));
+            }));
+        }
+        for (int i = 0; i < BLADES; i++) {
+            crown.add(world.spawn(at, BlockDisplay.class, spawned -> {
+                spawned.setBlock(cherryLeaves());
+                prepare(spawned);
+                spawned.setBrightness(new Display.Brightness(14, 14));
+                spawned.setGlowing(true);
+                spawned.setGlowColorOverride(PETAL);
+            }));
+        }
+    }
+
+    private static void prepare(Display display) {
+        display.setTransformation(blossomShape(0f, 0.01f));
+        display.setTeleportDuration(2);
+        display.setInterpolationDuration(2);
+        display.setBillboard(Display.Billboard.FIXED);
+        display.setPersistent(false);
+        display.setGravity(false);
+    }
+
+    /**
+     * Blossoms orbit the waist facing outward and pinwheel; blades counter-orbit on a tilted ring
+     * above the head. {@code gather} 0→1 tightens both rings for the last beats before the slam.
+     */
+    private static void bloom(Location focus, List<Display> crown, int tick, double gather) {
+        for (int i = 0; i < crown.size(); i++) {
+            Display display = crown.get(i);
+            if (display == null || !display.isValid()) {
+                continue;
+            }
+            if (i < BLOSSOMS) {
+                double ang = tick * 0.16 + i * (Math.PI * 2 / BLOSSOMS);
+                double r = 1.25 * (1.0 - 0.35 * gather);
+                double y = 0.85 + Math.sin(tick * 0.2 + i) * 0.12 + gather * 0.35;
+                Vector radial = new Vector(Math.cos(ang), 0, Math.sin(ang));
+                place(display, focus.clone().add(radial.clone().multiply(r)).add(0, y, 0), yawOf(radial), 0f,
+                        blossomShape((float) (tick * 0.25 + i), 0.62f));
+            } else {
+                int j = i - BLOSSOMS;
+                double ang = -tick * 0.22 + j * (Math.PI * 2 / BLADES);
+                double r = 1.75 * (1.0 - 0.3 * gather);
+                double y = 1.7 + gather * 0.6 + Math.cos(ang) * 0.3;
+                Vector heading = new Vector(Math.sin(ang), 0, -Math.cos(ang));
+                place(display, focus.clone().add(Math.cos(ang) * r, y, Math.sin(ang) * r), yawOf(heading), 0f,
+                        bladeShape((float) Math.toRadians(35.0), 1.0f));
+            }
+        }
+    }
+
+    /** Hover dressing: ash drifting down, a sakura sigil under the feet, rising chimes while it gathers. */
+    private static void hoverFx(World world, Location focus, int tick, double gather) {
+        if (tick % 2 == 0) {
+            world.spawnParticle(Particle.ASH, focus.clone().add(0, 2.2, 0), 3, 1.2, 0.4, 1.2, 0.0);
+            world.spawnParticle(Particle.CHERRY_LEAVES, focus.clone().add(0, 2.6, 0), 1, 0.9, 0.2, 0.9, 0.0);
+        }
+        if (tick % 4 == 0) {
+            crest(world, focus.clone().subtract(0, 0.35, 0), 1.35, (float) (tick * 0.08),
+                    new Particle.DustOptions(gather > 0.0 ? GLINT : BLOSSOM, 0.9f));
+        }
+        if (gather > 0.0 && tick % 2 == 0) {
+            world.playSound(focus, Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.5f, 1.0f + (float) gather * 0.9f);
+        }
+    }
+
+    /** Dive: the crown streams upward behind the body as a tight blossom column with vertical blades. */
+    private static void fallTrail(World world, Location focus, List<Display> crown, int tick) {
+        for (int i = 0; i < crown.size(); i++) {
+            Display display = crown.get(i);
+            if (display == null || !display.isValid()) {
+                continue;
+            }
+            if (i < BLOSSOMS) {
+                double ang = tick * 0.5 + i * 0.9;
+                double y = 1.0 + (i / (double) BLOSSOMS) * 2.8;
+                Vector radial = new Vector(Math.cos(ang), 0, Math.sin(ang));
+                place(display, focus.clone().add(radial.clone().multiply(0.45)).add(0, y, 0), yawOf(radial), 0f,
+                        blossomShape((float) (tick * 0.4 + i), 0.55f));
+            } else {
+                int j = i - BLOSSOMS;
+                double ang = j * (Math.PI * 2 / BLADES) + tick * 0.1;
+                Vector radial = new Vector(Math.cos(ang), 0, Math.sin(ang));
+                place(display, focus.clone().add(radial.clone().multiply(0.7)).add(0, 1.3 + j * 0.35, 0), yawOf(radial), -90f,
+                        bladeShape(0f, 1.1f));
+            }
+        }
+        Particle.DustOptions streak = new Particle.DustOptions(GLINT, 0.7f);
+        for (int k = 1; k <= 3; k++) {
+            world.spawnParticle(Particle.DUST, focus.clone().add(0, 1.0 + k * 0.6, 0), 1, 0.08, 0.1, 0.08, 0, streak);
+        }
+    }
+
+    /**
+     * Blossoms hop outward on the shockwave and shrink away; blades skim the floor faster like spokes.
+     * A blossom leading edge and an ash trailing edge ride the same radius as before.
+     */
+    private static void expandShockwave(Location focus, List<Display> crown, int wave) {
+        World world = focus == null ? null : focus.getWorld();
+        if (world == null) {
+            return;
+        }
+        double radius = 1.1 + wave * 0.38;
+        float fade = wave > 10 ? Math.max(0.01f, (14 - wave) / 4f) : 1f;
+        for (int i = 0; i < crown.size(); i++) {
+            Display display = crown.get(i);
+            if (display == null || !display.isValid()) {
+                continue;
+            }
+            if (i < BLOSSOMS) {
+                double ang = Math.PI * 2 * i / BLOSSOMS + wave * 0.18;
+                double y = 0.25 + Math.sin(Math.min(1.0, wave / 14.0) * Math.PI) * 0.6;
+                Vector radial = new Vector(Math.cos(ang), 0, Math.sin(ang));
+                place(display, focus.clone().add(radial.clone().multiply(radius)).add(0, y, 0), yawOf(radial), 0f,
+                        blossomShape((float) (wave * 0.6 + i), 0.62f * fade));
+            } else {
+                int j = i - BLOSSOMS;
+                double ang = Math.PI * 2 * j / BLADES + Math.PI / BLADES;
+                Vector radial = new Vector(Math.cos(ang), 0, Math.sin(ang));
+                place(display, focus.clone().add(radial.clone().multiply(1.1 + wave * 0.5)).add(0, 0.12, 0), yawOf(radial), 0f,
+                        bladeShape(0f, 1.15f * fade));
+            }
+        }
+        if (wave <= 12) {
+            Particle.DustOptions lead = new Particle.DustOptions(BLOSSOM, 1.3f);
+            Particle.DustOptions trail = new Particle.DustOptions(ASHEN, 1.0f);
+            int points = Math.max(12, (int) (radius * 5));
+            for (int i = 0; i < points; i++) {
+                double ang = Math.PI * 2 * i / points;
+                world.spawnParticle(Particle.DUST, focus.clone().add(Math.cos(ang) * radius, 0.2, Math.sin(ang) * radius),
+                        1, 0, 0, 0, 0, lead);
+                if (wave % 2 == 0 && radius > 0.8) {
+                    double back = radius - 0.45;
+                    world.spawnParticle(Particle.DUST, focus.clone().add(Math.cos(ang) * back, 0.15, Math.sin(ang) * back),
+                            1, 0, 0, 0, 0, trail);
+                }
+                if (i % 6 == 0) {
+                    world.spawnParticle(Particle.CHERRY_LEAVES, focus.clone().add(Math.cos(ang) * radius, 0.3, Math.sin(ang) * radius),
+                            1, 0.04, 0.05, 0.04, 0.01);
+                }
+            }
+        }
+        if (wave == 5 || wave == 9) {
+            crest(world, focus, SLAM_RADIUS, (float) (wave * 0.12),
+                    new Particle.DustOptions(wave == 5 ? PETAL : ASHEN, wave == 5 ? 1.0f : 0.8f));
+        }
+    }
+
+    /** Five-petal sakura outline on the floor, notched at each tip. */
+    private static void crest(World world, Location center, double radius, float turn, Particle.DustOptions dust) {
+        int points = Math.max(40, (int) (radius * 26));
+        for (int i = 0; i < points; i++) {
+            double theta = Math.PI * 2 * i / points;
+            double r = radius * blossom(theta);
+            double ang = theta + turn;
+            world.spawnParticle(Particle.DUST, center.clone().add(Math.cos(ang) * r, 0.12, Math.sin(ang) * r), 1, 0, 0, 0, 0, dust);
+        }
+    }
+
+    private static double blossom(double theta) {
+        double lobe = Math.abs(Math.cos(theta * 2.5));
+        double phase = (theta * 2.5) % Math.PI;
+        double fromTip = Math.min(phase, Math.PI - phase);
+        double notch = 0.2 * Math.exp(-(fromTip * fromTip) / 0.03);
+        return Math.max(0.1, Math.pow(lobe, 0.6) - notch);
+    }
+
+    private static void place(Display display, Location at, float yaw, float pitch, Transformation shape) {
+        Location spot = at.clone();
+        spot.setYaw(yaw);
+        spot.setPitch(pitch);
+        display.teleport(spot);
+        display.setInterpolationDelay(0);
+        display.setInterpolationDuration(2);
+        display.setTransformation(shape);
+    }
+
+    /** Pink-petal sprite spinning in its own plane like a pinwheel. Item displays render centered. */
+    private static Transformation blossomShape(float spin, float scale) {
+        return new Transformation(
+                new Vector3f(),
+                new Quaternionf().rotateZ(spin),
+                new Vector3f(scale, scale, scale),
+                new Quaternionf()
+        );
+    }
+
+    /** Thin cherry-leaf blade, long along the heading, banked by {@code roll}, centered on the anchor. */
+    private static Transformation bladeShape(float roll, float scale) {
+        float wide = 0.26f * scale;
+        float thick = 0.06f * scale;
+        float length = 0.95f * scale;
+        Quaternionf rot = new Quaternionf().rotateZ(roll);
+        Vector3f half = rot.transform(new Vector3f(wide / 2f, thick / 2f, length / 2f));
+        return new Transformation(half.negate(), rot, new Vector3f(wide, thick, length), new Quaternionf());
+    }
+
+    private static float yawOf(Vector facing) {
+        return (float) Math.toDegrees(Math.atan2(-facing.getX(), facing.getZ()));
+    }
+
+    private static void clear(List<Display> crown) {
+        for (Display display : crown) {
+            if (display != null && display.isValid()) {
+                display.remove();
+            }
+        }
+        crown.clear();
+    }
+
+    /**
+     * Real cherry leaves for the hover blades and the slam crumbs.
+     * Default leaf data is distance 7 and not persistent, so clients skip the model on a display.
+     */
+    private static org.bukkit.block.data.BlockData cherryLeaves() {
+        org.bukkit.block.data.type.Leaves leaves =
+                (org.bukkit.block.data.type.Leaves) Material.CHERRY_LEAVES.createBlockData();
+        leaves.setPersistent(true);
+        leaves.setDistance(1);
+        return leaves;
+    }
+}

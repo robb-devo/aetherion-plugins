@@ -91,6 +91,14 @@ public final class CoinPlaceholderExpansion extends PlaceholderExpansion {
                 yield needed <= 0L ? "MAX" : Long.toString(needed);
             }
             case "level_bar", "aether_level_xpbar" -> plugin.getSkills() == null ? "" : de.aetherion.items.skill.AetherionLevel.bar(plugin.getSkills().accountXp(player));
+            case "collection_level" -> plugin.getCodex() == null ? "0" : Integer.toString(
+                    de.aetherion.items.codex.CodexBook.summary(plugin.getCodex(), player,
+                            de.aetherion.items.codex.CodexBook.Ledger.COLLECTION).level());
+            case "bestiary_level" -> plugin.getCodex() == null ? "0" : Integer.toString(
+                    de.aetherion.items.codex.CodexBook.summary(plugin.getCodex(), player,
+                            de.aetherion.items.codex.CodexBook.Ledger.BESTIARY).level());
+            case "codex_score" -> Integer.toString(de.aetherion.items.codex.CodexHubGUI.score(player));
+            case "codex_claimable" -> Integer.toString(de.aetherion.items.codex.CodexRewards.claimableTotal(player));
             case "area", "region" -> plugin.getAreas() == null ? "Wilderness" : plugin.getAreas().nameAt(player.getLocation());
             case "weather", "area_weather" -> weatherLine(player);
             case "damage" -> statStr(player, ItemCapability.DAMAGE);

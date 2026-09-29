@@ -184,7 +184,7 @@ public final class LivingNpcService {
     }
 
     /** Keep the TextDisplay nametag glued to the FancyNPC during scripted walks. */
-    private void followName(String npcId, Location feet) {
+    void followName(String npcId, Location feet) {
         if (feet == null) {
             return;
         }
@@ -197,7 +197,7 @@ public final class LivingNpcService {
         }
     }
 
-    private static Location plantFeet(Location at, double preferY) {
+    static Location plantFeet(Location at, double preferY) {
         org.bukkit.World world = at.getWorld();
         if (world == null) {
             return at.clone();
@@ -326,8 +326,10 @@ public final class LivingNpcService {
                 questNpc.setEntityId(sentinelId(key));
                 QuestNPCRegistry.registerNPC(questNpc);
                 LivingNpcAtmosphere.onSpawned(questNpc.getId(), location.clone());
+                LivingNpcLife.onSpawned(questNpc.getId(), location.clone());
                 Object existing = findFancy(key);
                 if (existing != null) {
+                    refreshCastSkin(existing, key);
                     scheduleMojangSkin(existing, key);
                 }
                 return questNpc;
@@ -352,8 +354,10 @@ public final class LivingNpcService {
             FancyNpcFacade.applyVisibility(data, visibilityDistance());
             FancyNpcFacade.invoke(data, "setInteractionCooldown", float.class, 0.5f);
             FancyNpcFacade.invoke(data, "setSpawnEntity", boolean.class, true);
-            // Skins applied async — FancyNpcs getByUsername blocks main thread + hits broken API.
-            applyGear(data, questNpc.getId());
+            // Anonymous cast skin (painted for Aetherion, signed via FancyNpcs/MineSkin, cached).
+            // Until it is signed the NPC keeps the dyed-leather outfit on a default body.
+            boolean skinned = applyCastSkin(data, questNpc.getId());
+            applyGear(data, questNpc.getId(), skinned);
 
             Object fancy = FancyNpcFacade.adapt(data);
             FancyNpcFacade.setSaveToFile(fancy, false);
@@ -369,6 +373,7 @@ public final class LivingNpcService {
             questNpc.setEntityId(sentinelId(questNpc.getId()));
             QuestNPCRegistry.registerNPC(questNpc);
             LivingNpcAtmosphere.onSpawned(questNpc.getId(), location.clone());
+            LivingNpcLife.onSpawned(questNpc.getId(), location.clone());
             return questNpc;
         } catch (ReflectiveOperationException | RuntimeException ex) {
             Throwable root = ex;
@@ -403,6 +408,7 @@ public final class LivingNpcService {
         }
         fancyNames.remove(key);
         LivingNpcAtmosphere.onRemoved(npcId);
+        LivingNpcLife.onRemoved(npcId);
         QuestNPC questNpc = QuestNPCRegistry.getNPC(npcId);
         if (questNpc != null && isLiving(npcId)) {
             questNpc.setEntityId(null);
@@ -477,7 +483,7 @@ public final class LivingNpcService {
         }
     }
 
-    private void applyGear(Object data, String npcId) throws ReflectiveOperationException {
+    private void applyGear(Object data, String npcId, boolean castSkinned) throws ReflectiveOperationException {
         LivingNpcProfile profile = LivingNpcProfile.of(npcId);
         if (profile == null) {
             return;
@@ -488,6 +494,10 @@ public final class LivingNpcService {
         ItemStack hand = profile.handItem();
         if (hand != null) {
             add.invoke(data, FancyNpcFacade.equipmentSlot("MAINHAND"), hand);
+        }
+        if (castSkinned) {
+            // The painted outfit is the costume — no leather over it.
+            return;
         }
         ItemStack chest = profile.chestItem();
         if (chest != null) {
@@ -500,6 +510,78 @@ public final class LivingNpcService {
         ItemStack boots = profile.bootsItem();
         if (boots != null) {
             add.invoke(data, FancyNpcFacade.equipmentSlot("FEET"), boots);
+        }
+    }
+
+    /** FancyNPC handle for a living id (null when not spawned). */
+    public Object fancy(String npcId) {
+        if (npcId == null || !isLiving(npcId) || !available()) {
+            return null;
+        }
+        return findFancy(npcId);
+    }
+
+    private boolean applyCastSkin(Object data, String npcId) {
+        LivingNpcSkins skins = LivingNpcSkins.get();
+        if (skins == null || !LivingNpcSkins.hasCastSkin(npcId)) {
+            return false;
+        }
+        return skins.apply(data, npcId);
+    }
+
+    /** Re-used FancyNPC from an earlier boot: pick up a skin that was signed since. */
+    private void refreshCastSkin(Object fancy, String npcId) {
+        LivingNpcSkins skins = LivingNpcSkins.get();
+        if (skins == null || !LivingNpcSkins.hasCastSkin(npcId)) {
+            return;
+        }
+        try {
+            Object data = FancyNpcFacade.data(fancy);
+            if (data == null) {
+                return;
+            }
+            Object current = data.getClass().getMethod("getSkinData").invoke(data);
+            String ident = current == null ? null
+                    : String.valueOf(current.getClass().getMethod("getIdentifier").invoke(current));
+            boolean ours = ident != null && ident.toLowerCase(Locale.ROOT).endsWith("/" + npcId.toLowerCase(Locale.ROOT) + ".png");
+            boolean hasTexture = current != null
+                    && Boolean.TRUE.equals(current.getClass().getMethod("hasTexture").invoke(current));
+            if (ours && hasTexture) {
+                return;
+            }
+            // Wrong skin (e.g. an old build's borrowed face) or unsigned: switch to the cast skin.
+            boolean signed = skins.apply(data, npcId);
+            if (signed) {
+                onCastSkinSigned(npcId);
+            } else if (!ours) {
+                FancyNpcFacade.removeFromPlayersQuiet(fancy);
+                FancyNpcFacade.spawnForAll(fancy);
+            }
+        } catch (ReflectiveOperationException | RuntimeException ignored) {
+        }
+    }
+
+    /**
+     * A cast skin just got signed: drop the placeholder leather (hand item stays) and
+     * re-send the NPC so every viewer sees the new body.
+     */
+    public void onCastSkinSigned(String npcId) {
+        Object npc = fancy(npcId);
+        if (npc == null) {
+            return;
+        }
+        try {
+            Object data = FancyNpcFacade.data(npc);
+            Class<?> slotClass = FancyNpcFacade.equipmentSlotClass();
+            Method add = data.getClass().getMethod("addEquipment", slotClass, ItemStack.class);
+            ItemStack air = new ItemStack(org.bukkit.Material.AIR);
+            add.invoke(data, FancyNpcFacade.equipmentSlot("CHEST"), air);
+            add.invoke(data, FancyNpcFacade.equipmentSlot("LEGS"), air);
+            add.invoke(data, FancyNpcFacade.equipmentSlot("FEET"), air);
+            FancyNpcFacade.removeFromPlayersQuiet(npc);
+            FancyNpcFacade.spawnForAll(npc);
+        } catch (ReflectiveOperationException | RuntimeException ex) {
+            plugin.getLogger().fine("Cast skin refresh failed for " + npcId + ": " + ex.getMessage());
         }
     }
 

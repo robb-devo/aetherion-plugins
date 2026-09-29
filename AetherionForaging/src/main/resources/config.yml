@@ -94,12 +94,15 @@ isle-guide:
   placed: false
   # FancyNPC packet reveal (blocks). Default Fancy is ~10; 48 reads from the pad.
   visibility-distance: 48
+# Foraging Eldervale: hotspots = the Golden Sap isle event (one forest runs rich), bait = the
+# Woodwright's Sap Lure. Timing for every isle event lives in forage-isle.yml → events.
 hotspots:
-  enabled: false
+  enabled: true
+  designed: grove-events-v1
   interval-seconds: 480
   duration-seconds: 120
 bait:
-  enabled: false
+  enabled: true
 
 # Rare heartwood — forage isle only (~3% per paid log). Grove ritual fuel.
 isle-heartwood:

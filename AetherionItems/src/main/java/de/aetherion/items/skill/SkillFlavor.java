@@ -149,6 +149,54 @@ public final class SkillFlavor {
                     "You clock in where the sun gave up.",
                     "Light is a rumor you don't need."
             };
+            case BEDROCK_BORN -> new String[] {
+                    "Eldervale stone knows your boots.",
+                    "The tunnels lean in when you pass.",
+                    "The mountain files you under family.",
+                    "Every seam on the isle has your name scratched in it.",
+                    "The bedrock asks how your day went.",
+                    "You are load-bearing for the whole island."
+            };
+            case WORK_SONG -> new String[] {
+                    "You swing in four-four. The seam keeps time.",
+                    "The pick found the backbeat.",
+                    "Three miners joined in on the chorus.",
+                    "The mountain hums along. Off-key, loyally.",
+                    "Stalactites tap their feet now.",
+                    "The mine is a song, and you wrote it."
+            };
+            case GEODE_NOSE -> new String[] {
+                    "You can smell a crystal through ten feet of granite.",
+                    "Amethyst sneezes when you walk past.",
+                    "Geodes hold their breath to look smaller. It fails.",
+                    "The Assayer keeps a chair warm for you.",
+                    "Crystals line up to be found.",
+                    "The rock gives up its heart before you ask."
+            };
+            case UNION_CARD -> new String[] {
+                    "The Foreman pays union rates. Mostly to you.",
+                    "Your card has three stamps and a coffee stain.",
+                    "Contracts arrive pre-negotiated.",
+                    "The clerk rounds up out of respect.",
+                    "You are the union now.",
+                    "The mine pays you to show up. Then more."
+            };
+            case SEAM_READER -> new String[] {
+                    "You read ore like a newspaper. Bad news for the ore.",
+                    "Veins show their hand early.",
+                    "The seam confesses before you swing.",
+                    "Stone can't keep a secret around you.",
+                    "Ore glows a little just to be noticed.",
+                    "The whole mountain is an open book."
+            };
+            case DEPTH_GAUGE -> new String[] {
+                    "The deeper it gets, the better it pays.",
+                    "Your ears pop in the good way.",
+                    "The dark added you to payroll.",
+                    "You measure time in fathoms.",
+                    "The Undercroft sends a welcome card.",
+                    "Down is just up with better ore."
+            };
             case LIGHT_FOOT -> new String[] {
                     "You leave before the trees finish complaining.",
                     "The lecture can keep up. Barely.",
@@ -180,6 +228,54 @@ public final class SkillFlavor {
                     "Chlorophyll started taking notes.",
                     "The lawn is a hostile takeover.",
                     "Life grows faster to get it over with."
+            };
+            case GROVE_BORN -> new String[] {
+                    "The island's trees know your boots.",
+                    "The cherries bloom a little earlier for you.",
+                    "Seven forests, one first name basis.",
+                    "The Crown leans down to say hello.",
+                    "Every stump on the isle remembers you fondly.",
+                    "You are, technically, part of the canopy now."
+            };
+            case SAP_SENSE -> new String[] {
+                    "You smell a Crown Find before it lets go.",
+                    "Amber hums in your pocket.",
+                    "The crowns drop hints. You pick them up.",
+                    "Juniper keeps a drawer just for your finds.",
+                    "Heartsong is less of a rumour lately.",
+                    "The canopy empties its pockets for you."
+            };
+            case STEADY_HANDS -> new String[] {
+                    "The fell marker waits for you now.",
+                    "Green looks wider from where you stand.",
+                    "Misses happen to other people.",
+                    "The axe slows down to hear what you think.",
+                    "Titans respect a patient cut.",
+                    "The bar is a formality."
+            };
+            case DEADFALL_DANCER -> new String[] {
+                    "Widowmakers keep missing. Rude of them.",
+                    "You hear the limb before it hears itself.",
+                    "Falling branches file complaints about you.",
+                    "Deadfall is just delivery.",
+                    "The canopy threw its best. You caught the logs.",
+                    "Gravity gave up on you personally."
+            };
+            case BOARD_RATES -> new String[] {
+                    "Pell pays union rates. Mostly to you.",
+                    "Your orders come with a thank-you note.",
+                    "The Board rounds up out of respect.",
+                    "Pell keeps your pin at eye level.",
+                    "You are the Lumber Board's favourite problem.",
+                    "The island pays you to show up. Then more."
+            };
+            case HEART_HUNTER -> new String[] {
+                    "Heartwood hums when you walk past.",
+                    "Trees hide their hearts. Badly, around you.",
+                    "The Grove Table saves you a seat.",
+                    "You can hear the rings inside the bark.",
+                    "Heartwood turns up the way coins do for others.",
+                    "Every trunk on the isle is a treasure chest."
             };
             case CROP_GOSSIP -> new String[] {
                     "The wheat has started a group chat.",

@@ -172,6 +172,10 @@ public final class IsleGuideNpc implements Listener {
             return;
         }
         coolUntil.put(player.getUniqueId(), now + 3500L);
+        de.aetherion.foraging.isle.ForageIsle isle = de.aetherion.foraging.isle.ForageIsle.get();
+        if (isle != null) {
+            isle.compass().talked(player, "guide");
+        }
         player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_YES, 0.55f, 1.25f);
         player.sendMessage("§a" + DISPLAY + " §8» §fHey — short tour of the isle?");
         Bukkit.getScheduler().runTaskLater(plugin, () -> {

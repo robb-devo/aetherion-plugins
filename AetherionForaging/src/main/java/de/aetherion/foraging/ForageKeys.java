@@ -16,6 +16,11 @@ public final class ForageKeys {
         return key("isle_guide_anchor");
     }
 
+    /** Successful chops counted for newcomer ActionBar hints (cap 10). */
+    public static NamespacedKey chopHintCount() {
+        return key("chop_hint_count");
+    }
+
     private static NamespacedKey key(String name) {
         AetherionForaging plugin = AetherionForaging.getInstance();
         if (plugin != null) {

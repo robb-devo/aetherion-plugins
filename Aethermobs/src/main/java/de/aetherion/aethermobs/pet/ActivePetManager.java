@@ -4,6 +4,7 @@ import de.aetherion.aethermobs.AetherMobs;
 import de.aetherion.aethermobs.pet.skill.PetSkillManager;
 import de.aetherion.items.AetherionItems;
 import org.bukkit.Location;
+import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -129,8 +130,89 @@ public class ActivePetManager implements Listener {
         );
     }
 
+    /**
+     * Player-chosen equip: the pet grows in beside its owner with a soft
+     * two-note arrival. Restores after teleports/respawns stay silent via {@link #equip}.
+     */
+    public void summon(
+            Player player,
+            PetInstance pet
+    ) {
+
+        equip(
+                player,
+                pet
+        );
+
+        PetEntity summoned =
+                getActivePet(
+                        player
+                );
+
+        if (summoned == null
+                || !summoned.isSpawned()) {
+
+            return;
+        }
+
+        summoned.materialize(
+                10
+        );
+
+        player.playSound(
+                player.getLocation(),
+                Sound.BLOCK_AMETHYST_BLOCK_CHIME,
+                0.7f,
+                1.5f
+        );
+
+        player.playSound(
+                player.getLocation(),
+                Sound.ENTITY_ALLAY_AMBIENT_WITH_ITEM,
+                0.45f,
+                1.3f
+        );
+    }
+
+    /** Player-chosen unequip: the pet shrinks away instead of blinking out. */
+    public void dismiss(
+            Player player
+    ) {
+
+        if (player == null) {
+            return;
+        }
+
+        removeActivePet(
+                player,
+                true
+        );
+
+        refreshPlayerStats(
+                player
+        );
+
+        player.playSound(
+                player.getLocation(),
+                Sound.BLOCK_AMETHYST_BLOCK_CHIME,
+                0.5f,
+                0.9f
+        );
+    }
+
     private void removeActivePet(
             Player player
+    ) {
+
+        removeActivePet(
+                player,
+                false
+        );
+    }
+
+    private void removeActivePet(
+            Player player,
+            boolean gracefully
     ) {
 
         PetEntity activePet =
@@ -151,7 +233,11 @@ public class ActivePetManager implements Listener {
                 );
             }
 
-            activePet.remove();
+            if (gracefully) {
+                activePet.vanish(6);
+            } else {
+                activePet.remove();
+            }
         }
     }
 

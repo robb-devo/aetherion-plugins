@@ -61,6 +61,8 @@ public class QuestMarkerManager implements Listener {
     private final Map<UUID, Map<String, TextDisplay>> markers = new HashMap<>();
     private final Map<UUID, Map<String, MarkerKind>> markerKinds = new HashMap<>();
     private final Map<String, TextDisplay> nameDisplays = new HashMap<>();
+    /** Player → NPC they're talking to: the talk bubble stands in for nametag + marker. */
+    private final Map<UUID, String> talkingWith = new HashMap<>();
 
     private boolean blinkOn = true;
     private int blinkPulse;
@@ -140,6 +142,49 @@ public class QuestMarkerManager implements Listener {
 
     }
 
+    /** Hide this NPC's nametag + quest marker for {@code player} while the talk bubble is up. */
+    public void setTalking(Player player, String npcId) {
+        if (player == null || npcId == null) {
+            return;
+        }
+        String id = npcId.toLowerCase(java.util.Locale.ROOT);
+        String previous = talkingWith.put(player.getUniqueId(), id);
+        if (previous != null && !previous.equals(id)) {
+            showFor(player, previous);
+        }
+        TextDisplay name = nameDisplays.get(id);
+        if (name != null && name.isValid()) {
+            player.hideEntity(plugin, name);
+        }
+        Map<String, TextDisplay> playerMarkers = markers.get(player.getUniqueId());
+        TextDisplay marker = playerMarkers == null ? null : playerMarkers.get(id);
+        if (marker != null && marker.isValid()) {
+            player.hideEntity(plugin, marker);
+        }
+    }
+
+    /** Conversation over: nametag + marker come back. */
+    public void clearTalking(Player player) {
+        if (player == null) {
+            return;
+        }
+        String id = talkingWith.remove(player.getUniqueId());
+        if (id != null) {
+            showFor(player, id);
+        }
+    }
+
+    private void showFor(Player player, String npcId) {
+        TextDisplay name = nameDisplays.get(npcId);
+        if (name != null && name.isValid()) {
+            player.showEntity(plugin, name);
+        }
+        QuestNPC npc = QuestNPCRegistry.getNPC(npcId);
+        if (npc != null) {
+            updateMarker(player, npc);
+        }
+    }
+
     /** Smooth nametag follow while a living FancyNPC is mid-walk. */
     public void followLivingName(String npcId, Location feet) {
         if (npcId == null || feet == null || feet.getWorld() == null) {
@@ -203,6 +248,7 @@ public class QuestMarkerManager implements Listener {
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
 
+        talkingWith.remove(event.getPlayer().getUniqueId());
         removePlayer(event.getPlayer());
 
     }
@@ -300,6 +346,9 @@ public class QuestMarkerManager implements Listener {
         if (display == null || !display.isValid() || display.isDead()) {
             display = spawn(player, npc, location, kind);
             playerMarkers.put(npc.getId(), display);
+            if (npc.getId().equalsIgnoreCase(talkingWith.get(player.getUniqueId()))) {
+                player.hideEntity(plugin, display);
+            }
             return;
         }
 
@@ -310,6 +359,10 @@ public class QuestMarkerManager implements Listener {
 
         display.text(markerText(kind, blinkOn));
         applyMarkerStyle(display);
+        if (npc.getId().equalsIgnoreCase(talkingWith.get(player.getUniqueId()))) {
+            player.hideEntity(plugin, display);
+            return;
+        }
         player.showEntity(plugin, display);
 
     }

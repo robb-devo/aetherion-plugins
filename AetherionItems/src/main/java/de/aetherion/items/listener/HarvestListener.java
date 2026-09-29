@@ -107,7 +107,8 @@ public class HarvestListener implements Listener {
             clearBreakSpeed(player);
             return;
         }
-        double miningPower = equipmentStats.getStat(player, ItemCapability.MINING_POWER);
+        double miningPower = equipmentStats.getStat(player, ItemCapability.MINING_POWER)
+                + de.aetherion.items.mining.MineIsleHook.orePower(player, material);
         if (!HarvestRules.canHarvest(material, miningPower)) {
             event.setCancelled(true);
             clearBreakSpeed(player);
@@ -115,7 +116,8 @@ public class HarvestListener implements Listener {
             return;
         }
         event.setInstaBreak(false);
-        applyBreakSpeed(player, block);
+        applyBreakSpeed(player, block, miningPower
+                + de.aetherion.items.mining.MineIsleHook.speedPower(player, material, block.getLocation()));
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -144,7 +146,8 @@ public class HarvestListener implements Listener {
         if (!HarvestRules.tracked(material)) {
             return;
         }
-        double miningPower = equipmentStats.getStat(player, ItemCapability.MINING_POWER);
+        double miningPower = equipmentStats.getStat(player, ItemCapability.MINING_POWER)
+                + de.aetherion.items.mining.MineIsleHook.orePower(player, material);
         if (!open && !HarvestRules.canHarvest(material, miningPower)) {
             event.setCancelled(true);
             event.setDropItems(false);
@@ -187,11 +190,18 @@ public class HarvestListener implements Listener {
             return;
         }
         boolean open = HarvestRules.openMine(block.getWorld());
-        double miningPower = equipmentStats.getStat(player, ItemCapability.MINING_POWER);
+        double miningPower = equipmentStats.getStat(player, ItemCapability.MINING_POWER)
+                + de.aetherion.items.mining.MineIsleHook.orePower(player, material);
         if (!open && !HarvestRules.canHarvest(material, miningPower)) {
             return;
         }
         org.bukkit.block.data.BlockData original = block.getBlockData().clone();
+        de.aetherion.items.mining.MineIsleHook.noteVacuum(player, material, block.getLocation());
+        // Vacuumed ore fires no break event — credit the Collection here or it never counts.
+        if (de.aetherion.items.AetherionItems.getInstance() != null
+                && de.aetherion.items.AetherionItems.getInstance().getCodex() != null) {
+            de.aetherion.items.AetherionItems.getInstance().getCodex().noteHarvest(player, material);
+        }
         var skills = de.aetherion.items.AetherionItems.getInstance() == null
                 ? null
                 : de.aetherion.items.AetherionItems.getInstance().getSkills();
@@ -313,10 +323,13 @@ public class HarvestListener implements Listener {
     }
 
     private void payOut(Player player, Block block, Material material) {
-        double fortune = Math.max(0, equipmentStats.getStat(player, ItemCapability.FORTUNE));
+        // Ore-only Fortune from the Mining Eldervale loops (mastery, rhythm, rations, depth).
+        double fortune = Math.max(0, equipmentStats.getStat(player, ItemCapability.FORTUNE))
+                + de.aetherion.items.mining.MineIsleHook.oreFortune(player, material, block.getLocation());
         if (material == Material.AMETHYST_CLUSTER) {
             giveFortuned(player, new ItemStack(Material.AMETHYST_CLUSTER), 0);
             giveFortuned(player, new ItemStack(Material.AMETHYST_SHARD, 4), fortune);
+            giveIsleBonus(player, new ItemStack(Material.AMETHYST_SHARD), material, block);
             maybeDropVoided455(player, material);
             return;
         }
@@ -325,6 +338,7 @@ public class HarvestListener implements Listener {
             int amount = HarvestRules.fullBlockBaseAmount(material);
             if (resource != null && amount > 0) {
                 giveFortuned(player, new ItemStack(resource, amount), fortune);
+                giveIsleBonus(player, new ItemStack(resource), material, block);
             }
             maybeDropVoided455(player, material);
             return;
@@ -332,11 +346,13 @@ public class HarvestListener implements Listener {
         // Copper/debris: 1 smelted drop per block (furnaces off). Extra only from Fortune.
         if (material == Material.COPPER_ORE || material == Material.DEEPSLATE_COPPER_ORE) {
             giveFortuned(player, new ItemStack(Material.COPPER_INGOT, 1), fortune);
+            giveIsleBonus(player, new ItemStack(Material.COPPER_INGOT), material, block);
             maybeDropVoided455(player, material);
             return;
         }
         if (material == Material.ANCIENT_DEBRIS) {
             giveFortuned(player, new ItemStack(Material.NETHERITE_INGOT, 1), fortune);
+            giveIsleBonus(player, new ItemStack(Material.NETHERITE_INGOT), material, block);
             maybeDropVoided455(player, material);
             return;
         }
@@ -345,6 +361,7 @@ public class HarvestListener implements Listener {
         if (drops.isEmpty()) {
             drops = List.of(new ItemStack(material));
         }
+        ItemStack primary = null;
         for (ItemStack drop : drops) {
             if (drop == null || drop.getType().isAir()) {
                 continue;
@@ -355,9 +372,37 @@ public class HarvestListener implements Listener {
             if (stack == null || stack.getType().isAir()) {
                 continue;
             }
+            if (primary == null) {
+                primary = stack.clone();
+            }
             giveFortuned(player, stack, fortune);
         }
+        if (primary != null) {
+            giveIsleBonus(player, primary, material, block);
+        }
         maybeDropVoided455(player, material);
+    }
+
+    /**
+     * Mining Eldervale whole-item extras (Rich Vein…) — one unit of the ore's resource each,
+     * no Fortune stacking, gold action-bar tag like the Farm Isle's Bee Bloom.
+     */
+    private void giveIsleBonus(Player player, ItemStack unit, Material ore, Block block) {
+        if (unit == null || block == null) {
+            return;
+        }
+        int bonus = de.aetherion.items.mining.MineIsleHook.harvestBonus(player, ore, block.getLocation());
+        if (bonus <= 0) {
+            return;
+        }
+        ItemStack one = unit.clone();
+        one.setAmount(1);
+        giveAmount(player, one, bonus);
+        String label = de.aetherion.items.mining.MineIsleHook.harvestBonusLabel(player, block.getLocation());
+        player.sendActionBar(net.kyori.adventure.text.Component.text(
+                (label == null ? "Bonus" : label) + " +" + bonus,
+                net.kyori.adventure.text.format.NamedTextColor.GOLD
+        ));
     }
 
     public void payWood(Player player, Material material) {
@@ -491,13 +536,12 @@ public class HarvestListener implements Listener {
         ));
     }
 
-    private void applyBreakSpeed(Player player, Block block) {
+    private void applyBreakSpeed(Player player, Block block, double miningPower) {
         clearBreakSpeed(player);
         AttributeInstance attribute = player.getAttribute(Attribute.PLAYER_BLOCK_BREAK_SPEED);
         if (attribute == null) {
             return;
         }
-        double miningPower = equipmentStats.getStat(player, ItemCapability.MINING_POWER);
         int desired = HarvestRules.canHarvest(block.getType(), miningPower)
                 ? HarvestRules.ticks(block.getType(), miningPower)
                 : 400;

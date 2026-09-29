@@ -134,6 +134,81 @@ public final class VeinsChunkGenerator extends ChunkGenerator {
                 }
             }
         }
+        paintGeodes(chunkX, chunkZ, minY, maxY, seed, data);
+    }
+
+    // ------------------------------------------------------------------ Amethyst geodes (layout 5)
+
+    /** One geode per 40×40 cell (deeper cells more likely), never near the hub or the walls. */
+    private static final int GEODE_CELL = 40;
+
+    private void paintGeodes(int chunkX, int chunkZ, int minY, int maxY, long seed, ChunkData data) {
+        int originX = chunkX << 4;
+        int originZ = chunkZ << 4;
+        int cellMinX = Math.floorDiv(originX - 8, GEODE_CELL);
+        int cellMaxX = Math.floorDiv(originX + 24, GEODE_CELL);
+        int cellMinZ = Math.floorDiv(originZ - 8, GEODE_CELL);
+        int cellMaxZ = Math.floorDiv(originZ + 24, GEODE_CELL);
+        for (int cx = cellMinX; cx <= cellMaxX; cx++) {
+            for (int cz = cellMinZ; cz <= cellMaxZ; cz++) {
+                Random cellRng = new Random(seed ^ 0x9E3779B97F4A7C15L ^ ((long) cx * 73428767L) ^ ((long) cz * 912931L));
+                int y = minY + 12 + cellRng.nextInt(Math.max(1, Math.min(hubY - 30, maxY - 12) - (minY + 12)));
+                double depthShare = 1.0d - (y - minY) / (double) Math.max(1, hubY - minY);
+                if (cellRng.nextDouble() > 0.35d + 0.55d * depthShare) {
+                    continue;
+                }
+                int gx = cx * GEODE_CELL + 6 + cellRng.nextInt(GEODE_CELL - 12);
+                int gz = cz * GEODE_CELL + 6 + cellRng.nextInt(GEODE_CELL - 12);
+                if (Math.abs(gx) < HUB + 12 && Math.abs(gz) < HUB + 12 || !inside(gx, gz)
+                        || Math.abs(gx) > radius - 10 || Math.abs(gz) > radius - 10) {
+                    continue;
+                }
+                int r = 4 + cellRng.nextInt(3) + (depthShare > 0.6d ? 1 : 0);
+                geode(originX, originZ, gx, y, gz, r, cellRng.nextLong(), minY, maxY, data);
+            }
+        }
+    }
+
+    private static void geode(int originX, int originZ, int gx, int gy, int gz, int r, long salt, int minY, int maxY, ChunkData data) {
+        double outer = r + 0.5d;
+        for (int x = 0; x < 16; x++) {
+            int wx = originX + x;
+            if (Math.abs(wx - gx) > r + 1) {
+                continue;
+            }
+            for (int z = 0; z < 16; z++) {
+                int wz = originZ + z;
+                if (Math.abs(wz - gz) > r + 1) {
+                    continue;
+                }
+                for (int wy = gy - r - 1; wy <= gy + r + 1; wy++) {
+                    if (wy <= minY + 1 || wy >= maxY - 2) {
+                        continue;
+                    }
+                    double dx = wx - gx;
+                    double dy = (wy - gy) * 1.15d;
+                    double dz = wz - gz;
+                    double d = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                    if (d > outer) {
+                        continue;
+                    }
+                    long h = salt ^ ((long) wx * 341873128712L) ^ ((long) wy * 132897987541L) ^ ((long) wz * 42317861L);
+                    h ^= (h >>> 29);
+                    int noise = (int) Math.floorMod(h, 100L);
+                    Material block;
+                    if (d > r - 0.5d) {
+                        block = noise < 12 ? Material.SMOOTH_BASALT : Material.CALCITE;
+                    } else if (d > r - 1.6d) {
+                        block = noise < 16 ? Material.BUDDING_AMETHYST : Material.AMETHYST_BLOCK;
+                    } else if (d > r - 2.4d && noise < 38) {
+                        block = noise < 22 ? Material.AMETHYST_CLUSTER : Material.LARGE_AMETHYST_BUD;
+                    } else {
+                        block = Material.AIR;
+                    }
+                    data.setBlock(x, wy, z, block);
+                }
+            }
+        }
     }
 
     private boolean inside(int x, int z) {

@@ -54,7 +54,7 @@ public final class AppearanceMenu implements Listener {
             inventory.setItem(PRESET_START + i, EditorItems.button(
                     preset.icon(),
                     (selected ? "§a" : "§e") + preset.label(),
-                    "§7Skin hint §f" + preset.skinUsername(),
+                    "§7Skin §fAetherion cast · " + preset.label(),
                     selected ? "§aSelected" : "§7Click to apply"
             ));
         }

@@ -29,7 +29,11 @@ public final class SpawnGotoCommand implements CommandExecutor {
             Map.entry("farmisle", "farm_isle"),
             Map.entry("borderlands", "borderlands"),
             Map.entry("colosseum", "colosseum"),
-            Map.entry("eldervale", "eldervale")
+            Map.entry("eldervale", "eldervale"),
+            Map.entry("mining", "eldervale"),
+            Map.entry("miningisle", "eldervale"),
+            Map.entry("fishing", "fishing_eldervale"),
+            Map.entry("fishingisle", "fishing_eldervale")
     );
 
     private final HubService hub;
