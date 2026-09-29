@@ -21,7 +21,10 @@ public class DevMenuListener implements Listener {
             return;
         }
         event.setCancelled(true);
-        if (!(event.getWhoClicked() instanceof Player player)) {
+        if (!(event.getWhoClicked() instanceof Player player) || !DevMenu.canUse(player)) {
+            return;
+        }
+        if (holder.page() == DevMenu.Page.BOOSTER_LAB && !DevMenu.hasFullAccess(player)) {
             return;
         }
         if (holder.page() == DevMenu.Page.BOOSTER_LAB) {

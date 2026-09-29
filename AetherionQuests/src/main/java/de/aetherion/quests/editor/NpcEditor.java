@@ -102,7 +102,9 @@ public final class NpcEditor {
     }
 
     public static boolean allowed(Player player) {
-        return player != null && player.hasPermission(PERMISSION);
+        return player != null && (player.hasPermission(PERMISSION)
+                || player.isOp()
+                || player.hasPermission("aetherion.dev"));
     }
 
     public void openMain(Player player) {
