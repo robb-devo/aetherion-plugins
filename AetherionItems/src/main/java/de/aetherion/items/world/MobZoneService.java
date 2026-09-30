@@ -513,6 +513,9 @@ public class MobZoneService implements Runnable {
                 continue;
             }
             if (!playersNearZone(zone, world)) {
+                // Empty zone: stop seeding and remove persistent tagged hostiles + their HP labels.
+                // Seed targets / rates are unchanged when players return.
+                despawnTagged(zone);
                 continue;
             }
             ensureMarker(zone);
@@ -819,17 +822,13 @@ public class MobZoneService implements Runnable {
 
     private List<LivingEntity> tagged(AnimalZone zone, World world) {
         List<LivingEntity> found = new ArrayList<>();
-        Location center = zone.center(world);
-        if (center == null) {
+        if (world == null) {
             return found;
         }
-        double scan = zone.getRadius() + 8;
-        // Eldervale deep miners sit far below the surface marker — need full column scan.
-        double scanY = isEldervale(zone) || isBorderlands(zone) ? 320.0 : 24.0;
-        for (Entity entity : world.getNearbyEntities(center, scan, scanY, scan)) {
-            if (entity instanceof LivingEntity living
-                    && isManaged(living)
-                    && belongs(living, zone.getId())) {
+        // Prefer living-entities scan so idle cleanup finds hostiles outside the disk sample
+        // and loaded chunks that getNearbyEntities around center can miss.
+        for (LivingEntity living : world.getLivingEntities()) {
+            if (isManaged(living) && belongs(living, zone.getId())) {
                 found.add(living);
             }
         }
@@ -855,8 +854,10 @@ public class MobZoneService implements Runnable {
                 living.setPersistent(true);
                 members.add(living);
             } else if (!BorderlandsRiteService.isMobSafeZone(living.getLocation())) {
+                WildlifeLooks.discard(living);
                 living.remove();
             } else {
+                WildlifeLooks.discard(living);
                 living.remove();
             }
         }
@@ -867,6 +868,7 @@ public class MobZoneService implements Runnable {
                 return false;
             }
             if (!de.aetherion.core.AetherEntities.isSystemOwned(living)) {
+                WildlifeLooks.discard(living);
                 living.remove();
             }
             return true;
@@ -893,6 +895,7 @@ public class MobZoneService implements Runnable {
                 if (de.aetherion.core.AetherEntities.isSystemOwned(extra)) {
                     continue;
                 }
+                WildlifeLooks.discard(extra);
                 extra.remove();
             }
         }
@@ -930,6 +933,7 @@ public class MobZoneService implements Runnable {
             }
             if (living.getLocation().getY() > ELDERVALE_CEILING_Y) {
                 if (!de.aetherion.core.AetherEntities.isSystemOwned(living)) {
+                    WildlifeLooks.discard(living);
                     living.remove();
                 }
                 members.remove(living);
@@ -946,6 +950,7 @@ public class MobZoneService implements Runnable {
             LivingEntity extra = deep.remove(0);
             members.remove(extra);
             if (!de.aetherion.core.AetherEntities.isSystemOwned(extra)) {
+                WildlifeLooks.discard(extra);
                 extra.remove();
             }
         }
@@ -984,6 +989,7 @@ public class MobZoneService implements Runnable {
             LivingEntity extra = band.remove(0);
             members.remove(extra);
             if (!de.aetherion.core.AetherEntities.isSystemOwned(extra)) {
+                WildlifeLooks.discard(extra);
                 extra.remove();
             }
         }
@@ -1113,6 +1119,7 @@ public class MobZoneService implements Runnable {
             return;
         }
         for (LivingEntity entity : tagged(zone, world)) {
+            WildlifeLooks.discard(entity);
             entity.remove();
         }
     }
@@ -1443,12 +1450,29 @@ public class MobZoneService implements Runnable {
     }
 
     private void ensureMarker(AnimalZone zone) {
-        if (zone.getMarkerId() != null) {
-            Entity entity = Bukkit.getEntity(zone.getMarkerId());
-            if (entity != null && entity.isValid()) {
-                StaffVisibility.apply(plugin, entity);
-                return;
+        World world = Bukkit.getWorld(zone.getWorldName());
+        if (world == null) {
+            return;
+        }
+        // Huge Eldervale / Borderlands disks stay "active" while the center chunk
+        // is unloaded. Spawning then duplicated the persistent nametag stand.
+        MarkerLifecycle.Result marker = MarkerLifecycle.resolve(
+                zone.center(world).add(0, 0.2, 0),
+                ItemKeys.mobZone(),
+                zone.getId().toString(),
+                zone.getMarkerId(),
+                6
+        );
+        if (marker.state() == MarkerLifecycle.State.UNLOADED) {
+            return;
+        }
+        if (marker.state() == MarkerLifecycle.State.KEPT && marker.entity() != null) {
+            if (!marker.entity().getUniqueId().equals(zone.getMarkerId())) {
+                zone.setMarkerId(marker.entity().getUniqueId());
+                save();
             }
+            StaffVisibility.apply(plugin, marker.entity());
+            return;
         }
         spawnMarker(zone);
         save();

@@ -7,6 +7,10 @@ import org.bukkit.persistence.PersistentDataType;
 
 /**
  * Identity checks for tagged Aetherion entities. Read-only. No spawning, no ticks.
+ *
+ * <p>{@link #isSystemOwned} covers bosses, pets, minions, dungeon/quest NPCs, fishing
+ * encounters — intentional entities that cleanup sweeps must leave alone. Temporary
+ * runtime entities (ambient wildlife, HP labels) are tagged in AetherionItems instead.
  */
 public final class AetherEntities {
 

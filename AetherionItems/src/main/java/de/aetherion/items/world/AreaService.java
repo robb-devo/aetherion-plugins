@@ -366,15 +366,23 @@ public final class AreaService {
                 continue;
             }
             Location center = zone.center(world);
-            if (!center.getChunk().isLoaded()) {
+            MarkerLifecycle.Result marker = MarkerLifecycle.resolve(
+                    center.clone().add(0, 0.2, 0),
+                    ItemKeys.areaZone(),
+                    zone.getId().toString(),
+                    zone.getMarkerId(),
+                    6
+            );
+            if (marker.state() == MarkerLifecycle.State.UNLOADED) {
                 continue;
             }
-            if (zone.getMarkerId() != null) {
-                Entity entity = Bukkit.getEntity(zone.getMarkerId());
-                if (entity != null && entity.isValid()) {
-                    applyVisibility(entity);
-                    continue;
+            if (marker.state() == MarkerLifecycle.State.KEPT && marker.entity() != null) {
+                if (!marker.entity().getUniqueId().equals(zone.getMarkerId())) {
+                    zone.setMarkerId(marker.entity().getUniqueId());
+                    save();
                 }
+                applyVisibility(marker.entity());
+                continue;
             }
             spawnMarker(zone);
             save();

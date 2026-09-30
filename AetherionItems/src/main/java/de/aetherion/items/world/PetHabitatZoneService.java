@@ -233,6 +233,10 @@ public final class PetHabitatZoneService implements Runnable {
             if (world == null) {
                 continue;
             }
+            if (!playersNearZone(zone, world)) {
+                // Idle: do not restamp markers (avoids unload→respawn stacks). Caps unchanged.
+                continue;
+            }
             Location center = zone.center(world);
             if (!center.getChunk().isLoaded()) {
                 continue;
@@ -250,6 +254,20 @@ public final class PetHabitatZoneService implements Runnable {
                 );
             }
         }
+    }
+
+    private boolean playersNearZone(PetHabitatZone zone, World world) {
+        Location center = zone.center(world);
+        double reach = zone.getRadius() + 40;
+        double reachSq = reach * reach;
+        for (Player player : world.getPlayers()) {
+            double dx = player.getLocation().getX() - center.getX();
+            double dz = player.getLocation().getZ() - center.getZ();
+            if (dx * dx + dz * dz <= reachSq) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public void revealTo(Player player) {
@@ -318,12 +336,27 @@ public final class PetHabitatZoneService implements Runnable {
     }
 
     private void ensureMarker(PetHabitatZone zone) {
-        if (zone.getMarkerId() != null) {
-            Entity entity = Bukkit.getEntity(zone.getMarkerId());
-            if (entity != null && entity.isValid()) {
-                StaffVisibility.apply(plugin, entity);
-                return;
+        World world = Bukkit.getWorld(zone.getWorldName());
+        if (world == null) {
+            return;
+        }
+        MarkerLifecycle.Result marker = MarkerLifecycle.resolve(
+                zone.center(world).add(0, 0.2, 0),
+                ItemKeys.petHabitatZone(),
+                zone.getId().toString(),
+                zone.getMarkerId(),
+                6
+        );
+        if (marker.state() == MarkerLifecycle.State.UNLOADED) {
+            return;
+        }
+        if (marker.state() == MarkerLifecycle.State.KEPT && marker.entity() != null) {
+            if (!marker.entity().getUniqueId().equals(zone.getMarkerId())) {
+                zone.setMarkerId(marker.entity().getUniqueId());
+                save();
             }
+            StaffVisibility.apply(plugin, marker.entity());
+            return;
         }
         spawnMarker(zone);
         save();
