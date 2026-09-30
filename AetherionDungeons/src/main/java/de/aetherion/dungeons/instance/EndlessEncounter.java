@@ -48,7 +48,7 @@ public final class EndlessEncounter {
     /** Kill this share of the pack to open the boss gate. */
     public static final double CLEAR_RATIO = 0.75;
     /** Bump when fixed gate / spot rules change — forces prep rebuild without re-paste. */
-    public static final int PREP_VERSION = 3;
+    public static final int PREP_VERSION = 4;
 
     private static final int SPAWN_SAFE = 14;
     private static final Material DOOR_GLASS = Material.RED_STAINED_GLASS;
@@ -64,7 +64,12 @@ public final class EndlessEncounter {
     public static final int BOSS_X = 6;
     public static final int BOSS_Y = 130;
     public static final int BOSS_Z = -166;
-    private static final int MOB_WANT_MAX = 72;
+    /** Floor 2 trash cap (was 72). Clearance stays 75% of whatever actually spawns. */
+    private static final int MOB_WANT_MAX = 108;
+    /** Standable-spot spacing in blocks (was 4). Tighter so the higher cap can fill. */
+    private static final int SPOT_STRIDE = 3;
+    /** Mobs per stagger tick. 108 at 6 matches the old 72-at-4 spawn window. */
+    private static final int SPAWN_WAVE = 6;
 
     private static final Map<UUID, Deque<Location>> SAFE_HISTORY = new ConcurrentHashMap<>();
     private static final Map<String, EndlessState> BY_WORLD = new ConcurrentHashMap<>();
@@ -516,7 +521,7 @@ public final class EndlessEncounter {
                 }
                 return;
             }
-            int batch = 4;
+            int batch = SPAWN_WAVE;
             for (int n = 0; n < batch && cursor[0] < queue.size(); n++) {
                 int[] xyz = queue.get(cursor[0]++);
                 Location at = new Location(world, xyz[0] + 0.5, xyz[1] + 1, xyz[2] + 0.5);
@@ -633,8 +638,8 @@ public final class EndlessEncounter {
         int sz = spawn.getBlockZ();
         int yMin = Math.max(minY, Math.min(SPAWN_Y - 2, GATE_Y_MIN - 8));
         int yMax = Math.min(maxY - 3, GATE_Y_MAX + 6);
-        for (int x = minX + 3; x <= maxX - 3; x += 4) {
-            for (int z = minZ + 3; z <= maxZ - 3; z += 4) {
+        for (int x = minX + 3; x <= maxX - 3; x += SPOT_STRIDE) {
+            for (int z = minZ + 3; z <= maxZ - 3; z += SPOT_STRIDE) {
                 if (z <= GATE_Z + 1) {
                     continue;
                 }
