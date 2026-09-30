@@ -27,3 +27,14 @@ wipe:
   # false = real wipe (current production). Flags are also left untouched in dry-run
   # so a later boot with dry-run: false still runs the pending wipe.
   dry-run: false
+
+# Lifetime online time. Kept across world/map resets and /wipe beta.
+# Booster timers in AetherionItems are a separate counter.
+playtime:
+  # Empty = <crafty>/shared/playtime when that shared folder already exists
+  # (or when wipe.shared-root is set). Otherwise plugins/AetherionCore/playtime.
+  # Example: directory: "/var/opt/minecraft/crafty/shared/playtime"
+  directory: ""
+
+  # How often open sessions are written, in seconds. Minimum 5.
+  flush-seconds: 60

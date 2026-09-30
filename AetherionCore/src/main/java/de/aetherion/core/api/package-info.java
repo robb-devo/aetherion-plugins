@@ -5,5 +5,6 @@
  * WorldEdit, DiscordSRV, and TAB stay on reflection — they are external plugins.
  *
  * <p>QA test bots: {@link de.aetherion.core.api.TestBotsAccess} (AetherionStressBots).
+ * Wipe-safe playtime: {@link de.aetherion.core.api.PlaytimeAccess} (AetherionCore).
  */
 package de.aetherion.core.api;

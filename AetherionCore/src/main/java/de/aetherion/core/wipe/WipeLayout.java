@@ -47,7 +47,8 @@ public final class WipeLayout {
         return deriveSharedRoot(serverRoot);
     }
 
-    static File deriveSharedRoot(File serverRoot) {
+    /** Parent of {@code crafty/servers/<id>/} → {@code crafty/shared}. Null when the path is too short. */
+    public static File deriveSharedRoot(File serverRoot) {
         File servers = serverRoot == null ? null : serverRoot.getParentFile();
         File crafty = servers == null ? null : servers.getParentFile();
         if (crafty == null) {

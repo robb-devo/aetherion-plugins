@@ -13,6 +13,8 @@ Suggested folders drop: `plugins/AetherionCore.jar` first, then Items, BossEngin
 
 Hub / Pit backends also need **AetherionCore** (Pit `depend`s on it for `FancyNpcFacade`).
 
+Playtime (`/playtime`, `/fullplaytimereset`) ships inside Core. Replace `plugins/AetherionCore.jar` on each Paper backend and restart. Totals are stored under Crafty `shared/playtime/` when that folder exists, so world resets and `/wipe beta` leave them in place. Permissions and the optional `playtime.directory` key: [AetherionCore/README.md](AetherionCore/README.md).
+
 ## Wipe (Crafty)
 
 AetherionCore `config.yml` → `wipe.*` (defaults = current production):
