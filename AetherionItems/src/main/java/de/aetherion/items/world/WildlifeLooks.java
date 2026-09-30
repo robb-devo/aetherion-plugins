@@ -1417,6 +1417,7 @@ public final class WildlifeLooks implements Listener {
             if (world == null) {
                 continue;
             }
+            releaseLeakedAmbient(player);
             Location at = player.getLocation();
             for (Entity nearby : world.getNearbyEntities(at, 48, 28, 48)) {
                 if (nearby instanceof LivingEntity living && eligible(living)) {
@@ -1427,6 +1428,67 @@ public final class WildlifeLooks implements Listener {
             }
         }
         populate();
+    }
+
+    /**
+     * Ambient wildlife used to stay saved ({@code setPersistent} defaults true on animals)
+     * even with remove-when-far-away. Capital is one bubble so the nearby cap held.
+     * Mine and Forage are large: each new bubble spawned another herd, and underground
+     * players never counted the surface animals above them, so the cap never tripped.
+     * Only animals this plugin tagged as runtime ambient are trimmed — zone herds,
+     * tames, and untagged vanilla animals stay.
+     */
+    private void releaseLeakedAmbient(Player player) {
+        World world = player.getWorld();
+        if (world == null) {
+            return;
+        }
+        Location at = player.getLocation();
+        List<Animals> leaked = new ArrayList<>();
+        // Tall box: miners stand far below the surface herd the old spawner left.
+        for (Entity nearby : world.getNearbyEntities(at, 48, 96, 48)) {
+            if (!(nearby instanceof Animals animal) || !isRuntimeAmbient(animal)) {
+                continue;
+            }
+            animal.setPersistent(false);
+            animal.setRemoveWhenFarAway(true);
+            leaked.add(animal);
+        }
+        if (leaked.size() <= AMBIENT_NEARBY_CAP) {
+            return;
+        }
+        leaked.sort((a, b) -> Double.compare(
+                a.getLocation().distanceSquared(at),
+                b.getLocation().distanceSquared(at)
+        ));
+        for (int i = AMBIENT_NEARBY_CAP; i < leaked.size(); i++) {
+            Animals extra = leaked.get(i);
+            discard(extra);
+            extra.remove();
+        }
+    }
+
+    private static boolean isRuntimeAmbient(Animals animal) {
+        if (animal == null || !animal.isValid() || animal instanceof Player) {
+            return false;
+        }
+        if (animal instanceof Tameable tameable && tameable.isTamed()) {
+            return false;
+        }
+        if (AetherEntities.isSystemOwned(animal) || AetherEntities.isBoss(animal)) {
+            return false;
+        }
+        var data = animal.getPersistentDataContainer();
+        if (data.has(ItemKeys.zoneSpawn(), PersistentDataType.STRING)) {
+            return false;
+        }
+        if (data.has(ItemKeys.ambientRuntime(), PersistentDataType.BYTE)) {
+            return true;
+        }
+        // Older ambient spawns: titled by this plugin and flagged to despawn, but
+        // persistence was left on so they never actually left.
+        return animal.getRemoveWhenFarAway()
+                && data.has(ItemKeys.wildlifeTitle(), PersistentDataType.STRING);
     }
 
     private boolean shouldDropLabel(TextDisplay display) {
@@ -1482,6 +1544,11 @@ public final class WildlifeLooks implements Listener {
             int x = player.getLocation().getBlockX() + (int) Math.round(Math.cos(angle) * dist);
             int z = player.getLocation().getBlockZ() + (int) Math.round(Math.sin(angle) * dist);
             int y = world.getHighestBlockYAt(x, z);
+            // Same layer as the player. Underground mine shifts used to fill the
+            // surface (outside the nearby Y window) without ever hitting the cap.
+            if (Math.abs((y + 1.0) - player.getLocation().getY()) > 12.0) {
+                continue;
+            }
             Location ground = new Location(world, x + 0.5, y + 1.0, z + 0.5);
             Material floor = world.getBlockAt(x, y, z).getType();
             if (!floor.isSolid() || floor.name().contains("LEAVES") || floor == Material.BARRIER) {
@@ -1499,7 +1566,14 @@ public final class WildlifeLooks implements Listener {
             }
             EntityType type = pickAnimal(world, ground);
             LivingEntity spawned = (LivingEntity) world.spawnEntity(ground, type);
+            // Temporary. Animals default to persistent, which ignores remove-when-far-away.
+            spawned.setPersistent(false);
             spawned.setRemoveWhenFarAway(true);
+            spawned.getPersistentDataContainer().set(
+                    ItemKeys.ambientRuntime(),
+                    PersistentDataType.BYTE,
+                    (byte) 1
+            );
             attach(spawned, true);
             return;
         }

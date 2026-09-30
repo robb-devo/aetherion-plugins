@@ -231,6 +231,14 @@ public final class ItemKeys {
         return key("wildlife_title");
     }
 
+    /**
+     * Runtime ambient animal (WildlifeLooks). Temporary — not a placed herd.
+     * Zone animals use {@link #zoneSpawn()} and stay capped with the anchor.
+     */
+    public static NamespacedKey ambientRuntime() {
+        return key("ambient_runtime");
+    }
+
     public static NamespacedKey cryptHoloTool() {
         return key("crypt_holo_tool");
     }

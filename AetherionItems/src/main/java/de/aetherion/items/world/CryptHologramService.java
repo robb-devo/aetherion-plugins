@@ -190,38 +190,29 @@ public final class CryptHologramService {
             if (world == null) {
                 continue;
             }
-            Entity entity = holo.displayId() == null ? null : Bukkit.getEntity(holo.displayId());
-            if (entity instanceof TextDisplay display && entity.isValid()) {
-                // Kill extras that may have stacked on the same spot.
-                cullDuplicates(holo, display.getUniqueId());
+            Location at = holo.location(world);
+            MarkerLifecycle.Result marker = MarkerLifecycle.resolve(
+                    at,
+                    ItemKeys.cryptHoloDisplay(),
+                    holo.id().toString(),
+                    holo.displayId(),
+                    3
+            );
+            if (marker.state() == MarkerLifecycle.State.UNLOADED) {
+                continue;
+            }
+            if (marker.state() == MarkerLifecycle.State.KEPT && marker.entity() instanceof TextDisplay display) {
+                if (!display.getUniqueId().equals(holo.displayId())) {
+                    holo.displayId(display.getUniqueId());
+                    save();
+                }
                 display.text(LegacyComponentSerializer.legacySection().deserialize(
                         LINE_1 + "\n" + LINE_2
                 ));
                 continue;
             }
             spawnDisplay(holo);
-        }
-    }
-
-    private void cullDuplicates(PlacedHolo holo, UUID keepId) {
-        World world = Bukkit.getWorld(holo.world());
-        if (world == null) {
-            return;
-        }
-        Location at = holo.location(world);
-        for (Entity entity : world.getEntitiesByClass(TextDisplay.class)) {
-            if (entity.getUniqueId().equals(keepId)) {
-                continue;
-            }
-            String id = entity.getPersistentDataContainer().get(
-                    ItemKeys.cryptHoloDisplay(),
-                    PersistentDataType.STRING
-            );
-            boolean ours = holo.id().toString().equals(id)
-                    || entity.getScoreboardTags().contains("aetherion_crypt_holo");
-            if (ours && entity.getLocation().distanceSquared(at) <= 2.25) {
-                entity.remove();
-            }
+            save();
         }
     }
 

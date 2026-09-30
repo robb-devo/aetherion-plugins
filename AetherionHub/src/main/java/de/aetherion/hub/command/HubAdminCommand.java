@@ -25,7 +25,7 @@ public final class HubAdminCommand implements CommandExecutor, TabCompleter {
 
     private static final List<String> SUBS = List.of(
             "set", "list", "unlock", "lock", "name", "icon", "slot", "default", "hint", "give",
-            "softlight", "shabbymine", "reload", "reloadpads"
+            "softlight", "shabbymine", "eldervale", "reload", "reloadpads"
     );
 
     private final AetherionHub plugin;
@@ -63,6 +63,7 @@ public final class HubAdminCommand implements CommandExecutor, TabCompleter {
             case "give" -> give(sender, args);
             case "softlight" -> softlight(sender, args);
             case "shabbymine" -> shabbymine(sender);
+            case "eldervale" -> eldervale(sender);
             case "reload" -> {
                 hub.reload();
                 if (plugin.getLaunchPads() != null) {
@@ -364,6 +365,16 @@ public final class HubAdminCommand implements CommandExecutor, TabCompleter {
         }
     }
 
+    private void eldervale(CommandSender sender) {
+        try {
+            Class.forName("de.aetherion.items.world.EldervaleMinePrep")
+                    .getMethod("run", CommandSender.class)
+                    .invoke(null, sender);
+        } catch (ReflectiveOperationException | NoClassDefFoundError e) {
+            sender.sendMessage("§cEldervale enrich needs AetherionItems loaded.");
+        }
+    }
+
     private void help(CommandSender sender) {
         sender.sendMessage("§6AetherionHub admin");
         sender.sendMessage("§7/hubadmin set <id> §8- save your location as a spawn");
@@ -377,7 +388,8 @@ public final class HubAdminCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage("§7/hubadmin hint [player]");
         sender.sendMessage("§7/hubadmin give [player] [spawnId]");
         sender.sendMessage("§7/hubadmin softlight [radius|mines] …");
-        sender.sendMessage("§7/hubadmin shabbymine §8- dense lights + sponge→ores in Shabby Mine");
+        sender.sendMessage("§7/hubadmin shabbymine §8- coal/iron/copper veins only in Shabby Mine");
+        sender.sendMessage("§7/hubadmin eldervale §8- lights + ore hotspots on Eldervale");
         sender.sendMessage("§7/hubadmin reload");
         sender.sendMessage("§7/hubadmin reloadpads §8- reload island jump pads");
     }

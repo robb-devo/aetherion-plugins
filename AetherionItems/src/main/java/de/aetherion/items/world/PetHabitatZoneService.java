@@ -318,12 +318,27 @@ public final class PetHabitatZoneService implements Runnable {
     }
 
     private void ensureMarker(PetHabitatZone zone) {
-        if (zone.getMarkerId() != null) {
-            Entity entity = Bukkit.getEntity(zone.getMarkerId());
-            if (entity != null && entity.isValid()) {
-                StaffVisibility.apply(plugin, entity);
-                return;
+        World world = Bukkit.getWorld(zone.getWorldName());
+        if (world == null) {
+            return;
+        }
+        MarkerLifecycle.Result marker = MarkerLifecycle.resolve(
+                zone.center(world).add(0, 0.2, 0),
+                ItemKeys.petHabitatZone(),
+                zone.getId().toString(),
+                zone.getMarkerId(),
+                6
+        );
+        if (marker.state() == MarkerLifecycle.State.UNLOADED) {
+            return;
+        }
+        if (marker.state() == MarkerLifecycle.State.KEPT && marker.entity() != null) {
+            if (!marker.entity().getUniqueId().equals(zone.getMarkerId())) {
+                zone.setMarkerId(marker.entity().getUniqueId());
+                save();
             }
+            StaffVisibility.apply(plugin, marker.entity());
+            return;
         }
         spawnMarker(zone);
         save();
