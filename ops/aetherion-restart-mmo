@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+# Countdown, then let AetherionCore shut the backend down.
+#
+# Install (operators, on the host — not inside the server jar):
+#   sudo install -m 0755 ops/aetherion-restart-mmo /usr/local/bin/aetherion-restart-mmo
+#
+# Crafty's Stop button sends SIGTERM. That cannot wait 10 seconds inside
+# Plugin#onDisable. Point restarts at this script, or paste the printed
+# command into the Crafty console BEFORE stop:
+#   aenet restart 10
+#   aenet restart 10 Patch Ashen-Katana-Restore
+#
+# No reason words: one generic English line ("Server is restarting…"), then the even countdown.
+# Reason words: one English line naming that patch, then the same countdown.
+#
+# Optional /etc/aetherion/restart.env:
+#   AETHERION_RCON_HOST=127.0.0.1
+#   AETHERION_RCON_PORT=25575
+#   AETHERION_RCON_PASSWORD=secret
+#   AETHERION_SCREEN=mmo-r
+#   AETHERION_TMUX=mmo-r
+#   AETHERION_STDIN=/path/to/server.stdin
+#
+# Usage: aetherion-restart-mmo [seconds] [reason words...]
+# Default seconds: 10. Omit the reason for a manual restart.
+set -euo pipefail
+
+if [[ -f /etc/aetherion/restart.env ]]; then
+  # shellcheck disable=SC1091
+  source /etc/aetherion/restart.env
+fi
+
+if [[ $# -eq 0 ]]; then
+  CMD="aenet restart 10"
+else
+  CMD="aenet restart $*"
+fi
+
+send_command() {
+  if [[ -n "${AETHERION_RCON_HOST:-}" && -n "${AETHERION_RCON_PASSWORD:-}" ]] && command -v mcrcon >/dev/null 2>&1; then
+    mcrcon -H "${AETHERION_RCON_HOST}" -P "${AETHERION_RCON_PORT:-25575}" -p "${AETHERION_RCON_PASSWORD}" "${CMD}"
+    return 0
+  fi
+  if [[ -n "${AETHERION_SCREEN:-}" ]] && command -v screen >/dev/null 2>&1; then
+    screen -S "${AETHERION_SCREEN}" -p 0 -X stuff "${CMD}"$'\n'
+    return 0
+  fi
+  if [[ -n "${AETHERION_TMUX:-}" ]] && command -v tmux >/dev/null 2>&1; then
+    tmux send-keys -t "${AETHERION_TMUX}" "${CMD}" Enter
+    return 0
+  fi
+  if [[ -n "${AETHERION_STDIN:-}" && -w "${AETHERION_STDIN}" ]]; then
+    printf '%s\n' "${CMD}" > "${AETHERION_STDIN}"
+    return 0
+  fi
+  return 1
+}
+
+if ! send_command; then
+  echo "Could not reach the server console." >&2
+  echo "Set /etc/aetherion/restart.env (rcon, screen, tmux, or stdin fifo)," >&2
+  echo "or paste this into the Crafty console before Stop:" >&2
+  echo "  ${CMD}" >&2
+  exit 1
+fi
+
+echo "Sent: ${CMD}"
+echo "The backend counts down in chat, then calls Bukkit.shutdown()."
+echo "Do not SIGTERM it from Crafty until that countdown finishes."
