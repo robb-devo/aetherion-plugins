@@ -4,11 +4,13 @@ import {
   cancelPath,
   sampleSolidNear,
   setGoal,
-  withinLeash,
-  wanderOnIsland
+  withinLeash
 } from './safety.js'
-import { findMatchingBlock, inventoryAlmostFull, jitter, markError, note, tossJunk, waitUntil, sleep } from './util.js'
+import { findMatchingBlock, inventoryAlmostFull, jitter, markError, note, tossJunk, sleep } from './util.js'
 import { applyPathfinderDefaults, fidget, takeIdleGoal } from './playstyle.js'
+import { isLingering, shouldYield } from './mind.js'
+import { assignGoal, canDigFrom, floorY, forgetGoal, insideDisk, isFailedBlock, isFooting, planDig, rememberFailure, standFeet } from './move.js'
+import Vec3 from 'vec3'
 
 const { goals, Movements, pathfinder } = pathfinderPkg
 
@@ -31,25 +33,98 @@ export function createDigLoop(bot, cfg, log, { activity, names, searchRadius, yR
 
   let running = false
   let busy = false
+  let cached = null
 
   function home() {
     return bot.qaHome || bot.entity?.position
   }
 
-  function pickBlock() {
-    const origin = home() || bot.entity?.position
-    const primary = findMatchingBlock(bot, nameSet, radius, yRange ?? 6, origin)
-    if (primary && withinLeash(primary.position.offset(0.5, 0.5, 0.5), home(), pickLeash)) {
-      return primary
-    }
-    if (fallbackSet.size === 0) {
+  function worldAt(x, y, z) {
+    if (!bot.blockAt) return null
+    try {
+      return bot.blockAt(new Vec3(Math.floor(x), Math.floor(y), Math.floor(z)))
+    } catch {
       return null
     }
-    const filler = findMatchingBlock(bot, fallbackSet, Math.min(radius, pickLeash), Math.min(yRange ?? 6, 5), origin)
-    if (filler && withinLeash(filler.position.offset(0.5, 0.5, 0.5), home(), pickLeash)) {
-      return filler
+  }
+
+  function usable(block, primary) {
+    if (!block?.position || !bot.entity?.position) return null
+    if (isFooting(bot.entity.position, block)) return null
+    if (isFailedBlock(bot, block.position)) return null
+    const stand = standFeet(worldAt, block.position.x, block.position.y, block.position.z, bot.entity.position)
+    const decision = planDig({
+      pos: bot.entity.position,
+      blockPos: block.position,
+      stand,
+      home: home(),
+      leash,
+      failed: false,
+      footing: false,
+      primary
+    })
+    if (decision === 'skip') return null
+    return { stand, decision }
+  }
+
+  function pickBlock() {
+    const now = Date.now()
+    if (cached && now < cached.until) {
+      const held = bot.blockAt(cached.pos)
+      const plan = held && usable(held, nameSet.has(held.name))
+      if (plan && (nameSet.has(held.name) || fallbackSet.has(held.name))) {
+        return { block: held, ...plan }
+      }
+      cached = null
+    }
+    const origin = bot.entity?.position || home()
+    const primary = findMatchingBlock(bot, nameSet, radius, yRange ?? 6, origin, (block) => !!usable(block, true))
+    const primaryPlan = primary && usable(primary, true)
+    if (primary && primaryPlan) {
+      cached = { pos: primary.position, until: now + 5000 }
+      return { block: primary, ...primaryPlan }
+    }
+    if (fallbackSet.size === 0) return null
+    const filler = findMatchingBlock(
+      bot,
+      fallbackSet,
+      Math.min(radius, leash),
+      Math.min(yRange ?? 6, 5),
+      origin,
+      (block) => !!usable(block, false)
+    )
+    const fillerPlan = filler && usable(filler, false)
+    if (filler && fillerPlan) {
+      cached = { pos: filler.position, until: now + 4000 }
+      return { block: filler, ...fillerPlan }
     }
     return null
+  }
+
+  function dropTarget(reason) {
+    if (cached?.pos) rememberFailure(bot, cached.pos)
+    cached = null
+    bot.qaDigging = false
+    cancelPath(bot)
+    forgetGoal(bot)
+    setGoal(bot, null)
+    note(bot, reason, activity)
+  }
+
+  function stepAtFloor() {
+    if (!bot.pathfinder || bot.pathfinder.isMoving()) return
+    const pos = bot.entity.position
+    const anchor = home()
+    const floor = { x: anchor.x, y: floorY(pos.y, anchor.y), z: anchor.z }
+    const reach = Math.min(wanderRadius, 4)
+    const pad = sampleSolidNear(bot, floor, reach)
+    if (!pad || Math.abs(pad.y - pos.y) > 2) return
+    if (!insideDisk(pad, anchor, Math.max(2, leash - 1))) return
+    const issued = assignGoal(bot, goals, pad, 1.5, { minIntervalMs: 2800 })
+    if (issued) {
+      note(bot, 'looking for ore', 'pathing')
+      setGoal(bot, pad)
+    }
   }
 
   function aborted() {
@@ -58,15 +133,21 @@ export function createDigLoop(bot, cfg, log, { activity, names, searchRadius, yR
 
   async function tick() {
     if (!bot.entity || busy || bot.qaSuspended) return
+    if (shouldYield(bot)) {
+      if (isLingering(bot)) note(bot, 'taking a break', 'lingering')
+      return
+    }
     if (bot.qaNeedRetarget) {
       bot.qaNeedRetarget = false
-      bot.qaDigging = false
       bot.qaGathering = false
-      setGoal(bot, null)
-      cancelPath(bot)
-      note(bot, 'retarget after stuck/leash', 'idle')
-      wanderOnIsland(bot, home(), wanderRadius, goals)
-      await sleep(jitter(400, 0.5))
+      if (bot.qaActivity !== 'recovering') {
+        dropTarget('drop target')
+        return
+      }
+      if (cached?.pos) rememberFailure(bot, cached.pos)
+      cached = null
+    }
+    if (home() && !withinLeash(bot.entity.position, home(), Math.max(2, leash - 1))) {
       return
     }
     if (!home()) {
@@ -76,7 +157,9 @@ export function createDigLoop(bot, cfg, log, { activity, names, searchRadius, yR
     if (!bot.pathfinder.movements) {
       const moves = applyIslandMovements(new Movements(bot), {
         canDig,
-        maxDrop: cfg.maxDrop ?? 2
+        maxDrop: cfg.maxDrop ?? 2,
+        bot,
+        sprint: false
       })
       bot.pathfinder.setMovements(moves)
       applyPathfinderDefaults(bot, moves)
@@ -86,69 +169,85 @@ export function createDigLoop(bot, cfg, log, { activity, names, searchRadius, yR
       tossJunk(bot)
     }
 
-    const block = pickBlock()
+    const picked = pickBlock()
     const needGoal = takeIdleGoal(bot)
-    if (!block || needGoal) {
+    if (!picked || needGoal) {
       bot.qaGathering = false
       bot.qaDigging = false
-      setGoal(bot, null)
-      bot.qaActivity = bot.pathfinder.isMoving() ? 'pathing' : 'idle'
-      if (!bot.pathfinder.isMoving()) {
-        const pad = sampleSolidNear(bot, home(), wanderRadius)
-        if (pad) {
-          note(bot, needGoal ? 'new goal hop' : 'scan hop', 'pathing')
-          setGoal(bot, pad)
-          bot.pathfinder.setGoal(new goals.GoalNear(pad.x, pad.y, pad.z, 1))
-        } else {
-          wanderOnIsland(bot, home(), wanderRadius, goals)
-        }
-        if (Math.random() < 0.25) fidget(bot, activity)
+      if (needGoal) {
+        cached = null
+        forgetGoal(bot)
       }
+      if (!bot.pathfinder.isMoving()) stepAtFloor()
+      else bot.qaActivity = 'pathing'
+      if (Math.random() < 0.08) fidget(bot, activity)
       return
     }
 
+    const { block, stand, decision } = picked
+    if (decision === 'dig' || canDigFrom(bot.entity.position, block.position)) {
+      await digBlock(block)
+      return
+    }
+
+    bot.qaGathering = true
+    const issued = assignGoal(bot, goals, stand, 1.15, { minIntervalMs: 2200 })
+    if (issued) {
+      note(bot, `path to ${block.name}`, 'pathing')
+      setGoal(bot, stand)
+      bot.qaPathProgressAt = Date.now()
+    } else if (!bot.qaPathProgressAt) {
+      bot.qaPathProgressAt = bot.qaMoveIssued || Date.now()
+    }
+    const movedCloser = bot.entity.position.distanceTo(block.position.offset(0.5, 0.5, 0.5))
+    if (!bot.qaPathDist || movedCloser < bot.qaPathDist - 0.45) {
+      bot.qaPathDist = movedCloser
+      bot.qaPathProgressAt = Date.now()
+    }
+    if ((Date.now() - (bot.qaPathProgressAt || 0)) > 2500) {
+      bot.qaPathDist = null
+      dropTarget(`gave up on ${block.name}`)
+    }
+  }
+
+  async function digBlock(block) {
     busy = true
     bot.qaGathering = true
+    bot.qaDigging = true
+    cancelPath(bot)
+    forgetGoal(bot)
+    setGoal(bot, null)
     try {
-      const dest = block.position.offset(0.5, 0.5, 0.5)
-      setGoal(bot, dest)
-      const dist = bot.entity.position.distanceTo(dest)
-      if (dist > 3.2) {
-        note(bot, `path to ${block.name}`, 'pathing')
-        bot.pathfinder.setGoal(new goals.GoalNear(block.position.x, block.position.y, block.position.z, 2))
-        await waitUntil(() => {
-          if (aborted()) return true
-          return bot.entity.position.distanceTo(block.position.offset(0.5, 0.5, 0.5)) <= 3.2
-        }, 10_000)
-      }
-      if (aborted()) {
-        cancelPath(bot)
-        setGoal(bot, null)
-        return
-      }
-      bot.pathfinder.setGoal(null)
-      bot.qaDigging = true
-      note(bot, `dig ${block.name}`, activity)
-      await sleep(jitter(180, 0.6))
-      if (Math.random() < 0.12) {
-        note(bot, 'scratch head', activity)
-        await sleep(jitter(700, 0.5))
-      }
+      bot.setControlState('jump', false)
+      bot.setControlState('forward', false)
+      bot.setControlState('sprint', false)
+    } catch {
+      /* ignore */
+    }
+    note(bot, `dig ${block.name}`, activity)
+    try {
+      await sleep(jitter(160, 0.5))
+      if (aborted()) return
       await bot.lookAt(block.position.offset(0.5, 0.5, 0.5), true)
       await Promise.race([
-        bot.dig(block),
+        bot.dig(block, true),
         sleep(digTimeoutMs).then(() => {
           throw new Error('dig timeout')
         })
       ])
+      cached = null
+      bot.qaPathDist = null
     } catch (err) {
-      if (!String(err.message || err).includes('dig timeout') && !String(err.message || err).includes('wait timeout')) {
-        markError(bot, err)
-      }
+      const message = String(err?.message || err)
+      const expected = message.includes('dig timeout')
+        || message.includes('Digging aborted')
+        || message.includes('Block not in view')
+        || message.includes('Infinity')
+      if (!expected) markError(bot, err)
       try { bot.stopDigging() } catch { /* ignore */ }
-      cancelPath(bot)
-      setGoal(bot, null)
-      wanderOnIsland(bot, home(), wanderRadius, goals)
+      rememberFailure(bot, block?.position)
+      cached = null
+      bot.qaPathDist = null
     } finally {
       bot.qaDigging = false
       bot.qaGathering = false

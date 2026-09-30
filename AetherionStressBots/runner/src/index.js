@@ -79,6 +79,7 @@ Wave 2 QA: --combat (QaCombat) / --fish / --trade / --quest / --pad
 Legacy:    --mining (StressM). --combat uses QaCombat unless prefixes.combat is StressC.
 
 --listen   start with 0 bots and keep the HTTP control server up (Dev menu)
+Dashboard: http://127.0.0.1:18765/  (SSH tunnel if you are not on the host). ?token= if control.token is set.
 Defaults connect offline to MMO-R (${baseConfig.host}:${baseConfig.port}).
 Copy ${path.basename(examplePath)} → config.json and set velocitySecret locally. Do not commit it.
 Stop with Ctrl+C.`)

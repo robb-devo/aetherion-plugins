@@ -2,6 +2,7 @@ import pathfinderPkg from 'mineflayer-pathfinder'
 import { applyIslandMovements, cancelPath, standingIsSafe, withinLeash, wanderOnIsland } from './safety.js'
 import { fidget, markError, note } from './util.js'
 import { maybeSkip } from './playstyle.js'
+import { shouldYield } from './mind.js'
 
 const { goals, Movements, pathfinder } = pathfinderPkg
 
@@ -30,6 +31,7 @@ export function createCatchLoop(bot, cfg, log) {
 
   async function tick() {
     if (!bot.entity || bot.qaSuspended) return
+    if (shouldYield(bot)) return
     if (!home()) {
       bot.qaHome = { x: bot.entity.position.x, y: bot.entity.position.y, z: bot.entity.position.z }
     }
@@ -73,7 +75,8 @@ export function createCatchLoop(bot, cfg, log) {
 
     bot.pathfinder.setGoal(null)
     const now = Date.now()
-    if (now - lastThrow < throwCooldownMs) {
+    const cooldown = throwCooldownMs * (0.75 + (bot.qaPersona?.patience ?? 0.5) * 0.7)
+    if (now - lastThrow < cooldown) {
       note(bot, 'catch cooldown', 'catching')
       return
     }

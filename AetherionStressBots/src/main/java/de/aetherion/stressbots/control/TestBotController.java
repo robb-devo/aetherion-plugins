@@ -27,6 +27,10 @@ public final class TestBotController implements TestBotsAccess {
     private final BotReportBuilder reports;
     private final Map<BotRole, Integer> desired = new ConcurrentHashMap<>();
 
+    public RunnerControlClient runner() {
+        return runner;
+    }
+
     public TestBotController(AetherionStressBots plugin, RunnerControlClient runner, BotReportBuilder reports) {
         this.plugin = plugin;
         this.runner = runner;

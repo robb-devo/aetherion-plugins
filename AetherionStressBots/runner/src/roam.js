@@ -1,6 +1,7 @@
 import pathfinderPkg from 'mineflayer-pathfinder'
 import { applyIslandMovements, cancelPath, horizontalDistance, nearestAnchor, wanderOnIsland } from './safety.js'
 import { markError, note } from './util.js'
+import { shouldYield } from './mind.js'
 
 const { goals, Movements, pathfinder } = pathfinderPkg
 
@@ -56,6 +57,8 @@ export function createRoamLoop(bot, cfg, log) {
       return
     }
 
+    if (shouldYield(bot)) return
+
     if (waypoints.length === 0) {
       note(bot, 'roam idle (no waypoints)', 'idle')
       fidget(bot)
@@ -64,7 +67,7 @@ export function createRoamLoop(bot, cfg, log) {
 
     if (bot.pathfinder.isMoving()) {
       bot.qaActivity = 'roaming'
-    } else if (Date.now() - lastHop > 1400 || bot.qaNeedNewGoal) {
+    } else if (Date.now() - lastHop > (1100 + (bot.qaPersona?.patience ?? 0.5) * 2600) || bot.qaNeedNewGoal) {
       bot.qaNeedNewGoal = false
       lastHop = Date.now()
       const nearby = waypoints.filter((wp) => horizontalDistance(bot.entity.position, wp) <= maxHop)
@@ -91,11 +94,7 @@ export function createRoamLoop(bot, cfg, log) {
   function fidget(botRef) {
     const roll = Math.random()
     try {
-      if (roll < 0.34) {
-        botRef.setControlState('jump', true)
-        setTimeout(() => botRef.setControlState('jump', false), 220)
-        note(botRef, 'jump', 'roaming')
-      } else if (roll < 0.67) {
+      if (roll < 0.5) {
         botRef.swingArm()
         note(botRef, 'swing', 'roaming')
       } else {
@@ -126,7 +125,7 @@ function nearestHostile(bot, radius) {
   let best = null
   let bestDist = radius
   for (const entity of Object.values(bot.entities)) {
-    if (!entity || entity === bot.entity) continue
+    if (!entity || entity === bot.entity || entity.type === 'player') continue
     const name = (entity.name || entity.displayName || '').toLowerCase()
     if (!name) continue
     if (!HOSTILE.some((key) => name.includes(key))) continue
