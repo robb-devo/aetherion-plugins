@@ -20,10 +20,21 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Reuses one persistent Endless XL base world so WorldEdit paste happens at most once
- * (until the schematic changes). Enter/leave only recycle entities + door.
+ * Reuses one persistent Floor 2 base world so the Endless XL schematic is pasted once.
+ * Enter/leave only recycle entities, the red gate, and the reward chest.
+ * <p>
+ * The base used to be parked (chunks unloaded) before it was saved, with auto-save off.
+ * Everything past a 3-chunk radius of spawn — the corridor, the gate, the Frostbound —
+ * never hit disk and came back as void. {@link #FLOOR2_BASE_REVISION} forces that
+ * half-saved world to be pasted again.
  */
 final class DungeonWarmPool {
+
+    /**
+     * Bump when an existing {@code xl_base} folder must be pasted again.
+     * Revision 1 bases were saved only around spawn.
+     */
+    static final int FLOOR2_BASE_REVISION = 2;
 
     /** Survives purge/restart — schematic lives here permanently. */
     public static final String ENDLESS_BASE = InstanceManager.WORLD_PREFIX + "xl_base";
@@ -62,14 +73,27 @@ final class DungeonWarmPool {
         }
         plugin.getServer().getScheduler().runTaskLater(plugin, this::ensureWarmVoid, 100L);
         // Prefer loading an existing base (fast). First-time paste is delayed further.
-        plugin.getServer().getScheduler().runTaskLater(plugin, this::ensureWarmEndless, 140L);
+        plugin.getServer().getScheduler().runTaskLater(plugin, this::ensureWarmEndlessNow, 140L);
         plugin.getServer().getScheduler().runTaskLater(plugin, this::ensureWarmAshes, 180L);
     }
 
     void ensureAll() {
         ensureWarmVoid();
-        ensureWarmEndless();
+        ensureWarmEndlessNow();
         ensureWarmAshes();
+    }
+
+    boolean hasWarmEndless() {
+        return warmEndless != null && warmEndless.world() != null;
+    }
+
+    /** Claim the warm Floor 2 base, building it on this thread when the pool is empty. */
+    WarmEndless acquireEndless() {
+        if (warmEndless != null) {
+            return takeEndless();
+        }
+        ensureWarmEndlessNow();
+        return takeEndless();
     }
 
     void shutdown() {
@@ -238,7 +262,7 @@ final class DungeonWarmPool {
         });
     }
 
-    private void ensureWarmEndless() {
+    private void ensureWarmEndlessNow() {
         if (warmEndless != null || !endlessBuilding.compareAndSet(false, true)) {
             return;
         }
@@ -246,26 +270,42 @@ final class DungeonWarmPool {
             endlessBuilding.set(false);
             return; // currently in a run
         }
-        plugin.getServer().getScheduler().runTask(plugin, () -> {
-            try {
-                if (warmEndless != null || !claimedEndless.isEmpty()) {
+        try {
+            if (warmEndless != null || !claimedEndless.isEmpty()) {
+                return;
+            }
+            long started = System.currentTimeMillis();
+            File folder = new File(Bukkit.getWorldContainer(), ENDLESS_BASE);
+            EndlessEncounter.Prep prep = loadPrep();
+            EndlessSchemBuilder.PasteResult paste = loadPasteMeta();
+            boolean schemChanged = schemFingerprintChanged(prep != null);
+            boolean prepStale = prep == null || loadPrepVersion() != EndlessEncounter.PREP_VERSION;
+
+            if (folder.isDirectory() && paste != null && !schemChanged) {
+                World world = loadOrCreateBaseWorld();
+                if (world == null) {
+                    plugin.getLogger().warning("Could not load Floor 2 base world.");
                     return;
                 }
-                long started = System.currentTimeMillis();
-                File folder = new File(Bukkit.getWorldContainer(), ENDLESS_BASE);
-                EndlessEncounter.Prep prep = loadPrep();
-                EndlessSchemBuilder.PasteResult paste = loadPasteMeta();
-                boolean schemChanged = schemFingerprintChanged(prep != null);
-                boolean prepStale = prep == null || loadPrepVersion() != EndlessEncounter.PREP_VERSION;
-
-                if (folder.isDirectory() && paste != null && !schemChanged) {
-                    World world = loadOrCreateBaseWorld();
-                    if (world == null) {
-                        plugin.getLogger().warning("Could not load Endless XL base world.");
+                world.setAutoSave(false);
+                if (!EndlessSchemBuilder.extentPresent(world, paste)) {
+                    if (!EndlessSchemBuilder.worldEditPresent()) {
+                        plugin.getLogger().warning(
+                                "Floor 2 base is truncated and WorldEdit is offline, so it was left in place."
+                        );
                         return;
                     }
+                    if (!world.getPlayers().isEmpty()) {
+                        plugin.getLogger().warning("Floor 2 base is truncated, but players are inside. Not rebuilding.");
+                        return;
+                    }
+                    plugin.getLogger().warning(
+                            "Floor 2 base is truncated past spawn (void toward the Frostbound). Pasting the full map once."
+                    );
+                    discardEndlessWorld(world);
+                } else {
                     if (prepStale) {
-                        plugin.getLogger().info("Endless prep outdated — rebuilding gate/spots on existing base...");
+                        plugin.getLogger().info("Floor 2 prep outdated — rebuilding gate/spots on existing base...");
                         prep = EndlessEncounter.prepare(
                                 plugin,
                                 world,
@@ -280,56 +320,85 @@ final class DungeonWarmPool {
                     }
                     parkWorld(world);
                     warmEndless = new WarmEndless(world, paste, prep);
-                    plugin.getLogger().info("Endless XL base loaded (no paste) in "
+                    plugin.getLogger().info("Floor 2 base loaded (no paste) in "
                             + (System.currentTimeMillis() - started) + "ms — spots=" + prep.mobSpotCount());
                     return;
                 }
-
-                if (!EndlessSchemBuilder.worldEditPresent()) {
-                    plugin.getLogger().warning("Endless XL base missing and WorldEdit is offline.");
-                    return;
-                }
-
-                plugin.getLogger().info("Building Endless XL base (one-time WorldEdit paste)...");
-                World world = loadOrCreateBaseWorld();
-                if (world == null) {
-                    plugin.getLogger().warning("Endless XL base create failed.");
-                    return;
-                }
-                // Clear leftover entities from a half-built base.
-                for (org.bukkit.entity.Entity entity : new ArrayList<>(world.getEntities())) {
-                    if (!(entity instanceof Player)) {
-                        entity.remove();
-                    }
-                }
-                paste = EndlessSchemBuilder.paste(plugin, world);
-                // Prep IMMEDIATELY while pasted chunks are still loaded (delay caused spots=1).
-                prep = EndlessEncounter.prepare(
-                        plugin,
-                        world,
-                        paste.minX(),
-                        paste.maxX(),
-                        paste.minY(),
-                        paste.maxY(),
-                        paste.minZ(),
-                        paste.maxZ()
-                );
-                savePrep(prep, paste);
-                saveSchemFingerprint();
-                parkWorld(world);
-                world.setAutoSave(true);
-                world.save();
-                world.setAutoSave(false);
-                warmEndless = new WarmEndless(world, paste, prep);
-                plugin.getLogger().info("Endless XL base ready in " + (System.currentTimeMillis() - started)
-                        + "ms (spots=" + prep.mobSpotCount() + ", door=" + prep.doorBlockCount()
-                        + "). Later restarts skip paste.");
-            } catch (RuntimeException exception) {
-                plugin.getLogger().warning("Endless XL base failed: " + exception.getMessage());
-            } finally {
-                endlessBuilding.set(false);
             }
-        });
+
+            if (!EndlessSchemBuilder.worldEditPresent()) {
+                plugin.getLogger().warning("Floor 2 base missing and WorldEdit is offline.");
+                return;
+            }
+
+            plugin.getLogger().info("Building Floor 2 base (one-time WorldEdit paste)...");
+            World existing = Bukkit.getWorld(ENDLESS_BASE);
+            if (existing != null || new File(Bukkit.getWorldContainer(), ENDLESS_BASE).isDirectory()) {
+                discardEndlessWorld(existing);
+            }
+            World world = loadOrCreateBaseWorld();
+            if (world == null) {
+                plugin.getLogger().warning("Floor 2 base create failed.");
+                return;
+            }
+            // Clear leftover entities from a half-built base.
+            for (org.bukkit.entity.Entity entity : new ArrayList<>(world.getEntities())) {
+                if (!(entity instanceof Player)) {
+                    entity.remove();
+                }
+            }
+            try {
+                paste = EndlessSchemBuilder.paste(plugin, world);
+            } catch (RuntimeException exception) {
+                plugin.getLogger().warning("Floor 2 paste failed, discarding partial base: " + exception.getMessage());
+                discardEndlessWorld(world);
+                throw exception;
+            }
+            // Prep IMMEDIATELY while pasted chunks are still loaded (delay caused spots=1).
+            prep = EndlessEncounter.prepare(
+                    plugin,
+                    world,
+                    paste.minX(),
+                    paste.maxX(),
+                    paste.minY(),
+                    paste.maxY(),
+                    paste.minZ(),
+                    paste.maxZ()
+            );
+            if (!EndlessSchemBuilder.extentPresent(world, paste)) {
+                discardEndlessWorld(world);
+                throw new IllegalStateException("Floor 2 paste did not leave a solid corridor to the Frostbound.");
+            }
+            savePrep(prep, paste);
+            saveSchemFingerprint();
+            parkWorld(world);
+            warmEndless = new WarmEndless(world, paste, prep);
+            plugin.getLogger().info("Floor 2 base ready in " + (System.currentTimeMillis() - started)
+                    + "ms (spots=" + prep.mobSpotCount() + ", door=" + prep.doorBlockCount()
+                    + "). Later restarts skip paste.");
+        } catch (RuntimeException exception) {
+            plugin.getLogger().warning("Floor 2 base failed: " + exception.getMessage());
+        } finally {
+            endlessBuilding.set(false);
+        }
+    }
+
+    /** Drop a half-saved Floor 2 folder so the next paste is not written into void chunks. */
+    private void discardEndlessWorld(World world) {
+        if (world != null) {
+            world.setAutoSave(false);
+            if (!world.getPlayers().isEmpty()) {
+                plugin.getLogger().warning("Not deleting Floor 2 base while players are inside.");
+                return;
+            }
+            if (!Bukkit.unloadWorld(world, false)) {
+                plugin.getLogger().warning("Could not unload Floor 2 base before rebuild.");
+            }
+        }
+        File folder = new File(Bukkit.getWorldContainer(), ENDLESS_BASE);
+        if (!deleteRecursively(folder) && folder.exists()) {
+            plugin.getLogger().warning("Could not delete Floor 2 base folder; paste will overwrite blocks.");
+        }
     }
 
     private World loadOrCreateBaseWorld() {
@@ -364,7 +433,7 @@ final class DungeonWarmPool {
     private void saveSchemFingerprint() {
         File schem = new File(plugin.getDataFolder(), EndlessSchemBuilder.RESOURCE_PATH);
         try {
-            String fp = schem.length() + ":" + schem.lastModified();
+            String fp = schem.length() + ":" + schem.lastModified() + ":r" + FLOOR2_BASE_REVISION;
             fingerprintFile().getParentFile().mkdirs();
             java.nio.file.Files.writeString(fingerprintFile().toPath(), fp);
         } catch (Exception exception) {
@@ -382,7 +451,7 @@ final class DungeonWarmPool {
             return true;
         }
         try {
-            String expected = schem.length() + ":" + schem.lastModified();
+            String expected = schem.length() + ":" + schem.lastModified() + ":r" + FLOOR2_BASE_REVISION;
             String actual = java.nio.file.Files.readString(fp.toPath()).trim();
             return !expected.equals(actual);
         } catch (Exception exception) {
@@ -627,6 +696,13 @@ final class DungeonWarmPool {
                 EndlessEncounter.SPAWN_Y,
                 EndlessEncounter.SPAWN_Z + 0.5
         ));
+        // Floor 2 only: the paste is wider than the chunks we keep loaded. Flush first,
+        // and leave auto-save on while those chunks unload so the Frostbound half is kept.
+        boolean endlessBase = ENDLESS_BASE.equals(world.getName());
+        if (endlessBase) {
+            world.setAutoSave(true);
+            world.save();
+        }
         int keep = 3;
         int spawnCx = EndlessEncounter.SPAWN_X >> 4;
         int spawnCz = EndlessEncounter.SPAWN_Z >> 4;
@@ -637,6 +713,9 @@ final class DungeonWarmPool {
                 continue;
             }
             chunk.unload(true);
+        }
+        if (endlessBase) {
+            world.setAutoSave(false);
         }
     }
 
