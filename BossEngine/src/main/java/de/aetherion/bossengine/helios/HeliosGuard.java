@@ -5,12 +5,14 @@ import de.aetherion.bossengine.helios.encounter.HeliosEncounter;
 import de.aetherion.bossengine.helios.encounter.Participants;
 import de.aetherion.bossengine.helios.world.HeliosWorld;
 import de.aetherion.bossengine.util.TextUtil;
+import de.aetherion.core.api.QuestBars;
 
 import io.papermc.paper.event.player.PrePlayerAttackEntityEvent;
 
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -34,8 +36,9 @@ import org.bukkit.inventory.EquipmentSlot;
 /**
  * Keeps an instance honest and keeps people safe:
  * no pearls, chorus, elytra or flight, no block edits, cutscene invulnerability, void rescue hooks,
- * echoes on death, a clean exit on quit or any foreign teleport, and a guaranteed trip home on the
+ * revive-in-arena on death, a clean exit on quit or any foreign teleport, and a guaranteed trip home on the
  * next login after a crash. Staff with {@code helios.bypass} are exempt from the movement rules.
+ * Quest / hint bossbars stay off while inside the Helios world.
  */
 public final class HeliosGuard implements Listener {
 
@@ -51,8 +54,33 @@ public final class HeliosGuard implements Listener {
         return module.world() != null && p.getWorld() == module.world();
     }
 
+    private boolean heliosWorld(World world) {
+        return module.world() != null && world == module.world();
+    }
+
     private boolean exempt(Player p) {
         return p.hasPermission(BYPASS) || p.getGameMode() == GameMode.CREATIVE || p.getGameMode() == GameMode.SPECTATOR;
+    }
+
+    /** Quest bossbar + soft NPC hints off for the whole Helios world — boss HP only. */
+    private static void hushHud(Player player) {
+        if (player == null) {
+            return;
+        }
+        QuestBars.suppress(player);
+        try {
+            Class<?> hint = Class.forName("de.aetherion.quests.ui.QuestHint");
+            hint.getMethod("clear", Player.class).invoke(null, player);
+        } catch (ReflectiveOperationException ignored) {
+            // Quests offline — fine.
+        }
+    }
+
+    private static void restoreHud(Player player) {
+        if (player == null) {
+            return;
+        }
+        QuestBars.unsuppress(player);
     }
 
     /* ------------------------------------------------------------------ movement exploits */
@@ -194,11 +222,15 @@ public final class HeliosGuard implements Listener {
             // Home now, while the player object is still valid: the next login starts clean.
             e.leave(p, true);
         }
+        restoreHud(p);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onJoin(PlayerJoinEvent event) {
         Player p = event.getPlayer();
+        if (inWorld(p)) {
+            hushHud(p);
+        }
         module.plugin().getServer().getScheduler().runTaskLater(module.plugin(), () -> recoverPlayer(module, p), 2L);
         module.plugin().getServer().getScheduler().runTaskLater(module.plugin(), () -> {
             if (p.isOnline() && de.aetherion.bossengine.helios.reward.PendingRewards.deliver(p) > 0) {
@@ -211,6 +243,11 @@ public final class HeliosGuard implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onWorldChange(PlayerChangedWorldEvent event) {
         Player p = event.getPlayer();
+        if (heliosWorld(p.getWorld())) {
+            hushHud(p);
+        } else if (heliosWorld(event.getFrom())) {
+            restoreHud(p);
+        }
         HeliosEncounter e = module.encounterOf(p);
         if (e != null && p.getWorld() != module.world()) {
             e.leave(p, false);

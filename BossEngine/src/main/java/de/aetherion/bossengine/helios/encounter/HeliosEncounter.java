@@ -473,7 +473,7 @@ public final class HeliosEncounter {
                 beginClosing(true);
             }
             if ((act == Act.HERALD || act == Act.HELIOS) && !victory && builtAt >= 0 && clock - builtAt > 60) {
-                if (party.alive().isEmpty()) {
+                if (party.alive().isEmpty() && !partyAwaitingRespawn()) {
                     fail();
                 }
             }
@@ -654,40 +654,53 @@ public final class HeliosEncounter {
 
     /* ================================================================== people */
 
-    /** A participant died in the arena. */
+    /** True while someone is still on the death screen (about to respawn into the fight). */
+    private boolean partyAwaitingRespawn() {
+        for (Player p : party.present()) {
+            if (p.isDead()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** A participant died in the arena — stay in the fight; respawn puts them back on the floor. */
     public void died(Player p) {
         Participants.Member m = party.get(p);
         if (m == null) {
             return;
         }
-        if (cfg.echoes()) {
-            m.echo = true;
-        }
+        m.echo = false;
         for (Player o : audience()) {
             o.sendMessage(TextUtil.component(Lang.pick(o,
-                    "&6✦ &7" + p.getName() + " &8verglüht. &7Ein Echo bleibt.",
-                    "&6✦ &7" + p.getName() + " &8burns away. &7An echo remains.")));
-        }
-        if (!cfg.echoes()) {
-            Bukkit.getScheduler().runTask(module.plugin(), () -> leave(p, true));
+                    "&6✦ &7" + p.getName() + " &8verglüht. &7Steht gleich wieder auf.",
+                    "&6✦ &7" + p.getName() + " &8burns away. &7They'll stand again.")));
         }
     }
 
-    /** Where a dead participant respawns (the overlook) or null to let vanilla decide. */
+    /** Respawn on the arena floor as a fighter (not spectator, not main world). */
     public Location respawn(Player p) {
         Participants.Member m = party.get(p);
-        if (m == null || !m.echo) {
+        if (m == null) {
             return null;
         }
+        m.echo = false;
+        Vector3f safe = arena == null ? new Vector3f() : arena.safeSpot(m.lastGround);
+        Location to = stage.at(safe.x, 0.1f, safe.z);
+        to.setYaw(p.getLocation().getYaw());
+        to.setPitch(10f);
         Bukkit.getScheduler().runTask(module.plugin(), () -> {
-            if (p.isOnline() && party.contains(p)) {
-                p.setGameMode(GameMode.SPECTATOR);
-                p.sendTitlePart(net.kyori.adventure.title.TitlePart.TITLE, TextUtil.component("&7Echo"));
-                p.sendTitlePart(net.kyori.adventure.title.TitlePart.SUBTITLE, TextUtil.component(Lang.pick(p,
-                        "&8Du siehst zu, bis das Licht verklingt.", "&8You watch until the light fades.")));
+            if (!p.isOnline() || !party.contains(p)) {
+                return;
             }
+            if (p.getGameMode() != GameMode.CREATIVE) {
+                p.setGameMode(GameMode.SURVIVAL);
+            }
+            p.setAllowFlight(false);
+            p.setFlying(false);
+            p.setFallDistance(0f);
         });
-        return overlook();
+        return to;
     }
 
     /** A participant leaves (command, quit, other world). */
