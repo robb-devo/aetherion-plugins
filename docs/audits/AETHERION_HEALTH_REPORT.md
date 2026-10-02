@@ -23,6 +23,7 @@ What is actually wrong, with evidence:
 - Dungeon transfer snapshots default to `/var/opt/minecraft/crafty/shared/transfer`. The test server logged `Could not create transfer snapshot dir`. **MEDIUM, REPRODUCED** as a warning. On the real Crafty host that directory is the documented path, so production may be fine. A host that cannot create it will fail transfers.
 - BossEngine creates `helios_requiem` at enable (3 slots). Dungeons warm a void world and `aedun_xl_base` with zero players. Shutdown logged `Waiting 60s for chunk system to halt` for `aedun_warm_void_d32a867a`. **MEDIUM, REPRODUCED, RUNTIME VERIFIED** on this combined server. A dungeon backend that keeps the warm pool will pay this on every stop.
 - The even-second restart countdown (`RestartCountdown`, chat on 10, 8, 6, 4, 2) is **not on `main`**. It exists only on unmerged `origin/cursor/aenet-restart-countdown-398b`. **INFORMATIONAL lock gap.** Do not treat `main` as if that class is present.
+- Follow-up source pass (no second Paper boot): `open_up` never receives progress; several boss-hunt rewards name Hub spawns that `HubService` deletes; quarry minions credit wall-clock time while the process is down; mining seals are in-memory bedrock timers; a successful dungeon snapshot clears the inventory and a failed `connect()` does not put it back; `ashen_katana` has no `ItemProfile`, so equipment stats ignore its PDC damage. Details in sections 3.7–3.12. All **STATICALLY INFERRED**. Do not “fix” the katana by editing `AshenKatanaListener`.
 - `robb-devo/aetherion-texturepack` is not readable from this environment (`gh repo view` could not resolve it). Model/texture parity is **UNTESTED** against the pack. Static count: 114 `setCustomModelData` calls in `CustomItem.java`, 101 distinct integers, 11 integers used more than once.
 
 Do not “clean up” `CustomItem`, `DevMenu`, scripted boss directors, `TalkUx`, booster sockets, or the two locked weapons. They are large because they are the game.
@@ -116,6 +117,53 @@ Lifecycle sketch for the paths that were actually read:
 - Boot: `[AetherionDungeons] Could not create transfer snapshot dir: /var/opt/minecraft/crafty/shared/transfer`.
 - `TransferSnapshotStore` keeps that `File` when `mkdirs` fails. Later `save` will fail to write. On the real Crafty layout this path is intentional (`SETUP.md`). Anywhere else, transfers do not work until the config is overridden. The jar default is not “derive relative to the server”.
 
+### 3.7 `open_up` cannot complete
+
+- Severity: **HIGH** for that quest. Evidence: **CONFIRMED**. Verification: **STATICALLY INFERRED**.
+- `QuestRegistry` registers `open_up` as `ObjectiveType.USE` / target `MERCHANT_CHEST` / amount 1 (`QuestRegistry.java` around 566–584).
+- `QuestObjectiveListener.onUse` only calls `addProgress` when `ObjectiveMatcher.matches` is true. `matches` compares the clicked block’s `Material.name()` to the target (or a small ore alias map). There is no `Material` named `MERCHANT_CHEST`, so a chest click does not match.
+- `MerchantChestService.tryOpen` / `finish` grants the sample item, records cooldown, and saves `merchant-chest.yml`. A search of that class shows `getProgress` (legacy unlock migration only) and **no** `addProgress`.
+- Expected: opening the merchant sample chest completes Open Up. Actual: the chest can pay out while the objective stays at 0. No player was joined to click it.
+
+### 3.8 Quest spawn rewards point at ids Hub deletes
+
+- Severity: **HIGH** for those rewards (coins and XP on the same quests still grant). Evidence: **CONFIRMED**. Verification: **STATICALLY INFERRED**.
+- `HubService.ORIGIN_SPAWN_IDS` is harbour, ore_ridge, mines, capital, forage_isle, farm, farm_isle, borderlands, colosseum, eldervale, fishing_eldervale. `RETIRED_SPAWN_IDS` includes `lurker_camp`, `royal_palace`, `ticket_hall`, `trash_chute`, `guild_quarry`, `worm_tunnels`, `collections`. `retireSpawns()` removes any spawn that is not an origin id.
+- `HubService.unlock` returns false when `spawn(spawnId)` is null. `QuestManager.giveSpawnUnlock` then tells the player it could not unlock that spawn.
+- Rewards that name retired ids: `those_sounds` → `Spawn: lurker_camp` (`QuestRegistry` 706–710); `walking_mountain` → `royal_palace`; T2 hunts `open_ticket` → `ticket_hall`, `lost_and_found` → `trash_chute`, `overtime` → `guild_quarry`, `denied_claim` → `worm_tunnels`, `bounced_check` → `collections` (`registerBossHunt` / `registerT2BossHunt` calls at 733–863).
+- Hunts that still name live ids (`farm`, `mines`, `harbour`, `capital`) are not in this list. This is a content/id mismatch after the origin-map purge, not a missing reward parser. The parser for `Spawn:` is still called.
+
+### 3.9 Quarry minions produce for offline wall-clock time
+
+- Severity: **HIGH** if the UI or design says production only runs while the server is up. Evidence: **CONFIRMED**. Verification: **STATICALLY INFERRED** (no minion was placed; the formula is the code).
+- `MinionService.catchUp` (`AetherionGuilds/.../MinionService.java` 190–204): `steps = (now - lastTick) / interval`, then `addStored` up to cap, then `lastTick` advances by `steps * interval`. There is no clamp to “this JVM was running”.
+- A minion whose `lastTick` is hours or days old is credited that entire gap on the next `catchUp` (startup or open), limited only by storage cap.
+- `preview` uses the same step math for the number shown before catch-up.
+- Not runtime-measured. Cap still bounds the stored stack. This is not a coin printer; it is stored quarry material.
+
+### 3.10 Mined ore sealed as bedrock does not survive a restart
+
+- Severity: **MEDIUM**. Evidence: **CONFIRMED**. Verification: **STATICALLY INFERRED**.
+- `MiningListener.seal` sets the block to bedrock immediately, then `runTaskLater` restores the original block data after `20 * respawnSeconds` ticks, and only if the block is still bedrock (lines 105–125).
+- Those tasks are not written to disk. Disable or crash drops them. The chunk keeps bedrock.
+- Expected: ore returns after the configured seconds, including across a restart (or the seal is not bedrock). Actual: a restart inside the delay leaves bedrock where the ore was. Not reproduced on the test server (no player broke a block).
+
+### 3.11 Dungeon transfer clears inventory before the hop, and a failed connect does not restore it
+
+- Severity: **HIGH** on a failed hop. Evidence: **CONFIRMED**. Verification: **STATICALLY INFERRED**. The directory-missing warning was runtime-verified (3.6). No player was transferred.
+- `TransferSnapshotStore.save` writes the snapshot with `AtomicYaml`, and on success calls `clearLivingInventory` (lines 118–128). On `IOException` it returns **without** clearing.
+- `RemoteServerBridge.transferToDungeon` always calls `save` first, then `connect` (lines 93–102). `connect` returns false only when building or sending the plugin message throws (lines 115–130). That false path does not call a restore.
+- `sendPluginMessage` returning normally makes `connect` return true even when no Velocity proxy is listening. The player stays on this backend with an empty living inventory and a snapshot on disk. Applying that snapshot is a separate join path, not this failure path.
+- Expected: a hop that does not leave the server puts the inventory back, or does not clear until the proxy accepts the player. Actual: clear happens as soon as the YAML write succeeds.
+
+### 3.12 Blossom Blade has no equipment profile
+
+- Severity: **HIGH** for the weapon’s listed damage in the shared stat pipeline. Evidence: **CONFIRMED**. Verification: **STATICALLY INFERRED**. Combat was not swung.
+- `ItemProfile` has `GRAVWELL_CLEAVER("gravwell_cleaver", DAMAGE, …)` and `ASHEN_CLEAVER("ashen_cleaver", …)`. There is no `"ashen_katana"` entry. `fromItemId` falls through to `UNKNOWN`, whose capability list is empty (`ItemProfile.java` 1635–1638, 1699–1762).
+- `ActiveEquipmentStats.getItemStat` returns 0 when `!profile.hasCapability(capability)` (lines 102–106), before `itemManager.getStat`. PDC damage on the katana (`BossGearBalance` case `ashen_katana` → `weapon(86, …)`, `CustomItem.createAshenKatana`) is therefore not added by this aggregator.
+- `AshenKatanaListener` (around line 125) uses `Math.max(24.0, equipmentStats.getStat(player, DAMAGE))` for the ability. With no profile, that DAMAGE total is other worn gear only, and the floor stays 24. Gravwell is registered, so this gap is specific to the katana id.
+- **LOCKED / PROTECTED adjacent.** This is a missing registry row, not a request to retune the dash, rise, blossom-crown, slam, particles, or sounds. Do not edit `AshenKatanaListener` or `GravwellCleaverListener` to “fix” it. The safe direction is an `ItemProfile` entry for `ashen_katana` with the same capability set as the other boss weapons, leaving ability code untouched.
+
 ---
 
 ## 4. Suspected Regressions
@@ -172,7 +220,9 @@ No invented capacity numbers. See section 21.
 
 - Rank file: `RankBadgeService.save` builds a fresh `YamlConfiguration`, `config.save(file)`, catches `IOException` and ignores it. A disk-full save fails silently and the next successful save can still be a full overwrite. **HIGH** if this file is the network source of truth, **MEDIUM** otherwise. **CONFIRMED, STATICALLY INFERRED.**
 - Coins `save()` loads the live file and overlays this JVM’s map. Two backends sharing one `coins.yml` can drop the other’s updates. The duping checklist already says a hard kill inside 60 s loses unsaved seconds, and that per-player coin files are not done. **STRONGLY INDICATED, STATICALLY INFERRED.**
-- `TransferSnapshotStore.save` writes the snapshot, then `clearLivingInventory`. If the proxy move never happens, the source player is empty until some server applies `{uuid}.yml`. Documented in `docs/DUPING_CHECKLIST.md`. **CONFIRMED design, UNTESTED** with a real Velocity hop.
+- `TransferSnapshotStore.save` writes the snapshot, then `clearLivingInventory`. `RemoteServerBridge.connect` returns false only on an exception and does not restore (section 3.11). A plugin message that never moves the player still returns true. **CONFIRMED, STATICALLY INFERRED.** Documented as a residual in `docs/DUPING_CHECKLIST.md`. **UNTESTED** with a real Velocity hop.
+- Mining ore seals are bedrock plus a delayed task (section 3.10). Restart drops the task. **CONFIRMED, STATICALLY INFERRED.**
+- `PersistenceFlushListener` flushes coins, shards, progress, skills, codex, recipes, blueprints, xp boosts, and market on quit. It does not call `ranks.flush()`. Rank mutations that were read (`setRank` paths around lines 231 and 262) call `save()` themselves, and `onDisable` calls `flush()`. The quit gap matters only for a rank change that does not save immediately. **LOW, STATICALLY INFERRED.** Not a second copy of the rank overwrite bug in section 6.
 - Apply path clears inventory before restoring. A snapshot missing `inventory-b64` restores an empty array (see section 4). **POSSIBLE.**
 - Quest files use `AtomicYaml` for `YamlConfiguration`. **Looks sound. UNTESTED** with a player.
 - Guild `save()` is a full-file rewrite through `AtomicYaml`. Crash mid-write should not truncate. Concurrent writers still last-win. **STATICALLY INFERRED.**
@@ -199,6 +249,7 @@ No invented capacity numbers. See section 21.
 - Enable order observed: Core (STARTUP) → Hub → Items → Mobs → Beta → Quests → Farming → BossEngine (hooks Items loot bridge on the next tick) → Guilds → Foraging → Mining → StressBots → Dungeons → Pit (failed) → Fishing. BossEngine’s `loadbefore: Multiverse-Core` does nothing here because Multiverse is absent. That hook is for production world_eater void gen. **UNTESTED** against real Multiverse.
 - `AetherServices` is the intended seam. Dungeon transfer null-checks progress, pets, and quests. **Good.**
 - Pit’s PAPI coupling is a hard class dependency hiding behind `softdepend` (section 3.2). Items’ coin placeholder is constructed only when PAPI is enabled. **That pattern is the one to copy.**
+- `AetherionForaging` `plugin.yml` lists AetherionItems as `softdepend`, but `ForagingListener` (and `ForageBridge`, `ForagingSkills`, grove rite classes) import `de.aetherion.items.*` at the top of the file, and `AetherionForaging.onEnable` does `new ForagingListener(this)` with no `isPluginEnabled` check. Same failure mode as Pit if Items is absent: the class does not load. The combined test server had Items, so Foraging enabled. **STRONGLY INDICATED, STATICALLY INFERRED.** Not reproduced by removing the jar.
 - LuckPerms is `softdepend` and is not safe to call (section 3.3).
 - FancyNpcs is reflection (`FancyNpcFacade`). Foraging, Pit, and Quests logged missing interact events and continued. **RUNTIME VERIFIED** as a degraded but alive start. NPC click gameplay is **UNTESTED** and will not work without FancyNpcs.
 - WorldGuard is a real `depend` for Farming, Foraging, and Mining. They enabled once the dist jars were present. The Maven `worldguard-bukkit` artifact (273 KB) is not a server plugin; the Modrinth dist jar is. **INFORMATIONAL** for anyone who copies the compile-scoped jar into `plugins/`.
@@ -211,7 +262,7 @@ No invented capacity numbers. See section 21.
 - `InstanceManager` owns session maps, a 1 s room scan, a 60 s orphan purge, build failure cleanup (`deleteWorld`), and `shutdown()` from `AetherionDungeons.onDisable`. **STATICALLY INFERRED** as a real lifecycle, not a fire-and-forget.
 - Warm pool runs with no players. Boot created `aedun_warm_void_d32a867a` and `aedun_xl_base`. Shutdown paid a 60 s chunk halt on the warm void world. **REPRODUCED.**
 - Transfer v4 is claim-by-rename (`uuid.yml` → `uuid.claimed.yml`) so a second join should not apply twice. **STATICALLY INFERRED.** Not tested.
-- Inventory is cleared on the source after a successful snapshot write. Residual empty-inventory if the hop fails: already in the duping checklist.
+- Inventory is cleared on the source after a successful snapshot write. `connect()` false does not restore it (section 3.11). Residual empty-inventory if the hop fails: already in the duping checklist. **CONFIRMED, STATICALLY INFERRED.**
 - Party disconnect, loot chest double-claim, reconnect, and two simultaneous instances: **UNTESTED.**
 - Floor/room builders (`PrototypeDungeonBuilder`, `LerfingTestBuilder`, `EndlessSchemBuilder`) were not executed. Impossible connections and room collisions: **UNTESTED.**
 - No evidence on `main` that dungeon code was gutted. The booster-wipe fix commit `83b7f85` is on an unmerged branch and also tried to replace anvil boosters; `main` already has `BoosterSockets` and a 14-socket menu, so that branch is not a clean patch.
@@ -232,6 +283,8 @@ No invented capacity numbers. See section 21.
 ## 11. Island/Guild/Quarry Findings
 
 - Guilds enable creates two worlds (`aether_guilds`, `aether_islands`) and states that quarries tick for the whole uptime. **RUNTIME VERIFIED** creation. Tick cost **UNTESTED** (no minions placed).
+- Quarry catch-up credits every elapsed interval since `lastTick`, including time the process was down (section 3.9). **CONFIRMED, STATICALLY INFERRED.**
+- `AetherionItemsAccess.islandUnlocked` / `guildUnlocked` return **true** when AetherionItems is not enabled (`AetherionItemsAccess.java` 25–31 and 41–46). `AetherionGuilds/plugin.yml` only `softdepend`s Items. On a Guilds-only process the level gate is open. Production mmo-r loads both. **MEDIUM, CONFIRMED, STATICALLY INFERRED.** Not hit on the combined test boot (Items was enabled).
 - Bank deposit: permission check, cap, `takeCoins`, then `setBankCoins`, then atomic full save. Withdraw: decrement bank, then `addCoins`. A crash between those two lines loses or duplicates coins depending on direction. **POSSIBLE, STATICALLY INFERRED**, one main-thread window, not reproduced.
 - Island ownership and permission leaks: **UNTESTED.** No player, no WorldGuard regions exercised beyond “config loaded”.
 - Farming isle paste is a separate world from the Eldervale farm grid in `world` (`FarmIsleZones` comment). Both exist. The volume scan (section 3.4) is the farm-island world, not the Eldervale grid.
@@ -244,14 +297,16 @@ No invented capacity numbers. See section 21.
 - `TalkUx` is present and still described in source as a `TextDisplay` bubble, reply chips, and a quest card, per listener. **LOCKED SHELL INTACT. STATICALLY INFERRED.** No NPC was clicked.
 - FancyNpcs absent: Quests logged editor NPCs will not restore; Foraging logged Pell/Tamsin/Juniper not placed and interact events missing; Pit logged hub NPC clicks dead (and then Pit disabled for the PAPI crash). **RUNTIME VERIFIED** degradation.
 - `DialogManager` is ~large and still the dialog owner. German overlay: `lang/de.yml` exists. The handoff (`docs/CLOUD_CHAT_HANDOFF.md`) says an EN rewrite + DE overlay was in progress as of 2026-09-29 and `main` is that tip. Key-by-key EN/DE parity was **not** fully diffed. **UNTESTED** as a player.
-- Quest rewards in `QuestManager` still call `customItem.createRandomBooster()` and vanilla item grants. A full “reward id with no factory” pass was **not** completed. **UNTESTED** beyond spot reads.
+- `open_up` does not complete from the merchant chest (section 3.7). **CONFIRMED, STATICALLY INFERRED.**
+- Spawn unlock rewards for `lurker_camp`, `royal_palace`, and the five T2 hall/quarry/tunnel/collections ids fail because Hub retires those ids (section 3.8). Coins and XP on those quests are separate reward lines and still run. **CONFIRMED, STATICALLY INFERRED.**
+- Quest rewards in `QuestManager` still call `customItem.createRandomBooster()` and vanilla item grants. A full “reward id with no factory” pass was **not** completed beyond the spawn-id pass above.
 - Fresh-player walkthrough: **not done.** No Minecraft client in this VM.
 
 ---
 
 ## 13. Item/Combat Findings
 
-- Blossom Blade: id `ashen_katana`, `AshenKatanaListener` (dash, rise, blossom-crown, slam — comment in source), `BossGearBalance` case, Dev menu factory, `CustomItem.createAshenKatana`. **Present. Combat feel UNTESTED. Do not edit.**
+- Blossom Blade: id `ashen_katana`, `AshenKatanaListener` (dash, rise, blossom-crown, slam — comment in source), `BossGearBalance` case, Dev menu factory, `CustomItem.createAshenKatana`. **Listener present. Do not edit the listener.** Equipment aggregation drops its damage because `ItemProfile` has no `ashen_katana` row (section 3.12). **CONFIRMED, STATICALLY INFERRED.** Gravwell Cleaver’s profile row exists.
 - Gravwell Cleaver: id `gravwell_cleaver`, `GravwellCleaverListener`, balance case, factory. **Present. UNTESTED. Do not edit.**
 - Boosters: `BoosterSockets` stores 14 sockets; `BoosterSocketMenu` is the anvil UI; `BoosterLimits` / lore say 14 total; item stack size is 1 since the initial commit. Stat stacking is the lock called “stackable lore”. **Shell present. Socket behavior UNTESTED.**
 - Borderlands spirit vials are water potions with PDC (`borderlandsSpirit`, boss id), not drinkable by lore. No `setMaxStackSize`, so they follow potion stacking (1). **STATICALLY INFERRED.** Whether they should stack as items is the lock phrase “Borderlands vials” without an explicit stack size in `main`. Do not change them in a drive-by.
@@ -385,14 +440,20 @@ Technical order only.
 7. Dungeon transfer dir: if `mkdirs` fails, log the error you already log and do not pretend snapshots work; consider a relative default for non-Crafty hosts without changing production’s absolute path when that directory exists.
 8. Forage hologram: reuse tagged displays and do not spawn a new persistent one when the old one is merely unloaded. Re-implement on `main`; do not merge `forage-hologram-leak-470a` as a whole if the diff is wider than that.
 9. Warm-pool shutdown: don’t block disable for 60 s on an idle void world. Confirm on a dungeon-only boot before changing pool policy.
-10. Only then: two-client AH, guild bank, quest, and pet round-trips.
+10. Add an `ItemProfile` row for `ashen_katana` (same capabilities as the other boss melee). Do not edit `AshenKatanaListener`.
+11. Grant `open_up` / `MERCHANT_CHEST` progress only from a successful merchant-chest open.
+12. Retire quest `Spawn:` rewards that name ids in `HubService.RETIRED_SPAWN_IDS`, or point them at live origin ids.
+13. Decide quarry offline catch-up: the code credits wall-clock downtime up to the storage cap. Bound it to process uptime if that is not the design.
+14. Persist mining seal restore deadlines so a restart does not leave bedrock.
+15. On dungeon `connect()` failure, restore the living inventory that `TransferSnapshotStore.save` just cleared.
+16. Only then: two-client AH, guild bank, quest, and pet round-trips.
 
 ---
 
 ## 23. Unknowns / Areas Requiring Human Testing
 
 - Any joined player: kits, quests, NPC bubble, combat feel, vials, anvil sockets, boosters on upgrade.
-- Velocity hop: snapshot, inventory clear, apply once, coins overlay, failed connect.
+- Velocity hop: snapshot, inventory clear, apply once, coins overlay, failed connect. The no-restore path is confirmed in source (3.11); it was not played.
 - LuckPerms present: does `syncGroups` rewrite live group weights/prefixes (`writeGroupMeta` clears weight and prefix nodes on every rank group at startup)? **STATICALLY INFERRED** as a production side effect. Not run with LP installed.
 - Multiverse load order vs `world_eater` generator.
 - FancyNpcs click path, TAB, DiscordSRV.
@@ -427,7 +488,7 @@ Keep these small. Do not generate a second framework.
 
 This is a large, rapidly assembled Paper MMO that **builds, boots, and keeps coins** when the process is allowed to stop cleanly. The economy write path and the service registry are better than the size of the classes suggests. The boss and item files are big because the content is big. That is not the problem.
 
-The problem is a handful of concrete holes and a set of locks that live in docs and unmerged branches rather than on `main`. The worst hole is that god-kit commands are public. The worst operational hole on Hub is Pit dying without PlaceholderAPI. The worst stall we actually watched is the farm-island portal scan on first paste. The Admin/OP lock is unimplemented on `main`, and the restart countdown the docs name is not in this tree at all.
+The problem is a handful of concrete holes and a set of locks that live in docs and unmerged branches rather than on `main`. The worst hole is that god-kit commands are public. The worst operational hole on Hub is Pit dying without PlaceholderAPI. The worst stall we actually watched is the farm-island portal scan on first paste. The Admin/OP lock is unimplemented on `main`, and the restart countdown the docs name is not in this tree at all. A later static pass also found an unwinnable `open_up` objective, quest teleports aimed at deleted hub ids, quarry catch-up that counts downtime, mining bedrock that a restart can freeze, a dungeon hop that clears inventory before it knows the player left, and a Blossom Blade id that never enters the equipment profile table. None of those were clicked in-game. The katana listener stays locked.
 
 It is not a rewrite candidate. It is a “fix these paths, then playtest the ones this VM could not join” candidate. Merging the pile of old `cursor/*` branches to “catch up” would change locked weapons and mix unrelated diffs. Re-apply the intended behavior on today’s `main`, in the files named in the handoff, and leave the directors and the bubble alone.
 
@@ -498,6 +559,72 @@ It is not a rewrite candidate. It is a “fix these paths, then playtest the one
 - Direction: keep LuckPerms types in a class that is not initialized unless `isPluginEnabled` is true, and catch linkage errors. Do not shade LuckPerms into the jar.
 - Must not change: group names, the admin lock from item 4.
 
+#### 5b. Blossom Blade is missing from `ItemProfile`
+
+- Subsystem: item stat identity. Lock-adjacent. **Do not treat this as a combat retune.**
+- Files: `AetherionItems/src/main/java/de/aetherion/items/model/ItemProfile.java` (`fromItemId`, `UNKNOWN`, `GRAVWELL_CLEAVER`). Read-only context: `ActiveEquipmentStats.getItemStat`, `BossGearBalance` case `ashen_katana`, `AshenKatanaListener` line ~125.
+- Problem: `fromItemId("ashen_katana")` is `UNKNOWN`. `getItemStat` returns 0 before PDC stats are read. Ability damage uses `Math.max(24, aggregated DAMAGE)`, so the katana’s own damage number never enters that total. `gravwell_cleaver` is registered and is not in this hole.
+- Evidence: CONFIRMED, STATICALLY INFERRED. No swing test.
+- Risk: the weapon’s listed damage does not participate in the shared equipment total. Players still get the scripted ability.
+- Expected: `ashen_katana` resolves to a profile that allows DAMAGE / crit the same way `gravwell_cleaver` does, and the ability math, timings, VFX, and sounds stay as they are.
+- Direction: add one enum constant. Do not edit `AshenKatanaListener`, `GravwellCleaverListener`, particles, or `BossGearBalance` numbers unless the owner asks.
+- Must not change: locked weapon feel, item id string `ashen_katana`, model data, Gravwell behavior.
+
+#### 5c. `open_up` never increments
+
+- Subsystem: quests.
+- Files: `QuestRegistry` (`open_up`), `QuestObjectiveListener.onUse`, `ObjectiveMatcher`, `MerchantChestService.finish`.
+- Problem: USE matching is material-name equality. `MERCHANT_CHEST` is not a material. The chest service never calls `addProgress`.
+- Evidence: CONFIRMED, STATICALLY INFERRED.
+- Risk: the merchant sample quest cannot be turned in through the chest it describes.
+- Expected: a successful first sample open completes the USE objective and nothing else (not every chest in the world).
+- Direction: one `addProgress(player, "open_up", "MERCHANT_CHEST", 1)` on the success path inside `MerchantChestService`, after the unlock check. Do not widen `ObjectiveMatcher` to treat every chest as `MERCHANT_CHEST`.
+- Must not change: `TalkUx`, chest loot tables, cooldown.
+
+#### 5d. Retired Hub spawns are still quest rewards
+
+- Subsystem: quests × hub.
+- Files: `QuestRegistry` (`those_sounds`, `walking_mountain`, `registerT2BossHunt` call sites), `HubService.ORIGIN_SPAWN_IDS` / `RETIRED_SPAWN_IDS` / `unlock`, `QuestManager.giveSpawnUnlock`.
+- Problem: reward strings name ids `retireSpawns()` removes. `unlock` returns false. The player gets the failure chat line. Coins and XP on the same quest still pay.
+- Evidence: CONFIRMED, STATICALLY INFERRED.
+- Risk: Those Sounds and the named boss hunts advertise a teleport the origin map no longer has.
+- Expected: either a live spawn id, or no spawn reward line.
+- Direction: change the reward string to an id in `ORIGIN_SPAWN_IDS`, or drop the spawn reward. Do not reintroduce retired map ids unless the owner is putting those places back.
+- Must not change: origin spawn list, hub paste, dialogue shell.
+
+#### 5e. Quarry offline catch-up
+
+- Subsystem: guild / personal quarry minions.
+- Files: `AetherionGuilds/src/main/java/de/aetherion/guilds/service/MinionService.java` `catchUp` and `preview`.
+- Problem: steps are `(now - lastTick) / interval` with no “server was online” bound.
+- Evidence: CONFIRMED, STATICALLY INFERRED. No minion placed.
+- Risk: after downtime, the next tick fills storage up to cap from wall-clock time.
+- Expected: if production is online-only, credit only time this process was up. If offline production is intended, say so in config and stop describing it as online-only in any player text that still says that.
+- Direction: store a last-seen-online timestamp or cap steps to uptime since enable. Keep cap, compression, and item ids.
+- Must not change: quarry block types, guild bank formula, island schematic.
+
+#### 5f. Mining bedrock seal is memory-only
+
+- Subsystem: mining regen.
+- Files: `AetherionMining/src/main/java/de/aetherion/mining/MiningListener.java` `seal`.
+- Problem: bedrock is written now; restore is a Bukkit task. Restart drops the task and leaves bedrock.
+- Evidence: CONFIRMED, STATICALLY INFERRED.
+- Risk: veins and sealed ores become permanent bedrock after a restart mid-timer.
+- Expected: ore returns on schedule, or the seal is reloaded from disk and restored.
+- Direction: persist world, position, original block data, and deadline; on enable, schedule the remainder. Do not change drop tables or skill XP.
+- Must not change: WorldGuard hook, dig-paint tool ids.
+
+#### 5g. Failed dungeon connect does not restore the cleared inventory
+
+- Subsystem: dungeon network transfer.
+- Files: `RemoteServerBridge.transferToDungeon` / `connect`, `TransferSnapshotStore.save` (`clearLivingInventory` after a successful atomic write).
+- Problem: inventory is cleared once the snapshot file is written. `connect` false does not restore. A plugin message that does not move the player still counts as success.
+- Evidence: CONFIRMED, STATICALLY INFERRED. Complements 3.6 (directory warning was runtime-verified).
+- Risk: player stays on the source server with an empty inventory. Snapshot on disk is the only copy.
+- Expected: if the player is still on this server after the attempt, put the living inventory back (or never clear until the destination applies).
+- Direction: on `connect` false, restore from the snapshot just saved and delete or keep the file consistently. For “message sent but proxy absent”, that needs a timeout or a proxy ack; do not invent one without the owner. Do not change snapshot version 4 field names.
+- Must not change: `AtomicYaml` coin format, party loot rules.
+
 #### 6. `player-ranks.yml` save is a silent full overwrite
 
 - Subsystem: ranks persistence.
@@ -553,6 +680,8 @@ It is not a rewrite candidate. It is a “fix these paths, then playtest the one
 - StressBot README catch-timing contradiction.
 - CI does not run unit tests.
 - First-boot world set when every jar is on one server. Production split may avoid some of this. Do not “fix” world creation without knowing which backend loads which jar.
+- Foraging’s `softdepend` on Items is a hard import (`ForagingListener` and related classes). Same shape as the Pit crash. Not reproduced; Items was present at boot.
+- Guild/island level gates return true when Items is disabled (`AetherionItemsAccess`). Production loads both. A Guilds-only process would skip the level check.
 
 ### DO NOT TOUCH
 
@@ -590,3 +719,4 @@ It is not a rewrite candidate. It is a “fix these paths, then playtest the one
 | Coin probe stop/start | 4242 written, 4242 reloaded |
 | Joined player, Velocity, FancyNpcs, LuckPerms, PAPI, texture pack, StressBot runner | Not run |
 | `aetherion-texturepack` | No access |
+| Follow-up source pass (3.7–3.12) | Static only. No second Paper boot. No production files edited. |
