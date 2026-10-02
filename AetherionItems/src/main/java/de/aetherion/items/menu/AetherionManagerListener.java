@@ -6,8 +6,12 @@ import de.aetherion.items.listener.LoadoutListener;
 import de.aetherion.items.listener.StorageListener;
 import de.aetherion.items.progress.ProgressionService;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -20,6 +24,7 @@ import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
@@ -135,6 +140,7 @@ public class AetherionManagerListener implements Listener {
             }
             meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
             meta.setMaxStackSize(1);
+            meta.setCustomModelData(3500);
             meta.getPersistentDataContainer().set(
                     ItemKeys.manager(),
                     PersistentDataType.BYTE,
@@ -190,10 +196,6 @@ public class AetherionManagerListener implements Listener {
         var inventory = player.getInventory();
 
         for (int slot = 0; slot < inventory.getSize(); slot++) {
-            if (slot == HOTBAR_SLOT) {
-                continue;
-            }
-
             if (isManagerItem(inventory.getItem(slot))) {
                 inventory.setItem(slot, null);
             }
@@ -203,8 +205,17 @@ public class AetherionManagerListener implements Listener {
             player.setItemOnCursor(null);
         }
 
+        if (!hotbarEnabled()) {
+            return;
+        }
+
         boolean dungeon = player.getWorld() != null && player.getWorld().getName().startsWith("aedun_");
         inventory.setItem(HOTBAR_SLOT, dungeon ? dungeonMapOrFallback(player) : createManagerItem(player));
+    }
+
+    private static boolean hotbarEnabled() {
+        AetherionItems plugin = AetherionItems.getInstance();
+        return plugin == null || plugin.getConfig().getBoolean("manager.hotbar-enabled", true);
     }
 
     private ItemStack dungeonMapOrFallback(Player player) {
@@ -227,7 +238,7 @@ public class AetherionManagerListener implements Listener {
             return;
         }
         if (event.getInventory().getHolder() instanceof AetherionManagerGUI.Holder) {
-            AetherionManagerGUI.stopSkillsBlink(player);
+            AetherionManagerGUI.stopAllBlinks(player);
         }
         // Always kill ghost manager on the cursor when any inventory closes.
         if (isManagerItem(player.getItemOnCursor())) {
@@ -241,6 +252,11 @@ public class AetherionManagerListener implements Listener {
     public void onJoin(PlayerJoinEvent event) {
         giveManagerLater(event.getPlayer(), 5L);
         giveManagerLater(event.getPlayer(), 20L);
+    }
+
+    @EventHandler
+    public void onQuit(PlayerQuitEvent event) {
+        AetherionManagerGUI.stopAllBlinks(event.getPlayer());
     }
 
     @EventHandler
@@ -313,7 +329,7 @@ public class AetherionManagerListener implements Listener {
             event.setCancelled(true);
 
             if (event.getRawSlot() == StatsOverviewGUI.BACK_SLOT) {
-                manager.open(player);
+                de.aetherion.items.util.ManagerNav.openManager(player);
             }
 
             return;
@@ -322,7 +338,7 @@ public class AetherionManagerListener implements Listener {
         if (event.getView().getTopInventory().getHolder() instanceof de.aetherion.items.codex.BestiaryGUI.Holder) {
             event.setCancelled(true);
             if (event.getRawSlot() == de.aetherion.items.codex.CodexGui.BACK_SLOT) {
-                manager.open(player);
+                de.aetherion.items.util.ManagerNav.openManager(player);
                 return;
             }
             if (manager.getBestiaryGUI() != null) {
@@ -334,7 +350,7 @@ public class AetherionManagerListener implements Listener {
         if (event.getView().getTopInventory().getHolder() instanceof de.aetherion.items.codex.CollectionGUI.Holder) {
             event.setCancelled(true);
             if (event.getRawSlot() == de.aetherion.items.codex.CodexGui.BACK_SLOT) {
-                manager.open(player);
+                de.aetherion.items.util.ManagerNav.openManager(player);
                 return;
             }
             if (manager.getCollectionGUI() != null) {
@@ -346,7 +362,7 @@ public class AetherionManagerListener implements Listener {
         if (event.getView().getTopInventory().getHolder() instanceof de.aetherion.items.codex.DungeonJournalGUI.Holder) {
             event.setCancelled(true);
             if (event.getRawSlot() == de.aetherion.items.codex.DungeonJournalGUI.BACK_SLOT) {
-                manager.open(player);
+                de.aetherion.items.util.ManagerNav.openManager(player);
                 return;
             }
             if (manager.getJournalGUI() != null) {
@@ -388,12 +404,18 @@ public class AetherionManagerListener implements Listener {
         }
     }
 
+    /** Every menu this listener routes clicks for — all of them are display-only. */
+    private static boolean isManagerMenu(Object holder) {
+        return holder instanceof AetherionManagerGUI.Holder
+                || holder instanceof StatsOverviewGUI.Holder
+                || holder instanceof de.aetherion.items.codex.BestiaryGUI.Holder
+                || holder instanceof de.aetherion.items.codex.CollectionGUI.Holder
+                || holder instanceof de.aetherion.items.codex.DungeonJournalGUI.Holder;
+    }
+
     @EventHandler
     public void onInventoryDrag(InventoryDragEvent event) {
-        if (event.getView().getTopInventory().getHolder() instanceof AetherionManagerGUI.Holder
-                || event.getView().getTopInventory().getHolder() instanceof StatsOverviewGUI.Holder
-                || event.getView().getTopInventory().getHolder() instanceof de.aetherion.items.codex.BestiaryGUI.Holder
-                || event.getView().getTopInventory().getHolder() instanceof de.aetherion.items.codex.CollectionGUI.Holder) {
+        if (isManagerMenu(event.getView().getTopInventory().getHolder())) {
             event.setCancelled(true);
             return;
         }
@@ -408,13 +430,16 @@ public class AetherionManagerListener implements Listener {
     }
 
     private void handleManagerClick(Player player, int slot) {
+        if (!AetherionManagerGUI.isActionSlot(slot)) {
+            return;
+        }
         ProgressionService progress = AetherionItems.getInstance() == null
                 ? null
                 : AetherionItems.getInstance().progress();
         switch (slot) {
             case AetherionManagerGUI.BAZAAR_SLOT -> {
                 if (progress != null && !progress.bazaar(player)) {
-                    player.sendMessage(progress.hint(ProgressionService.Flag.TRADER));
+                    locked(player, progress.hint(ProgressionService.Flag.TRADER));
                     return;
                 }
                 var market = AetherionItems.getInstance().getMarket();
@@ -422,11 +447,12 @@ public class AetherionManagerListener implements Listener {
                     player.sendMessage("§cBazaar is not loaded.");
                     return;
                 }
+                opened(player);
                 market.openBazaar(player);
             }
             case AetherionManagerGUI.AUCTION_SLOT -> {
                 if (progress != null && !progress.auction(player)) {
-                    player.sendMessage(progress.hint(ProgressionService.Flag.TRADER));
+                    locked(player, progress.hint(ProgressionService.Flag.TRADER));
                     return;
                 }
                 var market = AetherionItems.getInstance().getMarket();
@@ -434,11 +460,12 @@ public class AetherionManagerListener implements Listener {
                     player.sendMessage("§cAuction House is not loaded.");
                     return;
                 }
+                opened(player);
                 market.openAuction(player);
             }
             case AetherionManagerGUI.SKILLS_SLOT -> {
                 if (progress != null && !progress.skills(player)) {
-                    player.sendMessage(progress.hint(ProgressionService.Flag.SKILLS));
+                    locked(player, progress.hint(ProgressionService.Flag.SKILLS));
                     return;
                 }
                 var menu = AetherionItems.getInstance().getSkillMenu();
@@ -446,6 +473,7 @@ public class AetherionManagerListener implements Listener {
                     player.sendMessage("§cSkills are not loaded.");
                     return;
                 }
+                opened(player);
                 menu.open(player);
             }
             case AetherionManagerGUI.SHOP_SLOT -> {
@@ -454,42 +482,50 @@ public class AetherionManagerListener implements Listener {
                     player.sendMessage("§cShop is not loaded.");
                     return;
                 }
+                opened(player);
                 shop.open(player);
             }
             case AetherionManagerGUI.RECIPE_SLOT -> {
                 if (progress != null && !progress.recipeBook(player)) {
-                    player.sendMessage(progress.hint(ProgressionService.Flag.WORKBENCH));
+                    locked(player, progress.hint(ProgressionService.Flag.WORKBENCH));
                     return;
                 }
                 if (manager.getRecipeBookGUI() != null) {
+                    opened(player);
                     manager.getRecipeBookGUI().open(player);
                 }
             }
-            case AetherionManagerGUI.STATS_SLOT -> manager.getStatsGUI().open(player);
+            case AetherionManagerGUI.STATS_SLOT -> {
+                opened(player);
+                manager.getStatsGUI().open(player);
+            }
             case AetherionManagerGUI.BESTIARY_SLOT -> {
                 if (progress != null && !progress.bestiary(player)) {
-                    player.sendMessage(progress.bestiaryHint());
+                    locked(player, progress.bestiaryHint());
                     return;
                 }
                 if (manager.getBestiaryGUI() != null) {
+                    opened(player);
                     manager.getBestiaryGUI().open(player);
                 }
             }
             case AetherionManagerGUI.COLLECTION_SLOT -> {
                 if (progress != null && !progress.collection(player)) {
-                    player.sendMessage(progress.collectionHint());
+                    locked(player, progress.collectionHint());
                     return;
                 }
                 if (manager.getCollectionGUI() != null) {
+                    opened(player);
                     manager.getCollectionGUI().open(player);
                 }
             }
             case AetherionManagerGUI.JOURNAL_SLOT -> {
                 if (progress != null && !progress.journal(player)) {
-                    player.sendMessage(progress.journalHint());
+                    locked(player, progress.journalHint());
                     return;
                 }
                 if (manager.getJournalGUI() != null) {
+                    opened(player);
                     manager.getJournalGUI().open(player);
                 }
             }
@@ -499,10 +535,11 @@ public class AetherionManagerListener implements Listener {
                     return;
                 }
                 if (progress != null && !progress.island(player)) {
-                    player.sendMessage(progress.islandHint());
+                    locked(player, progress.islandHint());
                     return;
                 }
                 player.closeInventory();
+                opened(player);
                 player.performCommand("island");
             }
             case AetherionManagerGUI.GUILD_SLOT -> {
@@ -511,16 +548,18 @@ public class AetherionManagerListener implements Listener {
                     return;
                 }
                 if (progress != null && !progress.guild(player)) {
-                    player.sendMessage(progress.guildHint());
+                    locked(player, progress.guildHint());
                     return;
                 }
                 player.closeInventory();
+                opened(player);
                 player.performCommand("guild");
             }
             case AetherionManagerGUI.STORAGE_SLOT -> {
                 StorageListener storageListener = AetherionItems.getInstance().getStorageListener();
 
                 if (storageListener != null) {
+                    opened(player);
                     storageListener.openStorage(player);
                 }
             }
@@ -528,6 +567,7 @@ public class AetherionManagerListener implements Listener {
                 LoadoutListener loadoutListener = AetherionItems.getInstance().getLoadoutListener();
 
                 if (loadoutListener != null) {
+                    opened(player);
                     loadoutListener.openLoadoutMenu(player);
                 }
             }
@@ -537,15 +577,18 @@ public class AetherionManagerListener implements Listener {
                     return;
                 }
                 if (progress != null && !progress.spawns(player)) {
-                    player.sendMessage(progress.hint(ProgressionService.Flag.SPAWN_UNLOCKER));
+                    locked(player, progress.hint(ProgressionService.Flag.SPAWN_UNLOCKER));
                     return;
                 }
-                player.closeInventory();
-                player.performCommand("spawns");
+                if (!openSpawns(player)) {
+                    player.closeInventory();
+                    player.performCommand("spawns");
+                }
+                opened(player);
             }
             case AetherionManagerGUI.PETS_SLOT -> {
                 if (progress != null && !progress.pets(player)) {
-                    player.sendMessage(progress.hint(ProgressionService.Flag.PETS));
+                    locked(player, progress.hint(ProgressionService.Flag.PETS));
                     return;
                 }
                 if (!manager.hasPetMenu()) {
@@ -554,25 +597,28 @@ public class AetherionManagerListener implements Listener {
                 }
 
                 manager.openPets(player);
+                opened(player);
             }
             case AetherionManagerGUI.CRAFT_SLOT -> {
                 if (progress != null && !progress.craftingTable(player)) {
-                    player.sendMessage(progress.hint(ProgressionService.Flag.WORKBENCH));
+                    locked(player, progress.hint(ProgressionService.Flag.WORKBENCH));
                     return;
                 }
                 player.closeInventory();
+                opened(player);
                 Bukkit.getScheduler().runTask(AetherionItems.getInstance(), () ->
                         player.openWorkbench(player.getLocation(), true));
             }
             case AetherionManagerGUI.ANVIL_SLOT -> {
                 if (progress != null && !progress.anvil(player)) {
-                    player.sendMessage(progress.hint(ProgressionService.Flag.ANVIL));
+                    locked(player, progress.hint(ProgressionService.Flag.ANVIL));
                     return;
                 }
                 de.aetherion.items.util.QuestProgressHook.noteUsed(player, "AETHER_ANVIL");
                 player.closeInventory();
+                opened(player);
                 Bukkit.getScheduler().runTask(AetherionItems.getInstance(), () ->
-                        player.openAnvil(player.getLocation(), true));
+                        de.aetherion.items.menu.BoosterSocketMenu.open(player));
             }
             case AetherionManagerGUI.DEV_SLOT -> {
                 var dev = AetherionItems.getInstance().getDevMenu();
@@ -580,12 +626,47 @@ public class AetherionManagerListener implements Listener {
                     player.sendMessage("§cDEV only.");
                     return;
                 }
+                opened(player);
                 dev.open(player);
             }
-            case AetherionManagerGUI.CLOSE_SLOT -> player.closeInventory();
+            case AetherionManagerGUI.CLOSE_SLOT -> {
+                opened(player);
+                player.closeInventory();
+            }
             default -> {
             }
         }
+    }
+
+    private static void opened(Player player) {
+        player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.35f, 1.4f);
+    }
+
+    private static boolean openSpawns(Player player) {
+        var plugin = Bukkit.getPluginManager().getPlugin("AetherionHub");
+        if (plugin == null || !plugin.isEnabled()) {
+            return false;
+        }
+        try {
+            Object menu = plugin.getClass().getMethod("getMenu").invoke(plugin);
+            if (menu == null) {
+                return false;
+            }
+            menu.getClass().getMethod("open", Player.class).invoke(menu, player);
+            return true;
+        } catch (ReflectiveOperationException ignored) {
+            return false;
+        }
+    }
+
+    /** Locked tab click: keep the chat hint, add an ActionBar echo and a dull thunk. */
+    private static void locked(Player player, String hint) {
+        player.sendMessage(hint);
+        player.sendActionBar(Component.text(
+                "\u2716 Locked \u00b7 " + hint.replaceAll("§.", ""),
+                NamedTextColor.RED
+        ));
+        player.playSound(player.getLocation(), Sound.BLOCK_CHEST_LOCKED, 0.4f, 1.4f);
     }
 
     private void restore(Player player) {

@@ -84,6 +84,41 @@ public final class BoosterApplier {
         return Status.APPLIED;
     }
 
+    /** Reverse one socketed booster. Counts and flats drop together. */
+    public static Status remove(ItemManager items, ItemStack item, BoosterType type) {
+        if (items == null || item == null || type == null || !items.isAetherionItem(item)) {
+            return Status.NOT_ITEM;
+        }
+        ItemStats stats = items.getItemStats(item);
+        if (stats.boosterCount(type) <= 0) {
+            return Status.NOT_ITEM;
+        }
+        ItemProfile profile = items.getProfile(item);
+        Rarity rarity = items.getRarity(item);
+        if (rarity == null) {
+            return Status.NO_RARITY;
+        }
+        if (type.isCore()) {
+            removeCore(stats, profile, type, rarity);
+        } else {
+            removeSpecial(stats, type, rarity);
+        }
+        ItemMeta meta = item.getItemMeta();
+        if (meta == null) {
+            return Status.NOT_ITEM;
+        }
+        items.saveItemStats(meta, stats);
+        List<String> existing = meta.getLore();
+        if (existing != null) {
+            List<String> lore = new ArrayList<>(existing);
+            ItemLore.updateDisplayedStats(lore, stats, profile);
+            meta.setLore(lore);
+        }
+        ItemPresentation.polish(meta);
+        item.setItemMeta(meta);
+        return Status.APPLIED;
+    }
+
     private static void applyCore(ItemStats stats, ItemProfile profile, BoosterType type, Rarity rarity) {
         double amount = BoosterStats.getCoreFlat(type, rarity);
         if (profile.hasCapability(ItemCapability.MINING_POWER)) {
@@ -142,6 +177,70 @@ public final class BoosterApplier {
             case BIRCH -> {
                 stats.setCritChance(stats.getCritChance() + value);
                 stats.setBirchBoosters(stats.getBirchBoosters() + 1);
+            }
+            default -> {
+            }
+        }
+    }
+
+    private static void removeCore(ItemStats stats, ItemProfile profile, BoosterType type, Rarity rarity) {
+        double amount = BoosterStats.getCoreFlat(type, rarity);
+        if (profile.hasCapability(ItemCapability.MINING_POWER)) {
+            stats.setMiningPower(Math.max(0.0, stats.getMiningPower() - amount));
+        }
+        if (profile.hasCapability(ItemCapability.FORTUNE)) {
+            stats.setFortune(Math.max(0.0, stats.getFortune() - amount));
+        }
+        if (profile.hasCapability(ItemCapability.DAMAGE)) {
+            stats.setDamage(Math.max(0.0, stats.getDamage() - amount));
+        }
+        if (profile.hasCapability(ItemCapability.DEFENSE)) {
+            stats.setDefense(Math.max(0.0, stats.getDefense() - amount));
+        }
+        switch (type) {
+            case COAL -> stats.setCoalBoosters(Math.max(0, stats.getCoalBoosters() - 1));
+            case IRON -> stats.setIronBoosters(Math.max(0, stats.getIronBoosters() - 1));
+            case GOLD -> stats.setGoldBoosters(Math.max(0, stats.getGoldBoosters() - 1));
+            case DIAMOND -> stats.setDiamondBoosters(Math.max(0, stats.getDiamondBoosters() - 1));
+            default -> {
+            }
+        }
+    }
+
+    private static void removeSpecial(ItemStats stats, BoosterType type, Rarity rarity) {
+        double value = BoosterStats.getSpecialStat(type, rarity);
+        switch (type) {
+            case EMERALD -> {
+                stats.setSpread(Math.max(0.0, stats.getSpread() - value));
+                stats.setEmeraldBoosters(Math.max(0, stats.getEmeraldBoosters() - 1));
+            }
+            case REDSTONE -> {
+                stats.setAttackSpread(Math.max(0.0, stats.getAttackSpread() - value));
+                stats.setRedstoneBoosters(Math.max(0, stats.getRedstoneBoosters() - 1));
+            }
+            case LAPIS -> {
+                stats.setHealth(Math.max(0.0, stats.getHealth() - value));
+                stats.setLapisBoosters(Math.max(0, stats.getLapisBoosters() - 1));
+            }
+            case GLOWSTONE -> {
+                stats.setSpeed(Math.max(0.0, stats.getSpeed() - value));
+                stats.setGlowstoneBoosters(Math.max(0, stats.getGlowstoneBoosters() - 1));
+            }
+            case WHEAT -> {
+                stats.setCatchRate(Math.max(0.0, stats.getCatchRate() - value));
+                stats.setWheatBoosters(Math.max(0, stats.getWheatBoosters() - 1));
+            }
+            case CARROT -> {
+                stats.setHarvestSpread(Math.max(0.0, stats.getHarvestSpread() - value));
+                stats.setCarrotBoosters(Math.max(0, stats.getCarrotBoosters() - 1));
+            }
+            case OAK -> {
+                stats.setCritDamage(Math.max(0.0, stats.getCritDamage() - value));
+                stats.setOakBoosters(Math.max(0, stats.getOakBoosters() - 1));
+            }
+            case BIRCH -> {
+                stats.setCritChance(Math.max(0.0, stats.getCritChance() - value));
+                stats.setBirchBoosters(Math.max(0, stats.getBirchBoosters() - 1));
             }
             default -> {
             }
