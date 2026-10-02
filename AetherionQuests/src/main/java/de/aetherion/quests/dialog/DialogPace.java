@@ -7,10 +7,10 @@ package de.aetherion.quests.dialog;
 public final class DialogPace {
 
     /**
-     * Ticks between consecutive dialogue lines (~2.0s at 20 TPS).
+     * Ticks between consecutive dialogue lines (~3.0s at 20 TPS).
      * Keep this the only place that defines speech rhythm.
      */
-    public static final long LINE_GAP_TICKS = 40L;
+    public static final long LINE_GAP_TICKS = 60L;
 
     private DialogPace() {
     }

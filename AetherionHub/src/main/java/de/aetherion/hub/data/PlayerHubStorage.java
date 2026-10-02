@@ -53,6 +53,19 @@ public final class PlayerHubStorage {
         }
     }
 
+    /** Full hub wipe: delete player file + drop cache (teleports / unlocks). */
+    public void wipePlayer(UUID uuid) {
+        if (uuid == null) {
+            return;
+        }
+        dirty.remove(uuid);
+        cache.remove(uuid);
+        File file = file(uuid);
+        if (file.exists() && !file.delete() && plugin != null) {
+            plugin.getLogger().warning("Could not delete hub player file: " + file.getName());
+        }
+    }
+
     public PlayerHubData load(UUID uuid) {
         return cache.computeIfAbsent(uuid, this::read);
     }

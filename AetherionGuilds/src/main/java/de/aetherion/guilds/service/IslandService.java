@@ -1,22 +1,34 @@
 package de.aetherion.guilds.service;
 
+import de.aetherion.guilds.island.StarterLayout;
 import de.aetherion.guilds.model.Guild;
 import de.aetherion.guilds.model.IslandTiers;
+import de.aetherion.guilds.template.PasteService;
+import de.aetherion.guilds.template.Template;
+import de.aetherion.guilds.template.TemplateLibrary;
 import de.aetherion.guilds.world.IslandBuilder;
-import de.aetherion.core.world.VoidChunkGenerator;
 
 import org.bukkit.Bukkit;
 import org.bukkit.GameRule;
 import org.bukkit.Location;
 import org.bukkit.World;
-import org.bukkit.WorldCreator;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public final class IslandService {
 
     private final JavaPlugin plugin;
     private World world;
+    // island highlight: the Guild Harbour starter pastes over a few ticks
+    private PasteService paste;
+    private TemplateLibrary templates;
+    private final Map<UUID, List<Runnable>> waiting = new ConcurrentHashMap<>();
 
     public IslandService(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -28,6 +40,11 @@ public final class IslandService {
 
     public World world() {
         return world;
+    }
+
+    public void attachHighlight(PasteService paste, TemplateLibrary templates) {
+        this.paste = paste;
+        this.templates = templates;
     }
 
     public int spacing() {
@@ -54,20 +71,73 @@ public final class IslandService {
     }
 
     public Location spawn(Guild guild) {
-        if (world == null) {
+        if (world == null || guild == null) {
             return null;
         }
         ensureBuilt(guild);
+        StarterLayout starter = StarterLayout.byId(guild.starter());
+        if (starter != null) {
+            return new Location(world, originX(guild) + starter.spawnX() + 0.5, 64 + starter.spawnY(),
+                    originZ(guild) + starter.spawnZ() + 0.5, starter.yaw(), 0);
+        }
         return new Location(world, originX(guild) + 0.5, 65, originZ(guild) - 3.5, 0, 0);
     }
 
     public void ensureBuilt(Guild guild) {
-        if (guild == null || world == null || guild.islandBuilt()) {
+        ensureBuilt(guild, null);
+    }
+
+    /** Classic pads build at once; the Guild Harbour starter pastes, then {@code then} runs. */
+    public void ensureBuilt(Guild guild, Runnable then) {
+        if (guild == null || world == null) {
             return;
         }
-        Location spawn = IslandBuilder.build(world, originX(guild), originZ(guild), guild.islandLevel());
-        guild.setIslandBuilt(true);
-        world.setSpawnLocation(spawn);
+        if (guild.islandBuilt()) {
+            if (then != null) {
+                then.run();
+            }
+            return;
+        }
+        StarterLayout starter = StarterLayout.byId(guild.starter());
+        Template template = starter == null || templates == null ? null : templates.get(starter.templateId());
+        if (template == null || paste == null) {
+            Location spawn = IslandBuilder.build(world, originX(guild), originZ(guild), guild.islandLevel());
+            guild.setIslandBuilt(true);
+            world.setSpawnLocation(spawn);
+            if (then != null) {
+                then.run();
+            }
+            return;
+        }
+        List<Runnable> queue = waiting.get(guild.id());
+        if (queue != null) {
+            if (then != null) {
+                queue.add(then);
+            }
+            return;
+        }
+        queue = new ArrayList<>();
+        if (then != null) {
+            queue.add(then);
+        }
+        waiting.put(guild.id(), queue);
+        paste.paste(template, world, originX(guild), 64, originZ(guild), 0, PasteService.Mode.SKIP_AIR, true, job -> {
+            guild.setIslandBuilt(true);
+            Location spawn = spawn(guild);
+            if (spawn != null) {
+                world.setSpawnLocation(spawn);
+            }
+            List<Runnable> done = waiting.remove(guild.id());
+            if (done != null) {
+                for (Runnable runnable : done) {
+                    runnable.run();
+                }
+            }
+        });
+    }
+
+    public void whenBuilt(Guild guild, Runnable then) {
+        ensureBuilt(guild, then);
     }
 
     public void expand(Guild guild, int fromLevel) {
@@ -75,7 +145,10 @@ public final class IslandService {
             return;
         }
         ensureBuilt(guild);
-        IslandBuilder.upgrade(world, originX(guild), originZ(guild), fromLevel, guild.islandLevel());
+        if (StarterLayout.byId(guild.starter()) == null) {
+            // classic pads grow their platform; the Guild Harbour grows through bought land
+            IslandBuilder.upgrade(world, originX(guild), originZ(guild), fromLevel, guild.islandLevel());
+        }
     }
 
     public void clearPlot(Guild guild) {
@@ -127,20 +200,8 @@ public final class IslandService {
 
     private World loadWorld() {
         String name = plugin.getConfig().getString("island-world", "aether_guilds");
-        World existing = Bukkit.getWorld(name);
-        if (existing != null) {
-            applyRules(existing);
-            return existing;
-        }
-        WorldCreator creator = new WorldCreator(name);
-        creator.generator(new VoidChunkGenerator());
-        creator.generateStructures(false);
-        creator.environment(World.Environment.NORMAL);
-        World created = creator.createWorld();
-        if (created != null) {
-            applyRules(created);
-        }
-        return created;
+        // always on the void generator, also when a world manager / older boot loaded it first (see VoidWorlds)
+        return de.aetherion.guilds.world.VoidWorlds.load(plugin, name, this::applyRules);
     }
 
     private void applyRules(World world) {

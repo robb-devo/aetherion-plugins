@@ -91,6 +91,7 @@ public class PlayerJoinListener implements Listener {
         }
         if (plugin != null && plugin.getPlayerQuestStorage() != null) {
             plugin.getPlayerQuestStorage().unload(event.getPlayer().getUniqueId());
+            questManager.forgetPlayer(event.getPlayer().getUniqueId());
         }
     }
 

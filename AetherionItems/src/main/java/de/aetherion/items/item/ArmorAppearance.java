@@ -32,7 +32,10 @@ public final class ArmorAppearance {
             return;
         }
 
-        ArmorTrim trim = trimFor(itemId.toLowerCase());
+        ArmorTrim trim = de.aetherion.items.dungeon.WardenPrisonLook.trimFor(itemId, meta);
+        if (trim == null) {
+            trim = trimFor(itemId.toLowerCase());
+        }
         if (trim == null) {
             return;
         }

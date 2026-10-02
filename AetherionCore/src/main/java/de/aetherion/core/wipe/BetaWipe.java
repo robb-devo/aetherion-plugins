@@ -136,7 +136,7 @@ public final class BetaWipe {
         removed += deleteChildren(new File(progress, "AetherMobs"));
         removed += deleteChildren(new File(progress, "AetherionQuests"));
         for (String child : List.of("loadouts", "storage", "sacks", "pets", "quests", "coins.yml",
-                "skills.yml", "progress.yml", "shards.yml", "player-ranks.yml")) {
+                "skills.yml", "progress.yml", "shards.yml")) {
             removed += deleteRecursively(new File(progress, child));
             removed += deleteRecursively(new File(new File(progress, "AetherionItems"), child));
         }
@@ -161,7 +161,7 @@ public final class BetaWipe {
             File items = new File(server, "plugins/AetherionItems");
             if (items.isDirectory() && !items.getAbsolutePath().equalsIgnoreCase(localItems.getAbsolutePath())) {
                 for (String file : List.of("coins.yml", "shards.yml", "skills.yml", "progress.yml",
-                        "recipe_unlocks.yml", "player-ranks.yml", "market.yml",
+                        "recipe_unlocks.yml", "market.yml",
                         "xp-boosts.yml", "codex.yml", "unlocked_blueprints.yml",
                         "areas.yml", "colosseum-unlock.yml")) {
                     removed += deleteRecursively(new File(items, file));
@@ -190,7 +190,7 @@ public final class BetaWipe {
 
         removed += wipePlugin("AetherionItems",
                 List.of("coins.yml", "shards.yml", "skills.yml", "progress.yml",
-                        "recipe_unlocks.yml", "player-ranks.yml", "market.yml",
+                        "recipe_unlocks.yml", "market.yml",
                         "xp-boosts.yml", "codex.yml", "voided-455.yml",
                         "unlocked_blueprints.yml", "areas.yml", "colosseum-unlock.yml"),
                 List.of("storage", "loadouts", "sacks"));

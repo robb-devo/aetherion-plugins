@@ -1,5 +1,7 @@
 package de.aetherion.guilds.service;
 
+import de.aetherion.guilds.island.LandService;
+import de.aetherion.guilds.island.StarterLayout;
 import de.aetherion.guilds.model.BankTiers;
 import de.aetherion.guilds.model.Guild;
 import de.aetherion.guilds.model.GuildRank;
@@ -26,6 +28,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 public final class GuildService {
@@ -38,6 +42,9 @@ public final class GuildService {
     private final Map<UUID, Guild> guilds = new ConcurrentHashMap<>();
     private final Map<UUID, UUID> playerGuild = new ConcurrentHashMap<>();
     private MinionService minions;
+    // island highlight hooks: founding beat, and dropping structures/belts/projects on disband or wipe
+    private BiConsumer<Player, Guild> createdHook;
+    private Consumer<Guild> removalHook;
 
     public GuildService(JavaPlugin plugin, IslandService islands) {
         this.plugin = plugin;
@@ -48,6 +55,14 @@ public final class GuildService {
 
     public void attachMinions(MinionService minions) {
         this.minions = minions;
+    }
+
+    public void setCreatedHook(BiConsumer<Player, Guild> createdHook) {
+        this.createdHook = createdHook;
+    }
+
+    public void setRemovalHook(Consumer<Guild> removalHook) {
+        this.removalHook = removalHook;
     }
 
     public void wipeAll() {
@@ -65,6 +80,11 @@ public final class GuildService {
                 minions.removeVisuals(guild);
             }
             minions.purgeAllVisuals();
+        }
+        if (removalHook != null) {
+            for (Guild guild : List.copyOf(guilds.values())) {
+                removalHook.accept(guild);
+            }
         }
         for (Guild guild : List.copyOf(guilds.values())) {
             islands.clearPlot(guild);
@@ -116,11 +136,16 @@ public final class GuildService {
         }
         Guild guild = new Guild(UUID.randomUUID(), name, nextPlot());
         guild.members().put(leader.getUniqueId(), GuildRank.LEADER);
+        guild.setStarter(StarterLayout.GUILD.id());
+        guild.parcels().addAll(LandService.initialParcels());
         guilds.put(guild.id(), guild);
         playerGuild.put(leader.getUniqueId(), guild.id());
         islands.ensureBuilt(guild);
         save();
         leader.sendMessage("§aCreated guild §f" + name + "§a. Open §f/guild §ato visit your island.");
+        if (createdHook != null) {
+            createdHook.accept(leader, guild);
+        }
         return guild;
     }
 
@@ -144,6 +169,9 @@ public final class GuildService {
         }
         if (minions != null) {
             minions.removeVisuals(guild);
+        }
+        if (removalHook != null) {
+            removalHook.accept(guild);
         }
         islands.clearPlot(guild);
         guilds.remove(guild.id());
@@ -297,6 +325,15 @@ public final class GuildService {
             player.sendMessage("§cCreate or join a guild first. §f/guild create <name>");
             return;
         }
+        if (!guild.islandBuilt() && StarterLayout.byId(guild.starter()) != null) {
+            player.sendMessage("§7The harbour is still rising…");
+            islands.whenBuilt(guild, () -> {
+                if (player.isOnline()) {
+                    goHome(player);
+                }
+            });
+            return;
+        }
         Location spawn = islands.spawn(guild);
         if (spawn == null) {
             player.sendMessage("§cThe guild island is not ready.");
@@ -330,7 +367,8 @@ public final class GuildService {
         if (AetherionItemsAccess.count(player, "quarry_core") < cost.cores()) {
             missing.add("§d" + cost.cores() + " Quarry Core");
         }
-        if (AetherionItemsAccess.coins(player) < cost.coins()) {
+        boolean economy = de.aetherion.core.api.AetherServices.coins() != null;
+        if (economy && AetherionItemsAccess.coins(player) < cost.coins()) {
             missing.add("§6" + GuildFormat.compact(cost.coins()) + " Coins");
         }
         if (!missing.isEmpty()) {
@@ -339,10 +377,19 @@ public final class GuildService {
         }
         AetherionItemsAccess.take(player, "compacted_cobblestone", cost.compactedCobble());
         AetherionItemsAccess.take(player, "quarry_core", cost.cores());
-        AetherionItemsAccess.takeCoins(player, cost.coins());
+        if (economy) {
+            AetherionItemsAccess.takeCoins(player, cost.coins());
+        }
         guild.setIslandLevel(from + 1);
         islands.expand(guild, from);
         save();
+        for (UUID id : guild.members().keySet()) {
+            Player member = Bukkit.getPlayer(id);
+            if (member != null && member.isOnline()) {
+                member.sendTitle("§6⚑ Island Tier " + guild.islandLevel(), "§7" + guild.name() + " grows", 5, 50, 15);
+                member.playSound(member.getLocation(), org.bukkit.Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.9f, 1.1f);
+            }
+        }
         broadcast(guild, "§a" + player.getName() + " upgraded the island to §fLv." + guild.islandLevel()
                 + "§a. Build radius is now §f" + islands.buildRadius(guild) + "§a.");
     }
@@ -458,6 +505,16 @@ public final class GuildService {
             config.set(path + ".plot", guild.plot());
             config.set(path + ".island-built", guild.islandBuilt());
             config.set(path + ".island-level", guild.islandLevel());
+            if (guild.starter() != null) {
+                config.set(path + ".starter", guild.starter());
+            }
+            if (!guild.parcels().isEmpty()) {
+                List<String> parcels = new ArrayList<>();
+                for (long key : guild.parcels()) {
+                    parcels.add(LandService.px(key) + "," + LandService.pz(key));
+                }
+                config.set(path + ".parcels", parcels);
+            }
             config.set(path + ".bank.level", guild.bankLevel());
             config.set(path + ".bank.coins", guild.bankCoins());
             for (int slot = 0; slot < Guild.BANK_MAX_SLOTS; slot++) {
@@ -516,6 +573,16 @@ public final class GuildService {
             Guild guild = new Guild(id, section.getString("name", "Guild"), section.getInt("plot"));
             guild.setIslandBuilt(section.getBoolean("island-built"));
             guild.setIslandLevel(section.getInt("island-level", 1));
+            guild.setStarter(section.getString("starter"));
+            for (String raw : section.getStringList("parcels")) {
+                String[] xz = raw.split(",");
+                if (xz.length == 2) {
+                    try {
+                        guild.parcels().add(LandService.key(Integer.parseInt(xz[0].trim()), Integer.parseInt(xz[1].trim())));
+                    } catch (NumberFormatException ignored) {
+                    }
+                }
+            }
             ConfigurationSection bankSection = section.getConfigurationSection("bank");
             guild.setBankLevel(bankSection == null ? section.getInt("bank.level", 0) : bankSection.getInt("level", 0));
             guild.setBankCoins(section.getLong("bank.coins"));

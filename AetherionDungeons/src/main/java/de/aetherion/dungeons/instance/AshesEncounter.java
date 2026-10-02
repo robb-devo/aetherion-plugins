@@ -63,14 +63,27 @@ public final class AshesEncounter {
     public static final int ARENA_MIN_Z = -111;
     public static final int ARENA_MAX_Z = -31;
 
-    public static final int BOSS_X = (ARENA_MIN_X + ARENA_MAX_X) / 2;
-    public static final int BOSS_Y = 98;
-    public static final int BOSS_Z = (ARENA_MIN_Z + ARENA_MAX_Z) / 2;
+    /**
+     * Locked Throne spawn — Sovereign Anchor placement on Floor 3
+     * ({@code aedun_f3_ashes} 266.5, 96, -70.5). Boss always spawns here;
+     * legendary victory chest lands on the same block after death.
+     */
+    public static final int BOSS_X = 266;
+    public static final int BOSS_Y = 96;
+    public static final int BOSS_Z = -71;
 
     private static final Material DOOR = Material.RED_STAINED_GLASS;
     private static final double CLEAR_RATIO = 0.75;
     private static final int MOB_WANT_MAX = 64;
     private static final int SPAWN_SAFE = 12;
+
+    /** Clearance beats for the Throne's servants; killing one grants bonus clearance. */
+    private static final double CHAINWARDEN_AT = 0.40;
+    private static final double HERALD_AT = 0.70;
+    private static final int ELITE_BONUS_KILLS = 4;
+    /** Herald rises on the crawl side of the gate, facing the party. */
+    private static final int HERALD_X = GATE_X - 9;
+    private static final int HERALD_Z = (GATE_Z_MIN + GATE_Z_MAX) / 2;
 
     private static final Map<String, AshesState> BY_WORLD = new ConcurrentHashMap<>();
 
@@ -104,6 +117,8 @@ public final class AshesEncounter {
         private BossBar bar;
         private boolean doorOpen;
         private boolean bossSpawned;
+        private boolean chainwardenSpawned;
+        private boolean heraldSpawned;
         private int kills;
         private int mobsLeft;
         private BukkitTask spawnTask;
@@ -162,7 +177,8 @@ public final class AshesEncounter {
             return;
         }
         world.getChunkAt(BOSS_X >> 4, BOSS_Z >> 4).load(true);
-        DungeonLootFx.placeVictoryAt(plugin, world, BOSS_X + 4, BOSS_Y, BOSS_Z, 3);
+        // Legendary Reliquary on the locked Throne core (Sovereign Anchor).
+        DungeonLootFx.placeVictoryAt(plugin, world, BOSS_X, BOSS_Y, BOSS_Z, 3, DungeonLootFx.ChestTier.LEGENDARY);
     }
 
     public static Location begin(Plugin plugin, World world, DungeonSession session, Prep prep) {
@@ -235,10 +251,16 @@ public final class AshesEncounter {
         if (state == null || state.doorOpen) {
             return;
         }
+        if (BossEngineBridge.isAshesElite(entity)) {
+            String elite = BossEngineBridge.templateId(entity);
+            plugin.getServer().getScheduler().runTask(plugin, () -> onEliteSlain(plugin, world, elite));
+            return;
+        }
         Byte flag = entity.getPersistentDataContainer().get(ashesKey(plugin), PersistentDataType.BYTE);
         if (flag == null || flag != (byte) 1) {
             return;
         }
+        Location where = entity.getLocation().clone();
         plugin.getServer().getScheduler().runTask(plugin, () -> {
             AshesState live = BY_WORLD.get(world.getName());
             if (live == null || live.doorOpen) {
@@ -249,8 +271,74 @@ public final class AshesEncounter {
             refreshBar(live);
             if (live.kills >= live.killsNeeded) {
                 openBossDoor(plugin, world, live);
+                return;
             }
+            maybeCallElites(plugin, world, live, where);
         });
+    }
+
+    private static void onEliteSlain(Plugin plugin, World world, String elite) {
+        AshesState live = BY_WORLD.get(world.getName());
+        if (live == null || live.doorOpen) {
+            return;
+        }
+        live.kills = Math.min(live.killsNeeded, live.kills + ELITE_BONUS_KILLS);
+        refreshBar(live);
+        String name = BossEngineBridge.HERALD.equalsIgnoreCase(elite) ? "§6§lCinder Herald" : "§8§lThe Chainwarden";
+        for (Player player : world.getPlayers()) {
+            player.sendMessage("§8[§6Throne§8] " + name + " §7is ash. §6+" + ELITE_BONUS_KILLS + " clearance");
+            player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.6f, 1.2f);
+        }
+        if (live.kills >= live.killsNeeded) {
+            openBossDoor(plugin, world, live);
+        }
+    }
+
+    /** Mid-clear beats: the jailer at 40%, the herald before the gate at 70%. Each comes once. */
+    private static void maybeCallElites(Plugin plugin, World world, AshesState live, Location where) {
+        double progress = live.progress();
+        if (!live.chainwardenSpawned && progress >= CHAINWARDEN_AT) {
+            live.chainwardenSpawned = true;
+            Location at = landing(world, where.getBlockX(), where.getBlockZ(), where.getBlockY());
+            callElite(plugin, world, BossEngineBridge.CHAINWARDEN, at != null ? at : where,
+                    "§8§lThe Chainwarden §7has come for his escaped prisoners.",
+                    "§8The Chainwarden");
+        }
+        if (!live.heraldSpawned && progress >= HERALD_AT) {
+            live.heraldSpawned = true;
+            Location at = landing(world, HERALD_X, HERALD_Z, GATE_Y_MIN);
+            if (at == null) {
+                at = landing(world, where.getBlockX(), where.getBlockZ(), where.getBlockY());
+            }
+            callElite(plugin, world, BossEngineBridge.HERALD, at != null ? at : where,
+                    "§6§lCinder Herald §7rises before the gate. §8The burned sky speaks.",
+                    "§6Cinder Herald");
+        }
+    }
+
+    private static void callElite(Plugin plugin, World world, String templateId, Location at, String line, String title) {
+        world.getChunkAt(at).load(true);
+        Player initiator = world.getPlayers().isEmpty() ? null : world.getPlayers().get(0);
+        if (!BossEngineBridge.spawn(at, initiator, templateId, false)) {
+            plugin.getLogger().warning("Ashes elite " + templateId + " did not spawn at "
+                    + at.getBlockX() + "," + at.getBlockY() + "," + at.getBlockZ());
+            return;
+        }
+        for (Player player : world.getPlayers()) {
+            player.sendMessage("§8[§6Throne§8] " + line + " §8(§6+" + ELITE_BONUS_KILLS + " clearance §7on kill§8)");
+            player.sendTitle("", title, 6, 34, 10);
+            player.playSound(player.getLocation(), Sound.BLOCK_BELL_RESONATE, 0.8f, 0.6f);
+        }
+    }
+
+    /** Standable spot on this column near {@code yHint}; feet location or null. */
+    private static Location landing(World world, int x, int z, int yHint) {
+        for (int y = yHint + 4; y >= yHint - 8; y--) {
+            if (standable(world, x, y, z)) {
+                return new Location(world, x + 0.5, y + 1, z + 0.5);
+            }
+        }
+        return null;
     }
 
     private static void refreshBar(AshesState state) {

@@ -28,6 +28,7 @@ public final class HubPortalBridge implements Listener {
     private final Plugin plugin;
     private final RemoteServerBridge remote;
     private final TransferSnapshotStore snapshots;
+    private final CharacterSync sync;
     private final Portal hubPortal;
     private final Portal returnPortal;
     private final Arrival hubArrival;
@@ -36,10 +37,11 @@ public final class HubPortalBridge implements Listener {
     private final Map<UUID, Long> cooldown = new ConcurrentHashMap<>();
     private final Map<UUID, Long> joinGrace = new ConcurrentHashMap<>();
 
-    public HubPortalBridge(Plugin plugin, RemoteServerBridge remote, TransferSnapshotStore snapshots) {
+    public HubPortalBridge(Plugin plugin, RemoteServerBridge remote, TransferSnapshotStore snapshots, CharacterSync sync) {
         this.plugin = plugin;
         this.remote = remote;
         this.snapshots = snapshots;
+        this.sync = sync;
         this.hubPortal = Portal.fromConfig(plugin, "hub-portal", -1.0, 67.0, -204.0);
         this.returnPortal = Portal.fromConfig(plugin, "return-portal", -1.0, 48.0, -27.0);
         // Land ON mmo-d (dungeon hub) after crossing from capital.
@@ -151,48 +153,99 @@ public final class HubPortalBridge implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.MONITOR)
+    /**
+     * LOWEST: the character must be in place before other plugins' join handlers read it
+     * (loadouts, quests, pets). Arrival teleports / pending floor still run a few ticks later.
+     */
+    @EventHandler(priority = EventPriority.LOWEST)
     public void onJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
         joinGrace.put(player.getUniqueId(), System.currentTimeMillis() + joinGraceMs);
+        arrive(player);
+    }
+
+    /** Join (and plugin-reload) path — one pipeline for every arrival. */
+    public void arrive(Player player) {
+        if (player == null || !player.isOnline()) {
+            return;
+        }
+        if (sync != null) {
+            sync.arrive(player, result -> scheduleArrival(player, result));
+            return;
+        }
+        TransferSnapshotStore.ApplyResult result = snapshots.applyOnJoin(player);
+        if (result.applied()) {
+            scheduleArrival(player, result);
+        }
+    }
+
+    private void scheduleArrival(Player player, TransferSnapshotStore.ApplyResult result) {
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             if (!player.isOnline()) {
                 return;
             }
-            TransferSnapshotStore.ApplyResult result = snapshots.applyDetailed(player);
-            if (!result.applied()) {
-                return;
-            }
+            handleArrival(player, result);
+        }, 8L);
+    }
+
+    private void handleArrival(Player player, TransferSnapshotStore.ApplyResult result) {
+        String here = snapshots == null ? "" : snapshots.serverName();
+        if (result.dcFloor() > 0) {
+            // Dungeon session policy: fresh. The run ended when they disconnected.
             if (remote != null && remote.isDungeonRole()) {
                 Location dest = dungeonArrival.toLocation();
                 if (dest != null) {
                     player.teleport(dest);
                 }
-                player.sendMessage("§5Dungeon Hub§7: Welcome — gear synced.");
-                player.sendMessage("§7Tip: §e/dhub §7teleports here from anywhere.");
-                if (result.pendingFloor() > 0) {
-                    int floor = result.pendingFloor();
-                    boolean bossOnly = result.bossOnly();
-                    Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                        if (!player.isOnline()) {
-                            return;
-                        }
-                        var pluginMain = de.aetherion.dungeons.AetherionDungeons.getInstance();
-                        if (pluginMain == null || pluginMain.getInstances() == null) {
-                            return;
-                        }
-                        player.sendMessage("§5Dungeon Gate§7: Opening Floor §f" + floor + "§7…");
-                        pluginMain.getInstances().enterPrototype(player, bossOnly, floor);
-                    }, 15L);
-                }
-            } else if (remote != null && remote.isHubRole()) {
+            } else {
                 Location dest = hubArrival.toLocation();
                 if (dest != null) {
                     player.teleport(dest);
                 }
-                player.sendMessage("§5Capital§7: Welcome back — gear synced.");
             }
-        }, 8L);
+            player.sendMessage("§5Dungeon Gate§7: Your §fFloor " + result.dcFloor()
+                    + "§7 run closed when you disconnected. Your gear is safe — start a fresh run at the gate.");
+            return;
+        }
+        if (result.sameServerRelog(here)) {
+            // Quit + rejoin on the same backend: playerdata location is already right.
+            return;
+        }
+        if (remote != null && remote.isDungeonRole()) {
+            if (!result.arrivalFromHub()) {
+                return;
+            }
+            Location dest = dungeonArrival.toLocation();
+            if (dest != null) {
+                player.teleport(dest);
+            }
+            player.sendMessage("§5Dungeon Hub§7: Welcome — gear synced.");
+            player.sendMessage("§7Tip: §e/dhub §7teleports here from anywhere.");
+            if (result.pendingFloor() > 0) {
+                int floor = result.pendingFloor();
+                boolean bossOnly = result.bossOnly();
+                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    if (!player.isOnline()) {
+                        return;
+                    }
+                    var pluginMain = de.aetherion.dungeons.AetherionDungeons.getInstance();
+                    if (pluginMain == null || pluginMain.getInstances() == null) {
+                        return;
+                    }
+                    player.sendMessage("§5Dungeon Gate§7: Opening Floor §f" + floor + "§7…");
+                    pluginMain.getInstances().enterPrototype(player, bossOnly, floor);
+                }, 15L);
+            }
+        } else if (remote != null && remote.isHubRole()) {
+            if (!result.returnFromDungeon()) {
+                return;
+            }
+            Location dest = hubArrival.toLocation();
+            if (dest != null) {
+                player.teleport(dest);
+            }
+            player.sendMessage("§5Capital§7: Welcome back — gear synced.");
+        }
     }
 
     /** Teleport (or Velocity-transfer) the player to the dungeon hub. Usable from anywhere. */

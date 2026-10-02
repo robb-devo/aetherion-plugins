@@ -200,7 +200,7 @@ public final class TalkUx implements Listener {
         previousLine = cfg.getBoolean("talk-ux.show-previous-line", true);
         maxDistance = Math.max(4.0, cfg.getDouble("talk-ux.max-distance", 10.0));
         chipTimeoutTicks = Math.max(200, cfg.getInt("talk-ux.reply-timeout-seconds", 40) * 20);
-        lingerTicks = Math.max(20, cfg.getInt("talk-ux.linger-ticks", 70));
+        lingerTicks = Math.max(20, cfg.getInt("talk-ux.linger-ticks", 90));
         bubbleScale = (float) Math.max(0.3, Math.min(1.2, cfg.getDouble("talk-ux.bubble-scale", 0.56)));
         List<String> prefixes = cfg.getStringList("talk-ux.classic-name-prefixes");
         if (!cfg.isSet("talk-ux.classic-name-prefixes")) {
@@ -246,6 +246,11 @@ public final class TalkUx implements Listener {
         }
         NpcMemory memory = NpcMemory.get();
         return memory == null || !memory.prefersClassic(player.getUniqueId());
+    }
+
+    /** How close a listener must stand for the bubble to open and stay (blocks). */
+    public double reach() {
+        return maxDistance;
     }
 
     public boolean isTalkingWith(Player player, String npcId) {
@@ -296,7 +301,7 @@ public final class TalkUx implements Listener {
             return;
         }
         player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_HAT, SoundCategory.MASTER, 0.35f, 1.8f);
-        player.sendActionBar(Component.text("Pick a reply — look at it and click · or scroll + click", NamedTextColor.GOLD));
+        player.sendActionBar(Component.text(ui(player, "pulse", "Pick a reply — look at it and click · or scroll + click"), NamedTextColor.GOLD));
         for (ChipView chip : s.chips) {
             popScale(chip.display, 1.12f, 2);
             Bukkit.getScheduler().runTaskLater(plugin, () -> popScale(chip.display, 1.0f, 3), 3L);
@@ -312,7 +317,7 @@ public final class TalkUx implements Listener {
             return;
         }
         String id = npcId.toLowerCase(Locale.ROOT);
-        if (!LivingNpcService.isLiving(id)) {
+        if (!LivingNpcService.isLiving(id) && !GuestSpeakers.has(id)) {
             return;
         }
         Session s = sessions.get(player.getUniqueId());
@@ -341,8 +346,8 @@ public final class TalkUx implements Listener {
         s.total = TalkText.visibleLength(s.current);
         s.shown = 0;
         s.acc = 0;
-        // Finish typing within ~22 ticks so there's reading time before the next paced line.
-        s.cps = Math.max(1.4, s.total / 22.0);
+        // Finish typing within ~32 ticks so there's reading time before the next paced line.
+        s.cps = Math.max(1.1, s.total / 32.0);
         s.typedAt = -1;
         s.lastLineAt = tick;
         renderBubble(player, s);
@@ -395,31 +400,32 @@ public final class TalkUx implements Listener {
         if (gateFail != null) {
             String hint = de.aetherion.quests.util.QuestSkillGate.requirementHint(quest);
             line(player, id, npc.getName(), gateFail + (hint != null ? " " + hint : ""));
-            choices.add(new Choice("Got it.", NamedTextColor.GRAY, decline, false, "Got it.", declineCmd));
-            choices.add(new Choice("Show me the numbers", NamedTextColor.DARK_GRAY, details, false, null, detailsCmd));
+            String gotIt = ui(player, "got_it", "Got it.");
+            choices.add(new Choice(gotIt, NamedTextColor.GRAY, decline, false, gotIt, declineCmd));
+            choices.add(new Choice(ui(player, "numbers", "Show me the numbers"), NamedTextColor.DARK_GRAY, details, false, null, detailsCmd));
         } else if (conflicting != null) {
             String current = de.aetherion.quests.lang.LangPack.questTitle(player, conflicting.getId(), conflicting.getTitle());
             // Two-step in-world; the chat path has its own CONFIRM ABORT step.
-            choices.add(new Choice("Drop \"" + current + "\" & take this", NamedTextColor.GOLD, accept, true,
-                    "Fine. I'll drop the other job.", acceptCmd));
-            choices.add(new Choice("Keep my current job", NamedTextColor.RED, decline, false,
-                    "I'll finish what I started.", declineCmd));
-            choices.add(new Choice("Details…", NamedTextColor.GRAY, details, false, null, detailsCmd));
+            choices.add(new Choice(ui(player, "conflict_take", "Drop \"{0}\" & take this").replace("{0}", current), NamedTextColor.GOLD, accept, true,
+                    ui(player, "conflict_take_echo", "Fine. I'll drop the other job."), acceptCmd));
+            choices.add(new Choice(ui(player, "conflict_keep", "Keep my current job"), NamedTextColor.RED, decline, false,
+                    ui(player, "conflict_keep_echo", "I'll finish what I started."), declineCmd));
+            choices.add(new Choice(ui(player, "details", "Details…"), NamedTextColor.GRAY, details, false, null, detailsCmd));
         } else {
-            choices.add(new Choice(CastBook.acceptLabel(id, quest.getId()), NamedTextColor.GREEN, accept, false,
-                    CastBook.acceptLabel(id, quest.getId()), acceptCmd));
-            choices.add(new Choice(CastBook.declineLabel(id), NamedTextColor.RED, decline, false,
-                    CastBook.declineLabel(id), declineCmd));
-            choices.add(new Choice("Details…", NamedTextColor.GRAY, details, false, null, detailsCmd));
+            choices.add(new Choice(CastBook.acceptLabel(id, quest.getId(), player), NamedTextColor.GREEN, accept, false,
+                    CastBook.acceptLabel(id, quest.getId(), player), acceptCmd));
+            choices.add(new Choice(CastBook.declineLabel(id, player), NamedTextColor.RED, decline, false,
+                    CastBook.declineLabel(id, player), declineCmd));
+            choices.add(new Choice(ui(player, "details", "Details…"), NamedTextColor.GRAY, details, false, null, detailsCmd));
         }
         s.questOffer = true;
         s.onTimeout = gateFail != null ? null : () -> player.sendMessage(Component.text("  » ", NamedTextColor.DARK_GRAY)
-                .append(Component.text(npc.getName() + "'s offer stands. ", NamedTextColor.GRAY))
-                .append(chatButton("[Accept]", NamedTextColor.GREEN, "/aetherionquest accept " + quest.getId(),
-                        "Take " + title))
+                .append(Component.text(ui(player, "offer_stands", "{0}'s offer stands. ").replace("{0}", npc.getName()), NamedTextColor.GRAY))
+                .append(chatButton(ui(player, "accept_button", "[Accept]"), NamedTextColor.GREEN, "/aetherionquest accept " + quest.getId(),
+                        ui(player, "accept_hover", "Take {0}").replace("{0}", title)))
                 .append(Component.text(" ", NamedTextColor.GRAY))
-                .append(chatButton("[Decline]", NamedTextColor.RED, "/aetherionquest decline " + quest.getId(),
-                        "Maybe another time")));
+                .append(chatButton(ui(player, "decline_button", "[Decline]"), NamedTextColor.RED, "/aetherionquest decline " + quest.getId(),
+                        ui(player, "decline_hover", "Maybe another time"))));
         showCard(player, s, quest, conflicting);
         s.timeoutTicks = chipTimeoutTicks;
         showChips(player, s, choices);
@@ -436,7 +442,7 @@ public final class TalkUx implements Listener {
             return false;
         }
         String id = npcId.toLowerCase(Locale.ROOT);
-        if (!LivingNpcService.isLiving(id)) {
+        if (!LivingNpcService.isLiving(id) && !GuestSpeakers.has(id)) {
             return false;
         }
         Location at = NpcPresence.locate(id);
@@ -508,7 +514,7 @@ public final class TalkUx implements Listener {
             kill(old.display);
         }
         LivingNpcProfile profile = LivingNpcProfile.of(id);
-        String code = profile != null ? profile.chatPrefix() : "§6";
+        String code = profile != null ? profile.chatPrefix() : GuestSpeakers.nameCode(id, "§6");
         String name = displayName == null ? id : displayName;
         String text = code + "§l" + name + "\n" + TalkText.wrap("§f" + TalkText.fill(audience.get(0), legacyLine), 150);
         if (audience.size() > 1) {
@@ -546,7 +552,7 @@ public final class TalkUx implements Listener {
         Session s = new Session(player.getUniqueId(), npcId, ++tokenSeq);
         s.npcName = displayName == null || displayName.isBlank() ? npcId : displayName;
         LivingNpcProfile profile = LivingNpcProfile.of(npcId);
-        s.nameCode = profile != null ? profile.chatPrefix() : "§6";
+        s.nameCode = profile != null ? profile.chatPrefix() : GuestSpeakers.nameCode(npcId, "§6");
         s.npcAt = npcAt.clone();
         Location pos = bubblePos(npcAt, player);
         s.bubble = spawnText(pos, d -> styleBubble(d, bubbleScale));
@@ -650,7 +656,7 @@ public final class TalkUx implements Listener {
                 d.setDefaultBackground(false);
                 d.setBrightness(new Display.Brightness(15, 15));
                 d.setTransformation(scaleOf(0.01f));
-                d.text(chipText(choice, index, false, false));
+                d.text(chipText(player, choice, index, false, false));
                 d.setBackgroundColor(chipBg(false));
             });
             if (chip.display == null) {
@@ -678,12 +684,12 @@ public final class TalkUx implements Listener {
         }
         if (s.questOffer) {
             player.sendActionBar(TalkGlyphs.leftClick()
-                    .append(Component.text("Look at a reply + click  ·  ", NamedTextColor.GOLD))
+                    .append(Component.text(ui(player, "hint_offer", "Look at a reply + click  ·  "), NamedTextColor.GOLD))
                     .append(TalkGlyphs.scroll())
-                    .append(Component.text("or scroll + click", NamedTextColor.GOLD)));
+                    .append(Component.text(ui(player, "hint_offer_scroll", "or scroll + click"), NamedTextColor.GOLD)));
         } else {
             player.sendActionBar(TalkGlyphs.leftClick()
-                    .append(Component.text("Look at a reply + click — or just walk on", NamedTextColor.GRAY)));
+                    .append(Component.text(ui(player, "hint_topics", "Look at a reply + click — or just walk on"), NamedTextColor.GRAY)));
         }
         player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, SoundCategory.MASTER, 0.25f, 1.6f);
     }
@@ -710,8 +716,8 @@ public final class TalkUx implements Listener {
                 .hoverEvent(HoverEvent.showText(Component.text(hover, NamedTextColor.GRAY)));
     }
 
-    private Component chipText(Choice choice, int index, boolean hovered, boolean armed) {
-        String label = armed ? "Sure? Click again" : choice.label();
+    private Component chipText(Player player, Choice choice, int index, boolean hovered, boolean armed) {
+        String label = armed ? ui(player, "armed", "Sure? Click again") : choice.label();
         if (hovered) {
             return TalkGlyphs.chevron()
                     .append(Component.text(label, choice.color(), TextDecoration.BOLD))
@@ -742,7 +748,7 @@ public final class TalkUx implements Listener {
             text.append("\n§7").append(TalkText.wrap(TalkText.strip(desc), 150).replace("\n", "\n§7"));
         }
         if (!quest.getObjectives().isEmpty()) {
-            text.append("\n§e▸ Goals");
+            text.append("\n§e▸ ").append(ui(player, "goals", "Goals"));
             for (Objective objective : quest.getObjectives()) {
                 if (objective == null) {
                     continue;
@@ -752,7 +758,7 @@ public final class TalkUx implements Listener {
             }
         }
         if (!quest.getRewards().isEmpty()) {
-            text.append("\n§a▸ Pays");
+            text.append("\n§a▸ ").append(ui(player, "pays", "Pays"));
             for (Reward reward : quest.getRewards()) {
                 if (reward == null) {
                     continue;
@@ -761,7 +767,7 @@ public final class TalkUx implements Listener {
             }
         }
         if (conflicting != null) {
-            text.append("\n§c⚠ Replaces your current job");
+            text.append("\n§c⚠ ").append(ui(player, "replaces", "Replaces your current job"));
         }
         Vector toward = horizontal(player.getLocation().toVector().subtract(npcAt.toVector()));
         Vector right = new Vector(-toward.getZ(), 0, toward.getX()).multiply(-1);
@@ -782,6 +788,11 @@ public final class TalkUx implements Listener {
             player.showEntity(plugin, s.card);
             popIn(s.card, 0.42f);
         }
+    }
+
+    /** German overlay for fixed talk-UI strings ({@code ui.talk_ux.<key>}); English passes through as written. */
+    private static String ui(Player player, String key, String english) {
+        return de.aetherion.quests.lang.LangPack.ui(player, "talk_ux." + key, english);
     }
 
     private static String pretty(String raw) {
@@ -938,7 +949,7 @@ public final class TalkUx implements Listener {
             ChipView chip = s.chips.get(old);
             chip.armed = false;
             if (chip.display != null && chip.display.isValid()) {
-                chip.display.text(chipText(chip.choice, old, false, false));
+                chip.display.text(chipText(player, chip.choice, old, false, false));
                 chip.display.setBackgroundColor(chipBg(false));
                 popScale(chip.display, 0.5f, 2);
             }
@@ -956,7 +967,7 @@ public final class TalkUx implements Listener {
             }
             if (i == index || i == old) {
                 if (chip.display != null && chip.display.isValid()) {
-                    chip.display.text(chipText(chip.choice, i, on, chip.armed));
+                    chip.display.text(chipText(player, chip.choice, i, on, chip.armed));
                     chip.display.setBackgroundColor(chipBg(on));
                     popScale(chip.display, on ? 0.56f : 0.5f, 2);
                 }
@@ -979,7 +990,7 @@ public final class TalkUx implements Listener {
             if (s.hover != index) {
                 setHover(player, s, index);
             } else if (chip.display != null) {
-                chip.display.text(chipText(chip.choice, index, true, true));
+                chip.display.text(chipText(player, chip.choice, index, true, true));
             }
             player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, SoundCategory.MASTER, 0.5f, 0.9f);
             return;
@@ -987,7 +998,7 @@ public final class TalkUx implements Listener {
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, SoundCategory.MASTER, 0.35f, 1.25f);
         if (chip.choice.echo() != null) {
             player.sendMessage(Component.text("  » ", NamedTextColor.DARK_GRAY)
-                    .append(Component.text("You: ", NamedTextColor.GRAY))
+                    .append(Component.text(ui(player, "you", "You: "), NamedTextColor.GRAY))
                     .append(Component.text(chip.choice.echo(), NamedTextColor.WHITE, TextDecoration.ITALIC)));
         }
         clearChips(s);
@@ -1124,7 +1135,7 @@ public final class TalkUx implements Listener {
         }
         s.hoverByScroll = true;
         setHover(event.getPlayer(), s, target);
-        event.getPlayer().sendActionBar(Component.text("Click to pick · scroll to change", NamedTextColor.GOLD));
+        event.getPlayer().sendActionBar(Component.text(ui(event.getPlayer(), "scroll", "Click to pick · scroll to change"), NamedTextColor.GOLD));
     }
 
     @EventHandler
@@ -1149,7 +1160,7 @@ public final class TalkUx implements Listener {
             return;
         }
         if (s == null || s.token != token || s.chips.isEmpty()) {
-            player.sendMessage(Component.text("That conversation moved on. Right-click them again.", NamedTextColor.GRAY));
+            player.sendMessage(Component.text(ui(player, "moved_on", "That conversation moved on. Right-click them again."), NamedTextColor.GRAY));
             return;
         }
         pick(player, s, index);

@@ -30,6 +30,8 @@ import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.EntityPortalEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
 import org.bukkit.event.entity.EntityRemoveEvent;
+import org.bukkit.event.player.PlayerAnimationEvent;
+import org.bukkit.event.player.PlayerAnimationType;
 import org.bukkit.event.weather.LightningStrikeEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
@@ -250,6 +252,21 @@ public class BossCombatListener implements Listener {
                 || (plugin instanceof BossEngine engine && engine.getKeys().isStormBolt(combuster)));
         if (ours) {
             event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onNihilBodySwing(PlayerAnimationEvent event) {
+        if (event.getAnimationType() != PlayerAnimationType.ARM_SWING) {
+            return;
+        }
+        Player player = event.getPlayer();
+        for (BossInstance instance : bossManager.getActive()) {
+            if (instance.worldEater() != null && instance.worldEater().isMine()
+                    && instance.worldEater().tryBodySwing(player)) {
+                bossManager.refreshHud(instance);
+                return;
+            }
         }
     }
 
@@ -569,7 +586,15 @@ public class BossCombatListener implements Listener {
     }
 
     private boolean shouldUncancelBossHit(BossInstance instance, EntityDamageEvent event) {
-        if (instance == null || event.getCause() != EntityDamageEvent.DamageCause.PROJECTILE) {
+        if (instance == null || instance.isDamageBlocked()) {
+            return false;
+        }
+        // Vanilla invulnerable / hub cleaners cancel hits before we absorb combat HP.
+        // Directors own real armor via isDamageBlocked(); everything else must still chip the bar.
+        if (event instanceof EntityDamageByEntityEvent byEntity && damager(byEntity.getDamager()) != null) {
+            return true;
+        }
+        if (event.getCause() != EntityDamageEvent.DamageCause.PROJECTILE) {
             return false;
         }
         return instance.getEntity() instanceof org.bukkit.entity.Enderman

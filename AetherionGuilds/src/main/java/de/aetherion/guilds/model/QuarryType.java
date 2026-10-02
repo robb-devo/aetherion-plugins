@@ -139,6 +139,19 @@ public enum QuarryType {
         return builder.toString();
     }
 
+    /**
+     * The dig rate a player can count on: items per minute at this level, from the curve alone (no smoothing,
+     * no bursts). Cobble L5 with the default 10 s interval = 96/min.
+     */
+    public long perMinute(int level, int intervalSeconds) {
+        return Math.round(perTick(level) * (60.0 / Math.max(1, intervalSeconds)));
+    }
+
+    /** Relative speed (1.0 = cobble); rarer goods come slower. */
+    public double rate() {
+        return rate;
+    }
+
     public String compressedId() {
         return "compressed_" + resourceKey;
     }

@@ -187,6 +187,10 @@ public final class DungeonGearProgress {
     }
 
     public static void ensure(ItemStack item, ItemManager items) {
+        if (item != null && item.hasItemMeta() && items != null) {
+            boolean fresh = !item.getItemMeta().getPersistentDataContainer().has(ItemKeys.dungeonGearLevel(), PersistentDataType.INTEGER);
+            WardenPrisonLook.apply(item, items, fresh);
+        }
         if (!canLevel(item, items)) {
             return;
         }

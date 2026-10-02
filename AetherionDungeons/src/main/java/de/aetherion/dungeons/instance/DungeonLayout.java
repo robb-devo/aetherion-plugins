@@ -296,6 +296,25 @@ public final class DungeonLayout {
     }
 
     /**
+     * Assembled layout (Floor 1 room pool): the caller already placed every room and link.
+     * {@code templateFloor=true} keeps the Lerfing gate/seam behaviour.
+     */
+    public static DungeonLayout fromParts(
+            int seed,
+            Room lobby,
+            List<CombatRoom> combatRooms,
+            List<Link> links,
+            Room boss,
+            Room exit,
+            int bossGateX,
+            int bossGateZ,
+            boolean bossGateAlongX,
+            boolean templateFloor
+    ) {
+        return new DungeonLayout(seed, lobby, combatRooms, links, boss, exit, bossGateX, bossGateZ, bossGateAlongX, templateFloor);
+    }
+
+    /**
      * Branching Lerfing prison test: separate safe lobby, then combat chambers
      * in different directions (like Floor 1), boss at the far end.
      */

@@ -66,7 +66,9 @@ public final class NpcPresence {
             Map.entry("root_cellar", new Voice(Sound.BLOCK_NOTE_BLOCK_BANJO, 1.25f, 0.24f)),
             Map.entry("town_crier", new Voice(Sound.BLOCK_NOTE_BLOCK_BELL, 0.8f, 0.30f)),
             Map.entry("street_sweeper", new Voice(Sound.BLOCK_NOTE_BLOCK_HAT, 0.8f, 0.30f)),
-            Map.entry("lamp_lighter", new Voice(Sound.BLOCK_NOTE_BLOCK_CHIME, 1.1f, 0.20f))
+            Map.entry("lamp_lighter", new Voice(Sound.BLOCK_NOTE_BLOCK_CHIME, 1.1f, 0.20f)),
+            // guest speakers (other plugins' NPCs on the talk bubble) borrow a voice by name
+            Map.entry("isle_hand", new Voice(Sound.BLOCK_NOTE_BLOCK_BANJO, 1.22f, 0.26f))
     );
 
     /**
@@ -78,7 +80,7 @@ public final class NpcPresence {
             return;
         }
         String id = npcId.toLowerCase(Locale.ROOT).trim();
-        Voice voice = VOICES.getOrDefault(id, DEFAULT_VOICE);
+        Voice voice = VOICES.getOrDefault(de.aetherion.quests.talk.GuestSpeakers.voiceOf(id), DEFAULT_VOICE);
         Location at = locate(id);
         Location from = at != null && at.getWorld() != null && at.getWorld().equals(player.getWorld())
                 && at.distanceSquared(player.getLocation()) <= VOICE_NEAR * VOICE_NEAR
@@ -97,7 +99,7 @@ public final class NpcPresence {
             return;
         }
         String id = npcId.toLowerCase(Locale.ROOT).trim();
-        Voice voice = VOICES.getOrDefault(id, DEFAULT_VOICE);
+        Voice voice = VOICES.getOrDefault(de.aetherion.quests.talk.GuestSpeakers.voiceOf(id), DEFAULT_VOICE);
         Location at = locate(id);
         boolean near = at != null
                 && at.getWorld() != null
@@ -125,14 +127,17 @@ public final class NpcPresence {
     }
 
     /**
-     * Best known position of an NPC: live FancyNPC host, then the spawned entity,
-     * then {@code npcs.yml}. Feet level. May be null.
+     * Best known position of an NPC: a guest speaker's own anchor, else the live FancyNPC host, then the
+     * spawned entity, then {@code npcs.yml}. Feet level. May be null.
      */
     public static Location locate(String npcId) {
         if (npcId == null) {
             return null;
         }
         String id = npcId.toLowerCase(Locale.ROOT).trim();
+        if (de.aetherion.quests.talk.GuestSpeakers.has(id)) {
+            return de.aetherion.quests.talk.GuestSpeakers.locate(id);
+        }
         AetherionQuests plugin = AetherionQuests.getInstance();
         if (plugin == null) {
             return null;

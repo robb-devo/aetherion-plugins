@@ -259,13 +259,13 @@ public final class DungeonArmor {
         lore.add("");
         addStatLines("dungeon_vestige_" + piece.id(), stats, lore);
         lore.add("");
-        lore.add("§7Dungeon Vestige " + piece.display());
-        lore.add("§7Blank on purpose. The dungeon sells");
-        lore.add("§7identities, not fashion.");
+        lore.add("§7Pried off a prisoner who stopped needing it.");
+        lore.add("§7The shackle marks are still warm.");
         lore.add("");
-        lore.add("§eRight-click §7to choose a calling.");
+        lore.add("§eRight-click §7to decide who you were in here.");
         lore.add("§8This vestige is consumed. You keep the chosen piece.");
-        lore.add("§8Tank · Assassin · Soldier · Healer · Shaman");
+        lore.add("§bTurnkey §8· §5Escapist §8· §cRiot Warden §8· §eChaplain §8· §3Sculkbound");
+        lore.add("§8Warden's Prison · Floor I");
         return lore;
     }
 
@@ -285,11 +285,13 @@ public final class DungeonArmor {
         lore.add("");
         addStatLines(calling.itemId(safe, piece), stats, lore);
         lore.add("");
-        lore.add(calling.color()
-                + (safe == DungeonGearTier.T1 ? "Dungeon Calling: " : "Calling: ")
-                + calling.display()
-                + (safe == DungeonGearTier.T1 ? "" : " §8· " + safe.roman()));
-        lore.add("§7" + calling.flavor());
+        if (safe == DungeonGearTier.T1) {
+            lore.add(WardenPrisonLook.setLine(calling));
+            lore.add("§7" + WardenPrisonLook.pieceLine(calling, piece));
+        } else {
+            lore.add(calling.color() + "Calling: " + calling.display() + " §8· " + safe.roman());
+            lore.add("§7" + calling.flavor());
+        }
         lore.add("");
         lore.add("§8Likes: §7" + calling.boosters());
         if (safe == DungeonGearTier.T1) {
@@ -326,7 +328,13 @@ public final class DungeonArmor {
         lore.add("");
         addStatLines(kind.itemId(safe), stats, lore);
         lore.add("");
-        lore.add("§7" + kind.flavor());
+        if (safe == DungeonGearTier.T1) {
+            DungeonCalling calling = kind.calling();
+            lore.add(calling.color() + WardenPrisonLook.setName(calling) + " Set §8· " + calling.display() + " · Warden's Prison");
+            lore.add("§7" + WardenPrisonLook.weaponLine(kind));
+        } else {
+            lore.add("§7" + kind.flavor());
+        }
         lore.add(dungeonGear
                 ? "§8Dungeon weapon. Levels in dungeons. Cores raise the cap."
                 : "§8Boss weapon. Same rules as the others.");

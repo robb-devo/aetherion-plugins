@@ -11,6 +11,8 @@ depend:
 softdepend:
   - AetherionItems
   - PlaceholderAPI
+  - AetherionQuests
+  - FancyNpcs
 
 commands:
   guild:

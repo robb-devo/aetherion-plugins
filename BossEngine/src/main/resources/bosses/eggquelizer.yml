@@ -1,0 +1,103 @@
+# ============================================================
+# EGGQUELIZER
+# A giant egg on tiny legs with a speaker for a face, running the
+# arena's PA. Spectacle boss: the whole fight lives in
+#   de.aetherion.bossengine.instance.eggquelizer.EggquelizerDirector
+# This file only supplies HP gates, transition windows and a hitbox.
+#
+# Arena: the director raises its own EggStage at the spawn (lifted to
+# the first height where it fits in open air), places blocks only into
+# air and strikes exactly those blocks after the show.
+#
+# HP / loot below are placeholders.
+# ============================================================
+
+id: eggquelizer
+display-name: "&f&lEGGQUELIZER"
+# Silhouette only: invisible hitbox. The body is ~75 BlockDisplays.
+entity-type: HUSK
+model-engine-id: ""
+
+attributes:
+  max-health: 60000
+  movement-speed: 0.0
+  attack-damage: 0
+  scale: 2.6
+  follow-range: 32
+  knockback-resistance: 1.0
+
+options:
+  glowing: false
+  custom-name-visible: false
+  silent: true
+  invulnerable-spawn-ticks: 0
+  persistent: true
+  remove-when-far-away: false
+  prevent-item-pickup: true
+
+conditions:
+  max-instances: 1
+  leash-radius: 40
+  leash-action: TELEPORT
+
+phases:
+  - id: soundcheck
+    health-percent: 100
+    display-name: "&f&lEGGQUELIZER"
+    skills: []
+
+  # OVERCLOCK. Authored at 222 ticks; other values rescale the timeline.
+  - id: headliner
+    health-percent: 60
+    display-name: "&f&lEGGQUELIZER &7— &eOverclocked"
+    transition:
+      duration-ticks: 222
+      invulnerable: true
+      freeze-ai: true
+      explode: false
+    skills: []
+
+  # DISTORTION. Authored at 170 ticks.
+  - id: distortion
+    health-percent: 30
+    display-name: "&5&lEGGQUELIZER &7— &dDistorted"
+    transition:
+      duration-ticks: 170
+      invulnerable: true
+      freeze-ai: true
+      explode: false
+    skills: []
+
+skills: []
+
+# Placeholder loot.
+loot:
+  damage-based: true
+  participation-threshold-percent: 5.0
+  experience: 600
+
+  killer-bonus: []
+
+  top-damagers:
+    count: 0
+    items: []
+
+  shared: []
+
+  per-damager:
+    - source: VANILLA
+      material: EGG
+      min-amount: 1
+      max-amount: 3
+      chance: 1.0
+    - source: VANILLA
+      material: NOTE_BLOCK
+      min-amount: 1
+      max-amount: 1
+      chance: 0.25
+    - source: VANILLA
+      material: EXPERIENCE_BOTTLE
+      min-amount: 6
+      max-amount: 12
+      chance: 1.0
+      scale-with-damage: true

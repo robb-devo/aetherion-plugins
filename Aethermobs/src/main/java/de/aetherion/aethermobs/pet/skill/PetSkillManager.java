@@ -3938,8 +3938,11 @@ public class PetSkillManager implements Listener {
 
             if (entity != null) {
 
+                // Lookout used to setGlowing(true) — that painted every Borderlands
+                // zombie with a wallhack outline. No glow; range-only soft sense stays
+                // for the skill tick bookkeeping (range scan still runs).
                 entity.setGlowing(
-                        true
+                        false
                 );
             }
         }

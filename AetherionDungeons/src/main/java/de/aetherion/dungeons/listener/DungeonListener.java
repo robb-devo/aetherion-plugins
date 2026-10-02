@@ -4,6 +4,7 @@ import de.aetherion.core.AetherKeys;
 import de.aetherion.dungeons.AetherionDungeons;
 import de.aetherion.dungeons.bridge.BossEngineBridge;
 import de.aetherion.dungeons.instance.AshesEncounter;
+import de.aetherion.dungeons.instance.DungeonChestProps;
 import de.aetherion.dungeons.instance.DungeonLootFx;
 import de.aetherion.dungeons.instance.DungeonProgressHud;
 import de.aetherion.dungeons.instance.EndlessEncounter;
@@ -196,6 +197,19 @@ public final class DungeonListener implements Listener {
             return;
         }
         markReady(event.getPlayer());
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
+    public void onReliquaryClick(PlayerInteractEntityEvent event) {
+        Block block = DungeonChestProps.blockOf(event.getRightClicked());
+        if (block == null) {
+            return;
+        }
+        event.setCancelled(true);
+        if (event.getHand() != EquipmentSlot.HAND || !DungeonLootFx.isLootChest(block)) {
+            return;
+        }
+        instances.tryLootChest(event.getPlayer(), block);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)

@@ -1,5 +1,8 @@
 package de.aetherion.guilds.menu;
 
+import de.aetherion.guilds.island.HostService;
+import de.aetherion.guilds.island.IslandHost;
+import de.aetherion.guilds.logistics.LogisticsService;
 import de.aetherion.guilds.model.Guild;
 import de.aetherion.guilds.model.PersonalIsland;
 import de.aetherion.guilds.model.QuarryMinion;
@@ -7,6 +10,9 @@ import de.aetherion.guilds.model.QuarryType;
 import de.aetherion.guilds.service.GuildService;
 import de.aetherion.guilds.service.MinionService;
 import de.aetherion.guilds.service.PersonalIslandService;
+import de.aetherion.guilds.structure.PlacedStructure;
+import de.aetherion.guilds.structure.StructureService;
+import de.aetherion.guilds.template.StateRotator;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -28,15 +34,26 @@ public final class QuarryMenu {
     public static final int MILL_SLOT = 20;
     public static final int PICKUP_SLOT = 21;
     public static final int CLOSE_SLOT = 22;
+    public static final int HOUSING_SLOT = 23;
 
     private final MinionService minions;
     private final GuildService guilds;
     private final PersonalIslandService personal;
+    private HostService hosts;
+    private StructureService structures;
+    private LogisticsService logistics;
 
     public QuarryMenu(GuildService guilds, PersonalIslandService personal, MinionService minions) {
         this.guilds = guilds;
         this.personal = personal;
         this.minions = minions;
+    }
+
+    /** Island highlight: the quarry's housing (headframe + chute) and where its belt goes. */
+    public void attachHighlight(HostService hosts, StructureService structures, LogisticsService logistics) {
+        this.hosts = hosts;
+        this.structures = structures;
+        this.logistics = logistics;
     }
 
     public void open(Player player, Guild guild, QuarryMinion minion) {
@@ -63,10 +80,22 @@ public final class QuarryMenu {
         QuarryType type = minion.quarryType();
         QuarryMinion.StorageView view = minion.view();
         String mill = switch (minion.processor()) {
-            case COMPRESSED -> "§aMill: crafts Compressed";
-            case COMPACTED -> "§bForge: Compacted, leftover Compressed";
-            default -> "§8No mill installed";
+            case COMPRESSED -> "§aBuilt-in Mill: makes Compressed";
+            case COMPACTED -> "§bBuilt-in Forge: Compacted, leftover Compressed";
+            default -> "§8No built-in mill";
         };
+        int interval = Math.max(1, de.aetherion.guilds.AetherionGuilds.getInstance() == null ? 10
+                : de.aetherion.guilds.AetherionGuilds.getInstance().getConfig().getInt("minion-interval-seconds", 10));
+        long perMinute = Math.round(minion.perTick() * (60.0 / interval));
+        String state = null;
+        if (structures != null && logistics != null) {
+            IslandHost stateHost = holder.personal() ? IslandHost.personal(holder.ownerId()) : IslandHost.guild(holder.ownerId());
+            PlacedStructure stateHousing = structures.housingOf(stateHost, minion.id());
+            if (stateHousing != null) {
+                de.aetherion.guilds.logistics.MachineState machineState = logistics.status(stateHousing);
+                state = machineState.tag() + (machineState.problem() ? " §8· " + machineState.hint() : "");
+            }
+        }
         Inventory inventory = Bukkit.createInventory(holder, 27, "§8" + type.display());
         ItemStack pane = named(Material.GRAY_STAINED_GLASS_PANE, " ");
         for (int slot = 0; slot < inventory.getSize(); slot++) {
@@ -75,11 +104,12 @@ public final class QuarryMenu {
         inventory.setItem(INFO_SLOT, named(
                 type.icon(),
                 "§6" + type.display() + " §8Lv." + minion.level() + "/" + QuarryType.MAX_LEVEL,
+                state == null ? "§8Not on a belt line" : state,
                 "§7Raw: §e" + view.raw() + " " + type.productName(),
                 view.compressed() > 0 ? "§7Compressed: §a" + view.compressed() : "§8No compressed stored",
                 view.compacted() > 0 ? "§7Compacted: §b" + view.compacted() : "§8No compacted stored",
-                "§7Rate: §f" + minion.perTick() + " §7/ tick",
-                "§7Cap: §f" + minion.cap() + " raw-eq",
+                "§7Digs: §f" + de.aetherion.guilds.util.GuildFormat.compact(perMinute) + " §7" + type.productName() + " / min",
+                "§7Cap: §f" + minion.cap() + " goods",
                 mill,
                 type.blurb(),
                 "§8Crafts while the server is online."
@@ -115,13 +145,16 @@ public final class QuarryMenu {
         } else {
             inventory.setItem(MILL_SLOT, named(
                     Material.PISTON,
-                    minion.processor() == QuarryMinion.Processor.COMPRESSED ? mill : "§eInstall Mill / Forge",
+                    minion.processor() == QuarryMinion.Processor.COMPRESSED ? mill : "§eBuilt-in Mill / Forge",
                     minion.processor() == QuarryMinion.Processor.COMPRESSED
                             ? "§7Crafts Compressed while it runs."
-                            : "§7Hold a Quarry Mill or Forge",
+                            : "§7Hold a Quarry Mill or Quarry Forge",
                     minion.processor() == QuarryMinion.Processor.COMPRESSED
                             ? "§8Leftover stays raw until 128."
-                            : "§7and click here."
+                            : "§7and click: it compresses by itself.",
+                    minion.processor() == QuarryMinion.Processor.COMPRESSED
+                            ? ""
+                            : "§8(Or build a Mill on the belt line.)"
             ));
         }
         inventory.setItem(PICKUP_SLOT, named(
@@ -132,6 +165,34 @@ public final class QuarryMenu {
                 "§eClick"
         ));
         inventory.setItem(CLOSE_SLOT, named(Material.BARRIER, "§cClose"));
+        if (structures != null && logistics != null) {
+            IslandHost host = holder.personal() ? IslandHost.personal(holder.ownerId()) : IslandHost.guild(holder.ownerId());
+            PlacedStructure housing = structures.housingOf(host, minion.id());
+            if (structures.slimHousing(housing)) {
+                inventory.setItem(HOUSING_SLOT, named(
+                        Material.PISTON,
+                        "§eRaise Housing",
+                        "§7Builds the 3x3 quarry housing round",
+                        "§7it (only into empty space). Its",
+                        "§6chute §7faces you: start a belt on",
+                        "§7the cell in front of it.",
+                        housing == null ? "§8Not linked yet." : "§8Now: " + logistics.summary(housing),
+                        "§eClick §7(stand where the chute should face)"
+                ));
+            } else {
+                long beltRate = logistics.outPerMinute(housing);
+                inventory.setItem(HOUSING_SLOT, named(
+                        Material.HOPPER,
+                        "§6Housing & Belt",
+                        logistics.summary(housing),
+                        beltRate > 0 ? "§7On the belt: §f" + de.aetherion.guilds.logistics.LogisticsService.perMinute(beltRate)
+                                + " §8(live)" : "§8Nothing on the belt this moment.",
+                        "§7Belts carry everything it makes;",
+                        "§7collect here takes what's left.",
+                        "§8Pick the quarry up to move both."
+                ));
+            }
+        }
         player.openInventory(inventory);
     }
 
@@ -158,6 +219,27 @@ public final class QuarryMenu {
         if (slot == MILL_SLOT) {
             minions.installProcessor(player, ref.minion(), player.getInventory().getItemInMainHand());
             open(player, ref);
+            return;
+        }
+        if (slot == HOUSING_SLOT && structures != null && hosts != null) {
+            IslandHost host = holder.personal() ? IslandHost.personal(holder.ownerId()) : IslandHost.guild(holder.ownerId());
+            PlacedStructure housing = structures.housingOf(host, ref.minion().id());
+            if (!structures.slimHousing(housing)) {
+                return;
+            }
+            if (!hosts.canPlace(player, host)) {
+                player.sendMessage(hosts.rankHint(host, "raise quarry housings"));
+                return;
+            }
+            int rot = StateRotator.frontTowardViewer(player.getLocation().getYaw());
+            StructureService.HousingResult result = structures.raiseHousing(host, ref.minion(), rot);
+            player.sendMessage(switch (result) {
+                case FULL -> "§aHousing raised. §7Lay a belt from its §6chute §7(Build → Belt Layer).";
+                case RIG -> "§7No room for the full housing here (other buildings or your land's edge);"
+                        + " a drill rig went up instead. Belts start on any cell next to it.";
+                case NONE -> "§cNo room above this quarry. Clear some space round it and try again.";
+            });
+            player.closeInventory();
             return;
         }
         if (slot == PICKUP_SLOT) {
@@ -204,7 +286,21 @@ public final class QuarryMenu {
         if (cost.cores() > 0) {
             lore.add("§d" + cost.cores() + " Quarry Core");
         }
-        lore.add("§7More output per tick.");
+        int interval = Math.max(1, de.aetherion.guilds.AetherionGuilds.getInstance() == null ? 10
+                : de.aetherion.guilds.AetherionGuilds.getInstance().getConfig().getInt("minion-interval-seconds", 10));
+        lore.add("§7Digs §f" + type.perMinute(nextLevel - 1, interval) + "§7/min §8→ §a"
+                + type.perMinute(nextLevel, interval) + "§7/min");
+        int tierNow = de.aetherion.guilds.logistics.PropBodies.quarryTier(nextLevel - 1);
+        int tierNext = de.aetherion.guilds.logistics.PropBodies.quarryTier(nextLevel);
+        if (tierNext != tierNow) {
+            lore.add("§6✦ New look: §f" + de.aetherion.guilds.logistics.PropBodies.quarryTierName(nextLevel));
+        } else if (tierNext < 3) {
+            int to = nextLevel;
+            while (de.aetherion.guilds.logistics.PropBodies.quarryTier(to) == tierNow && to < QuarryType.MAX_LEVEL) {
+                to++;
+            }
+            lore.add("§8New look at Lv." + to + ": " + de.aetherion.guilds.logistics.PropBodies.quarryTierName(to));
+        }
         lore.add(QuarryType.upgradeLine(nextLevel));
         lore.add("§8Island grind. Last tiers jump hard.");
         return lore.toArray(String[]::new);

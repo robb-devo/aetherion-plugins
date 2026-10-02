@@ -5,6 +5,8 @@ import de.aetherion.aethermobs.menu.PetMenu;
 import de.aetherion.items.core.ItemKeys;
 import de.aetherion.items.model.Rarity;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -13,6 +15,7 @@ import org.bukkit.entity.Snowball;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
@@ -168,6 +171,7 @@ public class BetaSphereManager implements Listener {
             );
         }
 
+        // Lore is baked into stacks players already hold — changing it breaks stacking.
         return List.of(
                 "§7Catch Sphere",
                 "",
@@ -357,12 +361,24 @@ public class BetaSphereManager implements Listener {
             return;
         }
 
+        // The same click also locks the catch timing — never spend a second sphere on it.
+        AetherMobs mobs = AetherMobs.getInstance();
+        if (mobs != null
+                && mobs.getPetCatchListener() != null
+                && mobs.getPetCatchListener().isInRitual(player)) {
+            return;
+        }
+
         if (isOnCooldown(player, sphere)) {
             double seconds = getRemainingCooldown(player, sphere) / 1000.0;
-            player.sendMessage(
-                    "§d✦ §fSphere cooldown: §d"
-                            + String.format("%.1f", seconds)
-                            + "s"
+            player.sendActionBar(
+                    net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
+                            .legacySection()
+                            .deserialize(
+                                    "§7Sphere ready in §d"
+                                            + String.format("%.1f", seconds)
+                                            + "s"
+                            )
             );
             return;
         }
@@ -374,6 +390,11 @@ public class BetaSphereManager implements Listener {
                 sphere.getId()
         );
 
+        // Fly the sphere's own model, not a vanilla snowball.
+        ItemStack look = item.clone();
+        look.setAmount(1);
+        projectile.setItem(look);
+
         if (sphere.isInfinite()) {
             projectile.getPersistentDataContainer().set(
                     BETA_PROJECTILE_KEY,
@@ -384,8 +405,25 @@ public class BetaSphereManager implements Listener {
             consumeSphere(player, event.getHand());
         }
 
-        player.playSound(player.getLocation(), Sound.ENTITY_SNOWBALL_THROW, 1.0f, 1.0f);
+        player.playSound(player.getLocation(), Sound.ENTITY_SNOWBALL_THROW, 0.8f, 1.15f);
         setCooldown(player);
+    }
+
+    /** A sphere that misses lands with a small glass tink instead of vanishing silently. */
+    @EventHandler
+    public void onSphereLand(ProjectileHitEvent event) {
+        if (!(event.getEntity() instanceof Snowball snowball)) {
+            return;
+        }
+        if (!snowball.getPersistentDataContainer().has(SPHERE_PROJECTILE_KEY, PersistentDataType.STRING)) {
+            return;
+        }
+        Location at = snowball.getLocation();
+        if (at.getWorld() == null) {
+            return;
+        }
+        at.getWorld().playSound(at, Sound.BLOCK_AMETHYST_BLOCK_HIT, 0.45f, 1.7f);
+        at.getWorld().spawnParticle(Particle.WHITE_ASH, at, 4, 0.1, 0.05, 0.1, 0.0);
     }
 
     private void consumeSphere(Player player, EquipmentSlot hand) {

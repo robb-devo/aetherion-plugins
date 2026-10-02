@@ -69,6 +69,24 @@ commands:
     description: Async-paste Eldervale farming/fishing island schematics via FAWE
     usage: /aetherpaste <farming|fishing|clear> …
     permission: aetherion.paste
+  propwand:
+    description: Give the Prop Wand (look + click to paste Aetherion prop schems)
+    usage: /propwand [extract|list]
+    aliases: [aeprops, propstick]
+    permission: aetherion.propwand
+  summit:
+    description: Teleport to Skyreach Summit if unlocked
+    aliases: [skyreach]
+    permission: aetherionhub.use
+  whisperwood:
+    description: Teleport to the Whisperwood Shrine if unlocked
+    aliases: [wilds]
+    permission: aetherionhub.use
+  origin:
+    description: Origin Journal - districts, glowcaps, bells, skyways, the tour
+    usage: /origin [journal|go <place>|stop|tour [stop]|settings|wish|dev]
+    aliases: [originisle, originjournal]
+    permission: aetherionhub.use
 
 permissions:
   aetherionhub.use:
@@ -77,4 +95,15 @@ permissions:
     default: op
   aetherion.paste:
     description: Paste Eldervale island schematics asynchronously via FAWE
+    default: op
+  aetherion.propwand:
+    description: Use /propwand and paste prop schematics with the wand
+    default: op
+  aetherion.origin.admin:
+    description: Origin Isle DEV hub (/origin dev) and townsfolk anchors
+    default: op
+    children:
+      aetherion.origin.dev: true
+  aetherion.origin.dev:
+    description: Origin Isle DEV actions
     default: op

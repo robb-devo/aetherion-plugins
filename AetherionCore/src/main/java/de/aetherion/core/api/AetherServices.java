@@ -24,6 +24,7 @@ public final class AetherServices {
     private static volatile HarvestAccess harvest;
     private static volatile DungeonAccess dungeons;
     private static volatile TestBotsAccess testBots;
+    private static volatile TalkAccess talk;
 
     private AetherServices() {
     }
@@ -88,6 +89,10 @@ public final class AetherServices {
         testBots = access;
     }
 
+    public static void registerTalk(TalkAccess access) {
+        talk = access;
+    }
+
     public static PartyAccess party() {
         return party;
     }
@@ -146,6 +151,11 @@ public final class AetherServices {
 
     public static TestBotsAccess testBots() {
         return testBots;
+    }
+
+    /** In-world talk bubbles (AetherionQuests), or null. */
+    public static TalkAccess talk() {
+        return talk;
     }
 
     public static void clearParty(PartyAccess access) {
@@ -235,6 +245,12 @@ public final class AetherServices {
     public static void clearTestBots(TestBotsAccess access) {
         if (testBots == access) {
             testBots = null;
+        }
+    }
+
+    public static void clearTalk(TalkAccess access) {
+        if (talk == access) {
+            talk = null;
         }
     }
 }

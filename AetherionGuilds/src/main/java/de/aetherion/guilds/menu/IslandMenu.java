@@ -1,213 +1,440 @@
 package de.aetherion.guilds.menu;
 
+import de.aetherion.guilds.island.HostService;
+import de.aetherion.guilds.island.IslandGuide;
+import de.aetherion.guilds.island.IslandHost;
+import de.aetherion.guilds.island.LandService;
+import de.aetherion.guilds.island.StarterLayout;
+import de.aetherion.guilds.logistics.LogisticsService;
 import de.aetherion.guilds.model.IslandTiers;
 import de.aetherion.guilds.model.PersonalIsland;
 import de.aetherion.guilds.model.QuarryMinion;
 import de.aetherion.guilds.service.MinionService;
 import de.aetherion.guilds.service.PersonalIslandService;
+import de.aetherion.guilds.structure.PlacedStructure;
+import de.aetherion.guilds.structure.StructureService;
+import de.aetherion.guilds.structure.StructureType;
 import de.aetherion.guilds.util.AetherionItemsAccess;
 import de.aetherion.guilds.util.GuildFormat;
 
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.entity.Player;
+import org.bukkit.event.inventory.ClickType;
 import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public final class IslandMenu {
+/**
+ * {@code /island}: the one home for your island. Build, Production and Land are the three big doors; home,
+ * tier, Hollis, friends, collect and the border sit below. The tile that is the obvious next thing glows.
+ * {@code /island build|land|production} jump straight into the same pages.
+ */
+public final class IslandMenu implements MenuKit.Menu {
 
-    public static final String TITLE = "§8Island";
-    public static final int INFO_SLOT = 4;
-    public static final int HOME_SLOT = 20;
-    public static final int COLLECT_SLOT = 22;
-    public static final int UPGRADE_SLOT = 24;
-    public static final int FRIENDS_SLOT = 30;
-    public static final int STATUS_SLOT = 32;
-    public static final int BACK_SLOT = 45;
-    public static final int CLOSE_SLOT = 49;
+    private static final int HEADER = 4;
+    private static final int BUILD = 20;
+    private static final int PRODUCTION = 22;
+    private static final int LAND = 24;
+    private static final int HOME = 29;
+    private static final int TIER = 31;
+    private static final int GUIDE = 33;
+    private static final int FRIENDS = 38;
+    private static final int COLLECT = 40;
+    private static final int BORDER = 42;
+    private static final int BACK = 45;
+    private static final int CLOSE = 49;
+
+    private enum Next {
+        HUT,
+        QUARRY,
+        WORKSHOP_OR_BELT,
+        NONE
+    }
 
     private final PersonalIslandService islands;
     private final MinionService minions;
     private final FriendMenu friends;
     private final BiomeSelectMenu biomes;
+    private StarterSelectMenu starters;
+    private BuildMenu build;
+    private LandMenu land;
+    private ProductionMenu production;
+    private HostService hosts;
+    private LogisticsService logistics;
+    private StructureService structures;
+    private LandService landService;
+    private IslandGuide guide;
+    private de.aetherion.guilds.island.FactoryGoals goals;
 
-    public IslandMenu(
-            PersonalIslandService islands,
-            MinionService minions,
-            FriendMenu friends,
-            BiomeSelectMenu biomes
-    ) {
+    public void attachGoals(de.aetherion.guilds.island.FactoryGoals goals) {
+        this.goals = goals;
+    }
+
+    public IslandMenu(PersonalIslandService islands, MinionService minions, FriendMenu friends, BiomeSelectMenu biomes) {
         this.islands = islands;
         this.minions = minions;
         this.friends = friends;
         this.biomes = biomes;
     }
 
+    /** Island highlight: starters, blueprints, land, production, guide. */
+    public void attachHighlight(StarterSelectMenu starters, BuildMenu build, LandMenu land, HostService hosts,
+                                LogisticsService logistics) {
+        this.starters = starters;
+        this.build = build;
+        this.land = land;
+        this.hosts = hosts;
+        this.logistics = logistics;
+    }
+
+    public void attachHub(ProductionMenu production, StructureService structures, LandService landService,
+                          IslandGuide guide) {
+        this.production = production;
+        this.structures = structures;
+        this.landService = landService;
+        this.guide = guide;
+    }
+
     public void open(Player player) {
         if (!AetherionItemsAccess.islandUnlocked(player)) {
-            player.sendMessage(AetherionItemsAccess.islandHint());
+            if (starters != null) {
+                starters.open(player);
+            } else {
+                player.sendMessage(AetherionItemsAccess.islandHint());
+            }
             return;
         }
         PersonalIsland island = islands.byOwner(player.getUniqueId());
         if (island == null) {
-            biomes.open(player);
+            if (starters != null) {
+                starters.open(player);
+            } else {
+                biomes.open(player);
+            }
             return;
         }
-        Inventory inventory = Bukkit.createInventory(new Holder(), 54, TITLE);
-        ItemStack pane = named(Material.GRAY_STAINED_GLASS_PANE, " ");
-        for (int slot = 0; slot < inventory.getSize(); slot++) {
-            inventory.setItem(slot, pane.clone());
+        IslandHost host = IslandHost.personal(island.ownerId());
+        StarterLayout starter = StarterLayout.byId(island.starter());
+        Inventory inventory = MenuKit.framed(this, host, 54, "§8✦ " + (hosts != null ? hosts.title(host) : "Your Island"));
+        Next next = next(host, island);
+
+        inventory.setItem(HEADER, header(island, host, starter));
+
+        if (build != null) {
+            boolean hasHub = structures != null && structures.hasWorkshop(host);
+            List<String> lore = new ArrayList<>(hasHub
+                    ? List.of("§7Your §6Hub §7runs the factory now:",
+                    "§7build, belts and upgrades are at",
+                    "§7the §fWorkshop lectern§7.",
+                    "")
+                    : List.of("§7Your first pieces: the Storage Hut,",
+                    "§7a starter belt and the §6Workshop§7.",
+                    "§7The Workshop becomes your §6Hub§7:",
+                    "§7the factory desk from then on.",
+                    ""));
+            switch (next) {
+                case HUT -> lore.add("§6◆ Next: §fStorage Hut §7(first one free)");
+                case WORKSHOP_OR_BELT -> lore.add("§6◆ Next: §fa belt from the quarry chute");
+                default -> {
+                }
+            }
+            de.aetherion.guilds.island.FactoryGoals.Goal goal = next == Next.NONE && goals != null ? goals.next(host) : null;
+            if (goal != null) {
+                lore.add("§b➤ Next goal: §f" + goal.title());
+            }
+            lore.add(hasHub ? "§e▶ Show me the Hub" : "§e▶ Open Build");
+            inventory.setItem(BUILD, MenuKit.tile(Material.CRAFTING_TABLE, "§6§lBuild", lore,
+                    next == Next.HUT || next == Next.WORKSHOP_OR_BELT || goal != null));
         }
-        inventory.setItem(INFO_SLOT, named(
-                island.biome().icon(),
-                "§aYour Island",
-                "§7Biome: §f" + island.biome().display(),
-                "§7Level: §f" + island.islandLevel(),
-                "§7Quarries: §f" + island.minions().size(),
-                "§7Build radius: §f" + islands.buildRadius(island),
-                island.biome().look()
-        ));
-        inventory.setItem(HOME_SLOT, named(
-                Material.OAK_DOOR,
-                "§aGo Home",
-                "§7Teleport to your island."
-        ));
-        inventory.setItem(COLLECT_SLOT, named(
-                Material.HOPPER,
-                "§eCollect All",
-                "§7Empty every quarry at once."
-        ));
-        if (island.canUpgradeIsland()) {
-            IslandTiers.UpgradeCost cost = IslandTiers.upgradeCost(island.islandLevel());
+        if (production != null) {
+            inventory.setItem(PRODUCTION, MenuKit.tile(Material.BLAST_FURNACE, "§a§lProduction",
+                    productionLore(host, island, next), next == Next.QUARRY || upgradeReady(player, host)));
+        }
+        if (land != null) {
             List<String> lore = new ArrayList<>();
-            lore.add("§7Upgrade to §fLv." + (island.islandLevel() + 1));
-            lore.add("§7Bigger island and a better look.");
-            lore.add("§7Radius → §f" + islands.buildRadius(island) + " §8+8");
+            lore.add("§7Owned: §f" + hosts.parcels(host).size() + " §7parcels §8(16×16)");
+            if (landService != null) {
+                lore.add("§7Next parcel: §6" + GuildFormat.compact(landService.price(host)) + " §7coins");
+            }
             lore.add("");
-            if (cost.compactedCobble() > 0) {
-                lore.add("§f" + cost.compactedCobble() + " Compacted Cobble");
-            }
-            if (cost.cores() > 0) {
-                lore.add("§d" + cost.cores() + " Quarry Core");
-            }
-            if (cost.coins() > 0) {
-                lore.add("§6" + GuildFormat.compact(cost.coins()) + " Coins");
-            }
-            inventory.setItem(UPGRADE_SLOT, named(Material.BEACON, "§eUpgrade Island", lore.toArray(String[]::new)));
-        } else {
-            inventory.setItem(UPGRADE_SLOT, named(
-                    Material.BEDROCK,
-                    "§cMax Island",
-                    "§7Lv." + island.islandLevel() + " is fully upgraded."
-            ));
+            lore.add("§7Buy land touching yours; new");
+            lore.add("§7ground rises there in your");
+            lore.add("§7island's look.");
+            lore.add("");
+            lore.add("§e▶ Open the land map");
+            inventory.setItem(LAND, MenuKit.tile(Material.FILLED_MAP, "§b§lLand", lore, false));
         }
-        inventory.setItem(FRIENDS_SLOT, named(
-                Material.PLAYER_HEAD,
-                "§bFriends",
-                "§7Friends can visit your island.",
-                "§eClick to open friends."
-        ));
-        inventory.setItem(STATUS_SLOT, named(
-                Material.CLOCK,
-                "§eQuarry Status",
-                statusLines(island)
-        ));
-        inventory.setItem(BACK_SLOT, named(
-                Material.ARROW,
-                "§eBack",
-                "§7Return to Aetherion Manager."
-        ));
-        inventory.setItem(CLOSE_SLOT, named(Material.BARRIER, "§cClose"));
+
+        inventory.setItem(HOME, MenuKit.named(Material.OAK_DOOR, "§aGo Home", "§7Teleport to your island.", "",
+                "§e▶ Click"));
+        inventory.setItem(TIER, tierTile(island));
+        inventory.setItem(GUIDE, guideTile(island));
+        inventory.setItem(FRIENDS, MenuKit.named(Material.PLAYER_HEAD, "§bFriends & Visits",
+                "§7Friends can visit your island", "§7while the server is online.", "", "§e▶ Open friends"));
+        inventory.setItem(COLLECT, collectTile(island));
+        inventory.setItem(BORDER, MenuKit.named(Material.SPYGLASS, "§eShow build border",
+                "§7Gold particles trace where", "§7you may build, for a few seconds."));
+
+        inventory.setItem(BACK, MenuKit.named(Material.ARROW, "§7Aetherion Manager"));
+        inventory.setItem(CLOSE, MenuKit.named(Material.BARRIER, "§cClose"));
         player.openInventory(inventory);
     }
 
-    public void handle(Player player, int slot) {
+    // ------------------------------------------------------------------------------------------------
+    // tiles
+    // ------------------------------------------------------------------------------------------------
+
+    private ItemStack header(PersonalIsland island, IslandHost host, StarterLayout starter) {
+        List<String> lore = new ArrayList<>();
+        lore.add(starter != null ? "§7" + starter.display() : "§7" + island.biome().display() + " pad");
+        lore.add("");
+        lore.add("§7Island Tier  §f" + island.islandLevel() + "§8/" + IslandTiers.MAX_LEVEL);
+        lore.add("§7Build radius §f" + islands.buildRadius(island) + " §8+ §f" + hosts.parcels(host).size() + " §7parcels");
+        lore.add("§7Quarries     §f" + island.minions().size());
+        if (structures != null) {
+            int buildings = 0;
+            long used = 0L;
+            long cap = 0L;
+            for (PlacedStructure structure : structures.of(host)) {
+                if (structure.type() == StructureType.QUARRY_HOUSING || structure.type() == StructureType.PROJECT) {
+                    continue;
+                }
+                buildings++;
+                if (structure.type().role() == StructureType.Role.SINK) {
+                    used += PlacedStructure.total(structure.store());
+                    cap += structure.capacity();
+                }
+            }
+            lore.add("§7Buildings    §f" + buildings);
+            if (cap > 0) {
+                lore.add("§7Storage      " + de.aetherion.guilds.project.GuildProjectService.bar(used, cap));
+            }
+        }
+        if (logistics != null) {
+            int running = 0;
+            for (LogisticsService.Route route : logistics.routes(host)) {
+                if (route.to() != null) {
+                    running++;
+                }
+            }
+            lore.add("§7Belts        §f" + logistics.count(host) + "§8/" + logistics.cap(host)
+                    + (running > 0 ? " §8· §a" + running + " running" : ""));
+        }
+        return MenuKit.glow(MenuKit.named(starter != null ? starter.icon() : island.biome().icon(),
+                "§6§l" + hosts.title(host), lore));
+    }
+
+    private List<String> productionLore(IslandHost host, PersonalIsland island, Next next) {
+        List<String> lore = new ArrayList<>();
+        int shown = 0;
+        if (logistics != null) {
+            for (LogisticsService.Route route : logistics.routes(host)) {
+                if (shown >= 4) {
+                    break;
+                }
+                lore.add("§7" + route.from().label() + " §8→ "
+                        + (route.deadEnd() ? "§c✖ nowhere" : "§f" + route.to().label()));
+                shown++;
+            }
+        }
+        if (shown == 0) {
+            lore.add("§8No chains yet: quarry → belt → hut.");
+        }
+        lore.add("");
+        lore.add("§7Buildings, quarries, upgrades,");
+        lore.add("§7storage and every chain.");
+        if (next == Next.QUARRY) {
+            lore.add("");
+            lore.add("§6◆ Next: §fplace a quarry near the hut");
+        }
+        lore.add("");
+        lore.add("§e▶ Open production");
+        return lore;
+    }
+
+    private ItemStack tierTile(PersonalIsland island) {
+        if (!island.canUpgradeIsland()) {
+            return MenuKit.named(Material.NETHER_STAR, "§6Island Tier " + island.islandLevel() + " §8(max)",
+                    "§7Fully grown. Land parcels still", "§7add room to build.");
+        }
+        IslandTiers.UpgradeCost cost = IslandTiers.upgradeCost(island.islandLevel());
+        List<String> lore = new ArrayList<>();
+        lore.add("§7Now §fTier " + island.islandLevel() + " §8→ §fTier " + (island.islandLevel() + 1));
+        lore.add(IslandTiers.perkLine(island.islandLevel() + 1));
+        lore.add("");
+        if (cost.compactedCobble() > 0) {
+            lore.add("§f" + cost.compactedCobble() + " Compacted Cobble");
+        }
+        if (cost.cores() > 0) {
+            lore.add("§d" + cost.cores() + " Quarry Core");
+        }
+        if (cost.coins() > 0) {
+            lore.add("§6" + GuildFormat.compact(cost.coins()) + " coins");
+        }
+        lore.add("");
+        lore.add("§e▶ Raise the tier");
+        return MenuKit.named(Material.BEACON, "§eIsland Tier §f" + island.islandLevel(), lore);
+    }
+
+    private ItemStack guideTile(PersonalIsland island) {
+        if (guide == null || !guide.available()) {
+            return MenuKit.named(Material.BOOK, "§eFirst steps",
+                    "§71. Storage Hut on the marked pad", "§72. A quarry a few steps away",
+                    "§73. A belt from its chute into the hut");
+        }
+        IslandGuide.Step step = guide.step(island.ownerId());
+        String objective = guide.objective(island.ownerId());
+        List<String> lore = new ArrayList<>();
+        lore.add("§7The isle hand. He walks you");
+        lore.add("§7through hut → quarry → belt.");
+        lore.add("");
+        if (objective != null) {
+            lore.add("§6◆ " + "§f" + objective.replace("§7", "§8"));
+            lore.add("§7Tour: §f" + guide.progress(island.ownerId()) + "§8/§f3 §7done");
+            lore.add("");
+            lore.add("§e▶ Carry on with " + guide.name());
+        } else if (step == IslandGuide.Step.SKIPPED) {
+            lore.add("§8Tour skipped.");
+            lore.add("");
+            lore.add("§e▶ Take the tour after all");
+        } else {
+            lore.add("§a✔ Tour done. He's in the yard");
+            lore.add("§afor tips.");
+            lore.add("");
+            lore.add("§e▶ Talk to " + guide.name());
+        }
+        return MenuKit.tile(Material.WRITABLE_BOOK, "§e" + guide.name() + " §7· Isle Hand", lore, objective != null);
+    }
+
+    private ItemStack collectTile(PersonalIsland island) {
+        List<String> lore = new ArrayList<>();
+        if (island.minions().isEmpty()) {
+            lore.add("§8No quarries placed yet.");
+        } else {
+            int shown = 0;
+            for (QuarryMinion minion : island.minions()) {
+                if (shown++ >= 5) {
+                    lore.add("§8…and " + (island.minions().size() - 5) + " more");
+                    break;
+                }
+                QuarryMinion.StorageView view = minions.preview(minion);
+                lore.add("§7" + minion.quarryType().display() + " §8Lv." + minion.level()
+                        + " §7· §e" + GuildFormat.compact(view.rawEquivalent()) + "§8/" + GuildFormat.compact(minion.cap()));
+            }
+        }
+        lore.add("");
+        lore.add("§8Belted quarries fill your huts");
+        lore.add("§8on their own.");
+        lore.add("");
+        lore.add("§e▶ Empty every quarry into your pack");
+        return MenuKit.named(Material.CHEST, "§eCollect all quarries", lore);
+    }
+
+    // ------------------------------------------------------------------------------------------------
+    // what's next
+    // ------------------------------------------------------------------------------------------------
+
+    private Next next(IslandHost host, PersonalIsland island) {
+        if (structures == null) {
+            return Next.NONE;
+        }
+        if (structures.count(host, StructureType.STORAGE_HUT) == 0) {
+            return Next.HUT;
+        }
+        if (island.minions().isEmpty()) {
+            return Next.QUARRY;
+        }
+        if (logistics != null) {
+            for (LogisticsService.Route route : logistics.routes(host)) {
+                if (route.to() != null) {
+                    return Next.NONE;
+                }
+            }
+        }
+        return Next.WORKSHOP_OR_BELT;
+    }
+
+    private boolean upgradeReady(Player player, IslandHost host) {
+        if (structures == null) {
+            return false;
+        }
+        for (PlacedStructure structure : structures.of(host)) {
+            if (structures.nextTier(structure) != null && structures.upgradeBlocked(player, structure) == null) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // ------------------------------------------------------------------------------------------------
+    // clicks
+    // ------------------------------------------------------------------------------------------------
+
+    @Override
+    public void click(Player player, MenuKit.Holder holder, int slot, ClickType click) {
         PersonalIsland island = islands.byOwner(player.getUniqueId());
         if (island == null) {
             player.closeInventory();
-            biomes.open(player);
-            return;
-        }
-        if (slot == CLOSE_SLOT) {
-            player.closeInventory();
-            return;
-        }
-        if (slot == BACK_SLOT) {
-            player.closeInventory();
-            player.performCommand("aethermanager");
-            return;
-        }
-        if (slot == HOME_SLOT) {
-            player.closeInventory();
-            islands.goHome(player);
-            return;
-        }
-        if (slot == COLLECT_SLOT) {
-            minions.collectAll(player, island);
             open(player);
             return;
         }
-        if (slot == UPGRADE_SLOT) {
-            islands.upgradeIsland(player);
-            open(player);
-            return;
-        }
-        if (slot == FRIENDS_SLOT) {
-            friends.open(player);
-            return;
-        }
-        if (slot == STATUS_SLOT) {
-            if (island.minions().isEmpty()) {
-                player.sendMessage("§7No quarries yet. Craft one: §f8 Compressed §7around a §dQuarry Core§7.");
-                return;
+        IslandHost host = IslandHost.personal(island.ownerId());
+        switch (slot) {
+            case BUILD -> {
+                if (build != null) {
+                    build.open(player, host);
+                }
             }
-            for (QuarryMinion minion : island.minions()) {
-                minions.catchUp(minion);
-                QuarryMinion.StorageView view = minion.view();
-                player.sendMessage("§7" + minion.quarryType().display() + " §8Lv." + minion.level()
-                        + " §8- " + GuildFormat.nametag(minion.quarryType(), minion.level(), view));
+            case PRODUCTION -> {
+                if (production != null) {
+                    production.open(player, host);
+                }
             }
-            islands.save();
-        }
-    }
-
-    private String[] statusLines(PersonalIsland island) {
-        List<String> lore = new ArrayList<>();
-        lore.add("§7Runs while the server is online.");
-        if (island.minions().isEmpty()) {
-            lore.add("§8No quarries placed.");
-            return lore.toArray(String[]::new);
-        }
-        for (QuarryMinion minion : island.minions()) {
-            QuarryMinion.StorageView view = minions.preview(minion);
-            lore.add("§7" + minion.quarryType().display() + " §8Lv." + minion.level()
-                    + " §7· §e" + view.rawEquivalent() + "§8/" + minion.cap());
-        }
-        return lore.toArray(String[]::new);
-    }
-
-    private ItemStack named(Material material, String name, String... lore) {
-        ItemStack item = new ItemStack(material);
-        ItemMeta meta = item.getItemMeta();
-        if (meta != null) {
-            meta.setDisplayName(name);
-            if (lore.length > 0) {
-                meta.setLore(List.of(lore));
+            case LAND -> {
+                if (land != null) {
+                    land.open(player, host);
+                }
             }
-            item.setItemMeta(meta);
-        }
-        return item;
-    }
-
-    public static final class Holder implements InventoryHolder {
-        @Override
-        public Inventory getInventory() {
-            return null;
+            case HOME -> {
+                player.closeInventory();
+                islands.goHome(player);
+            }
+            case TIER -> {
+                islands.upgradeIsland(player);
+                open(player);
+            }
+            case GUIDE -> {
+                player.closeInventory();
+                if (guide != null && guide.available()) {
+                    guide.resume(player);
+                } else {
+                    player.sendMessage("§6First steps: §7Storage Hut on the marked pad → a quarry a few steps away"
+                            + " → a belt from its chute into the hut.");
+                }
+            }
+            case FRIENDS -> friends.open(player);
+            case COLLECT -> {
+                minions.collectAll(player, island);
+                player.playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 0.6f, 1.1f);
+                open(player);
+            }
+            case BORDER -> {
+                player.closeInventory();
+                if (landService != null) {
+                    landService.flashBorder(player, host);
+                    landService.sendBorderMessage(player);
+                }
+            }
+            case BACK -> {
+                player.closeInventory();
+                player.performCommand("aethermanager");
+            }
+            case CLOSE -> player.closeInventory();
+            default -> {
+            }
         }
     }
 }

@@ -2,7 +2,9 @@ package de.aetherion.guilds.model;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public final class PersonalIsland {
 
@@ -12,6 +14,10 @@ public final class PersonalIsland {
     private boolean islandBuilt;
     private int islandLevel = 1;
     private final List<QuarryMinion> minions = new ArrayList<>();
+    /** Authored starter id (island highlight), or null for a classic biome pad. */
+    private String starter;
+    /** Owned land parcels (16x16, see LandService), packed x/z keys. */
+    private final Set<Long> parcels = ConcurrentHashMap.newKeySet();
 
     public PersonalIsland(UUID ownerId, int plot, IslandBiome biome) {
         this.ownerId = ownerId;
@@ -61,5 +67,17 @@ public final class PersonalIsland {
 
     public List<QuarryMinion> minions() {
         return minions;
+    }
+
+    public String starter() {
+        return starter;
+    }
+
+    public void setStarter(String starter) {
+        this.starter = starter == null || starter.isBlank() ? null : starter;
+    }
+
+    public Set<Long> parcels() {
+        return parcels;
     }
 }

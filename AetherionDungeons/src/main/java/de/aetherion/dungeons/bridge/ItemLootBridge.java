@@ -115,6 +115,61 @@ public final class ItemLootBridge {
         return VESTIGE_PIECES.clone();
     }
 
+    /**
+     * Vestige slots a player already covers with Floor-1 gear: a blank vestige or an attuned
+     * Floor-I calling piece of that slot (worn, inventory, ender chest). Returned as vestige ids.
+     */
+    public static java.util.Set<String> ownedVestigeSlots(org.bukkit.entity.Player player) {
+        java.util.Set<String> out = new java.util.HashSet<>();
+        if (player == null) {
+            return out;
+        }
+        ItemFactoryAccess factory = AetherServices.items();
+        if (factory == null) {
+            return out;
+        }
+        scanVestigeSlots(player.getInventory().getContents(), factory, out);
+        scanVestigeSlots(player.getEnderChest().getContents(), factory, out);
+        return out;
+    }
+
+    private static void scanVestigeSlots(ItemStack[] items, ItemFactoryAccess factory, java.util.Set<String> out) {
+        if (items == null) {
+            return;
+        }
+        for (ItemStack item : items) {
+            if (item == null || item.getType().isAir()) {
+                continue;
+            }
+            String slot = vestigeSlotOf(factory.itemId(item));
+            if (slot != null) {
+                out.add(slot);
+            }
+        }
+    }
+
+    /** {@code dungeon_vestige_boots} / {@code dungeon_tank_boots} → {@code dungeon_vestige_boots}; T2/T3/relics/cores → null. */
+    static String vestigeSlotOf(String itemId) {
+        if (itemId == null || itemId.isBlank()) {
+            return null;
+        }
+        String id = itemId.toLowerCase(java.util.Locale.ROOT);
+        if (!id.startsWith("dungeon_")
+                || id.startsWith("dungeon_relic_")
+                || id.startsWith("dungeon_t2_")
+                || id.startsWith("dungeon_t3_")
+                || id.startsWith("dungeon_core")
+                || id.startsWith("dungeon_weapon")) {
+            return null;
+        }
+        for (String piece : new String[]{"helmet", "chestplate", "leggings", "boots"}) {
+            if (id.endsWith("_" + piece)) {
+                return "dungeon_vestige_" + piece;
+            }
+        }
+        return null;
+    }
+
     public static String vestigeIdOf(ItemStack item) {
         if (item == null) {
             return null;
@@ -156,7 +211,36 @@ public final class ItemLootBridge {
             return null;
         }
         ItemStack created = factory.dungeonWeaponSchematic(Math.max(1, floor));
-        return created != null ? created : create("dungeon_weapon_schematic");
+        ItemStack out = created != null ? created : create("dungeon_weapon_schematic");
+        if (floor <= 1) {
+            rename(out, "§5Dungeon Weapon Schematic", "§5Armory Requisition §8· §dFloor I");
+        }
+        return out;
+    }
+
+    /** Floor I drops read as the Warden's Prison straight out of the chest (Items migrates the rest on refresh). */
+    private static ItemStack prisonLook(String itemId, ItemStack item) {
+        if (item == null || itemId == null) {
+            return item;
+        }
+        String id = itemId.toLowerCase(java.util.Locale.ROOT);
+        if (id.startsWith("dungeon_vestige_")) {
+            String piece = id.substring("dungeon_vestige_".length());
+            String display = piece.isEmpty() ? piece : Character.toUpperCase(piece.charAt(0)) + piece.substring(1);
+            rename(item, "§7Dungeon Vestige " + display, "§7Shackled Vestige §8· §7" + display);
+        }
+        return item;
+    }
+
+    private static void rename(ItemStack item, String legacy, String wanted) {
+        if (item == null || !item.hasItemMeta()) {
+            return;
+        }
+        org.bukkit.inventory.meta.ItemMeta meta = item.getItemMeta();
+        if (meta != null && legacy.equals(meta.getDisplayName())) {
+            meta.setDisplayName(wanted);
+            item.setItemMeta(meta);
+        }
     }
 
     public static ItemStack rollCompressed() {
@@ -177,6 +261,6 @@ public final class ItemLootBridge {
         if (factory == null || itemId == null || itemId.isBlank()) {
             return null;
         }
-        return factory.create(itemId);
+        return prisonLook(itemId, factory.create(itemId));
     }
 }

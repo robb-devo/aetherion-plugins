@@ -189,6 +189,132 @@ public final class LerfingTestBuilder {
         }
     }
 
+    /**
+     * Floor 1 room-pool build: every template pasted at its planned bounds / rotation,
+     * corridors between them, unused door holes sealed, link mouths gated, exit alcove behind the boss.
+     */
+    public static Location buildPooled(Plugin plugin, World world, FloorOnePool.Plan plan) {
+        DungeonLayout layout = plan.layout();
+        STYLE.set(TemplateStyle.PRISON);
+        try {
+            PrototypeDungeonBuilder.applyPartyScale(1, 1);
+            int y = DungeonLayout.FLOOR_Y;
+            for (FloorOnePool.Placed placed : plan.all()) {
+                boolean ok;
+                try {
+                    ok = FloorOnePool.paste(plugin, world, placed, y);
+                } catch (RuntimeException exception) {
+                    plugin.getLogger().log(Level.WARNING, "[Floor1] Paste failed for " + placed.template().id(), exception);
+                    ok = false;
+                }
+                if (!ok) {
+                    plugin.getLogger().warning("[Floor1] Template " + placed.template().file() + " missing — plain chamber instead.");
+                    fillFallbackRoom(world, y, placed.bounds());
+                }
+            }
+
+            for (DungeonLayout.Link link : layout.links()) {
+                if (link.toIndex() == DungeonLayout.EXIT) {
+                    continue;
+                }
+                buildCorridor(world, y, link);
+            }
+
+            sealGaps(world, y, layout.lobby());
+            for (DungeonLayout.CombatRoom room : layout.combatRooms()) {
+                sealGaps(world, y, room.bounds());
+            }
+            sealGaps(world, y, layout.boss());
+
+            for (DungeonLayout.Link link : layout.links()) {
+                if (link.toIndex() == DungeonLayout.EXIT) {
+                    continue;
+                }
+                prepareMouth(world, y, link, true);
+                prepareMouth(world, y, link, false);
+            }
+
+            // Pool templates carry their own lanterns, braziers and fill light: only the plain
+            // runtime corridors get light here (no flood of invisible level-15 blocks in the rooms).
+            placeCorridorLanterns(world, y, layout);
+            buildExitAlcove(world, y, layout);
+            PrototypeDungeonBuilder.placePortal(world, layout);
+
+            DungeonLayout.Room lobby = layout.lobby();
+            double spawnX = lobby.centerX() + 0.5;
+            double spawnZ = lobby.centerZ() + 0.5;
+            clearSpawnPocket(world, lobby.centerX(), y, lobby.centerZ());
+            PrototypeDungeonBuilder.spawnReadyNpc(
+                    plugin,
+                    world,
+                    new Location(world, spawnX + 2.0, y + 1, spawnZ, -90f, 0f)
+            );
+            return new Location(world, spawnX, y + 1, spawnZ, 0f, 0f);
+        } finally {
+            STYLE.remove();
+        }
+    }
+
+    /** Only fills holes (unused door openings, void gaps) — keeps the template's own wall mix. */
+    private static void sealGaps(World world, int y, DungeonLayout.Room room) {
+        Material wall = style().wall;
+        Material floor = style().floor;
+        for (int x = room.minX(); x <= room.maxX(); x++) {
+            for (int z = room.minZ(); z <= room.maxZ(); z++) {
+                Material under = world.getBlockAt(x, y, z).getType();
+                if (under.isAir() || under == Material.BEDROCK || under == Material.BARRIER || under == Material.JIGSAW) {
+                    world.getBlockAt(x, y, z).setType(floor, false);
+                }
+                boolean edge = x == room.minX() || x == room.maxX() || z == room.minZ() || z == room.maxZ();
+                if (!edge) {
+                    continue;
+                }
+                for (int dy = 1; dy <= WALL_H; dy++) {
+                    Material m = world.getBlockAt(x, y + dy, z).getType();
+                    if (m.isAir() || m == Material.LIGHT || m == Material.BARRIER || m == Material.JIGSAW
+                            || m == Material.BEDROCK || m == Material.IRON_BARS || m == Material.COBWEB) {
+                        world.getBlockAt(x, y + dy, z).setType(wall, false);
+                    }
+                }
+            }
+        }
+    }
+
+    private static void buildExitAlcove(World world, int y, DungeonLayout layout) {
+        DungeonLayout.Room exit = layout.exit();
+        DungeonLayout.Room boss = layout.boss();
+        Material wall = style().wall;
+        Material ceil = style().ceil;
+        Material floor = style().exitFloor;
+        for (int x = exit.minX() - 1; x <= exit.maxX() + 1; x++) {
+            for (int z = exit.minZ(); z <= exit.maxZ() + 1; z++) {
+                boolean rim = x == exit.minX() - 1 || x == exit.maxX() + 1 || z == exit.maxZ() + 1;
+                world.getBlockAt(x, y, z).setType(floor, false);
+                for (int dy = 1; dy <= 5; dy++) {
+                    world.getBlockAt(x, y + dy, z).setType(rim ? wall : Material.AIR, false);
+                }
+                world.getBlockAt(x, y + 6, z).setType(ceil, false);
+            }
+        }
+        // The boss room is only reachable once the boss is released, so its back door can stay open.
+        punchDeep(world, y, boss.centerX(), boss.maxZ(), false);
+        placeLight(world, exit.centerX(), y + 3, exit.centerZ());
+    }
+
+    private static void fillFallbackRoom(World world, int y, DungeonLayout.Room room) {
+        TemplateStyle style = style();
+        for (int x = room.minX(); x <= room.maxX(); x++) {
+            for (int z = room.minZ(); z <= room.maxZ(); z++) {
+                boolean rim = x == room.minX() || x == room.maxX() || z == room.minZ() || z == room.maxZ();
+                world.getBlockAt(x, y, z).setType(style.floor, false);
+                for (int dy = 1; dy <= WALL_H; dy++) {
+                    world.getBlockAt(x, y + dy, z).setType(rim ? style.wall : Material.AIR, false);
+                }
+                world.getBlockAt(x, y + WALL_H + 1, z).setType(style.ceil, false);
+            }
+        }
+    }
+
     public static void openSeam(World world, DungeonLayout.Link link) {
         if (world == null || link == null || link.toIndex() == DungeonLayout.EXIT) {
             return;
@@ -425,6 +551,42 @@ public final class LerfingTestBuilder {
             }
             scatterLights(world, y, link.corridorBounds(), 4);
         }
+    }
+
+    /** Hanging lanterns down the middle of each corridor, every 6 blocks (pooled floors). */
+    private static void placeCorridorLanterns(World world, int y, DungeonLayout layout) {
+        for (DungeonLayout.Link link : layout.links()) {
+            if (link.toIndex() == DungeonLayout.EXIT) {
+                continue;
+            }
+            int top = y + HALL_H - 1;
+            if (link.alongX()) {
+                int cz = link.fromWallZ();
+                int x1 = Math.min(link.fromWallX(), link.toWallX()) + 2;
+                int x2 = Math.max(link.fromWallX(), link.toWallX()) - 2;
+                for (int x = x1 + 1; x <= x2; x += 6) {
+                    hangLantern(world, x, top, cz);
+                }
+            } else {
+                int cx = link.fromWallX();
+                int z1 = Math.min(link.fromWallZ(), link.toWallZ()) + 2;
+                int z2 = Math.max(link.fromWallZ(), link.toWallZ()) - 2;
+                for (int z = z1 + 1; z <= z2; z += 6) {
+                    hangLantern(world, cx, top, z);
+                }
+            }
+        }
+    }
+
+    private static void hangLantern(World world, int x, int y, int z) {
+        if (!world.getBlockAt(x, y, z).getType().isAir() && world.getBlockAt(x, y, z).getType() != Material.LIGHT) {
+            return;
+        }
+        org.bukkit.block.data.BlockData data = Material.LANTERN.createBlockData();
+        if (data instanceof org.bukkit.block.data.type.Lantern lantern) {
+            lantern.setHanging(true);
+        }
+        world.getBlockAt(x, y, z).setBlockData(data, false);
     }
 
     private static void scatterLights(World world, int floorY, DungeonLayout.Room room, int budget) {

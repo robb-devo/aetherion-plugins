@@ -85,6 +85,16 @@ public final class QuestProgressAccessImpl implements QuestProgressAccess {
     }
 
     @Override
+    public void npcLine(Player player, String npcId, String displayName, String line) {
+        if (player == null || line == null || line.isBlank()) {
+            return;
+        }
+        String id = npcId == null || npcId.isBlank() ? "npc" : npcId;
+        String name = displayName == null || displayName.isBlank() ? "NPC" : displayName;
+        de.aetherion.quests.npc.LivingNpcProfile.say(player, id, name, line);
+    }
+
+    @Override
     public void suppress(Player player) {
         QuestProgressDisplay.suppress(player);
     }

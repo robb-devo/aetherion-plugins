@@ -125,9 +125,11 @@ public final class DungeonCommand implements CommandExecutor, TabCompleter {
                     player.sendMessage("§cNo permission.");
                     return true;
                 }
-                if (remote == null || !remote.transferToDungeon(player)) {
+                if (remote == null || !remote.enabled()) {
                     player.sendMessage("§cEnable remote-transfer in AetherionDungeons config.");
+                    return true;
                 }
+                remote.transferToDungeon(player);
             }
             case "home", "return" -> {
                 if (remote == null) {
@@ -151,6 +153,42 @@ public final class DungeonCommand implements CommandExecutor, TabCompleter {
                 }
                 hub.ensureReturnPortal();
                 player.sendMessage("§aReturn portal rebuilt at configured coords.");
+            }
+            case "sync" -> {
+                if (!player.hasPermission("aetherion.dungeon.admin")) {
+                    player.sendMessage("§cNo permission.");
+                    return true;
+                }
+                var main = AetherionDungeons.getInstance();
+                if (main == null || main.getSnapshots() == null) {
+                    return true;
+                }
+                java.util.UUID id = player.getUniqueId();
+                String who = player.getName();
+                if (args.length > 1) {
+                    Player online = org.bukkit.Bukkit.getPlayerExact(args[1]);
+                    id = online != null ? online.getUniqueId() : org.bukkit.Bukkit.getOfflinePlayer(args[1]).getUniqueId();
+                    who = args[1];
+                }
+                player.sendMessage("§5Transfer §8· §f" + who + " §8@ §7" + main.getSnapshots().serverName());
+                player.sendMessage("§7" + main.getSnapshots().describe(id));
+            }
+            case "pool" -> {
+                if (!player.hasPermission("aetherion.dungeon.admin")) {
+                    player.sendMessage("§cNo permission.");
+                    return true;
+                }
+                if (args.length > 1 && "reload".equalsIgnoreCase(args[1])) {
+                    de.aetherion.dungeons.instance.FloorOnePool.reload();
+                    player.sendMessage("§aFloor 1 room pool reloaded on next run.");
+                    return true;
+                }
+                var main = AetherionDungeons.getInstance();
+                int size = main == null ? 0 : de.aetherion.dungeons.instance.FloorOnePool.catalogSize(main);
+                player.sendMessage("§5Floor 1 pool §8· §f" + size + " §7combat rooms"
+                        + (main != null && de.aetherion.dungeons.instance.FloorOnePool.enabled(main) ? "" : " §c(disabled)"));
+                String last = de.aetherion.dungeons.instance.FloorOnePool.lastSummary();
+                player.sendMessage("§7Last run: §f" + (last == null || last.isBlank() ? "—" : last));
             }
             case "cleanup" -> {
                 if (!player.hasPermission("aetherion.dungeon.admin")) {
@@ -183,6 +221,8 @@ public final class DungeonCommand implements CommandExecutor, TabCompleter {
             player.sendMessage("§5/dungeon transfer §7- send self to mmo-d (when remote enabled)");
             player.sendMessage("§5/dungeon portal §7- rebuild return portal (mmo-d)");
             player.sendMessage("§5/dungeon cleanup §7- remove capital leftovers (mmo-d)");
+            player.sendMessage("§5/dungeon sync [player] §7- transfer ledger / pending snapshot");
+            player.sendMessage("§5/dungeon pool [reload] §7- Floor 1 room pool + last run seed");
         }
     }
 
@@ -192,7 +232,7 @@ public final class DungeonCommand implements CommandExecutor, TabCompleter {
             Stream<String> options = Stream.of("leave", "home", "return", "dhub", "hub");
             if (sender.hasPermission("aetherion.dungeon.admin")) {
                 options = Stream.concat(options, Stream.of(
-                        "give", "guide", "remove", "enter", "boss", "transfer", "mmod", "portal", "cleanup"));
+                        "give", "guide", "remove", "enter", "boss", "transfer", "mmod", "portal", "cleanup", "sync", "pool"));
             }
             String prefix = args[0].toLowerCase(Locale.ROOT);
             return options.filter(option -> option.startsWith(prefix)).toList();

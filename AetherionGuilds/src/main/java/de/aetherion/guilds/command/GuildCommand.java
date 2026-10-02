@@ -1,6 +1,9 @@
 package de.aetherion.guilds.command;
 
+import de.aetherion.guilds.island.Highlight;
+import de.aetherion.guilds.island.IslandHost;
 import de.aetherion.guilds.menu.GuildMenu;
+import de.aetherion.guilds.model.Guild;
 import de.aetherion.guilds.service.GuildService;
 import de.aetherion.guilds.service.MinionService;
 import de.aetherion.guilds.util.AetherionItemsAccess;
@@ -21,11 +24,16 @@ public final class GuildCommand implements CommandExecutor, TabCompleter {
     private final GuildService guilds;
     private final MinionService minions;
     private final GuildMenu menu;
+    private Highlight highlight;
 
     public GuildCommand(GuildService guilds, MinionService minions, GuildMenu menu) {
         this.guilds = guilds;
         this.minions = minions;
         this.menu = menu;
+    }
+
+    public void attachHighlight(Highlight highlight) {
+        this.highlight = highlight;
     }
 
     @Override
@@ -77,6 +85,24 @@ public final class GuildCommand implements CommandExecutor, TabCompleter {
                 guilds.kick(player, Bukkit.getPlayerExact(args[1]));
             }
             case "home", "island" -> guilds.goHome(player);
+            case "project", "projects" -> {
+                if (highlight != null) {
+                    highlight.projectMenu().open(player);
+                }
+            }
+            case "build", "land", "belts" -> {
+                Guild guild = guilds.byPlayer(player.getUniqueId());
+                if (guild == null || highlight == null) {
+                    player.sendMessage("§cJoin or found a guild first.");
+                    return true;
+                }
+                IslandHost host = IslandHost.guild(guild.id());
+                switch (action) {
+                    case "build" -> highlight.buildMenu().open(player, host);
+                    case "land" -> highlight.landMenu().open(player, host);
+                    default -> highlight.placement().startBelts(player, host);
+                }
+            }
             case "menu" -> menu.open(player);
             case "quarry" -> {
                 player.sendMessage("§7Quarries are crafted, not given.");
@@ -90,7 +116,7 @@ public final class GuildCommand implements CommandExecutor, TabCompleter {
                 }
                 guilds.setRank(player, Bukkit.getPlayerExact(args[1]), args[2]);
             }
-            default -> player.sendMessage("§7/guild create|invite|accept|deny|leave|kick|rank|home|disband|quarry");
+            default -> player.sendMessage("§7/guild create|invite|accept|deny|leave|kick|rank|home|project|build|land|belts|disband|quarry");
         }
         return true;
     }
@@ -99,7 +125,8 @@ public final class GuildCommand implements CommandExecutor, TabCompleter {
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
             String prefix = args[0].toLowerCase(Locale.ROOT);
-            return Stream.of("create", "invite", "accept", "deny", "leave", "kick", "rank", "home", "disband", "menu", "quarry")
+            return Stream.of("create", "invite", "accept", "deny", "leave", "kick", "rank", "home", "project", "build",
+                            "land", "belts", "disband", "menu", "quarry")
                     .filter(option -> option.startsWith(prefix))
                     .toList();
         }

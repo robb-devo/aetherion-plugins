@@ -32,7 +32,12 @@ public final class HubService {
             "borderlands",
             "colosseum",
             "eldervale",
-            "fishing_eldervale"
+            "fishing_eldervale",
+            // Origin Isle overhaul: organic camps on the main island.
+            "summit",
+            "whisperwood",
+            // Recognised so the Bloodstone arena camp (main-checkout lineage) is never purged; not auto-created.
+            "bloodstone"
     );
 
     private static final String[] RETIRED_SPAWN_IDS = {
@@ -86,6 +91,8 @@ public final class HubService {
         changed |= ensureSpawn("colosseum", "Colosseum", "Proctor's ring — Crypt vials, T2 bosses. Unlocks with the Proctor.", "SANDSTONE", 19);
         changed |= ensureSpawn("eldervale", "Mining Eldervale", "Quarries, shafts, the Deep Forge. Past the slime jump pad. Walk in to unlock.", "DEEPSLATE_DIAMOND_ORE", 20);
         changed |= ensureSpawn("fishing_eldervale", "Fishing Eldervale", "Lake isle - The Line, shoals, and the Angler's Log.", "FISHING_ROD", 22);
+        changed |= ensureSpawn("summit", "Skyreach Summit", "Above the clouds on Mount Skyreach. Ride the updraft behind the Mountain Gate. Walk in to unlock.", "SPYGLASS", 23);
+        changed |= ensureSpawn("whisperwood", "Whisperwood Shrine", "The old shrine in the north-west wilds. Walk in to unlock.", "MOSSY_COBBLESTONE", 24);
 
         if (plugin.getConfig().getConfigurationSection("spawns.harbour") != null
                 && !plugin.getConfig().getBoolean("spawns.harbour.unlocked-by-default", false)) {
@@ -98,6 +105,8 @@ public final class HubService {
         changed |= ensureDiscoverRadius("farm", 28);
         changed |= ensureDiscoverRadius("borderlands", 36);
         changed |= ensureDiscoverRadius("eldervale", 36);
+        changed |= ensureDiscoverRadius("summit", 18);
+        changed |= ensureDiscoverRadius("whisperwood", 30);
         // Colosseum: no walk-in discover — soft gate until Proctor unlocks it.
 
         if (changed) {
@@ -121,11 +130,15 @@ public final class HubService {
         changed |= applyLayout("colosseum", "Colosseum", "Proctor's ring — Crypt vials, T2 bosses. Unlocks with the Proctor.", "SANDSTONE", 19, false);
         changed |= applyLayout("eldervale", "Mining Eldervale", "Quarries, shafts, the Deep Forge. Past the slime jump pad. Walk in to unlock.", "DEEPSLATE_DIAMOND_ORE", 20, false);
         changed |= applyLayout("fishing_eldervale", "Fishing Eldervale", "Lake isle - The Line, shoals, and the Angler's Log.", "FISHING_ROD", 22, false);
+        changed |= applyLayout("summit", "Skyreach Summit", "Above the clouds on Mount Skyreach. Ride the updraft behind the Mountain Gate. Walk in to unlock.", "SPYGLASS", 23, false);
+        changed |= applyLayout("whisperwood", "Whisperwood Shrine", "The old shrine in the north-west wilds. Walk in to unlock.", "MOSSY_COBBLESTONE", 24, false);
         changed |= ensureDiscoverRadius("ore_ridge", 40);
         changed |= ensureDiscoverRadius("capital", 48);
         changed |= ensureDiscoverRadius("farm", 28);
         changed |= ensureDiscoverRadius("borderlands", 36);
         changed |= ensureDiscoverRadius("eldervale", 36);
+        changed |= ensureDiscoverRadius("summit", 18);
+        changed |= ensureDiscoverRadius("whisperwood", 30);
         if (changed) {
             plugin.saveConfig();
             reload();
@@ -149,6 +162,8 @@ public final class HubService {
         stampDiscover("farm", 28);
         stampDiscover("borderlands", 36);
         stampDiscover("eldervale", 36);
+        stampDiscover("summit", 18);
+        stampDiscover("whisperwood", 30);
     }
 
     private void stampDiscover(String id, double fallback) {
@@ -318,6 +333,12 @@ public final class HubService {
         storage.unload(uuid);
     }
 
+    /** Full hub wipe for Dev Menu / account reset (hub file + Origin journal). */
+    public void wipePlayer(UUID uuid) {
+        storage.wipePlayer(uuid);
+        de.aetherion.hub.origin.OriginHooks.wipe(uuid);
+    }
+
     public HubSpawn selected(Player player) {
         return spawn(data(player.getUniqueId()).selectedId());
     }
@@ -427,6 +448,7 @@ public final class HubService {
         player.setFallDistance(0f);
         player.playSound(location, Sound.ENTITY_ENDERMAN_TELEPORT, 1f, 1.1f);
         player.sendMessage(format("messages.teleported", spawn));
+        de.aetherion.hub.origin.OriginHooks.arrived(player, spawn);
         return true;
     }
 

@@ -73,6 +73,7 @@ public final class BossEngine extends JavaPlugin {
         saveResourceIfMissing("bosses/ashen_chainwarden.yml");
         saveResourceIfMissing("bosses/cinder_herald.yml");
         saveResourceIfMissing("bosses/hanging_saint.yml");
+        saveResourceIfMissing("bosses/eggquelizer.yml");
         saveResourceIfMissing("bosses/world_eater_unbroken.yml");
         saveResourceIfMissing("bosses/world_eater.yml");
         de.aetherion.bossengine.helios.HeliosModule.syncResource(this, "bosses/helios_herald.yml");

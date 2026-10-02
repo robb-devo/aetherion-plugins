@@ -1,12 +1,16 @@
 package de.aetherion.core;
 
 import de.aetherion.core.command.WipeCommand;
+import de.aetherion.core.shutdown.ShutdownCountdown;
 import de.aetherion.core.wipe.BetaWipe;
 import de.aetherion.core.wipe.NetworkWipeWatch;
+import de.aetherion.core.world.VoidChunkGenerator;
 
+import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.PluginCommand;
+import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**
@@ -48,7 +52,9 @@ public final class AetherionCore extends JavaPlugin {
             wipe.setTabCompleter(wipeCommand);
         }
         networkWipeWatch.start();
+        Bukkit.getPluginManager().registerEvents(new ShutdownCountdown(this), this);
         getLogger().info("Shared keys and hit flags ready. Game plugins keep the loop.");
+        getLogger().info("ShutdownCountdown armed (10→8→6→4→2). Bypass: stop now|force.");
     }
 
     @Override
@@ -65,5 +71,14 @@ public final class AetherionCore extends JavaPlugin {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         sender.sendMessage("§8AetherionCore §7" + getPluginMeta().getVersion() + " §8· §7keys only, no tick.");
         return true;
+    }
+
+    /**
+     * Island / dungeon void worlds (bukkit.yml / Multiverse {@code AetherionCore:void}). Available at STARTUP so
+     * Multiverse can load {@code aether_islands} / {@code aether_guilds} as real void before Guilds enables.
+     */
+    @Override
+    public ChunkGenerator getDefaultWorldGenerator(String worldName, String id) {
+        return new VoidChunkGenerator();
     }
 }

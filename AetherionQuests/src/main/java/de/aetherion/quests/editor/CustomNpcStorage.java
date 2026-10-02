@@ -1,11 +1,18 @@
 package de.aetherion.quests.editor;
 
+import de.aetherion.quests.model.QuestState;
+
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -16,13 +23,26 @@ import java.util.logging.Level;
 
 /**
  * Persistent store for moderator FancyNPCs. Separate from story {@code npcs.yml}.
- * Reloads from disk before each write so we never clobber another session.
+ * Reloads from disk before each write so we never clobber another session, writes through a temp file,
+ * and keeps a one-per-startup backup ({@code editor-npcs.yml.bak}).
+ * <p>
+ * Schema (all keys optional except name): {@code npcs.<id>.{name, subtitle, skin, slim, preset, world, x, y, z,
+ * yaw, pitch, quest, start, quest-pages.{active,ready,completed}, created-by, edited-by, edited-at,
+ * pages.<pageId>.{lines, choices[{text, action, target}]}}}.
  */
 public final class CustomNpcStorage {
 
+    private static final String HEADER = """
+            Moderator-created FancyNPCs (Aetherion NPC Studio, /npc).
+            Story cast lives in npcs.yml — do not mix the two.
+            The plugin never overwrites this file from the jar.
+            """;
+
     private final JavaPlugin plugin;
     private final File file;
+    private final File backup;
     private final Map<String, CustomNpc> npcs = new LinkedHashMap<>();
+    private boolean backedUp;
 
     public CustomNpcStorage(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -31,14 +51,11 @@ public final class CustomNpcStorage {
             plugin.getLogger().warning("Could not create " + folder.getAbsolutePath());
         }
         this.file = new File(folder, "editor-npcs.yml");
+        this.backup = new File(folder, "editor-npcs.yml.bak");
         if (!file.exists()) {
             try {
                 YamlConfiguration empty = new YamlConfiguration();
-                empty.options().header("""
-                        Moderator-created FancyNPCs (Aetherion NPC editor).
-                        Story cast lives in npcs.yml — do not mix the two.
-                        The plugin never overwrites this file from the jar.
-                        """);
+                empty.options().header(HEADER);
                 empty.set("npcs", new LinkedHashMap<String, Object>());
                 empty.save(file);
             } catch (IOException ex) {
@@ -74,6 +91,10 @@ public final class CustomNpcStorage {
         return List.copyOf(npcs.values());
     }
 
+    public synchronized int size() {
+        return npcs.size();
+    }
+
     public synchronized CustomNpc get(String id) {
         if (id == null) {
             return null;
@@ -105,17 +126,40 @@ public final class CustomNpcStorage {
 
     private void writeAll() {
         YamlConfiguration yaml = new YamlConfiguration();
-        yaml.options().header("""
-                Moderator-created FancyNPCs (Aetherion NPC editor).
-                Story cast lives in npcs.yml — do not mix the two.
-                """);
+        yaml.options().header(HEADER);
+        yaml.set("npcs", new LinkedHashMap<String, Object>());
         for (CustomNpc npc : npcs.values()) {
             write(yaml, npc);
         }
+        backupOnce();
         try {
-            yaml.save(file);
+            Path target = file.toPath();
+            Path temp = target.resolveSibling(file.getName() + ".tmp");
+            Files.writeString(temp, yaml.saveToString(), StandardCharsets.UTF_8);
+            try {
+                Files.move(temp, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            } catch (AtomicMoveNotSupportedException ex) {
+                Files.move(temp, target, StandardCopyOption.REPLACE_EXISTING);
+            }
         } catch (IOException ex) {
-            plugin.getLogger().log(Level.WARNING, "Could not save editor-npcs.yml", ex);
+            // Temp/move can fail when another program holds the file — fall back to a direct write.
+            try {
+                yaml.save(file);
+            } catch (IOException again) {
+                plugin.getLogger().log(Level.WARNING, "Could not save editor-npcs.yml", again);
+            }
+        }
+    }
+
+    private void backupOnce() {
+        if (backedUp || !file.exists()) {
+            return;
+        }
+        backedUp = true;
+        try {
+            Files.copy(file.toPath(), backup.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException ex) {
+            plugin.getLogger().log(Level.WARNING, "Could not back up editor-npcs.yml", ex);
         }
     }
 
@@ -133,7 +177,20 @@ public final class CustomNpcStorage {
         yaml.set(path + ".yaw", npc.getYaw());
         yaml.set(path + ".pitch", npc.getPitch());
         yaml.set(path + ".quest", npc.getLinkedQuestId());
+        yaml.set(path + ".mode", npc.getMode().id());
+        yaml.set(path + ".autoQuest", npc.isAutoQuest());
         yaml.set(path + ".start", npc.getStartPage());
+        for (QuestState stage : CustomNpc.QUEST_STAGES) {
+            String pageId = npc.rawQuestPage(stage);
+            if (pageId != null) {
+                yaml.set(path + ".quest-pages." + stage.name().toLowerCase(Locale.ROOT), pageId);
+            }
+        }
+        yaml.set(path + ".created-by", npc.getCreatedBy());
+        yaml.set(path + ".edited-by", npc.getEditedBy());
+        if (npc.getEditedAt() > 0L) {
+            yaml.set(path + ".edited-at", npc.getEditedAt());
+        }
         for (CustomNpc.DialoguePage page : npc.pages().values()) {
             String pagePath = path + ".pages." + page.id();
             yaml.set(pagePath + ".lines", new ArrayList<>(page.lines()));
@@ -165,7 +222,17 @@ public final class CustomNpcStorage {
                 (float) section.getDouble("pitch")
         );
         npc.setLinkedQuestId(section.getString("quest"));
+        npc.setMode(NpcMode.parse(section.getString("mode"), npc.hasLinkedQuest()));
+        npc.setAutoQuest(section.getBoolean("autoQuest", true));
         npc.setStartPage(section.getString("start", CustomNpc.START_PAGE));
+        ConfigurationSection stages = section.getConfigurationSection("quest-pages");
+        if (stages != null) {
+            for (QuestState stage : CustomNpc.QUEST_STAGES) {
+                npc.setQuestPage(stage, stages.getString(stage.name().toLowerCase(Locale.ROOT)));
+            }
+        }
+        npc.setCreatedBy(section.getString("created-by"));
+        npc.setEdited(section.getString("edited-by"), section.getLong("edited-at", 0L));
         ConfigurationSection pages = section.getConfigurationSection("pages");
         if (pages != null) {
             npc.pages().clear();
@@ -175,11 +242,7 @@ public final class CustomNpcStorage {
                     continue;
                 }
                 CustomNpc.DialoguePage page = new CustomNpc.DialoguePage(CustomNpc.sanitizePageId(pageId));
-                page.lines().clear();
                 page.lines().addAll(pageSection.getStringList("lines"));
-                if (page.lines().isEmpty()) {
-                    page.lines().add("…");
-                }
                 List<Map<?, ?>> rawChoices = pageSection.getMapList("choices");
                 for (Map<?, ?> raw : rawChoices) {
                     if (raw == null) {

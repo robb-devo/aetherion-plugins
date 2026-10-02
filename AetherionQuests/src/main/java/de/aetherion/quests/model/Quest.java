@@ -252,6 +252,11 @@ public class Quest {
 
     }
 
+    /** Clears payouts — used by the NPC editor quest designer. */
+    public void clearRewards() {
+        rewards.clear();
+    }
+
 
     public List<Reward> getRewards() {
 
@@ -276,6 +281,11 @@ public class Quest {
                 objective
         );
 
+    }
+
+    /** Clears objectives — used by the NPC editor quest designer. */
+    public void clearObjectives() {
+        objectives.clear();
     }
 
 

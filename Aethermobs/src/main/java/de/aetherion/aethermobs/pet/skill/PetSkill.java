@@ -494,9 +494,9 @@ public enum PetSkill {
                 || this == OWL_WATCH
                 || this == DEER_ALERT) {
 
-            return "Hostiles within "
+            return "Senses hostiles within "
                     + formatNumber(lookoutRange())
-                    + " blocks glow through walls.";
+                    + " blocks (no outline).";
         }
 
         if (this == COD_SCHOOL) {

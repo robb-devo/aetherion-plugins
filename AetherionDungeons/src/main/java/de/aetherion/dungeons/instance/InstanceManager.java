@@ -52,11 +52,15 @@ public final class InstanceManager {
     }
 
     public void tryLootChest(Player player, org.bukkit.block.Block block) {
-        DungeonSession session = sessionOf(player);
-        if (session == null || player == null || !isDungeonWorld(player.getWorld())) {
+        if (player == null || block == null || !DungeonLootFx.isLootChest(block)) {
             return;
         }
-        DungeonLootFx.tryLoot(plugin, session, player, block);
+        DungeonSession session = sessionOf(player);
+        if (session != null && isDungeonWorld(player.getWorld())) {
+            DungeonLootFx.tryLoot(plugin, session, player, block);
+            return;
+        }
+        DungeonLootFx.tryLootOpenWorld(plugin, player, block);
     }
 
     public boolean isDungeonWorld(World world) {
@@ -263,15 +267,27 @@ public final class InstanceManager {
                 layout = AshesEncounter.layoutShell();
                 spawn = AshesEncounter.begin(plugin, world, session, prep);
             } else {
-                layout = template
-                        ? DungeonLayout.lerfingTest(worldName.hashCode() ^ System.nanoTime())
-                        : DungeonLayout.generate(worldName.hashCode() ^ System.nanoTime(), floorNumber);
-                spawn = template
-                        ? LerfingTestBuilder.build(plugin, world, layout, templateStyle)
-                        : PrototypeDungeonBuilder.build(plugin, world, layout, floorNumber);
+                long runSeed = worldName.hashCode() ^ System.nanoTime();
+                FloorOnePool.Plan pooled = template && FloorOnePool.enabled(plugin)
+                        ? FloorOnePool.plan(plugin, runSeed)
+                        : null;
+                if (pooled != null) {
+                    // Floor 1: shuffled cut of the Warden's Prison room pool.
+                    layout = pooled.layout();
+                    FloorOnePool.register(worldName, pooled);
+                    spawn = LerfingTestBuilder.buildPooled(plugin, world, pooled);
+                } else {
+                    layout = template
+                            ? DungeonLayout.lerfingTest(runSeed)
+                            : DungeonLayout.generate(runSeed, floorNumber);
+                    spawn = template
+                            ? LerfingTestBuilder.build(plugin, world, layout, templateStyle)
+                            : PrototypeDungeonBuilder.build(plugin, world, layout, floorNumber);
+                }
             }
         } catch (RuntimeException exception) {
             plugin.getLogger().severe("Dungeon build failed: " + exception.getMessage());
+            FloorOnePool.forget(worldName);
             byOwner.remove(player.getUniqueId());
             byWorld.remove(worldName);
             for (Player member : party) {
@@ -470,6 +486,7 @@ public final class InstanceManager {
             return;
         }
         session.cancelClose();
+        FloorOnePool.forget(session.worldName());
         byOwner.remove(session.ownerId());
         byWorld.remove(session.worldName());
         for (UUID id : session.party()) {
@@ -597,7 +614,7 @@ public final class InstanceManager {
         session.markRoomCleared(roomIndex);
         DungeonLayout.CombatRoom room = session.layout().combat(roomIndex);
         for (Player occupant : session.world().getPlayers()) {
-            occupant.sendMessage("§a" + room.title() + " §7cleared. §f" + session.clearedCount() + "/" + session.layout().combatCount());
+            occupant.sendMessage("§a" + chamberTitle(session, room) + " §7cleared. §f" + session.clearedCount() + "/" + session.layout().combatCount());
         }
         PrototypeDungeonBuilder.placeLootChest(session.world(), room, session.floorNumber());
         for (Player occupant : session.world().getPlayers()) {
@@ -626,7 +643,7 @@ public final class InstanceManager {
             withScale(session, () -> PrototypeDungeonBuilder.unlockRoom(plugin, session.world(), session.layout(), next));
             opened = true;
             for (Player occupant : session.world().getPlayers()) {
-                occupant.sendMessage("§8A seal turns green. §7" + session.layout().combat(next).title());
+                occupant.sendMessage("§8A seal turns green. §7" + chamberTitle(session, session.layout().combat(next)));
                 occupant.playSound(occupant.getLocation(), org.bukkit.Sound.BLOCK_BEACON_ACTIVATE, 0.45f, 1.55f);
             }
         }
@@ -647,6 +664,12 @@ public final class InstanceManager {
             occupant.playSound(occupant.getLocation(), org.bukkit.Sound.ENTITY_WITHER_AMBIENT, 0.6f, 0.7f);
             occupant.sendMessage("§5Every chamber is clear. " + bossName(session.floorNumber()) + " §7waits ahead.");
         }
+    }
+
+    /** "Chamber III · Cell Block" on pooled Floor 1 runs, plain "Chamber III" elsewhere. */
+    private String chamberTitle(DungeonSession session, DungeonLayout.CombatRoom room) {
+        String pooled = session == null ? null : FloorOnePool.roomTitle(session.world(), room.index());
+        return pooled == null ? room.title() : room.title() + " §8· §7" + pooled;
     }
 
     public void onBossKilled(World world) {

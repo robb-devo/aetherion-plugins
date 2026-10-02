@@ -24,6 +24,10 @@ public final class BossEngineBridge {
     public static final String AETHERION = "dungeon_aetherion";
     public static final String TEMPLATE = SENTINEL;
     private static final Set<String> DUNGEON_BOSSES = Set.of(SENTINEL, FROSTBOUND, AETHERION);
+    /** Floor 3 mid-clear elites. Never floor bosses: killing one must not end the floor. */
+    public static final String CHAINWARDEN = "ashen_chainwarden";
+    public static final String HERALD = "cinder_herald";
+    private static final Set<String> ASHES_ELITES = Set.of(CHAINWARDEN, HERALD);
 
     private BossEngineBridge() {
     }
@@ -131,6 +135,11 @@ public final class BossEngineBridge {
     public static boolean isEngineBoss(Entity entity) {
         String id = templateId(entity);
         return id != null && DUNGEON_BOSSES.contains(id.toLowerCase());
+    }
+
+    public static boolean isAshesElite(Entity entity) {
+        String id = templateId(entity);
+        return id != null && ASHES_ELITES.contains(id.toLowerCase());
     }
 
     public static boolean isMythBoss(Entity entity) {

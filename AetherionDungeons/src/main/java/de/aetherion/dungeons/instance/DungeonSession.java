@@ -240,7 +240,16 @@ public final class DungeonSession {
         if (playerId == null) {
             return java.util.Set.of();
         }
-        return vestigeSlotsThisRun.computeIfAbsent(playerId, ignored -> new HashSet<>());
+        // Seeded with the vestige slots the player already owns (worn, bag, ender), so Floor 1
+        // drops fill the gaps of their set first; once all four are covered it rolls freely.
+        return vestigeSlotsThisRun.computeIfAbsent(playerId, id -> {
+            java.util.Set<String> seeded = new HashSet<>();
+            org.bukkit.entity.Player online = org.bukkit.Bukkit.getPlayer(id);
+            if (online != null) {
+                seeded.addAll(de.aetherion.dungeons.bridge.ItemLootBridge.ownedVestigeSlots(online));
+            }
+            return seeded;
+        });
     }
 
     public void rememberVestigeSlot(UUID playerId, String pieceId) {
