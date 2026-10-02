@@ -17,7 +17,7 @@
 #   death            "Generating world" -> the Bonus Chest
 #
 # Full damage on the skull whenever FIGHT is active (phase shifts still block).
-# No hide tax. Idle regen is off for this encounter.
+# No hide tax. Idle regen is off. HP carries the fight (~55k).
 # ============================================================
 
 id: world_eater
@@ -27,7 +27,7 @@ entity-type: MAGMA_CUBE
 model-engine-id: ""
 
 attributes:
-  max-health: 45000
+  max-health: 55000
   movement-speed: 0.0
   attack-damage: 0
   scale: 1.0

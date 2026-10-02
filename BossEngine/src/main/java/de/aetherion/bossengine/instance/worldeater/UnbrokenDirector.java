@@ -157,12 +157,9 @@ public final class UnbrokenDirector {
         return isMine() && (act == Act.WAKING || act == Act.DYING || act == Act.BREAKING);
     }
 
-    /** Bedrock: blades barely scratch it unless it is cracked open. */
+    /** Full damage always — no hide/crack tax. HP carries the fight length. */
     public double scaleIncoming(double amount) {
-        if (!isMine()) {
-            return amount;
-        }
-        return exposeTicks > 0 ? amount : amount * 0.3;
+        return amount;
     }
 
     public void onDamaged(double amount) {
@@ -1513,13 +1510,12 @@ public final class UnbrokenDirector {
                 }
             } else {
                 if (t == 184) {
-                    // Struck: arms buckle, head snaps down, a short hold before the drop.
-                    body.springsFast();
-                    body.chest.kick(0.2f, 0f, 0f);
-                    hitstop = 3;
+                    // Leaves close over its hands — stay heavy/damped, no whip-snap kick.
+                    body.springsHeavy();
+                    hitstop = 4;
                     fx.score(Sound.ENTITY_IRON_GOLEM_DEATH, 0.9f, 0.5f);
                 } else {
-                    body.springs();
+                    body.springsHeavy();
                 }
                 body.poseReach(1f - smooth(window(t, 184, 194)) * 0.85f);
                 body.head.target.x = 0.7f;

@@ -2518,12 +2518,13 @@ public class BossInstance {
     private void applySlimeSize() {
         if (entity instanceof org.bukkit.entity.MagmaCube cube) {
             // Size drives the real collision box; keep Sparky wide enough to hit from mid-range.
-            // World Eater's hitbox rides the skull — a bit wider so bows can actually land.
+            // Nihil's skull is ~6.5 blocks long visually — size 8 (~4.1m) felt like eyes-only.
+            // Size 15 (~7.7m) covers brow → snout tip so blades and bows land on the whole head.
             int size;
             if ("sparky".equalsIgnoreCase(template.getId())) {
                 size = Math.max(7, (int) Math.round(template.getAttributes().getScale() * 2.4));
             } else if ("world_eater".equalsIgnoreCase(template.getId())) {
-                size = Math.max(8, (int) Math.round(template.getAttributes().getScale() * 4.0));
+                size = Math.max(15, (int) Math.round(template.getAttributes().getScale() * 8.0));
             } else {
                 size = Math.max(6, (int) Math.round(template.getAttributes().getScale() * 2.8));
             }

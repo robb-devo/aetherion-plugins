@@ -7,6 +7,9 @@ description: Modular custom-mob and boss engine for Aetherion
 
 depend:
   - AetherionCore
+  # Items must enable first so its DAMAGE rewrite runs before BossCombat absorbs the hit.
+  # Otherwise vanilla chip damage (~1) is what the combat pool sees.
+  - AetherionItems
 
 # Multiverse loads worlds at enable-time. Without this, MV can load world_eater
 # before BossEngine registers BossEngine:worldeater and new chunks become vanilla.
@@ -14,7 +17,6 @@ loadbefore:
   - Multiverse-Core
 
 softdepend:
-  - AetherionItems
   - AetherionDungeons
   - AetherMobs
   - AetherionQuests

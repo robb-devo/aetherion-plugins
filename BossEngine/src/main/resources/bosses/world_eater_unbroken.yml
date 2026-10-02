@@ -10,9 +10,8 @@
 # else (/boss spawn world_eater_unbroken) it rises out of the ground and
 # fights without touching the world.
 #
-# Bedrock: blades do 30% unless it is cracked open (after Hammerfall,
-# Strata, and all through the Weight). At 50% its left arm shatters.
-# HP tuned for a short gate fight (~12k); crack windows still matter.
+# Bedrock look, full damage always — no crack/hide tax. Crack windows are VFX only.
+# HP carries gate length (~22k). At 50% its left arm shatters.
 # ============================================================
 
 id: world_eater_unbroken
@@ -22,7 +21,7 @@ entity-type: IRON_GOLEM
 model-engine-id: ""
 
 attributes:
-  max-health: 12000
+  max-health: 22000
   movement-speed: 0.0
   attack-damage: 0
   scale: 2.2
