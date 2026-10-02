@@ -553,7 +553,8 @@ public class QuestManager {
         if (gateFail == null
                 && !de.aetherion.quests.util.QuestStoryGate.tutorialDone(player, this)
                 && !de.aetherion.quests.util.QuestStoryGate.isTutorialQuest(quest.getId())) {
-            gateFail = "§eComplete the tutorial first. §7Miss Ledger closes orientation after the Fields.";
+            gateFail = de.aetherion.quests.lang.LangPack.say(player, "gate.tutorial_first",
+                    "§eComplete the tutorial first. §7Miss Ledger closes orientation after the Fields.");
         }
         if (gateFail != null) {
             player.sendMessage(gateFail);

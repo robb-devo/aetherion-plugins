@@ -1,6 +1,7 @@
 package de.aetherion.quests.npc;
 
 import de.aetherion.quests.AetherionQuests;
+import de.aetherion.quests.lang.LangPack;
 import de.aetherion.quests.manager.QuestManager;
 import de.aetherion.quests.model.Quest;
 import de.aetherion.quests.model.QuestState;
@@ -68,8 +69,8 @@ public final class CastBook {
         v.onAccept = new String[] {"Good. Lumberjack's up the hill. Don't let him hug you."};
         v.onDecline = new String[] {"Pier's not going anywhere. Neither am I."};
         v.returning = new String[] {
-                "Back, {player}. Still no oak in your hands. Bold strategy.",
-                "Lumberjack. Up the hill. §eYellow arrow§f knows the way."
+                "Back, {player}. Still no oak. Bold strategy.",
+                "§eLumberjack§f, up the hill. §eYellow arrow§f knows the way."
         };
         v.greetNew = new String[] {"Oi, {player}! Over here — pier's got work.", "New face. Pier. Me. Now."};
         v.greet = new String[] {"Kit holding up, {player}?", "{player}. Still in one piece. Good kit."};
@@ -119,7 +120,7 @@ public final class CastBook {
                 "§eOre Ridge§f. Hill past the market. Twenty lumps."
         };
         v.greetNew = new String[] {"Ah. {player}. You're on my list."};
-        v.greet = new String[] {"{player}. Inventory looks healthy. Suspiciously.", "Coal's filed. You're filed. Lovely."};
+        v.greet = new String[] {"{player}. Inventory looks healthy. Suspiciously.", "{player}. Still on my list. Good list."};
         v.greetGrad = new String[] {"{player}. Page twelve of my ledger. The good page."};
         v.idle = new String[] {"Forty-two crates. It was forty-three this morning.", "Who signed for this anchor?",
                 "Nope. Map's still wrong."};
@@ -166,11 +167,11 @@ public final class CastBook {
         v = voice("booster_tutor");
         v.accept = "Let's fuse something.";
         v.decline = "Maybe later.";
-        v.onAccept = new String[] {"Yes! Anvil's in the Manager. Don't lick it."};
+        v.onAccept = new String[] {"Yes! Emerald's in your bag. Anvil's in the Manager. Don't lick it."};
         v.onDecline = new String[] {"Your gear stays boring, then. Your call."};
         v.returning = new String[] {
-                "That Emerald's still unfused, {player}. It's sad. Look at it.",
-                "Manager → §eAnvil§f. Gear left, booster right."
+                "Still no fuse, {player}? The Emerald's waiting on your yes.",
+                "Then Manager → §eAnvil§f. Gear left, booster right."
         };
         v.greetNew = new String[] {"{player}! Got anything I can set on fire? Upgrade. I meant upgrade."};
         v.greet = new String[] {"Smell that, {player}? Progress. Also mild burning."};
@@ -188,8 +189,8 @@ public final class CastBook {
         v.onAccept = new String[] {"Noted. Skills tab. Slot nine. It blinks."};
         v.onDecline = new String[] {"Your file stays open. It judges you."};
         v.returning = new String[] {
-                "{player}. Skills tab. It's blinking. At you.",
-                "Equip §eany one§f skill. Then come back."
+                "{player}. The stamp's waiting. So am I.",
+                "Say yes, equip §eany one§f skill, come back."
         };
         v.greetNew = new String[] {"{player}. Present. Good."};
         v.greet = new String[] {"{player}. On time. Almost.", "Posture, {player}."};
@@ -229,7 +230,7 @@ public final class CastBook {
                 "Then come back. Pistachio wants to meet it."
         };
         v.greetNew = new String[] {"{player}! Mind the parrot. She's judging your shoes."};
-        v.greet = new String[] {"How's your pet, {player}? Fed? Loved? Levelled?"};
+        v.greet = new String[] {"{player}! Pistachio remembers you. That's not a compliment."};
         v.greetGrad = new String[] {"{player}! Your pet's famous around here. Well. To me."};
         v.idle = new String[] {"Who's a good bird? Not you.", "*whistles*", "Pistachio, no."};
         v.farewell = new String[] {"Pistachio says bye. She doesn't. But imagine."};
@@ -358,7 +359,7 @@ public final class CastBook {
 
         v = voice("forage_pad_guide");
         v.greetNew = new String[] {"Jump the pad, {player}! It's fine! Mostly fine!"};
-        v.greet = new String[] {"Back from the isle, {player}? Smell that pine!"};
+        v.greet = new String[] {"Back from the isle, {player}? Smell that spruce!"};
         v.idle = new String[] {"Boing.", "*bounces on heels*", "The pad's sticky today. Good sticky."};
         v.farewell = new String[] {"Jump with your knees!"};
         topic(v, "Is the pad safe?", "Totally.", "Ninety percent totally.");
@@ -478,10 +479,28 @@ public final class CastBook {
     }
 
     /* ------------------------------------------------------------------ API */
+    // English is canonical. German readers get cast.<npc>.* from lang/de.yml; when the
+    // overlay has no entry the NPC stays quiet instead of barking English at them.
+
+    private static boolean german(Player player) {
+        return player != null && LangPack.german(player);
+    }
+
+    private static String pickDe(String npcId, String field) {
+        return pick(LangPack.castLines(npcId, field));
+    }
 
     public static String acceptLabel(String npcId, String questId) {
         Voice v = of(npcId);
         return v == null ? "I'm in." : v.accept;
+    }
+
+    public static String acceptLabel(String npcId, String questId, Player player) {
+        if (!german(player)) {
+            return acceptLabel(npcId, questId);
+        }
+        String de = LangPack.castText(npcId, "accept");
+        return de != null ? de : LangPack.ui(player, "talk_ux.accept_default", "I'm in.");
     }
 
     public static String declineLabel(String npcId) {
@@ -489,9 +508,21 @@ public final class CastBook {
         return v == null ? "Not now." : v.decline;
     }
 
+    public static String declineLabel(String npcId, Player player) {
+        if (!german(player)) {
+            return declineLabel(npcId);
+        }
+        String de = LangPack.castText(npcId, "decline");
+        return de != null ? de : LangPack.ui(player, "talk_ux.decline_default", "Not now.");
+    }
+
     public static String acceptReaction(String npcId) {
         Voice v = of(npcId);
         return v == null ? null : pick(v.onAccept);
+    }
+
+    public static String acceptReaction(String npcId, Player player) {
+        return german(player) ? pickDe(npcId, "on_accept") : acceptReaction(npcId);
     }
 
     public static String declineReaction(String npcId) {
@@ -499,9 +530,17 @@ public final class CastBook {
         return v == null ? null : pick(v.onDecline);
     }
 
+    public static String declineReaction(String npcId, Player player) {
+        return german(player) ? pickDe(npcId, "on_decline") : declineReaction(npcId);
+    }
+
     public static String farewell(String npcId) {
         Voice v = of(npcId);
         return v == null ? null : pick(v.farewell);
+    }
+
+    public static String farewell(String npcId, Player player) {
+        return german(player) ? pickDe(npcId, "farewell") : farewell(npcId);
     }
 
     public static List<Topic> topics(String npcId) {
@@ -509,13 +548,62 @@ public final class CastBook {
         return v == null ? List.of() : List.copyOf(v.topics);
     }
 
+    /** Small-talk topics in the reader's language (German: overlay only, may be empty). */
+    public static List<Topic> topics(String npcId, Player player) {
+        if (!german(player)) {
+            return topics(npcId);
+        }
+        List<Topic> out = new ArrayList<>();
+        for (Map<?, ?> entry : LangPack.castTopics(npcId)) {
+            Object label = entry.get("label");
+            Object lines = entry.get("lines");
+            if (label == null || !(lines instanceof List<?> list) || list.isEmpty()) {
+                continue;
+            }
+            String[] said = new String[list.size()];
+            for (int i = 0; i < said.length; i++) {
+                said[i] = String.valueOf(list.get(i));
+            }
+            out.add(new Topic(String.valueOf(label), said));
+        }
+        return out;
+    }
+
     public static String idle(String npcId) {
         Voice v = of(npcId);
         return v == null ? null : pick(v.idle);
     }
 
+    /** Idle bark for an audience that reads German ({@code german}) or English. */
+    public static String idle(String npcId, boolean german) {
+        if (!german) {
+            return idle(npcId);
+        }
+        return of(npcId) == null ? null : pickDe(npcId, "idle");
+    }
+
     public static List<List<Beat>> banter() {
         return BANTER;
+    }
+
+    /**
+     * German version of banter script {@code index}: same speakers, overlay lines.
+     * Null when the overlay has no complete translation for it.
+     */
+    public static List<Beat> banterGerman(int index) {
+        if (index < 0 || index >= BANTER.size()) {
+            return null;
+        }
+        List<Beat> english = BANTER.get(index);
+        List<String> lines = LangPack.banterLines(index);
+        if (lines == null || lines.size() != english.size()) {
+            return null;
+        }
+        List<Beat> out = new ArrayList<>(english.size());
+        for (int i = 0; i < english.size(); i++) {
+            out.add(new Beat(english.get(i).npcId(), lines.get(i)));
+        }
+        return out;
     }
 
     /**
@@ -530,6 +618,9 @@ public final class CastBook {
         NpcMemory memory = NpcMemory.get();
         if (memory == null || !memory.flag(player.getUniqueId(), introFlag(npcId))) {
             return null;
+        }
+        if (german(player)) {
+            return LangPack.castLines(npcId, "returning");
         }
         return v.returning.clone();
     }
@@ -555,14 +646,18 @@ public final class CastBook {
         Stage stage = stage(player);
         NpcMemory memory = NpcMemory.get();
         boolean met = memory != null && memory.talks(player.getUniqueId(), npcId) > 0;
-        if (stage == Stage.GRADUATE && v.greetGrad != null) {
-            return pick(v.greetGrad);
+        boolean de = german(player);
+        String[] grad = de ? LangPack.castLines(npcId, "greet_grad") : v.greetGrad;
+        String[] fresh = de ? LangPack.castLines(npcId, "greet_new") : v.greetNew;
+        String[] known = de ? LangPack.castLines(npcId, "greet") : v.greet;
+        if (stage == Stage.GRADUATE && grad != null) {
+            return pick(grad);
         }
         // First hour: "kit holding up?" makes no sense before there is a kit.
-        if ((stage == Stage.ARRIVAL || !met) && v.greetNew != null) {
-            return pick(v.greetNew);
+        if ((stage == Stage.ARRIVAL || !met) && fresh != null) {
+            return pick(fresh);
         }
-        return pick(v.greet != null ? v.greet : v.greetNew);
+        return pick(known != null ? known : fresh);
     }
 
     public static Stage stage(Player player) {

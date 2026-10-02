@@ -389,7 +389,7 @@ public class NpcListener implements Listener {
                     && questManager.getQuestState(player, timber) == QuestState.ACTIVE
                     && locked) {
                 org.bukkit.Location at = resolveNpcLocation(npc);
-                npcSay(player, npc, "Still watching, {player}? One more time — wait for green §aCHOP§f.");
+                npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "lumberjack.replay", "Still watching, {player}? One more time — wait for green §aCHOP§f."));
                 if (at != null) {
                     playForagerDemo(player, at);
                 } else {
@@ -452,7 +452,7 @@ public class NpcListener implements Listener {
                 if (welcome != null
                         && questManager.getQuestState(player, welcome) != QuestState.COMPLETED) {
                     npcSay(player, npc,
-                            "Egon first, {player}. He's got the paperwork. Then we chop.");
+                            de.aetherion.quests.lang.LangPack.say(player, "lumberjack.egon_first", "Egon first, {player}. He's got the paperwork. Then we chop."));
                     return;
                 }
             }
@@ -503,7 +503,7 @@ public class NpcListener implements Listener {
                     }
                     // Part 2 — one line at a time; never dump the equip speech in one breath.
                     npcSay(player, npc,
-                            "Nice catch, {player}. Pocket's squealing.");
+                            de.aetherion.quests.lang.LangPack.say(player, "lark.nice_catch", "Nice catch, {player}. Pocket's squealing."));
                     de.aetherion.quests.ui.QuestProgressDisplay.showProgress(player, questManager);
                     if (plugin != null) {
                         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
@@ -511,9 +511,9 @@ public class NpcListener implements Listener {
                                 return;
                             }
                             npcSay(player, npc,
-                                    "Now equip it: §eManager → Pets§f (it blinks). Pick your catch, equip. Pistachio's watching.");
+                                    de.aetherion.quests.lang.LangPack.say(player, "lark.equip_now", "Now equip it: §eManager → Pets§f — it blinks. Pick your catch."));
                             player.sendActionBar(net.kyori.adventure.text.Component.text(
-                                    "→ Manager → Pets → Equip your catch",
+                                    de.aetherion.quests.lang.LangPack.ui(player, "tip.lark_equip", "→ Manager → Pets → Equip your catch"),
                                     net.kyori.adventure.text.format.NamedTextColor.LIGHT_PURPLE
                             ));
                             de.aetherion.core.api.ProgressAccess progress = de.aetherion.core.api.AetherServices.progress();
@@ -535,7 +535,7 @@ public class NpcListener implements Listener {
                     QuestNPC turnNpc = de.aetherion.quests.npc.QuestNPCRegistry.getNPC(turnIn);
                     String turnName = turnNpc != null ? turnNpc.getName() : turnIn;
                     npcSay(player, npc,
-                            "Nice haul, {player}. That goes to §e" + turnName + "§f — not me.");
+                            de.aetherion.quests.lang.LangPack.say(player, "any.not_me", "Nice haul, {player}. That goes to §e{0}§f — not me.").replace("{0}", turnName));
                 } else {
                     showQuestProgress(player, quest);
                 }
@@ -583,7 +583,7 @@ public class NpcListener implements Listener {
     private void handoffForagerOnboarding(Player player, QuestNPC npc) {
         AetherionQuests plugin = AetherionQuests.getInstance();
 
-        npcSay(player, npc, "Egon sent you? Course he did. Axe lesson, then.");
+        npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "lumberjack.lesson", "Egon sent you? Course he did. Axe lesson, then."));
 
         org.bukkit.Location at = resolveNpcLocation(npc);
         if (plugin == null) {
@@ -602,9 +602,9 @@ public class NpcListener implements Listener {
             if (!player.isOnline()) {
                 return;
             }
-            npcSay(player, npc, "Take this axe. Watch me once — slowly — then you chop.");
+            npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "lumberjack.take_axe", "Take this axe. Watch me once — slowly — then you chop."));
             player.sendActionBar(net.kyori.adventure.text.Component.text(
-                    "→ Watch the chop demo, then fell oak for Egon",
+                    de.aetherion.quests.lang.LangPack.ui(player, "tip.chop_demo", "→ Watch the chop demo, then fell oak for Egon"),
                     net.kyori.adventure.text.format.NamedTextColor.GOLD
             ));
         }, 50L);
@@ -622,9 +622,9 @@ public class NpcListener implements Listener {
                 playForagerDemo(player, at);
             } else {
                 npcSay(player, npc,
-                        "Left-click a glowing trunk — when CHOP hits green, click again.");
+                        de.aetherion.quests.lang.LangPack.say(player, "lumberjack.click_trunk", "Left-click a glowing trunk — when CHOP hits green, click again."));
                 npcSay(player, npc,
-                        "Ten oak logs to §eEgon §fon the pier.");
+                        de.aetherion.quests.lang.LangPack.say(player, "lumberjack.ten_oak", "Ten oak logs to §eEgon §fon the pier."));
                 de.aetherion.quests.bridge.QuestProgressBridge.unlockForagerChop(player);
             }
         }, 110L);
@@ -652,8 +652,10 @@ public class NpcListener implements Listener {
             foraging.playChopDemo(player, near);
             return;
         }
-        LivingNpcProfile.say(player, "lumberjack", "Forager", "Left-click a glowing trunk — green CHOP, then swing.");
-        LivingNpcProfile.say(player, "lumberjack", "Forager", "Ten oak logs to Egon on the pier.");
+        LivingNpcProfile.say(player, "lumberjack", "Forager",
+                de.aetherion.quests.lang.LangPack.say(player, "lumberjack.demo_chop", "Left-click a glowing trunk — green CHOP, then swing."));
+        LivingNpcProfile.say(player, "lumberjack", "Forager",
+                de.aetherion.quests.lang.LangPack.say(player, "lumberjack.demo_egon", "Ten oak logs to Egon on the pier."));
     }
 
 
@@ -698,7 +700,7 @@ public class NpcListener implements Listener {
         }
 
         if (!questManager.consumeDeliverItems(player, quest)) {
-            npcSay(player, npc, "Hands look empty, {player}. Items first.");
+            npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "any.items_first", "Hands look empty, {player}. Items first."));
             showQuestProgress(player, quest);
             return;
         }
@@ -716,11 +718,11 @@ public class NpcListener implements Listener {
 
         if (de.aetherion.quests.item.DockShopPass.count(player, plugin) >= 1) {
             npcSay(player, npc,
-                    "You already have the pass. Give it to the Fishmonger — one slip only.");
+                    de.aetherion.quests.lang.LangPack.say(player, "fisher.pass_have", "You already have the pass. Give it to the Fishmonger — one slip only."));
             return;
         }
 
-        npcSay(player, npc, "Fishmonger sent you. Here's one dock pass.");
+        npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "fisher.pass_give", "Fishmonger sent you. Here's one dock pass."));
         player.getInventory().addItem(de.aetherion.quests.item.DockShopPass.create(plugin));
         questManager.syncDeliverProgress(player);
 
@@ -729,7 +731,7 @@ public class NpcListener implements Listener {
                 return;
             }
             npcSay(player, npc,
-                    "Hand him the paper. Buy a rod there if you need one, then come back for the reel lesson.");
+                    de.aetherion.quests.lang.LangPack.say(player, "fisher.pass_next", "Hand him the paper. Buy a rod there if you need one, then come back for the reel lesson."));
         }, 45L);
     }
 
@@ -738,13 +740,13 @@ public class NpcListener implements Listener {
         if (dialogManager.isSpeakingWith(player, npc)) {
             return;
         }
-        String[] lines = {
+        String[] lines = de.aetherion.quests.lang.LangPack.sayLines(player, "vince.visit", new String[] {
                 "Casino's behind me. Pick a machine. Don't cry on the felt.",
                 "Slots. Roulette. Coins in. Dignity stays in your pocket.",
                 "I don't deal. I commentate. Machines do the dirty work.",
                 "The glass is hungrier than you, {player}. Feed it anyway.",
                 "{player}! Lucky face. I can tell. I can always tell."
-        };
+        });
         int pick = Math.floorMod(org.bukkit.Bukkit.getCurrentTick() / 40, lines.length);
         LivingNpcProfile.say(player, npc, lines[pick]);
         AetherionQuests vinceHost = AetherionQuests.getInstance();
@@ -762,9 +764,9 @@ public class NpcListener implements Listener {
             return;
         }
         LivingNpcProfile.say(player, npc,
-                "Crystal desk, {player}. Buy, sell, or melt mats into Aether Crystals.");
+                de.aetherion.quests.lang.LangPack.say(player, "liquidator.desk", "Crystal desk, {player}. Buy, sell, or melt mats into Aether Crystals."));
         LivingNpcProfile.say(player, npc,
-                "Crystals come from the official shop — or as level rewards.");
+                de.aetherion.quests.lang.LangPack.say(player, "liquidator.crystals", "Crystals come from the official shop — or as level rewards."));
         AetherionQuests plugin = AetherionQuests.getInstance();
         if (plugin == null) {
             openLiquidatorGui(player);
@@ -828,11 +830,11 @@ public class NpcListener implements Listener {
                 }
                 questManager.giftCoins(player, 1000);
             });
-            LivingNpcProfile.say(player, npc, "There it is — Mining Pickaxe. Good work, {player}. Honestly.");
+            LivingNpcProfile.say(player, npc, de.aetherion.quests.lang.LangPack.say(player, "craftsman.pick_ok", "There it is — Mining Pickaxe. Good work, {player}. Honestly."));
             de.aetherion.quests.ui.QuestHint.clearPending(player);
             de.aetherion.quests.ui.QuestHint.show(player, "foreman", "Shaft Foreman");
             player.sendActionBar(net.kyori.adventure.text.Component.text(
-                    "→ Shaft Foreman · Mines",
+                    de.aetherion.quests.lang.LangPack.ui(player, "tip.to_foreman", "→ Shaft Foreman · Mines"),
                     net.kyori.adventure.text.format.NamedTextColor.AQUA
             ));
             return;
@@ -870,20 +872,20 @@ public class NpcListener implements Listener {
 
         if (playerHasSurveyorBlueprint(player)) {
             markSurveyorDeskReady(player);
-            LivingNpcProfile.say(player, npc, "A blueprint! Oh, that's a good one. Desk's yours — stamp it into a tool.");
+            LivingNpcProfile.say(player, npc, de.aetherion.quests.lang.LangPack.say(player, "surveyor.got_page", "A blueprint! Oh, that's a good one. Desk's yours — stamp it into a tool."));
             openSurveyorDesk(player);
             return;
         }
 
         LivingNpcProfile.say(player, npc,
-                "Trolls crawl the veins now, {player}. Hunt them — they drop blueprint pages.");
+                de.aetherion.quests.lang.LangPack.say(player, "surveyor.trolls", "Trolls crawl the veins now, {player}. Hunt them — they drop blueprint pages."));
         LivingNpcProfile.say(player, npc,
-                "Bring me a page. I'll stamp it into a tool right here.");
+                de.aetherion.quests.lang.LangPack.say(player, "surveyor.bring_page", "Bring me a page. I'll stamp it into a tool right here."));
     }
 
     private void handleEldervaleUpgradeVisit(Player player, QuestNPC npc) {
         LivingNpcProfile.say(player, npc,
-                "Forge is hot, {player}. Blueprinted tool + Upgrade Stone. I'll open the desk.");
+                de.aetherion.quests.lang.LangPack.say(player, "eldervale_upgrade.open", "Forge is hot, {player}. Blueprinted tool + Upgrade Stone. I'll open the desk."));
         // Dialog first, short beat, then forge GUI.
         Bukkit.getScheduler().runTaskLater(
                 AetherionQuests.getInstance(),
@@ -907,7 +909,7 @@ public class NpcListener implements Listener {
         if (first && plugin != null && plugin.getPlayerQuestStorage() != null) {
             plugin.getPlayerQuestStorage().markStarterKit(player.getUniqueId(), spokenKey);
             LivingNpcProfile.say(player, npc,
-                    "Millstone Pantry, love. Compacted crops go in. Refined pantry goods come out.");
+                    de.aetherion.quests.lang.LangPack.say(player, "root_cellar.first", "Millstone Pantry, love. Compacted crops go in. Refined pantry goods come out."));
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
                 if (player.isOnline()) {
                     openRootCellarHub(player);
@@ -1063,17 +1065,17 @@ public class NpcListener implements Listener {
     private void briefQuartermasterSpawns(Player player, QuestNPC npc) {
         AetherionQuests plugin = AetherionQuests.getInstance();
 
-        LivingNpcProfile.say(player, npc, "Coal logged. Thank you, {player}. Genuinely.");
+        LivingNpcProfile.say(player, npc, de.aetherion.quests.lang.LangPack.say(player, "quartermaster.coal_logged", "Coal logged. Thank you, {player}. Genuinely."));
         LivingNpcProfile.say(player, npc,
-                "Mines teleport's open — Manager → Teleports, or type §e/mines§f.");
+                de.aetherion.quests.lang.LangPack.say(player, "quartermaster.mines_tp", "Mines teleport's open — Manager → Teleports, or type §e/mines§f."));
         player.sendMessage("");
         player.sendActionBar(net.kyori.adventure.text.Component.text(
-                "→ Mines teleport · Manager or /mines",
+                de.aetherion.quests.lang.LangPack.ui(player, "tip.mines_tp", "→ Mines teleport · Manager or /mines"),
                 net.kyori.adventure.text.format.NamedTextColor.AQUA
         ));
         de.aetherion.quests.ui.QuestHint.show(player, "foreman", "Shaft Foreman", "also /mines");
         LivingNpcProfile.say(player, npc,
-                "Next: §eShaft Foreman§f at the Mines. Yellow arrow up top tracks him. I track the arrow.");
+                de.aetherion.quests.lang.LangPack.say(player, "quartermaster.next_foreman", "Next: §eShaft Foreman§f at the Mines. Yellow arrow tracks him. I track the arrow."));
 
         if (plugin != null) {
             de.aetherion.core.api.ProgressAccess progress = de.aetherion.core.api.AetherServices.progress();
@@ -1094,7 +1096,8 @@ public class NpcListener implements Listener {
 
     private void escortToCapital(Player player, QuestNPC npc) {
         String name = npc.getName();
-        npcSay(player, npc, "That's a shift, {player}. Proper dust on you. Head for the hub — stop at §eTemper§f (Booster Tutor) on the way.");
+        npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "foreman.shift_done", "That's a shift, {player}. Proper dust on you."));
+        npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "foreman.road_capital", "Road to Capital next — stop at §eTemper§f on the way. Booster Tutor."));
         de.aetherion.quests.ui.QuestHint.clearPending(player);
         de.aetherion.quests.ui.QuestHint.show(player, "booster_tutor", "Temper");
         player.sendActionBar(net.kyori.adventure.text.Component.text(
@@ -1108,11 +1111,11 @@ public class NpcListener implements Listener {
         AetherionQuests plugin = AetherionQuests.getInstance();
         String name = npc.getName();
 
-        npcSay(player, npc, "Skill equipped. Good. Stamped.");
+        npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "ledger.skill_ok", "Skill equipped. Good. Stamped."));
 
         if (plugin == null) {
             npcSay(player, npc,
-                    "Next: the fields. §eFarmer§f needs wheat. §eLark§f is in the same area for pets. Then come back to me.");
+                    de.aetherion.quests.lang.LangPack.say(player, "ledger.next_fields", "Next: the fields. §eFarmer§f needs wheat, §eLark§f does pets. Then back to me."));
             de.aetherion.quests.ui.QuestHint.show(player, "farmer", "Farmer");
             return;
         }
@@ -1122,7 +1125,7 @@ public class NpcListener implements Listener {
                 return;
             }
             npcSay(player, npc,
-                    "When you're ready: the fields. §eFarmer§f needs wheat — harvest and shoo the birds.");
+                    de.aetherion.quests.lang.LangPack.say(player, "ledger.fields_farmer", "When you're ready: the fields. §eFarmer§f needs wheat — harvest and shoo the birds."));
         }, 40L);
 
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
@@ -1130,7 +1133,7 @@ public class NpcListener implements Listener {
                 return;
             }
             npcSay(player, npc,
-                    "§eLark§f is in the same area for pets — catch spheres, then equip. He's the one talking to a parrot.");
+                    de.aetherion.quests.lang.LangPack.say(player, "ledger.fields_lark", "§eLark§f does pets, same area. He's the one talking to a parrot."));
         }, 85L);
 
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
@@ -1138,9 +1141,9 @@ public class NpcListener implements Listener {
                 return;
             }
             npcSay(player, npc,
-                    "§aCome back after Farmer and Lark. §fI close orientation — and I keep a help menu if you get stuck.");
+                    de.aetherion.quests.lang.LangPack.say(player, "ledger.come_back", "§aBack to me after both. §fI close orientation — and keep a help desk."));
             player.sendActionBar(net.kyori.adventure.text.Component.text(
-                    "Hint · Fields · Farmer + Lark → then Ledger",
+                    de.aetherion.quests.lang.LangPack.ui(player, "tip.fields", "Hint · Fields · Farmer + Lark → then Ledger"),
                     net.kyori.adventure.text.format.NamedTextColor.YELLOW
             ));
             de.aetherion.quests.ui.QuestHint.show(player, "farmer", "Farmer");
@@ -1152,14 +1155,14 @@ public class NpcListener implements Listener {
         String name = npc.getName();
 
         de.aetherion.quests.ui.QuestHint.clearPending(player);
-        npcSay(player, npc, "Ten down, {player}. Steel filed. You're less of a liability.");
+        npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "vex.ten_down", "Ten down, {player}. Steel filed. You're less of a liability."));
         // Borderlands teleport unlocks by walking into the waste (Hub discover popup) — not here.
 
         if (plugin == null) {
             npcSay(player, npc,
-                    "§7Soft tip — upgrade your combat set / boosters before the harder waste.");
+                    de.aetherion.quests.lang.LangPack.say(player, "vex.tip_fallback", "§7Soft tip — upgrade your combat set / boosters before the harder waste."));
             npcSay(player, npc,
-                    "Soft thread — §cRite Warden§f in the waste for bosses. Or don't. Map's yours.");
+                    de.aetherion.quests.lang.LangPack.say(player, "vex.rite_fallback", "Soft thread — §cRite Warden§f in the waste for bosses. Or don't. Map's yours."));
             de.aetherion.quests.ui.QuestHint.show(player, "rite_keeper", "Rite Warden");
             return;
         }
@@ -1169,7 +1172,7 @@ public class NpcListener implements Listener {
                 return;
             }
             npcSay(player, npc,
-                    "§7Soft tip — harden your gear a bit before you push deeper. Recipe Book + anvil help.");
+                    de.aetherion.quests.lang.LangPack.say(player, "vex.gear_tip", "§7Soft tip — harden your gear before you push deeper. Recipe Book + anvil help."));
         }, 40L);
 
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
@@ -1177,9 +1180,9 @@ public class NpcListener implements Listener {
                 return;
             }
             npcSay(player, npc,
-                    "Optional next — §cRite Warden§f. Borderlands bosses, powder altar. No paperwork from me.");
+                    de.aetherion.quests.lang.LangPack.say(player, "vex.rite_hint", "Optional next — §cRite Warden§f. Borderlands bosses, powder altar. No paperwork from me."));
             player.sendActionBar(net.kyori.adventure.text.Component.text(
-                    "Soft hint · gear up · then Rite Warden",
+                    de.aetherion.quests.lang.LangPack.ui(player, "tip.vex_next", "Soft hint · gear up · then Rite Warden"),
                     net.kyori.adventure.text.format.NamedTextColor.RED
             ));
             de.aetherion.quests.ui.QuestHint.show(player, "rite_keeper", "Rite Warden");
@@ -1193,10 +1196,10 @@ public class NpcListener implements Listener {
 
         de.aetherion.quests.ui.QuestHint.clearPending(player);
 
-        npcSay(player, npc, "Booster fused! Smell that? Progress. Also slight burning.");
+        npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "booster_tutor.fused", "Booster fused! Smell that? Progress. Also slight burning."));
 
         if (plugin == null) {
-            npcSay(player, npc, "Next — §dMiss Ledger§f at Capital.");
+            npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "booster_tutor.next_ledger_short", "Next — §dMiss Ledger§f at Capital."));
             de.aetherion.quests.ui.QuestHint.show(player, "ledger", "Miss Ledger");
             return;
         }
@@ -1205,7 +1208,7 @@ public class NpcListener implements Listener {
             if (!player.isOnline()) {
                 return;
             }
-            npcSay(player, npc, "Next — §dMiss Ledger§f at the Capital. Skills.");
+            npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "booster_tutor.next_ledger", "Next — §dMiss Ledger§f at Capital. Skills."));
             player.sendActionBar(net.kyori.adventure.text.Component.text(
                     "→ Miss Ledger · Skills (Capital)",
                     net.kyori.adventure.text.format.NamedTextColor.LIGHT_PURPLE
@@ -1218,7 +1221,7 @@ public class NpcListener implements Listener {
         AetherionQuests plugin = AetherionQuests.getInstance();
         String name = npc.getName();
 
-        npcSay(player, npc, "Wheat's done. Birds are furious. Perfect.");
+        npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "farmer.wheat_done", "Wheat's done. Birds are furious. Perfect."));
 
         // Both Fields stops done → Miss Ledger closes tutorial (not Farmer).
         if (de.aetherion.quests.util.QuestStoryGate.questCompleted(player, questManager, "pocket_zoo")) {
@@ -1228,7 +1231,7 @@ public class NpcListener implements Listener {
 
         if (plugin == null) {
             npcSay(player, npc,
-                    "Other end of the barn — farm guide and portal. Peek when you're curious.");
+                    de.aetherion.quests.lang.LangPack.say(player, "farmer.isle_fallback", "Other end of the barn — farm guide and portal. Peek when you're curious."));
             de.aetherion.quests.ui.QuestHint.show(player, "lark", "Lark");
             return;
         }
@@ -1238,9 +1241,9 @@ public class NpcListener implements Listener {
                 return;
             }
             npcSay(player, npc,
-                    "Other end of the barn — Harrow and the portal to the Farm Isle. Worth a look sometime.");
+                    de.aetherion.quests.lang.LangPack.say(player, "farmer.isle_peek", "Other end of the barn — Harrow and the portal to the Farm Isle. Worth a look sometime."));
             player.sendActionBar(net.kyori.adventure.text.Component.text(
-                    "Farm Isle · barn far end · optional peek",
+                    de.aetherion.quests.lang.LangPack.ui(player, "tip.farm_isle", "Farm Isle · barn far end · optional peek"),
                     net.kyori.adventure.text.format.NamedTextColor.GREEN
             ));
             // Soft compass only — Lark was already covered in his intro.
@@ -1250,7 +1253,7 @@ public class NpcListener implements Listener {
 
     private void briefPocketZooNext(Player player, QuestNPC npc) {
         String name = npc.getName();
-        npcSay(player, npc, "Catch done. Your pet likes you. Probably.");
+        npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "lark.catch_done", "Catch done. Your pet likes you. Probably."));
 
         // Both Fields stops done → Miss Ledger closes tutorial (not Lark).
         if (de.aetherion.quests.util.QuestStoryGate.questCompleted(player, questManager, "farm_hand")) {
@@ -1258,7 +1261,7 @@ public class NpcListener implements Listener {
             return;
         }
 
-        npcSay(player, npc, "§eFarmer§f still wants wheat if you skipped him — same area.");
+        npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "lark.farmer_left", "§eFarmer§f still wants wheat if you skipped him — same area."));
         de.aetherion.quests.ui.QuestHint.show(player, "farmer", "Farmer");
     }
 
@@ -1270,7 +1273,7 @@ public class NpcListener implements Listener {
         de.aetherion.quests.ui.QuestHint.clearPending(player);
 
         if (plugin == null) {
-            npcSay(player, npc, "Back to §dMiss Ledger§f — she closes orientation. Or §e/capital§f.");
+            npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "fields.back_ledger", "Back to §dMiss Ledger§f — she closes orientation. Or §e/capital§f."));
             de.aetherion.quests.ui.QuestHint.show(player, "ledger", "Miss Ledger", "or /capital");
             return;
         }
@@ -1280,9 +1283,9 @@ public class NpcListener implements Listener {
                 return;
             }
             npcSay(player, npc,
-                    "§aFields done. §f§dMiss Ledger§f stamps the tutorial shut. Questions go to her.");
+                    de.aetherion.quests.lang.LangPack.say(player, "fields.done_ledger", "§aFields done. §f§dMiss Ledger§f stamps the tutorial shut. Questions go to her."));
             player.sendActionBar(net.kyori.adventure.text.Component.text(
-                    "→ Miss Ledger · or /capital",
+                    de.aetherion.quests.lang.LangPack.ui(player, "tip.to_ledger", "→ Miss Ledger · or /capital"),
                     net.kyori.adventure.text.format.NamedTextColor.LIGHT_PURPLE
             ));
             de.aetherion.quests.ui.QuestHint.show(player, "ledger", "Miss Ledger", "or /capital");
@@ -1307,7 +1310,7 @@ public class NpcListener implements Listener {
             if (plugin != null && offerLedgerDesk(player, npc)) {
                 return;
             }
-            LivingNpcProfile.say(player, npc, "Need a refresher? Here's the desk.");
+            LivingNpcProfile.say(player, npc, de.aetherion.quests.lang.LangPack.say(player, "ledger.refresher_desk", "Need a refresher? Here's the desk."));
             if (plugin != null) {
                 dialogManager.afterDialog(player, () ->
                         de.aetherion.quests.ui.EgonBriefingGUI.open(player, "Miss Ledger"));
@@ -1325,9 +1328,9 @@ public class NpcListener implements Listener {
             );
         }
         questManager.giftTutorialGraduation(player);
-        LivingNpcProfile.say(player, npc, "Well done, {player}. Orientation's filed — map's yours.");
+        LivingNpcProfile.say(player, npc, de.aetherion.quests.lang.LangPack.say(player, "ledger.graduated", "Well done, {player}. Orientation's filed — map's yours."));
         LivingNpcProfile.say(player, npc,
-                "One habit: always watch the §eyellow arrow up top§f. It points to your current job.");
+                de.aetherion.quests.lang.LangPack.say(player, "ledger.arrow_habit", "One habit: always watch the §eyellow arrow up top§f. It points to your current job."));
 
         if (plugin == null) {
             return;
@@ -1339,18 +1342,18 @@ public class NpcListener implements Listener {
             }
             if (!de.aetherion.quests.util.QuestStoryGate.questCompleted(player, questManager, "lesson_steel")) {
                 LivingNpcProfile.say(player, npc,
-                        "§cSergeant Vex§f at the Borderlands gate could be interesting. Need help later? Talk to me.");
+                        de.aetherion.quests.lang.LangPack.say(player, "ledger.hint_vex", "§cSergeant Vex§f at the Borderlands gate, if you're curious. I'm here if you get stuck."));
                 player.sendActionBar(net.kyori.adventure.text.Component.text(
-                        "Soft hint · Sergeant Vex",
+                        de.aetherion.quests.lang.LangPack.ui(player, "tip.vex_soft", "Soft hint · Sergeant Vex"),
                         net.kyori.adventure.text.format.NamedTextColor.RED
                 ));
                 de.aetherion.quests.ui.QuestHint.show(player, "vex", "Sergeant Vex");
             } else if (!de.aetherion.quests.util.QuestStoryGate.questCompleted(player, questManager, "border_rites")) {
                 LivingNpcProfile.say(player, npc,
-                        "§cRite Warden§f in the waste could be interesting. Need help later? Talk to me.");
+                        de.aetherion.quests.lang.LangPack.say(player, "ledger.hint_rite", "§cRite Warden§f out in the waste, if you're curious. I'm here if you get stuck."));
                 de.aetherion.quests.ui.QuestHint.show(player, "rite_keeper", "Rite Warden");
             } else {
-                LivingNpcProfile.say(player, npc, "Need help later? Talk to me.");
+                LivingNpcProfile.say(player, npc, de.aetherion.quests.lang.LangPack.say(player, "ledger.hint_help", "Stuck later? You know where I sit."));
             }
         }, 50L);
     }
@@ -1389,21 +1392,21 @@ public class NpcListener implements Listener {
         if ("dock_pass".equalsIgnoreCase(quest.getId())) {
             AetherionQuests plugin = AetherionQuests.getInstance();
             String name = npc.getName();
-            npcSay(player, npc, "Pass checks out.");
+            npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "fishmonger.pass_ok", "Pass checks out."));
             if (plugin != null) {
                 plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
                     if (!player.isOnline()) {
                         return;
                     }
                     npcSay(player, npc,
-                            "Shop's open for T1 gear now — rod and armor. Talk to me when you want to browse.");
+                            de.aetherion.quests.lang.LangPack.say(player, "fishmonger.shop_open", "Shop's open for T1 gear now — rod and armor. Talk to me when you want to browse."));
                 }, 45L);
                 plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
                     if (!player.isOnline()) {
                         return;
                     }
                     npcSay(player, npc,
-                            "Want Tackle's fishing lesson? Buy a rod here, then go back to him.");
+                            de.aetherion.quests.lang.LangPack.say(player, "fishmonger.lesson", "Want Tackle's fishing lesson? Buy a rod here, then go back to him."));
                 }, 90L);
             }
             return;
@@ -1464,7 +1467,7 @@ public class NpcListener implements Listener {
 
         if ("a_good_catch".equalsIgnoreCase(quest.getId())) {
             String name = npc.getName();
-            npcSay(player, npc, "Catch counted. Line's clear. Sea's still full.");
+            npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "fisher.catch_done", "Catch counted. Line's clear. Sea's still full."));
             AetherionQuests plugin = AetherionQuests.getInstance();
             if (plugin != null) {
                 plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
@@ -1472,11 +1475,11 @@ public class NpcListener implements Listener {
                         return;
                     }
                     npcSay(player, npc,
-                            "Peek at your rod sometime — certain tools level up around here.");
+                            de.aetherion.quests.lang.LangPack.say(player, "fisher.rod_tip", "Peek at your rod sometime — certain tools level up around here."));
                 }, 40L);
             } else {
                 npcSay(player, npc,
-                        "Peek at your rod sometime — certain tools level up around here.");
+                        de.aetherion.quests.lang.LangPack.say(player, "fisher.rod_tip", "Peek at your rod sometime — certain tools level up around here."));
             }
             return;
         }
@@ -1507,7 +1510,7 @@ public class NpcListener implements Listener {
             return;
         }
 
-        npcSay(player, npc, "Excellent work!");
+        npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "any.excellent", "Excellent work!"));
     }
 
 
@@ -1545,7 +1548,7 @@ public class NpcListener implements Listener {
             );
 
 
-            npcSay(player, npc, "Your first equipment is ready.");
+            npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "any.first_equipment", "Your first equipment is ready."));
 
 
             return;
@@ -1592,7 +1595,7 @@ public class NpcListener implements Listener {
 
         if (quest == null) {
 
-            npcSay(player, npc, "There is nothing for you here right now.");
+            npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "any.nothing_here", "There is nothing for you here right now."));
 
             return;
 
@@ -1750,7 +1753,7 @@ public class NpcListener implements Listener {
          * =====================================================
          */
 
-        npcSay(player, npc, "There is nothing for you here right now.");
+        npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "any.nothing_here", "There is nothing for you here right now."));
 
     }
 
@@ -2262,7 +2265,7 @@ public class NpcListener implements Listener {
     ) {
 
 
-        npcSay(player, npc, "Let's get to work.");
+        npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "any.to_work", "Let's get to work."));
 
 
         questManager.startQuest(
@@ -2347,7 +2350,7 @@ public class NpcListener implements Listener {
         );
 
 
-        npcSay(player, npc, "Excellent work!");
+        npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "any.excellent", "Excellent work!"));
 
     }
 
@@ -2446,12 +2449,15 @@ public class NpcListener implements Listener {
         java.util.Map<String, String[]> topics = de.aetherion.quests.ui.EgonBriefingGUI.talkTopics();
         java.util.List<de.aetherion.quests.talk.TalkUx.Choice> choices = new java.util.ArrayList<>();
         for (String key : java.util.List.of("Aetherion Manager", "Skills", "Pets", "Boosters")) {
-            String[] lines = topics.get(key);
-            if (lines == null) {
+            String[] english = topics.get(key);
+            if (english == null) {
                 continue;
             }
+            String slug = key.toLowerCase(java.util.Locale.ROOT).replace(' ', '_');
+            String[] lines = de.aetherion.quests.lang.LangPack.sayLines(player, "ledger.desk." + slug + ".lines", english);
+            String label = de.aetherion.quests.lang.LangPack.say(player, "ledger.desk." + slug + ".label", key);
             choices.add(new de.aetherion.quests.talk.TalkUx.Choice(
-                    key,
+                    label,
                     net.kyori.adventure.text.format.NamedTextColor.LIGHT_PURPLE,
                     () -> {
                         for (String line : lines) {
@@ -2469,18 +2475,19 @@ public class NpcListener implements Listener {
                         }
                     },
                     false,
-                    "Tell me about " + key.toLowerCase(java.util.Locale.ROOT) + "."
+                    de.aetherion.quests.lang.LangPack.say(player, "ledger.desk." + slug + ".echo",
+                            "Tell me about " + key.toLowerCase(java.util.Locale.ROOT) + ".")
             ));
         }
         choices.add(new de.aetherion.quests.talk.TalkUx.Choice(
-                "More topics…",
+                de.aetherion.quests.lang.LangPack.say(player, "ledger.desk.more", "More topics…"),
                 net.kyori.adventure.text.format.NamedTextColor.GRAY,
                 () -> de.aetherion.quests.ui.EgonBriefingGUI.open(player, "Miss Ledger"),
                 false,
                 null
         ));
         if (!talk.isTalkingWith(player, npc.getId())) {
-            npcSay(player, npc, "Need a refresher, {player}? Pick a topic.");
+            npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "ledger.desk_prompt", "Need a refresher, {player}? Pick a topic."));
             AetherionQuests host = AetherionQuests.getInstance();
             if (host != null) {
                 host.getServer().getScheduler().runTaskLater(host, () -> {

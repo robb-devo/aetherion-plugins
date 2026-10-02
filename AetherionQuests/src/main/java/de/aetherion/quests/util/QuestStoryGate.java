@@ -159,9 +159,8 @@ public final class QuestStoryGate {
 
     public static String[] tutorialBlockedLines() {
         return new String[] {
-                "Not yet, {player}. Orientation first.",
-                "Harbour → Mine → Temper → Miss Ledger → Fields. Then Ledger stamps you free.",
-                "Come back when you're filed. This desk isn't for rookies mid-lesson."
+                "Not yet, {player}. This desk opens after orientation.",
+                "Harbour → Mine → Temper → Miss Ledger → Fields. Then you're free."
         };
     }
 
@@ -241,11 +240,11 @@ public final class QuestStoryGate {
         }
         String name = speakerName == null || speakerName.isBlank() ? "Someone" : speakerName;
         player.sendMessage("");
-        npcSay(player, name, "Complete the tutorial first.");
+        npcSay(player, name, de.aetherion.quests.lang.LangPack.say(player, "redirect.lead", "Where you're actually meant to be:"));
 
         QuestManager qm = questManager();
         if (qm == null) {
-            npcSay(player, name, "§eMiss Ledger §fcloses orientation after the Fields.");
+            npcSay(player, name, de.aetherion.quests.lang.LangPack.say(player, "redirect.ledger_fields", "§eMiss Ledger §fcloses orientation after the Fields."));
             player.sendMessage("");
             QuestHint.show(player, "ledger", "Miss Ledger");
             return;
@@ -253,81 +252,81 @@ public final class QuestStoryGate {
 
         // Soft spine: Harbour (Egon) → QM → Mine → Temper → Ledger → Fields → Ledger.
         if (!questCompleted(player, qm, "gather_wood")) {
-            npcSay(player, name, "§aEgon §fat the pier — oak first. Then the Quartermaster.");
+            npcSay(player, name, de.aetherion.quests.lang.LangPack.say(player, "redirect.egon", "§aEgon §fat the pier — oak first. Then the Quartermaster."));
             player.sendMessage("");
             QuestHint.show(player, "egon", "Egon");
             player.sendActionBar(net.kyori.adventure.text.Component.text(
-                    "Tutorial · Egon · wood",
+                    de.aetherion.quests.lang.LangPack.ui(player, "tip.tutorial_egon", "Tutorial · Egon · wood"),
                     net.kyori.adventure.text.format.NamedTextColor.GREEN
             ));
             return;
         }
         if (!questCompleted(player, qm, "forge_coal")) {
-            npcSay(player, name, "§eQuartermaster §fpast the little market — coal run next.");
+            npcSay(player, name, de.aetherion.quests.lang.LangPack.say(player, "redirect.quartermaster", "§eQuartermaster §fpast the little market — coal run next."));
             player.sendMessage("");
             QuestHint.show(player, "quartermaster", "Quartermaster");
             player.sendActionBar(net.kyori.adventure.text.Component.text(
-                    "Tutorial · Quartermaster · coal",
+                    de.aetherion.quests.lang.LangPack.ui(player, "tip.tutorial_quartermaster", "Tutorial · Quartermaster · coal"),
                     net.kyori.adventure.text.format.NamedTextColor.YELLOW
             ));
             return;
         }
         if (!questCompleted(player, qm, "first_shift")) {
-            npcSay(player, name, "§eShaft Foreman §fat Shabby Mine — finish his shift.");
+            npcSay(player, name, de.aetherion.quests.lang.LangPack.say(player, "redirect.foreman", "§eShaft Foreman §fat Shabby Mine — finish his shift."));
             player.sendMessage("");
             QuestHint.show(player, "foreman", "Shaft Foreman");
             player.sendActionBar(net.kyori.adventure.text.Component.text(
-                    "Tutorial · Mines · Shaft Foreman",
+                    de.aetherion.quests.lang.LangPack.ui(player, "tip.tutorial_foreman", "Tutorial · Mines · Shaft Foreman"),
                     net.kyori.adventure.text.format.NamedTextColor.YELLOW
             ));
             return;
         }
         if (!questCompleted(player, qm, "lesson_boost")) {
-            npcSay(player, name, "§eTemper §f— Booster Tutor. Fuse one booster, then keep going.");
+            npcSay(player, name, de.aetherion.quests.lang.LangPack.say(player, "redirect.temper", "§eTemper §f— Booster Tutor. Fuse one booster, then keep going."));
             player.sendMessage("");
             QuestHint.show(player, "booster_tutor", "Temper");
             player.sendActionBar(net.kyori.adventure.text.Component.text(
-                    "Tutorial · Temper first",
+                    de.aetherion.quests.lang.LangPack.ui(player, "tip.tutorial_temper", "Tutorial · Temper first"),
                     net.kyori.adventure.text.format.NamedTextColor.GOLD
             ));
             return;
         }
         if (!questCompleted(player, qm, "lesson_manager")) {
-            npcSay(player, name, "§dMiss Ledger §fat Capital — Skills in the Manager.");
+            npcSay(player, name, de.aetherion.quests.lang.LangPack.say(player, "redirect.ledger_skills", "§dMiss Ledger §fat Capital — Skills in the Manager."));
             player.sendMessage("");
             QuestHint.show(player, "ledger", "Miss Ledger");
             player.sendActionBar(net.kyori.adventure.text.Component.text(
-                    "Tutorial · Miss Ledger · Skills",
+                    de.aetherion.quests.lang.LangPack.ui(player, "tip.tutorial_ledger", "Tutorial · Miss Ledger · Skills"),
                     net.kyori.adventure.text.format.NamedTextColor.LIGHT_PURPLE
             ));
             return;
         }
         if (!questCompleted(player, qm, "farm_hand")) {
-            npcSay(player, name, "§eFarmer §fat the Fields — wheat next.");
+            npcSay(player, name, de.aetherion.quests.lang.LangPack.say(player, "redirect.farmer", "§eFarmer §fat the Fields — wheat next."));
             player.sendMessage("");
             QuestHint.show(player, "farmer", "Farmer");
             player.sendActionBar(net.kyori.adventure.text.Component.text(
-                    "Tutorial · Fields · Farmer",
+                    de.aetherion.quests.lang.LangPack.ui(player, "tip.tutorial_farmer", "Tutorial · Fields · Farmer"),
                     net.kyori.adventure.text.format.NamedTextColor.YELLOW
             ));
             return;
         }
         if (!questCompleted(player, qm, "pocket_zoo")) {
-            npcSay(player, name, "§dLark §fat the fence — one catch for his collection.");
+            npcSay(player, name, de.aetherion.quests.lang.LangPack.say(player, "redirect.lark", "§dLark §fat the fence — one catch for his collection."));
             player.sendMessage("");
             QuestHint.show(player, "lark", "Lark");
             player.sendActionBar(net.kyori.adventure.text.Component.text(
-                    "Tutorial · Fields · Lark",
+                    de.aetherion.quests.lang.LangPack.ui(player, "tip.tutorial_lark", "Tutorial · Fields · Lark"),
                     net.kyori.adventure.text.format.NamedTextColor.LIGHT_PURPLE
             ));
             return;
         }
 
-        npcSay(player, name, "§dMiss Ledger §fcloses orientation. Go get stamped.");
+        npcSay(player, name, de.aetherion.quests.lang.LangPack.say(player, "redirect.stamp", "§dMiss Ledger §fcloses orientation. Go get stamped."));
         player.sendMessage("");
         QuestHint.show(player, "ledger", "Miss Ledger");
         player.sendActionBar(net.kyori.adventure.text.Component.text(
-                "Tutorial · Miss Ledger · graduation",
+                de.aetherion.quests.lang.LangPack.ui(player, "tip.tutorial_graduation", "Tutorial · Miss Ledger · graduation"),
                 net.kyori.adventure.text.format.NamedTextColor.LIGHT_PURPLE
         ));
     }
@@ -410,7 +409,7 @@ public final class QuestStoryGate {
         if (ledgerUnlocked(player, questManager)) {
             return null;
         }
-        return "§eShaft Foreman first. §7Mine shift, then we open Skills.";
+        return de.aetherion.quests.lang.LangPack.say(player, "gate.ledger_foreman_first", "§eShaft Foreman first. §7Mine shift, then we open Skills.");
     }
 
 
@@ -420,12 +419,12 @@ public final class QuestStoryGate {
         }
         String name = ledgerName == null || ledgerName.isBlank() ? "Miss Ledger" : ledgerName;
         player.sendMessage("");
-        npcSay(player, name, "You're early. Skills aren't open yet.");
-        npcSay(player, name, "§eShaft Foreman §fat the Mines — do his shift. Then come back.");
+        npcSay(player, name, de.aetherion.quests.lang.LangPack.say(player, "ledger.early", "You're early. Skills aren't open yet."));
+        npcSay(player, name, de.aetherion.quests.lang.LangPack.say(player, "ledger.early_foreman", "§eShaft Foreman §fat the Mines — do his shift. Then come back."));
         player.sendMessage("");
         QuestHint.show(player, "foreman", "Shaft Foreman");
         player.sendActionBar(net.kyori.adventure.text.Component.text(
-                "Hint · Mines · Shaft Foreman",
+                de.aetherion.quests.lang.LangPack.ui(player, "tip.mines_foreman", "Hint · Mines · Shaft Foreman"),
                 net.kyori.adventure.text.format.NamedTextColor.YELLOW
         ));
     }
@@ -433,9 +432,9 @@ public final class QuestStoryGate {
 
     public static String[] ledgerBlockedLines() {
         return new String[] {
-                "You're early, {player}. Skills stay locked until the mine shift's done.",
-                "Shaft Foreman at the Mines. Finish his shift — then come back.",
-                "Then I unlock the Skills tab. Not a minute before."
+                "You're early, {player}. Skills stay shut until the mine shift's done.",
+                "§eShaft Foreman§f, at the Mines. Finish his shift, then come back.",
+                "Then I open the Skills tab. Not a minute before."
         };
     }
 
