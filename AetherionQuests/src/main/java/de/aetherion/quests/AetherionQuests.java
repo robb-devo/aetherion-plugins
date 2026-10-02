@@ -71,6 +71,7 @@ public final class AetherionQuests extends JavaPlugin {
     private de.aetherion.quests.editor.NpcEditor npcEditor;
 
     private de.aetherion.core.api.QuestProgressAccess questAccess;
+    private de.aetherion.core.api.TalkAccess talkAccess;
 
 
 
@@ -451,6 +452,9 @@ public final class AetherionQuests extends JavaPlugin {
         );
         questAccess = new de.aetherion.quests.api.QuestProgressAccessImpl(this);
         de.aetherion.core.api.AetherServices.registerQuests(questAccess);
+        // Talk bubbles for other plugins' NPCs (guest speakers, e.g. the island guide in AetherionGuilds).
+        talkAccess = new de.aetherion.quests.api.TalkAccessImpl();
+        de.aetherion.core.api.AetherServices.registerTalk(talkAccess);
 
     }
 
@@ -549,6 +553,11 @@ public final class AetherionQuests extends JavaPlugin {
             de.aetherion.core.api.AetherServices.clearQuests(questAccess);
             questAccess = null;
         }
+        if (talkAccess != null) {
+            de.aetherion.core.api.AetherServices.clearTalk(talkAccess);
+            talkAccess = null;
+        }
+        de.aetherion.quests.talk.GuestSpeakers.clear();
 
         getLogger().info(
                 "AetherionQuests disabled!"
@@ -645,4 +654,4 @@ public final class AetherionQuests extends JavaPlugin {
         return new QuestNPCSpawnService().despawnEntity(entity);
     }
 
-}
+}

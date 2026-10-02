@@ -12,12 +12,13 @@ softdepend:
   - AetherionItems
   - BossEngine
   - AetherionQuests
+  - AetherMobs
   - WorldEdit
 
 commands:
   dungeon:
     description: Dungeon admin and leave
-    usage: /dungeon <give|remove|leave|enter|boss|home|dhub>
+    usage: /dungeon <give|remove|leave|enter|boss|home|dhub|sync|pool>
     aliases: [dungeons, aedungeon]
   dhub:
     description: Teleport to the dungeon hub from anywhere

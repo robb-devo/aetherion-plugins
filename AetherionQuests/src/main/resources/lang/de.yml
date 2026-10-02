@@ -1,10 +1,28 @@
-# Aetherion Quests — German pre-pre-beta language pack
-# Missing keys fall back to English. Quests & hints only.
+# Aetherion Quests — German language pack (overlay)
+# English in Java is the canonical voice sheet. This file only swaps wording:
+# same facts, same gates, same rewards. Missing keys fall back to English,
+# except cast.* (ambient voice): no German entry = that NPC stays quiet for DE readers.
+#
+# Sections
+#   ui / progress / msg   short UI strings (ui.talk_ux.* = bubble chips + quest card, ui.tip.* = action bars)
+#   quests.<id>           quest card title + description
+#   dialogs.<dialogId>    NPC intros (nested keys = state variants picked in code)
+#   completed.<npcId>     chatter after the NPC's quest is done (nested = variants)
+#   talk.<npc>.<key>      inline turn-in / brief / redirect lines
+#   cast.<npcId>.*        CastBook voice: chips, reactions, return visits, greetings, barks, topics
+#   banter                NPC-to-NPC scripts, same order and speakers as CastBook
+#
+# Proper nouns stay as the game shows them (Ore Ridge, Shabby Mine, Recipe Book, Anvil,
+# Catch Sphere, Quartermaster …) so speech matches nametags, menus and the compass.
+# Rite Warden / Proctor (Borderlands rites) keep their existing lines — owned by the Hub pass.
 
 ui:
   hint: "Hinweis"
   quest_offer: "§8Quest-Angebot"
   quest_accepted: "Quest angenommen: {0}"
+  quest_accepted_plain: "Quest angenommen"
+  quest_accepted_banner: "§a§lQUEST ANGENOMMEN"
+  decline_chat: "§7Vielleicht ein andermal."
   quest_complete: "§6✦ §eQuest abgeschlossen: §f{0}"
   quest_complete_banner: "§6§l✦ QUEST ABGESCHLOSSEN ✦"
   quest_complete_title: "QUEST ABGESCHLOSSEN"
@@ -39,6 +57,84 @@ ui:
   gate_market_chat: "§7Der Markt bleibt zu, bis §eEgon §7sein Eichenholz hat."
   gate_market_action: "→ Forager · dann bei Egon abgeben"
   gate_rescue_chat: "§7Ganz ruhig — zurück auf dem Pier. Erst mit §eEgon §7reden."
+  # In-world talk: reply chips, quest card, action-bar hints (TalkUx)
+  talk_ux:
+    accept_default: "Bin dabei."
+    decline_default: "Jetzt nicht."
+    bye: "Tschüss."
+    details: "Details…"
+    got_it: "Verstanden."
+    numbers: "Zeig mir die Zahlen"
+    conflict_take: "\"{0}\" fallen lassen & annehmen"
+    conflict_take_echo: "Gut. Den anderen Job lass ich fallen."
+    conflict_keep: "Meinen Job behalten"
+    conflict_keep_echo: "Ich mach fertig, was ich angefangen hab."
+    armed: "Sicher? Nochmal klicken"
+    goals: "Ziele"
+    pays: "Lohn"
+    replaces: "Ersetzt deinen aktuellen Job"
+    you: "Du: "
+    offer_stands: "Angebot von {0} steht. "
+    accept_button: "[Annehmen]"
+    accept_hover: "{0} annehmen"
+    decline_button: "[Ablehnen]"
+    decline_hover: "Vielleicht ein andermal"
+    pulse: "Antwort wählen — anschauen und klicken · oder scrollen + klicken"
+    hint_offer: "Antwort anschauen + klicken  ·  "
+    hint_offer_scroll: "oder scrollen + klicken"
+    hint_topics: "Antwort anschauen + klicken — oder einfach weitergehen"
+    scroll: "Klicken zum Wählen · scrollen zum Wechseln"
+    moved_on: "Das Gespräch ist vorbei. Nochmal rechtsklicken."
+  # Action-bar hints spoken around talk
+  tip:
+    egon_wood_first: "Hinweis · Egon · erst Holz"
+    mines_foreman: "Hinweis · Minen · Shaft Foreman"
+    skills_blink: "Nether Star öffnen (Slot 9) → Skills blinkt"
+    throw_sphere: "Catch Sphere auf ein wildes Pet werfen — dann mit Lark reden"
+    recipe_pickaxe: "Manager → grünes Recipe Book — Mining Pickaxe suchen (2. Rezept)"
+    lark_equip: "→ Manager → Pets → Fang ausrüsten"
+    chop_demo: "→ Chop-Demo anschauen, dann Eiche für Egon fällen"
+    to_foreman: "→ Shaft Foreman · Minen"
+    mines_tp: "→ Mines-Teleport · Manager oder /mines"
+    fields: "Hinweis · Felder · Farmer + Lark → dann Ledger"
+    vex_next: "Tipp · Gear aufrüsten · dann Rite Warden"
+    vex_soft: "Tipp · Sergeant Vex"
+    farm_isle: "Farm Isle · hinteres Scheunenende · optional"
+    to_ledger: "→ Miss Ledger · oder /capital"
+    tutorial_egon: "Tutorial · Egon · Holz"
+    tutorial_quartermaster: "Tutorial · Quartermaster · Kohle"
+    tutorial_foreman: "Tutorial · Minen · Shaft Foreman"
+    tutorial_temper: "Tutorial · erst Temper"
+    tutorial_ledger: "Tutorial · Miss Ledger · Skills"
+    tutorial_farmer: "Tutorial · Felder · Farmer"
+    tutorial_lark: "Tutorial · Felder · Lark"
+    tutorial_graduation: "Tutorial · Miss Ledger · Abschluss"
+    # Red thread — Ledger's roads, harbour crumb, Twig, Vex gear check
+    road_forage: "→ Twig · Schleim-Pad · Forage Isle"
+    road_farm: "→ Harrow · hinteres Scheunenende · Farm Isle"
+    road_fish: "→ Tackle · Hafenpier · Angeln"
+    road_steel: "→ Sergeant Vex · erst Gear anlegen"
+    road_rite: "→ Rite Warden · Borderlands"
+    canopy_clerk: "Hinweis · Canopy Clerk · Forage Isle"
+    harbour_pad: "→ Schleim-Pad · Forage Isle (Twig)"
+    vex_armour: "Tipp · Inventar → Rüstungsslots · Egons Kit"
+    vex_temper: "Tipp · Temper · erst ein Booster"
+  # /guide + Discord tips (QuestStoryGate#guideTips) — one "next" at a time
+  guide:
+    no_quests: "Sprich mit §aEgon §7am Pier von Anker Harbour — da beginnt die Orientierung."
+    active: "Aktive Quest: §f{0}§7 — {1}"
+    egon: "Geh zu §aEgon §7am Pier von §fAnker Harbour§7. Er ist deine erste Station."
+    egon_trail: "Folg dem grünen Leuchten auf den Planken — es führt zu Egon."
+    forager: "Egon schickt dich zum §aForager §7am Hügel — mit ihm reden, dann Eiche hacken."
+    oak_back: "Bring die Eichenstämme zurück zu §aEgon §7am Pier."
+    oak_deliver: "Eiche hacken und §f10 Eichenstämme §7bei §aEgon §7am Pier abgeben."
+    quartermaster: "Als Nächstes: §eQuartermaster §7hinter dem kleinen Markt — Kohlelauf (§f20 Kohle§7)."
+    foreman: "Als Nächstes: §eShaft Foreman §7an der Shabby Mine — seine Schicht fertig machen (§f/mines§7)."
+    temper: "Als Nächstes: §eTemper §7(Booster Tutor) auf dem Weg zur Capital — einen Booster fusen."
+    ledger: "Als Nächstes: §dMiss Ledger §7in der Capital — sie öffnet Skills im Manager."
+    farmer: "Als Nächstes: §eFarmer §7auf den Feldern — 48 Weizen, Vögel verscheuchen."
+    lark: "Als Nächstes: §dLark §7am Feldzaun — ein Pet fangen."
+    stamp: "Zurück zu §dMiss Ledger §7— sie stempelt die Orientierung zu und zeigt dir die Inseln."
 
 progress:
   catch_pet: "Fang ein Pet"
@@ -53,110 +149,214 @@ msg:
   tutorial_blocked: "Mach zuerst das Tutorial fertig."
   language_saved_de: "Sprache gespeichert · Deutsch (experimentell)"
   language_saved_en: "Language saved · English"
+  done_fallback: "Wir sind hier fertig. Nerv ein anderes Klemmbrett."
+  chests_unlocked: "§aKisten frei. §7Probekiste beim Merchant + Welt-Kisten sind aktiv."
+  harbour_pad: "§a✦ §7Hafen-Pad: §aTwig§7 zeigt dir den Schleimsprung → §aForage Isle§7."
 
 quests:
+  welcome_aboard:
+    title: "Willkommen an Bord"
+    description: "Sprich mit dem Forager oben am Hügel über Anker Harbour."
   gather_wood:
-    title: "Holz holen"
-    description: "Zehn Eichenstämme vom Forager. Zurück zu Egon am Pier."
+    title: "Egons Holzlauf"
+    description: "Hack Eiche mit der Axt vom Forager und bring Egon 10 Stämme."
   forge_coal:
     title: "Kohle für die Schmiede"
-    description: "Zwanzig Kohle vom Erzgrat zum Quartiermeister."
+    description: "Bring dem Quartermaster 20 Kohle vom Ore Ridge."
   first_shift:
     title: "Erste Schicht"
-    description: "Zweiunddreißig Erze in der Schäbigen Mine, dann zum Vorarbeiter."
-  lesson_boost:
-    title: "Booster-Lektion"
-    description: "Temper zeigt Boosters und Amboss."
-  lesson_manager:
-    title: "Skills & Manager"
-    description: "Miss Ledger erklärt Skills im Manager."
+    description: "Bau 32 Erze in der Shabby Mine ab und melde dich beim Shaft Foreman."
+  first_hunt:
+    title: "Erste Jagd"
+    description: "Hilf, den Hof von ein paar Tieren zu befreien."
   farm_hand:
     title: "Feldarbeit"
-    description: "Weizen ernten. Lark wartet am Zaun mit seiner Taschen-Sammlung."
+    description: "Ernte Weizen auf den Feldern. Lark hat seine Sammlung gleich nebenan."
+  a_simple_craft:
+    title: "Zweites Rezept"
+    description: "Öffne das §agrüne Recipe Book§7 im Manager und crafte eine §fMining Pickaxe§7 — Simple Pickaxe in die Mitte, Kohle drumherum."
+  shiny_things:
+    title: "Glänzendes"
+    description: "Bau drei Diamanten ab."
+  a_good_catch:
+    title: "Ein guter Fang"
+    description: "Fang fünf Fische."
+  dock_pass:
+    title: "Dock-Pass"
+    description: "Hol dir bei Tackle am Steg einen Shop-Pass und geh zurück zum Fishmonger."
+  open_up:
+    title: "Aufmachen"
+    description: "Öffne die Probekiste des Merchants."
   pocket_zoo:
     title: "Taschenzoo"
-    description: "Fang ein wildes Pet, sprich mit Lark, rüste es aus."
+    description: "Fang mit einer Catch Sphere ein wildes Pet für Lark, sprich mit ihm und rüste es im Manager aus."
+  those_sounds:
+    title: "Diese Geräusche"
+    description: "Finde die Quelle der Geräusche und erledige den Hollow Lurker."
+  poultry_problem:
+    title: "Geflügelproblem"
+    description: "Finde McNugget und steck das Riesenhuhn zurück in den Eimer."
+  troll_toll:
+    title: "Trollmaut"
+    description: "Überquer die Brücke. Überleb den Troll. Behalt das Wechselgeld."
+  ink_contract:
+    title: "Tintenvertrag"
+    description: "Tauch nach Squidward und komm mit weniger Tentakeln zurück."
+  ash_and_arrows:
+    title: "Asche und Pfeile"
+    description: "Jag Skuldugery, bevor die Feuersalve dich jagt."
+  walking_mountain:
+    title: "Wandelnder Berg"
+    description: "Bring den Aether Colossus zu Fall. Lass dich nicht zertreten."
+  the_veil:
+    title: "Der Schleier"
+    description: "Fordere Aetherion im Dungeon heraus. Unterhalte es — oder werd eine Fußnote."
+  open_ticket:
+    title: "Offenes Ticket"
+    description: "Schließ Sir Balthazar. Endgültig. Der Support tut so, als wär das der Plan gewesen."
+  lost_and_found:
+    title: "Fundbüro"
+    description: "Zieh dem Lobby Cleaner den Stecker, bevor er den Rest des Servers als Müll ablegt."
+  overtime:
+    title: "Überstunden"
+    description: "Stempel Sparky aus. Der Gildensteinbruch hat sein Blitzbudget überzogen."
+  denied_claim:
+    title: "Abgelehnter Antrag"
+    description: "Regel das mit Baron von Wurm. Die Spitzhacken-Versicherung hat schon nein gesagt."
+  bounced_check:
+    title: "Geplatzter Scheck"
+    description: "Pfände den Insolvent Wither. Bring das Hauptbuch zurück, zur Not in Stücken."
+  closed_road:
+    title: "Gesperrte Straße"
+    description: "Der Pathwarden ist die Straßensperre. Beweg ihn. Oder werd ein neues Wahrzeichen."
   lesson_steel:
-    title: "Erste Lektion Stahl"
-    description: "Zehn Gegner in den Borderlands für Sergeant Vex."
+    title: "Lektion: Stahl"
+    description: "Sergeant Vex will zehn Feinde in den Borderlands erledigt sehen. Endgültig."
+  lesson_boost:
+    title: "Lektion: Boost"
+    description: "Temper will einen Booster auf deinem Gear sehen — gefust am Anvil im Manager."
   border_rites:
     title: "Border-Riten"
     description: "Spirit-Fläschchen farmen, am Pulver-Altar zünden — ein Borderlands-Boss."
-  a_simple_craft:
-    title: "Einfache Schmiede"
-    description: "Craft die Mining Pickaxe und zeig sie dem Craftsman."
+  lesson_manager:
+    title: "Lektion: Skills"
+    description: "Miss Ledger will, dass du im Aetherion Manager einen Skill ausrüstest."
+  lesson_bones:
+    title: "Lektion: Dungeons"
+    description: "Rook will zehn Knochen. Dungeon-Hausaufgaben ohne Dungeon."
+  sidewalk_survey:
+    title: "Gehweg-Gutachten"
+    description: "Der Bench Cynic braucht acht verrottetes Fleisch für 'Forschung'. Frag nicht."
+  gravel_ambition:
+    title: "Kies-Ehrgeiz"
+    description: "Dust will dreißig Bruchstein. Die Karte kann warten. Die Straße nicht."
+  pantry_run:
+    title: "Vorratslauf"
+    description: "Larder will drei Compressed Wheat. Farm-Weizen komprimieren, dann abliefern."
+  pig_in_a_poke:
+    title: "Die Sau im Sack"
+    description: "Pet Scout will Beweise, dass du fangen kannst. Fang ein wildes Schwein mit einer Catch Sphere."
+  coal_audit:
+    title: "Kohleprüfung"
+    description: "Ore Ledger will fünf Compressed Coal. Bring Belege, keine Ausreden."
+  stump_census:
+    title: "Stumpfzählung"
+    description: "Timber Clerk braucht fünf Compressed Oak Logs. Bäume, die Steuern gezahlt haben."
+  canopy_sample:
+    title: "Kronenprobe"
+    description: "Canopy Clerk will je ein Compressed Oak, Birch und Spruce. Nur Inselholz zählt als Beweis."
+  scale_sample:
+    title: "Schuppenprobe"
+    description: "Dock Scaler will drei Compressed Cod. Das Klemmbrett ist schon nass."
+  bovine_brief:
+    title: "Rinderakte"
+    description: "Sphere Proctor will eine Kuh in einer Sphere. Keine Milch. Kein Steak. Gewahrsam."
+  guild_brick:
+    title: "Gildenziegel"
+    description: "Quarry Broker tauscht einen Compacted Cobblestone gegen Club-nahen Respekt."
 
 dialogs:
+  # ---------------------------------------------------------------- gates
   fishing_before_egon:
     - "Moment. Erst Egon fertig machen — dann reden wir übers Angeln."
   tutorial_blocked:
-    - "Mach zuerst das Tutorial fertig."
-    - "Hafen → Mine → Temper → Miss Ledger → Felder. Dann stempelt Ledger dich frei."
-    - "Komm zurück, wenn die Orientierung abgelegt ist. Dieser Schreibtisch ist nichts für Rookies mitten in der Lektion."
+    - "Noch nicht, {player}. Dieser Schalter öffnet nach der Orientierung."
+    - "Hafen → Mine → Temper → Miss Ledger → Felder. Dann bist du frei."
+  ledger_blocked:
+    - "Zu früh, {player}. Skills bleiben zu, bis die Minenschicht durch ist."
+    - "§eShaft Foreman§f, an den Minen. Schicht fertig machen, dann zurückkommen."
+    - "Dann öffne ich den Skills-Tab. Keine Minute früher."
+
+  # ---------------------------------------------------------------- Harbour spine
   egon_intro:
-    - "Egon. Hafen-Ausrüster. Ich brauche Eiche — du holst sie."
-    - "Der Forager am Hügel leiht die Axt und zeigt das Chop-Minispiel. Zehn Eichenstämme zurück hierher."
-    - "§eGelber Pfeil oben§f zeigt die Richtung. Die Planken hab ich dir auch bemalt. Gern geschehen."
+    - "{player}, richtig? Egon. Ich rüste Rookies aus. Du siehst aus wie einer."
+    - "Das Kit kostet zehn Eichenstämme. Der §eLumberjack§f am Hügel leiht dir die Axt."
+    - "Nennt sich Forager. Lass ihm den Spaß."
+    - "Der §egelbe Pfeil oben§f kennt den Weg. Das Glitzern auf den Planken ist von mir."
   egon_arrival_call:
     - "Hey — neues Gesicht! Hier drüben, beim grünen Leuchten."
   egon_greet_near:
     - "Das bin ich. Rechtsklick — ich beiße nicht, ich rüste aus."
   egon_kit_handoff:
-    - "Holz erhalten. Hier ist dein Kit — Spitzhacke, Schwert, Hacke, Rüstung."
+    - "Zehn Stämme. Zweimal gezählt. Hier ist dein Kit — Spitzhacke, Schwert, Hacke, Rüstung."
     - "Die Rüstung ist gebraucht. Vorbesitzer ist in Rente. Größtenteils friedlich."
-    - "§eQuartiermeister§f ist hinter dem kleinen Markt — sprich als Nächstes mit ihm."
+    - "Der §eQuartermaster§f sitzt hinter dem kleinen Markt. Na los, {player}."
   lumberjack_intro:
-    - "Egon braucht wieder Eiche."
-    - "Nimm die Simple Axe. Linksklick auf einen §eleuchtenden Stamm§f startet die Chop-Leiste."
-    - "Wenn die Leiste §aCHOP§f (grün) zeigt: nochmal linksklick. Verfehlst du's, setzt der Baum zurück."
-    - "Zehn Eichenstämme → abliefern bei §eEgon am Pier§f, nicht bei mir."
+    - "Egon braucht Eiche. Schon wieder. Der Mann frisst Planken, ich schwör's."
+    - "Simple Axe. Linksklick auf einen §eleuchtenden Stamm§f — das startet die Chop-Leiste."
+    - "Grünes §aCHOP§f? Nochmal Linksklick. Verpasst? Baum setzt zurück. Bäume sind nachtragend."
+    - "Zehn Eichenstämme → §eEgon am Pier§f. Nicht zu mir. Ich hab genug."
   quartermaster_intro:
-    - "Ich brauche Kohle für die Schmiede. Zwanzig Stück von der Oberfläche."
-    - "§eErzgrat§f ist der Hügel hinter dem kleinen Markt — Kohleadern im Freien. Zwanzig abbauen, zu mir zurücklaufen."
-    - "Achte auf den §egelben Pfeil oben§f — der trackt den Auftrag."
+    - "Quartermaster. Ich zähle Dinge. Heute: Kohle."
+    - "Zwanzig Stück. §eOre Ridge§f — der Hügel hinter dem kleinen Markt. Offene Adern."
+    - "Der §egelbe Pfeil oben§f verfolgt den Auftrag. Ich verfolge dich. Unauffällig."
   craftsman_intro:
-    - "Hey. Craftsman. Crafting ist freigeschaltet — Recipe Book im Manager."
-    - "Nether Star (Hotbar §e9§f) → §agrünes Buch§f anklicken. Da sind alle Blaupausen."
-    - "Craft eine §fMining Pickaxe§f: Simple Pickaxe in der Mitte, Kohle drumrum. Bring die Spitzhacke zu mir zurück."
+    - "Hm. Craftsman. Crafting ist offen — das Recipe Book steckt in deinem Manager."
+    - "Nether Star, Hotbar §e9§f → §agrünes Buch§f. Da drin ist jede Blaupause."
+    - "Bau eine §fMining Pickaxe§f. Simple Pickaxe in die Mitte, Kohle drumherum."
+    - "Bring sie her. Ich versuch, beeindruckt zu gucken."
   foreman_intro:
-    - "Schäbige Mine — die Höhle hinter mir. Darin §eErze§f abbauen: Kohle, Kupfer, Eisen, was fällt."
-    - "Brich §e32 Erz-Blöcke§f (kein Stein-Füllmaterial). Wenn der Zähler fertig ist, zurück zu mir."
-    - "Mining-Pickaxe und etwas Rüstung helfen. Recipe Book im Manager, falls du noch craften musst."
+    default:
+      - "Die Shabby Mine ist hinter mir. Schäbig trifft's."
+      - "Bau §eKohle, Kupfer, Eisen§f ab. §e32 Erzblöcke§f, dann komm zurück, {player}."
+      - "Mining Pickaxe und etwas Rüstung helfen. Das Recipe Book ist im Manager."
+    crafting_unlocked:
+      - "Die Shabby Mine ist hinter mir. Schäbig trifft's."
+      - "Bau §eKohle, Kupfer, Eisen§f ab. §e32 Erzblöcke§f, dann komm zurück, {player}."
+      - "Crafting ist jetzt offen. Grünes Recipe Book, im Manager."
+      - "Mining Pickaxe und etwas Rüstung helfen da unten."
   booster_tutor_intro:
-    - "Temper. Boosters sind kleine Upgrades zum Fusen auf Gear — mehr Mining Power, Fortune, Damage, sowas."
-    - "Manager öffnen (Nether Star, Slot 9) → §eAnvil§f. Gear §alinks§f, Booster §arechts§f, fused Piece rausnehmen."
-    - "Hier: Emerald Booster. Einmal auf irgendein Armor/Tool fusen. Dann sind wir durch — weiche Stats vor den nächsten Lektionen."
+    - "Temper. Ich fuse Zeug. Booster aufs Gear — Mining Power, Fortune, Damage."
+    - "Sag ja, und du kriegst einen Emerald Booster. Einmal fusen. Das ist die Lektion."
+    - "Manager → §eAnvil§f. Gear links, Booster rechts. Funken sind normal."
   ledger_intro:
-    - "Miss Ledger. Ich kümmere mich um Skills — und ich schließe die Orientierung, wenn du fertig bist."
-    - "Hotbar Slot §e9§f — Nether Star → Manager → Tab §dSkills§f (blinkt). Rüste §eirgendeinen§f Skill aus."
-    - "Komm zurück, wenn der Skill ausgerüstet ist."
+    - "Miss Ledger. Skills — und ich stemple die Orientierung zu, wenn du durch bist."
+    - "Hotbar §e9§f → Nether Star → Manager → §dSkills§f. Blinkt. Rüste §eirgendeinen§f Skill aus."
+    - "Komm wieder, wenn er sitzt, {player}. Ich halte den Stempel warm."
   farmer_intro:
-    - "Ich brauche Weizen von diesen Feldern — und die Vögel von den Pflanzen fern."
-    - "Weizen abbauen bis §e48 Weizen§f. Wenn Vögel landen: §eKlick§f — Bossbar zählt die Verscheucher."
-    - "§eLark§f ist danach in der gleichen Area für Pets. Anderer Quest — der Pfeil wandert, wenn's soweit ist."
+    default:
+      - "Weizen von diesen Feldern. Vögel weg von der Saat. Das ist der Job, {player}."
+      - "Ernte, bis du §e48§f Weizen hast. Vögel landen? §eKlick§f drauf — die Bossbar zählt mit."
+      - "§eLark§f macht Pets, gleiche Felder. Eigener Job — der Pfeil wandert, wenn's so weit ist."
+    lark_done:
+      - "Weizen von diesen Feldern. Vögel weg von der Saat. Das ist der Job, {player}."
+      - "Ernte, bis du §e48§f Weizen hast. Vögel landen? §eKlick§f drauf — die Bossbar zählt mit."
   lark_intro:
-    - "Hey. Die Felder sind Jagdgebiet — wilde Tiere, nicht mein Papagei."
-    - "Catch Spheres: eine halten, Tier ansehen, §eRechtsklick§f werfen. Fang §eeins§f, dann wieder mit mir reden."
-    - "Nach dem Fang zeig ich dirs §eAusrüsten§f. Ein Schritt nach dem anderen."
+    - "Die Felder sind Jagdgebiet. Wilde Tiere — nicht mein Papagei. Die beißt."
+    - "Catch Sphere in die Hand, Tier anschauen, §eRechtsklick§f zum Werfen."
+    - "Fang §eeins§f, dann rede mit mir. §eAusrüsten§f kommt danach. Schritt für Schritt."
+  fisher_intro:
+    - "Auswerfen. Auf den Biss warten. §eREEL§f, wenn die Leiste grün wird."
+    - "Fenster verpasst, Fisch weg. Fang §efünf§f, dann komm zurück, {player}."
+  fishmonger_intro:
+    - "Shop. Ruten. Rüstung. Münzen willkommen."
   vex_intro:
     - "Sergeant Vex. Tor zu den §cBorderlands§f — Ödland hinter der Mauer."
-    - "Erste Lektion: zehn Gegner. Töten. Husk, Stray, Crawler — egal welche."
-    - "Wenn's schwer wird: Combat-Set aus dem Recipe Book, Boosters am Amboss. Weicheres Gear. Härtere Treffer. Beweg dich."
-  fisher_intro:
-    - "Angeln ist einfach: wirf die Leine ins Wasser, warte auf den Biss, und hole ein wenn die Leiste grün wird."
-    - "Verpasst du das Grünfenster, ist der Fisch weg. Fang §efünf§f, dann wieder mit mir reden."
-  bar_whisper_intro:
-    - "Siehst du die Leiste unten am Bildschirm? Das ist dein §bAetherion Level§f."
-    - "Stats, Unlocks, neue Areas — viel von dieser Welt läuft darüber."
-    - "Spiel weiter. Die Leiste merkt sich das."
-  vince_intro:
-    - "Casino ist direkt hinter mir. Such dir 'ne Maschine. Nicht auf dem Filz heulen."
-    - "Slots und Roulette. Münzen rein. Würde bleibt draußen."
-    - "Ich deal nicht. Ich kommentiere. Die Maschinen machen den Dreck."
-    - "Hungrig? Das Glas ist's. Fütter's. Dann gib mir die Schuld."
-  fishmonger_intro:
-    - "Shop. Rute. Rüstung. Bargeld willkommen."
-    - "Ruten, Rüstung, Fisch. Münzen willkommen."
+    - "Erste Lektion: zehn Feinde. Husk, Stray, Crawler — mir egal, welche."
+    - "Checkliste: Rüstung an, Klinge in der Hand, Essen im Beutel. Booster helfen."
+    - "Und jetzt Abmarsch, {player}."
+
+  # ---------------------------------------------------------------- Borderlands (Hub pass owns these — unchanged)
   rite_keeper_intro:
     - "Rite Warden. Borderlands-Vertrag — T1-Bosse, kein Sightseeing."
     - "Töte Gegner. Spirit-Fläschchen: §c5%§f T1 · §c10%§f Sturdy · §c15%§f Elites. Die §eBeacon-Säule§f ist der Altar."
@@ -177,46 +377,891 @@ dialogs:
     - "Ring ist offen. Crypt-Fläschchen auf die leuchtende Markierung — nicht in meine Hand."
     - "Einmal durchgespielt. Das war der Lehrplan."
     - "Bring ein neues, wenn du eins hast. Oder auch nicht. Der Pathwarden ist nicht wählerisch."
+
+  # ---------------------------------------------------------------- Hub / Capital / isles
   farm_isle_guide_intro:
     - "Das Portal führt zur Farm Isle — geteilte Felder neben der Hub-Farm."
     - "Farming §e10§f zum Betreten. Dasselbe Portal bringt dich zurück."
+    - "Der Farmer nebenan hält sich für den echten Farmer. Süß."
+  forage_pad_guide_intro:
+    - "Schleim-Pad → Forage Isle. Springen. Nicht nachdenken."
+    - "Die Bäume da droppen, was sie sind — Fichte ist Fichte, Birke ist Birke."
+    - "Der §eCanopy Clerk§f auf der Insel will komprimierte Proben. Folg dem Pfeil, {player}."
   eldervale_welcome_intro:
-    - "Willkommen auf Eldervale."
-    - "Mining-Insel. Tiefengestein. Nicht runterfallen."
+    - "Willkommen auf Eldervale, {player}."
+    - "Bergbauinsel. Tiefes Gestein, dünne Luft."
+    - "Vorsicht an der Kante. Den Boden hat noch keiner gefunden."
+  eldervale_upgrade_intro:
+    - "Blaupausen-Schmiede. Tool plus Upgrade Stone. Das ist der ganze Trick."
+    - "Tier II, III, IV — die Steine werden fies teuer. Schnell."
+  isle_clerk_intro:
+    - "Die eigene Insel gibt's ab Aetherion Level §e20§f."
+    - "Nether Star, Slot neun → Island-Tab. Dort claimen. Ich mach keinen Papierkram."
+    - "Ein Beamter ohne Papierkram. Ja. Ich weiß."
+  merchant_intro:
+    - "Welt-Kisten. Nicht nur diese hier — die spawnen überall."
+    - "Seltenere Kiste, besseres Loot. Erkunden lohnt sich."
+    - "Mit mir reden schaltet sie frei. Die Probekiste steht neben mir, {player}."
+  surveyor_intro:
+    - "Trolle kriechen jetzt durch die weichen Adern — Kohle, Eisen, Kupfer. Sie droppen Blaupausen."
+    - "Bring mir eine Seite, {player}. Ich stemple sie dir hier in ein Tool."
+  liquidator_intro:
+    - "Kristall-Schalter. Kaufen, verkaufen oder Mats zu Aether Crystals schmelzen."
+    - "Crystals gibt's im offiziellen Shop — oder als Level-Belohnung."
+  canopy_clerk_intro:
+    - "Ich will Inselholz — komprimiert. Keine Hafenreste."
+    - "Foraging §e5§f. Dann je ein Compressed Oak, Birch, Spruce."
+    - "Drei Proben. Fette Auszahlung. Dann ab zum Hacken, {player}."
+  bar_whisper_intro:
+    - "Psst. {player}. Unten am Bildschirm — die Leiste. Dein §bAetherion Level§f."
+    - "Stats, Unlocks, neue Gebiete… vieles in dieser Welt öffnet sich darüber."
+    - "Spiel weiter. Die Leiste merkt sich das."
+  vince_intro:
+    - "Casino ist direkt hinter mir. Such dir 'ne Maschine. Nicht auf den Filz heulen."
+  dungeon_gate_intro:
+    - "Das Portal ist das Dungeon Gate. Es bringt dich zum Dungeon-Hub — Instanzen, Etagen, Wächter."
+    - "Geh durch, wenn du ausgerüstet bist. Die andere Seite schickt dich zurück in die Capital."
+  town_crier_intro:
+    - "Hört, hört! {player} naht!"
+    - "Hollis. Stadtschreier. Ich brülle Nützliches, damit der Pfeil es nicht muss."
+    - "Heutige Meldung: Der §egelbe Pfeil oben§f kennt immer noch den Weg. Jeden Tag. Zuverlässig."
+  street_sweeper_intro:
+    - "Vorsicht, der Haufen, {player}. Das ist ein ganzer Vormittag Arbeit."
+    - "Bram. Ich fege. Rookies verlieren Bruchstein. Bergleute Kies. Alle verlieren Niveau."
+    - "Saubere Straße, klarer Kopf. Vor allem saubere Straße."
+  lamp_lighter_intro:
+    night:
+      - "Abend, {player}. Wick. Lampen sind mein Geschäft."
+      - "Nachts braucht mich der Hafen. Und die Monster brauchen einen Snack."
+      - "Bleib im Licht. Dafür bin ich da."
+    day:
+      - "Morgen, {player}. Wick. Laternenanzünder."
+      - "Tagsüber hab ich frei. Ich poliere Glas und warte auf die Dämmerung."
+      - "Such mich nach Sonnenuntergang. Dann wird's interessant."
+  living_test_intro:
+    - "Wenn du das lesen kannst, funktioniert die Living-NPC-Pipeline."
+    - "Spieler-Skin, schaut dich an, kein Glühen. Dorfbewohner bleiben, wie sie sind."
+    - "Gib dem Team Bescheid, wenn der Rest migrieren soll."
+  rivet_intro:
+    - "Stillhalten — wenn die Platte klappert, berechne ich dir das Echo."
+    - "Dock Whisper murmelt von Gezeiten. Ich von Bolzen, die beruflich lügen."
+    - "Messing will Politur. Eisen will Respekt. Ich will den, der ständig meine Nieten klaut."
+    - "Du siehst nützlich aus. Oder zumindest ablenkend senkrecht. Nicht an die frische Farbe lehnen."
+
+  # ---------------------------------------------------------------- world NPCs / boss hunts
+  hunter_intro:
+    - "Auf dem Hof wird's laut. Zu viele Kühe unterwegs."
+    - "Leg fünf von ihnen um."
+    - "Komm wieder, wenn's ruhiger ist."
+  collector_intro:
+    - "Ich mag glänzende Sachen. Du magst Belohnungen. Einfacher Deal."
+    - "Bau mir drei Diamanten ab."
+  miner_intro:
+    - "WOAH!"
+    - "Erschreck mich doch nicht so..."
+    - "Ich war nur hier und hab friedlich vor mich hin gegraben..."
+    - "Aber dann diese Geräusche... AAAH!"
+    - "Kannst du nachsehen, woher die kommen? Ich zahl auch gut!"
+  chicken_keeper_intro:
+    - "Das ist kein Huhn. Das ist ein Logistikfehler mit Federn."
+    - "McNugget ist ausgebüxt. Schon wieder."
+    - "Wenn du es erledigst, gibt's Münzen. Und zwei Gläser, die ich lieber nicht beschrifte."
+  tollkeeper_intro:
+    - "Die Brücke ist zu. Der Troll kassiert Maut."
+    - "Die Maut ist, wer rüber will."
+    - "Hol sie dir zurück."
+  dockhand_intro:
+    - "Das Wasser schreibt in letzter Zeit seinen Namen auf Leute."
+    - "Squidward hat Laune. Tinte, Gift, das volle Programm."
+    - "Erledig ihn, bevor der Hafen nach Schreibwarenladen riecht."
+  ash_scout_intro:
+    - "Siehst du brennende Pfeile, bist du schon zu spät."
+    - "Skuldugery mag Publikum. Sei keins."
+    - "Bring die Sehne zum Schweigen. Ich tu so, als wär das ein Plan."
+  colossus_scholar_intro:
+    - "Er läuft. Das ist die ganze These."
+    - "Der Aether Colossus ist keine Metapher. Leider."
+    - "Wirf ihn um. Ich zitiere dich als Primärquelle."
+  veil_priest_intro:
+    - "Aetherion langweilt sich. Das ist ein Wetterbericht."
+    - "Es will einen Herausforderer. Du wirkst… verfügbar."
+    - "Gewinn, und ich zahl dich, als wolltest du überleben. Verlier, und es kriegt eine Geschichte."
+  patch_intern_intro:
+    - "Willkommen beim Support. Ihre geschätzte Wartezeit: Sir Balthazar."
+    - "Er hat die letzten drei eingefroren, die nach dem Status gefragt haben. Höflich."
+    - "Schließ das Ticket. Endgültig. Ich zahl in Diamantblöcken, damit du aufhörst zu mailen."
+  void_janitor_intro:
+    - "Die Lobby ist ein Tatort. Die Tat: Müll."
+    - "Der Lobby Cleaner hat drei Praktikanten und ein Gerücht eingesaugt. Frag nicht, was lauter war."
+    - "Zieh ihm den Stecker. Zwei Compacted Diamond Blocks. Aus dem Fundbüro. Natürlich."
+  fuse_intro:
+    - "Sparky ist Mitarbeiter des Monats. Keiner hat abgestimmt. Das Klemmbrett ist geschmolzen."
+    - "Kommt als Blitz zur Arbeit und geht als Loch im Gildensteinbruch."
+    - "Schalt ihn ab. Zwei Compacted Diamond Blocks. HR hat schon unterschrieben. In Ruß."
+  claims_adjuster_intro:
+    - "Baron von Wurm hat einen Steinbruch gefressen. Und uns die Bissspuren in Rechnung gestellt."
+    - "Das Formular hat ein Kästchen für 'am Stück verschluckt'. Zweimal geprüft."
+    - "Erledig den Wurm. Compacted Diamond Blocks. Das ist der Vergleich. Kein Einspruch."
+  repo_agent_intro:
+    - "Der Insolvent Wither hat Insolvenz angemeldet. Auf fremden Schädeln."
+    - "Das Inkasso hat mich geschickt. Ich schick dich. Nennt sich Delegieren. Auch Feigheit."
+    - "Pfände den Wither. Zwei Compacted Diamond Blocks. Falls wer fragt: Wir kennen uns nicht."
+  rook_intro:
+    - "Rook. Ich bereite Leute auf Löcher im Boden vor, die Eintritt kosten."
+    - "Dungeons sind Höhlen mit Meinung. Bring mir zehn Knochen. Hausaufgaben vor dem Ausflug."
+    - "Erst den Papierkram überleben. Die Skelette können warten."
+  gate_warden_intro:
+    - "Straße gesperrt. Der Pathwarden ist Grund und Plakat zugleich."
+    - "Er ist langsam. Er ist geduldig. Er beendet auch sehr gern Karrieren."
+    - "Beweg ihn. Oder werd eine Warntafel. Deine Wahl. Ich werd so oder so bezahlt."
+  bench_cynic_intro:
+    - "Nicht hinsetzen. Die Bank ist von Ansprüchen besetzt."
+    - "Ich brauch acht verrottetes Fleisch. Nenn's Forschung. Nenn's Mittagessen. Mir egal."
+    - "Bring's her. Dann überlass mich meiner Enttäuschung."
+  dust_intro:
+    - "Ich heiß Dust. Ich kartiere Orte, über die schon alle gelaufen sind."
+    - "Dreißig Bruchstein. Ehrgeiz braucht Straßen. Straßen brauchen Steine. Steine brauchen dich."
+    - "Mach keine Poesie draus. Mach einen Haufen."
+  fry_gossip_intro:
+    - "Du riechst nach Abenteuer. Oder nach Fett. Schwer zu sagen hier."
+    - "Clucksworth schreit ständig wegen McNugget. Riesenhuhn. Sehr verhaubar. Sehr knusprig."
+    - "Wenn du's überlebst, prahl nicht an der Fritteuse. Gossip hört zu. Und erzählt weiter."
+  dock_whisper_intro:
+    - "Leise. Der Fluss hat Meinungen."
+    - "Tackle zeigt dir das Einholen. Selten wird die Leine lila — Mythic Water Dragon. Nur für dich."
+    - "Kommt was Älteres als das Riff im Fläschchen hoch? Nicht schütteln. Nicht Brine fragen. Lass es."
+  larder_intro:
+    - "Die Speisekammer ist dünn. Meine Geduld dünner."
+    - "Weizen komprimieren — echter Compressed Wheat, keine grasigen Reste."
+    - "Drei davon. Dann reden wir über Booster."
+  pet_scout_intro:
+    - "Lark verteilt Spheres wie Bonbons. Ich will Beweise, dass du zielen kannst."
+    - "Fang ein wildes Schwein. Eins. Lebendig in der Sphere, nicht als Abendessen."
+    - "Komm wieder, wenn die Tasche quiekt."
+  ore_ledger_intro:
+    - "Ich grabe nicht. Ich prüfe. Der Berg hat schon einmal gelogen."
+    - "Mining-Skill Level acht. Mindestens. Darunter bist du Tourist mit Spitzhacke."
+    - "Fünf Compressed Coal. Nicht staubig. Nicht 'fast'. Komprimiert. Dann schließen wir die Akte."
+  timber_clerk_intro:
+    - "Jeder Stumpf reicht Beschwerde ein. Ich bin die Beschwerdestelle."
+    - "Foraging acht oder mehr. Wackelige Äxte warten draußen."
+    - "Fünf Compressed Oak Logs. Versteuertes Holz. Stiller Wald. Alle gewinnen, außer den Bäumen."
+  dock_scaler_intro:
+    - "Ich wiege Fische, die sich nicht wiegen lassen wollen. Beruflich."
+    - "Fishing zehn. Wenn dein Wurf noch wie ein Niesen aussieht: weitergehen."
+    - "Drei Compressed Cod. Ein Schwarm mit Solidarität. Das Klemmbrett bleibt so oder so nass."
+  sphere_proctor_intro:
+    - "Schweine waren Kindergarten. Kühe sind die Zwischenprüfung."
+    - "Aetherion Level fünf. Die Sphere hat Ansprüche. Ich auch."
+    - "Fang eine Kuh. Lebendig. Muhend. In Gewahrsam. Bring mir kein Steak und nenn es Fortschritt."
+  quarry_broker_intro:
+    - "Die Gildentür ist wählerisch. Ich bin wählerischer."
+    - "Aetherion Level zwanzig. Das ist der Club-Handschlag, minus Handschlag."
+    - "Ein Compacted Cobblestone. Nicht compressed. Compacted. Der Beweis, dass du's ernst meinst."
+  slag_poet_intro:
+    - "Ode an eine Ader, die mich geghostet hat. Strophe eins: Verrat. Strophe zwei: auch Verrat."
+    - "Ore Ledger will Kohle mit Quittung. Ich will Metaphern. Wir sind nicht gleich."
+    - "Wenn der Berg singt, antworte nicht. Er rechnet stundenweise ab."
+  bait_theory_intro:
+    - "Köder ist eine Philosophie. Würmer sind die Fußnoten."
+    - "Dock Whisper murmelt von lila Leinen. Dock Scaler von Klemmbrettern. Ich murmle von Entropie."
+    - "Wirf aus, als meinst du's ernst. Oder nicht. Der Fluss bewertet nach Gefühl."
+  stall_crumb_intro:
+    - "Frisches Brot. Oder von gestern. Kommt drauf an, wie ehrlich du aussiehst."
+    - "Der Quartermaster zahlt in Kohlegerede. Ich in Krusten. Such dir deine Religion aus."
+  stall_tack_intro:
+    - "Nägel, Schnur, Reue — drei für eine Münze, wenn ich dich mögen würde."
+    - "Ore Ridge frisst Werkzeug. Ich verkaufe den Kaugummi, der fast hilft."
+  stall_brine_intro:
+    - "Salz für Fisch, Salz für Wunden, Salz für Meinungen."
+    - "Tackle am Steg verkauft Ruten. Ich verkaufe den Grund, warum Fisch nach was schmeckt."
 
 completed:
+  default:
+    - "Wir sind quitt. Sagt das Klemmbrett."
+    - "Geh und mach jemand anderem den Tag ein bisschen schlechter."
   egon:
-    - "Holz erhalten. Kit bleibt deins — nicht verlieren."
-    - "§eQuartiermeister§f ist hinter dem kleinen Markt — sprich als Nächstes mit ihm."
-    - "Ab jetzt: achte auf den §egelben Pfeil oben§f. Der ist dein Guide."
+    default:
+      - "Passt das Kit? Gut. Sag's mir nicht, wenn nicht."
+      - "Der §eQuartermaster§f hinter dem kleinen Markt will dich als Nächstes."
+      - "§eGelber Pfeil oben§f. Trau ihm mehr als mir."
+    after_coal:
+      - "Hält das Kit, {player}? Gut. Sag's mir nicht, wenn nicht."
+      - "Am Pier ist Ruhe. §bTackle§f angelt ganz vorne, falls du 'ne Rute willst."
   lumberjack:
-    - "Egon hat sein Holz. Behalt die Axt."
-    - "Folge dem Pfeil zurück zu §eEgon§f am Pier."
+    - "Egon hat seine Eiche? Gut. Behalt die Axt. Sie mag dich."
+    - "Mal 'nen Nachmittag frei? §aTwigs§f Schleim-Pad ist gleich hinter mir. Forage Isle."
   quartermaster:
-    - "Danke — Kohle erhalten."
-    - "Teleports: Ort einmal freischalten (hinlaufen oder Homestead Marker). Dann /spawns — oder z.B. §e/harbour§f, §e/mines§f."
-    - "Als Nächstes: §eShaft Foreman§f an den Minen. Der gelbe Pfeil oben trackt ihn."
+    - "Kohle abgeheftet, {player}. Der Mines-Teleport bleibt offen — §e/mines§f."
+    - "Einmal hinlaufen, dann gehört's dir. §e/spawns§f listet alles."
+    - "Der Foreman wohnt immer noch an den Minen. Freiwillig, angeblich."
   craftsman:
-    - "Schöne Spitzhacke. Du bist bereit für die Minen."
-    - "Als Nächstes: §eShaft Foreman§f. Recipe Book im Blick behalten — später kommt neues Zeug."
+    default:
+      - "Schöne Spitzhacke, {player}. Du bist bereit für die Minen."
+      - "Als Nächstes: §eShaft Foreman§f. Das Recipe Book griffbereit halten — später kommen neue Seiten."
+    after_shift:
+      - "Hm. {player}. Hält die Spitzhacke? Gut."
+      - "Das Recipe Book wächst mit dir. Schau ab und zu rein."
   foreman:
-    - "Schicht zu. Als Nächstes: §eTemper§f auf dem Weg zum Hub — Booster Tutor."
-    - "Einmal am Amboss fusen, bevor Skills. Weiche Stats zuerst."
+    default:
+      - "Schicht ist zu. Als Nächstes: §eTemper§f, auf dem Weg zur Capital."
+      - "Ein Booster fusen, dann Skills. Vertrau der Reihenfolge."
+    after_boost:
+      - "Die Mine ist noch da, {player}. Der Staub auch."
+      - "Tiefere Adern zahlen besser. Tiefere Adern beißen auch."
   booster_tutor:
-    - "Amboss gelernt. Booster fused. Gut."
-    - "Als Nächstes: §eMiss Ledger§f in der Capital — Skills im Manager. Dann die Felder."
+    default:
+      - "Booster gefust. Rezepte bleiben jederzeit im §eRecipe Book§f."
+      - "Als Nächstes: §eMiss Ledger§f in der Capital — Skills. Dann die Felder."
+    after_skills:
+      - "In letzter Zeit was Scharfes gefust, {player}?"
+      - "Der Anvil ist immer im Manager. Rezepte im §eRecipe Book§f."
   ledger:
-    - "Skill ausgerüstet. Gut."
-    - "Als Nächstes: die Felder — §eFarmer§f (Weizen) und §eLark§f (Pets) in der gleichen Area."
-    - "Komm nach beiden zurück. Ich schließe das Tutorial — und ich hab ein Hilfemenü, wenn du's brauchst."
+    - "Skill sitzt. Gut. Gestempelt."
+    - "Als Nächstes: die Felder — §eFarmer§f (Weizen) und §eLark§f (Pets), gleiche Ecke."
+    - "Komm nach beiden zurück, {player}. Ich schließe die Orientierung — und hab einen Hilfeschalter."
   farmer:
-    - "Weizen erledigt. Gute Arbeit."
-    - "Später neugierig: Farm-Guide + Portal zur Farm Isle am anderen Ende der Scheune."
-    - "§eLark§f fertig machen, falls noch offen — dann zurück zu §eMiss Ledger§f für den Stempel."
+    default:
+      - "Weizen erledigt. Die Vögel schmollen. Gute Arbeit, {player}."
+      - "Mach §eLark§f fertig, falls noch offen, dann §eMiss Ledger§f — oder §e/capital§f."
+    lark_done:
+      - "Weizen erledigt. Die Vögel schmollen. Gute Arbeit, {player}."
+      - "Zurück zu §eMiss Ledger§f für den Stempel — oder §e/capital§f, wenn du den Weg kennst."
+    graduate:
+      - "Die Vögel sind zurück. Du auch. Gut, {player}."
+      - "Die Farm Isle ist hinter §eHarrows§f Portal, hinteres Ende der Scheune."
   lark:
-    - "Fang erledigt. Pets sind klar."
-    - "§eMiss Ledger§f schließt die Orientierung. Hol dir den Stempel — Fragen an ihren Schreibtisch, nicht an mich."
+    default:
+      - "Fang erledigt. Dein Pet mag dich. Wahrscheinlich."
+      - "§eMiss Ledger§f schließt die Orientierung — §e/capital§f, wenn du faul bist. Fragen an sie."
+    graduate:
+      - "{player}! Dein Pet mag dich immer noch. Pistachio ist eifersüchtig."
+      - "Wilde laufen über die Felder. Fang mehr, wenn du neugierig bist."
+  fisher:
+    - "Fang gezählt. Leine frei. Meer noch voll."
+    - "Guck dir mal deine Rute an — manche Tools leveln hier."
+  fishmonger:
+    - "Shop ist offen. Sprich mich an, wenn du stöbern willst."
   vex:
-    - "Zehn erledigt. Tor bleibt offen."
-    - "Kleiner Tipp — Combat-Set und Boosters erst etwas pushen, bevor's härter wird."
-    - "Willst Bosse? Rite Warden im Ödland. Oder verschwinde produktiv."
+    - "Lektion Stahl: bestanden. Form: fragwürdig. Akzeptabel."
+    - "Combat-Set und Booster vor dem härteren Ödland. Dann §cRite Warden§f, wenn du Bosse willst."
+  surveyor:
+    - "Der Tisch bleibt offen. Sammlung oben, unten eine Blaupause ins Tool stempeln."
+    - "Trolle kriechen durch jede Ader in dieser Mine. Grab, wenn du Seiten willst."
+  merchant:
+    - "Die Kisten bleiben frei, {player}. Probe neben mir, mehr draußen in der Welt."
+    - "Seltenere Kiste, besseres Loot. Mach alles auf. Trau nichts."
+  canopy_clerk:
+    - "Proben abgeheftet. Eiche, Birke, Fichte — vom Blätterdach genehmigt."
+    - "Komm wieder, wenn die Insel einen vierten Baum erfindet, {player}. Bis dahin: hacken."
+  hunter:
+    - "Erstes Blut abgeheftet. Werd nicht sentimental."
+    - "Nächstes Mal größere Probleme mitbringen. Oder leisere Schritte."
+  collector:
+    - "Glänzendes erhalten. Mein Regal ist selbstgefällig. Du darfst gehen."
+    - "Grab tiefer, wenn dir das Urteil der Felsen fehlt."
+  miner:
+    - "Der Hollow Lurker ist still. Meine Nerven nicht. Danke dafür."
+    - "Wenn die Tunnel wieder flüstern, schieb ich's auf deine Schritte."
+  chicken_keeper:
+    - "McNugget ist erledigt. Der Stall beschwert sich trotzdem."
+    - "Sag nichts von Fett. Fry Gossip hört alles."
+  tollkeeper:
+    - "Maut in Troll bezahlt. Die Brücke ist zufrieden. Weitergehen."
+    - "Die nächste Überquerung kostet Charme. Du bist im Minus."
+  dockhand:
+    - "Tintenvertrag erledigt. Squidward ist wieder ein Gerücht. Gut."
+    - "Der Steg bleibt nass. Meine Geduld dünn. Lass beides in Ruhe."
+  ash_scout:
+    - "Asche abgeheftet. Pfeile gezählt. Skuldugery ist jetzt das Problem von jemand anderem."
+    - "Stocher nicht zum Spaß in der Glut. Das ist mein Job. Angeblich."
+  colossus_scholar:
+    - "Laufender Berg: notiert. These: überfällig. Du: frei."
+    - "Wenn er wieder aufsteht, war ich nie hier."
+  veil_priest:
+    - "Der Schleier hält. Deine Neugier nicht. Zügle sie."
+    - "Nyx bewahrt Geheimnisse. Du bewahrst Abstand."
+  patch_intern:
+    - "Ticket geschlossen. Sir Balthazar gepatcht. Praktikant immer noch unbezahlt."
+    - "Bitte bewerten Sie dieses Gespräch: ein Stern, zwei Seufzer."
+  void_janitor:
+    - "Fundbüro leer. Lobby urteilt. Mopp ist heilig."
+    - "Tritt kein Void auf die Fliesen. Hab gerade existenzielle Angst gewachst."
+  fuse:
+    - "Überstunden verbucht. Sparky ist still. Meine Schicht nicht."
+    - "Wenn was funkt: weggehen. Dramatisch."
+  claims_adjuster:
+    - "Antrag abgelehnt. Dann doch nicht. Bürokratie ist Extremsport."
+    - "Wormsworth stempelt. Du gehst. Wunderschönes System."
+  repo_agent:
+    - "Scheck geplatzt. Dann zurückgeprallt. Audit hat genug gegrinst."
+    - "Nächstes Mal weniger Schuldscheine. Mehr Würde."
+  rook:
+    - "Knochen geliefert. Lehrplan zerkaut. Unterricht beendet."
+    - "Rook hebt Quittungen auf. Du hältst Abstand."
+  gate_warden:
+    - "Straße offen. Tor gelangweilt. Nicht rumlungern wie ein Tourist."
+    - "Gesperrte Straßen öffnen sich für Leute, die Jobs erledigen. So wie du."
+  bench_cynic:
+    - "Fleisch erforscht. Ansprüche verfehlt. Bank weiter besetzt."
+    - "Nicht hinsetzen. Die Enttäuschung ist reserviert."
+  dust:
+    - "Bruchstein gestapelt. Ehrgeiz kurz weniger staubig. Weiter."
+    - "Karten können warten. Deine Füße nicht."
+  larder:
+    - "Speisekammer weniger tragisch. Weizen komprimiert. Ego aufgeblasen. Fertig."
+    - "Komm hungrig wieder, nicht nostalgisch."
+  pet_scout:
+    - "Schweinebeweis akzeptiert. Tasche quiekt noch. Stolz auf dich. Mäßig."
+    - "Nächster Fang: höher zielen. Wörtlich. Kühe haben Höhe."
+  ore_ledger:
+    - "Kohleprüfung abgeschlossen. Zahlen haben sich benommen. Wunder notiert."
+    - "Keine Quittungen fälschen. Hat der Berg schon versucht."
+  timber_clerk:
+    - "Stumpfzählung abgeschlossen. Wald ruhiger. Klemmbrett glücklicher."
+    - "Nur versteuertes Holz. Unversteuertes Holz ist ein Lebensstil, den ich nicht unterstütze."
+  dock_scaler:
+    - "Schuppenprobe abgeheftet. Kabeljau komprimiert. Klemmbrett noch nass. Passt."
+    - "Nächstes Mal Fische, die Maßeinheiten respektieren."
+  sphere_proctor:
+    - "Rinderakte geschlossen. Kuh in Gewahrsam. Zwischenprüfung: bestanden."
+    - "Keine Steakwitze. Kenn ich alle. Schlecht erzählt."
+  quarry_broker:
+    - "Gildenziegel erhalten. Club-nah. Handschlag imaginär."
+    - "Compacted heißt compacted. Komm wieder, wenn du's vergisst — trau dich."
+
+talk:
+  any:
+    not_me: "Schöne Ausbeute, {player}. Das geht an §e{0}§f — nicht an mich."
+    items_first: "Die Hände sehen leer aus, {player}. Erst die Items."
+    excellent: "Hervorragende Arbeit!"
+    nothing_here: "Hier gibt's gerade nichts für dich."
+    first_equipment: "Deine erste Ausrüstung ist fertig."
+    to_work: "An die Arbeit."
+  lumberjack:
+    replay: "Immer noch am Zuschauen, {player}? Nochmal — warte auf grünes §aCHOP§f."
+    egon_first: "Erst Egon, {player}. Der hat den Papierkram. Dann hacken wir."
+    lesson: "Egon schickt dich? Klar tut er das. Dann Axt-Lektion."
+    take_axe: "Nimm die Axt. Schau mir einmal zu — langsam — dann hackst du."
+    click_trunk: "Linksklick auf einen leuchtenden Stamm — wenn CHOP grün wird, nochmal klicken."
+    ten_oak: "Zehn Eichenstämme zu §eEgon §fam Pier."
+    demo_chop: "Linksklick auf einen leuchtenden Stamm — grünes CHOP, dann zuschlagen."
+    demo_egon: "Zehn Eichenstämme zu Egon am Pier."
+  quartermaster:
+    coal_logged: "Kohle verbucht. Danke, {player}. Ehrlich."
+    mines_tp: "Der Mines-Teleport ist offen — Manager → Teleports, oder tipp §e/mines§f."
+    next_foreman: "Als Nächstes: §eShaft Foreman§f an den Minen. Der gelbe Pfeil verfolgt ihn. Ich verfolge den Pfeil."
+  craftsman:
+    pick_ok: "Da ist sie — Mining Pickaxe. Gute Arbeit, {player}. Ehrlich."
+  foreman:
+    shift_done: "Das war 'ne Schicht, {player}. Ordentlich Staub auf dir."
+    road_capital: "Jetzt Richtung Capital — unterwegs bei §eTemper§f halten. Booster Tutor."
+  booster_tutor:
+    fused: "Booster gefust! Riechst du das? Fortschritt. Und leicht verbrannt."
+    next_ledger_short: "Als Nächstes — §dMiss Ledger§f in der Capital."
+    next_ledger: "Als Nächstes — §dMiss Ledger§f in der Capital. Skills."
+  ledger:
+    skill_ok: "Skill sitzt. Gut. Gestempelt."
+    next_fields: "Als Nächstes: die Felder. §eFarmer§f braucht Weizen, §eLark§f macht Pets. Dann zurück zu mir."
+    fields_farmer: "Wenn du so weit bist: die Felder. §eFarmer§f braucht Weizen — ernten, Vögel verscheuchen."
+    fields_lark: "§eLark§f macht Pets, gleiche Ecke. Der, der mit einem Papagei redet."
+    come_back: "§aNach beiden zurück zu mir. §fDann zeig ich dir, wo Skills wirklich wachsen."
+    early: "Zu früh. Skills sind noch zu."
+    early_foreman: "§eShaft Foreman §fan den Minen — mach seine Schicht. Dann komm zurück."
+    refresher_desk: "Auffrischung? Hier ist der Schalter."
+    graduated: "Gut gemacht, {player}. Orientierung abgeheftet — die Karte gehört dir."
+    arrow_habit: "Eine Angewohnheit: immer den §egelben Pfeil oben§f im Blick. Er zeigt auf deinen aktuellen Job."
+    hint_vex: "§cSergeant Vex§f am Borderlands-Tor, falls du neugierig bist. Wenn du hängst: ich bin hier."
+    hint_rite: "§cRite Warden§f draußen im Ödland, falls du neugierig bist. Wenn du hängst: ich bin hier."
+    hint_help: "Später festgefahren? Du weißt, wo ich sitze."
+    # Red thread — the roads after the stamp (ui/SkillRoads.java)
+    roads:
+      intro: "Skills wachsen da draußen, {player}. Nicht an meinem Schalter."
+      menu: "Holz, Weizen, Fisch — oder Stahl. Such dir was aus. Der Pfeil folgt."
+      list: "§aTwigs§f Pad: Forage Isle. §eHarrows§f Portal: Farm Isle. §bTackle§f: Angeln."
+      forage:
+        label: "Forage Isle · Twig"
+        echo: "Bäume, bitte."
+        line: "§aTwigs§f Schleim-Pad, beim Forager. Inselbäume, dickere Stämme."
+      farm:
+        label: "Farm Isle · Harrow"
+        echo: "Felder für mich."
+        line: "§eHarrows§f Portal, hinteres Ende der Scheune. Ab Farming §e10§f kommst du rein."
+      fish:
+        label: "Angeln · Tackle"
+        echo: "Ich angle."
+        line: "§bTackle§f, ganz vorne am Hafenpier. Rute, Geduld, fünf Fische."
+        line_done: "§bTackle§f steht noch am Pier. Frag ihn, wo die großen hin sind."
+      steel:
+        label: "Kampf · Vex"
+        echo: "Was zum Draufhauen."
+        line: "§cSergeant Vex§f, am Borderlands-Tor. Rüstung an, bevor du klopfst."
+      rite:
+        label: "Bosse · Rite Warden"
+        echo: "Größeres zum Draufhauen."
+        line: "§cRite Warden§f, draußen im Ödland. Bring ein Fläschchen mit. Und Nerven."
+      wander:
+        label: "Ich schau mich um."
+        echo: "Ich schau mich erst mal um."
+        line: "Gut. Die Karte gehört dir. Mein Schalter läuft nicht weg."
+    desk_prompt: "Auffrischung, {player}? Such dir ein Thema aus."
+    desk:
+      more: "Mehr Themen…"
+      where_next:
+        label: "Wohin jetzt?"
+        echo: "Wohin als Nächstes?"
+      aetherion_manager:
+        label: "Aetherion Manager"
+        echo: "Erzähl mir vom Manager."
+        lines:
+          - "Der Nether Star ist kein Schmuck. Das ist der Aetherion Manager."
+          - "Aufmachen. Skills, Pets, Rezepte, Lager, Spawns — alles drin."
+          - "Er schaltet mehr frei, je weniger nutzlos du bist. Schau oft rein."
+      skills:
+        label: "Skills"
+        echo: "Erzähl mir von Skills."
+        lines:
+          - "Skills sind ausgerüstete Bäume, keine Hausaufgaben. Manager → Skills."
+          - "Einen Skill in einen freien Slot klicken. Ich prüfe das."
+          - "Ein Slot frei zum Start. Mehr gibt's mit Münz-Meilensteinen."
+      pets:
+        label: "Pets"
+        echo: "Erzähl mir von Pets."
+        lines:
+          - "Pets sitzen im Manager. Eins ausrüsten. Gibt Stats. Leise."
+          - "Sie leveln, während du spielst. Drachen machen ein Drama draus."
+          - "Hat es im Dungeon eine Aura: erst Tooltip lesen, dann angeben."
+      boosters:
+        label: "Booster"
+        echo: "Erzähl mir von Boostern."
+        lines:
+          - "Booster sind klebrige Upgrades. Drauf auf Gear, das sie zulässt."
+          - "Die wichtigsten pushen Mining Power, Fortune, Damage, Defense."
+          - "Es gibt ein Cap. Frag nicht mich. Frag jemanden mit Klemmbrett."
+  farmer:
+    wheat_done: "Weizen erledigt. Die Vögel toben. Perfekt."
+    isle_fallback: "Anderes Ende der Scheune — Farm-Guide und Portal. Schau rein, wenn du neugierig bist."
+    isle_peek: "Anderes Ende der Scheune — Harrow und das Portal zur Farm Isle. Irgendwann einen Blick wert."
+  lark:
+    nice_catch: "Schöner Fang, {player}. Die Tasche quiekt."
+    equip_now: "Jetzt ausrüsten: §eManager → Pets§f — blinkt. Deinen Fang auswählen."
+    catch_done: "Fang erledigt. Dein Pet mag dich. Wahrscheinlich."
+    farmer_left: "§eFarmer§f will noch Weizen, falls du ihn ausgelassen hast — gleiche Ecke."
+  fields:
+    back_ledger: "Zurück zu §dMiss Ledger§f — sie schließt die Orientierung. Oder §e/capital§f."
+    done_ledger: "§aFelder erledigt. §f§dMiss Ledger§f stempelt das Tutorial zu. Fragen gehen an sie."
+  fisher:
+    pass_have: "Du hast den Pass schon. Gib ihn dem Fishmonger — nur ein Zettel."
+    pass_give: "Der Fishmonger schickt dich. Hier, ein Dock-Pass."
+    pass_next: "Gib ihm den Zettel. Kauf dort 'ne Rute, falls nötig, dann komm zur Angelstunde zurück."
+    catch_done: "Fang gezählt. Leine frei. Meer noch voll."
+    rod_tip: "Guck dir mal deine Rute an — manche Tools leveln hier."
+  fishmonger:
+    pass_ok: "Pass passt."
+    shop_open: "Der Shop ist offen für T1-Gear — Rute und Rüstung. Sprich mich an, wenn du stöbern willst."
+    lesson: "Willst du Tackles Angelstunde? Kauf hier 'ne Rute, dann zurück zu ihm."
+  vex:
+    ten_down: "Zehn erledigt, {player}. Stahl abgeheftet. Du bist weniger ein Risiko."
+    tip_fallback: "§7Kleiner Tipp — Combat-Set und Booster aufrüsten, bevor's ins härtere Ödland geht."
+    rite_fallback: "Loser Faden — §cRite Warden§f im Ödland, für Bosse. Oder nicht. Die Karte gehört dir."
+    gear_tip: "§7Kleiner Tipp — härte dein Gear, bevor du tiefer gehst. Recipe Book und Anvil helfen."
+    rite_hint: "Optional als Nächstes — §cRite Warden§f. Borderlands-Bosse, Pulveraltar. Kein Papierkram von mir."
+    death_up: "Wieder in der Senkrechten."
+    death_gear: "Probleme? Combat-Set + Booster. Recipe Book und Anvil. Dann die zehn fertig machen."
+    death_temper: "Probleme? §eTemper§7 bringt dir Booster bei. Das Combat-Set steht im Recipe Book."
+    # Red thread — gear check before the first "go fight" (once, skippable)
+    check_armour: "Gear-Check, {player}. …Keine Rüstung. Mutig. Und dumm."
+    check_armour_fix: "Egons Kit — die Rüstung gehört in die Rüstungsslots. Dann komm wieder."
+    check_boost: "Gear-Check. Rüstung: passt. Klinge: nackt."
+    check_boost_fix: "§eTemper§f fust Booster, auf dem Weg zur Capital. Dann gehen die zehn schneller."
+    chip_gear: "Ich rüste auf."
+    chip_ready: "Bin trotzdem bereit."
+    gear_ok: "Klug. Ich bin hier. Am Brüllen."
+    check_again: "Sprich mich an, wenn du so weit bist. Oder wenn du dich mutig fühlst."
+  vince:
+    visit:
+      - "Casino ist hinter mir. Such dir 'ne Maschine. Nicht auf den Filz heulen."
+      - "Slots. Roulette. Münzen rein. Würde bleibt in der Tasche."
+      - "Ich gebe nicht. Ich kommentiere. Die Drecksarbeit machen die Maschinen."
+      - "Das Glas ist hungriger als du, {player}. Füttere es trotzdem."
+      - "{player}! Glücksgesicht. Seh ich sofort. Seh ich immer."
+  liquidator:
+    desk: "Kristall-Schalter, {player}. Kaufen, verkaufen oder Mats zu Aether Crystals schmelzen."
+    crystals: "Crystals gibt's im offiziellen Shop — oder als Level-Belohnung."
+  surveyor:
+    got_page: "Eine Blaupause! Oh, die ist gut. Der Tisch gehört dir — stempel sie in ein Tool."
+    trolls: "Trolle kriechen jetzt durch die Adern, {player}. Jag sie — sie droppen Blaupausen-Seiten."
+    bring_page: "Bring mir eine Seite. Ich stemple sie dir hier in ein Tool."
+  eldervale_upgrade:
+    open: "Die Schmiede ist heiß, {player}. Blaupausen-Tool + Upgrade Stone. Ich mach den Tisch auf."
+  root_cellar:
+    first: "Mühlstein-Speisekammer, Schätzchen. Compacted Crops rein, feine Vorräte raus."
+  redirect:
+    lead: "Wo du eigentlich hingehörst:"
+    ledger_fields: "§eMiss Ledger §fschließt die Orientierung nach den Feldern."
+    egon: "§aEgon §fam Pier — erst Eiche. Dann der Quartermaster."
+    quartermaster: "§eQuartermaster §fhinter dem kleinen Markt — als Nächstes Kohle."
+    foreman: "§eShaft Foreman §fan der Shabby Mine — seine Schicht fertig machen."
+    temper: "§eTemper §f— Booster Tutor. Einen Booster fusen, dann weiter."
+    ledger_skills: "§dMiss Ledger §fin der Capital — Skills im Manager."
+    farmer: "§eFarmer §fauf den Feldern — als Nächstes Weizen."
+    lark: "§dLark §fam Zaun — ein Fang für seine Sammlung."
+    stamp: "§dMiss Ledger §fschließt die Orientierung. Hol dir den Stempel."
+  gate:
+    ledger_foreman_first: "§eErst der Shaft Foreman. §7Minenschicht, dann öffnen wir Skills."
+    tutorial_first: "§eErst das Tutorial. §7Miss Ledger schließt die Orientierung nach den Feldern."
+
+# CastBook voice sheet (German). Fields mirror npc/CastBook.java:
+#   accept / decline (reply chips) · on_accept / on_decline (reaction) · returning (repeat visit)
+#   greet_new / greet / greet_grad (approach, by stage) · idle (ambient) · farewell · topics
+# idle lines are shown to everyone in range — never use {player} there.
+cast:
+  egon:
+    accept: "Zeig mir die Eiche."
+    decline: "Später, Egon."
+    on_accept: ["Gut. Der Lumberjack ist oben am Hügel. Lass dich nicht umarmen."]
+    on_decline: ["Der Pier läuft nicht weg. Ich auch nicht."]
+    returning:
+      - "Wieder da, {player}. Immer noch keine Eiche. Mutige Strategie."
+      - "§eLumberjack§f, oben am Hügel. Der §egelbe Pfeil§f kennt den Weg."
+    greet_new: ["He, {player}! Hier rüber — am Pier gibt's Arbeit.", "Neues Gesicht. Pier. Zu mir. Jetzt."]
+    greet: ["Hält das Kit, {player}?", "{player}. Noch am Stück. Gutes Kit."]
+    greet_grad: ["Schau dich an, {player}. Fast gefährlich.", "Das Kit hat sich bezahlt gemacht. Schön."]
+    idle: ["Wer legt ständig Fisch auf meine Kisten?", "Eiche. Immer Eiche. Keiner bringt Birke.", "Dreißig Jahre Rookies. Ich zähl noch mit."]
+    farewell: ["Pass auf die Kante auf. Das Wasser ist kalt, und ich spring nicht."]
+    topics:
+      - label: "Wer bist du eigentlich?"
+        lines: ["Egon. Ich rüste Leute aus. Steht schon im Namen.", "Dreißig Jahre auf diesem Pier. Rookies kommen nass an und gehen gepanzert."]
+      - label: "Was ist das hier?"
+        lines: ["Anker Harbour. Boote rein, Rookies raus.", "Die Capital ist die Straße rauf. Dahinter die Minen. Nichts überstürzen."]
+      - label: "Irgendwelche Tipps?"
+        lines: ["Achte auf den §egelben Pfeil§f. Der ist schlauer als die meisten, die ich ausgerüstet hab.", "Und rede mit Leuten. Die halbe Hafenmeile berät gratis. Die andere Hälfte kassiert."]
+  lumberjack:
+    accept: "Her mit der Axt."
+    decline: "Vielleicht später."
+    on_accept: ["Baum fällt! …Sorry. Macht der Gewohnheit. Nur leuchtende Stämme."]
+    on_decline: ["Die Bäume warten. Können sie gut."]
+    returning:
+      - "{player}! Zurück zur Axt-Lektion? Leuchtender Stamm, grünes §aCHOP§f."
+      - "Zehn Eichenstämme → §eEgon am Pier§f. Nicht zu mir. Ich hab genug."
+    greet_new: ["Axt-neugierig, {player}? Egon hat dich geschickt, oder?"]
+    greet: ["{player}! In letzter Zeit Bäume fallen hören?", "Schon Muskelkater, {player}? Gut."]
+    greet_grad: ["Da ist ja der Holzfäller-Profi. Die Bäume tuscheln immer noch über dich, {player}."]
+    idle: ["Baum fällt!… sorry. Gewohnheit.", "Die Eiche guckt mich komisch an.", "Birke ist nur Eiche, die aufgegeben hat.", "Nenn mich Forager. Klingt netter."]
+    farewell: ["Pass auf deine Zehen auf. Äxte tun's nicht."]
+    topics:
+      - label: "Lumberjack oder Forager?"
+        lines: ["Auf dem Schild steht Lumberjack. Ich sag Forager.", "Lumberjack klingt brutal. Forager klingt, als wär's mir nicht egal. Ist es nicht. Ich hack trotzdem."]
+      - label: "Baum-Tipps?"
+        lines: ["Größere Bäume, längere Leisten. Nicht gierig werden.", "Nur leuchtende Stämme. Der Rest ist Deko. Emotional."]
+  quartermaster:
+    accept: "Zwanzig Stück. Bin dran."
+    decline: "Heute nicht."
+    on_accept: ["Notiert. Du hast jetzt einen Job, {player}."]
+    on_decline: ["Notiert. Mit Enttäuschung."]
+    returning:
+      - "Kohlestand: immer noch null, {player}. Hab nachgezählt. Zweimal."
+      - "§eOre Ridge§f. Hügel hinter dem Markt. Zwanzig Stück."
+    greet_new: ["Ah. {player}. Du stehst auf meiner Liste."]
+    greet: ["{player}. Inventar sieht gesund aus. Verdächtig gesund.", "{player}. Immer noch auf meiner Liste. Gute Liste."]
+    greet_grad: ["{player}. Seite zwölf in meinem Buch. Die gute Seite."]
+    idle: ["Zweiundvierzig Kisten. Heute Morgen waren's dreiundvierzig.", "Wer hat für diesen Anker unterschrieben?", "Nee. Die Karte stimmt immer noch nicht."]
+    farewell: ["Weggetreten. Höflich."]
+    topics:
+      - label: "Was lieferst du?"
+        lines: ["Alles. Irgendwann. Erst der Papierkram.", "Gerade: eine Schmiede, die Kohle frisst, und einen Hafen, der Schmieden frisst."]
+      - label: "Wie gehen Teleports?"
+        lines: ["Einmal hinlaufen — schon freigeschaltet. Oder einen Homestead Marker setzen.", "Dann Manager → Teleports, oder den Ort tippen. §e/harbour§f, §e/mines§f. So."]
+  craftsman:
+    greet_new: ["Hm. {player}. Das Recipe Book ist in deinem Manager."]
+    greet: ["Hm. {player}.", "Hält die Spitzhacke? Hm. Gut."]
+    greet_grad: ["Hm. Gute Arbeit in letzter Zeit, {player}. Bild dir nichts drauf ein."]
+    idle: ["*kläng*", "Hm.", "Eisen ist heute launisch.", "Kohle. Mehr Kohle."]
+    farewell: ["Hm."]
+    topics:
+      - label: "Was macht gutes Gear aus?"
+        lines: ["Altes Teil in die Mitte. Material drumherum. Das ist das ganze Geheimnis.", "Der Rest ist Schweiß. Hauptsächlich deiner."]
+      - label: "Wo ist das Recipe Book?"
+        lines: ["Nether Star, Hotbar §e9§f. Grünes Buch. Da ist jede Blaupause drin."]
+  foreman:
+    accept: "Stempel mich ein."
+    decline: "Noch nicht."
+    on_accept: ["Mine ist hinter mir. Helm auf. Oh — kein Helm. Mutig."]
+    on_decline: ["Die Mine wartet. Tut sie seit Ewigkeiten."]
+    returning:
+      - "Zweiunddreißig Erze, {player}. Die Höhle ist hinter mir. Beißt nicht. Kaum."
+      - "Kohle, Kupfer, Eisen. Zählt alles."
+    greet_new: ["Helme retten Leben, {player}. Hab ich gehört."]
+    greet: ["{player}! Noch 'ne Schicht?", "Staub steht dir, {player}."]
+    greet_grad: ["Guck mal, wer jetzt unter Tage zu Hause ist. Stolz auf dich. Sag's keinem."]
+    idle: ["*paff*", "Hörst du das? Ich auch nicht. Gutes Zeichen.", "Dreißig Jahre. Hasse Spinnen immer noch."]
+    farewell: ["Achte auf Abgründe. Auf die Dunkelheit. Auf dich."]
+    topics:
+      - label: "Ist es sicher da unten?"
+        lines: ["Sicher? Das ist 'ne Mine, {player}.", "Meistens. Achte auf Abgründe. Auf die Dunkelheit. Und darauf, dass ich nicht reingehe."]
+      - label: "Die Pfeife?"
+        lines: ["Hält den Staub fern. Der Doktor sagt was anderes. Der Doktor gräbt nicht."]
+  booster_tutor:
+    accept: "Lass uns was fusen."
+    decline: "Vielleicht später."
+    on_accept: ["Ja! Der Emerald ist im Inventar. Der Anvil ist im Manager. Nicht ablecken."]
+    on_decline: ["Dann bleibt dein Gear eben langweilig. Deine Entscheidung."]
+    returning:
+      - "Immer noch nichts gefust, {player}? Der Emerald wartet auf dein Ja."
+      - "Dann Manager → §eAnvil§f. Gear links, Booster rechts."
+    greet_new: ["{player}! Hast du was, das ich anzünden kann? Upgraden. Ich meinte upgraden."]
+    greet: ["Riechst du das, {player}? Fortschritt. Und leicht verbrannt."]
+    greet_grad: ["{player}! In letzter Zeit was Scharfes gefust?"]
+    idle: ["*zisch*", "Der Funke war Absicht.", "Brille auf. Immer Brille auf."]
+    farewell: ["Bleib entflammbar. Moment. Nein. Lieber nicht."]
+    topics:
+      - label: "Gibt's ein Limit?"
+        lines: ["Es gibt ein Cap. Frag nicht, ob ich's anhebe.", "Hab's einmal versucht. Da war ein Feuer. Ein gutes Feuer, aber trotzdem."]
+      - label: "Bester Booster?"
+        lines: ["Der, den du auch wirklich fust, {player}."]
+  ledger:
+    accept: "Her mit dem Stempel."
+    decline: "Später."
+    on_accept: ["Notiert. Skills-Tab. Slot neun. Blinkt."]
+    on_decline: ["Deine Akte bleibt offen. Sie urteilt über dich."]
+    returning:
+      - "{player}. Der Stempel wartet. Ich auch."
+      - "Sag ja, rüste §eirgendeinen§f Skill aus, komm zurück."
+    greet_new: ["{player}. Anwesend. Gut."]
+    greet: ["{player}. Pünktlich. Fast.", "Haltung, {player}."]
+    greet_grad: ["{player}. Gestempelt und entlassen. Blamier den Stempel nicht."]
+    idle: ["*stempel*", "Zu spät. Zu spät. Zu früh. Zu spät.", "Wer schreibt denn so eine Neun?"]
+    farewell: ["Entlassen."]
+    topics:
+      - label: "Was sind Skills?"
+        lines: ["Ausgerüstete Bäume. Keine Hausaufgaben.", "Ein Slot frei zum Start. Mehr gibt's mit Münz-Meilensteinen."]
+      - label: "Was steht noch an?"
+        lines: ["Erst die Felder. Dann mein Stempel.", "Danach hat jeder Skill seine Insel. Ich zeig sie dir."]
+  farmer:
+    accept: "Ab ans Ernten."
+    decline: "Jetzt nicht."
+    on_accept: ["Behalt den Himmel im Auge, {player}. Die planen was."]
+    on_decline: ["Runde an die Vögel."]
+    returning:
+      - "Die Vögel gewinnen, {player}. §e48§f Weizen. Und verscheuchen."
+      - "Sie landen — du klickst. Die Bossbar zählt."
+    greet_new: ["{player}! Vögel gesehen? Trau ihnen nicht."]
+    greet: ["Der Weizen wächst, {player}. Das Vogelproblem auch."]
+    greet_grad: ["{player}! Die Vögel erinnern sich an dich. Gut so."]
+    idle: ["Husch!", "Die Krähe starrt seit einer Stunde.", "Bald Regen. Oder Vögel. Eher Vögel."]
+    farewell: ["Augen nach oben. Da sind sie immer."]
+    topics:
+      - label: "Warum die Vögel?"
+        lines: ["Die wissen, was sie getan haben.", "Jede Saison. Dieselben Vögel. Den da kenn ich."]
+      - label: "Farm Isle?"
+        lines: ["Harrows Portal, hinteres Ende der Scheune.", "Farming zehn. Größere Felder. Weniger Vögel."]
+  lark:
+    accept: "Zeig mir die Spheres."
+    decline: "Später."
+    on_accept: ["Tief zielen, {player}. Schweine sind klein."]
+    on_decline: ["Die Tiere werden erleichtert sein."]
+    returning:
+      - "Sphere in die Hand, Tier anschauen, §eRechtsklick§f. Ein Fang, {player}."
+      - "Dann komm zurück. Pistachio will es kennenlernen."
+    greet_new: ["{player}! Vorsicht, Papagei. Sie bewertet deine Schuhe."]
+    greet: ["{player}! Pistachio erinnert sich an dich. Das ist kein Kompliment."]
+    greet_grad: ["{player}! Dein Pet ist hier berühmt. Na ja. Bei mir."]
+    idle: ["Wer ist ein guter Vogel? Du nicht.", "*pfeift*", "Pistachio, nein."]
+    farewell: ["Pistachio sagt tschüss. Tut sie nicht. Aber stell's dir vor."]
+    topics:
+      - label: "Dein Papagei?"
+        lines: ["Pistachio. Kein Blickkontakt.", "Sie nimmt das als Herausforderung."]
+      - label: "Bestes Pet?"
+        lines: ["Das, das dir folgt.", "Drachen machen ein Drama ums Leveln. Lohnt sich."]
+  fisher:
+    accept: "Ich werf aus."
+    decline: "Heute nicht."
+    on_accept: ["Geduld. Fische riechen Eile."]
+    on_decline: ["Das Meer wartet. Tut es immer."]
+    returning:
+      - "Fünf Fische, {player}. Auswerfen. Warten. §eREEL§f bei Grün."
+      - "Fenster verpasst, Fisch weg. Wär ich auch."
+    greet_new: ["Gute Flut heute, {player}."]
+    greet: ["Die Leine ruft, {player}.", "Wind stimmt. Fische nicht."]
+    greet_grad: ["{player}. Das Meer hat nach dir gefragt."]
+    idle: ["*summt ein Seemannslied*", "Ostwind. Die Fische schmollen.", "Hm. Knabbert."]
+    farewell: ["Immer eine Handbreit Wasser unterm Kiel."]
+    topics:
+      - label: "Angel-Tipps?"
+        lines: ["Geduld, {player}.", "Und Grün. Bei Grün einholen. Der Rest ist Wetter."]
+      - label: "Mal was Großes gesehen?"
+        lines: ["Einmal.", "Nicht rausgeholt. Denk heute noch dran."]
+  fishmonger:
+    greet_new: ["Heute frisch! Größtenteils!"]
+    greet: ["{player}! Kabeljau? Lachs? Reue?", "Ruten, Rüstung, Fisch. Münzen willkommen."]
+    idle: ["Frischer Kabeljau! Frischlich!", "Lachs! Kaum benutzt!", "Nicht den Fisch anstupsen."]
+  vex:
+    accept: "Jawohl!"
+    decline: "Noch nicht bereit."
+    on_accept: ["LOS, {player}! Zehn! Abmarsch!"]
+    on_decline: ["Dann mach dich bereit. Die Uhr läuft."]
+    returning:
+      - "Zehn Feinde, {player}. Borderlands. Die erledigen sich nicht selbst."
+      - "Husk, Stray, Crawler. Mir egal, welche."
+    greet_new: ["Augen geradeaus, {player}!"]
+    greet: ["{player}. Atmest noch. Ausreichend.", "Kinn hoch, {player}. Klinge hoch."]
+    greet_grad: ["{player}. Kampfbereit. …Bild dir nichts drauf ein."]
+    idle: ["Hopp!", "Links! Rechts! Links!", "*schärft das Schwert*"]
+    farewell: ["Wegtreten! Und zwar mit Haltung."]
+    topics:
+      - label: "Ein Rat?"
+        lines: ["Erst zuschlagen. Dann denken. Dann überleben.", "Nein — erst denken. Schreib dir das auf."]
+      - label: "Die Narbe?"
+        lines: ["Trainingsunfall.", "Das Training hat gewonnen."]
+  farm_isle_guide:
+    greet_new: ["Die Insel ist offen, {player}. Wenn deine Hände es sind."]
+    greet: ["Guter Boden heute, {player}."]
+    idle: ["*kaut auf einem Halm*", "Guter Boden heute.", "Das Portal summt. Das ist normal. Glaub ich."]
+    farewell: ["Dasselbe Portal zurück. Keine Experimente."]
+    topics:
+      - label: "Was gibt's auf der Insel?"
+        lines: ["Größere Felder. Weniger Vögel. Besserer Boden.", "Sag's nicht dem Farmer."]
+      - label: "Du und der Farmer?"
+        lines: ["Er hält sich für den echten Farmer.", "Süß."]
+  surveyor:
+    greet_new: ["{player}! Trolle gesehen? Große? Erzähl mir alles."]
+    greet: ["Hast du 'ne Seite für mich, {player}?"]
+    idle: ["*kritzelt eine Karte*", "Norden ist… da lang. Wahrscheinlich.", "Trolle. Faszinierend. Furchtbar. Faszinierend."]
+  vince:
+    greet_new: ["{player}! Glückstag? Du siehst nach Glück aus."]
+    greet: ["{player}! Meine Lieblingskundschaft. Heute."]
+    idle: ["*wirft eine Münze*", "Rot. Immer Rot.", "Heute Nacht gewinnt jemand. Statistisch."]
+    farewell: ["Komm reicher wieder. Oder ärmer. Ich bin nicht wählerisch."]
+    topics:
+      - label: "Tipps?"
+        lines: ["Die Bank gewinnt immer.", "Ich bin der Cousin der Bank. Mir geht's gut."]
+      - label: "Hast du wirklich Glück?"
+        lines: ["Lucky Vince. Steht im Namen.", "Namen lügen, {player}."]
+  bar_whisper:
+    greet_new: ["Psst. {player}. Schau nach unten. Die Leiste."]
+    greet: ["deine leiste hat sich bewegt, {player}… ich hab's gespürt."]
+    idle: ["…", "*lauscht in die Luft*", "level up… level up…"]
+    farewell: ["spiel weiter. sie merkt es."]
+    topics:
+      - label: "Wie füll ich sie?"
+        lines: ["Spielen. Quests. Graben. Angeln.", "Alles flüstert ihr was zu, {player}."]
+  eldervale_welcome:
+    greet_new: ["Die Luft ist dünn hier oben, {player}. Langsam atmen."]
+    greet: ["Wieder auf dem Berg, {player}? Gute Lunge."]
+    idle: ["*zieht den Schal enger*", "Schnee bis heute Abend.", "Pass auf den Sims auf, Schätzchen."]
+    farewell: ["Bleib von der Kante weg. Ich mein's ernst."]
+    topics:
+      - label: "Was gibt's hier?"
+        lines: ["Erz, das das Festland vergessen hat.", "Und eine Schmiede, die sich an alles erinnert."]
+      - label: "Wie tief geht's runter?"
+        lines: ["Tief.", "Keiner hat sich zurückgemeldet. Das ist der Witz."]
+  eldervale_upgrade:
+    greet_new: ["Die Esse glüht, {player}."]
+    greet: ["Bring mir Stahl, {player}. Und Steine."]
+    idle: ["*Hammerschlag*", "Heißer.", "Der Stein singt."]
+  merchant:
+    greet_new: ["Ah, {player}! Kundschaft! Oder nur zum Gucken. Beides willkommen."]
+    greet: ["{player}! Gute Kisten gefunden?"]
+    idle: ["Kisten! Abenteuer in Holz!", "*poliert einen Smaragd*", "Alles muss raus. Irgendwann."]
+    farewell: ["Mach alles auf. Trau nichts. Vor allem keinen Mimics."]
+    topics:
+      - label: "Was verkaufst du?"
+        lines: ["Gelegenheit. In Holz verpackt.", "Die Kisten, {player}. Ich verkaufe die Idee von Kisten."]
+  isle_clerk:
+    greet_new: ["Inselträume, {player}? Level zwanzig. Dann träumen."]
+    greet: ["Papierkram? Nein. Nie. Nächster."]
+    idle: ["*stempelt nichts*", "Formular 20-B. Gibt's nicht.", "Inseln. Alle wollen Inseln."]
+    farewell: ["Geh leveln. Ich bin hier. Ohne Papierkram."]
+    topics:
+      - label: "Ein Beamter, der Papierkram hasst?"
+        lines: ["Ja.", "Ich weiß."]
+  forage_pad_guide:
+    greet_new: ["Spring aufs Pad, {player}! Alles gut! Fast alles gut!"]
+    greet: ["Zurück von der Insel, {player}? Riech mal — Fichte!"]
+    idle: ["Boing.", "*wippt auf den Fersen*", "Das Pad ist heute klebrig. Gut klebrig."]
+    farewell: ["Aus den Knien springen!"]
+    topics:
+      - label: "Ist das Pad sicher?"
+        lines: ["Total.", "Zu neunzig Prozent total."]
+  liquidator:
+    greet_new: ["{player}. Die Kristalle flüstern über dich. Meistens Zahlen."]
+    greet: ["Kaufen oder schmelzen, {player}?"]
+    idle: ["*Kristallsummen*", "Lila ist ein Preis, keine Farbe.", "Schmelzen. Prägen. Wiederholen."]
+  canopy_clerk:
+    accept: "Proben kommen."
+    decline: "Jetzt nicht."
+    on_accept: ["Komprimiert, {player}. Ich prüfe das."]
+    on_decline: ["Das Blätterdach kann warten. Es ist geduldig."]
+    returning:
+      - "Compressed Oak, Birch, Spruce, {player}. Inselholz."
+      - "Hafenreste zählen nicht. Die rieche ich."
+    greet_new: ["{player}. Rinde dabei? Proben, meine ich."]
+    greet: ["Mehr Jahresringe, {player}. Gute Saison."]
+    idle: ["*schnüffelt an einem Stamm*", "Fichte. Eindeutig Fichte.", "Jahresringe: vierzig. Respektabel."]
+    farewell: ["Verantwortungsvoll hacken."]
+    topics:
+      - label: "Warum Proben?"
+        lines: ["Beweis, dass die Insel echtes Holz wachsen lässt.", "Das Blätterdach führt Buch. Ich auch."]
+  root_cellar:
+    greet_new: ["Hunger, {player}? Alle haben Hunger."]
+    greet: ["Frisches Mehl, {player}. Pass auf deine Stiefel auf."]
+    idle: ["*mahlt Korn*", "Mehl überall. Überall.", "Karotten legen sich nicht von selbst ein."]
+  town_crier:
+    greet_new: ["Hört, hört! {player} wandelt unter uns!"]
+    greet: ["Oyez, {player}! Nachrichten um elf. Und jetzt."]
+    idle:
+      - "Hört, hört! Der Manager wohnt in Hotbar-Slot neun!"
+      - "Hört, hört! Booster gehören auf den Anvil, nicht in den Mund!"
+      - "Hört, hört! Redet mit Fremden! Die haben Quests!"
+      - "Hört, hört! Der gelbe Pfeil hat immer recht! Meistens!"
+      - "Hört, hört! In der Wildnis spawnen Kisten! Macht Sachen auf!"
+    farewell: ["Zieht los! Laut!"]
+    topics:
+      - label: "Neuigkeiten?"
+        lines: ["Der Hafen steht. Die Minen sind staubig. Die Vögel gewinnen.", "Das waren die Nachrichten."]
+      - label: "Warum schreist du?"
+        lines: ["Flüstern skaliert nicht, {player}."]
+  street_sweeper:
+    greet_new: ["Stiefel abtreten, {player}."]
+    greet: ["Schon wieder da, {player}? Kies dabei? Lass es."]
+    idle: ["*fege fege*", "Wer verliert denn einen ganzen Bruchstein?", "Sauberster Platz der Insel. Gern geschehen."]
+    farewell: ["Vorsicht, Haufen."]
+    topics:
+      - label: "Was Seltsames gesehen?"
+        lines: ["Einen Trollabdruck bei den Minen. So groß wie ein Boot.", "Hab ihn weggefegt. Beweis weg. Hätte ich nicht tun sollen."]
+  lamp_lighter:
+    greet_new: ["Der Abend kommt, {player}. Ich spür's."]
+    greet: ["Bleib im Licht, {player}."]
+    idle: ["*poliert eine Laterne*", "Dämmerung in ein paar Stunden. Bereit.", "Jede Lampe hat einen Namen. Die da heißt Gerald."]
+    farewell: ["Halt eine Fackel bereit."]
+    topics:
+      - label: "Warum Lampen?"
+        lines: ["Monster hassen Licht. Ich liebe es. Wir haben einen Waffenstillstand.", "Eigentlich gehen sie mir nur aus dem Weg."]
+
+# NPC-to-NPC banter — index-aligned with CastBook.banter(), same speakers per beat.
+# Played to everyone in range when most of them read German. Never use {player} here.
+banter:
+  # 0 egon · fishmonger · egon · fishmonger
+  - ["Der Kabeljau liegt da seit Dienstag.", "Der ist gereift, Egon. Wie du.", "Ich bin erfahren.", "Der Kabeljau auch. Man riecht's."]
+  # 1 fishmonger · egon · fishmonger
+  - ["Egon! Willst du 'nen Fisch?", "Ich will meine Kiste zurück.", "Der Fisch ist IN der Kiste."]
+  # 2 forage_pad_guide · lumberjack · forage_pad_guide
+  - ["Lumberjack! Probier das Pad!", "Forager. Und nein. Bäume hüpfen nicht.", "Inselbäume irgendwie schon."]
+  # 3 lumberjack · forage_pad_guide
+  - ["Twig. Schon wieder Rinde im Haar.", "Das ist ein Look."]
+  # 4 farmer · lark · farmer · lark
+  - ["Lark. Dein Papagei frisst meinen Weizen.", "Sie probiert nur.", "Sie KLAUT.", "Probiert!"]
+  # 5 lark · farmer
+  - ["Wilde Schweine gesehen?", "Nur die in meinem Weizen."]
+  # 6 bar_whisper · quartermaster
+  - ["die leiste sagt, du hängst mit dem papierkram hinterher…", "Die Leiste kann gern Beschwerde einreichen."]
+  # 7 eldervale_welcome · eldervale_upgrade · eldervale_welcome
+  - ["Forgehand, du schmilzt noch den Schnee.", "Gut. Schnee ist rutschig.", "Das ist ein Berg."]
+  # 8 liquidator · ledger · liquidator
+  - ["Miss Ledger. Einen Kristall für Ihre Gedanken?", "Meine Gedanken sind unverkäuflich.", "Dann zur Miete?"]
+  # 9 town_crier · egon · town_crier
+  - ["Hört, hört! Egons Kabeljau ist FRISCH!", "Das ist nicht mein Kabeljau.", "Hört, hört! Egon verstößt den Kabeljau!"]
+  # 10 street_sweeper · town_crier
+  - ["Hollis. Du stehst auf meinem Haufen.", "Hört, hört! Bram hat einen Haufen!"]
+  # 11 vince · isle_clerk · vince
+  - ["Deed! Ich wette 'ne Insel, dass ich heute gewinne.", "Inseln sind kein Wetteinsatz.", "Alles ist ein Wetteinsatz, Deed."]

@@ -946,6 +946,7 @@ public final class BorderlandsRiteService implements Listener {
                     PersistentDataType.STRING,
                     boss.id()
             );
+            meta.setMaxStackSize(64);
             item.setItemMeta(meta);
         }
         return item;
@@ -979,6 +980,7 @@ public final class BorderlandsRiteService implements Listener {
                     PersistentDataType.STRING,
                     boss.id()
             );
+            meta.setMaxStackSize(64);
             item.setItemMeta(meta);
         }
         return item;

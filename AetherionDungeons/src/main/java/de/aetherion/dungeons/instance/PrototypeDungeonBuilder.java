@@ -429,6 +429,11 @@ public final class PrototypeDungeonBuilder {
     }
 
     private static void spawnCombatRoom(Plugin plugin, World world, DungeonLayout.CombatRoom combat) {
+        java.util.List<Location> pads = FloorOnePool.spawnPads(world, combat.index());
+        if (!pads.isEmpty()) {
+            spawnPooledRoom(plugin, world, combat, pads);
+            return;
+        }
         int y = FLOOR_Y + 1;
         DungeonLayout.Room bounds = combat.bounds();
         double cx = bounds.centerX() + 0.5;
@@ -469,6 +474,41 @@ public final class PrototypeDungeonBuilder {
         if (scaleFloor >= 3) {
             spawnWalker(plugin, world, cx - 3.2, y, cz - 3.2, room);
             spawnArcher(plugin, world, bounds.maxX() - 2.5, y, bounds.maxZ() - 2.5, room);
+        }
+    }
+
+    /**
+     * Floor 1 pool rooms: every template ships mob pads (open 3x3 floor, off the door lanes).
+     * Warden + brute take the pads nearest the centre, archers the outermost, walkers the rest.
+     */
+    private static void spawnPooledRoom(Plugin plugin, World world, DungeonLayout.CombatRoom combat, java.util.List<Location> pads) {
+        int room = combat.index();
+        DungeonLayout.Room bounds = combat.bounds();
+        double cx = bounds.centerX() + 0.5;
+        double cz = bounds.centerZ() + 0.5;
+        java.util.List<Location> inner = new java.util.ArrayList<>(pads);
+        inner.sort(java.util.Comparator.comparingDouble(at -> (at.getX() - cx) * (at.getX() - cx) + (at.getZ() - cz) * (at.getZ() - cz)));
+        java.util.List<Location> outer = new java.util.ArrayList<>(inner);
+        java.util.Collections.reverse(outer);
+        int n = inner.size();
+        int next = 0;
+        if (combat.miniBoss()) {
+            Location at = inner.get(next++ % n);
+            spawnMiniBoss(plugin, world, at.getX(), at.getY(), at.getZ(), room);
+        }
+        if (combat.brute()) {
+            Location at = inner.get(next++ % n);
+            spawnBrute(plugin, world, at.getX(), at.getY(), at.getZ(), room);
+        }
+        for (int i = 0; i < combat.archers(); i++) {
+            Location at = outer.get(i % n);
+            spawnArcher(plugin, world, at.getX(), at.getY(), at.getZ(), room);
+        }
+        int walkers = combat.walkers() + (scaleFloor == 1 ? 1 : 0);
+        java.util.concurrent.ThreadLocalRandom random = java.util.concurrent.ThreadLocalRandom.current();
+        for (int i = 0; i < walkers; i++) {
+            Location at = inner.get((next + i) % n);
+            spawnWalker(plugin, world, at.getX() + random.nextDouble(-0.3, 0.3), at.getY(), at.getZ() + random.nextDouble(-0.3, 0.3), room);
         }
     }
 

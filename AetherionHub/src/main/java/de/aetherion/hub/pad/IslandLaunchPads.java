@@ -139,6 +139,37 @@ public final class IslandLaunchPads implements Listener {
         return pads.size();
     }
 
+    /** Read-only view of a configured pad (Origin skyway flair, DEV). */
+    public record PadInfo(String id, String world, int minX, int minY, int minZ, int maxX, int maxY, int maxZ,
+                          boolean requireStamped, String label) {
+    }
+
+    public List<PadInfo> padInfo() {
+        List<PadInfo> out = new ArrayList<>(pads.size());
+        for (Pad pad : pads) {
+            out.add(new PadInfo(pad.id(), pad.world(), pad.minX(), pad.minY(), pad.minZ(), pad.maxX(), pad.maxY(),
+                    pad.maxZ(), pad.requireStamped(), labelTitle(pad.id())));
+        }
+        return out;
+    }
+
+    /** Would this pad launch {@code player} right now? Same rule as the pad itself, but no messages or nudges. */
+    public boolean openFor(Player player, String padId) {
+        for (Pad pad : pads) {
+            if (!pad.id().equalsIgnoreCase(padId)) {
+                continue;
+            }
+            if (!pad.requireStamped) {
+                return true;
+            }
+            if (player.hasPermission("aetherionhub.admin") || player.hasPermission("aetherion.mines.admin")) {
+                return true;
+            }
+            return hasStampedBlueprint(player, pad.requireIds);
+        }
+        return true;
+    }
+
     private static int intAt(ConfigurationSection s, String dotted, String section, String key, int def) {
         if (s.isSet(dotted)) {
             return s.getInt(dotted, def);
@@ -272,9 +303,48 @@ public final class IslandLaunchPads implements Listener {
     }
 
     private void ensureSingleLabel(World world, Pad pad) {
-        wipePadLabelZone(world, pad);
         Location at = labelLocation(world, pad);
         String title = labelTitle(pad.id());
+        TextDisplay kept = null;
+        List<TextDisplay> extras = new ArrayList<>();
+        double minX = Math.min(pad.minX(), pad.maxX()) - 4.0;
+        double maxX = Math.max(pad.minX(), pad.maxX()) + 5.0;
+        double minZ = Math.min(pad.minZ(), pad.maxZ()) - 4.0;
+        double maxZ = Math.max(pad.minZ(), pad.maxZ()) + 5.0;
+        double minY = Math.min(pad.minY(), pad.maxY()) - 1.0;
+        double maxY = Math.max(pad.minY(), pad.maxY()) + 6.0;
+        for (Entity entity : world.getNearbyEntities(at, 8, 6, 8)) {
+            if (!(entity instanceof TextDisplay display)) {
+                continue;
+            }
+            Location loc = display.getLocation();
+            if (loc.getX() < minX || loc.getX() > maxX
+                    || loc.getY() < minY || loc.getY() > maxY
+                    || loc.getZ() < minZ || loc.getZ() > maxZ) {
+                continue;
+            }
+            if (!isJumpPadLabel(display)) {
+                continue;
+            }
+            if (kept == null) {
+                kept = display;
+            } else {
+                extras.add(display);
+            }
+        }
+        for (TextDisplay extra : extras) {
+            extra.remove();
+        }
+        if (kept != null && kept.isValid()) {
+            kept.text(Component.text(title, NamedTextColor.GREEN, TextDecoration.BOLD));
+            kept.setPersistent(false);
+            kept.addScoreboardTag(LABEL_TAG);
+            kept.addScoreboardTag(LABEL_TAG + "_" + pad.id().toLowerCase(Locale.ROOT));
+            if (kept.getLocation().distanceSquared(at) > 0.05) {
+                kept.teleport(at);
+            }
+            return;
+        }
         world.spawn(at, TextDisplay.class, display -> {
             display.text(Component.text(title, NamedTextColor.GREEN, TextDecoration.BOLD));
             display.setBillboard(Display.Billboard.CENTER);
@@ -391,6 +461,7 @@ public final class IslandLaunchPads implements Listener {
             player.setFlying(false);
         }
         launch(player, pad, below.getLocation().add(0.5, 1.0, 0.5));
+        de.aetherion.hub.origin.OriginHooks.padLaunched(player, pad.id());
     }
 
     private boolean mayUsePad(Player player, Pad pad) {
@@ -405,6 +476,7 @@ public final class IslandLaunchPads implements Listener {
         }
         player.sendMessage("§cJump pad sealed.");
         player.sendMessage("§7Stamp a §eSurveyor blueprint §7into a tool first — then this pad opens.");
+        de.aetherion.hub.origin.OriginHooks.padSealed(player, pad.id());
         player.playSound(player.getLocation(), org.bukkit.Sound.BLOCK_IRON_TRAPDOOR_CLOSE, 0.7f, 0.6f);
         nudgeOffPad(player, pad);
         // Longer cooldown so the locked message doesn't spam while standing on the pad.
@@ -491,6 +563,7 @@ public final class IslandLaunchPads implements Listener {
                         grantNoFall(player, LANDING_GRACE_MS);
                         endFlightLock(player);
                         cancel();
+                        de.aetherion.hub.origin.OriginHooks.padLanded(player, pad.id());
                     } else if (tick > boostTicks + 200) {
                         grantNoFall(player, LANDING_GRACE_MS);
                         endFlightLock(player);
@@ -512,6 +585,7 @@ public final class IslandLaunchPads implements Listener {
                         grantNoFall(player, LANDING_GRACE_MS);
                         endFlightLock(player);
                         cancel();
+                        de.aetherion.hub.origin.OriginHooks.padLanded(player, pad.id());
                         return;
                     }
                     double speed = Math.sqrt(holdX * holdX + holdZ * holdZ);

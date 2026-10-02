@@ -58,11 +58,12 @@ public class HealthListener implements Listener {
         this.storedHealthKey = new NamespacedKey(plugin, "stored_player_health");
         this.maxHealthAttribute = resolveMaxHealthAttribute();
 
+        // Every 2 ticks so OriginCompass / fishing tips cannot permanently eat the HP/DEF line.
         plugin.getServer().getScheduler().runTaskTimer(
                 plugin,
                 this::tickHealthDisplay,
-                5L,
-                5L
+                2L,
+                2L
         );
     }
 
@@ -224,18 +225,30 @@ public class HealthListener implements Listener {
 
     private void tickHealthDisplay() {
         regenPulse++;
-        boolean naturalRegen = regenPulse % 16 == 0;
+        // ~every 1.6s at 2-tick cadence (was every 1.6s at 5-tick cadence).
+        boolean naturalRegen = regenPulse % 40 == 0;
 
         for (Player player : plugin.getServer().getOnlinePlayers()) {
             if (!player.isOnline() || player.isDead()) {
                 continue;
             }
-            // updateHealth already stores + shows the bar; avoid doubling PDC/ActionBar work.
-            updateHealth(player, ApplyMode.NORMAL);
-            if (naturalRegen) {
-                applyScaledNaturalRegen(player);
+            try {
+                // updateHealth already stores + shows the bar; avoid doubling PDC/ActionBar work.
+                updateHealth(player, ApplyMode.NORMAL);
+                if (naturalRegen) {
+                    applyScaledNaturalRegen(player);
+                }
+                reconcileStoredHealth(player);
+            } catch (RuntimeException ex) {
+                // One bad player must never cancel the shared HUD timer.
+                plugin.getLogger().warning(
+                        "Health HUD tick failed for " + player.getName() + ": " + ex.getMessage()
+                );
+                try {
+                    showHealthBar(player);
+                } catch (RuntimeException ignored) {
+                }
             }
-            reconcileStoredHealth(player);
         }
     }
 
@@ -247,6 +260,8 @@ public class HealthListener implements Listener {
         AttributeInstance maxHealth = maxHealthOf(player);
 
         if (maxHealth == null) {
+            // Still paint the action bar so a missing attribute never blanks HP/DEF.
+            showHealthBar(player);
             return;
         }
 
@@ -369,16 +384,30 @@ public class HealthListener implements Listener {
                 .append(Component.text(formatHp(max), NamedTextColor.RED))
                 .build();
 
+        Component bar = health;
         if (defense > 0.05) {
             Component defenseHud = Component.text()
                     .append(Component.text("🛡 ", NamedTextColor.AQUA))
                     .append(Component.text(formatHp(defense), NamedTextColor.WHITE))
                     .build();
-            player.sendActionBar(health.append(Component.text("                      ")).append(defenseHud));
-            return;
+            bar = health.append(Component.text("                      ")).append(defenseHud);
         }
 
-        player.sendActionBar(health);
+        String heldId = itemManager.getItemId(player.getInventory().getItemInMainHand());
+        if (de.aetherion.items.combat.AbilityCooldownHud.showing(player, heldId)) {
+            Component cooldown = de.aetherion.items.combat.AbilityCooldownHud.fragment(
+                    player,
+                    heldId,
+                    defense <= 0.05
+            );
+            if (defense > 0.05) {
+                bar = bar.append(Component.text("  ·  ", NamedTextColor.DARK_GRAY)).append(cooldown);
+            } else {
+                bar = bar.append(cooldown);
+            }
+        }
+
+        player.sendActionBar(bar);
     }
 
     private void setPlayerHealth(Player player, double amount) {
@@ -452,17 +481,39 @@ public class HealthListener implements Listener {
     }
 
     private AttributeInstance maxHealthOf(Player player) {
-        if (player == null || maxHealthAttribute == null) {
+        if (player == null) {
             return null;
         }
-        return player.getAttribute(maxHealthAttribute);
+        if (maxHealthAttribute != null) {
+            AttributeInstance direct = player.getAttribute(maxHealthAttribute);
+            if (direct != null) {
+                return direct;
+            }
+        }
+        // Paper 1.21 renamed GENERIC_* → plain names; try both if the cached key misses.
+        try {
+            AttributeInstance modern = player.getAttribute(Attribute.valueOf("MAX_HEALTH"));
+            if (modern != null) {
+                return modern;
+            }
+        } catch (IllegalArgumentException ignored) {
+        }
+        try {
+            return player.getAttribute(Attribute.GENERIC_MAX_HEALTH);
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
     }
 
     private static Attribute resolveMaxHealthAttribute() {
         try {
             return Attribute.valueOf("MAX_HEALTH");
         } catch (IllegalArgumentException ignored) {
-            return Attribute.GENERIC_MAX_HEALTH;
+            try {
+                return Attribute.GENERIC_MAX_HEALTH;
+            } catch (Throwable ignoredAgain) {
+                return null;
+            }
         }
     }
 

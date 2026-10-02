@@ -1,8 +1,10 @@
 package de.aetherion.dungeons;
 
+import de.aetherion.dungeons.bridge.CharacterSync;
 import de.aetherion.dungeons.bridge.DungeonTpsProbe;
 import de.aetherion.dungeons.bridge.HubPortalBridge;
 import de.aetherion.dungeons.bridge.RemoteServerBridge;
+import de.aetherion.dungeons.bridge.TransferGuard;
 import de.aetherion.dungeons.bridge.TransferSnapshotStore;
 import de.aetherion.dungeons.command.DungeonCommand;
 import de.aetherion.dungeons.instance.DungeonProgressHud;
@@ -40,6 +42,8 @@ public final class AetherionDungeons extends JavaPlugin {
     private DungeonGuideService guide;
     private RemoteServerBridge remote;
     private TransferSnapshotStore snapshots;
+    private TransferGuard transferGuard;
+    private CharacterSync characterSync;
     private HubPortalBridge hubPortalBridge;
     private DungeonTpsProbe tpsProbe;
     private DungeonHubService hubService;
@@ -50,7 +54,14 @@ public final class AetherionDungeons extends JavaPlugin {
         instance = this;
         saveDefaultConfig();
         snapshots = new TransferSnapshotStore(this);
-        remote = new RemoteServerBridge(this, snapshots);
+        transferGuard = new TransferGuard(this);
+        remote = new RemoteServerBridge(this, snapshots, transferGuard);
+        characterSync = new CharacterSync(this, snapshots, transferGuard, remote);
+        remote.setCharacterSync(characterSync);
+        getServer().getPluginManager().registerEvents(transferGuard, this);
+        getServer().getPluginManager().registerEvents(characterSync, this);
+        int keepDays = Math.max(1, getConfig().getInt("remote-transfer.keep-history-days", 3));
+        getServer().getScheduler().runTaskAsynchronously(this, () -> snapshots.prune(keepDays));
         tpsProbe = new DungeonTpsProbe(this);
         instances = new InstanceManager(this);
         keeper = new DungeonKeeperService(this);
@@ -63,8 +74,10 @@ public final class AetherionDungeons extends JavaPlugin {
         tpsProbe.start();
 
         getServer().getPluginManager().registerEvents(new DungeonListener(this, instances, keeper, guide), this);
-        hubPortalBridge = new HubPortalBridge(this, remote, snapshots);
+        hubPortalBridge = new HubPortalBridge(this, remote, snapshots, characterSync);
         getServer().getPluginManager().registerEvents(hubPortalBridge, this);
+        // Plugin reload with players online: hand back characters packed on disable.
+        characterSync.resyncOnlineAfterEnable(hubPortalBridge::arrive);
         hubService = new DungeonHubService(this, remote);
         hubService.start();
         DungeonKeeperFancyListener.register(this);
@@ -104,6 +117,11 @@ public final class AetherionDungeons extends JavaPlugin {
             tpsProbe.stop();
         }
         DungeonProgressHud.stop();
+        // Pack every online character BEFORE instances evacuate and before Paper saves
+        // playerdata (plugins are disabled first, so the quit hook would never run).
+        if (characterSync != null) {
+            characterSync.flushAllOnDisable();
+        }
         if (instances != null) {
             instances.shutdown();
         }
@@ -137,6 +155,14 @@ public final class AetherionDungeons extends JavaPlugin {
 
     public RemoteServerBridge getRemote() {
         return remote;
+    }
+
+    public TransferSnapshotStore getSnapshots() {
+        return snapshots;
+    }
+
+    public CharacterSync getCharacterSync() {
+        return characterSync;
     }
 
     public void openDungeonMap(Player player) {

@@ -29,7 +29,7 @@ final class DevHubs {
             {"AetherionCore", "Service bridges for every other tile"},
             {"BossEngine", "Boss anchors · boss cores · arena spawns"},
             {"AetherionHub", "Spawn anchors · camps · wipe hub unlocks"},
-            {"AetherionQuests", "NPC anchors · chests · /npc studio · quest resets"},
+            {"AetherionQuests", "NPC anchors · chests · /aethernpc · quest resets"},
             {"AetherMobs", "Pets · spheres · treats · Aetherlex"},
             {"AetherionDungeons", "Dungeon runs · Dungeon Keeper"},
             {"AetherionFarming", "Farming Island hub · farm tools · portals"},
@@ -37,7 +37,7 @@ final class DevHubs {
             {"AetherionForaging", "Isle weather · Miss Canopy · grove"},
             {"AetherionMining", "Mining Island hub · Deep Forge · Amethyst Mine"},
             {"AetherionStressBots", "Testbots"},
-            {"FancyNpcs", "NPC studio backing"},
+            {"FancyNpcs", "Living NPC skins / bodies (not the editor)"},
             {"LuckPerms", "Rank groups"},
     };
 
@@ -171,8 +171,8 @@ final class DevHubs {
         // Bottom row extras (45 / 49 / 53 are chrome).
         inventory.setItem(47, tile(Material.FEATHER, "§aToggle /flight", "flight-toggle",
                 "§7Same as EssentialsX fly."));
-        inventory.setItem(51, tile(Material.WRITABLE_BOOK, "§b§lNPC Studio", "page:NPC_EDITOR",
-                "§7/npc · create · nearby · wand · list · /aethernpc"));
+        inventory.setItem(51, tile(Material.WRITABLE_BOOK, "§b§lNPC Editor", "open:aethernpc",
+                "§7Opus studio · §f/aethernpc"));
     }
 
     private static ItemStack categoryTile(Cat cat, String action, String... lines) {
@@ -341,6 +341,10 @@ final class DevHubs {
         inventory.setItem(38, tile(Material.IRON_AXE, "§2§lForage Island", "forageisle:open",
                 "§7Seven forests · cast · updrafts · events ·", "§7critters · finds · marks · progression.",
                 dot("AetherionForaging")));
+        // ADDITIVE only: empty slot beside Forage — Origin Isle DEV hub (Capital / main island).
+        inventory.setItem(39, tile(Material.BELL, "§6§lOrigin Island", "originisle:open",
+                "§7Capital · districts · cast · softlight ·", "§7tour · events. Opens §f/origin dev§7.",
+                dot("AetherionHub")));
     }
 
     private static void drawProgress(Inventory inventory) {
@@ -377,21 +381,20 @@ final class DevHubs {
                 "§7Give shards to any online player."));
         inventory.setItem(12, tile(Material.PLAYER_HEAD, "§bTestbots", "page:TESTBOTS",
                 "§7QA bots · start / stop / count per role.", dot("AetherionStressBots")));
-        inventory.setItem(13, tile(Material.WRITABLE_BOOK, "§b§lNPC Studio", "page:NPC_EDITOR",
-                "§7/npc editor · create · nearby · wand ·", "§7list · help · /aethernpc.", dot("AetherionQuests")));
-        inventory.setItem(14, tile(Material.BLAZE_ROD, "§6NPC Editor §8(/npc)", "npc-wand",
-                "§7FancyNPC + quest creator in one click.", "§8Permission: aetherion.npc.editor"));
-        inventory.setItem(15, tile(Material.WRITABLE_BOOK, "§dNPC & Quest Editor", "open:aethernpc",
-                "§7Talking NPC in under a minute.", "§eOpens /aethernpc"));
-        inventory.setItem(16, tile(Material.FEATHER, "§aToggle /flight", "flight-toggle",
+        inventory.setItem(13, tile(Material.WRITABLE_BOOK, "§b§lNPC Editor", "open:aethernpc",
+                "§7Opus studio — dialogue + quest link.",
+                "§7Command: §f/aethernpc",
+                "§8Permission: aetherion.npc.editor",
+                dot("AetherionQuests")));
+        inventory.setItem(14, tile(Material.FEATHER, "§aToggle /flight", "flight-toggle",
                 "§7Same as EssentialsX fly.", "§8essentials.fly · aetherion.flight"));
-        inventory.setItem(19, tile(Material.COMPARATOR, "§9⚙ System Status", "page:STATUS",
+        inventory.setItem(15, tile(Material.COMPARATOR, "§9⚙ System Status", "page:STATUS",
                 "§7Plugin health · TPS · search index."));
-        inventory.setItem(20, tile(Material.JUNGLE_SAPLING, "§a§lContent Kit Preview", "page:CONTENT_KIT",
+        inventory.setItem(16, tile(Material.JUNGLE_SAPLING, "§a§lContent Kit Preview", "page:CONTENT_KIT",
                 "§7Exactly what Monkey / Homie ranks see", "§7(aetherion.dev.content)."));
-        inventory.setItem(21, tile(Material.ANVIL, "§dBooster Lab", "page:BOOSTER_LAB",
+        inventory.setItem(19, tile(Material.ANVIL, "§dBooster Lab", "page:BOOSTER_LAB",
                 "§7Apply boosters at an item's rarity."));
-        inventory.setItem(22, tile(Material.WRITTEN_BOOK, "§e/botreport", "testbot:report",
+        inventory.setItem(20, tile(Material.WRITTEN_BOOK, "§e/botreport", "testbot:report",
                 "§7Chat dump + book copy."));
     }
 

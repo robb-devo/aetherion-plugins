@@ -163,7 +163,7 @@ Use a fresh alt, or `/aquest reset all` on your account.
 
 ## Open / not done
 
-- **German:** the DE overlay keeps the old tone. Factual fixes were merged from the prior unmerged pass (no Dock Pass, "Klick", Harrow in German). Return-visit intros and topics are English-only (DE players get the full intro and no topics).
+- **German:** done in the follow-up pass, see [`docs/dialogs/DIALOG_VOICE_DE.md`](../dialogs/DIALOG_VOICE_DE.md). It covers return visits, topics, chips, greetings, barks, banter, turn-ins and all quest cards. (Originally: the DE overlay kept the old tone, and return-visit intros and topics were English-only.)
 - **Unmerged pass:** `cursor/placed-npc-dialog-pass-f9dd` is still unmerged. Its `de.yml` can't be taken wholesale, because it would delete the Harbour Hour keys.
 - **Not in-game tested:** there's no Paper server in this sandbox. Every FancyNpcs reflection target was checked against the 2.9.2 jar. The Paper API is compile-verified against 1.21.1.
 - **Skins on the live server:** they depend on MineSkin being reachable from the server (see *Skins*).

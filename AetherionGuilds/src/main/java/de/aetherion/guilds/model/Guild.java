@@ -5,6 +5,7 @@ import org.bukkit.inventory.ItemStack;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -23,6 +24,10 @@ public final class Guild {
     private final Map<UUID, GuildRank> members = new ConcurrentHashMap<>();
     private final Map<UUID, Long> invites = new ConcurrentHashMap<>();
     private final List<QuarryMinion> minions = new ArrayList<>();
+    /** Authored starter id (island highlight), or null for the classic guild pad. */
+    private String starter;
+    /** Owned land parcels (16x16, see LandService), packed x/z keys. */
+    private final Set<Long> parcels = ConcurrentHashMap.newKeySet();
 
     public Guild(UUID id, String name, int plot) {
         this.id = id;
@@ -132,5 +137,17 @@ public final class Guild {
             }
         }
         return online;
+    }
+
+    public String starter() {
+        return starter;
+    }
+
+    public void setStarter(String starter) {
+        this.starter = starter == null || starter.isBlank() ? null : starter;
+    }
+
+    public Set<Long> parcels() {
+        return parcels;
     }
 }

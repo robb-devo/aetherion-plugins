@@ -280,7 +280,7 @@ public class DamageListener implements Listener {
      */
 
     @EventHandler(
-            priority = EventPriority.HIGHEST,
+            priority = EventPriority.HIGH,
             ignoreCancelled = false
     )
     public void onEntityDamage(
@@ -299,6 +299,11 @@ public class DamageListener implements Listener {
          */
 
         if (event.getDamager() instanceof org.bukkit.entity.Projectile projectile) {
+            // Stamp projectile damage before BossEngine (HIGHEST) absorbs combat HP.
+            if (event.isCancelled() && event.getEntity() instanceof LivingEntity living
+                    && (AetherEntities.isBoss(living) || AetherEntities.isBossMinion(living))) {
+                event.setCancelled(false);
+            }
             applyShortbowProjectile(event, projectile);
             return;
         }
@@ -336,11 +341,17 @@ public class DamageListener implements Listener {
             return;
         }
 
-        // WorldGuard often cancels wildlife hits before our damage rewrite.
-        // Reclaim those swings so Attack Spread / weapon damage still apply.
+        // WorldGuard / vanilla invulnerable often cancel before our rewrite.
+        // Reclaim wildlife AND bosses so Attack Spread / weapon damage still apply
+        // (BossEngine then absorbs the stamped value at HIGHEST).
         if (event.isCancelled()) {
-            if (!(event.getEntity() instanceof LivingEntity living)
-                    || !WildlifeCombatListener.allowsPlayerHit(player, living)) {
+            if (!(event.getEntity() instanceof LivingEntity living)) {
+                return;
+            }
+            boolean reclaim = WildlifeCombatListener.allowsPlayerHit(player, living)
+                    || AetherEntities.isBoss(living)
+                    || AetherEntities.isBossMinion(living);
+            if (!reclaim) {
                 return;
             }
             event.setCancelled(false);

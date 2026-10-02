@@ -12,6 +12,30 @@ remote-transfer:
   skip-floor2-warm-on-hub: true
   shared-dir: "/var/opt/minecraft/crafty/shared/transfer"
   join-grace-ms: 4000
+  # Transfer v6 — one character across mmo-r / mmo-d (see TransferSnapshotStore).
+  # Every leave (portal, /dungeon transfer, quit, shutdown) packs <uuid>.char.yml once;
+  # every join applies it once (ledger/<uuid>.yml keeps the ids). Only active with enabled: true.
+  character-sync: true
+  # Connect not answered within this time -> the untouched snapshot is taken back.
+  connect-timeout-ms: 8000
+  # Joined but the character file is not there yet (proxy /server race): wait this long.
+  arrival-wait-ms: 6000
+  # applied/, outbox/, rollback/ copies are pruned after N days (quarantine/ keeps 4x).
+  keep-history-days: 3
+  # Velocity name of THIS backend. Blank = target-server on role dungeon, return-server on role hub.
+  this-server: ""
+
+# Floor 1 (Warden's Prison): shuffled cut of the room pool in structures/floor1/pool.yml.
+floor1-pool:
+  enabled: true
+  # Combat chambers per run (lobby and boss come on top). 4..12
+  rooms-per-run: 7
+  # Side branches off the main hall chain.
+  branches: 2
+  min-large: 1
+  max-huge: 1
+  # Chance that the main chain turns east/west for one chamber.
+  turn-chance: 0.28
 
 # Capital nether portal on mmo-r → mmo-d
 hub-portal:

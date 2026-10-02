@@ -73,6 +73,9 @@ public enum DungeonWeaponKind {
 
     public String displayName(DungeonGearTier tier) {
         DungeonGearTier safe = tier == null ? DungeonGearTier.T1 : tier;
+        if (safe == DungeonGearTier.T1) {
+            return WardenPrisonLook.weaponName(this);
+        }
         String color = switch (this) {
             case SWORD -> "§c";
             case BOW -> "§5";

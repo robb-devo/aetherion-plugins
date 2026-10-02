@@ -19,8 +19,9 @@ public final class MainMenu implements Listener {
     private static final int CREATE = 11;
     private static final int NEARBY = 13;
     private static final int LIST = 15;
-    private static final int WAND = 21;
-    private static final int HELP = 23;
+    private static final int WAND = 20;
+    private static final int GUIDE = 22;
+    private static final int HELP = 24;
 
     private final NpcEditor editor;
 
@@ -39,8 +40,9 @@ public final class MainMenu implements Listener {
         inventory.setItem(4, EditorItems.button(
                 Material.NETHER_STAR,
                 "§bNPC Editor",
-                "§7Create FancyNPCs with dialogue.",
-                "§7Story NPCs stay untouched."
+                "§7Opus studio — dialogue + quest link.",
+                "§7Command: §f/aethernpc",
+                "§8Story NPCs stay untouched."
         ));
         inventory.setItem(CREATE, EditorItems.button(
                 Material.EMERALD_BLOCK,
@@ -65,6 +67,14 @@ public final class MainMenu implements Listener {
                 "§7Right-click air — this menu.",
                 "§7Right-click an editor NPC — edit.",
                 "§7Sneak-click — delete confirm."
+        ));
+        inventory.setItem(GUIDE, EditorItems.button(
+                Material.WRITTEN_BOOK,
+                "§b§lGuides §8(EN + DE)",
+                "§7Gives two written books:",
+                "§fEnglish §7+ §fDeutsch",
+                "§7Full step-by-step walkthrough.",
+                "§eClick to receive."
         ));
         inventory.setItem(HELP, EditorItems.button(
                 Material.KNOWLEDGE_BOOK,
@@ -100,6 +110,11 @@ public final class MainMenu implements Listener {
             }
             case LIST -> ListMenu.open(player, 0);
             case WAND -> editor.giveWand(player);
+            case GUIDE -> {
+                player.closeInventory();
+                GuideBook.giveBoth(player);
+                player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 0.8f, 1.1f);
+            }
             case HELP -> HelpMenu.open(player);
             default -> {
             }

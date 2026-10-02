@@ -41,6 +41,19 @@ public final class MinionService {
     private final GuildService guilds;
     private final IslandService islands;
     private PersonalIslandService personal;
+    private Hooks hooks;
+
+    /** Island highlight: quarry housings, belts and the nametag route hint hang off these. */
+    public interface Hooks {
+        void placed(Player player, QuarryMinion minion, boolean personal, UUID hostId);
+
+        void removed(QuarryMinion minion, boolean personal, UUID hostId);
+
+        String tagSuffix(QuarryMinion minion);
+
+        /** Inside real housing: the quarry shows as a spinning ore core under the drill, not a little miner. */
+        boolean housed(QuarryMinion minion);
+    }
 
     public MinionService(JavaPlugin plugin, GuildService guilds, IslandService islands) {
         this.plugin = plugin;
@@ -50,6 +63,10 @@ public final class MinionService {
 
     public void attachPersonal(PersonalIslandService personal) {
         this.personal = personal;
+    }
+
+    public void setHooks(Hooks hooks) {
+        this.hooks = hooks;
     }
 
     public NamespacedKey itemKey() {
@@ -262,6 +279,9 @@ public final class MinionService {
         QuarryMinion minion = createFromItem(block, item);
         guild.minions().add(minion);
         spawnVisual(guild, minion);
+        if (hooks != null) {
+            hooks.placed(player, minion, false, guild.id());
+        }
         guilds.save();
         player.sendMessage("§a" + minion.quarryType().display() + " placed. It runs while the server is online.");
         return minion;
@@ -276,6 +296,9 @@ public final class MinionService {
         QuarryMinion minion = createFromItem(block, item);
         island.minions().add(minion);
         spawnVisual(island, minion);
+        if (hooks != null) {
+            hooks.placed(player, minion, true, island.ownerId());
+        }
         personal.save();
         player.sendMessage("§a" + minion.quarryType().display() + " placed. It runs while the server is online.");
         return minion;
@@ -538,6 +561,10 @@ public final class MinionService {
         return null;
     }
 
+    private boolean housed(QuarryMinion minion) {
+        return hooks != null && hooks.housed(minion);
+    }
+
     private void dress(ArmorStand stand, QuarryMinion minion) {
         QuarryType type = minion.quarryType();
         int level = minion.level();
@@ -545,15 +572,58 @@ public final class MinionService {
             return;
         }
         stand.getEquipment().setHelmet(new ItemStack(visualHelmet(type, level)));
+        if (housed(minion)) {
+            stand.setArms(false);
+            stand.getEquipment().setItemInMainHand(new ItemStack(Material.AIR));
+            stand.getEquipment().setItemInOffHand(new ItemStack(Material.AIR));
+            return;
+        }
+        stand.setArms(true);
         stand.getEquipment().setItemInMainHand(toolItem(type, level));
         stand.getEquipment().setItemInOffHand(level >= 6 ? new ItemStack(Material.LIGHTNING_ROD) : new ItemStack(Material.AIR));
+    }
+
+    /** Re-dress a quarry's stand (after its housing changed). */
+    public void refreshLook(QuarryMinion minion) {
+        if (minion == null) {
+            return;
+        }
+        for (World world : new World[]{islands.world(), personal == null ? null : personal.world()}) {
+            if (world == null) {
+                continue;
+            }
+            ArmorStand stand = findStand(world, minion);
+            if (stand != null && stand.isValid()) {
+                dress(stand, minion);
+                applyLook(stand, minion, 0L);
+                return;
+            }
+        }
     }
 
     private void applyLook(ArmorStand stand, QuarryMinion minion, long now) {
         QuarryType type = minion.quarryType();
         int level = minion.level();
-        stand.setCustomName(GuildFormat.nametag(type, level, preview(minion)));
+        String suffix = hooks == null ? "" : hooks.tagSuffix(minion);
+        stand.setCustomName(GuildFormat.nametag(type, level, preview(minion)) + (suffix == null ? "" : suffix));
         stand.setCustomNameVisible(true);
+        if (housed(minion)) {
+            // the ore core turns under the drill; debris rather than a swinging pick
+            double spin = ((now / 1000.0) * (40 + level * 8) + Math.floorMod(minion.id().hashCode(), 360)) % 360.0;
+            stand.setHeadPose(new EulerAngle(0, Math.toRadians(spin), 0));
+            if (now > 0 && (now / 200L + minion.id().hashCode()) % 3L == 0L) {
+                Location tip = stand.getLocation().add(0, 0.95, 0);
+                try {
+                    tip.getWorld().spawnParticle(Particle.BLOCK, tip, 1 + level / 3, 0.12, 0.05, 0.12, 0.02,
+                            visualHelmet(type, level).createBlockData());
+                } catch (IllegalArgumentException ignored) {
+                }
+                if (level >= 5) {
+                    tip.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, tip, 1, 0.1, 0.05, 0.1, 0.01);
+                }
+            }
+            return;
+        }
         double phase = ((now / 50.0) + Math.floorMod(minion.id().hashCode(), 40)) / 8.0;
         double swing = Math.toRadians(-12 - 52 * Math.abs(Math.sin(phase)));
         stand.setRightArmPose(new EulerAngle(swing, 0, Math.toRadians(8)));
@@ -796,11 +866,17 @@ public final class MinionService {
         removeVisual(minion);
         if (ref.isPersonal()) {
             ref.island().minions().remove(minion);
+            if (hooks != null) {
+                hooks.removed(minion, true, ref.island().ownerId());
+            }
             if (personal != null) {
                 personal.save();
             }
         } else {
             ref.guild().minions().remove(minion);
+            if (hooks != null) {
+                hooks.removed(minion, false, ref.guild().id());
+            }
             guilds.save();
         }
         player.sendMessage("§aPicked up §f" + minion.quarryType().display() + "§a. Place it again to keep level, mill and storage.");

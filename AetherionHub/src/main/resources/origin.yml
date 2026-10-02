@@ -1,0 +1,373 @@
+# =====================================================================================================
+#  Origin Isle — the main island (OriginBuilds "Skyblock RPG Spawn", pasted 1:1 into `world`).
+#  Owned by AetherionHub (de.aetherion.hub.origin). Every coordinate below was measured from the
+#  original world file (region data, 985 x 981 blocks, x -526..458, z -616..364, ground ~57-64).
+#  Missing keys are merged into plugins/AetherionHub/origin.yml on start; your edits are never overwritten.
+# =====================================================================================================
+
+enabled: true
+world: world
+
+# XZ box the Origin systems run in (the island plus a small margin).
+footprint:
+  min-x: -540
+  max-x: 470
+  min-z: -630
+  max-z: 380
+
+# Players who haven't unlocked this hub camp yet (the Harbour Hour tutorial) get quiet discovery:
+# action bar + chat only, no titles, no tour offer. Set to "" to disable.
+quiet-until-spawn: capital
+
+# Fall off the island? The wind puts you back on your last safe footing (only if you stood on the
+# island in the last 30 s, never for someone who was already down there). The underside is ~y 13-39,
+# with hanging rock roots down to about -50; the void kills at -128.
+rescue:
+  enabled: true
+  floor-y: -60
+
+rewards:
+  district: 150
+  landmark: 60
+  waystone: 100
+  bell: 60
+  vista: 120
+  skyway: 80
+  updraft: 80
+  wayfarer: 2000        # every district
+  cartographer: 3000    # every landmark
+  glowcap-circle: 1500  # every waystone attuned
+  bellwright: 1500      # all seven bells
+  stargazer: 750        # every vista
+  skyrider: 1000        # every skyway, glide and updraft
+  tour: 1000            # once per player
+  wish: 25              # once per Starfall
+  fountain-favour: 250  # the rare wishing-fountain payback
+
+# -----------------------------------------------------------------------------------------------------
+# Districts. circles: "x z radius"; optional min-y / max-y. First match wins, so the order matters
+# (Skyreach sits above the Capital; Ore Ridge before the Harbour).
+# -----------------------------------------------------------------------------------------------------
+districts:
+  skyreach:
+    name: Mount Skyreach
+    color: "§f"
+    icon: SPYGLASS
+    tagline: "The cloud mountain above the city. Golden willows, one updraft up."
+    circles: ["-30 -300 115", "80 -335 55", "-150 -285 50", "0 -225 40"]
+    min-y: 92
+    anchor: "4.5 165 -224.5"
+    soundscape: mountain
+  ore_ridge:
+    name: Ore Ridge
+    color: "§8"
+    icon: IRON_ORE
+    tagline: "Coal and iron in the hill between the harbour and the mountain."
+    circles: ["125 -300 42", "75 -345 32"]
+    anchor: "139.5 110 -284.5"
+    soundscape: ridge
+  anker_harbour:
+    name: Anker Harbour
+    color: "§b"
+    icon: OAK_BOAT
+    tagline: "Docks, the fish market and every ship in the bay."
+    circles: ["290 -425 62", "215 -440 55", "210 -360 45", "270 -318 40", "185 -500 38"]
+    anchor: "300.5 63 -380.5"
+    soundscape: harbour
+  seawatch:
+    name: Seawatch Point
+    color: "§3"
+    icon: SPYGLASS
+    tagline: "The far shore of the bay. Gulls, cliffs and a view of the docks."
+    circles: ["410 -410 55", "420 -520 55", "360 -565 48"]
+    anchor: "410.5 56 -399.5"
+    soundscape: harbour
+  capital:
+    name: The Capital
+    color: "§6"
+    icon: BELL
+    tagline: "Ledger's plaza, the fountain, the library and the grand stair."
+    circles: ["0 -55 110", "0 -192 26", "-60 70 75", "-95 140 25", "40 80 60", "-135 -40 48", "95 -110 40", "-160 20 30"]
+    max-y: 120
+    anchor: "0.5 58 -61.5"
+    soundscape: capital
+  whisperwood:
+    name: Whisperwood Wilds
+    color: "§2"
+    icon: MOSSY_COBBLESTONE
+    tagline: "Rivers, giant mushrooms, Lily Lake and the old shrine."
+    circles: ["-420 -475 136", "-290 -420 95", "-175 -520 70", "-440 -300 80", "-255 -285 45"]
+    anchor: "-284.5 69 -499.5"
+    soundscape: wilds
+  bloomfield:
+    name: Bloomfield
+    color: "§d"
+    icon: PINK_TULIP
+    tagline: "The north road through the giant blossoms."
+    circles: ["-60 -540 95", "80 -570 58", "-30 -440 45"]
+    anchor: "-39.5 56 -449.5"
+    soundscape: meadow
+  colosseum:
+    name: The Colosseum
+    color: "§e"
+    icon: SANDSTONE
+    tagline: "The Proctor's ring. Crypt vials and louder crowds."
+    circles: ["-355 -125 64", "-288 -155 20"]
+    anchor: "-354.5 66 -124.5"
+    soundscape: arena
+  glowcap_crags:
+    name: Glowcap Crags
+    color: "§9"
+    icon: BLUE_ORCHID
+    tagline: "The mushroom mountain of the west. Glowcaps, starbells, a peak."
+    circles: ["-430 60 95", "-440 180 85", "-420 272 55", "-470 -60 42"]
+    anchor: "-407.5 147 27.5"
+    soundscape: crags
+  clucksworth:
+    name: Clucksworth Farmlands
+    color: "§a"
+    icon: HAY_BLOCK
+    tagline: "Fields, the big barn and a smithy with two bells."
+    circles: ["-230 150 88", "-275 235 52", "-165 205 48"]
+    anchor: "-249.5 62 180.5"
+    soundscape: farm
+  southwood:
+    name: Southwood
+    color: "§7"
+    icon: IRON_PICKAXE
+    tagline: "Forest road to the Shabby Mine and the Eldervale skyway."
+    circles: ["10 235 105", "-100 272 62", "110 285 48"]
+    anchor: "30.5 55 180.5"
+    soundscape: forest
+  borderlands:
+    name: The Borderlands
+    color: "§c"
+    icon: BONE_BLOCK
+    tagline: "Bones, mud and the Spiral Scar. Stay behind Vex."
+    circles: ["280 205 165", "160 120 58", "400 300 72", "180 300 62"]
+    anchor: "161.5 58 73.5"
+    soundscape: wastes
+  eastwood:
+    name: Eastwood
+    color: "§2"
+    icon: OAK_LOG
+    tagline: "The lumber road and the Forage Isle skyway."
+    circles: ["385 -245 88", "360 -320 42", "400 -100 78", "330 -10 58"]
+    anchor: "349.5 66 -326.5"
+    soundscape: forest
+
+# -----------------------------------------------------------------------------------------------------
+# Landmarks: "x y z" is a walkable spot (checked against the map). radius = discovery distance.
+# -----------------------------------------------------------------------------------------------------
+landmarks:
+  ledgers_court:     {name: "Ledger's Court",        district: capital,       at: "0.5 58 3.5",       radius: 10, icon: WRITABLE_BOOK,      blurb: "Where the Aetherion Manager was born. Miss Ledger keeps the books."}
+  fountain_square:   {name: "Fountain Square",       district: capital,       at: "-0.5 58 -76.5",    radius: 16, icon: WATER_BUCKET,       blurb: "Coins in, wishes out: sneak + right-click the water, empty hand."}
+  grand_stair:       {name: "The Grand Stair",       district: capital,       at: "0.5 61 -184.5",    radius: 10, icon: STONE_BRICK_STAIRS, blurb: "Up to the Mountain Gate."}
+  mountain_gate:     {name: "The Mountain Gate",     district: capital,       at: "0.5 67 -202.5",    radius: 8,  icon: CHISELED_STONE_BRICKS, blurb: "The arch under Skyreach. The updraft waits behind it."}
+  windmill_green:    {name: "Windmill Green",        district: capital,       at: "70.5 58 -39.5",    radius: 14, icon: WHEAT,              blurb: "The round garden under the great mill."}
+  great_library:     {name: "The Great Library",     district: capital,       at: "-49.5 60 100.5",   radius: 14, icon: CHISELED_BOOKSHELF, blurb: "Two hundred chiseled shelves. Mind the ladders."}
+  lucky_vinces:      {name: "Lucky Vince's",         district: capital,       at: "-5.5 60 74.5",     radius: 9,  icon: GOLD_NUGGET,        blurb: "Vince's tables. The house usually wins."}
+  scholars_hall:     {name: "Scholars' Hall",        district: capital,       at: "-159.5 61 20.5",   radius: 12, icon: LECTERN,            blurb: "Lecterns in rows and a bell by the door."}
+  market_hall:       {name: "The Market Hall",       district: capital,       at: "7.5 58 113.5",     radius: 12, icon: BARREL,             blurb: "A hundred barrels of everything."}
+  alchemists_corner: {name: "The Alchemist's Corner", district: capital,      at: "34.5 59 -56.5",    radius: 7,  icon: BREWING_STAND,      blurb: "Brewing stand, smoker, blast furnace: a busy counter."}
+  the_docks:         {name: "The Docks",             district: anker_harbour, at: "305.5 67 -417.5",  radius: 18, icon: OAK_BOAT,           blurb: "Every ship in the bay ties up here."}
+  beacon_pier:       {name: "Beacon Pier",           district: anker_harbour, at: "267.5 64 -462.5",  radius: 12, icon: BEACON,             blurb: "Three beacons light the northern pier."}
+  bell_wharf:        {name: "Bell Wharf",            district: anker_harbour, at: "293.5 64 -292.5",  radius: 10, icon: BELL,               blurb: "Twin bells for arrivals and storms."}
+  fish_market:       {name: "The Fish Market",       district: anker_harbour, at: "270.5 63 -369.5",  radius: 9,  icon: COD,                blurb: "Ask the Fishmonger about the cod."}
+  qm_forge:          {name: "Quartermaster's Forge", district: anker_harbour, at: "172.5 64 -364.5",  radius: 10, icon: BLAST_FURNACE,      blurb: "Coal in, steel out."}
+  ridge_lookout:     {name: "Ridge Lookout",         district: ore_ridge,     at: "139.5 110 -284.5", radius: 8,  icon: SPYGLASS,           blurb: "The highest step of Ore Ridge. The whole bay below."}
+  skyreach_terrace:  {name: "Skyreach Terrace",      district: skyreach,      at: "6.5 158 -219.5",   radius: 8,  icon: CHISELED_STONE_BRICKS, blurb: "Where the updraft sets you down."}
+  skyreach_summit:   {name: "Skyreach Summit",       district: skyreach,      at: "-5.5 200 -268.5",  radius: 9,  icon: SPYGLASS,           blurb: "Above the clouds. The Stargazer keeps a stool here."}
+  golden_willows:    {name: "The Golden Willows",    district: skyreach,      at: "-81.5 193 -258.5", radius: 14, icon: WEEPING_VINES,      blurb: "Willows that drip gold over the edge of the world."}
+  old_shrine:        {name: "The Old Shrine",        district: whisperwood,   at: "-284.5 69 -499.5", radius: 14, icon: CAMPFIRE,           blurb: "Braziers still burn on the high tower."}
+  crossing_bridge:   {name: "Crossing Bridge",       district: whisperwood,   at: "-269.5 57 -261.5", radius: 8,  icon: OAK_PLANKS,         blurb: "The old bridge over the Whisper."}
+  lily_lake:         {name: "Lily Lake",             district: whisperwood,   at: "-419.5 60 -359.5", radius: 16, icon: LILY_PAD,           blurb: "Lily pads the size of rafts."}
+  wildwatch_bluff:   {name: "Wildwatch Bluff",       district: skyreach,      at: "-151.5 106 -269.5", radius: 8, icon: SPYGLASS,           blurb: "The mountain's west shoulder, over the wilds."}
+  bloom_road:        {name: "The Bloom Road",        district: bloomfield,    at: "-39.5 56 -449.5",  radius: 18, icon: PEONY,              blurb: "Giant blossoms line the north road."}
+  colosseum_ring:    {name: "The Colosseum Ring",    district: colosseum,     at: "-354.5 66 -124.5", radius: 20, icon: IRON_SWORD,         blurb: "The Proctor's arena."}
+  crag_peak:         {name: "Crag Peak",             district: glowcap_crags, at: "-406.5 147 27.5",  radius: 8,  icon: SPYGLASS,           blurb: "The top of the mushroom mountain."}
+  starbell_hollow:   {name: "Starbell Hollow",       district: clucksworth,   at: "-179.5 59 89.5",   radius: 22, icon: ALLIUM,             blurb: "Giant flowers that hum after dark."}
+  clucksworth_barn:  {name: "Clucksworth Barn",      district: clucksworth,   at: "-249.5 62 180.5",  radius: 14, icon: HAY_BLOCK,          blurb: "The big barn. Mind the chickens."}
+  farm_smithy:       {name: "The Farm Smithy",       district: clucksworth,   at: "-167.5 65 210.5",  radius: 9,  icon: SMITHING_TABLE,     blurb: "Twin bells over the forge."}
+  mine_mouth:        {name: "The Mine Road",         district: southwood,     at: "30.5 55 180.5",    radius: 12, icon: RAIL,               blurb: "Down to the first shift."}
+  mine_hill:         {name: "Mine Hill",             district: southwood,     at: "-6.5 106 230.5",   radius: 8,  icon: SPYGLASS,           blurb: "A mossy crown over the south forest."}
+  eldervale_skyway:  {name: "The Eldervale Skyway",  district: southwood,     at: "22.5 55 300.5",    radius: 7,  icon: SLIME_BLOCK,        blurb: "The arch pad to Mining Eldervale."}
+  vexs_gate:         {name: "Vex's Gate",            district: borderlands,   at: "161.5 58 73.5",    radius: 10, icon: IRON_BARS,          blurb: "Sergeant Vex holds the line here."}
+  spiral_scar:       {name: "The Spiral Scar",       district: borderlands,   at: "150.5 62 125.5",   radius: 25, icon: MUD,                blurb: "Something fell here and kept turning."}
+  the_ribcage:       {name: "The Ribcage",           district: borderlands,   at: "298.5 64 133.5",   radius: 20, icon: BONE,               blurb: "A giant's bones, bleached and grinning."}
+  rite_circle:       {name: "The Rite Circle",       district: borderlands,   at: "251.5 59 173.5",   radius: 12, icon: SKELETON_SKULL,     blurb: "The Rite Warden's stones."}
+  lumber_camp:       {name: "The Lumber Camp",       district: eastwood,      at: "349.5 66 -326.5",  radius: 12, icon: IRON_AXE,           blurb: "Where the lumberjack argues with oaks."}
+  forage_skyway:     {name: "The Forage Skyway",     district: eastwood,      at: "432.5 55 -235.5",  radius: 9,  icon: SLIME_BLOCK,        blurb: "The pad to Forage Isle."}
+  seawatch_point:    {name: "Seawatch Point",        district: seawatch,      at: "410.5 56 -399.5",  radius: 15, icon: SPYGLASS,           blurb: "Across the bay from the docks."}
+
+# -----------------------------------------------------------------------------------------------------
+# Waystones: the giant glowcaps of the island (+ two sprouts for the harbour and Eastwood, which have
+# none). Walk up to one to attune; right-click it to travel to any glowcap you have attuned.
+# stand = walkable spot beside the stem (the click box + label sit here). cap = glowing cap centre.
+# -----------------------------------------------------------------------------------------------------
+waystones:
+  hearthcap:  {name: "Hearthcap",        district: capital,       stand: "-89.5 60 143.5",   cap: "-98 98 138",   sprout: false, blurb: "The glowcap on the Capital's west terrace."}
+  skyreach:   {name: "Skyreach Glowcap", district: skyreach,      stand: "-68.5 118 -387.5", cap: "-68 131 -388", sprout: false, blurb: "Grown out of the cliff under the summit."}
+  colosseum:  {name: "Ringside Glowcap", district: colosseum,     stand: "-284.5 61 -156.5", cap: "-283 68 -154", sprout: false, blurb: "East of the Colosseum."}
+  northwild:  {name: "Northwild Glowcap", district: whisperwood,  stand: "-471.5 62 -590.5", cap: "-475 68 -592", sprout: false, blurb: "The far north-west corner of the island."}
+  twincap:    {name: "The Twin Glowcaps", district: glowcap_crags, stand: "-404.5 66 243.5",  cap: "-405 76 246",  sprout: false, blurb: "Two caps, one stem apart."}
+  bonewatch:  {name: "Bonewatch Glowcap", district: borderlands,  stand: "377.5 67 113.5",   cap: "376 73 116",   sprout: false, blurb: "The only thing still glowing in the wastes."}
+  harbour:    {name: "Harbour Sprout",   district: anker_harbour, stand: "292.5 66 -404.5",  cap: "292.5 69 -404.5", sprout: true, blurb: "A young glowcap on the quay, planted for sailors."}
+  eastwood:   {name: "Eastwood Sprout",  district: eastwood,      stand: "360.5 66 -321.5",  cap: "360.5 69 -321.5", sprout: true, blurb: "A young glowcap by the lumber camp."}
+
+# -----------------------------------------------------------------------------------------------------
+# Vistas: stand here and the island names itself — district labels float toward each place.
+# -----------------------------------------------------------------------------------------------------
+vistas:
+  skyreach_summit: {name: "Skyreach Summit",  at: "-5.5 200 -268.5",  radius: 4.5}
+  crag_peak:       {name: "Crag Peak",        at: "-406.5 147 27.5",  radius: 4.0}
+  ridge_lookout:   {name: "Ridge Lookout",    at: "139.5 110 -284.5", radius: 4.0}
+  mine_hill:       {name: "Mine Hill",        at: "-6.5 106 230.5",   radius: 4.0}
+  wildwatch_bluff: {name: "Wildwatch Bluff",  at: "-151.5 106 -269.5", radius: 4.0}
+
+# The seven bells of Origin (real bell blocks in the map). The high one in the Bell Wharf tower is
+# out of reach: ring it with an arrow.
+bells:
+  scholars_bell:  {name: "Scholars' Bell",   at: "-165 65 4"}
+  smithy_west:    {name: "Smithy Bell (West)", at: "-172 66 215"}
+  smithy_east:    {name: "Smithy Bell (East)", at: "-164 66 215"}
+  wharf_bell:     {name: "Wharf Bell",       at: "284 65 -296"}
+  tower_low:      {name: "Tower Bell",       at: "302 65 -292"}
+  tower_high:     {name: "High Tower Bell",  at: "302 70 -292"}
+  wayside_bell:   {name: "Wayside Bell",     at: "9 57 279"}
+
+# -----------------------------------------------------------------------------------------------------
+# Updrafts: a clear air shaft from a walkable floor to a ledge you can't reach on foot.
+# floor/top are feet positions (validated: vertical column and glide corridor are clear).
+# -----------------------------------------------------------------------------------------------------
+updrafts:
+  skyreach: {name: "Skyreach Updraft", floor: "-1.5 64 -206.5", top: "6.5 158 -219.5"}
+  crag:     {name: "Crag Updraft",     floor: "-415.5 81 11.5",  top: "-407.5 145 24.5"}
+
+# -----------------------------------------------------------------------------------------------------
+# Flights (scripted, terrain-checked glides). trigger: "pad" = standing on slime inside min/max;
+# "rift" = stepping into the ring at `at`. path = waypoints (smoothed); first point = take-off.
+# -----------------------------------------------------------------------------------------------------
+flights:
+  southeast_skyway:
+    name: "Southeast Skyway"
+    to: "The Capital"
+    trigger: pad
+    min: "428 54 299"
+    max: "431 54 302"
+    speed: 2.6
+    path: ["429.5 55.3 300.5", "421.9 56.5 294.1", "368.4 136.5 248.9", "215.0 147 119.5", "6.6 106 -56.3", "1.4 63 -60.7", "0.5 58 -61.5"]
+  southwest_skyway:
+    name: "Southwest Skyway"
+    to: "The Capital"
+    trigger: pad
+    min: "-296 54 339"
+    max: "-292 54 340"
+    speed: 2.6
+    path: ["-293.5 55.3 339.5", "-291.5 56.8 330.5", "-289.5 95 312.5", "-284 170 296", "-260 182 262", "-146.5 182 139", "-4.2 106 -55", "-0.2 63 -60.5", "0.5 58 -61.5"]
+  summit_glide:
+    name: "Summit Glide"
+    to: "The Capital"
+    trigger: rift
+    at: "-0.5 194 -264.5"
+    radius: 1.4
+    speed: 2.2
+    path: ["-0.5 194.3 -264.5", "-0.5 195 -260.5", "-0.3 231 -230.1", "0 231 -163", "0.5 106 -69.5", "0.5 63 -62.7", "0.5 58 -61.5"]
+  crag_glide:
+    name: "Crag Glide"
+    to: "Clucksworth"
+    trigger: rift
+    at: "-405.5 147 28.5"
+    radius: 1.4
+    speed: 2.0
+    path: ["-405.5 147.3 28.5", "-401.5 149.5 31.5", "-376 179.5 50.4", "-320.5 166 91.5", "-241.9 101 149.7", "-236.5 66 153.8", "-235.5 61 154.5"]
+
+# -----------------------------------------------------------------------------------------------------
+# Ambient emitters (only for players within `radius`). kinds: forge kitchen alchemy lighthouse
+# mastlight fountain gulls surf starbell glowcap market mill chimes bones farm brazier pages coins
+# when: any | day | night | dusk
+# -----------------------------------------------------------------------------------------------------
+emitters:
+  - {kind: forge,      at: "168.5 66 -364.5",  radius: 22, when: any}
+  - {kind: forge,      at: "-175.5 66 215.5",  radius: 22, when: any}
+  - {kind: forge,      at: "-160.5 66 215.5",  radius: 22, when: any}
+  - {kind: alchemy,    at: "37.5 60 -59.5",    radius: 16, when: any}
+  - {kind: kitchen,    at: "-146.5 67 174.5",  radius: 18, when: day}
+  - {kind: kitchen,    at: "67.5 66 119.5",    radius: 18, when: day}
+  - {kind: alchemy,    at: "-166.5 65 4.5",    radius: 14, when: any}
+  - {kind: alchemy,    at: "-285.5 65 114.5",  radius: 14, when: any}
+  - {kind: lighthouse, at: "274.5 73 -473.5",  radius: 170, when: night}
+  - {kind: mastlight,  at: "288.5 71 -388.5",  radius: 90, when: night}
+  - {kind: mastlight,  at: "306.5 71 -390.5",  radius: 90, when: night}
+  - {kind: fountain,   at: "-0.5 61 -90.5",    radius: 20, when: any}
+  - {kind: gulls,      at: "290.5 82 -440.5",  radius: 90, when: day}
+  - {kind: gulls,      at: "410.5 78 -430.5",  radius: 70, when: day}
+  - {kind: surf,       at: "325.5 62 -352.5",  radius: 30, when: any}
+  - {kind: surf,       at: "-424.5 59 -350.5", radius: 30, when: any}
+  - {kind: starbell,   at: "-348.5 110 207.5", radius: 40, when: night}
+  - {kind: starbell,   at: "-240.5 94 281.5",  radius: 40, when: night}
+  - {kind: starbell,   at: "-277.5 88 78.5",   radius: 40, when: night}
+  - {kind: starbell,   at: "-122.5 90 116.5",  radius: 40, when: night}
+  - {kind: starbell,   at: "-179.5 88 88.5",   radius: 40, when: night}
+  - {kind: glowcap,    at: "-98 99 138",       radius: 48, when: night}
+  - {kind: glowcap,    at: "-68 132 -388",     radius: 48, when: night}
+  - {kind: glowcap,    at: "-283 69 -154",     radius: 48, when: night}
+  - {kind: glowcap,    at: "-475 69 -592",     radius: 48, when: night}
+  - {kind: glowcap,    at: "-405 77 246",      radius: 48, when: night}
+  - {kind: glowcap,    at: "376 74 116",       radius: 48, when: night}
+  - {kind: market,     at: "7.5 60 113.5",     radius: 18, when: day}
+  - {kind: market,     at: "60.5 60 0.5",      radius: 20, when: day}
+  - {kind: market,     at: "270.5 64 -369.5",  radius: 16, when: day}
+  - {kind: mill,       at: "68.5 72 -32.5",    radius: 30, when: any}
+  - {kind: chimes,     at: "-5.5 201 -268.5",  radius: 40, when: any}
+  - {kind: chimes,     at: "-81.5 195 -258.5", radius: 30, when: any}
+  - {kind: bones,      at: "298.5 70 133.5",   radius: 45, when: any}
+  - {kind: bones,      at: "150.5 64 125.5",   radius: 40, when: any}
+  - {kind: farm,       at: "-249.5 63 180.5",  radius: 30, when: day}
+  - {kind: farm,       at: "-250.5 62 125.5",  radius: 30, when: day}
+  - {kind: brazier,    at: "-256.5 103 -500",  radius: 90, when: night}
+  - {kind: pages,      at: "-49.5 61 100.5",   radius: 16, when: any}
+  - {kind: coins,      at: "-5.5 61 74.5",     radius: 12, when: any}
+
+# -----------------------------------------------------------------------------------------------------
+# The Origin cast (Hub-owned townsfolk; not Quests NPCs). Non-persistent villagers, rebuilt on chunk load.
+# -----------------------------------------------------------------------------------------------------
+cast:
+  auto-place: true
+  presets:
+    guide:      "10.5 58 6.5 150"
+    keeper:     "5.5 67 -199.5 160"
+    bellkeeper: "-160.5 61 7.5 90"
+    tender:     "-86.5 60 140.5 60"
+    stargazer:  "-7.5 198 -271.5 -30"
+
+# Island-wide moments. Cosmetic only; a new one every `interval-minutes` while anyone is on the isle.
+events:
+  enabled: true
+  interval-minutes: 22
+  lantern-festival: {center: "-0.5 62 -91.5", radius: 34}
+  aurora:           {center: "0 230 -240"}
+  starfall:         {center: "0 200 -60"}
+  petal-storm:      {centers: ["0.5 60 -40.5", "-240.5 62 160.5", "-40.5 57 -470.5"]}
+  harbour-fog:      {center: "290.5 64 -440.5", radius: 60}
+  rainbow:          {center: "0.5 58 -60.5"}
+
+# The wishing fountain (Fountain Square). Sneak + right-click its water with an empty hand: pay `cost`
+# coins, get a fortune; `favour-chance` of the Fountain's Favour (rewards.fountain-favour). One toss a minute.
+fountain:
+  center: "-0.5 60 -91"
+  radius: 12
+  cost: 10
+  favour-chance: 0.03
+
+# Hub camps added by the overhaul (organic walk-in unlocks). Locations are seeded once if unset.
+spawns:
+  summit:      {at: "-5.5 200 -268.5 180 0", discover-radius: 18}
+  whisperwood: {at: "-284.5 69 -497.5 180 0", discover-radius: 30}
+
+# /origin dev softlight: invisible LIGHT blocks where it's dark on the walkable surface.
+softlight:
+  step: 5
+  min-light: 7
+  level: 12
+  exclude: [borderlands]

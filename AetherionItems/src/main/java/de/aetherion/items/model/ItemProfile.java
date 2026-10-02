@@ -1570,6 +1570,165 @@ public enum ItemProfile {
             ItemCapability.CRIT_CHANCE
     ),
 
+    ASHEN_KATANA(
+            "ashen_katana",
+            ItemCapability.DAMAGE,
+            ItemCapability.ATTACK_SPREAD,
+            ItemCapability.CRIT_CHANCE,
+            ItemCapability.CRIT_DAMAGE
+    ),
+
+    CATACLYSM_ROD(
+            "cataclysm_rod",
+            ItemCapability.DAMAGE,
+            ItemCapability.CRIT_CHANCE,
+            ItemCapability.CRIT_DAMAGE
+    ),
+
+    DEEPSONG_CONCH(
+            "deepsong_conch",
+            ItemCapability.DAMAGE,
+            ItemCapability.CRIT_CHANCE,
+            ItemCapability.CRIT_DAMAGE
+    ),
+
+    HOLLOW_SUN_HELMET(
+            "hollow_sun_helmet",
+            ItemCapability.DAMAGE,
+            ItemCapability.DEFENSE,
+            ItemCapability.HEALTH,
+            ItemCapability.ATTACK_SPREAD,
+            ItemCapability.CRIT_CHANCE,
+            ItemCapability.CRIT_DAMAGE,
+            ItemCapability.SPEED
+    ),
+
+    HOLLOW_SUN_CHESTPLATE(
+            "hollow_sun_chestplate",
+            ItemCapability.DAMAGE,
+            ItemCapability.DEFENSE,
+            ItemCapability.HEALTH,
+            ItemCapability.ATTACK_SPREAD,
+            ItemCapability.CRIT_CHANCE,
+            ItemCapability.CRIT_DAMAGE,
+            ItemCapability.SPEED
+    ),
+
+    HOLLOW_SUN_LEGGINGS(
+            "hollow_sun_leggings",
+            ItemCapability.DAMAGE,
+            ItemCapability.DEFENSE,
+            ItemCapability.HEALTH,
+            ItemCapability.ATTACK_SPREAD,
+            ItemCapability.CRIT_CHANCE,
+            ItemCapability.CRIT_DAMAGE,
+            ItemCapability.SPEED
+    ),
+
+    HOLLOW_SUN_BOOTS(
+            "hollow_sun_boots",
+            ItemCapability.DAMAGE,
+            ItemCapability.DEFENSE,
+            ItemCapability.HEALTH,
+            ItemCapability.ATTACK_SPREAD,
+            ItemCapability.CRIT_CHANCE,
+            ItemCapability.CRIT_DAMAGE,
+            ItemCapability.SPEED
+    ),
+
+    METEOR_MACE(
+            "meteor_mace",
+            ItemCapability.DAMAGE,
+            ItemCapability.ATTACK_SPREAD,
+            ItemCapability.CRIT_CHANCE,
+            ItemCapability.CRIT_DAMAGE
+    ),
+
+    PORTAL_GUN(
+            "portal_gun",
+            ItemCapability.DAMAGE
+    ),
+
+    RUNE_SIGIL(
+            "rune_sigil",
+            ItemCapability.DAMAGE,
+            ItemCapability.CRIT_CHANCE,
+            ItemCapability.CRIT_DAMAGE
+    ),
+
+    SERAPHINE_NEEDLE(
+            "seraphine_needle",
+            ItemCapability.DAMAGE,
+            ItemCapability.ATTACK_SPREAD,
+            ItemCapability.CRIT_CHANCE,
+            ItemCapability.CRIT_DAMAGE
+    ),
+
+    SERAPHINE_VEIL(
+            "seraphine_veil",
+            ItemCapability.DAMAGE,
+            ItemCapability.DEFENSE,
+            ItemCapability.HEALTH,
+            ItemCapability.ATTACK_SPREAD,
+            ItemCapability.CRIT_CHANCE,
+            ItemCapability.CRIT_DAMAGE,
+            ItemCapability.SPEED
+    ),
+
+    SERAPHINE_BODICE(
+            "seraphine_bodice",
+            ItemCapability.DAMAGE,
+            ItemCapability.DEFENSE,
+            ItemCapability.HEALTH,
+            ItemCapability.ATTACK_SPREAD,
+            ItemCapability.CRIT_CHANCE,
+            ItemCapability.CRIT_DAMAGE,
+            ItemCapability.SPEED
+    ),
+
+    SERAPHINE_BELL_SKIRT(
+            "seraphine_bell_skirt",
+            ItemCapability.DAMAGE,
+            ItemCapability.DEFENSE,
+            ItemCapability.HEALTH,
+            ItemCapability.ATTACK_SPREAD,
+            ItemCapability.CRIT_CHANCE,
+            ItemCapability.CRIT_DAMAGE,
+            ItemCapability.SPEED
+    ),
+
+    SERAPHINE_POINTE_SLIPPERS(
+            "seraphine_pointe_slippers",
+            ItemCapability.DAMAGE,
+            ItemCapability.DEFENSE,
+            ItemCapability.HEALTH,
+            ItemCapability.ATTACK_SPREAD,
+            ItemCapability.CRIT_CHANCE,
+            ItemCapability.CRIT_DAMAGE,
+            ItemCapability.SPEED
+    ),
+
+    TERMINUS(
+            "terminus",
+            ItemCapability.DAMAGE,
+            ItemCapability.CRIT_CHANCE,
+            ItemCapability.CRIT_DAMAGE
+    ),
+
+    VESPER_BELL(
+            "vesper_bell",
+            ItemCapability.DAMAGE,
+            ItemCapability.CRIT_CHANCE,
+            ItemCapability.CRIT_DAMAGE
+    ),
+
+    WORLD_SPLITTER(
+            "world_splitter",
+            ItemCapability.DAMAGE,
+            ItemCapability.CRIT_CHANCE,
+            ItemCapability.CRIT_DAMAGE
+    ),
+
     GRAVWELL_CLEAVER(
             "gravwell_cleaver",
             ItemCapability.DAMAGE,

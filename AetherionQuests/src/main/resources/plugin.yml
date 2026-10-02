@@ -37,10 +37,11 @@ commands:
     usage: /npctalk [world|classic]
     aliases: [talkui]
 
-  npc:
-    description: In-game FancyNPC creator for moderators
-    usage: /npc
-    aliases: [aethernpc, npceditor]
+  # Primary name is aethernpc so FancyNpcs can keep vanilla /npc.
+  aethernpc:
+    description: Aetherion NPC + dialogue + quest-link editor (Opus studio)
+    usage: /aethernpc
+    aliases: [npceditor]
     permission: aetherion.npc.editor
 
 permissions:

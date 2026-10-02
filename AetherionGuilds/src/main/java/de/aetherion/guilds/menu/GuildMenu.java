@@ -1,5 +1,6 @@
 package de.aetherion.guilds.menu;
 
+import de.aetherion.guilds.island.IslandHost;
 import de.aetherion.guilds.model.Guild;
 import de.aetherion.guilds.model.GuildRank;
 import de.aetherion.guilds.model.IslandTiers;
@@ -36,12 +37,18 @@ public final class GuildMenu {
     public static final int UPGRADE_SLOT = 16;
     public static final int MINIONS_SLOT = 21;
     public static final int BACK_SLOT = 18;
+    public static final int PROJECTS_SLOT = 22;
+    public static final int BUILD_SLOT = 23;
+    public static final int LAND_SLOT = 24;
 
     private final GuildService guilds;
     private final MinionService minions;
     private final IslandService islands;
     private final FriendMenu friends;
     private BankMenu bank;
+    private GuildProjectMenu projects;
+    private BuildMenu build;
+    private LandMenu land;
 
     public GuildMenu(GuildService guilds, MinionService minions, IslandService islands, FriendMenu friends) {
         this.guilds = guilds;
@@ -52,6 +59,13 @@ public final class GuildMenu {
 
     public void setBank(BankMenu bank) {
         this.bank = bank;
+    }
+
+    /** Island highlight: projects, blueprints and land for the guild island. */
+    public void attachHighlight(GuildProjectMenu projects, BuildMenu build, LandMenu land) {
+        this.projects = projects;
+        this.build = build;
+        this.land = land;
     }
 
     public void open(Player player) {
@@ -171,6 +185,35 @@ public final class GuildMenu {
                 "§7Place, collect, or pick up",
                 "§7to move them."
         ));
+        if (projects != null) {
+            inventory.setItem(PROJECTS_SLOT, named(
+                    Material.LECTERN,
+                    "§6⚑ Guild Projects",
+                    "§7Build the Guild Hall or the",
+                    "§7Harbour Beacon together.",
+                    "§7Stages rise as you pay in.",
+                    "§eClick"
+            ));
+        }
+        if (build != null) {
+            inventory.setItem(BUILD_SLOT, named(
+                    Material.CRAFTING_TABLE,
+                    "§6Build",
+                    "§7Huts, Workshop, Mill, Forge,",
+                    "§7Depot and belts (Soldier+).",
+                    "§8Paid from the guild bank.",
+                    "§eClick"
+            ));
+        }
+        if (land != null) {
+            inventory.setItem(LAND_SLOT, named(
+                    Material.FILLED_MAP,
+                    "§aExpand Land",
+                    "§7Buy guild land (Mayor+).",
+                    "§8Paid from the guild bank.",
+                    "§eClick"
+            ));
+        }
         inventory.setItem(BACK_SLOT, named(Material.ARROW, "§eBack", "§7Return to the Aetherion Manager."));
         player.openInventory(inventory);
     }
@@ -219,6 +262,21 @@ public final class GuildMenu {
             case UPGRADE_SLOT -> {
                 guilds.upgradeIsland(player);
                 open(player);
+            }
+            case PROJECTS_SLOT -> {
+                if (projects != null) {
+                    projects.open(player);
+                }
+            }
+            case BUILD_SLOT -> {
+                if (build != null) {
+                    build.open(player, IslandHost.guild(guild.id()));
+                }
+            }
+            case LAND_SLOT -> {
+                if (land != null) {
+                    land.open(player, IslandHost.guild(guild.id()));
+                }
             }
             case MINIONS_SLOT -> {
                 player.closeInventory();

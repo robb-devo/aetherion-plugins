@@ -75,11 +75,13 @@ public final class VexDeathHintListener implements Listener {
             return;
         }
         player.sendMessage("");
-        player.sendMessage("§cSergeant Vex §8» §fYou're vertical again.");
+        player.sendMessage("§cSergeant Vex §8» §f" + de.aetherion.quests.lang.LangPack.say(player, "vex.death_up", "You're vertical again."));
         if (QuestStoryGate.questCompleted(player, questManager, "lesson_boost")) {
-            player.sendMessage("§cSergeant Vex §8» §7Trouble? Combat set + boosters. Recipe Book and anvil. Then finish the ten.");
+            player.sendMessage("§cSergeant Vex §8» §7" + de.aetherion.quests.lang.LangPack.say(player, "vex.death_gear",
+                    "Trouble? Combat set + boosters. Recipe Book and anvil. Then finish the ten."));
         } else {
-            player.sendMessage("§cSergeant Vex §8» §7Trouble? §eTemper§7 teaches boosters. Combat set from the Recipe Book. Soft gear.");
+            player.sendMessage("§cSergeant Vex §8» §7" + de.aetherion.quests.lang.LangPack.say(player, "vex.death_temper",
+                    "Trouble? §eTemper§7 teaches boosters. Combat set's in the Recipe Book."));
             de.aetherion.quests.ui.QuestHint.show(player, "booster_tutor", "Temper");
         }
         player.sendMessage("");

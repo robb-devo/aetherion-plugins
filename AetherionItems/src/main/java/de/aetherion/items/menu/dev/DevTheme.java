@@ -140,6 +140,7 @@ final class DevTheme {
             case WEAPONS_DUNGEON -> new Info(Cat.COMBAT, "Dungeon Relics", Page.WEAPONS);
             case WEAPONS_SPECIAL -> new Info(Cat.COMBAT, "Special Weapons", Page.WEAPONS);
             case WEAPONS_GOD -> new Info(Cat.COMBAT, "Test Extras", Page.WEAPONS);
+            case WEAPONS_TRAVERSAL -> new Info(Cat.COMBAT, "Traversal", Page.WEAPONS);
             case COMBAT -> new Info(Cat.COMBAT, "Combat Sets", Page.CAT_COMBAT);
             case SETS -> new Info(Cat.COMBAT, "Special Sets", Page.CAT_COMBAT);
             case LOADOUTS -> new Info(Cat.COMBAT, "Loadouts", Page.CAT_COMBAT);
@@ -183,7 +184,7 @@ final class DevTheme {
             case SHARDS -> new Info(Cat.ADMIN, "Aether Shards", Page.CAT_ADMIN);
             case TESTBOTS -> new Info(Cat.ADMIN, "Testbots", Page.CAT_ADMIN);
             case TESTBOTS_LIST -> new Info(Cat.ADMIN, "Bot List", Page.TESTBOTS);
-            case NPC_EDITOR -> new Info(Cat.ADMIN, "NPC Studio", Page.CAT_ADMIN);
+            case NPC_EDITOR -> new Info(Cat.ADMIN, "NPC Editor", Page.CAT_ADMIN);
             case STATUS -> new Info(Cat.ADMIN, "System Status", Page.CAT_ADMIN);
 
             // DANGER

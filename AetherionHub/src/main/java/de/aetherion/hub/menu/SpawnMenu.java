@@ -43,6 +43,9 @@ public final class SpawnMenu {
             case "colosseum" -> 19;
             case "eldervale" -> 20;
             case "borderlands" -> 21;
+            case "summit" -> 23;
+            case "whisperwood" -> 24;
+            case "bloodstone" -> 25;
             default -> spawn.slot();
         };
     }
@@ -146,8 +149,13 @@ public final class SpawnMenu {
         if (!unlocked) {
             lore.add("§cLocked");
             if ("farm".equalsIgnoreCase(spawn.id()) || "capital".equalsIgnoreCase(spawn.id())
-                    || "borderlands".equalsIgnoreCase(spawn.id()) || "ore_ridge".equalsIgnoreCase(spawn.id())) {
+                    || "borderlands".equalsIgnoreCase(spawn.id()) || "ore_ridge".equalsIgnoreCase(spawn.id())
+                    || "summit".equalsIgnoreCase(spawn.id()) || "whisperwood".equalsIgnoreCase(spawn.id())) {
                 lore.add("§7Walk there to unlock.");
+                String hint = de.aetherion.hub.origin.OriginHooks.lockedHint(player, spawn.id());
+                if (hint != null && spawn.hasLocation()) {
+                    lore.add(hint.replace("§e/origin go camp:" + spawn.id() + " §7points the way.", "").trim());
+                }
             } else {
                 lore.add("§7Unlock through the story,");
                 lore.add("§7or discover it in the world.");

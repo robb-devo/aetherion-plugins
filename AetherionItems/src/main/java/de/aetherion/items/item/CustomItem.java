@@ -237,7 +237,7 @@ public class CustomItem {
                 boosterType.name()
         );
 
-        meta.setMaxStackSize(1);
+        meta.setMaxStackSize(BoosterItems.MAX_STACK);
     }
 
 
@@ -8884,15 +8884,75 @@ public class CustomItem {
             stampTestGear(meta, "portal_gun");
             meta.setDisplayName("§b✦ Portal Gun");
             meta.setLore(createLore("portal_gun", List.of(
-                    "§7✦ §6LEGENDARY §8· §bSandbox Utility",
+                    "§7✦ §6LEGENDARY §8· §bTraversal",
                     "",
                     "§b✦ Dual Gate",
                     "§7Left-click: set §bAzure §7gate.",
                     "§7Right-click: set §6Amber §7gate.",
+                    "§7Wall upright · floor / ceiling flat.",
                     "§7Walk through either to exit the other.",
-                    "§8Clean BlockDisplay portals — no nova.",
+                    "§eSneak + L/R: §7clear that gate only.",
                     "",
-                    "§8Test Arena prototype"
+                    "§8Traversal kit"
+            ), stats));
+            meta.setUnbreakable(true);
+            meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE);
+            hideVanillaAttributes(meta);
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    public ItemStack createGrapplingHook() {
+        ItemStack item = new ItemStack(Material.FISHING_ROD);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            setItemId(meta, "grappling_hook");
+            ItemStats stats = new ItemStats();
+            stats.setDamage(8);
+            applyItemData(meta, Rarity.EPIC, stats);
+            stampTestGear(meta, "grappling_hook");
+            meta.setDisplayName("§3✦ Grappling Hook");
+            meta.setLore(createLore("grappling_hook", List.of(
+                    "§7✦ §5EPIC §8· §3Traversal",
+                    "",
+                    "§3✦ Latch & Pull",
+                    "§7Right-click a surface to latch.",
+                    "§7Pulled all the way to the point.",
+                    "§eSneak: §7cancel mid-pull.",
+                    "§8Long range · soft landing.",
+                    "",
+                    "§8Traversal kit"
+            ), stats));
+            meta.setUnbreakable(true);
+            meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE);
+            hideVanillaAttributes(meta);
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    public ItemStack createSkyreaverSpools() {
+        ItemStack item = new ItemStack(Material.CROSSBOW);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            setItemId(meta, "skyreaver_spools");
+            ItemStats stats = new ItemStats();
+            stats.setDamage(10);
+            applyItemData(meta, Rarity.LEGENDARY, stats);
+            stampTestGear(meta, "skyreaver_spools");
+            meta.setDisplayName("§c✦ Skyreaver Spools");
+            meta.setLore(createLore("skyreaver_spools", List.of(
+                    "§7✦ §6LEGENDARY §8· §cODM Traversal",
+                    "",
+                    "§c✦ Swing Cable",
+                    "§eLeft-click §7a surface: latch the claw.",
+                    "§eRight-click §7: gas boost where you look.",
+                    "§eSneak: §7cut — keep your momentum.",
+                    "§7Cable never yanks you — gas is look-only.",
+                    "§8Hang · boost · swing · chain.",
+                    "",
+                    "§8Traversal kit"
             ), stats));
             meta.setUnbreakable(true);
             meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE);

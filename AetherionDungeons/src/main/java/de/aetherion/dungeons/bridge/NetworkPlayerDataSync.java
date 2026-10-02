@@ -124,7 +124,7 @@ public final class NetworkPlayerDataSync {
                 String name = entry.getKey();
                 Object value = entry.getValue();
                 try {
-                    if (name.startsWith("yaml:") && value instanceof Map<?, ?> map) {
+                    if (name.startsWith("yaml:") && name.endsWith(".yml") && value instanceof Map<?, ?> map) {
                         writeKeys(new File(folder, name.substring(5)), (Map<String, Object>) map);
                     } else if (name.equals("file:storage") && value instanceof String raw) {
                         writeString(new File(folder, "storage/" + key + ".yml"), raw);
@@ -180,6 +180,68 @@ public final class NetworkPlayerDataSync {
         }
         plugin.getLogger().info("Network progression imported for " + player.getName()
                 + " keys=" + plain.keySet());
+    }
+
+    /**
+     * Pre-login staging (async): files that are read before {@code PlayerJoinEvent}
+     * (Paper stats/advancements, Quests per-player YAML) are written early so the arriving
+     * backend loads the transferred copy instead of a stale local one. The join hook still
+     * runs {@link #importAll} afterwards; writing the same bytes twice is harmless.
+     */
+    public void stageEarlyFiles(UUID id, Map<String, Object> plain, File mainWorldFolder) {
+        if (id == null || plain == null || plain.isEmpty()) {
+            return;
+        }
+        String key = id.toString();
+        if (mainWorldFolder != null) {
+            if (plain.get("file:stats") instanceof String raw) {
+                writeString(new File(mainWorldFolder, "stats/" + key + ".json"), raw);
+            }
+            if (plain.get("file:advancements") instanceof String raw) {
+                writeString(new File(mainWorldFolder, "advancements/" + key + ".json"), raw);
+            }
+        }
+        Plugin quests = Bukkit.getPluginManager().getPlugin("AetherionQuests");
+        if (quests != null) {
+            if (plain.get("file:quests") instanceof String raw) {
+                writeString(new File(quests.getDataFolder(), "players/" + key + ".yml"), raw);
+            }
+            if (plain.get("file:quests2") instanceof String raw) {
+                writeString(new File(quests.getDataFolder(), "data/" + key + ".yml"), raw);
+            }
+        }
+    }
+
+    /**
+     * Snapshots before v6 stored {@code yaml:coins.yml -> players.<uuid>} inside a normal YAML
+     * document, and Bukkit split the dots on load ({@code yaml:coins -> yml -> players -> <uuid>}).
+     * Rebuild the flat keys so those pending files still import into the right file and path.
+     */
+    @SuppressWarnings("unchecked")
+    public static Map<String, Object> repairLegacyKeys(Map<String, Object> plain) {
+        Map<String, Object> out = new LinkedHashMap<>();
+        if (plain == null) {
+            return out;
+        }
+        for (Map.Entry<String, Object> entry : plain.entrySet()) {
+            String name = entry.getKey();
+            Object value = entry.getValue();
+            if (name.startsWith("yaml:") && !name.endsWith(".yml") && value instanceof Map<?, ?> nested
+                    && nested.size() == 1 && nested.get("yml") instanceof Map<?, ?> inner) {
+                Map<String, Object> flat = new LinkedHashMap<>();
+                for (Map.Entry<?, ?> section : inner.entrySet()) {
+                    if (section.getValue() instanceof Map<?, ?> perPlayer) {
+                        for (Map.Entry<?, ?> player : perPlayer.entrySet()) {
+                            flat.put(section.getKey() + "." + player.getKey(), player.getValue());
+                        }
+                    }
+                }
+                out.put(name + ".yml", flat);
+            } else {
+                out.put(name, value);
+            }
+        }
+        return out;
     }
 
     /**

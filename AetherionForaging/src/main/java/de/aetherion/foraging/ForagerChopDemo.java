@@ -45,7 +45,7 @@ public final class ForagerChopDemo {
         Block trunk = listener.findDemoTrunk(nearForager, 6);
         if (trunk == null) {
             RUNNING.remove(viewer.getUniqueId());
-            viewer.sendMessage("§6Forager: §f...tree's shy. Just hit a glowing trunk with the axe.");
+            foragerSay(viewer, "...tree's shy. Just hit a glowing trunk with the axe.");
             unlockChop(viewer);
             return;
         }
@@ -53,7 +53,7 @@ public final class ForagerChopDemo {
         ForagingListener.TreeJob job = listener.createJobPublic(trunk, viewer, null);
         if (job == null || job.fellLog == null) {
             RUNNING.remove(viewer.getUniqueId());
-            viewer.sendMessage("§6Forager: §fThat trunk's decorative. Find a living glow.");
+            foragerSay(viewer, "That trunk's decorative. Find a living glow.");
             unlockChop(viewer);
             return;
         }
@@ -82,12 +82,12 @@ public final class ForagerChopDemo {
         glowTrunk(world, fellAt);
 
         later(plugin, viewer, 55L, () ->
-                viewer.sendMessage("§6Forager: §fSee the glow on the trunk? That's your target."));
+                foragerSay(viewer, "See the glow on the trunk? That's your target."));
 
         later(plugin, viewer, 100L, () -> swingFx(world, foragerAt, fellAt));
 
         later(plugin, viewer, 145L, () ->
-                viewer.sendMessage("§6Forager: §fThis bar is the timing. CHOP comes late — wait for green."));
+                foragerSay(viewer, "This bar is the timing. CHOP comes late — wait for green."));
 
         later(plugin, viewer, 185L, () -> {
             if (plugin.hud() == null) {
@@ -133,7 +133,7 @@ public final class ForagerChopDemo {
                             world.spawnParticle(Particle.CRIT, fellAt, 10, 0.3, 0.3, 0.3, 0.04);
                         }
                         ForagingFx.success(viewer, fellAt);
-                        viewer.sendMessage("§6Forager: §aCHOP!");
+                        foragerSay(viewer, "§aCHOP!");
                         viewer.sendActionBar(net.kyori.adventure.text.Component.text(
                                 "CHOP",
                                 net.kyori.adventure.text.format.NamedTextColor.GREEN
@@ -141,9 +141,9 @@ public final class ForagerChopDemo {
                         listener.markDemo(job, viewer);
                         listener.collapsePublic(job);
                         later(plugin, viewer, 70L, () ->
-                                viewer.sendMessage("§6Forager: §fThat's the hit. Your turn — glowing trunk, wait for green CHOP."));
+                                foragerSay(viewer, "That's the hit. Your turn — glowing trunk, wait for green CHOP."));
                         later(plugin, viewer, 100L, () ->
-                                viewer.sendMessage("§6Forager: §fTen oak logs to §eEgon §fon the pier."));
+                                foragerSay(viewer, "Ten oak logs to §eEgon §fon the pier."));
                         later(plugin, viewer, 110L, () -> finishDemo(plugin, viewer));
                     }
 
@@ -178,6 +178,19 @@ public final class ForagerChopDemo {
         if (quests != null) {
             quests.unlockForagerChop(player);
         }
+    }
+
+    /** Bubble + chat when Quests is up; plain chat fallback otherwise. */
+    private static void foragerSay(Player player, String line) {
+        if (player == null || line == null || line.isBlank()) {
+            return;
+        }
+        de.aetherion.core.api.QuestProgressAccess quests = de.aetherion.core.api.AetherServices.quests();
+        if (quests != null) {
+            quests.npcLine(player, "lumberjack", "Forager", line);
+            return;
+        }
+        player.sendMessage("§6Forager: §f" + line);
     }
 
     private static void later(AetherionForaging plugin, Player viewer, long delay, Runnable task) {

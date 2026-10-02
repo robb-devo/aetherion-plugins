@@ -1,0 +1,79 @@
+# ============================================================
+# Quest compass
+# ============================================================
+# The sidebar on the right is drawn by TAB or DeluxeHub,
+# not by this plugin. If BOTH scoreboards are enabled they
+# overwrite each other. Keep TAB, disable DeluxeHub's board.
+#
+# PlaceholderAPI must be installed. Then add this line to TAB
+# (plugins/TAB/config.yml scoreboard) or DeluxeHub scoreboard:
+#
+#   %aetherionquests_compass% %aetherionquests_target%
+#
+# Placeholders:
+#   %aetherionquests_compass%   ↗ 84m
+#   %aetherionquests_arrow%     ↗
+#   %aetherionquests_distance%  84m
+#   %aetherionquests_target%    Hunter
+#   %aetherionquests_title%     First Hunt
+#
+# TAB refresh (optional, makes the arrow feel live):
+#   placeholder-refresh-intervals:
+#     "%aetherionquests_compass%": 200
+#     "%aetherionquests_target%": 1000
+#
+# The same arrow also appears on the quest bossbar.
+
+npcs:
+
+  fisherman:
+    world: world
+    x: 0
+    y: 64
+    z: 0
+
+# ============================================================
+# FancyNPC visibility (blocks)
+# ============================================================
+# Living story NPCs (Egon, Twig, …) stay high so the hub does not pop-in.
+# Moderator-created editor NPCs use a shorter default — fine on islands.
+# Miss Canopy lives in AetherionForaging: isle-guide.visibility-distance
+#
+# These keys are read with code defaults if missing. The jar will not
+# overwrite a live plugins/AetherionQuests/config.yml.
+
+living-npc-visibility-distance: 96
+editor-npc-visibility-distance: 48
+
+# ============================================================
+# NPC talk UX (in-world bubbles + reply chips)
+# ============================================================
+# Living NPCs speak in a speech bubble above their head (only the
+# listener sees it) and quest offers become reply chips next to the
+# NPC: look + click, scroll + click, or the chat buttons.
+# The chest Quest Offer stays as fallback ("Details…", classic mode,
+# FancyNpcs missing). Players can pick with /npctalk world|classic.
+# All keys have code defaults — a live config without them is fine.
+
+talk-ux:
+  enabled: true
+  voice-blips: true           # tiny per-NPC voice while text types out
+  chat-replies: true          # mirror reply chips as clickable chat
+  show-previous-line: true    # keep the last line (grey) above the new one
+  max-distance: 10            # walk further away and the bubble closes
+  reply-timeout-seconds: 40
+  linger-ticks: 90            # how long a finished line stays up (~+1s vs prior 70)
+  bubble-scale: 0.56
+  pack-glyphs: false          # true only once the server pack ships aetherion:talk
+
+# ============================================================
+# NPC life (work beats, glances, tiny patrols, greetings, banter)
+# ============================================================
+npc-life:
+  enabled: true
+  patrols: true               # ≤3-block, ground-checked walks for a few NPCs
+  social: true                # greet-by-name, rare idle barks, NPC banter
+
+# Players whose name starts with one of these always get the classic chest flow
+# (the Mineflayer QA / stress bots click the chest Quest Offer).
+# talk-ux.classic-name-prefixes: [QaQuest, QaCombat, QaMine, QaForage, QaCatch, QaRoam, QaFish, QaTrade, QaPad, StressM]

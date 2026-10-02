@@ -52,7 +52,7 @@ public final class LivingNpcProfile {
                 .hand(Material.IRON_HOE).leather(Color.fromRGB(120, 140, 60)).chest().boots()
                 .skinFile("farmer.png"));
         put(p("craftsman", "Market Forge", NamedTextColor.GRAY, "§7")
-                .hand(Material.IRON_INGOT).leather(Color.fromRGB(90, 90, 95)).chest().legs().boots()
+                .hand(Material.IRON_PICKAXE).leather(Color.fromRGB(90, 90, 95)).chest().legs().boots()
                 .skinFile("miner.png"));
         put(p("collector", "Shinies", NamedTextColor.GOLD, "§6")
                 .hand(Material.GOLD_NUGGET).leather(Color.fromRGB(160, 120, 40)).chest().boots()

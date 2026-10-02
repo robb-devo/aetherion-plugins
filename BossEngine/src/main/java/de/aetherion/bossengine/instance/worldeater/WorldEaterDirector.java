@@ -11,6 +11,8 @@ import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.WeatherType;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.BlockDisplay;
@@ -140,6 +142,8 @@ public final class WorldEaterDirector {
     private final List<Lob> lobs = new ArrayList<>();
     private final List<Serpent.World> cameUp = new ArrayList<>();
     private final Map<UUID, Location[]> history = new HashMap<>();
+    /** Body-swing cooldown (clock tick when next body hit is allowed). */
+    private final Map<UUID, Integer> bodySwingReady = new HashMap<>();
 
     /* ouroboros */
     private boolean inRing;
@@ -202,7 +206,10 @@ public final class WorldEaterDirector {
         return act == Act.ARRIVING || act == Act.TRANSITION || act == Act.DYING;
     }
 
-    /** Full damage always — no hide tax. Bows and blades hit the same. */
+    /**
+     * Head hitbox damage — full value. Body swings go through {@link #tryBodySwing} at ~25%.
+     * No Unbroken-style hide tax: the skull is always the honest precision target in FIGHT.
+     */
     public double scaleIncoming(double amount) {
         return amount;
     }
@@ -211,6 +218,93 @@ public final class WorldEaterDirector {
         if (isMine() && phase >= 4 && act == Act.FIGHT) {
             ringDamage += amount;
         }
+    }
+
+    /**
+     * Melee swing aimed at a body world-segment (BlockDisplays have no LivingEntity hitbox).
+     * Applies ~25% of the player's attack damage so body hits still matter without matching the head.
+     *
+     * @return true if a body hit was registered
+     */
+    public boolean tryBodySwing(Player player) {
+        if (!isMine() || act != Act.FIGHT || fx == null || serpent == null || !serpent.spawned() || player == null) {
+            return false;
+        }
+        if (blocksDamage()) {
+            return false;
+        }
+        ItemStack hand = player.getInventory().getItemInMainHand();
+        if (hand.getType().isAir()) {
+            return false;
+        }
+        if (player.getAttackCooldown() < 0.85f) {
+            return false;
+        }
+        Integer ready = bodySwingReady.get(player.getUniqueId());
+        if (ready != null && ready > clock) {
+            return false;
+        }
+        Location eyeLoc = player.getEyeLocation();
+        if (eyeLoc.getWorld() != fx.world()) {
+            return false;
+        }
+        Vector3f eye = fx.stage(eyeLoc);
+        Vector lookBukkit = eyeLoc.getDirection();
+        Vector3f look = new Vector3f((float) lookBukkit.getX(), (float) lookBukkit.getY(), (float) lookBukkit.getZ());
+        if (look.lengthSquared() < 1e-6f) {
+            return false;
+        }
+        look.normalize();
+
+        Vector3f skull = serpent.skullCenter();
+        Vector3f toSkull = new Vector3f(skull).sub(eye);
+        float skullDist = toSkull.length();
+        if (skullDist > 1e-4f && skullDist < 4.0f && toSkull.normalize().dot(look) > 0.55f) {
+            // Aiming at the head — leave it to the LivingEntity hitbox.
+            return false;
+        }
+
+        Serpent.Vertebra best = null;
+        float bestScore = Float.MAX_VALUE;
+        for (Serpent.Vertebra v : serpent.body) {
+            if (v.hidden || v.center.y < -3.5f || v.center.y > 8f) {
+                continue;
+            }
+            Vector3f to = new Vector3f(v.center).sub(eye);
+            float dist = to.length();
+            if (dist > 4.2f || dist < 0.35f) {
+                continue;
+            }
+            float align = to.mul(1f / dist).dot(look);
+            if (align < 0.55f) {
+                continue;
+            }
+            float score = dist * (2f - align);
+            if (score < bestScore) {
+                bestScore = score;
+                best = v;
+            }
+        }
+        if (best == null) {
+            return false;
+        }
+
+        bodySwingReady.put(player.getUniqueId(), clock + 8);
+        double base = 1.0;
+        AttributeInstance attr = player.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE);
+        if (attr != null) {
+            base = Math.max(1.0, attr.getValue());
+        }
+        double amount = Math.max(0.25, base * player.getAttackCooldown() * 0.25);
+        instance.getDamageTracker().add(player, amount);
+        instance.absorbDamage(amount);
+        fx.sound(best.center, Sound.BLOCK_SCULK_HIT, 1.5f, 0.65f);
+        fx.sound(best.center, Sound.ENTITY_ENDER_DRAGON_HURT, 0.5f, 1.35f);
+        fx.dust(best.center, WeProps.VOID, 1.0f, 7, 0.45);
+        if (taught.add("body")) {
+            fx.actionBar("&7The body yields. &fThe head is the wound that opens it.");
+        }
+        return true;
     }
 
     /** Where the Bonus Chest goes once it is gone (null before its death started). */
@@ -320,6 +414,7 @@ public final class WorldEaterDirector {
             ownSenses = null;
         }
         history.clear();
+        bodySwingReady.clear();
         fx.clear();
         fx = null;
         serpent = null;
@@ -967,7 +1062,8 @@ public final class WorldEaterDirector {
                 }
             }
             case 3 -> {
-                int stuck = phase == 1 ? 46 : phase == 2 ? 38 : 32;
+                // ~1.5s longer stuck window so knockback + crater recovery still leaves a real punish.
+                int stuck = phase == 1 ? 76 : phase == 2 ? 68 : 62;
                 if (stepTick == 0) {
                     expose(stuck + 6);
                     serpent.jaw(0.1f);
@@ -1524,7 +1620,9 @@ public final class WorldEaterDirector {
                     mC.set(a).fma(exitDistance(a, mD, 2f), mD);
                     mC.y = 0f;
                     props.add(new WeProps.Lane(fx, mB, mC, 3.6f, 8, charge - 2, charge + 28, Material.BLACK_CONCRETE, WeProps.VOID));
-                    fx.sound(serpent.mouth(), Sound.ENTITY_WARDEN_SONIC_CHARGE, 3f, 0.6f);
+                    fx.sound(serpent.mouth(), Sound.ENTITY_WARDEN_SONIC_CHARGE, 3f, 0.55f);
+                    fx.sound(serpent.mouth(), Sound.BLOCK_BEACON_AMBIENT, 2.2f, 0.5f);
+                    fx.score(Sound.AMBIENT_CAVE, 0.85f, 0.45f);
                     if (taught.add("breath")) {
                         fx.actionBar("&5It breathes the void. &7The line it marks will be gone.");
                     }
@@ -1532,6 +1630,13 @@ public final class WorldEaterDirector {
                 serpent.faceTo(new Vector3f(mD.x, -0.35f, mD.z), 0.08f);
                 serpent.jaw(smooth(window(stepTick, 0, charge)) * 1.05f);
                 fx.particle(Particle.REVERSE_PORTAL, serpent.mouth(), 10, 0.8, 0.05);
+                if (stepTick == charge / 2) {
+                    fx.sound(serpent.mouth(), Sound.ENTITY_WARDEN_HEARTBEAT, 2.4f, 0.5f);
+                    fx.score(Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 0.7f, 0.45f);
+                }
+                if (stepTick == charge - 4) {
+                    fx.sound(serpent.skullCenter(), Sound.ENTITY_ENDER_DRAGON_GROWL, 2.6f, 0.45f);
+                }
                 if (stepTick >= charge) {
                     next();
                 }
@@ -1541,8 +1646,11 @@ public final class WorldEaterDirector {
                 if (stepTick == 0) {
                     beamCore = fx.block(Material.BLACK_CONCRETE, null, 15);
                     beamShell = fx.block(Material.PURPLE_STAINED_GLASS, WeProps.VOID, 15);
-                    fx.sound(serpent.mouth(), Sound.ENTITY_WARDEN_SONIC_BOOM, 3f, 0.5f);
-                    fx.score(Sound.BLOCK_BEACON_DEACTIVATE, 0.7f, 0.5f);
+                    fx.sound(serpent.mouth(), Sound.ENTITY_WARDEN_SONIC_BOOM, 3.5f, 0.45f);
+                    fx.sound(serpent.mouth(), Sound.ENTITY_GENERIC_EXPLODE, 2.4f, 0.45f);
+                    fx.sound(serpent.mouth(), Sound.ENTITY_ENDER_DRAGON_GROWL, 2.8f, 0.4f);
+                    fx.score(Sound.BLOCK_BEACON_DEACTIVATE, 1f, 0.4f);
+                    fx.score(Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.55f, 0.5f);
                     mF = 0f;
                 }
                 float u = smooth(window(stepTick, 0, 16));
@@ -1563,7 +1671,8 @@ public final class WorldEaterDirector {
                     }
                 }
                 if (stepTick % 4 == 0) {
-                    fx.sound(end, Sound.BLOCK_ROOTED_DIRT_BREAK, 2f, 0.5f);
+                    fx.sound(end, Sound.BLOCK_ROOTED_DIRT_BREAK, 2.2f, 0.45f);
+                    fx.sound(end, Sound.BLOCK_STONE_BREAK, 1.4f, 0.4f);
                     fx.particle(Particle.SQUID_INK, end, 10, 0.8, 0.05);
                 }
                 if (stepTick >= dur) {
@@ -1577,6 +1686,9 @@ public final class WorldEaterDirector {
                     WeFx.push(beamCore, WeFx.beam(mouth, end, 0.01f), 6);
                     WeFx.push(beamShell, WeFx.beam(mouth, end, 0.02f), 6);
                     serpent.jaw(0.1f);
+                    fx.sound(end, Sound.BLOCK_ANVIL_LAND, 1.6f, 0.35f);
+                    fx.sound(end, Sound.ENTITY_GENERIC_EXPLODE, 1.2f, 0.55f);
+                    fx.score(Sound.AMBIENT_CAVE, 0.7f, 0.4f);
                 }
                 if (stepTick == 7) {
                     fx.kill(beamCore);
@@ -1584,6 +1696,10 @@ public final class WorldEaterDirector {
                     beamCore = null;
                     beamShell = null;
                     swimTo(rim(mA, 12f, -14f), new Vector3f(-mD.x, -0.7f, -mD.z), 1.1f, 0.6f);
+                }
+                if (stepTick == 12) {
+                    fx.sound(mC, Sound.BLOCK_ROOTED_DIRT_BREAK, 2f, 0.35f);
+                    fx.sound(mC, Sound.BLOCK_GRAVEL_BREAK, 1.6f, 0.4f);
                 }
                 if (stepTick > 7 && swim()) {
                     finish(26);
@@ -2286,6 +2402,11 @@ public final class WorldEaterDirector {
         } else {
             serpent.lookForward();
         }
+        // Soft target cue on the skull — readable wound-point while it chews.
+        if (clock % 14 == 0) {
+            fx.dust(serpent.skullCenter(), WeProps.WHITE, 1.1f, 4, 0.35);
+            fx.particle(Particle.REVERSE_PORTAL, serpent.mouth(), 4, 0.35, 0.02);
+        }
     }
 
     private void tickOuroboros() {
@@ -2363,10 +2484,26 @@ public final class WorldEaterDirector {
         if (s != null) {
             s.borderTo(innerSize(side), 1);
         }
-        fx.sound(serpent.mouth(), Sound.ENTITY_WARDEN_HURT, 3f, 0.5f);
-        fx.sound(serpent.mouth(), Sound.ENTITY_LLAMA_SPIT, 3f, 0.4f);
+        Vector3f mouth = serpent.mouth();
+        Vector3f tip = serpent.nearestBody(mouth);
+        if (tip == null) {
+            tip = new Vector3f(mouth).fma(-6f, serpent.fwd);
+        }
+        fx.sound(mouth, Sound.ENTITY_WARDEN_HURT, 3.2f, 0.45f);
+        fx.sound(mouth, Sound.ENTITY_ENDER_DRAGON_HURT, 2.2f, 0.55f);
+        fx.sound(mouth, Sound.ENTITY_LLAMA_SPIT, 2.6f, 0.4f);
+        fx.score(Sound.BLOCK_RESPAWN_ANCHOR_DEPLETE, 0.55f, 0.55f);
+        fx.stream(Particle.END_ROD, mouth, tip, 1.1);
+        fx.dust(mouth, WeProps.WHITE, 1.6f, 14, 0.7);
+        fx.dust(tip, WeProps.VOID, 1.4f, 10, 0.6);
         serpent.skull.kick(-0.2f, 0f, 0f);
+        serpent.eyes(WeProps.WHITE);
+        // Brief bright eyes: head wound → ring gave ground.
+        expose(Math.max(exposeTicks, 18));
         tailEvery = Math.min(70, tailEvery + 2);
+        if (taught.add("regurgitate")) {
+            fx.actionBar("&aThe ring opened. &fKeep wounding the head — it coughs the world back.");
+        }
     }
 
     /** One of the worlds in the ring spills over onto whoever stands nearest it. */
@@ -2775,7 +2912,9 @@ public final class WorldEaterDirector {
         exposeTicks = Math.max(exposeTicks, ticks);
         if (!was && serpent != null) {
             serpent.eyes(WeProps.WHITE);
-            fx.sound(serpent.skullCenter(), Sound.BLOCK_AMETHYST_BLOCK_RESONATE, 2f, 0.5f);
+            fx.sound(serpent.skullCenter(), Sound.BLOCK_AMETHYST_BLOCK_RESONATE, 2.4f, 0.5f);
+            fx.sound(serpent.skullCenter(), Sound.ENTITY_WARDEN_HEARTBEAT, 1.8f, 0.55f);
+            fx.dust(serpent.skullCenter(), WeProps.WHITE, 1.5f, 12, 0.7);
         }
     }
 

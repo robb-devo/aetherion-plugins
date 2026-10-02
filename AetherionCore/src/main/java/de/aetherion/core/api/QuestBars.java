@@ -23,6 +23,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class QuestBars {
 
     private static final Map<UUID, Set<String>> LEASES = new ConcurrentHashMap<>();
+    /** Leases that also clear the soft hint bar (a place that owns the whole top of the screen). */
+    private static final Map<UUID, Set<String>> WHOLE_TOP = new ConcurrentHashMap<>();
 
     private QuestBars() {
     }
@@ -70,12 +72,37 @@ public final class QuestBars {
     }
 
     /**
+     * Like {@link #suppress(Player, String)}, and the soft hint bar steps aside too. For places that own the
+     * whole top of the screen (e.g. a player's island shows its own calm status bar there).
+     */
+    public static void suppressAll(Player player, String owner) {
+        if (player == null || owner == null) {
+            return;
+        }
+        WHOLE_TOP.computeIfAbsent(player.getUniqueId(), ignored -> ConcurrentHashMap.newKeySet()).add(owner);
+        suppress(player, owner);
+    }
+
+    /** True while a {@link #suppressAll} lease is held: the hint bar stays hidden. */
+    public static boolean hintsHidden(UUID playerId) {
+        if (playerId == null) {
+            return false;
+        }
+        Set<String> owners = WHOLE_TOP.get(playerId);
+        return owners != null && !owners.isEmpty();
+    }
+
+    /**
      * Drop a named lease. The quest bar returns only when no lease is left.
      * Safe to call when the owner never suppressed (no-op).
      */
     public static void release(UUID playerId, String owner) {
         if (playerId == null || owner == null) {
             return;
+        }
+        Set<String> whole = WHOLE_TOP.get(playerId);
+        if (whole != null && whole.remove(owner) && whole.isEmpty()) {
+            WHOLE_TOP.remove(playerId, whole);
         }
         Set<String> owners = LEASES.get(playerId);
         if (owners == null || !owners.remove(owner)) {

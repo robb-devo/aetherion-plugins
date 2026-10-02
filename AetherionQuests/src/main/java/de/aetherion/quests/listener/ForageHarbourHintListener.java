@@ -11,6 +11,10 @@ import org.bukkit.event.Listener;
 /**
  * After Miss Ledger stamps the tutorial shut: soft tip toward the Forage Isle
  * slime pad when the player is back in Anker Harbour.
+ * <p>
+ * Red thread: once only, and it never steals the compass from a road the player already
+ * picked (Ledger's picker, a quest in progress) — then it's a single chat crumb instead.
+ * Silent if the player already met Twig or Ledger already pointed at the pad.
  */
 public final class ForageHarbourHintListener implements Listener, Runnable {
 
@@ -48,13 +52,23 @@ public final class ForageHarbourHintListener implements Listener, Runnable {
         }
 
         plugin.getPlayerQuestStorage().markStarterKit(player.getUniqueId(), HINT_KEY);
+        de.aetherion.quests.npc.NpcMemory memory = de.aetherion.quests.npc.NpcMemory.get();
+        if (memory != null && memory.talks(player.getUniqueId(), "forage_pad_guide") > 0) {
+            return; // already met Twig — nothing to discover
+        }
+        player.sendMessage(de.aetherion.quests.lang.LangPack.msg(player, "harbour_pad",
+                "§a✦ §7Harbour pad: §aTwig§7 points to the slime jump → §aForage Isle§7."));
+        boolean busy = plugin.getQuestManager().findActiveOrReadyQuest(player) != null;
+        String thread = QuestHint.pendingNpc(player);
+        if (busy || (thread != null && !"ledger".equals(thread))) {
+            return; // one next tip at a time — keep the road they're already on
+        }
         QuestHint.clearPending(player);
         QuestHint.show(player, "forage_pad_guide", "Twig · Forage Pad");
         player.sendActionBar(net.kyori.adventure.text.Component.text(
-                "→ Slime pad · Forage Isle (Twig)",
+                de.aetherion.quests.lang.LangPack.ui(player, "tip.harbour_pad", "→ Slime pad · Forage Isle (Twig)"),
                 net.kyori.adventure.text.format.NamedTextColor.GREEN
         ));
-        player.sendMessage("§a✦ §7Harbour pad: §aTwig§7 points to the slime jump → §aForage Isle§7.");
     }
 
     private static boolean insideHarbour(Player player) {
