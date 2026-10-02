@@ -2,6 +2,7 @@ import { useId, useMemo, useState } from 'react'
 import { useLang } from '../../i18n.jsx'
 import { api, errorMessage } from '../../lib/api.js'
 import { Notice, Spinner, useToast } from '../ui.jsx'
+import FilesPanel from './FilesPanel.jsx'
 import { RamTierPicker } from './ServerBits.jsx'
 
 const DIFFICULTIES = ['peaceful', 'easy', 'normal', 'hard']
@@ -28,6 +29,7 @@ export default function SettingsPanel({ server, tiers, onSaved }) {
   const [error, setError] = useState(null)
   const offline = server.status === 'offline'
   const baseline = useMemo(() => fromServer(server), [server])
+  const addonFolder = server.software === 'fabric' ? 'mods' : server.software === 'vanilla' ? null : 'plugins'
 
   const changed = Object.keys(form).filter((key) => String(form[key]) !== String(baseline[key]))
   const maxPlayers = Number(form.maxPlayers)
@@ -55,85 +57,93 @@ export default function SettingsPanel({ server, tiers, onSaved }) {
   }
 
   return (
-    <form className="space-y-6" onSubmit={save} noValidate>
-      <div className="grid gap-5 sm:grid-cols-2">
-        <div>
-          <label className="label" htmlFor={ids.name}>
-            {t.name}
-          </label>
-          <input id={ids.name} className="field" maxLength={32} value={form.name} onChange={set('name')} />
+    <div className="space-y-8">
+      <form className="space-y-6" onSubmit={save} noValidate>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <div>
+            <label className="label" htmlFor={ids.name}>
+              {t.name}
+            </label>
+            <input id={ids.name} className="field" maxLength={32} value={form.name} onChange={set('name')} />
+          </div>
+          <div>
+            <label className="label" htmlFor={ids.motd}>
+              {t.motd}
+            </label>
+            <input id={ids.motd} className="field" maxLength={60} value={form.motd} onChange={set('motd')} />
+            <p className="mt-1.5 text-xs text-ash">{t.motdHint}</p>
+          </div>
+          <div>
+            <label className="label" htmlFor={ids.difficulty}>
+              {t.difficulty}
+            </label>
+            <select id={ids.difficulty} className="field" value={form.difficulty} onChange={set('difficulty')}>
+              {DIFFICULTIES.map((value) => (
+                <option key={value} value={value}>
+                  {t.difficulties[value]}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="label" htmlFor={ids.gamemode}>
+              {t.gamemode}
+            </label>
+            <select id={ids.gamemode} className="field" value={form.gamemode} onChange={set('gamemode')}>
+              {GAMEMODES.map((value) => (
+                <option key={value} value={value}>
+                  {t.gamemodes[value]}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="label" htmlFor={ids.max}>
+              {t.maxPlayers}
+            </label>
+            <input
+              id={ids.max}
+              className="field"
+              type="number"
+              min={1}
+              max={40}
+              value={form.maxPlayers}
+              aria-invalid={!valid}
+              onChange={set('maxPlayers')}
+            />
+          </div>
         </div>
-        <div>
-          <label className="label" htmlFor={ids.motd}>
-            {t.motd}
-          </label>
-          <input id={ids.motd} className="field" maxLength={60} value={form.motd} onChange={set('motd')} />
-          <p className="mt-1.5 text-xs text-ash">{t.motdHint}</p>
-        </div>
-        <div>
-          <label className="label" htmlFor={ids.difficulty}>
-            {t.difficulty}
-          </label>
-          <select id={ids.difficulty} className="field" value={form.difficulty} onChange={set('difficulty')}>
-            {DIFFICULTIES.map((value) => (
-              <option key={value} value={value}>
-                {t.difficulties[value]}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="label" htmlFor={ids.gamemode}>
-            {t.gamemode}
-          </label>
-          <select id={ids.gamemode} className="field" value={form.gamemode} onChange={set('gamemode')}>
-            {GAMEMODES.map((value) => (
-              <option key={value} value={value}>
-                {t.gamemodes[value]}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="label" htmlFor={ids.max}>
-            {t.maxPlayers}
-          </label>
-          <input
-            id={ids.max}
-            className="field"
-            type="number"
-            min={1}
-            max={40}
-            value={form.maxPlayers}
-            aria-invalid={!valid}
-            onChange={set('maxPlayers')}
-          />
-        </div>
-      </div>
 
-      <fieldset>
-        <legend className="label">{t.ram}</legend>
-        {tiers ? (
-          <RamTierPicker
-            tiers={tiers}
-            value={form.ramMb}
-            disabled={!offline}
-            name={`ram-${server.id}`}
-            onChange={(ramMb) => setForm((current) => ({ ...current, ramMb }))}
-          />
-        ) : null}
-        {!offline ? <p className="mt-2 text-xs text-gold">{t.ramLocked}</p> : null}
-      </fieldset>
+        <fieldset>
+          <legend className="label">{t.ram}</legend>
+          {tiers ? (
+            <RamTierPicker
+              tiers={tiers}
+              value={form.ramMb}
+              disabled={!offline}
+              name={`ram-${server.id}`}
+              onChange={(ramMb) => setForm((current) => ({ ...current, ramMb }))}
+            />
+          ) : null}
+          {!offline ? <p className="mt-2 text-xs text-gold">{t.ramLocked}</p> : null}
+        </fieldset>
 
-      {error ? <Notice tone="error">{errorMessage(error, copy)}</Notice> : null}
+        {error ? <Notice tone="error">{errorMessage(error, copy)}</Notice> : null}
 
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t hairline pt-5">
-        <p className="text-xs text-ash">{offline ? '' : t.applyNote}</p>
-        <button type="submit" className="btn btn-primary notch" disabled={!changed.length || !valid || saving}>
-          {saving ? <Spinner /> : null}
-          {saving ? t.saving : t.save}
-        </button>
-      </div>
-    </form>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t hairline pt-5">
+          <p className="text-xs text-ash">{offline ? '' : t.applyNote}</p>
+          <button type="submit" className="btn btn-primary notch" disabled={!changed.length || !valid || saving}>
+            {saving ? <Spinner /> : null}
+            {saving ? t.saving : t.save}
+          </button>
+        </div>
+      </form>
+
+      <section className="border-t hairline pt-6">
+        <h3 className="label">{t.filesTitle}</h3>
+        <p className="mb-3 text-xs text-ash">{t.filesHint}</p>
+        <FilesPanel server={server} initialPath={addonFolder || ''} />
+      </section>
+    </div>
   )
 }

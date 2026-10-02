@@ -66,8 +66,14 @@ export const api = {
   action: (id, action) => request(`/servers/${encodeURIComponent(id)}/${action}`, { method: 'POST' }),
   addons: (id) => request(`/servers/${encodeURIComponent(id)}/addons`),
   installAddon: (id, versionId) => request(`/servers/${encodeURIComponent(id)}/addons`, { method: 'POST', body: { versionId } }),
+  uploadAddon: (id, fileName, data) =>
+    request(`/servers/${encodeURIComponent(id)}/addons/upload`, { method: 'POST', body: { fileName, data } }),
   removeAddon: (id, file) =>
     request(`/servers/${encodeURIComponent(id)}/addons/${encodeURIComponent(file)}`, { method: 'DELETE' }),
+  files: (id, path = '') => {
+    const query = path ? `?path=${encodeURIComponent(path)}` : ''
+    return request(`/servers/${encodeURIComponent(id)}/files${query}`)
+  },
   console: (id, lines = 250) => request(`/servers/${encodeURIComponent(id)}/console?lines=${lines}`),
   command: (id, command) => request(`/servers/${encodeURIComponent(id)}/console`, { method: 'POST', body: { command } }),
 }

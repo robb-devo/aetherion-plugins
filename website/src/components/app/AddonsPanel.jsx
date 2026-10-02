@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { interpolate } from '../../copy.js'
 import { useLang } from '../../i18n.jsx'
 import { api, errorMessage } from '../../lib/api.js'
@@ -37,11 +37,26 @@ async function compatibleVersion(projectId, loaders, version) {
   return versions.find((item) => item.version_type === 'release') ?? versions[0] ?? null
 }
 
+const MAX_UPLOAD_BYTES = 64 * 1024 * 1024
+
+async function fileToBase64(file) {
+  const buffer = await file.arrayBuffer()
+  const bytes = new Uint8Array(buffer)
+  let binary = ''
+  const chunk = 0x8000
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk))
+  }
+  return btoa(binary)
+}
+
 /** Modrinth-style plugin/mod browser for one server. */
 export default function AddonsPanel({ server }) {
   const { copy, lang } = useLang()
   const t = copy.app.dash.addons
   const showToast = useToast()
+  const inputId = useId()
+  const fileRef = useRef(null)
   const [info, setInfo] = useState(null)
   const [loadError, setLoadError] = useState(null)
   const [query, setQuery] = useState('')
@@ -111,18 +126,68 @@ export default function AddonsPanel({ server }) {
     }
   }
 
+  async function upload(event) {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+    if (!file.name.toLowerCase().endsWith('.jar')) {
+      showToast(t.uploadJarOnly, 'error')
+      return
+    }
+    if (file.size > MAX_UPLOAD_BYTES) {
+      showToast(t.uploadTooLarge, 'error')
+      return
+    }
+    setBusy((current) => ({ ...current, upload: true }))
+    try {
+      const data = await fileToBase64(file)
+      const result = await api.uploadAddon(server.id, file.name, data)
+      showToast(interpolate(t.uploaded, { name: result.file || file.name }), 'success')
+      setChanged(true)
+      await load()
+    } catch (error) {
+      showToast(errorMessage(error, copy), 'error')
+    } finally {
+      setBusy((current) => ({ ...current, upload: false }))
+    }
+  }
+
   if (loadError) return <Notice tone="error">{errorMessage(loadError, copy)}</Notice>
   if (!info) return <Skeleton className="h-64" />
   if (!info.supported) return <Notice tone="info">{t.vanilla}</Notice>
 
   const label = info.kind === 'mod' ? t.mods : t.plugins
+  const uploading = Boolean(busy.upload)
 
   return (
     <div className="space-y-6">
       {changed && running ? <Notice tone="warn">{t.restartHint}</Notice> : null}
 
       <section>
-        <h3 className="label">{interpolate(t.installedTitle, { kind: label, n: info.addons.length })}</h3>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <h3 className="label !mb-0">{interpolate(t.installedTitle, { kind: label, n: info.addons.length })}</h3>
+          <div className="flex items-center gap-2">
+            <input
+              id={inputId}
+              ref={fileRef}
+              type="file"
+              accept=".jar,application/java-archive"
+              className="hidden"
+              disabled={uploading}
+              onChange={upload}
+            />
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm notch !min-h-8"
+              disabled={uploading}
+              onClick={() => fileRef.current?.click()}
+            >
+              {uploading ? <Spinner /> : null}
+              {uploading ? t.uploading : t.upload}
+            </button>
+          </div>
+        </div>
+        <p className="mt-1.5 mb-2 text-xs text-ash">{t.uploadHint}</p>
         {info.addons.length ? (
           <ul className="divide-y divide-white/5 overflow-hidden rounded-md border border-white/8 bg-black/25">
             {info.addons.map((addon) => (
