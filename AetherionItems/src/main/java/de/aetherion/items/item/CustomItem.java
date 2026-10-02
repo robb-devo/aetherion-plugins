@@ -7388,6 +7388,137 @@ public class CustomItem {
 
     /*
      * =========================================================
+     * HOLLOW SUN SET (Remnant of the Hollow Sun)
+     * =========================================================
+     */
+
+    public ItemStack createHollowSunHelmet() {
+        return createHollowSunArmor(
+                Material.NETHERITE_HELMET,
+                "hollow_sun_helmet",
+                "§6✦✦✦ §eCorona Visor",
+                80, 120, 18, 12, 8, 48, 2, 2341,
+                List.of(
+                        "§e☀ Solar Sight",
+                        "§7Crits §eSunmark §7the target for §f4s§7.",
+                        "§7Sunmarked foes take §e+6% §7damage from you.",
+                        "",
+                        "§6Remnant of the Hollow Sun §8(§f1§8/§f4§8)",
+                        "§8It still remembers how to shine."
+                )
+        );
+    }
+
+    public ItemStack createHollowSunChestplate() {
+        return createHollowSunArmor(
+                Material.NETHERITE_CHESTPLATE,
+                "hollow_sun_chestplate",
+                "§6✦✦✦ §6Hollow Heart Cuirass",
+                160, 210, 34, 20, 10, 75, 2, 2342,
+                List.of(
+                        "§6☀ Caged Star",
+                        "§7Dealing damage builds §6Heat§7.",
+                        "§7At §f100§7, your next hit bursts in a",
+                        "§6Corona §7for §f60% §7of its damage.",
+                        "",
+                        "§6Remnant of the Hollow Sun §8(§f2§8/§f4§8)",
+                        "§8The plate is hollow. The heart is not."
+                )
+        );
+    }
+
+    public ItemStack createHollowSunLeggings() {
+        return createHollowSunArmor(
+                Material.NETHERITE_LEGGINGS,
+                "hollow_sun_leggings",
+                "§6✦✦✦ §cRed Giant Greaves",
+                120, 160, 28, 16, 8, 60, 3, 2343,
+                List.of(
+                        "§c☀ Swell",
+                        "§7Below §f50% §7HP: §c+10% §7Damage, §c+8% §7Defense,",
+                        "§7and your hits leave a brief §cFlare§7.",
+                        "",
+                        "§6Remnant of the Hollow Sun §8(§f3§8/§f4§8)",
+                        "§8I burned for ten thousand years."
+                )
+        );
+    }
+
+    public ItemStack createHollowSunBoots() {
+        return createHollowSunArmor(
+                Material.NETHERITE_BOOTS,
+                "hollow_sun_boots",
+                "§6✦✦✦ §5Starfall Sabatons",
+                80, 115, 18, 12, 6, 45, 5, 2344,
+                List.of(
+                        "§5☀ Starfall §8(Double-sneak in the air)",
+                        "§7Plunge down and land in a crimson shockwave.",
+                        "§8Cooldown: §f18s",
+                        "",
+                        "§6Remnant of the Hollow Sun §8(§f4§8/§f4§8)",
+                        "§8Every star falls."
+                )
+        );
+    }
+
+    private ItemStack createHollowSunArmor(
+            Material material,
+            String itemId,
+            String displayName,
+            double defense,
+            double health,
+            double damage,
+            double attackSpread,
+            double critChance,
+            double critDamage,
+            double speed,
+            int modelData,
+            List<String> effectLore
+    ) {
+        ItemStack item = new ItemStack(material);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            setItemId(meta, itemId);
+            ItemStats stats = new ItemStats();
+            stats.setDefense(defense);
+            stats.setHealth(health);
+            stats.setDamage(damage);
+            stats.setAttackSpread(attackSpread);
+            stats.setCritChance(critChance);
+            stats.setCritDamage(critDamage);
+            stats.setSpeed(speed);
+            applyItemData(meta, Rarity.MYTHIC, stats);
+            BossGearBalance.stamp(meta);
+            meta.setDisplayName(displayName);
+            List<String> lore = new ArrayList<>();
+            lore.add("§7✦ §5MYTHIC");
+            lore.add("");
+            lore.add("§7🛡 Defense: §f+" + formatAetherionStat(defense));
+            lore.add("§7❤ Health: §f+" + formatAetherionStat(health));
+            lore.add("§7⚔ Damage: §f+" + formatAetherionStat(damage));
+            lore.add("§7⚔ Attack Spread: §f+" + formatAetherionStat(attackSpread));
+            lore.add("§7✧ Crit Chance: §f+" + formatAetherionStat(critChance) + "%");
+            lore.add("§7✧ Crit Damage: §f+" + formatAetherionStat(critDamage) + "%");
+            lore.add("§7✦ Speed: §f+" + formatAetherionStat(speed) + "%");
+            lore.add("");
+            lore.addAll(effectLore);
+            lore.add("");
+            lore.add("§6Set: Remnant of the Hollow Sun");
+            lore.add("§e2 · Main Sequence §7— every §f5th §7hit calls a §eStarcall§7.");
+            lore.add("§c3 · Red Giant §7— heavy blows make you §cburn brighter§7.");
+            lore.add("§54 · Collapse §7— cheat death once as a §5black star§7,");
+            lore.add("§7    then §dNova§7. §8(12m)");
+            meta.setLore(createLore(lore, false, true, true));
+            meta.setCustomModelData(modelData);
+            meta.setUnbreakable(true);
+            hideVanillaAttributes(meta);
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    /*
+     * =========================================================
      * DAWNBEARER SET + SOLSTICE (Helios Requiem)
      * =========================================================
      * Forged from what the supernova gave back: gold that remembers being
