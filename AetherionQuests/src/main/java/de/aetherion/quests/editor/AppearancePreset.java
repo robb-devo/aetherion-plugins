@@ -96,6 +96,40 @@ public enum AppearancePreset {
         return stack;
     }
 
+    /** Held item as a readable name ("Iron Pickaxe"). */
+    public String handName() {
+        String[] parts = hand.name().toLowerCase(Locale.ROOT).split("_");
+        StringBuilder out = new StringBuilder();
+        for (String part : parts) {
+            if (part.isEmpty()) {
+                continue;
+            }
+            if (!out.isEmpty()) {
+                out.append(' ');
+            }
+            out.append(Character.toUpperCase(part.charAt(0))).append(part.substring(1));
+        }
+        return out.toString();
+    }
+
+    /** Leather colour of the outfit, for tinted icons. */
+    public Color color() {
+        return leather;
+    }
+
+    /** True when {@code username} is one of the outfit default skins (i.e. not a custom pick). */
+    public static boolean isDefaultSkin(String username) {
+        if (username == null || username.isBlank()) {
+            return true;
+        }
+        for (AppearancePreset preset : values()) {
+            if (preset.skinUsername.equalsIgnoreCase(username.trim())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static AppearancePreset parse(String raw) {
         if (raw == null || raw.isBlank()) {
             return WORKER;
