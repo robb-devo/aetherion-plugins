@@ -1,0 +1,313 @@
+header-footer:
+  enabled: true
+  designs:
+    default:
+      header:
+      - ''
+      - <gradient:gold:yellow:gold><b>✦ AETHERION ✦</b></gradient>
+      - '&8— &7MMO Realm &8—'
+      - ''
+      footer:
+      - ''
+      - '&7Online &f%online%&8/&7%online_max%  &8·  &7Ping &f%ping%&7ms'
+      - ''
+tablist-name-formatting:
+  enabled: true
+  disable-condition: '%world%=disabledworld'
+scoreboard-teams:
+  enabled: true
+  enable-collision: true
+  invisible-nametags: false
+  sorting-types:
+  - GROUPS:admin,monkey,citrus,mvpplusplus,beta,aetherion,eternal,empyrean,ascendant,sovereign,celestine,aetherborn,mythwright,legend,champion,veteran,adventurer,default
+  - PLACEHOLDER_A_TO_Z:%player%
+  case-sensitive-sorting: true
+  can-see-friendly-invisibles: false
+  disable-condition: '%world%=disabledworld'
+playerlist-objective:
+  # Off: the layout below swaps real entries for fake slots, so TAB warns this
+  # objective "will only look bad and consume resources". Ping is in the footer.
+  enabled: false
+  value: '%ping%'
+  fancy-value: '&7Ping: %ping%'
+  title: TAB
+  render-type: INTEGER
+  disable-condition: '%world%=disabledworld'
+belowname-objective:
+  enabled: true
+  value: '%aetherion_hp%'
+  fancy-value: '&c❤ %aetherion_hp%&7/&c%aetherion_max_hp%'
+  fancy-value-default: NPC
+  title: '&c❤'
+  disable-condition: '%world%=disabledworld'
+  view-distance: 12
+prevent-spectator-effect:
+  enabled: false
+bossbar:
+  enabled: false
+  toggle-command: /bossbar
+  remember-toggle-choice: false
+  hidden-by-default: false
+  bars:
+    ServerInfo:
+      style: PROGRESS
+      color: '%animation:barcolors%'
+      progress: '100'
+      text: '&fWebsite: &bwww.domain.com'
+scoreboard:
+  enabled: true
+  toggle-command: /sb
+  remember-toggle-choice: false
+  hidden-by-default: false
+  delay-on-join-milliseconds: 0
+  scoreboards:
+    # Single board: special-rank line is first; TAB drops empty lines when
+    # %aetherion_ultra_rank% is blank (no stored extra). Avoids ultra/main
+    # display-condition race that left ranked players stuck on main.
+    #
+    # Who (special rank, level, XP) -> where (area) -> purse (coins).
+    # The level line always has static text, so it never hides. Quest progress
+    # stays on the quest BossBar/ActionBar and is not repeated here.
+    sidebar:
+      title: '%animation:AetherionTitle%'
+      lines:
+      - '&8&m----------------'
+      - '%aetherion_ultra_rank%'
+      - '%aetherion_level_title% &8· &7Lv %aetherion_level_colored%'
+      - '%aetherion_level_bar%'
+      - ''
+      - '&7Area &f%aetherion_area%'
+      - '&7Coins &6%aetherion_coins%'
+      - '&8&m----------------'
+layout:
+  enabled: true
+  direction: COLUMNS
+  default-skin: mineskin:37e93c8e12cd426cb28fce31969e0674
+  enable-remaining-players-text: true
+  remaining-players-text: '... and %s more'
+  empty-slot-ping-value: 1000
+  layouts:
+    guild_island:
+      display-condition: '%world%=aether_guilds'
+      slot-count: 80
+      fixed-slots:
+      - 2|<gradient:gold:yellow:gold><b>✦ AETHERION ✦</b></gradient>
+      - 3|&7Aetherion
+      - 4|&8&m--------------------
+      - 6|&6&lSERVER
+      - '7|&7Status: &aOnline'
+      - '8|&7Players: &f%online%&7/&f%online_max%'
+      - '9|&7Ping: &f%ping%&7ms'
+      - '10|&7TPS: &f%tps%'
+      - '11|&7RAM: &f%memory-used%&7MB'
+      - '12|&7World: &fAetherion'
+      - 14|&6&lNETWORK
+      - '15|&7Server: &fAetherion'
+      - '16|&7Version: &f1.21.1'
+      - 17|&b✦ Aether Shards
+      - '18|&f%aetherion_shards%'
+      - 19|&8&m--------------------
+      - 20|&6✦ AETHERION ✦
+      - 22|&e&lAREA
+      - 23|&f%aetherguild_island%
+      - 24|&7Island Lv.%aetherguild_island_level%
+      - '25| '
+      - 26|&6&lQUARRIES
+      - '27|&7%aetherguild_quarry_1%'
+      - '28|&7%aetherguild_quarry_2%'
+      - '29|&7%aetherguild_quarry_3%'
+      - '30|&7%aetherguild_quarry_4%'
+      - '31|&7%aetherguild_quarry_5%'
+      - '32|&7%aetherguild_quarry_6%'
+      - '33|&7%aetherguild_quarry_7%'
+      - '34|&7%aetherguild_quarry_8%'
+      - '35| '
+      - 36|&e&lMEMBERS
+      - '37|&aOnline: &f%aetherguild_online_count%&7/&f%aetherguild_member_count%'
+      - '38|&7%aetherguild_member_1%'
+      - '39|&7%aetherguild_member_2%'
+      - 40|&8&m--------------------
+      - 42|&6&lPLAYERS
+      - 62|&e&lSTATS
+      - '63|&c⚔ Damage: &f%aetherion_damage%'
+      - '64|&7🛡 Defense: &f%aetherion_defense%'
+      - '65|&c❤ Health: &f%aetherion_health%'
+      - '66|&e✧ Crit Chance: &f%aetherion_crit_chance%%'
+      - '67|&6✧ Crit Damage: &f%aetherion_crit_damage%%'
+      - '68|&c✦ Atk Spread: &f%aetherion_attack_spread%'
+      - '69|&f⚡ Speed: &f%aetherion_speed%%'
+      - '70| '
+      - 71|&e&lGATHER
+      - '72|&b⛏ Power: &f%aetherion_mining_power%'
+      - '73|&a💎 Fortune: &f%aetherion_fortune%'
+      - '74|&a✦ Spread: &f%aetherion_spread%'
+      - '75|&6🌾 Harvest: &f%aetherion_harvest%'
+      - '76|&b🎣 Fish Speed: &f%aetherion_fishing_speed%'
+      - '77|&3🐟 Fish Catch: &f%aetherion_fishing_catch%'
+      - '78|&6☘ Catch Rate: &f%aetherion_catch_rate%%'
+      - 79|&8&m--------------------
+      - 80|&6✦ AETHERION ✦
+      groups:
+        players:
+          slots:
+          - 44-60
+    # mmor TAB list. No display-condition = everyone outside aether_guilds.
+    # Columns read left to right: you, players, combat, gathering.
+    default:
+      slot-count: 80
+      fixed-slots:
+      - 2|&6&lPROFILE
+      - '3|%aetherion_level_title% &8· &7Lv %aetherion_level_colored%'
+      - '4|%aetherion_level_bar%'
+      - 6|&6&lPURSE
+      - '7|&7Coins &6%aetherion_coins%'
+      - '8|&7Shards &b%aetherion_shards%'
+      - 10|&6&lAREA
+      - '11|&f%aetherion_area%'
+      - '12|&7Weather &f%aetherion_weather%'
+      - 14|&6&lPET
+      - '15|&f%aethermobs_pet_name%'
+      - '16|&7Lv.%aethermobs_pet_level% %aethermobs_pet_bar%'
+      - '22|&6&lPLAYERS &8%online%'
+      - 42|&6&lCOMBAT
+      - '43|&c⚔ Damage: &f%aetherion_damage%'
+      - '44|&7🛡 Defense: &f%aetherion_defense%'
+      - '45|&c❤ Health: &f%aetherion_health%'
+      - '46|&e✧ Crit Chance: &f%aetherion_crit_chance%%'
+      - '47|&6✧ Crit Damage: &f%aetherion_crit_damage%%'
+      - '48|&c✦ Atk Spread: &f%aetherion_attack_spread%'
+      - '49|&f⚡ Speed: &f%aetherion_speed%%'
+      - 62|&6&lGATHERING
+      - '63|&b⛏ Power: &f%aetherion_mining_power%'
+      - '64|&a💎 Fortune: &f%aetherion_fortune%'
+      - '65|&a✦ Spread: &f%aetherion_spread%'
+      - '66|&6🌾 Harvest: &f%aetherion_harvest%'
+      - '67|&b🎣 Fish Speed: &f%aetherion_fishing_speed%'
+      - '68|&3🐟 Fish Catch: &f%aetherion_fishing_catch%'
+      - '69|&6☘ Catch Rate: &f%aetherion_catch_rate%%'
+      groups:
+        players:
+          slots:
+          - 24-40
+ping-spoof:
+  enabled: false
+  value: 0
+global-playerlist:
+  enabled: false
+  display-others-as-spectators: false
+  display-vanished-players-as-spectators: true
+  isolate-unlisted-servers: false
+  update-latency: false
+  spy-servers:
+  - spyserver1
+  - spyserver2
+  server-groups:
+    lobbies:
+    - lobby1
+    - lobby2
+    group2:
+    - server1
+    - server2
+placeholders:
+  date-format: dd.MM.yyyy
+  time-format: '[HH:mm:ss / h:mm a]'
+  time-offset: 0
+  register-tab-expansion: false
+  locale: en-US
+placeholder-output-replacements:
+  '%essentials_vanished%':
+    'yes': '&7| Vanished'
+    'no': ''
+conditions:
+  nick:
+    conditions:
+    - '%player%=%essentials_nickname%'
+    true: '%player%'
+    false: ~%essentials_nickname%
+placeholder-refresh-intervals:
+  default-refresh-interval: 500
+  # Keep at the 500ms default: %aetherion_ultra_rank% and %aetherion_tab_prefix%
+  # carry the animated dyes. Values below only change on XP, coin, gear or pet events.
+  '%aetherion_area%': 2000
+  '%aetherion_weather%': 2000
+  '%aetherion_level_title%': 1000
+  '%aetherion_level_colored%': 1000
+  '%aetherion_level_bar%': 1000
+  '%aetherion_coins%': 1000
+  '%aetherion_shards%': 2000
+  '%aetherion_damage%': 1000
+  '%aetherion_defense%': 1000
+  '%aetherion_health%': 1000
+  '%aetherion_crit_chance%': 1000
+  '%aetherion_crit_damage%': 1000
+  '%aetherion_attack_spread%': 1000
+  '%aetherion_speed%': 1000
+  '%aetherion_mining_power%': 1000
+  '%aetherion_fortune%': 1000
+  '%aetherion_spread%': 1000
+  '%aetherion_harvest%': 1000
+  '%aetherion_fishing_speed%': 1000
+  '%aetherion_fishing_catch%': 1000
+  '%aetherion_catch_rate%': 1000
+  '%aethermobs_pet_name%': 2000
+  '%aethermobs_pet_level%': 2000
+  '%aethermobs_pet_bar%': 1000
+  '%server_uptime%': 1000
+  '%server_tps_1_colored%': 1000
+  '%server_unique_joins%': 5000
+  '%player_health%': 200
+  '%player_ping%': 1000
+  '%vault_prefix%': 1000
+  '%rel_factionsuuid_relation_color%': 1000
+assign-groups-by-permissions: false
+primary-group-finding-list:
+- admin
+- mvpplusplus
+- aetherborn
+- mythwright
+- legend
+- champion
+- veteran
+- adventurer
+- default
+permission-refresh-interval: 1000
+debug: false
+mysql:
+  enabled: false
+  host: 127.0.0.1
+  port: 3306
+  database: tab
+  username: user
+  password: password
+  useSSL: true
+proxy-support:
+  enabled: true
+  channel-name-suffix: custom
+  type: PLUGIN
+  plugin:
+    name: RedisBungee
+  redis:
+    url: redis://:password@localhost:6379/0
+  rabbitmq:
+    exchange: plugin
+    url: amqp://guest:guest@localhost:5672/%2F
+components:
+  minimessage-support: true
+  disable-shadow-for-heads: true
+config-version: 7
+per-world-playerlist:
+  enabled: false
+  allow-bypass-permission: false
+  ignore-effect-in-worlds:
+  - ignoredworld
+  - build
+  shared-playerlist-world-groups:
+    lobby:
+    - lobby1
+    - lobby2
+    minigames:
+    - paintball
+    - bedwars
+compensate-for-packetevents-bug: false
+use-bukkit-permissions-manager: false
+use-online-uuid-in-tablist: true

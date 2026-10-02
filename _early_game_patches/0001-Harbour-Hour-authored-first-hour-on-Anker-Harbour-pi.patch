@@ -1,0 +1,2363 @@
+From 3d6d8d31144ee1b484f405276d853d83929b2bc6 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sun, 27 Sep 2026 15:40:55 +0000
+Subject: [PATCH 1/3] Harbour Hour: authored first hour on Anker Harbour pier
+
+Presence and craft around the existing tutorial spine (no quest graph,
+gate or locked-system changes).
+
+- Arrival: first join shows an ANKER HARBOUR place card after the language
+  pick, then the Hub FIND EGON card, two bells rung from Egon's position,
+  a green flare over him and his call-out. Items skips its generic title on
+  first join; Hub decides its fallback hint at join time (fixes a race that
+  cut the arrival short). Returning rookies get a quiet nudge instead.
+- Egon attractor: green column over Egon readable across the pier, and a
+  one-time "right-click me" line when you walk up.
+- Kit ceremony: StarterGearReward builds items as before; StarterKitCeremony
+  stages the handoff with per-player ItemDisplays (Egon's hands -> layout ->
+  into the player), grants each piece as it lands, auto-equips armour into
+  empty slots, and flushes everything on quit/world change/disable. Forager's
+  axe gets the same single-piece handoff. Full bag drops leftovers instead
+  of deleting them.
+- Egon's turn-in lines retimed over the ceremony via the say queue
+  (DialogPace), localized.
+- Spine ambience: Egon, Forager, Foreman and Miss Ledger get small ambient
+  loops in LivingNpcAtmosphere (particles + rare quiet sounds).
+- Dialog presence: per-NPC voice blip + speech motes in the NPC's colour on
+  every paced line (DialogManager + LivingNpcProfile.say).
+- Trail: TutorialQuestTrail keeps its corners; adds per-player painted
+  chevrons (BlockDisplay, setTransformationMatrix) near the player with a
+  rolling pulse, dust further ahead.
+- Copy: harbour gate hints localized (DE), new DE strings, Egon intro line
+  updated for the painted trail.
+- Spawn discover: small player-only spark ring on unlock.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01XBvw8uznr7aYFitEgL7MFx
+---
+ .../hub/command/HubAdminCommand.java          |   6 +-
+ .../aetherion/hub/listener/HubListener.java   |   6 +
+ .../hub/listener/SpawnDiscoverListener.java   |  18 +
+ AetherionHub/src/main/resources/config.yml    |   5 +-
+ .../items/listener/JoinWelcomeListener.java   |  10 +-
+ .../de/aetherion/quests/AetherionQuests.java  |   6 +
+ .../quests/dialog/DialogManager.java          |   6 +-
+ .../de/aetherion/quests/lang/LangMenu.java    |   8 +-
+ .../listener/HarbourOnboardingGate.java       |  19 +-
+ .../quests/listener/NpcListener.java          |  23 +-
+ .../quests/listener/PlayerJoinListener.java   |  20 +-
+ .../quests/manager/QuestManager.java          |   4 +-
+ .../quests/npc/LivingNpcAtmosphere.java       | 209 +++++++
+ .../quests/npc/LivingNpcProfile.java          |   1 +
+ .../de/aetherion/quests/npc/NpcPresence.java  | 123 ++++
+ .../quests/reward/StarterGearReward.java      |  77 ++-
+ .../quests/reward/StarterKitCeremony.java     | 553 ++++++++++++++++++
+ .../quests/ui/EgonHintParticles.java          |  52 +-
+ .../aetherion/quests/ui/HarbourArrival.java   | 203 +++++++
+ .../quests/ui/TutorialQuestTrail.java         | 410 +++++++++++--
+ .../src/main/resources/lang/de.yml            |  26 +-
+ 21 files changed, 1691 insertions(+), 94 deletions(-)
+ create mode 100644 AetherionQuests/src/main/java/de/aetherion/quests/npc/NpcPresence.java
+ create mode 100644 AetherionQuests/src/main/java/de/aetherion/quests/reward/StarterKitCeremony.java
+ create mode 100644 AetherionQuests/src/main/java/de/aetherion/quests/ui/HarbourArrival.java
+
+diff --git a/AetherionHub/src/main/java/de/aetherion/hub/command/HubAdminCommand.java b/AetherionHub/src/main/java/de/aetherion/hub/command/HubAdminCommand.java
+index 58afa67..66743c1 100644
+--- a/AetherionHub/src/main/java/de/aetherion/hub/command/HubAdminCommand.java
++++ b/AetherionHub/src/main/java/de/aetherion/hub/command/HubAdminCommand.java
+@@ -266,18 +266,18 @@ public final class HubAdminCommand implements CommandExecutor, TabCompleter {
+         );
+         String subtitle = plugin.getConfig().getString(
+                 "starter-hint.subtitle",
+-                "§eGreen glow near spawn · talk to him"
++                "§eGreen glow on the pier · right-click him"
+         );
+         String actionbar = plugin.getConfig().getString(
+                 "starter-hint.actionbar",
+-                "§aLook for the green aura — Egon kits rookies"
++                "§aLook for the green glow — Egon kits rookies"
+         );
+ 
+         player.showTitle(net.kyori.adventure.title.Title.title(
+                 net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection()
+                         .deserialize(title == null ? "§6§lFIND EGON" : title),
+                 net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection()
+-                        .deserialize(subtitle == null ? "§eGreen glow near spawn" : subtitle),
++                        .deserialize(subtitle == null ? "§eGreen glow on the pier" : subtitle),
+                 net.kyori.adventure.title.Title.Times.times(
+                         java.time.Duration.ofMillis(300),
+                         java.time.Duration.ofSeconds(4),
+diff --git a/AetherionHub/src/main/java/de/aetherion/hub/listener/HubListener.java b/AetherionHub/src/main/java/de/aetherion/hub/listener/HubListener.java
+index 5ee5074..27e5026 100644
+--- a/AetherionHub/src/main/java/de/aetherion/hub/listener/HubListener.java
++++ b/AetherionHub/src/main/java/de/aetherion/hub/listener/HubListener.java
+@@ -58,6 +58,12 @@ public final class HubListener implements Listener {
+         if (hub.hintShown(player.getUniqueId())) {
+             return;
+         }
++        // Decide now, not in 3s: if the language menu is about to open, Quests' harbour
++        // arrival fires FIND EGON after the pick. Checking later raced a fast click and
++        // cut the arrival card short.
++        if (!languageAlreadyChosen(player)) {
++            return;
++        }
+         long delay = Math.max(1L, plugin.getConfig().getLong("starter-hint.delay-ticks", 60L));
+         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+             if (!player.isOnline() || hub.hintShown(player.getUniqueId())) {
+diff --git a/AetherionHub/src/main/java/de/aetherion/hub/listener/SpawnDiscoverListener.java b/AetherionHub/src/main/java/de/aetherion/hub/listener/SpawnDiscoverListener.java
+index 2acc156..becb0d6 100644
+--- a/AetherionHub/src/main/java/de/aetherion/hub/listener/SpawnDiscoverListener.java
++++ b/AetherionHub/src/main/java/de/aetherion/hub/listener/SpawnDiscoverListener.java
+@@ -9,7 +9,9 @@ import net.kyori.adventure.title.Title;
+ 
+ import org.bukkit.Bukkit;
+ import org.bukkit.Location;
++import org.bukkit.Particle;
+ import org.bukkit.Sound;
++import org.bukkit.SoundCategory;
+ import org.bukkit.entity.Player;
+ import org.bukkit.event.Listener;
+ import org.bukkit.plugin.Plugin;
+@@ -173,6 +175,7 @@ public final class SpawnDiscoverListener implements Listener, Runnable {
+     private void announce(Player player, HubSpawn spawn) {
+         String name = spawn.displayName();
+         player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1f, 1.15f);
++        worldNoticed(player);
+         player.showTitle(Title.title(
+                 LegacyComponentSerializer.legacySection().deserialize(
+                         "§b§lNEW AREA · " + name.toUpperCase(Locale.ROOT)
+@@ -192,4 +195,19 @@ public final class SpawnDiscoverListener implements Listener, Runnable {
+             progress.unlock(player, "SPAWN_UNLOCKER", "Teleports", "Manager → Teleports");
+         }
+     }
++
++    /**
++     * "The world noticed you": a ring of sparks rolls out from your feet and a few motes
++     * lift off — player-only, one beat, no entities.
++     */
++    private void worldNoticed(Player player) {
++        Location feet = player.getLocation().add(0.0, 0.15, 0.0);
++        for (int i = 0; i < 20; i++) {
++            double a = i * (Math.PI * 2.0 / 20.0);
++            // count 0 = the offsets become a velocity: sparks slide outward along the ground.
++            player.spawnParticle(Particle.FIREWORK, feet, 0, Math.cos(a), 0.02, Math.sin(a), 0.18);
++        }
++        player.spawnParticle(Particle.END_ROD, feet.clone().add(0.0, 0.6, 0.0), 10, 0.5, 0.4, 0.5, 0.03);
++        player.playSound(feet, Sound.BLOCK_AMETHYST_BLOCK_CHIME, SoundCategory.PLAYERS, 0.7f, 1.2f);
++    }
+ }
+diff --git a/AetherionHub/src/main/resources/config.yml b/AetherionHub/src/main/resources/config.yml
+index 1dbf057..f9db195 100644
+--- a/AetherionHub/src/main/resources/config.yml
++++ b/AetherionHub/src/main/resources/config.yml
+@@ -8,10 +8,11 @@ join-at-selected-spawn: true
+ starter-hint:
+   enabled: true
+   # First join only (Minecraft hasPlayedBefore). Existing players can use /hubadmin hint.
++  # With AetherionQuests this is the second card of the harbour arrival (after "ANKER HARBOUR").
+   delay-ticks: 60
+   title: "§6§lFIND EGON"
+-  subtitle: "§eGreen glow near harbour · talk to him"
+-  actionbar: "§aLook for the green aura — Egon kits rookies"
++  subtitle: "§eGreen glow on the pier · right-click him"
++  actionbar: "§aLook for the green glow — Egon kits rookies"
+   also-chat: false
+   messages:
+     - ""
+diff --git a/AetherionItems/src/main/java/de/aetherion/items/listener/JoinWelcomeListener.java b/AetherionItems/src/main/java/de/aetherion/items/listener/JoinWelcomeListener.java
+index f9189eb..e6b77a9 100644
+--- a/AetherionItems/src/main/java/de/aetherion/items/listener/JoinWelcomeListener.java
++++ b/AetherionItems/src/main/java/de/aetherion/items/listener/JoinWelcomeListener.java
+@@ -28,7 +28,13 @@ public final class JoinWelcomeListener implements Listener {
+     public void onJoin(PlayerJoinEvent event) {
+         event.joinMessage(null);
+         Player player = event.getPlayer();
+-        plugin.getServer().getScheduler().runTaskLater(plugin, () -> show(player), 12L);
++        // First join belongs to the harbour: Quests plays the Anker Harbour arrival after the
++        // language pick. A plugin-name title here would just flash under the language menu.
++        boolean harbourArrival = !player.hasPlayedBefore()
++                && plugin.getServer().getPluginManager().isPluginEnabled("AetherionQuests");
++        if (!harbourArrival) {
++            plugin.getServer().getScheduler().runTaskLater(plugin, () -> show(player), 12L);
++        }
+         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+             if (player.isOnline()) {
+                 de.aetherion.items.progress.ProgressionUnlock.syncFromCompletedQuests(player);
+@@ -42,7 +48,7 @@ public final class JoinWelcomeListener implements Listener {
+         }
+         player.showTitle(Title.title(
+                 Component.text("AETHERION", NamedTextColor.GOLD, TextDecoration.BOLD),
+-                Component.text("welcome", NamedTextColor.YELLOW),
++                Component.text(player.hasPlayedBefore() ? "welcome back" : "welcome", NamedTextColor.YELLOW),
+                 Title.Times.times(Duration.ofMillis(350), Duration.ofMillis(2200), Duration.ofMillis(650))
+         ));
+         player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.35f, 0.95f);
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/AetherionQuests.java b/AetherionQuests/src/main/java/de/aetherion/quests/AetherionQuests.java
+index 7bdf13a..972509f 100644
+--- a/AetherionQuests/src/main/java/de/aetherion/quests/AetherionQuests.java
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/AetherionQuests.java
+@@ -119,6 +119,9 @@ public final class AetherionQuests extends JavaPlugin {
+                         this
+                 );
+ 
++        // Starter kit / axe handoff scene (lands items; flushes on quit/disable).
++        de.aetherion.quests.reward.StarterKitCeremony.init(this);
++
+ 
+         markerManager =
+                 new QuestMarkerManager(
+@@ -461,6 +464,9 @@ public final class AetherionQuests extends JavaPlugin {
+     @Override
+     public void onDisable() {
+ 
++        // Land any kit still mid-handoff before player data is flushed.
++        de.aetherion.quests.reward.StarterKitCeremony.shutdown();
++
+         if (markerManager != null) {
+             markerManager.shutdown();
+         }
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/dialog/DialogManager.java b/AetherionQuests/src/main/java/de/aetherion/quests/dialog/DialogManager.java
+index 96444b5..4191dfc 100644
+--- a/AetherionQuests/src/main/java/de/aetherion/quests/dialog/DialogManager.java
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/dialog/DialogManager.java
+@@ -20,7 +20,6 @@ import net.md_5.bungee.api.chat.TextComponent;
+ 
+ import org.bukkit.Bukkit;
+ import org.bukkit.Location;
+-import org.bukkit.Sound;
+ import org.bukkit.entity.Player;
+ import org.bukkit.inventory.ItemStack;
+ import org.bukkit.event.EventHandler;
+@@ -590,7 +589,8 @@ public class DialogManager implements Listener {
+         if (player == null || npc == null || !LivingNpcProfile.isLiving(npc.getId())) {
+             return;
+         }
+-        player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_HAT, 0.35f, 1.35f);
++        // Per-NPC voice + speech motes (was one shared hat tick for everyone).
++        de.aetherion.quests.npc.NpcPresence.cue(player, npc.getId());
+     }
+ 
+ 
+@@ -1420,7 +1420,7 @@ public class DialogManager implements Listener {
+             return new String[] {
+                     "Egon. Harbour kit man. I need oak — you're fetching it.",
+                     "Forager is up the hill. He lends the axe and shows the chop minigame. Bring ten oak logs back here.",
+-                    "§eYellow arrow up top§f points the way. You'll also see a short sparkle trail on the ground for this job."
++                    "§eYellow arrow up top§f points the way. I've had the planks painted for you, too. You're welcome."
+             };
+ 
+         }
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/lang/LangMenu.java b/AetherionQuests/src/main/java/de/aetherion/quests/lang/LangMenu.java
+index 039b3d3..f50e9f9 100644
+--- a/AetherionQuests/src/main/java/de/aetherion/quests/lang/LangMenu.java
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/lang/LangMenu.java
+@@ -138,17 +138,15 @@ public final class LangMenu implements Listener {
+                     code.german() ? "Willkommen · Sprache gespeichert" : "Welcome · language saved",
+                     net.kyori.adventure.text.format.NamedTextColor.GOLD
+             ));
+-            // FIND EGON only after the language popup closes — never overlapping it.
++            // Harbour arrival (place card → FIND EGON → Egon's bells) only after the
++            // language popup closes — never overlapping it.
+             AetherionQuests quests = AetherionQuests.getInstance();
+             if (quests != null) {
+                 quests.getServer().getScheduler().runTaskLater(quests, () -> {
+                     if (!player.isOnline()) {
+                         return;
+                     }
+-                    de.aetherion.core.api.HubAccess hub = de.aetherion.core.api.AetherServices.hub();
+-                    if (hub != null) {
+-                        hub.sendStarterHint(player);
+-                    }
++                    de.aetherion.quests.ui.HarbourArrival.play(player);
+                 }, 12L);
+             }
+         }
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/listener/HarbourOnboardingGate.java b/AetherionQuests/src/main/java/de/aetherion/quests/listener/HarbourOnboardingGate.java
+index 6c2d083..561d311 100644
+--- a/AetherionQuests/src/main/java/de/aetherion/quests/listener/HarbourOnboardingGate.java
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/listener/HarbourOnboardingGate.java
+@@ -1,6 +1,7 @@
+ package de.aetherion.quests.listener;
+ 
+ import de.aetherion.quests.AetherionQuests;
++import de.aetherion.quests.lang.LangPack;
+ import de.aetherion.quests.manager.QuestManager;
+ import de.aetherion.quests.model.Quest;
+ import de.aetherion.quests.model.QuestState;
+@@ -91,8 +92,8 @@ public final class HarbourOnboardingGate implements Listener {
+                 Vector toward = towardPierInside(to);
+                 shove(player, toward, depthOutsidePier(to));
+                 hint(player, "egon", "Egon",
+-                        "§eEgon §7is right here on the pier — talk to him first.",
+-                        "→ Talk to Egon");
++                        LangPack.ui(player, "gate_pier_chat", "§eEgon §7is right here on the pier — talk to him first."),
++                        LangPack.ui(player, "gate_pier_action", "→ Talk to Egon"));
+             }
+             return;
+         }
+@@ -102,8 +103,8 @@ public final class HarbourOnboardingGate implements Listener {
+             double depth = Math.max(0.0, MARKET_X - to.getX());
+             shove(player, new Vector(1.0, 0.0, 0.0), depth);
+             hint(player, "egon", "Egon",
+-                    "§7Market stays closed until you bring §eEgon §7his oak.",
+-                    "→ Forager · then turn in at Egon");
++                    LangPack.ui(player, "gate_market_chat", "§7Market stays closed until you bring §eEgon §7his oak."),
++                    LangPack.ui(player, "gate_market_action", "→ Forager · then turn in at Egon"));
+         }
+     }
+ 
+@@ -131,13 +132,19 @@ public final class HarbourOnboardingGate implements Listener {
+         player.setVelocity(new Vector(0, 0, 0));
+         player.setFallDistance(0f);
+         player.teleport(harbour);
+-        player.sendMessage("§7Easy — back on the pier. Talk to §eEgon §7first.");
++        player.sendMessage(LangPack.ui(player, "gate_rescue_chat", "§7Easy — back on the pier. Talk to §eEgon §7first."));
+         player.sendActionBar(net.kyori.adventure.text.Component.text(
+-                "→ Talk to Egon",
++                LangPack.ui(player, "gate_pier_action", "→ Talk to Egon"),
+                 net.kyori.adventure.text.format.NamedTextColor.GOLD
+         ));
+         player.playSound(harbour, Sound.ENTITY_PLAYER_SPLASH, 0.35f, 1.2f);
+         QuestHint.show(player, "egon", "Egon");
++        // Dripping on the planks: Egon rings you over.
++        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
++            if (player.isOnline()) {
++                de.aetherion.quests.ui.HarbourArrival.flareEgon(player);
++            }
++        }, 12L);
+     }
+ 
+     private Location harbourSpawnLocation() {
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/listener/NpcListener.java b/AetherionQuests/src/main/java/de/aetherion/quests/listener/NpcListener.java
+index 978f907..8670531 100644
+--- a/AetherionQuests/src/main/java/de/aetherion/quests/listener/NpcListener.java
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/listener/NpcListener.java
+@@ -1451,23 +1451,24 @@ public class NpcListener implements Listener {
+         if ("gather_wood".equalsIgnoreCase(quest.getId())
+                 || "egon".equalsIgnoreCase(npc.getId())) {
+             AetherionQuests plugin = AetherionQuests.getInstance();
+-            String name = npc.getName();
+-            npcSay(player, npc, "Logs received. Kit stays yours — don't lose it.");
++            // The kit handoff scene (StarterKitCeremony) is already in the air —
++            // Egon talks over it, one DialogPace beat per line (say queue).
++            String[] lines = de.aetherion.quests.lang.LangPack.dialogs(player, "egon_kit_handoff", new String[] {
++                    "Logs received. Here's your kit — pickaxe, sword, hoe, armour.",
++                    "Armour's second-hand. Previous owner retired. Peacefully, mostly.",
++                    "§eQuartermaster§f is past the little market — talk to him next."
++            });
++            for (String line : lines) {
++                npcSay(player, npc, line);
++            }
+             if (plugin != null) {
+-                plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+-                    if (player.isOnline()) {
+-                        npcSay(player, npc,
+-                                "Quartermaster's past the little market — talk to him next.");
+-                    }
+-                }, 45L);
++                long afterLast = de.aetherion.quests.dialog.DialogPace.LINE_GAP_TICKS * Math.max(0, lines.length - 1) + 25L;
+                 plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                     if (player.isOnline()) {
+                         de.aetherion.quests.ui.QuestHint.show(player, "quartermaster", "Quartermaster");
+                     }
+-                }, 70L);
++                }, afterLast);
+             } else {
+-                npcSay(player, npc,
+-                        "Quartermaster's past the little market — talk to him next.");
+                 de.aetherion.quests.ui.QuestHint.show(player, "quartermaster", "Quartermaster");
+             }
+             return;
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/listener/PlayerJoinListener.java b/AetherionQuests/src/main/java/de/aetherion/quests/listener/PlayerJoinListener.java
+index c5b51a8..5722060 100644
+--- a/AetherionQuests/src/main/java/de/aetherion/quests/listener/PlayerJoinListener.java
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/listener/PlayerJoinListener.java
+@@ -44,9 +44,11 @@ public class PlayerJoinListener implements Listener {
+ 
+             questManager.backfillAetherXp(player);
+ 
+-            // First join: tiny language picker (quests/hints only).
++            // First join: tiny language picker (quests/hints only) → HarbourArrival after the pick.
+             if (!de.aetherion.quests.lang.PlayerLang.hasChosen(player)) {
+                 de.aetherion.quests.lang.LangMenu.openIfNeeded(player);
++            } else {
++                nudgeIfEgonWaiting(player, plugin);
+             }
+ 
+             Quest quest = questManager.getTrackedQuest(player);
+@@ -64,6 +66,22 @@ public class PlayerJoinListener implements Listener {
+     }
+ 
+ 
++    /** Back on the server but never spoke to Egon: his bells + flare once the welcome title clears. */
++    private void nudgeIfEgonWaiting(Player player, AetherionQuests plugin) {
++        Quest welcome = questManager.getQuest("welcome_aboard");
++        if (welcome == null
++                || questManager.getQuestState(player, welcome) != de.aetherion.quests.model.QuestState.AVAILABLE
++                || de.aetherion.quests.util.QuestStoryGate.tutorialDone(player, questManager)) {
++            return;
++        }
++        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
++            if (player.isOnline()) {
++                de.aetherion.quests.ui.HarbourArrival.nudge(player);
++            }
++        }, 50L);
++    }
++
++
+     @EventHandler
+     public void onPlayerQuit(PlayerQuitEvent event) {
+         QuestProgressDisplay.remove(event.getPlayer());
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/manager/QuestManager.java b/AetherionQuests/src/main/java/de/aetherion/quests/manager/QuestManager.java
+index a180ccb..bd2dba9 100644
+--- a/AetherionQuests/src/main/java/de/aetherion/quests/manager/QuestManager.java
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/manager/QuestManager.java
+@@ -689,10 +689,10 @@ public class QuestManager {
+         if ("a_simple_craft".equalsIgnoreCase(quest.getId())) {
+             unlockProgressFeature(player, "WORKBENCH", "Crafting + Recipes", "Manager → green Recipe Book");
+         }
+-        // Harbour onboarding: Forager hands out the Simple Axe once.
++        // Harbour onboarding: Forager hands out the Simple Axe once (handoff scene from his hands).
+         if ("gather_wood".equalsIgnoreCase(quest.getId())) {
+             if (claimStarterKit(player, quest.getId())) {
+-                StarterGearReward.giveSimpleAxe(player);
++                StarterGearReward.giveSimpleAxe(player, "lumberjack");
+             }
+         }
+         // Fishing rod / coin rewards wait until turn-in (see completeQuest).
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/npc/LivingNpcAtmosphere.java b/AetherionQuests/src/main/java/de/aetherion/quests/npc/LivingNpcAtmosphere.java
+index 0213ef8..fdd4528 100644
+--- a/AetherionQuests/src/main/java/de/aetherion/quests/npc/LivingNpcAtmosphere.java
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/npc/LivingNpcAtmosphere.java
+@@ -3,22 +3,35 @@ package de.aetherion.quests.npc;
+ import de.aetherion.quests.AetherionQuests;
+ 
+ import org.bukkit.Bukkit;
++import org.bukkit.Color;
+ import org.bukkit.Location;
++import org.bukkit.Material;
+ import org.bukkit.Particle;
++import org.bukkit.Sound;
++import org.bukkit.SoundCategory;
+ import org.bukkit.World;
++import org.bukkit.block.data.BlockData;
+ import org.bukkit.entity.Entity;
+ import org.bukkit.entity.Player;
+ import org.bukkit.plugin.Plugin;
+ import org.bukkit.scheduler.BukkitTask;
+ 
++import java.util.ArrayList;
++import java.util.List;
+ import java.util.Map;
++import java.util.Set;
+ import java.util.concurrent.ConcurrentHashMap;
++import java.util.concurrent.ThreadLocalRandom;
+ import java.util.function.Supplier;
+ 
+ /**
+  * Lark: bind a real AetherMobs parrot companion (same follow/bob as equipped pets).
+  * Liquidator: enchant-table rune motes around the desk.
+  * Fisher: no atmosphere — rod in hand only.
++ * <p>
++ * First-hour spine (Egon, Forager, Foreman, Miss Ledger): one shared slow loop.
++ * Particles are small and constant; sounds are rare, quiet, and only for players
++ * standing nearby — the NPC is busy with their own job when you walk up.
+  */
+ public final class LivingNpcAtmosphere {
+ 
+@@ -28,6 +41,19 @@ public final class LivingNpcAtmosphere {
+     private static volatile BukkitTask liquidatorFx;
+     private static volatile Location liquidatorAt;
+ 
++    /** Spine NPCs with an ambient loop (Egon → Forager → Foreman → Ledger). */
++    private static final Set<String> SPINE = Set.of("egon", "lumberjack", "foreman", "ledger");
++    private static final double SPINE_VIEW = 20.0;
++    private static final double SPINE_EAR = 14.0;
++    private static final long SPINE_PERIOD = 10L;
++    private static final Map<String, Location> spineAt = new ConcurrentHashMap<>();
++    private static final Map<String, Long> spineNextSound = new ConcurrentHashMap<>();
++    private static volatile BukkitTask spineFx;
++    private static long spineCycle;
++    private static final BlockData OAK_CHIPS = Material.OAK_LOG.createBlockData();
++    private static final Particle.DustOptions LEDGER_INK =
++            new Particle.DustOptions(Color.fromRGB(92, 48, 64), 0.55f);
++
+     private LivingNpcAtmosphere() {
+     }
+ 
+@@ -40,6 +66,12 @@ public final class LivingNpcAtmosphere {
+             ensureLiquidatorFx();
+             return;
+         }
++        String spineId = npcId.toLowerCase(java.util.Locale.ROOT);
++        if (SPINE.contains(spineId)) {
++            spineAt.put(spineId, at.clone());
++            ensureSpineFx();
++            return;
++        }
+         if (!"lark".equalsIgnoreCase(npcId)) {
+             return;
+         }
+@@ -67,6 +99,14 @@ public final class LivingNpcAtmosphere {
+             stopLiquidatorFx();
+             return;
+         }
++        if (SPINE.contains(id)) {
++            spineAt.remove(id);
++            spineNextSound.remove(id);
++            if (spineAt.isEmpty()) {
++                stopSpineFx();
++            }
++            return;
++        }
+         Object pet = petHandles.remove(id);
+         fallbackHost.remove(id);
+         if (pet != null) {
+@@ -134,6 +174,175 @@ public final class LivingNpcAtmosphere {
+         world.spawnParticle(Particle.WITCH, at.clone().add(0.0, 0.35, 0.0), 2, 0.25, 0.35, 0.25, 0.0);
+     }
+ 
++    /* =========================================================
++     * SPINE AMBIENCE — Egon / Forager / Foreman / Miss Ledger
++     * ========================================================= */
++
++    private static void ensureSpineFx() {
++        if (spineFx != null) {
++            return;
++        }
++        AetherionQuests plugin = AetherionQuests.getInstance();
++        if (plugin == null) {
++            return;
++        }
++        spineFx = plugin.getServer().getScheduler().runTaskTimer(
++                plugin,
++                LivingNpcAtmosphere::tickSpine,
++                20L,
++                SPINE_PERIOD
++        );
++    }
++
++    private static void stopSpineFx() {
++        if (spineFx != null) {
++            spineFx.cancel();
++            spineFx = null;
++        }
++    }
++
++    private static void tickSpine() {
++        AetherionQuests plugin = AetherionQuests.getInstance();
++        if (plugin == null) {
++            return;
++        }
++        spineCycle++;
++        LivingNpcService living = plugin.getLivingNpcService();
++        for (String id : SPINE) {
++            Location cached = spineAt.get(id);
++            if (cached == null) {
++                continue;
++            }
++            Location at = cached;
++            if (living != null && living.isSpawned(id)) {
++                Location live = living.locationOf(id);
++                if (live != null && live.getWorld() != null) {
++                    at = live.clone();
++                    spineAt.put(id, at.clone());
++                }
++            }
++            World world = at.getWorld();
++            if (world == null) {
++                continue;
++            }
++            List<Player> viewers = nearby(world, at, SPINE_VIEW);
++            if (viewers.isEmpty()) {
++                continue;
++            }
++            ThreadLocalRandom rng = ThreadLocalRandom.current();
++            switch (id) {
++                case "egon" -> egonAmbient(world, at, rng);
++                case "lumberjack" -> foragerAmbient(world, at, rng);
++                case "foreman" -> foremanAmbient(world, at, rng);
++                case "ledger" -> ledgerAmbient(world, at, rng);
++                default -> {
++                }
++            }
++            if (soundDue(id, rng)) {
++                List<Player> ears = nearby(world, at, SPINE_EAR);
++                if (!ears.isEmpty()) {
++                    spineSound(plugin, id, at, ears, rng);
++                }
++            }
++        }
++    }
++
++    /** Harbour kit man: light catches freshly oiled iron in his hands. */
++    private static void egonAmbient(World world, Location at, ThreadLocalRandom rng) {
++        if (rng.nextDouble() < 0.28) {
++            world.spawnParticle(Particle.WAX_OFF, at.clone().add(0.0, 1.15, 0.0), 1, 0.22, 0.12, 0.22, 0.0);
++        }
++    }
++
++    /** Forager: whittling — oak chips drop off the axe now and then. */
++    private static void foragerAmbient(World world, Location at, ThreadLocalRandom rng) {
++        if (rng.nextDouble() < 0.34) {
++            world.spawnParticle(Particle.BLOCK, at.clone().add(0.0, 1.05, 0.0), 2, 0.2, 0.08, 0.2, 0.0, OAK_CHIPS);
++        }
++    }
++
++    /** Shaft Foreman: pipe on, always. */
++    private static void foremanAmbient(World world, Location at, ThreadLocalRandom rng) {
++        if (rng.nextDouble() < 0.5) {
++            world.spawnParticle(Particle.SMOKE, at.clone().add(0.0, 1.85, 0.0), 1, 0.06, 0.02, 0.06, 0.004);
++        }
++    }
++
++    /** Miss Ledger: ink specks off the quill. */
++    private static void ledgerAmbient(World world, Location at, ThreadLocalRandom rng) {
++        if (spineCycle % 2 == 0 && rng.nextDouble() < 0.6) {
++            world.spawnParticle(Particle.DUST, at.clone().add(0.0, 1.1, 0.0), 1, 0.18, 0.06, 0.18, 0.0, LEDGER_INK);
++        }
++    }
++
++    /** Next sound in 6–14 s per NPC, so the pier never ticks like a clock. */
++    private static boolean soundDue(String id, ThreadLocalRandom rng) {
++        long next = spineNextSound.getOrDefault(id, 0L);
++        if (next == 0L) {
++            spineNextSound.put(id, spineCycle + rng.nextLong(4L, 16L));
++            return false;
++        }
++        if (spineCycle < next) {
++            return false;
++        }
++        spineNextSound.put(id, spineCycle + rng.nextLong(12L, 29L));
++        return true;
++    }
++
++    private static void spineSound(
++            AetherionQuests plugin,
++            String id,
++            Location at,
++            List<Player> ears,
++            ThreadLocalRandom rng
++    ) {
++        Location hands = at.clone().add(0.0, 1.1, 0.0);
++        switch (id) {
++            case "egon" -> {
++                if (rng.nextBoolean()) {
++                    play(ears, hands, Sound.ITEM_ARMOR_EQUIP_IRON, SoundCategory.NEUTRAL, 0.16f, 1.15f);
++                } else {
++                    // A fish turns over somewhere off the pier.
++                    Location water = at.clone().add(rng.nextDouble(-6.0, 6.0), -1.0, rng.nextDouble(-6.0, 6.0));
++                    play(ears, water, Sound.ENTITY_FISHING_BOBBER_SPLASH, SoundCategory.AMBIENT, 0.18f, 1.3f);
++                }
++            }
++            case "lumberjack" -> {
++                play(ears, hands, Sound.BLOCK_WOOD_HIT, SoundCategory.NEUTRAL, 0.22f, 0.95f);
++                plugin.getServer().getScheduler().runTaskLater(plugin,
++                        () -> play(ears, hands, Sound.BLOCK_WOOD_HIT, SoundCategory.NEUTRAL, 0.18f, 1.05f), 5L);
++            }
++            case "foreman" -> play(ears, hands, Sound.BLOCK_STONE_HIT, SoundCategory.NEUTRAL, 0.2f, 0.8f);
++            case "ledger" -> {
++                // Page… stamp.
++                play(ears, hands, Sound.ITEM_BOOK_PAGE_TURN, SoundCategory.NEUTRAL, 0.28f, 1.1f);
++                plugin.getServer().getScheduler().runTaskLater(plugin,
++                        () -> play(ears, hands, Sound.BLOCK_NOTE_BLOCK_BASEDRUM, SoundCategory.NEUTRAL, 0.22f, 0.62f), 7L);
++            }
++            default -> {
++            }
++        }
++    }
++
++    private static void play(List<Player> ears, Location at, Sound sound, SoundCategory category, float volume, float pitch) {
++        for (Player player : ears) {
++            if (player.isOnline() && at.getWorld() != null && at.getWorld().equals(player.getWorld())) {
++                player.playSound(at, sound, category, volume, pitch);
++            }
++        }
++    }
++
++    private static List<Player> nearby(World world, Location at, double radius) {
++        List<Player> out = new ArrayList<>(2);
++        double r2 = radius * radius;
++        for (Player player : world.getPlayers()) {
++            if (player.getLocation().distanceSquared(at) <= r2) {
++                out.add(player);
++            }
++        }
++        return out;
++    }
++
+     private static void ensureKeepAlive() {
+         if (keepAlive != null) {
+             return;
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/npc/LivingNpcProfile.java b/AetherionQuests/src/main/java/de/aetherion/quests/npc/LivingNpcProfile.java
+index 624695b..b0b4343 100644
+--- a/AetherionQuests/src/main/java/de/aetherion/quests/npc/LivingNpcProfile.java
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/npc/LivingNpcProfile.java
+@@ -402,6 +402,7 @@ public final class LivingNpcProfile {
+         LivingNpcProfile profile = of(npcId);
+         if (profile != null) {
+             player.sendMessage(profile.formatChatLine(displayName, line));
++            NpcPresence.cue(player, npcId);
+             return;
+         }
+         String name = displayName == null || displayName.isBlank() ? "NPC" : displayName;
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/npc/NpcPresence.java b/AetherionQuests/src/main/java/de/aetherion/quests/npc/NpcPresence.java
+new file mode 100644
+index 0000000..82b49f7
+--- /dev/null
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/npc/NpcPresence.java
+@@ -0,0 +1,123 @@
++package de.aetherion.quests.npc;
++
++import de.aetherion.quests.AetherionQuests;
++
++import net.kyori.adventure.text.format.NamedTextColor;
++
++import org.bukkit.Bukkit;
++import org.bukkit.Color;
++import org.bukkit.Location;
++import org.bukkit.Particle;
++import org.bukkit.Sound;
++import org.bukkit.entity.Entity;
++import org.bukkit.entity.Player;
++
++import java.util.Locale;
++import java.util.Map;
++import java.util.concurrent.ThreadLocalRandom;
++
++/**
++ * Small "someone is talking to you" layer for paced NPC lines.
++ * <p>
++ * One cue per spoken line ({@link de.aetherion.quests.dialog.DialogPace} keeps the rhythm):
++ * a per-NPC voice blip instead of one shared hat tick, and two motes in the speaker's
++ * name colour just above their head. Listener only — nobody else on the pier sees it.
++ * Text stays untouched; this is body language, not dialog.
++ */
++public final class NpcPresence {
++
++    /** Voice plays from the NPC when the listener is this close, else at the listener. */
++    private static final double VOICE_NEAR = 16.0;
++    private static final double SPARKLE_RANGE = 24.0;
++
++    private record Voice(Sound sound, float pitch, float volume) {
++    }
++
++    /** Previous shared cue — every living NPC without its own voice keeps it. */
++    private static final Voice DEFAULT_VOICE = new Voice(Sound.BLOCK_NOTE_BLOCK_HAT, 1.35f, 0.35f);
++
++    /** Spine NPCs get a voice you can recognise with your eyes closed. */
++    private static final Map<String, Voice> VOICES = Map.of(
++            "egon", new Voice(Sound.BLOCK_NOTE_BLOCK_BIT, 0.84f, 0.26f),
++            "lumberjack", new Voice(Sound.BLOCK_NOTE_BLOCK_XYLOPHONE, 0.92f, 0.30f),
++            "quartermaster", new Voice(Sound.BLOCK_NOTE_BLOCK_BIT, 1.06f, 0.24f),
++            "foreman", new Voice(Sound.BLOCK_NOTE_BLOCK_BASS, 1.30f, 0.40f),
++            "ledger", new Voice(Sound.BLOCK_NOTE_BLOCK_CHIME, 1.62f, 0.20f),
++            "booster_tutor", new Voice(Sound.BLOCK_NOTE_BLOCK_IRON_XYLOPHONE, 1.18f, 0.24f),
++            "farmer", new Voice(Sound.BLOCK_NOTE_BLOCK_BANJO, 1.10f, 0.26f),
++            "lark", new Voice(Sound.BLOCK_NOTE_BLOCK_FLUTE, 1.45f, 0.26f)
++    );
++
++    private NpcPresence() {
++    }
++
++    /** One spoken line from {@code npcId} reached {@code player}. */
++    public static void cue(Player player, String npcId) {
++        if (player == null || !player.isOnline() || npcId == null) {
++            return;
++        }
++        String id = npcId.toLowerCase(Locale.ROOT).trim();
++        Voice voice = VOICES.getOrDefault(id, DEFAULT_VOICE);
++        Location at = locate(id);
++        boolean near = at != null
++                && at.getWorld() != null
++                && at.getWorld().equals(player.getWorld())
++                && at.distanceSquared(player.getLocation()) <= VOICE_NEAR * VOICE_NEAR;
++
++        // Tiny pitch drift so a run of lines sounds like speech, not a metronome.
++        float drift = (float) ThreadLocalRandom.current().nextDouble(-0.04, 0.04);
++        Location from = near ? at.clone().add(0.0, 1.6, 0.0) : player.getLocation();
++        player.playSound(from, voice.sound(), voice.volume(), clampPitch(voice.pitch() + drift));
++
++        if (at == null
++                || at.getWorld() == null
++                || !at.getWorld().equals(player.getWorld())
++                || at.distanceSquared(player.getLocation()) > SPARKLE_RANGE * SPARKLE_RANGE) {
++            return;
++        }
++        LivingNpcProfile profile = LivingNpcProfile.of(id);
++        NamedTextColor tone = profile != null ? profile.nameColor() : NamedTextColor.GOLD;
++        Particle.DustOptions mote = new Particle.DustOptions(
++                Color.fromRGB(tone.red(), tone.green(), tone.blue()),
++                0.6f
++        );
++        player.spawnParticle(Particle.DUST, at.clone().add(0.0, 2.05, 0.0), 2, 0.14, 0.05, 0.14, 0.0, mote);
++    }
++
++    /**
++     * Best known position of an NPC: live FancyNPC host, then the spawned entity,
++     * then {@code npcs.yml}. Feet level. May be null.
++     */
++    public static Location locate(String npcId) {
++        if (npcId == null) {
++            return null;
++        }
++        String id = npcId.toLowerCase(Locale.ROOT).trim();
++        AetherionQuests plugin = AetherionQuests.getInstance();
++        if (plugin == null) {
++            return null;
++        }
++        LivingNpcService living = plugin.getLivingNpcService();
++        if (living != null && LivingNpcService.isLiving(id) && living.available()) {
++            Location live = living.locationOf(id);
++            if (live != null && live.getWorld() != null) {
++                return live;
++            }
++        }
++        QuestNPC npc = QuestNPCRegistry.getNPC(id);
++        if (npc != null && npc.getEntityId() != null) {
++            Entity entity = Bukkit.getEntity(npc.getEntityId());
++            if (entity != null && entity.isValid() && !entity.isDead()) {
++                return entity.getLocation();
++            }
++        }
++        if (plugin.getNpcDataStorage() != null) {
++            return plugin.getNpcDataStorage().getSavedLocation(id);
++        }
++        return null;
++    }
++
++    private static float clampPitch(float pitch) {
++        return Math.max(0.5f, Math.min(2.0f, pitch));
++    }
++}
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/reward/StarterGearReward.java b/AetherionQuests/src/main/java/de/aetherion/quests/reward/StarterGearReward.java
+index 82ade34..782446e 100644
+--- a/AetherionQuests/src/main/java/de/aetherion/quests/reward/StarterGearReward.java
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/reward/StarterGearReward.java
+@@ -3,10 +3,15 @@ package de.aetherion.quests.reward;
+ 
+ import de.aetherion.items.AetherionItems;
+ import de.aetherion.items.item.CustomItem;
++import de.aetherion.quests.lang.LangPack;
+ 
+ import org.bukkit.entity.Player;
+ import org.bukkit.inventory.ItemStack;
+ 
++import java.util.ArrayList;
++import java.util.List;
++import java.util.Map;
++
+ 
+ public class StarterGearReward {
+ 
+@@ -19,6 +24,10 @@ public class StarterGearReward {
+      * Gibt das komplette Simple Gear aus AetherionItems.
+      *
+      * Harbour onboarding splits axe (Forager) from the rest (Egon).
++     *
++     * Items are always built here via CustomItem (StarterSetBalance
++     * revision included). StarterKitCeremony only stages the handoff
++     * and grants each piece as it lands — or instantly if it can't run.
+      * =========================================================
+      */
+ 
+@@ -36,6 +45,14 @@ public class StarterGearReward {
+ 
+ 
+     public static void giveSimpleAxe(Player player) {
++        giveSimpleAxe(player, null);
++    }
++
++
++    /**
++     * @param giverNpcId NPC whose hands the axe comes from (handoff scene), or null for a plain grant
++     */
++    public static void giveSimpleAxe(Player player, String giverNpcId) {
+         if (player == null) {
+             return;
+         }
+@@ -44,8 +61,12 @@ public class StarterGearReward {
+             player.sendMessage("§cAetherionItems not found.");
+             return;
+         }
+-        give(player, customItem.createSimpleAxe());
++        ItemStack axe = customItem.createSimpleAxe();
++        if (axe == null) {
++            return;
++        }
+         player.sendMessage("§aReceived: §fSimple Axe");
++        deliver(player, giverNpcId, List.of(axe), StarterKitCeremony.Finale.AXE);
+     }
+ 
+ 
+@@ -74,16 +95,41 @@ public class StarterGearReward {
+             return;
+         }
+ 
+-        give(player, customItem.createSimplePickaxe());
++        List<ItemStack> kit = new ArrayList<>(8);
++        kit.add(customItem.createSimplePickaxe());
+         if (includeAxe) {
+-            give(player, customItem.createSimpleAxe());
++            kit.add(customItem.createSimpleAxe());
++        }
++        kit.add(customItem.createSimpleSword());
++        kit.add(customItem.createSimpleHoe());
++        kit.add(customItem.createSimpleHelmet());
++        kit.add(customItem.createSimpleChestplate());
++        kit.add(customItem.createSimpleLeggings());
++        kit.add(customItem.createSimpleBoots());
++        kit.removeIf(stack -> stack == null);
++
++        // Same line style as the other quest rewards in the turn-in block.
++        player.sendMessage(LangPack.ui(
++                player,
++                "kit_reward_line",
++                "§b✦ §3Reward: §fEgon's Starter Kit §7— pickaxe, sword, hoe, armour"
++        ));
++        deliver(player, "egon", kit, StarterKitCeremony.Finale.KIT);
++    }
++
++
++    private static void deliver(
++            Player player,
++            String giverNpcId,
++            List<ItemStack> kit,
++            StarterKitCeremony.Finale finale
++    ) {
++        if (giverNpcId != null && StarterKitCeremony.present(player, giverNpcId, kit, finale)) {
++            return;
++        }
++        for (ItemStack stack : kit) {
++            give(player, stack);
+         }
+-        give(player, customItem.createSimpleSword());
+-        give(player, customItem.createSimpleHoe());
+-        give(player, customItem.createSimpleHelmet());
+-        give(player, customItem.createSimpleChestplate());
+-        give(player, customItem.createSimpleLeggings());
+-        give(player, customItem.createSimpleBoots());
+     }
+ 
+ 
+@@ -96,9 +142,16 @@ public class StarterGearReward {
+     }
+ 
+ 
+-    private static void give(Player player, ItemStack stack) {
+-        if (stack != null) {
+-            player.getInventory().addItem(stack);
++    /** Into the bag; a full bag drops the rest at the player's feet instead of eating it. */
++    static void give(Player player, ItemStack stack) {
++        if (player == null || stack == null) {
++            return;
++        }
++        Map<Integer, ItemStack> leftover = player.getInventory().addItem(stack);
++        for (ItemStack rest : leftover.values()) {
++            if (rest != null && player.getWorld() != null) {
++                player.getWorld().dropItem(player.getLocation(), rest);
++            }
+         }
+     }
+ 
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/reward/StarterKitCeremony.java b/AetherionQuests/src/main/java/de/aetherion/quests/reward/StarterKitCeremony.java
+new file mode 100644
+index 0000000..12a69d3
+--- /dev/null
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/reward/StarterKitCeremony.java
+@@ -0,0 +1,553 @@
++package de.aetherion.quests.reward;
++
++import de.aetherion.quests.AetherionQuests;
++import de.aetherion.quests.lang.LangPack;
++import de.aetherion.quests.npc.NpcPresence;
++
++import net.kyori.adventure.text.Component;
++import net.kyori.adventure.text.format.NamedTextColor;
++
++import org.bukkit.Location;
++import org.bukkit.Material;
++import org.bukkit.Particle;
++import org.bukkit.Sound;
++import org.bukkit.SoundCategory;
++import org.bukkit.World;
++import org.bukkit.entity.Display;
++import org.bukkit.entity.ItemDisplay;
++import org.bukkit.entity.Player;
++import org.bukkit.event.EventHandler;
++import org.bukkit.event.EventPriority;
++import org.bukkit.event.Listener;
++import org.bukkit.event.player.PlayerChangedWorldEvent;
++import org.bukkit.event.player.PlayerQuitEvent;
++import org.bukkit.inventory.ItemStack;
++import org.bukkit.inventory.PlayerInventory;
++import org.bukkit.scheduler.BukkitTask;
++import org.bukkit.util.Vector;
++import org.joml.Matrix4f;
++
++import java.util.ArrayList;
++import java.util.List;
++import java.util.Map;
++import java.util.UUID;
++import java.util.concurrent.ConcurrentHashMap;
++
++/**
++ * Starter kit handoff as a small scene instead of a silent inventory drop.
++ * <p>
++ * Each piece leaves the giver's hands (Egon for the kit, the Forager for the axe),
++ * settles into a little equipment layout in front of the player — armour stacked like
++ * a mannequin, tools fanned to the sides — then flies into the player one by one.
++ * The item is granted <em>when it lands</em>; armour goes straight onto an empty slot
++ * ("Equipper" — Egon suits you up).
++ * <p>
++ * Safety: only the listener sees the displays (non-persistent). Quit, world change,
++ * walking off, or plugin disable flushes every un-landed piece straight into the
++ * inventory, so the kit can never be lost to the show.
++ * <p>
++ * Items themselves still come from {@link StarterGearReward} → {@code CustomItem}
++ * (StarterSetBalance untouched). This class only decides <em>when</em> they arrive.
++ */
++public final class StarterKitCeremony implements Listener {
++
++    public static final String TAG = "ae_kit_ceremony";
++
++    /** Finale copy. */
++    enum Finale {
++        KIT,
++        AXE
++    }
++
++    private static final long SPAWN_GAP = 4L;
++    private static final int GLIDE = 10;
++    private static final long HOLD = 12L;
++    private static final long COLLECT_GAP = 4L;
++    private static final int FLY = 6;
++    /** Giver must be this close for the pieces to start in their hands. */
++    private static final double GIVER_RANGE = 14.0;
++    /** Walk further than this from the layout and the kit just lands in your bag. */
++    private static final double LEASH = 24.0;
++
++    private static final float ICON_SCALE = 0.46f;
++
++    /** Rising G-major pentatonic on bell — one note per piece (note-block pitches). */
++    private static final float[] MOTIF = {0.5297f, 0.5946f, 0.6674f, 0.7937f, 0.8909f, 1.0595f, 1.1892f, 1.3348f};
++
++    private static volatile StarterKitCeremony instance;
++
++    private final AetherionQuests plugin;
++    private final Map<UUID, Run> running = new ConcurrentHashMap<>();
++
++    private StarterKitCeremony(AetherionQuests plugin) {
++        this.plugin = plugin;
++    }
++
++    public static void init(AetherionQuests plugin) {
++        if (plugin == null || instance != null) {
++            return;
++        }
++        StarterKitCeremony created = new StarterKitCeremony(plugin);
++        plugin.getServer().getPluginManager().registerEvents(created, plugin);
++        instance = created;
++    }
++
++    /** Plugin disable: every running ceremony lands instantly. */
++    public static void shutdown() {
++        StarterKitCeremony current = instance;
++        instance = null;
++        if (current == null) {
++            return;
++        }
++        for (UUID id : new ArrayList<>(current.running.keySet())) {
++            current.flush(id);
++        }
++    }
++
++    /**
++     * Start a handoff. When this returns {@code true} the ceremony owns granting every
++     * stack in {@code kit}; when {@code false} the caller must grant them itself.
++     */
++    static boolean present(Player player, String giverNpcId, List<ItemStack> kit, Finale finale) {
++        StarterKitCeremony current = instance;
++        if (current == null
++                || player == null
++                || !player.isOnline()
++                || player.isDead()
++                || kit == null
++                || kit.isEmpty()
++                || !current.plugin.isEnabled()) {
++            return false;
++        }
++        return current.start(player, giverNpcId, kit, finale);
++    }
++
++    /* =========================================================
++     * RUN
++     * ========================================================= */
++
++    private boolean start(Player player, String giverNpcId, List<ItemStack> kit, Finale finale) {
++        // Two handoffs can't overlap — land the old one first.
++        flush(player.getUniqueId());
++
++        Location eye = player.getEyeLocation();
++        World world = eye.getWorld();
++        if (world == null) {
++            return false;
++        }
++
++        Location giver = NpcPresence.locate(giverNpcId);
++        boolean giverNear = giver != null
++                && giver.getWorld() != null
++                && giver.getWorld().equals(world)
++                && giver.distanceSquared(player.getLocation()) <= GIVER_RANGE * GIVER_RANGE;
++
++        Vector forward = eye.getDirection().setY(0);
++        if (forward.lengthSquared() < 1.0e-4 && giverNear) {
++            forward = giver.toVector().subtract(eye.toVector()).setY(0);
++        }
++        if (forward.lengthSquared() < 1.0e-4) {
++            forward = new Vector(0, 0, 1);
++        }
++        forward.normalize();
++        Vector right = new Vector(-forward.getZ(), 0.0, forward.getX());
++
++        double reach = 2.2;
++        if (giverNear) {
++            double toGiver = Math.sqrt(giver.distanceSquared(player.getLocation()));
++            reach = Math.max(1.6, Math.min(2.4, toGiver * 0.6));
++        }
++        Location center = eye.clone().add(forward.clone().multiply(reach)).add(0.0, -0.35, 0.0);
++
++        Location origin;
++        if (giverNear) {
++            // Out of the giver's hands, nudged toward the player.
++            Vector towardPlayer = eye.toVector().subtract(giver.toVector()).setY(0);
++            if (towardPlayer.lengthSquared() > 1.0e-4) {
++                towardPlayer.normalize().multiply(0.45);
++            }
++            origin = giver.clone().add(towardPlayer).add(0.0, 1.25, 0.0);
++        } else {
++            origin = center.clone().add(0.0, -0.9, 0.0);
++        }
++
++        Run run = new Run(player.getUniqueId(), finale, center);
++        List<Slot> slots = layout(kit, center, forward, right);
++        for (int i = 0; i < kit.size(); i++) {
++            ItemStack stack = kit.get(i);
++            if (stack == null || stack.getType() == Material.AIR) {
++                continue;
++            }
++            run.pieces.add(new Piece(stack.clone(), slots.get(i)));
++        }
++        if (run.pieces.isEmpty()) {
++            return false;
++        }
++        run.origin = origin;
++        running.put(player.getUniqueId(), run);
++        run.task = plugin.getServer().getScheduler().runTaskTimer(plugin, () -> tick(run), 1L, 1L);
++        return true;
++    }
++
++    private void tick(Run run) {
++        Player player = plugin.getServer().getPlayer(run.playerId);
++        if (player == null || !player.isOnline()) {
++            flush(run.playerId);
++            return;
++        }
++        try {
++            if (player.getWorld() != run.center.getWorld()
++                    || player.getLocation().distanceSquared(run.center) > LEASH * LEASH) {
++                flush(run.playerId);
++                return;
++            }
++            step(player, run);
++        } catch (RuntimeException exception) {
++            plugin.getLogger().warning("Kit ceremony hiccup (" + exception.getMessage() + ") — landing kit directly.");
++            flush(run.playerId);
++        }
++    }
++
++    private void step(Player player, Run run) {
++        long t = ++run.tick;
++        int n = run.pieces.size();
++        long lastSpawn = SPAWN_GAP * n;
++        // Last piece starts gliding two ticks after it spawns.
++        long holdStart = lastSpawn + 2 + GLIDE;
++        long collectStart = holdStart + HOLD;
++        long lastLand = collectStart + COLLECT_GAP * (n - 1) + FLY;
++
++        for (int i = 0; i < n; i++) {
++            Piece piece = run.pieces.get(i);
++            long spawnAt = SPAWN_GAP * (i + 1);
++            long moveAt = spawnAt + 2;
++            long flyAt = collectStart + COLLECT_GAP * i;
++            long landAt = flyAt + FLY;
++
++            if (t == spawnAt) {
++                piece.display = spawnPiece(player, run.origin, piece.stack);
++            } else if (t == moveAt) {
++                layOut(player, piece, i);
++            } else if (t == flyAt) {
++                fly(player, piece);
++            } else if (t == landAt) {
++                land(player, run, piece, i);
++            }
++        }
++
++        if (t == holdStart) {
++            presentAll(player, run);
++        }
++        if (t == lastLand + 4) {
++            finale(player, run);
++        }
++        if (t >= lastLand + 6) {
++            finish(run);
++        }
++    }
++
++    private ItemDisplay spawnPiece(Player player, Location origin, ItemStack stack) {
++        World world = origin.getWorld();
++        if (world == null) {
++            return null;
++        }
++        Location at = origin.clone();
++        at.setYaw(0f);
++        at.setPitch(0f);
++        ItemDisplay display = world.spawn(at, ItemDisplay.class, spawned -> {
++            spawned.setPersistent(false);
++            spawned.setVisibleByDefault(false);
++            spawned.setInvulnerable(true);
++            spawned.setGravity(false);
++            spawned.setItemStack(stack.clone());
++            spawned.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.GUI);
++            spawned.setBillboard(Display.Billboard.CENTER);
++            spawned.setBrightness(new Display.Brightness(15, 15));
++            spawned.setShadowRadius(0f);
++            spawned.setTeleportDuration(GLIDE);
++            spawned.setTransformationMatrix(pose(0.02f, 0f));
++            spawned.addScoreboardTag(TAG);
++        });
++        player.showEntity(plugin, display);
++        return display;
++    }
++
++    private void layOut(Player player, Piece piece, int index) {
++        ItemDisplay display = piece.display;
++        if (display == null || !display.isValid()) {
++            return;
++        }
++        display.teleport(piece.slot.at);
++        display.setInterpolationDelay(0);
++        display.setInterpolationDuration(GLIDE);
++        display.setTransformationMatrix(pose(ICON_SCALE, piece.slot.roll));
++
++        Location at = piece.slot.at;
++        float note = MOTIF[Math.min(index, MOTIF.length - 1)];
++        player.playSound(at, Sound.BLOCK_NOTE_BLOCK_BELL, SoundCategory.PLAYERS, 0.22f, note);
++        if (isArmour(piece.stack)) {
++            player.playSound(at, Sound.ITEM_ARMOR_EQUIP_LEATHER, SoundCategory.PLAYERS, 0.45f, 1.0f + index * 0.04f);
++        } else {
++            player.playSound(at, Sound.BLOCK_ANVIL_LAND, SoundCategory.PLAYERS, 0.12f, 1.9f);
++        }
++    }
++
++    /** Everything is laid out — one breath before it comes to you. */
++    private void presentAll(Player player, Run run) {
++        for (Piece piece : run.pieces) {
++            ItemDisplay display = piece.display;
++            if (display == null || !display.isValid()) {
++                continue;
++            }
++            // Flights are quicker than the glide out; set a tick before the first flight.
++            display.setTeleportDuration(FLY);
++            display.setInterpolationDelay(0);
++            display.setInterpolationDuration((int) HOLD);
++            display.setTransformationMatrix(pose(ICON_SCALE * 1.08f, piece.slot.roll * 0.5f));
++            player.spawnParticle(Particle.WAX_OFF, piece.slot.at, 1, 0.08, 0.08, 0.08, 0.0);
++        }
++        player.playSound(run.center, Sound.BLOCK_AMETHYST_BLOCK_CHIME, SoundCategory.PLAYERS, 0.35f, 1.2f);
++    }
++
++    private void fly(Player player, Piece piece) {
++        ItemDisplay display = piece.display;
++        if (display == null || !display.isValid()) {
++            return;
++        }
++        Location chest = player.getLocation().add(0.0, 1.05, 0.0);
++        chest.setYaw(0f);
++        chest.setPitch(0f);
++        display.teleport(chest);
++        display.setInterpolationDelay(0);
++        display.setInterpolationDuration(FLY);
++        display.setTransformationMatrix(pose(0.08f, 0f));
++    }
++
++    private void land(Player player, Run run, Piece piece, int index) {
++        removeDisplay(piece);
++        if (piece.granted) {
++            return;
++        }
++        piece.granted = true;
++        boolean worn = grant(player, piece.stack);
++        run.wornAny |= worn;
++        float pitch = 1.0f + Math.min(index, 7) * 0.08f;
++        player.playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, SoundCategory.PLAYERS, 0.5f, pitch);
++        if (worn) {
++            player.playSound(player.getLocation(), Sound.ITEM_ARMOR_EQUIP_IRON, SoundCategory.PLAYERS, 0.35f, 1.1f);
++        }
++    }
++
++    private void finale(Player player, Run run) {
++        Location at = player.getLocation();
++        player.playSound(at, Sound.BLOCK_NOTE_BLOCK_BELL, SoundCategory.PLAYERS, 0.35f, 1.0595f);
++        player.playSound(at, Sound.BLOCK_NOTE_BLOCK_BELL, SoundCategory.PLAYERS, 0.28f, 1.3348f);
++        player.playSound(at, Sound.ENTITY_PLAYER_LEVELUP, SoundCategory.PLAYERS, 0.3f, 1.35f);
++        player.spawnParticle(Particle.HAPPY_VILLAGER, at.clone().add(0.0, 1.0, 0.0), 8, 0.4, 0.5, 0.4, 0.0);
++
++        String line;
++        if (run.finale == Finale.AXE) {
++            line = LangPack.ui(player, "kit_axe_landed", "✔ Simple Axe · yours to keep");
++        } else if (run.wornAny) {
++            line = LangPack.ui(player, "kit_landed_worn", "✔ Kit issued · armour's on, tools are in your bag");
++        } else {
++            line = LangPack.ui(player, "kit_landed", "✔ Kit issued · check your inventory");
++        }
++        player.sendActionBar(Component.text(line, NamedTextColor.GREEN));
++    }
++
++    private void finish(Run run) {
++        if (run.task != null) {
++            run.task.cancel();
++            run.task = null;
++        }
++        for (Piece piece : run.pieces) {
++            removeDisplay(piece);
++        }
++        running.remove(run.playerId, run);
++    }
++
++    /** Land every piece now — no show. Safe to call any time. */
++    private void flush(UUID playerId) {
++        Run run = running.remove(playerId);
++        if (run == null) {
++            return;
++        }
++        if (run.task != null) {
++            run.task.cancel();
++            run.task = null;
++        }
++        Player player = plugin.getServer().getPlayer(playerId);
++        for (Piece piece : run.pieces) {
++            removeDisplay(piece);
++            if (!piece.granted && player != null) {
++                piece.granted = true;
++                grant(player, piece.stack);
++            }
++        }
++        if (player == null && run.pieces.stream().anyMatch(piece -> !piece.granted)) {
++            plugin.getLogger().warning("Kit ceremony: player " + playerId + " vanished before the kit landed.");
++        }
++    }
++
++    @EventHandler(priority = EventPriority.LOWEST)
++    public void onQuit(PlayerQuitEvent event) {
++        flush(event.getPlayer().getUniqueId());
++    }
++
++    @EventHandler(priority = EventPriority.MONITOR)
++    public void onWorldChange(PlayerChangedWorldEvent event) {
++        flush(event.getPlayer().getUniqueId());
++    }
++
++    /* =========================================================
++     * GRANT
++     * ========================================================= */
++
++    /** @return true if it went straight onto an empty armour slot. */
++    private static boolean grant(Player player, ItemStack stack) {
++        if (player == null || stack == null) {
++            return false;
++        }
++        PlayerInventory inventory = player.getInventory();
++        String name = stack.getType().name();
++        if (name.endsWith("_HELMET") && isEmpty(inventory.getHelmet())) {
++            inventory.setHelmet(stack);
++            return true;
++        }
++        if (name.endsWith("_CHESTPLATE") && isEmpty(inventory.getChestplate())) {
++            inventory.setChestplate(stack);
++            return true;
++        }
++        if (name.endsWith("_LEGGINGS") && isEmpty(inventory.getLeggings())) {
++            inventory.setLeggings(stack);
++            return true;
++        }
++        if (name.endsWith("_BOOTS") && isEmpty(inventory.getBoots())) {
++            inventory.setBoots(stack);
++            return true;
++        }
++        StarterGearReward.give(player, stack);
++        return false;
++    }
++
++    private static boolean isEmpty(ItemStack stack) {
++        return stack == null || stack.getType() == Material.AIR || stack.getAmount() <= 0;
++    }
++
++    /* =========================================================
++     * LAYOUT
++     * ========================================================= */
++
++    /**
++     * Armour stacked like a mannequin in the middle; tools fanned left/right.
++     * Returned list is parallel to {@code kit}.
++     */
++    private static List<Slot> layout(List<ItemStack> kit, Location center, Vector forward, Vector right) {
++        List<Slot> slots = new ArrayList<>(kit.size());
++        int tools = 0;
++        for (ItemStack stack : kit) {
++            if (stack == null) {
++                slots.add(new Slot(center.clone(), 0f));
++                continue;
++            }
++            int armourRow = armourRow(stack);
++            if (kit.size() == 1) {
++                slots.add(new Slot(center.clone().add(0.0, 0.1, 0.0), 0f));
++                continue;
++            }
++            if (armourRow >= 0) {
++                double y = 0.52 - armourRow * 0.44;
++                slots.add(new Slot(center.clone().add(0.0, y, 0.0), 0f));
++                continue;
++            }
++            int side = tools % 2 == 0 ? -1 : 1;
++            int row = tools / 2;
++            tools++;
++            double y = 0.25 - row * 0.62;
++            Location at = center.clone()
++                    .add(right.clone().multiply(0.95 * side))
++                    .add(forward.clone().multiply(-0.18))
++                    .add(0.0, y, 0.0);
++            slots.add(new Slot(at, side < 0 ? 18f : -18f));
++        }
++        for (Slot slot : slots) {
++            slot.at.setYaw(0f);
++            slot.at.setPitch(0f);
++        }
++        return slots;
++    }
++
++    private static int armourRow(ItemStack stack) {
++        String name = stack.getType().name();
++        if (name.endsWith("_HELMET")) {
++            return 0;
++        }
++        if (name.endsWith("_CHESTPLATE")) {
++            return 1;
++        }
++        if (name.endsWith("_LEGGINGS")) {
++            return 2;
++        }
++        if (name.endsWith("_BOOTS")) {
++            return 3;
++        }
++        return -1;
++    }
++
++    private static boolean isArmour(ItemStack stack) {
++        return stack != null && armourRow(stack) >= 0;
++    }
++
++    /** Billboarded icon: uniform scale + a little roll. Matrix only — no TRS decompose. */
++    private static Matrix4f pose(float scale, float rollDeg) {
++        return new Matrix4f()
++                .rotateZ((float) Math.toRadians(rollDeg))
++                .scale(scale);
++    }
++
++    private static void removeDisplay(Piece piece) {
++        if (piece.display != null) {
++            if (piece.display.isValid()) {
++                piece.display.remove();
++            }
++            piece.display = null;
++        }
++    }
++
++    /* =========================================================
++     * STATE
++     * ========================================================= */
++
++    private static final class Run {
++        final UUID playerId;
++        final Finale finale;
++        final Location center;
++        final List<Piece> pieces = new ArrayList<>();
++        Location origin;
++        BukkitTask task;
++        long tick;
++        boolean wornAny;
++
++        Run(UUID playerId, Finale finale, Location center) {
++            this.playerId = playerId;
++            this.finale = finale;
++            this.center = center;
++        }
++    }
++
++    private static final class Piece {
++        final ItemStack stack;
++        final Slot slot;
++        ItemDisplay display;
++        boolean granted;
++
++        Piece(ItemStack stack, Slot slot) {
++            this.stack = stack;
++            this.slot = slot;
++        }
++    }
++
++    private record Slot(Location at, float roll) {
++    }
++}
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/ui/EgonHintParticles.java b/AetherionQuests/src/main/java/de/aetherion/quests/ui/EgonHintParticles.java
+index ca516b7..6a145bf 100644
+--- a/AetherionQuests/src/main/java/de/aetherion/quests/ui/EgonHintParticles.java
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/ui/EgonHintParticles.java
+@@ -20,6 +20,9 @@ import org.bukkit.scheduler.BukkitTask;
+ /**
+  * Soft green aura only around Egon for players who have not yet
+  * accepted Welcome Aboard. Per-player particles; disappears on accept.
++ * <p>
++ * Attractor: a thin green "lantern smoke" column over his head reads from the far
++ * end of the pier; walk up close and he tells you how to talk to him — once.
+  */
+ public final class EgonHintParticles {
+ 
+@@ -27,11 +30,18 @@ public final class EgonHintParticles {
+     private static final String QUEST_ID = "welcome_aboard";
+     private static final double VIEW_DISTANCE = 22.0;
+     private static final double VIEW_DISTANCE_SQUARED = VIEW_DISTANCE * VIEW_DISTANCE;
++    /** Column over his head — client culls plain particles past ~32 blocks anyway. */
++    private static final double BEACON_DISTANCE_SQUARED = 32.0 * 32.0;
++    private static final double GREET_DISTANCE_SQUARED = 5.5 * 5.5;
++    private static final long GREET_COOLDOWN_MS = 5L * 60L * 1000L;
+ 
+     private final AetherionQuests plugin;
+     private final QuestManager questManager;
+     private final Particle.DustOptions dust =
+             new Particle.DustOptions(Color.fromRGB(72, 210, 96), 1.05f);
++    private final Particle.DustOptions beacon =
++            new Particle.DustOptions(Color.fromRGB(120, 225, 130), 0.85f);
++    private final java.util.Map<java.util.UUID, Long> greeted = new java.util.concurrent.ConcurrentHashMap<>();
+ 
+     private BukkitTask task;
+     private int phase;
+@@ -85,14 +95,26 @@ public final class EgonHintParticles {
+         Location soft = base.clone().add(0.0, 1.05, 0.0);
+         World world = base.getWorld();
+ 
++        // Rising column: one mote per tick, climbing 2.3 → 4.4 over eight ticks.
++        Location column = base.clone().add(0.0, 1.95 + (phase % 8) * 0.3, 0.0);
++
+         for (Player player : world.getPlayers()) {
+-            if (player.getLocation().distanceSquared(base) > VIEW_DISTANCE_SQUARED) {
++            double distanceSquared = player.getLocation().distanceSquared(base);
++            if (distanceSquared > BEACON_DISTANCE_SQUARED) {
+                 continue;
+             }
+             if (questManager.getQuestState(player, quest) != QuestState.AVAILABLE) {
+                 continue;
+             }
+ 
++            player.spawnParticle(Particle.DUST, column, 1, 0.03, 0.0, 0.03, 0.0, beacon);
++            if (distanceSquared <= GREET_DISTANCE_SQUARED) {
++                maybeGreet(player, egon);
++            }
++            if (distanceSquared > VIEW_DISTANCE_SQUARED) {
++                continue;
++            }
++
+             player.spawnParticle(Particle.DUST, ringA, 1, 0.0, 0.0, 0.0, 0.0, dust);
+             player.spawnParticle(Particle.DUST, ringB, 1, 0.0, 0.0, 0.0, 0.0, dust);
+             if (phase % 2 == 0) {
+@@ -101,6 +123,34 @@ public final class EgonHintParticles {
+         }
+     }
+ 
++    /** Close enough to click but hasn't: Egon says how, once every few minutes. */
++    private void maybeGreet(Player player, QuestNPC egon) {
++        if (!de.aetherion.quests.lang.PlayerLang.hasChosen(player)
++                || HarbourArrival.isPlaying(player)
++                || de.aetherion.quests.util.QuestStoryGate.tutorialDone(player, questManager)) {
++            return;
++        }
++        if (plugin.getDialogManager() != null && plugin.getDialogManager().isSpeaking(player)) {
++            return;
++        }
++        long now = System.currentTimeMillis();
++        Long last = greeted.get(player.getUniqueId());
++        if (last != null && now - last < GREET_COOLDOWN_MS) {
++            return;
++        }
++        greeted.put(player.getUniqueId(), now);
++        String name = egon.getName() == null || egon.getName().isBlank() ? "Egon" : egon.getName();
++        for (String line : de.aetherion.quests.lang.LangPack.dialogs(player, "egon_greet_near", new String[] {
++                "That's me. Right-click — I don't bite, I kit."
++        })) {
++            de.aetherion.quests.npc.LivingNpcProfile.say(player, NPC_ID, name, line);
++        }
++        player.sendActionBar(net.kyori.adventure.text.Component.text(
++                de.aetherion.quests.lang.LangPack.ui(player, "egon_greet_action", "→ Right-click Egon"),
++                net.kyori.adventure.text.format.NamedTextColor.GOLD
++        ));
++    }
++
+     private Location resolveLocation(QuestNPC egon) {
+         LivingNpcService living = plugin.getLivingNpcService();
+         if (LivingNpcService.isLiving(NPC_ID) && living != null) {
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/ui/HarbourArrival.java b/AetherionQuests/src/main/java/de/aetherion/quests/ui/HarbourArrival.java
+new file mode 100644
+index 0000000..60c3503
+--- /dev/null
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/ui/HarbourArrival.java
+@@ -0,0 +1,203 @@
++package de.aetherion.quests.ui;
++
++import de.aetherion.quests.AetherionQuests;
++import de.aetherion.quests.lang.LangPack;
++import de.aetherion.quests.npc.LivingNpcProfile;
++import de.aetherion.quests.npc.NpcPresence;
++import de.aetherion.quests.npc.QuestNPC;
++import de.aetherion.quests.npc.QuestNPCRegistry;
++
++import net.kyori.adventure.text.Component;
++import net.kyori.adventure.text.format.NamedTextColor;
++import net.kyori.adventure.text.format.TextDecoration;
++import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
++import net.kyori.adventure.title.Title;
++
++import org.bukkit.Color;
++import org.bukkit.Location;
++import org.bukkit.Particle;
++import org.bukkit.Sound;
++import org.bukkit.SoundCategory;
++import org.bukkit.entity.Player;
++import org.bukkit.scheduler.BukkitRunnable;
++
++import java.time.Duration;
++import java.util.Set;
++import java.util.UUID;
++import java.util.concurrent.ConcurrentHashMap;
++
++/**
++ * Anker Harbour arrival — the first ten seconds as one authored beat.
++ * <pre>
++ *   language picked
++ *     → "ANKER HARBOUR" place card, foghorn + water (no plugin-name title)
++ *     → FIND EGON card (Hub starter-hint, still the single source + shown-once flag)
++ *       + two bells rung from where Egon stands + a green flare over him
++ *     → Egon calls you over in chat (his own voice cue)
++ * </pre>
++ * Returning rookies who never spoke to Egon get {@link #nudge(Player)}: no titles,
++ * just his bells, the flare and the soft hint.
++ */
++public final class HarbourArrival {
++
++    private static final String EGON = "egon";
++    private static final long FIND_EGON_AT = 46L;
++    private static final long EGON_CALLS_AT = 72L;
++    private static final long DONE_AT = 110L;
++    private static final double FLARE_RANGE = 48.0;
++
++    private static final Particle.DustOptions EGON_GREEN =
++            new Particle.DustOptions(Color.fromRGB(72, 210, 96), 1.35f);
++    private static final Particle.DustOptions EGON_GREEN_SOFT =
++            new Particle.DustOptions(Color.fromRGB(150, 235, 160), 0.9f);
++
++    private static final Set<UUID> PLAYING = ConcurrentHashMap.newKeySet();
++
++    private HarbourArrival() {
++    }
++
++    /** True while the arrival beat is still running (other Egon prompts wait). */
++    public static boolean isPlaying(Player player) {
++        return player != null && PLAYING.contains(player.getUniqueId());
++    }
++
++    /** First join, right after the language pick. */
++    public static void play(Player player) {
++        AetherionQuests plugin = AetherionQuests.getInstance();
++        if (plugin == null || player == null || !player.isOnline()) {
++            return;
++        }
++        UUID id = player.getUniqueId();
++        PLAYING.add(id);
++
++        placeCard(player);
++
++        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
++            if (!player.isOnline()) {
++                return;
++            }
++            findEgonCard(player);
++            flareEgon(player);
++            QuestHint.show(player, EGON, egonName());
++        }, FIND_EGON_AT);
++
++        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
++            if (!player.isOnline()) {
++                return;
++            }
++            for (String line : LangPack.dialogs(player, "egon_arrival_call", new String[] {
++                    "Oi — new face! Over here, by the green glow."
++            })) {
++                LivingNpcProfile.say(player, EGON, egonName(), line);
++            }
++        }, EGON_CALLS_AT);
++
++        plugin.getServer().getScheduler().runTaskLater(plugin, () -> PLAYING.remove(id), DONE_AT);
++    }
++
++    /** Came back without ever talking to Egon: point, don't shout. */
++    public static void nudge(Player player) {
++        if (player == null || !player.isOnline()) {
++            return;
++        }
++        player.sendActionBar(Component.text(
++                LangPack.ui(player, "egon_nudge", "Egon's still waiting on the pier · follow the green glow"),
++                NamedTextColor.GREEN
++        ));
++        flareEgon(player);
++        QuestHint.show(player, EGON, egonName());
++    }
++
++    /* =========================================================
++     * BEATS
++     * ========================================================= */
++
++    private static void placeCard(Player player) {
++        String title = LangPack.ui(player, "arrival_title", "ANKER HARBOUR");
++        String subtitle = LangPack.ui(player, "arrival_subtitle", "§7Aetherion · §fmind the planks, rookie");
++        player.showTitle(Title.title(
++                Component.text(title, NamedTextColor.GOLD, TextDecoration.BOLD),
++                LegacyComponentSerializer.legacySection().deserialize(subtitle),
++                Title.Times.times(Duration.ofMillis(600), Duration.ofMillis(1500), Duration.ofMillis(300))
++        ));
++        Location at = player.getLocation();
++        // Foghorn out on the water, then the pier settling around you.
++        player.playSound(at, Sound.BLOCK_NOTE_BLOCK_DIDGERIDOO, SoundCategory.AMBIENT, 0.45f, 0.53f);
++        player.playSound(at, Sound.ENTITY_BOAT_PADDLE_WATER, SoundCategory.AMBIENT, 0.45f, 0.85f);
++        player.playSound(at.clone().add(3.0, -1.0, -2.0), Sound.ENTITY_FISHING_BOBBER_SPLASH, SoundCategory.AMBIENT, 0.25f, 1.25f);
++    }
++
++    private static void findEgonCard(Player player) {
++        de.aetherion.core.api.HubAccess hub = de.aetherion.core.api.AetherServices.hub();
++        if (hub != null) {
++            // Hub owns FIND EGON copy + the shown-once flag. False = already shown this life.
++            hub.sendStarterHint(player);
++            return;
++        }
++        player.showTitle(Title.title(
++                Component.text(LangPack.ui(player, "find_egon_title", "FIND EGON"), NamedTextColor.GOLD, TextDecoration.BOLD),
++                Component.text(LangPack.ui(player, "find_egon_subtitle", "Green glow on the pier · right-click him"),
++                        NamedTextColor.YELLOW),
++                Title.Times.times(Duration.ofMillis(300), Duration.ofSeconds(4), Duration.ofMillis(700))
++        ));
++    }
++
++    /**
++     * Two bells rung from where Egon stands (so you hear which way to walk)
++     * and a green flare climbing over his head. Listener only.
++     */
++    public static void flareEgon(Player player) {
++        AetherionQuests plugin = AetherionQuests.getInstance();
++        Location egon = NpcPresence.locate(EGON);
++        if (plugin == null
++                || player == null
++                || egon == null
++                || egon.getWorld() == null
++                || !egon.getWorld().equals(player.getWorld())
++                || egon.distanceSquared(player.getLocation()) > FLARE_RANGE * FLARE_RANGE) {
++            return;
++        }
++        Location bell = egon.clone().add(0.0, 1.6, 0.0);
++        player.playSound(bell, Sound.BLOCK_BELL_USE, SoundCategory.NEUTRAL, 0.9f, 1.25f);
++        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
++            if (player.isOnline()) {
++                player.playSound(bell, Sound.BLOCK_BELL_USE, SoundCategory.NEUTRAL, 0.7f, 1.5f);
++            }
++        }, 9L);
++
++        new BukkitRunnable() {
++            private int step;
++
++            @Override
++            public void run() {
++                if (!player.isOnline() || step > 9) {
++                    cancel();
++                    return;
++                }
++                double y = 0.4 + step * 0.42;
++                player.spawnParticle(Particle.DUST, egon.clone().add(0.0, y, 0.0), 2, 0.06, 0.08, 0.06, 0.0, EGON_GREEN);
++                if (step == 9) {
++                    Location top = egon.clone().add(0.0, y + 0.2, 0.0);
++                    for (int i = 0; i < 14; i++) {
++                        double a = i * (Math.PI * 2.0 / 14.0);
++                        player.spawnParticle(
++                                Particle.DUST,
++                                top.clone().add(Math.cos(a) * 0.7, 0.0, Math.sin(a) * 0.7),
++                                1, 0.0, 0.0, 0.0, 0.0, EGON_GREEN_SOFT
++                        );
++                    }
++                    player.spawnParticle(Particle.HAPPY_VILLAGER, top, 6, 0.35, 0.2, 0.35, 0.0);
++                }
++                step++;
++            }
++        }.runTaskTimer(plugin, 0L, 2L);
++    }
++
++    static String egonName() {
++        QuestNPC npc = QuestNPCRegistry.getNPC(EGON);
++        if (npc != null && npc.getName() != null && !npc.getName().isBlank()) {
++            return npc.getName();
++        }
++        return "Egon";
++    }
++}
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/ui/TutorialQuestTrail.java b/AetherionQuests/src/main/java/de/aetherion/quests/ui/TutorialQuestTrail.java
+index aad5adc..e57fe36 100644
+--- a/AetherionQuests/src/main/java/de/aetherion/quests/ui/TutorialQuestTrail.java
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/ui/TutorialQuestTrail.java
+@@ -10,20 +10,36 @@ import de.aetherion.quests.npc.QuestNPCRegistry;
+ import org.bukkit.Bukkit;
+ import org.bukkit.Color;
+ import org.bukkit.Location;
++import org.bukkit.Material;
+ import org.bukkit.Particle;
+ import org.bukkit.World;
++import org.bukkit.block.Block;
++import org.bukkit.block.data.BlockData;
++import org.bukkit.entity.BlockDisplay;
++import org.bukkit.entity.Display;
+ import org.bukkit.entity.Entity;
+ import org.bukkit.entity.Player;
+ import org.bukkit.scheduler.BukkitTask;
+ import org.bukkit.util.Vector;
++import org.joml.Matrix4f;
+ 
+ import java.util.ArrayList;
++import java.util.HashMap;
++import java.util.HashSet;
++import java.util.Iterator;
+ import java.util.List;
++import java.util.Map;
++import java.util.Set;
++import java.util.UUID;
+ 
+ /**
+- * Ground dust along a fixed harbour path for Egon's first wood loop:
++ * Guide path for Egon's first wood loop:
+  * Egon → (300,63,-379) → (328,63,-379) → Forager (outbound),
+  * reverse when delivering logs back.
++ * <p>
++ * Near the player: a few painted dock chevrons on the planks (per-player BlockDisplays),
++ * a slow pulse rolling forward through them. Beyond them: the old gold dust, so the
++ * far end of the route still reads. Same corners, same quests — just better paint.
+  */
+ public final class TutorialQuestTrail {
+ 
+@@ -31,6 +47,27 @@ public final class TutorialQuestTrail {
+     private static final double SPACING = 1.15;
+     private static final double MAX_AHEAD = 56.0;
+ 
++    /** Painted chevrons: count, spacing, first one this far ahead of you. */
++    private static final int CHEVRONS = 6;
++    private static final double CHEVRON_GAP = 2.4;
++    private static final double CHEVRON_LEAD = 1.4;
++    /** Wander further than this off the route and only the dust stays. */
++    private static final double CHEVRON_OFF_PATH = 10.0;
++    private static final double CHEVRON_END_MARGIN = 1.6;
++    public static final String CHEVRON_TAG = "ae_trail_chevron";
++
++    /** Chevron arm: width, thickness, length, and spread either side of straight back. */
++    private static final float ARM_W = 0.09f;
++    private static final float ARM_H = 0.02f;
++    private static final float ARM_L = 0.42f;
++    private static final float ARM_SPREAD = (float) Math.toRadians(40.0);
++    /** Chevron centre sits halfway along its depth. */
++    private static final float TIP_Z = (float) (ARM_L * Math.cos(Math.toRadians(40.0)) * 0.5);
++    private static final float PULSE_SCALE = 1.3f;
++    private static final int PULSE_TICKS = 6;
++
++    private static final BlockData PAINT = Material.YELLOW_CONCRETE.createBlockData();
++
+     /** Harbour path corners (same world as Egon / Forager). */
+     private static final double[][] CORNERS = {
+             {300.5, 63.15, -379.5},
+@@ -42,9 +79,11 @@ public final class TutorialQuestTrail {
+     private final QuestManager questManager;
+     private final Particle.DustOptions dust =
+             new Particle.DustOptions(Color.fromRGB(255, 214, 90), 1.05f);
++    private final Map<UUID, Crumbs> crumbs = new HashMap<>();
+ 
+     private BukkitTask task;
+     private int phase;
++    private int pulse;
+ 
+     public TutorialQuestTrail(AetherionQuests plugin, QuestManager questManager) {
+         this.plugin = plugin;
+@@ -63,22 +102,60 @@ public final class TutorialQuestTrail {
+             task.cancel();
+             task = null;
+         }
++        for (Crumbs set : crumbs.values()) {
++            set.removeAll();
++        }
++        crumbs.clear();
+     }
+ 
+     private void tick() {
+         phase = (phase + 1) % 6;
++        pulse++;
++        Set<UUID> painted = new HashSet<>();
+         for (Player player : Bukkit.getOnlinePlayers()) {
+             if (player == null || !player.isOnline()) {
+                 continue;
+             }
+-            List<Location> path = pathFor(player);
+-            if (path == null || path.size() < 2) {
++            List<Location> nodes = pathFor(player);
++            if (nodes == null || nodes.size() < 2) {
+                 continue;
+             }
+-            drawFromPlayer(player, path);
++            Path path = new Path(nodes);
++            Location feet = player.getLocation();
++            Path.Hit here = path.project(feet);
++            Location end = nodes.get(nodes.size() - 1);
++            boolean arrived = feet.distanceSquared(end) <= ARRIVED * ARRIVED;
++
++            double dustFrom = here.s();
++            if (!arrived && here.distance() <= CHEVRON_OFF_PATH) {
++                String key = trackedId(player);
++                double lastChevron = paintChevrons(player, path, here.s(), key);
++                if (lastChevron > 0.0) {
++                    painted.add(player.getUniqueId());
++                    dustFrom = lastChevron + CHEVRON_GAP * 0.5;
++                }
++            }
++            drawDust(player, path, dustFrom, here.s() + MAX_AHEAD);
++            if (phase % 3 == 0 && !arrived) {
++                player.spawnParticle(Particle.END_ROD, end.clone().add(0, 0.35, 0), 1, 0.1, 0.15, 0.1, 0.0);
++            }
++        }
++        // Off route, quest moved on, or logged out → chevrons go.
++        Iterator<Map.Entry<UUID, Crumbs>> it = crumbs.entrySet().iterator();
++        while (it.hasNext()) {
++            Map.Entry<UUID, Crumbs> entry = it.next();
++            if (!painted.contains(entry.getKey())) {
++                entry.getValue().removeAll();
++                it.remove();
++            }
+         }
+     }
+ 
++    private String trackedId(Player player) {
++        Quest tracked = questManager == null ? null : questManager.getTrackedQuest(player);
++        return tracked == null ? "" : tracked.getId();
++    }
++
+     private List<Location> pathFor(Player player) {
+         if (questManager == null) {
+             return null;
+@@ -124,59 +201,302 @@ public final class TutorialQuestTrail {
+         return null;
+     }
+ 
+-    private void drawFromPlayer(Player player, List<Location> path) {
+-        Location feet = player.getLocation();
+-        int nearest = nearestIndex(feet, path);
+-        double drawn = 0.0;
+-        Location cursor = path.get(nearest).clone();
+-        // Start a bit ahead of the nearest node so the trail leads forward.
+-        for (int i = nearest; i < path.size() - 1; i++) {
+-            Location a = i == nearest ? cursor : path.get(i);
+-            Location b = path.get(i + 1);
+-            Vector delta = b.toVector().subtract(a.toVector());
+-            double len = delta.length();
+-            if (len < 0.01) {
+-                continue;
++    /* =========================================================
++     * DUST (far guidance)
++     * ========================================================= */
++
++    private void drawDust(Player player, Path path, double from, double to) {
++        double limit = Math.min(to, path.length());
++        // Snap to the spacing grid so dots stay put and the phase makes them march.
++        long k = (long) Math.ceil(Math.max(0.0, from) / SPACING);
++        for (double s = k * SPACING; s <= limit; s += SPACING, k++) {
++            if ((k + phase) % 2 == 0) {
++                player.spawnParticle(Particle.DUST, path.pointAt(s), 1, 0.03, 0.02, 0.03, 0.0, dust);
+             }
+-            Vector step = delta.normalize().multiply(SPACING);
+-            int steps = Math.max(1, (int) Math.ceil(len / SPACING));
+-            Location point = a.clone();
+-            for (int s = 0; s < steps; s++) {
+-                if (drawn > MAX_AHEAD) {
+-                    return;
++        }
++    }
++
++    /* =========================================================
++     * CHEVRONS (near guidance)
++     * ========================================================= */
++
++    /**
++     * Keep this player's chevrons on the arc-length grid just ahead of them.
++     *
++     * @return arc length of the furthest chevron placed, or 0 if none
++     */
++    private double paintChevrons(Player player, Path path, double s0, String key) {
++        long firstSlot = (long) Math.ceil((s0 + CHEVRON_LEAD) / CHEVRON_GAP);
++        double maxS = path.length() - CHEVRON_END_MARGIN;
++        Crumbs set = crumbs.computeIfAbsent(player.getUniqueId(), id -> new Crumbs());
++
++        if (!set.placedFor(key, firstSlot)) {
++            set.key = key;
++            set.firstSlot = firstSlot;
++            World world = player.getWorld();
++            for (int i = 0; i < CHEVRONS; i++) {
++                double s = (firstSlot + i) * CHEVRON_GAP;
++                if (s > maxS) {
++                    set.clear(i);
++                    continue;
+                 }
+-                if ((s + phase) % 2 == 0) {
+-                    player.spawnParticle(Particle.DUST, point, 1, 0.03, 0.02, 0.03, 0.0, dust);
++                Location point = path.pointAt(s);
++                double groundTop = groundTop(world, point);
++                point.setY(Double.isNaN(groundTop) ? point.getY() - 0.12 : groundTop + 0.02);
++                point.setYaw(0f);
++                point.setPitch(0f);
++                set.place(plugin, player, i, point, path.headingAt(s));
++            }
++        }
++
++        // One chevron swells at a time, rolling away from you (with a short rest between waves).
++        int active = pulse % (CHEVRONS + 2);
++        int previous = (pulse - 1) % (CHEVRONS + 2);
++        set.pulse(previous, 1.0f);
++        set.pulse(active, PULSE_SCALE);
++
++        double last = 0.0;
++        for (int i = CHEVRONS - 1; i >= 0; i--) {
++            if (set.has(i)) {
++                last = (firstSlot + i) * CHEVRON_GAP;
++                break;
++            }
++        }
++        return last;
++    }
++
++    /**
++     * Top of the walkable surface under a path point (planks, slabs, carpet),
++     * or NaN if nothing sensible is nearby. Climbs out if the straight line
++     * between corners dipped into a slope.
++     */
++    private static double groundTop(World world, Location at) {
++        if (world == null) {
++            return Double.NaN;
++        }
++        int bx = at.getBlockX();
++        int bz = at.getBlockZ();
++        int y = at.getBlockY();
++        int climb = 0;
++        while (climb < 3 && !world.getBlockAt(bx, y, bz).isPassable()) {
++            y++;
++            climb++;
++        }
++        for (int d = 0; d < 6; d++) {
++            Block block = world.getBlockAt(bx, y - d, bz);
++            if (block.isLiquid()) {
++                return block.getY() + 0.9;
++            }
++            if (!block.isPassable()) {
++                double top = block.getBoundingBox().getMaxY();
++                return top > block.getY() ? top : block.getY() + 1.0;
++            }
++        }
++        return Double.NaN;
++    }
++
++    /**
++     * One arm of a flat "^" chevron pointing along {@code heading}.
++     * Local frame: +Z forward, tip at +TIP_Z, arm swept back by ±ARM_SPREAD.
++     * Matrix only ({@code setTransformationMatrix}) — no TRS decompose.
++     */
++    private static Matrix4f armMatrix(float heading, int side, float scale) {
++        float sweep = (float) Math.PI + side * ARM_SPREAD;
++        return new Matrix4f()
++                .rotateY(heading)
++                .scale(scale, 1.0f, scale)
++                .translate(0.0f, 0.0f, TIP_Z)
++                .rotateY(sweep)
++                .translate(-ARM_W * 0.5f, 0.0f, 0.0f)
++                .scale(ARM_W, ARM_H, ARM_L);
++    }
++
++    /** Per-player chevron pool: {@code CHEVRONS} pairs of arm displays. */
++    private static final class Crumbs {
++        private final BlockDisplay[][] arms = new BlockDisplay[CHEVRONS][];
++        private final float[] headings = new float[CHEVRONS];
++        private String key;
++        private long firstSlot = Long.MIN_VALUE;
++
++        /** Same window, same quest, and nothing got culled (chunk unload drops non-persistent displays). */
++        boolean placedFor(String questKey, long slot) {
++            if (slot != firstSlot || questKey == null || !questKey.equals(key)) {
++                return false;
++            }
++            for (BlockDisplay[] pair : arms) {
++                if (pair != null && (pair[0] == null || !pair[0].isValid() || pair[1] == null || !pair[1].isValid())) {
++                    return false;
+                 }
+-                point.add(step);
+-                drawn += SPACING;
+             }
++            return true;
+         }
+-        Location end = path.get(path.size() - 1);
+-        if (phase % 3 == 0 && feet.distanceSquared(end) > ARRIVED * ARRIVED) {
+-            player.spawnParticle(Particle.END_ROD, end.clone().add(0, 0.35, 0), 1, 0.1, 0.15, 0.1, 0.0);
++
++        boolean has(int i) {
++            BlockDisplay[] pair = arms[i];
++            return pair != null && pair[0] != null && pair[0].isValid();
++        }
++
++        void place(AetherionQuests plugin, Player viewer, int i, Location at, float heading) {
++            headings[i] = heading;
++            BlockDisplay[] pair = arms[i];
++            if (pair == null || pair[0] == null || !pair[0].isValid() || pair[1] == null || !pair[1].isValid()
++                    || pair[0].getWorld() != at.getWorld()) {
++                clear(i);
++                pair = new BlockDisplay[] {
++                        spawnArm(plugin, viewer, at, heading, -1),
++                        spawnArm(plugin, viewer, at, heading, 1)
++                };
++                arms[i] = pair;
++                return;
++            }
++            for (int side = 0; side < 2; side++) {
++                BlockDisplay arm = pair[side];
++                arm.teleport(at);
++                arm.setInterpolationDuration(0);
++                arm.setTransformationMatrix(armMatrix(heading, side == 0 ? -1 : 1, 1.0f));
++            }
++        }
++
++        void pulse(int i, float scale) {
++            if (i < 0 || i >= CHEVRONS || !has(i)) {
++                return;
++            }
++            BlockDisplay[] pair = arms[i];
++            for (int side = 0; side < 2; side++) {
++                BlockDisplay arm = pair[side];
++                if (arm == null || !arm.isValid()) {
++                    continue;
++                }
++                arm.setInterpolationDelay(0);
++                arm.setInterpolationDuration(PULSE_TICKS);
++                arm.setTransformationMatrix(armMatrix(headings[i], side == 0 ? -1 : 1, scale));
++            }
++        }
++
++        void clear(int i) {
++            BlockDisplay[] pair = arms[i];
++            if (pair != null) {
++                for (BlockDisplay arm : pair) {
++                    if (arm != null && arm.isValid()) {
++                        arm.remove();
++                    }
++                }
++            }
++            arms[i] = null;
++        }
++
++        void removeAll() {
++            for (int i = 0; i < CHEVRONS; i++) {
++                clear(i);
++            }
++        }
++
++        private static BlockDisplay spawnArm(AetherionQuests plugin, Player viewer, Location at, float heading, int side) {
++            World world = at.getWorld();
++            if (world == null) {
++                return null;
++            }
++            BlockDisplay arm = world.spawn(at, BlockDisplay.class, display -> {
++                display.setPersistent(false);
++                display.setVisibleByDefault(false);
++                display.setInvulnerable(true);
++                display.setGravity(false);
++                display.setBlock(PAINT);
++                display.setBrightness(new Display.Brightness(12, 15));
++                display.setShadowRadius(0f);
++                display.setTransformationMatrix(armMatrix(heading, side, 1.0f));
++                display.addScoreboardTag(CHEVRON_TAG);
++            });
++            viewer.showEntity(plugin, arm);
++            return arm;
+         }
+     }
+ 
+-    private static int nearestIndex(Location from, List<Location> path) {
+-        int best = 0;
+-        double bestDist = Double.MAX_VALUE;
+-        for (int i = 0; i < path.size(); i++) {
+-            Location p = path.get(i);
+-            if (!from.getWorld().equals(p.getWorld())) {
+-                continue;
++    /* =========================================================
++     * PATH
++     * ========================================================= */
++
++    /** Polyline with arc length — projection, points and headings along it. */
++    private static final class Path {
++
++        record Hit(double s, double distance) {
++        }
++
++        private final List<Location> nodes;
++        private final double[] cumulative;
++        private final double length;
++
++        Path(List<Location> nodes) {
++            this.nodes = nodes;
++            this.cumulative = new double[nodes.size()];
++            double total = 0.0;
++            for (int i = 1; i < nodes.size(); i++) {
++                total += nodes.get(i - 1).distance(nodes.get(i));
++                cumulative[i] = total;
+             }
+-            double d = from.distanceSquared(p);
+-            if (d < bestDist) {
+-                bestDist = d;
+-                best = i;
++            this.length = total;
++        }
++
++        double length() {
++            return length;
++        }
++
++        Hit project(Location p) {
++            double bestDist = Double.MAX_VALUE;
++            double bestS = 0.0;
++            Vector pv = p.toVector();
++            for (int i = 0; i < nodes.size() - 1; i++) {
++                Vector a = nodes.get(i).toVector();
++                Vector ab = nodes.get(i + 1).toVector().subtract(a);
++                double len2 = ab.lengthSquared();
++                double t = len2 < 1.0e-6 ? 0.0 : pv.clone().subtract(a).dot(ab) / len2;
++                t = Math.max(0.0, Math.min(1.0, t));
++                Vector q = a.clone().add(ab.clone().multiply(t));
++                double d = q.distanceSquared(pv);
++                if (d < bestDist) {
++                    bestDist = d;
++                    bestS = cumulative[i] + t * Math.sqrt(len2);
++                }
+             }
++            return new Hit(bestS, Math.sqrt(bestDist));
+         }
+-        // If already past a node toward the end, nudge forward one.
+-        if (best < path.size() - 1 && bestDist < ARRIVED * ARRIVED) {
+-            return best + 1;
++
++        Location pointAt(double s) {
++            int i = segmentAt(s);
++            Location a = nodes.get(i);
++            Location b = nodes.get(i + 1);
++            double seg = cumulative[i + 1] - cumulative[i];
++            double t = seg < 1.0e-6 ? 0.0 : (s - cumulative[i]) / seg;
++            t = Math.max(0.0, Math.min(1.0, t));
++            return new Location(
++                    a.getWorld(),
++                    a.getX() + (b.getX() - a.getX()) * t,
++                    a.getY() + (b.getY() - a.getY()) * t,
++                    a.getZ() + (b.getZ() - a.getZ()) * t
++            );
++        }
++
++        /** Radians for {@code Matrix4f.rotateY}: local +Z turned onto the walking direction. */
++        float headingAt(double s) {
++            int i = segmentAt(s);
++            for (int j = i; j < nodes.size() - 1; j++) {
++                double dx = nodes.get(j + 1).getX() - nodes.get(j).getX();
++                double dz = nodes.get(j + 1).getZ() - nodes.get(j).getZ();
++                if (dx * dx + dz * dz > 1.0e-4) {
++                    return (float) Math.atan2(dx, dz);
++                }
++            }
++            return 0f;
++        }
++
++        private int segmentAt(double s) {
++            for (int i = 0; i < nodes.size() - 2; i++) {
++                if (s <= cumulative[i + 1]) {
++                    return i;
++                }
++            }
++            return nodes.size() - 2;
+         }
+-        return best;
+     }
+ 
+     private static Location ground(Location npc) {
+diff --git a/AetherionQuests/src/main/resources/lang/de.yml b/AetherionQuests/src/main/resources/lang/de.yml
+index 5627b25..d7aea1b 100644
+--- a/AetherionQuests/src/main/resources/lang/de.yml
++++ b/AetherionQuests/src/main/resources/lang/de.yml
+@@ -23,6 +23,22 @@ ui:
+   npc_quest: "§8Quest verknüpfen"
+   npc_confirm: "§8Bestätigen"
+   npc_help: "§8NPC-Hilfe"
++  # Harbour Hour — Ankunft, Egon, Kit-Übergabe
++  arrival_title: "ANKER-HAFEN"
++  arrival_subtitle: "§7Aetherion · §fVorsicht auf den Planken, Rookie"
++  find_egon_title: "FINDE EGON"
++  find_egon_subtitle: "Grünes Leuchten am Pier · Rechtsklick auf ihn"
++  egon_nudge: "Egon wartet noch am Pier · folg dem grünen Leuchten"
++  egon_greet_action: "→ Rechtsklick auf Egon"
++  kit_reward_line: "§b✦ §3Reward: §fEgons Starter-Kit §7— Spitzhacke, Schwert, Hacke, Rüstung"
++  kit_landed_worn: "✔ Kit ausgegeben · Rüstung sitzt, Werkzeug ist im Inventar"
++  kit_landed: "✔ Kit ausgegeben · schau ins Inventar"
++  kit_axe_landed: "✔ Simple Axe · gehört dir"
++  gate_pier_chat: "§eEgon §7steht direkt hier am Pier — sprich zuerst mit ihm."
++  gate_pier_action: "→ Sprich mit Egon"
++  gate_market_chat: "§7Der Markt bleibt zu, bis §eEgon §7sein Eichenholz hat."
++  gate_market_action: "→ Forager · dann bei Egon abgeben"
++  gate_rescue_chat: "§7Ganz ruhig — zurück auf dem Pier. Erst mit §eEgon §7reden."
+ 
+ progress:
+   catch_pet: "Fang ein Pet"
+@@ -80,7 +96,15 @@ dialogs:
+   egon_intro:
+     - "Egon. Hafen-Ausrüster. Ich brauche Eiche — du holst sie."
+     - "Der Forager am Hügel leiht die Axt und zeigt das Chop-Minispiel. Zehn Eichenstämme zurück hierher."
+-    - "§eGelber Pfeil oben§f zeigt die Richtung. Für diesen Auftrag siehst du auch kurz einen Funkel-Pfad am Boden."
++    - "§eGelber Pfeil oben§f zeigt die Richtung. Die Planken hab ich dir auch bemalt. Gern geschehen."
++  egon_arrival_call:
++    - "Hey — neues Gesicht! Hier drüben, beim grünen Leuchten."
++  egon_greet_near:
++    - "Das bin ich. Rechtsklick — ich beiße nicht, ich rüste aus."
++  egon_kit_handoff:
++    - "Holz erhalten. Hier ist dein Kit — Spitzhacke, Schwert, Hacke, Rüstung."
++    - "Die Rüstung ist gebraucht. Vorbesitzer ist in Rente. Größtenteils friedlich."
++    - "§eQuartiermeister§f ist hinter dem kleinen Markt — sprich als Nächstes mit ihm."
+   lumberjack_intro:
+     - "Egon braucht wieder Eiche."
+     - "Nimm die Simple Axe. Linksklick auf einen §eleuchtenden Stamm§f startet die Chop-Leiste."
+-- 
+2.55.0.windows.3
+

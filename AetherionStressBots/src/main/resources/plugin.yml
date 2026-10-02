@@ -18,6 +18,9 @@ commands:
     description: Stress/test-bot assist controls
     usage: /stressbots <reload|setup|list|start|stop|stopall|report>
     permission-message: No permission.
+  botfocus:
+    description: Internal test-bot activity warp
+    usage: /botfocus <activity>
   botreport:
     description: Dump online test-bot status for QA
     usage: /botreport

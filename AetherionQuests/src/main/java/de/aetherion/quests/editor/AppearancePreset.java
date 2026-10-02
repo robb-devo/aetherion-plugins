@@ -11,16 +11,18 @@ import java.util.Locale;
  * Equipment / vibe presets for moderator FancyNPCs (same leather look as living hosts).
  */
 public enum AppearancePreset {
-    WORKER("Worker", Material.IRON_PICKAXE, Color.fromRGB(110, 78, 42), true, true, true, false, "Grian"),
-    SAILOR("Sailor", Material.FISHING_ROD, Color.fromRGB(40, 70, 110), true, false, true, false, "MumboJumbo"),
-    FARMER("Farmer", Material.IRON_HOE, Color.fromRGB(120, 140, 60), true, false, true, false, "GoodTimesWithScar"),
-    GUARD("Guard", Material.IRON_SWORD, Color.fromRGB(36, 58, 92), true, true, true, false, "impulseSV"),
-    SCHOLAR("Scholar", Material.BOOK, Color.fromRGB(200, 200, 210), true, false, true, false, "GeminiTay"),
-    MYSTIC("Mystic", Material.ENDER_PEARL, Color.fromRGB(40, 20, 55), true, true, true, true, "PearlescentMoon"),
-    SCOUT("Scout", Material.BOW, Color.fromRGB(78, 58, 40), true, false, true, false, "EthosLab"),
-    ROGUE("Rogue", Material.GOLD_NUGGET, Color.fromRGB(90, 45, 35), true, false, true, false, "VintageBeef"),
-    MINER("Miner", Material.IRON_PICKAXE, Color.fromRGB(70, 70, 75), true, true, true, false, "Docm77"),
-    ALEX("Alex", Material.STICK, Color.fromRGB(92, 48, 64), true, false, true, true, "Alex");
+    // Skins: anonymous cast skins painted for Aetherion (skins/cast/preset_*.png) — never a
+    // real creator's account. The "aetherion:" token routes through LivingNpcSkins.
+    WORKER("Worker", Material.IRON_PICKAXE, Color.fromRGB(110, 78, 42), true, true, true, false, "aetherion:preset_worker"),
+    SAILOR("Sailor", Material.FISHING_ROD, Color.fromRGB(40, 70, 110), true, false, true, false, "aetherion:preset_sailor"),
+    FARMER("Farmer", Material.IRON_HOE, Color.fromRGB(120, 140, 60), true, false, true, false, "aetherion:preset_farmer"),
+    GUARD("Guard", Material.IRON_SWORD, Color.fromRGB(36, 58, 92), true, true, true, false, "aetherion:preset_guard"),
+    SCHOLAR("Scholar", Material.BOOK, Color.fromRGB(200, 200, 210), true, false, true, false, "aetherion:preset_scholar"),
+    MYSTIC("Mystic", Material.ENDER_PEARL, Color.fromRGB(40, 20, 55), true, true, true, true, "aetherion:preset_mystic"),
+    SCOUT("Scout", Material.BOW, Color.fromRGB(78, 58, 40), true, false, true, false, "aetherion:preset_scout"),
+    ROGUE("Rogue", Material.GOLD_NUGGET, Color.fromRGB(90, 45, 35), true, false, true, false, "aetherion:preset_rogue"),
+    MINER("Miner", Material.IRON_PICKAXE, Color.fromRGB(70, 70, 75), true, true, true, false, "aetherion:preset_miner"),
+    ALEX("Townsfolk", Material.STICK, Color.fromRGB(92, 48, 64), true, false, true, true, "aetherion:preset_townsfolk");
 
     private final String label;
     private final Material hand;

@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class CustomItem {
+    private static final Color SERAPHINE_GLAZE = Color.fromRGB(246, 241, 230);
 
     private final ItemManager itemManager;
     private final ProgressionItems progression;
@@ -7287,6 +7288,341 @@ public class CustomItem {
 
     /*
      * =========================================================
+     * WORLDHIDE SET + WORLDBITE (Nihil, the World Eater)
+     * =========================================================
+     * Cut from the hide of the thing that ate sixteen worlds. Each piece
+     * carries the eye it could not eat (amethyst eye trim) and the pack
+     * icons at CMD 4101-4105.
+     */
+
+    public ItemStack createRandomWorldhideArmor() {
+        return switch (ThreadLocalRandom.current().nextInt(4)) {
+            case 0 -> createWorldhideHelmet();
+            case 1 -> createWorldhideChestplate();
+            case 2 -> createWorldhideLeggings();
+            default -> createWorldhideBoots();
+        };
+    }
+
+    public ItemStack createWorldhideHelmet() {
+        return worldhidePiece(Material.NETHERITE_HELMET, "worldhide_helmet", "§5✦✦✦ §dWorldhide Crown", 4101,
+                "§8The brow it stared with.");
+    }
+
+    public ItemStack createWorldhideChestplate() {
+        return worldhidePiece(Material.NETHERITE_CHESTPLATE, "worldhide_chestplate", "§5✦✦✦ §dWorldhide Carapace", 4102,
+                "§8Sixteen worlds, stitched shut.");
+    }
+
+    public ItemStack createWorldhideLeggings() {
+        return worldhidePiece(Material.NETHERITE_LEGGINGS, "worldhide_leggings", "§5✦✦✦ §dWorldhide Coils", 4103,
+                "§8It lay around the world in these.");
+    }
+
+    public ItemStack createWorldhideBoots() {
+        return worldhidePiece(Material.NETHERITE_BOOTS, "worldhide_boots", "§5✦✦✦ §dWorldhide Treads", 4104,
+                "§8They leave grass where they step.");
+    }
+
+    private ItemStack worldhidePiece(Material material, String itemId, String displayName, int modelData, String flavor) {
+        ItemStack item = new ItemStack(material);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            setItemId(meta, itemId);
+            ItemStats stats = BossGearBalance.base(itemId);
+            applyItemData(meta, Rarity.MYTHIC, stats);
+            BossGearBalance.stamp(meta);
+            meta.setDisplayName(displayName);
+            meta.setLore(createLore(itemId, List.of(
+                    "§7✦ §5MYTHIC",
+                    "",
+                    "§5Full Set: Last Seed",
+                    "§7Where you stand, the world grows back:",
+                    "§7regenerate and gain absorption",
+                    "§7while standing on grass or moss.",
+                    "",
+                    flavor,
+                    "§8Loot of Nihil, the World Eater"
+            ), stats));
+            meta.setCustomModelData(modelData);
+            meta.setUnbreakable(true);
+            if (meta instanceof org.bukkit.inventory.meta.ArmorMeta armor) {
+                armor.setTrim(new org.bukkit.inventory.meta.trim.ArmorTrim(
+                        org.bukkit.inventory.meta.trim.TrimMaterial.AMETHYST,
+                        org.bukkit.inventory.meta.trim.TrimPattern.EYE));
+                meta.addItemFlags(ItemFlag.HIDE_ARMOR_TRIM);
+            }
+            hideVanillaAttributes(meta);
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    public ItemStack createWorldbite() {
+        ItemStack item = new ItemStack(Material.NETHERITE_SWORD);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            setItemId(meta, "worldbite");
+            ItemStats stats = BossGearBalance.base("worldbite");
+            applyItemData(meta, Rarity.MYTHIC, stats);
+            BossGearBalance.stamp(meta);
+            meta.setDisplayName("§5✦✦✦ §dWorldbite");
+            meta.setLore(createLore("worldbite", List.of(
+                    "§7✦ §5MYTHIC",
+                    "",
+                    "§5✦ Devour",
+                    "§7Right-click: a chunk border snaps",
+                    "§7shut ahead of you. Everything inside",
+                    "§7is pulled in, bitten and drained.",
+                    "§8Cooldown 8s.",
+                    "",
+                    "§8Its last fang. Still hungry.",
+                    "§8Loot of Nihil, the World Eater"
+            ), stats));
+            meta.setCustomModelData(4105);
+            meta.setUnbreakable(true);
+            hideVanillaAttributes(meta);
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    /*
+     * =========================================================
+     * HOLLOW SUN SET (Remnant of the Hollow Sun)
+     * =========================================================
+     */
+
+    public ItemStack createHollowSunHelmet() {
+        return createHollowSunArmor(
+                Material.NETHERITE_HELMET,
+                "hollow_sun_helmet",
+                "§6✦✦✦ §eCorona Visor",
+                80, 120, 18, 12, 8, 48, 2, 2341,
+                List.of(
+                        "§e☀ Solar Sight",
+                        "§7Crits §eSunmark §7the target for §f4s§7.",
+                        "§7Sunmarked foes take §e+6% §7damage from you.",
+                        "",
+                        "§6Remnant of the Hollow Sun §8(§f1§8/§f4§8)",
+                        "§8It still remembers how to shine."
+                )
+        );
+    }
+
+    public ItemStack createHollowSunChestplate() {
+        return createHollowSunArmor(
+                Material.NETHERITE_CHESTPLATE,
+                "hollow_sun_chestplate",
+                "§6✦✦✦ §6Hollow Heart Cuirass",
+                160, 210, 34, 20, 10, 75, 2, 2342,
+                List.of(
+                        "§6☀ Caged Star",
+                        "§7Dealing damage builds §6Heat§7.",
+                        "§7At §f100§7, your next hit bursts in a",
+                        "§6Corona §7for §f60% §7of its damage.",
+                        "",
+                        "§6Remnant of the Hollow Sun §8(§f2§8/§f4§8)",
+                        "§8The plate is hollow. The heart is not."
+                )
+        );
+    }
+
+    public ItemStack createHollowSunLeggings() {
+        return createHollowSunArmor(
+                Material.NETHERITE_LEGGINGS,
+                "hollow_sun_leggings",
+                "§6✦✦✦ §cRed Giant Greaves",
+                120, 160, 28, 16, 8, 60, 3, 2343,
+                List.of(
+                        "§c☀ Swell",
+                        "§7Below §f50% §7HP: §c+10% §7Damage, §c+8% §7Defense,",
+                        "§7and your hits leave a brief §cFlare§7.",
+                        "",
+                        "§6Remnant of the Hollow Sun §8(§f3§8/§f4§8)",
+                        "§8I burned for ten thousand years."
+                )
+        );
+    }
+
+    public ItemStack createHollowSunBoots() {
+        return createHollowSunArmor(
+                Material.NETHERITE_BOOTS,
+                "hollow_sun_boots",
+                "§6✦✦✦ §5Starfall Sabatons",
+                80, 115, 18, 12, 6, 45, 5, 2344,
+                List.of(
+                        "§5☀ Starfall §8(Double-sneak in the air)",
+                        "§7Plunge down and land in a crimson shockwave.",
+                        "§8Cooldown: §f18s",
+                        "",
+                        "§6Remnant of the Hollow Sun §8(§f4§8/§f4§8)",
+                        "§8Every star falls."
+                )
+        );
+    }
+
+    private ItemStack createHollowSunArmor(
+            Material material,
+            String itemId,
+            String displayName,
+            double defense,
+            double health,
+            double damage,
+            double attackSpread,
+            double critChance,
+            double critDamage,
+            double speed,
+            int modelData,
+            List<String> effectLore
+    ) {
+        ItemStack item = new ItemStack(material);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            setItemId(meta, itemId);
+            ItemStats stats = new ItemStats();
+            stats.setDefense(defense);
+            stats.setHealth(health);
+            stats.setDamage(damage);
+            stats.setAttackSpread(attackSpread);
+            stats.setCritChance(critChance);
+            stats.setCritDamage(critDamage);
+            stats.setSpeed(speed);
+            applyItemData(meta, Rarity.MYTHIC, stats);
+            BossGearBalance.stamp(meta);
+            meta.setDisplayName(displayName);
+            List<String> lore = new ArrayList<>();
+            lore.add("§7✦ §5MYTHIC");
+            lore.add("");
+            lore.add("§7🛡 Defense: §f+" + formatAetherionStat(defense));
+            lore.add("§7❤ Health: §f+" + formatAetherionStat(health));
+            lore.add("§7⚔ Damage: §f+" + formatAetherionStat(damage));
+            lore.add("§7⚔ Attack Spread: §f+" + formatAetherionStat(attackSpread));
+            lore.add("§7✧ Crit Chance: §f+" + formatAetherionStat(critChance) + "%");
+            lore.add("§7✧ Crit Damage: §f+" + formatAetherionStat(critDamage) + "%");
+            lore.add("§7✦ Speed: §f+" + formatAetherionStat(speed) + "%");
+            lore.add("");
+            lore.addAll(effectLore);
+            lore.add("");
+            lore.add("§6Set: Remnant of the Hollow Sun");
+            lore.add("§e2 · Main Sequence §7— every §f5th §7hit calls a §eStarcall§7.");
+            lore.add("§c3 · Red Giant §7— heavy blows make you §cburn brighter§7.");
+            lore.add("§54 · Collapse §7— cheat death once as a §5black star§7,");
+            lore.add("§7    then §dNova§7. §8(12m)");
+            meta.setLore(createLore(lore, false, true, true));
+            meta.setCustomModelData(modelData);
+            meta.setUnbreakable(true);
+            hideVanillaAttributes(meta);
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    /*
+     * =========================================================
+     * DAWNBEARER SET + SOLSTICE (Helios Requiem)
+     * =========================================================
+     * Forged from what the supernova gave back: gold that remembers being
+     * a star. Pack icons at CMD 4201-4205. Full set: Second Dawn.
+     */
+
+    public ItemStack createRandomHeliosArmor() {
+        return switch (ThreadLocalRandom.current().nextInt(4)) {
+            case 0 -> createHeliosCrown();
+            case 1 -> createHeliosHeartplate();
+            case 2 -> createHeliosOrbitGreaves();
+            default -> createHeliosDawnTreads();
+        };
+    }
+
+    public ItemStack createHeliosCrown() {
+        return heliosPiece(Material.NETHERITE_HELMET, "helios_crown", "§6✦✦✦ §eDawnbearer Crown", 4201,
+                "§8Seven rays. One of them still warm.");
+    }
+
+    public ItemStack createHeliosHeartplate() {
+        return heliosPiece(Material.NETHERITE_CHESTPLATE, "helios_heartplate", "§6✦✦✦ §eDawnbearer Heartplate", 4202,
+                "§8It beats. Not always in time with you.");
+    }
+
+    public ItemStack createHeliosOrbitGreaves() {
+        return heliosPiece(Material.NETHERITE_LEGGINGS, "helios_orbit_greaves", "§6✦✦✦ §eDawnbearer Orbit Greaves", 4203,
+                "§8Four rings, and you in the middle.");
+    }
+
+    public ItemStack createHeliosDawnTreads() {
+        return heliosPiece(Material.NETHERITE_BOOTS, "helios_dawn_treads", "§6✦✦✦ §eDawnbearer Treads", 4204,
+                "§8Every step lands on the beat.");
+    }
+
+    private ItemStack heliosPiece(Material material, String itemId, String displayName, int modelData, String flavor) {
+        ItemStack item = new ItemStack(material);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            setItemId(meta, itemId);
+            ItemStats stats = BossGearBalance.base(itemId);
+            applyItemData(meta, Rarity.MYTHIC, stats);
+            BossGearBalance.stamp(meta);
+            meta.setDisplayName(displayName);
+            meta.setLore(createLore(itemId, List.of(
+                    "§7✦ §6MYTHIC",
+                    "",
+                    "§6Full Set: Second Dawn",
+                    "§7When you fall below §c30%§7 health,",
+                    "§7you go supernova: heal §a30%§7, gain",
+                    "§7absorption, and blast nearby enemies.",
+                    "§8Cooldown 120s.",
+                    "",
+                    flavor,
+                    "§8Loot of Helios, the Dying Star"
+            ), stats));
+            meta.setCustomModelData(modelData);
+            meta.setUnbreakable(true);
+            if (meta instanceof org.bukkit.inventory.meta.ArmorMeta armor) {
+                armor.setTrim(new org.bukkit.inventory.meta.trim.ArmorTrim(
+                        org.bukkit.inventory.meta.trim.TrimMaterial.GOLD,
+                        org.bukkit.inventory.meta.trim.TrimPattern.SILENCE));
+                meta.addItemFlags(ItemFlag.HIDE_ARMOR_TRIM);
+            }
+            hideVanillaAttributes(meta);
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    public ItemStack createHeliosSolstice() {
+        ItemStack item = new ItemStack(Material.NETHERITE_SWORD);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            setItemId(meta, "helios_solstice");
+            ItemStats stats = BossGearBalance.base("helios_solstice");
+            applyItemData(meta, Rarity.MYTHIC, stats);
+            BossGearBalance.stamp(meta);
+            meta.setDisplayName("§6✦✦✦ §eSolstice");
+            meta.setLore(createLore("helios_solstice", List.of(
+                    "§7✦ §6MYTHIC",
+                    "",
+                    "§6✦ Constellation",
+                    "§7Right-click: open a portal at your hand",
+                    "§7and its twin above your target. Your",
+                    "§7light enters one and falls from the",
+                    "§7other: a lance of sunlight on everything",
+                    "§7below. Burns.",
+                    "§8Cooldown 10s.",
+                    "",
+                    "§8The Herald's fourth blade. It came back.",
+                    "§8Loot of Helios, the Dying Star"
+            ), stats));
+            meta.setCustomModelData(4205);
+            meta.setUnbreakable(true);
+            hideVanillaAttributes(meta);
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    /*
+     * =========================================================
      * CATCHER SET
      * =========================================================
      */
@@ -8050,4 +8386,520 @@ public class CustomItem {
         }
         return item;
     }
+
+
+    // --- restored showcase factories (terminus-absolute-item) ---
+
+    public ItemStack createAshenKatana() {
+
+        ItemStack item = new ItemStack(Material.NETHERITE_SWORD);
+        ItemMeta meta = item.getItemMeta();
+
+        if (meta != null) {
+
+            setItemId(meta, "ashen_katana");
+
+            ItemStats stats = BossGearBalance.base("ashen_katana");
+
+            applyItemData(meta, Rarity.MYTHIC, stats);
+            BossGearBalance.stamp(meta);
+            BossWeaponLook.apply(meta, "ashen_katana");
+
+            meta.setDisplayName("§dBlossom Blade");
+
+            meta.setLore(
+                    createLore(
+                            List.of(
+                                    "§7✦ §dMYTHIC",
+                                    "",
+                                    "§7⚔ Damage: §f+86.00",
+                                    "§7⚔ Attack Spread: §f+14.00",
+                                    "§7✧ Crit Chance: §f+15.00%",
+                                    "§7✧ Crit Damage: §f+105.00%",
+                                    "",
+                                    "§8The sheath remembers every cut.",
+                                    "§8Dropped by §dThe Ashen Sheath§8.",
+                                    "",
+                                    "§d✦ Blossom Commitment",
+                                    "§7Right-click: dash, rise, cherry-leaf hover,",
+                                    "§7then slam a hostile shockwave.",
+                                    "§8Players & pets ignored. §7CD §f8s§7.",
+                                    DungeonCore.BOSS_CORE_HINT,
+                                    "",
+                                    "§8Aetherion Boss Drop"
+                            ),
+                            false,
+                            true,
+                            false
+                    )
+            );
+
+            meta.setCustomModelData(3304);
+            meta.setUnbreakable(true);
+            meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE);
+            hideVanillaAttributes(meta);
+
+            item.setItemMeta(meta);
+        }
+
+        return item;
+    }
+
+
+    public ItemStack createMeteorMace() {
+        ItemStack item = new ItemStack(Material.MACE);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            setItemId(meta, "meteor_mace");
+            ItemStats stats = new ItemStats();
+            stats.setDamage(125);
+            stats.setCritChance(10);
+            stats.setCritDamage(140);
+            stats.setAttackSpread(6);
+            applyItemData(meta, Rarity.MYTHIC, stats);
+            stampTestGear(meta, "meteor_mace");
+            meta.setDisplayName("§c✦ Meteor Mace");
+            meta.setLore(createLore("meteor_mace", List.of(
+                    "§7✦ §5MYTHIC §8· §cSandbox",
+                    "",
+                    "§7⚔ Damage: §f+125.00",
+                    "§7⚔ Attack Spread: §f+6.00",
+                    "§7✧ Crit Chance: §f+10.00%",
+                    "§7✧ Crit Damage: §f+140.00%",
+                    "",
+                    "§c✦ Starfall",
+                    "§7Right-click where you look: a fissure",
+                    "§7crawls out, the smash §flaunches §7foes,",
+                    "§7then a §cmeteor §7crashes onto them.",
+                    "§7The molten crater keeps burning.",
+                    "§8No player/pet targets. §7CD §f20s§7 §8(off in arena).",
+                    "",
+                    "§8Test Arena prototype"
+            ), stats));
+            meta.setUnbreakable(true);
+            meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE);
+            hideVanillaAttributes(meta);
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+
+    public ItemStack createCataclysmRod() {
+        ItemStack item = new ItemStack(Material.END_ROD);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            setItemId(meta, "cataclysm_rod");
+            ItemStats stats = new ItemStats();
+            stats.setDamage(95);
+            stats.setCritChance(12);
+            stats.setCritDamage(130);
+            applyItemData(meta, Rarity.LEGENDARY, stats);
+            stampTestGear(meta, "cataclysm_rod");
+            meta.setDisplayName("§c✦ Cataclysm Rod");
+            meta.setLore(createLore("cataclysm_rod", List.of(
+                    "§7✦ §6LEGENDARY §8· §cSandbox Showcase",
+                    "",
+                    "§7⚔ Damage: §f+95.00",
+                    "§7✧ Crit Chance: §f+12.00%",
+                    "§7✧ Crit Damage: §f+130.00%",
+                    "",
+                    "§c✦ Absolute Nova → Seismic Charge",
+                    "§7Right-click: fire a star-core bolt.",
+                    "§7Sky supernova — then silence —",
+                    "§7then a floor seismic charge that",
+                    "§7detonates late. §8The punchline.",
+                    "§8CD off in Test Arena.",
+                    "",
+                    "§8Test Arena prototype"
+            ), stats));
+            meta.setUnbreakable(true);
+            meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE);
+            hideVanillaAttributes(meta);
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+
+    public ItemStack createRuneSigil() {
+        ItemStack item = new ItemStack(Material.HEART_OF_THE_SEA);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            setItemId(meta, "rune_sigil");
+            ItemStats stats = new ItemStats();
+            stats.setDamage(88);
+            stats.setCritChance(10);
+            stats.setCritDamage(120);
+            applyItemData(meta, Rarity.LEGENDARY, stats);
+            stampTestGear(meta, "rune_sigil");
+            meta.setDisplayName("§b✦ Rune Sigil");
+            meta.setLore(createLore("rune_sigil", List.of(
+                    "§7✦ §6LEGENDARY §8· §bSandbox Showcase",
+                    "",
+                    "§7⚔ Damage: §f+88.00",
+                    "§7✧ Crit Chance: §f+10.00%",
+                    "§7✧ Crit Damage: §f+120.00%",
+                    "",
+                    "§b✦ Azure Rite",
+                    "§7Right-click: plant an azure seal.",
+                    "§7Rune circle + blue flame rise —",
+                    "§7then a judgment pillar skyward.",
+                    "§7Annihilates hostiles. Fully heals",
+                    "§7players + absorption & regen.",
+                    "§8CD off in Test Arena.",
+                    "",
+                    "§8Test Arena prototype"
+            ), stats));
+            meta.setUnbreakable(true);
+            meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE);
+            hideVanillaAttributes(meta);
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+
+    public ItemStack createWorldSplitter() {
+        ItemStack item = new ItemStack(Material.NETHERITE_AXE);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            setItemId(meta, "world_splitter");
+            ItemStats stats = new ItemStats();
+            stats.setDamage(110);
+            stats.setCritChance(14);
+            stats.setCritDamage(145);
+            applyItemData(meta, Rarity.LEGENDARY, stats);
+            stampTestGear(meta, "world_splitter");
+            meta.setDisplayName("§5✦ World Splitter");
+            meta.setLore(createLore("world_splitter", List.of(
+                    "§7✦ §6LEGENDARY §8· §5Sandbox Showcase",
+                    "",
+                    "§7⚔ Damage: §f+110.00",
+                    "§7✧ Crit Chance: §f+14.00%",
+                    "§7✧ Crit Damage: §f+145.00%",
+                    "",
+                    "§5✦ Reality Rift",
+                    "§7Right-click: tear a seam in space.",
+                    "§7Two halves of the world peel apart —",
+                    "§7void between, debris falling wrong,",
+                    "§7then reality slams shut.",
+                    "§8No blocks are broken. Illusion only.",
+                    "§8CD off in Test Arena.",
+                    "",
+                    "§8Test Arena prototype"
+            ), stats));
+            meta.setUnbreakable(true);
+            meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE);
+            hideVanillaAttributes(meta);
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+
+    public ItemStack createVesperBell() {
+        ItemStack item = new ItemStack(Material.BELL);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            setItemId(meta, "vesper_bell");
+            ItemStats stats = new ItemStats();
+            stats.setDamage(92);
+            stats.setCritChance(10);
+            stats.setCritDamage(125);
+            applyItemData(meta, Rarity.LEGENDARY, stats);
+            stampTestGear(meta, "vesper_bell");
+            meta.setDisplayName("§6✦ Vesper Bell");
+            meta.setLore(createLore("vesper_bell", List.of(
+                    "§7✦ §6LEGENDARY §8· §6Sandbox Showcase",
+                    "",
+                    "§7⚔ Damage: §f+92.00",
+                    "§7✧ Crit Chance: §f+10.00%",
+                    "§7✧ Crit Damage: §f+125.00%",
+                    "",
+                    "§6✦ Basilica of the Last Hymn",
+                    "§7Right-click: toll the bell. A cathedral",
+                    "§7builds itself around you — columns,",
+                    "§7vault, a rose window blooming light.",
+                    "§7Each toll heals & §fconsecrates §7allies",
+                    "§7(§e+35% damage§7) and nails enemies.",
+                    "§7Then the basilica ascends with the",
+                    "§7bound inside — and shatters.",
+                    "§8CD off in Test Arena.",
+                    "",
+                    "§8Test Arena prototype"
+            ), stats));
+            meta.setUnbreakable(true);
+            meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE);
+            hideVanillaAttributes(meta);
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+
+    public ItemStack createDeepsongConch() {
+        ItemStack item = new ItemStack(Material.NAUTILUS_SHELL);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            setItemId(meta, "deepsong_conch");
+            ItemStats stats = new ItemStats();
+            stats.setDamage(120);
+            stats.setCritChance(15);
+            stats.setCritDamage(150);
+            applyItemData(meta, Rarity.LEGENDARY, stats);
+            stampTestGear(meta, "deepsong_conch");
+            meta.setDisplayName("§3✦ Deepsong Conch");
+            meta.setLore(createLore("deepsong_conch", List.of(
+                    "§7✦ §6LEGENDARY §8· §3Server Flagship",
+                    "",
+                    "§7⚔ Damage: §f+120.00",
+                    "§7✧ Crit Chance: §f+15.00%",
+                    "§7✧ Crit Damage: §f+150.00%",
+                    "",
+                    "§3✦ The Stone Sea",
+                    "§7Right-click: blow the conch. The sun",
+                    "§7falls, the ground turns to water and",
+                    "§7something vast circles beneath it.",
+                    "§7A star-whale breaches the earth,",
+                    "§7sings at the apex, dives — and then",
+                    "§7the Leviathan §bexhales§7.",
+                    "§8No blocks touched. CD off in Test Arena.",
+                    "",
+                    "§8Test Arena prototype"
+            ), stats));
+            meta.setUnbreakable(true);
+            meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE);
+            hideVanillaAttributes(meta);
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+
+    /** The last boundary stone. Ability: {@link de.aetherion.items.listener.TerminusEdge}. */
+    public ItemStack createTerminus() {
+        ItemStack item = new ItemStack(Material.LIGHTNING_ROD);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            setItemId(meta, "terminus");
+            ItemStats stats = new ItemStats();
+            stats.setDamage(150);
+            stats.setCritChance(15);
+            stats.setCritDamage(150);
+            applyItemData(meta, Rarity.MYTHIC, stats);
+            stampTestGear(meta, "terminus");
+            meta.setDisplayName("§f✦ Terminus");
+            meta.setLore(createLore("terminus", List.of(
+                    "§7✦ §dMYTHIC §8· §fAbsolute Limit",
+                    "",
+                    "§7⚔ Damage: §f+150.00",
+                    "§7✧ Crit Chance: §f+15.00%",
+                    "§7✧ Crit Damage: §f+150.00%",
+                    "",
+                    "§f✦ Here Ends the World",
+                    "§7Right-click: set the last boundary stone.",
+                    "§7The edge of the world — the real one,",
+                    "§7thirty million blocks out — §fcomes to it§7.",
+                    "§7Four walls as tall as the sky close on",
+                    "§7one block and crush whatever they herd.",
+                    "§7The world has to go somewhere.",
+                    "§8It goes up.",
+                    "§8No blocks touched. One edge per world.",
+                    "§8CD off in Test Arena.",
+                    "",
+                    "§8Test Arena prototype"
+            ), stats));
+            meta.setUnbreakable(true);
+            meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE);
+            hideVanillaAttributes(meta);
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+
+    public ItemStack createRandomSeraphineArmor() {
+        return switch (ThreadLocalRandom.current().nextInt(4)) {
+            case 0 -> createSeraphineVeil();
+            case 1 -> createSeraphineBodice();
+            case 2 -> createSeraphineBellSkirt();
+            default -> createSeraphinePointeSlippers();
+        };
+    }
+
+
+    public ItemStack createSeraphineVeil() {
+        return createSeraphineArmor(
+                Material.LEATHER_HELMET,
+                "seraphine_veil",
+                "Kintsugi Veil",
+                3341,
+                List.of(
+                        "§fGlass over a face that never learned to frown.",
+                        "§7Behind it, a small gold halo still turns."
+                )
+        );
+    }
+
+
+    public ItemStack createSeraphineBodice() {
+        return createSeraphineArmor(
+                Material.LEATHER_CHESTPLATE,
+                "seraphine_bodice",
+                "Porcelain Bodice",
+                3342,
+                List.of(
+                        "§fGlazed white. Cracked where the Hand gripped.",
+                        "§7Every crack was mended in gold."
+                )
+        );
+    }
+
+
+    public ItemStack createSeraphineBellSkirt() {
+        return createSeraphineArmor(
+                Material.LEATHER_LEGGINGS,
+                "seraphine_bell_skirt",
+                "Marionette Bell Skirt",
+                3343,
+                List.of(
+                        "§fEight hinged porcelain panels, gold at the hem.",
+                        "§7They flare when you spin. You will spin."
+                )
+        );
+    }
+
+
+    public ItemStack createSeraphinePointeSlippers() {
+        return createSeraphineArmor(
+                Material.LEATHER_BOOTS,
+                "seraphine_pointe_slippers",
+                "Gilt Pointe Slippers",
+                3344,
+                List.of(
+                        "§fShe never walked. She was carried, toes on the boards.",
+                        "§7Gold-tipped, for a stage that floats."
+                )
+        );
+    }
+
+
+    private ItemStack createSeraphineArmor(
+            Material material,
+            String itemId,
+            String name,
+            int modelData,
+            List<String> story
+    ) {
+        ItemStack item = new ItemStack(material);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            setItemId(meta, itemId);
+            ItemStats stats = BossGearBalance.base(itemId);
+            applyItemData(meta, Rarity.LEGENDARY, stats);
+            BossGearBalance.stamp(meta);
+            meta.setDisplayName("§6✦ §f" + name);
+            List<String> lore = new ArrayList<>();
+            lore.add("§7✦ §6LEGENDARY §8· §fThe Mended Saint");
+            lore.add("");
+            lore.add("§7🛡 Defense: §f+" + formatAetherionStat(stats.getDefense()));
+            lore.add("§7❤ Health: §f+" + formatAetherionStat(stats.getHealth()));
+            lore.add("§7⚔ Damage: §f+" + formatAetherionStat(stats.getDamage()));
+            lore.add("§7⚔ Attack Spread: §f+" + formatAetherionStat(stats.getAttackSpread()));
+            lore.add("§7✧ Crit Chance: §f+" + formatAetherionStat(stats.getCritChance()) + "%");
+            lore.add("§7✧ Crit Damage: §f+" + formatAetherionStat(stats.getCritDamage()) + "%");
+            lore.add("§7✦ Speed: §f+" + formatAetherionStat(stats.getSpeed()) + "%");
+            lore.add("");
+            lore.addAll(story);
+            lore.add("");
+            lore.add("§6Full Set §8· §fStrung");
+            lore.add("§7A golden thread from the flies");
+            lore.add("§7catches every fall. You never land hard.");
+            lore.add("");
+            lore.add("§8Fallen from the Gilded Proscenium");
+            meta.setLore(createLore(itemId, lore, stats));
+            meta.setCustomModelData(modelData);
+            meta.setUnbreakable(true);
+            applyArmorColor(meta, SERAPHINE_GLAZE);
+            hideVanillaAttributes(meta);
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+
+    public ItemStack createSeraphineNeedle() {
+        ItemStack item = new ItemStack(Material.IRON_SWORD);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            setItemId(meta, "seraphine_needle");
+            ItemStats stats = BossGearBalance.base("seraphine_needle");
+            applyItemData(meta, Rarity.LEGENDARY, stats);
+            BossGearBalance.stamp(meta);
+            BossWeaponLook.apply(meta, "seraphine_needle");
+            meta.setDisplayName("§6✦ §fSeverance§7, the Saint's Needle");
+            meta.setLore(createLore(List.of(
+                    "§7✦ §6LEGENDARY §8· §fThe Mended Saint",
+                    "",
+                    "§7⚔ Damage: §f+84.00",
+                    "§7⚔ Attack Spread: §f+10.00",
+                    "§7✧ Crit Chance: §f+14.00%",
+                    "§7✧ Crit Damage: §f+100.00%",
+                    "",
+                    "§fShe cut her own strings with this.",
+                    "§7The Hand above still flinches at it.",
+                    "",
+                    "§6✦ Five Strings §8· §eRight-click",
+                    "§7Five fingertips part the clouds and drop",
+                    "§7golden threads on up to §f5 §7foes. Hoisted,",
+                    "§7jerked in stop-motion to her lullaby, then",
+                    "§7cut loose to fall like dropped porcelain.",
+                    "§8Players & pets ignored. §7CD §f14s§7.",
+                    "",
+                    "§6✦ Kintsugi Stitch §8· §7Passive",
+                    "§7Every §f5th §7hit on one foe sews a gold",
+                    "§7seam through it and plays her next note.",
+                    "",
+                    "§8Drawn from Seraphine, the Hanging Saint"
+            ), false, true, false));
+            meta.setCustomModelData(3340);
+            meta.setUnbreakable(true);
+            meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE);
+            hideVanillaAttributes(meta);
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+
+    public ItemStack createPortalGun() {
+        ItemStack item = new ItemStack(Material.IRON_HOE);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            setItemId(meta, "portal_gun");
+            ItemStats stats = new ItemStats();
+            stats.setDamage(12);
+            applyItemData(meta, Rarity.LEGENDARY, stats);
+            stampTestGear(meta, "portal_gun");
+            meta.setDisplayName("§b✦ Portal Gun");
+            meta.setLore(createLore("portal_gun", List.of(
+                    "§7✦ §6LEGENDARY §8· §bSandbox Utility",
+                    "",
+                    "§b✦ Dual Gate",
+                    "§7Left-click: set §bAzure §7gate.",
+                    "§7Right-click: set §6Amber §7gate.",
+                    "§7Walk through either to exit the other.",
+                    "§8Clean BlockDisplay portals — no nova.",
+                    "",
+                    "§8Test Arena prototype"
+            ), stats));
+            meta.setUnbreakable(true);
+            meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE);
+            hideVanillaAttributes(meta);
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
 }

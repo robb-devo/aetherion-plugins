@@ -322,4 +322,28 @@ public final class BlueprintUnlockService {
             }
         }
     }
+
+
+    /** Drop hunt / desk / collected / stamped blueprints for one player. */
+    public void wipePlayer(UUID playerId) {
+        if (playerId == null) {
+            return;
+        }
+        huntEnabled.remove(playerId);
+        deskReady.remove(playerId);
+        collected.remove(playerId);
+        stamped.remove(playerId);
+        YamlConfiguration yaml = file.exists()
+                ? YamlConfiguration.loadConfiguration(file)
+                : new YamlConfiguration();
+        yaml.set("players." + playerId, null);
+        try {
+            yaml.save(file);
+            dirty = false;
+        } catch (IOException exception) {
+            plugin.getLogger().warning("Could not wipe blueprints for " + playerId + ": " + exception.getMessage());
+            dirty = true;
+        }
+    }
+
 }

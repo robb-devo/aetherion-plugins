@@ -1,0 +1,409 @@
+From c6f2b83f4994503fd6153312aecb00b7a08673c1 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 29 Sep 2026 05:01:14 +0200
+Subject: [PATCH 7/9] Docs: Mining Eldervale systems, schem map, forge costs,
+ DEV IA splice, test sheet, deploy; jar surface diff tool
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01Cb5rUs5Jy2h8ZCMwTfnbVN
+---
+ docs/MINING_ELDERVALE.md        | 304 ++++++++++++++++++++++++++++++++
+ docs/tools/jar-surface-diff.ps1 |  75 ++++++++
+ 2 files changed, 379 insertions(+)
+ create mode 100644 docs/MINING_ELDERVALE.md
+ create mode 100644 docs/tools/jar-surface-diff.ps1
+
+diff --git a/docs/MINING_ELDERVALE.md b/docs/MINING_ELDERVALE.md
+new file mode 100644
+index 00000000..e0dce1c6
+--- /dev/null
++++ b/docs/MINING_ELDERVALE.md
+@@ -0,0 +1,304 @@
++# Mining Eldervale: the mining destination
++
++Mining Eldervale is Aetherion's flagship gather isle. On top of every strike it stacks a work song, geodes you crack open by hand, per-ore mastery, contracts, depth, events, critters and hazards. The Deep Forge turns ore into permanent **Forge Marks**. Under all of it sits the **Amethyst Mine** (`/amethyst`, the daily-reset dig world known as The Veins), which is the prestige layer: Resonance, Shardlings, Geode Hearts and Heartstones.
++
++It follows the same pattern as Farming Eldervale (`AetherionFarming` `isle/*`) and Fishing Eldervale (`AetherionFishing` `isle/*`): a single router, profiles, events, menus, compass, cast and DEV pages.
++
++Ownership:
++
++- **AetherionMining** owns the isle, the Amethyst Mine and every loop.
++- **AetherionItems** owns payouts (HarvestListener), skills, the blueprint forge GUI and ritual, and the DEV pages.
++- **AetherionCore** only gains default methods on `MiningAccess`.
++
++No locked system is touched: Boosters, vials, the Custom Anvil / `BoosterSocketMenu`, ranks and RankBadge, Blossom Blade, Gravwell Cleaver, ShutdownCountdown, Farming Eldervale and Helios all stay as they are.
++
++---
++
++## 1. Map (measured from `Mining-Eldervale-Island.schem`)
++
++**How the coordinates were derived**
++
++- Paste point: `eldervale.paste` = **22 90 580**.
++- Sponge/FAWE offset: **-190 -181 -227**.
++- Conversion: world = paste + offset + schem-local.
++  - Schem box: x -168..227 · y -91..240 · z 353..763.
++  - Rock itself: x -98..192 · y -49..185 · z 417..703. The surface is around **Y 89**.
++- What the scan found:
++  - 6 bells, 1 blast furnace, 49 grindstones, 32 beds, 573 barrels, 2,976 block entities.
++  - One interconnected cave system of about 683k air blocks, running from Y -26 to 178.
++  - A surface lake at Y 79, a lush cave at the bottom, and lava pockets.
++
++| Kind | Id | Name | Circles (x z r) | Y | Anchor | What's there |
++|---|---|---|---|---|---|---|
++| hall | `landing` | The Landing | 53 484 14 | 84–115 | 53.5 90 486.5 | Origin pad drop point, Old Wick |
++| hall | `lantern_row` | Lantern Row | 20 592 30 · 55 585 14 | 84–135 | 25.5 90 592.5 | main street (bells, bunks, smithy) |
++| hall | `contract_office` | The Contract Office | -55 524 14 | 92–135 | -53.5 99 519.5 | west hall (bell, enchanting table), Otto |
++| hall | `bunkhouse` | The Bunkhouse | -66 556 10 | 90–115 | -65.5 96 556.5 | banners and beds |
++| hall | `the_hearth` | The Hearth | -58 620 12 | 90–125 | -56.5 98 614.5 | 8 smokers (the oven), Nan |
++| hall | `assay_office` | The Assay Office | 16 660 18 | 110–175 | 15.5 122 660.5 | library (74 chiseled shelves), Ilse, Record Board |
++| hall | `crown_lookout` | Crown Lookout | 16 512 14 | 125–190 | 16.5 145 512.5 | peak tower (Y 178) |
++| hall | `stonewright_terrace` | Stonewright Terrace | 80 445 16 | 110–150 | 80.5 119 446.5 | stonecutters, grindstones |
++| hall | `tinkers_end` | Tinker's End | 152 606 16 | 86–130 | 152.5 90 597.5 | east hamlet (bell, lectern, smithing table) |
++| hall | `deep_forge` | The Deep Forge | 38 476 9 | 30–62 | 38.5 39 474.5 | the schem's blast furnace + anvil hut on the North Pit floor, Brann |
++| hall | `last_lamp` | Last Lamp | 106 567 9 | -12–10 | 105.5 -5 566.5 | deepest camp (chest, barrels), Hollis |
++| quarry | `north_pit` | The North Pit | 32 458 20 · 0 478 10 | 28–92 | 30.5 35 457.5 | open pit, floor at Y 31–40 |
++| quarry | `long_cut` | The Long Cut | -26 495 9 · -28 515 9 · -26 535 8 | 30–92 | -27.5 45 512.5 | west trench, floor at Y 35–49 |
++| quarry | `sunder_cut` | Sunder Cut | 160 515 16 · 160 550 13 | 25–95 | 159.5 45 529.5 | east canyon + the grindstone gear wall (x 159, Y 55–62) |
++| quarry | `terraces` | The Terraces | 100 500 26 · 120 535 18 | 60–92 | 99.5 77 506.5 | stepped basin at Y 72–80, ore depot (82 barrels) |
++| quarry | `west_hollow` | West Hollow | -76 590 13 | 40–92 | -72.5 50 586.5 | sunken hollow at Y 50 |
++| water | `glimmerwater` | Glimmerwater | 80 657 34 · 60 690 12 | 60–95 | 64.5 79 637.5 | surface lake at Y 79, sand shore, chests |
++| water | `weeping_cistern` | The Weeping Cistern | -40 550 20 | 35–76 | -46.5 48 551.5 | hidden pool, Y 37–69 |
++| shaft | `lantern_galleries` | The Lantern Galleries | -66 548 24 · 130 515 22 | 56–82 | — | upper tunnels (24k + 9k cave air) |
++| shaft | `needle_gallery` | Needle Gallery | 59 470 16 | 45–72 | — | dripstone gallery (18k cave air) |
++| shaft | `great_works` | The Great Works | 42 540 46 | 26–56 | 42.5 37 541.5 | central deep hall (72k cave air) |
++| shaft | `crucible_shaft` | The Crucible Shaft | 33 478 7 | -5–38 | 32.5 5 478.5 | vertical shaft under the forge, camp at Y 0 |
++| shaft | `emberseam` | The Emberseam | 56 505 15 · 13 648 14 · -30 603 13 | -15–66 | 55.5 0 500.5 | lava pockets: **heat hazard, Cinder Mites** |
++| shaft | `rootdeep` | Rootdeep Grotto | 14 539 38 · 45 560 20 | -22–24 | 13.5 3 539.5 | lush cave (63k cave air): **Gloam Moths** |
++| shaft | `the_fangs` | The Fangs | 104 555 18 | -22–8 | 102.5 -3 552.5 | dripstone undercroft |
++
++**Depth bands** (`mine-isle.depth`)
++
++| Band | Y range | Ore Fortune | Crystal Finds | Bonus XP per ore |
++|---|---|---|---|---|
++| Surface | Y ≥ 82 | +0 | ×1.0 | — |
++| Upper Galleries | 56–82 | +5 | ×1.10 | — |
++| Deep Works | 26–56 | +12 | ×1.25 | +1 |
++| The Undercroft | < 26 | +20 | ×1.50 | +2 |
++
++Depth Gauge scales all of it. Reaching a band for the first time pays a title card plus 50/100/150 XP.
++
++**The cast** (`mine-cast.presets`; these are standable spots taken from the schem)
++
++| Role | Name | Preset | Board |
++|---|---|---|---|
++| LAMPWARDEN | Old Wick | 57.5 90 485.5 | map + compass, depth card, crew tour |
++| CLERK | Otto Brassbuckle | -53.5 99 519.5 | Foreman Contracts |
++| COOK | Nan Coalbright | -56.5 98 614.5 | The Hearth (rations) |
++| ASSAYER | Ilse Veyne | 15.5 122 660.5 | Collections, mastery, Specimen Cabinet, specimen sales |
++| FORGEMASTER | Brann Emberlock | 38.5 39 475.5 | Forge Works (marks, reputation, flares and canaries) |
++| HERMIT | Hollis Underhill | 105.5 -5 566.5 | Last Lamp (depth board, Stonejaw bounty, deep trade) |
++
++The cast is auto-placed on first start (`mine-cast.auto-place`). None of them replace the Quests NPCs already on the isle (Forgehand, Surveyor, Ore Ledger, the Eldervale welcome).
++
++---
++
++## 2. Systems
++
++| System | Class | What it does | Config |
++|---|---|---|---|
++| Router | `isle/MineIsle` | Routes each isle strike (MONITOR, registered before `MiningListener`) to every loop, answers Items' payout questions, and provides isle-only Spread (StatProvider) | `mine-isle.*` |
++| Footprint | `isle/MineWorld` | Cached box, landing, location helpers | `mine-isle-footprint` |
++| Districts + depth | `isle/MineDistricts` | 25 named places, y-bounded shafts, four depth bands | `mine-isle-districts`, `mine-isle.depth` |
++| Profiles | `isle/MineProfiles` | `mine-isle-players.yml`: districts, mastery, cabinet, claims, contracts, ration, depth (deepest Y and bands), Forge rep and marks, shift streak, critters felled, Amethyst stats, compass, met crew, buffs | — |
++| Strike Rhythm | `isle/StrikeRhythm` | Work-song meter (Steady Pick → In the Seam → Anvil Chorus) and a Seam Chain that bursts into extra ore. Deep bursts can wake a Stonejaw | `strike-rhythm.enabled` |
++| Crystal Finds | `isle/CrystalFinds` | A geode pushes out of the rock and you crack it with a pickaxe. Grades: Rough / Flawless / Perfect / Heartstone (Amethyst Mine only). Carat weights and isle records | `crystal-finds.*` |
++| Ore Mastery | `isle/OreMastery` | Tiers I–VII per ore family. Permanent ore-only Fortune, plus Power at IV and VII. Counts double on the isle and in the Amethyst Mine | — |
++| Assay Ledger | `isle/AssayLedger` | Collections from the Codex (the source of truth), milestone payouts, Collector rank, Specimen Cabinet (rows, crowns, columns) | — |
++| The Hearth | `isle/Hearth` | Five mining-only rations, paid in ore | — |
++| Foreman Contracts | `isle/ForemanContracts` | Three jobs: hand-ins, deep shifts, Amethyst Mine shifts. Each stamp also earns Forge Reputation | — |
++| Mine events | `isle/MineEvents` | Rich Vein · Ember Hour · Tremor (rubble) · Troll Run | `mine-events.*` |
++| Cast | `isle/MineCast`, `MineRole` | Six villagers (non-persistent, rebuilt on chunk load), barks, DEV anchors | `mine-cast.*` |
++| Compass | `isle/MineCompass` | Discovery titles, Cartographer, depth cards, an arrow with a height hint, first-visit welcome and crew tour | — |
++| Menus | `isle/MineMenus` | Every NPC board plus the Mining Journal (`/mineisle`) | — |
++| **Deep Forge** | `isle/ForgeWorks` | **Forge Marks** (permanent, stored on the player): Tempered Head I–V, Assay Plate I–V, Lamp Core I–III, Seam Hook I–III, Heat Ward I–III. **Forge Reputation** ranks Visitor → Forgelord gate the tiers. Consumables: Prospector's Flare and Canary Cage | — |
++| Props | `isle/MineProps` | Display set pieces: the Deep Forge (breathing crucible, pumping bellows, smoking chimney, quench trough, pick rack), braziers at the Forgehand anvil (flare during blueprint rituals), the live Record Board | `forge-prop.*`, `props.*` |
++| Critters | `isle/MineCritters` | Display-entity creatures (safe in peaceful, never trip spawn guards): Cinder Mite, Gloam Moth, **Stonejaw** (ore guardian), Shardling | `critters.*` |
++| Hazards | `isle/MineHazards` | Strain → cave-in (telegraphed; dodge it and loose ore pays you), Emberseam heat, Undercroft dark | `hazards.enabled` |
++| **Amethyst Mine** | `isle/AmethystMine` + `veins/VeinsChunkGenerator` | Geodes in worldgen (more and bigger the deeper you go). Resonance meter → Shatter → Geode Heart. Shardlings. Soft gate on the Violet Deep. Existing `/amethyst` and `/deepmines` are unchanged | `amethyst-mine.*` |
++| DEV backend | `isle/MineDev` | `group:verb[:arg]` actions for the Items DEV pages and `/mineisle dev` | — |
++| Core hooks | `MiningAccess` (Core), `api/MiningAccessImpl` | isle check, ore Fortune/Power/speed, Rich Vein extras, vacuum notes, forge ritual start/finish, DEV | — |
++| Items hooks | `mining/MineIsleHook`, `HarvestListener`, `BlueprintForgeRitual` | Guarded bridge. A Core/Mining jar older than these hooks switches them off once instead of throwing | — |
++| Skills | `AetherSkill` + `SkillFlavor` + `SkillMenu` + `SkillService` | Bedrock Born (isle-only), Work Song, Geode Nose, Union Card, Seam Reader, Depth Gauge. Existing Rock Whisper, Extra Pocket, Pack Rat, Spread Sheet, Quarry Manners and Cave Sense are kept | — |
++| DEV hub | `menu/dev/MineIsleDevPages` | DEV → **Mining Island** (teleports · cast · events/critters/hazards · progression). `Page.MINING` stays the gear shelf | — |
++| Hub goto | Hub `SpawnGotoCommand` | `/mining` and `/miningisle` go to the `eldervale` spawn, next to `/fishing` and `/eldervale` | — |
++
++### What one strike does (isle)
++
++```
++strike ─ mastery (+2) · depth record/band card · contracts (deep shifts) · events (Rich Vein, Troll Run) · shift streak
++       ─ (hand-mined only) Strike Rhythm → Seam Chain → Seam Burst (→ Stonejaw?) · Crystal Find roll
++       ─ critters (mites in the heat, moths in the grotto) · hazards (strain → cave-in) · depth XP
++payout ─ Items asks back: ore Fortune = mastery + ledger + rhythm + ration + depth + streak + Assay Plate
++                          ore Power  = mastery IV/VII + Heartstone crown (that ore only, isle/Amethyst only)
++                          speed      = rhythm + ration + Tempered Head (never gates)
++                          extra drop = Rich Vein
++```
++
++In the Amethyst Mine a strike feeds mastery, Amethyst shifts, Resonance, Shardlings and Crystal Finds (Veins odds, Heartstones possible). Outside both, only mastery counts, at half weight.
++
++### Forge Marks (costs)
++
++Costs are compressed/compacted ore Items ids, coins and specimens, gated by Forge rank. There's no second currency.
++
++| Mark | I | II | III | IV | V |
++|---|---|---|---|---|---|
++| Tempered Head (+4 speed/lvl) | 4 C.Iron, 2k | 8 C.Iron, 4 C.Gold, 6k · Apprentice | 16 C.Iron, 8 C.Gold, 2 C.Diamond, 15k · Journeyman | 1 Compacted Iron, 16 C.Gold, 8 C.Diamond, 40k · Smith | 2 Compacted Iron, 1 Compacted Gold, 24 C.Diamond, 120k, 1 Perfect · Master |
++| Assay Plate (+4 ore Fortune/lvl) | 4 C.Copper, 2 C.Lapis, 2.5k | 8 C.Copper, 6 C.Lapis, 2 C.Redstone, 7.5k, 1 Rough | 16 C.Lapis, 8 C.Redstone, 4 C.Gold, 20k, 1 Flawless | 1 Compacted Lapis, 16 C.Gold, 4 C.Emerald, 50k, 1 Perfect | 1 Compacted Gold, 16 C.Emerald, 150k, **1 Heartstone** |
++| Lamp Core (finds ×1.08/1.16/1.25) | 6 C.Redstone, 3k · Apprentice | 12 C.Redstone, 6 C.Lapis, 12k, 1 Flawless · Journeyman | 1 Compacted Redstone, 16 C.Lapis, 40k, 2 Perfect · Smith | | |
++| Seam Hook (Seam −1/lvl, floor 4) | 8 C.Copper, 2 C.Emerald, 4k · Apprentice | 16 C.Copper, 6 C.Emerald, 12k · Journeyman | 1 Compacted Copper, 12 C.Emerald, 35k · Smith | | |
++| Heat Ward (−20% hazard dmg/lvl) | 8 C.Coal, 2k | 24 C.Coal, 16 Obsidian, 6k · Apprentice | 1 Compacted Coal, 64 Obsidian, 20k · Journeyman | | |
++
++Reputation needed per rank: Apprentice 100 · Journeyman 500 · Smith 1,500 · Master 4,000 · Forgelord 10,000.
++
++Ways to earn it:
++
++- Forging a Mark: 25 × level + coins / 400.
++- A blueprint ritual at the Forgehand: 40 × tier.
++- A contract: 8, or 12 for a shift.
++- A Stonejaw kill: 50.
++- A Stonejaw's Jaw handed to Hollis: 60.
++- A consumable: 3.
++
++---
++
++## 3. Commands
++
++| Command | Who | What |
++|---|---|---|
++| `/mineisle` | everyone | Mining Journal |
++| `/mineisle tour` · `go <place>` · `stop` · `map` | everyone | crew tour, compass, clear it, Old Wick's map |
++| `/mineisle reload` · `where` · `dev <action>` | `aetherion.mines.admin` | reload config, position check, any DEV action |
++| `/mining` (`/miningisle`) | everyone | Hub teleport to the `eldervale` spawn once it's unlocked |
++| `/amethyst` (`/veins`) | everyone | Amethyst Mine (unchanged) |
++| `/deepmines …` | admin | Veins admin (unchanged) |
++
++Examples of `/mineisle dev` actions:
++
++- `event:rich|ember|tremor|troll|stop`
++- `rhythm:max`
++- `find:<ore>:<grade>`
++- `critter:stonejaw|cinder_mite|gloam_moth|shardling`
++- `hazard:cavein`
++- `forge:rep:1000|max|reset|tool:flare|burst`
++- `mastery:<0-7>`
++- `cabinet:fill|clear`
++- `contracts:reset|fill`
++- `districts:all|reset`
++- `depth:all`
++- `streak:1`
++- `npc:preset-all|remove-all|preset:<role>|here:<role>|goto:<role>|anchor:<role>`
++- `props:rebuild`
++- `prop:deep_forge|forgehand|records`
++- `landing:set`
++- `give:rations|tools|specimens`
++- `profile:reset`
++- `config:reload`
++- `where`
++
++---
++
++## 4. DEV menu
++
++`MineIsleDevPages` looks its pages up **by name**, so it compiles against any `DevMenu`. On this branch (the committed DevMenu) it's wired in:
++
++- `Page` gets `MINE_ISLE*`.
++- Draw and action dispatch are in place.
++- Root page 2 gets a "Mining Island" tile in slot 31. Ambient Props (slot 25) and Full Player Wipe (page 3) are kept.
++
++### Splice for the DevMenu Hypixel IA (DevHubs / DevTheme / DevIndex)
++
++The IA files were still being edited in the local worktree, so they were **not** overwritten. Paste these 7 blocks to light up the hub there:
++
++1. **DevMenu.java**: add to `enum Page`, anywhere, for example after `FISH_ISLE_PROGRESS,`:
++   ```java
++   MINE_ISLE, MINE_ISLE_SPOTS, MINE_ISLE_NPCS, MINE_ISLE_EVENTS, MINE_ISLE_PROGRESS,
++   ```
++2. **DevMenu.java**: add the field and construct it next to `fishIsle`:
++   ```java
++   private final MineIsleDevPages mineIsle;          // field
++   this.mineIsle = new MineIsleDevPages(customItem); // constructor
++   ```
++3. **DevMenu.java**: in the draw chain, right after the `FishIsleDevPages.owns(page)` branch:
++   ```java
++   } else if (MineIsleDevPages.owns(page)) {
++       this.mineIsle.draw(inventory, page, player);
++   ```
++4. **DevMenu.java**: in `handle`/`dispatch`, next to the `fishisle:` block:
++   ```java
++   if (action.startsWith(MineIsleDevPages.PREFIX)) {
++       Page current = player.getOpenInventory().getTopInventory().getHolder() instanceof Holder holder
++               ? holder.page() : Page.MINE_ISLE;
++       Page reopen = mineIsle.handle(player, action, click, current);
++       if (reopen != null) {
++           open(player, reopen);
++       }
++       return;
++   }
++   ```
++   Then add `"mineisle:profile:reset", "mineisle:npcall:remove"` to the `case` list in `requiresConfirm(String)`. The confirm flow re-dispatches with `SHIFT_LEFT`, which is exactly what `MineIsleDevPages` treats as confirmed.
++5. **DevTheme.java**: add to the `info(Page)` switch. It's exhaustive, so these cases are required once step 1 is in:
++   ```java
++   case MINE_ISLE -> new Info(Cat.WORLDS, "Mining Island", DevMenu.Page.CAT_WORLDS);
++   case MINE_ISLE_SPOTS -> new Info(Cat.WORLDS, "Mine · Teleports", DevMenu.Page.MINE_ISLE);
++   case MINE_ISLE_NPCS -> new Info(Cat.WORLDS, "Mine · NPC Cast", DevMenu.Page.MINE_ISLE);
++   case MINE_ISLE_EVENTS -> new Info(Cat.WORLDS, "Mine · Events & Critters", DevMenu.Page.MINE_ISLE);
++   case MINE_ISLE_PROGRESS -> new Info(Cat.WORLDS, "Mine · Progression", DevMenu.Page.MINE_ISLE);
++   ```
++6. **DevHubs.java**: these slots are free today.
++   - `drawWorlds`: `inventory.setItem(37, tile(Material.DIAMOND_PICKAXE, "§6§lMining Island", "page:MINE_ISLE", "§7Teleports · cast · events · Deep Forge ·", "§7critters · Amethyst Mine · progression.", dot("AetherionMining")));`
++   - `drawProgress`: `inventory.setItem(22, tile(Material.DIAMOND_PICKAXE, "§6Mining Progression", "page:MINE_ISLE_PROGRESS", "§7Mining skills · Eldervale loadout · mastery ·", "§7cabinet · Forge Marks · depth · resets."));`
++   - `drawDanger`:
++     - `inventory.setItem(22, tile(Material.IRON_PICKAXE, "§cWipe My Mining Eldervale Profile", "confirm:mineisle:profile:reset", "§7Districts, mastery, cabinet, contracts, marks, rep.", "§8Asks to confirm."));`
++     - `inventory.setItem(25, tile(Material.VILLAGER_SPAWN_EGG, "§cRemove Mining Isle Cast", "confirm:mineisle:npcall:remove", "§7Despawns all six Mining Eldervale NPCs.", "§8Asks to confirm."));`
++   - `PLUGINS`: change the `AetherionMining` blurb to `"Mining Island hub · Deep Forge · Amethyst Mine"`.
++   - Optional: add confirm titles for the two actions to the `confirmTitle`/`confirmLore` switches.
++7. **DevIndex.java**: add `|| action.startsWith("mineisle:tp:")` to `isRecentable`/pinnable, next to `fishisle:tp:`.
++
++Nothing on the Special Sets, Wipe, Ambient, T2, Fishing or Farm pages changes.
++
++---
++
++## 5. Config
++
++Every new key lives under `mine-isle`, `mine-isle-footprint`, `mine-isle-districts`, `mine-cast`, `strike-rhythm`, `crystal-finds`, `mine-events`, `critters`, `hazards`, `amethyst-mine`, `forge-prop` and `props`.
++
++On start the plugin now runs `copyDefaults(true)` + `saveConfig()`. That **adds missing keys** to an existing `plugins/AetherionMining/config.yml` and never changes values that are already set. The old `mine:`, `veins:` and `eldervale:` blocks stay as they are.
++
++Data files:
++
++- `mine-isle-players.yml`: profiles and isle records.
++- `mine-cast.yml`: NPC placements.
++- `veins.yml`: unchanged, but the layout goes to 5 (see deploy).
++
++If the island is ever re-pasted somewhere else, shift the districts, presets, landing and props by the same delta.
++
++---
++
++## 6. Click-test sheet
++
++Setup: deploy Core + Items + Mining + Hub together (see §7), then join as op.
++
++1. **Arrive.** Take the Origin slime pad or `/mining`. You should get the welcome lines and an arrow to Old Wick. Walking into The Landing shows a discovery title (1/25).
++2. **Tour.** Right-click Old Wick: the map board lists 25 places (unknown ones are grey). Click a known one to get the compass arrow and height hint. `/mineisle tour` walks you to Otto → Nan → Ilse → Brann → Hollis, each paying a little XP.
++3. **Rhythm.** Mine ore steadily in the North Pit. The bossbar climbs Steady Pick → In the Seam → Anvil Chorus with the notes rising. Same ore 8× in a row gives a Seam Burst (sparks, extra ore).
++4. **Crystal Find.** Run `/mineisle dev find:diamond:perfect`. The geode grows out of the rock. Hit it with a pickaxe until it cracks. You get the specimen, a cabinet line and possibly an isle record (the Record Board at the Assay Office updates).
++5. **Depth.** Walk down the Crucible Shaft from the Deep Forge. Band cards show at Y 82, 56 and 26, and first-time titles pay XP. In the Undercroft with no lantern, Darkness pulses. With a lantern in your off-hand, it doesn't.
++6. **Cave-in.** Hammer one spot below Y 56. First you get dust and a warning, then the ⚠ CAVE-IN title. Step out within 2 s and loose ore pays you. Stay and you take about 20% max HP plus blindness. `/mineisle dev hazard:cavein` forces it.
++7. **Heat.** Stand in the Emberseam (`/mineisle go emberseam`). The heat bar climbs, you get Slowness at 30 and burn at 65, and water resets it.
++8. **Critters.** `/mineisle dev critter:stonejaw` spawns it. Watch the ring telegraph, then the slam. It takes 16 hits. It drops the jaw, ore and a Flawless+ geode, and announces to the isle. Hand the jaw to Hollis for 2,500 coins and +60 rep. Cinder Mites bite and burn. Gloam Moths flee; catching one gives Gloam-lit.
++9. **Contracts.** At Otto, deliver a hand-in. You get coins, XP and +8 Forge rep. Shifts count as you mine.
++10. **Hearth.** Cook a Miner's Pasty at Nan (64 coal and 32 copper), eat it, and check that ore Fortune rises in `/stats`.
++11. **Deep Forge.** At Brann, `/mineisle dev forge:rep:1000` first. Forge Tempered Head I: you get a title, the crucible erupts and the bellows pump faster. Craft a Prospector's Flare and snap it: ores within 10 blocks glow for 15 s, visible only to you.
++12. **Forgehand.** Upgrade a blueprint tool with an Upgrade Stone at the Forgehand. The braziers around the anvil flare for the whole ritual, the Deep Forge roars, and +40 rep per tier is paid. At Tier IV the whole isle gets a shout.
++13. **Amethyst Mine.** `/amethyst` shows the intro lines. Find a geode (calcite shell) and break crystal. The Resonance bar goes Humming → Singing Walls (Shardlings appear and zap you after an END_ROD beam) → Shatterpoint → 100. It shatters: you take damage, Shardlings spawn, and sometimes a Geode Heart is left (crack it for a Heartstone chance). Below Y 0 at Mining < 20 you get the Violet Deep hum.
++14. **DEV.** DEV → Mining Island (page 2 on this branch's DevMenu, CAT_WORLDS once the IA splice is in). Check teleports, place the cast at presets, start and stop events, the progression buttons, and that Farming/Fishing Island, Special Sets, Ambient and Wipe are all still there.
++15. **Regression.** Mining outside the isle (Ore Ridge, Mines) pays exactly what it did before, with only mastery counting. Farming and Fishing Eldervale are unchanged. `/amethyst` and `/deepmines` still work.
++
++---
++
++## 7. Deploy notes (for Robbi / the local agent; nothing was deployed from here)
++
++- **Jars.** Ship **Core + Items + Mining (+ Hub for `/mining`) together**.
++  - Older Items with newer Mining: the isle loops run, but Items won't ask for the isle bonuses.
++  - Newer Items with older Mining/Core: `MineIsleHook` switches itself off once and logs it.
++- **Build.** From the repo root: `mvn -DskipTests package`. Outputs:
++  - `AetherionCore/target/AetherionCore-1.0.0.jar`
++  - `AetherionItems/target/AetherionItems-1.0.0.jar`
++  - `AetherionMining/target/AetherionMining-1.0.0.jar`
++  - `AetherionHub/target/AetherionHub-1.0.0.jar`
++- **Don't ship a thinner Mining jar.** The server still has an older, larger `AetherionMining.jar` next to `AetherionMining-1.0.0.jar`. Run `docs/tools/jar-surface-diff.ps1 -Old <live AetherionMining.jar> -New <built jar>` first. Any class or command it lists as **MISSING** has to be restored before the old jar goes. Then keep only one Mining jar in `plugins/`.
++- **Amethyst Mine rebuild.** `VeinsWorld.LAYOUT` goes from 4 to 5. On the first start the old `aether_veins` folder is deleted and regenerated with geodes. It's a daily-reset world anyway, and occupants are sent back to spawn. Exits and generation are kept in `veins.yml`.
++- **Config.** Missing keys are merged into the live `config.yml` automatically. Existing values are left as they are.
++- **Cast.** The six NPCs auto-place at their presets on first start. Move them with DEV anchors (`/mineisle dev npc:anchor:<role>`) if the build differs from the schem.
++- **Forgehand braziers.** They adopt the Items forge anvil on the first blueprint ritual, or use `/mineisle dev prop:forgehand` while standing on the anvil.
++- **Special ranks.** Nothing here touches ranks or the wipe paths. The Mining profile reset only clears `mine-isle-players.yml` for that player.
+diff --git a/docs/tools/jar-surface-diff.ps1 b/docs/tools/jar-surface-diff.ps1
+new file mode 100644
+index 00000000..f234c1bb
+--- /dev/null
++++ b/docs/tools/jar-surface-diff.ps1
+@@ -0,0 +1,75 @@
++<#
++.SYNOPSIS
++  Feature-surface diff between two plugin jars (additive-ship check).
++
++.DESCRIPTION
++  Lists every class, resource, plugin.yml command and config.yml top-level key that exists in the
++  OLD jar but not in the NEW one (MISSING = would be lost on ship) and what the NEW jar adds.
++  Exit code 1 when anything is MISSING, so it can gate a deploy script.
++
++.EXAMPLE
++  .\jar-surface-diff.ps1 -Old .\live\AetherionMining.jar -New .\AetherionMining\target\AetherionMining-1.0.0.jar
++#>
++param(
++    [Parameter(Mandatory = $true)][string]$Old,
++    [Parameter(Mandatory = $true)][string]$New
++)
++
++Add-Type -AssemblyName System.IO.Compression.FileSystem
++
++function Read-Surface([string]$path) {
++    $zip = [System.IO.Compression.ZipFile]::OpenRead((Resolve-Path $path))
++    try {
++        $classes = New-Object System.Collections.Generic.HashSet[string]
++        $resources = New-Object System.Collections.Generic.HashSet[string]
++        $commands = New-Object System.Collections.Generic.HashSet[string]
++        $configKeys = New-Object System.Collections.Generic.HashSet[string]
++        foreach ($entry in $zip.Entries) {
++            if ($entry.FullName.EndsWith('/')) { continue }
++            if ($entry.FullName.EndsWith('.class')) {
++                [void]$classes.Add(($entry.FullName -replace '\.class$', '' -replace '/', '.'))
++            } elseif (-not $entry.FullName.StartsWith('META-INF/')) {
++                [void]$resources.Add($entry.FullName)
++            }
++            if ($entry.FullName -eq 'plugin.yml' -or $entry.FullName -eq 'config.yml') {
++                $reader = New-Object System.IO.StreamReader($entry.Open())
++                $text = $reader.ReadToEnd()
++                $reader.Close()
++                if ($entry.FullName -eq 'plugin.yml') {
++                    $inCommands = $false
++                    foreach ($line in ($text -split "`r?`n")) {
++                        if ($line -match '^commands:\s*$') { $inCommands = $true; continue }
++                        if ($inCommands -and $line -match '^\S') { $inCommands = $false }
++                        if ($inCommands -and $line -match '^  ([A-Za-z0-9_-]+):') { [void]$commands.Add($Matches[1]) }
++                    }
++                } else {
++                    foreach ($line in ($text -split "`r?`n")) {
++                        if ($line -match '^([A-Za-z0-9_-]+):') { [void]$configKeys.Add($Matches[1]) }
++                    }
++                }
++            }
++        }
++        return @{ classes = $classes; resources = $resources; commands = $commands; config = $configKeys }
++    } finally {
++        $zip.Dispose()
++    }
++}
++
++$a = Read-Surface $Old
++$b = Read-Surface $New
++$missingTotal = 0
++foreach ($kind in 'classes', 'commands', 'config', 'resources') {
++    $missing = @($a[$kind] | Where-Object { -not $b[$kind].Contains($_) } | Sort-Object)
++    $added = @($b[$kind] | Where-Object { -not $a[$kind].Contains($_) } | Sort-Object)
++    # Inner/anonymous classes are reported with their outer class; top-level misses matter most.
++    Write-Host ("== {0}: {1} in old, {2} in new, MISSING {3}, added {4}" -f $kind, $a[$kind].Count, $b[$kind].Count, $missing.Count, $added.Count)
++    foreach ($m in $missing) { Write-Host ("   MISSING  {0}" -f $m) -ForegroundColor Red }
++    if ($added.Count -le 60) { foreach ($n in $added) { Write-Host ("   added    {0}" -f $n) -ForegroundColor DarkGreen } }
++    $missingTotal += $missing.Count
++}
++if ($missingTotal -gt 0) {
++    Write-Host "`nNOT SAFE TO SHIP: $missingTotal surface item(s) would disappear. Restore them first." -ForegroundColor Red
++    exit 1
++}
++Write-Host "`nOK: new jar keeps the whole old surface." -ForegroundColor Green
++exit 0
+-- 
+2.43.0
+

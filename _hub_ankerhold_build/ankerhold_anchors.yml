@@ -1,0 +1,799 @@
+meta:
+  schematic:
+    width: 380
+    height: 217
+    length: 361
+    min:
+    - -188
+    - -48
+    - -181
+    max:
+    - 191
+    - 168
+    - 179
+    palette: 365
+    block_entities: 196
+    solid: 4806253
+    offset:
+    - -188
+    - -111
+    - -181
+    origin:
+    - 0
+    - 63
+    - 0
+  paste_note: Stand at origin and //paste, or //paste -o to restore design coords
+flights:
+  summit_glide:
+    path:
+    - - -48.5
+      - 159.3
+      - -113.5
+    - - -48.5
+      - 161.0
+      - -109.5
+    - - -30
+      - 165.0
+      - -96
+    - - -12
+      - 157.0
+      - -64
+    - - -6
+      - 104
+      - -30
+    - - -3
+      - 86
+      - -2
+    - - -2.5
+      - 79.0
+      - 6.5
+    hits: []
+  skyreach_updraft:
+    column:
+    - - 4.5
+      - 89.0
+      - -66.5
+    - - 4.5
+      - 133.0
+      - -66.5
+    glide:
+    - - 4.5
+      - 133.0
+      - -66.5
+    - - -19.5
+      - 130.0
+      - -78.5
+    - - -25.5
+      - 125.2
+      - -84.5
+    hits: []
+  origin_to_mining:
+    from_:
+    - 42.5
+    - 73.5
+    - 175.5
+    to:
+    - 53.5
+    - 91.0
+    - 482.5
+    horizontal: 307.2
+    apex: 55
+    hits: []
+  origin_to_forage:
+    from_:
+    - 141.5
+    - 74.5
+    - -92.5
+    to:
+    - 479.5
+    - 74.0
+    - -240.5
+    horizontal: 369.0
+    apex: 45
+    hits: []
+anchors:
+  bell:
+    field_chapel:
+      x: -41.5
+      y: 85.0
+      z: 120.5
+      note: Field Chapel bell (over the south bay)
+    harbour:
+      x: 143.5
+      y: 68.0
+      z: 30.5
+      note: Harbour Bell on the south horn
+    tallybell:
+      x: 16.5
+      y: 118.0
+      z: -24.5
+      note: Tallybell — ring it with an arrow, or climb up
+    vex_gate:
+      x: -87.5
+      y: 79.0
+      z: -13.5
+      note: Vex's warning bell over the gate
+    wayside:
+      x: -11.5
+      y: 75.0
+      z: 122.5
+      note: Wayside Bell (south bay shrine)
+  discover:
+    borderlands:
+      x: -100.5
+      y: 72.0
+      z: -13.5
+      radius: 30
+    capital:
+      x: -8.5
+      y: 79.0
+      z: -0.5
+      radius: 36
+      note: walk-in discover centre
+    farm:
+      x: -86.0
+      y: 76.0
+      z: 75.5
+      radius: 28
+    ore_ridge:
+      x: 90.0
+      y: 74.0
+      z: 88.5
+      radius: 30
+    summit:
+      x: -49.5
+      y: 159.0
+      z: -117.5
+      radius: 18
+    whisperwood:
+      x: 90.5
+      y: 74.0
+      z: -61.5
+      radius: 30
+  emitter:
+    coins:
+      x: -19.5
+      y: 79.0
+      z: 22.5
+      note: coins emitter (Vince's tables)
+    colosseum:
+      x: -161.5
+      y: 77.0
+      z: -142.5
+      note: arena crowd emitter
+    lighthouse:
+      x: 168.5
+      y: 108.0
+      z: -41.5
+      note: rotating beam emitter
+    qm_forge:
+      x: 96.5
+      y: 67.0
+      z: 47.5
+      note: forge smoke/clank emitter
+    temper_forge:
+      x: 40.5
+      y: 73.0
+      z: 56.5
+      note: forge emitter
+  fountain:
+    ledgers_court:
+      x: -7.5
+      y: 79.0
+      z: -0.5
+      radius: 5.3
+      note: Wishing fountain (sneak+right-click water). Anchor statue on top.
+  gate:
+    harbour_steps:
+      x: 47.5
+      y: 79.0
+      z: 4.5
+      note: Harbour Steps (capital east gate)
+    south:
+      x: 25.5
+      y: 79.0
+      z: 46.5
+      note: South Gate (road from the mine / Temper)
+    west:
+      x: -68.5
+      y: 79.0
+      z: 1.5
+      note: West Gate (fields / Vex)
+  glide:
+    summit.ring:
+      x: -48.5
+      y: 159.0
+      z: -113.5
+      radius: 1.4
+      note: Summit Glide rift -> Ledger's Court; path over the Grand Stair
+  hook:
+    guild_slips:
+      x: 128.5
+      y: 65.0
+      z: -30.5
+      note: Unfinished guild slips (future guild harbour hook)
+  landmark:
+    archive:
+      x: -44.0
+      y: 79.0
+      z: -29.5
+      note: The Archive (codex/collections vibe; future hook)
+    burnt_quarter:
+      x: -110.5
+      y: 71.0
+      z: -40.5
+      note: The burnt west quarter (houses that stood where the anchor came down)
+    capital_chain:
+      x: -5.5
+      y: -23.0
+      z: 6.5
+      note: Mooring chain hanging from the underside
+    colosseum:
+      x: -161.5
+      y: 74.0
+      z: -142.5
+      note: The Colosseum (floating fragment)
+    colosseum_bridge:
+      x: -144.0
+      y: 74.0
+      z: -111.5
+      note: Rope bridge from the Borderlands to the Colosseum fragment
+    fallen_anchor:
+      x: -136.0
+      y: 70.0
+      z: -24.0
+      note: The Fallen Anchor — Ankerhold's torn third mooring (ring top ~y 133)
+    farm_isle_gate:
+      x: -135.5
+      y: 75.0
+      z: 140.5
+      note: Harrow's Gate — Farm Isle to the south-west
+    forage_skyway:
+      x: 141.5
+      y: 74.0
+      z: -98.5
+      note: The Forage Skyway (pad deck)
+    harbour_chain:
+      x: 142.5
+      y: 57.0
+      z: 43.5
+      note: Mooring chain hanging from the underside
+    ledgers_court:
+      x: -23.5
+      y: 79.0
+      z: -2.5
+      note: Ledger's Court (capital plaza)
+    lighthouse:
+      x: 168.5
+      y: 73.0
+      z: -41.5
+      note: Seawatch Light (rope bridge from the north horn)
+    menagerie:
+      x: -55.5
+      y: 75.0
+      z: 100.5
+      note: Lark's Menagerie (pets hint)
+    mountain_gate:
+      x: -9.5
+      y: 89.0
+      z: -67.5
+      note: The Mountain Gate (Grand Stair top)
+    orchard:
+      x: -63.0
+      y: 76.0
+      z: 59.0
+      note: Orchard (blossoming azalea + oak)
+    red_barn:
+      x: -98.5
+      y: 76.0
+      z: 72.5
+      note: Clucksworth red barn
+    registry:
+      x: 33.5
+      y: 79.0
+      z: -2.5
+      note: Harbour Registry — deeds & guild charters
+    rite_circle:
+      x: -121.5
+      y: 70.0
+      z: 9.5
+      note: The Rite Circle
+    shaft_no1:
+      x: 40.5
+      y: 73.0
+      z: 94.5
+      note: Shaft No. 1 — runs right through the ridge
+    skyreach_terrace:
+      x: -25.5
+      y: 125.0
+      z: -87.5
+      note: Skyreach Terrace (updraft landing)
+    surveyors_ledge:
+      x: 42.5
+      y: 73.0
+      z: 164.5
+      note: Surveyor's Ledge — Mining Eldervale on the southern horizon
+    tallybell:
+      x: 17.0
+      y: 79.0
+      z: -18.5
+      note: The Tallybell (capital landmark)
+    the_scar:
+      x: -131.5
+      y: 69.0
+      z: -26.5
+      note: The Scar — a crack straight through the island
+    the_spill:
+      x: 150.5
+      y: 65.0
+      z: 8.5
+      note: Pier head over the Spill (lagoon waterfall)
+    vexs_gate:
+      x: -84.5
+      y: 72.0
+      z: -13.5
+      note: Vex's Gate
+    wayside_shrine:
+      x: -11.5
+      y: 73.0
+      z: 116.5
+      note: Wayside Shrine over the south bay
+    windmill:
+      x: -111.5
+      y: 81.0
+      z: 62.5
+      note: Clucksworth windmill (hill landmark)
+  npc:
+    arena_proctor:
+      x: -139.5
+      y: 74.0
+      z: -142.5
+      yaw: -90.0
+      role: arena_proctor
+      note: Proctor at the Colosseum gate
+    bar_whisper:
+      x: 69.5
+      y: 66.0
+      z: 19.5
+      yaw: -90.0
+      role: bar_whisper
+      note: Bar Whisper at the Salt Barrel's quay counter
+    booster_tutor:
+      x: 29.5
+      y: 72.0
+      z: 57.5
+      yaw: 90.0
+      role: booster_tutor
+      note: Temper's smithy at the South Gate stair foot ('on the road to Capital')
+    cobb_kettleby:
+      x: -23.5
+      y: 125.0
+      z: -90.5
+      yaw: 0.0
+      role: origin:cobb
+      note: Origin skyway board (or move to the gate platform)
+    craftsman:
+      x: 78.5
+      y: 68.0
+      z: 36.5
+      yaw: 180.0
+      role: craftsman
+      note: Craftsman at the workshop door
+    dockhand:
+      x: 100.5
+      y: 65.0
+      z: 8.5
+      yaw: 90.0
+      role: dockhand
+      note: 'flavour: dockhand on the long pier'
+    dungeon_gate:
+      x: -6.5
+      y: 89.0
+      z: -91.5
+      yaw: 0.0
+      role: dungeon_gate
+      note: Threshold, keeper of the dungeon frame
+    egon:
+      x: 141.5
+      y: 65.0
+      z: 3.5
+      yaw: -90.0
+      role: egon
+      note: Egon greets arrivals at the pier head (green glow)
+    farm_isle_guide:
+      x: -132.5
+      y: 75.0
+      z: 135.5
+      yaw: 90.0
+      role: farm_isle_guide
+      note: Harrow beside the Farm Isle portal
+    farmer:
+      x: -85.5
+      y: 75.0
+      z: 68.5
+      yaw: 0.0
+      role: farmer
+      note: Farmer on the farmhouse porch
+    fisher:
+      x: 112.5
+      y: 65.0
+      z: -6.5
+      yaw: 0.0
+      role: fisher
+      note: Tackle — fishes off the end of the north pier
+    fishmonger:
+      x: 141.5
+      y: 65.0
+      z: 13.5
+      yaw: -90.0
+      role: fishmonger
+      note: Fishmonger's stall beside Egon (they bicker)
+    forage_pad_guide:
+      x: 136.5
+      y: 74.0
+      z: -97.5
+      yaw: -90.0
+      role: forage_pad_guide
+      note: Twig beside the Forage pad
+    foreman:
+      x: 37.5
+      y: 73.0
+      z: 89.5
+      yaw: 180.0
+      role: foreman
+      note: Shaft Foreman at the mine mouth
+    isle_clerk:
+      x: 33.5
+      y: 79.0
+      z: -3.5
+      yaw: 0.0
+      role: isle_clerk
+      note: Deed at the Harbour Registry (personal island deeds, guild charter)
+    lark:
+      x: -55.5
+      y: 75.0
+      z: 87.5
+      yaw: 180.0
+      role: lark
+      note: Lark at her menagerie gate (pocket_zoo)
+    ledger:
+      x: -25.5
+      y: 79.0
+      z: -4.5
+      yaw: -90.0
+      role: ledger
+      note: Miss Ledger at her porch desk, facing Ledger's Court
+    liquidator:
+      x: 14.5
+      y: 79.0
+      z: 16.5
+      yaw: 180.0
+      role: liquidator
+      note: Crystal Liquidator's kiosk by the plaza
+    lumberjack:
+      x: 92.5
+      y: 74.0
+      z: -57.5
+      yaw: 0.0
+      role: lumberjack
+      note: Lumberjack/Forager at the camp (chop demo)
+    merchant:
+      x: 80.5
+      y: 67.0
+      z: -23.5
+      yaw: 0.0
+      role: merchant
+      note: Merchant at the warehouse
+    orla_vane:
+      x: -51.5
+      y: 79.0
+      z: -15.5
+      yaw: -90.0
+      role: origin:orla
+      note: Origin board (journal / tour / bells / glowcaps folded in)
+    quartermaster:
+      x: 97.5
+      y: 66.0
+      z: 36.5
+      yaw: 180.0
+      role: quartermaster
+      note: Quartermaster at the forge front
+    rite_keeper:
+      x: -121.5
+      y: 70.0
+      z: 13.5
+      yaw: 180.0
+      role: rite_keeper
+      note: Rite Warden at the Rite Circle
+    stellan_voss:
+      x: -52.5
+      y: 159.0
+      z: -119.5
+      yaw: 0.0
+      role: origin:stellan
+      note: Origin summit stargazer (vistas, wishes)
+    surveyor:
+      x: 36.5
+      y: 73.0
+      z: 162.5
+      yaw: -90.0
+      role: surveyor
+      note: Surveyor — stamps the blueprint that unseals the Mining pad
+    vex:
+      x: -83.5
+      y: 72.0
+      z: -15.5
+      yaw: -90.0
+      role: vex
+      note: Sergeant Vex outside his gate (danger edge)
+    vince:
+      x: -22.5
+      y: 79.0
+      z: 18.5
+      yaw: 180.0
+      role: vince
+      note: Lucky Vince outside the Lucky Knot
+  pad:
+    forage_to_origin.land:
+      x: 134.5
+      y: 74.0
+      z: -92.5
+      note: forage_to_origin target
+    mining_to_origin.land:
+      x: 40.5
+      y: 73.0
+      z: 165.5
+      note: mining_to_origin target (Surveyor's Ledge)
+    origin_to_forage:
+      x: 141.5
+      y: 74.0
+      z: -92.5
+      min:
+      - 139
+      - 73
+      - -95
+      max:
+      - 143
+      - 73
+      - -91
+      target_hint: Forage Isle landing (479.5 74 -240.5) — ENE
+      note: Forage slime pad (open). Launch heading ENE.
+    origin_to_mining:
+      x: 42.5
+      y: 73.0
+      z: 175.5
+      min:
+      - 40
+      - 72
+      - 174
+      max:
+      - 44
+      - 72
+      - 176
+      target_hint: Mining Eldervale landing (53.5 91 482.5) — due south
+      note: Mining slime pad (stamped-blueprint gate). Launch heading +Z.
+  portal:
+    dungeon_hub:
+      x: -9.5
+      y: 89.0
+      z: -94.5
+      radius: 3.5
+      note: Dungeon departure (AetherionDungeons hub-portal centre, r≈3.5) -> mmo-d
+    dungeon_return:
+      x: -9.5
+      y: 89.0
+      z: -74.5
+      yaw: 0.0
+      note: return landing in the hall
+    farm_isle:
+      x: -135.5
+      y: 75.0
+      z: 140.5
+      min:
+      - -136
+      - 75
+      - 138
+      max:
+      - -136
+      - 79
+      - 142
+      note: Farm Isle portal frame (re-point FarmPortal* region here; Farming 10 gate stays in Farming)
+  region:
+    chop_grove:
+      x: 90.0
+      y: 73.0
+      z: -62.0
+      min:
+      - 67
+      - 69
+      - -85
+      max:
+      - 113
+      - 89
+      - -39
+      note: 'Chop grove: 18 plain oaks for the lumberjack demo — break/regen region'
+    farm_fields:
+      x: -109.0
+      y: 75.0
+      z: 104.0
+      min:
+      - -128
+      - 74
+      - 88
+      max:
+      - -90
+      - 75
+      - 120
+      note: Crop strips (Farmer's farm_hand) — harvest/regen region
+    mine_first_shift:
+      x: 40.0
+      y: 73.0
+      z: 107.0
+      min:
+      - 37
+      - 73
+      - 95
+      max:
+      - 43
+      - 76
+      - 118
+      note: Shaft No. 1 ore walls (Foreman's first shift) — break/regen region
+    ore_ridge_coal:
+      x: 89.5
+      y: 74.0
+      z: 91.0
+      min:
+      - 80
+      - 70
+      - 84
+      max:
+      - 99
+      - 95
+      - 99
+      note: Coal cut (Quartermaster's forge_coal errand) — break/regen region
+  rescue:
+    footprint:
+      x: 0.0
+      y: -60.0
+      z: 0.0
+      min:
+      - -196
+      - -60
+      - -196
+      max:
+      - 196
+      - 200
+      - 196
+      note: Edge rescue box (Origin rescue.floor-y stays -60; footprint shrinks to the new hub)
+  secret:
+    keel_hatch:
+      x: 126.5
+      y: 65.0
+      z: 33.5
+      note: Keel hatch on the south quay
+  ship:
+    sky_sloop:
+      x: 173.5
+      y: 65.0
+      z: 16.5
+      note: Moored sky-sloop (decor; first-join fantasy)
+  spawn:
+    borderlands:
+      x: -98.5
+      y: 72.0
+      z: -13.5
+      yaw: 90.0
+      note: Borderlands camp (just inside Vex's gate)
+    capital:
+      x: -2.5
+      y: 79.0
+      z: 6.5
+      yaw: 90.0
+      note: 'Capital camp: Ledger''s Court south side'
+    colosseum:
+      x: -136.5
+      y: 74.0
+      z: -142.5
+      yaw: 90.0
+      note: Colosseum camp
+    farm:
+      x: -85.5
+      y: 75.0
+      z: 72.5
+      yaw: 0.0
+      note: Farm camp (farmhouse yard)
+    harbour:
+      x: 166.5
+      y: 65.0
+      z: 8.5
+      yaw: 90.0
+      note: 'Arrival: east pier beside the sky-sloop''s gangway; also world spawn'
+    mines:
+      x: 40.5
+      y: 73.0
+      z: 83.5
+      yaw: 0.0
+      note: Mines camp (mine apron)
+    ore_ridge:
+      x: 90.5
+      y: 72.0
+      z: 80.5
+      yaw: 0.0
+      note: Ore Ridge camp (coal cut)
+    summit:
+      x: -49.5
+      y: 159.0
+      z: -115.5
+      yaw: 0.0
+      note: Summit camp (Origin)
+    whisperwood:
+      x: 90.5
+      y: 74.0
+      z: -61.5
+      yaw: 0.0
+      note: Whisperwood camp (keeps the old id)
+  updraft:
+    skyreach.floor:
+      x: 4.5
+      y: 89.0
+      z: -66.5
+      note: Skyreach Updraft floor (copper grate vent)
+    skyreach.top:
+      x: -25.5
+      y: 125.0
+      z: -84.5
+      note: Skyreach Updraft top (terrace); glide corridor NW from (4.5, 132, -66.5)
+  vista:
+    lighthouse:
+      x: 168.5
+      y: 106.0
+      z: -36.5
+      note: Lighthouse gallery (vista)
+    ridge_lookout:
+      x: 58.5
+      y: 107.0
+      z: 119.5
+      note: 'Ridge Lookout (vista): harbour, capital, Mining Eldervale'
+    skyreach_summit:
+      x: -49.5
+      y: 159.0
+      z: -117.5
+      note: Skyreach Summit (vista)
+    tallybell:
+      x: 16.5
+      y: 113.0
+      z: -21.5
+      note: Belfry gallery (vista)
+    the_keel:
+      x: 146.5
+      y: 51.0
+      z: 33.5
+      note: The Keel — balcony under the harbour lip; the Harbour Chain hangs beside it (secret vista)
+  waystone:
+    capital:
+      x: -53.5
+      y: 79.0
+      z: -14.5
+      note: Capital glowcap (Origin-light waystone)
+    fields:
+      x: -100.5
+      y: 77.0
+      z: 51.5
+      note: Fields glowcap
+    harbour:
+      x: 72.5
+      y: 65.0
+      z: -11.5
+      note: Harbour glowcap sprout (Origin-light)
+    whisperwood:
+      x: 80.5
+      y: 83.0
+      z: -99.5
+      note: Whisperwood glowcap
+  world:
+    spawn:
+      x: 166.5
+      y: 65.0
+      z: 8.5
+      yaw: 90.0
+      note: setworldspawn / first join

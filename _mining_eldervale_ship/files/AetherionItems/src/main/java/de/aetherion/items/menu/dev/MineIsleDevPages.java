@@ -1,0 +1,455 @@
+package de.aetherion.items.menu.dev;
+
+import de.aetherion.core.api.AetherServices;
+import de.aetherion.core.api.MiningAccess;
+import de.aetherion.items.AetherionItems;
+import de.aetherion.items.core.ItemKeys;
+import de.aetherion.items.item.CustomItem;
+import de.aetherion.items.skill.AetherSkill;
+import de.aetherion.items.skill.SkillService;
+
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.Sound;
+import org.bukkit.entity.Player;
+import org.bukkit.event.inventory.ClickType;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemFlag;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+
+/**
+ * DEV → Mining Island: the Mining Eldervale hub (teleports, cast, events, forge, critters, Amethyst
+ * Mine, progression). It sits next to {@link DevMenu.Page#MINING}, which stays the Mining gear shelf,
+ * and it never replaces it.
+ *
+ * <p>Isle-side buttons go through {@link MiningAccess#devAction}; skill and gear buttons run here.
+ * Every action is {@code mineisle:<group>:<verb>[:arg]}. Pages are looked up by name
+ * ({@code MINE_ISLE}, {@code MINE_ISLE_SPOTS}, {@code MINE_ISLE_NPCS}, {@code MINE_ISLE_EVENTS},
+ * {@code MINE_ISLE_PROGRESS}), so this class compiles against any DevMenu. A DevMenu without
+ * those enum constants simply never routes here. The splice is in docs/MINING_ELDERVALE.md.
+ */
+final class MineIsleDevPages {
+
+    static final String PREFIX = "mineisle:";
+    static final String HUB = "MINE_ISLE";
+    private static final int[] CONTENT = {
+            10, 11, 12, 13, 14, 15, 16,
+            19, 20, 21, 22, 23, 24, 25,
+            28, 29, 30, 31, 32, 33, 34,
+            37, 38, 39, 40, 41, 42, 43
+    };
+    private static final List<String> ELDERVALE_SKILLS = List.of("BEDROCK_BORN", "WORK_SONG", "GEODE_NOSE", "UNION_CARD",
+            "SEAM_READER", "DEPTH_GAUGE");
+
+    private final CustomItem customItem;
+
+    MineIsleDevPages(CustomItem customItem) {
+        this.customItem = customItem;
+    }
+
+    static boolean owns(DevMenu.Page page) {
+        return page != null && page.name().startsWith(HUB);
+    }
+
+    /** The page constant by name, or {@code null} when this DevMenu doesn't carry it. */
+    static DevMenu.Page page(String name) {
+        try {
+            return DevMenu.Page.valueOf(name);
+        } catch (IllegalArgumentException missing) {
+            return null;
+        }
+    }
+
+    private static MiningAccess mining() {
+        try {
+            return AetherServices.mining();
+        } catch (LinkageError error) {
+            return null;
+        }
+    }
+
+    // ------------------------------------------------------------------ drawing
+
+    void draw(Inventory inventory, DevMenu.Page page, Player player) {
+        switch (page.name()) {
+            case "MINE_ISLE" -> drawHub(inventory);
+            case "MINE_ISLE_SPOTS" -> drawSpots(inventory);
+            case "MINE_ISLE_NPCS" -> drawNpcs(inventory);
+            case "MINE_ISLE_EVENTS" -> drawEvents(inventory);
+            case "MINE_ISLE_PROGRESS" -> drawProgress(inventory);
+            default -> {
+            }
+        }
+        inventory.setItem(45, button(Material.ARROW, "§eBack", HUB.equals(page.name()) ? "back" : "page:" + HUB));
+        inventory.setItem(49, button(Material.BARRIER, "§cClose", "close"));
+    }
+
+    private void drawHub(Inventory inventory) {
+        List<String> status = new ArrayList<>(status());
+        status.add("");
+        status.add("§8Mining Eldervale lives in the hub world.");
+        status.add("§8Gear shelf: Mining Sets (page MINING).");
+        inventory.setItem(4, button(Material.DIAMOND_PICKAXE, "§6§lMining Island", "page:" + HUB, status.toArray(String[]::new)));
+
+        inventory.setItem(10, button(Material.ENDER_PEARL, "§bTeleport: Landing", PREFIX + "tp:Landing",
+                "§7Where the Origin pad drops you.", "§8mine-isle.landing"));
+        inventory.setItem(11, button(Material.COMPASS, "§eAll Teleports", "page:MINE_ISLE_SPOTS",
+                "§7Crew spots · every hall, quarry,", "§7shaft and water (schem-measured)."));
+        inventory.setItem(12, button(Material.VILLAGER_SPAWN_EGG, "§dNPC Cast", "page:MINE_ISLE_NPCS",
+                "§7Old Wick · Otto · Nan · Ilse ·", "§7Brann · Hollis. Presets from the schem."));
+        inventory.setItem(13, button(Material.BELL, "§eEvents · Critters · Hazards", "page:MINE_ISLE_EVENTS",
+                "§7Rich Vein · Ember Hour · Tremor · Troll Run ·", "§7Stonejaw · Shardlings · cave-ins · finds."));
+        inventory.setItem(14, button(Material.EXPERIENCE_BOTTLE, "§aProgression & Skills", "page:MINE_ISLE_PROGRESS",
+                "§7Mining skills · Eldervale loadout · picks ·", "§7mastery · cabinet · forge · resets."));
+        inventory.setItem(15, button(Material.LODESTONE, "§6Set Landing Here", PREFIX + "landing:set",
+                "§7Writes mine-isle.landing to config."));
+        inventory.setItem(16, button(Material.IRON_PICKAXE, "§fMining Sets I – V", "page:MINING",
+                "§7The gear shelf (armor + pick per tier)."));
+
+        inventory.setItem(19, button(Material.REPEATER, "§aReload Mining Config", PREFIX + "config:reload",
+                "§7Footprint, districts, presets, props.", "§7Player data untouched."));
+        inventory.setItem(20, button(Material.FILLED_MAP, "§7Where Am I?", PREFIX + "where",
+                "§7District + band + footprint at your feet."));
+        inventory.setItem(21, button(Material.ANVIL, "§6Rebuild Props", PREFIX + "props:rebuild",
+                "§7Deep Forge set piece, Forgehand braziers,", "§7the Record Board."));
+        inventory.setItem(22, button(Material.BLAST_FURNACE, "§6Move Deep Forge Prop Here", PREFIX + "prop:deep_forge",
+                "§7Writes forge-prop.deep."));
+        inventory.setItem(23, button(Material.SMITHING_TABLE, "§6Forgehand Braziers Here", PREFIX + "prop:forgehand",
+                "§7Stand on the Items forge anvil.", "§8Auto-adopted on the first ritual."));
+        inventory.setItem(24, button(Material.OAK_SIGN, "§dRecord Board Here", PREFIX + "prop:records"));
+        inventory.setItem(25, button(Material.AMETHYST_CLUSTER, "§dAmethyst Mine Anchor", "give:homestead:amethyst",
+                "§7Stand in the Amethyst Area,", "§7right-click to save §f/amethyst§7."));
+
+        inventory.setItem(28, button(Material.LANTERN, "§eOpen: Old Wick", PREFIX + "open:lampwarden", "§7Map, depth card, tour."));
+        inventory.setItem(29, button(Material.WRITABLE_BOOK, "§6Open: Contract Office", PREFIX + "open:clerk"));
+        inventory.setItem(30, button(Material.BAKED_POTATO, "§cOpen: The Hearth", PREFIX + "open:cook"));
+        inventory.setItem(31, button(Material.AMETHYST_SHARD, "§dOpen: Assay Office", PREFIX + "open:assayer"));
+        inventory.setItem(32, button(Material.ANVIL, "§6Open: The Deep Forge", PREFIX + "open:forgemaster"));
+        inventory.setItem(33, button(Material.SOUL_LANTERN, "§3Open: Last Lamp", PREFIX + "open:hermit"));
+        inventory.setItem(34, button(Material.BOOK, "§6Open: Mining Journal", PREFIX + "open:journal", "§8/mineisle"));
+    }
+
+    private void drawSpots(Inventory inventory) {
+        inventory.setItem(4, button(Material.COMPASS, "§eMining Eldervale Teleports", "page:MINE_ISLE_SPOTS",
+                "§7Crew spots use the placed NPC, else its preset.", "§7Districts land on their anchor (or centre)."));
+        Map<String, Location> spots = spots();
+        int index = 0;
+        for (Map.Entry<String, Location> entry : spots.entrySet()) {
+            if (index >= CONTENT.length) {
+                break;
+            }
+            Location at = entry.getValue();
+            Material icon = index == 0 ? Material.ENDER_PEARL : index <= 6 ? Material.VILLAGER_SPAWN_EGG
+                    : at.getBlockY() < 56 ? Material.CHAIN : Material.LANTERN;
+            inventory.setItem(CONTENT[index++], button(icon, "§f" + entry.getKey(), PREFIX + "tp:" + entry.getKey(),
+                    "§8" + at.getBlockX() + " " + at.getBlockY() + " " + at.getBlockZ()));
+        }
+        if (spots.isEmpty()) {
+            inventory.setItem(22, button(Material.BARRIER, "§cAetherionMining offline", "noop"));
+        }
+    }
+
+    private void drawNpcs(Inventory inventory) {
+        inventory.setItem(4, button(Material.VILLAGER_SPAWN_EGG, "§dMining Eldervale Cast", "page:MINE_ISLE_NPCS",
+                "§eLeft §7give anchor  §eRight §7place at preset",
+                "§eShift-left §7teleport there  §eShift-right §7remove",
+                "§8Villagers respawn with their chunk — no dupes."));
+        int index = 0;
+        int[] slots = {10, 11, 12, 14, 15, 16};
+        for (Map.Entry<String, ItemStack> entry : items("npcs").entrySet()) {
+            if (index >= slots.length) {
+                break;
+            }
+            ItemStack icon = entry.getValue().clone();
+            ItemMeta meta = icon.getItemMeta();
+            if (meta != null) {
+                List<String> lore = meta.hasLore() ? new ArrayList<>(meta.getLore()) : new ArrayList<>();
+                lore.add("");
+                lore.add("§eLeft §7anchor · §eRight §7preset");
+                lore.add("§eShift-left §7go · §eShift-right §7remove");
+                meta.setLore(lore);
+                icon.setItemMeta(meta);
+            }
+            inventory.setItem(slots[index++], tagged(icon, PREFIX + "npc:" + entry.getKey()));
+        }
+        if (index == 0) {
+            inventory.setItem(22, button(Material.BARRIER, "§cAetherionMining offline", "noop"));
+            return;
+        }
+        inventory.setItem(29, button(Material.EMERALD_BLOCK, "§aPlace Whole Cast at Presets", PREFIX + "npcall:preset",
+                "§7All six at their schem spots.", "§8Presets: config mine-cast.presets"));
+        inventory.setItem(33, button(Material.TNT, "§cRemove Whole Cast", PREFIX + "npcall:remove",
+                "§eShift-click §7to confirm."));
+    }
+
+    private void drawEvents(Inventory inventory) {
+        List<String> status = status();
+        inventory.setItem(4, button(Material.BELL, "§eEvents · Critters · Hazards", "page:MINE_ISLE_EVENTS",
+                status.isEmpty() ? new String[]{"§cAetherionMining offline"} : status.toArray(String[]::new)));
+        inventory.setItem(10, button(Material.GOLD_ORE, "§eStart Rich Vein", PREFIX + "event:rich",
+                "§7One district pays extra ore + XP."));
+        inventory.setItem(11, button(Material.MAGMA_BLOCK, "§cStart Ember Hour", PREFIX + "event:ember",
+                "§7Crystal Finds ×4 on the isle."));
+        inventory.setItem(12, button(Material.GRAVEL, "§fStart Tremor", PREFIX + "event:tremor",
+                "§7Rubble to clear · shore it up for ×2 finds."));
+        inventory.setItem(13, button(Material.MOSSY_COBBLESTONE, "§aStart Troll Run", PREFIX + "event:troll",
+                "§7Ore Trolls crawl out of the seam."));
+        inventory.setItem(14, button(Material.BARRIER, "§cStop Mine Event", PREFIX + "event:stop"));
+        inventory.setItem(15, button(Material.NOTE_BLOCK, "§6Rhythm → Anvil Chorus", PREFIX + "rhythm:max"));
+        inventory.setItem(16, button(Material.GRAVEL, "§cCave-in On Me", PREFIX + "hazard:cavein",
+                "§7Telegraphs a collapse where you stand.", "§8Step out of the dust in 2s."));
+
+        inventory.setItem(19, button(Material.DEEPSLATE_DIAMOND_ORE, "§4Spawn Stonejaw", PREFIX + "critter:stonejaw",
+                "§7Ore guardian: slams, 16 hits, drops a geode."));
+        inventory.setItem(20, button(Material.MAGMA_BLOCK, "§6Spawn Cinder Mite", PREFIX + "critter:cinder_mite"));
+        inventory.setItem(21, button(Material.GLOW_BERRIES, "§bSpawn Gloam Moth", PREFIX + "critter:gloam_moth"));
+        inventory.setItem(22, button(Material.AMETHYST_CLUSTER, "§dSpawn Shardling", PREFIX + "critter:shardling"));
+        inventory.setItem(23, button(Material.BLAST_FURNACE, "§6Deep Forge Roar", PREFIX + "forge:burst"));
+
+        inventory.setItem(28, button(Material.DIAMOND, "§bFind: Perfect Starcore Diamond", PREFIX + "find:diamond:perfect"));
+        inventory.setItem(29, button(Material.EMERALD, "§aFind: Flawless Verdant Eye", PREFIX + "find:emerald:flawless"));
+        inventory.setItem(30, button(Material.GOLD_INGOT, "§eFind: Rough Sun Nugget", PREFIX + "find:gold:rough"));
+        inventory.setItem(31, button(Material.AMETHYST_SHARD, "§6Find: Heartstone Violet Crown", PREFIX + "find:amethyst:heartstone",
+                "§7The Amethyst Mine-only grade."));
+        inventory.setItem(34, button(Material.PAPER, "§7How to test", "noop",
+                "§71. Rhythm → Chorus, mine an ore family 8×.",
+                "§72. Seam Burst below the Deep Works line",
+                "§7   can wake a Stonejaw (12%).",
+                "§73. Hammer one spot deep → cave-in.",
+                "§74. /amethyst, break crystal → Resonance."));
+    }
+
+    private void drawProgress(Inventory inventory) {
+        int[] levels = {1, 20, 40, 60, 80, 100};
+        for (int i = 0; i < levels.length; i++) {
+            inventory.setItem(10 + i, button(Material.EXPERIENCE_BOTTLE, "§aMining Skills → Lv. " + levels[i],
+                    PREFIX + "skill:level:" + levels[i], "§7Every Mining skill, you only."));
+        }
+        inventory.setItem(16, button(Material.DIAMOND_PICKAXE, "§6Equip Eldervale Miner Loadout", PREFIX + "skill:equip",
+                "§7Grants all slots, equips Bedrock Born,", "§7Work Song, Geode Nose, Union Card,", "§7Seam Reader, Depth Gauge."));
+
+        ItemStack[] picks = {customItem.createMiningPickaxe(), customItem.createMiningPickaxe2(), customItem.createMiningPickaxe3(),
+                customItem.createMiningPickaxe4(), customItem.createMiningPickaxe5()};
+        String[] pickIds = {"mining_pickaxe", "mining_pickaxe_2", "mining_pickaxe_3", "mining_pickaxe_4", "mining_pickaxe_5"};
+        for (int i = 0; i < picks.length; i++) {
+            if (picks[i] != null) {
+                inventory.setItem(19 + i, tagged(picks[i].clone(), "item:" + pickIds[i]));
+            }
+        }
+        inventory.setItem(24, button(Material.BAKED_POTATO, "§cAll Rations", PREFIX + "give:rations", "§7One of each Hearth ration."));
+        inventory.setItem(25, button(Material.GLOWSTONE_DUST, "§eFlares · Canaries · Jaw", PREFIX + "give:tools",
+                "§78 Prospector's Flares, 8 Canary Cages,", "§7a Stonejaw's Jaw."));
+
+        inventory.setItem(28, button(Material.EXPERIENCE_BOTTLE, "§6Mastery → IV", PREFIX + "mastery:4", "§7Every ore family. No rewards."));
+        inventory.setItem(29, button(Material.ENCHANTED_BOOK, "§6Mastery → VII", PREFIX + "mastery:7"));
+        inventory.setItem(30, button(Material.GLASS, "§dFill Specimen Cabinet", PREFIX + "cabinet:fill"));
+        inventory.setItem(31, button(Material.AMETHYST_CLUSTER, "§dSample Specimens", PREFIX + "give:specimens",
+                "§7One per family + a Heartstone."));
+        inventory.setItem(32, button(Material.ANVIL, "§6Forge Rep +1,000", PREFIX + "forge:rep:1000"));
+        inventory.setItem(33, button(Material.NETHERITE_INGOT, "§6Max Every Forge Mark", PREFIX + "forge:max"));
+        inventory.setItem(34, button(Material.FILLED_MAP, "§eDiscover All Places", PREFIX + "districts:all"));
+        inventory.setItem(37, button(Material.WRITABLE_BOOK, "§6Reset Contract Board", PREFIX + "contracts:reset"));
+        inventory.setItem(38, button(Material.CLOCK, "§6Shift Streak +1", PREFIX + "streak:1"));
+        inventory.setItem(39, button(Material.RECOVERY_COMPASS, "§3Mark All Depths Reached", PREFIX + "depth:all"));
+        inventory.setItem(40, button(Material.MAP, "§7Reset Discovery", PREFIX + "districts:reset"));
+        inventory.setItem(41, button(Material.BOOK, "§7Reset Collection Claims", PREFIX + "claims:reset"));
+        inventory.setItem(42, button(Material.GRINDSTONE, "§7Reset Forge Marks + Rep", PREFIX + "forge:reset"));
+        inventory.setItem(43, button(Material.TNT, "§cWipe My Mining Eldervale Profile", PREFIX + "profile:reset",
+                "§7Districts, mastery, cabinet, contracts,", "§7marks, rep, depth. §8Skills untouched.",
+                "§eShift-click §7to confirm."));
+    }
+
+    // ------------------------------------------------------------------ clicks
+
+    /** @return the page to reopen, or {@code null} to leave the inventory as is. */
+    DevMenu.Page handle(Player player, String action, ClickType click, DevMenu.Page current) {
+        String body = action.substring(PREFIX.length());
+        boolean shift = click != null && click.isShiftClick();
+        boolean right = click != null && click.isRightClick();
+
+        if (body.startsWith("skill:")) {
+            player.sendMessage(skill(player, body.substring("skill:".length())));
+            player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.7f, 1.3f);
+            return current;
+        }
+        if (body.startsWith("npc:")) {
+            String role = body.substring("npc:".length());
+            if (!right && !shift) {
+                ItemStack anchor = items("npcs").get(role);
+                if (anchor != null) {
+                    give(player, anchor.clone());
+                }
+                return null;
+            }
+            String verb = shift ? (right ? "remove" : "goto") : "preset";
+            reply(player, dev(player, "npc:" + verb + ":" + role));
+            return "goto".equals(verb) ? null : current;
+        }
+        if (body.equals("npcall:preset")) {
+            reply(player, dev(player, "npc:preset-all"));
+            return current;
+        }
+        if (body.equals("npcall:remove") || body.equals("profile:reset")) {
+            if (!shift) {
+                player.sendMessage("§eShift-click to confirm.");
+                player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 0.9f, 0.7f);
+                return null;
+            }
+            reply(player, dev(player, body.equals("npcall:remove") ? "npc:remove-all" : "profile:reset"));
+            return current;
+        }
+        boolean leaves = body.startsWith("tp:") || body.startsWith("open:") || body.startsWith("event:")
+                || body.startsWith("critter:") || body.startsWith("find:") || body.startsWith("hazard:");
+        if (leaves) {
+            player.closeInventory();
+        }
+        reply(player, dev(player, body));
+        return leaves ? null : current;
+    }
+
+    private String skill(Player player, String verb) {
+        AetherionItems plugin = AetherionItems.getInstance();
+        SkillService skills = plugin == null ? null : plugin.getSkills();
+        if (skills == null) {
+            return "§cSkills are not loaded.";
+        }
+        if (verb.startsWith("level:")) {
+            int level;
+            try {
+                level = Integer.parseInt(verb.substring("level:".length()));
+            } catch (NumberFormatException ignored) {
+                return "§cBad level.";
+            }
+            for (AetherSkill skill : AetherSkill.values()) {
+                if (skill.category() == AetherSkill.Category.MINING) {
+                    skills.setLevel(player, skill, level);
+                }
+            }
+            return "§aEvery Mining skill → Lv. " + level + "§a.";
+        }
+        if (verb.equals("equip")) {
+            skills.grantAllSlots(player);
+            List<String> missed = new ArrayList<>();
+            for (String name : ELDERVALE_SKILLS) {
+                AetherSkill skill;
+                try {
+                    skill = AetherSkill.valueOf(name);
+                } catch (IllegalArgumentException missing) {
+                    missed.add(name.toLowerCase(Locale.ROOT));
+                    continue;
+                }
+                if (skills.slotOf(player, skill) < 0 && !skills.equip(player, skill)) {
+                    missed.add(skill.displayName());
+                }
+            }
+            return missed.isEmpty()
+                    ? "§6Eldervale Miner loadout equipped §7(Bedrock Born, Work Song, Geode Nose, Union Card, Seam Reader, Depth Gauge)."
+                    : "§eCould not equip: §f" + String.join(", ", missed) + " §7(slots full, or /skills to swap).";
+        }
+        return "§cUnknown skill action.";
+    }
+
+    private static String dev(Player player, String action) {
+        MiningAccess mining = mining();
+        if (mining == null) {
+            return "§cAetherionMining is not loaded (or Core predates Mining Eldervale).";
+        }
+        try {
+            String reply = mining.devAction(player, action);
+            return reply == null ? "§cAetherionMining on the server predates the Mining Island hub — deploy Core, Items and Mining together." : reply;
+        } catch (LinkageError error) {
+            return "§cAetherionMining / Core on the server predate the Mining Island hub — deploy all three jars.";
+        }
+    }
+
+    private static void reply(Player player, String message) {
+        if (message == null || message.isBlank()) {
+            return;
+        }
+        for (String line : message.split("\n")) {
+            player.sendMessage(line);
+        }
+        player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.8f, 1.25f);
+    }
+
+    // ------------------------------------------------------------------ data
+
+    private static List<String> status() {
+        MiningAccess mining = mining();
+        if (mining == null) {
+            return List.of("§cAetherionMining offline");
+        }
+        try {
+            List<String> lines = mining.devStatus();
+            return lines == null || lines.isEmpty() ? List.of("§cMining jar too old for this hub") : lines;
+        } catch (LinkageError error) {
+            return List.of("§cMining/Core jar too old for this hub");
+        }
+    }
+
+    private static Map<String, Location> spots() {
+        MiningAccess mining = mining();
+        if (mining == null) {
+            return Map.of();
+        }
+        try {
+            return mining.devSpots();
+        } catch (LinkageError error) {
+            return Map.of();
+        }
+    }
+
+    private static Map<String, ItemStack> items(String group) {
+        MiningAccess mining = mining();
+        if (mining == null) {
+            return Map.of();
+        }
+        try {
+            return mining.devItems(group);
+        } catch (LinkageError error) {
+            return Map.of();
+        }
+    }
+
+    private static void give(Player player, ItemStack item) {
+        if (item == null) {
+            return;
+        }
+        HashMap<Integer, ItemStack> overflow = player.getInventory().addItem(item);
+        overflow.values().forEach(left -> player.getWorld().dropItemNaturally(player.getLocation(), left));
+        player.playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 0.7f, 1.2f);
+    }
+
+    private static ItemStack button(Material material, String name, String action, String... lore) {
+        ItemStack item = new ItemStack(material);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            meta.setDisplayName(name);
+            if (lore.length > 0) {
+                meta.setLore(List.of(lore));
+            }
+            meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
+            de.aetherion.items.util.GuiItems.hideVanilla(meta);
+            meta.getPersistentDataContainer().set(ItemKeys.devAction(), PersistentDataType.STRING, action);
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    private static ItemStack tagged(ItemStack item, String action) {
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            meta.getPersistentDataContainer().set(ItemKeys.devAction(), PersistentDataType.STRING, action);
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+}

@@ -1,19 +1,25 @@
 package de.aetherion.guilds.service;
 
-import de.aetherion.core.world.VoidChunkGenerator;
+import de.aetherion.guilds.island.LandService;
+import de.aetherion.guilds.island.StarterLayout;
 import de.aetherion.guilds.model.IslandBiome;
 import de.aetherion.guilds.model.IslandTiers;
 import de.aetherion.guilds.model.PersonalIsland;
 import de.aetherion.guilds.model.QuarryMinion;
+import de.aetherion.guilds.template.PasteService;
+import de.aetherion.guilds.template.Template;
+import de.aetherion.guilds.template.TemplateLibrary;
 import de.aetherion.guilds.util.AetherionItemsAccess;
+import de.aetherion.guilds.util.GuildFormat;
 import de.aetherion.guilds.world.IslandBuilder;
 
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.GameRule;
 import org.bukkit.Location;
+import org.bukkit.Particle;
+import org.bukkit.Sound;
 import org.bukkit.World;
-import org.bukkit.WorldCreator;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
@@ -21,12 +27,14 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
 public final class PersonalIslandService {
 
@@ -36,6 +44,12 @@ public final class PersonalIslandService {
     private final Set<UUID> islandFlight = ConcurrentHashMap.newKeySet();
     private World world;
     private MinionService minions;
+    // island highlight: authored starters, land parcels, unlock state
+    private PasteService paste;
+    private TemplateLibrary templates;
+    private Consumer<YamlConfiguration> extraSave;
+    private Consumer<PersonalIsland> removalHook;
+    private final Map<UUID, List<Runnable>> waiting = new ConcurrentHashMap<>();
 
     public PersonalIslandService(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -49,6 +63,21 @@ public final class PersonalIslandService {
 
     public void attachMinions(MinionService minions) {
         this.minions = minions;
+    }
+
+    public void attachHighlight(PasteService paste, TemplateLibrary templates) {
+        this.paste = paste;
+        this.templates = templates;
+    }
+
+    /** Extra top-level sections written into personal_islands.yml (unlock state). */
+    public void setExtraSave(Consumer<YamlConfiguration> extraSave) {
+        this.extraSave = extraSave;
+    }
+
+    /** Called before an island's data is dropped (wipe): structures, belts. */
+    public void setRemovalHook(Consumer<PersonalIsland> removalHook) {
+        this.removalHook = removalHook;
     }
 
     public World world() {
@@ -119,15 +148,90 @@ public final class PersonalIslandService {
             return null;
         }
         ensureBuilt(island);
+        StarterLayout starter = StarterLayout.byId(island.starter());
+        if (starter != null) {
+            return new Location(world, originX(island) + starter.spawnX() + 0.5, 64 + starter.spawnY(),
+                    originZ(island) + starter.spawnZ() + 0.5, starter.yaw(), 0);
+        }
         return new Location(world, originX(island) + 0.5, 65, originZ(island) - 3.5, 0, 0);
     }
 
     public void ensureBuilt(PersonalIsland island) {
-        if (island == null || world == null || island.islandBuilt()) {
+        ensureBuilt(island, null);
+    }
+
+    /**
+     * Builds the island if needed. Classic pads build instantly; authored starters paste over a few ticks, so
+     * {@code then} runs once the island is really there (right away if it already is).
+     */
+    public void ensureBuilt(PersonalIsland island, Runnable then) {
+        if (island == null || world == null) {
             return;
         }
-        IslandBuilder.build(world, originX(island), originZ(island), island.islandLevel(), island.biome());
-        island.setIslandBuilt(true);
+        if (island.islandBuilt()) {
+            if (then != null) {
+                then.run();
+            }
+            return;
+        }
+        StarterLayout starter = StarterLayout.byId(island.starter());
+        Template template = starter == null || templates == null ? null : templates.get(starter.templateId());
+        if (template == null || paste == null) {
+            IslandBuilder.build(world, originX(island), originZ(island), island.islandLevel(), island.biome());
+            island.setIslandBuilt(true);
+            if (then != null) {
+                then.run();
+            }
+            return;
+        }
+        List<Runnable> queue = waiting.get(island.ownerId());
+        if (queue != null) {
+            if (then != null) {
+                queue.add(then);
+            }
+            return;
+        }
+        queue = new ArrayList<>();
+        if (then != null) {
+            queue.add(then);
+        }
+        waiting.put(island.ownerId(), queue);
+        paste.paste(template, world, originX(island), 64, originZ(island), 0, PasteService.Mode.SKIP_AIR, true, job -> {
+            island.setIslandBuilt(true);
+            save();
+            List<Runnable> done = waiting.remove(island.ownerId());
+            if (done != null) {
+                for (Runnable runnable : done) {
+                    runnable.run();
+                }
+            }
+        });
+    }
+
+    public void whenBuilt(PersonalIsland island, Runnable then) {
+        ensureBuilt(island, then);
+    }
+
+    /** Claim with an authored starter (the highlight flow). The caller runs the ceremony. */
+    public PersonalIsland createStarter(Player player, StarterLayout starter) {
+        if (player == null || starter == null) {
+            return null;
+        }
+        if (!AetherionItemsAccess.islandUnlocked(player)) {
+            player.sendMessage(AetherionItemsAccess.islandHint());
+            return null;
+        }
+        if (byOwner(player.getUniqueId()) != null) {
+            player.sendMessage("§cYou already have a personal island.");
+            return null;
+        }
+        PersonalIsland island = new PersonalIsland(player.getUniqueId(), nextPlot(), starter.biome());
+        island.setStarter(starter.id());
+        island.parcels().addAll(LandService.initialParcels());
+        islands.put(island.ownerId(), island);
+        save();
+        player.sendMessage("§aIsland claimed: §f" + starter.display() + "§a. §7Open §f/island §7anytime.");
+        return island;
     }
 
     public PersonalIsland create(Player player, IslandBiome biome) {
@@ -166,6 +270,15 @@ public final class PersonalIslandService {
             player.sendMessage("§7Pick a biome first to create your island.");
             return;
         }
+        if (!island.islandBuilt() && StarterLayout.byId(island.starter()) != null) {
+            player.sendMessage("§7Your island is still rising…");
+            whenBuilt(island, () -> {
+                if (player.isOnline()) {
+                    goHome(player);
+                }
+            });
+            return;
+        }
         Location spawn = spawn(island);
         if (spawn == null) {
             player.sendMessage("§cIsland world is not ready.");
@@ -183,6 +296,11 @@ public final class PersonalIslandService {
         PersonalIsland island = byOwner(ownerId);
         if (island == null) {
             visitor.sendMessage("§cThat player has no personal island yet.");
+            return;
+        }
+        if (!island.islandBuilt() && StarterLayout.byId(island.starter()) != null) {
+            visitor.sendMessage("§7That island is still rising… try again in a moment.");
+            ensureBuilt(island);
             return;
         }
         Location spawn = spawn(island);
@@ -252,21 +370,29 @@ public final class PersonalIslandService {
             player.sendMessage("§cNeed §f" + cost.cores() + " Quarry Core§c.");
             return;
         }
-        if (AetherionItemsAccess.coins(player) < cost.coins()) {
-            player.sendMessage("§cNeed §6" + cost.coins() + " coins§c.");
+        boolean economy = de.aetherion.core.api.AetherServices.coins() != null;
+        if (economy && AetherionItemsAccess.coins(player) < cost.coins()) {
+            player.sendMessage("§cNeed §6" + GuildFormat.compact(cost.coins()) + " coins§c.");
             return;
         }
         AetherionItemsAccess.take(player, "compacted_cobblestone", cost.compactedCobble());
         AetherionItemsAccess.take(player, "quarry_core", cost.cores());
-        if (!AetherionItemsAccess.takeCoins(player, cost.coins())) {
+        if (economy && !AetherionItemsAccess.takeCoins(player, cost.coins())) {
             player.sendMessage("§cCould not take coins.");
             return;
         }
         island.setIslandLevel(from + 1);
-        IslandBuilder.upgrade(world, originX(island), originZ(island), from, island.islandLevel(), island.biome());
+        if (StarterLayout.byId(island.starter()) == null) {
+            // classic pads grow their platform; authored starters grow through bought land instead
+            IslandBuilder.upgrade(world, originX(island), originZ(island), from, island.islandLevel(), island.biome());
+        }
         save();
-        player.sendMessage("§aIsland upgraded to §fLv." + island.islandLevel()
-                + "§a. Build radius is now §f" + buildRadius(island) + "§a.");
+        player.sendTitle("§6✦ Island Tier " + island.islandLevel() + " ✦", "§7Radius §f" + buildRadius(island)
+                + " §8· §7more belts & machines", 5, 50, 15);
+        player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.9f, 1.2f);
+        player.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, player.getLocation().add(0, 1, 0), 40, 0.5, 0.8, 0.5, 0.3);
+        player.sendMessage("§aIsland Tier §f" + island.islandLevel()
+                + "§a. Build radius is now §f" + buildRadius(island) + "§a; more belts and machines unlocked.");
     }
 
     public void wipeAll() {
@@ -286,6 +412,11 @@ public final class PersonalIslandService {
                 minions.removePersonalVisuals(island);
             }
         }
+        if (removalHook != null) {
+            for (PersonalIsland island : List.copyOf(islands.values())) {
+                removalHook.accept(island);
+            }
+        }
         for (PersonalIsland island : List.copyOf(islands.values())) {
             IslandBuilder.clear(world, originX(island), originZ(island));
         }
@@ -302,6 +433,16 @@ public final class PersonalIslandService {
             config.set(path + ".biome", island.biome().name());
             config.set(path + ".island-built", island.islandBuilt());
             config.set(path + ".island-level", island.islandLevel());
+            if (island.starter() != null) {
+                config.set(path + ".starter", island.starter());
+            }
+            if (!island.parcels().isEmpty()) {
+                List<String> parcels = new ArrayList<>();
+                for (long key : island.parcels()) {
+                    parcels.add(LandService.px(key) + "," + LandService.pz(key));
+                }
+                config.set(path + ".parcels", parcels);
+            }
             for (QuarryMinion minion : island.minions()) {
                 String m = path + ".minions." + minion.id();
                 config.set(m + ".type", minion.type());
@@ -315,6 +456,9 @@ public final class PersonalIslandService {
                 config.set(m + ".level", minion.level());
                 config.set(m + ".processor", minion.processor().name());
             }
+        }
+        if (extraSave != null) {
+            extraSave.accept(config);
         }
         try {
             File folder = file.getParentFile();
@@ -354,6 +498,16 @@ public final class PersonalIslandService {
             );
             island.setIslandBuilt(section.getBoolean("island-built", false));
             island.setIslandLevel(section.getInt("island-level", 1));
+            island.setStarter(section.getString("starter"));
+            for (String raw : section.getStringList("parcels")) {
+                String[] xz = raw.split(",");
+                if (xz.length == 2) {
+                    try {
+                        island.parcels().add(LandService.key(Integer.parseInt(xz[0].trim()), Integer.parseInt(xz[1].trim())));
+                    } catch (NumberFormatException ignored) {
+                    }
+                }
+            }
             ConfigurationSection minionsSection = section.getConfigurationSection("minions");
             if (minionsSection != null) {
                 for (String minionKey : minionsSection.getKeys(false)) {
@@ -393,20 +547,8 @@ public final class PersonalIslandService {
 
     private World loadWorld() {
         String name = plugin.getConfig().getString("personal-island-world", "aether_islands");
-        World existing = Bukkit.getWorld(name);
-        if (existing != null) {
-            applyRules(existing);
-            return existing;
-        }
-        WorldCreator creator = new WorldCreator(name);
-        creator.generator(new VoidChunkGenerator());
-        creator.generateStructures(false);
-        creator.environment(World.Environment.NORMAL);
-        World created = creator.createWorld();
-        if (created != null) {
-            applyRules(created);
-        }
-        return created;
+        // always on the void generator, also when a world manager / older boot loaded it first (see VoidWorlds)
+        return de.aetherion.guilds.world.VoidWorlds.load(plugin, name, this::applyRules);
     }
 
     private void applyRules(World world) {

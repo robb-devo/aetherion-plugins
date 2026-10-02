@@ -162,9 +162,3 @@ loot:
   shared: []
 
   per-damager:
-    - source: VANILLA
-      material: EXPERIENCE_BOTTLE
-      min-amount: 10
-      max-amount: 18
-      chance: 1.0
-      scale-with-damage: true

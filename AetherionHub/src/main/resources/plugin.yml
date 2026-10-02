@@ -61,6 +61,11 @@ commands:
     description: Async-paste Eldervale farming/fishing island schematics via FAWE
     usage: /aetherpaste <farming|fishing|clear> …
     permission: aetherion.paste
+  propwand:
+    description: Give the Prop Wand (look + click to paste Aetherion prop schems)
+    usage: /propwand [extract|list]
+    aliases: [aeprops, propstick]
+    permission: aetherion.propwand
 
 permissions:
   aetherionhub.use:
@@ -69,4 +74,7 @@ permissions:
     default: op
   aetherion.paste:
     description: Paste Eldervale island schematics asynchronously via FAWE
+    default: op
+  aetherion.propwand:
+    description: Use /propwand and paste prop schematics with the wand
     default: op

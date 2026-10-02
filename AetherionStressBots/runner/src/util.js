@@ -145,6 +145,38 @@ function columnHasFloor(bot, x, y, z) {
   return false
 }
 
+export function bindLoop(bot, intervalMs, tick) {
+  const handle = setInterval(() => {
+    if (bot.qaBrainHold) return
+    Promise.resolve()
+      .then(tick)
+      .catch((err) => markError(bot, err))
+  }, intervalMs)
+  const stop = () => clearInterval(handle)
+  bot.qaStoppers = bot.qaStoppers || []
+  bot.qaStoppers.push(stop)
+  bot.once('end', stop)
+  return stop
+}
+
+export function stopBoundLoops(bot) {
+  for (const stop of bot.qaStoppers || []) {
+    try { stop() } catch { /* ignore */ }
+  }
+  bot.qaStoppers = []
+}
+
+export function inventorySummary(bot) {
+  try {
+    const items = bot.inventory?.items?.() || []
+    if (items.length === 0) return 'empty'
+    const names = items.slice(0, 3).map((it) => it.count > 1 ? `${it.name} x${it.count}` : it.name)
+    return `${items.length} items · ${names.join(', ')}`
+  } catch {
+    return ''
+  }
+}
+
 export function heldName(bot) {
   const item = bot.heldItem
   return item && item.name ? item.name : '-'

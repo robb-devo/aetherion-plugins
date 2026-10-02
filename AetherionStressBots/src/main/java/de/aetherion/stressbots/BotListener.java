@@ -29,6 +29,12 @@ public final class BotListener implements Listener {
             return;
         }
         plugin.getActivity().onJoin(player);
+        if (plugin.getFocus() != null) {
+            plugin.getFocus().ensure(player);
+            plugin.getActivity().markProfile(player,
+                    plugin.getFocus().profileOf(player),
+                    plugin.getFocus().focusOf(player) == null ? "" : plugin.getFocus().focusOf(player).id());
+        }
         plugin.getLogger().info("Testbot joined: " + player.getName());
         BotRoleHandler handler = plugin.getRegistry().byPlayer(player);
         if (handler != null) {
@@ -49,7 +55,9 @@ public final class BotListener implements Listener {
         if (handler == null) {
             return;
         }
-        Location dest = BotLocations.assignedAnchor(player, roleSection(handler));
+        Location dest = plugin.getFocus() != null
+                ? plugin.getFocus().recoverPad(player, false)
+                : BotLocations.assignedAnchor(player, roleSection(handler));
         if (dest == null) {
             dest = handler.destination(player);
         }

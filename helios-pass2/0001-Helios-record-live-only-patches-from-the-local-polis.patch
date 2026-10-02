@@ -1,0 +1,293 @@
+From c7b42be98bf25592b2bafce5c5b61499ca1a3900 Mon Sep 17 00:00:00 2001
+From: Robbi <ropebe51@gmail.com>
+Date: Mon, 28 Sep 2026 23:02:46 +0200
+Subject: [PATCH 1/2] Helios: record live-only patches from the local polish
+ tree
+
+These were live on MMO-R but uncommitted in _wt_helios_polish:
+- Helios/Act scripts: full damage in FIGHT, invuln only intro/interlude/dying/cinematic
+- Scheduler holds during an Opening; Opening text says bonus window, not exclusive
+- Herald/Helios body collidable; BossCombatListener lets Helios hits through
+  and applies the AetherionItems DAMAGE stat to melee
+- No natural mob spawns in helios_requiem / World Eater site
+- World Eater Unbroken crust: no hidden damage limit
+- plugin.yml: AetherionItems is a hard depend
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_015RSgCUqZ7nNf8EUo5cqZPh
+---
+ .../bossengine/helios/HeliosGuard.java        | 16 ++++++
+ .../helios/encounter/ActScript.java           | 12 +++--
+ .../helios/requiem/HeliosScript.java          |  2 +-
+ .../instance/worldeater/UnbrokenDirector.java |  7 +--
+ .../listener/BossCombatListener.java          | 51 ++++++++++++++++++-
+ .../listener/WorldEaterSiteListener.java      | 16 ++++++
+ BossEngine/src/main/resources/plugin.yml      |  4 +-
+ 7 files changed, 94 insertions(+), 14 deletions(-)
+
+diff --git a/BossEngine/src/main/java/de/aetherion/bossengine/helios/HeliosGuard.java b/BossEngine/src/main/java/de/aetherion/bossengine/helios/HeliosGuard.java
+index fbcd048..726061e 100644
+--- a/BossEngine/src/main/java/de/aetherion/bossengine/helios/HeliosGuard.java
++++ b/BossEngine/src/main/java/de/aetherion/bossengine/helios/HeliosGuard.java
+@@ -17,6 +17,7 @@ import org.bukkit.event.Listener;
+ import org.bukkit.event.block.Action;
+ import org.bukkit.event.block.BlockBreakEvent;
+ import org.bukkit.event.block.BlockPlaceEvent;
++import org.bukkit.event.entity.CreatureSpawnEvent;
+ import org.bukkit.event.entity.EntityDamageEvent;
+ import org.bukkit.event.entity.EntityToggleGlideEvent;
+ import org.bukkit.event.entity.PlayerDeathEvent;
+@@ -135,6 +136,21 @@ public final class HeliosGuard implements Listener {
+         }
+     }
+ 
++    /** No natural mobs in the instance world: only plugin / command / egg spawns. */
++    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
++    public void onCreatureSpawn(CreatureSpawnEvent event) {
++        if (!heliosWorld(module, event.getLocation().getWorld())) {
++            return;
++        }
++        CreatureSpawnEvent.SpawnReason reason = event.getSpawnReason();
++        if (reason == CreatureSpawnEvent.SpawnReason.COMMAND
++                || reason == CreatureSpawnEvent.SpawnReason.CUSTOM
++                || reason == CreatureSpawnEvent.SpawnReason.SPAWNER_EGG) {
++            return;
++        }
++        event.setCancelled(true);
++    }
++
+     /* ------------------------------------------------------------------ damage */
+ 
+     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+diff --git a/BossEngine/src/main/java/de/aetherion/bossengine/helios/encounter/ActScript.java b/BossEngine/src/main/java/de/aetherion/bossengine/helios/encounter/ActScript.java
+index c42492e..c7dc850 100644
+--- a/BossEngine/src/main/java/de/aetherion/bossengine/helios/encounter/ActScript.java
++++ b/BossEngine/src/main/java/de/aetherion/bossengine/helios/encounter/ActScript.java
+@@ -165,7 +165,11 @@ public abstract class ActScript implements BossScript {
+ 
+     @Override
+     public boolean blocksDamage() {
+-        return mode != Mode.FIGHT || shielded();
++        // Full damage in FIGHT. Invulnerable only for intro / interlude / dying and cinematics.
++        if (mode == Mode.INTRO || mode == Mode.INTERLUDE || mode == Mode.DYING || mode == Mode.DONE) {
++            return true;
++        }
++        return enc != null && enc.cinematic();
+     }
+ 
+     @Override
+@@ -264,7 +268,7 @@ public abstract class ActScript implements BossScript {
+     }
+ 
+     private void schedule() {
+-        if (clock < nextPickAt || enc.cinematic() || paused()) {
++        if (opening() || openingPending || clock < nextPickAt || enc.cinematic() || paused()) {
+             return;
+         }
+         int cap = maxConcurrent();
+@@ -417,7 +421,7 @@ public abstract class ActScript implements BossScript {
+             enc.score().chord(org.bukkit.Sound.BLOCK_NOTE_BLOCK_BELL, 0.9f, 1f, 1.26f, 1.5f);
+             enc.score().play(org.bukkit.Sound.BLOCK_AMETHYST_BLOCK_RESONATE, 1f, 1.2f);
+             for (Player p : enc.audience()) {
+-                p.sendActionBar(de.aetherion.bossengine.util.TextUtil.component("&a&lOPENING &7- strike now!"));
++                p.sendActionBar(de.aetherion.bossengine.util.TextUtil.component("&a&lOPENING &7- &fextra damage &7window (you can hit anytime)"));
+             }
+             onOpening(true);
+         }
+@@ -527,7 +531,7 @@ public abstract class ActScript implements BossScript {
+         entity.setSilent(true);
+         entity.setFireTicks(0);
+         entity.setVelocity(new Vector());
+-        entity.setCollidable(false);
++        entity.setCollidable(true);
+         if (entity.getEquipment() != null) {
+             entity.getEquipment().clear();
+         }
+diff --git a/BossEngine/src/main/java/de/aetherion/bossengine/helios/requiem/HeliosScript.java b/BossEngine/src/main/java/de/aetherion/bossengine/helios/requiem/HeliosScript.java
+index 14252b2..56d7a31 100644
+--- a/BossEngine/src/main/java/de/aetherion/bossengine/helios/requiem/HeliosScript.java
++++ b/BossEngine/src/main/java/de/aetherion/bossengine/helios/requiem/HeliosScript.java
+@@ -414,7 +414,7 @@ public final class HeliosScript extends ActScript {
+ 
+     @Override
+     protected boolean shielded() {
+-        return requiem != null && !requiem.exposed();
++        return false;
+     }
+ 
+     @Override
+diff --git a/BossEngine/src/main/java/de/aetherion/bossengine/instance/worldeater/UnbrokenDirector.java b/BossEngine/src/main/java/de/aetherion/bossengine/instance/worldeater/UnbrokenDirector.java
+index ead373e..f41cf7b 100644
+--- a/BossEngine/src/main/java/de/aetherion/bossengine/instance/worldeater/UnbrokenDirector.java
++++ b/BossEngine/src/main/java/de/aetherion/bossengine/instance/worldeater/UnbrokenDirector.java
+@@ -157,12 +157,9 @@ public final class UnbrokenDirector {
+         return isMine() && (act == Act.WAKING || act == Act.DYING || act == Act.BREAKING);
+     }
+ 
+-    /** Bedrock: blades barely scratch it unless it is cracked open. */
++    /** Full damage in the fight: no hidden damage limit on the crust. */
+     public double scaleIncoming(double amount) {
+-        if (!isMine()) {
+-            return amount;
+-        }
+-        return exposeTicks > 0 ? amount : amount * 0.3;
++        return amount;
+     }
+ 
+     public void onDamaged(double amount) {
+diff --git a/BossEngine/src/main/java/de/aetherion/bossengine/listener/BossCombatListener.java b/BossEngine/src/main/java/de/aetherion/bossengine/listener/BossCombatListener.java
+index 74c2ede..d9730ab 100644
+--- a/BossEngine/src/main/java/de/aetherion/bossengine/listener/BossCombatListener.java
++++ b/BossEngine/src/main/java/de/aetherion/bossengine/listener/BossCombatListener.java
+@@ -120,7 +120,7 @@ public class BossCombatListener implements Listener {
+                 event.setCancelled(true);
+                 return;
+             }
+-            if (!isAbilityOrScriptedMelee(event) && striker.getAttackCooldown() < 0.85f) {
++            if (!isHeliosScriptBoss(instance) && !isAbilityOrScriptedMelee(event) && striker.getAttackCooldown() < 0.85f) {
+                 event.setCancelled(true);
+                 return;
+             }
+@@ -151,6 +151,14 @@ public class BossCombatListener implements Listener {
+                 ? damager(byEntity.getDamager())
+                 : null;
+ 
++        // Items' DAMAGE stat must reach the boss even when vanilla melee arrives small.
++        if (player != null && event instanceof EntityDamageByEntityEvent meleeHit
++                && !(meleeHit.getDamager() instanceof Projectile)
++                && (event.getCause() == EntityDamageEvent.DamageCause.ENTITY_ATTACK
++                    || event.getCause() == EntityDamageEvent.DamageCause.ENTITY_SWEEP_ATTACK)) {
++            incoming = Math.max(incoming, aetherionMeleeDamage(player));
++        }
++
+         if (player != null && instance.script() != null) {
+             double modified = instance.script().incoming(player, incoming);
+             if (modified < 0) {
+@@ -569,7 +577,18 @@ public class BossCombatListener implements Listener {
+     }
+ 
+     private boolean shouldUncancelBossHit(BossInstance instance, EntityDamageEvent event) {
+-        if (instance == null || event.getCause() != EntityDamageEvent.DamageCause.PROJECTILE) {
++        if (instance == null) {
++            return false;
++        }
++        // Helios: full damage in FIGHT. Nothing else may swallow a player's hit on the scripted body.
++        if (isHeliosScriptBoss(instance) && isPlayerCombatHit(event) && !instance.isDamageBlocked()) {
++            LivingEntity body = instance.getEntity();
++            if (body != null && body.isInvulnerable()) {
++                body.setInvulnerable(false);
++            }
++            return true;
++        }
++        if (event.getCause() != EntityDamageEvent.DamageCause.PROJECTILE) {
+             return false;
+         }
+         return instance.getEntity() instanceof org.bukkit.entity.Enderman
+@@ -604,6 +623,26 @@ public class BossCombatListener implements Listener {
+         return bossManager.getByEntity(entity).orElse(null);
+     }
+ 
++    /** AetherionItems DAMAGE stat of the player's gear (reflection: no hard compile edge on internals). */
++    private static double aetherionMeleeDamage(Player player) {
++        if (player == null || !Bukkit.getPluginManager().isPluginEnabled("AetherionItems")) {
++            return 0.0;
++        }
++        try {
++            org.bukkit.plugin.Plugin items = Bukkit.getPluginManager().getPlugin("AetherionItems");
++            Object itemManager = items.getClass().getMethod("getItemManager").invoke(items);
++            Class<?> statsClass = Class.forName("de.aetherion.items.manager.ActiveEquipmentStats");
++            Object stats = statsClass.getConstructor(itemManager.getClass()).newInstance(itemManager);
++            Class<?> capClass = Class.forName("de.aetherion.items.model.ItemCapability");
++            @SuppressWarnings({"unchecked", "rawtypes"})
++            Object damageCap = Enum.valueOf((Class) capClass, "DAMAGE");
++            Object value = statsClass.getMethod("getStat", Player.class, capClass).invoke(stats, player, damageCap);
++            return value instanceof Number number ? Math.max(0.0, number.doubleValue()) : 0.0;
++        } catch (ClassCastException | ReflectiveOperationException ignored) {
++            return 0.0;
++        }
++    }
++
+     private Player damager(Entity damager) {
+         if (damager instanceof Player player) {
+             return player;
+@@ -667,6 +706,14 @@ public class BossCombatListener implements Listener {
+         return damager(byEntity.getDamager()) != null;
+     }
+ 
++    private static boolean isHeliosScriptBoss(BossInstance instance) {
++        if (instance == null || instance.getTemplate() == null) {
++            return false;
++        }
++        String id = instance.getTemplate().getId();
++        return "helios_herald".equalsIgnoreCase(id) || "helios_requiem".equalsIgnoreCase(id);
++    }
++
+     private static boolean isAbilityOrScriptedMelee(EntityDamageEvent event) {
+         if (de.aetherion.core.combat.ScriptedHits.isActive()) {
+             return true;
+diff --git a/BossEngine/src/main/java/de/aetherion/bossengine/listener/WorldEaterSiteListener.java b/BossEngine/src/main/java/de/aetherion/bossengine/listener/WorldEaterSiteListener.java
+index bb2adfa..fb0f7b8 100644
+--- a/BossEngine/src/main/java/de/aetherion/bossengine/listener/WorldEaterSiteListener.java
++++ b/BossEngine/src/main/java/de/aetherion/bossengine/listener/WorldEaterSiteListener.java
+@@ -14,6 +14,7 @@ import org.bukkit.event.block.BlockBreakEvent;
+ import org.bukkit.event.block.BlockBurnEvent;
+ import org.bukkit.event.block.BlockFromToEvent;
+ import org.bukkit.event.block.BlockPlaceEvent;
++import org.bukkit.event.entity.CreatureSpawnEvent;
+ import org.bukkit.event.entity.EntityChangeBlockEvent;
+ import org.bukkit.event.entity.EntityExplodeEvent;
+ import org.bukkit.event.player.PlayerBucketEmptyEvent;
+@@ -78,6 +79,21 @@ public class WorldEaterSiteListener implements Listener {
+         }
+     }
+ 
++    /** No natural mobs at the site: only plugin / command / egg spawns. */
++    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
++    public void onCreatureSpawn(CreatureSpawnEvent event) {
++        if (!siteWorld(event.getLocation().getWorld())) {
++            return;
++        }
++        CreatureSpawnEvent.SpawnReason reason = event.getSpawnReason();
++        if (reason == CreatureSpawnEvent.SpawnReason.COMMAND
++                || reason == CreatureSpawnEvent.SpawnReason.CUSTOM
++                || reason == CreatureSpawnEvent.SpawnReason.SPAWNER_EGG) {
++            return;
++        }
++        event.setCancelled(true);
++    }
++
+     @EventHandler(priority = EventPriority.MONITOR)
+     public void onWorldChange(PlayerChangedWorldEvent event) {
+         WorldEaterSite.forget(event.getPlayer());
+diff --git a/BossEngine/src/main/resources/plugin.yml b/BossEngine/src/main/resources/plugin.yml
+index d8132b5..c09f462 100644
+--- a/BossEngine/src/main/resources/plugin.yml
++++ b/BossEngine/src/main/resources/plugin.yml
+@@ -7,6 +7,8 @@ description: Modular custom-mob and boss engine for Aetherion
+ 
+ depend:
+   - AetherionCore
++  # Items must enable first so its DAMAGE rewrite runs before BossCombat absorbs the hit.
++  - AetherionItems
+ 
+ # Multiverse loads worlds at enable-time. Without this, MV can load world_eater
+ # before BossEngine registers BossEngine:worldeater and new chunks become vanilla.
+@@ -14,7 +16,6 @@ loadbefore:
+   - Multiverse-Core
+ 
+ softdepend:
+-  - AetherionItems
+   - AetherionDungeons
+   - AetherMobs
+   - AetherionQuests
+@@ -23,7 +24,6 @@ softdepend:
+   - DeluxeHub
+   - MythicMobs
+   - Multiverse-Core
+-
+ commands:
+   boss:
+     description: BossEngine admin command
+-- 
+2.43.0
+

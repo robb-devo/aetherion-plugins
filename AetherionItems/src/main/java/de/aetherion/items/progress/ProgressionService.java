@@ -255,4 +255,25 @@ public final class ProgressionService {
         } catch (IllegalArgumentException ignored) {
         }
     }
+
+
+    /** Drop all Manager / unlock flags for this player (RAM + progress.yml). */
+    public void wipePlayer(UUID playerId) {
+        if (playerId == null) {
+            return;
+        }
+        flags.remove(playerId);
+        YamlConfiguration config = file.exists()
+                ? YamlConfiguration.loadConfiguration(file)
+                : new YamlConfiguration();
+        config.set("players." + playerId, null);
+        try {
+            AtomicYaml.save(config, file, plugin.getLogger());
+            dirty = false;
+        } catch (Exception exception) {
+            plugin.getLogger().warning("Could not wipe progress for " + playerId + ": " + exception.getMessage());
+            dirty = true;
+        }
+    }
+
 }

@@ -1,5 +1,7 @@
 package de.aetherion.items.listener;
 
+import de.aetherion.items.combat.AbilityCooldownHud;
+
 import de.aetherion.core.AetherKeys;
 import de.aetherion.items.core.ItemKeys;
 import de.aetherion.items.manager.ActiveEquipmentStats;
@@ -59,6 +61,14 @@ public final class TestGearListener implements Listener {
     private final Map<UUID, Long> cycloneCd = new ConcurrentHashMap<>();
     private final Map<UUID, Long> prismCd = new ConcurrentHashMap<>();
     private final Map<UUID, Long> cascadeCd = new ConcurrentHashMap<>();
+
+    private final Map<UUID, Long> meteorCd = new ConcurrentHashMap<>();
+    private final Map<UUID, Long> cataclysmCd = new ConcurrentHashMap<>();
+    private final Map<UUID, Long> runeSigilCd = new ConcurrentHashMap<>();
+    private final Map<UUID, Long> worldSplitterCd = new ConcurrentHashMap<>();
+    private final Map<UUID, Long> vesperCd = new ConcurrentHashMap<>();
+    private final Map<UUID, Long> deepsongCd = new ConcurrentHashMap<>();
+    private final Map<UUID, Long> terminusCd = new ConcurrentHashMap<>();
 
     public TestGearListener(JavaPlugin plugin, ItemManager itemManager) {
         this.plugin = plugin;
@@ -366,6 +376,188 @@ public final class TestGearListener implements Listener {
             }
             prototypes.castCascadeBolt(player, Math.max(40.0, equipmentStats.getStat(player, ItemCapability.DAMAGE)));
         }
+
+
+        if ("meteor_mace".equalsIgnoreCase(id)) {
+            if (hand != EquipmentSlot.HAND) {
+                return;
+            }
+            event.setCancelled(true);
+            event.setUseItemInHand(org.bukkit.event.Event.Result.DENY);
+            if (prototypes.isMeteorBusy(player.getUniqueId())) {
+                player.sendActionBar(net.kyori.adventure.text.Component.text("§cMeteor §7still falling…"));
+                return;
+            }
+            long tick = Bukkit.getCurrentTick();
+            if (!TestPrototypeAbilities.freeCd(player)) {
+                Long next = meteorCd.get(player.getUniqueId());
+                if (next != null && tick < next) {
+                    player.sendActionBar(net.kyori.adventure.text.Component.text(
+                            "§cMeteor §7recharging… §f" + Math.max(1, (next - tick + 19) / 20) + "s"));
+                    return;
+                }
+                meteorCd.put(player.getUniqueId(), tick + 400L);
+                AbilityCooldownHud.arm(player, "meteor_mace", "Meteor", tick + 400L, stack);
+            }
+            prototypes.castMeteor(player, Math.max(40.0, equipmentStats.getStat(player, ItemCapability.DAMAGE)));
+            return;
+        }
+
+
+        if ("cataclysm_rod".equalsIgnoreCase(id)) {
+            if (hand != EquipmentSlot.HAND) {
+                return;
+            }
+            event.setCancelled(true);
+            event.setUseItemInHand(org.bukkit.event.Event.Result.DENY);
+            if (prototypes.isCataclysmBusy(player.getUniqueId())) {
+                player.sendActionBar(net.kyori.adventure.text.Component.text("§cNova §7still unfolding…"));
+                return;
+            }
+            long tick = Bukkit.getCurrentTick();
+            if (!TestPrototypeAbilities.freeCd(player)) {
+                Long next = cataclysmCd.get(player.getUniqueId());
+                if (next != null && tick < next) {
+                    player.sendActionBar(net.kyori.adventure.text.Component.text(
+                            "§cCataclysm §7recharging… §f" + Math.max(1, (next - tick + 19) / 20) + "s"));
+                    return;
+                }
+                cataclysmCd.put(player.getUniqueId(), tick + 600L);
+                AbilityCooldownHud.arm(player, "cataclysm_rod", "Cataclysm", tick + 600L, stack);
+            }
+            prototypes.castCataclysm(player, Math.max(40.0, equipmentStats.getStat(player, ItemCapability.DAMAGE)));
+            return;
+        }
+
+
+        if ("rune_sigil".equalsIgnoreCase(id)) {
+            if (hand != EquipmentSlot.HAND) {
+                return;
+            }
+            event.setCancelled(true);
+            event.setUseItemInHand(org.bukkit.event.Event.Result.DENY);
+            if (prototypes.isRuneSigilBusy(player.getUniqueId())) {
+                player.sendActionBar(net.kyori.adventure.text.Component.text("§bSigil §7still unfolding…"));
+                return;
+            }
+            long tick = Bukkit.getCurrentTick();
+            if (!TestPrototypeAbilities.freeCd(player)) {
+                Long next = runeSigilCd.get(player.getUniqueId());
+                if (next != null && tick < next) {
+                    player.sendActionBar(net.kyori.adventure.text.Component.text(
+                            "§bRune Sigil §7recharging… §f" + Math.max(1, (next - tick + 19) / 20) + "s"));
+                    return;
+                }
+                runeSigilCd.put(player.getUniqueId(), tick + 500L);
+                AbilityCooldownHud.arm(player, "rune_sigil", "Rune Sigil", tick + 500L, stack);
+            }
+            prototypes.castRuneSigil(player, Math.max(40.0, equipmentStats.getStat(player, ItemCapability.DAMAGE)));
+            return;
+        }
+
+
+        if ("world_splitter".equalsIgnoreCase(id)) {
+            if (hand != EquipmentSlot.HAND) {
+                return;
+            }
+            event.setCancelled(true);
+            event.setUseItemInHand(org.bukkit.event.Event.Result.DENY);
+            if (prototypes.isWorldSplitterBusy(player.getUniqueId())) {
+                player.sendActionBar(net.kyori.adventure.text.Component.text("§5Rift §7still open…"));
+                return;
+            }
+            long tick = Bukkit.getCurrentTick();
+            if (!TestPrototypeAbilities.freeCd(player)) {
+                Long next = worldSplitterCd.get(player.getUniqueId());
+                if (next != null && tick < next) {
+                    player.sendActionBar(net.kyori.adventure.text.Component.text(
+                            "§5World Splitter §7recharging… §f" + Math.max(1, (next - tick + 19) / 20) + "s"));
+                    return;
+                }
+                worldSplitterCd.put(player.getUniqueId(), tick + 700L);
+                AbilityCooldownHud.arm(player, "world_splitter", "World Split", tick + 700L, stack);
+            }
+            prototypes.castWorldSplitter(player, Math.max(40.0, equipmentStats.getStat(player, ItemCapability.DAMAGE)));
+            return;
+        }
+
+
+        if ("vesper_bell".equalsIgnoreCase(id)) {
+            if (hand != EquipmentSlot.HAND) {
+                return;
+            }
+            event.setCancelled(true);
+            event.setUseItemInHand(org.bukkit.event.Event.Result.DENY);
+            if (prototypes.isVesperBusy(player.getUniqueId())) {
+                player.sendActionBar(net.kyori.adventure.text.Component.text("§6Hymn §7still sounding…"));
+                return;
+            }
+            long tick = Bukkit.getCurrentTick();
+            if (!TestPrototypeAbilities.freeCd(player)) {
+                Long next = vesperCd.get(player.getUniqueId());
+                if (next != null && tick < next) {
+                    player.sendActionBar(net.kyori.adventure.text.Component.text(
+                            "§6Vesper Bell §7recharging… §f" + Math.max(1, (next - tick + 19) / 20) + "s"));
+                    return;
+                }
+                vesperCd.put(player.getUniqueId(), tick + 600L);
+                AbilityCooldownHud.arm(player, "vesper_bell", "Vesper", tick + 600L, stack);
+            }
+            prototypes.castVesperBell(player, Math.max(40.0, equipmentStats.getStat(player, ItemCapability.DAMAGE)));
+            return;
+        }
+
+
+        if ("deepsong_conch".equalsIgnoreCase(id)) {
+            if (hand != EquipmentSlot.HAND) {
+                return;
+            }
+            event.setCancelled(true);
+            event.setUseItemInHand(org.bukkit.event.Event.Result.DENY);
+            if (prototypes.isDeepsongBusy(player.getUniqueId())) {
+                player.sendActionBar(net.kyori.adventure.text.Component.text("§3The sea §7is still moving…"));
+                return;
+            }
+            long tick = Bukkit.getCurrentTick();
+            if (!TestPrototypeAbilities.freeCd(player)) {
+                Long next = deepsongCd.get(player.getUniqueId());
+                if (next != null && tick < next) {
+                    player.sendActionBar(net.kyori.adventure.text.Component.text(
+                            "§3Deepsong §7recharging… §f" + Math.max(1, (next - tick + 19) / 20) + "s"));
+                    return;
+                }
+                deepsongCd.put(player.getUniqueId(), tick + 900L);
+                AbilityCooldownHud.arm(player, "deepsong_conch", "Deepsong", tick + 900L, stack);
+            }
+            prototypes.castDeepsong(player, Math.max(40.0, equipmentStats.getStat(player, ItemCapability.DAMAGE)));
+            return;
+        }
+
+
+        if ("terminus".equalsIgnoreCase(id)) {
+            // A lightning rod underneath: never let either hand place it.
+            event.setCancelled(true);
+            event.setUseItemInHand(org.bukkit.event.Event.Result.DENY);
+            if (hand != EquipmentSlot.HAND) {
+                return;
+            }
+            if (prototypes.isTerminusBusy(player.getUniqueId())) {
+                player.sendActionBar(net.kyori.adventure.text.Component.text("§7The world already has an edge."));
+                return;
+            }
+            long tick = Bukkit.getCurrentTick();
+            if (!TestPrototypeAbilities.freeCd(player)) {
+                Long next = terminusCd.get(player.getUniqueId());
+                if (next != null && tick < next) {
+                    player.sendActionBar(net.kyori.adventure.text.Component.text(
+                            "§fTerminus §7recharging… §f" + Math.max(1, (next - tick + 19) / 20) + "s"));
+                    return;
+                }
+                terminusCd.put(player.getUniqueId(), tick + 1200L);
+                AbilityCooldownHud.arm(player, "terminus", "Terminus", tick + 1200L, stack);
+            }
+            prototypes.castTerminus(player, Math.max(40.0, equipmentStats.getStat(player, ItemCapability.DAMAGE)));
+        }
     }
 
     @EventHandler
@@ -441,17 +633,7 @@ public final class TestGearListener implements Listener {
             return;
         }
         echoReady.put(player.getUniqueId(), tick + 8L);
-        Location origin = victim.getLocation().clone();
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            if (!victim.isValid() || victim.isDead() || !player.isOnline()) {
-                return;
-            }
-            Location ghost = origin.clone().add(0, 1.0, 0);
-            player.getWorld().spawnParticle(Particle.SOUL, ghost, 18, 0.35, 0.5, 0.35, 0.01);
-            player.getWorld().playSound(ghost, Sound.ENTITY_PLAYER_ATTACK_SWEEP, 0.7f, 1.5f);
-            de.aetherion.items.combat.ScriptedHits.run(
-                    () -> victim.damage(Math.max(2.0, damage * 0.40), player));
-        }, 8L);
+        EchoBladeAfterimage.cast(plugin, player, victim, Math.max(2.0, damage * 0.40));
     }
 
     private void applyParity(Player player, LivingEntity victim, EntityDamageByEntityEvent event) {

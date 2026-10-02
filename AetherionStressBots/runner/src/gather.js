@@ -7,8 +7,9 @@ import {
   withinLeash,
   wanderOnIsland
 } from './safety.js'
-import { findMatchingBlock, inventoryAlmostFull, jitter, markError, note, tossJunk, waitUntil, sleep } from './util.js'
+import { bindLoop, findMatchingBlock, inventoryAlmostFull, jitter, markError, note, tossJunk, waitUntil, sleep } from './util.js'
 import { applyPathfinderDefaults, fidget, takeIdleGoal } from './playstyle.js'
+import { tickSurvival } from './react.js'
 
 const { goals, Movements, pathfinder } = pathfinderPkg
 
@@ -58,6 +59,7 @@ export function createDigLoop(bot, cfg, log, { activity, names, searchRadius, yR
 
   async function tick() {
     if (!bot.entity || busy || bot.qaSuspended) return
+    if (tickSurvival(bot)) return
     if (bot.qaNeedRetarget) {
       bot.qaNeedRetarget = false
       bot.qaDigging = false
@@ -128,6 +130,7 @@ export function createDigLoop(bot, cfg, log, { activity, names, searchRadius, yR
       }
       bot.pathfinder.setGoal(null)
       bot.qaDigging = true
+      bot.qaTarget = block.name
       note(bot, `dig ${block.name}`, activity)
       await sleep(jitter(180, 0.6))
       if (Math.random() < 0.12) {
@@ -164,13 +167,10 @@ export function createDigLoop(bot, cfg, log, { activity, names, searchRadius, yR
     }
     log(bot.stressName, `${activity} loop start`)
     note(bot, `${activity} loop start`, activity)
-    const handle = setInterval(() => {
-      tick().catch((err) => {
-        markError(bot, err)
-        log(bot.stressName, `${activity} tick: ${err.message}`)
-      })
-    }, jitter(280, 0.15))
-    bot.once('end', () => clearInterval(handle))
+    bindLoop(bot, jitter(280, bot.qaPersonality?.tickJitter ?? 0.15), () => tick().catch((err) => {
+      markError(bot, err)
+      log(bot.stressName, `${activity} tick: ${err.message}`)
+    }))
   }
 }
 

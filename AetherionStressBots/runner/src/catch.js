@@ -1,6 +1,7 @@
 import pathfinderPkg from 'mineflayer-pathfinder'
 import { applyIslandMovements, cancelPath, standingIsSafe, withinLeash, wanderOnIsland } from './safety.js'
-import { fidget, markError, note } from './util.js'
+import { bindLoop, fidget, markError, note } from './util.js'
+import { tickSurvival } from './react.js'
 import { maybeSkip } from './playstyle.js'
 
 const { goals, Movements, pathfinder } = pathfinderPkg
@@ -30,6 +31,7 @@ export function createCatchLoop(bot, cfg, log) {
 
   async function tick() {
     if (!bot.entity || bot.qaSuspended) return
+    if (tickSurvival(bot)) return
     if (!home()) {
       bot.qaHome = { x: bot.entity.position.x, y: bot.entity.position.y, z: bot.entity.position.z }
     }
@@ -84,6 +86,7 @@ export function createCatchLoop(bot, cfg, log) {
       return
     }
     try {
+      bot.qaTarget = target.name || 'entity'
       note(bot, `throw sphere at ${target.name || 'entity'}`, 'catching')
       await bot.activateItem()
       bot.qaMinigame = bot.qaMinigame || {}
@@ -102,13 +105,10 @@ export function createCatchLoop(bot, cfg, log) {
     }
     log(bot.stressName, 'catch loop start (pad throws + timing clicks)')
     note(bot, 'catch loop start', 'catching')
-    const handle = setInterval(() => {
-      tick().catch((err) => {
-        markError(bot, err)
-        log(bot.stressName, `catch tick: ${err.message}`)
-      })
-    }, 300)
-    bot.once('end', () => clearInterval(handle))
+    bindLoop(bot, 300 + Math.floor(Math.random() * 80), () => tick().catch((err) => {
+      markError(bot, err)
+      log(bot.stressName, `catch tick: ${err.message}`)
+    }))
   }
 }
 

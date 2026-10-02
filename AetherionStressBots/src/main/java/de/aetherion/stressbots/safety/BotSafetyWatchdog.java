@@ -69,7 +69,7 @@ public final class BotSafetyWatchdog implements Listener, Runnable {
                 continue;
             }
             Location loc = player.getLocation();
-            ConfigurationSection section = roleSection(handler);
+            ConfigurationSection section = workingSection(player, handler);
             Location home = BotLocations.assignedAnchor(player, section);
             double leash = leashOf(section);
 
@@ -79,7 +79,8 @@ public final class BotSafetyWatchdog implements Listener, Runnable {
                 recover(player, handler, "void-floor", false);
                 continue;
             }
-            boolean padFlight = handler.role() == BotRole.PAD && now < padFlightUntil.getOrDefault(player.getUniqueId(), 0L);
+            boolean padFlight = workingRole(player, handler) == BotRole.PAD
+                    && now < padFlightUntil.getOrDefault(player.getUniqueId(), 0L);
             if (padFlight) {
                 plugin.getActivity().markActivity(player, "pad_hop", "mid-hop");
                 continue;
@@ -112,10 +113,11 @@ public final class BotSafetyWatchdog implements Listener, Runnable {
             }
 
             int hopTicks = plugin.getConfig().getInt("testbots.safety.pad-hop-ticks", 0);
-            if ((handler.role() == BotRole.ROAM || handler.role() == BotRole.PAD) && hopTicks > 0) {
+            BotRole working = workingRole(player, handler);
+            if ((working == BotRole.ROAM || working == BotRole.PAD) && hopTicks > 0) {
                 long last = lastHopAt.getOrDefault(player.getUniqueId(), 0L);
-                long interval = handler.role() == BotRole.PAD ? Math.max(400L, hopTicks * 20L) : hopTicks * 50L;
-                if (now - last > interval && handler.role() == BotRole.ROAM) {
+                long interval = working == BotRole.PAD ? Math.max(400L, hopTicks * 20L) : hopTicks * 50L;
+                if (now - last > interval && working == BotRole.ROAM) {
                     recover(player, handler, "pad-hop", true);
                 }
             }
@@ -132,10 +134,15 @@ public final class BotSafetyWatchdog implements Listener, Runnable {
         if (previous != null && now - previous < cooldown) {
             return false;
         }
-        ConfigurationSection section = roleSection(handler);
-        Location dest = otherPad
-                ? BotLocations.otherAnchor(player, section, player.getLocation())
-                : BotLocations.assignedAnchor(player, section);
+        Location dest = plugin.getFocus() != null
+                ? plugin.getFocus().recoverPad(player, otherPad)
+                : null;
+        if (dest == null) {
+            ConfigurationSection section = workingSection(player, handler);
+            dest = otherPad
+                    ? BotLocations.otherAnchor(player, section, player.getLocation())
+                    : BotLocations.assignedAnchor(player, section);
+        }
         if (dest == null) {
             dest = handler.destination(player);
         }
@@ -155,7 +162,7 @@ public final class BotSafetyWatchdog implements Listener, Runnable {
     }
 
     private void trackPadFlight(Player player, BotRoleHandler handler, Location loc, long now) {
-        if (handler.role() != BotRole.PAD) {
+        if (workingRole(player, handler) != BotRole.PAD) {
             return;
         }
         Vector velocity = player.getVelocity();
@@ -169,12 +176,28 @@ public final class BotSafetyWatchdog implements Listener, Runnable {
         }
     }
 
-    private ConfigurationSection roleSection(BotRoleHandler handler) {
+    private ConfigurationSection workingSection(Player player, BotRoleHandler handler) {
+        if (plugin.getFocus() != null) {
+            ConfigurationSection focused = plugin.getFocus().workingSection(player);
+            if (focused != null) {
+                return focused;
+            }
+        }
         ConfigurationSection qa = BotRoleRegistry.roleSection(plugin, handler.role());
         if (qa != null) {
             return qa;
         }
         return plugin.getConfig().getConfigurationSection(handler.role().id());
+    }
+
+    private BotRole workingRole(Player player, BotRoleHandler handler) {
+        if (plugin.getFocus() != null) {
+            BotRole focus = plugin.getFocus().focusOf(player);
+            if (focus != null) {
+                return focus;
+            }
+        }
+        return handler.role();
     }
 
     private double leashOf(ConfigurationSection section) {

@@ -30,6 +30,7 @@ public final class BotRoleRegistry {
         register(new TradeRoleHandler(plugin));
         register(new QuestRoleHandler(plugin));
         register(new PadRoleHandler(plugin));
+        register(new GeneralRoleHandler(plugin));
         register(new LegacyMiningRoleHandler(plugin));
     }
 
@@ -100,10 +101,15 @@ public final class BotRoleRegistry {
         return byWave(2);
     }
 
+    public List<BotRoleHandler> wave3() {
+        return byWave(3);
+    }
+
     public List<BotRoleHandler> qa() {
         List<BotRoleHandler> out = new ArrayList<>();
         out.addAll(wave1());
         out.addAll(wave2());
+        out.addAll(wave3());
         return out;
     }
 

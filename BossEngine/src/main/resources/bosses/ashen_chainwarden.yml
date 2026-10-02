@@ -1,0 +1,115 @@
+# ============================================================
+# The Chainwarden · Floor 3 (Throne of Ashes) elite
+# Jailer of the Throne. Spawns mid-clear in the crawl (AshesEncounter ~40%).
+# Mini-boss scale: far below Pathwarden (52k) / Sovereign (115k). Placeholder numbers.
+# Mechanics live in AshesEliteDirector:
+#   Shackle  - red ring follows one player, locks, strobes white -> yank + slow
+#   Lockdown - ash cage square around him; inside when it slams = hit
+#   Sweep    - (below 50%) 180 degree frontal chain sweep
+# Spawn: /boss give ashen_chainwarden_anchor   Test: /boss give ashen_chainwarden_core
+# ============================================================
+
+id: ashen_chainwarden
+display-name: "&8&lThe Chainwarden"
+entity-type: WITHER_SKELETON
+model-engine-id: ""
+
+attributes:
+  max-health: 16000
+  movement-speed: 0.24
+  attack-damage: 42
+  scale: 1.6
+  follow-range: 24
+  knockback-resistance: 0.85
+
+equipment:
+  helmet: NETHERITE_HELMET
+  chestplate: NETHERITE_CHESTPLATE
+  leggings: CHAINMAIL_LEGGINGS
+  boots: NETHERITE_BOOTS
+  main-hand: CHAIN
+  off-hand: AIR
+  drop-chance: 0.0
+
+options:
+  glowing: false
+  custom-name-visible: true
+  silent: false
+  invulnerable-spawn-ticks: 30
+  persistent: true
+  remove-when-far-away: false
+  prevent-item-pickup: true
+
+conditions:
+  max-instances: 48
+  leash-radius: 22
+  leash-action: TELEPORT
+
+phases:
+  - id: warden
+    health-percent: 100
+    display-name: "&8&lThe Chainwarden"
+    skills: []
+
+  - id: keys
+    health-percent: 50
+    display-name: "&8&lThe Chainwarden &7(&cUnlocked&7)"
+    transition:
+      duration-ticks: 50
+      invulnerable: true
+      freeze-ai: true
+      start-radius: 5.0
+      end-radius: 1.2
+      particle: SMALL_FLAME
+      extra-particle: WHITE_ASH
+      points: 44
+      height: 0.15
+    attributes:
+      movement-speed: 0.28
+    skills:
+      - type: SOUND
+        trigger: ON_PHASE
+        sound: BLOCK_CHAIN_BREAK
+        volume: 1.4
+        pitch: 0.5
+
+skills:
+  - type: SOUND
+    trigger: ON_SPAWN
+    sound: BLOCK_IRON_DOOR_OPEN
+    volume: 1.4
+    pitch: 0.45
+
+  - type: SOUND
+    trigger: ON_SPAWN
+    sound: BLOCK_CHAIN_PLACE
+    volume: 1.4
+    pitch: 0.5
+
+  - type: DIALOG
+    trigger: ON_SPAWN
+    broadcast: false
+    radius: 64
+    message: "&8&lThe Chainwarden &7drags his chains out of the ash. &8\"Back to your cells.\""
+
+  - type: DIALOG
+    trigger: ON_DEATH
+    broadcast: false
+    radius: 64
+    message: "&8&lThe Chainwarden &7falls. &6+Clearance"
+
+loot:
+  damage-based: true
+  participation-threshold-percent: 5.0
+  experience: 0
+  killer-bonus: []
+  rank-loot: {}
+  top-damagers:
+    count: 1
+    items:
+      - source: AETHERION
+        item-id: random_booster
+        amount: 1
+        chance: 0.10
+  shared: []
+  per-damager:

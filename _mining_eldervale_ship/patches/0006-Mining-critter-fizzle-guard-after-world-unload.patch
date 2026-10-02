@@ -1,0 +1,27 @@
+From 1b2a7727a48c52742053e6bf7630e84e9f0d9067 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 29 Sep 2026 04:58:37 +0200
+Subject: [PATCH 6/9] Mining: critter fizzle guard after world unload
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01Cb5rUs5Jy2h8ZCMwTfnbVN
+---
+ .../src/main/java/de/aetherion/mining/isle/MineCritters.java    | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/AetherionMining/src/main/java/de/aetherion/mining/isle/MineCritters.java b/AetherionMining/src/main/java/de/aetherion/mining/isle/MineCritters.java
+index 1fa220a3..ed4dd249 100644
+--- a/AetherionMining/src/main/java/de/aetherion/mining/isle/MineCritters.java
++++ b/AetherionMining/src/main/java/de/aetherion/mining/isle/MineCritters.java
+@@ -680,7 +680,7 @@ public final class MineCritters implements Listener {
+     }
+ 
+     private void fizzle(Critter critter) {
+-        if (critter.at != null && critter.at.getWorld() != null) {
++        if (critter.body != null && critter.body.isValid() && critter.at != null && critter.at.getWorld() != null) {
+             critter.at.getWorld().spawnParticle(Particle.SMOKE, critter.at.clone().add(0, 0.4, 0), 8, 0.2, 0.2, 0.2, 0.02);
+         }
+         remove(critter);
+-- 
+2.43.0
+

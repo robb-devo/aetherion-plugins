@@ -4,11 +4,13 @@ import de.aetherion.bossengine.BossEngine;
 import de.aetherion.bossengine.api.SpawnCause;
 import de.aetherion.bossengine.event.BossDespawnEvent;
 import de.aetherion.bossengine.instance.BossInstance;
+import de.aetherion.bossengine.instance.saint.SaintStage;
 import de.aetherion.bossengine.item.SpawnItemDefinition;
 import de.aetherion.bossengine.model.BossTemplate;
 import de.aetherion.bossengine.util.TextUtil;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -47,6 +49,7 @@ public class BossCommand implements CommandExecutor, TabCompleter {
             case "reload" -> reload(sender);
             case "give" -> give(sender, args);
             case "info" -> info(sender, args);
+            case "stage" -> stage(sender, args);
             default -> sendHelp(sender);
         }
         return true;
@@ -182,6 +185,34 @@ public class BossCommand implements CommandExecutor, TabCompleter {
                 + " &7" + boss.getConditions().getLeashAction().name()));
     }
 
+    private void stage(CommandSender sender, String[] args) {
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage(TextUtil.component("&cPlayers only."));
+            return;
+        }
+        if (args.length < 2) {
+            sender.sendMessage(TextUtil.component("&cUsage: /boss stage <build|remove>"));
+            return;
+        }
+        String action = args[1].toLowerCase(Locale.ROOT);
+        Location at = player.getLocation();
+        switch (action) {
+            case "build" -> {
+                Location center = SaintStage.buildPermanent(plugin, at);
+                sender.sendMessage(TextUtil.component(
+                        "&aGilded Proscenium built at &f"
+                                + center.getBlockX() + " " + center.getBlockY() + " " + center.getBlockZ()
+                                + " &7(permanent — later Saint fights reuse it)."
+                ));
+            }
+            case "remove" -> {
+                SaintStage.strikePermanent(plugin, at);
+                sender.sendMessage(TextUtil.component("&aStruck the permanent stage at your feet (layout-matched)."));
+            }
+            default -> sender.sendMessage(TextUtil.component("&cUsage: /boss stage <build|remove>"));
+        }
+    }
+
     private void sendHelp(CommandSender sender) {
         sender.sendMessage(TextUtil.component("&5BossEngine"));
         sender.sendMessage(TextUtil.component("&8/boss spawn <id> &7- spawn at your location"));
@@ -189,7 +220,8 @@ public class BossCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(TextUtil.component("&8/boss list"));
         sender.sendMessage(TextUtil.component("&8/boss info <id>"));
         sender.sendMessage(TextUtil.component("&8/boss give [player] [item] &7- spawn/anchor items"));
-        sender.sendMessage(TextUtil.component("&8  hollow_lurker_anchor &7locks his cave home"));
+        sender.sendMessage(TextUtil.component("&8  hanging_saint_core &7/ &fhanging_saint_anchor"));
+        sender.sendMessage(TextUtil.component("&8/boss stage <build|remove> &7- Gilded Proscenium"));
         sender.sendMessage(TextUtil.component("&8/boss reload"));
     }
 
@@ -199,7 +231,7 @@ public class BossCommand implements CommandExecutor, TabCompleter {
             return List.of();
         }
         if (args.length == 1) {
-            return filter(args[0], List.of("spawn", "kill", "list", "reload", "give", "info"));
+            return filter(args[0], List.of("spawn", "kill", "list", "reload", "give", "info", "stage"));
         }
         if (args.length == 2 && (args[0].equalsIgnoreCase("spawn") || args[0].equalsIgnoreCase("info") || args[0].equalsIgnoreCase("kill"))) {
             List<String> ids = new ArrayList<>();
@@ -208,6 +240,9 @@ public class BossCommand implements CommandExecutor, TabCompleter {
                 ids.add("all");
             }
             return filter(args[1], ids);
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("stage")) {
+            return filter(args[1], List.of("build", "remove"));
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("give")) {
             List<String> names = new ArrayList<>();

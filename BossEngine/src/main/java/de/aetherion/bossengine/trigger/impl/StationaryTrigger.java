@@ -47,6 +47,10 @@ public class StationaryTrigger extends AbstractSpawnTrigger implements Listener 
             if (host.getBossManager().isSpawnerOccupied(getDefinition().getId())) {
                 return;
             }
+            // Template cap too — unloading bodies must not let a second Hollow Sun appear.
+            if (host.getBossManager().isTemplateAtCap(getDefinition().getBossId())) {
+                return;
+            }
             host.trySpawn(SpawnCause.TIMER, null);
         }, 20L, 40L);
     }

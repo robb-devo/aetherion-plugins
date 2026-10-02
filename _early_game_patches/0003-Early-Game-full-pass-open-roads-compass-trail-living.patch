@@ -1,0 +1,4073 @@
+From b49a61cf17ca7467cf0084a7432b0237b0a2a1a3 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sun, 27 Sep 2026 21:59:54 +0000
+Subject: [PATCH 3/3] Early Game full pass: open roads, compass trail, living
+ cast, UI density, chest props
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Past the pier and past tutorialDone — no quest IDs, gates, combat numbers
+or locked systems changed.
+
+- Graduation: Miss Ledger physically stamps an orientation slip
+  (GraduationStamp); QUEST COMPLETE + reward fire on the hit, then harbour
+  bells. Flushes on quit/world change/disable.
+- Open Roads (OpenRoads + OpenRoadsGUI): Vex -> Rite Warden -> Craftsman
+  side job -> Surveyor -> wider map, read from existing state. Ledger pins
+  the next road and opens the board; return visits open it too. /guide and
+  Discord guide lead with the roads after the stamp. Pinned roads persist
+  in QuestHint until filed.
+- TutorialQuestTrail compass mode: painted chevrons toward the READY
+  turn-in NPC or the QuestHint target (QM, Foreman, Temper, Ledger, Fields,
+  roads), only on walkable ground with headroom; NPC-colour beacon <64m.
+- LivingNpcAtmosphere: Quartermaster, Craftsman, Temper, Farmer, Vex,
+  Rite Warden, Surveyor ambient beats; NpcPresence voices for four more.
+- Recipe Book: known counts, quiet empty categories, Ready-to-craft view,
+  flat lists fold locked recipes into "+N more", softer undiscovered icon.
+  Manager: open x/y, one glinting next unlock, far locks recede, rails.
+- Craftsman: side job said plainly, craft nudge, small QUEST COMPLETE on
+  payout, state-aware follow-up (no stale "Next: Foreman").
+- Vex frames first hit (damage numbers / crits) and first kill once.
+- UnlockToast gets the discover "world noticed you" ring.
+- Explore chests are authored per-rarity Display props on a barrier
+  hitbox: hinge lid, idle life, open/spin/close choreography, walk-up
+  rattle, distant glint, first-sighting line. Legacy vanilla chests
+  migrate in place; facing persisted; parts non-persistent and cleaned on
+  remove/unload/disable. Dev Menu give path unchanged.
+- German strings for the new lines; finish doc in BossEngine/docs.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01LYGLQ5kJNk6fcjQdoCQbqM
+---
+ .../aetherion/items/command/GuideCommand.java |   9 +-
+ .../de/aetherion/items/guide/GuideAdvice.java |  33 +-
+ .../items/listener/RecipeBookListener.java    |  47 +-
+ .../items/menu/AetherionManagerGUI.java       | 132 +++-
+ .../aetherion/items/progress/UnlockToast.java |  29 +
+ .../items/recipe/GUI/RecipeBookGUI.java       | 286 ++++++++-
+ .../de/aetherion/quests/AetherionQuests.java  |   3 +
+ .../quests/bridge/QuestProgressBridge.java    |  35 +
+ .../quests/chest/ExploreChestProp.java        | 602 ++++++++++++++++++
+ .../quests/chest/ExploreChestService.java     | 346 ++++++++--
+ .../quests/dialog/DialogManager.java          |   5 +-
+ .../quests/listener/ExploreChestListener.java |   2 +-
+ .../quests/listener/NpcListener.java          | 136 ++--
+ .../listener/QuestObjectiveListener.java      |   5 +
+ .../quests/listener/VexDeathHintListener.java |  84 ++-
+ .../quests/npc/LivingNpcAtmosphere.java       | 115 +++-
+ .../de/aetherion/quests/npc/NpcPresence.java  |  25 +-
+ .../aetherion/quests/ui/GraduationStamp.java  | 439 +++++++++++++
+ .../de/aetherion/quests/ui/OpenRoadsGUI.java  | 225 +++++++
+ .../de/aetherion/quests/ui/QuestHint.java     |  34 +-
+ .../quests/ui/TutorialQuestTrail.java         | 185 +++++-
+ .../de/aetherion/quests/util/OpenRoads.java   | 210 ++++++
+ .../aetherion/quests/util/QuestStoryGate.java |   8 +
+ .../src/main/resources/lang/de.yml            |  49 +-
+ 24 files changed, 2917 insertions(+), 127 deletions(-)
+ create mode 100644 AetherionQuests/src/main/java/de/aetherion/quests/chest/ExploreChestProp.java
+ create mode 100644 AetherionQuests/src/main/java/de/aetherion/quests/ui/GraduationStamp.java
+ create mode 100644 AetherionQuests/src/main/java/de/aetherion/quests/ui/OpenRoadsGUI.java
+ create mode 100644 AetherionQuests/src/main/java/de/aetherion/quests/util/OpenRoads.java
+
+diff --git a/AetherionItems/src/main/java/de/aetherion/items/command/GuideCommand.java b/AetherionItems/src/main/java/de/aetherion/items/command/GuideCommand.java
+index e465c7a..61fc3fa 100644
+--- a/AetherionItems/src/main/java/de/aetherion/items/command/GuideCommand.java
++++ b/AetherionItems/src/main/java/de/aetherion/items/command/GuideCommand.java
+@@ -77,15 +77,20 @@ public final class GuideCommand implements CommandExecutor, TabCompleter {
+                 + " §7" + AetherionLevel.coloredTitle(level));
+         if (result.tutorial) {
+             player.sendMessage(PREFIX + "§aOrientation §7— one step at a time:");
++        } else if (result.roads) {
++            player.sendMessage(PREFIX + "§dOrientation filed §7— open roads, pick any:");
+         } else {
+             player.sendMessage(PREFIX + "Suggested next steps:");
+         }
+         int shown = 0;
++        int cap = result.roads ? 6 : 4;
+         for (String tip : result.tips) {
+-            if (shown >= 4) {
++            if (shown >= cap) {
+                 break;
+             }
+-            player.sendMessage("  §6› §7" + tip);
++            // First road is the suggestion — give it the weight, keep the rest quiet.
++            String bullet = result.roads && shown == 0 ? "  §e➜ §f" : "  §6› §7";
++            player.sendMessage(bullet + tip);
+             shown++;
+         }
+         player.sendMessage(PREFIX + "Craft: §e/guide craft <item> §8· §7Discord: §fguide §7in #guide");
+diff --git a/AetherionItems/src/main/java/de/aetherion/items/guide/GuideAdvice.java b/AetherionItems/src/main/java/de/aetherion/items/guide/GuideAdvice.java
+index ad1f2a6..ac89162 100644
+--- a/AetherionItems/src/main/java/de/aetherion/items/guide/GuideAdvice.java
++++ b/AetherionItems/src/main/java/de/aetherion/items/guide/GuideAdvice.java
+@@ -34,11 +34,18 @@ public final class GuideAdvice {
+         public final String header;
+         public final List<String> tips;
+         public final boolean tutorial;
++        /** Orientation filed — tips lead with Ledger's open roads (Vex, Rite Warden, …). */
++        public final boolean roads;
+ 
+         public Result(String header, List<String> tips, boolean tutorial) {
++            this(header, tips, tutorial, false);
++        }
++
++        public Result(String header, List<String> tips, boolean tutorial, boolean roads) {
+             this.header = header;
+             this.tips = tips;
+             this.tutorial = tutorial;
++            this.roads = roads;
+         }
+     }
+ 
+@@ -55,6 +62,12 @@ public final class GuideAdvice {
+         }
+ 
+         List<String> tips = new ArrayList<>();
++        // After Miss Ledger's stamp: the open roads first, so /guide never drops into "go do dungeons".
++        List<String> roads = questRoadTips(player);
++        boolean hasRoads = roads != null && !roads.isEmpty();
++        if (hasRoads) {
++            tips.addAll(stripAll(roads));
++        }
+         ProgressionService progress = AetherionItems.getInstance() == null
+                 ? null : AetherionItems.getInstance().progress();
+         if (progress != null) {
+@@ -86,7 +99,7 @@ public final class GuideAdvice {
+             tips.add("Explore dungeons, upgrade gear, and keep leveling skills.");
+             tips.add("Use /atrecipes for crafting and /aetherion for the Manager.");
+         }
+-        return new Result(header, tips, false);
++        return new Result(header, tips, false, hasRoads);
+     }
+ 
+     public static Result nextOnlineOrNull(UUID uuid) {
+@@ -155,6 +168,24 @@ public final class GuideAdvice {
+         return List.of();
+     }
+ 
++    @SuppressWarnings("unchecked")
++    private static List<String> questRoadTips(Player player) {
++        if (!Bukkit.getPluginManager().isPluginEnabled("AetherionQuests")) {
++            return List.of();
++        }
++        try {
++            Class<?> gate = Class.forName("de.aetherion.quests.util.QuestStoryGate");
++            Method m = gate.getMethod("roadTips", Player.class);
++            Object raw = m.invoke(null, player);
++            if (raw instanceof List<?> list) {
++                return (List<String>) list;
++            }
++        } catch (Throwable ignored) {
++            // Older Quests jar without roads — fall back to unlock tips.
++        }
++        return List.of();
++    }
++
+     private static Map<String, Integer> countIngredients(RecipeDefinition recipe) {
+         Map<String, Integer> counts = new LinkedHashMap<>();
+         Map<Character, ItemStack> map = recipe.getIngredients();
+diff --git a/AetherionItems/src/main/java/de/aetherion/items/listener/RecipeBookListener.java b/AetherionItems/src/main/java/de/aetherion/items/listener/RecipeBookListener.java
+index c25cde5..6e59898 100644
+--- a/AetherionItems/src/main/java/de/aetherion/items/listener/RecipeBookListener.java
++++ b/AetherionItems/src/main/java/de/aetherion/items/listener/RecipeBookListener.java
+@@ -75,6 +75,7 @@ public class RecipeBookListener implements Listener {
+             case CATEGORIES -> handleCategoryClick(player, slot);
+             case RECIPE_LIST -> handleRecipeListClick(player, holder, slot);
+             case RECIPE_DETAIL -> handleRecipeDetailClick(player, holder, slot);
++            case READY -> handleReadyClick(player, holder, slot);
+         }
+     }
+ 
+@@ -91,6 +92,10 @@ public class RecipeBookListener implements Listener {
+             de.aetherion.items.util.ManagerNav.openManager(player);
+             return;
+         }
++        if (slot == RecipeBookGUI.READY_SLOT) {
++            recipeBookGUI.openReady(player, 1);
++            return;
++        }
+ 
+         RecipeCategory[] categories = RecipeCategory.values();
+ 
+@@ -156,7 +161,8 @@ public class RecipeBookListener implements Listener {
+             return;
+         }
+ 
+-        List<RecipeDefinition> recipes = recipeBookGUI.getRecipes(player, category);
++        // Same folded list the GUI drew (known first, one row of silhouettes).
++        List<RecipeDefinition> recipes = recipeBookGUI.visibleRecipes(player, category);
+ 
+         int recipeIndex = slotIndex + (holder.getPage() - 1) * RecipeBookLayout.RECIPE_SLOTS.length;
+ 
+@@ -174,13 +180,44 @@ public class RecipeBookListener implements Listener {
+         recipeBookGUI.openRecipe(player, recipe, holder.getPage());
+     }
+ 
++    private void handleReadyClick(
++            Player player,
++            RecipeBookGUI.RecipeBookHolder holder,
++            int slot
++    ) {
++        if (slot == RecipeBookLayout.BACK_SLOT) {
++            recipeBookGUI.openCategories(player);
++            return;
++        }
++        if (slot == RecipeBookLayout.PREV_PAGE_SLOT && holder.getPage() > 1) {
++            recipeBookGUI.openReady(player, holder.getPage() - 1);
++            return;
++        }
++        if (slot == RecipeBookLayout.NEXT_PAGE_SLOT) {
++            recipeBookGUI.openReady(player, holder.getPage() + 1);
++            return;
++        }
++        int slotIndex = RecipeBookLayout.recipeIndexFromSlot(slot);
++        if (slotIndex < 0) {
++            return;
++        }
++        List<RecipeDefinition> ready = recipeBookGUI.readyRecipes(player);
++        int index = slotIndex + (holder.getPage() - 1) * RecipeBookLayout.RECIPE_SLOTS.length;
++        if (index < 0 || index >= ready.size()) {
++            return;
++        }
++        recipeBookGUI.openRecipe(player, ready.get(index), holder.getPage(), true);
++    }
++
+     private void handleRecipeDetailClick(
+             Player player,
+             RecipeBookGUI.RecipeBookHolder holder,
+             int slot
+     ) {
+         if (slot == RecipeBookLayout.BACK_SLOT) {
+-            if (holder.getCategory() != null) {
++            if (holder.isFromReady()) {
++                recipeBookGUI.openReady(player, holder.getPage());
++            } else if (holder.getCategory() != null) {
+                 recipeBookGUI.openCategory(player, holder.getCategory(), holder.getPage());
+             } else {
+                 recipeBookGUI.openCategories(player);
+@@ -236,7 +273,7 @@ public class RecipeBookListener implements Listener {
+         if (!RecipeBookCrafter.canCraft(player, recipe, itemManager)) {
+             player.sendMessage("§cMissing ingredients for Insta Craft.");
+             player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 0.7f, 0.7f);
+-            recipeBookGUI.openRecipe(player, recipe, holder.getPage());
++            recipeBookGUI.openRecipe(player, recipe, holder.getPage(), holder.isFromReady());
+             return;
+         }
+ 
+@@ -244,7 +281,7 @@ public class RecipeBookListener implements Listener {
+         if (result == null) {
+             player.sendMessage("§cCould not craft that recipe.");
+             player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 0.7f, 0.7f);
+-            recipeBookGUI.openRecipe(player, recipe, holder.getPage());
++            recipeBookGUI.openRecipe(player, recipe, holder.getPage(), holder.isFromReady());
+             return;
+         }
+ 
+@@ -273,7 +310,7 @@ public class RecipeBookListener implements Listener {
+         player.sendMessage("§aCrafted §f" + displayName(result) + "§a.");
+         player.playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 1.0f, 1.1f);
+         player.updateInventory();
+-        recipeBookGUI.openRecipe(player, recipe, holder.getPage());
++        recipeBookGUI.openRecipe(player, recipe, holder.getPage(), holder.isFromReady());
+     }
+ 
+     private String displayName(ItemStack item) {
+diff --git a/AetherionItems/src/main/java/de/aetherion/items/menu/AetherionManagerGUI.java b/AetherionItems/src/main/java/de/aetherion/items/menu/AetherionManagerGUI.java
+index 628374c..2044f57 100644
+--- a/AetherionItems/src/main/java/de/aetherion/items/menu/AetherionManagerGUI.java
++++ b/AetherionItems/src/main/java/de/aetherion/items/menu/AetherionManagerGUI.java
+@@ -16,6 +16,7 @@ import org.bukkit.inventory.ItemStack;
+ import org.bukkit.inventory.meta.ItemMeta;
+ import org.bukkit.scheduler.BukkitTask;
+ 
++import java.util.List;
+ import java.util.Map;
+ import java.util.UUID;
+ import java.util.concurrent.ConcurrentHashMap;
+@@ -58,6 +59,8 @@ public class AetherionManagerGUI {
+ 
+     private final AetherionManager manager;
+     private final StorageInventory storageInventory;
++    /** Slots of the lock that opens next — set per open() (main thread only). */
++    private final java.util.Set<Integer> nextSlots = new java.util.HashSet<>();
+ 
+     public AetherionManagerGUI(AetherionManager manager, StorageInventory storageInventory) {
+         this.manager = manager;
+@@ -71,10 +74,40 @@ public class AetherionManagerGUI {
+                 ? null
+                 : AetherionItems.getInstance().progress();
+ 
++        // Early on most of this is locked. Say how far along you are, light up the one
++        // lock that opens next, and let the far-future ones (journal, island, guild) recede.
++        List<Gate> gates = gates(player, progress);
++        nextSlots.clear();
++        int open = 0;
++        Gate next = null;
++        for (Gate gate : gates) {
++            if (gate.open()) {
++                open++;
++            } else if (next == null) {
++                next = gate;
++            }
++        }
++        if (next != null) {
++            for (Gate gate : gates) {
++                if (!gate.open() && gate.group().equals(next.group())) {
++                    nextSlots.add(gate.slot());
++                }
++            }
++        }
++        List<String> headerLore = new java.util.ArrayList<>();
++        headerLore.add("§7Your hub. It grows as you do.");
++        if (!gates.isEmpty()) {
++            headerLore.add("");
++            headerLore.add("§7Open: §f" + open + "§7/§f" + gates.size() + "  " + bar(open, gates.size()));
++            if (next != null) {
++                headerLore.add("§7Next: §e" + next.name());
++                headerLore.add(next.hint());
++            }
++        }
+         inventory.setItem(4, button(
+                 Material.NETHER_STAR,
+                 "§6Aetherion Manager",
+-                "§7Your hub. It grows as you do."
++                headerLore.toArray(String[]::new)
+         ));
+ 
+         inventory.setItem(SHOP_SLOT, button(
+@@ -602,6 +635,33 @@ public class AetherionManagerGUI {
+             inventory.setItem(slot, button(material, name, unlockedLore));
+             return;
+         }
++        if (nextSlots.contains(slot)) {
++            // The one lock worth reading right now.
++            ItemStack next = button(
++                    Material.LIME_DYE,
++                    "§e" + strip(name) + " §8· next",
++                    "§e➜ Opens next",
++                    "",
++                    lockedHint
++            );
++            ItemMeta meta = next.getItemMeta();
++            if (meta != null) {
++                meta.addEnchant(Enchantment.UNBREAKING, 1, true);
++                meta.addItemFlags(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ATTRIBUTES);
++                next.setItemMeta(meta);
++            }
++            inventory.setItem(slot, next);
++            return;
++        }
++        if (slot == JOURNAL_SLOT || slot == ISLAND_SLOT || slot == GUILD_SLOT) {
++            // Far future: a quiet silhouette, not another grey "nope".
++            inventory.setItem(slot, button(
++                    Material.LIGHT_GRAY_STAINED_GLASS_PANE,
++                    "§8" + strip(name) + " · later",
++                    lockedHint
++            ));
++            return;
++        }
+         inventory.setItem(slot, button(
+                 Material.GRAY_DYE,
+                 "§8" + strip(name),
+@@ -612,6 +672,63 @@ public class AetherionManagerGUI {
+         ));
+     }
+ 
++    /** One lockable tab: its slot, whether it's open, the unlock it belongs to, and how to open it. */
++    private record Gate(int slot, boolean open, String group, String name, String hint) {
++    }
++
++    /**
++     * Lockable tabs in the order a new player actually opens them (the harbour spine first,
++     * mid–late game last). Tabs whose plugin is missing are left out, not counted as locked.
++     */
++    private List<Gate> gates(Player player, ProgressionService progress) {
++        List<Gate> gates = new java.util.ArrayList<>();
++        if (progress == null || player == null) {
++            return gates;
++        }
++        String workbench = progress.hint(ProgressionService.Flag.WORKBENCH);
++        gates.add(new Gate(CRAFT_SLOT, progress.craftingTable(player), "workbench", "Crafting + Recipes", workbench));
++        gates.add(new Gate(RECIPE_SLOT, progress.recipeBook(player), "workbench", "Crafting + Recipes", workbench));
++        gates.add(new Gate(ANVIL_SLOT, progress.anvil(player), "anvil", "Anvil",
++                progress.hint(ProgressionService.Flag.ANVIL)));
++        gates.add(new Gate(SKILLS_SLOT, progress.skills(player), "skills", "Skills",
++                progress.hint(ProgressionService.Flag.SKILLS)));
++        if (manager.hasPetMenu()) {
++            gates.add(new Gate(PETS_SLOT, progress.pets(player), "pets", "Pets",
++                    progress.hint(ProgressionService.Flag.PETS)));
++        }
++        if (Bukkit.getPluginManager().isPluginEnabled("AetherionHub")) {
++            gates.add(new Gate(SPAWN_SLOT, progress.spawns(player), "spawns", "Spawns",
++                    progress.hint(ProgressionService.Flag.SPAWN_UNLOCKER)));
++        }
++        String trader = progress.hint(ProgressionService.Flag.TRADER);
++        gates.add(new Gate(BAZAAR_SLOT, progress.bazaar(player), "trader", "Bazaar + Auction House", trader));
++        gates.add(new Gate(AUCTION_SLOT, progress.auction(player), "trader", "Bazaar + Auction House", trader));
++        gates.add(new Gate(COLLECTION_SLOT, progress.collection(player), "collection", "Collection",
++                progress.collectionHint()));
++        gates.add(new Gate(BESTIARY_SLOT, progress.bestiary(player), "bestiary", "Bestiary",
++                progress.bestiaryHint()));
++        gates.add(new Gate(JOURNAL_SLOT, progress.journal(player), "journal", "Dungeon Journal",
++                progress.journalHint()));
++        if (Bukkit.getPluginManager().isPluginEnabled("AetherionGuilds")) {
++            gates.add(new Gate(ISLAND_SLOT, progress.island(player), "island", "Island", progress.islandHint()));
++            gates.add(new Gate(GUILD_SLOT, progress.guild(player), "guild", "Guild", progress.guildHint()));
++        }
++        return gates;
++    }
++
++    private static String bar(int have, int of) {
++        int cells = 10;
++        int filled = of <= 0 ? 0 : (int) Math.round(cells * (have / (double) of));
++        StringBuilder out = new StringBuilder("§a");
++        for (int i = 0; i < cells; i++) {
++            if (i == filled) {
++                out.append("§8");
++            }
++            out.append('▮');
++        }
++        return out.toString();
++    }
++
+     private static String strip(String name) {
+         return name == null ? "" : name.replaceAll("§.", "");
+     }
+@@ -624,9 +741,18 @@ public class AetherionManagerGUI {
+             meta.setDisplayName(" ");
+             pane.setItemMeta(meta);
+         }
++        // Dark top and bottom rails frame the tabs so the page reads as a panel, not a pile of glass.
++        ItemStack rail = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
++        ItemMeta railMeta = rail.getItemMeta();
++        if (railMeta != null) {
++            railMeta.setDisplayName(" ");
++            rail.setItemMeta(railMeta);
++        }
+ 
+-        for (int slot = 0; slot < inventory.getSize(); slot++) {
+-            inventory.setItem(slot, pane.clone());
++        int size = inventory.getSize();
++        for (int slot = 0; slot < size; slot++) {
++            boolean edge = slot < 9 || slot >= size - 9;
++            inventory.setItem(slot, edge ? rail.clone() : pane.clone());
+         }
+     }
+ 
+diff --git a/AetherionItems/src/main/java/de/aetherion/items/progress/UnlockToast.java b/AetherionItems/src/main/java/de/aetherion/items/progress/UnlockToast.java
+index 3a09e19..e2cdef9 100644
+--- a/AetherionItems/src/main/java/de/aetherion/items/progress/UnlockToast.java
++++ b/AetherionItems/src/main/java/de/aetherion/items/progress/UnlockToast.java
+@@ -1,6 +1,11 @@
+ package de.aetherion.items.progress;
+ 
++import de.aetherion.items.AetherionItems;
++
++import org.bukkit.Location;
++import org.bukkit.Particle;
+ import org.bukkit.Sound;
++import org.bukkit.SoundCategory;
+ import org.bukkit.entity.Player;
+ 
+ /**
+@@ -26,9 +31,33 @@ public final class UnlockToast {
+         ));
+         player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.7f, 1.15f);
+         player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, 0.55f, 1.4f);
++        worldNoticed(player);
+         player.sendMessage("§a✦ Unlocked " + clean + "§a. §8" + strip(sub));
+     }
+ 
++    /**
++     * Same "the world noticed you" beat as a new-area discover (Hub), in unlock green:
++     * a ring slides out from your feet, a few motes lift, a second chime answers the first.
++     * Player-only particles, no entities.
++     */
++    private static void worldNoticed(Player player) {
++        Location feet = player.getLocation().add(0.0, 0.15, 0.0);
++        for (int i = 0; i < 14; i++) {
++            double a = i * (Math.PI * 2.0 / 14.0);
++            // count 0 = offsets become a velocity: sparks slide outward along the ground.
++            player.spawnParticle(Particle.FIREWORK, feet, 0, Math.cos(a), 0.02, Math.sin(a), 0.12);
++        }
++        player.spawnParticle(Particle.HAPPY_VILLAGER, feet.clone().add(0.0, 0.9, 0.0), 5, 0.4, 0.4, 0.4, 0.0);
++        AetherionItems plugin = AetherionItems.getInstance();
++        if (plugin != null) {
++            plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
++                if (player.isOnline()) {
++                    player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, SoundCategory.PLAYERS, 0.6f, 1.5f);
++                }
++            }, 6L);
++        }
++    }
++
+     private static String strip(String text) {
+         return text == null ? "" : text.replaceAll("§.", "");
+     }
+diff --git a/AetherionItems/src/main/java/de/aetherion/items/recipe/GUI/RecipeBookGUI.java b/AetherionItems/src/main/java/de/aetherion/items/recipe/GUI/RecipeBookGUI.java
+index 2a10277..3d72b34 100644
+--- a/AetherionItems/src/main/java/de/aetherion/items/recipe/GUI/RecipeBookGUI.java
++++ b/AetherionItems/src/main/java/de/aetherion/items/recipe/GUI/RecipeBookGUI.java
+@@ -32,6 +32,14 @@ public class RecipeBookGUI {
+     private static final String RECIPE_LIST_TITLE = "§8Aetherion Recipes";
+     private static final String RECIPE_DETAIL_TITLE = "§8Recipe Details";
+ 
++    /** Categories page: extra cards in the two free category cells. */
++    public static final int READY_SLOT = 40;
++    public static final int SOURCES_SLOT = 42;
++    /** List views: "+N more to discover" sits in the bottom rail. */
++    private static final int MORE_SLOT = 49;
++    /** Undiscovered silhouettes shown per flat category before the rest fold away. */
++    private static final int LOCKED_PREVIEW = 7;
++
+     private final RecipeManager recipeManager;
+ 
+     public RecipeBookGUI(RecipeManager recipeManager) {
+@@ -53,29 +61,61 @@ public class RecipeBookGUI {
+ 
+         fillBackground(inventory);
+ 
++        RecipeCategory[] categories = RecipeCategory.values();
++        int knownTotal = 0;
++        int allTotal = 0;
++        int[] known = new int[categories.length];
++        int[] total = new int[categories.length];
++        for (int i = 0; i < categories.length; i++) {
++            for (RecipeDefinition recipe : recipeManager.getRecipesByCategory(categories[i])) {
++                total[i]++;
++                if (recipe.isUnlocked(player)) {
++                    known[i]++;
++                }
++            }
++            knownTotal += known[i];
++            allTotal += total[i];
++        }
++        List<RecipeDefinition> ready = readyRecipes(player);
++
+         inventory.setItem(
+                 RecipeBookLayout.HEADER_SLOT,
+                 createSimpleItem(
+                         Material.KNOWLEDGE_BOOK,
+                         "§6Aetherion Recipe Book",
+                         List.of(
++                                "",
++                                "§7Known: §f" + knownTotal + "§7/§f" + allTotal + "  " + progressBar(knownTotal, allTotal),
+                                 "",
+                                 "§7Choose a category."
+                         )
+                 )
+         );
+ 
+-        RecipeCategory[] categories = RecipeCategory.values();
+-
+         for (int i = 0; i < categories.length && i < RecipeBookLayout.CATEGORY_SLOTS.length; i++) {
+             RecipeCategory category = categories[i];
+ 
+             inventory.setItem(
+                     RecipeBookLayout.CATEGORY_SLOTS[i],
+-                    createCategoryItem(category, isCategoryUnlocked(player, category))
++                    createCategoryItem(category, isCategoryUnlocked(player, category), known[i], total[i])
+             );
+         }
+ 
++        // Early on the book is mostly locks — lead with what you can actually do.
++        inventory.setItem(READY_SLOT, readyButton(ready));
++        inventory.setItem(SOURCES_SLOT, createSimpleItem(
++                Material.WRITABLE_BOOK,
++                "§eWhere recipes come from",
++                List.of(
++                        "",
++                        "§7Pages open as you go: skill levels,",
++                        "§7bosses, the Surveyor's blueprints,",
++                        "§7and things found off the road.",
++                        "",
++                        "§7Hover a §8???§7 to see its condition."
++                )
++        ));
++
+         inventory.setItem(
+                 RecipeBookLayout.BACK_SLOT,
+                 de.aetherion.items.util.ManagerNav.button()
+@@ -113,7 +153,14 @@ public class RecipeBookGUI {
+             return;
+         }
+ 
+-        List<RecipeDefinition> recipes = getRecipes(player, category);
++        List<RecipeDefinition> recipes = visibleRecipes(player, category);
++        int hidden = hiddenLockedCount(player, category);
++        int knownHere = 0;
++        for (RecipeDefinition recipe : recipes) {
++            if (recipe.isUnlocked(player)) {
++                knownHere++;
++            }
++        }
+ 
+         int pageSize = RecipeBookLayout.RECIPE_SLOTS.length;
+         int totalPages = Math.max(1, (int) Math.ceil(recipes.size() / (double) pageSize));
+@@ -127,16 +174,31 @@ public class RecipeBookGUI {
+ 
+         fillBackground(inventory);
+ 
++        List<String> headerLore = new ArrayList<>();
++        headerLore.add("");
++        headerLore.add(knownHere == 0
++                ? "§8Nothing learned here yet."
++                : "§7Known here: §f" + knownHere);
++        headerLore.add("§eClick §7to return to categories.");
++        if (totalPages > 1) {
++            headerLore.add("");
++            headerLore.add("§7Page §f" + currentPage + "§7/§f" + totalPages);
++        }
+         inventory.setItem(
+                 RecipeBookLayout.HEADER_SLOT,
+                 createCategoryIcon(
+                         category,
+                         "§6" + category.getIcon() + " " + category.getDisplayName(),
+-                        totalPages > 1
+-                                ? List.of("", "§7Recipes in this category", "§eClick §7to return to categories.", "", "§7Page §f" + currentPage + "§7/§f" + totalPages)
+-                                : List.of("", "§7Recipes in this category", "§eClick §7to return to categories.")
++                        headerLore
+                 )
+         );
++        if (hidden > 0) {
++            inventory.setItem(MORE_SLOT, createSimpleItem(
++                    Material.FIREWORK_STAR,
++                    "§8+ " + hidden + " more to discover",
++                    List.of("", "§7Known recipes sit up front.", "§7The rest stay folded until they matter.")
++            ));
++        }
+ 
+         int startIndex = (currentPage - 1) * pageSize;
+         int endIndex = Math.min(startIndex + pageSize, recipes.size());
+@@ -195,6 +257,14 @@ public class RecipeBookGUI {
+         fillBackground(inventory);
+ 
+         List<String> headerLore = new ArrayList<>(gearCategoryLore(category));
++        int knownGear = 0;
++        for (RecipeDefinition recipe : recipeManager.getRecipesByCategory(category)) {
++            if (recipe.isUnlocked(player)) {
++                knownGear++;
++            }
++        }
++        headerLore.add("");
++        headerLore.add(knownGear == 0 ? "§8Nothing learned here yet." : "§7Known here: §f" + knownGear);
+         if (totalPages > 1) {
+             headerLore.add("");
+             headerLore.add("§7Page §f" + currentPage + "§7/§f" + totalPages);
+@@ -293,6 +363,10 @@ public class RecipeBookGUI {
+     }
+ 
+     public void openRecipe(Player player, RecipeDefinition recipe, int page) {
++        openRecipe(player, recipe, page, false);
++    }
++
++    public void openRecipe(Player player, RecipeDefinition recipe, int page, boolean fromReady) {
+         if (recipe == null) {
+             return;
+         }
+@@ -304,7 +378,7 @@ public class RecipeBookGUI {
+         }
+ 
+         Inventory inventory = Bukkit.createInventory(
+-                new RecipeBookHolder(GUIType.RECIPE_DETAIL, recipe.getCategory(), recipe, page),
++                new RecipeBookHolder(GUIType.RECIPE_DETAIL, recipe.getCategory(), recipe, page, fromReady),
+                 RecipeBookLayout.SIZE,
+                 RECIPE_DETAIL_TITLE
+         );
+@@ -437,6 +511,166 @@ public class RecipeBookGUI {
+         return 3;
+     }
+ 
++    /**
++     * Flat categories: known recipes first, then one row of undiscovered silhouettes;
++     * the rest fold into a "+N more" card. The listener maps clicks through this same list.
++     */
++    public List<RecipeDefinition> visibleRecipes(Player player, RecipeCategory category) {
++        List<RecipeDefinition> all = getRecipes(player, category);
++        if (player == null) {
++            return all;
++        }
++        List<RecipeDefinition> known = new ArrayList<>();
++        List<RecipeDefinition> locked = new ArrayList<>();
++        for (RecipeDefinition recipe : all) {
++            (recipe.isUnlocked(player) ? known : locked).add(recipe);
++        }
++        List<RecipeDefinition> out = new ArrayList<>(known);
++        out.addAll(locked.subList(0, Math.min(LOCKED_PREVIEW, locked.size())));
++        return out;
++    }
++
++    private int hiddenLockedCount(Player player, RecipeCategory category) {
++        if (player == null) {
++            return 0;
++        }
++        int locked = 0;
++        for (RecipeDefinition recipe : recipeManager.getRecipesByCategory(category)) {
++            if (!recipe.isUnlocked(player)) {
++                locked++;
++            }
++        }
++        return Math.max(0, locked - LOCKED_PREVIEW);
++    }
++
++    /** Every known recipe the player's inventory can pay for right now, in book order. */
++    public List<RecipeDefinition> readyRecipes(Player player) {
++        List<RecipeDefinition> ready = new ArrayList<>();
++        if (player == null) {
++            return ready;
++        }
++        ItemManager itemManager = AetherionItems.getInstance() == null
++                ? null
++                : AetherionItems.getInstance().getItemManager();
++        if (itemManager == null) {
++            return ready;
++        }
++        java.util.Set<String> seen = new java.util.HashSet<>();
++        for (RecipeCategory category : RecipeCategory.values()) {
++            if (!isCategoryUnlocked(player, category)) {
++                continue;
++            }
++            for (RecipeDefinition recipe : getRecipes(player, category)) {
++                if (recipe == null || recipe.getId() == null || !seen.add(recipe.getId())) {
++                    continue;
++                }
++                if (recipe.isUnlocked(player) && RecipeBookCrafter.canCraft(player, recipe, itemManager)) {
++                    ready.add(recipe);
++                }
++            }
++        }
++        return ready;
++    }
++
++    public void openReady(Player player, int page) {
++        syncOwned(player);
++        List<RecipeDefinition> ready = readyRecipes(player);
++        int pageSize = RecipeBookLayout.RECIPE_SLOTS.length;
++        int totalPages = Math.max(1, (int) Math.ceil(ready.size() / (double) pageSize));
++        int currentPage = Math.max(1, Math.min(page, totalPages));
++
++        Inventory inventory = Bukkit.createInventory(
++                new RecipeBookHolder(GUIType.READY, null, null, currentPage),
++                RecipeBookLayout.SIZE,
++                "§8Recipes · Ready to craft"
++        );
++        fillBackground(inventory);
++
++        List<String> headerLore = new ArrayList<>();
++        headerLore.add("");
++        headerLore.add("§7Everything your bag can make");
++        headerLore.add("§7right now. Click one to craft.");
++        if (totalPages > 1) {
++            headerLore.add("");
++            headerLore.add("§7Page §f" + currentPage + "§7/§f" + totalPages);
++        }
++        inventory.setItem(RecipeBookLayout.HEADER_SLOT,
++                createSimpleItem(Material.CRAFTING_TABLE, "§a§lReady to craft", headerLore));
++
++        if (ready.isEmpty()) {
++            inventory.setItem(22, createSimpleItem(
++                    Material.BUNDLE,
++                    "§7Nothing yet — the bag is light",
++                    List.of("", "§7Gather a little, then look again.", "§7Known recipes live in the categories.")
++            ));
++        } else {
++            int start = (currentPage - 1) * pageSize;
++            int end = Math.min(start + pageSize, ready.size());
++            for (int i = start; i < end; i++) {
++                inventory.setItem(RecipeBookLayout.RECIPE_SLOTS[i - start], createRecipeItem(ready.get(i), true));
++            }
++        }
++
++        inventory.setItem(RecipeBookLayout.BACK_SLOT,
++                createSimpleItem(Material.ARROW, "§eBack", List.of("§7Return to categories")));
++        if (totalPages > 1 && currentPage > 1) {
++            inventory.setItem(RecipeBookLayout.PREV_PAGE_SLOT, createSimpleItem(
++                    Material.ARROW, "§ePrevious Page", List.of("", "§7Page " + (currentPage - 1) + " / " + totalPages)));
++        }
++        if (totalPages > 1 && currentPage < totalPages) {
++            inventory.setItem(RecipeBookLayout.NEXT_PAGE_SLOT, createSimpleItem(
++                    Material.ARROW, "§eNext Page", List.of("", "§7Page " + (currentPage + 1) + " / " + totalPages)));
++        }
++        player.openInventory(inventory);
++        playBookSound(player);
++    }
++
++    private ItemStack readyButton(List<RecipeDefinition> ready) {
++        List<String> lore = new ArrayList<>();
++        lore.add("");
++        if (ready.isEmpty()) {
++            lore.add("§8Nothing your bag can pay for yet.");
++            return createSimpleItem(Material.CRAFTING_TABLE, "§7Ready to craft", lore);
++        }
++        lore.add("§7You can make §a" + ready.size() + "§7 right now:");
++        for (int i = 0; i < ready.size() && i < 3; i++) {
++            lore.add("§8· §f" + stripColor(getDisplayName(ready.get(i).getResult())));
++        }
++        if (ready.size() > 3) {
++            lore.add("§8· …");
++        }
++        lore.add("");
++        lore.add("§eClick §7to see them.");
++        ItemStack item = createSimpleItem(Material.CRAFTING_TABLE, "§a§lReady to craft", lore);
++        ItemMeta meta = item.getItemMeta();
++        if (meta != null) {
++            meta.addEnchant(org.bukkit.enchantments.Enchantment.UNBREAKING, 1, true);
++            meta.addItemFlags(org.bukkit.inventory.ItemFlag.HIDE_ENCHANTS);
++            item.setItemMeta(meta);
++        }
++        return item;
++    }
++
++    private static String progressBar(int have, int of) {
++        int cells = 10;
++        int filled = of <= 0 ? 0 : (int) Math.round(cells * (have / (double) of));
++        if (have > 0 && filled == 0) {
++            filled = 1;
++        }
++        StringBuilder bar = new StringBuilder("§a");
++        for (int i = 0; i < cells; i++) {
++            if (i == filled) {
++                bar.append("§8");
++            }
++            bar.append('▮');
++        }
++        return bar.toString();
++    }
++
++    private static String stripColor(String text) {
++        return text == null ? "" : text.replaceAll("§.", "");
++    }
++
+     public boolean isCategoryUnlocked(Player player, RecipeCategory category) {
+         if (category == RecipeCategory.AETHER_MOBS) {
+             return new AetherMobsUnlockRequirement().isUnlocked(player);
+@@ -739,7 +973,7 @@ public class RecipeBookGUI {
+         return order.length;
+     }
+ 
+-    private ItemStack createCategoryItem(RecipeCategory category, boolean unlocked) {
++    private ItemStack createCategoryItem(RecipeCategory category, boolean unlocked, int known, int total) {
+         if (!unlocked) {
+             UnlockRequirement requirement = new AetherMobsUnlockRequirement();
+             List<String> lore = new ArrayList<>();
+@@ -766,10 +1000,19 @@ public class RecipeBookGUI {
+             );
+         }
+ 
++        if (known == 0) {
++            // Nothing learned yet: quieter name, honest lore — still clickable to peek.
++            return createCategoryIcon(
++                    category,
++                    "§7" + category.getIcon() + " " + category.getDisplayName(),
++                    List.of("", "§8Nothing learned here yet.", "§8" + total + " to discover.", "", "§7Click to peek.")
++            );
++        }
+         return createCategoryIcon(
+                 category,
+                 "§6" + category.getIcon() + " " + category.getDisplayName(),
+-                List.of("", "§7Click to view recipes.")
++                List.of("", "§a" + known + " §7known §8· " + Math.max(0, total - known) + " to discover", "",
++                        "§7Click to view recipes.")
+         );
+     }
+ 
+@@ -792,7 +1035,7 @@ public class RecipeBookGUI {
+         if (!unlocked) {
+             List<String> lore = new ArrayList<>();
+             lore.add("");
+-            lore.add("§c§lLOCKED");
++            lore.add("§7§lUNDISCOVERED");
+             lore.add("");
+ 
+             String unlockText = recipe.getUnlockDisplayText();
+@@ -802,10 +1045,10 @@ public class RecipeBookGUI {
+             }
+ 
+             lore.add("");
+-            lore.add("§8Complete the required");
+-            lore.add("§8progression to unlock this.");
++            lore.add("§8Not learned yet.");
+ 
+-            return createSimpleItem(Material.BARRIER, "§c§l???", lore);
++            // A silhouette, not a stop sign — locked is "later", not "wrong".
++            return createSimpleItem(Material.FIREWORK_STAR, "§8???", lore);
+         }
+ 
+         ItemStack result = recipe.getResult();
+@@ -988,7 +1231,9 @@ public class RecipeBookGUI {
+     public enum GUIType {
+         CATEGORIES,
+         RECIPE_LIST,
+-        RECIPE_DETAIL
++        RECIPE_DETAIL,
++        /** "Ready to craft" — every known recipe the bag can pay for right now. */
++        READY
+     }
+ 
+     public static class RecipeBookHolder implements InventoryHolder {
+@@ -997,16 +1242,27 @@ public class RecipeBookGUI {
+         private final RecipeCategory category;
+         private final RecipeDefinition recipe;
+         private final int page;
++        private final boolean fromReady;
+ 
+         public RecipeBookHolder(GUIType type, RecipeCategory category, RecipeDefinition recipe) {
+             this(type, category, recipe, 1);
+         }
+ 
+         public RecipeBookHolder(GUIType type, RecipeCategory category, RecipeDefinition recipe, int page) {
++            this(type, category, recipe, page, false);
++        }
++
++        public RecipeBookHolder(GUIType type, RecipeCategory category, RecipeDefinition recipe, int page, boolean fromReady) {
+             this.type = type;
+             this.category = category;
+             this.recipe = recipe;
+             this.page = Math.max(1, page);
++            this.fromReady = fromReady;
++        }
++
++        /** Detail opened from the Ready list — Back returns there. */
++        public boolean isFromReady() {
++            return fromReady;
+         }
+ 
+         public GUIType getType() {
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/AetherionQuests.java b/AetherionQuests/src/main/java/de/aetherion/quests/AetherionQuests.java
+index 972509f..6cc5dce 100644
+--- a/AetherionQuests/src/main/java/de/aetherion/quests/AetherionQuests.java
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/AetherionQuests.java
+@@ -121,6 +121,7 @@ public final class AetherionQuests extends JavaPlugin {
+ 
+         // Starter kit / axe handoff scene (lands items; flushes on quit/disable).
+         de.aetherion.quests.reward.StarterKitCeremony.init(this);
++        de.aetherion.quests.ui.GraduationStamp.init(this);
+ 
+ 
+         markerManager =
+@@ -176,6 +177,7 @@ public final class AetherionQuests extends JavaPlugin {
+                 );
+ 
+         new EgonBriefingGUI(this);
++        new de.aetherion.quests.ui.OpenRoadsGUI(this);
+ 
+ 
+ 
+@@ -466,6 +468,7 @@ public final class AetherionQuests extends JavaPlugin {
+ 
+         // Land any kit still mid-handoff before player data is flushed.
+         de.aetherion.quests.reward.StarterKitCeremony.shutdown();
++        de.aetherion.quests.ui.GraduationStamp.shutdown();
+ 
+         if (markerManager != null) {
+             markerManager.shutdown();
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/bridge/QuestProgressBridge.java b/AetherionQuests/src/main/java/de/aetherion/quests/bridge/QuestProgressBridge.java
+index 2e5a0dd..104c4d0 100644
+--- a/AetherionQuests/src/main/java/de/aetherion/quests/bridge/QuestProgressBridge.java
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/bridge/QuestProgressBridge.java
+@@ -146,6 +146,41 @@ public final class QuestProgressBridge {
+                 manager.addProgress(player, quest.getId(), objective.getTarget(), amount);
+             }
+         }
++        craftsmanNudge(player, target);
++    }
++
++    /**
++     * Craftsman's side job has no quest bar — so when the pickaxe comes off the book,
++     * he says so once and the arrow remembers him (never forced over an active quest).
++     */
++    private static void craftsmanNudge(Player player, String target) {
++        if (!"mining_pickaxe".equalsIgnoreCase(target)) {
++            return;
++        }
++        AetherionQuests plugin = AetherionQuests.getInstance();
++        if (plugin == null || plugin.getPlayerQuestStorage() == null) {
++            return;
++        }
++        var storage = plugin.getPlayerQuestStorage();
++        java.util.UUID id = player.getUniqueId();
++        if (!storage.hasStarterKit(id, "craftsman_spoken")
++                || storage.hasStarterKit(id, "craftsman_mining_pick_gift")
++                || storage.hasStarterKit(id, "craftsman_pick_nudge")) {
++            return;
++        }
++        storage.markStarterKit(id, "craftsman_pick_nudge");
++        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
++            if (!player.isOnline()) {
++                return;
++            }
++            de.aetherion.quests.npc.LivingNpcProfile.say(player, "craftsman", "Craftsman",
++                    de.aetherion.quests.lang.LangPack.ui(player, "craftsman_nudge",
++                            "Heard that from here. Bring the Mining Pickaxe by the forge — I pay for proof."));
++            // Never steal the arrow from a spine stop or a pinned road.
++            if (de.aetherion.quests.ui.QuestHint.targetNpcId(player) == null) {
++                de.aetherion.quests.ui.QuestHint.remember(player, "craftsman", "Craftsman");
++            }
++        }, 20L);
+     }
+ 
+     /** Soft-query for other plugins (Manager Skills highlight, etc.). */
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/chest/ExploreChestProp.java b/AetherionQuests/src/main/java/de/aetherion/quests/chest/ExploreChestProp.java
+new file mode 100644
+index 0000000..6ecfad4
+--- /dev/null
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/chest/ExploreChestProp.java
+@@ -0,0 +1,602 @@
++package de.aetherion.quests.chest;
++
++import de.aetherion.quests.AetherionQuests;
++
++import org.bukkit.Color;
++import org.bukkit.Location;
++import org.bukkit.Material;
++import org.bukkit.Particle;
++import org.bukkit.Sound;
++import org.bukkit.SoundCategory;
++import org.bukkit.World;
++import org.bukkit.block.data.BlockData;
++import org.bukkit.entity.BlockDisplay;
++import org.bukkit.entity.Display;
++import org.bukkit.entity.ItemDisplay;
++import org.bukkit.inventory.ItemStack;
++import org.bukkit.scheduler.BukkitTask;
++import org.joml.Matrix4f;
++
++import java.util.ArrayList;
++import java.util.List;
++import java.util.concurrent.ThreadLocalRandom;
++
++/**
++ * One exploration chest as an authored prop instead of a vanilla block.
++ * <p>
++ * Built from Display entities around an invisible barrier (the barrier keeps the
++ * click / break / explosion contract of {@link ExploreChestService}). Every part is a
++ * unit cube placed with a matrix ({@code setTransformationMatrix}); the lid and
++ * everything on it hang from one hinge at the back edge, so opening is a single
++ * rotation. Each rarity has its own silhouette and its own idle:
++ * <ul>
++ *   <li><b>Rare</b> — harbour strongbox: spruce, verdigris copper bands, iron hasp.
++ *       Breathes: the lid lifts a finger's width now and then.</li>
++ *   <li><b>Epic</b> — warded coffer: dark oak, amethyst bands, a lit gem on the hasp,
++ *       three shards orbiting slowly.</li>
++ *   <li><b>Legendary</b> — gilded reliquary: blackstone on gold feet, gold corner posts,
++ *       a small gold halo turning above the lid.</li>
++ *   <li><b>Mythic</b> — veil casket: crying obsidian floating over a glowing plinth,
++ *       bobbing, lid never quite shut, two motes circling.</li>
++ * </ul>
++ * All parts are non-persistent (a chunk unload drops them; the service rebuilds on load)
++ * and tagged {@link #TAG} so a stray set can always be swept.
++ */
++final class ExploreChestProp {
++
++    static final String TAG = "aether_explore_prop";
++
++    /* Body proportions — wider than deep, like a real chest. */
++    private static final float W = 0.86f;
++    private static final float D = 0.70f;
++    private static final float BH = 0.50f;
++    private static final float LH = 0.22f;
++    private static final float BAND = 0.24f;
++
++    private static final float OPEN = (float) Math.toRadians(104.0);
++    /** Lid tween step — small enough that the client's straight-line interpolation still reads as a hinge. */
++    private static final float LID_STEP = (float) Math.toRadians(30.0);
++    private static final int LID_STEP_TICKS = 2;
++
++    private enum Group {
++        /** Never moves (Mythic plinth). */
++        STATIC,
++        /** Chest body — follows the Mythic hover. */
++        BODY,
++        /** Hangs from the hinge. */
++        LID
++    }
++
++    private static final class Part {
++        private final Display display;
++        private final Group group;
++        private final Matrix4f local;
++
++        private Part(Display display, Group group, Matrix4f local) {
++            this.display = display;
++            this.group = group;
++            this.local = local;
++        }
++    }
++
++    private final AetherionQuests plugin;
++    private final ExploreChestKind kind;
++    private final Location origin;
++    private final float yaw;
++    private final float base;
++    private final List<Part> parts = new ArrayList<>();
++    private final List<ItemDisplay> orbiters = new ArrayList<>();
++    private final List<BlockDisplay> halo = new ArrayList<>();
++
++    private float lid;
++    private float restLid;
++    private float hover;
++    private boolean opened;
++    private long age;
++    private long nextBreath;
++    private long breathUntil = -1L;
++    private BukkitTask lidTask;
++
++    ExploreChestProp(AetherionQuests plugin, ExploreChestKind kind, Location blockCorner, float yaw) {
++        this.plugin = plugin;
++        this.kind = kind;
++        this.origin = blockCorner.clone().add(0.5, 0.0, 0.5);
++        this.origin.setYaw(0f);
++        this.origin.setPitch(0f);
++        this.yaw = yaw;
++        this.base = switch (kind) {
++            case LEGENDARY -> 0.06f;
++            case MYTHIC -> 0.2f;
++            default -> 0.0f;
++        };
++        this.restLid = kind == ExploreChestKind.MYTHIC ? (float) Math.toRadians(7.0) : 0f;
++        this.lid = restLid;
++        this.nextBreath = ThreadLocalRandom.current().nextLong(60L, 200L);
++    }
++
++    /* =========================================================
++     * BUILD
++     * ========================================================= */
++
++    void build() {
++        World world = origin.getWorld();
++        if (world == null) {
++            return;
++        }
++        Palette p = Palette.of(kind);
++
++        if (kind == ExploreChestKind.MYTHIC) {
++            block(world, p.trim, Group.STATIC, new Matrix4f().translate(-0.49f, 0.0f, -0.49f).scale(0.98f, 0.06f, 0.98f), -1);
++            block(world, p.glow, Group.STATIC, new Matrix4f().translate(-0.26f, 0.001f, -0.26f).scale(0.52f, 0.062f, 0.52f), 15);
++        }
++        if (kind == ExploreChestKind.LEGENDARY) {
++            for (int sx = -1; sx <= 1; sx += 2) {
++                for (int sz = -1; sz <= 1; sz += 2) {
++                    float cx = sx * (W / 2f - 0.07f);
++                    float cz = sz * (D / 2f - 0.07f);
++                    block(world, p.band, Group.BODY, new Matrix4f().translate(cx - 0.065f, 0.0f, cz - 0.065f)
++                            .scale(0.13f, base, 0.13f), -1);
++                }
++            }
++        }
++
++        // Body, its front bands, and the "inside" light (hidden under the closed lid).
++        block(world, p.body, Group.BODY, new Matrix4f().translate(-W / 2f, base, -D / 2f).scale(W, BH, D), -1);
++        for (int side = -1; side <= 1; side += 2) {
++            float x0 = side * BAND;
++            block(world, p.band, Group.BODY, new Matrix4f().translate(x0 - 0.045f, base, D / 2f).scale(0.09f, BH, 0.014f), -1);
++        }
++        block(world, p.glow, Group.BODY, new Matrix4f().translate(-W / 2f + 0.06f, base + BH + 0.002f, -D / 2f + 0.06f)
++                .scale(W - 0.12f, 0.01f, D - 0.12f), 15);
++
++        if (kind == ExploreChestKind.LEGENDARY) {
++            for (int sx = -1; sx <= 1; sx += 2) {
++                for (int sz = -1; sz <= 1; sz += 2) {
++                    block(world, p.band, Group.BODY, new Matrix4f()
++                            .translate(sx * W / 2f - 0.035f, base, sz * D / 2f - 0.035f)
++                            .scale(0.07f, BH + 0.004f, 0.07f), -1);
++                }
++            }
++        }
++
++        // Lid + everything on it — hinge space: origin on the back top edge, +Z toward the front.
++        block(world, p.lid, Group.LID, new Matrix4f().translate(-W / 2f - 0.01f, 0.0f, -0.005f).scale(W + 0.02f, LH, D + 0.025f), -1);
++        for (int side = -1; side <= 1; side += 2) {
++            float x0 = side * BAND;
++            block(world, p.band, Group.LID, new Matrix4f().translate(x0 - 0.045f, LH, -0.01f).scale(0.09f, 0.016f, D + 0.04f), -1);
++            block(world, p.band, Group.LID, new Matrix4f().translate(x0 - 0.045f, -0.002f, D + 0.02f).scale(0.09f, LH + 0.018f, 0.014f), -1);
++        }
++        block(world, p.latch, Group.LID, new Matrix4f().translate(-0.06f, -0.15f, D + 0.02f).scale(0.12f, 0.19f, 0.04f), -1);
++        if (kind == ExploreChestKind.EPIC || kind == ExploreChestKind.MYTHIC) {
++            // A lit gem set into the hasp.
++            block(world, p.gem, Group.LID, new Matrix4f()
++                    .translate(0.0f, -0.065f, D + 0.062f)
++                    .rotateZ((float) Math.toRadians(45.0))
++                    .translate(-0.042f, -0.042f, 0.0f)
++                    .scale(0.084f, 0.084f, 0.026f), 15);
++        }
++
++        if (kind == ExploreChestKind.EPIC) {
++            for (int i = 0; i < 3; i++) {
++                orbiters.add(item(world, new ItemStack(Material.AMETHYST_SHARD)));
++            }
++        } else if (kind == ExploreChestKind.MYTHIC) {
++            for (int i = 0; i < 2; i++) {
++                orbiters.add(item(world, new ItemStack(Material.END_ROD)));
++            }
++        } else if (kind == ExploreChestKind.LEGENDARY) {
++            for (int k = 0; k < 6; k++) {
++                BlockDisplay seg = world.spawn(origin, BlockDisplay.class, d -> {
++                    setup(d);
++                    d.setBlock(Material.GOLD_BLOCK.createBlockData());
++                    d.setBrightness(new Display.Brightness(15, 15));
++                });
++                halo.add(seg);
++            }
++        }
++        pose(0);
++    }
++
++    private void block(World world, BlockData data, Group group, Matrix4f local, int light) {
++        BlockDisplay display = world.spawn(origin, BlockDisplay.class, d -> {
++            setup(d);
++            d.setBlock(data);
++            if (light >= 0) {
++                d.setBrightness(new Display.Brightness(light, 15));
++            }
++            d.setTransformationMatrix(matrixFor(group, local));
++        });
++        parts.add(new Part(display, group, local));
++    }
++
++    private ItemDisplay item(World world, ItemStack stack) {
++        return world.spawn(origin, ItemDisplay.class, d -> {
++            setup(d);
++            d.setItemStack(stack);
++            d.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
++            d.setBrightness(new Display.Brightness(15, 15));
++        });
++    }
++
++    private static void setup(Display d) {
++        d.setPersistent(false);
++        d.setInvulnerable(true);
++        d.setGravity(false);
++        d.setShadowRadius(0f);
++        d.setViewRange(0.6f);
++        d.addScoreboardTag(TAG);
++    }
++
++    /* =========================================================
++     * MATRICES
++     * ========================================================= */
++
++    private Matrix4f frame(Group group) {
++        Matrix4f m = new Matrix4f();
++        if (group != Group.STATIC) {
++            m.translate(0.0f, hover, 0.0f);
++        }
++        return m.rotateY(yaw);
++    }
++
++    private Matrix4f matrixFor(Group group, Matrix4f local) {
++        Matrix4f m = frame(group);
++        if (group == Group.LID) {
++            // Hinge on the back top edge; negative X-rotation lifts the front.
++            m.translate(0.0f, base + BH, -D / 2f).rotateX(-lid);
++        }
++        return m.mul(local);
++    }
++
++    /* =========================================================
++     * ANIMATION
++     * ========================================================= */
++
++    /** Apply the current lid / hover / orbit state, interpolated over {@code ticks}. */
++    private void pose(int ticks) {
++        for (Part part : parts) {
++            if (part.group == Group.STATIC || part.display == null || !part.display.isValid()) {
++                continue;
++            }
++            if (part.group == Group.LID && lidTask != null) {
++                // The lid tween owns these for now (its own, shorter interpolation).
++                continue;
++            }
++            part.display.setInterpolationDelay(0);
++            part.display.setInterpolationDuration(ticks);
++            part.display.setTransformationMatrix(matrixFor(part.group, part.local));
++        }
++        poseOrbit(ticks);
++    }
++
++    private void poseLid(int ticks) {
++        for (Part part : parts) {
++            if (part.group != Group.LID || part.display == null || !part.display.isValid()) {
++                continue;
++            }
++            part.display.setInterpolationDelay(0);
++            part.display.setInterpolationDuration(ticks);
++            part.display.setTransformationMatrix(matrixFor(Group.LID, part.local));
++        }
++    }
++
++    private void poseOrbit(int ticks) {
++        if (!orbiters.isEmpty()) {
++            boolean epic = kind == ExploreChestKind.EPIC;
++            float radius = epic ? 0.66f : 0.6f;
++            float degPerTick = epic ? 2.2f : -3.0f;
++            int n = orbiters.size();
++            for (int i = 0; i < n; i++) {
++                ItemDisplay orb = orbiters.get(i);
++                if (orb == null || !orb.isValid()) {
++                    continue;
++                }
++                float a = (float) Math.toRadians(age * degPerTick + i * (360.0 / n));
++                float bob = (float) (0.05 * Math.sin(age * 0.07 + i * 2.1));
++                float y = (epic ? base + 0.52f : base + 0.42f) + bob;
++                Matrix4f m = new Matrix4f()
++                        .translate(0.0f, epic ? 0.0f : hover, 0.0f)
++                        .rotateY(a)
++                        .translate(radius, y, 0.0f)
++                        .rotateY((float) Math.toRadians(age * 6.0))
++                        .rotateZ(epic ? (float) Math.toRadians(35.0) : 0.0f)
++                        .scale(epic ? 0.3f : 0.24f);
++                orb.setInterpolationDelay(0);
++                orb.setInterpolationDuration(ticks);
++                orb.setTransformationMatrix(m);
++            }
++        }
++        if (!halo.isEmpty()) {
++            float r = 0.3f;
++            float apothem = (float) (r * Math.cos(Math.toRadians(30.0)));
++            float t = 0.035f;
++            float spin = (float) Math.toRadians(age * 1.5);
++            float y = base + BH + LH + 0.3f + (float) (0.025 * Math.sin(age * 0.05));
++            for (int k = 0; k < halo.size(); k++) {
++                BlockDisplay seg = halo.get(k);
++                if (seg == null || !seg.isValid()) {
++                    continue;
++                }
++                Matrix4f m = new Matrix4f()
++                        .translate(0.0f, y, 0.0f)
++                        .rotateY(spin + (float) Math.toRadians(k * 60.0))
++                        .translate(-r / 2f, -t / 2f, apothem - t / 2f)
++                        .scale(r, t, t);
++                seg.setInterpolationDelay(0);
++                seg.setInterpolationDuration(ticks);
++                seg.setTransformationMatrix(m);
++            }
++        }
++    }
++
++    /**
++     * Idle life, called every {@code step} ticks while someone is near.
++     * Also handles the chunk-safe case of parts having been dropped (returns false).
++     */
++    boolean idle(int step) {
++        if (!valid()) {
++            return false;
++        }
++        age += step;
++        ThreadLocalRandom rng = ThreadLocalRandom.current();
++        boolean moved = false;
++        if (kind == ExploreChestKind.MYTHIC) {
++            hover = (float) (0.035 * Math.sin(age * (Math.PI * 2.0 / 90.0)));
++            if (!opened) {
++                // Never quite shut: the lid flutters between ajar and a little more ajar.
++                lid = restLid + (float) Math.toRadians(3.0 * (0.5 + 0.5 * Math.sin(age * 0.09)));
++            }
++            moved = true;
++            if (age % 20 < step && origin.getWorld() != null) {
++                Location gap = light();
++                origin.getWorld().spawnParticle(Particle.END_ROD, gap, 1, 0.18, 0.02, 0.12, 0.01);
++            }
++        } else if (!opened && lidTask == null) {
++            if (breathUntil >= 0 && age >= breathUntil) {
++                breathUntil = -1L;
++                lid = restLid;
++                poseLid(7);
++            } else if (breathUntil < 0 && age >= nextBreath) {
++                // The lid lifts a finger's width and settles — something in there shifted.
++                lid = (float) Math.toRadians(kind == ExploreChestKind.RARE ? 6.0 : 4.0);
++                breathUntil = age + 6;
++                nextBreath = age + rng.nextLong(140L, 260L);
++                poseLid(4);
++                if (kind == ExploreChestKind.RARE && origin.getWorld() != null) {
++                    origin.getWorld().playSound(origin, Sound.BLOCK_WOODEN_TRAPDOOR_OPEN, SoundCategory.BLOCKS, 0.08f, 1.7f);
++                }
++            }
++        }
++        if (moved) {
++            pose(step);
++        } else {
++            poseOrbit(step);
++        }
++        return true;
++    }
++
++    /** Someone the chest is ready for walked up: the hasp rattles once. */
++    void notice() {
++        if (opened || lidTask != null || kind == ExploreChestKind.MYTHIC || !valid()) {
++            return;
++        }
++        lid = (float) Math.toRadians(3.0);
++        poseLid(2);
++        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
++            if (!opened && lidTask == null && valid()) {
++                lid = restLid;
++                poseLid(3);
++            }
++        }, 3L);
++    }
++
++    /** Swing the lid open (a few short steps so it reads as a hinge), with sound and a spill of light. */
++    void open() {
++        if (!valid()) {
++            return;
++        }
++        opened = true;
++        breathUntil = -1L;
++        tweenLid(OPEN);
++        World world = origin.getWorld();
++        if (world == null) {
++            return;
++        }
++        Location at = origin.clone().add(0.0, base + BH + hover, 0.0);
++        switch (kind) {
++            case RARE -> {
++                world.playSound(at, Sound.ITEM_ARMOR_EQUIP_CHAIN, SoundCategory.BLOCKS, 0.4f, 1.4f);
++                world.playSound(at, Sound.BLOCK_CHEST_OPEN, SoundCategory.BLOCKS, 0.55f, 1.1f);
++            }
++            case EPIC -> {
++                world.playSound(at, Sound.BLOCK_CHEST_OPEN, SoundCategory.BLOCKS, 0.55f, 0.9f);
++                world.playSound(at, Sound.BLOCK_AMETHYST_BLOCK_CHIME, SoundCategory.BLOCKS, 0.7f, 1.0f);
++            }
++            case LEGENDARY -> {
++                world.playSound(at, Sound.ITEM_ARMOR_EQUIP_GOLD, SoundCategory.BLOCKS, 0.6f, 1.0f);
++                world.playSound(at, Sound.BLOCK_CHEST_OPEN, SoundCategory.BLOCKS, 0.55f, 0.75f);
++                world.playSound(at, Sound.BLOCK_BELL_RESONATE, SoundCategory.BLOCKS, 0.25f, 1.4f);
++            }
++            case MYTHIC -> {
++                world.playSound(at, Sound.BLOCK_ENDER_CHEST_OPEN, SoundCategory.BLOCKS, 0.6f, 1.15f);
++                world.playSound(at, Sound.BLOCK_AMETHYST_BLOCK_RESONATE, SoundCategory.BLOCKS, 0.8f, 0.8f);
++            }
++        }
++        plugin.getServer().getScheduler().runTaskLater(plugin, () -> spill(false), 4L);
++    }
++
++    /** The reward just landed on top — a second, brighter spill for the rarer crates. */
++    void reveal() {
++        spill(true);
++        World world = origin.getWorld();
++        if (world == null) {
++            return;
++        }
++        Location at = light().add(0.0, 0.5, 0.0);
++        if (kind == ExploreChestKind.LEGENDARY) {
++            world.playSound(at, Sound.BLOCK_BELL_USE, SoundCategory.BLOCKS, 0.35f, 1.5f);
++        } else if (kind == ExploreChestKind.MYTHIC) {
++            world.playSound(at, Sound.BLOCK_BEACON_POWER_SELECT, SoundCategory.BLOCKS, 0.3f, 1.6f);
++            world.spawnParticle(Particle.END_ROD, at, 12, 0.05, 0.6, 0.05, 0.04);
++        }
++    }
++
++    void close() {
++        if (!valid()) {
++            opened = false;
++            return;
++        }
++        opened = false;
++        tweenLid(restLid);
++        World world = origin.getWorld();
++        if (world != null) {
++            Sound sound = kind == ExploreChestKind.MYTHIC ? Sound.BLOCK_ENDER_CHEST_CLOSE : Sound.BLOCK_CHEST_CLOSE;
++            plugin.getServer().getScheduler().runTaskLater(plugin, () ->
++                    world.playSound(origin, sound, SoundCategory.BLOCKS, 0.5f, 1.0f), 5L);
++        }
++    }
++
++    private void tweenLid(float target) {
++        if (lidTask != null) {
++            lidTask.cancel();
++            lidTask = null;
++        }
++        lidTask = plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
++            if (!valid()) {
++                stopTween();
++                return;
++            }
++            float diff = target - lid;
++            if (Math.abs(diff) < 1.0e-3f) {
++                stopTween();
++                return;
++            }
++            lid += Math.signum(diff) * Math.min(Math.abs(diff), LID_STEP);
++            poseLid(LID_STEP_TICKS);
++        }, 1L, LID_STEP_TICKS);
++    }
++
++    private void stopTween() {
++        if (lidTask != null) {
++            lidTask.cancel();
++            lidTask = null;
++        }
++    }
++
++    private void spill(boolean bright) {
++        World world = origin.getWorld();
++        if (world == null) {
++            return;
++        }
++        Location at = light();
++        Particle.DustOptions dust = new Particle.DustOptions(Palette.of(kind).tone, bright ? 1.1f : 0.8f);
++        world.spawnParticle(Particle.DUST, at, bright ? 12 : 7, 0.25, 0.15, 0.18, 0.0, dust);
++        Particle accent = switch (kind) {
++            case RARE -> Particle.GLOW;
++            case EPIC -> Particle.WITCH;
++            case LEGENDARY -> Particle.WAX_ON;
++            case MYTHIC -> Particle.END_ROD;
++        };
++        world.spawnParticle(accent, at, bright ? 6 : 3, 0.2, 0.2, 0.15, 0.02);
++    }
++
++    /** Top of the open chest (world space) — where the light comes out. */
++    Location light() {
++        return origin.clone().add(0.0, base + BH + hover + 0.08, 0.0);
++    }
++
++    Color tone() {
++        return Palette.of(kind).tone;
++    }
++
++    ExploreChestKind kind() {
++        return kind;
++    }
++
++    boolean valid() {
++        if (parts.isEmpty()) {
++            return false;
++        }
++        for (Part part : parts) {
++            if (part.display == null || !part.display.isValid()) {
++                return false;
++            }
++        }
++        return true;
++    }
++
++    void remove() {
++        stopTween();
++        for (Part part : parts) {
++            if (part.display != null && part.display.isValid()) {
++                part.display.remove();
++            }
++        }
++        parts.clear();
++        for (ItemDisplay orb : orbiters) {
++            if (orb != null && orb.isValid()) {
++                orb.remove();
++            }
++        }
++        orbiters.clear();
++        for (BlockDisplay seg : halo) {
++            if (seg != null && seg.isValid()) {
++                seg.remove();
++            }
++        }
++        halo.clear();
++    }
++
++    /* =========================================================
++     * PALETTES
++     * ========================================================= */
++
++    private static final class Palette {
++        private final BlockData body;
++        private final BlockData lid;
++        private final BlockData band;
++        private final BlockData latch;
++        private final BlockData gem;
++        private final BlockData glow;
++        private final BlockData trim;
++        private final Color tone;
++
++        private Palette(Material body, Material lid, Material band, Material latch, Material gem,
++                        Material glow, Material trim, Color tone) {
++            this.body = body.createBlockData();
++            this.lid = lid.createBlockData();
++            this.band = band.createBlockData();
++            this.latch = latch.createBlockData();
++            this.gem = gem.createBlockData();
++            this.glow = glow.createBlockData();
++            this.trim = trim.createBlockData();
++            this.tone = tone;
++        }
++
++        private static final Palette RARE = new Palette(
++                Material.SPRUCE_PLANKS, Material.STRIPPED_SPRUCE_WOOD, Material.WAXED_OXIDIZED_CUT_COPPER,
++                Material.IRON_BLOCK, Material.PRISMARINE_BRICKS, Material.SEA_LANTERN, Material.SPRUCE_PLANKS,
++                Color.fromRGB(96, 206, 226));
++        private static final Palette EPIC = new Palette(
++                Material.DARK_OAK_PLANKS, Material.STRIPPED_DARK_OAK_WOOD, Material.AMETHYST_BLOCK,
++                Material.POLISHED_BLACKSTONE, Material.AMETHYST_BLOCK, Material.AMETHYST_BLOCK, Material.DARK_OAK_PLANKS,
++                Color.fromRGB(168, 96, 226));
++        private static final Palette LEGENDARY = new Palette(
++                Material.POLISHED_BLACKSTONE_BRICKS, Material.POLISHED_BLACKSTONE, Material.GOLD_BLOCK,
++                Material.RAW_GOLD_BLOCK, Material.GOLD_BLOCK, Material.SHROOMLIGHT, Material.GOLD_BLOCK,
++                Color.fromRGB(255, 196, 64));
++        private static final Palette MYTHIC = new Palette(
++                Material.CRYING_OBSIDIAN, Material.OBSIDIAN, Material.PURPUR_PILLAR,
++                Material.AMETHYST_BLOCK, Material.PEARLESCENT_FROGLIGHT, Material.PEARLESCENT_FROGLIGHT, Material.OBSIDIAN,
++                Color.fromRGB(255, 128, 232));
++
++        static Palette of(ExploreChestKind kind) {
++            return switch (kind) {
++                case RARE -> RARE;
++                case EPIC -> EPIC;
++                case LEGENDARY -> LEGENDARY;
++                case MYTHIC -> MYTHIC;
++            };
++        }
++    }
++}
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/chest/ExploreChestService.java b/AetherionQuests/src/main/java/de/aetherion/quests/chest/ExploreChestService.java
+index 4d3a0b9..0a22b27 100644
+--- a/AetherionQuests/src/main/java/de/aetherion/quests/chest/ExploreChestService.java
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/chest/ExploreChestService.java
+@@ -13,6 +13,7 @@ import org.bukkit.Material;
+ import org.bukkit.NamespacedKey;
+ import org.bukkit.Particle;
+ import org.bukkit.Sound;
++import org.bukkit.SoundCategory;
+ import org.bukkit.World;
+ import org.bukkit.block.Block;
+ import org.bukkit.block.BlockFace;
+@@ -47,6 +48,13 @@ import java.util.concurrent.TimeUnit;
+ 
+ /**
+  * World exploration chests — 12h per player per chest, merchant-style spin.
++ * <p>
++ * Each chest is an authored {@link ExploreChestProp} (per-rarity model + idle life)
++ * standing on an invisible barrier; the barrier keeps the click / break / explosion
++ * contract. Opening swings the lid, the loot rises out of it and spins, the reward
++ * lands, and the lid shuts again. Chests that are ready for you notice you when you
++ * walk up, glint faintly from a distance, and say so once the first time you see them.
++ * Older vanilla-block chests are converted in place on load (facing kept).
+  */
+ public final class ExploreChestService {
+ 
+@@ -55,6 +63,20 @@ public final class ExploreChestService {
+ 
+     private static final long COOLDOWN_MS = TimeUnit.HOURS.toMillis(12);
+     private static final double NEAR_BLOCKS = 7.5d;
++    /** Ready chests rattle once when you're this close (per player, per chest, per minute). */
++    private static final double NOTICE_BLOCKS = 4.5d;
++    private static final long NOTICE_COOLDOWN_MS = TimeUnit.SECONDS.toMillis(60);
++    /** Faint glint over ready chests between these distances — an invitation, not a beacon. */
++    private static final double GLINT_MIN = 8.0d;
++    private static final double GLINT_MAX = 48.0d;
++    /** "Something catches the light" — once per session per chest, the first time you come this close. */
++    private static final double SIGHT_BLOCKS = 14.0d;
++    /** Props animate only while someone is this close. */
++    private static final double ANIMATE_BLOCKS = 40.0d;
++    private static final int PROP_STEP = 5;
++    private static final Set<Material> LEGACY_BLOCKS = Set.of(
++            Material.CHEST, Material.TRAPPED_CHEST, Material.ENDER_CHEST, Material.PURPLE_SHULKER_BOX
++    );
+ 
+     private final AetherionQuests plugin;
+     private final NamespacedKey kindKey;
+@@ -66,7 +88,15 @@ public final class ExploreChestService {
+     private final Set<String> busy = new HashSet<>();
+     private final Map<String, BukkitTask> idle = new HashMap<>();
+     private final Map<ExploreChestKind, List<ItemStack>> showcase = new EnumMap<>(ExploreChestKind.class);
++    private final Map<String, ExploreChestProp> props = new HashMap<>();
++    private final Map<String, BlockFace> facings = new HashMap<>();
++    /** playerUuid|chestKey → next time the chest may notice this player. */
++    private final Map<String, Long> noticed = new HashMap<>();
++    /** playerUuid|chestKey seen this session. */
++    private final Set<String> sighted = new HashSet<>();
+     private BukkitTask proximity;
++    private BukkitTask propTicker;
++    private int glintCycle;
+ 
+     public ExploreChestService(AetherionQuests plugin) {
+         this.plugin = plugin;
+@@ -74,6 +104,7 @@ public final class ExploreChestService {
+         this.file = new File(plugin.getDataFolder(), "explore-chests.yml");
+         load();
+         proximity = plugin.getServer().getScheduler().runTaskTimer(plugin, this::tickProximity, 20L, 10L);
++        propTicker = plugin.getServer().getScheduler().runTaskTimer(plugin, this::tickProps, 25L, PROP_STEP);
+     }
+ 
+     public void shutdown() {
+@@ -81,9 +112,17 @@ public final class ExploreChestService {
+             proximity.cancel();
+             proximity = null;
+         }
++        if (propTicker != null) {
++            propTicker.cancel();
++            propTicker = null;
++        }
+         for (String id : new ArrayList<>(idle.keySet())) {
+             cancelIdle(id);
+         }
++        for (ExploreChestProp prop : props.values()) {
++            prop.remove();
++        }
++        props.clear();
+         save();
+     }
+ 
+@@ -92,7 +131,14 @@ public final class ExploreChestService {
+     }
+ 
+     public ExploreChestKind kindOf(Block block) {
+-        if (block == null || !(block.getState() instanceof TileState state)) {
++        if (block == null) {
++            return null;
++        }
++        if (block.getType() == Material.BARRIER) {
++            // Prop chests: the barrier is only a hitbox; the yml row carries the kind.
++            return kinds.get(key(block));
++        }
++        if (!(block.getState() instanceof TileState state)) {
+             return null;
+         }
+         ExploreChestKind fromBlock = ExploreChestKind.fromId(
+@@ -121,20 +167,12 @@ public final class ExploreChestService {
+             player.sendMessage("§eThere's already an exploration chest there.");
+             return;
+         }
+-        target.setType(kind.block(), false);
+-        var data = target.getBlockData();
+-        if (data instanceof org.bukkit.block.data.type.Chest chestData) {
+-            chestData.setType(org.bukkit.block.data.type.Chest.Type.SINGLE);
+-            chestData.setFacing(player.getFacing().getOppositeFace());
+-            target.setBlockData(chestData, false);
+-        } else if (data instanceof Directional directional) {
+-            directional.setFacing(player.getFacing().getOppositeFace());
+-            target.setBlockData(directional, false);
+-        }
+-        stamp(target, kind);
++        // Invisible hitbox; the chest you see is the prop.
++        target.setType(Material.BARRIER, false);
+         String id = key(target);
+         chests.add(id);
+         kinds.put(id, kind);
++        facings.put(id, horizontal(player.getFacing().getOppositeFace()));
+         save();
+         ensureFx(target);
+         player.sendMessage(kind.chat() + "Placed " + kind.display() + "§7. Each player, this crate, every §f12h§7.");
+@@ -151,6 +189,7 @@ public final class ExploreChestService {
+         busy.remove(id);
+         chests.remove(id);
+         kinds.remove(id);
++        facings.remove(id);
+         block.setType(Material.AIR, false);
+         save();
+         player.sendMessage("§eRemoved " + kind.display() + ".");
+@@ -193,7 +232,12 @@ public final class ExploreChestService {
+         }
+         busy.add(id);
+         if (spinner == null) {
++            ExploreChestProp prop = props.get(id);
++            if (prop != null) {
++                prop.open();
++            }
+             finish(player, block, kind, reward, label);
++            plugin.getServer().getScheduler().runTaskLater(plugin, () -> settle(block, null), 30L);
+             return;
+         }
+         spin(player, block, kind, spinner, label, reward);
+@@ -209,10 +253,15 @@ public final class ExploreChestService {
+             if (kind != null && block.getState() instanceof TileState) {
+                 stamp(block, kind);
+             }
+-            if (!isExploreChest(block)) {
++            if (!isExploreChest(block) || block.getType().isAir()) {
+                 if (block.getType().isAir()) {
+                     chests.remove(id);
+                     kinds.remove(id);
++                    facings.remove(id);
++                    ExploreChestProp prop = props.remove(id);
++                    if (prop != null) {
++                        prop.remove();
++                    }
+                 }
+                 continue;
+             }
+@@ -248,6 +297,13 @@ public final class ExploreChestService {
+             listed.add(id + "|" + (kind == null ? "rare" : kind.id()));
+         }
+         yaml.set("chests", listed);
++        List<String> faced = new ArrayList<>();
++        for (Map.Entry<String, BlockFace> entry : facings.entrySet()) {
++            if (chests.contains(entry.getKey())) {
++                faced.add(entry.getKey() + "|" + entry.getValue().name());
++            }
++        }
++        yaml.set("facing", faced);
+         List<java.util.Map<String, Object>> opens = new ArrayList<>();
+         for (Map.Entry<String, Long> entry : lastOpen.entrySet()) {
+             String stamp = entry.getKey();
+@@ -294,6 +350,16 @@ public final class ExploreChestService {
+             chests.add(id);
+             kinds.put(id, kind);
+         }
++        for (String raw : yaml.getStringList("facing")) {
++            int cut = raw == null ? -1 : raw.lastIndexOf('|');
++            if (cut <= 0) {
++                continue;
++            }
++            try {
++                facings.put(raw.substring(0, cut), horizontal(BlockFace.valueOf(raw.substring(cut + 1))));
++            } catch (IllegalArgumentException ignored) {
++            }
++        }
+         List<?> opens = yaml.getList("last-open");
+         if (opens != null) {
+             for (Object rawOpen : opens) {
+@@ -352,6 +418,18 @@ public final class ExploreChestService {
+             label.text(Component.text("...").color(NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+         }
+         String id = key(block);
++        ExploreChestProp prop = props.get(id);
++        if (prop != null) {
++            prop.open();
++        }
++        // The loot climbs out of the open chest before it starts to turn.
++        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
++            if (spinner.isValid()) {
++                spinner.setInterpolationDelay(0);
++                spinner.setInterpolationDuration(6);
++                spinner.setTransformation(spinPose(0f, 0.62f, 0f));
++            }
++        }, 4L);
+         new BukkitRunnable() {
+             int step = 0;
+             final int total = 22 + ThreadLocalRandom.current().nextInt(6);
+@@ -361,30 +439,58 @@ public final class ExploreChestService {
+                 if (!spinner.isValid() || !player.isOnline()) {
+                     busy.remove(id);
+                     restoreLabel(block, label);
++                    settle(block, spinner);
+                     cancel();
+                     return;
+                 }
+                 step++;
++                if (step == 1) {
++                    spinner.setInterpolationDelay(0);
++                    spinner.setInterpolationDuration(1);
++                }
+                 if (step < total) {
+                     if (!pool.isEmpty()) {
+                         spinner.setItemStack(pool.get(step % pool.size()));
+                     }
+-                    spinner.setTransformation(spinPose(step * 42f, 0.62f));
++                    spinner.setTransformation(spinPose(step * 42f, 0.62f, 0f));
+                     player.playSound(block.getLocation(), Sound.UI_BUTTON_CLICK, 0.25f, 1.4f + (step % 5) * 0.08f);
+                     return;
+                 }
+                 spinner.setItemStack(reward.display);
+-                spinner.setTransformation(spinPose(0f, 0.85f));
++                spinner.setInterpolationDuration(4);
++                spinner.setTransformation(spinPose(0f, 0.85f, 0.08f));
+                 burst(player, block.getLocation().add(0.5, 1.3, 0.5), kind);
++                if (prop != null) {
++                    prop.reveal();
++                }
+                 cancel();
+                 plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                     finish(player, block, kind, reward, label);
+                     if (spinner.isValid()) {
+-                        spinner.setTransformation(spinPose(0f, 0.55f));
++                        spinner.setInterpolationDuration(6);
++                        spinner.setTransformation(spinPose(0f, 0.55f, 0f));
+                     }
+                 }, 16L);
++                // Hold the reward a moment, then it sinks back and the lid shuts.
++                plugin.getServer().getScheduler().runTaskLater(plugin, () -> settle(block, spinner), 46L);
+             }
+-        }.runTaskTimer(plugin, 0L, 1L);
++        }.runTaskTimer(plugin, 10L, 1L);
++    }
++
++    /** Park the spinner inside the chest and close the lid (unless someone already opened it again). */
++    private void settle(Block block, ItemDisplay spinner) {
++        if (busy.contains(key(block))) {
++            return;
++        }
++        if (spinner != null && spinner.isValid()) {
++            spinner.setInterpolationDelay(0);
++            spinner.setInterpolationDuration(8);
++            spinner.setTransformation(parkedPose());
++        }
++        ExploreChestProp prop = props.get(key(block));
++        if (prop != null) {
++            prop.close();
++        }
+     }
+ 
+     private void finish(
+@@ -419,6 +525,10 @@ public final class ExploreChestService {
+         if (block == null || kind == null) {
+             return;
+         }
++        String id = key(block);
++        if (!migrate(block, id, kind)) {
++            return;
++        }
+         World world = block.getWorld();
+         Location spinAt = block.getLocation().add(0.5, 1.15, 0.5);
+         Location textAt = block.getLocation().add(0.5, 1.65, 0.5);
+@@ -427,7 +537,7 @@ public final class ExploreChestService {
+         List<ItemStack> pool = pool(kind);
+         ItemStack first = pool.isEmpty() ? new ItemStack(kind.block()) : pool.get(0);
+         if (spinner == null) {
+-            spinner = world.spawn(spinAt, ItemDisplay.class, display -> {
++            world.spawn(spinAt, ItemDisplay.class, display -> {
+                 display.setItemStack(first);
+                 display.setPersistent(true);
+                 display.setInvulnerable(true);
+@@ -436,9 +546,14 @@ public final class ExploreChestService {
+                 display.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.GUI);
+                 display.setBrightness(new Display.Brightness(15, 15));
+                 display.setShadowRadius(0f);
+-                display.setTransformation(spinPose(0f, 0.55f));
++                display.setTransformation(parkedPose());
+                 display.addScoreboardTag(SPIN_TAG);
+             });
++        } else if (!busy.contains(id)) {
++            // Older builds left the sample spinning on top — it lives inside the chest now.
++            cancelIdle(id);
++            spinner.setInterpolationDuration(0);
++            spinner.setTransformation(parkedPose());
+         }
+         if (label == null) {
+             world.spawn(textAt, TextDisplay.class, text -> {
+@@ -452,44 +567,129 @@ public final class ExploreChestService {
+                 text.setGravity(false);
+                 text.addScoreboardTag(LABEL_TAG);
+             });
+-        } else if (label.isValid() && !busy.contains(key(block))) {
++        } else if (label.isValid() && !busy.contains(id)) {
+             label.text(labelCopy(kind, null, block));
+         }
+-        startIdle(block, spinner, pool);
++        ensureProp(block, id, kind);
+     }
+ 
+-    private void startIdle(Block block, ItemDisplay spinner, List<ItemStack> pool) {
+-        String id = key(block);
+-        BukkitTask existing = idle.get(id);
+-        if (existing != null && !existing.isCancelled()) {
++    /**
++     * Vanilla-block chests from older builds become a barrier (facing kept) so the prop can
++     * stand in their place. Anything that isn't ours or a barrier is left alone.
++     *
++     * @return true if the block is (now) a barrier hitbox
++     */
++    private boolean migrate(Block block, String id, ExploreChestKind kind) {
++        Material type = block.getType();
++        if (type == Material.BARRIER) {
++            return true;
++        }
++        if (!LEGACY_BLOCKS.contains(type)) {
++            return false;
++        }
++        BlockFace face = BlockFace.SOUTH;
++        if (block.getBlockData() instanceof Directional directional) {
++            face = directional.getFacing();
++        }
++        facings.putIfAbsent(id, horizontal(face));
++        // The yml row carries the kind from here on (the tile PDC goes with the old block).
++        chests.add(id);
++        kinds.put(id, kind);
++        block.setType(Material.BARRIER, false);
++        save();
++        return true;
++    }
++
++    private void ensureProp(Block block, String id, ExploreChestKind kind) {
++        ExploreChestProp prop = props.get(id);
++        if (prop != null && prop.valid() && prop.kind() == kind) {
+             return;
+         }
+-        BukkitTask task = new BukkitRunnable() {
+-            int step = 0;
++        if (prop != null) {
++            prop.remove();
++        }
++        sweepProps(block);
++        ExploreChestProp built = new ExploreChestProp(plugin, kind, block.getLocation(),
++                yawOf(facings.getOrDefault(id, BlockFace.SOUTH)));
++        built.build();
++        props.put(id, built);
++    }
+ 
+-            @Override
+-            public void run() {
+-                if (spinner == null || !spinner.isValid() || !isExploreChest(block)) {
+-                    cancel();
+-                    idle.remove(id);
+-                    return;
++    /** Stray prop parts (reload, crash) around a chest. */
++    private static void sweepProps(Block block) {
++        Location at = block.getLocation().add(0.5, 0.5, 0.5);
++        for (Entity entity : block.getWorld().getNearbyEntities(at, 1.2, 1.6, 1.2)) {
++            if (entity.getScoreboardTags().contains(ExploreChestProp.TAG)) {
++                entity.remove();
++            }
++        }
++    }
++
++    private void tickProps() {
++        if (props.isEmpty()) {
++            return;
++        }
++        double r2 = ANIMATE_BLOCKS * ANIMATE_BLOCKS;
++        for (Map.Entry<String, ExploreChestProp> entry : new ArrayList<>(props.entrySet())) {
++            Block block = blockOf(entry.getKey());
++            if (block == null || !block.getWorld().isChunkLoaded(block.getX() >> 4, block.getZ() >> 4)) {
++                continue;
++            }
++            Location center = block.getLocation().add(0.5, 0.5, 0.5);
++            boolean watched = false;
++            for (Player player : block.getWorld().getPlayers()) {
++                if (player.getLocation().distanceSquared(center) <= r2) {
++                    watched = true;
++                    break;
+                 }
+-                if (busy.contains(id) || pool.isEmpty()) {
+-                    return;
++            }
++            if (!watched) {
++                continue;
++            }
++            ExploreChestProp prop = entry.getValue();
++            if (!prop.valid()) {
++                // Something took the parts (chunk edge, /kill) — rebuild while someone's looking.
++                ExploreChestKind kind = kindOf(block);
++                if (kind != null && block.getType() == Material.BARRIER) {
++                    ensureProp(block, entry.getKey(), kind);
+                 }
+-                step++;
+-                spinner.setItemStack(pool.get(step % pool.size()));
+-                spinner.setTransformation(spinPose(step * 18f, 0.55f));
++                continue;
+             }
+-        }.runTaskTimer(plugin, 10L, 8L);
+-        idle.put(id, task);
++            prop.idle(PROP_STEP);
++        }
++    }
++
++    private static BlockFace horizontal(BlockFace face) {
++        if (face == null) {
++            return BlockFace.SOUTH;
++        }
++        return switch (face) {
++            case NORTH, SOUTH, EAST, WEST -> face;
++            default -> BlockFace.SOUTH;
++        };
++    }
++
++    /** Radians for {@code rotateY}: local +Z (the chest front) turned toward {@code face}. */
++    private static float yawOf(BlockFace face) {
++        return switch (face) {
++            case NORTH -> (float) Math.PI;
++            case EAST -> (float) (Math.PI / 2.0);
++            case WEST -> (float) (-Math.PI / 2.0);
++            default -> 0f;
++        };
+     }
+ 
+     private void clearFx(Block block) {
+         cancelIdle(key(block));
++        ExploreChestProp prop = props.remove(key(block));
++        if (prop != null) {
++            prop.remove();
++        }
+         Location at = block.getLocation().add(0.5, 1.4, 0.5);
+         for (Entity entity : block.getWorld().getNearbyEntities(at, 1.6, 2.2, 1.6)) {
+-            if (entity.getScoreboardTags().contains(SPIN_TAG) || entity.getScoreboardTags().contains(LABEL_TAG)) {
++            if (entity.getScoreboardTags().contains(SPIN_TAG)
++                    || entity.getScoreboardTags().contains(LABEL_TAG)
++                    || entity.getScoreboardTags().contains(ExploreChestProp.TAG)) {
+                 entity.remove();
+             }
+         }
+@@ -516,6 +716,8 @@ public final class ExploreChestService {
+         if (chests.isEmpty()) {
+             return;
+         }
++        glintCycle++;
++        long now = System.currentTimeMillis();
+         for (String id : new ArrayList<>(chests)) {
+             if (busy.contains(id)) {
+                 continue;
+@@ -533,6 +735,12 @@ public final class ExploreChestService {
+                     continue;
+                 }
+                 double dist = player.getLocation().distanceSquared(center);
++                if (dist > GLINT_MAX * GLINT_MAX) {
++                    continue;
++                }
++                if (kind != null && readyFor(player, id)) {
++                    invite(player, block, id, kind, dist, now);
++                }
+                 if (dist > NEAR_BLOCKS * NEAR_BLOCKS) {
+                     continue;
+                 }
+@@ -546,6 +754,53 @@ public final class ExploreChestService {
+                 label.text(labelCopy(kind, nearest, block));
+             }
+         }
++        if (noticed.size() > 4096) {
++            noticed.values().removeIf(until -> until < now);
++        }
++    }
++
++    /**
++     * Exploration invitation for a chest that's ready for {@code player}: a faint glint from
++     * a distance, one "something catches the light" the first time this session, and a
++     * rattle of the hasp when they walk right up.
++     */
++    private void invite(Player player, Block block, String id, ExploreChestKind kind, double dist2, long now) {
++        String stamp = player.getUniqueId() + "|" + id;
++        ExploreChestProp prop = props.get(id);
++        Location top = prop != null ? prop.light() : block.getLocation().add(0.5, 0.9, 0.5);
++
++        if (dist2 >= GLINT_MIN * GLINT_MIN && glintCycle % 4 == 0) {
++            Color tone = prop != null ? prop.tone() : Color.WHITE;
++            player.spawnParticle(Particle.DUST, top.clone().add(0.0, 0.85, 0.0), 2, 0.12, 0.12, 0.12, 0.0,
++                    new Particle.DustOptions(tone, 1.3f));
++            if ((kind == ExploreChestKind.LEGENDARY || kind == ExploreChestKind.MYTHIC) && glintCycle % 8 == 0) {
++                player.spawnParticle(Particle.END_ROD, top.clone().add(0.0, 1.1, 0.0), 1, 0.05, 0.1, 0.05, 0.0);
++            }
++        }
++
++        if (dist2 <= SIGHT_BLOCKS * SIGHT_BLOCKS && !lastOpen.containsKey(stamp) && sighted.add(stamp)) {
++            player.sendActionBar(Component.text("✦ Something catches the light · ", NamedTextColor.GRAY)
++                    .append(Component.text(kind.display(), kind.color())));
++            player.playSound(top, Sound.BLOCK_AMETHYST_BLOCK_CHIME, SoundCategory.PLAYERS, 0.35f, 1.6f);
++        }
++
++        if (dist2 <= NOTICE_BLOCKS * NOTICE_BLOCKS && noticed.getOrDefault(stamp, 0L) <= now) {
++            noticed.put(stamp, now + NOTICE_COOLDOWN_MS);
++            if (prop != null) {
++                prop.notice();
++            }
++            switch (kind) {
++                case RARE -> player.playSound(top, Sound.BLOCK_CHEST_LOCKED, SoundCategory.BLOCKS, 0.25f, 1.6f);
++                case EPIC -> player.playSound(top, Sound.BLOCK_AMETHYST_BLOCK_CHIME, SoundCategory.BLOCKS, 0.45f, 1.2f);
++                case LEGENDARY -> player.playSound(top, Sound.BLOCK_NOTE_BLOCK_BELL, SoundCategory.BLOCKS, 0.3f, 1.6f);
++                case MYTHIC -> player.playSound(top, Sound.BLOCK_AMETHYST_BLOCK_RESONATE, SoundCategory.BLOCKS, 0.5f, 1.0f);
++            }
++        }
++    }
++
++    private boolean readyFor(Player player, String id) {
++        Long last = lastOpen.get(player.getUniqueId() + "|" + id);
++        return last == null || last + COOLDOWN_MS <= System.currentTimeMillis();
+     }
+ 
+     private Component statusLine(Player player, Block block) {
+@@ -615,15 +870,20 @@ public final class ExploreChestService {
+         player.playSound(at, Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.55f, 1.35f);
+     }
+ 
+-    private static Transformation spinPose(float yawDeg, float scale) {
++    private static Transformation spinPose(float yawDeg, float scale, float lift) {
+         return new Transformation(
+-                new Vector3f(),
++                new Vector3f(0f, lift, 0f),
+                 new AxisAngle4f((float) Math.toRadians(yawDeg), 0f, 1f, 0f),
+                 new Vector3f(scale, scale, scale),
+                 new AxisAngle4f()
+         );
+     }
+ 
++    /** Spinner at rest: tucked inside the chest body. */
++    private static Transformation parkedPose() {
++        return spinPose(0f, 0.04f, -0.75f);
++    }
++
+     private static String formatLeft(long ms) {
+         long totalSec = Math.max(1L, (ms + 999L) / 1000L);
+         long hours = totalSec / 3600L;
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/dialog/DialogManager.java b/AetherionQuests/src/main/java/de/aetherion/quests/dialog/DialogManager.java
+index 4191dfc..859f5f2 100644
+--- a/AetherionQuests/src/main/java/de/aetherion/quests/dialog/DialogManager.java
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/dialog/DialogManager.java
+@@ -2196,8 +2196,9 @@ public class DialogManager implements Listener {
+     private String[] craftsmanIntroLines(Player player) {
+         return new String[] {
+                 "Hey. Craftsman. Crafting is unlocked — Recipe Book lives in the Manager.",
+-                "Nether Star (hotbar §e9§f) → click the §agreen book§f. Every blueprint is there.",
+-                "Craft a §fMining Pickaxe§f: Simple Pickaxe in the middle, coal around it. Bring that pick back to me to finish."
++                "Nether Star (hotbar §e9§f) → click the §agreen book§f. What you know sits up front; the rest you'll find.",
++                "§7Side job, not on Ledger's list:§f craft a §fMining Pickaxe§f — Simple Pickaxe in the middle, coal around it.",
++                "Show it to me whenever. I pay for proof. No clipboard, no deadline."
+         };
+     }
+ 
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/listener/ExploreChestListener.java b/AetherionQuests/src/main/java/de/aetherion/quests/listener/ExploreChestListener.java
+index 6017dee..14ab827 100644
+--- a/AetherionQuests/src/main/java/de/aetherion/quests/listener/ExploreChestListener.java
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/listener/ExploreChestListener.java
+@@ -56,7 +56,7 @@ public final class ExploreChestListener implements Listener {
+             meta.setLore(List.of(
+                     "§7DEV · exploration crate.",
+                     "§7Each player, this crate, every §f12h§7.",
+-                    "§8Spin animation — no vanilla inventory.",
++                    "§8Authored prop · lid, spin and idle per rarity.",
+                     "",
+                     "§eRight-click a block §7to place.",
+                     "§eSneak + click the chest §7to remove."
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/listener/NpcListener.java b/AetherionQuests/src/main/java/de/aetherion/quests/listener/NpcListener.java
+index 8670531..9937572 100644
+--- a/AetherionQuests/src/main/java/de/aetherion/quests/listener/NpcListener.java
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/listener/NpcListener.java
+@@ -792,6 +792,11 @@ public class NpcListener implements Listener {
+             if (plugin != null && plugin.getPlayerQuestStorage() != null) {
+                 plugin.getPlayerQuestStorage().markStarterKit(player.getUniqueId(), giftKey);
+             }
++            // The side job gets its own small QUEST COMPLETE — never a silent "already done".
++            if (plugin != null && plugin.getQuestFeedback() != null) {
++                plugin.getQuestFeedback().playComplete(player,
++                        de.aetherion.quests.lang.LangPack.questTitle(player, "a_simple_craft", "Second Recipe"));
++            }
+             // One contiguous reward block: quest rewards + craftsman bonus, then blank / level-ups.
+             questManager.runRewardBlock(player, () -> {
+                 Quest legacy = questManager.getQuest("a_simple_craft");
+@@ -803,17 +808,48 @@ public class NpcListener implements Listener {
+                 }
+                 questManager.giftCoins(player, 1000);
+             });
+-            LivingNpcProfile.say(player, npc, "There it is — Mining Pickaxe. Good work.");
+-            de.aetherion.quests.ui.QuestHint.clearPending(player);
+-            de.aetherion.quests.ui.QuestHint.show(player, "foreman", "Shaft Foreman");
+-            player.sendActionBar(net.kyori.adventure.text.Component.text(
+-                    "→ Shaft Foreman · Mines",
+-                    net.kyori.adventure.text.format.NamedTextColor.AQUA
+-            ));
++            LivingNpcProfile.say(player, npc, de.aetherion.quests.lang.LangPack.ui(player,
++                    "craftsman_paid", "There it is — Mining Pickaxe. Proof accepted, coin paid."));
++            if (!de.aetherion.quests.util.QuestStoryGate.questCompleted(player, questManager, "first_shift")) {
++                // Mid-orientation: the pick is for the Mines — Foreman is still the job.
++                de.aetherion.quests.ui.QuestHint.clearPending(player);
++                de.aetherion.quests.ui.QuestHint.show(player, "foreman", "Shaft Foreman");
++                player.sendActionBar(net.kyori.adventure.text.Component.text(
++                        "→ Shaft Foreman · Mines",
++                        net.kyori.adventure.text.format.NamedTextColor.AQUA
++                ));
++            } else if (de.aetherion.quests.util.QuestStoryGate.tutorialDone(player, questManager)) {
++                // After the stamp: side job filed, the arrow moves to the next open road.
++                de.aetherion.quests.ui.QuestHint.clearPending(player);
++                de.aetherion.quests.util.OpenRoads.Road next =
++                        de.aetherion.quests.util.OpenRoads.next(player, questManager);
++                if (next != de.aetherion.quests.util.OpenRoads.Road.WILDS && plugin != null) {
++                    plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
++                        if (player.isOnline()) {
++                            de.aetherion.quests.util.OpenRoads.pin(player, next);
++                        }
++                    }, de.aetherion.quests.dialog.DialogPace.LINE_GAP_TICKS);
++                }
++            } else if ("craftsman".equals(de.aetherion.quests.ui.QuestHint.targetNpcId(player))) {
++                // Shift done, stamp not yet: the arrow was on him for the side job — let it go.
++                de.aetherion.quests.ui.QuestHint.clearPending(player);
++            }
++            // Otherwise the orientation arrow stays exactly where it was.
+             return;
+         }
+ 
+         if (gifted) {
++            if (de.aetherion.quests.util.QuestStoryGate.questCompleted(player, questManager, "first_shift")) {
++                // "Next: Shaft Foreman" is only true before the shift — after it, talk shop.
++                String[] lines = de.aetherion.quests.lang.LangPack.dialogs(player, "craftsman_after_shift", new String[] {
++                        "Pick's holding up? Good.",
++                        "Recipe Book grows as you do — new pages come from the waste, the veins and the Surveyor's desk."
++                });
++                for (String line : lines) {
++                    LivingNpcProfile.say(player, npc, line);
++                }
++                return;
++            }
+             dialogManager.startCompletedDialog(player, npc);
+             return;
+         }
+@@ -1277,53 +1313,70 @@ public class NpcListener implements Listener {
+         }
+ 
+         if (!firstStamp) {
+-            // Return visit — dialog first, short pause, then manager menu.
+-            LivingNpcProfile.say(player, npc, "Need a refresher? Here's the desk.");
++            // Return visit — one line, short pause, then her desk: open roads (briefing one click away).
++            LivingNpcProfile.say(player, npc, de.aetherion.quests.lang.LangPack.ui(player,
++                    "roads.ledger_return", "Roads are on the desk. Pick one."));
+             if (plugin != null) {
+                 dialogManager.afterDialog(player, () ->
+-                        de.aetherion.quests.ui.EgonBriefingGUI.open(player, "Miss Ledger"));
++                        de.aetherion.quests.ui.OpenRoadsGUI.open(player));
+             } else {
+-                de.aetherion.quests.ui.EgonBriefingGUI.open(player, "Miss Ledger");
++                de.aetherion.quests.ui.OpenRoadsGUI.open(player);
+             }
+             return;
+         }
+ 
+-        // Same QUEST COMPLETE block as every other turn-in, then rewards, blank, Ledger in her colour.
+-        if (plugin != null && plugin.getQuestFeedback() != null) {
+-            plugin.getQuestFeedback().playComplete(
+-                    player,
+-                    de.aetherion.quests.lang.LangPack.ui(player, "tutorial_name", "Tutorial")
+-            );
++        // The stamp itself is the milestone: QUEST COMPLETE + rewards fire when it hits the slip.
++        Runnable stamped = () -> {
++            if (plugin != null && plugin.getQuestFeedback() != null) {
++                plugin.getQuestFeedback().playComplete(
++                        player,
++                        de.aetherion.quests.lang.LangPack.ui(player, "tutorial_name", "Tutorial")
++                );
++            }
++            questManager.giftTutorialGraduation(player);
++        };
++        boolean staged = de.aetherion.quests.ui.GraduationStamp.play(player, stamped);
++        if (!staged) {
++            stamped.run();
+         }
+-        questManager.giftTutorialGraduation(player);
+-        LivingNpcProfile.say(player, npc, "Well done. Orientation's filed — map's yours.");
+-        LivingNpcProfile.say(player, npc,
+-                "One habit: always watch the §eyellow arrow up top§f. It points to your current job.");
+ 
+         if (plugin == null) {
++            LivingNpcProfile.say(player, npc, "Well done. Orientation's filed — map's yours.");
+             return;
+         }
+ 
++        de.aetherion.quests.util.OpenRoads.Road next =
++                de.aetherion.quests.util.OpenRoads.next(player, questManager);
++        String[] lines = de.aetherion.quests.lang.LangPack.dialogs(player, "ledger_graduation", new String[] {
++                "Stamped. Orientation's filed — the map's yours.",
++                "One habit: the §eyellow arrow up top§f follows whatever you pin. Pin something.",
++                "Roads are on my desk. I'll mark the one most rookies take first."
++        });
++        long speakAt = staged ? 26L : 20L;
+         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+             if (!player.isOnline()) {
+                 return;
+             }
+-            if (!de.aetherion.quests.util.QuestStoryGate.questCompleted(player, questManager, "lesson_steel")) {
+-                LivingNpcProfile.say(player, npc,
+-                        "§cSergeant Vex§f at the Borderlands gate could be interesting. Need help later? Talk to me.");
+-                player.sendActionBar(net.kyori.adventure.text.Component.text(
+-                        "Soft hint · Sergeant Vex",
+-                        net.kyori.adventure.text.format.NamedTextColor.RED
+-                ));
+-                de.aetherion.quests.ui.QuestHint.show(player, "vex", "Sergeant Vex");
+-            } else if (!de.aetherion.quests.util.QuestStoryGate.questCompleted(player, questManager, "border_rites")) {
+-                LivingNpcProfile.say(player, npc,
+-                        "§cRite Warden§f in the waste could be interesting. Need help later? Talk to me.");
+-                de.aetherion.quests.ui.QuestHint.show(player, "rite_keeper", "Rite Warden");
+-            } else {
+-                LivingNpcProfile.say(player, npc, "Need help later? Talk to me.");
++            for (String line : lines) {
++                LivingNpcProfile.say(player, npc, line);
+             }
+-        }, 50L);
++        }, speakAt);
++
++        long afterLines = speakAt + de.aetherion.quests.dialog.DialogPace.LINE_GAP_TICKS * lines.length;
++        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
++            if (!player.isOnline()) {
++                return;
++            }
++            de.aetherion.quests.util.OpenRoads.pin(player, next);
++            org.bukkit.Location desk = de.aetherion.quests.npc.NpcPresence.locate("ledger");
++            boolean stillAtDesk = desk != null
++                    && desk.getWorld() != null
++                    && desk.getWorld().equals(player.getWorld())
++                    && desk.distanceSquared(player.getLocation()) <= 10.0 * 10.0;
++            if (stillAtDesk && player.getOpenInventory().getType() == org.bukkit.event.inventory.InventoryType.CRAFTING) {
++                de.aetherion.quests.ui.OpenRoadsGUI.open(player);
++            }
++        }, afterLines);
+     }
+ 
+ 
+@@ -1412,6 +1465,17 @@ public class NpcListener implements Listener {
+                                 "Thread's yours now — waste, desks, whatever. No leash from me.");
+                     }
+                 }, 45L);
++                // No leash from him — but the arrow quietly moves to the next open road.
++                plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
++                    if (!player.isOnline()) {
++                        return;
++                    }
++                    de.aetherion.quests.util.OpenRoads.Road next =
++                            de.aetherion.quests.util.OpenRoads.next(player, questManager);
++                    if (next != de.aetherion.quests.util.OpenRoads.Road.WILDS) {
++                        de.aetherion.quests.util.OpenRoads.pin(player, next);
++                    }
++                }, 90L);
+             } else {
+                 npcSay(player, npc,
+                         "Thread's yours now — waste, desks, whatever. No leash from me.");
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/listener/QuestObjectiveListener.java b/AetherionQuests/src/main/java/de/aetherion/quests/listener/QuestObjectiveListener.java
+index 3cfc2b1..16a177a 100644
+--- a/AetherionQuests/src/main/java/de/aetherion/quests/listener/QuestObjectiveListener.java
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/listener/QuestObjectiveListener.java
+@@ -1041,6 +1041,11 @@ public class QuestObjectiveListener implements Listener {
+     }
+ 
+     private boolean isBorderlandsHostileKill(Entity entity) {
++        return isBorderlandsHostile(entity);
++    }
++
++    /** Same test {@code lesson_steel} counts kills with — shared so Vex's framing never disagrees. */
++    public static boolean isBorderlandsHostile(Entity entity) {
+         if (!(entity instanceof org.bukkit.entity.Monster)) {
+             return false;
+         }
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/listener/VexDeathHintListener.java b/AetherionQuests/src/main/java/de/aetherion/quests/listener/VexDeathHintListener.java
+index 4969a8a..94335ca 100644
+--- a/AetherionQuests/src/main/java/de/aetherion/quests/listener/VexDeathHintListener.java
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/listener/VexDeathHintListener.java
+@@ -1,15 +1,23 @@
+ package de.aetherion.quests.listener;
+ 
++import de.aetherion.quests.AetherionQuests;
++import de.aetherion.quests.lang.LangPack;
+ import de.aetherion.quests.manager.QuestManager;
+ import de.aetherion.quests.model.Quest;
+ import de.aetherion.quests.model.QuestState;
++import de.aetherion.quests.npc.LivingNpcProfile;
+ import de.aetherion.quests.util.QuestStoryGate;
+ 
+ import org.bukkit.Bukkit;
++import org.bukkit.entity.Entity;
++import org.bukkit.entity.LivingEntity;
+ import org.bukkit.entity.Player;
++import org.bukkit.entity.Projectile;
+ import org.bukkit.event.EventHandler;
+ import org.bukkit.event.EventPriority;
+ import org.bukkit.event.Listener;
++import org.bukkit.event.entity.EntityDamageByEntityEvent;
++import org.bukkit.event.entity.EntityDeathEvent;
+ import org.bukkit.event.entity.PlayerDeathEvent;
+ import org.bukkit.event.player.PlayerRespawnEvent;
+ import org.bukkit.plugin.java.JavaPlugin;
+@@ -19,7 +27,12 @@ import java.util.UUID;
+ import java.util.concurrent.ConcurrentHashMap;
+ 
+ /**
+- * Soft nudge during Vex's Borderlands lesson after a death.
++ * Sergeant Vex frames the first fight — nothing about the numbers changes.
++ * <p>
++ * During {@code lesson_steel}: the first hit on a Borderlands hostile gets a word from
++ * the gate about the damage numbers you just saw (white = you, gold ✦ = crit); the first
++ * kill gets a count. Each fires once per player (persisted with the starter-kit flags).
++ * After a death: the old soft nudge toward gear.
+  */
+ public final class VexDeathHintListener implements Listener {
+ 
+@@ -36,6 +49,75 @@ public final class VexDeathHintListener implements Listener {
+         this.questManager = questManager;
+     }
+ 
++    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
++    public void onFirstHit(EntityDamageByEntityEvent event) {
++        Player attacker = attackerOf(event);
++        if (attacker == null || event.getFinalDamage() <= 0.05d || !isOnLessonSteel(attacker)) {
++            return;
++        }
++        if (!QuestObjectiveListener.isBorderlandsHostile(event.getEntity())) {
++            return;
++        }
++        if (!claimOnce(attacker, "steel_primer_hit")) {
++            return;
++        }
++        // A beat after the number has floated up, so the eye is already on it.
++        Bukkit.getScheduler().runTaskLater(plugin, () -> {
++            if (!attacker.isOnline()) {
++                return;
++            }
++            String[] lines = LangPack.dialogs(attacker, "vex_primer_hit", new String[] {
++                    "§7(from the gate)§f See the number that jumped off it? That's you. Not a guess.",
++                    "Gold §6✦§f ones are crits — watch which swings make them. White is honest work."
++            });
++            for (String line : lines) {
++                LivingNpcProfile.say(attacker, "vex", "Sergeant Vex", line);
++            }
++        }, 14L);
++    }
++
++    @EventHandler(priority = EventPriority.MONITOR)
++    public void onFirstKill(EntityDeathEvent event) {
++        LivingEntity dead = event.getEntity();
++        Player killer = dead.getKiller();
++        if (killer == null || !isOnLessonSteel(killer) || !QuestObjectiveListener.isBorderlandsHostile(dead)) {
++            return;
++        }
++        if (!claimOnce(killer, "steel_primer_kill")) {
++            return;
++        }
++        Bukkit.getScheduler().runTaskLater(plugin, () -> {
++            if (!killer.isOnline()) {
++                return;
++            }
++            LivingNpcProfile.say(killer, "vex", "Sergeant Vex", LangPack.ui(killer, "vex_primer_kill",
++                    "One. The count's on your bar up top. Nine more and we talk."));
++        }, 12L);
++    }
++
++    private static boolean claimOnce(Player player, String key) {
++        AetherionQuests quests = AetherionQuests.getInstance();
++        if (quests == null || quests.getPlayerQuestStorage() == null) {
++            return false;
++        }
++        if (quests.getPlayerQuestStorage().hasStarterKit(player.getUniqueId(), key)) {
++            return false;
++        }
++        quests.getPlayerQuestStorage().markStarterKit(player.getUniqueId(), key);
++        return true;
++    }
++
++    private static Player attackerOf(EntityDamageByEntityEvent event) {
++        Entity damager = event.getDamager();
++        if (damager instanceof Player player) {
++            return player;
++        }
++        if (damager instanceof Projectile projectile && projectile.getShooter() instanceof Player player) {
++            return player;
++        }
++        return null;
++    }
++
+     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+     public void onDeath(PlayerDeathEvent event) {
+         Player player = event.getEntity();
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/npc/LivingNpcAtmosphere.java b/AetherionQuests/src/main/java/de/aetherion/quests/npc/LivingNpcAtmosphere.java
+index fdd4528..fa84a0a 100644
+--- a/AetherionQuests/src/main/java/de/aetherion/quests/npc/LivingNpcAtmosphere.java
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/npc/LivingNpcAtmosphere.java
+@@ -32,6 +32,12 @@ import java.util.function.Supplier;
+  * First-hour spine (Egon, Forager, Foreman, Miss Ledger): one shared slow loop.
+  * Particles are small and constant; sounds are rare, quiet, and only for players
+  * standing nearby — the NPC is busy with their own job when you walk up.
++ * <p>
++ * Past the pier the same loop carries the rest of the early cast, each at their own
++ * trade: the Quartermaster's crates, the Craftsman's hammer (sparks only when it lands),
++ * Temper's heated metal, the Farmer's chaff and hens, Sergeant Vex drilling at the
++ * Borderlands gate in blown ash, the Rite Warden's spores and soul-sighs, the Surveyor's
++ * spyglass. Same budget: tiny particles only when someone is watching, sounds rare.
+  */
+ public final class LivingNpcAtmosphere {
+ 
+@@ -41,8 +47,12 @@ public final class LivingNpcAtmosphere {
+     private static volatile BukkitTask liquidatorFx;
+     private static volatile Location liquidatorAt;
+ 
+-    /** Spine NPCs with an ambient loop (Egon → Forager → Foreman → Ledger). */
+-    private static final Set<String> SPINE = Set.of("egon", "lumberjack", "foreman", "ledger");
++    /** Early cast with an ambient loop (pier spine + the stops after it). */
++    private static final Set<String> SPINE = Set.of(
++            "egon", "lumberjack", "foreman", "ledger",
++            "quartermaster", "craftsman", "booster_tutor", "farmer",
++            "vex", "rite_keeper", "surveyor"
++    );
+     private static final double SPINE_VIEW = 20.0;
+     private static final double SPINE_EAR = 14.0;
+     private static final long SPINE_PERIOD = 10L;
+@@ -53,6 +63,11 @@ public final class LivingNpcAtmosphere {
+     private static final BlockData OAK_CHIPS = Material.OAK_LOG.createBlockData();
+     private static final Particle.DustOptions LEDGER_INK =
+             new Particle.DustOptions(Color.fromRGB(92, 48, 64), 0.55f);
++    private static final BlockData CHAFF = Material.HAY_BLOCK.createBlockData();
++    private static final Particle.DustOptions HOT_METAL =
++            new Particle.DustOptions(Color.fromRGB(255, 142, 52), 0.5f);
++    private static final Particle.DustOptions BLUEPRINT_INK =
++            new Particle.DustOptions(Color.fromRGB(70, 130, 200), 0.45f);
+ 
+     private LivingNpcAtmosphere() {
+     }
+@@ -235,7 +250,13 @@ public final class LivingNpcAtmosphere {
+                 case "lumberjack" -> foragerAmbient(world, at, rng);
+                 case "foreman" -> foremanAmbient(world, at, rng);
+                 case "ledger" -> ledgerAmbient(world, at, rng);
++                case "booster_tutor" -> temperAmbient(world, at, rng);
++                case "farmer" -> farmerAmbient(world, at, rng);
++                case "vex" -> vexAmbient(world, at, rng);
++                case "rite_keeper" -> riteAmbient(world, at, rng);
++                case "surveyor" -> surveyorAmbient(world, at, rng);
+                 default -> {
++                    // Quartermaster / Craftsman: sound-led, no idle particles.
+                 }
+             }
+             if (soundDue(id, rng)) {
+@@ -275,6 +296,47 @@ public final class LivingNpcAtmosphere {
+         }
+     }
+ 
++    /** Temper: metal still warm from the last fuse — a glint, a heat mote. */
++    private static void temperAmbient(World world, Location at, ThreadLocalRandom rng) {
++        if (rng.nextDouble() < 0.22) {
++            world.spawnParticle(Particle.DUST, at.clone().add(0.0, 1.1, 0.0), 1, 0.16, 0.06, 0.16, 0.0, HOT_METAL);
++        } else if (rng.nextDouble() < 0.08) {
++            world.spawnParticle(Particle.WAX_ON, at.clone().add(0.0, 1.15, 0.0), 1, 0.2, 0.1, 0.2, 0.0);
++        }
++    }
++
++    /** Farmer: chaff in the breeze around his boots. */
++    private static void farmerAmbient(World world, Location at, ThreadLocalRandom rng) {
++        if (rng.nextDouble() < 0.25) {
++            world.spawnParticle(Particle.BLOCK, at.clone().add(0.0, 0.35, 0.0), 2, 0.55, 0.1, 0.55, 0.0, CHAFF);
++        }
++    }
++
++    /** Sergeant Vex: the waste blows ash through the gate. */
++    private static void vexAmbient(World world, Location at, ThreadLocalRandom rng) {
++        if (rng.nextDouble() < 0.55) {
++            world.spawnParticle(Particle.WHITE_ASH, at.clone().add(0.0, 1.4, 0.0), 3, 1.6, 0.8, 1.6, 0.0);
++        }
++    }
++
++    /** Rite Warden: crimson spores hang in the air; now and then a soul lifts off the altar dust. */
++    private static void riteAmbient(World world, Location at, ThreadLocalRandom rng) {
++        if (rng.nextDouble() < 0.45) {
++            world.spawnParticle(Particle.CRIMSON_SPORE, at.clone().add(0.0, 1.2, 0.0), 2, 0.9, 0.6, 0.9, 0.0);
++        }
++        if (rng.nextDouble() < 0.04) {
++            world.spawnParticle(Particle.SOUL, at.clone().add(rng.nextDouble(-0.8, 0.8), 0.2, rng.nextDouble(-0.8, 0.8)),
++                    1, 0.0, 0.0, 0.0, 0.015);
++        }
++    }
++
++    /** Surveyor: blueprint ink on the fingers. */
++    private static void surveyorAmbient(World world, Location at, ThreadLocalRandom rng) {
++        if (spineCycle % 2 == 1 && rng.nextDouble() < 0.4) {
++            world.spawnParticle(Particle.DUST, at.clone().add(0.0, 1.1, 0.0), 1, 0.18, 0.06, 0.18, 0.0, BLUEPRINT_INK);
++        }
++    }
++
+     /** Next sound in 6–14 s per NPC, so the pier never ticks like a clock. */
+     private static boolean soundDue(String id, ThreadLocalRandom rng) {
+         long next = spineNextSound.getOrDefault(id, 0L);
+@@ -319,11 +381,60 @@ public final class LivingNpcAtmosphere {
+                 plugin.getServer().getScheduler().runTaskLater(plugin,
+                         () -> play(ears, hands, Sound.BLOCK_NOTE_BLOCK_BASEDRUM, SoundCategory.NEUTRAL, 0.22f, 0.62f), 7L);
+             }
++            case "quartermaster" -> {
++                // A crate lid, then the tally.
++                if (rng.nextBoolean()) {
++                    play(ears, hands, Sound.BLOCK_BARREL_CLOSE, SoundCategory.NEUTRAL, 0.2f, 0.9f);
++                } else {
++                    play(ears, hands, Sound.ITEM_BOOK_PAGE_TURN, SoundCategory.NEUTRAL, 0.22f, 0.9f);
++                }
++            }
++            case "craftsman" -> {
++                // Two hammer taps; sparks jump only when the hammer lands.
++                craftsmanTap(ears, hands, 1.45f);
++                plugin.getServer().getScheduler().runTaskLater(plugin, () -> craftsmanTap(ears, hands, 1.6f), 6L);
++            }
++            case "booster_tutor" -> play(ears, hands, Sound.BLOCK_SMITHING_TABLE_USE, SoundCategory.NEUTRAL, 0.14f, 1.25f);
++            case "farmer" -> {
++                if (rng.nextBoolean()) {
++                    play(ears, hands, Sound.ITEM_HOE_TILL, SoundCategory.NEUTRAL, 0.2f, 1.05f);
++                } else {
++                    Location coop = at.clone().add(rng.nextDouble(-5.0, 5.0), 0.3, rng.nextDouble(-5.0, 5.0));
++                    play(ears, coop, Sound.ENTITY_CHICKEN_AMBIENT, SoundCategory.AMBIENT, 0.18f, 1.1f);
++                }
++            }
++            case "vex" -> {
++                if (rng.nextBoolean()) {
++                    // Whetstone along the blade.
++                    play(ears, hands, Sound.BLOCK_GRINDSTONE_USE, SoundCategory.NEUTRAL, 0.12f, 1.45f);
++                } else {
++                    // Drill cadence — two low beats.
++                    play(ears, hands, Sound.BLOCK_NOTE_BLOCK_BASEDRUM, SoundCategory.NEUTRAL, 0.24f, 0.5f);
++                    plugin.getServer().getScheduler().runTaskLater(plugin,
++                            () -> play(ears, hands, Sound.BLOCK_NOTE_BLOCK_BASEDRUM, SoundCategory.NEUTRAL, 0.24f, 0.5f), 8L);
++                }
++            }
++            case "rite_keeper" -> {
++                if (rng.nextBoolean()) {
++                    play(ears, hands, Sound.PARTICLE_SOUL_ESCAPE, SoundCategory.AMBIENT, 0.5f, 0.8f);
++                } else {
++                    play(ears, hands, Sound.BLOCK_RESPAWN_ANCHOR_AMBIENT, SoundCategory.AMBIENT, 0.16f, 0.7f);
++                }
++            }
++            case "surveyor" -> play(ears, hands, Sound.ITEM_SPYGLASS_USE, SoundCategory.NEUTRAL, 0.3f, 1.0f);
+             default -> {
+             }
+         }
+     }
+ 
++    private static void craftsmanTap(List<Player> ears, Location hands, float pitch) {
++        play(ears, hands, Sound.BLOCK_ANVIL_USE, SoundCategory.NEUTRAL, 0.08f, pitch);
++        World world = hands.getWorld();
++        if (world != null) {
++            world.spawnParticle(Particle.CRIT, hands.clone().add(0.0, -0.1, 0.0), 3, 0.08, 0.04, 0.08, 0.12);
++        }
++    }
++
+     private static void play(List<Player> ears, Location at, Sound sound, SoundCategory category, float volume, float pitch) {
+         for (Player player : ears) {
+             if (player.isOnline() && at.getWorld() != null && at.getWorld().equals(player.getWorld())) {
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/npc/NpcPresence.java b/AetherionQuests/src/main/java/de/aetherion/quests/npc/NpcPresence.java
+index 82b49f7..e2a403f 100644
+--- a/AetherionQuests/src/main/java/de/aetherion/quests/npc/NpcPresence.java
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/npc/NpcPresence.java
+@@ -36,16 +36,21 @@ public final class NpcPresence {
+     /** Previous shared cue — every living NPC without its own voice keeps it. */
+     private static final Voice DEFAULT_VOICE = new Voice(Sound.BLOCK_NOTE_BLOCK_HAT, 1.35f, 0.35f);
+ 
+-    /** Spine NPCs get a voice you can recognise with your eyes closed. */
+-    private static final Map<String, Voice> VOICES = Map.of(
+-            "egon", new Voice(Sound.BLOCK_NOTE_BLOCK_BIT, 0.84f, 0.26f),
+-            "lumberjack", new Voice(Sound.BLOCK_NOTE_BLOCK_XYLOPHONE, 0.92f, 0.30f),
+-            "quartermaster", new Voice(Sound.BLOCK_NOTE_BLOCK_BIT, 1.06f, 0.24f),
+-            "foreman", new Voice(Sound.BLOCK_NOTE_BLOCK_BASS, 1.30f, 0.40f),
+-            "ledger", new Voice(Sound.BLOCK_NOTE_BLOCK_CHIME, 1.62f, 0.20f),
+-            "booster_tutor", new Voice(Sound.BLOCK_NOTE_BLOCK_IRON_XYLOPHONE, 1.18f, 0.24f),
+-            "farmer", new Voice(Sound.BLOCK_NOTE_BLOCK_BANJO, 1.10f, 0.26f),
+-            "lark", new Voice(Sound.BLOCK_NOTE_BLOCK_FLUTE, 1.45f, 0.26f)
++    /** Early-cast NPCs get a voice you can recognise with your eyes closed. */
++    private static final Map<String, Voice> VOICES = Map.ofEntries(
++            Map.entry("egon", new Voice(Sound.BLOCK_NOTE_BLOCK_BIT, 0.84f, 0.26f)),
++            Map.entry("lumberjack", new Voice(Sound.BLOCK_NOTE_BLOCK_XYLOPHONE, 0.92f, 0.30f)),
++            Map.entry("quartermaster", new Voice(Sound.BLOCK_NOTE_BLOCK_BIT, 1.06f, 0.24f)),
++            Map.entry("foreman", new Voice(Sound.BLOCK_NOTE_BLOCK_BASS, 1.30f, 0.40f)),
++            Map.entry("ledger", new Voice(Sound.BLOCK_NOTE_BLOCK_CHIME, 1.62f, 0.20f)),
++            Map.entry("booster_tutor", new Voice(Sound.BLOCK_NOTE_BLOCK_IRON_XYLOPHONE, 1.18f, 0.24f)),
++            Map.entry("farmer", new Voice(Sound.BLOCK_NOTE_BLOCK_BANJO, 1.10f, 0.26f)),
++            Map.entry("lark", new Voice(Sound.BLOCK_NOTE_BLOCK_FLUTE, 1.45f, 0.26f)),
++            // Past the pier: the drill sergeant barks low, the Warden hums, the forge clinks.
++            Map.entry("vex", new Voice(Sound.BLOCK_NOTE_BLOCK_BASEDRUM, 0.78f, 0.34f)),
++            Map.entry("rite_keeper", new Voice(Sound.BLOCK_NOTE_BLOCK_DIDGERIDOO, 0.72f, 0.26f)),
++            Map.entry("craftsman", new Voice(Sound.BLOCK_NOTE_BLOCK_COW_BELL, 1.12f, 0.20f)),
++            Map.entry("surveyor", new Voice(Sound.BLOCK_NOTE_BLOCK_PLING, 1.28f, 0.16f))
+     );
+ 
+     private NpcPresence() {
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/ui/GraduationStamp.java b/AetherionQuests/src/main/java/de/aetherion/quests/ui/GraduationStamp.java
+new file mode 100644
+index 0000000..057eed6
+--- /dev/null
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/ui/GraduationStamp.java
+@@ -0,0 +1,439 @@
++package de.aetherion.quests.ui;
++
++import de.aetherion.quests.AetherionQuests;
++import de.aetherion.quests.lang.LangPack;
++import de.aetherion.quests.npc.NpcPresence;
++
++import net.kyori.adventure.text.Component;
++import net.kyori.adventure.text.format.NamedTextColor;
++
++import org.bukkit.Color;
++import org.bukkit.Location;
++import org.bukkit.Material;
++import org.bukkit.Particle;
++import org.bukkit.Sound;
++import org.bukkit.SoundCategory;
++import org.bukkit.World;
++import org.bukkit.block.data.BlockData;
++import org.bukkit.entity.BlockDisplay;
++import org.bukkit.entity.Display;
++import org.bukkit.entity.Player;
++import org.bukkit.event.EventHandler;
++import org.bukkit.event.EventPriority;
++import org.bukkit.event.Listener;
++import org.bukkit.event.player.PlayerChangedWorldEvent;
++import org.bukkit.event.player.PlayerQuitEvent;
++import org.bukkit.scheduler.BukkitTask;
++import org.bukkit.util.Vector;
++import org.joml.Matrix4f;
++
++import java.util.ArrayList;
++import java.util.List;
++import java.util.Map;
++import java.util.UUID;
++import java.util.concurrent.ConcurrentHashMap;
++
++/**
++ * Miss Ledger's stamp — the moment orientation ends, as a small physical beat.
++ * <p>
++ * An orientation slip appears on her side of the desk, her stamp comes down on it
++ * (the milestone fanfare fires on the hit, not on the click), a wine-ink seal is left
++ * behind, the slip lifts and is filed into your pocket, and somewhere down at the
++ * harbour two bells answer. About two and a half seconds; the listener is the only one
++ * who sees it.
++ * <p>
++ * Safety: displays are per-player and non-persistent. Quit, world change or plugin
++ * disable fires the milestone callback immediately (if it hasn't fired yet) and removes
++ * every piece — the graduation reward can never be lost to the show.
++ */
++public final class GraduationStamp implements Listener {
++
++    public static final String TAG = "ae_graduation_stamp";
++
++    private static final double LEDGER_RANGE = 8.0;
++    private static final long T_SLIP = 1;
++    private static final long T_SLIP_GROW = 3;
++    private static final long T_STAMP = 5;
++    private static final long T_STAMP_IN = 7;
++    private static final long T_RAISE = 11;
++    private static final long T_PRESS = 17;
++    private static final long T_HIT = 19;
++    private static final long T_LIFT = 25;
++    private static final long T_STAMP_GONE = 33;
++    private static final long T_SHOW = 36;
++    private static final long T_FILE = 48;
++    private static final long T_FILED = 54;
++    private static final long T_BELL_1 = 60;
++    private static final long T_BELL_2 = 72;
++    private static final long T_END = 74;
++
++    private static final BlockData SLIP = Material.WHITE_CONCRETE.createBlockData();
++    private static final BlockData INK = Material.PURPLE_CONCRETE.createBlockData();
++    private static final BlockData RUBBER = Material.RED_TERRACOTTA.createBlockData();
++    private static final BlockData BASE = Material.POLISHED_BLACKSTONE.createBlockData();
++    private static final BlockData HANDLE = Material.STRIPPED_DARK_OAK_LOG.createBlockData();
++    private static final Particle.DustOptions INK_MOTE =
++            new Particle.DustOptions(Color.fromRGB(92, 48, 64), 0.7f);
++
++    private static volatile GraduationStamp instance;
++
++    private final AetherionQuests plugin;
++    private final Map<UUID, Run> running = new ConcurrentHashMap<>();
++
++    private GraduationStamp(AetherionQuests plugin) {
++        this.plugin = plugin;
++    }
++
++    public static void init(AetherionQuests plugin) {
++        if (plugin == null || instance != null) {
++            return;
++        }
++        GraduationStamp created = new GraduationStamp(plugin);
++        plugin.getServer().getPluginManager().registerEvents(created, plugin);
++        instance = created;
++    }
++
++    public static void shutdown() {
++        GraduationStamp current = instance;
++        instance = null;
++        if (current == null) {
++            return;
++        }
++        for (UUID id : new ArrayList<>(current.running.keySet())) {
++            current.flush(id);
++        }
++    }
++
++    /**
++     * Play the stamp. {@code onStamp} runs exactly once — on the hit, or immediately if
++     * the scene is cut short. Returns false if nothing was started (caller runs it).
++     */
++    public static boolean play(Player player, Runnable onStamp) {
++        GraduationStamp current = instance;
++        if (current == null || player == null || !player.isOnline() || player.isDead()
++                || !current.plugin.isEnabled()) {
++            return false;
++        }
++        return current.start(player, onStamp);
++    }
++
++    private boolean start(Player player, Runnable onStamp) {
++        flush(player.getUniqueId());
++        Location eye = player.getEyeLocation();
++        World world = eye.getWorld();
++        if (world == null) {
++            return false;
++        }
++        Location ledger = NpcPresence.locate("ledger");
++        boolean ledgerNear = ledger != null
++                && world.equals(ledger.getWorld())
++                && ledger.distanceSquared(player.getLocation()) <= LEDGER_RANGE * LEDGER_RANGE;
++
++        Vector toPlayer;
++        Location desk;
++        if (ledgerNear) {
++            toPlayer = player.getLocation().toVector().subtract(ledger.toVector()).setY(0);
++            if (toPlayer.lengthSquared() < 1.0e-4) {
++                toPlayer = eye.getDirection().multiply(-1).setY(0);
++            }
++            toPlayer.normalize();
++            double gap = Math.sqrt(ledger.distanceSquared(player.getLocation()));
++            double reach = Math.max(0.6, Math.min(1.1, gap * 0.45));
++            desk = ledger.clone().add(toPlayer.clone().multiply(reach)).add(0.0, 1.0, 0.0);
++        } else {
++            Vector forward = eye.getDirection().setY(0);
++            if (forward.lengthSquared() < 1.0e-4) {
++                forward = new Vector(0, 0, 1);
++            }
++            forward.normalize();
++            toPlayer = forward.clone().multiply(-1);
++            desk = eye.clone().add(forward.multiply(1.5)).add(0.0, -0.6, 0.0);
++        }
++        desk.setYaw(0f);
++        desk.setPitch(0f);
++
++        Run run = new Run(player.getUniqueId(), desk, (float) Math.atan2(toPlayer.getX(), toPlayer.getZ()), onStamp);
++        running.put(player.getUniqueId(), run);
++        run.task = plugin.getServer().getScheduler().runTaskTimer(plugin, () -> tick(run), 1L, 1L);
++        return true;
++    }
++
++    private void tick(Run run) {
++        Player player = plugin.getServer().getPlayer(run.playerId);
++        if (player == null || !player.isOnline()) {
++            flush(run.playerId);
++            return;
++        }
++        try {
++            if (player.getWorld() != run.desk.getWorld()) {
++                flush(run.playerId);
++                return;
++            }
++            step(player, run);
++        } catch (RuntimeException exception) {
++            plugin.getLogger().warning("Graduation stamp hiccup (" + exception.getMessage() + ") — filing directly.");
++            flush(run.playerId);
++        }
++    }
++
++    private void step(Player player, Run run) {
++        long t = ++run.tick;
++        if (t == T_SLIP) {
++            run.slip.add(spawn(player, run.desk, SLIP, slipFrame(run, 0.0f, 0.02f, 0f).mul(slipLocal())));
++            run.slip.add(spawn(player, run.desk, INK, slipFrame(run, 0.0f, 0.02f, 0f).mul(hidden(sealDiamond()))));
++            run.slip.add(spawn(player, run.desk, INK, slipFrame(run, 0.0f, 0.02f, 0f).mul(hidden(sealSquare()))));
++            player.playSound(run.desk, Sound.ITEM_BOOK_PAGE_TURN, SoundCategory.PLAYERS, 0.7f, 1.05f);
++        } else if (t == T_SLIP_GROW) {
++            // Interpolation needs a tick between spawn and the first change.
++            animateSlip(run, 0.0f, 1.0f, 0f, 5, false);
++        } else if (t == T_STAMP) {
++            run.stamp.add(spawn(player, run.desk, RUBBER, stampFrame(1.1f, 0.02f).mul(rubber())));
++            run.stamp.add(spawn(player, run.desk, BASE, stampFrame(1.1f, 0.02f).mul(base())));
++            run.stamp.add(spawn(player, run.desk, HANDLE, stampFrame(1.1f, 0.02f).mul(handle())));
++            run.stamp.add(spawn(player, run.desk, BASE, stampFrame(1.1f, 0.02f).mul(knob())));
++        } else if (t == T_STAMP_IN) {
++            animateStamp(run, 0.85f, 1.0f, 4);
++        } else if (t == T_RAISE) {
++            // A breath: the stamp lifts a hair before it commits.
++            animateStamp(run, 0.95f, 1.0f, 6);
++        } else if (t == T_PRESS) {
++            animateStamp(run, 0.012f, 1.0f, 2);
++        } else if (t == T_HIT) {
++            hit(player, run);
++        } else if (t == T_LIFT) {
++            animateStamp(run, 0.9f, 0.02f, 8);
++        } else if (t == T_STAMP_GONE) {
++            remove(run.stamp);
++        } else if (t == T_SHOW) {
++            // Slip stands up and turns to you — read it before it's filed.
++            animateSlip(run, 0.32f, 1.1f, (float) Math.toRadians(70.0), 8, true);
++            player.playSound(run.desk, Sound.ITEM_BOOK_PAGE_TURN, SoundCategory.PLAYERS, 0.5f, 1.3f);
++        } else if (t == T_FILE) {
++            Location pocket = player.getLocation().add(0.0, 1.0, 0.0);
++            pocket.setYaw(0f);
++            pocket.setPitch(0f);
++            for (BlockDisplay piece : run.slip) {
++                if (piece != null && piece.isValid()) {
++                    piece.setTeleportDuration(6);
++                    piece.teleport(pocket);
++                }
++            }
++            animateSlip(run, 0.0f, 0.08f, (float) Math.toRadians(70.0), 6, true);
++        } else if (t == T_FILED) {
++            remove(run.slip);
++            player.playSound(player.getLocation(), Sound.ITEM_BOOK_PUT, SoundCategory.PLAYERS, 0.8f, 1.1f);
++            player.sendActionBar(Component.text(
++                    LangPack.ui(player, "graduation_filed", "✔ Orientation filed · the map is yours"),
++                    NamedTextColor.LIGHT_PURPLE
++            ));
++        } else if (t == T_BELL_1) {
++            harbourBell(player, 0.71f);
++        } else if (t == T_BELL_2) {
++            harbourBell(player, 0.94f);
++        } else if (t >= T_END) {
++            finish(run);
++        }
++    }
++
++    private void hit(Player player, Run run) {
++        Location at = run.desk.clone().add(0.0, 0.03, 0.0);
++        player.playSound(at, Sound.BLOCK_NOTE_BLOCK_BASEDRUM, SoundCategory.PLAYERS, 0.9f, 0.55f);
++        player.playSound(at, Sound.BLOCK_WOODEN_TRAPDOOR_CLOSE, SoundCategory.PLAYERS, 0.55f, 0.72f);
++        for (int i = 0; i < 10; i++) {
++            double a = i * (Math.PI * 2.0 / 10.0);
++            player.spawnParticle(Particle.DUST, at.clone().add(Math.cos(a) * 0.16, 0.0, Math.sin(a) * 0.16),
++                    1, 0.0, 0.0, 0.0, 0.0, INK_MOTE);
++        }
++        // Ink shows once the stamp comes up — seal grows in under it.
++        animateSlip(run, 0.0f, 1.0f, 0f, 1, true);
++        fire(run);
++    }
++
++    /** Two bells from "down at the harbour" — quiet, low, a beat apart. */
++    private static void harbourBell(Player player, float pitch) {
++        Location far = player.getLocation().add(player.getLocation().getDirection().setY(0).multiply(-6.0));
++        player.playSound(far, Sound.BLOCK_BELL_USE, SoundCategory.AMBIENT, 0.32f, pitch);
++    }
++
++    /* =========================================================
++     * FRAMES — matrix only (setTransformationMatrix)
++     * ========================================================= */
++
++    /** Slip frame: lift above the desk, turn to the player, tilt up, scale. */
++    private static Matrix4f slipFrame(Run run, float lift, float scale, float tilt) {
++        return new Matrix4f()
++                .translate(0.0f, lift, 0.0f)
++                .rotateY(run.yaw)
++                .rotateX(tilt)
++                .scale(scale);
++    }
++
++    private static Matrix4f slipLocal() {
++        return new Matrix4f().translate(-0.2f, 0.0f, -0.14f).scale(0.4f, 0.008f, 0.28f);
++    }
++
++    private static Matrix4f sealDiamond() {
++        return new Matrix4f()
++                .translate(0.0f, 0.009f, 0.02f)
++                .rotateY((float) Math.toRadians(45.0))
++                .translate(-0.05f, 0.0f, -0.05f)
++                .scale(0.1f, 0.003f, 0.1f);
++    }
++
++    private static Matrix4f sealSquare() {
++        return new Matrix4f().translate(-0.045f, 0.0095f, -0.025f).scale(0.09f, 0.003f, 0.09f);
++    }
++
++    /** Near-zero, never zero — a singular matrix does not decompose cleanly. */
++    private static Matrix4f hidden(Matrix4f local) {
++        return new Matrix4f(local).scale(0.001f);
++    }
++
++    private static Matrix4f stampFrame(float height, float scale) {
++        return new Matrix4f().translate(0.0f, height, 0.0f).scale(scale);
++    }
++
++    private static Matrix4f rubber() {
++        return new Matrix4f().translate(-0.075f, 0.0f, -0.075f).scale(0.15f, 0.02f, 0.15f);
++    }
++
++    private static Matrix4f base() {
++        return new Matrix4f().translate(-0.09f, 0.02f, -0.09f).scale(0.18f, 0.05f, 0.18f);
++    }
++
++    private static Matrix4f handle() {
++        return new Matrix4f().translate(-0.03f, 0.07f, -0.03f).scale(0.06f, 0.18f, 0.06f);
++    }
++
++    private static Matrix4f knob() {
++        return new Matrix4f().translate(-0.055f, 0.25f, -0.055f).scale(0.11f, 0.07f, 0.11f);
++    }
++
++    /** Slip + seal share one frame. Seal stays hidden (scale 0) until the stamp has hit. */
++    private void animateSlip(Run run, float lift, float scale, float tilt, int ticks, boolean inked) {
++        Matrix4f frame = slipFrame(run, lift, scale, tilt);
++        Matrix4f[] locals = {slipLocal(), sealDiamond(), sealSquare()};
++        for (int i = 0; i < run.slip.size() && i < locals.length; i++) {
++            BlockDisplay piece = run.slip.get(i);
++            if (piece == null || !piece.isValid()) {
++                continue;
++            }
++            Matrix4f local = (i == 0 || inked) ? locals[i] : hidden(locals[i]);
++            piece.setInterpolationDelay(0);
++            piece.setInterpolationDuration(ticks);
++            piece.setTransformationMatrix(new Matrix4f(frame).mul(local));
++        }
++    }
++
++    private void animateStamp(Run run, float height, float scale, int ticks) {
++        Matrix4f frame = stampFrame(height, scale);
++        Matrix4f[] locals = {rubber(), base(), handle(), knob()};
++        for (int i = 0; i < run.stamp.size() && i < locals.length; i++) {
++            BlockDisplay piece = run.stamp.get(i);
++            if (piece == null || !piece.isValid()) {
++                continue;
++            }
++            piece.setInterpolationDelay(0);
++            piece.setInterpolationDuration(ticks);
++            piece.setTransformationMatrix(new Matrix4f(frame).mul(locals[i]));
++        }
++    }
++
++    private BlockDisplay spawn(Player viewer, Location at, BlockData block, Matrix4f matrix) {
++        World world = at.getWorld();
++        if (world == null) {
++            return null;
++        }
++        BlockDisplay display = world.spawn(at, BlockDisplay.class, spawned -> {
++            spawned.setPersistent(false);
++            spawned.setVisibleByDefault(false);
++            spawned.setInvulnerable(true);
++            spawned.setGravity(false);
++            spawned.setBlock(block);
++            spawned.setBrightness(new Display.Brightness(13, 15));
++            spawned.setShadowRadius(0f);
++            spawned.setTransformationMatrix(matrix);
++            spawned.addScoreboardTag(TAG);
++        });
++        viewer.showEntity(plugin, display);
++        return display;
++    }
++
++    /* =========================================================
++     * LIFECYCLE
++     * ========================================================= */
++
++    private void fire(Run run) {
++        if (run.fired) {
++            return;
++        }
++        run.fired = true;
++        if (run.onStamp != null) {
++            try {
++                run.onStamp.run();
++            } catch (RuntimeException exception) {
++                plugin.getLogger().warning("Graduation callback failed: " + exception.getMessage());
++            }
++        }
++    }
++
++    private void finish(Run run) {
++        if (run.task != null) {
++            run.task.cancel();
++        }
++        remove(run.stamp);
++        remove(run.slip);
++        running.remove(run.playerId, run);
++    }
++
++    private void flush(UUID playerId) {
++        Run run = running.remove(playerId);
++        if (run == null) {
++            return;
++        }
++        if (run.task != null) {
++            run.task.cancel();
++        }
++        remove(run.stamp);
++        remove(run.slip);
++        fire(run);
++    }
++
++    private static void remove(List<BlockDisplay> pieces) {
++        for (BlockDisplay piece : pieces) {
++            if (piece != null && piece.isValid()) {
++                piece.remove();
++            }
++        }
++        pieces.clear();
++    }
++
++    @EventHandler(priority = EventPriority.MONITOR)
++    public void onQuit(PlayerQuitEvent event) {
++        flush(event.getPlayer().getUniqueId());
++    }
++
++    @EventHandler(priority = EventPriority.MONITOR)
++    public void onWorldChange(PlayerChangedWorldEvent event) {
++        flush(event.getPlayer().getUniqueId());
++    }
++
++    private static final class Run {
++        private final UUID playerId;
++        private final Location desk;
++        private final float yaw;
++        private final Runnable onStamp;
++        private final List<BlockDisplay> slip = new ArrayList<>(3);
++        private final List<BlockDisplay> stamp = new ArrayList<>(4);
++        private BukkitTask task;
++        private long tick;
++        private boolean fired;
++
++        private Run(UUID playerId, Location desk, float yaw, Runnable onStamp) {
++            this.playerId = playerId;
++            this.desk = desk;
++            this.yaw = yaw;
++            this.onStamp = onStamp;
++        }
++    }
++}
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/ui/OpenRoadsGUI.java b/AetherionQuests/src/main/java/de/aetherion/quests/ui/OpenRoadsGUI.java
+new file mode 100644
+index 0000000..923968b
+--- /dev/null
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/ui/OpenRoadsGUI.java
+@@ -0,0 +1,225 @@
++package de.aetherion.quests.ui;
++
++import de.aetherion.quests.AetherionQuests;
++import de.aetherion.quests.lang.LangPack;
++import de.aetherion.quests.manager.QuestManager;
++import de.aetherion.quests.npc.LivingNpcProfile;
++import de.aetherion.quests.util.OpenRoads;
++
++import org.bukkit.Bukkit;
++import org.bukkit.Material;
++import org.bukkit.Sound;
++import org.bukkit.enchantments.Enchantment;
++import org.bukkit.entity.Player;
++import org.bukkit.event.EventHandler;
++import org.bukkit.event.Listener;
++import org.bukkit.event.inventory.InventoryClickEvent;
++import org.bukkit.event.inventory.InventoryDragEvent;
++import org.bukkit.inventory.Inventory;
++import org.bukkit.inventory.InventoryHolder;
++import org.bukkit.inventory.ItemFlag;
++import org.bukkit.inventory.ItemStack;
++import org.bukkit.inventory.meta.ItemMeta;
++import org.bukkit.plugin.java.JavaPlugin;
++
++import java.util.ArrayList;
++import java.util.List;
++
++/**
++ * Miss Ledger's desk after the stamp: "Open Roads".
++ * <p>
++ * One small board instead of a void — the four doors the harbour already has plus the
++ * wider map. The suggested road glints; filed ones read as filed. Clicking a road points
++ * the yellow arrow at that NPC ({@link OpenRoads#pin}) and closes; nothing is accepted,
++ * nothing is forced. The old topic briefing sits one click away.
++ */
++public final class OpenRoadsGUI implements Listener {
++
++    private static final int SIZE = 27;
++    private static final int SLOT_HEADER = 4;
++    private static final int[] ROAD_SLOTS = {10, 12, 14, 16};
++    private static final int SLOT_WILDS = 22;
++    private static final int SLOT_BRIEFING = 18;
++    private static final int SLOT_CLOSE = 26;
++
++    public OpenRoadsGUI(JavaPlugin plugin) {
++        plugin.getServer().getPluginManager().registerEvents(this, plugin);
++    }
++
++    public static void open(Player player) {
++        if (player == null || !player.isOnline()) {
++            return;
++        }
++        QuestManager qm = questManager();
++        OpenRoads.Road next = OpenRoads.next(player, qm);
++        Inventory inventory = Bukkit.createInventory(
++                new Holder(),
++                SIZE,
++                LangPack.ui(player, "roads.gui_title", "§8Miss Ledger · Open Roads")
++        );
++        fill(inventory);
++
++        int filed = 0;
++        for (OpenRoads.Road road : OpenRoads.Road.values()) {
++            if (road != OpenRoads.Road.WILDS && OpenRoads.done(player, qm, road)) {
++                filed++;
++            }
++        }
++        inventory.setItem(SLOT_HEADER, item(
++                Material.FILLED_MAP,
++                LangPack.ui(player, "roads.gui_header", "§dOpen Roads"),
++                false,
++                LangPack.ui(player, "roads.gui_header_1", "§7Orientation's filed. None of this is homework."),
++                LangPack.ui(player, "roads.gui_header_2", "§7Pick a road — I'll point the arrow."),
++                "",
++                "§8" + filed + "/4 " + LangPack.ui(player, "roads.gui_filed", "roads filed")
++        ));
++
++        OpenRoads.Road[] doors = {
++                OpenRoads.Road.STEEL,
++                OpenRoads.Road.RITES,
++                OpenRoads.Road.CRAFT,
++                OpenRoads.Road.SURVEY
++        };
++        for (int i = 0; i < doors.length; i++) {
++            inventory.setItem(ROAD_SLOTS[i], roadCard(player, qm, doors[i], doors[i] == next));
++        }
++        inventory.setItem(SLOT_WILDS, roadCard(player, qm, OpenRoads.Road.WILDS, next == OpenRoads.Road.WILDS));
++
++        inventory.setItem(SLOT_BRIEFING, item(
++                Material.WRITABLE_BOOK,
++                LangPack.ui(player, "roads.gui_briefing", "§eBriefing topics"),
++                false,
++                LangPack.ui(player, "roads.gui_briefing_1", "§7Manager, boosters, pets, storage…"),
++                LangPack.ui(player, "roads.gui_briefing_2", "§7The refresher desk.")
++        ));
++        inventory.setItem(SLOT_CLOSE, item(
++                Material.BARRIER,
++                LangPack.ui(player, "close", "§cClose"),
++                false
++        ));
++        player.openInventory(inventory);
++        player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 0.7f, 1.0f);
++    }
++
++    private static ItemStack roadCard(Player player, QuestManager qm, OpenRoads.Road road, boolean suggested) {
++        boolean filed = road != OpenRoads.Road.WILDS && OpenRoads.done(player, qm, road);
++        List<String> lore = new ArrayList<>();
++        lore.add("§8" + road.where(player));
++        lore.add("");
++        lore.add("§7" + road.pitch(player));
++        lore.add("");
++        if (filed) {
++            lore.add(LangPack.ui(player, "roads.card_filed", "§a✔ Filed. Go back anytime."));
++        } else if (suggested) {
++            lore.add(LangPack.ui(player, "roads.card_next", "§e➜ Suggested next"));
++        }
++        if (road.npcId() != null) {
++            lore.add(LangPack.ui(player, "roads.card_click", "§eClick §7to point the arrow here."));
++        } else {
++            lore.add(LangPack.ui(player, "roads.card_click_wilds", "§eClick §7— no arrow. Just go."));
++        }
++        String name = filed
++                ? "§8✔ " + road.label()
++                : (suggested ? road.color() + "§l" + road.label() : road.color() + road.label());
++        return item(filed ? Material.PAPER : road.icon(), name, suggested && !filed, lore.toArray(String[]::new));
++    }
++
++    @EventHandler
++    public void onClick(InventoryClickEvent event) {
++        if (!(event.getView().getTopInventory().getHolder() instanceof Holder)) {
++            return;
++        }
++        event.setCancelled(true);
++        if (!(event.getWhoClicked() instanceof Player player)) {
++            return;
++        }
++        int slot = event.getRawSlot();
++        if (slot < 0 || slot >= SIZE) {
++            return;
++        }
++        if (slot == SLOT_CLOSE) {
++            player.closeInventory();
++            return;
++        }
++        if (slot == SLOT_BRIEFING) {
++            player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.6f, 1.2f);
++            EgonBriefingGUI.open(player, "Miss Ledger");
++            return;
++        }
++        OpenRoads.Road road = roadAt(slot);
++        if (road == null) {
++            return;
++        }
++        player.closeInventory();
++        OpenRoads.pin(player, road);
++        String line = road.npcId() == null
++                ? LangPack.ui(player, "roads.ledger_wilds", "No arrow for that one. Look for a glint off the path.")
++                : LangPack.format(player, "ui.roads.ledger_pin", "The arrow is on {0}. Off you go.", road.label());
++        LivingNpcProfile.say(player, "ledger", "Miss Ledger", line);
++    }
++
++    @EventHandler
++    public void onDrag(InventoryDragEvent event) {
++        if (event.getView().getTopInventory().getHolder() instanceof Holder) {
++            event.setCancelled(true);
++        }
++    }
++
++    private static OpenRoads.Road roadAt(int slot) {
++        if (slot == SLOT_WILDS) {
++            return OpenRoads.Road.WILDS;
++        }
++        OpenRoads.Road[] doors = {
++                OpenRoads.Road.STEEL,
++                OpenRoads.Road.RITES,
++                OpenRoads.Road.CRAFT,
++                OpenRoads.Road.SURVEY
++        };
++        for (int i = 0; i < ROAD_SLOTS.length; i++) {
++            if (ROAD_SLOTS[i] == slot) {
++                return doors[i];
++            }
++        }
++        return null;
++    }
++
++    private static void fill(Inventory inventory) {
++        ItemStack pane = item(Material.GRAY_STAINED_GLASS_PANE, " ", false);
++        ItemStack rail = item(Material.BLACK_STAINED_GLASS_PANE, " ", false);
++        for (int i = 0; i < inventory.getSize(); i++) {
++            // Top and bottom rows darker — the road row reads as the page.
++            inventory.setItem(i, (i < 9 || i >= 18) ? rail.clone() : pane.clone());
++        }
++    }
++
++    private static ItemStack item(Material material, String name, boolean glint, String... lore) {
++        ItemStack item = new ItemStack(material);
++        ItemMeta meta = item.getItemMeta();
++        if (meta != null) {
++            meta.setDisplayName(name);
++            if (lore != null && lore.length > 0) {
++                meta.setLore(List.of(lore));
++            }
++            if (glint) {
++                meta.addEnchant(Enchantment.UNBREAKING, 1, true);
++                meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
++            }
++            meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
++            item.setItemMeta(meta);
++        }
++        return item;
++    }
++
++    private static QuestManager questManager() {
++        AetherionQuests plugin = AetherionQuests.getInstance();
++        return plugin == null ? null : plugin.getQuestManager();
++    }
++
++    public static final class Holder implements InventoryHolder {
++        @Override
++        public Inventory getInventory() {
++            return null;
++        }
++    }
++}
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/ui/QuestHint.java b/AetherionQuests/src/main/java/de/aetherion/quests/ui/QuestHint.java
+index 8d68658..022f60c 100644
+--- a/AetherionQuests/src/main/java/de/aetherion/quests/ui/QuestHint.java
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/ui/QuestHint.java
+@@ -100,6 +100,18 @@ public final class QuestHint {
+         return npcLocation(hint.npcId());
+     }
+ 
++    /** NPC id the soft hint currently points at (visible or remembered), or null. */
++    public static String targetNpcId(Player player) {
++        if (player == null) {
++            return null;
++        }
++        Hint hint = HINTS.get(player.getUniqueId());
++        if (hint == null) {
++            hint = PENDING.get(player.getUniqueId());
++        }
++        return hint == null ? null : hint.npcId();
++    }
++
+     public static void tickAll(QuestManager questManager) {
+         if (questManager == null) {
+             return;
+@@ -140,6 +152,13 @@ public final class QuestHint {
+             return false;
+         }
+         String npc = pending.npcId().toLowerCase(Locale.ROOT);
++        // After the stamp, a pinned open road stays until that road is filed (Craftsman included).
++        if (de.aetherion.quests.util.QuestStoryGate.tutorialDone(player, questManager)) {
++            de.aetherion.quests.util.OpenRoads.Road road = roadFor(npc);
++            if (road != null) {
++                return !de.aetherion.quests.util.OpenRoads.done(player, questManager, road);
++            }
++        }
+         // Orientation trail drops after stamp — except Miss Ledger (graduation visit).
+         if (de.aetherion.quests.util.QuestStoryGate.tutorialDone(player, questManager)
+                 && isTutorialTrailNpc(npc)
+@@ -149,7 +168,11 @@ public final class QuestHint {
+         return switch (npc) {
+             case "egon", "lumberjack" -> stillNeeds(questManager, player, "gather_wood");
+             case "quartermaster" -> stillNeeds(questManager, player, "forge_coal");
+-            case "foreman", "craftsman" -> stillNeeds(questManager, player, "first_shift");
++            case "foreman" -> stillNeeds(questManager, player, "first_shift");
++            // Craftsman: en route to the Mines, or while his side job is unpaid.
++            case "craftsman" -> stillNeeds(questManager, player, "first_shift")
++                    || !de.aetherion.quests.util.OpenRoads.done(player, questManager,
++                            de.aetherion.quests.util.OpenRoads.Road.CRAFT);
+             case "booster_tutor" -> stillNeeds(questManager, player, "lesson_boost");
+             case "ledger" -> stillNeeds(questManager, player, "lesson_manager")
+                     || de.aetherion.quests.util.QuestStoryGate.tutorialDone(player, questManager);
+@@ -171,6 +194,15 @@ public final class QuestHint {
+                 && state != de.aetherion.quests.model.QuestState.COMPLETED;
+     }
+ 
++    private static de.aetherion.quests.util.OpenRoads.Road roadFor(String npcId) {
++        for (de.aetherion.quests.util.OpenRoads.Road road : de.aetherion.quests.util.OpenRoads.Road.values()) {
++            if (road.npcId() != null && road.npcId().equals(npcId)) {
++                return road;
++            }
++        }
++        return null;
++    }
++
+     private static boolean isTutorialTrailNpc(String npcId) {
+         if (npcId == null) {
+             return false;
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/ui/TutorialQuestTrail.java b/AetherionQuests/src/main/java/de/aetherion/quests/ui/TutorialQuestTrail.java
+index e57fe36..13cb4c8 100644
+--- a/AetherionQuests/src/main/java/de/aetherion/quests/ui/TutorialQuestTrail.java
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/ui/TutorialQuestTrail.java
+@@ -4,9 +4,14 @@ import de.aetherion.quests.AetherionQuests;
+ import de.aetherion.quests.data.NPCDataStorage;
+ import de.aetherion.quests.manager.QuestManager;
+ import de.aetherion.quests.model.Quest;
++import de.aetherion.quests.model.QuestState;
++import de.aetherion.quests.npc.LivingNpcProfile;
++import de.aetherion.quests.npc.NpcPresence;
+ import de.aetherion.quests.npc.QuestNPC;
+ import de.aetherion.quests.npc.QuestNPCRegistry;
+ 
++import net.kyori.adventure.text.format.NamedTextColor;
++
+ import org.bukkit.Bukkit;
+ import org.bukkit.Color;
+ import org.bukkit.Location;
+@@ -28,6 +33,7 @@ import java.util.HashMap;
+ import java.util.HashSet;
+ import java.util.Iterator;
+ import java.util.List;
++import java.util.Locale;
+ import java.util.Map;
+ import java.util.Set;
+ import java.util.UUID;
+@@ -40,6 +46,14 @@ import java.util.UUID;
+  * Near the player: a few painted dock chevrons on the planks (per-player BlockDisplays),
+  * a slow pulse rolling forward through them. Beyond them: the old gold dust, so the
+  * far end of the route still reads. Same corners, same quests — just better paint.
++ * <p>
++ * Past the pier (Quartermaster → Foreman → Temper → Miss Ledger → Fields, and the open
++ * road Ledger pins after the stamp) there are no authored corners, so the same paint
++ * works as a compass: a short run of chevrons from where you stand toward whoever the
++ * yellow arrow points at, only on walkable ground with headroom (it stops rather than
++ * climb a wall), and a thin beacon in that NPC's colour over their head once they're
++ * within sight. The target is the one {@link QuestHint} already chose — or the turn-in
++ * NPC once a quest is READY — never a second navigation system.
+  */
+ public final class TutorialQuestTrail {
+ 
+@@ -68,6 +82,21 @@ public final class TutorialQuestTrail {
+ 
+     private static final BlockData PAINT = Material.YELLOW_CONCRETE.createBlockData();
+ 
++    /** Compass mode: NPCs the painted trail may lead to past the pier (Egon/Forager have the authored route). */
++    private static final Set<String> COMPASS_NPCS = Set.of(
++            "quartermaster", "foreman", "craftsman", "booster_tutor", "ledger",
++            "farmer", "lark", "vex", "rite_keeper", "surveyor"
++    );
++    /** Beacon over the target NPC reads from this far. */
++    private static final double BEACON_RANGE = 64.0;
++    /** Compass chevrons only for targets within this range (same world). */
++    private static final double COMPASS_RANGE = 420.0;
++    /** Drift further than this off the compass line and it re-anchors where you stand. */
++    private static final double COMPASS_REANCHOR = 6.0;
++    /** Walkable-ground limits between neighbouring compass chevrons. */
++    private static final double STEP_UP = 1.3;
++    private static final double STEP_DOWN = 2.6;
++
+     /** Harbour path corners (same world as Egon / Forager). */
+     private static final double[][] CORNERS = {
+             {300.5, 63.15, -379.5},
+@@ -80,6 +109,8 @@ public final class TutorialQuestTrail {
+     private final Particle.DustOptions dust =
+             new Particle.DustOptions(Color.fromRGB(255, 214, 90), 1.05f);
+     private final Map<UUID, Crumbs> crumbs = new HashMap<>();
++    private final Map<UUID, Anchor> anchors = new HashMap<>();
++    private long anchorSerial;
+ 
+     private BukkitTask task;
+     private int phase;
+@@ -106,6 +137,7 @@ public final class TutorialQuestTrail {
+             set.removeAll();
+         }
+         crumbs.clear();
++        anchors.clear();
+     }
+ 
+     private void tick() {
+@@ -118,8 +150,12 @@ public final class TutorialQuestTrail {
+             }
+             List<Location> nodes = pathFor(player);
+             if (nodes == null || nodes.size() < 2) {
++                if (compass(player)) {
++                    painted.add(player.getUniqueId());
++                }
+                 continue;
+             }
++            anchors.remove(player.getUniqueId());
+             Path path = new Path(nodes);
+             Location feet = player.getLocation();
+             Path.Hit here = path.project(feet);
+@@ -129,7 +165,7 @@ public final class TutorialQuestTrail {
+             double dustFrom = here.s();
+             if (!arrived && here.distance() <= CHEVRON_OFF_PATH) {
+                 String key = trackedId(player);
+-                double lastChevron = paintChevrons(player, path, here.s(), key);
++                double lastChevron = paintChevrons(player, path, here.s(), key, false);
+                 if (lastChevron > 0.0) {
+                     painted.add(player.getUniqueId());
+                     dustFrom = lastChevron + CHEVRON_GAP * 0.5;
+@@ -140,6 +176,7 @@ public final class TutorialQuestTrail {
+                 player.spawnParticle(Particle.END_ROD, end.clone().add(0, 0.35, 0), 1, 0.1, 0.15, 0.1, 0.0);
+             }
+         }
++        anchors.keySet().removeIf(id -> Bukkit.getPlayer(id) == null);
+         // Off route, quest moved on, or logged out → chevrons go.
+         Iterator<Map.Entry<UUID, Crumbs>> it = crumbs.entrySet().iterator();
+         while (it.hasNext()) {
+@@ -225,7 +262,7 @@ public final class TutorialQuestTrail {
+      *
+      * @return arc length of the furthest chevron placed, or 0 if none
+      */
+-    private double paintChevrons(Player player, Path path, double s0, String key) {
++    private double paintChevrons(Player player, Path path, double s0, String key, boolean strictGround) {
+         long firstSlot = (long) Math.ceil((s0 + CHEVRON_LEAD) / CHEVRON_GAP);
+         double maxS = path.length() - CHEVRON_END_MARGIN;
+         Crumbs set = crumbs.computeIfAbsent(player.getUniqueId(), id -> new Crumbs());
+@@ -234,14 +271,32 @@ public final class TutorialQuestTrail {
+             set.key = key;
+             set.firstSlot = firstSlot;
+             World world = player.getWorld();
++            double previousTop = player.getLocation().getY();
++            boolean blocked = false;
+             for (int i = 0; i < CHEVRONS; i++) {
+                 double s = (firstSlot + i) * CHEVRON_GAP;
+-                if (s > maxS) {
++                if (s > maxS || blocked) {
+                     set.clear(i);
+                     continue;
+                 }
+                 Location point = path.pointAt(s);
++                if (strictGround) {
++                    // Compass line ignores terrain: follow the ground you'd actually walk on.
++                    point.setY(previousTop + 0.5);
++                }
+                 double groundTop = groundTop(world, point);
++                if (strictGround) {
++                    if (Double.isNaN(groundTop)
++                            || groundTop - previousTop > STEP_UP
++                            || previousTop - groundTop > STEP_DOWN
++                            || !headroom(world, point, groundTop)) {
++                        // A wall, a drop, a roof: stop here rather than paint over it.
++                        blocked = true;
++                        set.clear(i);
++                        continue;
++                    }
++                    previousTop = groundTop;
++                }
+                 point.setY(Double.isNaN(groundTop) ? point.getY() - 0.12 : groundTop + 0.02);
+                 point.setYaw(0f);
+                 point.setPitch(0f);
+@@ -295,6 +350,130 @@ public final class TutorialQuestTrail {
+         return Double.NaN;
+     }
+ 
++    /** Two passable blocks above a painted spot — nobody walks through a ceiling. */
++    private static boolean headroom(World world, Location at, double groundTop) {
++        int bx = at.getBlockX();
++        int bz = at.getBlockZ();
++        int y = (int) Math.ceil(groundTop - 0.01);
++        return world.getBlockAt(bx, y, bz).isPassable() && world.getBlockAt(bx, y + 1, bz).isPassable();
++    }
++
++    /* =========================================================
++     * COMPASS (past the pier)
++     * ========================================================= */
++
++    /**
++     * Chevrons + beacon toward the NPC the yellow arrow points at.
++     *
++     * @return true if chevrons are standing for this player
++     */
++    private boolean compass(Player player) {
++        String npcId = compassTarget(player);
++        if (npcId == null) {
++            anchors.remove(player.getUniqueId());
++            return false;
++        }
++        World world = player.getWorld();
++        Location target = NpcPresence.locate(npcId);
++        if (world == null || target == null || target.getWorld() == null || !world.equals(target.getWorld())
++                || isFarmIsland(world)) {
++            anchors.remove(player.getUniqueId());
++            return false;
++        }
++        Location feet = player.getLocation();
++        double dx = target.getX() - feet.getX();
++        double dz = target.getZ() - feet.getZ();
++        double flat = Math.sqrt(dx * dx + dz * dz);
++        if (flat <= ARRIVED + 1.0 || flat > COMPASS_RANGE) {
++            anchors.remove(player.getUniqueId());
++            return false;
++        }
++        beacon(player, npcId, target, flat);
++
++        Location end = ground(target);
++        Anchor anchor = anchors.get(player.getUniqueId());
++        if (anchor == null || !anchor.npcId.equals(npcId) || anchor.from.getWorld() != world) {
++            anchor = newAnchor(npcId, feet);
++            anchors.put(player.getUniqueId(), anchor);
++        }
++        Path path = new Path(List.of(anchor.from, end));
++        Path.Hit here = path.project(feet);
++        if (here.distance() > COMPASS_REANCHOR) {
++            anchor = newAnchor(npcId, feet);
++            anchors.put(player.getUniqueId(), anchor);
++            path = new Path(List.of(anchor.from, end));
++            here = path.project(feet);
++        }
++        return paintChevrons(player, path, here.s(), "npc:" + npcId + "#" + anchor.serial, true) > 0.0;
++    }
++
++    private Anchor newAnchor(String npcId, Location feet) {
++        Location from = feet.clone();
++        from.setYaw(0f);
++        from.setPitch(0f);
++        return new Anchor(npcId, from, ++anchorSerial);
++    }
++
++    /**
++     * Who the paint should lead to: the turn-in NPC while a quest is READY, else the soft
++     * hint (never while objectives are still being worked — the quest bar owns that).
++     */
++    private String compassTarget(Player player) {
++        if (questManager == null) {
++            return null;
++        }
++        Quest tracked = questManager.getTrackedQuest(player);
++        Quest active = tracked != null ? tracked : questManager.findActiveOrReadyQuest(player);
++        if (active != null) {
++            if (questManager.getQuestState(player, active) != QuestState.READY) {
++                return null;
++            }
++            String turnIn = null;
++            if (active.hasTurnInNpc()) {
++                turnIn = active.getTurnInNpcId();
++            } else {
++                QuestNPC npc = QuestNPCRegistry.findForQuest(active);
++                turnIn = npc == null ? null : npc.getId();
++            }
++            return guided(turnIn);
++        }
++        return guided(QuestHint.targetNpcId(player));
++    }
++
++    private static String guided(String npcId) {
++        if (npcId == null) {
++            return null;
++        }
++        String id = npcId.toLowerCase(Locale.ROOT);
++        return COMPASS_NPCS.contains(id) ? id : null;
++    }
++
++    /** Thin rising column in the NPC's name colour, player-only, once they're within sight. */
++    private void beacon(Player player, String npcId, Location target, double flat) {
++        if (flat > BEACON_RANGE || phase % 2 != 0) {
++            return;
++        }
++        LivingNpcProfile profile = LivingNpcProfile.of(npcId);
++        NamedTextColor tone = profile != null ? profile.nameColor() : NamedTextColor.YELLOW;
++        Particle.DustOptions mote = new Particle.DustOptions(Color.fromRGB(tone.red(), tone.green(), tone.blue()), 0.85f);
++        double rise = (pulse % 4) * 0.14;
++        Location head = target.clone().add(0.0, 2.45 + rise, 0.0);
++        for (int i = 0; i < 7; i++) {
++            player.spawnParticle(Particle.DUST, head.clone().add(0.0, i * 0.55, 0.0), 1, 0.015, 0.04, 0.015, 0.0, mote);
++        }
++        if (phase == 0) {
++            player.spawnParticle(Particle.END_ROD, head.clone().add(0.0, 4.1, 0.0), 1, 0.05, 0.1, 0.05, 0.0);
++        }
++    }
++
++    private static boolean isFarmIsland(World world) {
++        String name = world.getName().toLowerCase(Locale.ROOT);
++        return name.equals("aether_farm_island") || name.startsWith("aether_farm_");
++    }
++
++    private record Anchor(String npcId, Location from, long serial) {
++    }
++
+     /**
+      * One arm of a flat "^" chevron pointing along {@code heading}.
+      * Local frame: +Z forward, tip at +TIP_Z, arm swept back by ±ARM_SPREAD.
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/util/OpenRoads.java b/AetherionQuests/src/main/java/de/aetherion/quests/util/OpenRoads.java
+new file mode 100644
+index 0000000..f3b6520
+--- /dev/null
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/util/OpenRoads.java
+@@ -0,0 +1,210 @@
++package de.aetherion.quests.util;
++
++import de.aetherion.quests.AetherionQuests;
++import de.aetherion.quests.lang.LangPack;
++import de.aetherion.quests.manager.QuestManager;
++import de.aetherion.quests.ui.QuestHint;
++
++import net.kyori.adventure.text.Component;
++import net.kyori.adventure.text.format.NamedTextColor;
++
++import org.bukkit.Material;
++import org.bukkit.Sound;
++import org.bukkit.entity.Player;
++
++import java.util.ArrayList;
++import java.util.List;
++
++/**
++ * The soft mid-game opening after Miss Ledger's stamp.
++ * <p>
++ * Not a spine and not a quest chain — four doors the harbour already has
++ * (Vex, Rite Warden, Craftsman, Surveyor) plus "the wider map", in the order a
++ * new player gets the most out of them. Each road is "done" by state the game
++ * already tracks; nothing new is persisted here. {@code /guide}, Ledger's desk and
++ * the graduation beat all read from this one list so they never disagree.
++ */
++public final class OpenRoads {
++
++    public enum Road {
++        STEEL("vex", "Sergeant Vex", "§c", Material.IRON_SWORD,
++                "Borderlands gate",
++                "Ten hostiles. Learn how a hit lands here."),
++        RITES("rite_keeper", "Rite Warden", "§c", Material.BLAZE_POWDER,
++                "The waste · powder altar",
++                "Light a spirit. Meet something bigger."),
++        CRAFT("craftsman", "Craftsman", "§e", Material.CRAFTING_TABLE,
++                "Market forge",
++                "Side job: show him a Mining Pickaxe. He pays."),
++        SURVEY("surveyor", "Surveyor", "§b", Material.MAP,
++                "Blueprint desk",
++                "Troll pages from the veins become tools."),
++        WILDS(null, "The wider map", "§a", Material.COMPASS,
++                "Off the roads",
++                "New areas unlock teleports. Crates hide where paths don't go.");
++
++        private final String npcId;
++        private final String label;
++        private final String color;
++        private final Material icon;
++        private final String where;
++        private final String pitch;
++
++        Road(String npcId, String label, String color, Material icon, String where, String pitch) {
++            this.npcId = npcId;
++            this.label = label;
++            this.color = color;
++            this.icon = icon;
++            this.where = where;
++            this.pitch = pitch;
++        }
++
++        public String npcId() {
++            return npcId;
++        }
++
++        public String label() {
++            return label;
++        }
++
++        public String color() {
++            return color;
++        }
++
++        public Material icon() {
++            return icon;
++        }
++
++        public String key() {
++            return name().toLowerCase(java.util.Locale.ROOT);
++        }
++
++        public String where(Player player) {
++            return LangPack.ui(player, "roads." + key() + "_where", where);
++        }
++
++        public String pitch(Player player) {
++            return LangPack.ui(player, "roads." + key() + "_pitch", pitch);
++        }
++    }
++
++    private static final String CRAFTSMAN_GIFT_KEY = "craftsman_mining_pick_gift";
++
++    private OpenRoads() {
++    }
++
++    public static boolean done(Player player, QuestManager qm, Road road) {
++        if (player == null || road == null) {
++            return false;
++        }
++        return switch (road) {
++            case STEEL -> qm != null && QuestStoryGate.questCompleted(player, qm, "lesson_steel");
++            case RITES -> qm != null && QuestStoryGate.questCompleted(player, qm, "border_rites");
++            case CRAFT -> craftsmanPaid(player);
++            case SURVEY -> surveyorMet(player);
++            case WILDS -> false;
++        };
++    }
++
++    /** First road still open, in the order the harbour intends. WILDS when everything else is filed. */
++    public static Road next(Player player, QuestManager qm) {
++        for (Road road : Road.values()) {
++            if (road == Road.WILDS) {
++                continue;
++            }
++            if (!done(player, qm, road)) {
++                return road;
++            }
++        }
++        return Road.WILDS;
++    }
++
++    /**
++     * Plain lines for {@code /guide} after orientation. Empty while orientation is still open
++     * (the tutorial tips own that stretch).
++     */
++    public static List<String> tips(Player player, QuestManager qm) {
++        List<String> tips = new ArrayList<>();
++        if (player == null || qm == null || !QuestStoryGate.tutorialDone(player, qm)) {
++            return tips;
++        }
++        Road next = next(player, qm);
++        tips.add(LangPack.ui(player, "roads.tip_next", "Next road:") + " " + next.color() + next.label()
++                + " §7— " + next.where(player) + ". " + next.pitch(player));
++        int others = 0;
++        for (Road road : Road.values()) {
++            if (others >= 2) {
++                break;
++            }
++            if (road == next || road == Road.WILDS || done(player, qm, road)) {
++                continue;
++            }
++            tips.add(road.color() + road.label() + " §7— " + road.pitch(player));
++            others++;
++        }
++        if (next != Road.WILDS) {
++            tips.add(Road.WILDS.color() + Road.WILDS.label() + " §7— " + Road.WILDS.pitch(player));
++        }
++        return tips;
++    }
++
++    /** Point the yellow arrow at a road's NPC (no-op for the wider map). */
++    public static void pin(Player player, Road road) {
++        if (player == null || road == null) {
++            return;
++        }
++        if (road.npcId() == null) {
++            QuestHint.clearPending(player);
++            player.sendActionBar(Component.text(
++                    LangPack.ui(player, "roads.wilds_action", "Map's yours · look for a glint off the path"),
++                    NamedTextColor.GREEN
++            ));
++            player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 0.6f, 1.2f);
++            return;
++        }
++        QuestHint.show(player, road.npcId(), road.label());
++        player.sendActionBar(Component.text(
++                "→ " + road.label() + " · " + road.where(player),
++                colorOf(road)
++        ));
++        player.playSound(player.getLocation(), Sound.ITEM_LODESTONE_COMPASS_LOCK, 0.6f, 1.25f);
++    }
++
++    public static NamedTextColor colorOf(Road road) {
++        if (road == null) {
++            return NamedTextColor.GRAY;
++        }
++        return switch (road) {
++            case STEEL, RITES -> NamedTextColor.RED;
++            case CRAFT -> NamedTextColor.YELLOW;
++            case SURVEY -> NamedTextColor.AQUA;
++            case WILDS -> NamedTextColor.GREEN;
++        };
++    }
++
++    private static boolean craftsmanPaid(Player player) {
++        AetherionQuests plugin = AetherionQuests.getInstance();
++        return plugin != null
++                && plugin.getPlayerQuestStorage() != null
++                && plugin.getPlayerQuestStorage().hasStarterKit(player.getUniqueId(), CRAFTSMAN_GIFT_KEY);
++    }
++
++    /** Surveyor opens the blueprint hunt on the first post-stamp talk — that's "met". */
++    private static boolean surveyorMet(Player player) {
++        try {
++            Object items = Class.forName("de.aetherion.items.AetherionItems")
++                    .getMethod("getInstance").invoke(null);
++            if (items == null) {
++                return false;
++            }
++            Object service = items.getClass().getMethod("blueprintUnlocks").invoke(items);
++            if (service == null) {
++                return false;
++            }
++            Object on = service.getClass().getMethod("isHuntEnabled", Player.class).invoke(service, player);
++            return on instanceof Boolean && (Boolean) on;
++        } catch (ReflectiveOperationException | NoClassDefFoundError ignored) {
++            return false;
++        }
++    }
++}
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/util/QuestStoryGate.java b/AetherionQuests/src/main/java/de/aetherion/quests/util/QuestStoryGate.java
+index 401c085..1d4089b 100644
+--- a/AetherionQuests/src/main/java/de/aetherion/quests/util/QuestStoryGate.java
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/util/QuestStoryGate.java
+@@ -234,6 +234,14 @@ public final class QuestStoryGate {
+         return tips;
+     }
+ 
++    /**
++     * Plain tips after Miss Ledger's stamp — the open roads (Vex → Rite Warden → Craftsman →
++     * Surveyor → the wider map). Empty while orientation is still open.
++     */
++    public static java.util.List<String> roadTips(Player player) {
++        return OpenRoads.tips(player, questManager());
++    }
++
+     /** Soft next stop while orientation is still open. */
+     public static void redirectToTutorial(Player player, String speakerName) {
+         if (player == null) {
+diff --git a/AetherionQuests/src/main/resources/lang/de.yml b/AetherionQuests/src/main/resources/lang/de.yml
+index d7aea1b..29fec9f 100644
+--- a/AetherionQuests/src/main/resources/lang/de.yml
++++ b/AetherionQuests/src/main/resources/lang/de.yml
+@@ -40,6 +40,40 @@ ui:
+   gate_market_action: "→ Forager · dann bei Egon abgeben"
+   gate_rescue_chat: "§7Ganz ruhig — zurück auf dem Pier. Erst mit §eEgon §7reden."
+ 
++  # Early Game — offene Wege nach dem Stempel, Abschluss, Craftsman, Vex
++  graduation_filed: "✔ Orientierung abgelegt · die Karte gehört dir"
++  craftsman_paid: "Da ist sie — Mining Pickaxe. Beweis angenommen, Münzen bezahlt."
++  craftsman_nudge: "Hab's bis hier gehört. Bring die Mining Pickaxe an die Schmiede — ich zahle für Beweise."
++  vex_primer_kill: "Einer. Der Zähler steht oben in deiner Leiste. Noch neun, dann reden wir."
++  roads:
++    tip_next: "Nächster Weg:"
++    steel_where: "Tor zu den Borderlands"
++    steel_pitch: "Zehn Feinde. Lern, wie ein Treffer hier sitzt."
++    rites_where: "Die Ödnis · Pulver-Altar"
++    rites_pitch: "Entzünde einen Geist. Triff etwas Größeres."
++    craft_where: "Markt-Schmiede"
++    craft_pitch: "Nebenjob: zeig ihm eine Mining Pickaxe. Er zahlt."
++    survey_where: "Blaupausen-Tisch"
++    survey_pitch: "Troll-Seiten aus den Adern werden zu Werkzeugen."
++    wilds_where: "Abseits der Wege"
++    wilds_pitch: "Neue Gebiete schalten Teleports frei. Truhen verstecken sich, wo keine Wege sind."
++    wilds_action: "Die Karte gehört dir · achte auf ein Glitzern abseits des Weges"
++    gui_title: "§8Miss Ledger · Offene Wege"
++    gui_header: "§dOffene Wege"
++    gui_header_1: "§7Orientierung abgelegt. Nichts davon ist Pflicht."
++    gui_header_2: "§7Wähl einen Weg — ich richte den Pfeil aus."
++    gui_filed: "Wege abgelegt"
++    gui_briefing: "§eBriefing-Themen"
++    gui_briefing_1: "§7Manager, Booster, Pets, Lager…"
++    gui_briefing_2: "§7Der Auffrischungs-Tisch."
++    card_filed: "§a✔ Abgelegt. Jederzeit wieder hin."
++    card_next: "§e➜ Empfohlen als Nächstes"
++    card_click: "§eKlick §7— der Pfeil zeigt dorthin."
++    card_click_wilds: "§eKlick §7— kein Pfeil. Einfach los."
++    ledger_wilds: "Dafür gibt's keinen Pfeil. Achte auf ein Glitzern abseits des Weges."
++    ledger_pin: "Pfeil zeigt auf {0}. Na los."
++    ledger_return: "Die Wege liegen auf dem Tisch. Such dir einen aus."
++
+ progress:
+   catch_pet: "Fang ein Pet"
+   talk_to_lark: "Sprich mit Lark"
+@@ -116,8 +150,19 @@ dialogs:
+     - "Achte auf den §egelben Pfeil oben§f — der trackt den Auftrag."
+   craftsman_intro:
+     - "Hey. Craftsman. Crafting ist freigeschaltet — Recipe Book im Manager."
+-    - "Nether Star (Hotbar §e9§f) → §agrünes Buch§f anklicken. Da sind alle Blaupausen."
+-    - "Craft eine §fMining Pickaxe§f: Simple Pickaxe in der Mitte, Kohle drumrum. Bring die Spitzhacke zu mir zurück."
++    - "Nether Star (Hotbar §e9§f) → §agrünes Buch§f anklicken. Was du kennst, liegt vorne; den Rest findest du."
++    - "§7Nebenjob, nicht auf Ledgers Liste:§f craft eine §fMining Pickaxe§f — Simple Pickaxe in der Mitte, Kohle drumrum."
++    - "Zeig sie mir, wann du willst. Ich zahle für Beweise. Kein Klemmbrett, keine Frist."
++  craftsman_after_shift:
++    - "Die Spitzhacke hält? Gut."
++    - "Das Recipe Book wächst mit dir — neue Seiten kommen aus der Ödnis, den Adern und vom Tisch des Surveyors."
++  ledger_graduation:
++    - "Gestempelt. Orientierung abgelegt — die Karte gehört dir."
++    - "Eine Gewohnheit: der §egelbe Pfeil oben§f folgt dem, was du anheftest. Heft was an."
++    - "Die Wege liegen auf meinem Tisch. Ich markiere den, den die meisten Rookies zuerst nehmen."
++  vex_primer_hit:
++    - "§7(vom Tor)§f Siehst du die Zahl, die von ihm abspringt? Das bist du. Kein Raten."
++    - "Goldene §6✦§f sind Crits — merk dir, welche Schwünge sie machen. Weiß ist ehrliche Arbeit."
+   foreman_intro:
+     - "Schäbige Mine — die Höhle hinter mir. Darin §eErze§f abbauen: Kohle, Kupfer, Eisen, was fällt."
+     - "Brich §e32 Erz-Blöcke§f (kein Stein-Füllmaterial). Wenn der Zähler fertig ist, zurück zu mir."
+-- 
+2.55.0.windows.3
+

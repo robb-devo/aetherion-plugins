@@ -1,6 +1,7 @@
 import pathfinderPkg from 'mineflayer-pathfinder'
 import { applyIslandMovements, standingIsSafe, wanderOnIsland } from './safety.js'
-import { markError, note, sleep } from './util.js'
+import { bindLoop, markError, note, sleep } from './util.js'
+import { tickSurvival } from './react.js'
 import { ACTIVITIES, fidget } from './playstyle.js'
 import { maybeOpenBooster } from './minigame.js'
 
@@ -68,6 +69,7 @@ export function createFishLoop(bot, cfg, log) {
 
   async function tick() {
     if (!bot.entity || bot.qaSuspended || casting) return
+    if (tickSurvival(bot)) return
     if (!bot.pathfinder.movements) {
       bot.pathfinder.setMovements(applyIslandMovements(new Movements(bot), { canDig: false, maxDrop: 2 }))
     }
@@ -109,12 +111,9 @@ export function createFishLoop(bot, cfg, log) {
     running = true
     log(bot.stressName, 'fish loop start')
     note(bot, 'fish loop start', ACTIVITIES.fishing)
-    const handle = setInterval(() => {
-      tick().catch((err) => {
-        markError(bot, err)
-        log(bot.stressName, `fish tick: ${err.message}`)
-      })
-    }, 360)
-    bot.once('end', () => clearInterval(handle))
+    bindLoop(bot, 360 + Math.floor(Math.random() * 80), () => tick().catch((err) => {
+      markError(bot, err)
+      log(bot.stressName, `fish tick: ${err.message}`)
+    }))
   }
 }

@@ -12,7 +12,7 @@ import {
   windowTitle
 } from './gui.js'
 import { applyIslandMovements, wanderOnIsland } from './safety.js'
-import { markError, note, sleep } from './util.js'
+import { bindLoop, markError, note, sleep } from './util.js'
 import { ACTIVITIES, fidget } from './playstyle.js'
 import { maybeOpenBooster } from './minigame.js'
 
@@ -77,7 +77,7 @@ export function createTradeLoop(bot, cfg, log) {
   bot.loadPlugin(pathfinder)
   const wanderRadius = cfg.wanderRadius ?? 5
   let running = false
-  let step = 0
+  let step = Math.abs((bot.stressName || 't').split('').reduce((h, c) => h + c.charCodeAt(0), 0)) % 4
   let lastFidget = 0
   let busy = false
 
@@ -159,12 +159,9 @@ export function createTradeLoop(bot, cfg, log) {
     running = true
     log(bot.stressName, 'trade loop start (ah + bazaar GUIs)')
     note(bot, 'trade loop start', ACTIVITIES.trading)
-    const handle = setInterval(() => {
-      tick().catch((err) => {
-        markError(bot, err)
-        log(bot.stressName, `trade tick: ${err.message}`)
-      })
-    }, 480)
-    bot.once('end', () => clearInterval(handle))
+    bindLoop(bot, 480 + Math.floor(Math.random() * 120), () => tick().catch((err) => {
+      markError(bot, err)
+      log(bot.stressName, `trade tick: ${err.message}`)
+    }))
   }
 }

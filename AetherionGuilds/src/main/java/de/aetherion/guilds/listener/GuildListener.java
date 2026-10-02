@@ -1,5 +1,7 @@
 package de.aetherion.guilds.listener;
 
+import de.aetherion.guilds.island.HostService;
+import de.aetherion.guilds.island.IslandHost;
 import de.aetherion.guilds.menu.BankMenu;
 import de.aetherion.guilds.menu.BiomeSelectMenu;
 import de.aetherion.guilds.menu.FriendMenu;
@@ -49,6 +51,7 @@ public final class GuildListener implements Listener {
     private final FriendMenu friendMenu;
     private final FriendService friends;
     private final BankMenu bankMenu;
+    private HostService hosts;
 
     public GuildListener(
             GuildService guilds,
@@ -76,19 +79,17 @@ public final class GuildListener implements Listener {
         this.bankMenu = bankMenu;
     }
 
+    /** Island highlight: build rights = tier square + bought land parcels. */
+    public void attachHosts(HostService hosts) {
+        this.hosts = hosts;
+    }
+
     @EventHandler
     public void onMenu(InventoryClickEvent event) {
         if (event.getView().getTopInventory().getHolder() instanceof GuildMenu.Holder) {
             event.setCancelled(true);
             if (event.getWhoClicked() instanceof Player player) {
                 menu.handle(player, event.getRawSlot());
-            }
-            return;
-        }
-        if (event.getView().getTopInventory().getHolder() instanceof IslandMenu.Holder) {
-            event.setCancelled(true);
-            if (event.getWhoClicked() instanceof Player player) {
-                islandMenu.handle(player, event.getRawSlot());
             }
             return;
         }
@@ -123,7 +124,6 @@ public final class GuildListener implements Listener {
     @EventHandler
     public void onDrag(InventoryDragEvent event) {
         if (event.getView().getTopInventory().getHolder() instanceof GuildMenu.Holder
-                || event.getView().getTopInventory().getHolder() instanceof IslandMenu.Holder
                 || event.getView().getTopInventory().getHolder() instanceof BiomeSelectMenu.Holder
                 || event.getView().getTopInventory().getHolder() instanceof QuarryMenu.Holder
                 || event.getView().getTopInventory().getHolder() instanceof FriendMenu.Holder) {
@@ -261,6 +261,7 @@ public final class GuildListener implements Listener {
 
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
+        edgeHint.remove(event.getPlayer().getUniqueId());
         if (personal != null) {
             personal.clearFlight(event.getPlayer());
         }
@@ -324,6 +325,22 @@ public final class GuildListener implements Listener {
         return org.bukkit.plugin.java.JavaPlugin.getProvidingPlugin(GuildListener.class);
     }
 
+    private final java.util.Map<java.util.UUID, Long> edgeHint = new java.util.HashMap<>();
+
+    /** Build zone = classic tier square + bought parcels; past the edge you get a (throttled) hint. */
+    private boolean zoneCheck(Player player, IslandHost host, int x, int z, String landCommand) {
+        if (hosts.inBuildZone(host, x, z)) {
+            return true;
+        }
+        long now = System.currentTimeMillis();
+        Long last = edgeHint.get(player.getUniqueId());
+        if (last == null || now - last > 4000L) {
+            edgeHint.put(player.getUniqueId(), now);
+            player.sendMessage("§7That's past the edge of your land. §f" + landCommand + " §7buys more.");
+        }
+        return false;
+    }
+
     private boolean canBuildGuild(Player player, int x, int z) {
         if (player.getGameMode() == GameMode.CREATIVE && player.hasPermission("aetherion.guild.admin")) {
             return true;
@@ -341,6 +358,9 @@ public final class GuildListener implements Listener {
             player.sendMessage("§cFootmen cannot build. Ask for Soldier or higher.");
             return false;
         }
+        if (hosts != null) {
+            return zoneCheck(player, IslandHost.guild(guild.id()), x, z, "/guild land");
+        }
         int radius = islands.buildRadius(guild);
         return Math.abs(x - islands.originX(guild)) <= radius && Math.abs(z - islands.originZ(guild)) <= radius;
     }
@@ -353,6 +373,9 @@ public final class GuildListener implements Listener {
         if (island == null || !island.ownerId().equals(player.getUniqueId())) {
             player.sendMessage("§cThis is not your island.");
             return false;
+        }
+        if (hosts != null) {
+            return zoneCheck(player, IslandHost.personal(island.ownerId()), x, z, "/island land");
         }
         int radius = personal.buildRadius(island);
         return Math.abs(x - personal.originX(island)) <= radius && Math.abs(z - personal.originZ(island)) <= radius;

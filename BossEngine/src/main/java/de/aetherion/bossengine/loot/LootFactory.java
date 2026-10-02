@@ -53,6 +53,10 @@ public class LootFactory {
         if (entry.getMaterial() == null || entry.getMaterial().isAir()) {
             return Optional.empty();
         }
+        // Taboo: vanilla XP bottles are worthless trash on Aetherion — never roll them.
+        if (entry.getMaterial() == org.bukkit.Material.EXPERIENCE_BOTTLE) {
+            return Optional.empty();
+        }
         return Optional.of(new ItemStack(entry.getMaterial(), amount));
     }
 

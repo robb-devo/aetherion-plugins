@@ -1,0 +1,70 @@
+---
+description: LOCKED Aetherion systems — boosters, vials, Anvil GUI, and rank/permission rules. Never change unless Robbi explicitly requests.
+alwaysApply: true
+---
+
+# Locked Aetherion systems
+
+FIXED design requirements. Not suggestions. Not cleanup targets.
+
+If an unrelated task conflicts: **stop**, say `LOCKED … SYSTEM CONFLICT: …`, explain what would need to change, wait for explicit instruction.
+
+## Boosters (LOCKED)
+
+- Stat boost info MUST stay in item lore/tooltip
+- MUST remain stackable (`BoosterItems.MAX_STACK = 64`)
+- Do not change names, IDs, materials/models/textures, or intended stats/effects
+
+## Borderlands vials (LOCKED)
+
+- MUST remain stackable
+- Do not alter rite/altar behavior unless explicitly requested
+
+## Custom Anvil GUI (LOCKED)
+
+`BoosterSocketMenu` + `BoosterSockets`: 14 sockets + top-right vanilla Anvil (slot 8) for Dungeon Cores. Manager/`/av` open the socket GUI first.
+
+## Rank / permission system (LOCKED)
+
+Canonical: `RankBadgeService`, dyes (`CelestialDye` / `CitrusDye` / `RainbowDye`), Dev Menu Ranks, `player-ranks.yml` extras.
+
+- **OP ≠ Admin / any Aetherion rank.** OP never auto-grants ranks or LuckPerms cosmetic ranks.
+- **Admin = Robb UUID only** (`RankBadgeService.ROBB` / IGN A3therion). Never grant Admin from OP, LP, permissions, or name alone.
+- **Rank assignment:** only Dev Menu Ranks. Players cannot self-assign or assign others. LP does not control Aetherion ranks.
+- **Persistence:** `player-ranks.yml` is authoritative across restarts/reloads/OP/LP changes.
+- **TAB:** keep level-colored titles; special rank BEFORE level rank; special ranks on right-side TAB where designed.
+- **Special ranks (LOCKED with colors/effects):** Admin, MVP++ (static gold/red), Monkey (`CelestialDye` #B2FFFF), Citrus (`CitrusDye`). Do not flatten to plain text.
+
+### Wipes vs ranks (GOLDEN — never break)
+
+Special ranks and level ranks are **independent**.
+
+- **Special ranks / `player-ranks.yml` extras (Admin, MVP++, Monkey, Citrus, …):** NEVER touched by any wipe, progress reset, storage wipe, quest wipe, or “full reset”. Not even for Robb/A3therion. Change **only** when Robbi does it himself or gives an **explicit** order to change that special rank.
+- **Aetherion level rank (level-colored TAB title):** follows level/XP. A level wipe / XP wipe correctly resets it. That is expected and separate from special ranks.
+- Wipe scripts must **hard-exclude** `player-ranks.yml` (and any special-rank store). Stripping UUID keys from that file is forbidden.
+
+Do not touch Admin identity, OP/rank separation, Dev Menu rank UI, rank persistence, TAB rank display, or special-rank dyes unless Robbi explicitly requests that change.
+
+## Signature weapons (LOCKED) — Blossom Blade + Gravwell Cleaver
+
+Do **not** touch abilities, VFX, particles, sounds, combat feel, or effect tuning. Ever. Unless Robbi explicitly requests.
+
+| Weapon | Display | Internal id (keep) | Code |
+|--------|---------|-------------------|------|
+| **Blossom Blade** | `§dBlossom Blade` | `ashen_katana` | `AshenKatanaListener`, `AshenKatanaProp`, `CustomItem.createAshenKatana` |
+| **Gravwell Cleaver** | `§5Gravwell Cleaver` | `gravwell_cleaver` | `GravwellCleaverListener`, `CustomItem.createGravwellCleaver` |
+
+- Display rename only is OK if Robbi asks (ids/CMD/models stay)
+- No “polish”, balance, refactor, or simplify of these combat systems
+- Unrelated task conflict → `LOCKED WEAPON SYSTEM CONFLICT: …` and wait
+
+## Shutdown countdown (LOCKED)
+
+`AetherionCore` `ShutdownCountdown`: on `stop` / `restart` (player, console, RCON) always chat-warn **10 → 8 → 6 → 4 → 2** every **2 seconds**, then shut down.
+
+- MUST stay enabled across restarts/deploys
+- Do not remove, shorten, or bypass for normal stops
+- Emergency only: `stop now` / `stop force` (or restart equivalents) skips the countdown
+- Prefer sending `stop` (not raw SIGKILL) so players get the warning
+
+Do not strip this unless Robbi explicitly requests removal.

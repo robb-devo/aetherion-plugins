@@ -1,7 +1,7 @@
 import pathfinderPkg from 'mineflayer-pathfinder'
 import { applyIslandMovements, cancelPath, horizontalDistance, nearestAnchor, standingIsSafe } from './safety.js'
 import { pickNextPad, readPads } from './pads.js'
-import { markError, note, sleep } from './util.js'
+import { bindLoop, markError, note, sleep } from './util.js'
 import { ACTIVITIES, fidget } from './playstyle.js'
 
 const { goals, Movements, pathfinder } = pathfinderPkg
@@ -150,12 +150,9 @@ export function createPadLoop(bot, cfg, log) {
     running = true
     log(bot.stressName, `pad loop start (${pads.length} pads)`)
     note(bot, 'pad loop start', ACTIVITIES.padHop)
-    const handle = setInterval(() => {
-      tick().catch((err) => {
-        markError(bot, err)
-        log(bot.stressName, `pad tick: ${err.message}`)
-      })
-    }, 420)
-    bot.once('end', () => clearInterval(handle))
+    bindLoop(bot, 420 + Math.floor(Math.random() * 80), () => tick().catch((err) => {
+      markError(bot, err)
+      log(bot.stressName, `pad tick: ${err.message}`)
+    }))
   }
 }

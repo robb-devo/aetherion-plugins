@@ -1,0 +1,615 @@
+From 8756d6b9a22c7052675aa703fd4921392183a615 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 29 Sep 2026 00:23:17 +0200
+Subject: [PATCH 1/9] Core+Items: MiningAccess Eldervale hooks, ore-only isle
+ payouts, six isle skills
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Core MiningAccess grows quiet default methods (mirror of FarmAccess):
+onMineIsle, oreFortuneBonus, orePowerBonus, oreSpeedPower,
+oreHarvestBonus(+Label), noteOreHarvest, devAction/devItems/devStatus/devSpots.
+
+Items:
+- MineIsleHook: guarded calls (LinkageError -> hooks off once, logged).
+- HarvestListener: isle Fortune on ore / mineral payouts only; ore-specific
+  mastery Mining Power for the gate + speed of that ore; speed-only power
+  (rhythm, rations) never touches gates; Rich Vein whole-item extras with a
+  gold action-bar tag; Vein Siphon vacuum harvests reported to Mining.
+- Six Mining skills: Bedrock Born (isle-only +16 Fortune +6 Spread),
+  Work Song, Geode Nose, Union Card, Seam Reader, Depth Gauge — flavour
+  lines, effect lines, isle gating in SkillService, loop hint.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01Cb5rUs5Jy2h8ZCMwTfnbVN
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01Cb5rUs5Jy2h8ZCMwTfnbVN
+---
+ .../de/aetherion/core/api/MiningAccess.java   |  73 ++++++++++
+ .../items/listener/HarvestListener.java       |  53 ++++++-
+ .../aetherion/items/mining/MineIsleHook.java  | 130 ++++++++++++++++++
+ .../de/aetherion/items/skill/AetherSkill.java |  63 +++++++++
+ .../de/aetherion/items/skill/SkillFlavor.java |  48 +++++++
+ .../de/aetherion/items/skill/SkillMenu.java   |  17 ++-
+ .../aetherion/items/skill/SkillService.java   |   4 +
+ 7 files changed, 380 insertions(+), 8 deletions(-)
+ create mode 100644 AetherionItems/src/main/java/de/aetherion/items/mining/MineIsleHook.java
+
+diff --git a/AetherionCore/src/main/java/de/aetherion/core/api/MiningAccess.java b/AetherionCore/src/main/java/de/aetherion/core/api/MiningAccess.java
+index 90d50c54..a1c1b7d2 100644
+--- a/AetherionCore/src/main/java/de/aetherion/core/api/MiningAccess.java
++++ b/AetherionCore/src/main/java/de/aetherion/core/api/MiningAccess.java
+@@ -1,5 +1,6 @@
+ package de.aetherion.core.api;
+ 
++import org.bukkit.Location;
+ import org.bukkit.Material;
+ import org.bukkit.World;
+ import org.bukkit.block.Block;
+@@ -7,9 +8,15 @@ import org.bukkit.block.data.BlockData;
+ import org.bukkit.entity.Player;
+ import org.bukkit.inventory.ItemStack;
+ 
++import java.util.List;
++import java.util.Map;
++
+ /**
+  * The Veins world + ore seal/regen. Implemented by AetherionMining.
+  * Pickaxe stats and harvest payouts stay in AetherionItems ({@link HarvestAccess}).
++ *
++ * <p>The Eldervale block below mirrors {@link FarmAccess}: every method has a quiet default so an
++ * older Mining jar next to a newer Items jar (or the other way round) never breaks a harvest.
+  */
+ public interface MiningAccess {
+ 
+@@ -28,4 +35,70 @@ public interface MiningAccess {
+ 
+     /** Ore/mineral regen delay in seconds. Unknown materials return the stone default (10). */
+     long respawnSeconds(Material material);
++
++    // ------------------------------------------------------------------ Mining Eldervale
++
++    /** True inside the Mining Eldervale footprint (isle-only skills and loops). */
++    default boolean onMineIsle(Location at) {
++        return false;
++    }
++
++    /**
++     * Ore-only Fortune from Mining loops (ore mastery, Strike Rhythm, Hearth rations, depth,
++     * specimen cabinet). Added by the Items harvest listener to ore / mineral payouts only —
++     * never to crops, logs or fish.
++     */
++    default double oreFortuneBonus(Player player, Material ore, Location at) {
++        return 0.0d;
++    }
++
++    /**
++     * Ore-specific Mining Power from mastery of that very ore (so it can never open a gate for an
++     * ore the player has not already mined). Counts for the gate and the break speed of {@code ore}.
++     */
++    default double orePowerBonus(Player player, Material ore) {
++        return 0.0d;
++    }
++
++    /** Extra Mining Power used for break speed only (rhythm, rations) — never for gates. */
++    default double oreSpeedPower(Player player, Material ore, Location at) {
++        return 0.0d;
++    }
++
++    /** Whole extra drops for one ore break (Rich Vein, …). 0 if none. */
++    default int oreHarvestBonus(Player player, Material ore, Location at) {
++        return 0;
++    }
++
++    /** Short action-bar tag for {@link #oreHarvestBonus}, e.g. "Rich Vein". Null when none. */
++    default String oreHarvestBonusLabel(Player player, Location at) {
++        return null;
++    }
++
++    /**
++     * An ore paid out without a {@code BlockBreakEvent} (Vein Siphon vacuum). Mining counts it for
++     * mastery and contracts; rhythm and Crystal Finds stay hand-mined only.
++     */
++    default void noteOreHarvest(Player player, Material ore, Location at, boolean vacuum) {
++    }
++
++    /** DEV menu: run a Mining Island action ({@code group:verb[:arg]}); returns the chat reply. */
++    default String devAction(Player player, String action) {
++        return null;
++    }
++
++    /** DEV menu: give-able items of a group (id → icon), e.g. {@code npcs}, {@code rations}, {@code specimens}. */
++    default Map<String, ItemStack> devItems(String group) {
++        return Map.of();
++    }
++
++    /** DEV menu: status lines for the Mining Island hub button. */
++    default List<String> devStatus() {
++        return List.of();
++    }
++
++    /** DEV menu: named teleport spots on the isle (label → location). */
++    default Map<String, Location> devSpots() {
++        return Map.of();
++    }
+ }
+diff --git a/AetherionItems/src/main/java/de/aetherion/items/listener/HarvestListener.java b/AetherionItems/src/main/java/de/aetherion/items/listener/HarvestListener.java
+index 7335f508..252cda15 100644
+--- a/AetherionItems/src/main/java/de/aetherion/items/listener/HarvestListener.java
++++ b/AetherionItems/src/main/java/de/aetherion/items/listener/HarvestListener.java
+@@ -107,7 +107,8 @@ public class HarvestListener implements Listener {
+             clearBreakSpeed(player);
+             return;
+         }
+-        double miningPower = equipmentStats.getStat(player, ItemCapability.MINING_POWER);
++        double miningPower = equipmentStats.getStat(player, ItemCapability.MINING_POWER)
++                + de.aetherion.items.mining.MineIsleHook.orePower(player, material);
+         if (!HarvestRules.canHarvest(material, miningPower)) {
+             event.setCancelled(true);
+             clearBreakSpeed(player);
+@@ -115,7 +116,8 @@ public class HarvestListener implements Listener {
+             return;
+         }
+         event.setInstaBreak(false);
+-        applyBreakSpeed(player, block);
++        applyBreakSpeed(player, block, miningPower
++                + de.aetherion.items.mining.MineIsleHook.speedPower(player, material, block.getLocation()));
+     }
+ 
+     @EventHandler(priority = EventPriority.MONITOR)
+@@ -144,7 +146,8 @@ public class HarvestListener implements Listener {
+         if (!HarvestRules.tracked(material)) {
+             return;
+         }
+-        double miningPower = equipmentStats.getStat(player, ItemCapability.MINING_POWER);
++        double miningPower = equipmentStats.getStat(player, ItemCapability.MINING_POWER)
++                + de.aetherion.items.mining.MineIsleHook.orePower(player, material);
+         if (!open && !HarvestRules.canHarvest(material, miningPower)) {
+             event.setCancelled(true);
+             event.setDropItems(false);
+@@ -187,11 +190,13 @@ public class HarvestListener implements Listener {
+             return;
+         }
+         boolean open = HarvestRules.openMine(block.getWorld());
+-        double miningPower = equipmentStats.getStat(player, ItemCapability.MINING_POWER);
++        double miningPower = equipmentStats.getStat(player, ItemCapability.MINING_POWER)
++                + de.aetherion.items.mining.MineIsleHook.orePower(player, material);
+         if (!open && !HarvestRules.canHarvest(material, miningPower)) {
+             return;
+         }
+         org.bukkit.block.data.BlockData original = block.getBlockData().clone();
++        de.aetherion.items.mining.MineIsleHook.noteVacuum(player, material, block.getLocation());
+         var skills = de.aetherion.items.AetherionItems.getInstance() == null
+                 ? null
+                 : de.aetherion.items.AetherionItems.getInstance().getSkills();
+@@ -313,10 +318,13 @@ public class HarvestListener implements Listener {
+     }
+ 
+     private void payOut(Player player, Block block, Material material) {
+-        double fortune = Math.max(0, equipmentStats.getStat(player, ItemCapability.FORTUNE));
++        // Ore-only Fortune from the Mining Eldervale loops (mastery, rhythm, rations, depth).
++        double fortune = Math.max(0, equipmentStats.getStat(player, ItemCapability.FORTUNE))
++                + de.aetherion.items.mining.MineIsleHook.oreFortune(player, material, block.getLocation());
+         if (material == Material.AMETHYST_CLUSTER) {
+             giveFortuned(player, new ItemStack(Material.AMETHYST_CLUSTER), 0);
+             giveFortuned(player, new ItemStack(Material.AMETHYST_SHARD, 4), fortune);
++            giveIsleBonus(player, new ItemStack(Material.AMETHYST_SHARD), material, block);
+             maybeDropVoided455(player, material);
+             return;
+         }
+@@ -325,6 +333,7 @@ public class HarvestListener implements Listener {
+             int amount = HarvestRules.fullBlockBaseAmount(material);
+             if (resource != null && amount > 0) {
+                 giveFortuned(player, new ItemStack(resource, amount), fortune);
++                giveIsleBonus(player, new ItemStack(resource), material, block);
+             }
+             maybeDropVoided455(player, material);
+             return;
+@@ -332,11 +341,13 @@ public class HarvestListener implements Listener {
+         // Copper/debris: 1 smelted drop per block (furnaces off). Extra only from Fortune.
+         if (material == Material.COPPER_ORE || material == Material.DEEPSLATE_COPPER_ORE) {
+             giveFortuned(player, new ItemStack(Material.COPPER_INGOT, 1), fortune);
++            giveIsleBonus(player, new ItemStack(Material.COPPER_INGOT), material, block);
+             maybeDropVoided455(player, material);
+             return;
+         }
+         if (material == Material.ANCIENT_DEBRIS) {
+             giveFortuned(player, new ItemStack(Material.NETHERITE_INGOT, 1), fortune);
++            giveIsleBonus(player, new ItemStack(Material.NETHERITE_INGOT), material, block);
+             maybeDropVoided455(player, material);
+             return;
+         }
+@@ -345,6 +356,7 @@ public class HarvestListener implements Listener {
+         if (drops.isEmpty()) {
+             drops = List.of(new ItemStack(material));
+         }
++        ItemStack primary = null;
+         for (ItemStack drop : drops) {
+             if (drop == null || drop.getType().isAir()) {
+                 continue;
+@@ -355,11 +367,39 @@ public class HarvestListener implements Listener {
+             if (stack == null || stack.getType().isAir()) {
+                 continue;
+             }
++            if (primary == null) {
++                primary = stack.clone();
++            }
+             giveFortuned(player, stack, fortune);
+         }
++        if (primary != null) {
++            giveIsleBonus(player, primary, material, block);
++        }
+         maybeDropVoided455(player, material);
+     }
+ 
++    /**
++     * Mining Eldervale whole-item extras (Rich Vein…) — one unit of the ore's resource each,
++     * no Fortune stacking, gold action-bar tag like the Farm Isle's Bee Bloom.
++     */
++    private void giveIsleBonus(Player player, ItemStack unit, Material ore, Block block) {
++        if (unit == null || block == null) {
++            return;
++        }
++        int bonus = de.aetherion.items.mining.MineIsleHook.harvestBonus(player, ore, block.getLocation());
++        if (bonus <= 0) {
++            return;
++        }
++        ItemStack one = unit.clone();
++        one.setAmount(1);
++        giveAmount(player, one, bonus);
++        String label = de.aetherion.items.mining.MineIsleHook.harvestBonusLabel(player, block.getLocation());
++        player.sendActionBar(net.kyori.adventure.text.Component.text(
++                (label == null ? "Bonus" : label) + " +" + bonus,
++                net.kyori.adventure.text.format.NamedTextColor.GOLD
++        ));
++    }
++
+     public void payWood(Player player, Material material) {
+         if (player == null || material == null) {
+             return;
+@@ -491,13 +531,12 @@ public class HarvestListener implements Listener {
+         ));
+     }
+ 
+-    private void applyBreakSpeed(Player player, Block block) {
++    private void applyBreakSpeed(Player player, Block block, double miningPower) {
+         clearBreakSpeed(player);
+         AttributeInstance attribute = player.getAttribute(Attribute.PLAYER_BLOCK_BREAK_SPEED);
+         if (attribute == null) {
+             return;
+         }
+-        double miningPower = equipmentStats.getStat(player, ItemCapability.MINING_POWER);
+         int desired = HarvestRules.canHarvest(block.getType(), miningPower)
+                 ? HarvestRules.ticks(block.getType(), miningPower)
+                 : 400;
+diff --git a/AetherionItems/src/main/java/de/aetherion/items/mining/MineIsleHook.java b/AetherionItems/src/main/java/de/aetherion/items/mining/MineIsleHook.java
+new file mode 100644
+index 00000000..12a41560
+--- /dev/null
++++ b/AetherionItems/src/main/java/de/aetherion/items/mining/MineIsleHook.java
+@@ -0,0 +1,130 @@
++package de.aetherion.items.mining;
++
++import de.aetherion.core.api.AetherServices;
++import de.aetherion.core.api.MiningAccess;
++
++import org.bukkit.Location;
++import org.bukkit.Material;
++import org.bukkit.entity.Player;
++
++/**
++ * Items → AetherionMining calls for the Mining Eldervale loops (isle check, ore Fortune,
++ * ore Mining Power, harvest extras). Mirrors {@code FarmIsleHook}: every call is guarded, so an
++ * older Core / Mining jar on the server turns the hooks off once instead of throwing from the
++ * harvest listener on every swing.
++ */
++public final class MineIsleHook {
++
++    private static volatile boolean broken;
++
++    private MineIsleHook() {
++    }
++
++    private static MiningAccess mining() {
++        return broken ? null : AetherServices.mining();
++    }
++
++    private static void off(LinkageError error) {
++        if (!broken) {
++            broken = true;
++            java.util.logging.Logger.getLogger("AetherionItems").warning(
++                    "Mining Eldervale hooks off — Core/Mining jar predates them (" + error.getClass().getSimpleName() + ").");
++        }
++    }
++
++    /** Inside the Mining Eldervale footprint. */
++    public static boolean onIsle(Player player) {
++        MiningAccess mining = mining();
++        if (mining == null || player == null) {
++            return false;
++        }
++        try {
++            return mining.onMineIsle(player.getLocation());
++        } catch (LinkageError error) {
++            off(error);
++            return false;
++        }
++    }
++
++    /** Ore-only Fortune from the Mining loops. 0 for anything that is not an ore / mineral block. */
++    public static double oreFortune(Player player, Material ore, Location at) {
++        MiningAccess mining = mining();
++        if (mining == null || player == null || ore == null || !HarvestRules.requiresPickaxe(ore)) {
++            return 0.0d;
++        }
++        try {
++            return Math.max(0.0d, mining.oreFortuneBonus(player, ore, at));
++        } catch (LinkageError error) {
++            off(error);
++            return 0.0d;
++        }
++    }
++
++    /** Ore-specific Mining Power (mastery of that ore) — gate + speed for that ore only. */
++    public static double orePower(Player player, Material ore) {
++        MiningAccess mining = mining();
++        if (mining == null || player == null || ore == null || !HarvestRules.requiresPickaxe(ore)) {
++            return 0.0d;
++        }
++        try {
++            return Math.max(0.0d, mining.orePowerBonus(player, ore));
++        } catch (LinkageError error) {
++            off(error);
++            return 0.0d;
++        }
++    }
++
++    /** Speed-only Mining Power (rhythm, rations). Never used for gates. */
++    public static double speedPower(Player player, Material ore, Location at) {
++        MiningAccess mining = mining();
++        if (mining == null || player == null || ore == null) {
++            return 0.0d;
++        }
++        try {
++            return Math.max(0.0d, mining.oreSpeedPower(player, ore, at));
++        } catch (LinkageError error) {
++            off(error);
++            return 0.0d;
++        }
++    }
++
++    /** Whole extra drops (Rich Vein…). */
++    public static int harvestBonus(Player player, Material ore, Location at) {
++        MiningAccess mining = mining();
++        if (mining == null || player == null || ore == null || !HarvestRules.requiresPickaxe(ore)) {
++            return 0;
++        }
++        try {
++            return Math.max(0, mining.oreHarvestBonus(player, ore, at));
++        } catch (LinkageError error) {
++            off(error);
++            return 0;
++        }
++    }
++
++    public static String harvestBonusLabel(Player player, Location at) {
++        MiningAccess mining = mining();
++        if (mining == null) {
++            return null;
++        }
++        try {
++            return mining.oreHarvestBonusLabel(player, at);
++        } catch (LinkageError error) {
++            off(error);
++            return null;
++        }
++    }
++
++    /** Vein Siphon (no BlockBreakEvent): let Mining count it for mastery / contracts. */
++    public static void noteVacuum(Player player, Material ore, Location at) {
++        MiningAccess mining = mining();
++        if (mining == null || player == null || ore == null) {
++            return;
++        }
++        try {
++            mining.noteOreHarvest(player, ore, at, true);
++        } catch (LinkageError error) {
++            off(error);
++        }
++    }
++}
+diff --git a/AetherionItems/src/main/java/de/aetherion/items/skill/AetherSkill.java b/AetherionItems/src/main/java/de/aetherion/items/skill/AetherSkill.java
+index cf58f627..2fa6dac3 100644
+--- a/AetherionItems/src/main/java/de/aetherion/items/skill/AetherSkill.java
++++ b/AetherionItems/src/main/java/de/aetherion/items/skill/AetherSkill.java
+@@ -178,6 +178,63 @@ public enum AetherSkill {
+             "+10 Mining Power in caves or after dark.",
+             Flag.CAVE_SENSE
+     ),
++    BEDROCK_BORN(
++            "bedrock_born",
++            "Bedrock Born",
++            Category.MINING,
++            Material.CHISELED_DEEPSLATE,
++            "Eldervale stone knows your boots.",
++            "+16 Fortune and +6 Spread on Mining Eldervale only.",
++            Flag.BEDROCK_BORN,
++            bonus(ItemCapability.FORTUNE, 16),
++            bonus(ItemCapability.SPREAD, 6)
++    ),
++    WORK_SONG(
++            "work_song",
++            "Work Song",
++            Category.MINING,
++            Material.BELL,
++            "You swing in four-four. The seam keeps time.",
++            "Strike Rhythm builds faster and holds longer. +6 Fortune.",
++            Flag.WORK_SONG,
++            bonus(ItemCapability.FORTUNE, 6)
++    ),
++    GEODE_NOSE(
++            "geode_nose",
++            "Geode Nose",
++            Category.MINING,
++            Material.AMETHYST_CLUSTER,
++            "You can smell a crystal through ten feet of granite.",
++            "Crystal Finds turn up more often, heavier, and crack faster.",
++            Flag.GEODE_NOSE
++    ),
++    UNION_CARD(
++            "union_card",
++            "Union Card",
++            Category.MINING,
++            Material.WRITABLE_BOOK,
++            "The Foreman pays union rates. Mostly to you.",
++            "Foreman Contracts pay more coins.",
++            Flag.UNION_CARD
++    ),
++    SEAM_READER(
++            "seam_reader",
++            "Seam Reader",
++            Category.MINING,
++            Material.SPYGLASS,
++            "You read ore like a newspaper. Bad news for the ore.",
++            "Seam Chains burst sooner. Nearby ore shimmers now and then.",
++            Flag.SEAM_READER
++    ),
++    DEPTH_GAUGE(
++            "depth_gauge",
++            "Depth Gauge",
++            Category.MINING,
++            Material.LANTERN,
++            "The deeper it gets, the better it pays.",
++            "Eldervale depth bonuses +50%. Pairs with Cave Sense.",
++            Flag.DEPTH_GAUGE
++    ),
+ 
+     LIGHT_FOOT(
+             "light_foot",
+@@ -532,6 +589,12 @@ public enum AetherSkill {
+         GOLDEN_HOUR,
+         NIGHT_OWL,
+         CAVE_SENSE,
++        BEDROCK_BORN,
++        WORK_SONG,
++        GEODE_NOSE,
++        UNION_CARD,
++        SEAM_READER,
++        DEPTH_GAUGE,
+         PINCH_PENNY,
+         DIAMOND_SPINE,
+         RELIC_APPETITE,
+diff --git a/AetherionItems/src/main/java/de/aetherion/items/skill/SkillFlavor.java b/AetherionItems/src/main/java/de/aetherion/items/skill/SkillFlavor.java
+index 0a5ff543..2dd8bf54 100644
+--- a/AetherionItems/src/main/java/de/aetherion/items/skill/SkillFlavor.java
++++ b/AetherionItems/src/main/java/de/aetherion/items/skill/SkillFlavor.java
+@@ -149,6 +149,54 @@ public final class SkillFlavor {
+                     "You clock in where the sun gave up.",
+                     "Light is a rumor you don't need."
+             };
++            case BEDROCK_BORN -> new String[] {
++                    "Eldervale stone knows your boots.",
++                    "The tunnels lean in when you pass.",
++                    "The mountain files you under family.",
++                    "Every seam on the isle has your name scratched in it.",
++                    "The bedrock asks how your day went.",
++                    "You are load-bearing for the whole island."
++            };
++            case WORK_SONG -> new String[] {
++                    "You swing in four-four. The seam keeps time.",
++                    "The pick found the backbeat.",
++                    "Three miners joined in on the chorus.",
++                    "The mountain hums along. Off-key, loyally.",
++                    "Stalactites tap their feet now.",
++                    "The mine is a song, and you wrote it."
++            };
++            case GEODE_NOSE -> new String[] {
++                    "You can smell a crystal through ten feet of granite.",
++                    "Amethyst sneezes when you walk past.",
++                    "Geodes hold their breath to look smaller. It fails.",
++                    "The Assayer keeps a chair warm for you.",
++                    "Crystals line up to be found.",
++                    "The rock gives up its heart before you ask."
++            };
++            case UNION_CARD -> new String[] {
++                    "The Foreman pays union rates. Mostly to you.",
++                    "Your card has three stamps and a coffee stain.",
++                    "Contracts arrive pre-negotiated.",
++                    "The clerk rounds up out of respect.",
++                    "You are the union now.",
++                    "The mine pays you to show up. Then more."
++            };
++            case SEAM_READER -> new String[] {
++                    "You read ore like a newspaper. Bad news for the ore.",
++                    "Veins show their hand early.",
++                    "The seam confesses before you swing.",
++                    "Stone can't keep a secret around you.",
++                    "Ore glows a little just to be noticed.",
++                    "The whole mountain is an open book."
++            };
++            case DEPTH_GAUGE -> new String[] {
++                    "The deeper it gets, the better it pays.",
++                    "Your ears pop in the good way.",
++                    "The dark added you to payroll.",
++                    "You measure time in fathoms.",
++                    "The Undercroft sends a welcome card.",
++                    "Down is just up with better ore."
++            };
+             case LIGHT_FOOT -> new String[] {
+                     "You leave before the trees finish complaining.",
+                     "The lecture can keep up. Barely.",
+diff --git a/AetherionItems/src/main/java/de/aetherion/items/skill/SkillMenu.java b/AetherionItems/src/main/java/de/aetherion/items/skill/SkillMenu.java
+index 67797fce..8aedcaeb 100644
+--- a/AetherionItems/src/main/java/de/aetherion/items/skill/SkillMenu.java
++++ b/AetherionItems/src/main/java/de/aetherion/items/skill/SkillMenu.java
+@@ -671,6 +671,21 @@ public final class SkillMenu implements Listener {
+                 // Speed is gear/pets/Lv.3 pace only — Night Owl no longer grants move speed.
+             }
+             case CAVE_SENSE -> lines.add(Effect.stat("Mining Power in the dark", 10.0 * scale, "+", ""));
++            case BEDROCK_BORN -> lines.add(Effect.hint("Stats apply on Mining Eldervale only."));
++            case WORK_SONG -> {
++                lines.add(Effect.stat("Rhythm per strike", 1.0 + 0.5 * scale, "+", ""));
++                lines.add(Effect.stat("Rhythm hold", 40.0 * scale, "+", "%"));
++            }
++            case GEODE_NOSE -> {
++                lines.add(Effect.stat("Crystal Find chance", 50.0 * scale, "+", "%"));
++                lines.add(Effect.hint("Rolls weight twice · one less crack."));
++            }
++            case UNION_CARD -> lines.add(Effect.stat("Contract coins", Math.min(60.0, 15.0 * scale), "+", "%"));
++            case SEAM_READER -> {
++                lines.add(Effect.stat("Seam Chain burst at", Math.max(4.0, 8.0 - Math.floor(scale * 1.5)), "", " strikes"));
++                lines.add(Effect.hint("Nearby ore shimmers every ~30s."));
++            }
++            case DEPTH_GAUGE -> lines.add(Effect.stat("Depth bonuses", 50.0 * scale, "+", "%"));
+             case PINCH_PENNY -> lines.add(Effect.stat("Midas Cost",
+                     Math.max(2L, 5L - tier), "", " coins"));
+             case DIAMOND_SPINE -> lines.add(Effect.stat("Melee Reflect", 8.0 * scale, "+", "%"));
+@@ -706,7 +721,7 @@ public final class SkillMenu implements Listener {
+     /** How the category's stats touch its gathering loop. {@code null} for combat pages. */
+     private static String loopHint(AetherSkill.Category category) {
+         return switch (category) {
+-            case MINING -> "Mining Power opens harder ore.\nFortune multiplies what breaks.";
++            case MINING -> "Mining Power opens harder ore.\nFortune multiplies what breaks.\nOn Mining Eldervale: Rhythm, Crystal Finds, Contracts.";
+             case FORAGING -> "Perfect fells and streaks pay bonus XP.\nLv. 50 widens the CHOP window.\nFortune raises each tree's wood cap.";
+             case FARMING -> "Harvest breaks extra crops per swing.\nClearing birds boosts the whole field.\nOn the Farm Isle: Rhythm, Prize Crops, Orders.";
+             case FISHING -> "Fish Catch widens the green zone.\nFish Speed shortens the wait.\nPerfect reels and streaks pay bonus XP.";
+diff --git a/AetherionItems/src/main/java/de/aetherion/items/skill/SkillService.java b/AetherionItems/src/main/java/de/aetherion/items/skill/SkillService.java
+index b2a985f6..672413bf 100644
+--- a/AetherionItems/src/main/java/de/aetherion/items/skill/SkillService.java
++++ b/AetherionItems/src/main/java/de/aetherion/items/skill/SkillService.java
+@@ -819,6 +819,10 @@ public final class SkillService implements StatProvider, Listener {
+                     && !de.aetherion.items.fishing.FishIsleHook.onIsle(player)) {
+                 continue;
+             }
++            if (skill.flag() == AetherSkill.Flag.BEDROCK_BORN
++                    && !de.aetherion.items.mining.MineIsleHook.onIsle(player)) {
++                continue;
++            }
+             double scale = multiplier(player, skill);
+             total += skill.bonus(capability) * scale;
+             if (dark && capability == ItemCapability.MINING_POWER && skill.flag() == AetherSkill.Flag.CAVE_SENSE) {
+-- 
+2.43.0
+

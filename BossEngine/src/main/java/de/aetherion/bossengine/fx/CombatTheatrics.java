@@ -61,10 +61,26 @@ public final class CombatTheatrics {
         switch (id(instance)) {
             case "sparky" -> world.playSound(at, Sound.ENTITY_GHAST_SCREAM, 0.7f, 0.55f);
             case "aether_colossus" -> world.playSound(at, Sound.ENTITY_RAVAGER_ROAR, 1.2f, 0.5f);
-            case "hollow_lurker" -> world.playSound(at, Sound.ENTITY_WARDEN_SONIC_BOOM, 0.7f, 0.7f);
-            case "skuldugery" -> world.playSound(at, Sound.ENTITY_BLAZE_AMBIENT, 1.1f, 0.55f);
-            case "mcnugget" -> world.playSound(at, Sound.ENTITY_CHICKEN_HURT, 1.2f, 0.45f);
-            case "bridge_troll" -> world.playSound(at, Sound.ENTITY_PIGLIN_BRUTE_ANGRY, 1.15f, 0.55f);
+            case "hollow_lurker" -> {
+                world.playSound(at, Sound.BLOCK_SCULK_SENSOR_CLICKING, 0.7f, 0.6f);
+                world.playSound(at, Sound.BLOCK_SCULK_SHRIEKER_SHRIEK, 0.45f, 0.7f);
+                dustRing(world, at, 2.2, Color.fromRGB(48, 196, 188), 1.1f);
+            }
+            case "skuldugery" -> {
+                world.playSound(at, Sound.ENTITY_WITHER_SKELETON_AMBIENT, 0.7f, 0.55f);
+                world.playSound(at, Sound.ITEM_FIRECHARGE_USE, 0.35f, 0.7f);
+                dustRing(world, at, 2.4, Color.fromRGB(255, 112, 28), 1.1f);
+            }
+            case "mcnugget" -> {
+                world.playSound(at, Sound.BLOCK_NOTE_BLOCK_BIT, 0.55f, 1.4f);
+                world.playSound(at, Sound.BLOCK_LAVA_POP, 0.35f, 1.2f);
+                dustRing(world, at, 2.0, Color.fromRGB(255, 196, 64), 1.15f);
+            }
+            case "bridge_troll" -> {
+                world.playSound(at, Sound.ENTITY_PIGLIN_BRUTE_ANGRY, 0.7f, 0.55f);
+                world.playSound(at, Sound.BLOCK_CHAIN_PLACE, 0.45f, 0.6f);
+                dustRing(world, at, 2.6, Color.fromRGB(214, 168, 72), 1.2f);
+            }
             case "squidward" -> world.playSound(at, Sound.ENTITY_ELDER_GUARDIAN_CURSE, 0.8f, 0.7f);
             case "sir_balthazar" -> world.playSound(at, Sound.ENTITY_EVOKER_PREPARE_ATTACK, 1.1f, 0.8f);
             case "baron_von_wurm" -> world.playSound(at, Sound.ENTITY_SILVERFISH_AMBIENT, 1.2f, 0.4f);
@@ -120,6 +136,162 @@ public final class CombatTheatrics {
         }
     }
 
+    /**
+     * Thin floor ring drawn before a ring burst lands. True when this boss has a themed tell,
+     * so the caller can skip the generic crit preview.
+     */
+    public static boolean ringTelegraph(BossInstance instance, Location at, double radius) {
+        World world = at == null ? null : at.getWorld();
+        Color color = telegraphColor(id(instance));
+        if (world == null || color == null || radius <= 0) {
+            return false;
+        }
+        dustRing(world, at, radius, color, 0.85f);
+        return true;
+    }
+
+    private static Color telegraphColor(String bossId) {
+        return switch (bossId) {
+            case "hollow_lurker" -> Color.fromRGB(48, 196, 188);
+            case "skuldugery" -> Color.fromRGB(255, 112, 28);
+            case "mcnugget" -> Color.fromRGB(255, 196, 64);
+            case "bridge_troll" -> Color.fromRGB(214, 168, 72);
+            default -> null;
+        };
+    }
+
+    /** Themed phase-change opener; false = caller keeps its default sting. */
+    public static boolean transitionStart(BossInstance instance, Location at) {
+        World world = at == null ? null : at.getWorld();
+        if (world == null) {
+            return false;
+        }
+        switch (id(instance)) {
+            case "hollow_lurker" -> {
+                world.playSound(at, Sound.ENTITY_WARDEN_EMERGE, 0.7f, 0.7f);
+                dustRing(world, at, 3.2, Color.fromRGB(48, 196, 188), 1.2f);
+            }
+            case "skuldugery" -> {
+                world.playSound(at, Sound.ENTITY_WITHER_SKELETON_HURT, 0.7f, 0.55f);
+                dustRing(world, at, 3.0, Color.fromRGB(255, 112, 28), 1.15f);
+            }
+            case "mcnugget" -> {
+                world.playSound(at, Sound.BLOCK_NOTE_BLOCK_BIT, 0.6f, 0.8f);
+                dustRing(world, at, 2.4, Color.fromRGB(255, 196, 64), 1.1f);
+            }
+            case "bridge_troll" -> {
+                world.playSound(at, Sound.ENTITY_PIGLIN_BRUTE_ANGRY, 0.7f, 0.5f);
+                world.playSound(at, Sound.BLOCK_CHAIN_PLACE, 0.5f, 0.45f);
+                dustRing(world, at, 4.0, Color.fromRGB(214, 168, 72), 1.3f);
+            }
+            default -> {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /** Per-tick flourish layered on the configured transition shape. */
+    public static void transitionPulse(BossInstance instance, Location at, int tick, int duration) {
+        World world = at == null ? null : at.getWorld();
+        if (world == null) {
+            return;
+        }
+        double t = tick / (double) Math.max(1, duration);
+        if (TierPhaseShow.owns(instance)) {
+            TierPhaseShow.tick(instance, at, tick, duration);
+            if (tick % 16 == 0) {
+                switch (id(instance)) {
+                    case "skuldugery" -> world.playSound(at, Sound.BLOCK_BONE_BLOCK_PLACE, 0.45f, 0.7f);
+                    case "hollow_lurker" -> world.playSound(at, Sound.BLOCK_SCULK_CHARGE, 0.4f, 0.6f);
+                    case "mcnugget" -> world.playSound(at, Sound.BLOCK_NOTE_BLOCK_BIT, 0.35f, 1.2f);
+                    case "bridge_troll" -> world.playSound(at, Sound.BLOCK_CHAIN_PLACE, 0.4f, 0.55f);
+                    default -> {
+                    }
+                }
+            }
+            return;
+        }
+        switch (id(instance)) {
+            case "hollow_lurker" -> {
+                // Dark creeping in from the edge; heartbeats quicken.
+                if (tick % 2 == 0) {
+                    dustRing(world, at, 7.0 - t * 5.0, Color.fromRGB(14, 36, 42), 1.8f);
+                }
+                int beat = t < 0.5 ? 16 : t < 0.8 ? 10 : 5;
+                if (tick % beat == 0) {
+                    world.playSound(at, Sound.ENTITY_WARDEN_HEARTBEAT, 1.0f, 0.6f + (float) t * 0.4f);
+                }
+            }
+            case "skuldugery" -> {
+                // Ember vortex climbing his spine.
+                for (int i = 0; i < 3; i++) {
+                    double angle = tick * 0.35 + i * Math.PI * 2 / 3;
+                    double r = 1.6 - t * 0.6;
+                    world.spawnParticle(Particle.FLAME, at.clone().add(Math.cos(angle) * r, (tick % 20) * 0.15, Math.sin(angle) * r), 1, 0, 0, 0, 0);
+                }
+                if (tick % 4 == 0) {
+                    world.spawnParticle(Particle.WHITE_ASH, at.clone().add(0, 2.0, 0), 12, 2.2, 1.0, 2.2, 0);
+                }
+                if (tick % 12 == 0) {
+                    world.playSound(at, Sound.BLOCK_FIRE_AMBIENT, 1.0f, 0.6f + (float) t);
+                }
+            }
+            case "mcnugget" -> {
+                // Oil bubbling up; fryer beeps climb.
+                if (tick % 3 == 0) {
+                    world.spawnParticle(Particle.DRIPPING_HONEY, at.clone().add(0, 0.2, 0), 4, 1.2, 0.1, 1.2, 0);
+                    world.spawnParticle(Particle.BUBBLE_POP, at.clone().add(0, 0.2, 0), 4, 1.2, 0.1, 1.2, 0.02);
+                }
+                if (tick % 8 == 0) {
+                    world.playSound(at, Sound.BLOCK_NOTE_BLOCK_BIT, 0.8f, 0.8f + (float) t * 1.1f);
+                }
+            }
+            case "bridge_troll" -> {
+                if (tick % 2 == 0) {
+                    dustRing(world, at, 5.5 - t * 3.2, Color.fromRGB(214, 168, 72), 1.2f);
+                }
+                if (tick % 10 == 0) {
+                    world.playSound(at, Sound.BLOCK_CHAIN_PLACE, 0.45f, 0.5f + (float) t * 0.4f);
+                }
+            }
+            default -> {
+            }
+        }
+    }
+
+    /** Themed release beat when the transition ends. */
+    public static void transitionEnd(BossInstance instance, Location at) {
+        World world = at == null ? null : at.getWorld();
+        if (world == null) {
+            return;
+        }
+        switch (id(instance)) {
+            case "hollow_lurker" -> {
+                world.playSound(at, Sound.ENTITY_WARDEN_ROAR, 1.0f, 0.7f);
+                dustRing(world, at, 4.5, Color.fromRGB(90, 230, 255), 1.4f);
+                world.spawnParticle(Particle.SONIC_BOOM, at.clone().add(0, 1.2, 0), 1, 0, 0, 0, 0);
+            }
+            case "skuldugery" -> {
+                world.playSound(at, Sound.ENTITY_BLAZE_DEATH, 0.8f, 0.8f);
+                world.playSound(at, Sound.ITEM_FIRECHARGE_USE, 1.1f, 0.5f);
+                dustRing(world, at, 4.0, Color.fromRGB(255, 122, 32), 1.8f);
+                world.spawnParticle(Particle.LAVA, at.clone().add(0, 0.6, 0), 14, 1.0, 0.3, 1.0, 0);
+            }
+            case "mcnugget" -> {
+                world.playSound(at, Sound.BLOCK_NOTE_BLOCK_BELL, 0.9f, 1.7f);
+                dustRing(world, at, 3.6, Color.fromRGB(255, 196, 64), 1.4f);
+            }
+            case "bridge_troll" -> {
+                world.playSound(at, Sound.BLOCK_ANVIL_LAND, 0.7f, 0.5f);
+                dustRing(world, at, 5.0, Color.fromRGB(214, 168, 72), 1.5f);
+                dustRing(world, at, 2.2, Color.fromRGB(255, 230, 160), 1.0f);
+            }
+            default -> {
+            }
+        }
+    }
+
     public static boolean meteorBurns(BossInstance instance) {
         return switch (id(instance)) {
             case "sparky", "skuldugery" -> true;
@@ -149,41 +321,35 @@ public final class CombatTheatrics {
 
     private static void slamLurker(Location at) {
         World world = at.getWorld();
-        world.playSound(at, Sound.ENTITY_WARDEN_HEARTBEAT, 0.9f, 0.55f);
-        world.playSound(at, Sound.BLOCK_SCULK_BREAK, 1.1f, 0.6f);
-        world.spawnParticle(Particle.SOUL, at, 22, 0.8, 0.15, 0.8, 0.02);
-        world.spawnParticle(Particle.SCULK_SOUL, at.clone().add(0, 0.2, 0), 14, 0.7, 0.1, 0.7, 0.01);
-        FakeDestruction.blockBurst(world, at, Material.SCULK, 12);
-        ring(world, at, 3.2, Particle.SOUL_FIRE_FLAME, 0.15);
+        world.playSound(at, Sound.ENTITY_WARDEN_HEARTBEAT, 0.55f, 0.7f);
+        world.playSound(at, Sound.BLOCK_SCULK_BREAK, 0.7f, 0.8f);
+        dustRing(world, at, 2.6, Color.fromRGB(48, 196, 188), 1.3f);
+        dustRing(world, at, 1.1, Color.fromRGB(12, 40, 48), 1.0f);
+        world.spawnParticle(Particle.SCULK_SOUL, at.clone().add(0, 0.15, 0), 6, 0.25, 0.05, 0.25, 0.01);
     }
 
     private static void slamSkull(Location at) {
         World world = at.getWorld();
-        world.playSound(at, Sound.ENTITY_SKELETON_DEATH, 1.0f, 0.55f);
-        world.playSound(at, Sound.ITEM_FIRECHARGE_USE, 0.9f, 0.6f);
-        world.spawnParticle(Particle.FLAME, at, 24, 0.8, 0.25, 0.8, 0.03);
-        world.spawnParticle(Particle.LAVA, at, 6, 0.4, 0.1, 0.4, 0);
-        itemBurst(world, at, Material.BONE, 16);
-        ring(world, at, 2.8, Particle.FLAME, 0.2);
+        world.playSound(at, Sound.ENTITY_SKELETON_SHOOT, 0.7f, 0.55f);
+        world.playSound(at, Sound.ITEM_FIRECHARGE_USE, 0.45f, 0.7f);
+        dustRing(world, at, 2.4, Color.fromRGB(255, 112, 28), 1.35f);
+        world.spawnParticle(Particle.SMALL_FLAME, at.clone().add(0, 0.2, 0), 6, 0.2, 0.05, 0.2, 0.01);
     }
 
     private static void slamNugget(Location at) {
         World world = at.getWorld();
-        world.playSound(at, Sound.ENTITY_CHICKEN_HURT, 1.15f, 0.7f);
-        world.playSound(at, Sound.ENTITY_CHICKEN_EGG, 0.9f, 0.8f);
-        world.spawnParticle(Particle.CLOUD, at, 18, 0.8, 0.25, 0.8, 0.04);
-        itemBurst(world, at, Material.FEATHER, 18);
-        itemBurst(world, at, Material.EGG, 6);
+        world.playSound(at, Sound.BLOCK_NOTE_BLOCK_BELL, 0.7f, 1.6f);
+        world.playSound(at, Sound.BLOCK_LAVA_POP, 0.4f, 1.1f);
+        dustRing(world, at, 2.2, Color.fromRGB(255, 196, 64), 1.4f);
+        dustRing(world, at, 1.0, Color.fromRGB(90, 40, 12), 0.9f);
     }
 
     private static void slamTroll(Location at) {
         World world = at.getWorld();
-        world.playSound(at, Sound.BLOCK_ANVIL_LAND, 1.35f, 0.45f);
-        world.playSound(at, Sound.ENTITY_PIGLIN_BRUTE_HURT, 0.8f, 0.6f);
-        world.spawnParticle(Particle.GUST, at.clone().add(0, 0.2, 0), 2, 0.2, 0.05, 0.2, 0);
-        world.spawnParticle(Particle.ELECTRIC_SPARK, at, 20, 0.9, 0.4, 0.9, 0.04);
-        itemBurst(world, at, Material.GOLD_NUGGET, 14);
-        FakeDestruction.blockBurst(world, at, Material.GOLD_BLOCK, 8);
+        world.playSound(at, Sound.BLOCK_ANVIL_LAND, 0.85f, 0.5f);
+        world.playSound(at, Sound.BLOCK_CHAIN_PLACE, 0.55f, 0.55f);
+        dustRing(world, at, 3.0, Color.fromRGB(214, 168, 72), 1.45f);
+        FakeDestruction.blockBurst(world, at, Material.GOLD_BLOCK, 4);
     }
 
     private static void slamSquid(Location at) {
@@ -283,30 +449,42 @@ public final class CombatTheatrics {
 
     private static void ringLurker(Location at, double radius) {
         World world = at.getWorld();
-        world.playSound(at, Sound.ENTITY_WARDEN_HEARTBEAT, 0.8f, 0.45f);
-        ring(world, at, radius, Particle.SCULK_SOUL, 0.2);
-        world.spawnParticle(Particle.SOUL, at, 16, 0.5, 0.2, 0.5, 0.02);
+        world.playSound(at, Sound.BLOCK_SCULK_CATALYST_BLOOM, 0.7f, 0.75f);
+        world.playSound(at, Sound.ENTITY_WARDEN_HEARTBEAT, 0.4f, 0.6f);
+        dustRing(world, at, radius, Color.fromRGB(48, 196, 188), 1.25f);
+        dustRing(world, at, Math.max(0.8, radius * 0.45), Color.fromRGB(12, 40, 48), 0.9f);
     }
 
     private static void ringSkull(Location at, double radius) {
         World world = at.getWorld();
-        world.playSound(at, Sound.ENTITY_BLAZE_SHOOT, 0.8f, 0.6f);
-        ring(world, at, radius, Particle.FLAME, 0.35);
-        itemBurst(world, at, Material.ARROW, 10);
+        world.playSound(at, Sound.ENTITY_BLAZE_SHOOT, 0.45f, 0.7f);
+        world.playSound(at, Sound.ENTITY_SKELETON_SHOOT, 0.55f, 0.55f);
+        dustRing(world, at, radius, Color.fromRGB(255, 112, 28), 1.3f);
+        world.spawnParticle(Particle.SMALL_FLAME, at.clone().add(0, 0.2, 0), 4, 0.15, 0.05, 0.15, 0.01);
     }
 
     private static void ringNugget(Location at, double radius) {
         World world = at.getWorld();
-        world.playSound(at, Sound.ENTITY_CHICKEN_EGG, 1.0f, 0.7f);
-        ring(world, at, radius, Particle.CLOUD, 0.3);
-        itemBurst(world, at, Material.FEATHER, 16);
+        world.playSound(at, Sound.BLOCK_NOTE_BLOCK_BELL, 0.65f, 1.7f);
+        world.playSound(at, Sound.BLOCK_LAVA_POP, 0.3f, 1.3f);
+        dustRing(world, at, radius, Color.fromRGB(255, 196, 64), 1.35f);
+    }
+
+    private static void dustRing(World world, Location at, double radius, Color color, float size) {
+        int points = Math.max(16, (int) (radius * 6));
+        Particle.DustOptions dust = new Particle.DustOptions(color, size);
+        for (int i = 0; i < points; i++) {
+            double angle = Math.PI * 2 * i / points;
+            world.spawnParticle(Particle.DUST, at.getX() + Math.cos(angle) * radius, at.getY() + 0.15,
+                    at.getZ() + Math.sin(angle) * radius, 1, 0, 0, 0, dust);
+        }
     }
 
     private static void ringTroll(Location at, double radius) {
         World world = at.getWorld();
-        world.playSound(at, Sound.BLOCK_ANVIL_PLACE, 0.9f, 0.55f);
-        ring(world, at, radius, Particle.ELECTRIC_SPARK, 0.25);
-        itemBurst(world, at, Material.GOLD_INGOT, 8);
+        world.playSound(at, Sound.BLOCK_ANVIL_PLACE, 0.55f, 0.6f);
+        world.playSound(at, Sound.BLOCK_CHAIN_STEP, 0.4f, 0.5f);
+        dustRing(world, at, radius, Color.fromRGB(214, 168, 72), 1.4f);
     }
 
     private static void ringSquid(Location at, double radius) {
@@ -387,32 +565,30 @@ public final class CombatTheatrics {
 
     private static void meteorLurker(Location ground) {
         World world = ground.getWorld();
-        column(world, ground, Particle.SOUL, Particle.SCULK_SOUL, 14);
-        world.playSound(ground, Sound.ENTITY_WARDEN_NEARBY_CLOSE, 0.55f, 0.7f);
-        FakeDestruction.blockBurst(world, ground, Material.SCULK, 10);
+        column(world, ground, Particle.SCULK_SOUL, Particle.SOUL, 8);
+        world.playSound(ground, Sound.ENTITY_WARDEN_NEARBY_CLOSE, 0.4f, 0.8f);
+        dustRing(world, ground, 2.8, Color.fromRGB(48, 196, 188), 1.2f);
     }
 
     private static void meteorSkull(Location ground) {
         World world = ground.getWorld();
-        column(world, ground, Particle.FLAME, Particle.LAVA, 14);
-        world.playSound(ground, Sound.ENTITY_SKELETON_SHOOT, 0.9f, 0.5f);
-        itemBurst(world, ground, Material.ARROW, 8);
-        FakeDestruction.blockBurst(world, ground, Material.BONE_BLOCK, 8);
+        column(world, ground, Particle.SMALL_FLAME, Particle.FLAME, 8);
+        world.playSound(ground, Sound.ENTITY_SKELETON_SHOOT, 0.55f, 0.55f);
+        dustRing(world, ground, 2.6, Color.fromRGB(255, 112, 28), 1.25f);
     }
 
     private static void meteorNugget(Location ground) {
         World world = ground.getWorld();
-        column(world, ground, Particle.CLOUD, Particle.CRIT, 12);
-        world.playSound(ground, Sound.ENTITY_CHICKEN_EGG, 1.0f, 0.6f);
-        itemBurst(world, ground, Material.FEATHER, 14);
-        itemBurst(world, ground, Material.EGG, 4);
+        column(world, ground, Particle.FLAME, Particle.LAVA, 6);
+        world.playSound(ground, Sound.BLOCK_NOTE_BLOCK_BELL, 0.6f, 1.5f);
+        dustRing(world, ground, 2.4, Color.fromRGB(255, 196, 64), 1.3f);
     }
 
     private static void meteorTroll(Location ground) {
         World world = ground.getWorld();
-        column(world, ground, Particle.ELECTRIC_SPARK, Particle.CRIT, 12);
-        world.playSound(ground, Sound.BLOCK_ANVIL_LAND, 0.85f, 0.7f);
-        itemBurst(world, ground, Material.GOLD_NUGGET, 12);
+        column(world, ground, Particle.CRIT, Particle.ELECTRIC_SPARK, 6);
+        world.playSound(ground, Sound.BLOCK_ANVIL_LAND, 0.6f, 0.55f);
+        dustRing(world, ground, 3.2, Color.fromRGB(214, 168, 72), 1.4f);
     }
 
     private static void meteorSquid(Location ground) {

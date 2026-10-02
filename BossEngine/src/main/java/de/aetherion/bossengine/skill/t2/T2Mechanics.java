@@ -658,6 +658,9 @@ public final class T2Mechanics {
         if (announceWorld != null) {
             for (int preview = 1; preview <= safeWaves; preview++) {
                 double radius = preview * safeStep;
+                if (de.aetherion.bossengine.fx.CombatTheatrics.ringTelegraph(instance, pinned, radius)) {
+                    continue;
+                }
                 int points = Math.max(12, (int) (radius * 4));
                 for (int i = 0; i < points; i++) {
                     double angle = (Math.PI * 2 * i) / points;

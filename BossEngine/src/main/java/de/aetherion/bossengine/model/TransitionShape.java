@@ -9,5 +9,7 @@ public enum TransitionShape {
     LIGHTNING_STORM,
     BLACK_HOLE,
     VOID_TORNADO,
-    BEAM_SPIN
+    BEAM_SPIN,
+    /** Ashen Sheath phase — cherry petal cyclone (not the generic shredder). */
+    CHERRY_TORNADO
 }

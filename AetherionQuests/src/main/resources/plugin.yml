@@ -32,6 +32,11 @@ commands:
     usage: /language [en|de]
     aliases: [lang, sprache, sprachewahl]
 
+  npctalk:
+    description: NPC talk UI — in-world bubbles + reply chips, or classic chat + chest
+    usage: /npctalk [world|classic]
+    aliases: [talkui]
+
   npc:
     description: In-game FancyNPC creator for moderators
     usage: /npc

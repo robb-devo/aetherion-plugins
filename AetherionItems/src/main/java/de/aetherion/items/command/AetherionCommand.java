@@ -403,6 +403,29 @@ public class AetherionCommand implements CommandExecutor {
         }
 
 
+        if (input.equals("helioskit") || input.equals("dawnbearerkit")) {
+            player.getInventory().addItem(customItem.createHeliosCrown());
+            player.getInventory().addItem(customItem.createHeliosHeartplate());
+            player.getInventory().addItem(customItem.createHeliosOrbitGreaves());
+            player.getInventory().addItem(customItem.createHeliosDawnTreads());
+            player.getInventory().addItem(customItem.createHeliosSolstice());
+            return true;
+        }
+        if (input.equals("worldeaterkit") || input.equals("worldhidekit")) {
+            player.getInventory().addItem(customItem.createWorldhideHelmet());
+            player.getInventory().addItem(customItem.createWorldhideChestplate());
+            player.getInventory().addItem(customItem.createWorldhideLeggings());
+            player.getInventory().addItem(customItem.createWorldhideBoots());
+            player.getInventory().addItem(customItem.createWorldbite());
+            return true;
+        }
+
+        if (input.equals("worldbite")) {
+            player.getInventory().addItem(customItem.createWorldbite());
+            return true;
+        }
+
+
         if (
                 input.equals("voidstick")
                         || input.equals("aetherionstick")

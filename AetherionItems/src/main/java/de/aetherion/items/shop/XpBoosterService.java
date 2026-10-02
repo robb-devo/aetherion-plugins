@@ -229,4 +229,29 @@ public final class XpBoosterService implements Listener, Runnable {
             }
         }
     }
+
+
+    /** End any active XP boost for this player. */
+    public void wipePlayer(UUID playerId) {
+        if (playerId == null) {
+            return;
+        }
+        remaining.remove(playerId);
+        leftover.remove(playerId);
+        YamlConfiguration config = file.exists()
+                ? YamlConfiguration.loadConfiguration(file)
+                : new YamlConfiguration();
+        config.set("players." + playerId, null);
+        try {
+            File folder = file.getParentFile();
+            if (folder != null && !folder.exists()) {
+                folder.mkdirs();
+            }
+            config.save(file);
+            dirty = false;
+        } catch (IOException ignored) {
+            dirty = true;
+        }
+    }
+
 }

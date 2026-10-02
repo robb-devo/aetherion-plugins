@@ -21,28 +21,13 @@ public final class LivingNpcProfile {
 
     private static final Map<String, LivingNpcProfile> BY_ID = new HashMap<>();
 
-    /**
-     * Distinct Mojang accounts — FancyNpcs loads these without a MineSkin API key.
-     * Custom PNGs need mineskin_api_key; usernames use Mojang and stay unique per NPC.
+    /*
+     * Skins: every living host wears an original cast skin painted for Aetherion
+     * (skins/cast/<id>.png, see LivingNpcSkins). The old auto-assigned list of real
+     * creators' Mojang accounts is gone on purpose — players must never recognise a
+     * famous face on a town NPC. skinUsername(...) stays for a deliberate, explicit
+     * override only; nothing is assigned by default.
      */
-    private static int SKIN_SEQ = 0;
-    private static final String[] SKIN_USERNAMES = {
-            "Grian", "MumboJumbo", "GoodTimesWithScar", "PearlescentMoon", "GeminiTay",
-            "impulseSV", "BdoubleO100", "EthosLab", "VintageBeef", "Docm77",
-            "Xisuma", "Cubfan135", "TangoTek", "ZombieCleo", "FalseSymmetry",
-            "iJevin", "Keralis", "xBCrafted", "Welsknight", "Stressmonster101",
-            "Iskall85", "Rendog", "JoeHills", "Hypnotizd", "ZedaphPlays",
-            "CaptainSparklez", "DanTDM", "SSundee", "JeromeASF", "SkyDoesMinecraft",
-            "PopularMMOs", "SmallishBeans", "SolidarityGaming", "InTheLittleWood",
-            "Smajor1995", "Pixlriffs", "fWhip", "HBomb94", "Shubble",
-            "Punz", "Purpled", "Sapnap", "GeorgeNotFound", "BadBoyHalo",
-            "Antfrost", "FoolishG", "TinaKitten", "Michaelmcchill", "Awesamdude",
-            "TommyInnit", "Tubbo", "Ranboo", "WilburSoot", "Ph1LzA",
-            "Technoblade", "Quackity", "KarlJacobs", "Fundy", "Nihachu",
-            "jeb_", "Dinnerbone", "Grumm", "Notch", "Seapeekay",
-            "Sneegsnag", "ConnorEatsPants", "Slimecicle", "KaraCorvus", "KatherineElizabeth",
-            "Sykkuno", "Ludwig", "QTCinderella", "Valkyrae", "Pokimane"
-    };
 
     static {
         // Hub starters
@@ -67,7 +52,7 @@ public final class LivingNpcProfile {
                 .hand(Material.IRON_HOE).leather(Color.fromRGB(120, 140, 60)).chest().boots()
                 .skinFile("farmer.png"));
         put(p("craftsman", "Market Forge", NamedTextColor.GRAY, "§7")
-                .hand(Material.IRON_INGOT).leather(Color.fromRGB(90, 90, 95)).chest().legs().boots()
+                .hand(Material.IRON_PICKAXE).leather(Color.fromRGB(90, 90, 95)).chest().legs().boots()
                 .skinFile("miner.png"));
         put(p("collector", "Shinies", NamedTextColor.GOLD, "§6")
                 .hand(Material.GOLD_NUGGET).leather(Color.fromRGB(160, 120, 40)).chest().boots()
@@ -248,8 +233,20 @@ public final class LivingNpcProfile {
                 .skinFile("scholar.png"));
         put(p("liquidator", "Crystal Desk", NamedTextColor.LIGHT_PURPLE, "§d")
                 .hand(Material.AMETHYST_SHARD).leather(Color.fromRGB(72, 36, 110))
-                .fullLeather().slim().skinFile("mystic.png")
-                .skinUsername("PearlescentMoon"));
+                .fullLeather().slim().skinFile("mystic.png"));
+    }
+
+    static {
+        // Idea NPCs (/questnpc extras) — cast skins carry the look, no leather needed.
+        put(p("town_crier", "Town Crier", NamedTextColor.GOLD, "§6")
+                .hand(Material.BELL).leather(Color.fromRGB(122, 36, 48)).chest().boots()
+                .skinFile("scholar.png"));
+        put(p("street_sweeper", "Keeps It Clean", NamedTextColor.GRAY, "§7")
+                .hand(Material.BRUSH).leather(Color.fromRGB(138, 122, 90)).chest().boots()
+                .skinFile("worker.png"));
+        put(p("lamp_lighter", "Lamp Round", NamedTextColor.YELLOW, "§e")
+                .hand(Material.LANTERN).leather(Color.fromRGB(30, 42, 58)).chest().boots()
+                .skinFile("scout.png"));
     }
 
     private static Builder p(String id, String subtitle, NamedTextColor color, String chat) {
@@ -257,9 +254,6 @@ public final class LivingNpcProfile {
     }
 
     private static void put(Builder builder) {
-        if (builder.skinUsername == null || builder.skinUsername.isBlank()) {
-            builder.skinUsername = SKIN_USERNAMES[SKIN_SEQ++ % SKIN_USERNAMES.length];
-        }
         BY_ID.put(builder.id, builder.build());
     }
 
@@ -330,7 +324,7 @@ public final class LivingNpcProfile {
         return skinFile;
     }
 
-    /** Mojang username for FancyNpcs — unique look without MineSkin file upload. */
+    /** Explicit Mojang username override (null by default — cast skins are used instead). */
     public String skinUsername() {
         return skinUsername;
     }
@@ -399,14 +393,20 @@ public final class LivingNpcProfile {
             String displayName,
             String line
     ) {
+        String filled = de.aetherion.quests.talk.TalkText.fill(player, line);
         LivingNpcProfile profile = of(npcId);
         if (profile != null) {
-            player.sendMessage(profile.formatChatLine(displayName, line));
+            player.sendMessage(profile.formatChatLine(displayName, filled));
             NpcPresence.cue(player, npcId);
+            // Same line, spoken in-world: bubble above the NPC for this player only.
+            de.aetherion.quests.talk.TalkUx talk = de.aetherion.quests.talk.TalkUx.get();
+            if (talk != null) {
+                talk.line(player, npcId, displayName, filled);
+            }
             return;
         }
         String name = displayName == null || displayName.isBlank() ? "NPC" : displayName;
-        player.sendMessage("§6" + name + " §8⟫ §f" + line);
+        player.sendMessage("§6" + name + " §8⟫ §f" + filled);
     }
 
     public ItemStack handItem() {

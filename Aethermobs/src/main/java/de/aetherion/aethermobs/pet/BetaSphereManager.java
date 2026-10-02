@@ -132,6 +132,17 @@ public class BetaSphereManager implements Listener {
                 rarity.name()
         );
 
+        // Numeric CMDs for resource-pack overrides (snowball.json).
+        // 3601 common, 3602 rare, 3603 epic, 3604 legendary, 3605 beta.
+        int modelData = switch (sphere.getId()) {
+            case "rare" -> 3602;
+            case "epic" -> 3603;
+            case "legendary" -> 3604;
+            case "beta" -> 3605;
+            default -> 3601;
+        };
+        meta.setCustomModelData(modelData);
+
         if (sphere.isInfinite()) {
             meta.getPersistentDataContainer().set(
                     BETA_SPHERE_KEY,

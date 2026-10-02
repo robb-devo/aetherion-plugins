@@ -145,7 +145,8 @@ public final class FarmingHoeProgress {
         player.getInventory().setItemInMainHand(item);
         if (leveled) {
             player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.4f);
-            player.sendMessage("§aThe Furrow Ledger clocked in. §fHoe Lv. " + level + "§8/§7" + cap + "§a.");
+            String hoeName = meta.hasDisplayName() ? meta.getDisplayName() : "§aYour hoe";
+            player.sendMessage(hoeName + " §aclocked in. §fHoe Lv. " + level + "§8/§7" + cap + "§a.");
         }
     }
 

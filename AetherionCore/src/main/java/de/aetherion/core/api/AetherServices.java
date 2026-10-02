@@ -19,10 +19,12 @@ public final class AetherServices {
     private static volatile PetAccess pets;
     private static volatile ForageAccess foraging;
     private static volatile FarmAccess farming;
+    private static volatile FishAccess fishing;
     private static volatile MiningAccess mining;
     private static volatile HarvestAccess harvest;
     private static volatile DungeonAccess dungeons;
     private static volatile TestBotsAccess testBots;
+    private static volatile TalkAccess talk;
 
     private AetherServices() {
     }
@@ -67,6 +69,10 @@ public final class AetherServices {
         farming = access;
     }
 
+    public static void registerFishing(FishAccess access) {
+        fishing = access;
+    }
+
     public static void registerMining(MiningAccess access) {
         mining = access;
     }
@@ -81,6 +87,10 @@ public final class AetherServices {
 
     public static void registerTestBots(TestBotsAccess access) {
         testBots = access;
+    }
+
+    public static void registerTalk(TalkAccess access) {
+        talk = access;
     }
 
     public static PartyAccess party() {
@@ -123,6 +133,10 @@ public final class AetherServices {
         return farming;
     }
 
+    public static FishAccess fishing() {
+        return fishing;
+    }
+
     public static MiningAccess mining() {
         return mining;
     }
@@ -137,6 +151,11 @@ public final class AetherServices {
 
     public static TestBotsAccess testBots() {
         return testBots;
+    }
+
+    /** In-world talk bubbles (AetherionQuests), or null. */
+    public static TalkAccess talk() {
+        return talk;
     }
 
     public static void clearParty(PartyAccess access) {
@@ -199,6 +218,12 @@ public final class AetherServices {
         }
     }
 
+    public static void clearFishing(FishAccess access) {
+        if (fishing == access) {
+            fishing = null;
+        }
+    }
+
     public static void clearMining(MiningAccess access) {
         if (mining == access) {
             mining = null;
@@ -220,6 +245,12 @@ public final class AetherServices {
     public static void clearTestBots(TestBotsAccess access) {
         if (testBots == access) {
             testBots = null;
+        }
+    }
+
+    public static void clearTalk(TalkAccess access) {
+        if (talk == access) {
+            talk = null;
         }
     }
 }

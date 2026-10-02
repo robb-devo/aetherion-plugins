@@ -1,0 +1,198 @@
+# Foraging Eldervale — isle layout and tuning.
+#
+# Every position below was measured from Foraging-Eldervale-Island.schem as pasted by
+# /forageadmin isle paste (origin 677 90 -116, rotate-y 180):
+#     world = (1068 - x, y - 33, 21 - z)   for schem-local (x, y, z)
+# Anchors are standing spots (feet level). Move any of them in-game from /grove dev → Places / Cast;
+# the plugin never overwrites a value you changed — it only adds entries that are missing.
+version: 1
+
+enabled: true
+
+# ── Named places (discovery, wayfinder, TAB, fall-catch checkpoints) ───────────────────────────
+# A place with "grove:" overrides the district grid inside its box.
+landmarks:
+  landing:
+    display: The Landing
+    grove: elderwood
+    anchor: 559.5 90 -207.5
+    radius: 9
+    height: 6
+    blurb: Where the harbour pad drops you. Miss Canopy keeps the briefing desk.
+  emberlit_hollow:
+    display: Emberlit Hollow
+    grove: gloamwood
+    anchor: 634.5 98 -255.5
+    min: 610 95 -297
+    max: 660 136 -234
+    blurb: A lantern hamlet hung under the cherry shelf. Warm light, cold stone.
+  blossom_pagoda:
+    display: Blossom Pagoda
+    grove: blossom
+    anchor: 693.5 200 -243.5
+    min: 664 188 -268
+    max: 712 240 -218
+    blurb: The shrine on the shelf. The Archivist keeps the Forest Ledger here.
+  petal_market:
+    display: Petal Market
+    grove: blossom
+    anchor: 732.5 199 -318.5
+    radius: 10
+    height: 6
+    blurb: Stalls under the cherry boughs, halfway to the Crown.
+  bell_lodge:
+    display: Bell Lodge
+    grove: elderwood
+    anchor: 763.5 92 -44.5
+    min: 747 88 -58
+    max: 788 113 -29
+    blurb: The Woodwright's bench and the only bell on the island.
+  streamside_hut:
+    display: Streamside Hut
+    grove: elderwood
+    anchor: 698.5 91 -132.5
+    min: 679 88 -155
+    max: 728 114 -112
+    blurb: A hut where the vale streams meet.
+  frostpine_lodge:
+    display: Frostpine Lodge
+    grove: frostpine
+    anchor: 846.5 113 -161.5
+    min: 816 110 -208
+    max: 878 151 -129
+    blurb: Snowed-in lodge on the ridge. The campfires are the only warm thing up here.
+  ridge_watchtower:
+    display: Ridge Watchtower
+    grove: frostpine
+    anchor: 766.5 112 -146.5
+    min: 760 110 -166
+    max: 786 142 -141
+    blurb: Ladders up a spruce tower. Good view of three districts.
+  sunscar_huts:
+    display: Sunscar Huts
+    grove: sunscar
+    anchor: 857.5 151 -347.5
+    min: 820 148 -378
+    max: 897 170 -326
+    blurb: Acacia huts on the red mesa, around the ponds.
+  redrock_camp:
+    display: Redrock Camp
+    grove: sunscar
+    anchor: 907.5 151 -270.5
+    min: 896 148 -296
+    max: 937 162 -260
+    blurb: A mesa camp at the edge of the mangroves.
+  brinefall_stilts:
+    display: Brinefall Stilt House
+    grove: brinefall
+    anchor: 921.5 113 -186.5
+    min: 910 110 -201
+    max: 948 146 -161
+    blurb: Stilts in the mud where the ridge meets the mangroves.
+  brinefall_lakes:
+    display: Brinefall Lakes
+    grove: brinefall
+    anchor: 1015.5 146 -149.5
+    radius: 30
+    height: 10
+    blurb: Terraced lakes that pour off the island's east edge.
+  canopy_boardwalk:
+    display: Canopy Boardwalk
+    grove: crown
+    anchor: 778.5 199 -317.5
+    radius: 14
+    height: 10
+    blurb: Boardwalks strung between the jungle giants.
+  mossgate_ruin:
+    display: Mossgate Ruin
+    grove: crown
+    anchor: 718.5 199 -389.5
+    radius: 18
+    height: 14
+    blurb: Mossy stone swallowed by the jungle. Older than the shrine.
+  crown_lookout:
+    display: Crown Lookout
+    grove: crown
+    anchor: 721.5 258 -263.5
+    radius: 7
+    height: 6
+    blurb: Stairs at the very top of a jungle giant. The highest you can stand.
+
+# ── Updrafts: stand on "from", ride the column up, glide to "to" ───────────────────────────────
+# Each shaft was checked against the schem: the air above "from" is clear all the way up.
+updrafts:
+  landing_updraft:
+    display: Landing Updraft
+    from: 607.5 92 -215.5
+    to: 612.5 199 -220.5
+  hollow_chimney:
+    display: Hollow Chimney
+    from: 598.5 101 -237.5
+    to: 599.5 199 -238.5
+  crown_draft:
+    display: Crown Draft
+    from: 676.5 98 -201.5
+    to: 680.5 199 -205.5
+  crown_step:
+    display: Crown Step
+    from: 720.5 129 -188.5
+    to: 723.5 190 -192.5
+  ridge_gust:
+    display: Ridge Gust
+    from: 841.5 113 -171.5
+    to: 834.5 141 -177.5
+  frost_chimney:
+    display: Frost Chimney
+    from: 909.5 100 -76.5
+    to: 902.5 141 -82.5
+  brinefall_spout:
+    display: Brinefall Spout
+    from: 970.5 97 -117.5
+    to: 970.5 146 -124.5
+  brine_cliff:
+    display: Brine Cliff Draft
+    from: 981.5 93 -226.5
+    to: 978.5 197 -222.5
+
+# ── The Grove cast (FancyNPC, isle-local). No skin = Steve/Alex. Only ever use ORIGINAL skins. ──
+cast:
+  auto-place: true
+  visibility-distance: 40
+  board_clerk:
+    anchor: 564.5 90 -180.5
+    yaw: 180
+    skin: ""
+  woodwright:
+    anchor: 763.5 92 -44.5
+    yaw: 0
+    skin: ""
+  archivist:
+    anchor: 693.5 200 -243.5
+    yaw: 90
+    skin: ""
+
+# ── Tuning ─────────────────────────────────────────────────────────────────────────────────────
+tuning:
+  # Crown Finds: base chance a felled tree drops a find from its crown.
+  crown-find-chance: 0.07
+  # Trees with at least this many logs are Titans (two-stage fell).
+  titan-logs: 40
+  # Widowmaker: tall trees can drop a loose limb on you after the fell.
+  widowmaker-min-logs: 14
+  widowmaker-chance: 0.12
+  # District extras (saplings, petals, cocoa…) per fell.
+  extras-chance: 0.22
+  # Fall-catch: below this y inside the isle footprint you get pulled back to your last safe spot.
+  fall-catch-floor-y: 70
+  updraft-speed: 1.05
+
+events:
+  enabled: true
+  # Seconds between isle events while foragers are on the isle (random in range).
+  interval-min-seconds: 420
+  interval-max-seconds: 660
+  warmup-seconds: 20
+
+critters:
+  enabled: true
+  global-cap: 14

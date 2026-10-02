@@ -152,6 +152,7 @@ public final class FarmIslandAmbience implements Listener, Runnable {
         int wheat = 0;
         int carrots = 0;
         int potatoes = 0;
+        int beets = 0;
         int ripened = 0;
         ThreadLocalRandom random = ThreadLocalRandom.current();
         for (int x = Math.min(minX, maxX); x <= Math.max(minX, maxX); x++) {
@@ -162,12 +163,15 @@ public final class FarmIslandAmbience implements Listener, Runnable {
                     if (type == Material.WHEAT) {
                         wheat++;
                         double roll = random.nextDouble();
-                        if (roll < 0.28) {
+                        if (roll < 0.22) {
                             type = Material.CARROTS;
                             carrots++;
-                        } else if (roll < 0.56) {
+                        } else if (roll < 0.44) {
                             type = Material.POTATOES;
                             potatoes++;
+                        } else if (roll < 0.58) {
+                            type = Material.BEETROOTS;
+                            beets++;
                         }
                     }
                     if (!Crops.isCrop(type) && type != Material.WHEAT
@@ -188,7 +192,8 @@ public final class FarmIslandAmbience implements Listener, Runnable {
             }
         }
         plugin.getLogger().info("Farm island crops ripened=" + ripened
-                + " carrots=" + carrots + " potatoes=" + potatoes + " (scanned wheat=" + wheat + ")");
+                + " carrots=" + carrots + " potatoes=" + potatoes + " beets=" + beets
+                + " (scanned wheat=" + wheat + ")");
     }
 
     private void lightIsland(World world, int minX, int maxX, int minZ, int maxZ) {

@@ -168,7 +168,3 @@ loot:
       max-amount: 12
       chance: 1.0
       scale-with-damage: true
-    - source: VANILLA
-      material: EXPERIENCE_BOTTLE
-      amount: 8
-      chance: 0.8

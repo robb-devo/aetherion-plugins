@@ -6,6 +6,7 @@ import java.util.Locale;
  * All Mineflayer bot identities this plugin kits.
  * Wave 1 QA roles: {@link #MINE}, {@link #FORAGE}, {@link #CATCH}, {@link #ROAM}.
  * Wave 2 QA roles: {@link #COMBAT}, {@link #FISH}, {@link #TRADE}, {@link #QUEST}, {@link #PAD}.
+ * Wave 3: {@link #GENERAL} switches between real activities.
  * {@link #MINING} stays as the Phase 1 {@code StressM*} prefix.
  */
 public enum BotRole {
@@ -18,6 +19,7 @@ public enum BotRole {
     TRADE("trade", 2),
     QUEST("quest", 2),
     PAD("pad", 2),
+    GENERAL("general", 3),
     MINING("mining", 0);
 
     private final String id;
@@ -44,13 +46,17 @@ public enum BotRole {
         return wave == 2;
     }
 
+    public boolean wave3() {
+        return wave == 3;
+    }
+
     /** Dev menu / {@code /stressbots start} roles (Wave 1 + later). */
     public boolean startable() {
         return wave >= 1;
     }
 
     public boolean qa() {
-        return wave == 1 || wave == 2;
+        return wave >= 1;
     }
 
     public static BotRole fromId(String raw) {
@@ -87,6 +93,10 @@ public enum BotRole {
         if ("jump".equals(key) || "jumppad".equals(key) || "jump-pad".equals(key)
                 || "pads".equals(key) || "slime".equals(key) || "hop".equals(key)) {
             return PAD;
+        }
+        if ("player".equals(key) || "mixed".equals(key) || "explorer".equals(key)
+                || "qa".equals(key) || "any".equals(key)) {
+            return GENERAL;
         }
         for (BotRole role : values()) {
             if (role.id.equals(key) || role.name().equalsIgnoreCase(key)) {

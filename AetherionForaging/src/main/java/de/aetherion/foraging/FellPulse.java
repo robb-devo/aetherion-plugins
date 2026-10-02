@@ -22,7 +22,8 @@ final class FellPulse {
         this.job = job;
         this.strikeTicks = Math.max(40, strikeTicks);
         this.zoneSize = ForagingStrike.zoneSize(zoneSize);
-        this.zoneStart = ForagingStrike.randomZoneStart(this.zoneSize);
+        // Same window the look-preview already showed for this treeId.
+        this.zoneStart = ForagingStrike.zoneStartForTree(job.treeId, this.zoneSize);
     }
 
     boolean tick() {

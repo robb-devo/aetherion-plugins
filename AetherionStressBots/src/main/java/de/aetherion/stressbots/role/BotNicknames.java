@@ -63,6 +63,11 @@ public final class BotNicknames {
                     "§ePad-Hopper", "§eSchleim-Sepp", "§eSprung-Steffi", "§eLaunch-Lutz", "§eBogen-Bärbel",
                     "§eInsel-Ilse", "§eHub-Hüpfer", "§eAetherpad", "§eTrampolin-Tim", "§eAbsprung-Anke"
             )),
+            Map.entry(BotRole.GENERAL, List.of(
+                    "§fAlltag-Anke", "§fMix-Moritz", "§fSpieler-Sven", "§fRumhanger", "§fAether-Otto",
+                    "§fWechsel-Wilma", "§fHobby-Hilde", "§fQuereinsteiger", "§fPausen-Paul", "§fVielseit-Vera",
+                    "§fNeugier-Nils", "§fTour-Tanja", "§fMitläufer", "§fProbe-Pia", "§fZufall-Zack"
+            )),
             Map.entry(BotRole.MINING, List.of(
                     "§7Stress-Stollen", "§7Schacht-Bot", "§7Alte-Ader", "§7Mine-Marga", "§7Staub-Stefan"
             ))

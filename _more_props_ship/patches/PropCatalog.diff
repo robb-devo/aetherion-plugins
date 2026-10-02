@@ -1,0 +1,44 @@
+--- a/AetherionHub/src/main/java/de/aetherion/hub/prop/PropCatalog.java	2026-09-30 04:13:19.489718056 +0200
++++ b/AetherionHub/src/main/java/de/aetherion/hub/prop/PropCatalog.java	2026-09-30 04:13:19.491389373 +0200
+@@ -15,7 +15,8 @@
+ import java.util.Map;
+ 
+ /**
+- * The 18 Aetherion prop schematics (accents → landmarks). Front of every piece faces south.
++ * The 40 Aetherion prop schematics: the first 18, then the 22 of the second pass (each group accents →
++ * landmarks). Front of every piece faces south.
+  */
+ public final class PropCatalog {
+ 
+@@ -40,7 +41,30 @@
+             prop("ae_harbour_watchtower", "Harbour Watchtower", "harbour", Material.BELL, "Signal fire on top."),
+             prop("ae_boathouse", "Boathouse", "fishing", Material.OAK_BOAT, "y = water surface; stilts below."),
+             prop("ae_forest_ruin_gate", "Forest Ruin Gate", "foraging", Material.MOSSY_COBBLESTONE_WALL, "Path through N–S."),
+-            prop("ae_mine_headframe", "Mine Headframe", "mining", Material.COAL_BLOCK, "Dig 3×3 under collar for a real shaft.")
++            prop("ae_mine_headframe", "Mine Headframe", "mining", Material.COAL_BLOCK, "Dig 3×3 under collar for a real shaft."),
++            // Second pass (_more_props_ship): these anchor on the block you look at, front points the way you look.
++            prop("ae_prop_fallen_log", "Fallen Giant", "foraging", Material.OAK_LOG, "Lies across your view; walk-through hollow."),
++            prop("ae_prop_mossy_boulders", "Split Boulder", "anywhere", Material.MOSSY_COBBLESTONE, "Grips a block into the ground."),
++            prop("ae_prop_lobster_pots", "Lobster Pots", "fishing", Material.SCAFFOLDING, "Beach or quay; tall side at the back."),
++            prop("ae_prop_ore_carts", "Ore Carts", "mining", Material.MINECART, "Rails run across your view to the buffer."),
++            prop("ae_prop_signpost", "Signpost", "anywhere", Material.DARK_OAK_HANGING_SIGN, "Rotate so the arms match the roads."),
++            prop("ae_prop_flower_cart", "Flower Cart", "anywhere", Material.RED_TULIP, "Awning side points the way you look."),
++            prop("ae_prop_overlook_bench", "Overlook Bench", "edge", Material.FLOWERING_AZALEA, "Seat looks the way you look."),
++            prop("ae_prop_timber_stack", "Timber Stack", "mining", Material.STRIPPED_SPRUCE_LOG, "Log ends point the way you look."),
++            prop("ae_prop_quay_capstan", "Quay Capstan", "harbour", Material.LEAD, "Aim 1 block in from the quay edge."),
++            prop("ae_prop_channel_marker", "Channel Marker", "fishing", Material.RED_BANNER, "Aim at the sea floor, 2–8 deep."),
++            prop("ae_prop_anchor_monument", "Anchor Monument", "harbour", Material.ANVIL, "Plaque points the way you look."),
++            prop("ae_fishing_pier", "Fishing Pier", "fishing", Material.FISHING_ROD, "Aim at the quay edge; runs out ahead."),
++            prop("ae_forest_standing_stones", "Standing Stones", "foraging", Material.AMETHYST_CLUSTER, "Aim at the glade centre; 15 across."),
++            prop("ae_harbour_lighthouse", "Lighthouse", "harbour", Material.SHROOMLIGHT, "Headland ground; door points ahead."),
++            prop("ae_harbour_warehouse", "Harbour Warehouse", "harbour", Material.CHEST, "Cargo arch points the way you look."),
++            prop("ae_moored_sloop", "Moored Sloop", "harbour", Material.DARK_OAK_BOAT, "Aim at the quay edge, 1 above water."),
++            prop("ae_fishing_net_loft", "Net Loft", "fishing", Material.COBWEB, "Aim at the shore edge, 1 above water."),
++            prop("ae_mine_tipple", "Ore Tipple", "mining", Material.COAL, "Rails run across your view under the bin."),
++            prop("ae_mine_smelter", "Smelter", "mining", Material.BLAST_FURNACE, "Hearth points the way you look."),
++            prop("ae_forest_treehouse", "Treehouse", "foraging", Material.OAK_SAPLING, "Hut door points the way you look."),
++            prop("ae_edge_windmill", "Windmill", "edge", Material.WHEAT, "Sails point the way you look."),
++            prop("ae_edge_broken_bridge", "Broken Bridge", "edge", Material.CRACKED_STONE_BRICKS, "Aim at the last block before the drop.")
+     );
+ 
+     private static final Map<String, Prop> BY_ID;

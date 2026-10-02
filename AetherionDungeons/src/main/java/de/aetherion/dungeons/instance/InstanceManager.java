@@ -52,11 +52,16 @@ public final class InstanceManager {
     }
 
     public void tryLootChest(Player player, org.bukkit.block.Block block) {
-        DungeonSession session = sessionOf(player);
-        if (session == null || player == null || !isDungeonWorld(player.getWorld())) {
+        if (player == null || block == null || !DungeonLootFx.isLootChest(block)) {
             return;
         }
-        DungeonLootFx.tryLoot(plugin, session, player, block);
+        DungeonSession session = sessionOf(player);
+        if (session != null && isDungeonWorld(player.getWorld())) {
+            DungeonLootFx.tryLoot(plugin, session, player, block);
+            return;
+        }
+        // Arena / out-of-dungeon Sovereign Reliquary (e.g. Ashen Void after dungeon_aetherion).
+        DungeonLootFx.tryLootOpenWorld(plugin, player, block);
     }
 
     public boolean isDungeonWorld(World world) {

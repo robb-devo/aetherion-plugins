@@ -13,6 +13,7 @@ import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
+import org.bukkit.SoundCategory;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -47,6 +48,13 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * World exploration chests — 12h per player per chest, merchant-style spin.
+ * <p>
+ * Each chest is an authored {@link ExploreChestProp} (per-rarity model + idle life)
+ * standing on an invisible barrier; the barrier keeps the click / break / explosion
+ * contract. Opening swings the lid, the loot rises out of it and spins, the reward
+ * lands, and the lid shuts again. Chests that are ready for you notice you when you
+ * walk up, glint faintly from a distance, and say so once the first time you see them.
+ * Older vanilla-block chests are converted in place on load (facing kept).
  */
 public final class ExploreChestService {
 
@@ -55,6 +63,20 @@ public final class ExploreChestService {
 
     private static final long COOLDOWN_MS = TimeUnit.HOURS.toMillis(12);
     private static final double NEAR_BLOCKS = 7.5d;
+    /** Ready chests rattle once when you're this close (per player, per chest, per minute). */
+    private static final double NOTICE_BLOCKS = 4.5d;
+    private static final long NOTICE_COOLDOWN_MS = TimeUnit.SECONDS.toMillis(60);
+    /** Faint glint over ready chests between these distances — an invitation, not a beacon. */
+    private static final double GLINT_MIN = 8.0d;
+    private static final double GLINT_MAX = 48.0d;
+    /** "Something catches the light" — once per session per chest, the first time you come this close. */
+    private static final double SIGHT_BLOCKS = 14.0d;
+    /** Props animate only while someone is this close. */
+    private static final double ANIMATE_BLOCKS = 40.0d;
+    private static final int PROP_STEP = 5;
+    private static final Set<Material> LEGACY_BLOCKS = Set.of(
+            Material.CHEST, Material.TRAPPED_CHEST, Material.ENDER_CHEST, Material.PURPLE_SHULKER_BOX
+    );
 
     private final AetherionQuests plugin;
     private final NamespacedKey kindKey;
@@ -66,7 +88,15 @@ public final class ExploreChestService {
     private final Set<String> busy = new HashSet<>();
     private final Map<String, BukkitTask> idle = new HashMap<>();
     private final Map<ExploreChestKind, List<ItemStack>> showcase = new EnumMap<>(ExploreChestKind.class);
+    private final Map<String, ExploreChestProp> props = new HashMap<>();
+    private final Map<String, BlockFace> facings = new HashMap<>();
+    /** playerUuid|chestKey → next time the chest may notice this player. */
+    private final Map<String, Long> noticed = new HashMap<>();
+    /** playerUuid|chestKey seen this session. */
+    private final Set<String> sighted = new HashSet<>();
     private BukkitTask proximity;
+    private BukkitTask propTicker;
+    private int glintCycle;
 
     public ExploreChestService(AetherionQuests plugin) {
         this.plugin = plugin;
@@ -74,6 +104,7 @@ public final class ExploreChestService {
         this.file = new File(plugin.getDataFolder(), "explore-chests.yml");
         load();
         proximity = plugin.getServer().getScheduler().runTaskTimer(plugin, this::tickProximity, 20L, 10L);
+        propTicker = plugin.getServer().getScheduler().runTaskTimer(plugin, this::tickProps, 25L, PROP_STEP);
     }
 
     public void shutdown() {
@@ -81,9 +112,17 @@ public final class ExploreChestService {
             proximity.cancel();
             proximity = null;
         }
+        if (propTicker != null) {
+            propTicker.cancel();
+            propTicker = null;
+        }
         for (String id : new ArrayList<>(idle.keySet())) {
             cancelIdle(id);
         }
+        for (ExploreChestProp prop : props.values()) {
+            prop.remove();
+        }
+        props.clear();
         save();
     }
 
@@ -92,7 +131,14 @@ public final class ExploreChestService {
     }
 
     public ExploreChestKind kindOf(Block block) {
-        if (block == null || !(block.getState() instanceof TileState state)) {
+        if (block == null) {
+            return null;
+        }
+        if (block.getType() == Material.BARRIER) {
+            // Prop chests: the barrier is only a hitbox; the yml row carries the kind.
+            return kinds.get(key(block));
+        }
+        if (!(block.getState() instanceof TileState state)) {
             return null;
         }
         ExploreChestKind fromBlock = ExploreChestKind.fromId(
@@ -121,20 +167,12 @@ public final class ExploreChestService {
             player.sendMessage("§eThere's already an exploration chest there.");
             return;
         }
-        target.setType(kind.block(), false);
-        var data = target.getBlockData();
-        if (data instanceof org.bukkit.block.data.type.Chest chestData) {
-            chestData.setType(org.bukkit.block.data.type.Chest.Type.SINGLE);
-            chestData.setFacing(player.getFacing().getOppositeFace());
-            target.setBlockData(chestData, false);
-        } else if (data instanceof Directional directional) {
-            directional.setFacing(player.getFacing().getOppositeFace());
-            target.setBlockData(directional, false);
-        }
-        stamp(target, kind);
+        // Invisible hitbox; the chest you see is the prop.
+        target.setType(Material.BARRIER, false);
         String id = key(target);
         chests.add(id);
         kinds.put(id, kind);
+        facings.put(id, horizontal(player.getFacing().getOppositeFace()));
         save();
         ensureFx(target);
         player.sendMessage(kind.chat() + "Placed " + kind.display() + "§7. Each player, this crate, every §f12h§7.");
@@ -151,6 +189,7 @@ public final class ExploreChestService {
         busy.remove(id);
         chests.remove(id);
         kinds.remove(id);
+        facings.remove(id);
         block.setType(Material.AIR, false);
         save();
         player.sendMessage("§eRemoved " + kind.display() + ".");
@@ -193,7 +232,12 @@ public final class ExploreChestService {
         }
         busy.add(id);
         if (spinner == null) {
+            ExploreChestProp prop = props.get(id);
+            if (prop != null) {
+                prop.open();
+            }
             finish(player, block, kind, reward, label);
+            plugin.getServer().getScheduler().runTaskLater(plugin, () -> settle(block, null), 30L);
             return;
         }
         spin(player, block, kind, spinner, label, reward);
@@ -209,10 +253,15 @@ public final class ExploreChestService {
             if (kind != null && block.getState() instanceof TileState) {
                 stamp(block, kind);
             }
-            if (!isExploreChest(block)) {
+            if (!isExploreChest(block) || block.getType().isAir()) {
                 if (block.getType().isAir()) {
                     chests.remove(id);
                     kinds.remove(id);
+                    facings.remove(id);
+                    ExploreChestProp prop = props.remove(id);
+                    if (prop != null) {
+                        prop.remove();
+                    }
                 }
                 continue;
             }
@@ -248,6 +297,13 @@ public final class ExploreChestService {
             listed.add(id + "|" + (kind == null ? "rare" : kind.id()));
         }
         yaml.set("chests", listed);
+        List<String> faced = new ArrayList<>();
+        for (Map.Entry<String, BlockFace> entry : facings.entrySet()) {
+            if (chests.contains(entry.getKey())) {
+                faced.add(entry.getKey() + "|" + entry.getValue().name());
+            }
+        }
+        yaml.set("facing", faced);
         List<java.util.Map<String, Object>> opens = new ArrayList<>();
         for (Map.Entry<String, Long> entry : lastOpen.entrySet()) {
             String stamp = entry.getKey();
@@ -293,6 +349,16 @@ public final class ExploreChestService {
             }
             chests.add(id);
             kinds.put(id, kind);
+        }
+        for (String raw : yaml.getStringList("facing")) {
+            int cut = raw == null ? -1 : raw.lastIndexOf('|');
+            if (cut <= 0) {
+                continue;
+            }
+            try {
+                facings.put(raw.substring(0, cut), horizontal(BlockFace.valueOf(raw.substring(cut + 1))));
+            } catch (IllegalArgumentException ignored) {
+            }
         }
         List<?> opens = yaml.getList("last-open");
         if (opens != null) {
@@ -352,6 +418,18 @@ public final class ExploreChestService {
             label.text(Component.text("...").color(NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
         }
         String id = key(block);
+        ExploreChestProp prop = props.get(id);
+        if (prop != null) {
+            prop.open();
+        }
+        // The loot climbs out of the open chest before it starts to turn.
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            if (spinner.isValid()) {
+                spinner.setInterpolationDelay(0);
+                spinner.setInterpolationDuration(6);
+                spinner.setTransformation(spinPose(0f, 0.62f, 0f));
+            }
+        }, 4L);
         new BukkitRunnable() {
             int step = 0;
             final int total = 22 + ThreadLocalRandom.current().nextInt(6);
@@ -361,30 +439,58 @@ public final class ExploreChestService {
                 if (!spinner.isValid() || !player.isOnline()) {
                     busy.remove(id);
                     restoreLabel(block, label);
+                    settle(block, spinner);
                     cancel();
                     return;
                 }
                 step++;
+                if (step == 1) {
+                    spinner.setInterpolationDelay(0);
+                    spinner.setInterpolationDuration(1);
+                }
                 if (step < total) {
                     if (!pool.isEmpty()) {
                         spinner.setItemStack(pool.get(step % pool.size()));
                     }
-                    spinner.setTransformation(spinPose(step * 42f, 0.62f));
+                    spinner.setTransformation(spinPose(step * 42f, 0.62f, 0f));
                     player.playSound(block.getLocation(), Sound.UI_BUTTON_CLICK, 0.25f, 1.4f + (step % 5) * 0.08f);
                     return;
                 }
                 spinner.setItemStack(reward.display);
-                spinner.setTransformation(spinPose(0f, 0.85f));
+                spinner.setInterpolationDuration(4);
+                spinner.setTransformation(spinPose(0f, 0.85f, 0.08f));
                 burst(player, block.getLocation().add(0.5, 1.3, 0.5), kind);
+                if (prop != null) {
+                    prop.reveal();
+                }
                 cancel();
                 plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
                     finish(player, block, kind, reward, label);
                     if (spinner.isValid()) {
-                        spinner.setTransformation(spinPose(0f, 0.55f));
+                        spinner.setInterpolationDuration(6);
+                        spinner.setTransformation(spinPose(0f, 0.55f, 0f));
                     }
                 }, 16L);
+                // Hold the reward a moment, then it sinks back and the lid shuts.
+                plugin.getServer().getScheduler().runTaskLater(plugin, () -> settle(block, spinner), 46L);
             }
-        }.runTaskTimer(plugin, 0L, 1L);
+        }.runTaskTimer(plugin, 10L, 1L);
+    }
+
+    /** Park the spinner inside the chest and close the lid (unless someone already opened it again). */
+    private void settle(Block block, ItemDisplay spinner) {
+        if (busy.contains(key(block))) {
+            return;
+        }
+        if (spinner != null && spinner.isValid()) {
+            spinner.setInterpolationDelay(0);
+            spinner.setInterpolationDuration(8);
+            spinner.setTransformation(parkedPose());
+        }
+        ExploreChestProp prop = props.get(key(block));
+        if (prop != null) {
+            prop.close();
+        }
     }
 
     private void finish(
@@ -419,6 +525,10 @@ public final class ExploreChestService {
         if (block == null || kind == null) {
             return;
         }
+        String id = key(block);
+        if (!migrate(block, id, kind)) {
+            return;
+        }
         World world = block.getWorld();
         Location spinAt = block.getLocation().add(0.5, 1.15, 0.5);
         Location textAt = block.getLocation().add(0.5, 1.65, 0.5);
@@ -427,7 +537,7 @@ public final class ExploreChestService {
         List<ItemStack> pool = pool(kind);
         ItemStack first = pool.isEmpty() ? new ItemStack(kind.block()) : pool.get(0);
         if (spinner == null) {
-            spinner = world.spawn(spinAt, ItemDisplay.class, display -> {
+            world.spawn(spinAt, ItemDisplay.class, display -> {
                 display.setItemStack(first);
                 display.setPersistent(true);
                 display.setInvulnerable(true);
@@ -436,9 +546,14 @@ public final class ExploreChestService {
                 display.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.GUI);
                 display.setBrightness(new Display.Brightness(15, 15));
                 display.setShadowRadius(0f);
-                display.setTransformation(spinPose(0f, 0.55f));
+                display.setTransformation(parkedPose());
                 display.addScoreboardTag(SPIN_TAG);
             });
+        } else if (!busy.contains(id)) {
+            // Older builds left the sample spinning on top — it lives inside the chest now.
+            cancelIdle(id);
+            spinner.setInterpolationDuration(0);
+            spinner.setTransformation(parkedPose());
         }
         if (label == null) {
             world.spawn(textAt, TextDisplay.class, text -> {
@@ -452,44 +567,129 @@ public final class ExploreChestService {
                 text.setGravity(false);
                 text.addScoreboardTag(LABEL_TAG);
             });
-        } else if (label.isValid() && !busy.contains(key(block))) {
+        } else if (label.isValid() && !busy.contains(id)) {
             label.text(labelCopy(kind, null, block));
         }
-        startIdle(block, spinner, pool);
+        ensureProp(block, id, kind);
     }
 
-    private void startIdle(Block block, ItemDisplay spinner, List<ItemStack> pool) {
-        String id = key(block);
-        BukkitTask existing = idle.get(id);
-        if (existing != null && !existing.isCancelled()) {
+    /**
+     * Vanilla-block chests from older builds become a barrier (facing kept) so the prop can
+     * stand in their place. Anything that isn't ours or a barrier is left alone.
+     *
+     * @return true if the block is (now) a barrier hitbox
+     */
+    private boolean migrate(Block block, String id, ExploreChestKind kind) {
+        Material type = block.getType();
+        if (type == Material.BARRIER) {
+            return true;
+        }
+        if (!LEGACY_BLOCKS.contains(type)) {
+            return false;
+        }
+        BlockFace face = BlockFace.SOUTH;
+        if (block.getBlockData() instanceof Directional directional) {
+            face = directional.getFacing();
+        }
+        facings.putIfAbsent(id, horizontal(face));
+        // The yml row carries the kind from here on (the tile PDC goes with the old block).
+        chests.add(id);
+        kinds.put(id, kind);
+        block.setType(Material.BARRIER, false);
+        save();
+        return true;
+    }
+
+    private void ensureProp(Block block, String id, ExploreChestKind kind) {
+        ExploreChestProp prop = props.get(id);
+        if (prop != null && prop.valid() && prop.kind() == kind) {
             return;
         }
-        BukkitTask task = new BukkitRunnable() {
-            int step = 0;
+        if (prop != null) {
+            prop.remove();
+        }
+        sweepProps(block);
+        ExploreChestProp built = new ExploreChestProp(plugin, kind, block.getLocation(),
+                yawOf(facings.getOrDefault(id, BlockFace.SOUTH)));
+        built.build();
+        props.put(id, built);
+    }
 
-            @Override
-            public void run() {
-                if (spinner == null || !spinner.isValid() || !isExploreChest(block)) {
-                    cancel();
-                    idle.remove(id);
-                    return;
-                }
-                if (busy.contains(id) || pool.isEmpty()) {
-                    return;
-                }
-                step++;
-                spinner.setItemStack(pool.get(step % pool.size()));
-                spinner.setTransformation(spinPose(step * 18f, 0.55f));
+    /** Stray prop parts (reload, crash) around a chest. */
+    private static void sweepProps(Block block) {
+        Location at = block.getLocation().add(0.5, 0.5, 0.5);
+        for (Entity entity : block.getWorld().getNearbyEntities(at, 1.2, 1.6, 1.2)) {
+            if (entity.getScoreboardTags().contains(ExploreChestProp.TAG)) {
+                entity.remove();
             }
-        }.runTaskTimer(plugin, 10L, 8L);
-        idle.put(id, task);
+        }
+    }
+
+    private void tickProps() {
+        if (props.isEmpty()) {
+            return;
+        }
+        double r2 = ANIMATE_BLOCKS * ANIMATE_BLOCKS;
+        for (Map.Entry<String, ExploreChestProp> entry : new ArrayList<>(props.entrySet())) {
+            Block block = blockOf(entry.getKey());
+            if (block == null || !block.getWorld().isChunkLoaded(block.getX() >> 4, block.getZ() >> 4)) {
+                continue;
+            }
+            Location center = block.getLocation().add(0.5, 0.5, 0.5);
+            boolean watched = false;
+            for (Player player : block.getWorld().getPlayers()) {
+                if (player.getLocation().distanceSquared(center) <= r2) {
+                    watched = true;
+                    break;
+                }
+            }
+            if (!watched) {
+                continue;
+            }
+            ExploreChestProp prop = entry.getValue();
+            if (!prop.valid()) {
+                // Something took the parts (chunk edge, /kill) — rebuild while someone's looking.
+                ExploreChestKind kind = kindOf(block);
+                if (kind != null && block.getType() == Material.BARRIER) {
+                    ensureProp(block, entry.getKey(), kind);
+                }
+                continue;
+            }
+            prop.idle(PROP_STEP);
+        }
+    }
+
+    private static BlockFace horizontal(BlockFace face) {
+        if (face == null) {
+            return BlockFace.SOUTH;
+        }
+        return switch (face) {
+            case NORTH, SOUTH, EAST, WEST -> face;
+            default -> BlockFace.SOUTH;
+        };
+    }
+
+    /** Radians for {@code rotateY}: local +Z (the chest front) turned toward {@code face}. */
+    private static float yawOf(BlockFace face) {
+        return switch (face) {
+            case NORTH -> (float) Math.PI;
+            case EAST -> (float) (Math.PI / 2.0);
+            case WEST -> (float) (-Math.PI / 2.0);
+            default -> 0f;
+        };
     }
 
     private void clearFx(Block block) {
         cancelIdle(key(block));
+        ExploreChestProp prop = props.remove(key(block));
+        if (prop != null) {
+            prop.remove();
+        }
         Location at = block.getLocation().add(0.5, 1.4, 0.5);
         for (Entity entity : block.getWorld().getNearbyEntities(at, 1.6, 2.2, 1.6)) {
-            if (entity.getScoreboardTags().contains(SPIN_TAG) || entity.getScoreboardTags().contains(LABEL_TAG)) {
+            if (entity.getScoreboardTags().contains(SPIN_TAG)
+                    || entity.getScoreboardTags().contains(LABEL_TAG)
+                    || entity.getScoreboardTags().contains(ExploreChestProp.TAG)) {
                 entity.remove();
             }
         }
@@ -516,6 +716,8 @@ public final class ExploreChestService {
         if (chests.isEmpty()) {
             return;
         }
+        glintCycle++;
+        long now = System.currentTimeMillis();
         for (String id : new ArrayList<>(chests)) {
             if (busy.contains(id)) {
                 continue;
@@ -533,6 +735,12 @@ public final class ExploreChestService {
                     continue;
                 }
                 double dist = player.getLocation().distanceSquared(center);
+                if (dist > GLINT_MAX * GLINT_MAX) {
+                    continue;
+                }
+                if (kind != null && readyFor(player, id)) {
+                    invite(player, block, id, kind, dist, now);
+                }
                 if (dist > NEAR_BLOCKS * NEAR_BLOCKS) {
                     continue;
                 }
@@ -546,6 +754,53 @@ public final class ExploreChestService {
                 label.text(labelCopy(kind, nearest, block));
             }
         }
+        if (noticed.size() > 4096) {
+            noticed.values().removeIf(until -> until < now);
+        }
+    }
+
+    /**
+     * Exploration invitation for a chest that's ready for {@code player}: a faint glint from
+     * a distance, one "something catches the light" the first time this session, and a
+     * rattle of the hasp when they walk right up.
+     */
+    private void invite(Player player, Block block, String id, ExploreChestKind kind, double dist2, long now) {
+        String stamp = player.getUniqueId() + "|" + id;
+        ExploreChestProp prop = props.get(id);
+        Location top = prop != null ? prop.light() : block.getLocation().add(0.5, 0.9, 0.5);
+
+        if (dist2 >= GLINT_MIN * GLINT_MIN && glintCycle % 4 == 0) {
+            Color tone = prop != null ? prop.tone() : Color.WHITE;
+            player.spawnParticle(Particle.DUST, top.clone().add(0.0, 0.85, 0.0), 2, 0.12, 0.12, 0.12, 0.0,
+                    new Particle.DustOptions(tone, 1.3f));
+            if ((kind == ExploreChestKind.LEGENDARY || kind == ExploreChestKind.MYTHIC) && glintCycle % 8 == 0) {
+                player.spawnParticle(Particle.END_ROD, top.clone().add(0.0, 1.1, 0.0), 1, 0.05, 0.1, 0.05, 0.0);
+            }
+        }
+
+        if (dist2 <= SIGHT_BLOCKS * SIGHT_BLOCKS && !lastOpen.containsKey(stamp) && sighted.add(stamp)) {
+            player.sendActionBar(Component.text("✦ Something catches the light · ", NamedTextColor.GRAY)
+                    .append(Component.text(kind.display(), kind.color())));
+            player.playSound(top, Sound.BLOCK_AMETHYST_BLOCK_CHIME, SoundCategory.PLAYERS, 0.35f, 1.6f);
+        }
+
+        if (dist2 <= NOTICE_BLOCKS * NOTICE_BLOCKS && noticed.getOrDefault(stamp, 0L) <= now) {
+            noticed.put(stamp, now + NOTICE_COOLDOWN_MS);
+            if (prop != null) {
+                prop.notice();
+            }
+            switch (kind) {
+                case RARE -> player.playSound(top, Sound.BLOCK_CHEST_LOCKED, SoundCategory.BLOCKS, 0.25f, 1.6f);
+                case EPIC -> player.playSound(top, Sound.BLOCK_AMETHYST_BLOCK_CHIME, SoundCategory.BLOCKS, 0.45f, 1.2f);
+                case LEGENDARY -> player.playSound(top, Sound.BLOCK_NOTE_BLOCK_BELL, SoundCategory.BLOCKS, 0.3f, 1.6f);
+                case MYTHIC -> player.playSound(top, Sound.BLOCK_AMETHYST_BLOCK_RESONATE, SoundCategory.BLOCKS, 0.5f, 1.0f);
+            }
+        }
+    }
+
+    private boolean readyFor(Player player, String id) {
+        Long last = lastOpen.get(player.getUniqueId() + "|" + id);
+        return last == null || last + COOLDOWN_MS <= System.currentTimeMillis();
     }
 
     private Component statusLine(Player player, Block block) {
@@ -615,13 +870,18 @@ public final class ExploreChestService {
         player.playSound(at, Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.55f, 1.35f);
     }
 
-    private static Transformation spinPose(float yawDeg, float scale) {
+    private static Transformation spinPose(float yawDeg, float scale, float lift) {
         return new Transformation(
-                new Vector3f(),
+                new Vector3f(0f, lift, 0f),
                 new AxisAngle4f((float) Math.toRadians(yawDeg), 0f, 1f, 0f),
                 new Vector3f(scale, scale, scale),
                 new AxisAngle4f()
         );
+    }
+
+    /** Spinner at rest: tucked inside the chest body. */
+    private static Transformation parkedPose() {
+        return spinPose(0f, 0.04f, -0.75f);
     }
 
     private static String formatLeft(long ms) {

@@ -96,6 +96,15 @@ public class DialogManager implements Listener {
     private final Map<UUID, String> activeDialogNpc =
             new HashMap<>();
 
+    /** Last quest offer per player — in-world reply chips, reactions, "Details…" chest. */
+    private record OfferContext(QuestNPC npc, Quest quest, Quest conflicting, String gateFail) {
+    }
+
+    private final Map<UUID, OfferContext> lastOffer = new HashMap<>();
+
+    /** Small-talk topics already asked this conversation (player → npc:label). */
+    private final Map<UUID, java.util.Set<String>> askedTopics = new HashMap<>();
+
 
 
     /*
@@ -135,6 +144,8 @@ public class DialogManager implements Listener {
         }
         pendingQuestChoices.remove(playerId);
         activeDialogNpc.remove(playerId);
+        lastOffer.remove(playerId);
+        askedTopics.remove(playerId);
         BukkitTask task = activeDialogs.remove(playerId);
         if (task != null) {
             task.cancel();
@@ -320,10 +331,10 @@ public class DialogManager implements Listener {
                             "Hold up. Finish with Egon first — then we talk fishing."
                     }
             ));
-            playDialog(player, npc, blocked, false);
+            playDialog(player, npc, blocked, false, false);
             QuestHint.show(player, "egon", "Egon");
             player.sendActionBar(net.kyori.adventure.text.Component.text(
-                    "Hint · Egon · wood first",
+                    de.aetherion.quests.lang.LangPack.ui(player, "tip.egon_wood_first", "Hint · Egon · wood first"),
                     net.kyori.adventure.text.format.NamedTextColor.GREEN
             ));
             return;
@@ -335,11 +346,15 @@ public class DialogManager implements Listener {
             Quest lesson = questManager.getQuest("lesson_manager");
             if (lesson == null
                     || questManager.getQuestState(player, lesson) == QuestState.AVAILABLE) {
-                String[] blocked = cleanLines(QuestStoryGate.ledgerBlockedLines());
-                playDialog(player, npc, blocked, false);
+                String[] blocked = cleanLines(de.aetherion.quests.lang.LangPack.dialogs(
+                        player,
+                        "ledger_blocked",
+                        QuestStoryGate.ledgerBlockedLines()
+                ));
+                playDialog(player, npc, blocked, false, false);
                 QuestHint.show(player, "foreman", "Shaft Foreman");
                 player.sendActionBar(net.kyori.adventure.text.Component.text(
-                        "Hint · Mines · Shaft Foreman",
+                        de.aetherion.quests.lang.LangPack.ui(player, "tip.mines_foreman", "Hint · Mines · Shaft Foreman"),
                         net.kyori.adventure.text.format.NamedTextColor.YELLOW
                 ));
                 return;
@@ -350,7 +365,7 @@ public class DialogManager implements Listener {
         if ("rite_keeper".equalsIgnoreCase(npc.getId())
                 && !QuestStoryGate.riteKeeperUnlocked(player, questManager)) {
             String[] blocked = cleanLines(QuestStoryGate.riteKeeperBlockedLines());
-            playDialog(player, npc, blocked, false);
+            playDialog(player, npc, blocked, false, false);
             QuestStoryGate.redirectToTutorial(player, npc.getName());
             return;
         }
@@ -362,7 +377,7 @@ public class DialogManager implements Listener {
                     "tutorial_blocked",
                     QuestStoryGate.tutorialBlockedLines()
             ));
-            playDialog(player, npc, blocked, false);
+            playDialog(player, npc, blocked, false, false);
             QuestStoryGate.redirectToTutorial(player, npc.getName());
             return;
         }
@@ -389,11 +404,11 @@ public class DialogManager implements Listener {
                         "arena_proctor_vial",
                         new String[] {
                                 "There it is. Stronger than the Borderlands strain.",
-                                "Come on — let's look at the ring. I'll check the vial on the way.",
-                                "Try not to breathe on it. Or jostle me. Or exist too hard."
+                                "Come on — we look at the ring. I'll check the vial on the way.",
+                                "Don't shake it. Don't sniff it. Don't breathe on me."
                         }
                 ));
-                playDialog(player, npc, lines, false);
+                playDialog(player, npc, lines, false, false);
                 Bukkit.getScheduler().runTaskLater(plugin, () -> startColosseumEscort(player), 55L);
                 return;
             }
@@ -417,6 +432,17 @@ public class DialogManager implements Listener {
                 dialogId,
                 getDialogLines(dialogId, player)
         ));
+
+        // Repeat visit while the offer still stands: a short, name-aware nudge instead
+        // of the full speech (voice sheet; German reads cast.<npc>.returning).
+        if (de.aetherion.quests.npc.CastBook.questAvailable(player, npc)) {
+            String[] returning = de.aetherion.quests.npc.CastBook.returningIntro(npc.getId(), player);
+            if (returning != null && returning.length > 0) {
+                lines = cleanLines(returning);
+            } else {
+                de.aetherion.quests.npc.CastBook.markIntroHeard(player, npc.getId());
+            }
+        }
 
         if (lines.length == 0) {
             return;
@@ -466,7 +492,7 @@ public class DialogManager implements Listener {
             };
         }
 
-        playDialog(player, npc, lines, false);
+        playDialog(player, npc, lines, false, true);
     }
 
     /** Drop null / blank entries so empty “first lines” never burn a delay slot. */
@@ -496,7 +522,8 @@ public class DialogManager implements Listener {
         }
         boolean first = quests.getMerchantChests().unlockFor(player);
         if (first) {
-            player.sendMessage("§aChests unlocked. §7Sample beside the merchant + world crates are live.");
+            player.sendMessage(de.aetherion.quests.lang.LangPack.msg(player, "chests_unlocked",
+                    "§aChests unlocked. §7Sample beside the merchant + world crates are live."));
         }
     }
 
@@ -532,6 +559,16 @@ public class DialogManager implements Listener {
             String[] lines,
             boolean offerQuest
     ) {
+        playDialog(player, npc, lines, offerQuest, !offerQuest);
+    }
+
+    private void playDialog(
+            Player player,
+            QuestNPC npc,
+            String[] lines,
+            boolean offerQuest,
+            boolean topicsAfter
+    ) {
 
         UUID playerId = player.getUniqueId();
 
@@ -555,18 +592,27 @@ public class DialogManager implements Listener {
                     cancel();
                     if (offerQuest) {
                         showQuestOptions(player, npc);
-                    } else if (npc != null && "merchant".equalsIgnoreCase(npc.getId())) {
-                        unlockMerchantChests(player);
+                    } else {
+                        if (npc != null && "merchant".equalsIgnoreCase(npc.getId())) {
+                            unlockMerchantChests(player);
+                        }
+                        if (topicsAfter) {
+                            offerTopics(player, npc);
+                        }
                     }
                     return;
                 }
 
-                String line = lines[index++];
+                String line = de.aetherion.quests.talk.TalkText.fill(player, lines[index++]);
                 if ("__BLANK__".equals(line)) {
                     player.sendMessage("");
                 } else {
                     player.sendMessage(formatNpcLine(npc, line));
                     playLivingChatCue(player, npc);
+                    de.aetherion.quests.talk.TalkUx talk = de.aetherion.quests.talk.TalkUx.get();
+                    if (talk != null && npc != null) {
+                        talk.line(player, npc.getId(), npc.getName(), line);
+                    }
                 }
             }
         };
@@ -672,6 +718,31 @@ public class DialogManager implements Listener {
                 player.getUniqueId(),
                 quest.getId()
         );
+        lastOffer.put(player.getUniqueId(), new OfferContext(npc, quest, conflicting, gateFail));
+
+        // In-world reply chips + quest card at the NPC. Chest GUI stays as the fallback
+        // (classic mode, FancyNpcs missing, NPC out of reach) and behind "Details…".
+        de.aetherion.quests.talk.TalkUx talk = de.aetherion.quests.talk.TalkUx.get();
+        final Quest offered = quest;
+        final Quest conflictFinal = conflicting;
+        final String gateFinal = gateFail;
+        if (talk != null && talk.offerQuest(
+                player,
+                npc,
+                quest,
+                conflicting,
+                gateFail,
+                () -> handleGuiAccept(player, offered.getId()),
+                () -> handleGuiDecline(player, offered.getId()),
+                () -> {
+                    if (acceptGUI != null && offered.getId().equalsIgnoreCase(
+                            pendingQuestChoices.get(player.getUniqueId()))) {
+                        acceptGUI.open(player, npc, offered, conflictFinal, gateFinal);
+                    }
+                }
+        )) {
+            return;
+        }
 
         if (acceptGUI != null) {
             acceptGUI.open(player, npc, quest, conflicting, gateFail);
@@ -905,7 +976,8 @@ public class DialogManager implements Listener {
         if (!lower.startsWith("/aetherionquest accept ")
                 && !lower.startsWith("/aetherionquest decline ")
                 && !lower.startsWith("/aetherionquest confirm ")
-                && !lower.startsWith("/aetherionquest cancel ")) {
+                && !lower.startsWith("/aetherionquest cancel ")
+                && !lower.startsWith("/aetherionquest details ")) {
 
             return;
 
@@ -986,6 +1058,14 @@ public class DialogManager implements Listener {
 
         }
 
+
+        if (action.equals("details")) {
+            OfferContext ctx = lastOffer.get(player.getUniqueId());
+            if (acceptGUI != null && ctx != null && ctx.quest().getId().equalsIgnoreCase(pendingQuestId)) {
+                acceptGUI.open(player, ctx.npc(), ctx.quest(), ctx.conflicting(), ctx.gateFail());
+            }
+            return;
+        }
 
         if (action.equals("accept")) {
 
@@ -1212,6 +1292,7 @@ public class DialogManager implements Listener {
                 player,
                 quest
         );
+        reactToOffer(player, quest, true);
 
         // gather_wood: axe is granted on start; chop unlock waits for ForagerChopDemo.
         if ("gather_wood".equalsIgnoreCase(quest.getId())) {
@@ -1241,7 +1322,7 @@ public class DialogManager implements Listener {
 
         if ("lesson_manager".equalsIgnoreCase(quest.getId())) {
             player.sendActionBar(net.kyori.adventure.text.Component.text(
-                    "Open Nether Star (slot 9) → Skills will blink",
+                    de.aetherion.quests.lang.LangPack.ui(player, "tip.skills_blink", "Open Nether Star (slot 9) → Skills will blink"),
                     net.kyori.adventure.text.format.NamedTextColor.LIGHT_PURPLE
             ));
             plugin.getServer().getScheduler().runTask(plugin, () -> {
@@ -1253,7 +1334,7 @@ public class DialogManager implements Listener {
         }
         if ("pocket_zoo".equalsIgnoreCase(quest.getId())) {
             player.sendActionBar(net.kyori.adventure.text.Component.text(
-                    "Throw a Catch Sphere at a wild pet — then talk to Lark",
+                    de.aetherion.quests.lang.LangPack.ui(player, "tip.throw_sphere", "Throw a Catch Sphere at a wild pet — then talk to Lark"),
                     net.kyori.adventure.text.format.NamedTextColor.LIGHT_PURPLE
             ));
             plugin.getServer().getScheduler().runTask(plugin, () -> {
@@ -1265,7 +1346,7 @@ public class DialogManager implements Listener {
         }
         if ("a_simple_craft".equalsIgnoreCase(quest.getId())) {
             player.sendActionBar(net.kyori.adventure.text.Component.text(
-                    "Manager → green Recipe Book — find Mining Pickaxe (2nd recipe)",
+                    de.aetherion.quests.lang.LangPack.ui(player, "tip.recipe_pickaxe", "Manager → green Recipe Book — find Mining Pickaxe (2nd recipe)"),
                     net.kyori.adventure.text.format.NamedTextColor.YELLOW
             ));
             plugin.getServer().getScheduler().runTask(plugin, () -> {
@@ -1279,12 +1360,12 @@ public class DialogManager implements Listener {
         player.sendMessage("");
 
         player.sendMessage(
-                "§a§lQUEST ACCEPTED"
+                de.aetherion.quests.lang.LangPack.ui(player, "quest_accepted_banner", "§a§lQUEST ACCEPTED")
         );
 
         player.sendMessage(
                 "§7"
-                        + quest.getTitle()
+                        + de.aetherion.quests.lang.LangPack.questTitle(player, quest.getId(), quest.getTitle())
         );
 
         player.sendMessage("");
@@ -1308,11 +1389,101 @@ public class DialogManager implements Listener {
         player.sendMessage("");
 
         player.sendMessage(
-                "§7Maybe another time."
+                de.aetherion.quests.lang.LangPack.ui(player, "decline_chat", "§7Maybe another time.")
         );
 
         player.sendMessage("");
 
+        reactToOffer(player, quest, false);
+
+    }
+
+    /** The NPC answers your answer (in their voice), then the reply chips go away. */
+    private void reactToOffer(Player player, Quest quest, boolean accepted) {
+        OfferContext ctx = lastOffer.remove(player.getUniqueId());
+        de.aetherion.quests.talk.TalkUx talk = de.aetherion.quests.talk.TalkUx.get();
+        if (talk != null) {
+            talk.clearChips(player);
+        }
+        if (ctx == null || ctx.npc() == null || quest == null
+                || !ctx.quest().getId().equalsIgnoreCase(quest.getId())) {
+            return;
+        }
+        if (ctx.gateFail() != null) {
+            return;
+        }
+        String line = accepted
+                ? de.aetherion.quests.npc.CastBook.acceptReaction(ctx.npc().getId(), player)
+                : de.aetherion.quests.npc.CastBook.declineReaction(ctx.npc().getId(), player);
+        if (line != null && LivingNpcProfile.isLiving(ctx.npc().getId())) {
+            LivingNpcProfile.say(player, ctx.npc(), line);
+            de.aetherion.quests.npc.LivingNpcLife life = de.aetherion.quests.npc.LivingNpcLife.get();
+            if (life != null) {
+                life.emote(player, ctx.npc().getId(), accepted ? "!" : "…");
+            }
+        }
+    }
+
+    /**
+     * Small talk after a conversation: up to three topics from the NPC's voice sheet
+     * plus "Bye." as in-world reply chips. Nothing happens in classic mode.
+     */
+    public void offerTopics(Player player, QuestNPC npc) {
+        de.aetherion.quests.talk.TalkUx talk = de.aetherion.quests.talk.TalkUx.get();
+        if (talk == null || player == null || npc == null || !talk.enabledFor(player)
+                || !LivingNpcProfile.isLiving(npc.getId())) {
+            return;
+        }
+        java.util.List<de.aetherion.quests.npc.CastBook.Topic> topics =
+                de.aetherion.quests.npc.CastBook.topics(npc.getId(), player);
+        if (topics.isEmpty()) {
+            return;
+        }
+        java.util.Set<String> asked = askedTopics.computeIfAbsent(player.getUniqueId(), k -> new java.util.HashSet<>());
+        java.util.List<de.aetherion.quests.talk.TalkUx.Choice> choices = new ArrayList<>();
+        for (de.aetherion.quests.npc.CastBook.Topic topic : topics) {
+            String key = npc.getId() + ":" + topic.label();
+            if (asked.contains(key) || choices.size() >= 3) {
+                continue;
+            }
+            choices.add(new de.aetherion.quests.talk.TalkUx.Choice(
+                    topic.label(),
+                    net.kyori.adventure.text.format.NamedTextColor.AQUA,
+                    () -> {
+                        asked.add(key);
+                        for (String line : topic.lines()) {
+                            LivingNpcProfile.say(player, npc, line);
+                        }
+                        long after = DialogPace.LINE_GAP_TICKS * topic.lines().length + 12L;
+                        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                            de.aetherion.quests.talk.TalkUx t = de.aetherion.quests.talk.TalkUx.get();
+                            if (player.isOnline() && t != null && t.isTalkingWith(player, npc.getId())
+                                    && !t.hasChips(player) && !isSpeaking(player)) {
+                                offerTopics(player, npc);
+                            }
+                        }, after);
+                    },
+                    false,
+                    topic.label()
+            ));
+        }
+        if (choices.isEmpty()) {
+            return;
+        }
+        String byeLabel = de.aetherion.quests.lang.LangPack.ui(player, "talk_ux.bye", "Bye.");
+        choices.add(new de.aetherion.quests.talk.TalkUx.Choice(
+                byeLabel,
+                net.kyori.adventure.text.format.NamedTextColor.GRAY,
+                () -> {
+                    String bye = de.aetherion.quests.npc.CastBook.farewell(npc.getId(), player);
+                    if (bye != null) {
+                        LivingNpcProfile.say(player, npc, bye);
+                    }
+                },
+                false,
+                byeLabel
+        ));
+        talk.choices(player, npc.getId(), npc.getName(), choices);
     }
 
 
@@ -1418,9 +1589,10 @@ public class DialogManager implements Listener {
         )) {
 
             return new String[] {
-                    "Egon. Harbour kit man. I need oak — you're fetching it.",
-                    "Forager is up the hill. He lends the axe and shows the chop minigame. Bring ten oak logs back here.",
-                    "§eYellow arrow up top§f points the way. I've had the planks painted for you, too. You're welcome."
+                    "{player}, right? Egon. I kit out rookies. You look like one.",
+                    "Kit costs ten oak logs. The §eLumberjack§f up the hill lends the axe.",
+                    "Calls himself the Forager. Humour him.",
+                    "§eYellow arrow up top§f knows the way. The sparkles on the planks are mine."
             };
 
         }
@@ -1438,9 +1610,9 @@ public class DialogManager implements Listener {
         )) {
 
             return new String[] {
-                    "I need coal for the forge. Twenty lumps from the surface.",
-                    "§eOre Ridge§f is the hill past the little market — coal veins in the open. Mine twenty, walk them back to me.",
-                    "Watch the §eyellow arrow up top§f — it tracks the job."
+                    "Quartermaster. I count things. Today: coal.",
+                    "Twenty lumps. §eOre Ridge§f — hill past the little market. Open veins.",
+                    "§eYellow arrow up top§f tracks the job. I track you. Lightly."
             };
 
         }
@@ -1456,10 +1628,10 @@ public class DialogManager implements Listener {
 
         if (dialogId.equalsIgnoreCase("lumberjack_intro")) {
             return new String[] {
-                    "Egon needs oak again.",
-                    "Take this Simple Axe. Left-click a §eglowing trunk§f to start the chop bar.",
-                    "When the bar hits §aCHOP§f (green), left-click again. Miss it and the tree resets.",
-                    "Ten oak logs → deliver to §eEgon on the pier§f, not to me."
+                    "Egon needs oak. Again. Man eats planks, I swear.",
+                    "Simple Axe. Left-click a §eglowing trunk§f — that starts the chop bar.",
+                    "Bar hits §aCHOP§f (green)? Left-click again. Miss it, the tree resets. Trees are petty.",
+                    "Ten oak logs → §eEgon on the pier§f. Not me. I have plenty."
             };
         }
 
@@ -1480,14 +1652,14 @@ public class DialogManager implements Listener {
 
         if (dialogId.equalsIgnoreCase("fisher_intro")) {
             return new String[] {
-                    "Fishing: cast into water, wait for the bite, §eREEL§f when the bar turns green.",
-                    "Miss the window and the fish leaves. Catch §efive§f, then talk to me again."
+                    "Cast into water. Wait for the bite. §eREEL§f when the bar turns green.",
+                    "Miss the window, the fish leaves. Catch §efive§f, then come back, {player}."
             };
         }
 
         if (dialogId.equalsIgnoreCase("fishmonger_intro")) {
             return new String[] {
-                    "Shop's open. Browse what you need."
+                    "Shop. Rods. Armour. Coins welcome."
             };
         }
 
@@ -1497,24 +1669,24 @@ public class DialogManager implements Listener {
 
         if (dialogId.equalsIgnoreCase("surveyor_intro")) {
             return new String[] {
-                    "Hey — ore trolls can drop blueprints now. Soft ores: coal, iron, copper.",
-                    "Come back when you've got a page. I'll stamp it here."
+                    "Trolls crawl the soft veins now — coal, iron, copper. They drop blueprint pages.",
+                    "Bring me a page, {player}. I'll stamp it into a tool right here."
             };
         }
 
         if (dialogId.equalsIgnoreCase("merchant_intro")) {
             return new String[] {
-                    "Chests like that show up all over the world — not just beside me.",
-                    "Higher rarity, better loot. Exploring pays off.",
-                    "Talking to me unlocks them. Sample crate beside me anytime — world chests too."
+                    "World chests. Not just this crate — they spawn all over.",
+                    "Rarer chest, better loot. Exploring pays.",
+                    "Talking to me unlocks them. Sample's beside me anytime, {player}."
             };
         }
 
         if (dialogId.equalsIgnoreCase("lark_intro")) {
             return new String[] {
-                    "Hey. Fields are hunting ground — wild animals, not my parrot.",
-                    "Catch Spheres: hold one, look at a critter, §eright-click§f to throw. Catch §eone§f animal, then talk to me again.",
-                    "After the catch I'll show you how to §eequip§f the pet. One step at a time."
+                    "Fields are hunting ground. Wild animals — not my parrot. She bites.",
+                    "Hold a Catch Sphere, look at a critter, §eright-click§f to throw.",
+                    "Catch §eone§f, then talk to me. §eEquipping§f comes after. One step at a time."
             };
         }
 
@@ -1619,39 +1791,41 @@ public class DialogManager implements Listener {
         if (dialogId.equalsIgnoreCase("vex_intro")) {
             return new String[] {
                     "Sergeant Vex. Gate to the §cBorderlands§f — wasteland past the wall.",
-                    "First lesson: ten hostiles. Kill them. Husk, stray, crawler — I don't care which.",
-                    "If you're struggling: combat set from the Recipe Book, boosters on the anvil. Soft gear. Harder hits. Now move."
+                    "First lesson: ten hostiles. Husk, stray, crawler — I don't care which.",
+                    "Checklist: armour on, blade in hand, food in the bag. Boosters help.",
+                    "Now move, {player}."
             };
         }
 
         if (dialogId.equalsIgnoreCase("booster_tutor_intro")) {
             return new String[] {
-                    "Temper. Boosters fuse onto gear — more mining power, fortune, damage.",
-                    "Manager → §eAnvil§f: gear left, booster right. Here's an Emerald — fuse it once. All booster recipes live in the §eRecipe Book§f."
+                    "Temper. I fuse things. Boosters onto gear — mining power, fortune, damage.",
+                    "Say yes and you get an Emerald Booster. Fuse it once. That's the lesson.",
+                    "Manager → §eAnvil§f. Gear left, booster right. Sparks are normal."
             };
         }
 
         if (dialogId.equalsIgnoreCase("rite_keeper_intro")) {
             return new String[] {
-                    "Rite Warden. Borderlands contract — T1 bosses, not sightseeing.",
-                    "Kill hostiles. Spirit vials: §c5%§f T1 · §c10%§f Sturdy · §c15%§f elites. Look for the §ebeacon pillar§f — that's the altar.",
-                    "Right-click the light-gray powder with the vial. Ten seconds. Thunder. Then it walks. Kill it once to prove the rite."
+                    "Rite Warden. Borderlands contract — T1 bosses. Not a walking tour.",
+                    "Kill hostiles for Spirit vials: §c5%§f T1 · §c10%§f Sturdy · §c15%§f elites. The §ebeacon pillar§f is the altar.",
+                    "Right-click the light-gray powder with a vial. Ten seconds. Thunder. Then it walks. Kill it once — rite passed."
             };
         }
 
         if (dialogId.equalsIgnoreCase("arena_proctor_intro")) {
             return new String[] {
                     "Proctor. This ring used to mean something. Then people got careful.",
-                    "I've heard of vials from old Borderlands bosses — and of a stronger strain in the Crypt.",
-                    "Bring me one of those stronger vials. I want to study it. Carefully. Probably."
+                    "Borderlands vials are the starter kit. The Crypt brews a stronger strain.",
+                    "Bring me a Crypt vial, {player}. I'll study it. Carefully. Probably."
             };
         }
 
         if (dialogId.equalsIgnoreCase("ledger_intro")) {
             return new String[] {
-                    "Miss Ledger. I handle skills — and I close orientation when you're done.",
-                    "Hotbar slot §e9§f — Nether Star → Manager → §dSkills§f tab (it blinks). Equip §eany one§f skill.",
-                    "Come back to me when that skill is equipped."
+                    "Miss Ledger. Skills — and I stamp orientation shut when you're done.",
+                    "Hotbar §e9§f → Nether Star → Manager → §dSkills§f. It blinks. Equip §eany one§f skill.",
+                    "Come back when it's equipped, {player}. I'll keep the stamp warm."
             };
         }
 
@@ -1698,7 +1872,7 @@ public class DialogManager implements Listener {
         if (dialogId.equalsIgnoreCase("dock_whisper_intro")) {
             return new String[] {
                     "Quiet. The river has opinions.",
-                    "Fisher will teach you the reel. Rare days, the line goes purple — Mythic Water Dragon. Only yours to catch.",
+                    "Tackle will teach you the reel. Rare days, the line goes purple — Mythic Water Dragon. Only yours to catch.",
                     "And if something older than the reef comes up in a vial? Don't shake it. Don't ask Brine. Just... don't."
             };
         }
@@ -1707,7 +1881,7 @@ public class DialogManager implements Listener {
             return new String[] {
                     "Pantry's thin. My patience thinner.",
                     "Compress wheat — real Compressed Wheat, not the grassy leftovers.",
-                    "Three stacks of that. Then we talk boosters."
+                    "Three of those. Then we talk boosters."
             };
         }
 
@@ -1737,9 +1911,9 @@ public class DialogManager implements Listener {
 
         if (dialogId.equalsIgnoreCase("canopy_clerk_intro")) {
             return new String[] {
-                    "Isle wood tells the truth. Harbour oak is a cover story.",
-                    "Foraging five. Then bring me one Compressed Oak, one Birch, one Spruce.",
-                    "Three samples. Fat payout. The canopy keeps receipts."
+                    "I want isle wood — compressed. Not harbour leftovers.",
+                    "Foraging §e5§f. Then one Compressed Oak, one Birch, one Spruce.",
+                    "Three samples. Fat payout. Then go chop, {player}."
             };
         }
 
@@ -1807,36 +1981,39 @@ public class DialogManager implements Listener {
         if (dialogId.equalsIgnoreCase("farm_isle_guide_intro")) {
             return new String[] {
                     "Portal goes to the Farm Isle — shared fields off the hub farm.",
-                    "Farming ten to enter. Same portal brings you back."
+                    "Farming §e10§f to enter. Same portal brings you back.",
+                    "The Farmer next door thinks he's the real farmer. Cute."
             };
         }
 
         if (dialogId.equalsIgnoreCase("forage_pad_guide_intro")) {
             return new String[] {
-                    "That slime pad? Forage Isle. Jump, don't overthink it.",
-                    "Trees out there drop what they are — spruce is spruce. Birch is birch.",
-                    "Canopy Clerk on the isle wants compressed samples. Follow the arrow."
+                    "Slime pad → Forage Isle. Jump. Don't overthink it.",
+                    "Trees out there drop what they are — spruce is spruce, birch is birch.",
+                    "§eCanopy Clerk§f on the isle wants compressed samples. Follow the arrow, {player}."
             };
         }
 
         if (dialogId.equalsIgnoreCase("eldervale_welcome_intro")) {
             return new String[] {
-                    "Welcome to Eldervale.",
-                    "Mining island. Deep rock. Don't fall off the edge."
+                    "Welcome to Eldervale, {player}.",
+                    "Mining island. Deep rock, thin air.",
+                    "Mind the edge. Nobody's found the bottom yet."
             };
         }
 
         if (dialogId.equalsIgnoreCase("eldervale_upgrade_intro")) {
             return new String[] {
-                    "Blueprint forge. Tool plus Upgrade Stone.",
-                    "Tier II, III, IV — stones get nasty expensive."
+                    "Blueprint forge. Tool plus Upgrade Stone. That's the whole trick.",
+                    "Tier II, III, IV — stones get nasty expensive. Fast."
             };
         }
 
         if (dialogId.equalsIgnoreCase("isle_clerk_intro")) {
             return new String[] {
-                    "Personal island unlocks at Aetherion Level 20.",
-                    "Manager — Nether Star, slot nine. Island tab. Claim it there, not from me."
+                    "Personal island unlocks at Aetherion Level §e20§f.",
+                    "Nether Star, slot nine → Island tab. Claim it there. I don't do paperwork.",
+                    "A clerk who doesn't do paperwork. Yes. I know."
             };
         }
 
@@ -1866,8 +2043,8 @@ public class DialogManager implements Listener {
 
         if (dialogId.equalsIgnoreCase("bar_whisper_intro")) {
             return new String[] {
-                    "See that bar at the bottom of your screen? That's your §bAetherion Level§f.",
-                    "Stats, soft unlocks, new areas — a lot of this world opens through it.",
+                    "Psst. {player}. Bottom of your screen — that bar. Your §bAetherion Level§f.",
+                    "Stats, soft unlocks, new areas… a lot of this world opens through it.",
                     "Keep playing. The bar notices."
             };
         }
@@ -1878,10 +2055,40 @@ public class DialogManager implements Listener {
             };
         }
 
+        if (dialogId.equalsIgnoreCase("town_crier_intro")) {
+            return new String[] {
+                    "Hear ye, hear ye! A {player} approaches!",
+                    "Hollis. Town Crier. I shout useful things so the arrow doesn't have to.",
+                    "Today's news: the §eyellow arrow up top§f still knows the way. Every day. Reliable."
+            };
+        }
+
+        if (dialogId.equalsIgnoreCase("street_sweeper_intro")) {
+            return new String[] {
+                    "Mind the pile, {player}. That's a morning's work.",
+                    "Bram. I sweep. Rookies drop cobble. Miners drop gravel. Everyone drops standards.",
+                    "Clean street, clean mind. Mostly clean street."
+            };
+        }
+
+        if (dialogId.equalsIgnoreCase("lamp_lighter_intro")) {
+            return (player != null && player.getWorld().getTime() > 12000L && player.getWorld().getTime() < 23000L)
+                    ? de.aetherion.quests.lang.LangPack.dialogs(player, "lamp_lighter_intro.night", new String[] {
+                            "Evening, {player}. Wick. Lamps are my business.",
+                            "Night's when the harbour needs me. And when hostiles need a snack.",
+                            "Stay in the light. It's what I'm for."
+                    })
+                    : de.aetherion.quests.lang.LangPack.dialogs(player, "lamp_lighter_intro.day", new String[] {
+                            "Morning, {player}. Wick. Lamplighter.",
+                            "Daytime's my off-shift. I polish glass and wait for dusk.",
+                            "Come find me after sunset. That's when it's interesting."
+                    });
+        }
+
         if (dialogId.equalsIgnoreCase("liquidator_intro")) {
             return new String[] {
-                    "Crystal Liquidator. Buy, sell, or melt mats into Aether Crystals here.",
-                    "Crystals come from the official shop, or as level rewards."
+                    "Crystal desk. Buy, sell, or melt mats into Aether Crystals.",
+                    "Crystals come from the official shop — or as level rewards."
             };
         }
 
@@ -2029,62 +2236,92 @@ public class DialogManager implements Listener {
 
         return switch (npcId.toLowerCase()) {
             case "quartermaster" -> new String[] {
-                    "Thanks — coal received.",
-                    "Teleports: unlock a place once (walk there, or use a Homestead Marker). Then /spawns — or type the place, e.g. §e/harbour§f, §e/mines§f.",
-                    "__BLANK__",
-                    "Try §e/harbour§f now if you want the docks. Next: §eShaft Foreman§f at the Mines."
+                    "Coal's filed, {player}. Mines teleport stays open — §e/mines§f.",
+                    "Walk somewhere once and it's yours. §e/spawns§f lists the lot.",
+                    "Foreman still lives at the Mines. By choice, allegedly."
             };
             case "hunter" -> new String[] {
                     "First blood's filed. Don't get sentimental about it.",
                     "Next time bring bigger problems. Or quieter footsteps."
             };
             case "lumberjack" -> new String[] {
-                    "Egon got his wood. Keep the axe.",
-                    "Follow the arrow back to §eEgon§f on the pier."
+                    "Egon got his oak? Good. Keep the axe. It likes you.",
+                    "Free afternoon? §aTwig§f's slime pad is just past me. Forage Isle."
             };
-            case "egon" -> new String[] {
-                    "Logs received. Kit stays yours — don't lose it.",
-                    "§eQuartermaster§f is past the little market — talk to him next.",
-                    "From here on: watch the §eyellow arrow up top§f. That's your guide."
-            };
+            case "egon" -> QuestStoryGate.questCompleted(player, questManager, "forge_coal")
+                    ? de.aetherion.quests.lang.LangPack.completed(player, "egon.after_coal", new String[] {
+                            "Kit holding up, {player}? Good. Don't tell me if it isn't.",
+                            "Pier's quiet. §bTackle§f fishes off the end, if you fancy a rod."
+                    })
+                    : de.aetherion.quests.lang.LangPack.completed(player, "egon.default", new String[] {
+                            "Kit fits? Good. Don't tell me if it doesn't.",
+                            "§eQuartermaster§f past the little market wants you next.",
+                            "§eYellow arrow up top§f. Trust it more than me."
+                    });
             case "farmer" -> farmerCompletedLines(player);
             case "ledger" -> new String[] {
-                    "Skill equipped. Good.",
-                    "Next: the fields — §eFarmer§f (wheat) and §eLark§f (pets) in the same area.",
-                    "Come back after both. I close the tutorial — and I keep a help menu if you get stuck."
+                    "Skill's equipped. Good. Stamped.",
+                    "Next: the fields — §eFarmer§f (wheat) and §eLark§f (pets), same area.",
+                    "Come back after both, {player}. I close orientation — and I keep a help desk."
             };
-            case "lark" -> new String[] {
-                    "Catch done. You're set with pets.",
-                    "§eMiss Ledger§f closes orientation — or §e/capital§f. Questions go to her desk, not mine."
-            };
-            case "craftsman", "blacksmith" -> new String[] {
-                    "Nice pick. You're set for the Mines.",
-                    "Next: §eShaft Foreman§f. Keep the Recipe Book handy — new stuff shows up later."
-            };
+            case "lark" -> QuestStoryGate.tutorialDone(player, questManager)
+                    ? de.aetherion.quests.lang.LangPack.completed(player, "lark.graduate", new String[] {
+                            "{player}! Your pet still likes you. Pistachio's jealous.",
+                            "Wild ones roam the fields. Catch more when you're curious."
+                    })
+                    : de.aetherion.quests.lang.LangPack.completed(player, "lark.default", new String[] {
+                            "Catch done. Your pet likes you. Probably.",
+                            "§eMiss Ledger§f closes orientation — §e/capital§f if you're lazy. Questions go to her."
+                    });
+            case "craftsman", "blacksmith" -> QuestStoryGate.questCompleted(player, questManager, "first_shift")
+                    ? de.aetherion.quests.lang.LangPack.completed(player, "craftsman.after_shift", new String[] {
+                            "Hm. {player}. Pick holding up? Good.",
+                            "Recipe Book grows as you do. Check it now and then."
+                    })
+                    : de.aetherion.quests.lang.LangPack.completed(player, "craftsman.default", new String[] {
+                            "Nice pick, {player}. You're set for the Mines.",
+                            "Next: §eShaft Foreman§f. Keep the Recipe Book handy — new pages show up later."
+                    });
             case "collector" -> new String[] {
                     "Shiny things received. My shelf is smug. You're dismissed.",
                     "Mine deeper if you miss the sound of rock judging you."
             };
             case "fisher", "fisherman" -> new String[] {
-                    "Catch counted. Line clear. Peek at your rod sometime — certain tools level up around here."
+                    "Catch counted. Line's clear. Sea's still full.",
+                    "Peek at your rod sometime — certain tools level up around here."
             };
             case "fishmonger" -> new String[] {
                     "Shop's open. Talk to me anytime to browse."
             };
-            case "foreman" -> new String[] {
-                    "Shift's closed. Next: §eTemper§f toward the hub — Booster Tutor.",
-                    "Fuse one booster before skills."
-            };
-            case "booster_tutor" -> new String[] {
-                    "Booster fused. Good. Recipes stay in the §eRecipe Book§f anytime.",
-                    "Next: §eMiss Ledger§f at Capital — Skills. Then the Fields."
-            };
+            case "foreman" -> QuestStoryGate.questCompleted(player, questManager, "lesson_boost")
+                    ? de.aetherion.quests.lang.LangPack.completed(player, "foreman.after_boost", new String[] {
+                            "Mine's still there, {player}. So's the dust.",
+                            "Deeper veins pay better. Deeper veins also bite."
+                    })
+                    : de.aetherion.quests.lang.LangPack.completed(player, "foreman.default", new String[] {
+                            "Shift's closed. Next: §eTemper§f, on the road to Capital.",
+                            "One booster fused before skills. Trust the order."
+                    });
+            case "booster_tutor" -> QuestStoryGate.questCompleted(player, questManager, "lesson_manager")
+                    ? de.aetherion.quests.lang.LangPack.completed(player, "booster_tutor.after_skills", new String[] {
+                            "Fused anything spicy lately, {player}?",
+                            "Anvil's always in the Manager. Recipes in the §eRecipe Book§f."
+                    })
+                    : de.aetherion.quests.lang.LangPack.completed(player, "booster_tutor.default", new String[] {
+                            "Booster fused. Recipes stay in the §eRecipe Book§f anytime.",
+                            "Next: §eMiss Ledger§f at Capital — Skills. Then the Fields."
+                    });
             case "surveyor" -> new String[] {
                     "Desk stays open. Collection up top, stamp a blueprint into its tool below.",
                     "Trolls crawl any vein in this mine. Dig when you're hungry for pages."
             };
             case "merchant" -> new String[] {
-                    "Chests stay unlocked. Sample beside me, more out in the world. Higher rarity, better loot."
+                    "Chests stay unlocked, {player}. Sample beside me, more out in the world.",
+                    "Rarer chest, better loot. Open everything. Trust nothing."
+            };
+            case "rite_keeper" -> new String[] {
+                    "Rite logged. The altar stays. Keep the vials coming.",
+                    "No leash from me, {player}. Waste, desks, whatever."
             };
             case "miner" -> new String[] {
                     "Hollow Lurker's quiet. My nerves aren't. Thanks for that.",
@@ -2135,8 +2372,8 @@ public class DialogManager implements Listener {
                     "Bring fewer IOUs next time. Bring more dignity."
             };
             case "vex" -> new String[] {
-                    "Lesson steel: passed. Form still terrible. Acceptable.",
-                    "Soft tip — combat set and boosters before the harder waste. Then Rite Warden if you want bosses."
+                    "Lesson steel: passed. Form: questionable. Acceptable.",
+                    "Combat set and boosters before the harder waste. Then §cRite Warden§f if you want bosses."
             };
             case "rook" -> new String[] {
                     "Bones delivered. Curriculum chewed. Class dismissed.",
@@ -2172,7 +2409,7 @@ public class DialogManager implements Listener {
             };
             case "canopy_clerk" -> new String[] {
                     "Samples filed. Oak, birch, spruce — canopy approved.",
-                    "Come back when the isle invents a fourth tree. Until then: chop."
+                    "Come back when the isle invents a fourth tree, {player}. Until then: chop."
             };
             case "dock_scaler" -> new String[] {
                     "Scale sample filed. Cod compressed. Clipboard still wet. Fine.",
@@ -2186,18 +2423,19 @@ public class DialogManager implements Listener {
                     "Guild brick received. Club adjacent. Handshake imaginary.",
                     "Compacted means compacted. Come back when you forget that — I dare you."
             };
-            default -> new String[] {
+            default -> de.aetherion.quests.lang.LangPack.completed(player, "default", new String[] {
                     "We're squared. Clipboard says so.",
                     "Go make someone else's day slightly worse."
-            };
+            });
         };
     }
 
     private String[] craftsmanIntroLines(Player player) {
         return new String[] {
-                "Hey. Craftsman. Crafting is unlocked — Recipe Book lives in the Manager.",
-                "Nether Star (hotbar §e9§f) → click the §agreen book§f. Every blueprint is there.",
-                "Craft a §fMining Pickaxe§f: Simple Pickaxe in the middle, coal around it. Bring that pick back to me to finish."
+                "Hm. Craftsman. Crafting's open — Recipe Book lives in your Manager.",
+                "Nether Star, hotbar §e9§f → §agreen book§f. Every blueprint's in there.",
+                "Make a §fMining Pickaxe§f. Simple Pickaxe in the middle, coal around it.",
+                "Bring it here. I'll try to look impressed."
         };
     }
 
@@ -2205,31 +2443,37 @@ public class DialogManager implements Listener {
         boolean larkDone = player != null
                 && QuestStoryGate.questCompleted(player, questManager, "pocket_zoo");
         if (larkDone) {
-            return new String[] {
-                    "I need wheat from these fields — and the birds kept off the crops.",
-                    "Break wheat until you have §e48§f. When birds land on the crops, §eright-click§f them — bossbar counts shoos."
-            };
+            return de.aetherion.quests.lang.LangPack.dialogs(player, "farmer_intro.lark_done", new String[] {
+                    "Wheat from these fields. Birds off the crops. That's the job, {player}.",
+                    "Break wheat till you've got §e48§f. Birds land? §eClick§f them — bossbar counts the shoos."
+            });
         }
-        return new String[] {
-                "I need wheat from these fields — and the birds kept off the crops.",
-                "Break wheat until you have §e48§f. When birds land on the crops, §eright-click§f them — bossbar counts shoos.",
-                "§eLark§f is in the same area for pets after this. Different quest — the arrow will move when you're ready."
-        };
+        return de.aetherion.quests.lang.LangPack.dialogs(player, "farmer_intro.default", new String[] {
+                "Wheat from these fields. Birds off the crops. That's the job, {player}.",
+                "Break wheat till you've got §e48§f. Birds land? §eClick§f them — bossbar counts the shoos.",
+                "§eLark§f does pets, same fields. Separate job — the arrow moves when it's time."
+        });
     }
 
     private String[] farmerCompletedLines(Player player) {
         boolean larkDone = player != null
                 && QuestStoryGate.questCompleted(player, questManager, "pocket_zoo");
-        if (larkDone) {
-            return new String[] {
-                    "Wheat's done. Nice work.",
-                    "Back to §eMiss Ledger§f for the stamp — or §e/capital§f if you know the way."
-            };
+        if (player != null && QuestStoryGate.tutorialDone(player, questManager)) {
+            return de.aetherion.quests.lang.LangPack.completed(player, "farmer.graduate", new String[] {
+                    "Birds are back. So are you. Good, {player}.",
+                    "Farm Isle's through §eHarrow§f's portal, far end of the barn."
+            });
         }
-        return new String[] {
-                "Wheat's done. Nice work.",
+        if (larkDone) {
+            return de.aetherion.quests.lang.LangPack.completed(player, "farmer.lark_done", new String[] {
+                    "Wheat's done. Birds are sulking. Nice work, {player}.",
+                    "Back to §eMiss Ledger§f for the stamp — or §e/capital§f if you know the way."
+            });
+        }
+        return de.aetherion.quests.lang.LangPack.completed(player, "farmer.default", new String[] {
+                "Wheat's done. Birds are sulking. Nice work, {player}.",
                 "Finish §eLark§f if you haven't, then §eMiss Ledger§f — or §e/capital§f."
-        };
+        });
     }
 
     private String[] foremanIntroLines(Player player) {
@@ -2248,15 +2492,18 @@ public class DialogManager implements Listener {
             if (plugin != null && plugin.getPlayerQuestStorage() != null && player != null) {
                 plugin.getPlayerQuestStorage().markStarterKit(player.getUniqueId(), "craftsman_spoken");
             }
-            return new String[] {
-                    "Shabby Mine — cave behind me. Dig §ecoal, copper, iron§f. Break §e32 ore blocks§f, then come back.",
-                    "Crafting's open — green Recipe Book in the Manager. A mining pickaxe and some armor help down there."
-            };
+            return de.aetherion.quests.lang.LangPack.dialogs(player, "foreman_intro.crafting_unlocked", new String[] {
+                    "Shabby Mine's behind me. The name is accurate.",
+                    "Dig §ecoal, copper, iron§f. Break §e32 ore blocks§f, then come back, {player}.",
+                    "Crafting's open now. Green Recipe Book, in the Manager.",
+                    "A mining pickaxe and some armour help down there."
+            });
         }
-        return new String[] {
-                "Shabby Mine — cave behind me. Dig §ecoal, copper, iron§f. Break §e32 ore blocks§f, then come back.",
-                "A mining pickaxe and some armor help — Recipe Book in the Manager if you need them."
-        };
+        return de.aetherion.quests.lang.LangPack.dialogs(player, "foreman_intro.default", new String[] {
+                "Shabby Mine's behind me. The name is accurate.",
+                "Dig §ecoal, copper, iron§f. Break §e32 ore blocks§f, then come back, {player}.",
+                "Mining pickaxe and some armour help. Recipe Book's in the Manager if you need them."
+        });
     }
 
     public static boolean playerHasItemId(Player player, String itemId) {

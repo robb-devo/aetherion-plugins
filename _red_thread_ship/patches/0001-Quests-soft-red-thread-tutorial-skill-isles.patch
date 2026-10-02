@@ -1,0 +1,924 @@
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/dialog/DialogManager.java b/AetherionQuests/src/main/java/de/aetherion/quests/dialog/DialogManager.java
+index 0dc3f52..7a48977 100644
+--- a/AetherionQuests/src/main/java/de/aetherion/quests/dialog/DialogManager.java
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/dialog/DialogManager.java
+@@ -1792,7 +1792,7 @@ public class DialogManager implements Listener {
+             return new String[] {
+                     "Sergeant Vex. Gate to the §cBorderlands§f — wasteland past the wall.",
+                     "First lesson: ten hostiles. Husk, stray, crawler — I don't care which.",
+-                    "Struggling? Combat set from the Recipe Book. Boosters on the anvil.",
++                    "Checklist: armour on, blade in hand, food in the bag. Boosters help.",
+                     "Now move, {player}."
+             };
+         }
+@@ -2246,12 +2246,12 @@ public class DialogManager implements Listener {
+             };
+             case "lumberjack" -> new String[] {
+                     "Egon got his oak? Good. Keep the axe. It likes you.",
+-                    "Come back when you miss the smell of sap."
++                    "Free afternoon? §aTwig§f's slime pad is just past me. Forage Isle."
+             };
+             case "egon" -> QuestStoryGate.questCompleted(player, questManager, "forge_coal")
+                     ? de.aetherion.quests.lang.LangPack.completed(player, "egon.after_coal", new String[] {
+                             "Kit holding up, {player}? Good. Don't tell me if it isn't.",
+-                            "Pier's quiet. That's how I like it."
++                            "Pier's quiet. §bTackle§f fishes off the end, if you fancy a rod."
+                     })
+                     : de.aetherion.quests.lang.LangPack.completed(player, "egon.default", new String[] {
+                             "Kit fits? Good. Don't tell me if it doesn't.",
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/listener/ForageHarbourHintListener.java b/AetherionQuests/src/main/java/de/aetherion/quests/listener/ForageHarbourHintListener.java
+index 50e0fa9..6c6cd1a 100644
+--- a/AetherionQuests/src/main/java/de/aetherion/quests/listener/ForageHarbourHintListener.java
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/listener/ForageHarbourHintListener.java
+@@ -11,6 +11,10 @@ import org.bukkit.event.Listener;
+ /**
+  * After Miss Ledger stamps the tutorial shut: soft tip toward the Forage Isle
+  * slime pad when the player is back in Anker Harbour.
++ * <p>
++ * Red thread: once only, and it never steals the compass from a road the player already
++ * picked (Ledger's picker, a quest in progress) — then it's a single chat crumb instead.
++ * Silent if the player already met Twig or Ledger already pointed at the pad.
+  */
+ public final class ForageHarbourHintListener implements Listener, Runnable {
+ 
+@@ -48,13 +52,23 @@ public final class ForageHarbourHintListener implements Listener, Runnable {
+         }
+ 
+         plugin.getPlayerQuestStorage().markStarterKit(player.getUniqueId(), HINT_KEY);
++        de.aetherion.quests.npc.NpcMemory memory = de.aetherion.quests.npc.NpcMemory.get();
++        if (memory != null && memory.talks(player.getUniqueId(), "forage_pad_guide") > 0) {
++            return; // already met Twig — nothing to discover
++        }
++        player.sendMessage(de.aetherion.quests.lang.LangPack.msg(player, "harbour_pad",
++                "§a✦ §7Harbour pad: §aTwig§7 points to the slime jump → §aForage Isle§7."));
++        boolean busy = plugin.getQuestManager().findActiveOrReadyQuest(player) != null;
++        String thread = QuestHint.pendingNpc(player);
++        if (busy || (thread != null && !"ledger".equals(thread))) {
++            return; // one next tip at a time — keep the road they're already on
++        }
+         QuestHint.clearPending(player);
+         QuestHint.show(player, "forage_pad_guide", "Twig · Forage Pad");
+         player.sendActionBar(net.kyori.adventure.text.Component.text(
+-                "→ Slime pad · Forage Isle (Twig)",
++                de.aetherion.quests.lang.LangPack.ui(player, "tip.harbour_pad", "→ Slime pad · Forage Isle (Twig)"),
+                 net.kyori.adventure.text.format.NamedTextColor.GREEN
+         ));
+-        player.sendMessage("§a✦ §7Harbour pad: §aTwig§7 points to the slime jump → §aForage Isle§7.");
+     }
+ 
+     private static boolean insideHarbour(Player player) {
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/listener/NpcListener.java b/AetherionQuests/src/main/java/de/aetherion/quests/listener/NpcListener.java
+index 53704c6..f103e57 100644
+--- a/AetherionQuests/src/main/java/de/aetherion/quests/listener/NpcListener.java
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/listener/NpcListener.java
+@@ -255,9 +255,11 @@ public class NpcListener implements Listener {
+             if ("forage_pad_guide".equalsIgnoreCase(npc.getId())) {
+                 de.aetherion.quests.ui.QuestHint.show(player, "canopy_clerk", "Canopy Clerk");
+                 player.sendActionBar(net.kyori.adventure.text.Component.text(
+-                        "Hint · Canopy Clerk · Forage Isle",
++                        de.aetherion.quests.lang.LangPack.ui(player, "tip.canopy_clerk", "Hint · Canopy Clerk · Forage Isle"),
+                         net.kyori.adventure.text.format.NamedTextColor.GREEN
+                 ));
++                // Found the pad on their own — the harbour pad crumb has nothing left to say.
++                de.aetherion.quests.ui.SkillRoads.markForagePointed(player);
+             }
+             return;
+         }
+@@ -446,6 +448,11 @@ public class NpcListener implements Listener {
+ 
+         if (state == QuestState.AVAILABLE) {
+ 
++            // Sergeant Vex: one gear check before the first "go fight" (soft — once, skippable).
++            if ("lesson_steel".equalsIgnoreCase(quest.getId()) && vexGearCheck(player, npc)) {
++                return;
++            }
++
+             // Timber run is unlocked by Egon's pier handshake first.
+             if ("gather_wood".equalsIgnoreCase(quest.getId())) {
+                 Quest welcome = questManager.getQuest("welcome_aboard");
+@@ -1141,7 +1148,7 @@ public class NpcListener implements Listener {
+                 return;
+             }
+             npcSay(player, npc,
+-                    de.aetherion.quests.lang.LangPack.say(player, "ledger.come_back", "§aBack to me after both. §fI close orientation — and keep a help desk."));
++                    de.aetherion.quests.lang.LangPack.say(player, "ledger.come_back", "§aBack to me after both. §fThen I show you where skills really grow."));
+             player.sendActionBar(net.kyori.adventure.text.Component.text(
+                     de.aetherion.quests.lang.LangPack.ui(player, "tip.fields", "Hint · Fields · Farmer + Lark → then Ledger"),
+                     net.kyori.adventure.text.format.NamedTextColor.YELLOW
+@@ -1336,24 +1343,12 @@ public class NpcListener implements Listener {
+             return;
+         }
+ 
++        // Red thread: the stamp opens the roads — Forage / Farm / Fishing / Steel. Player picks
++        // one (reply chips) or wanders; one soft compass target either way. Replaces the old
++        // Vex-only pointer (ledger.hint_vex / hint_rite / hint_help keys kept for rollback).
+         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+-            if (!player.isOnline()) {
+-                return;
+-            }
+-            if (!de.aetherion.quests.util.QuestStoryGate.questCompleted(player, questManager, "lesson_steel")) {
+-                LivingNpcProfile.say(player, npc,
+-                        de.aetherion.quests.lang.LangPack.say(player, "ledger.hint_vex", "§cSergeant Vex§f at the Borderlands gate, if you're curious. I'm here if you get stuck."));
+-                player.sendActionBar(net.kyori.adventure.text.Component.text(
+-                        de.aetherion.quests.lang.LangPack.ui(player, "tip.vex_soft", "Soft hint · Sergeant Vex"),
+-                        net.kyori.adventure.text.format.NamedTextColor.RED
+-                ));
+-                de.aetherion.quests.ui.QuestHint.show(player, "vex", "Sergeant Vex");
+-            } else if (!de.aetherion.quests.util.QuestStoryGate.questCompleted(player, questManager, "border_rites")) {
+-                LivingNpcProfile.say(player, npc,
+-                        de.aetherion.quests.lang.LangPack.say(player, "ledger.hint_rite", "§cRite Warden§f out in the waste, if you're curious. I'm here if you get stuck."));
+-                de.aetherion.quests.ui.QuestHint.show(player, "rite_keeper", "Rite Warden");
+-            } else {
+-                LivingNpcProfile.say(player, npc, de.aetherion.quests.lang.LangPack.say(player, "ledger.hint_help", "Stuck later? You know where I sit."));
++            if (player.isOnline()) {
++                de.aetherion.quests.ui.SkillRoads.graduation(player, npc);
+             }
+         }, 50L);
+     }
+@@ -2437,6 +2432,90 @@ public class NpcListener implements Listener {
+         }
+     }
+ 
++    /**
++     * Sergeant Vex's gear check — the readiness beat before his first "go fight".
++     * Soft gate: plays once per player, only when they look under-geared, and always
++     * lets them through ("Ready anyway." chip, or simply clicking Vex again).
++     *
++     * @return true when the check played (caller skips the offer this click)
++     */
++    private boolean vexGearCheck(Player player, QuestNPC npc) {
++        AetherionQuests plugin = AetherionQuests.getInstance();
++        if (plugin == null || plugin.getPlayerQuestStorage() == null) {
++            return false;
++        }
++        String flag = "vex_gear_check";
++        if (plugin.getPlayerQuestStorage().hasStarterKit(player.getUniqueId(), flag)) {
++            return false;
++        }
++        // In-world talk only. Classic mode + QA bots (chest runners) get the offer straight away;
++        // Vex's intro already carries the checklist line for them.
++        de.aetherion.quests.talk.TalkUx talkUx = de.aetherion.quests.talk.TalkUx.get();
++        if (talkUx == null || !talkUx.enabledFor(player)) {
++            return false;
++        }
++        de.aetherion.quests.util.QuestStoryGate.CombatReadiness ready =
++                de.aetherion.quests.util.QuestStoryGate.combatReadiness(player, questManager);
++        if (ready == de.aetherion.quests.util.QuestStoryGate.CombatReadiness.READY) {
++            return false;
++        }
++        plugin.getPlayerQuestStorage().markStarterKit(player.getUniqueId(), flag);
++        dialogManager.clearPendingChoice(player);
++
++        boolean armour = ready == de.aetherion.quests.util.QuestStoryGate.CombatReadiness.NO_ARMOUR;
++        String[] lines = armour
++                ? new String[] {
++                        de.aetherion.quests.lang.LangPack.say(player, "vex.check_armour", "Gear check, {player}. …No armour. Bold. Also stupid."),
++                        de.aetherion.quests.lang.LangPack.say(player, "vex.check_armour_fix", "Egon's kit — armour goes in the armour slots. Then come back.")
++                }
++                : new String[] {
++                        de.aetherion.quests.lang.LangPack.say(player, "vex.check_boost", "Gear check. Armour: fine. Blade: plain."),
++                        de.aetherion.quests.lang.LangPack.say(player, "vex.check_boost_fix", "§eTemper§f fuses boosters, on the road to Capital. The ten go faster.")
++                };
++        for (String line : lines) {
++            npcSay(player, npc, line);
++        }
++        String tipKey = armour ? "tip.vex_armour" : "tip.vex_temper";
++        String tipEn = armour ? "Tip · Inventory → armour slots · Egon's kit" : "Tip · Temper · one booster first";
++
++        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
++            if (!player.isOnline()) {
++                return;
++            }
++            player.sendActionBar(net.kyori.adventure.text.Component.text(
++                    de.aetherion.quests.lang.LangPack.ui(player, tipKey, tipEn),
++                    net.kyori.adventure.text.format.NamedTextColor.RED
++            ));
++            java.util.List<de.aetherion.quests.talk.TalkUx.Choice> choices = java.util.List.of(
++                    new de.aetherion.quests.talk.TalkUx.Choice(
++                            de.aetherion.quests.lang.LangPack.say(player, "vex.chip_gear", "I'll gear up."),
++                            net.kyori.adventure.text.format.NamedTextColor.GREEN,
++                            () -> {
++                                npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "vex.gear_ok", "Smart. I'll be here. Shouting."));
++                                if (!armour) {
++                                    de.aetherion.quests.ui.QuestHint.show(player, "booster_tutor", "Temper");
++                                }
++                            },
++                            false,
++                            de.aetherion.quests.lang.LangPack.say(player, "vex.chip_gear", "I'll gear up.")
++                    ),
++                    new de.aetherion.quests.talk.TalkUx.Choice(
++                            de.aetherion.quests.lang.LangPack.say(player, "vex.chip_ready", "Ready anyway."),
++                            net.kyori.adventure.text.format.NamedTextColor.RED,
++                            () -> dialogManager.startDialog(player, npc),
++                            false,
++                            de.aetherion.quests.lang.LangPack.say(player, "vex.chip_ready", "Ready anyway.")
++                    )
++            );
++            de.aetherion.quests.talk.TalkUx talk = de.aetherion.quests.talk.TalkUx.get();
++            if (talk == null || !talk.choices(player, npc.getId(), npc.getName(), choices)) {
++                npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "vex.check_again",
++                        "Talk to me when you're set. Or if you're feeling brave."));
++            }
++        }, de.aetherion.quests.dialog.DialogPace.LINE_GAP_TICKS * lines.length + 10L);
++        return true;
++    }
++
+     /**
+      * Miss Ledger's help desk in-world: four briefing topics + "More topics…" (chest desk)
+      * as reply chips. Returns false when the in-world path can't run.
+@@ -2448,7 +2527,16 @@ public class NpcListener implements Listener {
+         }
+         java.util.Map<String, String[]> topics = de.aetherion.quests.ui.EgonBriefingGUI.talkTopics();
+         java.util.List<de.aetherion.quests.talk.TalkUx.Choice> choices = new java.util.ArrayList<>();
+-        for (String key : java.util.List.of("Aetherion Manager", "Skills", "Pets", "Boosters")) {
++        // Red thread: always one tap from "where do I go now?". TalkUx shows 5 chips max, so
++        // Boosters moved behind "More topics…" (chest desk still has it; Temper teaches it).
++        choices.add(new de.aetherion.quests.talk.TalkUx.Choice(
++                de.aetherion.quests.lang.LangPack.say(player, "ledger.desk.where_next.label", "Where next?"),
++                net.kyori.adventure.text.format.NamedTextColor.GOLD,
++                () -> de.aetherion.quests.ui.SkillRoads.deskPrompt(player, npc),
++                false,
++                de.aetherion.quests.lang.LangPack.say(player, "ledger.desk.where_next.echo", "Where to now?")
++        ));
++        for (String key : java.util.List.of("Aetherion Manager", "Skills", "Pets")) {
+             String[] english = topics.get(key);
+             if (english == null) {
+                 continue;
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/npc/CastBook.java b/AetherionQuests/src/main/java/de/aetherion/quests/npc/CastBook.java
+index e9f0d45..96cac83 100644
+--- a/AetherionQuests/src/main/java/de/aetherion/quests/npc/CastBook.java
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/npc/CastBook.java
+@@ -201,7 +201,8 @@ public final class CastBook {
+                 "Equipped trees. Not homework.",
+                 "One slot free at start. More unlock with coin milestones.");
+         topic(v, "What's left for me?",
+-                "The yellow arrow knows. I only stamp.");
++                "Fields first. Then my stamp.",
++                "After that, every skill has an isle. I'll point.");
+ 
+         v = voice("farmer");
+         v.accept = "Let's harvest.";
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/ui/QuestHint.java b/AetherionQuests/src/main/java/de/aetherion/quests/ui/QuestHint.java
+index 8d68658..818fdbf 100644
+--- a/AetherionQuests/src/main/java/de/aetherion/quests/ui/QuestHint.java
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/ui/QuestHint.java
+@@ -33,6 +33,8 @@ public final class QuestHint {
+     /** Soft trail remembered across side-quests; restored when idle. */
+     private static final Map<UUID, Hint> PENDING = new ConcurrentHashMap<>();
+     private static final Map<UUID, BossBar> BARS = new ConcurrentHashMap<>();
++    /** Road hints (isle guides) that the player has walked up to — dropped on the next tick. */
++    private static final Map<UUID, String> ARRIVED_AT = new ConcurrentHashMap<>();
+ 
+     private QuestHint() {
+     }
+@@ -48,6 +50,7 @@ public final class QuestHint {
+         }
+         String name = label == null || label.isBlank() ? pretty(npcId) : label;
+         Hint hint = new Hint(npcId.toLowerCase(Locale.ROOT), name, note);
++        ARRIVED_AT.remove(player.getUniqueId());
+         HINTS.put(player.getUniqueId(), hint);
+         PENDING.put(player.getUniqueId(), hint);
+         tickPlayer(player);
+@@ -59,9 +62,22 @@ public final class QuestHint {
+             return;
+         }
+         String name = label == null || label.isBlank() ? pretty(npcId) : label;
++        ARRIVED_AT.remove(player.getUniqueId());
+         PENDING.put(player.getUniqueId(), new Hint(npcId.toLowerCase(Locale.ROOT), name, null));
+     }
+ 
++    /** NPC id of the remembered soft trail (visible or waiting), or null. */
++    public static String pendingNpc(Player player) {
++        if (player == null) {
++            return null;
++        }
++        Hint hint = PENDING.get(player.getUniqueId());
++        if (hint == null) {
++            hint = HINTS.get(player.getUniqueId());
++        }
++        return hint == null ? null : hint.npcId();
++    }
++
+     public static void clear(Player player) {
+         if (player == null) {
+             return;
+@@ -78,6 +94,7 @@ public final class QuestHint {
+         clear(player);
+         if (player != null) {
+             PENDING.remove(player.getUniqueId());
++            ARRIVED_AT.remove(player.getUniqueId());
+         }
+     }
+ 
+@@ -155,10 +172,31 @@ public final class QuestHint {
+                     || de.aetherion.quests.util.QuestStoryGate.tutorialDone(player, questManager);
+             case "farmer" -> stillNeeds(questManager, player, "farm_hand");
+             case "lark" -> stillNeeds(questManager, player, "pocket_zoo");
++            case "vex" -> stillNeeds(questManager, player, "lesson_steel");
++            case "rite_keeper" -> stillNeeds(questManager, player, "border_rites");
++            // Isle roads (Ledger's picker / harbour crumbs): the trail ends once you reach the guide.
++            case "forage_pad_guide", "farm_isle_guide" -> !npc.equals(ARRIVED_AT.get(player.getUniqueId()));
++            // Tackle: quest bar owns the pin while his lesson runs; otherwise until you reach him.
++            case "fisher" -> !npc.equals(ARRIVED_AT.get(player.getUniqueId()))
++                    && !running(questManager, player, "a_good_catch");
+             default -> true;
+         };
+     }
+ 
++    private static boolean running(QuestManager questManager, Player player, String questId) {
++        var quest = questManager.getQuest(questId);
++        if (quest == null) {
++            return false;
++        }
++        var state = questManager.getQuestState(player, quest);
++        return state == de.aetherion.quests.model.QuestState.ACTIVE
++                || state == de.aetherion.quests.model.QuestState.READY;
++    }
++
++    private static boolean isRoadNpc(String npcId) {
++        return "forage_pad_guide".equals(npcId) || "farm_isle_guide".equals(npcId) || "fisher".equals(npcId);
++    }
++
+     /** Quest not yet finished — drop pending once ACTIVE/READY/COMPLETED (quest bar owns the pin). */
+     private static boolean stillNeeds(QuestManager questManager, Player player, String questId) {
+         var quest = questManager.getQuest(questId);
+@@ -221,6 +259,9 @@ public final class QuestHint {
+         double dz = target.getZ() - player.getLocation().getZ();
+         double dist = Math.sqrt(dx * dx + dz * dz);
+         if (dist <= ARRIVED) {
++            if (isRoadNpc(hint.npcId())) {
++                ARRIVED_AT.put(player.getUniqueId(), hint.npcId());
++            }
+             bar.setTitle("§7" + de.aetherion.quests.lang.LangPack.ui(player, "hint", "Hint")
+                 + " §8• §a" + hint.label() + note + " §8• §a●");
+             bar.setColor(BarColor.GREEN);
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/ui/SkillRoads.java b/AetherionQuests/src/main/java/de/aetherion/quests/ui/SkillRoads.java
+new file mode 100644
+index 0000000..76d8d99
+--- /dev/null
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/ui/SkillRoads.java
+@@ -0,0 +1,292 @@
++package de.aetherion.quests.ui;
++
++import de.aetherion.quests.AetherionQuests;
++import de.aetherion.quests.dialog.DialogPace;
++import de.aetherion.quests.lang.LangPack;
++import de.aetherion.quests.manager.QuestManager;
++import de.aetherion.quests.npc.LivingNpcProfile;
++import de.aetherion.quests.npc.QuestNPC;
++import de.aetherion.quests.talk.TalkUx;
++import de.aetherion.quests.util.QuestStoryGate;
++
++import net.kyori.adventure.text.Component;
++import net.kyori.adventure.text.format.NamedTextColor;
++
++import org.bukkit.entity.Player;
++
++import java.util.ArrayList;
++import java.util.List;
++
++/**
++ * Red thread after orientation: Miss Ledger hands the player the "open roads" —
++ * Forage Isle (Twig), Farm Isle (Harrow), Fishing (Tackle) and Steel (Vex, later Rite Warden).
++ * <p>
++ * Soft by design: the player picks one road (reply chips) or wanders. Exactly one soft
++ * compass target is set at a time. No quest state is touched and nothing is locked.
++ */
++public final class SkillRoads {
++
++    /** Set once the Forage road was pointed at, so the harbour pad crumb doesn't repeat it. */
++    public static final String FORAGE_POINTED_KEY = "forage_harbour_pad_hint";
++
++    public enum Road {
++        FORAGE, FARM, FISH, STEEL
++    }
++
++    private SkillRoads() {
++    }
++
++    /* ------------------------------------------------------------------ graduation */
++
++    /**
++     * Graduation beat (first stamp only): two lines from Ledger, a quiet default compass
++     * target, then the road picker. Classic mode / no TalkUx: one summary line + default.
++     */
++    public static void graduation(Player player, QuestNPC ledger) {
++        if (player == null || ledger == null || !player.isOnline()) {
++            return;
++        }
++        QuestManager qm = questManager();
++        Road fallback = defaultRoad(player, qm);
++        // Default target so the bossbar never goes blank (and drops Ledger's own pin) — a chip replaces it.
++        QuestHint.clearPending(player);
++        QuestHint.show(player, npcId(player, qm, fallback), hintLabel(player, qm, fallback));
++
++        say(player, ledger, LangPack.say(player, "ledger.roads.intro",
++                "Skills grow out there, {player}. Not at my desk."));
++
++        if (!talkReady(player)) {
++            say(player, ledger, LangPack.say(player, "ledger.roads.list",
++                    "§aTwig§f's pad: Forage Isle. §eHarrow§f's portal: Farm Isle. §bTackle§f: fishing."));
++            point(player, ledger, fallback, false);
++            return;
++        }
++        say(player, ledger, LangPack.say(player, "ledger.roads.menu",
++                "Wood, wheat, fish — or steel. Pick one. The arrow follows."));
++        later(player, DialogPace.LINE_GAP_TICKS * 2L + 10L, () -> {
++            if (!offer(player, ledger)) {
++                point(player, ledger, fallback, true);
++            }
++        });
++    }
++
++    /** Ledger desk chip "Where next?": same picker, one prompt line. */
++    public static void deskPrompt(Player player, QuestNPC ledger) {
++        if (player == null || ledger == null) {
++            return;
++        }
++        say(player, ledger, LangPack.say(player, "ledger.roads.menu",
++                "Wood, wheat, fish — or steel. Pick one. The arrow follows."));
++        later(player, DialogPace.LINE_GAP_TICKS + 10L, () -> {
++            if (!offer(player, ledger)) {
++                point(player, ledger, defaultRoad(player, questManager()), true);
++            }
++        });
++    }
++
++    /** Road chips beside Ledger (max 5: four roads + "I'll wander."). */
++    public static boolean offer(Player player, QuestNPC ledger) {
++        TalkUx talk = TalkUx.get();
++        if (talk == null || player == null || ledger == null || !talk.enabledFor(player)) {
++            return false;
++        }
++        QuestManager qm = questManager();
++        List<TalkUx.Choice> choices = new ArrayList<>();
++        for (Road road : Road.values()) {
++            if (road == Road.STEEL && steelDone(player, qm)) {
++                continue;
++            }
++            String key = labelKey(player, qm, road);
++            choices.add(new TalkUx.Choice(
++                    label(player, key),
++                    color(road),
++                    () -> point(player, ledger, road, true),
++                    false,
++                    echo(player, key)
++            ));
++        }
++        choices.add(new TalkUx.Choice(
++                LangPack.say(player, "ledger.roads.wander.label", "I'll wander."),
++                NamedTextColor.GRAY,
++                () -> {
++                    // Their call: no compass nag. The desk's "Where next?" brings the roads back.
++                    QuestHint.clearPending(player);
++                    say(player, ledger, LangPack.say(player, "ledger.roads.wander.line",
++                            "Good. The map's yours. My desk isn't going anywhere."));
++                },
++                false,
++                LangPack.say(player, "ledger.roads.wander.echo", "I'll look around.")
++        ));
++        return talk.choices(player, ledger.getId(), ledger.getName(), choices);
++    }
++
++    /**
++     * Point at one road: speaker line, one compass target, one action-bar tip.
++     * {@code speak=false} skips the line (already covered by a summary).
++     */
++    public static void point(Player player, QuestNPC speaker, Road road, boolean speak) {
++        if (player == null || road == null || !player.isOnline()) {
++            return;
++        }
++        QuestManager qm = questManager();
++        String key = labelKey(player, qm, road);
++        if (speak && speaker != null) {
++            say(player, speaker, line(player, lineKey(player, qm, road)));
++        }
++        QuestHint.clearPending(player);
++        QuestHint.show(player, npcId(player, qm, road), hintLabel(player, qm, road));
++        player.sendActionBar(Component.text(tip(player, key), color(road)));
++        if (road == Road.FORAGE) {
++            markForagePointed(player);
++        }
++    }
++
++    /** Plain default when the player doesn't pick: the harbour lesson first, then the isle trees. */
++    public static Road defaultRoad(Player player, QuestManager qm) {
++        if (qm != null && player != null && !QuestStoryGate.questCompleted(player, qm, "a_good_catch")) {
++            return Road.FISH;
++        }
++        return Road.FORAGE;
++    }
++
++    public static void markForagePointed(Player player) {
++        AetherionQuests plugin = AetherionQuests.getInstance();
++        if (player != null && plugin != null && plugin.getPlayerQuestStorage() != null) {
++            plugin.getPlayerQuestStorage().markStarterKit(player.getUniqueId(), FORAGE_POINTED_KEY);
++        }
++    }
++
++    /* ------------------------------------------------------------------ lookups */
++
++    static String npcId(Player player, QuestManager qm, Road road) {
++        return switch (road) {
++            case FORAGE -> "forage_pad_guide";
++            case FARM -> "farm_isle_guide";
++            case FISH -> "fisher";
++            case STEEL -> vexDone(player, qm) ? "rite_keeper" : "vex";
++        };
++    }
++
++    private static String hintLabel(Player player, QuestManager qm, Road road) {
++        return switch (road) {
++            case FORAGE -> "Twig · Forage Pad";
++            case FARM -> "Harrow · Farm Isle";
++            case FISH -> "Tackle · Fishing";
++            case STEEL -> vexDone(player, qm) ? "Rite Warden" : "Sergeant Vex";
++        };
++    }
++
++    /** Label / tip key: forage, farm, fish, steel (Vex) or rite (after Vex). */
++    private static String labelKey(Player player, QuestManager qm, Road road) {
++        return switch (road) {
++            case FORAGE -> "forage";
++            case FARM -> "farm";
++            case FISH -> "fish";
++            case STEEL -> vexDone(player, qm) ? "rite" : "steel";
++        };
++    }
++
++    private static String lineKey(Player player, QuestManager qm, Road road) {
++        String key = labelKey(player, qm, road);
++        if (road == Road.FISH && qm != null && QuestStoryGate.questCompleted(player, qm, "a_good_catch")) {
++            return key + ".line_done";
++        }
++        return key + ".line";
++    }
++
++    // Explicit keys (no string building) so the DE validator and grep see every one.
++
++    private static String label(Player player, String key) {
++        return switch (key) {
++            case "forage" -> LangPack.say(player, "ledger.roads.forage.label", "Forage Isle · Twig");
++            case "farm" -> LangPack.say(player, "ledger.roads.farm.label", "Farm Isle · Harrow");
++            case "fish" -> LangPack.say(player, "ledger.roads.fish.label", "Fishing · Tackle");
++            case "rite" -> LangPack.say(player, "ledger.roads.rite.label", "Bosses · Rite Warden");
++            default -> LangPack.say(player, "ledger.roads.steel.label", "Combat · Vex");
++        };
++    }
++
++    private static String echo(Player player, String key) {
++        return switch (key) {
++            case "forage" -> LangPack.say(player, "ledger.roads.forage.echo", "Trees, please.");
++            case "farm" -> LangPack.say(player, "ledger.roads.farm.echo", "Fields for me.");
++            case "fish" -> LangPack.say(player, "ledger.roads.fish.echo", "I'll fish.");
++            case "rite" -> LangPack.say(player, "ledger.roads.rite.echo", "Bigger things to hit.");
++            default -> LangPack.say(player, "ledger.roads.steel.echo", "Something to hit.");
++        };
++    }
++
++    private static String line(Player player, String lineKey) {
++        return switch (lineKey) {
++            case "forage.line" -> LangPack.say(player, "ledger.roads.forage.line",
++                    "§aTwig§f's slime pad, by the Forager. Isle trees, bigger chop.");
++            case "farm.line" -> LangPack.say(player, "ledger.roads.farm.line",
++                    "§eHarrow§f's portal, far end of the barn. Farming §e10§f gets you in.");
++            case "fish.line" -> LangPack.say(player, "ledger.roads.fish.line",
++                    "§bTackle§f, end of the harbour pier. Rod, patience, five fish.");
++            case "fish.line_done" -> LangPack.say(player, "ledger.roads.fish.line_done",
++                    "§bTackle§f's still on the pier. Ask him where the big ones went.");
++            case "rite.line" -> LangPack.say(player, "ledger.roads.rite.line",
++                    "§cRite Warden§f, out in the waste. Bring a vial. And nerve.");
++            default -> LangPack.say(player, "ledger.roads.steel.line",
++                    "§cSergeant Vex§f, Borderlands gate. Armour on before you knock.");
++        };
++    }
++
++    private static String tip(Player player, String key) {
++        return switch (key) {
++            case "forage" -> LangPack.ui(player, "tip.road_forage", "→ Twig · slime pad · Forage Isle");
++            case "farm" -> LangPack.ui(player, "tip.road_farm", "→ Harrow · barn far end · Farm Isle");
++            case "fish" -> LangPack.ui(player, "tip.road_fish", "→ Tackle · harbour pier · fishing");
++            case "rite" -> LangPack.ui(player, "tip.road_rite", "→ Rite Warden · Borderlands");
++            default -> LangPack.ui(player, "tip.road_steel", "→ Sergeant Vex · gear on first");
++        };
++    }
++
++    private static NamedTextColor color(Road road) {
++        return switch (road) {
++            case FORAGE -> NamedTextColor.GREEN;
++            case FARM -> NamedTextColor.YELLOW;
++            case FISH -> NamedTextColor.AQUA;
++            case STEEL -> NamedTextColor.RED;
++        };
++    }
++
++    private static boolean vexDone(Player player, QuestManager qm) {
++        return qm != null && player != null && QuestStoryGate.questCompleted(player, qm, "lesson_steel");
++    }
++
++    /** Vex and the Rite are both filed — the steel road has nothing left to point at. */
++    private static boolean steelDone(Player player, QuestManager qm) {
++        return vexDone(player, qm) && QuestStoryGate.questCompleted(player, qm, "border_rites");
++    }
++
++    /* ------------------------------------------------------------------ plumbing */
++
++    private static boolean talkReady(Player player) {
++        TalkUx talk = TalkUx.get();
++        return talk != null && talk.enabledFor(player);
++    }
++
++    private static void say(Player player, QuestNPC npc, String line) {
++        LivingNpcProfile.say(player, npc, line);
++    }
++
++    private static void later(Player player, long ticks, Runnable task) {
++        AetherionQuests plugin = AetherionQuests.getInstance();
++        if (plugin == null) {
++            task.run();
++            return;
++        }
++        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
++            if (player.isOnline()) {
++                task.run();
++            }
++        }, ticks);
++    }
++
++    private static QuestManager questManager() {
++        AetherionQuests plugin = AetherionQuests.getInstance();
++        return plugin == null ? null : plugin.getQuestManager();
++    }
++}
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/util/QuestStoryGate.java b/AetherionQuests/src/main/java/de/aetherion/quests/util/QuestStoryGate.java
+index 616a34a..ca370e9 100644
+--- a/AetherionQuests/src/main/java/de/aetherion/quests/util/QuestStoryGate.java
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/util/QuestStoryGate.java
+@@ -166,7 +166,8 @@ public final class QuestStoryGate {
+ 
+     /**
+      * Plain tips for /guide and Discord (same spine as {@link #redirectToTutorial}).
+-     * Empty list = tutorial finished (caller may add post-tutorial tips).
++     * One "next" at a time. Empty list = tutorial finished (caller may add post-tutorial tips).
++     * German readers get {@code ui.guide.*} from lang/de.yml.
+      */
+     public static java.util.List<String> guideTips(Player player) {
+         java.util.List<String> tips = new java.util.ArrayList<>();
+@@ -175,7 +176,7 @@ public final class QuestStoryGate {
+         }
+         QuestManager qm = questManager();
+         if (qm == null) {
+-            tips.add("Talk to §aEgon §7on the pier at Anker Harbour — start orientation there.");
++            tips.add(guide(player, "no_quests", "Talk to §aEgon §7on the pier at Anker Harbour — start orientation there."));
+             return tips;
+         }
+         if (tutorialDone(player, qm)) {
+@@ -184,7 +185,11 @@ public final class QuestStoryGate {
+ 
+         Quest active = qm.findActiveOrReadyQuest(player);
+         if (active != null && isTutorialQuest(active.getId())) {
+-            tips.add("Active quest: §f" + active.getTitle() + "§7 — " + active.getDescription());
++            String title = de.aetherion.quests.lang.LangPack.questTitle(player, active.getId(), active.getTitle());
++            String description = de.aetherion.quests.lang.LangPack.questDescription(player, active.getId(), active.getDescription());
++            tips.add(guide(player, "active", "Active quest: §f{0}§7 — {1}")
++                    .replace("{0}", title)
++                    .replace("{1}", description));
+         }
+ 
+         // Soft spine: Harbour (Egon) → QM → Mine → Temper → Ledger → Fields → Ledger.
+@@ -194,45 +199,79 @@ public final class QuestStoryGate {
+                     ? QuestState.COMPLETED
+                     : qm.getQuestState(player, welcome);
+             if (welcomeState == QuestState.AVAILABLE) {
+-                tips.add("Go to §aEgon §7on the pier at §fAnker Harbour§7. He's your first stop.");
+-                tips.add("Follow the green particles / trail if you see them — they point to Egon.");
++                tips.add(guide(player, "egon", "Go to §aEgon §7on the pier at §fAnker Harbour§7. He's your first stop."));
++                tips.add(guide(player, "egon_trail", "Follow the green glow on the planks — it leads to Egon."));
+             } else if (welcomeState == QuestState.ACTIVE || welcomeState == QuestState.READY) {
+-                tips.add("Egon sent you to the §aForager §7up the hill — talk to him, then chop oak.");
+-                tips.add("Bring the oak logs back to §aEgon §7on the pier.");
++                tips.add(guide(player, "forager", "Egon sent you to the §aForager §7up the hill — talk to him, then chop oak."));
++                tips.add(guide(player, "oak_back", "Bring the oak logs back to §aEgon §7on the pier."));
+             } else {
+-                tips.add("Chop oak and deliver §f10 oak logs §7to §aEgon §7on the pier.");
++                tips.add(guide(player, "oak_deliver", "Chop oak and deliver §f10 oak logs §7to §aEgon §7on the pier."));
+             }
+             return tips;
+         }
+         if (!questCompleted(player, qm, "forge_coal")) {
+-            tips.add("Next: §eQuartermaster §7past the little market — coal run (§f20 coal§7).");
++            tips.add(guide(player, "quartermaster", "Next: §eQuartermaster §7past the little market — coal run (§f20 coal§7)."));
+             return tips;
+         }
+         if (!questCompleted(player, qm, "first_shift")) {
+-            tips.add("Next: §eShaft Foreman §7at Shabby Mine — finish his shift.");
++            tips.add(guide(player, "foreman", "Next: §eShaft Foreman §7at Shabby Mine — finish his shift (§f/mines§7)."));
+             return tips;
+         }
+         if (!questCompleted(player, qm, "lesson_boost")) {
+-            tips.add("Next: §eTemper §7(Booster Tutor) at the harbour — fuse one booster.");
++            tips.add(guide(player, "temper", "Next: §eTemper §7(Booster Tutor) on the road to Capital — fuse one booster."));
+             return tips;
+         }
+         if (!questCompleted(player, qm, "lesson_manager")) {
+-            tips.add("Next: §dMiss Ledger §7at Capital — unlocks Skills in the Manager.");
++            tips.add(guide(player, "ledger", "Next: §dMiss Ledger §7at Capital — she opens Skills in the Manager."));
+             return tips;
+         }
+         if (!questCompleted(player, qm, "farm_hand")) {
+-            tips.add("Next: §eFarmer §7at the Fields — wheat.");
++            tips.add(guide(player, "farmer", "Next: §eFarmer §7at the Fields — 48 wheat, shoo the birds."));
+             return tips;
+         }
+         if (!questCompleted(player, qm, "pocket_zoo")) {
+-            tips.add("Next: §dLark §7at the Fields fence — one pet catch.");
++            tips.add(guide(player, "lark", "Next: §dLark §7at the Fields fence — one pet catch."));
+             return tips;
+         }
+ 
+-        tips.add("Return to §dMiss Ledger §7— she closes orientation / tutorial.");
++        tips.add(guide(player, "stamp", "Back to §dMiss Ledger §7— she stamps orientation shut and shows you the isles."));
+         return tips;
+     }
+ 
++    private static String guide(Player player, String key, String english) {
++        return de.aetherion.quests.lang.LangPack.ui(player, "guide." + key, english);
++    }
++
++    /** How ready the player looks for Vex's first fight — cheap, soft check (no locks). */
++    public enum CombatReadiness {
++        NO_ARMOUR,
++        NO_BOOSTER,
++        READY
++    }
++
++    /**
++     * Armour worn (2+ pieces — Egon's kit or better) and Temper's booster lesson filed.
++     * Used only to decide whether Sergeant Vex opens with a gear check.
++     */
++    public static CombatReadiness combatReadiness(Player player, QuestManager questManager) {
++        if (player == null) {
++            return CombatReadiness.READY;
++        }
++        int worn = 0;
++        for (org.bukkit.inventory.ItemStack piece : player.getInventory().getArmorContents()) {
++            if (piece != null && !piece.getType().isAir()) {
++                worn++;
++            }
++        }
++        if (worn < 2) {
++            return CombatReadiness.NO_ARMOUR;
++        }
++        if (questManager != null && !questCompleted(player, questManager, "lesson_boost")) {
++            return CombatReadiness.NO_BOOSTER;
++        }
++        return CombatReadiness.READY;
++    }
++
+     /** Soft next stop while orientation is still open. */
+     public static void redirectToTutorial(Player player, String speakerName) {
+         if (player == null) {
+diff --git a/AetherionQuests/src/main/resources/lang/de.yml b/AetherionQuests/src/main/resources/lang/de.yml
+index 7be5e94..2c8cf44 100644
+--- a/AetherionQuests/src/main/resources/lang/de.yml
++++ b/AetherionQuests/src/main/resources/lang/de.yml
+@@ -109,6 +109,32 @@ ui:
+     tutorial_farmer: "Tutorial · Felder · Farmer"
+     tutorial_lark: "Tutorial · Felder · Lark"
+     tutorial_graduation: "Tutorial · Miss Ledger · Abschluss"
++    # Red thread — Ledger's roads, harbour crumb, Twig, Vex gear check
++    road_forage: "→ Twig · Schleim-Pad · Forage Isle"
++    road_farm: "→ Harrow · hinteres Scheunenende · Farm Isle"
++    road_fish: "→ Tackle · Hafenpier · Angeln"
++    road_steel: "→ Sergeant Vex · erst Gear anlegen"
++    road_rite: "→ Rite Warden · Borderlands"
++    canopy_clerk: "Hinweis · Canopy Clerk · Forage Isle"
++    harbour_pad: "→ Schleim-Pad · Forage Isle (Twig)"
++    vex_armour: "Tipp · Inventar → Rüstungsslots · Egons Kit"
++    vex_temper: "Tipp · Temper · erst ein Booster"
++  # /guide + Discord tips (QuestStoryGate#guideTips) — one "next" at a time
++  guide:
++    no_quests: "Sprich mit §aEgon §7am Pier von Anker Harbour — da beginnt die Orientierung."
++    active: "Aktive Quest: §f{0}§7 — {1}"
++    egon: "Geh zu §aEgon §7am Pier von §fAnker Harbour§7. Er ist deine erste Station."
++    egon_trail: "Folg dem grünen Leuchten auf den Planken — es führt zu Egon."
++    forager: "Egon schickt dich zum §aForager §7am Hügel — mit ihm reden, dann Eiche hacken."
++    oak_back: "Bring die Eichenstämme zurück zu §aEgon §7am Pier."
++    oak_deliver: "Eiche hacken und §f10 Eichenstämme §7bei §aEgon §7am Pier abgeben."
++    quartermaster: "Als Nächstes: §eQuartermaster §7hinter dem kleinen Markt — Kohlelauf (§f20 Kohle§7)."
++    foreman: "Als Nächstes: §eShaft Foreman §7an der Shabby Mine — seine Schicht fertig machen (§f/mines§7)."
++    temper: "Als Nächstes: §eTemper §7(Booster Tutor) auf dem Weg zur Capital — einen Booster fusen."
++    ledger: "Als Nächstes: §dMiss Ledger §7in der Capital — sie öffnet Skills im Manager."
++    farmer: "Als Nächstes: §eFarmer §7auf den Feldern — 48 Weizen, Vögel verscheuchen."
++    lark: "Als Nächstes: §dLark §7am Feldzaun — ein Pet fangen."
++    stamp: "Zurück zu §dMiss Ledger §7— sie stempelt die Orientierung zu und zeigt dir die Inseln."
+ 
+ progress:
+   catch_pet: "Fang ein Pet"
+@@ -125,6 +151,7 @@ msg:
+   language_saved_en: "Language saved · English"
+   done_fallback: "Wir sind hier fertig. Nerv ein anderes Klemmbrett."
+   chests_unlocked: "§aKisten frei. §7Probekiste beim Merchant + Welt-Kisten sind aktiv."
++  harbour_pad: "§a✦ §7Hafen-Pad: §aTwig§7 zeigt dir den Schleimsprung → §aForage Isle§7."
+ 
+ quests:
+   welcome_aboard:
+@@ -326,7 +353,7 @@ dialogs:
+   vex_intro:
+     - "Sergeant Vex. Tor zu den §cBorderlands§f — Ödland hinter der Mauer."
+     - "Erste Lektion: zehn Feinde. Husk, Stray, Crawler — mir egal, welche."
+-    - "Zu hart? Combat-Set aus dem Recipe Book. Booster auf den Anvil."
++    - "Checkliste: Rüstung an, Klinge in der Hand, Essen im Beutel. Booster helfen."
+     - "Und jetzt Abmarsch, {player}."
+ 
+   # ---------------------------------------------------------------- Borderlands (Hub pass owns these — unchanged)
+@@ -560,10 +587,10 @@ completed:
+       - "§eGelber Pfeil oben§f. Trau ihm mehr als mir."
+     after_coal:
+       - "Hält das Kit, {player}? Gut. Sag's mir nicht, wenn nicht."
+-      - "Am Pier ist Ruhe. So mag ich das."
++      - "Am Pier ist Ruhe. §bTackle§f angelt ganz vorne, falls du 'ne Rute willst."
+   lumberjack:
+     - "Egon hat seine Eiche? Gut. Behalt die Axt. Sie mag dich."
+-    - "Komm wieder, wenn dir der Harzgeruch fehlt."
++    - "Mal 'nen Nachmittag frei? §aTwigs§f Schleim-Pad ist gleich hinter mir. Forage Isle."
+   quartermaster:
+     - "Kohle abgeheftet, {player}. Der Mines-Teleport bleibt offen — §e/mines§f."
+     - "Einmal hinlaufen, dann gehört's dir. §e/spawns§f listet alles."
+@@ -738,7 +765,7 @@ talk:
+     next_fields: "Als Nächstes: die Felder. §eFarmer§f braucht Weizen, §eLark§f macht Pets. Dann zurück zu mir."
+     fields_farmer: "Wenn du so weit bist: die Felder. §eFarmer§f braucht Weizen — ernten, Vögel verscheuchen."
+     fields_lark: "§eLark§f macht Pets, gleiche Ecke. Der, der mit einem Papagei redet."
+-    come_back: "§aNach beiden zurück zu mir. §fIch schließe die Orientierung — und hab einen Hilfeschalter."
++    come_back: "§aNach beiden zurück zu mir. §fDann zeig ich dir, wo Skills wirklich wachsen."
+     early: "Zu früh. Skills sind noch zu."
+     early_foreman: "§eShaft Foreman §fan den Minen — mach seine Schicht. Dann komm zurück."
+     refresher_desk: "Auffrischung? Hier ist der Schalter."
+@@ -747,9 +774,42 @@ talk:
+     hint_vex: "§cSergeant Vex§f am Borderlands-Tor, falls du neugierig bist. Wenn du hängst: ich bin hier."
+     hint_rite: "§cRite Warden§f draußen im Ödland, falls du neugierig bist. Wenn du hängst: ich bin hier."
+     hint_help: "Später festgefahren? Du weißt, wo ich sitze."
++    # Red thread — the roads after the stamp (ui/SkillRoads.java)
++    roads:
++      intro: "Skills wachsen da draußen, {player}. Nicht an meinem Schalter."
++      menu: "Holz, Weizen, Fisch — oder Stahl. Such dir was aus. Der Pfeil folgt."
++      list: "§aTwigs§f Pad: Forage Isle. §eHarrows§f Portal: Farm Isle. §bTackle§f: Angeln."
++      forage:
++        label: "Forage Isle · Twig"
++        echo: "Bäume, bitte."
++        line: "§aTwigs§f Schleim-Pad, beim Forager. Inselbäume, dickere Stämme."
++      farm:
++        label: "Farm Isle · Harrow"
++        echo: "Felder für mich."
++        line: "§eHarrows§f Portal, hinteres Ende der Scheune. Ab Farming §e10§f kommst du rein."
++      fish:
++        label: "Angeln · Tackle"
++        echo: "Ich angle."
++        line: "§bTackle§f, ganz vorne am Hafenpier. Rute, Geduld, fünf Fische."
++        line_done: "§bTackle§f steht noch am Pier. Frag ihn, wo die großen hin sind."
++      steel:
++        label: "Kampf · Vex"
++        echo: "Was zum Draufhauen."
++        line: "§cSergeant Vex§f, am Borderlands-Tor. Rüstung an, bevor du klopfst."
++      rite:
++        label: "Bosse · Rite Warden"
++        echo: "Größeres zum Draufhauen."
++        line: "§cRite Warden§f, draußen im Ödland. Bring ein Fläschchen mit. Und Nerven."
++      wander:
++        label: "Ich schau mich um."
++        echo: "Ich schau mich erst mal um."
++        line: "Gut. Die Karte gehört dir. Mein Schalter läuft nicht weg."
+     desk_prompt: "Auffrischung, {player}? Such dir ein Thema aus."
+     desk:
+       more: "Mehr Themen…"
++      where_next:
++        label: "Wohin jetzt?"
++        echo: "Wohin als Nächstes?"
+       aetherion_manager:
+         label: "Aetherion Manager"
+         echo: "Erzähl mir vom Manager."
+@@ -809,6 +869,15 @@ talk:
+     death_up: "Wieder in der Senkrechten."
+     death_gear: "Probleme? Combat-Set + Booster. Recipe Book und Anvil. Dann die zehn fertig machen."
+     death_temper: "Probleme? §eTemper§7 bringt dir Booster bei. Das Combat-Set steht im Recipe Book."
++    # Red thread — gear check before the first "go fight" (once, skippable)
++    check_armour: "Gear-Check, {player}. …Keine Rüstung. Mutig. Und dumm."
++    check_armour_fix: "Egons Kit — die Rüstung gehört in die Rüstungsslots. Dann komm wieder."
++    check_boost: "Gear-Check. Rüstung: passt. Klinge: nackt."
++    check_boost_fix: "§eTemper§f fust Booster, auf dem Weg zur Capital. Dann gehen die zehn schneller."
++    chip_gear: "Ich rüste auf."
++    chip_ready: "Bin trotzdem bereit."
++    gear_ok: "Klug. Ich bin hier. Am Brüllen."
++    check_again: "Sprich mich an, wenn du so weit bist. Oder wenn du dich mutig fühlst."
+   vince:
+     visit:
+       - "Casino ist hinter mir. Such dir 'ne Maschine. Nicht auf den Filz heulen."
+@@ -967,7 +1036,7 @@ cast:
+       - label: "Was sind Skills?"
+         lines: ["Ausgerüstete Bäume. Keine Hausaufgaben.", "Ein Slot frei zum Start. Mehr gibt's mit Münz-Meilensteinen."]
+       - label: "Was steht noch an?"
+-        lines: ["Der gelbe Pfeil weiß es. Ich stemple nur."]
++        lines: ["Erst die Felder. Dann mein Stempel.", "Danach hat jeder Skill seine Insel. Ich zeig sie dir."]
+   farmer:
+     accept: "Ab ans Ernten."
+     decline: "Jetzt nicht."

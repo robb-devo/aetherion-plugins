@@ -1,0 +1,3060 @@
+From daabf3c6926f2ec5c47b3b3cef5d16c051f0340b Mon Sep 17 00:00:00 2001
+From: Robbi <ropebe51@gmail.com>
+Date: Mon, 28 Sep 2026 23:30:04 +0200
+Subject: [PATCH 2/2] Helios Requiem polish pass 2: hunt, escalate, smooth,
+ star vault
+
+A  Herald: new Starfall (leap into the star's light, hunt a player with a
+   floor ring, lock, meteor dive + jumpable shockwave; 2x below 50 %),
+   84 BPM, moves chain on the next beat, flurries 3/4, 4-beat openings that
+   start as soon as his move ends, one hazard alongside his own move.
+   Blink vanishes in place, streak + lunge + follow-through. Body pushed
+   every tick with interpolation overlap; blade double-push fixed; mirror
+   shuffle/reveal are cuts; intro blades visible; English title.
+B  Star: accumulated spin phase (spin changes made the whole star and belt
+   jump), eased spin, odd-tick pushes, 3-tick interpolation at 2-tick
+   cadence (also rig, debris, singularity, falling sectors, supernova).
+C  Constellation: after the relay the floor beam HUNTS (weighty chase,
+   retargets every 2 beats with ping + hairline), then the scar TEARS
+   (fuses, chained eruptions, holes that grow back). Requiem keeps the
+   short form. Portal spin no longer jumps.
+E  Singularity: Helios herds from outside the party; new Gravity Tether
+   binds a player to the hole (extra pull, one burn, Helios holds the rein).
+F  Supernova: unstable-star convulsions with metal/glass crashes and sky
+   strobe, second wall + roar + sky fractures + aftershocks after the blast.
+G  Star Vault born out of the dying star, floats over the pit, builds a
+   dais and four N/E/S/W staircases beat by beat; capsules come out of it
+   onto the dais. Loot wiring unchanged. Cleared on every exit.
+
+helios.yml v4 (new knobs: herald.starfall, herald.pacing, portals hunt/tear,
+helios.tether). D (arena expansion) intentionally left out: see
+BossEngine/docs/HELIOS_POLISH_PASS2_CHANGELOG.md.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_015RSgCUqZ7nNf8EUo5cqZPh
+---
+ .../docs/HELIOS_POLISH_PASS2_CHANGELOG.md     |  93 ++++
+ .../bossengine/helios/core/HeliosStage.java   |  18 +-
+ .../helios/encounter/ActScript.java           |  18 +-
+ .../helios/encounter/HeliosEncounter.java     |  27 ++
+ .../bossengine/helios/herald/BladeSwarm.java  |   3 +-
+ .../bossengine/helios/herald/BlinkStrike.java |  50 +-
+ .../bossengine/helios/herald/HeraldRig.java   |  33 +-
+ .../helios/herald/HeraldScript.java           |  57 ++-
+ .../bossengine/helios/herald/Starfall.java    | 333 +++++++++++++
+ .../bossengine/helios/requiem/ArenaBreak.java |   3 +-
+ .../helios/requiem/DebrisField.java           |   2 +-
+ .../helios/requiem/GravityTether.java         | 216 +++++++++
+ .../helios/requiem/HeliosScript.java          |  88 +++-
+ .../helios/requiem/PortalBeams.java           | 387 ++++++++++++++-
+ .../helios/requiem/Singularity.java           |  22 +-
+ .../bossengine/helios/requiem/Supernova.java  | 187 ++++++-
+ .../bossengine/helios/reward/StarVault.java   | 458 ++++++++++++++++++
+ .../helios/reward/StarseedReliquary.java      |  73 ++-
+ .../bossengine/helios/star/DyingStar.java     |  24 +-
+ BossEngine/src/main/resources/helios.yml      |  29 +-
+ 20 files changed, 2017 insertions(+), 104 deletions(-)
+ create mode 100644 BossEngine/docs/HELIOS_POLISH_PASS2_CHANGELOG.md
+ create mode 100644 BossEngine/src/main/java/de/aetherion/bossengine/helios/herald/Starfall.java
+ create mode 100644 BossEngine/src/main/java/de/aetherion/bossengine/helios/requiem/GravityTether.java
+ create mode 100644 BossEngine/src/main/java/de/aetherion/bossengine/helios/reward/StarVault.java
+
+diff --git a/BossEngine/docs/HELIOS_POLISH_PASS2_CHANGELOG.md b/BossEngine/docs/HELIOS_POLISH_PASS2_CHANGELOG.md
+new file mode 100644
+index 0000000..4ca3e8c
+--- /dev/null
++++ b/BossEngine/docs/HELIOS_POLISH_PASS2_CHANGELOG.md
+@@ -0,0 +1,93 @@
++# Helios Requiem: Polish Pass 2
++
++Branch `claude/helios-polish-pass2` on top of the live `_wt_helios_polish` tree
++(`claude/helios-polish` @ b18fc46 + the live-only patches that were uncommitted there; commit 1 records
++them). Config: `helios.yml` **v4** (old copy is kept as `helios.yml.v3.bak`). Boss YAMLs unchanged (v3).
++
++## A · Act I, the Herald
++* **New move: Starfall** (`/helios attack starfall|starfall2`, from 90 % HP): he crouches, leaps into
++  the star's light and hangs there hunting one player with an amber floor ring (slower than a walk, so
++  you drag it but can't lose it) and a white hairline. Half a beat before the dive the ring goes white and
++  locks; he lands like a meteor: crater, cracks, and a flat shockwave rolling out (jump it). One beat on
++  his knee afterwards. Below 50 % he dives twice, enraged three times, each dive on someone else.
++* **Pacing:** 84 BPM (was 78), moves chain on the next beat, flurries of 3 (4 below half), Opening 4 beats
++  (was 6) and it opens as soon as his own move is done (a running cage keeps going; no idle dead zone).
++  He may run one hazard alongside his own move (two below half). Blink chains 3x when enraged.
++* **Blink:** vanishes in place (no smear), a white streak shows his path, he appears wound-up one step
++  short and lunges through the cut, follow-through held, then guard. Local shake on the hit.
++* **Hitching fixed:** the body is pushed every tick with one tick of interpolation overlap (was every
++  second tick, interp == cadence: a late packet froze him). Blade swarm blades were pushed twice per tick
++  with two different interpolations: fixed. Mirror shuffle / reveal are jump cuts instead of slides.
++  During the mirror the real one moves exactly like the clones (only the heartbeat gives it away).
++* Intro: the four blades falling out of the corona were invisible (hidden with the body): now visible.
++  Title is English ("THE HERALD").
++
++## B · Intro orbit debris ("comets")
++* The star's rotation was `clock * spinRate`: every spin change (e.g. 0.4 → 1 at intro tick 85) made the
++  whole star, corona and belt jump. Now an accumulated phase, and spin changes glide.
++* Star pushed on odd ticks (bodies on even) with 3-tick interpolation for a 2-tick cadence (overlap
++  absorbs network jitter). Same overlap for Helios' rig, debris field, singularity, falling sectors and
++  the supernova's 2-tick pieces.
++
++## C · The signature beam (Constellation)
++Summon → constellation → charge → relay unchanged, then:
++* **HUNT** (8 beats): the floor beam locks onto a player and chases them. It has weight (limited
++  acceleration, top speed ramps from a walk to just under a sprint), so a sprint plus a hard turn shakes
++  it. Every 2 beats it picks the next player (ping + magenta hairline + action bar). Touch-down ring,
++  scorch, cracks, molten trail; the whole chain surges on every beat, the mask stares at the touch-down.
++  Prism side beams rake their lanes like walls, then fade.
++* **TEAR:** the scar glows white for one beat (fuses + cracks + rising tone), then erupts along its
++  length oldest-first: pillars of light, and every third point tears a hole through the floor. Holes grow
++  back after 9 s unless that sector was destroyed for good (burned / shattered / seam).
++* The Requiem keeps the short form (no hunt) so its music stays in time.
++* Portal rims no longer jump when the spin rate changes (accumulated spin).
++
++## D · Arena expansion
++Not done: temporary floor outside the layout collides with the supernova rebuild (`restore` +
++`revertTemps` would punch holes) and with rescue / island logic. The Tear gives the reshaping instead.
++
++## E · Singularity
++* **Herding:** Helios hangs just outside the party (between them and the rim) and swoops round every
++  4 beats: hitting it means walking away from the pull, escaping it means walking into the pull.
++* **New move: Gravity Tether** (`/helios attack tether`, singularity only): a violet hairline from the
++  core marks the player farthest from the hole (collar closes on the beat, a note only they hear), then a
++  chain of dark light binds them for 3 beats: extra pull (`helios.tether.pull`, sprint outward still
++  just holds), one burn halfway, Helios holding the other end. Two players below 15 % / enraged.
++* Portals weigh less during the singularity (2), tether 4.
++
++## F · Death (supernova)
++Structure unchanged, pushed further:
++* **Unstable star:** seven accelerating convulsions during the swell: shells lurch out and snap back,
++  rays flare, a crash of metal and glass (anvil, mace, chain, glass, later sonic boom + bell), camera
++  jolts; the last three strobe the sky. The point trembles harder and harder.
++* **Over-dimensional detonation:** after the main blast a second wall (anvil destroy, shield break, glass
++  in three pitches, golem death, door break, explosion), then a roar from beyond (wither spawn, dragon
++  growl, thunder, sonic boom), the sky cracking into huge planes of light, aftershocks rolling away.
++
++## G · The Star Vault and the stairs
++* ~2 s after the detonation the pulsar's point swells and the **Star Vault** is born out of the dead
++  star: plates fly out and lock together round a white-hot seed, two halos spin up. It sinks over the
++  pit to float above the centre.
++* Beat by beat the star builds the way up: first a dais of light under the vault (gold, smooth quartz,
++  quartz brick), then five steps at a time on **four staircases (N/E/S/W)** until they touch the Crown.
++  Each step is star-matter flying out of the vault and becoming real stone on the beat, one note higher.
++* When the loot arrives the lid lifts and each capsule rises out of the vault and settles on the dais.
++  Loot wiring, claim rules, expiry and offline delivery are unchanged (`StarseedReliquary`).
++* Cleanup: the vault clears its blocks and displays on every exit (victory close, abort, leave,
++  disable); blocks sit only in the pit (no layout cells), so the arena restore never touches them; a
++  crash is caught by the slot wipe.
++
++## Config (helios.yml v4)
++`tempo.herald 84` · `herald.pacing.opening-beats 4` · `herald.starfall.power 60` ·
++`herald.starfall.wave.power 30` · `helios.portals.hunt-beats 8` · `hunt-speed-start 0.16` ·
++`hunt-speed-end 0.27` · `hunt-accel 0.024` · `hunt.power 36` · `tear.power 44` ·
++`tear-regrow-seconds 9` · `helios.tether.power 14` · `helios.tether.pull 0.03`.
++
++## Playtest notes
++* `/helios start <you>` → watch the intro belt (no lurch at the heartbeat 4 ignition), blades falling.
++* Herald: `/helios attack starfall2`, `blink3`, `swarm`; `/helios hp 51` mirror (shuffles are cuts).
++* Act II: `/helios attack portals` (hunt + tear), `/helios hp 24` then `/helios attack tether`.
++* Death: `/helios hp 5` → Requiem → kill; listen for the convulsions and the second/third blast, then
++  the vault birth, the dais + four stairs, capsules on the dais.
++* Tuning knobs if it's too much: `hunt-speed-end`, `hunt-beats`, `tear.power`, `tether.pull`,
++  `starfall.power`, `herald.pacing.opening-beats`, `tempo.herald`.
+diff --git a/BossEngine/src/main/java/de/aetherion/bossengine/helios/core/HeliosStage.java b/BossEngine/src/main/java/de/aetherion/bossengine/helios/core/HeliosStage.java
+index 8e32587..cd06c5f 100644
+--- a/BossEngine/src/main/java/de/aetherion/bossengine/helios/core/HeliosStage.java
++++ b/BossEngine/src/main/java/de/aetherion/bossengine/helios/core/HeliosStage.java
+@@ -40,6 +40,10 @@ import java.util.function.Supplier;
+ public final class HeliosStage {
+ 
+     public static final float VIEW_RANGE = 4f;
++    /** Interpolation for pieces pushed every tick (one tick of overlap absorbs network jitter). */
++    public static final int SMOOTH_1 = 2;
++    /** Interpolation for pieces pushed every second tick. */
++    public static final int SMOOTH_2 = 3;
+ 
+     private final Location anchor;
+     private final World world;
+@@ -311,10 +315,16 @@ public final class HeliosStage {
+     /* ------------------------------------------------------------------ pushing */
+ 
+     /**
+-     * Pushes a pose. The interpolation must match how often the caller pushes: the client starts each
+-     * new interpolation from the previous <i>target</i>, so a longer interpolation than the push cadence
+-     * makes pieces snap and jitter. Slow motion is therefore done by the scripts (slower animation),
+-     * never by stretching interpolation here.
++     * Pushes a pose. The client starts each new interpolation from where the piece is drawn right now
++     * (the last rendered progress), so chaining is continuous. Two rules keep motion smooth:
++     * <ul>
++     *   <li>Use one tick <i>more</i> interpolation than the push cadence ({@link #SMOOTH_1} = every tick,
++     *       {@link #SMOOTH_2} = every second tick). A packet that arrives a tick late then just lets the
++     *       current glide run on instead of freezing the piece for a tick and jerking it on (the
++     *       "sometimes stutters" of cadence == interpolation).</li>
++     *   <li>Never stretch interpolation far beyond the cadence (slow motion): the piece lags further and
++     *       further behind its target. Slow motion is done by the scripts (slower animation).</li>
++     * </ul>
+      */
+     public void push(Display d, Transformation t, int interp) {
+         if (d == null || !d.isValid()) {
+diff --git a/BossEngine/src/main/java/de/aetherion/bossengine/helios/encounter/ActScript.java b/BossEngine/src/main/java/de/aetherion/bossengine/helios/encounter/ActScript.java
+index c7dc850..262de5c 100644
+--- a/BossEngine/src/main/java/de/aetherion/bossengine/helios/encounter/ActScript.java
++++ b/BossEngine/src/main/java/de/aetherion/bossengine/helios/encounter/ActScript.java
+@@ -247,6 +247,11 @@ public abstract class ActScript implements BossScript {
+         return 3;
+     }
+ 
++    /** Beats between two moves of a flurry (after the next beat boundary). 0 = straight on the next beat. */
++    protected int breathBeats() {
++        return 1;
++    }
++
+     /* ================================================================== scheduler */
+ 
+     protected void enterFight() {
+@@ -342,7 +347,7 @@ public abstract class ActScript implements BossScript {
+             nextPickAt = Integer.MAX_VALUE / 2;
+         } else {
+             // The next move counts in on the beat after a short breath.
+-            nextPickAt = clock + enc.tempo().ticksUntil(1);
++            nextPickAt = clock + enc.tempo().ticksUntil(breathBeats());
+         }
+     }
+ 
+@@ -401,6 +406,15 @@ public abstract class ActScript implements BossScript {
+     protected void onOpening(boolean open) {
+     }
+ 
++    /**
++     * Does the Opening wait until every hazard has finished? (Helios: yes, its hazards are the fight.)
++     * When false it opens as soon as the body is free, and long hazards (a cage) keep running meanwhile:
++     * no dead stretch where the boss idles and nothing happens.
++     */
++    protected boolean openingWaitsForHazards() {
++        return true;
++    }
++
+     private boolean hazardsRunning() {
+         for (Attack a : running) {
+             if (a.family() != Attack.Family.ARENA) {
+@@ -411,7 +425,7 @@ public abstract class ActScript implements BossScript {
+     }
+ 
+     private void tickOpening() {
+-        if (openingPending && !paused() && !hazardsRunning()) {
++        if (openingPending && !paused() && (openingWaitsForHazards() ? !hazardsRunning() : !bodyBusy())) {
+             openingPending = false;
+             openingLen = Math.max(20, enc.tempo().ticks(openingBeats()));
+             openingUntil = clock + openingLen;
+diff --git a/BossEngine/src/main/java/de/aetherion/bossengine/helios/encounter/HeliosEncounter.java b/BossEngine/src/main/java/de/aetherion/bossengine/helios/encounter/HeliosEncounter.java
+index 7cb72e2..4d0d9fb 100644
+--- a/BossEngine/src/main/java/de/aetherion/bossengine/helios/encounter/HeliosEncounter.java
++++ b/BossEngine/src/main/java/de/aetherion/bossengine/helios/encounter/HeliosEncounter.java
+@@ -13,6 +13,7 @@ import de.aetherion.bossengine.helios.core.HeliosStage;
+ import de.aetherion.bossengine.helios.core.Score;
+ import de.aetherion.bossengine.helios.core.SkyControl;
+ import de.aetherion.bossengine.helios.core.Tempo;
++import de.aetherion.bossengine.helios.reward.StarVault;
+ import de.aetherion.bossengine.helios.reward.StarseedReliquary;
+ import de.aetherion.bossengine.helios.star.DyingStar;
+ import de.aetherion.bossengine.helios.world.Arena;
+@@ -84,6 +85,7 @@ public final class HeliosEncounter {
+     private DyingStar star;
+     private final HeliosBars bars = new HeliosBars();
+     private StarseedReliquary reliquary;
++    private StarVault vault;
+ 
+     private BossInstance herald;
+     private BossInstance helios;
+@@ -180,6 +182,23 @@ public final class HeliosEncounter {
+         return bars;
+     }
+ 
++    /** The reliquary's vault (born out of the dying star during the supernova), or null. */
++    public StarVault vault() {
++        return vault;
++    }
++
++    /** The supernova gives birth to the vault at {@code at}; it then descends and builds its stairs itself. */
++    public StarVault birthVault(Vector3f at) {
++        if (act == Act.CLOSED || stage == null) {
++            return null;
++        }
++        if (vault == null) {
++            vault = new StarVault(this);
++        }
++        vault.birth(at);
++        return vault;
++    }
++
+     public Participants party() {
+         return party;
+     }
+@@ -464,6 +483,9 @@ public final class HeliosEncounter {
+             arena.tick();
+             guardPlayers();
+             tickBars();
++            if (vault != null) {
++                vault.tick();
++            }
+             if (reliquary != null) {
+                 reliquary.tick();
+                 if (reliquary.finished() && closeAt < 0) {
+@@ -881,6 +903,11 @@ public final class HeliosEncounter {
+             reliquary.deliverAll();
+             reliquary.clear();
+         }
++        if (vault != null) {
++            // Stairs, dais and the floating vault go on every exit (the slot wipe would catch them too).
++            vault.clear();
++            vault = null;
++        }
+         bars.hideAll();
+         for (Participants.Member m : party.all()) {
+             if (m.gone) {
+diff --git a/BossEngine/src/main/java/de/aetherion/bossengine/helios/herald/BladeSwarm.java b/BossEngine/src/main/java/de/aetherion/bossengine/helios/herald/BladeSwarm.java
+index ee75d79..4324a89 100644
+--- a/BossEngine/src/main/java/de/aetherion/bossengine/helios/herald/BladeSwarm.java
++++ b/BossEngine/src/main/java/de/aetherion/bossengine/helios/herald/BladeSwarm.java
+@@ -111,7 +111,8 @@ final class BladeSwarm extends Attack {
+             case FAN -> fan();
+             case PINCER -> pincer();
+         };
+-        s.rig().renderBladesOnly(1);
++        // No blade push here: the rig pushes every tick after the attacks ran (free blades at interp 1).
++        // Pushing here as well gave the blades two different interpolations per tick: that was the jitter.
+         return done;
+     }
+ 
+diff --git a/BossEngine/src/main/java/de/aetherion/bossengine/helios/herald/BlinkStrike.java b/BossEngine/src/main/java/de/aetherion/bossengine/helios/herald/BlinkStrike.java
+index ea2afdc..b568960 100644
+--- a/BossEngine/src/main/java/de/aetherion/bossengine/helios/herald/BlinkStrike.java
++++ b/BossEngine/src/main/java/de/aetherion/bossengine/helios/herald/BlinkStrike.java
+@@ -38,7 +38,9 @@ final class BlinkStrike extends Attack {
+     private final Vector3f landing = new Vector3f();
+     private final Vector3f aim = new Vector3f();
+     private Shapes.Line ghostLine;
++    private Shapes.Line streak;
+     private Shapes.Line landLine;
++    private final Vector3f vanishedAt = new Vector3f();
+     private final Shapes.Line[] fan = new Shapes.Line[3];
+     private Shapes.Ring arc;
+     private Shapes.Disc pad;
+@@ -65,6 +67,7 @@ final class BlinkStrike extends Attack {
+         mark = enc.tempo().ticks(2);
+         recover = enc.tempo().ticks(1.5);
+         ghostLine = new Shapes.Line(stage, g, Material.WHITE_CONCRETE, WHITE);
++        streak = new Shapes.Line(stage, g, Material.WHITE_STAINED_GLASS, WHITE);
+         landLine = new Shapes.Line(stage, g, Material.WHITE_CONCRETE, WHITE);
+         for (int i = 0; i < fan.length; i++) {
+             fan[i] = new Shapes.Line(stage, g, Material.ORANGE_STAINED_GLASS, AMBER);
+@@ -103,9 +106,15 @@ final class BlinkStrike extends Attack {
+         if (local == t0) {
+             lockLanding(rig);
+             Vector3f old = new Vector3f(rig.root);
++            vanishedAt.set(old);
+             ghostLine.set(old, new Vector3f(old).add(0f, 3.4f, 0f), 0.18f, 0);
+-            ghostLine.set(old, new Vector3f(old).add(0f, 3.4f, 0f), 0.01f, 8);
++            // Collapse in place first; the (invisible) body only moves two ticks later, so it never
++            // smears across the arena on its way to the landing point.
+             rig.visible(false);
++            // The path he takes: a white streak from where he stood to where he will land.
++            Vector3f from = new Vector3f(old).add(0f, 1.4f, 0f);
++            Vector3f to = new Vector3f(landing).add(0f, 1.4f, 0f);
++            streak.set(from, to, 0.09f, 0);
+             enc.score().at(new Vector3f(old).add(0f, 1.5f, 0f), Sound.ENTITY_ENDERMAN_TELEPORT, 1f, 1.7f);
+             landLine.set(landing, new Vector3f(landing).add(0f, 3.4f, 0f), 0.02f, 0);
+             landLine.set(landing, new Vector3f(landing).add(0f, 3.4f, 0f), 0.08f, mark);
+@@ -118,18 +127,44 @@ final class BlinkStrike extends Attack {
+                 fan[i].set(new Vector3f(landing).add(0f, 0.04f, 0f), tip, 0.04f, 4);
+             }
+         }
++        if (local == t0 + 1) {
++            // The after-image thins out where he stood.
++            ghostLine.set(vanishedAt, new Vector3f(vanishedAt).add(0f, 3.4f, 0f), 0.01f, 8);
++        }
++        if (local == t0 + 2) {
++            // Invisible now: move to one step behind the landing point, facing the target.
++            Vector3f back = new Vector3f(landing).sub(aim);
++            back.y = 0f;
++            if (back.lengthSquared() < 1e-4f) {
++                back.set(0f, 0f, -1f);
++            }
++            back.normalize().mul(1.3f);
++            rig.root.set(landing).add(back);
++            rig.face = (float) Math.atan2(aim.x - landing.x, aim.z - landing.z);
++            streak.set(new Vector3f(landing).add(0f, 1.4f, 0f), new Vector3f(landing).add(0f, 1.4f, 0f), 0.01f, 6);
++        }
+         if (local > t0 && local < t1 && (local - t0) % 3 == 0) {
+             enc.score().at(new Vector3f(landing).add(0f, 1f, 0f), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.9f, 1.8f);
+         }
+         if (local == t1) {
+             strike(rig);
+         }
++        if (local > t1 && local <= t1 + 2) {
++            // The lunge: he arrives a step short and drives through the cut.
++            rig.root.lerp(landing, 0.6f);
++        }
++        if (local == t1 + 2) {
++            rig.root.set(landing);
++        }
+         if (local == t1 + 3) {
+             // Hitstop over: the arc flies out and dies.
+             float yaw = HMath.angleOf(aim.x - landing.x, aim.z - landing.z);
+             arc.arc(new Vector3f(landing).add(0f, 1.1f, 0f), new Quaternionf(), REACH + 1.4f, 0.05f, 0.05f,
+                     yaw - HALF_CONE, yaw + HALF_CONE, 6);
+             hideMarkers(4);
++        }
++        if (local == t1 + 7) {
++            // Follow-through held, then he gathers himself.
+             rig.pose(HeraldRig.Pose.guard(), 0.2f);
+         }
+         if (local == t2) {
+@@ -162,13 +197,13 @@ final class BlinkStrike extends Attack {
+             landing.set(tf).sub(new Vector3f(dir).mul(2.4f));
+             landing.y = 0f;
+         }
+-        rig.root.set(landing);
+-        rig.face = (float) Math.atan2(aim.x - landing.x, aim.z - landing.z);
+     }
+ 
+     private void strike(HeraldRig rig) {
+         rig.visible(true);
+-        rig.snap(HeraldRig.Pose.slash());
++        // He appears mid-swing (wound up) and the lunge carries the cut through.
++        rig.snap(HeraldRig.Pose.slashWindup());
++        rig.pose(HeraldRig.Pose.slash(), 0.55f);
+         rig.flare(15);
+         for (int i = 0; i < 4; i++) {
+             if (!rig.blade(i).free) {
+@@ -181,6 +216,8 @@ final class BlinkStrike extends Attack {
+         enc.score().at(landing, Sound.ENTITY_PLAYER_ATTACK_SWEEP, 1.2f, 0.6f);
+         enc.score().at(landing, Sound.ITEM_TRIDENT_RIPTIDE_1, 1f, 1.3f);
+         enc.score().at(landing, Sound.ENTITY_BREEZE_WIND_BURST, 0.7f, 0.8f);
++        enc.score().at(landing, Sound.ITEM_MACE_SMASH_AIR, 0.9f, 0.7f);
++        enc.camera().shakeFrom(landing, 8f, 6);
+         stage.particle(org.bukkit.Particle.SWEEP_ATTACK, new Vector3f(landing).add(0f, 1.2f, 0f), 3, 0.8, 0);
+         double power = s.power("blink", 70);
+         for (Player p : enc.fighters()) {
+@@ -211,12 +248,15 @@ final class BlinkStrike extends Attack {
+             l.hide(landing, interp);
+         }
+         ghostLine.hide(landing, interp);
++        streak.hide(landing, interp);
+     }
+ 
+     private void hideAll(int interp) {
+-        Vector3f o = new Vector3f();
++        // Hidden at his feet, not at the stage origin: the first tell then grows from him.
++        Vector3f o = new Vector3f(s.rig().root);
+         landLine.hide(o, interp);
+         ghostLine.hide(o, interp);
++        streak.hide(o, interp);
+         pad.hide(o, interp);
+         for (Shapes.Line l : fan) {
+             l.hide(o, interp);
+diff --git a/BossEngine/src/main/java/de/aetherion/bossengine/helios/herald/HeraldRig.java b/BossEngine/src/main/java/de/aetherion/bossengine/helios/herald/HeraldRig.java
+index 187a951..8a54957 100644
+--- a/BossEngine/src/main/java/de/aetherion/bossengine/helios/herald/HeraldRig.java
++++ b/BossEngine/src/main/java/de/aetherion/bossengine/helios/herald/HeraldRig.java
+@@ -208,9 +208,13 @@ public final class HeraldRig {
+     private float blend = 0.25f;
+     private int clock;
+     private boolean visible = true;
++    /** Free blades (flying for an attack or the intro) show on their own, even while the body is hidden. */
++    private boolean bladesVisible = true;
+     private float scale = 1f;
+     private boolean ghost;
+     private float coreHeat = 0.6f;
++    /** Next push is a cut (no interpolation): the rig jumped (mirror shuffle / reveal) and must not smear. */
++    private boolean cutNext;
+ 
+     /* assembly: every part flies in from its own start point */
+     private float assemble = 1f;
+@@ -288,10 +292,19 @@ public final class HeraldRig {
+         this.visible = on;
+     }
+ 
++    /** The next render places everything instantly (a jump cut instead of a slide across the arena). */
++    public void cut() {
++        this.cutNext = true;
++    }
++
+     public boolean visible() {
+         return visible;
+     }
+ 
++    public void bladesVisible(boolean on) {
++        this.bladesVisible = on;
++    }
++
+     public void scale(float s) {
+         this.scale = s;
+     }
+@@ -350,11 +363,17 @@ public final class HeraldRig {
+     /* ================================================================== solve + push */
+ 
+     /**
+-     * Solve and push. {@code interp} is the interpolation per push; call every tick for snappy moves,
+-     * every second tick (interp 3) when idle.
++     * Solve and push. {@code interp} is the body's interpolation per push: call every tick with
++     * {@link HeliosStage#SMOOTH_1} (idle glide) or 1 (snappy strikes); clones every second tick with
++     * {@link HeliosStage#SMOOTH_2}. Free blades are always pushed at 1: attacks steer them tick by tick and
++     * their hit tests must match what you see.
+      */
+     public void render(int interp) {
+         clock++;
++        if (cutNext) {
++            cutNext = false;
++            interp = 0;
++        }
+         pose.approach(target, blend);
+         solve();
+         for (int i = 0; i < parts.size(); i++) {
+@@ -453,7 +472,7 @@ public final class HeraldRig {
+             place(gauntlet[side], elbow, fa, 0f, -0.62f * s, 0f);
+ 
+             Vector3f hipJoint = new Quaternionf(body).transform(new Vector3f(0.2f * sx * s, -0.06f * s, 0f)).add(hip);
+-            float thighPitch = pose.crouch * 1.05f + 0.12f * (1f - pose.crouch) * (float) Math.sin(clock * 0.05f + side);
++            float thighPitch = pose.crouch * 1.05f + 0.12f * (1f - pose.crouch) * (float) Math.sin(clock * 0.025f + side);
+             Quaternionf th = new Quaternionf(body).rotateX(-thighPitch);
+             place(thigh[side], hipJoint, th, 0f, -0.33f * s, 0f);
+             Vector3f knee = new Quaternionf(th).transform(new Vector3f(0f, -0.66f * s, 0f)).add(hipJoint);
+@@ -479,7 +498,7 @@ public final class HeraldRig {
+         Quaternionf headRot = new Quaternionf(head.worldRot);
+         Vector3f at = headRot.transform(new Vector3f(0f, 0.1f * scale, -0.32f * scale)).add(head.worldCenter);
+         Quaternionf orient = new Quaternionf(headRot).rotateX(HMath.HALF_PI);
+-        halo.pose(at, orient, 0.52f * scale, 0.05f, 0.05f, clock * 0.02f, 0f, 0f, interp);
++        halo.pose(at, orient, 0.52f * scale, 0.05f, 0.05f, clock * 0.01f, 0f, 0f, interp);
+     }
+ 
+     private void renderBlades(int interp) {
+@@ -490,19 +509,19 @@ public final class HeraldRig {
+             if (!b.free) {
+                 // Wings: two blades each side, fanned up and out behind the shoulders, breathing.
+                 float sx = i < 2 ? -1f : 1f;
+-                float spread = (i % 2 == 0 ? 0.55f : 1.05f) + 0.06f * (float) Math.sin(clock * 0.07f + i);
++                float spread = (i % 2 == 0 ? 0.55f : 1.05f) + 0.06f * (float) Math.sin(clock * 0.035f + i);
+                 Quaternionf r = new Quaternionf(body).rotateZ(sx * spread).rotateX(-0.25f);
+                 b.rot.set(r);
+                 b.pos.set(new Quaternionf(body).transform(new Vector3f(sx * (0.35f + (i % 2) * 0.12f), -0.2f, -0.1f)).add(back));
+                 b.scale = scale * 0.85f;
+                 b.hot = false;
+             }
+-            pushBlade(b, interp);
++            pushBlade(b, b.free && interp > 0 ? 1 : interp);
+         }
+     }
+ 
+     private void pushBlade(Blade b, int interp) {
+-        boolean show = visible && assemble >= 0.9f && b.scale > 0.01f;
++        boolean show = (b.free ? bladesVisible : visible && assemble >= 0.9f) && b.scale > 0.01f;
+         if (!show) {
+             stage.push(b.grip, HeliosStage.gone(b.pos), interp);
+             stage.push(b.guard, HeliosStage.gone(b.pos), interp);
+diff --git a/BossEngine/src/main/java/de/aetherion/bossengine/helios/herald/HeraldScript.java b/BossEngine/src/main/java/de/aetherion/bossengine/helios/herald/HeraldScript.java
+index 6485b6a..db44a18 100644
+--- a/BossEngine/src/main/java/de/aetherion/bossengine/helios/herald/HeraldScript.java
++++ b/BossEngine/src/main/java/de/aetherion/bossengine/helios/herald/HeraldScript.java
+@@ -3,6 +3,7 @@ package de.aetherion.bossengine.helios.herald;
+ import de.aetherion.bossengine.helios.HeliosGuard;
+ import de.aetherion.bossengine.helios.HeliosModule;
+ import de.aetherion.bossengine.helios.core.HMath;
++import de.aetherion.bossengine.helios.core.HeliosStage;
+ import de.aetherion.bossengine.helios.core.Score;
+ import de.aetherion.bossengine.helios.core.Shapes;
+ import de.aetherion.bossengine.helios.core.SkyControl;
+@@ -39,7 +40,9 @@ import java.util.concurrent.ThreadLocalRandom;
+  * <pre>
+  *   INTRO   (240 t) blackout → the star ignites beat by beat → four blades fall and bite into the Course →
+  *           armor flies in from the debris belt, feet first → the sun core ignites (white flash) → title
+- *   FIGHT   90 BPM. Blink-Strike, Blade Swarm (spiral / fan / pincer), Laser Cage, Platform Fall, Sun Lance
++ *   FIGHT   84 BPM. Blink-Strike, Blade Swarm (spiral / fan / pincer), Laser Cage, Platform Fall, Sun Lance,
++ *           Starfall (he leaps into the star's light, hunts one player and dives: crater + shockwave).
++ *           Moves chain on the next beat, flurries of 3 (4 below half), a short Opening after each.
+  *   MIRROR  (50 %) three clones; the real one's heart is audible on the beat; find it
+  *   DEATH   (210 t) he kneels, blades fall; silence; gravity beam; stretched, swallowed; flash; heartbeat
+  * </pre>
+@@ -185,7 +188,6 @@ public final class HeraldScript extends ActScript implements HeliosGuard.PropAwa
+                 b.pos.set(from).lerp(to, f);
+                 b.rot.set(new Quaternionf().rotateX(HMath.PI).rotateZ((1f - f) * 3f));
+             }
+-            rig.renderBladesOnly(1);
+             if (t == 110) {
+                 for (int i = 0; i < 4; i++) {
+                     Vector3f at = new Vector3f(rig.root).add(HMath.ring(3.2f, i * HMath.HALF_PI + HMath.PI / 4f, 0f));
+@@ -230,7 +232,7 @@ public final class HeraldScript extends ActScript implements HeliosGuard.PropAwa
+         if (t == 205) {
+             for (Player p : enc.audience()) {
+                 p.showTitle(net.kyori.adventure.title.Title.title(
+-                        TextUtil.component("&6&lDER HEROLD"),
++                        TextUtil.component("&6&lTHE HERALD"),
+                         TextUtil.component("&7Warden of the dying star"),
+                         net.kyori.adventure.title.Title.Times.times(java.time.Duration.ofMillis(300),
+                                 java.time.Duration.ofMillis(2600), java.time.Duration.ofMillis(700))));
+@@ -337,13 +339,20 @@ public final class HeraldScript extends ActScript implements HeliosGuard.PropAwa
+         if (rig == null) {
+             return;
+         }
++        // The Herald is pushed every tick: snappy (interp 1) while a move needs it, otherwise with one
++        // tick of overlap so his glide never freezes on a late packet. Clones every second tick.
+         boolean fast = fastRender || mode == Mode.DYING || (mode == Mode.INTRO && modeTick > 110);
+-        if (fast || clock % 2 == 0) {
+-            rig.render(fast ? 1 : 2);
++        if (mirrorTick >= 0 && !fast) {
++            // Mirror: the real one moves exactly like the clones (same cadence), only its heart gives it away.
++            if (clock % 2 == 0) {
++                rig.render(HeliosStage.SMOOTH_2);
++            }
++        } else {
++            rig.render(fast ? 1 : HeliosStage.SMOOTH_1);
+         }
+         for (int i = 0; i < clones.size(); i++) {
+             if (clock % 2 == i % 2) {
+-                clones.get(i).render(2);
++                clones.get(i).render(HeliosStage.SMOOTH_2);
+             }
+         }
+         if (mirrorTick >= 0 && realIndex >= 0 && realIndex < mirrorSpots.size()) {
+@@ -395,12 +404,31 @@ public final class HeraldScript extends ActScript implements HeliosGuard.PropAwa
+         if (enc.enraged()) {
+             return 3;
+         }
+-        return hp > 50 ? 1 : 2;
++        // His own move plus one hazard of another family; below half, two hazards.
++        return hp > 50 ? 2 : 3;
+     }
+ 
+     @Override
+     protected int flurryLength() {
+-        return instance.healthPercent() > 50 ? 2 : 3;
++        return instance.healthPercent() > 50 ? 3 : 4;
++    }
++
++    /** He chains: the next move counts in on the very next beat. */
++    @Override
++    protected int breathBeats() {
++        return 0;
++    }
++
++    /** He opens as soon as his own move is done; a running cage or swarm keeps going around him. */
++    @Override
++    protected boolean openingWaitsForHazards() {
++        return false;
++    }
++
++    /** Short breather, not a nap: the Opening is a bonus-damage window, he is never untouchable. */
++    @Override
++    protected int openingBeats() {
++        return Math.max(2, cfgInt("pacing.opening-beats", 4));
+     }
+ 
+     /** Spent: he sinks to one knee, the blades droop, the core gutters. Hit him. */
+@@ -436,8 +464,11 @@ public final class HeraldScript extends ActScript implements HeliosGuard.PropAwa
+     protected List<Choice> choices() {
+         double hp = instance.healthPercent();
+         List<Choice> out = new ArrayList<>();
+-        out.add(new Choice("blink", () -> new BlinkStrike(this, hp < 50 ? 2 : 1), 5, 8, Attack.Family.BODY));
+-        out.add(new Choice("swarm", () -> new BladeSwarm(this, null), 4, 14, Attack.Family.SWEEP));
++        out.add(new Choice("blink", () -> new BlinkStrike(this, enc.enraged() ? 3 : hp < 50 ? 2 : 1), 5, 8, Attack.Family.BODY));
++        out.add(new Choice("swarm", () -> new BladeSwarm(this, null), 4, 12, Attack.Family.SWEEP));
++        if (hp < 90) {
++            out.add(new Choice("starfall", () -> new Starfall(this, enc.enraged() ? 3 : hp < 50 ? 2 : 1), 3, 22, Attack.Family.BODY));
++        }
+         if (hp < 90) {
+             out.add(new Choice("platform", () -> new PlatformFall(this), 3, 32, Attack.Family.ARENA));
+         }
+@@ -462,6 +493,8 @@ public final class HeraldScript extends ActScript implements HeliosGuard.PropAwa
+         out.add(new Choice("cage", () -> new LaserCage(this), 1, 1, Attack.Family.GROUND));
+         out.add(new Choice("platform", () -> new PlatformFall(this), 1, 1, Attack.Family.ARENA));
+         out.add(new Choice("lance", () -> new SunLance(this), 1, 1, Attack.Family.BODY));
++        out.add(new Choice("starfall", () -> new Starfall(this, 1), 1, 1, Attack.Family.BODY));
++        out.add(new Choice("starfall2", () -> new Starfall(this, 2), 1, 1, Attack.Family.BODY));
+         return out;
+     }
+ 
+@@ -570,6 +603,7 @@ public final class HeraldScript extends ActScript implements HeliosGuard.PropAwa
+             r.root.set(spot);
+             r.visible(true);
+             r.snap(HeraldRig.Pose.guard());
++            r.cut();
+         }
+     }
+ 
+@@ -641,9 +675,10 @@ public final class HeraldScript extends ActScript implements HeliosGuard.PropAwa
+         }
+         HeraldRig real = realRig();
+         if (real != rig) {
+-            // Swap: the body we keep is always "rig", so move it to where the real one stood.
++            // Swap: the body we keep is always "rig", so move it to where the real one stood (a cut, no slide).
+             rig.root.set(real.root);
+             rig.face = real.face;
++            rig.cut();
+         }
+         enc.score().play(Sound.BLOCK_GLASS_BREAK, 1f, 0.6f);
+         enc.score().chord(Sound.BLOCK_NOTE_BLOCK_BELL, 0.9f, Score.semi(0), Score.semi(7));
+diff --git a/BossEngine/src/main/java/de/aetherion/bossengine/helios/herald/Starfall.java b/BossEngine/src/main/java/de/aetherion/bossengine/helios/herald/Starfall.java
+new file mode 100644
+index 0000000..2d92a74
+--- /dev/null
++++ b/BossEngine/src/main/java/de/aetherion/bossengine/helios/herald/Starfall.java
+@@ -0,0 +1,333 @@
++package de.aetherion.bossengine.helios.herald;
++
++import de.aetherion.bossengine.helios.core.HMath;
++import de.aetherion.bossengine.helios.core.Score;
++import de.aetherion.bossengine.helios.core.Shapes;
++import de.aetherion.bossengine.helios.encounter.Attack;
++import de.aetherion.bossengine.util.TextUtil;
++
++import org.bukkit.Color;
++import org.bukkit.Material;
++import org.bukkit.Sound;
++import org.bukkit.entity.Player;
++import org.joml.Quaternionf;
++import org.joml.Vector3f;
++
++/**
++ * STARFALL. The Herald's show-stopper: he crouches, leaps up into the star's light and hangs there,
++ * hunting. An amber ring on the floor follows one player (a little slower than they can run) while a
++ * white hairline drops from him onto it and a chime climbs. Half a beat before he falls the ring turns
++ * white and locks. He dives onto it like a meteor: crater, cracks, and a flat shockwave that rolls out
++ * across the floor (jump it). Then he is down on one knee for a beat. Below half health he dives twice,
++ * enraged three times, each dive hunting someone else.
++ *
++ * <p>Read: keep moving while the ring hunts you, step out of the white ring when it locks, jump the wave.
++ */
++final class Starfall extends Attack {
++
++    private static final Color AMBER = Color.fromRGB(255, 176, 60);
++    private static final Color WHITE = Color.fromRGB(255, 244, 214);
++    private static final float HEIGHT = 9f;
++    private static final float CRATER = 3.2f;
++    private static final float WAVE_MAX = 15f;
++
++    private final HeraldScript s;
++    private final int dives;
++    private int dive;
++    private int local;
++    private Player target;
++    private final Vector3f mark = new Vector3f();
++    private final Vector3f lift = new Vector3f();
++    private Shapes.Ring reticle;
++    private Shapes.Ring inner;
++    private Shapes.Line column;
++    private Shapes.Ring wave;
++    private Shapes.Disc crater;
++
++    private int windup;
++    private int rise;
++    private int hunt;
++    private int lock;
++    private int fall;
++    private int recover;
++    private int waveLen;
++    private int impactAt = -1;
++    private final Vector3f impact = new Vector3f();
++
++    Starfall(HeraldScript s, int dives) {
++        super(s);
++        this.s = s;
++        this.dives = Math.max(1, dives);
++    }
++
++    @Override
++    public String id() {
++        return "starfall";
++    }
++
++    @Override
++    public Family family() {
++        return Family.BODY;
++    }
++
++    @Override
++    public void start() {
++        windup = 6;
++        rise = Math.max(12, enc.tempo().ticks(1.25));
++        hunt = enc.tempo().ticks(2);
++        lock = Math.max(6, enc.tempo().ticks(0.5));
++        fall = 4;
++        recover = enc.tempo().ticks(1.25);
++        waveLen = enc.tempo().ticks(1.5);
++        reticle = new Shapes.Ring(stage, g, 22, Material.ORANGE_STAINED_GLASS, AMBER, 15, true);
++        inner = new Shapes.Ring(stage, g, 12, Material.YELLOW_STAINED_GLASS, AMBER, 15, true);
++        column = new Shapes.Line(stage, g, Material.WHITE_CONCRETE, WHITE);
++        wave = new Shapes.Ring(stage, g, stage.budget().scaled(40, 24), Material.WHITE_CONCRETE, WHITE, 15, true);
++        crater = new Shapes.Disc(stage, g, Material.WHITE_STAINED_GLASS, WHITE, 15);
++        Vector3f o = new Vector3f(s.rig().root);
++        reticle.hide(o, 0);
++        inner.hide(o, 0);
++        column.hide(o, 0);
++        wave.hide(o, 0);
++        crater.hide(o, 0);
++        s.fast(true);
++        nextDive();
++    }
++
++    /** Each dive hunts the player farthest from him, never the same one twice in a row (if there is a choice). */
++    private void nextDive() {
++        local = 0;
++        Player previous = target;
++        java.util.List<Player> fighters = enc.fighters();
++        target = null;
++        float best = -1f;
++        for (Player p : fighters) {
++            if (p == previous && fighters.size() > 1) {
++                continue;
++            }
++            float d = stage.feet(p).distanceSquared(s.rig().root);
++            if (d > best) {
++                best = d;
++                target = p;
++            }
++        }
++        if (target == null) {
++            target = previous;
++        }
++        lift.set(s.rig().root);
++    }
++
++    @Override
++    protected boolean tick() {
++        HeraldRig rig = s.rig();
++        int huntFrom = windup + rise;
++        int lockAt = huntFrom + hunt;
++        int fallAt = lockAt + lock;
++        int hitAt = fallAt + fall;
++        int end = hitAt + recover;
++        tickWave();
++
++        if (target != null && (!target.isValid() || target.isDead())) {
++            target = s.pickTarget(false);
++        }
++        if (local == 0) {
++            HeraldRig.Pose p = HeraldRig.Pose.guard();
++            p.crouch = 0.9f;
++            p.lean = 0.35f;
++            p.hover = 0f;
++            rig.pose(p, 0.35f);
++            enc.score().at(rig.chestPoint(), Sound.BLOCK_BEACON_POWER_SELECT, 1f, 0.7f);
++            enc.score().sweep(new Vector3f(rig.root).add(0f, 2f, 0f), Sound.BLOCK_AMETHYST_BLOCK_RESONATE, 0.8f, 1.1f, 0.6f, 1.4f, huntFrom, 3);
++        }
++        if (local == windup) {
++            // The leap: up into the star's light.
++            rig.pose(HeraldRig.Pose.raise(), 0.3f);
++            rig.flare(15);
++            rig.coreHeat(1f);
++            enc.score().at(rig.root, Sound.ENTITY_BREEZE_JUMP, 1.2f, 0.6f);
++            enc.score().at(rig.root, Sound.ENTITY_BREEZE_WIND_BURST, 1f, 0.5f);
++            enc.camera().shakeFrom(rig.root, 10f, 4);
++            stage.blockDust(new Vector3f(rig.root).add(0f, 0.2f, 0f), Material.POLISHED_BLACKSTONE, 18, 0.8);
++        }
++        if (local >= windup && local < huntFrom) {
++            float f = HMath.outCubic(HMath.window(local, windup, huntFrom));
++            Vector3f want = target == null ? new Vector3f(lift) : stage.feet(target);
++            rig.root.x = HMath.lerp(lift.x, want.x, f * 0.6f);
++            rig.root.z = HMath.lerp(lift.z, want.z, f * 0.6f);
++            rig.root.y = HEIGHT * f;
++            if (target != null) {
++                rig.faceToward(stage.feet(target), 0.3f);
++            }
++        }
++        if (local == huntFrom) {
++            mark.set(target == null ? rig.root : stage.feet(target));
++            mark.y = 0f;
++            enc.score().at(new Vector3f(mark).add(0f, 1f, 0f), Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 1f, 1.2f);
++            if (target != null) {
++                enc.score().to(target, Sound.BLOCK_NOTE_BLOCK_PLING, 1f, 0.7f);
++                target.sendActionBar(TextUtil.component("&6&lThe Herald hunts you. &eKeep moving!"));
++            }
++            HeraldRig.Pose p = HeraldRig.Pose.point(-1.2f);
++            p.hover = 0.2f;
++            rig.pose(p, 0.25f);
++        }
++        if (local >= huntFrom && local < lockAt) {
++            // The reticle hunts: a little slower than a walk, so you can drag it but not lose it.
++            if (target != null) {
++                Vector3f want = stage.feet(target);
++                want.y = 0f;
++                Vector3f step = new Vector3f(want).sub(mark);
++                float d = step.length();
++                float max = 0.2f;
++                if (d > max) {
++                    step.mul(max / d);
++                }
++                mark.add(step);
++            }
++            float f = HMath.window(local, huntFrom, lockAt);
++            rig.root.x = HMath.lerp(rig.root.x, mark.x, 0.3f);
++            rig.root.z = HMath.lerp(rig.root.z, mark.z, 0.3f);
++            rig.root.y = HEIGHT + 0.25f * (float) Math.sin(local * 0.3f);
++            float r = HMath.lerp(4.2f, CRATER + 0.2f, HMath.smooth(f));
++            if (local % 2 == 0) {
++                reticle.flat(new Vector3f(mark).add(0f, 0.06f, 0f), r, 0.16f, 0.04f, local * 0.05f, 2);
++                inner.flat(new Vector3f(mark).add(0f, 0.07f, 0f), 0.8f + 0.5f * (1f - f), 0.08f, 0.04f, -local * 0.08f, 2);
++                column.set(new Vector3f(mark).add(0f, 0.1f, 0f), new Vector3f(rig.root).add(0f, 1.2f, 0f), 0.03f + 0.04f * f, 2);
++            }
++            int step = Math.max(3, enc.tempo().ticks(0.5));
++            if ((local - huntFrom) % step == 0) {
++                int k = (local - huntFrom) / step;
++                enc.score().at(new Vector3f(mark).add(0f, 1f, 0f), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 1f, Score.semi(k * 2));
++            }
++        }
++        if (local == lockAt) {
++            // Locked: the ring goes white and stops. Get out of it.
++            if (!enc.arena().solidAt(mark.x, mark.z)) {
++                mark.set(enc.arena().safeSpot(mark));
++            }
++            reticle.material(Material.WHITE_CONCRETE);
++            reticle.glow(WHITE);
++            crater.hide(new Vector3f(mark).add(0f, 0.05f, 0f), 0);
++            wave.hide(new Vector3f(mark).add(0f, 0.3f, 0f), 0);
++            reticle.flat(new Vector3f(mark).add(0f, 0.06f, 0f), CRATER, 0.22f, 0.05f, 0f, 2);
++            inner.hide(mark, 3);
++            column.set(new Vector3f(mark).add(0f, 0.1f, 0f), new Vector3f(mark).add(0f, HEIGHT + 1.2f, 0f), 0.14f, 3);
++            enc.score().at(new Vector3f(mark).add(0f, 1f, 0f), Sound.BLOCK_BEACON_ACTIVATE, 1f, 1.6f);
++            enc.score().at(new Vector3f(mark).add(0f, 1f, 0f), Sound.BLOCK_NOTE_BLOCK_HAT, 1f, 0.8f);
++            rig.root.x = mark.x;
++            rig.root.z = mark.z;
++            HeraldRig.Pose p = HeraldRig.Pose.slashWindup();
++            p.lean = 0.9f;
++            p.hover = 0.3f;
++            rig.pose(p, 0.4f);
++        }
++        if (local >= fallAt && local < hitAt) {
++            float f = HMath.inQuad(HMath.window(local, fallAt, hitAt));
++            rig.root.set(mark.x, HEIGHT * (1f - f), mark.z);
++            if (local == fallAt) {
++                enc.score().at(new Vector3f(mark).add(0f, 4f, 0f), Sound.ITEM_TRIDENT_RIPTIDE_3, 1.2f, 0.7f);
++                rig.pose(HeraldRig.Pose.slash(), 0.6f);
++            }
++        }
++        if (local == hitAt) {
++            land(rig);
++        }
++        if (local == hitAt + 4) {
++            reticle.hide(mark, 6);
++            column.hide(mark, 4);
++        }
++        local++;
++        if (local >= end) {
++            dive++;
++            if (dive >= dives) {
++                // The last wave finishes rolling out before the move is over.
++                return impactAt < 0 || t - impactAt >= waveLen;
++            }
++            reticle.material(Material.ORANGE_STAINED_GLASS);
++            reticle.glow(AMBER);
++            nextDive();
++        }
++        return false;
++    }
++
++    private void land(HeraldRig rig) {
++        rig.root.set(mark.x, 0f, mark.z);
++        HeraldRig.Pose p = HeraldRig.Pose.kneel();
++        p.crouch = 0.85f;
++        p.lean = 0.5f;
++        rig.snap(p);
++        rig.flare(15);
++        impact.set(mark);
++        impactAt = t;
++        crater.set(new Vector3f(mark).add(0f, 0.05f, 0f), CRATER + 0.3f, 0.04f, 0.4f, 3);
++        enc.score().at(mark, Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 1.5f, 0.6f);
++        enc.score().at(mark, Sound.ENTITY_GENERIC_EXPLODE, 1.2f, 0.6f);
++        enc.score().at(mark, Sound.ENTITY_WARDEN_SONIC_BOOM, 0.6f, 0.9f);
++        enc.score().at(mark, Sound.BLOCK_ANVIL_LAND, 0.9f, 0.5f);
++        enc.camera().shakeFrom(mark, 22f, 12);
++        enc.camera().tint(Material.ORANGE_STAINED_GLASS, 1, 4);
++        stage.blockDust(new Vector3f(mark).add(0f, 0.3f, 0f), Material.POLISHED_BLACKSTONE, 40, 1.6);
++        stage.particle(org.bukkit.Particle.FLASH, new Vector3f(mark).add(0f, 0.5f, 0f), 1, 0, 0);
++        int cx = (int) Math.floor(mark.x);
++        int cz = (int) Math.floor(mark.z);
++        for (int dx = -3; dx <= 3; dx++) {
++            for (int dz = -3; dz <= 3; dz++) {
++                if (dx * dx + dz * dz <= 10) {
++                    enc.arena().crackCell(cx + dx, cz + dz, 0.75f - 0.05f * (Math.abs(dx) + Math.abs(dz)), 140);
++                }
++            }
++        }
++        double power = s.power("starfall", 60);
++        for (Player pl : enc.fighters()) {
++            Vector3f f = stage.feet(pl);
++            float d = HMath.horizontal(new Vector3f(f).sub(mark));
++            if (d <= CRATER && f.y < 2.5f) {
++                enc.hit(pl, power, "starfall", 10, HeraldScript.away(mark, f, 0.9));
++            }
++        }
++    }
++
++    /** The floor shockwave from the last impact: a flat white ring rolling outward. Jump it. */
++    private void tickWave() {
++        if (impactAt < 0) {
++            return;
++        }
++        int age = t - impactAt;
++        if (age == 8) {
++            crater.hide(impact, 8);
++        }
++        if (age > waveLen + 2) {
++            return;
++        }
++        float f = HMath.outQuad(HMath.window(age, 0, waveLen));
++        float r = HMath.lerp(CRATER, WAVE_MAX, f);
++        if (age >= waveLen) {
++            wave.hide(impact, 3);
++            return;
++        }
++        float tall = 0.6f * (1f - f) + 0.2f;
++        wave.pose(new Vector3f(impact).add(0f, 0.3f, 0f), new Quaternionf(), r, 0.35f, tall, age * 0.04f, 0f, 0f, 1);
++        double power = s.power("starfall.wave", 30);
++        for (Player p : enc.fighters()) {
++            Vector3f f0 = stage.feet(p);
++            float d = HMath.horizontal(new Vector3f(f0).sub(impact));
++            // Only once it has left the crater (whoever stood in the crater already took the dive).
++            if (r > CRATER + 0.5f && Math.abs(d - r) < 0.9f && f0.y < 0.6f) {
++                enc.hit(p, power, "starfall_wave", 12, HeraldScript.away(impact, f0, 0.6));
++            }
++        }
++    }
++
++    @Override
++    protected void cleanup() {
++        HeraldRig rig = s.rig();
++        rig.root.y = 0f;
++        rig.flare(15);
++        s.fast(false);
++    }
++
++    @Override
++    public int recovery() {
++        return enc.tempo().ticks(1);
++    }
++}
+diff --git a/BossEngine/src/main/java/de/aetherion/bossengine/helios/requiem/ArenaBreak.java b/BossEngine/src/main/java/de/aetherion/bossengine/helios/requiem/ArenaBreak.java
+index 3b9dc6a..0f534fc 100644
+--- a/BossEngine/src/main/java/de/aetherion/bossengine/helios/requiem/ArenaBreak.java
++++ b/BossEngine/src/main/java/de/aetherion/bossengine/helios/requiem/ArenaBreak.java
+@@ -1,6 +1,7 @@
+ package de.aetherion.bossengine.helios.requiem;
+ 
+ import de.aetherion.bossengine.helios.core.HMath;
++import de.aetherion.bossengine.helios.core.HeliosStage;
+ import de.aetherion.bossengine.helios.core.Shapes;
+ import de.aetherion.bossengine.helios.core.SkyControl;
+ import de.aetherion.bossengine.helios.encounter.Attack;
+@@ -234,7 +235,7 @@ final class ArenaBreak extends Attack {
+             Quaternionf tip = new Quaternionf().rotateAxis(HMath.inQuad(f) * 1.2f, axis.x, axis.y, axis.z);
+             Vector3f offset = new Vector3f(out).mul(f * 5f).add(0f, -HMath.inQuad(f) * 40f, 0f);
+             if (age % 2 == 0) {
+-                r.pose(tip, offset, 1f - 0.35f * f, 2);
++                r.pose(tip, offset, 1f - 0.35f * f, HeliosStage.SMOOTH_2);
+             }
+             if (age == 62) {
+                 r.pose(tip, offset, 0.001f, 0);
+diff --git a/BossEngine/src/main/java/de/aetherion/bossengine/helios/requiem/DebrisField.java b/BossEngine/src/main/java/de/aetherion/bossengine/helios/requiem/DebrisField.java
+index 4fa3309..0e18b93 100644
+--- a/BossEngine/src/main/java/de/aetherion/bossengine/helios/requiem/DebrisField.java
++++ b/BossEngine/src/main/java/de/aetherion/bossengine/helios/requiem/DebrisField.java
+@@ -85,7 +85,7 @@ final class DebrisField {
+                 at.lerp(pull, HMath.inCubic(collapse));
+             }
+             Quaternionf rot = new Quaternionf().rotateXYZ(t * r.spin, t * r.spin * 0.7f, r.a);
+-            stage.push(r.d, HeliosStage.cube(at, r.size * (1f - 0.9f * collapse), rot), 2);
++            stage.push(r.d, HeliosStage.cube(at, r.size * (1f - 0.9f * collapse), rot), HeliosStage.SMOOTH_2);
+         }
+     }
+ 
+diff --git a/BossEngine/src/main/java/de/aetherion/bossengine/helios/requiem/GravityTether.java b/BossEngine/src/main/java/de/aetherion/bossengine/helios/requiem/GravityTether.java
+new file mode 100644
+index 0000000..1dd37f3
+--- /dev/null
++++ b/BossEngine/src/main/java/de/aetherion/bossengine/helios/requiem/GravityTether.java
+@@ -0,0 +1,216 @@
++package de.aetherion.bossengine.helios.requiem;
++
++import de.aetherion.bossengine.helios.core.HMath;
++import de.aetherion.bossengine.helios.core.HeliosStage;
++import de.aetherion.bossengine.helios.core.Shapes;
++import de.aetherion.bossengine.helios.encounter.Attack;
++import de.aetherion.bossengine.util.TextUtil;
++
++import org.bukkit.Color;
++import org.bukkit.Material;
++import org.bukkit.Sound;
++import org.bukkit.entity.Player;
++import org.bukkit.potion.PotionEffect;
++import org.bukkit.potion.PotionEffectType;
++import org.joml.Vector3f;
++
++import java.util.ArrayList;
++import java.util.List;
++
++/**
++ * GRAVITY TETHER (singularity only). Helios hunts alongside the hole: it swings its rings shut, reads a
++ * name off the party and binds that player to the black hole.
++ *
++ * <pre>
++ *   MARK   (1 beat)  a violet hairline runs from the core to the chosen player; a low note only they hear,
++ *                    a ring closes around their feet. The one farthest from the hole is chosen first.
++ *   BIND   (3 beats) the hairline becomes a chain of dark light that follows them. The hole hauls on them
++ *                    much harder (a sprint outward just about holds; walking does not). It burns once
++ *                    halfway through. Helios holds the other end from its mask, rings spinning.
++ *   SNAP             the chain breaks with a crack of thunder; whoever is still inside the horizon takes
++ *                    the horizon's burn as usual.
++ * </pre>
++ * Below 15 % (or enraged) it binds two players at once when it can.
++ */
++final class GravityTether extends Attack {
++
++    private static final Color VIOLET = Color.fromRGB(170, 80, 255);
++
++    private final HeliosScript h;
++    private final List<Player> bound = new ArrayList<>();
++    private final List<Shapes.Line> marks = new ArrayList<>();
++    private final List<Shapes.Beam> chains = new ArrayList<>();
++    private final List<Shapes.Ring> collars = new ArrayList<>();
++    /** Helios holds the other end: a hairline from its mask to each bound player. */
++    private final List<Shapes.Line> reins = new ArrayList<>();
++    private int mark;
++    private int bind;
++
++    GravityTether(HeliosScript h) {
++        super(h);
++        this.h = h;
++    }
++
++    @Override
++    public String id() {
++        return "tether";
++    }
++
++    @Override
++    public Family family() {
++        return Family.BODY;
++    }
++
++    @Override
++    public void start() {
++        mark = enc.tempo().ticks(1);
++        bind = enc.tempo().ticks(3);
++        List<Player> f = new ArrayList<>(enc.fighters());
++        // Farthest from the hole first: nobody gets to hide at the edge.
++        f.sort((a, b) -> Float.compare(dist(b), dist(a)));
++        int want = (h.instance().healthPercent() < 15.0 || enc.enraged()) ? 2 : 1;
++        for (int i = 0; i < Math.min(want, f.size()); i++) {
++            bound.add(f.get(i));
++        }
++        for (Player p : bound) {
++            Vector3f chest = chest(p);
++            Shapes.Line l = new Shapes.Line(stage, g, Material.PURPLE_STAINED_GLASS, VIOLET);
++            l.set(Singularity.CENTER, chest, 0.04f, 0);
++            marks.add(l);
++            Shapes.Beam b = new Shapes.Beam(stage, g, Material.CRYING_OBSIDIAN, Material.PURPLE_STAINED_GLASS, VIOLET);
++            b.hide(0);
++            chains.add(b);
++            Shapes.Ring c = new Shapes.Ring(stage, g, 12, Material.PURPLE_STAINED_GLASS, VIOLET, 15, true);
++            Vector3f feet = stage.feet(p);
++            c.flat(new Vector3f(feet.x, 0.06f, feet.z), 2.2f, 0.1f, 0.04f, 0f, 0);
++            collars.add(c);
++            Shapes.Line r = new Shapes.Line(stage, g, Material.MAGENTA_STAINED_GLASS, VIOLET);
++            r.set(h.rig().maskPoint(), chest, 0.02f, 0);
++            reins.add(r);
++            enc.score().to(p, Sound.BLOCK_NOTE_BLOCK_BASS, 1f, 0.5f);
++            enc.score().to(p, Sound.ENTITY_WARDEN_SONIC_CHARGE, 0.9f, 1.3f);
++            p.sendActionBar(TextUtil.component("&5&lHelios binds you to the hole. &dSprint outward!"));
++        }
++        enc.score().at(h.rig().center, Sound.BLOCK_END_PORTAL_FRAME_FILL, 1.2f, 0.5f);
++        h.rig().ringScale(0.55f);
++        h.rig().spin(2.2f);
++    }
++
++    private float dist(Player p) {
++        Vector3f f = stage.feet(p);
++        return HMath.horizontal(new Vector3f(f).sub(Singularity.CENTER));
++    }
++
++    private Vector3f chest(Player p) {
++        return stage.feet(p).add(0f, 1.1f, 0f);
++    }
++
++    @Override
++    protected boolean tick() {
++        Singularity sing = h.singularity();
++        if (sing == null || bound.isEmpty()) {
++            return true;
++        }
++        int snap = mark + bind;
++        for (int i = 0; i < bound.size(); i++) {
++            Player p = bound.get(i);
++            boolean alive = p.isValid() && !p.isDead() && enc.fighters().contains(p);
++            if (!alive) {
++                sing.tether(p, 0f);
++                chains.get(i).hide(2);
++                marks.get(i).hide(Singularity.CENTER, 2);
++                collars.get(i).hide(Singularity.CENTER, 2);
++                reins.get(i).hide(h.rig().maskPoint(), 2);
++                continue;
++            }
++            Vector3f chest = chest(p);
++            Vector3f feet = stage.feet(p);
++            if (t < snap) {
++                reins.get(i).set(h.rig().maskPoint(), chest, t < mark ? 0.02f : 0.05f, HeliosStage.SMOOTH_1);
++            } else if (t == snap) {
++                reins.get(i).hide(chest, 3);
++            }
++            if (t < mark) {
++                // The collar closes on the beat: step out of nothing, it follows you.
++                float f = HMath.window(t, 0, mark);
++                marks.get(i).set(Singularity.CENTER, chest, 0.04f + 0.04f * f, HeliosStage.SMOOTH_1);
++                collars.get(i).flat(new Vector3f(feet.x, 0.06f, feet.z), HMath.lerp(2.2f, 0.7f, f), 0.1f, 0.04f, t * 0.2f, HeliosStage.SMOOTH_1);
++            } else if (t == mark) {
++                marks.get(i).hide(chest, 2);
++                collars.get(i).hide(feet, 3);
++                chains.get(i).set(Singularity.CENTER, chest, 0.35f, 0);
++                sing.tether(p, (float) enc.config().d("helios.tether.pull", 0.03));
++                enc.score().at(feet, Sound.BLOCK_CHAIN_PLACE, 1.2f, 0.5f);
++                enc.score().at(feet, Sound.ENTITY_WARDEN_SONIC_BOOM, 0.5f, 1.4f);
++                enc.camera().shake(p, 10, 2);
++                p.addPotionEffect(new PotionEffect(PotionEffectType.DARKNESS, 40, 0, false, false, false));
++            } else if (t < snap) {
++                float beat = enc.star() == null ? 0f : enc.star().beat();
++                chains.get(i).set(Singularity.CENTER, chest, 0.3f + 0.12f * beat, 1);
++                if (t - mark == bind / 2) {
++                    // One burn halfway through: the pull is the threat, not a damage-over-time drain.
++                    enc.hit(p, h.power("tether", 14), "tether", 18, null);
++                    enc.score().to(p, Sound.BLOCK_CHAIN_HIT, 1f, 0.6f);
++                }
++            }
++        }
++        if (t >= mark && t < snap) {
++            // Helios stares its prey down.
++            Player first = bound.get(0);
++            if (first.isValid()) {
++                h.rig().lookAt(chest(first), 0.25f);
++            }
++            if (enc.tempo().onBeat()) {
++                enc.score().at(Singularity.CENTER, Sound.BLOCK_NOTE_BLOCK_BASS, 1.2f, 0.5f);
++                h.rig().heartSize(1.3f);
++            } else if (t % 6 == 0) {
++                h.rig().heartSize(1f);
++            }
++        }
++        if (t == snap) {
++            for (int i = 0; i < bound.size(); i++) {
++                Player p = bound.get(i);
++                sing.tether(p, 0f);
++                Shapes.Beam b = chains.get(i);
++                b.set(b.from(), b.to(), 0.8f, 1);
++                if (p.isValid()) {
++                    enc.score().at(stage.feet(p), Sound.BLOCK_CHAIN_BREAK, 1.3f, 0.6f);
++                    enc.score().at(stage.feet(p), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.5f, 1.4f);
++                }
++            }
++            enc.camera().flash(1, 3);
++            h.rig().ringScale(1f);
++            h.rig().spin(1f);
++            h.rig().heartSize(1f);
++        }
++        if (t == snap + 2) {
++            for (Shapes.Beam b : chains) {
++                b.thin(3);
++            }
++        }
++        if (t == snap + 6) {
++            for (Shapes.Beam b : chains) {
++                b.hide(2);
++            }
++        }
++        return t >= snap + 8;
++    }
++
++    @Override
++    protected void cleanup() {
++        Singularity sing = h.singularity();
++        for (Player p : bound) {
++            if (sing != null) {
++                sing.tether(p, 0f);
++            }
++        }
++        h.rig().ringScale(1f);
++        h.rig().spin(1f);
++        h.rig().heartSize(1f);
++    }
++
++    @Override
++    public int recovery() {
++        return enc.tempo().ticks(1);
++    }
++}
+diff --git a/BossEngine/src/main/java/de/aetherion/bossengine/helios/requiem/HeliosScript.java b/BossEngine/src/main/java/de/aetherion/bossengine/helios/requiem/HeliosScript.java
+index 56d7a31..8f70c40 100644
+--- a/BossEngine/src/main/java/de/aetherion/bossengine/helios/requiem/HeliosScript.java
++++ b/BossEngine/src/main/java/de/aetherion/bossengine/helios/requiem/HeliosScript.java
+@@ -82,6 +82,10 @@ public final class HeliosScript extends ActScript {
+         return rig;
+     }
+ 
++    Singularity singularity() {
++        return singularity;
++    }
++
+     double power(String key, double def) {
+         return enc.config().power("helios." + key, def);
+     }
+@@ -118,6 +122,52 @@ public final class HeliosScript extends ActScript {
+         molten.add(new int[]{dx, dz, clock + ticks});
+     }
+ 
++    /* ------------------------------------------------------------------ torn floor that grows back */
++
++    private final List<Object[]> regrow = new ArrayList<>();
++
++    /**
++     * Floor torn out by an attack grows back after {@code ticks}, unless its sector has been destroyed for
++     * good in the meantime (burned Corona, shattered or fallen Course), or it is the seam between Crown and
++     * Course after the shatter: restoring those would leave floating fragments or re-bridge the islands.
++     */
++    void regrowLater(List<ArenaLayout.Cell> cells, int ticks) {
++        if (cells != null && !cells.isEmpty()) {
++            regrow.add(new Object[]{new ArrayList<>(cells), clock + Math.max(20, ticks)});
++        }
++    }
++
++    @SuppressWarnings("unchecked")
++    private void tickRegrow() {
++        if (regrow.isEmpty()) {
++            return;
++        }
++        Arena arena = enc.arena();
++        for (Iterator<Object[]> it = regrow.iterator(); it.hasNext(); ) {
++            Object[] r = it.next();
++            if (clock < (int) r[1]) {
++                continue;
++            }
++            it.remove();
++            List<ArenaLayout.Cell> back = new ArrayList<>();
++            for (ArenaLayout.Cell c : (List<ArenaLayout.Cell>) r[0]) {
++                if (arena.ringGone(c.ring()) || arena.state(c.ring(), c.sector()) != Arena.SectorState.INTACT) {
++                    continue;
++                }
++                if (shattered && c.ring() == 1 && c.radius() < ArenaLayout.RING_IN[1] + 0.5f) {
++                    continue;
++                }
++                back.add(c);
++            }
++            if (!back.isEmpty()) {
++                arena.restore(back);
++                Vector3f at = new Vector3f(back.get(0).dx() + 0.5f, 0.2f, back.get(0).dz() + 0.5f);
++                enc.score().at(at, Sound.BLOCK_AMETHYST_CLUSTER_PLACE, 0.8f, 0.7f);
++                enc.stage().blockDust(at, Material.DEEPSLATE, 8, 0.6);
++            }
++        }
++    }
++
+     /** The Corona has burned away (or the Course shattered): its rubble keeps circling the arena. */
+     void rubble(int count, float from, float to) {
+         if (debris == null) {
+@@ -251,6 +301,7 @@ public final class HeliosScript extends ActScript {
+         String phase = phaseId();
+         double hp = instance.healthPercent();
+         tickMolten();
++        tickRegrow();
+         if (debris != null) {
+             debris.tick();
+         }
+@@ -297,10 +348,23 @@ public final class HeliosScript extends ActScript {
+             return;
+         }
+         if (singularity != null) {
+-            orbit += 0.004f;
+-            Vector3f to = new Vector3f(Singularity.CENTER).add(HMath.ring(13.5f, orbit, 1.2f));
+-            glideTo(to, 0.05f);
+-            lookAtParty(0.1f);
++            // Herding: it hangs just OUTSIDE the party, so they stand between Helios and the hole. To hit
++            // it you walk away from the pull; to get away from it you walk into the pull. Every four beats
++            // it swoops round to cut off whoever tries to slip away along the rim.
++            if (modeTick >= stationAt) {
++                Vector3f c = partyCentroid();
++                float a = HMath.angleOf(c.x - Singularity.CENTER.x, c.z - Singularity.CENTER.z)
++                        + (ThreadLocalRandom.current().nextFloat() - 0.5f) * 0.9f;
++                float partyR = HMath.horizontal(new Vector3f(c).sub(Singularity.CENTER));
++                float r = HMath.clamp(partyR + 3.5f, 11f, 19f);
++                station.set(Singularity.CENTER).add(HMath.ring(r, a, 0f));
++                station.y = 3.4f;
++                stationAt = modeTick + enc.tempo().ticks(4);
++                orbit = a;
++            }
++            glideTo(station, 0.06f);
++            rig.center.y += 0.03f * (float) Math.sin(clock * 0.09f);
++            lookAtParty(0.12f);
+             return;
+         }
+         if (modeTick >= stationAt) {
+@@ -358,8 +422,9 @@ public final class HeliosScript extends ActScript {
+         if (rig == null) {
+             return;
+         }
++        // Even ticks (the star takes the odd ones), one tick of interpolation overlap: no freeze on a late packet.
+         if (clock % 2 == 0) {
+-            rig.render(2);
++            rig.render(HeliosStage.SMOOTH_2);
+         }
+         hitbox.set(rig.center).sub(0f, 1.3f, 0f);
+     }
+@@ -388,6 +453,7 @@ public final class HeliosScript extends ActScript {
+                 rig.black(true);
+                 rig.crack(0.6f);
+                 singularity = new Singularity(this);
++                stationAt = 0;
+                 enc.score().dilation(singularity::dilation);
+                 enc.sky().freeze(singularity::skyRate);
+                 holdScheduler(enc.tempo().ticks(4));
+@@ -475,7 +541,11 @@ public final class HeliosScript extends ActScript {
+     protected List<Choice> choices() {
+         String phase = phaseId().toLowerCase(java.util.Locale.ROOT);
+         List<Choice> out = new ArrayList<>();
+-        out.add(new Choice("portals", () -> new PortalBeams(this, 0), 4, 20, Attack.Family.SWEEP));
++        out.add(new Choice("portals", () -> new PortalBeams(this, 0, true), singularity != null ? 2 : 4, 20, Attack.Family.SWEEP));
++        if (singularity != null) {
++            // The hole pulls; Helios hunts with it.
++            out.add(new Choice("tether", () -> new GravityTether(this), 4, 10, Attack.Family.BODY));
++        }
+         out.add(new Choice("plasma", () -> new PlasmaRings(this, 2 + ThreadLocalRandom.current().nextInt(2), null), 3, 16, Attack.Family.GROUND));
+         out.add(new Choice("flares", () -> new SolarFlares(this, 4), 3, 14, Attack.Family.SKY));
+         if (singularity == null) {
+@@ -492,8 +562,10 @@ public final class HeliosScript extends ActScript {
+     @Override
+     protected List<Choice> allChoices() {
+         List<Choice> out = new ArrayList<>();
+-        out.add(new Choice("portals", () -> new PortalBeams(this, 0), 1, 1, Attack.Family.SWEEP));
+-        out.add(new Choice("portals5", () -> new PortalBeams(this, 5), 1, 1, Attack.Family.SWEEP));
++        out.add(new Choice("portals", () -> new PortalBeams(this, 0, true), 1, 1, Attack.Family.SWEEP));
++        out.add(new Choice("portals5", () -> new PortalBeams(this, 5, true), 1, 1, Attack.Family.SWEEP));
++        out.add(new Choice("portals-short", () -> new PortalBeams(this, 4), 1, 1, Attack.Family.SWEEP));
++        out.add(new Choice("tether", () -> new GravityTether(this), 1, 1, Attack.Family.BODY));
+         out.add(new Choice("plasma", () -> new PlasmaRings(this, 4, null), 1, 1, Attack.Family.GROUND));
+         out.add(new Choice("flares", () -> new SolarFlares(this, 3), 1, 1, Attack.Family.SKY));
+         out.add(new Choice("wind", () -> new SolarWind(this, 3), 1, 1, Attack.Family.ARENA));
+diff --git a/BossEngine/src/main/java/de/aetherion/bossengine/helios/requiem/PortalBeams.java b/BossEngine/src/main/java/de/aetherion/bossengine/helios/requiem/PortalBeams.java
+index 021a659..3c84ffa 100644
+--- a/BossEngine/src/main/java/de/aetherion/bossengine/helios/requiem/PortalBeams.java
++++ b/BossEngine/src/main/java/de/aetherion/bossengine/helios/requiem/PortalBeams.java
+@@ -5,6 +5,9 @@ import de.aetherion.bossengine.helios.core.HeliosStage;
+ import de.aetherion.bossengine.helios.core.Score;
+ import de.aetherion.bossengine.helios.core.Shapes;
+ import de.aetherion.bossengine.helios.encounter.Attack;
++import de.aetherion.bossengine.helios.world.Arena;
++import de.aetherion.bossengine.helios.world.ArenaLayout;
++import de.aetherion.bossengine.util.TextUtil;
+ 
+ import org.bukkit.Color;
+ import org.bukkit.Material;
+@@ -19,24 +22,32 @@ import java.util.List;
+ import java.util.concurrent.ThreadLocalRandom;
+ 
+ /**
+- * CONSTELLATION: Helios's signature. It draws a constellation of portals in the sky and threads its
+- * light through them, one star at a time, until it rakes the floor.
++ * CONSTELLATION: Helios's signature and the fight's business card. It draws a constellation of portals
++ * in the sky, threads its light through them one star at a time, and then the light comes down and
++ * <b>hunts</b>.
+  *
+  * <pre>
+  *   SUMMON         each portal ignites on its own half-beat (a rising arpeggio): a point of light, then
+  *                  its rim is drawn round, its face spins in, three shards take orbit
+  *   CONSTELLATION  pairs are colour-coded (cyan, magenta) and linked by a thread whose light-points flow
+  *                  from ENTRY to EXIT; the whole beam path is traced the same way; amber lanes with
+- *                  arrows show where the floor beams will rake and in which direction
++ *                  arrows show where the floor beams come down and in which direction they rake
+  *   CHARGE         the heart flares; the feed beam swells; everything spins up
+  *   RELAY          the light hops through the chain one segment per half-beat, each hop a step higher
+  *                  in pitch, the portal it enters pulsing; you can hear it coming
+- *   SWEEP          the floor beams rake their lanes, leaving molten scars; the prism fans into three
++ *   HUNT           the floor beam locks onto a player and chases them across the arena (it has weight:
++ *                  it speeds up over the hunt but turns late, so a sprint and a hard turn shake it). Every
++ *                  two beats it picks its next prey (a ping and a hairline tell who). It scorches, cracks
++ *                  and melts the floor behind it. Prism side beams rake their lanes like walls, then fade.
++ *   TEAR           the scar it left glows white for a beat, then erupts along its whole length, oldest
++ *                  end first: pillars of light, and every third point tears a hole through the floor
++ *                  (it grows back a few seconds later)
+  *   IMPLODE        overload flash, the beams snap off, every portal collapses on a falling chord
+  * </pre>
+  *
+  * Geometry is physically consistent (each follow-up entry sits on the previous exit's ray, facing back
+  * along it), so the chain can be traced by eye. Beams only hurt from the moment their segment ignites.
++ * The Requiem uses the short form (no hunt, no tear) so its music stays on time.
+  */
+ final class PortalBeams extends Attack {
+ 
+@@ -58,6 +69,8 @@ final class PortalBeams extends Attack {
+         final BlockDisplay spark;
+         int born = -1;
+         float pulse;
++        /** Accumulated spin (tick * rate made every rim jump when the rate changed at charge / implode). */
++        float spin;
+ 
+         Portal(Vector3f c, Vector3f normal, int pair) {
+             this.c = c;
+@@ -96,7 +109,7 @@ final class PortalBeams extends Attack {
+             int age = tick - born;
+             float draw = HMath.outCubic(HMath.window(age, 0, 12));
+             float r = 1.8f * size * (1f + 0.25f * pulse) * (0.2f + 0.8f * draw);
+-            float spin = tick * 0.12f * spinRate;
++            spin += 0.24f * spinRate;
+             rim.arc(c, q, r, 0.16f + 0.1f * pulse, 0.16f, spin, spin + HMath.TAU * draw, interp);
+             inner.pose(c, q, r * 0.72f, 0.06f, 0.06f, -spin * 1.6f, 0f, 0f, interp);
+             face.set(c, r * 0.68f * draw, 0.03f, q, -spin * 0.8f, interp);
+@@ -159,7 +172,7 @@ final class PortalBeams extends Attack {
+             for (int i = 0; i < dots.size(); i++) {
+                 float f = ((tick * 0.9f / Math.max(4f, len)) + i / (float) dots.size()) % 1f;
+                 Vector3f at = new Vector3f(a).lerp(b, f);
+-                stage.push(dots.get(i), HeliosStage.cube(at, 0.2f, new Quaternionf()), f < 0.05f ? 0 : 2);
++                stage.push(dots.get(i), HeliosStage.cube(at, 0.2f, new Quaternionf()), f < 0.05f ? 0 : HeliosStage.SMOOTH_2);
+             }
+         }
+ 
+@@ -213,9 +226,34 @@ final class PortalBeams extends Attack {
+     private int implodeAt;
+     private int end;
+ 
++    /* ---- hunt + tear (the signature form; the Requiem plays the short form) */
++    private static final int MAX_TRAIL = 16;
++    private final boolean hunt;
++    private int hunter = -1;
++    private int huntEnd;
++    private int tearAt;
++    private int chainStep;
++    private final Vector3f huntP = new Vector3f();
++    private final Vector3f huntV = new Vector3f();
++    private Player prey;
++    private int preyIndex = -1;
++    private int nextPrey;
++    private int aimHideAt = -1;
++    private Shapes.Line aimLine;
++    private Shapes.Ring contact;
++    private final List<Vector3f> trail = new ArrayList<>();
++    private final List<Shapes.Line> fuses = new ArrayList<>();
++    private final List<Arena.Replica> holes = new ArrayList<>();
++    private final List<Integer> holeAt = new ArrayList<>();
++
+     PortalBeams(HeliosScript h, int count) {
++        this(h, count, false);
++    }
++
++    PortalBeams(HeliosScript h, int count, boolean hunt) {
+         super(h);
+         this.h = h;
++        this.hunt = hunt;
+         int min = enc.config().i("helios.portals.count-min", 3);
+         int max = enc.config().i("helios.portals.count-max", 5);
+         this.count = count > 0 ? count : min + ThreadLocalRandom.current().nextInt(Math.max(1, max - min + 1));
+@@ -250,6 +288,16 @@ final class PortalBeams extends Attack {
+         sweepStart = lastIgnite;
+         sweep = enc.tempo().ticks(3);
+         implodeAt = sweepStart + sweep;
++        if (hunt && hunter >= 0) {
++            huntEnd = sweepStart + enc.tempo().ticks(Math.max(4, enc.config().i("helios.portals.hunt-beats", 8)));
++            tearAt = huntEnd + enc.tempo().ticks(1);
++            chainStep = 2;
++            implodeAt = Math.max(implodeAt, tearAt + MAX_TRAIL * chainStep + 8);
++            aimLine = new Shapes.Line(stage, g, Material.MAGENTA_STAINED_GLASS, PAIR[1]);
++            aimLine.hide(heart0(), 0);
++            contact = new Shapes.Ring(stage, g, 14, Material.WHITE_CONCRETE, WHITE, 15, true);
++            contact.hide(heart0(), 0);
++        }
+         end = implodeAt + enc.tempo().ticks(1.5);
+         h.rig().ringScale(1.6f);
+         enc.score().play(Sound.BLOCK_BEACON_POWER_SELECT, 1f, 0.6f);
+@@ -307,6 +355,16 @@ final class PortalBeams extends Attack {
+         } else {
+             addFloor(emitter, target, side, sweepDir);
+         }
++        // The hunter: the only floor beam, or the middle one of the prism's three.
++        int floors = 0;
++        for (int i = 0; i < segments.size(); i++) {
++            if (segments.get(i).floor) {
++                if (!prism || floors == 1) {
++                    hunter = i;
++                }
++                floors++;
++            }
++        }
+         for (Segment s : segments) {
+             s.beam = new Shapes.Beam(stage, g, Material.WHITE_CONCRETE, Material.YELLOW_STAINED_GLASS, WHITE);
+             s.beam.hide(0);
+@@ -370,10 +428,14 @@ final class PortalBeams extends Attack {
+         float spinRate = t < charge ? 1f : t < implodeAt ? 2.2f : 3f;
+         if (t % 2 == 0 && t < implodeAt) {
+             for (Portal p : portals) {
+-                p.pose(t, 1f + (t >= charge ? 0.15f : 0f), spinRate, 2);
++                p.pose(t, 1f + (t >= charge ? 0.15f : 0f), spinRate, HeliosStage.SMOOTH_2);
+             }
+         }
+-        h.rig().lookAt(portals.get(0).c, 0.12f);
++        if (hunt && hunter >= 0 && t >= sweepStart && t < huntEnd) {
++            h.rig().lookAt(huntP, 0.25f);
++        } else {
++            h.rig().lookAt(portals.get(0).c, 0.12f);
++        }
+ 
+         // CONSTELLATION: threads and paths flow; lanes and arrows lay down.
+         if (t == summon) {
+@@ -435,24 +497,58 @@ final class PortalBeams extends Attack {
+         if (t >= relayStart && t < implodeAt) {
+             float w = 0.6f + 0.2f * enc.star().beat();
+             float sf = HMath.inOutCubic(HMath.window(t, sweepStart, sweepStart + sweep));
++            boolean sidesDone = hunt && t >= sweepStart + sweep;
+             int floorIdx = 0;
+-            for (Segment s : segments) {
++            for (int i = 0; i < segments.size(); i++) {
++                Segment s = segments.get(i);
+                 if (t < s.igniteAt) {
++                    if (s.floor) {
++                        floorIdx++;
++                    }
+                     continue;
+                 }
+                 Vector3f to = s.b;
++                float width = w;
+                 if (s.floor) {
+-                    to = new Vector3f(s.laneA).lerp(s.laneB, sf);
++                    if (hunt && i == hunter) {
++                        if (t >= huntEnd) {
++                            floorIdx++;
++                            continue;
++                        }
++                        if (t == s.igniteAt) {
++                            huntP.set(s.laneA);
++                            huntV.set(0f);
++                        }
++                        if (t >= sweepStart) {
++                            stepHunt();
++                        }
++                        to = new Vector3f(huntP);
++                        // Escalates: wider and hotter the longer it hunts.
++                        width = w + 0.45f * HMath.window(t, sweepStart, huntEnd);
++                    } else if (sidesDone) {
++                        if (t == sweepStart + sweep) {
++                            s.beam.thin(3);
++                        }
++                        floorIdx++;
++                        continue;
++                    } else {
++                        to = new Vector3f(s.laneA).lerp(s.laneB, sf);
++                    }
+                     scar(to, floorIdx++);
+                 }
+                 float grow = HMath.outCubic(HMath.window(t, s.igniteAt, s.igniteAt + 3));
+-                s.beam.set(s.a, to, 0.05f + (w - 0.05f) * grow, 1);
++                s.beam.set(s.a, to, 0.05f + (width - 0.05f) * grow, 1);
+                 hurt(s.a, to);
+             }
+             if (t % 20 == 0) {
+                 enc.score().play(Sound.BLOCK_BEACON_AMBIENT, 0.8f, 2f);
+             }
+         }
++        if (hunt && hunter >= 0) {
++            tickHuntShow();
++            tickTear();
++        }
++        animateHoles();
+         if (t == sweepStart) {
+             enc.score().play(Sound.ENTITY_BREEZE_WIND_BURST, 1f, 0.5f);
+             enc.score().sweep(null, Sound.ENTITY_PLAYER_ATTACK_SWEEP, 0.7f, 0.7f, 0.6f, 1.1f, sweep, 5);
+@@ -461,6 +557,9 @@ final class PortalBeams extends Attack {
+         // IMPLODE: overload flash, the beams snap, every portal collapses on a falling chord.
+         if (t == implodeAt - 4) {
+             for (Segment s : segments) {
++                if (hunt && s.floor) {
++                    continue;
++                }
+                 s.beam.set(s.a, s.floor ? s.laneB : s.b, 1.4f, 3);
+             }
+             enc.camera().flash(2, 6);
+@@ -497,6 +596,272 @@ final class PortalBeams extends Attack {
+         return t >= end;
+     }
+ 
++    private Vector3f heart0() {
++        return new Vector3f(h.rig().center);
++    }
++
++    /* ================================================================== hunt */
++
++    /**
++     * The hunting beam has weight: it steers toward its prey with limited acceleration and a top speed
++     * that climbs over the hunt (from a walk to just under a sprint). Running straight away only buys
++     * time; a sprint and a hard turn make it overshoot.
++     */
++    private void stepHunt() {
++        if (t >= nextPrey || prey == null || !prey.isValid() || prey.isDead() || !enc.fighters().contains(prey)) {
++            pickPrey();
++        }
++        float f = HMath.window(t, sweepStart, huntEnd);
++        float vmax = (float) HMath.lerp((float) enc.config().d("helios.portals.hunt-speed-start", 0.16),
++                (float) enc.config().d("helios.portals.hunt-speed-end", 0.27), HMath.smooth(f));
++        float accel = (float) enc.config().d("helios.portals.hunt-accel", 0.024);
++        Vector3f desired = new Vector3f();
++        if (prey != null) {
++            Vector3f to = stage.feet(prey);
++            to.y = 0.05f;
++            desired.set(to).sub(huntP);
++            desired.y = 0f;
++            float d = desired.length();
++            if (d > 0.05f) {
++                desired.mul(Math.min(vmax, d * 0.5f + 0.02f) / d);
++            }
++        }
++        Vector3f dv = new Vector3f(desired).sub(huntV);
++        float dl = dv.length();
++        if (dl > accel) {
++            dv.mul(accel / dl);
++        }
++        huntV.add(dv);
++        huntP.add(huntV);
++        huntP.y = 0.05f;
++        float r = HMath.horizontal(huntP);
++        if (r > 33f) {
++            huntP.x *= 33f / r;
++            huntP.z *= 33f / r;
++        }
++        // Scorched ground: remember the path for the tear.
++        if (trail.isEmpty() || (trail.size() < MAX_TRAIL && trail.get(trail.size() - 1).distance(huntP) >= 1.7f)) {
++            trail.add(new Vector3f(huntP.x, 0f, huntP.z));
++        }
++        // Standing in the touch-down is worse than grazing the beam.
++        double power = h.power("portals.hunt", h.power("portals", 36));
++        for (Player p : enc.fighters()) {
++            Vector3f pf = stage.feet(p);
++            if (HMath.horizontal(new Vector3f(pf).sub(huntP)) < 1.5f && pf.y < 2f) {
++                // Same key as the beam itself: touching down on you never stacks with the beam's own hit.
++                enc.hit(p, power, "portal", 10, null);
++                p.setFireTicks(Math.max(p.getFireTicks(), 30));
++            }
++        }
++    }
++
++    /** Next prey: round the party, one after the other (solo: you, again). A ping and a hairline say who. */
++    private void pickPrey() {
++        List<Player> f = enc.fighters();
++        nextPrey = t + enc.tempo().ticks(2);
++        if (f.isEmpty()) {
++            prey = null;
++            return;
++        }
++        preyIndex = (preyIndex + 1) % f.size();
++        prey = f.get(preyIndex);
++        Vector3f at = stage.feet(prey);
++        aimLine.set(new Vector3f(huntP).add(0f, 0.12f, 0f), new Vector3f(at.x, 0.12f, at.z), 0.07f, 0);
++        aimHideAt = t + 10;
++        enc.score().to(prey, Sound.BLOCK_NOTE_BLOCK_PLING, 1f, 1.5f);
++        enc.score().to(prey, Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 0.8f, 1.6f);
++        enc.score().at(huntP, Sound.BLOCK_BEACON_POWER_SELECT, 1f, 1.4f);
++        prey.sendActionBar(TextUtil.component("&d&lThe light hunts you. &fSprint and turn!"));
++    }
++
++    /** The pomp around the hunt: the touch-down ring, the tempo of the chase, the whole chain surging. */
++    private void tickHuntShow() {
++        if (aimHideAt >= 0 && t >= aimHideAt) {
++            aimLine.hide(huntP, 3);
++            aimHideAt = -1;
++        }
++        if (t < sweepStart || t >= huntEnd) {
++            if (t == huntEnd && contact != null) {
++                contact.hide(huntP, 4);
++            }
++            return;
++        }
++        float f = HMath.window(t, sweepStart, huntEnd);
++        float beat = enc.star().beat();
++        contact.flat(new Vector3f(huntP).add(0f, 0.08f, 0f), 1.1f + 0.5f * beat + 0.4f * f, 0.16f, 0.06f, t * 0.3f, HeliosStage.SMOOTH_1);
++        if (t == sweepStart) {
++            h.rig().spin(1.8f);
++            h.rig().ringScale(1.9f);
++            enc.score().play(Sound.ENTITY_WARDEN_SONIC_BOOM, 1f, 0.6f);
++            enc.score().at(huntP, Sound.ENTITY_GUARDIAN_ATTACK, 1.4f, 0.6f);
++            enc.score().chord(Sound.BLOCK_NOTE_BLOCK_BELL, 0.8f, Score.semi(-12), Score.semi(-5), Score.semi(0));
++            enc.camera().flash(1, 4);
++        }
++        if (enc.tempo().onBeat()) {
++            // Every beat the chain surges: portals pulse, the heart flares, the drone climbs.
++            for (Portal p : portals) {
++                p.pulse = 1.2f;
++            }
++            h.rig().heartSize(1.25f + 0.35f * f);
++            enc.score().play(Sound.BLOCK_BEACON_AMBIENT, 1f, 0.9f + 0.9f * f);
++            enc.score().at(huntP, Sound.ENTITY_BLAZE_SHOOT, 1f, 0.5f + 0.5f * f);
++            enc.camera().shakeFrom(huntP, 12f, 5);
++        }
++        if (t == sweepStart + (huntEnd - sweepStart) / 2) {
++            enc.score().at(huntP, Sound.ENTITY_GUARDIAN_ATTACK, 1.4f, 1.1f);
++        }
++    }
++
++    /* ================================================================== tear */
++
++    private void tickTear() {
++        if (t == huntEnd) {
++            // Overload at the last touch-down, then the scar lights up: one beat to get off it.
++            Segment s = segments.get(hunter);
++            s.beam.set(s.a, huntP, 1.5f, 2);
++            enc.camera().flash(1, 4);
++            enc.score().at(huntP, Sound.ENTITY_GENERIC_EXPLODE, 1f, 0.8f);
++            h.rig().spin(1f);
++            h.rig().heartSize(1f);
++            for (int i = 0; i < trail.size(); i++) {
++                Vector3f p = trail.get(i);
++                // Spawned small in place this tick; they grow next tick (a push in the spawn tick is not
++                // interpolated, and growing from the stage origin would fly them in from the centre).
++                Shapes.Line fuse = new Shapes.Line(stage, g, Material.WHITE_CONCRETE, WHITE);
++                fuse.set(p, new Vector3f(p).add(0f, 0.05f, 0f), 0.02f, 0);
++                fuses.add(fuse);
++                if (i > 0) {
++                    enc.arena().crackLine(trail.get(i - 1), p, 0.95f, tearAt - huntEnd + 40);
++                }
++            }
++            enc.score().sweep(null, Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 0.9f, 1.2f, 0.7f, 1.8f, tearAt - huntEnd, 3);
++            for (Player p : enc.fighters()) {
++                p.sendActionBar(TextUtil.component("&f&lThe scar is about to erupt! &7Get off the light!"));
++            }
++        }
++        if (t == huntEnd + 1) {
++            for (int i = 0; i < fuses.size(); i++) {
++                Vector3f p = trail.get(i);
++                fuses.get(i).set(p, new Vector3f(p).add(0f, 0.9f, 0f), 0.14f, Math.max(4, tearAt - huntEnd - 3));
++            }
++        }
++        if (t == huntEnd + 4) {
++            segments.get(hunter).beam.thin(3);
++        }
++        if (t == huntEnd + 8) {
++            segments.get(hunter).beam.hide(2);
++        }
++        if (t < tearAt) {
++            return;
++        }
++        int k = (t - tearAt) / chainStep;
++        if ((t - tearAt) % chainStep == 0 && k < trail.size()) {
++            erupt(k);
++        }
++        // Each pillar collapses a few ticks after it went up.
++        int done = (t - tearAt - 5) / chainStep;
++        if ((t - tearAt - 5) >= 0 && (t - tearAt - 5) % chainStep == 0 && done < fuses.size()) {
++            fuses.get(done).hide(trail.get(done), 4);
++        }
++        // The last pillar is down: implode right after (the timeline reserved room for a full trail).
++        if (t - tearAt == trail.size() * chainStep + 8 && t + 4 < implodeAt) {
++            implodeAt = t + 4;
++            end = implodeAt + enc.tempo().ticks(1.5);
++        }
++    }
++
++    private void erupt(int k) {
++        Vector3f p = trail.get(k);
++        if (k < fuses.size()) {
++            fuses.get(k).set(p, new Vector3f(p).add(0f, 4.5f, 0f), 0.6f, 2);
++        }
++        enc.score().at(p, Sound.ENTITY_GENERIC_EXPLODE, 0.8f, 0.9f + 0.04f * k);
++        enc.score().at(p, Sound.ENTITY_FIREWORK_ROCKET_BLAST, 1f, 0.7f);
++        stage.particle(org.bukkit.Particle.EXPLOSION, new Vector3f(p).add(0f, 0.6f, 0f), 1, 0.1, 0);
++        enc.camera().shakeFrom(p, 9f, 4);
++        int cx = (int) Math.floor(p.x);
++        int cz = (int) Math.floor(p.z);
++        for (int dx = -1; dx <= 1; dx++) {
++            for (int dz = -1; dz <= 1; dz++) {
++                enc.arena().crackCell(cx + dx, cz + dz, 0.9f, 80);
++            }
++        }
++        double power = h.power("portals.tear", 44);
++        for (Player pl : enc.fighters()) {
++            Vector3f f = stage.feet(pl);
++            if (HMath.horizontal(new Vector3f(f).sub(p)) < 1.9f && f.y < 3f) {
++                enc.hit(pl, power, "portal_tear", 20, new org.bukkit.util.Vector(0, 0.35, 0));
++            }
++        }
++        if (k % 3 == 2) {
++            tearHole(cx, cz);
++        }
++    }
++
++    /** Tears a small plus-shaped hole straight through the floor (keel included). It grows back. */
++    private void tearHole(int cx, int cz) {
++        Arena arena = enc.arena();
++        List<ArenaLayout.Cell> cells = new ArrayList<>();
++        int[][] plus = {{0, 0}, {1, 0}, {-1, 0}, {0, 1}, {0, -1}};
++        for (int[] o : plus) {
++            int dx = cx + o[0];
++            int dz = cz + o[1];
++            ArenaLayout.Cell top = ArenaLayout.at(dx, -1, dz);
++            if (top == null || !arena.solidAt(dx + 0.5f, dz + 0.5f)) {
++                continue;
++            }
++            // Never the seams: the pit rim, and the Crown/Course seam (islands must stay islands).
++            if (top.radius() < ArenaLayout.RING_IN[top.ring()] + 0.5f) {
++                continue;
++            }
++            for (int dy = -1; dy >= -16; dy--) {
++                ArenaLayout.Cell c = ArenaLayout.at(dx, dy, dz);
++                if (c != null) {
++                    cells.add(c);
++                }
++            }
++        }
++        if (cells.isEmpty()) {
++            return;
++        }
++        Arena.Replica rep = arena.replica(g, cells, true);
++        rep.pose(new Quaternionf(), new Vector3f(), 1f, 0);
++        rep.material(Material.MAGMA_BLOCK);
++        rep.brightness(15);
++        arena.revertTempsIn(cells);
++        arena.remove(cells);
++        holes.add(rep);
++        holeAt.add(t);
++        h.regrowLater(cells, 20 * enc.config().i("helios.portals.tear-regrow-seconds", 9));
++        Vector3f at = new Vector3f(cx + 0.5f, 0f, cz + 0.5f);
++        enc.score().at(at, Sound.BLOCK_DEEPSLATE_BRICKS_BREAK, 1.2f, 0.6f);
++    }
++
++    private void animateHoles() {
++        for (int i = 0; i < holes.size(); i++) {
++            int age = t - holeAt.get(i);
++            if (age > 42) {
++                continue;
++            }
++            if (age == 42) {
++                holes.get(i).pose(new Quaternionf(), new Vector3f(0f, -20f, 0f), 0.001f, 0);
++                continue;
++            }
++            if (age % 2 == 0) {
++                float f = HMath.window(age, 0, 40);
++                Quaternionf tumble = new Quaternionf().rotateXYZ(f * 1.3f, f * 0.7f, f * 0.4f);
++                holes.get(i).pose(tumble, new Vector3f(0f, -HMath.inQuad(f) * 18f, 0f), 1f - 0.5f * f, HeliosStage.SMOOTH_2);
++            }
++        }
++    }
++
++    @Override
++    protected void cleanup() {
++        h.rig().spin(1f);
++        h.rig().heartSize(1f);
++        h.rig().ringScale(1f);
++    }
++
+     private Segment floorSegment(int i) {
+         int k = 0;
+         for (Segment s : segments) {
+diff --git a/BossEngine/src/main/java/de/aetherion/bossengine/helios/requiem/Singularity.java b/BossEngine/src/main/java/de/aetherion/bossengine/helios/requiem/Singularity.java
+index e2f5f93..8ac25d6 100644
+--- a/BossEngine/src/main/java/de/aetherion/bossengine/helios/requiem/Singularity.java
++++ b/BossEngine/src/main/java/de/aetherion/bossengine/helios/requiem/Singularity.java
+@@ -61,6 +61,8 @@ final class Singularity {
+     private boolean quiet;
+     private int nextIsland;
+     private final List<Tear> tears = new ArrayList<>();
++    /** Players Helios has bound to the hole (GravityTether): extra pull per tick. */
++    private final java.util.Map<java.util.UUID, Float> tethers = new java.util.HashMap<>();
+ 
+     private static final class Rock {
+         BlockDisplay d;
+@@ -138,6 +140,18 @@ final class Singularity {
+         strength = s;
+     }
+ 
++    /** Helios binds {@code p} to the hole: {@code pull} extra per tick on top of gravity (0 releases). */
++    void tether(Player p, float pull) {
++        if (p == null) {
++            return;
++        }
++        if (pull <= 0f) {
++            tethers.remove(p.getUniqueId());
++        } else {
++            tethers.put(p.getUniqueId(), pull);
++        }
++    }
++
+     void tick() {
+         t++;
+         horizon = HMath.lerp(horizon, horizonTarget, 0.03f);
+@@ -167,7 +181,7 @@ final class Singularity {
+ 
+     private void render() {
+         float spin = quiet ? 0f : t * 0.04f;
+-        int interp = 2;
++        int interp = HeliosStage.SMOOTH_2;
+         if (t % 2 != 0) {
+             return;
+         }
+@@ -234,11 +248,14 @@ final class Singularity {
+             if (p.isSneaking()) {
+                 k *= 0.35;
+             }
++            float bound = tethers.getOrDefault(p.getUniqueId(), 0f);
++            // Bound by Helios: the hole hauls harder (a sprint outward still just about holds).
++            k += bound * (p.isSneaking() ? 0.6 : 1.0);
+             Vector swirl = new Vector(-rel.z, 0, rel.x).multiply(k * 0.25);
+             Vector v = p.getVelocity().add(new Vector(rel.x * k, 0, rel.z * k)).add(swirl);
+             // Never faster inward than a sprint can beat: skilled play escapes.
+             double inward = v.getX() * rel.x + v.getZ() * rel.z;
+-            double cap = enc.config().d("helios.singularity.max-inward", 0.24);
++            double cap = enc.config().d("helios.singularity.max-inward", 0.24) + (bound > 0f ? 0.03 : 0.0);
+             if (inward > cap) {
+                 v.subtract(new Vector(rel.x, 0, rel.z).multiply(inward - cap));
+             }
+@@ -345,6 +362,7 @@ final class Singularity {
+     }
+ 
+     void release() {
++        tethers.clear();
+         for (Player p : enc.audience()) {
+             enc.camera().vignette(p, 0f);
+             p.removePotionEffect(PotionEffectType.SLOWNESS);
+diff --git a/BossEngine/src/main/java/de/aetherion/bossengine/helios/requiem/Supernova.java b/BossEngine/src/main/java/de/aetherion/bossengine/helios/requiem/Supernova.java
+index dfa1e9c..a786989 100644
+--- a/BossEngine/src/main/java/de/aetherion/bossengine/helios/requiem/Supernova.java
++++ b/BossEngine/src/main/java/de/aetherion/bossengine/helios/requiem/Supernova.java
+@@ -34,15 +34,21 @@ import java.util.List;
+  *    70  COLLAPSE      rings, mask, disk and rubble spiral into the heart; light streams in from the rim
+  *   150  THE POINT     one white point. Absolute silence. One heartbeat.
+  *   190  SWELL         four nested shells turning against each other, sixteen corona rays, the floor
+- *                      turning to light ring by ring outward, the rumble climbing
++ *                      turning to light ring by ring outward, the rumble climbing. The star is UNSTABLE:
++ *                      it convulses on an accelerating stutter (shells lurch, rays flare, a metal crash,
++ *                      the sky flickers), the point trembles harder and harder
+  *   250  DETONATION    night becomes noon in one frame; flat shock rings on three levels and two upright
+- *                      ones, a sphere of light plates, ejecta; everyone is lifted and floats
++ *                      ones, a sphere of light plates, ejecta; everyone is lifted and floats. Then it keeps
++ *                      going: a second wall of crashing metal and glass, a roar from beyond (wither, dragon,
++ *                      thunder), the sky itself cracks into planes of light, aftershocks roll away
+  *   265  NEBULA        coloured veils drift outward; a pulsar sweeps its two beams; dawn
++ *   290  THE VAULT     the pulsar's point swells and bursts: the Star Vault is born out of the dead star,
++ *                      sinks over the pit and builds its dais and four staircases, beat by beat
+  *   300  GIVING BACK   the broken arena rebuilds from light, the floor's glow draws back inward
+  * </pre>
+  *
+- * Every piece is posed at the same cadence it is pushed (no stretched interpolation), so nothing
+- * snaps. Displays are created ahead of the detonation over several ticks to respect the spawn budget.
++ * Pieces pushed every second tick use one tick of interpolation overlap ({@link HeliosStage#SMOOTH_2}):
++ * continuous, and a late packet never freezes them. Displays are created ahead of the detonation over several ticks to respect the spawn budget.
+  */
+ final class Supernova {
+ 
+@@ -87,6 +93,13 @@ final class Supernova {
+     private int rebuildCursor;
+     private float shellScale;
+     private float raySpin;
++    /** Instability: how hard the star is convulsing right now (decays every tick). */
++    private float jolt;
++    private int stutters;
++    private int skyBackAt = -1;
++    private static final int[] STUTTER = {204, 216, 226, 234, 240, 245, 248};
++    private final List<BlockDisplay> fractures = new ArrayList<>();
++    private final List<Quaternionf> fractureRot = new ArrayList<>();
+ 
+     Supernova(HeliosScript h) {
+         this.h = h;
+@@ -145,12 +158,21 @@ final class Supernova {
+         if (t == 200) {
+             spawnNebula();
+         }
++        if (t == 244) {
++            spawnFractures();
++        }
+         if (t >= 190 && t < 250) {
+             swell(HMath.window(t, 190, 250), t);
+         }
+         if (t == 250) {
+             detonate();
+         }
++        if (t >= 250 && t < 300) {
++            aftershocks(t);
++        }
++        if (t >= 282 && t <= 290) {
++            vaultBirth(t);
++        }
+         if (t > 250 && t < 330) {
+             expand(t - 250);
+         }
+@@ -215,7 +237,7 @@ final class Supernova {
+                 float outer = 45f * (1f - e) + 2f;
+                 Vector3f from = new Vector3f(heart).add(HMath.ring(outer, a, y * (1f - e)));
+                 Vector3f to = new Vector3f(from).lerp(heart, 0.35f + 0.6f * e);
+-                stage.push(inflow.get(i), HeliosStage.beam(from, to, 0.08f + 0.1f * e), 2);
++                stage.push(inflow.get(i), HeliosStage.beam(from, to, 0.08f + 0.1f * e), HeliosStage.SMOOTH_2);
+             }
+         }
+         if (t % 10 == 0) {
+@@ -260,12 +282,25 @@ final class Supernova {
+ 
+     private void swell(float f, int t) {
+         float e = HMath.inExpo(f);
+-        shellScale = 0.15f + e;
++        boolean stutter = stutters < STUTTER.length && t == STUTTER[stutters];
++        if (stutter) {
++            convulse(stutters++, t);
++        }
++        jolt *= 0.62f;
++        shellScale = 0.15f + e + jolt;
+         raySpin += 0.01f + 0.05f * f;
+-        if (t % 2 == 0) {
+-            poseShells(2, t);
+-            poseRays(2, 2f + 14f * e, 0.12f + 0.25f * e);
+-            stage.push(point, HeliosStage.cube(heart, 0.3f + 1.2f * e, new Quaternionf().rotateY(t * 0.2f)), 2);
++        if (t % 2 == 0 || stutter) {
++            int interp = stutter ? 1 : HeliosStage.SMOOTH_2;
++            poseShells(interp, t);
++            poseRays(interp, (2f + 14f * e) * (1f + jolt), (0.12f + 0.25f * e) * (1f + 2f * jolt));
++            // The point trembles harder and harder: it cannot hold itself together.
++            float tremble = HMath.window(t, 226, 250) * 0.45f;
++            Vector3f at = new Vector3f(heart).add((HMath.hash(t, 3) - 0.5f) * tremble, (HMath.hash(t, 5) - 0.5f) * tremble,
++                    (HMath.hash(t, 7) - 0.5f) * tremble);
++            stage.push(point, HeliosStage.cube(at, 0.3f + 1.2f * e + jolt, new Quaternionf().rotateY(t * 0.2f)), interp);
++        }
++        if (t == skyBackAt) {
++            enc.sky().now(SkyControl.NIGHT);
+         }
+         glowFloor(f);
+         enc.camera().vignetteAll(0.15f + 0.6f * f);
+@@ -321,6 +356,115 @@ final class Supernova {
+         }
+     }
+ 
++    /**
++     * One convulsion of the unstable star: the shells lurch outward and snap back, the rays flare, a crash
++     * of metal and glass, the camera jolts; each one harder than the last. The last three strobe the sky.
++     */
++    private void convulse(int k, int t) {
++        float power = 0.35f + 0.1f * k;
++        jolt = power;
++        Score score = enc.score();
++        score.play(Sound.BLOCK_ANVIL_LAND, 0.7f + 0.12f * k, 0.5f + 0.03f * k, true);
++        score.play(Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 0.8f + 0.1f * k, 0.5f, true);
++        score.play(Sound.BLOCK_CHAIN_BREAK, 0.8f, 0.5f + 0.05f * k, true);
++        score.play(Sound.BLOCK_GLASS_BREAK, 0.6f + 0.1f * k, 0.5f + 0.1f * (k % 3), true);
++        if (k >= 3) {
++            score.play(Sound.ENTITY_WARDEN_SONIC_BOOM, 0.4f + 0.1f * k, 0.5f + 0.05f * k, true);
++            score.play(Sound.BLOCK_BELL_RESONATE, 0.8f, 0.5f + 0.1f * (k - 3), true);
++        }
++        enc.camera().shakeAll(6 + 2 * k, 2);
++        if (k >= STUTTER.length - 3) {
++            // The sky can't decide what time it is.
++            enc.sky().now(SkyControl.DUSK);
++            skyBackAt = t + 2;
++            enc.camera().flash(0, 2 + k / 2);
++        }
++    }
++
++    /** Huge thin planes through the heart, hidden until the detonation: the sky cracking. */
++    private void spawnFractures() {
++        int n = stage.budget().scaled(7, 4);
++        for (int i = 0; i < n; i++) {
++            BlockDisplay d = g.block((i % 2 == 0 ? Material.WHITE_STAINED_GLASS : Material.WHITE_CONCRETE).createBlockData(),
++                    i % 2 == 0 ? null : WHITE, 15, true);
++            stage.push(d, HeliosStage.gone(heart), 0);
++            fractures.add(d);
++            fractureRot.add(new Quaternionf().rotateXYZ(HMath.hash(i, 3) * HMath.PI, HMath.hash(i, 5) * HMath.PI, HMath.hash(i, 7) * HMath.PI));
++        }
++    }
++
++    private void fracture(int i, float size, int hold) {
++        if (i >= fractures.size()) {
++            return;
++        }
++        BlockDisplay d = fractures.get(i);
++        stage.push(d, HeliosStage.box(heart, new Vector3f(size, i % 2 == 0 ? 0.06f : 0.03f, size), fractureRot.get(i)), 0);
++        org.bukkit.Bukkit.getScheduler().runTaskLater(enc.module().plugin(), () -> {
++            if (d.isValid()) {
++                stage.push(d, HeliosStage.box(heart, new Vector3f(size * 1.3f, 0.001f, size * 1.3f), fractureRot.get(i)), 3);
++            }
++        }, hold);
++    }
++
++    /**
++     * The explosion doesn't stop at one: a second wall of crashing metal and glass, a roar from beyond, the
++     * sky splitting into planes of light, then aftershocks rolling away. Over-dimensional, on purpose.
++     */
++    private void aftershocks(int t) {
++        Score score = enc.score();
++        if (t == 250) {
++            fracture(0, 90f, 3);
++            fracture(1, 70f, 2);
++        }
++        if (t == 253) {
++            // The crash: everything metal and glass in the universe breaking at once.
++            score.play(Sound.BLOCK_ANVIL_DESTROY, 1.6f, 0.5f, true);
++            score.play(Sound.ITEM_SHIELD_BREAK, 1.2f, 0.5f, true);
++            score.play(Sound.BLOCK_GLASS_BREAK, 1.4f, 0.5f, true);
++            score.play(Sound.BLOCK_GLASS_BREAK, 1.2f, 0.75f, true);
++            score.play(Sound.BLOCK_GLASS_BREAK, 1f, 1.1f, true);
++            score.play(Sound.BLOCK_CHAIN_BREAK, 1.2f, 0.5f, true);
++            score.play(Sound.ENTITY_IRON_GOLEM_DEATH, 1f, 0.5f, true);
++            score.play(Sound.ENTITY_ZOMBIE_BREAK_WOODEN_DOOR, 1f, 0.5f, true);
++            score.play(Sound.ENTITY_GENERIC_EXPLODE, 1.6f, 0.75f, true);
++            enc.camera().flash(2, 10);
++            enc.camera().shakeAll(34, 2);
++            fracture(2, 110f, 3);
++            fracture(3, 80f, 2);
++        }
++        if (t == 258) {
++            // A roar from somewhere that is not here.
++            score.play(Sound.ENTITY_WITHER_SPAWN, 1.3f, 0.5f, true);
++            score.play(Sound.ENTITY_ENDER_DRAGON_GROWL, 1.6f, 0.5f, true);
++            score.play(Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1.6f, 0.6f, true);
++            score.play(Sound.ENTITY_WARDEN_SONIC_BOOM, 1.4f, 0.6f, true);
++            fracture(4, 130f, 4);
++            fracture(5, 60f, 2);
++            fracture(6, 100f, 3);
++        }
++        if (t == 264 || t == 274 || t == 288) {
++            // Aftershocks, rolling away.
++            int k = t == 264 ? 0 : t == 274 ? 1 : 2;
++            score.play(Sound.ENTITY_GENERIC_EXPLODE, 1.2f - 0.3f * k, 0.5f, true);
++            score.play(Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1f - 0.25f * k, 0.5f + 0.1f * k, true);
++            score.play(Sound.BLOCK_DEEPSLATE_BRICKS_BREAK, 1f, 0.5f, true);
++            enc.camera().shakeAll(14 - 4 * k, 3);
++        }
++    }
++
++    /** The pulsar's point swells, and the vault is born out of the dead star. */
++    private void vaultBirth(int t) {
++        if (t < 290) {
++            float f = HMath.window(t, 282, 290);
++            stage.push(pulsar[0], HeliosStage.cube(heart, 0.5f + 1.3f * HMath.inCubic(f), new Quaternionf().rotateY(t * 0.3f)), 1);
++            if (t == 282) {
++                enc.score().sweep(null, Sound.BLOCK_BEACON_AMBIENT, 0.8f, 1.2f, 1f, 2f, 8, 2);
++            }
++            return;
++        }
++        enc.birthVault(new Vector3f(heart));
++    }
++
+     /* ================================================================== 250: detonation */
+ 
+     private void spawnWaves() {
+@@ -410,29 +554,29 @@ final class Supernova {
+         for (int s = 0; s < shells.length; s++) {
+             for (int i = 0; i < 3; i++) {
+                 if (t > 16) {
+-                    stage.push(shells[s][i], HeliosStage.gone(heart), 2);
++                    stage.push(shells[s][i], HeliosStage.gone(heart), HeliosStage.SMOOTH_2);
+                 } else {
+                     Quaternionf rot = new Quaternionf().rotateXYZ(t * 0.2f * (i + 1), t * 0.15f, 0f);
+-                    stage.push(shells[s][i], HeliosStage.cube(heart, SHELL_R[s] * shellScale * 1.6f * (1f - t / 17f), rot), 2);
++                    stage.push(shells[s][i], HeliosStage.cube(heart, SHELL_R[s] * shellScale * 1.6f * (1f - t / 17f), rot), HeliosStage.SMOOTH_2);
+                 }
+             }
+         }
+-        poseRays(2, 20f + 70f * f, Math.max(0.03f, 0.4f * (1f - f)));
++        poseRays(HeliosStage.SMOOTH_2, 20f + 70f * f, Math.max(0.03f, 0.4f * (1f - f)));
+         for (int i = 0; i < waves.size(); i++) {
+             float r = 2f + 72f * f * (1f - i * 0.06f);
+             float thick = 1.1f * (1f - f) + 0.06f;
+             Vector3f at = new Vector3f(heart).add(0f, waveY.get(i), 0f);
+-            waves.get(i).pose(at, waveOrient.get(i), r, thick, thick, t * 0.03f, 0f, 0f, 2);
++            waves.get(i).pose(at, waveOrient.get(i), r, thick, thick, t * 0.03f, 0f, 0f, HeliosStage.SMOOTH_2);
+         }
+         for (int i = 0; i < sphere.size(); i++) {
+             Vector3f dir = sphereDir.get(i);
+             Vector3f at = new Vector3f(dir).mul(3f + 58f * f).add(heart);
+             float size = 5f * (1f - f) + 0.2f;
+-            stage.push(sphere.get(i), HeliosStage.box(at, new Vector3f(size, 0.08f, size), HMath.alignY(dir)), 2);
++            stage.push(sphere.get(i), HeliosStage.box(at, new Vector3f(size, 0.08f, size), HMath.alignY(dir)), HeliosStage.SMOOTH_2);
+         }
+         for (int i = 0; i < ejecta.size(); i++) {
+             Vector3f at = new Vector3f(ejectaDir.get(i)).mul(4f + 50f * f * (0.6f + HMath.hash(i, 3) * 0.6f)).add(heart);
+-            stage.push(ejecta.get(i), HeliosStage.cube(at, 1.3f * (1f - f) + 0.08f, new Quaternionf().rotateXYZ(t * 0.1f + i, t * 0.07f, 0f)), 2);
++            stage.push(ejecta.get(i), HeliosStage.cube(at, 1.3f * (1f - f) + 0.08f, new Quaternionf().rotateXYZ(t * 0.1f + i, t * 0.07f, 0f)), HeliosStage.SMOOTH_2);
+         }
+         if (t == 68) {
+             for (Shapes.Ring r : waves) {
+@@ -466,15 +610,18 @@ final class Supernova {
+             Vector3f out = new Vector3f(base).sub(heart).mul(1f + life * 0.8f).add(heart);
+             float size = (6f + HMath.hash(i, 13) * 6f) * fade;
+             Quaternionf rot = new Quaternionf().rotateY(i + t * 0.004f).rotateX(0.6f + HMath.hash(i, 17));
+-            stage.push(nebula.get(i), HeliosStage.box(out, new Vector3f(size, 0.05f, size * 0.6f), rot), 2);
++            stage.push(nebula.get(i), HeliosStage.box(out, new Vector3f(size, 0.05f, size * 0.6f), rot), HeliosStage.SMOOTH_2);
+         }
+         // The pulsar: a white point sweeping two beams like a lighthouse.
+         float spin = t * 0.12f;
+-        stage.push(pulsar[0], HeliosStage.cube(heart, 0.5f, new Quaternionf().rotateY(spin)), 2);
++        if (t < 282 || t > 292) {
++            // (282-290 the point swells and gives birth to the vault: see vaultBirth)
++            stage.push(pulsar[0], HeliosStage.cube(heart, 0.5f, new Quaternionf().rotateY(spin)), HeliosStage.SMOOTH_2);
++        }
+         Vector3f axis = new Vector3f((float) Math.cos(spin), 0.35f, (float) Math.sin(spin)).normalize();
+         float len = 18f * fade;
+-        stage.push(pulsar[1], HeliosStage.beam(heart, new Vector3f(axis).mul(len).add(heart), 0.12f), 2);
+-        stage.push(pulsar[2], HeliosStage.beam(heart, new Vector3f(axis).mul(-len).add(heart), 0.12f), 2);
++        stage.push(pulsar[1], HeliosStage.beam(heart, new Vector3f(axis).mul(len).add(heart), 0.12f), HeliosStage.SMOOTH_2);
++        stage.push(pulsar[2], HeliosStage.beam(heart, new Vector3f(axis).mul(-len).add(heart), 0.12f), HeliosStage.SMOOTH_2);
+         if (t % 24 == 0 && t < 440) {
+             enc.score().at(heart, Sound.BLOCK_BEACON_POWER_SELECT, 0.5f, 1.8f);
+         }
+diff --git a/BossEngine/src/main/java/de/aetherion/bossengine/helios/reward/StarVault.java b/BossEngine/src/main/java/de/aetherion/bossengine/helios/reward/StarVault.java
+new file mode 100644
+index 0000000..2c2cb85
+--- /dev/null
++++ b/BossEngine/src/main/java/de/aetherion/bossengine/helios/reward/StarVault.java
+@@ -0,0 +1,458 @@
++package de.aetherion.bossengine.helios.reward;
++
++import de.aetherion.bossengine.helios.core.HMath;
++import de.aetherion.bossengine.helios.core.HeliosStage;
++import de.aetherion.bossengine.helios.core.Score;
++import de.aetherion.bossengine.helios.core.Shapes;
++import de.aetherion.bossengine.helios.encounter.HeliosEncounter;
++import de.aetherion.bossengine.helios.world.Arena;
++
++import org.bukkit.Color;
++import org.bukkit.Material;
++import org.bukkit.Particle;
++import org.bukkit.Sound;
++import org.bukkit.World;
++import org.bukkit.block.Block;
++import org.bukkit.block.BlockFace;
++import org.bukkit.block.data.BlockData;
++import org.bukkit.block.data.Bisected;
++import org.bukkit.block.data.type.Stairs;
++import org.bukkit.entity.BlockDisplay;
++import org.joml.Quaternionf;
++import org.joml.Vector3f;
++
++import java.util.ArrayList;
++import java.util.List;
++
++/**
++ * THE STAR VAULT: the reliquary's body, born out of the dying star.
++ *
++ * <pre>
++ *   BIRTH    the pulsar's point swells and bursts: the vault's plates fly out of the dead star and lock
++ *            together around a white-hot seed, two star-matter halos spin up
++ *   DESCENT  it sinks from where the star was to float over the middle of the pit
++ *   STAIRS   beat by beat the star builds the way up to it: first a dais of light under it, then one step
++ *            at a time four staircases grow outward (north, east, south, west) until they touch the Crown.
++ *            Every step is star-matter flying out of the vault and turning into real stone on the beat.
++ *   OPEN     the reliquary ({@link StarseedReliquary}) lifts the lid and the capsules come out onto the dais
++ * </pre>
++ *
++ * The staircases are real blocks (you walk up them) placed only inside the pit, where the arena layout has
++ * no cells, so the arena restore never touches them. {@link #clear()} removes every block and display; the
++ * encounter calls it on every exit (victory, abort, leave, disable), and the slot wipe catches a crash.
++ */
++public final class StarVault {
++
++    /** Where the vault floats: over the middle of the pit, above the dais. */
++    public static final Vector3f REST = new Vector3f(0f, 4.7f, 0f);
++    /** The dais' blocks sit at this stage height; you stand on {@link #DAIS_TOP}. */
++    public static final int DAIS_Y = 2;
++    public static final float DAIS_TOP = DAIS_Y + 1f;
++    public static final float DAIS_R = 3.3f;
++
++    private static final Color GOLD = Color.fromRGB(255, 205, 90);
++    private static final Color SEED = Color.fromRGB(255, 250, 230);
++    private static final int BIRTH = 26;
++    private static final int DESCENT = 56;
++    private static final int[] STEP_R = {4, 5, 6, 7, 8};
++    private static final int[][] DIRS = {{0, -1}, {1, 0}, {0, 1}, {-1, 0}};
++
++    private final HeliosEncounter enc;
++    private final HeliosStage stage;
++    private final HeliosStage.Group group;
++    private final Vector3f from = new Vector3f();
++    private final Vector3f center = new Vector3f();
++    private final List<Part> parts = new ArrayList<>();
++    private final Shapes.Ring haloA;
++    private final Shapes.Ring haloB;
++    private final Shapes.Line tether;
++    private final List<BlockDisplay> shards = new ArrayList<>();
++    private final List<Vector3f> shardTo = new ArrayList<>();
++    private final List<int[]> placed = new ArrayList<>();
++    private final List<Object[]> waiting = new ArrayList<>();
++
++    private int t = -1;
++    private int stairsAt = -1;
++    private int stepLen = 12;
++    private int layer = -1;
++    private boolean stairsDone;
++    private float open;
++    private float openTarget;
++    private boolean cleared;
++
++    private static final class Part {
++        final BlockDisplay d;
++        final Vector3f off;
++        final Vector3f size;
++        final Vector3f burst;
++
++        Part(BlockDisplay d, Vector3f off, Vector3f size, Vector3f burst) {
++            this.d = d;
++            this.off = off;
++            this.size = size;
++            this.burst = burst;
++        }
++    }
++
++    public StarVault(HeliosEncounter enc) {
++        this.enc = enc;
++        this.stage = enc.stage();
++        this.group = stage.group();
++        part(Material.GOLD_BLOCK, 0f, -0.5f, 0f, 1.5f, 0.22f, 1.05f, 13);
++        part(Material.WHITE_STAINED_GLASS, 0f, 0f, 0f, 1.25f, 0.8f, 0.85f, 15);
++        part(Material.PEARLESCENT_FROGLIGHT, 0f, 0f, 0f, 0.42f, 0.42f, 0.42f, 15);
++        part(Material.GOLD_BLOCK, 0f, 0.5f, 0f, 1.58f, 0.18f, 1.12f, 15);
++        part(Material.GOLD_BLOCK, 0f, 0.66f, 0f, 0.5f, 0.12f, 0.5f, 15);
++        for (int i = 0; i < 4; i++) {
++            float sx = (i & 1) == 0 ? -1f : 1f;
++            float sz = (i & 2) == 0 ? -1f : 1f;
++            part(Material.GOLD_BLOCK, sx * 0.64f, 0f, sz * 0.44f, 0.1f, 0.9f, 0.1f, 13);
++        }
++        for (int i = 0; i < 6; i++) {
++            float a = i * HMath.TAU / 6f;
++            part(Material.GOLD_BLOCK, (float) Math.cos(a) * 0.3f, 0.95f, (float) Math.sin(a) * 0.3f, 0.06f, 0.5f, 0.06f, 15);
++        }
++        haloA = new Shapes.Ring(stage, group, 16, Material.YELLOW_STAINED_GLASS, GOLD, 15, true);
++        haloB = new Shapes.Ring(stage, group, 12, Material.WHITE_STAINED_GLASS, SEED, 15, true);
++        tether = new Shapes.Line(stage, group, Material.WHITE_CONCRETE, SEED);
++        Vector3f o = new Vector3f(REST);
++        haloA.hide(o, 0);
++        haloB.hide(o, 0);
++        tether.hide(o, 0);
++        for (int i = 0; i < 12; i++) {
++            BlockDisplay d = group.block(Material.PEARLESCENT_FROGLIGHT.createBlockData(), SEED, 15, true);
++            stage.push(d, HeliosStage.gone(o), 0);
++            shards.add(d);
++            shardTo.add(new Vector3f(o));
++        }
++        center.set(REST);
++    }
++
++    private void part(Material m, float x, float y, float z, float sx, float sy, float sz, int bright) {
++        BlockDisplay d = group.block(m.createBlockData(), m == Material.PEARLESCENT_FROGLIGHT ? SEED : null, bright, true);
++        int i = parts.size();
++        Vector3f burst = new Vector3f(HMath.hash(i, 3) - 0.5f, HMath.hash(i, 5) - 0.5f, HMath.hash(i, 7) - 0.5f).normalize().mul(3.5f);
++        parts.add(new Part(d, new Vector3f(x, y, z), new Vector3f(sx, sy, sz), burst));
++        stage.push(d, HeliosStage.gone(REST), 0);
++    }
++
++    /* ================================================================== control */
++
++    /** The vault is born at {@code at} (the dying star) and starts its descent and the stairs on its own. */
++    public void birth(Vector3f at) {
++        if (t >= 0 || cleared) {
++            return;
++        }
++        from.set(at);
++        center.set(at);
++        t = 0;
++        for (Part p : parts) {
++            stage.push(p.d, HeliosStage.gone(at), 0);
++        }
++        haloA.hide(at, 0);
++        haloB.hide(at, 0);
++        tether.hide(at, 0);
++        Score score = enc.score();
++        score.play(Sound.BLOCK_END_PORTAL_FRAME_FILL, 1.2f, 0.6f, true);
++        score.play(Sound.BLOCK_VAULT_OPEN_SHUTTER, 1.2f, 0.6f, true);
++        score.play(Sound.ITEM_TOTEM_USE, 0.6f, 1.3f, true);
++        score.chord(Sound.BLOCK_NOTE_BLOCK_BELL, 0.9f, Score.semi(-5), Score.semi(0), Score.semi(4), Score.semi(7));
++        enc.camera().flash(1, 6);
++        stage.particle(Particle.END_ROD, at, 40, 1.2, 0.15);
++    }
++
++    public boolean born() {
++        return t >= 0;
++    }
++
++    public boolean settled() {
++        return t >= BIRTH + DESCENT;
++    }
++
++    public boolean stairsDone() {
++        return stairsDone;
++    }
++
++    /** The chest's center (stage). */
++    public Vector3f center() {
++        return new Vector3f(center);
++    }
++
++    /** Lid and seed: 0 closed … 1 open (the reliquary drives it while the capsules come out). */
++    public void open(float f) {
++        openTarget = HMath.clamp01(f);
++    }
++
++    /* ================================================================== tick */
++
++    public void tick() {
++        if (t < 0 || cleared) {
++            return;
++        }
++        t++;
++        open = HMath.lerp(open, openTarget, 0.15f);
++        float assemble;
++        if (t <= BIRTH) {
++            // Plates burst out of the star, then lock together around the seed.
++            float f = HMath.window(t, 0, BIRTH);
++            // 0..6 the plates fly out of the star; then they lock together (a little overshoot).
++            assemble = t < 6 ? -HMath.outCubic(t / 6f) : HMath.outBack(HMath.window(t, 6, BIRTH));
++            center.set(from);
++            if (t == 6) {
++                enc.score().play(Sound.BLOCK_VAULT_ACTIVATE, 1.2f, 0.8f, true);
++                enc.score().play(Sound.BLOCK_BEACON_ACTIVATE, 1f, 1.4f, true);
++            }
++            if (t == BIRTH) {
++                enc.score().chordAt(center, Sound.BLOCK_NOTE_BLOCK_CHIME, 1f, Score.semi(0), Score.semi(4), Score.semi(7), Score.semi(12));
++                enc.score().at(center, Sound.BLOCK_VAULT_CLOSE_SHUTTER, 1.2f, 1.2f);
++            }
++            pose(assemble, f, 1);
++        } else if (t <= BIRTH + DESCENT) {
++            float f = HMath.inOutCubic(HMath.window(t, BIRTH, BIRTH + DESCENT));
++            center.set(from).lerp(REST, f);
++            center.y += (float) Math.sin(f * HMath.PI) * 0.8f;
++            pose(1f, 1f, HeliosStage.SMOOTH_1);
++            tether.set(from, new Vector3f(center).add(0f, 0.9f, 0f), 0.05f * (1f - f) + 0.01f, HeliosStage.SMOOTH_1);
++            if ((t - BIRTH) % 10 == 0) {
++                enc.score().at(center, Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.9f, 0.7f + 0.6f * f);
++            }
++            if (t == BIRTH + DESCENT) {
++                tether.hide(center, 6);
++                enc.score().at(center, Sound.BLOCK_BEACON_POWER_SELECT, 1.2f, 1.2f);
++                enc.score().at(center, Sound.BLOCK_RESPAWN_ANCHOR_SET_SPAWN, 1f, 1.2f);
++                stairsAt = t + 8;
++            }
++        } else {
++            center.set(REST);
++            center.y += 0.12f * (float) Math.sin(t * 0.07f);
++            pose(1f, 1f, HeliosStage.SMOOTH_1);
++        }
++        tickStairs();
++        retryWaiting();
++    }
++
++    private void pose(float assemble, float grow, int interp) {
++        float spin = t * 0.03f;
++        Quaternionf yaw = new Quaternionf().rotateY(spin);
++        for (int i = 0; i < parts.size(); i++) {
++            Part p = parts.get(i);
++            Vector3f off = new Vector3f(p.off);
++            Vector3f size = new Vector3f(p.size);
++            // Lid, crown and rays lift with the opening; the seed rises and swells.
++            if (i == 3 || i == 4 || i >= 9) {
++                off.y += open * 0.9f;
++            }
++            if (i == 2) {
++                off.y += open * 0.6f;
++                size.mul(1f + 0.5f * open + 0.12f * HMath.heartbeat(t / 20f));
++            }
++            Vector3f at = yaw.transform(new Vector3f(off)).add(center);
++            if (assemble != 1f) {
++                // assemble < 0: still flying out (scatter grows); 0..1: coming back together.
++                float out = assemble < 0f ? -assemble : 1f - assemble;
++                at.add(new Vector3f(p.burst).mul(out));
++            }
++            size.mul(Math.max(0.001f, Math.min(1f, grow * 1.2f)));
++            Quaternionf rot = new Quaternionf(yaw);
++            if (assemble != 1f) {
++                float out = assemble < 0f ? -assemble : 1f - assemble;
++                rot.rotateXYZ(out * 4f * HMath.hash(i, 11), out * 3f, 0f);
++            }
++            stage.push(p.d, HeliosStage.box(at, size, rot), interp);
++        }
++        float hs = Math.max(0.05f, grow);
++        haloA.pose(center, new Quaternionf().rotateX(0.35f).rotateY(t * 0.02f), 1.35f * hs, 0.06f, 0.06f, t * 0.05f, 0f, 0f, interp);
++        haloB.pose(center, new Quaternionf().rotateZ(1.1f).rotateY(-t * 0.03f), 1.05f * hs, 0.04f, 0.04f, -t * 0.07f, 0f, 0f, interp);
++    }
++
++    /* ================================================================== stairs */
++
++    private void tickStairs() {
++        if (stairsAt < 0 || stairsDone || t < stairsAt) {
++            return;
++        }
++        int local = t - stairsAt;
++        int want = local / stepLen;
++        int in = local % stepLen;
++        if (in == 0 && want != layer && want <= STEP_R.length) {
++            layer = want;
++            launch(layer);
++        }
++        if (in >= 1 && in <= 8) {
++            // Star-matter in flight: from the vault's belly to its block, on a shallow arc.
++            float f = HMath.outCubic(HMath.window(in, 0, 8));
++            Vector3f start = new Vector3f(center).add(0f, -0.4f, 0f);
++            for (int i = 0; i < shards.size(); i++) {
++                Vector3f to = shardTo.get(i);
++                Vector3f mid = new Vector3f(start).lerp(to, 0.5f).add(0f, 1.6f, 0f);
++                Vector3f at = HMath.bezier(start, mid, to, f, new Vector3f());
++                stage.push(shards.get(i), HeliosStage.cube(at, 0.28f + 0.3f * f, new Quaternionf().rotateXYZ(in * 0.4f, in * 0.3f, 0f)), 1);
++            }
++        }
++        if (in == 8) {
++            land(layer);
++        }
++        if (in == 9) {
++            for (int i = 0; i < shards.size(); i++) {
++                stage.push(shards.get(i), HeliosStage.gone(shardTo.get(i)), 4);
++            }
++            if (layer >= STEP_R.length) {
++                stairsDone = true;
++                finale();
++            }
++        }
++    }
++
++    /** Where this layer's star-matter goes: the dais ring (layer 0), else one step on each of the four stairs. */
++    private void launch(int layer) {
++        if (layer == 0) {
++            for (int i = 0; i < shards.size(); i++) {
++                float a = i * HMath.TAU / shards.size();
++                shardTo.get(i).set(HMath.ring(i % 2 == 0 ? 2.6f : 1.4f, a, DAIS_TOP - 0.2f));
++            }
++        } else {
++            int r = STEP_R[layer - 1];
++            int k = 0;
++            for (int[] d : DIRS) {
++                for (int off = -1; off <= 1; off++) {
++                    int dx = d[0] * r + (d[0] == 0 ? off : 0);
++                    int dz = d[1] * r + (d[1] == 0 ? off : 0);
++                    shardTo.get(k++).set(dx, stepY(r) + 0.6f, dz);
++                }
++            }
++        }
++        enc.score().at(center, Sound.BLOCK_BEACON_POWER_SELECT, 0.9f, 0.8f + layer * 0.12f);
++        enc.score().at(center, Sound.BLOCK_AMETHYST_BLOCK_RESONATE, 0.8f, 0.8f + layer * 0.1f);
++    }
++
++    /** The beat lands: this layer turns into real stone. */
++    private void land(int layer) {
++        World w = enc.world();
++        Arena arena = enc.arena();
++        if (layer == 0) {
++            for (int dx = -4; dx <= 4; dx++) {
++                for (int dz = -4; dz <= 4; dz++) {
++                    // Block (dx, dz) is centred on stage point (dx, dz): the stage anchor is the centre block's middle.
++                    float r = (float) Math.sqrt(dx * dx + dz * dz);
++                    if (r > DAIS_R + 0.2f) {
++                        continue;
++                    }
++                    Material m = r < 1.3f ? Material.GOLD_BLOCK : r < 2.6f ? Material.SMOOTH_QUARTZ : Material.QUARTZ_BRICKS;
++                    put(w, arena, dx, DAIS_Y, dz, m.createBlockData());
++                }
++            }
++            enc.score().chordAt(new Vector3f(0f, DAIS_TOP, 0f), Sound.BLOCK_NOTE_BLOCK_BELL, 1f, Score.semi(-12), Score.semi(-5), Score.semi(0));
++            enc.score().at(new Vector3f(0f, DAIS_TOP, 0f), Sound.BLOCK_VAULT_PLACE, 1.2f, 0.7f);
++            stage.particle(Particle.END_ROD, new Vector3f(0f, DAIS_TOP + 0.2f, 0f), 30, 1.6, 0.02);
++            enc.camera().shakeFrom(new Vector3f(0f, DAIS_TOP, 0f), 24f, 4);
++            return;
++        }
++        int r = STEP_R[layer - 1];
++        for (int[] d : DIRS) {
++            BlockFace up = face(-d[0], -d[1]);
++            for (int off = -1; off <= 1; off++) {
++                int dx = d[0] * r + (d[0] == 0 ? off : 0);
++                int dz = d[1] * r + (d[1] == 0 ? off : 0);
++                BlockData data;
++                if (r <= 5) {
++                    data = (off == 0 ? Material.SMOOTH_QUARTZ : Material.QUARTZ_BRICKS).createBlockData();
++                } else {
++                    data = Material.SMOOTH_QUARTZ_STAIRS.createBlockData();
++                    if (data instanceof Stairs st) {
++                        st.setFacing(up);
++                        st.setHalf(Bisected.Half.BOTTOM);
++                        st.setShape(Stairs.Shape.STRAIGHT);
++                    }
++                }
++                put(w, arena, dx, stepY(r), dz, data);
++            }
++            Vector3f at = new Vector3f(d[0] * r, stepY(r) + 1f, d[1] * r);
++            stage.particle(Particle.END_ROD, at, 6, 0.6, 0.01);
++        }
++        // Each step one note higher: the way up is a scale.
++        int[] scale = {0, 2, 4, 7, 9, 12};
++        enc.score().chord(Sound.BLOCK_NOTE_BLOCK_CHIME, 1f, Score.semi(scale[Math.min(layer, scale.length - 1)]),
++                Score.semi(scale[Math.min(layer, scale.length - 1)] - 12));
++        enc.score().play(Sound.BLOCK_AMETHYST_CLUSTER_PLACE, 1f, 0.6f + 0.1f * layer);
++        enc.score().play(Sound.BLOCK_DEEPSLATE_BRICKS_PLACE, 0.8f, 0.7f);
++    }
++
++    private void finale() {
++        enc.score().chord(Sound.BLOCK_NOTE_BLOCK_BELL, 1f, Score.semi(0), Score.semi(4), Score.semi(7), Score.semi(12));
++        enc.score().play(Sound.BLOCK_BEACON_ACTIVATE, 1f, 1.2f);
++        enc.score().play(Sound.ENTITY_PLAYER_LEVELUP, 0.6f, 0.8f);
++        enc.camera().flash(0, 5);
++        for (int[] d : DIRS) {
++            stage.particle(Particle.END_ROD, new Vector3f(d[0] * 8.5f, 1.2f, d[1] * 8.5f), 12, 0.6, 0.02);
++        }
++        for (org.bukkit.entity.Player p : enc.audience()) {
++            p.sendActionBar(de.aetherion.bossengine.util.TextUtil.component("&6The way up is open. &eClimb to the reliquary."));
++        }
++    }
++
++    /** Height of the block for a step at radius r: stairs climb 0 → 2, then the bridge and dais at 2. */
++    private static int stepY(int r) {
++        return switch (r) {
++            case 8 -> 0;
++            case 7 -> 1;
++            default -> DAIS_Y;
++        };
++    }
++
++    private static BlockFace face(int dx, int dz) {
++        if (dx > 0) {
++            return BlockFace.EAST;
++        }
++        if (dx < 0) {
++            return BlockFace.WEST;
++        }
++        return dz > 0 ? BlockFace.SOUTH : BlockFace.NORTH;
++    }
++
++    private void put(World w, Arena arena, int dx, int dy, int dz, BlockData data) {
++        if (arena.occupied(dx, dy, dz)) {
++            waiting.add(new Object[]{dx, dy, dz, data});
++            return;
++        }
++        Block b = w.getBlockAt(arena.cx() + dx, arena.cy() + dy, arena.cz() + dz);
++        if (!b.getType().isAir()) {
++            return;
++        }
++        b.setBlockData(data, false);
++        placed.add(new int[]{dx, dy, dz});
++    }
++
++    private void retryWaiting() {
++        if (waiting.isEmpty() || t % 5 != 0) {
++            return;
++        }
++        List<Object[]> again = new ArrayList<>(waiting);
++        waiting.clear();
++        for (Object[] o : again) {
++            put(enc.world(), enc.arena(), (int) o[0], (int) o[1], (int) o[2], (BlockData) o[3]);
++        }
++    }
++
++    /* ================================================================== cleanup */
++
++    /** Removes the stairs, the dais and every display. Idempotent; safe on every exit path. */
++    public void clear() {
++        if (cleared) {
++            return;
++        }
++        cleared = true;
++        waiting.clear();
++        Arena arena = enc.arena();
++        World w = enc.world();
++        if (arena != null && w != null) {
++            for (int[] p : placed) {
++                Block b = w.getBlockAt(arena.cx() + p[0], arena.cy() + p[1], arena.cz() + p[2]);
++                if (!b.getType().isAir()) {
++                    b.setType(Material.AIR, false);
++                }
++            }
++        }
++        placed.clear();
++        group.clear();
++    }
++}
+diff --git a/BossEngine/src/main/java/de/aetherion/bossengine/helios/reward/StarseedReliquary.java b/BossEngine/src/main/java/de/aetherion/bossengine/helios/reward/StarseedReliquary.java
+index 40e6a1b..d2deefb 100644
+--- a/BossEngine/src/main/java/de/aetherion/bossengine/helios/reward/StarseedReliquary.java
++++ b/BossEngine/src/main/java/de/aetherion/bossengine/helios/reward/StarseedReliquary.java
+@@ -28,10 +28,11 @@ import java.util.Map;
+ import java.util.UUID;
+ 
+ /**
+- * THE STARSEED RELIQUARY. After the supernova one point of light is left where the star was.
+- * For every participant with a share, a starseed capsule (a gold cage around a white-hot seed in a
+- * glass shell) detaches from it and glides down a slow spiral to its own pedestal on the Crown,
+- * trailing a hairline of light. Each capsule carries its owner's name and opens only for them: the
++ * THE STARSEED RELIQUARY. The {@link StarVault} was born out of the dying star during the supernova and
++ * now floats over the pit on its dais, with four staircases leading up. Its lid lifts and, for every
++ * participant with a share, a starseed capsule (a gold cage around a white-hot seed in a glass shell)
++ * rises out of it and settles on the dais, trailing a hairline of light. (Without a vault, e.g. an admin
++ * skip, the old staging plays: a point of light where the star was, capsules gliding down to the Crown.) Each capsule carries its owner's name and opens only for them: the
+  * lid lifts, the seed rises and streams into the player, and the share is theirs.
+  *
+  * <p>Same contract as the reliquary / music box / seed vault: {@code LootService.grantToChest} pays XP
+@@ -53,6 +54,7 @@ public final class StarseedReliquary {
+     private final HeliosStage.Group group;
+     private final Map<UUID, Capsule> capsules = new LinkedHashMap<>();
+     private final int expiresIn;
++    private final StarVault vault;
+     private BlockDisplay light;
+     private Shapes.Ring halo;
+     private int t;
+@@ -63,8 +65,15 @@ public final class StarseedReliquary {
+         this.stage = enc.stage();
+         this.group = stage.group();
+         this.expiresIn = Math.max(20 * 20, claimTicks);
+-        light = group.block(Material.PEARLESCENT_FROGLIGHT.createBlockData(), SEED, 15, true);
+-        halo = new Shapes.Ring(stage, group, 16, Material.YELLOW_STAINED_GLASS, GOLD, 15, true);
++        this.vault = enc.vault() != null && enc.vault().born() ? enc.vault() : null;
++        if (vault == null) {
++            light = group.block(Material.PEARLESCENT_FROGLIGHT.createBlockData(), SEED, 15, true);
++            halo = new Shapes.Ring(stage, group, 16, Material.YELLOW_STAINED_GLASS, GOLD, 15, true);
++        } else {
++            vault.open(1f);
++            enc.score().at(vault.center(), Sound.BLOCK_VAULT_OPEN_SHUTTER, 1.2f, 1f);
++            enc.score().at(vault.center(), Sound.BLOCK_VAULT_EJECT_ITEM, 1f, 0.9f);
++        }
+         List<UUID> owners = new ArrayList<>();
+         for (Map.Entry<UUID, List<ItemStack>> e : bundles.entrySet()) {
+             if (e.getValue() != null && !e.getValue().isEmpty()) {
+@@ -73,8 +82,10 @@ public final class StarseedReliquary {
+         }
+         for (int i = 0; i < owners.size(); i++) {
+             UUID id = owners.get(i);
+-            float a = HMath.HALF_PI + (i - (owners.size() - 1) * 0.5f) * Math.min(0.55f, HMath.TAU / Math.max(1, owners.size()));
+-            capsules.put(id, new Capsule(id, bundles.get(id), a, i * STAGGER));
++            float a = vault != null
++                    ? HMath.HALF_PI + i * HMath.TAU / Math.max(1, owners.size())
++                    : HMath.HALF_PI + (i - (owners.size() - 1) * 0.5f) * Math.min(0.55f, HMath.TAU / Math.max(1, owners.size()));
++            capsules.put(id, new Capsule(id, bundles.get(id), a, i * (vault != null ? 6 : STAGGER)));
+         }
+         enc.score().chord(Sound.BLOCK_AMETHYST_BLOCK_RESONATE, 1f, 0.75f, 1f, 1.26f);
+     }
+@@ -82,8 +93,10 @@ public final class StarseedReliquary {
+     public void tick() {
+         t++;
+         float pulse = 1f + 0.12f * (float) Math.sin(t * 0.15f);
+-        stage.push(light, HeliosStage.cube(POINT, 0.55f * pulse, new Quaternionf().rotateY(t * 0.05f).rotateX(t * 0.03f)), 3);
+-        halo.pose(POINT, new Quaternionf().rotateX(0.3f).rotateY(t * 0.02f), 1.4f * pulse, 0.05f, 0.05f, t * 0.04f, 0f, 0f, 3);
++        if (light != null) {
++            stage.push(light, HeliosStage.cube(POINT, 0.55f * pulse, new Quaternionf().rotateY(t * 0.05f).rotateX(t * 0.03f)), 3);
++            halo.pose(POINT, new Quaternionf().rotateX(0.3f).rotateY(t * 0.02f), 1.4f * pulse, 0.05f, 0.05f, t * 0.04f, 0f, 0f, 3);
++        }
+         for (Capsule c : capsules.values()) {
+             c.tick();
+         }
+@@ -164,6 +177,8 @@ public final class StarseedReliquary {
+         final float angle;
+         final int delay;
+         final Vector3f pedestal;
++        final Vector3f origin;
++        final int descent;
+         final Vector3f pos = new Vector3f(POINT);
+         final BlockDisplay seed;
+         final BlockDisplay shell;
+@@ -185,7 +200,10 @@ public final class StarseedReliquary {
+             this.items = items;
+             this.angle = angle;
+             this.delay = delay;
+-            this.pedestal = HMath.ring(PEDESTAL_R, angle, 0f);
++            this.pedestal = vault != null ? HMath.ring(2.2f, angle, StarVault.DAIS_TOP) : HMath.ring(PEDESTAL_R, angle, 0f);
++            this.origin = vault != null ? vault.center() : new Vector3f(POINT);
++            this.descent = vault != null ? 40 : DESCENT;
++            pos.set(origin);
+             seed = group.block(Material.PEARLESCENT_FROGLIGHT.createBlockData(), SEED, 15, true);
+             shell = group.block(Material.WHITE_STAINED_GLASS.createBlockData(), null, 15, true);
+             lid = group.block(Material.GOLD_BLOCK.createBlockData(), GOLD, 15, true);
+@@ -196,7 +214,7 @@ public final class StarseedReliquary {
+             trail = new Shapes.Line(stage, group, Material.WHITE_CONCRETE, SEED);
+             mark = new Shapes.Disc(stage, group, Material.YELLOW_STAINED_GLASS, GOLD, 15);
+             mark.hide(pedestal, 0);
+-            trail.hide(POINT, 0);
++            trail.hide(origin, 0);
+             pose(0f, 0f, 1);
+         }
+ 
+@@ -206,18 +224,24 @@ public final class StarseedReliquary {
+                 return;
+             }
+             if (!landed) {
+-                float f = HMath.window(local, 0, DESCENT);
+-                // A slow spiral down: one and a half turns, easing into the pedestal.
++                float f = HMath.window(local, 0, descent);
+                 float e = HMath.inOutCubic(f);
+-                float turns = (1f - e) * HMath.PI * 1.5f;
+-                float r = HMath.lerp(0.5f, PEDESTAL_R, e);
+-                Vector3f p = HMath.ring(r, angle + turns, HMath.lerp(POINT.y, 1.1f, e));
+-                p.y += (float) Math.sin(f * HMath.PI) * 1.5f;
+-                pos.set(p);
++                if (vault != null) {
++                    // Out of the open vault: up over the lid, then an arc down onto its place on the dais.
++                    Vector3f top = new Vector3f(origin).add(0f, 1.8f, 0f).add(HMath.ring(0.8f, angle, 0f));
++                    HMath.bezier(new Vector3f(origin).add(0f, 0.6f, 0f), top, pedestal, e, pos);
++                } else {
++                    // A slow spiral down: one and a half turns, easing into the pedestal.
++                    float turns = (1f - e) * HMath.PI * 1.5f;
++                    float r = HMath.lerp(0.5f, PEDESTAL_R, e);
++                    Vector3f p = HMath.ring(r, angle + turns, HMath.lerp(POINT.y, 1.1f, e));
++                    p.y += (float) Math.sin(f * HMath.PI) * 1.5f;
++                    pos.set(p);
++                }
+                 pose(local * 0.12f, 0f, 3);
+-                trail.set(POINT, pos, 0.03f * (1f - f * 0.6f), 3);
++                trail.set(origin, pos, 0.03f * (1f - f * 0.6f), 3);
+                 if (local == 0) {
+-                    enc.score().at(POINT, Sound.BLOCK_BEACON_POWER_SELECT, 0.8f, 1.6f);
++                    enc.score().at(origin, Sound.BLOCK_BEACON_POWER_SELECT, 0.8f, 1.6f);
+                 }
+                 if (f >= 1f) {
+                     land();
+@@ -248,19 +272,18 @@ public final class StarseedReliquary {
+         private void land() {
+             landed = true;
+             trail.hide(pos, 6);
+-            mark.set(new Vector3f(pedestal.x, 0.02f, pedestal.z), 1.3f, 0.04f, 0f, 1);
+-            mark.set(new Vector3f(pedestal.x, 0.02f, pedestal.z), 0.9f, 0.04f, 0.4f, 20);
++            mark.set(new Vector3f(pedestal.x, pedestal.y + 0.02f, pedestal.z), 0.9f, 0.04f, 0.4f, 6);
+             enc.score().chordAt(pos, Sound.BLOCK_NOTE_BLOCK_CHIME, 0.9f, Score.semi(0), Score.semi(4), Score.semi(7));
+             enc.score().at(pos, Sound.BLOCK_AMETHYST_CLUSTER_PLACE, 1f, 0.8f);
+             stage.particle(Particle.END_ROD, new Vector3f(pos).add(0f, 0.6f, 0f), 12, 0.35, 0.02);
+-            org.bukkit.Location at = stage.at(pos.x, 0.05f, pos.z);
++            org.bukkit.Location at = stage.at(pos.x, pedestal.y + 0.05f, pos.z);
+             hitbox = stage.world().spawn(at, Interaction.class, i -> {
+                 i.setPersistent(false);
+                 i.setInteractionWidth(1.3f);
+                 i.setInteractionHeight(1.7f);
+                 i.setResponsive(true);
+             });
+-            label = group.text(new Vector3f(pos.x, 2.3f, pos.z), "&6✦ &f" + name, 1f, Color.fromARGB(80, 0, 0, 0));
++            label = group.text(new Vector3f(pos.x, pedestal.y + 2.3f, pos.z), "&6✦ &f" + name, 1f, Color.fromARGB(80, 0, 0, 0));
+             Player p = Bukkit.getPlayer(owner);
+             if (p != null) {
+                 enc.score().to(p, Sound.ENTITY_PLAYER_LEVELUP, 0.7f, 1.4f);
+diff --git a/BossEngine/src/main/java/de/aetherion/bossengine/helios/star/DyingStar.java b/BossEngine/src/main/java/de/aetherion/bossengine/helios/star/DyingStar.java
+index 76101a2..3576599 100644
+--- a/BossEngine/src/main/java/de/aetherion/bossengine/helios/star/DyingStar.java
++++ b/BossEngine/src/main/java/de/aetherion/bossengine/helios/star/DyingStar.java
+@@ -27,7 +27,9 @@ import java.util.List;
+  *
+  * Its heartbeat is the fight's {@link Tempo}: every beat the heart swells ("lub"), then a smaller "dub".
+  * Scripts drive its moods (dormant, burning, agitated), crack it, tear it open, collapse it and finally
+- * hand its debris out as meteors. Pushed every second tick with a 3-tick interpolation: smooth, cheap.
++ * hand its debris out as meteors. Pushed every second tick (the odd ones, so it never shares a packet
++ * burst with the bodies) with a 3-tick interpolation: one tick of overlap, so a late packet never freezes
++ * the belt. Spin changes glide instead of jumping, so the orbiting rock never lurches.
+  */
+ public final class DyingStar {
+ 
+@@ -54,11 +56,14 @@ public final class DyingStar {
+     private final Vector3f center = new Vector3f(CENTER);
+ 
+     private int clock;
++    /** Accumulated spin phase. (It used to be clock * spinRate: any spin change made the whole star jump.) */
++    private float phase;
+     private float scale = 0f;
+     private float scaleTarget = 1f;
+     private float scaleRate = 0.02f;
+     private float pulseAmp = 0.35f;
+     private float spinRate = 1f;
++    private float spinTarget = 1f;
+     private float coronaRadius = 1f;
+     private float open;
+     private float openTarget;
+@@ -66,7 +71,7 @@ public final class DyingStar {
+     private boolean heartVisible = true;
+     private boolean shellsVisible = true;
+     private boolean coronaVisible = true;
+-    private int interp = 2;
++    private int interp = HeliosStage.SMOOTH_2;
+ 
+     public DyingStar(HeliosStage stage, Tempo tempo) {
+         this.stage = stage;
+@@ -135,8 +140,14 @@ public final class DyingStar {
+         this.pulseAmp = amp;
+     }
+ 
++    /** Target spin; the star eases into it (a jump would make every orbit lurch). */
+     public void spin(float rate) {
++        this.spinTarget = rate;
++    }
++
++    public void spinNow(float rate) {
+         this.spinRate = rate;
++        this.spinTarget = rate;
+     }
+ 
+     public void coronaRadius(float r) {
+@@ -229,6 +240,11 @@ public final class DyingStar {
+ 
+     public void tick() {
+         clock++;
++        if (spinRate != spinTarget) {
++            float d = spinTarget - spinRate;
++            spinRate = Math.abs(d) <= 0.02f ? spinTarget : spinRate + Math.signum(d) * 0.02f;
++        }
++        phase += 0.05f * spinRate;
+         if (scale != scaleTarget) {
+             float d = scaleTarget - scale;
+             scale = Math.abs(d) <= scaleRate ? scaleTarget : scale + Math.signum(d) * scaleRate;
+@@ -243,13 +259,13 @@ public final class DyingStar {
+                 d.tumble += d.spin * spinRate;
+             }
+         }
+-        if (clock % 2 == 0) {
++        if (clock % 2 == 1) {
+             render();
+         }
+     }
+ 
+     private void render() {
+-        float t = clock * 0.05f * spinRate;
++        float t = phase;
+         float beat = HMath.heartbeat(tempo.phase()) * pulseAmp;
+         float s = scale;
+         for (int i = 0; i < heart.length; i++) {
+diff --git a/BossEngine/src/main/resources/helios.yml b/BossEngine/src/main/resources/helios.yml
+index 54af247..8ef5819 100644
+--- a/BossEngine/src/main/resources/helios.yml
++++ b/BossEngine/src/main/resources/helios.yml
+@@ -1,4 +1,4 @@
+-# helios-version: 3 (files with an older version are backed up to .bak and replaced on start)
++# helios-version: 4 (files with an older version are backed up to .bak and replaced on start)
+ # ============================================================
+ # HELIOS REQUIEM - the dying star (two acts)
+ #
+@@ -88,7 +88,7 @@ performance:
+ 
+ # The star's heartbeat is the fight's clock (beats per minute).
+ tempo:
+-  herald: 78
++  herald: 84
+   interlude: 60
+   corona: 88
+   decay: 96
+@@ -96,8 +96,17 @@ tempo:
+   requiem: 112
+ 
+ herald:
++  pacing:
++    # The Herald's Opening after each flurry (bonus damage window; he is never untouchable in the fight).
++    opening-beats: 4
+   blink:
+     power: 55
++  starfall:
++    # He leaps into the star's light, hunts one player with a floor ring, locks and dives.
++    power: 60
++    # The flat shockwave rolling out from the crater (jump it).
++    wave:
++      power: 30
+   swarm:
+     power: 42
+   cage:
+@@ -124,6 +133,22 @@ helios:
+     power: 36
+     count-min: 3
+     count-max: 5
++    # The signature's hunt: the floor beam chases a player (weighty: it turns late).
++    hunt-beats: 8
++    hunt-speed-start: 0.16
++    # Just under a sprint (0.28): sprint and turn to shake it.
++    hunt-speed-end: 0.27
++    hunt-accel: 0.024
++    hunt:
++      power: 36
++    # The scar erupts along its whole length afterwards; every third point tears a hole that grows back.
++    tear:
++      power: 44
++    tear-regrow-seconds: 9
++  tether:
++    # Singularity: Helios binds a player to the hole (extra pull per tick; a sprint outward still holds).
++    power: 14
++    pull: 0.03
+   plasma:
+     power: 34
+   flares:
+-- 
+2.43.0
+

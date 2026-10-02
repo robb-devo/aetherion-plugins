@@ -163,7 +163,12 @@ public final class HubPortalBridge implements Listener {
             if (!result.applied()) {
                 return;
             }
+            // Progression-only / Velocity Hub syncs also "apply" — do NOT yank the player.
+            // Only relocate on a real cross-backend transfer (hub↔dungeon).
             if (remote != null && remote.isDungeonRole()) {
+                if (!result.arrivalFromHub()) {
+                    return;
+                }
                 Location dest = dungeonArrival.toLocation();
                 if (dest != null) {
                     player.teleport(dest);
@@ -186,6 +191,9 @@ public final class HubPortalBridge implements Listener {
                     }, 15L);
                 }
             } else if (remote != null && remote.isHubRole()) {
+                if (!result.returnFromDungeon()) {
+                    return;
+                }
                 Location dest = hubArrival.toLocation();
                 if (dest != null) {
                     player.teleport(dest);

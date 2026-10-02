@@ -1,7 +1,8 @@
 import pathfinderPkg from 'mineflayer-pathfinder'
 import { clickSlot, closeWindow, isQuestOfferWindow, parseQuestAcceptCommand, SLOTS, waitForWindow, windowTitle } from './gui.js'
 import { applyIslandMovements, cancelPath, wanderOnIsland } from './safety.js'
-import { markError, note, sleep } from './util.js'
+import { bindLoop, markError, note, sleep } from './util.js'
+import { tickSurvival } from './react.js'
 import { ACTIVITIES, fidget } from './playstyle.js'
 
 const { goals, Movements, pathfinder } = pathfinderPkg
@@ -70,6 +71,7 @@ export function createQuestLoop(bot, cfg, log) {
   async function talk(entity) {
     lastTalk = Date.now()
     lastNpcId = entity.id
+    bot.qaTarget = entity.username || entity.name || 'npc'
     note(bot, `quest talk ${entity.username || entity.name || 'npc'}`, ACTIVITIES.questDialog)
     try {
       await bot.lookAt(entity.position.offset(0, entity.height || 1.6, 0), true)
@@ -98,6 +100,7 @@ export function createQuestLoop(bot, cfg, log) {
 
   async function tick() {
     if (!bot.entity || bot.qaSuspended) return
+    if (tickSurvival(bot)) return
     if (!bot.pathfinder.movements) {
       bot.pathfinder.setMovements(applyIslandMovements(new Movements(bot), { canDig: false, maxDrop: 2 }))
     }
@@ -134,12 +137,9 @@ export function createQuestLoop(bot, cfg, log) {
     running = true
     log(bot.stressName, 'quest loop start')
     note(bot, 'quest loop start', ACTIVITIES.questDialog)
-    const handle = setInterval(() => {
-      tick().catch((err) => {
-        markError(bot, err)
-        log(bot.stressName, `quest tick: ${err.message}`)
-      })
-    }, 380)
-    bot.once('end', () => clearInterval(handle))
+    bindLoop(bot, 380 + Math.floor(Math.random() * 80), () => tick().catch((err) => {
+      markError(bot, err)
+      log(bot.stressName, `quest tick: ${err.message}`)
+    }))
   }
 }

@@ -1,11 +1,29 @@
 {
   "providers": [
+    { "type": "reference", "id": "minecraft:include/space" },
+    { "type": "reference", "id": "minecraft:include/default" },
+    { "type": "reference", "id": "minecraft:include/unifont" },
+    { "type": "space", "advances": { "\uE005": -48 } },
+    {
+      "type": "bitmap",
+      "file": "minecraft:font/space_neg.png",
+      "ascent": -32768,
+      "height": -48,
+      "chars": ["\uE007"]
+    },
     {
       "type": "bitmap",
       "file": "aetherion:font/badge_wanderer.png",
       "ascent": 8,
       "height": 12,
       "chars": ["\uE001"]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:font/gui_aetherion_manager.png",
+      "ascent": 24,
+      "height": 256,
+      "chars": ["\uE004"]
     }
   ]
 }

@@ -297,6 +297,13 @@ public final class LivingNpcAtmosphere {
             ThreadLocalRandom rng
     ) {
         Location hands = at.clone().add(0.0, 1.1, 0.0);
+        // Body matches the sound: the chop / stamp / tap comes with an arm swing.
+        LivingNpcLife life = LivingNpcLife.get();
+        if (life != null && !"egon".equals(id)
+                && (de.aetherion.quests.talk.TalkUx.get() == null
+                || !de.aetherion.quests.talk.TalkUx.get().isBusy(id))) {
+            life.swing(id);
+        }
         switch (id) {
             case "egon" -> {
                 if (rng.nextBoolean()) {
@@ -493,6 +500,280 @@ public final class LivingNpcAtmosphere {
                     entity.remove();
                 }
             }
+        }
+    }
+
+
+    /* =========================================================
+     * SOCIAL — greet by name, idle barks, NPC-to-NPC banter
+     * =========================================================
+     * Rare on purpose. Bubbles float above the nametag and only
+     * nearby players see them. Nothing fires at players who are
+     * mid-conversation or in classic talk mode.
+     */
+
+    private static final double GREET_RANGE = 6.5;
+    private static final long GREET_COOLDOWN_MS = 12L * 60L * 1000L;
+    private static final long PLAYER_GREET_GAP_TICKS = 20L * 25L;
+    private static final long IDLE_COOLDOWN_TICKS = 20L * 150L;
+    private static final long BANTER_GAP_TICKS = 20L * 45L;
+    private static final long PAIR_COOLDOWN_TICKS = 20L * 60L * 6L;
+
+    private static volatile BukkitTask socialTask;
+    private static long socialTick;
+    private static final Map<java.util.UUID, Long> lastGreetTick = new ConcurrentHashMap<>();
+    private static final Map<java.util.UUID, Long> lastIdleHeard = new ConcurrentHashMap<>();
+    private static final Map<String, Long> npcIdleAt = new ConcurrentHashMap<>();
+    private static final Map<Integer, Long> pairAt = new ConcurrentHashMap<>();
+    private static long lastBanter;
+    private static volatile boolean banterRunning;
+
+    public static void startSocial(AetherionQuests plugin) {
+        stopSocial();
+        if (plugin == null || !plugin.getConfig().getBoolean("npc-life.social", true)) {
+            return;
+        }
+        socialTask = plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
+            socialTick += 20L;
+            try {
+                tickGreetings(plugin);
+                if (socialTick % 60L == 0L) {
+                    tickIdleBarks(plugin);
+                }
+                if (socialTick % 100L == 0L) {
+                    tickBanter(plugin);
+                }
+            } catch (RuntimeException ex) {
+                plugin.getLogger().fine("NPC social tick failed: " + ex.getMessage());
+            }
+        }, 60L, 20L);
+    }
+
+    public static void stopSocial() {
+        if (socialTask != null) {
+            socialTask.cancel();
+            socialTask = null;
+        }
+        banterRunning = false;
+    }
+
+    private static de.aetherion.quests.talk.TalkUx talk() {
+        return de.aetherion.quests.talk.TalkUx.get();
+    }
+
+    private static void tickGreetings(AetherionQuests plugin) {
+        de.aetherion.quests.talk.TalkUx talk = talk();
+        LivingNpcService living = plugin.getLivingNpcService();
+        NpcMemory memory = NpcMemory.get();
+        if (talk == null || living == null || memory == null || !living.available()) {
+            return;
+        }
+        long nowMs = System.currentTimeMillis();
+        // One location lookup per NPC per pass (FancyNpcs lookups are reflective).
+        java.util.Map<String, Location> spots = new java.util.HashMap<>();
+        for (QuestNPC npc : QuestNPCRegistry.getAll().values()) {
+            if (npc != null && LivingNpcService.isLiving(npc.getId())) {
+                Location at = living.locationOf(npc.getId());
+                if (at != null && at.getWorld() != null) {
+                    spots.put(npc.getId(), at);
+                }
+            }
+        }
+        if (spots.isEmpty()) {
+            return;
+        }
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            if (!talk.enabledFor(player) || talk.hasChips(player)) {
+                continue;
+            }
+            Long last = lastGreetTick.get(player.getUniqueId());
+            if (last != null && socialTick - last < PLAYER_GREET_GAP_TICKS) {
+                continue;
+            }
+            String bestId = null;
+            QuestNPC best = null;
+            double bestD = GREET_RANGE * GREET_RANGE;
+            for (java.util.Map.Entry<String, Location> spot : spots.entrySet()) {
+                Location at = spot.getValue();
+                if (!at.getWorld().equals(player.getWorld())) {
+                    continue;
+                }
+                double d = at.distanceSquared(player.getLocation());
+                if (d < bestD) {
+                    bestD = d;
+                    bestId = spot.getKey();
+                    best = QuestNPCRegistry.getNPC(spot.getKey());
+                }
+            }
+            if (best == null || talk.isTalkingWith(player, bestId) || talk.isBusy(bestId)) {
+                continue;
+            }
+            if (nowMs - memory.lastGreet(player.getUniqueId(), bestId) < GREET_COOLDOWN_MS) {
+                continue;
+            }
+            String line = CastBook.greeting(bestId, player);
+            if (line == null) {
+                continue;
+            }
+            memory.noteGreet(player.getUniqueId(), bestId);
+            lastGreetTick.put(player.getUniqueId(), socialTick);
+            talk.bark(bestId, best.getName(), line, List.of(player), 70);
+            LivingNpcLife life = LivingNpcLife.get();
+            if (life != null && memory.talks(player.getUniqueId(), bestId) == 0) {
+                life.emote(player, bestId, "!");
+                life.swingFor(player, bestId);
+            }
+        }
+    }
+
+    private static void tickIdleBarks(AetherionQuests plugin) {
+        de.aetherion.quests.talk.TalkUx talk = talk();
+        LivingNpcService living = plugin.getLivingNpcService();
+        if (talk == null || living == null || !living.available() || banterRunning) {
+            return;
+        }
+        ThreadLocalRandom rng = ThreadLocalRandom.current();
+        for (QuestNPC npc : QuestNPCRegistry.getAll().values()) {
+            if (npc == null || !LivingNpcService.isLiving(npc.getId()) || rng.nextDouble() > 0.25) {
+                continue;
+            }
+            String id = npc.getId();
+            Long last = npcIdleAt.get(id);
+            if (last != null && socialTick - last < IDLE_COOLDOWN_TICKS) {
+                continue;
+            }
+            if (talk.isBusy(id)) {
+                continue;
+            }
+            Location at = living.locationOf(id);
+            if (at == null || at.getWorld() == null) {
+                continue;
+            }
+            List<Player> audience = new ArrayList<>();
+            for (Player p : at.getWorld().getPlayers()) {
+                double d = p.getLocation().distanceSquared(at);
+                Long heard = lastIdleHeard.get(p.getUniqueId());
+                if (d >= 16.0 && d <= 196.0 && (heard == null || socialTick - heard > 20L * 60L)) {
+                    audience.add(p);
+                }
+            }
+            if (audience.isEmpty()) {
+                continue;
+            }
+            String line = CastBook.idle(id, mostlyGerman(audience));
+            if (line == null) {
+                continue;
+            }
+            npcIdleAt.put(id, socialTick);
+            for (Player p : audience) {
+                lastIdleHeard.put(p.getUniqueId(), socialTick);
+            }
+            talk.bark(id, npc.getName(), line, audience, 60);
+        }
+    }
+
+    private static void tickBanter(AetherionQuests plugin) {
+        de.aetherion.quests.talk.TalkUx talk = talk();
+        LivingNpcService living = plugin.getLivingNpcService();
+        if (talk == null || living == null || !living.available() || banterRunning) {
+            return;
+        }
+        if (socialTick - lastBanter < BANTER_GAP_TICKS) {
+            return;
+        }
+        List<List<CastBook.Beat>> all = CastBook.banter();
+        if (all.isEmpty()) {
+            return;
+        }
+        int start = ThreadLocalRandom.current().nextInt(all.size());
+        for (int i = 0; i < all.size(); i++) {
+            int index = (start + i) % all.size();
+            List<CastBook.Beat> beats = all.get(index);
+            Long pairLast = pairAt.get(index);
+            if (pairLast != null && socialTick - pairLast < PAIR_COOLDOWN_TICKS) {
+                continue;
+            }
+            java.util.Set<String> cast = new java.util.HashSet<>();
+            for (CastBook.Beat beat : beats) {
+                cast.add(beat.npcId());
+            }
+            boolean ready = true;
+            List<Location> spots = new ArrayList<>();
+            for (String id : cast) {
+                Location at = living.locationOf(id);
+                if (at == null || at.getWorld() == null || talk.isBusy(id)) {
+                    ready = false;
+                    break;
+                }
+                spots.add(at);
+            }
+            if (!ready || spots.isEmpty()) {
+                continue;
+            }
+            List<Player> audience = new ArrayList<>();
+            for (Player p : spots.get(0).getWorld().getPlayers()) {
+                for (Location at : spots) {
+                    if (at.getWorld().equals(p.getWorld()) && at.distanceSquared(p.getLocation()) <= 18.0 * 18.0) {
+                        audience.add(p);
+                        break;
+                    }
+                }
+            }
+            if (audience.isEmpty()) {
+                continue;
+            }
+            List<CastBook.Beat> spoken = beats;
+            if (mostlyGerman(audience)) {
+                spoken = CastBook.banterGerman(index);
+                if (spoken == null) {
+                    continue;
+                }
+            }
+            pairAt.put(index, socialTick);
+            lastBanter = socialTick;
+            playBanter(plugin, spoken, audience);
+            return;
+        }
+    }
+
+    /** Shared barks show one text to everyone in range: majority language wins, ties stay English. */
+    private static boolean mostlyGerman(List<Player> audience) {
+        int german = 0;
+        for (Player p : audience) {
+            if (de.aetherion.quests.lang.LangPack.german(p)) {
+                german++;
+            }
+        }
+        return german * 2 > audience.size();
+    }
+
+    private static void playBanter(AetherionQuests plugin, List<CastBook.Beat> beats, List<Player> audience) {
+        banterRunning = true;
+        long delay = 0L;
+        for (int i = 0; i < beats.size(); i++) {
+            CastBook.Beat beat = beats.get(i);
+            final boolean last = i == beats.size() - 1;
+            plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                de.aetherion.quests.talk.TalkUx talk = talk();
+                QuestNPC npc = QuestNPCRegistry.getNPC(beat.npcId());
+                if (talk != null && npc != null) {
+                    List<Player> still = new ArrayList<>();
+                    for (Player p : audience) {
+                        if (p.isOnline()) {
+                            still.add(p);
+                        }
+                    }
+                    talk.bark(beat.npcId(), npc.getName(), beat.line(), still, 70);
+                    LivingNpcLife life = LivingNpcLife.get();
+                    if (life != null) {
+                        life.swing(beat.npcId());
+                    }
+                }
+                if (last) {
+                    banterRunning = false;
+                }
+            }, delay);
+            delay += 55L;
         }
     }
 }

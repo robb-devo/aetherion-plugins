@@ -1,0 +1,56 @@
+From 70e2c8c4dc01682dbd09787f37bc1936b6b38240 Mon Sep 17 00:00:00 2001
+From: robb-devo <robb-devo@users.noreply.github.com>
+Date: Sun, 27 Sep 2026 18:17:53 +0200
+Subject: [PATCH 2/3] Fix kit ceremony quit flush using the live Player.
+
+getPlayer(uuid) is often null during PlayerQuitEvent; prefer the event player so unlanded gear is not lost.
+---
+ .../quests/reward/StarterKitCeremony.java          | 14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
+
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/reward/StarterKitCeremony.java b/AetherionQuests/src/main/java/de/aetherion/quests/reward/StarterKitCeremony.java
+index 12a69d3..89a530a 100644
+--- a/AetherionQuests/src/main/java/de/aetherion/quests/reward/StarterKitCeremony.java
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/reward/StarterKitCeremony.java
+@@ -369,6 +369,14 @@ public final class StarterKitCeremony implements Listener {
+ 
+     /** Land every piece now — no show. Safe to call any time. */
+     private void flush(UUID playerId) {
++        flush(playerId, plugin.getServer().getPlayer(playerId));
++    }
++
++    /**
++     * Prefer {@code preferred} (e.g. {@link PlayerQuitEvent#getPlayer()}) — on quit
++     * {@code getPlayer(uuid)} is often already null while the event player still has an inventory.
++     */
++    private void flush(UUID playerId, Player preferred) {
+         Run run = running.remove(playerId);
+         if (run == null) {
+             return;
+@@ -377,7 +385,7 @@ public final class StarterKitCeremony implements Listener {
+             run.task.cancel();
+             run.task = null;
+         }
+-        Player player = plugin.getServer().getPlayer(playerId);
++        Player player = preferred != null ? preferred : plugin.getServer().getPlayer(playerId);
+         for (Piece piece : run.pieces) {
+             removeDisplay(piece);
+             if (!piece.granted && player != null) {
+@@ -392,12 +400,12 @@ public final class StarterKitCeremony implements Listener {
+ 
+     @EventHandler(priority = EventPriority.LOWEST)
+     public void onQuit(PlayerQuitEvent event) {
+-        flush(event.getPlayer().getUniqueId());
++        flush(event.getPlayer().getUniqueId(), event.getPlayer());
+     }
+ 
+     @EventHandler(priority = EventPriority.MONITOR)
+     public void onWorldChange(PlayerChangedWorldEvent event) {
+-        flush(event.getPlayer().getUniqueId());
++        flush(event.getPlayer().getUniqueId(), event.getPlayer());
+     }
+ 
+     /* =========================================================
+-- 
+2.55.0.windows.3
+

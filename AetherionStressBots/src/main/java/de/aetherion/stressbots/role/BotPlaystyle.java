@@ -239,7 +239,8 @@ public final class BotPlaystyle {
         if (!plugin.getConfig().getBoolean("testbots.playstyle.unlock-spawns", true)) {
             return;
         }
-        if (role != BotRole.TRADE && role != BotRole.QUEST && role != BotRole.PAD && role != BotRole.ROAM) {
+        if (role != BotRole.TRADE && role != BotRole.QUEST && role != BotRole.PAD
+                && role != BotRole.ROAM && role != BotRole.GENERAL) {
             return;
         }
         HubAccess hub = AetherServices.hub();
@@ -260,6 +261,7 @@ public final class BotPlaystyle {
             case CATCH -> kitCatcher(inv, items, tier);
             case FISH -> kitFishing(inv, items, tier);
             case COMBAT -> kitCombat(inv, items, tier, true);
+            case GENERAL -> kitCombat(inv, items, Math.min(3, tier), false);
             default -> kitCombat(inv, items, Math.min(3, tier), false);
         }
     }
@@ -340,6 +342,9 @@ public final class BotPlaystyle {
             case TRADE -> new AetherSkill[] {AetherSkill.PINCH_PENNY, AetherSkill.GOLDEN_HOUR, AetherSkill.LUCKY_STREAK};
             case QUEST -> new AetherSkill[] {AetherSkill.QUIET_PRIDE, AetherSkill.NIGHT_OWL, AetherSkill.QUICK_HANDS};
             case ROAM, PAD -> new AetherSkill[] {AetherSkill.LIGHT_FOOT, AetherSkill.QUIET_PRIDE, AetherSkill.IRON_STOMACH};
+            case GENERAL -> alt
+                    ? new AetherSkill[] {AetherSkill.LIGHT_FOOT, AetherSkill.QUICK_HANDS, AetherSkill.ROCK_WHISPER}
+                    : new AetherSkill[] {AetherSkill.WOODWISE, AetherSkill.HEAVY_HANDS, AetherSkill.BITE_ME};
         };
     }
 
@@ -350,10 +355,10 @@ public final class BotPlaystyle {
         }
         ProgressionService progress = itemsPlugin.progress();
         progress.unlock(player, ProgressionService.Flag.SKILLS);
-        if (role == BotRole.CATCH || role == BotRole.ROAM || role == BotRole.PAD) {
+        if (role == BotRole.CATCH || role == BotRole.ROAM || role == BotRole.PAD || role == BotRole.GENERAL) {
             progress.unlock(player, ProgressionService.Flag.PETS);
         }
-        if (role == BotRole.TRADE) {
+        if (role == BotRole.TRADE || role == BotRole.GENERAL) {
             progress.unlock(player, ProgressionService.Flag.TRADER);
             plugin.getActivity().markAction(player, "trader flag");
         }
@@ -366,6 +371,7 @@ public final class BotPlaystyle {
         }
         long amount = switch (role) {
             case TRADE -> 400L + index * 80L;
+            case GENERAL -> 220L + index * 30L;
             case QUEST -> 120L + index * 20L;
             default -> 40L + index * 15L;
         };

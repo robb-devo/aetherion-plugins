@@ -73,6 +73,10 @@ public final class BotProvisioner {
             player.setFireTicks(0);
         }
 
+        if (plugin.getFocus() != null) {
+            plugin.getFocus().ensure(player);
+        }
+
         CustomItem custom = itemsPlugin.getCustomItem();
         player.getInventory().clear();
         player.getInventory().setArmorContents(null);

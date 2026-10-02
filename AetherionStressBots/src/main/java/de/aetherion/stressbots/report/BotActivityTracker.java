@@ -254,6 +254,9 @@ public final class BotActivityTracker implements Listener, Runnable {
             return;
         }
         runtime(player).note("quit");
+        if (plugin.getFocus() != null) {
+            plugin.getFocus().clear(player);
+        }
     }
 
     @Override
@@ -279,7 +282,7 @@ public final class BotActivityTracker implements Listener, Runnable {
             if (runtime.lastSample != null && runtime.lastSample.getWorld() == loc.getWorld()) {
                 double dist = runtime.lastSample.distanceSquared(loc);
                 if (dist > 0.35) {
-                    BotRole role = roleOf(player);
+                    BotRole role = workingRole(player);
                     if (role == BotRole.ROAM) {
                         runtime.activity = ROAMING;
                     } else if (role == BotRole.PAD) {
@@ -377,16 +380,51 @@ public final class BotActivityTracker implements Listener, Runnable {
                 || BROWSING.equals(activity);
     }
 
+    public void markProfile(Player player, String profile, String focus) {
+        if (player == null) {
+            return;
+        }
+        Runtime runtime = runtime(player);
+        if (profile != null && !profile.isBlank()) {
+            runtime.profile = profile;
+        }
+        if (focus != null && !focus.isBlank()) {
+            runtime.state = "focus:" + focus;
+        }
+    }
+
+    public void markTarget(Player player, String target) {
+        if (player == null) {
+            return;
+        }
+        runtime(player).target = target == null ? "" : target;
+    }
+
     public void markActivity(Player player, String activity, String action) {
         if (player == null) {
             return;
         }
         Runtime runtime = runtime(player);
         if (activity != null && !activity.isBlank()) {
-            runtime.activity = activity;
+            runtime.activity = normalizeActivity(activity);
         }
         runtime.note(action);
         runtime.lastActionMs = System.currentTimeMillis();
+    }
+
+    private static String normalizeActivity(String activity) {
+        return switch (activity.toLowerCase(Locale.ROOT)) {
+            case "mine" -> MINING;
+            case "forage" -> FORAGING;
+            case "catch" -> CATCHING;
+            case "roam" -> ROAMING;
+            case "combat", "fight" -> FIGHTING;
+            case "fish" -> FISHING;
+            case "trade" -> TRADING;
+            case "quest" -> QUESTING;
+            case "pad" -> PAD_HOP;
+            default -> activity;
+        };
     }
 
     private static String titleOf(String raw) {
@@ -406,6 +444,16 @@ public final class BotActivityTracker implements Listener, Runnable {
         return handler == null ? null : handler.role();
     }
 
+    private BotRole workingRole(Player player) {
+        if (plugin.getFocus() != null) {
+            BotRole focus = plugin.getFocus().focusOf(player);
+            if (focus != null) {
+                return focus;
+            }
+        }
+        return roleOf(player);
+    }
+
     public static String pretty(ItemStack item) {
         if (item == null || item.getType().isAir()) {
             return "-";
@@ -419,6 +467,9 @@ public final class BotActivityTracker implements Listener, Runnable {
     public static final class Runtime {
         private volatile String activity = IDLE;
         private volatile String lastError = "";
+        private volatile String target = "";
+        private volatile String profile = "";
+        private volatile String state = "";
         private volatile int deaths;
         private volatile long lastActionMs = System.currentTimeMillis();
         private volatile long lastRecoverMs;
@@ -431,6 +482,18 @@ public final class BotActivityTracker implements Listener, Runnable {
 
         public String lastError() {
             return lastError;
+        }
+
+        public String target() {
+            return target;
+        }
+
+        public String profile() {
+            return profile;
+        }
+
+        public String state() {
+            return state == null || state.isBlank() ? activity : state;
         }
 
         public int deaths() {

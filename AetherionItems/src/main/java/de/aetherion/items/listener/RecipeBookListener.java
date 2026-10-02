@@ -75,6 +75,7 @@ public class RecipeBookListener implements Listener {
             case CATEGORIES -> handleCategoryClick(player, slot);
             case RECIPE_LIST -> handleRecipeListClick(player, holder, slot);
             case RECIPE_DETAIL -> handleRecipeDetailClick(player, holder, slot);
+            case READY -> handleReadyClick(player, holder, slot);
         }
     }
 
@@ -89,6 +90,10 @@ public class RecipeBookListener implements Listener {
     private void handleCategoryClick(Player player, int slot) {
         if (slot == RecipeBookLayout.BACK_SLOT) {
             de.aetherion.items.util.ManagerNav.openManager(player);
+            return;
+        }
+        if (slot == RecipeBookGUI.READY_SLOT) {
+            recipeBookGUI.openReady(player, 1);
             return;
         }
 
@@ -156,7 +161,8 @@ public class RecipeBookListener implements Listener {
             return;
         }
 
-        List<RecipeDefinition> recipes = recipeBookGUI.getRecipes(player, category);
+        // Same folded list the GUI drew (known first, one row of silhouettes).
+        List<RecipeDefinition> recipes = recipeBookGUI.visibleRecipes(player, category);
 
         int recipeIndex = slotIndex + (holder.getPage() - 1) * RecipeBookLayout.RECIPE_SLOTS.length;
 
@@ -174,13 +180,44 @@ public class RecipeBookListener implements Listener {
         recipeBookGUI.openRecipe(player, recipe, holder.getPage());
     }
 
+    private void handleReadyClick(
+            Player player,
+            RecipeBookGUI.RecipeBookHolder holder,
+            int slot
+    ) {
+        if (slot == RecipeBookLayout.BACK_SLOT) {
+            recipeBookGUI.openCategories(player);
+            return;
+        }
+        if (slot == RecipeBookLayout.PREV_PAGE_SLOT && holder.getPage() > 1) {
+            recipeBookGUI.openReady(player, holder.getPage() - 1);
+            return;
+        }
+        if (slot == RecipeBookLayout.NEXT_PAGE_SLOT) {
+            recipeBookGUI.openReady(player, holder.getPage() + 1);
+            return;
+        }
+        int slotIndex = RecipeBookLayout.recipeIndexFromSlot(slot);
+        if (slotIndex < 0) {
+            return;
+        }
+        List<RecipeDefinition> ready = recipeBookGUI.readyRecipes(player);
+        int index = slotIndex + (holder.getPage() - 1) * RecipeBookLayout.RECIPE_SLOTS.length;
+        if (index < 0 || index >= ready.size()) {
+            return;
+        }
+        recipeBookGUI.openRecipe(player, ready.get(index), holder.getPage(), true);
+    }
+
     private void handleRecipeDetailClick(
             Player player,
             RecipeBookGUI.RecipeBookHolder holder,
             int slot
     ) {
         if (slot == RecipeBookLayout.BACK_SLOT) {
-            if (holder.getCategory() != null) {
+            if (holder.isFromReady()) {
+                recipeBookGUI.openReady(player, holder.getPage());
+            } else if (holder.getCategory() != null) {
                 recipeBookGUI.openCategory(player, holder.getCategory(), holder.getPage());
             } else {
                 recipeBookGUI.openCategories(player);
@@ -236,7 +273,7 @@ public class RecipeBookListener implements Listener {
         if (!RecipeBookCrafter.canCraft(player, recipe, itemManager)) {
             player.sendMessage("§cMissing ingredients for Insta Craft.");
             player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 0.7f, 0.7f);
-            recipeBookGUI.openRecipe(player, recipe, holder.getPage());
+            recipeBookGUI.openRecipe(player, recipe, holder.getPage(), holder.isFromReady());
             return;
         }
 
@@ -244,7 +281,7 @@ public class RecipeBookListener implements Listener {
         if (result == null) {
             player.sendMessage("§cCould not craft that recipe.");
             player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 0.7f, 0.7f);
-            recipeBookGUI.openRecipe(player, recipe, holder.getPage());
+            recipeBookGUI.openRecipe(player, recipe, holder.getPage(), holder.isFromReady());
             return;
         }
 
@@ -273,7 +310,7 @@ public class RecipeBookListener implements Listener {
         player.sendMessage("§aCrafted §f" + displayName(result) + "§a.");
         player.playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 1.0f, 1.1f);
         player.updateInventory();
-        recipeBookGUI.openRecipe(player, recipe, holder.getPage());
+        recipeBookGUI.openRecipe(player, recipe, holder.getPage(), holder.isFromReady());
     }
 
     private String displayName(ItemStack item) {

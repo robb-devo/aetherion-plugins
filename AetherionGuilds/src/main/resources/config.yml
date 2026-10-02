@@ -8,3 +8,38 @@ minion-interval-seconds: 10
 max-quarry-level: 7
 island-build-radius: 24
 reset-islands: false
+
+# --- Island highlight (starters, land, structures, belts, guild projects) -----------------------
+# All keys are optional; the plugin uses these defaults when a key is missing (existing configs keep working).
+# Templates live in plugins/AetherionGuilds/templates/*.schem (extracted once, never overwritten).
+# Re-author any of them with WorldEdit (//schem save), drop the file there, then /island admin reload-templates.
+paste-blocks-per-tick: 3000
+land:
+  parcel-base: 2500        # personal: coins per 16x16 parcel x (parcels owned - 8)
+  guild-parcel-base: 10000 # guild: from the guild bank
+logistics:
+  belt-coins: 5            # per belt tile (refunded when taken up)
+  max-run: 64              # longest single belt lay
+  cargo-per-island: 36     # visible cargo ItemDisplays per island (cosmetic)
+  cargo-global: 240
+  conveyor-visuals: true          # belt, rails, rollers and moving chevrons on the plates (display entities)
+  conveyor-radius: 40             # only runs this close to someone on the island are dressed
+  conveyor-runs-per-island: 80
+  conveyor-entities-global: 1800
+unlock:
+  island-foreshadow-level: 15  # gull's note (needs PlaceholderAPI %aetherion_level%)
+  guild-foreshadow-level: 65
+
+# --- Final knackpunkt pass ------------------------------------------------------------------------
+void:
+  persist-generator: true         # writes worlds.<island world>.generator: AetherionGuilds into bukkit.yml
+  scrub: true                     # clears overworld terrain left in the island worlds (checked once per chunk)
+  scrub-blocks-per-tick: 3000
+guide:
+  enabled: true                   # Hollis, the isle hand (needs FancyNpcs; talks in the TalkUx bubble)
+  name: Hollis
+  title: Isle Hand
+  skin: MHF_Villager
+  free-belt-tiles: 16             # the starter belt kit: no Workshop needed for the first belt, these tiles free
+island-bar:
+  enabled: true                   # calm island status bar; quest/hint bars step aside on island worlds either way

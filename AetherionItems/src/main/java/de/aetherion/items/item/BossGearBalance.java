@@ -58,6 +58,7 @@ public final class BossGearBalance {
         return switch (itemId.toLowerCase()) {
             case "warped_blade" -> weapon(48, 8, 9, 62);
             case "gravwell_cleaver" -> weapon(80, 8, 13, 96);
+            case "ashen_katana" -> weapon(86, 14, 15, 105);
             case "bridged_axe" -> weapon(80, 12, 13, 90);
             case "skuldugery_shortbow" -> weapon(72, 14, 12, 88);
             case "aetherblade" -> weapon(100, 16, 16, 115);
@@ -78,6 +79,22 @@ public final class BossGearBalance {
             case "aetherion_chestplate" -> aetherion(70, 96, 26, 22, 16, 110, 4);
             case "aetherion_leggings" -> aetherion(56, 72, 18, 18, 10, 68, 3);
             case "aetherion_boots" -> aetherion(42, 50, 12, 12, 8, 50, 6);
+            // Worldhide / Worldbite (Nihil, the World Eater): one step over Aetherion.
+            case "worldbite" -> weapon(108, 16, 17, 120);
+            case "worldhide_helmet" -> aetherion(46, 64, 15, 14, 9, 54, 3);
+            case "worldhide_chestplate" -> aetherion(76, 104, 28, 22, 17, 118, 4);
+            case "worldhide_leggings" -> aetherion(60, 78, 19, 18, 11, 72, 3);
+            case "worldhide_boots" -> aetherion(46, 54, 13, 12, 9, 54, 7);
+            // Dawnbearer / Solstice (Helios Requiem): the two-act raid, one step over Worldhide.
+            case "helios_solstice" -> weapon(114, 16, 18, 126);
+            case "helios_crown" -> aetherion(48, 66, 16, 15, 10, 58, 3);
+            case "helios_heartplate" -> aetherion(80, 110, 29, 23, 18, 124, 4);
+            case "helios_orbit_greaves" -> aetherion(63, 82, 20, 19, 12, 76, 3);
+            case "helios_dawn_treads" -> aetherion(48, 57, 14, 13, 10, 58, 8);
+            case "hollow_sun_helmet" -> aetherion(80, 120, 18, 12, 8, 48, 2);
+            case "hollow_sun_chestplate" -> aetherion(160, 210, 34, 20, 10, 75, 2);
+            case "hollow_sun_leggings" -> aetherion(120, 160, 28, 16, 8, 60, 3);
+            case "hollow_sun_boots" -> aetherion(80, 115, 18, 12, 6, 45, 5);
             case "pickaxe_core_of_the_burrower" -> {
                 ItemStats stats = new ItemStats();
                 stats.setFortune(128);
@@ -92,6 +109,12 @@ public final class BossGearBalance {
                 yield stats;
             }
             case "hollow_longbow" -> weapon(88, 12, 12, 85);
+            // The Mended Saint (Seraphine, the Hanging Saint). Placeholder balance: crit + speed, lighter plate.
+            case "seraphine_needle" -> weapon(84, 10, 14, 100);
+            case "seraphine_veil" -> aetherion(34, 46, 10, 8, 10, 55, 3);
+            case "seraphine_bodice" -> aetherion(58, 80, 20, 14, 14, 90, 3);
+            case "seraphine_bell_skirt" -> aetherion(46, 62, 14, 12, 10, 64, 5);
+            case "seraphine_pointe_slippers" -> aetherion(32, 42, 8, 8, 8, 45, 10);
             case "ironhide_helmet" -> tank(20, 36);
             case "ironhide_chestplate" -> tank(38, 56);
             case "ironhide_leggings" -> tank(30, 44);

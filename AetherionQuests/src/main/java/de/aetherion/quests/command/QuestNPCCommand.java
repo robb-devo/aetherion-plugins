@@ -125,6 +125,15 @@ public class QuestNPCCommand implements CommandExecutor {
         }
 
 
+        if (action.equals("extras")) {
+
+            de.aetherion.quests.ui.IdeaNpcMenu.open(player);
+
+            return true;
+
+        }
+
+
         if (action.equals("give")) {
 
             handleGive(
@@ -980,6 +989,13 @@ public class QuestNPCCommand implements CommandExecutor {
         player.sendMessage(
                 ChatColor.GOLD
                         + "=== Quest NPC Commands ==="
+        );
+
+        player.sendMessage(
+                ChatColor.YELLOW
+                        + "/questnpc extras"
+                        + ChatColor.GRAY
+                        + " - idea NPCs (anchors, not placed)"
         );
 
 

@@ -1,6 +1,7 @@
 import pathfinderPkg from 'mineflayer-pathfinder'
 import { applyIslandMovements, wanderOnIsland, withinLeash } from './safety.js'
-import { fidget, jitter, note } from './util.js'
+import { bindLoop, fidget, jitter, note } from './util.js'
+import { tickSurvival } from './react.js'
 
 const { goals, Movements, pathfinder } = pathfinderPkg
 
@@ -22,6 +23,7 @@ export function createCombatLoop(bot, cfg, log) {
 
   async function tick() {
     if (!bot.entity || bot.entity.isValid === false || bot.qaSuspended) return
+    if (tickSurvival(bot) && !nearestHostile(bot, searchRadius, home(), leash)) return
     if (!bot.pathfinder.movements) {
       bot.pathfinder.setMovements(applyIslandMovements(new Movements(bot), {
         canDig: false,
@@ -33,6 +35,7 @@ export function createCombatLoop(bot, cfg, log) {
     const target = nearestHostile(bot, searchRadius, pad, leash)
     if (target) {
       const dist = bot.entity.position.distanceTo(target.position)
+      bot.qaTarget = target.name || 'mob'
       note(bot, `combat ${target.name || 'mob'}`, 'combat')
       bot.lookAt(target.position.offset(0, target.height * 0.85, 0), true).catch(() => {})
       if (dist > 2.6) {
@@ -70,10 +73,7 @@ export function createCombatLoop(bot, cfg, log) {
     }
     log(bot.stressName, 'combat loop start')
     note(bot, 'combat loop start', 'fighting')
-    const handle = setInterval(() => {
-      tick().catch((err) => log(bot.stressName, `combat tick: ${err.message}`))
-    }, jitter(250, 0.15))
-    bot.once('end', () => clearInterval(handle))
+    bindLoop(bot, jitter(250, bot.qaPersonality?.tickJitter ?? 0.15), () => tick().catch((err) => log(bot.stressName, `combat tick: ${err.message}`)))
   }
 }
 

@@ -1,0 +1,5041 @@
+From e0f6ecbc894bd4e12b57e0e3aae1c03f85f28a4e Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Thu, 1 Oct 2026 02:23:14 +0200
+Subject: [PATCH] =?UTF-8?q?BossEngine:=20Eggquelizer=20=E2=80=94=20egg-on-?=
+ =?UTF-8?q?legs=20speaker=20boss=20with=20arena=20PA=20network?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+New director package instance/eggquelizer (stage, body rig, speaker state
+machine, props, director FSM), eggquelizer.yml spectacle stub, minimal
+BossInstance wiring, default yaml save and an eggquelizer_core test vial.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01TZ18pFdhKncUf4k73xzCHj
+---
+ .../de/aetherion/bossengine/BossEngine.java   |    1 +
+ .../bossengine/instance/BossInstance.java     |   32 +-
+ .../instance/eggquelizer/EggBody.java         |  528 ++++
+ .../instance/eggquelizer/EggFx.java           |  303 +++
+ .../instance/eggquelizer/EggMath.java         |  148 ++
+ .../instance/eggquelizer/EggProps.java        |  500 ++++
+ .../instance/eggquelizer/EggSpeaker.java      |  532 ++++
+ .../instance/eggquelizer/EggStage.java        |  467 ++++
+ .../eggquelizer/EggquelizerDirector.java      | 2199 +++++++++++++++++
+ .../bossengine/item/BossSpawnItemService.java |    3 +
+ .../src/main/resources/bosses/eggquelizer.yml |  103 +
+ 11 files changed, 4808 insertions(+), 8 deletions(-)
+ create mode 100644 BossEngine/src/main/java/de/aetherion/bossengine/instance/eggquelizer/EggBody.java
+ create mode 100644 BossEngine/src/main/java/de/aetherion/bossengine/instance/eggquelizer/EggFx.java
+ create mode 100644 BossEngine/src/main/java/de/aetherion/bossengine/instance/eggquelizer/EggMath.java
+ create mode 100644 BossEngine/src/main/java/de/aetherion/bossengine/instance/eggquelizer/EggProps.java
+ create mode 100644 BossEngine/src/main/java/de/aetherion/bossengine/instance/eggquelizer/EggSpeaker.java
+ create mode 100644 BossEngine/src/main/java/de/aetherion/bossengine/instance/eggquelizer/EggStage.java
+ create mode 100644 BossEngine/src/main/java/de/aetherion/bossengine/instance/eggquelizer/EggquelizerDirector.java
+ create mode 100644 BossEngine/src/main/resources/bosses/eggquelizer.yml
+
+diff --git a/BossEngine/src/main/java/de/aetherion/bossengine/BossEngine.java b/BossEngine/src/main/java/de/aetherion/bossengine/BossEngine.java
+index 4d259e7..36175e7 100644
+--- a/BossEngine/src/main/java/de/aetherion/bossengine/BossEngine.java
++++ b/BossEngine/src/main/java/de/aetherion/bossengine/BossEngine.java
+@@ -73,6 +73,7 @@ public final class BossEngine extends JavaPlugin {
+         saveResourceIfMissing("bosses/ashen_chainwarden.yml");
+         saveResourceIfMissing("bosses/cinder_herald.yml");
+         saveResourceIfMissing("bosses/hanging_saint.yml");
++        saveResourceIfMissing("bosses/eggquelizer.yml");
+         saveResourceIfMissing("bosses/world_eater_unbroken.yml");
+         saveResourceIfMissing("bosses/world_eater.yml");
+         de.aetherion.bossengine.helios.HeliosModule.syncResource(this, "bosses/helios_herald.yml");
+diff --git a/BossEngine/src/main/java/de/aetherion/bossengine/instance/BossInstance.java b/BossEngine/src/main/java/de/aetherion/bossengine/instance/BossInstance.java
+index f4b66ed..563f0fa 100644
+--- a/BossEngine/src/main/java/de/aetherion/bossengine/instance/BossInstance.java
++++ b/BossEngine/src/main/java/de/aetherion/bossengine/instance/BossInstance.java
+@@ -86,6 +86,8 @@ public class BossInstance {
+     private final SandboxDirector sandboxDirector = new SandboxDirector(this);
+     private final de.aetherion.bossengine.instance.saint.HangingSaintDirector saintDirector =
+             new de.aetherion.bossengine.instance.saint.HangingSaintDirector(this);
++    private final de.aetherion.bossengine.instance.eggquelizer.EggquelizerDirector eggDirector =
++            new de.aetherion.bossengine.instance.eggquelizer.EggquelizerDirector(this);
+     private final de.aetherion.bossengine.instance.worldeater.UnbrokenDirector unbrokenDirector =
+             new de.aetherion.bossengine.instance.worldeater.UnbrokenDirector(this);
+     private final de.aetherion.bossengine.instance.worldeater.WorldEaterDirector worldEaterDirector =
+@@ -313,6 +315,7 @@ public class BossInstance {
+             sovereignDirector.onBind();
+             sandboxDirector.onBind();
+             saintDirector.onBind();
++            eggDirector.onBind();
+             unbrokenDirector.onBind();
+             worldEaterDirector.onBind();
+             if (script != null) {
+@@ -360,13 +363,14 @@ public class BossInstance {
+             sovereignDirector.onBind();
+             sandboxDirector.onBind();
+             saintDirector.onBind();
++            eggDirector.onBind();
+             unbrokenDirector.onBind();
+             worldEaterDirector.onBind();
+             if (script != null) {
+                 script.onBind();
+             }
+             // Soft-arena bosses stay where they were — never blink home on rebind.
+-            if (script == null && !refusesHardArenaSnap() && !saintDirector.isMine() && !ownsWorldEaterBody()) {
++            if (script == null && !refusesHardArenaSnap() && !saintDirector.isMine() && !eggDirector.isMine() && !ownsWorldEaterBody()) {
+                 snapToArena();
+             }
+             clearBodyUnloaded();
+@@ -462,6 +466,7 @@ public class BossInstance {
+                 || sovereignDirector.isDying()
+                 || signatureDirector.isDying()
+                 || saintDirector.isDying()
++                || eggDirector.isDying()
+                 || unbrokenDirector.isDying()
+                 || worldEaterDirector.isDying()
+                 || (script != null && script.isDying()));
+@@ -479,6 +484,7 @@ public class BossInstance {
+         signatureDirector.abort();
+         sandboxDirector.abort();
+         saintDirector.abort();
++        eggDirector.abort();
+         unbrokenDirector.abort();
+         worldEaterDirector.abort();
+         if (script != null) {
+@@ -527,6 +533,7 @@ public class BossInstance {
+         eliteDirector.clearFx();
+         de.aetherion.bossengine.skill.t2.T2Mechanics.clearInstanceProps(this);
+         saintDirector.clear();
++        eggDirector.clear();
+         unbrokenDirector.clear();
+         worldEaterDirector.clear();
+         if (script != null) {
+@@ -570,6 +577,7 @@ public class BossInstance {
+                 || sovereignDirector.blocksDamage()
+                 || signatureDirector.isDying()
+                 || saintDirector.blocksDamage()
++                || eggDirector.blocksDamage()
+                 || unbrokenDirector.blocksDamage()
+                 || worldEaterDirector.blocksDamage()
+                 || sandboxDirector.blocksDamage()
+@@ -626,6 +634,7 @@ public class BossInstance {
+                 || hollowSunDirector.beginDeath()
+                 || sovereignDirector.beginDeath()
+                 || saintDirector.beginDeath()
++                || eggDirector.beginDeath()
+                 || unbrokenDirector.beginDeath()
+                 || worldEaterDirector.beginDeath()
+                 || signatureDirector.beginDeath()) {
+@@ -757,6 +766,10 @@ public class BossInstance {
+             ticksAlive++;
+             return saintDirector.tick();
+         }
++        if (eggDirector.isDying()) {
++            ticksAlive++;
++            return eggDirector.tick();
++        }
+         if (unbrokenDirector.isDying()) {
+             ticksAlive++;
+             return unbrokenDirector.tick();
+@@ -784,6 +797,7 @@ public class BossInstance {
+         sovereignDirector.tick();
+         sandboxDirector.tick();
+         saintDirector.tick();
++        eggDirector.tick();
+         unbrokenDirector.tick();
+         worldEaterDirector.tick();
+         if (ticksAlive == 20 || ticksAlive == 100) {
+@@ -964,8 +978,9 @@ public class BossInstance {
+             if (transition.isFreezeAi() && entity instanceof Mob mob) {
+                 mob.setAI(false);
+             }
+-            if (saintDirector.ownsTransition() || unbrokenDirector.ownsTransition() || worldEaterDirector.ownsTransition()) {
+-                // Hanging Saint, the Unbroken and the World Eater stage their own transitions.
++            if (saintDirector.ownsTransition() || eggDirector.ownsTransition()
++                    || unbrokenDirector.ownsTransition() || worldEaterDirector.ownsTransition()) {
++                // Hanging Saint, Eggquelizer, the Unbroken and the World Eater stage their own transitions.
+                 return;
+             }
+             if (hollowSunDirector.isMine()) {
+@@ -1032,7 +1047,8 @@ public class BossInstance {
+         }
+         transitionTick++;
+         double progress = (double) transitionTick / Math.max(1, transition.getDurationTicks());
+-        if (saintDirector.ownsTransition() || unbrokenDirector.ownsTransition() || worldEaterDirector.ownsTransition()) {
++        if (saintDirector.ownsTransition() || eggDirector.ownsTransition()
++                || unbrokenDirector.ownsTransition() || worldEaterDirector.ownsTransition()) {
+             // Choreography runs inside the director's tick(); only the timer lives here.
+         } else if (hollowSunDirector.isMine()) {
+             // The director flies the body for the whole transition; no phase-return snap.
+@@ -2114,7 +2130,7 @@ public class BossInstance {
+             }
+             return;
+         }
+-        if (saintDirector.ownsBody()) {
++        if (saintDirector.ownsBody() || eggDirector.ownsBody()) {
+             if (entity instanceof Mob mob) {
+                 mob.setAI(false);
+                 mob.setAware(false);
+@@ -2265,8 +2281,8 @@ public class BossInstance {
+             // Cave boss: zero leash, zero pulls, zero ports.
+             return;
+         }
+-        if (saintDirector.isMine()) {
+-            // Stage fight: the director owns her seat; leash would yank the husk off the boards.
++        if (saintDirector.isMine() || eggDirector.isMine()) {
++            // Stage fight: the director owns the body; leash would yank the hitbox off the boards.
+             return;
+         }
+         if (ownsWorldEaterBody()) {
+@@ -2634,7 +2650,7 @@ public class BossInstance {
+ 
+     private void unstickIfNeeded() {
+         if (entity == null || !entity.isValid() || sovereignDirector.holdsBody() || saintDirector.ownsBody()
+-                || unbrokenDirector.ownsBody() || worldEaterDirector.ownsBody()) {
++                || eggDirector.ownsBody() || unbrokenDirector.ownsBody() || worldEaterDirector.ownsBody()) {
+             return;
+         }
+         if (isHollowLurker()) {
+diff --git a/BossEngine/src/main/java/de/aetherion/bossengine/instance/eggquelizer/EggBody.java b/BossEngine/src/main/java/de/aetherion/bossengine/instance/eggquelizer/EggBody.java
+new file mode 100644
+index 0000000..0963a40
+--- /dev/null
++++ b/BossEngine/src/main/java/de/aetherion/bossengine/instance/eggquelizer/EggBody.java
+@@ -0,0 +1,528 @@
++package de.aetherion.bossengine.instance.eggquelizer;
++
++import org.bukkit.Color;
++import org.bukkit.Material;
++import org.bukkit.entity.BlockDisplay;
++import org.joml.Matrix4f;
++import org.joml.Vector3f;
++
++import java.util.ArrayList;
++import java.util.List;
++
++/**
++ * The Eggquelizer itself: a giant egg on tiny chicken legs with a huge speaker for a face.
++ *
++ * <p>Body space: origin at the ground point between the feet, +Y up, +Z out of the speaker.
++ * Every pose is a handful of springs (pitch, roll, squash) plus a few authored channels
++ * (cone breath, LED level, foot lifts, jitter). No face: personality is where the speaker
++ * points, how it leans, how it squashes, and when it goes completely still.
++ */
++final class EggBody {
++
++    static final float LEG_H = 0.95f;
++    static final float SHELL_H = 4.7f;
++    static final float SHELL_R = 1.8f;
++    static final float FACE_H = 1.95f;
++    static final float FACE_Z = 1.62f;
++    static final int SLICES = 10;
++
++    static final Color ORANGE = Color.fromRGB(255, 120, 20);
++    static final Color HOT = Color.fromRGB(255, 70, 30);
++
++    private static final int BODY = 0;
++    private static final int LEG_L = 1;
++    private static final int LEG_R = 2;
++
++    private static final int R_SHELL = 0;
++    private static final int R_FACE = 1;
++    private static final int R_CONE = 2;
++    private static final int R_LED = 3;
++    private static final int R_CRACK = 4;
++    private static final int R_CORE = 5;
++    private static final int R_LID = 6;
++    private static final int R_GRILLE = 7;
++    private static final int R_LEG = 8;
++    private static final int R_TIP = 9;
++    private static final int R_AMP = 10;
++
++    private static final class Part {
++        final int space;
++        final int role;
++        final Matrix4f local;
++        final Material material;
++        final int brightness;
++        int index;
++        int slice = -1;
++        BlockDisplay d;
++        final Matrix4f sent = new Matrix4f();
++        boolean hasSent;
++        boolean hiddenSent;
++
++        Part(int space, int role, Matrix4f local, Material material, int brightness) {
++            this.space = space;
++            this.role = role;
++            this.local = local;
++            this.material = material;
++            this.brightness = brightness;
++        }
++    }
++
++    private final List<Part> parts = new ArrayList<>();
++    private final List<Part> leds = new ArrayList<>();
++    private Part tip;
++
++    /* ------------------------------------------------------------------ pose channels */
++
++    final Vector3f pos = new Vector3f();
++    float yaw;
++    final EggMath.Spring pitch = new EggMath.Spring(0f, 0.16f, 0.22f);
++    final EggMath.Spring roll = new EggMath.Spring(0f, 0.16f, 0.22f);
++    final EggMath.Spring squash = new EggMath.Spring(1f, 0.28f, 0.24f);
++    final EggMath.Spring cone = new EggMath.Spring(0f, 0.4f, 0.4f);
++    /** Extra forward bulge of the face cone (Overclock overfill). */
++    float overfill;
++    /** Body vibration amplitude in blocks. */
++    float jitter;
++    /** Vertical bob above the legs (waddle bounce, hops). */
++    float bob;
++    /** Whole-body lift off the floor (airborne hops). */
++    float air;
++    /** Foot lift per leg, 0..1. */
++    float liftL;
++    float liftR;
++    /** Leg kick angle (tipped over, flailing). */
++    float kickL;
++    float kickR;
++    /** 0..1 shell separation once cracked. */
++    float crackOpen;
++    boolean cracked;
++    boolean lidOff;
++    /** Face cone dented (distortion). */
++    boolean dented;
++    /** Body frozen: holds its last frame (cinematic stills). */
++    boolean frozen;
++
++    private int ledLevel = -1;
++    private Color ledGlow;
++    private boolean coneHot;
++    private boolean tipOn;
++    private int interp = 2;
++    private EggFx fx;
++
++    EggBody() {
++        build();
++    }
++
++    /* ================================================================== construction */
++
++    private Part add(int space, int role, Material m, int bright, float cx, float cy, float cz,
++                     float sx, float sy, float sz, float rotX, float rotY, float rotZ) {
++        Matrix4f local = new Matrix4f().translation(cx, cy, cz).rotateY(rotY).rotateX(rotX).rotateZ(rotZ)
++                .scale(sx, sy, sz).translate(-0.5f, -0.5f, -0.5f);
++        Part p = new Part(space, role, local, m, bright);
++        p.index = parts.size();
++        parts.add(p);
++        return p;
++    }
++
++    /** Egg profile: radius at normalized height h (0 bottom, 1 top). */
++    static float profile(float h) {
++        float hc = 0.4f;
++        float t = h < hc ? (h - hc) / hc : (h - hc) / (1f - hc);
++        float r = (float) Math.sqrt(Math.max(0f, 1f - t * t));
++        if (h > hc) {
++            r *= 1f - 0.12f * (h - hc) / (1f - hc);
++        }
++        return SHELL_R * r;
++    }
++
++    private void build() {
++        float sliceH = SHELL_H / SLICES;
++        for (int i = 0; i < SLICES; i++) {
++            float h0 = i / (float) SLICES;
++            float hm = (i + 0.5f) / SLICES;
++            float r = Math.max(0.35f, profile(hm));
++            float y = LEG_H + (h0 + 0.5f / SLICES) * SHELL_H;
++            float twist = i * EggMath.PI / 16f;
++            int bright = 10 + Math.min(5, i);
++            int role = i == SLICES - 1 || i == SLICES - 2 ? R_LID : R_SHELL;
++            float s = r * 1.74f;
++            Part a = add(BODY, role, Material.WHITE_CONCRETE, bright, 0f, y, 0f, s, sliceH + 0.04f, s, 0f, twist, 0f);
++            Part b = add(BODY, role, Material.WHITE_CONCRETE, bright, 0f, y, 0f, s, sliceH + 0.04f, s, 0f, twist + EggMath.PI / 4f, 0f);
++            a.slice = i;
++            b.slice = i;
++        }
++        // Glowing core: invisible until the shell cracks open.
++        add(BODY, R_CORE, Material.SHROOMLIGHT, 15, 0f, LEG_H + SHELL_H * 0.45f, 0f, 2.6f, SHELL_H * 0.7f, 2.6f, 0f, 0f, 0f);
++
++        float fy = LEG_H + FACE_H;
++        // Speaker housing and baffle.
++        add(BODY, R_FACE, Material.BLACK_CONCRETE, 9, 0f, fy, FACE_Z - 0.35f, 2.9f, 2.9f, 0.8f, 0f, 0f, 0f);
++        add(BODY, R_FACE, Material.BLACK_CONCRETE, 9, 0f, fy, FACE_Z - 0.3f, 2.5f, 2.5f, 0.78f, 0f, 0f, EggMath.PI / 4f);
++        add(BODY, R_FACE, Material.POLISHED_BLACKSTONE, 10, 0f, fy, FACE_Z + 0.06f, 2.55f, 2.55f, 0.06f, 0f, 0f, 0f);
++        // Surround ring.
++        add(BODY, R_FACE, Material.GRAY_CONCRETE, 11, 0f, fy, FACE_Z + 0.1f, 2.2f, 2.2f, 0.08f, 0f, 0f, 0f);
++        add(BODY, R_FACE, Material.GRAY_CONCRETE, 11, 0f, fy, FACE_Z + 0.1f, 2.0f, 2.0f, 0.08f, 0f, 0f, EggMath.PI / 4f);
++        // Cone and dust cap: they breathe.
++        add(BODY, R_CONE, Material.COAL_BLOCK, 11, 0f, fy, FACE_Z + 0.15f, 1.7f, 1.7f, 0.1f, 0f, 0f, 0f);
++        add(BODY, R_CONE, Material.COAL_BLOCK, 11, 0f, fy, FACE_Z + 0.15f, 1.55f, 1.55f, 0.1f, 0f, 0f, EggMath.PI / 4f);
++        add(BODY, R_CONE, Material.IRON_BLOCK, 13, 0f, fy, FACE_Z + 0.24f, 0.62f, 0.62f, 0.16f, 0f, 0f, 0f);
++        // Grille bars across the face.
++        for (int k = -1; k <= 1; k++) {
++            add(BODY, R_GRILLE, Material.IRON_BLOCK, 12, 0f, fy + k * 0.62f, FACE_Z + 0.42f, 2.3f, 0.07f, 0.07f, 0f, 0f, 0f);
++        }
++        // LED meter: five lamps arched over the speaker.
++        for (int k = 0; k < 5; k++) {
++            float a = (k - 2) * 0.32f;
++            float lx = (float) Math.sin(a) * 1.35f;
++            float ly = fy + 1.62f + (float) Math.cos(a) * 0.25f - 0.25f;
++            Part led = add(BODY, R_LED, Material.GRAY_CONCRETE, 6, lx, ly, FACE_Z - 0.02f, 0.3f, 0.22f, 0.12f, 0f, 0f, 0f);
++            leds.add(led);
++        }
++        // Side amps ("ears").
++        for (int s = -1; s <= 1; s += 2) {
++            float ax = s * (SHELL_R + 0.1f);
++            add(BODY, R_AMP, Material.BLACK_CONCRETE, 9, ax, fy - 0.1f, -0.1f, 0.5f, 1.0f, 1.0f, 0f, 0f, 0f);
++            add(BODY, R_AMP, Material.GRAY_CONCRETE, 11, ax + s * 0.27f, fy - 0.1f, -0.1f, 0.06f, 0.7f, 0.7f, 0f, 0f, 0f);
++        }
++        // Antenna with a beat light.
++        float topY = LEG_H + SHELL_H;
++        add(BODY, R_LID, Material.LIGHTNING_ROD, 12, 0.3f, topY + 0.45f, -0.3f, 0.9f, 1.1f, 0.9f, 0f, 0f, 0.15f);
++        tip = add(BODY, R_TIP, Material.RED_CONCRETE, 8, 0.38f, topY + 1.05f, -0.3f, 0.2f, 0.2f, 0.2f, 0f, 0f, 0f);
++        // Rear cable: from the egg's back down to the floor.
++        add(BODY, R_SHELL, Material.BLACK_CONCRETE, 7, 0f, LEG_H + 0.55f, -SHELL_R + 0.05f, 0.16f, 0.16f, 0.6f, 0f, 0f, 0f);
++        add(BODY, R_SHELL, Material.IRON_BLOCK, 12, 0f, LEG_H + 0.55f, -SHELL_R - 0.25f, 0.28f, 0.22f, 0.22f, 0f, 0f, 0f);
++        // Cracks (zigzags across the front-left, front-right and back). Hidden until cracked.
++        float[][] cracks = {
++                {-0.9f, 3.6f, 1.25f, 0.5f, 0.0f}, {-1.1f, 3.0f, 1.1f, -0.6f, 0.0f}, {-0.8f, 2.35f, 1.35f, 0.4f, 0.0f},
++                {1.0f, 3.9f, 1.05f, -0.5f, 0.0f}, {1.25f, 3.3f, 0.8f, 0.55f, 0.0f}, {1.05f, 2.7f, 1.0f, -0.4f, 0.0f},
++                {0.4f, 4.2f, -1.2f, 0.6f, 1.0f}, {-0.2f, 3.6f, -1.45f, -0.5f, 1.0f}, {0.3f, 2.9f, -1.5f, 0.45f, 1.0f},
++        };
++        for (float[] c : cracks) {
++            float yawOut = (float) Math.atan2(c[0], c[2]);
++            float rr = profile(c[1] / SHELL_H) * 1.1f;
++            add(BODY, R_CRACK, Material.BLACK_CONCRETE, 4, (float) Math.sin(yawOut) * rr, LEG_H + c[1], (float) Math.cos(yawOut) * rr,
++                    0.12f, 0.8f, 0.12f, 0f, yawOut, c[3]);
++        }
++        // Tiny chicken legs: shin + three toes forward + one back.
++        for (int s = -1; s <= 1; s += 2) {
++            int space = s < 0 ? LEG_L : LEG_R;
++            float lx = s * 0.6f;
++            add(space, R_LEG, Material.ORANGE_TERRACOTTA, 11, lx, LEG_H * 0.5f + 0.05f, 0f, 0.2f, LEG_H + 0.1f, 0.2f, 0f, 0f, 0f);
++            for (int t = -1; t <= 1; t++) {
++                add(space, R_LEG, Material.ORANGE_TERRACOTTA, 11, lx + t * 0.16f, 0.05f, 0.24f, 0.11f, 0.08f, 0.5f, 0f, t * 0.42f, 0f);
++            }
++            add(space, R_LEG, Material.ORANGE_TERRACOTTA, 11, lx, 0.05f, -0.18f, 0.1f, 0.08f, 0.32f, 0f, 0f, 0f);
++        }
++    }
++
++    /* ================================================================== lifecycle */
++
++    void spawn(EggFx fx) {
++        this.fx = fx;
++        for (Part p : parts) {
++            p.d = fx.block(p.material, null, p.brightness);
++            p.hasSent = false;
++            p.hiddenSent = false;
++        }
++        ledLevel = -1;
++        coneHot = false;
++        tipOn = false;
++        render(0);
++    }
++
++    boolean intact() {
++        for (Part p : parts) {
++            if (p.d == null || !p.d.isValid()) {
++                return false;
++            }
++        }
++        return true;
++    }
++
++    void remove() {
++        for (Part p : parts) {
++            EggFx.kill(p.d);
++            p.d = null;
++        }
++    }
++
++    /** Detach the display list (death corpse lingers a moment after the encounter clears). */
++    List<BlockDisplay> detach() {
++        List<BlockDisplay> out = new ArrayList<>();
++        for (Part p : parts) {
++            if (p.d != null && p.d.isValid()) {
++                out.add(p.d);
++            }
++            p.d = null;
++        }
++        return out;
++    }
++
++    /* ================================================================== channels */
++
++    /** LED meter: 0..5 lamps lit, colored green/yellow/red by position. */
++    void leds(int level) {
++        level = Math.max(0, Math.min(5, level));
++        if (level == ledLevel && ledGlow == null) {
++            return;
++        }
++        ledLevel = level;
++        ledGlow = null;
++        for (int k = 0; k < leds.size(); k++) {
++            Part p = leds.get(k);
++            if (p.d == null || !p.d.isValid()) {
++                continue;
++            }
++            boolean on = k < level;
++            Material m = !on ? Material.GRAY_CONCRETE
++                    : k < 2 ? Material.LIME_CONCRETE : k < 4 ? Material.YELLOW_CONCRETE : Material.RED_CONCRETE;
++            p.d.setBlock(m.createBlockData());
++            EggFx.light(p.d, on ? 15 : 5);
++            EggFx.glow(p.d, on && level == 5 ? EggSpeaker.RED : null);
++        }
++    }
++
++    /** Every LED one color (overload, distortion). */
++    void ledsAll(Material m, Color glow) {
++        ledLevel = 5;
++        ledGlow = glow;
++        for (Part p : leds) {
++            if (p.d != null && p.d.isValid()) {
++                p.d.setBlock(m.createBlockData());
++                EggFx.light(p.d, 15);
++                EggFx.glow(p.d, glow);
++            }
++        }
++    }
++
++    void ledsOff() {
++        ledLevel = 0;
++        ledGlow = null;
++        for (Part p : leds) {
++            if (p.d != null && p.d.isValid()) {
++                p.d.setBlock(Material.BLACK_CONCRETE.createBlockData());
++                EggFx.light(p.d, 0);
++                EggFx.glow(p.d, null);
++            }
++        }
++    }
++
++    /** The cone and cap glow: armed / overfilling. */
++    void coneHot(boolean hot) {
++        if (hot == coneHot) {
++            return;
++        }
++        coneHot = hot;
++        for (Part p : parts) {
++            if (p.role == R_CONE && p.d != null && p.d.isValid()) {
++                EggFx.glow(p.d, hot ? EggSpeaker.RED : null);
++                EggFx.light(p.d, hot ? 15 : p.brightness);
++            }
++        }
++    }
++
++    void tip(boolean on) {
++        if (on == tipOn || tip == null || tip.d == null || !tip.d.isValid()) {
++            return;
++        }
++        tipOn = on;
++        tip.d.setBlock((on ? Material.REDSTONE_BLOCK : Material.RED_CONCRETE).createBlockData());
++        EggFx.light(tip.d, on ? 15 : 6);
++        EggFx.glow(tip.d, on ? EggSpeaker.RED : null);
++    }
++
++    /** Power loss: every light on the body goes dark. */
++    void powerDown() {
++        ledsOff();
++        coneHot(false);
++        tip(false);
++        for (Part p : parts) {
++            if (p.d != null && p.d.isValid() && (p.role == R_CORE)) {
++                p.d.setBlock(Material.BLACK_CONCRETE.createBlockData());
++                EggFx.light(p.d, 2);
++            }
++        }
++    }
++
++    /** Distortion: show cracks and the inner glow. */
++    void crack() {
++        if (cracked) {
++            return;
++        }
++        cracked = true;
++        for (Part p : parts) {
++            if (p.role == R_CORE && p.d != null && p.d.isValid()) {
++                EggFx.glow(p.d, ORANGE);
++            }
++        }
++    }
++
++    void interp(int ticks) {
++        this.interp = ticks;
++    }
++
++    /** World point at the center of the speaker face (stage space). */
++    Vector3f facePoint() {
++        return bodyMatrix().transformPosition(new Vector3f(0f, LEG_H + FACE_H, FACE_Z + 0.5f));
++    }
++
++    /** Unit facing of the speaker (stage space). */
++    Vector3f faceDir() {
++        Vector3f d = bodyMatrix().transformDirection(new Vector3f(0f, 0f, 1f));
++        return d.lengthSquared() < 1e-6f ? new Vector3f(0f, 0f, 1f) : d.normalize();
++    }
++
++    Vector3f topPoint() {
++        return bodyMatrix().transformPosition(new Vector3f(0f, LEG_H + SHELL_H, 0f));
++    }
++
++    Vector3f centerPoint() {
++        return bodyMatrix().transformPosition(new Vector3f(0f, LEG_H + SHELL_H * 0.42f, 0f));
++    }
++
++    /* ================================================================== solve + push */
++
++    void tickSprings() {
++        if (frozen) {
++            return;
++        }
++        pitch.tick();
++        roll.tick();
++        squash.tick();
++        cone.tick();
++    }
++
++    private float lift() {
++        // Lying down: raise the pivot so the shell rests on the floor instead of sinking into it.
++        float p = Math.abs((float) Math.sin(pitch.value));
++        float r = Math.abs((float) Math.sin(roll.value));
++        float f = EggMath.clamp01((Math.max(p, r) - 0.4f) / 0.6f);
++        float extra = pitch.value > 0f ? 0.45f : 0.1f;
++        return f * (SHELL_R - LEG_H * 0.35f + extra);
++    }
++
++    private Matrix4f rootMatrix(float tiltScale) {
++        float jx = jitter > 0f ? (EggMath.rnd() * 2f - 1f) * jitter : 0f;
++        float jz = jitter > 0f ? (EggMath.rnd() * 2f - 1f) * jitter : 0f;
++        return new Matrix4f()
++                .translation(pos.x + jx, pos.y + air + lift(), pos.z + jz)
++                .rotateY(yaw)
++                .rotateX(pitch.value * tiltScale)
++                .rotateZ(roll.value * tiltScale);
++    }
++
++    Matrix4f bodyMatrix() {
++        float sy = Math.max(0.3f, squash.value);
++        float sxz = 1f / (float) Math.sqrt(sy);
++        return rootMatrix(1f)
++                .translate(0f, bob, 0f)
++                .translate(0f, LEG_H, 0f)
++                .scale(sxz, sy, sxz)
++                .translate(0f, -LEG_H, 0f);
++    }
++
++    void render() {
++        if (frozen || fx == null) {
++            return;
++        }
++        render(jitter > 0.01f ? 1 : interp);
++    }
++
++    private void render(int push) {
++        Matrix4f body = bodyMatrix();
++        Matrix4f legs = rootMatrix(1f);
++        float fy = LEG_H + FACE_H;
++        float sep = cracked ? crackOpen : 0f;
++        for (Part p : parts) {
++            if (p.d == null) {
++                continue;
++            }
++            Matrix4f out;
++            if (p.space == BODY) {
++                out = new Matrix4f(body);
++                switch (p.role) {
++                    case R_CONE -> {
++                        out.translate(0f, fy, 0f).translate(0f, 0f, cone.value + overfill * 0.4f);
++                        float s = 1f + overfill * 0.35f;
++                        if (dented) {
++                            out.translate(0.12f, -0.08f, 0f).rotateZ(0.22f).rotateY(0.1f);
++                        }
++                        out.scale(s, s, 1f).translate(0f, -fy, 0f);
++                    }
++                    case R_GRILLE -> {
++                        if (dented && p.index % 3 == 0) {
++                            out.translate(0f, fy, FACE_Z + 0.42f).rotateZ(0.35f).rotateY(0.2f).translate(0f, -fy, -FACE_Z - 0.42f);
++                        }
++                    }
++                    case R_CRACK, R_CORE -> {
++                        if (!cracked) {
++                            hide(p);
++                            continue;
++                        }
++                    }
++                    case R_LID, R_TIP -> {
++                        if (lidOff) {
++                            hide(p);
++                            continue;
++                        }
++                    }
++                    default -> {
++                    }
++                }
++                if (p.slice >= 0 && sep > 0f) {
++                    // Cracked shell: slices drift apart, each a little skewed.
++                    float k = p.slice - SLICES * 0.45f;
++                    out.translate(((p.slice * 37) % 5 - 2) * 0.025f * sep, k * 0.05f * sep, ((p.slice * 53) % 5 - 2) * 0.025f * sep);
++                }
++            } else {
++                boolean left = p.space == LEG_L;
++                float lift = left ? liftL : liftR;
++                float kick = left ? kickL : kickR;
++                out = new Matrix4f(legs).translate(0f, bob * 0.35f + lift * 0.35f, lift * 0.15f);
++                if (kick != 0f) {
++                    out.translate(0f, LEG_H, 0f).rotateX(kick).translate(0f, -LEG_H, 0f);
++                }
++            }
++            out.mul(p.local);
++            p.hiddenSent = false;
++            if (push > 0 && p.hasSent && p.sent.equals(out, 1e-4f)) {
++                continue;
++            }
++            p.sent.set(out);
++            p.hasSent = true;
++            EggFx.push(p.d, out, push);
++        }
++    }
++
++    private void hide(Part p) {
++        if (p.hiddenSent) {
++            return;
++        }
++        p.hiddenSent = true;
++        p.hasSent = false;
++        EggFx.push(p.d, EggFx.gone(new Vector3f(pos)), 0);
++    }
++
++    /** The two top slices and the antenna, as matrices, for the lid that pops off. */
++    List<Matrix4f> lidMatrices() {
++        List<Matrix4f> out = new ArrayList<>();
++        Matrix4f body = bodyMatrix();
++        for (Part p : parts) {
++            if (p.role == R_LID) {
++                out.add(new Matrix4f(body).mul(p.local));
++            }
++        }
++        return out;
++    }
++
++    List<Material> lidMaterials() {
++        List<Material> out = new ArrayList<>();
++        for (Part p : parts) {
++            if (p.role == R_LID) {
++                out.add(p.material);
++            }
++        }
++        return out;
++    }
++}
+diff --git a/BossEngine/src/main/java/de/aetherion/bossengine/instance/eggquelizer/EggFx.java b/BossEngine/src/main/java/de/aetherion/bossengine/instance/eggquelizer/EggFx.java
+new file mode 100644
+index 0000000..2857df7
+--- /dev/null
++++ b/BossEngine/src/main/java/de/aetherion/bossengine/instance/eggquelizer/EggFx.java
+@@ -0,0 +1,303 @@
++package de.aetherion.bossengine.instance.eggquelizer;
++
++import de.aetherion.bossengine.instance.BossInstance;
++import de.aetherion.bossengine.util.TextUtil;
++
++import net.kyori.adventure.title.Title;
++
++import org.bukkit.Bukkit;
++import org.bukkit.Color;
++import org.bukkit.Location;
++import org.bukkit.Material;
++import org.bukkit.Particle;
++import org.bukkit.Sound;
++import org.bukkit.SoundCategory;
++import org.bukkit.World;
++import org.bukkit.block.data.BlockData;
++import org.bukkit.entity.BlockDisplay;
++import org.bukkit.entity.Display;
++import org.bukkit.entity.ItemDisplay;
++import org.bukkit.entity.Player;
++import org.bukkit.inventory.ItemStack;
++import org.joml.Matrix4f;
++import org.joml.Quaternionf;
++import org.joml.Vector3f;
++
++import java.time.Duration;
++import java.util.ArrayList;
++import java.util.List;
++
++/**
++ * One fixed anchor (stage center, floor surface) that every Eggquelizer display spawns on.
++ * Displays never teleport: all motion is transformation interpolation relative to the anchor.
++ */
++final class EggFx {
++
++    static final float VIEW_RANGE = 3.5f;
++    static final double AUDIENCE_RADIUS = 72.0;
++    static final double COMBAT_RADIUS = 26.0;
++
++    private final BossInstance instance;
++    private final Location anchor;
++    private final World world;
++    /** Pitch jitter on every sound once the shell has cracked (0 = clean signal). */
++    float warble;
++
++    EggFx(BossInstance instance, Location anchor) {
++        this.instance = instance;
++        this.anchor = anchor.clone();
++        this.anchor.setYaw(0f);
++        this.anchor.setPitch(0f);
++        this.world = anchor.getWorld();
++    }
++
++    BossInstance instance() {
++        return instance;
++    }
++
++    Location anchor() {
++        return anchor.clone();
++    }
++
++    World world() {
++        return world;
++    }
++
++    Location at(Vector3f p) {
++        return new Location(world, anchor.getX() + p.x, anchor.getY() + p.y, anchor.getZ() + p.z);
++    }
++
++    Location at(float x, float y, float z) {
++        return new Location(world, anchor.getX() + x, anchor.getY() + y, anchor.getZ() + z);
++    }
++
++    Vector3f stage(Location l) {
++        return new Vector3f(
++                (float) (l.getX() - anchor.getX()),
++                (float) (l.getY() - anchor.getY()),
++                (float) (l.getZ() - anchor.getZ()));
++    }
++
++    /* ------------------------------------------------------------------ displays */
++
++    BlockDisplay block(Material material, Color glow, int brightness) {
++        return block(material.createBlockData(), glow, brightness);
++    }
++
++    BlockDisplay block(BlockData data, Color glow, int brightness) {
++        return world.spawn(anchor, BlockDisplay.class, d -> {
++            d.setBlock(data);
++            prepare(d, glow, brightness);
++            d.setTransformationMatrix(new Matrix4f().scale(0.001f));
++        });
++    }
++
++    ItemDisplay item(ItemStack stack, int brightness) {
++        return world.spawn(anchor, ItemDisplay.class, d -> {
++            d.setItemStack(stack);
++            d.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
++            prepare(d, null, brightness);
++            d.setTransformationMatrix(new Matrix4f().scale(0.001f));
++        });
++    }
++
++    private void prepare(Display d, Color glow, int brightness) {
++        d.setPersistent(false);
++        d.setGravity(false);
++        d.setBillboard(Display.Billboard.FIXED);
++        d.setViewRange(VIEW_RANGE);
++        d.setShadowRadius(0f);
++        d.setShadowStrength(0f);
++        d.setInterpolationDelay(0);
++        d.setInterpolationDuration(0);
++        d.setTeleportDuration(0);
++        if (brightness >= 0) {
++            int b = Math.max(0, Math.min(15, brightness));
++            d.setBrightness(new Display.Brightness(b, b));
++        }
++        if (glow != null) {
++            d.setGlowing(true);
++            d.setGlowColorOverride(glow);
++        }
++        instance.getKeys().tagBeamFx(d, instance.getInstanceId());
++    }
++
++    static void push(Display d, Matrix4f m, int interp) {
++        if (d == null || !d.isValid()) {
++            return;
++        }
++        d.setInterpolationDelay(0);
++        d.setInterpolationDuration(Math.max(0, interp));
++        d.setTransformationMatrix(m);
++    }
++
++    static void glow(Display d, Color color) {
++        if (d == null || !d.isValid()) {
++            return;
++        }
++        if (color == null) {
++            d.setGlowing(false);
++            return;
++        }
++        d.setGlowColorOverride(color);
++        d.setGlowing(true);
++    }
++
++    static void light(Display d, int level) {
++        if (d != null && d.isValid()) {
++            int b = Math.max(0, Math.min(15, level));
++            d.setBrightness(new Display.Brightness(b, b));
++        }
++    }
++
++    static void kill(Display d) {
++        if (d != null && d.isValid()) {
++            d.remove();
++        }
++    }
++
++    /** Unit block centered on {@code c}, sized, yawed (floor decals, ring segments). */
++    static Matrix4f box(Vector3f c, float sx, float sy, float sz, float yaw) {
++        return new Matrix4f().translation(c).rotateY(yaw).scale(sx, sy, sz).translate(-0.5f, -0.5f, -0.5f);
++    }
++
++    /** A thin box stretched from a to b. */
++    static Matrix4f beam(Vector3f a, Vector3f b, float width) {
++        return beam(a, b, width, width);
++    }
++
++    static Matrix4f beam(Vector3f a, Vector3f b, float width, float depth) {
++        Vector3f dir = new Vector3f(b).sub(a);
++        float len = dir.length();
++        if (len < 1e-4f) {
++            return gone(a);
++        }
++        return new Matrix4f()
++                .translation(a)
++                .rotate(new Quaternionf().rotationTo(0f, 1f, 0f, dir.x / len, dir.y / len, dir.z / len))
++                .scale(width, len, depth)
++                .translate(-0.5f, 0f, -0.5f);
++    }
++
++    static Matrix4f gone(Vector3f at) {
++        return new Matrix4f().translation(at).scale(0.001f);
++    }
++
++    /* ------------------------------------------------------------------ players */
++
++    List<Player> audience() {
++        List<Player> out = new ArrayList<>();
++        if (world == null) {
++            return out;
++        }
++        double r2 = AUDIENCE_RADIUS * AUDIENCE_RADIUS;
++        for (Player p : world.getPlayers()) {
++            if (p.getLocation().distanceSquared(anchor) <= r2) {
++                out.add(p);
++            }
++        }
++        return out;
++    }
++
++    private List<Player> targetCache = List.of();
++    private int targetTick = Integer.MIN_VALUE;
++
++    /** Vulnerable players on or around the stage. Cached per server tick. */
++    List<Player> targets() {
++        int now = Bukkit.getCurrentTick();
++        if (now != targetTick) {
++            targetCache = scanTargets();
++            targetTick = now;
++        }
++        return targetCache;
++    }
++
++    private List<Player> scanTargets() {
++        List<Player> out = new ArrayList<>();
++        if (world == null) {
++            return out;
++        }
++        for (Player p : world.getPlayers()) {
++            if (!instance.isCombatTarget(p) || p.isDead()) {
++                continue;
++            }
++            Location l = p.getLocation();
++            double dx = l.getX() - anchor.getX();
++            double dz = l.getZ() - anchor.getZ();
++            double dy = l.getY() - anchor.getY();
++            if (dx * dx + dz * dz <= COMBAT_RADIUS * COMBAT_RADIUS && dy > -8 && dy < 30) {
++                out.add(p);
++            }
++        }
++        return out;
++    }
++
++    Player nearestTarget(Vector3f from) {
++        Player best = null;
++        double bestD = Double.MAX_VALUE;
++        for (Player p : targets()) {
++            double d = EggMath.horizontal(stage(p.getLocation()), from);
++            if (d < bestD) {
++                bestD = d;
++                best = p;
++            }
++        }
++        return best;
++    }
++
++    /* ------------------------------------------------------------------ sound */
++
++    private float pitch(float p) {
++        if (warble > 0f) {
++            p *= 1f + (EggMath.rnd() * 2f - 1f) * warble;
++        }
++        return EggMath.clamp(p, 0.5f, 2f);
++    }
++
++    /** Positional: you hear WHICH speaker it came from. */
++    void sound(Vector3f at, Sound sound, float volume, float pitch) {
++        world.playSound(at(at), sound, SoundCategory.MASTER, volume, pitch(pitch));
++    }
++
++    /** Clean positional sound that ignores the warble (death, UI-ish ticks). */
++    void clean(Vector3f at, Sound sound, float volume, float pitch) {
++        world.playSound(at(at), sound, SoundCategory.MASTER, volume, EggMath.clamp(pitch, 0.5f, 2f));
++    }
++
++    /** Non-positional, identical for every listener. */
++    void score(Sound sound, float volume, float pitch) {
++        float p = pitch(pitch);
++        for (Player pl : audience()) {
++            pl.playSound(pl.getLocation(), sound, SoundCategory.MASTER, volume, p);
++        }
++    }
++
++    void particle(Particle particle, Vector3f at, int count, double spread, double speed) {
++        world.spawnParticle(particle, at(at), count, spread, spread, spread, speed);
++    }
++
++    void particle(Particle particle, Vector3f at, int count, double sx, double sy, double sz, double speed) {
++        world.spawnParticle(particle, at(at), count, sx, sy, sz, speed);
++    }
++
++    void dust(Vector3f at, Color color, float size, int count, double spread) {
++        world.spawnParticle(Particle.DUST, at(at), count, spread, spread, spread, 0,
++                new Particle.DustOptions(color, size));
++    }
++
++    void title(String main, String sub, int fadeIn, int stay, int fadeOut) {
++        Title title = Title.title(
++                TextUtil.component(main),
++                TextUtil.component(sub),
++                Title.Times.times(Duration.ofMillis(fadeIn * 50L), Duration.ofMillis(stay * 50L), Duration.ofMillis(fadeOut * 50L)));
++        for (Player p : audience()) {
++            p.showTitle(title);
++        }
++    }
++
++    void actionBar(String text) {
++        for (Player p : audience()) {
++            p.sendActionBar(TextUtil.component(text));
++        }
++    }
++}
+diff --git a/BossEngine/src/main/java/de/aetherion/bossengine/instance/eggquelizer/EggMath.java b/BossEngine/src/main/java/de/aetherion/bossengine/instance/eggquelizer/EggMath.java
+new file mode 100644
+index 0000000..1422774
+--- /dev/null
++++ b/BossEngine/src/main/java/de/aetherion/bossengine/instance/eggquelizer/EggMath.java
+@@ -0,0 +1,148 @@
++package de.aetherion.bossengine.instance.eggquelizer;
++
++import org.joml.Vector3f;
++
++/** Easing, angles and spring helpers. Every Eggquelizer timeline is authored in 0..1 time. */
++final class EggMath {
++
++    static final float PI = (float) Math.PI;
++    static final float TAU = PI * 2f;
++    static final float HALF_PI = PI * 0.5f;
++
++    private EggMath() {
++    }
++
++    static float clamp(float v, float lo, float hi) {
++        return v < lo ? lo : Math.min(v, hi);
++    }
++
++    static float clamp01(float v) {
++        return clamp(v, 0f, 1f);
++    }
++
++    static float lerp(float a, float b, float t) {
++        return a + (b - a) * t;
++    }
++
++    /** 0..1 progress of {@code tick} inside [from, to). */
++    static float window(int tick, int from, int to) {
++        if (to <= from) {
++            return tick >= to ? 1f : 0f;
++        }
++        return clamp01((tick - from) / (float) (to - from));
++    }
++
++    static float smooth(float t) {
++        t = clamp01(t);
++        return t * t * (3f - 2f * t);
++    }
++
++    static float inCubic(float t) {
++        t = clamp01(t);
++        return t * t * t;
++    }
++
++    static float outCubic(float t) {
++        t = clamp01(t) - 1f;
++        return t * t * t + 1f;
++    }
++
++    static float outBack(float t) {
++        t = clamp01(t);
++        float c1 = 1.70158f;
++        float c3 = c1 + 1f;
++        float u = t - 1f;
++        return 1f + c3 * u * u * u + c1 * u * u;
++    }
++
++    /** Parabolic hop: 0 at both ends, 1 in the middle. */
++    static float arc(float t) {
++        t = clamp01(t);
++        return 4f * t * (1f - t);
++    }
++
++    static float wrap(float a) {
++        while (a > PI) {
++            a -= TAU;
++        }
++        while (a < -PI) {
++            a += TAU;
++        }
++        return a;
++    }
++
++    static float approachAngle(float from, float to, float maxStep) {
++        float d = wrap(to - from);
++        if (Math.abs(d) <= maxStep) {
++            return to;
++        }
++        return from + Math.signum(d) * maxStep;
++    }
++
++    /** Yaw that turns local +Z toward (dx, dz). */
++    static float yawToward(float dx, float dz) {
++        return (float) Math.atan2(dx, dz);
++    }
++
++    static float horizontal(Vector3f a, Vector3f b) {
++        float dx = a.x - b.x;
++        float dz = a.z - b.z;
++        return (float) Math.sqrt(dx * dx + dz * dz);
++    }
++
++    static float radius(Vector3f v) {
++        return (float) Math.sqrt(v.x * v.x + v.z * v.z);
++    }
++
++    static Vector3f flat(float yaw, float r) {
++        return new Vector3f((float) Math.sin(yaw) * r, 0f, (float) Math.cos(yaw) * r);
++    }
++
++    static Vector3f lerpVec(Vector3f a, Vector3f b, float t) {
++        return new Vector3f(lerp(a.x, b.x, t), lerp(a.y, b.y, t), lerp(a.z, b.z, t));
++    }
++
++    static float semitone(int n) {
++        return clamp((float) Math.pow(2.0, n / 12.0) * 0.5f, 0.5f, 2f);
++    }
++
++    static float rnd() {
++        return (float) Math.random();
++    }
++
++    static float rnd(float lo, float hi) {
++        return lo + (hi - lo) * (float) Math.random();
++    }
++
++    /** A critically-ish damped spring on one float. */
++    static final class Spring {
++        float value;
++        float vel;
++        float target;
++        float k;
++        float d;
++
++        Spring(float rest, float k, float d) {
++            this.value = rest;
++            this.target = rest;
++            this.k = k;
++            this.d = d;
++        }
++
++        void tick() {
++            vel += (target - value) * k;
++            vel *= 1f - d;
++            value += vel;
++        }
++
++        void kick(float v) {
++            vel += v;
++        }
++
++        void snap(float v) {
++            value = v;
++            target = v;
++            vel = 0f;
++        }
++    }
++}
+diff --git a/BossEngine/src/main/java/de/aetherion/bossengine/instance/eggquelizer/EggProps.java b/BossEngine/src/main/java/de/aetherion/bossengine/instance/eggquelizer/EggProps.java
+new file mode 100644
+index 0000000..6f0f024
+--- /dev/null
++++ b/BossEngine/src/main/java/de/aetherion/bossengine/instance/eggquelizer/EggProps.java
+@@ -0,0 +1,500 @@
++package de.aetherion.bossengine.instance.eggquelizer;
++
++import org.bukkit.Color;
++import org.bukkit.Material;
++import org.bukkit.entity.BlockDisplay;
++import org.bukkit.entity.Display;
++import org.joml.Matrix4f;
++import org.joml.Vector3f;
++
++import java.util.ArrayList;
++import java.util.HashSet;
++import java.util.Iterator;
++import java.util.List;
++import java.util.Set;
++import java.util.UUID;
++
++/**
++ * Short-lived physical things: pressure waves, lane walls, floor telegraphs, launch columns,
++ * treble balls, the signal packet, the popped-off lid. Each animates with one long client-side
++ * interpolation where possible (spawn, then a single push), never a per-tick spawn storm.
++ */
++final class EggProps {
++
++    interface Prop {
++        /** @return false when finished (then removed) */
++        boolean tick();
++
++        void remove();
++    }
++
++    private final List<Prop> live = new ArrayList<>();
++
++    <T extends Prop> T add(T p) {
++        live.add(p);
++        return p;
++    }
++
++    void tick() {
++        for (Iterator<Prop> it = live.iterator(); it.hasNext(); ) {
++            Prop p = it.next();
++            boolean alive;
++            try {
++                alive = p.tick();
++            } catch (RuntimeException ex) {
++                alive = false;
++            }
++            if (!alive) {
++                p.remove();
++                it.remove();
++            }
++        }
++    }
++
++    List<Prop> live() {
++        return live;
++    }
++
++    void clear() {
++        for (Prop p : live) {
++            p.remove();
++        }
++        live.clear();
++    }
++
++    /* ================================================================== ring wave */
++
++    /**
++     * A low pressure wave rolling outward along the floor. Jump it (it is short) or stand outside
++     * its arc. The server knows exactly where the front is; the client sees one smooth push.
++     */
++    static final class RingWave implements Prop {
++        final Vector3f center;
++        final float aim;
++        final float halfArc;
++        final float r0;
++        final float r1;
++        final float height;
++        final int life;
++        final Set<UUID> hit = new HashSet<>();
++        double power;
++        float knock = 1.3f;
++        float lift = 0.45f;
++        private final List<BlockDisplay> segs = new ArrayList<>();
++        private int age;
++
++        boolean done() {
++            return age >= life;
++        }
++
++        RingWave(EggFx fx, Vector3f center, float aim, float halfArc, float r0, float r1, float height, int life,
++                 Material material, Color glow) {
++            this.center = new Vector3f(center.x, 0.02f, center.z);
++            this.aim = aim;
++            this.halfArc = halfArc;
++            this.r0 = r0;
++            this.r1 = r1;
++            this.height = height;
++            this.life = Math.max(4, life);
++            int n = Math.max(6, Math.round(28 * halfArc / EggMath.PI));
++            for (int i = 0; i < n; i++) {
++                BlockDisplay d = fx.block(material, glow, 15);
++                EggFx.push(d, seg(i, n, r0, height), 0);
++                segs.add(d);
++            }
++        }
++
++        private Matrix4f seg(int i, int n, float r, float h) {
++            float a = aim - halfArc + (i + 0.5f) * (2f * halfArc / n);
++            float chord = 2f * r * (float) Math.sin(halfArc / n) + 0.12f;
++            Vector3f c = new Vector3f(center.x + (float) Math.sin(a) * r, center.y + h * 0.5f, center.z + (float) Math.cos(a) * r);
++            return EggFx.box(c, Math.max(0.01f, chord), Math.max(0.01f, h), 0.22f, a + EggMath.HALF_PI);
++        }
++
++        float radiusNow() {
++            float t = EggMath.clamp01((age - 2) / (float) (life - 2));
++            return EggMath.lerp(r0, r1, t);
++        }
++
++        boolean active() {
++            return age >= 2 && age < life - 1;
++        }
++
++        /** Is a player whose feet are at {@code feet} (stage space) caught by the wave front now? */
++        boolean catches(Vector3f feet, float band) {
++            if (!active() || feet.y > height * 0.85f + 0.05f) {
++                return false;
++            }
++            float dx = feet.x - center.x;
++            float dz = feet.z - center.z;
++            float d = (float) Math.sqrt(dx * dx + dz * dz);
++            if (Math.abs(d - radiusNow()) > band) {
++                return false;
++            }
++            if (halfArc >= EggMath.PI - 0.01f) {
++                return true;
++            }
++            float a = (float) Math.atan2(dx, dz);
++            return Math.abs(EggMath.wrap(a - aim)) <= halfArc + 0.08f;
++        }
++
++        @Override
++        public boolean tick() {
++            age++;
++            if (age == 2) {
++                for (int i = 0; i < segs.size(); i++) {
++                    EggFx.push(segs.get(i), seg(i, segs.size(), r1, height * 0.9f), life - 2);
++                }
++            }
++            return age < life;
++        }
++
++        @Override
++        public void remove() {
++            for (BlockDisplay d : segs) {
++                EggFx.kill(d);
++            }
++        }
++    }
++
++    /* ================================================================== lane wall */
++
++    /** A standing wall of air sliding down a lane. Cannot be jumped; sidestep out of the lane. */
++    static final class LaneWall implements Prop {
++        final Vector3f start;
++        final Vector3f dir;
++        final float length;
++        final float width;
++        final int life;
++        final Set<UUID> hit = new HashSet<>();
++        double power;
++        private final BlockDisplay wall;
++        private final BlockDisplay core;
++        private int age;
++
++        LaneWall(EggFx fx, Vector3f start, Vector3f dir, float length, float width, int life, Color glow) {
++            this.start = new Vector3f(start.x, 0f, start.z);
++            this.dir = new Vector3f(dir.x, 0f, dir.z).normalize();
++            this.length = length;
++            this.width = width;
++            this.life = Math.max(4, life);
++            float yaw = (float) Math.atan2(this.dir.x, this.dir.z);
++            wall = fx.block(Material.WHITE_STAINED_GLASS, glow, 15);
++            core = fx.block(Material.LIGHT_GRAY_STAINED_GLASS, null, 15);
++            EggFx.push(wall, slab(0f, yaw, 1f), 0);
++            EggFx.push(core, slab(0f, yaw, 0.55f), 0);
++        }
++
++        private Matrix4f slab(float s, float yaw, float k) {
++            Vector3f c = new Vector3f(start).fma(s, dir).add(0f, 1.15f * k, 0f);
++            return EggFx.box(c, width * (0.9f + 0.1f * k), 2.3f * k, 0.35f + 0.25f * (1f - k), yaw);
++        }
++
++        boolean done() {
++            return age >= life;
++        }
++
++        float frontNow() {
++            return length * EggMath.clamp01((age - 2) / (float) (life - 2));
++        }
++
++        boolean active() {
++            return age >= 2 && age < life;
++        }
++
++        boolean catches(Vector3f feet) {
++            if (!active() || feet.y > 3.2f) {
++                return false;
++            }
++            Vector3f rel = new Vector3f(feet.x - start.x, 0f, feet.z - start.z);
++            float along = rel.dot(dir);
++            float across = Math.abs(rel.x * dir.z - rel.z * dir.x);
++            float s = frontNow();
++            return across <= width * 0.5f + 0.3f && along >= s - 1.2f && along <= s + 0.7f;
++        }
++
++        @Override
++        public boolean tick() {
++            age++;
++            float yaw = (float) Math.atan2(dir.x, dir.z);
++            if (age == 2) {
++                EggFx.push(wall, slab(length, yaw, 0.75f), life - 2);
++                EggFx.push(core, slab(length, yaw, 0.45f), life - 2);
++            }
++            return age < life;
++        }
++
++        @Override
++        public void remove() {
++            EggFx.kill(wall);
++            EggFx.kill(core);
++        }
++    }
++
++    /* ================================================================== floor telegraphs */
++
++    /** A flat floor stripe (lane telegraph). Grows in, holds, snaps off. */
++    static final class Stripe implements Prop {
++        private final BlockDisplay d;
++        private final Matrix4f full;
++        private final int life;
++        private int age;
++
++        Stripe(EggFx fx, Vector3f a, Vector3f b, float width, Material material, Color glow, int life) {
++            this.life = life;
++            Vector3f mid = new Vector3f(a).add(b).mul(0.5f);
++            mid.y = 0.03f;
++            float len = EggMath.horizontal(a, b);
++            float yaw = (float) Math.atan2(b.x - a.x, b.z - a.z);
++            full = EggFx.box(mid, width, 0.04f, len, yaw);
++            d = fx.block(material, glow, 15);
++            EggFx.push(d, EggFx.box(new Vector3f(a.x, 0.03f, a.z), width * 0.2f, 0.04f, 0.1f, yaw), 0);
++        }
++
++        @Override
++        public boolean tick() {
++            age++;
++            if (age == 2) {
++                EggFx.push(d, full, 3);
++            }
++            return age < life;
++        }
++
++        @Override
++        public void remove() {
++            EggFx.kill(d);
++        }
++    }
++
++    /** A ring outline on the floor (sub zone, tweeter target). Optional slow shrink = timer. */
++    static final class FloorRing implements Prop {
++        private final List<BlockDisplay> segs = new ArrayList<>();
++        private final Vector3f center;
++        private final float r;
++        private final float rEnd;
++        private final int life;
++        private int age;
++
++        FloorRing(EggFx fx, Vector3f center, float r, float rEnd, Material material, Color glow, int life) {
++            this.center = new Vector3f(center.x, 0.04f, center.z);
++            this.r = r;
++            this.rEnd = rEnd;
++            this.life = life;
++            int n = Math.max(10, Math.round(r * 5));
++            for (int i = 0; i < n; i++) {
++                BlockDisplay d = fx.block(material, glow, 15);
++                EggFx.push(d, seg(i, n, r), 0);
++                segs.add(d);
++            }
++        }
++
++        private Matrix4f seg(int i, int n, float rad) {
++            float a = (i + 0.5f) * EggMath.TAU / n;
++            float chord = 2f * rad * (float) Math.sin(Math.PI / n) + 0.05f;
++            Vector3f c = new Vector3f(center.x + (float) Math.sin(a) * rad, center.y, center.z + (float) Math.cos(a) * rad);
++            return EggFx.box(c, chord, 0.05f, 0.22f, a + EggMath.HALF_PI);
++        }
++
++        @Override
++        public boolean tick() {
++            age++;
++            if (age == 2 && Math.abs(rEnd - r) > 0.01f) {
++                for (int i = 0; i < segs.size(); i++) {
++                    EggFx.push(segs.get(i), seg(i, segs.size(), rEnd), Math.max(1, life - 2));
++                }
++            }
++            return age < life;
++        }
++
++        @Override
++        public void remove() {
++            for (BlockDisplay d : segs) {
++                EggFx.kill(d);
++            }
++        }
++    }
++
++    /* ================================================================== launch column */
++
++    static final class Column implements Prop {
++        private final BlockDisplay d;
++        private final Vector3f base;
++        private final float width;
++        private int age;
++
++        Column(EggFx fx, Vector3f base, float width) {
++            this.base = new Vector3f(base.x, 0.1f, base.z);
++            this.width = width;
++            d = fx.block(Material.WHITE_STAINED_GLASS, Color.fromRGB(200, 230, 255), 15);
++            EggFx.push(d, EggFx.box(new Vector3f(this.base).add(0f, 0.1f, 0f), width, 0.2f, width, 0f), 0);
++        }
++
++        @Override
++        public boolean tick() {
++            age++;
++            if (age == 2) {
++                EggFx.push(d, EggFx.box(new Vector3f(base).add(0f, 4.5f, 0f), width * 0.85f, 9f, width * 0.85f, 0.4f), 4);
++            } else if (age == 7) {
++                EggFx.push(d, EggFx.box(new Vector3f(base).add(0f, 9f, 0f), width * 0.05f, 6f, width * 0.05f, 0.8f), 6);
++            }
++            return age < 13;
++        }
++
++        @Override
++        public void remove() {
++            EggFx.kill(d);
++        }
++    }
++
++    /* ================================================================== flying things */
++
++    /** A small glowing body flying a parabola from a to b. Fires {@code onLand} at arrival. */
++    static final class Ball implements Prop {
++        private final BlockDisplay d;
++        private final Vector3f a;
++        private final Vector3f b;
++        private final float apex;
++        private final int flight;
++        private final float size;
++        private final Runnable onLand;
++        private int age;
++
++        Ball(EggFx fx, Vector3f a, Vector3f b, float apex, int flight, float size, Material m, Color glow, Runnable onLand) {
++            this.a = new Vector3f(a);
++            this.b = new Vector3f(b);
++            this.apex = apex;
++            this.flight = Math.max(2, flight);
++            this.size = size;
++            this.onLand = onLand;
++            d = fx.block(m, glow, 15);
++            EggFx.push(d, at(0f), 0);
++        }
++
++        private Matrix4f at(float t) {
++            Vector3f p = EggMath.lerpVec(a, b, t);
++            p.y += EggMath.arc(t) * apex;
++            return new Matrix4f().translation(p).rotateY(t * 9f).rotateX(t * 7f).scale(size).translate(-0.5f, -0.5f, -0.5f);
++        }
++
++        @Override
++        public boolean tick() {
++            age++;
++            float t = EggMath.clamp01(age / (float) flight);
++            EggFx.push(d, at(t), 1);
++            if (age >= flight) {
++                if (onLand != null) {
++                    onLand.run();
++                }
++                return false;
++            }
++            return true;
++        }
++
++        @Override
++        public void remove() {
++            EggFx.kill(d);
++        }
++    }
++
++    /** The signal: a bright packet running down a cable in one smooth interpolation. */
++    static final class Packet implements Prop {
++        private final BlockDisplay d;
++        private final BlockDisplay halo;
++        private final Vector3f b;
++        private final int hop;
++        private final Runnable onArrive;
++        private int age;
++
++        Packet(EggFx fx, Vector3f a, Vector3f b, int hop, Color color, Runnable onArrive) {
++            this.b = new Vector3f(b).add(0f, 0.25f, 0f);
++            this.hop = Math.max(2, hop);
++            this.onArrive = onArrive;
++            Vector3f s = new Vector3f(a).add(0f, 0.25f, 0f);
++            d = fx.block(Material.WHITE_CONCRETE, color, 15);
++            halo = fx.block(Material.WHITE_STAINED_GLASS, color, 15);
++            EggFx.push(d, EggFx.box(s, 0.38f, 0.38f, 0.38f, 0f), 0);
++            EggFx.push(halo, EggFx.box(s, 0.7f, 0.7f, 0.7f, 0.7f), 0);
++        }
++
++        @Override
++        public boolean tick() {
++            age++;
++            if (age == 2) {
++                EggFx.push(d, EggFx.box(b, 0.38f, 0.38f, 0.38f, 3f), hop - 2);
++                EggFx.push(halo, EggFx.box(b, 0.7f, 0.7f, 0.7f, 3.7f), hop - 2);
++            }
++            if (age >= hop) {
++                if (onArrive != null) {
++                    onArrive.run();
++                }
++                return false;
++            }
++            return true;
++        }
++
++        @Override
++        public void remove() {
++            EggFx.kill(d);
++            EggFx.kill(halo);
++        }
++    }
++
++    /**
++     * The lid of the egg pops off (Distortion) and clatters onto the floor, where it stays for the
++     * rest of the fight. Pieces fly as one rigid body: same flight transform for every piece.
++     */
++    static final class Lid implements Prop {
++        private final List<BlockDisplay> pieces = new ArrayList<>();
++        private final List<Matrix4f> start = new ArrayList<>();
++        private final Vector3f from;
++        private final Vector3f to;
++        private final int flight = 16;
++        private int age;
++        private final EggFx fx;
++
++        Lid(EggFx fx, List<Matrix4f> matrices, List<Material> materials, Vector3f from, Vector3f to) {
++            this.fx = fx;
++            this.from = new Vector3f(from);
++            this.to = new Vector3f(to);
++            for (int i = 0; i < matrices.size(); i++) {
++                BlockDisplay d = fx.block(materials.get(i), null, 12);
++                EggFx.push(d, matrices.get(i), 0);
++                pieces.add(d);
++                start.add(new Matrix4f(matrices.get(i)));
++            }
++        }
++
++        private Matrix4f flightAt(float t) {
++            // Rigid transform: move the pivot along the arc, tumble it, then land upside down.
++            Vector3f p = EggMath.lerpVec(from, to, t);
++            p.y = EggMath.lerp(from.y, to.y, t) + EggMath.arc(t) * 5f;
++            float spin = EggMath.outCubic(t) * EggMath.PI * 1.0f;
++            return new Matrix4f().translation(p).rotateX(spin).rotateZ(spin * 0.4f).translate(-from.x, -from.y, -from.z);
++        }
++
++        @Override
++        public boolean tick() {
++            age++;
++            if (age <= flight) {
++                float t = age / (float) flight;
++                Matrix4f f = flightAt(t);
++                for (int i = 0; i < pieces.size(); i++) {
++                    EggFx.push(pieces.get(i), new Matrix4f(f).mul(start.get(i)), 1);
++                }
++                if (age == flight) {
++                    fx.sound(to, org.bukkit.Sound.BLOCK_DECORATED_POT_BREAK, 1.6f, 0.6f);
++                    fx.sound(to, org.bukkit.Sound.ITEM_SHIELD_BLOCK, 1.2f, 0.5f);
++                    fx.particle(org.bukkit.Particle.CLOUD, to, 10, 0.6, 0.05);
++                }
++            }
++            return true;
++        }
++
++        @Override
++        public void remove() {
++            for (Display d : pieces) {
++                EggFx.kill(d);
++            }
++        }
++    }
++}
+diff --git a/BossEngine/src/main/java/de/aetherion/bossengine/instance/eggquelizer/EggSpeaker.java b/BossEngine/src/main/java/de/aetherion/bossengine/instance/eggquelizer/EggSpeaker.java
+new file mode 100644
+index 0000000..a677a07
+--- /dev/null
++++ b/BossEngine/src/main/java/de/aetherion/bossengine/instance/eggquelizer/EggSpeaker.java
+@@ -0,0 +1,532 @@
++package de.aetherion.bossengine.instance.eggquelizer;
++
++import org.bukkit.Color;
++import org.bukkit.Material;
++import org.bukkit.Particle;
++import org.bukkit.Sound;
++import org.bukkit.block.data.BlockData;
++import org.bukkit.entity.BlockDisplay;
++import org.joml.Matrix4f;
++import org.joml.Vector3f;
++
++import java.util.ArrayList;
++import java.util.List;
++
++/**
++ * One arena speaker: a display rig plus a strict, readable state machine.
++ *
++ * <pre>
++ * IDLE ─arm()→ CHARGING ─→ PRIMED ─→ FIRING ─→ COOLDOWN ─→ IDLE
++ *        hum, amber lamp,   red lamp, cone      white flash,   sag, dim, crackle
++ *        cone shakes back   dead still (tell)   cone punches
++ * </pre>
++ *
++ * The lamp never lies. The egg may lean the wrong way; the lamps are always honest.
++ */
++final class EggSpeaker {
++
++    enum Kind { WALL, SUB, TWEETER }
++
++    enum State { IDLE, CHARGING, PRIMED, FIRING, COOLDOWN, DEAD }
++
++    /** What happens when this speaker locks in and when it fires. Supplied by the director. */
++    interface Payload {
++        default void primed(EggSpeaker s) {
++        }
++
++        void fire(EggSpeaker s);
++    }
++
++    static final Color AMBER = Color.fromRGB(255, 176, 32);
++    static final Color RED = Color.fromRGB(255, 40, 40);
++    static final Color WHITE = Color.fromRGB(255, 255, 255);
++    static final Color VIOLET = Color.fromRGB(176, 64, 255);
++
++    private static final int FIRE_TICKS = 4;
++    private static final int COOL_TICKS = 22;
++
++    final Kind kind;
++    /** Position in the feedback loop (cable order). */
++    final int loop;
++    /** Mount point in stage space (base of the speaker on its surface). */
++    final Vector3f base;
++    final float yaw;
++    final float pitch;
++    /** Where cables plug in (floor level). */
++    final Vector3f port;
++
++    private final List<Part> parts = new ArrayList<>();
++    private Part lamp;
++    private Part fill;
++    private final List<Part> nubs = new ArrayList<>();
++    private EggFx fx;
++
++    State state = State.IDLE;
++    private int stateTick;
++    private int chargeTicks;
++    private int primeTicks;
++    private Payload payload;
++    /** Lamp idle tint once the egg has cracked. */
++    boolean distorted;
++
++    private float breath;
++    private float breathVel;
++    private float tilt;
++    private float tiltVel;
++    private boolean dirty = true;
++
++    private static final class Part {
++        final Matrix4f local;
++        final int role;
++        BlockDisplay d;
++        final Material material;
++
++        Part(Matrix4f local, int role, Material material) {
++            this.local = local;
++            this.role = role;
++            this.material = material;
++        }
++    }
++
++    private static final int CAB = 0;
++    private static final int CONE = 1;
++    private static final int LAMP = 2;
++    private static final int FILL = 3;
++    private static final int NUB = 4;
++
++    EggSpeaker(Kind kind, int loop, Vector3f base, float yaw, float pitch, Vector3f port) {
++        this.kind = kind;
++        this.loop = loop;
++        this.base = base;
++        this.yaw = yaw;
++        this.pitch = pitch;
++        this.port = port;
++        switch (kind) {
++            case WALL -> buildWall();
++            case SUB -> buildSub();
++            case TWEETER -> buildTweeter();
++        }
++    }
++
++    /* ================================================================== geometry */
++
++    private void add(int role, Material m, float cx, float cy, float cz, float sx, float sy, float sz, float rotZ, float rotY) {
++        Matrix4f local = new Matrix4f().translation(cx, cy, cz).rotateY(rotY).rotateZ(rotZ).scale(sx, sy, sz).translate(-0.5f, -0.5f, -0.5f);
++        Part p = new Part(local, role, m);
++        parts.add(p);
++        if (role == LAMP) {
++            lamp = p;
++        } else if (role == FILL) {
++            fill = p;
++        } else if (role == NUB) {
++            nubs.add(p);
++        }
++    }
++
++    /** A round-ish disc facing +Z: two squares crossed at 45 degrees. */
++    private void disc(int role, Material m, float cx, float cy, float cz, float size, float depth) {
++        add(role, m, cx, cy, cz, size, size, depth, 0f, 0f);
++        add(role, m, cx, cy, cz, size * 0.92f, size * 0.92f, depth, EggMath.PI / 4f, 0f);
++    }
++
++    /** A round-ish disc facing +Y. */
++    private void floorDisc(int role, Material m, float cy, float size, float depth) {
++        add(role, m, 0f, cy, 0f, size, depth, size, 0f, 0f);
++        add(role, m, 0f, cy, 0f, size * 0.92f, depth, size * 0.92f, 0f, EggMath.PI / 4f);
++    }
++
++    private void buildWall() {
++        float w = 2.3f;
++        float h = 3.4f;
++        float d = 1.3f;
++        float front = d / 2f;
++        add(CAB, Material.BLACK_CONCRETE, 0f, h / 2f, 0f, w, h, d, 0f, 0f);
++        add(CAB, Material.POLISHED_BLACKSTONE, 0f, 0.08f, 0f, w + 0.15f, 0.16f, d + 0.15f, 0f, 0f);
++        add(CAB, Material.POLISHED_BLACKSTONE, 0f, h - 0.06f, 0f, w + 0.1f, 0.12f, d + 0.1f, 0f, 0f);
++        // Woofer: surround, cone, dust cap.
++        disc(CAB, Material.GRAY_CONCRETE, 0f, 1.25f, front + 0.03f, 1.85f, 0.08f);
++        disc(CONE, Material.COAL_BLOCK, 0f, 1.25f, front + 0.06f, 1.4f, 0.1f);
++        add(CONE, Material.IRON_BLOCK, 0f, 1.25f, front + 0.12f, 0.46f, 0.46f, 0.12f, 0f, 0f);
++        // Tweeter.
++        disc(CAB, Material.GRAY_CONCRETE, 0f, 2.75f, front + 0.03f, 0.62f, 0.06f);
++        add(CAB, Material.IRON_BLOCK, 0f, 2.75f, front + 0.06f, 0.2f, 0.2f, 0.06f, 0f, 0f);
++        // Status strip (the charge fill grows across it) and the crown lamp.
++        add(CAB, Material.BLACK_STAINED_GLASS, 0f, 2.28f, front + 0.04f, 1.7f, 0.16f, 0.05f, 0f, 0f);
++        add(FILL, Material.YELLOW_CONCRETE, 0f, 2.28f, front + 0.06f, 1.6f, 0.12f, 0.05f, 0f, 0f);
++        add(LAMP, Material.GRAY_CONCRETE, 0f, h + 0.17f, 0f, 1.0f, 0.34f, 0.9f, 0f, 0f);
++    }
++
++    private void buildSub() {
++        add(CAB, Material.POLISHED_BLACKSTONE, 0f, 0.05f, 0f, 3.0f, 0.1f, 3.0f, 0f, 0f);
++        floorDisc(CAB, Material.GRAY_CONCRETE, 0.1f, 2.45f, 0.06f);
++        floorDisc(CONE, Material.COAL_BLOCK, 0.13f, 1.95f, 0.08f);
++        add(CONE, Material.IRON_BLOCK, 0f, 0.17f, 0f, 0.62f, 0.1f, 0.62f, 0f, 0f);
++        for (int sx = -1; sx <= 1; sx += 2) {
++            for (int sz = -1; sz <= 1; sz += 2) {
++                add(NUB, Material.GRAY_CONCRETE, sx * 1.3f, 0.16f, sz * 1.3f, 0.3f, 0.14f, 0.3f, 0f, 0f);
++            }
++        }
++    }
++
++    private void buildTweeter() {
++        float w = 1.6f;
++        float h = 1.6f;
++        float d = 1.2f;
++        float front = d / 2f;
++        add(CAB, Material.BLACK_CONCRETE, 0f, h / 2f, 0f, w, h, d, 0f, 0f);
++        // A horn: stepped flare.
++        add(CAB, Material.GRAY_CONCRETE, 0f, 0.8f, front + 0.05f, 1.3f, 1.0f, 0.1f, 0f, 0f);
++        add(CAB, Material.BLACK_CONCRETE, 0f, 0.8f, front + 0.08f, 1.0f, 0.72f, 0.1f, 0f, 0f);
++        add(CONE, Material.IRON_BLOCK, 0f, 0.8f, front + 0.12f, 0.42f, 0.3f, 0.1f, 0f, 0f);
++        add(FILL, Material.YELLOW_CONCRETE, 0f, 1.42f, front + 0.04f, 1.2f, 0.1f, 0.05f, 0f, 0f);
++        add(LAMP, Material.GRAY_CONCRETE, 0f, h + 0.16f, 0f, 0.8f, 0.32f, 0.8f, 0f, 0f);
++    }
++
++    /* ================================================================== lifecycle */
++
++    void spawn(EggFx fx) {
++        this.fx = fx;
++        for (Part p : parts) {
++            p.d = fx.block(p.material, null, p.role == CAB || p.role == CONE ? 11 : 6);
++        }
++        dirty = true;
++        applyLamp(true);
++        render(0);
++    }
++
++    boolean intact() {
++        for (Part p : parts) {
++            if (p.d == null || !p.d.isValid()) {
++                return false;
++            }
++        }
++        return true;
++    }
++
++    void remove() {
++        for (Part p : parts) {
++            EggFx.kill(p.d);
++            p.d = null;
++        }
++    }
++
++    /* ================================================================== control */
++
++    boolean free() {
++        return state == State.IDLE;
++    }
++
++    boolean busy() {
++        return state == State.CHARGING || state == State.PRIMED || state == State.FIRING;
++    }
++
++    /** Start the readable charge. Ignored unless idle or cooling (cooldown is cut short). */
++    boolean arm(int charge, int prime, Payload payload) {
++        if (state == State.DEAD || busy()) {
++            return false;
++        }
++        this.chargeTicks = Math.max(1, charge);
++        this.primeTicks = Math.max(1, prime);
++        this.payload = payload;
++        enter(State.CHARGING);
++        // Armed before this tick's speaker update: that update is charge tick 0, so the fire
++        // lands exactly charge + prime ticks after arming (on the beat the director asked for).
++        stateTick = -1;
++        fx.sound(cone(), Sound.BLOCK_LEVER_CLICK, 0.9f, 0.55f);
++        fx.sound(cone(), Sound.BLOCK_BEACON_ACTIVATE, 0.35f, 1.6f);
++        return true;
++    }
++
++    /** Charging, then hold primed until {@link #release()} (setpieces that fire on a cue). */
++    boolean armHold(int charge, Payload payload) {
++        boolean ok = arm(charge, 100000, payload);
++        return ok;
++    }
++
++    /** Fire a speaker that is primed and holding. */
++    void release() {
++        if (state == State.PRIMED || state == State.CHARGING) {
++            fire();
++        }
++    }
++
++    void cancel() {
++        if (state == State.CHARGING || state == State.PRIMED) {
++            payload = null;
++            enter(State.COOLDOWN);
++        }
++    }
++
++    /** Beat pulse while idle: the whole network breathes with the kick. */
++    void kick(float amount) {
++        if (state == State.IDLE || state == State.COOLDOWN) {
++            breathVel += amount;
++            dirty = true;
++        }
++    }
++
++    /** Death sequence: the speaker dies and stays dead. */
++    void die() {
++        if (state == State.DEAD) {
++            return;
++        }
++        payload = null;
++        enter(State.DEAD);
++        fx.clean(cone(), Sound.BLOCK_BEACON_DEACTIVATE, 0.9f, 0.7f + loop * 0.04f);
++        fx.clean(cone(), Sound.BLOCK_FIRE_EXTINGUISH, 0.5f, 1.4f);
++        fx.particle(Particle.SMOKE, cone(), 8, 0.3, 0.02);
++        tiltVel += 0.06f;
++    }
++
++    /** Wake a dead speaker (repair after a chunk reload never needs this; the death is final). */
++    void wakeFlash() {
++        if (state == State.DEAD) {
++            return;
++        }
++        breathVel += 0.12f;
++        dirty = true;
++        if (lamp != null && lamp.d != null && lamp.d.isValid()) {
++            lamp.d.setBlock(Material.WHITE_CONCRETE.createBlockData());
++            EggFx.glow(lamp.d, WHITE);
++            EggFx.light(lamp.d, 15);
++        }
++        stateTick = -6;
++    }
++
++    float progress() {
++        return state == State.CHARGING ? EggMath.clamp01(stateTick / (float) chargeTicks) : state == State.PRIMED || state == State.FIRING ? 1f : 0f;
++    }
++
++    /* ================================================================== tick */
++
++    void tick() {
++        stateTick++;
++        switch (state) {
++            case CHARGING -> {
++                float p = progress();
++                if (stateTick % 5 == 0) {
++                    fx.sound(cone(), Sound.BLOCK_NOTE_BLOCK_BASS, 0.45f + 0.5f * p, 0.5f + 0.5f * p);
++                }
++                if (p >= 0.5f && stateTick == chargeTicks / 2) {
++                    applyLamp(true);
++                }
++                dirty = true;
++                if (stateTick >= chargeTicks) {
++                    enter(State.PRIMED);
++                    fx.sound(cone(), Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 1f, 0.6f);
++                    fx.particle(Particle.CLOUD, cone(), 6, 0.25, 0.02);
++                    if (payload != null) {
++                        payload.primed(this);
++                    }
++                }
++            }
++            case PRIMED -> {
++                if (stateTick >= primeTicks) {
++                    fire();
++                }
++            }
++            case FIRING -> {
++                if (stateTick >= FIRE_TICKS) {
++                    enter(State.COOLDOWN);
++                    fx.sound(cone(), Sound.BLOCK_FIRE_EXTINGUISH, 0.35f, 1.7f);
++                    fx.particle(Particle.SMOKE, cone(), 4, 0.25, 0.01);
++                }
++            }
++            case COOLDOWN -> {
++                if (stateTick % 7 == 3) {
++                    fx.particle(Particle.ELECTRIC_SPARK, cone(), 2, 0.3, 0.05);
++                }
++                if (stateTick == 8) {
++                    applyLamp(true);
++                }
++                if (stateTick >= COOL_TICKS) {
++                    enter(State.IDLE);
++                }
++            }
++            case IDLE -> {
++                if (stateTick == 0) {
++                    applyLamp(true);
++                }
++            }
++            default -> {
++            }
++        }
++        // Springs.
++        float breathTarget = switch (state) {
++            case CHARGING -> -0.2f * progress();
++            case PRIMED -> -0.24f;
++            case COOLDOWN, DEAD -> -0.06f;
++            default -> 0f;
++        };
++        float tiltTarget = switch (state) {
++            case COOLDOWN -> 0.05f;
++            case DEAD -> 0.16f;
++            default -> 0f;
++        };
++        float lastB = breath;
++        float lastT = tilt;
++        if (state == State.PRIMED) {
++            // Dead still is the tell.
++            breath = breathTarget;
++            breathVel = 0f;
++        } else {
++            breathVel += (breathTarget - breath) * 0.35f;
++            breathVel *= 0.55f;
++            breath += breathVel;
++        }
++        tiltVel += (tiltTarget - tilt) * 0.2f;
++        tiltVel *= 0.7f;
++        tilt += tiltVel;
++        if (Math.abs(breath - lastB) > 1e-3f || Math.abs(tilt - lastT) > 1e-3f) {
++            dirty = true;
++        }
++        if (dirty) {
++            render(state == State.CHARGING ? 1 : 2);
++        }
++    }
++
++    private void fire() {
++        Payload p = payload;
++        payload = null;
++        enter(State.FIRING);
++        breath = 0.38f;
++        breathVel = 0f;
++        tiltVel -= 0.12f;
++        fx.sound(cone(), Sound.BLOCK_NOTE_BLOCK_BASS, 1.6f, 0.5f);
++        if (p != null) {
++            p.fire(this);
++        }
++    }
++
++    private void enter(State s) {
++        state = s;
++        stateTick = 0;
++        applyLamp(false);
++        dirty = true;
++    }
++
++    private void applyLamp(boolean refresh) {
++        Material lampMat;
++        Color glow;
++        int light;
++        switch (state) {
++            case CHARGING -> {
++                boolean hot = progress() >= 0.5f;
++                lampMat = hot ? Material.ORANGE_CONCRETE : Material.YELLOW_CONCRETE;
++                glow = AMBER;
++                light = 12;
++            }
++            case PRIMED -> {
++                lampMat = Material.RED_CONCRETE;
++                glow = RED;
++                light = 15;
++            }
++            case FIRING -> {
++                lampMat = Material.WHITE_CONCRETE;
++                glow = WHITE;
++                light = 15;
++            }
++            case COOLDOWN -> {
++                lampMat = stateTick < 8 ? Material.LIGHT_BLUE_CONCRETE : Material.BLUE_CONCRETE;
++                glow = null;
++                light = 5;
++            }
++            case DEAD -> {
++                lampMat = Material.BLACK_CONCRETE;
++                glow = null;
++                light = 0;
++            }
++            default -> {
++                lampMat = distorted ? Material.PURPLE_CONCRETE : Material.GRAY_CONCRETE;
++                glow = null;
++                light = distorted ? 9 : 4;
++            }
++        }
++        BlockData data = lampMat.createBlockData();
++        // The whole cabinet outlines red when it is locked in: readable across the arena, through anything.
++        Part shell = parts.isEmpty() ? null : parts.get(0);
++        if (shell != null && shell.d != null && shell.d.isValid()) {
++            EggFx.glow(shell.d, state == State.PRIMED ? RED : state == State.FIRING ? WHITE : null);
++        }
++        for (Part p : parts) {
++            if (p.d == null || !p.d.isValid()) {
++                continue;
++            }
++            if (p.role == LAMP || p.role == NUB) {
++                p.d.setBlock(data);
++                EggFx.glow(p.d, glow);
++                EggFx.light(p.d, light);
++            } else if (p.role == FILL) {
++                Material fm = state == State.PRIMED || state == State.FIRING ? Material.RED_CONCRETE
++                        : state == State.CHARGING && progress() >= 0.5f ? Material.ORANGE_CONCRETE : Material.YELLOW_CONCRETE;
++                p.d.setBlock(fm.createBlockData());
++                EggFx.light(p.d, state == State.IDLE || state == State.DEAD ? 2 : 15);
++            }
++        }
++    }
++
++    /* ================================================================== render */
++
++    Matrix4f mount() {
++        return new Matrix4f().translation(base).rotateY(yaw).rotateX(pitch);
++    }
++
++    /** World (stage) point at the cone face. */
++    Vector3f cone() {
++        Vector3f local = switch (kind) {
++            case WALL -> new Vector3f(0f, 1.25f, 0.9f);
++            case SUB -> new Vector3f(0f, 0.3f, 0f);
++            case TWEETER -> new Vector3f(0f, 0.8f, 0.8f);
++        };
++        return mount().transformPosition(local);
++    }
++
++    /** Unit direction the cone points (stage space). */
++    Vector3f facing() {
++        if (kind == Kind.SUB) {
++            return new Vector3f(0f, 1f, 0f);
++        }
++        return mount().transformDirection(new Vector3f(0f, 0f, 1f)).normalize();
++    }
++
++    private void render(int interp) {
++        dirty = false;
++        if (fx == null) {
++            return;
++        }
++        float jitter = state == State.CHARGING ? 0.012f + 0.045f * progress() : 0f;
++        Matrix4f m = mount();
++        // Cabinet tilt pivots on the front-bottom edge (recoil back, sag forward).
++        Matrix4f cab = new Matrix4f(m);
++        if (kind != Kind.SUB) {
++            cab.translate(0f, 0f, 0.6f).rotateX(tilt).translate(0f, 0f, -0.6f);
++        }
++        float fillW = state == State.IDLE || state == State.DEAD || state == State.COOLDOWN ? 0.001f
++                : state == State.CHARGING ? Math.max(0.001f, progress()) : 1f;
++        for (Part p : parts) {
++            if (p.d == null) {
++                continue;
++            }
++            Matrix4f out = new Matrix4f(cab);
++            if (p.role == CONE) {
++                float jx = jitter > 0f ? (EggMath.rnd() * 2f - 1f) * jitter : 0f;
++                float jy = jitter > 0f ? (EggMath.rnd() * 2f - 1f) * jitter : 0f;
++                if (kind == Kind.SUB) {
++                    out.translate(jx, breath * 0.6f, jy);
++                } else {
++                    out.translate(jx, jy, breath);
++                }
++            }
++            if (p.role == FILL) {
++                // Grow from the left edge.
++                Matrix4f l = new Matrix4f(p.local);
++                float shift = -(1f - fillW) * 0.5f;
++                out.translate(shift * (kind == Kind.WALL ? 1.6f : 1.2f), 0f, 0f).scale(fillW, 1f, 1f);
++                out.mul(l);
++            } else {
++                out.mul(p.local);
++            }
++            EggFx.push(p.d, out, interp);
++        }
++    }
++}
+diff --git a/BossEngine/src/main/java/de/aetherion/bossengine/instance/eggquelizer/EggStage.java b/BossEngine/src/main/java/de/aetherion/bossengine/instance/eggquelizer/EggStage.java
+new file mode 100644
+index 0000000..6ab51e2
+--- /dev/null
++++ b/BossEngine/src/main/java/de/aetherion/bossengine/instance/eggquelizer/EggStage.java
+@@ -0,0 +1,467 @@
++package de.aetherion.bossengine.instance.eggquelizer;
++
++import org.bukkit.Bukkit;
++import org.bukkit.Chunk;
++import org.bukkit.Color;
++import org.bukkit.Location;
++import org.bukkit.Material;
++import org.bukkit.NamespacedKey;
++import org.bukkit.Particle;
++import org.bukkit.Sound;
++import org.bukkit.SoundCategory;
++import org.bukkit.World;
++import org.bukkit.block.Block;
++import org.bukkit.entity.BlockDisplay;
++import org.bukkit.entity.Player;
++import org.bukkit.persistence.PersistentDataType;
++import org.bukkit.plugin.Plugin;
++import org.bukkit.potion.PotionEffect;
++import org.bukkit.potion.PotionEffectType;
++import org.joml.Vector3f;
++
++import java.util.ArrayList;
++import java.util.Comparator;
++import java.util.List;
++
++/**
++ * The EggStage: a floating round concert floor with a speaker network around it.
++ *
++ * <ul>
++ *   <li>Floor (r 19): dark concrete with distance rings every five blocks and a lane guide under
++ *       every wall speaker, so the shape of every attack is printed on the floor before it happens.
++ *       A fried-egg center pad, because of course.</li>
++ *   <li>8 WALL stacks at r 17 (lane blasts), 4 TWEETER towers at r 16 (treble drops),
++ *       4 floor SUBS at r 9 (vertical launch). 16 installations, one cable loop between them.</li>
++ * </ul>
++ *
++ * <p>Safety (SaintStage pattern): only ever places into air, records every block it placed and
++ * strikes exactly those. A chunk marker lets a crashed fight's leftovers be struck by layout.
++ */
++final class EggStage {
++
++    static final int FLOOR_R = 19;
++    static final float WALL_R = 17f;
++    static final float TOWER_R = 16f;
++    static final float SUB_R = 9f;
++    static final int TOWER_H = 7;
++    static final float PLAY_R = 15.5f;
++
++    private static final String MARKER = "egg_stage";
++
++    record Cell(int x, int y, int z, Material m, float order) {
++    }
++
++    private final Location center;
++    private final World world;
++    private final List<Cell> layout;
++    private final List<Block> placed = new ArrayList<>();
++    private final List<Material> placedAs = new ArrayList<>();
++    private int raiseCursor;
++    private boolean built;
++
++    final List<EggSpeaker> speakers = new ArrayList<>();
++    final List<EggSpeaker> walls = new ArrayList<>();
++    final List<EggSpeaker> subs = new ArrayList<>();
++    final List<EggSpeaker> tweeters = new ArrayList<>();
++    /** Cable i runs from loop node i to loop node i+1. */
++    private final List<BlockDisplay> cables = new ArrayList<>();
++    private final List<BlockDisplay> risers = new ArrayList<>();
++    private EggFx fx;
++
++    private EggStage(Location center) {
++        this.center = center;
++        this.world = center.getWorld();
++        this.layout = layout();
++        planNetwork();
++    }
++
++    /* ================================================================== claim */
++
++    /** Strike any crashed leftover here, then plan a fresh stage at the first clear height. */
++    static EggStage claim(Plugin plugin, Location spawn) {
++        Location leftover = readMarker(plugin, spawn);
++        if (leftover != null) {
++            new EggStage(leftover).strikeByLayout();
++            clearMarker(plugin, spawn);
++        }
++        Location c = snap(spawn);
++        int top = c.getWorld().getMaxHeight() - 16;
++        Location pick = c.clone().add(0, 4, 0);
++        for (int lift = 0; lift <= 90 && c.getBlockY() + lift < top; lift += 3) {
++            Location probe = c.clone().add(0, lift, 0);
++            if (clearance(probe) >= 0.94) {
++                pick = probe;
++                break;
++            }
++        }
++        EggStage stage = new EggStage(pick);
++        stage.writeMarker(plugin);
++        return stage;
++    }
++
++    private static double clearance(Location c) {
++        World w = c.getWorld();
++        int total = 0;
++        int air = 0;
++        int r = FLOOR_R + 1;
++        for (int x = -r; x <= r; x += 2) {
++            for (int z = -r; z <= r; z += 2) {
++                if (x * x + z * z > r * r) {
++                    continue;
++                }
++                for (int y = -5; y <= 9; y += 2) {
++                    total++;
++                    if (w.getBlockAt(c.getBlockX() + x, c.getBlockY() + y, c.getBlockZ() + z).getType().isAir()) {
++                        air++;
++                    }
++                }
++            }
++        }
++        return total == 0 ? 0 : air / (double) total;
++    }
++
++    private static Location snap(Location at) {
++        return new Location(at.getWorld(), at.getBlockX() + 0.5, at.getBlockY(), at.getBlockZ() + 0.5);
++    }
++
++    private void writeMarker(Plugin plugin) {
++        Chunk chunk = center.getChunk();
++        chunk.getPersistentDataContainer().set(new NamespacedKey(plugin, MARKER), PersistentDataType.STRING,
++                center.getBlockX() + "," + center.getBlockY() + "," + center.getBlockZ());
++    }
++
++    private static void clearMarker(Plugin plugin, Location at) {
++        at.getChunk().getPersistentDataContainer().remove(new NamespacedKey(plugin, MARKER));
++    }
++
++    private static Location readMarker(Plugin plugin, Location at) {
++        String raw = at.getChunk().getPersistentDataContainer().get(new NamespacedKey(plugin, MARKER), PersistentDataType.STRING);
++        if (raw == null) {
++            return null;
++        }
++        try {
++            String[] p = raw.split(",");
++            return new Location(at.getWorld(), Integer.parseInt(p[0]) + 0.5, Integer.parseInt(p[1]), Integer.parseInt(p[2]) + 0.5);
++        } catch (RuntimeException ignored) {
++            return null;
++        }
++    }
++
++    Location center() {
++        return center.clone();
++    }
++
++    boolean built() {
++        return built;
++    }
++
++    /* ================================================================== raise / strike */
++
++    /** Places the next slice. Returns progress 0..1. */
++    float raiseStep(int perTick) {
++        int end = Math.min(layout.size(), raiseCursor + perTick);
++        Cell last = null;
++        for (int i = raiseCursor; i < end; i++) {
++            Cell c = layout.get(i);
++            Block b = world.getBlockAt(center.getBlockX() + c.x(), center.getBlockY() + c.y(), center.getBlockZ() + c.z());
++            if (b.getType().isAir()) {
++                b.setType(c.m(), false);
++                placed.add(b);
++                placedAs.add(c.m());
++            }
++            last = c;
++        }
++        raiseCursor = end;
++        if (last != null) {
++            Location l = new Location(world, center.getBlockX() + last.x() + 0.5, center.getBlockY() + last.y() + 1.0, center.getBlockZ() + last.z() + 0.5);
++            world.playSound(l, Sound.BLOCK_NOTE_BLOCK_BASEDRUM, SoundCategory.BLOCKS, 1.2f, 0.5f + raiseCursor / (float) layout.size());
++            world.spawnParticle(Particle.CLOUD, l, 3, 0.4, 0.2, 0.4, 0.01);
++        }
++        if (raiseCursor >= layout.size()) {
++            built = true;
++            return 1f;
++        }
++        return raiseCursor / (float) layout.size();
++    }
++
++    /** End of show: the stage comes down (animated when the plugin can still schedule). */
++    void strike(Plugin plugin, int delayTicks) {
++        boolean animated = plugin != null && plugin.isEnabled() && delayTicks >= 0;
++        if (!animated || placed.isEmpty()) {
++            removeRig();
++            clearMarker(plugin, center);
++        }
++        if (placed.isEmpty()) {
++            return;
++        }
++        List<Block> blocks = new ArrayList<>(placed);
++        List<Material> mats = new ArrayList<>(placedAs);
++        placed.clear();
++        placedAs.clear();
++        if (!animated) {
++            for (int i = blocks.size() - 1; i >= 0; i--) {
++                if (blocks.get(i).getType() == mats.get(i)) {
++                    blocks.get(i).setType(Material.AIR, false);
++                }
++            }
++            return;
++        }
++        int[] cursor = {blocks.size() - 1};
++        int perTick = Math.max(180, blocks.size() / 30);
++        Bukkit.getScheduler().runTaskTimer(plugin, task -> {
++            if (!plugin.isEnabled()) {
++                task.cancel();
++                return;
++            }
++            if (cursor[0] == blocks.size() - 1) {
++                // The dead network stays on stage until the set comes down.
++                removeRig();
++                catchFallers();
++            }
++            int stop = Math.max(-1, cursor[0] - perTick);
++            Block lastBlock = null;
++            for (int i = cursor[0]; i > stop; i--) {
++                Block b = blocks.get(i);
++                if (b.getType() == mats.get(i)) {
++                    b.setType(Material.AIR, false);
++                    lastBlock = b;
++                }
++            }
++            cursor[0] = stop;
++            if (lastBlock != null) {
++                Location l = lastBlock.getLocation().add(0.5, 0.5, 0.5);
++                world.playSound(l, Sound.BLOCK_STONE_BREAK, SoundCategory.BLOCKS, 1f, 0.6f);
++                world.spawnParticle(Particle.CLOUD, l, 4, 0.5, 0.3, 0.5, 0.02);
++            }
++            if (cursor[0] < 0) {
++                // Struck clean. (A server stop mid-strike keeps the marker: the next claim cleans up.)
++                clearMarker(plugin, center);
++                task.cancel();
++            }
++        }, Math.max(1, delayTicks), 1L);
++    }
++
++    private void strikeByLayout() {
++        for (int i = layout.size() - 1; i >= 0; i--) {
++            Cell c = layout.get(i);
++            Block b = world.getBlockAt(center.getBlockX() + c.x(), center.getBlockY() + c.y(), center.getBlockZ() + c.z());
++            if (b.getType() == c.m()) {
++                b.setType(Material.AIR, false);
++            }
++        }
++    }
++
++    private void catchFallers() {
++        for (Player p : world.getPlayers()) {
++            Location l = p.getLocation();
++            double dx = l.getX() - center.getX();
++            double dz = l.getZ() - center.getZ();
++            if (dx * dx + dz * dz < 30 * 30 && Math.abs(l.getY() - center.getY()) < 20) {
++                p.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_FALLING, 20 * 25, 0, false, false, true));
++            }
++        }
++    }
++
++    /* ================================================================== network */
++
++    private void planNetwork() {
++        // Loop order by angle; walls every 45 deg, tweeters and subs fill the gaps.
++        int loop = 0;
++        for (int k = 0; k < 8; k++) {
++            float a = k * EggMath.PI / 4f;
++            Vector3f base = EggMath.flat(a, WALL_R).add(0f, 1f, 0f);
++            EggSpeaker w = new EggSpeaker(EggSpeaker.Kind.WALL, loop++, base, a + EggMath.PI, 0f,
++                    EggMath.flat(a, WALL_R - 1.2f).add(0f, 0.06f, 0f));
++            walls.add(w);
++            speakers.add(w);
++            float g = a + EggMath.PI / 8f;
++            if (k % 2 == 0) {
++                Vector3f top = EggMath.flat(g, TOWER_R).add(0f, TOWER_H, 0f);
++                EggSpeaker t = new EggSpeaker(EggSpeaker.Kind.TWEETER, loop++, top, g + EggMath.PI, 0.32f,
++                        EggMath.flat(g, TOWER_R - 1.6f).add(0f, 0.06f, 0f));
++                tweeters.add(t);
++                speakers.add(t);
++            } else {
++                Vector3f floor = EggMath.flat(g, SUB_R).add(0f, 0.0f, 0f);
++                EggSpeaker s = new EggSpeaker(EggSpeaker.Kind.SUB, loop++, floor, 0f, 0f,
++                        EggMath.flat(g, SUB_R + 1.6f).add(0f, 0.06f, 0f));
++                subs.add(s);
++                speakers.add(s);
++            }
++        }
++    }
++
++    EggSpeaker node(int loopIndex) {
++        int n = speakers.size();
++        return speakers.get(((loopIndex % n) + n) % n);
++    }
++
++    int size() {
++        return speakers.size();
++    }
++
++    void spawnRig(EggFx fx) {
++        this.fx = fx;
++        for (EggSpeaker s : speakers) {
++            s.spawn(fx);
++        }
++        for (int i = 0; i < speakers.size(); i++) {
++            EggSpeaker a = speakers.get(i);
++            EggSpeaker b = node(i + 1);
++            BlockDisplay d = fx.block(Material.BLACK_CONCRETE, null, 6);
++            EggFx.push(d, EggFx.beam(a.port, b.port, 0.18f, 0.1f), 0);
++            cables.add(d);
++        }
++        for (EggSpeaker t : tweeters) {
++            BlockDisplay d = fx.block(Material.BLACK_CONCRETE, null, 6);
++            Vector3f up = new Vector3f(t.port.x, TOWER_H - 0.1f, t.port.z);
++            EggFx.push(d, EggFx.beam(t.port, up, 0.16f), 0);
++            risers.add(d);
++        }
++    }
++
++    boolean rigIntact() {
++        for (EggSpeaker s : speakers) {
++            if (!s.intact()) {
++                return false;
++            }
++        }
++        for (BlockDisplay d : cables) {
++            if (d == null || !d.isValid()) {
++                return false;
++            }
++        }
++        return true;
++    }
++
++    void removeRig() {
++        for (EggSpeaker s : speakers) {
++            s.remove();
++        }
++        for (BlockDisplay d : cables) {
++            EggFx.kill(d);
++        }
++        for (BlockDisplay d : risers) {
++            EggFx.kill(d);
++        }
++        cables.clear();
++        risers.clear();
++    }
++
++    /** Light up cable i (node i to node i+1) while a signal runs on it. */
++    void cableLit(int i, Color color) {
++        if (cables.isEmpty()) {
++            return;
++        }
++        BlockDisplay d = cables.get(((i % cables.size()) + cables.size()) % cables.size());
++        if (d == null || !d.isValid()) {
++            return;
++        }
++        if (color == null) {
++            d.setBlock(Material.BLACK_CONCRETE.createBlockData());
++            EggFx.glow(d, null);
++            EggFx.light(d, 6);
++        } else {
++            d.setBlock(Material.WHITE_CONCRETE.createBlockData());
++            EggFx.glow(d, color);
++            EggFx.light(d, 15);
++        }
++    }
++
++    void tickSpeakers() {
++        for (EggSpeaker s : speakers) {
++            s.tick();
++        }
++    }
++
++    /* ================================================================== layout */
++
++    private static List<Cell> layout() {
++        List<Cell> cells = new ArrayList<>();
++        int r = FLOOR_R;
++        for (int x = -r - 2; x <= r + 2; x++) {
++            for (int z = -r - 2; z <= r + 2; z++) {
++                double d = Math.sqrt(x * x + z * z);
++                if (d <= r + 0.5) {
++                    cells.add(new Cell(x, -1, z, floorMaterial(x, z, d), (float) d));
++                    for (int k = 2; k <= 5; k++) {
++                        double kr = keel(k);
++                        if (d <= kr) {
++                            cells.add(new Cell(x, -k, z, k == 2 ? Material.POLISHED_BLACKSTONE : Material.BLACKSTONE, (float) d - k * 0.01f));
++                        }
++                    }
++                } else if (d <= r + 1.5) {
++                    // Rim: one block, so nobody strolls off the edge by accident.
++                    cells.add(new Cell(x, -1, z, Material.POLISHED_BLACKSTONE_BRICKS, (float) d));
++                    cells.add(new Cell(x, 0, z, (Math.round(Math.toDegrees(Math.atan2(x, z))) % 15 == 0)
++                            ? Material.GOLD_BLOCK : Material.POLISHED_BLACKSTONE_BRICK_WALL, (float) d + 0.2f));
++                }
++            }
++        }
++        // Wall pedestals.
++        for (int k = 0; k < 8; k++) {
++            float a = k * EggMath.PI / 4f;
++            int cx = Math.round((float) Math.sin(a) * WALL_R);
++            int cz = Math.round((float) Math.cos(a) * WALL_R);
++            for (int dx = -1; dx <= 1; dx++) {
++                for (int dz = -1; dz <= 1; dz++) {
++                    cells.add(new Cell(cx + dx, 0, cz + dz, dx == 0 && dz == 0 ? Material.GILDED_BLACKSTONE : Material.POLISHED_BLACKSTONE_BRICKS, WALL_R + 0.3f));
++                }
++            }
++        }
++        // Tweeter towers.
++        for (int k = 0; k < 4; k++) {
++            float g = k * EggMath.PI / 2f + EggMath.PI / 8f;
++            int cx = Math.round((float) Math.sin(g) * TOWER_R);
++            int cz = Math.round((float) Math.cos(g) * TOWER_R);
++            for (int y = 0; y < TOWER_H; y++) {
++                for (int dx = -1; dx <= 1; dx++) {
++                    for (int dz = -1; dz <= 1; dz++) {
++                        boolean corner = dx != 0 && dz != 0;
++                        Material m = y == TOWER_H - 1 ? Material.POLISHED_BLACKSTONE
++                                : corner ? Material.POLISHED_BLACKSTONE_BRICKS
++                                : y % 3 == 1 ? Material.GILDED_BLACKSTONE : Material.BLACKSTONE;
++                        cells.add(new Cell(cx + dx, y, cz + dz, m, TOWER_R + 1f + y * 0.4f));
++                    }
++                }
++            }
++        }
++        cells.sort(Comparator.comparingDouble(Cell::order));
++        return cells;
++    }
++
++    private static double keel(int depth) {
++        return switch (depth) {
++            case 2 -> FLOOR_R - 1.5;
++            case 3 -> FLOOR_R - 5.0;
++            case 4 -> FLOOR_R - 10.0;
++            default -> FLOOR_R - 15.0;
++        };
++    }
++
++    private static Material floorMaterial(int x, int z, double d) {
++        // Fried egg center: the egg's home.
++        if (d <= 1.6) {
++            return Material.YELLOW_CONCRETE;
++        }
++        if (d <= 3.4) {
++            return Material.WHITE_CONCRETE;
++        }
++        // Distance rings: shockwave timing reads off the floor.
++        for (int ring = 5; ring <= 15; ring += 5) {
++            if (Math.abs(d - ring) < 0.5) {
++                return Material.LIGHT_GRAY_CONCRETE;
++            }
++        }
++        // Lane guides under every wall stack.
++        double ang = Math.atan2(x, z);
++        for (int k = 0; k < 8; k++) {
++            double a = k * Math.PI / 4.0;
++            double diff = Math.abs(Math.atan2(Math.sin(ang - a), Math.cos(ang - a)));
++            if (diff < Math.PI / 2 && d * Math.sin(diff) < 0.55 && d > 3.4) {
++                return Material.BLACK_CONCRETE;
++            }
++        }
++        return Material.GRAY_CONCRETE;
++    }
++}
+diff --git a/BossEngine/src/main/java/de/aetherion/bossengine/instance/eggquelizer/EggquelizerDirector.java b/BossEngine/src/main/java/de/aetherion/bossengine/instance/eggquelizer/EggquelizerDirector.java
+new file mode 100644
+index 0000000..d98b28d
+--- /dev/null
++++ b/BossEngine/src/main/java/de/aetherion/bossengine/instance/eggquelizer/EggquelizerDirector.java
+@@ -0,0 +1,2199 @@
++package de.aetherion.bossengine.instance.eggquelizer;
++
++import de.aetherion.bossengine.combat.BossHits;
++import de.aetherion.bossengine.instance.BossInstance;
++import de.aetherion.bossengine.model.BossPhase;
++
++import org.bukkit.Bukkit;
++import org.bukkit.Color;
++import org.bukkit.Location;
++import org.bukkit.Material;
++import org.bukkit.Particle;
++import org.bukkit.Sound;
++import org.bukkit.entity.BlockDisplay;
++import org.bukkit.entity.ItemDisplay;
++import org.bukkit.entity.LivingEntity;
++import org.bukkit.entity.Mob;
++import org.bukkit.entity.Player;
++import org.bukkit.inventory.ItemStack;
++import org.bukkit.potion.PotionEffect;
++import org.bukkit.potion.PotionEffectType;
++import org.bukkit.util.Vector;
++import org.joml.Matrix4f;
++import org.joml.Vector3f;
++
++import java.util.ArrayList;
++import java.util.Comparator;
++import java.util.HashMap;
++import java.util.HashSet;
++import java.util.Iterator;
++import java.util.List;
++import java.util.Map;
++import java.util.Set;
++import java.util.UUID;
++import java.util.concurrent.ThreadLocalRandom;
++
++import static de.aetherion.bossengine.instance.eggquelizer.EggMath.PI;
++import static de.aetherion.bossengine.instance.eggquelizer.EggMath.arc;
++import static de.aetherion.bossengine.instance.eggquelizer.EggMath.clamp01;
++import static de.aetherion.bossengine.instance.eggquelizer.EggMath.lerp;
++import static de.aetherion.bossengine.instance.eggquelizer.EggMath.semitone;
++import static de.aetherion.bossengine.instance.eggquelizer.EggMath.smooth;
++import static de.aetherion.bossengine.instance.eggquelizer.EggMath.window;
++
++/**
++ * EGGQUELIZER. A giant egg on tiny legs with a speaker for a face, running the arena's PA.
++ *
++ * <p>The joke is the egg. The fight is dead serious: everything is quantized to a beat, every
++ * arena speaker telegraphs through one honest state machine (IDLE, CHARGING, PRIMED, FIRING,
++ * COOLDOWN), every hit is a physical pulse you can jump or sidestep, and silence is a weapon.
++ *
++ * <p>Acts: RAISING (stage unfolds) → INTRO (soundcheck: the network plays its melody in loop
++ * order, teaching the feedback path) → FIGHT ⇄ TRANSITION (60%: OVERCLOCK setpiece, then it falls
++ * on its back; 30%: DISTORTION, the shell cracks and the lid pops off) → DYING (final charge,
++ * hard silence, the network dies speaker by speaker, the egg tips over like a dead appliance,
++ * and lays one tiny egg).
++ *
++ * <p>Moves: BASS_DROP (aimed frontal pressure wave, jump it), CHANNELS (left/right wall banks,
++ * the lamps never lie, the egg sometimes does), SUBWOOFER (floor launch pads), SUB_HOP (the egg
++ * launches itself off its own sub), TWEETERS (treble balls from the towers), FEEDBACK (a signal
++ * runs the cable loop and every node fires in order), OVERCLOCK (setpiece), TIPPED (punish window).
++ */
++public final class EggquelizerDirector {
++
++    public static final String ID = "eggquelizer";
++
++    private enum Act { NONE, RAISING, INTRO, FIGHT, TRANSITION, DYING, DONE }
++
++    private enum Move { IDLE, WADDLE, BASS_DROP, CHANNELS, SUBWOOFER, SUB_HOP, TWEETERS, FEEDBACK, OVERCLOCK, TIPPED }
++
++    private static final int INTRO_TICKS = 152;
++    private static final int OVERCLOCK_TICKS = 222;
++    private static final int DISTORT_TICKS = 170;
++    private static final int DEATH_TICKS = 300;
++    private static final int STRIKE_DELAY_TICKS = 120;
++    private static final float EGG_R = 12f;
++
++    /** Loop melody: rising then falling pentatonic arch. The soundcheck teaches it, feedback replays it. */
++    private static final int[] MELODY = {0, 3, 5, 7, 10, 12, 15, 17, 19, 22, 24, 22, 19, 17, 15, 12};
++
++    private static final Color AIR = Color.fromRGB(190, 230, 255);
++    private static final Color SIGNAL = Color.fromRGB(120, 255, 255);
++    private static final Color SIGNAL_HOT = Color.fromRGB(255, 60, 60);
++    private static final Color TREBLE = Color.fromRGB(255, 255, 255);
++
++    private final BossInstance instance;
++
++    private EggFx fx;
++    private EggStage stage;
++    private EggBody body;
++    private EggProps props;
++
++    private Act act = Act.NONE;
++    private int actTick;
++    private Move move = Move.IDLE;
++    private Move lastMove = Move.IDLE;
++    private int moveTick;
++    private int cooldown = 40;
++    private int phase = 1;
++    private int clock;
++    private int beatClock;
++    private int beatLen = 10;
++    /** Ticks of silence left: the background beat holds its breath. */
++    private int silence;
++    private boolean deathFinished;
++    private boolean encoreDone;
++    private int transitionKind;
++    private int transitionLength;
++    private float walkPhase;
++    private boolean stepSide;
++
++    private UUID target;
++    private double lastHealth;
++    private int lastHitReact;
++    private int smugUntil;
++    private final Map<String, Integer> gate = new HashMap<>();
++    private final Set<String> taught = new HashSet<>();
++
++    private final List<EggProps.RingWave> waves = new ArrayList<>();
++    private final List<EggProps.LaneWall> lanes = new ArrayList<>();
++    private final List<Signal> signals = new ArrayList<>();
++    private EggProps.Lid lid;
++    private ItemDisplay chick;
++
++    /* move scratch */
++    private final Vector3f mA = new Vector3f();
++    private final Vector3f mB = new Vector3f();
++    private float mF;
++    private int mI;
++    private int mJ;
++    private int mK;
++    private int mFire;
++    private boolean mFlag;
++    private final List<EggSpeaker> mList = new ArrayList<>();
++
++    /** A signal running the cable loop (Feedback). */
++    private static final class Signal {
++        int node;
++        int dir;
++        int left;
++        int hopsDone;
++        int reverseAt = -1;
++        int arcAt = -1;
++        boolean done;
++    }
++
++    public EggquelizerDirector(BossInstance instance) {
++        this.instance = instance;
++    }
++
++    /* ================================================================== engine hooks */
++
++    public boolean isMine() {
++        return instance.getTemplate() != null && ID.equalsIgnoreCase(instance.getTemplate().getId());
++    }
++
++    /** The director drives the body: vanilla AI, unstick, leash and visibility polish stay out. */
++    public boolean ownsBody() {
++        return isMine() && act != Act.NONE;
++    }
++
++    /** The director stages both phase transitions itself. */
++    public boolean ownsTransition() {
++        return isMine();
++    }
++
++    public boolean isDying() {
++        return isMine() && act == Act.DYING;
++    }
++
++    public boolean blocksDamage() {
++        return isMine() && (act == Act.RAISING || act == Act.INTRO || act == Act.DYING);
++    }
++
++    public void onBind() {
++        if (!isMine()) {
++            return;
++        }
++        LivingEntity entity = instance.getEntity();
++        if (entity == null) {
++            return;
++        }
++        prepareBody(entity);
++        if (fx != null) {
++            // Same fight, new body (chunk reload / restore): the show keeps running.
++            placeHitbox();
++            return;
++        }
++        stage = EggStage.claim(instance.getPlugin(), instance.getSpawnLocation());
++        fx = new EggFx(instance, stage.center());
++        props = new EggProps();
++        lastHealth = instance.getCombatHealth();
++        phase = phaseFromTemplate();
++        beatLen = beatFor(phase);
++        act = Act.RAISING;
++        actTick = 0;
++        placeHitbox();
++    }
++
++    public boolean beginDeath() {
++        if (!isMine() || act == Act.DYING || act == Act.DONE || fx == null) {
++            return false;
++        }
++        endMove();
++        act = Act.DYING;
++        actTick = body == null ? DEATH_TICKS : 0;
++        LivingEntity entity = instance.getEntity();
++        if (entity != null) {
++            entity.setInvulnerable(true);
++        }
++        return true;
++    }
++
++    public void abort() {
++        if (isMine()) {
++            clear();
++        }
++    }
++
++    /** Remove everything this encounter spawned. Idempotent. */
++    public void clear() {
++        if (fx == null) {
++            return;
++        }
++        endMove();
++        signals.clear();
++        waves.clear();
++        lanes.clear();
++        props.clear();
++        lid = null;
++        org.bukkit.plugin.Plugin plugin = instance.getPlugin();
++        if (body != null) {
++            if (deathFinished && plugin.isEnabled()) {
++                // The dead appliance lingers a moment, then unplugs.
++                List<BlockDisplay> corpse = body.detach();
++                ItemDisplay egg = chick;
++                Location puff = fx.at(body.centerPoint());
++                Bukkit.getScheduler().runTaskLater(plugin, () -> {
++                    for (BlockDisplay d : corpse) {
++                        EggFx.kill(d);
++                    }
++                    EggFx.kill(egg);
++                    if (puff.getWorld() != null) {
++                        puff.getWorld().spawnParticle(Particle.CLOUD, puff, 30, 1.2, 1.2, 1.2, 0.02);
++                        puff.getWorld().playSound(puff, Sound.BLOCK_FIRE_EXTINGUISH, 0.8f, 1.2f);
++                    }
++                }, 100L);
++            } else {
++                body.remove();
++                EggFx.kill(chick);
++            }
++        } else {
++            EggFx.kill(chick);
++        }
++        chick = null;
++        if (stage != null) {
++            boolean animated = deathFinished && plugin.isEnabled();
++            stage.strike(plugin, animated ? STRIKE_DELAY_TICKS : -1);
++        }
++        fx = null;
++        body = null;
++        stage = null;
++        act = Act.NONE;
++    }
++
++    /**
++     * @return true when the death cinematic finished and loot should be paid
++     */
++    public boolean tick() {
++        if (!isMine() || fx == null) {
++            return false;
++        }
++        clock++;
++        LivingEntity entity = instance.getEntity();
++        if (entity != null && entity.isValid()) {
++            maintainBody(entity);
++        }
++        if (act == Act.RAISING) {
++            tickRaise();
++            placeHitbox();
++            return false;
++        }
++        if (body == null) {
++            if (act == Act.DYING) {
++                deathFinished = true;
++                act = Act.DONE;
++                return true;
++            }
++            return false;
++        }
++        repairIfUnloaded();
++
++        boolean finished = false;
++        switch (act) {
++            case INTRO -> tickIntro();
++            case FIGHT -> {
++                if (instance.isTransitioning()) {
++                    beginTransition();
++                    tickTransition();
++                } else {
++                    tickFight();
++                }
++            }
++            case TRANSITION -> tickTransition();
++            case DYING -> finished = tickDeath();
++            default -> {
++            }
++        }
++
++        body.tickSprings();
++        body.render();
++        stage.tickSpeakers();
++        props.tick();
++        if (act == Act.FIGHT || act == Act.TRANSITION) {
++            tickHazards();
++            tickBeat();
++            rescueFallers();
++        }
++        placeHitbox();
++        if (finished) {
++            deathFinished = true;
++            act = Act.DONE;
++        }
++        return finished;
++    }
++
++    /* ================================================================== setup */
++
++    private void prepareBody(LivingEntity entity) {
++        if (entity instanceof Mob mob) {
++            mob.setAI(false);
++            mob.setAware(false);
++            mob.setTarget(null);
++        }
++        entity.setGravity(false);
++        entity.setInvisible(true);
++        entity.setSilent(true);
++        entity.setFireTicks(0);
++        entity.setVelocity(new Vector());
++        if (entity.getEquipment() != null) {
++            entity.getEquipment().clear();
++        }
++    }
++
++    private void maintainBody(LivingEntity entity) {
++        if (entity instanceof Mob mob && mob.hasAI()) {
++            mob.setAI(false);
++            mob.setAware(false);
++        }
++        if (entity.hasGravity()) {
++            entity.setGravity(false);
++        }
++        if (!entity.isInvisible()) {
++            entity.setInvisible(true);
++        }
++        // Must stay collidable: projectiles otherwise pass through the invisible hitbox.
++        if (!entity.isCollidable()) {
++            entity.setCollidable(true);
++        }
++        entity.setFireTicks(0);
++        entity.setFallDistance(0f);
++    }
++
++    private int phaseFromTemplate() {
++        BossPhase current = instance.getCurrentPhase();
++        if (current == null) {
++            return 1;
++        }
++        double hp = current.getHealthPercent();
++        return hp > 60.5 ? 1 : hp > 30.5 ? 2 : 3;
++    }
++
++    private static int beatFor(int phase) {
++        return phase >= 3 ? 8 : phase == 2 ? 9 : 10;
++    }
++
++    private void spawnCast() {
++        stage.spawnRig(fx);
++        body = new EggBody();
++        body.pos.set(0f, 0f, 0f);
++        body.yaw = 0f;
++        // Unplugged: slumped forward, sitting on its little legs.
++        body.pitch.snap(0.55f);
++        body.squash.snap(0.78f);
++        body.bob = -0.35f;
++        body.spawn(fx);
++        body.ledsOff();
++        if (phase >= 3) {
++            applyDistortedLook(false);
++        }
++    }
++
++    /** If players left and the chunk unloaded, non-persistent displays are gone: rebuild them. */
++    private void repairIfUnloaded() {
++        if (clock % 20 != 0) {
++            return;
++        }
++        if (body.intact() && stage.rigIntact()) {
++            return;
++        }
++        props.clear();
++        waves.clear();
++        lanes.clear();
++        signals.clear();
++        lid = null;
++        body.remove();
++        stage.removeRig();
++        stage.spawnRig(fx);
++        body.spawn(fx);
++        if (phase >= 3) {
++            applyDistortedLook(false);
++        }
++    }
++
++    private void placeHitbox() {
++        LivingEntity entity = instance.getEntity();
++        if (entity == null || !entity.isValid() || fx == null) {
++            return;
++        }
++        float x = body == null ? 0f : body.pos.x;
++        float z = body == null ? 0f : body.pos.z;
++        float y = body == null ? 0.05f : Math.max(0.05f, body.pos.y + body.air);
++        Location at = fx.at(x, y, z);
++        at.setYaw((float) Math.toDegrees(-(body == null ? 0f : body.yaw)));
++        at.setPitch(0f);
++        Location current = entity.getLocation();
++        if (current.getWorld() != at.getWorld() || current.distanceSquared(at) > 0.0004) {
++            instance.runInternalTeleport(() -> entity.teleport(at));
++        }
++        entity.setVelocity(new Vector());
++    }
++
++    /* ================================================================== raise */
++
++    private void tickRaise() {
++        actTick++;
++        if (actTick == 1) {
++            fx.score(Sound.BLOCK_BEACON_ACTIVATE, 1f, 0.5f);
++        }
++        float progress = stage.raiseStep(260);
++        if (progress >= 1f) {
++            seatAudience();
++            spawnCast();
++            act = Act.INTRO;
++            actTick = 0;
++            beatClock = 0;
++        }
++    }
++
++    /** Players near the spawn are brought up onto the stage (it may float above the spawn). */
++    private void seatAudience() {
++        Location spawn = instance.getSpawnLocation();
++        Location c = stage.center();
++        if (spawn.getWorld() == null || Math.abs(c.getY() - spawn.getY()) < 3) {
++            return;
++        }
++        for (Player p : spawn.getWorld().getPlayers()) {
++            Location l = p.getLocation();
++            double dx = l.getX() - spawn.getX();
++            double dz = l.getZ() - spawn.getZ();
++            if (dx * dx + dz * dz > 34 * 34 || Math.abs(l.getY() - spawn.getY()) > 20) {
++                continue;
++            }
++            double a = Math.atan2(dx, dz);
++            Location to = c.clone().add(Math.sin(a) * 12, 0.1, Math.cos(a) * 12);
++            to.setDirection(c.toVector().subtract(to.toVector()).setY(0));
++            p.teleport(to);
++            p.setFallDistance(0f);
++            p.playSound(to, Sound.ENTITY_ITEM_PICKUP, 1f, 0.5f);
++        }
++    }
++
++    /* ================================================================== intro: SOUNDCHECK */
++
++    private void tickIntro() {
++        int t = actTick++;
++        beatClock++;
++        Vector3f face = body.facePoint();
++        if (t == 12 || t == 22) {
++            // Mic taps.
++            fx.sound(face, Sound.BLOCK_WOODEN_BUTTON_CLICK_ON, 1.8f, 0.55f);
++            fx.sound(face, Sound.BLOCK_NOTE_BLOCK_BASEDRUM, 1.2f, 0.5f);
++            body.cone.kick(0.18f);
++            body.squash.kick(-0.03f);
++        }
++        if (t >= 32 && t < 40) {
++            // Feedback squeal: it wakes up yelling.
++            fx.sound(face, Sound.BLOCK_NOTE_BLOCK_FLUTE, 0.9f, 1.6f + (t - 32) * 0.05f);
++            if (t % 2 == 0) {
++                fx.sound(face, Sound.BLOCK_NOTE_BLOCK_BIT, 0.6f, 2f);
++            }
++        }
++        if (t == 34) {
++            body.pitch.target = 0f;
++            body.pitch.kick(-0.25f);
++            body.squash.target = 1f;
++            body.squash.kick(0.12f);
++            fx.sound(body.pos, Sound.ENTITY_CHICKEN_STEP, 1.6f, 0.6f);
++        }
++        if (t >= 34) {
++            body.bob = lerp(body.bob, 0f, 0.2f);
++        }
++        if (t >= 42 && t < 50) {
++            body.leds(t % 2 == 0 ? 5 : 0);
++        }
++        if (t == 50) {
++            body.leds(0);
++        }
++        // SOUNDCHECK: every installation answers in loop order, one note each.
++        int n = stage.size();
++        if (t >= 52 && t < 52 + n * 4) {
++            int k = t - 52;
++            int i = k / 4;
++            EggSpeaker s = stage.node(i);
++            if (k % 4 == 0) {
++                s.wakeFlash();
++                fx.clean(s.cone(), Sound.BLOCK_NOTE_BLOCK_BELL, 1.3f, semitone(MELODY[i]));
++                fx.clean(s.cone(), Sound.BLOCK_NOTE_BLOCK_BASS, 0.8f, semitone(MELODY[i]));
++                fx.particle(Particle.NOTE, new Vector3f(s.cone()).add(0f, 1.2f, 0f), 1, 0.0, 1.0);
++                stage.cableLit(i, SIGNAL);
++                if (i > 0) {
++                    stage.cableLit(i - 1, null);
++                }
++                body.leds(1 + i % 5);
++            }
++            turnToward(s.base, 0.22f);
++        }
++        if (t == 52 + n * 4) {
++            stage.cableLit(n - 1, null);
++            body.leds(0);
++        }
++        if (t >= 118 && t < 140) {
++            Player p = currentTarget();
++            if (p != null) {
++                turnToward(fx.stage(p.getLocation()), 0.12f);
++            }
++            body.pitch.target = -0.14f;
++            body.roll.target = 0.08f;
++        }
++        if (t == 120) {
++            fx.title("&f&lEGGQUELIZER", "&7check one, two.", 6, 40, 14);
++        }
++        if (t == 122 || t == 132 || t == 142) {
++            fx.sound(face, Sound.BLOCK_NOTE_BLOCK_HAT, 1.4f, 1.1f);
++            body.leds((t - 112) / 10 + 1);
++        }
++        if (t >= 142) {
++            body.squash.target = 0.84f;
++            body.coneHot(true);
++            body.cone.target = -0.3f;
++        }
++        if (t >= INTRO_TICKS) {
++            body.pitch.target = 0f;
++            body.roll.target = 0f;
++            body.squash.target = 1f;
++            body.squash.kick(0.3f);
++            body.cone.target = 0f;
++            body.cone.value = 0.5f;
++            body.coneHot(false);
++            body.leds(0);
++            drop(face, 0.9f);
++            EggProps.RingWave show = props.add(new EggProps.RingWave(fx, body.pos, body.yaw, PI, 2f, 22f, 0.6f, 20,
++                    Material.WHITE_STAINED_GLASS, AIR));
++            show.power = 0;
++            for (EggSpeaker s : stage.speakers) {
++                s.kick(0.3f);
++            }
++            act = Act.FIGHT;
++            actTick = 0;
++            beatClock = 0;
++            cooldown = 30;
++            move = Move.IDLE;
++        }
++    }
++
++    /* ================================================================== the beat */
++
++    private boolean onBeat() {
++        return beatClock % beatLen == 0;
++    }
++
++    /** Ticks until a beat at least {@code min} ticks away. */
++    private int toBeat(int min) {
++        int t = Math.max(1, min);
++        while ((beatClock + t) % beatLen != 0) {
++            t++;
++        }
++        return t;
++    }
++
++    private void tickBeat() {
++        beatClock++;
++        if (silence > 0) {
++            silence--;
++            return;
++        }
++        if (act != Act.FIGHT || move == Move.TIPPED) {
++            return;
++        }
++        if (onBeat()) {
++            int bar = (beatClock / beatLen) % 4;
++            fx.sound(body.centerPoint(), Sound.BLOCK_NOTE_BLOCK_BASEDRUM, bar == 0 ? 0.9f : 0.55f, 0.55f);
++            if (bar == 0) {
++                fx.sound(body.centerPoint(), Sound.BLOCK_NOTE_BLOCK_BASS, 0.6f, 0.5f);
++            }
++            for (EggSpeaker s : stage.speakers) {
++                s.kick(0.05f);
++            }
++            if (move == Move.IDLE || move == Move.WADDLE) {
++                body.squash.kick(-0.035f);
++                body.cone.kick(0.08f);
++            }
++            body.tip(true);
++        } else if (beatClock % beatLen == 3) {
++            body.tip(false);
++        }
++        if (phase >= 2 && beatClock % beatLen == beatLen / 2) {
++            EggSpeaker s = stage.walls.get(ThreadLocalRandom.current().nextInt(stage.walls.size()));
++            fx.sound(s.cone(), Sound.BLOCK_NOTE_BLOCK_HAT, 0.35f, 1.5f);
++        }
++    }
++
++    /* ================================================================== fight */
++
++    private void tickFight() {
++        actTick++;
++        hitReactions();
++        switch (move) {
++            case IDLE -> idle();
++            case WADDLE -> waddle();
++            case BASS_DROP -> bassDrop(moveTick++);
++            case CHANNELS -> channels(moveTick++);
++            case SUBWOOFER -> subwoofer(moveTick++);
++            case SUB_HOP -> subHop(moveTick++);
++            case TWEETERS -> tweeters(moveTick++);
++            case FEEDBACK -> feedback(moveTick++);
++            case OVERCLOCK -> {
++                if (overclock(moveTick++, true)) {
++                    begin(Move.TIPPED);
++                }
++            }
++            case TIPPED -> tipped(moveTick++);
++        }
++        if (phase >= 3) {
++            body.jitter = Math.max(body.jitter, 0.012f);
++        }
++    }
++
++    private void idle() {
++        Player p = currentTarget();
++        body.squash.target = 1f;
++        body.cone.target = 0f;
++        body.jitter = phase >= 3 ? 0.012f : 0f;
++        if (clock < smugUntil) {
++            body.pitch.target = -0.16f;
++            body.roll.target = 0.1f;
++        } else {
++            body.pitch.target = 0f;
++            // Sway with the beat.
++            body.roll.target = (float) Math.sin(beatClock * PI / beatLen) * 0.05f;
++        }
++        if (p != null) {
++            Vector3f pp = fx.stage(p.getLocation());
++            float d = EggMath.horizontal(pp, body.pos);
++            turnToward(pp, 0.08f);
++            if (d > 11f) {
++                stepToward(pp, 0.11f, true);
++            } else if (d < 4.5f) {
++                // Back away without turning around: an egg moonwalk.
++                Vector3f away = new Vector3f(body.pos).sub(pp);
++                away.y = 0f;
++                if (away.lengthSquared() < 0.01f) {
++                    away.set(0f, 0f, 1f);
++                }
++                away.normalize(4f).add(body.pos);
++                stepToward(away, 0.09f, false);
++            } else {
++                settleLegs();
++            }
++        } else {
++            settleLegs();
++        }
++        if (--cooldown <= 0) {
++            chooseMove();
++        }
++    }
++
++    private void chooseMove() {
++        if (phase >= 3 && !encoreDone && instance.getCombatHealth() <= instance.getCombatMaxHealth() * 0.15) {
++            encoreDone = true;
++            begin(Move.OVERCLOCK);
++            return;
++        }
++        List<Move> bag = new ArrayList<>();
++        List<Float> weight = new ArrayList<>();
++        option(bag, weight, Move.BASS_DROP, 3f);
++        option(bag, weight, Move.CHANNELS, 2.5f);
++        option(bag, weight, Move.SUBWOOFER, 2f);
++        option(bag, weight, Move.FEEDBACK, phase == 1 ? 1.6f : 2.4f);
++        option(bag, weight, Move.TWEETERS, phase == 1 ? 1.2f : 2f);
++        if (phase >= 2) {
++            option(bag, weight, Move.SUB_HOP, 1.6f);
++        }
++        float total = 0f;
++        for (float w : weight) {
++            total += w;
++        }
++        float r = ThreadLocalRandom.current().nextFloat() * total;
++        for (int i = 0; i < bag.size(); i++) {
++            r -= weight.get(i);
++            if (r <= 0f) {
++                begin(bag.get(i));
++                return;
++            }
++        }
++        begin(bag.get(0));
++    }
++
++    private void option(List<Move> bag, List<Float> weight, Move m, float w) {
++        if (m == lastMove) {
++            return;
++        }
++        bag.add(m);
++        weight.add(w);
++    }
++
++    private void begin(Move m) {
++        endMove();
++        move = m;
++        moveTick = 0;
++        mI = 0;
++        mJ = 0;
++        mK = 0;
++        mF = 0f;
++        mFire = -1;
++        mFlag = false;
++        mList.clear();
++        if (m != Move.TIPPED && m != Move.WADDLE) {
++            lastMove = m;
++        }
++    }
++
++    private void finish(int cool) {
++        endMove();
++        move = Move.IDLE;
++        moveTick = 0;
++        cooldown = Math.max(8, cool - (phase - 1) * 6);
++        body.coneHot(false);
++        body.cone.target = 0f;
++        body.jitter = 0f;
++        body.overfill = 0f;
++        body.squash.target = 1f;
++        body.pitch.target = 0f;
++        body.roll.target = 0f;
++        body.air = 0f;
++        body.kickL = 0f;
++        body.kickR = 0f;
++        body.leds(0);
++    }
++
++    /** Tear down move-owned state. Speakers keep their own state machines running. */
++    private void endMove() {
++        if (body != null) {
++            body.frozen = false;
++            body.interp(2);
++        }
++    }
++
++    private void waddle() {
++        int t = moveTick++;
++        if (stepToward(mA, 0.13f, true) || t > 80) {
++            finish(10);
++        }
++    }
++
++    /* ================================================================== BASS DROP */
++
++    private void bassDrop(int t) {
++        int aim = phase == 1 ? 24 : phase == 2 ? 20 : 16;
++        if (t == 0) {
++            Player p = currentTarget();
++            mA.set(p == null ? new Vector3f(0f, 0f, 6f) : fx.stage(p.getLocation()));
++            mFlag = phase >= 2 && ThreadLocalRandom.current().nextFloat() < 0.35f;
++            fx.sound(body.facePoint(), Sound.BLOCK_BEACON_POWER_SELECT, 1.2f, 0.5f);
++        }
++        if (t < aim) {
++            float p = t / (float) aim;
++            Player pl = currentTarget();
++            if (pl != null) {
++                mA.set(fx.stage(pl.getLocation()));
++            }
++            turnToward(mA, 0.12f);
++            settleLegs();
++            body.squash.target = 1f - 0.16f * p;
++            body.pitch.target = -0.12f * p;
++            body.cone.target = -0.3f * p;
++            body.jitter = 0.015f + 0.04f * p;
++            body.leds(Math.round(5 * p));
++            if (t % 3 == 0) {
++                fx.sound(body.facePoint(), Sound.BLOCK_NOTE_BLOCK_BASS, 0.9f, 0.5f + 0.6f * p);
++            }
++            return;
++        }
++        if (t == aim) {
++            // Lock. Then nothing. The silence is the telegraph.
++            int hold = phase == 1 ? 12 : phase == 2 ? 10 : 8;
++            if (mFlag && mI == 0) {
++                hold += 16;
++            }
++            mFire = aim + toBeat(hold);
++            silence = mFire - aim + 2;
++            body.jitter = 0f;
++            body.cone.snap(-0.32f);
++            body.coneHot(true);
++            body.leds(5);
++            fx.sound(body.facePoint(), Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 1.2f, 0.5f);
++            fx.particle(Particle.CLOUD, body.facePoint(), 6, 0.3, 0.02);
++            float arcHalf = 0.95f;
++            int life = mFire - aim + 3;
++            for (int s = -1; s <= 1; s += 2) {
++                Vector3f dir = EggMath.flat(body.yaw + s * arcHalf, 1f);
++                Vector3f a = new Vector3f(body.pos).fma(1.6f, dir);
++                Vector3f b = new Vector3f(body.pos).fma(15f, dir);
++                props.add(new EggProps.Stripe(fx, a, b, 0.32f, Material.RED_STAINED_GLASS, EggSpeaker.RED, life));
++            }
++            return;
++        }
++        if (t < mFire) {
++            return;
++        }
++        if (t == mFire) {
++            Vector3f dir = EggMath.flat(body.yaw, 1f);
++            Vector3f origin = new Vector3f(body.pos).fma(1.4f, dir);
++            EggProps.RingWave w = props.add(new EggProps.RingWave(fx, origin, body.yaw, 0.95f, 1.2f, 24f, 0.85f, 26,
++                    Material.WHITE_STAINED_GLASS, AIR));
++            w.power = 12;
++            w.knock = 1.5f;
++            waves.add(w);
++            // Point blank: the air itself hits you.
++            for (Player p : fx.targets()) {
++                Vector3f pp = fx.stage(p.getLocation());
++                Vector3f rel = new Vector3f(pp).sub(body.pos);
++                float d = EggMath.radius(rel);
++                if (d < 3.6f && Math.abs(EggMath.wrap((float) Math.atan2(rel.x, rel.z) - body.yaw)) < 1.0f) {
++                    strike(p, 12, body.pos, 1.8f, 0.5f, "blank" + clock, 1);
++                    w.hit.add(p.getUniqueId());
++                }
++            }
++            drop(body.facePoint(), 1f);
++            body.coneHot(false);
++            body.cone.value = 0.55f;
++            body.cone.target = 0f;
++            body.leds(0);
++            body.squash.target = 1f;
++            body.squash.kick(0.32f);
++            body.pitch.kick(-0.3f);
++            body.pitch.target = 0f;
++            mB.set(dir).mul(-1f);
++            return;
++        }
++        int after = t - mFire;
++        if (after <= 7) {
++            // Recoil: its own bass shoves it back on its tiny legs.
++            Vector3f to = new Vector3f(body.pos).fma(0.26f * (1f - after / 8f), mB);
++            clampArena(to);
++            body.pos.set(to);
++            scramble(after);
++        } else {
++            settleLegs();
++        }
++        if (after == 26) {
++            if (phase >= 2 && mI == 0 && ThreadLocalRandom.current().nextFloat() < 0.4f) {
++                // Double drop: re-aim fast at someone else.
++                mI = 1;
++                mFlag = false;
++                moveTick = aim - (phase == 2 ? 10 : 12);
++                Player other = otherTarget();
++                if (other != null) {
++                    target = other.getUniqueId();
++                }
++                return;
++            }
++            finish(34);
++        }
++    }
++
++    /** The drop itself: everything heard as one physical hit. */
++    private void drop(Vector3f at, float scale) {
++        fx.sound(at, Sound.ENTITY_WARDEN_SONIC_BOOM, 1.3f * scale, 0.7f);
++        fx.sound(at, Sound.BLOCK_NOTE_BLOCK_BASS, 2f, 0.5f);
++        fx.sound(at, Sound.ENTITY_GENERIC_EXPLODE, 1.0f * scale, 0.5f);
++        fx.sound(at, Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 1.2f * scale, 0.6f);
++        fx.particle(Particle.SONIC_BOOM, at, 1, 0.0, 0.0);
++    }
++
++    /* ================================================================== CHANNELS */
++
++    private void channels(int t) {
++        int volleys = phase == 1 ? 4 : phase == 2 ? 6 : 8;
++        int spacing = phase == 1 ? 3 : 2;
++        if (t == 0) {
++            Player p = currentTarget();
++            Vector3f pp = p == null ? new Vector3f(0f, 0f, 8f) : fx.stage(p.getLocation());
++            float want = EggMath.yawToward(pp.x, pp.z);
++            // Snap the facing between two walls so the split into banks is clean.
++            float step = PI / 4f;
++            mF = Math.round((want - step / 2f) / step) * step + step / 2f;
++            mA.set(body.pos);
++            if (EggMath.radius(mA) > 3f) {
++                mA.normalize(2.5f);
++            }
++            mI = 0;
++            mJ = ThreadLocalRandom.current().nextBoolean() ? 1 : -1;
++            mK = toBeat(26);
++            fx.sound(body.facePoint(), Sound.BLOCK_NOTE_BLOCK_BASS, 1f, 0.6f);
++        }
++        if (t < mK) {
++            stepToward(mA, 0.16f, false);
++            body.yaw = EggMath.approachAngle(body.yaw, mF, 0.12f);
++            return;
++        }
++        body.yaw = EggMath.approachAngle(body.yaw, mF, 0.12f);
++        settleLegs();
++        int local = t - mK;
++        int period = spacing * beatLen;
++        if (mI < volleys && local == mI * period + 5) {
++            int side = mJ;
++            boolean full = phase >= 3 && mI % 3 == 2;
++            boolean fake = !full && phase >= 2 && ThreadLocalRandom.current().nextFloat() < 0.3f;
++            int gap = ThreadLocalRandom.current().nextInt(8);
++            int fireAt = period - 5;
++            List<EggSpeaker> bank = new ArrayList<>();
++            for (int k = 0; k < 8; k++) {
++                EggSpeaker w = stage.walls.get(k);
++                float lx = localX(w.base);
++                boolean onSide = side > 0 ? lx > 0f : lx < 0f;
++                if (full ? (k != gap && k != (gap + 1) % 8) : onSide) {
++                    bank.add(w);
++                }
++            }
++            for (EggSpeaker w : bank) {
++                w.arm(Math.max(3, fireAt - 7), 7, lanePayload());
++            }
++            // The egg leans to the bank it claims. Sometimes it claims the wrong one; the lamps never lie.
++            float lean = full ? 0f : (fake ? -side : side) * 0.3f;
++            body.roll.target = -lean;
++            body.pitch.target = full ? -0.2f : 0f;
++            fx.sound(body.facePoint(), Sound.BLOCK_NOTE_BLOCK_BASS, 1.2f, side > 0 ? 0.6f : 0.75f);
++            mJ = -mJ;
++            mI++;
++        }
++        if (local % beatLen == 0) {
++            body.squash.kick(-0.05f);
++        }
++        if (mI >= volleys && local >= (volleys - 1) * period + period + 20) {
++            finish(30);
++        }
++    }
++
++    /** Local +X of the egg (its left) for a stage point. */
++    private float localX(Vector3f p) {
++        float dx = p.x - body.pos.x;
++        float dz = p.z - body.pos.z;
++        return dx * (float) Math.cos(body.yaw) - dz * (float) Math.sin(body.yaw);
++    }
++
++    /* ================================================================== SUBWOOFER */
++
++    private void subwoofer(int t) {
++        int count = phase == 1 ? 2 : phase == 2 ? 3 : 4;
++        if (t == 0) {
++            mList.clear();
++            List<EggSpeaker> subs = new ArrayList<>(stage.subs);
++            subs.sort(Comparator.comparingDouble(this::nearestTargetDistance));
++            for (int i = 0; i < Math.min(count, subs.size()); i++) {
++                mList.add(subs.get(i));
++            }
++            mI = 0;
++            mK = toBeat(6);
++        }
++        Player p = currentTarget();
++        if (p != null) {
++            turnToward(fx.stage(p.getLocation()), 0.06f);
++        }
++        int local = t - mK;
++        if (local >= 0 && mI < mList.size() && local == mI * beatLen) {
++            // Stomp: tiny leg, big consequence.
++            EggSpeaker s = mList.get(mI);
++            boolean left = mI % 2 == 0;
++            if (left) {
++                body.liftL = 1f;
++            } else {
++                body.liftR = 1f;
++            }
++            body.pitch.kick(0.06f);
++            body.squash.kick(-0.06f);
++            fx.sound(body.pos, Sound.ENTITY_CHICKEN_STEP, 2f, 0.5f);
++            fx.sound(body.pos, Sound.BLOCK_NOTE_BLOCK_BASEDRUM, 1.2f, 0.5f);
++            int charge = toBeat(beatLen * 2 + 4) - 6;
++            if (s.arm(charge, 6, subPayload())) {
++                props.add(new EggProps.FloorRing(fx, s.base, 3.4f, 3.4f, Material.ORANGE_STAINED_GLASS, EggSpeaker.AMBER, charge + 2));
++            }
++            mI++;
++        }
++        body.liftL = Math.max(0f, body.liftL - 0.15f);
++        body.liftR = Math.max(0f, body.liftR - 0.15f);
++        if (mI >= mList.size() && local > (mList.size() + 3) * beatLen + 12) {
++            finish(28);
++        }
++    }
++
++    private double nearestTargetDistance(EggSpeaker s) {
++        double best = 999;
++        for (Player p : fx.targets()) {
++            best = Math.min(best, EggMath.horizontal(fx.stage(p.getLocation()), s.base));
++        }
++        return best;
++    }
++
++    /* ================================================================== SUB HOP */
++
++    private void subHop(int t) {
++        if (t == 0) {
++            EggSpeaker best = null;
++            float bestD = Float.MAX_VALUE;
++            for (EggSpeaker s : stage.subs) {
++                float d = EggMath.horizontal(s.base, body.pos);
++                if (s.free() && d < bestD) {
++                    bestD = d;
++                    best = s;
++                }
++            }
++            if (best == null) {
++                finish(10);
++                return;
++            }
++            mList.clear();
++            mList.add(best);
++            mA.set(best.base.x, 0f, best.base.z);
++            mFire = -1;
++        }
++        EggSpeaker sub = mList.isEmpty() ? null : mList.get(0);
++        if (sub == null) {
++            finish(10);
++            return;
++        }
++        if (mFire < 0) {
++            // Waddle onto the pad.
++            if (stepToward(mA, 0.17f, true) || t > 90) {
++                body.pos.set(mA);
++                int charge = toBeat(beatLen + 8) - 6;
++                mFire = t + charge + 6;
++                sub.arm(charge, 6, s -> {
++                    fireSub(s);
++                });
++                fx.sound(body.pos, Sound.ENTITY_CHICKEN_STEP, 1.6f, 1.4f);
++            }
++            return;
++        }
++        if (t < mFire) {
++            // Braced on the pad. It knows what is about to happen. It is excited.
++            settleLegs();
++            float p = window(t, mFire - 20, mFire);
++            body.squash.target = 1f - 0.22f * p;
++            body.jitter = 0.03f * p;
++            body.pitch.target = 0.08f;
++            return;
++        }
++        if (t == mFire) {
++            Player p = currentTarget();
++            mB.set(p == null ? new Vector3f(0f, 0f, 0f) : fx.stage(p.getLocation()));
++            mB.y = 0f;
++            clampArena(mB);
++            mA.set(body.pos);
++            mK = 30;
++            body.jitter = 0f;
++            body.squash.snap(1.35f);
++            body.squash.target = 1.1f;
++            props.add(new EggProps.FloorRing(fx, mB, 3.8f, 1.2f, Material.RED_STAINED_GLASS, EggSpeaker.RED, mK + 2));
++            fx.sound(body.pos, Sound.ENTITY_WIND_CHARGE_WIND_BURST, 1.6f, 0.6f);
++            return;
++        }
++        int fly = t - mFire;
++        if (fly < mK) {
++            float u = fly / (float) mK;
++            body.pos.set(lerp(mA.x, mB.x, smooth(u)), 0f, lerp(mA.z, mB.z, smooth(u)));
++            body.air = arc(u) * 10f;
++            body.kickL = (float) Math.sin(fly * 1.3f) * 0.9f;
++            body.kickR = (float) Math.cos(fly * 1.3f) * 0.9f;
++            body.pitch.target = u < 0.6f ? -0.25f : 0.45f;
++            turnToward(mB, 0.2f);
++            if (fly % 6 == 0) {
++                fx.sound(body.centerPoint(), Sound.ENTITY_CHICKEN_STEP, 1.2f, 1.8f);
++            }
++            return;
++        }
++        if (fly == mK) {
++            body.air = 0f;
++            body.kickL = 0f;
++            body.kickR = 0f;
++            body.pos.set(mB);
++            body.squash.snap(0.6f);
++            body.squash.target = 1f;
++            body.pitch.target = 0f;
++            body.pitch.kick(-0.2f);
++            EggProps.RingWave w = props.add(new EggProps.RingWave(fx, mB, 0f, PI, 1.5f, 16f, 0.8f, 20,
++                    Material.WHITE_STAINED_GLASS, AIR));
++            w.power = 10;
++            waves.add(w);
++            for (Player p : fx.targets()) {
++                if (EggMath.horizontal(fx.stage(p.getLocation()), mB) < 3.4f) {
++                    strike(p, 14, mB, 1.6f, 0.6f, "hop" + clock, 1);
++                    w.hit.add(p.getUniqueId());
++                }
++            }
++            fx.sound(mB, Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 2f, 0.5f);
++            fx.sound(mB, Sound.BLOCK_ANVIL_LAND, 1f, 0.5f);
++            fx.sound(mB, Sound.ENTITY_GENERIC_EXPLODE, 1f, 0.6f);
++            fx.particle(Particle.EXPLOSION, new Vector3f(mB).add(0f, 0.4f, 0f), 2, 0.6, 0.0);
++            return;
++        }
++        int dizzy = fly - mK;
++        // Dizzy: it wobbles in a little circle. Free hits.
++        body.roll.target = (float) Math.sin(dizzy * 0.35f) * 0.22f;
++        body.pitch.target = (float) Math.cos(dizzy * 0.35f) * 0.12f;
++        if (dizzy % 10 == 0) {
++            fx.sound(body.topPoint(), Sound.BLOCK_NOTE_BLOCK_CHIME, 0.7f, 1.8f - dizzy * 0.01f);
++        }
++        if (dizzy > 36) {
++            finish(26);
++        }
++    }
++
++    /* ================================================================== TWEETERS */
++
++    private void tweeters(int t) {
++        int count = phase == 1 ? 2 : 4;
++        int rounds = phase >= 3 ? 2 : 1;
++        if (t == 0) {
++            mList.clear();
++            List<EggSpeaker> tw = new ArrayList<>(stage.tweeters);
++            java.util.Collections.shuffle(tw);
++            for (int i = 0; i < count; i++) {
++                mList.add(tw.get(i % tw.size()));
++            }
++            mI = 0;
++            mK = toBeat(8);
++        }
++        int total = mList.size() * rounds;
++        int local = t - mK;
++        if (!mList.isEmpty()) {
++            EggSpeaker cue = mList.get(Math.min(mI, total - 1) % mList.size());
++            // Point the speaker up at the tower being cued.
++            turnToward(cue.base, 0.1f);
++            body.pitch.target = -0.32f;
++        }
++        settleLegs();
++        if (local >= 0 && mI < total && local == mI * beatLen) {
++            EggSpeaker s = mList.get(mI % mList.size());
++            s.arm(toBeat(beatLen * 2) - 8, 8, tweeterPayload());
++            fx.sound(body.facePoint(), Sound.BLOCK_NOTE_BLOCK_PLING, 0.9f, 1.6f + (mI % 4) * 0.1f);
++            body.cone.kick(0.12f);
++            mI++;
++        }
++        if (mI >= total && local > (total + 4) * beatLen + 10) {
++            finish(26);
++        }
++    }
++
++    /* ================================================================== FEEDBACK */
++
++    private void feedback(int t) {
++        int hop = beatLen * 2;
++        if (t == 0) {
++            signals.clear();
++            // Start a few nodes "upstream" of the target so the signal travels toward them.
++            Player p = currentTarget();
++            Vector3f pp = p == null ? new Vector3f(0f, 0f, 10f) : fx.stage(p.getLocation());
++            int near = 0;
++            float best = Float.MAX_VALUE;
++            for (EggSpeaker s : stage.speakers) {
++                float d = EggMath.horizontal(s.base, pp);
++                if (d < best) {
++                    best = d;
++                    near = s.loop;
++                }
++            }
++            mI = Math.floorMod(near - 3, stage.size());
++            mK = toBeat(24);
++        }
++        EggSpeaker start = stage.node(mI);
++        if (t < mK) {
++            float p = t / (float) mK;
++            turnToward(start.base, 0.14f);
++            settleLegs();
++            body.pitch.target = 0.1f;
++            body.jitter = 0.02f * p;
++            body.overfill = 0.3f * p;
++            if (t % 2 == 0) {
++                // The squeal builds.
++                fx.sound(body.facePoint(), Sound.BLOCK_NOTE_BLOCK_FLUTE, 0.5f + 0.5f * p, 1.2f + 0.8f * p);
++            }
++            if (phase >= 3 && t % 4 == 0) {
++                fx.sound(body.facePoint(), Sound.BLOCK_NOTE_BLOCK_BIT, 0.5f, 1.6f + 0.4f * p);
++            }
++            return;
++        }
++        if (t == mK) {
++            body.jitter = 0f;
++            body.overfill = 0f;
++            body.cone.value = 0.4f;
++            fx.sound(body.facePoint(), Sound.BLOCK_NOTE_BLOCK_FLUTE, 1.4f, 2f);
++            fx.sound(body.facePoint(), Sound.BLOCK_BEACON_POWER_SELECT, 1f, 2f);
++            int hops = phase == 1 ? 8 : 7;
++            Signal a = new Signal();
++            a.node = -1;
++            a.dir = 1;
++            a.left = hops;
++            if (phase >= 3) {
++                a.reverseAt = 4;
++                a.arcAt = 2;
++            }
++            signals.add(a);
++            injectSignal(a, start, hop);
++            if (phase >= 2) {
++                Signal b = new Signal();
++                b.node = -1;
++                b.dir = 1;
++                b.left = hops;
++                if (phase >= 3) {
++                    b.arcAt = 5;
++                }
++                signals.add(b);
++                injectSignal(b, stage.node(mI + stage.size() / 2), hop);
++            }
++            return;
++        }
++        // The egg follows the first live signal with its whole body, LEDs chasing.
++        Signal lead = null;
++        for (Signal s : signals) {
++            if (!s.done) {
++                lead = s;
++                break;
++            }
++        }
++        if (lead != null && lead.node >= 0) {
++            turnToward(stage.node(lead.node + lead.dir).base, 0.1f);
++            body.leds(lead.hopsDone % 6);
++        }
++        settleLegs();
++        body.pitch.target = 0f;
++        if (lead == null) {
++            if (mFire < 0) {
++                mFire = t;
++            }
++            if (t - mFire > 30) {
++                finish(34);
++            }
++        }
++    }
++
++    private void injectSignal(Signal s, EggSpeaker first, int hop) {
++        first.arm(hop, beatLen, payloadFor(first));
++        props.add(new EggProps.Packet(fx, body.facePoint(), first.port, hop, SIGNAL, () -> arrive(s, first, -1)));
++        fx.sound(first.cone(), Sound.BLOCK_NOTE_BLOCK_BELL, 1.1f, semitone(MELODY[first.loop]));
++    }
++
++    private void arrive(Signal s, EggSpeaker at, int cable) {
++        if (fx == null) {
++            return;
++        }
++        if (cable >= 0) {
++            stage.cableLit(cable, null);
++        }
++        if (s.done) {
++            return;
++        }
++        s.node = at.loop;
++        s.left--;
++        s.hopsDone++;
++        if (s.left <= 0 || act != Act.FIGHT || move != Move.FEEDBACK) {
++            s.done = true;
++            return;
++        }
++        int hop = beatLen * 2;
++        boolean reversing = s.hopsDone == s.reverseAt;
++        if (reversing) {
++            s.dir = -s.dir;
++            fx.sound(at.cone(), Sound.BLOCK_NOTE_BLOCK_BIT, 1.2f, 0.7f);
++            fx.sound(at.cone(), Sound.ENTITY_GENERIC_EXTINGUISH_FIRE, 0.8f, 1.4f);
++            fx.particle(Particle.ELECTRIC_SPARK, at.cone(), 14, 0.4, 0.1);
++        }
++        boolean arcing = s.hopsDone == s.arcAt;
++        int step = arcing ? 2 : 1;
++        EggSpeaker next = stage.node(s.node + s.dir * step);
++        int nextCable = s.dir > 0 ? s.node : Math.floorMod(s.node - 1, stage.size());
++        if (arcing) {
++            EggSpeaker skipped = stage.node(s.node + s.dir);
++            skipped.wakeFlash();
++            Vector3f a = new Vector3f(at.port).add(0f, 0.6f, 0f);
++            Vector3f b = new Vector3f(next.port).add(0f, 0.6f, 0f);
++            for (int i = 0; i <= 8; i++) {
++                fx.particle(Particle.ELECTRIC_SPARK, EggMath.lerpVec(a, b, i / 8f), 2, 0.15, 0.02);
++            }
++            fx.sound(at.cone(), Sound.ENTITY_LIGHTNING_BOLT_IMPACT, 0.6f, 1.8f);
++            nextCable = -1;
++        } else {
++            stage.cableLit(nextCable, reversing ? SIGNAL_HOT : SIGNAL);
++        }
++        next.arm(hop, beatLen, payloadFor(next));
++        fx.sound(next.cone(), Sound.BLOCK_NOTE_BLOCK_BELL, 1.1f, semitone(MELODY[next.loop]));
++        final int travelled = nextCable;
++        props.add(new EggProps.Packet(fx, at.port, next.port, hop, reversing ? SIGNAL_HOT : SIGNAL,
++                () -> arrive(s, next, travelled)));
++    }
++
++    /* ================================================================== payloads */
++
++    private EggSpeaker.Payload payloadFor(EggSpeaker s) {
++        return switch (s.kind) {
++            case WALL -> lanePayload();
++            case SUB -> subPayload();
++            case TWEETER -> tweeterPayload();
++        };
++    }
++
++    private EggSpeaker.Payload lanePayload() {
++        return new EggSpeaker.Payload() {
++            @Override
++            public void primed(EggSpeaker s) {
++                Vector3f dir = s.facing();
++                Vector3f a = new Vector3f(s.base.x, 0f, s.base.z).fma(1.2f, new Vector3f(dir.x, 0f, dir.z).normalize());
++                Vector3f b = new Vector3f(a).fma(18f, new Vector3f(dir.x, 0f, dir.z).normalize());
++                props.add(new EggProps.Stripe(fx, a, b, 3.3f, Material.RED_STAINED_GLASS, null, 9));
++            }
++
++            @Override
++            public void fire(EggSpeaker s) {
++                fireLane(s);
++            }
++        };
++    }
++
++    private void fireLane(EggSpeaker s) {
++        Vector3f dir = s.facing();
++        dir.y = 0f;
++        dir.normalize();
++        Vector3f start = new Vector3f(s.base.x, 0f, s.base.z).fma(1.0f, dir);
++        EggProps.LaneWall lane = props.add(new EggProps.LaneWall(fx, start, dir, 18.5f, 3.4f, 13, AIR));
++        lane.power = 10;
++        lanes.add(lane);
++        fx.sound(s.cone(), Sound.ENTITY_WIND_CHARGE_WIND_BURST, 1.6f, 0.55f);
++        fx.sound(s.cone(), Sound.ENTITY_GENERIC_EXPLODE, 0.7f, 0.75f);
++        fx.particle(Particle.GUST, s.cone(), 1, 0.0, 0.0);
++    }
++
++    private EggSpeaker.Payload subPayload() {
++        return new EggSpeaker.Payload() {
++            @Override
++            public void primed(EggSpeaker s) {
++                props.add(new EggProps.FloorRing(fx, s.base, 3.4f, 3.4f, Material.RED_STAINED_GLASS, EggSpeaker.RED, 9));
++            }
++
++            @Override
++            public void fire(EggSpeaker s) {
++                fireSub(s);
++            }
++        };
++    }
++
++    private void fireSub(EggSpeaker s) {
++        props.add(new EggProps.Column(fx, s.base, 2.6f));
++        EggProps.RingWave ring = props.add(new EggProps.RingWave(fx, s.base, 0f, PI, 0.8f, 4.5f, 0.35f, 8,
++                Material.WHITE_STAINED_GLASS, null));
++        ring.power = 0;
++        for (Player p : fx.targets()) {
++            Vector3f pp = fx.stage(p.getLocation());
++            if (EggMath.horizontal(pp, s.base) < 3.4f && pp.y < 2.4f && gateOnce(p, "sub" + s.loop + ":" + clock, 4)) {
++                BossHits.hurt(p, instance.getEntity(), 6);
++                Vector3f out = new Vector3f(pp.x - s.base.x, 0f, pp.z - s.base.z);
++                if (out.lengthSquared() > 1e-3f) {
++                    out.normalize(0.18f);
++                }
++                p.setVelocity(new Vector(out.x, 1.35, out.z));
++                p.setFallDistance(0f);
++                onPlayerHit();
++            }
++        }
++        fx.sound(s.cone(), Sound.ENTITY_WIND_CHARGE_WIND_BURST, 1.8f, 0.5f);
++        fx.sound(s.cone(), Sound.BLOCK_NOTE_BLOCK_BASS, 2f, 0.5f);
++        fx.sound(s.cone(), Sound.ENTITY_GENERIC_EXPLODE, 0.9f, 0.5f);
++    }
++
++    private EggSpeaker.Payload tweeterPayload() {
++        return new EggSpeaker.Payload() {
++            private Vector3f spot;
++            private int lockedAt;
++
++            private void lock(EggSpeaker s, int ringLife) {
++                Player p = randomTarget();
++                spot = p == null ? new Vector3f(EggMath.rnd(-8f, 8f), 0f, EggMath.rnd(-8f, 8f)) : fx.stage(p.getLocation());
++                spot.y = 0f;
++                clampArena(spot);
++                lockedAt = clock;
++                props.add(new EggProps.FloorRing(fx, spot, 3.1f, 0.9f, Material.RED_STAINED_GLASS, EggSpeaker.RED, ringLife));
++                fx.sound(s.cone(), Sound.BLOCK_AMETHYST_BLOCK_RESONATE, 1.2f, 2f);
++            }
++
++            @Override
++            public void primed(EggSpeaker s) {
++                lock(s, 8 + 14);
++            }
++
++            @Override
++            public void fire(EggSpeaker s) {
++                if (spot == null || clock - lockedAt > 20) {
++                    // Held primed for a setpiece: aim now, the ring is the timer.
++                    lock(s, 14);
++                }
++                Vector3f to = new Vector3f(spot);
++                fx.sound(s.cone(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.5f, 2f);
++                fx.sound(s.cone(), Sound.ENTITY_FIREWORK_ROCKET_LAUNCH, 1f, 1.6f);
++                props.add(new EggProps.Ball(fx, s.cone(), new Vector3f(to).add(0f, 0.3f, 0f), 3.5f, 14, 0.7f,
++                        Material.WHITE_CONCRETE, TREBLE, () -> trebleImpact(to)));
++            }
++        };
++    }
++
++    private void trebleImpact(Vector3f at) {
++        if (fx == null) {
++            return;
++        }
++        for (Player p : fx.targets()) {
++            Vector3f pp = fx.stage(p.getLocation());
++            if (EggMath.horizontal(pp, at) < 3.1f && pp.y < 3f) {
++                strike(p, 9, at, 1.0f, 0.5f, "treble" + clock, 1);
++            }
++        }
++        EggProps.RingWave ring = props.add(new EggProps.RingWave(fx, at, 0f, PI, 0.6f, 4.2f, 0.4f, 8,
++                Material.WHITE_STAINED_GLASS, TREBLE));
++        ring.power = 0;
++        fx.sound(at, Sound.BLOCK_GLASS_BREAK, 1.6f, 1.6f);
++        fx.sound(at, Sound.BLOCK_NOTE_BLOCK_BELL, 1.4f, 2f);
++        fx.sound(at, Sound.ENTITY_FIREWORK_ROCKET_BLAST, 1.2f, 1.5f);
++        fx.particle(Particle.END_ROD, new Vector3f(at).add(0f, 0.4f, 0f), 12, 0.4, 0.12);
++    }
++
++    /* ================================================================== OVERCLOCK */
++
++    /**
++     * The setpiece. Freeze, vibrate, overfill, the network wakes low to high, hard silence, then
++     * eight beats of BASS OVERLOAD: rings on even beats (jump), one wall set on odd beats (stand
++     * in the dark lanes), then the final drop. Then it overheats and falls on its back.
++     *
++     * @return true when the authored timeline has run out
++     */
++    private boolean overclock(int t, boolean encore) {
++        final int beat = 10;
++        if (t == 0) {
++            silence = OVERCLOCK_TICKS;
++            mA.set(0f, 0f, 0f);
++            fx.sound(body.facePoint(), Sound.BLOCK_BEACON_DEACTIVATE, 1.4f, 0.5f);
++            for (EggSpeaker s : stage.speakers) {
++                s.cancel();
++            }
++        }
++        if (t < 22) {
++            // Hustle to center: whatever speed it takes.
++            float d = EggMath.horizontal(body.pos, mA);
++            if (!stepToward(mA, Math.max(0.3f, d / Math.max(1, 21 - t)), true)) {
++                return false;
++            }
++            settleLegs();
++            return false;
++        }
++        if (t < 62) {
++            float p = window(t, 22, 62);
++            body.jitter = 0.01f + 0.07f * p;
++            body.overfill = p;
++            body.coneHot(true);
++            body.leds(Math.min(5, (t - 22) / 8 + 1));
++            body.squash.target = 1f - 0.1f * p;
++            if (t % 2 == 0) {
++                fx.sound(body.facePoint(), Sound.BLOCK_NOTE_BLOCK_BASS, 1.2f, 0.5f + 0.7f * p);
++            }
++            if (t == 30) {
++                fx.sound(body.facePoint(), Sound.BLOCK_BEACON_AMBIENT, 2f, 0.6f);
++            }
++            return false;
++        }
++        if (t < 102) {
++            // The network wakes in a rising pattern: floor, walls, towers. Low to high.
++            int k = t - 62;
++            if (k % 2 == 0) {
++                int idx = k / 2;
++                List<EggSpeaker> order = new ArrayList<>(stage.subs);
++                order.addAll(stage.walls);
++                order.addAll(stage.tweeters);
++                if (idx < order.size()) {
++                    EggSpeaker s = order.get(idx);
++                    if (s.kind == EggSpeaker.Kind.WALL) {
++                        s.wakeFlash();
++                    } else {
++                        s.armHold(10, s.kind == EggSpeaker.Kind.SUB ? subPayload() : tweeterPayload());
++                    }
++                    fx.clean(s.cone(), Sound.BLOCK_NOTE_BLOCK_BELL, 1.2f, semitone(Math.min(24, idx * 3 / 2)));
++                }
++            }
++            body.jitter = 0.08f;
++            if (t % 3 == 0) {
++                fx.sound(body.facePoint(), Sound.BLOCK_NOTE_BLOCK_BASS, 1f, 1.2f + 0.02f * (t - 62));
++            }
++            return false;
++        }
++        if (t < 112) {
++            // Hard silence. Everything holds.
++            body.jitter = 0f;
++            body.squash.target = 1.22f;
++            body.leds(5);
++            return false;
++        }
++        int o = t - 112;
++        if (o < 8 * beat) {
++            int k = o / beat;
++            int in = o % beat;
++            if (in == beat - 5 || (o == 0)) {
++                // Count-in tick: this is the jump cue.
++                fx.sound(body.topPoint(), Sound.BLOCK_NOTE_BLOCK_HAT, 1.6f, 1.2f);
++            }
++            if (k % 2 == 1 && in == 0) {
++                // Odd beat: one wall set was armed a beat ago and fires now.
++                fx.sound(body.facePoint(), Sound.BLOCK_NOTE_BLOCK_BASEDRUM, 1.4f, 0.6f);
++            }
++            if (in == 0 && k % 2 == 0 && k < 7) {
++                // Even beat: the egg itself pulses. Jump the ring.
++                bodyPulse(0.85f, 22f, 22, 11);
++                if (k < 6) {
++                    // Arm the next wall set to fire on the following beat; the dark walls are the safe lanes.
++                    int set = (k / 2) % 2;
++                    for (int w = set; w < 8; w += 2) {
++                        stage.walls.get(w).arm(beat - 6, 6, lanePayload());
++                    }
++                }
++            }
++            if (k == 7 && in == 0) {
++                // FINAL DROP: subs launch, tweeters fire, the egg detonates.
++                for (EggSpeaker s : stage.subs) {
++                    s.release();
++                }
++                for (EggSpeaker s : stage.tweeters) {
++                    s.release();
++                }
++                bodyPulse(1.0f, 26f, 24, 16);
++                body.squash.snap(1.35f);
++                fx.score(Sound.ENTITY_GENERIC_EXPLODE, 0.8f, 0.5f);
++            }
++            body.jitter = 0.04f;
++            return false;
++        }
++        int h = o - 8 * beat;
++        // Overheat: steam, fizz, flicker, then it tips over backwards.
++        body.jitter = h < 14 ? 0.05f : 0.0f;
++        body.overfill = Math.max(0f, 1f - h / 10f);
++        if (h % 3 == 0) {
++            fx.particle(Particle.CLOUD, body.topPoint(), 4, 0.4, 0.06);
++            fx.particle(Particle.SMOKE, body.facePoint(), 3, 0.3, 0.03);
++        }
++        if (h % 5 == 0) {
++            fx.sound(body.facePoint(), Sound.BLOCK_FIRE_EXTINGUISH, 0.9f, 0.8f + h * 0.02f);
++            body.leds(h % 10 == 0 ? 5 : 0);
++        }
++        if (h == 18) {
++            body.coneHot(false);
++            body.leds(0);
++            body.pitch.target = -1.42f;
++            body.pitch.kick(-0.12f);
++        }
++        if (h == 26) {
++            fx.sound(body.pos, Sound.BLOCK_ANVIL_LAND, 0.9f, 0.6f);
++            fx.sound(body.pos, Sound.ENTITY_GENERIC_EXPLODE, 0.5f, 1.4f);
++            fx.particle(Particle.CLOUD, new Vector3f(body.pos).add(0f, 0.4f, -2f), 14, 1.2, 0.05);
++        }
++        return h >= OVERCLOCK_TICKS - 112 - 8 * beat;
++    }
++
++    /** The egg's own 360-degree pressure ring (overload beats). */
++    private void bodyPulse(float height, float reach, int life, double power) {
++        EggProps.RingWave w = props.add(new EggProps.RingWave(fx, body.pos, 0f, PI, 1.6f, reach, height, life,
++                Material.WHITE_STAINED_GLASS, AIR));
++        w.power = power;
++        waves.add(w);
++        body.cone.value = 0.5f;
++        body.squash.kick(0.25f);
++        drop(body.facePoint(), 0.8f);
++        for (EggSpeaker s : stage.speakers) {
++            s.kick(0.2f);
++        }
++    }
++
++    /* ================================================================== TIPPED */
++
++    private void tipped(int t) {
++        int length = 76;
++        body.pitch.target = -1.42f;
++        body.jitter = 0f;
++        // Tiny legs kicking at the sky.
++        body.kickL = (float) Math.sin(t * 0.9f) * 0.8f;
++        body.kickR = (float) Math.sin(t * 0.9f + 1.7f) * 0.8f;
++        if (t % 3 == 0) {
++            fx.sound(body.pos, Sound.ENTITY_CHICKEN_STEP, 0.7f, 1.7f);
++        }
++        if (t % 6 == 0) {
++            fx.particle(Particle.SMOKE, body.facePoint(), 3, 0.25, 0.04);
++        }
++        if (t % 11 == 0) {
++            body.leds(ThreadLocalRandom.current().nextInt(4));
++        }
++        if (t == 50 || t == 58) {
++            body.roll.kick(t == 50 ? 0.3f : -0.35f);
++            fx.sound(body.pos, Sound.BLOCK_DECORATED_POT_HIT, 1.2f, 0.7f);
++        }
++        if (t == length) {
++            body.kickL = 0f;
++            body.kickR = 0f;
++            body.pitch.target = 0f;
++            body.pitch.kick(0.25f);
++            body.squash.snap(0.7f);
++            body.squash.target = 1f;
++            fx.sound(body.pos, Sound.ENTITY_SLIME_JUMP, 1.4f, 0.7f);
++            fx.sound(body.pos, Sound.BLOCK_NOTE_BLOCK_BASS, 1.2f, 0.7f);
++        }
++        if (t >= length + 16) {
++            finish(20);
++        }
++    }
++
++    /* ================================================================== transitions */
++
++    private void beginTransition() {
++        endMove();
++        move = Move.IDLE;
++        act = Act.TRANSITION;
++        actTick = 0;
++        for (Signal s : signals) {
++            s.done = true;
++        }
++        signals.clear();
++        BossPhase pending = instance.getPendingPhase();
++        transitionKind = pending != null && pending.getHealthPercent() < 45 ? 2 : 1;
++        int configured = pending != null && pending.getTransition() != null ? pending.getTransition().getDurationTicks() : 0;
++        int authored = transitionKind == 1 ? OVERCLOCK_TICKS : DISTORT_TICKS;
++        transitionLength = configured > 0 ? configured : authored;
++        body.kickL = 0f;
++        body.kickR = 0f;
++        body.air = 0f;
++        body.liftL = 0f;
++        body.liftR = 0f;
++        body.bob = 0f;
++        body.jitter = 0f;
++        body.overfill = 0f;
++        body.coneHot(false);
++        body.pitch.target = 0f;
++        body.roll.target = 0f;
++        body.squash.target = 1f;
++        body.cone.target = 0f;
++        moveTick = 0;
++        mFire = -1;
++    }
++
++    private void tickTransition() {
++        if (!instance.isTransitioning()) {
++            finishTransition();
++            return;
++        }
++        int authored = transitionKind == 1 ? OVERCLOCK_TICKS : DISTORT_TICKS;
++        int tau = Math.round(actTick * authored / (float) Math.max(1, transitionLength));
++        int prev = actTick == 0 ? -1 : Math.round((actTick - 1) * authored / (float) Math.max(1, transitionLength));
++        actTick++;
++        for (int k = prev + 1; k <= tau; k++) {
++            if (transitionKind == 1) {
++                overclock(k, false);
++            } else {
++                distortion(k);
++            }
++        }
++    }
++
++    private void finishTransition() {
++        act = Act.FIGHT;
++        actTick = 0;
++        phase = transitionKind == 1 ? 2 : 3;
++        beatLen = beatFor(phase);
++        beatClock = 0;
++        silence = 0;
++        lastHealth = instance.getCombatHealth();
++        if (transitionKind == 1) {
++            // It overheated: on its back, legs kicking. Punish window.
++            begin(Move.TIPPED);
++            moveTick = 0;
++        } else {
++            applyDistortedLook(true);
++            finish(24);
++        }
++    }
++
++    /**
++     * DISTORTION. Feedback scream, hard silence, three cracks, the lid pops off, a detuned reboot,
++     * one WUB. From here every sound warbles and the wobble never quite settles.
++     */
++    private void distortion(int t) {
++        Vector3f face = body.facePoint();
++        if (t == 0) {
++            silence = DISTORT_TICKS;
++            for (EggSpeaker s : stage.speakers) {
++                s.cancel();
++            }
++        }
++        if (t < 18) {
++            body.jitter = 0.1f;
++            body.overfill = (t % 4 < 2) ? 0.6f : 0f;
++            if (t % 2 == 0) {
++                fx.sound(face, Sound.BLOCK_NOTE_BLOCK_BIT, 1.4f, 2f);
++                fx.sound(face, Sound.BLOCK_NOTE_BLOCK_FLUTE, 1.2f, 1.9f + EggMath.rnd(-0.1f, 0.1f));
++            }
++            if (t == 2) {
++                fx.sound(face, Sound.ENTITY_WARDEN_SONIC_CHARGE, 1.2f, 2f);
++            }
++            if (t % 3 == 0) {
++                stage.node(ThreadLocalRandom.current().nextInt(stage.size())).wakeFlash();
++            }
++            return;
++        }
++        if (t == 18) {
++            body.jitter = 0f;
++            body.overfill = 0f;
++            body.leds(0);
++        }
++        if (t == 36 || t == 52 || t == 68) {
++            int n = (t - 36) / 16;
++            body.crack();
++            body.crackOpen = 0.35f * (n + 1);
++            if (n >= 1) {
++                body.dented = true;
++            }
++            body.pitch.kick(n % 2 == 0 ? 0.12f : -0.1f);
++            body.roll.kick(n % 2 == 0 ? -0.1f : 0.12f);
++            body.squash.kick(-0.08f);
++            fx.sound(face, n < 2 ? Sound.ENTITY_TURTLE_EGG_CRACK : Sound.ENTITY_TURTLE_EGG_BREAK, 2f, 0.5f + n * 0.05f);
++            fx.sound(face, Sound.BLOCK_AMETHYST_CLUSTER_BREAK, 1.2f, 0.5f);
++            if (n == 1) {
++                fx.sound(face, Sound.BLOCK_ANVIL_LAND, 0.5f, 1.6f);
++            }
++            fx.dust(body.centerPoint(), Color.WHITE, 1.4f, 14, 0.9);
++            fx.dust(body.centerPoint(), EggBody.ORANGE, 1.2f, 8, 0.6);
++        }
++        if (t == 86) {
++            popLid();
++        }
++        if (t > 86 && t < 100 && t % 2 == 0) {
++            fx.dust(body.topPoint(), EggBody.ORANGE, 1.6f, 4, 0.3);
++            fx.particle(Particle.LAVA, body.topPoint(), 1, 0.2, 0.0);
++        }
++        if (t >= 102 && t < 142) {
++            // Detuned reboot: a startup chime that is not quite in tune any more.
++            fx.warble = 0.08f;
++            int k = t - 102;
++            if (k % 5 == 0) {
++                fx.sound(face, Sound.BLOCK_NOTE_BLOCK_CHIME, 1.2f, semitone(MELODY[(k / 5) % 8] + 1));
++            }
++            if (k % 2 == 0) {
++                int idx = (k / 2 * 7) % stage.size();
++                EggSpeaker s = stage.node(idx);
++                s.distorted = true;
++                s.wakeFlash();
++            }
++            body.leds((k / 4) % 6);
++        }
++        if (t >= 146 && t < 158) {
++            float u = (t - 146) / 12f;
++            body.air = arc(u) * 1.6f;
++            body.squash.target = 1.1f;
++        }
++        if (t == 158) {
++            body.air = 0f;
++            body.squash.snap(0.68f);
++            body.squash.target = 1f;
++            bodyPulse(0.6f, 18f, 20, 8);
++        }
++    }
++
++    private void popLid() {
++        Vector3f top = body.topPoint();
++        Vector3f back = EggMath.flat(body.yaw + PI + 0.6f, 4.5f).add(body.pos);
++        back.y = 0.55f;
++        clampArena(back);
++        lid = props.add(new EggProps.Lid(fx, body.lidMatrices(), body.lidMaterials(), new Vector3f(top).add(0f, -0.4f, 0f), back));
++        body.lidOff = true;
++        fx.sound(top, Sound.ENTITY_CHICKEN_EGG, 2f, 0.5f);
++        fx.sound(top, Sound.ENTITY_FIREWORK_ROCKET_BLAST, 1.4f, 0.6f);
++        fx.sound(top, Sound.BLOCK_PISTON_EXTEND, 1f, 0.5f);
++        fx.particle(Particle.CLOUD, top, 12, 0.4, 0.08);
++    }
++
++    /** Phase 3 look and feel: cracked, lidless, purple idle lamps, wobbly, warbled. */
++    private void applyDistortedLook(boolean live) {
++        body.crack();
++        body.crackOpen = 1f;
++        body.dented = true;
++        if (!live) {
++            body.lidOff = true;
++        }
++        body.pitch.d = 0.12f;
++        body.roll.d = 0.12f;
++        body.squash.d = 0.16f;
++        fx.warble = 0.08f;
++        for (EggSpeaker s : stage.speakers) {
++            s.distorted = true;
++        }
++    }
++
++    /* ================================================================== death */
++
++    /**
++     * 1 final charge (everything wakes) · 2 peak tension · 3 hard silence · 4 the network dies one
++     * speaker at a time · 5 the egg loses power and tips over like a dead appliance · 6 one tiny
++     * egg plops out. Pop.
++     */
++    private boolean tickDeath() {
++        int t = actTick++;
++        Vector3f face = body.facePoint();
++        int n = stage.size();
++        if (t == 0) {
++            for (Signal s : signals) {
++                s.done = true;
++            }
++            signals.clear();
++            waves.clear();
++            lanes.clear();
++            body.kickL = 0f;
++            body.kickR = 0f;
++            body.air = 0f;
++            body.overfill = 0f;
++            body.pitch.target = 0f;
++            body.roll.target = 0f;
++            for (EggSpeaker s : stage.speakers) {
++                s.cancel();
++            }
++            fx.sound(face, Sound.BLOCK_BEACON_POWER_SELECT, 1.4f, 0.5f);
++        }
++        if (t < 44) {
++            // 1. Final charge: it tries one last time. Everything wakes, rising.
++            float p = t / 44f;
++            body.pos.lerp(new Vector3f(0f, 0f, 0f), 0.05f);
++            body.jitter = 0.02f + 0.06f * p;
++            body.overfill = p;
++            body.coneHot(true);
++            body.leds(Math.round(5 * p));
++            if (t % 2 == 0 && t / 2 < n) {
++                EggSpeaker s = stage.node(t / 2);
++                s.armHold(10, s2 -> {
++                });
++                fx.clean(s.cone(), Sound.BLOCK_NOTE_BLOCK_BELL, 1f, semitone(MELODY[t / 2]));
++            }
++            if (t % 3 == 0) {
++                fx.clean(face, Sound.BLOCK_NOTE_BLOCK_BASS, 1.2f, 0.5f + 1.3f * p);
++            }
++            return false;
++        }
++        if (t < 62) {
++            // 2. Peak tension: on its tiptoes, every lamp red, the pitch at the top.
++            body.squash.target = 1.28f;
++            body.jitter = 0.09f;
++            body.ledsAll(Material.RED_CONCRETE, EggSpeaker.RED);
++            if (t % 2 == 0) {
++                fx.clean(face, Sound.BLOCK_NOTE_BLOCK_FLUTE, 1.2f, 2f);
++            }
++            return false;
++        }
++        if (t == 62) {
++            // 3. Hard silence. No hum, no beat, nothing moves.
++            body.jitter = 0f;
++            body.frozen = true;
++        }
++        if (t < 94) {
++            return false;
++        }
++        if (t == 94) {
++            body.frozen = false;
++            body.overfill = 0f;
++            body.coneHot(false);
++        }
++        int dieStart = 94;
++        int dieGap = 5;
++        if (t < dieStart + n * dieGap) {
++            // 4. The network dies, one installation at a time, in loop order.
++            int k = t - dieStart;
++            if (k % dieGap == 0) {
++                EggSpeaker s = stage.node(k / dieGap);
++                s.die();
++                stage.cableLit(k / dieGap, null);
++                body.leds(5 - (k / dieGap) * 5 / n);
++            }
++            body.squash.target = lerp(1.2f, 1f, window(t, dieStart, dieStart + n * dieGap));
++            return false;
++        }
++        int e = t - (dieStart + n * dieGap);
++        if (e == 0) {
++            // 5. Power loss.
++            body.powerDown();
++            body.cone.target = -0.12f;
++            fx.clean(face, Sound.BLOCK_BEACON_DEACTIVATE, 1.6f, 0.5f);
++            fx.clean(face, Sound.BLOCK_NOTE_BLOCK_BASS, 1.4f, 0.5f);
++        }
++        if (e > 0 && e < 30) {
++            // Knees go. It sags, sways once, and leans past the point of no return.
++            body.squash.target = 0.88f;
++            body.roll.target = e < 14 ? 0.12f : -0.05f;
++            body.pitch.target = e < 14 ? -0.08f : 0.35f;
++            body.bob = -0.15f * window(e, 0, 20);
++        }
++        if (e == 30) {
++            body.pitch.target = 1.5f;
++            body.pitch.k = 0.1f;
++            body.pitch.d = 0.18f;
++            fx.clean(body.pos, Sound.BLOCK_WOODEN_TRAPDOOR_CLOSE, 0.8f, 0.5f);
++        }
++        if (e == 44) {
++            // Face-first into the floor like a dead appliance. Thud.
++            fx.clean(face, Sound.BLOCK_ANVIL_LAND, 1.2f, 0.5f);
++            fx.clean(face, Sound.ENTITY_GENERIC_EXPLODE, 0.6f, 0.5f);
++            fx.clean(face, Sound.BLOCK_DECORATED_POT_BREAK, 1.2f, 0.6f);
++            fx.particle(Particle.CLOUD, new Vector3f(face.x, 0.3f, face.z), 20, 1.4, 0.04);
++            body.squash.kick(-0.1f);
++        }
++        if (e > 50 && e < 80) {
++            // One leg twitches. Then doesn't.
++            body.kickR = e % 8 < 2 && e < 74 ? 0.5f : 0f;
++        }
++        if (e == 86) {
++            // 6. Pop.
++            fx.clean(face, Sound.ENTITY_CHICKEN_EGG, 1.6f, 1f);
++            spawnChick();
++        }
++        if (e > 86 && e < 104) {
++            rollChick(e - 86);
++        }
++        if (e == 112) {
++            fx.clean(face, Sound.BLOCK_NOTE_BLOCK_BIT, 0.25f, 2f);
++        }
++        return e >= 124;
++    }
++
++    private void spawnChick() {
++        Vector3f back = EggMath.flat(body.yaw + PI, 2.2f).add(body.pos);
++        mB.set(back.x, 0.2f, back.z);
++        mA.set(EggMath.flat(body.yaw + PI + 0.5f, 4.2f).add(body.pos));
++        mA.y = 0.2f;
++        clampArena(mA);
++        chick = fx.item(new ItemStack(Material.EGG), 15);
++        EggFx.push(chick, new Matrix4f().translation(mB).scale(0.9f), 0);
++        fx.particle(Particle.CLOUD, mB, 4, 0.15, 0.02);
++    }
++
++    private void rollChick(int k) {
++        if (chick == null) {
++            return;
++        }
++        float u = k / 18f;
++        Vector3f p = EggMath.lerpVec(mB, mA, EggMath.outCubic(u));
++        p.y = 0.2f + arc(Math.min(1f, u * 2f)) * 0.8f;
++        EggFx.push(chick, new Matrix4f().translation(p).rotateX(u * PI * 3f).scale(0.9f), 1);
++        if (k == 6) {
++            fx.clean(p, Sound.BLOCK_DECORATED_POT_HIT, 0.6f, 1.8f);
++        }
++    }
++
++    /* ================================================================== hazards */
++
++    private void tickHazards() {
++        for (Iterator<EggProps.RingWave> it = waves.iterator(); it.hasNext(); ) {
++            if (it.next().done()) {
++                it.remove();
++            }
++        }
++        for (Iterator<EggProps.LaneWall> it = lanes.iterator(); it.hasNext(); ) {
++            if (it.next().done()) {
++                it.remove();
++            }
++        }
++        if (waves.isEmpty() && lanes.isEmpty()) {
++            return;
++        }
++        for (Player p : fx.targets()) {
++            Vector3f feet = fx.stage(p.getLocation());
++            UUID id = p.getUniqueId();
++            for (EggProps.RingWave w : waves) {
++                if (w.power > 0 && w.catches(feet, 0.95f) && w.hit.add(id)) {
++                    strike(p, w.power, w.center, w.knock, w.lift, "wave" + System.identityHashCode(w), 1);
++                }
++            }
++            for (EggProps.LaneWall l : lanes) {
++                if (l.power > 0 && l.catches(feet) && l.hit.add(id)) {
++                    Vector3f from = new Vector3f(feet).fma(-2f, l.dir);
++                    strike(p, l.power, from, 1.6f, 0.4f, "lane" + System.identityHashCode(l), 1);
++                }
++            }
++        }
++    }
++
++    private boolean gateOnce(Player p, String key, int ticks) {
++        String k = p.getUniqueId() + "|" + key;
++        Integer last = gate.get(k);
++        if (last != null && clock - last < ticks) {
++            return false;
++        }
++        gate.put(k, clock);
++        if (gate.size() > 256) {
++            gate.entrySet().removeIf(en -> clock - en.getValue() > 200);
++        }
++        return true;
++    }
++
++    private boolean strike(Player p, double power, Vector3f from, float knock, float lift, String key, int gateTicks) {
++        if (!gateOnce(p, key, gateTicks)) {
++            return false;
++        }
++        if (power > 0) {
++            BossHits.hurt(p, instance.getEntity(), power);
++        }
++        Vector3f pp = fx.stage(p.getLocation());
++        Vector3f dir = new Vector3f(pp.x - from.x, 0f, pp.z - from.z);
++        if (dir.lengthSquared() < 1e-3f) {
++            dir.set((float) Math.sin(body.yaw), 0f, (float) Math.cos(body.yaw));
++        }
++        dir.normalize(knock);
++        p.setVelocity(new Vector(dir.x, lift, dir.z));
++        Location l = p.getLocation();
++        p.getWorld().playSound(l, Sound.ENTITY_PLAYER_ATTACK_KNOCKBACK, 1f, 0.6f);
++        p.getWorld().playSound(l, Sound.BLOCK_NOTE_BLOCK_BASS, 1f, 0.5f);
++        onPlayerHit();
++        return true;
++    }
++
++    /** Somebody got hit: a little smug lean, no words. */
++    private void onPlayerHit() {
++        if (move == Move.IDLE || move == Move.CHANNELS || move == Move.FEEDBACK) {
++            smugUntil = clock + 18;
++            body.pitch.kick(-0.05f);
++        }
++    }
++
++    /** Shell hit feedback: a ceramic tock, a flinch away from the attacker, a burst of static. */
++    private void hitReactions() {
++        double hp = instance.getCombatHealth();
++        if (hp < lastHealth - 0.01 && clock - lastHitReact >= 4) {
++            lastHitReact = clock;
++            Player attacker = fx.nearestTarget(body.pos);
++            if (attacker != null) {
++                Vector3f from = fx.stage(attacker.getLocation());
++                float lx = localX(from);
++                body.roll.kick(lx > 0 ? -0.04f : 0.04f);
++                body.pitch.kick(-0.03f);
++            }
++            body.squash.kick(-0.05f);
++            Vector3f c = body.centerPoint();
++            fx.sound(c, Sound.BLOCK_DECORATED_POT_HIT, 1.2f, 1.2f + EggMath.rnd() * 0.4f);
++            if (phase >= 3 || ThreadLocalRandom.current().nextFloat() < 0.3f) {
++                fx.sound(body.facePoint(), Sound.BLOCK_FIRE_EXTINGUISH, 0.35f, 1.8f);
++                fx.particle(Particle.ELECTRIC_SPARK, body.facePoint(), 3, 0.4, 0.05);
++            }
++        }
++        lastHealth = hp;
++    }
++
++    /** Nobody leaves mid-set: a bounce from the PA throws fallers back onto the stage. */
++    private void rescueFallers() {
++        if (clock % 5 != 0) {
++            return;
++        }
++        Location c = fx.anchor();
++        for (Player p : c.getWorld().getPlayers()) {
++            if (!instance.isCombatTarget(p) || p.isDead()) {
++                continue;
++            }
++            Location l = p.getLocation();
++            double dx = l.getX() - c.getX();
++            double dz = l.getZ() - c.getZ();
++            double dy = l.getY() - c.getY();
++            if (dx * dx + dz * dz > 46 * 46 || dy > -6 || dy < -90) {
++                continue;
++            }
++            double a = Math.atan2(dx, dz);
++            Location to = c.clone().add(Math.sin(a) * 13, 0.2, Math.cos(a) * 13);
++            to.setDirection(c.toVector().subtract(to.toVector()).setY(0));
++            p.teleport(to);
++            p.setFallDistance(0f);
++            p.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_FALLING, 30, 0, false, false, false));
++            BossHits.hurt(p, instance.getEntity(), 5);
++            p.playSound(to, Sound.ENTITY_SLIME_JUMP, 1.4f, 0.6f);
++            p.playSound(to, Sound.BLOCK_NOTE_BLOCK_BASS, 1.4f, 0.5f);
++            if (taught.add("rescue-" + p.getUniqueId())) {
++                p.sendMessage(de.aetherion.bossengine.util.TextUtil.component(
++                        "&7&oThe PA bounces you back on stage. The set is not over."));
++            }
++        }
++    }
++
++    /* ================================================================== locomotion */
++
++    /**
++     * Waddle toward {@code goal}. Feet alternate, the body rolls side to side, every footfall is a
++     * chicken step. @return true when arrived
++     */
++    private boolean stepToward(Vector3f goal, float speed, boolean face) {
++        Vector3f to = new Vector3f(goal.x - body.pos.x, 0f, goal.z - body.pos.z);
++        float d = to.length();
++        if (d < 0.25f) {
++            settleLegs();
++            return true;
++        }
++        to.normalize(Math.min(speed, d));
++        Vector3f next = new Vector3f(body.pos).add(to);
++        clampArena(next);
++        body.pos.set(next);
++        if (face) {
++            body.yaw = EggMath.approachAngle(body.yaw, EggMath.yawToward(to.x, to.z), 0.16f);
++        }
++        float before = walkPhase;
++        walkPhase += speed * 2.4f;
++        float s = (float) Math.sin(walkPhase);
++        body.liftL = Math.max(0f, s);
++        body.liftR = Math.max(0f, -s);
++        body.roll.target = s * 0.13f;
++        body.bob = Math.abs(s) * 0.07f;
++        if (Math.floor(before / PI) != Math.floor(walkPhase / PI)) {
++            stepSide = !stepSide;
++            fx.sound(body.pos, Sound.ENTITY_CHICKEN_STEP, 1.3f, 0.6f + EggMath.rnd() * 0.15f);
++            body.squash.kick(-0.025f);
++        }
++        return false;
++    }
++
++    /** Fast panicked steps (recoil). */
++    private void scramble(int k) {
++        float s = (float) Math.sin(k * 1.6f);
++        body.liftL = Math.max(0f, s);
++        body.liftR = Math.max(0f, -s);
++        if (k % 2 == 0) {
++            fx.sound(body.pos, Sound.ENTITY_CHICKEN_STEP, 1f, 1.2f);
++        }
++    }
++
++    private void settleLegs() {
++        body.liftL *= 0.6f;
++        body.liftR *= 0.6f;
++        body.bob *= 0.7f;
++    }
++
++    private void turnToward(Vector3f goal, float step) {
++        float want = EggMath.yawToward(goal.x - body.pos.x, goal.z - body.pos.z);
++        body.yaw = EggMath.approachAngle(body.yaw, want, step);
++    }
++
++    private static void clampArena(Vector3f v) {
++        float d = (float) Math.sqrt(v.x * v.x + v.z * v.z);
++        if (d > EGG_R) {
++            v.x *= EGG_R / d;
++            v.z *= EGG_R / d;
++        }
++    }
++
++    /* ================================================================== targeting */
++
++    private Player currentTarget() {
++        if (target != null) {
++            Player p = Bukkit.getPlayer(target);
++            if (p != null && fx.targets().contains(p)) {
++                return p;
++            }
++        }
++        Player p = fx.nearestTarget(body == null ? new Vector3f() : body.pos);
++        target = p == null ? null : p.getUniqueId();
++        return p;
++    }
++
++    private Player otherTarget() {
++        List<Player> all = fx.targets();
++        for (Player p : all) {
++            if (!p.getUniqueId().equals(target)) {
++                return p;
++            }
++        }
++        return all.isEmpty() ? null : all.get(0);
++    }
++
++    private Player randomTarget() {
++        List<Player> all = fx.targets();
++        return all.isEmpty() ? null : all.get(ThreadLocalRandom.current().nextInt(all.size()));
++    }
++}
+diff --git a/BossEngine/src/main/java/de/aetherion/bossengine/item/BossSpawnItemService.java b/BossEngine/src/main/java/de/aetherion/bossengine/item/BossSpawnItemService.java
+index ec24735..70e1343 100644
+--- a/BossEngine/src/main/java/de/aetherion/bossengine/item/BossSpawnItemService.java
++++ b/BossEngine/src/main/java/de/aetherion/bossengine/item/BossSpawnItemService.java
+@@ -393,6 +393,9 @@ public class BossSpawnItemService {
+         changed |= ensureItem(root, "hanging_saint_core", "hanging_saint", "SUMMON",
+                 "STRING", "&fHanging Saint Core",
+                 List.of("&7Right-click to summon Seraphine here (test).", "&8Test-Item · BossEngine"), true);
++        changed |= ensureItem(root, "eggquelizer_core", "eggquelizer", "SUMMON",
++                "EGG", "&fEggquelizer Core",
++                List.of("&7Right-click to summon the Eggquelizer here (test).", "&8Test-Item · BossEngine"), true);
+ 
+         // Sandbox / Test Arena prototypes (no live anchors)
+         changed |= ensureItem(root, "test_echo_core", "test_echo", "SUMMON",
+diff --git a/BossEngine/src/main/resources/bosses/eggquelizer.yml b/BossEngine/src/main/resources/bosses/eggquelizer.yml
+new file mode 100644
+index 0000000..93d35f8
+--- /dev/null
++++ b/BossEngine/src/main/resources/bosses/eggquelizer.yml
+@@ -0,0 +1,103 @@
++# ============================================================
++# EGGQUELIZER
++# A giant egg on tiny legs with a speaker for a face, running the
++# arena's PA. Spectacle boss: the whole fight lives in
++#   de.aetherion.bossengine.instance.eggquelizer.EggquelizerDirector
++# This file only supplies HP gates, transition windows and a hitbox.
++#
++# Arena: the director raises its own EggStage at the spawn (lifted to
++# the first height where it fits in open air), places blocks only into
++# air and strikes exactly those blocks after the show.
++#
++# HP / loot below are placeholders.
++# ============================================================
++
++id: eggquelizer
++display-name: "&f&lEGGQUELIZER"
++# Silhouette only: invisible hitbox. The body is ~75 BlockDisplays.
++entity-type: HUSK
++model-engine-id: ""
++
++attributes:
++  max-health: 60000
++  movement-speed: 0.0
++  attack-damage: 0
++  scale: 2.6
++  follow-range: 32
++  knockback-resistance: 1.0
++
++options:
++  glowing: false
++  custom-name-visible: false
++  silent: true
++  invulnerable-spawn-ticks: 0
++  persistent: true
++  remove-when-far-away: false
++  prevent-item-pickup: true
++
++conditions:
++  max-instances: 1
++  leash-radius: 40
++  leash-action: TELEPORT
++
++phases:
++  - id: soundcheck
++    health-percent: 100
++    display-name: "&f&lEGGQUELIZER"
++    skills: []
++
++  # OVERCLOCK. Authored at 222 ticks; other values rescale the timeline.
++  - id: headliner
++    health-percent: 60
++    display-name: "&f&lEGGQUELIZER &7— &eOverclocked"
++    transition:
++      duration-ticks: 222
++      invulnerable: true
++      freeze-ai: true
++      explode: false
++    skills: []
++
++  # DISTORTION. Authored at 170 ticks.
++  - id: distortion
++    health-percent: 30
++    display-name: "&5&lEGGQUELIZER &7— &dDistorted"
++    transition:
++      duration-ticks: 170
++      invulnerable: true
++      freeze-ai: true
++      explode: false
++    skills: []
++
++skills: []
++
++# Placeholder loot.
++loot:
++  damage-based: true
++  participation-threshold-percent: 5.0
++  experience: 600
++
++  killer-bonus: []
++
++  top-damagers:
++    count: 0
++    items: []
++
++  shared: []
++
++  per-damager:
++    - source: VANILLA
++      material: EGG
++      min-amount: 1
++      max-amount: 3
++      chance: 1.0
++    - source: VANILLA
++      material: NOTE_BLOCK
++      min-amount: 1
++      max-amount: 1
++      chance: 0.25
++    - source: VANILLA
++      material: EXPERIENCE_BOTTLE
++      min-amount: 6
++      max-amount: 12
++      chance: 1.0
++      scale-with-damage: true
+-- 
+2.43.0
+

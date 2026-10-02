@@ -1,0 +1,257 @@
+--- live/config.yml
++++ proposed/config.yml
+@@ -5,11 +5,11 @@
+       header:
+       - ''
+       - <gradient:gold:yellow:gold><b>✦ AETHERION ✦</b></gradient>
+-      - '&7Netzwerk Lobby'
++      - '&8— &7MMO Realm &8—'
+       - ''
+       footer:
+       - ''
+-      - '&7Online: &f%online%&7/&f%online_max%'
++      - '&7Online &f%online%&8/&7%online_max%  &8·  &7Ping &f%ping%&7ms'
+       - ''
+ tablist-name-formatting:
+   enabled: true
+@@ -25,7 +25,9 @@
+   can-see-friendly-invisibles: false
+   disable-condition: '%world%=disabledworld'
+ playerlist-objective:
+-  enabled: true
++  # Off: the layout below swaps real entries for fake slots, so TAB warns this
++  # objective "will only look bad and consume resources". Ping is in the footer.
++  enabled: false
+   value: '%ping%'
+   fancy-value: '&7Ping: %ping%'
+   title: TAB
+@@ -62,20 +64,20 @@
+     # Single board: special-rank line is first; TAB drops empty lines when
+     # %aetherion_ultra_rank% is blank (no stored extra). Avoids ultra/main
+     # display-condition race that left ranked players stuck on main.
++    #
++    # Who (special rank, level, XP) -> where (area) -> purse (coins).
++    # The level line always has static text, so it never hides. Quest progress
++    # stays on the quest BossBar/ActionBar and is not repeated here.
+     sidebar:
+-      title: '%animation:Aetherion%'
++      title: '%animation:AetherionTitle%'
+       lines:
+       - '&8&m----------------'
+       - '%aetherion_ultra_rank%'
+-      - '%aetherion_level_title%'
+-      - '&f%player%'
+-      - ''
+-      - '&6&l📍 AREA'
+-      - '&f%aetherion_area%'
++      - '%aetherion_level_title% &8· &7Lv %aetherion_level_colored%'
++      - '%aetherion_level_bar%'
+       - ''
+-      - '&6&l💰 ECONOMY'
+-      - '&eCoins'
+-      - '&f%aetherion_coins%'
++      - '&7Area &f%aetherion_area%'
++      - '&7Coins &6%aetherion_coins%'
+       - '&8&m----------------'
+ layout:
+   enabled: true
+@@ -109,7 +111,7 @@
+       - 22|&e&lAREA
+       - 23|&f%aetherguild_island%
+       - 24|&7Island Lv.%aetherguild_island_level%
+-      - 25|
++      - '25| '
+       - 26|&6&lQUARRIES
+       - '27|&7%aetherguild_quarry_1%'
+       - '28|&7%aetherguild_quarry_2%'
+@@ -119,7 +121,7 @@
+       - '32|&7%aetherguild_quarry_6%'
+       - '33|&7%aetherguild_quarry_7%'
+       - '34|&7%aetherguild_quarry_8%'
+-      - 35|
++      - '35| '
+       - 36|&e&lMEMBERS
+       - '37|&aOnline: &f%aetherguild_online_count%&7/&f%aetherguild_member_count%'
+       - '38|&7%aetherguild_member_1%'
+@@ -149,66 +151,44 @@
+         players:
+           slots:
+           - 44-60
++    # mmor TAB list. No display-condition = everyone outside aether_guilds.
++    # Columns read left to right: you, players, combat, gathering.
+     default:
+       slot-count: 80
+       fixed-slots:
+-      - 2|<gradient:gold:yellow:gold><b>✦ AETHERION ✦</b></gradient>
+-      - 3|&7Aetherion
+-      - 4|&8&m--------------------
+-      - 6|&6&lSERVER
+-      - '7|&7Status: &aOnline'
+-      - '8|&7Players: &f%online%&7/&f%online_max%'
+-      - '9|&7Ping: &f%ping%&7ms'
+-      - '10|&7TPS: &f%tps%'
+-      - '11|&7RAM: &f%memory-used%&7MB'
+-      - '12|&7World: &fAetherion'
+-      - 14|&6&lNETWORK
+-      - '15|&7Server: &fAetherion'
+-      - '16|&7Version: &f1.21.1'
+-      - 17|&b✦ Aether Shards
+-      - '18|&f%aetherion_shards%'
+-      - 19|&8&m--------------------
+-      - 20|&6✦ AETHERION ✦
+-      - 22|&6&lWORLD
+-      - 23|&fAetherion
+-      - 24|&7The world of adventure
+-      - 25|
+-      - 27|&e&lAREA
+-      - 28|&f%aetherion_area%
+-      - 29|&7Current region
+-      - 30|
+-      - 32|&d&lPET
+-      - 33|&f%aethermobs_pet_name%
+-      - 34|&7Lv.%aethermobs_pet_level% %aethermobs_pet_bar%
+-      - 35|
+-      - 37|&e&lLEVEL
+-      - 38|&fLv.%aetherion_level_colored%
+-      - 39|%aetherion_level_bar%
+-      - 40|&8&m--------------------
+-      - 42|&6&lPLAYERS
+-      - 62|&e&lSTATS
+-      - '63|&c⚔ Damage: &f%aetherion_damage%'
+-      - '64|&7🛡 Defense: &f%aetherion_defense%'
+-      - '65|&c❤ Health: &f%aetherion_health%'
+-      - '66|&e✧ Crit Chance: &f%aetherion_crit_chance%%'
+-      - '67|&6✧ Crit Damage: &f%aetherion_crit_damage%%'
+-      - '68|&c✦ Atk Spread: &f%aetherion_attack_spread%'
+-      - '69|&f⚡ Speed: &f%aetherion_speed%%'
+-      - '70| '
+-      - 71|&e&lGATHER
+-      - '72|&b⛏ Power: &f%aetherion_mining_power%'
+-      - '73|&a💎 Fortune: &f%aetherion_fortune%'
+-      - '74|&a✦ Spread: &f%aetherion_spread%'
+-      - '75|&6🌾 Harvest: &f%aetherion_harvest%'
+-      - '76|&b🎣 Fish Speed: &f%aetherion_fishing_speed%'
+-      - '77|&3🐟 Fish Catch: &f%aetherion_fishing_catch%'
+-      - '78|&6☘ Catch Rate: &f%aetherion_catch_rate%%'
+-      - 79|&8&m--------------------
+-      - 80|&6✦ AETHERION ✦
++      - 2|&6&lPROFILE
++      - '3|%aetherion_level_title% &8· &7Lv %aetherion_level_colored%'
++      - '4|%aetherion_level_bar%'
++      - 6|&6&lPURSE
++      - '7|&7Coins &6%aetherion_coins%'
++      - '8|&7Shards &b%aetherion_shards%'
++      - 10|&6&lAREA
++      - '11|&f%aetherion_area%'
++      - '12|&7Weather &f%aetherion_weather%'
++      - 14|&6&lPET
++      - '15|&f%aethermobs_pet_name%'
++      - '16|&7Lv.%aethermobs_pet_level% %aethermobs_pet_bar%'
++      - '22|&6&lPLAYERS &8%online%'
++      - 42|&6&lCOMBAT
++      - '43|&c⚔ Damage: &f%aetherion_damage%'
++      - '44|&7🛡 Defense: &f%aetherion_defense%'
++      - '45|&c❤ Health: &f%aetherion_health%'
++      - '46|&e✧ Crit Chance: &f%aetherion_crit_chance%%'
++      - '47|&6✧ Crit Damage: &f%aetherion_crit_damage%%'
++      - '48|&c✦ Atk Spread: &f%aetherion_attack_spread%'
++      - '49|&f⚡ Speed: &f%aetherion_speed%%'
++      - 62|&6&lGATHERING
++      - '63|&b⛏ Power: &f%aetherion_mining_power%'
++      - '64|&a💎 Fortune: &f%aetherion_fortune%'
++      - '65|&a✦ Spread: &f%aetherion_spread%'
++      - '66|&6🌾 Harvest: &f%aetherion_harvest%'
++      - '67|&b🎣 Fish Speed: &f%aetherion_fishing_speed%'
++      - '68|&3🐟 Fish Catch: &f%aetherion_fishing_catch%'
++      - '69|&6☘ Catch Rate: &f%aetherion_catch_rate%%'
+       groups:
+         players:
+           slots:
+-          - 44-60
++          - 24-40
+ ping-spoof:
+   enabled: false
+   value: 0
+@@ -246,7 +226,32 @@
+     false: ~%essentials_nickname%
+ placeholder-refresh-intervals:
+   default-refresh-interval: 500
++  # Keep at the 500ms default: %aetherion_ultra_rank% and %aetherion_tab_prefix%
++  # carry the animated dyes. Values below only change on XP, coin, gear or pet events.
+   '%aetherion_area%': 2000
++  '%aetherion_weather%': 2000
++  '%aetherion_level_title%': 1000
++  '%aetherion_level_colored%': 1000
++  '%aetherion_level_bar%': 1000
++  '%aetherion_coins%': 1000
++  '%aetherion_shards%': 2000
++  '%aetherion_damage%': 1000
++  '%aetherion_defense%': 1000
++  '%aetherion_health%': 1000
++  '%aetherion_crit_chance%': 1000
++  '%aetherion_crit_damage%': 1000
++  '%aetherion_attack_spread%': 1000
++  '%aetherion_speed%': 1000
++  '%aetherion_mining_power%': 1000
++  '%aetherion_fortune%': 1000
++  '%aetherion_spread%': 1000
++  '%aetherion_harvest%': 1000
++  '%aetherion_fishing_speed%': 1000
++  '%aetherion_fishing_catch%': 1000
++  '%aetherion_catch_rate%': 1000
++  '%aethermobs_pet_name%': 2000
++  '%aethermobs_pet_level%': 2000
++  '%aethermobs_pet_bar%': 1000
+   '%server_uptime%': 1000
+   '%server_tps_1_colored%': 1000
+   '%server_unique_joins%': 5000
+--- live/animations.yml
++++ proposed/animations.yml
+@@ -116,6 +116,47 @@
+     - '&6✦ AETHERION ✦'
+     - '&6&l✦ AETHERION ✦'
+     - '&e&l✦ AETHERION ✦'
++# Sidebar title. Steady two-tone gold (~3s), then one white sheen (~2s).
++# Every glyph is bold in every frame, so the sidebar never changes width.
++# Held frames repeat the same text, which TAB does not resend.
++AetherionTitle:
++  change-interval: 150
++  texts:
++  - '&e&l✦&6&l AETHERION &e&l✦'
++  - '&e&l✦&6&l AETHERION &e&l✦'
++  - '&e&l✦&6&l AETHERION &e&l✦'
++  - '&e&l✦&6&l AETHERION &e&l✦'
++  - '&e&l✦&6&l AETHERION &e&l✦'
++  - '&e&l✦&6&l AETHERION &e&l✦'
++  - '&e&l✦&6&l AETHERION &e&l✦'
++  - '&e&l✦&6&l AETHERION &e&l✦'
++  - '&e&l✦&6&l AETHERION &e&l✦'
++  - '&e&l✦&6&l AETHERION &e&l✦'
++  - '&e&l✦&6&l AETHERION &e&l✦'
++  - '&e&l✦&6&l AETHERION &e&l✦'
++  - '&e&l✦&6&l AETHERION &e&l✦'
++  - '&e&l✦&6&l AETHERION &e&l✦'
++  - '&e&l✦&6&l AETHERION &e&l✦'
++  - '&e&l✦&6&l AETHERION &e&l✦'
++  - '&e&l✦&6&l AETHERION &e&l✦'
++  - '&e&l✦&6&l AETHERION &e&l✦'
++  - '&e&l✦&6&l AETHERION &e&l✦'
++  - '&e&l✦&6&l AETHERION &e&l✦'
++  - '&e&l✦&6&l AETHERION &e&l✦'
++  - '&f&l✦&e&l &6&lAETHERION &e&l✦'
++  - '&e&l✦&f&l &e&lA&6&lETHERION &e&l✦'
++  - '&e&l✦ &f&lA&e&lE&6&lTHERION &e&l✦'
++  - '&e&l✦&6&l &e&lA&f&lE&e&lT&6&lHERION &e&l✦'
++  - '&e&l✦&6&l A&e&lE&f&lT&e&lH&6&lERION &e&l✦'
++  - '&e&l✦&6&l AE&e&lT&f&lH&e&lE&6&lRION &e&l✦'
++  - '&e&l✦&6&l AET&e&lH&f&lE&e&lR&6&lION &e&l✦'
++  - '&e&l✦&6&l AETH&e&lE&f&lR&e&lI&6&lON &e&l✦'
++  - '&e&l✦&6&l AETHE&e&lR&f&lI&e&lO&6&lN &e&l✦'
++  - '&e&l✦&6&l AETHER&e&lI&f&lO&e&lN&6&l &e&l✦'
++  - '&e&l✦&6&l AETHERI&e&lO&f&lN&e&l ✦'
++  - '&e&l✦&6&l AETHERIO&e&lN&f&l &e&l✦'
++  - '&e&l✦&6&l AETHERION&e&l &f&l✦'
++  - '&e&l✦&6&l AETHERION &e&l✦'
+ Aetherion_Adventurer:
+   change-interval: 300
+   texts:

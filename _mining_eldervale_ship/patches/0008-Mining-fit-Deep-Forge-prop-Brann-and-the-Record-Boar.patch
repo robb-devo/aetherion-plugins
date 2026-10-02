@@ -1,0 +1,134 @@
+From df8b89aaea37e96dd1b70ac230dce9c419a81159 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 29 Sep 2026 05:04:19 +0200
+Subject: [PATCH 8/9] Mining: fit Deep Forge prop, Brann and the Record Board
+ to the scanned buildings
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01Cb5rUs5Jy2h8ZCMwTfnbVN
+---
+ .../de/aetherion/mining/isle/MineProps.java   | 28 +++++++++----------
+ AetherionMining/src/main/resources/config.yml |  4 +--
+ docs/MINING_ELDERVALE.md                      |  2 +-
+ 3 files changed, 17 insertions(+), 17 deletions(-)
+
+diff --git a/AetherionMining/src/main/java/de/aetherion/mining/isle/MineProps.java b/AetherionMining/src/main/java/de/aetherion/mining/isle/MineProps.java
+index d0c445ca..82388506 100644
+--- a/AetherionMining/src/main/java/de/aetherion/mining/isle/MineProps.java
++++ b/AetherionMining/src/main/java/de/aetherion/mining/isle/MineProps.java
+@@ -53,7 +53,7 @@ public final class MineProps implements Listener {
+     enum Piece {
+         DEEP_FORGE("forge-prop.deep", "39.5 38 478.5"),
+         FORGEHAND("forge-prop.forgehand", null),
+-        RECORDS("props.records-board", "15.5 124.2 663.5 180");
++        RECORDS("props.records-board", "12.5 124.3 661.7 180");
+ 
+         final String path;
+         final String fallback;
+@@ -185,22 +185,22 @@ public final class MineProps implements Listener {
+     private void buildDeepForge(Location base, List<UUID> ids) {
+         World world = base.getWorld();
+         // Crucible: a squat cauldron with a molten top that pulses.
+-        block(ids, world, base.clone().add(2.0, 1.0, -3.6), Material.CAULDRON.createBlockData(), 1.25f, 1.1f, 1.25f, false, null);
+-        molten = block(ids, world, base.clone().add(2.12, 1.85, -3.48), Material.MAGMA_BLOCK.createBlockData(), 1.0f, 0.12f, 1.0f,
++        block(ids, world, base.clone().add(2.2, 1.0, -3.8), Material.CAULDRON.createBlockData(), 1.25f, 1.1f, 1.25f, false, null);
++        molten = block(ids, world, base.clone().add(2.32, 1.85, -3.68), Material.MAGMA_BLOCK.createBlockData(), 1.0f, 0.12f, 1.0f,
+                 true, Color.fromRGB(255, 120, 20));
+         // Bellows: plates and a leather body that breathes.
+-        block(ids, world, base.clone().add(3.9, 1.05, -2.2), Material.DARK_OAK_PLANKS.createBlockData(), 0.9f, 0.1f, 1.4f, false, null);
+-        bellows = block(ids, world, base.clone().add(3.95, 1.15, -2.15), Material.BROWN_WOOL.createBlockData(), 0.8f, 0.45f, 1.3f, false, null);
+-        block(ids, world, base.clone().add(3.9, 1.62, -2.2), Material.DARK_OAK_PLANKS.createBlockData(), 0.9f, 0.1f, 1.4f, false, null);
+-        block(ids, world, base.clone().add(3.35, 1.3, -1.6), Material.IRON_BARS.createBlockData(), 0.6f, 0.2f, 0.2f, false, null);
++        block(ids, world, base.clone().add(3.2, 1.05, -1.6), Material.DARK_OAK_PLANKS.createBlockData(), 0.9f, 0.1f, 1.4f, false, null);
++        bellows = block(ids, world, base.clone().add(3.25, 1.15, -1.55), Material.BROWN_WOOL.createBlockData(), 0.8f, 0.45f, 1.3f, false, null);
++        block(ids, world, base.clone().add(3.2, 1.62, -1.6), Material.DARK_OAK_PLANKS.createBlockData(), 0.9f, 0.1f, 1.4f, false, null);
++        block(ids, world, base.clone().add(2.65, 1.3, -1.0), Material.IRON_BARS.createBlockData(), 0.6f, 0.2f, 0.2f, false, null);
+         // Chimney: six blocks of dark stone rising out of the hut roof.
+         for (int i = 0; i < 6; i++) {
+             block(ids, world, base.clone().add(-0.4, 4.0 + i, -0.4), Material.POLISHED_DEEPSLATE.createBlockData(), 0.8f, 1.0f, 0.8f, false, null);
+         }
+         block(ids, world, base.clone().add(-0.55, 10.0, -0.55), Material.DEEPSLATE_TILE_SLAB.createBlockData(), 1.1f, 0.5f, 1.1f, false, null);
+         // Quench trough.
+-        block(ids, world, base.clone().add(-4.0, 1.0, -4.0), Material.SPRUCE_PLANKS.createBlockData(), 1.8f, 0.55f, 0.8f, false, null);
+-        block(ids, world, base.clone().add(-3.9, 1.35, -3.9), Material.LIGHT_BLUE_STAINED_GLASS.createBlockData(), 1.6f, 0.15f, 0.6f,
++        block(ids, world, base.clone().add(-0.5, 1.0, -4.4), Material.SPRUCE_PLANKS.createBlockData(), 1.8f, 0.55f, 0.8f, false, null);
++        block(ids, world, base.clone().add(-0.4, 1.35, -4.3), Material.LIGHT_BLUE_STAINED_GLASS.createBlockData(), 1.6f, 0.15f, 0.6f,
+                 false, null);
+         // Pick rack on the hut wall: iron → netherite.
+         Material[] picks = {Material.IRON_PICKAXE, Material.GOLDEN_PICKAXE, Material.DIAMOND_PICKAXE, Material.NETHERITE_PICKAXE};
+@@ -219,7 +219,7 @@ public final class MineProps implements Listener {
+         // Ingot stack on a barrel.
+         Material[] ingots = {Material.GOLD_BLOCK, Material.IRON_BLOCK, Material.COPPER_BLOCK};
+         for (int i = 0; i < ingots.length; i++) {
+-            block(ids, world, base.clone().add(-5.3 + 0.05 * i, 2.0 + 0.16 * i, -1.8 + 0.08 * i), ingots[i].createBlockData(),
++            block(ids, world, base.clone().add(-5.3 + 0.05 * i, 3.0 + 0.16 * i, -1.8 + 0.08 * i), ingots[i].createBlockData(),
+                     0.45f, 0.14f, 0.22f, false, null);
+         }
+         // Banner plate.
+@@ -369,19 +369,19 @@ public final class MineProps implements Listener {
+                 bellows.setTransformation(new Transformation(new Vector3f(), new AxisAngle4f(),
+                         new Vector3f(0.8f, breathIn ? 0.45f : 0.2f, 1.3f), new AxisAngle4f()));
+                 if (!breathIn) {
+-                    world.spawnParticle(Particle.SMOKE, forge.clone().add(3.4, 1.35, -1.5), 3, 0.05, 0.05, 0.05, 0.02);
++                    world.spawnParticle(Particle.SMOKE, forge.clone().add(2.7, 1.35, -0.9), 3, 0.05, 0.05, 0.05, 0.02);
+                 }
+             }
+             if (molten != null && molten.isValid()) {
+                 molten.setGlowColorOverride(breathIn ? Color.fromRGB(255, 150, 30) : Color.fromRGB(230, 70, 10));
+             }
+-            Location crucible = forge.clone().add(2.6, 2.0, -3.0);
++            Location crucible = forge.clone().add(2.8, 2.0, -3.2);
+             world.spawnParticle(Particle.SMALL_FLAME, crucible, roaring ? 8 : 1, 0.25, 0.05, 0.25, 0.005);
+             if (ThreadLocalRandom.current().nextInt(roaring ? 2 : 6) == 0) {
+                 world.spawnParticle(Particle.LAVA, crucible, 1, 0.2, 0.05, 0.2, 0.0);
+             }
+             world.spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, forge.clone().add(0.0, 10.7, 0.0), roaring ? 4 : 1, 0.12, 0.2, 0.12, 0.02);
+-            world.spawnParticle(Particle.DRIPPING_WATER, forge.clone().add(-3.1, 1.6, -3.6), 1, 0.4, 0.0, 0.1, 0.0);
++            world.spawnParticle(Particle.DRIPPING_WATER, forge.clone().add(0.4, 1.6, -4.0), 1, 0.4, 0.0, 0.1, 0.0);
+             if (roaring && now % 20 < 10) {
+                 world.playSound(crucible, Sound.BLOCK_BLASTFURNACE_FIRE_CRACKLE, SoundCategory.BLOCKS, 1.0f, 0.7f);
+             }
+@@ -432,7 +432,7 @@ public final class MineProps implements Listener {
+             return;
+         }
+         World world = forge.getWorld();
+-        Location crucible = forge.clone().add(2.6, 2.1, -3.0);
++        Location crucible = forge.clone().add(2.8, 2.1, -3.2);
+         world.spawnParticle(Particle.LAVA, crucible, big ? 30 : 12, 0.4, 0.3, 0.4, 0.0);
+         world.spawnParticle(Particle.FLAME, crucible, big ? 60 : 25, 0.5, 0.6, 0.5, 0.05);
+         world.spawnParticle(Particle.ELECTRIC_SPARK, crucible, 30, 0.6, 0.6, 0.6, 0.2);
+diff --git a/AetherionMining/src/main/resources/config.yml b/AetherionMining/src/main/resources/config.yml
+index 510be7b1..acf769a3 100644
+--- a/AetherionMining/src/main/resources/config.yml
++++ b/AetherionMining/src/main/resources/config.yml
+@@ -285,7 +285,7 @@ mine-cast:
+     clerk: "-53.5 99 519.5 0"
+     cook: "-56.5 98 614.5 180"
+     assayer: "15.5 122 660.5 0"
+-    forgemaster: "38.5 39 475.5 180"
++    forgemaster: "37.5 39 475.5 180"
+     hermit: "105.5 -5 566.5 0"
+ 
+ strike-rhythm:
+@@ -321,4 +321,4 @@ amethyst-mine:
+ forge-prop:
+   deep: "39.5 38 478.5"
+ props:
+-  records-board: "15.5 124.2 663.5 180"
++  records-board: "12.5 124.3 661.7 180"
+diff --git a/docs/MINING_ELDERVALE.md b/docs/MINING_ELDERVALE.md
+index e0dce1c6..e6c9c1ff 100644
+--- a/docs/MINING_ELDERVALE.md
++++ b/docs/MINING_ELDERVALE.md
+@@ -75,7 +75,7 @@ Depth Gauge scales all of it. Reaching a band for the first time pays a title ca
+ | CLERK | Otto Brassbuckle | -53.5 99 519.5 | Foreman Contracts |
+ | COOK | Nan Coalbright | -56.5 98 614.5 | The Hearth (rations) |
+ | ASSAYER | Ilse Veyne | 15.5 122 660.5 | Collections, mastery, Specimen Cabinet, specimen sales |
+-| FORGEMASTER | Brann Emberlock | 38.5 39 475.5 | Forge Works (marks, reputation, flares and canaries) |
++| FORGEMASTER | Brann Emberlock | 37.5 39 475.5 | Forge Works (marks, reputation, flares and canaries) |
+ | HERMIT | Hollis Underhill | 105.5 -5 566.5 | Last Lamp (depth board, Stonejaw bounty, deep trade) |
+ 
+ The cast is auto-placed on first start (`mine-cast.auto-place`). None of them replace the Quests NPCs already on the isle (Forgehand, Surveyor, Ore Ledger, the Eldervale welcome).
+-- 
+2.43.0
+

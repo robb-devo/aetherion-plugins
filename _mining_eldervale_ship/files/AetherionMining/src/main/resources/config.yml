@@ -1,0 +1,324 @@
+# Cleared 2026-09-11 — old megamap mine box removed.
+# Re-define the Origin mine region when ready.
+
+mine:
+  world: world
+  pos1:
+    x: 0
+    y: 0
+    z: 0
+  pos2:
+    x: 0
+    y: 0
+    z: 0
+  blocks:
+    IRON_ORE:
+      respawn: 30
+    GOLD_ORE:
+      respawn: 60
+    DIAMOND_ORE:
+      respawn: 120
+
+veins:
+  world: aether_veins
+  radius: 250
+  hub-y: 220
+  reset-hours: 24
+  keep-inventory: true
+
+# Mining Eldervale Island (Blocky Verse) — paste south of Origin slime pad.
+eldervale:
+  world: world
+  schematic: Mining-Eldervale-Island.schem
+  ignore-air: true
+  auto-paste-once: false
+  paste:
+    x: 22
+    y: 90
+    z: 580
+
+
+# =====================================================================
+# Mining Eldervale: the mining destination (package de.aetherion.mining.isle)
+# Every coordinate below was measured from Mining-Eldervale-Island.schem
+# pasted at eldervale.paste (22 90 580, WE/FAWE offset -190 -181 -227):
+#   world = paste + offset + schem-local  →  x -168..227, y -91..240, z 353..763
+#   the island itself spans x -98..192, y -49..185, z 417..703 (surface ≈ Y 89).
+# Re-paste somewhere else? Shift every x/y/z by the same delta (or /mineisle dev landing:set,
+# NPC anchors and prop:<piece> to move things by hand).
+# =====================================================================
+mine-isle:
+  enabled: true
+  # Isle blocks in one day that log a shift (streak: +1 ore Fortune per consecutive day, max 7).
+  shift-blocks: 250
+  landing:
+    world: world
+    x: 53.5
+    y: 90.0
+    z: 486.5
+    yaw: 0
+  # Depth bands under the isle (surface ≈ 89, deepest rock ≈ -49).
+  depth:
+    galleries-below-y: 82
+    deep-works-below-y: 56
+    undercroft-below-y: 26
+
+mine-isle-footprint:
+  enabled: true
+  world: world
+  min-x: -104
+  max-x: 198
+  min-z: 410
+  max-z: 710
+  min-y: -64
+  max-y: 200
+
+# Named places. circles: "x z radius" (several allowed). min-y / max-y bound shafts and water.
+# kind: hall | quarry | shaft | water. anchor = where the compass points (optional).
+mine-isle-districts:
+  enabled: true
+  districts:
+    landing:
+      name: The Landing
+      kind: hall
+      blurb: "Where the pad drops you. Old Wick keeps the lamps."
+      circles: ["53 484 14"]
+      min-y: 84
+      max-y: 115
+      anchor: {world: world, x: 53.5, y: 90, z: 486.5}
+    lantern_row:
+      name: Lantern Row
+      kind: hall
+      blurb: "Main street. Bells, bunks and the smithy."
+      circles: ["20 592 30", "55 585 14"]
+      min-y: 84
+      max-y: 135
+      anchor: {world: world, x: 25.5, y: 90, z: 592.5}
+    contract_office:
+      name: The Contract Office
+      kind: hall
+      blurb: "Otto stamps. The Foreman shouts."
+      circles: ["-55 524 14"]
+      min-y: 92
+      max-y: 135
+      anchor: {world: world, x: -53.5, y: 99, z: 519.5}
+    bunkhouse:
+      name: The Bunkhouse
+      kind: hall
+      blurb: "Banners, bunks and one very loud snorer."
+      circles: ["-66 556 10"]
+      min-y: 90
+      max-y: 115
+      anchor: {world: world, x: -65.5, y: 96, z: 556.5}
+    the_hearth:
+      name: The Hearth
+      kind: hall
+      blurb: "Nan's kitchen. Payment in ore."
+      circles: ["-58 620 12"]
+      min-y: 90
+      max-y: 125
+      anchor: {world: world, x: -56.5, y: 98, z: 614.5}
+    assay_office:
+      name: The Assay Office
+      kind: hall
+      blurb: "Ilse's scales, the Specimen Cabinet, the record board."
+      circles: ["16 660 18"]
+      min-y: 110
+      max-y: 175
+      anchor: {world: world, x: 15.5, y: 122, z: 660.5}
+    crown_lookout:
+      name: Crown Lookout
+      kind: hall
+      blurb: "Highest point on the rock. You can see every pit from here."
+      circles: ["16 512 14"]
+      min-y: 125
+      max-y: 190
+      anchor: {world: world, x: 16.5, y: 145, z: 512.5}
+    stonewright_terrace:
+      name: Stonewright Terrace
+      kind: hall
+      blurb: "The masons' benches. The stonecutters never stop."
+      circles: ["80 445 16"]
+      min-y: 110
+      max-y: 150
+      anchor: {world: world, x: 80.5, y: 119, z: 446.5}
+    tinkers_end:
+      name: Tinker's End
+      kind: hall
+      blurb: "The east hamlet. Somebody's always fixing something."
+      circles: ["152 606 16"]
+      min-y: 86
+      max-y: 130
+      anchor: {world: world, x: 152.5, y: 90, z: 597.5}
+    deep_forge:
+      name: The Deep Forge
+      kind: hall
+      blurb: "Brann's forge at the bottom of the North Pit."
+      circles: ["38 476 9"]
+      min-y: 30
+      max-y: 62
+      anchor: {world: world, x: 38.5, y: 39, z: 474.5}
+    last_lamp:
+      name: Last Lamp
+      kind: hall
+      blurb: "Hollis's camp. The deepest light on Eldervale."
+      circles: ["106 567 9"]
+      min-y: -12
+      max-y: 10
+      anchor: {world: world, x: 105.5, y: -5, z: 566.5}
+    north_pit:
+      name: The North Pit
+      kind: quarry
+      blurb: "Open-cast and honest. Every layer shows."
+      circles: ["32 458 20", "0 478 10"]
+      min-y: 28
+      max-y: 92
+      anchor: {world: world, x: 30.5, y: 35, z: 457.5}
+    long_cut:
+      name: The Long Cut
+      kind: quarry
+      blurb: "A trench someone started and nobody finished."
+      circles: ["-26 495 9", "-28 515 9", "-26 535 8"]
+      min-y: 30
+      max-y: 92
+      anchor: {world: world, x: -27.5, y: 45, z: 512.5}
+    sunder_cut:
+      name: Sunder Cut
+      kind: quarry
+      blurb: "The east canyon. The gear wall still turns."
+      circles: ["160 515 16", "160 550 13"]
+      min-y: 25
+      max-y: 95
+      anchor: {world: world, x: 159.5, y: 45, z: 529.5}
+    terraces:
+      name: The Terraces
+      kind: quarry
+      blurb: "Stepped stone, the ore depot, the carts."
+      circles: ["100 500 26", "120 535 18"]
+      min-y: 60
+      max-y: 92
+      anchor: {world: world, x: 99.5, y: 77, z: 506.5}
+    west_hollow:
+      name: West Hollow
+      kind: quarry
+      blurb: "A sunken hollow under the west cliffs."
+      circles: ["-76 590 13"]
+      min-y: 40
+      max-y: 92
+      anchor: {world: world, x: -72.5, y: 50, z: 586.5}
+    glimmerwater:
+      name: Glimmerwater
+      kind: water
+      blurb: "A cold lake in a stone bowl. Chests on the shore."
+      circles: ["80 657 34", "60 690 12"]
+      min-y: 60
+      max-y: 95
+      anchor: {world: world, x: 64.5, y: 79, z: 637.5}
+    weeping_cistern:
+      name: The Weeping Cistern
+      kind: water
+      blurb: "Water drips through the ceiling into a hidden pool."
+      circles: ["-40 550 20"]
+      min-y: 35
+      max-y: 76
+      anchor: {world: world, x: -46.5, y: 48, z: 551.5}
+    lantern_galleries:
+      name: The Lantern Galleries
+      kind: shaft
+      blurb: "Upper tunnels, lit by chains of lanterns."
+      circles: ["-66 548 24", "130 515 22"]
+      min-y: 56
+      max-y: 82
+    needle_gallery:
+      name: Needle Gallery
+      kind: shaft
+      blurb: "Dripstone teeth over a black drop."
+      circles: ["59 470 16"]
+      min-y: 45
+      max-y: 72
+    great_works:
+      name: The Great Works
+      kind: shaft
+      blurb: "The old central hall. Every shaft meets here."
+      circles: ["42 540 46"]
+      min-y: 26
+      max-y: 56
+      anchor: {world: world, x: 42.5, y: 37, z: 541.5}
+    crucible_shaft:
+      name: The Crucible Shaft
+      kind: shaft
+      blurb: "Straight down from the forge. Mind the camp."
+      circles: ["33 478 7"]
+      min-y: -5
+      max-y: 38
+      anchor: {world: world, x: 32.5, y: 5, z: 478.5}
+    emberseam:
+      name: The Emberseam
+      kind: shaft
+      blurb: "Lava runs in the rock here. It gets hot. Fast."
+      circles: ["56 505 15", "13 648 14", "-30 603 13"]
+      min-y: -15
+      max-y: 66
+      anchor: {world: world, x: 55.5, y: 0, z: 500.5}
+    rootdeep:
+      name: Rootdeep Grotto
+      kind: shaft
+      blurb: "A lush cave at the bottom of everything. Moths."
+      circles: ["14 539 38", "45 560 20"]
+      min-y: -22
+      max-y: 24
+      anchor: {world: world, x: 13.5, y: 3, z: 539.5}
+    the_fangs:
+      name: The Fangs
+      kind: shaft
+      blurb: "Dripstone teeth. Most turn back here."
+      circles: ["104 555 18"]
+      min-y: -22
+      max-y: 8
+      anchor: {world: world, x: 102.5, y: -3, z: 552.5}
+
+# The cast: "x y z yaw" standable spots found in the schematic.
+mine-cast:
+  auto-place: true
+  presets:
+    lampwarden: "57.5 90 485.5 90"
+    clerk: "-53.5 99 519.5 0"
+    cook: "-56.5 98 614.5 180"
+    assayer: "15.5 122 660.5 0"
+    forgemaster: "37.5 39 475.5 180"
+    hermit: "105.5 -5 566.5 0"
+
+strike-rhythm:
+  enabled: true
+
+crystal-finds:
+  # Base chance per hand strike (before ore, depth, skills, rations, marks, events).
+  chance: 0.00182
+  veins-multiplier: 1.25
+  heartstone-chance: 0.04
+
+mine-events:
+  enabled: true
+  interval-ticks: 24000
+  first-delay-ticks: 6000
+
+critters:
+  enabled: true
+  stonejaw-chance: 0.12
+
+hazards:
+  enabled: true
+
+# The Amethyst Mine (/amethyst): Resonance, Shardlings, Geode Hearts, the Violet Deep.
+amethyst-mine:
+  enabled: true
+  geode-heart-chance: 0.35
+  heart-heartstone-chance: 0.15
+  violet-deep-level: 20
+
+# Display-entity set pieces ("x y z [yaw]"). forge-prop.forgehand is adopted from the Items forge
+# anvil on the first blueprint ritual; set it by hand with /mineisle dev prop:forgehand.
+forge-prop:
+  deep: "39.5 38 478.5"
+props:
+  records-board: "12.5 124.3 661.7 180"

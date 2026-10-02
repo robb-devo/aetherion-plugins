@@ -60,6 +60,11 @@ public final class TestBotController implements TestBotsAccess {
         return idsOf(plugin.getRegistry().wave2());
     }
 
+    @Override
+    public List<String> wave3Roles() {
+        return idsOf(plugin.getRegistry().wave3());
+    }
+
     private static List<String> idsOf(List<BotRoleHandler> handlers) {
         List<String> ids = new ArrayList<>();
         for (BotRoleHandler handler : handlers) {
@@ -75,7 +80,7 @@ public final class TestBotController implements TestBotsAccess {
         }
         BotRole role = requireStartable(roleId);
         if (role == null) {
-            return "§cUnknown role. Wave 1: mine, forage, catch, roam. Wave 2: combat, fish, trade, quest, pad.";
+            return "§cUnknown role. Wave 1: mine, forage, catch, roam. Wave 2: combat, fish, trade, quest, pad. Wave 3: general.";
         }
         BotRoleHandler handler = plugin.getRegistry().handler(role);
         int clamped = clampCount(role, count <= 0 ? Math.max(1, desired.getOrDefault(role, 1)) : count);

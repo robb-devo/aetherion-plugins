@@ -1,0 +1,104 @@
+From 15de0b37917456db00dde1ee99d694d42cb62731 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 29 Sep 2026 04:57:08 +0200
+Subject: [PATCH 5/9] Hub: /mining goto beside /fishing; Mining: Amethyst Mine
+ naming polish
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01Cb5rUs5Jy2h8ZCMwTfnbVN
+---
+ .../main/java/de/aetherion/hub/command/SpawnGotoCommand.java  | 2 ++
+ .../src/main/java/de/aetherion/hub/service/HubService.java    | 4 ++--
+ AetherionHub/src/main/resources/plugin.yml                    | 4 ++++
+ .../src/main/java/de/aetherion/mining/veins/VeinsCommand.java | 2 +-
+ .../src/main/java/de/aetherion/mining/veins/VeinsWorld.java   | 4 ++--
+ 5 files changed, 11 insertions(+), 5 deletions(-)
+
+diff --git a/AetherionHub/src/main/java/de/aetherion/hub/command/SpawnGotoCommand.java b/AetherionHub/src/main/java/de/aetherion/hub/command/SpawnGotoCommand.java
+index ce68bff0..42336a6c 100644
+--- a/AetherionHub/src/main/java/de/aetherion/hub/command/SpawnGotoCommand.java
++++ b/AetherionHub/src/main/java/de/aetherion/hub/command/SpawnGotoCommand.java
+@@ -30,6 +30,8 @@ public final class SpawnGotoCommand implements CommandExecutor {
+             Map.entry("borderlands", "borderlands"),
+             Map.entry("colosseum", "colosseum"),
+             Map.entry("eldervale", "eldervale"),
++            Map.entry("mining", "eldervale"),
++            Map.entry("miningisle", "eldervale"),
+             Map.entry("fishing", "fishing_eldervale"),
+             Map.entry("fishingisle", "fishing_eldervale")
+     );
+diff --git a/AetherionHub/src/main/java/de/aetherion/hub/service/HubService.java b/AetherionHub/src/main/java/de/aetherion/hub/service/HubService.java
+index fe8863ae..5a0dfa7a 100644
+--- a/AetherionHub/src/main/java/de/aetherion/hub/service/HubService.java
++++ b/AetherionHub/src/main/java/de/aetherion/hub/service/HubService.java
+@@ -84,7 +84,7 @@ public final class HubService {
+         changed |= ensureSpawn("farm_isle", "Farm Isle", "Shared fields + Millstone pantry. Farming 10 portal.", "WHEAT", 16);
+         changed |= ensureSpawn("borderlands", "Borderlands", "Beyond Vex's gate. Hostile wastes.", "COARSE_DIRT", 21);
+         changed |= ensureSpawn("colosseum", "Colosseum", "Proctor's ring — Crypt vials, T2 bosses. Unlocks with the Proctor.", "SANDSTONE", 19);
+-        changed |= ensureSpawn("eldervale", "Eldervale", "Mining island past the slime jump pad. Walk in to unlock.", "DEEPSLATE_DIAMOND_ORE", 20);
++        changed |= ensureSpawn("eldervale", "Mining Eldervale", "Quarries, shafts, the Deep Forge. Past the slime jump pad. Walk in to unlock.", "DEEPSLATE_DIAMOND_ORE", 20);
+         changed |= ensureSpawn("fishing_eldervale", "Fishing Eldervale", "Lake isle - The Line, shoals, and the Angler's Log.", "FISHING_ROD", 22);
+ 
+         if (plugin.getConfig().getConfigurationSection("spawns.harbour") != null
+@@ -119,7 +119,7 @@ public final class HubService {
+         changed |= applyLayout("farm_isle", "Farm Isle", "Shared fields + Millstone pantry. Farming 10 portal.", "WHEAT", 16, false);
+         changed |= applyLayout("borderlands", "Borderlands", "Beyond Vex's gate. Hostile wastes. Walk in to unlock.", "COARSE_DIRT", 21, false);
+         changed |= applyLayout("colosseum", "Colosseum", "Proctor's ring — Crypt vials, T2 bosses. Unlocks with the Proctor.", "SANDSTONE", 19, false);
+-        changed |= applyLayout("eldervale", "Eldervale", "Mining island past the slime jump pad. Walk in to unlock.", "DEEPSLATE_DIAMOND_ORE", 20, false);
++        changed |= applyLayout("eldervale", "Mining Eldervale", "Quarries, shafts, the Deep Forge. Past the slime jump pad. Walk in to unlock.", "DEEPSLATE_DIAMOND_ORE", 20, false);
+         changed |= applyLayout("fishing_eldervale", "Fishing Eldervale", "Lake isle - The Line, shoals, and the Angler's Log.", "FISHING_ROD", 22, false);
+         changed |= ensureDiscoverRadius("ore_ridge", 40);
+         changed |= ensureDiscoverRadius("capital", 48);
+diff --git a/AetherionHub/src/main/resources/plugin.yml b/AetherionHub/src/main/resources/plugin.yml
+index cce8f0ab..f5489535 100644
+--- a/AetherionHub/src/main/resources/plugin.yml
++++ b/AetherionHub/src/main/resources/plugin.yml
+@@ -54,6 +54,10 @@ commands:
+   eldervale:
+     description: Teleport to Eldervale if unlocked
+     permission: aetherionhub.use
++  mining:
++    description: Teleport to Mining Eldervale if unlocked
++    aliases: [miningisle]
++    permission: aetherionhub.use
+   fishing:
+     description: Teleport to Fishing Eldervale if unlocked
+     aliases: [fishingisle]
+diff --git a/AetherionMining/src/main/java/de/aetherion/mining/veins/VeinsCommand.java b/AetherionMining/src/main/java/de/aetherion/mining/veins/VeinsCommand.java
+index eebe3019..71d77bfe 100644
+--- a/AetherionMining/src/main/java/de/aetherion/mining/veins/VeinsCommand.java
++++ b/AetherionMining/src/main/java/de/aetherion/mining/veins/VeinsCommand.java
+@@ -48,7 +48,7 @@ public final class VeinsCommand implements CommandExecutor, TabCompleter {
+             return true;
+         }
+         if (sub.equals("time")) {
+-            sender.sendMessage("§7The Veins reset in §f" + untilReset() + "§7.");
++            sender.sendMessage("§7The Amethyst Mine (The Veins) resets in §f" + untilReset() + "§7.");
+             return true;
+         }
+         if (sub.equals("npc")) {
+diff --git a/AetherionMining/src/main/java/de/aetherion/mining/veins/VeinsWorld.java b/AetherionMining/src/main/java/de/aetherion/mining/veins/VeinsWorld.java
+index 0aa7af78..512637df 100644
+--- a/AetherionMining/src/main/java/de/aetherion/mining/veins/VeinsWorld.java
++++ b/AetherionMining/src/main/java/de/aetherion/mining/veins/VeinsWorld.java
+@@ -149,7 +149,7 @@ public final class VeinsWorld {
+         Location spawn = hubSpawn();
+         player.teleport(spawn);
+         player.setFallDistance(0f);
+-        player.sendMessage("§7The Veins. §8Mine everything but the hub. Corners have favorites.");
++        player.sendMessage("§dThe Amethyst Mine §8(The Veins) §7· mine anything but the hub. Corners have favourites; geodes grow deeper down.");
+         player.playSound(spawn, org.bukkit.Sound.ENTITY_ENDERMAN_TELEPORT, 1f, 0.7f);
+         return true;
+     }
+@@ -175,7 +175,7 @@ public final class VeinsWorld {
+         if (System.currentTimeMillis() < nextReset) {
+             return;
+         }
+-        reset("The Veins closed. Stone is new again.");
++        reset("The Amethyst Mine closed for the night. Stone is new again, and so are the geodes.");
+     }
+ 
+     public void reset(String reason) {
+-- 
+2.43.0
+

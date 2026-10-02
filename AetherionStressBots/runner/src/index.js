@@ -30,6 +30,7 @@ function parseArgs(argv) {
     trade: 0,
     quest: 0,
     pad: 0,
+    general: 0,
     listen: false,
     host: baseConfig.host,
     port: baseConfig.port,
@@ -53,6 +54,7 @@ function parseArgs(argv) {
     else if ((arg === '--trade' || arg === '--ah') && next != null) takeNum('trade')
     else if (arg === '--quest' && next != null) takeNum('quest')
     else if (arg === '--pad' && next != null) takeNum('pad')
+    else if ((arg === '--general' || arg === '--player') && next != null) takeNum('general')
     else if (arg === '--host' && next != null) { out.host = next; i++ }
     else if (arg === '--port' && next != null) { out.port = Number(next); i++ }
     else if (arg === '--version' && next != null) { out.version = next; i++ }
@@ -72,7 +74,7 @@ async function main() {
   if (args.help) {
     console.log(`Usage:
   node src/index.js [--listen] [--mine N] [--forage N] [--catch N] [--roam N]
-                    [--combat N] [--fish N] [--trade N] [--quest N] [--pad N] [--mining N]
+                    [--combat N] [--fish N] [--trade N] [--quest N] [--pad N] [--general N] [--mining N]
 
 Wave 1 QA: --mine / --forage / --catch / --roam
 Wave 2 QA: --combat (QaCombat) / --fish / --trade / --quest / --pad
@@ -119,6 +121,7 @@ Stop with Ctrl+C.`)
     trade: args.trade,
     quest: args.quest,
     pad: args.pad,
+    general: args.general,
     mining: args.mining
   }
   const total = Object.values(planned).reduce((a, b) => a + b, 0)

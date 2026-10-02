@@ -1,0 +1,137 @@
+# ============================================================
+# The Hollow Sun – Fallen Star showcase boss (Bloodstone arena)
+# Combat: HollowSunDirector. Spawn: /boss spawn hollow_sun
+# Main Sequence: a gold star-knight. Swipe, lance, slam, starcall, corona.
+# Red Giant: it swells and hovers. Rotating flare beams, lava prominences.
+# Starfall (66% -> 33%): it rises, becomes a red sun, collapses to a black
+#   star and falls. Stand outside the crimson disc.
+# Collapse: black/violet. Gravity wells, folds, shockwaves, and at 15%
+#   the Nova: break the core or everyone burns.
+# Death: the armor bursts, the core returns to the sky as a star.
+# ============================================================
+
+id: hollow_sun
+display-name: "&6&lThe Hollow Sun"
+entity-type: WITHER_SKELETON
+model-engine-id: ""
+
+attributes:
+  max-health: 120000
+  movement-speed: 0.26
+  attack-damage: 34
+  scale: 1.4
+  follow-range: 40
+  knockback-resistance: 1.0
+
+equipment:
+  helmet: NETHERITE_HELMET
+  chestplate: NETHERITE_CHESTPLATE
+  leggings: NETHERITE_LEGGINGS
+  boots: NETHERITE_BOOTS
+  main-hand: AIR
+  off-hand: AIR
+  drop-chance: 0.0
+
+options:
+  glowing: false
+  custom-name-visible: true
+  silent: true
+  invulnerable-spawn-ticks: 30
+  persistent: true
+  remove-when-far-away: false
+  prevent-item-pickup: true
+
+conditions:
+  max-instances: 1
+  leash-radius: 40
+  leash-action: TELEPORT
+
+phases:
+  - id: main_sequence
+    health-percent: 100
+    display-name: "&6&lThe Hollow Sun &8· &eMain Sequence"
+    skills: []
+
+  - id: red_giant
+    health-percent: 66
+    display-name: "&c&lThe Hollow Sun &8· &4Red Giant"
+    transition:
+      duration-ticks: 100
+      invulnerable: true
+      freeze-ai: true
+      explode: false
+    skills:
+      - type: DIALOG
+        trigger: ON_PHASE
+        broadcast: true
+        message: "&6&lThe Hollow Sun&7: &fI burned for ten thousand years. &cI can burn brighter."
+
+  - id: collapse
+    health-percent: 33
+    display-name: "&5&lThe Hollow Sun &8· &dCollapse"
+    transition:
+      duration-ticks: 240
+      invulnerable: true
+      freeze-ai: true
+      explode: false
+    skills:
+      - type: DIALOG
+        trigger: ON_PHASE
+        broadcast: true
+        message: "&5&lThe Hollow Sun&7: &dEvery star falls. &5Fall with me."
+
+skills:
+  - type: DIALOG
+    trigger: ON_DEATH
+    broadcast: true
+    message: "&6&lThe Hollow Sun &7has returned to the sky."
+
+loot:
+  damage-based: true
+  participation-threshold-percent: 5.0
+  experience: 9000
+
+  killer-bonus:
+    - source: VANILLA
+      material: NETHER_STAR
+      amount: 1
+      chance: 1.0
+
+  rank-loot:
+    1:
+      - source: AETHERION
+        item-id: random_booster
+        amount: 2
+        chance: 0.75
+    2:
+      - source: AETHERION
+        item-id: random_booster
+        amount: 1
+        chance: 0.55
+    3:
+      - source: AETHERION
+        item-id: random_booster
+        amount: 1
+        chance: 0.35
+
+  top-damagers:
+    count: 3
+    items:
+      - source: AETHERION
+        item-id: random_booster
+        amount: 1
+        chance: 0.70
+
+  shared:
+    - source: VANILLA
+      material: GLOWSTONE_DUST
+      min-amount: 8
+      max-amount: 16
+      chance: 1.0
+    - source: VANILLA
+      material: CRYING_OBSIDIAN
+      min-amount: 2
+      max-amount: 6
+      chance: 1.0
+
+  per-damager:

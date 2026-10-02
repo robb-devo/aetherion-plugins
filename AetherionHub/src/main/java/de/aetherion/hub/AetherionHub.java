@@ -2,6 +2,7 @@ package de.aetherion.hub;
 
 import de.aetherion.hub.command.AetherPasteCommand;
 import de.aetherion.hub.command.HubAdminCommand;
+import de.aetherion.hub.command.PropWandCommand;
 import de.aetherion.hub.command.SpawnCommand;
 import de.aetherion.hub.command.SpawnGotoCommand;
 import de.aetherion.hub.data.PlayerHubStorage;
@@ -11,6 +12,9 @@ import de.aetherion.hub.listener.HubListener;
 import de.aetherion.hub.listener.SpawnDiscoverListener;
 import de.aetherion.hub.menu.SpawnMenu;
 import de.aetherion.hub.pad.IslandLaunchPads;
+import de.aetherion.hub.prop.PropCatalog;
+import de.aetherion.hub.prop.PropWand;
+import de.aetherion.hub.prop.PropWandListener;
 import de.aetherion.hub.service.HubService;
 
 import org.bukkit.command.PluginCommand;
@@ -65,6 +69,16 @@ public final class AetherionHub extends JavaPlugin {
             aetherPaste.setTabCompleter(pasteCommand);
         }
 
+        PropCatalog.ensureExtracted(this);
+        PropWand propWand = new PropWand(this);
+        PluginCommand propWandCmd = getCommand("propwand");
+        if (propWandCmd != null) {
+            PropWandCommand propCommand = new PropWandCommand(this, propWand);
+            propWandCmd.setExecutor(propCommand);
+            propWandCmd.setTabCompleter(propCommand);
+        }
+        getServer().getPluginManager().registerEvents(new PropWandListener(this, propWand), this);
+
         getServer().getPluginManager().registerEvents(new HubListener(this, hub, menu, adminCommand), this);
         getServer().getPluginManager().registerEvents(new HomesteadListener(homesteadMarker), this);
         getServer().getPluginManager().registerEvents(launchPads, this);
@@ -73,7 +87,7 @@ public final class AetherionHub extends JavaPlugin {
         discover.start();
         hubAccess = new de.aetherion.hub.api.HubAccessImpl();
         de.aetherion.core.api.AetherServices.registerHub(hubAccess);
-        getLogger().info("AetherionHub enabled. /spawn and /hub teleport, /spawns opens the menu, /aetherpaste pastes Eldervale islands.");
+        getLogger().info("AetherionHub enabled. /spawn /hub /spawns, /aetherpaste islands, /propwand places prop schems.");
     }
 
     @Override

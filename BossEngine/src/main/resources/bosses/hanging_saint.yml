@@ -1,0 +1,138 @@
+# ============================================================
+# Seraphine, the Hanging Saint
+# Spectacle boss. The whole fight lives in
+#   de.aetherion.bossengine.instance.saint.HangingSaintDirector
+# This file only supplies HP gates, transition windows and a hitbox.
+#
+# Arena: the director builds its own stage (the Gilded Proscenium) at
+# the spawn point, lifted to the first height where it fits in open air.
+# It only ever fills air, and strikes the set after the fight. For a
+# dedicated permanent arena call SaintStage.buildPermanent(plugin, loc)
+# once; later spawns on that spot reuse it and never tear it down.
+#
+# Balance / loot chances below are placeholders.
+# ============================================================
+
+id: hanging_saint
+display-name: "&f&lSeraphine&7, &6the Hanging Saint"
+# Silhouette only: invisible hitbox. The body is ~80 BlockDisplays.
+entity-type: HUSK
+model-engine-id: ""
+
+attributes:
+  max-health: 120000
+  movement-speed: 0.0
+  attack-damage: 0
+  scale: 2.4
+  follow-range: 32
+  knockback-resistance: 1.0
+
+options:
+  glowing: false
+  custom-name-visible: false
+  silent: true
+  invulnerable-spawn-ticks: 0
+  persistent: true
+  remove-when-far-away: false
+  prevent-item-pickup: true
+
+conditions:
+  max-instances: 1
+  leash-radius: 40
+  leash-action: TELEPORT
+
+phases:
+  - id: overture
+    health-percent: 100
+    display-name: "&f&lSeraphine&7, &6the Hanging Saint"
+    skills: []
+
+  # The Hand Descends. Authored at 140 ticks; other values rescale the timeline.
+  - id: the_hand
+    health-percent: 66
+    display-name: "&f&lSeraphine &7— &6The Hand Above"
+    transition:
+      duration-ticks: 140
+      invulnerable: true
+      freeze-ai: true
+      explode: false
+    skills: []
+
+  # Severance. Authored at 220 ticks.
+  - id: unstrung
+    health-percent: 33
+    display-name: "&4&lSeraphine&7, &cUnstrung"
+    transition:
+      duration-ticks: 220
+      invulnerable: true
+      freeze-ai: true
+      explode: false
+    skills: []
+
+skills: []
+
+# Paid into her music box (loot/SeraphineMusicBox): lowered onto the stage on golden
+# threads after the curtain call; each player right-clicks it for their own share.
+# Chances / amounts are placeholders.
+loot:
+  damage-based: true
+  participation-threshold-percent: 5.0
+  experience: 1000
+
+  killer-bonus: []
+
+  # The Mended Saint: Severance (needle) + Kintsugi Veil / Porcelain Bodice /
+  # Marionette Bell Skirt / Gilt Pointe Slippers (random_seraphine_armor = one piece).
+  rank-loot:
+    1:
+      - source: AETHERION
+        item-id: seraphine_needle
+        amount: 1
+        chance: 0.10
+      - source: AETHERION
+        item-id: random_seraphine_armor
+        amount: 1
+        chance: 1.0
+    2:
+      - source: AETHERION
+        item-id: seraphine_needle
+        amount: 1
+        chance: 0.04
+      - source: AETHERION
+        item-id: random_seraphine_armor
+        amount: 1
+        chance: 0.70
+    3:
+      - source: AETHERION
+        item-id: seraphine_needle
+        amount: 1
+        chance: 0.02
+      - source: AETHERION
+        item-id: random_seraphine_armor
+        amount: 1
+        chance: 0.35
+
+  top-damagers:
+    count: 0
+    items: []
+
+  shared: []
+
+  per-damager:
+    - source: AETHERION
+      item-id: random_seraphine_armor
+      amount: 1
+      chance: 0.05
+    # Gold from her seams.
+    - source: VANILLA
+      material: GOLD_NUGGET
+      min-amount: 8
+      max-amount: 24
+      chance: 1.0
+      scale-with-damage: true
+    - source: VANILLA
+      material: EXPERIENCE_BOTTLE
+      min-amount: 10
+      max-amount: 20
+      chance: 1.0
+      scale-with-damage: true

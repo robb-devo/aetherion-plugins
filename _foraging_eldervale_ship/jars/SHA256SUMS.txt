@@ -1,0 +1,2 @@
+c6f9e8495d9c8606b4900f42e857e5897ac3c84b3e76103ac503f05f2f29006d  AetherionForaging-1.0.0.jar  394063 bytes
+dd647a5ad43fbe6d180b7dab4c5bbab8c0a279952f5849ca78319f220b80ac64  AetherionItems-1.0.0.jar  2312411 bytes

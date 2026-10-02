@@ -1,0 +1,561 @@
+From 92aaabe9394fdf2446dbdb585307b214047cf131 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 29 Sep 2026 10:58:12 +0200
+Subject: [PATCH 9/9] Mining: review fixes: Tremor pays rubble only,
+ placed-block farming blocked, troll tracking, Violet Deep cooldown, strain
+ re-warn, collapse cancel off-isle, geode fair-game bar, cheapest specimen
+ taken, Cartographer on any entry, Shardling telegraph reset, NaN-safe DEV
+ facing, pending cast spots kept, quit cleanup
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01Cb5rUs5Jy2h8ZCMwTfnbVN
+---
+ .../aetherion/mining/isle/AmethystMine.java   | 18 +++++---
+ .../aetherion/mining/isle/CrystalFinds.java   | 15 ++++++-
+ .../de/aetherion/mining/isle/ForgeWorks.java  |  4 ++
+ .../de/aetherion/mining/isle/MineCast.java    | 25 +++++++++++
+ .../de/aetherion/mining/isle/MineCompass.java | 30 +++++++++----
+ .../aetherion/mining/isle/MineCritters.java   |  9 ++++
+ .../de/aetherion/mining/isle/MineDev.java     | 11 ++++-
+ .../de/aetherion/mining/isle/MineEvents.java  | 23 +++++++---
+ .../de/aetherion/mining/isle/MineHazards.java |  6 +++
+ .../de/aetherion/mining/isle/MineIsle.java    | 43 ++++++++++++++++++-
+ .../de/aetherion/mining/isle/MineItems.java   | 16 ++++++-
+ .../de/aetherion/mining/isle/MineSkills.java  | 14 ++++++
+ 12 files changed, 186 insertions(+), 28 deletions(-)
+
+diff --git a/AetherionMining/src/main/java/de/aetherion/mining/isle/AmethystMine.java b/AetherionMining/src/main/java/de/aetherion/mining/isle/AmethystMine.java
+index d604759b..0ddbd4b7 100644
+--- a/AetherionMining/src/main/java/de/aetherion/mining/isle/AmethystMine.java
++++ b/AetherionMining/src/main/java/de/aetherion/mining/isle/AmethystMine.java
+@@ -96,6 +96,7 @@ public final class AmethystMine implements Listener {
+ 
+     private final MineIsle isle;
+     private final Map<UUID, State> states = new ConcurrentHashMap<>();
++    private final Map<UUID, Integer> deepHum = new ConcurrentHashMap<>();
+     private BukkitTask task;
+ 
+     AmethystMine(MineIsle isle) {
+@@ -117,6 +118,11 @@ public final class AmethystMine implements Listener {
+     }
+ 
+     void forget(UUID id) {
++        deepHum.remove(id);
++        dropBar(id);
++    }
++
++    private void dropBar(UUID id) {
+         State state = states.remove(id);
+         if (state != null && state.bar != null) {
+             Player player = Bukkit.getPlayer(id);
+@@ -267,7 +273,7 @@ public final class AmethystMine implements Listener {
+                 paint(player, state);
+             }
+             if (state.value <= 0.0d && now - state.lastCrystalTick > 200) {
+-                forget(entry.getKey());
++                dropBar(entry.getKey());
+             }
+         }
+         if (now % 40 >= 10) {
+@@ -281,13 +287,13 @@ public final class AmethystMine implements Listener {
+                     || isle.forge().canary(player)) {
+                 continue;
+             }
+-            State state = states.computeIfAbsent(player.getUniqueId(), ignored -> new State());
+-            if (now < state.nextDeepHum) {
++            Integer next = deepHum.get(player.getUniqueId());
++            if (next != null && now < next) {
+                 continue;
+             }
+-            state.nextDeepHum = now + 20 * 8;
+-            player.addPotionEffect(new PotionEffect(PotionEffectType.NAUSEA, 20 * 5, 0, false, false, false));
+-            player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 20 * 5, 0, false, false, false));
++            deepHum.put(player.getUniqueId(), now + 20 * 8);
++            player.addPotionEffect(new PotionEffect(PotionEffectType.NAUSEA, 20 * 4, 0, false, false, false));
++            player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 20 * 4, 0, false, false, false));
+             MineText.bar(player, "§5The Violet Deep hums at you. §7Mining 20 or a §6Canary Cage §7quiets it.");
+             player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_RESONATE, SoundCategory.AMBIENT, 1.0f, 0.5f);
+         }
+diff --git a/AetherionMining/src/main/java/de/aetherion/mining/isle/CrystalFinds.java b/AetherionMining/src/main/java/de/aetherion/mining/isle/CrystalFinds.java
+index 6af4ad51..ebee228a 100644
+--- a/AetherionMining/src/main/java/de/aetherion/mining/isle/CrystalFinds.java
++++ b/AetherionMining/src/main/java/de/aetherion/mining/isle/CrystalFinds.java
+@@ -92,6 +92,7 @@ public final class CrystalFinds implements Listener {
+         TextDisplay label;
+         BukkitTask task;
+         boolean done;
++        boolean announced;
+ 
+         Geode(UUID finder, IsleOre ore, Grade grade, double carats, Location at, boolean veins, int cracksNeeded) {
+             this.finder = finder;
+@@ -113,6 +114,15 @@ public final class CrystalFinds implements Listener {
+         this.partKey = new NamespacedKey(isle.plugin(), "mine_geode_part");
+     }
+ 
++    /** Quit: drop per-player bookkeeping (the find cooldown only while it has run out). */
++    void forget(UUID id) {
++        lastStrike.remove(id);
++        Long last = lastFind.get(id);
++        if (last != null && System.currentTimeMillis() - last >= COOLDOWN_MS) {
++            lastFind.remove(id);
++        }
++    }
++
+     void shutdown() {
+         for (Geode geode : List.copyOf(byFinder.values())) {
+             remove(geode);
+@@ -324,11 +334,12 @@ public final class CrystalFinds implements Listener {
+             geode.stone.setInterpolationDuration(2);
+             geode.stone.setTransformation(scaled(Math.max(0.5f, size), bob, spin));
+         }
+-        if (age % 12 == 0 && geode.at.getWorld() != null) {
++        if (age % 12 < 2 && geode.at.getWorld() != null) {
+             geode.at.getWorld().spawnParticle(Particle.DUST, geode.at.clone().add(0, 0.5, 0), 3, 0.4, 0.4, 0.4, 0.0,
+                     new Particle.DustOptions(geode.ore.glow(), 1.0f));
+         }
+-        if (age == FINDER_TICKS) {
++        if (age >= FINDER_TICKS && !geode.announced) {
++            geode.announced = true;
+             Player finder = Bukkit.getPlayer(geode.finder);
+             if (finder != null) {
+                 MineText.bar(finder, "§e" + geode.ore.crystalName() + " §7is fair game now — anyone can swing!");
+diff --git a/AetherionMining/src/main/java/de/aetherion/mining/isle/ForgeWorks.java b/AetherionMining/src/main/java/de/aetherion/mining/isle/ForgeWorks.java
+index 23ba5700..6b9b09ed 100644
+--- a/AetherionMining/src/main/java/de/aetherion/mining/isle/ForgeWorks.java
++++ b/AetherionMining/src/main/java/de/aetherion/mining/isle/ForgeWorks.java
+@@ -644,6 +644,10 @@ public final class ForgeWorks implements Listener {
+         return true;
+     }
+ 
++    void forget(UUID id) {
++        flareCool.remove(id);
++    }
++
+     /** Leftover flare glows from a crash. */
+     void purgeStrays() {
+         for (World world : Bukkit.getWorlds()) {
+diff --git a/AetherionMining/src/main/java/de/aetherion/mining/isle/MineCast.java b/AetherionMining/src/main/java/de/aetherion/mining/isle/MineCast.java
+index 27562523..9c2070cd 100644
+--- a/AetherionMining/src/main/java/de/aetherion/mining/isle/MineCast.java
++++ b/AetherionMining/src/main/java/de/aetherion/mining/isle/MineCast.java
+@@ -68,6 +68,8 @@ public final class MineCast implements Listener {
+     private final NamespacedKey anchorKey;
+     private final File file;
+     private final Map<MineRole, Location> placed = new EnumMap<>(MineRole.class);
++    /** Saved spots whose world wasn't loaded yet: kept (and re-saved) until it is. */
++    private final Map<MineRole, ConfigurationSection> pending = new EnumMap<>(MineRole.class);
+     private final Map<MineRole, Spawned> live = new EnumMap<>(MineRole.class);
+     private final Map<String, Long> barked = new ConcurrentHashMap<>();
+     private final Map<UUID, Long> clickCool = new ConcurrentHashMap<>();
+@@ -84,6 +86,13 @@ public final class MineCast implements Listener {
+ 
+     void start() {
+         purgeStrays();
++        for (MineRole role : List.copyOf(pending.keySet())) {
++            Location at = MineWorld.location(pending.get(role));
++            if (at != null) {
++                placed.put(role, at);
++                pending.remove(role);
++            }
++        }
+         if (!seeded && isle.plugin().getConfig().getBoolean("mine-cast.auto-place", true)) {
+             for (MineRole role : MineRole.values()) {
+                 if (!placed.containsKey(role) && preset(role) != null) {
+@@ -138,6 +147,7 @@ public final class MineCast implements Listener {
+         if (at == null || at.getWorld() == null) {
+             return "§cNo location for " + role.display() + ".";
+         }
++        pending.remove(role);
+         despawn(role);
+         placed.put(role, at.clone());
+         save();
+@@ -165,6 +175,7 @@ public final class MineCast implements Listener {
+     }
+ 
+     public String remove(MineRole role) {
++        pending.remove(role);
+         despawn(role);
+         boolean had = placed.remove(role) != null;
+         save();
+@@ -177,6 +188,7 @@ public final class MineCast implements Listener {
+         }
+         int count = placed.size();
+         placed.clear();
++        pending.clear();
+         save();
+         return "§eRemoved §f" + count + "§e Mining Eldervale NPCs.";
+     }
+@@ -379,6 +391,12 @@ public final class MineCast implements Listener {
+         }
+     }
+ 
++    void forget(UUID id) {
++        clickCool.remove(id);
++        String prefix = id + ":";
++        barked.keySet().removeIf(key -> key.startsWith(prefix));
++    }
++
+     public void say(Player player, MineRole role, String line) {
+         if (player != null) {
+             player.sendMessage(role.color() + role.shortName() + " §8» §f" + line);
+@@ -466,6 +484,8 @@ public final class MineCast implements Listener {
+             Location at = MineWorld.location(section);
+             if (at != null) {
+                 placed.put(role, at);
++            } else {
++                pending.put(role, section);
+             }
+         }
+     }
+@@ -473,6 +493,11 @@ public final class MineCast implements Listener {
+     private void save() {
+         YamlConfiguration config = new YamlConfiguration();
+         config.set("seeded", seeded);
++        pending.forEach((role, section) -> {
++            if (!placed.containsKey(role)) {
++                config.createSection("roles." + role.id(), section.getValues(false));
++            }
++        });
+         placed.forEach((role, at) -> {
+             String path = "roles." + role.id();
+             config.set(path + ".world", at.getWorld() == null ? "world" : at.getWorld().getName());
+diff --git a/AetherionMining/src/main/java/de/aetherion/mining/isle/MineCompass.java b/AetherionMining/src/main/java/de/aetherion/mining/isle/MineCompass.java
+index ee8ed7dc..94aefcbe 100644
+--- a/AetherionMining/src/main/java/de/aetherion/mining/isle/MineCompass.java
++++ b/AetherionMining/src/main/java/de/aetherion/mining/isle/MineCompass.java
+@@ -220,7 +220,11 @@ public final class MineCompass {
+ 
+     private void enter(Player player, MineDistricts.District district, boolean announce) {
+         MineProfiles.Profile profile = isle.profiles().of(player);
+-        if (profile.districts.add(district.id())) {
++        boolean fresh = profile.districts.add(district.id());
++        if (!fresh) {
++            cartographer(player, profile);
++        }
++        if (fresh) {
+             isle.profiles().markDirty();
+             int found = countKnown(profile);
+             int total = isle.districts().size();
+@@ -234,14 +238,7 @@ public final class MineCompass {
+             player.playSound(player.getLocation(), district.kind() == MineDistricts.Kind.SHAFT
+                     ? Sound.AMBIENT_CAVE : Sound.BLOCK_LANTERN_PLACE, SoundCategory.PLAYERS, 0.7f, 1.0f);
+             MineSkills.bonus(player, DISCOVERY_XP * (district.kind() == MineDistricts.Kind.SHAFT ? 2 : 1));
+-            if (found >= total && !profile.surveyor && player.getGameMode() == GameMode.SURVIVAL) {
+-                profile.surveyor = true;
+-                MineSkills.coins(player, CARTOGRAPHER_COINS);
+-                MineSkills.bonus(player, CARTOGRAPHER_XP);
+-                player.sendMessage("§6✦ Cartographer §8· §7You've walked every hall, quarry and shaft on Mining Eldervale."
+-                        + " §6+" + MineText.coins(CARTOGRAPHER_COINS) + " coins §8· §a+" + CARTOGRAPHER_XP + " Mining XP");
+-                player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, SoundCategory.PLAYERS, 0.8f, 1.0f);
+-            }
++            cartographer(player, profile);
+             return;
+         }
+         if (announce) {
+@@ -275,6 +272,21 @@ public final class MineCompass {
+         }
+     }
+ 
++    /** Pays Cartographer once every place is known (checked on every entry, survival only). */
++    private void cartographer(Player player, MineProfiles.Profile profile) {
++        if (profile.surveyor || player.getGameMode() != GameMode.SURVIVAL
++                || countKnown(profile) < isle.districts().size() || isle.districts().size() == 0) {
++            return;
++        }
++        profile.surveyor = true;
++        isle.profiles().markDirty();
++        MineSkills.coins(player, CARTOGRAPHER_COINS);
++        MineSkills.bonus(player, CARTOGRAPHER_XP);
++        player.sendMessage("§6✦ Cartographer §8· §7You've walked every hall, quarry and shaft on Mining Eldervale."
++                + " §6+" + MineText.coins(CARTOGRAPHER_COINS) + " coins §8· §a+" + CARTOGRAPHER_XP + " Mining XP");
++        player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, SoundCategory.PLAYERS, 0.8f, 1.0f);
++    }
++
+     public int countKnown(MineProfiles.Profile profile) {
+         int count = 0;
+         for (MineDistricts.District district : isle.districts().all()) {
+diff --git a/AetherionMining/src/main/java/de/aetherion/mining/isle/MineCritters.java b/AetherionMining/src/main/java/de/aetherion/mining/isle/MineCritters.java
+index ed4dd249..fc24d971 100644
+--- a/AetherionMining/src/main/java/de/aetherion/mining/isle/MineCritters.java
++++ b/AetherionMining/src/main/java/de/aetherion/mining/isle/MineCritters.java
+@@ -166,6 +166,14 @@ public final class MineCritters implements Listener {
+         }
+     }
+ 
++    /** Quit: forget an expired Stonejaw cooldown (a running one survives a relog). */
++    void forget(UUID id) {
++        Long cool = stonejawCool.get(id);
++        if (cool != null && cool <= System.currentTimeMillis()) {
++            stonejawCool.remove(id);
++        }
++    }
++
+     public int count() {
+         return all.size();
+     }
+@@ -524,6 +532,7 @@ public final class MineCritters implements Listener {
+             }
+             case SHARDLING -> {
+                 if (distance > 7.5d) {
++                    critter.telegraphUntil = 0;
+                     return;
+                 }
+                 if (critter.telegraphUntil == 0 && now >= critter.nextAttack) {
+diff --git a/AetherionMining/src/main/java/de/aetherion/mining/isle/MineDev.java b/AetherionMining/src/main/java/de/aetherion/mining/isle/MineDev.java
+index 4fb8b292..6b30433b 100644
+--- a/AetherionMining/src/main/java/de/aetherion/mining/isle/MineDev.java
++++ b/AetherionMining/src/main/java/de/aetherion/mining/isle/MineDev.java
+@@ -198,7 +198,7 @@ public final class MineDev {
+         if (grade == null) {
+             grade = Grade.PERFECT;
+         }
+-        Location front = player.getEyeLocation().add(player.getLocation().getDirection().setY(0).normalize().multiply(2.0));
++        Location front = player.getEyeLocation().add(flatFacing(player).multiply(2.0));
+         double carats = Math.round((ore.minCarat() + ore.maxCarat()) / 2.0d * 100.0d) / 100.0d;
+         isle.crystals().spawn(player, ore, grade, carats, front.getBlock().getLocation(),
+                 grade == Grade.HEARTSTONE || (plugin().getVeins() != null && plugin().getVeins().isVeins(player.getWorld())));
+@@ -251,7 +251,7 @@ public final class MineDev {
+         if (kind == null) {
+             return "§cUnknown critter: " + kindId;
+         }
+-        Location front = player.getLocation().add(player.getLocation().getDirection().setY(0).normalize().multiply(3.0));
++        Location front = player.getLocation().add(flatFacing(player).multiply(3.0));
+         Location spot = kind.flies ? front.add(0, 1.2, 0) : MineCritters.floorNear(front, 3);
+         if (spot == null) {
+             return "§cNo room for a " + kind.display + " here.";
+@@ -367,6 +367,13 @@ public final class MineDev {
+         return out;
+     }
+ 
++    /** Horizontal facing (never NaN, even looking straight up or down). */
++    private static org.bukkit.util.Vector flatFacing(Player player) {
++        Location flat = player.getLocation().clone();
++        flat.setPitch(0.0f);
++        return flat.getDirection();
++    }
++
+     private static int parse(String raw, int fallback) {
+         try {
+             return Integer.parseInt(raw.trim());
+diff --git a/AetherionMining/src/main/java/de/aetherion/mining/isle/MineEvents.java b/AetherionMining/src/main/java/de/aetherion/mining/isle/MineEvents.java
+index 30fe9158..4479a427 100644
+--- a/AetherionMining/src/main/java/de/aetherion/mining/isle/MineEvents.java
++++ b/AetherionMining/src/main/java/de/aetherion/mining/isle/MineEvents.java
+@@ -115,7 +115,7 @@ public final class MineEvents implements Listener {
+     private final Map<UUID, Integer> tally = new HashMap<>();
+     private final Map<UUID, Rubble> rubbleByPart = new HashMap<>();
+     private final Map<UUID, Integer> rubbleHits = new HashMap<>();
+-    private final Map<UUID, Integer> trollsLive = new HashMap<>();
++    private final Map<UUID, List<UUID>> trollsLive = new HashMap<>();
+     private BukkitTask timer;
+     private BukkitTask ticker;
+     private Phase phase = Phase.IDLE;
+@@ -238,15 +238,23 @@ public final class MineEvents implements Listener {
+                 if (ore == IsleOre.STONE) {
+                     return;
+                 }
+-                int live = trollsLive.getOrDefault(player.getUniqueId(), 0);
+-                if (live >= 2 || ThreadLocalRandom.current().nextDouble() >= TROLL_CHANCE) {
++                List<UUID> mine = trollsLive.computeIfAbsent(player.getUniqueId(), ignored -> new ArrayList<>());
++                mine.removeIf(id -> {
++                    org.bukkit.entity.Entity troll = Bukkit.getEntity(id);
++                    return troll == null || !troll.isValid() || troll.isDead();
++                });
++                if (mine.size() >= 2 || ThreadLocalRandom.current().nextDouble() >= TROLL_CHANCE) {
+                     return;
+                 }
+-                if (MineSkills.spawnTroll(player, at.clone().add(0.5, 0.0, 0.5))) {
+-                    trollsLive.merge(player.getUniqueId(), 1, Integer::sum);
++                org.bukkit.entity.Entity troll = MineSkills.spawnTrollEntity(player, at.clone().add(0.5, 0.0, 0.5));
++                if (troll != null) {
++                    mine.add(troll.getUniqueId());
+                     MineText.bar(player, "§a⚠ An Ore Troll crawls out of the seam!");
+                 }
+             }
++            case TREMOR -> {
++                // Tremor pays for rubble cleared (strikeRubble), not for every block mined meanwhile.
++            }
+             default -> tally.merge(player.getUniqueId(), 1, Integer::sum);
+         }
+     }
+@@ -763,7 +771,10 @@ public final class MineEvents implements Listener {
+         if (killer == null) {
+             return;
+         }
+-        trollsLive.computeIfPresent(killer.getUniqueId(), (id, live) -> Math.max(0, live - 1));
++        List<UUID> live = trollsLive.get(killer.getUniqueId());
++        if (live != null) {
++            live.remove(event.getEntity().getUniqueId());
++        }
+         MineProfiles.Profile profile = isle.profiles().of(killer);
+         profile.trollsFelled++;
+         isle.profiles().markDirty();
+diff --git a/AetherionMining/src/main/java/de/aetherion/mining/isle/MineHazards.java b/AetherionMining/src/main/java/de/aetherion/mining/isle/MineHazards.java
+index 7fefaeb1..8ed5c1e6 100644
+--- a/AetherionMining/src/main/java/de/aetherion/mining/isle/MineHazards.java
++++ b/AetherionMining/src/main/java/de/aetherion/mining/isle/MineHazards.java
+@@ -136,6 +136,9 @@ public final class MineHazards implements Listener {
+         int bandBias = band == MineDistricts.Band.UNDERCROFT ? 6 : band == MineDistricts.Band.DEEP_WORKS ? 3 : 0;
+         local += bandBias;
+         boolean canary = isle.forge().canary(player);
++        if (local < STRAIN_WARN - (canary ? 6 : 0)) {
++            state.warned = false;
++        }
+         if (local >= STRAIN_WARN - (canary ? 6 : 0) && !state.warned) {
+             state.warned = true;
+             player.playSound(at, Sound.BLOCK_POINTED_DRIPSTONE_DRIP_WATER, SoundCategory.BLOCKS, 1.0f, 0.6f);
+@@ -176,6 +179,9 @@ public final class MineHazards implements Listener {
+         if (spot == null || spot.getWorld() == null) {
+             return;
+         }
++        if (!player.getWorld().equals(spot.getWorld()) || !MineWorld.onIsle(isle.plugin(), player)) {
++            return;
++        }
+         World world = spot.getWorld();
+         world.playSound(spot, Sound.ENTITY_GENERIC_EXPLODE, SoundCategory.BLOCKS, 0.6f, 0.5f);
+         world.playSound(spot, Sound.BLOCK_GRAVEL_BREAK, SoundCategory.BLOCKS, 1.4f, 0.5f);
+diff --git a/AetherionMining/src/main/java/de/aetherion/mining/isle/MineIsle.java b/AetherionMining/src/main/java/de/aetherion/mining/isle/MineIsle.java
+index 8abc2fa4..149d736e 100644
+--- a/AetherionMining/src/main/java/de/aetherion/mining/isle/MineIsle.java
++++ b/AetherionMining/src/main/java/de/aetherion/mining/isle/MineIsle.java
+@@ -20,6 +20,8 @@ import org.bukkit.event.EventPriority;
+ import org.bukkit.event.HandlerList;
+ import org.bukkit.event.Listener;
+ import org.bukkit.event.block.BlockBreakEvent;
++import org.bukkit.event.block.BlockPlaceEvent;
++import org.bukkit.event.world.WorldUnloadEvent;
+ import org.bukkit.event.player.PlayerQuitEvent;
+ 
+ import java.time.LocalDate;
+@@ -65,6 +67,9 @@ public final class MineIsle implements Listener, StatProvider {
+     private final AmethystMine amethyst;
+     private final MineDev dev;
+     private boolean itemsHooked;
++    /** Ore / crystal blocks a player placed: breaking them again feeds no loop (no place-break farming). */
++    private final java.util.Map<UUID, java.util.Set<Long>> placedBlocks = new java.util.concurrent.ConcurrentHashMap<>();
++    private static final int PLACED_CAP = 200_000;
+ 
+     public MineIsle(AetherionMining plugin) {
+         this.plugin = plugin;
+@@ -158,6 +163,35 @@ public final class MineIsle implements Listener, StatProvider {
+ 
+     // ------------------------------------------------------------------ the strike
+ 
++    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
++    public void onPlace(BlockPlaceEvent event) {
++        Material material = event.getBlockPlaced().getType();
++        if (!MiningBlocks.allows(material) && !AmethystMine.counts(material)) {
++            return;
++        }
++        java.util.Set<Long> set = placedBlocks.computeIfAbsent(event.getBlockPlaced().getWorld().getUID(),
++                ignored -> java.util.concurrent.ConcurrentHashMap.newKeySet());
++        if (set.size() >= PLACED_CAP) {
++            set.clear();
++        }
++        set.add(blockKey(event.getBlockPlaced()));
++    }
++
++    @EventHandler
++    public void onWorldUnload(WorldUnloadEvent event) {
++        placedBlocks.remove(event.getWorld().getUID());
++    }
++
++    private static long blockKey(Block block) {
++        return ((long) block.getX() & 0x3FFFFFFL) << 38 | ((long) block.getZ() & 0x3FFFFFFL) << 12 | ((block.getY() + 2048L) & 0xFFFL);
++    }
++
++    /** True (and forgotten) when a player placed this block: mined again, it counts for nothing. */
++    private boolean wasPlaced(Block block) {
++        java.util.Set<Long> set = placedBlocks.get(block.getWorld().getUID());
++        return set != null && set.remove(blockKey(block));
++    }
++
+     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+     public void onBreak(BlockBreakEvent event) {
+         Player player = event.getPlayer();
+@@ -176,7 +210,7 @@ public final class MineIsle implements Listener, StatProvider {
+         if (ore == null) {
+             ore = AmethystMine.oreOf(material);
+         }
+-        if (ore == null) {
++        if (ore == null || wasPlaced(block) || de.aetherion.mining.SharedWorldGuard.isBuildWorld(block.getWorld())) {
+             return;
+         }
+         Location at = block.getLocation();
+@@ -312,6 +346,10 @@ public final class MineIsle implements Listener, StatProvider {
+         compass.forget(id);
+         hazards.forget(id);
+         amethyst.forget(id);
++        crystals.forget(id);
++        cast.forget(id);
++        forge.forget(id);
++        critters.forget(id);
+         profiles.unload(id);
+     }
+ 
+@@ -392,7 +430,8 @@ public final class MineIsle implements Listener, StatProvider {
+     /** Vein Siphon vacuum: mastery + contracts count it. Rhythm and finds stay hand-mined. */
+     public void noteVacuum(Player player, Material material, Location at) {
+         IsleOre ore = oreFor(material);
+-        if (player == null || ore == null) {
++        if (player == null || ore == null || at == null || at.getWorld() == null
++                || wasPlaced(at.getBlock()) || de.aetherion.mining.SharedWorldGuard.isBuildWorld(at.getWorld())) {
+             return;
+         }
+         boolean veins = inVeins(at);
+diff --git a/AetherionMining/src/main/java/de/aetherion/mining/isle/MineItems.java b/AetherionMining/src/main/java/de/aetherion/mining/isle/MineItems.java
+index e6fedbff..88961b22 100644
+--- a/AetherionMining/src/main/java/de/aetherion/mining/isle/MineItems.java
++++ b/AetherionMining/src/main/java/de/aetherion/mining/isle/MineItems.java
+@@ -162,8 +162,22 @@ final class MineItems {
+         }
+     }
+ 
++    /** Takes the cheapest matching specimen, so a Heartstone is never eaten when a Rough would do. */
+     static void takeSpecimen(PlayerInventory inventory, CrystalFinds crystals, IsleOre ore) {
+-        int slot = firstSpecimen(inventory, crystals, ore);
++        int slot = -1;
++        long cheapest = Long.MAX_VALUE;
++        ItemStack[] contents = inventory.getStorageContents();
++        for (int i = 0; i < contents.length; i++) {
++            IsleOre found = crystals.oreOf(contents[i]);
++            if (found == null || (ore != null && found != ore)) {
++                continue;
++            }
++            long value = crystals.valueOf(contents[i]);
++            if (value < cheapest) {
++                cheapest = value;
++                slot = i;
++            }
++        }
+         if (slot < 0) {
+             return;
+         }
+diff --git a/AetherionMining/src/main/java/de/aetherion/mining/isle/MineSkills.java b/AetherionMining/src/main/java/de/aetherion/mining/isle/MineSkills.java
+index a15b1724..b36a51e9 100644
+--- a/AetherionMining/src/main/java/de/aetherion/mining/isle/MineSkills.java
++++ b/AetherionMining/src/main/java/de/aetherion/mining/isle/MineSkills.java
+@@ -187,6 +187,20 @@ public final class MineSkills {
+         }
+     }
+ 
++    /** Same as {@link #spawnTroll} but hands back the troll so callers can track it. */
++    public static org.bukkit.entity.Entity spawnTrollEntity(Player aggro, org.bukkit.Location at) {
++        try {
++            AetherionItems items = AetherionItems.getInstance();
++            if (items == null || items.getOreTrollListener() == null) {
++                return null;
++            }
++            Object spawned = items.getOreTrollListener().spawn(at, aggro);
++            return spawned instanceof org.bukkit.entity.Entity entity ? entity : null;
++        } catch (LinkageError ignored) {
++            return null;
++        }
++    }
++
+     public static boolean isTroll(org.bukkit.entity.Entity entity) {
+         try {
+             return de.aetherion.items.mining.OreTrollListener.isOreTroll(entity);
+-- 
+2.43.0
+

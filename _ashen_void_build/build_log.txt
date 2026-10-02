@@ -1,0 +1,70 @@
+SRC ok: C:\Users\Robbi\IdeaProjects\_ashen_void_build\bloodstone_live\bloodstone
+Removing old C:\Users\Robbi\IdeaProjects\_ashen_void_build\ashen_void
+Copying C:\Users\Robbi\IdeaProjects\_ashen_void_build\bloodstone_live\bloodstone -> C:\Users\Robbi\IdeaProjects\_ashen_void_build\ashen_void
+Loading level…
+LevelName: bloodstone -> Ashen Void
+total chunks 3702
+  scanned 200/3702 hot=3 changed=4544
+  scanned 400/3702 hot=9 changed=17081
+  scanned 600/3702 hot=13 changed=28045
+  scanned 800/3702 hot=17 changed=36599
+  scanned 1000/3702 hot=20 changed=43403
+  scanned 1200/3702 hot=25 changed=53963
+  scanned 1400/3702 hot=29 changed=61711
+  scanned 1600/3702 hot=31 changed=67409
+  scanned 1800/3702 hot=38 changed=84256
+  scanned 2000/3702 hot=42 changed=93794
+  scanned 2200/3702 hot=48 changed=109926
+  scanned 2400/3702 hot=50 changed=113839
+  scanned 2600/3702 hot=59 changed=134478
+  scanned 2800/3702 hot=64 changed=144162
+  scanned 3000/3702 hot=65 changed=146841
+  scanned 3200/3702 hot=69 changed=157001
+  scanned 3400/3702 hot=70 changed=158279
+  scanned 3600/3702 hot=74 changed=167839
+hot chunks: 76  palette_entries_touched: 19210  changed_cells: 172719
+Saving…
+Sampling arena (-40..40, y40..90, z70..160)…
+top-20 blocks near arena:
+  317364  universal_minecraft:air
+   16380  universal_minecraft:concrete_powder
+    4995  universal_minecraft:amethyst_block
+    4620  universal_minecraft:diamond_block
+    3820  universal_minecraft:concrete
+    2666  universal_minecraft:wall
+    1830  universal_minecraft:wool
+    1755  universal_minecraft:stone
+    1220  universal_minecraft:stained_glass_pane
+    1040  universal_minecraft:slab
+     762  universal_minecraft:end_stone
+     660  universal_minecraft:end_stone_bricks
+     587  universal_minecraft:stairs
+     546  universal_minecraft:stained_terracotta
+     473  universal_minecraft:purpur_pillar
+     210  universal_minecraft:coal_ore
+     205  universal_minecraft:carpet
+     186  universal_minecraft:purpur_block
+     126  universal_minecraft:iron_block
+     114  universal_minecraft:anvil
+OK: no lava/netherrack/magma/fire near arena
+End-ish names in top-20: ['universal_minecraft:concrete_powder', 'universal_minecraft:amethyst_block', 'universal_minecraft:concrete', 'universal_minecraft:end_stone', 'universal_minecraft:end_stone_bricks', 'universal_minecraft:purpur_pillar', 'universal_minecraft:purpur_block']
+DONE changed=172719 world=C:\Users\Robbi\IdeaProjects\_ashen_void_build\ashen_void
+
+=== POST-VERIFY color/material ===
+   16380  concrete_powder:purple
+    3337  concrete:purple
+    1633  wool:purple
+    1104  stained_glass_pane:black
+     546  stained_terracotta:cyan
+     483  concrete:black
+     205  carpet:black
+     197  wool:black
+     116  stained_glass_pane:purple
+      13  candle:purple
+       1  glazed_terracotta:purple
+materials:
+    2666  wall:end_stone_brick
+     792  slab:end_stone_brick
+     413  stairs:end_stone_brick
+     248  slab:purpur
+     174  stairs:purpur

@@ -367,4 +367,34 @@ public final class RecipeUnlockService {
         Collections.sort(list);
         return list;
     }
+
+
+    /** Revoke crafted / obtained / full-unlock for one player. */
+    public void wipePlayer(UUID playerId) {
+        if (playerId == null) {
+            return;
+        }
+        crafted.remove(playerId);
+        obtained.remove(playerId);
+        fullUnlock.remove(playerId);
+        YamlConfiguration yaml = file.exists()
+                ? YamlConfiguration.loadConfiguration(file)
+                : new YamlConfiguration();
+        yaml.set("crafted." + playerId, null);
+        yaml.set("obtained." + playerId, null);
+        java.util.List<String> full = new java.util.ArrayList<>();
+        for (UUID id : fullUnlock) {
+            full.add(id.toString());
+        }
+        Collections.sort(full);
+        yaml.set("full-unlock", full);
+        try {
+            yaml.save(file);
+            dirty = false;
+        } catch (IOException exception) {
+            plugin.getLogger().warning("Could not wipe recipe unlocks for " + playerId + ": " + exception.getMessage());
+            dirty = true;
+        }
+    }
+
 }

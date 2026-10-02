@@ -1,0 +1,4553 @@
+From 2ed4acbb734f8487aaaa87961efcbf8b5ee6630b Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 29 Sep 2026 04:19:16 +0200
+Subject: [PATCH 2/9] Mining: Eldervale isle WIP (profiles, districts, rhythm,
+ finds, mastery, ledger, hearth, contracts, events)
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01Cb5rUs5Jy2h8ZCMwTfnbVN
+---
+ .../de/aetherion/mining/isle/AssayLedger.java | 283 +++++++
+ .../aetherion/mining/isle/CrystalFinds.java   | 654 +++++++++++++++
+ .../mining/isle/ForemanContracts.java         | 397 +++++++++
+ .../java/de/aetherion/mining/isle/Grade.java  |  70 ++
+ .../java/de/aetherion/mining/isle/Hearth.java | 308 +++++++
+ .../de/aetherion/mining/isle/IsleOre.java     | 189 +++++
+ .../aetherion/mining/isle/MineDistricts.java  | 321 ++++++++
+ .../de/aetherion/mining/isle/MineEvents.java  | 778 ++++++++++++++++++
+ .../de/aetherion/mining/isle/MineItems.java   | 128 +++
+ .../aetherion/mining/isle/MineProfiles.java   | 326 ++++++++
+ .../de/aetherion/mining/isle/MineSkills.java  | 234 ++++++
+ .../de/aetherion/mining/isle/MineText.java    |  81 ++
+ .../de/aetherion/mining/isle/MineWorld.java   | 129 +++
+ .../de/aetherion/mining/isle/OreMastery.java  | 157 ++++
+ .../aetherion/mining/isle/StrikeRhythm.java   | 364 ++++++++
+ 15 files changed, 4419 insertions(+)
+ create mode 100644 AetherionMining/src/main/java/de/aetherion/mining/isle/AssayLedger.java
+ create mode 100644 AetherionMining/src/main/java/de/aetherion/mining/isle/CrystalFinds.java
+ create mode 100644 AetherionMining/src/main/java/de/aetherion/mining/isle/ForemanContracts.java
+ create mode 100644 AetherionMining/src/main/java/de/aetherion/mining/isle/Grade.java
+ create mode 100644 AetherionMining/src/main/java/de/aetherion/mining/isle/Hearth.java
+ create mode 100644 AetherionMining/src/main/java/de/aetherion/mining/isle/IsleOre.java
+ create mode 100644 AetherionMining/src/main/java/de/aetherion/mining/isle/MineDistricts.java
+ create mode 100644 AetherionMining/src/main/java/de/aetherion/mining/isle/MineEvents.java
+ create mode 100644 AetherionMining/src/main/java/de/aetherion/mining/isle/MineItems.java
+ create mode 100644 AetherionMining/src/main/java/de/aetherion/mining/isle/MineProfiles.java
+ create mode 100644 AetherionMining/src/main/java/de/aetherion/mining/isle/MineSkills.java
+ create mode 100644 AetherionMining/src/main/java/de/aetherion/mining/isle/MineText.java
+ create mode 100644 AetherionMining/src/main/java/de/aetherion/mining/isle/MineWorld.java
+ create mode 100644 AetherionMining/src/main/java/de/aetherion/mining/isle/OreMastery.java
+ create mode 100644 AetherionMining/src/main/java/de/aetherion/mining/isle/StrikeRhythm.java
+
+diff --git a/AetherionMining/src/main/java/de/aetherion/mining/isle/AssayLedger.java b/AetherionMining/src/main/java/de/aetherion/mining/isle/AssayLedger.java
+new file mode 100644
+index 00000000..26d9ed1d
+--- /dev/null
++++ b/AetherionMining/src/main/java/de/aetherion/mining/isle/AssayLedger.java
+@@ -0,0 +1,283 @@
++package de.aetherion.mining.isle;
++
++import net.kyori.adventure.title.Title;
++
++import org.bukkit.Bukkit;
++import org.bukkit.Particle;
++import org.bukkit.Sound;
++import org.bukkit.SoundCategory;
++import org.bukkit.entity.Player;
++
++import java.time.Duration;
++
++/**
++ * The Assay Ledger — where Mining's collections live.
++ *
++ * <ul>
++ *   <li><b>Collections</b> read the real Codex counts (every ore you have ever broken, anywhere)
++ *   and pay one-time milestone rewards at the Assayer. Nothing here keeps a second tally — if
++ *   the Codex says 4,000 iron, the ledger says 4,000 iron.</li>
++ *   <li><b>Collector rank</b>: every seven claimed milestones raise it one step, for a little more
++ *   Crystal Find luck and a little ore Fortune on every family.</li>
++ *   <li><b>Specimen Cabinet</b>: one slot per family × grade. A full row (Rough, Flawless, Perfect)
++ *   adds permanent Fortune for that ore; a Heartstone crowns it with ore Mining Power; a full
++ *   column pays out big.</li>
++ * </ul>
++ */
++public final class AssayLedger {
++
++    /** Codex counts for milestone 1..7 before the family's scale. */
++    private static final long[] MILESTONES = {0L, 50L, 250L, 1_000L, 4_000L, 15_000L, 50_000L, 150_000L};
++    public static final int MAX_MILESTONE = MILESTONES.length - 1;
++    private static final long[] MILESTONE_COINS = {0L, 150L, 500L, 1_500L, 4_000L, 10_000L, 25_000L, 60_000L};
++    private static final int STARS_PER_RANK = 7;
++    private static final double ROW_FORTUNE = 5.0d;
++    private static final double CROWN_POWER = 3.0d;
++
++    private final MineIsle isle;
++
++    AssayLedger(MineIsle isle) {
++        this.isle = isle;
++    }
++
++    // ------------------------------------------------------------------ collections
++
++    public static long milestone(IsleOre ore, int index) {
++        if (index <= 0) {
++            return 0L;
++        }
++        int clamped = Math.min(MAX_MILESTONE, index);
++        return Math.max(index, Math.round(MILESTONES[clamped] * ore.scale()));
++    }
++
++    public static long milestoneCoins(IsleOre ore, int index) {
++        long base = index >= 0 && index < MILESTONE_COINS.length ? MILESTONE_COINS[index] : 0L;
++        return Math.round(base * Math.max(0.6d, Math.min(2.5d, Math.sqrt(ore.unitValue()))));
++    }
++
++    public static int milestoneXp(int index) {
++        return 30 * index * index;
++    }
++
++    /** Lifetime count from the Codex (the truth). */
++    public long collected(Player player, IsleOre ore) {
++        return MineSkills.codexBlocks(player, ore.codexId());
++    }
++
++    /** Highest milestone the Codex count has reached. */
++    public int reached(Player player, IsleOre ore) {
++        long count = collected(player, ore);
++        int index = 0;
++        for (int i = 1; i <= MAX_MILESTONE; i++) {
++            if (count >= milestone(ore, i)) {
++                index = i;
++            }
++        }
++        return index;
++    }
++
++    public int claimable(Player player, IsleOre ore) {
++        return Math.max(0, reached(player, ore) - isle.profiles().of(player).claimed(ore));
++    }
++
++    public int claimableTotal(Player player) {
++        int total = 0;
++        for (IsleOre ore : IsleOre.values()) {
++            total += claimable(player, ore);
++        }
++        return total;
++    }
++
++    /** Claims every reached milestone of {@code ore}. Returns how many were paid. */
++    public int claim(Player player, IsleOre ore) {
++        MineProfiles.Profile profile = isle.profiles().of(player);
++        int from = profile.claimed(ore);
++        int to = reached(player, ore);
++        if (to <= from) {
++            return 0;
++        }
++        int rankBefore = rank(player);
++        long coins = 0L;
++        int xp = 0;
++        for (int i = from + 1; i <= to; i++) {
++            coins += milestoneCoins(ore, i);
++            xp += milestoneXp(i);
++        }
++        profile.claimed.put(ore, to);
++        isle.profiles().markDirty();
++        MineSkills.coins(player, coins);
++        MineSkills.bonus(player, xp);
++        player.sendMessage("§d✦ " + ore.colored() + " Collection " + MineText.roman(to) + " §8· §6+"
++                + MineText.coins(coins) + " coins §8· §a+" + xp + " Mining XP");
++        player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.PLAYERS, 0.8f, 1.2f);
++        player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, SoundCategory.PLAYERS, 0.7f, 1.4f);
++        int rankAfter = rank(player);
++        if (rankAfter > rankBefore) {
++            player.showTitle(Title.title(
++                    MineText.legacy("§dCollector Rank " + MineText.roman(Math.min(10, rankAfter))),
++                    MineText.legacy("§7+" + (int) Math.round((crystalMultiplier(player) - 1.0d) * 100) + "% Crystal Finds §8· §7+"
++                            + (int) collectorFortune(player) + " ore Fortune"),
++                    Title.Times.times(Duration.ofMillis(150), Duration.ofMillis(2400), Duration.ofMillis(400))
++            ));
++            player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, SoundCategory.PLAYERS, 0.8f, 1.0f);
++        }
++        return to - from;
++    }
++
++    public int claimAll(Player player) {
++        int total = 0;
++        for (IsleOre ore : IsleOre.values()) {
++            total += claim(player, ore);
++        }
++        return total;
++    }
++
++    /** Stars = claimed milestones across every family. */
++    public int stars(Player player) {
++        MineProfiles.Profile profile = isle.profiles().of(player);
++        int total = 0;
++        for (IsleOre ore : IsleOre.values()) {
++            total += profile.claimed(ore);
++        }
++        return total;
++    }
++
++    public static int maxStars() {
++        return IsleOre.values().length * MAX_MILESTONE;
++    }
++
++    public int rank(Player player) {
++        return stars(player) / STARS_PER_RANK;
++    }
++
++    /** +2% Crystal Find chance per Collector rank. */
++    public double crystalMultiplier(Player player) {
++        return player == null ? 1.0d : 1.0d + 0.02d * rank(player);
++    }
++
++    /** +1 ore Fortune per Collector rank (every family). */
++    public double collectorFortune(Player player) {
++        return player == null ? 0.0d : rank(player);
++    }
++
++    // ------------------------------------------------------------------ cabinet
++
++    public int cabinetFilled(Player player) {
++        return isle.profiles().of(player).cabinet.size();
++    }
++
++    public static int cabinetSize() {
++        return IsleOre.crystals().length * Grade.values().length;
++    }
++
++    public boolean rowComplete(Player player, IsleOre ore) {
++        MineProfiles.Profile profile = isle.profiles().of(player);
++        return profile.hasSpecimen(ore, Grade.ROUGH) && profile.hasSpecimen(ore, Grade.FLAWLESS)
++                && profile.hasSpecimen(ore, Grade.PERFECT);
++    }
++
++    public boolean crowned(Player player, IsleOre ore) {
++        return isle.profiles().of(player).hasSpecimen(ore, Grade.HEARTSTONE);
++    }
++
++    public boolean columnComplete(Player player, Grade grade) {
++        MineProfiles.Profile profile = isle.profiles().of(player);
++        for (IsleOre ore : IsleOre.crystals()) {
++            if (!profile.hasSpecimen(ore, grade)) {
++                return false;
++            }
++        }
++        return true;
++    }
++
++    /** Ore Fortune from the cabinet row of {@code ore} plus the Collector rank. */
++    public double oreFortune(Player player, IsleOre ore) {
++        if (player == null || ore == null || ore == IsleOre.STONE) {
++            return 0.0d;
++        }
++        return collectorFortune(player) + (rowComplete(player, ore) ? ROW_FORTUNE : 0.0d);
++    }
++
++    /** Ore Mining Power from a Heartstone crown (that ore only). */
++    public double orePower(Player player, IsleOre ore) {
++        return player != null && ore != null && ore.hasCrystal() && crowned(player, ore) ? CROWN_POWER : 0.0d;
++    }
++
++    public static long columnCoins(Grade grade) {
++        return switch (grade) {
++            case ROUGH -> 2_500L;
++            case FLAWLESS -> 10_000L;
++            case PERFECT -> 40_000L;
++            case HEARTSTONE -> 150_000L;
++        };
++    }
++
++    /** A specimen was just claimed — register it and pay any row / crown / column it completes. */
++    void onSpecimen(Player player, IsleOre ore, Grade grade) {
++        MineProfiles.Profile profile = isle.profiles().of(player);
++        if (!profile.cabinet.add(ore.id() + ":" + grade.id())) {
++            return;
++        }
++        isle.profiles().markDirty();
++        int filled = profile.cabinet.size();
++        player.sendMessage("§d✦ New for your Specimen Cabinet: " + grade.colored() + " " + ore.color() + ore.crystalName()
++                + " §8(" + filled + "/" + cabinetSize() + ")");
++        player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, SoundCategory.PLAYERS, 0.8f, 1.2f);
++        if (grade != Grade.HEARTSTONE && rowComplete(player, ore) && profile.cabinetRewards.add("row:" + ore.id())) {
++            isle.profiles().markDirty();
++            player.showTitle(Title.title(
++                    MineText.legacy(ore.color() + ore.display() + " Row Complete"),
++                    MineText.legacy("§a+" + (int) ROW_FORTUNE + " " + ore.display() + " Fortune §8· §7permanent"),
++                    Title.Times.times(Duration.ofMillis(150), Duration.ofMillis(2200), Duration.ofMillis(400))
++            ));
++            player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, SoundCategory.PLAYERS, 0.8f, 1.2f);
++        }
++        if (grade == Grade.HEARTSTONE && profile.cabinetRewards.add("crown:" + ore.id())) {
++            isle.profiles().markDirty();
++            player.sendMessage("§6✦ " + ore.display() + " is crowned §8· §7+" + (int) CROWN_POWER + " "
++                    + ore.display() + " Mining Power, for good.");
++        }
++        if (columnComplete(player, grade) && profile.cabinetRewards.add("col:" + grade.id())) {
++            isle.profiles().markDirty();
++            long coins = columnCoins(grade);
++            MineSkills.coins(player, coins);
++            MineSkills.bonus(player, 400);
++            player.sendMessage("§d✦ Every " + grade.colored() + " §dspecimen on the isle is in your cabinet! §6+"
++                    + MineText.coins(coins) + " coins §8· §a+400 Mining XP");
++            player.spawnParticle(Particle.FIREWORK, player.getLocation().add(0, 1.5, 0), 40, 0.6, 0.6, 0.6, 0.1);
++            if (grade == Grade.PERFECT || grade == Grade.HEARTSTONE) {
++                var line = MineText.legacy("§d✦ " + player.getName() + " §7completed the §f" + grade.display()
++                        + " §7column of the Eldervale Specimen Cabinet.");
++                for (Player online : Bukkit.getOnlinePlayers()) {
++                    online.sendMessage(line);
++                }
++            }
++        }
++    }
++
++    /** DEV: fill or clear the cabinet (rewards not paid). */
++    void devCabinet(Player player, boolean fill) {
++        MineProfiles.Profile profile = isle.profiles().of(player);
++        profile.cabinet.clear();
++        profile.cabinetRewards.clear();
++        if (fill) {
++            for (IsleOre ore : IsleOre.crystals()) {
++                for (Grade grade : Grade.values()) {
++                    profile.cabinet.add(ore.id() + ":" + grade.id());
++                }
++                profile.cabinetRewards.add("row:" + ore.id());
++                profile.cabinetRewards.add("crown:" + ore.id());
++            }
++            for (Grade grade : Grade.values()) {
++                profile.cabinetRewards.add("col:" + grade.id());
++            }
++        }
++        isle.profiles().markDirty();
++    }
++
++    /** DEV: forget every claimed milestone so they can be claimed again. */
++    void devResetClaims(Player player) {
++        isle.profiles().of(player).claimed.clear();
++        isle.profiles().markDirty();
++    }
++}
+diff --git a/AetherionMining/src/main/java/de/aetherion/mining/isle/CrystalFinds.java b/AetherionMining/src/main/java/de/aetherion/mining/isle/CrystalFinds.java
+new file mode 100644
+index 00000000..91134604
+--- /dev/null
++++ b/AetherionMining/src/main/java/de/aetherion/mining/isle/CrystalFinds.java
+@@ -0,0 +1,654 @@
++package de.aetherion.mining.isle;
++
++import net.kyori.adventure.text.Component;
++import net.kyori.adventure.text.format.NamedTextColor;
++import net.kyori.adventure.text.format.TextDecoration;
++
++import org.bukkit.Bukkit;
++import org.bukkit.Color;
++import org.bukkit.GameMode;
++import org.bukkit.Location;
++import org.bukkit.Material;
++import org.bukkit.NamespacedKey;
++import org.bukkit.Particle;
++import org.bukkit.Sound;
++import org.bukkit.SoundCategory;
++import org.bukkit.World;
++import org.bukkit.enchantments.Enchantment;
++import org.bukkit.entity.Display;
++import org.bukkit.entity.Entity;
++import org.bukkit.entity.Interaction;
++import org.bukkit.entity.ItemDisplay;
++import org.bukkit.entity.Player;
++import org.bukkit.entity.TextDisplay;
++import org.bukkit.event.EventHandler;
++import org.bukkit.event.EventPriority;
++import org.bukkit.event.Listener;
++import org.bukkit.event.block.BlockPlaceEvent;
++import org.bukkit.event.entity.EntityDamageByEntityEvent;
++import org.bukkit.event.inventory.FurnaceBurnEvent;
++import org.bukkit.event.inventory.PrepareItemCraftEvent;
++import org.bukkit.event.player.PlayerInteractAtEntityEvent;
++import org.bukkit.event.player.PlayerInteractEntityEvent;
++import org.bukkit.inventory.EquipmentSlot;
++import org.bukkit.inventory.ItemFlag;
++import org.bukkit.inventory.ItemStack;
++import org.bukkit.inventory.meta.ItemMeta;
++import org.bukkit.persistence.PersistentDataContainer;
++import org.bukkit.persistence.PersistentDataType;
++import org.bukkit.scheduler.BukkitTask;
++import org.bukkit.util.Transformation;
++import org.joml.AxisAngle4f;
++import org.joml.Vector3f;
++
++import java.util.ArrayList;
++import java.util.List;
++import java.util.Map;
++import java.util.UUID;
++import java.util.concurrent.ConcurrentHashMap;
++import java.util.concurrent.ThreadLocalRandom;
++
++/**
++ * Crystal Finds — the rare find of Mining. Now and then a strike cracks into a hollow and a
++ * glowing geode shoulders out of the rock. It isn't free: <b>you have to mine it open</b>, a few
++ * pickaxe strikes while it spins and splinters. The finder gets first dibs; after a few seconds
++ * anyone may take a swing — whoever lands the last crack keeps the specimen.
++ *
++ * <p>Specimens carry a family, a grade (Rough → Flawless → Perfect, and the Veins-only
++ * Heartstone) and a carat weight. They sell at the Assayer, fill specimen contracts, feed the
++ * Hearth's Geode Broth, fill the Specimen Cabinet, and the heaviest of each family is an isle
++ * record on the Assay Hall board.
++ */
++public final class CrystalFinds implements Listener {
++
++    private static final int EMERGE_TICKS = 12;
++    private static final int FINDER_TICKS = 20 * 5;
++    private static final int LIFE_TICKS = 20 * 16;
++    private static final long COOLDOWN_MS = 25_000L;
++    private static final int STRIKE_GAP_TICKS = 4;
++
++    private final MineIsle isle;
++    private final NamespacedKey specimenKey;
++    private final NamespacedKey gradeKey;
++    private final NamespacedKey caratKey;
++    private final NamespacedKey partKey;
++    private final Map<UUID, Geode> byPart = new ConcurrentHashMap<>();
++    private final Map<UUID, Geode> byFinder = new ConcurrentHashMap<>();
++    private final Map<UUID, Long> lastFind = new ConcurrentHashMap<>();
++    private final Map<UUID, Integer> lastStrike = new ConcurrentHashMap<>();
++
++    private final class Geode {
++        final UUID finder;
++        final IsleOre ore;
++        final Grade grade;
++        final double carats;
++        final Location at;
++        final boolean veins;
++        final List<Entity> parts = new ArrayList<>();
++        final int bornTick;
++        final int cracksNeeded;
++        int cracks;
++        ItemDisplay stone;
++        TextDisplay label;
++        BukkitTask task;
++        boolean done;
++
++        Geode(UUID finder, IsleOre ore, Grade grade, double carats, Location at, boolean veins, int cracksNeeded) {
++            this.finder = finder;
++            this.ore = ore;
++            this.grade = grade;
++            this.carats = carats;
++            this.at = at;
++            this.veins = veins;
++            this.cracksNeeded = cracksNeeded;
++            this.bornTick = Bukkit.getCurrentTick();
++        }
++    }
++
++    CrystalFinds(MineIsle isle) {
++        this.isle = isle;
++        this.specimenKey = new NamespacedKey(isle.plugin(), "mine_specimen");
++        this.gradeKey = new NamespacedKey(isle.plugin(), "mine_specimen_grade");
++        this.caratKey = new NamespacedKey(isle.plugin(), "mine_specimen_ct");
++        this.partKey = new NamespacedKey(isle.plugin(), "mine_geode_part");
++    }
++
++    void shutdown() {
++        for (Geode geode : List.copyOf(byFinder.values())) {
++            remove(geode);
++        }
++    }
++
++    /** Leftover geode parts from a crash (entities are not persistent, but chunks can be saved mid-find). */
++    void purgeStrays() {
++        for (World world : Bukkit.getWorlds()) {
++            for (Entity entity : world.getEntities()) {
++                if (entity.getPersistentDataContainer().has(partKey, PersistentDataType.BYTE)) {
++                    entity.remove();
++                }
++            }
++        }
++    }
++
++    // ------------------------------------------------------------------ odds
++
++    private double baseChance() {
++        return Math.max(0.0d, isle.plugin().getConfig().getDouble("crystal-finds.chance", 1.0d / 550.0d));
++    }
++
++    /** Chance for one hand strike of {@code ore}; Emerald Spread neighbours and vacuum never roll. */
++    public double chance(Player player, IsleOre ore, Location at, boolean veins) {
++        if (ore == null || !ore.hasCrystal()) {
++            return 0.0d;
++        }
++        double chance = baseChance();
++        chance *= switch (ore) {
++            case DIAMOND, EMERALD, DEBRIS -> 3.0d;
++            case AMETHYST, GOLD -> 2.0d;
++            default -> 1.0d;
++        };
++        chance *= 1.0d + 0.5d * MineSkills.scale(player, MineSkills.GEODE_NOSE);
++        chance *= isle.hearth().crystalMultiplier(player);
++        chance *= 1.0d + 0.05d * isle.mastery().tier(player, ore);
++        chance *= isle.ledger().crystalMultiplier(player);
++        if (veins) {
++            chance *= isle.plugin().getConfig().getDouble("crystal-finds.veins-multiplier", 1.25d);
++        } else {
++            chance *= isle.events().crystalMultiplier();
++            chance *= isle.depthCrystalMultiplier(player, at);
++        }
++        return Math.min(0.25d, chance);
++    }
++
++    void roll(Player player, IsleOre ore, Location block, boolean veins) {
++        if (ore == null || !ore.hasCrystal() || byFinder.containsKey(player.getUniqueId())) {
++            return;
++        }
++        Long last = lastFind.get(player.getUniqueId());
++        if (last != null && System.currentTimeMillis() - last < COOLDOWN_MS) {
++            return;
++        }
++        if (ThreadLocalRandom.current().nextDouble() >= chance(player, ore, block, veins)) {
++            return;
++        }
++        lastFind.put(player.getUniqueId(), System.currentTimeMillis());
++        Grade grade = rollGrade(player, veins);
++        spawn(player, ore, grade, rollCarats(player, ore, grade), block, veins);
++    }
++
++    private Grade rollGrade(Player player, boolean veins) {
++        ThreadLocalRandom rng = ThreadLocalRandom.current();
++        if (veins) {
++            double heart = isle.plugin().getConfig().getDouble("crystal-finds.heartstone-chance", 0.04d)
++                    * (1.0d + 0.5d * MineSkills.scale(player, MineSkills.GEODE_NOSE));
++            if (rng.nextDouble() < heart) {
++                return Grade.HEARTSTONE;
++            }
++        }
++        Grade first = pick(rng.nextDouble());
++        if (MineSkills.has(player, MineSkills.GEODE_NOSE)) {
++            Grade second = pick(rng.nextDouble());
++            return second.ordinal() > first.ordinal() ? second : first;
++        }
++        return first;
++    }
++
++    private static Grade pick(double roll) {
++        if (roll < Grade.PERFECT.weight()) {
++            return Grade.PERFECT;
++        }
++        if (roll < Grade.PERFECT.weight() + Grade.FLAWLESS.weight()) {
++            return Grade.FLAWLESS;
++        }
++        return Grade.ROUGH;
++    }
++
++    private double rollCarats(Player player, IsleOre ore, Grade grade) {
++        ThreadLocalRandom rng = ThreadLocalRandom.current();
++        double roll = rng.nextDouble();
++        if (MineSkills.has(player, MineSkills.GEODE_NOSE)) {
++            roll = Math.max(roll, rng.nextDouble());
++        }
++        double shaped = Math.pow(roll, 1.8d);
++        double carats = ore.minCarat() + (ore.maxCarat() - ore.minCarat()) * shaped;
++        double gradeMult = switch (grade) {
++            case ROUGH -> 1.0d;
++            case FLAWLESS -> 1.35d;
++            case PERFECT -> 1.8d;
++            case HEARTSTONE -> 2.6d;
++        };
++        return Math.round(carats * gradeMult * 100.0d) / 100.0d;
++    }
++
++    // ------------------------------------------------------------------ the geode
++
++    /** Pushes a geode out of {@code block} for {@code finder}. Public for the DEV menu. */
++    public void spawn(Player finder, IsleOre ore, Grade grade, double carats, Location block, boolean veins) {
++        World world = block.getWorld();
++        if (world == null || ore == null || !ore.hasCrystal()) {
++            return;
++        }
++        Geode existing = byFinder.get(finder.getUniqueId());
++        if (existing != null) {
++            remove(existing);
++        }
++        Location at = block.getBlock().getLocation().add(0.5, 0.35, 0.5);
++        int cracks = Math.max(2, grade.cracks() - (MineSkills.has(finder, MineSkills.GEODE_NOSE) ? 1 : 0));
++        Geode geode = new Geode(finder.getUniqueId(), ore, grade, carats, at, veins, cracks);
++
++        geode.stone = world.spawn(at, ItemDisplay.class, spawned -> {
++            spawned.setItemStack(new ItemStack(ore.showcase()));
++            spawned.setBillboard(Display.Billboard.FIXED);
++            spawned.setGlowing(true);
++            spawned.setGlowColorOverride(grade == Grade.HEARTSTONE ? Color.fromRGB(255, 170, 30) : ore.glow());
++            spawned.setBrightness(new Display.Brightness(15, 15));
++            spawned.setTransformation(scaled(0.1f, -0.4f, 0.0f));
++            spawned.setPersistent(false);
++            spawned.getPersistentDataContainer().set(partKey, PersistentDataType.BYTE, (byte) 1);
++        });
++        geode.label = world.spawn(at.clone().add(0, 1.55, 0), TextDisplay.class, spawned -> {
++            spawned.text(label(geode));
++            spawned.setBillboard(Display.Billboard.CENTER);
++            spawned.setAlignment(TextDisplay.TextAlignment.CENTER);
++            spawned.setShadowed(true);
++            spawned.setSeeThrough(false);
++            spawned.setDefaultBackground(false);
++            spawned.setBackgroundColor(Color.fromARGB(110, 12, 10, 18));
++            spawned.setPersistent(false);
++            spawned.getPersistentDataContainer().set(partKey, PersistentDataType.BYTE, (byte) 1);
++        });
++        Interaction hitbox = world.spawn(at.clone().add(0, -0.45, 0), Interaction.class, spawned -> {
++            spawned.setInteractionWidth(1.3f);
++            spawned.setInteractionHeight(1.5f);
++            spawned.setResponsive(true);
++            spawned.setPersistent(false);
++            spawned.getPersistentDataContainer().set(partKey, PersistentDataType.BYTE, (byte) 1);
++        });
++        geode.parts.add(geode.stone);
++        geode.parts.add(geode.label);
++        geode.parts.add(hitbox);
++        byFinder.put(geode.finder, geode);
++        for (Entity part : geode.parts) {
++            byPart.put(part.getUniqueId(), geode);
++        }
++
++        // Emerge: grows out of the rock face with a shake.
++        Bukkit.getScheduler().runTaskLater(isle.plugin(), () -> {
++            if (!geode.stone.isValid()) {
++                return;
++            }
++            geode.stone.setInterpolationDelay(0);
++            geode.stone.setInterpolationDuration(EMERGE_TICKS);
++            geode.stone.setTransformation(scaled(1.15f, 0.25f, 0.0f));
++        }, 2L);
++
++        world.playSound(at, Sound.BLOCK_AMETHYST_BLOCK_RESONATE, SoundCategory.PLAYERS, 1.0f, 0.7f);
++        world.playSound(at, Sound.BLOCK_DEEPSLATE_BREAK, SoundCategory.PLAYERS, 1.0f, 0.6f);
++        world.playSound(at, Sound.ENTITY_PLAYER_LEVELUP, SoundCategory.PLAYERS, 0.5f, 1.9f);
++        world.spawnParticle(Particle.BLOCK, at, 40, 0.4, 0.3, 0.4, 0.1, Material.DEEPSLATE.createBlockData());
++        world.spawnParticle(Particle.DUST, at.clone().add(0, 0.4, 0), 24, 0.45, 0.45, 0.45, 0.0,
++                new Particle.DustOptions(ore.glow(), 1.6f));
++        String where = veins ? " §8(The Veins)" : "";
++        finder.sendMessage("§d✦ Crystal Find! §fA " + grade.colored() + " " + ore.color() + ore.crystalName()
++                + " §7(" + MineText.carats(carats) + ")" + where + " §eStrike it open §7— " + cracks + " cracks.");
++        MineText.bar(finder, "§d§l✦ " + ore.crystalName() + " §f" + MineText.carats(carats) + " §7— mine it open!");
++        if (grade == Grade.HEARTSTONE) {
++            world.playSound(at, Sound.BLOCK_BEACON_POWER_SELECT, SoundCategory.PLAYERS, 1.0f, 0.6f);
++            world.spawnParticle(Particle.END_ROD, at.clone().add(0, 0.6, 0), 30, 0.3, 0.8, 0.3, 0.05);
++        }
++        geode.task = Bukkit.getScheduler().runTaskTimer(isle.plugin(), () -> tick(geode), 1L, 2L);
++    }
++
++    private Component label(Geode geode) {
++        int left = Math.max(0, geode.cracksNeeded - geode.cracks);
++        String cracks = "§f" + "▮".repeat(geode.cracks) + "§8" + "▯".repeat(left);
++        return Component.text(geode.ore.crystalName().toUpperCase(), NamedTextColor.LIGHT_PURPLE, TextDecoration.BOLD)
++                .append(Component.newline())
++                .append(MineText.legacy(geode.grade.colored() + " §8· §f" + MineText.carats(geode.carats)))
++                .append(Component.newline())
++                .append(MineText.legacy(cracks + " §7strike it!"));
++    }
++
++    private void tick(Geode geode) {
++        if (geode.done) {
++            return;
++        }
++        int age = Bukkit.getCurrentTick() - geode.bornTick;
++        if (geode.stone != null && geode.stone.isValid() && age > EMERGE_TICKS + 2) {
++            float spin = (age * 0.06f) % ((float) Math.PI * 2.0f);
++            float bob = 0.25f + (float) Math.sin(age * 0.18d) * 0.05f;
++            float size = 1.15f - 0.12f * geode.cracks;
++            geode.stone.setInterpolationDelay(0);
++            geode.stone.setInterpolationDuration(2);
++            geode.stone.setTransformation(scaled(Math.max(0.5f, size), bob, spin));
++        }
++        if (age % 12 == 0 && geode.at.getWorld() != null) {
++            geode.at.getWorld().spawnParticle(Particle.DUST, geode.at.clone().add(0, 0.5, 0), 3, 0.4, 0.4, 0.4, 0.0,
++                    new Particle.DustOptions(geode.ore.glow(), 1.0f));
++        }
++        if (age == FINDER_TICKS) {
++            Player finder = Bukkit.getPlayer(geode.finder);
++            if (finder != null) {
++                MineText.bar(finder, "§e" + geode.ore.crystalName() + " §7is fair game now — anyone can swing!");
++            }
++        }
++        if (age >= LIFE_TICKS) {
++            sink(geode);
++        }
++    }
++
++    private void sink(Geode geode) {
++        if (geode.done) {
++            return;
++        }
++        World world = geode.at.getWorld();
++        if (world != null) {
++            world.spawnParticle(Particle.BLOCK, geode.at, 25, 0.35, 0.3, 0.35, 0.1, Material.DEEPSLATE.createBlockData());
++            world.playSound(geode.at, Sound.BLOCK_DEEPSLATE_BREAK, SoundCategory.PLAYERS, 0.9f, 0.5f);
++        }
++        Player finder = Bukkit.getPlayer(geode.finder);
++        if (finder != null) {
++            MineText.bar(finder, "§7The " + geode.ore.crystalName() + " sank back into the rock. §8Swing faster next time.");
++        }
++        remove(geode);
++    }
++
++    private void remove(Geode geode) {
++        geode.done = true;
++        if (geode.task != null) {
++            geode.task.cancel();
++        }
++        for (Entity part : geode.parts) {
++            byPart.remove(part.getUniqueId());
++            if (part.isValid()) {
++                part.remove();
++            }
++        }
++        byFinder.remove(geode.finder, geode);
++    }
++
++    // ------------------------------------------------------------------ striking
++
++    @EventHandler(priority = EventPriority.HIGHEST)
++    public void onPunch(EntityDamageByEntityEvent event) {
++        Geode geode = byPart.get(event.getEntity().getUniqueId());
++        if (geode == null) {
++            return;
++        }
++        event.setCancelled(true);
++        if (event.getDamager() instanceof Player player) {
++            strike(player, geode);
++        }
++    }
++
++    @EventHandler(priority = EventPriority.HIGHEST)
++    public void onClick(PlayerInteractEntityEvent event) {
++        Geode geode = byPart.get(event.getRightClicked().getUniqueId());
++        if (geode == null) {
++            return;
++        }
++        event.setCancelled(true);
++        if (event.getHand() == EquipmentSlot.HAND) {
++            strike(event.getPlayer(), geode);
++        }
++    }
++
++    @EventHandler(priority = EventPriority.HIGHEST)
++    public void onClickAt(PlayerInteractAtEntityEvent event) {
++        if (byPart.containsKey(event.getRightClicked().getUniqueId())) {
++            event.setCancelled(true);
++        }
++    }
++
++    private void strike(Player player, Geode geode) {
++        if (geode.done || player.getGameMode() == GameMode.SPECTATOR) {
++            return;
++        }
++        int now = Bukkit.getCurrentTick();
++        Integer last = lastStrike.get(player.getUniqueId());
++        if (last != null && now - last < STRIKE_GAP_TICKS) {
++            return;
++        }
++        lastStrike.put(player.getUniqueId(), now);
++        int age = now - geode.bornTick;
++        boolean finder = player.getUniqueId().equals(geode.finder);
++        if (!finder && age < FINDER_TICKS) {
++            MineText.bar(player, "§7Finder's dibs — §e" + ((FINDER_TICKS - age) / 20 + 1) + "s§7.");
++            return;
++        }
++        if (!holdingPickaxe(player)) {
++            MineText.bar(player, "§cCrystals crack for pickaxes only.");
++            return;
++        }
++        geode.cracks++;
++        World world = geode.at.getWorld();
++        float pitch = 0.7f + 0.15f * geode.cracks;
++        if (world != null) {
++            world.playSound(geode.at, Sound.BLOCK_AMETHYST_BLOCK_HIT, SoundCategory.PLAYERS, 1.0f, pitch);
++            world.playSound(geode.at, Sound.BLOCK_STONE_HIT, SoundCategory.PLAYERS, 0.8f, pitch);
++            world.spawnParticle(Particle.BLOCK, geode.at.clone().add(0, 0.4, 0), 14, 0.3, 0.3, 0.3, 0.1,
++                    geode.ore.showcase().createBlockData());
++        }
++        if (geode.cracks < geode.cracksNeeded) {
++            if (geode.label != null && geode.label.isValid()) {
++                geode.label.text(label(geode));
++            }
++            if (geode.stone != null && geode.stone.isValid()) {
++                // A jolt on every crack.
++                geode.stone.setInterpolationDelay(0);
++                geode.stone.setInterpolationDuration(1);
++                geode.stone.setTransformation(scaled(1.25f - 0.12f * geode.cracks, 0.35f, 0.4f * geode.cracks));
++            }
++            return;
++        }
++        claim(player, geode, finder);
++    }
++
++    private static boolean holdingPickaxe(Player player) {
++        ItemStack hand = player.getInventory().getItemInMainHand();
++        if (hand == null || hand.getType().isAir()) {
++            return false;
++        }
++        return hand.getType().name().endsWith("_PICKAXE") || org.bukkit.Tag.ITEMS_PICKAXES.isTagged(hand.getType());
++    }
++
++    private void claim(Player player, Geode geode, boolean finder) {
++        remove(geode);
++        ItemStack specimen = item(geode.ore, geode.grade, geode.carats);
++        MineSkills.give(player, specimen);
++        int xp = switch (geode.grade) {
++            case ROUGH -> 40;
++            case FLAWLESS -> 70;
++            case PERFECT -> 120;
++            case HEARTSTONE -> 300;
++        };
++        MineSkills.bonus(player, xp);
++        MineProfiles.Profile profile = isle.profiles().of(player);
++        profile.crystals++;
++        if (geode.carats > profile.bestCarat) {
++            profile.bestCarat = geode.carats;
++            profile.bestOre = geode.ore;
++            profile.bestGrade = geode.grade;
++        }
++        isle.profiles().markDirty();
++
++        World world = geode.at.getWorld();
++        if (world != null) {
++            world.spawnParticle(Particle.FIREWORK, geode.at.clone().add(0, 0.6, 0), 30, 0.4, 0.4, 0.4, 0.08);
++            world.spawnParticle(Particle.DUST, geode.at.clone().add(0, 0.6, 0), 30, 0.5, 0.5, 0.5, 0.0,
++                    new Particle.DustOptions(geode.ore.glow(), 1.8f));
++            world.playSound(geode.at, Sound.BLOCK_AMETHYST_CLUSTER_BREAK, SoundCategory.PLAYERS, 1.0f, 0.9f);
++            world.playSound(geode.at, Sound.ENTITY_FIREWORK_ROCKET_TWINKLE, SoundCategory.PLAYERS, 0.8f, 1.2f);
++        }
++        player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, SoundCategory.PLAYERS, 0.6f, 1.4f);
++        String steal = finder ? "" : " §8(claim-jumped!)";
++        player.sendMessage("§d✦ " + geode.grade.colored() + " " + geode.ore.color() + geode.ore.crystalName()
++                + " §7(" + MineText.carats(geode.carats) + ")" + steal + " §8· §7worth ~§6"
++                + MineText.coins(value(geode.ore, geode.grade, geode.carats)) + " coins §7at the Assayer. §a+" + xp + " Mining XP");
++        if (!finder) {
++            Player original = Bukkit.getPlayer(geode.finder);
++            if (original != null) {
++                original.sendMessage("§7" + player.getName() + " cracked your " + geode.ore.crystalName()
++                        + " open first. §8Mining is a contact sport.");
++            }
++        }
++        isle.ledger().onSpecimen(player, geode.ore, geode.grade);
++        if (isle.profiles().offerRecord(geode.ore, player, geode.carats, geode.grade)) {
++            String line = "§d✦ Isle record! §f" + player.getName() + " §7cracked a §d" + MineText.carats(geode.carats)
++                    + " " + geode.ore.crystalName() + "§7 — the heaviest on Eldervale.";
++            for (Player visitor : MineWorld.visitors(isle.plugin())) {
++                visitor.sendMessage(line);
++            }
++            player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, SoundCategory.PLAYERS, 0.8f, 0.9f);
++            isle.props().refresh();
++        }
++        if (geode.grade == Grade.HEARTSTONE) {
++            Component shout = MineText.legacy("§6✦ " + player.getName() + " §7pulled a §6Heartstone §7"
++                    + geode.ore.crystalName() + " out of The Veins. §8The mountain is going to want that back.");
++            for (Player online : Bukkit.getOnlinePlayers()) {
++                online.sendMessage(shout);
++            }
++        }
++    }
++
++    // ------------------------------------------------------------------ items
++
++    public ItemStack item(IsleOre ore, Grade grade, double carats) {
++        ItemStack item = new ItemStack(ore.showcase());
++        ItemMeta meta = item.getItemMeta();
++        if (meta == null) {
++            return item;
++        }
++        double rounded = Math.round(carats * 100.0d) / 100.0d;
++        meta.setDisplayName(grade.color() + "✦ " + ore.color() + ore.crystalName() + " §8(" + grade.colored() + "§8)");
++        List<String> lore = new ArrayList<>();
++        lore.add("§7A " + ore.display().toLowerCase() + " specimen from Eldervale's rock.");
++        lore.add("§7Weight: §f" + MineText.carats(rounded) + " §8(" + band(ore, grade, rounded) + "§8)");
++        lore.add("");
++        lore.add("§7Sells for §6" + MineText.coins(value(ore, grade, rounded)) + " coins §7at the §dAssayer§7.");
++        lore.add("§7Fills specimen Contracts · brews Geode Broth.");
++        lore.add("§7Registers in your §dSpecimen Cabinet§7.");
++        lore.add("");
++        lore.add(grade == Grade.HEARTSTONE ? "§6Heartstone §8· only The Veins grow these" : "§8Crystal Find · " + grade.display());
++        lore.add("§8Can't be placed, crafted or burned.");
++        meta.setLore(lore);
++        meta.addEnchant(Enchantment.UNBREAKING, 1, true);
++        meta.addItemFlags(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ATTRIBUTES);
++        PersistentDataContainer pdc = meta.getPersistentDataContainer();
++        pdc.set(specimenKey, PersistentDataType.STRING, ore.id());
++        pdc.set(gradeKey, PersistentDataType.STRING, grade.id());
++        pdc.set(caratKey, PersistentDataType.DOUBLE, rounded);
++        item.setItemMeta(meta);
++        return item;
++    }
++
++    public IsleOre oreOf(ItemStack item) {
++        if (item == null || !item.hasItemMeta()) {
++            return null;
++        }
++        return IsleOre.byId(item.getItemMeta().getPersistentDataContainer().get(specimenKey, PersistentDataType.STRING));
++    }
++
++    public Grade gradeOf(ItemStack item) {
++        if (item == null || !item.hasItemMeta()) {
++            return null;
++        }
++        return Grade.byId(item.getItemMeta().getPersistentDataContainer().get(gradeKey, PersistentDataType.STRING));
++    }
++
++    public double caratsOf(ItemStack item) {
++        if (item == null || !item.hasItemMeta()) {
++            return 0.0d;
++        }
++        Double carats = item.getItemMeta().getPersistentDataContainer().get(caratKey, PersistentDataType.DOUBLE);
++        return carats == null ? 0.0d : carats;
++    }
++
++    public boolean isSpecimen(ItemStack item) {
++        return oreOf(item) != null;
++    }
++
++    /** Family base × grade × how close the weight sits to the family's top. */
++    public static long value(IsleOre ore, Grade grade, double carats) {
++        double span = Math.max(0.01d, ore.maxCarat() - ore.minCarat());
++        double share = Math.max(0.0d, Math.min(1.0d, (carats / gradeScale(grade) - ore.minCarat()) / span));
++        long base = switch (ore) {
++            case COAL, COPPER -> 160L;
++            case IRON, REDSTONE -> 200L;
++            case LAPIS -> 220L;
++            case GOLD, QUARTZ -> 260L;
++            case AMETHYST -> 300L;
++            case DIAMOND -> 420L;
++            case EMERALD -> 480L;
++            case DEBRIS -> 600L;
++            default -> 120L;
++        };
++        return Math.round(base * grade.valueMult() * (0.6d + share));
++    }
++
++    private static double gradeScale(Grade grade) {
++        return switch (grade) {
++            case ROUGH -> 1.0d;
++            case FLAWLESS -> 1.35d;
++            case PERFECT -> 1.8d;
++            case HEARTSTONE -> 2.6d;
++        };
++    }
++
++    public long valueOf(ItemStack item) {
++        IsleOre ore = oreOf(item);
++        Grade grade = gradeOf(item);
++        return ore == null || grade == null ? 0L : value(ore, grade, caratsOf(item)) * item.getAmount();
++    }
++
++    private static String band(IsleOre ore, Grade grade, double carats) {
++        double share = (carats / gradeScale(grade) - ore.minCarat()) / Math.max(0.01d, ore.maxCarat() - ore.minCarat());
++        if (share >= 0.9d) {
++            return "§6museum-grade";
++        }
++        if (share >= 0.6d) {
++            return "§ehefty";
++        }
++        if (share >= 0.3d) {
++            return "§fsolid";
++        }
++        return "§7modest";
++    }
++
++    private static Transformation scaled(float scale, float lift, float spin) {
++        return new Transformation(
++                new Vector3f(0.0f, lift, 0.0f),
++                new AxisAngle4f(spin, 0.0f, 1.0f, 0.0f),
++                new Vector3f(scale, scale, scale),
++                new AxisAngle4f(0.0f, 0.0f, 0.0f, 1.0f)
++        );
++    }
++
++    // ------------------------------------------------------------------ specimen safety
++
++    /** Specimens are block-shaped trophies — never real blocks, never crafting input, never fuel. */
++    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
++    public void onPlace(BlockPlaceEvent event) {
++        if (isSpecimen(event.getItemInHand()) || isle.hearth().rationOf(event.getItemInHand()) != null) {
++            event.setCancelled(true);
++            MineText.bar(event.getPlayer(), "§7Specimens stay in one piece. §8Sell or register them at the Assayer.");
++        }
++    }
++
++    @EventHandler(priority = EventPriority.HIGHEST)
++    public void onCraft(PrepareItemCraftEvent event) {
++        for (ItemStack stack : event.getInventory().getMatrix()) {
++            if (isSpecimen(stack) || isle.hearth().rationOf(stack) != null) {
++                event.getInventory().setResult(null);
++                return;
++            }
++        }
++    }
++
++    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
++    public void onFuel(FurnaceBurnEvent event) {
++        if (isSpecimen(event.getFuel())) {
++            event.setCancelled(true);
++        }
++    }
++}
+diff --git a/AetherionMining/src/main/java/de/aetherion/mining/isle/ForemanContracts.java b/AetherionMining/src/main/java/de/aetherion/mining/isle/ForemanContracts.java
+new file mode 100644
+index 00000000..ec8799a1
+--- /dev/null
++++ b/AetherionMining/src/main/java/de/aetherion/mining/isle/ForemanContracts.java
+@@ -0,0 +1,397 @@
++package de.aetherion.mining.isle;
++
++import de.aetherion.items.economy.CompressedResource;
++
++import org.bukkit.Material;
++import org.bukkit.Sound;
++import org.bukkit.SoundCategory;
++import org.bukkit.configuration.ConfigurationSection;
++import org.bukkit.entity.Player;
++import org.bukkit.inventory.ItemStack;
++import org.bukkit.inventory.PlayerInventory;
++
++import java.util.ArrayList;
++import java.util.List;
++import java.util.Locale;
++import java.util.concurrent.ThreadLocalRandom;
++
++/**
++ * Foreman Contracts at the Contract Office — three rotating jobs per miner, paid well above
++ * trader value plus Mining XP. Two kinds are hand-ins (raw ore, compressed ore, a specimen);
++ * two are <b>shifts</b> that fill while you work: a Deep shift (mine below the Deep Works line on
++ * the isle) and a Veins shift (mine in The Veins — the annex pays the island's bills).
++ * A finished slot restocks after a short break; the board rerolls free every half hour.
++ * Union Card raises the coin payout.
++ */
++public final class ForemanContracts {
++
++    public enum Form {
++        RAW,
++        COMPRESSED,
++        SPECIMEN,
++        DEEP,
++        VEINS;
++
++        boolean shift() {
++            return this == DEEP || this == VEINS;
++        }
++    }
++
++    public record Contract(IsleOre ore, Form form, int amount, long coins, int xp, String client) {
++
++        public String want() {
++            return switch (form) {
++                case RAW -> amount + " " + ore.display();
++                case COMPRESSED -> amount + " Compressed " + ore.display();
++                case SPECIMEN -> "1 " + ore.crystalName() + " §8(any grade)";
++                case DEEP -> "Mine " + amount + " " + ore.display() + " below the Deep Works line";
++                case VEINS -> "Mine " + amount + " ore in The Veins";
++            };
++        }
++
++        Material icon() {
++            return switch (form) {
++                case SPECIMEN -> ore.showcase();
++                case DEEP -> Material.LANTERN;
++                case VEINS -> Material.CHAIN;
++                default -> ore.resource();
++            };
++        }
++
++        void write(ConfigurationSection section) {
++            section.set("ore", ore.id());
++            section.set("form", form.name());
++            section.set("amount", amount);
++            section.set("coins", coins);
++            section.set("xp", xp);
++            section.set("client", client);
++        }
++
++        static Contract read(ConfigurationSection section) {
++            if (section == null) {
++                return null;
++            }
++            IsleOre ore = IsleOre.byId(section.getString("ore"));
++            Form form;
++            try {
++                form = Form.valueOf(section.getString("form", "RAW").toUpperCase(Locale.ROOT));
++            } catch (IllegalArgumentException ignored) {
++                return null;
++            }
++            if (ore == null) {
++                return null;
++            }
++            return new Contract(ore, form, Math.max(1, section.getInt("amount", 1)), Math.max(0L, section.getLong("coins")),
++                    Math.max(0, section.getInt("xp")), section.getString("client", "The Foreman"));
++        }
++    }
++
++    private static final long RESTOCK_MS = 3L * 60_000L;
++    private static final long FREE_REROLL_MS = 30L * 60_000L;
++    private static final long REROLL_COST = 400L;
++    private static final String[] CLIENTS = {
++            "The Smelter",
++            "Harbour Forge",
++            "The Assay Office",
++            "The Lamplighters",
++            "A hub blacksmith",
++            "The Veins Foreman",
++            "Cart Crew",
++            "The Eldervale Mint",
++            "Old Wick's lantern works",
++            "A nervous jeweller",
++            "The Hearth",
++            "Somebody's uncle (paid in advance)"
++    };
++
++    private final MineIsle isle;
++
++    ForemanContracts(MineIsle isle) {
++        this.isle = isle;
++    }
++
++    /** Fills empty, restocked slots. Call before showing the board. */
++    public void refresh(Player player) {
++        MineProfiles.Profile profile = isle.profiles().of(player);
++        long now = System.currentTimeMillis();
++        boolean changed = false;
++        for (int slot = 0; slot < MineProfiles.CONTRACT_SLOTS; slot++) {
++            if (profile.contracts[slot] == null && profile.slotReadyAt[slot] <= now) {
++                profile.contracts[slot] = generate(player);
++                profile.slotReadyAt[slot] = 0L;
++                profile.progress[slot] = 0;
++                changed = true;
++            }
++        }
++        if (changed) {
++            isle.profiles().markDirty();
++        }
++    }
++
++    public Contract contract(Player player, int slot) {
++        MineProfiles.Profile profile = isle.profiles().of(player);
++        return slot < 0 || slot >= MineProfiles.CONTRACT_SLOTS ? null : profile.contracts[slot];
++    }
++
++    public long restockSeconds(Player player, int slot) {
++        MineProfiles.Profile profile = isle.profiles().of(player);
++        return Math.max(0L, (profile.slotReadyAt[slot] - System.currentTimeMillis()) / 1000L);
++    }
++
++    public long freeRerollSeconds(Player player) {
++        return Math.max(0L, (isle.profiles().of(player).freeRerollAt - System.currentTimeMillis()) / 1000L);
++    }
++
++    public int readyCount(Player player) {
++        int ready = 0;
++        for (int slot = 0; slot < MineProfiles.CONTRACT_SLOTS; slot++) {
++            Contract contract = contract(player, slot);
++            if (contract != null && have(player, slot) >= contract.amount()) {
++                ready++;
++            }
++        }
++        return ready;
++    }
++
++    /** Goods carried (hand-ins) or blocks mined so far (shifts). */
++    public int have(Player player, int slot) {
++        Contract contract = contract(player, slot);
++        if (contract == null) {
++            return 0;
++        }
++        if (contract.form().shift()) {
++            return isle.profiles().of(player).progress[slot];
++        }
++        PlayerInventory inventory = player.getInventory();
++        return switch (contract.form()) {
++            case RAW -> MineItems.countPlain(inventory, contract.ore().resource());
++            case COMPRESSED -> {
++                String id = compressedId(contract.ore());
++                yield id == null ? 0 : MineItems.countById(inventory, id);
++            }
++            case SPECIMEN -> MineItems.countSpecimens(inventory, isle.crystals(), contract.ore());
++            default -> 0;
++        };
++    }
++
++    public long payout(Player player, Contract contract) {
++        double union = Math.min(0.6d, 0.15d * MineSkills.scale(player, MineSkills.UNION_CARD));
++        return Math.round(contract.coins() * (1.0d + union));
++    }
++
++    /** A block was mined somewhere — shifts count it. */
++    void onMined(Player player, IsleOre ore, boolean veins, MineDistricts.Band band) {
++        if (ore == null || ore == IsleOre.STONE) {
++            return;
++        }
++        MineProfiles.Profile profile = isle.profiles().of(player);
++        for (int slot = 0; slot < MineProfiles.CONTRACT_SLOTS; slot++) {
++            Contract contract = profile.contracts[slot];
++            if (contract == null || !contract.form().shift() || profile.progress[slot] >= contract.amount()) {
++                continue;
++            }
++            boolean counts = contract.form() == Form.VEINS
++                    ? veins
++                    : !veins && band.deep() && contract.ore() == ore;
++            if (!counts) {
++                continue;
++            }
++            profile.progress[slot]++;
++            isle.profiles().markDirty();
++            if (profile.progress[slot] >= contract.amount()) {
++                MineText.bar(player, "§6✔ Shift done: §f" + contract.want() + " §7— hand it in with Otto.");
++                player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, SoundCategory.PLAYERS, 0.7f, 1.6f);
++            } else if (profile.progress[slot] % 25 == 0) {
++                MineText.bar(player, "§7Shift §f" + profile.progress[slot] + "§7/§f" + contract.amount() + " §8· " + contract.want());
++            }
++        }
++    }
++
++    public boolean deliver(Player player, int slot) {
++        Contract contract = contract(player, slot);
++        if (contract == null) {
++            return false;
++        }
++        int have = have(player, slot);
++        if (have < contract.amount()) {
++            player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, SoundCategory.PLAYERS, 0.6f, 0.7f);
++            MineText.bar(player, "§cNot yet §8· §7" + have + "/" + contract.amount() + " §8· " + contract.want());
++            return false;
++        }
++        PlayerInventory inventory = player.getInventory();
++        switch (contract.form()) {
++            case RAW -> MineItems.takePlain(inventory, contract.ore().resource(), contract.amount());
++            case COMPRESSED -> MineItems.takeById(inventory, compressedId(contract.ore()), contract.amount());
++            case SPECIMEN -> MineItems.takeSpecimen(inventory, isle.crystals(), contract.ore());
++            default -> {
++            }
++        }
++        long coins = payout(player, contract);
++        MineSkills.coins(player, coins);
++        MineSkills.bonus(player, contract.xp());
++        MineProfiles.Profile profile = isle.profiles().of(player);
++        profile.contracts[slot] = null;
++        profile.progress[slot] = 0;
++        profile.slotReadyAt[slot] = System.currentTimeMillis() + RESTOCK_MS;
++        profile.contractsDone++;
++        isle.profiles().markDirty();
++        player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_YES, SoundCategory.PLAYERS, 0.7f, 1.0f);
++        player.playSound(player.getLocation(), Sound.BLOCK_CHAIN_PLACE, SoundCategory.PLAYERS, 0.8f, 1.2f);
++        String bonus = coins > contract.coins() ? " §8(Union Card +" + MineText.coins(coins - contract.coins()) + ")" : "";
++        isle.cast().say(player, MineRole.CLERK, "Stamped and filed for " + contract.client() + ". §6+"
++                + MineText.coins(coins) + " coins" + bonus + " §8· §a+" + contract.xp() + " Mining XP");
++        return true;
++    }
++
++    /** Free every 30 min, otherwise 400 coins. */
++    public boolean reroll(Player player) {
++        MineProfiles.Profile profile = isle.profiles().of(player);
++        long now = System.currentTimeMillis();
++        boolean free = profile.freeRerollAt <= now;
++        if (!free && !MineSkills.takeCoins(player, REROLL_COST)) {
++            MineText.bar(player, "§cA fresh board costs §6" + REROLL_COST + " coins §cuntil the free reroll.");
++            return false;
++        }
++        if (free) {
++            profile.freeRerollAt = now + FREE_REROLL_MS;
++        }
++        for (int slot = 0; slot < MineProfiles.CONTRACT_SLOTS; slot++) {
++            profile.contracts[slot] = generate(player);
++            profile.slotReadyAt[slot] = 0L;
++            profile.progress[slot] = 0;
++        }
++        isle.profiles().markDirty();
++        player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, SoundCategory.PLAYERS, 0.8f, 1.0f);
++        MineText.bar(player, free ? "§aFresh contracts pinned up." : "§aFresh contracts pinned up §8(-" + REROLL_COST + " coins)");
++        return true;
++    }
++
++    /** DEV: clear cooldowns and roll a new board. */
++    void resetBoard(Player player) {
++        MineProfiles.Profile profile = isle.profiles().of(player);
++        profile.freeRerollAt = 0L;
++        for (int slot = 0; slot < MineProfiles.CONTRACT_SLOTS; slot++) {
++            profile.contracts[slot] = null;
++            profile.slotReadyAt[slot] = 0L;
++            profile.progress[slot] = 0;
++        }
++        refresh(player);
++    }
++
++    /** DEV: complete every shift on the board. */
++    void fillShifts(Player player) {
++        MineProfiles.Profile profile = isle.profiles().of(player);
++        for (int slot = 0; slot < MineProfiles.CONTRACT_SLOTS; slot++) {
++            Contract contract = profile.contracts[slot];
++            if (contract != null && contract.form().shift()) {
++                profile.progress[slot] = contract.amount();
++            }
++        }
++        isle.profiles().markDirty();
++    }
++
++    /** Sells every specimen in the inventory at the Assayer's price. */
++    public long sellSpecimens(Player player) {
++        PlayerInventory inventory = player.getInventory();
++        ItemStack[] contents = inventory.getStorageContents();
++        long total = 0L;
++        int sold = 0;
++        for (int slot = 0; slot < contents.length; slot++) {
++            long value = isle.crystals().valueOf(contents[slot]);
++            if (value <= 0L) {
++                continue;
++            }
++            total += value;
++            sold += contents[slot].getAmount();
++            contents[slot] = null;
++        }
++        if (sold == 0) {
++            MineText.bar(player, "§7No specimens to sell.");
++            return 0L;
++        }
++        inventory.setStorageContents(contents);
++        MineSkills.coins(player, total);
++        player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.PLAYERS, 0.8f, 1.1f);
++        isle.cast().say(player, MineRole.ASSAYER, "Weighed, logged, paid: " + sold + " specimen" + (sold == 1 ? "" : "s")
++                + " for §6" + MineText.coins(total) + " coins§f. The cabinet keeps its record either way.");
++        return total;
++    }
++
++    // ------------------------------------------------------------------ generation
++
++    Contract generate(Player player) {
++        ThreadLocalRandom rng = ThreadLocalRandom.current();
++        int level = MineSkills.level(player);
++        List<IsleOre> pool = new ArrayList<>(List.of(IsleOre.COAL, IsleOre.COPPER, IsleOre.IRON));
++        if (level >= 15) {
++            pool.addAll(List.of(IsleOre.REDSTONE, IsleOre.LAPIS));
++        }
++        if (level >= 25) {
++            pool.add(IsleOre.GOLD);
++        }
++        if (level >= 40) {
++            pool.addAll(List.of(IsleOre.DIAMOND, IsleOre.AMETHYST));
++        }
++        if (level >= 60) {
++            pool.add(IsleOre.EMERALD);
++        }
++        IsleOre ore = pool.get(rng.nextInt(pool.size()));
++        double scale = 1.0d + Math.min(2.0d, level / 50.0d);
++        double roll = rng.nextDouble();
++        Form form;
++        if (roll < 0.10d && level >= 15) {
++            form = Form.SPECIMEN;
++        } else if (roll < 0.25d && level >= 30) {
++            form = Form.VEINS;
++        } else if (roll < 0.43d) {
++            form = Form.DEEP;
++        } else if (roll < 0.63d && compressedId(ore) != null) {
++            form = Form.COMPRESSED;
++        } else {
++            form = Form.RAW;
++        }
++        String client = CLIENTS[rng.nextInt(CLIENTS.length)];
++        long unit = Math.max(1L, ore.unitValue());
++        return switch (form) {
++            case RAW -> {
++                int base = ore.rare() ? 8 + rng.nextInt(25) : 64 + rng.nextInt(193);
++                int amount = Math.max(ore.rare() ? 8 : 32, (int) Math.round(base * scale / 8.0d) * 8);
++                long coins = Math.round(amount * unit * (2.0d + rng.nextDouble() * 0.6d));
++                yield new Contract(ore, form, amount, coins, Math.max(12, amount / (ore.rare() ? 1 : 3)), client);
++            }
++            case COMPRESSED -> {
++                int amount = Math.max(1, (int) Math.round((1 + rng.nextInt(3)) * scale));
++                long coins = Math.round(amount * unit * 179L * (1.8d + rng.nextDouble() * 0.4d));
++                yield new Contract(ore, form, amount, coins, 60 * amount, client);
++            }
++            case SPECIMEN -> {
++                IsleOre crystal = ore.hasCrystal() ? ore : IsleOre.IRON;
++                long coins = CrystalFinds.value(crystal, Grade.ROUGH, (crystal.minCarat() + crystal.maxCarat()) / 2.0d) * 2L
++                        + 400L + rng.nextInt(301);
++                yield new Contract(crystal, form, 1, coins, 180, client);
++            }
++            case DEEP -> {
++                int base = ore.rare() ? 10 + rng.nextInt(20) : 60 + rng.nextInt(90);
++                int amount = Math.max(ore.rare() ? 8 : 40, (int) Math.round(base * scale / 5.0d) * 5);
++                long coins = Math.round(amount * Math.max(2L, unit) * (2.8d + rng.nextDouble() * 0.6d));
++                yield new Contract(ore, form, amount, coins, amount * 2, client);
++            }
++            case VEINS -> {
++                int amount = Math.max(80, (int) Math.round((100 + rng.nextInt(151)) * scale / 10.0d) * 10);
++                long coins = Math.round(amount * (6.0d + rng.nextDouble() * 2.0d));
++                yield new Contract(ore, form, amount, coins, amount * 2, "The Veins Foreman");
++            }
++        };
++    }
++
++    static String compressedId(IsleOre ore) {
++        if (ore == null || ore.compressedKey() == null) {
++            return null;
++        }
++        try {
++            return CompressedResource.valueOf(ore.compressedKey().toUpperCase(Locale.ROOT)).compressedId();
++        } catch (IllegalArgumentException | LinkageError ignored) {
++            return null;
++        }
++    }
++}
+diff --git a/AetherionMining/src/main/java/de/aetherion/mining/isle/Grade.java b/AetherionMining/src/main/java/de/aetherion/mining/isle/Grade.java
+new file mode 100644
+index 00000000..022e011b
+--- /dev/null
++++ b/AetherionMining/src/main/java/de/aetherion/mining/isle/Grade.java
+@@ -0,0 +1,70 @@
++package de.aetherion.mining.isle;
++
++import java.util.Locale;
++
++/**
++ * Crystal Find grades. Heartstones only grow in The Veins — the endgame annex has the one thing
++ * the island can't give you.
++ */
++public enum Grade {
++
++    ROUGH("Rough", "§7", 0.60d, 3, 1.0d),
++    FLAWLESS("Flawless", "§b", 0.30d, 4, 2.0d),
++    PERFECT("Perfect", "§d", 0.10d, 5, 4.0d),
++    HEARTSTONE("Heartstone", "§6", 0.0d, 7, 12.0d);
++
++    private final String display;
++    private final String color;
++    private final double weight;
++    private final int cracks;
++    private final double valueMult;
++
++    Grade(String display, String color, double weight, int cracks, double valueMult) {
++        this.display = display;
++        this.color = color;
++        this.weight = weight;
++        this.cracks = cracks;
++        this.valueMult = valueMult;
++    }
++
++    public String display() {
++        return display;
++    }
++
++    public String color() {
++        return color;
++    }
++
++    public String colored() {
++        return color + display;
++    }
++
++    /** Island roll weight (Heartstone is Veins-only and rolled separately). */
++    public double weight() {
++        return weight;
++    }
++
++    /** Pickaxe hits to crack the geode open. */
++    public int cracks() {
++        return cracks;
++    }
++
++    public double valueMult() {
++        return valueMult;
++    }
++
++    public String id() {
++        return name().toLowerCase(Locale.ROOT);
++    }
++
++    public static Grade byId(String id) {
++        if (id == null || id.isBlank()) {
++            return null;
++        }
++        try {
++            return valueOf(id.trim().toUpperCase(Locale.ROOT));
++        } catch (IllegalArgumentException ignored) {
++            return null;
++        }
++    }
++}
+diff --git a/AetherionMining/src/main/java/de/aetherion/mining/isle/Hearth.java b/AetherionMining/src/main/java/de/aetherion/mining/isle/Hearth.java
+new file mode 100644
+index 00000000..451d476a
+--- /dev/null
++++ b/AetherionMining/src/main/java/de/aetherion/mining/isle/Hearth.java
+@@ -0,0 +1,308 @@
++package de.aetherion.mining.isle;
++
++import org.bukkit.Color;
++import org.bukkit.Material;
++import org.bukkit.NamespacedKey;
++import org.bukkit.Particle;
++import org.bukkit.Sound;
++import org.bukkit.SoundCategory;
++import org.bukkit.enchantments.Enchantment;
++import org.bukkit.entity.Player;
++import org.bukkit.event.EventHandler;
++import org.bukkit.event.EventPriority;
++import org.bukkit.event.Listener;
++import org.bukkit.event.player.PlayerItemConsumeEvent;
++import org.bukkit.inventory.ItemFlag;
++import org.bukkit.inventory.ItemStack;
++import org.bukkit.inventory.PlayerInventory;
++import org.bukkit.inventory.meta.ItemMeta;
++import org.bukkit.inventory.meta.PotionMeta;
++import org.bukkit.persistence.PersistentDataType;
++
++import java.util.ArrayList;
++import java.util.EnumMap;
++import java.util.List;
++import java.util.Locale;
++import java.util.Map;
++
++/**
++ * The Hearth — Nan Coalbright cooks for miners, and she takes payment in ore. One ration at a
++ * time; eating another replaces it. Every buff is mining-only (ore Fortune, Spread, break speed,
++ * Strike Rhythm, Crystal Find luck), so a pasty never leaks into the fields.
++ */
++public final class Hearth implements Listener {
++
++    public enum Ration {
++        MINERS_PASTY("Miner's Pasty", Material.BAKED_POTATO, 10,
++                "Folded thick so it survives a cave-in. Allegedly.",
++                recipe(IsleOre.COAL, 64, IsleOre.COPPER, 32), 15, 0, 0, 0, 1.0, 1.0),
++        LAMPLIGHT_STEW("Lamplight Stew", Material.MUSHROOM_STEW, 10,
++                "Smells of lamp oil and good decisions.",
++                recipe(IsleOre.COAL, 64, IsleOre.REDSTONE, 32), 0, 0, 22, 0, 1.2, 1.0),
++        PICKMANS_BROTH("Pickman's Broth", Material.BEETROOT_SOUP, 10,
++                "Iron-rich. Literally. Nan grates it in.",
++                recipe(IsleOre.IRON, 64, IsleOre.LAPIS, 32), 5, 8, 0, 0, 1.0, 1.0),
++        TIN_CUP_COFFEE("Tin-Cup Coffee", Material.POTION, 10,
++                "Brewed on a shovel. Keeps the whole crew in time.",
++                recipe(IsleOre.COPPER, 64, IsleOre.GOLD, 16), 5, 0, 6, 1.0, 1.6, 1.0),
++        GEODE_BROTH("Geode Broth", Material.RABBIT_STEW, 15,
++                "Simmered around a specimen. Nan won't say which.",
++                recipe(IsleOre.GOLD, 32, IsleOre.DIAMOND, 8), 25, 10, 12, 0.5, 1.25, 1.5);
++
++        final String display;
++        final Material material;
++        final int minutes;
++        final String flavor;
++        final Map<IsleOre, Integer> costs;
++        final double fortune;
++        final double spread;
++        final double speedPower;
++        final double rhythmGain;
++        final double rhythmHold;
++        final double crystalMult;
++
++        Ration(String display, Material material, int minutes, String flavor, Map<IsleOre, Integer> costs,
++               double fortune, double spread, double speedPower, double rhythmGain, double rhythmHold, double crystalMult) {
++            this.display = display;
++            this.material = material;
++            this.minutes = minutes;
++            this.flavor = flavor;
++            this.costs = costs;
++            this.fortune = fortune;
++            this.spread = spread;
++            this.speedPower = speedPower;
++            this.rhythmGain = rhythmGain;
++            this.rhythmHold = rhythmHold;
++            this.crystalMult = crystalMult;
++        }
++
++        public String display() {
++            return display;
++        }
++
++        public Material material() {
++            return material;
++        }
++
++        public int minutes() {
++            return minutes;
++        }
++
++        public Map<IsleOre, Integer> costs() {
++            return costs;
++        }
++
++        public boolean needsSpecimen() {
++            return this == GEODE_BROTH;
++        }
++
++        public String id() {
++            return name().toLowerCase(Locale.ROOT);
++        }
++
++        public List<String> effectLines() {
++            List<String> lines = new ArrayList<>();
++            if (fortune > 0) {
++                lines.add("§a+" + (int) fortune + " ore Fortune");
++            }
++            if (spread > 0) {
++                lines.add("§a+" + (int) spread + " Spread");
++            }
++            if (speedPower > 0) {
++                lines.add("§e+" + (int) speedPower + " break-speed power §8(not gates)");
++            }
++            if (rhythmGain > 0) {
++                lines.add("§6+" + trim(rhythmGain) + " Rhythm per strike");
++            }
++            if (rhythmHold > 1.0) {
++                lines.add("§6Rhythm holds " + Math.round((rhythmHold - 1.0) * 100) + "% longer");
++            }
++            if (crystalMult > 1.0) {
++                lines.add("§dCrystal Finds ×" + trim(crystalMult));
++            }
++            return lines;
++        }
++
++        public static Ration byId(String id) {
++            if (id == null) {
++                return null;
++            }
++            try {
++                return valueOf(id.trim().toUpperCase(Locale.ROOT));
++            } catch (IllegalArgumentException ignored) {
++                return null;
++            }
++        }
++
++        private static String trim(double value) {
++            return value == Math.floor(value) ? String.valueOf((int) value) : String.valueOf(value);
++        }
++    }
++
++    private final MineIsle isle;
++    private final NamespacedKey rationKey;
++
++    Hearth(MineIsle isle) {
++        this.isle = isle;
++        this.rationKey = new NamespacedKey(isle.plugin(), "mine_ration");
++    }
++
++    // ------------------------------------------------------------------ buff reads
++
++    public Ration active(Player player) {
++        if (player == null) {
++            return null;
++        }
++        MineProfiles.Profile profile = isle.profiles().of(player);
++        if (profile.ration == null || profile.rationUntil <= System.currentTimeMillis()) {
++            return null;
++        }
++        return Ration.byId(profile.ration);
++    }
++
++    public long secondsLeft(Player player) {
++        Ration ration = active(player);
++        return ration == null ? 0L : Math.max(0L, (isle.profiles().of(player).rationUntil - System.currentTimeMillis()) / 1000L);
++    }
++
++    double oreFortune(Player player) {
++        Ration ration = active(player);
++        return ration == null ? 0.0d : ration.fortune;
++    }
++
++    double spread(Player player) {
++        Ration ration = active(player);
++        return ration == null ? 0.0d : ration.spread;
++    }
++
++    double speedPower(Player player) {
++        Ration ration = active(player);
++        return ration == null ? 0.0d : ration.speedPower;
++    }
++
++    double rhythmGain(Player player) {
++        Ration ration = active(player);
++        return ration == null ? 0.0d : ration.rhythmGain;
++    }
++
++    double rhythmHold(Player player) {
++        Ration ration = active(player);
++        return ration == null ? 1.0d : ration.rhythmHold;
++    }
++
++    double crystalMultiplier(Player player) {
++        Ration ration = active(player);
++        return ration == null ? 1.0d : ration.crystalMult;
++    }
++
++    // ------------------------------------------------------------------ cooking
++
++    /** Missing-ingredient lines for the GUI (empty = can cook). */
++    public List<String> missing(Player player, Ration ration) {
++        List<String> out = new ArrayList<>();
++        PlayerInventory inventory = player.getInventory();
++        ration.costs.forEach((ore, amount) -> {
++            int have = MineItems.countPlain(inventory, ore.resource());
++            if (have < amount) {
++                out.add(ore.display() + " " + have + "/" + amount);
++            }
++        });
++        if (ration.needsSpecimen() && MineItems.firstSpecimen(inventory, isle.crystals(), null) < 0) {
++            out.add("any Crystal Find specimen");
++        }
++        return out;
++    }
++
++    public boolean cook(Player player, Ration ration) {
++        if (!missing(player, ration).isEmpty()) {
++            player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, SoundCategory.PLAYERS, 0.6f, 0.7f);
++            return false;
++        }
++        PlayerInventory inventory = player.getInventory();
++        ration.costs.forEach((ore, amount) -> MineItems.takePlain(inventory, ore.resource(), amount));
++        if (ration.needsSpecimen()) {
++            MineItems.takeSpecimen(inventory, isle.crystals(), null);
++        }
++        MineSkills.give(player, item(ration));
++        player.playSound(player.getLocation(), Sound.BLOCK_CAMPFIRE_CRACKLE, SoundCategory.PLAYERS, 1.0f, 1.0f);
++        player.playSound(player.getLocation(), Sound.BLOCK_BLASTFURNACE_FIRE_CRACKLE, SoundCategory.PLAYERS, 0.8f, 1.1f);
++        isle.cast().say(player, MineRole.COOK, "One " + ration.display + ". Eat it before you go down — it lasts "
++                + ration.minutes + " minutes.");
++        return true;
++    }
++
++    public ItemStack item(Ration ration) {
++        ItemStack item = new ItemStack(ration.material);
++        ItemMeta meta = item.getItemMeta();
++        if (meta == null) {
++            return item;
++        }
++        meta.setDisplayName("§6" + ration.display);
++        List<String> lore = new ArrayList<>();
++        lore.add("§7" + ration.flavor);
++        lore.add("");
++        for (String line : ration.effectLines()) {
++            lore.add("§8• " + line);
++        }
++        lore.add("§7Lasts §f" + ration.minutes + " min§7. One ration at a time.");
++        lore.add("");
++        lore.add("§eEat to start the buff.");
++        lore.add("§8The Hearth · Mining Eldervale");
++        meta.setLore(lore);
++        if (meta instanceof PotionMeta potion) {
++            potion.setColor(Color.fromRGB(92, 58, 30));
++        } else {
++            try {
++                var component = meta.getFood();
++                component.setCanAlwaysEat(true);
++                component.setNutrition(ration.minutes >= 15 ? 8 : 6);
++                component.setSaturation(ration.minutes >= 15 ? 9.6f : 7.2f);
++                meta.setFood(component);
++            } catch (Throwable ignored) {
++                // Older API without food components — still edible when hungry.
++            }
++        }
++        if (ration == Ration.GEODE_BROTH) {
++            meta.addEnchant(Enchantment.UNBREAKING, 1, true);
++        }
++        meta.addItemFlags(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ADDITIONAL_TOOLTIP);
++        meta.getPersistentDataContainer().set(rationKey, PersistentDataType.STRING, ration.id());
++        item.setItemMeta(meta);
++        return item;
++    }
++
++    public Ration rationOf(ItemStack item) {
++        if (item == null || !item.hasItemMeta()) {
++            return null;
++        }
++        return Ration.byId(item.getItemMeta().getPersistentDataContainer().get(rationKey, PersistentDataType.STRING));
++    }
++
++    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
++    public void onEat(PlayerItemConsumeEvent event) {
++        Ration ration = rationOf(event.getItem());
++        if (ration == null) {
++            return;
++        }
++        Player player = event.getPlayer();
++        Ration before = active(player);
++        MineProfiles.Profile profile = isle.profiles().of(player);
++        profile.ration = ration.id();
++        profile.rationUntil = System.currentTimeMillis() + ration.minutes * 60_000L;
++        isle.profiles().markDirty();
++        String replaced = before != null && before != ration ? " §8(replaces " + before.display + ")" : "";
++        player.sendMessage("§6" + ration.display + " §7— " + String.join("§7, ", ration.effectLines()) + " §7for §f"
++                + ration.minutes + " min§7." + replaced);
++        player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_BURP, SoundCategory.PLAYERS, 0.6f, 1.1f);
++        player.spawnParticle(Particle.SMOKE, player.getLocation().add(0, 1.8, 0), 6, 0.2, 0.1, 0.2, 0.01);
++        MineSkills.bonus(player, 5);
++    }
++
++    private static Map<IsleOre, Integer> recipe(Object... pairs) {
++        Map<IsleOre, Integer> map = new EnumMap<>(IsleOre.class);
++        for (int i = 0; i + 1 < pairs.length; i += 2) {
++            map.put((IsleOre) pairs[i], (Integer) pairs[i + 1]);
++        }
++        return map;
++    }
++}
+diff --git a/AetherionMining/src/main/java/de/aetherion/mining/isle/IsleOre.java b/AetherionMining/src/main/java/de/aetherion/mining/isle/IsleOre.java
+new file mode 100644
+index 00000000..e3712fd0
+--- /dev/null
++++ b/AetherionMining/src/main/java/de/aetherion/mining/isle/IsleOre.java
+@@ -0,0 +1,189 @@
++package de.aetherion.mining.isle;
++
++import org.bukkit.Color;
++import org.bukkit.Material;
++
++import java.util.EnumSet;
++import java.util.Locale;
++import java.util.Set;
++
++/**
++ * Ore families the Mining Eldervale loops know about: mastery, collections, Crystal Finds,
++ * contracts and the Hearth. {@code blocks} is what sits in the rock (ore + dense mineral block),
++ * {@code resource} is what a break pays. {@code scale} stretches mastery / collection thresholds
++ * (common rock needs more swings than a diamond).
++ */
++public enum IsleOre {
++
++    STONE("Stone", "§7", Material.COBBLESTONE, "stone", "cobblestone", 1L, 4.0d,
++            null, 0.0d, 0.0d, Material.COBBLESTONE, Color.fromRGB(150, 150, 150),
++            EnumSet.of(Material.STONE, Material.DEEPSLATE)),
++    COAL("Coal", "§8", Material.COAL, "coal", "coal", 2L, 1.5d,
++            "Jet Heart", 2.0d, 9.0d, Material.COAL_BLOCK, Color.fromRGB(70, 70, 80),
++            EnumSet.of(Material.COAL_ORE, Material.DEEPSLATE_COAL_ORE, Material.COAL_BLOCK)),
++    COPPER("Copper", "§6", Material.COPPER_INGOT, "copper", "raw_copper", 1L, 1.5d,
++            "Verdigris Geode", 2.5d, 11.0d, Material.OXIDIZED_COPPER, Color.fromRGB(80, 200, 160),
++            EnumSet.of(Material.COPPER_ORE, Material.DEEPSLATE_COPPER_ORE, Material.RAW_COPPER_BLOCK, Material.COPPER_BLOCK)),
++    IRON("Iron", "§f", Material.IRON_INGOT, "iron", "raw_iron", 3L, 1.0d,
++            "Ironheart Nodule", 3.0d, 13.0d, Material.RAW_IRON_BLOCK, Color.fromRGB(230, 200, 180),
++            EnumSet.of(Material.IRON_ORE, Material.DEEPSLATE_IRON_ORE, Material.RAW_IRON_BLOCK, Material.IRON_BLOCK)),
++    REDSTONE("Redstone", "§c", Material.REDSTONE, "redstone", "redstone", 1L, 1.0d,
++            "Emberstone", 2.5d, 12.0d, Material.REDSTONE_BLOCK, Color.fromRGB(255, 40, 30),
++            EnumSet.of(Material.REDSTONE_ORE, Material.DEEPSLATE_REDSTONE_ORE, Material.REDSTONE_BLOCK)),
++    LAPIS("Lapis", "§9", Material.LAPIS_LAZULI, "lapis", "lapis", 2L, 1.0d,
++            "Skyglass Lapis", 3.0d, 14.0d, Material.LAPIS_BLOCK, Color.fromRGB(40, 90, 255),
++            EnumSet.of(Material.LAPIS_ORE, Material.DEEPSLATE_LAPIS_ORE, Material.LAPIS_BLOCK)),
++    GOLD("Gold", "§e", Material.GOLD_INGOT, "gold", "raw_gold", 4L, 0.6d,
++            "Sun Nugget", 3.5d, 16.0d, Material.RAW_GOLD_BLOCK, Color.fromRGB(255, 210, 40),
++            EnumSet.of(Material.GOLD_ORE, Material.DEEPSLATE_GOLD_ORE, Material.NETHER_GOLD_ORE,
++                    Material.RAW_GOLD_BLOCK, Material.GOLD_BLOCK)),
++    QUARTZ("Quartz", "§f", Material.QUARTZ, "quartz", null, 2L, 0.6d,
++            "Moonquartz Spire", 3.0d, 15.0d, Material.QUARTZ_PILLAR, Color.fromRGB(245, 240, 255),
++            EnumSet.of(Material.NETHER_QUARTZ_ORE, Material.QUARTZ_BLOCK)),
++    AMETHYST("Amethyst", "§d", Material.AMETHYST_SHARD, "amethyst", null, 2L, 0.5d,
++            "Violet Crown", 4.0d, 18.0d, Material.AMETHYST_CLUSTER, Color.fromRGB(190, 110, 255),
++            EnumSet.of(Material.AMETHYST_CLUSTER)),
++    DIAMOND("Diamond", "§b", Material.DIAMOND, "diamond", "diamond", 8L, 0.25d,
++            "Starcore Diamond", 4.0d, 22.0d, Material.DIAMOND_BLOCK, Color.fromRGB(80, 230, 255),
++            EnumSet.of(Material.DIAMOND_ORE, Material.DEEPSLATE_DIAMOND_ORE, Material.DIAMOND_BLOCK)),
++    EMERALD("Emerald", "§a", Material.EMERALD, "emerald", "emerald", 6L, 0.15d,
++            "Verdant Eye", 4.5d, 24.0d, Material.EMERALD_BLOCK, Color.fromRGB(40, 255, 110),
++            EnumSet.of(Material.EMERALD_ORE, Material.DEEPSLATE_EMERALD_ORE, Material.EMERALD_BLOCK)),
++    DEBRIS("Ancient Debris", "§5", Material.NETHERITE_INGOT, "ancient_debris", null, 25L, 0.08d,
++            "Hollow Ember", 6.0d, 30.0d, Material.ANCIENT_DEBRIS, Color.fromRGB(170, 60, 40),
++            EnumSet.of(Material.ANCIENT_DEBRIS, Material.NETHERITE_BLOCK));
++
++    private final String display;
++    private final String color;
++    private final Material resource;
++    private final String codexId;
++    private final String compressedKey;
++    private final long unitValue;
++    private final double scale;
++    private final String crystalName;
++    private final double minCarat;
++    private final double maxCarat;
++    private final Material showcase;
++    private final Color glow;
++    private final Set<Material> blocks;
++
++    IsleOre(String display, String color, Material resource, String codexId, String compressedKey, long unitValue,
++            double scale, String crystalName, double minCarat, double maxCarat, Material showcase, Color glow,
++            Set<Material> blocks) {
++        this.display = display;
++        this.color = color;
++        this.resource = resource;
++        this.codexId = codexId;
++        this.compressedKey = compressedKey;
++        this.unitValue = unitValue;
++        this.scale = scale;
++        this.crystalName = crystalName;
++        this.minCarat = minCarat;
++        this.maxCarat = maxCarat;
++        this.showcase = showcase;
++        this.glow = glow;
++        this.blocks = blocks;
++    }
++
++    public String display() {
++        return display;
++    }
++
++    public String color() {
++        return color;
++    }
++
++    public String colored() {
++        return color + display;
++    }
++
++    public Material resource() {
++        return resource;
++    }
++
++    /** Codex block family id — the Collection counts live there. */
++    public String codexId() {
++        return codexId;
++    }
++
++    /** Items {@code CompressedResource} key, or {@code null} when the ore has no compressed form. */
++    public String compressedKey() {
++        return compressedKey;
++    }
++
++    /** Trader value of one resource unit (economy.yml) — contracts pay a multiple of it. */
++    public long unitValue() {
++        return unitValue;
++    }
++
++    public double scale() {
++        return scale;
++    }
++
++    /** Crystal Find name, or {@code null} for plain stone (stone never pops a crystal). */
++    public String crystalName() {
++        return crystalName;
++    }
++
++    public boolean hasCrystal() {
++        return crystalName != null;
++    }
++
++    public double minCarat() {
++        return minCarat;
++    }
++
++    public double maxCarat() {
++        return maxCarat;
++    }
++
++    /** Block shown inside a Crystal Find / specimen plinth. */
++    public Material showcase() {
++        return showcase;
++    }
++
++    public Color glow() {
++        return glow;
++    }
++
++    public Set<Material> blocks() {
++        return blocks;
++    }
++
++    public String id() {
++        return name().toLowerCase(Locale.ROOT);
++    }
++
++    /** Rarer families roll heavier on the contract board and the Tremor rubble. */
++    public boolean rare() {
++        return this == DIAMOND || this == EMERALD || this == DEBRIS || this == AMETHYST;
++    }
++
++    public static IsleOre fromBlock(Material material) {
++        if (material == null) {
++            return null;
++        }
++        for (IsleOre ore : values()) {
++            if (ore.blocks.contains(material)) {
++                return ore;
++            }
++        }
++        return null;
++    }
++
++    public static IsleOre byId(String id) {
++        if (id == null || id.isBlank()) {
++            return null;
++        }
++        try {
++            return valueOf(id.trim().toUpperCase(Locale.ROOT));
++        } catch (IllegalArgumentException ignored) {
++            return null;
++        }
++    }
++
++    /** Families with a Crystal Find (everything but stone). */
++    public static IsleOre[] crystals() {
++        return java.util.Arrays.stream(values()).filter(IsleOre::hasCrystal).toArray(IsleOre[]::new);
++    }
++}
+diff --git a/AetherionMining/src/main/java/de/aetherion/mining/isle/MineDistricts.java b/AetherionMining/src/main/java/de/aetherion/mining/isle/MineDistricts.java
+new file mode 100644
+index 00000000..899ac368
+--- /dev/null
++++ b/AetherionMining/src/main/java/de/aetherion/mining/isle/MineDistricts.java
+@@ -0,0 +1,321 @@
++package de.aetherion.mining.isle;
++
++import de.aetherion.mining.AetherionMining;
++
++import org.bukkit.Location;
++import org.bukkit.World;
++import org.bukkit.configuration.ConfigurationSection;
++
++import java.util.ArrayList;
++import java.util.Collections;
++import java.util.Comparator;
++import java.util.LinkedHashMap;
++import java.util.List;
++import java.util.Locale;
++import java.util.Map;
++
++/**
++ * Named places of Mining Eldervale — halls, quarries, shafts, the lake — from
++ * {@code mine-isle-districts} in config, plus the four depth bands under the island.
++ *
++ * <p>Unlike the Farm Isle's flat plots, a district can be <b>underground</b>: every district has an
++ * optional y-range, so the same x/z can be "Lantern Row" on the surface and "The Undercroft" 70
++ * blocks below it. Lookup order: halls and landmarks, then shafts (y-bounded), then water, then
++ * quarries; smaller areas first inside a kind.
++ */
++public final class MineDistricts {
++
++    public enum Kind {
++        HALL(0, "§6", "hall"),
++        SHAFT(1, "§3", "shaft"),
++        WATER(2, "§b", "water"),
++        QUARRY(3, "§e", "quarry");
++
++        private final int priority;
++        private final String color;
++        private final String noun;
++
++        Kind(int priority, String color, String noun) {
++            this.priority = priority;
++            this.color = color;
++            this.noun = noun;
++        }
++
++        public String color() {
++            return color;
++        }
++
++        public String noun() {
++            return noun;
++        }
++
++        /** Rich Vein picks from places where ore actually gets mined. */
++        public boolean mineable() {
++            return this == SHAFT || this == QUARRY;
++        }
++    }
++
++    /**
++     * Depth under the island. Bonuses scale with Depth Gauge; Cave Sense adds a little more
++     * Crystal Find luck in the two deepest bands.
++     */
++    public enum Band {
++        SURFACE("Surface", "§a", 0.0d, 1.00d, 0),
++        GALLERIES("Upper Galleries", "§e", 5.0d, 1.10d, 0),
++        DEEP_WORKS("Deep Works", "§6", 12.0d, 1.25d, 1),
++        UNDERCROFT("The Undercroft", "§c", 20.0d, 1.50d, 2);
++
++        private final String display;
++        private final String color;
++        private final double fortune;
++        private final double crystalMult;
++        private final int bonusXp;
++
++        Band(String display, String color, double fortune, double crystalMult, int bonusXp) {
++            this.display = display;
++            this.color = color;
++            this.fortune = fortune;
++            this.crystalMult = crystalMult;
++            this.bonusXp = bonusXp;
++        }
++
++        public String display() {
++            return display;
++        }
++
++        public String colored() {
++            return color + display;
++        }
++
++        public double fortune() {
++            return fortune;
++        }
++
++        public double crystalMult() {
++            return crystalMult;
++        }
++
++        public int bonusXp() {
++            return bonusXp;
++        }
++
++        public boolean deep() {
++            return this == DEEP_WORKS || this == UNDERCROFT;
++        }
++    }
++
++    public record Circle(double x, double z, double radius) {
++        boolean contains(double px, double pz) {
++            double dx = px - x;
++            double dz = pz - z;
++            return dx * dx + dz * dz <= radius * radius;
++        }
++    }
++
++    public record District(String id, String name, Kind kind, String blurb, List<Circle> circles,
++                           double minY, double maxY, Location anchor) {
++
++        public boolean contains(Location at) {
++            if (at.getY() < minY || at.getY() > maxY) {
++                return false;
++            }
++            for (Circle circle : circles) {
++                if (circle.contains(at.getX(), at.getZ())) {
++                    return true;
++                }
++            }
++            return false;
++        }
++
++        public String colored() {
++            return kind.color() + name;
++        }
++
++        /**
++         * Where to send someone: the configured anchor, else the surface at the main circle
++         * (shafts use the middle of their y-range so the arrow points down the mine).
++         */
++        public Location center(World world) {
++            if (anchor != null && anchor.getWorld() != null) {
++                return anchor.clone();
++            }
++            if (world == null || circles.isEmpty()) {
++                return null;
++            }
++            Circle main = circles.get(0);
++            int bx = (int) Math.floor(main.x());
++            int bz = (int) Math.floor(main.z());
++            double y = kind == Kind.SHAFT && maxY < 300
++                    ? (Math.max(minY, -60) + maxY) / 2.0d
++                    : world.getHighestBlockYAt(bx, bz) + 1;
++            return new Location(world, bx + 0.5, y, bz + 0.5);
++        }
++
++        private double smallestRadius() {
++            double best = Double.MAX_VALUE;
++            for (Circle circle : circles) {
++                best = Math.min(best, circle.radius());
++            }
++            return best;
++        }
++    }
++
++    private final AetherionMining plugin;
++    private List<District> ordered = List.of();
++    private Map<String, District> byId = Map.of();
++    private double galleriesBelow;
++    private double deepBelow;
++    private double undercroftBelow;
++
++    public MineDistricts(AetherionMining plugin) {
++        this.plugin = plugin;
++        reload();
++    }
++
++    public void reload() {
++        var config = plugin.getConfig();
++        List<District> loaded = config.getBoolean("mine-isle-districts.enabled", true)
++                ? parse(config.getConfigurationSection("mine-isle-districts.districts"), plugin.getLogger())
++                : List.of();
++        Map<String, District> index = new LinkedHashMap<>();
++        for (District district : loaded) {
++            index.put(district.id(), district);
++        }
++        ordered = loaded;
++        byId = Collections.unmodifiableMap(index);
++        galleriesBelow = config.getDouble("mine-isle.depth.galleries-below-y", 82.0d);
++        deepBelow = config.getDouble("mine-isle.depth.deep-works-below-y", 56.0d);
++        undercroftBelow = config.getDouble("mine-isle.depth.undercroft-below-y", 26.0d);
++    }
++
++    static List<District> parse(ConfigurationSection root, java.util.logging.Logger log) {
++        List<District> loaded = new ArrayList<>();
++        if (root != null) {
++            for (String id : root.getKeys(false)) {
++                ConfigurationSection section = root.getConfigurationSection(id);
++                if (section == null) {
++                    continue;
++                }
++                List<Circle> circles = new ArrayList<>();
++                for (String raw : section.getStringList("circles")) {
++                    Circle circle = parseCircle(raw);
++                    if (circle != null) {
++                        circles.add(circle);
++                    }
++                }
++                if (circles.isEmpty()) {
++                    if (log != null) {
++                        log.warning("Mining Eldervale district '" + id + "' has no circles — skipped.");
++                    }
++                    continue;
++                }
++                Kind kind;
++                try {
++                    kind = Kind.valueOf(section.getString("kind", "quarry").toUpperCase(Locale.ROOT));
++                } catch (IllegalArgumentException ignored) {
++                    kind = Kind.QUARRY;
++                }
++                Location anchor = null;
++                if (section.contains("anchor.x")) {
++                    World world = org.bukkit.Bukkit.getWorld(section.getString("anchor.world", "world"));
++                    if (world != null) {
++                        anchor = new Location(world, section.getDouble("anchor.x"), section.getDouble("anchor.y"),
++                                section.getDouble("anchor.z"), (float) section.getDouble("anchor.yaw", 0.0d), 0.0f);
++                    }
++                }
++                loaded.add(new District(
++                        id.toLowerCase(Locale.ROOT),
++                        section.getString("name", id),
++                        kind,
++                        section.getString("blurb", ""),
++                        List.copyOf(circles),
++                        section.getDouble("min-y", -64.0d),
++                        section.getDouble("max-y", 320.0d),
++                        anchor
++                ));
++            }
++        }
++        loaded.sort(Comparator.comparingInt((District district) -> district.kind().priority)
++                .thenComparingDouble(District::smallestRadius));
++        return Collections.unmodifiableList(loaded);
++    }
++
++    /** District under {@code at}, or {@code null} outside every named place (or off the isle). */
++    public District at(Location at) {
++        if (at == null || at.getWorld() == null || !MineWorld.onIsle(plugin, at)) {
++            return null;
++        }
++        for (District district : ordered) {
++            if (district.contains(at)) {
++                return district;
++            }
++        }
++        return null;
++    }
++
++    public District byId(String id) {
++        return id == null ? null : byId.get(id.toLowerCase(Locale.ROOT));
++    }
++
++    public List<District> all() {
++        return ordered;
++    }
++
++    public List<District> mineable() {
++        List<District> out = new ArrayList<>();
++        for (District district : ordered) {
++            if (district.kind().mineable()) {
++                out.add(district);
++            }
++        }
++        return out;
++    }
++
++    public int size() {
++        return ordered.size();
++    }
++
++    /** Depth band at {@code y} (only meaningful on the isle). */
++    public Band band(double y) {
++        if (y < undercroftBelow) {
++            return Band.UNDERCROFT;
++        }
++        if (y < deepBelow) {
++            return Band.DEEP_WORKS;
++        }
++        if (y < galleriesBelow) {
++            return Band.GALLERIES;
++        }
++        return Band.SURFACE;
++    }
++
++    public Band band(Location at) {
++        return at == null || !MineWorld.onIsle(plugin, at) ? Band.SURFACE : band(at.getY());
++    }
++
++    /** Top Y of a band (for the Surveyor's depth card). */
++    public double bandTop(Band band) {
++        return switch (band) {
++            case SURFACE -> Double.POSITIVE_INFINITY;
++            case GALLERIES -> galleriesBelow;
++            case DEEP_WORKS -> deepBelow;
++            case UNDERCROFT -> undercroftBelow;
++        };
++    }
++
++    private static Circle parseCircle(String raw) {
++        if (raw == null) {
++            return null;
++        }
++        String[] parts = raw.trim().split("[\\s,]+");
++        if (parts.length < 3) {
++            return null;
++        }
++        try {
++            return new Circle(Double.parseDouble(parts[0]), Double.parseDouble(parts[1]),
++                    Math.max(2.0d, Double.parseDouble(parts[2])));
++        } catch (NumberFormatException ignored) {
++            return null;
++        }
++    }
++}
+diff --git a/AetherionMining/src/main/java/de/aetherion/mining/isle/MineEvents.java b/AetherionMining/src/main/java/de/aetherion/mining/isle/MineEvents.java
+new file mode 100644
+index 00000000..30fe9158
+--- /dev/null
++++ b/AetherionMining/src/main/java/de/aetherion/mining/isle/MineEvents.java
+@@ -0,0 +1,778 @@
++package de.aetherion.mining.isle;
++
++import de.aetherion.core.api.QuestBars;
++
++import net.kyori.adventure.bossbar.BossBar;
++import net.kyori.adventure.title.Title;
++
++import org.bukkit.Bukkit;
++import org.bukkit.Color;
++import org.bukkit.GameMode;
++import org.bukkit.Location;
++import org.bukkit.Material;
++import org.bukkit.NamespacedKey;
++import org.bukkit.Particle;
++import org.bukkit.Sound;
++import org.bukkit.SoundCategory;
++import org.bukkit.World;
++import org.bukkit.block.Block;
++import org.bukkit.entity.BlockDisplay;
++import org.bukkit.entity.Display;
++import org.bukkit.entity.Entity;
++import org.bukkit.entity.Interaction;
++import org.bukkit.entity.Player;
++import org.bukkit.event.EventHandler;
++import org.bukkit.event.EventPriority;
++import org.bukkit.event.Listener;
++import org.bukkit.event.entity.EntityDamageByEntityEvent;
++import org.bukkit.event.entity.EntityDeathEvent;
++import org.bukkit.event.player.PlayerInteractAtEntityEvent;
++import org.bukkit.event.player.PlayerInteractEntityEvent;
++import org.bukkit.inventory.EquipmentSlot;
++import org.bukkit.inventory.ItemStack;
++import org.bukkit.persistence.PersistentDataType;
++import org.bukkit.scheduler.BukkitTask;
++import org.bukkit.util.Transformation;
++import org.joml.AxisAngle4f;
++import org.joml.Vector3f;
++
++import java.time.Duration;
++import java.util.ArrayList;
++import java.util.HashMap;
++import java.util.HashSet;
++import java.util.List;
++import java.util.Map;
++import java.util.Set;
++import java.util.UUID;
++import java.util.concurrent.ThreadLocalRandom;
++
++/**
++ * Isle-wide events on a timer while miners are on Mining Eldervale. All four telegraph first,
++ * share one boss bar, and end with a personal tally.
++ * <ul>
++ *   <li><b>Rich Vein</b> — one quarry or shaft runs rich: ores there pay an extra drop half the
++ *   time and bonus XP. (The Farm Isle's Bee Bloom, underground.)</li>
++ *   <li><b>Ember Hour</b> — the forges roar and the rock runs hot: Crystal Finds ×4 isle-wide.</li>
++ *   <li><b>Tremor</b> — the mountain shakes loose. Glowing rubble pops out of the walls near every
++ *   miner; strike it for ore. The whole isle works towards one shared goal, and if the crew makes
++ *   it, everyone who helped gets paid and Crystal Finds double for a minute.</li>
++ *   <li><b>Troll Run</b> — something in the deep is restless: Ore Trolls crawl out of the veins
++ *   far more often (blueprint drops as usual) and every troll felled pays a bounty.</li>
++ * </ul>
++ */
++public final class MineEvents implements Listener {
++
++    static final String LEASE = "mine-event";
++    private static final int TELEGRAPH_TICKS = 20 * 8;
++    private static final double RICH_EXTRA_CHANCE = 0.5d;
++    private static final int RICH_XP = 3;
++    private static final double EMBER_MULT = 4.0d;
++    private static final double SHORED_MULT = 2.0d;
++    private static final long SHORED_MS = 60_000L;
++    private static final double TROLL_CHANCE = 0.08d;
++    private static final int TROLL_BOUNTY_XP = 25;
++    private static final long TROLL_BOUNTY_COINS = 120L;
++
++    public enum Kind {
++        RICH_VEIN("Rich Vein", BossBar.Color.YELLOW, 90, "§e"),
++        EMBER_HOUR("Ember Hour", BossBar.Color.RED, 120, "§c"),
++        TREMOR("Tremor", BossBar.Color.WHITE, 75, "§f"),
++        TROLL_RUN("Troll Run", BossBar.Color.GREEN, 90, "§a");
++
++        final String display;
++        final BossBar.Color color;
++        final int seconds;
++        final String chat;
++
++        Kind(String display, BossBar.Color color, int seconds, String chat) {
++            this.display = display;
++            this.color = color;
++            this.seconds = seconds;
++            this.chat = chat;
++        }
++
++        public String display() {
++            return display;
++        }
++
++        public String colored() {
++            return chat + display;
++        }
++    }
++
++    private enum Phase {
++        IDLE,
++        TELEGRAPH,
++        ACTIVE
++    }
++
++    private record Rubble(UUID display, UUID hitbox, IsleOre ore, Location at, UUID owner, int bornTick) {
++    }
++
++    private final MineIsle isle;
++    private final NamespacedKey rubbleKey;
++    private final Set<UUID> viewers = new HashSet<>();
++    private final Map<UUID, Integer> tally = new HashMap<>();
++    private final Map<UUID, Rubble> rubbleByPart = new HashMap<>();
++    private final Map<UUID, Integer> rubbleHits = new HashMap<>();
++    private final Map<UUID, Integer> trollsLive = new HashMap<>();
++    private BukkitTask timer;
++    private BukkitTask ticker;
++    private Phase phase = Phase.IDLE;
++    private Kind kind;
++    private MineDistricts.District district;
++    private int phaseTicks;
++    private int activeTicks;
++    private long nextAtMs;
++    private BossBar bar;
++    private int goal;
++    private int progress;
++    private boolean goalMet;
++    private long shoredUntil;
++
++    MineEvents(MineIsle isle) {
++        this.isle = isle;
++        this.rubbleKey = new NamespacedKey(isle.plugin(), "mine_rubble");
++    }
++
++    void start() {
++        purgeStrays();
++        if (!isle.plugin().getConfig().getBoolean("mine-events.enabled", true)) {
++            return;
++        }
++        long interval = intervalTicks();
++        long first = Math.max(20L * 60L, isle.plugin().getConfig().getLong("mine-events.first-delay-ticks", 20L * 60L * 6L));
++        nextAtMs = System.currentTimeMillis() + first * 50L;
++        timer = Bukkit.getScheduler().runTaskTimer(isle.plugin(), this::maybeStart, first, interval);
++        ticker = Bukkit.getScheduler().runTaskTimer(isle.plugin(), this::tick, 5L, 5L);
++    }
++
++    void shutdown() {
++        stop(true);
++        if (timer != null) {
++            timer.cancel();
++            timer = null;
++        }
++        if (ticker != null) {
++            ticker.cancel();
++            ticker = null;
++        }
++    }
++
++    private long intervalTicks() {
++        return Math.max(20L * 120L, isle.plugin().getConfig().getLong("mine-events.interval-ticks", 20L * 60L * 20L));
++    }
++
++    // ------------------------------------------------------------------ queries
++
++    public boolean active() {
++        return phase == Phase.ACTIVE;
++    }
++
++    public Kind kind() {
++        return phase == Phase.IDLE ? null : kind;
++    }
++
++    public MineDistricts.District richDistrict() {
++        return phase == Phase.ACTIVE && kind == Kind.RICH_VEIN ? district : null;
++    }
++
++    public double crystalMultiplier() {
++        double mult = 1.0d;
++        if (phase == Phase.ACTIVE && kind == Kind.EMBER_HOUR) {
++            mult *= EMBER_MULT;
++        }
++        if (shoredUntil > System.currentTimeMillis()) {
++            mult *= SHORED_MULT;
++        }
++        return mult;
++    }
++
++    public long secondsUntilNext() {
++        if (phase != Phase.IDLE) {
++            return 0L;
++        }
++        return Math.max(0L, (nextAtMs - System.currentTimeMillis()) / 1000L);
++    }
++
++    public String statusLine() {
++        if (phase == Phase.IDLE) {
++            String shored = shoredUntil > System.currentTimeMillis()
++                    ? " §8· §dShored up: Crystal Finds ×2 (" + MineText.clock((shoredUntil - System.currentTimeMillis()) / 1000L) + ")"
++                    : "";
++            return "§7Next mine event in §f" + MineText.clock(secondsUntilNext()) + shored;
++        }
++        String where = kind == Kind.RICH_VEIN && district != null ? " §8· " + district.colored() : "";
++        String left = phase == Phase.TELEGRAPH ? "§7starting" : "§f" + MineText.clock((kind.seconds * 20L - activeTicks) / 20L) + " §7left";
++        return kind.colored() + where + " §8· " + left;
++    }
++
++    /** Extra whole drops for an ore break at {@code at} (Rich Vein). */
++    int richExtra(Player player, Location at) {
++        MineDistricts.District rich = richDistrict();
++        if (rich == null || at == null || !rich.contains(at)) {
++            return 0;
++        }
++        return ThreadLocalRandom.current().nextDouble() < RICH_EXTRA_CHANCE ? 1 : 0;
++    }
++
++    /** Break hook: Rich Vein XP + tally, Troll Run spawns, general tally. */
++    void onMined(Player player, IsleOre ore, Location at) {
++        if (phase != Phase.ACTIVE || ore == null) {
++            return;
++        }
++        switch (kind) {
++            case RICH_VEIN -> {
++                if (district == null || !district.contains(at) || ore == IsleOre.STONE) {
++                    return;
++                }
++                MineSkills.bonus(player, RICH_XP);
++                int count = tally.merge(player.getUniqueId(), 1, Integer::sum);
++                if (count % 10 == 0) {
++                    player.spawnParticle(Particle.DUST, at.clone().add(0.5, 0.6, 0.5), 8, 0.4, 0.3, 0.4, 0.0,
++                            new Particle.DustOptions(Color.fromRGB(255, 200, 40), 1.4f));
++                    player.playSound(at, Sound.BLOCK_AMETHYST_BLOCK_CHIME, SoundCategory.PLAYERS, 0.5f, 1.6f);
++                }
++            }
++            case TROLL_RUN -> {
++                if (ore == IsleOre.STONE) {
++                    return;
++                }
++                int live = trollsLive.getOrDefault(player.getUniqueId(), 0);
++                if (live >= 2 || ThreadLocalRandom.current().nextDouble() >= TROLL_CHANCE) {
++                    return;
++                }
++                if (MineSkills.spawnTroll(player, at.clone().add(0.5, 0.0, 0.5))) {
++                    trollsLive.merge(player.getUniqueId(), 1, Integer::sum);
++                    MineText.bar(player, "§a⚠ An Ore Troll crawls out of the seam!");
++                }
++            }
++            default -> tally.merge(player.getUniqueId(), 1, Integer::sum);
++        }
++    }
++
++    /** Seam Bursts during a Rich Vein pay a little extra. */
++    void onSeamBurst(Player player) {
++        if (phase == Phase.ACTIVE && kind == Kind.RICH_VEIN && district != null && district.contains(player.getLocation())) {
++            MineSkills.bonus(player, 10);
++        }
++    }
++
++    // ------------------------------------------------------------------ lifecycle
++
++    private void maybeStart() {
++        nextAtMs = System.currentTimeMillis() + intervalTicks() * 50L;
++        if (phase != Phase.IDLE) {
++            return;
++        }
++        List<Player> miners = MineWorld.miners(isle.plugin());
++        if (miners.isEmpty()) {
++            return;
++        }
++        double roll = ThreadLocalRandom.current().nextDouble();
++        MineDistricts.District rich = districtWithMiners(miners);
++        if (roll < 0.35d && rich != null) {
++            begin(Kind.RICH_VEIN, rich);
++        } else if (roll < 0.60d) {
++            begin(Kind.EMBER_HOUR, null);
++        } else if (roll < 0.85d) {
++            begin(Kind.TREMOR, null);
++        } else {
++            begin(Kind.TROLL_RUN, null);
++        }
++    }
++
++    private MineDistricts.District districtWithMiners(List<Player> miners) {
++        List<MineDistricts.District> candidates = new ArrayList<>();
++        for (MineDistricts.District candidate : isle.districts().mineable()) {
++            for (Player player : miners) {
++                if (candidate.contains(player.getLocation())) {
++                    candidates.add(candidate);
++                    break;
++                }
++            }
++        }
++        if (candidates.isEmpty()) {
++            List<MineDistricts.District> all = isle.districts().mineable();
++            return all.isEmpty() ? null : all.get(ThreadLocalRandom.current().nextInt(all.size()));
++        }
++        return candidates.get(ThreadLocalRandom.current().nextInt(candidates.size()));
++    }
++
++    /** DEV / timer entry. {@code where} picks the Rich Vein district; null = one with miners. */
++    public String begin(Kind next, MineDistricts.District where) {
++        if (phase != Phase.IDLE) {
++            stop(true);
++        }
++        if (next == Kind.RICH_VEIN) {
++            district = where != null ? where : districtWithMiners(MineWorld.miners(isle.plugin()));
++            if (district == null) {
++                return "§cNo quarries / shafts configured under mine-isle-districts.";
++            }
++        } else {
++            district = null;
++        }
++        kind = next;
++        phase = Phase.TELEGRAPH;
++        phaseTicks = 0;
++        activeTicks = 0;
++        tally.clear();
++        trollsLive.clear();
++        progress = 0;
++        goalMet = false;
++        String tease = switch (next) {
++            case RICH_VEIN -> "§eA seam is waking up under the " + district.colored() + "§e…";
++            case EMBER_HOUR -> "§cThe forges below are roaring. The rock is running hot…";
++            case TREMOR -> "§fThe mountain groans. Hold onto something…";
++            case TROLL_RUN -> "§aSomething is scratching behind the walls…";
++        };
++        Sound sound = switch (next) {
++            case RICH_VEIN -> Sound.BLOCK_AMETHYST_BLOCK_RESONATE;
++            case EMBER_HOUR -> Sound.BLOCK_BLASTFURNACE_FIRE_CRACKLE;
++            case TREMOR -> Sound.ENTITY_WARDEN_HEARTBEAT;
++            case TROLL_RUN -> Sound.ENTITY_SILVERFISH_AMBIENT;
++        };
++        for (Player visitor : MineWorld.visitors(isle.plugin())) {
++            visitor.sendMessage(tease);
++            visitor.playSound(visitor.getLocation(), sound, SoundCategory.AMBIENT, 0.9f, 0.7f);
++        }
++        return "§a" + next.display + " §7starting" + (district != null ? " in " + district.colored() : "") + "§7.";
++    }
++
++    public String stop(boolean quiet) {
++        if (phase == Phase.IDLE) {
++            return "§7No mine event running.";
++        }
++        Kind was = kind;
++        boolean ran = phase == Phase.ACTIVE;
++        phase = Phase.IDLE;
++        clearRubble();
++        if (bar != null) {
++            for (UUID id : Set.copyOf(viewers)) {
++                hide(id);
++            }
++        }
++        viewers.clear();
++        bar = null;
++        if (!quiet && ran) {
++            if (was == Kind.TREMOR) {
++                finishTremor();
++            }
++            for (Player visitor : MineWorld.visitors(isle.plugin())) {
++                Integer count = tally.get(visitor.getUniqueId());
++                String line = switch (was) {
++                    case RICH_VEIN -> "§eThe seam settles." + (count == null ? "" : " §7You worked §f" + count + " §7rich ore.");
++                    case EMBER_HOUR -> "§cThe forges bank down." + (count == null ? "" : " §7You struck §f" + count + " §7blocks in the heat.");
++                    case TREMOR -> "§fThe mountain goes quiet." + (count == null ? "" : " §7You cleared §f" + count + " §7rubble.");
++                    case TROLL_RUN -> "§aThe scratching stops." + (count == null ? "" : " §7You felled §f" + count + " §7troll" + (count == 1 ? "" : "s") + ".");
++                };
++                visitor.sendMessage(line);
++            }
++        }
++        tally.clear();
++        trollsLive.clear();
++        district = null;
++        return "§eMine event stopped.";
++    }
++
++    private int totalTicks() {
++        return kind.seconds * 20;
++    }
++
++    private void tick() {
++        if (phase == Phase.IDLE) {
++            return;
++        }
++        if (phase == Phase.TELEGRAPH) {
++            phaseTicks += 5;
++            if (kind == Kind.TREMOR && phaseTicks % 20 == 0) {
++                for (Player visitor : MineWorld.visitors(isle.plugin())) {
++                    visitor.playSound(visitor.getLocation(), Sound.BLOCK_BASALT_BREAK, SoundCategory.AMBIENT, 0.7f, 0.5f);
++                    visitor.spawnParticle(Particle.FALLING_DUST, visitor.getLocation().add(0, 3, 0), 6, 3.0, 0.5, 3.0, 0.0,
++                            Material.GRAVEL.createBlockData());
++                }
++            }
++            if (phaseTicks >= TELEGRAPH_TICKS) {
++                activate();
++            }
++            return;
++        }
++        activeTicks += 5;
++        if (activeTicks >= totalTicks()) {
++            stop(false);
++            return;
++        }
++        List<Player> visitors = MineWorld.visitors(isle.plugin());
++        syncViewers(visitors);
++        if (bar != null) {
++            bar.progress((float) Math.max(0.0d, 1.0d - activeTicks / (double) totalTicks()));
++            bar.name(MineText.legacy(barTitle()));
++        }
++        switch (kind) {
++            case RICH_VEIN -> {
++                if (activeTicks % 20 == 0 && district != null) {
++                    for (Player visitor : visitors) {
++                        if (district.contains(visitor.getLocation())) {
++                            visitor.spawnParticle(Particle.DUST, visitor.getLocation().add(0, 1.5, 0), 4, 4.0, 1.5, 4.0, 0.0,
++                                    new Particle.DustOptions(Color.fromRGB(255, 200, 40), 1.2f));
++                        }
++                    }
++                }
++            }
++            case EMBER_HOUR -> {
++                if (activeTicks % 20 == 0) {
++                    for (Player visitor : visitors) {
++                        visitor.spawnParticle(Particle.LAVA, visitor.getLocation().add(0, 2.5, 0), 1, 5.0, 1.0, 5.0, 0.0);
++                        if (activeTicks % 100 == 0) {
++                            visitor.playSound(visitor.getLocation(), Sound.BLOCK_ANVIL_LAND, SoundCategory.AMBIENT, 0.12f, 0.6f);
++                        }
++                    }
++                }
++            }
++            case TREMOR -> {
++                if (activeTicks % 160 == 0) {
++                    for (Player miner : MineWorld.miners(isle.plugin())) {
++                        spawnRubble(miner);
++                    }
++                }
++                if (activeTicks % 60 == 0) {
++                    for (Player visitor : visitors) {
++                        visitor.playSound(visitor.getLocation(), Sound.BLOCK_DEEPSLATE_BREAK, SoundCategory.AMBIENT, 0.4f, 0.5f);
++                    }
++                }
++                expireRubble();
++            }
++            case TROLL_RUN -> {
++                if (activeTicks % 100 == 0) {
++                    for (Player visitor : visitors) {
++                        visitor.playSound(visitor.getLocation(), Sound.ENTITY_ZOMBIE_AMBIENT, SoundCategory.AMBIENT, 0.25f, 0.5f);
++                    }
++                }
++            }
++        }
++    }
++
++    private void activate() {
++        phase = Phase.ACTIVE;
++        activeTicks = 0;
++        if (kind == Kind.TREMOR) {
++            goal = Math.max(15, 10 * MineWorld.miners(isle.plugin()).size());
++        }
++        bar = BossBar.bossBar(MineText.legacy(barTitle()), 1.0f, kind.color, BossBar.Overlay.PROGRESS);
++        String sub = switch (kind) {
++            case RICH_VEIN -> "§6" + district.name() + " §7· +1 ore (50%) and +" + RICH_XP + " XP per ore";
++            case EMBER_HOUR -> "§7Crystal Finds ×" + (int) EMBER_MULT + " for two minutes";
++            case TREMOR -> "§7Strike the glowing rubble · crew goal §f" + goal;
++            case TROLL_RUN -> "§7Ore Trolls everywhere · §6" + TROLL_BOUNTY_COINS + " coins §7a head";
++        };
++        for (Player visitor : MineWorld.visitors(isle.plugin())) {
++            visitor.showTitle(Title.title(
++                    MineText.legacy(kind.chat + kind.display),
++                    MineText.legacy(sub),
++                    Title.Times.times(Duration.ofMillis(200), Duration.ofMillis(2400), Duration.ofMillis(500))
++            ));
++            Sound sound = switch (kind) {
++                case RICH_VEIN -> Sound.BLOCK_AMETHYST_CLUSTER_BREAK;
++                case EMBER_HOUR -> Sound.ITEM_FIRECHARGE_USE;
++                case TREMOR -> Sound.ENTITY_WARDEN_EMERGE;
++                case TROLL_RUN -> Sound.ENTITY_RAVAGER_ROAR;
++            };
++            visitor.playSound(visitor.getLocation(), sound, SoundCategory.AMBIENT, kind == Kind.TREMOR ? 0.4f : 0.7f, 0.8f);
++        }
++        if (kind == Kind.TREMOR) {
++            for (Player miner : MineWorld.miners(isle.plugin())) {
++                spawnRubble(miner);
++            }
++        }
++        syncViewers(MineWorld.visitors(isle.plugin()));
++    }
++
++    private String barTitle() {
++        long left = Math.max(0L, (totalTicks() - activeTicks) / 20L);
++        return switch (kind) {
++            case RICH_VEIN -> "§eRich Vein §8· §6" + (district == null ? "?" : district.name())
++                    + " §8· §f+1 ore · +" + RICH_XP + " XP §8· §7" + MineText.clock(left);
++            case EMBER_HOUR -> "§cEmber Hour §8· §fCrystal Finds ×" + (int) EMBER_MULT + " §8· §7" + MineText.clock(left);
++            case TREMOR -> "§fTremor §8· §7Crew §f" + progress + "§7/§f" + goal
++                    + (goalMet ? " §a✔ shored up" : "") + " §8· §7" + MineText.clock(left);
++            case TROLL_RUN -> "§aTroll Run §8· §fbounty " + TROLL_BOUNTY_COINS + " coins §8· §7" + MineText.clock(left);
++        };
++    }
++
++    private void syncViewers(List<Player> visitors) {
++        if (bar == null) {
++            return;
++        }
++        Set<UUID> now = new HashSet<>();
++        for (Player visitor : visitors) {
++            now.add(visitor.getUniqueId());
++            if (viewers.add(visitor.getUniqueId())) {
++                QuestBars.suppress(visitor, LEASE);
++                visitor.showBossBar(bar);
++            }
++        }
++        for (UUID id : Set.copyOf(viewers)) {
++            if (!now.contains(id)) {
++                hide(id);
++            }
++        }
++    }
++
++    private void hide(UUID id) {
++        viewers.remove(id);
++        Player player = Bukkit.getPlayer(id);
++        if (player != null && bar != null) {
++            player.hideBossBar(bar);
++        }
++        QuestBars.release(id, LEASE);
++    }
++
++    void onQuit(UUID id) {
++        if (viewers.contains(id)) {
++            hide(id);
++        }
++    }
++
++    // ------------------------------------------------------------------ tremor rubble
++
++    private void spawnRubble(Player miner) {
++        int mine = 0;
++        for (Rubble rubble : new HashSet<>(rubbleByPart.values())) {
++            if (rubble.owner().equals(miner.getUniqueId())) {
++                mine++;
++            }
++        }
++        if (mine >= 2) {
++            return;
++        }
++        Location spot = findSpot(miner.getLocation());
++        if (spot == null) {
++            return;
++        }
++        IsleOre ore = rubbleOre(isle.districts().band(spot));
++        World world = spot.getWorld();
++        BlockDisplay display = world.spawn(spot, BlockDisplay.class, spawned -> {
++            spawned.setBlock(ore.showcase().createBlockData());
++            spawned.setGlowing(true);
++            spawned.setGlowColorOverride(ore.glow());
++            spawned.setBrightness(new Display.Brightness(15, 15));
++            spawned.setTransformation(new Transformation(
++                    new Vector3f(-0.35f, 0.0f, -0.35f),
++                    new AxisAngle4f(0.35f, 0.3f, 1.0f, 0.2f),
++                    new Vector3f(0.7f, 0.7f, 0.7f),
++                    new AxisAngle4f(0.0f, 0.0f, 0.0f, 1.0f)
++            ));
++            spawned.setPersistent(false);
++            spawned.getPersistentDataContainer().set(rubbleKey, PersistentDataType.BYTE, (byte) 1);
++        });
++        Interaction hitbox = world.spawn(spot, Interaction.class, spawned -> {
++            spawned.setInteractionWidth(1.0f);
++            spawned.setInteractionHeight(1.0f);
++            spawned.setResponsive(true);
++            spawned.setPersistent(false);
++            spawned.getPersistentDataContainer().set(rubbleKey, PersistentDataType.BYTE, (byte) 1);
++        });
++        Rubble rubble = new Rubble(display.getUniqueId(), hitbox.getUniqueId(), ore, spot, miner.getUniqueId(),
++                Bukkit.getCurrentTick());
++        rubbleByPart.put(display.getUniqueId(), rubble);
++        rubbleByPart.put(hitbox.getUniqueId(), rubble);
++        world.spawnParticle(Particle.BLOCK, spot.clone().add(0, 0.4, 0), 20, 0.3, 0.3, 0.3, 0.1, Material.DEEPSLATE.createBlockData());
++        world.playSound(spot, Sound.BLOCK_POINTED_DRIPSTONE_FALL, SoundCategory.BLOCKS, 1.0f, 0.7f);
++        MineText.bar(miner, "§f⛏ Loose seam! §7" + ore.colored() + " §7rubble shook out nearby — strike it.");
++    }
++
++    /** A free, floored air block 2–6 blocks from {@code near} at roughly the same height. */
++    private Location findSpot(Location near) {
++        World world = near.getWorld();
++        if (world == null) {
++            return null;
++        }
++        ThreadLocalRandom rng = ThreadLocalRandom.current();
++        for (int attempt = 0; attempt < 14; attempt++) {
++            int dx = rng.nextInt(-6, 7);
++            int dz = rng.nextInt(-6, 7);
++            if (Math.abs(dx) + Math.abs(dz) < 2) {
++                continue;
++            }
++            for (int dy = -1; dy <= 1; dy++) {
++                Block air = world.getBlockAt(near.getBlockX() + dx, near.getBlockY() + dy, near.getBlockZ() + dz);
++                if (air.getType().isAir() && air.getRelative(0, 1, 0).getType().isAir()
++                        && air.getRelative(0, -1, 0).getType().isSolid()
++                        && MineWorld.onIsle(isle.plugin(), air.getLocation())) {
++                    return air.getLocation().add(0.5, 0.0, 0.5);
++                }
++            }
++        }
++        return null;
++    }
++
++    private static IsleOre rubbleOre(MineDistricts.Band band) {
++        double roll = ThreadLocalRandom.current().nextDouble();
++        return switch (band) {
++            case UNDERCROFT -> roll < 0.25 ? IsleOre.DIAMOND : roll < 0.40 ? IsleOre.EMERALD : roll < 0.65 ? IsleOre.GOLD : IsleOre.LAPIS;
++            case DEEP_WORKS -> roll < 0.10 ? IsleOre.DIAMOND : roll < 0.40 ? IsleOre.GOLD : roll < 0.70 ? IsleOre.REDSTONE : IsleOre.LAPIS;
++            case GALLERIES -> roll < 0.35 ? IsleOre.IRON : roll < 0.65 ? IsleOre.COPPER : roll < 0.85 ? IsleOre.REDSTONE : IsleOre.GOLD;
++            case SURFACE -> roll < 0.45 ? IsleOre.COAL : roll < 0.80 ? IsleOre.COPPER : IsleOre.IRON;
++        };
++    }
++
++    private void expireRubble() {
++        int now = Bukkit.getCurrentTick();
++        for (Rubble rubble : new HashSet<>(rubbleByPart.values())) {
++            if (now - rubble.bornTick() > 20 * 30) {
++                removeRubble(rubble, true);
++            }
++        }
++    }
++
++    private void removeRubble(Rubble rubble, boolean crumble) {
++        rubbleByPart.remove(rubble.display());
++        rubbleByPart.remove(rubble.hitbox());
++        rubbleHits.remove(rubble.hitbox());
++        for (UUID id : List.of(rubble.display(), rubble.hitbox())) {
++            Entity entity = Bukkit.getEntity(id);
++            if (entity != null) {
++                entity.remove();
++            }
++        }
++        if (crumble && rubble.at().getWorld() != null) {
++            rubble.at().getWorld().spawnParticle(Particle.BLOCK, rubble.at().clone().add(0, 0.3, 0), 12, 0.25, 0.2, 0.25, 0.05,
++                    Material.GRAVEL.createBlockData());
++        }
++    }
++
++    private void clearRubble() {
++        for (Rubble rubble : new HashSet<>(rubbleByPart.values())) {
++            removeRubble(rubble, false);
++        }
++        rubbleByPart.clear();
++        rubbleHits.clear();
++    }
++
++    private void purgeStrays() {
++        for (World world : Bukkit.getWorlds()) {
++            for (Entity entity : world.getEntities()) {
++                if (entity.getPersistentDataContainer().has(rubbleKey, PersistentDataType.BYTE)) {
++                    entity.remove();
++                }
++            }
++        }
++    }
++
++    @EventHandler(priority = EventPriority.HIGHEST)
++    public void onRubblePunch(EntityDamageByEntityEvent event) {
++        Rubble rubble = rubbleByPart.get(event.getEntity().getUniqueId());
++        if (rubble == null) {
++            return;
++        }
++        event.setCancelled(true);
++        if (event.getDamager() instanceof Player player) {
++            strikeRubble(player, rubble);
++        }
++    }
++
++    @EventHandler(priority = EventPriority.HIGHEST)
++    public void onRubbleClick(PlayerInteractEntityEvent event) {
++        Rubble rubble = rubbleByPart.get(event.getRightClicked().getUniqueId());
++        if (rubble == null) {
++            return;
++        }
++        event.setCancelled(true);
++        if (event.getHand() == EquipmentSlot.HAND) {
++            strikeRubble(event.getPlayer(), rubble);
++        }
++    }
++
++    @EventHandler(priority = EventPriority.HIGHEST)
++    public void onRubbleClickAt(PlayerInteractAtEntityEvent event) {
++        if (rubbleByPart.containsKey(event.getRightClicked().getUniqueId())) {
++            event.setCancelled(true);
++        }
++    }
++
++    private void strikeRubble(Player player, Rubble rubble) {
++        if (player.getGameMode() == GameMode.SPECTATOR) {
++            return;
++        }
++        ItemStack hand = player.getInventory().getItemInMainHand();
++        if (hand == null || !hand.getType().name().endsWith("_PICKAXE")) {
++            MineText.bar(player, "§cRubble wants a pickaxe.");
++            return;
++        }
++        int hits = rubbleHits.merge(rubble.hitbox(), 1, Integer::sum);
++        World world = rubble.at().getWorld();
++        if (world != null) {
++            world.playSound(rubble.at(), Sound.BLOCK_DEEPSLATE_HIT, SoundCategory.PLAYERS, 1.0f, 0.8f + hits * 0.2f);
++            world.spawnParticle(Particle.BLOCK, rubble.at().clone().add(0, 0.4, 0), 8, 0.2, 0.2, 0.2, 0.05,
++                    rubble.ore().showcase().createBlockData());
++        }
++        if (hits < 2) {
++            return;
++        }
++        removeRubble(rubble, true);
++        int amount = rubble.ore().rare() ? 1 + ThreadLocalRandom.current().nextInt(2) : 2 + ThreadLocalRandom.current().nextInt(5);
++        MineSkills.give(player, new ItemStack(rubble.ore().resource(), amount));
++        MineSkills.bonus(player, 8);
++        tally.merge(player.getUniqueId(), 1, Integer::sum);
++        MineProfiles.Profile profile = isle.profiles().of(player);
++        profile.rubbleCleared++;
++        isle.profiles().markDirty();
++        progress++;
++        if (world != null) {
++            world.playSound(rubble.at(), Sound.BLOCK_AMETHYST_CLUSTER_BREAK, SoundCategory.PLAYERS, 0.8f, 1.1f);
++        }
++        MineText.bar(player, "§f+" + amount + " " + rubble.ore().colored() + " §8· §7crew §f" + progress + "§7/§f" + goal);
++        if (!goalMet && progress >= goal) {
++            goalMet = true;
++            shoredUntil = System.currentTimeMillis() + SHORED_MS;
++            for (Player visitor : MineWorld.visitors(isle.plugin())) {
++                visitor.showTitle(Title.title(
++                        MineText.legacy("§aShored Up!"),
++                        MineText.legacy("§7The crew held the mountain · §dCrystal Finds ×2 §7for a minute"),
++                        Title.Times.times(Duration.ofMillis(150), Duration.ofMillis(2200), Duration.ofMillis(400))
++                ));
++                visitor.playSound(visitor.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, SoundCategory.PLAYERS, 0.8f, 1.0f);
++            }
++        }
++    }
++
++    /** Tremor payout: everyone who cleared rubble gets paid; more if the crew hit the goal. */
++    private void finishTremor() {
++        for (Map.Entry<UUID, Integer> entry : tally.entrySet()) {
++            Player player = Bukkit.getPlayer(entry.getKey());
++            if (player == null) {
++                continue;
++            }
++            long coins = entry.getValue() * 60L + (goalMet ? 500L : 0L);
++            int xp = entry.getValue() * 6 + (goalMet ? 120 : 0);
++            MineSkills.coins(player, coins);
++            MineSkills.bonus(player, xp);
++            player.sendMessage("§fTremor pay §8· §6+" + MineText.coins(coins) + " coins §8· §a+" + xp + " Mining XP"
++                    + (goalMet ? " §8(crew bonus)" : ""));
++        }
++    }
++
++    // ------------------------------------------------------------------ troll run
++
++    @EventHandler(priority = EventPriority.MONITOR)
++    public void onTrollDeath(EntityDeathEvent event) {
++        if (!MineSkills.isTroll(event.getEntity())) {
++            return;
++        }
++        Player killer = event.getEntity().getKiller();
++        if (killer == null) {
++            return;
++        }
++        trollsLive.computeIfPresent(killer.getUniqueId(), (id, live) -> Math.max(0, live - 1));
++        MineProfiles.Profile profile = isle.profiles().of(killer);
++        profile.trollsFelled++;
++        isle.profiles().markDirty();
++        if (phase != Phase.ACTIVE || kind != Kind.TROLL_RUN || !MineWorld.onIsle(isle.plugin(), killer)) {
++            return;
++        }
++        tally.merge(killer.getUniqueId(), 1, Integer::sum);
++        MineSkills.coins(killer, TROLL_BOUNTY_COINS);
++        MineSkills.bonus(killer, TROLL_BOUNTY_XP);
++        MineText.bar(killer, "§aTroll bounty §8· §6+" + TROLL_BOUNTY_COINS + " coins §8· §a+" + TROLL_BOUNTY_XP + " Mining XP");
++    }
++}
+diff --git a/AetherionMining/src/main/java/de/aetherion/mining/isle/MineItems.java b/AetherionMining/src/main/java/de/aetherion/mining/isle/MineItems.java
+new file mode 100644
+index 00000000..25afb869
+--- /dev/null
++++ b/AetherionMining/src/main/java/de/aetherion/mining/isle/MineItems.java
+@@ -0,0 +1,128 @@
++package de.aetherion.mining.isle;
++
++import de.aetherion.items.core.ItemKeys;
++
++import org.bukkit.Material;
++import org.bukkit.inventory.ItemStack;
++import org.bukkit.inventory.PlayerInventory;
++import org.bukkit.inventory.meta.ItemMeta;
++import org.bukkit.persistence.PersistentDataType;
++
++/**
++ * Inventory counting for contracts and the Hearth. "Plain" ore is vanilla stacks only — a custom
++ * item that happens to be a diamond (specimen, compressed, quest item) is never eaten.
++ */
++final class MineItems {
++
++    private MineItems() {
++    }
++
++    static boolean isPlain(ItemStack stack, Material material) {
++        if (stack == null || stack.getType() != material) {
++            return false;
++        }
++        if (!stack.hasItemMeta()) {
++            return true;
++        }
++        ItemMeta meta = stack.getItemMeta();
++        return !meta.hasDisplayName() && !meta.hasCustomModelData() && meta.getPersistentDataContainer().isEmpty();
++    }
++
++    static int countPlain(PlayerInventory inventory, Material material) {
++        int total = 0;
++        for (ItemStack stack : inventory.getStorageContents()) {
++            if (isPlain(stack, material)) {
++                total += stack.getAmount();
++            }
++        }
++        return total;
++    }
++
++    static void takePlain(PlayerInventory inventory, Material material, int amount) {
++        int left = amount;
++        ItemStack[] contents = inventory.getStorageContents();
++        for (int slot = 0; slot < contents.length && left > 0; slot++) {
++            ItemStack stack = contents[slot];
++            if (!isPlain(stack, material)) {
++                continue;
++            }
++            int take = Math.min(left, stack.getAmount());
++            left -= take;
++            stack.setAmount(stack.getAmount() - take);
++            contents[slot] = stack.getAmount() <= 0 ? null : stack;
++        }
++        inventory.setStorageContents(contents);
++    }
++
++    static String itemId(ItemStack stack) {
++        if (stack == null || !stack.hasItemMeta()) {
++            return null;
++        }
++        try {
++            return stack.getItemMeta().getPersistentDataContainer().get(ItemKeys.item(), PersistentDataType.STRING);
++        } catch (LinkageError ignored) {
++            return null;
++        }
++    }
++
++    static int countById(PlayerInventory inventory, String id) {
++        int total = 0;
++        for (ItemStack stack : inventory.getStorageContents()) {
++            if (id != null && id.equals(itemId(stack))) {
++                total += stack.getAmount();
++            }
++        }
++        return total;
++    }
++
++    static void takeById(PlayerInventory inventory, String id, int amount) {
++        int left = amount;
++        ItemStack[] contents = inventory.getStorageContents();
++        for (int slot = 0; slot < contents.length && left > 0; slot++) {
++            ItemStack stack = contents[slot];
++            if (stack == null || !id.equals(itemId(stack))) {
++                continue;
++            }
++            int take = Math.min(left, stack.getAmount());
++            left -= take;
++            stack.setAmount(stack.getAmount() - take);
++            contents[slot] = stack.getAmount() <= 0 ? null : stack;
++        }
++        inventory.setStorageContents(contents);
++    }
++
++    /** First storage slot holding a specimen (of {@code ore}, or any when null); -1 when none. */
++    static int firstSpecimen(PlayerInventory inventory, CrystalFinds crystals, IsleOre ore) {
++        ItemStack[] contents = inventory.getStorageContents();
++        for (int slot = 0; slot < contents.length; slot++) {
++            IsleOre found = crystals.oreOf(contents[slot]);
++            if (found != null && (ore == null || found == ore)) {
++                return slot;
++            }
++        }
++        return -1;
++    }
++
++    static int countSpecimens(PlayerInventory inventory, CrystalFinds crystals, IsleOre ore) {
++        int total = 0;
++        for (ItemStack stack : inventory.getStorageContents()) {
++            IsleOre found = crystals.oreOf(stack);
++            if (found != null && (ore == null || found == ore)) {
++                total += stack.getAmount();
++            }
++        }
++        return total;
++    }
++
++    static void takeSpecimen(PlayerInventory inventory, CrystalFinds crystals, IsleOre ore) {
++        int slot = firstSpecimen(inventory, crystals, ore);
++        if (slot < 0) {
++            return;
++        }
++        ItemStack stack = inventory.getItem(slot);
++        if (stack != null) {
++            stack.setAmount(stack.getAmount() - 1);
++            inventory.setItem(slot, stack.getAmount() <= 0 ? null : stack);
++        }
++    }
++}
+diff --git a/AetherionMining/src/main/java/de/aetherion/mining/isle/MineProfiles.java b/AetherionMining/src/main/java/de/aetherion/mining/isle/MineProfiles.java
+new file mode 100644
+index 00000000..b8dd6fb0
+--- /dev/null
++++ b/AetherionMining/src/main/java/de/aetherion/mining/isle/MineProfiles.java
+@@ -0,0 +1,326 @@
++package de.aetherion.mining.isle;
++
++import de.aetherion.core.persist.AtomicYaml;
++import de.aetherion.mining.AetherionMining;
++
++import org.bukkit.configuration.ConfigurationSection;
++import org.bukkit.configuration.file.YamlConfiguration;
++import org.bukkit.entity.Player;
++import org.bukkit.scheduler.BukkitTask;
++
++import java.io.File;
++import java.io.IOException;
++import java.util.EnumMap;
++import java.util.LinkedHashSet;
++import java.util.List;
++import java.util.Map;
++import java.util.Set;
++import java.util.UUID;
++import java.util.concurrent.ConcurrentHashMap;
++import java.util.logging.Level;
++
++/**
++ * Mining Eldervale progress per player ({@code mine-isle-players.yml}): discovered districts,
++ * ore mastery, Crystal Finds and the specimen cabinet, claimed collection milestones, Foreman
++ * contracts, the Hearth ration, this Veins cycle's tally — plus the isle-wide specimen records.
++ * Saved on a dirty timer, on quit and on disable.
++ */
++public final class MineProfiles {
++
++    public static final int CONTRACT_SLOTS = 3;
++
++    public static final class Profile {
++        final Set<String> districts = new LinkedHashSet<>();
++        boolean surveyor;
++        final Map<IsleOre, Long> mined = new EnumMap<>(IsleOre.class);
++        final Map<IsleOre, Integer> tiers = new EnumMap<>(IsleOre.class);
++        int crystals;
++        double bestCarat;
++        IsleOre bestOre;
++        Grade bestGrade;
++        /** "ore:grade" of every specimen ever grabbed. */
++        final Set<String> cabinet = new LinkedHashSet<>();
++        /** Highest claimed Collection milestone (1-based) per ore; 0 = none claimed. */
++        final Map<IsleOre, Integer> claimed = new EnumMap<>(IsleOre.class);
++        final Set<String> cabinetRewards = new LinkedHashSet<>();
++        final ForemanContracts.Contract[] contracts = new ForemanContracts.Contract[CONTRACT_SLOTS];
++        final long[] slotReadyAt = new long[CONTRACT_SLOTS];
++        final int[] progress = new int[CONTRACT_SLOTS];
++        long freeRerollAt;
++        int contractsDone;
++        String ration;
++        long rationUntil;
++        int veinsGeneration = -1;
++        long veinsMined;
++        long rubbleCleared;
++        long trollsFelled;
++
++        public Set<String> districts() {
++            return districts;
++        }
++
++        public boolean surveyor() {
++            return surveyor;
++        }
++
++        public long mined(IsleOre ore) {
++            return mined.getOrDefault(ore, 0L);
++        }
++
++        public int tier(IsleOre ore) {
++            return tiers.getOrDefault(ore, 0);
++        }
++
++        public int crystals() {
++            return crystals;
++        }
++
++        public double bestCarat() {
++            return bestCarat;
++        }
++
++        public IsleOre bestOre() {
++            return bestOre;
++        }
++
++        public Grade bestGrade() {
++            return bestGrade;
++        }
++
++        public boolean hasSpecimen(IsleOre ore, Grade grade) {
++            return cabinet.contains(ore.id() + ":" + grade.id());
++        }
++
++        public int claimed(IsleOre ore) {
++            return claimed.getOrDefault(ore, 0);
++        }
++
++        public int contractsDone() {
++            return contractsDone;
++        }
++
++        public long veinsMined() {
++            return veinsMined;
++        }
++
++        public long rubbleCleared() {
++            return rubbleCleared;
++        }
++
++        public long trollsFelled() {
++            return trollsFelled;
++        }
++    }
++
++    /** Heaviest specimen ever grabbed per ore family — the Assay Hall's bragging board. */
++    public record SpecimenRecord(UUID holder, String name, double carats, Grade grade) {
++    }
++
++    private final AetherionMining plugin;
++    private final File file;
++    private final Map<UUID, Profile> profiles = new ConcurrentHashMap<>();
++    private final Map<IsleOre, SpecimenRecord> records = new EnumMap<>(IsleOre.class);
++    private YamlConfiguration disk;
++    private boolean dirty;
++    private BukkitTask saveTask;
++
++    public MineProfiles(AetherionMining plugin) {
++        this.plugin = plugin;
++        this.file = new File(plugin.getDataFolder(), "mine-isle-players.yml");
++        AtomicYaml.recoverTemp(file, plugin.getLogger());
++        disk = file.exists() ? YamlConfiguration.loadConfiguration(file) : new YamlConfiguration();
++        loadRecords();
++        saveTask = plugin.getServer().getScheduler().runTaskTimer(plugin, this::saveIfDirty, 20L * 120L, 20L * 120L);
++    }
++
++    public Profile of(Player player) {
++        return of(player.getUniqueId());
++    }
++
++    public Profile of(UUID id) {
++        return profiles.computeIfAbsent(id, this::load);
++    }
++
++    public void markDirty() {
++        dirty = true;
++    }
++
++    public Map<IsleOre, SpecimenRecord> records() {
++        return records;
++    }
++
++    /** True when {@code carats} beats the isle record for {@code ore} (and stores it). */
++    public boolean offerRecord(IsleOre ore, Player player, double carats, Grade grade) {
++        SpecimenRecord current = records.get(ore);
++        if (current != null && current.carats() >= carats) {
++            return false;
++        }
++        records.put(ore, new SpecimenRecord(player.getUniqueId(), player.getName(), carats, grade));
++        dirty = true;
++        return true;
++    }
++
++    /** Wipe one player's Mining Eldervale progress (DEV). */
++    public void reset(UUID id) {
++        profiles.put(id, new Profile());
++        disk.set("players." + id, null);
++        dirty = true;
++    }
++
++    public void unload(UUID id) {
++        Profile profile = profiles.get(id);
++        if (profile != null) {
++            write(id, profile);
++            profiles.remove(id);
++            dirty = true;
++        }
++    }
++
++    public void saveIfDirty() {
++        if (dirty) {
++            save();
++        }
++    }
++
++    public void save() {
++        profiles.forEach(this::write);
++        disk.set("records", null);
++        records.forEach((ore, record) -> {
++            String path = "records." + ore.id();
++            disk.set(path + ".uuid", record.holder().toString());
++            disk.set(path + ".name", record.name());
++            disk.set(path + ".carats", record.carats());
++            disk.set(path + ".grade", record.grade() == null ? null : record.grade().id());
++        });
++        try {
++            if (!plugin.getDataFolder().exists()) {
++                plugin.getDataFolder().mkdirs();
++            }
++            AtomicYaml.save(disk, file, plugin.getLogger());
++            dirty = false;
++        } catch (IOException exception) {
++            plugin.getLogger().log(Level.WARNING, "Could not save mine-isle-players.yml", exception);
++        }
++    }
++
++    public void shutdown() {
++        if (saveTask != null) {
++            saveTask.cancel();
++            saveTask = null;
++        }
++        save();
++    }
++
++    private Profile load(UUID id) {
++        Profile profile = new Profile();
++        ConfigurationSection section = disk.getConfigurationSection("players." + id);
++        if (section == null) {
++            return profile;
++        }
++        profile.districts.addAll(section.getStringList("districts"));
++        profile.surveyor = section.getBoolean("surveyor", false);
++        readOreLongs(section.getConfigurationSection("mined"), profile.mined);
++        readOreInts(section.getConfigurationSection("tiers"), profile.tiers);
++        profile.crystals = section.getInt("crystals", 0);
++        profile.bestCarat = section.getDouble("best-carat", 0.0d);
++        profile.bestOre = IsleOre.byId(section.getString("best-ore"));
++        profile.bestGrade = Grade.byId(section.getString("best-grade"));
++        profile.cabinet.addAll(section.getStringList("cabinet"));
++        readOreInts(section.getConfigurationSection("claimed"), profile.claimed);
++        profile.cabinetRewards.addAll(section.getStringList("cabinet-rewards"));
++        for (int slot = 0; slot < CONTRACT_SLOTS; slot++) {
++            profile.contracts[slot] = ForemanContracts.Contract.read(section.getConfigurationSection("contracts." + slot));
++            profile.slotReadyAt[slot] = section.getLong("slot-ready." + slot, 0L);
++            profile.progress[slot] = section.getInt("progress." + slot, 0);
++        }
++        profile.freeRerollAt = section.getLong("free-reroll-at", 0L);
++        profile.contractsDone = section.getInt("contracts-done", 0);
++        profile.ration = section.getString("ration");
++        profile.rationUntil = section.getLong("ration-until", 0L);
++        profile.veinsGeneration = section.getInt("veins-generation", -1);
++        profile.veinsMined = section.getLong("veins-mined", 0L);
++        profile.rubbleCleared = section.getLong("rubble-cleared", 0L);
++        profile.trollsFelled = section.getLong("trolls-felled", 0L);
++        return profile;
++    }
++
++    private void write(UUID id, Profile profile) {
++        String path = "players." + id;
++        disk.set(path, null);
++        ConfigurationSection section = disk.createSection(path);
++        section.set("districts", List.copyOf(profile.districts));
++        section.set("surveyor", profile.surveyor);
++        profile.mined.forEach((ore, count) -> section.set("mined." + ore.id(), count));
++        profile.tiers.forEach((ore, tier) -> section.set("tiers." + ore.id(), tier));
++        section.set("crystals", profile.crystals);
++        section.set("best-carat", profile.bestCarat);
++        section.set("best-ore", profile.bestOre == null ? null : profile.bestOre.id());
++        section.set("best-grade", profile.bestGrade == null ? null : profile.bestGrade.id());
++        section.set("cabinet", List.copyOf(profile.cabinet));
++        profile.claimed.forEach((ore, index) -> section.set("claimed." + ore.id(), index));
++        section.set("cabinet-rewards", List.copyOf(profile.cabinetRewards));
++        for (int slot = 0; slot < CONTRACT_SLOTS; slot++) {
++            ForemanContracts.Contract contract = profile.contracts[slot];
++            if (contract != null) {
++                contract.write(section.createSection("contracts." + slot));
++            }
++            if (profile.slotReadyAt[slot] > 0L) {
++                section.set("slot-ready." + slot, profile.slotReadyAt[slot]);
++            }
++            if (profile.progress[slot] > 0) {
++                section.set("progress." + slot, profile.progress[slot]);
++            }
++        }
++        section.set("free-reroll-at", profile.freeRerollAt);
++        section.set("contracts-done", profile.contractsDone);
++        section.set("ration", profile.ration);
++        section.set("ration-until", profile.rationUntil);
++        section.set("veins-generation", profile.veinsGeneration);
++        section.set("veins-mined", profile.veinsMined);
++        section.set("rubble-cleared", profile.rubbleCleared);
++        section.set("trolls-felled", profile.trollsFelled);
++    }
++
++    private static void readOreLongs(ConfigurationSection section, Map<IsleOre, Long> into) {
++        if (section == null) {
++            return;
++        }
++        for (String key : section.getKeys(false)) {
++            IsleOre ore = IsleOre.byId(key);
++            if (ore != null) {
++                into.put(ore, section.getLong(key));
++            }
++        }
++    }
++
++    private static void readOreInts(ConfigurationSection section, Map<IsleOre, Integer> into) {
++        if (section == null) {
++            return;
++        }
++        for (String key : section.getKeys(false)) {
++            IsleOre ore = IsleOre.byId(key);
++            if (ore != null) {
++                into.put(ore, section.getInt(key));
++            }
++        }
++    }
++
++    private void loadRecords() {
++        ConfigurationSection section = disk.getConfigurationSection("records");
++        if (section == null) {
++            return;
++        }
++        for (String key : section.getKeys(false)) {
++            IsleOre ore = IsleOre.byId(key);
++            String uuid = section.getString(key + ".uuid");
++            if (ore == null || uuid == null) {
++                continue;
++            }
++            try {
++                records.put(ore, new SpecimenRecord(UUID.fromString(uuid), section.getString(key + ".name", "?"),
++                        section.getDouble(key + ".carats"), Grade.byId(section.getString(key + ".grade"))));
++            } catch (IllegalArgumentException ignored) {
++            }
++        }
++    }
++}
+diff --git a/AetherionMining/src/main/java/de/aetherion/mining/isle/MineSkills.java b/AetherionMining/src/main/java/de/aetherion/mining/isle/MineSkills.java
+new file mode 100644
+index 00000000..a15b1724
+--- /dev/null
++++ b/AetherionMining/src/main/java/de/aetherion/mining/isle/MineSkills.java
+@@ -0,0 +1,234 @@
++package de.aetherion.mining.isle;
++
++import de.aetherion.items.AetherionItems;
++import de.aetherion.items.codex.CodexService;
++import de.aetherion.items.economy.CoinService;
++import de.aetherion.items.skill.AetherSkill;
++import de.aetherion.items.skill.SkillProgression;
++import de.aetherion.items.skill.SkillService;
++import de.aetherion.items.util.InventoryDrops;
++
++import org.bukkit.entity.Player;
++import org.bukkit.inventory.ItemStack;
++
++import java.util.List;
++import java.util.Locale;
++import java.util.Map;
++import java.util.concurrent.ConcurrentHashMap;
++
++/**
++ * Thin bridge to the skill spine, coins, Codex and inventory helpers in AetherionItems.
++ * Safe when Items is missing, mid-reload, or an older build without the Eldervale mining
++ * skills — calls just stop crediting.
++ *
++ * <p>Mining flags are looked up by name so a Mining jar never hard-links to an enum constant
++ * the live Items jar might not have yet (same rule as Farming's {@code FarmingSkills}).
++ */
++public final class MineSkills {
++
++    public static final String BEDROCK_BORN = "BEDROCK_BORN";
++    public static final String WORK_SONG = "WORK_SONG";
++    public static final String GEODE_NOSE = "GEODE_NOSE";
++    public static final String UNION_CARD = "UNION_CARD";
++    public static final String SEAM_READER = "SEAM_READER";
++    public static final String DEPTH_GAUGE = "DEPTH_GAUGE";
++    public static final String CAVE_SENSE = "CAVE_SENSE";
++
++    private static final Map<String, AetherSkill.Flag> FLAGS = new ConcurrentHashMap<>();
++    private static final AetherSkill.Flag MISSING = AetherSkill.Flag.NONE;
++
++    private MineSkills() {
++    }
++
++    /** Bonus Mining XP (rhythm, finds, orders, discoveries). */
++    public static void bonus(Player player, int amount) {
++        if (player == null || amount <= 0) {
++            return;
++        }
++        try {
++            SkillService skills = skills();
++            if (skills != null) {
++                skills.grantGatherBonus(player, AetherSkill.Category.MINING, amount);
++            }
++        } catch (LinkageError ignored) {
++        }
++    }
++
++    /** Focus Mining skill + level bar, or {@code null} with none equipped. */
++    public static String credit(Player player) {
++        try {
++            SkillService skills = skills();
++            return skills == null ? null : skills.loopCredit(player, AetherSkill.Category.MINING);
++        } catch (LinkageError ignored) {
++            return null;
++        }
++    }
++
++    /** Best Mining skill level (1 when Items is offline). */
++    public static int level(Player player) {
++        try {
++            SkillService skills = skills();
++            return skills == null || player == null ? 1 : skills.highestLevel(player, AetherSkill.Category.MINING);
++        } catch (LinkageError ignored) {
++            return 1;
++        }
++    }
++
++    /** 0–5: one step per rarity tier (every 20 levels) of the best Mining skill. */
++    public static int boostTier(Player player) {
++        try {
++            return SkillProgression.rarityTier(level(player));
++        } catch (LinkageError ignored) {
++            return 0;
++        }
++    }
++
++    /** Equipped Mining flag, by name ({@link #WORK_SONG}, …). */
++    public static boolean has(Player player, String flagName) {
++        AetherSkill.Flag flag = flag(flagName);
++        if (flag == null || player == null) {
++            return false;
++        }
++        try {
++            SkillService skills = skills();
++            return skills != null && skills.hasFlag(player, flag);
++        } catch (LinkageError ignored) {
++            return false;
++        }
++    }
++
++    /** Effect scale of the equipped skill carrying {@code flagName}; 0 when not equipped. */
++    public static double scale(Player player, String flagName) {
++        if (!has(player, flagName)) {
++            return 0.0d;
++        }
++        try {
++            SkillService skills = skills();
++            return skills == null ? 0.0d : skills.multiplier(player, flag(flagName));
++        } catch (LinkageError ignored) {
++            return 0.0d;
++        }
++    }
++
++    public static void coins(Player player, long amount) {
++        CoinService coins = coinService();
++        if (coins != null && player != null && amount > 0L) {
++            coins.add(player, amount);
++        }
++    }
++
++    public static boolean takeCoins(Player player, long amount) {
++        CoinService coins = coinService();
++        return coins != null && player != null && amount >= 0L && coins.take(player, amount);
++    }
++
++    public static long balance(Player player) {
++        CoinService coins = coinService();
++        return coins == null || player == null ? 0L : coins.get(player);
++    }
++
++    /** Hand an item over (inventory first, overflow at the feet) through Items' drop helper. */
++    public static void give(Player player, ItemStack item) {
++        if (player == null || item == null || item.getType().isAir()) {
++            return;
++        }
++        try {
++            InventoryDrops.give(player, item);
++        } catch (LinkageError ignored) {
++            player.getInventory().addItem(item).values()
++                    .forEach(left -> player.getWorld().dropItemNaturally(player.getLocation(), left));
++        }
++    }
++
++    /** Lifetime Codex count for a block family id ({@code diamond}, {@code coal}, …). */
++    public static long codexBlocks(Player player, String codexId) {
++        CodexService codex = codex();
++        if (codex == null || player == null || codexId == null) {
++            return 0L;
++        }
++        try {
++            return codex.blocks(player, codexId);
++        } catch (LinkageError ignored) {
++            return 0L;
++        }
++    }
++
++    /** Codex top miners for a block family: "1. Name — 12,345". Empty when Codex is offline. */
++    public static List<String> codexTop(String codexId, int limit) {
++        CodexService codex = codex();
++        if (codex == null || codexId == null) {
++            return List.of();
++        }
++        try {
++            List<CodexService.Rank> ranks = codex.topBlocks(codexId);
++            java.util.ArrayList<String> out = new java.util.ArrayList<>();
++            for (CodexService.Rank rank : ranks) {
++                if (out.size() >= limit) {
++                    break;
++                }
++                out.add("§e" + rank.place() + ". §f" + rank.name() + " §8— §7" + MineText.coins(rank.amount()));
++            }
++            return out;
++        } catch (LinkageError ignored) {
++            return List.of();
++        }
++    }
++
++    /** Spawns an Ore Troll through Items (Troll Run). Returns false when Items can't. */
++    public static boolean spawnTroll(Player aggro, org.bukkit.Location at) {
++        try {
++            AetherionItems items = AetherionItems.getInstance();
++            if (items == null || items.getOreTrollListener() == null) {
++                return false;
++            }
++            return items.getOreTrollListener().spawn(at, aggro) != null;
++        } catch (LinkageError ignored) {
++            return false;
++        }
++    }
++
++    public static boolean isTroll(org.bukkit.entity.Entity entity) {
++        try {
++            return de.aetherion.items.mining.OreTrollListener.isOreTroll(entity);
++        } catch (LinkageError ignored) {
++            return false;
++        }
++    }
++
++    private static AetherSkill.Flag flag(String name) {
++        if (name == null) {
++            return null;
++        }
++        AetherSkill.Flag flag = FLAGS.computeIfAbsent(name.toUpperCase(Locale.ROOT), key -> {
++            try {
++                return AetherSkill.Flag.valueOf(key);
++            } catch (IllegalArgumentException | LinkageError missing) {
++                return MISSING;
++            }
++        });
++        return flag == MISSING ? null : flag;
++    }
++
++    private static CoinService coinService() {
++        try {
++            AetherionItems items = AetherionItems.getInstance();
++            return items == null ? null : items.getCoins();
++        } catch (LinkageError ignored) {
++            return null;
++        }
++    }
++
++    private static CodexService codex() {
++        try {
++            AetherionItems items = AetherionItems.getInstance();
++            return items == null ? null : items.getCodex();
++        } catch (LinkageError ignored) {
++            return null;
++        }
++    }
++
++    private static SkillService skills() {
++        AetherionItems items = AetherionItems.getInstance();
++        return items == null ? null : items.getSkills();
++    }
++}
+diff --git a/AetherionMining/src/main/java/de/aetherion/mining/isle/MineText.java b/AetherionMining/src/main/java/de/aetherion/mining/isle/MineText.java
+new file mode 100644
+index 00000000..15377b6b
+--- /dev/null
++++ b/AetherionMining/src/main/java/de/aetherion/mining/isle/MineText.java
+@@ -0,0 +1,81 @@
++package de.aetherion.mining.isle;
++
++import net.kyori.adventure.text.Component;
++import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
++
++import org.bukkit.Location;
++import org.bukkit.entity.Player;
++
++import java.util.Locale;
++
++/** Formatting shared by the Mining Eldervale loops — legacy colour strings, like the rest of Aetherion. */
++public final class MineText {
++
++    public static final LegacyComponentSerializer LEGACY = LegacyComponentSerializer.legacySection();
++    private static final String[] ARROWS = {"↑", "↗", "→", "↘", "↓", "↙", "←", "↖"};
++    private static final String[] ROMAN = {"0", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"};
++
++    private MineText() {
++    }
++
++    public static Component legacy(String text) {
++        return LEGACY.deserialize(text == null ? "" : text);
++    }
++
++    public static void bar(Player player, String text) {
++        if (player != null) {
++            player.sendActionBar(legacy(text));
++        }
++    }
++
++    public static String coins(long amount) {
++        return String.format(Locale.US, "%,d", amount);
++    }
++
++    public static String carats(double carats) {
++        return String.format(Locale.US, "%.2f ct", carats);
++    }
++
++    public static String roman(int n) {
++        return n >= 0 && n < ROMAN.length ? ROMAN[n] : String.valueOf(n);
++    }
++
++    /** {@code 4:05} / {@code 1:02:03}. */
++    public static String clock(long seconds) {
++        long s = Math.max(0L, seconds);
++        long h = s / 3600L;
++        long m = (s % 3600L) / 60L;
++        long sec = s % 60L;
++        return h > 0 ? String.format(Locale.US, "%d:%02d:%02d", h, m, sec) : String.format(Locale.US, "%d:%02d", m, sec);
++    }
++
++    /** Ten-cell bar, filled share in {@code on}. */
++    public static String cells(double fill, String on) {
++        int filled = (int) Math.round(Math.max(0.0d, Math.min(1.0d, fill)) * 10.0d);
++        return on + "▮".repeat(filled) + "§8" + "▯".repeat(10 - filled);
++    }
++
++    /** Screen-relative arrow from the player's facing towards {@code target}. */
++    public static String arrow(Player player, Location target) {
++        Location from = player.getLocation();
++        double dx = target.getX() - from.getX();
++        double dz = target.getZ() - from.getZ();
++        double targetYaw = Math.toDegrees(Math.atan2(-dx, dz));
++        double delta = ((targetYaw - from.getYaw()) % 360.0d + 540.0d) % 360.0d - 180.0d;
++        int index = (int) Math.round(delta / 45.0d);
++        return ARROWS[((index % 8) + 8) % 8];
++    }
++
++    /** "▲ 12 up" / "▼ 30 down" / "level" for a wayfinder. */
++    public static String vertical(Player player, Location target) {
++        int dy = (int) Math.round(target.getY() - player.getLocation().getY());
++        if (Math.abs(dy) < 3) {
++            return "";
++        }
++        return dy > 0 ? " §a▲" + dy : " §c▼" + (-dy);
++    }
++
++    public static String plural(long amount, String noun) {
++        return amount + " " + noun + (amount == 1 ? "" : "s");
++    }
++}
+diff --git a/AetherionMining/src/main/java/de/aetherion/mining/isle/MineWorld.java b/AetherionMining/src/main/java/de/aetherion/mining/isle/MineWorld.java
+new file mode 100644
+index 00000000..66405b84
+--- /dev/null
++++ b/AetherionMining/src/main/java/de/aetherion/mining/isle/MineWorld.java
+@@ -0,0 +1,129 @@
++package de.aetherion.mining.isle;
++
++import de.aetherion.mining.AetherionMining;
++
++import org.bukkit.Bukkit;
++import org.bukkit.GameMode;
++import org.bukkit.Location;
++import org.bukkit.World;
++import org.bukkit.configuration.ConfigurationSection;
++import org.bukkit.entity.Player;
++
++import java.util.ArrayList;
++import java.util.List;
++
++/**
++ * "Is this on Mining Eldervale?" and "who is down the mine?" — one place for every isle loop.
++ * The footprint box ({@code mine-isle-footprint}) is cached: isle checks run per strike, per tick
++ * and inside stat lookups. The Veins are a separate world and never count as the isle.
++ */
++public final class MineWorld {
++
++    record Box(boolean enabled, String world, double minX, double maxX, double minZ, double maxZ,
++               double minY, double maxY) {
++
++        boolean contains(Location at) {
++            return enabled
++                    && at.getWorld() != null
++                    && at.getWorld().getName().equalsIgnoreCase(world)
++                    && at.getX() >= minX && at.getX() <= maxX
++                    && at.getZ() >= minZ && at.getZ() <= maxZ
++                    && at.getY() >= minY && at.getY() <= maxY;
++        }
++    }
++
++    private static volatile Box box;
++
++    private MineWorld() {
++    }
++
++    /** Re-read {@code mine-isle-footprint} (after a config reload). */
++    public static void refresh(AetherionMining plugin) {
++        ConfigurationSection section = plugin == null ? null : plugin.getConfig().getConfigurationSection("mine-isle-footprint");
++        if (section == null) {
++            box = new Box(false, "world", 0, 0, 0, 0, 0, 0);
++            return;
++        }
++        box = new Box(
++                section.getBoolean("enabled", true),
++                section.getString("world", "world"),
++                Math.min(section.getDouble("min-x"), section.getDouble("max-x")),
++                Math.max(section.getDouble("min-x"), section.getDouble("max-x")),
++                Math.min(section.getDouble("min-z"), section.getDouble("max-z")),
++                Math.max(section.getDouble("min-z"), section.getDouble("max-z")),
++                section.getDouble("min-y", -64.0d),
++                section.getDouble("max-y", 320.0d)
++        );
++    }
++
++    static Box box(AetherionMining plugin) {
++        Box current = box;
++        if (current == null) {
++            refresh(plugin);
++            current = box;
++        }
++        return current;
++    }
++
++    public static boolean onIsle(AetherionMining plugin, Location at) {
++        if (at == null || at.getWorld() == null) {
++            return false;
++        }
++        return box(plugin).contains(at);
++    }
++
++    public static boolean onIsle(AetherionMining plugin, Player player) {
++        return player != null && player.isOnline() && onIsle(plugin, player.getLocation());
++    }
++
++    /** Survival players inside the footprint — the ones isle loops reward. */
++    public static List<Player> miners(AetherionMining plugin) {
++        List<Player> out = new ArrayList<>();
++        for (Player player : Bukkit.getOnlinePlayers()) {
++            if (player.getGameMode() == GameMode.SURVIVAL && onIsle(plugin, player)) {
++                out.add(player);
++            }
++        }
++        return out;
++    }
++
++    /** Everyone inside the footprint (staff in creative included) — for FX and bars. */
++    public static List<Player> visitors(AetherionMining plugin) {
++        List<Player> out = new ArrayList<>();
++        for (Player player : Bukkit.getOnlinePlayers()) {
++            if (onIsle(plugin, player)) {
++                out.add(player);
++            }
++        }
++        return out;
++    }
++
++    public static World world(AetherionMining plugin) {
++        return Bukkit.getWorld(box(plugin).world());
++    }
++
++    /** "x a…b z c…d" for DEV status. */
++    public static String describe(AetherionMining plugin) {
++        Box current = box(plugin);
++        if (!current.enabled()) {
++            return "§cFootprint: off";
++        }
++        return "§7Footprint: §f" + current.world() + " §8x " + (int) current.minX() + "…" + (int) current.maxX()
++                + " z " + (int) current.minZ() + "…" + (int) current.maxZ()
++                + " y " + (int) current.minY() + "…" + (int) current.maxY();
++    }
++
++    /** Where the Origin jump pad drops players ({@code mine-isle.landing}), or {@code null}. */
++    public static Location landing(AetherionMining plugin) {
++        ConfigurationSection section = plugin.getConfig().getConfigurationSection("mine-isle.landing");
++        if (section == null) {
++            return null;
++        }
++        World world = Bukkit.getWorld(section.getString("world", "world"));
++        if (world == null) {
++            return null;
++        }
++        return new Location(world, section.getDouble("x"), section.getDouble("y"), section.getDouble("z"),
++                (float) section.getDouble("yaw", 0.0d), (float) section.getDouble("pitch", 0.0d));
++    }
++}
+diff --git a/AetherionMining/src/main/java/de/aetherion/mining/isle/OreMastery.java b/AetherionMining/src/main/java/de/aetherion/mining/isle/OreMastery.java
+new file mode 100644
+index 00000000..00b02ea6
+--- /dev/null
++++ b/AetherionMining/src/main/java/de/aetherion/mining/isle/OreMastery.java
+@@ -0,0 +1,157 @@
++package de.aetherion.mining.isle;
++
++import net.kyori.adventure.title.Title;
++
++import org.bukkit.Particle;
++import org.bukkit.Sound;
++import org.bukkit.SoundCategory;
++import org.bukkit.entity.Player;
++
++import java.time.Duration;
++
++/**
++ * Ore Mastery — the long game. Every ore family keeps a lifetime count; tiers I–VII pay coins,
++ * Mining XP and a permanent Fortune bonus that only applies to that ore. Tiers IV and VII add
++ * <b>ore-specific Mining Power</b> — it only ever helps the ore you've already mastered, so it
++ * speeds you up without opening a gate early.
++ *
++ * <p>Mining Eldervale and The Veins both count double, so the island and its deep annex are
++ * where mastery actually moves. Rarer families need far fewer breaks per tier.
++ */
++public final class OreMastery {
++
++    /** Breaks needed for tier 1..7 before the family's scale (index = tier). */
++    private static final long[] BASE = {0L, 150L, 600L, 2_000L, 6_000L, 15_000L, 40_000L, 100_000L};
++    public static final int MAX_TIER = BASE.length - 1;
++    private static final long[] COINS = {0L, 300L, 900L, 2_500L, 6_000L, 14_000L, 32_000L, 75_000L};
++    private static final double FORTUNE_PER_TIER = 5.0d;
++
++    private final MineIsle isle;
++
++    OreMastery(MineIsle isle) {
++        this.isle = isle;
++    }
++
++    public static long threshold(IsleOre ore, int tier) {
++        if (tier <= 0) {
++            return 0L;
++        }
++        int clamped = Math.min(MAX_TIER, tier);
++        return Math.max(tier, Math.round(BASE[clamped] * ore.scale()));
++    }
++
++    public int tier(Player player, IsleOre ore) {
++        return player == null || ore == null ? 0 : isle.profiles().of(player).tier(ore);
++    }
++
++    public long count(Player player, IsleOre ore) {
++        return player == null || ore == null ? 0L : isle.profiles().of(player).mined(ore);
++    }
++
++    /** Ore-only Fortune from mastery of the ore being mined. */
++    public double oreFortune(Player player, IsleOre ore) {
++        return ore == null || ore == IsleOre.STONE ? 0.0d : fortuneAt(tier(player, ore));
++    }
++
++    /** Ore-specific Mining Power: +3 at IV, +8 at VII (that ore only). */
++    public double orePower(Player player, IsleOre ore) {
++        return ore == null || ore == IsleOre.STONE ? 0.0d : powerAt(tier(player, ore));
++    }
++
++    public static double fortuneAt(int tier) {
++        return tier * FORTUNE_PER_TIER;
++    }
++
++    public static double powerAt(int tier) {
++        return tier >= 7 ? 8.0d : tier >= 4 ? 3.0d : 0.0d;
++    }
++
++    public static long coinsAt(IsleOre ore, int tier) {
++        long base = tier >= 0 && tier < COINS.length ? COINS[tier] : 0L;
++        double valueScale = Math.max(0.6d, Math.min(2.5d, Math.sqrt(ore.unitValue())));
++        return Math.round(base * valueScale);
++    }
++
++    public static int xpAt(int tier) {
++        return 40 * tier * tier;
++    }
++
++    public static int tierFor(IsleOre ore, long mined) {
++        int tier = 0;
++        for (int i = 1; i <= MAX_TIER; i++) {
++            if (mined >= threshold(ore, i)) {
++                tier = i;
++            }
++        }
++        return tier;
++    }
++
++    /** Fill toward the next tier, 0..1 (1 at max). */
++    public static double fill(IsleOre ore, long mined) {
++        int tier = tierFor(ore, mined);
++        if (tier >= MAX_TIER) {
++            return 1.0d;
++        }
++        long from = threshold(ore, tier);
++        long to = threshold(ore, tier + 1);
++        return (mined - from) / (double) Math.max(1L, to - from);
++    }
++
++    /** One break of {@code ore} worth {@code weight} ledger marks. */
++    void onMined(Player player, IsleOre ore, int weight) {
++        if (ore == null || weight <= 0) {
++            return;
++        }
++        MineProfiles.Profile profile = isle.profiles().of(player);
++        long total = profile.mined(ore) + weight;
++        profile.mined.put(ore, total);
++        isle.profiles().markDirty();
++        int reached = tierFor(ore, total);
++        int had = profile.tier(ore);
++        while (had < reached) {
++            had++;
++            profile.tiers.put(ore, had);
++            celebrate(player, ore, had);
++        }
++    }
++
++    /** DEV: force every family to {@code tier} (counts set to the threshold, rewards not paid). */
++    void setAll(Player player, int tier) {
++        int clamped = Math.max(0, Math.min(MAX_TIER, tier));
++        MineProfiles.Profile profile = isle.profiles().of(player);
++        for (IsleOre ore : IsleOre.values()) {
++            profile.mined.put(ore, threshold(ore, clamped));
++            profile.tiers.put(ore, clamped);
++        }
++        isle.profiles().markDirty();
++    }
++
++    private void celebrate(Player player, IsleOre ore, int tier) {
++        long coins = coinsAt(ore, tier);
++        int xp = xpAt(tier);
++        MineSkills.coins(player, coins);
++        MineSkills.bonus(player, xp);
++        String perk = ore == IsleOre.STONE
++                ? "Stonecutter's pride"
++                : "+" + (int) fortuneAt(tier) + " " + ore.display() + " Fortune";
++        if (powerAt(tier) > powerAt(tier - 1)) {
++            perk += " · +" + (int) powerAt(tier) + " " + ore.display() + " Mining Power";
++        }
++        player.showTitle(Title.title(
++                MineText.legacy(ore.color() + ore.display() + " Mastery " + MineText.roman(tier)),
++                MineText.legacy("§e" + perk + " §8· §6+" + MineText.coins(coins) + " coins"),
++                Title.Times.times(Duration.ofMillis(150), Duration.ofMillis(2200), Duration.ofMillis(400))
++        ));
++        player.sendMessage("§6✦ " + ore.colored() + " Mastery " + MineText.roman(tier) + " §8· §7" + perk
++                + " §8(permanent, that ore only) §8· §6+" + MineText.coins(coins) + " coins §8· §a+" + xp + " Mining XP");
++        if (tier < MAX_TIER) {
++            player.sendMessage("§8Next tier at " + MineText.coins(threshold(ore, tier + 1)) + " "
++                    + ore.display().toLowerCase() + ". Eldervale and The Veins count double.");
++        }
++        player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, SoundCategory.PLAYERS, 0.7f, 1.1f);
++        player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_USE, SoundCategory.PLAYERS, 0.3f, 1.5f);
++        player.spawnParticle(Particle.ELECTRIC_SPARK, player.getLocation().add(0, 1.0, 0), 24, 0.6, 0.6, 0.6, 0.05);
++        player.spawnParticle(Particle.DUST, player.getLocation().add(0, 1.4, 0), 20, 0.5, 0.5, 0.5, 0.0,
++                new Particle.DustOptions(ore.glow(), 1.4f));
++    }
++}
+diff --git a/AetherionMining/src/main/java/de/aetherion/mining/isle/StrikeRhythm.java b/AetherionMining/src/main/java/de/aetherion/mining/isle/StrikeRhythm.java
+new file mode 100644
+index 00000000..072d4729
+--- /dev/null
++++ b/AetherionMining/src/main/java/de/aetherion/mining/isle/StrikeRhythm.java
+@@ -0,0 +1,364 @@
++package de.aetherion.mining.isle;
++
++import de.aetherion.core.api.QuestBars;
++
++import net.kyori.adventure.bossbar.BossBar;
++
++import org.bukkit.Bukkit;
++import org.bukkit.Location;
++import org.bukkit.Particle;
++import org.bukkit.Sound;
++import org.bukkit.SoundCategory;
++import org.bukkit.entity.Player;
++import org.bukkit.scheduler.BukkitTask;
++
++import java.util.Map;
++import java.util.UUID;
++import java.util.concurrent.ConcurrentHashMap;
++
++/**
++ * Strike Rhythm — the miner's work song. Keep breaking rock without a pause and the mountain
++ * starts to answer. Every strike adds rhythm (rarer ore adds more), idling drains it. Tiers pay
++ * ore-only Fortune, Spread and break speed, and each strike plays the next beat of a four-count
++ * work song: a hammer on the one, a minor-pentatonic ring on the rest.
++ *
++ * <p>On top of the meter runs the <b>Seam Chain</b>: break the same ore family back to back and
++ * the chain grows; at 8 (Seam Reader: fewer) the seam bursts — a handful of extra ore, a rhythm
++ * kick and a spray of sparks in the ore's colour. Stone between strikes doesn't break a chain.
++ */
++public final class StrikeRhythm {
++
++    static final String LEASE = "strike-rhythm";
++    private static final double MAX = 100.0d;
++    /** Ticks between strikes that still count as "in time" — ore takes longer than wheat. */
++    private static final int BASE_HOLD_TICKS = 45;
++    private static final double DRAIN_PER_STEP = 6.0d;
++    private static final int HIDE_AFTER_TICKS = 50;
++    /** Minor pentatonic, two octaves — the ring of a pick on good rock. */
++    private static final int[] SCALE = {0, 3, 5, 7, 10, 12, 15, 17, 19, 22, 24};
++    private static final int BASE_SEAM = 8;
++
++    public enum Tier {
++        NONE(0, "", 0, 0, 0, BossBar.Color.WHITE, "§7"),
++        STEADY(20, "Steady Pick", 10, 0, 6, BossBar.Color.GREEN, "§a"),
++        SEAM(50, "In the Seam", 25, 6, 14, BossBar.Color.YELLOW, "§e"),
++        CHORUS(100, "Anvil Chorus", 50, 12, 25, BossBar.Color.RED, "§6");
++
++        final int from;
++        final String label;
++        final double fortune;
++        final double spread;
++        final double speedPower;
++        final BossBar.Color color;
++        final String chat;
++
++        Tier(int from, String label, double fortune, double spread, double speedPower, BossBar.Color color, String chat) {
++            this.from = from;
++            this.label = label;
++            this.fortune = fortune;
++            this.spread = spread;
++            this.speedPower = speedPower;
++            this.color = color;
++            this.chat = chat;
++        }
++
++        static Tier of(double stacks) {
++            Tier best = NONE;
++            for (Tier tier : values()) {
++                if (stacks >= tier.from) {
++                    best = tier;
++                }
++            }
++            return best;
++        }
++
++        public String label() {
++            return label;
++        }
++
++        public String chat() {
++            return chat;
++        }
++
++        public double fortune() {
++            return fortune;
++        }
++    }
++
++    private static final class State {
++        double stacks;
++        int lastTick;
++        int beat;
++        int noteStep;
++        int direction = 1;
++        Tier tier = Tier.NONE;
++        BossBar bar;
++        int hideAt;
++        double best;
++        IsleOre seamOre;
++        int seam;
++        int bursts;
++    }
++
++    private final MineIsle isle;
++    private final Map<UUID, State> states = new ConcurrentHashMap<>();
++    private BukkitTask task;
++
++    StrikeRhythm(MineIsle isle) {
++        this.isle = isle;
++    }
++
++    void start() {
++        task = Bukkit.getScheduler().runTaskTimer(isle.plugin(), this::tick, 5L, 5L);
++    }
++
++    void shutdown() {
++        if (task != null) {
++            task.cancel();
++            task = null;
++        }
++        for (UUID id : Map.copyOf(states).keySet()) {
++            clear(id);
++        }
++    }
++
++    boolean enabled() {
++        return isle.plugin().getConfig().getBoolean("strike-rhythm.enabled", true);
++    }
++
++    /** One hand-mined stone / ore block on the isle (never the Emerald Spread neighbours). */
++    void onStrike(Player player, IsleOre ore, Location at) {
++        if (!enabled()) {
++            return;
++        }
++        State state = states.computeIfAbsent(player.getUniqueId(), ignored -> new State());
++        int now = Bukkit.getCurrentTick();
++        double weight = ore == IsleOre.STONE ? 0.5d : ore.rare() ? 2.0d : 1.0d;
++        double gain = weight * (1.0d + 0.5d * MineSkills.scale(player, MineSkills.WORK_SONG))
++                + isle.hearth().rhythmGain(player);
++        state.stacks = Math.min(MAX, state.stacks + gain);
++        state.lastTick = now;
++        state.hideAt = 0;
++        Tier before = state.tier;
++        state.tier = Tier.of(state.stacks);
++        playBeat(player, state, at);
++        if (ore != IsleOre.STONE) {
++            seam(player, state, ore, at);
++        }
++        state.best = Math.max(state.best, state.stacks);
++        if (state.tier.ordinal() > before.ordinal()) {
++            tierUp(player, state.tier);
++        }
++        if (state.tier == Tier.CHORUS && state.beat % 4 == 0) {
++            MineSkills.bonus(player, 1);
++        }
++        paint(player, state);
++    }
++
++    // ------------------------------------------------------------------ reads
++
++    public Tier tier(Player player) {
++        State state = player == null ? null : states.get(player.getUniqueId());
++        return state == null ? Tier.NONE : state.tier;
++    }
++
++    public double stacks(Player player) {
++        State state = player == null ? null : states.get(player.getUniqueId());
++        return state == null ? 0.0d : state.stacks;
++    }
++
++    public double best(Player player) {
++        State state = player == null ? null : states.get(player.getUniqueId());
++        return state == null ? 0.0d : state.best;
++    }
++
++    public int seam(Player player) {
++        State state = player == null ? null : states.get(player.getUniqueId());
++        return state == null ? 0 : state.seam;
++    }
++
++    public int bursts(Player player) {
++        State state = player == null ? null : states.get(player.getUniqueId());
++        return state == null ? 0 : state.bursts;
++    }
++
++    double oreFortune(Player player) {
++        return tier(player).fortune;
++    }
++
++    double spread(Player player) {
++        return tier(player).spread;
++    }
++
++    double speedPower(Player player) {
++        return tier(player).speedPower;
++    }
++
++    /** Strikes in one family that burst the seam (Seam Reader lowers it, floor 4). */
++    static int seamLength(Player player) {
++        double scale = MineSkills.scale(player, MineSkills.SEAM_READER);
++        return (int) Math.max(4.0d, BASE_SEAM - Math.floor(scale * 1.5d));
++    }
++
++    /** DEV: straight to Anvil Chorus. */
++    void max(Player player) {
++        State state = states.computeIfAbsent(player.getUniqueId(), ignored -> new State());
++        state.stacks = MAX;
++        state.lastTick = Bukkit.getCurrentTick() + 20 * 20;
++        state.tier = Tier.CHORUS;
++        state.best = MAX;
++        tierUp(player, Tier.CHORUS);
++        paint(player, state);
++    }
++
++    void clear(UUID id) {
++        State state = states.remove(id);
++        if (state != null && state.bar != null) {
++            Player player = Bukkit.getPlayer(id);
++            if (player != null) {
++                player.hideBossBar(state.bar);
++            }
++        }
++        QuestBars.release(id, LEASE);
++    }
++
++    // ------------------------------------------------------------------ seam chain
++
++    private void seam(Player player, State state, IsleOre ore, Location at) {
++        if (state.seamOre != ore) {
++            state.seamOre = ore;
++            state.seam = 0;
++        }
++        state.seam++;
++        int need = seamLength(player);
++        if (state.seam < need) {
++            return;
++        }
++        state.seam = 0;
++        state.bursts++;
++        int extra = 1 + (ore.rare() ? 0 : Math.min(3, MineSkills.boostTier(player) / 2 + 1));
++        MineSkills.give(player, new org.bukkit.inventory.ItemStack(ore.resource(), extra));
++        state.stacks = Math.min(MAX, state.stacks + 4.0d);
++        MineSkills.bonus(player, 6);
++        Location spot = at == null ? player.getLocation() : at.clone().add(0.5, 0.5, 0.5);
++        player.spawnParticle(Particle.DUST, spot, 18, 0.35, 0.35, 0.35, 0.0,
++                new Particle.DustOptions(ore.glow(), 1.3f));
++        player.spawnParticle(Particle.ELECTRIC_SPARK, spot, 10, 0.3, 0.3, 0.3, 0.05);
++        player.playSound(spot, Sound.BLOCK_AMETHYST_BLOCK_CHIME, SoundCategory.PLAYERS, 0.8f, 1.4f);
++        player.playSound(spot, Sound.BLOCK_ANVIL_LAND, SoundCategory.PLAYERS, 0.18f, 1.8f);
++        MineText.bar(player, ore.color() + "⛏ Seam Burst! §f+" + extra + " " + ore.display()
++                + " §8· §7+4 rhythm · +6 Mining XP");
++        isle.events().onSeamBurst(player);
++    }
++
++    // ------------------------------------------------------------------ ticking
++
++    private int holdTicks(Player player) {
++        double skill = 0.4d * MineSkills.scale(player, MineSkills.WORK_SONG);
++        return (int) Math.round(BASE_HOLD_TICKS * (1.0d + skill) * isle.hearth().rhythmHold(player));
++    }
++
++    private void tick() {
++        int now = Bukkit.getCurrentTick();
++        for (Map.Entry<UUID, State> entry : Map.copyOf(states).entrySet()) {
++            Player player = Bukkit.getPlayer(entry.getKey());
++            State state = entry.getValue();
++            if (player == null || !player.isOnline() || !MineWorld.onIsle(isle.plugin(), player)) {
++                clear(entry.getKey());
++                continue;
++            }
++            if (state.stacks <= 0.0d) {
++                if (state.hideAt > 0 && now >= state.hideAt) {
++                    clear(entry.getKey());
++                }
++                continue;
++            }
++            if (now - state.lastTick <= holdTicks(player)) {
++                continue;
++            }
++            Tier before = state.tier;
++            state.stacks = Math.max(0.0d, state.stacks - DRAIN_PER_STEP);
++            state.tier = Tier.of(state.stacks);
++            if (state.stacks <= 0.0d) {
++                state.hideAt = now + HIDE_AFTER_TICKS;
++                state.seam = 0;
++                if (before != Tier.NONE) {
++                    player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, SoundCategory.PLAYERS, 0.35f, 0.5f);
++                }
++            }
++            paint(player, state);
++        }
++    }
++
++    /** Four-count: the one is a hammer, the other three ring up and down the scale. */
++    private void playBeat(Player player, State state, Location at) {
++        state.beat++;
++        if (state.stacks < 5.0d) {
++            return;
++        }
++        Location ear = at == null ? player.getLocation() : at.clone().add(0.5, 0.5, 0.5);
++        if (state.beat % 4 == 1) {
++            player.playSound(ear, Sound.BLOCK_NOTE_BLOCK_BASEDRUM, SoundCategory.PLAYERS, 0.45f, 0.7f);
++            if (state.tier.ordinal() >= Tier.SEAM.ordinal()) {
++                player.playSound(ear, Sound.BLOCK_ANVIL_PLACE, SoundCategory.PLAYERS, 0.08f, 1.6f);
++            }
++            return;
++        }
++        state.noteStep += state.direction;
++        if (state.noteStep >= SCALE.length - 1 || state.noteStep <= 0) {
++            state.direction = -state.direction;
++            state.noteStep = Math.max(0, Math.min(SCALE.length - 1, state.noteStep));
++        }
++        float pitch = (float) Math.pow(2.0d, (SCALE[state.noteStep] - 12) / 12.0d);
++        Sound sound = switch (state.tier) {
++            case CHORUS -> Sound.BLOCK_NOTE_BLOCK_BELL;
++            case SEAM -> Sound.BLOCK_NOTE_BLOCK_IRON_XYLOPHONE;
++            default -> Sound.BLOCK_NOTE_BLOCK_XYLOPHONE;
++        };
++        player.playSound(ear, sound, SoundCategory.PLAYERS, state.tier == Tier.CHORUS ? 0.4f : 0.3f, pitch);
++        if (state.tier.ordinal() >= Tier.SEAM.ordinal()) {
++            player.spawnParticle(Particle.WAX_OFF, ear.clone().add(0, 0.4, 0), 1, 0.15, 0.15, 0.15, 0.0);
++        }
++    }
++
++    private void tierUp(Player player, Tier tier) {
++        String perk = "+" + (int) tier.fortune + " ore Fortune";
++        if (tier.spread > 0) {
++            perk += " · +" + (int) tier.spread + " Spread";
++        }
++        perk += " · faster breaks";
++        if (tier == Tier.CHORUS) {
++            perk += " · bonus Mining XP";
++        }
++        MineText.bar(player, tier.chat + "⚒ " + tier.label + " §8· §7" + perk);
++        Location at = player.getLocation();
++        player.playSound(at, Sound.BLOCK_ANVIL_USE, SoundCategory.PLAYERS, 0.25f, 1.4f);
++        player.playSound(at, Sound.BLOCK_NOTE_BLOCK_BELL, SoundCategory.PLAYERS, 0.5f, 0.84f);
++        player.playSound(at, Sound.BLOCK_NOTE_BLOCK_BELL, SoundCategory.PLAYERS, 0.45f, 1.0f);
++        player.playSound(at, Sound.BLOCK_NOTE_BLOCK_BELL, SoundCategory.PLAYERS, 0.4f, 1.26f);
++        player.spawnParticle(Particle.ELECTRIC_SPARK, at.clone().add(0, 1.6, 0), 14, 0.5, 0.3, 0.5, 0.08);
++        if (tier == Tier.CHORUS) {
++            player.spawnParticle(Particle.LAVA, at.clone().add(0, 1.2, 0), 6, 0.4, 0.3, 0.4, 0.0);
++        }
++    }
++
++    private void paint(Player player, State state) {
++        float progress = (float) Math.max(0.0d, Math.min(1.0d, state.stacks / MAX));
++        String seam = state.seamOre != null && state.seam > 0
++                ? " §8· " + state.seamOre.color() + "Seam " + state.seam + "/" + seamLength(player)
++                : "";
++        String title = state.tier == Tier.NONE
++                ? "§7⚒ Strike Rhythm §f" + (int) state.stacks + seam
++                : state.tier.chat + "⚒ " + state.tier.label + " §f" + (int) state.stacks
++                + " §8· §7+" + (int) state.tier.fortune + " ore Fortune" + seam;
++        if (state.bar == null) {
++            state.bar = BossBar.bossBar(MineText.legacy(title), progress, state.tier.color, BossBar.Overlay.NOTCHED_10);
++            QuestBars.suppress(player, LEASE);
++            player.showBossBar(state.bar);
++            return;
++        }
++        state.bar.name(MineText.legacy(title));
++        state.bar.progress(progress);
++        state.bar.color(state.tier.color);
++    }
++}
+-- 
+2.43.0
+

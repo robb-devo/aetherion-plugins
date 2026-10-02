@@ -44,3 +44,37 @@ npcs:
 
 living-npc-visibility-distance: 96
 editor-npc-visibility-distance: 48
+
+# ============================================================
+# NPC talk UX (in-world bubbles + reply chips)
+# ============================================================
+# Living NPCs speak in a speech bubble above their head (only the
+# listener sees it) and quest offers become reply chips next to the
+# NPC: look + click, scroll + click, or the chat buttons.
+# The chest Quest Offer stays as fallback ("Details…", classic mode,
+# FancyNpcs missing). Players can pick with /npctalk world|classic.
+# All keys have code defaults — a live config without them is fine.
+
+talk-ux:
+  enabled: true
+  voice-blips: true           # tiny per-NPC voice while text types out
+  chat-replies: true          # mirror reply chips as clickable chat
+  show-previous-line: true    # keep the last line (grey) above the new one
+  max-distance: 10            # walk further away and the bubble closes
+  reply-timeout-seconds: 40
+  linger-ticks: 90            # how long a finished line stays up (~+1s vs prior 70)
+  bubble-scale: 0.56
+  pack-glyphs: false          # true only once the server pack ships aetherion:talk
+
+# ============================================================
+# NPC life (work beats, glances, tiny patrols, greetings, banter)
+# ============================================================
+npc-life:
+  enabled: true
+  patrols: true               # ≤3-block, ground-checked walks for a few NPCs
+  social: true                # greet-by-name, rare idle barks, NPC banter
+  pace: 1.0                   # work-beat gap multiplier (0.5 busier .. 3.0 calmer)
+
+# Players whose name starts with one of these always get the classic chest flow
+# (the Mineflayer QA / stress bots click the chest Quest Offer).
+# talk-ux.classic-name-prefixes: [QaQuest, QaCombat, QaMine, QaForage, QaCatch, QaRoam, QaFish, QaTrade, QaPad, StressM]

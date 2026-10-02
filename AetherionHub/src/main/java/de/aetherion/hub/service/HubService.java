@@ -31,7 +31,8 @@ public final class HubService {
             "farm_isle",
             "borderlands",
             "colosseum",
-            "eldervale"
+            "eldervale",
+            "bloodstone"
     );
 
     private static final String[] RETIRED_SPAWN_IDS = {
@@ -84,6 +85,7 @@ public final class HubService {
         changed |= ensureSpawn("borderlands", "Borderlands", "Beyond Vex's gate. Hostile wastes.", "COARSE_DIRT", 21);
         changed |= ensureSpawn("colosseum", "Colosseum", "Proctor's ring — Crypt vials, T2 bosses. Unlocks with the Proctor.", "SANDSTONE", 19);
         changed |= ensureSpawn("eldervale", "Eldervale", "Mining island past the slime jump pad. Walk in to unlock.", "DEEPSLATE_DIAMOND_ORE", 20);
+        changed |= ensureSpawn("bloodstone", "Bloodstone", "Hollow Sun arena. Place the spawn anchor on the platform.", "RESPAWN_ANCHOR", 22);
 
         if (plugin.getConfig().getConfigurationSection("spawns.harbour") != null
                 && !plugin.getConfig().getBoolean("spawns.harbour.unlocked-by-default", false)) {
@@ -118,6 +120,7 @@ public final class HubService {
         changed |= applyLayout("borderlands", "Borderlands", "Beyond Vex's gate. Hostile wastes. Walk in to unlock.", "COARSE_DIRT", 21, false);
         changed |= applyLayout("colosseum", "Colosseum", "Proctor's ring — Crypt vials, T2 bosses. Unlocks with the Proctor.", "SANDSTONE", 19, false);
         changed |= applyLayout("eldervale", "Eldervale", "Mining island past the slime jump pad. Walk in to unlock.", "DEEPSLATE_DIAMOND_ORE", 20, false);
+        changed |= applyLayout("bloodstone", "Bloodstone", "Hollow Sun arena. Place the spawn anchor on the platform.", "RESPAWN_ANCHOR", 22, false);
         changed |= ensureDiscoverRadius("ore_ridge", 40);
         changed |= ensureDiscoverRadius("capital", 48);
         changed |= ensureDiscoverRadius("farm", 28);
@@ -313,6 +316,11 @@ public final class HubService {
 
     public void unload(UUID uuid) {
         storage.unload(uuid);
+    }
+
+    /** Full hub wipe for Dev Menu / account reset. */
+    public void wipePlayer(UUID uuid) {
+        storage.wipePlayer(uuid);
     }
 
     public HubSpawn selected(Player player) {

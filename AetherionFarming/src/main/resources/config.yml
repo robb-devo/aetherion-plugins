@@ -3,19 +3,89 @@
 bird-scare:
   # Try every 2 minutes near a survival player by mature crops.
   interval-ticks: 2400
-  # Bossbar / birds only within this many blocks (horizontal) of the field.
   view-range: 25
-  # Only fire on real farm fields around the Farm spawn — not every wheat patch on the map.
+  # If true: any mature crop field can host birds (ignores zones).
+  anywhere-near-crops: false
+  # Prefer multi-zone list (hub farm + Farm Isle). Legacy farm-zone kept as fallback.
+  zones:
+    - world: world
+      x: -211.5
+      z: 183.5
+      radius: 90
+    # Eldervale Farming Island (pasted into world — landing ~-303/483)
+    - world: world
+      x: -300.0
+      z: 500.0
+      radius: 220
   farm-zone:
     enabled: true
     world: world
     x: -211.5
     y: 61.0
     z: 183.5
-    # Player + crop must both sit inside this radius of the farm center.
     radius: 90
 
-# Shared communal farm island (void world + nether portal link).
+# Soft footprint for featured crop toasts + wind bees (matches Hub paste footprint).
+farm-isle-footprint:
+  enabled: true
+  world: world
+  min-x: -481
+  max-x: -107
+  min-z: 420
+  max-z: 782
+
+featured-crop:
+  enabled: true
+  # 1 real-time hour
+  rotate-ticks: 72000
+  # Chance for +1 extra crop when harvesting the featured one
+  bonus-chance: 0.35
+
+farm-isle-ambience:
+  enabled: true
+  bees: 6
+
+# Sugar cane banks on sand next to water inside farm-isle-footprint.
+# Additive only — existing cane rows are never rebuilt.
+farm-isle-cane:
+  auto-seed: true
+  # Flipped to true after the first pass. Dev → Millstone → "Seed Farm Isle" forces a re-run.
+  seeded: false
+  height-min: 3
+  height-max: 4
+  max-plants-per-run: 1500
+  # Sand + dirt/grass banks next to water across the whole Farm Isle footprint.
+  allow-dirt: true
+  chunks-per-tick: 4
+
+# Mature crop mix on farmland inside the footprint that has nothing growing on it.
+# Never touches farmland that already carries a crop.
+farm-isle-fields:
+  auto-seed: true
+  max-plants-per-run: 600
+  mix:
+    wheat: 40
+    carrot: 20
+    potato: 20
+    beetroot: 20
+
+# Scarecrow minigame — birds land around a DEV-placed scarecrow on the Farm Isle.
+# Success grants the same Golden Hour boost as the crop-field bird scare.
+scarecrow:
+  enabled: true
+  # 5 real-time minutes
+  interval-ticks: 6000
+  duration-ticks: 400
+  # Bird spawn spread around the prop.
+  radius: 8
+  # Players this close see the event and share the boost.
+  view-range: 24
+  birds:
+    base: 3
+    per-extra-player: 2
+    max: 12
+
+# Shared communal farm island (legacy void world — retired on live; Hub paste in world).
 farm-island:
   enabled: true
   auto-ensure: true

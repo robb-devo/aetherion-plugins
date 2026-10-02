@@ -39,6 +39,12 @@ Bots connect **offline to MMO-R** `127.0.0.1:25567` with Velocity modern-forward
 | `quest` | `QaQuest01…` | Walk to known FancyNPC pads (Maren / Twig / Eldervale), click Quest Offer accept | Mixed combat kit |
 | `pad` | `QaPad01…` | Walk onto island jump pads, ride the arc, hop a different pad. `pad-flight-ms` covers mid-hop. | Mixed combat kit |
 
+## Wave 3 roles
+
+| Role | Names | Does | Kit |
+|------|-------|------|-----|
+| `general` | `QaGeneral01…` | Mixed player. Picks a personality (explorer/farmer/miner/fighter/fisher/general) and switches between real activities via `/botfocus` + the existing role loops. | Mixed combat + pick/axe/rod + spheres + mats |
+
 ### Residual risks / limits
 
 - **AH / Bazaar:** Trade bots get the **TRADER** flag + starter coins and click list/buy slots (AH list 49 / price 2 / confirm 11). Empty books still fail.
@@ -69,7 +75,7 @@ Bots **throw spheres** at nearby living entities. They do **not** play the catch
 
 1. `/dev` / `/adev` / `/devmenu` (op or `aetherion.dev`)
 2. Next page (page 2) → **Testbots**
-3. Per role: set count (left/right ±1, shift ±5) → **Start** / **Stop**. **More roles** pages combat / fish / trade / quest / pad.
+3. Per role: set count (left/right ±1, shift ±5) → **Start** / **Stop**. **More roles** pages combat / fish / trade / quest / pad / general.
 4. Click the role icon for a list (nickname, xyz, held item, activity)
 5. **Stop all** · **/botreport** book+chat
 
@@ -80,7 +86,7 @@ Counts clamp to `testbots.max-total` (40), `testbots.caps.<role>` (8), `max-per-
 ## Commands
 
 ```
-/stressbots start <mine|forage|catch|roam|combat|fish|trade|quest|pad> [count]
+/stressbots start <mine|forage|catch|roam|combat|fish|trade|quest|pad|general> [count]
 /stressbots stop <role|all>
 /stressbots stopall
 /stressbots list
@@ -107,6 +113,7 @@ npm start -- --listen
 # or CLI
 node src/index.js --mine 5 --forage 3 --catch 2 --roam 5
 node src/index.js --combat 3 --fish 2 --trade 2 --quest 2 --pad 2
+node src/index.js --general 4
 node src/index.js --mining 5    # Phase 1 StressM
 ```
 

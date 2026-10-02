@@ -1,0 +1,34 @@
+---
+description: GOLDEN — ships ADD/EXTEND content; never overwrite live features with a thinner branch
+alwaysApply: true
+---
+
+# Additive ship — NEVER overwrite (GOLDEN)
+
+FIXED process rule. Not a suggestion. Robbi 2026-09-29 after DevMenu / Seraphine / Wipe / Ambient / Fishing-anchor regressions.
+
+## The law
+
+**New content and patches must ADD or EXTEND. They must NEVER silently replace a richer live/shipping tree with a thinner one.**
+
+If the shipping branch does not already contain a live feature, **bring that feature into the ship tree** before deploy. Do not “win” by deleting it from the jar.
+
+## What this forbids
+
+- Deploying Farming / Hotfix / Fishing / Helios / Midgame Items (or any plugin) that **drops** DevMenu pages, give-lists, factories, anchors, or commands that live already had
+- “While we’re here” rewrites that remove Special Sets, Test Gear, T2 uniques (Seraphine, Blossom Blade, Worldbite, …), Player Wipe, Ambient Props, effects, hub spawns, `/fishing`-style commands
+- Treating one feature branch as the full Items truth without a **diff against live / the previous ship**
+
+## What this requires before every jar ship
+
+1. **Diff checklist (non-negotiable):** compare shipping `DevMenu` + related factories against **live jar strings** and/or the last known-good tree for:
+   - Root / admin pages (Wipe, Ambient, Test Arena, Farming Island, …)
+   - Special Sets / T2 / Test Gear / Weapons give lists
+   - Hub spawns + goto commands (`/forage`, `/fishing`, farm isle, …)
+2. **Missing on ship tree but present on live/good tree → ADD it** (merge/cherry/copy). Do not ship until restored or Robbi explicitly accepts the drop.
+3. **New systems** (Farming Isle, Fishing Isle, …) land **beside** existing ones — new pages, new slots, new packages — not by wiping the old menu.
+4. Prefer **union of menus and factories**, not “this branch’s DevMenu file wholesale”.
+
+## Mentality
+
+We are **adding content**. Overwriting old content with a partial tree means we gained nothing and lost trust. If unsure whether something exists live: **assume it does** and verify before ship.

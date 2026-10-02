@@ -109,11 +109,11 @@ export function isWorkingActivity(activity) {
 
 export function playstyleOf(role, cfg = {}) {
   const flags = []
-  if (role === 'trade' || cfg.unlockTrader) flags.push(FLAGS.TRADER)
+  if (role === 'trade' || role === 'general' || cfg.unlockTrader) flags.push(FLAGS.TRADER)
   return {
     role,
     flags,
-    starterCoins: role === 'trade' ? (cfg.starterCoins ?? 2500) : (cfg.pocketCoins ?? 250),
+    starterCoins: role === 'trade' || role === 'general' ? (cfg.starterCoins ?? 2500) : (cfg.pocketCoins ?? 250),
     fidgetMs: cfg.fidgetMs ?? 4500,
     idleGoalMs: cfg.idleGoalMs ?? 8000
   }

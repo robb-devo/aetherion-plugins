@@ -1,0 +1,296 @@
+# Origin placements only. No megamap leftovers.
+# /questnpc spawn <id> persists here and restores on boot.
+npcs:
+  egon:
+    name: Egon the Equipper
+    questId: welcome_aboard
+    dialogId: egon_intro
+    world: world
+    x: 300.5
+    y: 63.0
+    z: -382.5
+    yaw: -43.18744
+    pitch: 0.0
+  vex:
+    name: Sergeant Vex
+    questId: lesson_steel
+    dialogId: vex_intro
+    serviceId: vex
+    world: world
+    x: 161.5
+    y: 58.0
+    z: 73.5
+    yaw: 8.508972
+    pitch: 0.0
+  booster_tutor:
+    name: Temper
+    questId: lesson_boost
+    dialogId: booster_tutor_intro
+    serviceId: booster_tutor
+    world: world
+    x: 53.5
+    y: 60.0
+    z: 113.5
+    yaw: -111.905975
+    pitch: 0.0
+  rite_keeper:
+    name: Rite Warden
+    questId: border_rites
+    dialogId: rite_keeper_intro
+    serviceId: rite_keeper
+    world: world
+    x: 251.5
+    y: 65.0
+    z: 173.5
+    yaw: 176.59354
+    pitch: 0.0
+  lumberjack:
+    name: Lumberjack
+    questId: gather_wood
+    dialogId: lumberjack_intro
+    serviceId: lumberjack
+    world: world
+    x: 349.5
+    y: 66.0
+    z: -327.5
+    yaw: -92.21264
+    pitch: 0.0
+  fishmonger:
+    name: Fishmonger
+    questId: ''
+    dialogId: fishmonger_intro
+    serviceId: ''
+    world: world
+    x: 278.5
+    y: 63.0
+    z: -370.5
+    yaw: -90.63193
+    pitch: 0.0
+  fisher:
+    name: Tackle
+    questId: a_good_catch
+    dialogId: fisher_intro
+    serviceId: fisher
+    world: world
+    x: 278.5
+    y: 64.0
+    z: -418.5
+    yaw: -93.87491
+    pitch: 0.0
+  craftsman:
+    name: Craftsman
+    questId: ''
+    dialogId: craftsman_intro
+    serviceId: craftsman
+    world: world
+    x: 218.5
+    y: 64.0
+    z: -387.5
+    yaw: 179.07407
+    pitch: 0.0
+  quartermaster:
+    name: Quartermaster
+    questId: forge_coal
+    dialogId: quartermaster_intro
+    world: world
+    x: 170.5
+    y: 64.0
+    z: -360.5
+    yaw: 88.27327
+    pitch: 0.0
+  foreman:
+    name: Shaft Foreman
+    questId: first_shift
+    dialogId: foreman_intro
+    serviceId: foreman
+    world: world
+    x: 30.5
+    y: 55.0
+    z: 190.5
+    yaw: -50.678856
+    pitch: 0.0
+  ledger:
+    name: Miss Ledger
+    questId: lesson_manager
+    dialogId: ledger_intro
+    serviceId: ledger
+    world: world
+    x: -1.5
+    y: 58.0
+    z: -0.5
+    yaw: 33.005127
+    pitch: 0.0
+  lark:
+    name: Lark
+    questId: pocket_zoo
+    dialogId: lark_intro
+    serviceId: lark
+    world: world
+    x: -225.5
+    y: 58.0
+    z: 149.5
+    yaw: 17.19696
+    pitch: 0.0
+  farmer:
+    name: Farmer
+    questId: farm_hand
+    dialogId: farmer_intro
+    serviceId: farmer
+    world: world
+    x: -214.5
+    y: 61.0
+    z: 175.5
+    yaw: 161.64679
+    pitch: 0.0
+  farm_isle_guide:
+    name: Harrow
+    questId: ''
+    dialogId: farm_isle_guide_intro
+    serviceId: ''
+    world: world
+    x: -256.5
+    y: 61.0
+    z: 185.5
+    yaw: 44.460754
+    pitch: 0.0
+  arena_proctor:
+    name: Proctor
+    dialogId: arena_proctor_intro
+    serviceId: arena_proctor
+    world: world
+    x: -299.5
+    y: 58.0
+    z: -101.5
+    yaw: 58.254032
+    pitch: 0.0
+  surveyor:
+    name: Surveyor
+    dialogId: surveyor_intro
+    serviceId: surveyor
+    world: world
+    x: -78.5
+    y: 50.0
+    z: 266.5
+    yaw: -51.286804
+    pitch: 0.0
+  vince:
+    name: Lucky Vince
+    questId: ''
+    dialogId: vince_intro
+    serviceId: ''
+    world: world
+    x: -6.5
+    y: 60.0
+    z: 74.5
+    yaw: 41.27771
+    pitch: 0.0
+  bar_whisper:
+    name: Bar Whisper
+    questId: ''
+    dialogId: bar_whisper_intro
+    serviceId: ''
+    world: world
+    x: 195.5
+    y: 64.0
+    z: -367.5
+    yaw: 90.199
+    pitch: 0.0
+  eldervale_welcome:
+    name: Maren
+    questId: ''
+    dialogId: eldervale_welcome_intro
+    serviceId: ''
+    world: world
+    x: 56.5
+    y: 90.0
+    z: 490.5
+    yaw: -77.7366
+    pitch: 0.0
+  eldervale_upgrade:
+    name: Forgehand
+    questId: ''
+    dialogId: eldervale_upgrade_intro
+    serviceId: ''
+    world: world
+    x: 53.5
+    y: 90.0
+    z: 500.5
+    yaw: 88.01483
+    pitch: 0.0
+  merchant:
+    name: Merchant
+    questId: ''
+    dialogId: merchant_intro
+    serviceId: merchant
+    world: world
+    x: 250.5
+    y: 64.0
+    z: -354.5
+    yaw: 0.31017667
+    pitch: 0.0
+  isle_clerk:
+    name: Deed
+    questId: ''
+    dialogId: isle_clerk_intro
+    serviceId: ''
+    world: world
+    x: 28.5
+    y: 58.0
+    z: 51.5
+    yaw: -64.541435
+    pitch: 0.0
+  forage_pad_guide:
+    name: Twig
+    questId: ''
+    dialogId: forage_pad_guide_intro
+    serviceId: ''
+    world: world
+    x: 365.5
+    y: 65.0
+    z: -308.5
+    yaw: -12.863131
+    pitch: 0.0
+  liquidator:
+    name: Crystal Liquidator
+    questId: ''
+    dialogId: liquidator_intro
+    serviceId: ''
+    world: world
+    x: -24.5
+    y: 58.0
+    z: 33.5
+    yaw: 264.63092
+    pitch: 0.0
+  canopy_clerk:
+    name: Canopy Clerk
+    questId: canopy_sample
+    dialogId: canopy_clerk_intro
+    serviceId: canopy_clerk
+    world: world
+    x: 567.5
+    y: 90.0
+    z: -204.5
+    yaw: -39.190407
+    pitch: 0.0
+  amethyst_mines_guide:
+    name: Crystal Guide
+    questId: ''
+    dialogId: amethyst_mines_guide_intro
+    serviceId: ''
+    world: world
+    x: 108.5
+    y: 37.0
+    z: 589.5
+    yaw: -0.79149216
+    pitch: 0.0
+  root_cellar:
+    name: Root Cellar
+    questId: ''
+    dialogId: ''
+    serviceId: ''
+    world: world
+    x: -294.75
+    y: 107.0
+    z: 522.15
+    yaw: 5.6591797
+    pitch: 0.0

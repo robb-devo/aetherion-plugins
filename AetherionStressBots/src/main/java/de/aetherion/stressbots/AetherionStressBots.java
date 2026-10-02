@@ -5,6 +5,7 @@ import de.aetherion.stressbots.control.RunnerControlClient;
 import de.aetherion.stressbots.control.TestBotController;
 import de.aetherion.stressbots.report.BotActivityTracker;
 import de.aetherion.stressbots.report.BotReportBuilder;
+import de.aetherion.stressbots.role.BotFocusService;
 import de.aetherion.stressbots.role.BotLocations;
 import de.aetherion.stressbots.role.BotNicknames;
 import de.aetherion.stressbots.role.BotRoleRegistry;
@@ -22,6 +23,7 @@ public final class AetherionStressBots extends JavaPlugin {
 
     private BotRoleRegistry registry;
     private BotNicknames nicknames;
+    private BotFocusService focus;
     private BotProvisioner provisioner;
     private BotActivityTracker activity;
     private TestBotController controller;
@@ -50,6 +52,12 @@ public final class AetherionStressBots extends JavaPlugin {
         PluginCommand report = getCommand("botreport");
         if (report != null) {
             report.setExecutor(new BotReportCommand(this));
+        }
+        PluginCommand focusCommand = getCommand("botfocus");
+        if (focusCommand != null) {
+            BotFocusCommand executor = new BotFocusCommand(this);
+            focusCommand.setExecutor(executor);
+            focusCommand.setTabCompleter(executor);
         }
 
         AetherServices.registerTestBots(controller);
@@ -85,6 +93,7 @@ public final class AetherionStressBots extends JavaPlugin {
     private void wire() {
         registry = new BotRoleRegistry(this);
         nicknames = new BotNicknames(this);
+        focus = new BotFocusService(this);
         provisioner = new BotProvisioner(this);
         BotReportBuilder reports = new BotReportBuilder(this);
         RunnerControlClient runner = new RunnerControlClient(this);
@@ -97,6 +106,10 @@ public final class AetherionStressBots extends JavaPlugin {
 
     public BotNicknames getNicknames() {
         return nicknames;
+    }
+
+    public BotFocusService getFocus() {
+        return focus;
     }
 
     public BotProvisioner getProvisioner() {

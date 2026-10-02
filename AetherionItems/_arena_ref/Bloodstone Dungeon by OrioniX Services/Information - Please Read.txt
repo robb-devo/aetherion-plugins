@@ -1,0 +1,39 @@
+   ____  _____  _____ ____  _   _ _______   __           
+  / __ \|  __ \|_   _/ __ \| \ | |_   _\ \ / /           
+ | |  | | |__) | | || |  | |  \| | | |  \ V /            
+ | |  | |  _  /  | || |  | | . ` | | |   > <             
+ | |__| | | \ \ _| || |__| | |\  |_| |_ / . \            
+  \____/|_|__\_\_____\____/|_|_\_|_____/_/ \_\___  _____ 
+  / ____|  ____|  __ \ \    / /_   _/ ____|  ____|/ ____|
+ | (___ | |__  | |__) \ \  / /  | || |    | |__  | (___  
+  \___ \|  __| |  _  / \ \/ /   | || |    |  __|  \___ \ 
+  ____) | |____| | \ \  \  /   _| || |____| |____ ____) |
+ |_____/|______|_|  \_\  \/   |_____\_____|______|_____/ 
+                                                         
+                                                         
+Thank you for your purchase! 
+
+Your support means the world to us. If you have any questions 
+or need assistance, don’t hesitate to reach out. 
+We hope you enjoy your new build and wish you great success 
+with your project! 
+
+Included Files
+You have 1 schematic version of the build:
+
+* 1.20+ – Works with 1.20, 1.21, and future versions of Minecraft
+
+How to Load the Build
+Before loading the schematic, make sure to run this command:
+/gamerule randomTickSpeed 0
+This prevents the leaves on trees from decaying.
+
+- Join our discord server (Support): https://discord.gg/92ESXYeEvS
+- Don’t miss out: Get **20% OFF your first commission**!  
+
+  _______ _    _          _   _ _  __ __     ______  _    _ 
+ |__   __| |  | |   /\   | \ | | |/ / \ \   / / __ \| |  | |
+    | |  | |__| |  /  \  |  \| | ' /   \ \_/ / |  | | |  | |
+    | |  |  __  | / /\ \ | . ` |  <     \   /| |  | | |  | |
+    | |  | |  | |/ ____ \| |\  | . \     | | | |__| | |__| |
+    |_|  |_|  |_/_/    \_\_| \_|_|\_\    |_|  \____/ \____/ 

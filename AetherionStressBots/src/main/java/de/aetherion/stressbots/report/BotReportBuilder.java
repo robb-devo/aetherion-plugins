@@ -149,11 +149,21 @@ public final class BotReportBuilder {
         for (TestBotView bot : report.bots()) {
             out.append("  - ").append(bot.label())
                     .append(" role=").append(bot.role())
+                    .append(" profile=").append(bot.profile().isBlank() ? "-" : bot.profile())
+                    .append(" state=").append(bot.state())
                     .append(" @ ").append(bot.world())
                     .append(String.format(Locale.ROOT, " %.1f %.1f %.1f", bot.x(), bot.y(), bot.z()))
+                    .append(" hp=").append(String.format(Locale.ROOT, "%.0f", bot.health()))
+                    .append(" food=").append(bot.food())
                     .append(" activity=").append(bot.activity())
                     .append(" held=").append(bot.heldItem())
                     .append(" deaths=").append(bot.deaths());
+            if (!bot.target().isBlank()) {
+                out.append(" target=").append(bot.target());
+            }
+            if (!bot.inventorySummary().isBlank()) {
+                out.append(" inv=").append(bot.inventorySummary());
+            }
             if (!bot.lastAction().isBlank()) {
                 out.append(" last=").append(bot.lastAction());
             }
@@ -177,6 +187,10 @@ public final class BotReportBuilder {
         BotActivityTracker.Runtime runtime = plugin.getActivity().snapshot(player);
         BotNicknames nicks = plugin.getNicknames();
         String display = nicks == null ? player.getName() : nicks.plain(player, handler.role());
+        String profile = runtime.profile();
+        if ((profile == null || profile.isBlank()) && plugin.getFocus() != null) {
+            profile = plugin.getFocus().profileOf(player);
+        }
         return new TestBotView(
                 player.getName(),
                 display,
@@ -190,8 +204,34 @@ public final class BotReportBuilder {
                 runtime.deaths(),
                 runtime.lastAction(),
                 runtime.lastError(),
-                runtime.recentActions()
+                runtime.recentActions(),
+                player.getHealth(),
+                player.getFoodLevel(),
+                inventorySummary(player),
+                runtime.target(),
+                profile,
+                runtime.state()
         );
+    }
+
+    private static String inventorySummary(Player player) {
+        org.bukkit.inventory.ItemStack[] contents = player.getInventory().getContents();
+        int used = 0;
+        List<String> names = new ArrayList<>();
+        for (ItemStack item : contents) {
+            if (item == null || item.getType().isAir()) {
+                continue;
+            }
+            used++;
+            if (names.size() < 3) {
+                String label = BotActivityTracker.pretty(item);
+                names.add(item.getAmount() > 1 ? label + " x" + item.getAmount() : label);
+            }
+        }
+        if (used == 0) {
+            return "empty";
+        }
+        return used + " items · " + String.join(", ", names);
     }
 
     private static String activityHint(List<TestBotView> members) {

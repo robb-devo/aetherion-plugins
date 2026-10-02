@@ -1,0 +1,217 @@
+# ============================================================
+# BossEngine – Spawner
+# ------------------------------------------------------------
+# 2026-09-11: all megamap homes cleared. Stay disabled until
+# you /boss place (or set coords) on the Origin map.
+# ============================================================
+
+spawners:
+  colossus_altar:
+    enabled: false
+    boss: aether_colossus
+    type: ITEM
+    world: world
+    x: 0.5
+    y: 200.0
+    z: 0.5
+    yaw: 180
+    pitch: 0
+    item-id: aether_colossus_core
+    altar-radius: 5
+    max-instances: 1
+    leash-radius: 40
+    leash-action: TELEPORT
+  
+  colossus_timer:
+    enabled: false
+    boss: aether_colossus
+    type: TIMER
+    world: world
+    x: 0.5
+    y: 200.0
+    z: 0.5
+    yaw: 90
+    pitch: 0
+    interval: 2h
+    max-instances: 1
+    leash-radius: 48
+    leash-action: RESET
+  
+  hollow_lurker_home:
+    enabled: false
+    boss: hollow_lurker
+    type: STATIONARY
+    world: world
+    x: 0.5
+    y: 200.0
+    z: 0.5
+    yaw: 0.0
+    pitch: 0.0
+    interval: 5m
+    max-instances: 1
+    leash-radius: 0
+    leash-action: TELEPORT
+  
+  mcnugget_home:
+    enabled: false
+    boss: mcnugget
+    type: STATIONARY
+    world: world
+    x: 0.5
+    y: 200.0
+    z: 0.5
+    yaw: 0.0
+    pitch: 0.0
+    interval: 5m
+    max-instances: 1
+    leash-radius: 24
+    leash-action: TELEPORT
+  
+  bridge_troll_home:
+    enabled: false
+    boss: bridge_troll
+    type: STATIONARY
+    world: world
+    x: 0.5
+    y: 200.0
+    z: 0.5
+    yaw: 0.0
+    pitch: 0.0
+    interval: 5m
+    max-instances: 1
+    leash-radius: 128
+    leash-action: TELEPORT
+  
+  squidward_home:
+    enabled: false
+    boss: squidward
+    type: STATIONARY
+    world: world
+    x: 0.5
+    y: 200.0
+    z: 0.5
+    yaw: 0.0
+    pitch: 0.0
+    interval: 5m
+    max-instances: 1
+    leash-radius: 24
+    leash-action: TELEPORT
+  
+  skuldugery_home:
+    enabled: false
+    boss: skuldugery
+    type: STATIONARY
+    world: world
+    x: 0.5
+    y: 200.0
+    z: 0.5
+    yaw: 0.0
+    pitch: 0.0
+    interval: 5m
+    max-instances: 1
+    leash-radius: 24
+    leash-action: TELEPORT
+  
+  lobby_cleaner_home:
+    enabled: false
+    boss: lobby_cleaner
+    type: STATIONARY
+    world: world
+    x: 0.5
+    y: 200.0
+    z: 0.5
+    yaw: 0.0
+    pitch: 0.0
+    interval: 5m
+    max-instances: 1
+    leash-radius: 60
+    leash-action: TELEPORT
+  
+  baron_von_wurm_home:
+    enabled: false
+    boss: baron_von_wurm
+    type: STATIONARY
+    world: world
+    x: 0.5
+    y: 200.0
+    z: 0.5
+    yaw: 0.0
+    pitch: 0.0
+    interval: 5m
+    max-instances: 1
+    leash-radius: 52
+    leash-action: TELEPORT
+  
+  sir_balthazar_home:
+    enabled: false
+    boss: sir_balthazar
+    type: STATIONARY
+    world: world
+    x: 0.5
+    y: 200.0
+    z: 0.5
+    yaw: 0.0
+    pitch: 0.0
+    interval: 5m
+    max-instances: 1
+    leash-radius: 24
+    leash-action: TELEPORT
+  
+  insolvent_wither_home:
+    enabled: false
+    boss: insolvent_wither
+    type: STATIONARY
+    world: world
+    x: 0.5
+    y: 200.0
+    z: 0.5
+    yaw: 0.0
+    pitch: 0.0
+    interval: 5m
+    max-instances: 1
+    leash-radius: 24
+    leash-action: TELEPORT
+  
+  sparky_home:
+    enabled: false
+    boss: sparky
+    type: STATIONARY
+    world: world
+    x: 0.5
+    y: 200.0
+    z: 0.5
+    yaw: 0.0
+    pitch: 0.0
+    interval: 5m
+    max-instances: 1
+    leash-radius: 55
+    leash-action: TELEPORT
+  
+  pathwarden_home:
+    enabled: false
+    boss: pathwarden
+    type: STATIONARY
+    world: world
+    x: 0.5
+    y: 200.0
+    z: 0.5
+    yaw: 0.0
+    pitch: 0.0
+    interval: 5m
+    max-instances: 1
+    leash-radius: 36
+    leash-action: TELEPORT
+  hollow_sun_home:
+    enabled: true
+    boss: hollow_sun
+    type: STATIONARY
+    world: bloodstone
+    x: 0.5
+    y: 63.0
+    z: 115.5
+    yaw: 0.0
+    pitch: 0.0
+    interval: 5m
+    max-instances: 1
+    leash-radius: 36
+    leash-action: TELEPORT

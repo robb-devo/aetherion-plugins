@@ -8,18 +8,22 @@ import { createFishLoop } from './fish.js'
 import { createTradeLoop } from './trade.js'
 import { createQuestLoop } from './quest.js'
 import { createPadLoop } from './pad.js'
+import { createGeneralLoop } from './general.js'
+import { attachBrain } from './brain.js'
+import { personalityOf } from './personality.js'
 import { attachVelocityForwarding } from './velocity.js'
 import { attachSafety, readAnchors } from './safety.js'
 import { attachPlaystyle } from './playstyle.js'
 import { attachLocale } from './locale.js'
 import { attachMinigames } from './minigame.js'
-import { fmtPos, heldName, note, sleep } from './util.js'
+import { fmtPos, heldName, inventorySummary, note, sleep } from './util.js'
 
 const { goals } = pathfinderPkg
 
 const WAVE1 = ['mine', 'forage', 'catch', 'roam']
 const WAVE2 = ['combat', 'fish', 'trade', 'quest', 'pad']
-const ALL_ROLES = [...WAVE1, ...WAVE2, 'mining']
+const WAVE3 = ['general']
+const ALL_ROLES = [...WAVE1, ...WAVE2, ...WAVE3, 'mining']
 
 export function createFleet({ config, log }) {
   const slots = new Map()
@@ -43,6 +47,7 @@ export function createFleet({ config, log }) {
       trade: 'QaTrade',
       quest: 'QaQuest',
       pad: 'QaPad',
+      general: 'QaGeneral',
       mining: 'StressM'
     }[role] || 'QaBot'
   }
@@ -86,6 +91,7 @@ export function createFleet({ config, log }) {
     if (role === 'trade') return createTradeLoop(bot, cfg, log)
     if (role === 'quest') return createQuestLoop(bot, cfg, log)
     if (role === 'pad') return createPadLoop(bot, cfg, log)
+    if (role === 'general') return createGeneralLoop(bot, cfg, log, config)
     return createMiningLoop(bot, cfg, log)
   }
 
@@ -112,9 +118,12 @@ export function createFleet({ config, log }) {
     bot.role = role
     bot.stressName = name
     bot.qaActivity = 'idle'
+    bot.qaState = 'idle'
+    bot.qaPersonality = personalityOf(name, role)
     bot.qaRecent = []
     bot.qaDeaths = 0
     bot.qaLastError = ''
+    bot.qaTarget = ''
     bot.managedStop = false
 
     if (config.velocitySecret) {
@@ -150,11 +159,15 @@ export function createFleet({ config, log }) {
 
     const loop = startLoop(bot, role)
     attachPlaystyle(bot, log)
+    if (role !== 'general') {
+      attachBrain(bot, { config, log, switchable: false })
+    }
     let started = false
     bot.on('spawn', () => {
       if (started) return
       started = true
-      setTimeout(() => loop(), 4500)
+      const delay = 3800 + Math.floor(Math.random() * 2200)
+      setTimeout(() => loop(), delay)
     })
 
     bot.on('end', (reason) => {
@@ -279,8 +292,14 @@ export function createFleet({ config, log }) {
       const bots = [...slots.values()].map((bot) => ({
         name: bot.stressName,
         role: bot.role,
+        profile: bot.qaPersonality?.id || '',
+        state: bot.qaState || bot.qaActivity || 'idle',
         activity: bot.qaActivity || 'idle',
+        target: bot.qaTarget || '',
         heldItem: heldName(bot),
+        health: Number.isFinite(bot.health) ? bot.health : null,
+        food: Number.isFinite(bot.food) ? bot.food : null,
+        inventory: inventorySummary(bot),
         deaths: bot.qaDeaths || 0,
         lastAction: bot.qaLastAction || '',
         lastError: bot.qaLastError || '',

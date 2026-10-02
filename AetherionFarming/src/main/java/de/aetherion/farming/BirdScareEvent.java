@@ -1,6 +1,7 @@
 package de.aetherion.farming;
 
 import de.aetherion.core.api.QuestBars;
+import de.aetherion.farming.island.FarmIsleZones;
 import de.aetherion.items.manager.ActiveEquipmentStats;
 import de.aetherion.items.manager.StatProvider;
 import de.aetherion.items.model.ItemCapability;
@@ -83,24 +84,9 @@ public final class BirdScareEvent implements Listener, StatProvider, Runnable {
         return Math.max(8.0d, plugin.getConfig().getDouble("bird-scare.view-range", DEFAULT_VIEW_RANGE));
     }
 
-    /** True when farm-zone is off, or the location is inside the configured farm bubble. */
+    /** True when anywhere-near-crops, or inside any configured farm / Farm Isle zone. */
     private boolean inFarmZone(Location at) {
-        if (at == null || at.getWorld() == null) {
-            return false;
-        }
-        if (!plugin.getConfig().getBoolean("bird-scare.farm-zone.enabled", true)) {
-            return true;
-        }
-        String worldName = plugin.getConfig().getString("bird-scare.farm-zone.world", "world");
-        if (!at.getWorld().getName().equalsIgnoreCase(worldName)) {
-            return false;
-        }
-        double fx = plugin.getConfig().getDouble("bird-scare.farm-zone.x", -211.5d);
-        double fz = plugin.getConfig().getDouble("bird-scare.farm-zone.z", 183.5d);
-        double radius = Math.max(16.0d, plugin.getConfig().getDouble("bird-scare.farm-zone.radius", 90.0d));
-        double dx = at.getX() - fx;
-        double dz = at.getZ() - fz;
-        return (dx * dx + dz * dz) <= radius * radius;
+        return FarmIsleZones.inBirdZone(plugin, at);
     }
 
     void start() {
@@ -344,14 +330,15 @@ public final class BirdScareEvent implements Listener, StatProvider, Runnable {
     }
 
     private void grantBoostFeedback(Player player, Location field) {
-        player.sendMessage("§aField clear. §7+50 Fortune, +50 Harvest for 60s.");
-        player.sendActionBar(Component.text("+50 Fortune · +50 Harvest  (60s)", NamedTextColor.GOLD));
+        // Golden Hour = the existing bird-scare success boost, named + gold particles.
+        player.sendMessage("§6Golden Hour! §7+50 Fortune, +50 Harvest for 60s.");
+        player.sendActionBar(Component.text("Golden Hour · +50 Fortune · +50 Harvest  (60s)", NamedTextColor.GOLD));
         player.showTitle(net.kyori.adventure.title.Title.title(
-                Component.text("Field clear", NamedTextColor.GREEN),
-                Component.text("+50 Fortune · +50 Harvest", NamedTextColor.GOLD),
+                Component.text("Golden Hour", NamedTextColor.GOLD),
+                Component.text("+50 Fortune · +50 Harvest", NamedTextColor.YELLOW),
                 net.kyori.adventure.title.Title.Times.times(
                         java.time.Duration.ofMillis(80),
-                        java.time.Duration.ofMillis(1400),
+                        java.time.Duration.ofMillis(1600),
                         java.time.Duration.ofMillis(220)
                 )
         ));
@@ -359,9 +346,10 @@ public final class BirdScareEvent implements Listener, StatProvider, Runnable {
         player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.55f, 1.4f);
         player.spawnParticle(Particle.HAPPY_VILLAGER, player.getLocation().add(0, 1.0, 0), 14, 0.35, 0.45, 0.35, 0.02);
         player.spawnParticle(Particle.END_ROD, player.getLocation().add(0, 1.1, 0), 8, 0.25, 0.35, 0.25, 0.01);
+        player.spawnParticle(Particle.FIREWORK, player.getLocation().add(0, 1.2, 0), 10, 0.4, 0.4, 0.4, 0.02);
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
             if (player.isOnline() && boostUntil.containsKey(player.getUniqueId())) {
-                player.sendActionBar(Component.text("+50 Fortune · +50 Harvest  (60s)", NamedTextColor.GOLD));
+                player.sendActionBar(Component.text("Golden Hour  (60s)", NamedTextColor.GOLD));
             }
         }, 25L);
         if (field != null && field.getWorld() != null && player.getWorld().equals(field.getWorld())) {

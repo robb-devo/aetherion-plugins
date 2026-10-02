@@ -1,0 +1,27 @@
+max-members: 50
+invite-seconds: 300
+island-spacing: 512
+island-world: aether_guilds
+personal-island-spacing: 512
+personal-island-world: aether_islands
+minion-interval-seconds: 10
+max-quarry-level: 7
+island-build-radius: 24
+reset-islands: false
+
+# --- Island highlight (starters, land, structures, belts, guild projects) -----------------------
+# All keys are optional; the plugin uses these defaults when a key is missing (existing configs keep working).
+# Templates live in plugins/AetherionGuilds/templates/*.schem (extracted once, never overwritten).
+# Re-author any of them with WorldEdit (//schem save), drop the file there, then /island admin reload-templates.
+paste-blocks-per-tick: 3000
+land:
+  parcel-base: 2500        # personal: coins per 16x16 parcel x (parcels owned - 8)
+  guild-parcel-base: 10000 # guild: from the guild bank
+logistics:
+  belt-coins: 5            # per belt tile (refunded when taken up)
+  max-run: 64              # longest single belt lay
+  cargo-per-island: 36     # visible cargo ItemDisplays per island (cosmetic)
+  cargo-global: 240
+unlock:
+  island-foreshadow-level: 15  # gull's note (needs PlaceholderAPI %aetherion_level%)
+  guild-foreshadow-level: 65
