@@ -142,7 +142,7 @@ public final class AdminBetaMenu {
             skull.setOwningPlayer(offline);
             skull.setDisplayName("§f" + safeName(data));
             List<String> lore = new ArrayList<>();
-            lore.add("§7Checklist §f" + data.doneCount() + "§7/§f" + data.totalMilestones());
+            lore.add("§7Journal §f" + data.doneCount() + "§7/§f" + data.totalMilestones());
             lore.add("§7Played §f" + formatDuration(data.playedMs()));
             lore.add(data.submitted() ? "§aFeedback in" : "§8No feedback yet");
             if (data.lang() != null) {

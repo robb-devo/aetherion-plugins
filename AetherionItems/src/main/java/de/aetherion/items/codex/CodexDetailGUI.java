@@ -192,6 +192,7 @@ public final class CodexDetailGUI {
                     lore.add("§6Drops");
                     lore.addAll(BossJournal.dropLines(loot, 12));
                 }
+                lore.addAll(BossJournal.recommended(card.boss().templateId()));
             }
             return GuiItems.named(card.isBoss() ? Material.WRITABLE_BOOK : Material.MAP, "§eField notes", lore);
         }

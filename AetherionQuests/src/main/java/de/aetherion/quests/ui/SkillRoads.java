@@ -19,7 +19,7 @@ import java.util.List;
 
 /**
  * Red thread after orientation: Miss Ledger hands the player the "open roads" —
- * Forage Isle (Twig), Farm Isle (Harrow), Fishing (Tackle) and Steel (Vex, later Rite Warden).
+ * Forage Isle (Twig), Farm Isle (Harlow), Fishing (Tackle) and Steel (Vex, later Rite Warden).
  * <p>
  * Soft by design: the player picks one road (reply chips) or wanders. Exactly one soft
  * compass target is set at a time. No quest state is touched and nothing is locked.
@@ -57,13 +57,13 @@ public final class SkillRoads {
 
         if (!talkReady(player)) {
             say(player, ledger, LangPack.say(player, "ledger.roads.list",
-                    "§aTwig§f's pad: Forage Isle. §eHarrow§f's portal: Farm Isle. §bTackle§f: fishing."));
+                    "§aTwig§f's pad: Forage Isle. §eHarlow§f, back of the barn: Farm Isle. §bTackle§f: fishing."));
             point(player, ledger, fallback, false);
             return;
         }
         say(player, ledger, LangPack.say(player, "ledger.roads.menu",
                 "Wood, wheat, fish — or steel. Pick one. The arrow follows."));
-        later(player, DialogPace.LINE_GAP_TICKS * 2L + 10L, () -> {
+        later(player, DialogPace.untilReplies(player), () -> {
             if (!offer(player, ledger)) {
                 point(player, ledger, fallback, true);
             }
@@ -77,7 +77,7 @@ public final class SkillRoads {
         }
         say(player, ledger, LangPack.say(player, "ledger.roads.menu",
                 "Wood, wheat, fish — or steel. Pick one. The arrow follows."));
-        later(player, DialogPace.LINE_GAP_TICKS + 10L, () -> {
+        later(player, DialogPace.untilReplies(player), () -> {
             if (!offer(player, ledger)) {
                 point(player, ledger, defaultRoad(player, questManager()), true);
             }
@@ -170,7 +170,7 @@ public final class SkillRoads {
     private static String hintLabel(Player player, QuestManager qm, Road road) {
         return switch (road) {
             case FORAGE -> "Twig · Forage Pad";
-            case FARM -> "Harrow · Farm Isle";
+            case FARM -> "Harlow · Farm Isle";
             case FISH -> "Tackle · Fishing";
             case STEEL -> vexDone(player, qm) ? "Rite Warden" : "Sergeant Vex";
         };
@@ -199,7 +199,7 @@ public final class SkillRoads {
     private static String label(Player player, String key) {
         return switch (key) {
             case "forage" -> LangPack.say(player, "ledger.roads.forage.label", "Forage Isle · Twig");
-            case "farm" -> LangPack.say(player, "ledger.roads.farm.label", "Farm Isle · Harrow");
+            case "farm" -> LangPack.say(player, "ledger.roads.farm.label", "Farm Isle · Harlow");
             case "fish" -> LangPack.say(player, "ledger.roads.fish.label", "Fishing · Tackle");
             case "rite" -> LangPack.say(player, "ledger.roads.rite.label", "Bosses · Rite Warden");
             default -> LangPack.say(player, "ledger.roads.steel.label", "Combat · Vex");
@@ -221,7 +221,7 @@ public final class SkillRoads {
             case "forage.line" -> LangPack.say(player, "ledger.roads.forage.line",
                     "§aTwig§f's slime pad, by the Forager. Isle trees, bigger chop.");
             case "farm.line" -> LangPack.say(player, "ledger.roads.farm.line",
-                    "§eHarrow§f's portal, far end of the barn. Farming §e10§f gets you in.");
+                    "§eHarlow§f, far end of the barn. He knows the way down — Farming §e10§f gets you in.");
             case "fish.line" -> LangPack.say(player, "ledger.roads.fish.line",
                     "§bTackle§f, end of the harbour pier. Rod, patience, five fish.");
             case "fish.line_done" -> LangPack.say(player, "ledger.roads.fish.line_done",
@@ -236,7 +236,7 @@ public final class SkillRoads {
     private static String tip(Player player, String key) {
         return switch (key) {
             case "forage" -> LangPack.ui(player, "tip.road_forage", "→ Twig · slime pad · Forage Isle");
-            case "farm" -> LangPack.ui(player, "tip.road_farm", "→ Harrow · barn far end · Farm Isle");
+            case "farm" -> LangPack.ui(player, "tip.road_farm", "→ Harlow · barn far end · Farm Isle");
             case "fish" -> LangPack.ui(player, "tip.road_fish", "→ Tackle · harbour pier · fishing");
             case "rite" -> LangPack.ui(player, "tip.road_rite", "→ Rite Warden · Borderlands");
             default -> LangPack.ui(player, "tip.road_steel", "→ Sergeant Vex · gear on first");

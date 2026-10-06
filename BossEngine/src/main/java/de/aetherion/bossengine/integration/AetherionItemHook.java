@@ -1,6 +1,7 @@
 package de.aetherion.bossengine.integration;
 
 import de.aetherion.items.AetherionItems;
+import de.aetherion.items.economy.CompressedResource;
 import de.aetherion.items.item.CustomItem;
 
 import org.bukkit.Bukkit;
@@ -58,13 +59,29 @@ public class AetherionItemHook implements AetherionItemBridge.ItemFactory {
             case "weapon_schematic" -> customItem.createWeaponSchematic();
             default -> {
                 ItemStack dungeon = customItem.createDungeonFromId(itemId);
-                yield dungeon != null ? dungeon : invokeCreate(itemId);
+                if (dungeon != null) {
+                    yield dungeon;
+                }
+                // compressed_* / compacted_* / refined_* / quarry_* have no createXxx method on
+                // CustomItem; reflection used to miss them silently (McNugget's compressed_coal).
+                ItemStack resource = CompressedResource.fromId(itemId);
+                yield resource != null ? resource : invokeCreate(itemId);
             }
         };
     }
 
     private ItemStack invokeCreate(String itemId) throws ReflectiveOperationException {
-        Method method = CustomItem.class.getMethod(toCreateMethod(itemId));
+        Method method;
+        try {
+            method = CustomItem.class.getMethod(toCreateMethod(itemId));
+        } catch (NoSuchMethodException missing) {
+            // Last resort: Items' own id router (domain factories: farming/foraging/fishing/boosters/...).
+            ItemStack routed = customItem.createById(itemId);
+            if (routed != null) {
+                return routed;
+            }
+            throw missing;
+        }
         Object result = method.invoke(customItem);
         return result instanceof ItemStack stack ? stack : null;
     }

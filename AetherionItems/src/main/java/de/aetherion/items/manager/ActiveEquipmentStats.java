@@ -122,10 +122,11 @@ public class ActiveEquipmentStats {
             value *= de.aetherion.items.item.DungeonCore.rarityStatMultiplier(itemManager.getRarity(item));
         }
         boolean dungeon = de.aetherion.items.dungeon.DungeonArmor.inDungeon(player);
-        boolean nativeGear = de.aetherion.items.dungeon.DungeonArmor.isNativeDungeonGear(item, itemManager);
-        // Native dungeon gear stays weak in the overworld; dungeon power = cores + gear level.
-        if (nativeGear && !dungeon) {
-            value *= de.aetherion.items.dungeon.DungeonArmor.OVERWORLD_STAT_MULTIPLIER;
+        // Dungeon gear stays weaker in the overworld; dungeon power = cores + gear level.
+        // Native Floor-I gear x0.38 (unchanged); P3 B2: relic-identified T2 x0.60, T3 x0.70.
+        double overworld = de.aetherion.items.dungeon.DungeonArmor.overworldMultiplier(item, itemManager);
+        if (overworld < 1.0 && !dungeon) {
+            value *= overworld;
         }
         if (dungeon) {
             value *= de.aetherion.items.dungeon.DungeonGearProgress.dungeonBonusMultiplier(

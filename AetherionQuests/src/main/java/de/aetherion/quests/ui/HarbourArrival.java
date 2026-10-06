@@ -61,8 +61,19 @@ public final class HarbourArrival {
         return player != null && PLAYING.contains(player.getUniqueId());
     }
 
-    /** First join, right after the language pick. */
+    /** First join, right after the language pick (no orbit / orbit skipped). */
     public static void play(Player player) {
+        play(player, false);
+    }
+
+    /**
+     * Hand-off after the opening orbit: no place card / foghorn — FIND EGON + flare + call only.
+     */
+    public static void playAfterOrbit(Player player) {
+        play(player, true);
+    }
+
+    private static void play(Player player, boolean afterOrbit) {
         AetherionQuests plugin = AetherionQuests.getInstance();
         if (plugin == null || player == null || !player.isOnline()) {
             return;
@@ -70,16 +81,24 @@ public final class HarbourArrival {
         UUID id = player.getUniqueId();
         PLAYING.add(id);
 
-        placeCard(player);
+        long findAt = afterOrbit ? 2L : FIND_EGON_AT;
+        long callAt = afterOrbit ? 18L : EGON_CALLS_AT;
+        long doneAt = afterOrbit ? 48L : DONE_AT;
+
+        if (!afterOrbit) {
+            placeCard(player);
+        }
 
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
             if (!player.isOnline()) {
                 return;
             }
             findEgonCard(player);
-            flareEgon(player);
+            if (!afterOrbit) {
+                flareEgon(player);
+            }
             QuestHint.show(player, EGON, egonName());
-        }, FIND_EGON_AT);
+        }, findAt);
 
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
             if (!player.isOnline()) {
@@ -90,9 +109,9 @@ public final class HarbourArrival {
             })) {
                 LivingNpcProfile.say(player, EGON, egonName(), line);
             }
-        }, EGON_CALLS_AT);
+        }, callAt);
 
-        plugin.getServer().getScheduler().runTaskLater(plugin, () -> PLAYING.remove(id), DONE_AT);
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> PLAYING.remove(id), doneAt);
     }
 
     /** Came back without ever talking to Egon: point, don't shout. */

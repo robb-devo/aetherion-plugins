@@ -683,7 +683,7 @@ public class RecipeBookGUI {
             "combat_", "mining_", "farming_", "foraging_", "fishing_",
             "rotten_", "bone_", "webweave_",
             "ironhide_", "healer_",
-            "catcher_", "diving_"
+            "catcher_", "diving_", "catch_sphere"
     };
 
     private int compareArmor(RecipeDefinition first, RecipeDefinition second) {
@@ -718,6 +718,12 @@ public class RecipeBookGUI {
 
     private int armorSlotOrder(RecipeDefinition recipe) {
         String id = recipe != null ? recipe.getId().toLowerCase() : "";
+        if (id.matches("^(mining|farming|foraging|fishing)_sack_t[123]$")) {
+            if (id.endsWith("_t1")) return 0;
+            if (id.endsWith("_t2")) return 1;
+            if (id.endsWith("_t3")) return 2;
+            return 3;
+        }
         if (id.startsWith("catch_sphere_")) {
             if (id.endsWith("_common")) return 0;
             if (id.endsWith("_rare")) return 1;
@@ -736,21 +742,24 @@ public class RecipeBookGUI {
         if (category == RecipeCategory.AETHER_MOBS) {
             return List.of(
                     "",
-                    "§7Catch spheres, common → epic.",
-                    "§7Catcher set: helmet → boots."
+                    "§7Catcher set: helmet → boots.",
+                    "§7Catch spheres last — common → epic, top to bottom."
             );
         }
         if (category == RecipeCategory.MINING || category == RecipeCategory.COMBAT) {
             return List.of(
                     "",
                     "§7Helmet → boots, top to bottom.",
-                    "§7Specials start on the next page."
+                    "§7Each tier's " + (category == RecipeCategory.MINING ? "pickaxe" : "sword") + " sits beside its helmet.",
+                    "§7Skill sacks sit after the gear — I → III.",
+                    "§7Specials follow the tiers."
             );
         }
         return List.of(
                 "",
                 "§7Helmet → boots, top to bottom.",
-                "§7Set tools sit beside their tier."
+                "§7Set tools sit beside their tier.",
+                "§7Skill sacks sit after the gear — I → III."
         );
     }
 
@@ -791,7 +800,7 @@ public class RecipeBookGUI {
         keys.sort(Comparator.comparingInt(this::setKeyRank));
 
         if (category == RecipeCategory.MINING || category == RecipeCategory.COMBAT) {
-            return groupedArmorThenSpecials(grouped, toolsBySet, orphanTools, keys);
+            return groupedTierPairsThenSpecials(grouped, toolsBySet, orphanTools, keys);
         }
 
         List<List<RecipeDefinition>> sets = new ArrayList<>();
@@ -819,57 +828,74 @@ public class RecipeBookGUI {
     }
 
     /**
-     * Mining / Combat: T1–T5 armor columns first (like Farming), then a new page of
-     * pickaxes/swords and specials.
+     * Mining / Combat, the Farming way: each tier is its armour column (helmet → boots) with the
+     * tier's tool in the next column, level with the helmet; more tools of the same tier stack
+     * under it. A tier never splits across pages. Everything else (orphan tools, specials,
+     * upgrade stones) packs four to a column right after the last tier — rows, not pages.
+     * <p>
+     * Each returned list is one column (index = row); {@link #getGearRecipe} reads the same list.
      */
-    private List<List<RecipeDefinition>> groupedArmorThenSpecials(
+    private List<List<RecipeDefinition>> groupedTierPairsThenSpecials(
             Map<String, List<RecipeDefinition>> grouped,
             Map<String, List<RecipeDefinition>> toolsBySet,
             List<RecipeDefinition> orphanTools,
             List<String> keys
     ) {
-        List<List<RecipeDefinition>> armor = new ArrayList<>();
-        List<List<RecipeDefinition>> tools = new ArrayList<>();
-        List<List<RecipeDefinition>> specials = new ArrayList<>();
+        int perPage = RecipeBookLayout.ARMOR_SETS_PER_PAGE;
+        int rows = RecipeBookLayout.ARMOR_PIECES;
+        List<List<RecipeDefinition>> columns = new ArrayList<>();
+        List<RecipeDefinition> looseTools = new ArrayList<>();
+        List<RecipeDefinition> specials = new ArrayList<>();
 
         for (String key : keys) {
             List<RecipeDefinition> pieces = new ArrayList<>(grouped.getOrDefault(key, List.of()));
             pieces.sort(Comparator.comparingInt(this::armorSlotOrder));
-            boolean armorSet = !pieces.isEmpty() && pieces.stream().anyMatch(this::isArmorPiece);
-            if (armorSet) {
-                if (pieces.size() > RecipeBookLayout.ARMOR_PIECES) {
-                    pieces = new ArrayList<>(pieces.subList(0, RecipeBookLayout.ARMOR_PIECES));
-                }
-                armor.add(pieces);
-            } else if (!pieces.isEmpty()) {
-                specials.add(pieces.size() > RecipeBookLayout.ARMOR_PIECES
-                        ? new ArrayList<>(pieces.subList(0, RecipeBookLayout.ARMOR_PIECES))
-                        : pieces);
-            }
             List<RecipeDefinition> setTools = new ArrayList<>(toolsBySet.getOrDefault(key, List.of()));
             setTools.sort(this::compareArmor);
-            for (RecipeDefinition tool : setTools) {
-                tools.add(List.of(tool));
+            boolean armorSet = pieces.stream().anyMatch(this::isArmorPiece);
+            if (!armorSet) {
+                // No armour tier to sit beside (e.g. a lone tiered tool): it joins the tools.
+                looseTools.addAll(setTools);
+                specials.addAll(pieces);
+                continue;
             }
-        }
-        orphanTools.sort(this::compareArmor);
-        for (RecipeDefinition tool : orphanTools) {
-            if (isSetTool(tool)) {
-                tools.add(List.of(tool));
-            } else {
-                specials.add(List.of(tool));
+            List<RecipeDefinition> armor = new ArrayList<>();
+            List<RecipeDefinition> beside = new ArrayList<>(setTools);
+            for (RecipeDefinition piece : pieces) {
+                if (armor.size() < rows && isArmorPiece(piece)) {
+                    armor.add(piece);
+                } else {
+                    beside.add(piece);
+                }
             }
+            int width = 1 + (beside.isEmpty() ? 0 : (beside.size() + rows - 1) / rows);
+            int used = columns.size() % perPage;
+            if (used > 0 && used + width > perPage) {
+                while (columns.size() % perPage != 0) {
+                    columns.add(List.of());
+                }
+            }
+            columns.add(armor);
+            columns.addAll(pack(beside, rows));
         }
 
-        List<List<RecipeDefinition>> sets = new ArrayList<>(armor);
-        if (!tools.isEmpty() || !specials.isEmpty()) {
-            while (!sets.isEmpty() && sets.size() % RecipeBookLayout.ARMOR_SETS_PER_PAGE != 0) {
-                sets.add(List.of());
-            }
-            sets.addAll(tools);
-            sets.addAll(specials);
+        orphanTools.sort(this::compareArmor);
+        for (RecipeDefinition tool : orphanTools) {
+            (isSetTool(tool) ? looseTools : specials).add(tool);
         }
-        return sets;
+        List<RecipeDefinition> loose = new ArrayList<>(looseTools);
+        loose.addAll(specials);
+        columns.addAll(pack(loose, rows));
+        return columns;
+    }
+
+    /** Fill columns top to bottom, {@code rows} at a time. */
+    private static List<List<RecipeDefinition>> pack(List<RecipeDefinition> items, int rows) {
+        List<List<RecipeDefinition>> out = new ArrayList<>();
+        for (int i = 0; i < items.size(); i += rows) {
+            out.add(new ArrayList<>(items.subList(i, Math.min(items.size(), i + rows))));
+        }
+        return out;
     }
 
     private boolean isArmorPiece(RecipeDefinition recipe) {
@@ -903,6 +929,9 @@ public class RecipeBookGUI {
     private String armorSetKey(RecipeDefinition recipe) {
         String id = recipe != null ? recipe.getId().toLowerCase() : "unknown";
         int tier = armorTier(recipe);
+        if (id.matches("^(mining|farming|foraging|fishing)_sack_t[123]$")) {
+            return id.replaceAll("_t[123]$", "_sacks");
+        }
         if (id.startsWith("combat_")) {
             return "combat_" + tier;
         }
@@ -956,13 +985,13 @@ public class RecipeBookGUI {
         String[] order = {
                 "combat_1", "combat_2", "combat_3", "combat_4", "combat_5",
                 "ironhide", "healer",
-                "mining_1", "mining_2", "mining_3", "mining_4", "mining_5",
-                "farming_1", "farming_2", "farming_3", "farming_4", "farming_5",
-                "foraging_1", "foraging_2", "foraging_3", "foraging_4", "foraging_5",
-                "fishing_1", "fishing_2", "fishing_3", "fishing_4", "fishing_5",
+                "mining_1", "mining_2", "mining_3", "mining_4", "mining_5", "mining_sacks",
+                "farming_1", "farming_2", "farming_3", "farming_4", "farming_5", "farming_sacks",
+                "foraging_1", "foraging_2", "foraging_3", "foraging_4", "foraging_5", "foraging_sacks",
+                "fishing_1", "fishing_2", "fishing_3", "fishing_4", "fishing_5", "fishing_sacks",
                 "diving",
-                "catch_sphere",
                 "catcher_1", "catcher_2", "catcher_3",
+                "catch_sphere",
                 "rotten", "bone", "webweave", "aetherion"
         };
         for (int i = 0; i < order.length; i++) {

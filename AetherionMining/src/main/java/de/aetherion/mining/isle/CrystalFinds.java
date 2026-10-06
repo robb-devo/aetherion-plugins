@@ -469,6 +469,10 @@ public final class CrystalFinds implements Listener {
         remove(geode);
         ItemStack specimen = item(geode.ore, geode.grade, geode.carats);
         MineSkills.give(player, specimen);
+        de.aetherion.core.api.ItemFactoryAccess signatures = de.aetherion.core.api.AetherServices.items();
+        if (signatures != null) {
+            signatures.noteSignature(player, "crystal_find");
+        }
         int xp = switch (geode.grade) {
             case ROUGH -> 40;
             case FLAWLESS -> 70;
@@ -543,7 +547,9 @@ public final class CrystalFinds implements Listener {
         lore.add("§7Registers in your §dSpecimen Cabinet§7.");
         lore.add("");
         lore.add(grade == Grade.HEARTSTONE ? "§6Heartstone §8· only The Veins grow these" : "§8Crystal Find · " + grade.display());
-        lore.add("§8Can't be placed, crafted or burned.");
+        lore.add(grade == Grade.HEARTSTONE
+                ? "§8Can't be placed, crafted or burned."
+                : "§8Signature §7· §8T4/T5 gear takes one. Never placed or burned.");
         meta.setLore(lore);
         meta.addEnchant(Enchantment.UNBREAKING, 1, true);
         meta.addItemFlags(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ATTRIBUTES);
@@ -552,6 +558,13 @@ public final class CrystalFinds implements Listener {
         pdc.set(gradeKey, PersistentDataType.STRING, grade.id());
         pdc.set(caratKey, PersistentDataType.DOUBLE, rounded);
         item.setItemMeta(meta);
+        // P1 Signature: Items id so T4/T5 recipes can take it. Heartstones stay collector items.
+        if (grade != Grade.HEARTSTONE) {
+            de.aetherion.core.api.ItemFactoryAccess items = de.aetherion.core.api.AetherServices.items();
+            if (items != null) {
+                items.stampSignature(item, "crystal_find");
+            }
+        }
         return item;
     }
 
@@ -579,6 +592,12 @@ public final class CrystalFinds implements Listener {
 
     public boolean isSpecimen(ItemStack item) {
         return oreOf(item) != null;
+    }
+
+    /** True when the specimen carries its Items Signature id ({@code crystal_find}). */
+    private static boolean isSignature(ItemStack item) {
+        return item != null && item.hasItemMeta() && "crystal_find".equals(item.getItemMeta()
+                .getPersistentDataContainer().get(de.aetherion.core.AetherKeys.ITEM_ID, PersistentDataType.STRING));
     }
 
     /** Family base × grade × how close the weight sits to the family's top. */
@@ -651,7 +670,9 @@ public final class CrystalFinds implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onCraft(PrepareItemCraftEvent event) {
         for (ItemStack stack : event.getInventory().getMatrix()) {
-            if (isSpecimen(stack) || isle.hearth().rationOf(stack) != null) {
+            // A stamped Signature (Items id) is AetherionItems' business: its crafting guard already
+            // refuses vanilla recipes and only its own T4/T5 recipes accept it.
+            if ((isSpecimen(stack) && !isSignature(stack)) || isle.hearth().rationOf(stack) != null) {
                 event.getInventory().setResult(null);
                 return;
             }

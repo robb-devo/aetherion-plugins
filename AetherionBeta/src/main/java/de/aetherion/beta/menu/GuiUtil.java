@@ -36,7 +36,20 @@ public final class GuiUtil {
     }
 
     public static ItemStack accent() {
-        return named(Material.MAGENTA_STAINED_GLASS_PANE, " ");
+        return named(Material.PURPLE_STAINED_GLASS_PANE, " ");
+    }
+
+    public static ItemStack ring() {
+        return named(Material.BLACK_STAINED_GLASS_PANE, " ");
+    }
+
+    public static ItemStack glint(ItemStack item) {
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            meta.setEnchantmentGlintOverride(true);
+            item.setItemMeta(meta);
+        }
+        return item;
     }
 
     public static void fill(org.bukkit.inventory.Inventory inventory) {
@@ -48,8 +61,13 @@ public final class GuiUtil {
         }
     }
 
+    /**
+     * Aetherion panel frame: purple beta bar on top, dark ring around, calm grey body
+     * (same read as the Manager / Dev shelves).
+     */
     public static void frame(org.bukkit.inventory.Inventory inventory) {
-        ItemStack edge = accent();
+        ItemStack bar = accent();
+        ItemStack edge = ring();
         ItemStack fill = filler();
         int size = inventory.getSize();
         int rows = size / 9;
@@ -57,7 +75,7 @@ public final class GuiUtil {
             int row = i / 9;
             int col = i % 9;
             boolean border = row == 0 || row == rows - 1 || col == 0 || col == 8;
-            inventory.setItem(i, border ? edge.clone() : fill.clone());
+            inventory.setItem(i, row == 0 ? bar.clone() : border ? edge.clone() : fill.clone());
         }
     }
 }

@@ -1,4 +1,15 @@
+# Hotbar nether-star. Hub lobby turns this off — players enter Eldervale via the Aetherion NPC.
+manager:
+  hotbar-enabled: true
+
+# Skills / Aetherion level. Leave sync-from empty unless a server explicitly pulls another file.
+skills:
+  persist: true
+  sync-from: ""
+
+# Hub lobby: no Aetherion ranks/levels. Only Robb UUID may show [Admin].
 ranks:
+  hub-lobby: false
   mvpplusplus:
     group: mvpplusplus
     weight: 90

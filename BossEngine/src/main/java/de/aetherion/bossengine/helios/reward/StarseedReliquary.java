@@ -28,10 +28,11 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * THE STARSEED RELIQUARY. After the supernova one point of light is left where the star was.
- * For every participant with a share, a starseed capsule (a gold cage around a white-hot seed in a
- * glass shell) detaches from it and glides down a slow spiral to its own pedestal on the Crown,
- * trailing a hairline of light. Each capsule carries its owner's name and opens only for them: the
+ * THE STARSEED RELIQUARY. The {@link StarVault} was born out of the dying star during the supernova and
+ * now floats over the pit on its dais, with four staircases leading up. Its lid lifts and, for every
+ * participant with a share, a starseed capsule (a gold cage around a white-hot seed in a glass shell)
+ * rises out of it and settles on the dais, trailing a hairline of light. (Without a vault, e.g. an admin
+ * skip, the old staging plays: a point of light where the star was, capsules gliding down to the Crown.) Each capsule carries its owner's name and opens only for them: the
  * lid lifts, the seed rises and streams into the player, and the share is theirs.
  *
  * <p>Same contract as the reliquary / music box / seed vault: {@code LootService.grantToChest} pays XP
@@ -53,6 +54,7 @@ public final class StarseedReliquary {
     private final HeliosStage.Group group;
     private final Map<UUID, Capsule> capsules = new LinkedHashMap<>();
     private final int expiresIn;
+    private final StarVault vault;
     private BlockDisplay light;
     private Shapes.Ring halo;
     private int t;
@@ -63,8 +65,15 @@ public final class StarseedReliquary {
         this.stage = enc.stage();
         this.group = stage.group();
         this.expiresIn = Math.max(20 * 20, claimTicks);
-        light = group.block(Material.PEARLESCENT_FROGLIGHT.createBlockData(), SEED, 15, true);
-        halo = new Shapes.Ring(stage, group, 16, Material.YELLOW_STAINED_GLASS, GOLD, 15, true);
+        this.vault = enc.vault() != null && enc.vault().born() ? enc.vault() : null;
+        if (vault == null) {
+            light = group.block(Material.PEARLESCENT_FROGLIGHT.createBlockData(), SEED, 15, true);
+            halo = new Shapes.Ring(stage, group, 16, Material.YELLOW_STAINED_GLASS, GOLD, 15, true);
+        } else {
+            vault.open(1f);
+            enc.score().at(vault.center(), Sound.BLOCK_VAULT_OPEN_SHUTTER, 1.2f, 1f);
+            enc.score().at(vault.center(), Sound.BLOCK_VAULT_EJECT_ITEM, 1f, 0.9f);
+        }
         List<UUID> owners = new ArrayList<>();
         for (Map.Entry<UUID, List<ItemStack>> e : bundles.entrySet()) {
             if (e.getValue() != null && !e.getValue().isEmpty()) {
@@ -73,8 +82,10 @@ public final class StarseedReliquary {
         }
         for (int i = 0; i < owners.size(); i++) {
             UUID id = owners.get(i);
-            float a = HMath.HALF_PI + (i - (owners.size() - 1) * 0.5f) * Math.min(0.55f, HMath.TAU / Math.max(1, owners.size()));
-            capsules.put(id, new Capsule(id, bundles.get(id), a, i * STAGGER));
+            float a = vault != null
+                    ? HMath.HALF_PI + i * HMath.TAU / Math.max(1, owners.size())
+                    : HMath.HALF_PI + (i - (owners.size() - 1) * 0.5f) * Math.min(0.55f, HMath.TAU / Math.max(1, owners.size()));
+            capsules.put(id, new Capsule(id, bundles.get(id), a, i * (vault != null ? 6 : STAGGER)));
         }
         enc.score().chord(Sound.BLOCK_AMETHYST_BLOCK_RESONATE, 1f, 0.75f, 1f, 1.26f);
     }
@@ -82,8 +93,10 @@ public final class StarseedReliquary {
     public void tick() {
         t++;
         float pulse = 1f + 0.12f * (float) Math.sin(t * 0.15f);
-        stage.push(light, HeliosStage.cube(POINT, 0.55f * pulse, new Quaternionf().rotateY(t * 0.05f).rotateX(t * 0.03f)), 3);
-        halo.pose(POINT, new Quaternionf().rotateX(0.3f).rotateY(t * 0.02f), 1.4f * pulse, 0.05f, 0.05f, t * 0.04f, 0f, 0f, 3);
+        if (light != null) {
+            stage.push(light, HeliosStage.cube(POINT, 0.55f * pulse, new Quaternionf().rotateY(t * 0.05f).rotateX(t * 0.03f)), 3);
+            halo.pose(POINT, new Quaternionf().rotateX(0.3f).rotateY(t * 0.02f), 1.4f * pulse, 0.05f, 0.05f, t * 0.04f, 0f, 0f, 3);
+        }
         for (Capsule c : capsules.values()) {
             c.tick();
         }
@@ -164,6 +177,8 @@ public final class StarseedReliquary {
         final float angle;
         final int delay;
         final Vector3f pedestal;
+        final Vector3f origin;
+        final int descent;
         final Vector3f pos = new Vector3f(POINT);
         final BlockDisplay seed;
         final BlockDisplay shell;
@@ -185,7 +200,10 @@ public final class StarseedReliquary {
             this.items = items;
             this.angle = angle;
             this.delay = delay;
-            this.pedestal = HMath.ring(PEDESTAL_R, angle, 0f);
+            this.pedestal = vault != null ? HMath.ring(2.2f, angle, StarVault.DAIS_TOP) : HMath.ring(PEDESTAL_R, angle, 0f);
+            this.origin = vault != null ? vault.center() : new Vector3f(POINT);
+            this.descent = vault != null ? 40 : DESCENT;
+            pos.set(origin);
             seed = group.block(Material.PEARLESCENT_FROGLIGHT.createBlockData(), SEED, 15, true);
             shell = group.block(Material.WHITE_STAINED_GLASS.createBlockData(), null, 15, true);
             lid = group.block(Material.GOLD_BLOCK.createBlockData(), GOLD, 15, true);
@@ -196,7 +214,7 @@ public final class StarseedReliquary {
             trail = new Shapes.Line(stage, group, Material.WHITE_CONCRETE, SEED);
             mark = new Shapes.Disc(stage, group, Material.YELLOW_STAINED_GLASS, GOLD, 15);
             mark.hide(pedestal, 0);
-            trail.hide(POINT, 0);
+            trail.hide(origin, 0);
             pose(0f, 0f, 1);
         }
 
@@ -206,18 +224,24 @@ public final class StarseedReliquary {
                 return;
             }
             if (!landed) {
-                float f = HMath.window(local, 0, DESCENT);
-                // A slow spiral down: one and a half turns, easing into the pedestal.
+                float f = HMath.window(local, 0, descent);
                 float e = HMath.inOutCubic(f);
-                float turns = (1f - e) * HMath.PI * 1.5f;
-                float r = HMath.lerp(0.5f, PEDESTAL_R, e);
-                Vector3f p = HMath.ring(r, angle + turns, HMath.lerp(POINT.y, 1.1f, e));
-                p.y += (float) Math.sin(f * HMath.PI) * 1.5f;
-                pos.set(p);
+                if (vault != null) {
+                    // Out of the open vault: up over the lid, then an arc down onto its place on the dais.
+                    Vector3f top = new Vector3f(origin).add(0f, 1.8f, 0f).add(HMath.ring(0.8f, angle, 0f));
+                    HMath.bezier(new Vector3f(origin).add(0f, 0.6f, 0f), top, pedestal, e, pos);
+                } else {
+                    // A slow spiral down: one and a half turns, easing into the pedestal.
+                    float turns = (1f - e) * HMath.PI * 1.5f;
+                    float r = HMath.lerp(0.5f, PEDESTAL_R, e);
+                    Vector3f p = HMath.ring(r, angle + turns, HMath.lerp(POINT.y, 1.1f, e));
+                    p.y += (float) Math.sin(f * HMath.PI) * 1.5f;
+                    pos.set(p);
+                }
                 pose(local * 0.12f, 0f, 3);
-                trail.set(POINT, pos, 0.03f * (1f - f * 0.6f), 3);
+                trail.set(origin, pos, 0.03f * (1f - f * 0.6f), 3);
                 if (local == 0) {
-                    enc.score().at(POINT, Sound.BLOCK_BEACON_POWER_SELECT, 0.8f, 1.6f);
+                    enc.score().at(origin, Sound.BLOCK_BEACON_POWER_SELECT, 0.8f, 1.6f);
                 }
                 if (f >= 1f) {
                     land();
@@ -248,19 +272,18 @@ public final class StarseedReliquary {
         private void land() {
             landed = true;
             trail.hide(pos, 6);
-            mark.set(new Vector3f(pedestal.x, 0.02f, pedestal.z), 1.3f, 0.04f, 0f, 1);
-            mark.set(new Vector3f(pedestal.x, 0.02f, pedestal.z), 0.9f, 0.04f, 0.4f, 20);
+            mark.set(new Vector3f(pedestal.x, pedestal.y + 0.02f, pedestal.z), 0.9f, 0.04f, 0.4f, 6);
             enc.score().chordAt(pos, Sound.BLOCK_NOTE_BLOCK_CHIME, 0.9f, Score.semi(0), Score.semi(4), Score.semi(7));
             enc.score().at(pos, Sound.BLOCK_AMETHYST_CLUSTER_PLACE, 1f, 0.8f);
             stage.particle(Particle.END_ROD, new Vector3f(pos).add(0f, 0.6f, 0f), 12, 0.35, 0.02);
-            org.bukkit.Location at = stage.at(pos.x, 0.05f, pos.z);
+            org.bukkit.Location at = stage.at(pos.x, pedestal.y + 0.05f, pos.z);
             hitbox = stage.world().spawn(at, Interaction.class, i -> {
                 i.setPersistent(false);
                 i.setInteractionWidth(1.3f);
                 i.setInteractionHeight(1.7f);
                 i.setResponsive(true);
             });
-            label = group.text(new Vector3f(pos.x, 2.3f, pos.z), "&6✦ &f" + name, 1f, Color.fromARGB(80, 0, 0, 0));
+            label = group.text(new Vector3f(pos.x, pedestal.y + 2.3f, pos.z), "&6✦ &f" + name, 1f, Color.fromARGB(80, 0, 0, 0));
             Player p = Bukkit.getPlayer(owner);
             if (p != null) {
                 enc.score().to(p, Sound.ENTITY_PLAYER_LEVELUP, 0.7f, 1.4f);

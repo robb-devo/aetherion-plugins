@@ -123,6 +123,7 @@ public class DevMenu {
         MINE_ISLE_PROGRESS,
         AMBIENT,
         PLAYER_WIPE,
+        LORE,
         // DEV // AETHERION command center — category hubs + power pages.
         CAT_CONTENT,
         CAT_COMBAT,
@@ -328,7 +329,9 @@ public class DevMenu {
         Holder previous = currentHolder(player);
         Page titlePage = page == Page.ROOT && contentOnly(player) ? Page.CONTENT_KIT : page;
         Inventory inventory = Bukkit.createInventory(spec, 54, DevTheme.title(titlePage, titleSuffix(spec)));
-        render(inventory, spec, player);
+        try (de.aetherion.items.item.LoreLocale.Scope ignored = de.aetherion.items.item.LoreLocale.viewing(player)) {
+            render(inventory, spec, player);
+        }
         player.openInventory(inventory);
         if (previous == null || previous.page() != page) {
             DevTheme.sound(player, page);
@@ -474,6 +477,13 @@ public class DevMenu {
     }
 
     public void handle(Player player, ItemStack clicked, int slot, ClickType click) {
+        // items the admin receives are written in the admin's own language
+        try (de.aetherion.items.item.LoreLocale.Scope ignored = de.aetherion.items.item.LoreLocale.viewing(player)) {
+            handleLocalized(player, clicked, slot, click);
+        }
+    }
+
+    private void handleLocalized(Player player, ItemStack clicked, int slot, ClickType click) {
         if (clicked == null || !clicked.hasItemMeta()) {
             return;
         }
@@ -1971,6 +1981,7 @@ public class DevMenu {
                 items.add(itemButton(customItem.createIronLongbow(), "iron_longbow"));
                 items.add(itemButton(customItem.createSimpleShortbow(), "simple_shortbow"));
                 items.add(itemButton(customItem.createReinforcedShortbow(), "reinforced_shortbow"));
+                items.add(itemButton(customItem.createHunterCrossbow(), "hunter_crossbow"));
             }
             case WEAPONS_PROGRESSION -> {
                 items.add(itemButton(customItem.progression().createCopperSword(), "copper_sword"));
@@ -2019,6 +2030,8 @@ public class DevMenu {
                 items.add(itemButton(customItem.createDungeonCore(), "dungeon_core"));
                 items.add(itemButton(customItem.createDungeonCore2(), "dungeon_core_2"));
                 items.add(itemButton(customItem.createDungeonCore3(), "dungeon_core_3"));
+                items.add(itemButton(customItem.createSpectacleStar(), "spectacle_star"));
+                items.add(itemButton(customItem.createAetherionSummons(), "aetherion_summons"));
                 items.add(itemButton(customItem.createDungeonWeaponRelic(de.aetherion.items.dungeon.DungeonGearTier.T2), "dungeon_relic_t2_weapon"));
                 items.add(itemButton(customItem.createDungeonWeaponRelic(de.aetherion.items.dungeon.DungeonGearTier.T3), "dungeon_relic_t3_weapon"));
                 items.add(itemButton(customItem.createWeaponSchematic(), "weapon_schematic"));
@@ -2108,6 +2121,12 @@ public class DevMenu {
                 items.add(itemButton(storage.createStorage(), "storage"));
                 items.add(itemButton(de.aetherion.items.storage.SackItems.create(de.aetherion.items.storage.SackType.RESOURCE), "resource_sack"));
                 items.add(itemButton(de.aetherion.items.storage.SackItems.create(de.aetherion.items.storage.SackType.BOOSTER), "booster_sack"));
+                for (var sackSkill : de.aetherion.items.storage.SkillSack.Skill.values()) {
+                    for (var sackTier : de.aetherion.items.storage.SkillSack.Tier.values()) {
+                        items.add(itemButton(de.aetherion.items.storage.SkillSack.create(sackSkill, sackTier),
+                                de.aetherion.items.storage.SkillSack.itemId(sackSkill, sackTier)));
+                    }
+                }
                 items.add(button(Material.HAY_BLOCK, "§aAnimal Anchor", "give:animal", "§7Place in the world."));
                 items.add(button(Material.ROTTEN_FLESH, "§cMob Anchor", "give:mob", "§7Hostiles, same radius."));
                 items.add(button(Material.COARSE_DIRT, "§6Borderlands Marker", "give:borderlands",
@@ -2310,6 +2329,13 @@ public class DevMenu {
                         : de.aetherion.items.economy.IsleHeartwood.contentOrdered()) {
                     items.add(itemButton(heart.create(), heart.itemId()));
                 }
+                // P2 Signatures: recipe-test samples (fit T4/T5 slots; no grade/weight, no isle-NPC value).
+                for (String signature : new String[] {
+                        de.aetherion.items.economy.Signatures.CRYSTAL_FIND,
+                        de.aetherion.items.economy.Signatures.PRIZE_CROP,
+                        de.aetherion.items.economy.Signatures.FISH_TROPHY}) {
+                    items.add(itemButton(de.aetherion.items.economy.Signatures.display(signature), signature));
+                }
             }
             case AREAS -> {
                 items.add(button(
@@ -2408,6 +2434,12 @@ public class DevMenu {
                 items.add(itemButton(customItem.accessories().shinyCharm(), de.aetherion.items.item.AccessoryItems.SHINY_ID));
                 items.add(itemButton(customItem.accessories().forgeCharm(), de.aetherion.items.item.AccessoryItems.FORGE_ID));
                 items.add(itemButton(customItem.accessories().estateCharm(), de.aetherion.items.item.AccessoryItems.ESTATE_ID));
+            }
+            case LORE -> {
+                // Story finds (Das Schlaflied) — no stats. Quests unlocks the Chronicle page on grant/turn-in.
+                for (de.aetherion.items.lore.StoryLore lore : de.aetherion.items.lore.StoryLore.values()) {
+                    items.add(itemButton(lore.create(), lore.itemId()));
+                }
             }
             default -> {
             }
@@ -2540,6 +2572,7 @@ public class DevMenu {
             case "iron_longbow" -> customItem.createIronLongbow();
             case "simple_shortbow" -> customItem.createSimpleShortbow();
             case "reinforced_shortbow" -> customItem.createReinforcedShortbow();
+            case "hunter_crossbow" -> customItem.createHunterCrossbow();
             case "wooden_rod" -> customItem.createWoodenRod();
             case "copper_rod" -> customItem.createCopperRod();
             case "frost_shard" -> customItem.createFrostShard();
@@ -2577,6 +2610,8 @@ public class DevMenu {
             case "dungeon_core" -> customItem.createDungeonCore();
             case "dungeon_core_2" -> customItem.createDungeonCore2();
             case "dungeon_core_3" -> customItem.createDungeonCore3();
+            case "spectacle_star" -> customItem.createSpectacleStar();
+            case "aetherion_summons" -> customItem.createAetherionSummons();
             case "dungeon_vestige_helmet" -> customItem.createDungeonVestigeHelmet();
             case "dungeon_vestige_chestplate" -> customItem.createDungeonVestigeChestplate();
             case "dungeon_vestige_leggings" -> customItem.createDungeonVestigeLeggings();
@@ -2648,6 +2683,14 @@ public class DevMenu {
             case "resource_sack" -> de.aetherion.items.storage.SackItems.create(de.aetherion.items.storage.SackType.RESOURCE);
             case "booster_sack" -> de.aetherion.items.storage.SackItems.create(de.aetherion.items.storage.SackType.BOOSTER);
             default -> {
+                ItemStack skillSack = de.aetherion.items.storage.SkillSack.fromId(id);
+                if (skillSack != null) {
+                    yield skillSack;
+                }
+                ItemStack lore = de.aetherion.items.lore.StoryLore.create(id);
+                if (lore != null) {
+                    yield lore;
+                }
                 ItemStack progression = customItem.progression().byId(id);
                 if (progression != null) {
                     yield progression;
@@ -2681,7 +2724,11 @@ public class DevMenu {
                     yield found;
                 }
                 ItemStack heart = de.aetherion.items.economy.IsleHeartwood.fromItemId(id);
-                yield heart != null ? heart : de.aetherion.items.economy.QuarryItems.fromId(id);
+                if (heart != null) {
+                    yield heart;
+                }
+                ItemStack signature = de.aetherion.items.economy.Signatures.display(id);
+                yield signature != null ? signature : de.aetherion.items.economy.QuarryItems.fromId(id);
             }
         };
     }
@@ -2739,6 +2786,11 @@ public class DevMenu {
         if (meta != null) {
             meta.getPersistentDataContainer().remove(ItemKeys.devAction());
             meta.getPersistentDataContainer().remove(DevItems.VIA);
+            if (de.aetherion.items.storage.SackItems.isSack(give)) {
+                // Each given sack gets its own contents file, not the shelf icon's.
+                meta.getPersistentDataContainer().set(ItemKeys.sackId(),
+                        org.bukkit.persistence.PersistentDataType.STRING, java.util.UUID.randomUUID().toString());
+            }
             give.setItemMeta(meta);
         }
         return give;

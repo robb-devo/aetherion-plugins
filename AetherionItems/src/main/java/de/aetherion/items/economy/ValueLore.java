@@ -20,7 +20,7 @@ public final class ValueLore {
         if (meta == null) {
             return;
         }
-        List<String> lore = meta.getLore() == null ? new ArrayList<>() : new ArrayList<>(meta.getLore());
+        List<String> lore = de.aetherion.items.item.LoreLocale.loreOrEmpty(meta);
         int index = valueLineIndex(lore);
         if (!values.showsListedValue(stack)) {
             if (index < 0) {
@@ -30,7 +30,7 @@ public final class ValueLore {
             if (index > 0 && index - 1 < lore.size() && lore.get(index - 1).isBlank()) {
                 lore.remove(index - 1);
             }
-            meta.setLore(lore);
+            de.aetherion.items.item.LoreLocale.writeLore(meta, lore);
             stack.setItemMeta(meta);
             return;
         }
@@ -52,7 +52,7 @@ public final class ValueLore {
             }
             lore.add(line);
         }
-        meta.setLore(lore);
+        de.aetherion.items.item.LoreLocale.writeLore(meta, lore);
         stack.setItemMeta(meta);
     }
 

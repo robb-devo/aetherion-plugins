@@ -109,14 +109,11 @@ public final class BlueprintUpgrade {
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
             meta.setDisplayName(color + "§lUpgrade Stone " + roman(use));
+            // Short, complete lines (≤46 visible). The pipeline adds type, flavor and the rarity footer.
             meta.setLore(List.of(
-                    "§7✦ " + color + rarity.name(),
-                    "",
-                    "§7Apply on a §bBlueprint tool §7at the",
-                    "§6Eldervale Forgehand§7.",
-                    "§7Raises tool to §fTier " + roman(use) + "§7.",
-                    "",
-                    "§8Requires current Tier " + roman(use - 1)
+                    "§eUse: §7Raise a §bBlueprint tool §7to §fTier " + roman(use) + "§7.",
+                    "§7Apply it at the §6Eldervale Forgehand§7.",
+                    "§8Needs Tier " + roman(use - 1) + " first."
             ));
             meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
             meta.getPersistentDataContainer().set(
@@ -135,6 +132,7 @@ public final class BlueprintUpgrade {
                     rarity.name()
             );
             meta.setCustomModelData(3200 + use);
+            ItemPresentation.polish(meta);
             item.setItemMeta(meta);
         }
         return item;
@@ -453,7 +451,7 @@ public final class BlueprintUpgrade {
         if (meta == null) {
             return;
         }
-        List<String> lore = meta.getLore() == null ? new ArrayList<>() : new ArrayList<>(meta.getLore());
+        List<String> lore = de.aetherion.items.item.LoreLocale.loreOrEmpty(meta);
         lore.removeIf(line -> {
             String plain = line == null ? "" : line.replaceAll("§.", "");
             return plain.contains("Blueprint Tier")
@@ -464,16 +462,8 @@ public final class BlueprintUpgrade {
             de.aetherion.items.item.ItemLore.updateDisplayedStats(lore, stats, profile);
         }
         String tierLine = "§bBlueprint Tier: §f" + roman(tier) + "/" + roman(MAX_TIER);
-        int insert = 0;
-        for (int i = 0; i < lore.size(); i++) {
-            String plain = lore.get(i) == null ? "" : lore.get(i).replaceAll("§.", "");
-            if (plain.contains("RARE") || plain.contains("EPIC") || plain.contains("LEGENDARY")
-                    || plain.contains("MYTHIC") || plain.contains("COMMON") || plain.contains("UNCOMMON")) {
-                insert = i + 1;
-                break;
-            }
-        }
-        lore.add(insert, tierLine);
+        // The layout pass lifts this into the progress block, so the raw position does not matter.
+        lore.add(tierLine);
         if ("vein_siphon".equalsIgnoreCase(itemId)) {
             lore.removeIf(line -> {
                 String plain = line == null ? "" : line.replaceAll("§.", "");
@@ -501,7 +491,7 @@ public final class BlueprintUpgrade {
             lore.add(Math.min(lore.size(), ability + 2),
                     "§7Cooldown: §f" + (resonanceCooldownTicks(tier) / 20) + "s");
         }
-        meta.setLore(lore);
+        de.aetherion.items.item.LoreLocale.writeLore(meta, lore);
     }
 
     private static int indexOfAbility(List<String> lore) {

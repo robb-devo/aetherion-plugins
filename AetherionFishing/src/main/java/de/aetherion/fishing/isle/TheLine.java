@@ -254,6 +254,10 @@ public final class TheLine {
         if (trophy) {
             profile.trophies++;
             InventoryDrops.give(player, isle.trophies().item(species, kg));
+            de.aetherion.core.api.ItemFactoryAccess signatures = de.aetherion.core.api.AetherServices.items();
+            if (signatures != null) {
+                signatures.noteSignature(player, "fish_trophy");
+            }
         }
         if (first) {
             newSpecies(player, species, kg, profile);

@@ -470,6 +470,12 @@ public final class TransferSnapshotStore {
         boolean omitInventory = legacyFile && shouldOmitInventory(yaml);
         boolean sameServer = fromName != null && fromName.equalsIgnoreCase(here) && !legacyFile;
         int decodeFailures = 0;
+        ItemStack[] invBackup = cloneAll(player.getInventory().getContents());
+        ItemStack[] armorBackup = cloneAll(player.getInventory().getArmorContents());
+        ItemStack[] extraBackup = cloneAll(player.getInventory().getExtraContents());
+        ItemStack[] enderBackup = cloneAll(player.getEnderChest().getContents());
+        ItemStack cursorBackup = player.getItemOnCursor() == null ? null : player.getItemOnCursor().clone();
+        boolean clearedLive = false;
         try {
             ItemStack[] inventory = null;
             ItemStack[] armor = null;
@@ -487,6 +493,7 @@ public final class TransferSnapshotStore {
                 player.setItemOnCursor(null);
                 player.getInventory().clear();
                 player.getEnderChest().clear();
+                clearedLive = true;
                 for (PotionEffect effect : player.getActivePotionEffects()) {
                     player.removePotionEffect(effect.getType());
                 }
@@ -501,6 +508,14 @@ public final class TransferSnapshotStore {
                 ItemStack cursor = decodeItem(yaml.getString("cursor-b64"));
                 decodeFailures = failures(invRaw, inventory) + failures(armorRaw, armor)
                         + failures(extraRaw, extra) + failures(enderRaw, ender);
+                if (decodeFailures > 0) {
+                    restoreLive(player, invBackup, armorBackup, extraBackup, enderBackup, cursorBackup);
+                    plugin.getLogger().severe("[Transfer] " + decodeFailures + " item(s) in snapshot " + snapshotId
+                            + " for " + player.getName() + " could not be decoded — live inventory restored, claim kept for retry: "
+                            + source.getAbsolutePath());
+                    player.sendMessage("§cTransfer data was damaged. Your inventory was restored — try rejoining or ask staff.");
+                    return ApplyResult.none();
+                }
                 if (inventory != null && inventory.length > 0) {
                     player.getInventory().setContents(fit(inventory, player.getInventory().getSize()));
                 }
@@ -636,17 +651,17 @@ public final class TransferSnapshotStore {
                     + (omitInventory ? " inv=left-in-place" : " inv=" + yaml.getInt("count.inventory", -1))
                     + (sameServer ? " progress=local" : " progress=imported")
                     + (legacyFile ? " legacy=v" + yaml.getInt("version", 4) : ""));
-            if (decodeFailures > 0) {
-                plugin.getLogger().severe("[Transfer] " + decodeFailures + " item(s) in snapshot " + snapshotId
-                        + " for " + player.getName() + " could not be decoded. Original kept at "
-                        + new File(appliedDir, id + "-" + snapshotId + ".yml").getAbsolutePath());
-                player.sendMessage("§c" + decodeFailures + " item(s) could not be restored. Staff have the original — nothing was deleted.");
-            }
             return new ApplyResult(true, pendingFloor, bossOnly, fromServer == null ? "" : fromServer,
                     omitInventory, snapshotId, reason, dcFloor, fromName == null ? "" : fromName);
         } catch (Exception ex) {
+            if (clearedLive) {
+                restoreLive(player, invBackup, armorBackup, extraBackup, enderBackup, cursorBackup);
+            }
             plugin.getLogger().log(Level.SEVERE, "[Transfer] FAILED to apply " + snapshotId + " for " + player.getName()
-                    + " — claimed file kept for the next join: " + source.getAbsolutePath(), ex);
+                    + " — live inventory restored; claimed file kept for the next join: " + source.getAbsolutePath(), ex);
+            if (player.isOnline()) {
+                player.sendMessage("§cTransfer failed. Your inventory was restored — try rejoining.");
+            }
             return ApplyResult.none();
         }
     }
@@ -829,6 +844,38 @@ public final class TransferSnapshotStore {
             out[i] = items[i] == null ? null : items[i].clone();
         }
         return out;
+    }
+
+    /** After a failed apply that already cleared the player — put what they joined with back. */
+    private static void restoreLive(
+            Player player,
+            ItemStack[] inventory,
+            ItemStack[] armor,
+            ItemStack[] extra,
+            ItemStack[] ender,
+            ItemStack cursor
+    ) {
+        if (player == null || !player.isOnline()) {
+            return;
+        }
+        if (inventory != null) {
+            player.getInventory().setContents(inventory);
+        }
+        if (armor != null) {
+            player.getInventory().setArmorContents(armor);
+        }
+        if (extra != null) {
+            player.getInventory().setExtraContents(extra);
+        }
+        if (ender != null) {
+            player.getEnderChest().setContents(ender);
+        }
+        if (cursor == null || cursor.getType().isAir()) {
+            player.setItemOnCursor(null);
+        } else {
+            player.setItemOnCursor(cursor);
+        }
+        player.updateInventory();
     }
 
     private static List<ItemStack> liveItems(Player player) {

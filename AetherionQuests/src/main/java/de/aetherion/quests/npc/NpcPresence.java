@@ -62,6 +62,7 @@ public final class NpcPresence {
             Map.entry("isle_clerk", new Voice(Sound.BLOCK_NOTE_BLOCK_HAT, 1.1f, 0.30f)),
             Map.entry("forage_pad_guide", new Voice(Sound.BLOCK_NOTE_BLOCK_BELL, 1.5f, 0.18f)),
             Map.entry("liquidator", new Voice(Sound.BLOCK_AMETHYST_BLOCK_CHIME, 1.2f, 0.30f)),
+            Map.entry("amethyst_mines_guide", new Voice(Sound.BLOCK_AMETHYST_BLOCK_CHIME, 1.0f, 0.35f)),
             Map.entry("canopy_clerk", new Voice(Sound.BLOCK_NOTE_BLOCK_XYLOPHONE, 1.1f, 0.26f)),
             Map.entry("root_cellar", new Voice(Sound.BLOCK_NOTE_BLOCK_BANJO, 1.25f, 0.24f)),
             Map.entry("town_crier", new Voice(Sound.BLOCK_NOTE_BLOCK_BELL, 0.8f, 0.30f)),

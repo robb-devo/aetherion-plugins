@@ -34,10 +34,15 @@ public final class TalkGlyphs {
 
     /** Speech tail under the bubble. */
     public static Component tail() {
+        return tail(TextColor.color(22, 22, 30));
+    }
+
+    /** Speech tail in the panel's own ink (fallback glyph only — the pack glyph is pre-painted). */
+    public static Component tail(TextColor ink) {
         if (enabled()) {
             return glyph('');
         }
-        return Component.text("▼", TextColor.color(22, 22, 30));
+        return Component.text("▼", ink == null ? TextColor.color(22, 22, 30) : ink);
     }
 
     /** Pointer in front of the hovered reply. */

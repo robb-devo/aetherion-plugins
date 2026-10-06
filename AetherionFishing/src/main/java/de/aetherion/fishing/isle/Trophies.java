@@ -62,7 +62,7 @@ public final class Trophies implements Listener {
         lore.add("§7Sells for §6" + LakeText.coins(value(species, rounded)) + " coins");
         lore.add("§7at the §dTrophy House §7(Odile).");
         lore.add("");
-        lore.add("§8Trophy Fish");
+        lore.add("§8Trophy Fish §7· §8Signature: T4/T5 gear takes one");
         meta.setLore(lore);
         meta.addEnchant(Enchantment.UNBREAKING, 1, true);
         meta.addItemFlags(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ATTRIBUTES);
@@ -70,6 +70,11 @@ public final class Trophies implements Listener {
         pdc.set(speciesKey, PersistentDataType.STRING, species.id());
         pdc.set(weightKey, PersistentDataType.DOUBLE, rounded);
         item.setItemMeta(meta);
+        // P1 Signature: Items id so T4/T5 recipes can take it. The Eldermaw scale is not a trophy fish.
+        de.aetherion.core.api.ItemFactoryAccess items = de.aetherion.core.api.AetherServices.items();
+        if (items != null) {
+            items.stampSignature(item, "fish_trophy");
+        }
         return item;
     }
 

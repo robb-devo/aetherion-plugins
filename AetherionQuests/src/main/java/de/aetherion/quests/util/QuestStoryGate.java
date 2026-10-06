@@ -47,7 +47,7 @@ public final class QuestStoryGate {
             "stall_brine",
             "dock_whisper",
             "bait_theory",
-            // Farm isle portal guide — portal itself is Farming-skill gated only.
+            // Harlow, Farm Isle guide — the pad itself is Farming-skill gated only.
             "farm_isle_guide",
             // Harbour forage pad guide — soft hint to the isle clerk.
             "forage_pad_guide",
@@ -142,7 +142,7 @@ public final class QuestStoryGate {
         if ("rite_keeper".equalsIgnoreCase(npcId)) {
             return false;
         }
-        // Farm isle guide / portal: Farming skill only — never tutorial.
+        // Harlow / Farm Isle pad: Farming skill only — never tutorial.
         if ("farm_isle_guide".equalsIgnoreCase(npcId)) {
             return false;
         }

@@ -69,6 +69,7 @@ public final class IsleCast implements Listener {
     private final Map<IsleRole, Spawned> live = new EnumMap<>(IsleRole.class);
     private final Map<String, Long> barked = new ConcurrentHashMap<>();
     private final Map<UUID, Long> clickCool = new ConcurrentHashMap<>();
+    private final TalkDesk wardenDesk;
     private BukkitTask task;
 
     IsleCast(FarmIsle isle) {
@@ -76,7 +77,62 @@ public final class IsleCast implements Listener {
         this.npcKey = new NamespacedKey(isle.plugin(), "isle_npc");
         this.anchorKey = new NamespacedKey(isle.plugin(), "isle_npc_anchor");
         this.file = new File(isle.plugin().getDataFolder(), "isle-cast.yml");
+        this.wardenDesk = wardenDesk();
         load();
+    }
+
+    /**
+     * Elsie at the Harvest Hall: the isle's front desk in the talk bubble — what the isle is, the
+     * harvest rhythm, where to sell and eat, how to get home; her full board stays one chip away.
+     */
+    private TalkDesk wardenDesk() {
+        IsleRole warden = IsleRole.WARDEN;
+        return new TalkDesk(isle.plugin(), "farm_isle_warden", warden.display(), warden.color(), "isle_hand",
+                () -> liveLocation(warden), () -> liveHologram(warden),
+                player -> "Welcome to Eldervale, {player}. Ask away — or just start pulling carrots.",
+                List.of(
+                        TalkDesk.Topic.of("What is this place?", net.kyori.adventure.text.format.NamedTextColor.GREEN,
+                                "What's on Eldervale?",
+                                "Fifteen named plots, one big harvest. Find them all — 2,500 coins and a title.",
+                                "Walk into one and it names itself. Arrow's on the nearest you haven't seen.")
+                                .then(this::pointAtUnknownPlot),
+                        TalkDesk.Topic.of("Harvest rhythm?", net.kyori.adventure.text.format.NamedTextColor.LIGHT_PURPLE,
+                                "How does the rhythm work?",
+                                "Harvest without stopping and the field sings. Stand around and it drains.",
+                                "Twenty, fifty, a hundred in a row — every step adds crop Fortune."),
+                        TalkDesk.Topic.of("Shops & pantry?", net.kyori.adventure.text.format.NamedTextColor.GOLD,
+                                "Where do I sell and eat?",
+                                "§6Hattie§f's orders pay better than the trader. §eBram§f bakes crops into farming food.",
+                                "§bGus§f keeps your Crop Mastery ledger. That one pays forever."),
+                        TalkDesk.Topic.of("How do I leave?", net.kyori.adventure.text.format.NamedTextColor.AQUA,
+                                "How do I get home?",
+                                "§e/capital§f takes you back to town.",
+                                "The fields will keep. They're patient. Unlike the crows.")
+                ),
+                "Board…", player -> isle.menus().openWarden(player),
+                "Mind the crows. They mind you.");
+    }
+
+    private void pointAtUnknownPlot(Player player) {
+        IslePlots.Plot next = isle.menus().nearestUnknown(player, isle.profiles().of(player));
+        if (next != null) {
+            isle.compass().guide(player, "an undiscovered area", next.center(player.getWorld()));
+        }
+    }
+
+    /** Where the NPC actually stands right now (spawned villager), else its placed spot. */
+    private Location liveLocation(IsleRole role) {
+        Spawned spawned = live.get(role);
+        Entity villager = spawned == null ? null : Bukkit.getEntity(spawned.villager());
+        if (villager != null && villager.isValid()) {
+            return villager.getLocation();
+        }
+        return location(role);
+    }
+
+    private Entity liveHologram(IsleRole role) {
+        Spawned spawned = live.get(role);
+        return spawned == null ? null : Bukkit.getEntity(spawned.hologram());
     }
 
     void start() {
@@ -90,6 +146,7 @@ public final class IsleCast implements Listener {
             task.cancel();
             task = null;
         }
+        wardenDesk.shutdown();
         for (IsleRole role : IsleRole.values()) {
             despawn(role);
         }
@@ -359,6 +416,10 @@ public final class IsleCast implements Listener {
             say(player, role, barks.get(ThreadLocalRandom.current().nextInt(barks.size())));
             return;
         }
+        // The Warden talks first (bubble + chips); her board sits behind "Board…".
+        if (role == IsleRole.WARDEN && wardenDesk.click(player)) {
+            return;
+        }
         isle.menus().open(player, role);
     }
 
@@ -367,6 +428,7 @@ public final class IsleCast implements Listener {
     }
 
     private void tick() {
+        wardenDesk.tick();
         if (Bukkit.getCurrentTick() % 100 < 10) {
             ensureAll();
         }

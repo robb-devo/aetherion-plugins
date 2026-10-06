@@ -199,9 +199,9 @@ public final class GuildMenu {
             inventory.setItem(BUILD_SLOT, named(
                     Material.CRAFTING_TABLE,
                     "§6Build",
-                    "§7Huts, Workshop, Mill, Forge,",
-                    "§7Depot and belts (Soldier+).",
-                    "§8Paid from the guild bank.",
+                    "§7The Build Tool: huts, Hub, belts",
+                    "§7and machines (Soldier+).",
+                    "§8Goods from guild storage, coins from the bank.",
                     "§eClick"
             ));
         }

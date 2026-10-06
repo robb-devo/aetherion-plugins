@@ -60,6 +60,7 @@ public class AetherionItems extends JavaPlugin {
     private static AetherionItems instance;
 
     private ItemManager itemManager;
+    private de.aetherion.items.item.LoreLocaleListener loreLocaleListener;
     private RecipeManager recipeManager;
     private de.aetherion.items.recipe.RecipeUnlockService recipeUnlocks;
     private de.aetherion.items.blueprint.BlueprintUnlockService blueprintUnlocks;
@@ -153,6 +154,7 @@ public class AetherionItems extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new de.aetherion.items.shop.AetherBloodVial(), this);
         getServer().getPluginManager().registerEvents(new de.aetherion.items.world.NetherRealm(), this);
         new de.aetherion.items.world.WorldRulesListener(this);
+        new de.aetherion.items.world.VanillaBlockListener(this);
         de.aetherion.items.command.ShardCommand shardCommand = new de.aetherion.items.command.ShardCommand(shards, shardShop);
         if (getCommand("shards") != null) {
             getCommand("shards").setExecutor(shardCommand);
@@ -200,10 +202,22 @@ public class AetherionItems extends JavaPlugin {
         }, 60L);
         new de.aetherion.items.listener.HungerListener(this);
 
-        new RecipeRegistry(recipeManager, customItem).registerAll();
+        RecipeRegistry recipes = new RecipeRegistry(recipeManager, customItem);
+        recipes.registerAll();
 
         recipeService = new BukkitRecipeService(this, recipeManager);
         recipeService.registerAll();
+
+        // Catch spheres need AetherMobs for the real item — retry once plugins are up.
+        getServer().getScheduler().runTaskLater(this, () -> {
+            recipes.registerCatchSpheres();
+            if (recipeService != null) {
+                recipeService.registerAll();
+                for (org.bukkit.entity.Player online : getServer().getOnlinePlayers()) {
+                    recipeService.discoverFor(online);
+                }
+            }
+        }, 40L);
 
         getServer().getPluginManager().registerEvents(
                 new CraftingListener(itemManager, recipeManager, recipeService, storageInventory, recipeUnlocks),
@@ -332,7 +346,9 @@ public class AetherionItems extends JavaPlugin {
                 new de.aetherion.items.world.MarkerVisibilityListener(areas, animalZones, mobZones, petHabitats),
                 this
         );
+        de.aetherion.items.item.LoreLocale.load(this);
         new de.aetherion.items.item.GearTooltip(this, itemManager);
+        loreLocaleListener = new de.aetherion.items.item.LoreLocaleListener(this, itemManager);
         de.aetherion.items.world.WildlifeLooks.register(this);
         de.aetherion.items.world.BorderlandsLightPass.schedule(this);
     }
@@ -363,6 +379,7 @@ public class AetherionItems extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new de.aetherion.items.farm.MillstoneWindmill(this), this);
         getServer().getPluginManager().registerEvents(new de.aetherion.items.farm.MillstoneListener(), this);
         getServer().getPluginManager().registerEvents(new de.aetherion.items.farm.RootCellarListener(), this);
+        getServer().getPluginManager().registerEvents(new de.aetherion.items.farm.MarketStallListener(), this);
         getServer().getPluginManager().registerEvents(
                 new de.aetherion.items.menu.dev.DevMenuListener(devMenu),
                 this
@@ -438,6 +455,8 @@ public class AetherionItems extends JavaPlugin {
                 new de.aetherion.items.codex.DungeonJournalGUI(codex)
         );
         getServer().getPluginManager().registerEvents(new CodexListener(codex), this);
+        // P1 Signatures: stamp pre-stamp isle finds (crystal / prize / trophy) with their Items id.
+        getServer().getPluginManager().registerEvents(new de.aetherion.items.listener.SignatureListener(this), this);
         de.aetherion.items.codex.BossJournalListener.register(this, codex);
         // Codex overhaul: one router for every Codex page, milestone perks, /codex /collection /bestiary.
         getServer().getPluginManager().registerEvents(new de.aetherion.items.codex.CodexMenus(), this);
@@ -546,6 +565,11 @@ public class AetherionItems extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (loreLocaleListener != null) {
+            loreLocaleListener.shutdown();
+            loreLocaleListener = null;
+        }
+        de.aetherion.items.item.LoreLocale.shutdown();
         de.aetherion.items.listener.AshenKatanaListener.shutdown();
         de.aetherion.items.listener.SeraphineGearListener.clearAll();
         de.aetherion.items.listener.HollowSunSetListener.shutdown();
@@ -597,6 +621,9 @@ public class AetherionItems extends JavaPlugin {
         }
         if (storageInventory != null) {
             storageInventory.saveAll();
+        }
+        if (sackInventory != null) {
+            sackInventory.skills().flushAll();
         }
         if (shards != null) {
             shards.save();

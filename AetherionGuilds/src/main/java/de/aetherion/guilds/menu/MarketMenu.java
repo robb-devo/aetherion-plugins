@@ -95,11 +95,11 @@ public final class MarketMenu implements MenuKit.Menu {
     public void open(Player player, IslandHost host) {
         if (structures != null && host != null) {
             if (structures.hub(host) == null) {
-                player.sendMessage("§7Coin Shortcuts open at your §6Hub§7: build the Workshop first.");
+                player.sendMessage("§7Coin Shortcuts open at your §6Hub§7: build it first (Build Tool → Hub).");
                 return;
             }
             if (!structures.atDesk(player, host)) {
-                player.sendMessage("§7Coin Shortcuts are at your §6Hub §7(the Workshop lectern).");
+                player.sendMessage("§7Coin Shortcuts are at your §6Hub §7(right-click its lectern).");
                 return;
             }
         }

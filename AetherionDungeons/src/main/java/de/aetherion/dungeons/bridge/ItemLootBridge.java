@@ -79,6 +79,15 @@ public final class ItemLootBridge {
         return create(tier == 1 ? "dungeon_core" : "dungeon_core_" + tier);
     }
 
+    /**
+     * P3 (design B1): an unidentified relic of the given floor tier (T2 = Floor 2, T3 = Floor 3).
+     * BossEngine/Items already map {@code random_dungeon_relic_t2/_t3}; nothing rolled them before.
+     */
+    public static ItemStack rollRelic(int tier) {
+        int safe = Math.max(2, Math.min(3, tier));
+        return create("random_dungeon_relic_t" + safe);
+    }
+
     public static ItemStack rollDungeonArmor() {
         return rollDungeonArmor(DUNGEON_ARMOR_CHANCE);
     }

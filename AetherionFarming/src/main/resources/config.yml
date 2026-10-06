@@ -89,17 +89,24 @@ scarecrow:
     per-extra-player: 2
     max: 12
 
-# Shared communal farm island (legacy void world — retired on live; Hub paste in world).
+# Legacy void farm-island DELETED. Eldervale Farm Isle in world is the only truth.
+# Keys kept so jump-pad / portal readers do not NPE — never re-enable auto-ensure.
 farm-island:
-  enabled: true
-  auto-ensure: true
-  world: aether_farm_island
+  enabled: false
+  auto-ensure: false
+  world: world
   require-farming-level: 10
   cooldown-ticks: 20
   hub-portal-radius: 6
-  pasted: false
-  ambience-ready: false
-  # hub-portal / island-exit filled by Dev → Portals
+  pasted: true
+  ambience-ready: true
+  island-exit:
+    world: world
+    x: -303.5
+    y: 66.0
+    z: 485.5
+    yaw: 180.0
+    pitch: 0.0
 
 # ---------------------------------------------------------------------------
 # Eldervale expansion — every loop below only runs inside farm-isle-footprint.

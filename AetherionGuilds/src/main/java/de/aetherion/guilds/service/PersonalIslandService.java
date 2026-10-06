@@ -395,6 +395,58 @@ public final class PersonalIslandService {
                 + "§a. Build radius is now §f" + buildRadius(island) + "§a; more belts and machines unlocked.");
     }
 
+    /**
+     * Wipe one personal island to zero: structures/belts/guide via removalHook,
+     * world plot cleared, claim slot freed. Owner can claim fresh.
+     */
+    public boolean wipe(UUID ownerId) {
+        if (ownerId == null) {
+            return false;
+        }
+        PersonalIsland island = islands.get(ownerId);
+        if (island == null) {
+            return false;
+        }
+        Location hub = Bukkit.getWorlds().isEmpty()
+                ? null
+                : Bukkit.getWorlds().get(0).getSpawnLocation();
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            if (!isPersonalWorld(player.getWorld())) {
+                continue;
+            }
+            if (plotAt(player.getLocation()) != island.plot()) {
+                continue;
+            }
+            if (hub != null) {
+                player.teleport(hub);
+            }
+            if (player.getUniqueId().equals(ownerId)) {
+                player.sendMessage("§7Your island progress was reset. Claim again with §f/island§7.");
+            } else {
+                player.sendMessage("§7That island was reset.");
+            }
+        }
+        if (minions != null) {
+            minions.removePersonalVisuals(island);
+        }
+        if (removalHook != null) {
+            try {
+                removalHook.accept(island);
+            } catch (RuntimeException exception) {
+                plugin.getLogger().warning("Island wipe hook failed for " + ownerId + ": " + exception.getMessage());
+            }
+        }
+        if (world != null) {
+            IslandBuilder.clear(world, originX(island), originZ(island));
+        }
+        islands.remove(ownerId);
+        islandFlight.remove(ownerId);
+        waiting.remove(ownerId);
+        save();
+        plugin.getLogger().info("Wiped personal island for " + ownerId + " (plot " + island.plot() + ").");
+        return true;
+    }
+
     public void wipeAll() {
         Location spawn = Bukkit.getWorlds().isEmpty()
                 ? null

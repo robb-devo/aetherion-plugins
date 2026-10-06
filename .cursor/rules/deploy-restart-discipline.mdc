@@ -1,0 +1,35 @@
+---
+description: Deploy/restart discipline — restart after patch; finish when restart returns
+alwaysApply: true
+---
+
+# Deploy / restart discipline (GOLDEN)
+
+FIXED ops rule. Robb 2026-10-03 (updated same night): surprise restarts bad; Done-waits worse.
+Robb later: **after a patch, always restart the servers that need the jar** unless he says otherwise.
+
+## After a patch — restart (default)
+
+- Deploy the jar(s), then **restart the server(s) that load them** (usually MMO-R; Hub/MMO-D only if that jar lives there too).
+- Exception: Robb says **kein Restart** / **-NoRestart** / jars only → upload only.
+- **Do not** restart unrelated servers “just in case”.
+
+## When restarting — clean + finish immediately
+
+Canonical: `C:\Users\Robbi\IdeaProjects\aetherion-ops\bin\ae.ps1`
+
+```text
+.\ae.ps1 restart <mmor|hub|…>
+```
+
+Graceful `stop` (LOCKED countdown) → clear `session.lock` → start → confirm java pid → **exit**.
+
+- **Do NOT** pass `-Wait` unless he wants “wait until Done”.
+- **Do NOT** poll `latest.log`, AwaitShell for `Done (`, or hang on a huge `block_until_ms`.
+- When `ae.ps1 restart` returns: **done**. One short confirmation. No multi-minute hang.
+- Prefer `stop` (not SIGKILL) so ShutdownCountdown runs.
+
+## Agent shell hygiene
+
+- Restart block ~60–90s max (stop+start pid). Then reply.
+- Never chain “restart A → wait Done → restart B → wait Done” unless he ordered that sequence.

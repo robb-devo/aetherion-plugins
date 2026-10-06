@@ -3,6 +3,7 @@ package de.aetherion.items.shop;
 import de.aetherion.items.AetherionItems;
 import de.aetherion.items.core.ItemKeys;
 import de.aetherion.items.item.ItemPresentation;
+import de.aetherion.items.model.Rarity;
 import de.aetherion.items.util.GuiItems;
 
 import org.bukkit.Color;
@@ -31,18 +32,18 @@ public final class AetherBloodVial implements Listener {
     public static final long LESSER_DURATION_MS = 3L * 60L * 60L * 1000L;
 
     public static ItemStack create() {
-        return createPhial(ID, "§5Phial of Aetherion's Blood", "§7✦ §dEPIC",
+        return createPhial(ID, "§5Phial of Aetherion's Blood", Rarity.EPIC,
                 "§7A polite sip. Then everything levels faster.",
                 XpBoosterService.DURATION_MS);
     }
 
     public static ItemStack createLesser() {
-        return createPhial(LESSER_ID, "§dLesser Phial of Aetherion's Blood", "§7✦ §9RARE",
+        return createPhial(LESSER_ID, "§dLesser Phial of Aetherion's Blood", Rarity.RARE,
                 "§7A smaller sip. Same bad idea, shorter shift.",
                 LESSER_DURATION_MS);
     }
 
-    private static ItemStack createPhial(String id, String name, String rarityLine, String flavor, long durationMs) {
+    private static ItemStack createPhial(String id, String name, Rarity rarity, String flavor, long durationMs) {
         ItemStack item = new ItemStack(Material.POTION);
         if (!(item.getItemMeta() instanceof PotionMeta meta)) {
             return item;
@@ -50,8 +51,6 @@ public final class AetherBloodVial implements Listener {
         long hours = Math.max(1L, durationMs / (60L * 60L * 1000L));
         meta.setDisplayName(name);
         meta.setLore(java.util.List.of(
-                rarityLine,
-                "",
                 flavor,
                 "§d+5% XP §7on skills, Aetherion Level, vanilla XP.",
                 "§d+4% damage§7, §d+3% defense§7, §d+5% coins§7.",
@@ -66,6 +65,7 @@ public final class AetherBloodVial implements Listener {
         meta.setBasePotionType(PotionType.AWKWARD);
         meta.addItemFlags(ItemFlag.HIDE_ADDITIONAL_TOOLTIP, ItemFlag.HIDE_ATTRIBUTES);
         meta.getPersistentDataContainer().set(ItemKeys.item(), PersistentDataType.STRING, id);
+        meta.getPersistentDataContainer().set(ItemKeys.rarity(), PersistentDataType.STRING, rarity.name());
         GuiItems.hideVanilla(meta);
         ItemPresentation.polish(meta);
         item.setItemMeta(meta);

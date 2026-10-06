@@ -208,12 +208,10 @@ public final class MerchantChestService {
         }
         UUID uuid = player.getUniqueId();
         migrateLegacy(player);
-        if (!unlocked.contains(uuid)) {
-            deny(player, "Talk to the merchant first — he unlocks these chests.");
-            return;
-        }
+        // Always openable — talking to the merchant is flavour / Open Up quest, not a hard lock.
+        unlocked.add(uuid);
         long readyAt = lastOpen.getOrDefault(uuid, 0L) + COOLDOWN_MS;
-        // First open after unlock has no wait (lastOpen missing).
+        // First open has no wait (lastOpen missing).
         if (lastOpen.containsKey(uuid)) {
             long left = readyAt - System.currentTimeMillis();
             if (left > 0L) {

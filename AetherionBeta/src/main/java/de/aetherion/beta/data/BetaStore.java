@@ -119,6 +119,9 @@ public final class BetaStore {
                 }
             }
         }
+        for (String reward : yaml.getStringList("rewards-claimed")) {
+            data.claim(reward);
+        }
         ConfigurationSection answers = yaml.getConfigurationSection("answers");
         if (answers != null) {
             for (String key : answers.getKeys(false)) {
@@ -147,6 +150,7 @@ public final class BetaStore {
             yaml.set(path + ".done", data.isDone(milestone));
             yaml.set(path + ".auto", data.isAuto(milestone));
         }
+        yaml.set("rewards-claimed", new java.util.ArrayList<>(data.claimedSnapshot()));
         for (Map.Entry<String, String> entry : data.answers().entrySet()) {
             yaml.set("answers." + entry.getKey(), entry.getValue());
         }

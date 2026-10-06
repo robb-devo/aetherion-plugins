@@ -150,6 +150,7 @@ public class DialogManager implements Listener {
         if (task != null) {
             task.cancel();
         }
+        DialogPace.forget(playerId);
     }
 
     /**
@@ -168,9 +169,9 @@ public class DialogManager implements Listener {
         }, delay);
     }
 
-    /** Default beat between spoken line and follow-up action (~1.5s). */
+    /** Follow-up once whatever was just said has typed out and been read (speech clock). */
     public void afterDialog(Player player, Runnable action) {
-        afterDialog(player, DialogPace.LINE_GAP_TICKS, action);
+        afterDialog(player, Math.max(20L, DialogPace.untilFree(player) + 4L), action);
     }
 
     public void clearPendingChoice(Player player) {
@@ -317,6 +318,7 @@ public class DialogManager implements Listener {
         BukkitTask existing = activeDialogs.remove(playerId);
         if (existing != null) {
             existing.cancel();
+            DialogPace.forget(playerId);
         }
         activeDialogNpc.remove(playerId);
         pendingQuestChoices.remove(playerId);
@@ -473,6 +475,7 @@ public class DialogManager implements Listener {
         BukkitTask existing = activeDialogs.remove(playerId);
         if (existing != null) {
             existing.cancel();
+            DialogPace.forget(playerId);
         }
         activeDialogNpc.remove(playerId);
         pendingQuestChoices.remove(playerId);
@@ -536,7 +539,7 @@ public class DialogManager implements Listener {
      *
      * Jede Zeile wird zeitversetzt ausgegeben.
      *
-     * Abstand: {@link DialogPace#LINE_GAP_TICKS} für jeden NPC / jeden Dialog.
+     * Abstand: {@link DialogPace} — Tippzeit der Zeile + feste Lesepause, für jeden NPC / jeden Dialog.
      *
      * Nach der letzten Zeile werden die
      * Quest-Optionen angezeigt.
@@ -570,57 +573,95 @@ public class DialogManager implements Listener {
             boolean topicsAfter
     ) {
 
-        UUID playerId = player.getUniqueId();
+        new DialogRun(player, npc, lines, offerQuest, topicsAfter).start();
 
-        BukkitRunnable runnable = new BukkitRunnable() {
+    }
 
-            private int index = 0;
+    /**
+     * One dialog, one line at a time on the player's speech clock ({@link DialogPace}): a line
+     * types out at the shared speed, gets the shared read gap, then the next one starts. If
+     * something else is still being said (a greeting via {@code LivingNpcProfile.say}), the
+     * dialog waits for it instead of talking over it.
+     */
+    private final class DialogRun implements Runnable {
 
-            @Override
-            public void run() {
+        private final Player player;
+        private final UUID playerId;
+        private final QuestNPC npc;
+        private final String[] lines;
+        private final boolean offerQuest;
+        private final boolean topicsAfter;
+        private int index;
+        private BukkitTask task;
 
-                if (!player.isOnline()) {
-                    activeDialogs.remove(playerId);
-                    activeDialogNpc.remove(playerId);
-                    cancel();
-                    return;
-                }
+        DialogRun(Player player, QuestNPC npc, String[] lines, boolean offerQuest, boolean topicsAfter) {
+            this.player = player;
+            this.playerId = player.getUniqueId();
+            this.npc = npc;
+            this.lines = lines;
+            this.offerQuest = offerQuest;
+            this.topicsAfter = topicsAfter;
+        }
 
-                if (index >= lines.length) {
-                    activeDialogs.remove(playerId);
-                    activeDialogNpc.remove(playerId);
-                    cancel();
-                    if (offerQuest) {
-                        showQuestOptions(player, npc);
-                    } else {
-                        if (npc != null && "merchant".equalsIgnoreCase(npc.getId())) {
-                            unlockMerchantChests(player);
-                        }
-                        if (topicsAfter) {
-                            offerTopics(player, npc);
-                        }
-                    }
-                    return;
-                }
+        void start() {
+            activeDialogNpc.put(playerId, npc.getId());
+            schedule(DialogPace.untilFree(player));
+        }
 
-                String line = de.aetherion.quests.talk.TalkText.fill(player, lines[index++]);
-                if ("__BLANK__".equals(line)) {
-                    player.sendMessage("");
-                } else {
-                    player.sendMessage(formatNpcLine(npc, line));
-                    playLivingChatCue(player, npc);
-                    de.aetherion.quests.talk.TalkUx talk = de.aetherion.quests.talk.TalkUx.get();
-                    if (talk != null && npc != null) {
-                        talk.line(player, npc.getId(), npc.getName(), line);
-                    }
-                }
+        private void schedule(long delay) {
+            task = plugin.getServer().getScheduler().runTaskLater(plugin, this, Math.max(0L, delay));
+            activeDialogs.put(playerId, task);
+        }
+
+        private void finish() {
+            if (activeDialogs.remove(playerId, task)) {
+                activeDialogNpc.remove(playerId);
             }
-        };
+        }
 
-        BukkitTask task = runnable.runTaskTimer(plugin, 0L, DialogPace.LINE_GAP_TICKS);
-        activeDialogs.put(playerId, task);
-        activeDialogNpc.put(playerId, npc.getId());
-
+        @Override
+        public void run() {
+            if (!player.isOnline()) {
+                finish();
+                return;
+            }
+            if (index >= lines.length) {
+                finish();
+                if (offerQuest) {
+                    showQuestOptions(player, npc);
+                } else {
+                    if (npc != null && "merchant".equalsIgnoreCase(npc.getId())) {
+                        unlockMerchantChests(player);
+                    }
+                    if (topicsAfter) {
+                        offerTopics(player, npc);
+                    }
+                }
+                return;
+            }
+            long busy = DialogPace.untilFree(player);
+            if (busy > 0L) {
+                // Someone (often the same NPC's greeting) is mid-line: let it land first.
+                schedule(busy);
+                return;
+            }
+            String line = de.aetherion.quests.talk.TalkText.fill(player, lines[index++]);
+            if ("__BLANK__".equals(line)) {
+                player.sendMessage("");
+                DialogPace.mark(player, null);
+                schedule(DialogPace.quietBeat());
+                return;
+            }
+            player.sendMessage(formatNpcLine(npc, line));
+            playLivingChatCue(player, npc);
+            de.aetherion.quests.talk.TalkUx talk = de.aetherion.quests.talk.TalkUx.get();
+            if (talk != null && npc != null) {
+                talk.line(player, npc.getId(), npc.getName(), line);
+            }
+            DialogPace.mark(player, line);
+            // Last line: the offer / topics land as it finishes typing; otherwise the full beat.
+            schedule(index >= lines.length ? DialogPace.untilReplies(player) : DialogPace.beat(line));
+        }
     }
 
     private static String formatNpcLine(QuestNPC npc, String line) {
@@ -1454,7 +1495,8 @@ public class DialogManager implements Listener {
                         for (String line : topic.lines()) {
                             LivingNpcProfile.say(player, npc, line);
                         }
-                        long after = DialogPace.LINE_GAP_TICKS * topic.lines().length + 12L;
+                        // Topics come back as soon as the answer has typed out.
+                        long after = DialogPace.untilReplies(player);
                         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
                             de.aetherion.quests.talk.TalkUx t = de.aetherion.quests.talk.TalkUx.get();
                             if (player.isOnline() && t != null && t.isTalkingWith(player, npc.getId())
@@ -1577,6 +1619,13 @@ public class DialogManager implements Listener {
             Player player
     ) {
 
+        // Main story beats ("Das Schlaflied") — EN in StoryLines, DE in dialogs.story_<npc>.*
+        if (dialogId.startsWith("story_")) {
+            String[] story = de.aetherion.quests.story.StoryLines.lines(player, dialogId);
+            if (story != null) {
+                return story;
+            }
+        }
 
         /*
          * =====================================================
@@ -1592,7 +1641,7 @@ public class DialogManager implements Listener {
                     "{player}, right? Egon. I kit out rookies. You look like one.",
                     "Kit costs ten oak logs. The §eLumberjack§f up the hill lends the axe.",
                     "Calls himself the Forager. Humour him.",
-                    "§eYellow arrow up top§f knows the way. The sparkles on the planks are mine."
+                    "§eYellow arrow up top§f knows the way. I mostly know the pier."
             };
 
         }
@@ -1980,8 +2029,8 @@ public class DialogManager implements Listener {
 
         if (dialogId.equalsIgnoreCase("farm_isle_guide_intro")) {
             return new String[] {
-                    "Portal goes to the Farm Isle — shared fields off the hub farm.",
-                    "Farming §e10§f to enter. Same portal brings you back.",
+                    "Farm Isle's down the road — Eldervale fields, long rows, better soil.",
+                    "Pad at the bottom takes you at Farming §e10§f. Arrow's on it.",
                     "The Farmer next door thinks he's the real farmer. Cute."
             };
         }
@@ -2010,11 +2059,19 @@ public class DialogManager implements Listener {
         }
 
         if (dialogId.equalsIgnoreCase("isle_clerk_intro")) {
-            return new String[] {
+            // After the old seal (story stage 3+) Deed admits he went looking.
+            if (de.aetherion.quests.story.StoryState.stageOf(player) >= 3) {
+                return de.aetherion.quests.lang.LangPack.dialogs(player, "isle_clerk_intro.after_seal", new String[] {
+                        "Island tab's in your Manager, {player}. Slot nine. Same as ever.",
+                        "Kingdom of Eldervale. I looked it up after you left.",
+                        "Then someone from the Registry told me to stop looking. So I stopped."
+                });
+            }
+            return de.aetherion.quests.lang.LangPack.dialogs(player, "isle_clerk_intro.default", new String[] {
                     "Personal island unlocks at Aetherion Level §e20§f.",
                     "Nether Star, slot nine → Island tab. Claim it there. I don't do paperwork.",
                     "A clerk who doesn't do paperwork. Yes. I know."
-            };
+            });
         }
 
         if (dialogId.equalsIgnoreCase("dungeon_gate_intro")) {
@@ -2044,7 +2101,7 @@ public class DialogManager implements Listener {
         if (dialogId.equalsIgnoreCase("bar_whisper_intro")) {
             return new String[] {
                     "Psst. {player}. Bottom of your screen — that bar. Your §bAetherion Level§f.",
-                    "Stats, soft unlocks, new areas… a lot of this world opens through it.",
+                    "Stats, unlocks, new places… most of this world opens through it.",
                     "Keep playing. The bar notices."
             };
         }
@@ -2056,11 +2113,19 @@ public class DialogManager implements Listener {
         }
 
         if (dialogId.equalsIgnoreCase("town_crier_intro")) {
-            return new String[] {
-                    "Hear ye, hear ye! A {player} approaches!",
-                    "Hollis. Town Crier. I shout useful things so the arrow doesn't have to.",
-                    "Today's news: the §eyellow arrow up top§f still knows the way. Every day. Reliable."
-            };
+            // Story stage 5+: the Fading is back in the market; Hollis still shouts, quieter.
+            if (de.aetherion.quests.story.StoryState.stageOf(player) >= 5) {
+                return de.aetherion.quests.lang.LangPack.dialogs(player, "town_crier_intro.quiet_news", new String[] {
+                        "Hear ye… {player}. Quieter news today.",
+                        "A woman in the market forgot her own name this morning. Just stood there.",
+                        "I shouted it anyway. That's the job. Didn't feel like news, though."
+                });
+            }
+            return de.aetherion.quests.lang.LangPack.dialogs(player, "town_crier_intro.default", new String[] {
+                    "Hear ye, hear ye! {player} approaches! Probably on purpose!",
+                    "Hollis. Town Crier. If it's news, I shout it. If it isn't, I shout it anyway.",
+                    "Today: the harbour stands, the bells rang on time, nobody fell in."
+            });
         }
 
         if (dialogId.equalsIgnoreCase("street_sweeper_intro")) {
@@ -2072,16 +2137,31 @@ public class DialogManager implements Listener {
         }
 
         if (dialogId.equalsIgnoreCase("lamp_lighter_intro")) {
-            return (player != null && player.getWorld().getTime() > 12000L && player.getWorld().getTime() < 23000L)
+            boolean night = player != null && player.getWorld().getTime() > 12000L && player.getWorld().getTime() < 23000L;
+            // Story stage 4+ (the queen's letters): Wick remembers who wrote the lamp law.
+            if (de.aetherion.quests.story.StoryState.stageOf(player) >= 4) {
+                return night
+                        ? de.aetherion.quests.lang.LangPack.dialogs(player, "lamp_lighter_intro.night_queen", new String[] {
+                                "Evening, {player}. Lamps are lit. All of them.",
+                                "Old law from a queen, my gran said. So the children wouldn't be afraid.",
+                                "Nobody remembers her name. The lamps do the remembering."
+                        })
+                        : de.aetherion.quests.lang.LangPack.dialogs(player, "lamp_lighter_intro.day_queen", new String[] {
+                                "Morning, {player}. Glass is clean. Wicks are trimmed.",
+                                "My gran said the lamp law came from a queen. Never said which one.",
+                                "Doesn't matter who wrote it. Dark's still dark."
+                        });
+            }
+            return night
                     ? de.aetherion.quests.lang.LangPack.dialogs(player, "lamp_lighter_intro.night", new String[] {
                             "Evening, {player}. Wick. Lamps are my business.",
-                            "Night's when the harbour needs me. And when hostiles need a snack.",
-                            "Stay in the light. It's what I'm for."
+                            "Every lantern in the harbour stays lit till dawn. Old law.",
+                            "Stay in the light. That's what it's for."
                     })
                     : de.aetherion.quests.lang.LangPack.dialogs(player, "lamp_lighter_intro.day", new String[] {
                             "Morning, {player}. Wick. Lamplighter.",
-                            "Daytime's my off-shift. I polish glass and wait for dusk.",
-                            "Come find me after sunset. That's when it's interesting."
+                            "Daytime's my off-shift. I polish glass and trim wicks.",
+                            "Find me after sunset. That's when the job starts."
                     });
         }
 
@@ -2089,6 +2169,13 @@ public class DialogManager implements Listener {
             return new String[] {
                     "Crystal desk. Buy, sell, or melt mats into Aether Crystals.",
                     "Crystals come from the official shop — or as level rewards."
+            };
+        }
+
+        if (dialogId.equalsIgnoreCase("amethyst_mines_guide_intro")) {
+            return new String[] {
+                    "Crystal Guide. The Amethyst Mine is through me — geodes, Resonance, Heartstones.",
+                    "Ready? I'll drop you at the violet hub. /amethyst works the same."
             };
         }
 
@@ -2461,7 +2548,7 @@ public class DialogManager implements Listener {
         if (player != null && QuestStoryGate.tutorialDone(player, questManager)) {
             return de.aetherion.quests.lang.LangPack.completed(player, "farmer.graduate", new String[] {
                     "Birds are back. So are you. Good, {player}.",
-                    "Farm Isle's through §eHarrow§f's portal, far end of the barn."
+                    "Farm Isle? §eHarlow§f, far end of the barn. He knows the way down."
             });
         }
         if (larkDone) {

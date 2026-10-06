@@ -19,7 +19,7 @@ softdepend:
 
 commands:
   aquest:
-    description: Main AetherionQuests command
+    description: Main AetherionQuests command (player accept/deny; admin start/complete/reset/cleanup)
     usage: /aquest
 
   questnpc:
@@ -49,5 +49,5 @@ permissions:
     description: Create and edit FancyNPCs with dialogue (moderator / content helper)
     default: false
   aetherionquests.admin:
-    description: Admin quest NPC tools (/questnpc, anchors)
-    default: op
+    description: Admin quest tools (/aquest start|complete|reset|cleanup, /questnpc)
+    default: false

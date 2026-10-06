@@ -11,6 +11,7 @@ import org.bukkit.WorldCreator;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
+import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -23,7 +24,10 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class VeinsWorld {
 
     public static final String DEFAULT_NAME = "aether_veins";
-    /** Bump to force a one-time rebuild of the dig world (5 = Amethyst geodes). */
+    /**
+     * Bump only when the procedural dig layout must wipe. Schematic mode ignores this —
+     * the Amethyst Mines map is the hand-built {@code amethyst-mines.schem}, not Deep Mines.
+     */
     public static final int LAYOUT = 5;
 
     private final AetherionMining plugin;
@@ -36,6 +40,7 @@ public final class VeinsWorld {
     private World world;
     private boolean digZonesReady;
     private boolean painting;
+    private boolean schematicReady;
 
     public VeinsWorld(AetherionMining plugin) {
         this.plugin = plugin;
@@ -75,9 +80,26 @@ public final class VeinsWorld {
         return check != null && check.getName().equalsIgnoreCase(worldName());
     }
 
+    public boolean schematicMode() {
+        return plugin.getConfig().getBoolean("veins.schematic-mode", true);
+    }
+
+    public boolean isSchematicReady() {
+        return schematicReady;
+    }
+
     public Location hubSpawn() {
         if (world == null) {
             return null;
+        }
+        // Prefer the placed Amethyst map spawn (schematic hub). hub-y 0,0 is the old deep-mines column.
+        if (plugin.getConfig().contains("veins.spawn-x") || schematicMode()) {
+            double x = plugin.getConfig().getDouble("veins.spawn-x", 8.5);
+            double y = plugin.getConfig().getDouble("veins.spawn-y", 18.0);
+            double z = plugin.getConfig().getDouble("veins.spawn-z", 8.5);
+            float yaw = (float) plugin.getConfig().getDouble("veins.spawn-yaw", 0.0);
+            float pitch = (float) plugin.getConfig().getDouble("veins.spawn-pitch", 0.0);
+            return new Location(world, x, y, z, yaw, pitch);
         }
         return new Location(world, 0.5, hubY() + 1, 0.5, 0f, 0f);
     }
@@ -133,6 +155,12 @@ public final class VeinsWorld {
      * chunk-gen geodes. Returns 1 if a paint job started, 0 if already ready / busy / unavailable.
      */
     public int ensureDigZones(CommandSender sender, boolean force) {
+        if (schematicMode()) {
+            if (sender != null) {
+                sender.sendMessage("§7Schematic Amethyst Mines — dig paint disabled (Deep Mines retired).");
+            }
+            return 0;
+        }
         World target = world != null && Bukkit.getWorld(world.getUID()) != null
                 ? world
                 : Bukkit.getWorld(worldName());
@@ -250,6 +278,9 @@ public final class VeinsWorld {
     }
 
     public World ensureLoaded() {
+        if (schematicMode()) {
+            return ensureSchematicWorld();
+        }
         if (layout < LAYOUT) {
             rebuildNow();
             layout = LAYOUT;
@@ -282,6 +313,62 @@ public final class VeinsWorld {
             saveData();
         }
         return world;
+    }
+
+    /**
+     * Hand-built Amethyst Mines map. Never runs Deep Mines chunk gen / dig paint.
+     * First boot (or when schematic-ready is false) wipes the procedural world and pastes the schem.
+     */
+    private World ensureSchematicWorld() {
+        if (world != null && Bukkit.getWorld(world.getUID()) != null) {
+            applyWorld(world);
+            return world;
+        }
+        World existing = Bukkit.getWorld(worldName());
+        if (existing != null && schematicReady) {
+            world = existing;
+            applyWorld(world);
+            return world;
+        }
+        // Dig world still present, or first schematic install — wipe and paste the real map.
+        plugin.getLogger().info("Amethyst Mines schematic mode — installing amethyst-mines.schem (Deep Mines retired)");
+        rebuildNow();
+        world = createVoid();
+        if (world != null) {
+            applyWorld(world);
+            pasteSchematic(Bukkit.getConsoleSender());
+        }
+        if (nextReset <= 0L) {
+            nextReset = System.currentTimeMillis() + resetMillis();
+            saveData();
+        }
+        return world;
+    }
+
+    public boolean pasteSchematic(CommandSender sender) {
+        World target = world != null ? world : Bukkit.getWorld(worldName());
+        if (target == null) {
+            target = ensureLoaded();
+        }
+        if (target == null) {
+            return false;
+        }
+        world = target;
+        boolean ok = AmethystPaste.paste(plugin, target, sender);
+        if (ok) {
+            schematicReady = true;
+            digZonesReady = true;
+            layout = LAYOUT;
+            Location spawn = hubSpawn();
+            if (spawn != null) {
+                target.setSpawnLocation(spawn);
+            }
+            if (npcs != null) {
+                npcs.spawnExit(target, (int) Math.floor(plugin.getConfig().getDouble("veins.spawn-y", 18.0)));
+            }
+            saveData();
+        }
+        return ok;
     }
 
     public void rememberExit(Player player) {
@@ -346,6 +433,10 @@ public final class VeinsWorld {
     }
 
     public void reset(String reason) {
+        if (schematicMode()) {
+            resetSchematic(reason);
+            return;
+        }
         World current = world != null ? world : Bukkit.getWorld(worldName());
         Location fallback = overworldSpawn();
         if (current != null) {
@@ -387,6 +478,32 @@ public final class VeinsWorld {
         plugin.getLogger().info("The Veins reset. Generation " + generation + ".");
     }
 
+    private void resetSchematic(String reason) {
+        World current = world != null ? world : Bukkit.getWorld(worldName());
+        Location fallback = overworldSpawn();
+        if (current != null) {
+            for (Player occupant : new ArrayList<>(current.getPlayers())) {
+                occupant.sendMessage("§8" + reason);
+                occupant.teleport(fallback);
+                occupant.setFallDistance(0f);
+                exits.remove(occupant.getUniqueId());
+            }
+        }
+        schematicReady = false;
+        generation++;
+        nextReset = System.currentTimeMillis() + resetMillis();
+        saveData();
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            rebuildNow();
+            world = createVoid();
+            if (world != null) {
+                applyWorld(world);
+                pasteSchematic(Bukkit.getConsoleSender());
+            }
+        }, 100L);
+        plugin.getLogger().info("Amethyst Mines schematic reset. Generation " + generation + ".");
+    }
+
     public void rescueIfBuried(Player player) {
         if (player == null || !isVeins(player.getWorld())) {
             return;
@@ -403,7 +520,7 @@ public final class VeinsWorld {
     }
 
     private void decorate() {
-        if (world == null) {
+        if (world == null || schematicMode()) {
             return;
         }
         VeinsHub.build(world, hubY());
@@ -424,6 +541,51 @@ public final class VeinsWorld {
             return null;
         }
         applyWorld(created);
+        return created;
+    }
+
+    /** Empty void host for the Amethyst Mines schematic — no Deep Mines stone cube. */
+    private World createVoid() {
+        WorldCreator creator = new WorldCreator(worldName());
+        creator.generator(new ChunkGenerator() {
+            @Override
+            public boolean shouldGenerateNoise() {
+                return false;
+            }
+
+            @Override
+            public boolean shouldGenerateSurface() {
+                return false;
+            }
+
+            @Override
+            public boolean shouldGenerateCaves() {
+                return false;
+            }
+
+            @Override
+            public boolean shouldGenerateDecorations() {
+                return false;
+            }
+
+            @Override
+            public boolean shouldGenerateMobs() {
+                return false;
+            }
+
+            @Override
+            public boolean shouldGenerateStructures() {
+                return false;
+            }
+        });
+        creator.generateStructures(false);
+        creator.environment(World.Environment.NORMAL);
+        creator.seed(20260920L);
+        World created = creator.createWorld();
+        if (created == null) {
+            plugin.getLogger().warning("Could not create Amethyst Mines void world.");
+            return null;
+        }
         return created;
     }
 
@@ -462,7 +624,20 @@ public final class VeinsWorld {
         target.setTime(18000L);
         target.setStorm(false);
         target.setThundering(false);
-        target.setSpawnLocation(radius() + 8, hubY() + 1, 0);
+        Location spawn;
+        if (schematicMode() || plugin.getConfig().contains("veins.spawn-x")) {
+            spawn = new Location(
+                    target,
+                    plugin.getConfig().getDouble("veins.spawn-x", 8.5),
+                    plugin.getConfig().getDouble("veins.spawn-y", 18.0),
+                    plugin.getConfig().getDouble("veins.spawn-z", 8.5),
+                    (float) plugin.getConfig().getDouble("veins.spawn-yaw", 0.0),
+                    (float) plugin.getConfig().getDouble("veins.spawn-pitch", 0.0)
+            );
+        } else {
+            spawn = new Location(target, radius() + 8, hubY() + 1, 0);
+        }
+        target.setSpawnLocation(spawn);
         VeinsGuard.open(target);
         target.setGameRule(GameRule.DO_MOB_SPAWNING, false);
         target.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
@@ -504,6 +679,7 @@ public final class VeinsWorld {
         generation = yaml.getInt("generation", 0);
         layout = yaml.getInt("layout", 0);
         digZonesReady = yaml.getBoolean("dig-zones-ready", layout >= LAYOUT);
+        schematicReady = yaml.getBoolean("schematic-ready", false);
         exits.clear();
         if (yaml.isConfigurationSection("exits")) {
             for (String key : yaml.getConfigurationSection("exits").getKeys(false)) {
@@ -537,6 +713,7 @@ public final class VeinsWorld {
         yaml.set("generation", generation);
         yaml.set("layout", layout);
         yaml.set("dig-zones-ready", digZonesReady);
+        yaml.set("schematic-ready", schematicReady);
         exits.forEach((id, location) -> {
             if (location == null || location.getWorld() == null) {
                 return;

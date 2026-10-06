@@ -67,7 +67,7 @@ import java.util.function.Consumer;
  * <ol>
  *   <li><b>Storage Hut</b> on the marked pad (the first one is free),</li>
  *   <li>a <b>Cobble Quarry</b>, on the house, set down a few steps away (he marks a good spot),</li>
- *   <li>a short <b>belt</b> from its chute into the hut (starter kit: no Workshop needed, first tiles free).</li>
+ *   <li>a short <b>belt</b> from its chute into the hut (with the Build Tool; the first tiles are free).</li>
  * </ol>
  * He walks to each spot with the player. Every step is detected from the island itself, so the tour never
  * blocks building: do things in any order, walk away, skip it, pick it up again from {@code /island}. After
@@ -105,6 +105,8 @@ public final class IslandGuide implements Listener {
     private static final class State {
         Step step = Step.WELCOME;
         boolean introduced;
+        /** Session-only: full welcome lines already played — later clicks get chips, not a line-1 restart. */
+        boolean welcomeSpoken;
         boolean quarryGiven;
         int freeTiles;
         int[] quarrySpot;
@@ -315,12 +317,23 @@ public final class IslandGuide implements Listener {
             return false;
         }
         State state = state(island.ownerId());
+        // Mark introduced before the delay so ownerSecond / early clicks can't fire a second greet.
         state.introduced = true;
         dirty = true;
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            if (player.isOnline()) {
-                greet(player, hand);
+            if (!player.isOnline()) {
+                return;
             }
+            State now = state(island.ownerId());
+            // Already mid-welcome (clicked him during the land delay): don't restart line 1.
+            if (now.step != Step.WELCOME || chats.containsKey(player.getUniqueId())) {
+                return;
+            }
+            TalkAccess talk = AetherServices.talk();
+            if (talk != null && talk.talkingWith(player, hand.speakerId)) {
+                return;
+            }
+            greet(player, hand);
         }, 30L);
         return true;
     }
@@ -478,6 +491,14 @@ public final class IslandGuide implements Listener {
     }
 
     private void greet(Player player, Hand hand) {
+        // Idempotent: never restart welcome mid-bubble (that re-queued line 1 and felt like a double dialog).
+        if (chats.containsKey(player.getUniqueId())) {
+            return;
+        }
+        TalkAccess existing = AetherServices.talk();
+        if (existing != null && existing.talkingWith(player, hand.speakerId)) {
+            return;
+        }
         State state = state(hand.owner);
         state.introduced = true;
         dirty = true;
@@ -493,13 +514,21 @@ public final class IslandGuide implements Listener {
             walkHome(hand);
             return;
         }
+        List<TalkAccess.Reply> welcomeReplies = List.of(
+                reply("Show me", NamedTextColor.GREEN, () -> startTour(player, hand)),
+                reply("I know the drill", NamedTextColor.GRAY, () -> skip(player, hand)),
+                reply("Later", NamedTextColor.DARK_GRAY, () -> speak(player, hand, List.of(
+                        "Right. I'll be in the yard. Give me a shout when you're ready."), List.of())));
+        if (state.welcomeSpoken) {
+            // Already said the two lines this session — offer choices, don't replay line 1.
+            speak(player, hand, List.of("Still with me? Hut, quarry, belt — want me to walk you through?"), welcomeReplies);
+            return;
+        }
+        state.welcomeSpoken = true;
         speak(player, hand, List.of(
                 "Oi, you made it! I'm " + name() + ". I keep isles like this one ticking.",
                 "Three pieces and this rock starts paying you: a hut, a quarry, a belt between them."),
-                List.of(reply("Show me", NamedTextColor.GREEN, () -> startTour(player, hand)),
-                        reply("I know the drill", NamedTextColor.GRAY, () -> skip(player, hand)),
-                        reply("Later", NamedTextColor.DARK_GRAY, () -> speak(player, hand, List.of(
-                                "Right. I'll be in the yard. Give me a shout when you're ready."), List.of()))));
+                welcomeReplies);
     }
 
     private void startTour(Player player, Hand hand) {
@@ -536,8 +565,9 @@ public final class IslandGuide implements Listener {
         IslandHost host = IslandHost.personal(hand.owner);
         speak(player, hand, List.of(
                 fresh ? "First, somewhere to keep it all. Your first Storage Hut is free." : "Still needs a Storage Hut. The first one's free.",
-                "See the gold outline? Island menu, Build, Storage Hut. Aim the blueprint at the pad and click."),
-                List.of(reply("Open Build", NamedTextColor.GREEN, () -> openBuild.accept(player, host)),
+                "Here's your Build Tool. Aim at the gold outline and right-click. You'll see it before it stands."),
+                List.of(reply("Hand me the Build Tool", NamedTextColor.GREEN, () -> placement.openTool(player, host,
+                                PlacementService.Part.STORAGE_HUT)),
                         reply("Show me the pad", NamedTextColor.GOLD, () -> {
                             outlinePad(player, host, 6);
                             speak(player, hand, List.of("Right there, gold outline. Front faces you when you place it."), List.of());
@@ -594,8 +624,8 @@ public final class IslandGuide implements Listener {
         String free = state.freeTiles > 0 ? " First " + state.freeTiles + " tiles are on me." : "";
         lead(player, hand, stand, () -> speak(player, hand, List.of(
                 (fresh ? "Hear that? Already digging. " : "") + "Last piece: a belt from its chute into the hut." + free,
-                "Click the orange chute mark, then the hut wall. Straight or one bend."),
-                List.of(reply("Hand me the Belt Layer", NamedTextColor.GREEN, () -> placement.startBelts(player, host)),
+                "Build Tool on Belt: right-click the orange mark, then the hut wall. Straight or one bend."),
+                List.of(reply("Build Tool: Belt", NamedTextColor.GREEN, () -> placement.startBelts(player, host)),
                         reply("Show me again", NamedTextColor.GOLD, () -> {
                             outlineChute(player, host, 6);
                             speak(player, hand, List.of("Orange mark: start there. End against the hut, any wall."), List.of());
@@ -620,8 +650,10 @@ public final class IslandGuide implements Listener {
         }
         speak(player, hand, List.of(
                 "There it is. Quarry, belt, hut. That's the whole trick.",
-                "Next: build a Workshop. That's your Hub, where the whole factory gets run from."),
-                List.of(reply("Open /island", NamedTextColor.GREEN, () -> openHub.accept(player)),
+                "Next: your Hub. Sneak and scroll the Build Tool to it. At the Hub you unlock new machines."),
+                List.of(reply("Build Tool: Hub", NamedTextColor.GREEN, () -> placement.openTool(player,
+                                IslandHost.personal(hand.owner), PlacementService.Part.HUB)),
+                        reply("Open /island", NamedTextColor.GOLD, () -> openHub.accept(player)),
                         reply("Thanks, " + name(), NamedTextColor.GRAY, () -> speak(player, hand,
                                 List.of("Any time. I'll be around the yard."), List.of()))));
         walkHome(hand);
@@ -643,18 +675,18 @@ public final class IslandGuide implements Listener {
         FactoryGoals.Goal goal = goals == null ? null : goals.next(host);
         if (goal != null) {
             speak(player, hand, List.of(goal.title() + ". " + goal.how()),
-                    List.of(reply("Build menu", NamedTextColor.GOLD, () -> openBuild.accept(player, host)),
+                    List.of(reply("Build Tool", NamedTextColor.GOLD, () -> placement.openTool(player, host, null)),
                             reply("Thanks", NamedTextColor.GRAY, null)));
             return;
         }
         String line;
         PlacedStructure hut = firstHut(host);
         if (!structures.hasWorkshop(host)) {
-            line = "Build a Workshop next: that's your Hub. Belts, mills and everything after run from its lectern.";
+            line = "Build your Hub next (Build Tool, sneak and scroll to Hub). New machines unlock at its lectern.";
         } else if (structures.count(host, StructureType.MILL) == 0) {
-            line = "Put a Mill on a belt: raw in, Compressed out. Compressed is what upgrades eat.";
+            line = "Unlock the Mill at your Hub, then put it on a belt: raw in, Compressed out. Upgrades eat Compressed.";
         } else if (hut != null && hut.level() < 2) {
-            line = "Your hut can grow a loft: four times the room. Production, click the hut, Upgrade.";
+            line = "Your hut can grow a loft: four times the room. Right-click the hut, Upgrade.";
         } else if (hosts.parcels(host).size() <= 9) {
             line = "Running out of yard? Buy land touching yours; new ground rises right there.";
         } else if (hosts.tier(host) < 2) {

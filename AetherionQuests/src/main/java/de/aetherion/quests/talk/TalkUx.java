@@ -11,6 +11,7 @@ import de.aetherion.quests.npc.NpcMemory;
 import de.aetherion.quests.npc.NpcPresence;
 import de.aetherion.quests.npc.QuestNPC;
 import de.aetherion.quests.reward.Reward;
+import de.aetherion.quests.ui.QuestMarkerManager;
 
 import io.papermc.paper.event.player.PrePlayerAttackEntityEvent;
 
@@ -51,10 +52,7 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.RayTraceResult;
-import org.bukkit.util.Transformation;
 import org.bukkit.util.Vector;
-import org.joml.AxisAngle4f;
-import org.joml.Vector3f;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -76,6 +74,10 @@ import java.util.concurrent.ThreadLocalRandom;
  * click, scroll the hotbar to pick one, or use the mirrored chat buttons. Everything is
  * visible only to the player in the conversation and never saved to disk.
  * <p>
+ * Presentation follows {@link TalkChrome}: one ink, the NPC's name colour as the only accent
+ * (thin rim around bubble / card / focused reply), the nameplate below the bubble doubles as
+ * the speaker label, and every piece blooms out of — and tucks back into — the NPC.
+ * <p>
  * This layer mirrors the existing chat pipeline — {@link de.aetherion.quests.dialog.DialogManager}
  * still owns pacing, gates and quest state. When the in-world path can't run (FancyNpcs
  * missing, NPC not found, player too far, player picked "classic"), callers fall back to
@@ -83,8 +85,17 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 public final class TalkUx implements Listener {
 
-    public static final String TAG = "ae_talk_ui";
+    /** Same tag Core janitors honour via {@link de.aetherion.core.entity.DisplayEntities#TALK_UI_TAG}. */
+    public static final String TAG = de.aetherion.core.entity.DisplayEntities.TALK_UI_TAG;
     private static final String CMD = "/aetalk";
+    private static final LegacyComponentSerializer LEGACY = LegacyComponentSerializer.legacySection();
+
+    /** The bubble leans this far toward its listener. */
+    private static final double LEAN = 0.12;
+    /** Re-lay the composition once the listener has walked ~25° around the NPC. */
+    private static final double ORBIT_DOT = 0.9;
+    /** Reply hitbox height — a little under the reply pitch so neighbours never overlap. */
+    private static final float CHIP_HIT_HEIGHT = 0.17f;
 
     private static TalkUx instance;
 
@@ -100,6 +111,7 @@ public final class TalkUx implements Listener {
     private boolean voiceBlips;
     private boolean chatReplies;
     private boolean previousLine;
+    private boolean frame;
     private double maxDistance;
     private int chipTimeoutTicks;
     private int lingerTicks;
@@ -125,9 +137,13 @@ public final class TalkUx implements Listener {
 
     private static final class ChipView {
         Choice choice;
-        TextDisplay display;
+        int index;
+        TalkPanel panel;
         Interaction hitbox;
         boolean armed;
+    }
+
+    private record ChipLabel(Component text, int width) {
     }
 
     private static final class Session {
@@ -135,10 +151,17 @@ public final class TalkUx implements Listener {
         final String npcId;
         final int token;
         String npcName;
-        String nameCode;
-        TextDisplay bubble;
+        TextColor accent = TalkChrome.QUEST;
+        /** Our nameplate sits under the bubble and names the speaker — no header in the bubble. */
+        boolean plate;
+        /** Bubble + tail have bloomed (they wait for the first line — no empty box). */
+        boolean bloomed;
+        Vector facing = new Vector(0, 0, 1);
+        TalkPanel bubble;
         TextDisplay tail;
-        TextDisplay card;
+        TalkPanel card;
+        int cardWidthPx;
+        int cardLines;
         String current = "";
         String previous;
         int shown;
@@ -148,6 +171,7 @@ public final class TalkUx implements Listener {
         long typedAt = -1;
         long lastLineAt;
         final List<ChipView> chips = new ArrayList<>();
+        int chipWidthPx;
         int hover = -1;
         boolean hoverByScroll;
         long chipsAt;
@@ -167,7 +191,9 @@ public final class TalkUx implements Listener {
     }
 
     private static final class Bark {
-        TextDisplay display;
+        TalkPanel panel;
+        TextDisplay tail;
+        boolean plate;
         long until;
         final Set<UUID> viewers = new HashSet<>();
     }
@@ -198,10 +224,14 @@ public final class TalkUx implements Listener {
         voiceBlips = cfg.getBoolean("talk-ux.voice-blips", true);
         chatReplies = cfg.getBoolean("talk-ux.chat-replies", true);
         previousLine = cfg.getBoolean("talk-ux.show-previous-line", true);
+        frame = cfg.getBoolean("talk-ux.bubble-frame", true);
         maxDistance = Math.max(4.0, cfg.getDouble("talk-ux.max-distance", 10.0));
         chipTimeoutTicks = Math.max(200, cfg.getInt("talk-ux.reply-timeout-seconds", 40) * 20);
         lingerTicks = Math.max(20, cfg.getInt("talk-ux.linger-ticks", 90));
         bubbleScale = (float) Math.max(0.3, Math.min(1.2, cfg.getDouble("talk-ux.bubble-scale", 0.56)));
+        de.aetherion.quests.dialog.DialogPace.configure(
+                cfg.getDouble("talk-ux.chars-per-tick", 1.5),
+                cfg.getLong("talk-ux.read-gap-ticks", 36L));
         List<String> prefixes = cfg.getStringList("talk-ux.classic-name-prefixes");
         if (!cfg.isSet("talk-ux.classic-name-prefixes")) {
             prefixes = List.of("QaQuest", "QaCombat", "QaMine", "QaForage", "QaCatch", "QaRoam",
@@ -220,7 +250,10 @@ public final class TalkUx implements Listener {
         }
         sessions.clear();
         for (Bark b : barks.values()) {
-            kill(b.display);
+            if (b.panel != null) {
+                b.panel.kill();
+            }
+            kill(b.tail);
         }
         barks.clear();
         purgeLeftovers();
@@ -301,10 +334,11 @@ public final class TalkUx implements Listener {
             return;
         }
         player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_HAT, SoundCategory.MASTER, 0.35f, 1.8f);
-        player.sendActionBar(Component.text(ui(player, "pulse", "Pick a reply — look at it and click · or scroll + click"), NamedTextColor.GOLD));
+        player.sendActionBar(Component.text(ui(player, "pulse", "Pick a reply — look at it and click · or scroll + click"), TalkChrome.HINT));
         for (ChipView chip : s.chips) {
-            popScale(chip.display, 1.12f, 2);
-            Bukkit.getScheduler().runTaskLater(plugin, () -> popScale(chip.display, 1.0f, 3), 3L);
+            if (chip.panel != null) {
+                chip.panel.nudge(1.12f);
+            }
         }
     }
 
@@ -337,20 +371,20 @@ public final class TalkUx implements Listener {
         if (displayName != null && !displayName.isBlank()) {
             s.npcName = displayName;
         }
-        clearChips(s);
+        clearChips(s, true);
         String filled = TalkText.fill(player, legacyLine);
         if (s.current != null && !s.current.isBlank() && s.typedAt >= 0) {
             s.previous = s.current;
         }
-        s.current = TalkText.wrap("§f" + filled, 168);
+        s.current = TalkText.wrap("§f" + filled, de.aetherion.quests.dialog.DialogPace.WRAP_PX);
         s.total = TalkText.visibleLength(s.current);
         s.shown = 0;
         s.acc = 0;
-        // Finish typing within ~32 ticks so there's reading time before the next paced line.
-        s.cps = Math.max(1.1, s.total / 32.0);
+        // One reading speed for every line and every NPC; DialogPace books the read gap after it.
+        s.cps = de.aetherion.quests.dialog.DialogPace.charsPerTick();
         s.typedAt = -1;
         s.lastLineAt = tick;
-        renderBubble(player, s);
+        renderBubble(s, true);
         LivingNpcLife life = LivingNpcLife.get();
         if (life != null) {
             life.gesture(player, id, filled);
@@ -471,11 +505,8 @@ public final class TalkUx implements Listener {
     public void clearChips(Player player) {
         Session s = player == null ? null : sessions.get(player.getUniqueId());
         if (s != null) {
-            clearChips(s);
-            if (s.card != null) {
-                popOut(s.card);
-                s.card = null;
-            }
+            clearChips(s, true);
+            collapseCard(s);
         }
     }
 
@@ -487,8 +518,10 @@ public final class TalkUx implements Listener {
     }
 
     /**
-     * Ambient one-liner above an NPC (greetings, banter). Floats above the nametag and is
-     * visible only to {@code viewers}. One bark per NPC at a time.
+     * Ambient one-liner above an NPC (greetings, banter), visible only to {@code viewers}.
+     * Living NPCs speak from the same slot as the talk bubble — right above their nameplate,
+     * with a tail — and their quest mark steps aside for the length of the line. One bark
+     * per NPC at a time.
      */
     public void bark(String npcId, String displayName, String legacyLine, Collection<? extends Player> viewers, int ticks) {
         if (!enabled || npcId == null || legacyLine == null || viewers == null || viewers.isEmpty()) {
@@ -511,33 +544,59 @@ public final class TalkUx implements Listener {
         }
         Bark old = barks.remove(id);
         if (old != null) {
-            kill(old.display);
+            if (old.panel != null) {
+                old.panel.kill();
+            }
+            kill(old.tail);
         }
-        LivingNpcProfile profile = LivingNpcProfile.of(id);
-        String code = profile != null ? profile.chatPrefix() : GuestSpeakers.nameCode(id, "§6");
-        String name = displayName == null ? id : displayName;
-        String text = code + "§l" + name + "\n" + TalkText.wrap("§f" + TalkText.fill(audience.get(0), legacyLine), 150);
-        if (audience.size() > 1) {
-            text = code + "§l" + name + "\n" + TalkText.wrap("§f" + legacyLine.replace("{player}", "you"), 150);
+        QuestMarkerManager markers = plugin.getMarkerManager();
+        boolean plate = LivingNpcProfile.of(id) != null && markers != null && markers.hasNameplate(id);
+        TextColor accent = TalkChrome.accentOf(id);
+        String name = TalkText.strip(displayName == null ? id : displayName);
+        String said = audience.size() > 1
+                ? legacyLine.replace("{player}", "you")
+                : TalkText.fill(audience.get(0), legacyLine);
+        String body = TalkText.wrap("§f" + said, 150);
+
+        Component text = Component.empty();
+        int width = 0;
+        int lines = 0;
+        if (!plate) {
+            text = text.append(Component.text(" " + name + " ", accent, TextDecoration.BOLD)).append(Component.newline());
+            width = TalkChrome.width(" " + name + " ", true);
+            lines++;
         }
-        Location pos = at.clone().add(0.0, 3.02, 0.0);
-        final String body = text;
-        TextDisplay display = spawnText(pos, d -> {
-            styleBubble(d, 0.5f);
-            d.text(LegacyComponentSerializer.legacySection().deserialize(body));
-        });
-        if (display == null) {
+        text = text.append(Component.text(" ")).append(LEGACY.deserialize(body.replace("\n", " \n "))).append(Component.text(" "));
+        width = Math.max(width, 8 + TalkChrome.legacyBlockWidth(body));
+        lines += body.split("\n", -1).length;
+
+        Location pos = barkPos(plate, at);
+        TalkPanel panel = TalkPanel.open(plugin, this::spawnText, pos, TalkChrome.BARK_SCALE,
+                d -> stylePanel(d, TextDisplay.TextAlignment.CENTER, TalkChrome.BARK_ALPHA), null);
+        if (panel == null) {
             return;
         }
+        panel.content(text, width, lines);
+        TextDisplay tail = plate ? spawnTail(tailPos(pos, TalkChrome.BARK_SCALE), accent) : null;
         Bark bark = new Bark();
-        bark.display = display;
-        bark.until = tick + Math.max(40, ticks);
+        bark.panel = panel;
+        bark.tail = tail;
+        bark.plate = plate;
+        int life = Math.max(40, ticks);
+        bark.until = tick + life;
         for (Player p : audience) {
-            p.showEntity(plugin, display);
+            panel.show(p);
+            if (tail != null) {
+                p.showEntity(plugin, tail);
+            }
             bark.viewers.add(p.getUniqueId());
             NpcPresence.blip(p, id, 0.16f);
+            if (plate && markers != null) {
+                markers.quiet(p, id, life + 3);
+            }
         }
-        popIn(display, 0.5f);
+        panel.popIn(1, true);
+        popIn(tail, TalkChrome.BARK_SCALE * 0.9f, 1);
         barks.put(id, bark);
     }
 
@@ -551,34 +610,37 @@ public final class TalkUx implements Listener {
         }
         Session s = new Session(player.getUniqueId(), npcId, ++tokenSeq);
         s.npcName = displayName == null || displayName.isBlank() ? npcId : displayName;
-        LivingNpcProfile profile = LivingNpcProfile.of(npcId);
-        s.nameCode = profile != null ? profile.chatPrefix() : GuestSpeakers.nameCode(npcId, "§6");
+        QuestMarkerManager markers = plugin.getMarkerManager();
+        s.accent = TalkChrome.accentOf(npcId);
+        s.plate = LivingNpcProfile.of(npcId) != null && markers != null && markers.hasNameplate(npcId);
         s.npcAt = npcAt.clone();
-        Location pos = bubblePos(npcAt, player);
-        s.bubble = spawnText(pos, d -> styleBubble(d, bubbleScale));
+        s.facing = horizontal(player.getLocation().toVector().subtract(npcAt.toVector()));
+        Location pos = bubblePos(s, npcAt);
+        s.bubble = TalkPanel.open(plugin, this::spawnText, pos, bubbleScale,
+                d -> {
+                    stylePanel(d, TextDisplay.TextAlignment.CENTER, TalkChrome.BUBBLE_ALPHA);
+                    d.setViewRange(0.5f);
+                },
+                frame ? TalkChrome.rim(s.accent) : null);
         if (s.bubble == null) {
             return null;
         }
-        s.tail = spawnText(pos.clone().add(0, -0.125 * (bubbleScale / 0.56), 0), d -> {
-            d.setBillboard(Display.Billboard.CENTER);
-            d.setDefaultBackground(false);
-            d.setBackgroundColor(Color.fromARGB(0, 0, 0, 0));
-            d.setShadowed(false);
-            d.setSeeThrough(false);
-            d.setLineWidth(40);
-            d.setBrightness(new Display.Brightness(15, 15));
-            d.text(TalkGlyphs.tail());
-            d.setTransformation(scaleOf(0.01f));
-        });
-        player.showEntity(plugin, s.bubble);
+        s.tail = spawnTail(tailPos(pos, bubbleScale), s.accent);
+        // An ambient line from this NPC would sit in the same slot — the conversation wins.
+        Bark bark = barks.get(npcId);
+        if (bark != null && bark.viewers.remove(player.getUniqueId())) {
+            bark.panel.hide(player);
+            if (bark.tail != null && bark.tail.isValid()) {
+                player.hideEntity(plugin, bark.tail);
+            }
+        }
+        s.bubble.show(player);
         if (s.tail != null) {
             player.showEntity(plugin, s.tail);
-            popIn(s.tail, bubbleScale * 0.9f);
         }
-        popIn(s.bubble, bubbleScale);
         sessions.put(player.getUniqueId(), s);
-        if (plugin.getMarkerManager() != null) {
-            plugin.getMarkerManager().setTalking(player, npcId);
+        if (markers != null) {
+            markers.setTalking(player, npcId);
         }
         NpcMemory memory = NpcMemory.get();
         if (memory != null) {
@@ -588,20 +650,29 @@ public final class TalkUx implements Listener {
     }
 
     private void destroy(Session s, boolean animate) {
-        sessions.remove(s.playerId);
-        clearChips(s);
+        sessions.remove(s.playerId, s);
+        clearChips(s, animate);
         if (animate) {
-            popOut(s.bubble);
+            if (s.bubble != null) {
+                s.bubble.collapse(null);
+            }
             popOut(s.tail);
-            popOut(s.card);
+            collapseCard(s);
         } else {
-            kill(s.bubble);
+            if (s.bubble != null) {
+                s.bubble.kill();
+            }
             kill(s.tail);
-            kill(s.card);
+            if (s.card != null) {
+                s.card.kill();
+            }
         }
+        s.card = null;
         Player player = Bukkit.getPlayer(s.playerId);
-        if (player != null && plugin.getMarkerManager() != null) {
-            plugin.getMarkerManager().clearTalking(player);
+        QuestMarkerManager markers = plugin.getMarkerManager();
+        if (player != null && markers != null && !sessions.containsKey(s.playerId)) {
+            // The mark waits for the bubble to fold away, then pops back in.
+            markers.clearTalking(player);
         }
     }
 
@@ -609,72 +680,130 @@ public final class TalkUx implements Listener {
      * Rendering
      * ===================================================================== */
 
-    private void renderBubble(Player player, Session s) {
-        if (s.bubble == null || !s.bubble.isValid()) {
+    private void renderBubble(Session s, boolean fresh) {
+        if (s.bubble == null || !s.bubble.valid()) {
             return;
         }
-        StringBuilder text = new StringBuilder();
-        text.append(s.nameCode).append("§l").append(s.npcName);
+        if (fresh) {
+            // The rim is sized once per line on the fully typed text — the box never changes
+            // while the line types out (the untyped rest is drawn in the bubble's own ink).
+            int[] box = bubbleBox(s);
+            s.bubble.content(bubbleText(s, s.total), box[0], box[1]);
+        }
+        s.bubble.body(bubbleText(s, s.shown));
+        if (fresh && !s.bloomed) {
+            s.bloomed = true;
+            s.bubble.popIn(1, true);
+            popIn(s.tail, bubbleScale * 0.9f, 1);
+        }
+    }
+
+    private Component bubbleText(Session s, int shown) {
+        Component out = Component.empty();
+        boolean first = true;
+        if (!s.plate) {
+            out = out.append(Component.text(" " + TalkText.strip(s.npcName) + " ", s.accent, TextDecoration.BOLD));
+            first = false;
+        }
         if (previousLine && s.previous != null && !s.previous.isBlank()) {
-            text.append("\n§8").append(TalkText.strip(s.previous).replace("\n", "\n§8"));
+            for (String line : TalkText.strip(s.previous).split("\n")) {
+                if (!first) {
+                    out = out.append(Component.newline());
+                }
+                out = out.append(Component.text(" " + line + " ", TalkChrome.FAINT));
+                first = false;
+            }
         }
-        text.append("\n").append(TalkText.truncate(s.current, s.shown));
-        Component body = LegacyComponentSerializer.legacySection().deserialize(text.toString());
-        if (s.shown < s.total) {
-            // Untyped remainder in the bubble's own colour: the box keeps its final size
-            // from the first frame, so nothing jumps while the line types out.
-            body = body.append(Component.text(TalkText.rest(s.current, s.shown), TextColor.color(17, 17, 25)));
+        if (!first) {
+            out = out.append(Component.newline());
         }
-        s.bubble.text(body);
+        String typed = TalkText.truncate(s.current, shown);
+        Component current = Component.text(" ").append(LEGACY.deserialize(typed.replace("\n", " \n ")));
+        if (shown < s.total) {
+            // Untyped remainder in the bubble's own ink: the box keeps its final size from
+            // the first frame, so nothing jumps while the line types out.
+            String rest = TalkText.rest(s.current, shown);
+            current = current.append(Component.text(rest.replace("\n", " \n "), TalkChrome.inkText(s.accent)));
+        }
+        return out.append(current.append(Component.text(" ")));
+    }
+
+    /** {widest line px, line count} of the fully typed bubble. */
+    private int[] bubbleBox(Session s) {
+        int width = 0;
+        int lines = 0;
+        if (!s.plate) {
+            width = TalkChrome.width(" " + TalkText.strip(s.npcName) + " ", true);
+            lines++;
+        }
+        if (previousLine && s.previous != null && !s.previous.isBlank()) {
+            for (String line : TalkText.strip(s.previous).split("\n")) {
+                width = Math.max(width, 8 + TalkChrome.width(line, false));
+                lines++;
+            }
+        }
+        for (String line : s.current.split("\n", -1)) {
+            width = Math.max(width, 8 + TalkChrome.legacyWidth(line));
+            lines++;
+        }
+        return new int[] {width, Math.max(1, lines)};
     }
 
     private void showChips(Player player, Session s, List<Choice> choices) {
-        clearChips(s);
+        clearChips(s, true);
         Location npcAt = s.npcAt != null ? s.npcAt : NpcPresence.locate(s.npcId);
         if (npcAt == null) {
             return;
         }
-        Vector toward = horizontal(player.getLocation().toVector().subtract(npcAt.toVector()));
-        Vector right = new Vector(-toward.getZ(), 0, toward.getX()).multiply(-1); // viewer's right
+        s.facing = horizontal(player.getLocation().toVector().subtract(npcAt.toVector()));
         int n = Math.min(choices.size(), 5);
-        double top = 1.62 + (n > 3 ? 0.14 : 0.0);
+        // One width for the whole column (incl. the bold focus / "Sure?" states): the replies
+        // read as a menu, and focusing one never changes its size.
+        int widest = 0;
+        String armedLabel = ui(player, "armed", "Sure? Click again");
         for (int i = 0; i < n; i++) {
-            Choice choice = choices.get(i);
+            Choice c = choices.get(i);
+            String key = String.valueOf(i + 1);
+            widest = Math.max(widest, chipContentWidth(key, c.label(), true));
+            if (c.confirm()) {
+                widest = Math.max(widest, chipContentWidth(key, armedLabel, true));
+            }
+        }
+        s.chipWidthPx = widest + 6;
+        Vector back = right(s.facing).multiply(-TalkChrome.DEAL);
+        float hitWidth = (float) Math.max(0.5, s.chipWidthPx * TalkChrome.PX * TalkChrome.CHIP_SCALE);
+        for (int i = 0; i < n; i++) {
             ChipView chip = new ChipView();
-            chip.choice = choice;
-            Location pos = npcAt.clone()
-                    .add(toward.clone().multiply(0.95))
-                    .add(right.clone().multiply(1.05))
-                    .add(0, top - i * 0.27, 0);
-            final int index = i;
-            chip.display = spawnText(pos, d -> {
-                d.setBillboard(Display.Billboard.CENTER);
-                d.setAlignment(TextDisplay.TextAlignment.CENTER);
-                d.setLineWidth(400);
-                d.setShadowed(true);
-                d.setSeeThrough(false);
-                d.setDefaultBackground(false);
-                d.setBrightness(new Display.Brightness(15, 15));
-                d.setTransformation(scaleOf(0.01f));
-                d.text(chipText(player, choice, index, false, false));
-                d.setBackgroundColor(chipBg(false));
-            });
-            if (chip.display == null) {
+            chip.choice = choices.get(i);
+            chip.index = i;
+            Location home = chipHome(s, npcAt, i);
+            chip.panel = TalkPanel.open(plugin, this::spawnText, home.clone().add(back),
+                    TalkChrome.CHIP_SCALE,
+                    d -> stylePanel(d, TextDisplay.TextAlignment.LEFT, TalkChrome.CHIP_ALPHA),
+                    frame ? TalkChrome.none() : null);
+            if (chip.panel == null) {
                 continue;
             }
-            int px = pixelWidth("[" + (i + 1) + "] " + choice.label()) + 12;
-            float width = (float) Math.max(0.6, px * 0.025 * 0.5);
-            chip.hitbox = spawn(pos.clone().add(0, -0.02, 0), Interaction.class, it -> {
-                it.setInteractionWidth(width);
-                it.setInteractionHeight(0.22f);
+            ChipLabel label = chipLabel(player, s, chip, false, false);
+            chip.panel.content(label.text(), label.width(), 1);
+            chip.hitbox = spawn(home.clone().add(0, -0.025, 0), Interaction.class, it -> {
+                it.setInteractionWidth(hitWidth);
+                it.setInteractionHeight(CHIP_HIT_HEIGHT);
                 it.setResponsive(false);
             });
-            player.showEntity(plugin, chip.display);
+            chip.panel.show(player);
             if (chip.hitbox != null) {
                 player.showEntity(plugin, chip.hitbox);
             }
-            final TextDisplay disp = chip.display;
-            Bukkit.getScheduler().runTaskLater(plugin, () -> popIn(disp, 0.5f), 1L + i * 2L);
+            final Session session = s;
+            // Deal out of the NPC, one after another.
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                if (sessions.get(session.playerId) != session || !session.chips.contains(chip) || session.npcAt == null) {
+                    return;
+                }
+                chip.panel.teleport(chipHome(session, session.npcAt, chip.index));
+                chip.panel.popIn(0, false);
+            }, 1L + i * 2L);
             s.chips.add(chip);
         }
         s.hover = -1;
@@ -684,18 +813,18 @@ public final class TalkUx implements Listener {
         }
         if (s.questOffer) {
             player.sendActionBar(TalkGlyphs.leftClick()
-                    .append(Component.text(ui(player, "hint_offer", "Look at a reply + click  ·  "), NamedTextColor.GOLD))
+                    .append(Component.text(ui(player, "hint_offer", "Look at a reply + click  ·  "), TalkChrome.HINT))
                     .append(TalkGlyphs.scroll())
-                    .append(Component.text(ui(player, "hint_offer_scroll", "or scroll + click"), NamedTextColor.GOLD)));
+                    .append(Component.text(ui(player, "hint_offer_scroll", "or scroll + click"), TalkChrome.HINT)));
         } else {
             player.sendActionBar(TalkGlyphs.leftClick()
-                    .append(Component.text(ui(player, "hint_topics", "Look at a reply + click — or just walk on"), NamedTextColor.GRAY)));
+                    .append(Component.text(ui(player, "hint_topics", "Look at a reply + click — or just walk on"), TalkChrome.MUTED)));
         }
         player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, SoundCategory.MASTER, 0.25f, 1.6f);
     }
 
     private void sendChatReplies(Player player, Session s) {
-        Component line = Component.text("  » ", NamedTextColor.DARK_GRAY);
+        Component line = Component.text("  » ", s.accent);
         for (int i = 0; i < s.chips.size(); i++) {
             ChipView chip = s.chips.get(i);
             String command = chip.choice.chatCommand() != null
@@ -704,90 +833,157 @@ public final class TalkUx implements Listener {
             if (i > 0) {
                 line = line.append(Component.text("  ", NamedTextColor.DARK_GRAY));
             }
-            line = line.append(chatButton("[" + chip.choice.label() + "]", chip.choice.color(), command,
+            line = line.append(chatButton("[" + chip.choice.label() + "]", TalkChrome.soft(chip.choice.color()), command,
                     chip.choice.label()));
         }
         player.sendMessage(line);
     }
 
-    private static Component chatButton(String label, NamedTextColor color, String command, String hover) {
+    private static Component chatButton(String label, TextColor color, String command, String hover) {
         return Component.text(label, color)
                 .clickEvent(ClickEvent.runCommand(command))
                 .hoverEvent(HoverEvent.showText(Component.text(hover, NamedTextColor.GRAY)));
     }
 
-    private Component chipText(Player player, Choice choice, int index, boolean hovered, boolean armed) {
-        String label = armed ? ui(player, "armed", "Sure? Click again") : choice.label();
-        if (hovered) {
-            return TalkGlyphs.chevron()
-                    .append(Component.text(label, choice.color(), TextDecoration.BOLD))
-                    .append(Component.text(" ◀", NamedTextColor.YELLOW));
+    /**
+     * " 1  Label     " — key column, label, padded to the column width. Rest: faint key,
+     * label in its (softened) meaning colour. Focus: key in the NPC's accent, label lifted
+     * and bold. Armed: amber "Sure? Click again".
+     */
+    private ChipLabel chipLabel(Player player, Session s, ChipView chip, boolean focus, boolean armed) {
+        String label = armed ? ui(player, "armed", "Sure? Click again") : chip.choice.label();
+        String key = String.valueOf(chip.index + 1);
+        boolean strong = focus || armed;
+        TextColor keyColor = armed ? TalkChrome.AMBER : focus ? s.accent : TalkChrome.FAINT;
+        TextColor labelColor = armed ? TalkChrome.AMBER
+                : focus ? TalkChrome.bright(chip.choice.color()) : TalkChrome.soft(chip.choice.color());
+        int used = chipContentWidth(key, label, strong);
+        int spaces = Math.max(1, Math.round((s.chipWidthPx - used) / 4f));
+        Component text = Component.text(" ")
+                .append(Component.text(key, keyColor).decoration(TextDecoration.BOLD, strong))
+                .append(Component.text("  "))
+                .append(Component.text(label, labelColor).decoration(TextDecoration.BOLD, strong))
+                .append(Component.text(" ".repeat(spaces)));
+        return new ChipLabel(text, used + spaces * 4);
+    }
+
+    private static int chipContentWidth(String key, String label, boolean strong) {
+        return 4 + TalkChrome.width(key, strong) + 8 + TalkChrome.width(TalkText.strip(label), strong);
+    }
+
+    private void focusChip(Player player, Session s, ChipView chip, boolean focus) {
+        if (chip.panel == null || !chip.panel.valid()) {
+            return;
         }
-        return Component.text("[" + (index + 1) + "] ", NamedTextColor.DARK_GRAY)
-                .append(Component.text(label, choice.color()));
+        boolean armed = focus && chip.armed;
+        ChipLabel label = chipLabel(player, s, chip, focus, armed);
+        chip.panel.content(label.text(), label.width(), 1);
+        TextColor tone = armed ? TalkChrome.AMBER : s.accent;
+        chip.panel.background(focus
+                ? TalkChrome.inkTint(tone, 0.2, TalkChrome.CHIP_FOCUS_ALPHA)
+                : TalkChrome.ink(TalkChrome.CHIP_ALPHA));
+        chip.panel.rimColor(focus ? TalkChrome.rim(tone) : TalkChrome.none(), 2);
+        chip.panel.scaleTo(focus ? TalkChrome.CHIP_FOCUS_SCALE : TalkChrome.CHIP_SCALE, 2);
     }
 
-    private static Color chipBg(boolean hovered) {
-        return hovered ? Color.fromARGB(225, 58, 52, 34) : Color.fromARGB(190, 14, 14, 20);
-    }
-
+    /**
+     * The quest as a small document beside the NPC: who (small caps, accent), what (gold
+     * title, muted brief), then goals and pay. Left of the NPC, top-aligned with the replies.
+     */
     private void showCard(Player player, Session s, Quest quest, Quest conflicting) {
         if (s.card != null) {
-            kill(s.card);
+            s.card.kill();
             s.card = null;
         }
         Location npcAt = s.npcAt != null ? s.npcAt : NpcPresence.locate(s.npcId);
         if (npcAt == null) {
             return;
         }
-        StringBuilder text = new StringBuilder();
-        text.append("§6§l").append(de.aetherion.quests.lang.LangPack.questTitle(player, quest.getId(), quest.getTitle()));
+        List<Component> lines = new ArrayList<>();
+        int[] width = {0};
+        java.util.function.BiConsumer<Component, Integer> add = (c, w) -> {
+            lines.add(c);
+            width[0] = Math.max(width[0], w);
+        };
+        s.facing = horizontal(player.getLocation().toVector().subtract(npcAt.toVector()));
+        String who = " " + TalkChrome.smallCaps(TalkText.strip(s.npcName)) + " ";
+        add.accept(Component.text(who, s.accent), TalkChrome.width(who, false));
+        String title = " " + TalkText.strip(de.aetherion.quests.lang.LangPack.questTitle(player, quest.getId(), quest.getTitle())) + " ";
+        add.accept(Component.text(title, TalkChrome.QUEST, TextDecoration.BOLD), TalkChrome.width(title, true));
         String desc = de.aetherion.quests.lang.LangPack.questDescription(player, quest.getId(),
                 quest.getDescription() == null ? "" : quest.getDescription());
         if (desc != null && !desc.isBlank()) {
-            text.append("\n§7").append(TalkText.wrap(TalkText.strip(desc), 150).replace("\n", "\n§7"));
+            for (String l : TalkText.wrap(TalkText.strip(desc), 150).split("\n")) {
+                String line = " " + l + " ";
+                add.accept(Component.text(line, TalkChrome.MUTED), TalkChrome.width(line, false));
+            }
         }
         if (!quest.getObjectives().isEmpty()) {
-            text.append("\n§e▸ ").append(ui(player, "goals", "Goals"));
+            add.accept(Component.text(" "), 4);
+            String label = " " + TalkChrome.smallCaps(ui(player, "goals", "Goals")) + " ";
+            add.accept(Component.text(label, TalkChrome.mix(TalkChrome.QUEST, TalkChrome.MUTED, 0.35)), TalkChrome.width(label, false));
             for (Objective objective : quest.getObjectives()) {
                 if (objective == null) {
                     continue;
                 }
-                String name = objective.getDisplayName() != null ? objective.getDisplayName() : pretty(objective.getTarget());
-                text.append("\n§f• ").append(TalkText.strip(name)).append(" §8x").append(Math.max(1, objective.getAmount()));
+                String name = TalkText.strip(objective.getDisplayName() != null ? objective.getDisplayName() : pretty(objective.getTarget()));
+                String amount = " ×" + Math.max(1, objective.getAmount());
+                add.accept(Component.text(" • ", TalkChrome.FAINT)
+                                .append(Component.text(name, TalkChrome.TEXT))
+                                .append(Component.text(amount + " ", TalkChrome.FAINT)),
+                        TalkChrome.width(" • " + name + amount + " ", false));
             }
         }
         if (!quest.getRewards().isEmpty()) {
-            text.append("\n§a▸ ").append(ui(player, "pays", "Pays"));
+            if (quest.getObjectives().isEmpty()) {
+                add.accept(Component.text(" "), 4);
+            }
+            String label = " " + TalkChrome.smallCaps(ui(player, "pays", "Pays")) + " ";
+            add.accept(Component.text(label, TalkChrome.mix(TalkChrome.READY, TalkChrome.MUTED, 0.35)), TalkChrome.width(label, false));
             for (Reward reward : quest.getRewards()) {
                 if (reward == null) {
                     continue;
                 }
-                text.append("\n§f• ").append(reward.getAmount()).append(" ").append(reward.getName());
+                String amount = String.valueOf(reward.getAmount());
+                String name = TalkText.strip(String.valueOf(reward.getName()));
+                add.accept(Component.text(" • ", TalkChrome.FAINT)
+                                .append(Component.text(amount, TalkChrome.READY))
+                                .append(Component.text(" " + name + " ", TalkChrome.TEXT)),
+                        TalkChrome.width(" • " + amount + " " + name + " ", false));
             }
         }
         if (conflicting != null) {
-            text.append("\n§c⚠ ").append(ui(player, "replaces", "Replaces your current job"));
+            String warn = " ⚠ " + ui(player, "replaces", "Replaces your current job") + " ";
+            add.accept(Component.text(warn, TalkChrome.WARN), TalkChrome.width(warn, false));
         }
-        Vector toward = horizontal(player.getLocation().toVector().subtract(npcAt.toVector()));
-        Vector right = new Vector(-toward.getZ(), 0, toward.getX()).multiply(-1);
-        Location pos = npcAt.clone().add(toward.clone().multiply(0.9)).add(right.clone().multiply(-1.15)).add(0, 0.95, 0);
-        String body = text.toString();
-        s.card = spawnText(pos, d -> {
-            d.setBillboard(Display.Billboard.CENTER);
-            d.setAlignment(TextDisplay.TextAlignment.LEFT);
-            d.setLineWidth(400);
-            d.setShadowed(true);
-            d.setDefaultBackground(false);
-            d.setBackgroundColor(Color.fromARGB(205, 32, 24, 14));
-            d.setBrightness(new Display.Brightness(15, 15));
-            d.setTransformation(scaleOf(0.01f));
-            d.text(LegacyComponentSerializer.legacySection().deserialize(body));
-        });
-        if (s.card != null) {
-            player.showEntity(plugin, s.card);
-            popIn(s.card, 0.42f);
+        Component body = Component.empty();
+        for (int i = 0; i < lines.size(); i++) {
+            if (i > 0) {
+                body = body.append(Component.newline());
+            }
+            body = body.append(lines.get(i));
         }
+        s.cardWidthPx = width[0];
+        s.cardLines = lines.size();
+        Location home = cardHome(s, npcAt);
+        Location from = home.clone().add(right(s.facing).multiply(TalkChrome.DEAL));
+        s.card = TalkPanel.open(plugin, this::spawnText, from, TalkChrome.CARD_SCALE,
+                d -> stylePanel(d, TextDisplay.TextAlignment.LEFT, TalkChrome.CARD_ALPHA),
+                frame ? TalkChrome.rim(s.accent) : null);
+        if (s.card == null) {
+            return;
+        }
+        s.card.content(body, s.cardWidthPx, s.cardLines);
+        s.card.show(player);
+        final TalkPanel card = s.card;
+        final Session session = s;
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (session.card != card || session.npcAt == null) {
+                return;
+            }
+            card.teleport(cardHome(session, session.npcAt));
+            card.popIn(0, false);
+        }, 2L);
     }
 
     /** German overlay for fixed talk-UI strings ({@code ui.talk_ux.<key>}); English passes through as written. */
@@ -803,13 +999,31 @@ public final class TalkUx implements Listener {
         return t.isEmpty() ? t : Character.toUpperCase(t.charAt(0)) + t.substring(1);
     }
 
-    private void clearChips(Session s) {
+    /** Replies fold back toward the NPC (or vanish at once when {@code animate} is false). */
+    private void clearChips(Session s, boolean animate) {
+        Vector tuck = right(s.facing).multiply(-TalkChrome.DEAL);
         for (ChipView chip : s.chips) {
-            popOut(chip.display);
+            if (chip.panel != null) {
+                if (animate) {
+                    Location at = chip.panel.location();
+                    chip.panel.collapse(at == null ? null : at.add(tuck));
+                } else {
+                    chip.panel.kill();
+                }
+            }
             kill(chip.hitbox);
         }
         s.chips.clear();
         s.hover = -1;
+    }
+
+    private void collapseCard(Session s) {
+        if (s.card == null) {
+            return;
+        }
+        Location at = s.card.location();
+        s.card.collapse(at == null ? null : at.add(right(s.facing).multiply(TalkChrome.DEAL)));
+        s.card = null;
     }
 
     /* =====================================================================
@@ -833,16 +1047,21 @@ public final class TalkUx implements Listener {
             while (it.hasNext()) {
                 Map.Entry<String, Bark> e = it.next();
                 Bark b = e.getValue();
-                if (tick >= b.until || b.display == null || !b.display.isValid()) {
-                    popOut(b.display);
+                if (tick >= b.until || b.panel == null || !b.panel.valid() || b.viewers.isEmpty()) {
+                    if (b.panel != null) {
+                        b.panel.collapse(null);
+                    }
+                    popOut(b.tail);
                     it.remove();
                     continue;
                 }
                 Location at = NpcPresence.locate(e.getKey());
-                if (at != null && at.getWorld() == b.display.getWorld()) {
-                    Location target = at.clone().add(0, 3.02, 0);
-                    if (b.display.getLocation().distanceSquared(target) > 0.01) {
-                        b.display.teleport(target);
+                Location now = b.panel.location();
+                if (at != null && now != null && at.getWorld() == now.getWorld()) {
+                    Location target = barkPos(b.plate, at);
+                    if (now.distanceSquared(target) > 0.01) {
+                        b.panel.teleport(target);
+                        teleportSmooth(b.tail, tailPos(target, TalkChrome.BARK_SCALE));
                     }
                 }
             }
@@ -865,11 +1084,17 @@ public final class TalkUx implements Listener {
                 destroy(s, true);
                 return;
             }
-            if (s.npcAt == null || s.npcAt.distanceSquared(at) > 0.0025) {
+            Vector facing = horizontal(player.getLocation().toVector().subtract(at.toVector()));
+            boolean moved = s.npcAt == null || s.npcAt.distanceSquared(at) > 0.0025;
+            boolean orbited = s.facing.dot(facing) < ORBIT_DOT;
+            if (moved || orbited) {
+                // NPC shifted or the listener walked around: the whole composition follows,
+                // so bubble, replies and card always face the one who's talking.
                 s.npcAt = at.clone();
-                Location pos = bubblePos(at, player);
-                teleportSmooth(s.bubble, pos);
-                teleportSmooth(s.tail, pos.clone().add(0, -0.125 * (bubbleScale / 0.56), 0));
+                if (orbited) {
+                    s.facing = facing;
+                }
+                layout(s);
             }
         }
         // Typewriter
@@ -893,11 +1118,11 @@ public final class TalkUx implements Listener {
                 if (s.shown >= s.total) {
                     s.typedAt = tick;
                 }
-                renderBubble(player, s);
+                renderBubble(s, false);
             }
         } else if (s.typedAt < 0) {
             s.typedAt = tick;
-            renderBubble(player, s);
+            renderBubble(s, false);
         }
         // Chips: hover + timeout
         if (!s.chips.isEmpty()) {
@@ -918,6 +1143,28 @@ public final class TalkUx implements Listener {
         }
     }
 
+    /** Put every piece of the conversation where it belongs for the current NPC spot / facing. */
+    private void layout(Session s) {
+        if (s.npcAt == null) {
+            return;
+        }
+        Location pos = bubblePos(s, s.npcAt);
+        if (s.bubble != null) {
+            s.bubble.teleport(pos);
+        }
+        teleportSmooth(s.tail, tailPos(pos, bubbleScale));
+        for (ChipView chip : s.chips) {
+            Location home = chipHome(s, s.npcAt, chip.index);
+            if (chip.panel != null) {
+                chip.panel.teleport(home);
+            }
+            teleportSmooth(chip.hitbox, home.clone().add(0, -0.025, 0));
+        }
+        if (s.card != null && s.card.valid()) {
+            s.card.teleport(cardHome(s, s.npcAt));
+        }
+    }
+
     private void updateHover(Player player, Session s) {
         Location eye = player.getEyeLocation();
         Vector origin = eye.toVector();
@@ -929,7 +1176,7 @@ public final class TalkUx implements Listener {
             if (chip.hitbox == null || !chip.hitbox.isValid()) {
                 continue;
             }
-            BoundingBox box = chip.hitbox.getBoundingBox().clone().expand(0.04, 0.03, 0.04);
+            BoundingBox box = chip.hitbox.getBoundingBox().clone().expand(0.04, 0.005, 0.04);
             RayTraceResult hit = box.rayTrace(origin, dir, 8.0);
             if (hit != null) {
                 double d = hit.getHitPosition().distanceSquared(origin);
@@ -948,11 +1195,7 @@ public final class TalkUx implements Listener {
             s.hover = -1;
             ChipView chip = s.chips.get(old);
             chip.armed = false;
-            if (chip.display != null && chip.display.isValid()) {
-                chip.display.text(chipText(player, chip.choice, old, false, false));
-                chip.display.setBackgroundColor(chipBg(false));
-                popScale(chip.display, 0.5f, 2);
-            }
+            focusChip(player, s, chip, false);
         }
     }
 
@@ -966,11 +1209,7 @@ public final class TalkUx implements Listener {
                 chip.armed = false;
             }
             if (i == index || i == old) {
-                if (chip.display != null && chip.display.isValid()) {
-                    chip.display.text(chipText(player, chip.choice, i, on, chip.armed));
-                    chip.display.setBackgroundColor(chipBg(on));
-                    popScale(chip.display, on ? 0.56f : 0.5f, 2);
-                }
+                focusChip(player, s, chip, on);
             }
         }
         player.playSound(player.getLocation(), Sound.BLOCK_WOODEN_BUTTON_CLICK_ON, SoundCategory.MASTER, 0.22f, 1.9f);
@@ -989,27 +1228,26 @@ public final class TalkUx implements Listener {
             chip.armed = true;
             if (s.hover != index) {
                 setHover(player, s, index);
-            } else if (chip.display != null) {
-                chip.display.text(chipText(player, chip.choice, index, true, true));
+            } else {
+                focusChip(player, s, chip, true);
             }
             player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, SoundCategory.MASTER, 0.5f, 0.9f);
             return;
         }
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, SoundCategory.MASTER, 0.35f, 1.25f);
         if (chip.choice.echo() != null) {
-            player.sendMessage(Component.text("  » ", NamedTextColor.DARK_GRAY)
+            player.sendMessage(Component.text("  » ", s.accent)
                     .append(Component.text(ui(player, "you", "You: "), NamedTextColor.GRAY))
                     .append(Component.text(chip.choice.echo(), NamedTextColor.WHITE, TextDecoration.ITALIC)));
         }
-        clearChips(s);
-        if (s.card != null) {
-            popOut(s.card);
-            s.card = null;
-        }
+        clearChips(s, true);
+        collapseCard(s);
         s.questOffer = false;
         s.onTimeout = null;
         s.lastLineAt = tick;
         s.typedAt = tick;
+        // They answered, so they've read it: the reaction doesn't sit out the read gap.
+        de.aetherion.quests.dialog.DialogPace.release(player);
         Runnable action = chip.choice.action();
         if (action != null) {
             try {
@@ -1135,7 +1373,7 @@ public final class TalkUx implements Listener {
         }
         s.hoverByScroll = true;
         setHover(event.getPlayer(), s, target);
-        event.getPlayer().sendActionBar(Component.text(ui(event.getPlayer(), "scroll", "Click to pick · scroll to change"), NamedTextColor.GOLD));
+        event.getPlayer().sendActionBar(Component.text(ui(event.getPlayer(), "scroll", "Click to pick · scroll to change"), TalkChrome.HINT));
     }
 
     @EventHandler
@@ -1191,12 +1429,45 @@ public final class TalkUx implements Listener {
     }
 
     /* =====================================================================
-     * Entity helpers
+     * Layout (see TalkChrome for the rhythm)
      * ===================================================================== */
 
-    private Location bubblePos(Location npcFeet, Player player) {
-        Vector toward = horizontal(player.getLocation().toVector().subtract(npcFeet.toVector()));
-        return npcFeet.clone().add(0, 2.08, 0).add(toward.multiply(0.12));
+    private Location bubblePos(Session s, Location npcFeet) {
+        // Right above the living nameplate, which then reads as the speaker label under the tail.
+        double y = s.plate ? TalkChrome.VOICE_Y : TalkChrome.VOICE_Y_FREE;
+        return npcFeet.clone().add(0, y, 0).add(s.facing.clone().multiply(LEAN));
+    }
+
+    private static Location barkPos(boolean plate, Location npcFeet) {
+        return npcFeet.clone().add(0, plate ? TalkChrome.VOICE_Y : 3.02, 0);
+    }
+
+    /** The tail hangs from the bubble's bottom edge (tail glyph box ≈ one line at 0.9× scale). */
+    private static Location tailPos(Location bubble, float scale) {
+        return bubble.clone().add(0, -0.125 * (scale / 0.56), 0);
+    }
+
+    private static Location chipHome(Session s, Location npcAt, int index) {
+        double half = s.chipWidthPx * TalkChrome.PX * TalkChrome.CHIP_SCALE / 2.0;
+        double y = TalkChrome.SIDE_TOP - TalkChrome.LINE_PX * TalkChrome.PX * TalkChrome.CHIP_SCALE - index * TalkChrome.CHIP_STEP;
+        return npcAt.clone()
+                .add(s.facing.clone().multiply(TalkChrome.SIDE_FORWARD))
+                .add(right(s.facing).multiply(TalkChrome.SIDE_GAP + half))
+                .add(0, y, 0);
+    }
+
+    private static Location cardHome(Session s, Location npcAt) {
+        double half = s.cardWidthPx * TalkChrome.PX * TalkChrome.CARD_SCALE / 2.0;
+        double height = s.cardLines * TalkChrome.LINE_PX * TalkChrome.PX * TalkChrome.CARD_SCALE;
+        return npcAt.clone()
+                .add(s.facing.clone().multiply(TalkChrome.SIDE_FORWARD))
+                .add(right(s.facing).multiply(-(TalkChrome.SIDE_GAP + half)))
+                .add(0, TalkChrome.SIDE_TOP - height, 0);
+    }
+
+    /** The listener's right-hand side, seen while facing the NPC. */
+    private static Vector right(Vector toward) {
+        return new Vector(toward.getZ(), 0, -toward.getX());
     }
 
     private static Vector horizontal(Vector v) {
@@ -1213,17 +1484,26 @@ public final class TalkUx implements Listener {
                 && at.distanceSquared(player.getLocation()) <= max * max;
     }
 
-    private void styleBubble(TextDisplay d, float scale) {
-        d.setBillboard(Display.Billboard.CENTER);
-        d.setAlignment(TextDisplay.TextAlignment.CENTER);
+    /* =====================================================================
+     * Entity helpers
+     * ===================================================================== */
+
+    private static void stylePanel(TextDisplay d, TextDisplay.TextAlignment alignment, int alpha) {
+        TalkChrome.base(d);
+        d.setAlignment(alignment);
         d.setLineWidth(400);
-        d.setShadowed(true);
-        d.setSeeThrough(false);
-        d.setDefaultBackground(false);
-        d.setBackgroundColor(Color.fromARGB(214, 16, 16, 24));
-        d.setBrightness(new Display.Brightness(15, 15));
-        d.setTransformation(scaleOf(0.01f));
-        d.setViewRange(0.5f);
+        d.setBackgroundColor(TalkChrome.ink(alpha));
+    }
+
+    private TextDisplay spawnTail(Location at, TextColor accent) {
+        return spawnText(at, d -> {
+            TalkChrome.base(d);
+            d.setShadowed(false);
+            d.setBackgroundColor(Color.fromARGB(0, 0, 0, 0));
+            d.setLineWidth(40);
+            d.text(TalkGlyphs.tail(TalkChrome.inkText(accent)));
+            d.setTransformation(TalkChrome.scaled(0.01f));
+        });
     }
 
     private TextDisplay spawnText(Location at, java.util.function.Consumer<TextDisplay> setup) {
@@ -1252,31 +1532,18 @@ public final class TalkUx implements Listener {
         }
     }
 
-    private static Transformation scaleOf(float s) {
-        return new Transformation(new Vector3f(), new AxisAngle4f(), new Vector3f(s, s, s), new AxisAngle4f());
-    }
-
-    private void popIn(Display display, float target) {
+    private void popIn(Display display, float target, long delay) {
         if (display == null) {
             return;
         }
-        Bukkit.getScheduler().runTaskLater(plugin, () -> popScale(display, target, 4), 2L);
-    }
-
-    private static void popScale(Display display, float target, int ticks) {
-        if (display == null || !display.isValid()) {
-            return;
-        }
-        display.setInterpolationDelay(0);
-        display.setInterpolationDuration(ticks);
-        display.setTransformation(scaleOf(target));
+        Bukkit.getScheduler().runTaskLater(plugin, () -> TalkChrome.animate(display, TalkChrome.scaled(target), 4), Math.max(1L, delay));
     }
 
     private void popOut(Display display) {
         if (display == null || !display.isValid()) {
             return;
         }
-        popScale(display, 0.01f, 3);
+        TalkChrome.animate(display, TalkChrome.scaled(0.01f), 3);
         Bukkit.getScheduler().runTaskLater(plugin, () -> kill(display), 4L);
     }
 
@@ -1290,15 +1557,6 @@ public final class TalkUx implements Listener {
         if (entity != null && entity.isValid()) {
             entity.remove();
         }
-    }
-
-    private static int pixelWidth(String text) {
-        int w = 0;
-        String plain = TalkText.strip(text);
-        for (int i = 0; i < plain.length(); i++) {
-            w += TalkText.advance(plain.charAt(i));
-        }
-        return w;
     }
 
     /** Remove UI entities left in loaded chunks by a crash / hot reload. */

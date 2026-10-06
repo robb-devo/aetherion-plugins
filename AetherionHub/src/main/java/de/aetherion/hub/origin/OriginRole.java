@@ -37,11 +37,11 @@ public enum OriginRole {
     BELLKEEPER("Sister Aurel", "Keeper of the Seven Bells", "§e", "cleric", "snow", Material.BELL,
             "The Seven Bells · the old hymn",
             List.of(
-                    "Seven bells, seven notes. The old hymn only works if you ring them all.",
+                    "Seven bells, seven notes. Ring them all and the old hymn plays.",
                     "The high bell in the wharf tower? Arrows, dear. Nobody climbs that.",
-                    "Dawn gets three strokes, dusk gets five. The island counts, even if you don't.",
-                    "Every bell on Origin was cast for someone. Most of them have forgotten who.",
-                    "Hear that hum after dark? Starbells. They answer the bells, if you ask me."
+                    "Dawn gets three strokes, dusk gets five. I count. Someone has to.",
+                    "Every bell here was cast for someone. Most have forgotten who.",
+                    "Hear that hum after dark? Starbells. They answer the big ones."
             )),
     TENDER("Fen Glowmoor", "Glowcap Tender", "§9", "farmer", "swamp", Material.GLOW_BERRIES,
             "Glowcap waystones · travel",
@@ -55,10 +55,11 @@ public enum OriginRole {
     STARGAZER("Stellan Voss", "Summit Stargazer", "§d", "librarian", "savanna", Material.SPYGLASS,
             "Vistas · the night sky · wishes",
             List.of(
-                    "Stand on a high place and the island names itself. Five of them. Find them.",
-                    "Falling stars on Origin are rare. When you see one, sneak and look up. Make it count.",
+                    "Stand somewhere high and the island names itself. Five spots. Find them.",
+                    "Falling stars are rare here. When one comes, sneak and look up.",
+                    "Shooting stars over Skyreach. Make a wish, they say.",
                     "The aurora comes when it likes. Mostly when you're indoors.",
-                    "From here you can see the Borderlands. From there you can't see anything nice.",
+                    "From here you can see the Borderlands. From there, nothing nice.",
                     "The glide down is quicker than the stairs. Also louder."
             ));
 

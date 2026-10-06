@@ -179,11 +179,11 @@ public final class TestGearListener implements Listener {
             long tick = Bukkit.getCurrentTick();
             Long next = charmCd.get(player.getUniqueId());
             if (next != null && tick < next) {
-                player.sendActionBar(net.kyori.adventure.text.Component.text(
-                        "§6Writ §7recharging… §f" + Math.max(1, (next - tick + 19) / 20) + "s"));
+                AbilityCooldownHud.denied(player, id);
                 return;
             }
             charmCd.put(player.getUniqueId(), tick + 240L);
+            AbilityCooldownHud.armPinned(player, id, "Writ", tick + 240L);
             player.removePotionEffect(PotionEffectType.SLOWNESS);
             player.removePotionEffect(PotionEffectType.MINING_FATIGUE);
             player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 80, 0, true, true, true));
@@ -197,11 +197,11 @@ public final class TestGearListener implements Listener {
             long tick = Bukkit.getCurrentTick();
             Long next = contractCd.get(player.getUniqueId());
             if (next != null && tick < next) {
-                player.sendActionBar(net.kyori.adventure.text.Component.text(
-                        "§eContract §7cooling… §f" + Math.max(1, (next - tick + 19) / 20) + "s"));
+                AbilityCooldownHud.denied(player, id);
                 return;
             }
             contractCd.put(player.getUniqueId(), tick + 280L);
+            AbilityCooldownHud.armPinned(player, id, "Contract", tick + 280L);
             double hp = player.getHealth();
             player.setHealth(Math.max(1.0, hp * 0.90));
             player.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, 160, 1, true, true, true));
@@ -225,11 +225,11 @@ public final class TestGearListener implements Listener {
             if (!TestPrototypeAbilities.freeCd(player)) {
                 Long next = stormCd.get(player.getUniqueId());
                 if (next != null && tick < next) {
-                    player.sendActionBar(net.kyori.adventure.text.Component.text(
-                            "§eStorm §7recharging… §f" + Math.max(1, (next - tick + 19) / 20) + "s"));
+                    AbilityCooldownHud.denied(player, id);
                     return;
                 }
                 stormCd.put(player.getUniqueId(), tick + 480L);
+                AbilityCooldownHud.arm(player, id, "Storm", tick + 480L, stack);
             }
             double dmg = Math.max(40.0, equipmentStats.getStat(player, ItemCapability.DAMAGE));
             prototypes.castStorm(player, dmg);
@@ -246,13 +246,14 @@ public final class TestGearListener implements Listener {
             if (!TestPrototypeAbilities.freeCd(player)) {
                 Long next = sonicCd.get(player.getUniqueId());
                 if (next != null && tick < next) {
-                    player.sendActionBar(net.kyori.adventure.text.Component.text(
-                            "§3Resonance §7recharging… §f" + Math.max(1, (next - tick + 19) / 20) + "s"));
+                    AbilityCooldownHud.denied(player, id);
                     return;
                 }
                 int tier = de.aetherion.items.blueprint.BlueprintUpgrade.tier(stack);
-                sonicCd.put(player.getUniqueId(), tick
-                        + de.aetherion.items.blueprint.BlueprintUpgrade.resonanceCooldownTicks(tier));
+                long sonicReady = tick
+                        + de.aetherion.items.blueprint.BlueprintUpgrade.resonanceCooldownTicks(tier);
+                sonicCd.put(player.getUniqueId(), sonicReady);
+                AbilityCooldownHud.arm(player, id, "Resonance", sonicReady, stack);
             }
             double dmg = Math.max(28.0, equipmentStats.getStat(player, ItemCapability.DAMAGE));
             prototypes.castSonic(player, dmg);
@@ -273,11 +274,11 @@ public final class TestGearListener implements Listener {
             if (!TestPrototypeAbilities.freeCd(player)) {
                 Long next = judgmentCd.get(player.getUniqueId());
                 if (next != null && tick < next) {
-                    player.sendActionBar(net.kyori.adventure.text.Component.text(
-                            "§aJudgment §7recharging… §f" + Math.max(1, (next - tick + 19) / 20) + "s"));
+                    AbilityCooldownHud.denied(player, id);
                     return;
                 }
                 judgmentCd.put(player.getUniqueId(), tick + 500L);
+                AbilityCooldownHud.arm(player, id, "Judgment", tick + 500L, stack);
             }
             prototypes.castJudgmentBeam(player, Math.max(40.0, equipmentStats.getStat(player, ItemCapability.DAMAGE)));
             return;
@@ -296,11 +297,11 @@ public final class TestGearListener implements Listener {
             if (!TestPrototypeAbilities.freeCd(player)) {
                 Long next = dashCd.get(player.getUniqueId());
                 if (next != null && tick < next) {
-                    player.sendActionBar(net.kyori.adventure.text.Component.text(
-                            "§fDash §7recharging… §f" + Math.max(1, (next - tick + 19) / 20) + "s"));
+                    AbilityCooldownHud.denied(player, id);
                     return;
                 }
                 dashCd.put(player.getUniqueId(), tick + 80L);
+                AbilityCooldownHud.arm(player, id, "Dash", tick + 80L, stack);
             }
             prototypes.castDash(player);
             return;
@@ -320,11 +321,11 @@ public final class TestGearListener implements Listener {
             if (!TestPrototypeAbilities.freeCd(player)) {
                 Long next = cycloneCd.get(player.getUniqueId());
                 if (next != null && tick < next) {
-                    player.sendActionBar(net.kyori.adventure.text.Component.text(
-                            "§fCyclone §7recharging… §f" + Math.max(1, (next - tick + 19) / 20) + "s"));
+                    AbilityCooldownHud.denied(player, id);
                     return;
                 }
                 cycloneCd.put(player.getUniqueId(), tick + 400L);
+                AbilityCooldownHud.arm(player, id, "Cyclone", tick + 400L, stack);
             }
             prototypes.castTornado(player, Math.max(40.0, equipmentStats.getStat(player, ItemCapability.DAMAGE)));
             return;
@@ -344,11 +345,11 @@ public final class TestGearListener implements Listener {
             if (!TestPrototypeAbilities.freeCd(player)) {
                 Long next = prismCd.get(player.getUniqueId());
                 if (next != null && tick < next) {
-                    player.sendActionBar(net.kyori.adventure.text.Component.text(
-                            "§dPrism §7recharging… §f" + Math.max(1, (next - tick + 19) / 20) + "s"));
+                    AbilityCooldownHud.denied(player, id);
                     return;
                 }
                 prismCd.put(player.getUniqueId(), tick + 450L);
+                AbilityCooldownHud.arm(player, id, "Prism", tick + 450L, stack);
             }
             prototypes.castPrismBang(player, Math.max(40.0, equipmentStats.getStat(player, ItemCapability.DAMAGE)));
             return;
@@ -368,11 +369,11 @@ public final class TestGearListener implements Listener {
             if (!TestPrototypeAbilities.freeCd(player)) {
                 Long next = cascadeCd.get(player.getUniqueId());
                 if (next != null && tick < next) {
-                    player.sendActionBar(net.kyori.adventure.text.Component.text(
-                            "§6Cascade §7recharging… §f" + Math.max(1, (next - tick + 19) / 20) + "s"));
+                    AbilityCooldownHud.denied(player, id);
                     return;
                 }
                 cascadeCd.put(player.getUniqueId(), tick + 200L);
+                AbilityCooldownHud.arm(player, id, "Cascade", tick + 200L, stack);
             }
             prototypes.castCascadeBolt(player, Math.max(40.0, equipmentStats.getStat(player, ItemCapability.DAMAGE)));
         }
@@ -392,8 +393,7 @@ public final class TestGearListener implements Listener {
             if (!TestPrototypeAbilities.freeCd(player)) {
                 Long next = meteorCd.get(player.getUniqueId());
                 if (next != null && tick < next) {
-                    player.sendActionBar(net.kyori.adventure.text.Component.text(
-                            "§cMeteor §7recharging… §f" + Math.max(1, (next - tick + 19) / 20) + "s"));
+                    AbilityCooldownHud.denied(player, id);
                     return;
                 }
                 meteorCd.put(player.getUniqueId(), tick + 400L);
@@ -418,8 +418,7 @@ public final class TestGearListener implements Listener {
             if (!TestPrototypeAbilities.freeCd(player)) {
                 Long next = cataclysmCd.get(player.getUniqueId());
                 if (next != null && tick < next) {
-                    player.sendActionBar(net.kyori.adventure.text.Component.text(
-                            "§cCataclysm §7recharging… §f" + Math.max(1, (next - tick + 19) / 20) + "s"));
+                    AbilityCooldownHud.denied(player, id);
                     return;
                 }
                 cataclysmCd.put(player.getUniqueId(), tick + 600L);
@@ -444,8 +443,7 @@ public final class TestGearListener implements Listener {
             if (!TestPrototypeAbilities.freeCd(player)) {
                 Long next = runeSigilCd.get(player.getUniqueId());
                 if (next != null && tick < next) {
-                    player.sendActionBar(net.kyori.adventure.text.Component.text(
-                            "§bRune Sigil §7recharging… §f" + Math.max(1, (next - tick + 19) / 20) + "s"));
+                    AbilityCooldownHud.denied(player, id);
                     return;
                 }
                 runeSigilCd.put(player.getUniqueId(), tick + 500L);
@@ -470,8 +468,7 @@ public final class TestGearListener implements Listener {
             if (!TestPrototypeAbilities.freeCd(player)) {
                 Long next = worldSplitterCd.get(player.getUniqueId());
                 if (next != null && tick < next) {
-                    player.sendActionBar(net.kyori.adventure.text.Component.text(
-                            "§5World Splitter §7recharging… §f" + Math.max(1, (next - tick + 19) / 20) + "s"));
+                    AbilityCooldownHud.denied(player, id);
                     return;
                 }
                 worldSplitterCd.put(player.getUniqueId(), tick + 700L);
@@ -496,8 +493,7 @@ public final class TestGearListener implements Listener {
             if (!TestPrototypeAbilities.freeCd(player)) {
                 Long next = vesperCd.get(player.getUniqueId());
                 if (next != null && tick < next) {
-                    player.sendActionBar(net.kyori.adventure.text.Component.text(
-                            "§6Vesper Bell §7recharging… §f" + Math.max(1, (next - tick + 19) / 20) + "s"));
+                    AbilityCooldownHud.denied(player, id);
                     return;
                 }
                 vesperCd.put(player.getUniqueId(), tick + 600L);
@@ -522,8 +518,7 @@ public final class TestGearListener implements Listener {
             if (!TestPrototypeAbilities.freeCd(player)) {
                 Long next = deepsongCd.get(player.getUniqueId());
                 if (next != null && tick < next) {
-                    player.sendActionBar(net.kyori.adventure.text.Component.text(
-                            "§3Deepsong §7recharging… §f" + Math.max(1, (next - tick + 19) / 20) + "s"));
+                    AbilityCooldownHud.denied(player, id);
                     return;
                 }
                 deepsongCd.put(player.getUniqueId(), tick + 900L);
@@ -549,8 +544,7 @@ public final class TestGearListener implements Listener {
             if (!TestPrototypeAbilities.freeCd(player)) {
                 Long next = terminusCd.get(player.getUniqueId());
                 if (next != null && tick < next) {
-                    player.sendActionBar(net.kyori.adventure.text.Component.text(
-                            "§fTerminus §7recharging… §f" + Math.max(1, (next - tick + 19) / 20) + "s"));
+                    AbilityCooldownHud.denied(player, id);
                     return;
                 }
                 terminusCd.put(player.getUniqueId(), tick + 1200L);

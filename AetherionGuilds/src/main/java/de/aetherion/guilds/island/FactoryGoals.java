@@ -39,24 +39,23 @@ public final class FactoryGoals {
     private final HostService hosts;
     private final StructureService structures;
     private final LogisticsService logistics;
-    private final File file;
     private final Map<String, Set<String>> rewarded = new HashMap<>();
     private boolean dirty;
 
     private final List<Goal> goals = List.of(
             new Goal("first_chain", "Run your first chain", "Quarry → belt → Storage Hut. Lay the belt from the chute.",
                     2_000L, (g, h) -> g.sourceLines(h) >= 1),
-            new Goal("hub", "Found your Hub", "Build → Workshop. Its lectern runs the factory from then on.",
+            new Goal("hub", "Found your Hub", "Build Tool → Hub. At its lectern you unlock new machines.",
                     3_000L, (g, h) -> g.structures.hasWorkshop(h)),
-            new Goal("mill_line", "Put a Mill in your line", "Belt into the Mill, belt out of it into the hut. Raw in, Compressed out.",
+            new Goal("mill_line", "Put a Mill in your line", "Unlock the Mill at the Hub. Belt in, belt out into the hut. Raw in, Compressed out.",
                     5_000L, (g, h) -> g.inLine(h, StructureType.MILL)),
             new Goal("two_quarries", "Run two quarries into your line", "Set down a second quarry and belt it into the same line.",
                     8_000L, (g, h) -> g.sourceLines(h) >= 2),
-            new Goal("split", "Split a line with a Splitter", "Build → Splitter, click it onto a belt, lay a second belt away from its side.",
+            new Goal("split", "Split a line with a Splitter", "Unlock it at the Hub. Build Tool → Splitter onto a belt, then a second belt away from its side.",
                     10_000L, (g, h) -> g.pieceExits(h, StructureType.SPLITTER) >= 2),
-            new Goal("loft", "Grow your Storage Hut into a Loft", "Hub → Production → click the hut → Upgrade.",
+            new Goal("loft", "Grow your Storage Hut into a Loft", "Right-click the hut → Upgrade.",
                     15_000L, (g, h) -> g.level(h, StructureType.STORAGE_HUT) >= 2),
-            new Goal("hub2", "Raise your Hub to the Foreman's Hall", "Hub lectern → Hub tier. Unlocks Forge, Overflow Gate, Sorter.",
+            new Goal("hub2", "Raise your Hub to the Foreman's Hall", "Hub lectern → Hub tier. Then the Forge, Overflow Gate and Sorter can be unlocked.",
                     18_000L, (g, h) -> g.structures.hubLevel(h) >= 2),
             new Goal("sort", "Sort goods with a Sorter", "Set a Sorter into a line, pick a good, give it a front and a side belt.",
                     20_000L, (g, h) -> g.sorterWorks(h)),
@@ -70,15 +69,18 @@ public final class FactoryGoals {
                     80_000L, (g, h) -> g.hosts.tier(h) >= 3),
             new Goal("hub3", "Raise the Grand Hub", "Hub lectern → Hub tier. Every Mill and Forge runs twice as fast.",
                     100_000L, (g, h) -> g.structures.hubLevel(h) >= 3),
-            new Goal("warehouse", "Grow a Warehouse", "Hub → Production → Storage Loft → Upgrade.",
+            new Goal("warehouse", "Grow a Warehouse", "Right-click the Storage Loft → Upgrade.",
                     120_000L, (g, h) -> g.level(h, StructureType.STORAGE_HUT) >= 3));
 
-    public FactoryGoals(JavaPlugin plugin, HostService hosts, StructureService structures, LogisticsService logistics) {
+    private final IslandFiles files;
+
+    public FactoryGoals(JavaPlugin plugin, HostService hosts, StructureService structures, LogisticsService logistics,
+                        IslandFiles files) {
         this.plugin = plugin;
+        this.files = files;
         this.hosts = hosts;
         this.structures = structures;
         this.logistics = logistics;
-        this.file = new File(plugin.getDataFolder(), "island_goals.yml");
         load();
     }
 
@@ -262,33 +264,40 @@ public final class FactoryGoals {
     }
 
     private void load() {
-        AtomicYaml.recoverTemp(file, plugin.getLogger());
-        if (!file.exists()) {
+        if (files.splitting()) {
+            YamlConfiguration old = files.legacy("island_goals.yml");
+            if (old != null) {
+                for (String key : old.getKeys(false)) {
+                    rewarded.put(key, upgrade(new HashSet<>(old.getStringList(key))));
+                }
+            }
+            dirty = true;
+            saveIfDirty();
             return;
         }
-        YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
-        for (String key : config.getKeys(false)) {
-            Set<String> got = new HashSet<>(config.getStringList(key));
-            if (got.contains("workshop")) {
-                got.add("hub"); // renamed goal, already paid
+        for (String key : files.keys()) {
+            YamlConfiguration doc = files.doc(key);
+            if (doc.isList("goals.rewarded")) {
+                rewarded.put(key, upgrade(new HashSet<>(doc.getStringList("goals.rewarded"))));
             }
-            rewarded.put(key, got);
         }
+    }
+
+    private static Set<String> upgrade(Set<String> got) {
+        if (got.contains("workshop")) {
+            got.add("hub"); // renamed goal, already paid
+        }
+        return got;
     }
 
     public void saveIfDirty() {
         if (!dirty) {
             return;
         }
-        YamlConfiguration config = new YamlConfiguration();
         for (Map.Entry<String, Set<String>> entry : rewarded.entrySet()) {
-            config.set(entry.getKey(), List.copyOf(entry.getValue()));
+            files.replace(entry.getKey(), "goals").set("rewarded", List.copyOf(entry.getValue()));
         }
-        try {
-            AtomicYaml.save(config, file, plugin.getLogger());
-            dirty = false;
-        } catch (IOException exception) {
-            plugin.getLogger().warning("Could not save island_goals.yml: " + exception.getMessage());
-        }
+        files.flush();
+        dirty = false;
     }
 }

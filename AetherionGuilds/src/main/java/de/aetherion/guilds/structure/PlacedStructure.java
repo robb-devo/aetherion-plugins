@@ -29,6 +29,16 @@ public final class PlacedStructure {
     private String filter;
     /** Splitter: whose turn the next odd unit is (keeps small trickles fair). */
     private int turn;
+    /** Built back when a Mill/Forge took a Quarry Mill/Forge item: taking it down gives that item back. */
+    private boolean itemPaid;
+
+    public boolean itemPaid() {
+        return itemPaid;
+    }
+
+    public void setItemPaid(boolean itemPaid) {
+        this.itemPaid = itemPaid;
+    }
     /** Upgrade tier (1 = as built). See {@link StructureUpgrades}. */
     private int level = 1;
     private final Map<Res, Long> store = new LinkedHashMap<>();

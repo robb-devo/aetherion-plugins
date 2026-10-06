@@ -184,11 +184,13 @@ public class AetherionManagerGUI {
                     progress == null ? "§7Lark unlocks this with Catch Spheres." : progress.hint(ProgressionService.Flag.PETS),
                     "§7Open your caught pets.");
         }
-        put(inventory, JOURNAL_SLOT, progress != null && progress.journal(player),
-                Material.WRITABLE_BOOK, "§5Dungeon Journal",
+        put(inventory, JOURNAL_SLOT, journalOpen(player, progress),
+                Material.WRITABLE_BOOK, "§5Journal",
                 progress == null ? "§7A dungeon boss. Then the receipts." : progress.journalHint(),
-                "§7Boss kills and what they",
-                "§7can drop. One page per boss.",
+                "§7Boss Journal: boss kills and",
+                "§7what they can drop.",
+                "§7Chronicle: the old story,",
+                "§7one find at a time.",
                 "§8/codex journal");
         put(inventory, RECIPE_SLOT, progress != null && progress.recipeBook(player),
                 Material.KNOWLEDGE_BOOK, "§6Recipe Book",
@@ -774,13 +776,21 @@ public class AetherionManagerGUI {
                 progress.collectionHint()));
         gates.add(new Gate(BESTIARY_SLOT, progress.bestiary(player), "bestiary", "Bestiary",
                 progress.bestiaryHint()));
-        gates.add(new Gate(JOURNAL_SLOT, progress.journal(player), "journal", "Dungeon Journal",
+        gates.add(new Gate(JOURNAL_SLOT, journalOpen(player, progress), "journal", "Journal",
                 progress.journalHint()));
         if (Bukkit.getPluginManager().isPluginEnabled("AetherionGuilds")) {
             gates.add(new Gate(ISLAND_SLOT, progress.island(player), "island", "Island", progress.islandHint()));
             gates.add(new Gate(GUILD_SLOT, progress.guild(player), "guild", "Guild", progress.guildHint()));
         }
         return gates;
+    }
+
+    /** Journal tab opens for the Boss Journal gate or once the Chronicle has a page. */
+    private static boolean journalOpen(Player player, ProgressionService progress) {
+        if (progress != null && progress.journal(player)) {
+            return true;
+        }
+        return player != null && !de.aetherion.items.codex.ChronicleGUI.pages(player).isEmpty();
     }
 
     private static String bar(int have, int of) {

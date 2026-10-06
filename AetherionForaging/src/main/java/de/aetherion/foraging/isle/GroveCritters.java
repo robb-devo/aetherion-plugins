@@ -229,6 +229,7 @@ public final class GroveCritters implements Listener {
             d.setTeleportDuration(STEP);
             d.setPersistent(false);
             d.addScoreboardTag(TAG);
+            ForageDisplays.mark(d);
         });
         c.hitbox = world.spawn(c.at, Interaction.class, i -> {
             i.setInteractionWidth(0.8f);
@@ -236,6 +237,7 @@ public final class GroveCritters implements Listener {
             i.setResponsive(true);
             i.setPersistent(false);
             i.addScoreboardTag(TAG);
+            ForageDisplays.mark(i);
         });
         all.put(c.id, c);
         byPart.put(c.body.getUniqueId(), c);
@@ -467,10 +469,12 @@ public final class GroveCritters implements Listener {
         all.remove(c.id);
         if (c.body != null) {
             byPart.remove(c.body.getUniqueId());
+            ForageDisplays.forget(c.body);
             c.body.remove();
         }
         if (c.hitbox != null) {
             byPart.remove(c.hitbox.getUniqueId());
+            ForageDisplays.forget(c.hitbox);
             c.hitbox.remove();
         }
     }

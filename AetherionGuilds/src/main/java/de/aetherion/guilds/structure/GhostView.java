@@ -70,6 +70,7 @@ final class GhostView {
 
     void structure(Template template, World in, int x, int y, int z, int rotation, boolean fits, int[] portLocal) {
         clearBelts();
+        clearMark();
         if (template != shown || in != world || plate == null || !plate.isValid()) {
             clearStructure();
             build(template, in, x, y, z, rotation, fits, portLocal);
@@ -244,6 +245,7 @@ final class GhostView {
     /** A flat marker on one cell (where the belt would start). */
     void cursor(World in, int x, int y, int z, boolean fits) {
         clearStructure();
+        clearMark();
         clearLegs();
         Location at = new Location(in, x, y, z);
         if (cursor == null || !cursor.isValid() || cursor.getWorld() != in) {
@@ -261,6 +263,7 @@ final class GhostView {
     /** The planned run as straight strips (an L is two). {@code corners} are the run's turning points. */
     void run(World in, List<int[]> points, boolean fits) {
         clearStructure();
+        clearMark();
         if (cursor != null) {
             cursor.remove();
             cursor = null;
@@ -370,9 +373,41 @@ final class GhostView {
         chutes.clear();
     }
 
+    // ------------------------------------------------------------------------------------------------
+    // take-down marker
+    // ------------------------------------------------------------------------------------------------
+
+    private BlockDisplay mark;
+
+    /** A red glowing box around what the Build Tool would take down (block bounds, inclusive). */
+    void mark(World in, int x1, int y1, int z1, int x2, int y2, int z2) {
+        clearStructure();
+        clearRun();
+        Location at = new Location(in, x1, y1, z1);
+        Transformation t = box(-0.04f, 0.0f, -0.04f, x2 - x1 + 1.08f, y2 - y1 + 1.04f, z2 - z1 + 1.08f);
+        if (mark == null || !mark.isValid() || mark.getWorld() != in) {
+            if (mark != null) {
+                mark.remove();
+            }
+            mark = spawn(at, Material.RED_STAINED_GLASS.createBlockData(), t, BAD);
+            return;
+        }
+        mark.setTeleportDuration(0);
+        mark.teleport(at);
+        mark.setTransformation(t);
+    }
+
+    void clearMark() {
+        if (mark != null) {
+            mark.remove();
+            mark = null;
+        }
+    }
+
     void clear() {
         clearStructure();
         clearBelts();
+        clearMark();
     }
 
     // ------------------------------------------------------------------------------------------------

@@ -47,6 +47,7 @@ public final class PlayerLang {
             return;
         }
         storage.setLanguage(player.getUniqueId(), code);
+        de.aetherion.core.api.AetherServices.notifyLangChanged(player);
     }
 
     private static PlayerQuestStorage storage() {

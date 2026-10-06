@@ -166,6 +166,7 @@ public final class CrownFinds implements Runnable {
             spawned.setTeleportDuration(2);
             spawned.setPersistent(false);
             spawned.addScoreboardTag(TAG);
+            de.aetherion.foraging.isle.ForageDisplays.mark(spawned);
         });
         drops.add(drop);
         world.playSound(start, Sound.BLOCK_AZALEA_LEAVES_BREAK, SoundCategory.BLOCKS, 1.0f, 0.7f);
@@ -220,6 +221,7 @@ public final class CrownFinds implements Runnable {
                 if (finder != null) {
                     ForageText.bar(finder, "§7The " + drop.data.find().display + " §7wilted before anyone picked it up.");
                 }
+                ForageDisplays.forget(drop.body);
                 drop.body.remove();
                 it.remove();
             }
@@ -253,6 +255,7 @@ public final class CrownFinds implements Runnable {
             int grams = (int) Math.round(data.grams() * 1.10d);
             data = new FindData(data.find(), data.grade(), grams);
         }
+        ForageDisplays.forget(drop.body);
         drop.body.remove();
         ForageBridge.give(player, ForageItems.find(data), player.getLocation());
         ForageProfile profile = isle.profiles().get(player);
@@ -281,6 +284,7 @@ public final class CrownFinds implements Runnable {
     void clear() {
         for (Drop drop : drops) {
             if (drop.body != null && drop.body.isValid()) {
+                ForageDisplays.forget(drop.body);
                 drop.body.remove();
             }
         }

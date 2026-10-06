@@ -15,6 +15,11 @@ import org.bukkit.entity.TextDisplay;
 public final class DisplayEntities {
 
     public static final String JUMP_PAD_TAG = "aetherion_jump_pad";
+    /**
+     * Quests TalkUx bubble / chips / card / bark panels. Isle janitors and
+     * {@link #discard} must leave these alone — they are short-lived, per-viewer UI.
+     */
+    public static final String TALK_UI_TAG = "ae_talk_ui";
 
     private DisplayEntities() {
     }
@@ -32,7 +37,7 @@ public final class DisplayEntities {
         }
     }
 
-    /** Jump-pad labels, pets, and armor stands must survive janitors. */
+    /** Jump-pad labels, talk UI, pets, and armor stands must survive janitors. */
     public static boolean isProtected(Entity entity) {
         if (entity == null || entity instanceof ArmorStand) {
             return true;
@@ -40,7 +45,7 @@ public final class DisplayEntities {
         if (AetherEntities.isPet(entity)) {
             return true;
         }
-        return isJumpPadLabel(entity);
+        return isJumpPadLabel(entity) || isTalkUi(entity);
     }
 
     public static boolean isJumpPadLabel(Entity entity) {
@@ -53,6 +58,11 @@ public final class DisplayEntities {
             }
         }
         return false;
+    }
+
+    /** In-world TalkUx panels ({@link #TALK_UI_TAG}). */
+    public static boolean isTalkUi(Entity entity) {
+        return entity != null && entity.getScoreboardTags().contains(TALK_UI_TAG);
     }
 
     public static boolean isHologram(Entity entity) {

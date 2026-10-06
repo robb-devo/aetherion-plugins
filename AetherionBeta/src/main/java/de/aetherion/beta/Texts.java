@@ -1,8 +1,12 @@
 package de.aetherion.beta;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public final class Texts {
+
+    /** Chat prefix for everything the journal says. */
+    public static final String JOURNAL = "§d✦ §5Journal §8» ";
 
     private Texts() {
     }
@@ -11,95 +15,166 @@ public final class Texts {
         return lang == BetaLang.DE ? de : en;
     }
 
+    /* ------------------------------------------------------------------ courier */
+
+    /** Legacy chat fallback (bubble off). Keep short. */
     public static String npcGreeting(BetaLang lang, String name) {
         return t(lang,
-                "§d✦ §fHey §e" + name + "§f. I'm the beta guide — here's your checklist book.",
-                "§d✦ §fHey §e" + name + "§f. Ich bin der Beta-Guide — hier ist dein Checklisten-Buch.");
-    }
-
-    public static String npcGreeting2(BetaLang lang) {
-        return t(lang,
-                "§7The list fills itself when you try things — quests, gathering, pets, bosses, and more.",
-                "§7Die Liste hakt sich selbst ab, wenn du Dinge ausprobierst — Quests, Gathering, Pets, Bosse und mehr.");
+                "§d✦ Patch Courier §8» §fHey §e" + name + "§f — thanks for playing the beta. Here's your §dBeta Journal§f.",
+                "§d✦ Patch-Kurier §8» §fHey §e" + name + "§f — danke, dass du die Beta zockst. Hier ist dein §dBeta-Journal§f.");
     }
 
     public static String npcFarewell(BetaLang lang) {
         return t(lang,
-                "§7I'm off. Lose the book? Use §f/checklist §7anytime to open beta feedback.",
-                "§7Ich bin weg. Buch weg? Mit §f/checklist §7öffnet sich das Beta-Feedback jederzeit.");
+                "§7Lost it? §f/checklist",
+                "§7Verloren? §f/checklist");
+    }
+
+    /** TalkUx bubble lines — no chat prefix, short. */
+    public static String bubbleThanks(BetaLang lang, String name) {
+        return t(lang,
+                "Hey " + name + " — thanks for jumping into the beta.",
+                "Hey " + name + " — danke, dass du die Beta zockst.");
+    }
+
+    public static String bubbleBook(BetaLang lang) {
+        return t(lang,
+                "Here's your Beta Journal. It ticks itself off while you play — right-click it or /checklist.",
+                "Hier ist dein Beta-Journal. Es hakt sich beim Spielen selbst ab — Rechtsklick oder /checklist.");
+    }
+
+    public static String bubbleChip(BetaLang lang) {
+        return t(lang, "Got it.", "Alles klar.");
     }
 
     public static String bookGiven(BetaLang lang) {
-        return t(lang,
-                "§aBeta checklist book added to your inventory.",
-                "§aBeta-Checklisten-Buch liegt in deinem Inventar.");
+        return t(lang, "§8+ §dBeta Journal", "§8+ §dBeta-Journal");
     }
 
     public static String alreadyHaveBook(BetaLang lang) {
-        return t(lang,
-                "§7You already carry the checklist book.",
-                "§7Du hast das Checklisten-Buch schon dabei.");
+        return t(lang, "§7You already carry your journal.", "§7Du hast dein Journal schon dabei.");
     }
 
     public static String openHint(BetaLang lang) {
         return t(lang,
-                "§7Use §f/checklist §7or right-click the book.",
-                "§7Nutze §f/checklist §7oder Rechtsklick aufs Buch.");
+                "§7Right-click the journal or use §f/checklist§7.",
+                "§7Rechtsklick aufs Journal oder §f/checklist§7.");
     }
 
+    /* ------------------------------------------------------------------ titles */
+
     public static String langTitle() {
-        return "§8Beta · Language";
+        return "§5■ §0Language · Sprache";
     }
 
     public static String checklistTitle(BetaLang lang) {
-        return t(lang, "§8Beta · Checklist", "§8Beta · Checkliste");
+        return t(lang, "§5■ §0Beta Journal", "§5■ §0Beta-Journal");
     }
 
     public static String ratingTitle(BetaLang lang) {
-        return t(lang, "§8Beta · Feedback", "§8Beta · Feedback");
+        return t(lang, "§5■ §0Beta Feedback", "§5■ §0Beta-Feedback");
     }
 
     public static String adminTitle() {
-        return "§8Beta · Analysis";
+        return "§5■ §0Beta · Analysis";
     }
+
+    /* ------------------------------------------------------------------ milestones */
 
     public static String milestoneName(BetaLang lang, Milestone m) {
         return switch (m) {
-            case MEET_GUIDE -> t(lang, "Meet the guide", "Guide treffen");
-            case QUESTS -> t(lang, "Try a quest", "Quest ausprobieren");
-            case GATHER -> t(lang, "Try gathering", "Gathering ausprobieren");
-            case PET -> t(lang, "Catch or equip a pet", "Pet fangen / ausrüsten");
-            case BOSS -> t(lang, "Fight a world boss", "Welt-Boss kämpfen");
-            case DUNGEON -> t(lang, "Enter a dungeon", "Dungeon betreten");
-            case ISLAND -> t(lang, "Visit an island", "Insel anschauen");
+            case MEET_GUIDE -> t(lang, "Meet the Patch Courier", "Den Patch-Kurier treffen");
+            case QUESTS -> t(lang, "Talk to a quest giver", "Mit einem Questgeber reden");
+            case GATHER -> t(lang, "Gather something", "Etwas sammeln");
+            case PET -> t(lang, "Meet a pet", "Ein Pet kennenlernen");
+            case BOSS -> t(lang, "Bring down a world boss", "Einen Welt-Boss legen");
+            case DUNGEON -> t(lang, "Step into a dungeon", "Einen Dungeon betreten");
+            case ISLAND -> t(lang, "Visit an island", "Eine Insel besuchen");
         };
     }
 
-    public static List<String> milestoneLore(BetaLang lang, Milestone m, boolean done, boolean auto) {
-        String status = done
-                ? t(lang, "§a✔ Done", "§a✔ Erledigt")
-                : t(lang, "§8○ Not yet", "§8○ Noch offen");
-        String hint = switch (m) {
-            case MEET_GUIDE -> t(lang, "§7Talk to the Patch Courier.", "§7Sprich mit dem Patch-Kurier.");
-            case QUESTS -> t(lang, "§7Auto when you talk to a quest NPC.", "§7Auto beim Gespräch mit einem Quest-NPC.");
-            case GATHER -> t(lang, "§7Auto on mining, farming, foraging, fishing.", "§7Auto bei Mining, Farming, Foraging, Fishing.");
-            case PET -> t(lang, "§7Auto when you interact with a pet.", "§7Auto bei Interaktion mit einem Pet.");
-            case BOSS -> t(lang, "§7Auto when you help kill a boss.", "§7Auto wenn du einen Boss mitkillst.");
-            case DUNGEON -> t(lang, "§7Auto when you enter a dungeon world.", "§7Auto beim Betreten einer Dungeon-Welt.");
-            case ISLAND -> t(lang, "§7Auto on guild / personal islands.", "§7Auto auf Gilden- / Privatinseln.");
+    public static String milestoneHint(BetaLang lang, Milestone m) {
+        return switch (m) {
+            case MEET_GUIDE -> t(lang, "§7Talk to the courier at the harbour.", "§7Sprich mit dem Kurier am Hafen.");
+            case QUESTS -> t(lang, "§7Right-click any quest NPC.", "§7Rechtsklick auf einen Quest-NPC.");
+            case GATHER -> t(lang, "§7Mine, farm, chop or fish.", "§7Minen, farmen, holzen oder angeln.");
+            case PET -> t(lang, "§7Catch, equip or pat a pet.", "§7Ein Pet fangen, ausrüsten oder streicheln.");
+            case BOSS -> t(lang, "§7Be there when a boss falls.", "§7Sei dabei, wenn ein Boss fällt.");
+            case DUNGEON -> t(lang, "§7Enter any dungeon run.", "§7Starte einen beliebigen Dungeon-Run.");
+            case ISLAND -> t(lang, "§7Your own or your guild's island.", "§7Deine eigene oder die Gilden-Insel.");
         };
-        String mode = auto
-                ? t(lang, "§8Tracks automatically", "§8Wird automatisch erkannt")
-                : t(lang, "§8Click to toggle", "§8Klicken zum Umschalten");
-        return List.of(status, "", hint, mode);
     }
+
+    public static List<String> milestoneLore(BetaLang lang, Milestone m, boolean done, boolean tracked) {
+        List<String> lore = new ArrayList<>();
+        lore.add(milestoneHint(lang, m));
+        lore.add("");
+        if (done && tracked) {
+            lore.add(t(lang, "§a✔ Done §8· tracked", "§a✔ Erledigt §8· erkannt"));
+        } else if (done) {
+            lore.add(t(lang, "§e✔ Ticked by you", "§e✔ Von dir abgehakt"));
+            lore.add(t(lang, "§8Turns green once the game sees it.", "§8Wird grün, sobald das Spiel es erkennt."));
+        } else {
+            lore.add(t(lang, "§8○ Open §8· ticks itself off", "§8○ Offen §8· hakt sich selbst ab"));
+            lore.add(t(lang, "§8Already did it? Click to tick.", "§8Schon gemacht? Klick zum Abhaken."));
+        }
+        return lore;
+    }
+
+    /* ------------------------------------------------------------------ journal */
+
+    public static String progressHeader(BetaLang lang) {
+        return t(lang, "§d§lBeta Journal", "§d§lBeta-Journal");
+    }
+
+    public static String tracked(BetaLang lang, int done, int total) {
+        return t(lang, "§7Progress  ", "§7Fortschritt  ") + "§f" + done + "§8/" + total;
+    }
+
+    public static String played(BetaLang lang, String duration) {
+        return t(lang, "§7Played    §f", "§7Gespielt  §f") + duration;
+    }
+
+    public static String feedbackState(BetaLang lang, boolean submitted) {
+        return submitted
+                ? t(lang, "§7Feedback  §a✔ sent", "§7Feedback  §a✔ gesendet")
+                : t(lang, "§7Feedback  §8not yet", "§7Feedback  §8noch offen");
+    }
+
+    public static String progressToast(BetaLang lang, String milestone, int done, int total) {
+        return JOURNAL + "§a✔ §f" + milestone + " §8(" + done + "/" + total + ")";
+    }
+
+    public static String rewardReadyToast(BetaLang lang, String reward) {
+        return JOURNAL + t(lang, "§eReward ready: §f", "§eBelohnung bereit: §f") + reward
+                + " §8— §7/checklist";
+    }
+
+    public static String rewardClaimed(BetaLang lang, String reward, String what) {
+        return JOURNAL + t(lang, "§aClaimed §f", "§aAbgeholt: §f") + reward + " §8· " + what;
+    }
+
+    public static String rewardsOffline(BetaLang lang) {
+        return JOURNAL + t(lang, "§cRewards are offline right now — try again later.",
+                "§cBelohnungen sind gerade offline — später nochmal.");
+    }
+
+    public static String bookButton(BetaLang lang) {
+        return t(lang, "§dGet a new journal", "§dNeues Journal holen");
+    }
+
+    public static String close(BetaLang lang) {
+        return t(lang, "§cClose", "§cSchließen");
+    }
+
+    /* ------------------------------------------------------------------ feedback */
 
     public static String rateButton(BetaLang lang) {
         return t(lang, "§eRate this session", "§eSession bewerten");
     }
 
     public static String rateButtonLore(BetaLang lang) {
-        return t(lang, "§7Multiple choice · glass picks", "§7Multiple Choice · Glas-Auswahl");
+        return t(lang, "§7Four quick picks — about 20 seconds.", "§7Vier schnelle Klicks — etwa 20 Sekunden.");
     }
 
     public static String langButton(BetaLang lang) {
@@ -107,9 +182,9 @@ public final class Texts {
     }
 
     public static String submitted(BetaLang lang) {
-        return t(lang,
-                "§aThanks — feedback saved for the beta board.",
-                "§aDanke — Feedback liegt auf dem Beta-Board.");
+        return JOURNAL + t(lang,
+                "§aThanks — your feedback is on the beta board.",
+                "§aDanke — dein Feedback liegt auf dem Beta-Board.");
     }
 
     public static String qOverall(BetaLang lang) {

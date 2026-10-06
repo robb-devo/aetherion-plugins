@@ -63,6 +63,8 @@ public final class PropBodies {
             case MILL -> level >= 2 ? 4.8f : 4.4f;
             case FORGE -> 3.8f;
             case DEPOT -> 2.8f;
+            case STORAGE_HUT -> hutWall(level) + 1.45f + (level >= 3 ? 0.5f : 0f);
+            case WORKSHOP -> 0.6f + hubTower(level) + (level >= 3 ? 1.0f : 0.15f);
             default -> 3f;
         };
     }
@@ -114,10 +116,14 @@ public final class PropBodies {
             case MILL -> mill(parts, level);
             case FORGE -> forge(parts, level);
             case DEPOT -> depot(parts, level);
+            case STORAGE_HUT -> hut(parts, level);
+            case WORKSHOP -> hub(parts, level);
             default -> {
             }
         }
-        if (type != StructureType.QUARRY_HOUSING || !Props.QUARRY_SLIM.equals(templateId)) {
+        if (type == StructureType.STORAGE_HUT) {
+            wideIntakes(parts);
+        } else if (type != StructureType.WORKSHOP && (type != StructureType.QUARRY_HOUSING || !Props.QUARRY_SLIM.equals(templateId))) {
             ports(parts, type);
         }
         return parts;
@@ -442,6 +448,31 @@ public final class PropBodies {
         lamp(parts, -1.32f, 1.15f, 1.32f);
     }
 
+    /** Where crates stand (fill shows as crates: empty → stacked full). The hut stacks a 4x3 grid per storey. */
+    public static List<Part> crates(int count, int level, StructureType type) {
+        if (type == StructureType.STORAGE_HUT) {
+            List<Part> parts = new ArrayList<>();
+            int max = crateSlots(level, type);
+            for (int i = 0; i < Math.min(count, max); i++) {
+                int layer = i / 12;
+                int cell = i % 12;
+                float x = -1.35f + (cell % 4) * 0.9f;
+                float z = -1.55f + (cell / 4) * 0.9f;
+                Material crate = (i % 4 == 0) ? Material.BARREL : (i % 4 == 1) ? Material.STRIPPED_OAK_WOOD
+                        : (i % 4 == 2) ? Material.SPRUCE_PLANKS : Material.COMPOSTER;
+                parts.add(new Part("crate", crate.createBlockData(), null,
+                        new Vector3f(x, 0.12f + 0.39f + layer * 0.79f, z), new Vector3f(0.78f, 0.78f, 0.78f),
+                        new Quaternionf().rotateY((float) ((i * 0.37) % 0.3 - 0.15)), false));
+            }
+            return parts;
+        }
+        return crates(count, level);
+    }
+
+    public static int crateSlots(int level, StructureType type) {
+        return type == StructureType.STORAGE_HUT ? 12 * Math.min(3, Math.max(1, level)) : crateSlots(level);
+    }
+
     /** Where crates stand in a depot (fill shows as crates: empty yard → stacked full). */
     public static List<Part> crates(int count, int level) {
         List<Part> parts = new ArrayList<>();
@@ -462,6 +493,197 @@ public final class PropBodies {
 
     public static int crateSlots(int level) {
         return level >= 2 ? 16 : 8;
+    }
+
+    // ------------------------------------------------------------------------------------------------
+    // Storage Hut → Storage Loft → Warehouse
+    // ------------------------------------------------------------------------------------------------
+
+    static float hutWall(int level) {
+        return level >= 3 ? 3.7f : level == 2 ? 3.2f : 2.4f;
+    }
+
+    /** An open-front timber store: crates inside stack up as it fills; it grows a storey, then a slate roof. */
+    private static void hut(List<Part> parts, int level) {
+        float h = hutWall(level);
+        Material infill = level >= 3 ? Material.BRICKS : Material.WHITE_TERRACOTTA;
+        Material post = level >= 3 ? Material.STRIPPED_DARK_OAK_LOG : Material.STRIPPED_SPRUCE_LOG;
+        box(parts, "", Material.SPRUCE_PLANKS, 0, 0.06f, 0, 4.9f, 0.12f, 4.9f);
+        box(parts, "", Material.STRIPPED_SPRUCE_WOOD, 0, 0.14f, 2.3f, 4.9f, 0.08f, 0.3f);
+        for (int sx = -1; sx <= 1; sx += 2) {
+            for (int sz = -1; sz <= 1; sz += 2) {
+                box(parts, "", post, sx * 2.25f, h / 2f, sz * 2.25f, 0.34f, h, 0.34f);
+            }
+        }
+        // back and side walls (timber frame with infill), the front stays open so you see the stock
+        box(parts, "", infill, 0, h / 2f, -2.3f, 4.2f, h, 0.14f);
+        for (int s = -1; s <= 1; s += 2) {
+            box(parts, "", infill, s * 2.3f, h / 2f, -0.1f, 0.14f, h, 4.1f);
+            box(parts, "", post, s * 2.33f, h * 0.5f, -0.1f, 0.18f, 0.2f, 4.2f);
+        }
+        box(parts, "", post, 0, h * 0.5f, -2.33f, 4.3f, 0.2f, 0.18f);
+        if (level >= 2) {
+            // the loft: an upper gallery behind a rail, a second beam line
+            box(parts, "", Material.SPRUCE_PLANKS, 0, h * 0.62f, -1.85f, 4.3f, 0.12f, 0.9f);
+            box(parts, "", Material.SPRUCE_FENCE, 0, h * 0.62f + 0.35f, -1.42f, 4.2f, 0.5f, 0.1f);
+            box(parts, "", post, 0, h * 0.62f, 2.25f, 4.6f, 0.2f, 0.2f);
+        }
+        if (level >= 3) {
+            // copper band round the warehouse
+            box(parts, "", Material.WAXED_CUT_COPPER, 0, 0.42f, -2.38f, 4.5f, 0.24f, 0.05f);
+            for (int s = -1; s <= 1; s += 2) {
+                box(parts, "", Material.WAXED_CUT_COPPER, s * 2.38f, 0.42f, -0.1f, 0.05f, 0.24f, 4.3f);
+            }
+        }
+        // front lintel and the name board
+        box(parts, "", post, 0, h - 0.1f, 2.25f, 4.7f, 0.24f, 0.24f);
+        box(parts, "", Material.OAK_PLANKS, 0, h - 0.5f, 2.36f, 1.7f, 0.42f, 0.06f);
+        parts.add(new Part("", null, new ItemStack(Material.BARREL), new Vector3f(0, h - 0.5f, 2.42f),
+                new Vector3f(0.3f, 0.3f, 0.05f), new Quaternionf(), false));
+        // the roof: two pitched planes and a ridge beam over the whole store
+        Material roof = level >= 3 ? Material.DEEPSLATE_TILES : level == 2 ? Material.DARK_OAK_PLANKS : Material.SPRUCE_PLANKS;
+        float depth = 2.95f;
+        float pitch = 0.5f;
+        float rise = (float) (depth / 2f * Math.sin(pitch));
+        float run = (float) (depth / 2f * Math.cos(pitch));
+        for (int s = -1; s <= 1; s += 2) {
+            parts.add(new Part("", roof.createBlockData(), null, new Vector3f(0, h + rise, s * run),
+                    new Vector3f(5.5f, 0.18f, depth), new Quaternionf().rotateX(s * pitch), false));
+        }
+        box(parts, "", post, 0, h + 2f * rise + 0.02f, 0, 5.6f, 0.2f, 0.2f);
+        // gable ends close the roof on the sides (the ridge runs left to right)
+        for (int s = -1; s <= 1; s += 2) {
+            box(parts, "", infill, s * 2.3f, h + rise * 0.5f, 0, 0.12f, rise, 2.4f);
+        }
+        if (level >= 2) {
+            // a hoist on the gable with a crate on its chain
+            parts.add(new Part("", Bukkit.createBlockData("minecraft:chain[axis=y]"), null,
+                    new Vector3f(1.3f, h - 0.75f, 2.55f), new Vector3f(1f, 0.9f, 1f), new Quaternionf(), false));
+            box(parts, "", Material.BARREL, 1.3f, h - 1.45f, 2.55f, 0.5f, 0.5f, 0.5f);
+            parts.add(new Part("", Bukkit.createBlockData("minecraft:lantern[hanging=true]"), null,
+                    new Vector3f(-1.3f, h - 0.6f, 2.3f), new Vector3f(0.5f, 0.5f, 0.5f), new Quaternionf(), true));
+        }
+        if (level >= 3) {
+            parts.add(new Part("", Bukkit.createBlockData("minecraft:lightning_rod[facing=up]"), null,
+                    new Vector3f(0, h + 2f * rise + 0.5f, 0), new Vector3f(0.6f, 0.9f, 0.6f), new Quaternionf(), false));
+        }
+        lamp(parts, -2.25f, h + 0.22f, 2.25f);
+    }
+
+    /** Green intake lips on all four walls of the hut: a belt may run into any of them. */
+    private static void wideIntakes(List<Part> parts) {
+        parts.add(new Part("", Material.LIME_CONCRETE.createBlockData(), null, new Vector3f(0, 0.3f, -2.47f),
+                new Vector3f(1.2f, 0.08f, 0.06f), new Quaternionf(), true));
+        parts.add(new Part("", Material.LIME_CONCRETE.createBlockData(), null, new Vector3f(0, 0.24f, 2.47f),
+                new Vector3f(1.2f, 0.08f, 0.06f), new Quaternionf(), true));
+        for (int s = -1; s <= 1; s += 2) {
+            parts.add(new Part("", Material.LIME_CONCRETE.createBlockData(), null, new Vector3f(s * 2.47f, 0.3f, 0),
+                    new Vector3f(0.06f, 0.08f, 1.2f), new Quaternionf(), true));
+        }
+    }
+
+    // ------------------------------------------------------------------------------------------------
+    // Hub → Foreman's Hall → Grand Hub
+    // ------------------------------------------------------------------------------------------------
+
+    static float hubTower(int level) {
+        return level >= 3 ? 4.6f : level == 2 ? 4.0f : 3.4f;
+    }
+
+    /**
+     * The Hub: a stone dais, a tower at the back, and over the desk a spinning glass core with a light in it
+     * (the "holo table"). The real lectern stands in front of it. Tier 2 adds a canopy and work benches, tier 3
+     * a gold dome, crystals and a crowned tower.
+     */
+    private static void hub(List<Part> parts, int level) {
+        float tower = hubTower(level);
+        float frame = 2.3f;
+        Material pillar = level >= 3 ? Material.POLISHED_BLACKSTONE_BRICKS : level == 2 ? Material.WAXED_CUT_COPPER
+                : Material.POLISHED_DEEPSLATE;
+        Material trim = level >= 3 ? Material.GOLD_BLOCK : Material.WAXED_COPPER_BLOCK;
+        box(parts, "", Material.POLISHED_ANDESITE, 0, 0.06f, 0, 4.9f, 0.12f, 4.9f);
+        box(parts, "", Material.SMOOTH_STONE_SLAB, 0, 0.15f, 1.85f, 3.0f, 0.06f, 1.2f);
+        // the dais at the back
+        box(parts, "", Material.POLISHED_DEEPSLATE, 0, 0.4f, -1.3f, 4.6f, 0.56f, 2.3f);
+        box(parts, "", trim, 0, 0.7f, -0.13f, 4.6f, 0.06f, 0.06f);
+        // corner pillars and the frame beams
+        for (int sx = -1; sx <= 1; sx += 2) {
+            for (int sz = -1; sz <= 1; sz += 2) {
+                box(parts, "", pillar, sx * 2.2f, frame / 2f, sz * 2.2f, 0.36f, frame, 0.36f);
+                box(parts, "", trim, sx * 2.2f, frame + 0.08f, sz * 2.2f, 0.46f, 0.16f, 0.46f);
+            }
+        }
+        for (int s = -1; s <= 1; s += 2) {
+            box(parts, "", Material.POLISHED_DEEPSLATE, 0, frame, s * 2.2f, 4.1f, 0.22f, 0.22f);
+            box(parts, "", Material.POLISHED_DEEPSLATE, s * 2.2f, frame, 0, 0.22f, 0.22f, 4.1f);
+        }
+        // the tower behind the desk
+        float base = 0.68f;
+        box(parts, "", Material.POLISHED_DEEPSLATE_WALL, 0, base + tower / 2f, -1.55f, 0.9f, tower, 0.9f);
+        box(parts, "", trim, 0, base + 1.2f, -1.55f, 1.06f, 0.16f, 1.06f);
+        box(parts, "", trim, 0, base + tower, -1.55f, 1.12f, 0.2f, 1.12f);
+        parts.add(new Part("", Bukkit.createBlockData("minecraft:lightning_rod[facing=up]"), null,
+                new Vector3f(0, base + tower + 0.55f, -1.55f), new Vector3f(0.5f, 0.9f, 0.5f), new Quaternionf(), false));
+        // the holo core: a pedestal, a beam of light, a glass gem turning round a glowing heart
+        box(parts, "", Material.POLISHED_BLACKSTONE, 0, 1.05f, -0.45f, 0.62f, 0.7f, 0.62f);
+        parts.add(new Part("", Bukkit.createBlockData("minecraft:end_rod[facing=up]"), null,
+                new Vector3f(0, 1.75f, -0.45f), new Vector3f(0.5f, 0.7f, 0.5f), new Quaternionf(), true));
+        Quaternionf gem = new Quaternionf().rotateX(0.6155f).rotateZ((float) (Math.PI / 4));
+        spin(parts, "stone", level >= 3 ? Material.YELLOW_STAINED_GLASS : Material.LIGHT_BLUE_STAINED_GLASS,
+                0, 2.45f, -0.45f, 0.82f, 0.82f, 0.82f, gem);
+        parts.add(new Part("stone2", null, new ItemStack(level >= 2 ? Material.SEA_LANTERN : Material.GLOWSTONE),
+                new Vector3f(0, 2.45f, -0.45f), new Vector3f(0.36f, 0.36f, 0.36f), new Quaternionf(gem), true));
+        // low rails along the dais, a lit path from the porch to the lectern
+        for (int sx = -1; sx <= 1; sx += 2) {
+            box(parts, "", Material.POLISHED_DEEPSLATE_WALL, sx * 2.2f, 0.98f, -1.3f, 0.12f, 0.6f, 1.9f);
+        }
+        box(parts, "", Material.POLISHED_DEEPSLATE_WALL, 0, 0.98f, -2.2f, 4.1f, 0.6f, 0.12f);
+        parts.add(new Part("", Material.CYAN_STAINED_GLASS.createBlockData(), null, new Vector3f(0, 0.19f, 1.95f),
+                new Vector3f(0.34f, 0.03f, 1.0f), new Quaternionf(), true));
+        // two side screens angled toward the desk
+        for (int s = -1; s <= 1; s += 2) {
+            parts.add(new Part("", Material.BLACK_STAINED_GLASS.createBlockData(), null, new Vector3f(s * 1.45f, 1.55f, -1.15f),
+                    new Vector3f(0.9f, 0.62f, 0.06f), new Quaternionf().rotateY(s * 0.55f), false));
+            parts.add(new Part("", Material.CYAN_STAINED_GLASS.createBlockData(), null, new Vector3f(s * 1.45f, 1.55f, -1.11f),
+                    new Vector3f(0.78f, 0.5f, 0.02f), new Quaternionf().rotateY(s * 0.55f), true));
+            box(parts, "", Material.POLISHED_DEEPSLATE_WALL, s * 1.45f, 0.95f, -1.2f, 0.12f, 0.6f, 0.12f);
+        }
+        if (level >= 2) {
+            // the Foreman's Hall: two lean-to roofs with a skylight over the core, benches, lanterns
+            float depth = 1.9f;
+            float pitch = 0.32f;
+            float rise = (float) (depth / 2f * Math.sin(pitch));
+            float run = (float) (depth / 2f * Math.cos(pitch));
+            for (int s = -1; s <= 1; s += 2) {
+                parts.add(new Part("", Material.DARK_OAK_PLANKS.createBlockData(), null,
+                        new Vector3f(s * (0.8f + run), frame + 0.2f + rise, 0), new Vector3f(depth, 0.14f, 5.0f),
+                        new Quaternionf().rotateZ(-s * pitch), false));
+                box(parts, "", Material.DARK_OAK_LOG, s * 0.8f, frame + 0.2f + 2f * rise, 0, 0.18f, 0.18f, 5.0f);
+            }
+            box(parts, "", Material.SMITHING_TABLE, -1.7f, 1.05f, -1.9f, 0.7f, 0.7f, 0.7f);
+            box(parts, "", Material.CARTOGRAPHY_TABLE, 1.7f, 1.05f, -1.9f, 0.7f, 0.7f, 0.7f);
+            for (int s = -1; s <= 1; s += 2) {
+                parts.add(new Part("", Bukkit.createBlockData("minecraft:lantern[hanging=true]"), null,
+                        new Vector3f(s * 1.2f, frame - 0.42f, 2.2f), new Vector3f(0.5f, 0.5f, 0.5f), new Quaternionf(), true));
+            }
+        }
+        if (level >= 3) {
+            // the Grand Hub: a gold dome on the tower, crystals on the pillars
+            float top = base + tower + 0.1f;
+            box(parts, "", Material.GOLD_BLOCK, 0, top + 0.2f, -1.55f, 1.3f, 0.3f, 1.3f);
+            box(parts, "", Material.GOLD_BLOCK, 0, top + 0.48f, -1.55f, 0.9f, 0.28f, 0.9f);
+            box(parts, "", Material.GOLD_BLOCK, 0, top + 0.72f, -1.55f, 0.5f, 0.22f, 0.5f);
+            parts.add(new Part("", Bukkit.createBlockData("minecraft:end_rod[facing=up]"), null,
+                    new Vector3f(0, top + 1.15f, -1.55f), new Vector3f(0.6f, 0.7f, 0.6f), new Quaternionf(), true));
+            for (int sx = -1; sx <= 1; sx += 2) {
+                for (int sz = -1; sz <= 1; sz += 2) {
+                    parts.add(new Part("", Bukkit.createBlockData("minecraft:amethyst_cluster[facing=up]"), null,
+                            new Vector3f(sx * 2.2f, frame + 0.45f, sz * 2.2f), new Vector3f(0.6f, 0.6f, 0.6f),
+                            new Quaternionf(), true));
+                }
+            }
+        }
+        lamp(parts, 2.2f, frame + 0.32f, 2.2f);
     }
 
     /** Authored ports: orange lip on the chute (belt out), green lips on the faces belts may run into. */

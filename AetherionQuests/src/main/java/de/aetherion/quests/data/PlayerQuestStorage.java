@@ -76,6 +76,18 @@ public class PlayerQuestStorage {
         markDirty(uuid);
     }
 
+    public boolean hasOpeningOrbitShown(UUID uuid) {
+        return config(uuid).getBoolean("opening-orbit-shown", false);
+    }
+
+    public void markOpeningOrbitShown(UUID uuid) {
+        if (uuid == null) {
+            return;
+        }
+        config(uuid).set("opening-orbit-shown", true);
+        markDirty(uuid);
+    }
+
     /** -1 means never recorded (pre-backfill player data). */
     public int getAetherXpGranted(UUID uuid, String questId) {
         if (!config(uuid).contains("quests." + questId + ".aetherXpGranted")) {

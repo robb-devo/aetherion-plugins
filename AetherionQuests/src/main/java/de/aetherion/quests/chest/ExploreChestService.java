@@ -201,11 +201,7 @@ public final class ExploreChestService {
         if (player == null || kind == null) {
             return;
         }
-        var merchant = plugin.getMerchantChests();
-        if (merchant == null || !merchant.isUnlocked(player)) {
-            deny(player, "Talk to the merchant at the harbour first — he unlocks these chests.");
-            return;
-        }
+        // Chests are always openable — merchant only teaches that they exist (no lock).
         String id = key(block);
         String stamp = player.getUniqueId() + "|" + id;
         if (lastOpen.containsKey(stamp)) {

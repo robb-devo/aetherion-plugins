@@ -13,6 +13,7 @@ import de.aetherion.bossengine.helios.core.HeliosStage;
 import de.aetherion.bossengine.helios.core.Score;
 import de.aetherion.bossengine.helios.core.SkyControl;
 import de.aetherion.bossengine.helios.core.Tempo;
+import de.aetherion.bossengine.helios.reward.StarVault;
 import de.aetherion.bossengine.helios.reward.StarseedReliquary;
 import de.aetherion.bossengine.helios.star.DyingStar;
 import de.aetherion.bossengine.helios.world.Arena;
@@ -84,6 +85,7 @@ public final class HeliosEncounter {
     private DyingStar star;
     private final HeliosBars bars = new HeliosBars();
     private StarseedReliquary reliquary;
+    private StarVault vault;
 
     private BossInstance herald;
     private BossInstance helios;
@@ -178,6 +180,23 @@ public final class HeliosEncounter {
 
     public HeliosBars bars() {
         return bars;
+    }
+
+    /** The reliquary's vault (born out of the dying star during the supernova), or null. */
+    public StarVault vault() {
+        return vault;
+    }
+
+    /** The supernova gives birth to the vault at {@code at}; it then descends and builds its stairs itself. */
+    public StarVault birthVault(Vector3f at) {
+        if (act == Act.CLOSED || stage == null) {
+            return null;
+        }
+        if (vault == null) {
+            vault = new StarVault(this);
+        }
+        vault.birth(at);
+        return vault;
     }
 
     public Participants party() {
@@ -464,6 +483,9 @@ public final class HeliosEncounter {
             arena.tick();
             guardPlayers();
             tickBars();
+            if (vault != null) {
+                vault.tick();
+            }
             if (reliquary != null) {
                 reliquary.tick();
                 if (reliquary.finished() && closeAt < 0) {
@@ -880,6 +902,11 @@ public final class HeliosEncounter {
         if (reliquary != null) {
             reliquary.deliverAll();
             reliquary.clear();
+        }
+        if (vault != null) {
+            // Stairs, dais and the floating vault go on every exit (the slot wipe would catch them too).
+            vault.clear();
+            vault = null;
         }
         bars.hideAll();
         for (Participants.Member m : party.all()) {

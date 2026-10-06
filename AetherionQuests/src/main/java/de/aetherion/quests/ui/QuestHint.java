@@ -21,6 +21,10 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Soft exploration hint (not a quest) — bossbar + compass arrow only.
+ * <p>
+ * Targets are NPC ids, or fixed waypoints ({@code spot:<key>}, e.g. an isle jump pad) whose
+ * spot comes from config {@code road-spots.<key>} with a code default. Road targets (isle
+ * guides, Tackle, pads) end their trail once the player reaches them.
  */
 public final class QuestHint {
 
@@ -36,7 +40,45 @@ public final class QuestHint {
     /** Road hints (isle guides) that the player has walked up to — dropped on the next tick. */
     private static final Map<UUID, String> ARRIVED_AT = new ConcurrentHashMap<>();
 
+    /** Waypoint ids: {@code spot:<key>} (see {@link #showSpot}). */
+    public static final String SPOT_PREFIX = "spot:";
+
+    /** Live hub pad spots (MMO-R scout 2026-10-03), used when config has no {@code road-spots.<key>}. */
+    private static final Map<String, double[]> SPOT_DEFAULTS = Map.of(
+            // origin_to_farming: hub footprint -296..-291, 54, 339..341
+            "farm_pad", new double[] {-293.0, 55.0, 340.5},
+            // origin_to_fishing: hub footprint -368..-363, 62, -489..-488
+            "fish_pad", new double[] {-365.5, 63.0, -488.5}
+    );
+
     private QuestHint() {
+    }
+
+    /** Point the soft arrow at a fixed waypoint (a pad, a landing) instead of an NPC. */
+    public static void showSpot(Player player, String spotKey, String label) {
+        if (spotKey == null || spotKey.isBlank()) {
+            return;
+        }
+        show(player, SPOT_PREFIX + spotKey.toLowerCase(Locale.ROOT), label);
+    }
+
+    /** Spot for {@code road-spots.<key>} ({@code world, x, y, z}), else the code default, else null. */
+    public static Location spotLocation(String key) {
+        if (key == null) {
+            return null;
+        }
+        AetherionQuests plugin = AetherionQuests.getInstance();
+        String world = "world";
+        double[] xyz = SPOT_DEFAULTS.get(key);
+        if (plugin != null) {
+            var section = plugin.getConfig().getConfigurationSection("road-spots." + key);
+            if (section != null) {
+                world = section.getString("world", world);
+                xyz = new double[] {section.getDouble("x"), section.getDouble("y"), section.getDouble("z")};
+            }
+        }
+        org.bukkit.World w = xyz == null ? null : Bukkit.getWorld(world);
+        return w == null ? null : new Location(w, xyz[0], xyz[1], xyz[2]);
     }
 
     public static void show(Player player, String npcId, String label) {
@@ -157,6 +199,10 @@ public final class QuestHint {
             return false;
         }
         String npc = pending.npcId().toLowerCase(Locale.ROOT);
+        if (npc.startsWith(SPOT_PREFIX)) {
+            // Waypoints (isle pads): the trail ends once you stand on it.
+            return !npc.equals(ARRIVED_AT.get(player.getUniqueId()));
+        }
         // Orientation trail drops after stamp — except Miss Ledger (graduation visit).
         if (de.aetherion.quests.util.QuestStoryGate.tutorialDone(player, questManager)
                 && isTutorialTrailNpc(npc)
@@ -194,7 +240,8 @@ public final class QuestHint {
     }
 
     private static boolean isRoadNpc(String npcId) {
-        return "forage_pad_guide".equals(npcId) || "farm_isle_guide".equals(npcId) || "fisher".equals(npcId);
+        return "forage_pad_guide".equals(npcId) || "farm_isle_guide".equals(npcId) || "fisher".equals(npcId)
+                || (npcId != null && npcId.startsWith(SPOT_PREFIX));
     }
 
     /** Quest not yet finished — drop pending once ACTIVE/READY/COMPLETED (quest bar owns the pin). */
@@ -296,6 +343,9 @@ public final class QuestHint {
     }
 
     private static Location npcLocation(String npcId) {
+        if (npcId != null && npcId.startsWith(SPOT_PREFIX)) {
+            return spotLocation(npcId.substring(SPOT_PREFIX.length()));
+        }
         QuestNPC npc = QuestNPCRegistry.getNPC(npcId);
         if (npc == null) {
             return null;

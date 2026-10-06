@@ -69,6 +69,7 @@ public final class LakeCast implements Listener {
     private final Map<LakeRole, Spawned> live = new EnumMap<>(LakeRole.class);
     private final Map<String, Long> barked = new ConcurrentHashMap<>();
     private final Map<UUID, Long> clickCool = new ConcurrentHashMap<>();
+    private final TalkDesk harbourDesk;
     private BukkitTask task;
 
     LakeCast(FishIsle isle) {
@@ -76,7 +77,54 @@ public final class LakeCast implements Listener {
         this.npcKey = new NamespacedKey(isle.plugin(), "lake_npc");
         this.anchorKey = new NamespacedKey(isle.plugin(), "lake_npc_anchor");
         this.file = new File(isle.plugin().getDataFolder(), "isle-cast.yml");
+        this.harbourDesk = harbourDesk();
         load();
+    }
+
+    /**
+     * Maren at the Harbourmaster's Hall: the lake's front desk in the talk bubble — the waters,
+     * heat and streaks, shoal and bells, who's who; her angler card stays one chip away.
+     */
+    private TalkDesk harbourDesk() {
+        LakeRole maren = LakeRole.HARBOURMASTER;
+        return new TalkDesk(isle.plugin(), "fish_isle_harbourmaster", maren.display(), maren.color(), "fishmonger",
+                () -> liveLocation(maren), () -> liveHologram(maren),
+                player -> "Welcome to the harbour, {player}. Every water here keeps its own fish.",
+                List.of(
+                        TalkDesk.Topic.of("The waters?", net.kyori.adventure.text.format.NamedTextColor.AQUA,
+                                "Where do I fish?",
+                                "Twelve named waters — the lake, the high tarns, even the plaza fountain.",
+                                "Walk up to one and it goes on your card. Find all twelve and I pay for it."),
+                        TalkDesk.Topic.of("Heat & streaks?", net.kyori.adventure.text.format.NamedTextColor.GOLD,
+                                "What's this heat?",
+                                "Clean catches warm the water: Warm, Hot, Boiling, Whirlpool.",
+                                "Hotter water, rarer fish. One miss and it's cold again."),
+                        TalkDesk.Topic.of("Shoal & bells?", net.kyori.adventure.text.format.NamedTextColor.YELLOW,
+                                "What are the bells for?",
+                                "Water boiling with leaping fish? That's the shoal. Cast inside — it moves on.",
+                                "Bells mean a Silver Run, or the Eldermaw. When it's the Eldermaw, everyone pulls."),
+                        TalkDesk.Topic.of("Who's who?", net.kyori.adventure.text.format.NamedTextColor.LIGHT_PURPLE,
+                                "Who else is here?",
+                                "§eTilly§f at the Bait Shack turns fish into bait. §dOdile§f keeps the Log and buys trophies.",
+                                "§3Old Finn§f watches the lake from the south pier. Ask him about the pale one.")
+                ),
+                "Card…", player -> isle.menus().openHarbour(player),
+                "Tight lines, love.");
+    }
+
+    /** Where the NPC actually stands right now (spawned villager), else its placed spot. */
+    private Location liveLocation(LakeRole role) {
+        Spawned spawned = live.get(role);
+        Entity villager = spawned == null ? null : Bukkit.getEntity(spawned.villager());
+        if (villager != null && villager.isValid()) {
+            return villager.getLocation();
+        }
+        return location(role);
+    }
+
+    private Entity liveHologram(LakeRole role) {
+        Spawned spawned = live.get(role);
+        return spawned == null ? null : Bukkit.getEntity(spawned.hologram());
     }
 
     void start() {
@@ -90,6 +138,7 @@ public final class LakeCast implements Listener {
             task.cancel();
             task = null;
         }
+        harbourDesk.shutdown();
         for (LakeRole role : LakeRole.values()) {
             despawn(role);
         }
@@ -327,6 +376,10 @@ public final class LakeCast implements Listener {
         }
         clickCool.put(player.getUniqueId(), now + 400L);
         player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_AMBIENT, SoundCategory.NEUTRAL, 0.7f, 1.1f);
+        // Maren talks first (bubble + chips); her angler card sits behind "Card…".
+        if (role == LakeRole.HARBOURMASTER && harbourDesk.click(player)) {
+            return;
+        }
         isle.menus().open(player, role);
     }
 
@@ -349,6 +402,7 @@ public final class LakeCast implements Listener {
     }
 
     private void tick() {
+        harbourDesk.tick();
         if (Bukkit.getCurrentTick() % 100 < 10) {
             ensureAll();
         }

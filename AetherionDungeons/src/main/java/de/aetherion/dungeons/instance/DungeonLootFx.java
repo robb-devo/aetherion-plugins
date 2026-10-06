@@ -660,9 +660,13 @@ public final class DungeonLootFx {
                     session
             ), Kind.VESTIGE);
         }
-        // F2/F3: cores and mats — no unidentified / no vestige from random chests.
+        // F2/F3: cores and mats — no vestige from random chests.
         if (r < 62) {
             return new RolledLoot(orFallback(ItemLootBridge.rollDungeonCore(floor, 1.0), Kind.CORE, floor, player, session), Kind.CORE);
+        }
+        // P3 B1: 4% unidentified relic of the floor's tier (taken from the compressed band 62-78).
+        if (r < 66) {
+            return new RolledLoot(orFallback(ItemLootBridge.rollRelic(floor), Kind.RELIC, floor, player, session), Kind.RELIC);
         }
         if (r < 78) {
             return new RolledLoot(orFallback(ItemLootBridge.rollCompressed(), Kind.COMPRESSED, floor, player, session), Kind.COMPRESSED);
@@ -687,6 +691,10 @@ public final class DungeonLootFx {
         if (r < 40) {
             return new RolledLoot(orFallback(ItemLootBridge.rollCompressed(), Kind.COMPRESSED, floor, player, session), Kind.COMPRESSED);
         }
+        // P3 B1: Floor 1 victory shows a 2% T2 relic as a preview of Floor 2 (taken from the booster band 40-58).
+        if (floor <= 1 && r >= 56 && r < 58) {
+            return new RolledLoot(orFallback(ItemLootBridge.rollRelic(2), Kind.RELIC, floor, player, session), Kind.RELIC);
+        }
         if (r < 58) {
             return new RolledLoot(orFallback(ItemLootBridge.create("random_booster"), Kind.BOOSTER, floor, player, session), Kind.BOOSTER);
         }
@@ -702,7 +710,11 @@ public final class DungeonLootFx {
                     session
             ), Kind.VESTIGE);
         }
-        // F2/F3 victory: more cores / mats, no schematic / vestige.
+        // F2/F3 victory: P3 B1 - 12% unidentified relic of the floor's tier (r 58-70, taken from the
+        // core band 58-82; cores keep 8-22 + 70-82 = 26%). No schematic / vestige.
+        if (r < 70) {
+            return new RolledLoot(orFallback(ItemLootBridge.rollRelic(floor), Kind.RELIC, floor, player, session), Kind.RELIC);
+        }
         if (r < 82) {
             return new RolledLoot(orFallback(ItemLootBridge.rollDungeonCore(floor, 1.0), Kind.CORE, floor, player, session), Kind.CORE);
         }
@@ -744,6 +756,7 @@ public final class DungeonLootFx {
             add(pool, ItemLootBridge.rollWeaponSchematic(1.0, floor));
         } else {
             add(pool, ItemLootBridge.rollDungeonCore(floor, 1.0));
+            add(pool, ItemLootBridge.rollRelic(floor));
         }
         add(pool, ItemLootBridge.create("random_booster"));
         add(pool, ItemLootBridge.rollCompressed());

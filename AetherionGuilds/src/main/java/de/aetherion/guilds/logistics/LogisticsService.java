@@ -260,8 +260,12 @@ public final class LogisticsService {
         return IslandTiers.beltCap(hosts.tier(host));
     }
 
+    /**
+     * Extra coins per belt tile on top of its Cobblestone. 0 by default: belts are paid in goods now (the old
+     * {@code belt-coins} key is ignored on purpose, so an old config doesn't double-charge).
+     */
     public long tileCost() {
-        return Math.max(0L, plugin.getConfig().getLong("logistics.belt-coins", 5L));
+        return Math.max(0L, plugin.getConfig().getLong("logistics.belt-extra-coins", 0L));
     }
 
     // ------------------------------------------------------------------------------------------------
@@ -399,10 +403,20 @@ public final class LogisticsService {
             return false;
         }
         int free = beltPass == null ? 0 : Math.max(0, Math.min(fresh, beltPass.freeTiles(host)));
-        long price = tileCost() * (fresh - free);
-        if (!hosts.charge(player, host, price)) {
+        // belts are made of what the island makes: a cobblestone a tile from storage (plus coins if configured)
+        List<de.aetherion.guilds.structure.BuildCosts.Line> bill = new ArrayList<>();
+        long tiles = fresh - free;
+        if (tiles > 0) {
+            bill.add(new de.aetherion.guilds.structure.BuildCosts.Line(de.aetherion.guilds.structure.BuildCosts.COBBLE,
+                    tiles * de.aetherion.guilds.structure.BuildCosts.BELT_COBBLE));
+            if (tileCost() > 0) {
+                bill.add(new de.aetherion.guilds.structure.BuildCosts.Line(null, tiles * tileCost()));
+            }
+        }
+        if (!structures.pay(player, host, bill)) {
             return false;
         }
+        long price = tiles;
         if (free > 0) {
             beltPass.useFree(host, free);
         }
@@ -444,9 +458,10 @@ public final class LogisticsService {
             }, 1L + i);
         }
         player.sendMessage("§a" + fresh + " belt tile" + (fresh == 1 ? "" : "s") + " laid"
-                + (price > 0 ? " §8(§6" + GuildFormat.compact(price) + " " + hosts.fundsLabel(host) + "§8)" : "")
+                + (price > 0 ? " §8(" + GuildFormat.compact(price) + " Cobblestone from storage)" : "")
                 + (free > 0 ? " §8(§e" + free + " free, starter kit§8)" : "")
                 + "§a. §7" + count(host) + "/" + cap(host) + " tiles.");
+        structures.milestone(host, "first_belt");
         connections(player, host, world, linkedBefore);
         return true;
     }
@@ -482,6 +497,9 @@ public final class LogisticsService {
             }
             any = true;
             lastLayTalked = true;
+            if (route.from().type() == StructureType.QUARRY_HOUSING) {
+                structures.milestone(host, "first_chain");
+            }
             Location port = route.path.isEmpty()
                     ? new Location(world, route.to().x() + 0.5, route.to().y() + 1.2, route.to().z() + 0.5)
                     : new Location(world, route.path.get(route.path.size() - 1).nextX() + 0.5,
@@ -539,7 +557,8 @@ public final class LogisticsService {
         if (block.getType() == BELT_BLOCK || block.getType() == Material.RAIL) {
             block.setType(Material.AIR, false);
         }
-        hosts.refund(player, host, tileCost());
+        structures.giveGoods(player, host, de.aetherion.guilds.structure.BuildCosts.COBBLE,
+                de.aetherion.guilds.structure.BuildCosts.BELT_COBBLE);
         net.routesDirty = true;
         net.version++;
         dirty = true;
@@ -623,6 +642,7 @@ public final class LogisticsService {
 
     public void dropHost(IslandHost host) {
         Net net = nets.remove(host.key());
+        savedHosts.remove(host.key()); // its file was moved to islands/removed/: never write it again
         cargo.clearHost(host.key());
         beltVisuals.clearHost(host.key());
         machineFx.clearHost(host.key());
@@ -962,8 +982,11 @@ public final class LogisticsService {
                 continue;
             }
             if (type == StructureType.WORKSHOP) {
-                views.add(new MachineFx.View(s, MachineState.LECTERN, hubTitle(s), hubBoard(host), !s.building(),
-                        null, null, List.of(), List.of(), null, false, s.maxY() + 1.2, 0.0, s.level(), null));
+                double boardY = de.aetherion.guilds.structure.Props.isProp(s.templateId())
+                        ? s.y() + 1.0 + PropBodies.height(type, s.level(), s.templateId()) + 0.5 : s.maxY() + 1.2;
+                views.add(new MachineFx.View(s, s.building() ? MachineState.BUILDING : MachineState.LECTERN, hubTitle(s),
+                        hubBoard(host), !s.building(), null, null, List.of(), List.of(), null, false, boardY, 0.0,
+                        s.level(), null));
                 continue;
             }
             MachineState state = status(s);
@@ -1168,7 +1191,7 @@ public final class LogisticsService {
 
     /** One line per quarry: where its goods end up and how that line is doing. */
     public String hubBoard(IslandHost host) {
-        StringBuilder out = new StringBuilder("§e✎ Right-click the lectern");
+        StringBuilder out = new StringBuilder("§e✎ Right-click the lectern: unlocks & upgrades");
         int shown = 0;
         List<Route> lines = new ArrayList<>();
         for (Route route : routes(host)) {
@@ -1980,10 +2003,11 @@ public final class LogisticsService {
             player.sendMessage("§cCan't set it there: " + problem + ".");
             return null;
         }
-        long price = structures.priceFor(host, type);
-        if (!hosts.charge(player, host, price)) {
+        List<de.aetherion.guilds.structure.BuildCosts.Line> bill = structures.buildCost(host, type);
+        if (!structures.pay(player, host, bill)) {
             return null;
         }
+        String price = de.aetherion.guilds.structure.BuildCosts.describe(bill);
         Belt cut = belt(world, x, y, z);
         BlockFace front = cut != null ? cut.dir() : facing;
         if (cut != null) {
@@ -2000,8 +2024,10 @@ public final class LogisticsService {
                 dirty = true;
             }
             world.getBlockAt(x, y, z).setType(Material.AIR, false);
-            hosts.refund(player, host, tileCost());
+            structures.giveGoods(player, host, de.aetherion.guilds.structure.BuildCosts.COBBLE,
+                    de.aetherion.guilds.structure.BuildCosts.BELT_COBBLE);
         }
+        structures.milestone(host, "first_piece");
         PlacedStructure piece = structures.registerRouter(host, type, x, y - 1, z, rotOf(front));
         if (piece == null) {
             return null;
@@ -2011,8 +2037,7 @@ public final class LogisticsService {
         world.playSound(at, Sound.BLOCK_COPPER_GRATE_PLACE, 1f, 0.9f);
         world.playSound(at, Sound.BLOCK_CHAIN_PLACE, 0.7f, 1.3f);
         world.spawnParticle(Particle.WAX_OFF, at, 10, 0.35, 0.35, 0.35, 0.02);
-        player.sendMessage("§a" + type.display() + " set down" + (price > 0 ? " §8(§6" + GuildFormat.compact(price)
-                + " " + hosts.fundsLabel(host) + "§8)" : "") + "§a. §7" + switch (type) {
+        player.sendMessage("§a" + type.display() + " set down §8(" + price + ")§a. §7" + switch (type) {
             case SORTER -> "Right-click it to pick what goes out the front.";
             case OVERFLOW -> "Front belt first, sides take the spill.";
             default -> "Every belt leading away from it gets an equal share.";
@@ -2090,60 +2115,94 @@ public final class LogisticsService {
         }
     }
 
+    private de.aetherion.guilds.island.IslandFiles files;
+    private final Set<String> savedHosts = new HashSet<>();
+
+    /** Saves go into one file per island (section {@code belts}). */
+    public void attachFiles(de.aetherion.guilds.island.IslandFiles files) {
+        this.files = files;
+    }
+
     public void save() {
-        YamlConfiguration config = new YamlConfiguration();
-        for (Map.Entry<String, Net> entry : nets.entrySet()) {
-            Net net = entry.getValue();
-            if (net.belts.isEmpty()) {
+        if (files == null) {
+            return;
+        }
+        Set<String> keys = new HashSet<>(nets.keySet());
+        keys.addAll(savedHosts);
+        for (String hostKey : keys) {
+            ConfigurationSection section = files.replace(hostKey, "belts");
+            Net net = nets.get(hostKey);
+            if (net == null) {
                 continue;
             }
             List<String> belts = new ArrayList<>(net.belts.size());
             for (Belt belt : net.belts.values()) {
                 belts.add(belt.serialize());
             }
-            config.set("hosts." + entry.getKey() + ".last-flow", net.lastFlow);
-            config.set("hosts." + entry.getKey() + ".belts", belts);
+            section.set("last-flow", net.lastFlow);
+            section.set("tiles", belts);
         }
-        try {
-            AtomicYaml.save(config, file, plugin.getLogger());
-            dirty = false;
-        } catch (IOException exception) {
-            plugin.getLogger().warning("Could not save island_logistics.yml: " + exception.getMessage());
-        }
+        savedHosts.clear();
+        savedHosts.addAll(nets.keySet());
+        files.flush();
+        dirty = false;
     }
 
     public void load() {
-        AtomicYaml.recoverTemp(file, plugin.getLogger());
-        if (!file.exists()) {
-            return;
-        }
-        YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
-        ConfigurationSection root = config.getConfigurationSection("hosts");
-        if (root == null) {
-            return;
-        }
         int loaded = 0;
-        for (String hostKey : root.getKeys(false)) {
-            IslandHost host = IslandHost.parse(hostKey);
-            if (host == null) {
-                continue;
-            }
-            World world = hosts.world(host);
-            if (world == null) {
-                continue;
-            }
-            Net net = net(host);
-            net.lastFlow = root.getLong(hostKey + ".last-flow", 0L);
-            Map<Long, String> index = worldIndex.computeIfAbsent(world.getName(), k -> new HashMap<>());
-            for (String raw : root.getStringList(hostKey + ".belts")) {
-                Belt belt = Belt.parse(raw);
-                if (belt != null) {
-                    net.belts.put(belt.key(), belt);
-                    index.put(belt.key(), host.key());
-                    loaded++;
+        if (files.splitting()) {
+            YamlConfiguration old = files.legacy("island_logistics.yml");
+            ConfigurationSection root = old == null ? null : old.getConfigurationSection("hosts");
+            if (root != null) {
+                for (String hostKey : root.getKeys(false)) {
+                    ConfigurationSection old0 = root.getConfigurationSection(hostKey);
+                    IslandHost parsed = IslandHost.parse(hostKey);
+                    if (old0 != null && parsed != null && hosts.world(parsed) == null) {
+                        // world not loaded during the split: carry its belts over as they are (never lost)
+                        ConfigurationSection into = files.replace(hostKey, "belts");
+                        into.set("last-flow", old0.getLong("last-flow", 0L));
+                        into.set("tiles", old0.getStringList("belts"));
+                        plugin.getLogger().warning("Island " + hostKey + ": world not loaded during the split;"
+                                + " its belts were copied over unread.");
+                        continue;
+                    }
+                    loaded += readHost(hostKey, old0, "belts");
                 }
             }
+            save();
+        } else {
+            for (String hostKey : files.keys()) {
+                loaded += readHost(hostKey, files.doc(hostKey).getConfigurationSection("belts"), "tiles");
+            }
         }
+        savedHosts.addAll(nets.keySet());
         plugin.getLogger().info("Island highlight: loaded " + loaded + " belt tiles.");
+    }
+
+    private int readHost(String hostKey, ConfigurationSection section, String listKey) {
+        IslandHost host = IslandHost.parse(hostKey);
+        if (host == null || section == null) {
+            return 0;
+        }
+        World world = hosts.world(host);
+        if (world == null) {
+            plugin.getLogger().warning("Island " + hostKey + ": its world isn't loaded; belts kept on disk, not shown.");
+            return 0;
+        }
+        Net net = net(host);
+        net.lastFlow = section.getLong("last-flow", 0L);
+        Map<Long, String> index = worldIndex.computeIfAbsent(world.getName(), k -> new HashMap<>());
+        int loaded = 0;
+        for (String raw : section.getStringList(listKey)) {
+            Belt belt = Belt.parse(raw);
+            if (belt == null) {
+                plugin.getLogger().warning("Island " + hostKey + ": skipped a broken belt tile '" + raw + "'.");
+                continue;
+            }
+            net.belts.put(belt.key(), belt);
+            index.put(belt.key(), host.key());
+            loaded++;
+        }
+        return loaded;
     }
 }

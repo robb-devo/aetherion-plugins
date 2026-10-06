@@ -37,7 +37,7 @@ public final class ForestLedger {
     private static final long[] MILESTONE_COINS = {200L, 800L, 2500L, 6000L, 14000L, 30000L};
     private static final long[] COLUMN_COINS = {2000L, 6000L, 20000L, 60000L};
     private static final int[] COLUMN_STANDING = {1, 2, 3, 5};
-    private static final String BOARD_TAG = "ae_grove_records";
+    public static final String BOARD_TAG = "ae_grove_records";
 
     private final ForageIsle isle;
     private UUID boardId;
@@ -223,81 +223,9 @@ public final class ForestLedger {
         return "§6✔ Sold " + ForageText.plural(sold, "find") + " §8· §6+" + ForageText.coins(total) + " coins";
     }
 
-    // ------------------------------------------------------------------ record board
-
-    /** Every ~30 s: keep a live TextDisplay board beside the Archivist while someone's near. */
+    /** Live world board retired — records stay in Juniper's ledger menu (no free TextDisplay). */
     void tickBoard() {
-        double[] anchor = isle.config().castAnchor(ForageCast.ARCHIVIST);
-        World world = isle.isleWorld();
-        if (anchor == null || world == null) {
-            return;
-        }
-        Location at = new Location(world, anchor[0] + 2.2d, anchor[1] + 1.8d, anchor[2]);
-        if (!world.isChunkLoaded(at.getBlockX() >> 4, at.getBlockZ() >> 4)) {
-            boardId = null;
-            return;
-        }
-        boolean someone = false;
-        for (Player player : world.getPlayers()) {
-            if (player.getLocation().distanceSquared(at) < 40 * 40) {
-                someone = true;
-                break;
-            }
-        }
-        TextDisplay board = board(at);
-        if (!someone) {
-            if (board != null) {
-                board.remove();
-                boardId = null;
-            }
-            return;
-        }
-        if (board == null) {
-            board = world.spawn(at, TextDisplay.class, t -> {
-                t.setBillboard(Display.Billboard.VERTICAL);
-                t.setAlignment(TextDisplay.TextAlignment.LEFT);
-                t.setShadowed(true);
-                t.setDefaultBackground(false);
-                t.setBackgroundColor(Color.fromARGB(110, 12, 24, 10));
-                t.setLineWidth(220);
-                t.setPersistent(false);
-                t.addScoreboardTag(BOARD_TAG);
-            });
-            boardId = board.getUniqueId();
-        }
-        board.text(ForageText.legacy(boardText()));
-    }
-
-    private TextDisplay board(Location at) {
-        if (boardId != null) {
-            Entity entity = Bukkit.getEntity(boardId);
-            if (entity instanceof TextDisplay text && text.isValid()) {
-                return text;
-            }
-        }
-        for (Entity entity : at.getWorld().getNearbyEntities(at, 3, 3, 3)) {
-            if (entity instanceof TextDisplay text && text.getScoreboardTags().contains(BOARD_TAG)) {
-                boardId = text.getUniqueId();
-                return text;
-            }
-        }
-        return null;
-    }
-
-    private String boardText() {
-        StringBuilder out = new StringBuilder("§6§lIsle Records\n§7Largest fell per district\n");
-        for (Grove grove : Grove.values()) {
-            ForageProfiles.Record rec = isle.profiles().record("fell." + grove.id());
-            out.append(grove.color()).append(grove.display()).append(" §8· ")
-                    .append(rec == null ? "§8—" : "§f" + rec.name() + " §7" + rec.value() + " logs").append('\n');
-        }
-        out.append("\n§7Heaviest Crown Find\n");
-        for (Find find : Find.values()) {
-            ForageProfiles.Record rec = isle.profiles().record("find." + find.id());
-            out.append(find.color).append(find.display).append(" §8· ")
-                    .append(rec == null ? "§8—" : "§f" + rec.name() + " §7" + ForageText.grams(rec.value())).append('\n');
-        }
-        return out.toString().trim();
+        // Intentionally empty. Old BOARD_TAG plates are purged on isle start.
     }
 
     void removeBoard() {
@@ -308,9 +236,18 @@ public final class ForestLedger {
             }
             boardId = null;
         }
+        World world = isle.isleWorld();
+        if (world == null) {
+            return;
+        }
+        for (Entity entity : world.getEntities()) {
+            if (entity instanceof TextDisplay text && text.getScoreboardTags().contains(BOARD_TAG)) {
+                text.remove();
+            }
+        }
     }
 
     static boolean isOurs(Entity entity) {
-        return entity.getScoreboardTags().contains(BOARD_TAG);
+        return entity != null && entity.getScoreboardTags().contains(BOARD_TAG);
     }
 }

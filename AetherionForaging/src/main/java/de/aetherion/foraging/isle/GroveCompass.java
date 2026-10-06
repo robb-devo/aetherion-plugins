@@ -1,5 +1,7 @@
 package de.aetherion.foraging.isle;
 
+import net.kyori.adventure.bossbar.BossBar;
+
 import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.World;
@@ -15,9 +17,8 @@ import java.util.UUID;
  * reward. Named places (the Pagoda, the Hollow, the Bell Lodge…) pay once too. All seven forests make you
  * a <b>Grove Walker</b>; every place makes you the <b>Cartographer</b>.
  *
- * <p>On request ({@code /grove go}) it points an arrow — with a height hint, because on this island
- * "up" matters more than "north" — at a forest, a place, an updraft or a cast member until you arrive.
- * First-time visitors are walked through the cast: Miss Canopy, Pell, Tamsin, then the climb to Juniper.
+ * <p>On request ({@code /grove go} / {@code /grove tour}) it points a bossbar wayfinder — not the
+ * ActionBar, which Items owns for HP / DEF / cooldowns. Tour is opt-in only.
  */
 public final class GroveCompass {
 
@@ -37,6 +38,7 @@ public final class GroveCompass {
     private final Map<UUID, Grove> current = new HashMap<>();
     private final Map<UUID, String> currentPlace = new HashMap<>();
     private final Map<UUID, Target> targets = new HashMap<>();
+    private final Map<UUID, BossBar> wayBars = new HashMap<>();
     private final Map<UUID, Long> cardCooldown = new HashMap<>();
     private final Map<UUID, Boolean> greeted = new HashMap<>();
 
@@ -51,8 +53,7 @@ public final class GroveCompass {
             UUID id = player.getUniqueId();
             ForageProfile profile = isle.profiles().get(player);
             if (greeted.putIfAbsent(id, Boolean.TRUE) == null && profile.tourStep == 0 && profile.groves.isEmpty()) {
-                player.sendMessage("§2❦ Foraging Eldervale §8· §7seven forests, one island. §fNew here? §7Follow the arrow, or §f/grove tour§7.");
-                startTour(player, profile);
+                player.sendMessage("§2❦ Foraging Eldervale §8· §7seven forests, one island. §7Tip: §f/grove tour §7walks the cast, or just explore.");
             }
             Grove grove = isle.grove(at);
             Grove before = current.put(id, grove);
@@ -114,11 +115,11 @@ public final class GroveCompass {
         }
     }
 
-    // ------------------------------------------------------------------ wayfinder
+    // ------------------------------------------------------------------ wayfinder (bossbar — never ActionBar)
 
     public void point(Player player, String name, Location at) {
         if (at == null) {
-            targets.remove(player.getUniqueId());
+            stop(player);
             return;
         }
         targets.put(player.getUniqueId(), new Target(name, at.clone()));
@@ -127,6 +128,7 @@ public final class GroveCompass {
 
     public void stop(Player player) {
         targets.remove(player.getUniqueId());
+        hideWayBar(player);
     }
 
     public boolean pointing(Player player) {
@@ -136,20 +138,39 @@ public final class GroveCompass {
     private void wayfind(Player player) {
         Target target = targets.get(player.getUniqueId());
         if (target == null || target.at().getWorld() != player.getWorld()) {
+            hideWayBar(player);
             return;
         }
         double dist = player.getLocation().distance(target.at());
         if (dist < 5.0d) {
             targets.remove(player.getUniqueId());
+            hideWayBar(player);
             ForageText.bar(player, "§a✔ " + target.name() + " §7— you're here.");
             player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, 0.7f, 1.6f);
             return;
         }
-        if (ForageText.held(player)) {
+        // Cap progress so distant targets still show a thin bar; never touch ActionBar (HP/CD HUD).
+        float progress = (float) Math.max(0.05d, Math.min(1.0d, 1.0d - (dist / 120.0d)));
+        String title = "§e" + ForageText.arrow(player, target.at()) + " §f" + target.name()
+                + " §8· §7" + (int) dist + "m" + ForageText.vertical(player, target.at());
+        BossBar bar = wayBars.computeIfAbsent(player.getUniqueId(), id -> {
+            BossBar created = BossBar.bossBar(ForageText.legacy(title), progress, BossBar.Color.GREEN,
+                    BossBar.Overlay.PROGRESS);
+            player.showBossBar(created);
+            return created;
+        });
+        bar.name(ForageText.legacy(title));
+        bar.progress(progress);
+    }
+
+    private void hideWayBar(Player player) {
+        if (player == null) {
             return;
         }
-        player.sendActionBar(ForageText.legacy("§e" + ForageText.arrow(player, target.at()) + " §f" + target.name()
-                + " §8· §7" + (int) dist + "m" + ForageText.vertical(player, target.at())));
+        BossBar bar = wayBars.remove(player.getUniqueId());
+        if (bar != null) {
+            player.hideBossBar(bar);
+        }
     }
 
     /** Resolves a forest, place, updraft or cast id to a standing spot. */
@@ -228,7 +249,7 @@ public final class GroveCompass {
         profile.tourStep++;
         profile.dirty = true;
         if (profile.tourStep >= TOUR.length) {
-            targets.remove(player.getUniqueId());
+            stop(player);
             ForageBridge.coins(player, 750L);
             isle.standing().add(player, profile, 1, "tour");
             player.sendMessage("§2Tour done §8· §6+750 coins §8· §7the island is yours. §f/grove §7is your journal.");
@@ -244,5 +265,12 @@ public final class GroveCompass {
         targets.remove(id);
         cardCooldown.remove(id);
         greeted.remove(id);
+        BossBar bar = wayBars.remove(id);
+        if (bar != null) {
+            Player player = org.bukkit.Bukkit.getPlayer(id);
+            if (player != null) {
+                player.hideBossBar(bar);
+            }
+        }
     }
 }

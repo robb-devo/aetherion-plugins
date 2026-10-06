@@ -1,5 +1,39 @@
 # AetherionCore — shared library. No gameplay tick.
 #
+# network: which Velocity backend this jar is running on.
+# Blank this-server uses the Velocity GetServer reply, then the live port map
+# (hub 25566, mmo-r 25567, mmo-d 25568, mmo-c 25569).
+# Warps that belong on the main world connect to main-server unless this backend IS mmo-r.
+
+network:
+  this-server: ""
+  main-server: mmo-r
+  # Lean exile backend (Velocity name). Port 25569.
+  exile-server: mmo-c
+  # Empty = Crafty shared/transfer (same folder AetherionDungeons already uses).
+  shared-dir: ""
+
+# Exile island host (only arms on mmo-c). Cutscene + world hygiene live in Core
+# so that backend stays jar-light (no Quests / Items / Dungeons).
+exile:
+  world: aetherion_exile
+  spawn:
+    x: 162.5
+    y: 73.0
+    z: 6.5
+    yaw: 90.0
+    pitch: -8.0
+  keep-worlds:
+    - aetherion_exile
+  # Unloaded on enable when present. Folders can be moved to _retired/ by ops.
+  retire-worlds:
+    - ankerhold
+    - bloodstone
+    - throne_of_ashes
+  unload-foreign-worlds: true
+  cutscene:
+    enabled: true
+
 # wipe.* is used by /wipe beta and NetworkWipeWatch (Crafty multi-backend).
 # Empty / omitted keys keep historical production behavior:
 #   shared = <this-server>/../.. /shared

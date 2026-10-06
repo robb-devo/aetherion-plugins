@@ -193,6 +193,11 @@ public class NpcListener implements Listener {
          * =========================================================
          */
 
+        // Main story ("Das Schlaflied"): story NPCs + story steps on Hollis / Deed claim the click.
+        if (de.aetherion.quests.story.StoryFlow.handle(player, npc, questManager, dialogManager)) {
+            return;
+        }
+
         // Surveyor before generic QUEST turn-in — never consume blueprints on talk.
         if ("surveyor".equalsIgnoreCase(npc.getId())) {
             handleSurveyorVisit(player, npc);
@@ -223,6 +228,12 @@ public class NpcListener implements Listener {
             return;
         }
 
+        // Crystal Guide — Amethyst Mine entrance on Mining Eldervale.
+        if ("amethyst_mines_guide".equalsIgnoreCase(npc.getId())) {
+            handleAmethystGuideVisit(player, npc);
+            return;
+        }
+
         if (npc.getType() == NPCType.QUEST) {
 
             handleQuestNPC(
@@ -249,7 +260,16 @@ public class NpcListener implements Listener {
                 return;
             }
             dialogManager.clearPendingChoice(player);
-            if (npc.getDialogId() != null && !npc.getDialogId().isEmpty()) {
+            // Skill-road guides: TalkUx desk (bubble + chips); classic chat falls back to the dialog.
+            if ("farm_isle_guide".equalsIgnoreCase(npc.getId())) {
+                handleHarlowVisit(player, npc);
+                return;
+            }
+            if ("eldervale_welcome".equalsIgnoreCase(npc.getId()) && openEldervaleDesk(player, npc)) {
+                return;
+            }
+            boolean twigDesk = "forage_pad_guide".equalsIgnoreCase(npc.getId()) && openTwigDesk(player, npc);
+            if (!twigDesk && npc.getDialogId() != null && !npc.getDialogId().isEmpty()) {
                 dialogManager.startDialog(player, npc);
             }
             if ("forage_pad_guide".equalsIgnoreCase(npc.getId())) {
@@ -576,6 +596,18 @@ public class NpcListener implements Listener {
                 return;
             }
 
+            // Tackle after his lesson: Fishing Eldervale desk + arrow to the hub pad.
+            if ("fisher".equalsIgnoreCase(npc.getId()) && "a_good_catch".equalsIgnoreCase(quest.getId())) {
+                handleTackleDesk(player, npc);
+                return;
+            }
+
+            // Farmer after orientation: the Farm Isle starts with Harlow, back of the barn.
+            if ("farmer".equalsIgnoreCase(npc.getId())
+                    && de.aetherion.quests.util.QuestStoryGate.tutorialDone(player, questManager)) {
+                pointToHarlow(player);
+            }
+
             dialogManager.startCompletedDialog(player, npc);
             return;
 
@@ -751,7 +783,7 @@ public class NpcListener implements Listener {
                 "Casino's behind me. Pick a machine. Don't cry on the felt.",
                 "Slots. Roulette. Coins in. Dignity stays in your pocket.",
                 "I don't deal. I commentate. Machines do the dirty work.",
-                "The glass is hungrier than you, {player}. Feed it anyway.",
+                "Slots don't care how lucky you feel, {player}. Feed them anyway.",
                 "{player}! Lucky face. I can tell. I can always tell."
         });
         int pick = Math.floorMod(org.bukkit.Bukkit.getCurrentTick() / 40, lines.length);
@@ -762,7 +794,7 @@ public class NpcListener implements Listener {
                 if (player.isOnline()) {
                     dialogManager.offerTopics(player, npc);
                 }
-            }, de.aetherion.quests.dialog.DialogPace.LINE_GAP_TICKS);
+            }, de.aetherion.quests.dialog.DialogPace.untilReplies(player));
         }
     }
 
@@ -785,6 +817,33 @@ public class NpcListener implements Listener {
                 openLiquidatorGui(player);
             }
         }, 65L);
+    }
+
+    private void handleAmethystGuideVisit(Player player, QuestNPC npc) {
+        if (dialogManager.isSpeakingWith(player, npc)) {
+            return;
+        }
+        LivingNpcProfile.say(player, npc,
+                de.aetherion.quests.lang.LangPack.say(player, "amethyst_guide.hello",
+                        "Crystal Guide. The Amethyst Mine is through me — geodes, Resonance, Heartstones."));
+        LivingNpcProfile.say(player, npc,
+                de.aetherion.quests.lang.LangPack.say(player, "amethyst_guide.send",
+                        "Ready? I'll drop you at the violet hub. §e/amethyst§f works the same."));
+        AetherionQuests plugin = AetherionQuests.getInstance();
+        Runnable send = () -> {
+            if (!player.isOnline()) {
+                return;
+            }
+            de.aetherion.core.api.MiningAccess mining = de.aetherion.core.api.AetherServices.mining();
+            if (mining == null || !mining.enterAmethystMine(player)) {
+                player.sendMessage("§cAmethyst Mine is offline right now.");
+            }
+        };
+        if (plugin == null) {
+            send.run();
+            return;
+        }
+        plugin.getServer().getScheduler().runTaskLater(plugin, send, 55L);
     }
 
     private static void openLiquidatorGui(Player player) {
@@ -1238,7 +1297,7 @@ public class NpcListener implements Listener {
 
         if (plugin == null) {
             npcSay(player, npc,
-                    de.aetherion.quests.lang.LangPack.say(player, "farmer.isle_fallback", "Other end of the barn — farm guide and portal. Peek when you're curious."));
+                    de.aetherion.quests.lang.LangPack.say(player, "farmer.isle_fallback", "Far end of the barn — Harlow. He knows the way down to the Farm Isle."));
             de.aetherion.quests.ui.QuestHint.show(player, "lark", "Lark");
             return;
         }
@@ -1248,9 +1307,9 @@ public class NpcListener implements Listener {
                 return;
             }
             npcSay(player, npc,
-                    de.aetherion.quests.lang.LangPack.say(player, "farmer.isle_peek", "Other end of the barn — Harrow and the portal to the Farm Isle. Worth a look sometime."));
+                    de.aetherion.quests.lang.LangPack.say(player, "farmer.isle_peek", "Far end of the barn — that's §eHarlow§f. He knows the way down to the Farm Isle. Later."));
             player.sendActionBar(net.kyori.adventure.text.Component.text(
-                    de.aetherion.quests.lang.LangPack.ui(player, "tip.farm_isle", "Farm Isle · barn far end · optional peek"),
+                    de.aetherion.quests.lang.LangPack.ui(player, "tip.farm_isle", "Farm Isle · Harlow · barn far end · later"),
                     net.kyori.adventure.text.format.NamedTextColor.GREEN
             ));
             // Soft compass only — Lark was already covered in his intro.
@@ -1461,20 +1520,17 @@ public class NpcListener implements Listener {
         }
 
         if ("a_good_catch".equalsIgnoreCase(quest.getId())) {
-            String name = npc.getName();
             npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "fisher.catch_done", "Catch counted. Line's clear. Sea's still full."));
-            AetherionQuests plugin = AetherionQuests.getInstance();
-            if (plugin != null) {
-                plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-                    if (!player.isOnline()) {
-                        return;
-                    }
-                    npcSay(player, npc,
-                            de.aetherion.quests.lang.LangPack.say(player, "fisher.rod_tip", "Peek at your rod sometime — certain tools level up around here."));
-                }, 40L);
+            npcSay(player, npc,
+                    de.aetherion.quests.lang.LangPack.say(player, "fisher.rod_tip", "Peek at your rod sometime — certain tools level up around here."));
+            if (de.aetherion.quests.util.QuestStoryGate.tutorialDone(player, questManager)) {
+                npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "fisher.eldervale_pitch",
+                        "Want bigger fish? §bFishing Eldervale§f, out west. Arrow's on the pad."));
+                afterSpeech(player, () -> pointFishPad(player));
             } else {
-                npcSay(player, npc,
-                        de.aetherion.quests.lang.LangPack.say(player, "fisher.rod_tip", "Peek at your rod sometime — certain tools level up around here."));
+                // Mid-orientation: name the place, keep the tutorial arrow where it is.
+                npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "fisher.eldervale_later",
+                        "Bigger water out west — §bFishing Eldervale§f. Finish your rounds with Ledger first."));
             }
             return;
         }
@@ -1493,7 +1549,7 @@ public class NpcListener implements Listener {
                 npcSay(player, npc, line);
             }
             if (plugin != null) {
-                long afterLast = de.aetherion.quests.dialog.DialogPace.LINE_GAP_TICKS * Math.max(0, lines.length - 1) + 25L;
+                long afterLast = de.aetherion.quests.dialog.DialogPace.untilFree(player) + 4L;
                 plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
                     if (player.isOnline()) {
                         de.aetherion.quests.ui.QuestHint.show(player, "quartermaster", "Quartermaster");
@@ -2424,6 +2480,236 @@ public class NpcListener implements Listener {
         LivingNpcProfile.say(player, npc, line);
     }
 
+    /** Run {@code task} once everything queued for this player has typed out. */
+    private static void afterSpeech(Player player, Runnable task) {
+        AetherionQuests plugin = AetherionQuests.getInstance();
+        if (plugin == null) {
+            task.run();
+            return;
+        }
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            if (player.isOnline()) {
+                task.run();
+            }
+        }, Math.max(1L, de.aetherion.quests.dialog.DialogPace.untilReplies(player)));
+    }
+
+    /* ------------------------------------------------------------------ skill-road guides */
+
+    /** Farming level the Farm Isle pad asks for. */
+    private static final int FARM_ISLE_LEVEL = 10;
+
+    /** Soft arrow to Harlow — only for players who haven't met him and aren't following another road. */
+    private static void pointToHarlow(Player player) {
+        de.aetherion.quests.npc.NpcMemory memory = de.aetherion.quests.npc.NpcMemory.get();
+        if (memory != null && memory.talks(player.getUniqueId(), "farm_isle_guide") > 0) {
+            return;
+        }
+        if (de.aetherion.quests.ui.QuestHint.pendingNpc(player) != null) {
+            return;
+        }
+        de.aetherion.quests.ui.QuestHint.show(player, "farm_isle_guide",
+                de.aetherion.quests.lang.LangPack.ui(player, "hint_label.harlow", "Harlow · Farm Isle"));
+    }
+
+    private static void pointFarmPad(Player player) {
+        de.aetherion.quests.ui.QuestHint.clearPending(player);
+        de.aetherion.quests.ui.QuestHint.showSpot(player, "farm_pad",
+                de.aetherion.quests.lang.LangPack.ui(player, "hint_label.farm_pad", "Farm Isle Pad"));
+        player.sendActionBar(net.kyori.adventure.text.Component.text(
+                de.aetherion.quests.lang.LangPack.ui(player, "tip.farm_pad", "→ Farm Isle pad · down the road from the barn"),
+                net.kyori.adventure.text.format.NamedTextColor.YELLOW));
+    }
+
+    private static void pointFishPad(Player player) {
+        de.aetherion.quests.ui.QuestHint.clearPending(player);
+        de.aetherion.quests.ui.QuestHint.showSpot(player, "fish_pad",
+                de.aetherion.quests.lang.LangPack.ui(player, "hint_label.fish_pad", "Fishing Eldervale Pad"));
+        player.sendActionBar(net.kyori.adventure.text.Component.text(
+                de.aetherion.quests.lang.LangPack.ui(player, "tip.fish_pad", "→ Fishing Eldervale pad · out west"),
+                net.kyori.adventure.text.format.NamedTextColor.AQUA));
+    }
+
+    /**
+     * Harlow, far end of the barn: pitches the Farm Isle, puts the arrow on the pad down the
+     * road, then keeps a small desk (bubble + chips). Classic chat gets his intro + the arrow.
+     */
+    private void handleHarlowVisit(Player player, QuestNPC npc) {
+        if (de.aetherion.quests.talk.NpcDesk.busy(player, npc.getId())) {
+            return;
+        }
+        int farming = de.aetherion.quests.util.QuestSkillGate.categoryLevel(player,
+                de.aetherion.items.skill.AetherSkill.Category.FARMING);
+        boolean ready = farming >= FARM_ISLE_LEVEL;
+        pointFarmPad(player);
+        String opener = ready
+                ? de.aetherion.quests.lang.LangPack.say(player, "farm_isle_guide.open_ready",
+                        "Farm Isle's down the road, {player}. Pad at the bottom — you're cleared. Arrow's on it.")
+                : de.aetherion.quests.lang.LangPack.say(player, "farm_isle_guide.open",
+                        "Farm Isle's down the road, {player}. Pad at the bottom takes you at Farming §e10§f.");
+        de.aetherion.quests.talk.NpcDesk desk = de.aetherion.quests.talk.NpcDesk.of(npc)
+                .topic(de.aetherion.quests.lang.LangPack.say(player, "farm_isle_guide.desk.isle.label", "What's out there?"),
+                        net.kyori.adventure.text.format.NamedTextColor.GREEN,
+                        de.aetherion.quests.lang.LangPack.say(player, "farm_isle_guide.desk.isle.echo", "What's on the isle?"),
+                        de.aetherion.quests.lang.LangPack.sayLines(player, "farm_isle_guide.desk.isle.lines", new String[] {
+                                "Eldervale fields. Long rows, a Harvest Hall, an Oven House that never cools.",
+                                "§aElsie§f, the Field Warden, meets you at the landing. She knows every corner."
+                        }))
+                .topic(de.aetherion.quests.lang.LangPack.say(player, "farm_isle_guide.desk.level.label", "Farming 10?"),
+                        net.kyori.adventure.text.format.NamedTextColor.YELLOW,
+                        de.aetherion.quests.lang.LangPack.say(player, "farm_isle_guide.desk.level.echo", "Why Farming 10?"),
+                        () -> harlowLevelLines(player))
+                .topic(de.aetherion.quests.lang.LangPack.say(player, "farm_isle_guide.desk.back.label", "Coming back?"),
+                        net.kyori.adventure.text.format.NamedTextColor.AQUA,
+                        de.aetherion.quests.lang.LangPack.say(player, "farm_isle_guide.desk.back.echo", "How do I get back?"),
+                        de.aetherion.quests.lang.LangPack.sayLines(player, "farm_isle_guide.desk.back.lines", new String[] {
+                                "§e/capital§f puts you back in town.",
+                                "Or ask the Warden. She has opinions about leaving early."
+                        }));
+        if (!desk.open(player, opener)) {
+            dialogManager.startDialog(player, npc);
+        }
+    }
+
+    /**
+     * Maren at the Eldervale landing: the mining isle's front desk — who's who, how deep it goes,
+     * the forges, what bites. Classic chat falls back to her intro dialog.
+     */
+    private boolean openEldervaleDesk(Player player, QuestNPC npc) {
+        if (de.aetherion.quests.talk.NpcDesk.busy(player, npc.getId())) {
+            return true;
+        }
+        return de.aetherion.quests.talk.NpcDesk.of(npc)
+                .topic(de.aetherion.quests.lang.LangPack.say(player, "eldervale_welcome.desk.crew.label", "Who's who?"),
+                        net.kyori.adventure.text.format.NamedTextColor.AQUA,
+                        de.aetherion.quests.lang.LangPack.say(player, "eldervale_welcome.desk.crew.echo", "Who runs this rock?"),
+                        de.aetherion.quests.lang.LangPack.sayLines(player, "eldervale_welcome.desk.crew.lines", new String[] {
+                                "§eOld Wick§f by the landing lamp has the map, the depth card and the crew tour.",
+                                "§eOtto§f hands out contracts. §eNan§f at the Hearth feeds you — in ore."
+                        }))
+                .topic(de.aetherion.quests.lang.LangPack.say(player, "eldervale_welcome.desk.depth.label", "How deep?"),
+                        net.kyori.adventure.text.format.NamedTextColor.YELLOW,
+                        de.aetherion.quests.lang.LangPack.say(player, "eldervale_welcome.desk.depth.echo", "How deep does it go?"),
+                        de.aetherion.quests.lang.LangPack.sayLines(player, "eldervale_welcome.desk.depth.lines", new String[] {
+                                "Galleries, Deep Works, then the Undercroft. Deeper rock, more Fortune.",
+                                "First time in a band you get a card and some XP. Mind the heat in the Emberseam."
+                        }))
+                .topic(de.aetherion.quests.lang.LangPack.say(player, "eldervale_welcome.desk.forge.label", "The forges?"),
+                        net.kyori.adventure.text.format.NamedTextColor.GOLD,
+                        de.aetherion.quests.lang.LangPack.say(player, "eldervale_welcome.desk.forge.echo", "Tell me about the forges."),
+                        de.aetherion.quests.lang.LangPack.sayLines(player, "eldervale_welcome.desk.forge.lines", new String[] {
+                                "§6Brann§f runs the Deep Forge on the North Pit floor. Ore in, Forge Marks out — for keeps.",
+                                "The §6Forgehand§f up here stamps blueprints into tools. Bring an Upgrade Stone."
+                        }))
+                .topic(de.aetherion.quests.lang.LangPack.say(player, "eldervale_welcome.desk.warn.label", "Anything bite?"),
+                        net.kyori.adventure.text.format.NamedTextColor.RED,
+                        de.aetherion.quests.lang.LangPack.say(player, "eldervale_welcome.desk.warn.echo", "What should I watch for?"),
+                        de.aetherion.quests.lang.LangPack.sayLines(player, "eldervale_welcome.desk.warn.lines", new String[] {
+                                "Strain the rock and it caves in. You'll hear it first — move.",
+                                "Stonejaws guard the rich seams. And down deep, the packs don't knock."
+                        }))
+                .open(player, de.aetherion.quests.lang.LangPack.say(player, "eldervale_welcome.desk.open",
+                        "Welcome to Eldervale, {player}. Deep rock, thin air — ask before you jump."));
+    }
+
+    /** Twig at the harbour pad: Forage Isle in three questions. Classic chat keeps his intro dialog. */
+    private boolean openTwigDesk(Player player, QuestNPC npc) {
+        if (de.aetherion.quests.talk.NpcDesk.busy(player, npc.getId())) {
+            return true;
+        }
+        return de.aetherion.quests.talk.NpcDesk.of(npc)
+                .topic(de.aetherion.quests.lang.LangPack.say(player, "forage_pad_guide.desk.isle.label", "What's out there?"),
+                        net.kyori.adventure.text.format.NamedTextColor.GREEN,
+                        de.aetherion.quests.lang.LangPack.say(player, "forage_pad_guide.desk.isle.echo", "What's on the isle?"),
+                        de.aetherion.quests.lang.LangPack.sayLines(player, "forage_pad_guide.desk.isle.lines", new String[] {
+                                "Trees that drop what they are — spruce is spruce, birch is birch.",
+                                "§aMiss Canopy§f gives the tour. Heartwoods, the magic table, the lot."
+                        }))
+                .topic(de.aetherion.quests.lang.LangPack.say(player, "forage_pad_guide.desk.who.label", "Who do I find?"),
+                        net.kyori.adventure.text.format.NamedTextColor.YELLOW,
+                        de.aetherion.quests.lang.LangPack.say(player, "forage_pad_guide.desk.who.echo", "Who's waiting over there?"),
+                        de.aetherion.quests.lang.LangPack.sayLines(player, "forage_pad_guide.desk.who.lines", new String[] {
+                                "§eCanopy Clerk§f wants compressed samples. Arrow's on them.",
+                                "Miss Canopy teaches. The Clerk pays. Good system."
+                        }))
+                .topic(de.aetherion.quests.lang.LangPack.say(player, "forage_pad_guide.desk.safe.label", "Is the pad safe?"),
+                        net.kyori.adventure.text.format.NamedTextColor.AQUA,
+                        de.aetherion.quests.lang.LangPack.say(player, "forage_pad_guide.desk.safe.echo", "Is that thing safe?"),
+                        de.aetherion.quests.lang.LangPack.sayLines(player, "forage_pad_guide.desk.safe.lines", new String[] {
+                                "Totally.",
+                                "Ninety percent totally."
+                        }))
+                .open(player, de.aetherion.quests.lang.LangPack.say(player, "forage_pad_guide.desk.open",
+                        "Slime pad → Forage Isle, {player}. Jump. Don't overthink it."));
+    }
+
+    private static String[] harlowLevelLines(Player player) {
+        int farming = de.aetherion.quests.util.QuestSkillGate.categoryLevel(player,
+                de.aetherion.items.skill.AetherSkill.Category.FARMING);
+        if (farming < 0) {
+            return de.aetherion.quests.lang.LangPack.sayLines(player, "farm_isle_guide.desk.level.unknown", new String[] {
+                    "Farming §e10§f. The pad checks. I don't."
+            });
+        }
+        String level = String.valueOf(farming);
+        if (farming >= FARM_ISLE_LEVEL) {
+            return fillLevel(de.aetherion.quests.lang.LangPack.sayLines(player, "farm_isle_guide.desk.level.ready", new String[] {
+                    "You're Farming §e{0}§f. Pad's yours.",
+                    "Go on. The isle doesn't harvest itself."
+            }), level);
+        }
+        return fillLevel(de.aetherion.quests.lang.LangPack.sayLines(player, "farm_isle_guide.desk.level.short", new String[] {
+                "You're Farming §e{0}§f. Every crop you swing at counts — the Farmer's wheat too.",
+                "Hit §e10§f and the pad lets you through."
+        }), level);
+    }
+
+    private static String[] fillLevel(String[] lines, String level) {
+        String[] out = new String[lines.length];
+        for (int i = 0; i < lines.length; i++) {
+            out[i] = lines[i] == null ? null : lines[i].replace("{0}", level);
+        }
+        return out;
+    }
+
+    /**
+     * Tackle after the lesson: the harbour was practice — Fishing Eldervale is the real water.
+     * Arrow on the hub pad, then a small desk. Classic chat: his completed lines + the arrow.
+     */
+    private void handleTackleDesk(Player player, QuestNPC npc) {
+        if (de.aetherion.quests.talk.NpcDesk.busy(player, npc.getId())) {
+            return;
+        }
+        pointFishPad(player);
+        de.aetherion.quests.talk.NpcDesk desk = de.aetherion.quests.talk.NpcDesk.of(npc)
+                .topic(de.aetherion.quests.lang.LangPack.say(player, "fisher.desk.isle.label", "What's out there?"),
+                        net.kyori.adventure.text.format.NamedTextColor.AQUA,
+                        de.aetherion.quests.lang.LangPack.say(player, "fisher.desk.isle.echo", "What's on Eldervale?"),
+                        de.aetherion.quests.lang.LangPack.sayLines(player, "fisher.desk.isle.lines", new String[] {
+                                "One big lake, a dozen named waters. Each keeps its own fish.",
+                                "§bMaren§f runs the Harbourmaster's Hall. Start at her board."
+                        }))
+                .topic(de.aetherion.quests.lang.LangPack.say(player, "fisher.desk.way.label", "Which way?"),
+                        net.kyori.adventure.text.format.NamedTextColor.YELLOW,
+                        de.aetherion.quests.lang.LangPack.say(player, "fisher.desk.way.echo", "How do I get there?"),
+                        de.aetherion.quests.lang.LangPack.sayLines(player, "fisher.desk.way.lines", new String[] {
+                                "West. Far west. The pad throws you over the water.",
+                                "Follow the arrow. Don't stop to fish puddles."
+                        }))
+                .topic(de.aetherion.quests.lang.LangPack.say(player, "fisher.desk.tips.label", "Any tips?"),
+                        net.kyori.adventure.text.format.NamedTextColor.GREEN,
+                        de.aetherion.quests.lang.LangPack.say(player, "fisher.desk.tips.echo", "Any advice?"),
+                        de.aetherion.quests.lang.LangPack.sayLines(player, "fisher.desk.tips.lines", new String[] {
+                                "Water boiling out on the lake? That's the Shoal. Cast inside it.",
+                                "Bells across the lake mean a run. Drop everything."
+                        }));
+        String opener = de.aetherion.quests.lang.LangPack.say(player, "fisher.desk.open",
+                "Harbour's for practice, {player}. Real water's on §bFishing Eldervale§f — arrow's on the pad.");
+        if (!desk.open(player, opener)) {
+            dialogManager.startCompletedDialog(player, npc);
+        }
+    }
+
     /** Shopkeeper hello before the shop opens (bubble stays up behind the GUI). */
     private static void greetShop(Player player, QuestNPC npc) {
         String line = de.aetherion.quests.npc.CastBook.greeting(npc.getId(), player);
@@ -2512,7 +2798,7 @@ public class NpcListener implements Listener {
                 npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "vex.check_again",
                         "Talk to me when you're set. Or if you're feeling brave."));
             }
-        }, de.aetherion.quests.dialog.DialogPace.LINE_GAP_TICKS * lines.length + 10L);
+        }, de.aetherion.quests.dialog.DialogPace.untilReplies(player));
         return true;
     }
 
@@ -2559,7 +2845,7 @@ public class NpcListener implements Listener {
                                         && !t.hasChips(player)) {
                                     offerLedgerDesk(player, npc);
                                 }
-                            }, de.aetherion.quests.dialog.DialogPace.LINE_GAP_TICKS * lines.length + 10L);
+                            }, de.aetherion.quests.dialog.DialogPace.untilReplies(player));
                         }
                     },
                     false,

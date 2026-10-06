@@ -259,6 +259,11 @@ public final class ItemKeys {
         return key("lore_cache");
     }
 
+    /** "de" on items whose tooltip is currently German (lore_cache always stays English). */
+    public static NamespacedKey loreLang() {
+        return key("lore_lang");
+    }
+
     public static NamespacedKey listingId() {
         return key("listing_id");
     }

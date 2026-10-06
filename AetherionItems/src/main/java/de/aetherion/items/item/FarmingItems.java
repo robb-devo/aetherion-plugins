@@ -172,7 +172,6 @@ public final class FarmingItems {
         lore.add("");
         lore.add(hoe ? "§e🌾 Farming Tool" : "§e🌾 Farming Armor");
         lore.add("");
-        lore.add("§8Aetherion Farming Set");
         ItemProfile profile = ItemProfile.fromItemId(id);
         ItemLore.ensureStatLines(lore, stats, profile);
         ItemLore.appendBoosterSections(lore, stats, profile);

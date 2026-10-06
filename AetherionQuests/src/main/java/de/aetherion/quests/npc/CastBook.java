@@ -54,6 +54,14 @@ public final class CastBook {
         String[] idle = {};
         String[] farewell = {"Right. Off you go."};
         final List<Topic> topics = new ArrayList<>();
+        // Main story ("Das Schlaflied"), per player and only after the tutorial:
+        String[] greetLegend;        // mixed into greetings (Act I, public knowledge)
+        String[] greetDoubt;         // mixed in from doubtStage on (Act II)
+        int doubtStage = 99;
+        boolean doubtOnly;           // greetDoubt replaces every greeting (Berit after she fades)
+        String storyLabel;           // one stage-aware small-talk topic
+        String[] storyLegend;
+        String[] storyDoubt;
     }
 
     private static final Map<String, Voice> VOICES = new HashMap<>();
@@ -87,6 +95,13 @@ public final class CastBook {
         topic(v, "Any tips?",
                 "Watch the §eyellow arrow§f. It's smarter than most people I've kitted.",
                 "And talk to folk. Half this harbour gives free advice. The other half charges.");
+        v.greetLegend = lines("Weather's fine, {player}. Just don't sail toward the Veil.");
+        v.greetDoubt = lines("{player}. See a ferry with no rower? Don't wave.");
+        story(v, 4, "The Veil?",
+                lines("Fog wall past the outer buoys. Never sail past it.",
+                        "Old sailor's rule. Nobody knows who made it. Everybody keeps it."),
+                lines("Fishers swear there's a ferry by the old royal quay. Nobody rowing.",
+                        "I don't sail that way. Neither should you."));
 
         v = voice("lumberjack");
         v.accept = "Hand me the axe.";
@@ -156,7 +171,7 @@ public final class CastBook {
         v.greetNew = new String[] {"Hard hats save lives, {player}. I'm told."};
         v.greet = new String[] {"{player}! Back for another shift?", "Dust suits you, {player}."};
         v.greetGrad = new String[] {"Look who's a miner now. Proud of you. Don't tell anyone."};
-        v.idle = new String[] {"*puff*", "Hear that? Neither do I. Good sign.", "Thirty years. Still hate spiders."};
+        v.idle = new String[] {"*puff*", "Hear that? Neither do I. Good sign.", "Twenty years down there. Still hate spiders."};
         v.farewell = new String[] {"Watch the drops. Watch the dark. Watch yourself."};
         topic(v, "Is it safe down there?",
                 "Safe? It's a mine, {player}.",
@@ -197,6 +212,8 @@ public final class CastBook {
         v.greetGrad = new String[] {"Graduate {player}. Try not to embarrass the stamp."};
         v.idle = new String[] {"*stamp*", "Late. Late. Early. Late.", "Who writes a nine like that?"};
         v.farewell = new String[] {"Dismissed."};
+        v.greetDoubt = lines("{player}. No records before the Silent Year. That's no accident.");
+        v.doubtStage = 3;
         topic(v, "What are skills?",
                 "Equipped trees. Not homework.",
                 "One slot free at start. More unlock with coin milestones.");
@@ -219,7 +236,7 @@ public final class CastBook {
         v.idle = new String[] {"Shoo!", "That crow's been staring for an hour.", "Rain soon. Or birds. Probably birds."};
         v.farewell = new String[] {"Eyes up. They're always up there."};
         topic(v, "Why the birds?", "They know what they did.", "Every season. Same birds. I recognise that one.");
-        topic(v, "Farm Isle?", "Harrow's portal, far end of the barn.", "Farming ten. Bigger fields. Fewer birds.");
+        topic(v, "Farm Isle?", "Harlow, far end of the barn. He knows the way down.", "Farming ten. Bigger fields. Fewer birds.");
 
         v = voice("lark");
         v.accept = "Show me the spheres.";
@@ -306,8 +323,8 @@ public final class CastBook {
         v = voice("farm_isle_guide");
         v.greetNew = new String[] {"Isle's open, {player}. If your hands are."};
         v.greet = new String[] {"Soil's good today, {player}."};
-        v.idle = new String[] {"*chews wheat*", "Soil's good today.", "Portal hums. That's normal. I think."};
-        v.farewell = new String[] {"Same portal back. Don't get clever."};
+        v.idle = new String[] {"*chews wheat*", "Soil's good today.", "Pad thumps all day. That's normal. I think."};
+        v.farewell = new String[] {"Knees bent on the pad. Don't get clever."};
         topic(v, "What's on the isle?", "Bigger fields. Fewer birds. Better soil.", "Don't tell the Farmer.");
         topic(v, "You and the Farmer?", "He thinks he's the real farmer.", "Cute.");
 
@@ -315,6 +332,13 @@ public final class CastBook {
         v.greetNew = new String[] {"{player}! Seen any trolls? Big ones? Tell me everything."};
         v.greet = new String[] {"Got a page for me, {player}?"};
         v.idle = new String[] {"*scribbles a map*", "North is… that way. Probably.", "Trolls. Fascinating. Terrible. Fascinating."};
+        v.greetLegend = lines("{player}! Seen a troll with chain? Tell me everything.");
+        v.greetDoubt = lines("{player}. Royal forge-work in a troll's pocket. I can't sleep.");
+        story(v, 5, "Troll chain?",
+                lines("Bridge trolls hoard chain. Links the size of my head.",
+                        "Where do they find it? Nobody forges links like that anymore."),
+                lines("I measured a link. Royal forge-work. From the old moorings.",
+                        "Clean cuts on both ends. Somebody did that on purpose."));
 
         v = voice("vince");
         v.greetNew = new String[] {"{player}! Feeling lucky? You look lucky."};
@@ -323,6 +347,13 @@ public final class CastBook {
         v.farewell = new String[] {"Come back richer. Or poorer. I'm not picky."};
         topic(v, "Any tips?", "House always wins.", "I'm the house's cousin. I do alright.");
         topic(v, "Are you actually lucky?", "Lucky Vince. It's in the name.", "Names lie, {player}.");
+        v.greetLegend = lines("{player}! A hundred says the mad king's a bedtime story. In?");
+        v.greetDoubt = lines("{player}. That bet about the king? Off. Don't ask.");
+        story(v, 5, "The mad king?",
+                lines("Bet you a hundred the mad king's just a story.",
+                        "Kings don't break skies. Kings break banks. Different job."),
+                lines("Bet's off. Bet's very off.",
+                        "House rule: never bet against something that already happened."));
 
         v = voice("bar_whisper");
         v.greetNew = new String[] {"Psst. {player}. Look down. The bar."};
@@ -330,6 +361,13 @@ public final class CastBook {
         v.idle = new String[] {"…", "*listens to the air*", "level up… level up…"};
         v.farewell = new String[] {"keep playing. it notices."};
         topic(v, "How do I fill it?", "Play. Quest. Mine. Fish.", "Everything whispers to it, {player}.");
+        v.greetLegend = lines("the bar remembers you, {player}…");
+        v.greetDoubt = lines("some bars stop remembering… then the people stop too…");
+        story(v, 6, "Remembers?",
+                lines("Everything you do, the bar keeps. Every swing. Every catch.",
+                        "It remembers you, {player}. That's nice. Isn't it?"),
+                lines("Lately some bars just… go quiet. Mid-word.",
+                        "Then the people go quiet too. Keep playing. Please."));
 
         v = voice("eldervale_welcome");
         v.greetNew = new String[] {"Air's thin up here, {player}. Breathe slow."};
@@ -352,11 +390,27 @@ public final class CastBook {
         topic(v, "What do you sell?", "Opportunity. Wrapped in wood.", "The chests, {player}. I sell the idea of chests.");
 
         v = voice("isle_clerk");
+        // Lullaby step 5 (the old seal) — chips/reactions only show on that offer.
+        v.accept = "Archive it is.";
+        v.decline = "I'll ignore it.";
+        v.onAccept = new String[] {"Good. Less paper on my desk."};
+        v.onDecline = new String[] {"Ignoring things is my job. Don't take it."};
+        v.returning = new String[] {
+                "The seal, {player}. §eYsolde§f at the Archive. Not me.",
+                "I still don't do paperwork. Especially old paperwork."
+        };
         v.greetNew = new String[] {"Island dreams, {player}? Level twenty. Then dream."};
         v.greet = new String[] {"Paperwork? No. Never. Next."};
         v.idle = new String[] {"*stamps nothing*", "Form 20-B. Doesn't exist.", "Islands. Everyone wants islands."};
         v.farewell = new String[] {"Go level. I'll be here. Not doing paperwork."};
         topic(v, "A clerk who hates paperwork?", "Yes.", "I know.");
+        v.greetLegend = lines("Old seals on old deeds, {player}. Ignore them. I do.");
+        v.greetDoubt = lines("{player}. We don't talk about the seal. Next.");
+        story(v, 3, "That old seal?",
+                lines("Paperwork from before paperwork. Some seals are older than the desk.",
+                        "I stamp nothing. I ask nothing. Next."),
+                lines("Kingdom of Eldervale. I looked it up. Then someone told me to stop.",
+                        "So I stopped. I'm very good at stopping."));
 
         v = voice("forage_pad_guide");
         v.greetNew = new String[] {"Jump the pad, {player}! It's fine! Mostly fine!"};
@@ -392,18 +446,34 @@ public final class CastBook {
 
         // ------------------------------------------------------------ Idea NPCs (extras)
         v = voice("town_crier");
+        // Lullaby step 1 (the old tale) — chips/reactions only show on that offer.
+        v.accept = "I'll go hear it.";
+        v.decline = "Not tonight, Hollis.";
+        v.onAccept = new String[] {"Hear ye! {player} goes to learn some history! Rare!"};
+        v.onDecline = new String[] {"The tale's a thousand years old. It'll keep."};
+        v.returning = new String[] {
+                "Hear ye! {player} still hasn't heard the tale!",
+                "§eMother Berit§f. Edge of the Capital. Compass knows."
+        };
         v.greetNew = new String[] {"Hear ye! {player} walks among us!"};
         v.greet = new String[] {"Oyez, {player}! News at eleven. Also now."};
         v.idle = new String[] {
                 "Hear ye! Your Manager lives in hotbar slot nine!",
-                "Hear ye! Boosters go on the anvil, not in your mouth!",
+                "Hear ye! Boosters go on the Anvil, not in your mouth!",
                 "Hear ye! Talk to strangers! They have quests!",
-                "Hear ye! The yellow arrow is always right! Mostly!",
+                "Hear ye! Mind your children, or Aetherion comes for them!",
                 "Hear ye! Chests spawn in the wild! Go open things!"
         };
         v.farewell = new String[] {"Go forth! Loudly!"};
         topic(v, "Any news?", "The harbour stands. The mines are dusty. The birds are winning.", "That's the news.");
         topic(v, "Why shout?", "Whispering doesn't scale, {player}.");
+        v.greetLegend = lines("Hear ye! Mind your children, {player}! …None? Mind yourself, then.");
+        v.greetDoubt = lines("Hear ye… {player}. You remember my name? Good. Just checking.");
+        story(v, 5, "The mad king?",
+                lines("Not shouting this one. King went mad, broke the sky, got sent away.",
+                        "Kids' story. §eMother Berit§f tells it with the scary voice."),
+                lines("People keep forgetting things lately. Names. Doors. Kettles.",
+                        "The old tale had a word for that. I'm not shouting it."));
 
         v = voice("street_sweeper");
         v.greetNew = new String[] {"Wipe your boots, {player}."};
@@ -415,9 +485,129 @@ public final class CastBook {
         v = voice("lamp_lighter");
         v.greetNew = new String[] {"Evening's coming, {player}. I can feel it."};
         v.greet = new String[] {"Stay in the light, {player}."};
-        v.idle = new String[] {"*polishes lantern*", "Dusk in a few hours. Ready.", "Every lamp has a name. That one's Gerald."};
+        v.idle = new String[] {"*polishes a lantern*", "Dusk in a few hours. Ready.",
+                "Every lamp has a name. That one's Gerald.", "One more wick. Always one more."};
         v.farewell = new String[] {"Keep a torch handy."};
-        topic(v, "Why lamps?", "Hostiles hate light. I love it. We have a truce.", "It's mostly them avoiding me.");
+        topic(v, "Why lamps?", "Hostiles hate light. I love it. We have a truce.", "Mostly they just avoid me.");
+        v.greetLegend = lines("Every lamp lit till dawn, {player}. Old law. I just keep it.");
+        v.greetDoubt = lines("{player}. Lamps are lit. Every one. I checked twice.");
+        story(v, 4, "The old law?",
+                lines("Lanterns stay lit till dawn. Every one. Old law.",
+                        "Nobody knows whose. I don't need to know. I just keep it."),
+                lines("My gran said a queen wrote it. For the children.",
+                        "So they'd never wake up in the dark."));
+
+        // ------------------------------------------------------------ Hub townsfolk (AetherionHub owns the NPC)
+        // Sister Aurel and Stellan Voss speak through the Hub's own bubble; the Hub asks for their
+        // lines via StoryAccess.bark so the Act II layer and German come from one place.
+        v = voice("bellkeeper");
+        v.idle = new String[] {
+                "Seven bells, seven notes. Ring them all and the old hymn plays.",
+                "The high bell in the wharf tower? Arrows, dear. Nobody climbs that.",
+                "Dawn gets three strokes, dusk gets five. I count. Someone has to.",
+                "Every bell here was cast for someone. Most have forgotten who.",
+                "Hear that hum after dark? Starbells. They answer the big ones."
+        };
+        v.greetDoubt = lines("The dusk toll was short again. Four. I counted twice.",
+                "Four strokes at dusk. The bells don't miss. Something does.");
+        v.doubtStage = 2;
+
+        v = voice("stargazer");
+        v.idle = new String[] {
+                "Stand somewhere high and the island names itself. Five spots. Find them.",
+                "Falling stars are rare here. When one comes, sneak and look up.",
+                "Shooting stars over Skyreach. Make a wish, they say.",
+                "The aurora comes when it likes. Mostly when you're indoors.",
+                "From here you can see the Borderlands. From there, nothing nice.",
+                "The glide down is quicker than the stairs. Also louder."
+        };
+        v.greetDoubt = lines("Those aren't stars. They're too warm. Something up there is coming apart.",
+                "I used to make wishes on them. Now I just count them.");
+        v.doubtStage = 3;
+
+        // ------------------------------------------------------------ Main story cast (Das Schlaflied)
+        v = voice("ysolde");
+        v.accept = "I'm on it.";
+        v.decline = "Not yet.";
+        v.onAccept = new String[] {"Good. Quietly, please.", "Noted. I'll be here. I'm always here."};
+        v.onDecline = new String[] {"The past isn't going anywhere. It's the one thing that can't."};
+        v.greetNew = new String[] {"Quiet, please. The books are older than your grandparents."};
+        v.greet = new String[] {"{player}. Wipe your boots. The Archive notices.", "Back, {player}? Gloves first. Then talk."};
+        v.greetGrad = v.greet;
+        v.greetLegend = lines("Legends are for children, {player}. Records are for adults.");
+        v.greetDoubt = lines("{player}. I've been reading what we burned. Slowly.");
+        v.idle = new String[] {"*turns a page very carefully*", "Gloves. Always gloves.", "Shh.",
+                "Misfiled. Again. By me. Unacceptable."};
+        v.farewell = new String[] {"Mind the stacks on your way out."};
+        topic(v, "What is this place?",
+                "The Archive. Everything the Capital wrote down and kept.",
+                "And a few things it wrote down and wishes it hadn't.");
+        topic(v, "Why 'Thorne'?", "Old Capital family. Councillors, mostly.", "Very proud of their signatures.");
+        story(v, 3, "The mad king?",
+                lines("A children's story. The Registry approved it. That alone worries me.",
+                        "Approved stories are the ones someone needed you to believe."),
+                lines("He had a name: Corvin. A scholar. Lit this city with lamps, they say.",
+                        "Somewhere between the lamps and the bells, he became the monster."));
+
+        v = voice("berit");
+        v.accept = "I'll go and look.";
+        v.decline = "Another time, Berit.";
+        v.onAccept = new String[] {"Bring whatever's humming to §eYsolde§f at the Archive. Mind the dark."};
+        v.onDecline = new String[] {"It's hummed for a thousand years, love. It'll hum till Tuesday."};
+        v.greetNew = new String[] {"Come in, love. Mind the step."};
+        v.greet = new String[] {"There you are, {player}. Kettle's on. Always is.", "Come in, love. Mind the step."};
+        v.greetGrad = v.greet;
+        v.greetDoubt = lines("Hello, dear. Have we met?", "Oh — a visitor. How lovely. Do I know you?");
+        v.doubtStage = 6;
+        v.doubtOnly = true;
+        v.idle = new String[] {"*hums a tune with no ending*", "My knees say rain.", "Kettle's on. Kettle's always on."};
+        v.farewell = new String[] {"Mind the step, love."};
+        topic(v, "Your knees?", "They predict rain, bad news and visitors.", "Today they said visitors. Hello.");
+        story(v, 6, "The old song?",
+                lines("My gran taught me. It never had an ending.",
+                        "So I hum the gap. You get used to a gap."),
+                lines("Song? I used to know a song, I think.",
+                        "Isn't that silly. Would you like some tea?"));
+
+        v = voice("nell");
+        v.accept = "I'll check on her.";
+        v.decline = "Not right now, Nell.";
+        v.onAccept = new String[] {"Thank you! I'll keep my lamp on till you're back."};
+        v.onDecline = new String[] {"Okay. I'll ask again later. I'm good at asking."};
+        v.greetNew = new String[] {"Hi! Are you new? I'm Nell."};
+        v.greet = new String[] {"Hi, {player}! I learned a new note. It's the same note."};
+        v.greetGrad = v.greet;
+        v.greetDoubt = lines("Mother Berit called me 'little miss' again.");
+        v.doubtStage = 6;
+        v.idle = new String[] {"*hums the bell tune*", "One, two, three bells. That's morning.",
+                "Lamps on soon. Good.", "I'm not scared. I'm careful."};
+        v.farewell = new String[] {"Bye! Don't walk in the dark!"};
+        topic(v, "Afraid of the dark?", "No! …Only when the lamps go out.", "Wick says they never go out. Wick doesn't lie.");
+        topic(v, "The bell song?", "Seven notes. Then it stops. Like it forgot.",
+                "Mother Berit says we hum the gap. So I hum the gap.");
+
+        v = voice("hesper");
+        v.greetNew = new String[] {"Down from the Capital, {player}? Mind the edge. It's ours."};
+        v.greet = v.greetNew;
+        v.greetGrad = v.greetNew;
+        v.greetDoubt = lines("{player}. You came back. That's more than most.");
+        v.idle = new String[] {"*watches the torn mooring*", "Tourists. Again.", "We remember. That's the whole job."};
+        v.farewell = new String[] {"Go carefully. The edge doesn't care who you are."};
+        topic(v, "The camp?", "Descendants of people who came from elsewhere. Long ago.", "We keep the names others dropped.");
+        story(v, 5, "The Anchor?",
+                lines("The third mooring. 'Old', they say up top. Old is a convenient word."),
+                lines("Torn, not broken. Broken things fail. Torn things were pulled."));
+
+        v = voice("ferryman");
+        v.greetNew = new String[] {"Passenger? No? Just looking? Look all you like."};
+        v.greet = v.greetNew;
+        v.greetGrad = v.greetNew;
+        v.idle = new String[] {"Ferry! …No? No one.", "*polishes an oar he never uses*", "Fog's thick. Fog's always thick."};
+        v.farewell = new String[] {"Mind the planks. Some of them are only habit."};
+        topic(v, "Your name?", "It was… something with an R? Or a boat. No, that's the boat.",
+                "Nobody calls me anything. So it hardly matters.");
+        topic(v, "Where does it go?", "Across. Everything goes across eventually.",
+                "Past the Veil. Where nobody sails. Except me. Allegedly.");
 
         // ------------------------------------------------------------ NPC-to-NPC banter
         banter(new Beat("egon", "That cod's been out since Tuesday."),
@@ -454,6 +644,22 @@ public final class CastBook {
         banter(new Beat("vince", "Deed! Bet you an island I win tonight."),
                 new Beat("isle_clerk", "Islands aren't wagers."),
                 new Beat("vince", "Everything's a wager, Deed."));
+        // Main story cast — public knowledge only (banter plays to everyone in range).
+        banter(new Beat("nell", "Mother Berit, how does the song end?"),
+                new Beat("berit", "It doesn't, love. We hum the gap."),
+                new Beat("nell", "Hmm… hmmm…"),
+                new Beat("berit", "Perfect. That's the gap."));
+        banter(new Beat("vince", "Egon. Bet you won't sail past the Veil."),
+                new Beat("egon", "Nobody sails past the Veil."),
+                new Beat("vince", "So that's a no?"),
+                new Beat("egon", "That's a rule."));
+        banter(new Beat("town_crier", "Hear ye! The Archive is OPEN!"),
+                new Beat("ysolde", "Quietly open, Hollis."),
+                new Beat("town_crier", "Hear ye… quietly…"));
+        banter(new Beat("nell", "Wick, will the lamps stay on tonight?"),
+                new Beat("lamp_lighter", "Every one. Till dawn."),
+                new Beat("nell", "Promise?"),
+                new Beat("lamp_lighter", "Old law. I just keep it."));
     }
 
     private static Voice voice(String id) {
@@ -462,6 +668,18 @@ public final class CastBook {
 
     private static void topic(Voice v, String label, String... lines) {
         v.topics.add(new Topic(label, lines));
+    }
+
+    /** Act I / Act II layer for this voice ({@code doubtStage} = story stage where doubt starts). */
+    private static void story(Voice v, int doubtStage, String label, String[] legend, String[] doubt) {
+        v.doubtStage = doubtStage;
+        v.storyLabel = label;
+        v.storyLegend = legend;
+        v.storyDoubt = doubt;
+    }
+
+    private static String[] lines(String... lines) {
+        return lines;
     }
 
     private static void banter(Beat... beats) {
@@ -551,10 +769,18 @@ public final class CastBook {
 
     /** Small-talk topics in the reader's language (German: overlay only, may be empty). */
     public static List<Topic> topics(String npcId, Player player) {
+        Topic story = storyTopic(npcId, player);
         if (!german(player)) {
-            return topics(npcId);
+            List<Topic> out = new ArrayList<>(topics(npcId));
+            if (story != null) {
+                out.add(0, story);
+            }
+            return out;
         }
         List<Topic> out = new ArrayList<>();
+        if (story != null) {
+            out.add(story);
+        }
         for (Map<?, ?> entry : LangPack.castTopics(npcId)) {
             Object label = entry.get("label");
             Object lines = entry.get("lines");
@@ -648,6 +874,12 @@ public final class CastBook {
         NpcMemory memory = NpcMemory.get();
         boolean met = memory != null && memory.talks(player.getUniqueId(), npcId) > 0;
         boolean de = german(player);
+        if (stage == Stage.GRADUATE) {
+            String told = storyGreeting(npcId, v, player, de);
+            if (told != null) {
+                return told;
+            }
+        }
         String[] grad = de ? LangPack.castLines(npcId, "greet_grad") : v.greetGrad;
         String[] fresh = de ? LangPack.castLines(npcId, "greet_new") : v.greetNew;
         String[] known = de ? LangPack.castLines(npcId, "greet") : v.greet;
@@ -659,6 +891,68 @@ public final class CastBook {
             return pick(fresh);
         }
         return pick(known != null ? known : fresh);
+    }
+
+    // ------------------------------------------------------------------ main story layer
+
+    private static int storyStage(Player player) {
+        return de.aetherion.quests.story.StoryState.stageOf(player);
+    }
+
+    /** Story greeting for a graduate, or null to fall back to the normal pool. */
+    private static String storyGreeting(String npcId, Voice v, Player player, boolean de) {
+        if (v.greetLegend == null && v.greetDoubt == null) {
+            return null;
+        }
+        int stage = storyStage(player);
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        if (v.greetDoubt != null && stage >= v.doubtStage) {
+            if (v.doubtOnly || random.nextBoolean()) {
+                return pick(de ? LangPack.castLines(npcId, "greet_doubt") : v.greetDoubt);
+            }
+            return null;
+        }
+        if (v.greetLegend != null && random.nextBoolean()) {
+            return pick(de ? LangPack.castLines(npcId, "greet_legend") : v.greetLegend);
+        }
+        return null;
+    }
+
+    /** The stage-aware small-talk topic (after the tutorial), or null. */
+    private static Topic storyTopic(String npcId, Player player) {
+        Voice v = of(npcId);
+        if (v == null || v.storyLabel == null || player == null || stage(player) != Stage.GRADUATE) {
+            return null;
+        }
+        boolean doubt = v.storyDoubt != null && storyStage(player) >= v.doubtStage;
+        if (german(player)) {
+            String label = LangPack.castText(npcId, "story.label");
+            String[] said = LangPack.castLines(npcId, doubt ? "story.doubt" : "story.legend");
+            return label == null || said == null ? null : new Topic(label, said);
+        }
+        String[] said = doubt ? v.storyDoubt : v.storyLegend;
+        return said == null ? null : new Topic(v.storyLabel, said);
+    }
+
+    /**
+     * Ambient line for an NPC another plugin owns (the Hub's Sister Aurel / Stellan): their
+     * usual barks, plus the Act II line once the player is far enough. Null before the
+     * tutorial is done or when this voice has nothing (the owner then uses its own lines).
+     */
+    public static String storyBark(String npcId, Player player) {
+        Voice v = of(npcId);
+        if (v == null || player == null || stage(player) != Stage.GRADUATE) {
+            return null;
+        }
+        boolean de = german(player);
+        if (v.greetDoubt != null && storyStage(player) >= v.doubtStage
+                && ThreadLocalRandom.current().nextInt(3) == 0) {
+            String doubt = pick(de ? LangPack.castLines(npcId, "greet_doubt") : v.greetDoubt);
+            if (doubt != null) {
+                return doubt;
+            }
+        }
+        return pick(de ? LangPack.castLines(npcId, "idle") : v.idle);
     }
 
     public static Stage stage(Player player) {

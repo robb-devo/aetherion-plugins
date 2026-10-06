@@ -372,11 +372,11 @@ public final class HollowSunSetListener implements Listener, Runnable, StatProvi
             return;
         }
         if (nowMs < state.starfallReadyAt) {
-            long left = (state.starfallReadyAt - nowMs + 999L) / 1000L;
-            player.sendActionBar(net.kyori.adventure.text.Component.text("§5☀ Starfall §7— §f" + left + "s"));
+            de.aetherion.items.combat.AbilityCooldownHud.denied(player, "hollow_sun:starfall");
             return;
         }
         state.starfallReadyAt = nowMs + STARFALL_CD_MS;
+        de.aetherion.items.combat.AbilityCooldownHud.armPinnedMs(player, "hollow_sun:starfall", "Starfall", STARFALL_CD_MS);
         new Plunge(player, state).runTaskTimer(plugin, 0L, 1L);
     }
 
@@ -849,6 +849,7 @@ public final class HollowSunSetListener implements Listener, Runnable, StatProvi
     private void redGiant(Player player, State state) {
         state.redGiantLeft = RED_GIANT_TICKS;
         state.redGiantReadyAt = System.currentTimeMillis() + RED_GIANT_CD_MS;
+        de.aetherion.items.combat.AbilityCooldownHud.armPinnedMs(player, "hollow_sun:red_giant", "Red Giant", RED_GIANT_CD_MS);
         state.beamAngle = Math.toRadians(player.getLocation().getYaw());
         World world = player.getWorld();
         Location mid = player.getLocation().add(0, 1.0, 0);

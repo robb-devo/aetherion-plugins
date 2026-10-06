@@ -455,13 +455,14 @@ public class AetherionManagerListener implements Listener {
                 }
             }
             case AetherionManagerGUI.JOURNAL_SLOT -> {
-                if (progress != null && !progress.journal(player)) {
-                    player.sendMessage(progress.journalHint());
+                // Journal hub: Boss Journal (own gate) + Chronicle (story finds).
+                if (!de.aetherion.items.codex.JournalHubGUI.available(player)) {
+                    if (progress != null) {
+                        player.sendMessage(progress.journalHint());
+                    }
                     return;
                 }
-                if (manager.getJournalGUI() != null) {
-                    manager.getJournalGUI().open(player);
-                }
+                de.aetherion.items.codex.JournalHubGUI.open(player);
             }
             case AetherionManagerGUI.ISLAND_SLOT -> {
                 if (!Bukkit.getPluginManager().isPluginEnabled("AetherionGuilds")) {

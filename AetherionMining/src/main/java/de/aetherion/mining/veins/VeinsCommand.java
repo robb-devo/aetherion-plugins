@@ -65,8 +65,19 @@ public final class VeinsCommand implements CommandExecutor, TabCompleter {
                 sender.sendMessage("§cAdmin only.");
                 return true;
             }
-            veins.reset("Amethyst Area closed. Dig zones restored from snapshot seed.");
-            sender.sendMessage("§7Dig-zone reset started (hub untouched).");
+            veins.reset("Amethyst Mines closed. Map restored from schematic.");
+            sender.sendMessage("§7Amethyst Mines reset started.");
+            return true;
+        }
+        if (sub.equals("schem") || sub.equals("paste")) {
+            if (!sender.hasPermission("aetherion.mines.admin")) {
+                sender.sendMessage("§cAdmin only.");
+                return true;
+            }
+            veins.ensureLoaded();
+            if (veins.pasteSchematic(sender)) {
+                sender.sendMessage("§aAmethyst Mines schematic applied.");
+            }
             return true;
         }
         if (sub.equals("zones")) {
@@ -122,7 +133,7 @@ public final class VeinsCommand implements CommandExecutor, TabCompleter {
         }
         sender.sendMessage("§7/amethyst §8· §7/deepmines leave|time");
         if (sender.hasPermission("aetherion.mines.admin")) {
-            sender.sendMessage("§8Admin: /deepmines npc|reset|zones|softlight|eldervale");
+            sender.sendMessage("§8Admin: /deepmines npc|reset|schem|zones|softlight|eldervale");
         }
         return true;
     }
@@ -132,7 +143,7 @@ public final class VeinsCommand implements CommandExecutor, TabCompleter {
         if (args.length == 1) {
             List<String> out = new ArrayList<>(List.of("leave", "time"));
             if (sender.hasPermission("aetherion.mines.admin")) {
-                out.addAll(List.of("npc", "reset", "zones", "softlight", "eldervale"));
+                out.addAll(List.of("npc", "reset", "schem", "paste", "zones", "softlight", "eldervale"));
             }
             return out;
         }

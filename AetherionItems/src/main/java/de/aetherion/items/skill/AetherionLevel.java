@@ -164,10 +164,26 @@ public final class AetherionLevel {
         return color(clamped) + title(clamped);
     }
 
-    /** +1 Damage / +1 Health stacks every {@link #STAT_EVERY} account levels. */
+    /** P4 / L4 (D3): above this account level the milestone slows to {@link #STAT_EVERY_LATE}. */
+    public static final int STAT_TAPER_FROM = 250;
+    public static final int STAT_EVERY_LATE = 25;
+
+    /**
+     * +1 Damage / +1 Health every {@link #STAT_EVERY} account levels up to {@link #STAT_TAPER_FROM},
+     * then every {@link #STAT_EVERY_LATE}: +50 at 250, +60 at 500, +240 at 5000 (was +100 / +1,000).
+     * Account level stays a breadth meter; breadth keeps paying through titles and gates.
+     */
     public static int milestoneStatBonus(int level) {
         int clamped = Math.max(1, Math.min(MAX_LEVEL, level));
-        return clamped / STAT_EVERY;
+        if (clamped <= STAT_TAPER_FROM) {
+            return clamped / STAT_EVERY;
+        }
+        return STAT_TAPER_FROM / STAT_EVERY + (clamped - STAT_TAPER_FROM) / STAT_EVERY_LATE;
+    }
+
+    /** Levels per milestone step at this account level (5, or 25 past the taper). */
+    public static int statEveryAt(int level) {
+        return level >= STAT_TAPER_FROM ? STAT_EVERY_LATE : STAT_EVERY;
     }
 
     public static String bar(long xp) {

@@ -46,6 +46,22 @@ living-npc-visibility-distance: 96
 editor-npc-visibility-distance: 48
 
 # ============================================================
+# Opening orbit (Ankerhold first-join flyover)
+# ============================================================
+# Language pick → 15 s spectator orbit → shortened FIND EGON.
+# Path: opening_orbit.yml (baked ticks). Skip silently if already
+# shown, disabled, wrong server, or not near the harbour gangway.
+# Admin replay: /aquest orbit
+#
+# servers: Velocity/port names where Ankerhold orbit may play.
+# mmo-c is the exile backend now — do not list it here.
+# Add mmo-r when Ankerhold is the live hub.
+
+opening-orbit:
+  enabled: true
+  servers: []
+
+# ============================================================
 # NPC talk UX (in-world bubbles + reply chips)
 # ============================================================
 # Living NPCs speak in a speech bubble above their head (only the
@@ -63,8 +79,17 @@ talk-ux:
   max-distance: 10            # walk further away and the bubble closes
   reply-timeout-seconds: 40
   linger-ticks: 90            # how long a finished line stays up (~+1s vs prior 70)
+  chars-per-tick: 1.5         # typewriter speed — the same for every line and every NPC
+  read-gap-ticks: 36          # pause after a line finishes typing before the next may start
   bubble-scale: 0.56
+  bubble-frame: true          # thin name-colour edge on bubble, quest card + focused reply
   pack-glyphs: false          # true only once the server pack ships aetherion:talk
+
+# Soft-hint waypoints (QuestHint "spot:<key>") — isle jump pads on the hub side.
+# Code defaults match the live pads; set a key here only if a pad moves.
+# road-spots:
+#   farm_pad: {world: world, x: -293.0, y: 55, z: 340.5}    # origin_to_farming → Farm Isle
+#   fish_pad: {world: world, x: -365.5, y: 63, z: -488.5}   # origin_to_fishing → Fishing Eldervale
 
 # ============================================================
 # NPC life (work beats, glances, tiny patrols, greetings, banter)

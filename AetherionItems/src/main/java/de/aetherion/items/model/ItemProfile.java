@@ -1791,6 +1791,14 @@ public enum ItemProfile {
             ItemCapability.CRIT_DAMAGE
     ),
 
+    HUNTER_CROSSBOW(
+            "hunter_crossbow",
+            ItemCapability.DAMAGE,
+            ItemCapability.ATTACK_SPREAD,
+            ItemCapability.CRIT_CHANCE,
+            ItemCapability.CRIT_DAMAGE
+    ),
+
     UNKNOWN(
             "",
             new ItemCapability[0]

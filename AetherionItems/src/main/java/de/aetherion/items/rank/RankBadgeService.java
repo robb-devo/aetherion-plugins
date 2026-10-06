@@ -1,5 +1,7 @@
 package de.aetherion.items.rank;
 
+import de.aetherion.core.persist.AtomicYaml;
+
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.configuration.ConfigurationSection;
@@ -13,6 +15,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -75,9 +78,12 @@ public final class RankBadgeService implements Listener {
 
     private final JavaPlugin plugin;
     private final File file;
+    private final Object saveLock = new Object();
     private final ConcurrentHashMap<UUID, String> assigned = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, String> extras = new ConcurrentHashMap<>();
     private final Set<UUID> forced = ConcurrentHashMap.newKeySet();
+    /** Extras intentionally cleared on this JVM — must be deleted from shared disk on save. */
+    private final Set<UUID> clearedExtras = ConcurrentHashMap.newKeySet();
 
     public RankBadgeService(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -377,6 +383,7 @@ public final class RankBadgeService implements Listener {
                 LuckPermsSilent.removeGroup(playerId, previous);
             }
             extras.put(playerId, rank.group());
+            clearedExtras.remove(playerId);
             save();
             applyLuckPerms(playerId, aetherionGroup(playerId), rank);
             Player online = Bukkit.getPlayer(playerId);
@@ -493,6 +500,7 @@ public final class RankBadgeService implements Listener {
             return false;
         }
         extras.remove(playerId);
+        clearedExtras.add(playerId);
         save();
         LuckPermsSilent.removeGroup(playerId, key);
         applyLuckPerms(playerId, aetherionGroup(playerId), extraFor(playerId));
@@ -587,8 +595,10 @@ public final class RankBadgeService implements Listener {
                 String group = rankByGroup(section.getString(key, "adventurer")).group();
                 if ("admin".equals(group) && !isRobb(playerId)) {
                     extras.remove(playerId);
+                    clearedExtras.add(playerId);
                 } else if (isPermanentExtra(group)) {
                     extras.put(playerId, group);
+                    clearedExtras.remove(playerId);
                 } else {
                     assigned.put(playerId, group);
                 }
@@ -601,8 +611,10 @@ public final class RankBadgeService implements Listener {
                 String group = rankByGroup(extraSection.getString(key, "")).group();
                 if (isDisplayableExtra(playerId, group)) {
                     extras.put(playerId, group);
+                    clearedExtras.remove(playerId);
                 } else if ("admin".equals(group)) {
                     extras.remove(playerId);
+                    clearedExtras.add(playerId);
                 }
             } catch (RuntimeException ignored) {
             }
@@ -615,6 +627,7 @@ public final class RankBadgeService implements Listener {
     }
 
     private void load() {
+        AtomicYaml.recoverTemp(file, plugin.getLogger());
         if (!file.exists()) {
             return;
         }
@@ -628,6 +641,7 @@ public final class RankBadgeService implements Listener {
                     UUID id = UUID.fromString(key);
                     if ("admin".equals(group) && !isRobb(id)) {
                         droppedForeignAdmin = true;
+                        clearedExtras.add(id);
                         continue;
                     }
                     if (isPermanentExtra(group)) {
@@ -649,6 +663,7 @@ public final class RankBadgeService implements Listener {
                         extras.put(id, group);
                     } else if ("admin".equals(group)) {
                         droppedForeignAdmin = true;
+                        clearedExtras.add(id);
                     }
                 } catch (IllegalArgumentException ignored) {
                 }
@@ -669,20 +684,44 @@ public final class RankBadgeService implements Listener {
         save();
     }
 
+    /**
+     * Merge onto disk so a shared network {@code player-ranks.yml} keeps extras
+     * and XP ranks written by peer JVMs. Never full-rewrite from this JVM alone.
+     */
     private void save() {
-        YamlConfiguration config = new YamlConfiguration();
-        assigned.forEach((id, group) -> config.set("players." + id, group));
-        extras.forEach((id, group) -> config.set("extras." + id, group));
-        if (!forced.isEmpty()) {
-            config.set("forced", forced.stream().map(UUID::toString).toList());
-        }
-        try {
-            File folder = file.getParentFile();
-            if (folder != null && !folder.exists()) {
-                folder.mkdirs();
+        synchronized (saveLock) {
+            AtomicYaml.recoverTemp(file, plugin.getLogger());
+            YamlConfiguration config = file.isFile()
+                    ? YamlConfiguration.loadConfiguration(file)
+                    : new YamlConfiguration();
+            assigned.forEach((id, group) -> config.set("players." + id, group));
+            extras.forEach((id, group) -> config.set("extras." + id, group));
+            for (UUID id : clearedExtras) {
+                if (!extras.containsKey(id)) {
+                    config.set("extras." + id, null);
+                    // Foreign admin may have been stored under players. — strip that too.
+                    String underPlayers = config.getString("players." + id);
+                    if (underPlayers != null && "admin".equalsIgnoreCase(underPlayers) && !isRobb(id)) {
+                        config.set("players." + id, null);
+                    }
+                }
             }
-            config.save(file);
-        } catch (IOException ignored) {
+            clearedExtras.clear();
+            // Preserve peer-JVM forced UUIDs we do not know; rewrite ours from memory.
+            LinkedHashSet<String> forcedIds = new LinkedHashSet<>(config.getStringList("forced"));
+            assigned.keySet().forEach(id -> forcedIds.remove(id.toString()));
+            extras.keySet().forEach(id -> forcedIds.remove(id.toString()));
+            forced.forEach(id -> forcedIds.add(id.toString()));
+            if (forcedIds.isEmpty()) {
+                config.set("forced", null);
+            } else {
+                config.set("forced", new ArrayList<>(forcedIds));
+            }
+            try {
+                AtomicYaml.save(config, file, plugin.getLogger());
+            } catch (IOException exception) {
+                plugin.getLogger().warning("Could not save player-ranks.yml: " + exception.getMessage());
+            }
         }
     }
 

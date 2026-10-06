@@ -204,6 +204,16 @@ public final class MinionService {
         return Math.max(1, plugin.getConfig().getInt("minion-interval-seconds", 10)) * 1000;
     }
 
+    /**
+     * <b>Offline rule (decided, not forgotten):</b> a quarry keeps digging while nobody is around and while the
+     * server is down: every missed step is credited as rate × time, but only into the quarry's own storage and
+     * never past its limit ({@link QuarryMinion#cap()}). A quarry left alone for a week is simply full — it does
+     * not grow a week of goods. The belt network does the same once a minute ({@code LogisticsService.stepAll}):
+     * quarries hand over, Mills and Forges convert at their rate for the time passed (at most 7 days per step),
+     * and everything stops where a hut, Depot or machine store is full. So downtime is credited, up to the limits
+     * of what the island built — a bigger factory holds more, nothing grows forever. Rate × time, no item
+     * entities, nothing dupes on restart (lastTick moves by whole steps).
+     */
     private void catchUp(QuarryMinion minion, long now, int interval) {
         if (minion.lastTick() <= 0) {
             minion.setLastTick(now);

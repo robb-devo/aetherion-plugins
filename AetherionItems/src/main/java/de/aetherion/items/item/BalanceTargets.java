@@ -31,6 +31,21 @@ package de.aetherion.items.item;
  *   <li>Combat Damage 320 · Health 560 · Defense 420</li>
  * </ul>
  *
+ * <p><b>REV7 re-documentation (Progression P4 / L1, Robb D1).</b> The 18% booster line above is the
+ * REV6 plan, not what ships. Boosters are LOCKED and scale with the <i>boosted item's</i> rarity, and
+ * a core booster on combat armour adds Damage <i>and</i> Defense. The typical load on a T5 (Mythic)
+ * combat set is about +228 Damage / +138 Defense: roughly 43% of Late Damage, the main damage
+ * spine from Mid on. That is accepted (D1). Booster values, sockets and stacks are not tuned here.
+ * The curve is landed instead with the crit soft cap (L2, {@code DamageListener}), the flatter
+ * Grudge skills (L3, {@code SkillProgression#bossGrudge}) and the tapered account milestone
+ * (L4, {@code AetherionLevel#milestoneStatBonus}); boss HP follows from fight-log telemetry (L5).
+ * Read the comfort band per stat focus, booster reality included:
+ * <ul>
+ *   <li>REV7 Combat: Damage ~540 · Defense ~420 · Health ~560</li>
+ *   <li>Target effective hit vs bosses (design §3.3): Early ~80 · Mid ~400 · Late ~1,000–1,650 · End ~2,400</li>
+ * </ul>
+ * Source: {@code docs/PROGRESSION_DESIGN_OPUS.md} §3. Doc only; no constant below changes.
+ *
  * <p>T5 set alone is strong (~45% of the band) but must not already be endgame.
  * REV5 T5 Mining set was 860 Fortune set-alone — that is the whole comfortable
  * stack before pad/skills/boosters. Hypixel-raw ~8900 set-alone is rejected.

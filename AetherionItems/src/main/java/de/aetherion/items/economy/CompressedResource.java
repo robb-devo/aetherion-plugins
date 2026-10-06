@@ -693,8 +693,6 @@ public enum CompressedResource {
                 meta.addItemFlags(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ATTRIBUTES);
             }
             meta.setLore(lore(
-                    "§7✦ §aUNCOMMON",
-                    "",
                     "§72 stacks of " + pretty(input.name()) + ",",
                     usesHead() ? "§7packed into one head." : "§7packed into one stack.",
                     "",
@@ -720,8 +718,6 @@ public enum CompressedResource {
                 meta.addItemFlags(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ATTRIBUTES);
             }
             meta.setLore(lore(
-                    "§7✦ §bRARE",
-                    "",
                     "§7128 Compressed " + pretty(key) + ",",
                     compactedHash != null && !compactedHash.isBlank()
                             ? "§7forged into one crate."
@@ -748,13 +744,10 @@ public enum CompressedResource {
             meta.addEnchant(Enchantment.UNBREAKING, 1, true);
             meta.addItemFlags(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ATTRIBUTES);
             meta.setLore(lore(
-                    "§7✦ §5EPIC",
-                    "",
                     "§7Millstone-cured " + pretty(key) + ".",
                     "§7Worth more than the Compacted it cost.",
                     "",
-                    "§8Trade value: §6" + coins(refinedId()) + " coins",
-                    "§8Aetherion Farm Pantry"
+                    "§8Trade value: §6" + coins(refinedId()) + " coins"
             ));
             de.aetherion.items.item.ItemPresentation.polish(meta);
             item.setItemMeta(meta);

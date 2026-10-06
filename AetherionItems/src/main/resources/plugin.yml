@@ -25,6 +25,7 @@ commands:
 
   aetheriontest:
     description: Gives a test Aetherion item
+    permission: aetherion.dev
 
   atrecipes:
     description: Opens the Aetherion Recipe Book
@@ -34,7 +35,7 @@ commands:
       - recipebook
 
   aetherionitems:
-    description: Aetherion item commands
+    description: Aetherion item commands (DEV — kits, gear grants, boosters)
     aliases:
       - kit1
       - kit2
@@ -53,6 +54,7 @@ commands:
       - leggings
       - boots
       - booster
+    permission: aetherion.dev
 
   aetherion:
     description: Opens the Aetherion Manager

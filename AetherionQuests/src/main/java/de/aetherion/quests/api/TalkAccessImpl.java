@@ -1,6 +1,8 @@
 package de.aetherion.quests.api;
 
 import de.aetherion.core.api.TalkAccess;
+import de.aetherion.quests.AetherionQuests;
+import de.aetherion.quests.dialog.DialogPace;
 import de.aetherion.quests.talk.GuestSpeakers;
 import de.aetherion.quests.talk.TalkUx;
 
@@ -37,16 +39,37 @@ public final class TalkAccessImpl implements TalkAccess {
         return ux == null ? 0.0 : ux.reach();
     }
 
+    /**
+     * Guest lines ride the same speech clock as ours ({@link DialogPace}): several {@code say}
+     * calls in one tick play one after another at the shared typing speed + read gap.
+     */
     @Override
     public boolean say(Player player, String speakerId, String line) {
         TalkUx ux = TalkUx.get();
-        if (ux == null || player == null || !GuestSpeakers.has(speakerId) || !ux.enabledFor(player)) {
+        if (ux == null || player == null || line == null || !GuestSpeakers.has(speakerId) || !ux.enabledFor(player)
+                || !inReach(ux, player, speakerId)) {
             return false;
         }
-        ux.line(player, speakerId, GuestSpeakers.displayName(speakerId), line);
-        return ux.isTalkingWith(player, speakerId);
+        String filled = de.aetherion.quests.talk.TalkText.fill(player, line);
+        long delay = DialogPace.reserve(player, filled);
+        if (delay <= 0L) {
+            ux.line(player, speakerId, GuestSpeakers.displayName(speakerId), filled);
+            return ux.isTalkingWith(player, speakerId);
+        }
+        AetherionQuests plugin = AetherionQuests.getInstance();
+        if (plugin == null) {
+            return false;
+        }
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            TalkUx now = TalkUx.get();
+            if (now != null && player.isOnline() && GuestSpeakers.has(speakerId)) {
+                now.line(player, speakerId, GuestSpeakers.displayName(speakerId), filled);
+            }
+        }, delay);
+        return true;
     }
 
+    /** Chips land once the queued lines have typed out (never under a line that's still coming). */
     @Override
     public boolean replies(Player player, String speakerId, List<Reply> replies) {
         TalkUx ux = TalkUx.get();
@@ -61,7 +84,31 @@ public final class TalkAccessImpl implements TalkAccess {
             NamedTextColor color = reply.color() == null ? NamedTextColor.WHITE : reply.color();
             choices.add(new TalkUx.Choice(reply.label(), color, reply.action(), false, reply.echo()));
         }
-        return !choices.isEmpty() && ux.choices(player, speakerId, GuestSpeakers.displayName(speakerId), choices);
+        if (choices.isEmpty()) {
+            return false;
+        }
+        long wait = DialogPace.untilReplies(player);
+        AetherionQuests plugin = AetherionQuests.getInstance();
+        if (wait <= 0L || plugin == null) {
+            return ux.choices(player, speakerId, GuestSpeakers.displayName(speakerId), choices);
+        }
+        if (!ux.enabledFor(player) || !inReach(ux, player, speakerId)) {
+            return false;
+        }
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            TalkUx now = TalkUx.get();
+            if (now != null && player.isOnline()) {
+                now.choices(player, speakerId, GuestSpeakers.displayName(speakerId), choices);
+            }
+        }, wait);
+        return true;
+    }
+
+    private static boolean inReach(TalkUx ux, Player player, String speakerId) {
+        org.bukkit.Location at = GuestSpeakers.locate(speakerId);
+        double reach = ux.reach() + 2.0;
+        return at != null && at.getWorld() != null && at.getWorld().equals(player.getWorld())
+                && at.distanceSquared(player.getLocation()) <= reach * reach;
     }
 
     @Override

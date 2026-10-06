@@ -236,10 +236,8 @@ public final class AccessoryItems {
         lore.add("");
         lore.addAll(flavor(charm, clamped));
         lore.add("");
-        lore.add("§eOff-hand accessory");
         lore.add(charm.category().title() + " §8· §7hold in the off hand");
         lore.add("");
-        lore.add("§8Aetherion Charm");
         ItemProfile profile = ItemProfile.fromItemId(id);
         ItemLore.ensureStatLines(lore, stats, profile);
         ItemLore.appendBoosterSections(lore, stats, profile);
@@ -279,7 +277,7 @@ public final class AccessoryItems {
                         "§7A cheap homage to a very expensive hobby.",
                         "§7Nearby wild pets feel luckier. Allegedly."
                 ),
-                "§6Shiny Charm §8· §7hold in the off hand",
+                "§7Charm §8· §7hold in the off hand",
                 "§7Wild pets near you spawn shiny far more often.",
                 stats,
                 3200
@@ -296,7 +294,7 @@ public final class AccessoryItems {
                         "§7A quarry mill that pays rent in your pocket.",
                         "§7Inventory clutter, meet the shredder."
                 ),
-                "§6Pocket Forge §8· §7hold in the off hand",
+                "§7Charm §8· §7hold in the off hand",
                 "§7Auto-compresses and compacts resources while held.",
                 new ItemStats(),
                 3201
@@ -313,7 +311,7 @@ public final class AccessoryItems {
                         "§7Livestock. Bones. They call it loot.",
                         "§7I call it an eyesore. I'll take it off their hands."
                 ),
-                "§6Estate Liquidator §8· §7hold in the off hand",
+                "§7Charm §8· §7hold in the off hand",
                 "§7Auto-sells vanilla mob and animal drops for coins.",
                 new ItemStats(),
                 3202
@@ -382,11 +380,9 @@ public final class AccessoryItems {
         lore.add("");
         lore.addAll(flavor);
         lore.add("");
-        lore.add("§eOff-hand accessory");
         lore.add(handLine);
         lore.add(effectLine);
         lore.add("");
-        lore.add("§8Aetherion Charm");
         ItemProfile profile = ItemProfile.fromItemId(id);
         ItemLore.ensureStatLines(lore, stats, profile);
         ItemLore.appendBoosterSections(lore, stats, profile);

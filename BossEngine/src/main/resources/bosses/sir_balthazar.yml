@@ -226,8 +226,9 @@ loot:
         amount: 1
         chance: 1.0
   shared:
-    - source: VANILLA
-      material: NETHER_STAR
+    # P0: NETHER_STAR -> tagged spectacle_star (Trophy; vanilla Wither stars can't stand in)
+    - source: AETHERION
+      item-id: spectacle_star
       amount: 1
       chance: 0.55
   per-damager:

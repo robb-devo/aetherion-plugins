@@ -124,6 +124,7 @@ final class DevTheme {
             case MILLSTONE -> new Info(Cat.CONTENT, "Millstone & Pantry", Page.CAT_CONTENT);
             case BORDERLANDS_SPIRITS -> new Info(Cat.CONTENT, "Spirit Vials", Page.CAT_CONTENT);
             case SKILL_GEAR -> new Info(Cat.CONTENT, "Skill Gear", Page.CAT_CONTENT);
+            case LORE -> new Info(Cat.CONTENT, "Lore & Chronicle", Page.CAT_CONTENT);
             case MINING -> new Info(Cat.CONTENT, "Mining Sets", Page.SKILL_GEAR);
             case FARMING -> new Info(Cat.CONTENT, "Farming Sets", Page.SKILL_GEAR);
             case FORAGING -> new Info(Cat.CONTENT, "Foraging Sets", Page.SKILL_GEAR);

@@ -803,6 +803,9 @@ public class QuestManager {
                 quest
         );
 
+        // Story side effects (Chronicle pages, storybook, Veil Quay) — no-op for other quests.
+        de.aetherion.quests.story.StoryState.onQuestCompleted(player, quest);
+
         // Rod comes from Dock Pass handoff (Tackle) — not again on fishing turn-in.
         // Anvil unlocks with Temper (lesson_boost), not craftsman.
 

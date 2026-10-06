@@ -1,0 +1,2056 @@
+Folder PATH listing
+Volume serial number is CC5D-7E6F
+C:\USERS\ROBBI\APPDATA\LOCAL\TEMP\AETHER_PACK_LIVE_SCAN
+|   pack.mcmeta
+|   README_AETHERION.txt
+|   
+\---assets
+    +---aetherion
+    |   \---textures
+    |       +---font
+    |       |       badge_wanderer.png
+    |       |       
+    |       \---gui
+    |           \---sprites
+    |               \---tooltip
+    |                       aethered_background.png
+    |                       aethered_background.png.mcmeta
+    |                       aethered_frame.png
+    |                       aethered_frame.png.mcmeta
+    |                       common_background.png
+    |                       common_background.png.mcmeta
+    |                       common_frame.png
+    |                       common_frame.png.mcmeta
+    |                       epic_background.png
+    |                       epic_background.png.mcmeta
+    |                       epic_frame.png
+    |                       epic_frame.png.mcmeta
+    |                       legendary_background.png
+    |                       legendary_background.png.mcmeta
+    |                       legendary_frame.png
+    |                       legendary_frame.png.mcmeta
+    |                       mythic_background.png
+    |                       mythic_background.png.mcmeta
+    |                       mythic_frame.png
+    |                       mythic_frame.png.mcmeta
+    |                       rare_background.png
+    |                       rare_background.png.mcmeta
+    |                       rare_frame.png
+    |                       rare_frame.png.mcmeta
+    |                       uncommon_background.png
+    |                       uncommon_background.png.mcmeta
+    |                       uncommon_frame.png
+    |                       uncommon_frame.png.mcmeta
+    |                       
+    \---minecraft
+        +---citresewn
+        |   \---cit
+        |       +---aetherion_armor
+        |       |       ae_boots.properties
+        |       |       ae_boots_netherite_layer_1.png
+        |       |       ae_boots_netherite_layer_2.png
+        |       |       ae_chest.properties
+        |       |       ae_chest_netherite_layer_1.png
+        |       |       ae_chest_netherite_layer_2.png
+        |       |       ae_helm.properties
+        |       |       ae_helm_netherite_layer_1.png
+        |       |       ae_helm_netherite_layer_2.png
+        |       |       ae_legs.properties
+        |       |       ae_legs_netherite_layer_1.png
+        |       |       ae_legs_netherite_layer_2.png
+        |       |       catch_t1_boots.properties
+        |       |       catch_t1_boots_gold_layer_1.png
+        |       |       catch_t1_boots_gold_layer_2.png
+        |       |       catch_t1_chest.properties
+        |       |       catch_t1_chest_gold_layer_1.png
+        |       |       catch_t1_chest_gold_layer_2.png
+        |       |       catch_t1_helm.properties
+        |       |       catch_t1_helm_gold_layer_1.png
+        |       |       catch_t1_helm_gold_layer_2.png
+        |       |       catch_t1_legs.properties
+        |       |       catch_t1_legs_gold_layer_1.png
+        |       |       catch_t1_legs_gold_layer_2.png
+        |       |       catch_t2_boots.properties
+        |       |       catch_t2_boots_gold_layer_1.png
+        |       |       catch_t2_boots_gold_layer_2.png
+        |       |       catch_t2_chest.properties
+        |       |       catch_t2_chest_gold_layer_1.png
+        |       |       catch_t2_chest_gold_layer_2.png
+        |       |       catch_t2_helm.properties
+        |       |       catch_t2_helm_gold_layer_1.png
+        |       |       catch_t2_helm_gold_layer_2.png
+        |       |       catch_t2_legs.properties
+        |       |       catch_t2_legs_gold_layer_1.png
+        |       |       catch_t2_legs_gold_layer_2.png
+        |       |       catch_t3_boots.properties
+        |       |       catch_t3_boots_gold_layer_1.png
+        |       |       catch_t3_boots_gold_layer_2.png
+        |       |       catch_t3_chest.properties
+        |       |       catch_t3_chest_gold_layer_1.png
+        |       |       catch_t3_chest_gold_layer_2.png
+        |       |       catch_t3_helm.properties
+        |       |       catch_t3_helm_gold_layer_1.png
+        |       |       catch_t3_helm_gold_layer_2.png
+        |       |       catch_t3_legs.properties
+        |       |       catch_t3_legs_gold_layer_1.png
+        |       |       catch_t3_legs_gold_layer_2.png
+        |       |       c_t1_boots.properties
+        |       |       c_t1_boots_chainmail_layer_1.png
+        |       |       c_t1_boots_chainmail_layer_2.png
+        |       |       c_t1_chest.properties
+        |       |       c_t1_chest_chainmail_layer_1.png
+        |       |       c_t1_chest_chainmail_layer_2.png
+        |       |       c_t1_helm.properties
+        |       |       c_t1_helm_chainmail_layer_1.png
+        |       |       c_t1_helm_chainmail_layer_2.png
+        |       |       c_t1_legs.properties
+        |       |       c_t1_legs_chainmail_layer_1.png
+        |       |       c_t1_legs_chainmail_layer_2.png
+        |       |       c_t2_boots.properties
+        |       |       c_t2_boots_iron_layer_1.png
+        |       |       c_t2_boots_iron_layer_2.png
+        |       |       c_t2_chest.properties
+        |       |       c_t2_chest_iron_layer_1.png
+        |       |       c_t2_chest_iron_layer_2.png
+        |       |       c_t2_helm.properties
+        |       |       c_t2_helm_iron_layer_1.png
+        |       |       c_t2_helm_iron_layer_2.png
+        |       |       c_t2_legs.properties
+        |       |       c_t2_legs_iron_layer_1.png
+        |       |       c_t2_legs_iron_layer_2.png
+        |       |       c_t3_boots.properties
+        |       |       c_t3_boots_diamond_layer_1.png
+        |       |       c_t3_boots_diamond_layer_2.png
+        |       |       c_t3_chest.properties
+        |       |       c_t3_chest_diamond_layer_1.png
+        |       |       c_t3_chest_diamond_layer_2.png
+        |       |       c_t3_helm.properties
+        |       |       c_t3_helm_diamond_layer_1.png
+        |       |       c_t3_helm_diamond_layer_2.png
+        |       |       c_t3_legs.properties
+        |       |       c_t3_legs_diamond_layer_1.png
+        |       |       c_t3_legs_diamond_layer_2.png
+        |       |       c_t4_boots.properties
+        |       |       c_t4_boots_netherite_layer_1.png
+        |       |       c_t4_boots_netherite_layer_2.png
+        |       |       c_t4_chest.properties
+        |       |       c_t4_chest_netherite_layer_1.png
+        |       |       c_t4_chest_netherite_layer_2.png
+        |       |       c_t4_helm.properties
+        |       |       c_t4_helm_netherite_layer_1.png
+        |       |       c_t4_helm_netherite_layer_2.png
+        |       |       c_t4_legs.properties
+        |       |       c_t4_legs_netherite_layer_1.png
+        |       |       c_t4_legs_netherite_layer_2.png
+        |       |       c_t5_boots.properties
+        |       |       c_t5_boots_netherite_layer_1.png
+        |       |       c_t5_boots_netherite_layer_2.png
+        |       |       c_t5_chest.properties
+        |       |       c_t5_chest_netherite_layer_1.png
+        |       |       c_t5_chest_netherite_layer_2.png
+        |       |       c_t5_helm.properties
+        |       |       c_t5_helm_netherite_layer_1.png
+        |       |       c_t5_helm_netherite_layer_2.png
+        |       |       c_t5_legs.properties
+        |       |       c_t5_legs_netherite_layer_1.png
+        |       |       c_t5_legs_netherite_layer_2.png
+        |       |       dive_boots.properties
+        |       |       dive_boots_leather_layer_1.png
+        |       |       dive_boots_leather_layer_1_overlay.png
+        |       |       dive_boots_leather_layer_2.png
+        |       |       dive_boots_leather_layer_2_overlay.png
+        |       |       dive_chest.properties
+        |       |       dive_chest_leather_layer_1.png
+        |       |       dive_chest_leather_layer_1_overlay.png
+        |       |       dive_chest_leather_layer_2.png
+        |       |       dive_chest_leather_layer_2_overlay.png
+        |       |       dive_helm.properties
+        |       |       dive_helm_leather_layer_1.png
+        |       |       dive_helm_leather_layer_1_overlay.png
+        |       |       dive_helm_leather_layer_2.png
+        |       |       dive_helm_leather_layer_2_overlay.png
+        |       |       dive_legs.properties
+        |       |       dive_legs_leather_layer_1.png
+        |       |       dive_legs_leather_layer_1_overlay.png
+        |       |       dive_legs_leather_layer_2.png
+        |       |       dive_legs_leather_layer_2_overlay.png
+        |       |       farm_t1_boots.properties
+        |       |       farm_t1_boots_leather_layer_1.png
+        |       |       farm_t1_boots_leather_layer_1_overlay.png
+        |       |       farm_t1_boots_leather_layer_2.png
+        |       |       farm_t1_boots_leather_layer_2_overlay.png
+        |       |       farm_t1_chest.properties
+        |       |       farm_t1_chest_leather_layer_1.png
+        |       |       farm_t1_chest_leather_layer_1_overlay.png
+        |       |       farm_t1_chest_leather_layer_2.png
+        |       |       farm_t1_chest_leather_layer_2_overlay.png
+        |       |       farm_t1_helm.properties
+        |       |       farm_t1_helm_leather_layer_1.png
+        |       |       farm_t1_helm_leather_layer_1_overlay.png
+        |       |       farm_t1_helm_leather_layer_2.png
+        |       |       farm_t1_helm_leather_layer_2_overlay.png
+        |       |       farm_t1_legs.properties
+        |       |       farm_t1_legs_leather_layer_1.png
+        |       |       farm_t1_legs_leather_layer_1_overlay.png
+        |       |       farm_t1_legs_leather_layer_2.png
+        |       |       farm_t1_legs_leather_layer_2_overlay.png
+        |       |       farm_t2_boots.properties
+        |       |       farm_t2_boots_leather_layer_1.png
+        |       |       farm_t2_boots_leather_layer_1_overlay.png
+        |       |       farm_t2_boots_leather_layer_2.png
+        |       |       farm_t2_boots_leather_layer_2_overlay.png
+        |       |       farm_t2_chest.properties
+        |       |       farm_t2_chest_leather_layer_1.png
+        |       |       farm_t2_chest_leather_layer_1_overlay.png
+        |       |       farm_t2_chest_leather_layer_2.png
+        |       |       farm_t2_chest_leather_layer_2_overlay.png
+        |       |       farm_t2_helm.properties
+        |       |       farm_t2_helm_leather_layer_1.png
+        |       |       farm_t2_helm_leather_layer_1_overlay.png
+        |       |       farm_t2_helm_leather_layer_2.png
+        |       |       farm_t2_helm_leather_layer_2_overlay.png
+        |       |       farm_t2_legs.properties
+        |       |       farm_t2_legs_leather_layer_1.png
+        |       |       farm_t2_legs_leather_layer_1_overlay.png
+        |       |       farm_t2_legs_leather_layer_2.png
+        |       |       farm_t2_legs_leather_layer_2_overlay.png
+        |       |       farm_t3_boots.properties
+        |       |       farm_t3_boots_leather_layer_1.png
+        |       |       farm_t3_boots_leather_layer_1_overlay.png
+        |       |       farm_t3_boots_leather_layer_2.png
+        |       |       farm_t3_boots_leather_layer_2_overlay.png
+        |       |       farm_t3_chest.properties
+        |       |       farm_t3_chest_leather_layer_1.png
+        |       |       farm_t3_chest_leather_layer_1_overlay.png
+        |       |       farm_t3_chest_leather_layer_2.png
+        |       |       farm_t3_chest_leather_layer_2_overlay.png
+        |       |       farm_t3_helm.properties
+        |       |       farm_t3_helm_leather_layer_1.png
+        |       |       farm_t3_helm_leather_layer_1_overlay.png
+        |       |       farm_t3_helm_leather_layer_2.png
+        |       |       farm_t3_helm_leather_layer_2_overlay.png
+        |       |       farm_t3_legs.properties
+        |       |       farm_t3_legs_leather_layer_1.png
+        |       |       farm_t3_legs_leather_layer_1_overlay.png
+        |       |       farm_t3_legs_leather_layer_2.png
+        |       |       farm_t3_legs_leather_layer_2_overlay.png
+        |       |       farm_t4_boots.properties
+        |       |       farm_t4_boots_leather_layer_1.png
+        |       |       farm_t4_boots_leather_layer_1_overlay.png
+        |       |       farm_t4_boots_leather_layer_2.png
+        |       |       farm_t4_boots_leather_layer_2_overlay.png
+        |       |       farm_t4_chest.properties
+        |       |       farm_t4_chest_leather_layer_1.png
+        |       |       farm_t4_chest_leather_layer_1_overlay.png
+        |       |       farm_t4_chest_leather_layer_2.png
+        |       |       farm_t4_chest_leather_layer_2_overlay.png
+        |       |       farm_t4_helm.properties
+        |       |       farm_t4_helm_leather_layer_1.png
+        |       |       farm_t4_helm_leather_layer_1_overlay.png
+        |       |       farm_t4_helm_leather_layer_2.png
+        |       |       farm_t4_helm_leather_layer_2_overlay.png
+        |       |       farm_t4_legs.properties
+        |       |       farm_t4_legs_leather_layer_1.png
+        |       |       farm_t4_legs_leather_layer_1_overlay.png
+        |       |       farm_t4_legs_leather_layer_2.png
+        |       |       farm_t4_legs_leather_layer_2_overlay.png
+        |       |       farm_t5_boots.properties
+        |       |       farm_t5_boots_leather_layer_1.png
+        |       |       farm_t5_boots_leather_layer_1_overlay.png
+        |       |       farm_t5_boots_leather_layer_2.png
+        |       |       farm_t5_boots_leather_layer_2_overlay.png
+        |       |       farm_t5_chest.properties
+        |       |       farm_t5_chest_leather_layer_1.png
+        |       |       farm_t5_chest_leather_layer_1_overlay.png
+        |       |       farm_t5_chest_leather_layer_2.png
+        |       |       farm_t5_chest_leather_layer_2_overlay.png
+        |       |       farm_t5_helm.properties
+        |       |       farm_t5_helm_leather_layer_1.png
+        |       |       farm_t5_helm_leather_layer_1_overlay.png
+        |       |       farm_t5_helm_leather_layer_2.png
+        |       |       farm_t5_helm_leather_layer_2_overlay.png
+        |       |       farm_t5_legs.properties
+        |       |       farm_t5_legs_leather_layer_1.png
+        |       |       farm_t5_legs_leather_layer_1_overlay.png
+        |       |       farm_t5_legs_leather_layer_2.png
+        |       |       farm_t5_legs_leather_layer_2_overlay.png
+        |       |       fish_t1_boots.properties
+        |       |       fish_t1_boots_leather_layer_1.png
+        |       |       fish_t1_boots_leather_layer_1_overlay.png
+        |       |       fish_t1_boots_leather_layer_2.png
+        |       |       fish_t1_boots_leather_layer_2_overlay.png
+        |       |       fish_t1_chest.properties
+        |       |       fish_t1_chest_leather_layer_1.png
+        |       |       fish_t1_chest_leather_layer_1_overlay.png
+        |       |       fish_t1_chest_leather_layer_2.png
+        |       |       fish_t1_chest_leather_layer_2_overlay.png
+        |       |       fish_t1_helm.properties
+        |       |       fish_t1_helm_leather_layer_1.png
+        |       |       fish_t1_helm_leather_layer_1_overlay.png
+        |       |       fish_t1_helm_leather_layer_2.png
+        |       |       fish_t1_helm_leather_layer_2_overlay.png
+        |       |       fish_t1_legs.properties
+        |       |       fish_t1_legs_leather_layer_1.png
+        |       |       fish_t1_legs_leather_layer_1_overlay.png
+        |       |       fish_t1_legs_leather_layer_2.png
+        |       |       fish_t1_legs_leather_layer_2_overlay.png
+        |       |       fish_t2_boots.properties
+        |       |       fish_t2_boots_leather_layer_1.png
+        |       |       fish_t2_boots_leather_layer_1_overlay.png
+        |       |       fish_t2_boots_leather_layer_2.png
+        |       |       fish_t2_boots_leather_layer_2_overlay.png
+        |       |       fish_t2_chest.properties
+        |       |       fish_t2_chest_leather_layer_1.png
+        |       |       fish_t2_chest_leather_layer_1_overlay.png
+        |       |       fish_t2_chest_leather_layer_2.png
+        |       |       fish_t2_chest_leather_layer_2_overlay.png
+        |       |       fish_t2_helm.properties
+        |       |       fish_t2_helm_leather_layer_1.png
+        |       |       fish_t2_helm_leather_layer_1_overlay.png
+        |       |       fish_t2_helm_leather_layer_2.png
+        |       |       fish_t2_helm_leather_layer_2_overlay.png
+        |       |       fish_t2_legs.properties
+        |       |       fish_t2_legs_leather_layer_1.png
+        |       |       fish_t2_legs_leather_layer_1_overlay.png
+        |       |       fish_t2_legs_leather_layer_2.png
+        |       |       fish_t2_legs_leather_layer_2_overlay.png
+        |       |       fish_t3_boots.properties
+        |       |       fish_t3_boots_leather_layer_1.png
+        |       |       fish_t3_boots_leather_layer_1_overlay.png
+        |       |       fish_t3_boots_leather_layer_2.png
+        |       |       fish_t3_boots_leather_layer_2_overlay.png
+        |       |       fish_t3_chest.properties
+        |       |       fish_t3_chest_leather_layer_1.png
+        |       |       fish_t3_chest_leather_layer_1_overlay.png
+        |       |       fish_t3_chest_leather_layer_2.png
+        |       |       fish_t3_chest_leather_layer_2_overlay.png
+        |       |       fish_t3_helm.properties
+        |       |       fish_t3_helm_leather_layer_1.png
+        |       |       fish_t3_helm_leather_layer_1_overlay.png
+        |       |       fish_t3_helm_leather_layer_2.png
+        |       |       fish_t3_helm_leather_layer_2_overlay.png
+        |       |       fish_t3_legs.properties
+        |       |       fish_t3_legs_leather_layer_1.png
+        |       |       fish_t3_legs_leather_layer_1_overlay.png
+        |       |       fish_t3_legs_leather_layer_2.png
+        |       |       fish_t3_legs_leather_layer_2_overlay.png
+        |       |       fish_t4_boots.properties
+        |       |       fish_t4_boots_leather_layer_1.png
+        |       |       fish_t4_boots_leather_layer_1_overlay.png
+        |       |       fish_t4_boots_leather_layer_2.png
+        |       |       fish_t4_boots_leather_layer_2_overlay.png
+        |       |       fish_t4_chest.properties
+        |       |       fish_t4_chest_leather_layer_1.png
+        |       |       fish_t4_chest_leather_layer_1_overlay.png
+        |       |       fish_t4_chest_leather_layer_2.png
+        |       |       fish_t4_chest_leather_layer_2_overlay.png
+        |       |       fish_t4_helm.properties
+        |       |       fish_t4_helm_leather_layer_1.png
+        |       |       fish_t4_helm_leather_layer_1_overlay.png
+        |       |       fish_t4_helm_leather_layer_2.png
+        |       |       fish_t4_helm_leather_layer_2_overlay.png
+        |       |       fish_t4_legs.properties
+        |       |       fish_t4_legs_leather_layer_1.png
+        |       |       fish_t4_legs_leather_layer_1_overlay.png
+        |       |       fish_t4_legs_leather_layer_2.png
+        |       |       fish_t4_legs_leather_layer_2_overlay.png
+        |       |       fish_t5_boots.properties
+        |       |       fish_t5_boots_leather_layer_1.png
+        |       |       fish_t5_boots_leather_layer_1_overlay.png
+        |       |       fish_t5_boots_leather_layer_2.png
+        |       |       fish_t5_boots_leather_layer_2_overlay.png
+        |       |       fish_t5_chest.properties
+        |       |       fish_t5_chest_leather_layer_1.png
+        |       |       fish_t5_chest_leather_layer_1_overlay.png
+        |       |       fish_t5_chest_leather_layer_2.png
+        |       |       fish_t5_chest_leather_layer_2_overlay.png
+        |       |       fish_t5_helm.properties
+        |       |       fish_t5_helm_leather_layer_1.png
+        |       |       fish_t5_helm_leather_layer_1_overlay.png
+        |       |       fish_t5_helm_leather_layer_2.png
+        |       |       fish_t5_helm_leather_layer_2_overlay.png
+        |       |       fish_t5_legs.properties
+        |       |       fish_t5_legs_leather_layer_1.png
+        |       |       fish_t5_legs_leather_layer_1_overlay.png
+        |       |       fish_t5_legs_leather_layer_2.png
+        |       |       fish_t5_legs_leather_layer_2_overlay.png
+        |       |       for_t1_boots.properties
+        |       |       for_t1_boots_leather_layer_1.png
+        |       |       for_t1_boots_leather_layer_1_overlay.png
+        |       |       for_t1_boots_leather_layer_2.png
+        |       |       for_t1_boots_leather_layer_2_overlay.png
+        |       |       for_t1_chest.properties
+        |       |       for_t1_chest_leather_layer_1.png
+        |       |       for_t1_chest_leather_layer_1_overlay.png
+        |       |       for_t1_chest_leather_layer_2.png
+        |       |       for_t1_chest_leather_layer_2_overlay.png
+        |       |       for_t1_helm.properties
+        |       |       for_t1_helm_leather_layer_1.png
+        |       |       for_t1_helm_leather_layer_1_overlay.png
+        |       |       for_t1_helm_leather_layer_2.png
+        |       |       for_t1_helm_leather_layer_2_overlay.png
+        |       |       for_t1_legs.properties
+        |       |       for_t1_legs_leather_layer_1.png
+        |       |       for_t1_legs_leather_layer_1_overlay.png
+        |       |       for_t1_legs_leather_layer_2.png
+        |       |       for_t1_legs_leather_layer_2_overlay.png
+        |       |       for_t2_boots.properties
+        |       |       for_t2_boots_leather_layer_1.png
+        |       |       for_t2_boots_leather_layer_1_overlay.png
+        |       |       for_t2_boots_leather_layer_2.png
+        |       |       for_t2_boots_leather_layer_2_overlay.png
+        |       |       for_t2_chest.properties
+        |       |       for_t2_chest_leather_layer_1.png
+        |       |       for_t2_chest_leather_layer_1_overlay.png
+        |       |       for_t2_chest_leather_layer_2.png
+        |       |       for_t2_chest_leather_layer_2_overlay.png
+        |       |       for_t2_helm.properties
+        |       |       for_t2_helm_leather_layer_1.png
+        |       |       for_t2_helm_leather_layer_1_overlay.png
+        |       |       for_t2_helm_leather_layer_2.png
+        |       |       for_t2_helm_leather_layer_2_overlay.png
+        |       |       for_t2_legs.properties
+        |       |       for_t2_legs_leather_layer_1.png
+        |       |       for_t2_legs_leather_layer_1_overlay.png
+        |       |       for_t2_legs_leather_layer_2.png
+        |       |       for_t2_legs_leather_layer_2_overlay.png
+        |       |       for_t3_boots.properties
+        |       |       for_t3_boots_leather_layer_1.png
+        |       |       for_t3_boots_leather_layer_1_overlay.png
+        |       |       for_t3_boots_leather_layer_2.png
+        |       |       for_t3_boots_leather_layer_2_overlay.png
+        |       |       for_t3_chest.properties
+        |       |       for_t3_chest_leather_layer_1.png
+        |       |       for_t3_chest_leather_layer_1_overlay.png
+        |       |       for_t3_chest_leather_layer_2.png
+        |       |       for_t3_chest_leather_layer_2_overlay.png
+        |       |       for_t3_helm.properties
+        |       |       for_t3_helm_leather_layer_1.png
+        |       |       for_t3_helm_leather_layer_1_overlay.png
+        |       |       for_t3_helm_leather_layer_2.png
+        |       |       for_t3_helm_leather_layer_2_overlay.png
+        |       |       for_t3_legs.properties
+        |       |       for_t3_legs_leather_layer_1.png
+        |       |       for_t3_legs_leather_layer_1_overlay.png
+        |       |       for_t3_legs_leather_layer_2.png
+        |       |       for_t3_legs_leather_layer_2_overlay.png
+        |       |       for_t4_boots.properties
+        |       |       for_t4_boots_leather_layer_1.png
+        |       |       for_t4_boots_leather_layer_1_overlay.png
+        |       |       for_t4_boots_leather_layer_2.png
+        |       |       for_t4_boots_leather_layer_2_overlay.png
+        |       |       for_t4_chest.properties
+        |       |       for_t4_chest_leather_layer_1.png
+        |       |       for_t4_chest_leather_layer_1_overlay.png
+        |       |       for_t4_chest_leather_layer_2.png
+        |       |       for_t4_chest_leather_layer_2_overlay.png
+        |       |       for_t4_helm.properties
+        |       |       for_t4_helm_leather_layer_1.png
+        |       |       for_t4_helm_leather_layer_1_overlay.png
+        |       |       for_t4_helm_leather_layer_2.png
+        |       |       for_t4_helm_leather_layer_2_overlay.png
+        |       |       for_t4_legs.properties
+        |       |       for_t4_legs_leather_layer_1.png
+        |       |       for_t4_legs_leather_layer_1_overlay.png
+        |       |       for_t4_legs_leather_layer_2.png
+        |       |       for_t4_legs_leather_layer_2_overlay.png
+        |       |       for_t5_boots.properties
+        |       |       for_t5_boots_leather_layer_1.png
+        |       |       for_t5_boots_leather_layer_1_overlay.png
+        |       |       for_t5_boots_leather_layer_2.png
+        |       |       for_t5_boots_leather_layer_2_overlay.png
+        |       |       for_t5_chest.properties
+        |       |       for_t5_chest_leather_layer_1.png
+        |       |       for_t5_chest_leather_layer_1_overlay.png
+        |       |       for_t5_chest_leather_layer_2.png
+        |       |       for_t5_chest_leather_layer_2_overlay.png
+        |       |       for_t5_helm.properties
+        |       |       for_t5_helm_leather_layer_1.png
+        |       |       for_t5_helm_leather_layer_1_overlay.png
+        |       |       for_t5_helm_leather_layer_2.png
+        |       |       for_t5_helm_leather_layer_2_overlay.png
+        |       |       for_t5_legs.properties
+        |       |       for_t5_legs_leather_layer_1.png
+        |       |       for_t5_legs_leather_layer_1_overlay.png
+        |       |       for_t5_legs_leather_layer_2.png
+        |       |       for_t5_legs_leather_layer_2_overlay.png
+        |       |       ih_boots.properties
+        |       |       ih_boots_iron_layer_1.png
+        |       |       ih_boots_iron_layer_2.png
+        |       |       ih_chest.properties
+        |       |       ih_chest_iron_layer_1.png
+        |       |       ih_chest_iron_layer_2.png
+        |       |       ih_helm.properties
+        |       |       ih_helm_iron_layer_1.png
+        |       |       ih_helm_iron_layer_2.png
+        |       |       ih_legs.properties
+        |       |       ih_legs_iron_layer_1.png
+        |       |       ih_legs_iron_layer_2.png
+        |       |       m_t1_boots.properties
+        |       |       m_t1_boots_chainmail_layer_1.png
+        |       |       m_t1_boots_chainmail_layer_2.png
+        |       |       m_t1_chest.properties
+        |       |       m_t1_chest_chainmail_layer_1.png
+        |       |       m_t1_chest_chainmail_layer_2.png
+        |       |       m_t1_helm.properties
+        |       |       m_t1_helm_chainmail_layer_1.png
+        |       |       m_t1_helm_chainmail_layer_2.png
+        |       |       m_t1_legs.properties
+        |       |       m_t1_legs_chainmail_layer_1.png
+        |       |       m_t1_legs_chainmail_layer_2.png
+        |       |       m_t2_boots.properties
+        |       |       m_t2_boots_iron_layer_1.png
+        |       |       m_t2_boots_iron_layer_2.png
+        |       |       m_t2_chest.properties
+        |       |       m_t2_chest_iron_layer_1.png
+        |       |       m_t2_chest_iron_layer_2.png
+        |       |       m_t2_helm.properties
+        |       |       m_t2_helm_iron_layer_1.png
+        |       |       m_t2_helm_iron_layer_2.png
+        |       |       m_t2_legs.properties
+        |       |       m_t2_legs_iron_layer_1.png
+        |       |       m_t2_legs_iron_layer_2.png
+        |       |       m_t3_boots.properties
+        |       |       m_t3_boots_diamond_layer_1.png
+        |       |       m_t3_boots_diamond_layer_2.png
+        |       |       m_t3_chest.properties
+        |       |       m_t3_chest_diamond_layer_1.png
+        |       |       m_t3_chest_diamond_layer_2.png
+        |       |       m_t3_helm.properties
+        |       |       m_t3_helm_diamond_layer_1.png
+        |       |       m_t3_helm_diamond_layer_2.png
+        |       |       m_t3_legs.properties
+        |       |       m_t3_legs_diamond_layer_1.png
+        |       |       m_t3_legs_diamond_layer_2.png
+        |       |       m_t4_boots.properties
+        |       |       m_t4_boots_netherite_layer_1.png
+        |       |       m_t4_boots_netherite_layer_2.png
+        |       |       m_t4_chest.properties
+        |       |       m_t4_chest_netherite_layer_1.png
+        |       |       m_t4_chest_netherite_layer_2.png
+        |       |       m_t4_helm.properties
+        |       |       m_t4_helm_netherite_layer_1.png
+        |       |       m_t4_helm_netherite_layer_2.png
+        |       |       m_t4_legs.properties
+        |       |       m_t4_legs_netherite_layer_1.png
+        |       |       m_t4_legs_netherite_layer_2.png
+        |       |       m_t5_boots.properties
+        |       |       m_t5_boots_netherite_layer_1.png
+        |       |       m_t5_boots_netherite_layer_2.png
+        |       |       m_t5_chest.properties
+        |       |       m_t5_chest_netherite_layer_1.png
+        |       |       m_t5_chest_netherite_layer_2.png
+        |       |       m_t5_helm.properties
+        |       |       m_t5_helm_netherite_layer_1.png
+        |       |       m_t5_helm_netherite_layer_2.png
+        |       |       m_t5_legs.properties
+        |       |       m_t5_legs_netherite_layer_1.png
+        |       |       m_t5_legs_netherite_layer_2.png
+        |       |       simple_boots.properties
+        |       |       simple_boots_leather_layer_1.png
+        |       |       simple_boots_leather_layer_1_overlay.png
+        |       |       simple_boots_leather_layer_2.png
+        |       |       simple_boots_leather_layer_2_overlay.png
+        |       |       simple_chest.properties
+        |       |       simple_chest_leather_layer_1.png
+        |       |       simple_chest_leather_layer_1_overlay.png
+        |       |       simple_chest_leather_layer_2.png
+        |       |       simple_chest_leather_layer_2_overlay.png
+        |       |       simple_helm.properties
+        |       |       simple_helm_leather_layer_1.png
+        |       |       simple_helm_leather_layer_1_overlay.png
+        |       |       simple_helm_leather_layer_2.png
+        |       |       simple_helm_leather_layer_2_overlay.png
+        |       |       simple_legs.properties
+        |       |       simple_legs_leather_layer_1.png
+        |       |       simple_legs_leather_layer_1_overlay.png
+        |       |       simple_legs_leather_layer_2.png
+        |       |       simple_legs_leather_layer_2_overlay.png
+        |       |       
+        |       \---aetherion_items
+        |               ashen_katana.png
+        |               ashen_katana_4.png
+        |               bp_bounty.png
+        |               bp_bounty.properties
+        |               bp_resonance.png
+        |               bp_resonance.properties
+        |               bp_tide.png
+        |               bp_tide.properties
+        |               bp_vein.png
+        |               bp_vein.properties
+        |               bp_wild.png
+        |               bp_wild.properties
+        |               catch_sphere_common.png
+        |               catch_sphere_common.properties
+        |               catch_sphere_epic.png
+        |               catch_sphere_epic.properties
+        |               catch_sphere_legendary.png
+        |               catch_sphere_legendary.properties
+        |               catch_sphere_rare.png
+        |               catch_sphere_rare.properties
+        |               charm_combat.png
+        |               charm_combat.properties
+        |               charm_combat_2.png
+        |               charm_combat_2.properties
+        |               charm_combat_3.png
+        |               charm_combat_3.properties
+        |               charm_estate.png
+        |               charm_estate.properties
+        |               charm_farming.png
+        |               charm_farming.properties
+        |               charm_farming_2.png
+        |               charm_farming_2.properties
+        |               charm_farming_3.png
+        |               charm_farming_3.properties
+        |               charm_fishing.png
+        |               charm_fishing.properties
+        |               charm_fishing_2.png
+        |               charm_fishing_2.properties
+        |               charm_fishing_3.png
+        |               charm_fishing_3.properties
+        |               charm_foraging.png
+        |               charm_foraging.properties
+        |               charm_foraging_2.png
+        |               charm_foraging_2.properties
+        |               charm_foraging_3.png
+        |               charm_foraging_3.properties
+        |               charm_forge.png
+        |               charm_forge.properties
+        |               charm_mining.png
+        |               charm_mining.properties
+        |               charm_mining_2.png
+        |               charm_mining_2.properties
+        |               charm_mining_3.png
+        |               charm_mining_3.properties
+        |               charm_shiny.png
+        |               charm_shiny.properties
+        |               charm_utility.png
+        |               charm_utility.properties
+        |               charm_utility_2.png
+        |               charm_utility_2.properties
+        |               charm_utility_3.png
+        |               charm_utility_3.properties
+        |               combat_sword.png
+        |               combat_sword_2.png
+        |               combat_sword_3.png
+        |               combat_sword_4.png
+        |               combat_sword_5.png
+        |               farming_hoe.png
+        |               farming_hoe_2.png
+        |               farming_hoe_3.png
+        |               farming_hoe_4.png
+        |               farming_hoe_5.png
+        |               fishing_rod.png
+        |               fishing_rod_2.png
+        |               fishing_rod_3.png
+        |               fishing_rod_4.png
+        |               fishing_rod_5.png
+        |               fishing_rod_t1.png
+        |               fishing_rod_t2.png
+        |               fishing_rod_t3.png
+        |               fishing_rod_t4.png
+        |               fishing_rod_t5.png
+        |               foraging_axe.png
+        |               foraging_axe_2.png
+        |               foraging_axe_3.png
+        |               foraging_axe_4.png
+        |               foraging_axe_5.png
+        |               gravwell_cleaver.png
+        |               hunter_crossbow.png
+        |               hunter_crossbow.properties
+        |               hunter_crossbow_arrow.png
+        |               hunter_crossbow_firework.png
+        |               hunter_crossbow_pulling_0.png
+        |               hunter_crossbow_pulling_1.png
+        |               hunter_crossbow_pulling_2.png
+        |               mining_pickaxe.png
+        |               mining_pickaxe_2.png
+        |               mining_pickaxe_3.png
+        |               mining_pickaxe_4.png
+        |               mining_pickaxe_5.png
+        |               resonance_scythe.png
+        |               simple_axe.png
+        |               t1_axe.png
+        |               t2_axe.png
+        |               t3_axe.png
+        |               t4_axe.png
+        |               t5_axe.png
+        |               tool_bounty_hoe.png
+        |               tool_bounty_hoe.properties
+        |               tool_tide_latch.png
+        |               tool_tide_latch.properties
+        |               tool_vein_siphon.png
+        |               tool_vein_siphon.properties
+        |               tool_wild_sight.png
+        |               tool_wild_sight.properties
+        |               upgrade_stone_2.png
+        |               upgrade_stone_2.properties
+        |               upgrade_stone_3.png
+        |               upgrade_stone_3.properties
+        |               upgrade_stone_4.png
+        |               upgrade_stone_4.properties
+        |               void_vacuum_charm.png
+        |               void_vacuum_charm.properties
+        |               
+        +---font
+        |       default.json
+        |       
+        +---lang
+        |       en_us.json
+        |       
+        +---models
+        |   \---item
+        |           aetherblade.json
+        |           aetherion_boots.json
+        |           aetherion_chestplate.json
+        |           aetherion_helmet.json
+        |           aetherion_leggings.json
+        |           aetherion_manager.json
+        |           aetherion_void_stick.json
+        |           amethyst_shard.json
+        |           ashen_katana.json
+        |           beginner_pickaxe.json
+        |           birch_booster.json
+        |           birch_log.json
+        |           blaze_powder.json
+        |           blaze_rod.json
+        |           blueprint_bounty_hoe.json
+        |           blueprint_canopy_cleaver.json
+        |           blueprint_resonance_scythe.json
+        |           blueprint_tide_latch.json
+        |           blueprint_vein_siphon.json
+        |           blueprint_wild_sight.json
+        |           bone_knife.json
+        |           bounty_hoe.json
+        |           bow.json
+        |           bridged_axe.json
+        |           canopy_cleaver.json
+        |           carrot_booster.json
+        |           catcher_boots.json
+        |           catcher_boots_2.json
+        |           catcher_boots_3.json
+        |           catcher_chestplate.json
+        |           catcher_chestplate_2.json
+        |           catcher_chestplate_3.json
+        |           catcher_gaff.json
+        |           catcher_gaff_2.json
+        |           catcher_gaff_3.json
+        |           catcher_helmet.json
+        |           catcher_helmet_2.json
+        |           catcher_helmet_3.json
+        |           catcher_leggings.json
+        |           catcher_leggings_2.json
+        |           catcher_leggings_3.json
+        |           catch_sphere_common.json
+        |           catch_sphere_epic.json
+        |           catch_sphere_legendary.json
+        |           catch_sphere_rare.json
+        |           chainmail_boots.json
+        |           chainmail_chestplate.json
+        |           chainmail_helmet.json
+        |           chainmail_leggings.json
+        |           charm_combat.json
+        |           charm_combat_2.json
+        |           charm_combat_3.json
+        |           charm_estate.json
+        |           charm_farming.json
+        |           charm_farming_2.json
+        |           charm_farming_3.json
+        |           charm_fishing.json
+        |           charm_fishing_2.json
+        |           charm_fishing_3.json
+        |           charm_foraging.json
+        |           charm_foraging_2.json
+        |           charm_foraging_3.json
+        |           charm_forge.json
+        |           charm_mining.json
+        |           charm_mining_2.json
+        |           charm_mining_3.json
+        |           charm_shiny.json
+        |           charm_utility.json
+        |           charm_utility_2.json
+        |           charm_utility_3.json
+        |           coal_block.json
+        |           coal_booster.json
+        |           combat_boots.json
+        |           combat_boots_2.json
+        |           combat_boots_3.json
+        |           combat_boots_4.json
+        |           combat_boots_5.json
+        |           combat_chestplate.json
+        |           combat_chestplate_2.json
+        |           combat_chestplate_3.json
+        |           combat_chestplate_4.json
+        |           combat_chestplate_5.json
+        |           combat_helmet.json
+        |           combat_helmet_2.json
+        |           combat_helmet_3.json
+        |           combat_helmet_4.json
+        |           combat_helmet_5.json
+        |           combat_leggings.json
+        |           combat_leggings_2.json
+        |           combat_leggings_3.json
+        |           combat_leggings_4.json
+        |           combat_leggings_5.json
+        |           combat_sword.json
+        |           combat_sword_2.json
+        |           combat_sword_3.json
+        |           combat_sword_4.json
+        |           combat_sword_5.json
+        |           compacted_cobble.json
+        |           compacted_cobble_hammer.json
+        |           compacted_diamond.json
+        |           compacted_diamond_pickaxe.json
+        |           compacted_diamond_sword.json
+        |           compacted_emerald.json
+        |           compacted_emerald_scythe.json
+        |           compacted_iron.json
+        |           compacted_iron_pickaxe.json
+        |           compacted_midas_dagger.json
+        |           compacted_timber.json
+        |           compressed_coal.json
+        |           compressed_cobble.json
+        |           compressed_gold.json
+        |           compressed_gold_sword.json
+        |           compressed_stone_pickaxe.json
+        |           copper_rod.json
+        |           copper_sword.json
+        |           crossbow.json
+        |           diamond_axe.json
+        |           diamond_block.json
+        |           diamond_booster.json
+        |           diamond_boots.json
+        |           diamond_chestplate.json
+        |           diamond_helmet.json
+        |           diamond_hoe.json
+        |           diamond_leggings.json
+        |           diamond_pickaxe.json
+        |           diamond_pickaxe_vanilla.json
+        |           diamond_sword.json
+        |           diving_boots.json
+        |           diving_chestplate.json
+        |           diving_helmet.json
+        |           diving_leggings.json
+        |           dungeon_core_1.json
+        |           dungeon_core_2.json
+        |           dungeon_core_3.json
+        |           ember_rod.json
+        |           emerald_block.json
+        |           emerald_booster.json
+        |           emerald_crown.json
+        |           farming_boots.json
+        |           farming_boots_2.json
+        |           farming_boots_3.json
+        |           farming_boots_4.json
+        |           farming_boots_5.json
+        |           farming_chestplate.json
+        |           farming_chestplate_2.json
+        |           farming_chestplate_3.json
+        |           farming_chestplate_4.json
+        |           farming_chestplate_5.json
+        |           farming_helmet.json
+        |           farming_helmet_2.json
+        |           farming_helmet_3.json
+        |           farming_helmet_4.json
+        |           farming_helmet_5.json
+        |           farming_hoe.json
+        |           farming_hoe_2.json
+        |           farming_hoe_3.json
+        |           farming_hoe_4.json
+        |           farming_hoe_5.json
+        |           farming_leggings.json
+        |           farming_leggings_2.json
+        |           farming_leggings_3.json
+        |           farming_leggings_4.json
+        |           farming_leggings_5.json
+        |           fishing_boots.json
+        |           fishing_boots_2.json
+        |           fishing_boots_3.json
+        |           fishing_boots_4.json
+        |           fishing_boots_5.json
+        |           fishing_chestplate.json
+        |           fishing_chestplate_2.json
+        |           fishing_chestplate_3.json
+        |           fishing_chestplate_4.json
+        |           fishing_chestplate_5.json
+        |           fishing_helmet.json
+        |           fishing_helmet_2.json
+        |           fishing_helmet_3.json
+        |           fishing_helmet_4.json
+        |           fishing_helmet_5.json
+        |           fishing_leggings.json
+        |           fishing_leggings_2.json
+        |           fishing_leggings_3.json
+        |           fishing_leggings_4.json
+        |           fishing_leggings_5.json
+        |           fishing_rod.json
+        |           fishing_rod_2.json
+        |           fishing_rod_3.json
+        |           fishing_rod_4.json
+        |           fishing_rod_5.json
+        |           fishing_rod_t1.json
+        |           fishing_rod_t2.json
+        |           fishing_rod_t3.json
+        |           fishing_rod_t4.json
+        |           fishing_rod_t5.json
+        |           fishing_rod_t5_alt.json
+        |           foraging_axe.json
+        |           foraging_axe_2.json
+        |           foraging_axe_3.json
+        |           foraging_axe_4.json
+        |           foraging_axe_5.json
+        |           foraging_boots.json
+        |           foraging_boots_2.json
+        |           foraging_boots_3.json
+        |           foraging_boots_4.json
+        |           foraging_boots_5.json
+        |           foraging_chestplate.json
+        |           foraging_chestplate_2.json
+        |           foraging_chestplate_3.json
+        |           foraging_chestplate_4.json
+        |           foraging_chestplate_5.json
+        |           foraging_helmet.json
+        |           foraging_helmet_2.json
+        |           foraging_helmet_3.json
+        |           foraging_helmet_4.json
+        |           foraging_helmet_5.json
+        |           foraging_leggings.json
+        |           foraging_leggings_2.json
+        |           foraging_leggings_3.json
+        |           foraging_leggings_4.json
+        |           foraging_leggings_5.json
+        |           frost_shard.json
+        |           glowstone.json
+        |           glowstone_booster.json
+        |           golden_axe.json
+        |           golden_boots.json
+        |           golden_chestplate.json
+        |           golden_helmet.json
+        |           golden_leggings.json
+        |           golden_sword.json
+        |           gold_block.json
+        |           gold_booster.json
+        |           gold_nugget.json
+        |           gravwell_cleaver.json
+        |           hay_block.json
+        |           hollow_longbow.json
+        |           hunter_bow.json
+        |           hunter_crossbow.json
+        |           hunter_crossbow_arrow.json
+        |           hunter_crossbow_firework.json
+        |           hunter_crossbow_pulling_0.json
+        |           hunter_crossbow_pulling_1.json
+        |           hunter_crossbow_pulling_2.json
+        |           ironhide_boots.json
+        |           ironhide_chestplate.json
+        |           ironhide_helmet.json
+        |           ironhide_leggings.json
+        |           iron_axe.json
+        |           iron_block.json
+        |           iron_booster.json
+        |           iron_boots.json
+        |           iron_chestplate.json
+        |           iron_helmet.json
+        |           iron_hoe.json
+        |           iron_leggings.json
+        |           iron_longbow.json
+        |           iron_pickaxe.json
+        |           iron_sword.json
+        |           lapis_block.json
+        |           lapis_booster.json
+        |           lapis_pendant.json
+        |           leather_boots.json
+        |           leather_boots_vanilla.json
+        |           leather_chestplate.json
+        |           leather_chestplate_vanilla.json
+        |           leather_helmet.json
+        |           leather_helmet_vanilla.json
+        |           leather_leggings.json
+        |           leather_leggings_vanilla.json
+        |           lightning_rod.json
+        |           mace.json
+        |           magma_cream.json
+        |           mender_staff.json
+        |           mining_boots.json
+        |           mining_boots_2.json
+        |           mining_boots_3.json
+        |           mining_boots_4.json
+        |           mining_boots_5.json
+        |           mining_chestplate.json
+        |           mining_chestplate_2.json
+        |           mining_chestplate_3.json
+        |           mining_chestplate_4.json
+        |           mining_chestplate_5.json
+        |           mining_helmet.json
+        |           mining_helmet_2.json
+        |           mining_helmet_3.json
+        |           mining_helmet_4.json
+        |           mining_helmet_5.json
+        |           mining_leggings.json
+        |           mining_leggings_2.json
+        |           mining_leggings_3.json
+        |           mining_leggings_4.json
+        |           mining_leggings_5.json
+        |           mining_pickaxe.json
+        |           mining_pickaxe_2.json
+        |           mining_pickaxe_3.json
+        |           mining_pickaxe_4.json
+        |           mining_pickaxe_5.json
+        |           netherite_axe.json
+        |           netherite_boots.json
+        |           netherite_boots_vanilla.json
+        |           netherite_chestplate.json
+        |           netherite_chestplate_vanilla.json
+        |           netherite_helmet.json
+        |           netherite_helmet_vanilla.json
+        |           netherite_hoe.json
+        |           netherite_leggings.json
+        |           netherite_leggings_vanilla.json
+        |           netherite_pickaxe.json
+        |           netherite_pickaxe_vanilla.json
+        |           netherite_scrap.json
+        |           netherite_sword.json
+        |           netherite_sword_vanilla.json
+        |           nether_star.json
+        |           oak_booster.json
+        |           oak_log.json
+        |           obsidian_maul.json
+        |           paper.json
+        |           prismarine_shard.json
+        |           quest_book.json
+        |           redstone_block.json
+        |           redstone_booster.json
+        |           reinforced_shortbow.json
+        |           resonance_scythe.json
+        |           rotten_cleaver.json
+        |           simple_axe.json
+        |           simple_boots.json
+        |           simple_chestplate.json
+        |           simple_helmet.json
+        |           simple_hoe.json
+        |           simple_leggings.json
+        |           simple_longbow.json
+        |           simple_pickaxe.json
+        |           simple_shortbow.json
+        |           simple_sword.json
+        |           skuldugery_shortbow.json
+        |           snowball.json
+        |           splinter_glaive.json
+        |           spyglass.json
+        |           stick.json
+        |           stone_pickaxe.json
+        |           stone_sword.json
+        |           stormcaller_maul.json
+        |           tide_latch.json
+        |           totem_of_undying.json
+        |           upgrade_stone_2.json
+        |           upgrade_stone_3.json
+        |           upgrade_stone_4.json
+        |           vein_siphon.json
+        |           vein_syphon.json
+        |           venom_dagger.json
+        |           voided_455.json
+        |           void_vacuum_charm.json
+        |           warped_blade.json
+        |           webweave_fang.json
+        |           wheat_booster.json
+        |           wild_sight.json
+        |           wooden_axe.json
+        |           wooden_hoe.json
+        |           wooden_pickaxe.json
+        |           wooden_sword.json
+        |           worldbite.json
+        |           worldhide_boots.json
+        |           worldhide_chestplate.json
+        |           worldhide_helmet.json
+        |           worldhide_leggings.json
+        |           
+        +---optifine
+        |   \---cit
+        |       +---aetherion_armor
+        |       |       ae_boots.properties
+        |       |       ae_boots_netherite_layer_1.png
+        |       |       ae_boots_netherite_layer_2.png
+        |       |       ae_chest.properties
+        |       |       ae_chest_netherite_layer_1.png
+        |       |       ae_chest_netherite_layer_2.png
+        |       |       ae_helm.properties
+        |       |       ae_helm_netherite_layer_1.png
+        |       |       ae_helm_netherite_layer_2.png
+        |       |       ae_legs.properties
+        |       |       ae_legs_netherite_layer_1.png
+        |       |       ae_legs_netherite_layer_2.png
+        |       |       catch_t1_boots.properties
+        |       |       catch_t1_boots_gold_layer_1.png
+        |       |       catch_t1_boots_gold_layer_2.png
+        |       |       catch_t1_chest.properties
+        |       |       catch_t1_chest_gold_layer_1.png
+        |       |       catch_t1_chest_gold_layer_2.png
+        |       |       catch_t1_helm.properties
+        |       |       catch_t1_helm_gold_layer_1.png
+        |       |       catch_t1_helm_gold_layer_2.png
+        |       |       catch_t1_legs.properties
+        |       |       catch_t1_legs_gold_layer_1.png
+        |       |       catch_t1_legs_gold_layer_2.png
+        |       |       catch_t2_boots.properties
+        |       |       catch_t2_boots_gold_layer_1.png
+        |       |       catch_t2_boots_gold_layer_2.png
+        |       |       catch_t2_chest.properties
+        |       |       catch_t2_chest_gold_layer_1.png
+        |       |       catch_t2_chest_gold_layer_2.png
+        |       |       catch_t2_helm.properties
+        |       |       catch_t2_helm_gold_layer_1.png
+        |       |       catch_t2_helm_gold_layer_2.png
+        |       |       catch_t2_legs.properties
+        |       |       catch_t2_legs_gold_layer_1.png
+        |       |       catch_t2_legs_gold_layer_2.png
+        |       |       catch_t3_boots.properties
+        |       |       catch_t3_boots_gold_layer_1.png
+        |       |       catch_t3_boots_gold_layer_2.png
+        |       |       catch_t3_chest.properties
+        |       |       catch_t3_chest_gold_layer_1.png
+        |       |       catch_t3_chest_gold_layer_2.png
+        |       |       catch_t3_helm.properties
+        |       |       catch_t3_helm_gold_layer_1.png
+        |       |       catch_t3_helm_gold_layer_2.png
+        |       |       catch_t3_legs.properties
+        |       |       catch_t3_legs_gold_layer_1.png
+        |       |       catch_t3_legs_gold_layer_2.png
+        |       |       c_t1_boots.properties
+        |       |       c_t1_boots_chainmail_layer_1.png
+        |       |       c_t1_boots_chainmail_layer_2.png
+        |       |       c_t1_chest.properties
+        |       |       c_t1_chest_chainmail_layer_1.png
+        |       |       c_t1_chest_chainmail_layer_2.png
+        |       |       c_t1_helm.properties
+        |       |       c_t1_helm_chainmail_layer_1.png
+        |       |       c_t1_helm_chainmail_layer_2.png
+        |       |       c_t1_legs.properties
+        |       |       c_t1_legs_chainmail_layer_1.png
+        |       |       c_t1_legs_chainmail_layer_2.png
+        |       |       c_t2_boots.properties
+        |       |       c_t2_boots_iron_layer_1.png
+        |       |       c_t2_boots_iron_layer_2.png
+        |       |       c_t2_chest.properties
+        |       |       c_t2_chest_iron_layer_1.png
+        |       |       c_t2_chest_iron_layer_2.png
+        |       |       c_t2_helm.properties
+        |       |       c_t2_helm_iron_layer_1.png
+        |       |       c_t2_helm_iron_layer_2.png
+        |       |       c_t2_legs.properties
+        |       |       c_t2_legs_iron_layer_1.png
+        |       |       c_t2_legs_iron_layer_2.png
+        |       |       c_t3_boots.properties
+        |       |       c_t3_boots_diamond_layer_1.png
+        |       |       c_t3_boots_diamond_layer_2.png
+        |       |       c_t3_chest.properties
+        |       |       c_t3_chest_diamond_layer_1.png
+        |       |       c_t3_chest_diamond_layer_2.png
+        |       |       c_t3_helm.properties
+        |       |       c_t3_helm_diamond_layer_1.png
+        |       |       c_t3_helm_diamond_layer_2.png
+        |       |       c_t3_legs.properties
+        |       |       c_t3_legs_diamond_layer_1.png
+        |       |       c_t3_legs_diamond_layer_2.png
+        |       |       c_t4_boots.properties
+        |       |       c_t4_boots_netherite_layer_1.png
+        |       |       c_t4_boots_netherite_layer_2.png
+        |       |       c_t4_chest.properties
+        |       |       c_t4_chest_netherite_layer_1.png
+        |       |       c_t4_chest_netherite_layer_2.png
+        |       |       c_t4_helm.properties
+        |       |       c_t4_helm_netherite_layer_1.png
+        |       |       c_t4_helm_netherite_layer_2.png
+        |       |       c_t4_legs.properties
+        |       |       c_t4_legs_netherite_layer_1.png
+        |       |       c_t4_legs_netherite_layer_2.png
+        |       |       c_t5_boots.properties
+        |       |       c_t5_boots_netherite_layer_1.png
+        |       |       c_t5_boots_netherite_layer_2.png
+        |       |       c_t5_chest.properties
+        |       |       c_t5_chest_netherite_layer_1.png
+        |       |       c_t5_chest_netherite_layer_2.png
+        |       |       c_t5_helm.properties
+        |       |       c_t5_helm_netherite_layer_1.png
+        |       |       c_t5_helm_netherite_layer_2.png
+        |       |       c_t5_legs.properties
+        |       |       c_t5_legs_netherite_layer_1.png
+        |       |       c_t5_legs_netherite_layer_2.png
+        |       |       dive_boots.properties
+        |       |       dive_boots_leather_layer_1.png
+        |       |       dive_boots_leather_layer_1_overlay.png
+        |       |       dive_boots_leather_layer_2.png
+        |       |       dive_boots_leather_layer_2_overlay.png
+        |       |       dive_chest.properties
+        |       |       dive_chest_leather_layer_1.png
+        |       |       dive_chest_leather_layer_1_overlay.png
+        |       |       dive_chest_leather_layer_2.png
+        |       |       dive_chest_leather_layer_2_overlay.png
+        |       |       dive_helm.properties
+        |       |       dive_helm_leather_layer_1.png
+        |       |       dive_helm_leather_layer_1_overlay.png
+        |       |       dive_helm_leather_layer_2.png
+        |       |       dive_helm_leather_layer_2_overlay.png
+        |       |       dive_legs.properties
+        |       |       dive_legs_leather_layer_1.png
+        |       |       dive_legs_leather_layer_1_overlay.png
+        |       |       dive_legs_leather_layer_2.png
+        |       |       dive_legs_leather_layer_2_overlay.png
+        |       |       farm_t1_boots.properties
+        |       |       farm_t1_boots_leather_layer_1.png
+        |       |       farm_t1_boots_leather_layer_1_overlay.png
+        |       |       farm_t1_boots_leather_layer_2.png
+        |       |       farm_t1_boots_leather_layer_2_overlay.png
+        |       |       farm_t1_chest.properties
+        |       |       farm_t1_chest_leather_layer_1.png
+        |       |       farm_t1_chest_leather_layer_1_overlay.png
+        |       |       farm_t1_chest_leather_layer_2.png
+        |       |       farm_t1_chest_leather_layer_2_overlay.png
+        |       |       farm_t1_helm.properties
+        |       |       farm_t1_helm_leather_layer_1.png
+        |       |       farm_t1_helm_leather_layer_1_overlay.png
+        |       |       farm_t1_helm_leather_layer_2.png
+        |       |       farm_t1_helm_leather_layer_2_overlay.png
+        |       |       farm_t1_legs.properties
+        |       |       farm_t1_legs_leather_layer_1.png
+        |       |       farm_t1_legs_leather_layer_1_overlay.png
+        |       |       farm_t1_legs_leather_layer_2.png
+        |       |       farm_t1_legs_leather_layer_2_overlay.png
+        |       |       farm_t2_boots.properties
+        |       |       farm_t2_boots_leather_layer_1.png
+        |       |       farm_t2_boots_leather_layer_1_overlay.png
+        |       |       farm_t2_boots_leather_layer_2.png
+        |       |       farm_t2_boots_leather_layer_2_overlay.png
+        |       |       farm_t2_chest.properties
+        |       |       farm_t2_chest_leather_layer_1.png
+        |       |       farm_t2_chest_leather_layer_1_overlay.png
+        |       |       farm_t2_chest_leather_layer_2.png
+        |       |       farm_t2_chest_leather_layer_2_overlay.png
+        |       |       farm_t2_helm.properties
+        |       |       farm_t2_helm_leather_layer_1.png
+        |       |       farm_t2_helm_leather_layer_1_overlay.png
+        |       |       farm_t2_helm_leather_layer_2.png
+        |       |       farm_t2_helm_leather_layer_2_overlay.png
+        |       |       farm_t2_legs.properties
+        |       |       farm_t2_legs_leather_layer_1.png
+        |       |       farm_t2_legs_leather_layer_1_overlay.png
+        |       |       farm_t2_legs_leather_layer_2.png
+        |       |       farm_t2_legs_leather_layer_2_overlay.png
+        |       |       farm_t3_boots.properties
+        |       |       farm_t3_boots_leather_layer_1.png
+        |       |       farm_t3_boots_leather_layer_1_overlay.png
+        |       |       farm_t3_boots_leather_layer_2.png
+        |       |       farm_t3_boots_leather_layer_2_overlay.png
+        |       |       farm_t3_chest.properties
+        |       |       farm_t3_chest_leather_layer_1.png
+        |       |       farm_t3_chest_leather_layer_1_overlay.png
+        |       |       farm_t3_chest_leather_layer_2.png
+        |       |       farm_t3_chest_leather_layer_2_overlay.png
+        |       |       farm_t3_helm.properties
+        |       |       farm_t3_helm_leather_layer_1.png
+        |       |       farm_t3_helm_leather_layer_1_overlay.png
+        |       |       farm_t3_helm_leather_layer_2.png
+        |       |       farm_t3_helm_leather_layer_2_overlay.png
+        |       |       farm_t3_legs.properties
+        |       |       farm_t3_legs_leather_layer_1.png
+        |       |       farm_t3_legs_leather_layer_1_overlay.png
+        |       |       farm_t3_legs_leather_layer_2.png
+        |       |       farm_t3_legs_leather_layer_2_overlay.png
+        |       |       farm_t4_boots.properties
+        |       |       farm_t4_boots_leather_layer_1.png
+        |       |       farm_t4_boots_leather_layer_1_overlay.png
+        |       |       farm_t4_boots_leather_layer_2.png
+        |       |       farm_t4_boots_leather_layer_2_overlay.png
+        |       |       farm_t4_chest.properties
+        |       |       farm_t4_chest_leather_layer_1.png
+        |       |       farm_t4_chest_leather_layer_1_overlay.png
+        |       |       farm_t4_chest_leather_layer_2.png
+        |       |       farm_t4_chest_leather_layer_2_overlay.png
+        |       |       farm_t4_helm.properties
+        |       |       farm_t4_helm_leather_layer_1.png
+        |       |       farm_t4_helm_leather_layer_1_overlay.png
+        |       |       farm_t4_helm_leather_layer_2.png
+        |       |       farm_t4_helm_leather_layer_2_overlay.png
+        |       |       farm_t4_legs.properties
+        |       |       farm_t4_legs_leather_layer_1.png
+        |       |       farm_t4_legs_leather_layer_1_overlay.png
+        |       |       farm_t4_legs_leather_layer_2.png
+        |       |       farm_t4_legs_leather_layer_2_overlay.png
+        |       |       farm_t5_boots.properties
+        |       |       farm_t5_boots_leather_layer_1.png
+        |       |       farm_t5_boots_leather_layer_1_overlay.png
+        |       |       farm_t5_boots_leather_layer_2.png
+        |       |       farm_t5_boots_leather_layer_2_overlay.png
+        |       |       farm_t5_chest.properties
+        |       |       farm_t5_chest_leather_layer_1.png
+        |       |       farm_t5_chest_leather_layer_1_overlay.png
+        |       |       farm_t5_chest_leather_layer_2.png
+        |       |       farm_t5_chest_leather_layer_2_overlay.png
+        |       |       farm_t5_helm.properties
+        |       |       farm_t5_helm_leather_layer_1.png
+        |       |       farm_t5_helm_leather_layer_1_overlay.png
+        |       |       farm_t5_helm_leather_layer_2.png
+        |       |       farm_t5_helm_leather_layer_2_overlay.png
+        |       |       farm_t5_legs.properties
+        |       |       farm_t5_legs_leather_layer_1.png
+        |       |       farm_t5_legs_leather_layer_1_overlay.png
+        |       |       farm_t5_legs_leather_layer_2.png
+        |       |       farm_t5_legs_leather_layer_2_overlay.png
+        |       |       fish_t1_boots.properties
+        |       |       fish_t1_boots_leather_layer_1.png
+        |       |       fish_t1_boots_leather_layer_1_overlay.png
+        |       |       fish_t1_boots_leather_layer_2.png
+        |       |       fish_t1_boots_leather_layer_2_overlay.png
+        |       |       fish_t1_chest.properties
+        |       |       fish_t1_chest_leather_layer_1.png
+        |       |       fish_t1_chest_leather_layer_1_overlay.png
+        |       |       fish_t1_chest_leather_layer_2.png
+        |       |       fish_t1_chest_leather_layer_2_overlay.png
+        |       |       fish_t1_helm.properties
+        |       |       fish_t1_helm_leather_layer_1.png
+        |       |       fish_t1_helm_leather_layer_1_overlay.png
+        |       |       fish_t1_helm_leather_layer_2.png
+        |       |       fish_t1_helm_leather_layer_2_overlay.png
+        |       |       fish_t1_legs.properties
+        |       |       fish_t1_legs_leather_layer_1.png
+        |       |       fish_t1_legs_leather_layer_1_overlay.png
+        |       |       fish_t1_legs_leather_layer_2.png
+        |       |       fish_t1_legs_leather_layer_2_overlay.png
+        |       |       fish_t2_boots.properties
+        |       |       fish_t2_boots_leather_layer_1.png
+        |       |       fish_t2_boots_leather_layer_1_overlay.png
+        |       |       fish_t2_boots_leather_layer_2.png
+        |       |       fish_t2_boots_leather_layer_2_overlay.png
+        |       |       fish_t2_chest.properties
+        |       |       fish_t2_chest_leather_layer_1.png
+        |       |       fish_t2_chest_leather_layer_1_overlay.png
+        |       |       fish_t2_chest_leather_layer_2.png
+        |       |       fish_t2_chest_leather_layer_2_overlay.png
+        |       |       fish_t2_helm.properties
+        |       |       fish_t2_helm_leather_layer_1.png
+        |       |       fish_t2_helm_leather_layer_1_overlay.png
+        |       |       fish_t2_helm_leather_layer_2.png
+        |       |       fish_t2_helm_leather_layer_2_overlay.png
+        |       |       fish_t2_legs.properties
+        |       |       fish_t2_legs_leather_layer_1.png
+        |       |       fish_t2_legs_leather_layer_1_overlay.png
+        |       |       fish_t2_legs_leather_layer_2.png
+        |       |       fish_t2_legs_leather_layer_2_overlay.png
+        |       |       fish_t3_boots.properties
+        |       |       fish_t3_boots_leather_layer_1.png
+        |       |       fish_t3_boots_leather_layer_1_overlay.png
+        |       |       fish_t3_boots_leather_layer_2.png
+        |       |       fish_t3_boots_leather_layer_2_overlay.png
+        |       |       fish_t3_chest.properties
+        |       |       fish_t3_chest_leather_layer_1.png
+        |       |       fish_t3_chest_leather_layer_1_overlay.png
+        |       |       fish_t3_chest_leather_layer_2.png
+        |       |       fish_t3_chest_leather_layer_2_overlay.png
+        |       |       fish_t3_helm.properties
+        |       |       fish_t3_helm_leather_layer_1.png
+        |       |       fish_t3_helm_leather_layer_1_overlay.png
+        |       |       fish_t3_helm_leather_layer_2.png
+        |       |       fish_t3_helm_leather_layer_2_overlay.png
+        |       |       fish_t3_legs.properties
+        |       |       fish_t3_legs_leather_layer_1.png
+        |       |       fish_t3_legs_leather_layer_1_overlay.png
+        |       |       fish_t3_legs_leather_layer_2.png
+        |       |       fish_t3_legs_leather_layer_2_overlay.png
+        |       |       fish_t4_boots.properties
+        |       |       fish_t4_boots_leather_layer_1.png
+        |       |       fish_t4_boots_leather_layer_1_overlay.png
+        |       |       fish_t4_boots_leather_layer_2.png
+        |       |       fish_t4_boots_leather_layer_2_overlay.png
+        |       |       fish_t4_chest.properties
+        |       |       fish_t4_chest_leather_layer_1.png
+        |       |       fish_t4_chest_leather_layer_1_overlay.png
+        |       |       fish_t4_chest_leather_layer_2.png
+        |       |       fish_t4_chest_leather_layer_2_overlay.png
+        |       |       fish_t4_helm.properties
+        |       |       fish_t4_helm_leather_layer_1.png
+        |       |       fish_t4_helm_leather_layer_1_overlay.png
+        |       |       fish_t4_helm_leather_layer_2.png
+        |       |       fish_t4_helm_leather_layer_2_overlay.png
+        |       |       fish_t4_legs.properties
+        |       |       fish_t4_legs_leather_layer_1.png
+        |       |       fish_t4_legs_leather_layer_1_overlay.png
+        |       |       fish_t4_legs_leather_layer_2.png
+        |       |       fish_t4_legs_leather_layer_2_overlay.png
+        |       |       fish_t5_boots.properties
+        |       |       fish_t5_boots_leather_layer_1.png
+        |       |       fish_t5_boots_leather_layer_1_overlay.png
+        |       |       fish_t5_boots_leather_layer_2.png
+        |       |       fish_t5_boots_leather_layer_2_overlay.png
+        |       |       fish_t5_chest.properties
+        |       |       fish_t5_chest_leather_layer_1.png
+        |       |       fish_t5_chest_leather_layer_1_overlay.png
+        |       |       fish_t5_chest_leather_layer_2.png
+        |       |       fish_t5_chest_leather_layer_2_overlay.png
+        |       |       fish_t5_helm.properties
+        |       |       fish_t5_helm_leather_layer_1.png
+        |       |       fish_t5_helm_leather_layer_1_overlay.png
+        |       |       fish_t5_helm_leather_layer_2.png
+        |       |       fish_t5_helm_leather_layer_2_overlay.png
+        |       |       fish_t5_legs.properties
+        |       |       fish_t5_legs_leather_layer_1.png
+        |       |       fish_t5_legs_leather_layer_1_overlay.png
+        |       |       fish_t5_legs_leather_layer_2.png
+        |       |       fish_t5_legs_leather_layer_2_overlay.png
+        |       |       for_t1_boots.properties
+        |       |       for_t1_boots_leather_layer_1.png
+        |       |       for_t1_boots_leather_layer_1_overlay.png
+        |       |       for_t1_boots_leather_layer_2.png
+        |       |       for_t1_boots_leather_layer_2_overlay.png
+        |       |       for_t1_chest.properties
+        |       |       for_t1_chest_leather_layer_1.png
+        |       |       for_t1_chest_leather_layer_1_overlay.png
+        |       |       for_t1_chest_leather_layer_2.png
+        |       |       for_t1_chest_leather_layer_2_overlay.png
+        |       |       for_t1_helm.properties
+        |       |       for_t1_helm_leather_layer_1.png
+        |       |       for_t1_helm_leather_layer_1_overlay.png
+        |       |       for_t1_helm_leather_layer_2.png
+        |       |       for_t1_helm_leather_layer_2_overlay.png
+        |       |       for_t1_legs.properties
+        |       |       for_t1_legs_leather_layer_1.png
+        |       |       for_t1_legs_leather_layer_1_overlay.png
+        |       |       for_t1_legs_leather_layer_2.png
+        |       |       for_t1_legs_leather_layer_2_overlay.png
+        |       |       for_t2_boots.properties
+        |       |       for_t2_boots_leather_layer_1.png
+        |       |       for_t2_boots_leather_layer_1_overlay.png
+        |       |       for_t2_boots_leather_layer_2.png
+        |       |       for_t2_boots_leather_layer_2_overlay.png
+        |       |       for_t2_chest.properties
+        |       |       for_t2_chest_leather_layer_1.png
+        |       |       for_t2_chest_leather_layer_1_overlay.png
+        |       |       for_t2_chest_leather_layer_2.png
+        |       |       for_t2_chest_leather_layer_2_overlay.png
+        |       |       for_t2_helm.properties
+        |       |       for_t2_helm_leather_layer_1.png
+        |       |       for_t2_helm_leather_layer_1_overlay.png
+        |       |       for_t2_helm_leather_layer_2.png
+        |       |       for_t2_helm_leather_layer_2_overlay.png
+        |       |       for_t2_legs.properties
+        |       |       for_t2_legs_leather_layer_1.png
+        |       |       for_t2_legs_leather_layer_1_overlay.png
+        |       |       for_t2_legs_leather_layer_2.png
+        |       |       for_t2_legs_leather_layer_2_overlay.png
+        |       |       for_t3_boots.properties
+        |       |       for_t3_boots_leather_layer_1.png
+        |       |       for_t3_boots_leather_layer_1_overlay.png
+        |       |       for_t3_boots_leather_layer_2.png
+        |       |       for_t3_boots_leather_layer_2_overlay.png
+        |       |       for_t3_chest.properties
+        |       |       for_t3_chest_leather_layer_1.png
+        |       |       for_t3_chest_leather_layer_1_overlay.png
+        |       |       for_t3_chest_leather_layer_2.png
+        |       |       for_t3_chest_leather_layer_2_overlay.png
+        |       |       for_t3_helm.properties
+        |       |       for_t3_helm_leather_layer_1.png
+        |       |       for_t3_helm_leather_layer_1_overlay.png
+        |       |       for_t3_helm_leather_layer_2.png
+        |       |       for_t3_helm_leather_layer_2_overlay.png
+        |       |       for_t3_legs.properties
+        |       |       for_t3_legs_leather_layer_1.png
+        |       |       for_t3_legs_leather_layer_1_overlay.png
+        |       |       for_t3_legs_leather_layer_2.png
+        |       |       for_t3_legs_leather_layer_2_overlay.png
+        |       |       for_t4_boots.properties
+        |       |       for_t4_boots_leather_layer_1.png
+        |       |       for_t4_boots_leather_layer_1_overlay.png
+        |       |       for_t4_boots_leather_layer_2.png
+        |       |       for_t4_boots_leather_layer_2_overlay.png
+        |       |       for_t4_chest.properties
+        |       |       for_t4_chest_leather_layer_1.png
+        |       |       for_t4_chest_leather_layer_1_overlay.png
+        |       |       for_t4_chest_leather_layer_2.png
+        |       |       for_t4_chest_leather_layer_2_overlay.png
+        |       |       for_t4_helm.properties
+        |       |       for_t4_helm_leather_layer_1.png
+        |       |       for_t4_helm_leather_layer_1_overlay.png
+        |       |       for_t4_helm_leather_layer_2.png
+        |       |       for_t4_helm_leather_layer_2_overlay.png
+        |       |       for_t4_legs.properties
+        |       |       for_t4_legs_leather_layer_1.png
+        |       |       for_t4_legs_leather_layer_1_overlay.png
+        |       |       for_t4_legs_leather_layer_2.png
+        |       |       for_t4_legs_leather_layer_2_overlay.png
+        |       |       for_t5_boots.properties
+        |       |       for_t5_boots_leather_layer_1.png
+        |       |       for_t5_boots_leather_layer_1_overlay.png
+        |       |       for_t5_boots_leather_layer_2.png
+        |       |       for_t5_boots_leather_layer_2_overlay.png
+        |       |       for_t5_chest.properties
+        |       |       for_t5_chest_leather_layer_1.png
+        |       |       for_t5_chest_leather_layer_1_overlay.png
+        |       |       for_t5_chest_leather_layer_2.png
+        |       |       for_t5_chest_leather_layer_2_overlay.png
+        |       |       for_t5_helm.properties
+        |       |       for_t5_helm_leather_layer_1.png
+        |       |       for_t5_helm_leather_layer_1_overlay.png
+        |       |       for_t5_helm_leather_layer_2.png
+        |       |       for_t5_helm_leather_layer_2_overlay.png
+        |       |       for_t5_legs.properties
+        |       |       for_t5_legs_leather_layer_1.png
+        |       |       for_t5_legs_leather_layer_1_overlay.png
+        |       |       for_t5_legs_leather_layer_2.png
+        |       |       for_t5_legs_leather_layer_2_overlay.png
+        |       |       ih_boots.properties
+        |       |       ih_boots_iron_layer_1.png
+        |       |       ih_boots_iron_layer_2.png
+        |       |       ih_chest.properties
+        |       |       ih_chest_iron_layer_1.png
+        |       |       ih_chest_iron_layer_2.png
+        |       |       ih_helm.properties
+        |       |       ih_helm_iron_layer_1.png
+        |       |       ih_helm_iron_layer_2.png
+        |       |       ih_legs.properties
+        |       |       ih_legs_iron_layer_1.png
+        |       |       ih_legs_iron_layer_2.png
+        |       |       m_t1_boots.properties
+        |       |       m_t1_boots_chainmail_layer_1.png
+        |       |       m_t1_boots_chainmail_layer_2.png
+        |       |       m_t1_chest.properties
+        |       |       m_t1_chest_chainmail_layer_1.png
+        |       |       m_t1_chest_chainmail_layer_2.png
+        |       |       m_t1_helm.properties
+        |       |       m_t1_helm_chainmail_layer_1.png
+        |       |       m_t1_helm_chainmail_layer_2.png
+        |       |       m_t1_legs.properties
+        |       |       m_t1_legs_chainmail_layer_1.png
+        |       |       m_t1_legs_chainmail_layer_2.png
+        |       |       m_t2_boots.properties
+        |       |       m_t2_boots_iron_layer_1.png
+        |       |       m_t2_boots_iron_layer_2.png
+        |       |       m_t2_chest.properties
+        |       |       m_t2_chest_iron_layer_1.png
+        |       |       m_t2_chest_iron_layer_2.png
+        |       |       m_t2_helm.properties
+        |       |       m_t2_helm_iron_layer_1.png
+        |       |       m_t2_helm_iron_layer_2.png
+        |       |       m_t2_legs.properties
+        |       |       m_t2_legs_iron_layer_1.png
+        |       |       m_t2_legs_iron_layer_2.png
+        |       |       m_t3_boots.properties
+        |       |       m_t3_boots_diamond_layer_1.png
+        |       |       m_t3_boots_diamond_layer_2.png
+        |       |       m_t3_chest.properties
+        |       |       m_t3_chest_diamond_layer_1.png
+        |       |       m_t3_chest_diamond_layer_2.png
+        |       |       m_t3_helm.properties
+        |       |       m_t3_helm_diamond_layer_1.png
+        |       |       m_t3_helm_diamond_layer_2.png
+        |       |       m_t3_legs.properties
+        |       |       m_t3_legs_diamond_layer_1.png
+        |       |       m_t3_legs_diamond_layer_2.png
+        |       |       m_t4_boots.properties
+        |       |       m_t4_boots_netherite_layer_1.png
+        |       |       m_t4_boots_netherite_layer_2.png
+        |       |       m_t4_chest.properties
+        |       |       m_t4_chest_netherite_layer_1.png
+        |       |       m_t4_chest_netherite_layer_2.png
+        |       |       m_t4_helm.properties
+        |       |       m_t4_helm_netherite_layer_1.png
+        |       |       m_t4_helm_netherite_layer_2.png
+        |       |       m_t4_legs.properties
+        |       |       m_t4_legs_netherite_layer_1.png
+        |       |       m_t4_legs_netherite_layer_2.png
+        |       |       m_t5_boots.properties
+        |       |       m_t5_boots_netherite_layer_1.png
+        |       |       m_t5_boots_netherite_layer_2.png
+        |       |       m_t5_chest.properties
+        |       |       m_t5_chest_netherite_layer_1.png
+        |       |       m_t5_chest_netherite_layer_2.png
+        |       |       m_t5_helm.properties
+        |       |       m_t5_helm_netherite_layer_1.png
+        |       |       m_t5_helm_netherite_layer_2.png
+        |       |       m_t5_legs.properties
+        |       |       m_t5_legs_netherite_layer_1.png
+        |       |       m_t5_legs_netherite_layer_2.png
+        |       |       simple_boots.properties
+        |       |       simple_boots_leather_layer_1.png
+        |       |       simple_boots_leather_layer_1_overlay.png
+        |       |       simple_boots_leather_layer_2.png
+        |       |       simple_boots_leather_layer_2_overlay.png
+        |       |       simple_chest.properties
+        |       |       simple_chest_leather_layer_1.png
+        |       |       simple_chest_leather_layer_1_overlay.png
+        |       |       simple_chest_leather_layer_2.png
+        |       |       simple_chest_leather_layer_2_overlay.png
+        |       |       simple_helm.properties
+        |       |       simple_helm_leather_layer_1.png
+        |       |       simple_helm_leather_layer_1_overlay.png
+        |       |       simple_helm_leather_layer_2.png
+        |       |       simple_helm_leather_layer_2_overlay.png
+        |       |       simple_legs.properties
+        |       |       simple_legs_leather_layer_1.png
+        |       |       simple_legs_leather_layer_1_overlay.png
+        |       |       simple_legs_leather_layer_2.png
+        |       |       simple_legs_leather_layer_2_overlay.png
+        |       |       
+        |       \---aetherion_items
+        |               ashen_katana.png
+        |               ashen_katana_4.png
+        |               bp_bounty.png
+        |               bp_bounty.properties
+        |               bp_resonance.png
+        |               bp_resonance.properties
+        |               bp_tide.png
+        |               bp_tide.properties
+        |               bp_vein.png
+        |               bp_vein.properties
+        |               bp_wild.png
+        |               bp_wild.properties
+        |               catch_sphere_common.png
+        |               catch_sphere_common.properties
+        |               catch_sphere_epic.png
+        |               catch_sphere_epic.properties
+        |               catch_sphere_legendary.png
+        |               catch_sphere_legendary.properties
+        |               catch_sphere_rare.png
+        |               catch_sphere_rare.properties
+        |               charm_combat.png
+        |               charm_combat.properties
+        |               charm_combat_2.png
+        |               charm_combat_2.properties
+        |               charm_combat_3.png
+        |               charm_combat_3.properties
+        |               charm_estate.png
+        |               charm_estate.properties
+        |               charm_farming.png
+        |               charm_farming.properties
+        |               charm_farming_2.png
+        |               charm_farming_2.properties
+        |               charm_farming_3.png
+        |               charm_farming_3.properties
+        |               charm_fishing.png
+        |               charm_fishing.properties
+        |               charm_fishing_2.png
+        |               charm_fishing_2.properties
+        |               charm_fishing_3.png
+        |               charm_fishing_3.properties
+        |               charm_foraging.png
+        |               charm_foraging.properties
+        |               charm_foraging_2.png
+        |               charm_foraging_2.properties
+        |               charm_foraging_3.png
+        |               charm_foraging_3.properties
+        |               charm_forge.png
+        |               charm_forge.properties
+        |               charm_mining.png
+        |               charm_mining.properties
+        |               charm_mining_2.png
+        |               charm_mining_2.properties
+        |               charm_mining_3.png
+        |               charm_mining_3.properties
+        |               charm_shiny.png
+        |               charm_shiny.properties
+        |               charm_utility.png
+        |               charm_utility.properties
+        |               charm_utility_2.png
+        |               charm_utility_2.properties
+        |               charm_utility_3.png
+        |               charm_utility_3.properties
+        |               combat_sword.png
+        |               combat_sword_2.png
+        |               combat_sword_3.png
+        |               combat_sword_4.png
+        |               combat_sword_5.png
+        |               farming_hoe.png
+        |               farming_hoe_2.png
+        |               farming_hoe_3.png
+        |               farming_hoe_4.png
+        |               farming_hoe_5.png
+        |               fishing_rod.png
+        |               fishing_rod_2.png
+        |               fishing_rod_3.png
+        |               fishing_rod_4.png
+        |               fishing_rod_5.png
+        |               fishing_rod_t1.png
+        |               fishing_rod_t2.png
+        |               fishing_rod_t3.png
+        |               fishing_rod_t4.png
+        |               fishing_rod_t5.png
+        |               foraging_axe.png
+        |               foraging_axe_2.png
+        |               foraging_axe_3.png
+        |               foraging_axe_4.png
+        |               foraging_axe_5.png
+        |               gravwell_cleaver.png
+        |               hunter_crossbow.png
+        |               hunter_crossbow.properties
+        |               hunter_crossbow_arrow.png
+        |               hunter_crossbow_firework.png
+        |               hunter_crossbow_pulling_0.png
+        |               hunter_crossbow_pulling_1.png
+        |               hunter_crossbow_pulling_2.png
+        |               mining_pickaxe.png
+        |               mining_pickaxe_2.png
+        |               mining_pickaxe_3.png
+        |               mining_pickaxe_4.png
+        |               mining_pickaxe_5.png
+        |               resonance_scythe.png
+        |               simple_axe.png
+        |               t1_axe.png
+        |               t2_axe.png
+        |               t3_axe.png
+        |               t4_axe.png
+        |               t5_axe.png
+        |               tool_bounty_hoe.png
+        |               tool_bounty_hoe.properties
+        |               tool_tide_latch.png
+        |               tool_tide_latch.properties
+        |               tool_vein_siphon.png
+        |               tool_vein_siphon.properties
+        |               tool_wild_sight.png
+        |               tool_wild_sight.properties
+        |               upgrade_stone_2.png
+        |               upgrade_stone_2.properties
+        |               upgrade_stone_3.png
+        |               upgrade_stone_3.properties
+        |               upgrade_stone_4.png
+        |               upgrade_stone_4.properties
+        |               void_vacuum_charm.png
+        |               void_vacuum_charm.properties
+        |               
+        \---textures
+            +---font
+            |       gui_aetherion_manager.png
+            |       space_neg.png
+            |       
+            \---item
+                    aetherblade.png
+                    aetherblade_2.png
+                    aetherion_boots.png
+                    aetherion_chestplate.png
+                    aetherion_helmet.png
+                    aetherion_leggings.png
+                    aetherion_manager.png
+                    aetherion_manager_2.png
+                    aetherion_void_stick.png
+                    ashen_katana.png
+                    ashen_katana_4.png
+                    beginner_pickaxe.png
+                    birch_booster.png
+                    blueprint_bounty_hoe.png
+                    blueprint_resonance_scythe.png
+                    blueprint_tide_latch.png
+                    blueprint_vein_syphon.png
+                    blueprint_wild_sight.png
+                    bone_knife.png
+                    bountyhoe_bp.png
+                    bounty_hoe.png
+                    bridged_axe.png
+                    bridged_axe_2.png
+                    canopy_cleaver.png
+                    canopy_cleaver_3.png
+                    canopy_cleaver_alt.png
+                    carrot_booster.png
+                    catcher_boots.png
+                    catcher_boots_2.png
+                    catcher_boots_3.png
+                    catcher_chestplate.png
+                    catcher_chestplate_2.png
+                    catcher_chestplate_3.png
+                    catcher_gaff.png
+                    catcher_gaff_2.png
+                    catcher_gaff_3.png
+                    catcher_helmet.png
+                    catcher_helmet_2.png
+                    catcher_helmet_3.png
+                    catcher_leggings.png
+                    catcher_leggings_2.png
+                    catcher_leggings_3.png
+                    catch_sphere.png
+                    catch_sphere_2.png
+                    catch_sphere_3.png
+                    catch_sphere_common.png
+                    catch_sphere_epic.png
+                    catch_sphere_legendary.png
+                    catch_sphere_rare.png
+                    charm_combat.png
+                    charm_combat_2.png
+                    charm_combat_3.png
+                    charm_estate.png
+                    charm_farming.png
+                    charm_farming_2.png
+                    charm_farming_3.png
+                    charm_fishing.png
+                    charm_fishing_2.png
+                    charm_fishing_3.png
+                    charm_foraging.png
+                    charm_foraging_2.png
+                    charm_foraging_3.png
+                    charm_forge.png
+                    charm_mining.png
+                    charm_mining_2.png
+                    charm_mining_3.png
+                    charm_shiny.png
+                    charm_utility.png
+                    charm_utility_2.png
+                    charm_utility_3.png
+                    coal_booster.png
+                    combat_boots.png
+                    combat_boots_2.png
+                    combat_boots_3.png
+                    combat_boots_4.png
+                    combat_boots_5.png
+                    combat_chestplate.png
+                    combat_chestplate_2.png
+                    combat_chestplate_3.png
+                    combat_chestplate_4.png
+                    combat_chestplate_5.png
+                    combat_helmet.png
+                    combat_helmet_2.png
+                    combat_helmet_3.png
+                    combat_helmet_4.png
+                    combat_helmet_5.png
+                    combat_leggings.png
+                    combat_leggings_2.png
+                    combat_leggings_3.png
+                    combat_leggings_4.png
+                    combat_leggings_5.png
+                    combat_sword.png
+                    combat_sword_2.png
+                    combat_sword_3.png
+                    combat_sword_4.png
+                    combat_sword_5.png
+                    compacted_cobble.png
+                    compacted_cobble_hammer.png
+                    compacted_diamond.png
+                    compacted_diamondsword.png
+                    compacted_diamond_pickaxe.png
+                    compacted_diamond_sword.png
+                    compacted_emerald.png
+                    compacted_iron.png
+                    compacted_iron_pickaxe.png
+                    compacted_midas_2.png
+                    compacted_midas_dagger.png
+                    compacted_timber.png
+                    compressed_coal.png
+                    compressed_cobble.png
+                    compressed_gold.png
+                    compressed_stone_pickaxe.png
+                    copper_rod.png
+                    copper_sword.png
+                    diamond_booster.png
+                    diamond_combat_sword.png
+                    diving_boots.png
+                    diving_chestplate.png
+                    diving_helmet.png
+                    diving_leggings.png
+                    dungeoncore1_item.png
+                    dungeoncore2.png
+                    dungeon_core3.png
+                    dungeon_core_1.png
+                    dungeon_core_2.png
+                    dungeon_core_3.png
+                    ember_rod.png
+                    emerald_booster.png
+                    emerald_crown.png
+                    farming_boots.png
+                    farming_boots_2.png
+                    farming_boots_3.png
+                    farming_boots_4.png
+                    farming_boots_5.png
+                    farming_chestplate.png
+                    farming_chestplate_2.png
+                    farming_chestplate_3.png
+                    farming_chestplate_4.png
+                    farming_chestplate_5.png
+                    farming_helmet.png
+                    farming_helmet_2.png
+                    farming_helmet_3.png
+                    farming_helmet_4.png
+                    farming_helmet_5.png
+                    farming_hoe.png
+                    farming_hoe_2.png
+                    farming_hoe_3.png
+                    farming_hoe_4.png
+                    farming_hoe_5.png
+                    farming_leggings.png
+                    farming_leggings_2.png
+                    farming_leggings_3.png
+                    farming_leggings_4.png
+                    farming_leggings_5.png
+                    fishing_boots.png
+                    fishing_boots_2.png
+                    fishing_boots_3.png
+                    fishing_boots_4.png
+                    fishing_boots_5.png
+                    fishing_chestplate.png
+                    fishing_chestplate_2.png
+                    fishing_chestplate_3.png
+                    fishing_chestplate_4.png
+                    fishing_chestplate_5.png
+                    fishing_helmet.png
+                    fishing_helmet_2.png
+                    fishing_helmet_3.png
+                    fishing_helmet_4.png
+                    fishing_helmet_5.png
+                    fishing_leggings.png
+                    fishing_leggings_2.png
+                    fishing_leggings_3.png
+                    fishing_leggings_4.png
+                    fishing_leggings_5.png
+                    fishing_rod.png
+                    fishing_rod_2.png
+                    fishing_rod_3.png
+                    fishing_rod_4.png
+                    fishing_rod_5.png
+                    fishing_rod_t1.png
+                    fishing_rod_t2.png
+                    fishing_rod_t3.png
+                    fishing_rod_t4.png
+                    fishing_rod_t5.png
+                    fishing_rod_t5_alt.png
+                    foraging_axe.png
+                    foraging_axe_2.png
+                    foraging_axe_3.png
+                    foraging_axe_4.png
+                    foraging_axe_5.png
+                    foraging_boots.png
+                    foraging_boots_2.png
+                    foraging_boots_3.png
+                    foraging_boots_4.png
+                    foraging_boots_5.png
+                    foraging_chestplate.png
+                    foraging_chestplate_2.png
+                    foraging_chestplate_3.png
+                    foraging_chestplate_4.png
+                    foraging_chestplate_5.png
+                    foraging_helmet.png
+                    foraging_helmet_2.png
+                    foraging_helmet_3.png
+                    foraging_helmet_4.png
+                    foraging_helmet_5.png
+                    foraging_leggings.png
+                    foraging_leggings_2.png
+                    foraging_leggings_3.png
+                    foraging_leggings_4.png
+                    foraging_leggings_5.png
+                    frost_shard.png
+                    glowstone_booster.png
+                    gold_booster.png
+                    gravwell_cleaver.png
+                    grudge_charm.png
+                    grudge_marble_2.png
+                    grudge_relic.png
+                    hollow_longbow.png
+                    hunter_bow.png
+                    hunter_crossbow.png
+                    hunter_crossbow_arrow.png
+                    hunter_crossbow_firework.png
+                    hunter_crossbow_pulling_0.png
+                    hunter_crossbow_pulling_1.png
+                    hunter_crossbow_pulling_2.png
+                    ironhide_boots.png
+                    ironhide_chestplate.png
+                    ironhide_helmet.png
+                    ironhide_leggings.png
+                    iron_booster.png
+                    iron_combat_sword.png
+                    iron_longbow.png
+                    lapis_booster.png
+                    lapis_pendant.png
+                    mender_staff.png
+                    mining_boots.png
+                    mining_boots_2.png
+                    mining_boots_3.png
+                    mining_boots_4.png
+                    mining_boots_5.png
+                    mining_chestplate.png
+                    mining_chestplate_2.png
+                    mining_chestplate_3.png
+                    mining_chestplate_4.png
+                    mining_chestplate_5.png
+                    mining_helmet.png
+                    mining_helmet_2.png
+                    mining_helmet_3.png
+                    mining_helmet_4.png
+                    mining_helmet_5.png
+                    mining_leggings.png
+                    mining_leggings_2.png
+                    mining_leggings_3.png
+                    mining_leggings_4.png
+                    mining_leggings_5.png
+                    mining_pickaxe.png
+                    mining_pickaxe_2.png
+                    mining_pickaxe_3.png
+                    mining_pickaxe_4.png
+                    mining_pickaxe_5.png
+                    mythic_combat_sword.png
+                    netherite_combat_sword.png
+                    oak_booster.png
+                    obsidian_maul.png
+                    quest_book.png
+                    redstone_booster.png
+                    reinforced_shortbow.png
+                    resonance_bp.png
+                    resonance_scythe.png
+                    resonance_scythe_2.png
+                    rotten_cleaver.png
+                    simple_axe.png
+                    simple_boots.png
+                    simple_chestplate.png
+                    simple_helmet.png
+                    simple_hoe.png
+                    simple_leggings.png
+                    simple_longbow.png
+                    simple_pickaxe.png
+                    simple_shortbow.png
+                    simple_sword.png
+                    skuldugery_shortbow.png
+                    skullduggeries_shortbow.png
+                    splinter_glaive.png
+                    stormcaller_maul.png
+                    t1_axe.png
+                    t1_fishing.png
+                    t1_hoe.png
+                    t1_pickaxe.png
+                    t2_axe.png
+                    t2_catch.png
+                    t2_fishing.png
+                    t2_hoe.png
+                    t2_pickaxe.png
+                    t3_axe.png
+                    t3_fishing.png
+                    t3_hoe.png
+                    t3_pickaxe.png
+                    t4_axe.png
+                    t4_fishing.png
+                    t4_hoe.png
+                    t4_pickaxe.png
+                    t5_axe.png
+                    t5_fishing.png
+                    t5_fishing_2.png
+                    t5_hoe.png
+                    t5_pickaxe.png
+                    tidelatch_bp.png
+                    tide_latch.png
+                    upgrade_stone2.png
+                    upgrade_stone3.png
+                    upgrade_stone4.png
+                    upgrade_stone_2.png
+                    upgrade_stone_3.png
+                    upgrade_stone_4.png
+                    veinsyphon_bp.png
+                    veinsyphon_powerfull.png
+                    vein_siphon.png
+                    vein_syphon.png
+                    venom_dagger.png
+                    voided_455.png
+                    voided_455_2.png
+                    void_vacuum_charm.png
+                    warped_blade.png
+                    webweave_fang.png
+                    wheat_booster.png
+                    wildsight_bp.png
+                    wild_sight.png
+                    worldbite.png
+                    worldhide_boots.png
+                    worldhide_chestplate.png
+                    worldhide_helmet.png
+                    worldhide_leggings.png
+                    

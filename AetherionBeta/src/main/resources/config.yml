@@ -10,3 +10,12 @@ npc:
   # Display name shown above each player's personal guide
   name-en: "§d✦ Patch Courier"
   name-de: "§d✦ Patch-Kurier"
+
+# Beta Journal rewards (coins via AetherionItems). Small on purpose — no power.
+# Full clear also hands out the cosmetic Courier's Seal.
+rewards:
+  enabled: true
+  first-steps: 250
+  halfway: 750
+  full-clear: 2000
+  feedback: 500

@@ -538,15 +538,15 @@ public class QuestNPCRegistry {
          * NERVOUS MINER
          * =========================================================
          *
-         * First boss quest: Hollow Lurker.
+         * Former Hollow Lurker hunt giver — quest retired; flavor until cleanup.
          */
 
         QuestNPC miner =
                 new QuestNPC(
                         "miner",
                         "Nervous Miner",
-                        NPCType.QUEST,
-                        "those_sounds",
+                        NPCType.FLAVOR,
+                        "",
                         "miner_intro",
                         "miner"
                 );
@@ -556,11 +556,12 @@ public class QuestNPCRegistry {
         );
 
 
+        // Former boss-hunt givers — quests retired; NPCs left as flavor until a later cleanup.
         registerNPC(new QuestNPC(
                 "chicken_keeper",
                 "Clucksworth",
-                NPCType.QUEST,
-                "poultry_problem",
+                NPCType.FLAVOR,
+                "",
                 "chicken_keeper_intro",
                 "chicken_keeper"
         ));
@@ -568,8 +569,8 @@ public class QuestNPCRegistry {
         registerNPC(new QuestNPC(
                 "tollkeeper",
                 "Tollkeeper",
-                NPCType.QUEST,
-                "troll_toll",
+                NPCType.FLAVOR,
+                "",
                 "tollkeeper_intro",
                 "tollkeeper"
         ));
@@ -577,8 +578,8 @@ public class QuestNPCRegistry {
         registerNPC(new QuestNPC(
                 "dockhand",
                 "Brine",
-                NPCType.QUEST,
-                "ink_contract",
+                NPCType.FLAVOR,
+                "",
                 "dockhand_intro",
                 "dockhand"
         ));
@@ -586,8 +587,8 @@ public class QuestNPCRegistry {
         registerNPC(new QuestNPC(
                 "ash_scout",
                 "Cinder",
-                NPCType.QUEST,
-                "ash_and_arrows",
+                NPCType.FLAVOR,
+                "",
                 "ash_scout_intro",
                 "ash_scout"
         ));
@@ -595,8 +596,8 @@ public class QuestNPCRegistry {
         registerNPC(new QuestNPC(
                 "colossus_scholar",
                 "Riven",
-                NPCType.QUEST,
-                "walking_mountain",
+                NPCType.FLAVOR,
+                "",
                 "colossus_scholar_intro",
                 "colossus_scholar"
         ));
@@ -604,8 +605,8 @@ public class QuestNPCRegistry {
         registerNPC(new QuestNPC(
                 "veil_priest",
                 "Nyx",
-                NPCType.QUEST,
-                "the_veil",
+                NPCType.FLAVOR,
+                "",
                 "veil_priest_intro",
                 "veil_priest"
         ));
@@ -613,8 +614,8 @@ public class QuestNPCRegistry {
         registerNPC(new QuestNPC(
                 "patch_intern",
                 "Helpline",
-                NPCType.QUEST,
-                "open_ticket",
+                NPCType.FLAVOR,
+                "",
                 "patch_intern_intro",
                 "patch_intern"
         ));
@@ -622,8 +623,8 @@ public class QuestNPCRegistry {
         registerNPC(new QuestNPC(
                 "void_janitor",
                 "Mopsworth",
-                NPCType.QUEST,
-                "lost_and_found",
+                NPCType.FLAVOR,
+                "",
                 "void_janitor_intro",
                 "void_janitor"
         ));
@@ -631,8 +632,8 @@ public class QuestNPCRegistry {
         registerNPC(new QuestNPC(
                 "fuse",
                 "Fuse",
-                NPCType.QUEST,
-                "overtime",
+                NPCType.FLAVOR,
+                "",
                 "fuse_intro",
                 "fuse"
         ));
@@ -640,8 +641,8 @@ public class QuestNPCRegistry {
         registerNPC(new QuestNPC(
                 "claims_adjuster",
                 "Wormsworth",
-                NPCType.QUEST,
-                "denied_claim",
+                NPCType.FLAVOR,
+                "",
                 "claims_adjuster_intro",
                 "claims_adjuster"
         ));
@@ -649,8 +650,8 @@ public class QuestNPCRegistry {
         registerNPC(new QuestNPC(
                 "repo_agent",
                 "Audit",
-                NPCType.QUEST,
-                "bounced_check",
+                NPCType.FLAVOR,
+                "",
                 "repo_agent_intro",
                 "repo_agent"
         ));
@@ -868,10 +869,10 @@ public class QuestNPCRegistry {
                 ""
         ));
 
-        // Hub farm portal guide — place yourself (Harrow).
+        // Hub Farm Isle guide — far end of the barn; points at the farming pad (id stays).
         registerNPC(new QuestNPC(
                 "farm_isle_guide",
-                "Harrow",
+                "Harlow",
                 NPCType.FLAVOR,
                 "",
                 "farm_isle_guide_intro",
@@ -969,6 +970,14 @@ public class QuestNPCRegistry {
                 "liquidator_intro",
                 ""
         ));
+        registerNPC(new QuestNPC(
+                "amethyst_mines_guide",
+                "Crystal Guide",
+                NPCType.FLAVOR,
+                "",
+                "amethyst_mines_guide_intro",
+                ""
+        ));
 
         // Idea NPCs — not placed. /questnpc extras hands out anchors; place one to try it.
         registerNPC(new QuestNPC(
@@ -996,11 +1005,25 @@ public class QuestNPCRegistry {
                 ""
         ));
 
+        // Main story "Das Schlaflied" — not placed by default. /questnpc story hands out anchors.
+        // Their talk is routed by StoryFlow (offers, turn-ins, stage lines); no service id on
+        // purpose so the generic markers never point at a story step that isn't open yet.
+        registerNPC(new QuestNPC("ysolde", "Ysolde Thorne", NPCType.FLAVOR, "", "story_ysolde.default", ""));
+        registerNPC(new QuestNPC("berit", "Mother Berit", NPCType.FLAVOR, "", "story_berit.default", ""));
+        registerNPC(new QuestNPC("nell", "Nell", NPCType.FLAVOR, "", "story_nell.default", ""));
+        registerNPC(new QuestNPC("hesper", "Hesper Kael", NPCType.FLAVOR, "", "story_hesper.default", ""));
+        registerNPC(new QuestNPC("ferryman", "Ferryman", NPCType.FLAVOR, "", "story_ferryman.default", ""));
+
     }
 
     /** Invented ambient NPCs offered on the /questnpc extras page (none are placed by default). */
     public static java.util.List<String> ideaNpcIds() {
         return java.util.List.of("town_crier", "street_sweeper", "lamp_lighter");
+    }
+
+    /** Main-story cast (Das Schlaflied) offered on /questnpc story — none are placed by default. */
+    public static java.util.List<String> storyNpcIds() {
+        return java.util.List.of("ysolde", "berit", "nell", "hesper", "ferryman");
     }
 
     public static String linkedBoss(String npcId) {

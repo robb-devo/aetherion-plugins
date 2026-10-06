@@ -13,10 +13,16 @@ starter-hint:
   title: "§6§lFIND EGON"
   subtitle: "§eGreen glow on the pier · right-click him"
   actionbar: "§aLook for the green glow — Egon kits rookies"
+  title-de: "§6§lFINDE EGON"
+  subtitle-de: "§eGrünes Leuchten am Pier · Rechtsklick auf ihn"
+  actionbar-de: "§aSuch das grüne Leuchten — Egon hilft Rookies"
   also-chat: false
   messages:
     - ""
     - "§6§lHint: §eTalk to Egon and Quartermaster to start your journey"
+  messages-de:
+    - ""
+    - "§6§lTipp: §eSprich mit Egon und dem Quartermaster, um zu starten"
 
 messages:
   teleported: "§aTeleported to §f{name}§a."

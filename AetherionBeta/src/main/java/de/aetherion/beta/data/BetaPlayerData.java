@@ -6,7 +6,9 @@ import de.aetherion.beta.Milestone;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 public final class BetaPlayerData {
@@ -17,6 +19,7 @@ public final class BetaPlayerData {
     private final EnumSet<Milestone> done = EnumSet.noneOf(Milestone.class);
     private final EnumMap<Milestone, Boolean> auto = new EnumMap<>(Milestone.class);
     private final Map<String, String> answers = new HashMap<>();
+    private final Set<String> claimed = new LinkedHashSet<>();
     private boolean submitted;
     private long firstSeenMs;
     private long lastSeenMs;
@@ -72,10 +75,36 @@ public final class BetaPlayerData {
         return Milestone.values().length;
     }
 
+    /** Milestones the game actually detected (self-ticked ones don't count toward rewards). */
+    public int trackedCount() {
+        int count = 0;
+        for (Milestone milestone : done) {
+            if (isAuto(milestone)) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    public boolean claimed(String rewardId) {
+        return claimed.contains(rewardId);
+    }
+
+    public void claim(String rewardId) {
+        if (claimed.add(rewardId)) {
+            dirty = true;
+        }
+    }
+
+    public Set<String> claimedSnapshot() {
+        return Set.copyOf(claimed);
+    }
+
     public boolean mark(Milestone milestone, boolean autoMarked) {
         if (done.contains(milestone)) {
-            if (autoMarked) {
+            if (autoMarked && !isAuto(milestone)) {
                 auto.put(milestone, true);
+                dirty = true;
             }
             return false;
         }

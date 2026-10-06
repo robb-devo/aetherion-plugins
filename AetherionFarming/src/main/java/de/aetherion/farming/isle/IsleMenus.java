@@ -226,7 +226,7 @@ public final class IsleMenus implements Listener {
         return out;
     }
 
-    private IslePlots.Plot nearestUnknown(Player player, IsleProfiles.Profile profile) {
+    IslePlots.Plot nearestUnknown(Player player, IsleProfiles.Profile profile) {
         IslePlots.Plot best = null;
         double bestDistance = Double.MAX_VALUE;
         for (IslePlots.Plot plot : isle.plots().all()) {

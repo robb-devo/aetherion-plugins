@@ -82,7 +82,7 @@ public final class MerchantChestListener implements Listener {
         Player player = event.getPlayer();
         Block block = event.getClickedBlock();
         ItemStack hand = player.getInventory().getItemInMainHand();
-        if (isPlacer(hand) && player.hasPermission("aetherionquests.admin")) {
+        if (isPlacer(hand) && ExploreChestListener.canEdit(player)) {
             event.setCancelled(true);
             if (action != Action.RIGHT_CLICK_BLOCK || block == null) {
                 return;
@@ -96,6 +96,11 @@ public final class MerchantChestListener implements Listener {
                 return;
             }
             chests.place(player, block, event.getBlockFace());
+            return;
+        }
+        if (isPlacer(hand) && !ExploreChestListener.canEdit(player)) {
+            event.setCancelled(true);
+            player.sendMessage("§cNeed §faetherionquests.admin §cor §faetherion.dev §cto place sample chests.");
             return;
         }
         if (block == null || !chests.isMerchantChest(block)) {
@@ -115,7 +120,9 @@ public final class MerchantChestListener implements Listener {
         }
         event.setCancelled(true);
         Player player = event.getPlayer();
-        if (player.hasPermission("aetherionquests.admin") && isPlacer(player.getInventory().getItemInMainHand()) && player.isSneaking()) {
+        if (ExploreChestListener.canEdit(player)
+                && isPlacer(player.getInventory().getItemInMainHand())
+                && player.isSneaking()) {
             chests.remove(player, event.getBlock());
         }
     }

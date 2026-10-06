@@ -46,7 +46,7 @@ public final class LivingNpcSkins {
             "egon", "lumberjack", "quartermaster", "craftsman", "foreman", "booster_tutor", "ledger",
             "farmer", "lark", "fisher", "fishmonger", "vex", "rite_keeper", "arena_proctor",
             "farm_isle_guide", "surveyor", "vince", "bar_whisper", "eldervale_welcome", "eldervale_upgrade",
-            "merchant", "isle_clerk", "forage_pad_guide", "liquidator", "canopy_clerk", "root_cellar",
+            "merchant", "isle_clerk", "forage_pad_guide", "liquidator", "amethyst_mines_guide", "canopy_clerk", "root_cellar",
             "town_crier", "street_sweeper", "lamp_lighter",
             "preset_worker", "preset_sailor", "preset_farmer", "preset_guard", "preset_scholar",
             "preset_mystic", "preset_scout", "preset_rogue", "preset_miner", "preset_townsfolk"

@@ -42,6 +42,11 @@ public class PetTestCommand implements CommandExecutor {
             return true;
         }
 
+        if (!player.isOp() && !player.hasPermission("aetherion.dev")) {
+            player.sendMessage("§cDEV only. Use §f/pets §cfor your collection.");
+            return true;
+        }
+
         if (args.length > 0
                 && args[0].equalsIgnoreCase("collection")) {
 
@@ -146,8 +151,8 @@ public class PetTestCommand implements CommandExecutor {
     }
 
     private void giveSphere(Player player, String[] args) {
-        if (!player.isOp()) {
-            player.sendMessage("§cOnly operators can give catch spheres.");
+        if (!player.isOp() && !player.hasPermission("aetherion.dev")) {
+            player.sendMessage("§cDEV only.");
             return;
         }
 

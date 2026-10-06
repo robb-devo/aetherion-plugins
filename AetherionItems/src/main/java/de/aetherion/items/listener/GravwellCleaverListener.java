@@ -69,14 +69,13 @@ public final class GravwellCleaverListener implements Listener {
         );
         Long next = nextUseTick.get(player.getUniqueId());
         if (next != null && tick < next) {
-            long left = Math.max(1, (next - tick + 19) / 20);
-            player.sendActionBar(net.kyori.adventure.text.Component.text(
-                    "§5Gravwell Cleaver §7recharging… §f" + left + "s"
-            ));
+            de.aetherion.items.combat.AbilityCooldownHud.denied(player, "gravwell_cleaver");
             return;
         }
 
         nextUseTick.put(player.getUniqueId(), tick + cooldownTicks);
+        // HUD readout only (no hotbar overlay) — Gravwell feel is LOCKED.
+        de.aetherion.items.combat.AbilityCooldownHud.arm(player, "gravwell_cleaver", "Gravwell", tick + cooldownTicks);
         double dmg = Math.max(40.0, equipmentStats.getStat(player, ItemCapability.DAMAGE));
         prototypes.castGravwell(player, dmg);
     }

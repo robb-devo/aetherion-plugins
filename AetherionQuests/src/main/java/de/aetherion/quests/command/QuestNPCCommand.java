@@ -125,7 +125,8 @@ public class QuestNPCCommand implements CommandExecutor {
         }
 
 
-        if (action.equals("extras")) {
+        // "story" opens the same page: idea NPCs on top, the Das Schlaflied cast below.
+        if (action.equals("extras") || action.equals("story")) {
 
             de.aetherion.quests.ui.IdeaNpcMenu.open(player);
 
@@ -996,6 +997,13 @@ public class QuestNPCCommand implements CommandExecutor {
                         + "/questnpc extras"
                         + ChatColor.GRAY
                         + " - idea NPCs (anchors, not placed)"
+        );
+
+        player.sendMessage(
+                ChatColor.YELLOW
+                        + "/questnpc story"
+                        + ChatColor.GRAY
+                        + " - Das Schlaflied cast: Ysolde, Berit, Nell, Hesper, Ferryman"
         );
 
 

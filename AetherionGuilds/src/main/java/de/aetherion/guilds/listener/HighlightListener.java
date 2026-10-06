@@ -48,6 +48,7 @@ import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
@@ -141,15 +142,24 @@ public final class HighlightListener implements Listener {
         }
         Player player = event.getPlayer();
         if (event.getHand() != EquipmentSlot.HAND) {
-            // the client falls through to the off hand after a tool click: never place/use that too
-            if (placement.holdingTool(player)) {
+            // the client falls through to the off hand after a tool click: never place/use that too; and the
+            // tool itself (its icon is often a block) is never used from the off hand
+            if (placement.holdingTool(player) || placement.isTool(event.getItem())) {
                 event.setCancelled(true);
             }
             return;
         }
         if (placement.holdingTool(player)) {
             event.setCancelled(true);
-            placement.onInteract(player, event.getAction().isRightClick(), event.getClickedBlock(), player.isSneaking());
+            Block clicked = event.getClickedBlock();
+            if (event.getAction() == Action.RIGHT_CLICK_BLOCK && clicked != null && placement.opensBuildings(player)) {
+                // right-click one of your buildings with a part picked: it opens, like without the tool
+                PlacedStructure owned = structures.owner(clicked);
+                if (owned != null && hosts.isMember(player, owned.host()) && openBuilding(player, clicked, owned)) {
+                    return;
+                }
+            }
+            placement.onInteract(player, event.getAction().isRightClick(), clicked, player.isSneaking());
             return;
         }
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK || event.getClickedBlock() == null) {
@@ -171,62 +181,69 @@ public final class HighlightListener implements Listener {
             guildBoard(event, player, block);
             return;
         }
-        if (structure.building()) {
+        if (openBuilding(player, block, structure)) {
             event.setCancelled(true);
+        }
+    }
+
+    /** Opens the menu behind a structure's control block. True when something opened. */
+    private boolean openBuilding(Player player, Block block, PlacedStructure structure) {
+        if (structure.building()) {
             player.sendMessage("§7Still going up…");
-            return;
+            return true;
         }
         Material type = block.getType();
         switch (structure.type()) {
             case STORAGE_HUT, DEPOT -> {
                 if (type == Material.BARREL || type == Material.CHEST || type == Material.TRAPPED_CHEST
                         || type == Material.COMPOSTER || type == Material.BARRIER || type == Material.HOPPER) {
-                    event.setCancelled(true);
                     storage.open(player, structure);
+                    return true;
                 }
             }
             case MILL, FORGE -> {
                 if (type == Material.HOPPER || type == Material.BLAST_FURNACE || type == Material.GRINDSTONE
                         || type == Material.SMITHING_TABLE || type == Material.SMOOTH_STONE || type.name().endsWith("ANVIL")
                         || type == Material.BARRIER) {
-                    event.setCancelled(true);
                     machine.open(player, structure);
+                    return true;
                 }
             }
             case WORKSHOP -> {
                 if (type == Material.LECTERN) {
-                    event.setCancelled(true);
                     if (hubMenu != null) {
                         hubMenu.open(player, structure.host());
                     } else {
                         build.open(player, structure.host());
                     }
+                    return true;
                 }
             }
             case QUARRY_HOUSING -> {
                 if (type == Material.HOPPER || type == Material.BARREL || type == Material.BARRIER) {
-                    event.setCancelled(true);
                     MinionService.QuarryRef ref = quarryRef(structure);
                     if (ref != null) {
                         quarry.open(player, ref);
                     }
+                    return true;
                 }
             }
             case PROJECT -> {
                 if (type == Material.LECTERN) {
-                    event.setCancelled(true);
                     projectMenu.open(player);
+                    return true;
                 }
             }
             case SPLITTER, OVERFLOW, SORTER -> {
                 if (pieceMenu != null) {
-                    event.setCancelled(true);
                     pieceMenu.open(player, structure);
+                    return true;
                 }
             }
             default -> {
             }
         }
+        return false;
     }
 
     private void guildBoard(PlayerInteractEvent event, Player player, Block block) {
@@ -281,12 +298,12 @@ public final class HighlightListener implements Listener {
         }
         if (logistics.isBelt(world, block.getX(), block.getY(), block.getZ())) {
             event.setCancelled(true);
-            player.sendMessage("§7That's a conveyor. Take it up with the Belt Layer (left-click it while holding the tool).");
+            player.sendMessage("§7That's a belt. Take it up with the Build Tool (pick §fTake down§7, or left-click it with §fBelt§7).");
             return;
         }
         if (logistics.isBeltSupport(world, block.getX(), block.getY(), block.getZ())) {
             event.setCancelled(true);
-            player.sendMessage("§7A conveyor runs on this block.");
+            player.sendMessage("§7A belt runs on this block.");
             return;
         }
         PlacedStructure structure = structures.owner(block);
@@ -295,7 +312,7 @@ public final class HighlightListener implements Listener {
             String label = structure == null ? "structure" : structure.label();
             player.sendMessage(structure != null && structure.type() == StructureType.PROJECT
                     ? "§7That's part of the guild's build. It stays."
-                    : "§7Part of your " + label + ". Right-click it, then \"Take it down\" to move it.");
+                    : "§7Part of your " + label + ". To move it: Build Tool → §fTake down§7.");
         }
     }
 
@@ -305,8 +322,8 @@ public final class HighlightListener implements Listener {
         if (!hosts.isIslandWorld(block.getWorld())) {
             return;
         }
-        if (placement.holdingTool(event.getPlayer())) {
-            event.setCancelled(true);
+        if (placement.holdingTool(event.getPlayer()) || placement.isTool(event.getItemInHand())) {
+            event.setCancelled(true); // the tool's icon is a block: it is never placed as one
             return;
         }
         PlacedStructure structure = structures.at(block.getWorld(), block.getX(), block.getY(), block.getZ());
@@ -390,8 +407,20 @@ public final class HighlightListener implements Listener {
 
     @EventHandler(priority = EventPriority.LOW)
     public void onToolClick(InventoryClickEvent event) {
-        if (event.getView().getTopInventory().getType() == InventoryType.CRAFTING
-                || !(event.getWhoClicked() instanceof Player player)) {
+        if (!(event.getWhoClicked() instanceof Player player)) {
+            return;
+        }
+        if (event.getView().getTopInventory().getType() == InventoryType.CRAFTING) {
+            // in your own inventory the tool may move around the pack, but never into the off hand
+            boolean offHand = event.getSlot() == 40 && event.getSlotType() == org.bukkit.event.inventory.InventoryType.SlotType.QUICKBAR
+                    || event.getRawSlot() == 45;
+            boolean tool = placement.isTool(event.getCurrentItem()) || placement.isTool(event.getCursor());
+            if ((tool && (offHand || event.getClick() == ClickType.SWAP_OFFHAND))
+                    || (event.getClick() == ClickType.SWAP_OFFHAND && placement.isTool(event.getCurrentItem()))
+                    || (offHand && event.getClick() == ClickType.NUMBER_KEY && event.getHotbarButton() >= 0
+                    && placement.isTool(player.getInventory().getItem(event.getHotbarButton())))) {
+                event.setCancelled(true);
+            }
             return;
         }
         boolean tool = placement.isTool(event.getCurrentItem()) || placement.isTool(event.getCursor());
@@ -408,22 +437,50 @@ public final class HighlightListener implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onToolDrag(InventoryDragEvent event) {
-        if (event.getView().getTopInventory().getType() != InventoryType.CRAFTING
-                && placement.isTool(event.getOldCursor())) {
+        if (!placement.isTool(event.getOldCursor())) {
+            return;
+        }
+        if (event.getView().getTopInventory().getType() != InventoryType.CRAFTING || event.getRawSlots().contains(45)) {
             event.setCancelled(true);
         }
     }
 
+    /** F with the Build Tool in hand: the part picker (the tool never goes to the off hand). */
     @EventHandler(ignoreCancelled = true)
     public void onSwapHands(PlayerSwapHandItemsEvent event) {
         if (placement.isTool(event.getMainHandItem()) || placement.isTool(event.getOffHandItem())) {
             event.setCancelled(true);
+            if (placement.isTool(event.getOffHandItem())) {
+                placement.openPicker(event.getPlayer());
+            }
         }
+    }
+
+    /** Sneak + scroll with the Build Tool in hand: the next / previous part instead of another hotbar slot. */
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    public void onToolScroll(PlayerItemHeldEvent event) {
+        Player player = event.getPlayer();
+        if (!player.isSneaking() || placement.part(player) == null
+                || !placement.isTool(player.getInventory().getItem(event.getPreviousSlot()))) {
+            return;
+        }
+        int step = event.getNewSlot() - event.getPreviousSlot();
+        if (step > 4) {
+            step -= 9;
+        } else if (step < -4) {
+            step += 9;
+        }
+        if (Math.abs(step) != 1) {
+            return; // a number key jump, not a scroll: let it switch slots
+        }
+        event.setCancelled(true);
+        placement.cycle(player, Integer.signum(step));
     }
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     public void onToolEntity(PlayerInteractEntityEvent event) {
-        if (event.getHand() == EquipmentSlot.HAND && placement.holdingTool(event.getPlayer())) {
+        if (placement.holdingTool(event.getPlayer())
+                || placement.isTool(event.getPlayer().getInventory().getItem(event.getHand()))) {
             event.setCancelled(true);
         }
     }

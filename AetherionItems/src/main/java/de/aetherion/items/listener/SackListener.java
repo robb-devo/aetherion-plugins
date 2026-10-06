@@ -6,6 +6,7 @@ import de.aetherion.items.storage.BoosterSackMenu;
 import de.aetherion.items.storage.SackInventory;
 import de.aetherion.items.storage.SackItems;
 import de.aetherion.items.storage.SackType;
+import de.aetherion.items.storage.SkillSackMenu;
 
 import org.bukkit.GameMode;
 import org.bukkit.entity.Player;
@@ -14,12 +15,15 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.entity.Item;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
@@ -78,6 +82,14 @@ public final class SackListener implements Listener {
             return;
         }
 
+        if (top.getHolder() instanceof SkillSackMenu.Holder skillHolder) {
+            event.setCancelled(true);
+            if (event.getClickedInventory() != null && event.getClickedInventory().equals(top)) {
+                sacks.skills().handleClick(player, skillHolder, event.getRawSlot(), event.isRightClick());
+            }
+            return;
+        }
+
         if (!(top.getHolder() instanceof SackInventory.Holder holder)) {
             return;
         }
@@ -109,7 +121,8 @@ public final class SackListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onDrag(InventoryDragEvent event) {
-        if (event.getInventory().getHolder() instanceof BoosterSackMenu.Holder) {
+        if (event.getInventory().getHolder() instanceof BoosterSackMenu.Holder
+                || event.getInventory().getHolder() instanceof SkillSackMenu.Holder) {
             event.setCancelled(true);
             return;
         }
@@ -128,6 +141,14 @@ public final class SackListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onClose(InventoryCloseEvent event) {
+        if (event.getPlayer() instanceof Player closer) {
+            // Sacks may have moved into / out of Aetherion Storage.
+            sacks.skills().invalidate(closer);
+        }
+        if (event.getInventory().getHolder() instanceof SkillSackMenu.Holder skillHolder) {
+            sacks.skills().save(skillHolder);
+            return;
+        }
         if (event.getInventory().getHolder() instanceof BoosterSackMenu.Holder boosterHolder) {
             sacks.boosters().save(boosterHolder);
             return;
@@ -135,6 +156,37 @@ public final class SackListener implements Listener {
         if (event.getInventory().getHolder() instanceof SackInventory.Holder holder) {
             sacks.save(holder);
         }
+    }
+
+    /** Manual pickups (and below Auto-Pickup level) still feed skill sacks. */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onPickup(EntityPickupItemEvent event) {
+        if (!(event.getEntity() instanceof Player player) || player.getGameMode() == GameMode.SPECTATOR) {
+            return;
+        }
+        Item entity = event.getItem();
+        ItemStack stack = entity.getItemStack();
+        int absorbed = sacks.skills().absorb(player, stack);
+        if (absorbed <= 0) {
+            return;
+        }
+        event.setCancelled(true);
+        SkillSackMenu.noteAbsorbed(player, stack, absorbed);
+        player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_ITEM_PICKUP, 0.2f, 1.6f);
+        int left = stack.getAmount() - absorbed;
+        if (left <= 0) {
+            entity.remove();
+            return;
+        }
+        ItemStack rest = stack.clone();
+        rest.setAmount(left);
+        entity.setItemStack(rest);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onQuit(PlayerQuitEvent event) {
+        sacks.skills().invalidate(event.getPlayer());
+        sacks.skills().flushAll();
     }
 
     private static boolean isInsert(InventoryAction action) {

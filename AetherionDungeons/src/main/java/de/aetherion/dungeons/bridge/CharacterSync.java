@@ -106,10 +106,17 @@ public final class CharacterSync implements Listener {
         if (!enabled) {
             return;
         }
+        // Same-server quit / shutdown / reload: snapshot is a backup only. Never empty the
+        // live inventory — Paper must keep writing playerdata, otherwise a hard restart
+        // (or a missed APPLY) leaves the player with an empty .dat.
         TransferSnapshotStore.SaveResult saved = store.saveCharacter(player, reason, "", 0, false, currentRunFloor(player));
-        if (saved.ok()) {
+        boolean crossServerLeave = reason != null
+                && !reason.equalsIgnoreCase("quit")
+                && !reason.equalsIgnoreCase("shutdown")
+                && !reason.equalsIgnoreCase("reload");
+        if (saved.ok() && crossServerLeave) {
             store.clearLocalCharacter(player);
-        } else {
+        } else if (!saved.ok()) {
             // Keep the playerdata copy; tell the ledger it lives here.
             store.ledger().markHolder(id, store.serverName());
         }

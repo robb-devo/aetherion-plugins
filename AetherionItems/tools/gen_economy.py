@@ -189,6 +189,15 @@ items["quarry_core"] = 1400
 items["quarry_compressor"] = 450
 items["quarry_compactor"] = 1400
 
+# --- P2 progression reagents (Signatures, Cores, Trophies) used by the T4/T5 recipe deltas ---
+SIG_HEARTWOOD = 450        # isle_heartwood_* (EconomyCurve.DEFAULT_QUARRY)
+SIG_CRYSTAL = 400          # crystal_find
+SIG_PRIZE = 350            # prize_crop
+SIG_TROPHY = 200           # fish_trophy
+CORE_I = 350_000           # dungeon_core
+WARPED_BLADE = 1_800_000   # warped_blade (Hollow Lurker)
+BURROWER_CORE = 2_700_000  # pickaxe_core_of_the_burrower (Baron von Wurm)
+
 # --- Skill ladders (approximate shapes from RecipeRegistry) ---
 # Combat armor T1: helm5, chest8, legs7, boots4 cobble
 combat_t1 = {
@@ -211,12 +220,12 @@ for piece in combat_t1:
 
 for piece in combat_t1:
     items[f"{piece}_4"] = craft(
-        items[f"{piece}_3"] + 2 * D("raw_gold") + 2 * D("bone"), MARGIN[4]
+        items[f"{piece}_3"] + 2 * D("raw_gold") + 2 * D("bone") + SIG_HEARTWOOD, MARGIN[4]
     )
 
 for piece in combat_t1:
     items[f"{piece}_5"] = craft(
-        items[f"{piece}_4"] + 1 * D("diamond") + 3 * D("emerald"), MARGIN[5]
+        items[f"{piece}_4"] + 1 * D("diamond") + 3 * D("emerald") + SIG_TROPHY, MARGIN[5]
     )
 
 # Combat sword T1: 2 cobble + stick
@@ -226,10 +235,10 @@ items["combat_sword_3"] = craft(
     items["combat_sword_2"] + 2 * C("bone") + 2 * C("rotten_flesh"), MARGIN[3]
 )
 items["combat_sword_4"] = craft(
-    items["combat_sword_3"] + 2 * D("raw_gold") + 2 * D("bone"), MARGIN[4]
+    items["combat_sword_3"] + 2 * D("raw_gold") + 2 * D("bone") + SIG_HEARTWOOD, MARGIN[4]
 )
 items["combat_sword_5"] = craft(
-    items["combat_sword_4"] + 1 * D("diamond") + 3 * D("emerald"), MARGIN[5]
+    items["combat_sword_4"] + 1 * D("diamond") + 3 * D("emerald") + SIG_TROPHY + WARPED_BLADE, MARGIN[5]
 )
 
 # Mining armor T1 copper shapes (same counts as combat)
@@ -251,12 +260,12 @@ for piece in mining_t1:
 # T4: 2+2 copper D + coal D
 for piece in mining_t1:
     items[f"{piece}_4"] = craft(
-        items[f"{piece}_3"] + 2 * D("raw_copper") + 2 * D("coal"), MARGIN[4]
+        items[f"{piece}_3"] + 2 * D("raw_copper") + 2 * D("coal") + SIG_HEARTWOOD, MARGIN[4]
     )
-# T5: 1 diamond D + 3 redstone D
+# T5: 1 diamond D + 3 redstone D (+ Prize Crop)
 for piece in mining_t1:
     items[f"{piece}_5"] = craft(
-        items[f"{piece}_4"] + 1 * D("diamond") + 3 * D("redstone"), MARGIN[5]
+        items[f"{piece}_4"] + 1 * D("diamond") + 3 * D("redstone") + SIG_PRIZE, MARGIN[5]
     )
 
 # simple pick + mining pick ladder
@@ -270,11 +279,12 @@ items["mining_pickaxe_3"] = craft(
     items["mining_pickaxe_2"] + 2 * C("raw_copper") + 2 * C("raw_iron"), MARGIN[3]
 )
 items["mining_pickaxe_4"] = craft(
-    items["mining_pickaxe_3"] + 2 * D("raw_copper") + 2 * D("coal"), MARGIN[4]
+    items["mining_pickaxe_3"] + 2 * D("raw_copper") + 2 * D("coal") + SIG_HEARTWOOD, MARGIN[4]
 )
 items["mining_pickaxe_5"] = craft(
-    items["mining_pickaxe_4"] + D("diamond") + 3 * D("redstone"), MARGIN[5]
+    items["mining_pickaxe_4"] + D("diamond") + 3 * D("redstone") + SIG_PRIZE + CORE_I, MARGIN[5]
 )
+# Burrower shortcut: the boss core stands in for the T4 pick (result is the same pickaxe).
 items["vein_siphon"] = craft(
     items["mining_pickaxe"] + 4 * V("IRON_INGOT") + 4 * V("REDSTONE"), MARGIN[3]
 )
@@ -300,17 +310,17 @@ items["farming_hoe_3"] = craft(
 )
 for piece in farm_t1:
     items[f"{piece}_4"] = craft(
-        items[f"{piece}_3"] + 2 * D("sugar_cane") + 2 * D("carrot"), MARGIN[4]
+        items[f"{piece}_3"] + 2 * D("sugar_cane") + 2 * D("carrot") + SIG_TROPHY, MARGIN[4]
     )
 items["farming_hoe_4"] = craft(
-    items["farming_hoe_3"] + 2 * D("sugar_cane") + 2 * D("wheat"), MARGIN[4]
+    items["farming_hoe_3"] + 2 * D("sugar_cane") + 2 * D("wheat") + SIG_TROPHY, MARGIN[4]
 )
 for piece in farm_t1:
     items[f"{piece}_5"] = craft(
-        items[f"{piece}_4"] + 1 * D("nether_wart") + 3 * D("potato"), MARGIN[5]
+        items[f"{piece}_4"] + 1 * D("nether_wart") + 3 * D("potato") + SIG_CRYSTAL, MARGIN[5]
     )
 items["farming_hoe_5"] = craft(
-    items["farming_hoe_4"] + 1 * D("nether_wart") + 3 * D("wheat"), MARGIN[5]
+    items["farming_hoe_4"] + 1 * D("nether_wart") + 3 * D("wheat") + SIG_CRYSTAL + CORE_I, MARGIN[5]
 )
 
 # Foraging
@@ -331,17 +341,17 @@ for piece in list(forage_t1) + ["foraging_axe"]:
     )
 for piece in forage_t1:
     items[f"{piece}_4"] = craft(
-        items[f"{piece}_3"] + 2 * D("dark_oak_log") + 2 * D("mangrove_log"), MARGIN[4]
+        items[f"{piece}_3"] + 2 * D("dark_oak_log") + 2 * D("mangrove_log") + SIG_CRYSTAL, MARGIN[4]
     )
 items["foraging_axe_4"] = craft(
-    items["foraging_axe_3"] + 2 * D("dark_oak_log") + 2 * D("mangrove_log"), MARGIN[4]
+    items["foraging_axe_3"] + 2 * D("dark_oak_log") + 2 * D("mangrove_log") + SIG_CRYSTAL, MARGIN[4]
 )
 for piece in forage_t1:
     items[f"{piece}_5"] = craft(
-        items[f"{piece}_4"] + 1 * D("cherry_log") + 3 * D("bamboo_block"), MARGIN[5]
+        items[f"{piece}_4"] + 1 * D("cherry_log") + 3 * D("bamboo_block") + SIG_TROPHY, MARGIN[5]
     )
 items["foraging_axe_5"] = craft(
-    items["foraging_axe_4"] + 1 * D("cherry_log") + 3 * D("bamboo_block"), MARGIN[5]
+    items["foraging_axe_4"] + 1 * D("cherry_log") + 3 * D("bamboo_block") + SIG_TROPHY + CORE_I, MARGIN[5]
 )
 
 # Fishing
@@ -362,17 +372,17 @@ for piece in list(fish_t1) + ["fishing_rod"]:
     )
 for piece in fish_t1:
     items[f"{piece}_4"] = craft(
-        items[f"{piece}_3"] + 2 * D("prismarine_shard") + 2 * D("salmon"), MARGIN[4]
+        items[f"{piece}_3"] + 2 * D("prismarine_shard") + 2 * D("salmon") + SIG_PRIZE, MARGIN[4]
     )
 items["fishing_rod_4"] = craft(
-    items["fishing_rod_3"] + 2 * D("prismarine_shard") + 2 * D("salmon"), MARGIN[4]
+    items["fishing_rod_3"] + 2 * D("prismarine_shard") + 2 * D("salmon") + SIG_PRIZE, MARGIN[4]
 )
 for piece in fish_t1:
     items[f"{piece}_5"] = craft(
-        items[f"{piece}_4"] + 1 * D("prismarine_shard") + 3 * D("pufferfish"), MARGIN[5]
+        items[f"{piece}_4"] + 1 * D("prismarine_shard") + 3 * D("pufferfish") + SIG_HEARTWOOD, MARGIN[5]
     )
 items["fishing_rod_5"] = craft(
-    items["fishing_rod_4"] + 1 * D("prismarine_shard") + 3 * D("pufferfish"), MARGIN[5]
+    items["fishing_rod_4"] + 1 * D("prismarine_shard") + 3 * D("pufferfish") + SIG_HEARTWOOD + CORE_I, MARGIN[5]
 )
 
 # Charms T1: 2x2 vanilla domain
@@ -515,9 +525,12 @@ for prefix, mat in [
     items[f"{prefix}_leggings"] = craft(7 * C(mat), MARGIN[2])
     items[f"{prefix}_boots"] = craft(4 * C(mat), MARGIN[2])
 
-# Diving set — fishing loot / craft mid
-for piece, n in [("helmet", 5), ("chestplate", 8), ("leggings", 7), ("boots", 4)]:
-    items[f"diving_{piece}"] = craft(n * C("prismarine_shard"), MARGIN[3])
+# Diving set — fishing loot, and (P2) a T3-side craft:
+# fishing_<piece>_3 + 2 compressed prismarine + 1 compressed pufferfish + 1 fish_trophy
+for piece in ["helmet", "chestplate", "leggings", "boots"]:
+    items[f"diving_{piece}"] = craft(
+        items[f"fishing_{piece}_3"] + 2 * C("prismarine_shard") + C("pufferfish") + SIG_TROPHY, MARGIN[3]
+    )
 
 # Sacks
 items["mining_sack"] = craft(8 * C("leather") + C("coal"), MARGIN[2])
@@ -584,6 +597,14 @@ drops = {
     "skuldugery_shortbow": 2_800_000,
     "hollow_longbow": 2_600_000,
     "aetherion_void_stick": 6_000_000,
+    # P0 Trophy: tagged boss star (replaces vanilla NETHER_STAR drops)
+    "spectacle_star": 900_000,
+    # P6 pinnacle key: ingredient sum, no margin (a key, not gear)
+    "aetherion_summons": 3_158_456,
+    # P1 Signatures (typical NPC buy price; real sale goes by grade/weight at the isle NPC)
+    "crystal_find": 400,
+    "prize_crop": 350,
+    "fish_trophy": 200,
     # Aetherion set slightly above strong T5 craft
     "aetherion_helmet": 3_200_000,
     "aetherion_chestplate": 4_000_000,
@@ -666,6 +687,9 @@ yml = f"""# Aetherion listed coin values (Skyblock-feel).
 # Margins: T1 1.20, T2 1.30, T3 1.45, T4 1.65, T5 1.90
 #          charms 1.25/1.45/1.70, boosters 1.35, material 1.55
 # Channels: Trader 100% resources, Gear buyback 32%, Silas ×8, Bazaar 50–300%.
+
+# Bump together with ItemValueService.ECONOMY_VERSION to roll a new file out to live servers.
+economy-version: 3
 
 vanilla:
 {vanilla_lines}

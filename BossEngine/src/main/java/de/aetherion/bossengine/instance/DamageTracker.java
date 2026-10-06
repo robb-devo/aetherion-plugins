@@ -15,13 +15,19 @@ public class DamageTracker {
     private final Map<UUID, Double> damageByPlayer = new ConcurrentHashMap<>();
     private final Map<UUID, Long> lastHitAt = new ConcurrentHashMap<>();
     private double totalDamage;
+    /** Wall-clock millis of the first player hit (0 = untouched). Fight clock for fight-log.csv. */
+    private volatile long firstHitAt;
 
     public void add(Player player, double amount) {
         if (player == null || amount <= 0) {
             return;
         }
+        long now = System.currentTimeMillis();
+        if (firstHitAt == 0L) {
+            firstHitAt = now;
+        }
         damageByPlayer.merge(player.getUniqueId(), amount, Double::sum);
-        lastHitAt.put(player.getUniqueId(), System.currentTimeMillis());
+        lastHitAt.put(player.getUniqueId(), now);
         totalDamage += amount;
     }
 
@@ -35,6 +41,10 @@ public class DamageTracker {
 
     public long lastHitMillis(UUID playerId) {
         return lastHitAt.getOrDefault(playerId, 0L);
+    }
+
+    public long firstHitMillis() {
+        return firstHitAt;
     }
 
     public double getTotalDamage() {

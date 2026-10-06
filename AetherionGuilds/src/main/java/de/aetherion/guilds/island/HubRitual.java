@@ -59,14 +59,14 @@ public final class HubRitual {
             if (!player.isOnline()) {
                 return;
             }
-            player.sendTitle("§6§l✦ THE HUB IS FOUNDED ✦", "§7your factory runs from its lectern now", 8, 80, 20);
+            player.sendTitle("§6§l✦ THE HUB IS FOUNDED ✦", "§7new machines unlock at its lectern", 8, 80, 20);
             player.sendMessage("");
             player.sendMessage("§6§l  ✦ Your Hub stands.");
-            player.sendMessage("  §7Its §flectern §7is the factory desk from now on:");
-            player.sendMessage("  §f· Build §7— Mill, Depot, Splitter and more");
-            player.sendMessage("  §f· Belt Layer §7— lay as many belts as you like");
-            player.sendMessage("  §f· Upgrades §7and §6Coin Shortcuts");
-            player.sendMessage("  §7The board over it shows every line on your island.");
+            player.sendMessage("  §7At its §flectern§7:");
+            player.sendMessage("  §f· Unlock §7— Mill, Depot, Splitter and more");
+            player.sendMessage("  §f· Hub tier §7— bigger Hub, more to unlock");
+            player.sendMessage("  §f· §6Coin Shortcuts §7— quarries and parts for coins");
+            player.sendMessage("  §7Build everything with the §fBuild Tool§7, anywhere on your island.");
             player.sendMessage("");
         });
     }

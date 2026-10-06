@@ -325,6 +325,10 @@ public final class PrizeCrops implements Listener {
         remove(pop);
         ItemStack prize = item(pop.crop, pop.kg);
         InventoryDrops.give(player, prize);
+        de.aetherion.core.api.ItemFactoryAccess signatures = de.aetherion.core.api.AetherServices.items();
+        if (signatures != null) {
+            signatures.noteSignature(player, "prize_crop");
+        }
         FarmingSkills.bonus(player, 40);
         IsleProfiles.Profile profile = isle.profiles().of(player);
         profile.prizes++;
@@ -377,7 +381,7 @@ public final class PrizeCrops implements Listener {
                 "§7Fills prize Harvest Orders.",
                 "§7Bakes the §6Golden Harvest Pie§7.",
                 "",
-                "§8Prize Crop"
+                "§8Prize Crop §7· §8Signature: T4/T5 gear takes one"
         ));
         meta.addEnchant(Enchantment.UNBREAKING, 1, true);
         meta.addItemFlags(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ATTRIBUTES);
@@ -385,6 +389,11 @@ public final class PrizeCrops implements Listener {
         pdc.set(prizeKey, PersistentDataType.STRING, crop.id());
         pdc.set(weightKey, PersistentDataType.DOUBLE, rounded);
         item.setItemMeta(meta);
+        // P1 Signature: Items id so T4/T5 recipes can take it (and vanilla recipes can't eat it).
+        de.aetherion.core.api.ItemFactoryAccess items = de.aetherion.core.api.AetherServices.items();
+        if (items != null) {
+            items.stampSignature(item, "prize_crop");
+        }
         return item;
     }
 

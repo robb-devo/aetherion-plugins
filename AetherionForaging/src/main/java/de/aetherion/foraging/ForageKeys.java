@@ -2,7 +2,7 @@ package de.aetherion.foraging;
 
 import org.bukkit.NamespacedKey;
 
-/** Persistent keys for forage DEV anchors. */
+/** Persistent keys for forage DEV anchors and owned isle displays. */
 public final class ForageKeys {
 
     private ForageKeys() {
@@ -19,6 +19,21 @@ public final class ForageKeys {
     /** Successful chops counted for newcomer ActionBar hints (cap 10). */
     public static NamespacedKey chopHintCount() {
         return key("chop_hint_count");
+    }
+
+    /** Grove cast nameplate (role id as string) — Farm IsleCast style. */
+    public static NamespacedKey castPlate() {
+        return key("grove_cast_plate");
+    }
+
+    /** Miss Canopy nameplate. */
+    public static NamespacedKey canopyPlate() {
+        return key("miss_canopy_plate");
+    }
+
+    /** Ephemeral FX (finds / critters / windfall / widowmaker). */
+    public static NamespacedKey fx() {
+        return key("forage_fx");
     }
 
     private static NamespacedKey key(String name) {

@@ -49,8 +49,9 @@ public final class BetaCommand implements CommandExecutor, TabCompleter {
                     return true;
                 }
                 if (args[1].equalsIgnoreCase("place")) {
-                    plugin.npcs().placeAnchor(player.getLocation());
-                    player.sendMessage("§aBeta guide anchor set. Each player sees their own courier here.");
+                    plugin.npcs().placeAnchor(player.getLocation(), player);
+                    player.sendMessage("§aBeta guide anchor set here. You should see your courier now.");
+                    player.sendMessage("§8Players who already met him only see him after §f/beta reset <name>§8.");
                     return true;
                 }
                 if (args[1].equalsIgnoreCase("remove")) {

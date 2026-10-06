@@ -187,10 +187,12 @@ public final class StorageMenu implements MenuKit.Menu {
         open(player, structure);
     }
 
-    /** Moves up to {@code max} of res from the map into the player's inventory; returns how many. */
+    /**
+     * Moves up to {@code max} of res from the map into the player's inventory; returns how many. Remove before
+     * credit (like the market): the goods leave the store first, whatever doesn't fit in the pack goes back.
+     */
     static long give(Player player, Map<Res, Long> from, Res res, long max) {
-        long have = from.getOrDefault(res, 0L);
-        long want = Math.min(have, max);
+        long want = Math.min(from.getOrDefault(res, 0L), max);
         if (want <= 0L) {
             return 0L;
         }
@@ -199,10 +201,11 @@ public final class StorageMenu implements MenuKit.Menu {
             player.sendMessage("§c" + res.display() + " needs AetherionItems to take out.");
             return 0L;
         }
+        long taken = PlacedStructure.take(from, res, want);
         long given = 0L;
         int stackSize = Math.max(1, template.getMaxStackSize());
-        while (given < want) {
-            int amount = (int) Math.min(stackSize, want - given);
+        while (given < taken) {
+            int amount = (int) Math.min(stackSize, taken - given);
             ItemStack stack = template.clone();
             stack.setAmount(amount);
             Map<Integer, ItemStack> left = player.getInventory().addItem(stack);
@@ -215,7 +218,9 @@ public final class StorageMenu implements MenuKit.Menu {
                 break;
             }
         }
-        PlacedStructure.take(from, res, given);
+        if (taken > given) {
+            PlacedStructure.add(from, res, taken - given);
+        }
         return given;
     }
 }

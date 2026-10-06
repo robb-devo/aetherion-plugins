@@ -62,6 +62,17 @@ public final class InventoryDrops {
 
         Material type = stack.getType();
         int amount = Math.max(1, stack.getAmount());
+        // Skill sacks (inventory or Aetherion Storage) take matching drops first.
+        int absorbed = de.aetherion.items.storage.SkillSackMenu.tryAbsorb(player, stack);
+        if (absorbed > 0) {
+            de.aetherion.items.storage.SkillSackMenu.noteAbsorbed(player, stack, absorbed);
+            if (absorbed >= amount) {
+                return;
+            }
+            stack = stack.clone();
+            amount -= absorbed;
+            stack.setAmount(amount);
+        }
         var leftover = player.getInventory().addItem(stack);
         int kept = amount;
         for (ItemStack left : leftover.values()) {

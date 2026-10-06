@@ -37,6 +37,13 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
         this.highlight = highlight;
     }
 
+    private java.util.function.Supplier<List<String>> funnel = List::of;
+
+    /** {@code /island admin funnel}: how far islands got (first hut, belt, quarry, Hub, machine, upgrade...). */
+    public void attachFunnel(java.util.function.Supplier<List<String>> funnel) {
+        this.funnel = funnel == null ? List::of : funnel;
+    }
+
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player player)) {
@@ -78,9 +85,14 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
             case "home", "tp", "go" -> islands.goHome(player);
             case "menu" -> menu.open(player);
             case "upgrade", "tier" -> islands.upgradeIsland(player);
-            case "build", "blueprints" -> {
+            case "build", "blueprints", "tool" -> {
                 if (needIsland(player, host)) {
-                    highlight.buildMenu().open(player, host);
+                    // on your island: the Build Tool straight into your hand (F shows every part); elsewhere the picker
+                    if (host.equals(highlight.hosts().at(player.getLocation()))) {
+                        highlight.placement().openTool(player, host, null);
+                    } else {
+                        highlight.buildMenu().open(player, host);
+                    }
                 }
             }
             case "land", "expand" -> {
@@ -101,7 +113,7 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
             }
             case "done", "cancel" -> {
                 if (highlight != null) {
-                    highlight.placement().cancel(player, "§7Build mode off.");
+                    highlight.placement().cancel(player, "§7Build Tool put away.");
                 }
             }
             case "production", "prod", "machines" -> {
@@ -182,7 +194,7 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
                     return;
                 }
                 int tiles = highlight.logistics().rebuild(host);
-                player.sendMessage("§aRe-placed " + tiles + " conveyor tiles from island_logistics.yml.");
+                player.sendMessage("§aRe-placed " + tiles + " belt tiles from the island's save.");
             }
             case "reload-templates" -> {
                 highlight.templates().reload();
@@ -207,6 +219,15 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
                     player.sendMessage("§7/island admin guide reset §8(your own tour, for testing)");
                 }
             }
+            case "wipe" -> {
+                // Own island only — progress to zero, claim slot freed. No other players.
+                if (islands.wipe(player.getUniqueId())) {
+                    player.sendMessage("§aYour island is gone. §7/island §ato claim a fresh one.");
+                } else {
+                    player.sendMessage("§7You had no personal island to wipe.");
+                }
+            }
+            case "funnel" -> funnel.get().forEach(player::sendMessage);
             case "info" -> {
                 IslandHost host = highlight.hosts().at(player.getLocation());
                 player.sendMessage("§6Island highlight §8| §7paste jobs: §f" + highlight.paste().pending()
@@ -221,7 +242,7 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
                 }
             }
             default -> player.sendMessage("§7/island admin fx [unlock|foreshadow|guild|guildhint] §8| §7rebuild §8| §7reload-templates"
-                    + " §8| §7void [sweep [force]] §8| §7guide reset §8| §7info");
+                    + " §8| §7void [sweep [force]] §8| §7guide reset §8| §7wipe §8| §7info §8| §7funnel");
         }
     }
 
@@ -229,13 +250,13 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
             String prefix = args[0].toLowerCase(Locale.ROOT);
-            return Stream.of("create", "home", "menu", "build", "production", "land", "belts", "tier", "guide", "done")
+            return Stream.of("create", "home", "menu", "build", "tool", "production", "land", "belts", "tier", "guide", "done")
                     .filter(option -> option.startsWith(prefix))
                     .toList();
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("admin") && sender.hasPermission("aetherion.guild.admin")) {
             String prefix = args[1].toLowerCase(Locale.ROOT);
-            return Stream.of("fx", "rebuild", "reload-templates", "void", "guide", "info").filter(o -> o.startsWith(prefix)).toList();
+            return Stream.of("fx", "rebuild", "reload-templates", "void", "guide", "wipe", "info", "funnel").filter(o -> o.startsWith(prefix)).toList();
         }
         return List.of();
     }

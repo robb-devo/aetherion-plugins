@@ -124,8 +124,12 @@ public class HealthListener implements Listener {
         plugin.getServer().getScheduler().runTask(
                 plugin,
                 () -> {
-                    updateHealth(event.getPlayer(), ApplyMode.NORMAL);
-                    updateSpeed(event.getPlayer());
+                    Player player = event.getPlayer();
+                    org.bukkit.inventory.ItemStack held = player.getInventory().getItemInMainHand();
+                    de.aetherion.items.combat.AbilityCooldownHud.onHeldChange(
+                            player, itemManager.getItemId(held), held);
+                    updateHealth(player, ApplyMode.NORMAL);
+                    updateSpeed(player);
                 }
         );
     }

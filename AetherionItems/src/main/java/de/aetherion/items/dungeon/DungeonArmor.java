@@ -84,6 +84,31 @@ public final class DungeonArmor {
         return flag != null && flag == 1;
     }
 
+    /**
+     * Overworld stat share for dungeon gear (P3 B2): native Floor-I gear x0.38, relic-identified T2 x0.60,
+     * T3 x0.70, everything else x1. Inside a dungeon nothing is cut.
+     */
+    public static double overworldMultiplier(ItemStack item, ItemManager items) {
+        if (item == null || items == null) {
+            return 1.0d;
+        }
+        if (isNativeDungeonGear(item, items)) {
+            return OVERWORLD_STAT_MULTIPLIER;
+        }
+        String id = items.getItemId(item);
+        if (isRelicTierGear(id)) {
+            return DungeonGearTier.fromItemId(id).overworldMultiplier();
+        }
+        return 1.0d;
+    }
+
+    /** Identified T2/T3 calling armor or weapon (not the unidentified relic, not native Floor-I gear). */
+    public static boolean isRelicTierGear(String itemId) {
+        DungeonGearTier tier = DungeonGearTier.fromItemId(itemId);
+        return (tier == DungeonGearTier.T2 || tier == DungeonGearTier.T3)
+                && (DungeonCalling.fromItemId(itemId) != null || DungeonWeaponKind.fromItemId(itemId) != null);
+    }
+
     public static boolean consumeAndReplace(
             Player player,
             EquipmentSlot preferredHand,
@@ -255,8 +280,6 @@ public final class DungeonArmor {
 
     public static List<String> vestigeLore(DungeonPiece piece, ItemStats stats) {
         List<String> lore = new ArrayList<>();
-        lore.add("§7✦ §bRARE");
-        lore.add("");
         addStatLines("dungeon_vestige_" + piece.id(), stats, lore);
         lore.add("");
         lore.add("§7Pried off a prisoner who stopped needing it.");
@@ -281,8 +304,6 @@ public final class DungeonArmor {
     ) {
         DungeonGearTier safe = tier == null ? DungeonGearTier.T1 : tier;
         List<String> lore = new ArrayList<>();
-        lore.add(safe.rarityLine());
-        lore.add("");
         addStatLines(calling.itemId(safe, piece), stats, lore);
         lore.add("");
         if (safe == DungeonGearTier.T1) {
@@ -298,8 +319,9 @@ public final class DungeonArmor {
             lore.add("§8Outside dungeons: §7this set is polite about it.");
             lore.add(de.aetherion.items.item.DungeonCore.ATTUNED_CORE_HINT);
         } else {
-            lore.add("§8Overworld boss piece. Not dungeon gear yet.");
-            lore.add(de.aetherion.items.item.DungeonCore.BOSS_CORE_HINT);
+            // P3 B2: relic tiers keep part of their power outside dungeons.
+            lore.add("§8Relic piece. Full power in dungeons.");
+            lore.add(de.aetherion.items.item.DungeonCore.coreHint(calling.itemId(safe, piece)));
         }
         if (calling == DungeonCalling.ASSASSIN) {
             lore.add("");
@@ -324,8 +346,6 @@ public final class DungeonArmor {
     ) {
         DungeonGearTier safe = tier == null ? DungeonGearTier.T1 : tier;
         List<String> lore = new ArrayList<>();
-        lore.add(safe.rarityLine());
-        lore.add("");
         addStatLines(kind.itemId(safe), stats, lore);
         lore.add("");
         if (safe == DungeonGearTier.T1) {
@@ -337,7 +357,7 @@ public final class DungeonArmor {
         }
         lore.add(dungeonGear
                 ? "§8Dungeon weapon. Levels in dungeons. Cores raise the cap."
-                : "§8Boss weapon. Same rules as the others.");
+                : "§8Relic weapon. Full power in dungeons.");
         if (kind == DungeonWeaponKind.BOW) {
             lore.add("§7Hold right-click to fire. Needs arrows.");
         }
@@ -354,7 +374,7 @@ public final class DungeonArmor {
         }
         lore.add(dungeonGear
                 ? de.aetherion.items.item.DungeonCore.ATTUNED_CORE_HINT
-                : de.aetherion.items.item.DungeonCore.BOSS_CORE_HINT);
+                : de.aetherion.items.item.DungeonCore.coreHint(kind.itemId(safe)));
         if (dungeonGear) {
             lore.add("");
             lore.addAll(DungeonGearProgress.previewLines(0, 0, 1.0d));
@@ -394,28 +414,27 @@ public final class DungeonArmor {
         return Math.max(0.58d, 1.0d - cut);
     }
 
+    /**
+     * Shade ability + full-set bonus, kept to the tooltip law (short blocks, wraps at 46).
+     * Numbers match {@link #assassinIntervalFactor} / {@link #assassinCooldownFactor} and the set bonus.
+     */
     public static List<String> assassinLore(Player player, ItemManager items) {
         List<String> lore = new ArrayList<>();
-        lore.add("§6Shade · Bow");
-        lore.add("§7Draw / fire interval:");
-        lore.add("§8  1 pc   §f-8%");
-        lore.add("§8  2 pcs  §f-16%");
-        lore.add("§8  3 pcs  §f-24%");
-        lore.add("§8  4 pcs  §f-32%");
-        lore.add("§8Dungeon extra: §f-12% §7× gear level");
-        lore.add("§8Full set extra: §f-6% §7× gear level");
-        lore.add("§7Ability cooldown:");
-        lore.add("§8  1 / 2 / 3 / 4 pcs  §f-5% / -10% / -15% / -20%");
-        lore.add("§8Dungeon extra: §f-8% §7× gear level §8(floor -42%)");
-        lore.add("§7Full set:");
-        lore.add("§8  Overworld  §f+5 dmg  +4% crit");
-        lore.add("§8  Dungeon    §f+14 dmg  +10% crit  +18% crit dmg  §7× gear");
+        lore.add("§6✦ Shade");
+        lore.add("§7Per piece: §fbow draw -8%§7, §fCD -5%§7.");
+        lore.add("§7In dungeons: §f-12% §7draw, §f-8% §7CD,");
+        lore.add("§7× gear level. CD floor §f-42%§7.");
         int pieces = wornPieces(player, items, DungeonCalling.ASSASSIN);
         if (pieces > 0) {
             int fireCut = (int) Math.round((1.0d - assassinIntervalFactor(player, items)) * 100.0d);
             int cdCut = (int) Math.round((1.0d - assassinCooldownFactor(player, items)) * 100.0d);
-            lore.add("§aNow: §f" + pieces + " pc  fire §a-" + fireCut + "%  §7cd §a-" + cdCut + "%");
+            lore.add("§8Now: §f" + pieces + " pc §8· draw §f-" + fireCut + "% §8· CD §f-" + cdCut + "%");
         }
+        lore.add("");
+        lore.add("§6✦ Full Set");
+        lore.add("§7Overworld §f+5 §7Damage, §f+4% §7Crit Chance.");
+        lore.add("§7In dungeons: §f+14 §7Damage, §f+10% §7Crit Chance,");
+        lore.add("§f+18% §7Crit Damage, §f-6% §7draw, × gear level.");
         return lore;
     }
 
@@ -427,7 +446,7 @@ public final class DungeonArmor {
         if (meta == null) {
             return;
         }
-        List<String> lore = meta.getLore() == null ? new ArrayList<>() : new ArrayList<>(meta.getLore());
+        List<String> lore = de.aetherion.items.item.LoreLocale.loreOrEmpty(meta);
         List<String> next = new ArrayList<>();
         boolean wrote = false;
         for (String line : lore) {
@@ -445,7 +464,7 @@ public final class DungeonArmor {
             next.addAll(insert, assassinLore(player, items));
             next.add(insert, "");
         }
-        meta.setLore(next);
+        de.aetherion.items.item.LoreLocale.writeLore(meta, next);
         item.setItemMeta(meta);
     }
 
@@ -467,31 +486,27 @@ public final class DungeonArmor {
         if (plain.isEmpty()) {
             return false;
         }
+        // Current shape.
+        if (plain.equals("✦ shade") || plain.equals("✦ full set")) {
+            return true;
+        }
+        if (plain.startsWith("per piece: bow draw") || plain.startsWith("in dungeons: -12% draw")
+                || plain.startsWith("× gear level. cd floor") || plain.startsWith("now: ")
+                || plain.startsWith("overworld +5 damage") || plain.startsWith("in dungeons: +14 damage")
+                || plain.startsWith("+18% crit damage, -6% draw")) {
+            return true;
+        }
+        // Legacy shape (pre lore-finish pass) so old items heal.
         if (plain.startsWith("shade") && (plain.contains("bow") || plain.contains("·"))) {
             return true;
         }
-        if (plain.startsWith("now:") && (plain.contains("fire") || plain.contains("cd"))) {
-            return true;
-        }
-        if (plain.contains("draw / fire") || plain.contains("draw/fire")) {
-            return true;
-        }
-        if (plain.contains("ability cooldown")) {
-            return true;
-        }
-        if (plain.contains("dungeon extra:") || plain.contains("full set extra:")) {
-            return true;
-        }
-        if (plain.contains("1 / 2 / 3 / 4 pcs")) {
-            return true;
-        }
-        if (plain.contains("overworld") && plain.contains("dmg")) {
-            return true;
-        }
-        if (plain.contains("dungeon") && plain.contains("crit dmg")) {
-            return true;
-        }
-        if (plain.contains("bow fire rate") || plain.contains("full set in dungeons")) {
+        if (plain.contains("draw / fire") || plain.contains("draw/fire")
+                || plain.contains("ability cooldown")
+                || plain.contains("dungeon extra:") || plain.contains("full set extra:")
+                || plain.contains("1 / 2 / 3 / 4 pcs")
+                || (plain.contains("overworld") && plain.contains("dmg"))
+                || (plain.contains("dungeon") && plain.contains("crit dmg"))
+                || plain.contains("bow fire rate") || plain.contains("full set in dungeons")) {
             return true;
         }
         return plain.startsWith("1 pc") || plain.startsWith("2 pcs") || plain.startsWith("3 pcs")

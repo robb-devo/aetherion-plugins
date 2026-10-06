@@ -62,7 +62,8 @@ public final class DungeonGuideGUI implements Listener {
                 Material.IRON_BARS,
                 "§dFloors",
                 "§7Floor 1 Prison · Floor 2 Frost · Floor 3 Ashes.",
-                "§7Harder floors, better cores."
+                "§7Harder floors, better cores.",
+                "§aF1 Early–Mid §8· §6F2 Late §8· §cF3 End"
         ));
         inventory.setItem(SLOT_PARTY, button(
                 Material.PLAYER_HEAD,
@@ -119,6 +120,12 @@ public final class DungeonGuideGUI implements Listener {
                     "§5Floor 1 · Prison§7 — halls, glass gates, Sentinel.",
                     "§bFloor 2 · Frostbound§7 — clearance bar → snowman.",
                     "§5Floor 3 · Throne of Ashes§7 — Aetherion.",
+                    "",
+                    "§7Recommended:",
+                    "§aF1§7 Early–Mid · §6F2§7 Late (Account 75+, T4)",
+                    "§cF3§7 End (T5, boss sets, Core III)",
+                    "§7F2/F3 caches hold §5T2§7/§6T3 relics§7.",
+                    "",
                     "§7One active run at a time."
             );
             case SLOT_PARTY -> button(

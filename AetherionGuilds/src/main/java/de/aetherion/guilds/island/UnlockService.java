@@ -254,8 +254,18 @@ public final class UnlockService {
         player.sendMessage("");
     }
 
+    private java.util.function.Consumer<IslandHost> claimed = host -> {
+    };
+
+    /** Told when a player claims a new island (the funnel's "start"). */
+    public void onClaim(java.util.function.Consumer<IslandHost> claimed) {
+        this.claimed = claimed == null ? host -> {
+        } : claimed;
+    }
+
     /** Starter picked: paste, then drift down onto it. */
     public void claim(Player player, PersonalIsland island, StarterLayout starter) {
+        claimed.accept(IslandHost.personal(island.ownerId()));
         player.closeInventory();
         player.sendTitle("§7The island rises…", "§f" + starter.display(), 5, 80, 10);
         player.playSound(player.getLocation(), Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 1f, 0.7f);

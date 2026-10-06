@@ -1,0 +1,1138 @@
+diff -ruN a/AetherionItems/src/main/java/de/aetherion/items/AetherionItems.java b/AetherionItems/src/main/java/de/aetherion/items/AetherionItems.java
+--- a/AetherionItems/src/main/java/de/aetherion/items/AetherionItems.java	2026-10-05 13:08:46.559645066 +0200
++++ b/AetherionItems/src/main/java/de/aetherion/items/AetherionItems.java	2026-10-05 13:08:46.469854767 +0200
+@@ -610,6 +610,9 @@
+         if (storageInventory != null) {
+             storageInventory.saveAll();
+         }
++        if (sackInventory != null) {
++            sackInventory.skills().flushAll();
++        }
+         if (shards != null) {
+             shards.save();
+         }
+diff -ruN a/AetherionItems/src/main/java/de/aetherion/items/listener/AutoPickupListener.java b/AetherionItems/src/main/java/de/aetherion/items/listener/AutoPickupListener.java
+--- a/AetherionItems/src/main/java/de/aetherion/items/listener/AutoPickupListener.java	2026-10-05 13:08:46.483213000 +0200
++++ b/AetherionItems/src/main/java/de/aetherion/items/listener/AutoPickupListener.java	2026-10-05 13:08:46.477088860 +0200
+@@ -138,6 +138,17 @@
+         BUSY.set(true);
+         try {
+             int before = stack.getAmount();
++            int absorbed = de.aetherion.items.storage.SkillSackMenu.tryAbsorb(player, stack);
++            if (absorbed > 0) {
++                de.aetherion.items.storage.SkillSackMenu.noteAbsorbed(player, stack, absorbed);
++                if (absorbed >= before) {
++                    item.remove();
++                    return true;
++                }
++                stack = stack.clone();
++                before -= absorbed;
++                stack.setAmount(before);
++            }
+             var leftover = player.getInventory().addItem(stack);
+             if (leftover.isEmpty()) {
+                 item.remove();
+diff -ruN a/AetherionItems/src/main/java/de/aetherion/items/listener/SackListener.java b/AetherionItems/src/main/java/de/aetherion/items/listener/SackListener.java
+--- a/AetherionItems/src/main/java/de/aetherion/items/listener/SackListener.java	2026-10-05 13:08:46.494262196 +0200
++++ b/AetherionItems/src/main/java/de/aetherion/items/listener/SackListener.java	2026-10-05 13:08:46.489280335 +0200
+@@ -6,6 +6,7 @@
+ import de.aetherion.items.storage.SackInventory;
+ import de.aetherion.items.storage.SackItems;
+ import de.aetherion.items.storage.SackType;
++import de.aetherion.items.storage.SkillSackMenu;
+ 
+ import org.bukkit.GameMode;
+ import org.bukkit.entity.Player;
+@@ -14,12 +15,15 @@
+ import org.bukkit.event.Listener;
+ import org.bukkit.event.block.Action;
+ import org.bukkit.event.block.BlockPlaceEvent;
++import org.bukkit.event.entity.EntityPickupItemEvent;
+ import org.bukkit.event.inventory.ClickType;
+ import org.bukkit.event.inventory.InventoryAction;
+ import org.bukkit.event.inventory.InventoryClickEvent;
+ import org.bukkit.event.inventory.InventoryCloseEvent;
+ import org.bukkit.event.inventory.InventoryDragEvent;
+ import org.bukkit.event.player.PlayerInteractEvent;
++import org.bukkit.entity.Item;
++import org.bukkit.event.player.PlayerQuitEvent;
+ import org.bukkit.inventory.Inventory;
+ import org.bukkit.inventory.ItemStack;
+ 
+@@ -78,6 +82,14 @@
+             return;
+         }
+ 
++        if (top.getHolder() instanceof SkillSackMenu.Holder skillHolder) {
++            event.setCancelled(true);
++            if (event.getClickedInventory() != null && event.getClickedInventory().equals(top)) {
++                sacks.skills().handleClick(player, skillHolder, event.getRawSlot(), event.isRightClick());
++            }
++            return;
++        }
++
+         if (!(top.getHolder() instanceof SackInventory.Holder holder)) {
+             return;
+         }
+@@ -109,7 +121,8 @@
+ 
+     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+     public void onDrag(InventoryDragEvent event) {
+-        if (event.getInventory().getHolder() instanceof BoosterSackMenu.Holder) {
++        if (event.getInventory().getHolder() instanceof BoosterSackMenu.Holder
++                || event.getInventory().getHolder() instanceof SkillSackMenu.Holder) {
+             event.setCancelled(true);
+             return;
+         }
+@@ -128,6 +141,14 @@
+ 
+     @EventHandler(priority = EventPriority.MONITOR)
+     public void onClose(InventoryCloseEvent event) {
++        if (event.getPlayer() instanceof Player closer) {
++            // Sacks may have moved into / out of Aetherion Storage.
++            sacks.skills().invalidate(closer);
++        }
++        if (event.getInventory().getHolder() instanceof SkillSackMenu.Holder skillHolder) {
++            sacks.skills().save(skillHolder);
++            return;
++        }
+         if (event.getInventory().getHolder() instanceof BoosterSackMenu.Holder boosterHolder) {
+             sacks.boosters().save(boosterHolder);
+             return;
+@@ -137,6 +158,37 @@
+         }
+     }
+ 
++    /** Manual pickups (and below Auto-Pickup level) still feed skill sacks. */
++    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
++    public void onPickup(EntityPickupItemEvent event) {
++        if (!(event.getEntity() instanceof Player player) || player.getGameMode() == GameMode.SPECTATOR) {
++            return;
++        }
++        Item entity = event.getItem();
++        ItemStack stack = entity.getItemStack();
++        int absorbed = sacks.skills().absorb(player, stack);
++        if (absorbed <= 0) {
++            return;
++        }
++        event.setCancelled(true);
++        SkillSackMenu.noteAbsorbed(player, stack, absorbed);
++        player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_ITEM_PICKUP, 0.2f, 1.6f);
++        int left = stack.getAmount() - absorbed;
++        if (left <= 0) {
++            entity.remove();
++            return;
++        }
++        ItemStack rest = stack.clone();
++        rest.setAmount(left);
++        entity.setItemStack(rest);
++    }
++
++    @EventHandler(priority = EventPriority.MONITOR)
++    public void onQuit(PlayerQuitEvent event) {
++        sacks.skills().invalidate(event.getPlayer());
++        sacks.skills().flushAll();
++    }
++
+     private static boolean isInsert(InventoryAction action) {
+         return action == InventoryAction.PLACE_ALL
+                 || action == InventoryAction.PLACE_ONE
+diff -ruN a/AetherionItems/src/main/java/de/aetherion/items/menu/dev/DevMenu.java b/AetherionItems/src/main/java/de/aetherion/items/menu/dev/DevMenu.java
+--- a/AetherionItems/src/main/java/de/aetherion/items/menu/dev/DevMenu.java	2026-10-05 13:08:46.506991031 +0200
++++ b/AetherionItems/src/main/java/de/aetherion/items/menu/dev/DevMenu.java	2026-10-05 13:08:46.501383058 +0200
+@@ -2121,6 +2121,12 @@
+                 items.add(itemButton(storage.createStorage(), "storage"));
+                 items.add(itemButton(de.aetherion.items.storage.SackItems.create(de.aetherion.items.storage.SackType.RESOURCE), "resource_sack"));
+                 items.add(itemButton(de.aetherion.items.storage.SackItems.create(de.aetherion.items.storage.SackType.BOOSTER), "booster_sack"));
++                for (var sackSkill : de.aetherion.items.storage.SkillSack.Skill.values()) {
++                    for (var sackTier : de.aetherion.items.storage.SkillSack.Tier.values()) {
++                        items.add(itemButton(de.aetherion.items.storage.SkillSack.create(sackSkill, sackTier),
++                                de.aetherion.items.storage.SkillSack.itemId(sackSkill, sackTier)));
++                    }
++                }
+                 items.add(button(Material.HAY_BLOCK, "§aAnimal Anchor", "give:animal", "§7Place in the world."));
+                 items.add(button(Material.ROTTEN_FLESH, "§cMob Anchor", "give:mob", "§7Hostiles, same radius."));
+                 items.add(button(Material.COARSE_DIRT, "§6Borderlands Marker", "give:borderlands",
+@@ -2677,6 +2683,10 @@
+             case "resource_sack" -> de.aetherion.items.storage.SackItems.create(de.aetherion.items.storage.SackType.RESOURCE);
+             case "booster_sack" -> de.aetherion.items.storage.SackItems.create(de.aetherion.items.storage.SackType.BOOSTER);
+             default -> {
++                ItemStack skillSack = de.aetherion.items.storage.SkillSack.fromId(id);
++                if (skillSack != null) {
++                    yield skillSack;
++                }
+                 ItemStack lore = de.aetherion.items.lore.StoryLore.create(id);
+                 if (lore != null) {
+                     yield lore;
+@@ -2776,6 +2786,11 @@
+         if (meta != null) {
+             meta.getPersistentDataContainer().remove(ItemKeys.devAction());
+             meta.getPersistentDataContainer().remove(DevItems.VIA);
++            if (de.aetherion.items.storage.SackItems.isSack(give)) {
++                // Each given sack gets its own contents file, not the shelf icon's.
++                meta.getPersistentDataContainer().set(ItemKeys.sackId(),
++                        org.bukkit.persistence.PersistentDataType.STRING, java.util.UUID.randomUUID().toString());
++            }
+             give.setItemMeta(meta);
+         }
+         return give;
+diff -ruN a/AetherionItems/src/main/java/de/aetherion/items/storage/SackInventory.java b/AetherionItems/src/main/java/de/aetherion/items/storage/SackInventory.java
+--- a/AetherionItems/src/main/java/de/aetherion/items/storage/SackInventory.java	2026-10-05 13:08:46.518021608 +0200
++++ b/AetherionItems/src/main/java/de/aetherion/items/storage/SackInventory.java	2026-10-05 13:08:46.512759865 +0200
+@@ -22,6 +22,7 @@
+     private final JavaPlugin plugin;
+     private final File folder;
+     private final BoosterSackMenu boosters;
++    private final SkillSackMenu skills;
+ 
+     public SackInventory(JavaPlugin plugin) {
+         this.plugin = plugin;
+@@ -33,17 +34,26 @@
+                 ? aetherion.getItemManager()
+                 : AetherionItems.getInstance() == null ? null : AetherionItems.getInstance().getItemManager();
+         this.boosters = new BoosterSackMenu(plugin, items);
++        this.skills = new SkillSackMenu(plugin, items);
+     }
+ 
+     public BoosterSackMenu boosters() {
+         return boosters;
+     }
+ 
++    public SkillSackMenu skills() {
++        return skills;
++    }
++
+     public void open(Player player, ItemStack sackItem) {
+         if (player == null || sackItem == null) {
+             return;
+         }
+         SackItems.ensureId(sackItem);
++        if (SkillSack.is(sackItem)) {
++            skills.open(player, sackItem);
++            return;
++        }
+         SackType type = SackItems.typeOf(sackItem);
+         UUID id = SackItems.idOf(sackItem);
+         if (type == null || id == null) {
+diff -ruN a/AetherionItems/src/main/java/de/aetherion/items/storage/SackItems.java b/AetherionItems/src/main/java/de/aetherion/items/storage/SackItems.java
+--- a/AetherionItems/src/main/java/de/aetherion/items/storage/SackItems.java	2026-10-05 13:08:46.527921798 +0200
++++ b/AetherionItems/src/main/java/de/aetherion/items/storage/SackItems.java	2026-10-05 13:08:46.522857971 +0200
+@@ -51,7 +51,7 @@
+     }
+ 
+     public static boolean isSack(ItemStack item) {
+-        return typeOf(item) != null;
++        return typeOf(item) != null || SkillSack.is(item);
+     }
+ 
+     public static SackType typeOf(ItemStack item) {
+diff -ruN a/AetherionItems/src/main/java/de/aetherion/items/storage/SkillSack.java b/AetherionItems/src/main/java/de/aetherion/items/storage/SkillSack.java
+--- a/AetherionItems/src/main/java/de/aetherion/items/storage/SkillSack.java	1970-01-01 01:00:00.000000000 +0100
++++ b/AetherionItems/src/main/java/de/aetherion/items/storage/SkillSack.java	2026-10-05 13:08:46.532954655 +0200
+@@ -0,0 +1,350 @@
++package de.aetherion.items.storage;
++
++import de.aetherion.items.AetherionItems;
++import de.aetherion.items.core.ItemKeys;
++import de.aetherion.items.economy.CompressedResource;
++import de.aetherion.items.manager.ItemManager;
++import de.aetherion.items.model.ItemStats;
++import de.aetherion.items.model.Rarity;
++
++import org.bukkit.Material;
++import org.bukkit.inventory.ItemFlag;
++import org.bukkit.inventory.ItemStack;
++import org.bukkit.inventory.meta.ItemMeta;
++import org.bukkit.persistence.PersistentDataType;
++
++import java.util.ArrayList;
++import java.util.List;
++import java.util.Locale;
++import java.util.UUID;
++
++/**
++ * Shared skill-sack framework: one {@link Skill} (which resources) x one {@link Tier}
++ * (which forms + how many). Every skill sack is built from this — no per-skill classes.
++ */
++public final class SkillSack {
++
++    /** Item PDC value for {@link ItemKeys#sackType()} — keeps legacy {@link SackType} untouched. */
++    public static final String TYPE_TAG = "SKILL";
++
++    private SkillSack() {
++    }
++
++    /** What a sack slot holds for one resource. */
++    public enum Form {
++        RAW("raw"),
++        COMPRESSED("compressed"),
++        COMPACTED("compacted");
++
++        private final String key;
++
++        Form(String key) {
++            this.key = key;
++        }
++
++        public String key() {
++            return key;
++        }
++    }
++
++    public enum Tier {
++        T1("I", 2_000, Rarity.UNCOMMON, Form.RAW),
++        T2("II", 20_000, Rarity.RARE, Form.RAW, Form.COMPRESSED),
++        T3("III", 200_000, Rarity.EPIC, Form.RAW, Form.COMPRESSED, Form.COMPACTED);
++
++        private final String roman;
++        private final int capacity;
++        private final Rarity rarity;
++        private final List<Form> forms;
++
++        Tier(String roman, int capacity, Rarity rarity, Form... forms) {
++            this.roman = roman;
++            this.capacity = capacity;
++            this.rarity = rarity;
++            this.forms = List.of(forms);
++        }
++
++        public String roman() {
++            return roman;
++        }
++
++        /** Max count per slot (one resource in one form). */
++        public int capacity() {
++            return capacity;
++        }
++
++        public Rarity rarity() {
++            return rarity;
++        }
++
++        public List<Form> forms() {
++            return forms;
++        }
++
++        public boolean holds(Form form) {
++            return forms.contains(form);
++        }
++    }
++
++    public enum Skill {
++        MINING("Mining", "§b"),
++        FARMING("Farming", "§e"),
++        FORAGING("Foraging", "§2"),
++        FISHING("Fishing", "§3");
++
++        private final String label;
++        private final String color;
++        private List<CompressedResource> resources;
++
++        Skill(String label, String color) {
++            this.label = label;
++            this.color = color;
++        }
++
++        public String label() {
++            return label;
++        }
++
++        public String color() {
++            return color;
++        }
++
++        /** Accepted resources, in the shared display order. */
++        public List<CompressedResource> resources() {
++            if (resources == null) {
++                List<CompressedResource> out = new ArrayList<>();
++                for (CompressedResource resource : CompressedResource.contentOrdered()) {
++                    if (owns(resource)) {
++                        out.add(resource);
++                    }
++                }
++                resources = List.copyOf(out);
++            }
++            return resources;
++        }
++
++        private boolean owns(CompressedResource resource) {
++            return switch (this) {
++                case MINING -> resource.isMiningDrop();
++                case FARMING -> resource.isFarmingDrop();
++                case FORAGING -> resource.isForagingDrop();
++                case FISHING -> resource.isFishingDrop();
++            };
++        }
++    }
++
++    /** One stored slot: resource + form. */
++    public record Slot(CompressedResource resource, Form form) {
++        public String key() {
++            return form.key() + "." + resource.key();
++        }
++
++        public ItemStack sample() {
++            return switch (form) {
++                case RAW -> new ItemStack(resource.input());
++                case COMPRESSED -> resource.compressed();
++                case COMPACTED -> resource.compacted();
++            };
++        }
++
++        public String displayName() {
++            return switch (form) {
++                case RAW -> "§f" + resource.prettyName();
++                case COMPRESSED -> "§aCompressed " + resource.prettyName();
++                case COMPACTED -> "§bCompacted " + resource.prettyName();
++            };
++        }
++    }
++
++    /**
++     * Which slot this stack would go into for the given sack, or null if the sack refuses it.
++     * Raw = plain vanilla drop (no Aetherion id, no rename, not Nether-marked).
++     */
++    public static Slot slotFor(Skill skill, Tier tier, ItemStack stack, ItemManager items) {
++        if (skill == null || tier == null || stack == null || stack.getType().isAir()) {
++            return null;
++        }
++        String id = items == null ? null : items.getItemId(stack);
++        if (id != null) {
++            CompressedResource resource = CompressedResource.byItemId(id);
++            if (resource == null || !skill.resources().contains(resource)) {
++                return null;
++            }
++            String lower = id.toLowerCase(Locale.ROOT);
++            if (lower.equals(resource.compressedId()) && tier.holds(Form.COMPRESSED)) {
++                return new Slot(resource, Form.COMPRESSED);
++            }
++            if (lower.equals(resource.compactedId()) && tier.holds(Form.COMPACTED)) {
++                return new Slot(resource, Form.COMPACTED);
++            }
++            return null;
++        }
++        ItemMeta meta = stack.getItemMeta();
++        if (meta != null && meta.hasDisplayName()) {
++            return null;
++        }
++        if (de.aetherion.items.world.NetherRealm.isMarked(stack)) {
++            return null;
++        }
++        for (CompressedResource resource : skill.resources()) {
++            if (resource.input() == stack.getType()) {
++                return new Slot(resource, Form.RAW);
++            }
++        }
++        return null;
++    }
++
++    /** Every slot this sack shows, column = resource, row = form. */
++    public static List<Slot> slots(Skill skill, Tier tier) {
++        List<Slot> out = new ArrayList<>();
++        for (Form form : tier.forms()) {
++            for (CompressedResource resource : skill.resources()) {
++                out.add(new Slot(resource, form));
++            }
++        }
++        return out;
++    }
++
++    // ------------------------------------------------------------------ items
++
++    public static String itemId(Skill skill, Tier tier) {
++        return skill.name().toLowerCase(Locale.ROOT) + "_sack_" + tier.name().toLowerCase(Locale.ROOT);
++    }
++
++    public static String displayName(Skill skill, Tier tier) {
++        return skill.color() + skill.label() + " Sack " + tier.roman();
++    }
++
++    public static ItemStack create(Skill skill, Tier tier) {
++        return create(skill, tier, UUID.randomUUID());
++    }
++
++    public static ItemStack create(Skill skill, Tier tier, UUID sackId) {
++        if (skill == null || tier == null) {
++            return null;
++        }
++        ItemStack item = new ItemStack(Material.CHEST);
++        ItemMeta meta = item.getItemMeta();
++        if (meta == null) {
++            return item;
++        }
++        meta.setDisplayName(displayName(skill, tier));
++        meta.setLore(lore(skill, tier));
++        var pdc = meta.getPersistentDataContainer();
++        pdc.set(ItemKeys.item(), PersistentDataType.STRING, itemId(skill, tier));
++        pdc.set(ItemKeys.sackId(), PersistentDataType.STRING, sackId.toString());
++        pdc.set(ItemKeys.sackType(), PersistentDataType.STRING, TYPE_TAG);
++        if (tier != Tier.T1) {
++            meta.setEnchantmentGlintOverride(true);
++        }
++        meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS);
++        ItemManager manager = AetherionItems.getInstance() == null ? null : AetherionItems.getInstance().getItemManager();
++        if (manager != null) {
++            manager.applyItemData(meta, tier.rarity(), new ItemStats());
++        }
++        de.aetherion.items.item.ItemPresentation.polish(meta);
++        item.setItemMeta(meta);
++        return item;
++    }
++
++    private static List<String> lore(Skill skill, Tier tier) {
++        List<String> lines = new ArrayList<>();
++        lines.add("§7Collects " + skill.label() + " drops automatically.");
++        lines.add("");
++        lines.add("§7Holds: " + formsLine(tier));
++        lines.add("§7Capacity: §f" + String.format(Locale.US, "%,d", tier.capacity()) + " §7per slot");
++        lines.add("§7Resources: §f" + skill.resources().size());
++        lines.add("");
++        lines.add("§8Works from your inventory or");
++        lines.add("§8from inside Aetherion Storage.");
++        lines.add("§eRight-click to open.");
++        return lines;
++    }
++
++    private static String formsLine(Tier tier) {
++        StringBuilder out = new StringBuilder();
++        for (Form form : tier.forms()) {
++            if (out.length() > 0) {
++                out.append("§8 · ");
++            }
++            out.append(switch (form) {
++                case RAW -> "§fRaw";
++                case COMPRESSED -> "§aCompressed";
++                case COMPACTED -> "§bCompacted";
++            });
++        }
++        return out.toString();
++    }
++
++    public static boolean is(ItemStack item) {
++        return skillOf(item) != null && tierOf(item) != null;
++    }
++
++    public static Skill skillOf(ItemStack item) {
++        String id = rawId(item);
++        if (id == null) {
++            return null;
++        }
++        for (Skill skill : Skill.values()) {
++            if (id.startsWith(skill.name().toLowerCase(Locale.ROOT) + "_sack_")) {
++                return skill;
++            }
++        }
++        return null;
++    }
++
++    public static Tier tierOf(ItemStack item) {
++        String id = rawId(item);
++        if (id == null) {
++            return null;
++        }
++        for (Tier tier : Tier.values()) {
++            if (id.endsWith("_sack_" + tier.name().toLowerCase(Locale.ROOT))) {
++                return tier;
++            }
++        }
++        return null;
++    }
++
++    /** Dev / admin give by item id (e.g. {@code mining_sack_t2}). */
++    public static ItemStack fromId(String id) {
++        if (id == null) {
++            return null;
++        }
++        String lower = id.toLowerCase(Locale.ROOT);
++        for (Skill skill : Skill.values()) {
++            for (Tier tier : Tier.values()) {
++                if (itemId(skill, tier).equals(lower)) {
++                    return create(skill, tier);
++                }
++            }
++        }
++        return null;
++    }
++
++    /** All 12 sacks, skill-major — dev shelves. */
++    public static List<ItemStack> all() {
++        List<ItemStack> out = new ArrayList<>();
++        for (Skill skill : Skill.values()) {
++            for (Tier tier : Tier.values()) {
++                out.add(create(skill, tier));
++            }
++        }
++        return out;
++    }
++
++    private static String rawId(ItemStack item) {
++        if (item == null || item.getType().isAir() || !item.hasItemMeta()) {
++            return null;
++        }
++        ItemMeta meta = item.getItemMeta();
++        if (meta == null) {
++            return null;
++        }
++        String type = meta.getPersistentDataContainer().get(ItemKeys.sackType(), PersistentDataType.STRING);
++        if (!TYPE_TAG.equals(type)) {
++            return null;
++        }
++        return meta.getPersistentDataContainer().get(ItemKeys.item(), PersistentDataType.STRING);
++    }
++}
+diff -ruN a/AetherionItems/src/main/java/de/aetherion/items/storage/SkillSackMenu.java b/AetherionItems/src/main/java/de/aetherion/items/storage/SkillSackMenu.java
+--- a/AetherionItems/src/main/java/de/aetherion/items/storage/SkillSackMenu.java	1970-01-01 01:00:00.000000000 +0100
++++ b/AetherionItems/src/main/java/de/aetherion/items/storage/SkillSackMenu.java	2026-10-05 13:08:46.536320557 +0200
+@@ -0,0 +1,489 @@
++package de.aetherion.items.storage;
++
++import de.aetherion.items.AetherionItems;
++import de.aetherion.items.core.ItemKeys;
++import de.aetherion.items.economy.ValueLore;
++import de.aetherion.items.manager.ItemManager;
++import de.aetherion.items.storage.SkillSack.Skill;
++import de.aetherion.items.storage.SkillSack.Slot;
++import de.aetherion.items.storage.SkillSack.Tier;
++import de.aetherion.items.util.GuiItems;
++
++import org.bukkit.Bukkit;
++import org.bukkit.Material;
++import org.bukkit.Sound;
++import org.bukkit.configuration.ConfigurationSection;
++import org.bukkit.configuration.file.YamlConfiguration;
++import org.bukkit.entity.Player;
++import org.bukkit.inventory.Inventory;
++import org.bukkit.inventory.InventoryHolder;
++import org.bukkit.inventory.ItemStack;
++import org.bukkit.inventory.meta.ItemMeta;
++import org.bukkit.persistence.PersistentDataType;
++import org.bukkit.plugin.java.JavaPlugin;
++
++import java.io.File;
++import java.io.IOException;
++import java.util.ArrayList;
++import java.util.HashMap;
++import java.util.LinkedHashMap;
++import java.util.List;
++import java.util.Locale;
++import java.util.Map;
++import java.util.UUID;
++
++/**
++ * Skill sacks T1–T3: count store, shared open-UI, and auto-absorb from the
++ * player's inventory and from Aetherion Storage. Same file folder as the booster sack.
++ */
++public final class SkillSackMenu {
++
++    private static final long SCAN_TTL_MS = 1_000L;
++    private static final long FLUSH_TICKS = 20L * 30L;
++
++    private final JavaPlugin plugin;
++    private final ItemManager items;
++    private final File folder;
++    private final Map<UUID, Data> cache = new HashMap<>();
++    private final Map<UUID, Scan> scans = new HashMap<>();
++
++    public SkillSackMenu(JavaPlugin plugin, ItemManager items) {
++        this.plugin = plugin;
++        this.items = items;
++        this.folder = new File(plugin.getDataFolder(), "sacks");
++        if (!folder.exists()) {
++            folder.mkdirs();
++        }
++        Bukkit.getScheduler().runTaskTimer(plugin, this::flushAll, FLUSH_TICKS, FLUSH_TICKS);
++    }
++
++    // ============================================================== open / UI
++
++    public void open(Player player, ItemStack sackItem) {
++        Skill skill = SkillSack.skillOf(sackItem);
++        Tier tier = SkillSack.tierOf(sackItem);
++        UUID id = SackItems.idOf(sackItem);
++        if (player == null || skill == null || tier == null || id == null) {
++            return;
++        }
++        invalidate(player);
++        Holder holder = new Holder(id, skill, tier, data(id));
++        int rows = tier.forms().size() + 2;
++        Inventory inventory = Bukkit.createInventory(holder, rows * 9, SkillSack.displayName(skill, tier));
++        holder.bind(inventory);
++        paint(holder);
++        player.openInventory(inventory);
++        player.playSound(player.getLocation(), Sound.ITEM_BUNDLE_DROP_CONTENTS, 0.5f, 1.2f);
++    }
++
++    public void paint(Holder holder) {
++        if (holder == null || holder.inventory == null) {
++            return;
++        }
++        Inventory inventory = holder.inventory;
++        int size = inventory.getSize();
++        ItemStack filler = GuiItems.named(Material.GRAY_STAINED_GLASS_PANE, " ");
++        for (int i = 0; i < size; i++) {
++            inventory.setItem(i, filler);
++        }
++        holder.slots.clear();
++        inventory.setItem(4, header(holder));
++        List<Integer> columns = columns(holder.skill.resources().size());
++        int row = 1;
++        for (SkillSack.Form form : holder.tier.forms()) {
++            int col = 0;
++            for (var resource : holder.skill.resources()) {
++                Slot slot = new Slot(resource, form);
++                int raw = row * 9 + columns.get(col++);
++                holder.slots.put(raw, slot);
++                inventory.setItem(raw, icon(slot, holder.data.count(slot), holder.tier.capacity()));
++            }
++            row++;
++        }
++        inventory.setItem(size - 5, GuiItems.named(Material.HOPPER, "§aInsert All",
++                "§7Moves every matching item from",
++                "§7your inventory into this sack."));
++    }
++
++    /** Raw-slot click in the top inventory. */
++    public void handleClick(Player player, Holder holder, int rawSlot, boolean rightClick) {
++        if (player == null || holder == null || holder.inventory == null) {
++            return;
++        }
++        if (rawSlot == holder.inventory.getSize() - 5) {
++            int moved = insertAll(player, holder);
++            paint(holder);
++            if (moved > 0) {
++                player.playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 0.45f, 1.35f);
++                player.sendActionBar("§aInserted §f" + format(moved) + " §aitem" + (moved == 1 ? "" : "s") + ".");
++            } else {
++                player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.35f, 0.7f);
++                player.sendActionBar("§7Nothing to insert.");
++            }
++            return;
++        }
++        Slot slot = holder.slots.get(rawSlot);
++        if (slot == null) {
++            return;
++        }
++        int stored = holder.data.count(slot);
++        if (stored <= 0) {
++            player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.3f, 0.55f);
++            return;
++        }
++        ItemStack give = withdrawStack(slot);
++        int want = Math.min(stored, rightClick ? 1 : give.getMaxStackSize());
++        give.setAmount(want);
++        Map<Integer, ItemStack> leftover = player.getInventory().addItem(give);
++        int notGiven = 0;
++        for (ItemStack left : leftover.values()) {
++            notGiven += left == null ? 0 : left.getAmount();
++        }
++        int taken = want - notGiven;
++        if (taken <= 0) {
++            player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 0.35f, 1.0f);
++            player.sendActionBar("§7Inventory full.");
++            return;
++        }
++        holder.data.add(slot, -taken, holder.tier.capacity());
++        paint(holder);
++        player.playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 0.4f, 1.15f);
++    }
++
++    public void save(Holder holder) {
++        if (holder != null) {
++            flush(holder.sackId);
++        }
++    }
++
++    private ItemStack header(Holder holder) {
++        ItemStack item = SkillSack.create(holder.skill, holder.tier, holder.sackId);
++        ItemMeta meta = item.getItemMeta();
++        if (meta != null) {
++            long total = 0;
++            for (Slot slot : SkillSack.slots(holder.skill, holder.tier)) {
++                total += holder.data.count(slot);
++            }
++            List<String> lore = new ArrayList<>(meta.getLore() == null ? List.of() : meta.getLore());
++            // Swap the "Right-click to open." hint for live totals.
++            if (!lore.isEmpty()) {
++                lore.remove(lore.size() - 1);
++            }
++            lore.add("§7Stored: §f" + format(total) + " §7items");
++            meta.setLore(lore);
++            meta.getPersistentDataContainer().set(ItemKeys.guiDisplay(), PersistentDataType.BYTE, (byte) 1);
++            item.setItemMeta(meta);
++        }
++        return item;
++    }
++
++    private ItemStack icon(Slot slot, int stored, int capacity) {
++        ItemStack item = slot.sample();
++        item.setAmount(1);
++        ItemMeta meta = item.getItemMeta();
++        if (meta == null) {
++            return item;
++        }
++        meta.setDisplayName(slot.displayName());
++        List<String> lore = new ArrayList<>();
++        lore.add("§7Stored: §f" + format(stored) + "§8/§f" + format(capacity));
++        lore.add(bar(stored, capacity));
++        lore.add("");
++        if (stored > 0) {
++            lore.add("§eLeft-click §7take a stack");
++            lore.add("§eRight-click §7take one");
++        } else {
++            lore.add("§8Empty");
++        }
++        meta.setLore(lore);
++        meta.getPersistentDataContainer().set(ItemKeys.guiDisplay(), PersistentDataType.BYTE, (byte) 1);
++        GuiItems.hideVanilla(meta);
++        item.setItemMeta(meta);
++        return item;
++    }
++
++    private static String bar(int stored, int capacity) {
++        int filled = capacity <= 0 ? 0 : (int) Math.round(20.0 * Math.min(stored, capacity) / capacity);
++        if (stored > 0 && filled == 0) {
++            filled = 1;
++        }
++        return "§a" + "|".repeat(filled) + "§8" + "|".repeat(20 - filled);
++    }
++
++    /** Centered columns: spaced out when the skill has few resources. */
++    private static List<Integer> columns(int count) {
++        List<Integer> out = new ArrayList<>();
++        if (count <= 0) {
++            return out;
++        }
++        int step = count * 2 - 1 <= 9 ? 2 : 1;
++        int width = (count - 1) * step + 1;
++        int start = Math.max(0, (9 - width) / 2);
++        for (int i = 0; i < count && i < 9; i++) {
++            out.add(start + i * step);
++        }
++        return out;
++    }
++
++    private ItemStack withdrawStack(Slot slot) {
++        ItemStack item = slot.sample();
++        AetherionItems plugin = AetherionItems.getInstance();
++        if (plugin != null && plugin.getItemValues() != null) {
++            ValueLore.apply(item, plugin.getItemValues());
++        }
++        return item;
++    }
++
++    private int insertAll(Player player, Holder holder) {
++        int moved = 0;
++        ItemStack[] contents = player.getInventory().getStorageContents();
++        for (int i = 0; i < contents.length; i++) {
++            ItemStack stack = contents[i];
++            Slot slot = SkillSack.slotFor(holder.skill, holder.tier, stack, items);
++            if (slot == null) {
++                continue;
++            }
++            int take = holder.data.add(slot, stack.getAmount(), holder.tier.capacity());
++            if (take <= 0) {
++                continue;
++            }
++            int left = stack.getAmount() - take;
++            if (left <= 0) {
++                player.getInventory().setItem(i, null);
++            } else {
++                stack.setAmount(left);
++                player.getInventory().setItem(i, stack);
++            }
++            moved += take;
++        }
++        return moved;
++    }
++
++    // ============================================================== absorb
++
++    /** Static entry for drop paths ({@code InventoryDrops}, auto-pickup). */
++    public static int tryAbsorb(Player player, ItemStack stack) {
++        AetherionItems plugin = AetherionItems.getInstance();
++        if (plugin == null || plugin.getSackInventory() == null) {
++            return 0;
++        }
++        return plugin.getSackInventory().skills().absorb(player, stack);
++    }
++
++    /** Quest / recipe credit for items that went into a sack instead of the inventory. */
++    public static void noteAbsorbed(Player player, ItemStack stack, int amount) {
++        if (player == null || stack == null || amount <= 0) {
++            return;
++        }
++        de.aetherion.items.util.QuestProgressHook.noteCollected(player, stack.getType(), amount);
++        AetherionItems plugin = AetherionItems.getInstance();
++        if (plugin != null && plugin.recipeUnlocks() != null) {
++            plugin.recipeUnlocks().noteObtained(player, stack);
++        }
++    }
++
++    /**
++     * Pushes as much of {@code stack} as fits into the player's skill sacks
++     * (inventory first, then Aetherion Storage). Does not modify the stack.
++     *
++     * @return amount absorbed (0 … stack amount)
++     */
++    public int absorb(Player player, ItemStack stack) {
++        if (player == null || stack == null || stack.getType().isAir() || stack.getAmount() <= 0) {
++            return 0;
++        }
++        List<Ref> sacks = sacksOf(player);
++        if (sacks.isEmpty()) {
++            return 0;
++        }
++        int remaining = stack.getAmount();
++        for (Ref ref : sacks) {
++            Slot slot = SkillSack.slotFor(ref.skill, ref.tier, stack, items);
++            if (slot == null) {
++                continue;
++            }
++            remaining -= data(ref.id).add(slot, remaining, ref.tier.capacity());
++            if (remaining <= 0) {
++                break;
++            }
++        }
++        int absorbed = stack.getAmount() - Math.max(0, remaining);
++        if (absorbed > 0 && player.getOpenInventory().getTopInventory().getHolder() instanceof Holder open) {
++            paint(open);
++        }
++        return absorbed;
++    }
++
++    /** Drop the cached sack scan (sack moved, storage closed, …). */
++    public void invalidate(Player player) {
++        if (player != null) {
++            scans.remove(player.getUniqueId());
++        }
++    }
++
++    private List<Ref> sacksOf(Player player) {
++        long now = System.currentTimeMillis();
++        Scan scan = scans.get(player.getUniqueId());
++        if (scan != null && now - scan.at < SCAN_TTL_MS) {
++            return scan.refs;
++        }
++        Map<UUID, Ref> found = new LinkedHashMap<>();
++        collect(found, player.getInventory().getContents());
++        Inventory top = player.getOpenInventory().getTopInventory();
++        if (top != null && top.getHolder() == null
++                && player.getOpenInventory().getTitle().startsWith(StorageGUI.STORAGE_TITLE)) {
++            // Live, not-yet-saved storage page.
++            collect(found, top.getContents());
++        }
++        AetherionItems aetherion = AetherionItems.getInstance();
++        StorageInventory storage = aetherion == null ? null : aetherion.getStorageInventory();
++        if (storage != null) {
++            collect(found, storage.storedItems(player.getUniqueId()).toArray(new ItemStack[0]));
++        }
++        List<Ref> refs = List.copyOf(found.values());
++        scans.put(player.getUniqueId(), new Scan(now, refs));
++        return refs;
++    }
++
++    private static void collect(Map<UUID, Ref> into, ItemStack[] contents) {
++        if (contents == null) {
++            return;
++        }
++        for (ItemStack stack : contents) {
++            Skill skill = SkillSack.skillOf(stack);
++            if (skill == null) {
++                continue;
++            }
++            Tier tier = SkillSack.tierOf(stack);
++            UUID id = SackItems.idOf(stack);
++            if (tier == null || id == null || into.containsKey(id)) {
++                continue;
++            }
++            into.put(id, new Ref(id, skill, tier));
++        }
++    }
++
++    // ============================================================== persistence
++
++    private Data data(UUID id) {
++        return cache.computeIfAbsent(id, this::load);
++    }
++
++    private Data load(UUID id) {
++        Data data = new Data();
++        File file = file(id);
++        if (!file.exists()) {
++            return data;
++        }
++        YamlConfiguration yaml = YamlConfiguration.loadConfiguration(file);
++        ConfigurationSection counts = yaml.getConfigurationSection("counts");
++        if (counts == null) {
++            return data;
++        }
++        for (String form : counts.getKeys(false)) {
++            ConfigurationSection section = counts.getConfigurationSection(form);
++            if (section == null) {
++                continue;
++            }
++            for (String resource : section.getKeys(false)) {
++                int value = section.getInt(resource, 0);
++                if (value > 0) {
++                    data.counts.put(form.toLowerCase(Locale.ROOT) + "." + resource.toLowerCase(Locale.ROOT), value);
++                }
++            }
++        }
++        return data;
++    }
++
++    public void flushAll() {
++        for (UUID id : new ArrayList<>(cache.keySet())) {
++            flush(id);
++        }
++    }
++
++    private void flush(UUID id) {
++        Data data = cache.get(id);
++        if (data == null || !data.dirty) {
++            return;
++        }
++        YamlConfiguration yaml = new YamlConfiguration();
++        yaml.set("type", SkillSack.TYPE_TAG);
++        for (Map.Entry<String, Integer> entry : data.counts.entrySet()) {
++            if (entry.getValue() != null && entry.getValue() > 0) {
++                yaml.set("counts." + entry.getKey(), entry.getValue());
++            }
++        }
++        try {
++            de.aetherion.core.persist.AtomicYaml.save(yaml, file(id), plugin.getLogger());
++            data.dirty = false;
++        } catch (IOException exception) {
++            plugin.getLogger().warning("Could not save skill sack " + id + ": " + exception.getMessage());
++        }
++    }
++
++    private File file(UUID id) {
++        return new File(folder, id + ".yml");
++    }
++
++    private static String format(long value) {
++        return String.format(Locale.US, "%,d", value);
++    }
++
++    // ============================================================== types
++
++    private record Ref(UUID id, Skill skill, Tier tier) {
++    }
++
++    private record Scan(long at, List<Ref> refs) {
++    }
++
++    private static final class Data {
++        private final Map<String, Integer> counts = new HashMap<>();
++        private boolean dirty;
++
++        int count(Slot slot) {
++            return counts.getOrDefault(slot.key(), 0);
++        }
++
++        /** @return how much actually changed (clamped to 0 … capacity). */
++        int add(Slot slot, int delta, int capacity) {
++            int current = count(slot);
++            int next = Math.max(0, Math.min(capacity, current + delta));
++            if (next == current) {
++                return 0;
++            }
++            counts.put(slot.key(), next);
++            dirty = true;
++            return Math.abs(next - current);
++        }
++    }
++
++    public static final class Holder implements InventoryHolder {
++        private final UUID sackId;
++        private final Skill skill;
++        private final Tier tier;
++        private final Data data;
++        private final Map<Integer, Slot> slots = new HashMap<>();
++        private Inventory inventory;
++
++        Holder(UUID sackId, Skill skill, Tier tier, Data data) {
++            this.sackId = sackId;
++            this.skill = skill;
++            this.tier = tier;
++            this.data = data;
++        }
++
++        void bind(Inventory inventory) {
++            this.inventory = inventory;
++        }
++
++        public UUID sackId() {
++            return sackId;
++        }
++
++        @Override
++        public Inventory getInventory() {
++            return inventory;
++        }
++    }
++}
+diff -ruN a/AetherionItems/src/main/java/de/aetherion/items/storage/StorageInventory.java b/AetherionItems/src/main/java/de/aetherion/items/storage/StorageInventory.java
+--- a/AetherionItems/src/main/java/de/aetherion/items/storage/StorageInventory.java	2026-10-05 13:08:46.548721999 +0200
++++ b/AetherionItems/src/main/java/de/aetherion/items/storage/StorageInventory.java	2026-10-05 13:08:46.544492677 +0200
+@@ -839,6 +839,30 @@
+         saveStorage(uuid);
+     }
+ 
++    /** Every stored item across all pages (read-only view for skill sacks). */
++    public java.util.List<ItemStack> storedItems(UUID uuid) {
++        java.util.List<ItemStack> out = new java.util.ArrayList<>();
++        if (uuid == null) {
++            return out;
++        }
++        loadStorage(uuid);
++        ItemStack[][] pages = storageContents.get(uuid);
++        if (pages == null) {
++            return out;
++        }
++        for (ItemStack[] page : pages) {
++            if (page == null) {
++                continue;
++            }
++            for (ItemStack item : page) {
++                if (item != null && !item.getType().isAir()) {
++                    out.add(item);
++                }
++            }
++        }
++        return out;
++    }
++
+     public void invalidateAndReload(UUID uuid) {
+         if (uuid == null) {
+             return;
+@@ -846,4 +870,4 @@
+         storageContents.remove(uuid);
+         loadStorage(uuid);
+     }
+-}
+\ No newline at end of file
++}
+\ No newline at end of file
+diff -ruN a/AetherionItems/src/main/java/de/aetherion/items/util/InventoryDrops.java b/AetherionItems/src/main/java/de/aetherion/items/util/InventoryDrops.java
+--- a/AetherionItems/src/main/java/de/aetherion/items/util/InventoryDrops.java	2026-10-05 13:08:46.558021857 +0200
++++ b/AetherionItems/src/main/java/de/aetherion/items/util/InventoryDrops.java	2026-10-05 13:08:46.553378746 +0200
+@@ -62,6 +62,17 @@
+ 
+         Material type = stack.getType();
+         int amount = Math.max(1, stack.getAmount());
++        // Skill sacks (inventory or Aetherion Storage) take matching drops first.
++        int absorbed = de.aetherion.items.storage.SkillSackMenu.tryAbsorb(player, stack);
++        if (absorbed > 0) {
++            de.aetherion.items.storage.SkillSackMenu.noteAbsorbed(player, stack, absorbed);
++            if (absorbed >= amount) {
++                return;
++            }
++            stack = stack.clone();
++            amount -= absorbed;
++            stack.setAmount(amount);
++        }
+         var leftover = player.getInventory().addItem(stack);
+         int kept = amount;
+         for (ItemStack left : leftover.values()) {

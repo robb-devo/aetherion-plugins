@@ -51,7 +51,7 @@ public final class SackItems {
     }
 
     public static boolean isSack(ItemStack item) {
-        return typeOf(item) != null;
+        return typeOf(item) != null || SkillSack.is(item);
     }
 
     public static SackType typeOf(ItemStack item) {

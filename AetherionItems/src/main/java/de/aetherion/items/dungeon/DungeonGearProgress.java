@@ -260,7 +260,7 @@ public final class DungeonGearProgress {
     }
 
     private static void patchLore(ItemMeta meta, ItemStack item, ItemManager items, int level, int currentXp) {
-        List<String> lore = meta.getLore() == null ? new ArrayList<>() : new ArrayList<>(meta.getLore());
+        List<String> lore = de.aetherion.items.item.LoreLocale.loreOrEmpty(meta);
         List<String> next = new ArrayList<>();
         boolean wrote = false;
         for (String line : lore) {
@@ -289,18 +289,15 @@ public final class DungeonGearProgress {
                     items == null ? null : items.getRarity(item)
             ));
         }
-        meta.setLore(next);
+        de.aetherion.items.item.LoreLocale.writeLore(meta, next);
     }
 
     private static List<String> displayLines(int level, int currentXp, int dungeonPercent, int cap, Rarity rarity) {
         int safeCap = Math.max(LEVELS_PER_CORE, Math.min(MAX_LEVEL, cap));
         List<String> lines = new ArrayList<>();
-        lines.add("§5Dungeon: §f+" + Math.max(0, dungeonPercent) + "% stats");
         int rarityPercent = DungeonCore.rarityStatPercent(rarity);
-        if (rarityPercent > 0) {
-            lines.add("§7Rarity bonus: §f+" + rarityPercent + "% stats");
-        }
-        lines.add("§8Level cap §f" + safeCap + " §8(+25 per core)");
+        lines.add("§5Dungeon: §f+" + Math.max(0, dungeonPercent) + "% stats"
+                + (rarityPercent > 0 ? " §8· rarity §f+" + rarityPercent + "%" : ""));
         lines.add(levelBarLine(level, currentXp, safeCap));
         return lines;
     }

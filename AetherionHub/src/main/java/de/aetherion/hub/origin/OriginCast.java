@@ -1,5 +1,7 @@
 package de.aetherion.hub.origin;
 
+import de.aetherion.core.api.AetherServices;
+import de.aetherion.core.api.StoryAccess;
 import de.aetherion.core.npc.FancyNpcFacade;
 
 import net.kyori.adventure.text.Component;
@@ -550,11 +552,62 @@ public final class OriginCast implements Listener {
         clickCool.put(player.getUniqueId(), now + 400L);
         player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_AMBIENT, SoundCategory.NEUTRAL, 0.7f, 1.1f);
         boolean first = !isle.profiles().get(player).met.contains(role.id());
+        // Main story (AetherionQuests): a running step can end here — Sister Aurel's bell count.
+        List<String> story = storyTalk(player, role);
+        if (!story.isEmpty()) {
+            sayInTurn(player, role, story);
+            isle.compass().talked(player, role);
+            return;
+        }
         if (first) {
             say(player, role, role.barks().get(0));
         }
         isle.compass().talked(player, role);
         isle.menus().openBoard(player, role);
+    }
+
+    /** Story lines for this click (reader's language), empty when no story step ends here. */
+    private static List<String> storyTalk(Player player, OriginRole role) {
+        StoryAccess story = AetherServices.story();
+        if (story == null) {
+            return List.of();
+        }
+        try {
+            List<String> lines = story.talk(player, role.id());
+            return lines == null ? List.of() : lines;
+        } catch (RuntimeException ex) {
+            return List.of();
+        }
+    }
+
+    /** Ambient line from the story layer (stage-aware, German-aware), or null for the Hub's own barks. */
+    private static String storyBark(Player player, OriginRole role) {
+        StoryAccess story = AetherServices.story();
+        if (story == null) {
+            return null;
+        }
+        try {
+            return story.bark(player, role.id());
+        } catch (RuntimeException ex) {
+            return null;
+        }
+    }
+
+    /** One bubble per beat, read-paced, so a short story scene doesn't land as one wall of chat. */
+    private void sayInTurn(Player player, OriginRole role, List<String> lines) {
+        long delay = 0L;
+        for (String line : lines) {
+            if (delay == 0L) {
+                say(player, role, line);
+            } else {
+                Bukkit.getScheduler().runTaskLater(isle.plugin(), () -> {
+                    if (player.isOnline()) {
+                        say(player, role, line);
+                    }
+                }, delay);
+            }
+            delay += 50L;
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -719,8 +772,12 @@ public final class OriginCast implements Listener {
                     Long last = barked.get(key);
                     if (last == null || now - last > BARK_COOLDOWN_MS) {
                         barked.put(key, now);
-                        List<String> barks = entry.getKey().barks();
-                        say(player, entry.getKey(), barks.get(ThreadLocalRandom.current().nextInt(barks.size())));
+                        String line = storyBark(player, entry.getKey());
+                        if (line == null) {
+                            List<String> barks = entry.getKey().barks();
+                            line = barks.get(ThreadLocalRandom.current().nextInt(barks.size()));
+                        }
+                        say(player, entry.getKey(), line);
                     }
                 }
             }

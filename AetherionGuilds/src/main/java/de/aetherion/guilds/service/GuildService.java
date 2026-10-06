@@ -422,7 +422,7 @@ public final class GuildService {
         guild.setBankLevel(from + 1);
         save();
         broadcast(guild, "§a" + player.getName() + " upgraded the guild bank to §fLv." + guild.bankLevel()
-                + "§a. Coin cap is now §6" + GuildFormat.compact(guild.coinCap())
+                + "§a. Coin limit is now §6" + GuildFormat.compact(guild.coinCap())
                 + "§a with §f" + guild.bankSlots() + " §aitem slots.");
     }
 

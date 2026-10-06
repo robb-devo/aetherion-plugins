@@ -57,7 +57,7 @@ public final class CatcherGaffProgress {
         int cap = maxLevel(item);
         int level = Math.min(cap, levelFrom(meta, cap));
         meta.getPersistentDataContainer().set(ItemKeys.catcherGaffLevel(), PersistentDataType.INTEGER, level);
-        meta.setLore(withProgress(meta.getLore(), level, xpFrom(meta), cap));
+        de.aetherion.items.item.LoreLocale.writeLore(meta, withProgress(de.aetherion.items.item.LoreLocale.canonicalLore(meta), level, xpFrom(meta), cap));
         ItemPresentation.polish(meta);
         item.setItemMeta(meta);
     }
@@ -108,7 +108,7 @@ public final class CatcherGaffProgress {
         int copiedXp = xp(from);
         meta.getPersistentDataContainer().set(ItemKeys.catcherGaffLevel(), PersistentDataType.INTEGER, copiedLevel);
         meta.getPersistentDataContainer().set(ItemKeys.catcherGaffXp(), PersistentDataType.INTEGER, copiedXp);
-        meta.setLore(withProgress(meta.getLore(), copiedLevel, copiedXp, cap));
+        de.aetherion.items.item.LoreLocale.writeLore(meta, withProgress(de.aetherion.items.item.LoreLocale.canonicalLore(meta), copiedLevel, copiedXp, cap));
         ItemPresentation.polish(meta);
         to.setItemMeta(meta);
     }
@@ -166,13 +166,13 @@ public final class CatcherGaffProgress {
             stats.setCatchRate(stats.getCatchRate() + catchGain);
             stats.setSpeed(stats.getSpeed() + speedGain);
             items.saveItemStats(meta, stats);
-            List<String> lore = meta.hasLore() ? new ArrayList<>(meta.getLore()) : new ArrayList<>();
+            List<String> lore = de.aetherion.items.item.LoreLocale.loreOrEmpty(meta);
             ItemLore.updateDisplayedStats(lore, stats, items.getProfile(item));
-            meta.setLore(lore);
+            de.aetherion.items.item.LoreLocale.writeLore(meta, lore);
         }
         meta.getPersistentDataContainer().set(ItemKeys.catcherGaffLevel(), PersistentDataType.INTEGER, level);
         meta.getPersistentDataContainer().set(ItemKeys.catcherGaffXp(), PersistentDataType.INTEGER, level >= cap ? 0 : xp);
-        meta.setLore(withProgress(meta.getLore(), level, level >= cap ? 0 : xp, cap));
+        de.aetherion.items.item.LoreLocale.writeLore(meta, withProgress(de.aetherion.items.item.LoreLocale.canonicalLore(meta), level, level >= cap ? 0 : xp, cap));
         ItemPresentation.polish(meta);
         item.setItemMeta(meta);
         if (writeBack != null) {
@@ -187,7 +187,7 @@ public final class CatcherGaffProgress {
         }
         ItemMeta meta = item.getItemMeta();
         int cap = maxLevel(item);
-        meta.setLore(withProgress(meta.getLore(), level(item), xp(item), cap));
+        de.aetherion.items.item.LoreLocale.writeLore(meta, withProgress(de.aetherion.items.item.LoreLocale.canonicalLore(meta), level(item), xp(item), cap));
         item.setItemMeta(meta);
     }
 

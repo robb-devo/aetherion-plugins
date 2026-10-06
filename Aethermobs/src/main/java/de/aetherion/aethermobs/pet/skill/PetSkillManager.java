@@ -3921,10 +3921,10 @@ public class PetSkillManager implements Listener {
                             );
 
             if (entity != null) {
-
-                entity.setGlowing(
-                        false
-                );
+                entity.setGlowing(false);
+                if (entity instanceof LivingEntity living) {
+                    living.removePotionEffect(PotionEffectType.GLOWING);
+                }
             }
         }
 
@@ -3937,20 +3937,16 @@ public class PetSkillManager implements Listener {
                             );
 
             if (entity != null) {
-
-                // Lookout used to setGlowing(true) — that painted every Borderlands
-                // zombie with a wallhack outline. No glow; range-only soft sense stays
-                // for the skill tick bookkeeping (range scan still runs).
-                entity.setGlowing(
-                        false
-                );
+                // NEVER outline hostiles/bosses for lookout/scout pets. Glow is global.
+                entity.setGlowing(false);
+                if (entity instanceof LivingEntity living) {
+                    living.removePotionEffect(PotionEffectType.GLOWING);
+                }
             }
         }
 
         lookoutMobs.clear();
-        lookoutMobs.addAll(
-                nextMobs
-        );
+        // Do not track targets for glow — skill stays range-only bookkeeping if needed later.
     }
 
     private void clearBeacons() {

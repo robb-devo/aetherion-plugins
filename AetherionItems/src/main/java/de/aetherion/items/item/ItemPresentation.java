@@ -4,7 +4,6 @@ import de.aetherion.items.core.ItemKeys;
 import de.aetherion.items.model.Rarity;
 
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
@@ -19,12 +18,13 @@ import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Entry point for item presentation: rarity-colored name + spec layout (docs/ITEM_TOOLTIP_SPEC.md).
+ */
 public final class ItemPresentation {
 
-    private static final Pattern RARITY_LINE = Pattern.compile(
-            "(?i)^(?:§.)*(?:✦\\s*)?(?:§.)*(COMMON|UNCOMMON|RARE|EPIC|LEGENDARY|MYTHIC|AETHERED|GOD ITEM)\\b.*$"
-    );
-    private static final Pattern STAT_NUMBER = Pattern.compile("(\\d+)[.,](\\d+)");
+    private static final Pattern DECIMAL = Pattern.compile("(?<![\\d.,])(\\d+)[.,](\\d{1,2})(?![\\d])");
+    private static final String DECORATION = "✦✧★☆⚝✪";
     private static final int[] RAINBOW = {
             0xFF5E7E, 0xFF9A5C, 0xFFD76A, 0x7DFFB3, 0x6AD5FF, 0x7B8CFF, 0xC9A7FF, 0xFF8AD4
     };
@@ -42,31 +42,50 @@ public final class ItemPresentation {
         }
         String itemId = meta.getPersistentDataContainer().get(ItemKeys.item(), PersistentDataType.STRING);
         Rarity rarity = rarityOf(meta);
-        applyName(meta, itemId, rarity);
+        boolean german = LoreLocale.target(meta);
+        applyName(meta, itemId, rarity, german);
         TooltipStyle.apply(meta, rarity);
-        if (meta.hasLore() && meta.lore() != null) {
-            meta.setLore(polishLore(new ArrayList<>(meta.getLore()), itemId, rarity));
+        if (LoreTemplates.capturing()) {
+            return;
+        }
+        if (meta.hasLore() && meta.getLore() != null) {
+            // English is canonical: a German item is taken back to English, laid out, then localized again.
+            List<String> english = LoreLocale.canonicalLore(meta);
+            List<String> laidOut = polishLore(english, itemId, rarity);
+            meta.setLore(LoreLocale.present(meta, itemId, laidOut));
         }
     }
 
     public static Component coloredName(String plain, String itemId, Rarity rarity) {
-        String text = plain == null ? "" : plain.trim();
+        String text = cleanName(plain);
         if (text.isBlank()) {
             return Component.empty();
         }
         if (isGod(itemId)) {
             return rainbow(text);
         }
-        if (itemId != null && itemId.toLowerCase(Locale.ROOT).startsWith("simple_")) {
-            return Component.text(text)
-                    .decoration(TextDecoration.ITALIC, false)
-                    .color(NamedTextColor.GRAY);
-        }
         Component component = Component.text(text).decoration(TextDecoration.ITALIC, false);
         if (rarity != null) {
             component = component.color(rarity.textColor());
         }
         return component;
+    }
+
+    /** Drops decorative glyph runs around a name ({@code ✦✦✦ Worldbite} → {@code Worldbite}). */
+    public static String cleanName(String plain) {
+        if (plain == null) {
+            return "";
+        }
+        String text = plain.trim();
+        int start = 0;
+        while (start < text.length() && (DECORATION.indexOf(text.charAt(start)) >= 0 || text.charAt(start) == ' ')) {
+            start++;
+        }
+        int end = text.length();
+        while (end > start && (DECORATION.indexOf(text.charAt(end - 1)) >= 0 || text.charAt(end - 1) == ' ')) {
+            end--;
+        }
+        return text.substring(start, end);
     }
 
     public static Component rainbow(String text) {
@@ -79,15 +98,29 @@ public final class ItemPresentation {
         return name;
     }
 
-    private static void applyName(ItemMeta meta, String itemId, Rarity rarity) {
+    private static void applyName(ItemMeta meta, String itemId, Rarity rarity, boolean german) {
         String plain = plainName(meta);
         if (plain.isBlank()) {
             return;
         }
+        // names are canonical English too: a German name is mapped back, then localized for the viewer
+        String english = LoreLocale.englishName(plain);
+        String shown = german ? LoreLocale.germanName(english) : english;
+        if (shown == null) {
+            shown = english;
+        }
         if (rarity == null && !isGod(itemId)) {
+            if (!shown.equals(plain)) {
+                String legacy = meta.hasDisplayName() ? meta.getDisplayName() : "";
+                String codes = legacy.replaceFirst("^((?:§[0-9a-fk-or])*).*$", "$1");
+                if (!codes.isEmpty() && ChatColor.stripColor(legacy).equals(plain)
+                        && legacy.equals(codes + plain)) {
+                    meta.setDisplayName(codes + shown);
+                }
+            }
             return;
         }
-        meta.displayName(coloredName(plain, itemId, rarity));
+        meta.displayName(coloredName(shown, itemId, rarity));
     }
 
     private static String plainName(ItemMeta meta) {
@@ -116,109 +149,28 @@ public final class ItemPresentation {
     }
 
     private static List<String> polishLore(List<String> lore, String itemId, Rarity rarity) {
-        List<String> cleaned = new ArrayList<>();
+        List<String> cleaned = new ArrayList<>(lore.size());
         for (String line : lore) {
-            if (isRarityHeader(line)) {
-                continue;
-            }
             cleaned.add(reformatNumbers(line));
         }
-        while (!cleaned.isEmpty() && cleaned.get(0).isBlank()) {
-            cleaned.remove(0);
-        }
-        cleaned.removeIf(ItemPresentation::isDuplicateAetherbladeLine);
-        ItemFlavor.inject(cleaned, itemId);
         DungeonCore.ensureHint(cleaned, itemId);
-        punctuate(cleaned);
         return LoreLayout.normalize(cleaned, itemId, rarity);
     }
 
-    private static boolean isDuplicateAetherbladeLine(String line) {
-        if (line == null) {
-            return false;
-        }
-        String plain = ChatColor.stripColor(line).trim().toLowerCase(Locale.ROOT);
-        return plain.equals("a mythical blade. origin unknown");
-    }
-
-    private static boolean isRarityHeader(String line) {
-        if (line == null) {
-            return false;
-        }
-        String stripped = ChatColor.stripColor(line).trim();
-        return RARITY_LINE.matcher(stripped).matches();
-    }
-
+    /** One number style everywhere: {@code 100.00 → 100}, {@code 1,50 → 1.5}. Thousands separators stay. */
     public static String reformatNumbers(String line) {
         if (line == null || line.isBlank()) {
             return line;
         }
-        Matcher matcher = STAT_NUMBER.matcher(line);
+        Matcher matcher = DECIMAL.matcher(line);
         StringBuilder out = new StringBuilder();
         while (matcher.find()) {
             String whole = matcher.group(1);
-            String fraction = matcher.group(2);
-            String replacement;
-            if (fraction.matches("0+")) {
-                replacement = whole;
-            } else {
-                replacement = whole + "," + (fraction.length() == 1 ? fraction + "0" : fraction);
-            }
+            String fraction = matcher.group(2).replaceAll("0+$", "");
+            String replacement = fraction.isEmpty() ? whole : whole + "." + fraction;
             matcher.appendReplacement(out, Matcher.quoteReplacement(replacement));
         }
         matcher.appendTail(out);
         return out.toString();
-    }
-
-    private static void punctuate(List<String> lore) {
-        for (int i = 0; i < lore.size(); i++) {
-            String line = lore.get(i);
-            if (!isFlavor(line)) {
-                continue;
-            }
-            if (i + 1 < lore.size() && isContinuation(lore.get(i + 1))) {
-                continue;
-            }
-            lore.set(i, ensureSentence(line));
-        }
-    }
-
-    private static boolean isFlavor(String line) {
-        if (line == null || line.isBlank()) {
-            return false;
-        }
-        String stripped = ChatColor.stripColor(line).trim();
-        if (stripped.length() < 12 || stripped.contains(":")) {
-            return false;
-        }
-        if (line.contains("Boosters") || line.contains("Mining Power") || line.contains("Fortune")
-                || line.contains("Damage") || line.contains("Defense") || line.contains("Health")
-                || line.contains("Spread") || line.contains("Harvest") || line.contains("Fish Speed")
-                || line.contains("Fish Catch") || line.contains("Crit") || line.contains("Speed")
-                || line.contains("Catch Rate") || line.contains("Hoe Level") || line.contains("Rod Level")
-                || stripped.startsWith("●") || stripped.startsWith("◆")) {
-            return false;
-        }
-        return line.trim().startsWith("§7");
-    }
-
-    private static boolean isContinuation(String line) {
-        if (line == null || !line.trim().startsWith("§7")) {
-            return false;
-        }
-        String stripped = ChatColor.stripColor(line).trim();
-        return !stripped.isEmpty() && Character.isLowerCase(stripped.charAt(0));
-    }
-
-    private static String ensureSentence(String line) {
-        String stripped = ChatColor.stripColor(line).trim();
-        if (stripped.endsWith(".") || stripped.endsWith("!") || stripped.endsWith("?") || stripped.endsWith("...")) {
-            return line;
-        }
-        int words = stripped.split("\\s+").length;
-        if (words < 3) {
-            return line;
-        }
-        return line + ".";
     }
 }

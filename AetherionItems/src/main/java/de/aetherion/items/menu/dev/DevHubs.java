@@ -247,6 +247,8 @@ final class DevHubs {
                 "§7Mill anchors · crop tiers · cane tools ·", "§7district signs · treats · pantry NPCs."));
         inventory.setItem(22, tile(Material.POTION, "§cSpirit Vials", "page:BORDERLANDS_SPIRITS",
                 "§7T1 Borderlands altar vials +", "§7T2 Crypt / Colosseum vials."));
+        inventory.setItem(23, tile(Material.LECTERN, "§6Lore & Chronicle", "page:LORE",
+                "§7Story finds · Queen's letters ·", "§7The Mad King · Sealed Writ. No stats."));
         // Row 3 — quick grabs (the real items; also on their shelves).
         var custom = menu.customItem();
         inventory.setItem(28, DevItems.tag(custom.createRecipeBook().clone(), "item:recipe_book"));

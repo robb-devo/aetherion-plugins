@@ -31,7 +31,17 @@ public final class ItemFlavor {
         }
     }
 
+    /** Curated flavor first, then the generic set/tier line. */
     public static String jokeFor(String itemId) {
+        String curated = curatedFor(itemId);
+        if (curated != null) {
+            return curated;
+        }
+        return itemId == null || itemId.isBlank() ? null : setJoke(itemId.toLowerCase(Locale.ROOT));
+    }
+
+    /** Hand-written flavor for one specific item (wins over any authored quip). */
+    public static String curatedFor(String itemId) {
         if (itemId == null || itemId.isBlank()) {
             return null;
         }
@@ -83,10 +93,19 @@ public final class ItemFlavor {
             case "bone_knife" -> "§7Calcium with a grudge.";
             case "obsidian_maul" -> "§7The door is you. The door hits back.";
             case "mender_staff" -> "§7Keep them alive. They will not thank you.";
-            default -> {
-                String packed = de.aetherion.items.economy.CompressedResource.flavorFor(id);
-                yield packed != null ? packed : setJoke(id);
-            }
+            case "ashen_katana" -> "§7The sheath remembers every cut.";
+            case "wooden_rod" -> "§7Bad at fishing. Great at lightning.";
+            case "copper_rod" -> "§7The wooden rod, but it learned to gossip.";
+            case "frost_shard" -> "§7Cold enough to make a skeleton shiver.";
+            case "ember_rod" -> "§7Compressed redstone and a bad attitude.";
+            case "hunter_crossbow" -> "§7A crossbow by name. The arrows disagree.";
+            case "blueprint_upgrade_stone_2" -> "§7Amethyst with ambitions.";
+            case "blueprint_upgrade_stone_3" -> "§7Gold, with opinions about your tool.";
+            case "blueprint_upgrade_stone_4" -> "§7Scrap that remembers being netherite.";
+            case "dungeon_core" -> "§7A dungeon coughed. This is the hairball.";
+            case "dungeon_core_2" -> "§7Second spark. The dungeon is less amused.";
+            case "dungeon_core_3" -> "§7The last honest piece of a dishonest floor.";
+            default -> de.aetherion.items.economy.CompressedResource.flavorFor(id);
         };
     }
 

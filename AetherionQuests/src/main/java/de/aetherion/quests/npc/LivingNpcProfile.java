@@ -2,7 +2,6 @@ package de.aetherion.quests.npc;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextDecoration;
 
 import org.bukkit.Color;
 import org.bukkit.Material;
@@ -194,8 +193,8 @@ public final class LivingNpcProfile {
                 .hand(Material.KELP).leather(Color.fromRGB(50, 90, 100)).chest().boots()
                 .slim().skinFile("alex_slim.png"));
 
-        // Hub farm portal guide (FancyNpc)
-        put(p("farm_isle_guide", "Isle Gate", NamedTextColor.GREEN, "§a")
+        // Harlow — hub Farm Isle guide, far end of the barn (FancyNpc)
+        put(p("farm_isle_guide", "Farm Isle Road", NamedTextColor.GREEN, "§a")
                 .hand(Material.WHEAT).leather(Color.fromRGB(110, 130, 55)).chest().boots()
                 .skinFile("farmer.png"));
 
@@ -234,6 +233,9 @@ public final class LivingNpcProfile {
         put(p("liquidator", "Crystal Desk", NamedTextColor.LIGHT_PURPLE, "§d")
                 .hand(Material.AMETHYST_SHARD).leather(Color.fromRGB(72, 36, 110))
                 .fullLeather().slim().skinFile("mystic.png"));
+        put(p("amethyst_mines_guide", "Amethyst Mines", NamedTextColor.LIGHT_PURPLE, "§d")
+                .hand(Material.AMETHYST_CLUSTER).leather(Color.fromRGB(90, 40, 140))
+                .fullLeather().slim().skinFile("mystic.png"));
     }
 
     static {
@@ -247,6 +249,25 @@ public final class LivingNpcProfile {
         put(p("lamp_lighter", "Lamp Round", NamedTextColor.YELLOW, "§e")
                 .hand(Material.LANTERN).leather(Color.fromRGB(30, 42, 58)).chest().boots()
                 .skinFile("scout.png"));
+    }
+
+    static {
+        // Main story "Das Schlaflied" (/questnpc story) — not placed by default.
+        put(p("ysolde", "Archive Desk", NamedTextColor.DARK_AQUA, "§3")
+                .hand(Material.WRITTEN_BOOK).leather(Color.fromRGB(46, 62, 70)).fullLeather()
+                .slim().skinFile("alex_slim.png"));
+        put(p("berit", "Edge of Town", NamedTextColor.GOLD, "§6")
+                .hand(Material.CANDLE).leather(Color.fromRGB(122, 92, 74)).chest().boots()
+                .slim().skinFile("alex_slim.png"));
+        put(p("nell", "Harbour Lane", NamedTextColor.YELLOW, "§e")
+                .hand(Material.LANTERN).leather(Color.fromRGB(196, 150, 90)).chest().boots()
+                .slim().skinFile("alex_slim.png"));
+        put(p("hesper", "Anchor Camp", NamedTextColor.GRAY, "§7")
+                .hand(Material.CHAIN).leather(Color.fromRGB(58, 58, 64)).fullLeather()
+                .skinFile("guard.png"));
+        put(p("ferryman", "Veil Quay", NamedTextColor.DARK_GRAY, "§8")
+                .hand(Material.OAK_BOAT).leather(Color.fromRGB(150, 156, 160)).fullLeather()
+                .skinFile("sailor.png"));
     }
 
     private static Builder p(String id, String subtitle, NamedTextColor color, String chat) {
@@ -329,11 +350,18 @@ public final class LivingNpcProfile {
         return skinUsername;
     }
 
+    /** Name colour refined for in-world chrome (plate, bubble rim, focused reply, quest card). */
+    public net.kyori.adventure.text.format.TextColor accent() {
+        return de.aetherion.quests.talk.TalkChrome.accent(nameColor);
+    }
+
+    /**
+     * Two quiet lines over the head: name in the accent, role in small caps. The talk bubble
+     * floats right above it, so the plate also names the speaker while they talk.
+     */
     public Component nametag(String displayName) {
         String name = displayName == null ? id : displayName;
-        return Component.text(name, nameColor, TextDecoration.BOLD)
-                .append(Component.newline())
-                .append(Component.text(subtitle, NamedTextColor.GRAY));
+        return de.aetherion.quests.talk.TalkChrome.nameplate(name, accent(), subtitle);
     }
 
     public String formatChatLine(String displayName, String line) {
@@ -356,8 +384,11 @@ public final class LivingNpcProfile {
         enqueueSay(player, npcId, displayName, line);
     }
 
-    private static final java.util.Map<java.util.UUID, Integer> SAY_QUEUES = new java.util.concurrent.ConcurrentHashMap<>();
-
+    /**
+     * Queue a line on the player's speech clock ({@link de.aetherion.quests.dialog.DialogPace}):
+     * it starts once whatever is being said has typed out and had its read gap — same rhythm
+     * at the start of a conversation and in the middle of it.
+     */
     private static void enqueueSay(
             org.bukkit.entity.Player player,
             String npcId,
@@ -369,21 +400,12 @@ public final class LivingNpcProfile {
             sayNow(player, npcId, displayName, line);
             return;
         }
-        java.util.UUID id = player.getUniqueId();
-        int slot = SAY_QUEUES.merge(id, 1, Integer::sum) - 1;
-        long delay = slot * de.aetherion.quests.dialog.DialogPace.LINE_GAP_TICKS;
+        String filled = de.aetherion.quests.talk.TalkText.fill(player, line);
+        long delay = de.aetherion.quests.dialog.DialogPace.reserve(player, filled);
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-            if (!player.isOnline()) {
-                SAY_QUEUES.remove(id);
-                return;
+            if (player.isOnline()) {
+                sayNow(player, npcId, displayName, line);
             }
-            sayNow(player, npcId, displayName, line);
-            SAY_QUEUES.compute(id, (k, v) -> {
-                if (v == null || v <= 1) {
-                    return null;
-                }
-                return v - 1;
-            });
         }, delay);
     }
 

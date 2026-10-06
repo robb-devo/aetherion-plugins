@@ -457,7 +457,7 @@ final class MachineFx {
                 world.playSound(at, Sound.BLOCK_CHAIN_PLACE, SoundCategory.BLOCKS, 0.8f, 0.7f);
             }
         }
-        if (s.type() == StructureType.DEPOT) {
+        if (s.type() == StructureType.DEPOT || s.type() == StructureType.STORAGE_HUT) {
             crates(world, props, s, view.fill());
         }
         props.assemble = false;
@@ -481,7 +481,7 @@ final class MachineFx {
     }
 
     private void crates(World world, Props props, PlacedStructure s, double fill) {
-        int slots = PropBodies.crateSlots(s.level());
+        int slots = PropBodies.crateSlots(s.level(), s.type());
         int want = fill <= 0.0 ? 0 : Math.max(1, (int) Math.round(fill * slots));
         if (!aliveParts(props.crates)) {
             killParts(props.crates);
@@ -490,7 +490,7 @@ final class MachineFx {
         if (want == have) {
             return;
         }
-        List<PropBodies.Part> all = PropBodies.crates(want, s.level());
+        List<PropBodies.Part> all = PropBodies.crates(want, s.level(), s.type());
         if (want < have) {
             while (props.crates.size() > want) {
                 BodyPart last = props.crates.remove(props.crates.size() - 1);
@@ -575,6 +575,16 @@ final class MachineFx {
         switch (s.type()) {
             case MILL -> world.spawnParticle(Particle.WHITE_ASH, center.clone().add(0, 0.6, 0), s.level() >= 2 ? 10 : 6,
                     0.6, 0.3, 0.6, 0.01);
+            case WORKSHOP -> {
+                // the holo core hums: a few glyphs drift into it, the Grand Hub sends light up its tower
+                Location gem = new Location(world, s.x() + 0.5, s.y() + 3.45, s.z() + 0.5);
+                int[] back = de.aetherion.guilds.template.StateRotator.rotateXZ(0, -1, s.rot());
+                gem.add(back[0] * 0.45, 0, back[1] * 0.45);
+                world.spawnParticle(Particle.ENCHANT, gem, 4, 0.6, 0.4, 0.6, 0.6);
+                if (s.level() >= 3) {
+                    world.spawnParticle(Particle.END_ROD, gem.clone().add(back[0] * 1.1, 2.5, back[1] * 1.1), 1, 0.15, 0.4, 0.15, 0.01);
+                }
+            }
             case FORGE -> {
                 int[] chimney = de.aetherion.guilds.template.StateRotator.rotateXZ(-1, -1, s.rot());
                 world.spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, s.x() + chimney[0] * 0.85 + 0.5, s.y() + 4.8,

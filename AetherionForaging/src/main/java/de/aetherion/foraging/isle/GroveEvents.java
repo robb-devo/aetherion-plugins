@@ -192,10 +192,10 @@ public final class GroveEvents implements Listener {
                 }
             }
             case BARK_BLIGHT -> {
-                if (tick % 6 == 0) {
-                    for (Player player : onIsle) {
-                        isle.critters().spawnBeetle(player);
-                    }
+                // One beetle spawn pulse for the isle — not once per player (was N× every 6s).
+                if (tick % 10 == 0 && !onIsle.isEmpty()) {
+                    Player target = onIsle.get(ThreadLocalRandom.current().nextInt(onIsle.size()));
+                    isle.critters().spawnBeetle(target);
                 }
             }
             default -> {
@@ -411,6 +411,7 @@ public final class GroveEvents implements Listener {
             d.setTeleportDuration(6);
             d.setPersistent(false);
             d.addScoreboardTag(LOG_TAG);
+            ForageDisplays.mark(d);
         });
         log.hitbox = world.spawn(spot, Interaction.class, i -> {
             i.setInteractionWidth(1.6f);
@@ -418,6 +419,7 @@ public final class GroveEvents implements Listener {
             i.setResponsive(true);
             i.setPersistent(false);
             i.addScoreboardTag(LOG_TAG);
+            ForageDisplays.mark(i);
         });
         Bukkit.getScheduler().runTaskLater(isle.plugin(), () -> {
             if (log.body.isValid()) {
@@ -468,10 +470,12 @@ public final class GroveEvents implements Listener {
     private void removeLog(WindLog log) {
         if (log.body != null) {
             logByPart.remove(log.body.getUniqueId());
+            ForageDisplays.forget(log.body);
             log.body.remove();
         }
         if (log.hitbox != null) {
             logByPart.remove(log.hitbox.getUniqueId());
+            ForageDisplays.forget(log.hitbox);
             log.hitbox.remove();
         }
     }

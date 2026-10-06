@@ -110,10 +110,12 @@ public final class RatingMenu {
                 player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 0.7f, 0.7f);
                 return;
             }
+            boolean wasReady = de.aetherion.beta.BetaJournal.anyReady(plugin, data);
             data.setSubmitted(true);
             plugin.store().save(data);
-            player.closeInventory();
             player.sendMessage(Texts.submitted(lang));
+            de.aetherion.beta.BetaJournal.announceNewRewards(plugin, player, data, wasReady);
+            ChecklistMenu.open(plugin, player);
             player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.8f, 1.2f);
             plugin.getLogger().info("Beta feedback from " + player.getName()
                     + " overall=" + data.answers().get(Q_OVERALL)

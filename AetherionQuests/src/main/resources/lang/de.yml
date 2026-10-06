@@ -87,6 +87,11 @@ ui:
     moved_on: "Das Gespräch ist vorbei. Nochmal rechtsklicken."
   # Action-bar hints spoken around talk
   tip:
+    story_next:
+      deed: "Weiter · Deed, der Isle Clerk · ab Aetherion Level 20"
+      nell: "Weiter · Nell · Hafengassen · Aetherion Level 50"
+      ysolde_road: "Erzähl's Ysolde · Archiv · Aetherion Level 60"
+      veil: "Der Veil Quay ist offen · die Fähre wartet auf Level 75"
     egon_wood_first: "Hinweis · Egon · erst Holz"
     mines_foreman: "Hinweis · Minen · Shaft Foreman"
     skills_blink: "Nether Star öffnen (Slot 9) → Skills blinkt"
@@ -99,7 +104,7 @@ ui:
     fields: "Hinweis · Felder · Farmer + Lark → dann Ledger"
     vex_next: "Tipp · Gear aufrüsten · dann Rite Warden"
     vex_soft: "Tipp · Sergeant Vex"
-    farm_isle: "Farm Isle · hinteres Scheunenende · optional"
+    farm_isle: "Farm Isle · Harlow · hinteres Scheunenende · später"
     to_ledger: "→ Miss Ledger · oder /capital"
     tutorial_egon: "Tutorial · Egon · Holz"
     tutorial_quartermaster: "Tutorial · Quartermaster · Kohle"
@@ -111,7 +116,9 @@ ui:
     tutorial_graduation: "Tutorial · Miss Ledger · Abschluss"
     # Red thread — Ledger's roads, harbour crumb, Twig, Vex gear check
     road_forage: "→ Twig · Schleim-Pad · Forage Isle"
-    road_farm: "→ Harrow · hinteres Scheunenende · Farm Isle"
+    road_farm: "→ Harlow · hinteres Scheunenende · Farm Isle"
+    farm_pad: "→ Farm-Isle-Pad · den Weg runter von der Scheune"
+    fish_pad: "→ Fishing-Eldervale-Pad · weit im Westen"
     road_fish: "→ Tackle · Hafenpier · Angeln"
     road_steel: "→ Sergeant Vex · erst Gear anlegen"
     road_rite: "→ Rite Warden · Borderlands"
@@ -119,6 +126,11 @@ ui:
     harbour_pad: "→ Schleim-Pad · Forage Isle (Twig)"
     vex_armour: "Tipp · Inventar → Rüstungsslots · Egons Kit"
     vex_temper: "Tipp · Temper · erst ein Booster"
+  # Soft-hint bossbar labels (QuestHint)
+  hint_label:
+    harlow: "Harlow · Farm Isle"
+    farm_pad: "Farm-Isle-Pad"
+    fish_pad: "Fishing-Eldervale-Pad"
   # /guide + Discord tips (QuestStoryGate#guideTips) — one "next" at a time
   guide:
     no_quests: "Sprich mit §aEgon §7am Pier von Anker Harbour — da beginnt die Orientierung."
@@ -146,6 +158,13 @@ progress:
   spawn_boss: "Beschwöre einen Boss"
 
 msg:
+  story:
+    find: "§6✦ Story-Fund §8» §f{0} §8· §7Neue Chronik-Seite."
+    letter_hint: "§7§oUnter dem Futter: ein Brief, wachsversiegelt, gezeichnet 'M'."
+  boss:
+    skuldugery: "§cSkuldugery §8» §f§oIch bin gerannt. Der Hauptmann nicht."
+    pathwarden: "§7Pathwarden §8» §f§oBefehl… erfüllt?"
+    bridge_troll: "§6Bridge Troll §8» §f§oKette alt. Kette schwer. Kette MEINS."
   tutorial_blocked: "Mach zuerst das Tutorial fertig."
   language_saved_de: "Sprache gespeichert · Deutsch (experimentell)"
   language_saved_en: "Language saved · English"
@@ -154,6 +173,34 @@ msg:
   harbour_pad: "§a✦ §7Hafen-Pad: §aTwig§7 zeigt dir den Schleimsprung → §aForage Isle§7."
 
 quests:
+  # Das Schlaflied (main story, Act I–II)
+  lullaby_old_tale:
+    title: "Eine alte Geschichte"
+    description: "Hollis sagt, Mütterchen Berit erzählt die Geschichte vom irren König am besten. Such ihr Häuschen am Rand der Capital und hör zu."
+  lullaby_gear:
+    title: "Das Summen in der Tiefe"
+    description: "Die tiefen Stollen der Shabby Mine summen Berits Schlaflied. Töte den Hollow Lurker und bring, was er bewacht, zu Ysolde Thorne ins Archiv."
+  lullaby_insignia:
+    title: "Ein Abzeichen der Garde"
+    description: "Ysolde will einen Beweis, dass der König eine Garde hatte. Töte Skuldugery, den brennenden Bogenschützen, und bring sein Abzeichen (Sun Guard Insignia) ins Archiv."
+  lullaby_short_toll:
+    title: "Glocken zählen"
+    description: "Frag Sister Aurel, die Hüterin der Sieben Glocken, was sie gezählt hat."
+  lullaby_old_seal:
+    title: "Das alte Siegel"
+    description: "Deine Inselpapiere tragen ein altes Siegel: Königreich Eldervale. Bring die Frage zu Ysolde Thorne ins Archiv."
+  lullaby_letters:
+    title: "Briefe von M"
+    description: "Finde in Welt-Kisten drei versiegelte Briefe, gezeichnet 'M', und bring sie Ysolde ins Archiv."
+  lullaby_third_anchor:
+    title: "Der dritte Anker"
+    description: "Geh runter zum Lager unter dem Fallen Anchor und frag Hesper Kael nach dem dritten Anker."
+  lullaby_forgotten:
+    title: "Das dunkle Fenster"
+    description: "Nell sagt, Mütterchen Berit hat vergessen, ihre Lampe anzumachen. Sieh bei Berit in ihrem Häuschen nach."
+  lullaby_silent_road:
+    title: "Die stille Straße"
+    description: "Töte den Pathwarden auf der versiegelten Königsstraße und bring das Schreiben, das er trägt, zu Ysolde ins Archiv."
   welcome_aboard:
     title: "Willkommen an Bord"
     description: "Sprich mit dem Forager oben am Hügel über Anker Harbour."
@@ -274,6 +321,18 @@ quests:
   guild_brick:
     title: "Gildenziegel"
     description: "Quarry Broker tauscht einen Compacted Cobblestone gegen Club-nahen Respekt."
+  signature_crystal:
+    title: "Schliff"
+    description: "Ore Ledger will einen Crystal Find, von Hand geknackt. Holzfäller schärfen T4-Äxte daran; Bauern mahlen ihn in T5-Erde."
+  signature_heartwood:
+    title: "Maserung"
+    description: "Timber Clerk will ein Elderbark Heartwood. Bergleute schäften T4-Spitzhacken damit; Kämpfer wickeln T4-Griffe in den dunklen Vetter."
+  signature_prize:
+    title: "Blaues Band"
+    description: "Larder will eine Prize Crop. Angler ködern T4-Schnüre damit; Bergleute essen sie bei T5."
+  signature_trophy:
+    title: "Wandtrophäe"
+    description: "Dock Scaler will einen Trophy Fish. Bauern düngen T4-Erde mit Fischmehl; T5-Kämpfer füttern ihre Platte mit Schuppen."
 
 dialogs:
   # ---------------------------------------------------------------- gates
@@ -292,7 +351,7 @@ dialogs:
     - "{player}, richtig? Egon. Ich rüste Rookies aus. Du siehst aus wie einer."
     - "Das Kit kostet zehn Eichenstämme. Der §eLumberjack§f am Hügel leiht dir die Axt."
     - "Nennt sich Forager. Lass ihm den Spaß."
-    - "Der §egelbe Pfeil oben§f kennt den Weg. Das Glitzern auf den Planken ist von mir."
+    - "Der §egelbe Pfeil oben§f kennt den Weg. Ich kenn hauptsächlich den Pier."
   egon_arrival_call:
     - "Hey — neues Gesicht! Hier drüben, beim grünen Leuchten."
   egon_greet_near:
@@ -380,8 +439,8 @@ dialogs:
 
   # ---------------------------------------------------------------- Hub / Capital / isles
   farm_isle_guide_intro:
-    - "Das Portal führt zur Farm Isle — geteilte Felder neben der Hub-Farm."
-    - "Farming §e10§f zum Betreten. Dasselbe Portal bringt dich zurück."
+    - "Die Farm Isle liegt den Weg runter — Eldervale-Felder, lange Reihen, besserer Boden."
+    - "Das Pad unten bringt dich hin, ab Farming §e10§f. Der Pfeil zeigt drauf."
     - "Der Farmer nebenan hält sich für den echten Farmer. Süß."
   forage_pad_guide_intro:
     - "Schleim-Pad → Forage Isle. Springen. Nicht nachdenken."
@@ -395,9 +454,14 @@ dialogs:
     - "Blaupausen-Schmiede. Tool plus Upgrade Stone. Das ist der ganze Trick."
     - "Tier II, III, IV — die Steine werden fies teuer. Schnell."
   isle_clerk_intro:
-    - "Die eigene Insel gibt's ab Aetherion Level §e20§f."
-    - "Nether Star, Slot neun → Island-Tab. Dort claimen. Ich mach keinen Papierkram."
-    - "Ein Beamter ohne Papierkram. Ja. Ich weiß."
+    default:
+      - "Die eigene Insel gibt's ab Aetherion Level §e20§f."
+      - "Nether Star, Slot neun → Island-Tab. Dort claimen. Ich mach keinen Papierkram."
+      - "Ein Beamter ohne Papierkram. Ja. Ich weiß."
+    after_seal:
+      - "Der Island-Tab ist im Manager, {player}. Slot neun. Wie immer."
+      - "Königreich Eldervale. Ich hab's nachgeschlagen, als du weg warst."
+      - "Dann hieß es von der Registry, ich soll aufhören. Also hab ich aufgehört."
   merchant_intro:
     - "Welt-Kisten. Nicht nur diese hier — die spawnen überall."
     - "Seltenere Kiste, besseres Loot. Erkunden lohnt sich."
@@ -414,7 +478,7 @@ dialogs:
     - "Drei Proben. Fette Auszahlung. Dann ab zum Hacken, {player}."
   bar_whisper_intro:
     - "Psst. {player}. Unten am Bildschirm — die Leiste. Dein §bAetherion Level§f."
-    - "Stats, Unlocks, neue Gebiete… vieles in dieser Welt öffnet sich darüber."
+    - "Stats, Unlocks, neue Orte… das meiste hier öffnet sich darüber."
     - "Spiel weiter. Die Leiste merkt sich das."
   vince_intro:
     - "Casino ist direkt hinter mir. Such dir 'ne Maschine. Nicht auf den Filz heulen."
@@ -422,9 +486,14 @@ dialogs:
     - "Das Portal ist das Dungeon Gate. Es bringt dich zum Dungeon-Hub — Instanzen, Etagen, Wächter."
     - "Geh durch, wenn du ausgerüstet bist. Die andere Seite schickt dich zurück in die Capital."
   town_crier_intro:
-    - "Hört, hört! {player} naht!"
-    - "Hollis. Stadtschreier. Ich brülle Nützliches, damit der Pfeil es nicht muss."
-    - "Heutige Meldung: Der §egelbe Pfeil oben§f kennt immer noch den Weg. Jeden Tag. Zuverlässig."
+    default:
+      - "Hört, hört! {player} naht! Vermutlich mit Absicht!"
+      - "Hollis. Stadtschreier. Ist es Neuigkeit, brüll ich's. Ist es keine, auch."
+      - "Heute: Der Hafen steht, die Glocken waren pünktlich, keiner ist reingefallen."
+    quiet_news:
+      - "Hört, hört… {player}. Leisere Nachrichten heute."
+      - "Eine Frau auf dem Markt hat heute früh ihren eigenen Namen vergessen. Stand einfach da."
+      - "Hab's trotzdem gerufen. Ist mein Job. Fühlte sich nur nicht wie eine Nachricht an."
   street_sweeper_intro:
     - "Vorsicht, der Haufen, {player}. Das ist ein ganzer Vormittag Arbeit."
     - "Bram. Ich fege. Rookies verlieren Bruchstein. Bergleute Kies. Alle verlieren Niveau."
@@ -432,12 +501,20 @@ dialogs:
   lamp_lighter_intro:
     night:
       - "Abend, {player}. Wick. Lampen sind mein Geschäft."
-      - "Nachts braucht mich der Hafen. Und die Monster brauchen einen Snack."
-      - "Bleib im Licht. Dafür bin ich da."
+      - "Jede Laterne im Hafen brennt bis zum Morgen. Altes Gesetz."
+      - "Bleib im Licht. Dafür ist es da."
     day:
       - "Morgen, {player}. Wick. Laternenanzünder."
-      - "Tagsüber hab ich frei. Ich poliere Glas und warte auf die Dämmerung."
-      - "Such mich nach Sonnenuntergang. Dann wird's interessant."
+      - "Tagsüber hab ich frei. Ich poliere Glas und schneide Dochte."
+      - "Such mich nach Sonnenuntergang. Dann fängt die Arbeit an."
+    night_queen:
+      - "Abend, {player}. Die Lampen brennen. Alle."
+      - "Altes Gesetz von einer Königin, sagte meine Oma. Damit die Kinder keine Angst haben."
+      - "Ihren Namen weiß keiner mehr. Das Erinnern machen die Lampen."
+    day_queen:
+      - "Morgen, {player}. Glas ist sauber. Dochte sind geschnitten."
+      - "Meine Oma meinte, das Lampengesetz kam von einer Königin. Welche, hat sie nie gesagt."
+      - "Egal, wer's geschrieben hat. Dunkel bleibt dunkel."
   living_test_intro:
     - "Wenn du das lesen kannst, funktioniert die Living-NPC-Pipeline."
     - "Spieler-Skin, schaut dich an, kein Glühen. Dorfbewohner bleiben, wie sie sind."
@@ -576,6 +653,204 @@ dialogs:
     - "Salz für Fisch, Salz für Wunden, Salz für Meinungen."
     - "Tackle am Steg verkauft Ruten. Ich verkaufe den Grund, warum Fisch nach was schmeckt."
 
+  # ------------------------------------------------------------ Das Schlaflied (story_<npc>.<beat>)
+  # Same beat count as StoryLines.java. Chained ids (a+b) are localized part by part.
+  story_town_crier:
+    offer_old_tale:
+      - "Hört, hört! Heute Abend: der irre König, der den Himmel entzweibrach!"
+      - "Nicht von mir. Ich mach Schlagzeilen. §eMütterchen Berit§f erzählt's richtig."
+      - "Ihr Häuschen steht am Rand der Capital. Geh vor ihrem Nickerchen."
+    remind_old_tale:
+      - "Hört, hört! {player} kennt die Geschichte immer noch nicht! Schande!"
+      - "§eMütterchen Berit§f. Rand der Capital. Der Kompass weiß Bescheid."
+  story_berit:
+    before:
+      - "Viel zu tun, Liebes? Erledig erst deine Wege."
+      - "Ich bin genau hier. Meine Knie bestehen darauf."
+    default:
+      - "Setz dich, setz dich. Mütterchen Berit. Älteste Frau im Ort, und stolz drauf."
+      - "Abends summ ich. Das Lied meiner Oma. Alte Gewohnheit."
+      - "Hollis, der Schreier, schickt mir Leute für die alte Geschichte. Frag ihn."
+    old_tale_done:
+      - "Setz dich, Liebes. Der irre König? Hat den Himmel entzweigebrochen, heißt es."
+      - "Dann haben ihn die Glocken fortgeschickt. Hier — Omas altes Märchenbuch."
+      - "Sie hat mir dazu ein Schlaflied gesungen. Das Lied hatte nie ein Ende."
+    gear_hook:
+      - "Komisch nur: Die tiefen Stollen der §eShabby Mine§f summen es nachts."
+      - "Was der Hollow Lurker da bewacht, bring's zu §eYsolde§f ins Archiv."
+    offer_gear:
+      - "Die Kumpel sagen, die tiefen Stollen summen nachts mein Lied. Falsch und langsam."
+      - "Irgendwas unten in der §eShabby Mine§f. Hollow Lurker nennen sie's."
+      - "Was immer es bewacht, bring's zu §eYsolde§f ins Archiv. Nicht zu mir."
+    remind_gear:
+      - "Das Summen, Liebes. §eShabby Mine§f, tiefe Stollen. Der Hollow Lurker."
+      - "Was er bewacht, geht zu §eYsolde§f ins Archiv."
+    after_gear:
+      - "Da bist du ja. Ysolde sagt, das Summen war eine Spieldose. Schick."
+      - "Oma sagte immer, das Lied kommt aus einem Kästchen. Ich dachte, sie neckt mich."
+    forgotten_done:
+      - "Oh — hallo, Liebes. Kennen wir uns? Du hast ein freundliches Gesicht."
+      - "Ich hab abends immer etwas gesummt. Wie ging das noch…?"
+      - "Ach, vergiss mich. Pass auf die Stufe, wenn du gehst. Wer immer du bist."
+    stranger:
+      - "Hallo, Liebes. Neu hier?"
+      - "Ich stell immer eine Lampe ins Fenster. Ich weiß nicht mehr, warum."
+  story_ysolde:
+    before:
+      - "Das Archiv öffnet nicht für Leute, die noch den Hafen lernen."
+      - "Mach deine Runden bei §eMiss Ledger§f fertig. Dann komm wieder. Leise."
+    default:
+      - "Ysolde Thorne. Archivarin. Handschuhe an, wenn du was anfasst."
+      - "Legenden sind was für den Schreier. Ich führe Akten. Langweilig und wahr."
+      - "Findest du was, das älter ist als die Registry? Bring's mir."
+    remind_gear:
+      - "Berit schickt dich? Dann bring mir, was der Lurker bewacht."
+      - "§eShabby Mine§f, tiefe Stollen. Folg dem Summen."
+    gear_done:
+      - "Ein Spieldosen-Zahnrad. Messing, von Hand geschnitten. Macht heute keiner mehr."
+      - "Hofarbeit. Älter als die erste Seite der Registry. Interessant."
+    offer_insignia:
+      - "Angenommen, es gab einen König. Könige haben Wachen. Wachen tragen Abzeichen."
+      - "§cSkuldugery§f, der brennende Bogenschütze, trägt eins unterm Ruß."
+      - "Bring mir das Abzeichen. Dein Kompass findet ihn, solange er unterwegs ist."
+    remind_insignia:
+      - "Das Abzeichen, {player}. §cSkuldugery§f. Brennende Pfeile, großes Ego."
+      - "Der Kompass findet ihn, solange er unterwegs ist. Bring das Abzeichen, nicht ihn."
+    insignia_done:
+      - "Sun Guard. Echt. Jahrhundertelang poliert, von jemandem, der sonst nichts hatte."
+      - "Also: ein König, eine Garde und mindestens ein Mann, der weggerannt ist."
+    offer_short_toll:
+      - "Die Registry nennt das Glockenläuten 'Brauch'. Bräuche kommen irgendwoher."
+      - "§eSister Aurel§f hütet die Sieben Glocken, drüben in der Scholars' Hall."
+      - "Frag sie, was sie gezählt hat. Ich will Zahlen, keine Gedichte."
+    remind_short_toll:
+      - "§eSister Aurel§f, Scholars' Hall. Frag, was sie gezählt hat."
+      - "Zahlen, {player}. Bring mir Zahlen."
+    after_toll:
+      - "Vier Schläge zur Dämmerung, sagt sie? Hab's aufgeschrieben. Zweimal."
+      - "Bring mir alles, was älter ist als die Registry. Siegel. Briefe. Fetzen."
+      - "Deine Inselurkunde kommt mit Aetherion Level §e20§f. Lies die Ecke."
+    old_seal_done:
+      - "Eldervale. So hieß dieses Königreich. Die Registry schwört, das gab's nie."
+      - "Eine Seite hat überlebt. Ein König namens §fCorvin§f. Gelehrter, kein Soldat."
+      - "Jemand hat einen Namen verbrannt. Das tut man nur, wenn er beim Lesen wehtut."
+    offer_letters:
+      - "In alten Kisten tauchen Briefe auf. Klein gefaltet, gezeichnet 'M'."
+      - "Mach unterwegs die Welt-Kisten auf. Drei Briefe. Bring alle drei."
+      - "Ich will wissen, wer 'M' war. Die Registry tut, als wüsste sie's nicht."
+    letters_hook:
+      - "In alten Kisten tauchen Briefe auf, gezeichnet 'M'. Mindestens drei."
+      - "Mach unterwegs die Welt-Kisten auf. Bring mir alle drei."
+    musing_seal:
+      - "Eldervale. Corvin. Ich sag sie immer wieder. Vielleicht werden sie leichter."
+    letters_gate:
+      - "Die nächste Spur braucht jemand Stärkeren. Aetherion Level §e30§f."
+    remind_letters:
+      - "Drei Briefe, {player}. Welt-Kisten. Mach alles auf, woran du vorbeikommst."
+      - "Versiegelt, gezeichnet 'M'. Lies sie nicht unterwegs. …Du wirst sie lesen."
+    letters_done:
+      - "Das Siegel im Wachs gehört einer Königin. Ihr Name war §fMaelis§f."
+      - "Und eine Tochter. Schau — kleine Sterne am Rand. Der irre König hatte Familie."
+    offer_third_anchor:
+      - "Unter dem §eFallen Anchor§f gibt's ein Lager. Die führen eigene Akten."
+      - "Ihr Sprecher heißt §eHesper Kael§f. Er wird dich nicht mögen. Geh trotzdem."
+      - "Frag nach dem dritten Anker. Dann hör mehr zu, als du redest."
+    third_anchor_hook:
+      - "Lager unter dem §eFallen Anchor§f. Ihr Sprecher heißt §eHesper Kael§f."
+      - "Frag ihn nach dem dritten Anker. Er wird dich nicht mögen. Geh trotzdem."
+    musing_letters:
+      - "Eine Frau. Eine Tochter. Das Märchenbuch hat beide vergessen. Kaum ein Zufall."
+    anchor_gate:
+      - "Die nächste Spur führt durch raues Land. Komm mit Aetherion Level §e40§f wieder."
+    remind_third_anchor:
+      - "§eHesper Kael§f. Das Lager unter dem §eFallen Anchor§f, draußen im Westen."
+      - "Frag nach dem dritten Anker. Dann lass ihn reden."
+    after_anchor:
+      - "Du warst bei Hesper. Dann weißt du, was die Registry weggelassen hat."
+      - "Sechzehn Liegeplätze in den alten Hafenplänen. Ich hab selbst gezählt."
+      - "In den Hafengassen vergessen Leute Dinge. Halt die Ohren offen."
+    offer_silent_road:
+      - "Berit kennt dich nicht mehr? Dann ist es zurück. Die alte Krankheit: das Verblassen."
+      - "Der Rat hat die Königsstraße versiegelt. Der §cPathwarden§f bewacht sie noch."
+      - "Töte den Wächter. Bring mir das Schreiben, das er trägt. Der Kompass findet ihn."
+    musing_fading:
+      - "Leute, die ihre eigene Haustür vergessen. Die alten Bücher hatten ein Wort dafür."
+    road_gate:
+      - "Werd stärker, {player}. Aetherion Level §e60§f. Dann öffnen wir die Straße."
+    remind_silent_road:
+      - "Der §cPathwarden§f, {player}. Die Königsstraße. Der Kompass findet ihn."
+      - "Bring das Schreiben. Brich das Wachs nicht. Das will ich selbst."
+    silent_road_done:
+      - "'Niemand gehe zu ihm. Niemand gehe von ihm.' Gezeichnet: der Rat."
+      - "Ein Name ist Thorne. Meine Urgroßmutter hat ihn aus den Büchern gestrichen."
+      - "Die Straße endet an einem alten Kai im Nebel. §fDer Veil Quay§f. Er ist jetzt offen."
+    after_road:
+      - "Ich behalte das Schreiben. Die Registry kann mich drum bitten. Höflich."
+      - "Der Veil Quay gehört dir. Die Fähre ist was anderes. Level §e75§f."
+  story_isle_clerk:
+    offer_old_seal:
+      - "Deine Inselpapiere sind da. Altes Siegel in der Ecke. Ignorier es."
+      - "…Du liest es. Schön. 'Königreich Eldervale.' Nie gehört."
+      - "Bring's zu §eYsolde§f ins Archiv. Sie sammelt alte Tinte. Ich sammle nichts."
+    remind_old_seal:
+      - "Das Siegel, {player}. §eYsolde§f, Archiv. Nicht ich. Niemals ich."
+  story_bellkeeper:
+    short_toll_done:
+      - "Morgens drei Schläge. Abends fünf. War schon immer so, Liebes."
+      - "Gestern Abend waren's vier. Ich hab zweimal gezählt. Dann ein drittes Mal."
+      - "Sonst hat's keiner gemerkt. Sag's deiner Archivarin. Sie will die Zahl."
+  story_hesper:
+    before:
+      - "Das Lager nimmt keine Besucher, die noch den Hafen lernen."
+      - "Bring deine Einweisung zu Ende. Dann komm runter, wenn's sein muss."
+    default:
+      - "Hesper Kael. Ich spreche für das Lager unter dem Anker."
+      - "Touristen starren auf den kaputten Liegeplatz. Du starrst auf mich."
+      - "Starr auf den Liegeplatz. Ist einfacher."
+    third_anchor_done:
+      - "Du kommst wegen des Königs. Alle von da oben kommen wegen des Königs."
+      - "Sechzehn Welten lagen hier vertäut. Er hat die Ketten gekappt. Meine fiel."
+      - "Du hast die Briefe seiner Frau gelesen? Gut. Trauer ist keine Begnadigung."
+    after:
+      - "Du hast zugehört. Das tun die wenigsten."
+      - "An ihm ändert das nichts. Denk dran, wenn die Geschichte traurig wird."
+  story_nell:
+    before:
+      - "Hi! Mama sagt, ich darf keine Leute stören, die noch beschäftigt sind."
+      - "Bist du noch beschäftigt? Du siehst beschäftigt aus."
+    default:
+      - "Hi. Ich bin Nell. Ich kann alle sieben Glocken. Hör mal: hmm, hmm, hmmm…"
+      - "Mütterchen Berit hat's mir beigebracht. Das Lied hört mittendrin auf. Ist normal."
+      - "Ich hab keine Angst im Dunkeln. Ich mag nur Lampen. Sehr."
+    offer_forgotten:
+      - "Mütterchen Berit hat gestern Abend ihre Lampe nicht angemacht. Macht sie sonst immer."
+      - "Heute früh hat sie mich 'kleines Fräulein' genannt. So nennt sie mich nie."
+      - "Kannst du nach ihr sehen? Ihr Häuschen, am Rand der Capital. Bitte?"
+    wait:
+      - "Mütterchen Berits Lampe ist komisch. Mama sagt, das ist nichts."
+      - "Mama sagt auch, nur richtig starke Erwachsene helfen. So Level-§e50§f-stark."
+    remind_forgotten:
+      - "Hast du sie gesehen? Das Häuschen am Rand der Capital."
+      - "Ihre Lampe ist immer noch aus. Ich hab die Fenster zweimal gezählt."
+    after:
+      - "Geht's ihr gut? Sie meinte, ich hab einen hübschen Namen. Sie kennt meinen Namen."
+      - "Ich hab ihre Lampe für sie angemacht. Wick hat mir gezeigt, wie."
+  story_ferryman:
+    before:
+      - "Heute keine Fahrgäste. Erledig erst deine Sachen im Hafen."
+    default:
+      - "Fähre! Fähre zum — hm. Wohin ging die noch gleich?"
+      - "Die Straße ist lange zu. Du bist sie trotzdem gelaufen?"
+      - "Heute keine Fahrgäste. Der Nebel sagt nein. Der Nebel sagt immer nein."
+    waiting:
+      - "Ein Fahrgast? Der erste seit… einer Weile. Einer langen Weile."
+      - "Der Nebel ist nicht bereit für dich. Das Boot, ehrlich gesagt, auch nicht."
+      - "Komm mit Aetherion Level §e75§f wieder. Der Nebel mag runde Zahlen."
+    soon:
+      - "Der Nebel ist heute dünner. Nicht dünn genug."
+      - "Bald. Das Ruder will dauernd benutzt werden."
+      - "Komm bald wieder. Bis dahin weiß ich den Weg wieder."
+
 completed:
   default:
     - "Wir sind quitt. Sagt das Klemmbrett."
@@ -629,7 +904,7 @@ completed:
       - "Zurück zu §eMiss Ledger§f für den Stempel — oder §e/capital§f, wenn du den Weg kennst."
     graduate:
       - "Die Vögel sind zurück. Du auch. Gut, {player}."
-      - "Die Farm Isle ist hinter §eHarrows§f Portal, hinteres Ende der Scheune."
+      - "Farm Isle? §eHarlow§f, hinteres Ende der Scheune. Der kennt den Weg runter."
   lark:
     default:
       - "Fang erledigt. Dein Pet mag dich. Wahrscheinlich."
@@ -778,15 +1053,15 @@ talk:
     roads:
       intro: "Skills wachsen da draußen, {player}. Nicht an meinem Schalter."
       menu: "Holz, Weizen, Fisch — oder Stahl. Such dir was aus. Der Pfeil folgt."
-      list: "§aTwigs§f Pad: Forage Isle. §eHarrows§f Portal: Farm Isle. §bTackle§f: Angeln."
+      list: "§aTwigs§f Pad: Forage Isle. §eHarlow§f, hinter der Scheune: Farm Isle. §bTackle§f: Angeln."
       forage:
         label: "Forage Isle · Twig"
         echo: "Bäume, bitte."
         line: "§aTwigs§f Schleim-Pad, beim Forager. Inselbäume, dickere Stämme."
       farm:
-        label: "Farm Isle · Harrow"
+        label: "Farm Isle · Harlow"
         echo: "Felder für mich."
-        line: "§eHarrows§f Portal, hinteres Ende der Scheune. Ab Farming §e10§f kommst du rein."
+        line: "§eHarlow§f, hinteres Ende der Scheune. Der kennt den Weg runter — ab Farming §e10§f kommst du rein."
       fish:
         label: "Angeln · Tackle"
         echo: "Ich angle."
@@ -840,8 +1115,8 @@ talk:
           - "Es gibt ein Cap. Frag nicht mich. Frag jemanden mit Klemmbrett."
   farmer:
     wheat_done: "Weizen erledigt. Die Vögel toben. Perfekt."
-    isle_fallback: "Anderes Ende der Scheune — Farm-Guide und Portal. Schau rein, wenn du neugierig bist."
-    isle_peek: "Anderes Ende der Scheune — Harrow und das Portal zur Farm Isle. Irgendwann einen Blick wert."
+    isle_fallback: "Hinteres Ende der Scheune — Harlow. Der kennt den Weg runter zur Farm Isle."
+    isle_peek: "Hinteres Ende der Scheune — das ist §eHarlow§f. Der kennt den Weg runter zur Farm Isle. Später."
   lark:
     nice_catch: "Schöner Fang, {player}. Die Tasche quiekt."
     equip_now: "Jetzt ausrüsten: §eManager → Pets§f — blinkt. Deinen Fang auswählen."
@@ -856,6 +1131,106 @@ talk:
     pass_next: "Gib ihm den Zettel. Kauf dort 'ne Rute, falls nötig, dann komm zur Angelstunde zurück."
     catch_done: "Fang gezählt. Leine frei. Meer noch voll."
     rod_tip: "Guck dir mal deine Rute an — manche Tools leveln hier."
+    eldervale_pitch: "Lust auf größere Fische? §bFishing Eldervale§f, weit im Westen. Der Pfeil zeigt aufs Pad."
+    eldervale_later: "Größeres Wasser im Westen — §bFishing Eldervale§f. Erst deine Runde bei Ledger fertig machen."
+    # P-F desk — after the lesson (Fishing Eldervale pitch + pad arrow)
+    desk:
+      open: "Der Hafen ist zum Üben, {player}. Echtes Wasser gibt's auf §bFishing Eldervale§f — der Pfeil zeigt aufs Pad."
+      isle:
+        label: "Was gibt's da draußen?"
+        echo: "Was ist auf Eldervale?"
+        lines:
+          - "Ein großer See, ein Dutzend benannte Gewässer. Jedes hat seine eigenen Fische."
+          - "§bMaren§f führt die Harbourmaster's Hall. Fang an ihrem Brett an."
+      way:
+        label: "Welche Richtung?"
+        echo: "Wie komm ich hin?"
+        lines:
+          - "Westen. Weit im Westen. Das Pad wirft dich übers Wasser."
+          - "Folg dem Pfeil. Und angel nicht unterwegs in Pfützen."
+      tips:
+        label: "Ein paar Tipps?"
+        echo: "Hast du Ratschläge?"
+        lines:
+          - "Kocht das Wasser draußen auf dem See? Das ist der Schwarm. Wirf mitten rein."
+          - "Glocken über dem See heißen: ein Run. Lass alles stehen."
+  # Harlow — hub Farm Isle guide (P-B / P-F desk)
+  farm_isle_guide:
+    open: "Die Farm Isle liegt den Weg runter, {player}. Das Pad unten bringt dich hin, ab Farming §e10§f."
+    open_ready: "Die Farm Isle liegt den Weg runter, {player}. Pad unten — du darfst rüber. Der Pfeil zeigt drauf."
+    desk:
+      isle:
+        label: "Was gibt's da draußen?"
+        echo: "Was ist auf der Insel?"
+        lines:
+          - "Eldervale-Felder. Lange Reihen, eine Harvest Hall, ein Ofenhaus, das nie kalt wird."
+          - "§aElsie§f, die Field Warden, wartet am Landeplatz. Die kennt jede Ecke."
+      level:
+        label: "Farming 10?"
+        echo: "Warum Farming 10?"
+        unknown: ["Farming §e10§f. Das Pad prüft. Ich nicht."]
+        ready:
+          - "Du bist Farming §e{0}§f. Das Pad gehört dir."
+          - "Na los. Die Insel erntet sich nicht von allein."
+        short:
+          - "Du bist Farming §e{0}§f. Jede Ernte zählt — auch der Weizen vom Farmer."
+          - "Ab §e10§f lässt dich das Pad durch."
+      back:
+        label: "Und zurück?"
+        echo: "Wie komm ich zurück?"
+        lines:
+          - "§e/capital§f bringt dich zurück in die Stadt."
+          - "Oder frag die Warden. Die hat Meinungen übers Früh-Gehen."
+  # Maren — Eldervale landing desk (P-F)
+  eldervale_welcome:
+    desk:
+      open: "Willkommen auf Eldervale, {player}. Tiefer Fels, dünne Luft — erst fragen, dann springen."
+      crew:
+        label: "Wer ist wer?"
+        echo: "Wer hat hier das Sagen?"
+        lines:
+          - "§eOld Wick§f an der Landelampe hat die Karte, die Tiefenkarte und die Crew-Tour."
+          - "§eOtto§f verteilt Aufträge. §eNan§f in der Hearth füttert dich — gegen Erz."
+      depth:
+        label: "Wie tief?"
+        echo: "Wie tief geht's runter?"
+        lines:
+          - "Galerien, Deep Works, dann das Undercroft. Tieferer Fels, mehr Fortune."
+          - "Beim ersten Mal in einer Tiefe gibt's eine Karte und etwas XP. Pass auf die Hitze im Emberseam auf."
+      forge:
+        label: "Die Schmieden?"
+        echo: "Erzähl mir von den Schmieden."
+        lines:
+          - "§6Brann§f führt die Deep Forge unten im North Pit. Erz rein, Forge Marks raus — für immer."
+          - "Der §6Forgehand§f hier oben stempelt Blaupausen in Tools. Bring einen Upgrade Stone mit."
+      warn:
+        label: "Was beißt hier?"
+        echo: "Worauf muss ich aufpassen?"
+        lines:
+          - "Überlaste den Fels und er stürzt ein. Du hörst es vorher — beweg dich."
+          - "Stonejaws bewachen die reichen Adern. Und tief unten klopfen die Rudel nicht an."
+  # Twig — harbour pad desk (P-F)
+  forage_pad_guide:
+    desk:
+      open: "Schleim-Pad → Forage Isle, {player}. Springen. Nicht nachdenken."
+      isle:
+        label: "Was gibt's da draußen?"
+        echo: "Was ist auf der Insel?"
+        lines:
+          - "Bäume, die droppen, was sie sind — Fichte ist Fichte, Birke ist Birke."
+          - "§aMiss Canopy§f macht die Führung. Heartwoods, der Zaubertisch, alles."
+      who:
+        label: "Zu wem soll ich?"
+        echo: "Wer wartet da drüben?"
+        lines:
+          - "Der §eCanopy Clerk§f will komprimierte Proben. Der Pfeil zeigt auf ihn."
+          - "Miss Canopy lehrt. Der Clerk zahlt. Gutes System."
+      safe:
+        label: "Ist das Pad sicher?"
+        echo: "Ist das Ding sicher?"
+        lines:
+          - "Total."
+          - "Zu neunzig Prozent total."
   fishmonger:
     pass_ok: "Pass passt."
     shop_open: "Der Shop ist offen für T1-Gear — Rute und Rüstung. Sprich mich an, wenn du stöbern willst."
@@ -883,7 +1258,7 @@ talk:
       - "Casino ist hinter mir. Such dir 'ne Maschine. Nicht auf den Filz heulen."
       - "Slots. Roulette. Münzen rein. Würde bleibt in der Tasche."
       - "Ich gebe nicht. Ich kommentiere. Die Drecksarbeit machen die Maschinen."
-      - "Das Glas ist hungriger als du, {player}. Füttere es trotzdem."
+      - "Den Slots ist egal, wie viel Glück du fühlst, {player}. Füttere sie trotzdem."
       - "{player}! Glücksgesicht. Seh ich sofort. Seh ich immer."
   liquidator:
     desk: "Kristall-Schalter, {player}. Kaufen, verkaufen oder Mats zu Aether Crystals schmelzen."
@@ -936,6 +1311,12 @@ cast:
         lines: ["Anker Harbour. Boote rein, Rookies raus.", "Die Capital ist die Straße rauf. Dahinter die Minen. Nichts überstürzen."]
       - label: "Irgendwelche Tipps?"
         lines: ["Achte auf den §egelben Pfeil§f. Der ist schlauer als die meisten, die ich ausgerüstet hab.", "Und rede mit Leuten. Die halbe Hafenmeile berät gratis. Die andere Hälfte kassiert."]
+    greet_legend: ["Wetter ist gut, {player}. Nur nicht Richtung Veil segeln."]
+    greet_doubt: ["{player}. Siehst du eine Fähre ohne Ruderer? Nicht winken."]
+    story:
+      label: "Der Veil?"
+      legend: ["Nebelwand hinter den äußeren Bojen. Da segelt man nie durch.", "Alte Seemannsregel. Keiner weiß, von wem. Jeder hält sich dran."]
+      doubt: ["Die Fischer schwören, am alten Königskai liegt eine Fähre. Keiner rudert.", "Ich segel da nicht hin. Du auch nicht."]
   lumberjack:
     accept: "Her mit der Axt."
     decline: "Vielleicht später."
@@ -994,7 +1375,7 @@ cast:
     greet_new: ["Helme retten Leben, {player}. Hab ich gehört."]
     greet: ["{player}! Noch 'ne Schicht?", "Staub steht dir, {player}."]
     greet_grad: ["Guck mal, wer jetzt unter Tage zu Hause ist. Stolz auf dich. Sag's keinem."]
-    idle: ["*paff*", "Hörst du das? Ich auch nicht. Gutes Zeichen.", "Dreißig Jahre. Hasse Spinnen immer noch."]
+    idle: ["*paff*", "Hörst du das? Ich auch nicht. Gutes Zeichen.", "Zwanzig Jahre da unten. Hasse Spinnen immer noch."]
     farewell: ["Achte auf Abgründe. Auf die Dunkelheit. Auf dich."]
     topics:
       - label: "Ist es sicher da unten?"
@@ -1032,6 +1413,7 @@ cast:
     greet_grad: ["{player}. Gestempelt und entlassen. Blamier den Stempel nicht."]
     idle: ["*stempel*", "Zu spät. Zu spät. Zu früh. Zu spät.", "Wer schreibt denn so eine Neun?"]
     farewell: ["Entlassen."]
+    greet_doubt: ["{player}. Keine Akten vor dem Stillen Jahr. Das ist kein Zufall."]
     topics:
       - label: "Was sind Skills?"
         lines: ["Ausgerüstete Bäume. Keine Hausaufgaben.", "Ein Slot frei zum Start. Mehr gibt's mit Münz-Meilensteinen."]
@@ -1054,7 +1436,7 @@ cast:
       - label: "Warum die Vögel?"
         lines: ["Die wissen, was sie getan haben.", "Jede Saison. Dieselben Vögel. Den da kenn ich."]
       - label: "Farm Isle?"
-        lines: ["Harrows Portal, hinteres Ende der Scheune.", "Farming zehn. Größere Felder. Weniger Vögel."]
+        lines: ["Harlow, hinteres Ende der Scheune. Der kennt den Weg runter.", "Farming zehn. Größere Felder. Weniger Vögel."]
   lark:
     accept: "Zeig mir die Spheres."
     decline: "Später."
@@ -1116,8 +1498,8 @@ cast:
   farm_isle_guide:
     greet_new: ["Die Insel ist offen, {player}. Wenn deine Hände es sind."]
     greet: ["Guter Boden heute, {player}."]
-    idle: ["*kaut auf einem Halm*", "Guter Boden heute.", "Das Portal summt. Das ist normal. Glaub ich."]
-    farewell: ["Dasselbe Portal zurück. Keine Experimente."]
+    idle: ["*kaut auf einem Halm*", "Guter Boden heute.", "Das Pad wummert den ganzen Tag. Das ist normal. Glaub ich."]
+    farewell: ["Knie beugen auf dem Pad. Keine Experimente."]
     topics:
       - label: "Was gibt's auf der Insel?"
         lines: ["Größere Felder. Weniger Vögel. Besserer Boden.", "Sag's nicht dem Farmer."]
@@ -1127,6 +1509,12 @@ cast:
     greet_new: ["{player}! Trolle gesehen? Große? Erzähl mir alles."]
     greet: ["Hast du 'ne Seite für mich, {player}?"]
     idle: ["*kritzelt eine Karte*", "Norden ist… da lang. Wahrscheinlich.", "Trolle. Faszinierend. Furchtbar. Faszinierend."]
+    greet_legend: ["{player}! Einen Troll mit Kette gesehen? Erzähl mir alles."]
+    greet_doubt: ["{player}. Königliche Schmiedearbeit in der Tasche eines Trolls. Ich schlaf nicht mehr."]
+    story:
+      label: "Trollkette?"
+      legend: ["Brückentrolle horten Ketten. Glieder so groß wie mein Kopf.", "Wo finden die so was? So schmiedet heute keiner mehr."]
+      doubt: ["Ich hab ein Glied vermessen. Königliche Schmiede. Von den alten Liegeplätzen.", "Saubere Schnitte an beiden Enden. Das war Absicht."]
   vince:
     greet_new: ["{player}! Glückstag? Du siehst nach Glück aus."]
     greet: ["{player}! Meine Lieblingskundschaft. Heute."]
@@ -1137,6 +1525,12 @@ cast:
         lines: ["Die Bank gewinnt immer.", "Ich bin der Cousin der Bank. Mir geht's gut."]
       - label: "Hast du wirklich Glück?"
         lines: ["Lucky Vince. Steht im Namen.", "Namen lügen, {player}."]
+    greet_legend: ["{player}! Hundert drauf, der irre König ist nur ein Märchen. Dabei?"]
+    greet_doubt: ["{player}. Die Wette mit dem König? Gilt nicht mehr. Frag nicht."]
+    story:
+      label: "Der irre König?"
+      legend: ["Ich wette hundert, der irre König ist nur eine Geschichte.", "Könige brechen keine Himmel. Könige sprengen Banken. Anderer Job."]
+      doubt: ["Wette ist ab. Wette ist sehr ab.", "Hausregel: Wette nie gegen etwas, das schon passiert ist."]
   bar_whisper:
     greet_new: ["Psst. {player}. Schau nach unten. Die Leiste."]
     greet: ["deine leiste hat sich bewegt, {player}… ich hab's gespürt."]
@@ -1145,6 +1539,12 @@ cast:
     topics:
       - label: "Wie füll ich sie?"
         lines: ["Spielen. Quests. Graben. Angeln.", "Alles flüstert ihr was zu, {player}."]
+    greet_legend: ["die leiste erinnert sich an dich, {player}…"]
+    greet_doubt: ["manche leisten vergessen… dann vergessen die leute auch…"]
+    story:
+      label: "Erinnert sich?"
+      legend: ["Alles, was du tust, behält die Leiste. Jeden Schlag. Jeden Fang.", "Sie erinnert sich an dich, {player}. Schön, oder?"]
+      doubt: ["In letzter Zeit werden manche Leisten einfach… still. Mitten im Wort.", "Dann werden die Leute auch still. Spiel weiter. Bitte."]
   eldervale_welcome:
     greet_new: ["Die Luft ist dünn hier oben, {player}. Langsam atmen."]
     greet: ["Wieder auf dem Berg, {player}? Gute Lunge."]
@@ -1168,6 +1568,13 @@ cast:
       - label: "Was verkaufst du?"
         lines: ["Gelegenheit. In Holz verpackt.", "Die Kisten, {player}. Ich verkaufe die Idee von Kisten."]
   isle_clerk:
+    accept: "Dann eben ins Archiv."
+    decline: "Ich ignorier's."
+    on_accept: ["Gut. Weniger Papier auf meinem Tisch."]
+    on_decline: ["Ignorieren ist mein Job. Nimm ihn mir nicht weg."]
+    returning:
+      - "Das Siegel, {player}. §eYsolde§f im Archiv. Nicht ich."
+      - "Ich mach immer noch keinen Papierkram. Schon gar keinen alten."
     greet_new: ["Inselträume, {player}? Level zwanzig. Dann träumen."]
     greet: ["Papierkram? Nein. Nie. Nächster."]
     idle: ["*stempelt nichts*", "Formular 20-B. Gibt's nicht.", "Inseln. Alle wollen Inseln."]
@@ -1175,6 +1582,12 @@ cast:
     topics:
       - label: "Ein Beamter, der Papierkram hasst?"
         lines: ["Ja.", "Ich weiß."]
+    greet_legend: ["Alte Siegel auf alten Urkunden, {player}. Ignorier sie. Mach ich auch."]
+    greet_doubt: ["{player}. Über das Siegel reden wir nicht. Nächster."]
+    story:
+      label: "Das alte Siegel?"
+      legend: ["Papierkram von vor dem Papierkram. Manche Siegel sind älter als der Tisch.", "Ich stempel nichts. Ich frag nichts. Nächster."]
+      doubt: ["Königreich Eldervale. Nachgeschlagen. Dann hieß es: aufhören.", "Also hab ich aufgehört. Im Aufhören bin ich sehr gut."]
   forage_pad_guide:
     greet_new: ["Spring aufs Pad, {player}! Alles gut! Fast alles gut!"]
     greet: ["Zurück von der Insel, {player}? Riech mal — Fichte!"]
@@ -1207,13 +1620,20 @@ cast:
     greet: ["Frisches Mehl, {player}. Pass auf deine Stiefel auf."]
     idle: ["*mahlt Korn*", "Mehl überall. Überall.", "Karotten legen sich nicht von selbst ein."]
   town_crier:
+    accept: "Ich geh sie mir anhören."
+    decline: "Heute nicht, Hollis."
+    on_accept: ["Hört, hört! {player} lernt Geschichte! Selten!"]
+    on_decline: ["Die Geschichte ist tausend Jahre alt. Die hält sich."]
+    returning:
+      - "Hört, hört! {player} kennt die Geschichte immer noch nicht!"
+      - "§eMütterchen Berit§f. Rand der Capital. Der Kompass weiß Bescheid."
     greet_new: ["Hört, hört! {player} wandelt unter uns!"]
     greet: ["Oyez, {player}! Nachrichten um elf. Und jetzt."]
     idle:
       - "Hört, hört! Der Manager wohnt in Hotbar-Slot neun!"
       - "Hört, hört! Booster gehören auf den Anvil, nicht in den Mund!"
       - "Hört, hört! Redet mit Fremden! Die haben Quests!"
-      - "Hört, hört! Der gelbe Pfeil hat immer recht! Meistens!"
+      - "Hört, hört! Passt auf eure Kinder auf, sonst holt sie Aetherion!"
       - "Hört, hört! In der Wildnis spawnen Kisten! Macht Sachen auf!"
     farewell: ["Zieht los! Laut!"]
     topics:
@@ -1221,6 +1641,12 @@ cast:
         lines: ["Der Hafen steht. Die Minen sind staubig. Die Vögel gewinnen.", "Das waren die Nachrichten."]
       - label: "Warum schreist du?"
         lines: ["Flüstern skaliert nicht, {player}."]
+    greet_legend: ["Hört, hört! Passt auf eure Kinder auf, {player}! …Keine? Dann auf dich."]
+    greet_doubt: ["Hört, hört… {player}. Weißt du noch, wie ich heiße? Gut. Nur zur Sicherheit."]
+    story:
+      label: "Der irre König?"
+      legend: ["Die schrei ich nicht. König wird irre, bricht den Himmel, wird fortgeschickt.", "Kindergeschichte. §eMütterchen Berit§f erzählt sie mit der Gruselstimme."]
+      doubt: ["Die Leute vergessen in letzter Zeit Dinge. Namen. Türen. Wasserkessel.", "Die alte Geschichte hatte ein Wort dafür. Das schrei ich nicht."]
   street_sweeper:
     greet_new: ["Stiefel abtreten, {player}."]
     greet: ["Schon wieder da, {player}? Kies dabei? Lass es."]
@@ -1232,11 +1658,122 @@ cast:
   lamp_lighter:
     greet_new: ["Der Abend kommt, {player}. Ich spür's."]
     greet: ["Bleib im Licht, {player}."]
-    idle: ["*poliert eine Laterne*", "Dämmerung in ein paar Stunden. Bereit.", "Jede Lampe hat einen Namen. Die da heißt Gerald."]
+    idle: ["*poliert eine Laterne*", "Dämmerung in ein paar Stunden. Bereit.", "Jede Lampe hat einen Namen. Die da heißt Gerald.", "Noch ein Docht. Immer noch einer."]
     farewell: ["Halt eine Fackel bereit."]
     topics:
       - label: "Warum Lampen?"
         lines: ["Monster hassen Licht. Ich liebe es. Wir haben einen Waffenstillstand.", "Eigentlich gehen sie mir nur aus dem Weg."]
+    greet_legend: ["Jede Lampe brennt bis zum Morgen, {player}. Altes Gesetz. Ich halt's nur ein."]
+    greet_doubt: ["{player}. Die Lampen brennen. Alle. Hab zweimal nachgesehen."]
+    story:
+      label: "Das alte Gesetz?"
+      legend: ["Laternen brennen bis zum Morgen. Jede einzelne. Altes Gesetz.", "Keiner weiß, von wem. Muss ich auch nicht. Ich halt's nur ein."]
+      doubt: ["Meine Oma sagte, eine Königin hat's geschrieben. Für die Kinder.", "Damit sie nie im Dunkeln aufwachen."]
+
+  # ------------------------------------------------------------ Hub townsfolk (Hub owns the NPC, Quests owns the lines)
+  bellkeeper:
+    idle:
+      - "Sieben Glocken, sieben Töne. Läute alle, dann spielt die alte Hymne."
+      - "Die hohe Glocke im Werftturm? Pfeile, Liebes. Da klettert keiner rauf."
+      - "Morgens drei Schläge, abends fünf. Ich zähle. Einer muss es ja."
+      - "Jede Glocke hier wurde für jemanden gegossen. Die meisten wissen nicht mehr, für wen."
+      - "Hörst du das Summen nach Einbruch der Nacht? Starbells. Sie antworten den großen."
+    greet_doubt:
+      - "Das Abendläuten war wieder zu kurz. Vier. Ich hab zweimal gezählt."
+      - "Vier Schläge zur Dämmerung. Die Glocken irren sich nicht. Irgendwas anderes schon."
+  stargazer:
+    idle:
+      - "Stell dich irgendwo hoch, und die Insel nennt sich selbst. Fünf Plätze. Finde sie."
+      - "Sternschnuppen sind selten hier. Kommt eine: schleichen und hochschauen."
+      - "Sternschnuppen über Skyreach. Wünsch dir was, sagt man."
+      - "Das Polarlicht kommt, wann es will. Meistens, wenn du drinnen bist."
+      - "Von hier sieht man die Borderlands. Von dort nichts Schönes."
+      - "Der Gleitflug runter ist schneller als die Treppe. Und lauter."
+    greet_doubt:
+      - "Das sind keine Sterne. Zu warm. Da oben geht etwas auseinander."
+      - "Früher hab ich mir was gewünscht. Jetzt zähl ich sie nur noch."
+
+  # ------------------------------------------------------------ Das Schlaflied cast
+  ysolde:
+    accept: "Bin dran."
+    decline: "Noch nicht."
+    on_accept: ["Gut. Leise, bitte.", "Notiert. Ich bin hier. Ich bin immer hier."]
+    on_decline: ["Die Vergangenheit läuft nicht weg. Das ist das Einzige, was sie nicht kann."]
+    greet_new: ["Leise, bitte. Die Bücher sind älter als deine Großeltern."]
+    greet: ["{player}. Stiefel abtreten. Das Archiv merkt so was.", "Wieder da, {player}? Erst Handschuhe. Dann reden."]
+    greet_grad: ["{player}. Stiefel abtreten. Das Archiv merkt so was.", "Wieder da, {player}? Erst Handschuhe. Dann reden."]
+    greet_legend: ["Legenden sind was für Kinder, {player}. Akten sind was für Erwachsene."]
+    greet_doubt: ["{player}. Ich lese, was wir verbrannt haben. Langsam."]
+    idle: ["*blättert sehr vorsichtig um*", "Handschuhe. Immer Handschuhe.", "Pst.", "Falsch einsortiert. Schon wieder. Von mir. Inakzeptabel."]
+    farewell: ["Pass auf die Regale auf, wenn du gehst."]
+    topics:
+      - label: "Was ist das hier?"
+        lines: ["Das Archiv. Alles, was die Capital aufgeschrieben und behalten hat.", "Und ein paar Dinge, die sie aufgeschrieben hat und lieber nicht hätte."]
+      - label: "Warum 'Thorne'?"
+        lines: ["Alte Capital-Familie. Meistens Ratsleute.", "Sehr stolz auf ihre Unterschriften."]
+    story:
+      label: "Der irre König?"
+      legend: ["Eine Kindergeschichte. Von der Registry genehmigt. Allein das macht mir Sorgen.", "Genehmigte Geschichten sind die, die du glauben sollst."]
+      doubt: ["Er hatte einen Namen: Corvin. Ein Gelehrter. Hat die Stadt mit Lampen erhellt, heißt es.", "Irgendwo zwischen den Lampen und den Glocken wurde er zum Monster."]
+  berit:
+    accept: "Ich geh nachsehen."
+    decline: "Ein andermal, Berit."
+    on_accept: ["Bring, was da summt, zu §eYsolde§f ins Archiv. Pass auf im Dunkeln."]
+    on_decline: ["Das summt seit tausend Jahren, Liebes. Das summt auch noch bis Dienstag."]
+    greet_new: ["Komm rein, Liebes. Pass auf die Stufe auf."]
+    greet: ["Da bist du ja, {player}. Der Kessel ist an. Ist er immer.", "Komm rein, Liebes. Pass auf die Stufe auf."]
+    greet_grad: ["Da bist du ja, {player}. Der Kessel ist an. Ist er immer.", "Komm rein, Liebes. Pass auf die Stufe auf."]
+    greet_doubt: ["Hallo, Liebes. Kennen wir uns?", "Oh — Besuch. Wie schön. Kenn ich dich?"]
+    idle: ["*summt eine Melodie ohne Ende*", "Meine Knie sagen Regen.", "Der Kessel ist an. Der Kessel ist immer an."]
+    farewell: ["Pass auf die Stufe auf, Liebes."]
+    topics:
+      - label: "Deine Knie?"
+        lines: ["Die sagen Regen voraus, schlechte Nachrichten und Besuch.", "Heute sagten sie Besuch. Hallo."]
+    story:
+      label: "Das alte Lied?"
+      legend: ["Meine Oma hat's mir beigebracht. Es hatte nie ein Ende.", "Also summ ich die Lücke. An eine Lücke gewöhnt man sich."]
+      doubt: ["Ein Lied? Ich kannte mal ein Lied, glaub ich.", "Ist das nicht albern. Möchtest du einen Tee?"]
+  nell:
+    accept: "Ich seh nach ihr."
+    decline: "Gerade nicht, Nell."
+    on_accept: ["Danke! Ich lass meine Lampe an, bis du zurück bist."]
+    on_decline: ["Okay. Ich frag später nochmal. Fragen kann ich gut."]
+    greet_new: ["Hi! Bist du neu? Ich bin Nell."]
+    greet: ["Hi, {player}! Ich hab einen neuen Ton gelernt. Es ist derselbe Ton."]
+    greet_grad: ["Hi, {player}! Ich hab einen neuen Ton gelernt. Es ist derselbe Ton."]
+    greet_doubt: ["Mütterchen Berit hat mich wieder 'kleines Fräulein' genannt."]
+    idle: ["*summt die Glockenmelodie*", "Eins, zwei, drei Glocken. Das ist Morgen.", "Bald gehen die Lampen an. Gut.", "Ich hab keine Angst. Ich bin vorsichtig."]
+    farewell: ["Tschüss! Lauf nicht im Dunkeln!"]
+    topics:
+      - label: "Angst im Dunkeln?"
+        lines: ["Nein! …Nur wenn die Lampen ausgehen.", "Wick sagt, die gehen nie aus. Wick lügt nicht."]
+      - label: "Das Glockenlied?"
+        lines: ["Sieben Töne. Dann hört es auf. Als hätte es was vergessen.", "Mütterchen Berit sagt, wir summen die Lücke. Also summ ich die Lücke."]
+  hesper:
+    greet_new: ["Runter aus der Capital, {player}? Pass auf die Kante auf. Die gehört uns."]
+    greet: ["Runter aus der Capital, {player}? Pass auf die Kante auf. Die gehört uns."]
+    greet_grad: ["Runter aus der Capital, {player}? Pass auf die Kante auf. Die gehört uns."]
+    greet_doubt: ["{player}. Du bist wiedergekommen. Mehr als die meisten."]
+    idle: ["*beobachtet den zerrissenen Liegeplatz*", "Touristen. Schon wieder.", "Wir erinnern uns. Das ist der ganze Job."]
+    farewell: ["Geh vorsichtig. Der Kante ist egal, wer du bist."]
+    topics:
+      - label: "Das Lager?"
+        lines: ["Nachfahren von Leuten, die von woanders kamen. Vor langer Zeit.", "Wir behalten die Namen, die andere fallen gelassen haben."]
+    story:
+      label: "Der Anker?"
+      legend: ["Der dritte Liegeplatz. 'Alt', sagen sie oben. Alt ist ein bequemes Wort."]
+      doubt: ["Gerissen, nicht gebrochen. Gebrochenes versagt. Gerissenes wurde gezogen."]
+  ferryman:
+    greet_new: ["Fahrgast? Nein? Nur gucken? Guck, so viel du willst."]
+    greet: ["Fahrgast? Nein? Nur gucken? Guck, so viel du willst."]
+    greet_grad: ["Fahrgast? Nein? Nur gucken? Guck, so viel du willst."]
+    idle: ["Fähre! …Nein? Keiner.", "*poliert ein Ruder, das er nie benutzt*", "Der Nebel ist dick. Der Nebel ist immer dick."]
+    farewell: ["Pass auf die Planken auf. Manche sind nur noch Gewohnheit."]
+    topics:
+      - label: "Dein Name?"
+        lines: ["Der war… irgendwas mit R? Oder ein Boot. Nein, das ist das Boot.", "Mich ruft eh keiner. Also ist's egal."]
+      - label: "Wohin fährt sie?"
+        lines: ["Rüber. Alles fährt irgendwann rüber.", "Hinter den Veil. Wo keiner hinsegelt. Außer mir. Angeblich."]
 
 # NPC-to-NPC banter — index-aligned with CastBook.banter(), same speakers per beat.
 # Played to everyone in range when most of them read German. Never use {player} here.
@@ -1265,3 +1802,11 @@ banter:
   - ["Hollis. Du stehst auf meinem Haufen.", "Hört, hört! Bram hat einen Haufen!"]
   # 11 vince · isle_clerk · vince
   - ["Deed! Ich wette 'ne Insel, dass ich heute gewinne.", "Inseln sind kein Wetteinsatz.", "Alles ist ein Wetteinsatz, Deed."]
+  # 12 nell · berit · nell · berit
+  - ["Mütterchen Berit, wie hört das Lied auf?", "Gar nicht, Liebes. Wir summen die Lücke.", "Hmm… hmmm…", "Perfekt. Das ist die Lücke."]
+  # 13 vince · egon · vince · egon
+  - ["Egon. Wette, du segelst nicht hinter den Veil.", "Keiner segelt hinter den Veil.", "Also nein?", "Das ist 'ne Regel."]
+  # 14 town_crier · ysolde · town_crier
+  - ["Hört, hört! Das Archiv hat GEÖFFNET!", "Leise geöffnet, Hollis.", "Hört, hört… leise…"]
+  # 15 nell · lamp_lighter · nell · lamp_lighter
+  - ["Wick, bleiben die Lampen heute Nacht an?", "Jede einzelne. Bis zum Morgen.", "Versprochen?", "Altes Gesetz. Ich halt's nur ein."]

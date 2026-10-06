@@ -150,6 +150,11 @@ public final class BossEngine extends JavaPlugin {
                 new de.aetherion.bossengine.listener.WorldEaterSiteListener(),
                 this
         );
+        // Progression telemetry (P0): one CSV row per paid boss death -> plugins/BossEngine/fight-log.csv
+        getServer().getPluginManager().registerEvents(
+                new de.aetherion.bossengine.telemetry.BossFightLog(this),
+                this
+        );
         // The Last Seed: the World Eater's void world. Idle unless that world is loaded and built.
         de.aetherion.bossengine.instance.worldeater.WorldEaterSite.start(this);
         getServer().getScheduler().runTask(this, () -> {

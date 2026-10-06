@@ -508,6 +508,11 @@ public class ForagingListener implements Listener {
                 clearLookPreview(id);
                 continue;
             }
+            // Canopy BFS is forage-isle only — harbour trees in `world` must not pay this tax.
+            if (!inForageIsle(player.getLocation())) {
+                clearLookPreview(id);
+                continue;
+            }
             if (!QuestProgressHook.canChopTrees(player)) {
                 clearLookPreview(id);
                 continue;
@@ -743,6 +748,8 @@ public class ForagingListener implements Listener {
                 zoneFor(player, streak, job.family, base, job.notched), speedFor(player, base, job.notched));
         job.pulse = pulse;
         pulses.put(player.getUniqueId(), pulse);
+
+        // Every living tree runs its own timing bar — no post-teach / sneak instant fell.
         ForagingFx.start(player, job.fellLocation());
         hud.striking(player, pulse.marker, pulse.zoneStart, pulse.zoneSize, pulse.hot(), pulse.ready(), streak);
     }
@@ -1848,6 +1855,11 @@ public class ForagingListener implements Listener {
             }
             give(player, stack, player.getLocation());
             String name = String.valueOf(kind.getClass().getMethod("itemId").invoke(kind));
+            // P1 Signature: count the find in the Codex (heartwood already carries its Items id).
+            de.aetherion.core.api.ItemFactoryAccess signatures = de.aetherion.core.api.AetherServices.items();
+            if (signatures != null) {
+                signatures.noteSignature(player, name);
+            }
             player.sendMessage("§d✦ Rare heartwood §8· §f" + name.replace("isle_heartwood_", "").replace('_', ' '));
             player.playSound(player.getLocation(), org.bukkit.Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.7f, 1.4f);
         } catch (Throwable ignored) {

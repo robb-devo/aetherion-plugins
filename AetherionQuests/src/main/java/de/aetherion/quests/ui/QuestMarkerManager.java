@@ -9,17 +9,15 @@ import de.aetherion.quests.npc.LivingNpcProfile;
 import de.aetherion.quests.npc.LivingNpcService;
 import de.aetherion.quests.npc.QuestNPC;
 import de.aetherion.quests.npc.QuestNPCRegistry;
+import de.aetherion.quests.talk.TalkChrome;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextDecoration;
 
 import org.bukkit.Bukkit;
-import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
 import org.bukkit.World;
-import org.bukkit.entity.Display;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -33,24 +31,39 @@ import org.bukkit.util.Transformation;
 import org.joml.Vector3f;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 
+/**
+ * Overhead UI for quest NPCs: one shared nameplate per NPC, one quest mark per player.
+ * <p>
+ * Look comes from {@link TalkChrome} (same family as the talk bubble): calm badge marks —
+ * gold "!" (job on offer), green "?" (hand it in), muted "?" (in progress) — that breathe
+ * instead of blinking. The slot above the plate belongs to the NPC's voice: while a player
+ * talks with the NPC, or the NPC barks at them, their mark lifts away and later drops back in.
+ */
 public class QuestMarkerManager implements Listener {
 
 
     private enum MarkerKind {
         HIDDEN,
         AVAILABLE,
-        READY
+        READY,
+        PENDING
     }
 
 
     private static final float VIEW_RANGE = 28.0f / 64.0f;
     private static final double MAX_VIEW_DISTANCE = 28.0;
     private static final double MAX_VIEW_DISTANCE_SQUARED = MAX_VIEW_DISTANCE * MAX_VIEW_DISTANCE;
+    /** Marks over non-living (editor) NPCs — their plate is one line at 2.15. */
+    private static final double EDITOR_MARK_Y = 2.65;
+    private static final double EDITOR_PLATE_Y = 2.15;
 
 
     private final AetherionQuests plugin;
@@ -61,11 +74,14 @@ public class QuestMarkerManager implements Listener {
     private final Map<UUID, Map<String, TextDisplay>> markers = new HashMap<>();
     private final Map<UUID, Map<String, MarkerKind>> markerKinds = new HashMap<>();
     private final Map<String, TextDisplay> nameDisplays = new HashMap<>();
-    /** Player → NPC they're talking to: the talk bubble stands in for nametag + marker. */
+    /** Player → NPC they're talking to: their mark steps aside; the nameplate stays as the speaker label. */
     private final Map<UUID, String> talkingWith = new HashMap<>();
+    /** Player → NPC → server tick until which the mark steps aside for an ambient line. */
+    private final Map<UUID, Map<String, Integer>> quietUntil = new HashMap<>();
+    /** Marks currently tucked away per player — they drop back in instead of snapping. */
+    private final Map<UUID, Set<String>> tucked = new HashMap<>();
 
-    private boolean blinkOn = true;
-    private int blinkPulse;
+    private int pulse;
     private BukkitTask task;
 
 
@@ -120,7 +136,7 @@ public class QuestMarkerManager implements Listener {
         }
 
         for (QuestNPC npc : QuestNPCRegistry.getAll().values()) {
-            updateMarker(player, npc);
+            updateMarker(player, npc, 1L);
         }
 
     }
@@ -137,60 +153,114 @@ public class QuestMarkerManager implements Listener {
         updateNameDisplay(npc);
 
         for (Player player : Bukkit.getOnlinePlayers()) {
-            updateMarker(player, npc);
+            updateMarker(player, npc, 1L);
         }
 
     }
 
-    /** Hide this NPC's nametag + quest marker for {@code player} while the talk bubble is up. */
+    /** This NPC has a live nameplate of ours (the talk bubble can sit right on top of it). */
+    public boolean hasNameplate(String npcId) {
+        TextDisplay plate = plateOf(npcId);
+        return plate != null && plate.isValid() && !plate.isDead();
+    }
+
+    /** Talk bubble opened: this NPC's quest mark lifts away for {@code player}. */
     public void setTalking(Player player, String npcId) {
         if (player == null || npcId == null) {
             return;
         }
-        String id = npcId.toLowerCase(java.util.Locale.ROOT);
+        String id = key(npcId);
         String previous = talkingWith.put(player.getUniqueId(), id);
         if (previous != null && !previous.equals(id)) {
-            showFor(player, previous);
+            showFor(player, previous, 1L);
         }
-        TextDisplay name = nameDisplays.get(id);
-        if (name != null && name.isValid()) {
-            player.hideEntity(plugin, name);
-        }
-        Map<String, TextDisplay> playerMarkers = markers.get(player.getUniqueId());
-        TextDisplay marker = playerMarkers == null ? null : playerMarkers.get(id);
-        if (marker != null && marker.isValid()) {
-            player.hideEntity(plugin, marker);
-        }
+        tuck(player, id);
     }
 
-    /** Conversation over: nametag + marker come back. */
+    /** Conversation over: the mark drops back in once the bubble has folded away. */
     public void clearTalking(Player player) {
         if (player == null) {
             return;
         }
         String id = talkingWith.remove(player.getUniqueId());
         if (id != null) {
-            showFor(player, id);
+            showFor(player, id, 3L);
         }
     }
 
-    private void showFor(Player player, String npcId) {
-        TextDisplay name = nameDisplays.get(npcId);
+    /**
+     * The NPC says something ambient to {@code player} from the voice slot: the mark steps
+     * aside for {@code ticks}, then comes back on its own.
+     */
+    public void quiet(Player player, String npcId, int ticks) {
+        if (player == null || npcId == null || ticks <= 0) {
+            return;
+        }
+        UUID uuid = player.getUniqueId();
+        String id = key(npcId);
+        quietUntil.computeIfAbsent(uuid, k -> new HashMap<>())
+                .merge(id, Bukkit.getCurrentTick() + ticks, Math::max);
+        tuck(player, id);
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (player.isOnline() && !isQuiet(uuid, id)) {
+                Map<String, Integer> q = quietUntil.get(uuid);
+                if (q != null) {
+                    q.remove(id);
+                    if (q.isEmpty()) {
+                        quietUntil.remove(uuid);
+                    }
+                }
+                showFor(player, id, 1L);
+            }
+        }, ticks + 1L);
+    }
+
+    private boolean isQuiet(UUID uuid, String npcId) {
+        String id = key(npcId);
+        if (id.equals(talkingWith.get(uuid))) {
+            return true;
+        }
+        Map<String, Integer> q = quietUntil.get(uuid);
+        Integer until = q == null ? null : q.get(id);
+        return until != null && until > Bukkit.getCurrentTick();
+    }
+
+    /** Mark lifts and shrinks away, then hides (per player — nobody else's mark moves). */
+    private void tuck(Player player, String npcId) {
+        UUID uuid = player.getUniqueId();
+        String id = key(npcId);
+        if (!tucked.computeIfAbsent(uuid, k -> new HashSet<>()).add(id)) {
+            return;
+        }
+        TextDisplay marker = markOf(uuid, id);
+        if (marker == null || !marker.isValid() || !player.canSee(marker)) {
+            return;
+        }
+        TalkChrome.animate(marker, TalkChrome.scaled(0.05f, 0.14f), 3);
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (marker.isValid() && player.isOnline() && isQuiet(uuid, id)) {
+                player.hideEntity(plugin, marker);
+            }
+        }, 4L);
+    }
+
+    private void showFor(Player player, String npcId, long popDelay) {
+        TextDisplay name = plateOf(npcId);
         if (name != null && name.isValid()) {
             player.showEntity(plugin, name);
         }
         QuestNPC npc = QuestNPCRegistry.getNPC(npcId);
         if (npc != null) {
-            updateMarker(player, npc);
+            updateMarker(player, npc, popDelay);
         }
     }
 
-    /** Smooth nametag follow while a living FancyNPC is mid-walk. */
+    /** Smooth nametag (and quest mark) follow while a living FancyNPC walks. */
     public void followLivingName(String npcId, Location feet) {
         if (npcId == null || feet == null || feet.getWorld() == null) {
             return;
         }
-        TextDisplay display = nameDisplays.get(npcId);
+        TextDisplay display = plateOf(npcId);
         if (display == null || !display.isValid() || display.isDead()) {
             QuestNPC npc = QuestNPCRegistry.getNPC(npcId);
             if (npc != null) {
@@ -198,10 +268,19 @@ public class QuestMarkerManager implements Listener {
             }
             return;
         }
-        Location at = feet.clone().add(0.0, 2.35, 0.0);
+        Location at = feet.clone().add(0.0, TalkChrome.PLATE_Y, 0.0);
         if (display.getWorld() != at.getWorld()
                 || display.getLocation().distanceSquared(at) > 0.0001) {
             display.teleport(at);
+        }
+        // Marks used to lag a refresh (~2 s) behind a walking NPC — keep them on the plate.
+        Location mark = feet.clone().add(0.0, TalkChrome.MARK_Y, 0.0);
+        for (Map.Entry<UUID, Map<String, TextDisplay>> entry : markers.entrySet()) {
+            TextDisplay marker = markOf(entry.getKey(), npcId);
+            if (marker != null && marker.isValid() && marker.getWorld() == mark.getWorld()
+                    && marker.getLocation().distanceSquared(mark) > 0.0001) {
+                marker.teleport(mark);
+            }
         }
     }
 
@@ -234,6 +313,8 @@ public class QuestMarkerManager implements Listener {
 
         markers.clear();
         markerKinds.clear();
+        tucked.clear();
+        quietUntil.clear();
 
         for (TextDisplay display : nameDisplays.values()) {
             removeDisplay(display);
@@ -248,7 +329,10 @@ public class QuestMarkerManager implements Listener {
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
 
-        talkingWith.remove(event.getPlayer().getUniqueId());
+        UUID uuid = event.getPlayer().getUniqueId();
+        talkingWith.remove(uuid);
+        quietUntil.remove(uuid);
+        tucked.remove(uuid);
         removePlayer(event.getPlayer());
 
     }
@@ -256,33 +340,44 @@ public class QuestMarkerManager implements Listener {
 
     private void tick() {
 
-        blinkOn = !blinkOn;
-        blinkPulse++;
-        // Full kind/visibility refresh every ~2s; blink-only the rest.
-        if (blinkPulse % 4 == 0) {
+        pulse++;
+        // Full kind/visibility refresh every ~2s; marks breathe every second.
+        if (pulse % 4 == 0) {
             refreshAll();
-            return;
         }
-        blinkExisting();
+        if (pulse % 2 == 0) {
+            breathe();
+        }
 
     }
 
-    private void blinkExisting() {
+    /**
+     * Offers and hand-ins drift up and down a hair (interpolated over a full second each way)
+     * instead of colour-blinking. Neighbouring NPCs breathe out of phase.
+     */
+    private void breathe() {
+        boolean up = (pulse / 2) % 2 == 0;
         for (Map.Entry<UUID, Map<String, TextDisplay>> entry : markers.entrySet()) {
             Map<String, MarkerKind> kindsForPlayer = markerKinds.get(entry.getKey());
             if (kindsForPlayer == null || kindsForPlayer.isEmpty()) {
                 continue;
             }
+            Set<String> away = tucked.get(entry.getKey());
             for (Map.Entry<String, TextDisplay> marker : entry.getValue().entrySet()) {
                 TextDisplay display = marker.getValue();
                 if (display == null || !display.isValid() || display.isDead()) {
                     continue;
                 }
                 MarkerKind kind = kindsForPlayer.get(marker.getKey());
-                if (kind == null || kind == MarkerKind.HIDDEN) {
+                if (kind == null || kind == MarkerKind.HIDDEN || !TalkChrome.markBobs(chrome(kind))) {
                     continue;
                 }
-                display.text(markerText(kind, blinkOn));
+                if (away != null && away.contains(key(marker.getKey()))) {
+                    continue;
+                }
+                boolean high = up ^ ((marker.getKey().hashCode() & 1) == 1);
+                TalkChrome.animate(display,
+                        TalkChrome.scaled(TalkChrome.markScale(chrome(kind)), high ? TalkChrome.MARK_BOB : 0f), 20);
             }
         }
     }
@@ -308,24 +403,25 @@ public class QuestMarkerManager implements Listener {
     }
 
 
-    private void updateMarker(Player player, QuestNPC npc) {
+    private void updateMarker(Player player, QuestNPC npc, long popDelay) {
 
         if (player == null || npc == null) {
             return;
         }
 
+        UUID uuid = player.getUniqueId();
         MarkerKind kind = kindFor(player, npc);
         Location location = LivingNpcService.isLiving(npc.getId())
-                ? markerLocation(npc, 2.8)
-                : markerLocation(npc, 2.65);
+                ? markerLocation(npc, TalkChrome.MARK_Y)
+                : markerLocation(npc, EDITOR_MARK_Y);
 
         Map<String, TextDisplay> playerMarkers = markers.computeIfAbsent(
-                player.getUniqueId(),
-                uuid -> new HashMap<>()
+                uuid,
+                k -> new HashMap<>()
         );
         Map<String, MarkerKind> kindsForPlayer = markerKinds.computeIfAbsent(
-                player.getUniqueId(),
-                uuid -> new HashMap<>()
+                uuid,
+                k -> new HashMap<>()
         );
 
         TextDisplay display = playerMarkers.get(npc.getId());
@@ -341,13 +437,21 @@ public class QuestMarkerManager implements Listener {
             return;
         }
 
-        kindsForPlayer.put(npc.getId(), kind);
+        MarkerKind before = kindsForPlayer.put(npc.getId(), kind);
+        boolean quiet = isQuiet(uuid, npc.getId());
+        String id = key(npc.getId());
 
         if (display == null || !display.isValid() || display.isDead()) {
-            display = spawn(player, npc, location, kind);
+            display = spawn(npc, location, kind);
             playerMarkers.put(npc.getId(), display);
-            if (npc.getId().equalsIgnoreCase(talkingWith.get(player.getUniqueId()))) {
-                player.hideEntity(plugin, display);
+            if (quiet) {
+                tucked.computeIfAbsent(uuid, k -> new HashSet<>()).add(id);
+            } else {
+                Set<String> away = tucked.get(uuid);
+                if (away != null) {
+                    away.remove(id);
+                }
+                popIn(player, display, kind, 1L);
             }
             return;
         }
@@ -357,14 +461,58 @@ public class QuestMarkerManager implements Listener {
             display.teleport(location);
         }
 
-        display.text(markerText(kind, blinkOn));
-        applyMarkerStyle(display);
-        if (npc.getId().equalsIgnoreCase(talkingWith.get(player.getUniqueId()))) {
+        display.text(markerText(kind));
+        applyMarkerStyle(display, kind);
+
+        if (quiet) {
+            tucked.computeIfAbsent(uuid, k -> new HashSet<>()).add(id);
             player.hideEntity(plugin, display);
             return;
         }
+
+        Set<String> away = tucked.get(uuid);
+        if (away != null && away.remove(id)) {
+            popIn(player, display, kind, popDelay);
+            return;
+        }
+
+        if (before != null && before != kind) {
+            // Offer → hand-in (or back): one soft bump so the change is noticed, not shouted.
+            bump(display, kind);
+        }
         player.showEntity(plugin, display);
 
+    }
+
+    /** Start small and a touch high, then drop into place with a little spring. */
+    private void popIn(Player player, TextDisplay display, MarkerKind kind, long delay) {
+        float scale = TalkChrome.markScale(chrome(kind));
+        TalkChrome.animate(display, TalkChrome.scaled(0.05f, 0.12f), 0);
+        player.showEntity(plugin, display);
+        UUID uuid = player.getUniqueId();
+        String id = getNpcId(display);
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (!display.isValid() || (id != null && isQuiet(uuid, id))) {
+                return;
+            }
+            TalkChrome.animate(display, TalkChrome.scaled(scale * 1.15f, 0f), 3);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                if (display.isValid() && (id == null || !isQuiet(uuid, id))) {
+                    TalkChrome.animate(display, TalkChrome.scaled(scale, 0f), 3);
+                }
+            }, 3L);
+        }, Math.max(1L, delay));
+    }
+
+    private void bump(TextDisplay display, MarkerKind kind) {
+        float scale = TalkChrome.markScale(chrome(kind));
+        float lift = display.getTransformation().getTranslation().y();
+        TalkChrome.animate(display, TalkChrome.scaled(scale * 1.3f, lift), 3);
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (display.isValid()) {
+                TalkChrome.animate(display, TalkChrome.scaled(scale, lift), 4);
+            }
+        }, 3L);
     }
 
 
@@ -382,9 +530,13 @@ public class QuestMarkerManager implements Listener {
             return MarkerKind.READY;
         }
 
-        // Offer + in-progress: keep the hologram so NPCs like Tackle stay marked.
-        if (state == QuestState.AVAILABLE || state == QuestState.ACTIVE) {
+        if (state == QuestState.AVAILABLE) {
             return MarkerKind.AVAILABLE;
+        }
+
+        // In progress: keep NPCs like Tackle marked — just quieter than an open offer.
+        if (state == QuestState.ACTIVE) {
+            return MarkerKind.PENDING;
         }
 
         return MarkerKind.HIDDEN;
@@ -413,11 +565,6 @@ public class QuestMarkerManager implements Listener {
 
         return null;
 
-    }
-
-
-    private Location markerLocation(QuestNPC npc) {
-        return markerLocation(npc, 2.65);
     }
 
 
@@ -484,8 +631,8 @@ public class QuestMarkerManager implements Listener {
     private void updateNameDisplay(QuestNPC npc) {
 
         Location location = LivingNpcService.isLiving(npc.getId())
-                ? markerLocation(npc, 2.35)
-                : markerLocation(npc, 2.15);
+                ? markerLocation(npc, TalkChrome.PLATE_Y)
+                : markerLocation(npc, EDITOR_PLATE_Y);
 
         // Always scrub orphan nametags (stacked = opaque black background).
         purgeNameDisplays(npc.getId());
@@ -517,63 +664,51 @@ public class QuestMarkerManager implements Listener {
 
         display.text(nameComponent(npc));
         applyNameStyle(display);
-        display.setBackgroundColor(Color.fromARGB(40, 0, 0, 0));
     }
 
 
+    /** Spawned hidden — the caller pops it in (or keeps it tucked while the NPC speaks). */
     private TextDisplay spawn(
-            Player player,
             QuestNPC npc,
             Location location,
             MarkerKind kind
     ) {
 
-        TextDisplay display = location.getWorld().spawn(location, TextDisplay.class, textDisplay -> {
+        return location.getWorld().spawn(location, TextDisplay.class, textDisplay -> {
 
             textDisplay.setPersistent(false);
             textDisplay.setVisibleByDefault(false);
-            textDisplay.setBillboard(Display.Billboard.CENTER);
             textDisplay.setGravity(false);
             textDisplay.setInvulnerable(true);
-            textDisplay.setAlignment(TextDisplay.TextAlignment.CENTER);
-            textDisplay.setDefaultBackground(false);
-            textDisplay.setBackgroundColor(Color.fromARGB(50, 0, 0, 0));
-            textDisplay.setLineWidth(120);
-            textDisplay.text(markerText(kind, blinkOn));
+            textDisplay.text(markerText(kind));
             textDisplay.getPersistentDataContainer().set(
                     markerKey,
                     PersistentDataType.STRING,
                     npc.getId()
             );
-            applyMarkerStyle(textDisplay);
+            applyMarkerStyle(textDisplay, kind);
 
         });
-
-        player.showEntity(plugin, display);
-
-        return display;
 
     }
 
 
-    private Component markerText(MarkerKind kind, boolean blink) {
+    private Component markerText(MarkerKind kind) {
 
-        if (kind == MarkerKind.AVAILABLE) {
-            NamedTextColor bang = blink ? NamedTextColor.GOLD : NamedTextColor.YELLOW;
-            return Component.text("! ", bang)
-                    .append(Component.text("QUEST", NamedTextColor.WHITE, TextDecoration.BOLD))
-                    .append(Component.text(" !", bang));
+        if (kind == MarkerKind.HIDDEN) {
+            return Component.empty();
         }
 
-        if (kind == MarkerKind.READY) {
-            NamedTextColor mark = blink ? NamedTextColor.GREEN : NamedTextColor.AQUA;
-            return Component.text("? ", mark)
-                    .append(Component.text("QUEST", NamedTextColor.WHITE, TextDecoration.BOLD))
-                    .append(Component.text(" ?", mark));
-        }
+        return TalkChrome.markText(chrome(kind));
 
-        return Component.empty();
+    }
 
+    private static TalkChrome.Mark chrome(MarkerKind kind) {
+        return switch (kind) {
+            case READY -> TalkChrome.Mark.READY;
+            case PENDING -> TalkChrome.Mark.PENDING;
+            default -> TalkChrome.Mark.AVAILABLE;
+        };
     }
 
 
@@ -604,13 +739,8 @@ public class QuestMarkerManager implements Listener {
 
             textDisplay.setPersistent(false);
             textDisplay.setVisibleByDefault(true);
-            textDisplay.setBillboard(Display.Billboard.CENTER);
             textDisplay.setGravity(false);
             textDisplay.setInvulnerable(true);
-            textDisplay.setAlignment(TextDisplay.TextAlignment.CENTER);
-            textDisplay.setDefaultBackground(false);
-            textDisplay.setBackgroundColor(Color.fromARGB(40, 0, 0, 0));
-            textDisplay.setLineWidth(120);
             textDisplay.text(nameComponent(npc));
             textDisplay.getPersistentDataContainer().set(
                     nameKey,
@@ -628,17 +758,19 @@ public class QuestMarkerManager implements Listener {
         if (profile != null) {
             return profile.nametag(npc.getName());
         }
-        return Component.text(npc.getName(), NamedTextColor.AQUA);
+        return TalkChrome.nameplate(npc.getName(), TalkChrome.accent(NamedTextColor.AQUA), null);
     }
 
 
-    private void applyMarkerStyle(TextDisplay display) {
-        applyHologramStyle(display, 0.85f);
+    private void applyMarkerStyle(TextDisplay display, MarkerKind kind) {
+        TalkChrome.styleMark(display, chrome(kind));
+        applyHologramStyle(display, TalkChrome.markScale(chrome(kind)));
     }
 
 
     private void applyNameStyle(TextDisplay display) {
-        applyHologramStyle(display, 0.7f);
+        TalkChrome.stylePlate(display);
+        applyHologramStyle(display, TalkChrome.PLATE_SCALE);
     }
 
 
@@ -656,6 +788,44 @@ public class QuestMarkerManager implements Listener {
                 transformation.getRightRotation()
         ));
 
+    }
+
+
+    private TextDisplay plateOf(String npcId) {
+        if (npcId == null) {
+            return null;
+        }
+        TextDisplay direct = nameDisplays.get(npcId);
+        if (direct != null) {
+            return direct;
+        }
+        for (Map.Entry<String, TextDisplay> entry : nameDisplays.entrySet()) {
+            if (entry.getKey().equalsIgnoreCase(npcId)) {
+                return entry.getValue();
+            }
+        }
+        return null;
+    }
+
+    private TextDisplay markOf(UUID uuid, String npcId) {
+        Map<String, TextDisplay> playerMarkers = markers.get(uuid);
+        if (playerMarkers == null || npcId == null) {
+            return null;
+        }
+        TextDisplay direct = playerMarkers.get(npcId);
+        if (direct != null) {
+            return direct;
+        }
+        for (Map.Entry<String, TextDisplay> entry : playerMarkers.entrySet()) {
+            if (entry.getKey().equalsIgnoreCase(npcId)) {
+                return entry.getValue();
+            }
+        }
+        return null;
+    }
+
+    private static String key(String npcId) {
+        return npcId == null ? "" : npcId.toLowerCase(Locale.ROOT);
     }
 
 

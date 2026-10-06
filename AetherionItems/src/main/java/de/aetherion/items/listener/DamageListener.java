@@ -441,7 +441,9 @@ public class DamageListener implements Listener {
                         ItemCapability.CRIT_DAMAGE
                 );
 
-        if (critChance > 0.0 && Math.random() * 100.0 < critChance) {
+        // P4 / L2 (D4): crit chance above 50% counts half. Stats and lore still show the raw number.
+        double effectiveCrit = softCapCritChance(critChance);
+        if (effectiveCrit > 0.0 && Math.random() * 100.0 < effectiveCrit) {
             damage *= 1.0 + Math.max(0.0, critDamage) / 100.0;
             de.aetherion.items.combat.DamageNumbers.markCrit(player);
         }
@@ -1009,5 +1011,15 @@ public class DamageListener implements Listener {
 
     public static boolean isSpreadHit(UUID playerId) {
         return playerId != null && spreadProcessing.contains(playerId);
+    }
+
+    /** Crit-chance soft cap (design L2): {@code eff = 50 + (CC - 50) / 2} above 50%. */
+    public static final double CRIT_SOFT_CAP = 50.0;
+
+    public static double softCapCritChance(double critChance) {
+        if (critChance <= CRIT_SOFT_CAP) {
+            return critChance;
+        }
+        return CRIT_SOFT_CAP + (critChance - CRIT_SOFT_CAP) / 2.0;
     }
 }

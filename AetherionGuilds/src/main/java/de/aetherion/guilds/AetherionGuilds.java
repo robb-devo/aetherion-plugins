@@ -52,6 +52,9 @@ import org.bukkit.entity.Player;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.List;
 import java.util.UUID;
 
 public final class AetherionGuilds extends JavaPlugin {
@@ -83,6 +86,8 @@ public final class AetherionGuilds extends JavaPlugin {
     private IslandGuide guide;
     private IslandBar islandBar;
     private de.aetherion.guilds.island.FactoryGoals goals;
+    private de.aetherion.guilds.island.IslandFiles islandFiles;
+    private de.aetherion.guilds.island.FactoryProgress progress;
 
     @Override
     public void onEnable() {
@@ -118,11 +123,18 @@ public final class AetherionGuilds extends JavaPlugin {
         voidScrubber = new VoidScrubber(this, hosts);
         getServer().getPluginManager().registerEvents(voidScrubber, this);
         land = new LandService(this, hosts);
+        islandFiles = new de.aetherion.guilds.island.IslandFiles(this);
+        islandFiles.load();
         structures = new StructureService(this, hosts, templates, paste);
+        structures.attachFiles(islandFiles);
         structures.load();
         logistics = new LogisticsService(this, hosts, structures, minions);
+        logistics.attachFiles(islandFiles);
         logistics.load();
         structures.attachBelts(logistics::isBelt);
+        progress = new de.aetherion.guilds.island.FactoryProgress(this, islandFiles);
+        structures.attachProgress(progress::unlocked, progress::milestone);
+        progress.grandfather(structures, hosts.all());
         structures.onHousing(minions::refreshLook);
         placement = new PlacementService(this, hosts, structures, logistics);
         unlock = new UnlockService(this, personal, guilds, islands);
@@ -144,7 +156,8 @@ public final class AetherionGuilds extends JavaPlugin {
         machineMenu.attachProduction(productionMenu);
         GuildProjectMenu projectMenu = new GuildProjectMenu(guilds, projects);
         // elevation: belt pieces, factory goals, coin shortcuts
-        goals = new de.aetherion.guilds.island.FactoryGoals(this, hosts, structures, logistics);
+        goals = new de.aetherion.guilds.island.FactoryGoals(this, hosts, structures, logistics, islandFiles);
+        islandFiles.finishSplit();
         de.aetherion.guilds.menu.MarketMenu marketMenu = new de.aetherion.guilds.menu.MarketMenu(this, hosts, minions);
         de.aetherion.guilds.menu.PieceMenu pieceMenu = new de.aetherion.guilds.menu.PieceMenu(hosts, structures, logistics);
         pieceMenu.attachProduction(productionMenu);
@@ -154,17 +167,26 @@ public final class AetherionGuilds extends JavaPlugin {
         marketMenu.attachHub(structures);
         de.aetherion.guilds.menu.HubMenu hubMenu = new de.aetherion.guilds.menu.HubMenu(hosts, structures, logistics,
                 placement, buildMenu, productionMenu, marketMenu, goals);
+        hubMenu.attachProgress(progress);
         de.aetherion.guilds.island.HubRitual hubRitual = new de.aetherion.guilds.island.HubRitual(this);
         structures.onHubFounded(hubRitual::play);
         logistics.setHubFooter(host -> {
+            de.aetherion.guilds.structure.BuildCosts.Unlock unlock = progress.next(host);
+            String board = unlock == null ? ""
+                    : structures.hubLevel(host) >= unlock.hubLevel()
+                    ? "§6◆ Next unlock: §f" + de.aetherion.guilds.structure.PlacementService.Part.of(unlock.type()).label()
+                    + " §8(" + de.aetherion.guilds.structure.BuildCosts.describe(unlock.price()) + ")\n"
+                    : "§6◆ Next: §fHub tier " + unlock.hubLevel() + " §8(unlocks " + de.aetherion.guilds.structure
+                    .PlacementService.Part.of(unlock.type()).label() + ")\n";
             de.aetherion.guilds.island.FactoryGoals.Goal next = goals.next(host);
-            return next == null ? "§b✦ Every factory goal done" : "§b➤ Next: §f" + next.title();
+            return board + (next == null ? "§b✦ Every factory goal done" : "§b➤ Goal: §f" + next.title());
         });
 
         guide = new IslandGuide(this, hosts, structures, logistics, placement, minions);
         guide.attachMenus(islandMenu::open, buildMenu::open);
         guide.register();
         unlock.attachGuide(guide);
+        unlock.onClaim(host -> progress.milestone(host, "start"));
         unlock.attachStarterQuarry(() -> minions.createQuarryItem(de.aetherion.guilds.model.QuarryType.COBBLESTONE));
         islandBar = new IslandBar(this, hosts, structures, logistics);
         islandBar.attach(projects, guide);
@@ -184,8 +206,9 @@ public final class AetherionGuilds extends JavaPlugin {
             public void placed(Player player, QuarryMinion minion, boolean personalHost, UUID hostId) {
                 IslandHost host = personalHost ? IslandHost.personal(hostId) : IslandHost.guild(hostId);
                 int rot = StateRotator.frontTowardViewer(player.getLocation().getYaw());
+                structures.milestone(host, "first_quarry");
                 player.sendMessage(switch (structures.raiseHousing(host, minion, rot)) {
-                    case FULL -> "§7Its housing rises round it. Lay a belt from the §6chute §7(Build → Belt Layer).";
+                    case FULL -> "§7Its housing rises round it. Lay a belt from the §6orange mark §7(Build Tool → Belt).";
                     case RIG -> "§7Tight spot: a drill rig went up instead of the full housing."
                             + " Belts start on any cell next to it.";
                     case NONE -> "§7No room above it for a housing; belts can still start right next to it.";
@@ -213,11 +236,13 @@ public final class AetherionGuilds extends JavaPlugin {
             dropHost(IslandHost.personal(island.ownerId()));
             guide.forget(island.ownerId());
             goals.forget(IslandHost.personal(island.ownerId()));
+            progress.forget(IslandHost.personal(island.ownerId()));
         });
         guilds.setRemovalHook(guild -> {
             dropHost(IslandHost.guild(guild.id()));
             projects.dropGuild(guild.id());
             goals.forget(IslandHost.guild(guild.id()));
+            progress.forget(IslandHost.guild(guild.id()));
         });
         guilds.setCreatedHook((leader, guild) -> {
             projects.markVisited(guild, leader.getUniqueId());
@@ -243,6 +268,7 @@ public final class AetherionGuilds extends JavaPlugin {
         }
         IslandCommand islandCommand = new IslandCommand(personal, islandMenu, biomeMenu);
         islandCommand.attachHighlight(highlight);
+        islandCommand.attachFunnel(progress::report);
         var island = getCommand("island");
         if (island != null) {
             island.setExecutor(islandCommand);
@@ -262,6 +288,7 @@ public final class AetherionGuilds extends JavaPlugin {
                 getConfig().set("reset-islands", false);
                 saveConfig();
             }
+            processPersonalWipeRequests();
             minions.purgeUnownedVisuals();
             minions.catchUpAll();
             minions.respawnVisuals();
@@ -291,6 +318,7 @@ public final class AetherionGuilds extends JavaPlugin {
             logistics.saveIfDirty();
             guide.saveIfDirty();
             goals.saveIfDirty();
+            progress.saveIfDirty();
         }, 20L * 60, 20L * 60);
 
         if (getServer().getPluginManager().isPluginEnabled("PlaceholderAPI")) {
@@ -302,6 +330,12 @@ public final class AetherionGuilds extends JavaPlugin {
     }
 
     private void dropHost(IslandHost host) {
+        if (islandFiles != null) {
+            // keep the island's last state: written out, then moved to islands/removed/ (never deleted)
+            structures.save();
+            logistics.save();
+            islandFiles.remove(host.key());
+        }
         if (structures != null) {
             structures.dropHost(host);
             structures.save();
@@ -310,6 +344,52 @@ public final class AetherionGuilds extends JavaPlugin {
             logistics.dropHost(host);
             logistics.save();
         }
+    }
+
+    /**
+     * Ops: drop {@code plugins/AetherionGuilds/wipe-personal-request.txt} with one UUID per line
+     * (comments with #). On next boot those personal islands are wiped to zero — nobody else's.
+     */
+    private void processPersonalWipeRequests() {
+        File req = new File(getDataFolder(), "wipe-personal-request.txt");
+        if (!req.isFile()) {
+            return;
+        }
+        List<String> lines;
+        try {
+            lines = java.nio.file.Files.readAllLines(req.toPath());
+        } catch (IOException exception) {
+            getLogger().warning("Could not read wipe-personal-request.txt: " + exception.getMessage());
+            return;
+        }
+        int wiped = 0;
+        for (String raw : lines) {
+            String line = raw == null ? "" : raw.trim();
+            if (line.isEmpty() || line.startsWith("#")) {
+                continue;
+            }
+            try {
+                UUID id = UUID.fromString(line.split("\\s+")[0]);
+                if (personal.wipe(id)) {
+                    wiped++;
+                    getLogger().info("Wipe-request: personal island wiped for " + id);
+                } else {
+                    getLogger().info("Wipe-request: no personal island for " + id);
+                }
+            } catch (IllegalArgumentException ex) {
+                getLogger().warning("Wipe-request: bad UUID line: " + line);
+            }
+        }
+        try {
+            java.nio.file.Files.move(req.toPath(),
+                    new File(getDataFolder(), "wipe-personal-request.done-" + System.currentTimeMillis() + ".txt").toPath(),
+                    java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException exception) {
+            if (!req.delete()) {
+                getLogger().warning("Could not clear wipe-personal-request.txt after processing");
+            }
+        }
+        getLogger().info("Processed wipe-personal-request.txt (" + wiped + " wiped).");
     }
 
     /**
@@ -346,6 +426,9 @@ public final class AetherionGuilds extends JavaPlugin {
         }
         if (goals != null) {
             goals.saveIfDirty();
+        }
+        if (progress != null) {
+            progress.saveIfDirty();
         }
         if (projects != null) {
             projects.save();

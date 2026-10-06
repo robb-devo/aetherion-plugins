@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": { "layer0": "minecraft:item/blaze_rod" },
+  "overrides": [
+    { "predicate": { "custom_model_data": 2605 }, "model": "minecraft:item/ember_rod" },
+    { "predicate": { "custom_model_data": 2604 }, "model": "minecraft:item/mender_staff" }
+  ]
+}

@@ -27,11 +27,17 @@ public final class Props {
     public static final String MILL = "prop_mill";
     public static final String FORGE = "prop_forge";
     public static final String DEPOT = "prop_depot";
+    /** 5x5 timber store with crates that stack up as it fills (Storage Loft, Warehouse as it grows). */
+    public static final String HUT = "prop_hut";
+    /** 5x5 Hub: a dais, a tower, a spinning holo core over the real lectern (canopy, then a gold dome). */
+    public static final String HUB = "prop_hub";
 
     /** Old pasted looks that get swapped for props on first visit (same 3x3 footprint, same chute). */
     public static final Set<String> OLD_PRODUCTION = Set.of(
             "sm_quarry_housing", "sm_quarry_rig",
-            "sm_mill", "sm_mill_2", "sm_forge", "sm_forge_2", "sm_depot", "sm_depot_2");
+            "sm_mill", "sm_mill_2", "sm_forge", "sm_forge_2", "sm_depot", "sm_depot_2",
+            // 5x5 hut and Hub (same footprint, the Hub's lectern stays on the same cell)
+            "sm_storage_hut", "sm_storage_hut_2", "sm_storage_hut_3", "sm_workshop", "sm_workshop_2", "sm_workshop_3");
 
     private Props() {
     }
@@ -46,6 +52,8 @@ public final class Props {
             case MILL -> StructureType.MILL;
             case FORGE -> StructureType.FORGE;
             case DEPOT -> StructureType.DEPOT;
+            case HUT -> StructureType.STORAGE_HUT;
+            case HUB -> StructureType.WORKSHOP;
             default -> null;
         };
     }
@@ -60,6 +68,50 @@ public final class Props {
         library.register(machine(MILL, false, true));
         library.register(machine(FORGE, true, true));
         library.register(machine(DEPOT, false, false));
+        library.register(hut());
+        library.register(hub());
+    }
+
+    /** 5x5 hut: a solid two-high shell (belts run into any wall), the roof core above. */
+    private static Template hut() {
+        Map<String, String> cells = new LinkedHashMap<>();
+        for (int x = -2; x <= 2; x++) {
+            for (int z = -2; z <= 2; z++) {
+                cells.put(x + ",1," + z, BARRIER);
+                cells.put(x + ",2," + z, BARRIER);
+                if (Math.abs(x) <= 1 && Math.abs(z) <= 1) {
+                    cells.put(x + ",3," + z, BARRIER);
+                }
+            }
+        }
+        return Template.synthetic(HUT, -2, 0, -2, 2, 4, 2, cells);
+    }
+
+    /**
+     * 5x5 Hub: the back three rows are the dais and tower (shell), the corner posts are solid, and the real
+     * lectern stands at (0,1,1) — the same cell as on the old Workshop — with a free porch in front of it.
+     */
+    private static Template hub() {
+        Map<String, String> cells = new LinkedHashMap<>();
+        for (int x = -2; x <= 2; x++) {
+            for (int z = -2; z <= 0; z++) {
+                cells.put(x + ",1," + z, BARRIER);
+            }
+            for (int z = -2; z <= -1; z++) {
+                if (Math.abs(x) <= 1) {
+                    cells.put(x + ",2," + z, BARRIER);
+                }
+            }
+        }
+        cells.put("0,3,-1", BARRIER);
+        cells.put("0,4,-1", BARRIER);
+        for (int x = -2; x <= 2; x += 4) {
+            cells.put(x + ",1,1", BARRIER);
+            cells.put(x + ",1,2", BARRIER);
+            cells.put(x + ",2,2", BARRIER);
+        }
+        cells.put("0,1,1", "minecraft:lectern[facing=south,has_book=true,powered=false]");
+        return Template.synthetic(HUB, -2, 0, -2, 2, 5, 2, cells);
     }
 
     private static final String BARRIER = "minecraft:barrier";

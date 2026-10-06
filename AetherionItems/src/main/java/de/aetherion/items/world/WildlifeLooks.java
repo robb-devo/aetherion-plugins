@@ -105,14 +105,19 @@ public final class WildlifeLooks implements Listener {
     private static final double T4_COMPRESSED = 0.08;
     private static final double T4_COMPACTED = 0.015;
 
-    /** Surface weights: T1 lots, T2 common, T3 occasional. */
-    private static final int SURFACE_T1_WEIGHT = 55;
-    private static final int SURFACE_T2_WEIGHT = 30;
-    private static final int SURFACE_T3_WEIGHT = 15;
+    /** Past the vial altar: T2 common, T3 solid. No T1 in the deep waste. */
+    private static final int SURFACE_T2_WEIGHT = 65;
+    private static final int SURFACE_T3_WEIGHT = 35;
 
-    /** Around Sergeant Vex — surface spawns stay T1 only. */
-    public static final double VEX_T1_RADIUS = 60.0;
+    /**
+     * Soft gate bubble around Sergeant Vex (thin entrance pack only).
+     * The T1 combat lane itself stretches from Vex to the vial altar — see {@link #isBorderlandsT1Surface}.
+     */
+    public static final double VEX_T1_RADIUS = 32.0;
     private static final double VEX_T1_RADIUS_SQ = VEX_T1_RADIUS * VEX_T1_RADIUS;
+    /** Deep waste landmark — Seraphine / Hanging Saint home (axis for the T1→T2 split). */
+    private static final double SERAPHINE_X = 495.5;
+    private static final double SERAPHINE_Z = 322.5;
     private static volatile String vexWorld = "world";
     private static volatile double vexX = 161.5;
     private static volatile double vexY = 58.0;
@@ -151,6 +156,14 @@ public final class WildlifeLooks implements Listener {
         if (INSTANCE != null) {
             INSTANCE.removeLabel(entity);
         }
+    }
+
+    /** Drop detached wildlife HP TextDisplays in one world (teleport/cull leftovers). */
+    public static void purgeOrphanLabels(World world) {
+        if (INSTANCE == null || world == null) {
+            return;
+        }
+        INSTANCE.purgeOrphanLabelsIn(world);
     }
 
     /** Ore troll HP nameplate — same TextDisplay style as wildlife. */
@@ -243,23 +256,55 @@ public final class WildlifeLooks implements Listener {
             applyTier(entity, TIER_CRYPT);
             return;
         }
-        if (at != null && nearVexStarter(at)) {
+        // Vex → vial altar = T1 only. Altar → Seraphine = T2/T3 only.
+        if (at == null || isBorderlandsT1Surface(at)) {
             applyTier(entity, TIER_NORMAL);
             return;
         }
-        int roll = ThreadLocalRandom.current().nextInt(SURFACE_T1_WEIGHT + SURFACE_T2_WEIGHT + SURFACE_T3_WEIGHT);
-        if (roll < SURFACE_T1_WEIGHT) {
-            applyTier(entity, TIER_NORMAL);
-        } else if (roll < SURFACE_T1_WEIGHT + SURFACE_T2_WEIGHT) {
+        int roll = ThreadLocalRandom.current().nextInt(SURFACE_T2_WEIGHT + SURFACE_T3_WEIGHT);
+        if (roll < SURFACE_T2_WEIGHT) {
             applyTier(entity, TIER_STURDY);
         } else {
             applyTier(entity, TIER_BRUTE);
         }
     }
 
-    /** Horizontal disk around Vex — soft T1-only combat for the lesson entrance. */
+    /**
+     * Soft gate disk around Vex — keep the entrance thin.
+     * Not the full T1 lane (that reaches the vial altar).
+     */
     public static boolean nearVexStarter(Location at) {
         return nearVex(at, VEX_T1_RADIUS_SQ);
+    }
+
+    /**
+     * Surface T1 lane: from the Vex gate through the vial altar.
+     * Past the altar (toward Seraphine) is T2/T3 waste.
+     */
+    public static boolean isBorderlandsT1Surface(Location at) {
+        if (at == null || at.getWorld() == null) {
+            return false;
+        }
+        if (at.getY() <= CRYPT_CEILING_Y) {
+            return false;
+        }
+        refreshVexCenter();
+        if (!at.getWorld().getName().equalsIgnoreCase(vexWorld)) {
+            return false;
+        }
+        double ax = SERAPHINE_X - vexX;
+        double az = SERAPHINE_Z - vexZ;
+        double len = Math.sqrt(ax * ax + az * az);
+        if (len < 1.0) {
+            return nearVexStarter(at);
+        }
+        double ux = ax / len;
+        double uz = az / len;
+        double altarDot = (BorderlandsRiteService.ALTAR_X - vexX) * ux
+                + (BorderlandsRiteService.ALTAR_Z - vexZ) * uz;
+        double atDot = (at.getX() - vexX) * ux + (at.getZ() - vexZ) * uz;
+        // Small grace so the altar pad itself stays T1.
+        return atDot <= altarDot + 10.0;
     }
 
     /** Same Vex center, custom radius² (e.g. taboo bubble). */
@@ -991,11 +1036,32 @@ public final class WildlifeLooks implements Listener {
                 || entity.getPersistentDataContainer().has(ItemKeys.zoneSpawn(), PersistentDataType.STRING)) {
             disableSunBurn(entity);
         }
-        if (rollSturdy && !hasTier(entity) && ThreadLocalRandom.current().nextDouble() < STURDY_CHANCE) {
+        // T2 Sturdy is a Borderlands thing: hostiles only, inside the Borderlands only. Hub fields,
+        // towns, roads and isles never roll it (was: 16% of every mob spawn, animals included).
+        if (rollSturdy && !hasTier(entity) && isHostileMob(entity) && inBorderlandsAt(entity.getLocation())
+                && ThreadLocalRandom.current().nextDouble() < STURDY_CHANCE) {
             applySturdy(entity);
         }
         rememberTitle(entity);
         refreshLabel(entity);
+    }
+
+    private static boolean isHostileMob(LivingEntity entity) {
+        return entity instanceof Monster || entity instanceof org.bukkit.entity.Enemy;
+    }
+
+    /** Inside the Borderlands MobZone disk or a Borderlands area (Crypt below it included). */
+    public static boolean inBorderlandsAt(Location location) {
+        de.aetherion.items.AetherionItems items = de.aetherion.items.AetherionItems.getInstance();
+        if (items == null || location == null) {
+            return false;
+        }
+        MobZoneService mobs = items.getMobZones();
+        if (mobs != null && mobs.containsBorderlands(location)) {
+            return true;
+        }
+        AreaService areas = items.getAreas();
+        return areas != null && areas.isType(location, AreaType.BORDERLANDS);
     }
 
     private boolean eligible(LivingEntity entity) {
@@ -1304,11 +1370,28 @@ public final class WildlifeLooks implements Listener {
         if (entity == null) {
             return;
         }
+        String ownerId = entity.getUniqueId().toString();
         entity.getPersistentDataContainer().remove(ItemKeys.wildlifeLabel());
-        for (Entity passenger : entity.getPassengers()) {
+        for (Entity passenger : List.copyOf(entity.getPassengers())) {
             if (passenger instanceof TextDisplay
                     && passenger.getPersistentDataContainer().has(ItemKeys.wildlifeLabel(), PersistentDataType.STRING)) {
                 passenger.remove();
+            }
+        }
+        // Detached plates keep the owner UUID in PDC — kill those near the body too.
+        World world = entity.getWorld();
+        if (world == null) {
+            return;
+        }
+        Location at = entity.getLocation();
+        for (Entity nearby : world.getNearbyEntities(at, 6, 6, 6)) {
+            if (!(nearby instanceof TextDisplay display) || !display.isValid()) {
+                continue;
+            }
+            String tagged = display.getPersistentDataContainer().get(
+                    ItemKeys.wildlifeLabel(), PersistentDataType.STRING);
+            if (ownerId.equals(tagged) || (display.getVehicle() == null && isStrayHpLabel(display))) {
+                display.remove();
             }
         }
     }
@@ -1369,6 +1452,7 @@ public final class WildlifeLooks implements Listener {
             display.setBackgroundColor(Color.fromARGB(90, 12, 10, 8));
             display.setPersistent(false);
             display.setGravity(false);
+            display.setViewRange(0.35f); // ~56 blocks — stop far clients rendering hundreds of plates
             display.setTransformation(labelTransform(entity));
             display.getPersistentDataContainer().set(
                     ItemKeys.wildlifeLabel(),
@@ -1410,7 +1494,11 @@ public final class WildlifeLooks implements Listener {
         return snowy(entity.getLocation());
     }
 
+    private int labelPulse;
+
     private void tick() {
+        labelPulse++;
+        boolean refreshHp = labelPulse % 3 == 0; // ~6s — HP text, not every 2s for every mob
         // Player bubbles only — far entities are not visible and cost full-world scans.
         for (Player player : Bukkit.getOnlinePlayers()) {
             World world = player.getWorld();
@@ -1418,15 +1506,37 @@ public final class WildlifeLooks implements Listener {
                 continue;
             }
             Location at = player.getLocation();
-            for (Entity nearby : world.getNearbyEntities(at, 48, 28, 48)) {
+            for (Entity nearby : world.getNearbyEntities(at, 36, 20, 36)) {
                 if (nearby instanceof LivingEntity living && eligible(living)) {
-                    refreshLabel(living);
+                    if (refreshHp || labelOf(living) == null) {
+                        refreshLabel(living);
+                    }
                 } else if (nearby instanceof TextDisplay display && shouldDropLabel(display)) {
                     nearby.remove();
                 }
             }
         }
+        // Periodic world sweep for plates that teleports left behind outside the bubble.
+        if (labelPulse % 15 == 0) {
+            for (World world : Bukkit.getWorlds()) {
+                if (!isLivingOverworld(world)) {
+                    continue;
+                }
+                purgeOrphanLabelsIn(world);
+            }
+        }
         populate();
+    }
+
+    private void purgeOrphanLabelsIn(World world) {
+        for (Entity entity : List.copyOf(world.getEntitiesByClass(TextDisplay.class))) {
+            if (!(entity instanceof TextDisplay display) || !display.isValid()) {
+                continue;
+            }
+            if (shouldDropLabel(display)) {
+                display.remove();
+            }
+        }
     }
 
     private boolean shouldDropLabel(TextDisplay display) {
@@ -1458,6 +1568,10 @@ public final class WildlifeLooks implements Listener {
             Location at = player.getLocation();
             if (inEldervale(at)) {
                 // No ambient wildlife on Eldervale.
+                continue;
+            }
+            if (inBorderlandsAt(at)) {
+                // Borderlands animals spawn→cull thrash — hostiles only there.
                 continue;
             }
             int animals = 0;

@@ -64,7 +64,9 @@ public class CustomItem {
                 catcher::byId,
                 accessories::byId,
                 boosters::byId,
-                this::createDungeonFromId
+                this::createDungeonFromId,
+                // P2: Signatures (recipe/test samples) + isle heartwoods resolve by id too.
+                de.aetherion.items.economy.Signatures::display
         );
     }
 
@@ -301,13 +303,9 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §aCOMMON",
-                                    "",
                                     "§7⛏ Mining Power: §f+2",
                                     "§7💎 Fortune: §f+8",
-                                    "§7✦ Spread: §f+0.00",
-                                    "",
-                                    "§8Starter Tool"
+                                    "§7✦ Spread: §f+0.00"
                             ),
                             true,
                             false,
@@ -369,13 +367,9 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §7UNCOMMON",
-                                    "",
                                     "§7⛏ Mining Power: §f+14",
                                     "§7💎 Fortune: §f+22",
-                                    "§7✦ Spread: §f+0.00",
-                                    "",
-                                    "§8First real Aetherion pick"
+                                    "§7✦ Spread: §f+0.00"
                             ),
                             true,
                             false,
@@ -436,14 +430,8 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §7UNCOMMON",
-                                    "",
                                     "§7💎 Fortune: §f+8.00",
-                                    "§7✦ Spread: §f+1.00",
-                                    "",
-                                    "§7🪓 Woodcutting Tool",
-                                    "",
-                                    "§8First real Aetherion axe"
+                                    "§7✦ Spread: §f+1.00"
                             ),
                             true,
                             true,
@@ -504,16 +492,10 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §7UNCOMMON",
-                                    "",
                                     "§7⚔ Damage: §f+10.00",
                                     "§7⚔ Attack Spread: §f+2.00",
                                     "§7✧ Crit Chance: §f+4.00%",
-                                    "§7✧ Crit Damage: §f+38.00%",
-                                    "",
-                                    "§7⚔ Basic Weapon",
-                                    "",
-                                    "§8First real Aetherion sword"
+                                    "§7✧ Crit Damage: §f+38.00%"
                             ),
                             false,
                             true,
@@ -545,15 +527,12 @@ public class CustomItem {
             applyItemData(meta, Rarity.UNCOMMON, stats);
             meta.setDisplayName("§aSplinter Glaive");
             meta.setLore(createLore(List.of(
-                    "§7✦ §aUNCOMMON",
-                    "",
                     "§7⚔ Damage: §f+16.00",
                     "§7⚔ Attack Spread: §f+3.00",
                     "§7✧ Crit Chance: §f+6.00%",
                     "§7✧ Crit Damage: §f+48.00%",
                     "",
-                    "§7Oak that learned to be a spear.",
-                    "§8Aetherion Weapon"
+                    "§7Oak that learned to be a spear."
             ), false, true, false));
             meta.setCustomModelData(1018);
             meta.setUnbreakable(true);
@@ -576,15 +555,12 @@ public class CustomItem {
             applyItemData(meta, Rarity.RARE, stats);
             meta.setDisplayName("§bAshen Cleaver");
             meta.setLore(createLore(List.of(
-                    "§7✦ §bRARE",
-                    "",
                     "§7⚔ Damage: §f+24.00",
                     "§7⚔ Attack Spread: §f+5.00",
                     "§7✧ Crit Chance: §f+8.00%",
                     "§7✧ Crit Damage: §f+58.00%",
                     "",
-                    "§7Coal dust in the edge. The trees remember.",
-                    "§8Aetherion Weapon"
+                    "§7Coal dust in the edge. The trees remember."
             ), false, true, false));
             meta.setCustomModelData(1019);
             meta.setUnbreakable(true);
@@ -609,16 +585,12 @@ public class CustomItem {
             meta.getPersistentDataContainer().set(ItemKeys.needsAmmo(), PersistentDataType.BYTE, (byte) 1);
             meta.setDisplayName("§7Simple Longbow");
             meta.setLore(createLore(List.of(
-                    "§7✦ §7UNCOMMON",
-                    "",
                     "§7⚔ Damage: §f+16.00",
                     "§7✧ Crit Chance: §f+4.00%",
                     "§7✧ Crit Damage: §f+42.00%",
                     "",
                     "§eDraw: §f1.6s §8for a full shot.",
-                    "§7Needs arrows. Slow, but it hits.",
-                    "",
-                    "§8First real hunting bow"
+                    "§7Needs arrows. Slow, but it hits."
             ), false, true, false));
             meta.setCustomModelData(2210);
             meta.setUnbreakable(true);
@@ -643,17 +615,13 @@ public class CustomItem {
             meta.getPersistentDataContainer().set(ItemKeys.needsAmmo(), PersistentDataType.BYTE, (byte) 1);
             meta.setDisplayName("§7Simple Shortbow");
             meta.setLore(createLore(List.of(
-                    "§7✦ §7UNCOMMON",
-                    "",
                     "§7⚔ Damage: §f+8.00",
                     "§7✧ Crit Chance: §f+3.00%",
                     "§7✧ Crit Damage: §f+38.00%",
                     "",
                     "§6⚡ Fire Rate: §f1.50s",
                     "§7Hold right-click to fire.",
-                    "§7Needs arrows.",
-                    "",
-                    "§8First real shortbow"
+                    "§7Needs arrows."
             ), false, true, false));
             meta.setCustomModelData(2202);
             meta.setUnbreakable(true);
@@ -675,18 +643,9 @@ public class CustomItem {
             applyItemData(meta, Rarity.COMMON, stats);
             meta.setDisplayName("§eWooden Rod");
             meta.setLore(createLore(List.of(
-                    "§7✦ §fCOMMON",
-                    "",
-                    "§7⚔ Lightning: §f+48.00",
-                    "§7✧ Crit Chance: §f+5.00%",
-                    "§7✧ Crit Damage: §f+50.00%",
-                    "",
-                    "§eSomeone tried to fish with this.",
-                    "§7It was a terrible fishing rod.",
-                    "§7It is a much better lightning stick.",
-                    "",
-                    "§6Right-click: §7bolt where you look.",
-                    "§8Range 30 · 10s cooldown"
+                    "§6✦ Lightning Strike",
+                    "§eRight-click: §7bolt where you look.",
+                    "§8Range 30 · CD 10s"
             ), false, true, false));
             markWand(meta, "lightning", 30.0, 10_000L, 2.6, 0, 0);
             meta.setCustomModelData(2601);
@@ -713,8 +672,6 @@ public class CustomItem {
             meta.getPersistentDataContainer().set(ItemKeys.needsAmmo(), PersistentDataType.BYTE, (byte) 1);
             meta.setDisplayName("§6Hollow Longbow");
             meta.setLore(createLore(List.of(
-                    "§7✦ §6LEGENDARY",
-                    "",
                     "§7⚔ Damage: §f+88.00",
                     "§7⚔ Attack Spread: §f+12.00",
                     "§7✧ Crit Chance: §f+12.00%",
@@ -746,8 +703,6 @@ public class CustomItem {
             applyItemData(meta, Rarity.COMMON, stats);
             meta.setDisplayName("§fBone Knife");
             meta.setLore(createLore(List.of(
-                    "§7✦ §fCOMMON",
-                    "",
                     "§7⚔ Damage: §f+8.00",
                     "§7✧ Crit Chance: §f+18.00%",
                     "§7✧ Crit Damage: §f+90.00%",
@@ -778,8 +733,6 @@ public class CustomItem {
             meta.getPersistentDataContainer().set(ItemKeys.poisonTicks(), PersistentDataType.INTEGER, 80);
             meta.setDisplayName("§aVenom Dagger");
             meta.setLore(createLore(List.of(
-                    "§7✦ §aUNCOMMON",
-                    "",
                     "§7⚔ Damage: §f+12.00",
                     "§7✧ Crit Chance: §f+10.00%",
                     "§7✧ Crit Damage: §f+55.00%",
@@ -813,8 +766,6 @@ public class CustomItem {
             meta.getPersistentDataContainer().set(ItemKeys.needsAmmo(), PersistentDataType.BYTE, (byte) 1);
             meta.setDisplayName("§aIron Longbow");
             meta.setLore(createLore(List.of(
-                    "§7✦ §aUNCOMMON",
-                    "",
                     "§7⚔ Damage: §f+32.00",
                     "§7✧ Crit Chance: §f+6.00%",
                     "§7✧ Crit Damage: §f+55.00%",
@@ -847,8 +798,6 @@ public class CustomItem {
             meta.getPersistentDataContainer().set(ItemKeys.needsAmmo(), PersistentDataType.BYTE, (byte) 1);
             meta.setDisplayName("§aReinforced Shortbow");
             meta.setLore(createLore(List.of(
-                    "§7✦ §aUNCOMMON",
-                    "",
                     "§7⚔ Damage: §f+15.00",
                     "§7✧ Crit Chance: §f+5.00%",
                     "§7✧ Crit Damage: §f+45.00%",
@@ -867,9 +816,30 @@ public class CustomItem {
         return item;
     }
 
+    /** Legacy id, real bow again: plain bow (no shortbow/longbow flags), priced between the starter bows. */
     public ItemStack createHunterCrossbow() {
-        // No custom weapon — plain leather only (NPC hand / leftover give paths).
-        return new ItemStack(Material.LEATHER);
+        ItemStack item = new ItemStack(Material.BOW);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            setItemId(meta, "hunter_crossbow");
+            ItemStats stats = new ItemStats();
+            stats.setDamage(22.0);
+            stats.setCritChance(5.0);
+            stats.setCritDamage(48.0);
+            applyItemData(meta, Rarity.UNCOMMON, stats);
+            meta.getPersistentDataContainer().set(ItemKeys.needsAmmo(), PersistentDataType.BYTE, (byte) 1);
+            meta.setDisplayName("§aHunter Crossbow");
+            meta.setLore(createLore(List.of(
+                    "§7Draw, release. Needs arrows.",
+                    "",
+                    "§8Hunter's issue"
+            ), false, true, false));
+            meta.setCustomModelData(2205);
+            meta.setUnbreakable(true);
+            hideVanillaAttributes(meta);
+            item.setItemMeta(meta);
+        }
+        return item;
     }
 
     public ItemStack createCopperRod() {
@@ -885,17 +855,10 @@ public class CustomItem {
             markWand(meta, "chain", 28.0, 8_000L, 2.2, 2, 0);
             meta.setDisplayName("§eCopper Rod");
             meta.setLore(createLore(List.of(
-                    "§7✦ §aUNCOMMON",
-                    "",
-                    "§7⚔ Lightning: §f+42.00",
-                    "§7✧ Crit Chance: §f+6.00%",
-                    "§7✧ Crit Damage: §f+55.00%",
-                    "",
-                    "§eThe wooden rod, but it learned to gossip.",
-                    "§7Bolt jumps to 2 extra targets.",
-                    "",
-                    "§6Right-click: §7chain lightning.",
-                    "§8Range 28 · 8s cooldown"
+                    "§6✦ Chain Lightning",
+                    "§eRight-click: §7bolt where you look.",
+                    "§7Jumps to §f2 §7extra targets.",
+                    "§8Range 28 · CD 8s"
             ), false, true, false));
             meta.setCustomModelData(2602);
             meta.setUnbreakable(true);
@@ -919,17 +882,10 @@ public class CustomItem {
             markWand(meta, "frost", 24.0, 6_000L, 1.8, 0, 80);
             meta.setDisplayName("§bFrost Shard");
             meta.setLore(createLore(List.of(
-                    "§7✦ §aUNCOMMON",
-                    "",
-                    "§7⚔ Frost: §f+22.00",
-                    "§7✧ Crit Chance: §f+4.00%",
-                    "§7✧ Crit Damage: §f+40.00%",
-                    "",
-                    "§bCold enough to make a skeleton shiver.",
-                    "§7Slows whatever it hits.",
-                    "",
-                    "§6Right-click: §7frost burst.",
-                    "§8Range 24 · 6s cooldown · Slow 4s"
+                    "§6✦ Frost Burst",
+                    "§eRight-click: §7burst of frost.",
+                    "§7Slows whatever it hits for §f4s§7.",
+                    "§8Range 24 · CD 6s"
             ), false, true, false));
             meta.setCustomModelData(2603);
             meta.setUnbreakable(true);
@@ -1005,8 +961,6 @@ public class CustomItem {
             applyItemData(meta, Rarity.UNCOMMON, stats);
             meta.setDisplayName("§aRotten Cleaver");
             meta.setLore(createLore(List.of(
-                    "§7✦ §aUNCOMMON",
-                    "",
                     "§7⚔ Damage: §f+14.00",
                     "§7⚔ Attack Spread: §f+3.00",
                     "§7✧ Crit Chance: §f+5.00%",
@@ -1140,8 +1094,6 @@ public class CustomItem {
             applyItemData(meta, Rarity.UNCOMMON, stats);
             meta.setDisplayName("§fWebweave Fang");
             meta.setLore(createLore(List.of(
-                    "§7✦ §aUNCOMMON",
-                    "",
                     "§7⚔ Damage: §f+12.00",
                     "§7✧ Crit Chance: §f+14.00%",
                     "§7✧ Crit Damage: §f+55.00%",
@@ -1169,8 +1121,6 @@ public class CustomItem {
 
     private List<String> rottenLore(String piece, String defense, String health, String damage, String resist) {
         return List.of(
-                "§7✦ §aUNCOMMON",
-                "",
                 "§7🛡 Defense: §f+" + defense,
                 "§7❤ Health: §f+" + health,
                 "§7☠ Undead Damage: §f+" + damage + "%",
@@ -1195,8 +1145,6 @@ public class CustomItem {
 
     private List<String> boneLore(String piece, String defense, String health, String crit, String speed) {
         List<String> lore = new java.util.ArrayList<>(List.of(
-                "§7✦ §aUNCOMMON",
-                "",
                 "§7🛡 Defense: §f+" + defense,
                 "§7❤ Health: §f+" + health,
                 "§7✧ Crit Chance: §f+" + crit + "%"
@@ -1229,8 +1177,6 @@ public class CustomItem {
 
     private List<String> ironhideLore(String piece, String defense, String health) {
         return List.of(
-                "§7✦ §5EPIC",
-                "",
                 "§7🛡 Defense: §f+" + defense,
                 "§7❤ Health: §f+" + health,
                 "",
@@ -1320,8 +1266,6 @@ public class CustomItem {
 
     private List<String> healerLore(String piece, String defense, String health) {
         return List.of(
-                "§7✦ §bRARE",
-                "",
                 "§7🛡 Defense: §f+" + defense,
                 "§7❤ Health: §f+" + health,
                 "",
@@ -1403,8 +1347,6 @@ public class CustomItem {
             markWand(meta, "heal", 28.0, 5_000L, 2.4, 0, 0);
             meta.setDisplayName("§aMender Staff");
             meta.setLore(createLore(List.of(
-                    "§7✦ §bRARE",
-                    "",
                     "§7💚 Heal: §f+4❤ (8 blocks)",
                     "§7✧ Crit Chance: §f+4.00%",
                     "§7✧ Crit Damage: §f+40.00%",
@@ -1443,17 +1385,10 @@ public class CustomItem {
             markWand(meta, "ember", 28.0, 5_000L, 2.4, 0, 0);
             meta.setDisplayName("§6Ember Rod");
             meta.setLore(createLore(List.of(
-                    "§7✦ §bRARE",
-                    "",
-                    "§7⚔ Fire: §f+38.00",
-                    "§7✧ Crit Chance: §f+5.00%",
-                    "§7✧ Crit Damage: §f+50.00%",
-                    "",
-                    "§6Forged from compressed redstone and flame.",
+                    "§6✦ Ember Burst",
+                    "§eRight-click: §7burst of fire.",
                     "§7Sets targets ablaze.",
-                    "",
-                    "§6Right-click: §7fire burst.",
-                    "§8Range 28 · 5s cooldown"
+                    "§8Range 28 · CD 5s"
             ), false, true, false));
             meta.setCustomModelData(2605);
             meta.setUnbreakable(true);
@@ -1482,15 +1417,11 @@ public class CustomItem {
             applyItemData(meta, Rarity.RARE, stats);
             meta.setDisplayName("§bReinforced Pickaxe");
             meta.setLore(createLore(List.of(
-                    "§7✦ §bRARE",
-                    "",
                     "§7⛏ Mining Power: §f+18.00",
                     "§7💎 Fortune: §f+28.00",
                     "§7✦ Spread: §f+3.00",
                     "",
-                    "§7Compressed iron reinforces every strike.",
-                    "",
-                    "§8Aetherion Mining Tool"
+                    "§7Compressed iron reinforces every strike."
             ), true, false, false));
             meta.setCustomModelData(1008);
             meta.setUnbreakable(true);
@@ -1519,17 +1450,13 @@ public class CustomItem {
             applyItemData(meta, Rarity.RARE, stats);
             meta.setDisplayName("§8Obsidian Maul");
             meta.setLore(createLore(List.of(
-                    "§7✦ §bRARE",
-                    "",
                     "§7⚔ Damage: §f+35.00",
                     "§7🛡 Defense: §f+8.00",
                     "§7✧ Crit Chance: §f+3.00%",
                     "§7✧ Crit Damage: §f+35.00%",
                     "",
                     "§8Slow. Heavy. Final.",
-                    "§7A hammer carved from volcanic glass.",
-                    "",
-                    "§8Aetherion Tank Weapon"
+                    "§7A hammer carved from volcanic glass."
             ), false, true, false));
             meta.setCustomModelData(2606);
             meta.setUnbreakable(true);
@@ -1550,8 +1477,6 @@ public class CustomItem {
 
     private List<String> webLore(String piece, String defense, String health, String speed) {
         return List.of(
-                "§7✦ §aUNCOMMON",
-                "",
                 "§7🛡 Defense: §f+" + defense,
                 "§7❤ Health: §f+" + health,
                 "§7✦ Speed: §f+" + speed + "%",
@@ -1650,14 +1575,8 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §7UNCOMMON",
-                                    "",
                                     "§7🌾 Harvest: §f+18.00",
-                                    "§7💎 Fortune: §f+10.00",
-                                    "",
-                                    "§7🌱 Farming Tool",
-                                    "",
-                                    "§8First real Aetherion hoe"
+                                    "§7💎 Fortune: §f+10.00"
                             ),
                             true,
                             false,
@@ -1718,12 +1637,8 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §7UNCOMMON",
-                                    "",
                                     "§7🛡 Defense: §f+1.00",
-                                    "§7❤ Health: §f+0.00",
-                                    "",
-                                    "§8Basic Armor"
+                                    "§7❤ Health: §f+0.00"
                             ),
                             false,
                             false,
@@ -1784,12 +1699,8 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §7UNCOMMON",
-                                    "",
                                     "§7🛡 Defense: §f+3.00",
-                                    "§7❤ Health: §f+0.00",
-                                    "",
-                                    "§8Basic Armor"
+                                    "§7❤ Health: §f+0.00"
                             ),
                             false,
                             false,
@@ -1850,12 +1761,8 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §7UNCOMMON",
-                                    "",
                                     "§7🛡 Defense: §f+2.00",
-                                    "§7❤ Health: §f+0.00",
-                                    "",
-                                    "§8Basic Armor"
+                                    "§7❤ Health: §f+0.00"
                             ),
                             false,
                             false,
@@ -1916,12 +1823,8 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §7UNCOMMON",
-                                    "",
                                     "§7🛡 Defense: §f+1.00",
-                                    "§7❤ Health: §f+0.00",
-                                    "",
-                                    "§8Basic Armor"
+                                    "§7❤ Health: §f+0.00"
                             ),
                             false,
                             false,
@@ -2003,15 +1906,9 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §aCOMMON",
-                                    "",
                                     "§7🛡 Defense: §f+6.0",
                                     "§7⚔ Attack Spread: §f+3.0",
-                                    "§7❤ Health: §f+10.0",
-                                    "",
-                                    "§c⚔ Combat Armor",
-                                    "",
-                                    "§8Aetherion Combat Set"
+                                    "§7❤ Health: §f+10.0"
                             ),
                             false,
                             true,
@@ -2079,17 +1976,11 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §aCOMMON",
-                                    "",
                                     "§7🛡 Defense: §f+12.0",
                                     "§7⚔ Attack Spread: §f+4.0",
                                     "§7❤ Health: §f+16.0",
                                     "§7✧ Crit Chance: §f+5.0%",
-                                    "§7✧ Crit Damage: §f+35.0%",
-                                    "",
-                                    "§c⚔ Combat Armor",
-                                    "",
-                                    "§8Aetherion Combat Set"
+                                    "§7✧ Crit Damage: §f+35.0%"
                             ),
                             false,
                             true,
@@ -2155,15 +2046,9 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §aCOMMON",
-                                    "",
                                     "§7🛡 Defense: §f+8.0",
                                     "§7⚔ Attack Spread: §f+3.0",
-                                    "§7❤ Health: §f+12.0",
-                                    "",
-                                    "§c⚔ Combat Armor",
-                                    "",
-                                    "§8Aetherion Combat Set"
+                                    "§7❤ Health: §f+12.0"
                             ),
                             false,
                             true,
@@ -2230,16 +2115,10 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §aCOMMON",
-                                    "",
                                     "§7🛡 Defense: §f+6.0",
                                     "§7⚔ Attack Spread: §f+2.0",
                                     "§7❤ Health: §f+10.0",
-                                    "§7✦ Speed: §f+2.00%",
-                                    "",
-                                    "§c⚔ Combat Armor",
-                                    "",
-                                    "§8Aetherion Combat Set"
+                                    "§7✦ Speed: §f+2.00%"
                             ),
                             false,
                             true,
@@ -2314,15 +2193,9 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §bRARE",
-                                    "",
                                     "§7🛡 Defense: §f+14.0",
                                     "§7❤ Health: §f+20.0",
-                                    "§7⚔ Attack Spread: §f+5.0",
-                                    "",
-                                    "§c⚔ Combat Armor II",
-                                    "",
-                                    "§8Aetherion Combat Set"
+                                    "§7⚔ Attack Spread: §f+5.0"
                             ),
                             false,
                             true,
@@ -2390,17 +2263,11 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §bRARE",
-                                    "",
                                     "§7🛡 Defense: §f+28.0",
                                     "§7❤ Health: §f+32.0",
                                     "§7⚔ Attack Spread: §f+7.0",
                                     "§7✧ Crit Chance: §f+7.0%",
-                                    "§7✧ Crit Damage: §f+50.0%",
-                                    "",
-                                    "§c⚔ Combat Armor II",
-                                    "",
-                                    "§8Aetherion Combat Set"
+                                    "§7✧ Crit Damage: §f+50.0%"
                             ),
                             false,
                             true,
@@ -2466,15 +2333,9 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §bRARE",
-                                    "",
                                     "§7🛡 Defense: §f+18.0",
                                     "§7❤ Health: §f+24.0",
-                                    "§7⚔ Attack Spread: §f+5.0",
-                                    "",
-                                    "§c⚔ Combat Armor II",
-                                    "",
-                                    "§8Aetherion Combat Set"
+                                    "§7⚔ Attack Spread: §f+5.0"
                             ),
                             false,
                             true,
@@ -2540,15 +2401,9 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §bRARE",
-                                    "",
                                     "§7🛡 Defense: §f+12.0",
                                     "§7❤ Health: §f+18.0",
-                                    "§7⚔ Attack Spread: §f+4.0",
-                                    "",
-                                    "§c⚔ Combat Armor II",
-                                    "",
-                                    "§8Aetherion Combat Set"
+                                    "§7⚔ Attack Spread: §f+4.0"
                             ),
                             false,
                             true,
@@ -2613,16 +2468,10 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §aCOMMON",
-                                    "",
                                     "§7⚔ Damage: §f+14.00",
                                     "§7⚔ Attack Spread: §f+3.00",
                                     "§7✧ Crit Chance: §f+5.00%",
-                                    "§7✧ Crit Damage: §f+42.00%",
-                                    "",
-                                    "§c⚔ Combat Weapon",
-                                    "",
-                                    "§8Aetherion Combat Set"
+                                    "§7✧ Crit Damage: §f+42.00%"
                             ),
                             false,
                             true,
@@ -2691,16 +2540,10 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §bRARE",
-                                    "",
                                     "§7⚔ Damage: §f+22.00",
                                     "§7⚔ Attack Spread: §f+5.00",
                                     "§7✧ Crit Chance: §f+6.00%",
-                                    "§7✧ Crit Damage: §f+40.00%",
-                                    "",
-                                    "§c⚔ Combat Weapon II",
-                                    "",
-                                    "§8Aetherion Combat Set"
+                                    "§7✧ Crit Damage: §f+40.00%"
                             ),
                             false,
                             true,
@@ -2749,15 +2592,9 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §5EPIC",
-                                    "",
                                     "§7🛡 Defense: §f+28.0",
                                     "§7❤ Health: §f+36.0",
-                                    "§7⚔ Attack Spread: §f+8.0",
-                                    "",
-                                    "§c⚔ Combat Armor III",
-                                    "",
-                                    "§8Aetherion Combat Set"
+                                    "§7⚔ Attack Spread: §f+8.0"
                             ),
                             false,
                             true,
@@ -2802,17 +2639,11 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §5EPIC",
-                                    "",
                                     "§7🛡 Defense: §f+52.0",
                                     "§7❤ Health: §f+55.0",
                                     "§7⚔ Attack Spread: §f+12.0",
                                     "§7✧ Crit Chance: §f+10.0%",
-                                    "§7✧ Crit Damage: §f+70.0%",
-                                    "",
-                                    "§c⚔ Combat Armor III",
-                                    "",
-                                    "§8Aetherion Combat Set"
+                                    "§7✧ Crit Damage: §f+70.0%"
                             ),
                             false,
                             true,
@@ -2855,15 +2686,9 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §5EPIC",
-                                    "",
                                     "§7🛡 Defense: §f+36.0",
                                     "§7❤ Health: §f+42.0",
-                                    "§7⚔ Attack Spread: §f+8.0",
-                                    "",
-                                    "§c⚔ Combat Armor III",
-                                    "",
-                                    "§8Aetherion Combat Set"
+                                    "§7⚔ Attack Spread: §f+8.0"
                             ),
                             false,
                             true,
@@ -2906,15 +2731,9 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §5EPIC",
-                                    "",
                                     "§7🛡 Defense: §f+24.0",
                                     "§7❤ Health: §f+32.0",
-                                    "§7⚔ Attack Spread: §f+6.0",
-                                    "",
-                                    "§c⚔ Combat Armor III",
-                                    "",
-                                    "§8Aetherion Combat Set"
+                                    "§7⚔ Attack Spread: §f+6.0"
                             ),
                             false,
                             true,
@@ -2957,16 +2776,10 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §5EPIC",
-                                    "",
                                     "§7⚔ Damage: §f+40.00",
                                     "§7⚔ Attack Spread: §f+9.00",
                                     "§7✧ Crit Chance: §f+9.00%",
-                                    "§7✧ Crit Damage: §f+58.00%",
-                                    "",
-                                    "§c⚔ Combat Weapon III",
-                                    "",
-                                    "§8Aetherion Combat Set"
+                                    "§7✧ Crit Damage: §f+58.00%"
                             ),
                             false,
                             true,
@@ -3015,15 +2828,9 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §6LEGENDARY",
-                                    "",
                                     "§7🛡 Defense: §f+50.0",
                                     "§7❤ Health: §f+60.0",
-                                    "§7⚔ Attack Spread: §f+12.0",
-                                    "",
-                                    "§c⚔ Combat Armor IV",
-                                    "",
-                                    "§8Aetherion Combat Set"
+                                    "§7⚔ Attack Spread: §f+12.0"
                             ),
                             false,
                             true,
@@ -3068,17 +2875,11 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §6LEGENDARY",
-                                    "",
                                     "§7🛡 Defense: §f+95.0",
                                     "§7❤ Health: §f+95.0",
                                     "§7⚔ Attack Spread: §f+18.0",
                                     "§7✧ Crit Chance: §f+13.0%",
-                                    "§7✧ Crit Damage: §f+95.0%",
-                                    "",
-                                    "§c⚔ Combat Armor IV",
-                                    "",
-                                    "§8Aetherion Combat Set"
+                                    "§7✧ Crit Damage: §f+95.0%"
                             ),
                             false,
                             true,
@@ -3121,15 +2922,9 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §6LEGENDARY",
-                                    "",
                                     "§7🛡 Defense: §f+65.0",
                                     "§7❤ Health: §f+70.0",
-                                    "§7⚔ Attack Spread: §f+12.0",
-                                    "",
-                                    "§c⚔ Combat Armor IV",
-                                    "",
-                                    "§8Aetherion Combat Set"
+                                    "§7⚔ Attack Spread: §f+12.0"
                             ),
                             false,
                             true,
@@ -3172,15 +2967,9 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §6LEGENDARY",
-                                    "",
                                     "§7🛡 Defense: §f+45.0",
                                     "§7❤ Health: §f+55.0",
-                                    "§7⚔ Attack Spread: §f+9.0",
-                                    "",
-                                    "§c⚔ Combat Armor IV",
-                                    "",
-                                    "§8Aetherion Combat Set"
+                                    "§7⚔ Attack Spread: §f+9.0"
                             ),
                             false,
                             true,
@@ -3223,16 +3012,10 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §6LEGENDARY",
-                                    "",
                                     "§7⚔ Damage: §f+72.00",
                                     "§7⚔ Attack Spread: §f+14.00",
                                     "§7✧ Crit Chance: §f+13.00%",
-                                    "§7✧ Crit Damage: §f+82.00%",
-                                    "",
-                                    "§c⚔ Combat Weapon IV",
-                                    "",
-                                    "§8Aetherion Combat Set"
+                                    "§7✧ Crit Damage: §f+82.00%"
                             ),
                             false,
                             true,
@@ -3281,15 +3064,9 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §dMYTHIC",
-                                    "",
                                     "§7🛡 Defense: §f+90.0",
                                     "§7❤ Health: §f+100.0",
-                                    "§7⚔ Attack Spread: §f+18.0",
-                                    "",
-                                    "§c⚔ Combat Armor V",
-                                    "",
-                                    "§8Aetherion Combat Set"
+                                    "§7⚔ Attack Spread: §f+18.0"
                             ),
                             false,
                             true,
@@ -3334,17 +3111,11 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §dMYTHIC",
-                                    "",
                                     "§7🛡 Defense: §f+170.0",
                                     "§7❤ Health: §f+160.0",
                                     "§7⚔ Attack Spread: §f+26.0",
                                     "§7✧ Crit Chance: §f+16.0%",
-                                    "§7✧ Crit Damage: §f+120.0%",
-                                    "",
-                                    "§c⚔ Combat Armor V",
-                                    "",
-                                    "§8Aetherion Combat Set"
+                                    "§7✧ Crit Damage: §f+120.0%"
                             ),
                             false,
                             true,
@@ -3387,15 +3158,9 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §dMYTHIC",
-                                    "",
                                     "§7🛡 Defense: §f+115.0",
                                     "§7❤ Health: §f+120.0",
-                                    "§7⚔ Attack Spread: §f+18.0",
-                                    "",
-                                    "§c⚔ Combat Armor V",
-                                    "",
-                                    "§8Aetherion Combat Set"
+                                    "§7⚔ Attack Spread: §f+18.0"
                             ),
                             false,
                             true,
@@ -3438,15 +3203,9 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §dMYTHIC",
-                                    "",
                                     "§7🛡 Defense: §f+80.0",
                                     "§7❤ Health: §f+95.0",
-                                    "§7⚔ Attack Spread: §f+14.0",
-                                    "",
-                                    "§c⚔ Combat Armor V",
-                                    "",
-                                    "§8Aetherion Combat Set"
+                                    "§7⚔ Attack Spread: §f+14.0"
                             ),
                             false,
                             true,
@@ -3489,16 +3248,10 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §dMYTHIC",
-                                    "",
                                     "§7⚔ Damage: §f+130.00",
                                     "§7⚔ Attack Spread: §f+22.00",
                                     "§7✧ Crit Chance: §f+18.00%",
-                                    "§7✧ Crit Damage: §f+110.00%",
-                                    "",
-                                    "§c⚔ Combat Weapon V",
-                                    "",
-                                    "§8Aetherion Combat Set"
+                                    "§7✧ Crit Damage: §f+110.00%"
                             ),
                             false,
                             true,
@@ -3551,16 +3304,10 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §5EPIC",
-                                    "",
                                     "§7🛡 Defense: §f+14",
                                     "§7⛏ Mining Power: §f+42",
                                     "§7💎 Fortune: §f+85",
-                                    "§7✦ Spread: §f+10.00",
-                                    "",
-                                    "§9⛏ Mining Armor III",
-                                    "",
-                                    "§8Aetherion Mining Set"
+                                    "§7✦ Spread: §f+10.00"
                             ),
                             true,
                             false,
@@ -3605,16 +3352,10 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §5EPIC",
-                                    "",
                                     "§7🛡 Defense: §f+40",
                                     "§7⛏ Mining Power: §f+60",
                                     "§7💎 Fortune: §f+120",
-                                    "§7✦ Spread: §f+10.00",
-                                    "",
-                                    "§9⛏ Mining Armor III",
-                                    "",
-                                    "§8Aetherion Mining Set"
+                                    "§7✦ Spread: §f+10.00"
                             ),
                             true,
                             false,
@@ -3659,16 +3400,10 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §5EPIC",
-                                    "",
                                     "§7🛡 Defense: §f+28",
                                     "§7⛏ Mining Power: §f+50",
                                     "§7💎 Fortune: §f+100",
-                                    "§7✦ Spread: §f+10.00",
-                                    "",
-                                    "§9⛏ Mining Armor III",
-                                    "",
-                                    "§8Aetherion Mining Set"
+                                    "§7✦ Spread: §f+10.00"
                             ),
                             true,
                             false,
@@ -3713,16 +3448,10 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §5EPIC",
-                                    "",
                                     "§7🛡 Defense: §f+14",
                                     "§7⛏ Mining Power: §f+42",
                                     "§7💎 Fortune: §f+85",
-                                    "§7✦ Spread: §f+10.00",
-                                    "",
-                                    "§9⛏ Mining Armor III",
-                                    "",
-                                    "§8Aetherion Mining Set"
+                                    "§7✦ Spread: §f+10.00"
                             ),
                             true,
                             false,
@@ -3766,15 +3495,9 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §5EPIC",
-                                    "",
                                     "§7⛏ Mining Power: §f+48",
                                     "§7💎 Fortune: §f+80",
-                                    "§7✦ Spread: §f+7.00",
-                                    "",
-                                    "§9⛏ Mining Tool III",
-                                    "",
-                                    "§8Aetherion Mining Set"
+                                    "§7✦ Spread: §f+7.00"
                             ),
                             true,
                             false,
@@ -3825,16 +3548,10 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §6LEGENDARY",
-                                    "",
                                     "§7🛡 Defense: §f+22",
                                     "§7⛏ Mining Power: §f+80",
                                     "§7💎 Fortune: §f+160",
-                                    "§7✦ Spread: §f+20.00",
-                                    "",
-                                    "§9⛏ Mining Armor IV",
-                                    "",
-                                    "§8Aetherion Mining Set"
+                                    "§7✦ Spread: §f+20.00"
                             ),
                             true,
                             false,
@@ -3879,16 +3596,10 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §6LEGENDARY",
-                                    "",
                                     "§7🛡 Defense: §f+65",
                                     "§7⛏ Mining Power: §f+110",
                                     "§7💎 Fortune: §f+220",
-                                    "§7✦ Spread: §f+20.00",
-                                    "",
-                                    "§9⛏ Mining Armor IV",
-                                    "",
-                                    "§8Aetherion Mining Set"
+                                    "§7✦ Spread: §f+20.00"
                             ),
                             true,
                             false,
@@ -3933,16 +3644,10 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §6LEGENDARY",
-                                    "",
                                     "§7🛡 Defense: §f+45",
                                     "§7⛏ Mining Power: §f+90",
                                     "§7💎 Fortune: §f+180",
-                                    "§7✦ Spread: §f+20.00",
-                                    "",
-                                    "§9⛏ Mining Armor IV",
-                                    "",
-                                    "§8Aetherion Mining Set"
+                                    "§7✦ Spread: §f+20.00"
                             ),
                             true,
                             false,
@@ -3987,16 +3692,10 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §6LEGENDARY",
-                                    "",
                                     "§7🛡 Defense: §f+22",
                                     "§7⛏ Mining Power: §f+80",
                                     "§7💎 Fortune: §f+160",
-                                    "§7✦ Spread: §f+20.00",
-                                    "",
-                                    "§9⛏ Mining Armor IV",
-                                    "",
-                                    "§8Aetherion Mining Set"
+                                    "§7✦ Spread: §f+20.00"
                             ),
                             true,
                             false,
@@ -4040,15 +3739,9 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §6LEGENDARY",
-                                    "",
                                     "§7⛏ Mining Power: §f+88",
                                     "§7💎 Fortune: §f+145",
-                                    "§7✦ Spread: §f+13.00",
-                                    "",
-                                    "§9⛏ Mining Tool IV",
-                                    "",
-                                    "§8Aetherion Mining Set"
+                                    "§7✦ Spread: §f+13.00"
                             ),
                             true,
                             false,
@@ -4099,16 +3792,10 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §dMYTHIC",
-                                    "",
                                     "§7🛡 Defense: §f+35",
                                     "§7⛏ Mining Power: §f+150",
                                     "§7💎 Fortune: §f+300",
-                                    "§7✦ Spread: §f+40.00",
-                                    "",
-                                    "§9⛏ Mining Armor V",
-                                    "",
-                                    "§8Aetherion Mining Set"
+                                    "§7✦ Spread: §f+40.00"
                             ),
                             true,
                             false,
@@ -4153,16 +3840,10 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §dMYTHIC",
-                                    "",
                                     "§7🛡 Defense: §f+100",
                                     "§7⛏ Mining Power: §f+200",
                                     "§7💎 Fortune: §f+420",
-                                    "§7✦ Spread: §f+40.00",
-                                    "",
-                                    "§9⛏ Mining Armor V",
-                                    "",
-                                    "§8Aetherion Mining Set"
+                                    "§7✦ Spread: §f+40.00"
                             ),
                             true,
                             false,
@@ -4207,16 +3888,10 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §dMYTHIC",
-                                    "",
                                     "§7🛡 Defense: §f+70",
                                     "§7⛏ Mining Power: §f+170",
                                     "§7💎 Fortune: §f+350",
-                                    "§7✦ Spread: §f+40.00",
-                                    "",
-                                    "§9⛏ Mining Armor V",
-                                    "",
-                                    "§8Aetherion Mining Set"
+                                    "§7✦ Spread: §f+40.00"
                             ),
                             true,
                             false,
@@ -4261,16 +3936,10 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §dMYTHIC",
-                                    "",
                                     "§7🛡 Defense: §f+35",
                                     "§7⛏ Mining Power: §f+150",
                                     "§7💎 Fortune: §f+300",
-                                    "§7✦ Spread: §f+40.00",
-                                    "",
-                                    "§9⛏ Mining Armor V",
-                                    "",
-                                    "§8Aetherion Mining Set"
+                                    "§7✦ Spread: §f+40.00"
                             ),
                             true,
                             false,
@@ -4314,15 +3983,9 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §dMYTHIC",
-                                    "",
                                     "§7⛏ Mining Power: §f+160",
                                     "§7💎 Fortune: §f+260",
-                                    "§7✦ Spread: §f+22.00",
-                                    "",
-                                    "§9⛏ Mining Tool V",
-                                    "",
-                                    "§8Aetherion Mining Set"
+                                    "§7✦ Spread: §f+22.00"
                             ),
                             true,
                             false,
@@ -4403,16 +4066,10 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §aCOMMON",
-                                    "",
                                     "§7🛡 Defense: §f+4",
                                     "§7⛏ Mining Power: §f+10",
                                     "§7💎 Fortune: §f+18",
-                                    "§7✦ Spread: §f+1.00",
-                                    "",
-                                    "§9⛏ Mining Armor",
-                                    "",
-                                    "§8Aetherion Mining Set"
+                                    "§7✦ Spread: §f+1.00"
                             ),
                             true,
                             false,
@@ -4480,16 +4137,10 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §aCOMMON",
-                                    "",
                                     "§7🛡 Defense: §f+8",
                                     "§7⛏ Mining Power: §f+14",
                                     "§7💎 Fortune: §f+24",
-                                    "§7✦ Spread: §f+2.00",
-                                    "",
-                                    "§9⛏ Mining Armor",
-                                    "",
-                                    "§8Aetherion Mining Set"
+                                    "§7✦ Spread: §f+2.00"
                             ),
                             true,
                             false,
@@ -4557,16 +4208,10 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §aCOMMON",
-                                    "",
                                     "§7🛡 Defense: §f+6",
                                     "§7⛏ Mining Power: §f+12",
                                     "§7💎 Fortune: §f+20",
-                                    "§7✦ Spread: §f+1.00",
-                                    "",
-                                    "§9⛏ Mining Armor",
-                                    "",
-                                    "§8Aetherion Mining Set"
+                                    "§7✦ Spread: §f+1.00"
                             ),
                             true,
                             false,
@@ -4635,17 +4280,11 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §aCOMMON",
-                                    "",
                                     "§7🛡 Defense: §f+4",
                                     "§7⛏ Mining Power: §f+10",
                                     "§7💎 Fortune: §f+16",
                                     "§7✦ Spread: §f+1.00",
-                                    "§7✦ Speed: §f+2.00%",
-                                    "",
-                                    "§9⛏ Mining Armor",
-                                    "",
-                                    "§8Aetherion Mining Set"
+                                    "§7✦ Speed: §f+2.00%"
                             ),
                             true,
                             false,
@@ -4713,16 +4352,10 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §bRARE",
-                                    "",
                                     "§7🛡 Defense: §f+8",
                                     "§7⛏ Mining Power: §f+22",
                                     "§7💎 Fortune: §f+45",
-                                    "§7✦ Spread: §f+5.00",
-                                    "",
-                                    "§9⛏ Mining Armor II",
-                                    "",
-                                    "§8Aetherion Mining Set"
+                                    "§7✦ Spread: §f+5.00"
                             ),
                             true,
                             false,
@@ -4790,16 +4423,10 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §bRARE",
-                                    "",
                                     "§7🛡 Defense: §f+24",
                                     "§7⛏ Mining Power: §f+35",
                                     "§7💎 Fortune: §f+65",
-                                    "§7✦ Spread: §f+5.00",
-                                    "",
-                                    "§9⛏ Mining Armor II",
-                                    "",
-                                    "§8Aetherion Mining Set"
+                                    "§7✦ Spread: §f+5.00"
                             ),
                             true,
                             false,
@@ -4867,16 +4494,10 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §bRARE",
-                                    "",
                                     "§7🛡 Defense: §f+16",
                                     "§7⛏ Mining Power: §f+28",
                                     "§7💎 Fortune: §f+55",
-                                    "§7✦ Spread: §f+5.00",
-                                    "",
-                                    "§9⛏ Mining Armor II",
-                                    "",
-                                    "§8Aetherion Mining Set"
+                                    "§7✦ Spread: §f+5.00"
                             ),
                             true,
                             false,
@@ -4944,16 +4565,10 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §bRARE",
-                                    "",
                                     "§7🛡 Defense: §f+8",
                                     "§7⛏ Mining Power: §f+22",
                                     "§7💎 Fortune: §f+45",
-                                    "§7✦ Spread: §f+5.00",
-                                    "",
-                                    "§9⛏ Mining Armor II",
-                                    "",
-                                    "§8Aetherion Mining Set"
+                                    "§7✦ Spread: §f+5.00"
                             ),
                             true,
                             false,
@@ -5009,7 +4624,6 @@ public class CustomItem {
             de.aetherion.items.blueprint.BlueprintUpgrade.writeTier(meta, 1);
             meta.setDisplayName("§bVein Siphon");
             meta.setLore(createLore(List.of(
-                    "§7✦ §bRARE",
                     "§bBlueprint Tier: §fI/IV",
                     "",
                     "§7⛏ Mining Power: §f+48",
@@ -5021,9 +4635,7 @@ public class CustomItem {
                     "§7Cooldown: §f45s §8· max 15",
                     "",
                     "§6Mining Boss Damage: §f10 + rarity",
-                    "§7Pick hits on ore trolls.",
-                    "",
-                    "§8Aetherion Mining Tool"
+                    "§7Pick hits on ore trolls."
             ), true, false, false));
             meta.setCustomModelData(3102);
             meta.setUnbreakable(true);
@@ -5054,7 +4666,6 @@ public class CustomItem {
             de.aetherion.items.blueprint.BlueprintUpgrade.writeTier(meta, 1);
             meta.setDisplayName("§aCanopy Cleaver");
             meta.setLore(createLore(List.of(
-                    "§7✦ §bRARE",
                     "§bBlueprint Tier: §fI/IV",
                     "",
                     "§7💎 Fortune: §f+72",
@@ -5063,9 +4674,7 @@ public class CustomItem {
                     "§eAbility · Perfect Fell",
                     "§7Click the trunk base once —",
                     "§7instant perfect chop. Tree falls.",
-                    "§7Cooldown: §f20s",
-                    "",
-                    "§8Aetherion Foraging Tool"
+                    "§7Cooldown: §f20s"
             ), true, false, false));
             meta.setCustomModelData(3112);
             meta.setUnbreakable(true);
@@ -5097,16 +4706,13 @@ public class CustomItem {
             de.aetherion.items.blueprint.BlueprintUpgrade.writeTier(meta, 1);
             meta.setDisplayName("§eBounty Hoe");
             meta.setLore(createLore(List.of(
-                    "§7✦ §bRARE",
                     "§bBlueprint Tier: §fI/IV",
                     "",
                     "§7💎 Fortune: §f+80",
                     "§7✦ Harvest Spread: §f+100",
                     "",
                     "§eAbility · Packed Harvest",
-                    "§7Cuts more neighbouring mature crops.",
-                    "",
-                    "§8Aetherion Farming Tool"
+                    "§7Cuts more neighbouring mature crops."
             ), true, false, false));
             meta.setCustomModelData(3122);
             meta.setUnbreakable(true);
@@ -5136,16 +4742,13 @@ public class CustomItem {
             de.aetherion.items.blueprint.BlueprintUpgrade.writeTier(meta, 1);
             meta.setDisplayName("§dWild Sight");
             meta.setLore(createLore(List.of(
-                    "§7✦ §bRARE",
                     "§bBlueprint Tier: §fI/IV",
                     "",
                     "§7☘ Catch Rate: §f+8.00%",
                     "",
                     "§eAbility · Pet Sense",
                     "§7Hold to see nearby wild pets",
-                    "§7through walls — rarity glow + name.",
-                    "",
-                    "§8Aetherion Catcher Tool"
+                    "§7through walls — rarity glow + name."
             ), true, false, false));
             meta.setCustomModelData(3132);
             meta.setUnbreakable(true);
@@ -5177,7 +4780,6 @@ public class CustomItem {
             de.aetherion.items.blueprint.BlueprintUpgrade.writeTier(meta, 1);
             meta.setDisplayName("§3Tide Latch");
             meta.setLore(createLore(List.of(
-                    "§7✦ §bRARE",
                     "§bBlueprint Tier: §fI/IV",
                     "",
                     "§7💎 Fortune: §f+72",
@@ -5186,9 +4788,7 @@ public class CustomItem {
                     "",
                     "§eAbility · Aquatic Hook",
                     "§7Chance to reel aquatic pets,",
-                    "§7including deep-sea water pets.",
-                    "",
-                    "§8Aetherion Fishing Tool"
+                    "§7including deep-sea water pets."
             ), true, false, false));
             meta.setCustomModelData(3142);
             meta.setUnbreakable(true);
@@ -5215,8 +4815,6 @@ public class CustomItem {
             applyItemData(meta, Rarity.RARE, new ItemStats());
             meta.setDisplayName(name);
             meta.setLore(createLore(List.of(
-                    "§7✦ §bRARE",
-                    "",
                     line,
                     "§eStamp at the Surveyor desk.",
                     "",
@@ -5264,15 +4862,9 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §aCOMMON",
-                                    "",
                                     "§7⛏ Mining Power: §f+14",
                                     "§7💎 Fortune: §f+24",
-                                    "§7✦ Spread: §f+2.00",
-                                    "",
-                                    "§9⛏ Mining Tool",
-                                    "",
-                                    "§8Aetherion Mining Set"
+                                    "§7✦ Spread: §f+2.00"
                             ),
                             true,
                             false,
@@ -5342,15 +4934,9 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §bRARE",
-                                    "",
                                     "§7⛏ Mining Power: §f+26",
                                     "§7💎 Fortune: §f+44",
-                                    "§7✦ Spread: §f+4.00",
-                                    "",
-                                    "§9⛏ Mining Tool II",
-                                    "",
-                                    "§8Aetherion Mining Set"
+                                    "§7✦ Spread: §f+4.00"
                             ),
                             true,
                             false,
@@ -5854,13 +5440,9 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §bRARE",
-                                    "",
                                     "§7⛏ Mining Power: §f+0.00",
                                     "§7💎 Fortune: §f+0.00",
-                                    "§7✦ Spread: §f+0.00",
-                                    "",
-                                    "§8GOD Kit 2 Test Item"
+                                    "§7✦ Spread: §f+0.00"
                             ),
                             true,
                             false,
@@ -5916,13 +5498,9 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §bRARE",
-                                    "",
                                     "§7⛏ Mining Power: §f+0.00",
                                     "§7💎 Fortune: §f+0.00",
-                                    "§7✦ Spread: §f+0.00",
-                                    "",
-                                    "§8GOD Kit 2 Test Item"
+                                    "§7✦ Spread: §f+0.00"
                             ),
                             true,
                             false,
@@ -5978,12 +5556,8 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §bRARE",
-                                    "",
                                     "§7⚔ Damage: §f+0.00",
-                                    "§7⚔ Attack Spread: §f+0.00",
-                                    "",
-                                    "§8GOD Kit 2 Test Weapon"
+                                    "§7⚔ Attack Spread: §f+0.00"
                             ),
                             false,
                             true,
@@ -6039,13 +5613,9 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §bRARE",
-                                    "",
                                     "§7🛡 Defense: §f+0.00",
                                     "§7❤ Health: §f+0.00",
-                                    "§7✦ Spread: §f+0.00",
-                                    "",
-                                    "§8GOD Kit 2 Test Armor"
+                                    "§7✦ Spread: §f+0.00"
                             ),
                             true,
                             false,
@@ -6101,13 +5671,9 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §bRARE",
-                                    "",
                                     "§7🛡 Defense: §f+0.00",
                                     "§7❤ Health: §f+0.00",
-                                    "§7⚔ Attack Spread: §f+0.00",
-                                    "",
-                                    "§8GOD Kit 2 Test Armor"
+                                    "§7⚔ Attack Spread: §f+0.00"
                             ),
                             false,
                             true,
@@ -6163,12 +5729,8 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §bRARE",
-                                    "",
                                     "§7🛡 Defense: §f+0.00",
-                                    "§7❤ Health: §f+0.00",
-                                    "",
-                                    "§8GOD Kit 2 Test Armor"
+                                    "§7❤ Health: §f+0.00"
                             ),
                             false,
                             false,
@@ -6224,14 +5786,10 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §bRARE",
-                                    "",
                                     "§7🛡 Defense: §f+0.00",
                                     "§7❤ Health: §f+0.00",
                                     "§7✦ Spread: §f+0.00",
-                                    "§7⚔ Attack Spread: §f+0.00",
-                                    "",
-                                    "§8GOD Kit 2 Test Armor"
+                                    "§7⚔ Attack Spread: §f+0.00"
                             ),
                             true,
                             true,
@@ -6346,8 +5904,6 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §dMYTHIC",
-                                    "",
                                     "§7⚔ Damage: §f+155.00",
                                     "§7⚔ Attack Spread: §f+18.00",
                                     "§7✧ Crit Chance: §f+20.00%",
@@ -6411,8 +5967,6 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §6LEGENDARY",
-                                    "",
                                     "§7⚔ Damage: §f+90.00",
                                     "§7⚔ Attack Spread: §f+14.00",
                                     "§7✧ Crit Chance: §f+13.00%",
@@ -6473,8 +6027,6 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §6LEGENDARY",
-                                    "",
                                     "§7🛡 Defense: §f+20.00",
                                     "§7❤ Health: §f+24.00",
                                     "§7✦ Speed: §f+6.00%",
@@ -6532,8 +6084,6 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §5EPIC",
-                                    "",
                                     "§7⚔ Damage: §f+52.00",
                                     "§7⚔ Attack Spread: §f+8.00",
                                     "§7✧ Crit Chance: §f+9.00%",
@@ -6575,8 +6125,6 @@ public class CustomItem {
             BossGearBalance.stamp(meta);
             meta.setDisplayName("§6Staff of Technical Difficulties");
             meta.setLore(createLore(List.of(
-                    "§7✦ §6LEGENDARY",
-                    "",
                     "§7⚔ Damage: §f+105.00",
                     "§7⚔ Attack Spread: §f+10.00",
                     "§7✧ Crit Chance: §f+12.00%",
@@ -6606,11 +6154,8 @@ public class CustomItem {
             applyItemData(meta, Rarity.LEGENDARY, stats);
             meta.setDisplayName("§6Void Vacuum Charm");
             meta.setLore(createLore(List.of(
-                    "§7✦ §6LEGENDARY",
-                    "",
                     "§7✦ Speed: §f+8.00%",
                     "",
-                    "§eOff-hand accessory",
                     "§5✦ Auto-Pickup",
                     "§7Pulls nearby drops. The lobby stays tidy.",
                     "§8The Lobby Cleaner wants it back.",
@@ -6634,11 +6179,8 @@ public class CustomItem {
             applyItemData(meta, Rarity.LEGENDARY, stats);
             meta.setDisplayName("§6Thermal Core");
             meta.setLore(createLore(List.of(
-                    "§7✦ §6LEGENDARY",
-                    "",
                     "§7⚔ Damage: §f+8.00",
                     "",
-                    "§eOff-hand accessory",
                     "§5✦ Overclock",
                     "§7Faster melee swings. Shortbows fire §f0.2s §7sooner.",
                     "§cEach hit nicks you. Sparky calls it tuition.",
@@ -6663,13 +6205,10 @@ public class CustomItem {
             BossGearBalance.stamp(meta);
             meta.setDisplayName("§6Pickaxe Core of the Burrower");
             meta.setLore(createLore(List.of(
-                    "§7✦ §6LEGENDARY",
-                    "",
                     "§7⛏ Fortune: §f+62.00",
                     "§7⛏ Mining Power: §f+28.00",
                     "§7🛡 Defense: §f+14.00",
                     "",
-                    "§eOff-hand accessory",
                     "§5✦ Quarry Hunger",
                     "§7Mines harder. Hits back a little in combat.",
                     "§8Baron von Wurm still wants the picks.",
@@ -6693,11 +6232,8 @@ public class CustomItem {
             BossGearBalance.stamp(meta);
             meta.setDisplayName("§6Insolvent Ledger");
             meta.setLore(createLore(List.of(
-                    "§7✦ §6LEGENDARY",
-                    "",
                     "§7⚔ Damage: §f+20.00",
                     "",
-                    "§eOff-hand accessory",
                     "§5✦ Foreclosure",
                     "§7Kills pay extra coins. The house always wins.",
                     "§8You are briefly the house.",
@@ -6885,8 +6421,6 @@ public class CustomItem {
             applyItemData(meta, Rarity.EPIC, new ItemStats());
             meta.setDisplayName("§dWeapon Schematic");
             meta.setLore(createLore(List.of(
-                    "§7✦ §5EPIC",
-                    "",
                     "§7Unidentified overworld schematic.",
                     "§7Pick a weapon that matches an armor set.",
                     "",
@@ -6923,8 +6457,6 @@ public class CustomItem {
             );
             meta.setDisplayName("§5Dungeon Weapon Schematic");
             meta.setLore(createLore(List.of(
-                    tier.rarityLine(),
-                    "",
                     "§7Unidentified dungeon schematic.",
                     "§7Pick a weapon that matches a vestige class.",
                     "",
@@ -7063,8 +6595,6 @@ public class CustomItem {
             applyItemData(meta, Rarity.EPIC, new ItemStats());
             meta.setDisplayName("§5Dungeon Core " + DungeonCore.roman(safe));
             meta.setLore(List.of(
-                    "§7✦ §5EPIC",
-                    "",
                     coreFlavor(safe),
                     "§7Anvil: boss gear becomes dungeon gear.",
                     "§7Then it levels. Stronger inside dungeons.",
@@ -7077,6 +6607,30 @@ public class CustomItem {
             ));
             meta.setCustomModelData(2500 + safe);
             meta.setMaxStackSize(1);
+            hideVanillaAttributes(meta);
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    /**
+     * Spectacle Star (P0 Trophy). Tagged replacement for every vanilla NETHER_STAR boss drop, so a
+     * vanilla Wither star can never stand in for it. No stats. Used later by the pinnacle key.
+     */
+    public ItemStack createSpectacleStar() {
+        ItemStack item = new ItemStack(Material.NETHER_STAR);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            setItemId(meta, "spectacle_star");
+            applyItemData(meta, Rarity.LEGENDARY, new ItemStats());
+            meta.setDisplayName("§6✦ §eSpectacle Star");
+            meta.setLore(List.of(
+                    "§7Pried from a spectacle.",
+                    "§7Something wants it back.",
+                    "",
+                    "§8Boss trophy · crafting reagent",
+                    "§8Drops from spectacle bosses"
+            ));
             hideVanillaAttributes(meta);
             item.setItemMeta(meta);
         }
@@ -7210,8 +6764,6 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §5MYTHIC",
-                                    "",
                                     "§7🛡 Defense: §f+" + formatAetherionStat(defense),
                                     "§7❤ Health: §f+" + formatAetherionStat(health),
                                     "§7⚔ Damage: §f+" + formatAetherionStat(damage),
@@ -7253,17 +6805,13 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §5MYTHIC",
-                                    "",
                                     "§7⚔ Damage: §f+100.00",
                                     "",
                                     "§5✦ Slow Singularity",
                                     "§7Right-click to pull foes",
                                     "§7within 25 blocks and drain life.",
                                     "§8Hold right-click. Not while idle.",
-                                    DungeonCore.AETHERION_CORE_HINT,
-                                    "",
-                                    "§8Aetherion's leftover spark"
+                                    DungeonCore.AETHERION_CORE_HINT
                             ),
                             false,
                             false,
@@ -7334,8 +6882,6 @@ public class CustomItem {
             BossGearBalance.stamp(meta);
             meta.setDisplayName(displayName);
             meta.setLore(createLore(itemId, List.of(
-                    "§7✦ §5MYTHIC",
-                    "",
                     "§5Full Set: Last Seed",
                     "§7Where you stand, the world grows back:",
                     "§7regenerate and gain absorption",
@@ -7368,8 +6914,6 @@ public class CustomItem {
             BossGearBalance.stamp(meta);
             meta.setDisplayName("§5✦✦✦ §dWorldbite");
             meta.setLore(createLore("worldbite", List.of(
-                    "§7✦ §5MYTHIC",
-                    "",
                     "§5✦ Devour",
                     "§7Right-click: a chunk border snaps",
                     "§7shut ahead of you. Everything inside",
@@ -7393,12 +6937,52 @@ public class CustomItem {
      * =========================================================
      */
 
+    /**
+     * Pinnacle key (P6, design §5): crafted from one of each Signature, a Spectacle Star, a Core III and
+     * the bank. Right-click at Aetherion's anchor (the Veil) to call the open-world raid; BossEngine
+     * reads the Items id {@code aetherion_summons}. Consumed on a successful summon.
+     */
+    public ItemStack createAetherionSummons() {
+        ItemStack item = new ItemStack(Material.END_CRYSTAL);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            setItemId(meta, "aetherion_summons");
+            applyItemData(meta, Rarity.MYTHIC, new ItemStats());
+            meta.setDisplayName("§5✦✦✦ §dAetherion Summons");
+            meta.setLore(List.of(
+                    "§7Every isle, a spectacle, the third floor",
+                    "§7and the bank, pressed into one crystal.",
+                    "",
+                    "§eRight-click §7at §5the Veil §7(Aetherion's anchor)",
+                    "§7to tear it open. Aetherion answers.",
+                    "§8Consumed on a successful summon.",
+                    "",
+                    "§8Pinnacle · bring a party of four"
+            ));
+            meta.setMaxStackSize(1);
+            hideVanillaAttributes(meta);
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    /** One random Remnant of the Hollow Sun piece (BossEngine loot id {@code random_hollow_sun_armor}). */
+    public ItemStack createRandomHollowSunArmor() {
+        return switch (ThreadLocalRandom.current().nextInt(4)) {
+            case 0 -> createHollowSunHelmet();
+            case 1 -> createHollowSunChestplate();
+            case 2 -> createHollowSunLeggings();
+            default -> createHollowSunBoots();
+        };
+    }
+
     public ItemStack createHollowSunHelmet() {
         return createHollowSunArmor(
                 Material.NETHERITE_HELMET,
                 "hollow_sun_helmet",
                 "§6✦✦✦ §eCorona Visor",
-                80, 120, 18, 12, 8, 48, 2, 2341,
+                // D2 (P2): was 80 Def / 120 HP / 18 Dmg — normalised one step above Helios.
+                51, 70, 17, 12, 8, 48, 2, 2341,
                 List.of(
                         "§e☀ Solar Sight",
                         "§7Crits §eSunmark §7the target for §f4s§7.",
@@ -7415,7 +6999,8 @@ public class CustomItem {
                 Material.NETHERITE_CHESTPLATE,
                 "hollow_sun_chestplate",
                 "§6✦✦✦ §6Hollow Heart Cuirass",
-                160, 210, 34, 20, 10, 75, 2, 2342,
+                // D2 (P2): was 160 / 210 / 34.
+                85, 117, 31, 20, 10, 75, 2, 2342,
                 List.of(
                         "§6☀ Caged Star",
                         "§7Dealing damage builds §6Heat§7.",
@@ -7433,7 +7018,8 @@ public class CustomItem {
                 Material.NETHERITE_LEGGINGS,
                 "hollow_sun_leggings",
                 "§6✦✦✦ §cRed Giant Greaves",
-                120, 160, 28, 16, 8, 60, 3, 2343,
+                // D2 (P2): was 120 / 160 / 28.
+                67, 87, 21, 16, 8, 60, 3, 2343,
                 List.of(
                         "§c☀ Swell",
                         "§7Below §f50% §7HP: §c+10% §7Damage, §c+8% §7Defense,",
@@ -7450,7 +7036,8 @@ public class CustomItem {
                 Material.NETHERITE_BOOTS,
                 "hollow_sun_boots",
                 "§6✦✦✦ §5Starfall Sabatons",
-                80, 115, 18, 12, 6, 45, 5, 2344,
+                // D2 (P2): was 80 / 115 / 18.
+                51, 61, 15, 12, 6, 45, 5, 2344,
                 List.of(
                         "§5☀ Starfall §8(Double-sneak in the air)",
                         "§7Plunge down and land in a crimson shockwave.",
@@ -7492,8 +7079,6 @@ public class CustomItem {
             BossGearBalance.stamp(meta);
             meta.setDisplayName(displayName);
             List<String> lore = new ArrayList<>();
-            lore.add("§7✦ §5MYTHIC");
-            lore.add("");
             lore.add("§7🛡 Defense: §f+" + formatAetherionStat(defense));
             lore.add("§7❤ Health: §f+" + formatAetherionStat(health));
             lore.add("§7⚔ Damage: §f+" + formatAetherionStat(damage));
@@ -7565,8 +7150,6 @@ public class CustomItem {
             BossGearBalance.stamp(meta);
             meta.setDisplayName(displayName);
             meta.setLore(createLore(itemId, List.of(
-                    "§7✦ §6MYTHIC",
-                    "",
                     "§6Full Set: Second Dawn",
                     "§7When you fall below §c30%§7 health,",
                     "§7you go supernova: heal §a30%§7, gain",
@@ -7600,8 +7183,6 @@ public class CustomItem {
             BossGearBalance.stamp(meta);
             meta.setDisplayName("§6✦✦✦ §eSolstice");
             meta.setLore(createLore("helios_solstice", List.of(
-                    "§7✦ §6MYTHIC",
-                    "",
                     "§6✦ Constellation",
                     "§7Right-click: open a portal at your hand",
                     "§7and its twin above your target. Your",
@@ -7691,8 +7272,6 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §6LEGENDARY",
-                                    "",
                                     "§7⚔ Damage: §f+88.00",
                                     "§7⚔ Attack Spread: §f+16.00",
                                     "§7✧ Crit Chance: §f+12.00%",
@@ -7773,8 +7352,6 @@ public class CustomItem {
 
             meta.setLore(
                     List.of(
-                            "§7✦ §6AETHERION",
-                            "",
                             "§7Discover and explore",
                             "§7all available recipes.",
                             "",
@@ -7825,8 +7402,6 @@ public class CustomItem {
             stampTestGear(meta, "echo_blade");
             meta.setDisplayName("§d✦ Echo Blade");
             meta.setLore(createLore("echo_blade", List.of(
-                    "§7✦ §6LEGENDARY §8· §dSandbox",
-                    "",
                     "§7⚔ Damage: §f+95.00",
                     "§7⚔ Attack Spread: §f+4.00",
                     "§7✧ Crit Chance: §f+14.00%",
@@ -7860,8 +7435,6 @@ public class CustomItem {
             stampTestGear(meta, "parity_gauntlets");
             meta.setDisplayName("§b✦ Parity Gauntlets");
             meta.setLore(createLore("parity_gauntlets", List.of(
-                    "§7✦ §6LEGENDARY §8· §bSandbox",
-                    "",
                     "§7⚔ Damage: §f+88.00",
                     "§7⚔ Attack Spread: §f+6.00",
                     "§7✧ Crit Chance: §f+10.00%",
@@ -7894,8 +7467,6 @@ public class CustomItem {
             stampTestGear(meta, "rulebreaker_charm");
             meta.setDisplayName("§6✦ Rulebreaker Charm");
             meta.setLore(createLore("rulebreaker_charm", List.of(
-                    "§7✦ §5EPIC §8· §6Sandbox Charm",
-                    "",
                     "§7⚔ Damage: §f+12.00",
                     "§7✧ Crit Chance: §f+8.00%",
                     "§7✧ Crit Damage: §f+40.00%",
@@ -7930,8 +7501,6 @@ public class CustomItem {
             meta.getPersistentDataContainer().set(ItemKeys.needsAmmo(), PersistentDataType.BYTE, (byte) 0);
             meta.setDisplayName("§4✦ Metronome Bow");
             meta.setLore(createLore("metronome_bow", List.of(
-                    "§7✦ §6LEGENDARY §8· §4Sandbox",
-                    "",
                     "§7⚔ Damage: §f+120.00",
                     "§7⚔ Attack Spread: §f+8.00",
                     "§7✧ Crit Chance: §f+16.00%",
@@ -7965,8 +7534,6 @@ public class CustomItem {
             stampTestGear(meta, "softlock_plate");
             meta.setDisplayName("§c✦ Softlock Plate");
             meta.setLore(createLore("softlock_plate", List.of(
-                    "§7✦ §6LEGENDARY §8· §cSandbox",
-                    "",
                     "§7🛡 Defense: §f+85.00",
                     "§7❤ Health: §f+14.00",
                     "§7⚔ Damage: §f+8.00",
@@ -7999,8 +7566,6 @@ public class CustomItem {
             stampTestGear(meta, "nullstep_boots");
             meta.setDisplayName("§3✦ Nullstep Boots");
             meta.setLore(createLore("nullstep_boots", List.of(
-                    "§7✦ §5EPIC §8· §3Sandbox",
-                    "",
                     "§7🛡 Defense: §f+42.00",
                     "§7❤ Health: §f+6.00",
                     "§7✦ Speed: §f+18.00%",
@@ -8032,8 +7597,6 @@ public class CustomItem {
             stampTestGear(meta, "broker_contract");
             meta.setDisplayName("§e✦ Broker's Contract");
             meta.setLore(createLore("broker_contract", List.of(
-                    "§7✦ §9RARE §8· §eSandbox",
-                    "",
                     "§7⚔ Damage: §f+6.00",
                     "§7✧ Crit Chance: §f+5.00%",
                     "",
@@ -8063,8 +7626,6 @@ public class CustomItem {
             BossWeaponLook.apply(meta, "gravwell_cleaver");
             meta.setDisplayName("§5Gravwell Cleaver");
             meta.setLore(createLore(List.of(
-                    "§7✦ §6LEGENDARY",
-                    "",
                     "§7⚔ Damage: §f+115.00",
                     "§7⚔ Attack Spread: §f+4.00",
                     "§7✧ Crit Chance: §f+13.00%",
@@ -8103,8 +7664,6 @@ public class CustomItem {
             stampTestGear(meta, "stormcaller_maul");
             meta.setDisplayName("§e✦ Stormcaller Maul");
             meta.setLore(createLore("stormcaller_maul", List.of(
-                    "§7✦ §6LEGENDARY §8· §eSandbox",
-                    "",
                     "§7⚔ Damage: §f+112.00",
                     "§7⚔ Attack Spread: §f+5.00",
                     "§7✧ Crit Chance: §f+8.00%",
@@ -8148,7 +7707,6 @@ public class CustomItem {
             }
             meta.setDisplayName("§3✦ Resonance Scythe");
             meta.setLore(createLore("resonance_scythe", List.of(
-                    testStamp ? "§7✦ §5EPIC §8· §3Sandbox" : "§7✦ §5EPIC",
                     "§bBlueprint Tier: §fI/IV",
                     "",
                     "§7⚔ Damage: §f+36.00",
@@ -8185,8 +7743,6 @@ public class CustomItem {
             stampTestGear(meta, "judgment_staff");
             meta.setDisplayName("§a✦ Judgment Staff");
             meta.setLore(createLore("judgment_staff", List.of(
-                    "§7✦ §6LEGENDARY §8· §aSandbox",
-                    "",
                     "§7⚔ Damage: §f+88.00",
                     "§7✧ Crit Chance: §f+14.00%",
                     "§7✧ Crit Damage: §f+120.00%",
@@ -8220,8 +7776,6 @@ public class CustomItem {
             stampTestGear(meta, "dash_dagger");
             meta.setDisplayName("§f✦ Dash Dagger");
             meta.setLore(createLore("dash_dagger", List.of(
-                    "§7✦ §5EPIC §8· §fSandbox",
-                    "",
                     "§7⚔ Damage: §f+78.00",
                     "§7⚔ Attack Spread: §f+2.00",
                     "§7✧ Crit Chance: §f+22.00%",
@@ -8256,8 +7810,6 @@ public class CustomItem {
             stampTestGear(meta, "cyclone_rod");
             meta.setDisplayName("§f✦ Cyclone Rod");
             meta.setLore(createLore("cyclone_rod", List.of(
-                    "§7✦ §6LEGENDARY §8· §fSandbox",
-                    "",
                     "§7⚔ Damage: §f+84.00",
                     "§7⚔ Attack Spread: §f+6.00",
                     "§7✧ Crit Chance: §f+10.00%",
@@ -8291,8 +7843,6 @@ public class CustomItem {
             stampTestGear(meta, "prism_staff");
             meta.setDisplayName("§d✦ Prism Staff");
             meta.setLore(createLore("prism_staff", List.of(
-                    "§7✦ §6LEGENDARY §8· §dSandbox",
-                    "",
                     "§7⚔ Damage: §f+90.00",
                     "§7✧ Crit Chance: §f+12.00%",
                     "§7✧ Crit Damage: §f+110.00%",
@@ -8330,8 +7880,6 @@ public class CustomItem {
             meta.getPersistentDataContainer().set(ItemKeys.needsAmmo(), PersistentDataType.BYTE, (byte) 0);
             meta.setDisplayName("§6✦ Cascade Shortbow");
             meta.setLore(createLore("cascade_shortbow", List.of(
-                    "§7✦ §6LEGENDARY §8· §6Sandbox Shortbow",
-                    "",
                     "§7⚔ Damage: §f+98.00",
                     "§7⚔ Attack Spread: §f+5.00",
                     "§7✧ Crit Chance: §f+15.00%",
@@ -8410,8 +7958,6 @@ public class CustomItem {
             meta.setLore(
                     createLore(
                             List.of(
-                                    "§7✦ §dMYTHIC",
-                                    "",
                                     "§7⚔ Damage: §f+86.00",
                                     "§7⚔ Attack Spread: §f+14.00",
                                     "§7✧ Crit Chance: §f+15.00%",
@@ -8460,8 +8006,6 @@ public class CustomItem {
             stampTestGear(meta, "meteor_mace");
             meta.setDisplayName("§c✦ Meteor Mace");
             meta.setLore(createLore("meteor_mace", List.of(
-                    "§7✦ §5MYTHIC §8· §cSandbox",
-                    "",
                     "§7⚔ Damage: §f+125.00",
                     "§7⚔ Attack Spread: §f+6.00",
                     "§7✧ Crit Chance: §f+10.00%",
@@ -8498,8 +8042,6 @@ public class CustomItem {
             stampTestGear(meta, "cataclysm_rod");
             meta.setDisplayName("§c✦ Cataclysm Rod");
             meta.setLore(createLore("cataclysm_rod", List.of(
-                    "§7✦ §6LEGENDARY §8· §cSandbox Showcase",
-                    "",
                     "§7⚔ Damage: §f+95.00",
                     "§7✧ Crit Chance: §f+12.00%",
                     "§7✧ Crit Damage: §f+130.00%",
@@ -8535,8 +8077,6 @@ public class CustomItem {
             stampTestGear(meta, "rune_sigil");
             meta.setDisplayName("§b✦ Rune Sigil");
             meta.setLore(createLore("rune_sigil", List.of(
-                    "§7✦ §6LEGENDARY §8· §bSandbox Showcase",
-                    "",
                     "§7⚔ Damage: §f+88.00",
                     "§7✧ Crit Chance: §f+10.00%",
                     "§7✧ Crit Damage: §f+120.00%",
@@ -8573,8 +8113,6 @@ public class CustomItem {
             stampTestGear(meta, "world_splitter");
             meta.setDisplayName("§5✦ World Splitter");
             meta.setLore(createLore("world_splitter", List.of(
-                    "§7✦ §6LEGENDARY §8· §5Sandbox Showcase",
-                    "",
                     "§7⚔ Damage: §f+110.00",
                     "§7✧ Crit Chance: §f+14.00%",
                     "§7✧ Crit Damage: §f+145.00%",
@@ -8611,8 +8149,6 @@ public class CustomItem {
             stampTestGear(meta, "vesper_bell");
             meta.setDisplayName("§6✦ Vesper Bell");
             meta.setLore(createLore("vesper_bell", List.of(
-                    "§7✦ §6LEGENDARY §8· §6Sandbox Showcase",
-                    "",
                     "§7⚔ Damage: §f+92.00",
                     "§7✧ Crit Chance: §f+10.00%",
                     "§7✧ Crit Damage: §f+125.00%",
@@ -8651,8 +8187,6 @@ public class CustomItem {
             stampTestGear(meta, "deepsong_conch");
             meta.setDisplayName("§3✦ Deepsong Conch");
             meta.setLore(createLore("deepsong_conch", List.of(
-                    "§7✦ §6LEGENDARY §8· §3Server Flagship",
-                    "",
                     "§7⚔ Damage: §f+120.00",
                     "§7✧ Crit Chance: §f+15.00%",
                     "§7✧ Crit Damage: §f+150.00%",
@@ -8691,8 +8225,6 @@ public class CustomItem {
             stampTestGear(meta, "terminus");
             meta.setDisplayName("§f✦ Terminus");
             meta.setLore(createLore("terminus", List.of(
-                    "§7✦ §dMYTHIC §8· §fAbsolute Limit",
-                    "",
                     "§7⚔ Damage: §f+150.00",
                     "§7✧ Crit Chance: §f+15.00%",
                     "§7✧ Crit Damage: §f+150.00%",
@@ -8801,8 +8333,6 @@ public class CustomItem {
             BossGearBalance.stamp(meta);
             meta.setDisplayName("§6✦ §f" + name);
             List<String> lore = new ArrayList<>();
-            lore.add("§7✦ §6LEGENDARY §8· §fThe Mended Saint");
-            lore.add("");
             lore.add("§7🛡 Defense: §f+" + formatAetherionStat(stats.getDefense()));
             lore.add("§7❤ Health: §f+" + formatAetherionStat(stats.getHealth()));
             lore.add("§7⚔ Damage: §f+" + formatAetherionStat(stats.getDamage()));
@@ -8840,8 +8370,6 @@ public class CustomItem {
             BossWeaponLook.apply(meta, "seraphine_needle");
             meta.setDisplayName("§6✦ §fSeverance§7, the Saint's Needle");
             meta.setLore(createLore(List.of(
-                    "§7✦ §6LEGENDARY §8· §fThe Mended Saint",
-                    "",
                     "§7⚔ Damage: §f+84.00",
                     "§7⚔ Attack Spread: §f+10.00",
                     "§7✧ Crit Chance: §f+14.00%",
@@ -8884,8 +8412,6 @@ public class CustomItem {
             stampTestGear(meta, "portal_gun");
             meta.setDisplayName("§b✦ Portal Gun");
             meta.setLore(createLore("portal_gun", List.of(
-                    "§7✦ §6LEGENDARY §8· §bTraversal",
-                    "",
                     "§b✦ Dual Gate",
                     "§7Left-click: set §bAzure §7gate.",
                     "§7Right-click: set §6Amber §7gate.",
@@ -8914,8 +8440,6 @@ public class CustomItem {
             stampTestGear(meta, "grappling_hook");
             meta.setDisplayName("§3✦ Grappling Hook");
             meta.setLore(createLore("grappling_hook", List.of(
-                    "§7✦ §5EPIC §8· §3Traversal",
-                    "",
                     "§3✦ Latch & Pull",
                     "§7Right-click a surface to latch.",
                     "§7Pulled all the way to the point.",
@@ -8943,8 +8467,6 @@ public class CustomItem {
             stampTestGear(meta, "skyreaver_spools");
             meta.setDisplayName("§c✦ Skyreaver Spools");
             meta.setLore(createLore("skyreaver_spools", List.of(
-                    "§7✦ §6LEGENDARY §8· §cODM Traversal",
-                    "",
                     "§c✦ Swing Cable",
                     "§eLeft-click §7a surface: latch the claw.",
                     "§eRight-click §7: gas boost where you look.",

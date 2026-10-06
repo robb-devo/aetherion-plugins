@@ -759,7 +759,7 @@ public final class SkillService implements StatProvider, Listener {
             return;
         }
         AetherSkill skill = equippedWithFlag(attacker, AetherSkill.Flag.BOSS_GRUDGE);
-        double bonus = 10.0d * multiplier(attacker, AetherSkill.Flag.BOSS_GRUDGE);
+        double bonus = 100.0d * SkillProgression.bossGrudge(level(attacker, skill));
         String name = boss.getName();
         attacker.sendMessage("§8⌁ " + coloredName(attacker, skill) + " §8· §f" + name
                 + " §7goes on the list. §8+" + de.aetherion.items.item.ItemLore.formatStat(bonus) + "% damage");
@@ -810,12 +810,16 @@ public final class SkillService implements StatProvider, Listener {
 
     public double bossBonus(Player player) {
         double bonus = 1.0d;
-        if (hasFlag(player, AetherSkill.Flag.BOSS_GRUDGE)) {
-            bonus += 0.10d * multiplier(player, AetherSkill.Flag.BOSS_GRUDGE);
+        // P4 / L3: linear 10% -> 30% (Boss) and 12% -> 36% (Floor) instead of x effectMultiplier.
+        AetherSkill boss = equippedWithFlag(player, AetherSkill.Flag.BOSS_GRUDGE);
+        if (boss != null) {
+            bonus += SkillProgression.bossGrudge(level(player, boss));
         }
-        if (de.aetherion.items.dungeon.DungeonArmor.inDungeon(player)
-                && hasFlag(player, AetherSkill.Flag.FLOOR_GRUDGE)) {
-            bonus += 0.12d * multiplier(player, AetherSkill.Flag.FLOOR_GRUDGE);
+        if (de.aetherion.items.dungeon.DungeonArmor.inDungeon(player)) {
+            AetherSkill floor = equippedWithFlag(player, AetherSkill.Flag.FLOOR_GRUDGE);
+            if (floor != null) {
+                bonus += SkillProgression.floorGrudge(level(player, floor));
+            }
         }
         return bonus;
     }
@@ -1274,7 +1278,7 @@ public final class SkillService implements StatProvider, Listener {
         int statAfter = AetherionLevel.milestoneStatBonus(current);
         if (statAfter > statBefore) {
             player.sendMessage("§a+" + (statAfter - statBefore) + " Damage §8· §c+"
-                    + (statAfter - statBefore) + " Health §8· §7every " + AetherionLevel.STAT_EVERY + " levels");
+                    + (statAfter - statBefore) + " Health §8· §7every " + AetherionLevel.statEveryAt(current) + " levels");
             refresh(player);
         }
         // World pace (silent move/jump) kicks in at Lv.3 — refresh attributes, no announcement.
@@ -1371,7 +1375,7 @@ public final class SkillService implements StatProvider, Listener {
                     + " §7— stored XP carries you further.");
             player.sendMessage("§b+" + totalShards + " Aether Shards §8· §7" + milestones
                     + " milestones §8(§7through " + lastMilestone + "§8)");
-            player.sendMessage("§7Every §f" + AetherionLevel.STAT_EVERY
+            player.sendMessage("§7Every §f" + AetherionLevel.statEveryAt(current)
                     + " §7levels still grants §a+1 Damage §7& §c+1 Health§7.");
         }
         player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.7f);

@@ -179,7 +179,7 @@ public final class GuildProjectService {
         World world = hosts.world(host);
         Template finalShape = structures.templates().get(type.finalTemplate());
         if (world == null || finalShape == null) {
-            player.sendMessage("§cThat project's templates are missing on the server.");
+            player.sendMessage("§cThat project's shapes are missing on the server. Tell staff.");
             return;
         }
         if (hosts.starter(host) == StarterLayout.GUILD) {

@@ -1,6 +1,7 @@
 package de.aetherion.beta.listener;
 
 import de.aetherion.beta.AetherionBeta;
+import de.aetherion.beta.BetaJournal;
 import de.aetherion.beta.Milestone;
 import de.aetherion.beta.data.BetaPlayerData;
 import de.aetherion.core.AetherEntities;
@@ -63,10 +64,10 @@ public final class SessionListener implements Listener {
             return;
         }
         if (AetherEntities.isQuestNpc(entity)) {
-            plugin.store().get(event.getPlayer().getUniqueId()).mark(Milestone.QUESTS, true);
+            BetaJournal.progress(plugin, event.getPlayer(), Milestone.QUESTS);
         }
         if (entity.getPersistentDataContainer().has(AetherKeys.PET_ENTITY, PersistentDataType.BYTE)) {
-            plugin.store().get(event.getPlayer().getUniqueId()).mark(Milestone.PET, true);
+            BetaJournal.progress(plugin, event.getPlayer(), Milestone.PET);
         }
     }
 
@@ -75,7 +76,7 @@ public final class SessionListener implements Listener {
         if (!isGatherMaterial(event.getBlock().getType())) {
             return;
         }
-        plugin.store().get(event.getPlayer().getUniqueId()).mark(Milestone.GATHER, true);
+        BetaJournal.progress(plugin, event.getPlayer(), Milestone.GATHER);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -83,7 +84,7 @@ public final class SessionListener implements Listener {
         if (event.getState() != PlayerFishEvent.State.CAUGHT_FISH) {
             return;
         }
-        plugin.store().get(event.getPlayer().getUniqueId()).mark(Milestone.GATHER, true);
+        BetaJournal.progress(plugin, event.getPlayer(), Milestone.GATHER);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -93,11 +94,11 @@ public final class SessionListener implements Listener {
         }
         Player killer = event.getEntity().getKiller();
         if (killer != null) {
-            plugin.store().get(killer.getUniqueId()).mark(Milestone.BOSS, true);
+            BetaJournal.progress(plugin, killer, Milestone.BOSS);
         }
         for (Player player : event.getEntity().getWorld().getPlayers()) {
             if (player.getLocation().distanceSquared(event.getEntity().getLocation()) <= 48 * 48) {
-                plugin.store().get(player.getUniqueId()).mark(Milestone.BOSS, true);
+                BetaJournal.progress(plugin, player, Milestone.BOSS);
             }
         }
     }
@@ -105,12 +106,11 @@ public final class SessionListener implements Listener {
     @EventHandler
     public void onWorld(PlayerChangedWorldEvent event) {
         String name = event.getPlayer().getWorld().getName().toLowerCase();
-        BetaPlayerData data = plugin.store().get(event.getPlayer().getUniqueId());
         if (name.startsWith("aedun_")) {
-            data.mark(Milestone.DUNGEON, true);
+            BetaJournal.progress(plugin, event.getPlayer(), Milestone.DUNGEON);
         }
         if (name.equals("aether_islands") || name.equals("aether_guilds")) {
-            data.mark(Milestone.ISLAND, true);
+            BetaJournal.progress(plugin, event.getPlayer(), Milestone.ISLAND);
         }
     }
 

@@ -706,6 +706,17 @@ public final class PortalGunPortals implements Listener {
 
     private enum Kind { WALL, FLOOR, CEILING }
 
+    /**
+     * Legacy inner class name from older Hub Items jars. Aim logic now lives in
+     * {@link Frame} / placement helpers — kept so additive jar-surface checks stay green.
+     */
+    @Deprecated
+    @SuppressWarnings("unused")
+    private static final class Aim {
+        private Aim() {
+        }
+    }
+
     private enum Channel {
         AZURE("Azure", "§b", Color.fromRGB(70, 185, 255),
                 Material.LIGHT_BLUE_CONCRETE, Material.LIGHT_BLUE_STAINED_GLASS, Material.BLUE_CONCRETE, 1.6f),

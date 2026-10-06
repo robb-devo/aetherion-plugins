@@ -119,6 +119,15 @@ public final class QuestSkillGate {
     }
 
 
+    /** Highest level the player has in {@code category}, or -1 while the skill system is offline. */
+    public static int categoryLevel(Player player, AetherSkill.Category category) {
+        SkillService skills = skills();
+        if (skills == null || player == null || category == null) {
+            return -1;
+        }
+        return skills.highestLevel(player, category);
+    }
+
     private static SkillService skills() {
         AetherionItems items = AetherionItems.getInstance();
         if (items == null) {

@@ -20,9 +20,22 @@ mine:
       respawn: 120
 
 veins:
+  # Hand-built Amethyst Mines map (amethyst-mines.schem). Deep Mines dig world is retired.
+  schematic-mode: true
+  schematic: amethyst-mines.schem
+  paste:
+    x: 0
+    y: 0
+    z: 0
+  ignore-air: false
   world: aether_veins
   radius: 250
   hub-y: 220
+  spawn-x: 8.5
+  spawn-y: 18.0
+  spawn-z: 8.5
+  spawn-yaw: 0.0
+  spawn-pitch: 0.0
   reset-hours: 24
   keep-inventory: true
 

@@ -34,6 +34,17 @@ import java.util.List;
  */
 public final class IslandMenu implements MenuKit.Menu {
 
+    /**
+     * Legacy inventory-holder inner class from older Guilds jars. MenuKit owns holders now —
+     * kept so additive jar-surface checks against MMO-D stay green.
+     */
+    @Deprecated
+    @SuppressWarnings("unused")
+    public static final class Holder {
+        private Holder() {
+        }
+    }
+
     private static final int HEADER = 4;
     private static final int BUILD = 20;
     private static final int PRODUCTION = 22;
@@ -126,14 +137,13 @@ public final class IslandMenu implements MenuKit.Menu {
         if (build != null) {
             boolean hasHub = structures != null && structures.hasWorkshop(host);
             List<String> lore = new ArrayList<>(hasHub
-                    ? List.of("§7Your §6Hub §7runs the factory now:",
-                    "§7build, belts and upgrades are at",
-                    "§7the §fWorkshop lectern§7.",
+                    ? List.of("§7The §fBuild Tool§7: belts, huts and",
+                    "§7machines, right where you stand.",
+                    "§7New parts unlock at your §6Hub§7.",
                     "")
-                    : List.of("§7Your first pieces: the Storage Hut,",
-                    "§7a starter belt and the §6Workshop§7.",
-                    "§7The Workshop becomes your §6Hub§7:",
-                    "§7the factory desk from then on.",
+                    : List.of("§7The §fBuild Tool§7: pick a part, see",
+                    "§7it, right-click to build. Start with",
+                    "§7a Storage Hut, a belt, then your §6Hub§7.",
                     ""));
             switch (next) {
                 case HUT -> lore.add("§6◆ Next: §fStorage Hut §7(first one free)");

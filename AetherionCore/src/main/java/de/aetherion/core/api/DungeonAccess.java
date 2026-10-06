@@ -14,4 +14,11 @@ public interface DungeonAccess {
     boolean startTest(Player player, boolean bossOnly, int floor);
 
     boolean despawnKeeper(Entity entity);
+
+    /**
+     * Leave a live dungeon instance before a cross-server handoff.
+     * Default no-op when Dungeons is not the transfer owner on this backend.
+     */
+    default void leaveInstance(Player player) {
+    }
 }

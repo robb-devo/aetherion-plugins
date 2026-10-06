@@ -1,8 +1,10 @@
 package de.aetherion.foraging.isle;
 
 import de.aetherion.core.npc.FancyNpcFacade;
+import de.aetherion.foraging.ForageKeys;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Chunk;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -20,6 +22,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
@@ -54,7 +57,7 @@ public final class ForageCast implements Listener {
     public static final List<String> ROLES = List.of(BOARD_CLERK, WOODWRIGHT, ARCHIVIST);
 
     private static final String PREFIX = "ae_forage_cast_";
-    private static final String HOLO_TAG = "ae_grove_cast_holo";
+    public static final String HOLO_TAG = "ae_grove_cast_holo";
     private static final String HIDE_TEAM = "ae_forage_hide_npc";
 
     public record Member(String role, String name, String title, Material hand, String[] lines) {
@@ -119,6 +122,29 @@ public final class ForageCast implements Listener {
             if (!placed) {
                 yaml.set("cast." + role + ".placed", true);
                 isle.config().save();
+            }
+        }
+        startPlates();
+    }
+
+    @EventHandler
+    public void onChunkLoad(ChunkLoadEvent event) {
+        Chunk chunk = event.getChunk();
+        World world = isle.isleWorld();
+        if (world == null || !world.equals(chunk.getWorld())) {
+            return;
+        }
+        for (String role : ROLES) {
+            if (!placed(role)) {
+                continue;
+            }
+            double[] at = isle.config().castAnchor(role);
+            if (at == null) {
+                continue;
+            }
+            if ((int) Math.floor(at[0]) >> 4 == chunk.getX() && (int) Math.floor(at[2]) >> 4 == chunk.getZ()) {
+                Location want = new Location(world, at[0], at[1] + 2.15d, at[2]);
+                Bukkit.getScheduler().runTask(isle.plugin(), () -> ensurePlate(role, want));
             }
         }
     }
@@ -256,9 +282,36 @@ public final class ForageCast implements Listener {
         }, 5L);
     }
 
-    // ------------------------------------------------------------------ holograms (non-persistent, re-ensured)
+    // ------------------------------------------------------------------ holograms (Farm-style: UUID + PDC, purge strays)
 
-    /** Every ~5 s: name plates above placed members whose chunk is loaded. */
+    /**
+     * Wipe leftover cast plates (old tags / crashes), then ensure one plate per placed role.
+     * Call once on isle start — mirrors {@code IsleCast.purgeStrays + ensureAll}.
+     */
+    void startPlates() {
+        purgeStrayPlates();
+        tickHolograms();
+    }
+
+    /** Remove every TextDisplay marked as a cast plate (or legacy HOLO_TAG) in the isle world. */
+    void purgeStrayPlates() {
+        World world = isle.isleWorld();
+        if (world != null) {
+            for (Entity entity : world.getEntities()) {
+                if (!(entity instanceof TextDisplay)) {
+                    continue;
+                }
+                var pdc = entity.getPersistentDataContainer();
+                if (pdc.has(ForageKeys.castPlate(), PersistentDataType.STRING)
+                        || entity.getScoreboardTags().contains(HOLO_TAG)) {
+                    entity.remove();
+                }
+            }
+        }
+        holograms.clear();
+    }
+
+    /** Every ~5 s: at most one name plate per placed member whose chunk is loaded. */
     void tickHolograms() {
         World world = isle.isleWorld();
         if (world == null) {
@@ -272,29 +325,81 @@ public final class ForageCast implements Listener {
             }
             Location want = new Location(world, at[0], at[1] + 2.15d, at[2]);
             if (!world.isChunkLoaded(want.getBlockX() >> 4, want.getBlockZ() >> 4)) {
-                holograms.remove(role);
                 continue;
             }
-            UUID id = holograms.get(role);
-            Entity existing = id == null ? null : Bukkit.getEntity(id);
-            if (existing instanceof TextDisplay text && text.isValid()) {
-                if (text.getLocation().distanceSquared(want) > 0.01d) {
-                    text.teleport(want);
-                }
+            ensurePlate(role, want);
+        }
+    }
+
+    private void ensurePlate(String role, Location want) {
+        UUID id = holograms.get(role);
+        Entity existing = id == null ? null : Bukkit.getEntity(id);
+        if (existing instanceof TextDisplay text && text.isValid()) {
+            if (text.getLocation().distanceSquared(want) > 0.01d) {
+                text.teleport(want);
+            }
+            return;
+        }
+        // Recover by PDC near the anchor (chunk reload) — never spawn a second first.
+        TextDisplay recovered = findOwnedPlate(want, role);
+        if (recovered != null) {
+            holograms.put(role, recovered.getUniqueId());
+            if (recovered.getLocation().distanceSquared(want) > 0.01d) {
+                recovered.teleport(want);
+            }
+            cullOtherPlates(want, role, recovered);
+            return;
+        }
+        Member member = MEMBERS.get(role);
+        if (member == null || want.getWorld() == null) {
+            return;
+        }
+        cullOtherPlates(want, role, null);
+        TextDisplay holo = want.getWorld().spawn(want, TextDisplay.class, t -> {
+            t.text(ForageText.legacy("§a§l" + member.name() + "\n§7" + member.title()));
+            t.setBillboard(Display.Billboard.CENTER);
+            t.setAlignment(TextDisplay.TextAlignment.CENTER);
+            t.setShadowed(true);
+            t.setDefaultBackground(false);
+            t.setBackgroundColor(Color.fromARGB(0, 0, 0, 0));
+            t.setViewRange(0.4f);
+            t.setPersistent(false);
+            t.setGravity(false);
+            t.setInvulnerable(true);
+            t.getPersistentDataContainer().set(ForageKeys.castPlate(), PersistentDataType.STRING, role);
+            t.addScoreboardTag(HOLO_TAG);
+        });
+        holograms.put(role, holo.getUniqueId());
+    }
+
+    private static TextDisplay findOwnedPlate(Location at, String role) {
+        if (at == null || at.getWorld() == null) {
+            return null;
+        }
+        for (Entity entity : at.getWorld().getNearbyEntities(at, 4, 4, 4)) {
+            if (!(entity instanceof TextDisplay text) || !text.isValid()) {
                 continue;
             }
-            Member member = MEMBERS.get(role);
-            TextDisplay holo = world.spawn(want, TextDisplay.class, t -> {
-                t.text(ForageText.legacy("§a§l" + member.name() + "\n§7" + member.title()));
-                t.setBillboard(Display.Billboard.CENTER);
-                t.setAlignment(TextDisplay.TextAlignment.CENTER);
-                t.setShadowed(true);
-                t.setDefaultBackground(false);
-                t.setBackgroundColor(Color.fromARGB(0, 0, 0, 0));
-                t.setPersistent(false);
-                t.addScoreboardTag(HOLO_TAG);
-            });
-            holograms.put(role, holo.getUniqueId());
+            String owned = text.getPersistentDataContainer().get(ForageKeys.castPlate(), PersistentDataType.STRING);
+            if (role.equals(owned)) {
+                return text;
+            }
+        }
+        return null;
+    }
+
+    private static void cullOtherPlates(Location at, String role, TextDisplay keep) {
+        if (at == null || at.getWorld() == null) {
+            return;
+        }
+        for (Entity entity : at.getWorld().getNearbyEntities(at, 6, 5, 6)) {
+            if (!(entity instanceof TextDisplay display) || display == keep) {
+                continue;
+            }
+            String owned = display.getPersistentDataContainer().get(ForageKeys.castPlate(), PersistentDataType.STRING);
+            if (role.equals(owned) || display.getScoreboardTags().contains(HOLO_TAG)) {
+                display.remove();
+            }
         }
     }
 
@@ -307,13 +412,15 @@ public final class ForageCast implements Listener {
     }
 
     void removeHolograms() {
-        for (String role : ROLES) {
-            removeHologram(role);
-        }
+        purgeStrayPlates();
     }
 
     static boolean isOurs(Entity entity) {
-        return entity.getScoreboardTags().contains(HOLO_TAG);
+        if (entity == null) {
+            return false;
+        }
+        return entity.getPersistentDataContainer().has(ForageKeys.castPlate(), PersistentDataType.STRING)
+                || entity.getScoreboardTags().contains(HOLO_TAG);
     }
 
     // ------------------------------------------------------------------ talking

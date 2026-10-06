@@ -55,18 +55,74 @@ public final class IsleGuideNpc implements Listener {
 
     private final AetherionForaging plugin;
     private final Map<UUID, Long> coolUntil = new ConcurrentHashMap<>();
+    private final TalkDesk desk;
     private UUID hologramId;
 
     public IsleGuideNpc(AetherionForaging plugin) {
         this.plugin = plugin;
         new IsleGuideBriefingGUI(plugin);
+        this.desk = canopyDesk();
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
         Bukkit.getScheduler().runTaskLater(plugin, this::ensureIfPlaced, 100L);
         Bukkit.getScheduler().runTaskTimer(plugin, this::tickHologram, 40L, 80L);
+        Bukkit.getScheduler().runTaskTimer(plugin, desk::tick, 40L, 10L);
     }
 
     public void shutdown() {
+        desk.shutdown();
         removeHologram();
+        purgeStrayPlates();
+    }
+
+    /** Wipe leftover Canopy plates (legacy persistent + PDC) in the guide world only. */
+    public void purgeStrayPlates() {
+        Location at = guideLocation();
+        World world = at != null ? at.getWorld() : null;
+        if (world == null) {
+            String worldName = plugin.getConfig().getString("isle-guide.world", "world");
+            world = Bukkit.getWorld(worldName);
+        }
+        if (world == null) {
+            return;
+        }
+        for (Entity entity : world.getEntities()) {
+            if (!(entity instanceof TextDisplay)) {
+                continue;
+            }
+            if (entity.getPersistentDataContainer().has(ForageKeys.canopyPlate(), PersistentDataType.BYTE)
+                    || entity.getScoreboardTags().contains(HOLO_TAG)) {
+                if (hologramId != null && hologramId.equals(entity.getUniqueId())) {
+                    continue;
+                }
+                entity.remove();
+            }
+        }
+    }
+
+    /**
+     * Miss Canopy — Ledger-style desk for Foraging Eldervale (Fell Pulse, Crown Finds, cast, bark).
+     * Chest briefing stays as "Briefing…" / fallback when the bubble can't run.
+     */
+    private TalkDesk canopyDesk() {
+        return new TalkDesk(plugin, "forage_isle_canopy", DISPLAY, "§a", "canopy_clerk",
+                this::guideLocation, this::livingHologram,
+                player -> "Hey, {player}. Welcome to the grove. Ask — then go chop.",
+                List.of(
+                        TalkDesk.Topic.of("The chop?", NamedTextColor.GREEN, "How do I fell trees here?",
+                                "Hit a trunk and watch the timing bar — green is a clean cut. Stack clean cuts for a streak.",
+                                "Big trunks (Titans) need two clean cuts. Miss and the streak cools. Same axe feel, deeper payoff."),
+                        TalkDesk.Topic.of("Crown Finds?", NamedTextColor.GOLD, "What's a Crown Find?",
+                                "Sometimes the crown lets go of a glowing find as the tree falls. Catch it mid-air for bonus weight.",
+                                "§ePell§f at the Landing buys board orders — wood and Titans. That's the daily money loop."),
+                        TalkDesk.Topic.of("Who's who?", NamedTextColor.LIGHT_PURPLE, "Who else is on the isle?",
+                                "§ePell§f — Lumber Board. §6Tamsin§f — Grove Marks and bench gear. §dJuniper§f — Forest Ledger and sales.",
+                                "Walk the Landing tour once: me → Pell → Tamsin → Juniper. Updrafts carry you between pads."),
+                        TalkDesk.Topic.of("Bark & events?", NamedTextColor.RED, "Elderbark? Bark Blight?",
+                                "§6Elderbark§f and §8Nightbark§f are rare heartwoods from chops. Two different kinds feed the magic table by the dock.",
+                                "§cBark Blight§f is an isle event — beetles nip at your ankles. Squash them for coins and Standing.")
+                ),
+                "Briefing…", player -> IsleGuideBriefingGUI.open(player, DISPLAY),
+                "Off you go. The trees won't fell themselves.");
     }
 
     public void reload() {
@@ -84,6 +140,8 @@ public final class IsleGuideNpc implements Listener {
         if (at == null) {
             return;
         }
+        purgeStrayPlates();
+        hologramId = null;
         spawnFancy(at);
     }
 
@@ -173,13 +231,23 @@ public final class IsleGuideNpc implements Listener {
         }
         long now = System.currentTimeMillis();
         Long cool = coolUntil.get(player.getUniqueId());
-        if (cool != null && cool > now) {
+        boolean fresh = cool == null || cool <= now;
+        if (fresh) {
+            coolUntil.put(player.getUniqueId(), now + 3500L);
+            de.aetherion.foraging.isle.ForageIsle isle = de.aetherion.foraging.isle.ForageIsle.get();
+            if (isle != null) {
+                isle.compass().talked(player, "guide");
+            }
+        }
+        // Bubble + reply chips first; the chest briefing is "Briefing…" and the fallback.
+        if (desk.click(player)) {
+            if (fresh) {
+                player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_YES, 0.55f, 1.25f);
+            }
             return;
         }
-        coolUntil.put(player.getUniqueId(), now + 3500L);
-        de.aetherion.foraging.isle.ForageIsle isle = de.aetherion.foraging.isle.ForageIsle.get();
-        if (isle != null) {
-            isle.compass().talked(player, "guide");
+        if (!fresh) {
+            return;
         }
         player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_YES, 0.55f, 1.25f);
         player.sendMessage("§a" + DISPLAY + " §8» §fHey — short tour of the isle?");
@@ -354,7 +422,8 @@ public final class IsleGuideNpc implements Listener {
                 new AxisAngle4f(0, 0, 0, 1)
         ));
         text.addScoreboardTag(HOLO_TAG);
-        // Plugin respawns on load — persistence stacked copies across restarts.
+        text.getPersistentDataContainer().set(ForageKeys.canopyPlate(), PersistentDataType.BYTE, (byte) 1);
+        // Non-persistent like Farm cast plates — persistent=true survived restarts and stacked.
         text.setPersistent(false);
         text.setGravity(false);
         text.setInvulnerable(true);

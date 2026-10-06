@@ -56,6 +56,19 @@ public enum DungeonGearTier {
         return statMultiplier;
     }
 
+    /**
+     * Share of the stats this tier keeps outside dungeons (P3, design B2). Floor-I native gear stays
+     * at {@link DungeonArmor#OVERWORLD_STAT_MULTIPLIER}; relic-identified T2/T3 is milder so it is a Late
+     * sidegrade, not a replacement for the overworld T5 ladder. Full power + cores + level inside.
+     */
+    public double overworldMultiplier() {
+        return switch (this) {
+            case T1 -> DungeonArmor.OVERWORLD_STAT_MULTIPLIER;
+            case T2 -> 0.60d;
+            case T3 -> 0.70d;
+        };
+    }
+
     public Rarity rarity() {
         return rarity;
     }
@@ -66,14 +79,6 @@ public enum DungeonGearTier {
 
     public Material relicIcon() {
         return relicIcon;
-    }
-
-    public String rarityLine() {
-        return switch (this) {
-            case T3 -> "§7✦ §6LEGENDARY";
-            case T2 -> "§7✦ §5EPIC";
-            case T1 -> "§7✦ §bRARE";
-        };
     }
 
     public DungeonCalling[] armorChoices() {

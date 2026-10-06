@@ -93,6 +93,7 @@ public final class Widowmaker {
             d.setTeleportDuration(5);
             d.setPersistent(false);
             d.addScoreboardTag(TAG);
+            ForageDisplays.mark(d);
         });
         Bukkit.getScheduler().runTaskLater(isle.plugin(), () -> {
             if (limb.isValid()) {
@@ -107,7 +108,10 @@ public final class Widowmaker {
         world.playSound(spot, Sound.BLOCK_WOOD_BREAK, SoundCategory.BLOCKS, 1.3f, 0.6f);
         world.playSound(spot, Sound.ENTITY_GENERIC_EXPLODE, SoundCategory.BLOCKS, 0.25f, 1.6f);
         world.spawnParticle(Particle.BLOCK, spot.clone().add(0, 0.4, 0), 24, 0.8, 0.2, 0.4, 0.1, wood.createBlockData());
-        Bukkit.getScheduler().runTaskLater(isle.plugin(), limb::remove, 30L);
+        Bukkit.getScheduler().runTaskLater(isle.plugin(), () -> {
+            ForageDisplays.forget(limb);
+            limb.remove();
+        }, 30L);
         if (!player.isOnline() || player.getWorld() != world) {
             return;
         }

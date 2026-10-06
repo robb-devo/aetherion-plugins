@@ -394,6 +394,7 @@ public final class SkillMenu implements Listener {
                 "",
                 "§7Aetherion Level: §f100 XP §7= §f1 level§7.",
                 "§7Every §f" + AetherionLevel.STAT_EVERY + " §7levels: §a+1 Damage §7& §c+1 Health§7.",
+                "§8(Every " + AetherionLevel.STAT_EVERY_LATE + " past level " + AetherionLevel.STAT_TAPER_FROM + ".)",
                 "§7Auto pickup at Aetherion §f"
                         + de.aetherion.items.listener.AutoPickupListener.UNLOCK_LEVEL + "§7."
         );
@@ -827,8 +828,8 @@ public final class SkillMenu implements Listener {
             }
             case QUICK_HANDS -> lines.add(Effect.stat("Ability Cooldown",
                     100.0 - (Math.max(0.70, 1.0 - 0.10 * scale) * 100.0), "-", "%"));
-            case BOSS_GRUDGE -> lines.add(Effect.stat("Boss Damage", 10.0 * scale, "+", "%"));
-            case FLOOR_GRUDGE -> lines.add(Effect.stat("Dungeon Boss Damage", 12.0 * scale, "+", "%"));
+            case BOSS_GRUDGE -> lines.add(Effect.stat("Boss Damage", 100.0 * SkillProgression.bossGrudge(level), "+", "%"));
+            case FLOOR_GRUDGE -> lines.add(Effect.stat("Dungeon Boss Damage", 100.0 * SkillProgression.floorGrudge(level), "+", "%"));
             case RELIC_APPETITE -> lines.add(Effect.stat("Dungeon Gear XP", 20.0 * scale, "+", "%"));
             case BLOOD_TAX -> lines.add(Effect.stat("Kill Coins",
                     SkillService.bloodTaxCurve(level) * 100.0, "+", "% of HP"));

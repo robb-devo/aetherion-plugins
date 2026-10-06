@@ -127,6 +127,7 @@ public final class EgonHintParticles {
     private void maybeGreet(Player player, QuestNPC egon) {
         if (!de.aetherion.quests.lang.PlayerLang.hasChosen(player)
                 || HarbourArrival.isPlaying(player)
+                || OpeningOrbit.isPlaying(player)
                 || de.aetherion.quests.util.QuestStoryGate.tutorialDone(player, questManager)) {
             return;
         }

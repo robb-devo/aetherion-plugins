@@ -294,15 +294,18 @@ public class ItemManager {
 
         PlayerInventory inventory = player.getInventory();
 
-        for (ItemStack item : inventory.getContents()) {
-            refreshItemLore(item, expanded);
-        }
+        // every item is written in the player's own language (English when Quests is not there)
+        try (de.aetherion.items.item.LoreLocale.Scope ignored = de.aetherion.items.item.LoreLocale.viewing(player)) {
+            for (ItemStack item : inventory.getContents()) {
+                refreshItemLore(item, expanded);
+            }
 
-        for (ItemStack item : inventory.getArmorContents()) {
-            refreshItemLore(item, expanded);
-        }
+            for (ItemStack item : inventory.getArmorContents()) {
+                refreshItemLore(item, expanded);
+            }
 
-        refreshItemLore(inventory.getItemInOffHand(), expanded);
+            refreshItemLore(inventory.getItemInOffHand(), expanded);
+        }
     }
 
     public void refreshItemLore(ItemStack item) {
@@ -313,8 +316,28 @@ public class ItemManager {
         if (!isAetherionItem(item)) {
             return;
         }
+        de.aetherion.items.item.LoreLocale.Scope held;
+        boolean german;
+        {
+            Boolean scoped = de.aetherion.items.item.LoreLocale.scopedGerman();
+            german = (scoped != null ? scoped : de.aetherion.items.item.LoreLocale.tagged(item))
+                    && de.aetherion.items.item.LoreLocale.ready();
+        }
+        // Layout runs in English (held); the language is applied once, by GearTooltip.finish.
+        held = de.aetherion.items.item.LoreLocale.scope(german, true);
+        try {
+            refreshEnglishLore(item);
+        } finally {
+            held.close();
+        }
+        try (de.aetherion.items.item.LoreLocale.Scope ignored = de.aetherion.items.item.LoreLocale.scope(german, false)) {
+            de.aetherion.items.item.GearTooltip.finish(item, this, expanded);
+        }
+    }
 
+    private void refreshEnglishLore(ItemStack item) {
         de.aetherion.items.item.GearTooltip.restore(item);
+        de.aetherion.items.item.LoreLocale.canonicalize(item);
 
         ItemMeta meta = item.getItemMeta();
         if (meta == null) {
@@ -327,12 +350,22 @@ public class ItemManager {
             meta.setLore(BoosterStats.createItemLore(booster));
             meta.setMaxStackSize(de.aetherion.items.item.BoosterItems.MAX_STACK);
         } else {
+            // Factory lore is the source of truth: owned items heal from older layouts on refresh.
+            List<String> current = meta.getLore();
+            List<String> rebuilt = de.aetherion.items.item.LoreTemplates.rebuild(id, current);
+            if (rebuilt != null && rebuilt != current) {
+                meta.setLore(rebuilt);
+            }
             ItemProfile profile = getProfile(item);
             if (profile != ItemProfile.UNKNOWN && meta.getLore() != null) {
                 ItemStats stats = migrateProgressionStats(meta, id);
                 List<String> lore = new ArrayList<>(meta.getLore());
                 ItemLore.updateDisplayedStats(lore, stats, profile);
                 meta.setLore(lore);
+                if (de.aetherion.items.blueprint.BlueprintUpgrade.isBlueprintTool(id)) {
+                    de.aetherion.items.blueprint.BlueprintUpgrade.patchLore(
+                            meta, id, de.aetherion.items.blueprint.BlueprintUpgrade.tier(item), stats, profile);
+                }
             }
         }
 
@@ -344,7 +377,6 @@ public class ItemManager {
         BossWeaponLook.apply(meta, id);
         de.aetherion.items.item.ItemPresentation.polish(meta);
         item.setItemMeta(meta);
-        de.aetherion.items.item.GearTooltip.finish(item, this, expanded);
     }
 
     private ItemStats migrateProgressionStats(ItemMeta meta, String itemId) {

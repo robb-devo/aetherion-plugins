@@ -62,6 +62,17 @@ public final class MarketService implements Listener {
     private static final long BAZAAR_MS = 1000L * 60 * 60 * 24 * 7;
     private static final long AUCTION_MS = 1000L * 60 * 60 * 24;
     private static final int[] PRICE_PERCENTS = {50, 75, 100, 125, 150, 200, 250, 300};
+    private static final int FAIR_INDEX = 2;
+
+    private static final int SORT_SLOT = 50;
+    private static final int MINE_SLOT = 51;
+    private static final int EMPTY_SLOT = 22;
+    private static final int PRICE_PREVIEW_SLOT = 4;
+    private static final int PRICE_FIRST_SLOT = 9;
+    private static final int PRICE_CANCEL_SLOT = 22;
+
+    private static final String PREFIX = "§6Market §8» ";
+    private static final String RULE = "§8────────────────";
 
     private final AetherionItems plugin;
     private final ItemValueService values;
@@ -70,6 +81,7 @@ public final class MarketService implements Listener {
     private final Map<UUID, MarketListing> listings = new ConcurrentHashMap<>();
     private final Map<UUID, List<ItemStack>> returns = new ConcurrentHashMap<>();
     private final Set<UUID> buying = ConcurrentHashMap.newKeySet();
+    private final Map<UUID, View> views = new ConcurrentHashMap<>();
     private final Object listingLock = new Object();
 
     public MarketService(AetherionItems plugin, ItemValueService values, CoinService coins) {
@@ -232,6 +244,7 @@ public final class MarketService implements Listener {
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
         closeOpenGuis(event.getPlayer());
+        views.remove(event.getPlayer().getUniqueId());
     }
 
     @EventHandler
@@ -261,11 +274,31 @@ public final class MarketService implements Listener {
             return;
         }
         if (slot == PREV_SLOT) {
-            openBrowse(player, holder.channel, Math.max(0, holder.page - 1));
+            if (holder.page > 0) {
+                pageTurn(player);
+                openBrowse(player, holder.channel, holder.page - 1);
+            }
             return;
         }
         if (slot == NEXT_SLOT) {
-            openBrowse(player, holder.channel, holder.page + 1);
+            if (holder.page + 1 < holder.pages) {
+                pageTurn(player);
+                openBrowse(player, holder.channel, holder.page + 1);
+            }
+            return;
+        }
+        if (slot == SORT_SLOT) {
+            View view = view(player);
+            views.put(player.getUniqueId(), new View(view.sort().next(), view.mine()));
+            player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.5f, 1.5f);
+            openBrowse(player, holder.channel, 0);
+            return;
+        }
+        if (slot == MINE_SLOT) {
+            View view = view(player);
+            views.put(player.getUniqueId(), new View(view.sort(), !view.mine()));
+            player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.5f, view.mine() ? 1.1f : 1.4f);
+            openBrowse(player, holder.channel, 0);
             return;
         }
         if (slot == LIST_SLOT) {
@@ -283,7 +316,7 @@ public final class MarketService implements Listener {
         }
         MarketListing listing = listings.get(listingId);
         if (listing == null) {
-            player.sendMessage("§cThat listing is gone.");
+            player.sendMessage(PREFIX + "§cThat listing is gone.");
             openBrowse(player, holder.channel, holder.page);
             return;
         }
@@ -296,63 +329,107 @@ public final class MarketService implements Listener {
     }
 
     private void handlePrice(Player player, PriceHolder holder, int slot) {
-        if (slot == 8) {
+        if (slot == PRICE_CANCEL_SLOT) {
             player.closeInventory();
             return;
         }
-        if (slot < 0 || slot >= PRICE_PERCENTS.length) {
+        int index = slot - PRICE_FIRST_SLOT;
+        if (index < 0 || index >= PRICE_PERCENTS.length) {
             return;
         }
-        long unit = Math.max(1L, values.unitValue(holder.item));
-        long base = unit * Math.max(1, holder.item.getAmount());
-        long price = Math.max(1L, Math.round(base * (PRICE_PERCENTS[slot] / 100.0d)));
+        long price = priceAt(holder.item, index);
         holder.committed = true;
         createListing(player, holder.channel, holder.item, price);
         openBrowse(player, holder.channel, 0);
     }
 
+    /** Same formula the listing is created with — what the button says is what gets listed. */
+    private long priceAt(ItemStack item, int index) {
+        long unit = Math.max(1L, values.unitValue(item));
+        long base = unit * Math.max(1, item.getAmount());
+        return Math.max(1L, Math.round(base * (PRICE_PERCENTS[index] / 100.0d)));
+    }
+
     private void startListing(Player player, MarketChannel channel) {
         ItemStack hand = player.getInventory().getItemInMainHand();
-        if (hand == null || hand.getType().isAir()) {
-            player.sendMessage("§cHold the item you want to list.");
-            return;
-        }
-        if (channel == MarketChannel.BAZAAR && !values.isResource(hand)) {
-            player.sendMessage("§cThe Bazaar is for resources. Gear goes to the Auction House.");
-            return;
-        }
-        if (channel == MarketChannel.AUCTION && !values.isGear(hand)) {
-            player.sendMessage("§cThe Auction House is for gear and tools. Resources go to the Bazaar.");
-            return;
-        }
-        if (countOwn(player.getUniqueId(), channel) >= MAX_LISTINGS) {
-            player.sendMessage("§cYou already have " + MAX_LISTINGS + " listings here.");
-            return;
-        }
-        if (values.unitValue(hand) <= 0L) {
-            player.sendMessage("§cThat item has no coin value.");
+        String refusal = listRefusal(player, channel, hand);
+        if (refusal != null) {
+            player.sendMessage(PREFIX + "§c" + refusal);
+            player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 0.6f, 0.8f);
             return;
         }
         ItemStack listed = hand.clone();
         player.getInventory().setItemInMainHand(null);
         Inventory inventory = Bukkit.createInventory(
                 new PriceHolder(channel, listed),
-                9,
-                "§8List · " + label(channel)
+                27,
+                accent(channel) + "■ §0List · " + label(channel)
         );
-        long base = values.valueOf(listed);
-        for (int i = 0; i < PRICE_PERCENTS.length; i++) {
-            long price = Math.max(1L, Math.round(base * (PRICE_PERCENTS[i] / 100.0d)));
-            inventory.setItem(i, button(
-                    i == 2 ? Material.GOLD_INGOT : Material.SUNFLOWER,
-                    "§e" + PRICE_PERCENTS[i] + "% §8· §6" + format(price) + " coins",
-                    "§7Suggested value: §f" + format(base),
-                    "",
-                    "§eClick to list at this price."
-            ));
+        rails(inventory);
+
+        int amount = Math.max(1, listed.getAmount());
+        long fair = priceAt(listed, FAIR_INDEX);
+        ItemStack preview = listed.clone();
+        ItemMeta previewMeta = preview.getItemMeta();
+        if (previewMeta != null) {
+            List<String> lore = previewMeta.hasLore() ? new ArrayList<>(previewMeta.getLore()) : new ArrayList<>();
+            lore.add(RULE);
+            lore.add("§7Fair value  §6" + format(fair) + " coins"
+                    + (amount > 1 ? " §8(" + format(Math.max(1L, fair / amount)) + " ea)" : ""));
+            lore.add("§7Runs for    §f" + (channel == MarketChannel.AUCTION ? "24 hours" : "7 days"));
+            lore.add("§8Unsold items wait under Collect.");
+            previewMeta.setLore(lore);
+            preview.setItemMeta(previewMeta);
         }
-        inventory.setItem(8, button(Material.BARRIER, "§cCancel", "§7Returns the item."));
+        inventory.setItem(PRICE_PREVIEW_SLOT, preview);
+
+        for (int i = 0; i < PRICE_PERCENTS.length; i++) {
+            int percent = PRICE_PERCENTS[i];
+            long price = priceAt(listed, i);
+            Material material = percent < 100 ? Material.IRON_INGOT
+                    : percent == 100 ? Material.GOLD_INGOT
+                    : percent <= 150 ? Material.RAW_GOLD
+                    : Material.GOLD_BLOCK;
+            String tone = percent < 100 ? "§7Quick sale — undercuts fair value."
+                    : percent == 100 ? "§aFair value §7— the suggested price."
+                    : percent <= 150 ? "§7A little above fair value."
+                    : "§7Premium ask — may sit a while.";
+            ItemStack choice = button(
+                    material,
+                    "§6" + format(price) + " coins §8· " + percent + "%",
+                    tone,
+                    amount > 1 ? "§8" + format(Math.max(1L, price / amount)) + " each" : "§8",
+                    "",
+                    "§e▸ Click to list at this price"
+            );
+            if (percent == 100) {
+                glint(choice);
+            }
+            inventory.setItem(PRICE_FIRST_SLOT + i, choice);
+        }
+        inventory.setItem(PRICE_CANCEL_SLOT, button(Material.BARRIER, "§cCancel", "§7The item goes back to you."));
         player.openInventory(inventory);
+        player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 0.7f, 1.2f);
+    }
+
+    /** Null when the held stack can be listed here, otherwise the player-facing reason. */
+    private String listRefusal(Player player, MarketChannel channel, ItemStack hand) {
+        if (hand == null || hand.getType().isAir()) {
+            return "Hold the item you want to list.";
+        }
+        if (channel == MarketChannel.BAZAAR && !values.isResource(hand)) {
+            return "The Bazaar is for resources. Gear goes to the Auction House.";
+        }
+        if (channel == MarketChannel.AUCTION && !values.isGear(hand)) {
+            return "The Auction House is for gear and tools. Resources go to the Bazaar.";
+        }
+        if (countOwn(player.getUniqueId(), channel) >= MAX_LISTINGS) {
+            return "You already have " + MAX_LISTINGS + " listings here.";
+        }
+        if (values.unitValue(hand) <= 0L) {
+            return "That item has no coin value.";
+        }
+        return null;
     }
 
     private void createListing(Player player, MarketChannel channel, ItemStack item, long price) {
@@ -369,38 +446,49 @@ public final class MarketService implements Listener {
         listings.put(listing.id(), listing);
         save();
         player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.8f, 1.2f);
-        player.sendMessage("§aListed for §6" + format(price) + " coins§a.");
+        player.sendMessage(PREFIX + "§aListed §f" + displayName(item) + " §afor §6" + format(price) + " coins§a.");
     }
 
     private void openConfirm(Player player, MarketChannel channel, int page, MarketListing listing) {
-        Inventory inventory = Bukkit.createInventory(new ConfirmHolder(channel, page, listing.id()), 27, "§8Confirm purchase");
-        ItemStack pane = button(Material.GRAY_STAINED_GLASS_PANE, " ");
-        for (int slot = 0; slot < inventory.getSize(); slot++) {
-            inventory.setItem(slot, pane.clone());
-        }
+        Inventory inventory = Bukkit.createInventory(
+                new ConfirmHolder(channel, page, listing.id()),
+                27,
+                accent(channel) + "■ §0Confirm purchase"
+        );
+        rails(inventory);
+        long purse = coins.get(player);
+        boolean affordable = purse >= listing.price();
+
         ItemStack preview = listing.item().clone();
         ItemMeta meta = preview.getItemMeta();
         if (meta != null) {
             List<String> lore = meta.hasLore() ? new ArrayList<>(meta.getLore()) : new ArrayList<>();
-            lore.add("");
-            lore.add("§7Buyout: §6" + format(listing.price()) + " coins");
-            lore.add("§7Your purse: §e" + format(coins.get(player)) + " coins");
-            lore.add("");
-            lore.add("§eConfirm on the green wool.");
+            lore.add(RULE);
+            lore.add("§7Seller      §f" + sellerName(listing));
+            lore.add("§7Buyout      §6" + format(listing.price()) + " coins");
+            lore.add("§7Ends in     §f" + timeLeft(listing.expires() - System.currentTimeMillis()));
             meta.setLore(lore);
             preview.setItemMeta(meta);
         }
         inventory.setItem(13, preview);
-        inventory.setItem(11, button(
-                Material.LIME_WOOL,
-                "§aConfirm",
-                "§7Pay §6" + format(listing.price()) + " coins",
-                "§7and take this listing."
-        ));
+        inventory.setItem(11, affordable
+                ? button(
+                        Material.LIME_CONCRETE,
+                        "§aBuy now",
+                        "§7Pay §6" + format(listing.price()) + " coins",
+                        "§7Purse after: §e" + format(purse - listing.price()),
+                        "",
+                        "§e▸ Click to confirm")
+                : button(
+                        Material.GRAY_CONCRETE,
+                        "§cNot enough coins",
+                        "§7Price: §6" + format(listing.price()),
+                        "§7Purse: §e" + format(purse),
+                        "§7Short by §c" + format(listing.price() - purse)));
         inventory.setItem(15, button(
-                Material.RED_WOOL,
-                "§cCancel",
-                "§7Back to " + label(channel) + "."
+                Material.RED_CONCRETE,
+                "§cBack",
+                "§7Return to the " + label(channel) + "."
         ));
         player.openInventory(inventory);
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.6f, 1.2f);
@@ -420,7 +508,7 @@ public final class MarketService implements Listener {
         try {
             MarketListing listing = listings.get(holder.listingId);
             if (listing == null) {
-                player.sendMessage("§cThat listing is gone.");
+                player.sendMessage(PREFIX + "§cThat listing is gone.");
                 openBrowse(player, holder.channel, holder.page);
                 return;
             }
@@ -436,12 +524,13 @@ public final class MarketService implements Listener {
         synchronized (listingLock) {
             held = listings.remove(listing.id());
             if (held == null) {
-                player.sendMessage("§cThat listing is gone.");
+                player.sendMessage(PREFIX + "§cThat listing is gone.");
                 return;
             }
             if (!coins.take(player, held.price())) {
                 listings.put(held.id(), held);
-                player.sendMessage("§cYou need §6" + format(held.price()) + " coins§c.");
+                player.sendMessage(PREFIX + "§cYou need §6" + format(held.price()) + " coins§c.");
+                player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 0.6f, 0.8f);
                 return;
             }
         }
@@ -449,11 +538,12 @@ public final class MarketService implements Listener {
         giveOrDrop(player, held.item().clone());
         save();
         player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.4f);
-        player.sendMessage("§aBought for §6" + format(held.price()) + " coins§a.");
+        player.sendMessage(PREFIX + "§aBought §f" + displayName(held.item()) + " §afor §6" + format(held.price()) + " coins§a.");
         Player seller = Bukkit.getPlayer(held.seller());
         if (seller != null && seller.isOnline()) {
-            seller.sendMessage("§6" + label(held.channel()) + " §8» §a+" + format(held.price())
-                    + " coins §7from §f" + player.getName());
+            seller.sendMessage(accent(held.channel()) + label(held.channel()) + " §8» §a+" + format(held.price())
+                    + " coins §7· §f" + player.getName() + " §7bought §f" + displayName(held.item()));
+            seller.playSound(seller.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.6f, 1.6f);
         }
     }
 
@@ -467,14 +557,15 @@ public final class MarketService implements Listener {
         }
         giveOrDrop(player, held.item().clone());
         save();
-        player.sendMessage("§eListing cancelled. Item returned.");
+        player.playSound(player.getLocation(), Sound.ITEM_ARMOR_EQUIP_LEATHER, 0.7f, 1.2f);
+        player.sendMessage(PREFIX + "§eListing cancelled §7— §f" + displayName(held.item()) + " §7is back in your bag.");
     }
 
     private void collect(Player player) {
         expireDue();
         List<ItemStack> waiting = returns.remove(player.getUniqueId());
         if (waiting == null || waiting.isEmpty()) {
-            player.sendMessage("§7Nothing to collect.");
+            player.sendMessage(PREFIX + "§7Nothing to collect.");
             return;
         }
         int count = 0;
@@ -483,79 +574,172 @@ public final class MarketService implements Listener {
             count++;
         }
         save();
-        player.sendMessage("§aCollected §f" + count + " §aexpired listing(s).");
+        player.playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 0.7f, 1.1f);
+        player.sendMessage(PREFIX + "§aCollected §f" + count + " §aunsold listing" + (count == 1 ? "" : "s") + ".");
     }
 
     private void openBrowse(Player player, MarketChannel channel, int page) {
         expireDue();
+        View view = view(player);
+        UUID self = player.getUniqueId();
         List<MarketListing> shown = listings.values().stream()
                 .filter(listing -> listing.channel() == channel)
-                .sorted(Comparator.comparingLong(MarketListing::created).reversed())
+                .filter(listing -> !view.mine() || listing.seller().equals(self))
+                .sorted(view.sort().order)
                 .toList();
         int pages = Math.max(1, (shown.size() + PAGE_SIZE - 1) / PAGE_SIZE);
         int safePage = Math.min(Math.max(0, page), pages - 1);
         Inventory inventory = Bukkit.createInventory(
-                new BrowseHolder(channel, safePage),
+                new BrowseHolder(channel, safePage, pages),
                 54,
-                (channel == MarketChannel.BAZAAR ? "§8Bazaar" : "§8Auction House")
-                        + " §8· " + (safePage + 1) + "/" + pages
+                accent(channel) + "■ §0" + label(channel)
+                        + (view.mine() ? " §8· yours" : "")
+                        + (pages > 1 ? " §8· " + (safePage + 1) + "/" + pages : "")
         );
         fill(inventory);
         int start = safePage * PAGE_SIZE;
         for (int i = 0; i < PAGE_SIZE && start + i < shown.size(); i++) {
             inventory.setItem(i, icon(player, shown.get(start + i)));
         }
-        int waiting = returns.getOrDefault(player.getUniqueId(), List.of()).size();
-        inventory.setItem(PREV_SLOT, button(Material.ARROW, "§ePrevious page"));
+        if (shown.isEmpty()) {
+            inventory.setItem(EMPTY_SLOT, emptyState(channel, view.mine()));
+        }
+
+        int waiting = returns.getOrDefault(self, List.of()).size();
+        int own = countOwn(self, channel);
+        if (safePage > 0) {
+            inventory.setItem(PREV_SLOT, button(Material.ARROW, "§ePrevious page", "§8Page " + safePage + " of " + pages));
+        }
+        if (safePage + 1 < pages) {
+            inventory.setItem(NEXT_SLOT, button(Material.ARROW, "§eNext page", "§8Page " + (safePage + 2) + " of " + pages));
+        }
         inventory.setItem(INFO_SLOT, button(
-                Material.SUNFLOWER,
-                "§6" + label(channel),
-                "§7Balance: §e" + format(coins.get(player)) + " coins",
+                channel == MarketChannel.BAZAAR ? Material.BARREL : Material.GOLD_BLOCK,
+                accent(channel) + "§l" + label(channel),
                 channel == MarketChannel.BAZAAR
-                        ? "§7Resources only. Trader also buys these."
-                        : "§7Gear and tools. Buyout only.",
-                "§7Your listings: §f" + countOwn(player.getUniqueId(), channel) + "/" + MAX_LISTINGS,
-                waiting > 0 ? "§eExpired returns: §f" + waiting : "§8No expired returns."
+                        ? "§7Resources — compressed, compacted, vanilla."
+                        : "§7Gear and tools. Buyout listings.",
+                RULE,
+                "§7Purse         §e" + format(coins.get(player)) + " coins",
+                "§7Your listings §f" + own + "§8/" + MAX_LISTINGS,
+                "§7Listings run  §f" + (channel == MarketChannel.AUCTION ? "24 hours" : "7 days"),
+                "§7On the board  §f" + shown.size()
         ));
-        inventory.setItem(NEXT_SLOT, button(Material.ARROW, "§eNext page"));
-        inventory.setItem(LIST_SLOT, button(
-                Material.WRITABLE_BOOK,
-                "§aList item in hand",
-                "§7Hold the stack, then click here.",
-                "§7You pick the price next."
+        inventory.setItem(LIST_SLOT, listButton(player, channel));
+        inventory.setItem(SORT_SLOT, sortButton(view.sort()));
+        inventory.setItem(MINE_SLOT, button(
+                view.mine() ? Material.NAME_TAG : Material.PAPER,
+                view.mine() ? "§aShowing: your listings" : "§7Showing: everyone",
+                "§7You have §f" + own + " §7listed here.",
+                "§8Click your own listing to take it back.",
+                "",
+                "§e▸ Click to " + (view.mine() ? "show everyone" : "show only yours")
         ));
         inventory.setItem(BACK_SLOT, de.aetherion.items.util.ManagerNav.button());
-        inventory.setItem(COLLECT_SLOT, button(
-                Material.HOPPER,
-                "§eCollect returns",
-                waiting > 0 ? "§a" + waiting + " expired listing(s)." : "§7Nothing waiting."
-        ));
+        ItemStack collectButton = waiting > 0
+                ? button(Material.HOPPER, "§aCollect returns",
+                        "§f" + waiting + " §7unsold listing" + (waiting == 1 ? "" : "s") + " waiting.",
+                        "", "§e▸ Click to collect")
+                : button(Material.HOPPER, "§7Collect returns", "§8Nothing waiting.",
+                        "§8Unsold listings land here when they end.");
+        if (waiting > 0) {
+            glint(collectButton);
+        }
+        inventory.setItem(COLLECT_SLOT, collectButton);
         player.openInventory(inventory);
+    }
+
+    private ItemStack listButton(Player player, MarketChannel channel) {
+        ItemStack hand = player.getInventory().getItemInMainHand();
+        String refusal = listRefusal(player, channel, hand);
+        if (refusal == null) {
+            long fair = priceAt(hand, FAIR_INDEX);
+            ItemStack ready = button(
+                    Material.WRITABLE_BOOK,
+                    "§aList item in hand",
+                    "§f" + displayName(hand) + (hand.getAmount() > 1 ? " §8×" + hand.getAmount() : ""),
+                    "§7Fair value §6" + format(fair) + " coins",
+                    "",
+                    "§e▸ Click to pick a price"
+            );
+            glint(ready);
+            return ready;
+        }
+        return button(
+                Material.BOOK,
+                "§7List item in hand",
+                "§8" + refusal,
+                "",
+                channel == MarketChannel.BAZAAR
+                        ? "§7Hold a resource stack, then click."
+                        : "§7Hold a weapon, armor piece or tool, then click."
+        );
+    }
+
+    private ItemStack sortButton(Sort sort) {
+        List<String> lore = new ArrayList<>();
+        for (Sort option : Sort.values()) {
+            lore.add((option == sort ? "§a▸ " : "§8  ") + option.label);
+        }
+        lore.add("");
+        lore.add("§e▸ Click to cycle");
+        return de.aetherion.items.util.GuiItems.named(Material.COMPARATOR, "§6Sort", lore);
+    }
+
+    private ItemStack emptyState(MarketChannel channel, boolean mine) {
+        if (mine) {
+            return button(
+                    Material.LIGHT_GRAY_STAINED_GLASS_PANE,
+                    "§7You have nothing listed",
+                    "§8Hold a stack and use §7List item in hand§8.",
+                    "§8Your listings show up here."
+            );
+        }
+        return button(
+                Material.LIGHT_GRAY_STAINED_GLASS_PANE,
+                "§7The " + label(channel) + " is quiet",
+                "§8No listings right now.",
+                channel == MarketChannel.BAZAAR
+                        ? "§8Be first — list some resources."
+                        : "§8Be first — list a piece of gear."
+        );
     }
 
     private ItemStack icon(Player viewer, MarketListing listing) {
         ItemStack icon = listing.item().clone();
         ItemMeta meta = icon.getItemMeta();
         if (meta != null) {
+            boolean own = listing.seller().equals(viewer.getUniqueId());
+            int amount = Math.max(1, listing.item().getAmount());
             List<String> lore = meta.hasLore() ? new ArrayList<>(meta.getLore()) : new ArrayList<>();
-            OfflinePlayer seller = Bukkit.getOfflinePlayer(listing.seller());
-            String name = seller.getName() == null ? "Unknown" : seller.getName();
+            lore.add(RULE);
+            lore.add("§7Seller   " + (own ? "§aYou" : "§f" + sellerName(listing)));
+            lore.add("§7Price    §6" + format(listing.price()) + " coins"
+                    + (amount > 1 ? " §8(" + format(Math.max(1L, listing.price() / amount)) + " ea)" : ""));
+            lore.add("§7Ends in  §f" + timeLeft(listing.expires() - System.currentTimeMillis()));
             lore.add("");
-            lore.add("§7Seller: §f" + name);
-            lore.add("§7Buyout: §6" + format(listing.price()) + " coins");
-            lore.add("§7Amount: §f" + listing.item().getAmount());
-            lore.add("§7Time left: §f" + timeLeft(listing.expires() - System.currentTimeMillis()));
-            lore.add("");
-            if (listing.seller().equals(viewer.getUniqueId())) {
-                lore.add("§eClick to cancel and take it back.");
-            } else {
-                lore.add("§eClick to review and buy.");
-            }
+            lore.add(own ? "§c▸ Click to cancel and take it back" : "§e▸ Click to review and buy");
             meta.setLore(lore);
             meta.getPersistentDataContainer().set(ItemKeys.listingId(), PersistentDataType.STRING, listing.id().toString());
+            if (own) {
+                meta.setEnchantmentGlintOverride(true);
+            }
             icon.setItemMeta(meta);
         }
         return icon;
+    }
+
+    private View view(Player player) {
+        return views.getOrDefault(player.getUniqueId(), View.DEFAULT);
+    }
+
+    private static String sellerName(MarketListing listing) {
+        OfflinePlayer seller = Bukkit.getOfflinePlayer(listing.seller());
+        return seller.getName() == null ? "Unknown" : seller.getName();
+    }
+
+    private static void pageTurn(Player player) {
+        player.playSound(player.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 0.6f, 1.25f);
     }
 
     private void expireDue() {
@@ -798,25 +982,80 @@ public final class MarketService implements Listener {
         return item;
     }
 
+    /** Browse page: listing grid stays open, a dark rail carries the controls (Manager panel look). */
     private static void fill(Inventory inventory) {
-        ItemStack pane = button(Material.GRAY_STAINED_GLASS_PANE, " ");
+        ItemStack rail = button(Material.BLACK_STAINED_GLASS_PANE, " ");
         for (int slot = 45; slot < inventory.getSize(); slot++) {
-            inventory.setItem(slot, pane.clone());
+            inventory.setItem(slot, rail.clone());
+        }
+    }
+
+    /** 27-slot dialogs: dark top and bottom rails, calm grey middle row. */
+    private static void rails(Inventory inventory) {
+        ItemStack rail = button(Material.BLACK_STAINED_GLASS_PANE, " ");
+        ItemStack body = button(Material.GRAY_STAINED_GLASS_PANE, " ");
+        for (int slot = 0; slot < inventory.getSize(); slot++) {
+            int row = slot / 9;
+            inventory.setItem(slot, row == 1 ? body.clone() : rail.clone());
         }
     }
 
     private static ItemStack button(Material material, String name, String... lore) {
-        ItemStack item = new ItemStack(material);
+        return de.aetherion.items.util.GuiItems.named(material, name, lore);
+    }
+
+    private static void glint(ItemStack item) {
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
-            meta.setDisplayName(name);
-            if (lore.length > 0) {
-                meta.setLore(List.of(lore));
-            }
-            meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
+            meta.setEnchantmentGlintOverride(true);
             item.setItemMeta(meta);
         }
-        return item;
+    }
+
+    private static String accent(MarketChannel channel) {
+        return channel == MarketChannel.BAZAAR ? "§6" : "§3";
+    }
+
+    private static String displayName(ItemStack item) {
+        if (item == null) {
+            return "item";
+        }
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null && meta.hasDisplayName()) {
+            return meta.getDisplayName().replaceAll("§.", "");
+        }
+        String raw = item.getType().name().toLowerCase(Locale.ROOT).replace('_', ' ');
+        StringBuilder out = new StringBuilder(raw.length());
+        boolean upper = true;
+        for (char c : raw.toCharArray()) {
+            out.append(upper ? Character.toUpperCase(c) : c);
+            upper = c == ' ';
+        }
+        return out.toString();
+    }
+
+    private enum Sort {
+        NEWEST("Newest first", Comparator.comparingLong(MarketListing::created).reversed()),
+        CHEAPEST("Lowest price", Comparator.comparingLong(MarketListing::price)
+                .thenComparing(Comparator.comparingLong(MarketListing::created).reversed())),
+        ENDING("Ending soon", Comparator.comparingLong(MarketListing::expires));
+
+        final String label;
+        final Comparator<MarketListing> order;
+
+        Sort(String label, Comparator<MarketListing> order) {
+            this.label = label;
+            this.order = order;
+        }
+
+        Sort next() {
+            Sort[] all = values();
+            return all[(ordinal() + 1) % all.length];
+        }
+    }
+
+    private record View(Sort sort, boolean mine) {
+        static final View DEFAULT = new View(Sort.NEWEST, false);
     }
 
     private static String format(long amount) {
@@ -826,8 +1065,10 @@ public final class MarketService implements Listener {
     public static final class BrowseHolder implements InventoryHolder {
         private final MarketChannel channel;
         private final int page;
+        private final int pages;
 
-        private BrowseHolder(MarketChannel channel, int page) {
+        private BrowseHolder(MarketChannel channel, int page, int pages) {
+            this.pages = pages;
             this.channel = channel;
             this.page = page;
         }

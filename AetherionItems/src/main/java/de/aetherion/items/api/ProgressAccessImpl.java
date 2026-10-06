@@ -65,8 +65,10 @@ public final class ProgressAccessImpl implements ProgressAccess {
         if (plugin.getCodex() != null) {
             plugin.getCodex().save();
         }
-        // ranks.save() was invoked reflectively but RankBadgeService.save() is private —
-        // getMethod("save") never succeeded. Do not start flushing ranks here.
+        // ranks.flush() — public; former reflective save() never worked (private).
+        if (plugin.ranks() != null) {
+            plugin.ranks().flush();
+        }
         if (plugin.getMarket() != null) {
             plugin.getMarket().save();
         }
@@ -199,6 +201,18 @@ public final class ProgressAccessImpl implements ProgressAccess {
             return;
         }
         plugin.getManager().open(player);
+    }
+
+    @Override
+    public void syncAccountLevel(Player player) {
+        if (player == null || plugin == null || plugin.getSkills() == null) {
+            return;
+        }
+        int level = plugin.getSkills().accountLevel(player);
+        player.setLevel(Math.max(0, level));
+        if (plugin.ranks() != null) {
+            plugin.ranks().syncProgression(player, level);
+        }
     }
 
     private static ProgressionService.Flag flag(String flagName) {

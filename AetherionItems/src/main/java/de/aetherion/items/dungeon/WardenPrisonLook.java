@@ -292,10 +292,10 @@ public final class WardenPrisonLook {
                     meta.setEnchantmentGlintOverride(true);
                     changed = true;
                 }
-                List<String> lore = meta.getLore() == null ? new ArrayList<>() : new ArrayList<>(meta.getLore());
+                List<String> lore = de.aetherion.items.item.LoreLocale.loreOrEmpty(meta);
                 if (!lore.contains(MARK_LINE)) {
                     lore.add(Math.min(1, lore.size()), MARK_LINE);
-                    meta.setLore(lore);
+                    de.aetherion.items.item.LoreLocale.writeLore(meta, lore);
                     changed = true;
                 }
             }

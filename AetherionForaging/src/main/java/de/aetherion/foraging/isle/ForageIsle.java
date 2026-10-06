@@ -116,7 +116,11 @@ public final class ForageIsle implements Listener {
         var scheduler = Bukkit.getScheduler();
         tasks.add(scheduler.runTaskTimer(plugin, this::tick, 20L, 1L).getTaskId());
         tasks.add(scheduler.runTaskTimer(plugin, () -> profiles.saveAsync(false), 1200L, 1200L).getTaskId());
-        scheduler.runTaskLater(plugin, cast::ensureAll, 80L);
+        scheduler.runTaskLater(plugin, () -> {
+            ForageDisplays.purgeAll();
+            cast.ensureAll();
+            ledger.removeBoard();
+        }, 80L);
         instance = this;
         plugin.getLogger().info("Foraging Eldervale: grid " + map.status() + " · " + config.landmarks().size() + " places · "
                 + config.updrafts().size() + " updrafts · Items skills " + (ForageBridge.skillsInstalled() ? "found" : "not in this Items jar"));
@@ -167,6 +171,7 @@ public final class ForageIsle implements Listener {
         traversal.clear();
         cast.removeHolograms();
         ledger.removeBoard();
+        ForageDisplays.purgeAll();
         profiles.saveNow();
     }
 

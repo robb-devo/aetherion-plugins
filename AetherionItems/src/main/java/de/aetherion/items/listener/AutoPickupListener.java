@@ -138,6 +138,17 @@ public final class AutoPickupListener implements Listener {
         BUSY.set(true);
         try {
             int before = stack.getAmount();
+            int absorbed = de.aetherion.items.storage.SkillSackMenu.tryAbsorb(player, stack);
+            if (absorbed > 0) {
+                de.aetherion.items.storage.SkillSackMenu.noteAbsorbed(player, stack, absorbed);
+                if (absorbed >= before) {
+                    item.remove();
+                    return true;
+                }
+                stack = stack.clone();
+                before -= absorbed;
+                stack.setAmount(before);
+            }
             var leftover = player.getInventory().addItem(stack);
             if (leftover.isEmpty()) {
                 item.remove();

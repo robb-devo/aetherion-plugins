@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": { "layer0": "minecraft:item/blaze_powder" },
+  "overrides": [
+    { "predicate": { "custom_model_data": 3102 }, "model": "minecraft:item/charm_combat_2" }
+  ]
+}

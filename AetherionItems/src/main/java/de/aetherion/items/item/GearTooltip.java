@@ -63,6 +63,8 @@ public final class GearTooltip implements Listener {
             cached.add(line);
         }
         meta.setLore(cached);
+        // the cache is always English: whatever language the item showed before, it is English now
+        LoreLocale.setTag(meta, false);
         return true;
     }
 
@@ -70,6 +72,16 @@ public final class GearTooltip implements Listener {
         if (item == null || items == null || !items.isAetherionItem(item)) {
             return;
         }
+        // English is canonical: lay the tooltip out in English, localize as the very last step.
+        boolean german = LoreLocale.tagged(item);
+        Boolean view = LoreLocale.scopedGerman() == null ? Boolean.valueOf(german) : null;
+        LoreLocale.canonicalize(item);
+        try (LoreLocale.Scope ignored = LoreLocale.scope(view, false)) {
+            finishEnglish(item, items, expanded);
+        }
+    }
+
+    private static void finishEnglish(ItemStack item, ItemManager items, boolean expanded) {
         DungeonGearProgress.ensure(item, items);
         ItemMeta meta = item.getItemMeta();
         if (meta == null) {
@@ -81,11 +93,8 @@ public final class GearTooltip implements Listener {
         String itemId = items.getItemId(item);
         full = LoreLayout.normalize(full, itemId, items.getRarity(item));
         store(meta, full);
-        if (shouldCompact(item, items, full)) {
-            meta.setLore(compact(item, items, full));
-        } else {
-            meta.setLore(full);
-        }
+        List<String> shown = shouldCompact(item, items, full) ? compact(item, items, full) : full;
+        meta.setLore(LoreLocale.present(meta, itemId, shown));
         item.setItemMeta(meta);
     }
 
@@ -107,59 +116,44 @@ public final class GearTooltip implements Listener {
         if (items.getBoosterType(item) != null) {
             return false;
         }
-        if (DungeonGearProgress.canLevel(item, items)
-                || DungeonArmor.isAttuned(item, items)
-                || DungeonCore.tier(item) > 0) {
-            return true;
+        if (DungeonCore.isCore(item)) {
+            return false;
         }
-        return false;
+        return DungeonGearProgress.canLevel(item, items)
+                || DungeonArmor.isAttuned(item, items)
+                || DungeonCore.tier(item) > 0;
     }
 
     private static List<String> compact(ItemStack item, ItemManager items, List<String> full) {
         List<String> kept = new ArrayList<>();
         for (String line : full) {
-            if (line == null || line.isBlank() || isHintLine(line) || isDungeonStatPreview(line) || isDungeonHudLine(line)) {
+            if (line == null || isHintLine(line) || isDungeonStatPreview(line) || isDungeonHudLine(line)) {
                 continue;
             }
-            kept.add(line);
+            kept.add(line.isBlank() ? "" : line);
         }
-        String extra = ItemFlavor.jokeFor(items.getItemId(item));
-        if (extra != null) {
-            String needle = ChatColor.stripColor(extra);
-            boolean present = false;
-            for (String line : kept) {
-                if (needle.equals(ChatColor.stripColor(line))) {
-                    present = true;
-                    break;
-                }
-            }
-            if (!present) {
-                kept.add(extra);
-            }
-        }
+        kept.add("");
         String itemId = items.getItemId(item);
-        boolean dungeonized = DungeonGearProgress.canLevel(item, items)
+        boolean dungeonized = !DungeonCore.isCore(item)
+                && (DungeonGearProgress.canLevel(item, items)
                 || DungeonArmor.isAttuned(item, items)
                 || DungeonCore.tier(item) > 0
-                || DungeonCore.isAetherionEndgame(itemId);
+                || DungeonCore.isAetherionEndgame(itemId));
         if (dungeonized) {
             int level = DungeonGearProgress.level(item);
             int cap = DungeonGearProgress.maxLevel(item);
             int percent = DungeonGearProgress.combinedDungeonPercent(item, items, level);
             int core = DungeonCore.tier(item);
-            kept.add("§5Dungeon: §f+" + Math.max(0, percent) + "% stats");
             int rarityPercent = DungeonCore.rarityStatPercent(items.getRarity(item));
-            if (rarityPercent > 0) {
-                kept.add("§7Rarity bonus: §f+" + rarityPercent + "% stats");
-            }
+            kept.add("§5Dungeon: §f+" + Math.max(0, percent) + "% stats"
+                    + (rarityPercent > 0 ? " §8· rarity §f+" + rarityPercent + "%" : ""));
             kept.add(DungeonGearProgress.levelBarLine(level, DungeonGearProgress.xp(item), cap));
             if (core > 0) {
-                kept.add("§dInfused: Dungeon Core §f" + DungeonCore.roman(core) + "/" + DungeonCore.roman(DungeonCore.MAX_TIER));
+                kept.add("§dInfused: Dungeon Core §f" + DungeonCore.roman(core) + "§8/" + DungeonCore.roman(DungeonCore.MAX_TIER));
             }
             if (DungeonCore.canInfuse(itemId) && (DungeonCore.isAetherionEndgame(itemId) || core == 0)) {
                 kept.add(DungeonCore.coreHint(item, items));
             }
-            kept.add("§8Cores + gear level apply in dungeons.");
         } else if (DungeonCore.canInfuse(itemId)) {
             kept.add(DungeonCore.coreHint(item, items));
         }
@@ -212,12 +206,8 @@ public final class GearTooltip implements Listener {
             return false;
         }
         String lower = ChatColor.stripColor(line).toLowerCase(Locale.ROOT);
-        return lower.startsWith("dungeon:")
-                || lower.startsWith("lv ")
-                || lower.startsWith("infused:")
-                || lower.contains("level bonus")
-                || lower.startsWith("dungeonized")
-                || (lower.contains("anvil +") && lower.contains("core"));
+        return LoreLayout.isDungeonLine(line)
+                || lower.contains("level bonus");
     }
 
     private static String blockKind(String line) {

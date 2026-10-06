@@ -365,47 +365,55 @@ public class RecipeRegistry {
                 CompressedResource.BONE.compressed(),
                 CompressedResource.ROTTEN_FLESH.compressed());
 
-        registerLadderCross(
+        registerLadderCrossSig(
                 "combat_helmet_4", RecipeCategory.COMBAT, customItem.createCombatHelmet4(), Rarity.LEGENDARY,
                 customItem.createCombatHelmet3(),
                 CompressedResource.RAW_GOLD.compacted(),
-                CompressedResource.BONE.compacted());
-        registerLadderCross(
+                CompressedResource.BONE.compacted(),
+                de.aetherion.items.economy.IsleHeartwood.DARK_OAK.create());
+        registerLadderCrossSig(
                 "combat_chestplate_4", RecipeCategory.COMBAT, customItem.createCombatChestplate4(), Rarity.LEGENDARY,
                 customItem.createCombatChestplate3(),
                 CompressedResource.RAW_GOLD.compacted(),
-                CompressedResource.BONE.compacted());
-        registerLadderCross(
+                CompressedResource.BONE.compacted(),
+                de.aetherion.items.economy.IsleHeartwood.DARK_OAK.create());
+        registerLadderCrossSig(
                 "combat_leggings_4", RecipeCategory.COMBAT, customItem.createCombatLeggings4(), Rarity.LEGENDARY,
                 customItem.createCombatLeggings3(),
                 CompressedResource.RAW_GOLD.compacted(),
-                CompressedResource.BONE.compacted());
-        registerLadderCross(
+                CompressedResource.BONE.compacted(),
+                de.aetherion.items.economy.IsleHeartwood.DARK_OAK.create());
+        registerLadderCrossSig(
                 "combat_boots_4", RecipeCategory.COMBAT, customItem.createCombatBoots4(), Rarity.LEGENDARY,
                 customItem.createCombatBoots3(),
                 CompressedResource.RAW_GOLD.compacted(),
-                CompressedResource.BONE.compacted());
+                CompressedResource.BONE.compacted(),
+                de.aetherion.items.economy.IsleHeartwood.DARK_OAK.create());
 
-        registerLadderPeak(
+        registerLadderPeakSig(
                 "combat_helmet_5", RecipeCategory.COMBAT, customItem.createCombatHelmet5(), Rarity.MYTHIC,
                 customItem.createCombatHelmet4(),
                 CompressedResource.DIAMOND.compacted(),
-                CompressedResource.EMERALD.compacted());
-        registerLadderPeak(
+                CompressedResource.EMERALD.compacted(),
+                de.aetherion.items.economy.Signatures.display("fish_trophy"));
+        registerLadderPeakSig(
                 "combat_chestplate_5", RecipeCategory.COMBAT, customItem.createCombatChestplate5(), Rarity.MYTHIC,
                 customItem.createCombatChestplate4(),
                 CompressedResource.DIAMOND.compacted(),
-                CompressedResource.EMERALD.compacted());
-        registerLadderPeak(
+                CompressedResource.EMERALD.compacted(),
+                de.aetherion.items.economy.Signatures.display("fish_trophy"));
+        registerLadderPeakSig(
                 "combat_leggings_5", RecipeCategory.COMBAT, customItem.createCombatLeggings5(), Rarity.MYTHIC,
                 customItem.createCombatLeggings4(),
                 CompressedResource.DIAMOND.compacted(),
-                CompressedResource.EMERALD.compacted());
-        registerLadderPeak(
+                CompressedResource.EMERALD.compacted(),
+                de.aetherion.items.economy.Signatures.display("fish_trophy"));
+        registerLadderPeakSig(
                 "combat_boots_5", RecipeCategory.COMBAT, customItem.createCombatBoots5(), Rarity.MYTHIC,
                 customItem.createCombatBoots4(),
                 CompressedResource.DIAMOND.compacted(),
-                CompressedResource.EMERALD.compacted());
+                CompressedResource.EMERALD.compacted(),
+                de.aetherion.items.economy.Signatures.display("fish_trophy"));
 
 
         /*
@@ -443,16 +451,18 @@ public class RecipeRegistry {
                 customItem.createCombatSword2(),
                 CompressedResource.BONE.compressed(),
                 CompressedResource.ROTTEN_FLESH.compressed());
-        registerLadderCross(
+        registerLadderCrossSig(
                 "combat_sword_4", RecipeCategory.COMBAT, customItem.createCombatSword4(), Rarity.LEGENDARY,
                 customItem.createCombatSword3(),
                 CompressedResource.RAW_GOLD.compacted(),
-                CompressedResource.BONE.compacted());
-        registerLadderPeak(
+                CompressedResource.BONE.compacted(),
+                de.aetherion.items.economy.IsleHeartwood.DARK_OAK.create());
+        registerLadderPeakSig(
                 "combat_sword_5", RecipeCategory.COMBAT, customItem.createCombatSword5(), Rarity.MYTHIC,
                 customItem.createCombatSword4(),
                 CompressedResource.DIAMOND.compacted(),
-                CompressedResource.EMERALD.compacted());
+                CompressedResource.EMERALD.compacted(),
+                de.aetherion.items.economy.Signatures.display("fish_trophy"), customItem.createWarpedBlade());
 
 
         /*
@@ -541,47 +551,55 @@ public class RecipeRegistry {
                 CompressedResource.RAW_IRON.compressed(),
                 CompressedResource.COAL.compressed());
 
-        registerLadderCross(
+        registerLadderCrossSig(
                 "mining_helmet_4", RecipeCategory.MINING, customItem.createMiningHelmet4(), Rarity.LEGENDARY,
                 customItem.createMiningHelmet3(),
                 CompressedResource.RAW_COPPER.compacted(),
-                CompressedResource.COAL.compacted());
-        registerLadderCross(
+                CompressedResource.COAL.compacted(),
+                de.aetherion.items.economy.IsleHeartwood.OAK.create());
+        registerLadderCrossSig(
                 "mining_chestplate_4", RecipeCategory.MINING, customItem.createMiningChestplate4(), Rarity.LEGENDARY,
                 customItem.createMiningChestplate3(),
                 CompressedResource.RAW_COPPER.compacted(),
-                CompressedResource.COAL.compacted());
-        registerLadderCross(
+                CompressedResource.COAL.compacted(),
+                de.aetherion.items.economy.IsleHeartwood.OAK.create());
+        registerLadderCrossSig(
                 "mining_leggings_4", RecipeCategory.MINING, customItem.createMiningLeggings4(), Rarity.LEGENDARY,
                 customItem.createMiningLeggings3(),
                 CompressedResource.RAW_COPPER.compacted(),
-                CompressedResource.COAL.compacted());
-        registerLadderCross(
+                CompressedResource.COAL.compacted(),
+                de.aetherion.items.economy.IsleHeartwood.OAK.create());
+        registerLadderCrossSig(
                 "mining_boots_4", RecipeCategory.MINING, customItem.createMiningBoots4(), Rarity.LEGENDARY,
                 customItem.createMiningBoots3(),
                 CompressedResource.RAW_COPPER.compacted(),
-                CompressedResource.COAL.compacted());
+                CompressedResource.COAL.compacted(),
+                de.aetherion.items.economy.IsleHeartwood.OAK.create());
 
-        registerLadderPeak(
+        registerLadderPeakSig(
                 "mining_helmet_5", RecipeCategory.MINING, customItem.createMiningHelmet5(), Rarity.MYTHIC,
                 customItem.createMiningHelmet4(),
                 CompressedResource.DIAMOND.compacted(),
-                CompressedResource.REDSTONE.compacted());
-        registerLadderPeak(
+                CompressedResource.REDSTONE.compacted(),
+                de.aetherion.items.economy.Signatures.display("prize_crop"));
+        registerLadderPeakSig(
                 "mining_chestplate_5", RecipeCategory.MINING, customItem.createMiningChestplate5(), Rarity.MYTHIC,
                 customItem.createMiningChestplate4(),
                 CompressedResource.DIAMOND.compacted(),
-                CompressedResource.REDSTONE.compacted());
-        registerLadderPeak(
+                CompressedResource.REDSTONE.compacted(),
+                de.aetherion.items.economy.Signatures.display("prize_crop"));
+        registerLadderPeakSig(
                 "mining_leggings_5", RecipeCategory.MINING, customItem.createMiningLeggings5(), Rarity.MYTHIC,
                 customItem.createMiningLeggings4(),
                 CompressedResource.DIAMOND.compacted(),
-                CompressedResource.REDSTONE.compacted());
-        registerLadderPeak(
+                CompressedResource.REDSTONE.compacted(),
+                de.aetherion.items.economy.Signatures.display("prize_crop"));
+        registerLadderPeakSig(
                 "mining_boots_5", RecipeCategory.MINING, customItem.createMiningBoots5(), Rarity.MYTHIC,
                 customItem.createMiningBoots4(),
                 CompressedResource.DIAMOND.compacted(),
-                CompressedResource.REDSTONE.compacted());
+                CompressedResource.REDSTONE.compacted(),
+                de.aetherion.items.economy.Signatures.display("prize_crop"));
 
 
         /*
@@ -649,16 +667,28 @@ public class RecipeRegistry {
                 customItem.createMiningPickaxe2(),
                 CompressedResource.RAW_COPPER.compressed(),
                 CompressedResource.RAW_IRON.compressed());
-        registerLadderCross(
+        registerLadderCrossSig(
                 "mining_pickaxe_4", RecipeCategory.MINING, customItem.createMiningPickaxe4(), Rarity.LEGENDARY,
                 customItem.createMiningPickaxe3(),
                 CompressedResource.RAW_COPPER.compacted(),
-                CompressedResource.COAL.compacted());
-        registerLadderPeak(
+                CompressedResource.COAL.compacted(),
+                de.aetherion.items.economy.IsleHeartwood.OAK.create());
+        registerLadderPeakSig(
                 "mining_pickaxe_5", RecipeCategory.MINING, customItem.createMiningPickaxe5(), Rarity.MYTHIC,
                 customItem.createMiningPickaxe4(),
                 CompressedResource.DIAMOND.compacted(),
-                CompressedResource.REDSTONE.compacted());
+                CompressedResource.REDSTONE.compacted(),
+                de.aetherion.items.economy.Signatures.display("prize_crop"), customItem.createDungeonCore());
+        // P2 (design §4.3 / §5): Baron von Wurm's Burrower core as a shortcut, not a tax. It stands in
+        // for the T4 pick; still needs a crafted T3 pick (no jumping the ladder with a bought core).
+        // Id ends in the tier so the recipe book files it beside the T5 pick.
+        registerLadderPeakSig(
+                "mining_pickaxe_burrower_5", RecipeCategory.MINING, customItem.createMiningPickaxe5(), Rarity.MYTHIC,
+                customItem.createPickaxeCoreOfTheBurrower(),
+                CompressedResource.DIAMOND.compacted(),
+                CompressedResource.REDSTONE.compacted(),
+                de.aetherion.items.economy.Signatures.display("prize_crop"), customItem.createDungeonCore(),
+                new CraftedPredecessorRequirement("mining_pickaxe_3"));
 
         registerSimple(
                 "vein_siphon",
@@ -756,36 +786,46 @@ public class RecipeRegistry {
         registerLadderMix(
                 "farming_hoe_3", RecipeCategory.FARMING, farming.hoe(3), Rarity.EPIC,
                 farming.hoe(2), CompressedResource.POTATO.compressed(), CompressedResource.WHEAT.compressed());
-        registerLadderCross(
+        registerLadderCrossSig(
                 "farming_helmet_4", RecipeCategory.FARMING, farming.helmet(4), Rarity.LEGENDARY,
-                farming.helmet(3), CompressedResource.SUGAR_CANE.compacted(), CompressedResource.CARROT.compacted());
-        registerLadderCross(
+                farming.helmet(3), CompressedResource.SUGAR_CANE.compacted(), CompressedResource.CARROT.compacted(),
+                de.aetherion.items.economy.Signatures.display("fish_trophy"));
+        registerLadderCrossSig(
                 "farming_chestplate_4", RecipeCategory.FARMING, farming.chestplate(4), Rarity.LEGENDARY,
-                farming.chestplate(3), CompressedResource.SUGAR_CANE.compacted(), CompressedResource.CARROT.compacted());
-        registerLadderCross(
+                farming.chestplate(3), CompressedResource.SUGAR_CANE.compacted(), CompressedResource.CARROT.compacted(),
+                de.aetherion.items.economy.Signatures.display("fish_trophy"));
+        registerLadderCrossSig(
                 "farming_leggings_4", RecipeCategory.FARMING, farming.leggings(4), Rarity.LEGENDARY,
-                farming.leggings(3), CompressedResource.SUGAR_CANE.compacted(), CompressedResource.CARROT.compacted());
-        registerLadderCross(
+                farming.leggings(3), CompressedResource.SUGAR_CANE.compacted(), CompressedResource.CARROT.compacted(),
+                de.aetherion.items.economy.Signatures.display("fish_trophy"));
+        registerLadderCrossSig(
                 "farming_boots_4", RecipeCategory.FARMING, farming.boots(4), Rarity.LEGENDARY,
-                farming.boots(3), CompressedResource.SUGAR_CANE.compacted(), CompressedResource.CARROT.compacted());
-        registerLadderCross(
+                farming.boots(3), CompressedResource.SUGAR_CANE.compacted(), CompressedResource.CARROT.compacted(),
+                de.aetherion.items.economy.Signatures.display("fish_trophy"));
+        registerLadderCrossSig(
                 "farming_hoe_4", RecipeCategory.FARMING, farming.hoe(4), Rarity.LEGENDARY,
-                farming.hoe(3), CompressedResource.SUGAR_CANE.compacted(), CompressedResource.WHEAT.compacted());
-        registerLadderPeak(
+                farming.hoe(3), CompressedResource.SUGAR_CANE.compacted(), CompressedResource.WHEAT.compacted(),
+                de.aetherion.items.economy.Signatures.display("fish_trophy"));
+        registerLadderPeakSig(
                 "farming_helmet_5", RecipeCategory.FARMING, farming.helmet(5), Rarity.MYTHIC,
-                farming.helmet(4), CompressedResource.NETHER_WART.compacted(), CompressedResource.POTATO.compacted());
-        registerLadderPeak(
+                farming.helmet(4), CompressedResource.NETHER_WART.compacted(), CompressedResource.POTATO.compacted(),
+                de.aetherion.items.economy.Signatures.display("crystal_find"));
+        registerLadderPeakSig(
                 "farming_chestplate_5", RecipeCategory.FARMING, farming.chestplate(5), Rarity.MYTHIC,
-                farming.chestplate(4), CompressedResource.NETHER_WART.compacted(), CompressedResource.POTATO.compacted());
-        registerLadderPeak(
+                farming.chestplate(4), CompressedResource.NETHER_WART.compacted(), CompressedResource.POTATO.compacted(),
+                de.aetherion.items.economy.Signatures.display("crystal_find"));
+        registerLadderPeakSig(
                 "farming_leggings_5", RecipeCategory.FARMING, farming.leggings(5), Rarity.MYTHIC,
-                farming.leggings(4), CompressedResource.NETHER_WART.compacted(), CompressedResource.POTATO.compacted());
-        registerLadderPeak(
+                farming.leggings(4), CompressedResource.NETHER_WART.compacted(), CompressedResource.POTATO.compacted(),
+                de.aetherion.items.economy.Signatures.display("crystal_find"));
+        registerLadderPeakSig(
                 "farming_boots_5", RecipeCategory.FARMING, farming.boots(5), Rarity.MYTHIC,
-                farming.boots(4), CompressedResource.NETHER_WART.compacted(), CompressedResource.POTATO.compacted());
-        registerLadderPeak(
+                farming.boots(4), CompressedResource.NETHER_WART.compacted(), CompressedResource.POTATO.compacted(),
+                de.aetherion.items.economy.Signatures.display("crystal_find"));
+        registerLadderPeakSig(
                 "farming_hoe_5", RecipeCategory.FARMING, farming.hoe(5), Rarity.MYTHIC,
-                farming.hoe(4), CompressedResource.NETHER_WART.compacted(), CompressedResource.WHEAT.compacted());
+                farming.hoe(4), CompressedResource.NETHER_WART.compacted(), CompressedResource.WHEAT.compacted(),
+                de.aetherion.items.economy.Signatures.display("crystal_find"), customItem.createDungeonCore());
 
         ForagingItems foraging = customItem.foraging();
         // T1 Oak · T2 Birch+Spruce · T3 Jungle+Acacia compressed · T4 Dark Oak+Mangrove compacted · T5 Cherry+Bamboo compacted
@@ -864,36 +904,46 @@ public class RecipeRegistry {
         registerLadderMix(
                 "foraging_axe_3", RecipeCategory.FORAGING, foraging.axe(3), Rarity.EPIC,
                 foraging.axe(2), CompressedResource.JUNGLE_LOG.compressed(), CompressedResource.ACACIA_LOG.compressed());
-        registerLadderCross(
+        registerLadderCrossSig(
                 "foraging_helmet_4", RecipeCategory.FORAGING, foraging.helmet(4), Rarity.LEGENDARY,
-                foraging.helmet(3), CompressedResource.DARK_OAK_LOG.compacted(), CompressedResource.MANGROVE_LOG.compacted());
-        registerLadderCross(
+                foraging.helmet(3), CompressedResource.DARK_OAK_LOG.compacted(), CompressedResource.MANGROVE_LOG.compacted(),
+                de.aetherion.items.economy.Signatures.display("crystal_find"));
+        registerLadderCrossSig(
                 "foraging_chestplate_4", RecipeCategory.FORAGING, foraging.chestplate(4), Rarity.LEGENDARY,
-                foraging.chestplate(3), CompressedResource.DARK_OAK_LOG.compacted(), CompressedResource.MANGROVE_LOG.compacted());
-        registerLadderCross(
+                foraging.chestplate(3), CompressedResource.DARK_OAK_LOG.compacted(), CompressedResource.MANGROVE_LOG.compacted(),
+                de.aetherion.items.economy.Signatures.display("crystal_find"));
+        registerLadderCrossSig(
                 "foraging_leggings_4", RecipeCategory.FORAGING, foraging.leggings(4), Rarity.LEGENDARY,
-                foraging.leggings(3), CompressedResource.DARK_OAK_LOG.compacted(), CompressedResource.MANGROVE_LOG.compacted());
-        registerLadderCross(
+                foraging.leggings(3), CompressedResource.DARK_OAK_LOG.compacted(), CompressedResource.MANGROVE_LOG.compacted(),
+                de.aetherion.items.economy.Signatures.display("crystal_find"));
+        registerLadderCrossSig(
                 "foraging_boots_4", RecipeCategory.FORAGING, foraging.boots(4), Rarity.LEGENDARY,
-                foraging.boots(3), CompressedResource.DARK_OAK_LOG.compacted(), CompressedResource.MANGROVE_LOG.compacted());
-        registerLadderCross(
+                foraging.boots(3), CompressedResource.DARK_OAK_LOG.compacted(), CompressedResource.MANGROVE_LOG.compacted(),
+                de.aetherion.items.economy.Signatures.display("crystal_find"));
+        registerLadderCrossSig(
                 "foraging_axe_4", RecipeCategory.FORAGING, foraging.axe(4), Rarity.LEGENDARY,
-                foraging.axe(3), CompressedResource.DARK_OAK_LOG.compacted(), CompressedResource.MANGROVE_LOG.compacted());
-        registerLadderPeak(
+                foraging.axe(3), CompressedResource.DARK_OAK_LOG.compacted(), CompressedResource.MANGROVE_LOG.compacted(),
+                de.aetherion.items.economy.Signatures.display("crystal_find"));
+        registerLadderPeakSig(
                 "foraging_helmet_5", RecipeCategory.FORAGING, foraging.helmet(5), Rarity.MYTHIC,
-                foraging.helmet(4), CompressedResource.CHERRY_LOG.compacted(), CompressedResource.BAMBOO_BLOCK.compacted());
-        registerLadderPeak(
+                foraging.helmet(4), CompressedResource.CHERRY_LOG.compacted(), CompressedResource.BAMBOO_BLOCK.compacted(),
+                de.aetherion.items.economy.Signatures.display("fish_trophy"));
+        registerLadderPeakSig(
                 "foraging_chestplate_5", RecipeCategory.FORAGING, foraging.chestplate(5), Rarity.MYTHIC,
-                foraging.chestplate(4), CompressedResource.CHERRY_LOG.compacted(), CompressedResource.BAMBOO_BLOCK.compacted());
-        registerLadderPeak(
+                foraging.chestplate(4), CompressedResource.CHERRY_LOG.compacted(), CompressedResource.BAMBOO_BLOCK.compacted(),
+                de.aetherion.items.economy.Signatures.display("fish_trophy"));
+        registerLadderPeakSig(
                 "foraging_leggings_5", RecipeCategory.FORAGING, foraging.leggings(5), Rarity.MYTHIC,
-                foraging.leggings(4), CompressedResource.CHERRY_LOG.compacted(), CompressedResource.BAMBOO_BLOCK.compacted());
-        registerLadderPeak(
+                foraging.leggings(4), CompressedResource.CHERRY_LOG.compacted(), CompressedResource.BAMBOO_BLOCK.compacted(),
+                de.aetherion.items.economy.Signatures.display("fish_trophy"));
+        registerLadderPeakSig(
                 "foraging_boots_5", RecipeCategory.FORAGING, foraging.boots(5), Rarity.MYTHIC,
-                foraging.boots(4), CompressedResource.CHERRY_LOG.compacted(), CompressedResource.BAMBOO_BLOCK.compacted());
-        registerLadderPeak(
+                foraging.boots(4), CompressedResource.CHERRY_LOG.compacted(), CompressedResource.BAMBOO_BLOCK.compacted(),
+                de.aetherion.items.economy.Signatures.display("fish_trophy"));
+        registerLadderPeakSig(
                 "foraging_axe_5", RecipeCategory.FORAGING, foraging.axe(5), Rarity.MYTHIC,
-                foraging.axe(4), CompressedResource.CHERRY_LOG.compacted(), CompressedResource.BAMBOO_BLOCK.compacted());
+                foraging.axe(4), CompressedResource.CHERRY_LOG.compacted(), CompressedResource.BAMBOO_BLOCK.compacted(),
+                de.aetherion.items.economy.Signatures.display("fish_trophy"), customItem.createDungeonCore());
 
         FishingItems fishing = customItem.fishing();
         registerSimple(
@@ -971,36 +1021,77 @@ public class RecipeRegistry {
         registerLadderMix(
                 "fishing_rod_3", RecipeCategory.FISHING, fishing.rod(3), Rarity.EPIC,
                 fishing.rod(2), CompressedResource.PUFFERFISH.compressed(), CompressedResource.SALMON.compressed());
-        registerLadderCross(
+        registerLadderCrossSig(
                 "fishing_helmet_4", RecipeCategory.FISHING, fishing.helmet(4), Rarity.LEGENDARY,
-                fishing.helmet(3), CompressedResource.PRISMARINE_SHARD.compacted(), CompressedResource.SALMON.compacted());
-        registerLadderCross(
+                fishing.helmet(3), CompressedResource.PRISMARINE_SHARD.compacted(), CompressedResource.SALMON.compacted(),
+                de.aetherion.items.economy.Signatures.display("prize_crop"));
+        registerLadderCrossSig(
                 "fishing_chestplate_4", RecipeCategory.FISHING, fishing.chestplate(4), Rarity.LEGENDARY,
-                fishing.chestplate(3), CompressedResource.PRISMARINE_SHARD.compacted(), CompressedResource.SALMON.compacted());
-        registerLadderCross(
+                fishing.chestplate(3), CompressedResource.PRISMARINE_SHARD.compacted(), CompressedResource.SALMON.compacted(),
+                de.aetherion.items.economy.Signatures.display("prize_crop"));
+        registerLadderCrossSig(
                 "fishing_leggings_4", RecipeCategory.FISHING, fishing.leggings(4), Rarity.LEGENDARY,
-                fishing.leggings(3), CompressedResource.PRISMARINE_SHARD.compacted(), CompressedResource.SALMON.compacted());
-        registerLadderCross(
+                fishing.leggings(3), CompressedResource.PRISMARINE_SHARD.compacted(), CompressedResource.SALMON.compacted(),
+                de.aetherion.items.economy.Signatures.display("prize_crop"));
+        registerLadderCrossSig(
                 "fishing_boots_4", RecipeCategory.FISHING, fishing.boots(4), Rarity.LEGENDARY,
-                fishing.boots(3), CompressedResource.PRISMARINE_SHARD.compacted(), CompressedResource.SALMON.compacted());
-        registerLadderCross(
+                fishing.boots(3), CompressedResource.PRISMARINE_SHARD.compacted(), CompressedResource.SALMON.compacted(),
+                de.aetherion.items.economy.Signatures.display("prize_crop"));
+        registerLadderCrossSig(
                 "fishing_rod_4", RecipeCategory.FISHING, fishing.rod(4), Rarity.LEGENDARY,
-                fishing.rod(3), CompressedResource.PRISMARINE_SHARD.compacted(), CompressedResource.SALMON.compacted());
-        registerLadderPeak(
+                fishing.rod(3), CompressedResource.PRISMARINE_SHARD.compacted(), CompressedResource.SALMON.compacted(),
+                de.aetherion.items.economy.Signatures.display("prize_crop"));
+        registerLadderPeakSig(
                 "fishing_helmet_5", RecipeCategory.FISHING, fishing.helmet(5), Rarity.MYTHIC,
-                fishing.helmet(4), CompressedResource.PRISMARINE_SHARD.compacted(), CompressedResource.PUFFERFISH.compacted());
-        registerLadderPeak(
+                fishing.helmet(4), CompressedResource.PRISMARINE_SHARD.compacted(), CompressedResource.PUFFERFISH.compacted(),
+                de.aetherion.items.economy.IsleHeartwood.BAMBOO.create());
+        registerLadderPeakSig(
                 "fishing_chestplate_5", RecipeCategory.FISHING, fishing.chestplate(5), Rarity.MYTHIC,
-                fishing.chestplate(4), CompressedResource.PRISMARINE_SHARD.compacted(), CompressedResource.PUFFERFISH.compacted());
-        registerLadderPeak(
+                fishing.chestplate(4), CompressedResource.PRISMARINE_SHARD.compacted(), CompressedResource.PUFFERFISH.compacted(),
+                de.aetherion.items.economy.IsleHeartwood.BAMBOO.create());
+        registerLadderPeakSig(
                 "fishing_leggings_5", RecipeCategory.FISHING, fishing.leggings(5), Rarity.MYTHIC,
-                fishing.leggings(4), CompressedResource.PRISMARINE_SHARD.compacted(), CompressedResource.PUFFERFISH.compacted());
-        registerLadderPeak(
+                fishing.leggings(4), CompressedResource.PRISMARINE_SHARD.compacted(), CompressedResource.PUFFERFISH.compacted(),
+                de.aetherion.items.economy.IsleHeartwood.BAMBOO.create());
+        registerLadderPeakSig(
                 "fishing_boots_5", RecipeCategory.FISHING, fishing.boots(5), Rarity.MYTHIC,
-                fishing.boots(4), CompressedResource.PRISMARINE_SHARD.compacted(), CompressedResource.PUFFERFISH.compacted());
-        registerLadderPeak(
+                fishing.boots(4), CompressedResource.PRISMARINE_SHARD.compacted(), CompressedResource.PUFFERFISH.compacted(),
+                de.aetherion.items.economy.IsleHeartwood.BAMBOO.create());
+        registerLadderPeakSig(
                 "fishing_rod_5", RecipeCategory.FISHING, fishing.rod(5), Rarity.MYTHIC,
-                fishing.rod(4), CompressedResource.PRISMARINE_SHARD.compacted(), CompressedResource.PUFFERFISH.compacted());
+                fishing.rod(4), CompressedResource.PRISMARINE_SHARD.compacted(), CompressedResource.PUFFERFISH.compacted(),
+                de.aetherion.items.economy.IsleHeartwood.BAMBOO.create(), customItem.createDungeonCore());
+
+        /*
+         * PINNACLE KEY (P6, design §5): one of each Signature + Spectacle Star + Core III + the bank.
+         * "I couldn't get here on one activity alone." No skill gate — every part can be traded.
+         */
+        Map<Character, ItemStack> summons = new LinkedHashMap<>();
+        summons.put('H', de.aetherion.items.economy.IsleHeartwood.CHERRY.create());
+        summons.put('S', customItem.createSpectacleStar());
+        summons.put('C', de.aetherion.items.economy.Signatures.display("crystal_find"));
+        summons.put('T', de.aetherion.items.economy.Signatures.display("fish_trophy"));
+        summons.put('D', customItem.createDungeonCore3());
+        summons.put('P', de.aetherion.items.economy.Signatures.display("prize_crop"));
+        summons.put('A', CompressedResource.DIAMOND.compacted());
+        summons.put('E', CompressedResource.EMERALD.compacted());
+        registerSimple(
+                "aetherion_summons",
+                RecipeCategory.COMBAT,
+                customItem.createAetherionSummons(),
+                Rarity.MYTHIC,
+                List.of("HSC", "TDP", "AEA"),
+                summons
+        );
+
+        /*
+         * DIVING SET (P2, fixes an orphan: factory + value, no recipe).
+         * Plus shape on the fishing T3 piece: 2 compressed prismarine + 1 compressed pufferfish + 1 Trophy Fish.
+         */
+        registerDiving("diving_helmet", fishing.divingHelmet(), fishing.helmet(3), "fishing_helmet_3");
+        registerDiving("diving_chestplate", fishing.divingChestplate(), fishing.chestplate(3), "fishing_chestplate_3");
+        registerDiving("diving_leggings", fishing.divingLeggings(), fishing.leggings(3), "fishing_leggings_3");
+        registerDiving("diving_boots", fishing.divingBoots(), fishing.boots(3), "fishing_boots_3");
 
         registerCharms(customItem.accessories());
 
@@ -1514,6 +1605,149 @@ public class RecipeRegistry {
 
         registerResourceCompression();
         registerSacks();
+        registerSkillSacks();
+        registerCatchSpheres();
+    }
+
+    /**
+     * Leather bag (Resources) → skill Sack I/II/III in each skill category.
+     * T1 = bag + 8 raw · T2 = T1 + 4 compressed · T3 = T2 + 2 compacted.
+     */
+    private void registerSkillSacks() {
+        Map<Character, ItemStack> bag = new LinkedHashMap<>();
+        bag.put('L', new ItemStack(Material.LEATHER));
+        registerSimple(
+                de.aetherion.items.storage.SkillSack.LEATHER_BAG_ID,
+                RecipeCategory.RESOURCES,
+                de.aetherion.items.storage.SkillSack.createLeatherBag(),
+                Rarity.COMMON,
+                List.of("LLL", "L L", "LLL"),
+                bag
+        );
+
+        for (de.aetherion.items.storage.SkillSack.Skill skill
+                : de.aetherion.items.storage.SkillSack.Skill.values()) {
+            RecipeCategory category = switch (skill) {
+                case MINING -> RecipeCategory.MINING;
+                case FARMING -> RecipeCategory.FARMING;
+                case FORAGING -> RecipeCategory.FORAGING;
+                case FISHING -> RecipeCategory.FISHING;
+            };
+            CompressedResource resource = de.aetherion.items.storage.SkillSack.craftResource(skill);
+            String t1 = de.aetherion.items.storage.SkillSack.itemId(
+                    skill, de.aetherion.items.storage.SkillSack.Tier.T1);
+            String t2 = de.aetherion.items.storage.SkillSack.itemId(
+                    skill, de.aetherion.items.storage.SkillSack.Tier.T2);
+            String t3 = de.aetherion.items.storage.SkillSack.itemId(
+                    skill, de.aetherion.items.storage.SkillSack.Tier.T3);
+
+            Map<Character, ItemStack> raw = new LinkedHashMap<>();
+            raw.put('B', de.aetherion.items.storage.SkillSack.createLeatherBag());
+            raw.put('R', new ItemStack(resource.input()));
+            registerSimple(
+                    t1,
+                    category,
+                    de.aetherion.items.storage.SkillSack.create(
+                            skill, de.aetherion.items.storage.SkillSack.Tier.T1),
+                    Rarity.UNCOMMON,
+                    List.of("RRR", "RBR", "RRR"),
+                    raw,
+                    new CraftedPredecessorRequirement(de.aetherion.items.storage.SkillSack.LEATHER_BAG_ID)
+            );
+
+            Map<Character, ItemStack> compressed = new LinkedHashMap<>();
+            compressed.put('B', de.aetherion.items.storage.SkillSack.create(
+                    skill, de.aetherion.items.storage.SkillSack.Tier.T1));
+            compressed.put('C', resource.compressed());
+            registerSimple(
+                    t2,
+                    category,
+                    de.aetherion.items.storage.SkillSack.create(
+                            skill, de.aetherion.items.storage.SkillSack.Tier.T2),
+                    Rarity.RARE,
+                    List.of(" C ", "CBC", " C "),
+                    compressed,
+                    new CraftedPredecessorRequirement(t1)
+            );
+
+            Map<Character, ItemStack> compacted = new LinkedHashMap<>();
+            compacted.put('B', de.aetherion.items.storage.SkillSack.create(
+                    skill, de.aetherion.items.storage.SkillSack.Tier.T2));
+            compacted.put('M', resource.compacted());
+            registerSimple(
+                    t3,
+                    category,
+                    de.aetherion.items.storage.SkillSack.create(
+                            skill, de.aetherion.items.storage.SkillSack.Tier.T3),
+                    Rarity.EPIC,
+                    List.of(" M ", " B ", " M "),
+                    compacted,
+                    new CraftedPredecessorRequirement(t2)
+            );
+        }
+    }
+
+    /**
+     * Catch spheres in Aethermobs (last column). Soft-depends on AetherMobs for the item look.
+     * Safe to call again after AetherMobs enables — overwrites the same recipe ids.
+     */
+    public void registerCatchSpheres() {
+        ItemStack common = catchSphereItem("common");
+        ItemStack rare = catchSphereItem("rare");
+        ItemStack epic = catchSphereItem("epic");
+        if (common == null || rare == null || epic == null) {
+            return;
+        }
+
+        Map<Character, ItemStack> c = new LinkedHashMap<>();
+        c.put('W', new ItemStack(Material.OAK_PLANKS));
+        c.put('C', new ItemStack(Material.COAL));
+        registerSimple(
+                "catch_sphere_common",
+                RecipeCategory.AETHER_MOBS,
+                common,
+                Rarity.COMMON,
+                List.of("CWC", "W W", "CWC"),
+                c
+        );
+
+        Map<Character, ItemStack> r = new LinkedHashMap<>();
+        r.put('W', new ItemStack(Material.OAK_PLANKS));
+        r.put('G', new ItemStack(Material.GOLD_INGOT));
+        registerSimple(
+                "catch_sphere_rare",
+                RecipeCategory.AETHER_MOBS,
+                rare,
+                Rarity.RARE,
+                List.of("GWG", "W W", "GWG"),
+                r
+        );
+
+        Map<Character, ItemStack> e = new LinkedHashMap<>();
+        e.put('W', new ItemStack(Material.OAK_PLANKS));
+        e.put('D', new ItemStack(Material.DIAMOND));
+        registerSimple(
+                "catch_sphere_epic",
+                RecipeCategory.AETHER_MOBS,
+                epic,
+                Rarity.EPIC,
+                List.of("DWD", "W W", "DWD"),
+                e
+        );
+    }
+
+    private static ItemStack catchSphereItem(String id) {
+        try {
+            org.bukkit.plugin.Plugin plugin = org.bukkit.Bukkit.getPluginManager().getPlugin("AetherMobs");
+            if (plugin == null) {
+                return null;
+            }
+            return (ItemStack) plugin.getClass()
+                    .getMethod("createDevCatchSphere", String.class)
+                    .invoke(plugin, id);
+        } catch (Throwable ignored) {
+            return null;
+        }
     }
 
     private void registerCharms(AccessoryItems charms) {
@@ -2302,6 +2536,134 @@ public class RecipeRegistry {
                 rarity,
                 List.of(" S ", "SCS", " P "),
                 createMixedIngredients('S', support, 'C', center, 'P', premium)
+        );
+    }
+
+    /*
+     * =========================================================
+     * PROGRESSION P2 — cross-domain T4/T5 (design §4.3)
+     * Same mats as the Wave 2 ladders, plus one Signature from a neighbour isle
+     * (and on T5 tools one Dungeon Core / on the T5 sword one boss Trophy).
+     * The previous piece stays the centre; ingredient order is unchanged so the
+     * upgrade carry-over picks the same template as before.
+     * =========================================================
+     */
+
+    /**
+     * Diving piece: {@code  P  / PCF /  T } — C = fishing T3 piece, P = compressed prismarine,
+     * F = compressed pufferfish, T = any Trophy Fish.
+     */
+    private void registerDiving(String id, ItemStack result, ItemStack fishingT3, String predecessor) {
+        Map<Character, ItemStack> ingredients = createMixedIngredients(
+                'P', CompressedResource.PRISMARINE_SHARD.compressed(),
+                'F', CompressedResource.PUFFERFISH.compressed(),
+                'C', fishingT3);
+        ingredients.put('T', de.aetherion.items.economy.Signatures.display("fish_trophy"));
+        registerSimple(
+                id,
+                RecipeCategory.FISHING,
+                result,
+                Rarity.RARE,
+                List.of(" P ", "PCF", " T "),
+                ingredients,
+                new CraftedPredecessorRequirement(predecessor)
+        );
+    }
+
+    /**
+     * T4 cross + Signature in the empty top slot.
+     * Shape: {@code ASB /  C  / B A}
+     */
+    private void registerLadderCrossSig(
+            String id,
+            RecipeCategory category,
+            ItemStack result,
+            Rarity rarity,
+            ItemStack center,
+            ItemStack first,
+            ItemStack second,
+            ItemStack signature
+    ) {
+        Map<Character, ItemStack> ingredients = createMixedIngredients('A', first, 'B', second, 'C', center);
+        ingredients.put('S', signature.clone());
+        registerSimple(
+                id,
+                category,
+                result,
+                rarity,
+                List.of("ASB", " C ", "B A"),
+                ingredients
+        );
+    }
+
+    /**
+     * T5 peak + Signature top-left.
+     * Shape: {@code XS  / SCS /  P }
+     */
+    private void registerLadderPeakSig(
+            String id,
+            RecipeCategory category,
+            ItemStack result,
+            Rarity rarity,
+            ItemStack center,
+            ItemStack premium,
+            ItemStack support,
+            ItemStack signature
+    ) {
+        Map<Character, ItemStack> ingredients = createMixedIngredients('S', support, 'C', center, 'P', premium);
+        ingredients.put('X', signature.clone());
+        registerSimple(
+                id,
+                category,
+                result,
+                rarity,
+                List.of("XS ", "SCS", " P "),
+                ingredients
+        );
+    }
+
+    /**
+     * T5 peak + Signature top-left + one extra (Dungeon Core or boss Trophy) bottom-left.
+     * Shape: {@code XS  / SCS / EP }
+     */
+    private void registerLadderPeakSig(
+            String id,
+            RecipeCategory category,
+            ItemStack result,
+            Rarity rarity,
+            ItemStack center,
+            ItemStack premium,
+            ItemStack support,
+            ItemStack signature,
+            ItemStack extra
+    ) {
+        registerLadderPeakSig(id, category, result, rarity, center, premium, support, signature, extra,
+                UnlockRequirement.ALWAYS_UNLOCKED);
+    }
+
+    private void registerLadderPeakSig(
+            String id,
+            RecipeCategory category,
+            ItemStack result,
+            Rarity rarity,
+            ItemStack center,
+            ItemStack premium,
+            ItemStack support,
+            ItemStack signature,
+            ItemStack extra,
+            UnlockRequirement unlock
+    ) {
+        Map<Character, ItemStack> ingredients = createMixedIngredients('S', support, 'C', center, 'P', premium);
+        ingredients.put('X', signature.clone());
+        ingredients.put('E', extra.clone());
+        registerSimple(
+                id,
+                category,
+                result,
+                rarity,
+                List.of("XS ", "SCS", "EP "),
+                ingredients,
+                unlock
         );
     }
 }

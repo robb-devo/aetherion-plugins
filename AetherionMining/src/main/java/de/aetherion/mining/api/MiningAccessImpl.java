@@ -55,6 +55,15 @@ public final class MiningAccessImpl implements MiningAccess {
     }
 
     @Override
+    public boolean enterAmethystMine(Player player) {
+        AetherionMining plugin = AetherionMining.getInstance();
+        if (plugin == null || plugin.getVeins() == null || player == null) {
+            return false;
+        }
+        return plugin.getVeins().enter(player);
+    }
+
+    @Override
     public void sealForVacuum(Player player, Block block, BlockData original) {
         MiningListener.sealForVacuum(player, block, original);
     }

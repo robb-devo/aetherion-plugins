@@ -8,10 +8,15 @@ import de.aetherion.beta.data.BetaStore;
 import de.aetherion.beta.item.BetaBook;
 import de.aetherion.beta.menu.ChecklistMenu;
 import de.aetherion.beta.menu.LanguageMenu;
+import de.aetherion.core.api.AetherServices;
+import de.aetherion.core.api.TalkAccess;
+
+import net.kyori.adventure.text.format.NamedTextColor;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Entity;
@@ -21,6 +26,7 @@ import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -67,6 +73,14 @@ public final class BetaNpcService {
     }
 
     public void placeAnchor(Location location) {
+        placeAnchor(location, null);
+    }
+
+    /**
+     * Set the shared anchor. When {@code placer} is set, they always get a personal
+     * courier here (even if they already finished MEET_GUIDE) so admins can see it.
+     */
+    public void placeAnchor(Location location, Player placer) {
         FileConfiguration config = plugin.getConfig();
         config.set("npc.enabled", true);
         config.set("npc.world", location.getWorld().getName());
@@ -77,6 +91,22 @@ public final class BetaNpcService {
         config.set("npc.pitch", location.getPitch());
         plugin.saveConfig();
         respawnAll();
+        if (placer != null && placer.isOnline()) {
+            forceEnsureFor(placer);
+        }
+    }
+
+    /** Spawn (or re-teleport) the personal courier ignoring book / milestone gates. */
+    public void forceEnsureFor(Player player) {
+        if (player == null || !hasAnchor()) {
+            return;
+        }
+        Location anchor = anchor();
+        if (anchor == null) {
+            return;
+        }
+        despawnFor(player);
+        spawnPersonal(player, anchor);
     }
 
     public void clearAnchor() {
@@ -180,6 +210,8 @@ public final class BetaNpcService {
         }
     }
 
+    private static final String SPEAKER_ID = "beta_courier";
+
     public void interact(Player player, Entity entity) {
         UUID owner = ownerOf(entity);
         if (owner == null || !owner.equals(player.getUniqueId())) {
@@ -187,21 +219,83 @@ public final class BetaNpcService {
         }
         BetaPlayerData data = store.get(player.getUniqueId());
         data.setName(player.getName());
-        data.mark(de.aetherion.beta.Milestone.MEET_GUIDE, true);
-
         BetaLang lang = data.langOr(BetaLang.EN);
-        player.sendMessage(Texts.npcGreeting(lang, player.getName()));
-        player.sendMessage(Texts.npcGreeting2(lang));
-        giveBook(player, data, lang);
-        player.sendMessage(Texts.npcFarewell(lang));
 
-        // Let the chat lines sink in, then despawn, then open the menu.
+        TalkAccess talk = AetherServices.talk();
+        if (talk != null && talk.bubbles(player)) {
+            String display = lang == BetaLang.DE ? "Patch-Kurier" : "Patch Courier";
+            talk.registerSpeaker(new TalkAccess.Speaker(
+                    SPEAKER_ID, display, "§d", "isle_hand", entity::getLocation));
+            if (talk.recentlyPicked(player)) {
+                return;
+            }
+            if (talk.hasReplies(player, SPEAKER_ID)) {
+                talk.pulse(player);
+                return;
+            }
+            if (talk.talkingWith(player, SPEAKER_ID)) {
+                offerDoneChip(player, lang, data);
+                return;
+            }
+            player.playSound(entity.getLocation(), Sound.ENTITY_VILLAGER_CELEBRATE, 0.55f, 1.2f);
+            if (!talk.say(player, SPEAKER_ID, Texts.bubbleThanks(lang, player.getName()))) {
+                chatFallback(player, entity, data, lang);
+                return;
+            }
+            talk.say(player, SPEAKER_ID, Texts.bubbleBook(lang));
+            giveBook(player, data, lang, false);
+            de.aetherion.beta.BetaJournal.progress(plugin, player, de.aetherion.beta.Milestone.MEET_GUIDE);
+            offerDoneChip(player, lang, data);
+            return;
+        }
+
+        chatFallback(player, entity, data, lang);
+    }
+
+    private void offerDoneChip(Player player, BetaLang lang, BetaPlayerData data) {
+        TalkAccess talk = AetherServices.talk();
+        if (talk == null) {
+            return;
+        }
+        String chip = Texts.bubbleChip(lang);
+        talk.replies(player, SPEAKER_ID, List.of(
+                new TalkAccess.Reply(chip, NamedTextColor.GREEN, () -> finishTalk(player, data), chip)
+        ));
+    }
+
+    private void finishTalk(Player player, BetaPlayerData data) {
+        TalkAccess talk = AetherServices.talk();
+        if (talk != null) {
+            talk.end(player);
+        }
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (player.isOnline()) {
+                despawnFor(player);
+            }
+        }, 8L);
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (!player.isOnline()) {
+                return;
+            }
+            if (data.lang() == null) {
+                LanguageMenu.open(plugin, player);
+            } else {
+                ChecklistMenu.open(plugin, player);
+            }
+        }, 12L);
+    }
+
+    private void chatFallback(Player player, Entity entity, BetaPlayerData data, BetaLang lang) {
+        player.sendMessage(Texts.npcGreeting(lang, player.getName()));
+        player.playSound(entity.getLocation(), Sound.ENTITY_VILLAGER_CELEBRATE, 0.7f, 1.2f);
+        giveBook(player, data, lang, true);
+        de.aetherion.beta.BetaJournal.progress(plugin, player, de.aetherion.beta.Milestone.MEET_GUIDE);
+        player.sendMessage(Texts.npcFarewell(lang));
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             if (player.isOnline()) {
                 despawnFor(player);
             }
         }, 35L);
-
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             if (!player.isOnline()) {
                 return;
@@ -215,11 +309,17 @@ public final class BetaNpcService {
     }
 
     public void giveBook(Player player, BetaPlayerData data, BetaLang lang) {
+        giveBook(player, data, lang, true);
+    }
+
+    public void giveBook(Player player, BetaPlayerData data, BetaLang lang, boolean chat) {
         if (hasBook(player)) {
             if (!data.bookGiven()) {
                 data.setBookGiven(true);
             }
-            player.sendMessage(Texts.alreadyHaveBook(lang));
+            if (chat) {
+                player.sendMessage(Texts.alreadyHaveBook(lang));
+            }
             return;
         }
         ItemStack created = book.create(lang);
@@ -228,8 +328,9 @@ public final class BetaNpcService {
             player.getWorld().dropItemNaturally(player.getLocation(), created);
         }
         data.setBookGiven(true);
-        data.mark(de.aetherion.beta.Milestone.MEET_GUIDE, true);
-        player.sendMessage(Texts.bookGiven(lang));
+        if (chat) {
+            player.sendMessage(Texts.bookGiven(lang));
+        }
     }
 
     public boolean hasBook(Player player) {

@@ -20,8 +20,9 @@ spawn:
 # Always send players here when they join the hub (network entry).
 force-spawn-on-join: true
 
-# Velocity / Bungee server name for the MMO capital.
+# Velocity backend id (internal). Chat shows aetherion-display-name instead.
 aetherion-server: mmo-r
+aetherion-display-name: Aetherion
 
 # Clickable Discord invite (open URL on Discord NPC click).
 # Leave empty to auto-pick from DiscordSRV DiscordInviteLink when available.

@@ -563,7 +563,7 @@ public final class StructureService {
     /** Checks limits, workshop and item requirements. Returns null when fine, else the reason. */
     public String blockedReason(Player player, IslandHost host, StructureType type) {
         if (!type.buildable()) {
-            return "This isn't built from the Build menu.";
+            return "This isn't built with the Build Tool.";
         }
         if (!hosts.canPlace(player, host)) {
             return host.isGuild() ? "Soldiers and above can build structures." : "Only the island owner can build here.";
@@ -573,20 +573,128 @@ public final class StructureService {
             return "Limit reached (" + limit(host, type) + " at Island Tier " + tier + ").";
         }
         if (type.needsWorkshop() && !hasWorkshop(host)) {
-            return "Found your Hub first (build the Workshop).";
+            return "Build your Hub first.";
         }
         if ((type == StructureType.FORGE || type == StructureType.OVERFLOW || type == StructureType.SORTER)
                 && hubLevel(host) < 2) {
-            return "Needs the Foreman's Hall (upgrade your Hub).";
+            return "Needs Hub tier 2 (upgrade it at the Hub).";
         }
-        if ((type == StructureType.OVERFLOW || type == StructureType.SORTER) && count(host, StructureType.SPLITTER) == 0) {
-            return "Unlocks after your first Splitter.";
-        }
-        if (type.itemId() != null && AetherionItemsAccess.available()
-                && AetherionItemsAccess.count(player, type.itemId()) < 1) {
-            return "Needs 1 " + itemName(type.itemId()) + " in your inventory.";
+        if (!unlocks.test(host, type)) {
+            return "Unlock it at your Hub first.";
         }
         return null;
+    }
+
+    // ------------------------------------------------------------------------------------------------
+    // the island's storage pays for building (Satisfactory-style)
+    // ------------------------------------------------------------------------------------------------
+
+    private java.util.function.BiPredicate<IslandHost, StructureType> unlocks = (host, type) -> true;
+    private java.util.function.BiConsumer<IslandHost, String> milestone = (host, step) -> {
+    };
+
+    public void attachProgress(java.util.function.BiPredicate<IslandHost, StructureType> unlocks,
+                               java.util.function.BiConsumer<IslandHost, String> milestone) {
+        this.unlocks = unlocks == null ? (host, type) -> true : unlocks;
+        this.milestone = milestone == null ? (host, step) -> {
+        } : milestone;
+    }
+
+    public void milestone(IslandHost host, String step) {
+        milestone.accept(host, step);
+    }
+
+    /** Has this island unlocked the part at its Hub (parts without an unlock are always open)? */
+    public boolean unlocked(IslandHost host, StructureType type) {
+        return unlocks.test(host, type);
+    }
+
+    /** How much of a good lies in the island's Storage Huts and Depots. */
+    public long stock(IslandHost host, Res res) {
+        long have = 0L;
+        for (PlacedStructure sink : of(host)) {
+            if (sink.type().role() == StructureType.Role.SINK) {
+                have += sink.store().getOrDefault(res, 0L);
+            }
+        }
+        return have;
+    }
+
+    public List<BuildCosts.Line> buildCost(IslandHost host, StructureType type) {
+        return BuildCosts.build(type, type == StructureType.STORAGE_HUT && count(host, StructureType.STORAGE_HUT) == 0);
+    }
+
+    /** What's missing to pay this bill ("needs 40 more Cobblestone in storage"), or null when it can be paid. */
+    public String missing(Player player, IslandHost host, List<BuildCosts.Line> bill) {
+        for (BuildCosts.Line line : bill) {
+            long have = line.coins() ? hosts.funds(player, host) : stock(host, line.res());
+            if (have < line.amount()) {
+                return "needs " + GuildFormat.compact(line.amount() - have) + " more " + line.label()
+                        + (line.coins() ? "" : " in storage");
+            }
+        }
+        return null;
+    }
+
+    /** Takes the bill (all or nothing): goods from the island's storage, coins from the player / guild bank. */
+    public boolean pay(Player player, IslandHost host, List<BuildCosts.Line> bill) {
+        String missing = missing(player, host, bill);
+        if (missing != null) {
+            player.sendMessage("§c" + Character.toUpperCase(missing.charAt(0)) + missing.substring(1) + ".");
+            return false;
+        }
+        long coins = 0L;
+        for (BuildCosts.Line line : bill) {
+            if (line.coins()) {
+                coins += line.amount();
+            }
+        }
+        if (!hosts.charge(player, host, coins)) {
+            return false;
+        }
+        for (BuildCosts.Line line : bill) {
+            if (!line.coins()) {
+                takeGoods(host, line.res(), line.amount());
+            }
+        }
+        dirty = true;
+        return true;
+    }
+
+    private long takeGoods(IslandHost host, Res res, long need) {
+        long taken = 0L;
+        for (PlacedStructure sink : of(host)) {
+            if (sink.type().role() == StructureType.Role.SINK && taken < need) {
+                taken += PlacedStructure.take(sink.store(), res, need - taken);
+            }
+        }
+        return taken;
+    }
+
+    /** Gives goods back to the island's storage (huts with room first); what doesn't fit goes to the player. */
+    public void giveGoods(Player player, IslandHost host, Res res, long amount) {
+        long left = amount;
+        for (PlacedStructure sink : of(host)) {
+            if (sink.type().role() != StructureType.Role.SINK || left <= 0L) {
+                continue;
+            }
+            long free = (sink.capacity() - PlacedStructure.total(sink.store())) / res.rawEquivalent(1L);
+            long put = Math.min(left, Math.max(0L, free));
+            if (put > 0L) {
+                PlacedStructure.add(sink.store(), res, put);
+                left -= put;
+            }
+        }
+        while (left > 0L && player != null && player.isOnline()) {
+            ItemStack stack = res.stack((int) Math.min(64L, left));
+            if (stack == null) {
+                break;
+            }
+            left -= stack.getAmount();
+            player.getInventory().addItem(stack).values()
+                    .forEach(rest -> player.getWorld().dropItemNaturally(player.getLocation(), rest));
+        }
+        dirty = true;
     }
 
     public static String itemName(String itemId) {
@@ -611,15 +719,19 @@ public final class StructureService {
             player.sendMessage("§c" + validation.reason() + ".");
             return null;
         }
-        long price = priceFor(host, type);
-        if (!hosts.charge(player, host, price)) {
+        List<BuildCosts.Line> bill = buildCost(host, type);
+        if (!pay(player, host, bill)) {
             return null;
         }
-        if (type.itemId() != null && AetherionItemsAccess.available()) {
-            AetherionItemsAccess.take(player, type.itemId(), 1);
-        }
+        String paid = BuildCosts.describe(bill);
         PlacedStructure structure = new PlacedStructure(UUID.randomUUID(), type, host, world.getName(), ax, ay, az, rot,
                 System.currentTimeMillis());
+        milestone.accept(host, switch (type) {
+            case STORAGE_HUT -> "first_hut";
+            case WORKSHOP -> "hub_founded";
+            case MILL, FORGE, DEPOT -> "first_machine";
+            default -> "first_build";
+        });
         structure.setBuilding(true);
         register(structure);
         changeListener.accept(host);
@@ -639,8 +751,7 @@ public final class StructureService {
             }
             if (player.isOnline()) {
                 player.sendTitle("§6✦ " + type.display() + " §6✦", "§7built on " + hosts.title(host), 5, 40, 15);
-                player.sendMessage("§a" + type.display() + " built" + (price > 0 ? " §8(§6" + GuildFormat.compact(price)
-                        + " " + hosts.fundsLabel(host) + "§8)" : " §8(free)") + "§a. " + nextHint(type));
+                player.sendMessage("§a" + type.display() + " built §8(" + paid + ")§a. " + nextHint(type));
             }
         });
         return structure;
@@ -649,7 +760,7 @@ public final class StructureService {
     private static String nextHint(StructureType type) {
         return switch (type) {
             case STORAGE_HUT -> "§7Run a belt into any wall and it fills itself.";
-            case WORKSHOP -> "§7Your Hub stands. Its lectern is the factory desk now.";
+            case WORKSHOP -> "§7Your Hub stands. Unlock new parts at its lectern.";
             case MILL, FORGE -> "§7Belt in on any side, belt out from the chute at the front.";
             case DEPOT -> "§7End any belt here.";
             case SPLITTER, OVERFLOW, SORTER -> "§7Belts leading away from it are its exits.";
@@ -959,17 +1070,26 @@ public final class StructureService {
         if (structure.type() == StructureType.WORKSHOP) {
             for (PlacedStructure other : of(host)) {
                 if (other.type().needsWorkshop()) {
-                    player.sendMessage("§cMills, forges, depots and belt pieces need the Workshop. Take those down first.");
+                    player.sendMessage("§cMills, Forges, Depots and belt pieces need the Hub. Take those down first.");
                     return false;
                 }
             }
         }
-        long refund = priceFor(host, structure.type()) / 2L;
-        if (structure.type() == StructureType.STORAGE_HUT && count(host, StructureType.STORAGE_HUT) <= 1) {
-            refund = 0L;
+        // remove first, then give back (half the goods it cost), so nothing can be paid out twice
+        List<BuildCosts.Line> bill = BuildCosts.build(structure.type(),
+                structure.type() == StructureType.STORAGE_HUT && count(host, StructureType.STORAGE_HUT) <= 1);
+        remove(structure, true);
+        long refund = 0L;
+        for (BuildCosts.Line line : structure.itemPaid() ? List.<BuildCosts.Line>of() : bill) {
+            // a machine built with a Quarry Mill/Forge item (before unlocks) gives that item back instead
+            if (line.coins()) {
+                refund += line.amount() / 2L;
+            } else if (line.amount() / 2L > 0L) {
+                giveGoods(player, host, line.res(), line.amount() / 2L);
+            }
         }
         hosts.refund(player, host, refund);
-        if (structure.type().itemId() != null && AetherionItemsAccess.available()) {
+        if (structure.itemPaid() && structure.type().itemId() != null && AetherionItemsAccess.available()) {
             de.aetherion.core.api.ItemFactoryAccess items = de.aetherion.core.api.AetherServices.items();
             ItemStack item = items == null ? null : items.create(structure.type().itemId());
             if (item != null) {
@@ -977,9 +1097,7 @@ public final class StructureService {
                         .forEach(left -> player.getWorld().dropItemNaturally(player.getLocation(), left));
             }
         }
-        remove(structure, true);
-        player.sendMessage("§7" + structure.type().display() + " taken down"
-                + (refund > 0 ? " §8(§6+" + GuildFormat.compact(refund) + "§8)" : "") + "§7.");
+        player.sendMessage("§7" + structure.type().display() + " taken down §8(half its cost went back to your storage)§7.");
         player.playSound(player.getLocation(), Sound.BLOCK_WOOD_BREAK, 0.8f, 0.8f);
         return true;
     }
@@ -1080,7 +1198,7 @@ public final class StructureService {
             return host.isGuild() ? "Soldiers and above can upgrade buildings." : "Only the island owner can upgrade.";
         }
         if (!atDesk(player, host)) {
-            return "Upgrades are done at your Hub: right-click the Workshop lectern.";
+            return "Upgrades are done at your Hub: right-click its lectern.";
         }
         if (hosts.tier(host) < tier.minIslandTier()) {
             return "Needs Island Tier " + tier.minIslandTier() + ".";
@@ -1149,6 +1267,9 @@ public final class StructureService {
     }
 
     public boolean upgrade(Player player, PlacedStructure structure, boolean buyMissing) {
+        if (structure.templateId() != null && Props.OLD_PRODUCTION.contains(structure.templateId())) {
+            migrateToProps(structure.host()); // an old pasted house becomes its prop first (keeps its floor)
+        }
         String blocked = upgradeBlocked(player, structure, buyMissing);
         if (blocked != null) {
             player.sendMessage("§c" + blocked);
@@ -1204,6 +1325,9 @@ public final class StructureService {
         world.playSound(new Location(world, structure.x() + 0.5, structure.y() + 2, structure.z() + 0.5),
                 Sound.BLOCK_SCAFFOLDING_PLACE, 1f, 0.8f);
         paste.transition(from, to, world, structure.x(), structure.y(), structure.z(), structure.rot(), true, job -> {
+            if (byId.get(structure.id()) != structure) {
+                return; // taken down meanwhile: never bring it back
+            }
             structure.setTemplateId(to.id());
             structure.setLevel(tier.level());
             structure.setBuilding(false);
@@ -1234,6 +1358,7 @@ public final class StructureService {
     }
 
     private void celebrateUpgrade(Player player, PlacedStructure structure, StructureUpgrades.Tier tier, World world) {
+        milestone.accept(structure.host(), "first_upgrade");
         if (world != null) {
             Location top = new Location(world, structure.x() + 0.5, structure.maxY() + 1.0, structure.z() + 0.5);
             world.spawnParticle(Particle.TOTEM_OF_UNDYING, top, 40, 1.2, 1.0, 1.2, 0.25);
@@ -1274,6 +1399,8 @@ public final class StructureService {
                 case MILL -> Props.MILL;
                 case FORGE -> Props.FORGE;
                 case DEPOT -> Props.DEPOT;
+                case STORAGE_HUT -> Props.HUT;
+                case WORKSHOP -> Props.HUB;
                 default -> null;
             };
             Template from = templates.get(old);
@@ -1335,6 +1462,7 @@ public final class StructureService {
             unregister(structure);
         }
         byHost.remove(host.key());
+        savedHosts.remove(host.key()); // its file was moved to islands/removed/: never write it again
         dirty = true;
     }
 
@@ -1352,50 +1480,65 @@ public final class StructureService {
         }
     }
 
-    public void save() {
-        YamlConfiguration config = new YamlConfiguration();
-        for (Map.Entry<String, Map<UUID, PlacedStructure>> entry : byHost.entrySet()) {
-            for (PlacedStructure s : entry.getValue().values()) {
-                String path = "hosts." + entry.getKey() + "." + s.id();
-                config.set(path + ".type", s.type().id());
-                config.set(path + ".world", s.world());
-                config.set(path + ".x", s.x());
-                config.set(path + ".y", s.y());
-                config.set(path + ".z", s.z());
-                config.set(path + ".rot", s.rot());
-                config.set(path + ".placed", s.placedAt());
-                if (s.frameless()) {
-                    config.set(path + ".frameless", true);
-                }
-                if (s.minionId() != null) {
-                    config.set(path + ".minion", s.minionId().toString());
-                }
-                if (!s.frameless() && s.templateId() != null) {
-                    config.set(path + ".template", s.templateId());
-                }
-                if (s.type() == StructureType.PROJECT) {
-                    config.set(path + ".project", s.projectId());
-                }
-                if (s.level() > 1) {
-                    config.set(path + ".level", s.level());
-                }
-                if (s.filter() != null) {
-                    config.set(path + ".filter", s.filter());
-                }
-                writeMap(config, path + ".store", s.store());
-                writeMap(config, path + ".in", s.input());
-                writeMap(config, path + ".out", s.output());
-            }
-        }
-        try {
-            AtomicYaml.save(config, file, plugin.getLogger());
-            dirty = false;
-        } catch (IOException exception) {
-            plugin.getLogger().warning("Could not save island_structures.yml: " + exception.getMessage());
-        }
+    private de.aetherion.guilds.island.IslandFiles files;
+    private final java.util.Set<String> savedHosts = new java.util.HashSet<>();
+
+    /** Saves go into one file per island (section {@code structures}). */
+    public void attachFiles(de.aetherion.guilds.island.IslandFiles files) {
+        this.files = files;
     }
 
-    private static void writeMap(YamlConfiguration config, String path, Map<Res, Long> map) {
+    public void save() {
+        if (files == null) {
+            return;
+        }
+        java.util.Set<String> keys = new java.util.HashSet<>(byHost.keySet());
+        keys.addAll(savedHosts);
+        for (String hostKey : keys) {
+            ConfigurationSection root = files.replace(hostKey, "structures");
+            Map<UUID, PlacedStructure> map = byHost.getOrDefault(hostKey, Map.of());
+            for (PlacedStructure s : map.values()) {
+                ConfigurationSection c = root.createSection(s.id().toString());
+                c.set("type", s.type().id());
+                c.set("world", s.world());
+                c.set("x", s.x());
+                c.set("y", s.y());
+                c.set("z", s.z());
+                c.set("rot", s.rot());
+                c.set("placed", s.placedAt());
+                if (s.frameless()) {
+                    c.set("frameless", true);
+                }
+                if (s.minionId() != null) {
+                    c.set("minion", s.minionId().toString());
+                }
+                if (!s.frameless() && s.templateId() != null) {
+                    c.set("template", s.templateId());
+                }
+                if (s.type() == StructureType.PROJECT) {
+                    c.set("project", s.projectId());
+                }
+                if (s.level() > 1) {
+                    c.set("level", s.level());
+                }
+                if (s.filter() != null) {
+                    c.set("filter", s.filter());
+                }
+                if (s.itemPaid()) {
+                    c.set("item-paid", true);
+                }
+                writeMap(c, "store", s.store());
+                writeMap(c, "in", s.input());
+                writeMap(c, "out", s.output());
+            }
+        }
+        savedHosts.clear();
+        savedHosts.addAll(byHost.keySet());
+        files.flush();
+        dirty = false;
+    }
+
+    private static void writeMap(ConfigurationSection config, String path, Map<Res, Long> map) {
         for (Map.Entry<Res, Long> entry : map.entrySet()) {
             if (entry.getValue() != null && entry.getValue() > 0L) {
                 config.set(path + "." + entry.getKey().key(), entry.getValue());
@@ -1404,55 +1547,70 @@ public final class StructureService {
     }
 
     public void load() {
-        AtomicYaml.recoverTemp(file, plugin.getLogger());
-        if (!file.exists()) {
-            return;
-        }
-        YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
-        ConfigurationSection root = config.getConfigurationSection("hosts");
-        if (root == null) {
-            return;
-        }
         int loaded = 0;
-        for (String hostKey : root.getKeys(false)) {
-            IslandHost host = IslandHost.parse(hostKey);
-            ConfigurationSection hostSection = root.getConfigurationSection(hostKey);
-            if (host == null || hostSection == null) {
-                continue;
+        if (files.splitting()) {
+            YamlConfiguration old = files.legacy("island_structures.yml");
+            ConfigurationSection root = old == null ? null : old.getConfigurationSection("hosts");
+            if (root != null) {
+                for (String hostKey : root.getKeys(false)) {
+                    loaded += readHost(hostKey, root.getConfigurationSection(hostKey));
+                }
             }
-            for (String idKey : hostSection.getKeys(false)) {
-                ConfigurationSection s = hostSection.getConfigurationSection(idKey);
-                StructureType type = s == null ? null : StructureType.byId(s.getString("type"));
-                if (type == null) {
-                    continue;
-                }
-                try {
-                    PlacedStructure structure = new PlacedStructure(UUID.fromString(idKey), type, host,
-                            s.getString("world", ""), s.getInt("x"), s.getInt("y"), s.getInt("z"), s.getInt("rot"),
-                            s.getLong("placed"));
-                    structure.setFrameless(s.getBoolean("frameless", false));
-                    String minion = s.getString("minion");
-                    if (minion != null) {
-                        structure.setMinionId(UUID.fromString(minion));
-                    }
-                    // saved before the compact pass = no template id: keep the template it was built from
-                    structure.setTemplateId(s.getString("template", type.legacyTemplateId()));
-                    if (type == StructureType.PROJECT) {
-                        structure.setProjectId(s.getString("project"));
-                    }
-                    structure.setLevel(s.getInt("level", 1));
-                    structure.setFilter(s.getString("filter"));
-                    readMap(s.getConfigurationSection("store"), structure.store());
-                    readMap(s.getConfigurationSection("in"), structure.input());
-                    readMap(s.getConfigurationSection("out"), structure.output());
-                    register(structure);
-                    loaded++;
-                } catch (IllegalArgumentException ignored) {
-                }
+            save(); // fills the per-island sections; IslandFiles.finishSplit writes them
+        } else {
+            for (String hostKey : files.keys()) {
+                loaded += readHost(hostKey, files.doc(hostKey).getConfigurationSection("structures"));
             }
         }
+        savedHosts.addAll(byHost.keySet());
         dirty = false;
         plugin.getLogger().info("Island highlight: loaded " + loaded + " structures.");
+    }
+
+    private int readHost(String hostKey, ConfigurationSection hostSection) {
+        IslandHost host = IslandHost.parse(hostKey);
+        if (host == null || hostSection == null) {
+            return 0;
+        }
+        int loaded = 0;
+        for (String idKey : hostSection.getKeys(false)) {
+            ConfigurationSection s = hostSection.getConfigurationSection(idKey);
+            StructureType type = s == null ? null : StructureType.byId(s.getString("type"));
+            if (type == null) {
+                plugin.getLogger().warning("Island " + hostKey + ": skipped structure " + idKey + " (unknown type "
+                        + (s == null ? "?" : s.getString("type")) + ").");
+                continue;
+            }
+            try {
+                PlacedStructure structure = new PlacedStructure(UUID.fromString(idKey), type, host,
+                        s.getString("world", ""), s.getInt("x"), s.getInt("y"), s.getInt("z"), s.getInt("rot"),
+                        s.getLong("placed"));
+                structure.setFrameless(s.getBoolean("frameless", false));
+                String minion = s.getString("minion");
+                if (minion != null) {
+                    structure.setMinionId(UUID.fromString(minion));
+                }
+                // saved before the compact pass = no template id: keep the template it was built from
+                structure.setTemplateId(s.getString("template", type.legacyTemplateId()));
+                if (type == StructureType.PROJECT) {
+                    structure.setProjectId(s.getString("project"));
+                }
+                structure.setLevel(s.getInt("level", 1));
+                structure.setFilter(s.getString("filter"));
+                // before unlocks, a Mill/Forge took a Quarry Mill/Forge item: remember it so taking it down returns it
+                structure.setItemPaid(s.getBoolean("item-paid", files.splitting()
+                        && (type == StructureType.MILL || type == StructureType.FORGE)));
+                readMap(s.getConfigurationSection("store"), structure.store());
+                readMap(s.getConfigurationSection("in"), structure.input());
+                readMap(s.getConfigurationSection("out"), structure.output());
+                register(structure);
+                loaded++;
+            } catch (IllegalArgumentException exception) {
+                plugin.getLogger().warning("Island " + hostKey + ": skipped broken structure " + idKey + ": "
+                        + exception.getMessage());
+            }
+        }
+        return loaded;
     }
 
     private static void readMap(ConfigurationSection section, Map<Res, Long> map) {

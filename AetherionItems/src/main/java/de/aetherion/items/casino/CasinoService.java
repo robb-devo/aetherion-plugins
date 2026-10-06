@@ -40,7 +40,7 @@ public final class CasinoService implements Listener {
 
     public static final String NPC_NAME = "§6Lucky Vince";
     public static final String PREFIX = "§6Lucky Vince §8» §f";
-    public static final String LOBBY_TITLE = "§8Casino";
+    public static final String LOBBY_TITLE = "§8✦ §6§lCASINO §8✦";
 
     static final int LOBBY_SLOTS_SLOT = 11;
     static final int LOBBY_INFO_SLOT = 13;
@@ -153,35 +153,39 @@ public final class CasinoService implements Listener {
         for (int slot = 0; slot < inventory.getSize(); slot++) {
             inventory.setItem(slot, pane.clone());
         }
-        inventory.setItem(LOBBY_SLOTS_SLOT, GuiItems.named(
+        ItemStack slots = GuiItems.named(
                 Material.JUKEBOX,
-                "§eSlots",
-                "§7Seven reels. Add colored lines.",
-                "§7More lines, more coins on the table.",
-                "§7Crowns if you hate money correctly.",
+                "§6§lSLOTS",
+                "§7Match pictures. Win coins.",
+                "§8Books give free spins.",
                 "",
-                "§eClick to sit down."
-        ));
+                "§eClick to play."
+        );
+        CasinoGames.glow(slots);
+        inventory.setItem(LOBBY_SLOTS_SLOT, slots);
         inventory.setItem(LOBBY_INFO_SLOT, GuiItems.named(
                 Material.SUNFLOWER,
                 "§6Purse",
-                "§7Balance: §e" + coins.formatted(player) + " coins",
+                "§7Coins: §e" + coins.formatted(player),
                 "",
                 "§8Lucky Vince runs the floor.",
-                "§8Coins only. Friends table."
+                "§8Game coins only. Just for fun."
         ));
-        inventory.setItem(LOBBY_ROULETTE_SLOT, GuiItems.named(
+        ItemStack roulette = GuiItems.named(
                 Material.ENDER_PEARL,
-                "§cR§8o§cu§8l§ce§8t§ct§8e",
-                "§7The wheel is a circle. Ball runs it.",
-                "§7Red or black pays §f2x§7.",
-                "§7Zero pays §a14x§7. Don't.",
+                "§c§lROULETTE",
+                "§7Pick a color. Watch the ball.",
+                "§7Red or black §f2x§7 · zero §a14x",
                 "",
-                "§eClick to sit down."
-        ));
-        inventory.setItem(LOBBY_CLOSE_SLOT, GuiItems.named(Material.BARRIER, "§cClose", "§7Walk away with dignity."));
+                "§eClick to play."
+        );
+        CasinoGames.glow(roulette);
+        inventory.setItem(LOBBY_ROULETTE_SLOT, roulette);
+        inventory.setItem(LOBBY_CLOSE_SLOT, GuiItems.named(Material.BARRIER, "§cLeave", "§7Walk away with dignity."));
+        games.paintLobbyLights(inventory);
         player.openInventory(inventory);
         player.playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 0.35f, 1.35f);
+        player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, 0.3f, 1.7f);
     }
 
     @EventHandler(priority = EventPriority.HIGH)
@@ -397,6 +401,8 @@ public final class CasinoService implements Listener {
     }
 
     public static final class LobbyHolder implements InventoryHolder {
+        int lightsKey = -1;
+
         @Override
         public Inventory getInventory() {
             return null;

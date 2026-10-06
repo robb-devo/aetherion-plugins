@@ -80,6 +80,31 @@ final class CasinoGames {
     private static final int ROULETTE_SPIN = 51;
     private static final int ROULETTE_PURSE = 53;
 
+    static final String SLOTS_TITLE = "§8✦ §6§lSLOTS §8✦";
+    static final String ROULETTE_TITLE = "§8✦ §4§lROULETTE §8✦";
+
+    /** Bulbs that chase around the edge of each screen, listed in running order. */
+    private static final int[] SLOTS_LIGHTS = {0, 2, 3, 5, 6, 52, 50, 48, 46};
+    private static final int[] ROULETTE_LIGHTS = {0, 1, 7, 8, 17, 26, 35, 44, 52, 50, 43, 37, 36, 27, 18, 9};
+    private static final int[] ROULETTE_WOOD = {11, 15, 20, 24, 29, 33};
+    private static final int[] ROULETTE_FELT = {12, 13, 14, 21, 23, 30, 31, 32};
+    static final int[] LOBBY_LIGHTS = {0, 1, 2, 3, 4, 5, 6, 7, 8, 17, 26, 25, 24, 23, 21, 20, 19, 18, 9};
+
+    private static final ItemStack BULB_OFF = GuiItems.named(Material.BLACK_STAINED_GLASS_PANE, " ");
+    private static final ItemStack BULB_GOLD = GuiItems.named(Material.YELLOW_STAINED_GLASS_PANE, " ");
+    private static final ItemStack BULB_AMBER = GuiItems.named(Material.ORANGE_STAINED_GLASS_PANE, " ");
+    private static final ItemStack BULB_RED = GuiItems.named(Material.RED_STAINED_GLASS_PANE, " ");
+    private static final ItemStack BULB_WHITE = GuiItems.named(Material.WHITE_STAINED_GLASS_PANE, " ");
+    private static final ItemStack BULB_PINK = GuiItems.named(Material.MAGENTA_STAINED_GLASS_PANE, " ");
+    private static final ItemStack BULB_PURPLE = GuiItems.named(Material.PURPLE_STAINED_GLASS_PANE, " ");
+    private static final ItemStack[] BULB_RAINBOW = {
+            BULB_GOLD,
+            GuiItems.named(Material.LIME_STAINED_GLASS_PANE, " "),
+            GuiItems.named(Material.LIGHT_BLUE_STAINED_GLASS_PANE, " "),
+            BULB_PINK,
+            BULB_AMBER
+    };
+
     private final AetherionItems plugin;
     private final CoinService coins;
     private final CasinoService casino;
@@ -94,6 +119,8 @@ final class CasinoGames {
         this.plugin = plugin;
         this.coins = coins;
         this.casino = casino;
+        // Idle glass border: ~1.5s cadence (was every 2 ticks ≈ 10/s — needless packet spam).
+        plugin.getServer().getScheduler().runTaskTimer(plugin, this::tickLights, 20L, 30L);
     }
 
     boolean isTable(InventoryHolder holder) {
@@ -116,7 +143,7 @@ final class CasinoGames {
         if (banked != null && banked > 0) {
             holder.freeSpinsLeft = banked;
         }
-        Inventory inventory = Bukkit.createInventory(holder, 54, "§8Slots");
+        Inventory inventory = Bukkit.createInventory(holder, 54, SLOTS_TITLE);
         paintSlots(player, inventory, holder);
         player.openInventory(inventory);
         player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, 0.5f, 1.35f);
@@ -128,7 +155,7 @@ final class CasinoGames {
 
     void openRoulette(Player player) {
         RouletteHolder holder = new RouletteHolder(betFor(player));
-        Inventory inventory = Bukkit.createInventory(holder, 54, "§8Roulette");
+        Inventory inventory = Bukkit.createInventory(holder, 54, ROULETTE_TITLE);
         paintRoulette(player, inventory, holder);
         player.openInventory(inventory);
         player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, 0.5f, 0.8f);
@@ -174,7 +201,7 @@ final class CasinoGames {
         if (stillSlots(player, holder)) {
             return;
         }
-        Inventory inventory = Bukkit.createInventory(holder, 54, "§8Slots");
+        Inventory inventory = Bukkit.createInventory(holder, 54, SLOTS_TITLE);
         paintSlots(player, inventory, holder);
         player.openInventory(inventory);
         CasinoService.say(player, "Spin's live. ESC doesn't void the table — wait it out, then Back.");
@@ -191,7 +218,7 @@ final class CasinoGames {
         if (stillRoulette(player, holder)) {
             return;
         }
-        Inventory inventory = Bukkit.createInventory(holder, 54, "§8Roulette");
+        Inventory inventory = Bukkit.createInventory(holder, 54, ROULETTE_TITLE);
         paintRoulette(player, inventory, holder);
         player.openInventory(inventory);
         CasinoService.say(player, "Ball's still rolling. ESC doesn't void the spin.");
@@ -340,6 +367,7 @@ final class CasinoGames {
             }
         }
         holder.spinning = true;
+        holder.dimmed = false;
         spinning.add(player.getUniqueId());
         holder.window = randomWindow();
         holder.locked = new boolean[REEL_COLS];
@@ -368,6 +396,8 @@ final class CasinoGames {
         }
         SlotSymbol[][] result = rolled;
         int lastStop = REEL_STOP[REEL_STOP.length - 1];
+        setFx(holder, Fx.SPIN, lastStop + 60);
+        CasinoCabinet.machineSpin(player, lastStop + 8, machineFace(result, holder.lines));
         for (int tick = 0; tick <= lastStop; tick++) {
             int frame = tick;
             plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
@@ -425,7 +455,7 @@ final class CasinoGames {
                 bestStreak = streak;
                 bestSymbol = path[0];
             }
-            hits.add(line.chat + streak + "x " + path[0].label + " §8(+" + format(payout) + ")");
+            hits.add(line.chat + "● §f" + streak + "× " + path[0].label);
             for (int col = 0; col < streak; col++) {
                 holder.glow[line.rows[col]][col] = true;
             }
@@ -455,6 +485,28 @@ final class CasinoGames {
         if (big) {
             holder.stopAuto = true;
         }
+        boolean jackpot = isJackpot(bestStreak, bestSymbol);
+        int tier = books >= 3 ? CasinoCabinet.TIER_FREE
+                : jackpot ? CasinoCabinet.TIER_JACKPOT
+                : big ? CasinoCabinet.TIER_BIG
+                : win > 0L ? CasinoCabinet.TIER_WIN
+                : CasinoCabinet.TIER_LOSE;
+        boolean quiet = holder.usingFree || holder.autoSpin;
+        holder.lastWin = win;
+        switch (tier) {
+            case CasinoCabinet.TIER_FREE -> setFx(holder, Fx.FREE, 70);
+            case CasinoCabinet.TIER_JACKPOT -> setFx(holder, Fx.JACKPOT, 100);
+            case CasinoCabinet.TIER_BIG -> setFx(holder, Fx.BIG, 60);
+            case CasinoCabinet.TIER_WIN -> setFx(holder, Fx.WIN, 34);
+            default -> setFx(holder, Fx.LOSE, 16);
+        }
+        if (win > 0L && books < 3) {
+            holder.dimmed = true;
+            holder.dimUntil = Bukkit.getCurrentTick() + (big ? 44 : 30);
+        }
+        if (player.isOnline()) {
+            CasinoCabinet.machineResult(player, tier, win);
+        }
 
         boolean online = player.isOnline();
         if (!online || !stillSlots(player, holder)) {
@@ -464,7 +516,7 @@ final class CasinoGames {
             return;
         }
         if (win > 0L || books < 3) {
-            bang(player, bestStreak, bestSymbol, win, hits);
+            bang(player, bestStreak, bestSymbol, win, hits, quiet, books < 3);
         }
         if (books >= 3) {
             celebrateBooks(player, books, awarded);
@@ -577,28 +629,28 @@ final class CasinoGames {
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> flashEdges(player, holder, step + 1), 3L);
     }
 
-    private void bang(Player player, int streak, SlotSymbol symbol, long win, List<String> hits) {
+    private void bang(Player player, int streak, SlotSymbol symbol, long win, List<String> hits, boolean quiet, boolean titles) {
         if (win <= 0L) {
-            CasinoService.say(player, loseLine(player));
+            if (!quiet) {
+                CasinoService.say(player, loseLine(player));
+            }
             player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 0.7f, 0.5f);
             player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_LAND, 0.2f, 0.6f);
-            player.sendActionBar(Component.text("HOUSE WINS", NamedTextColor.DARK_GRAY));
+            player.playSound(player.getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 0.25f, 1.6f);
+            player.sendActionBar(Component.text("HOUSE WINS", NamedTextColor.DARK_GRAY, TextDecoration.BOLD));
             return;
         }
-        for (String hit : hits) {
-            CasinoService.say(player, hit);
-        }
-        CasinoService.say(player, "§a+" + format(win) + " coins");
+        CasinoService.say(player, "§a§l+" + format(win) + " coins §8· " + String.join("§8, ", hits));
         player.sendActionBar(Component.text("+" + format(win) + " COINS", NamedTextColor.GOLD, TextDecoration.BOLD));
         player.getWorld().spawnParticle(Particle.CRIT, player.getLocation().add(0, 1.2, 0), 18, 0.4, 0.4, 0.4, 0.15);
-        if ((symbol == SlotSymbol.CROWN && streak >= 4) || streak >= 6) {
+        player.getWorld().spawnParticle(Particle.ITEM, player.getLocation().add(0, 1.4, 0), 14, 0.25, 0.2, 0.25, 0.12,
+                new ItemStack(Material.GOLD_NUGGET));
+        if (isJackpot(streak, symbol)) {
             Bukkit.broadcastMessage("§6Lucky Vince §8» §e" + player.getName() + " just made the floor sweat.");
             CasinoService.razzBigWin(player);
-            player.showTitle(Title.title(
-                    Component.text("JACKPOT", NamedTextColor.GOLD, TextDecoration.BOLD),
-                    Component.text("+" + format(win) + " coins", NamedTextColor.YELLOW),
-                    Title.Times.times(Duration.ofMillis(80), Duration.ofMillis(2200), Duration.ofMillis(400))
-            ));
+            if (titles) {
+                countUp(player, "JACKPOT", NamedTextColor.GOLD, win, 18, true);
+            }
             player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1f, 1.05f);
             player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 0.35f, 1.4f);
             player.playSound(player.getLocation(), Sound.ITEM_TOTEM_USE, 0.4f, 1.3f);
@@ -608,19 +660,24 @@ final class CasinoGames {
         }
         if (streak >= 4 || hits.size() >= 2) {
             CasinoService.razzBigWin(player);
-            player.showTitle(Title.title(
-                    Component.text("BIG WIN", NamedTextColor.YELLOW, TextDecoration.BOLD),
-                    Component.text("+" + format(win), NamedTextColor.GOLD),
-                    Title.Times.times(Duration.ofMillis(60), Duration.ofMillis(1400), Duration.ofMillis(250))
-            ));
+            if (titles) {
+                countUp(player, "BIG WIN", NamedTextColor.YELLOW, win, 12, false);
+            }
             player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.8f, 1.2f);
             player.playSound(player.getLocation(), Sound.BLOCK_BELL_USE, 0.5f, 1.4f);
             player.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, player.getLocation().add(0, 1.1, 0), 20, 0.4, 0.5, 0.4, 0);
             fireworks(player, 2, false);
             return;
         }
+        if (titles) {
+            countUp(player, null, NamedTextColor.GOLD, win, 6, false);
+        }
         player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.55f, 1.45f);
         player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BELL, 0.5f, 1.6f);
+    }
+
+    private static boolean isJackpot(int streak, SlotSymbol symbol) {
+        return (symbol == SlotSymbol.CROWN && streak >= 4) || streak >= 6;
     }
 
     private void lockFx(Player player, int col) {
@@ -637,8 +694,10 @@ final class CasinoGames {
             return;
         }
         holder.spinning = true;
+        holder.dimmed = false;
         spinning.add(player.getUniqueId());
         holder.landed = -1;
+        setFx(holder, Fx.SPIN, 400);
         paintRoulette(player, inventory, holder);
         player.playSound(player.getLocation(), Sound.BLOCK_PISTON_EXTEND, 0.45f, 1.4f);
         player.sendActionBar(Component.text("BALL'S ROLLING", NamedTextColor.RED, TextDecoration.BOLD));
@@ -674,6 +733,7 @@ final class CasinoGames {
             previous = index;
             tick += 1L + step / 8L;
         }
+        RouletteCabinet.tableSpin(player, (int) tick, RING_NUMBERS[landIndex]);
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> finishRoulette(player, holder, landIndex), tick + 6L);
     }
 
@@ -689,9 +749,14 @@ final class CasinoGames {
         if (payout > 0L) {
             coins.credit(player, payout);
         }
+        holder.lastWon = won;
+        holder.dimmed = true;
+        holder.dimUntil = Bukkit.getCurrentTick() + (won ? 40 : 26);
+        setFx(holder, won ? (hit == WheelColor.GREEN ? Fx.JACKPOT : Fx.WIN) : Fx.LOSE, won ? (hit == WheelColor.GREEN ? 100 : 40) : 18);
         if (!player.isOnline()) {
             return;
         }
+        RouletteCabinet.tableResult(player, number, won);
         if (stillRoulette(player, holder)) {
             paintRoulette(player, player.getOpenInventory().getTopInventory(), holder);
         }
@@ -699,13 +764,11 @@ final class CasinoGames {
             CasinoService.say(player, hit.winLine(number) + " §a+" + format(payout) + " coins§f.");
             player.sendActionBar(Component.text("+" + format(payout) + " COINS", NamedTextColor.GREEN, TextDecoration.BOLD));
             player.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, player.getLocation().add(0, 1.1, 0), 22, 0.45, 0.5, 0.45, 0);
+            player.getWorld().spawnParticle(Particle.ITEM, player.getLocation().add(0, 1.4, 0), 14, 0.25, 0.2, 0.25, 0.12,
+                    new ItemStack(Material.GOLD_NUGGET));
             if (hit == WheelColor.GREEN) {
                 CasinoService.razzBigWin(player);
-                player.showTitle(Title.title(
-                        Component.text("ZERO", NamedTextColor.GREEN, TextDecoration.BOLD),
-                        Component.text("You maniac. +" + format(payout), NamedTextColor.YELLOW),
-                        Title.Times.times(Duration.ofMillis(80), Duration.ofMillis(1800), Duration.ofMillis(300))
-                ));
+                countUp(player, "ZERO", NamedTextColor.GREEN, payout, 16, true);
                 player.playSound(player.getLocation(), Sound.ITEM_TOTEM_USE, 0.45f, 1.25f);
                 player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.8f, 1.7f);
                 Bukkit.broadcastMessage("§6Lucky Vince §8» §a" + player.getName() + " hit zero. The felt is furious.");
@@ -714,70 +777,251 @@ final class CasinoGames {
                 if (payout >= holder.bet * 2L && payout >= 2_000L) {
                     CasinoService.razzBigWin(player);
                 }
+                countUp(player, hit.word + " " + number, hit.title, payout, 8, false);
                 player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.7f, 1.25f);
                 player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BELL, 0.55f, 1.3f);
             }
         } else {
             CasinoService.say(player, hit.loseLine(number));
-            player.sendActionBar(Component.text(number + "  ·  HOUSE"));
+            player.sendActionBar(Component.text(number + "  ·  HOUSE", NamedTextColor.DARK_GRAY, TextDecoration.BOLD));
+            player.showTitle(Title.title(
+                    Component.empty(),
+                    Component.text(hit.word + " " + number, hit.title, TextDecoration.BOLD)
+                            .append(Component.text("  ·  no win", NamedTextColor.DARK_GRAY)),
+                    Title.Times.times(Duration.ZERO, Duration.ofMillis(900), Duration.ofMillis(250))
+            ));
             player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 0.7f, 0.55f);
             player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_LAND, 0.15f, 0.7f);
+            player.playSound(player.getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 0.25f, 1.6f);
         }
     }
 
-    private void paintSlots(Player player, Inventory inventory, SlotsHolder holder) {
-        ItemStack black = GuiItems.named(Material.BLACK_STAINED_GLASS_PANE, " ");
-        ItemStack frame = GuiItems.named(Material.GRAY_STAINED_GLASS_PANE, " ");
-        for (int slot = 0; slot < inventory.getSize(); slot++) {
-            inventory.setItem(slot, black.clone());
+    // ── casino-night lights ─────────────────────────────────────────────────
+
+    private void tickLights() {
+        int now = Bukkit.getCurrentTick();
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            Inventory top = player.getOpenInventory().getTopInventory();
+            InventoryHolder holder = top.getHolder(false);
+            if (holder instanceof SlotsHolder slots) {
+                if (slots.fx != Fx.IDLE && slots.fx != Fx.SPIN && now >= slots.fxUntil) {
+                    slots.fx = Fx.IDLE;
+                }
+                if (slots.dimmed && now >= slots.dimUntil && !slots.spinning) {
+                    slots.dimmed = false;
+                    for (int col = 0; col < REEL_COLS; col++) {
+                        drawReel(top, slots, col);
+                    }
+                }
+                int key = lightsKey(slots.fx, now);
+                if (key != slots.lightsKey) {
+                    slots.lightsKey = key;
+                    paintLights(top, slotsLights(player), slots.fx, now, false);
+                }
+            } else if (holder instanceof RouletteHolder roulette) {
+                if (roulette.fx != Fx.IDLE && roulette.fx != Fx.SPIN && now >= roulette.fxUntil) {
+                    roulette.fx = Fx.IDLE;
+                }
+                if (roulette.dimmed && now >= roulette.dimUntil && !roulette.spinning) {
+                    roulette.dimmed = false;
+                    paintRoulette(player, top, roulette);
+                }
+                int key = lightsKey(roulette.fx, now);
+                if (key != roulette.lightsKey) {
+                    roulette.lightsKey = key;
+                    paintLights(top, ROULETTE_LIGHTS, roulette.fx, now, true);
+                }
+            } else if (holder instanceof CasinoService.LobbyHolder lobby) {
+                int key = lightsKey(Fx.IDLE, now);
+                if (key != lobby.lightsKey) {
+                    lobby.lightsKey = key;
+                    paintLights(top, LOBBY_LIGHTS, Fx.IDLE, now, false);
+                }
+            }
         }
-        for (int slot = 0; slot < 9; slot++) {
-            inventory.setItem(slot, frame.clone());
+    }
+
+    /** Changes only when the picture changes, so idle screens send almost nothing. */
+    private static int lightsKey(Fx fx, int now) {
+        int step = switch (fx) {
+            case IDLE -> now / 30;   // ~1.5s per frame at 20 tps
+            case WIN -> now / 10;    // celebrate a bit faster, still calm
+            case LOSE -> 0;
+            default -> now / 8;      // spin accent — not every tick
+        };
+        return fx.ordinal() * 1_000_000 + Math.floorMod(step, 999_983);
+    }
+
+    void paintLobbyLights(Inventory inventory) {
+        paintLights(inventory, LOBBY_LIGHTS, Fx.IDLE, Bukkit.getCurrentTick(), false);
+    }
+
+    private static void paintLights(Inventory inventory, int[] slots, Fx fx, int now, boolean roulette) {
+        ItemStack accent = roulette ? BULB_RED : BULB_AMBER;
+        for (int i = 0; i < slots.length; i++) {
+            ItemStack bulb = switch (fx) {
+                case SPIN -> chase(i, now / 2, accent);
+                case WIN -> (now / 4) % 2 == 0 ? BULB_GOLD : BULB_WHITE;
+                case BIG -> (i % 2 == 0) == ((now / 2) % 2 == 0) ? BULB_GOLD : accent;
+                case JACKPOT -> BULB_RAINBOW[Math.floorMod(i + now / 2, BULB_RAINBOW.length)];
+                case FREE -> (i + now / 2) % 2 == 0 ? BULB_PINK : BULB_PURPLE;
+                case LOSE -> BULB_OFF;
+                default -> chase(i, now / 6, accent);
+            };
+            inventory.setItem(slots[i], bulb.clone());
+        }
+    }
+
+    private static ItemStack chase(int index, int step, ItemStack accent) {
+        return switch (Math.floorMod(index - step, 3)) {
+            case 0 -> BULB_GOLD;
+            case 1 -> accent;
+            default -> BULB_OFF;
+        };
+    }
+
+    private static int[] slotsLights(Player player) {
+        if (isDev(player)) {
+            return SLOTS_LIGHTS;
+        }
+        int[] withCorner = java.util.Arrays.copyOf(SLOTS_LIGHTS, SLOTS_LIGHTS.length + 1);
+        System.arraycopy(SLOTS_LIGHTS, 5, withCorner, 6, SLOTS_LIGHTS.length - 5);
+        withCorner[5] = SLOTS_RIGGER;
+        return withCorner;
+    }
+
+    private static void setFx(SlotsHolder holder, Fx fx, int ticks) {
+        holder.fx = fx;
+        holder.fxUntil = Bukkit.getCurrentTick() + ticks;
+        holder.lightsKey = -1;
+    }
+
+    private static void setFx(RouletteHolder holder, Fx fx, int ticks) {
+        holder.fx = fx;
+        holder.fxUntil = Bukkit.getCurrentTick() + ticks;
+        holder.lightsKey = -1;
+    }
+
+    /** Rolling number in the title — the win counts itself up. */
+    private void countUp(Player player, String word, NamedTextColor wordColor, long amount, int frames, boolean flicker) {
+        for (int f = 1; f <= frames; f++) {
+            int frame = f;
+            plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                if (!player.isOnline()) {
+                    return;
+                }
+                boolean last = frame >= frames;
+                double t = frame / (double) frames;
+                long shown = last ? amount : Math.max(1L, Math.round(amount * (1 - Math.pow(1 - t, 3))));
+                NamedTextColor headColor = flicker && !last && frame % 2 == 0 ? NamedTextColor.WHITE : wordColor;
+                Component head = word == null
+                        ? Component.empty()
+                        : Component.text(word, headColor, TextDecoration.BOLD);
+                Component sub = Component.text("+" + format(shown) + " coins",
+                        last ? NamedTextColor.GOLD : NamedTextColor.YELLOW, TextDecoration.BOLD);
+                player.showTitle(Title.title(head, sub, Title.Times.times(
+                        Duration.ZERO,
+                        Duration.ofMillis(last ? 1500 : 400),
+                        Duration.ofMillis(last ? 350 : 0)
+                )));
+                player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP,
+                        last ? 0.6f : 0.3f, last ? 1.9f : 0.75f + 0.9f * (float) t);
+            }, (long) (frame - 1) * 2L);
+        }
+    }
+
+    /** Three pictures for the in-world machine's reels that tell the same story as the GUI. */
+    private static Material[] machineFace(SlotSymbol[][] result, int lines) {
+        if (countBooks(result) >= 3) {
+            return new Material[]{Material.BOOK, Material.BOOK, Material.BOOK};
+        }
+        SlotSymbol best = null;
+        long bestPay = 0L;
+        for (int i = 0; i < lines; i++) {
+            SlotSymbol[] path = Payline.values()[i].read(result);
+            int streak = streak(path);
+            long pay = streak >= 3 ? path[0].payout(streak) : 0L;
+            if (pay > bestPay) {
+                bestPay = pay;
+                best = path[0];
+            }
+        }
+        if (best != null) {
+            return new Material[]{best.material, best.material, best.material};
+        }
+        SlotSymbol a = result[1][0];
+        SlotSymbol b = result[1][1];
+        SlotSymbol c = result[1][2];
+        if (a == b && b == c) {
+            c = SlotSymbol.values()[(c.ordinal() + 1) % (SlotSymbol.values().length - 1)];
+        }
+        return new Material[]{a.material, b.material, c.material};
+    }
+
+    static boolean isRed(int number) {
+        return colorOf(number) == WheelColor.RED;
+    }
+
+    private void paintSlots(Player player, Inventory inventory, SlotsHolder holder) {
+        for (int slot = 0; slot < inventory.getSize(); slot++) {
+            inventory.setItem(slot, BULB_OFF.clone());
         }
         for (int row = 0; row < REEL_ROWS; row++) {
             Payline line = lineForRow(row);
             boolean on = line != null && line.ordinal() < holder.lines;
             ItemStack edge = on
-                    ? GuiItems.named(line.pane, line.chat + line.hint, "§7Active payline.")
-                    : GuiItems.named(Material.GRAY_STAINED_GLASS_PANE, "§8Locked line", "§7Add lines to light this.");
+                    ? GuiItems.named(line.pane, line.chat + "§l" + line.hint, "§7This line pays.")
+                    : GuiItems.named(Material.GRAY_STAINED_GLASS_PANE, "§8Line off", "§7Add lines to turn it on.");
             inventory.setItem(edgeSlot(row, true), edge.clone());
             inventory.setItem(edgeSlot(row, false), edge.clone());
         }
         inventory.setItem(SLOTS_PAYOUTS, GuiItems.named(
                 Material.KNOWLEDGE_BOOK,
-                "§ePayouts §8· §73+ from the left",
-                "§cCherry     §f5x §810x §818x §828x §845x",
-                "§6Gold       §f8x §815x §830x §850x §880x",
-                "§aEmerald    §f12x §828x §855x §890x §8160x",
-                "§bDiamond    §f22x §855x §8110x §8220x §8420x",
-                "§8Netherite  §f45x §8110x §8260x §8520x §8950x",
-                "§eStar       §f90x §8280x §8650x §81.3k §82.2k",
-                "§6§lCrown    §f220x §8850x §82.2k §84.2k §88.5k",
-                "§fBook       §dscatter · anywhere",
-                "§83 books = 7 free spins. Each extra +2.",
-                "§83 / 4 / 5 / 6 / 7 of a kind."
+                "§e§lPays §8· §73, 5 or 7 in a row",
+                "§7Count from the left reel.",
+                "",
+                "§cCherry      §f5x §8· 18x · 45x",
+                "§6Gold        §f8x §8· 30x · 80x",
+                "§aEmerald     §f12x §8· 55x · 160x",
+                "§bDiamond     §f22x §8· 110x · 420x",
+                "§8Netherite   §f45x §8· 260x · 950x",
+                "§eStar        §f90x §8· 650x · 2.2k",
+                "§6§lCrown       §f220x §8· 2.2k · 8.5k",
+                "",
+                "§fBook §7anywhere: §d3 = 7 free spins"
         ));
-        inventory.setItem(SLOTS_LOGO, GuiItems.named(
-                holder.freeSpinsLeft > 0 ? Material.BOOK : Material.JUKEBOX,
-                holder.freeSpinsLeft > 0 ? "§d§lFREE SPINS §f" + holder.freeSpinsLeft : "§6§lSLOTS",
-                "§7Seven reels. Four rows.",
-                "§7Books scatter. 3+ starts free spins.",
-                holder.spinning ? "§eSpinning..." : "§8Pull it."
-        ));
-        inventory.setItem(SLOTS_PURSE, purse(player));
+        boolean free = holder.freeSpinsLeft > 0;
+        ItemStack logo = GuiItems.named(
+                free ? Material.BOOK : Material.JUKEBOX,
+                free ? "§d§lFREE SPINS §f" + holder.freeSpinsLeft : "§6§lSLOTS",
+                "§7Match pictures from the left.",
+                "§73 books anywhere: free spins."
+        );
+        glow(logo);
+        inventory.setItem(SLOTS_LOGO, logo);
+        inventory.setItem(SLOTS_PURSE, purse(player, holder.lastWin));
         inventory.setItem(SLOTS_BET, betButton(holder.bet));
         inventory.setItem(SLOTS_LINE_BTN, linesButton(holder));
-        inventory.setItem(SLOTS_SPIN, GuiItems.named(
-                Material.LEVER,
-                holder.spinning
-                        ? (holder.usingFree || holder.freeSpinsLeft > 0 ? "§d§lFREE SPIN" : "§7Spinning...")
-                        : "§a§lSPIN",
-                holder.freeSpinsLeft > 0 ? "§dFree spins left: §f" + holder.freeSpinsLeft : "§7Stake: §e" + format(holder.bet) + " §7× §f" + holder.lines + " lines",
-                "§7Total: §6" + format(holder.cost()) + " coins",
-                "",
-                holder.spinning ? "§8Hands off the glass." : "§eClick to pull."
-        ));
-        inventory.setItem(SLOTS_BACK, GuiItems.named(Material.ARROW, "§eBack", "§7Return to the floor."));
+        ItemStack spin;
+        if (holder.spinning) {
+            spin = GuiItems.named(
+                    Material.TRIPWIRE_HOOK,
+                    holder.usingFree || free ? "§d§lFREE SPIN" : "§7Spinning...",
+                    "§8Wait for the reels."
+            );
+        } else {
+            spin = GuiItems.named(
+                    Material.LEVER,
+                    free ? "§d§lFREE SPIN" : "§a§lSPIN",
+                    free ? "§dFree spins left: §f" + holder.freeSpinsLeft : "§7Cost: §6" + format(holder.cost()) + " coins",
+                    free ? "§8Costs nothing." : "§8" + format(holder.bet) + " × " + holder.lines + (holder.lines == 1 ? " line" : " lines"),
+                    "",
+                    "§eClick to pull."
+            );
+            glow(spin);
+        }
+        inventory.setItem(SLOTS_SPIN, spin);
+        inventory.setItem(SLOTS_BACK, GuiItems.named(Material.ARROW, "§eBack", "§7To the casino floor."));
         inventory.setItem(SLOTS_AUTO, autoButton(holder));
         if (isDev(player)) {
             inventory.setItem(SLOTS_RIGGER, holder.rigged
@@ -795,10 +1039,13 @@ final class CasinoGames {
                             "§8Every spin: 50% a Hauptgewinn.",
                             "§7DEV. Click to load."));
         }
+        paintLights(inventory, slotsLights(player), holder.fx, Bukkit.getCurrentTick(), false);
+        holder.lightsKey = lightsKey(holder.fx, Bukkit.getCurrentTick());
         if (holder.window == null) {
+            ItemStack blank = GuiItems.named(Material.LIGHT_GRAY_STAINED_GLASS_PANE, "§8?", "§7Pull the lever.");
             for (int col = 0; col < REEL_COLS; col++) {
                 for (int row = 0; row < REEL_ROWS; row++) {
-                    inventory.setItem(reelSlot(row, col), GuiItems.named(Material.GRAY_DYE, "§8?", "§7Pull the lever."));
+                    inventory.setItem(reelSlot(row, col), blank.clone());
                 }
             }
             return;
@@ -810,8 +1057,8 @@ final class CasinoGames {
 
     private ItemStack linesButton(SlotsHolder holder) {
         List<String> lore = new ArrayList<>();
-        lore.add("§7Click to add a payline.");
-        lore.add("§7Each line costs another stake.");
+        lore.add("§7More lines, more ways to win.");
+        lore.add("§7Each line costs one bet.");
         lore.add("");
         for (Payline line : Payline.values()) {
             boolean on = line.ordinal() < holder.lines;
@@ -821,7 +1068,7 @@ final class CasinoGames {
         lore.add(holder.lines >= Payline.values().length ? "§eClick to reset to 1." : "§eClick to add one.");
         return GuiItems.named(
                 Material.MAP,
-                "§ePaylines §8· §f" + holder.lines + "/" + Payline.values().length,
+                "§eLines §8· §f" + holder.lines + "/" + Payline.values().length,
                 lore
         );
     }
@@ -832,63 +1079,94 @@ final class CasinoGames {
         }
         for (int row = 0; row < REEL_ROWS; row++) {
             boolean glow = holder.glow != null && holder.glow[row][col];
-            inventory.setItem(reelSlot(row, col), holder.window[row][col].icon(glow));
+            SlotSymbol symbol = holder.window[row][col];
+            inventory.setItem(reelSlot(row, col), holder.dimmed && !glow ? symbol.dimIcon() : symbol.icon(glow));
         }
     }
 
     private void paintRoulette(Player player, Inventory inventory, RouletteHolder holder) {
-        ItemStack black = GuiItems.named(Material.BLACK_STAINED_GLASS_PANE, " ");
-        ItemStack felt = GuiItems.named(Material.GREEN_STAINED_GLASS_PANE, "§2 ");
         for (int slot = 0; slot < inventory.getSize(); slot++) {
-            inventory.setItem(slot, black.clone());
+            inventory.setItem(slot, BULB_OFF.clone());
         }
-        for (int inner : new int[]{12, 13, 14, 21, 23, 30, 31, 32}) {
+        ItemStack wood = GuiItems.named(Material.BROWN_STAINED_GLASS_PANE, " ");
+        for (int slot : ROULETTE_WOOD) {
+            inventory.setItem(slot, wood.clone());
+        }
+        Material feltMaterial = Material.GREEN_STAINED_GLASS_PANE;
+        if (holder.dimmed) {
+            feltMaterial = holder.lastWon ? Material.YELLOW_STAINED_GLASS_PANE : Material.GRAY_STAINED_GLASS_PANE;
+        }
+        ItemStack felt = GuiItems.named(feltMaterial, " ");
+        for (int inner : ROULETTE_FELT) {
             inventory.setItem(inner, felt.clone());
         }
         for (int i = 0; i < RING_SLOTS.length; i++) {
             boolean hot = i == holder.highlight || i == holder.landed;
             boolean locked = holder.landed >= 0 && i == holder.landed;
+            if (holder.dimmed && !locked) {
+                inventory.setItem(RING_SLOTS[i], GuiItems.named(
+                        Material.GRAY_STAINED_GLASS_PANE, "§8" + RING_NUMBERS[i]));
+                continue;
+            }
             inventory.setItem(RING_SLOTS[i], pocketIcon(i, hot, locked));
         }
         int shown = holder.highlight >= 0 ? RING_NUMBERS[holder.highlight] : -1;
         inventory.setItem(BALL, ballIcon(shown, holder.landed >= 0));
-        inventory.setItem(ROULETTE_BACK, GuiItems.named(Material.ARROW, "§eBack", "§7Return to the floor."));
-        inventory.setItem(ROULETTE_RED, GuiItems.named(
-                Material.RED_WOOL,
-                holder.color == WheelColor.RED ? "§c§lRED §8· §aSelected" : "§cRed",
-                "§7Pays §f2x",
-                holder.color == WheelColor.RED ? "§aYour color." : "§eClick to bet red."
-        ));
-        inventory.setItem(ROULETTE_BLACK, GuiItems.named(
-                Material.BLACK_WOOL,
-                holder.color == WheelColor.BLACK ? "§8§lBLACK §8· §aSelected" : "§8Black",
-                "§7Pays §f2x",
-                holder.color == WheelColor.BLACK ? "§aYour color." : "§eClick to bet black."
-        ));
-        inventory.setItem(ROULETTE_GREEN, GuiItems.named(
-                Material.LIME_WOOL,
-                holder.color == WheelColor.GREEN ? "§a§lGREEN §8· §aSelected" : "§aGreen",
-                "§7Pays §a14x",
-                "§7One pocket. Zero.",
-                holder.color == WheelColor.GREEN ? "§aYour color." : "§eClick to bet green."
-        ));
+        inventory.setItem(ROULETTE_BACK, GuiItems.named(Material.ARROW, "§eBack", "§7To the casino floor."));
+        inventory.setItem(ROULETTE_RED, colorButton(holder, WheelColor.RED, Material.RED_WOOL, "§c", "RED", "§f2x"));
+        inventory.setItem(ROULETTE_BLACK, colorButton(holder, WheelColor.BLACK, Material.BLACK_WOOL, "§8", "BLACK", "§f2x"));
+        inventory.setItem(ROULETTE_GREEN, colorButton(holder, WheelColor.GREEN, Material.LIME_WOOL, "§a", "GREEN", "§a14x §8· only zero"));
         inventory.setItem(ROULETTE_BET, betButton(holder.bet));
-        inventory.setItem(ROULETTE_SPIN, GuiItems.named(
-                Material.LEVER,
-                holder.spinning ? "§7Spinning..." : "§a§lSPIN",
-                "§7Bet: §e" + format(holder.bet) + " coins",
-                "§7On: " + holder.color.chat,
-                "",
-                holder.spinning ? "§8Ball's running." : "§eClick to spin."
-        ));
-        inventory.setItem(ROULETTE_PURSE, purse(player));
+        ItemStack spin;
+        if (holder.spinning) {
+            spin = GuiItems.named(Material.TRIPWIRE_HOOK, "§7Rolling...", "§8Wait for the ball.");
+        } else {
+            spin = GuiItems.named(
+                    Material.LEVER,
+                    "§a§lSPIN",
+                    "§7Bet §e" + format(holder.bet) + " §7on " + holder.color.chat,
+                    "",
+                    "§eClick to spin."
+            );
+            glow(spin);
+        }
+        inventory.setItem(ROULETTE_SPIN, spin);
+        inventory.setItem(ROULETTE_PURSE, purse(player, 0L));
+        paintLights(inventory, ROULETTE_LIGHTS, holder.fx, Bukkit.getCurrentTick(), true);
+        holder.lightsKey = lightsKey(holder.fx, Bukkit.getCurrentTick());
     }
 
-    private ItemStack purse(Player player) {
+    private static ItemStack colorButton(
+            RouletteHolder holder, WheelColor color, Material material, String code, String word, String pays
+    ) {
+        boolean picked = holder.color == color;
+        ItemStack item = GuiItems.named(
+                material,
+                picked ? code + "§l" + word + " §a✔" : code + word.charAt(0) + word.substring(1).toLowerCase(Locale.ROOT),
+                "§7Pays " + pays,
+                picked ? "§aYour pick." : "§eClick to pick."
+        );
+        if (picked) {
+            glow(item);
+        }
+        return item;
+    }
+
+    private ItemStack purse(Player player, long lastWin) {
+        if (lastWin > 0L) {
+            ItemStack item = GuiItems.named(
+                    Material.SUNFLOWER,
+                    "§6Purse",
+                    "§7Coins: §e" + coins.formatted(player),
+                    "§a+" + format(lastWin) + " §7last spin"
+            );
+            glow(item);
+            return item;
+        }
         return GuiItems.named(
                 Material.SUNFLOWER,
                 "§6Purse",
-                "§7Balance: §e" + coins.formatted(player) + " coins"
+                "§7Coins: §e" + coins.formatted(player)
         );
     }
 
@@ -896,11 +1174,8 @@ final class CasinoGames {
         return GuiItems.named(
                 Material.GOLD_NUGGET,
                 "§eBet §8· §f" + format(bet),
-                "§eLeft click §7raises. §eRight click §7lowers.",
-                "§8Left also cycles back around.",
-                "§810 · 50 · 100 · 250 · 500",
-                "§81,000 · 2,500 · 5,000",
-                "§810,000 · 25,000 · 50,000"
+                "§eLeft click §7· more",
+                "§eRight click §7· less"
         );
     }
 
@@ -1138,7 +1413,7 @@ final class CasinoGames {
         return player.isOp() || player.hasPermission("aetherion.dev");
     }
 
-    private static void glow(ItemStack item) {
+    static void glow(ItemStack item) {
         ItemMeta meta = item.getItemMeta();
         if (meta == null) {
             return;
@@ -1286,6 +1561,11 @@ final class CasinoGames {
             return item;
         }
 
+        /** Pushed back while a win is on screen, so the winning line pops. */
+        ItemStack dimIcon() {
+            return GuiItems.named(Material.GRAY_STAINED_GLASS_PANE, "§8" + org.bukkit.ChatColor.stripColor(label));
+        }
+
         static SlotSymbol pick() {
             int roll = ThreadLocalRandom.current().nextInt(TOTAL);
             int cursor = 0;
@@ -1300,18 +1580,22 @@ final class CasinoGames {
     }
 
     private enum WheelColor {
-        RED(Material.RED_CONCRETE, "§cRed", 2L),
-        BLACK(Material.BLACK_CONCRETE, "§8Black", 2L),
-        GREEN(Material.LIME_CONCRETE, "§aGreen", 14L);
+        RED(Material.RED_CONCRETE, "§cRed", 2L, "RED", NamedTextColor.RED),
+        BLACK(Material.BLACK_CONCRETE, "§8Black", 2L, "BLACK", NamedTextColor.GRAY),
+        GREEN(Material.LIME_CONCRETE, "§aGreen", 14L, "ZERO", NamedTextColor.GREEN);
 
         final Material wool;
         final String chat;
         final long payout;
+        final String word;
+        final NamedTextColor title;
 
-        WheelColor(Material wool, String chat, long payout) {
+        WheelColor(Material wool, String chat, long payout, String word, NamedTextColor title) {
             this.wool = wool;
             this.chat = chat;
             this.payout = payout;
+            this.word = word;
+            this.title = title;
         }
 
         String winLine(int number) {
@@ -1326,6 +1610,10 @@ final class CasinoGames {
         }
     }
 
+    enum Fx {
+        IDLE, SPIN, WIN, BIG, JACKPOT, FREE, LOSE
+    }
+
     static final class SlotsHolder implements InventoryHolder {
         long bet;
         int lines;
@@ -1338,6 +1626,12 @@ final class CasinoGames {
         SlotSymbol[][] window;
         boolean[] locked;
         boolean[][] glow;
+        Fx fx = Fx.IDLE;
+        int fxUntil;
+        boolean dimmed;
+        int dimUntil;
+        long lastWin;
+        int lightsKey = -1;
 
         SlotsHolder(long bet, int lines) {
             this.bet = bet;
@@ -1360,6 +1654,12 @@ final class CasinoGames {
         boolean spinning;
         int highlight = -1;
         int landed = -1;
+        Fx fx = Fx.IDLE;
+        int fxUntil;
+        boolean dimmed;
+        int dimUntil;
+        boolean lastWon;
+        int lightsKey = -1;
 
         RouletteHolder(long bet) {
             this.bet = bet;

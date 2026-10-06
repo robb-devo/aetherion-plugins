@@ -3,8 +3,10 @@ package de.aetherion.items.api;
 import de.aetherion.core.AetherKeys;
 import de.aetherion.core.api.ItemFactoryAccess;
 import de.aetherion.items.economy.CompressedResource;
+import de.aetherion.items.economy.Signatures;
 import de.aetherion.items.item.CustomItem;
 
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
@@ -64,6 +66,21 @@ public final class ItemFactoryAccessImpl implements ItemFactoryAccess {
     @Override
     public ItemStack dungeonWeaponSchematic(int floor) {
         return customItem == null ? null : customItem.createDungeonWeaponSchematic(floor);
+    }
+
+    @Override
+    public ItemStack stampSignature(ItemStack item, String signatureId) {
+        return Signatures.stamp(item, signatureId);
+    }
+
+    @Override
+    public void noteSignature(Player player, String signatureId) {
+        String codexId = Signatures.codexId(signatureId);
+        de.aetherion.items.AetherionItems plugin = de.aetherion.items.AetherionItems.getInstance();
+        if (player == null || codexId == null || plugin == null || plugin.getCodex() == null) {
+            return;
+        }
+        plugin.getCodex().addBlock(player, codexId);
     }
 
     private static CompressedResource resource(String resourceName) {

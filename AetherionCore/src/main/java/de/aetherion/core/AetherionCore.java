@@ -1,6 +1,12 @@
 package de.aetherion.core;
 
+import de.aetherion.core.command.ExileCommand;
+import de.aetherion.core.command.NetworkRestartCommand;
 import de.aetherion.core.command.WipeCommand;
+import de.aetherion.core.network.ExileHost;
+import de.aetherion.core.network.ExileLink;
+import de.aetherion.core.network.MainWorldLink;
+import de.aetherion.core.network.TransferSnapshotStore;
 import de.aetherion.core.shutdown.ShutdownCountdown;
 import de.aetherion.core.wipe.BetaWipe;
 import de.aetherion.core.wipe.NetworkWipeWatch;
@@ -15,12 +21,20 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 /**
  * Shared library plugin. Loads first. Does not tick the game.
+ *
+ * <p>Keeps network transfer helpers ({@link MainWorldLink} / Core {@link TransferSnapshotStore})
+ * for backends that do not run AetherionDungeons (Hub). MMO-R/MMO-D also keep Dungeons transfer.
+ * Exile hops ({@link ExileLink} / {@link ExileHost}) live here so MMO-C stays Core-only.
  */
 public final class AetherionCore extends JavaPlugin {
 
     private static AetherionCore instance;
     private BetaWipe betaWipe;
     private NetworkWipeWatch networkWipeWatch;
+    private MainWorldLink link;
+    private TransferSnapshotStore snapshots;
+    private ExileLink exile;
+    private ExileHost exileHost;
 
     public static AetherionCore get() {
         return instance;
@@ -51,10 +65,49 @@ public final class AetherionCore extends JavaPlugin {
             wipe.setExecutor(wipeCommand);
             wipe.setTabCompleter(wipeCommand);
         }
+
+        NetworkRestartCommand restartCommand = new NetworkRestartCommand(this);
+        PluginCommand aenet = getCommand("aenet");
+        if (aenet != null) {
+            aenet.setExecutor(restartCommand);
+            aenet.setTabCompleter(restartCommand);
+        }
+
         networkWipeWatch.start();
+
+        snapshots = new TransferSnapshotStore(this);
+        link = new MainWorldLink(this, snapshots);
+        exile = new ExileLink(this, link, snapshots);
+        exileHost = new ExileHost(this, exile, snapshots);
+
+        ExileCommand exileCommand = new ExileCommand(this);
+        PluginCommand exileCmd = getCommand("exile");
+        if (exileCmd != null) {
+            exileCmd.setExecutor(exileCommand);
+            exileCmd.setTabCompleter(exileCommand);
+        }
+
         Bukkit.getPluginManager().registerEvents(new ShutdownCountdown(this), this);
         getLogger().info("Shared keys and hit flags ready. Game plugins keep the loop.");
         getLogger().info("ShutdownCountdown armed (10→8→6→4→2). Bypass: stop now|force.");
+        getLogger().info("Exile link → " + exile.exileServer()
+                + (exile.isExileServer() ? " (this backend hosts exile)" : ""));
+    }
+
+    public MainWorldLink link() {
+        return link;
+    }
+
+    public TransferSnapshotStore snapshots() {
+        return snapshots;
+    }
+
+    public ExileLink exile() {
+        return exile;
+    }
+
+    public ExileHost exileHost() {
+        return exileHost;
     }
 
     @Override

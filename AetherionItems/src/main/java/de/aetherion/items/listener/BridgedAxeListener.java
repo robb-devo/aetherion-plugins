@@ -115,10 +115,7 @@ public class BridgedAxeListener implements Listener {
         long tick = Bukkit.getCurrentTick();
         Long next = nextUseTick.get(player.getUniqueId());
         if (next != null && tick < next) {
-            long left = Math.max(1, (next - tick + 19) / 20);
-            player.sendActionBar(net.kyori.adventure.text.Component.text(
-                    "§6Bridged Axe §7recharging… §f" + left + "s"
-            ));
+            de.aetherion.items.combat.AbilityCooldownHud.denied(player, "bridged_axe");
             return;
         }
 

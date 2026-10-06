@@ -313,11 +313,11 @@ public final class BankMenu {
 
     private ItemStack upgradeIcon(Guild guild) {
         if (!guild.canUpgradeBank()) {
-            return named(Material.BEDROCK, "§cMax Bank", "§7Coin cap: §6" + GuildFormat.compact(guild.coinCap()));
+            return named(Material.BEDROCK, "§cMax Bank", "§7Coin limit: §6" + GuildFormat.compact(guild.coinCap()));
         }
         BankTiers.UpgradeCost cost = BankTiers.upgradeCost(guild.bankLevel());
         List<String> lore = new ArrayList<>();
-        lore.add("§7Next cap: §6" + GuildFormat.compact(BankTiers.coinCap(guild.bankLevel() + 1)));
+        lore.add("§7Next limit: §6" + GuildFormat.compact(BankTiers.coinCap(guild.bankLevel() + 1)));
         lore.add("§7Next slots: §f" + BankTiers.itemSlots(guild.bankLevel() + 1));
         lore.add("§7Cost: §f" + cost.label());
         lore.add("§eClick §7(Mayor+)");

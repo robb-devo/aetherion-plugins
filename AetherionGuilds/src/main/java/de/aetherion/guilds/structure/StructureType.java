@@ -17,16 +17,16 @@ import java.util.Locale;
  */
 public enum StructureType {
 
-    STORAGE_HUT("storage_hut", "Storage Hut", Material.BARREL, "sm_storage_hut", Role.SINK,
+    STORAGE_HUT("storage_hut", "Storage Hut", Material.BARREL, Props.HUT, Role.SINK,
             2_000L, null, 1, false, true, 5_000_000L, 0,
             List.of("§7Where your belts end. Holds",
                     "§7everything the quarries make,",
                     "§7raw or milled. Your first is free.")),
-    WORKSHOP("workshop", "Workshop", Material.SMITHING_TABLE, "sm_workshop", Role.UTILITY,
+    WORKSHOP("workshop", "Hub", Material.LECTERN, Props.HUB, Role.UTILITY,
             1_500L, null, 1, false, true, 0L, 0,
-            List.of("§7Your §6Hub§7. Its lectern is the",
-                    "§7factory desk: build, belts, belt",
-                    "§7pieces, upgrades, Coin Shortcuts.")),
+            List.of("§7Your factory's heart. At its",
+                    "§7lectern: unlocks, upgrades,",
+                    "§7Coin Shortcuts.")),
     DEPOT("depot", "Depot", Material.CHEST, Props.DEPOT, Role.SINK,
             500L, null, 2, true, true, 250_000L, 0,
             List.of("§7A crate yard. Ends any belt, and",

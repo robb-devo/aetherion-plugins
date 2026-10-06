@@ -130,26 +130,30 @@ public final class DialogueRuntime implements Listener, EditorQuestHook {
             afterLines(player, npc, shown, mode, null);
             return;
         }
-        BukkitTask task = Bukkit.getScheduler().runTaskTimer(plugin, new Runnable() {
+        UUID playerId = player.getUniqueId();
+        // Same rhythm as every other NPC: a line's slot is its typing time + the shared read gap.
+        Runnable step = new Runnable() {
             private int index;
 
             @Override
             public void run() {
                 if (!player.isOnline()) {
-                    cancel(player.getUniqueId());
+                    cancel(playerId);
                     return;
                 }
                 if (index >= lines.size()) {
-                    cancel(player.getUniqueId());
+                    cancel(playerId);
                     afterLines(player, npc, shown, mode, fill(lines.get(lines.size() - 1), player));
                     return;
                 }
-                String line = lines.get(index++);
-                player.sendMessage("§b" + npc.getName() + " §8⟫ §f" + fill(line, player));
+                String line = fill(lines.get(index++), player);
+                player.sendMessage("§b" + npc.getName() + " §8⟫ §f" + line);
                 player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_HAT, 0.35f, 1.35f);
+                DialogPace.mark(player, line);
+                speaking.put(playerId, Bukkit.getScheduler().runTaskLater(plugin, this, DialogPace.beat(line)));
             }
-        }, 0L, DialogPace.LINE_GAP_TICKS);
-        speaking.put(player.getUniqueId(), task);
+        };
+        speaking.put(playerId, Bukkit.getScheduler().runTaskLater(plugin, step, DialogPace.untilFree(player)));
     }
 
     private void afterLines(Player player, CustomNpc npc, CustomNpc.DialoguePage page, Mode mode, String lastLine) {

@@ -109,7 +109,7 @@ public final class QuarryMenu {
                 view.compressed() > 0 ? "§7Compressed: §a" + view.compressed() : "§8No compressed stored",
                 view.compacted() > 0 ? "§7Compacted: §b" + view.compacted() : "§8No compacted stored",
                 "§7Digs: §f" + de.aetherion.guilds.util.GuildFormat.compact(perMinute) + " §7" + type.productName() + " / min",
-                "§7Cap: §f" + minion.cap() + " goods",
+                "§7Holds up to: §f" + minion.cap() + " goods",
                 mill,
                 type.blurb(),
                 "§8Crafts while the server is online."
@@ -212,7 +212,11 @@ public final class QuarryMenu {
             return;
         }
         if (slot == UPGRADE_SLOT) {
-            minions.upgrade(player, ref.minion());
+            if (minions.upgrade(player, ref.minion()) && structures != null) {
+                structures.milestone(ref.isPersonal()
+                        ? de.aetherion.guilds.island.IslandHost.personal(ref.island().ownerId())
+                        : de.aetherion.guilds.island.IslandHost.guild(ref.guild().id()), "first_upgrade");
+            }
             open(player, ref);
             return;
         }
@@ -234,7 +238,7 @@ public final class QuarryMenu {
             int rot = StateRotator.frontTowardViewer(player.getLocation().getYaw());
             StructureService.HousingResult result = structures.raiseHousing(host, ref.minion(), rot);
             player.sendMessage(switch (result) {
-                case FULL -> "§aHousing raised. §7Lay a belt from its §6chute §7(Build → Belt Layer).";
+                case FULL -> "§aHousing raised. §7Lay a belt from its §6orange mark §7(Build Tool → Belt).";
                 case RIG -> "§7No room for the full housing here (other buildings or your land's edge);"
                         + " a drill rig went up instead. Belts start on any cell next to it.";
                 case NONE -> "§cNo room above this quarry. Clear some space round it and try again.";

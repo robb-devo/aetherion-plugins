@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/birch_log",
+  "overrides": [
+    {
+      "predicate": { "custom_model_data": 3012 },
+      "model": "minecraft:item/birch_booster"
+    }
+  ]
+}

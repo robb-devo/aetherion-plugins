@@ -91,10 +91,12 @@ public final class BossGearBalance {
             case "helios_heartplate" -> aetherion(80, 110, 29, 23, 18, 124, 4);
             case "helios_orbit_greaves" -> aetherion(63, 82, 20, 19, 12, 76, 3);
             case "helios_dawn_treads" -> aetherion(48, 57, 14, 13, 10, 58, 8);
-            case "hollow_sun_helmet" -> aetherion(80, 120, 18, 12, 8, 48, 2);
-            case "hollow_sun_chestplate" -> aetherion(160, 210, 34, 20, 10, 75, 2);
-            case "hollow_sun_leggings" -> aetherion(120, 160, 28, 16, 8, 60, 3);
-            case "hollow_sun_boots" -> aetherion(80, 115, 18, 12, 6, 45, 5);
+            // Remnant of the Hollow Sun — D2 (P2): one step above Dawnbearer, set-alone 254 Def / 335 HP
+            // (was 440 / 605). Offense stays at/below the old line; the set procs carry it.
+            case "hollow_sun_helmet" -> aetherion(51, 70, 17, 12, 8, 48, 2);
+            case "hollow_sun_chestplate" -> aetherion(85, 117, 31, 20, 10, 75, 2);
+            case "hollow_sun_leggings" -> aetherion(67, 87, 21, 16, 8, 60, 3);
+            case "hollow_sun_boots" -> aetherion(51, 61, 15, 12, 6, 45, 5);
             case "pickaxe_core_of_the_burrower" -> {
                 ItemStats stats = new ItemStats();
                 stats.setFortune(128);

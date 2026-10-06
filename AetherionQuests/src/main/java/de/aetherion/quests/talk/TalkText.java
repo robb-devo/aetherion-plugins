@@ -249,6 +249,10 @@ public final class TalkText {
                 if (c < 128) {
                     return 6;
                 }
+                if (c == '×' || c == '•' || TalkChrome.isSmallCap(c)) {
+                    // small caps / bullets come from unifont at half size — narrower than a letter
+                    return 5;
+                }
                 // unifont-ish symbols (—, ♥, ▶ …) are wider
                 return c == '—' ? 9 : 8;
         }
