@@ -34,15 +34,21 @@ import java.util.List;
  *    70  COLLAPSE      rings, mask, disk and rubble spiral into the heart; light streams in from the rim
  *   150  THE POINT     one white point. Absolute silence. One heartbeat.
  *   190  SWELL         four nested shells turning against each other, sixteen corona rays, the floor
- *                      turning to light ring by ring outward, the rumble climbing
+ *                      turning to light ring by ring outward, the rumble climbing. The star is UNSTABLE:
+ *                      it convulses on an accelerating stutter (shells lurch, rays flare, a metal crash,
+ *                      the sky flickers), the point trembles harder and harder
  *   250  DETONATION    night becomes noon in one frame; flat shock rings on three levels and two upright
- *                      ones, a sphere of light plates, ejecta; everyone is lifted and floats
+ *                      ones, a sphere of light plates, ejecta; everyone is lifted and floats. Then it keeps
+ *                      going: a second wall of crashing metal and glass, a roar from beyond (wither, dragon,
+ *                      thunder), the sky itself cracks into planes of light, aftershocks roll away
  *   265  NEBULA        coloured veils drift outward; a pulsar sweeps its two beams; dawn
+ *   290  THE VAULT     the pulsar's point swells and bursts: the Star Vault is born out of the dead star,
+ *                      sinks over the pit and builds its dais and four staircases, beat by beat
  *   300  GIVING BACK   the broken arena rebuilds from light, the floor's glow draws back inward
  * </pre>
  *
- * Every piece is posed at the same cadence it is pushed (no stretched interpolation), so nothing
- * snaps. Displays are created ahead of the detonation over several ticks to respect the spawn budget.
+ * Pieces pushed every second tick use one tick of interpolation overlap ({@link HeliosStage#SMOOTH_2}):
+ * continuous, and a late packet never freezes them. Displays are created ahead of the detonation over several ticks to respect the spawn budget.
  */
 final class Supernova {
 
@@ -87,6 +93,13 @@ final class Supernova {
     private int rebuildCursor;
     private float shellScale;
     private float raySpin;
+    /** Instability: how hard the star is convulsing right now (decays every tick). */
+    private float jolt;
+    private int stutters;
+    private int skyBackAt = -1;
+    private static final int[] STUTTER = {204, 216, 226, 234, 240, 245, 248};
+    private final List<BlockDisplay> fractures = new ArrayList<>();
+    private final List<Quaternionf> fractureRot = new ArrayList<>();
 
     Supernova(HeliosScript h) {
         this.h = h;
@@ -145,11 +158,20 @@ final class Supernova {
         if (t == 200) {
             spawnNebula();
         }
+        if (t == 244) {
+            spawnFractures();
+        }
         if (t >= 190 && t < 250) {
             swell(HMath.window(t, 190, 250), t);
         }
         if (t == 250) {
             detonate();
+        }
+        if (t >= 250 && t < 300) {
+            aftershocks(t);
+        }
+        if (t >= 282 && t <= 290) {
+            vaultBirth(t);
         }
         if (t > 250 && t < 330) {
             expand(t - 250);
@@ -215,7 +237,7 @@ final class Supernova {
                 float outer = 45f * (1f - e) + 2f;
                 Vector3f from = new Vector3f(heart).add(HMath.ring(outer, a, y * (1f - e)));
                 Vector3f to = new Vector3f(from).lerp(heart, 0.35f + 0.6f * e);
-                stage.push(inflow.get(i), HeliosStage.beam(from, to, 0.08f + 0.1f * e), 2);
+                stage.push(inflow.get(i), HeliosStage.beam(from, to, 0.08f + 0.1f * e), HeliosStage.SMOOTH_2);
             }
         }
         if (t % 10 == 0) {
@@ -260,12 +282,25 @@ final class Supernova {
 
     private void swell(float f, int t) {
         float e = HMath.inExpo(f);
-        shellScale = 0.15f + e;
+        boolean stutter = stutters < STUTTER.length && t == STUTTER[stutters];
+        if (stutter) {
+            convulse(stutters++, t);
+        }
+        jolt *= 0.62f;
+        shellScale = 0.15f + e + jolt;
         raySpin += 0.01f + 0.05f * f;
-        if (t % 2 == 0) {
-            poseShells(2, t);
-            poseRays(2, 2f + 14f * e, 0.12f + 0.25f * e);
-            stage.push(point, HeliosStage.cube(heart, 0.3f + 1.2f * e, new Quaternionf().rotateY(t * 0.2f)), 2);
+        if (t % 2 == 0 || stutter) {
+            int interp = stutter ? 1 : HeliosStage.SMOOTH_2;
+            poseShells(interp, t);
+            poseRays(interp, (2f + 14f * e) * (1f + jolt), (0.12f + 0.25f * e) * (1f + 2f * jolt));
+            // The point trembles harder and harder: it cannot hold itself together.
+            float tremble = HMath.window(t, 226, 250) * 0.45f;
+            Vector3f at = new Vector3f(heart).add((HMath.hash(t, 3) - 0.5f) * tremble, (HMath.hash(t, 5) - 0.5f) * tremble,
+                    (HMath.hash(t, 7) - 0.5f) * tremble);
+            stage.push(point, HeliosStage.cube(at, 0.3f + 1.2f * e + jolt, new Quaternionf().rotateY(t * 0.2f)), interp);
+        }
+        if (t == skyBackAt) {
+            enc.sky().now(SkyControl.NIGHT);
         }
         glowFloor(f);
         enc.camera().vignetteAll(0.15f + 0.6f * f);
@@ -319,6 +354,115 @@ final class Supernova {
             Material m = c.ring() == 0 ? Material.PEARLESCENT_FROGLIGHT : c.ring() == 1 ? Material.OCHRE_FROGLIGHT : Material.SHROOMLIGHT;
             arena.swap(c.dx(), c.dy(), c.dz(), m);
         }
+    }
+
+    /**
+     * One convulsion of the unstable star: the shells lurch outward and snap back, the rays flare, a crash
+     * of metal and glass, the camera jolts; each one harder than the last. The last three strobe the sky.
+     */
+    private void convulse(int k, int t) {
+        float power = 0.35f + 0.1f * k;
+        jolt = power;
+        Score score = enc.score();
+        score.play(Sound.BLOCK_ANVIL_LAND, 0.7f + 0.12f * k, 0.5f + 0.03f * k, true);
+        score.play(Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 0.8f + 0.1f * k, 0.5f, true);
+        score.play(Sound.BLOCK_CHAIN_BREAK, 0.8f, 0.5f + 0.05f * k, true);
+        score.play(Sound.BLOCK_GLASS_BREAK, 0.6f + 0.1f * k, 0.5f + 0.1f * (k % 3), true);
+        if (k >= 3) {
+            score.play(Sound.ENTITY_WARDEN_SONIC_BOOM, 0.4f + 0.1f * k, 0.5f + 0.05f * k, true);
+            score.play(Sound.BLOCK_BELL_RESONATE, 0.8f, 0.5f + 0.1f * (k - 3), true);
+        }
+        enc.camera().shakeAll(6 + 2 * k, 2);
+        if (k >= STUTTER.length - 3) {
+            // The sky can't decide what time it is.
+            enc.sky().now(SkyControl.DUSK);
+            skyBackAt = t + 2;
+            enc.camera().flash(0, 2 + k / 2);
+        }
+    }
+
+    /** Huge thin planes through the heart, hidden until the detonation: the sky cracking. */
+    private void spawnFractures() {
+        int n = stage.budget().scaled(7, 4);
+        for (int i = 0; i < n; i++) {
+            BlockDisplay d = g.block((i % 2 == 0 ? Material.WHITE_STAINED_GLASS : Material.WHITE_CONCRETE).createBlockData(),
+                    i % 2 == 0 ? null : WHITE, 15, true);
+            stage.push(d, HeliosStage.gone(heart), 0);
+            fractures.add(d);
+            fractureRot.add(new Quaternionf().rotateXYZ(HMath.hash(i, 3) * HMath.PI, HMath.hash(i, 5) * HMath.PI, HMath.hash(i, 7) * HMath.PI));
+        }
+    }
+
+    private void fracture(int i, float size, int hold) {
+        if (i >= fractures.size()) {
+            return;
+        }
+        BlockDisplay d = fractures.get(i);
+        stage.push(d, HeliosStage.box(heart, new Vector3f(size, i % 2 == 0 ? 0.06f : 0.03f, size), fractureRot.get(i)), 0);
+        org.bukkit.Bukkit.getScheduler().runTaskLater(enc.module().plugin(), () -> {
+            if (d.isValid()) {
+                stage.push(d, HeliosStage.box(heart, new Vector3f(size * 1.3f, 0.001f, size * 1.3f), fractureRot.get(i)), 3);
+            }
+        }, hold);
+    }
+
+    /**
+     * The explosion doesn't stop at one: a second wall of crashing metal and glass, a roar from beyond, the
+     * sky splitting into planes of light, then aftershocks rolling away. Over-dimensional, on purpose.
+     */
+    private void aftershocks(int t) {
+        Score score = enc.score();
+        if (t == 250) {
+            fracture(0, 90f, 3);
+            fracture(1, 70f, 2);
+        }
+        if (t == 253) {
+            // The crash: everything metal and glass in the universe breaking at once.
+            score.play(Sound.BLOCK_ANVIL_DESTROY, 1.6f, 0.5f, true);
+            score.play(Sound.ITEM_SHIELD_BREAK, 1.2f, 0.5f, true);
+            score.play(Sound.BLOCK_GLASS_BREAK, 1.4f, 0.5f, true);
+            score.play(Sound.BLOCK_GLASS_BREAK, 1.2f, 0.75f, true);
+            score.play(Sound.BLOCK_GLASS_BREAK, 1f, 1.1f, true);
+            score.play(Sound.BLOCK_CHAIN_BREAK, 1.2f, 0.5f, true);
+            score.play(Sound.ENTITY_IRON_GOLEM_DEATH, 1f, 0.5f, true);
+            score.play(Sound.ENTITY_ZOMBIE_BREAK_WOODEN_DOOR, 1f, 0.5f, true);
+            score.play(Sound.ENTITY_GENERIC_EXPLODE, 1.6f, 0.75f, true);
+            enc.camera().flash(2, 10);
+            enc.camera().shakeAll(34, 2);
+            fracture(2, 110f, 3);
+            fracture(3, 80f, 2);
+        }
+        if (t == 258) {
+            // A roar from somewhere that is not here.
+            score.play(Sound.ENTITY_WITHER_SPAWN, 1.3f, 0.5f, true);
+            score.play(Sound.ENTITY_ENDER_DRAGON_GROWL, 1.6f, 0.5f, true);
+            score.play(Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1.6f, 0.6f, true);
+            score.play(Sound.ENTITY_WARDEN_SONIC_BOOM, 1.4f, 0.6f, true);
+            fracture(4, 130f, 4);
+            fracture(5, 60f, 2);
+            fracture(6, 100f, 3);
+        }
+        if (t == 264 || t == 274 || t == 288) {
+            // Aftershocks, rolling away.
+            int k = t == 264 ? 0 : t == 274 ? 1 : 2;
+            score.play(Sound.ENTITY_GENERIC_EXPLODE, 1.2f - 0.3f * k, 0.5f, true);
+            score.play(Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1f - 0.25f * k, 0.5f + 0.1f * k, true);
+            score.play(Sound.BLOCK_DEEPSLATE_BRICKS_BREAK, 1f, 0.5f, true);
+            enc.camera().shakeAll(14 - 4 * k, 3);
+        }
+    }
+
+    /** The pulsar's point swells, and the vault is born out of the dead star. */
+    private void vaultBirth(int t) {
+        if (t < 290) {
+            float f = HMath.window(t, 282, 290);
+            stage.push(pulsar[0], HeliosStage.cube(heart, 0.5f + 1.3f * HMath.inCubic(f), new Quaternionf().rotateY(t * 0.3f)), 1);
+            if (t == 282) {
+                enc.score().sweep(null, Sound.BLOCK_BEACON_AMBIENT, 0.8f, 1.2f, 1f, 2f, 8, 2);
+            }
+            return;
+        }
+        enc.birthVault(new Vector3f(heart));
     }
 
     /* ================================================================== 250: detonation */
@@ -410,29 +554,29 @@ final class Supernova {
         for (int s = 0; s < shells.length; s++) {
             for (int i = 0; i < 3; i++) {
                 if (t > 16) {
-                    stage.push(shells[s][i], HeliosStage.gone(heart), 2);
+                    stage.push(shells[s][i], HeliosStage.gone(heart), HeliosStage.SMOOTH_2);
                 } else {
                     Quaternionf rot = new Quaternionf().rotateXYZ(t * 0.2f * (i + 1), t * 0.15f, 0f);
-                    stage.push(shells[s][i], HeliosStage.cube(heart, SHELL_R[s] * shellScale * 1.6f * (1f - t / 17f), rot), 2);
+                    stage.push(shells[s][i], HeliosStage.cube(heart, SHELL_R[s] * shellScale * 1.6f * (1f - t / 17f), rot), HeliosStage.SMOOTH_2);
                 }
             }
         }
-        poseRays(2, 20f + 70f * f, Math.max(0.03f, 0.4f * (1f - f)));
+        poseRays(HeliosStage.SMOOTH_2, 20f + 70f * f, Math.max(0.03f, 0.4f * (1f - f)));
         for (int i = 0; i < waves.size(); i++) {
             float r = 2f + 72f * f * (1f - i * 0.06f);
             float thick = 1.1f * (1f - f) + 0.06f;
             Vector3f at = new Vector3f(heart).add(0f, waveY.get(i), 0f);
-            waves.get(i).pose(at, waveOrient.get(i), r, thick, thick, t * 0.03f, 0f, 0f, 2);
+            waves.get(i).pose(at, waveOrient.get(i), r, thick, thick, t * 0.03f, 0f, 0f, HeliosStage.SMOOTH_2);
         }
         for (int i = 0; i < sphere.size(); i++) {
             Vector3f dir = sphereDir.get(i);
             Vector3f at = new Vector3f(dir).mul(3f + 58f * f).add(heart);
             float size = 5f * (1f - f) + 0.2f;
-            stage.push(sphere.get(i), HeliosStage.box(at, new Vector3f(size, 0.08f, size), HMath.alignY(dir)), 2);
+            stage.push(sphere.get(i), HeliosStage.box(at, new Vector3f(size, 0.08f, size), HMath.alignY(dir)), HeliosStage.SMOOTH_2);
         }
         for (int i = 0; i < ejecta.size(); i++) {
             Vector3f at = new Vector3f(ejectaDir.get(i)).mul(4f + 50f * f * (0.6f + HMath.hash(i, 3) * 0.6f)).add(heart);
-            stage.push(ejecta.get(i), HeliosStage.cube(at, 1.3f * (1f - f) + 0.08f, new Quaternionf().rotateXYZ(t * 0.1f + i, t * 0.07f, 0f)), 2);
+            stage.push(ejecta.get(i), HeliosStage.cube(at, 1.3f * (1f - f) + 0.08f, new Quaternionf().rotateXYZ(t * 0.1f + i, t * 0.07f, 0f)), HeliosStage.SMOOTH_2);
         }
         if (t == 68) {
             for (Shapes.Ring r : waves) {
@@ -466,15 +610,18 @@ final class Supernova {
             Vector3f out = new Vector3f(base).sub(heart).mul(1f + life * 0.8f).add(heart);
             float size = (6f + HMath.hash(i, 13) * 6f) * fade;
             Quaternionf rot = new Quaternionf().rotateY(i + t * 0.004f).rotateX(0.6f + HMath.hash(i, 17));
-            stage.push(nebula.get(i), HeliosStage.box(out, new Vector3f(size, 0.05f, size * 0.6f), rot), 2);
+            stage.push(nebula.get(i), HeliosStage.box(out, new Vector3f(size, 0.05f, size * 0.6f), rot), HeliosStage.SMOOTH_2);
         }
         // The pulsar: a white point sweeping two beams like a lighthouse.
         float spin = t * 0.12f;
-        stage.push(pulsar[0], HeliosStage.cube(heart, 0.5f, new Quaternionf().rotateY(spin)), 2);
+        if (t < 282 || t > 292) {
+            // (282-290 the point swells and gives birth to the vault: see vaultBirth)
+            stage.push(pulsar[0], HeliosStage.cube(heart, 0.5f, new Quaternionf().rotateY(spin)), HeliosStage.SMOOTH_2);
+        }
         Vector3f axis = new Vector3f((float) Math.cos(spin), 0.35f, (float) Math.sin(spin)).normalize();
         float len = 18f * fade;
-        stage.push(pulsar[1], HeliosStage.beam(heart, new Vector3f(axis).mul(len).add(heart), 0.12f), 2);
-        stage.push(pulsar[2], HeliosStage.beam(heart, new Vector3f(axis).mul(-len).add(heart), 0.12f), 2);
+        stage.push(pulsar[1], HeliosStage.beam(heart, new Vector3f(axis).mul(len).add(heart), 0.12f), HeliosStage.SMOOTH_2);
+        stage.push(pulsar[2], HeliosStage.beam(heart, new Vector3f(axis).mul(-len).add(heart), 0.12f), HeliosStage.SMOOTH_2);
         if (t % 24 == 0 && t < 440) {
             enc.score().at(heart, Sound.BLOCK_BEACON_POWER_SELECT, 0.5f, 1.8f);
         }

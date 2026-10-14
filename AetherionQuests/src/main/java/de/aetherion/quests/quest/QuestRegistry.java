@@ -675,192 +675,10 @@ openUp.addReward(
 
 
         /*
-         * =========================================================
-         * QUEST 10
-         * THOSE SOUNDS
-         * =========================================================
-         *
-         * NPC: Nervous Miner
-         * Kill the Hollow Lurker, then turn in for a Homestead Marker.
+         * Old boss-hunt quests (those_sounds, poultry_problem, troll_toll, ink_contract,
+         * ash_and_arrows, walking_mountain, the_veil, T2 amt hunts) removed — bosses stay
+         * free for the lullaby story line. Kept below: border_rites + closed_road (Pathwarden).
          */
-
-        Quest thoseSounds =
-                new Quest(
-                        "those_sounds",
-                        "Those Sounds",
-                        "Find the source of those sounds and slay the Hollow Lurker."
-                );
-
-        thoseSounds.setServiceId(
-                "miner"
-        );
-
-        thoseSounds.addObjective(
-                new Objective(
-                        ObjectiveType.KILL,
-                        "hollow_lurker",
-                        1
-                )
-        );
-
-        thoseSounds.addReward(
-                new Reward(
-                        "Spawn: lurker_camp",
-                        1
-                )
-        );
-
-        thoseSounds.addReward(
-                new Reward(
-                        "Coins",
-                        250
-                )
-        );
-
-        thoseSounds.addReward(
-                new Reward(
-                        "XP",
-                        500
-                )
-        );
-
-
-        questManager.registerQuest(
-                thoseSounds
-        );
-
-
-        registerBossHunt(
-                questManager,
-                "poultry_problem",
-                "Poultry Problem",
-                "Find McNugget and put the giant chicken back in the bucket.",
-                "chicken_keeper",
-                "mcnugget",
-                900,
-                600,
-                "farm"
-        );
-
-        registerBossHunt(
-                questManager,
-                "troll_toll",
-                "Troll Toll",
-                "Cross the bridge. Survive the troll. Keep the change.",
-                "tollkeeper",
-                "bridge_troll",
-                1400,
-                1000,
-                "mines"
-        );
-
-        registerBossHunt(
-                questManager,
-                "ink_contract",
-                "Ink Contract",
-                "Dive for Squidward and come back with fewer tentacles attached.",
-                "dockhand",
-                "squidward",
-                1200,
-                800,
-                "harbour"
-        );
-
-        registerBossHunt(
-                questManager,
-                "ash_and_arrows",
-                "Ash and Arrows",
-                "Hunt Skuldugery before the flaming volley hunts you.",
-                "ash_scout",
-                "skuldugery",
-                2200,
-                2000,
-                "capital"
-        );
-
-        registerBossHunt(
-                questManager,
-                "walking_mountain",
-                "Walking Mountain",
-                "Bring down the Aether Colossus. Try not to get stepped on.",
-                "colossus_scholar",
-                "aether_colossus",
-                3000,
-                3200,
-                "royal_palace"
-        );
-
-        registerBossHunt(
-                questManager,
-                "the_veil",
-                "The Veil",
-                "Challenge Aetherion in the dungeon. Entertain it, or become a footnote.",
-                "veil_priest",
-                "aetherion",
-                5500,
-                8000,
-                ""
-        );
-
-        registerT2BossHunt(
-                questManager,
-                "open_ticket",
-                "Open Ticket",
-                "Close Sir Balthazar. Permanently. Support will pretend this was the plan.",
-                "patch_intern",
-                "sir_balthazar",
-                3200,
-                3500,
-                "ticket_hall"
-        );
-
-        registerT2BossHunt(
-                questManager,
-                "lost_and_found",
-                "Lost and Found",
-                "Unplug the Lobby Cleaner before it files the rest of the server as trash.",
-                "void_janitor",
-                "lobby_cleaner",
-                3200,
-                3500,
-                "trash_chute"
-        );
-
-        registerT2BossHunt(
-                questManager,
-                "overtime",
-                "Overtime",
-                "Clock Sparky out. The guild quarry is over budget on lightning.",
-                "fuse",
-                "sparky",
-                3500,
-                4000,
-                "guild_quarry"
-        );
-
-        registerT2BossHunt(
-                questManager,
-                "denied_claim",
-                "Denied Claim",
-                "Settle Baron von Wurm. Pickaxe insurance already said no.",
-                "claims_adjuster",
-                "baron_von_wurm",
-                3800,
-                4500,
-                "worm_tunnels"
-        );
-
-        registerT2BossHunt(
-                questManager,
-                "bounced_check",
-                "Bounced Check",
-                "Foreclose the Insolvent Wither. Bring the ledger back in pieces if you have to.",
-                "repo_agent",
-                "insolvent_wither",
-                4200,
-                5000,
-                "collections"
-        );
 
         /*
          * Teaching NPCs — short lessons with dry humor.
@@ -1067,6 +885,43 @@ openUp.addReward(
         guildBrick.addReward(new Reward("XP", 200));
         questManager.registerQuest(guildBrick);
 
+        /*
+         * Progression P6 (design §4.4): one teaching quest per Signature. Mid-game (domain 20+), at the
+         * skill-world loop NPC of that domain. Each asks for one hand-earned isle find and says which
+         * neighbour ladder takes it at T4/T5. The payout beats the find's NPC price.
+         */
+        registerSignatureLesson(questManager, "signature_crystal", "Edge Work",
+                "Ore Ledger wants one Crystal Find, cracked by hand. Foragers hone T4 axes on them; farmers grind them into T5 soil.",
+                "ore_ledger", AetherSkill.Category.MINING, "crystal_find");
+        registerSignatureLesson(questManager, "signature_heartwood", "Grain of Truth",
+                "Timber Clerk wants one Elderbark Heartwood. Miners haft T4 picks with it; fighters wrap T4 hilts in its dark cousin.",
+                "timber_clerk", AetherSkill.Category.FORAGING, "isle_heartwood_oak");
+        registerSignatureLesson(questManager, "signature_prize", "Blue Ribbon",
+                "Larder wants one Prize Crop. Anglers bait T4 lines with them; miners eat them at T5.",
+                "larder", AetherSkill.Category.FARMING, "prize_crop");
+        registerSignatureLesson(questManager, "signature_trophy", "Wall Mount",
+                "Dock Scaler wants one Trophy Fish. Farmers feed T4 soil with fish meal; T5 fighters line their plate with scales.",
+                "dock_scaler", AetherSkill.Category.FISHING, "fish_trophy");
+
+    }
+
+    private static void registerSignatureLesson(
+            QuestManager questManager,
+            String id,
+            String title,
+            String description,
+            String serviceId,
+            AetherSkill.Category category,
+            String signatureId
+    ) {
+        Quest quest = new Quest(id, title, description);
+        quest.setServiceId(serviceId);
+        quest.requireCategory(category, 20);
+        quest.addObjective(new Objective(ObjectiveType.DELIVER, signatureId, 1));
+        quest.addReward(new Reward("Random Booster", 1));
+        quest.addReward(new Reward("Coins", 1200));
+        quest.addReward(new Reward("XP", 500));
+        questManager.registerQuest(quest);
     }
 
 

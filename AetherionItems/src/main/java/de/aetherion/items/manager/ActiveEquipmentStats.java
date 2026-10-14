@@ -60,15 +60,19 @@ public class ActiveEquipmentStats {
         }
 
         double multiplier = 1.0;
-        for (StatProvider provider : statProviders) {
+        // Snapshot so a provider register/unregister mid-tick cannot skip gear or blow the HUD timer.
+        for (StatProvider provider : List.copyOf(statProviders)) {
             if (provider == null) {
                 continue;
             }
-
-            total += provider.getStat(player, capability);
-            double extra = provider.getMultiplier(player, capability);
-            if (extra > 0.0) {
-                multiplier *= extra;
+            try {
+                total += provider.getStat(player, capability);
+                double extra = provider.getMultiplier(player, capability);
+                if (extra > 0.0) {
+                    multiplier *= extra;
+                }
+            } catch (RuntimeException ignored) {
+                // Bad provider must not zero the whole gear stack for this tick.
             }
         }
 
@@ -100,23 +104,31 @@ public class ActiveEquipmentStats {
         }
 
         ItemProfile profile = itemManager.getProfile(item);
-
-        if (!profile.hasCapability(capability)) {
-            return 0.0;
+        if (profile == null) {
+            profile = ItemProfile.UNKNOWN;
         }
 
         double value = itemManager.getStat(item, capability);
+        if (value <= 0.0) {
+            return 0.0;
+        }
+        // Known profiles without this capability stay gated; UNKNOWN still counts written PDC stats.
+        if (profile != ItemProfile.UNKNOWN && !profile.hasCapability(capability)) {
+            return 0.0;
+        }
+
         String itemId = itemManager.getItemId(item);
         if (de.aetherion.items.item.DungeonCore.canInfuse(itemId)) {
             value *= de.aetherion.items.item.DungeonCore.rarityStatMultiplier(itemManager.getRarity(item));
         }
         boolean dungeon = de.aetherion.items.dungeon.DungeonArmor.inDungeon(player);
-        boolean nativeGear = de.aetherion.items.dungeon.DungeonArmor.isNativeDungeonGear(item, itemManager);
-        // Native dungeon gear stays weak in the overworld; dungeon power = cores + gear level.
-        if (value > 0 && nativeGear && !dungeon) {
-            value *= de.aetherion.items.dungeon.DungeonArmor.OVERWORLD_STAT_MULTIPLIER;
+        // Dungeon gear stays weaker in the overworld; dungeon power = cores + gear level.
+        // Native Floor-I gear x0.38 (unchanged); P3 B2: relic-identified T2 x0.60, T3 x0.70.
+        double overworld = de.aetherion.items.dungeon.DungeonArmor.overworldMultiplier(item, itemManager);
+        if (overworld < 1.0 && !dungeon) {
+            value *= overworld;
         }
-        if (value > 0 && dungeon) {
+        if (dungeon) {
             value *= de.aetherion.items.dungeon.DungeonGearProgress.dungeonBonusMultiplier(
                     item,
                     itemManager,

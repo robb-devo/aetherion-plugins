@@ -42,16 +42,17 @@ public final class DungeonAttuneMenu implements Listener {
             return;
         }
         sessions.put(player.getUniqueId(), new Session(piece, hand == null ? EquipmentSlot.HAND : hand));
-        Inventory inventory = Bukkit.createInventory(new Holder(), 27, TITLE);
+        Inventory inventory = Bukkit.createInventory(new Holder(), 27, "§8Who were you in here?");
         ItemStack pane = GuiItems.named(org.bukkit.Material.GRAY_STAINED_GLASS_PANE, " ");
         for (int slot = 0; slot < inventory.getSize(); slot++) {
             inventory.setItem(slot, pane.clone());
         }
         inventory.setItem(4, GuiItems.named(
                 piece.leather(),
-                "§7Unattuned Vestige · " + piece.display(),
-                "§7Pick a calling. This piece commits.",
-                "§8There is no undo. The dungeon does not do refunds."
+                WardenPrisonLook.vestigeName(piece),
+                "§7Pick who you were in the Warden's Prison.",
+                "§7This piece commits. One in eight comes out §3Warden-Marked§7.",
+                "§8There is no undo. The Warden does not do refunds."
         ));
         DungeonCalling[] callings = DungeonCalling.values();
         for (int i = 0; i < callings.length; i++) {
@@ -127,7 +128,11 @@ public final class DungeonAttuneMenu implements Listener {
         player.closeInventory();
         player.playSound(player.getLocation(), Sound.BLOCK_ENCHANTMENT_TABLE_USE, 0.8f, 1.15f);
         player.playSound(player.getLocation(), Sound.ITEM_ARMOR_EQUIP_NETHERITE, 0.7f, 1.05f);
-        player.sendMessage(calling.color() + calling.display() + " §7chosen. The vestige remembers.");
+        player.sendMessage(WardenPrisonLook.pieceName(calling, session.piece) + " §7— the vestige remembers whose it was.");
+        if (WardenPrisonLook.isMarked(attuned)) {
+            player.playSound(player.getLocation(), Sound.BLOCK_SCULK_SHRIEKER_SHRIEK, 0.5f, 0.8f);
+            player.sendMessage("§3✦ Warden-Marked. §7It heard you take it.");
+        }
     }
 
     private boolean isVestigePiece(ItemStack item, DungeonPiece piece) {
@@ -148,10 +153,11 @@ public final class DungeonAttuneMenu implements Listener {
     private static ItemStack icon(DungeonCalling calling, DungeonPiece piece) {
         return GuiItems.named(
                 calling.icon(),
-                calling.color() + calling.display(),
+                calling.color() + WardenPrisonLook.setName(calling) + " §8· §7" + calling.display(),
                 "§7" + calling.specialty(),
                 "",
-                "§8Becomes: " + calling.setName() + " " + piece.display(),
+                "§8Becomes: " + WardenPrisonLook.pieceName(calling, piece),
+                "§8\"" + WardenPrisonLook.pieceLine(calling, piece) + "\"",
                 "§8Boosters: " + calling.boosters(),
                 "",
                 "§eClick to attune this piece."

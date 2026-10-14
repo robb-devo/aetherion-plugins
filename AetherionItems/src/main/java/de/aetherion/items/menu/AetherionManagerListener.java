@@ -387,6 +387,10 @@ public class AetherionManagerListener implements Listener {
                     player.sendMessage(progress.hint(ProgressionService.Flag.TRADER));
                     return;
                 }
+                if (NetworkHooks.marketOnMain(player, "bazaar")) {
+                    player.closeInventory();
+                    return;
+                }
                 var market = AetherionItems.getInstance().getMarket();
                 if (market == null) {
                     player.sendMessage("§cBazaar is not loaded.");
@@ -397,6 +401,10 @@ public class AetherionManagerListener implements Listener {
             case AetherionManagerGUI.AUCTION_SLOT -> {
                 if (progress != null && !progress.auction(player)) {
                     player.sendMessage(progress.hint(ProgressionService.Flag.TRADER));
+                    return;
+                }
+                if (NetworkHooks.marketOnMain(player, "ah")) {
+                    player.closeInventory();
                     return;
                 }
                 var market = AetherionItems.getInstance().getMarket();
@@ -455,16 +463,17 @@ public class AetherionManagerListener implements Listener {
                 }
             }
             case AetherionManagerGUI.JOURNAL_SLOT -> {
-                if (progress != null && !progress.journal(player)) {
-                    player.sendMessage(progress.journalHint());
+                // Journal hub: Boss Journal (own gate) + Chronicle (story finds).
+                if (!de.aetherion.items.codex.JournalHubGUI.available(player)) {
+                    if (progress != null) {
+                        player.sendMessage(progress.journalHint());
+                    }
                     return;
                 }
-                if (manager.getJournalGUI() != null) {
-                    manager.getJournalGUI().open(player);
-                }
+                de.aetherion.items.codex.JournalHubGUI.open(player);
             }
             case AetherionManagerGUI.ISLAND_SLOT -> {
-                if (!Bukkit.getPluginManager().isPluginEnabled("AetherionGuilds")) {
+                if (!NetworkHooks.islandsAvailable()) {
                     player.sendMessage("§cIslands are not loaded.");
                     return;
                 }
@@ -476,7 +485,7 @@ public class AetherionManagerListener implements Listener {
                 player.performCommand("island");
             }
             case AetherionManagerGUI.GUILD_SLOT -> {
-                if (!Bukkit.getPluginManager().isPluginEnabled("AetherionGuilds")) {
+                if (!NetworkHooks.islandsAvailable()) {
                     player.sendMessage("§cGuilds are not loaded.");
                     return;
                 }

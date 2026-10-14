@@ -131,10 +131,7 @@ public class WarpedBladeListener implements Listener {
         Long next = nextUseTick.get(player.getUniqueId());
         if (next != null && tick < next) {
             stepping.remove(player.getUniqueId());
-            long left = Math.max(1, (next - tick + 19) / 20);
-            player.sendActionBar(net.kyori.adventure.text.Component.text(
-                    "§3Warped Blade §7recharging… §f" + left + "s"
-            ));
+            AbilityCooldownHud.denied(player, "warped_blade");
             return;
         }
 

@@ -40,6 +40,10 @@ import java.util.function.Supplier;
 public final class HeliosStage {
 
     public static final float VIEW_RANGE = 4f;
+    /** Interpolation for pieces pushed every tick (one tick of overlap absorbs network jitter). */
+    public static final int SMOOTH_1 = 2;
+    /** Interpolation for pieces pushed every second tick. */
+    public static final int SMOOTH_2 = 3;
 
     private final Location anchor;
     private final World world;
@@ -311,10 +315,16 @@ public final class HeliosStage {
     /* ------------------------------------------------------------------ pushing */
 
     /**
-     * Pushes a pose. The interpolation must match how often the caller pushes: the client starts each
-     * new interpolation from the previous <i>target</i>, so a longer interpolation than the push cadence
-     * makes pieces snap and jitter. Slow motion is therefore done by the scripts (slower animation),
-     * never by stretching interpolation here.
+     * Pushes a pose. The client starts each new interpolation from where the piece is drawn right now
+     * (the last rendered progress), so chaining is continuous. Two rules keep motion smooth:
+     * <ul>
+     *   <li>Use one tick <i>more</i> interpolation than the push cadence ({@link #SMOOTH_1} = every tick,
+     *       {@link #SMOOTH_2} = every second tick). A packet that arrives a tick late then just lets the
+     *       current glide run on instead of freezing the piece for a tick and jerking it on (the
+     *       "sometimes stutters" of cadence == interpolation).</li>
+     *   <li>Never stretch interpolation far beyond the cadence (slow motion): the piece lags further and
+     *       further behind its target. Slow motion is done by the scripts (slower animation).</li>
+     * </ul>
      */
     public void push(Display d, Transformation t, int interp) {
         if (d == null || !d.isValid()) {

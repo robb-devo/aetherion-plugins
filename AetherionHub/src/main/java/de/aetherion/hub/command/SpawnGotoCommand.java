@@ -33,7 +33,12 @@ public final class SpawnGotoCommand implements CommandExecutor {
             Map.entry("mining", "eldervale"),
             Map.entry("miningisle", "eldervale"),
             Map.entry("fishing", "fishing_eldervale"),
-            Map.entry("fishingisle", "fishing_eldervale")
+            Map.entry("fishingisle", "fishing_eldervale"),
+            // Origin Isle overhaul camps.
+            Map.entry("summit", "summit"),
+            Map.entry("skyreach", "summit"),
+            Map.entry("whisperwood", "whisperwood"),
+            Map.entry("wilds", "whisperwood")
     );
 
     private final HubService hub;
@@ -64,6 +69,15 @@ public final class SpawnGotoCommand implements CommandExecutor {
             return true;
         }
 
+        if (!hub.isUnlocked(player, spawn.id()) && !player.hasPermission("aetherionhub.admin")) {
+            // Same refusal as before (hub.teleport prints the locked line), plus where it is on Origin.
+            hub.teleport(player, spawn);
+            String hint = de.aetherion.hub.origin.OriginHooks.lockedHint(player, spawn.id());
+            if (hint != null && hint.contains("/origin go")) {
+                player.sendMessage(hint);
+            }
+            return true;
+        }
         hub.teleport(player, spawn);
         return true;
     }

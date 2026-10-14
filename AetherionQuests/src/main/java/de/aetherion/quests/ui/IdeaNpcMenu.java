@@ -32,28 +32,46 @@ public final class IdeaNpcMenu implements Listener {
 
     private static final String TITLE = "§8NPC Extras · Idea NPCs";
 
-    private static final Map<String, String[]> BLURB = Map.of(
-            "town_crier", new String[] {"§7Rings a bell, shouts real tips.", "§7Loud. Useful. Loud."},
-            "street_sweeper", new String[] {"§7Sweeps the square on a tiny route.", "§7Gossip included."},
-            "lamp_lighter", new String[] {"§7Changes lines with the clock.", "§7Lights up at dusk."}
+    private static final Map<String, String[]> BLURB = Map.ofEntries(
+            Map.entry("town_crier", new String[] {"§7Rings a bell, shouts real tips.", "§7Gives Lullaby step 1."}),
+            Map.entry("street_sweeper", new String[] {"§7Sweeps the square on a tiny route.", "§7Gossip included."}),
+            Map.entry("lamp_lighter", new String[] {"§7Changes lines with the clock.", "§7Lights up at dusk."}),
+            Map.entry("ysolde", new String[] {"§7Archivist. Main Lullaby giver.", "§8Spot: Capital Archive"}),
+            Map.entry("berit", new String[] {"§7Oldest woman in town. The song.", "§8Spot: cottage, edge of the Capital"}),
+            Map.entry("nell", new String[] {"§7A child who hums the bells.", "§8Spot: harbour lane"}),
+            Map.entry("hesper", new String[] {"§7Speaks for the Anchor camp.", "§8Spot: under the Fallen Anchor"}),
+            Map.entry("ferryman", new String[] {"§7Waits at the end of the road.", "§8Spot: Veil Quay"})
     );
+
+    /** Top row: idea NPCs. Bottom row: the main-story cast. */
+    private static final int[] IDEA_SLOTS = {11, 13, 15};
+    private static final int[] STORY_SLOTS = {20, 21, 22, 23, 24};
+    private static final int CLOSE_SLOT = 31;
 
     public IdeaNpcMenu(JavaPlugin plugin) {
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
     }
 
     public static void open(Player player) {
-        Inventory inv = Bukkit.createInventory(new Holder(), 27, TITLE);
+        Inventory inv = Bukkit.createInventory(new Holder(), 36, TITLE);
         ItemStack pane = item(Material.GRAY_STAINED_GLASS_PANE, " ");
         for (int i = 0; i < inv.getSize(); i++) {
             inv.setItem(i, pane);
         }
-        inv.setItem(4, item(Material.WRITABLE_BOOK, "§6Idea NPCs",
-                "§7Invented ambient cast. Not placed.",
-                "§7Click one → anchor → place it.",
-                "§8Anonymous cast skin · voice · routine · banter"));
-        int slot = 11;
-        for (String id : QuestNPCRegistry.ideaNpcIds()) {
+        inv.setItem(4, item(Material.WRITABLE_BOOK, "§6Idea NPCs · Story cast",
+                "§7Top: invented ambient cast.",
+                "§7Bottom: Das Schlaflied (main story).",
+                "§7None are placed. Click → anchor → place it.",
+                "§8Story NPCs talk after the tutorial."));
+        fill(inv, IDEA_SLOTS, QuestNPCRegistry.ideaNpcIds());
+        fill(inv, STORY_SLOTS, QuestNPCRegistry.storyNpcIds());
+        inv.setItem(CLOSE_SLOT, item(Material.BARRIER, "§cClose"));
+        player.openInventory(inv);
+    }
+
+    private static void fill(Inventory inv, int[] slots, List<String> ids) {
+        for (int i = 0; i < ids.size() && i < slots.length; i++) {
+            String id = ids.get(i);
             QuestNPC npc = QuestNPCRegistry.getNPC(id);
             LivingNpcProfile profile = LivingNpcProfile.of(id);
             if (npc == null || profile == null) {
@@ -67,11 +85,24 @@ public final class IdeaNpcMenu implements Listener {
             lore.add("");
             lore.add("§eClick §7→ get anchor");
             ItemStack icon = profile.handItem() != null ? profile.handItem() : new ItemStack(Material.PLAYER_HEAD);
-            inv.setItem(slot, item(icon.getType(), profile.chatPrefix() + "§l" + npc.getName(), lore.toArray(String[]::new)));
-            slot += 2;
+            inv.setItem(slots[i], item(icon.getType(), profile.chatPrefix() + "§l" + npc.getName(), lore.toArray(String[]::new)));
         }
-        inv.setItem(22, item(Material.BARRIER, "§cClose"));
-        player.openInventory(inv);
+    }
+
+    private static String idAt(int raw) {
+        List<String> ideas = QuestNPCRegistry.ideaNpcIds();
+        for (int i = 0; i < IDEA_SLOTS.length && i < ideas.size(); i++) {
+            if (IDEA_SLOTS[i] == raw) {
+                return ideas.get(i);
+            }
+        }
+        List<String> story = QuestNPCRegistry.storyNpcIds();
+        for (int i = 0; i < STORY_SLOTS.length && i < story.size(); i++) {
+            if (STORY_SLOTS[i] == raw) {
+                return story.get(i);
+            }
+        }
+        return null;
     }
 
     @EventHandler
@@ -85,16 +116,14 @@ public final class IdeaNpcMenu implements Listener {
             return;
         }
         int raw = event.getRawSlot();
-        if (raw == 22) {
+        if (raw == CLOSE_SLOT) {
             player.closeInventory();
             return;
         }
-        List<String> ids = QuestNPCRegistry.ideaNpcIds();
-        int index = (raw - 11) / 2;
-        if (raw < 11 || (raw - 11) % 2 != 0 || index < 0 || index >= ids.size()) {
+        String id = idAt(raw);
+        if (id == null) {
             return;
         }
-        String id = ids.get(index);
         ItemStack anchor = NpcAnchorListener.create(id);
         if (anchor == null) {
             player.sendMessage("§cNo anchor for " + id + ".");

@@ -54,9 +54,9 @@ public final class ExploreChestListener implements Listener {
         if (meta != null) {
             meta.setDisplayName(kind.chat() + kind.display());
             meta.setLore(List.of(
-                    "§7DEV · exploration crate.",
+                    "§7DEV · exploration crate placer.",
+                    "§7Hand item looks vanilla — world prop is custom.",
                     "§7Each player, this crate, every §f12h§7.",
-                    "§8Spin animation — no vanilla inventory.",
                     "",
                     "§eRight-click a block §7to place.",
                     "§eSneak + click the chest §7to remove."
@@ -80,6 +80,13 @@ public final class ExploreChestListener implements Listener {
         return placerKind(item) != null;
     }
 
+    /** Dev Menu uses aetherion.dev / OP; LP often does not grant aetherionquests.admin to ops. */
+    static boolean canEdit(Player player) {
+        return player != null && (player.isOp()
+                || player.hasPermission("aetherionquests.admin")
+                || player.hasPermission("aetherion.dev"));
+    }
+
     @EventHandler(priority = EventPriority.HIGH)
     public void onUse(org.bukkit.event.player.PlayerInteractEvent event) {
         if (event.getHand() != EquipmentSlot.HAND) {
@@ -93,7 +100,7 @@ public final class ExploreChestListener implements Listener {
         Block block = event.getClickedBlock();
         ItemStack hand = player.getInventory().getItemInMainHand();
         ExploreChestKind placer = placerKind(hand);
-        if (placer != null && player.hasPermission("aetherionquests.admin")) {
+        if (placer != null && canEdit(player)) {
             event.setCancelled(true);
             if (action != Action.RIGHT_CLICK_BLOCK || block == null) {
                 return;
@@ -107,6 +114,11 @@ public final class ExploreChestListener implements Listener {
                 return;
             }
             chests.place(player, block, event.getBlockFace(), placer);
+            return;
+        }
+        if (placer != null && !canEdit(player)) {
+            event.setCancelled(true);
+            player.sendMessage("§cNeed §faetherionquests.admin §cor §faetherion.dev §cto place exploration chests.");
             return;
         }
         if (block == null || !chests.isExploreChest(block)) {
@@ -126,7 +138,7 @@ public final class ExploreChestListener implements Listener {
         }
         event.setCancelled(true);
         Player player = event.getPlayer();
-        if (player.hasPermission("aetherionquests.admin")
+        if (canEdit(player)
                 && isPlacer(player.getInventory().getItemInMainHand())
                 && player.isSneaking()) {
             chests.remove(player, event.getBlock());

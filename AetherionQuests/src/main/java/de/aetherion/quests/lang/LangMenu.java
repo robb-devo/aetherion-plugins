@@ -138,15 +138,15 @@ public final class LangMenu implements Listener {
                     code.german() ? "Willkommen · Sprache gespeichert" : "Welcome · language saved",
                     net.kyori.adventure.text.format.NamedTextColor.GOLD
             ));
-            // Harbour arrival (place card → FIND EGON → Egon's bells) only after the
-            // language popup closes — never overlapping it.
+            // Opening orbit (when gated) → shortened FIND EGON; otherwise full HarbourArrival.
+            // Never overlap the language popup.
             AetherionQuests quests = AetherionQuests.getInstance();
             if (quests != null) {
                 quests.getServer().getScheduler().runTaskLater(quests, () -> {
                     if (!player.isOnline()) {
                         return;
                     }
-                    de.aetherion.quests.ui.HarbourArrival.play(player);
+                    de.aetherion.quests.ui.OpeningOrbit.playAfterLanguagePick(player);
                 }, 12L);
             }
         }

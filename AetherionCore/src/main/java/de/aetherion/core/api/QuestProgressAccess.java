@@ -34,6 +34,17 @@ public interface QuestProgressAccess {
 
     void unlockForagerChop(Player player);
 
+    /**
+     * Speak as a living NPC (bubble + chat when Quests/TalkUx is up). Default falls back to plain chat.
+     */
+    default void npcLine(Player player, String npcId, String displayName, String line) {
+        if (player == null || line == null || line.isBlank()) {
+            return;
+        }
+        String name = displayName == null || displayName.isBlank() ? "NPC" : displayName;
+        player.sendMessage("§6" + name + ": §f" + line);
+    }
+
     void suppress(Player player);
 
     void unsuppress(Player player);

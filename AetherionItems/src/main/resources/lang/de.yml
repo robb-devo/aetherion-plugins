@@ -1,0 +1,1771 @@
+# German item tooltips. English is canonical in code; this file only adds the German twin.
+# Sections: glossary (labels), names, name_patterns, text (prose, keyed by the English text),
+# patterns ({0} holes for numbers/names), books, authors. Missing entry = that line stays English.
+glossary:
+  stat:
+    "Damage": "Schaden"
+    "Attack Spread": "Angriffsstreuung"
+    "Crit Chance": "Krit-Chance"
+    "Crit Damage": "Krit-Schaden"
+    "Undead Damage": "Untoten-Schaden"
+    "Health": "Leben"
+    "Defense": "Verteidigung"
+    "Undead Resist": "Untoten-Resistenz"
+    "Speed": "Tempo"
+    "Mining Power": "Abbaukraft"
+    "Fortune": "Glück"
+    "Spread": "Streuung"
+    "Harvest": "Ernte"
+    "Fish Speed": "Angeltempo"
+    "Fish Catch": "Fischfang"
+    "Catch Rate": "Fangrate"
+    "Fire Rate": "Feuerrate"
+    "Throw": "Wurf"
+    "Life Absorption": "Lebensentzug"
+    "Heal": "Heilung"
+    "Draw": "Spannzeit"
+    "Volley": "Salve"
+    "Lightning": "Blitz"
+    "Fire": "Feuer"
+    "Frost": "Frost"
+    "Cooldown": "Abklingzeit"
+    "Duration": "Dauer"
+    "Gaff Level": "Gaff-Stufe"
+    "Axe Level": "Axt-Stufe"
+    "Hoe Level": "Hacken-Stufe"
+    "Rod Level": "Ruten-Stufe"
+    "Level": "Stufe"
+    "Power": "Kraft"
+    "Range": "Reichweite"
+    "Harvest Spread": "Ernte"
+    "Fishing Speed": "Angeltempo"
+    "Fishing Catch": "Fischfang"
+  slot:
+    "Aetherion Gear": "Aetherion-Ausrüstung"
+    "Axe": "Axt"
+    "Blueprint": "Bauplan"
+    "Bone Gear": "Knochen-Ausrüstung"
+    "Boots": "Stiefel"
+    "Boots · Aetherion Set": "Stiefel · Aetherion-Set"
+    "Boots · Bone Set": "Stiefel · Knochen-Set"
+    "Boots · Dawnbearer Set": "Stiefel · Dawnbearer-Set"
+    "Boots · Healer Set": "Stiefel · Heiler-Set"
+    "Boots · Hollow Sun Set": "Stiefel · Hollow-Sun-Set"
+    "Boots · Ironhide Set": "Stiefel · Ironhide-Set"
+    "Boots · Rotten Set": "Stiefel · Morsch-Set"
+    "Boots · Saint's Set": "Stiefel · Heiligen-Set"
+    "Boots · Webweave Set": "Stiefel · Webweave-Set"
+    "Boots · Worldhide Set": "Stiefel · Worldhide-Set"
+    "Boss Trophy": "Boss-Trophäe"
+    "Bow": "Bogen"
+    "Catcher Boots": "Fänger-Stiefel"
+    "Catcher Chestplate": "Fänger-Brustplatte"
+    "Catcher Gaff · Off-hand": "Fänger-Gaff · Zweithand"
+    "Catcher Gear": "Fänger-Ausrüstung"
+    "Catcher Helmet": "Fänger-Helm"
+    "Catcher Leggings": "Fänger-Beinschutz"
+    "Charm · Off-hand": "Talisman · Zweithand"
+    "Chestplate": "Brustplatte"
+    "Chestplate · Aetherion Set": "Brustplatte · Aetherion-Set"
+    "Chestplate · Bone Set": "Brustplatte · Knochen-Set"
+    "Chestplate · Dawnbearer Set": "Brustplatte · Dawnbearer-Set"
+    "Chestplate · Healer Set": "Brustplatte · Heiler-Set"
+    "Chestplate · Hollow Sun Set": "Brustplatte · Hollow-Sun-Set"
+    "Chestplate · Ironhide Set": "Brustplatte · Ironhide-Set"
+    "Chestplate · Rotten Set": "Brustplatte · Morsch-Set"
+    "Chestplate · Saint's Set": "Brustplatte · Heiligen-Set"
+    "Chestplate · Webweave Set": "Brustplatte · Webweave-Set"
+    "Chestplate · Worldhide Set": "Brustplatte · Worldhide-Set"
+    "Combat Boots": "Kampf-Stiefel"
+    "Combat Charm · Off-hand": "Kampf-Talisman · Zweithand"
+    "Combat Chestplate": "Kampf-Brustplatte"
+    "Combat Gear": "Kampf-Ausrüstung"
+    "Combat Helmet": "Kampf-Helm"
+    "Combat Leggings": "Kampf-Beinschutz"
+    "Combat Sword": "Kampf-Schwert"
+    "Consumable": "Verbrauchsgut"
+    "Contract": "Vertrag"
+    "Core Booster": "Kern-Booster"
+    "Crossbow": "Armbrust"
+    "Dagger": "Dolch"
+    "Dawnbearer Gear": "Dawnbearer-Ausrüstung"
+    "Diving Boots": "Tauch-Stiefel"
+    "Diving Chestplate": "Tauch-Brustplatte"
+    "Diving Gear": "Tauch-Ausrüstung"
+    "Diving Helmet": "Tauch-Helm"
+    "Diving Leggings": "Tauch-Beinschutz"
+    "Dungeon Boots · Assassin": "Dungeon-Stiefel · Assassine"
+    "Dungeon Boots · Healer": "Dungeon-Stiefel · Heiler"
+    "Dungeon Boots · Shaman": "Dungeon-Stiefel · Schamane"
+    "Dungeon Boots · Soldier": "Dungeon-Stiefel · Soldat"
+    "Dungeon Boots · Tank": "Dungeon-Stiefel · Tank"
+    "Dungeon Chestplate · Assassin": "Dungeon-Brustplatte · Assassine"
+    "Dungeon Chestplate · Healer": "Dungeon-Brustplatte · Heiler"
+    "Dungeon Chestplate · Shaman": "Dungeon-Brustplatte · Schamane"
+    "Dungeon Chestplate · Soldier": "Dungeon-Brustplatte · Soldat"
+    "Dungeon Chestplate · Tank": "Dungeon-Brustplatte · Tank"
+    "Dungeon Core": "Dungeon-Kern"
+    "Dungeon Helmet · Assassin": "Dungeon-Helm · Assassine"
+    "Dungeon Helmet · Healer": "Dungeon-Helm · Heiler"
+    "Dungeon Helmet · Shaman": "Dungeon-Helm · Schamane"
+    "Dungeon Helmet · Soldier": "Dungeon-Helm · Soldat"
+    "Dungeon Helmet · Tank": "Dungeon-Helm · Tank"
+    "Dungeon Leggings · Assassin": "Dungeon-Beinschutz · Assassine"
+    "Dungeon Leggings · Healer": "Dungeon-Beinschutz · Heiler"
+    "Dungeon Leggings · Shaman": "Dungeon-Beinschutz · Schamane"
+    "Dungeon Leggings · Soldier": "Dungeon-Beinschutz · Soldat"
+    "Dungeon Leggings · Tank": "Dungeon-Beinschutz · Tank"
+    "Dungeon Relic": "Dungeon-Relikt"
+    "Dungeon Vestige": "Dungeon-Vestige"
+    "Farming Boots": "Farming-Stiefel"
+    "Farming Charm · Off-hand": "Farming-Talisman · Zweithand"
+    "Farming Chestplate": "Farming-Brustplatte"
+    "Farming Gear": "Farming-Ausrüstung"
+    "Farming Helmet": "Farming-Helm"
+    "Farming Hoe": "Farming-Hacke"
+    "Farming Leggings": "Farming-Beinschutz"
+    "Fishing Boots": "Angel-Stiefel"
+    "Fishing Charm · Off-hand": "Angel-Talisman · Zweithand"
+    "Fishing Chestplate": "Angel-Brustplatte"
+    "Fishing Gear": "Angel-Ausrüstung"
+    "Fishing Helmet": "Angel-Helm"
+    "Fishing Leggings": "Angel-Beinschutz"
+    "Fishing Rod": "Angelrute"
+    "Foraging Axe": "Sammel-Axt"
+    "Foraging Boots": "Sammel-Stiefel"
+    "Foraging Charm · Off-hand": "Sammel-Talisman · Zweithand"
+    "Foraging Chestplate": "Sammel-Brustplatte"
+    "Foraging Gear": "Sammel-Ausrüstung"
+    "Foraging Helmet": "Sammel-Helm"
+    "Foraging Leggings": "Sammel-Beinschutz"
+    "Gaff": "Gaff"
+    "Gauntlets": "Panzerhandschuhe"
+    "Glaive": "Glefe"
+    "God Kit": "Gott-Kit"
+    "God Kit · Axe": "Gott-Kit · Axt"
+    "God Kit · Boots": "Gott-Kit · Stiefel"
+    "God Kit · Chestplate": "Gott-Kit · Brustplatte"
+    "God Kit · Helmet": "Gott-Kit · Helm"
+    "God Kit · Leggings": "Gott-Kit · Beinschutz"
+    "God Kit · Pickaxe": "Gott-Kit · Spitzhacke"
+    "God Kit · Sword": "Gott-Kit · Schwert"
+    "Guide": "Anleitung"
+    "Healer Gear": "Heiler-Ausrüstung"
+    "Helmet": "Helm"
+    "Helmet · Aetherion Set": "Helm · Aetherion-Set"
+    "Helmet · Bone Set": "Helm · Knochen-Set"
+    "Helmet · Dawnbearer Set": "Helm · Dawnbearer-Set"
+    "Helmet · Healer Set": "Helm · Heiler-Set"
+    "Helmet · Hollow Sun Set": "Helm · Hollow-Sun-Set"
+    "Helmet · Ironhide Set": "Helm · Ironhide-Set"
+    "Helmet · Rotten Set": "Helm · Morsch-Set"
+    "Helmet · Saint's Set": "Helm · Heiligen-Set"
+    "Helmet · Webweave Set": "Helm · Webweave-Set"
+    "Helmet · Worldhide Set": "Helm · Worldhide-Set"
+    "Hollow Sun Gear": "Hollow-Sun-Ausrüstung"
+    "Ironhide Gear": "Ironhide-Ausrüstung"
+    "Island Quarry": "Insel-Steinbruch"
+    "Katana": "Katana"
+    "Leggings": "Beinschutz"
+    "Leggings · Aetherion Set": "Beinschutz · Aetherion-Set"
+    "Leggings · Bone Set": "Beinschutz · Knochen-Set"
+    "Leggings · Dawnbearer Set": "Beinschutz · Dawnbearer-Set"
+    "Leggings · Healer Set": "Beinschutz · Heiler-Set"
+    "Leggings · Hollow Sun Set": "Beinschutz · Hollow-Sun-Set"
+    "Leggings · Ironhide Set": "Beinschutz · Ironhide-Set"
+    "Leggings · Rotten Set": "Beinschutz · Morsch-Set"
+    "Leggings · Saint's Set": "Beinschutz · Heiligen-Set"
+    "Leggings · Webweave Set": "Beinschutz · Webweave-Set"
+    "Leggings · Worldhide Set": "Beinschutz · Worldhide-Set"
+    "Longbow": "Langbogen"
+    "Mace": "Streitkolben"
+    "Material": "Material"
+    "Maul": "Streithammer"
+    "Mining Boots": "Bergbau-Stiefel"
+    "Mining Charm · Off-hand": "Bergbau-Talisman · Zweithand"
+    "Mining Chestplate": "Bergbau-Brustplatte"
+    "Mining Gear": "Bergbau-Ausrüstung"
+    "Mining Helmet": "Bergbau-Helm"
+    "Mining Leggings": "Bergbau-Beinschutz"
+    "Mining Pickaxe": "Bergbau-Spitzhacke"
+    "Pendant · Off-hand": "Anhänger · Zweithand"
+    "Pet Lens": "Haustier-Linse"
+    "Pickaxe": "Spitzhacke"
+    "Quarry Part": "Steinbruch-Teil"
+    "Relic": "Relikt"
+    "Relic · Off-hand": "Relikt · Zweithand"
+    "Ring": "Ring"
+    "Ring · Off-hand": "Ring · Zweithand"
+    "Ritual Item": "Ritual-Gegenstand"
+    "Rotten Gear": "Morsch-Ausrüstung"
+    "Saint's Gear": "Heiligen-Ausrüstung"
+    "Schematic": "Bauplan"
+    "Scythe": "Sense"
+    "Shortbow": "Kurzbogen"
+    "Signature Find": "Signatur-Fund"
+    "Special Booster": "Spezial-Booster"
+    "Staff": "Stab"
+    "Starter Axe": "Starter-Axt"
+    "Starter Boots": "Starter-Stiefel"
+    "Starter Chestplate": "Starter-Brustplatte"
+    "Starter Gear": "Starter-Ausrüstung"
+    "Starter Helmet": "Starter-Helm"
+    "Starter Hoe": "Starter-Hacke"
+    "Starter Leggings": "Starter-Beinschutz"
+    "Starter Longbow": "Starter-Langbogen"
+    "Starter Pickaxe": "Starter-Spitzhacke"
+    "Starter Shortbow": "Starter-Kurzbogen"
+    "Starter Sword": "Starter-Schwert"
+    "Storage": "Lager"
+    "Summon": "Beschwörung"
+    "Sword": "Schwert"
+    "Test Kit": "Test-Kit"
+    "Test Kit · Axe": "Test-Kit · Axt"
+    "Test Kit · Boots": "Test-Kit · Stiefel"
+    "Test Kit · Chestplate": "Test-Kit · Brustplatte"
+    "Test Kit · Helmet": "Test-Kit · Helm"
+    "Test Kit · Leggings": "Test-Kit · Beinschutz"
+    "Test Kit · Pickaxe": "Test-Kit · Spitzhacke"
+    "Test Kit · Sword": "Test-Kit · Schwert"
+    "Traversal Tool": "Reise-Werkzeug"
+    "Upgrade Stone": "Aufwertungsstein"
+    "Utility Charm · Off-hand": "Nutz-Talisman · Zweithand"
+    "Wand": "Zauberstab"
+    "Webweave Gear": "Webweave-Ausrüstung"
+    "Worldhide Gear": "Worldhide-Ausrüstung"
+  word:
+    "Helmet": "Helm"
+    "Chestplate": "Brustplatte"
+    "Leggings": "Beinschutz"
+    "Boots": "Stiefel"
+    "Pickaxe": "Spitzhacke"
+    "Axe": "Axt"
+    "Hoe": "Hacke"
+    "Sword": "Schwert"
+    "Bow": "Bogen"
+    "Longbow": "Langbogen"
+    "Shortbow": "Kurzbogen"
+    "Crossbow": "Armbrust"
+    "Dagger": "Dolch"
+    "Wand": "Zauberstab"
+    "Staff": "Stab"
+    "Scythe": "Sense"
+    "Maul": "Streithammer"
+    "Mace": "Streitkolben"
+    "Katana": "Katana"
+    "Glaive": "Glefe"
+    "Gauntlets": "Panzerhandschuhe"
+    "Rod": "Rute"
+    "Gaff": "Gaff"
+    "Charm": "Talisman"
+    "Ring": "Ring"
+    "Pendant": "Anhänger"
+    "Relic": "Relikt"
+    "Gear": "Ausrüstung"
+    "Blueprint": "Bauplan"
+    "Boss Trophy": "Boss-Trophäe"
+    "Consumable": "Verbrauchsgut"
+    "Contract": "Vertrag"
+    "Core Booster": "Kern-Booster"
+    "Special Booster": "Spezial-Booster"
+    "Dungeon Core": "Dungeon-Kern"
+    "Dungeon Relic": "Dungeon-Relikt"
+    "Dungeon Vestige": "Dungeon-Vestige"
+    "Guide": "Anleitung"
+    "Island Quarry": "Insel-Steinbruch"
+    "Material": "Material"
+    "Pet Lens": "Haustier-Linse"
+    "Quarry Part": "Steinbruch-Teil"
+    "Ritual Item": "Ritual-Gegenstand"
+    "Schematic": "Bauplan"
+    "Signature Find": "Signatur-Fund"
+    "Storage": "Lager"
+    "Summon": "Beschwörung"
+    "Traversal Tool": "Reise-Werkzeug"
+    "Upgrade Stone": "Aufwertungsstein"
+    "Utility Charm": "Nutz-Talisman"
+    "God Kit": "Gott-Kit"
+    "Test Kit": "Test-Kit"
+    "Fishing Rod": "Angelrute"
+    "Off-hand": "Zweithand"
+    "Catcher Gaff": "Fänger-Gaff"
+    "Tank": "Tank"
+    "Assassin": "Assassine"
+    "Soldier": "Soldat"
+    "Healer": "Heiler"
+    "Shaman": "Schamane"
+    "Coal": "Kohle"
+    "Iron": "Eisen"
+    "Gold": "Gold"
+    "Diamond": "Diamant"
+    "Emerald": "Smaragd"
+    "Redstone": "Redstone"
+    "Lapis": "Lapis"
+    "Glowstone": "Glowstein"
+    "Wheat": "Weizen"
+    "Carrot": "Karotte"
+    "Oak": "Eiche"
+    "Birch": "Birke"
+    "Combat": "Kampf"
+    "Mining": "Bergbau"
+    "Farming": "Farming"
+    "Foraging": "Sammel"
+    "Fishing": "Angel"
+    "Diving": "Tauch"
+    "Catcher": "Fänger"
+    "Starter": "Starter"
+    "Dungeon": "Dungeon"
+    "Utility": "Nutz"
+    "Aetherion": "Aetherion"
+    "Worldhide": "Worldhide"
+    "Dawnbearer": "Dawnbearer"
+    "Hollow Sun": "Hollow-Sun"
+    "Saint's": "Heiligen"
+    "Ironhide": "Ironhide"
+    "Rotten": "Morsch"
+    "Bone": "Knochen"
+    "Webweave": "Webweave"
+    "God": "Gott"
+    "Test": "Test"
+    "Set": "Set"
+    "Kit": "Kit"
+    "Sun": "Sun"
+    "Hollow": "Hollow"
+  rarity:
+    "COMMON": "GEWÖHNLICH"
+    "UNCOMMON": "UNGEWÖHNLICH"
+    "RARE": "SELTEN"
+    "EPIC": "EPISCH"
+    "LEGENDARY": "LEGENDÄR"
+    "MYTHIC": "MYTHISCH"
+    "AETHERED": "AETHERED"
+    "GOD": "GOTT"
+  booster:
+    "Coal": "Kohle"
+    "Iron": "Eisen"
+    "Gold": "Gold"
+    "Diamond": "Diamant"
+    "Emerald": "Smaragd"
+    "Redstone": "Redstone"
+    "Lapis": "Lapis"
+    "Glowstone": "Glowstein"
+    "Wheat": "Weizen"
+    "Carrot": "Karotte"
+    "Oak": "Eiche"
+    "Birch": "Birke"
+  chrome:
+    "boosters": "Booster"
+    "fits": "Passt"
+names:
+  - {en: "Beginner's Pickaxe", de: "Anfänger-Spitzhacke"}
+  - {en: "Simple Pickaxe", de: "Einfache Spitzhacke"}
+  - {en: "Simple Axe", de: "Einfache Axt"}
+  - {en: "Simple Sword", de: "Einfaches Schwert"}
+  - {en: "Splinter Glaive", de: "Splitter-Glefe"}
+  - {en: "Ashen Cleaver", de: "Aschen-Spalter"}
+  - {en: "Simple Longbow", de: "Einfacher Langbogen"}
+  - {en: "Simple Shortbow", de: "Einfacher Kurzbogen"}
+  - {en: "Wooden Rod", de: "Holz-Rute"}
+  - {en: "Hollow Longbow", de: "Hollow-Langbogen"}
+  - {en: "Bone Knife", de: "Knochen-Messer"}
+  - {en: "Venom Dagger", de: "Gift-Dolch"}
+  - {en: "Iron Longbow", de: "Eisen-Langbogen"}
+  - {en: "Reinforced Shortbow", de: "Verstärkter Kurzbogen"}
+  - {en: "Hunter Crossbow", de: "Jäger-Armbrust"}
+  - {en: "Copper Rod", de: "Kupfer-Rute"}
+  - {en: "Frost Shard", de: "Frost-Splitter"}
+  - {en: "Rotten Helmet", de: "Morsch-Helm"}
+  - {en: "Rotten Chestplate", de: "Morsch-Brustplatte"}
+  - {en: "Rotten Leggings", de: "Morsch-Beinschutz"}
+  - {en: "Rotten Boots", de: "Morsch-Stiefel"}
+  - {en: "Rotten Cleaver", de: "Morsch-Spalter"}
+  - {en: "Bone Helmet", de: "Knochen-Helm"}
+  - {en: "Bone Chestplate", de: "Knochen-Brustplatte"}
+  - {en: "Bone Leggings", de: "Knochen-Beinschutz"}
+  - {en: "Bone Boots", de: "Knochen-Stiefel"}
+  - {en: "Webweave Helmet", de: "Webweave-Helm"}
+  - {en: "Webweave Chestplate", de: "Webweave-Brustplatte"}
+  - {en: "Webweave Leggings", de: "Webweave-Beinschutz"}
+  - {en: "Webweave Boots", de: "Webweave-Stiefel"}
+  - {en: "Webweave Fang", de: "Webweave-Fangzahn"}
+  - {en: "Ironhide Helmet", de: "Eisenhaut-Helm"}
+  - {en: "Ironhide Chestplate", de: "Eisenhaut-Brustplatte"}
+  - {en: "Ironhide Leggings", de: "Eisenhaut-Beinschutz"}
+  - {en: "Ironhide Boots", de: "Eisenhaut-Stiefel"}
+  - {en: "Healer Helmet", de: "Heiler-Helm"}
+  - {en: "Healer Chestplate", de: "Heiler-Brustplatte"}
+  - {en: "Healer Leggings", de: "Heiler-Beinschutz"}
+  - {en: "Healer Boots", de: "Heiler-Stiefel"}
+  - {en: "Mender Staff", de: "Wundheiler-Stab"}
+  - {en: "Ember Rod", de: "Glut-Rute"}
+  - {en: "Reinforced Pickaxe", de: "Verstärkte Spitzhacke"}
+  - {en: "Obsidian Maul", de: "Obsidian-Streithammer"}
+  - {en: "Simple Hoe", de: "Einfache Hacke"}
+  - {en: "Simple Helmet", de: "Einfacher Helm"}
+  - {en: "Simple Chestplate", de: "Einfache Brustplatte"}
+  - {en: "Simple Leggings", de: "Einfacher Beinschutz"}
+  - {en: "Simple Boots", de: "Einfache Stiefel"}
+  - {en: "Combat Helmet", de: "Kampf-Helm"}
+  - {en: "Combat Chestplate", de: "Kampf-Brustplatte"}
+  - {en: "Combat Leggings", de: "Kampf-Beinschutz"}
+  - {en: "Combat Boots", de: "Kampf-Stiefel"}
+  - {en: "Iron Combat Helmet", de: "Eisen-Kampf-Helm"}
+  - {en: "Iron Combat Chestplate", de: "Eisen-Kampf-Brustplatte"}
+  - {en: "Iron Combat Leggings", de: "Eisen-Kampf-Beinschutz"}
+  - {en: "Iron Combat Boots", de: "Eisen-Kampf-Stiefel"}
+  - {en: "Combat Sword", de: "Kampf-Schwert"}
+  - {en: "Iron Combat Sword", de: "Eisen-Kampf-Schwert"}
+  - {en: "Diamond Combat Helmet", de: "Diamant-Kampf-Helm"}
+  - {en: "Diamond Combat Chestplate", de: "Diamant-Kampf-Brustplatte"}
+  - {en: "Diamond Combat Leggings", de: "Diamant-Kampf-Beinschutz"}
+  - {en: "Diamond Combat Boots", de: "Diamant-Kampf-Stiefel"}
+  - {en: "Diamond Combat Sword", de: "Diamant-Kampf-Schwert"}
+  - {en: "Netherite Combat Helmet", de: "Netherit-Kampf-Helm"}
+  - {en: "Netherite Combat Chestplate", de: "Netherit-Kampf-Brustplatte"}
+  - {en: "Netherite Combat Leggings", de: "Netherit-Kampf-Beinschutz"}
+  - {en: "Netherite Combat Boots", de: "Netherit-Kampf-Stiefel"}
+  - {en: "Netherite Combat Sword", de: "Netherit-Kampf-Schwert"}
+  - {en: "Mythic Combat Helmet", de: "Mythischer Kampf-Helm"}
+  - {en: "Mythic Combat Chestplate", de: "Mythische Kampf-Brustplatte"}
+  - {en: "Mythic Combat Leggings", de: "Mythischer Kampf-Beinschutz"}
+  - {en: "Mythic Combat Boots", de: "Mythische Kampf-Stiefel"}
+  - {en: "Mythic Combat Sword", de: "Mythisches Kampf-Schwert"}
+  - {en: "Diamond Mining Helmet", de: "Diamant-Bergbau-Helm"}
+  - {en: "Diamond Mining Chestplate", de: "Diamant-Bergbau-Brustplatte"}
+  - {en: "Diamond Mining Leggings", de: "Diamant-Bergbau-Beinschutz"}
+  - {en: "Diamond Mining Boots", de: "Diamant-Bergbau-Stiefel"}
+  - {en: "Diamond Mining Pickaxe", de: "Diamant-Bergbau-Spitzhacke"}
+  - {en: "Netherite Mining Helmet", de: "Netherit-Bergbau-Helm"}
+  - {en: "Netherite Mining Chestplate", de: "Netherit-Bergbau-Brustplatte"}
+  - {en: "Netherite Mining Leggings", de: "Netherit-Bergbau-Beinschutz"}
+  - {en: "Netherite Mining Boots", de: "Netherit-Bergbau-Stiefel"}
+  - {en: "Netherite Mining Pickaxe", de: "Netherit-Bergbau-Spitzhacke"}
+  - {en: "Mythic Mining Helmet", de: "Mythischer Bergbau-Helm"}
+  - {en: "Mythic Mining Chestplate", de: "Mythische Bergbau-Brustplatte"}
+  - {en: "Mythic Mining Leggings", de: "Mythischer Bergbau-Beinschutz"}
+  - {en: "Mythic Mining Boots", de: "Mythische Bergbau-Stiefel"}
+  - {en: "Mythic Mining Pickaxe", de: "Mythische Bergbau-Spitzhacke"}
+  - {en: "Mining Helmet", de: "Bergbau-Helm"}
+  - {en: "Mining Chestplate", de: "Bergbau-Brustplatte"}
+  - {en: "Mining Leggings", de: "Bergbau-Beinschutz"}
+  - {en: "Mining Boots", de: "Bergbau-Stiefel"}
+  - {en: "Iron Mining Helmet", de: "Eisen-Bergbau-Helm"}
+  - {en: "Iron Mining Chestplate", de: "Eisen-Bergbau-Brustplatte"}
+  - {en: "Iron Mining Leggings", de: "Eisen-Bergbau-Beinschutz"}
+  - {en: "Iron Mining Boots", de: "Eisen-Bergbau-Stiefel"}
+  - {en: "Vein Siphon", de: "Erzader-Sauger"}
+  - {en: "Canopy Cleaver", de: "Kronenspalter"}
+  - {en: "Bounty Hoe", de: "Ertrags-Hacke"}
+  - {en: "Wild Sight", de: "Wildblick"}
+  - {en: "Tide Latch", de: "Gezeitenhaken"}
+  - {en: "Mining Pickaxe", de: "Bergbau-Spitzhacke"}
+  - {en: "Iron Mining Pickaxe", de: "Eisen-Bergbau-Spitzhacke"}
+  - {en: "GOD Pickaxe", de: "GOTT-Spitzhacke"}
+  - {en: "GOD Axe", de: "GOTT-Axt"}
+  - {en: "GOD Sword", de: "GOTT-Schwert"}
+  - {en: "GOD Helmet", de: "GOTT-Helm"}
+  - {en: "GOD Chestplate", de: "GOTT-Brustplatte"}
+  - {en: "GOD Leggings", de: "GOTT-Beinschutz"}
+  - {en: "GOD Boots", de: "GOTT-Stiefel"}
+  - {en: "GOD Kit 2 Pickaxe", de: "GOTT-Kit-2-Spitzhacke"}
+  - {en: "GOD Kit 2 Axe", de: "GOTT-Kit-2-Axt"}
+  - {en: "GOD Kit 2 Sword", de: "GOTT-Kit-2-Schwert"}
+  - {en: "GOD Kit 2 Helmet", de: "GOTT-Kit-2-Helm"}
+  - {en: "GOD Kit 2 Chestplate", de: "GOTT-Kit-2-Brustplatte"}
+  - {en: "GOD Kit 2 Leggings", de: "GOTT-Kit-2-Beinschutz"}
+  - {en: "GOD Kit 2 Boots", de: "GOTT-Kit-2-Stiefel"}
+  - {en: "Aetherblade", de: "Aetherblade"}
+  - {en: "Bridged Axe", de: "Brücken-Axt"}
+  - {en: "Squid's Boot", de: "Tintenfisch-Stiefel"}
+  - {en: "Warped Blade", de: "Warped Blade"}
+  - {en: "Staff of Technical Difficulties", de: "Stab der Technischen Störung"}
+  - {en: "Void Vacuum Charm", de: "Leerensauger-Talisman"}
+  - {en: "Thermal Core", de: "Thermo-Kern"}
+  - {en: "Pickaxe Core of the Burrower", de: "Spitzhacken-Kern des Wühlers"}
+  - {en: "Insolvent Ledger", de: "Insolventes Kassenbuch"}
+  - {en: "Weapon Schematic", de: "Waffen-Bauplan"}
+  - {en: "Dungeon Weapon Schematic", de: "Dungeon-Waffen-Bauplan"}
+  - {en: "✦ Spectacle Star", de: "✦ Spektakel-Stern"}
+  - {en: "✦✦✦ Aetherion Helmet", de: "✦✦✦ Aetherion-Helm"}
+  - {en: "✦✦✦ Aetherion Chestplate", de: "✦✦✦ Aetherion-Brustplatte"}
+  - {en: "✦✦✦ Aetherion Leggings", de: "✦✦✦ Aetherion-Beinschutz"}
+  - {en: "✦✦✦ Aetherion Boots", de: "✦✦✦ Aetherion-Stiefel"}
+  - {en: "✦✦✦ Void Stick", de: "✦✦✦ Leerenstock"}
+  - {en: "✦✦✦ Worldbite", de: "✦✦✦ Worldbite"}
+  - {en: "✦✦✦ Aetherion Summons", de: "✦✦✦ Aetherion-Beschwörung"}
+  - {en: "✦✦✦ Corona Visor", de: "✦✦✦ Korona-Visier"}
+  - {en: "✦✦✦ Hollow Heart Cuirass", de: "✦✦✦ Hohlherz-Kürass"}
+  - {en: "✦✦✦ Red Giant Greaves", de: "✦✦✦ Rote-Riesen-Beinschienen"}
+  - {en: "✦✦✦ Starfall Sabatons", de: "✦✦✦ Sternenfall-Panzerschuhe"}
+  - {en: "✦✦✦ Solstice", de: "✦✦✦ Sonnenwende"}
+  - {en: "Skuldugery's Shortbow", de: "Skuldugerys Kurzbogen"}
+  - {en: "Aetherion Recipe Book", de: "Aetherion Recipe Book"}
+  - {en: "✦ Echo Blade", de: "✦ Echo-Klinge"}
+  - {en: "✦ Parity Gauntlets", de: "✦ Paritäts-Panzerhandschuhe"}
+  - {en: "✦ Rulebreaker Charm", de: "✦ Regelbrecher-Talisman"}
+  - {en: "✦ Metronome Bow", de: "✦ Metronom-Bogen"}
+  - {en: "✦ Softlock Plate", de: "✦ Softlock-Platte"}
+  - {en: "✦ Nullstep Boots", de: "✦ Nullschritt-Stiefel"}
+  - {en: "✦ Broker's Contract", de: "✦ Broker-Vertrag"}
+  - {en: "Gravwell Cleaver", de: "Gravwell-Spalter"}
+  - {en: "✦ Stormcaller Maul", de: "✦ Sturmrufer-Streithammer"}
+  - {en: "✦ Resonance Scythe", de: "✦ Resonanz-Sense"}
+  - {en: "✦ Judgment Staff", de: "✦ Urteils-Stab"}
+  - {en: "✦ Dash Dagger", de: "✦ Vorstoß-Dolch"}
+  - {en: "✦ Cyclone Rod", de: "✦ Zyklon-Rute"}
+  - {en: "✦ Prism Staff", de: "✦ Prisma-Stab"}
+  - {en: "✦ Cascade Shortbow", de: "✦ Kaskaden-Kurzbogen"}
+  - {en: "✦ Dragon Ascension Vial", de: "✦ Drachenaufstiegs-Phiole"}
+  - {en: "Blossom Blade", de: "Blütenklinge"}
+  - {en: "✦ Meteor Mace", de: "✦ Meteor-Streitkolben"}
+  - {en: "✦ Cataclysm Rod", de: "✦ Kataklysmus-Rute"}
+  - {en: "✦ Rune Sigil", de: "✦ Runensiegel"}
+  - {en: "✦ World Splitter", de: "✦ Weltenspalter"}
+  - {en: "✦ Vesper Bell", de: "✦ Vesperglocke"}
+  - {en: "✦ Deepsong Conch", de: "✦ Tiefgesang-Muschel"}
+  - {en: "✦ Terminus", de: "✦ Terminus"}
+  - {en: "✦ Severance, the Saint's Needle", de: "✦ Severance, Nadel der Heiligen"}
+  - {en: "✦ Portal Gun", de: "✦ Portalkanone"}
+  - {en: "✦ Grappling Hook", de: "✦ Enterhaken"}
+  - {en: "✦ Skyreaver Spools", de: "✦ Skyreaver-Spulen"}
+  - {en: "Compressed Cobblestone", de: "Komprimierter Bruchstein"}
+  - {en: "Compacted Cobblestone", de: "Verdichteter Bruchstein"}
+  - {en: "Compressed Coal", de: "Komprimierte Kohle"}
+  - {en: "Compacted Coal", de: "Verdichtete Kohle"}
+  - {en: "Compressed Iron", de: "Komprimiertes Eisen"}
+  - {en: "Compacted Iron", de: "Verdichtetes Eisen"}
+  - {en: "Compressed Gold", de: "Komprimiertes Gold"}
+  - {en: "Compacted Gold", de: "Verdichtetes Gold"}
+  - {en: "Compressed Copper", de: "Komprimiertes Kupfer"}
+  - {en: "Compacted Copper", de: "Verdichtetes Kupfer"}
+  - {en: "Compressed Redstone", de: "Komprimierter Redstone"}
+  - {en: "Compacted Redstone", de: "Verdichteter Redstone"}
+  - {en: "Compressed Lapis", de: "Komprimierter Lapislazuli"}
+  - {en: "Compacted Lapis", de: "Verdichteter Lapislazuli"}
+  - {en: "Compressed Diamond", de: "Komprimierter Diamant"}
+  - {en: "Compacted Diamond", de: "Verdichteter Diamant"}
+  - {en: "Compressed Emerald", de: "Komprimierter Smaragd"}
+  - {en: "Compacted Emerald", de: "Verdichteter Smaragd"}
+  - {en: "Compressed Oak Log", de: "Komprimierter Eichenstamm"}
+  - {en: "Compacted Oak Log", de: "Verdichteter Eichenstamm"}
+  - {en: "Compressed Leather", de: "Komprimiertes Leder"}
+  - {en: "Compacted Leather", de: "Verdichtetes Leder"}
+  - {en: "Compressed Bone", de: "Komprimierter Knochen"}
+  - {en: "Compacted Bone", de: "Verdichteter Knochen"}
+  - {en: "Compressed String", de: "Komprimierter Faden"}
+  - {en: "Compacted String", de: "Verdichteter Faden"}
+  - {en: "Compressed Wheat", de: "Komprimierter Weizen"}
+  - {en: "Compacted Wheat", de: "Verdichteter Weizen"}
+  - {en: "Compressed Carrot", de: "Komprimierte Karotte"}
+  - {en: "Compacted Carrot", de: "Verdichtete Karotte"}
+  - {en: "Compressed Potato", de: "Komprimierte Kartoffel"}
+  - {en: "Compacted Potato", de: "Verdichtete Kartoffel"}
+  - {en: "Compressed Gunpowder", de: "Komprimiertes Schwarzpulver"}
+  - {en: "Compacted Gunpowder", de: "Verdichtetes Schwarzpulver"}
+  - {en: "Compressed Feather", de: "Komprimierte Feder"}
+  - {en: "Compacted Feather", de: "Verdichtete Feder"}
+  - {en: "Compressed Rotten Flesh", de: "Komprimiertes Gammelfleisch"}
+  - {en: "Compacted Rotten Flesh", de: "Verdichtetes Gammelfleisch"}
+  - {en: "Compressed Cod", de: "Komprimierter Kabeljau"}
+  - {en: "Compacted Cod", de: "Verdichteter Kabeljau"}
+  - {en: "Compressed Salmon", de: "Komprimierter Lachs"}
+  - {en: "Compacted Salmon", de: "Verdichteter Lachs"}
+  - {en: "Compressed Pufferfish", de: "Komprimierter Kugelfisch"}
+  - {en: "Compacted Pufferfish", de: "Verdichteter Kugelfisch"}
+  - {en: "Compressed Birch Log", de: "Komprimierter Birkenstamm"}
+  - {en: "Compacted Birch Log", de: "Verdichteter Birkenstamm"}
+  - {en: "Compressed Spruce Log", de: "Komprimierter Fichtenstamm"}
+  - {en: "Compacted Spruce Log", de: "Verdichteter Fichtenstamm"}
+  - {en: "Compressed Jungle Log", de: "Komprimierter Tropenbaumstamm"}
+  - {en: "Compacted Jungle Log", de: "Verdichteter Tropenbaumstamm"}
+  - {en: "Compressed Acacia Log", de: "Komprimierter Akazienstamm"}
+  - {en: "Compacted Acacia Log", de: "Verdichteter Akazienstamm"}
+  - {en: "Compressed Dark Oak Log", de: "Komprimierter Schwarzeichenstamm"}
+  - {en: "Compacted Dark Oak Log", de: "Verdichteter Schwarzeichenstamm"}
+  - {en: "Compressed Mangrove Log", de: "Komprimierter Mangrovenstamm"}
+  - {en: "Compacted Mangrove Log", de: "Verdichteter Mangrovenstamm"}
+  - {en: "Compressed Cherry Log", de: "Komprimierter Kirschstamm"}
+  - {en: "Compacted Cherry Log", de: "Verdichteter Kirschstamm"}
+  - {en: "Compressed Bamboo", de: "Komprimierter Bambus"}
+  - {en: "Compacted Bamboo", de: "Verdichteter Bambus"}
+  - {en: "Compressed Crimson Stem", de: "Komprimierter Karmesinstiel"}
+  - {en: "Compacted Crimson Stem", de: "Verdichteter Karmesinstiel"}
+  - {en: "Compressed Warped Stem", de: "Komprimierter Wirrstiel"}
+  - {en: "Compacted Warped Stem", de: "Verdichteter Wirrstiel"}
+  - {en: "Compressed Sugar Cane", de: "Komprimiertes Zuckerrohr"}
+  - {en: "Compacted Sugar Cane", de: "Verdichtetes Zuckerrohr"}
+  - {en: "Compressed Nether Wart", de: "Komprimierte Netherwarze"}
+  - {en: "Compacted Nether Wart", de: "Verdichtete Netherwarze"}
+  - {en: "Compressed Prismarine", de: "Komprimiertes Prismarin"}
+  - {en: "Compacted Prismarine", de: "Verdichtetes Prismarin"}
+  - {en: "Pantry Wheat", de: "Vorrats-Weizen"}
+  - {en: "Pantry Carrot", de: "Vorrats-Karotte"}
+  - {en: "Pantry Potato", de: "Vorrats-Kartoffel"}
+  - {en: "Pantry Cane", de: "Vorrats-Rohr"}
+  - {en: "Pantry Wart", de: "Vorrats-Warze"}
+  - {en: "Compressed Oak Chestplate", de: "Komprimierte Eichen-Brustplatte"}
+  - {en: "Compacted Timber Axe", de: "Verdichtete Holzfäller-Axt"}
+  - {en: "Compressed Stone Pickaxe", de: "Komprimierte Stein-Spitzhacke"}
+  - {en: "Compacted Cobble Hammer", de: "Verdichteter Bruchstein-Hammer"}
+  - {en: "Compressed Coal Ring", de: "Komprimierter Kohle-Ring"}
+  - {en: "Copper Sword", de: "Kupfer-Schwert"}
+  - {en: "Compressed Gold Sword", de: "Komprimiertes Gold-Schwert"}
+  - {en: "Compacted Midas Dagger", de: "Verdichteter Midas-Dolch"}
+  - {en: "Redstone Infused Boots", de: "Redstone-infundierte Stiefel"}
+  - {en: "Lapis Pendant", de: "Lapis-Anhänger"}
+  - {en: "Compacted Diamond Chestplate", de: "Verdichtete Diamant-Brustplatte"}
+  - {en: "Compacted Diamond Sword", de: "Verdichtetes Diamant-Schwert"}
+  - {en: "Emerald Crown", de: "Smaragd-Krone"}
+  - {en: "Compacted Emerald Scythe", de: "Verdichtete Smaragd-Sense"}
+  - {en: "Compacted Iron Pickaxe", de: "Verdichtete Eisen-Spitzhacke"}
+  - {en: "Compacted Diamond Pickaxe", de: "Verdichtete Diamant-Spitzhacke"}
+  - {en: "Voided 455", de: "Voided 455"}
+  - {en: "Quarry Core Shard", de: "Steinbruch-Kernsplitter"}
+  - {en: "Quarry Core", de: "Steinbruch-Kern"}
+  - {en: "Quarry Mill", de: "Steinbruch-Mühle"}
+  - {en: "Quarry Forge", de: "Steinbruch-Schmiede"}
+  - {en: "Carrot Harvest Booster", de: "Karottenernte-Booster"}
+  - {en: "Phial of Aetherion's Blood", de: "Aetherion-Blutphiole"}
+  - {en: "Lesser Phial of Aetherion's Blood", de: "Geringe Aetherion-Blutphiole"}
+  - {en: "Riot Warden's Breaker", de: "Krawallwärters Brecher"}
+  - {en: "Escapist's Shortbow", de: "Ausbrechers Kurzbogen"}
+  - {en: "Sculkbound Rod", de: "Sculkgebundene Rute"}
+  - {en: "Turnkey's Cell Maul", de: "Schließers Zellen-Streithammer"}
+  - {en: "Chaplain's Censer", de: "Kaplans Weihrauchfass"}
+  - {en: "The Mad King", de: "Der irre König"}
+  - {en: "Music Box Gear", de: "Spieldosen-Zahnrad"}
+  - {en: "Sun Guard Insignia", de: "Sun-Guard-Abzeichen"}
+  - {en: "Tiny Paper Crown", de: "Winzige Papierkrone"}
+  - {en: "Anchor Chain Link", de: "Ankerketten-Glied"}
+  - {en: "Letter Signed 'M' · I", de: "Brief, gezeichnet 'M' · I"}
+  - {en: "Letter Signed 'M' · II", de: "Brief, gezeichnet 'M' · II"}
+  - {en: "Letter Signed 'M' · III", de: "Brief, gezeichnet 'M' · III"}
+  - {en: "Sealed Writ of the Silent Year", de: "Schreiben des Stillen Jahres"}
+  - {en: "Cobblestone", de: "Bruchstein"}
+  - {en: "Coal", de: "Kohle"}
+  - {en: "Raw Iron", de: "Roheisen"}
+  - {en: "Raw Gold", de: "Rohgold"}
+  - {en: "Raw Copper", de: "Rohkupfer"}
+  - {en: "Redstone", de: "Redstone"}
+  - {en: "Lapis", de: "Lapis"}
+  - {en: "Lapis Lazuli", de: "Lapislazuli"}
+  - {en: "Diamond", de: "Diamant"}
+  - {en: "Emerald", de: "Smaragd"}
+  - {en: "Oak Log", de: "Eichenstamm"}
+  - {en: "Leather", de: "Leder"}
+  - {en: "Bone", de: "Knochen"}
+  - {en: "String", de: "Faden"}
+  - {en: "Wheat", de: "Weizen"}
+  - {en: "Carrot", de: "Karotte"}
+  - {en: "Potato", de: "Kartoffel"}
+  - {en: "Gunpowder", de: "Schwarzpulver"}
+  - {en: "Feather", de: "Feder"}
+  - {en: "Rotten Flesh", de: "Gammelfleisch"}
+  - {en: "Cod", de: "Kabeljau"}
+  - {en: "Salmon", de: "Lachs"}
+  - {en: "Pufferfish", de: "Kugelfisch"}
+  - {en: "Birch Log", de: "Birkenstamm"}
+  - {en: "Spruce Log", de: "Fichtenstamm"}
+  - {en: "Jungle Log", de: "Tropenbaumstamm"}
+  - {en: "Acacia Log", de: "Akazienstamm"}
+  - {en: "Dark Oak Log", de: "Schwarzeichenstamm"}
+  - {en: "Mangrove Log", de: "Mangrovenstamm"}
+  - {en: "Cherry Log", de: "Kirschstamm"}
+  - {en: "Bamboo Block", de: "Bambusblock"}
+  - {en: "Crimson Stem", de: "Karmesinstiel"}
+  - {en: "Warped Stem", de: "Wirrstiel"}
+  - {en: "Sugar Cane", de: "Zuckerrohr"}
+  - {en: "Nether Wart", de: "Netherwarze"}
+  - {en: "Prismarine Shard", de: "Prismarinscherbe"}
+  - {en: "Iron Ingot", de: "Eisenbarren"}
+  - {en: "Gold Ingot", de: "Goldbarren"}
+  - {en: "Copper Ingot", de: "Kupferbarren"}
+  - {en: "Cobble Quarry", de: "Bruchstein-Steinbruch"}
+  - {en: "Coal Quarry", de: "Kohle-Steinbruch"}
+  - {en: "Iron Quarry", de: "Eisen-Steinbruch"}
+  - {en: "Gold Quarry", de: "Gold-Steinbruch"}
+  - {en: "Copper Quarry", de: "Kupfer-Steinbruch"}
+  - {en: "Redstone Quarry", de: "Redstone-Steinbruch"}
+  - {en: "Lapis Quarry", de: "Lapis-Steinbruch"}
+  - {en: "Diamond Quarry", de: "Diamant-Steinbruch"}
+  - {en: "Emerald Quarry", de: "Smaragd-Steinbruch"}
+  - {en: "Oak Quarry", de: "Eichen-Steinbruch"}
+  - {en: "Birch Quarry", de: "Birken-Steinbruch"}
+  - {en: "Spruce Quarry", de: "Fichten-Steinbruch"}
+  - {en: "Jungle Quarry", de: "Dschungel-Steinbruch"}
+  - {en: "Acacia Quarry", de: "Akazien-Steinbruch"}
+  - {en: "Dark Oak Quarry", de: "Schwarzeichen-Steinbruch"}
+  - {en: "Mangrove Quarry", de: "Mangroven-Steinbruch"}
+  - {en: "Cherry Quarry", de: "Kirsch-Steinbruch"}
+  - {en: "Bamboo Quarry", de: "Bambus-Steinbruch"}
+  - {en: "Crimson Quarry", de: "Karmesin-Steinbruch"}
+  - {en: "Warped Quarry", de: "Wirr-Steinbruch"}
+  - {en: "Leather Quarry", de: "Leder-Steinbruch"}
+  - {en: "Bone Quarry", de: "Knochen-Steinbruch"}
+  - {en: "String Quarry", de: "Faden-Steinbruch"}
+  - {en: "Wheat Quarry", de: "Weizen-Steinbruch"}
+  - {en: "Carrot Quarry", de: "Karotten-Steinbruch"}
+  - {en: "Potato Quarry", de: "Kartoffel-Steinbruch"}
+  - {en: "Sugar Cane Quarry", de: "Zuckerrohr-Steinbruch"}
+  - {en: "Nether Wart Quarry", de: "Netherwarzen-Steinbruch"}
+  - {en: "Gunpowder Quarry", de: "Schwarzpulver-Steinbruch"}
+  - {en: "Feather Quarry", de: "Federn-Steinbruch"}
+  - {en: "Rotten Quarry", de: "Gammelfleisch-Steinbruch"}
+  - {en: "Cod Quarry", de: "Kabeljau-Steinbruch"}
+  - {en: "Salmon Quarry", de: "Lachs-Steinbruch"}
+  - {en: "Pufferfish Quarry", de: "Kugelfisch-Steinbruch"}
+  - {en: "Prismarine Quarry", de: "Prismarin-Steinbruch"}
+  - {en: "Tank", de: "Tank"}
+  - {en: "Assassin", de: "Assassine"}
+  - {en: "Soldier", de: "Soldat"}
+  - {en: "Healer", de: "Heiler"}
+  - {en: "Shaman", de: "Schamane"}
+  - {en: "Turnkey", de: "Schließer"}
+  - {en: "Escapist", de: "Ausbrecher"}
+  - {en: "Riot Warden", de: "Krawallwärter"}
+  - {en: "Chaplain", de: "Kaplan"}
+  - {en: "Sculkbound", de: "Sculkgebunden"}
+  - {en: "Helmet", de: "Helm"}
+  - {en: "Chestplate", de: "Brustplatte"}
+  - {en: "Leggings", de: "Beinschutz"}
+  - {en: "Boots", de: "Stiefel"}
+  - {en: "Weapon", de: "Waffe"}
+  - {en: "Edge", de: "Schneide"}
+  - {en: "Wand", de: "Zauberstab"}
+  - {en: "Maul", de: "Streithammer"}
+  - {en: "Staff", de: "Stab"}
+  - {en: "Mining Power, Fortune, Damage, Defense", de: "Abbaukraft, Glück, Schaden, Verteidigung"}
+  - {en: "Pet Catch Rate", de: "Haustier-Fangrate"}
+  - {en: "Tools, weapons and armor with those stats", de: "Werkzeuge, Waffen und Rüstung mit diesen Werten"}
+  - {en: "Items with Spread", de: "Items mit Streuung"}
+  - {en: "Weapons and combat armor", de: "Waffen und Kampfrüstung"}
+  - {en: "Armor with Health", de: "Rüstung mit Leben"}
+  - {en: "All boots", de: "Alle Stiefel"}
+  - {en: "Catcher armor", de: "Fänger-Rüstung"}
+  - {en: "Farming tools and armor", de: "Farm-Werkzeuge und -Rüstung"}
+  - {en: "Weapons and combat chestplates", de: "Waffen und Kampf-Brustplatten"}
+  - {en: "Combat", de: "Kampf"}
+  - {en: "Mining", de: "Bergbau"}
+  - {en: "Farming", de: "Farming"}
+  - {en: "Foraging", de: "Sammeln"}
+  - {en: "Fishing", de: "Angeln"}
+  - {en: "Utility", de: "Nutzen"}
+  - {en: "Turnkey's Iron Visor", de: "Schließers Eisenvisier"}
+  - {en: "Turnkey's Gaol Plate", de: "Schließers Kerkerplatte"}
+  - {en: "Turnkey's Cellblock Greaves", de: "Schließers Zellentrakt-Schienen"}
+  - {en: "Turnkey's Shackle Sabatons", de: "Schließers Fesselschuhe"}
+  - {en: "Escapist's Ragged Vest", de: "Ausbrechers Lumpenweste"}
+  - {en: "Escapist's Tunnel Wraps", de: "Ausbrechers Tunnelwickel"}
+  - {en: "Escapist's Silent Soles", de: "Ausbrechers Leisesohlen"}
+  - {en: "Riot Warden's Helm", de: "Krawallwärters Helm"}
+  - {en: "Riot Warden's Hauberk", de: "Krawallwärters Kettenhemd"}
+  - {en: "Riot Warden's Tassets", de: "Krawallwärters Beintaschen"}
+  - {en: "Riot Warden's Treads", de: "Krawallwärters Stiefel"}
+  - {en: "Chaplain's Penitent Robes", de: "Kaplans Büßerrobe"}
+  - {en: "Chaplain's Pilgrim Sandals", de: "Kaplans Pilgersandalen"}
+  - {en: "Marionette Bell Skirt", de: "Marionetten-Glockenrock"}
+  - {en: "Gilt Pointe Slippers", de: "Vergoldete Spitzenschuhe"}
+  - {en: "Jade Culm Heartwood", de: "Jade-Halm-Kernholz"}
+  - {en: "Spectacle Star", de: "Spektakel-Stern"}
+  - {en: "Aetherion Helmet", de: "Aetherion-Helm"}
+  - {en: "Aetherion Chestplate", de: "Aetherion-Brustplatte"}
+  - {en: "Aetherion Leggings", de: "Aetherion-Beinschutz"}
+  - {en: "Aetherion Boots", de: "Aetherion-Stiefel"}
+  - {en: "Void Stick", de: "Leerenstock"}
+  - {en: "Worldbite", de: "Worldbite"}
+  - {en: "Aetherion Summons", de: "Aetherion-Beschwörung"}
+  - {en: "Corona Visor", de: "Korona-Visier"}
+  - {en: "Hollow Heart Cuirass", de: "Hohlherz-Kürass"}
+  - {en: "Red Giant Greaves", de: "Rote-Riesen-Beinschienen"}
+  - {en: "Starfall Sabatons", de: "Sternenfall-Panzerschuhe"}
+  - {en: "Solstice", de: "Sonnenwende"}
+  - {en: "Echo Blade", de: "Echo-Klinge"}
+  - {en: "Parity Gauntlets", de: "Paritäts-Panzerhandschuhe"}
+  - {en: "Rulebreaker Charm", de: "Regelbrecher-Talisman"}
+  - {en: "Metronome Bow", de: "Metronom-Bogen"}
+  - {en: "Softlock Plate", de: "Softlock-Platte"}
+  - {en: "Nullstep Boots", de: "Nullschritt-Stiefel"}
+  - {en: "Broker's Contract", de: "Broker-Vertrag"}
+  - {en: "Stormcaller Maul", de: "Sturmrufer-Streithammer"}
+  - {en: "Resonance Scythe", de: "Resonanz-Sense"}
+  - {en: "Judgment Staff", de: "Urteils-Stab"}
+  - {en: "Dash Dagger", de: "Vorstoß-Dolch"}
+  - {en: "Cyclone Rod", de: "Zyklon-Rute"}
+  - {en: "Prism Staff", de: "Prisma-Stab"}
+  - {en: "Cascade Shortbow", de: "Kaskaden-Kurzbogen"}
+  - {en: "Dragon Ascension Vial", de: "Drachenaufstiegs-Phiole"}
+  - {en: "Meteor Mace", de: "Meteor-Streitkolben"}
+  - {en: "Cataclysm Rod", de: "Kataklysmus-Rute"}
+  - {en: "Rune Sigil", de: "Runensiegel"}
+  - {en: "World Splitter", de: "Weltenspalter"}
+  - {en: "Vesper Bell", de: "Vesperglocke"}
+  - {en: "Deepsong Conch", de: "Tiefgesang-Muschel"}
+  - {en: "Terminus", de: "Terminus"}
+  - {en: "Severance, the Saint's Needle", de: "Severance, Nadel der Heiligen"}
+  - {en: "Portal Gun", de: "Portalkanone"}
+  - {en: "Grappling Hook", de: "Enterhaken"}
+  - {en: "Skyreaver Spools", de: "Skyreaver-Spulen"}
+name_patterns:
+  - {en: "Upgrade Stone {0}", de: "Aufwertungsstein {0}"}
+  - {en: "Dungeon Core {0}", de: "Dungeon-Kern {0}"}
+  - {en: "Dungeon Vestige {0}", de: "Dungeon-Vestige {0}"}
+  - {en: "Shackled Vestige · {0}", de: "Gefesseltes Vestige · {0}"}
+  - {en: "Unidentified {0} {1}", de: "Unidentifiziert · {0} {1}"}
+  - {en: "Warden-Marked {0}", de: "Warden-gezeichnet {0}"}
+  - {en: "Bulwark {0} {1}", de: "Bollwerk-{0} {1}"}
+  - {en: "Shade String {0}", de: "Schatten-Sehne {0}"}
+  - {en: "Shade {0} {1}", de: "Schatten-{0} {1}"}
+  - {en: "Vanguard {0} {1}", de: "Vorhut-{0} {1}"}
+  - {en: "Sanctuary {0} {1}", de: "Zuflucht-{0} {1}"}
+  - {en: "Spiritbind {0} {1}", de: "Geistbund-{0} {1}"}
+  - {en: "{0} Charm", de: "{0}-Talisman"}
+text:
+  - {en: "§7Oak that learned to be a spear.", de: "§7Eiche, die Speer werden wollte."}
+  - {en: "§7Coal dust in the edge. The trees remember.", de: "§7Kohlestaub in der Klinge. Die Bäume vergessen nicht."}
+  - {en: "§eDraw: §f1.6s §8for a full shot.", de: "§eSpannzeit: §f1,6s §8für vollen Schuss."}
+  - {en: "§7Needs arrows. Slow, but it hits.", de: "§7Braucht Pfeile. Langsam, aber trifft."}
+  - {en: "§6⚡ Fire Rate: §f1.50s", de: "§6⚡ Feuerrate: §f1,50s"}
+  - {en: "§7Hold right-click to fire.", de: "§7Rechtsklick halten zum Schießen."}
+  - {en: "§7Needs arrows.", de: "§7Braucht Pfeile."}
+  - {en: "§6✦ Lightning Strike", de: "§6✦ Blitzschlag"}
+  - {en: "§eRight-click: §7bolt where you look.", de: "§eRechtsklick: §7Blitz, wohin du schaust."}
+  - {en: "§8Range 30 · CD 10s", de: "§8Reichweite 30 · CD 10s"}
+  - {en: "§eDraw: §f2.0s §8for a full shot.", de: "§eSpannzeit: §f2,0s §8für vollen Schuss."}
+  - {en: "§7Needs arrows. Pierces one target.", de: "§7Braucht Pfeile. Durchbohrt ein Ziel."}
+  - {en: "§8Hollow Lurker · details later", de: "§8Hollow Lurker · Details folgen"}
+  - {en: "§eCarved from something that §edidn't stay buried.", de: "§eGeschnitzt aus etwas, das §enicht im Grab geblieben ist."}
+  - {en: "§8Cheap. Sharp. Mean on a crit.", de: "§8Billig. Scharf. Fies bei Krits."}
+  - {en: "§2On hit: §7Poison for 4s.", de: "§2Bei Treffer: §7Gift für 4s."}
+  - {en: "§eA polite way to ruin §esomeone's afternoon.", de: "§eEine höfliche Art, jemandem §eden Nachmittag zu vermiesen."}
+  - {en: "§8Early toxin blade", de: "§8Frühe Giftklinge"}
+  - {en: "§eDraw: §f1.4s §8for a full shot.", de: "§eSpannzeit: §f1,4s §8für vollen Schuss."}
+  - {en: "§7Needs arrows. The hunting bow, grown up.", de: "§7Braucht Pfeile. Der Jagdbogen, nur erwachsen."}
+  - {en: "§8Upgrade of the Longbow", de: "§8Upgrade des Langbogens"}
+  - {en: "§6⚡ Fire Rate: §f1.20s", de: "§6⚡ Feuerrate: §f1,20s"}
+  - {en: "§8Upgrade of the Shortbow", de: "§8Upgrade des Kurzbogens"}
+  - {en: "§7Draw, release. Needs arrows.", de: "§7Spannen, loslassen. Braucht Pfeile."}
+  - {en: "§8Hunter's issue", de: "§8Jägerausrüstung"}
+  - {en: "§6✦ Chain Lightning", de: "§6✦ Kettenblitz"}
+  - {en: "§7Jumps to §f2 §7extra targets.", de: "§7Springt auf §f2 §7weitere Ziele."}
+  - {en: "§8Range 28 · CD 8s", de: "§8Reichweite 28 · CD 8s"}
+  - {en: "§6✦ Frost Burst", de: "§6✦ Froststoß"}
+  - {en: "§eRight-click: §7burst of frost.", de: "§eRechtsklick: §7ein Stoß aus Frost."}
+  - {en: "§7Slows whatever it hits for §f4s§7.", de: "§7Verlangsamt alles Getroffene für §f4s§7."}
+  - {en: "§8Range 24 · CD 6s", de: "§8Reichweite 24 · CD 6s"}
+  - {en: "§7Flesh learned to hold an edge.", de: "§7Fleisch, das lernte, scharf zu sein."}
+  - {en: "§8Matches the Rotten set.", de: "§8Passt zum Morsch-Set."}
+  - {en: "§7A fang the web decided to keep.", de: "§7Ein Zahn, den das Netz behielt."}
+  - {en: "§8Matches the Webweave set.", de: "§8Passt zum Webweave-Set."}
+  - {en: "§7Smells like a bad idea. Works like a great one §7against anything that should stay dead.", de: "§7Riecht nach schlechter Idee. Wirkt gegen alles, §7was tot bleiben sollte, wie eine geniale."}
+  - {en: "§8Full set: §7+10% Undead Damage & Resist", de: "§8Vollständiges Set: §7+10% Untoten-Schaden & -Resistenz"}
+  - {en: "§7Assembled with more confidence than anatomy.", de: "§7Mit mehr Selbstvertrauen als Anatomie zusammengebaut."}
+  - {en: "§8Full set: §7+4% Crit Chance", de: "§8Vollständiges Set: §7+4% Krit-Chance"}
+  - {en: "§7Built to take a beating and ask for more.", de: "§7Steckt Prügel ein und fragt nach Nachschlag."}
+  - {en: "§8Full set: §7+20 Defense", de: "§8Vollständiges Set: §7+20 Verteidigung"}
+  - {en: "§7Woven with restorative emerald threads.", de: "§7Gewebt aus heilenden Smaragdfäden."}
+  - {en: "§8Full set: §7Heal Aura (8 blocks, 2❤, 5s)", de: "§8Vollständiges Set: §7Heilaura (8 Blöcke, 2❤, 5s)"}
+  - {en: "§7💚 Heal: §f+4❤ (8 blocks)", de: "§7💚 Heilung: §f+4❤ (8 Blöcke)"}
+  - {en: "§aA staff infused with life energy.", de: "§aEin Stab, durchdrungen von Lebensenergie."}
+  - {en: "§7Heals all nearby players.", de: "§7Heilt alle Spieler in der Nähe."}
+  - {en: "§6Right-click: §7group heal.", de: "§6Rechtsklick: §7Gruppenheilung."}
+  - {en: "§8Range 28 · 5s cooldown", de: "§8Reichweite 28 · 5s Abklingzeit"}
+  - {en: "§6✦ Ember Burst", de: "§6✦ Glutstoß"}
+  - {en: "§eRight-click: §7burst of fire.", de: "§eRechtsklick: §7ein Stoß aus Feuer."}
+  - {en: "§7Sets targets ablaze.", de: "§7Setzt Ziele in Brand."}
+  - {en: "§8Range 28 · CD 5s", de: "§8Reichweite 28 · CD 5s"}
+  - {en: "§7Compressed iron reinforces every strike.", de: "§7Verdichtetes Eisen verstärkt jeden Schlag."}
+  - {en: "§8Slow. Heavy. Final.", de: "§8Langsam. Schwer. Final."}
+  - {en: "§7A hammer carved from volcanic glass.", de: "§7Ein Hammer, gehauen aus Vulkanglas."}
+  - {en: "§7Light as a cobweb. Almost as comforting.", de: "§7Leicht wie Spinnweben. Fast genauso kuschelig."}
+  - {en: "§8Full set: §7+5% Speed", de: "§8Vollständiges Set: §7+5% Tempo"}
+  - {en: "§bBlueprint: Vein Siphon", de: "§bBauplan: Erzader-Sauger"}
+  - {en: "§7Schematic for a suction mining tool.", de: "§7Bauplan für ein Saug-Abbauwerkzeug."}
+  - {en: "§bBlueprint Tier: §fI/IV", de: "§bBauplan-Stufe: §fI/IV"}
+  - {en: "§eAbility · Ore Vacuum", de: "§eFähigkeit · Erzsauger"}
+  - {en: "§7Right-click: pull ores in §f10§7 blocks", de: "§7Rechtsklick: Erze aus §f10§7 Blöcken heranziehen"}
+  - {en: "§7Cooldown: §f45s §8· max 15", de: "§7Abklingzeit: §f45s §8· max. 15"}
+  - {en: "§6Mining Boss Damage: §f10 + rarity", de: "§6Bergbau-Boss-Schaden: §f10 + Seltenheit"}
+  - {en: "§7Pick hits on ore trolls.", de: "§7Spitzhacken-Treffer gegen Erztrolle."}
+  - {en: "§aBlueprint: Canopy Cleaver", de: "§aBauplan: Kronenspalter"}
+  - {en: "§7Schematic for a one-swing tree feller.", de: "§7Bauplan für einen Ein-Hieb-Baumfäller."}
+  - {en: "§eAbility · Perfect Fell", de: "§eFähigkeit · Perfekte Fällung"}
+  - {en: "§7Click the trunk base once — §7instant perfect chop. Tree falls.", de: "§7Klick einmal den Stammfuß an — §7sofort perfekt gefällt. Baum fällt."}
+  - {en: "§7Cooldown: §f20s", de: "§7Abklingzeit: §f20s"}
+  - {en: "§eBlueprint: Bounty Hoe", de: "§eBauplan: Ertrags-Hacke"}
+  - {en: "§7Schematic for a high-yield harvest hoe.", de: "§7Bauplan für eine ertragreiche Erntehacke."}
+  - {en: "§eAbility · Packed Harvest", de: "§eFähigkeit · Volle Ernte"}
+  - {en: "§7Cuts more neighbouring mature crops.", de: "§7Erntet mehr reife Nachbarpflanzen mit."}
+  - {en: "§dBlueprint: Wild Sight", de: "§dBauplan: Wildblick"}
+  - {en: "§7Schematic for a pet-sense lens.", de: "§7Bauplan für eine Haustier-Spürlinse."}
+  - {en: "§eAbility · Pet Sense", de: "§eFähigkeit · Tierspürsinn"}
+  - {en: "§7Hold to see nearby wild pets §7through walls — rarity glow + name.", de: "§7Halten: wilde Haustiere in der Nähe §7durch Wände sehen — Seltenheitsleuchten + Name."}
+  - {en: "§3Blueprint: Tide Latch", de: "§3Bauplan: Gezeitenhaken"}
+  - {en: "§7Schematic for a rod that hooks water pets.", de: "§7Bauplan für eine Rute, die Wasser-Haustiere angelt."}
+  - {en: "§eAbility · Aquatic Hook", de: "§eFähigkeit · Wasserhaken"}
+  - {en: "§7Chance to reel aquatic pets, §7including deep-sea water pets.", de: "§7Chance, Wasser-Haustiere zu angeln, §7auch solche aus der Tiefsee."}
+  - {en: "§5Blueprint: Resonance Scythe", de: "§5Bauplan: Resonanz-Sense"}
+  - {en: "§7Schematic for the sonic combat scythe.", de: "§7Bauplan für die Schall-Kampfsense."}
+  - {en: "§eStamp at the Surveyor desk.", de: "§eAm Vermesser-Tisch abstempeln."}
+  - {en: "§8Dropped by Tiny Ore Trolls", de: "§8Drop von winzigen Erztrollen"}
+  - {en: "§7It shouldn't exist.", de: "§7Es dürfte nicht existieren."}
+  - {en: "§5✦ Rift Dance", de: "§5✦ Risstanz"}
+  - {en: "§7Right-click: blink to the 5 §7nearest enemies. §8(10s)", de: "§7Rechtsklick: blinzle zu den 5 §7nächsten Gegnern. §8(10s)"}
+  - {en: "§6❤ Life Absorption: §f5%", de: "§6❤ Lebensentzug: §f5%"}
+  - {en: "§6⚡ Throw: §f15s", de: "§6⚡ Wurf: §f15s"}
+  - {en: "§7Right-click to hurl the axe.", de: "§7Rechtsklick schleudert die Axt."}
+  - {en: "§7Hits steal health on melee and throw.", de: "§7Nahkampf- und Wurftreffer stehlen Leben."}
+  - {en: "§8Torn from the Bridge Troll", de: "§8Dem Bridge Troll entrissen"}
+  - {en: "§8Atleast one of them...", de: "§8Immerhin einer davon..."}
+  - {en: "§5✦ Ink Pulse", de: "§5✦ Tintenpuls"}
+  - {en: "§7Nearby hostiles take §f1% §7HP", de: "§7Feinde in der Nähe verlieren §f1% §7HP"}
+  - {en: "§5What the..?", de: "§5Was zum..?"}
+  - {en: "§5✦ Warp Step", de: "§5✦ Warpschritt"}
+  - {en: "§7Right-click to blink 5 blocks §7forward. §8(8s)", de: "§7Rechtsklick: blinzle 5 Blöcke §7nach vorn. §8(8s)"}
+  - {en: "§8Torn from the Hollow Lurker", de: "§8Dem Hollow Lurker entrissen"}
+  - {en: "§5✦ Freeze Frame", de: "§5✦ Standbild"}
+  - {en: "§7Right-click: bank incoming hits for §f4s§7.", de: "§7Rechtsklick: speichere eingehende Treffer §f4s§7 lang."}
+  - {en: "§7Then dump the pile into the nearest enemy.", de: "§7Dann kipp den Haufen auf den nächsten Gegner."}
+  - {en: "§8Sir Balthazar still denies the bug.", de: "§8Sir Balthazar leugnet den Bug bis heute."}
+  - {en: "§5✦ Auto-Pickup", de: "§5✦ Auto-Aufsammeln"}
+  - {en: "§7Pulls nearby drops. The lobby stays tidy.", de: "§7Zieht Drops in der Nähe an. Die Lobby bleibt sauber."}
+  - {en: "§8The Lobby Cleaner wants it back.", de: "§8Der Lobby-Reiniger will ihn zurück."}
+  - {en: "§5✦ Overclock", de: "§5✦ Übertakten"}
+  - {en: "§7Faster melee swings. Shortbows fire §f0.2s §7sooner.", de: "§7Schnellere Nahkampfhiebe. Kurzbögen feuern §f0,2s §7früher."}
+  - {en: "§cEach hit nicks you. Sparky calls it tuition.", de: "§cJeder Treffer ritzt dich. Sparky nennt es Lehrgeld."}
+  - {en: "§8Guild quarry leftover.", de: "§8Rest aus dem Gilden-Steinbruch."}
+  - {en: "§5✦ Quarry Hunger", de: "§5✦ Grubenhunger"}
+  - {en: "§7Mines harder. Hits back a little in combat.", de: "§7Baut härter ab. Schlägt im Kampf etwas zurück."}
+  - {en: "§8Baron von Wurm still wants the picks.", de: "§8Baron von Wurm will die Spitzhacken noch immer."}
+  - {en: "§5✦ Foreclosure", de: "§5✦ Pfändung"}
+  - {en: "§7Kills pay extra coins. The house always wins.", de: "§7Kills zahlen extra Münzen. Die Bank gewinnt immer."}
+  - {en: "§8You are briefly the house.", de: "§8Kurz bist du die Bank."}
+  - {en: "§8The Insolvent Wither left a bookmark.", de: "§8Der Insolvente Wither ließ ein Lesezeichen drin."}
+  - {en: "§7Unidentified overworld schematic.", de: "§7Unidentifizierter Oberwelt-Bauplan."}
+  - {en: "§7Pick a weapon that matches an armor set.", de: "§7Wähle eine Waffe passend zu einem Rüstungsset."}
+  - {en: "§8Combat · Mining · Farming · Fishing", de: "§8Kampf · Bergbau · Ackerbau · Angel"}
+  - {en: "§8Rotten · Bone · Webweave", de: "§8Morsch · Knochen · Webweave"}
+  - {en: "§8Ironhide · Healer · Catcher", de: "§8Eisenhaut · Heiler · Fänger"}
+  - {en: "§eRight-click §7to identify.", de: "§eRechtsklick §7zum Identifizieren."}
+  - {en: "§8Boss drop. There is no undo.", de: "§8Boss-Drop. Es gibt kein Strg+Z."}
+  - {en: "§7Unidentified dungeon schematic.", de: "§7Unidentifizierter Dungeon-Bauplan."}
+  - {en: "§7Pick a weapon that matches a vestige class.", de: "§7Wähle eine Waffe passend zu einer Vestige-Klasse."}
+  - {en: "§bTank §8· §5Assassin §8· §cSoldier", de: "§bTank §8· §5Assassine §8· §cSoldat"}
+  - {en: "§eHealer §8· §3Shaman", de: "§eHeiler §8· §3Schamane"}
+  - {en: "§8Dungeon drop. There is no undo.", de: "§8Dungeon-Drop. Es gibt kein Strg+Z."}
+  - {en: "§7Anvil: boss gear becomes dungeon gear.", de: "§7Amboss: aus Boss-Gear wird Dungeon-Gear."}
+  - {en: "§7Then it levels. Stronger inside dungeons.", de: "§7Dann levelt es. In Dungeons stärker."}
+  - {en: "§7Rarity itself adds a little extra to stats.", de: "§7Schon die Seltenheit gibt den Werten etwas extra."}
+  - {en: "§8T1 is a nudge. T3 is the real argument.", de: "§8T1 stupst an. T3 ist das echte Argument."}
+  - {en: "§7Pried from a spectacle.", de: "§7Aus einem Spektakel gehebelt."}
+  - {en: "§7Something wants it back.", de: "§7Etwas will ihn zurück."}
+  - {en: "§8Boss trophy · crafting reagent", de: "§8Boss-Trophäe · Crafting-Zutat"}
+  - {en: "§8Drops from spectacle bosses", de: "§8Droppt von Spektakel-Bossen"}
+  - {en: "§5Second spark. The dungeon is less amused.", de: "§5Zweiter Funke. Der Dungeon ist weniger amüsiert."}
+  - {en: "§5The last honest piece of a dishonest floor.", de: "§5Das letzte ehrliche Stück einer unehrlichen Etage."}
+  - {en: "§5A dungeon coughed. This is the hairball.", de: "§5Ein Dungeon hat gehustet. Das ist der Haarballen."}
+  - {en: "§5Full Set", de: "§5Vollständiges Set"}
+  - {en: "§7Survive death once. §8(15m)", de: "§7Überlebe den Tod einmal. §8(15m)"}
+  - {en: "§7A mini Ender Dragon follows you.", de: "§7Ein Mini-Enderdrache folgt dir."}
+  - {en: "§7It spits purple fire at mobs.", de: "§7Er spuckt lila Feuer auf Mobs."}
+  - {en: "§8Forged from the last dragon", de: "§8Aus dem letzten Drachen geschmiedet"}
+  - {en: "§5✦ Slow Singularity", de: "§5✦ Langsame Singularität"}
+  - {en: "§7Right-click to pull foes §7within 25 blocks and drain life.", de: "§7Rechtsklick zieht Feinde §7aus 25 Blöcken heran und saugt Leben ab."}
+  - {en: "§8Hold right-click. Not while idle.", de: "§8Rechtsklick halten. Nicht im Leerlauf."}
+  - {en: "§8The brow it stared with.", de: "§8Die Stirn, mit der es starrte."}
+  - {en: "§8Sixteen worlds, stitched shut.", de: "§8Sechzehn Welten, zugenäht."}
+  - {en: "§8It lay around the world in these.", de: "§8Darin lag es rings um die Welt."}
+  - {en: "§8They leave grass where they step.", de: "§8Wo sie auftreten, wächst Gras."}
+  - {en: "§5Full Set: Last Seed", de: "§5Vollständiges Set: Letzte Saat"}
+  - {en: "§7Where you stand, the world grows back:", de: "§7Wo du stehst, wächst die Welt nach:"}
+  - {en: "§7regenerate and gain absorption §7while standing on grass or moss.", de: "§7Regeneration und Absorption, §7solange du auf Gras oder Moos stehst."}
+  - {en: "§8Loot of Nihil, the World Eater", de: "§8Beute von Nihil, dem Weltenfresser"}
+  - {en: "§5✦ Devour", de: "§5✦ Verschlingen"}
+  - {en: "§7Right-click: a chunk border snaps §7shut ahead of you. Everything inside §7is pulled in, bitten and drained.", de: "§7Rechtsklick: Vor dir schnappt eine Chunkgrenze §7zu. Alles darin §7wird hineingezogen, zerbissen und ausgesaugt."}
+  - {en: "§8Cooldown 8s.", de: "§8Abklingzeit 8s."}
+  - {en: "§8Its last fang. Still hungry.", de: "§8Sein letzter Reißzahn. Immer noch hungrig."}
+  - {en: "§7Every isle, a spectacle, the third floor §7and the bank, pressed into one crystal.", de: "§7Jede Insel, ein Spektakel, die dritte Etage §7und die Bank, gepresst in einen Kristall."}
+  - {en: "§eRight-click §7at §5the Veil §7(Aetherion's anchor) §7to tear it open. Aetherion answers.", de: "§eRechtsklick §7auf §5den Schleier §7(Aetherions Anker), §7um ihn aufzureißen. Aetherion antwortet."}
+  - {en: "§8Consumed on a successful summon.", de: "§8Wird bei erfolgreicher Beschwörung verbraucht."}
+  - {en: "§8Pinnacle · bring a party of four", de: "§8Gipfel · bring eine Vierergruppe mit"}
+  - {en: "§e☀ Solar Sight", de: "§e☀ Sonnenblick"}
+  - {en: "§7Crits §eSunmark §7the target for §f4s§7.", de: "§7Krits verpassen dem Ziel ein §eSonnenmal §7für §f4s§7."}
+  - {en: "§7Sunmarked foes take §e+6% §7damage from you.", de: "§7Feinde mit Sonnenmal erleiden von dir §e+6% §7Schaden."}
+  - {en: "§6Remnant of the Hollow Sun §8(§f1§8/§f4§8)", de: "§6Überrest der Hollow Sun §8(§f1§8/§f4§8)"}
+  - {en: "§8It still remembers how to shine.", de: "§8Es weiß noch, wie man strahlt."}
+  - {en: "§6☀ Caged Star", de: "§6☀ Gefangener Stern"}
+  - {en: "§7Dealing damage builds §6Heat§7.", de: "§7Schaden austeilen baut §6Hitze§7 auf."}
+  - {en: "§7At §f100§7, your next hit bursts in a §6Corona §7for §f60% §7of its damage.", de: "§7Bei §f100§7 entlädt sich dein nächster Treffer in einer §6Korona §7mit §f60% §7seines Schadens."}
+  - {en: "§6Remnant of the Hollow Sun §8(§f2§8/§f4§8)", de: "§6Überrest der Hollow Sun §8(§f2§8/§f4§8)"}
+  - {en: "§8The plate is hollow. The heart is not.", de: "§8Die Platte ist hohl. Das Herz nicht."}
+  - {en: "§c☀ Swell", de: "§c☀ Aufblähen"}
+  - {en: "§7Below §f50% §7HP: §c+10% §7Damage, §c+8% §7Defense, §7and your hits leave a brief §cFlare§7.", de: "§7Unter §f50% §7HP: §c+10% §7Schaden, §c+8% §7Verteidigung, §7und deine Treffer hinterlassen eine kurze §cEruption§7."}
+  - {en: "§6Remnant of the Hollow Sun §8(§f3§8/§f4§8)", de: "§6Überrest der Hollow Sun §8(§f3§8/§f4§8)"}
+  - {en: "§8I burned for ten thousand years.", de: "§8Ich brannte zehntausend Jahre lang."}
+  - {en: "§5☀ Starfall §8(Double-sneak in the air)", de: "§5☀ Sternenfall §8(in der Luft zweimal schleichen)"}
+  - {en: "§7Plunge down and land in a crimson shockwave.", de: "§7Stürz hinab und lande in einer blutroten Schockwelle."}
+  - {en: "§8Cooldown: §f18s", de: "§8Abklingzeit: §f18s"}
+  - {en: "§6Remnant of the Hollow Sun §8(§f4§8/§f4§8)", de: "§6Überrest der Hollow Sun §8(§f4§8/§f4§8)"}
+  - {en: "§8Every star falls.", de: "§8Jeder Stern fällt."}
+  - {en: "§6Set: Remnant of the Hollow Sun", de: "§6Set: Überrest der Hollow Sun"}
+  - {en: "§e2 · Main Sequence §7— every §f5th §7hit calls a §eStarcall§7.", de: "§e2 · Hauptreihe §7— jeder §f5. §7Treffer löst einen §eSternruf§7 aus."}
+  - {en: "§c3 · Red Giant §7— heavy blows make you §cburn brighter§7.", de: "§c3 · Roter Riese §7— schwere Schläge lassen dich §cheller brennen§7."}
+  - {en: "§54 · Collapse §7— cheat death once as a §5black star§7, §7    then §dNova§7. §8(12m)", de: "§54 · Kollaps §7— betrüg den Tod einmal als §5schwarzer Stern§7, §7dann §dNova§7. §8(12m)"}
+  - {en: "§8Seven rays. One of them still warm.", de: "§8Sieben Strahlen. Einer davon noch warm."}
+  - {en: "§8It beats. Not always in time with you.", de: "§8Es schlägt. Nicht immer in deinem Takt."}
+  - {en: "§8Four rings, and you in the middle.", de: "§8Vier Ringe, und du mittendrin."}
+  - {en: "§8Every step lands on the beat.", de: "§8Jeder Schritt landet genau im Takt."}
+  - {en: "§6Full Set: Second Dawn", de: "§6Vollständiges Set: Zweite Morgenröte"}
+  - {en: "§7When you fall below §c30%§7 health, §7you go supernova: heal §a30%§7, gain §7absorption, and blast nearby enemies.", de: "§7Fällst du unter §c30%§7 Leben, §7wirst du zur Supernova: heilst §a30%§7, erhältst §7Absorption und sprengst Feinde in der Nähe weg."}
+  - {en: "§8Cooldown 120s.", de: "§8Abklingzeit 120s."}
+  - {en: "§8Loot of Helios, the Dying Star", de: "§8Beute von Helios, dem sterbenden Stern"}
+  - {en: "§6✦ Constellation", de: "§6✦ Sternbild"}
+  - {en: "§7Right-click: open a portal at your hand §7and its twin above your target. Your §7light enters one and falls from the §7other: a lance of sunlight on everything", de: "§7Rechtsklick: Öffne ein Portal an deiner Hand §7und seinen Zwilling über deinem Ziel. Dein §7Licht fällt in eines hinein und aus dem §7anderen heraus: eine Lanze aus Sonnenlicht auf alles"}
+  - {en: "§7below. Burns.", de: "§7darunter. Verbrennt."}
+  - {en: "§8Cooldown 10s.", de: "§8Abklingzeit 10s."}
+  - {en: "§8The Herald's fourth blade. It came back.", de: "§8Die vierte Klinge des Herolds. Sie kam zurück."}
+  - {en: "§6⚡ Fire Rate: §f1.00s", de: "§6⚡ Feuerrate: §f1,00s"}
+  - {en: "§7No arrows required. Hits Endermen.", de: "§7Keine Pfeile nötig. Trifft Endermen."}
+  - {en: "§8Core I: two arrows. Core II: three. Core III: piercing, Endermen.", de: "§8Kern I: zwei Pfeile. Kern II: drei. Kern III: durchbohrend, Endermen."}
+  - {en: "§8Skuldugery's personal bow", de: "§8Skuldugerys persönlicher Bogen"}
+  - {en: "§7Discover and explore §7all available recipes.", de: "§7Entdecke und erkunde §7alle verfügbaren Rezepte."}
+  - {en: "§eRight-click to open", de: "§eRechtsklick zum Öffnen"}
+  - {en: "§d✦ Afterimage Slash", de: "§d✦ Nachbild-Hieb"}
+  - {en: "§7On hit: a ghost swing strikes §7again after §f0.4s §7for §d40% §7damage.", de: "§7Bei Treffer: Ein Geisterhieb schlägt §7nach §f0,4s §7erneut mit §d40% §7Schaden zu."}
+  - {en: "§8Test Arena · pairs with The Echo", de: "§8Testarena · passt zu The Echo"}
+  - {en: "§b✦ Twin Sync", de: "§b✦ Zwillings-Sync"}
+  - {en: "§7Hit two different targets within §f0.9s §7→ next hit deals §b+55% §7damage.", de: "§7Triff zwei verschiedene Ziele binnen §f0,9s §7→ nächster Treffer macht §b+55% §7Schaden."}
+  - {en: "§8Test Arena · pairs with Parity", de: "§8Testarena · passt zu Parity"}
+  - {en: "§6✦ Writ of Exception", de: "§6✦ Freibrief"}
+  - {en: "§7Off-hand: ignore Curator rules.", de: "§7Zweithand: ignoriert Curator-Regeln."}
+  - {en: "§7Softens Broker pressure.", de: "§7Mildert Broker-Druck."}
+  - {en: "§eRight-click: §7purge §cSlowness §7(12s CD).", de: "§eRechtsklick: §7entfernt §cLangsamkeit §7(12s CD)."}
+  - {en: "§8Test Arena · off-hand", de: "§8Testarena · Zweithand"}
+  - {en: "§4✦ On the Beat", de: "§4✦ Im Takt"}
+  - {en: "§7No arrows needed. Shots on a §f2s §7pulse deal §c+40% §7damage.", de: "§7Keine Pfeile nötig. Schüsse im Takt von §f2s §7machen §c+40% §7Schaden."}
+  - {en: "§7Off-beat shots are weakened.", de: "§7Schüsse neben dem Takt sind geschwächt."}
+  - {en: "§8Test Arena · pairs with Heartbeat", de: "§8Testarena · passt zu Heartbeat"}
+  - {en: "§c✦ Hardened Inventory", de: "§c✦ Gehärtetes Inventar"}
+  - {en: "§7Ignores Softlock slot shocks.", de: "§7Ignoriert Softlock-Slotschocks."}
+  - {en: "§7When hit: §c10% §7chance to reflect §7§f8 §7true damage (no CD spam).", de: "§7Bei Treffer: §c10% §7Chance, §7§f8 §7echten Schaden zurückzuwerfen (kein CD-Spam)."}
+  - {en: "§8Test Arena · pairs with Softlock", de: "§8Testarena · passt zu Softlock"}
+  - {en: "§3✦ Void Tread", de: "§3✦ Leerentritt"}
+  - {en: "§7Resist Gravity Clerk pull.", de: "§7Trotzt dem Sog des Gravity Clerk."}
+  - {en: "§7Sneak in air: brief hover / §7slow-fall (§f6s §7CD).", de: "§7Schleichen in der Luft: kurz schweben / §7langsam fallen (§f6s §7CD)."}
+  - {en: "§8Test Arena · Nullspace / Gravity", de: "§8Testarena · Nullspace / Gravity"}
+  - {en: "§e✦ Sealed Bargain", de: "§e✦ Besiegelter Handel"}
+  - {en: "§7Right-click: spend §c10% HP §7for §aStrength II §7(8s).", de: "§7Rechtsklick: Zahl §c10% HP §7für §aStärke II §7(8s)."}
+  - {en: "§8Never consumed. §7CD §f14s§7.", de: "§8Wird nie verbraucht. §7CD §f14s§7."}
+  - {en: "§8Test Arena · pairs with Broker", de: "§8Testarena · passt zu Broker"}
+  - {en: "§5The gate keeps a toll. This collects it.", de: "§5Das Tor verlangt Zoll. Das hier treibt ihn ein."}
+  - {en: "§5✦ Event Horizon", de: "§5✦ Ereignishorizont"}
+  - {en: "§7Right-click: open a gravity well, §7pull hostiles in, then detonate.", de: "§7Rechtsklick: Öffne eine Schwerkraftsenke, §7zieh Feinde hinein, dann Detonation."}
+  - {en: "§8Players & pets ignored. §7CD §f5s§7.", de: "§8Ignoriert Spieler & Haustiere. §7CD §f5s§7."}
+  - {en: "§8Torn from the Pathwarden", de: "§8Dem Pathwarden entrissen"}
+  - {en: "§e✦ Thunderstorm", de: "§e✦ Gewitter"}
+  - {en: "§7Right-click: call a §f6s §7storm.", de: "§7Rechtsklick: Ruf §f6s §7lang einen Sturm herbei."}
+  - {en: "§7Quiet bolts hunt enemies in view.", de: "§7Leise Blitze jagen Feinde in Sichtweite."}
+  - {en: "§8No player/pet targets. §7CD §f24s§7 §8(off in arena).", de: "§8Keine Spieler/Haustiere als Ziel. §7CD §f24s§7 §8(in der Arena aus)."}
+  - {en: "§8Test Arena prototype", de: "§8Testarena-Prototyp"}
+  - {en: "§3✦ Resonance Wave", de: "§3✦ Resonanzwelle"}
+  - {en: "§7Right-click: fire a sonic line §7with small AoE along the path.", de: "§7Rechtsklick: Feuert eine Schalllinie §7mit kleinem AoE entlang der Bahn."}
+  - {en: "§7Cooldown: §f5s", de: "§7Abklingzeit: §f5s"}
+  - {en: "§8Aetherion Combat Tool", de: "§8Aetherion-Kampfwerkzeug"}
+  - {en: "§a✦ Judgment Beam", de: "§a✦ Urteilsstrahl"}
+  - {en: "§7Right-click: beacon beam follows look", de: "§7Rechtsklick: Leuchtfeuerstrahl folgt deinem Blick"}
+  - {en: "§7§aGreen → §cRed§7, pulses, then nukes.", de: "§7§aGrün → §cRot§7, pulsiert, dann Atomschlag."}
+  - {en: "§8CD off in Test Arena.", de: "§8CD in der Testarena aus."}
+  - {en: "§f✦ Forward Dash", de: "§f✦ Vorstoß"}
+  - {en: "§7Right-click: real dash ~§f5 §7blocks §7(velocity, not teleport).", de: "§7Rechtsklick: echter Vorstoß ~§f5 §7Blöcke §7(Schwung, kein Teleport)."}
+  - {en: "§f✦ Cyclone", de: "§f✦ Zyklon"}
+  - {en: "§7Right-click: spin enemies in a tornado, §7then fling them far out.", de: "§7Rechtsklick: Wirbel Feinde in einen Tornado §7und schleuder sie dann weit weg."}
+  - {en: "§d✦ Twin Prisms", de: "§d✦ Zwillingsprismen"}
+  - {en: "§7Right-click: two half-buried cubes §7orbit opposite ways, shrink & spin, §7then §cBig Bang§7.", de: "§7Rechtsklick: Zwei halb vergrabene Würfel §7kreisen gegenläufig, schrumpfen & drehen sich, §7dann §cUrknall§7."}
+  - {en: "§6✦ Cascade Bolt", de: "§6✦ Kaskadenschuss"}
+  - {en: "§eSneak + Right-click: §7huge bolt §7chains up to §f10 §7targets.", de: "§eSchleichen + Rechtsklick: §7Riesengeschoss §7springt auf bis zu §f10 §7Ziele über."}
+  - {en: "§8Attack Spread ignored. §7Arena: no CD.", de: "§8Ignoriert Angriffsstreuung. §7Arena: kein CD."}
+  - {en: "§7Provisional ritual item.", de: "§7Vorläufiger Ritualgegenstand."}
+  - {en: "§7Equip a §5Mythic §7dragon, then right-click.", de: "§7Rüste einen §5mythischen §7Drachen aus, dann Rechtsklick."}
+  - {en: "§7Raises it to §4Aethered §7(max level 200).", de: "§7Hebt ihn auf §4Aethered §7(max. Stufe 200)."}
+  - {en: "§8DEV / endgame placeholder", de: "§8DEV / Endgame-Platzhalter"}
+  - {en: "§8The sheath remembers every cut.", de: "§8Die Scheide erinnert sich an jeden Schnitt."}
+  - {en: "§8Dropped by §dThe Ashen Sheath§8.", de: "§8Drop von §dder Aschenen Scheide§8."}
+  - {en: "§d✦ Blossom Commitment", de: "§d✦ Blütenschwur"}
+  - {en: "§7Right-click: dash, rise, cherry-leaf hover, §7then slam a hostile shockwave.", de: "§7Rechtsklick: Vorstoß, Aufstieg, Kirschblatt-Schweben, §7dann eine Schockwelle auf Feinde schmettern."}
+  - {en: "§8Players & pets ignored. §7CD §f8s§7.", de: "§8Ignoriert Spieler & Haustiere. §7CD §f8s§7."}
+  - {en: "§8Aetherion Boss Drop", de: "§8Aetherion-Bossdrop"}
+  - {en: "§c✦ Starfall", de: "§c✦ Sternenfall"}
+  - {en: "§7Right-click where you look: a fissure §7crawls out, the smash §flaunches §7foes, §7then a §cmeteor §7crashes onto them.", de: "§7Rechtsklick, wohin du schaust: Ein Riss §7kriecht hervor, der Schlag §fschleudert §7Feinde hoch, §7dann kracht ein §cMeteor §7auf sie."}
+  - {en: "§7The molten crater keeps burning.", de: "§7Der glühende Krater brennt weiter."}
+  - {en: "§8No player/pet targets. §7CD §f20s§7 §8(off in arena).", de: "§8Keine Spieler/Haustiere als Ziel. §7CD §f20s§7 §8(in der Arena aus)."}
+  - {en: "§c✦ Absolute Nova → Seismic Charge", de: "§c✦ Absolute Nova → Seismische Ladung"}
+  - {en: "§7Right-click: fire a star-core bolt.", de: "§7Rechtsklick: Feuert ein Sternkern-Geschoss."}
+  - {en: "§7Sky supernova — then silence — §7then a floor seismic charge that §7detonates late. §8The punchline.", de: "§7Supernova am Himmel — dann Stille — §7dann eine seismische Bodenladung, die §7verspätet zündet. §8Die Pointe."}
+  - {en: "§b✦ Azure Rite", de: "§b✦ Azurnes Ritual"}
+  - {en: "§7Right-click: plant an azure seal.", de: "§7Rechtsklick: Setz ein azurnes Siegel."}
+  - {en: "§7Rune circle + blue flame rise — §7then a judgment pillar skyward.", de: "§7Runenkreis + blaue Flamme steigen auf — §7dann eine Gerichtssäule gen Himmel."}
+  - {en: "§7Annihilates hostiles. Fully heals §7players + absorption & regen.", de: "§7Vernichtet Feinde. Heilt Spieler §7komplett + Absorption & Regen."}
+  - {en: "§5✦ Reality Rift", de: "§5✦ Realitätsriss"}
+  - {en: "§7Right-click: tear a seam in space.", de: "§7Rechtsklick: Reiß eine Naht in den Raum."}
+  - {en: "§7Two halves of the world peel apart — §7void between, debris falling wrong, §7then reality slams shut.", de: "§7Zwei Welthälften schälen sich auseinander — §7dazwischen Leere, Trümmer fallen verkehrt, §7dann knallt die Realität zu."}
+  - {en: "§8No blocks are broken. Illusion only.", de: "§8Kein Block wird zerstört. Nur Illusion."}
+  - {en: "§6✦ Basilica of the Last Hymn", de: "§6✦ Basilika der letzten Hymne"}
+  - {en: "§7Right-click: toll the bell. A cathedral §7builds itself around you — columns, §7vault, a rose window blooming light.", de: "§7Rechtsklick: Läute die Glocke. Eine Kathedrale §7baut sich um dich auf — Säulen, §7Gewölbe, eine Fensterrose, die Licht erblüht."}
+  - {en: "§7Each toll heals & §fconsecrates §7allies §7(§e+35% damage§7) and nails enemies.", de: "§7Jeder Schlag heilt & §fweiht §7Verbündete §7(§e+35% Schaden§7) und nagelt Feinde fest."}
+  - {en: "§7Then the basilica ascends with the §7bound inside — and shatters.", de: "§7Dann fährt die Basilika samt den §7Gebundenen darin gen Himmel — und zerspringt."}
+  - {en: "§3✦ The Stone Sea", de: "§3✦ Das steinerne Meer"}
+  - {en: "§7Right-click: blow the conch. The sun §7falls, the ground turns to water and §7something vast circles beneath it.", de: "§7Rechtsklick: Blas in die Muschel. Die Sonne §7sinkt, der Boden wird zu Wasser und §7etwas Riesiges kreist darunter."}
+  - {en: "§7A star-whale breaches the earth, §7sings at the apex, dives — and then §7the Leviathan §bexhales§7.", de: "§7Ein Sternenwal bricht aus der Erde, §7singt im Zenit, taucht ab — und dann §7atmet der Leviathan §baus§7."}
+  - {en: "§8No blocks touched. CD off in Test Arena.", de: "§8Keine Blöcke berührt. CD in der Testarena aus."}
+  - {en: "§f✦ Here Ends the World", de: "§f✦ Hier endet die Welt"}
+  - {en: "§7Right-click: set the last boundary stone.", de: "§7Rechtsklick: Setz den letzten Grenzstein."}
+  - {en: "§7The edge of the world — the real one, §7thirty million blocks out — §fcomes to it§7.", de: "§7Der Rand der Welt — der echte, §7dreißig Millionen Blöcke entfernt — §fkommt zu ihm§7."}
+  - {en: "§7Four walls as tall as the sky close on §7one block and crush whatever they herd.", de: "§7Vier himmelhohe Mauern schließen sich um §7einen Block und zermalmen, was sie zusammentreiben."}
+  - {en: "§7The world has to go somewhere.", de: "§7Irgendwohin muss die Welt ja."}
+  - {en: "§8It goes up.", de: "§8Nach oben."}
+  - {en: "§8No blocks touched. One edge per world.", de: "§8Keine Blöcke berührt. Ein Rand pro Welt."}
+  - {en: "§fGlass over a face that never learned to frown.", de: "§fGlas über einem Gesicht, das nie finster blicken lernte."}
+  - {en: "§7Behind it, a small gold halo still turns.", de: "§7Dahinter dreht sich noch ein kleiner Goldheiligenschein."}
+  - {en: "§fGlazed white. Cracked where the Hand gripped.", de: "§fWeiß glasiert. Gesprungen, wo die Hand zugriff."}
+  - {en: "§7Every crack was mended in gold.", de: "§7Jeder Sprung wurde mit Gold gekittet."}
+  - {en: "§fEight hinged porcelain panels, gold at the hem.", de: "§fAcht Porzellanplatten an Scharnieren, Gold am Saum."}
+  - {en: "§7They flare when you spin. You will spin.", de: "§7Beim Drehen fächern sie auf. Du wirst dich drehen."}
+  - {en: "§fShe never walked. She was carried, toes on the boards.", de: "§fSie ging nie. Sie wurde getragen, Zehen auf den Brettern."}
+  - {en: "§7Gold-tipped, for a stage that floats.", de: "§7Goldene Spitzen, für eine schwebende Bühne."}
+  - {en: "§6Full Set §8· §fStrung", de: "§6Vollständiges Set §8· §fAm Faden"}
+  - {en: "§7A golden thread from the flies §7catches every fall. You never land hard.", de: "§7Ein goldener Faden vom Schnürboden §7fängt jeden Sturz. Du landest nie hart."}
+  - {en: "§8Fallen from the Gilded Proscenium", de: "§8Vom Vergoldeten Proszenium gefallen"}
+  - {en: "§fShe cut her own strings with this.", de: "§fDamit schnitt sie ihre eigenen Fäden durch."}
+  - {en: "§7The Hand above still flinches at it.", de: "§7Die Hand dort oben zuckt noch heute davor zurück."}
+  - {en: "§6✦ Five Strings §8· §eRight-click", de: "§6✦ Fünf Fäden §8· §eRechtsklick"}
+  - {en: "§7Five fingertips part the clouds and drop §7golden threads on up to §f5 §7foes. Hoisted, §7jerked in stop-motion to her lullaby, then §7cut loose to fall like dropped porcelain.", de: "§7Fünf Fingerspitzen teilen die Wolken und senken §7goldene Fäden auf bis zu §f5 §7Feinde. Hochgezogen, §7ruckartig in Stop-Motion zu ihrem Wiegenlied bewegt, dann §7abgeschnitten, und sie stürzen wie fallengelassenes Porzellan."}
+  - {en: "§8Players & pets ignored. §7CD §f14s§7.", de: "§8Ignoriert Spieler & Haustiere. §7CD §f14s§7."}
+  - {en: "§6✦ Kintsugi Stitch §8· §7Passive", de: "§6✦ Kintsugi-Naht §8· §7Passiv"}
+  - {en: "§7Every §f5th §7hit on one foe sews a gold §7seam through it and plays her next note.", de: "§7Jeder §f5. §7Treffer auf einen Feind näht eine goldene §7Naht hindurch und spielt ihren nächsten Ton."}
+  - {en: "§8Drawn from Seraphine, the Hanging Saint", de: "§8Gezogen aus Seraphine, der hängenden Heiligen"}
+  - {en: "§b✦ Dual Gate", de: "§b✦ Doppeltor"}
+  - {en: "§7Left-click: set §bAzure §7gate.", de: "§7Linksklick: §bAzur§7-Tor setzen."}
+  - {en: "§7Right-click: set §6Amber §7gate.", de: "§7Rechtsklick: §6Bernstein§7-Tor setzen."}
+  - {en: "§7Wall upright · floor / ceiling flat.", de: "§7Wand aufrecht · Boden / Decke flach."}
+  - {en: "§7Walk through either to exit the other.", de: "§7Geh durch eins, um aus dem anderen zu kommen."}
+  - {en: "§eSneak + L/R: §7clear that gate only.", de: "§eSchleichen + L/R: §7nur dieses Tor löschen."}
+  - {en: "§8Traversal kit", de: "§8Fortbewegungs-Kit"}
+  - {en: "§3✦ Latch & Pull", de: "§3✦ Einhaken & Ziehen"}
+  - {en: "§7Right-click a surface to latch.", de: "§7Rechtsklick auf eine Fläche zum Einhaken."}
+  - {en: "§7Pulled all the way to the point.", de: "§7Zieht dich ganz bis zum Punkt."}
+  - {en: "§eSneak: §7cancel mid-pull.", de: "§eSchleichen: §7Zug abbrechen."}
+  - {en: "§8Long range · soft landing.", de: "§8Große Reichweite · weiche Landung."}
+  - {en: "§c✦ Swing Cable", de: "§c✦ Schwungseil"}
+  - {en: "§eLeft-click §7a surface: latch the claw.", de: "§eLinksklick §7auf eine Fläche: Kralle einhaken."}
+  - {en: "§eRight-click §7: gas boost where you look.", de: "§eRechtsklick §7: Gas-Boost in Blickrichtung."}
+  - {en: "§eSneak: §7cut — keep your momentum.", de: "§eSchleichen: §7kappen — der Schwung bleibt."}
+  - {en: "§7Cable never yanks you — gas is look-only.", de: "§7Das Seil reißt dich nie — Gas folgt nur deinem Blick."}
+  - {en: "§8Hang · boost · swing · chain.", de: "§8Hängen · boosten · schwingen · verketten."}
+  - {en: "§7It mines. That is the entire personality.", de: "§7Sie baut ab. Das ist die ganze Persönlichkeit."}
+  - {en: "§7The rocks are not impressed. Yet.", de: "§7Die Felsen sind unbeeindruckt. Noch."}
+  - {en: "§7Trees have started taking it personally.", de: "§7Die Bäume nehmen es langsam persönlich."}
+  - {en: "§7Farming, but make it an insult.", de: "§7Ackerbau, aber als Schimpfwort."}
+  - {en: "§7Eleven identities. One paper. No refunds.", de: "§7Elf Identitäten. Ein Blatt. Kein Umtausch."}
+  - {en: "§7Five callings. One paper. No pickaxe.", de: "§7Fünf Berufungen. Ein Blatt. Keine Spitzhacke."}
+  - {en: "§7The zombies want their leftovers back.", de: "§7Die Zombies wollen ihre Reste zurück."}
+  - {en: "§7A spider's I-told-you-so, with a handle.", de: "§7Das „Hab ich doch gesagt“ einer Spinne, mit Griff."}
+  - {en: "§7Off-hand hoe. Pets that skip the meeting get hooked.", de: "§7Zweithand-Hacke. Tiere, die das Meeting schwänzen, hängen am Haken."}
+  - {en: "§7A sword in the same way a spoon is a weapon.", de: "§7Ein Schwert, so wie ein Löffel eine Waffe ist."}
+  - {en: "§7Fashioned from leftover confidence.", de: "§7Aus übrigem Selbstbewusstsein gefertigt."}
+  - {en: "§7Keeps the wind out. Barely the arrows.", de: "§7Hält den Wind ab. Die Pfeile kaum."}
+  - {en: "§7Pants with a job description.", de: "§7Eine Hose mit Stellenbeschreibung."}
+  - {en: "§7Walking, now with a modest opinion of itself.", de: "§7Gehen, jetzt mit bescheidenem Selbstwertgefühl."}
+  - {en: "§7Aims with hope and a short attention span.", de: "§7Zielt mit Hoffnung und kurzer Aufmerksamkeitsspanne."}
+  - {en: "§7Hold the button. Pretend it was skill.", de: "§7Halt die Taste. Tu so, als wär's Können."}
+  - {en: "§7Details later. Trauma now.", de: "§7Details später. Trauma jetzt."}
+  - {en: "§7The eggs can smell the desperation.", de: "§7Die Eier riechen die Verzweiflung."}
+  - {en: "§7A hug that files catch reports.", de: "§7Eine Umarmung, die Fangberichte einreicht."}
+  - {en: "§7Running toward pets. Professionally.", de: "§7Läuft auf Haustiere zu. Beruflich."}
+  - {en: "§7Quiet steps. Loud intentions.", de: "§7Leise Schritte. Laute Absichten."}
+  - {en: "§7A test tool that refuses to take itself seriously.", de: "§7Ein Testwerkzeug, das sich weigert, sich ernst zu nehmen."}
+  - {en: "§7A test weapon. The dummy still lost.", de: "§7Eine Testwaffe. Die Puppe hat trotzdem verloren."}
+  - {en: "§7Lab armor. Please do not file a ticket.", de: "§7Laborrüstung. Bitte kein Ticket aufmachen."}
+  - {en: "§7A pocket rumor that pets look better in this lighting.", de: "§7Ein Taschengerücht, dass Haustiere in diesem Licht besser aussehen."}
+  - {en: "§7It files your cobble so you don't have to.", de: "§7Er sortiert deinen Bruchstein, damit du's nicht musst."}
+  - {en: "§7Peasant souvenirs. I'll take them off the carpet.", de: "§7Bauern-Souvenirs. Ich sammle sie vom Teppich auf."}
+  - {en: "§8One catalyst short. Then the inventory learned gravity.", de: "§8Ein Katalysator zu wenig. Dann lernte das Inventar Schwerkraft."}
+  - {en: "§7It skipped the hallway. The hallway filed a complaint.", de: "§7Sie hat den Flur übersprungen. Der Flur hat Beschwerde eingelegt."}
+  - {en: "§7The Pathwarden's toll booth. Still accepting souls.", de: "§7Die Mautstelle des Pathwarden. Nimmt weiterhin Seelen an."}
+  - {en: "§7The patch notes were a suggestion.", de: "§7Die Patchnotes waren nur ein Vorschlag."}
+  - {en: "§7Drops report to the hopper. You do not.", de: "§7Drops melden sich beim Trichter. Du nicht."}
+  - {en: "§7Faster. Warmer. Slightly your problem.", de: "§7Schneller. Wärmer. Ein bisschen dein Problem."}
+  - {en: "§7The quarry still wants a receipt.", de: "§7Der Steinbruch will immer noch eine Quittung."}
+  - {en: "§7Assets of the recently less alive.", de: "§7Vermögen der kürzlich weniger Lebendigen."}
+  - {en: "§7A mythical blade. Origin still in committee.", de: "§7Eine mythische Klinge. Herkunft noch im Ausschuss."}
+  - {en: "§7The troll wanted a toll. This was the receipt.", de: "§7Der Troll wollte Maut. Das hier war die Quittung."}
+  - {en: "§7It drinks first. You can have the leftovers.", de: "§7Er trinkt zuerst. Du kriegst die Reste."}
+  - {en: "§7It ate sixteen worlds with this. Yours is next on the menu.", de: "§7Sechzehn Welten damit gefressen. Deine steht als Nächstes auf der Karte."}
+  - {en: "§7Aim at the floor. The sky does the rest.", de: "§7Ziel auf den Boden. Der Himmel erledigt den Rest."}
+  - {en: "§7One boot. Several opinions. All damp.", de: "§7Ein Stiefel. Mehrere Meinungen. Alle feucht."}
+  - {en: "§7Calcium with a grudge.", de: "§7Kalzium mit Groll."}
+  - {en: "§7The door is you. The door hits back.", de: "§7Die Tür bist du. Die Tür schlägt zurück."}
+  - {en: "§7Keep them alive. They will not thank you.", de: "§7Halte sie am Leben. Sie werden dir nicht danken."}
+  - {en: "§7Bad at fishing. Great at lightning.", de: "§7Mies im Angeln. Großartig in Blitzen."}
+  - {en: "§7The wooden rod, but it learned to gossip.", de: "§7Die Holzrute, aber sie hat Tratschen gelernt."}
+  - {en: "§7Cold enough to make a skeleton shiver.", de: "§7Kalt genug, dass selbst ein Skelett zittert."}
+  - {en: "§7Compressed redstone and a bad attitude.", de: "§7Komprimierter Redstone und schlechte Laune."}
+  - {en: "§7A crossbow by name. The arrows disagree.", de: "§7Nominell eine Armbrust. Die Pfeile widersprechen."}
+  - {en: "§7Amethyst with ambitions.", de: "§7Amethyst mit Ambitionen."}
+  - {en: "§7Gold, with opinions about your tool.", de: "§7Gold, mit Meinungen zu deinem Werkzeug."}
+  - {en: "§7Scrap that remembers being netherite.", de: "§7Schrott, der noch weiß, dass er mal Netherit war."}
+  - {en: "§7The deep end sent a dress code.", de: "§7Die Tiefsee hat einen Dresscode geschickt."}
+  - {en: "§7The last cast. The ocean signed the NDA.", de: "§7Der letzte Wurf. Der Ozean hat das NDA unterschrieben."}
+  - {en: "§7Mythic brine. Wear it like a verdict.", de: "§7Mythisches Salzwasser. Trag es wie ein Urteil."}
+  - {en: "§7Fourth cast. The tide started a support group.", de: "§7Vierter Wurf. Die Flut hat eine Selbsthilfegruppe gegründet."}
+  - {en: "§7Legendary leather that remembers every swell.", de: "§7Legendäres Leder, das sich an jede Welle erinnert."}
+  - {en: "§7It argues with the tide. The tide loses.", de: "§7Es streitet mit der Flut. Die Flut verliert."}
+  - {en: "§7Epic brine. Wear it like a verdict.", de: "§7Episches Salzwasser. Trag es wie ein Urteil."}
+  - {en: "§7The second cast. The first one filed a complaint.", de: "§7Der zweite Wurf. Der erste hat Beschwerde eingelegt."}
+  - {en: "§7Slightly more of an argument with waves.", de: "§7Etwas mehr Streit mit den Wellen."}
+  - {en: "§7The polite way to start a rumor with fish.", de: "§7Die höfliche Art, unter Fischen ein Gerücht zu streuen."}
+  - {en: "§7Leather that smelled a harbor and committed.", de: "§7Leder, das einen Hafen roch und sich festlegte."}
+  - {en: "§7The forest filed for bankruptcy. You declined.", de: "§7Der Wald hat Insolvenz angemeldet. Du hast abgelehnt."}
+  - {en: "§7Mythic bark. Wear it like a canopy.", de: "§7Mythische Rinde. Trag sie wie ein Blätterdach."}
+  - {en: "§7Fourth swing. The stump started a podcast.", de: "§7Vierter Hieb. Der Stumpf hat einen Podcast gestartet."}
+  - {en: "§7Legendary leather that remembers every ring.", de: "§7Legendäres Leder, das sich an jeden Jahresring erinnert."}
+  - {en: "§7The tree files an appeal. Denied.", de: "§7Der Baum legt Berufung ein. Abgelehnt."}
+  - {en: "§7Bark that learned to be armor.", de: "§7Rinde, die gelernt hat, Rüstung zu sein."}
+  - {en: "§7Second swing. The first one was a warning.", de: "§7Zweiter Hieb. Der erste war eine Warnung."}
+  - {en: "§7Slightly more of an argument with a trunk.", de: "§7Etwas mehr Streit mit einem Stamm."}
+  - {en: "§7The polite way to start a forest.", de: "§7Die höfliche Art, einen Wald zu gründen."}
+  - {en: "§7Leather that smelled pine and committed.", de: "§7Leder, das Nadelholz roch und sich festlegte."}
+  - {en: "§7The off hand got a promotion.", de: "§7Die Zweithand wurde befördert."}
+  - {en: "§7A pocket rumor, upgraded.", de: "§7Ein Taschengerücht, aufgewertet."}
+  - {en: "§7Hold it like a side argument.", de: "§7Halt es wie ein Nebenargument."}
+  - {en: "§7The last harvest argument. The field signed.", de: "§7Das letzte Ernte-Argument. Das Feld hat unterschrieben."}
+  - {en: "§7Mythic hay. Wear it like a verdict.", de: "§7Mythisches Heu. Trag es wie ein Urteil."}
+  - {en: "§7Fourth draft of the same rude rake.", de: "§7Vierter Entwurf desselben frechen Rechens."}
+  - {en: "§7Legendary dirt under the nails.", de: "§7Legendärer Dreck unter den Nägeln."}
+  - {en: "§7It harvests the argument and the crop.", de: "§7Es erntet den Streit und das Korn."}
+  - {en: "§7Epic hay. Wear it like a verdict.", de: "§7Episches Heu. Trag es wie ein Urteil."}
+  - {en: "§7The second rake. The first one filed a complaint.", de: "§7Der zweite Rechen. Der erste hat Beschwerde eingelegt."}
+  - {en: "§7Slightly more of an argument with grass.", de: "§7Etwas mehr Streit mit dem Gras."}
+  - {en: "§7The polite way to start a field.", de: "§7Die höfliche Art, ein Feld anzulegen."}
+  - {en: "§7Leather that smelled a farm and committed.", de: "§7Leder, das einen Hof roch und sich festlegte."}
+  - {en: "§7The last argument in a very long meeting.", de: "§7Das letzte Argument in einem sehr langen Meeting."}
+  - {en: "§7At this point the mobs send flowers.", de: "§7Inzwischen schicken die Mobs Blumen."}
+  - {en: "§7Sharper. Still rude.", de: "§7Schärfer. Immer noch frech."}
+  - {en: "§7The fourth draft. The first three exploded.", de: "§7Der vierte Entwurf. Die ersten drei sind explodiert."}
+  - {en: "§7Diamond, but it still gossiped in the forge.", de: "§7Diamant, hat aber in der Schmiede trotzdem getratscht."}
+  - {en: "§7Diamond, but emotionally still chainmail.", de: "§7Diamant, aber emotional noch Kettenhemd."}
+  - {en: "§7Slightly more of a point than last week.", de: "§7Etwas mehr Spitze als letzte Woche."}
+  - {en: "§7Slightly more of a fight than last week.", de: "§7Etwas mehr Kampf als letzte Woche."}
+  - {en: "§7It counts as a weapon. Barely.", de: "§7Zählt als Waffe. Gerade so."}
+  - {en: "§7Still legally considered a fight.", de: "§7Rechtlich gilt das noch als Kampf."}
+  - {en: "§7The quarry asked for a lawyer. You declined.", de: "§7Der Steinbruch wollte einen Anwalt. Du hast abgelehnt."}
+  - {en: "§7Endgame dirt. Wear it like you mean it.", de: "§7Endgame-Dreck. Trag ihn, als meinst du's ernst."}
+  - {en: "§7Stone has started writing reviews.", de: "§7Der Stein schreibt inzwischen Bewertungen."}
+  - {en: "§7The rocks unionized. You still clock in.", de: "§7Die Felsen sind organisiert. Du stempelst trotzdem."}
+  - {en: "§7Diamond manners. Cobble childhood.", de: "§7Diamant-Manieren. Bruchstein-Kindheit."}
+  - {en: "§7Looks expensive. Mines like it has a quota.", de: "§7Sieht teuer aus. Baut ab, als hätte sie ein Soll."}
+  - {en: "§7The second pick. The first one filed a complaint.", de: "§7Die zweite Spitzhacke. Die erste hat Beschwerde eingelegt."}
+  - {en: "§7Slightly more of an argument with stone.", de: "§7Etwas mehr Streit mit dem Stein."}
+  - {en: "§7The polite way to start a hole.", de: "§7Die höfliche Art, ein Loch anzufangen."}
+  - {en: "§7The rocks started a union. You declined.", de: "§7Die Felsen wollen eine Gewerkschaft. Du lehnst ab."}
+  - {en: "§7Rocks that learned to sit still.", de: "§7Steine, die gelernt haben stillzusitzen."}
+  - {en: "§7Night sky, now in briquette form.", de: "§7Nachthimmel, jetzt in Brikettform."}
+  - {en: "§7Ore with a gym membership.", de: "§7Erz mit Fitnessstudio-Abo."}
+  - {en: "§7Shiny. Still not paying rent.", de: "§7Glänzt. Zahlt trotzdem keine Miete."}
+  - {en: "§7The metal that oxidizes on purpose.", de: "§7Das Metall, das absichtlich oxidiert."}
+  - {en: "§7Dust that thinks it has opinions.", de: "§7Staub, der glaubt, eine Meinung zu haben."}
+  - {en: "§7Blue enough to start a rumor.", de: "§7Blau genug, um Gerüchte zu streuen."}
+  - {en: "§7Pressure, but make it jewelry.", de: "§7Druck, aber als Schmuck."}
+  - {en: "§7Villagers can smell this from spawn.", de: "§7Dorfbewohner riechen das schon vom Spawn aus."}
+  - {en: "§7A forest that filed for compression.", de: "§7Ein Wald, der Kompression beantragt hat."}
+  - {en: "§7Pale wood. Still opinionated.", de: "§7Blasses Holz. Trotzdem rechthaberisch."}
+  - {en: "§7Cold climate, warm stacks.", de: "§7Kaltes Klima, warme Stapel."}
+  - {en: "§7Canopy overtime in a neat stack.", de: "§7Wipfel-Überstunden, sauber gestapelt."}
+  - {en: "§7Savanna shade, vacuum packed.", de: "§7Savannenschatten, vakuumverpackt."}
+  - {en: "§7Thicket night, shelf-stable.", de: "§7Dickichtnacht, lange haltbar."}
+  - {en: "§7Brackish overtime. Roots included.", de: "§7Brackwasser-Überstunden. Wurzeln inklusive."}
+  - {en: "§7Blossoms compressed. Petals pending.", de: "§7Blüten komprimiert. Blütenblätter ausstehend."}
+  - {en: "§7A grove that learned to sit still.", de: "§7Ein Hain, der gelernt hat stillzusitzen."}
+  - {en: "§7Nether redwood with a work ethic.", de: "§7Nether-Mammutbaum mit Arbeitsmoral."}
+  - {en: "§7Blue fungus that got organized.", de: "§7Blauer Pilz, der sich organisiert hat."}
+  - {en: "§7Several cows, one polite stack.", de: "§7Mehrere Kühe, ein höflicher Stapel."}
+  - {en: "§7The skeleton's retirement plan.", de: "§7Die Altersvorsorge des Skeletts."}
+  - {en: "§7Webs that got their life together.", de: "§7Netze, die ihr Leben im Griff haben."}
+  - {en: "§7A field, pretending to be a loaf.", de: "§7Ein Feld, das so tut, als wär's ein Brot."}
+  - {en: "§7Orange. Crunchy. Unionized.", de: "§7Orange. Knackig. Organisiert."}
+  - {en: "§7A tuber that filed for compression.", de: "§7Eine Knolle, die Kompression beantragt hat."}
+  - {en: "§7Sweet overtime. Paper pending.", de: "§7Süße Überstunden. Papier folgt."}
+  - {en: "§7Nether spice. Shelf-stable spite.", de: "§7Nether-Würze. Lange haltbarer Groll."}
+  - {en: "§7Creeper diplomacy, vacuum packed.", de: "§7Creeper-Diplomatie, vakuumverpackt."}
+  - {en: "§7Flight, cancelled and folded.", de: "§7Flug gestrichen und zusammengefaltet."}
+  - {en: "§7Zombies send their regards. Warmly.", de: "§7Grüße von den Zombies. Herzlichst."}
+  - {en: "§7A school that learned to sit still.", de: "§7Ein Schwarm, der gelernt hat stillzusitzen."}
+  - {en: "§7Upstream, now shelf-stable.", de: "§7Stromaufwärts, jetzt lange haltbar."}
+  - {en: "§7Inflated ego. Compressed anyway.", de: "§7Aufgeblasenes Ego. Trotzdem komprimiert."}
+  - {en: "§7Ocean glass with a work ethic.", de: "§7Meeresglas mit Arbeitsmoral."}
+  - {en: "§8It mines the floor. The floor filed a complaint.", de: "§8Baut den Boden ab. Der Boden hat Beschwerde eingelegt."}
+  - {en: "§8A night shift that never learned to clock out.", de: "§8Eine Nachtschicht, die nie ausstempeln gelernt hat."}
+  - {en: "§8Eats stone. Pays in ingots and attitude.", de: "§8Frisst Stein. Zahlt in Barren und Allüren."}
+  - {en: "§8Still not paying rent. Now it's unionized.", de: "§8Zahlt immer noch keine Miete. Jetzt mit Gewerkschaft."}
+  - {en: "§8Oxidizes on a schedule. Very professional.", de: "§8Oxidiert nach Plan. Sehr professionell."}
+  - {en: "§8Click. Click. Profit. Click.", de: "§8Klick. Klick. Profit. Klick."}
+  - {en: "§8Enchanting tables hate this one trick.", de: "§8Zaubertische hassen diesen einen Trick."}
+  - {en: "§8Pressure, but make it a business model.", de: "§8Druck, aber als Geschäftsmodell."}
+  - {en: "§8A forest with a punch clock.", de: "§8Ein Wald mit Stechuhr."}
+  - {en: "§8Pale overtime. The bees filed a complaint.", de: "§8Blasse Überstunden. Die Bienen haben Beschwerde eingelegt."}
+  - {en: "§8Cold climate mill. Warm profits.", de: "§8Kaltklima-Sägewerk. Warme Gewinne."}
+  - {en: "§8Canopy mill. Monkeys unionized.", de: "§8Wipfel-Sägewerk. Affen organisiert."}
+  - {en: "§8Savanna mill. Shade on a schedule.", de: "§8Savannen-Sägewerk. Schatten nach Plan."}
+  - {en: "§8Thicket mill. Night shift forever.", de: "§8Dickicht-Sägewerk. Nachtschicht für immer."}
+  - {en: "§8Swamp mill. Frogs approved.", de: "§8Sumpf-Sägewerk. Frosch-geprüft."}
+  - {en: "§8Blossom mill. Petals optional.", de: "§8Blüten-Sägewerk. Blütenblätter optional."}
+  - {en: "§8Bamboo mill. Pandas filed a memo.", de: "§8Bambus-Sägewerk. Pandas schrieben ein Memo."}
+  - {en: "§8Crimson mill. Nether HR shrugged.", de: "§8Karmesin-Sägewerk. Nether-HR: Achselzucken."}
+  - {en: "§8Warped mill. Dreams, automated.", de: "§8Wirr-Sägewerk. Träume, automatisiert."}
+  - {en: "§8No cows were interviewed for this quarry.", de: "§8Für diesen Steinbruch wurden keine Kühe befragt."}
+  - {en: "§8The skeleton's retirement plan, automated.", de: "§8Die Altersvorsorge des Skeletts, automatisiert."}
+  - {en: "§8Spider HR approved this installation.", de: "§8Die Spinnen-HR hat diese Anlage genehmigt."}
+  - {en: "§8A field that learned to sit still. Then work.", de: "§8Ein Feld, das stillsitzen lernte. Dann arbeiten."}
+  - {en: "§8Orange overtime. The rabbits filed a complaint.", de: "§8Orange Überstunden. Die Hasen haben Beschwerde eingelegt."}
+  - {en: "§8A tuber with a punch clock.", de: "§8Eine Knolle mit Stechuhr."}
+  - {en: "§8Sweet mill. Paperwork optional.", de: "§8Süße Mühle. Papierkram optional."}
+  - {en: "§8Nether spice on a schedule.", de: "§8Nether-Würze nach Plan."}
+  - {en: "§8Creeper diplomacy, now with a mill.", de: "§8Creeper-Diplomatie, jetzt mit Mühle."}
+  - {en: "§8Flight, cancelled. Production, not.", de: "§8Flug gestrichen. Produktion nicht."}
+  - {en: "§8Zombies send leftovers. Warmly.", de: "§8Die Zombies schicken Reste. Herzlichst."}
+  - {en: "§8A school that unionized and got a mill.", de: "§8Ein Schwarm mit Gewerkschaft und eigener Mühle."}
+  - {en: "§8Upstream, automated.", de: "§8Stromaufwärts, automatisiert."}
+  - {en: "§8Inflated ego. Still on the clock.", de: "§8Aufgeblasenes Ego. Immer noch im Dienst."}
+  - {en: "§8Ocean glass with a mill and a grudge.", de: "§8Meeresglas mit Mühle und Groll."}
+  - {en: "§7packed into one head.", de: "§7zu einem Kopf gepresst."}
+  - {en: "§7packed into one stack.", de: "§7zu einem Stapel gepackt."}
+  - {en: "§7forged into one crate.", de: "§7zu einer Kiste geschmiedet."}
+  - {en: "§7forged into one enchanted block.", de: "§7zu einem verzauberten Block geschmiedet."}
+  - {en: "§7Worth more than the Compacted it cost.", de: "§7Mehr wert als das Verdichtete, das es gekostet hat."}
+  - {en: "§7Wood that decided it was armor.", de: "§7Holz, das sich zur Rüstung erklärt hat."}
+  - {en: "§7The trees are still arguing.", de: "§7Die Bäume streiten noch."}
+  - {en: "§8+5% wood drops. Wear with dignity.", de: "§8+5% Holz-Drops. Mit Würde tragen."}
+  - {en: "§7Packs a suitcase while it chops.", de: "§7Packt beim Fällen gleich den Koffer."}
+  - {en: "§72.5% chance to drop Compressed Oak Log.", de: "§72,5% Chance auf Komprimierten Eichenstamm."}
+  - {en: "§8Foraging tool. Trees hate paperwork.", de: "§8Sammler-Werkzeug. Bäume hassen Papierkram."}
+  - {en: "§7Cobble, but it went to finishing school.", de: "§7Bruchstein, aber mit Benimmschule."}
+  - {en: "§71% chance to compact cobble as you mine.", de: "§71% Chance, beim Abbauen Bruchstein zu verdichten."}
+  - {en: "§8Mining tool. Sits just above the T1 pick.", de: "§8Bergbau-Werkzeug. Knapp über der T1-Spitzhacke."}
+  - {en: "§7Quarries listen when you knock like this.", de: "§7Steinbrüche hören zu, wenn du so anklopfst."}
+  - {en: "§73.5% chance to compact cobble on break.", de: "§73,5% Chance, Bruchstein beim Abbau zu verdichten."}
+  - {en: "§8The polite way to double a pile.", de: "§8So verdoppelt man höflich einen Haufen."}
+  - {en: "§7Keeps a little night in your pocket.", de: "§7Ein bisschen Nacht für die Hosentasche."}
+  - {en: "§7Base speed, then more when the sun gives up.", de: "§7Grundtempo, und mehr, sobald die Sonne aufgibt."}
+  - {en: "§8Off-hand. Does not actually burn.", de: "§8Zweithand. Brennt nicht wirklich."}
+  - {en: "§7Less gossip than the rod. Still nosy.", de: "§7Tratscht weniger als die Rute. Trotzdem neugierig."}
+  - {en: "§7Weak swing. Jumps to nearby targets.", de: "§7Schwacher Hieb. Springt auf nahe Ziele über."}
+  - {en: "§8Early combat. The rod remains the loud one.", de: "§8Für frühe Kämpfe. Die Rute bleibt die Laute."}
+  - {en: "§7Mobs pay rent now.", de: "§7Mobs zahlen jetzt Miete."}
+  - {en: "§7Kills drop extra coins.", de: "§7Kills droppen extra Münzen."}
+  - {en: "§8Low damage. High invoices.", de: "§8Wenig Schaden. Hohe Rechnungen."}
+  - {en: "§7Every swing files an expense report.", de: "§7Jeder Hieb reicht eine Spesenabrechnung ein."}
+  - {en: "§7Consumes §610 coins §7per hit.", de: "§7Verbraucht §610 Münzen §7pro Treffer."}
+  - {en: "§7Miss the fee and the edge goes polite.", de: "§7Ohne Gebühr wird die Klinge höflich."}
+  - {en: "§8Crits that know what gold costs.", de: "§8Krits, die wissen, was Gold kostet."}
+  - {en: "§7Haste, with fewer extra steps.", de: "§7Eile, nur mit weniger Zwischenschritten."}
+  - {en: "§7Ability cooldowns: §c-15%§7.", de: "§7Fähigkeits-Abklingzeiten: §c-15%§7."}
+  - {en: "§8Wands, blinks, and other showing off.", de: "§8Zauberstäbe, Blinks und andere Angebereien."}
+  - {en: "§7Your bruises moonlight as a shield.", de: "§7Deine blauen Flecken jobben als Schild."}
+  - {en: "§710% of hits become absorption.", de: "§710% der Treffer werden zu Absorption."}
+  - {en: "§8Off-hand. We do not have mana. On purpose.", de: "§8Zweithand. Wir haben kein Mana. Mit Absicht."}
+  - {en: "§7If they hit you, they can have some back.", de: "§7Wer dich schlägt, kriegt was zurück."}
+  - {en: "§7Reflects 10% melee damage.", de: "§7Wirft 10% Nahkampfschaden zurück."}
+  - {en: "§8T4 plate. Sparkles under pressure.", de: "§8T4-Platte. Funkelt unter Druck."}
+  - {en: "§7Bosses hate paperwork. This is paperwork.", de: "§7Bosse hassen Papierkram. Das hier ist Papierkram."}
+  - {en: "§7+25% damage to bosses.", de: "§7+25% Schaden gegen Bosse."}
+  - {en: "§8Bosses still hate the invoice.", de: "§8Bosse hassen die Rechnung trotzdem."}
+  - {en: "§7Luck so loud the loot table can hear it.", de: "§7Glück so laut, dass die Loot-Tabelle es hört."}
+  - {en: "§7+14% Catch Rate. Rare eggs notice you.", de: "§7+14% Fangrate. Seltene Eier bemerken dich."}
+  - {en: "§8Wear it. Pretend it was earned.", de: "§8Trag sie. Tu so, als wär sie verdient."}
+  - {en: "§7Sometimes the coins applaud.", de: "§7Manchmal applaudieren die Münzen."}
+  - {en: "§75% chance: coin explosion and a short stun.", de: "§75% Chance: Münzexplosion und kurze Betäubung."}
+  - {en: "§8Hybrid graft. Diamond spine, emerald manners.", de: "§8Hybrid-Veredelung. Diamant-Rückgrat, Smaragd-Manieren."}
+  - {en: "§7Smelted the waiting out of mining.", de: "§7Hat das Warten aus dem Bergbau geschmolzen."}
+  - {en: "§72% chance to compact ores as you go.", de: "§72% Chance, Erze unterwegs zu verdichten."}
+  - {en: "§8T3 pick stats. Upgrade the stone one.", de: "§8T3-Spitzhackenwerte. Upgrade der Stein-Version."}
+  - {en: "§7The rock files for compressed status.", de: "§7Der Fels beantragt den Komprimiert-Status."}
+  - {en: "§74% chance to compact while mining.", de: "§74% Chance, beim Abbauen zu verdichten."}
+  - {en: "§8T4 pick stats. Still jealous of mythic.", de: "§8T4-Spitzhackenwerte. Weiter neidisch auf Mythisch."}
+  - {en: "§7A drill that almost finished becoming a rounder name.", de: "§7Ein Bohrer, der fast zu einem runderen Namen wurde."}
+  - {en: "§7The last catalyst never made the crossing.", de: "§7Der letzte Katalysator kam nie drüben an."}
+  - {en: "§7Void postage marked it RETURN TO SENDER, unpaid.", de: "§7Die Void-Post stempelte: ZURÜCK AN ABSENDER, unfrei."}
+  - {en: "§7Whoever held it learned that holes keep receipts.", de: "§7Wer ihn hielt, lernte: Löcher heben Quittungen auf."}
+  - {en: "§dOres leave as Compressed. Sometimes Compacted.", de: "§dErze gehen komprimiert raus. Manchmal verdichtet."}
+  - {en: "§8No charm. No skill. Greed still stacks.", de: "§8Kein Talisman. Kein Skill. Gier stapelt trotzdem."}
+  - {en: "§8Not craftable. Not in the book.", de: "§8Nicht craftbar. Nicht im Buch."}
+  - {en: "§7A cheap homage to a very expensive hobby.", de: "§7Eine billige Hommage an ein sehr teures Hobby."}
+  - {en: "§7Nearby wild pets feel luckier. Allegedly.", de: "§7Wilde Haustiere nahebei haben mehr Glück. Angeblich."}
+  - {en: "§7Wild pets near you spawn shiny far more often.", de: "§7Wilde Haustiere bei dir spawnen viel öfter als Shiny."}
+  - {en: "§7A quarry mill that pays rent in your pocket.", de: "§7Eine Steinbruch-Mühle, die in deiner Tasche Miete zahlt."}
+  - {en: "§7Inventory clutter, meet the shredder.", de: "§7Inventar-Chaos, das ist der Schredder."}
+  - {en: "§7Auto-compresses and compacts resources while held.", de: "§7Komprimiert und verdichtet Ressourcen automatisch beim Halten."}
+  - {en: "§7Livestock. Bones. They call it loot.", de: "§7Vieh. Knochen. Die nennen das Beute."}
+  - {en: "§7I call it an eyesore. I'll take it off their hands.", de: "§7Ich nenne es Schandfleck. Ich nehm's ihnen ab."}
+  - {en: "§7Auto-sells vanilla mob and animal drops for coins.", de: "§7Verkauft Vanilla-Mob- und Tier-Drops automatisch für Münzen."}
+  - {en: "§7A grudge with a setting.", de: "§7Ein Groll in Fassung."}
+  - {en: "§7Off-hand diplomacy, but armed.", de: "§7Zweithand-Diplomatie, aber bewaffnet."}
+  - {en: "§7The second marble. The first one sued.", de: "§7Die zweite Murmel. Die erste hat geklagt."}
+  - {en: "§7Crits, now with a pocket.", de: "§7Krits, jetzt mit Hosentasche."}
+  - {en: "§7A warm rock that holds a complaint.", de: "§7Ein warmer Stein, der eine Beschwerde hegt."}
+  - {en: "§7Off-hand. The sword can share.", de: "§7Zweithand. Das Schwert kann teilen."}
+  - {en: "§7It points at profit. Rude, accurate.", de: "§7Zeigt auf Profit. Unhöflich, aber treffsicher."}
+  - {en: "§7The quarry sent a thank-you note.", de: "§7Der Steinbruch schickte eine Dankeskarte."}
+  - {en: "§7Time, direction, and extra cobble.", de: "§7Uhrzeit, Richtung und extra Bruchstein."}
+  - {en: "§7A spreadsheet that fits in a fist.", de: "§7Eine Excel-Tabelle im Faustformat."}
+  - {en: "§7North is a suggestion. Ore is not.", de: "§7Norden ist ein Vorschlag. Erz nicht."}
+  - {en: "§7Hold it like a rumor about stone.", de: "§7Halt es wie ein Gerücht über Stein."}
+  - {en: "§7The forest filed it under 'problem'.", de: "§7Der Wald hat es unter 'Problem' abgelegt."}
+  - {en: "§7Leaves clock in faster now.", de: "§7Blätter stempeln jetzt schneller ein."}
+  - {en: "§7A snack with opinions about trees.", de: "§7Ein Snack mit Meinungen über Bäume."}
+  - {en: "§7Oak has started taking it personally.", de: "§7Die Eiche nimmt es inzwischen persönlich."}
+  - {en: "§7A sapling that pays rent in fortune.", de: "§7Ein Setzling, der Miete in Glück zahlt."}
+  - {en: "§7Off-hand greenery. Professionally.", de: "§7Zweithand-Grünzeug. Professionell."}
+  - {en: "§7The field nominated it for treasurer.", de: "§7Das Feld hat es zum Kassenwart nominiert."}
+  - {en: "§7Harvest, now with a pocket veto.", de: "§7Ernte, jetzt mit Taschen-Veto."}
+  - {en: "§7A bowl that itemizes wheat.", de: "§7Eine Schüssel, die Weizen auflistet."}
+  - {en: "§7Rows, columns, dirt.", de: "§7Zeilen, Spalten, Erde."}
+  - {en: "§7Seeds that gossip in the off hand.", de: "§7Samen, die in der Zweithand tratschen."}
+  - {en: "§7The hoe can keep the heavy lifting.", de: "§7Die schwere Arbeit bleibt bei der Hacke."}
+  - {en: "§7The tide lost the appeal.", de: "§7Die Flut hat die Revision verloren."}
+  - {en: "§7Bites arrive pre-scheduled.", de: "§7Bisse kommen mit Termin."}
+  - {en: "§7A sea with a heart, and a clipboard.", de: "§7Ein Meer mit Herz, und einem Klemmbrett."}
+  - {en: "§7Wait times filed for a reduction.", de: "§7Wartezeiten haben Kürzung beantragt."}
+  - {en: "§7A shell that remembers every nibble.", de: "§7Eine Muschel, die sich jedes Knabbern merkt."}
+  - {en: "§7Off-hand. The rod does the talking.", de: "§7Zweithand. Reden tut die Rute."}
+  - {en: "§7It finds the shortcut and the pet.", de: "§7Findet die Abkürzung und das Haustier."}
+  - {en: "§7The sun is now a scheduling conflict.", de: "§7Die Sonne ist jetzt ein Terminkonflikt."}
+  - {en: "§7An eye for exits. And eggs.", de: "§7Ein Auge für Ausgänge. Und Eier."}
+  - {en: "§7Utility, but make it jewelry.", de: "§7Nutzwert, aber als Schmuck."}
+  - {en: "§7A shard that keeps the extras handy.", de: "§7Ein Splitter, der die Extras griffbereit hält."}
+  - {en: "§7Speed, catch rate, and a pulse.", de: "§7Tempo, Fangrate und ein Puls."}
+  - {en: "§7Pried off a prisoner who stopped needing it.", de: "§7Einem Gefangenen abgenommen, der es nicht mehr brauchte."}
+  - {en: "§7The shackle marks are still warm.", de: "§7Die Fesselspuren sind noch warm."}
+  - {en: "§eRight-click §7to decide who you were in here.", de: "§eRechtsklick §7und entscheide, wer du hier drin warst."}
+  - {en: "§8This vestige is consumed. You keep the chosen piece.", de: "§8Dieses Vestige wird verbraucht. Das gewählte Teil bleibt dir."}
+  - {en: "§bTurnkey §8· §5Escapist §8· §cRiot Warden §8· §eChaplain §8· §3Sculkbound", de: "§bSchließer §8· §5Ausbrecher §8· §cAufruhr-Wärter §8· §eKaplan §8· §3Sculkgebunden"}
+  - {en: "§8Warden's Prison · Floor I", de: "§8Warden's Prison · Etage I"}
+  - {en: "§8Outside dungeons: §7this set is polite about it.", de: "§8Außerhalb von Dungeons: §7Dieses Set hält sich höflich zurück."}
+  - {en: "§8Relic piece. Full power in dungeons.", de: "§8Relikt-Teil. Volle Kraft in Dungeons."}
+  - {en: "§8Dungeon weapon. Levels in dungeons. Cores raise the cap.", de: "§8Dungeon-Waffe. Levelt in Dungeons. Kerne heben das Limit."}
+  - {en: "§8Relic weapon. Full power in dungeons.", de: "§8Relikt-Waffe. Volle Kraft in Dungeons."}
+  - {en: "§7Hold right-click to fire. Needs arrows.", de: "§7Rechtsklick halten zum Schießen. Braucht Pfeile."}
+  - {en: "§6Right-click: §7ember burst. Chains once.", de: "§6Rechtsklick: §7Glutstoß. Springt einmal über."}
+  - {en: "§6Right-click: §7heal nearby players.", de: "§6Rechtsklick: §7heilt Spieler in der Nähe."}
+  - {en: "§8Slow. Heavy. The hallway notices.", de: "§8Langsam. Schwer. Der Flur merkt es."}
+  - {en: "§6✦ Shade", de: "§6✦ Schatten"}
+  - {en: "§7Per piece: §fbow draw -8%§7, §fCD -5%§7.", de: "§7Pro Teil: §fBogen-Spannzeit -8%§7, §fCD -5%§7."}
+  - {en: "§7In dungeons: §f-12% §7draw, §f-8% §7CD, §7× gear level. CD floor §f-42%§7.", de: "§7In Dungeons: §f-12% §7Spannzeit, §f-8% §7CD, §7× Gear-Stufe. CD-Minimum §f-42%§7."}
+  - {en: "§6✦ Full Set", de: "§6✦ Vollständiges Set"}
+  - {en: "§7Overworld §f+5 §7Damage, §f+4% §7Crit Chance.", de: "§7Oberwelt: §f+5 §7Schaden, §f+4% §7Krit-Chance."}
+  - {en: "§7In dungeons: §f+14 §7Damage, §f+10% §7Crit Chance, §f+18% §7Crit Damage, §f-6% §7draw, × gear level.", de: "§7In Dungeons: §f+14 §7Schaden, §f+10% §7Krit-Chance, §f+18% §7Krit-Schaden, §f-6% §7Spannzeit, × Gear-Stufe."}
+  - {en: "§7Air is a suggestion down here.", de: "§7Luft ist hier unten nur ein Vorschlag."}
+  - {en: "§7The ocean issued a visitor badge.", de: "§7Der Ozean stellte einen Besucherausweis aus."}
+  - {en: "§7Pressure, but make it fashion.", de: "§7Druck, aber als Mode."}
+  - {en: "§7Keeps the brine on the outside.", de: "§7Hält das Salzwasser draußen."}
+  - {en: "§7Kicking, now with a depth chart.", de: "§7Strampeln, jetzt mit Tiefenkarte."}
+  - {en: "§7The current filed a complaint.", de: "§7Die Strömung hat Beschwerde eingelegt."}
+  - {en: "§7Walking on water was taken.", de: "§7Übers Wasser laufen? Schon vergeben."}
+  - {en: "§7So you walked under it instead.", de: "§7Also bist du eben drunter gelaufen."}
+  - {en: "§b🎣 Fishing Tool", de: "§b🎣 Angel-Werkzeug"}
+  - {en: "§3Diving Armor", de: "§3Tauch-Rüstung"}
+  - {en: "§b🎣 Fishing Armor", de: "§b🎣 Angel-Rüstung"}
+  - {en: "§8Aetherion Diving Set", de: "§8Aetherion-Tauch-Set"}
+  - {en: "§8Aetherion Fishing Set", de: "§8Aetherion-Angel-Set"}
+  - {en: "§7Breathe underwater. Full set: conduit.", de: "§7Unterwasseratmung. Vollständiges Set: Meereskraft."}
+  - {en: "§7Leviathan bait. Still rude to fish.", de: "§7Leviathan-Köder. Trotzdem unhöflich zu Fischen."}
+  - {en: "§7Fish write five-star reviews. Under protest.", de: "§7Fische schreiben Fünf-Sterne-Bewertungen. Unter Protest."}
+  - {en: "§7Abyss hours. Same spreadsheet, wetter.", de: "§7Dienst im Abgrund. Gleiche Tabelle, nur nasser."}
+  - {en: "§7Docks have a dress code now. This is it.", de: "§7Die Docks haben jetzt einen Dresscode. Das hier."}
+  - {en: "§7The ocean filed a complaint. You declined.", de: "§7Der Ozean legte Beschwerde ein. Du hast abgelehnt."}
+  - {en: "§7Fish started writing reviews. One star.", de: "§7Fische schreiben jetzt Bewertungen. Ein Stern."}
+  - {en: "§7Bites, wait times, excuses. A spreadsheet with water.", de: "§7Bisse, Wartezeiten, Ausreden. Eine Tabelle mit Wasser."}
+  - {en: "§7Docks have started taking notes.", de: "§7Die Docks machen sich schon Notizen."}
+  - {en: "§7It levels up. The ocean is keeping score.", de: "§7Es steigt auf. Der Ozean führt Buch."}
+  - {en: "§7Catches the neighbors. Professionally.", de: "§7Fängt die Nachbarn. Beruflich."}
+  - {en: "§e🌾 Farming Tool", de: "§e🌾 Ackerbau-Werkzeug"}
+  - {en: "§e🌾 Farming Armor", de: "§e🌾 Ackerbau-Rüstung"}
+  - {en: "§7Crops send flowers. You still clock in.", de: "§7Das Feld schickt Blumen. Du stempelst trotzdem."}
+  - {en: "§7The scarecrow board promoted you.", de: "§7Der Scheuchen-Vorstand hat dich befördert."}
+  - {en: "§7Wheat started writing reviews. Five stars, begrudgingly.", de: "§7Der Weizen schreibt jetzt Bewertungen. Fünf Sterne, widerwillig."}
+  - {en: "§7Barns have a dress code now. This is it.", de: "§7Scheunen haben jetzt Dresscode. Das hier ist er."}
+  - {en: "§7The field asked for a lawyer. You declined.", de: "§7Das Feld wollte einen Anwalt. Du hast abgelehnt."}
+  - {en: "§7The scarecrow unionized. You still clock in.", de: "§7Die Vogelscheuche ist organisiert. Du stempelst trotzdem."}
+  - {en: "§7Rows, columns, wheat. A spreadsheet with dirt.", de: "§7Zeilen, Spalten, Weizen. Eine Tabelle voller Dreck."}
+  - {en: "§7Barns have started writing reviews.", de: "§7Die Scheunen schreiben inzwischen Bewertungen."}
+  - {en: "§7It levels up. The wheat is keeping score.", de: "§7Es steigt auf. Der Weizen führt Buch."}
+  - {en: "§7Harvests the neighbors. Professionally.", de: "§7Erntet die Nachbarn. Beruflich."}
+  - {en: "§a🪓 Foraging Tool", de: "§a🪓 Sammler-Werkzeug"}
+  - {en: "§a🪓 Foraging Armor", de: "§a🪓 Sammler-Rüstung"}
+  - {en: "§7Worldroot. Then paperwork.", de: "§7Weltwurzel. Dann Papierkram."}
+  - {en: "§7The trees still send invoices. Paid in full.", de: "§7Die Bäume schicken noch Rechnungen. Voll bezahlt."}
+  - {en: "§7Canopy clearance, on purpose.", de: "§7Blätterdach gelichtet, mit Absicht."}
+  - {en: "§7Sawmills wrote a five-star review. Reluctantly.", de: "§7Sägewerke gaben fünf Sterne. Widerwillig."}
+  - {en: "§7Heartwood, then paperwork.", de: "§7Kernholz, dann Papierkram."}
+  - {en: "§7The canopy still sends invoices.", de: "§7Das Blätterdach schickt noch Rechnungen."}
+  - {en: "§7Windfall, on purpose.", de: "§7Windbruch, mit Absicht."}
+  - {en: "§7Sawmills have started writing reviews.", de: "§7Die Sägewerke schreiben inzwischen Bewertungen."}
+  - {en: "§7Spruce first. Oak later. Always sticks.", de: "§7Erst Fichte. Später Eiche. Immer Stöcke."}
+  - {en: "§7Kindling with a dress code.", de: "§7Anzündholz mit Dresscode."}
+  - {en: "§7A splinter of a Quarry Core.", de: "§7Ein Splitter eines Steinbruch-Kerns."}
+  - {en: "§7Four shards craft one Core.", de: "§7Vier Splitter ergeben einen Kern."}
+  - {en: "§820% drop from world bosses.", de: "§820% Drop-Chance bei Weltbossen."}
+  - {en: "§7The heart of an Island Quarry.", de: "§7Das Herz eines Insel-Steinbruchs."}
+  - {en: "§7Craft with 8 Compressed items §7around this core.", de: "§7Mit 8 komprimierten Items §7rund um diesen Kern herstellen."}
+  - {en: "§8Made from 4 Core Shards.", de: "§8Aus 4 Kernsplittern hergestellt."}
+  - {en: "§7Install on an island quarry.", de: "§7In einen Insel-Steinbruch einbauen."}
+  - {en: "§7Crafts Compressed while it runs.", de: "§7Stellt im Betrieb Komprimiertes her."}
+  - {en: "§7Leftover under 128 stays raw.", de: "§7Reste unter 128 bleiben roh."}
+  - {en: "§8Auto-crafts, then collect.", de: "§8Craftet selbst, dann einsammeln."}
+  - {en: "§7Crafts Compacted while it runs.", de: "§7Stellt im Betrieb Verdichtetes her."}
+  - {en: "§7If not enough for Compacted, §7leftover becomes Compressed.", de: "§7Reicht es nicht für Verdichtetes, §7wird der Rest komprimiert."}
+  - {en: "§7Place on your private or guild island.", de: "§7Auf deiner Privat- oder Gildeninsel platzieren."}
+  - {en: "§7while the server is online.", de: "§7solange der Server online ist."}
+  - {en: "§8Click it to collect or upgrade.", de: "§8Anklicken zum Einsammeln oder Aufwerten."}
+  - {en: "§8Dungeon Core → dungeon gear, levels inside.", de: "§8Dungeon-Kern → Dungeon-Ausrüstung, steigt drinnen auf."}
+  - {en: "§8Dungeonized · cores: stronger mini, less CD.", de: "§8Dungeonisiert · Kerne: stärkeres Mini, weniger CD."}
+  - {en: "§8Anvil + Dungeon Core: rarity up, +25 cap.", de: "§8Amboss + Dungeon-Kern: Seltenheit rauf, +25 Limit."}
+  - {en: "§6Volley: §f2 arrows", de: "§6Salve: §f2 Pfeile"}
+  - {en: "§6Volley: §f3 arrows", de: "§6Salve: §f3 Pfeile"}
+  - {en: "§6Volley: §f3 arrows §8· piercing, hits Endermen", de: "§6Salve: §f3 Pfeile §8· durchbohrend, trifft Endermen"}
+  - {en: "§6❤ Life Absorption: §f", de: "§6❤ Lebensentzug: §f"}
+  - {en: "§5Dungeon-bound weapon. Levels in dungeons.", de: "§5Dungeon-gebundene Waffe. Steigt in Dungeons auf."}
+  - {en: "§8Wear in off-hand. Looks like a hoe. Levels from catches.", de: "§8In der Zweithand tragen. Wirkt wie eine Hacke. Steigt durch Fänge auf."}
+  - {en: "§7Off-hand endgame hoe. Spheres do the catching.", de: "§7Endgame-Hacke für die Zweithand. Fangen tun die Spheres."}
+  - {en: "§7Utility charm can wait. This one is for pets.", de: "§7Der Nutz-Talisman kann warten. Der hier ist für Haustiere."}
+  - {en: "§7Endgame softsteps. Loud intentions.", de: "§7Endgame-Leisetreter. Laute Absichten."}
+  - {en: "§7The menagerie filed a complaint. Denied.", de: "§7Die Menagerie hat Beschwerde eingelegt. Abgelehnt."}
+  - {en: "§7Off-hand upgrade hoe. Catch rate with opinions.", de: "§7Upgrade-Hacke für die Zweithand. Fangrate mit Meinung."}
+  - {en: "§7Not a weapon. A negotiation tool.", de: "§7Keine Waffe. Ein Verhandlungswerkzeug."}
+  - {en: "§7Feathers in the lining. Ambition in the stitching.", de: "§7Federn im Futter. Ehrgeiz in den Nähten."}
+  - {en: "§7Pets smell the upgrade. They should.", de: "§7Haustiere riechen das Upgrade. Sollen sie auch."}
+  - {en: "§7Off-hand hoe. Not a sword. Not a sphere.", de: "§7Zweithand-Hacke. Kein Schwert. Keine Sphere."}
+  - {en: "§7Wear it left. Throw spheres right. Numbers go up.", de: "§7Links tragen. Rechts Spheres werfen. Zahlen steigen."}
+  - {en: "§7A polite sip. Then everything levels faster.", de: "§7Ein höflicher Schluck. Danach steigt alles schneller auf."}
+  - {en: "§7A smaller sip. Same bad idea, shorter shift.", de: "§7Ein kleinerer Schluck. Gleiche dumme Idee, kürzere Schicht."}
+  - {en: "§d+5% XP §7on skills, Aetherion Level, vanilla XP.", de: "§d+5% XP §7auf Skills, Aetherion-Stufe, Vanilla-XP."}
+  - {en: "§d+4% damage§7, §d+3% defense§7, §d+5% coins§7.", de: "§d+4% Schaden§7, §d+3% Verteidigung§7, §d+5% Münzen§7."}
+  - {en: "§8No potion icons. No night vision pulse.", de: "§8Keine Trank-Symbole. Kein Nachtsicht-Puls."}
+  - {en: "§8Not real time. AFK in the lobby does not count.", de: "§8Keine Echtzeit. AFK in der Lobby zählt nicht."}
+  - {en: "§eRight-click to drink.", de: "§eRechtsklick zum Trinken."}
+  - {en: "§dThe lesser phial tastes like a shorter bad idea.", de: "§dDie geringe Phiole schmeckt nach einer kürzeren dummen Idee."}
+  - {en: "§5The phial tastes like a bad idea that worked.", de: "§5Die Phiole schmeckt nach einer dummen Idee, die klappte."}
+  - {en: "§7Apply it at the §6Eldervale Forgehand§7.", de: "§7Beim §6Eldervale Forgehand§7 anwenden."}
+  - {en: "§7Boss drop. Pick a set. Dungeons keep their Floor I vestige.", de: "§7Boss-Drop. Wähl ein Set. Dungeons behalten ihr Vestige von Etage I."}
+  - {en: "§eRight-click §7to pick a shape.", de: "§eRechtsklick §7zum Wählen einer Form."}
+  - {en: "§8Sword · Bow · Wand · Maul · Staff", de: "§8Schwert · Bogen · Zauberstab · Streithammer · Stab"}
+  - {en: "§eRight-click §7to pick a set.", de: "§eRechtsklick §7zum Wählen eines Sets."}
+  - {en: "§8Not dungeon gear until a matching core.", de: "§8Erst mit passendem Kern Dungeon-Ausrüstung."}
+  - {en: "§8There is no undo.", de: "§8Rückgängig gibt es nicht."}
+  - {en: "§3✦ Warden-Marked §8· it heard you take it", de: "§3✦ Warden-gezeichnet §8· er hörte, wie du es nahmst"}
+  - {en: "§3Warden-Marked ", de: "§3Warden-gezeichnet "}
+  - {en: "§5Armory Requisition §8· §dFloor I", de: "§5Waffenkammer-Anforderung §8· §dEtage I"}
+  - {en: "§7Any grade but Heartstone.", de: "§7Jede Qualität außer Heartstone."}
+  - {en: "§7Cracked by hand on §dMining Eldervale§7.", de: "§7Von Hand abgebaut auf §dMining Eldervale§7."}
+  - {en: "§7Any crop, any weight.", de: "§7Jede Frucht, jedes Gewicht."}
+  - {en: "§7Hand harvests on the §eFarm Isle§7.", de: "§7Handernte auf der §eFarm Isle§7."}
+  - {en: "§7Any species, any weight.", de: "§7Jede Art, jedes Gewicht."}
+  - {en: "§7Landed on §bFishing Eldervale§7.", de: "§7An Land gezogen auf §bFishing Eldervale§7."}
+  - {en: "§5Signature §8· needs a find from Eldervale", de: "§5Signatur §8· braucht einen Fund aus Eldervale"}
+  - {en: "§8Quarries can't make it. Trade or find one.", de: "§8Kein Steinbruch macht das. Tausch oder finde einen."}
+  - {en: "§7A rare heartwood that only grows §7on Eldervale's forage isle.", de: "§7Ein seltenes Kernholz, das nur §7auf Eldervales Sammlerinsel wächst."}
+  - {en: "§8Offer pairs at the Grove table.", de: "§8Biete Paare am Tisch im Hain an."}
+  - {en: "§8Insert All · click a type to take 1.", de: "§8Alles einlagern · Typ anklicken, um 1 zu nehmen."}
+  - {en: "§8Right-click to open.", de: "§8Rechtsklick zum Öffnen."}
+  - {en: "§8Crafted storage — keeps inventory clean.", de: "§8Gecrafteter Stauraum — hält das Inventar sauber."}
+  - {en: "§7Per item rarity:", de: "§7Pro Item-Seltenheit:"}
+  - {en: "§6MAX. The menagerie filed a cease-and-desist.", de: "§6MAX. Die Menagerie hat dich abgemahnt."}
+  - {en: "§8Levels from catches. Rarer pets = more XP.", de: "§8Steigt durch Fänge auf. Seltenere Tiere = mehr XP."}
+  - {en: "§aYour hoe", de: "§aDeine Hacke"}
+  - {en: "§6MAX. The field has nothing left to prove.", de: "§6MAX. Das Feld muss niemandem mehr was beweisen."}
+  - {en: "§6MAX. The forest has nothing left to prove.", de: "§6MAX. Der Wald muss niemandem mehr was beweisen."}
+  - {en: "§6MAX. The ocean has nothing left to prove.", de: "§6MAX. Der Ozean muss niemandem mehr was beweisen."}
+  - {en: "§8Story find · a page in your Chronicle", de: "§8Story-Fund · eine Seite deiner Chronik"}
+  - {en: "§eRight-click §7to read.", de: "§eRechtsklick §7zum Lesen."}
+  - {en: "§7Ysolde Thorne at the Archive wants this.", de: "§7Ysolde Thorne im Archiv will das haben."}
+  - {en: "§7Ysolde Thorne collects these.", de: "§7Ysolde Thorne sammelt solche Briefe."}
+  - {en: "Found in a world chest.", de: "In einer Welt-Kiste gefunden."}
+  - {en: "Approved by the Registry. Scarier than it needs to be.", de: "Von der Registry genehmigt. Gruseliger als nötig."}
+  - {en: "Mother Berit's old copy.", de: "Mütterchen Berits altes Exemplar."}
+  - {en: "§7A children's book from the Capital.", de: "§7Ein Kinderbuch aus der Capital."}
+  - {en: "§7The king has a crown of lightning", de: "§7Der König trägt eine Krone aus Blitzen"}
+  - {en: "§7and no face at all.", de: "§7und überhaupt kein Gesicht."}
+  - {en: "Mother Berit gave you her copy.", de: "Mütterchen Berit hat dir ihr Exemplar gegeben."}
+  - {en: "It still turns when no one is looking.", de: "Es dreht sich noch, wenn keiner hinsieht."}
+  - {en: "Deep in the Shabby Mine.", de: "Tief in der Shabby Mine."}
+  - {en: "§7Brass, hand-cut, older than the Registry.", de: "§7Messing, von Hand geschnitten, älter als die Registry."}
+  - {en: "§7Something in the mine hummed", de: "§7Etwas in der Mine summte"}
+  - {en: "§7a lullaby around it.", de: "§7ihm ein Schlaflied vor."}
+  - {en: "The Hollow Lurker guarded it.", de: "Der Hollow Lurker hat es bewacht."}
+  - {en: "Polished for a thousand years. Never worn again.", de: "Tausend Jahre poliert. Nie wieder getragen."}
+  - {en: "Taken from Skuldugery's coat.", de: "Aus Skuldugerys Mantel genommen."}
+  - {en: "§7The Sun Guard was real.", de: "§7Die Sun Guard gab es wirklich."}
+  - {en: "§7Somebody kept this badge bright", de: "§7Jemand hielt dieses Abzeichen blank"}
+  - {en: "§7and never pinned it on again.", de: "§7und steckte es nie wieder an."}
+  - {en: "Skuldugery wore it under the soot.", de: "Skuldugery trug es unter dem Ruß."}
+  - {en: "Folded by small hands. Sized for a hen.", de: "Von kleinen Händen gefaltet. In Hennengröße."}
+  - {en: "Fell off McNugget.", de: "Von McNugget runtergefallen."}
+  - {en: "§7A paper crown, folded with care.", de: "§7Eine Papierkrone, sorgfältig gefaltet."}
+  - {en: "§7McNugget wore it into battle.", de: "§7McNugget trug sie in die Schlacht."}
+  - {en: "§7Nobody knows whose hands made it.", de: "§7Niemand weiß, wessen Hände sie gemacht haben."}
+  - {en: "McNugget dropped it.", de: "McNugget hat sie fallen lassen."}
+  - {en: "Too heavy for a troll. He carried it anyway.", de: "Zu schwer für einen Troll. Er trug es trotzdem."}
+  - {en: "From the Bridge Troll's toll chain.", de: "Aus der Zollkette des Bridge Troll."}
+  - {en: "§7One link of a mooring chain,", de: "§7Ein Glied einer Festmacherkette,"}
+  - {en: "§7as thick as your arm.", de: "§7so dick wie dein Arm."}
+  - {en: "§7The troll called it his.", de: "§7Der Troll nannte es seins."}
+  - {en: "The Bridge Troll hoarded it.", de: "Der Bridge Troll hat es gehortet."}
+  - {en: "Folded small. Smells faintly of lamp oil.", de: "Klein gefaltet. Riecht schwach nach Lampenöl."}
+  - {en: "§7A song for a child", de: "§7Ein Lied für ein Kind,"}
+  - {en: "§7who was afraid of the dark.", de: "§7das Angst vor der Dunkelheit hatte."}
+  - {en: "Someone pressed a star into the wax.", de: "Jemand hat einen Stern ins Wachs gedrückt."}
+  - {en: "§7Lamps over the harbour.", de: "§7Lampen über dem Hafen."}
+  - {en: "§7A child asleep against the glass.", de: "§7Ein Kind, an der Scheibe eingeschlafen."}
+  - {en: "The ink ran where something dripped on it.", de: "Die Tinte ist verlaufen, wo etwas darauf tropfte."}
+  - {en: "§7The outer isles began to forget.", de: "§7Die äußeren Inseln begannen zu vergessen."}
+  - {en: "§7'Finish the last verse with me.'", de: "§7'Sing mit mir die letzte Strophe zu Ende.'"}
+  - {en: "The wax is a thousand years old. The order isn't.", de: "Das Wachs ist tausend Jahre alt. Der Befehl nicht."}
+  - {en: "Carried by the Pathwarden.", de: "Vom Pathwarden getragen."}
+  - {en: "§7'Let no one walk to him.'", de: "§7'Niemand gehe zu ihm.'"}
+  - {en: "§7'Let no one walk from him.'", de: "§7'Niemand gehe von ihm.'"}
+  - {en: "§7One signature reads: Thorne.", de: "§7Eine Unterschrift lautet: Thorne."}
+  - {en: "The Pathwarden kept it for a thousand years.", de: "Der Pathwarden hat es tausend Jahre lang bewahrt."}
+  - {en: "You are the door. The door is you.", de: "Du bist die Tür. Die Tür bist du."}
+  - {en: "Stab first. Deny involvement.", de: "Erst zustechen. Dann alles abstreiten."}
+  - {en: "Orders were 'hit it until it stops.'", de: "Befehl war: 'Draufhauen, bis es aufhört.'"}
+  - {en: "You asked the dungeon. It answered with teeth.", de: "Du hast den Dungeon gefragt. Er antwortete mit Zähnen."}
+  - {en: "Holds the line. Undead resist. Extra bulk in dungeons.", de: "Hält die Linie. Untoten-Resistenz. Extra Masse in Dungeons."}
+  - {en: "Bows: -8% draw per piece. Cooldowns -5% per piece. Crits included.", de: "Bögen: -8% Spannzeit pro Teil. Abklingzeiten -5% pro Teil. Krits inklusive."}
+  - {en: "Damage, defense, attack spread. Dies second on purpose.", de: "Schaden, Verteidigung, Angriffsstreuung. Stirbt absichtlich als Zweiter."}
+  - {en: "Pulses health to nearby players. Optimism, with armor.", de: "Pulst Leben an Spieler in der Nähe. Optimismus mit Rüstung."}
+  - {en: "Attack spread, speed, spirit shields. Weather included.", de: "Angriffsstreuung, Tempo, Geisterschilde. Wetter inklusive."}
+  - {en: "Iron, Coal, Lapis", de: "Eisen, Kohle, Lapis"}
+  - {en: "Diamond, Gold, Birch, Oak, Glowstone, Redstone", de: "Diamant, Gold, Birke, Eiche, Glowstein, Redstone"}
+  - {en: "Iron, Gold, Diamond, Redstone, Birch, Lapis", de: "Eisen, Gold, Diamant, Redstone, Birke, Lapis"}
+  - {en: "Iron, Coal, Lapis, Glowstone", de: "Eisen, Kohle, Lapis, Glowstein"}
+  - {en: "Gold, Redstone, Lapis, Glowstone, Birch", de: "Gold, Redstone, Lapis, Glowstein, Birke"}
+  - {en: "A hallway argument, with better steel.", de: "Ein Flurstreit, nur mit besserem Stahl."}
+  - {en: "The dungeon taught this bow to skip the draw.", de: "Der Dungeon hat diesem Bogen das Spannen abgewöhnt."}
+  - {en: "Point. The floor does the rest.", de: "Zeigen. Den Rest erledigt der Boden."}
+  - {en: "You are the door. The door hits back.", de: "Du bist die Tür. Die Tür schlägt zurück."}
+  - {en: "The Combat set's argument, in sword form.", de: "Das Argument des Kampf-Sets, in Schwertform."}
+  - {en: "A pick that matches the Mining set.", de: "Eine Spitzhacke passend zum Bergbau-Set."}
+  - {en: "A hoe that matches the Furrow set.", de: "Eine Hacke passend zum Furchen-Set."}
+  - {en: "An axe that matches the Kindling set.", de: "Eine Axt passend zum Zunder-Set."}
+  - {en: "A rod that matches the Nibble set.", de: "Eine Rute passend zum Anbiss-Set."}
+  - {en: "The maul that matches the Ironhide set.", de: "Der Streithammer passend zum Ironhide-Set."}
+  - {en: "The staff that matches the Healer set.", de: "Der Stab passend zum Heiler-Set."}
+  - {en: "Every door on the block answered to this face.", de: "Jede Tür im Block gehorchte diesem Gesicht."}
+  - {en: "Dented where the riot pushed. It did not move.", de: "Eingedellt, wo der Aufruhr drückte. Gewichen ist es nicht."}
+  - {en: "Walked the same corridor ten thousand times.", de: "Zehntausendmal denselben Gang abgelaufen."}
+  - {en: "The chains are still attached. Somebody kept the key.", de: "Die Ketten hängen noch dran. Jemand hat den Schlüssel behalten."}
+  - {en: "Stitched from a cell blanket. Smells like freedom.", de: "Aus einer Zellendecke genäht. Riecht nach Freiheit."}
+  - {en: "Nineteen pockets. Eighteen of them hold a spoon.", de: "Neunzehn Taschen. In achtzehn steckt ein Löffel."}
+  - {en: "Worn crawling through a tunnel nobody finished.", de: "Getragen beim Kriechen durch einen Tunnel, den keiner fertig grub."}
+  - {en: "Never squeaked once. The guards hated that.", de: "Hat nie gequietscht. Die Wärter hassten das."}
+  - {en: "Visor down, opinions off.", de: "Visier runter, Meinung aus."}
+  - {en: "Chain links from the old cell doors, reforged.", de: "Kettenglieder der alten Zellentüren, neu geschmiedet."}
+  - {en: "Built for standing in a doorway and meaning it.", de: "Gebaut, um in einer Tür zu stehen und es ernst zu meinen."}
+  - {en: "Tread pattern: the floor of D Block.", de: "Profil: der Boden von Block D."}
+  - {en: "He heard every confession. He told the Warden none.", de: "Er hörte jede Beichte. Dem Wärter verriet er keine."}
+  - {en: "Candle wax, iron thread, and a stubborn prayer.", de: "Kerzenwachs, Eisenfaden und ein stures Gebet."}
+  - {en: "Knees worn through on the chapel stone.", de: "Die Knie auf dem Kapellenstein durchgescheuert."}
+  - {en: "Walked the infirmary rows every night.", de: "Ging jede Nacht die Reihen der Krankenstation ab."}
+  - {en: "It hums when the Warden is near. It is always humming.", de: "Es summt, wenn der Warden nah ist. Es summt immer."}
+  - {en: "The sculk grew into the cloth. It has opinions.", de: "Der Sculk ist in den Stoff gewachsen. Er hat Meinungen."}
+  - {en: "Quiet steps. Something below listens anyway.", de: "Leise Schritte. Etwas darunter hört trotzdem zu."}
+  - {en: "Leaves no prints. Leaves a little sculk.", de: "Hinterlässt keine Spuren. Hinterlässt ein bisschen Sculk."}
+  - {en: "Broke up the last riot. Started the next one.", de: "Hat den letzten Aufruhr beendet. Den nächsten angefangen."}
+  - {en: "Strung with cell-door wire. Fires before you decide.", de: "Mit Zellentürdraht bespannt. Schießt, bevor du dich entscheidest."}
+  - {en: "The key ring melted into a fist.", de: "Der Schlüsselring ist zu einer Faust geschmolzen."}
+  - {en: "A guard's lantern pole the sculk grew into.", de: "Eine Wärter-Laternenstange, in die der Sculk gewachsen ist."}
+  - {en: "Still smokes. The chapel incense never ran out.", de: "Qualmt noch. Der Kapellenweihrauch ging nie aus."}
+  - {en: "Does not level", de: "Steigt nicht auf"}
+  - {en: "forward.", de: "vorwärts."}
+  - {en: "nearest enemies.", de: "nächsten Gegnern."}
+  - {en: "Aetherion Combat Set", de: "Aetherion-Kampf-Set"}
+  - {en: "Aetherion Mining Set", de: "Aetherion-Bergbau-Set"}
+  - {en: "Aetherion Farming Set", de: "Aetherion-Farming-Set"}
+  - {en: "Aetherion Foraging Set", de: "Aetherion-Sammel-Set"}
+  - {en: "Aetherion Catcher Set", de: "Aetherion-Fänger-Set"}
+  - {en: "Basic Aetherion Tool", de: "Einfaches Aetherion-Werkzeug"}
+  - {en: "Basic Aetherion Weapon", de: "Einfache Aetherion-Waffe"}
+  - {en: "GOD Kit 2 Test", de: "GOTT-Kit 2 Test"}
+  - {en: "Starter hunting bow", de: "Starter-Jagdbogen"}
+patterns:
+  - {en: "Value: {0} coins each", de: "§8Wert: §6{0} Münzen §7pro Stück"}
+  - {en: "AH value: {0} coins", de: "§8AH-Wert: §6{0} Münzen"}
+  - {en: "Trade value: {0} coins", de: "§8Handelswert: §6{0} Münzen"}
+  - {en: "Type: {0}", de: "§8Typ: §f{0}"}
+  - {en: "Dungeon: +{0}% stats", de: "§5Dungeon: §f+{0}% Werte"}
+  - {en: "Dungeon: +{0}% stats · rarity +{1}%", de: "§5Dungeon: §f+{0}% Werte §8· Seltenheit §f+{1}%"}
+  - {en: "Infused: Dungeon Core {0}/{1}", de: "§dInfundiert: Dungeon-Kern §f{0}§8/{1}"}
+  - {en: "Overworld {0}% · Dungeon Core → dungeon gear.", de: "§8Oberwelt {0}% · Dungeon-Kern → Dungeon-Ausrüstung."}
+  - {en: "Overworld: {0}% of its stats. Full power in dungeons.", de: "§8Oberwelt: {0}% der Werte. Volle Kraft in Dungeons."}
+  - {en: "Requires Core {0} on a relic at Core {1}.", de: "§8Braucht Kern {0} auf einem Relikt mit Kern {1}."}
+  - {en: "Requires Core {0} on a relic at no infusion.", de: "§8Braucht Kern {0} auf einem Relikt ohne Infusion."}
+  - {en: "Floor {0} dungeon caches", de: "§8Etage {0} Dungeon-Verstecke"}
+  - {en: "Floor {0}. No farm tools.", de: "§8Etage {0}. Keine Farmgeräte."}
+  - {en: "Calling: {0} · {1}", de: "Berufung: {0} §8· {1}"}
+  - {en: "Likes: {0}", de: "§8Mag: §7{0}"}
+  - {en: "{0} Set · {1} · Warden's Prison", de: "{0}-Set §8· {1} · Warden's Prison"}
+  - {en: "Now: {0} pc · draw -{1}% · CD -{2}%", de: "§8Jetzt: §f{0} Tl. §8· Spannzeit §f-{1}% §8· CD §f-{2}%"}
+  - {en: "Unidentified overworld weapon.", de: "§7Unidentifiziert: Oberwelt-Waffe."}
+  - {en: "Unidentified overworld helmet.", de: "§7Unidentifiziert: Oberwelt-Helm."}
+  - {en: "Unidentified overworld chestplate.", de: "§7Unidentifiziert: Oberwelt-Brustplatte."}
+  - {en: "Unidentified overworld leggings.", de: "§7Unidentifiziert: Oberwelt-Beinschutz."}
+  - {en: "Unidentified overworld boots.", de: "§7Unidentifiziert: Oberwelt-Stiefel."}
+  - {en: "Duration: {0} hours of playtime", de: "§7Dauer: §f{0} Stunden Spielzeit"}
+  - {en: "Blueprint Tier: {0}/{1}", de: "§bBauplan-Stufe: §f{0}/{1}"}
+  - {en: "+{0} Catch Rate, +{1} Speed per level (more after Lv.60).", de: "§8+{0} Fangrate, +{1} Tempo pro Stufe §8(mehr ab Lv.60)."}
+  - {en: "+{0} Fortune, +{1} Harvest per level (more after Lv.60).", de: "§8+{0} Glück, +{1} Ernte pro Stufe §8(mehr ab Lv.60)."}
+  - {en: "+{0} Fortune, +{1} Power, +{2} Spread per level (more after Lv.60).", de: "§8+{0} Glück, +{1} Kraft, +{2} Streuung pro Stufe §8(mehr ab Lv.60)."}
+  - {en: "+{0} Fortune, +{1} Fish Catch, +{2} Fish Speed per level (more after Lv.60).", de: "§8+{0} Glück, +{1} Fischfang, +{2} Angeltempo pro Stufe §8(mehr ab Lv.60)."}
+  - {en: "Use: Raise a Blueprint tool to Tier {0}.", de: "§eNutzen: §7Hebt ein §bBauplan-Werkzeug §7auf §fStufe {0}§7."}
+  - {en: "Needs Tier {0} first.", de: "§8Braucht zuerst Stufe {0}."}
+  - {en: "Right-click: pull ores in {0} blocks", de: "§7Rechtsklick: zieht Erze im Umkreis von §f{0}§7 Blöcken"}
+  - {en: "Cooldown: {0}s · max {1}", de: "§7Abklingzeit: §f{0}s §8· max {1}"}
+  - {en: "Right-click to blink {0} blocks", de: "§7Rechtsklick: {0} Blöcke blinzeln"}
+  - {en: "forward. ({0}s)", de: "§7nach vorn. §8({0}s)"}
+  - {en: "Right-click: blink to the {0}", de: "§7Rechtsklick: blinzle zu den {0}"}
+  - {en: "nearest enemies. ({0}s)", de: "§7nächsten Gegnern. §8({0}s)"}
+  - {en: "within {0} blocks and drain life.", de: "§7im Umkreis von {0} Blöcken und saugt Leben."}
+  - {en: "Nearby hostiles take {0}% HP", de: "§7Gegner in der Nähe verlieren §f{0}% §7HP"}
+  - {en: "each second. (max {0})", de: "§7pro Sekunde. §8(max {0})"}
+  - {en: "Draw: {0}s for a full shot.", de: "§eSpannzeit: §f{0}s §8für einen vollen Schuss."}
+  - {en: "Survive death once. ({0}m)", de: "§7Überlebe den Tod einmal. §8({0}m)"}
+  - {en: "Produces {0}", de: "§7Produziert §f{0}"}
+  - {en: "2 stacks of {0},", de: "§72 Stapel {0},"}
+  - {en: "128 Compressed {0},", de: "§7128× komprimiert: {0},"}
+  - {en: "Millstone-cured {0}.", de: "§7Im Mahlstein gereift: {0}."}
+  - {en: "Adds to {0}.", de: "§7Erhöht §f{0}§7."}
+  - {en: "Works on: {0}", de: "§8Wirkt auf: {0}"}
+  - {en: "Socket at the Custom Anvil. Max {0} per item.", de: "§eEinsetzen §7am Custom Anvil. §8Max {0} pro Item."}
+  - {en: "{0} · hold in the off hand", de: "§7{0} §8· §7in der Zweithand halten"}
+authors:
+  "The Registry": "Die Registry"
+  "The Council": "Der Rat"
+  "M": "M"
+books:
+  book_mad_king:
+    - "§lDER IRRE KÖNIG§r\n\nEin Märchen für Kinder, die nicht schlafen wollen.\n\n\n§8Genehmigt von der Registry."
+    - "Es war einmal ein König, der wollte den ganzen Himmel für sich allein.\n\nEr war nicht gütig.\nEr war nicht weise.\nEr war irre."
+    - "Er hatte keinen Namen.\n\nIrre Könige dürfen keinen behalten."
+    - "Als der Himmel ihm nicht gehorchen wollte, zerbrach er ihn.\n\nWie einen Teller.\nWie ein Spielzeug.\nAls wäre nichts wichtig."
+    - "Da läuteten die tapferen Leute die Glocken, und die Glocken schickten ihn weit fort, hinter den Nebel, von wo er nie mehr zurückkommen kann."
+    - "Hörst du nachts die Glocken, dann mach die Augen zu.\n\nSie wollen nur ganz sicher gehen.\n\n\n§lEnde.§r"
+  maelis_letter_1:
+    - "C —\n\nElin will wieder nicht schlafen. Sie sagt, die Dunkelheit hat Ecken.\n\nIch hab ihr heute Abend ein Lied geschrieben. Sieben Töne, einer für jede Glocke."
+    - "Beim vierten schlief sie schon.\n\nDu summst es übrigens falsch. Jedes einzelne Mal.\n\nKomm heim und summ es ihr falsch vor. Das mag sie am liebsten.\n\n— M"
+  maelis_letter_2:
+    - "C —\n\nDu hast heute Abend den ganzen Hafen mit deinen Lampen erleuchtet. Die Stadt hat gejubelt, als hättest du den Mond gefangen."
+    - "Elin hat am Fenster gewinkt, bis sie an der Scheibe eingeschlafen ist.\n\nKomm vor der letzten Glocke heim. Die Werkstatt steht morgen früh auch noch.\n\n— M"
+  maelis_letter_3:
+    - "C —\n\nDie äußeren Inseln sind still, auf die falsche Art. Die Leute vergessen ihre Türen. Ihre Namen.\n\nMach nicht dieses Gesicht. Ich weiß, dass du schon darüber liest."
+    - "Versprich mir eins.\n\nSing mit mir die letzte Strophe zu Ende. Das tust du nie. Du hörst immer bei der siebten Glocke auf und siehst mich an, als wäre das Lied vorbei.\n\nIst es nicht.\n\n— M"
+  sealed_writ_silent_year:
+    - "§lSCHREIBEN DES STILLEN JAHRES§r\n\nAuf Befehl des Rates von Eldervale:\n\nNiemand gehe zu ihm.\nNiemand gehe von ihm."
+    - "Sein Name werde aus jedem Buch gestrichen,\nund die ihren mit dem seinen.\n\nDie Königsstraße ist gesperrt. Der Wächter steht, bis er abgelöst wird."
+    - "Gezeichnet für den Rat:\n\nA. Morrow\nT. Thorne\nE. Vasko\n\n§8(die übrigen Namen sind ausgekratzt)"

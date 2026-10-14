@@ -12,6 +12,7 @@ import net.luckperms.api.node.types.WeightNode;
 
 import org.bukkit.Bukkit;
 
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
@@ -20,6 +21,31 @@ import java.util.stream.Collectors;
 final class LuckPermsSilent {
 
     private LuckPermsSilent() {
+    }
+
+    /**
+     * Homie / Monkey content kit — never {@code aetherion.dev} (full admin).
+     * Tools only: Content Kit UI, NPC editor, self shards, flight.
+     * Citrus and Beta do not receive this kit.
+     */
+    static final String[] CONTENT_PERMISSIONS = {
+            "aetherion.npc.editor",
+            "aetherion.dev.content",
+            "aetherion.devmenu",
+            "aetherion.shards.admin",
+            "aetherion.flight",
+            "essentials.fly",
+            "essentials.fly.safelogin"
+    };
+
+    private static final String FULL_DEV = "aetherion.dev";
+
+    static {
+        for (String node : CONTENT_PERMISSIONS) {
+            if (FULL_DEV.equalsIgnoreCase(node)) {
+                throw new IllegalStateException("CONTENT_PERMISSIONS must not include aetherion.dev");
+            }
+        }
     }
 
     static boolean available() {
@@ -51,9 +77,99 @@ final class LuckPermsSilent {
             api.getGroupManager().saveGroup(group);
         }));
         api.getGroupManager().loadGroup("admin").thenAccept(optional -> optional.ifPresent(group -> {
-            group.data().add(PermissionNode.builder("aetherion.rank.admin").value(true).build());
+            group.data().clear(NodeType.PREFIX.predicate(node -> true));
+            group.data().clear(NodeType.PERMISSION.predicate(node ->
+                    "aetherion.rank.admin".equalsIgnoreCase(node.getKey())));
+            group.data().add(PermissionNode.builder("aetherion.npc.editor").value(true).build());
             api.getGroupManager().saveGroup(group);
         }));
+        api.getGroupManager().createAndLoadGroup("monkey").thenAccept(group -> {
+            if (group == null) {
+                return;
+            }
+            group.data().add(PermissionNode.builder("aetherion.rank.monkey").value(true).build());
+            grantContentKit(group);
+            denyFullDev(group);
+            api.getGroupManager().saveGroup(group);
+        });
+        // Cosmetic-only ultras. No tools. Do not negate aetherion.dev — an admin
+        // who also wears Citrus or Beta must keep the full DEV tree.
+        for (String cosmetic : List.of("citrus", "beta")) {
+            api.getGroupManager().createAndLoadGroup(cosmetic).thenAccept(group -> {
+                if (group == null) {
+                    return;
+                }
+                group.data().add(PermissionNode.builder("aetherion.rank." + cosmetic).value(true).build());
+                stripFullDevGrant(group);
+                stripContentKitGrants(group);
+                api.getGroupManager().saveGroup(group);
+            });
+        }
+        for (String staff : List.of("moderator", "mod")) {
+            api.getGroupManager().loadGroup(staff).thenAccept(optional -> optional.ifPresent(group -> {
+                grantContentKit(group);
+                denyFullDev(group);
+                api.getGroupManager().saveGroup(group);
+            }));
+        }
+    }
+
+    /** Homie / Monkey content kit — not full admin. */
+    private static void grantContentKit(Group group) {
+        if (group == null) {
+            return;
+        }
+        for (String node : CONTENT_PERMISSIONS) {
+            group.data().add(PermissionNode.builder(node).value(true).build());
+        }
+        denyFullDev(group);
+    }
+
+    /**
+     * Strip leftover manual {@code aetherion.dev} and plant an explicit deny
+     * so Monkey / content kit cannot inherit the full Dev Menu.
+     */
+    private static void denyFullDev(Group group) {
+        if (group == null) {
+            return;
+        }
+        stripFullDevGrant(group);
+        group.data().add(PermissionNode.builder(FULL_DEV).value(false).build());
+    }
+
+    private static void stripFullDevGrant(Group group) {
+        if (group == null) {
+            return;
+        }
+        group.data().clear(NodeType.PERMISSION.predicate(node ->
+                FULL_DEV.equalsIgnoreCase(node.getKey()) && node.getValue()));
+    }
+
+    /** Citrus and Beta are cosmetics only — never pick up content-kit nodes. */
+    private static void stripContentKitGrants(Group group) {
+        if (group == null) {
+            return;
+        }
+        for (String node : CONTENT_PERMISSIONS) {
+            group.data().clear(NodeType.PERMISSION.predicate(existing ->
+                    node.equalsIgnoreCase(existing.getKey()) && existing.getValue()));
+        }
+    }
+
+    static void removeGroup(UUID playerId, String group) {
+        if (playerId == null || group == null || group.isBlank() || !available()) {
+            return;
+        }
+        LuckPerms api;
+        try {
+            api = LuckPermsProvider.get();
+        } catch (IllegalStateException ignored) {
+            return;
+        }
+        String key = group.toLowerCase(Locale.ROOT);
+        api.getUserManager().modifyUser(playerId, user ->
+                user.data().clear(NodeType.INHERITANCE.predicate(node ->
+                        key.equals(node.getGroupName().toLowerCase(Locale.ROOT)))));
     }
 
     static void applyUser(UUID playerId, String keepGroup, String extraGroup, Set<String> managedGroups) {
@@ -78,13 +194,25 @@ final class LuckPermsSilent {
         group.data().clear(NodeType.WEIGHT.predicate(node -> true));
         group.data().clear(NodeType.PREFIX.predicate(node -> true));
         group.data().add(WeightNode.builder(rank.weight()).build());
-        group.data().add(PrefixNode.builder(rank.prefix(), rank.weight()).build());
+        // Admin text is painted by RankBadgeService for Robb only. A LuckPerms prefix
+        // on the admin group would show [Admin] for anyone who has the permission group.
+        if (!"admin".equalsIgnoreCase(rank.group())) {
+            group.data().add(PrefixNode.builder(rank.prefix(), rank.weight()).build());
+        }
     }
 
     private static void paintUser(User user, String keep, String extra, Set<String> managed) {
-        user.data().clear(NodeType.INHERITANCE.predicate(node -> managed.contains(node.getGroupName().toLowerCase(Locale.ROOT))));
+        // Wipe XP progression groups only. Ultra extras stay until removed.
+        user.data().clear(NodeType.INHERITANCE.predicate(node -> {
+            String name = node.getGroupName().toLowerCase(Locale.ROOT);
+            return managed.contains(name) && !RankBadgeService.isPermanentExtra(name);
+        }));
         user.data().add(InheritanceNode.builder(keep).build());
         if (extra != null && !extra.equals(keep)) {
+            user.data().clear(NodeType.INHERITANCE.predicate(node -> {
+                String name = node.getGroupName().toLowerCase(Locale.ROOT);
+                return RankBadgeService.isPermanentExtra(name) && !name.equals(extra);
+            }));
             user.data().add(InheritanceNode.builder(extra).build());
         }
     }

@@ -169,7 +169,6 @@ public final class CatcherItems {
         lore.add("");
         lore.add(id.contains("gaff") ? "§e🐾 Off-hand Catch Tool" : "§e🐾 Catcher Armor");
         lore.add("");
-        lore.add("§8Aetherion Catcher Set");
         if (id.contains("gaff")) {
             lore.add("§8Wear in off-hand. Looks like a hoe. Levels from catches.");
         }

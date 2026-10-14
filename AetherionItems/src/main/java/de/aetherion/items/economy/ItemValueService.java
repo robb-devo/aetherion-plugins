@@ -45,8 +45,11 @@ public final class ItemValueService {
         load(file);
     }
 
+    /** Bundled economy.yml version. 3 = P2 progression (Signature recipes, diving craft, Trophies). */
+    public static final int ECONOMY_VERSION = 3;
+
     private static void ensureEconomyFile(JavaPlugin plugin, File file) {
-        final int expectedVersion = 2;
+        final int expectedVersion = ECONOMY_VERSION;
         if (!file.exists()) {
             plugin.saveResource("economy.yml", false);
             return;
@@ -54,7 +57,16 @@ public final class ItemValueService {
         YamlConfiguration existing = YamlConfiguration.loadConfiguration(file);
         int version = existing.getInt("economy-version", 1);
         if (version < expectedVersion) {
-            plugin.getLogger().info("Updating economy.yml to version " + expectedVersion + " (was " + version + ").");
+            // Keep the old file next to the new one so any hand edits can be merged back.
+            File backup = new File(file.getParentFile(), "economy.yml.v" + version + ".bak");
+            try {
+                java.nio.file.Files.copy(file.toPath(), backup.toPath(),
+                        java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            } catch (java.io.IOException exception) {
+                plugin.getLogger().warning("Could not back up economy.yml before the update: " + exception.getMessage());
+            }
+            plugin.getLogger().info("Updating economy.yml to version " + expectedVersion + " (was " + version
+                    + "; old file kept as " + backup.getName() + ").");
             plugin.saveResource("economy.yml", true);
         }
     }
@@ -301,6 +313,13 @@ public final class ItemValueService {
         for (IsleHeartwood heart : IsleHeartwood.values()) {
             items.putIfAbsent(heart.itemId(), EconomyCurve.DEFAULT_QUARRY);
         }
+        // Progression ids (P0/P1). The live economy.yml is only re-extracted on a version bump,
+        // so these defaults keep new ids valued until it is; a listed value in the file wins.
+        items.putIfAbsent("spectacle_star", 900_000L);
+        items.putIfAbsent("aetherion_summons", 3_158_456L);
+        items.putIfAbsent(Signatures.CRYSTAL_FIND, 400L);
+        items.putIfAbsent(Signatures.PRIZE_CROP, 350L);
+        items.putIfAbsent(Signatures.FISH_TROPHY, 200L);
         // Disabled nether woods stay in enum but skip auto economy noise if desired — still listed.
     }
 

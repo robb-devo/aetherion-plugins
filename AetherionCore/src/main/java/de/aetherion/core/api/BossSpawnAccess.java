@@ -23,4 +23,20 @@ public interface BossSpawnAccess {
     void despawnInWorld(World world);
 
     void tagCompactHearths(Entity entity);
+
+    /**
+     * Walk a player (with their party, where the fight supports it) into a boss that keeps its own world:
+     * {@code "helios"} (Herald + Requiem instance), {@code "world_eater"} (the Last Seed site).
+     *
+     * @return {@code "ok"} or a short reason key ({@code "disabled"}, {@code "full"}, {@code "not-built"},
+     *         {@code "cooldown:<s>"}, {@code "unsupported"} …)
+     */
+    default String enterArena(Player player, String arena) {
+        return "unsupported";
+    }
+
+    /** True while a boss of this template is alive anywhere on this backend. */
+    default boolean alive(String templateId) {
+        return false;
+    }
 }

@@ -23,11 +23,11 @@ public final class DungeonCore {
     public static final int MAX_TIER = 3;
     public static final String ITEM_ID = "dungeon_core";
     public static final String BOSS_CORE_HINT =
-            "§8Dungeon Core: dungeon gear. Then it levels in dungeons.";
+            "§8Dungeon Core → dungeon gear, levels inside.";
     public static final String AETHERION_CORE_HINT =
-            "§8Dungeonized. Cores: stronger mini, less CD, higher cap.";
+            "§8Dungeonized · cores: stronger mini, less CD.";
     public static final String ATTUNED_CORE_HINT =
-            "§8Anvil + Dungeon Core: rarity up, +25 level cap.";
+            "§8Anvil + Dungeon Core: rarity up, +25 cap.";
 
     private static final Set<String> INFUSABLE = Set.of(
             "warped_blade",
@@ -51,7 +51,31 @@ public final class DungeonCore {
             "void_vacuum_charm",
             "thermal_core",
             "pickaxe_core_of_the_burrower",
-            "insolvent_ledger"
+            "insolvent_ledger",
+            // P0 (design B3): spectacle boss sets level in dungeons too.
+            // Nihil / World Eater
+            "worldbite",
+            "worldhide_helmet",
+            "worldhide_chestplate",
+            "worldhide_leggings",
+            "worldhide_boots",
+            // Helios, the Dying Star
+            "helios_solstice",
+            "helios_crown",
+            "helios_heartplate",
+            "helios_orbit_greaves",
+            "helios_dawn_treads",
+            // Seraphine / Hanging Saint
+            "seraphine_needle",
+            "seraphine_veil",
+            "seraphine_bodice",
+            "seraphine_bell_skirt",
+            "seraphine_pointe_slippers",
+            // Remnant of the Hollow Sun (P3: drops since D2; same treatment as the other boss sets)
+            "hollow_sun_helmet",
+            "hollow_sun_chestplate",
+            "hollow_sun_leggings",
+            "hollow_sun_boots"
     );
 
     private DungeonCore() {
@@ -152,6 +176,11 @@ public final class DungeonCore {
         DungeonWeaponKind kind = DungeonWeaponKind.fromItemId(itemId);
         if (kind != null && DungeonGearTier.fromItemId(itemId) == DungeonGearTier.T1) {
             return ATTUNED_CORE_HINT;
+        }
+        if (DungeonArmor.isRelicTierGear(itemId)) {
+            // P3 B2: name the overworld cut (stays a replaceable core hint: "dungeon core" + "dungeon gear").
+            int share = (int) Math.round(DungeonGearTier.fromItemId(itemId).overworldMultiplier() * 100.0d);
+            return "§8Overworld " + share + "% · Dungeon Core → dungeon gear.";
         }
         return BOSS_CORE_HINT;
     }
@@ -553,7 +582,7 @@ public final class DungeonCore {
     }
 
     public static void patchLore(ItemMeta meta, String itemId, int tier) {
-        List<String> lore = meta.getLore();
+        List<String> lore = de.aetherion.items.item.LoreLocale.canonicalLore(meta);
         if (lore == null) {
             lore = new ArrayList<>();
         }
@@ -712,7 +741,7 @@ public final class DungeonCore {
                 next.add(shortbowVolleyLore(tier));
             }
         }
-        meta.setLore(next);
+        de.aetherion.items.item.LoreLocale.writeLore(meta, next);
     }
 
     public static String roman(int value) {

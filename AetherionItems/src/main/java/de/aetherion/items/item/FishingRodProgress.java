@@ -82,7 +82,7 @@ public final class FishingRodProgress {
         int cap = maxLevel(item);
         int level = Math.min(cap, levelFrom(meta, cap));
         meta.getPersistentDataContainer().set(ItemKeys.fishingRodLevel(), PersistentDataType.INTEGER, level);
-        meta.setLore(withProgress(meta.getLore(), Kind.ROD, level, xpFrom(meta), cap));
+        de.aetherion.items.item.LoreLocale.writeLore(meta, withProgress(de.aetherion.items.item.LoreLocale.canonicalLore(meta), Kind.ROD, level, xpFrom(meta), cap));
         ItemPresentation.polish(meta);
         item.setItemMeta(meta);
     }
@@ -93,7 +93,7 @@ public final class FishingRodProgress {
         }
         ensureKeys(meta);
         int cap = 100;
-        meta.setLore(withProgress(meta.getLore(), Kind.ROD, levelFrom(meta, cap), xpFrom(meta), cap));
+        de.aetherion.items.item.LoreLocale.writeLore(meta, withProgress(de.aetherion.items.item.LoreLocale.canonicalLore(meta), Kind.ROD, levelFrom(meta, cap), xpFrom(meta), cap));
     }
 
     public static void ensureCharmMeta(ItemMeta meta) {
@@ -163,7 +163,7 @@ public final class FishingRodProgress {
         int copiedXp = xp(from);
         meta.getPersistentDataContainer().set(ItemKeys.fishingRodLevel(), PersistentDataType.INTEGER, copiedLevel);
         meta.getPersistentDataContainer().set(ItemKeys.fishingRodXp(), PersistentDataType.INTEGER, copiedXp);
-        meta.setLore(withProgress(meta.getLore(), Kind.ROD, copiedLevel, copiedXp, cap));
+        de.aetherion.items.item.LoreLocale.writeLore(meta, withProgress(de.aetherion.items.item.LoreLocale.canonicalLore(meta), Kind.ROD, copiedLevel, copiedXp, cap));
         ItemPresentation.polish(meta);
         to.setItemMeta(meta);
     }
@@ -230,13 +230,13 @@ public final class FishingRodProgress {
             stats.setFishingCatch(stats.getFishingCatch() + catchGain);
             stats.setFishingSpeed(stats.getFishingSpeed() + speedGain);
             items.saveItemStats(meta, stats);
-            List<String> lore = meta.hasLore() ? new ArrayList<>(meta.getLore()) : new ArrayList<>();
+            List<String> lore = de.aetherion.items.item.LoreLocale.loreOrEmpty(meta);
             ItemLore.updateDisplayedStats(lore, stats, items.getProfile(item));
-            meta.setLore(lore);
+            de.aetherion.items.item.LoreLocale.writeLore(meta, lore);
         }
         meta.getPersistentDataContainer().set(ItemKeys.fishingRodLevel(), PersistentDataType.INTEGER, level);
         meta.getPersistentDataContainer().set(ItemKeys.fishingRodXp(), PersistentDataType.INTEGER, level >= cap ? 0 : xp);
-        meta.setLore(withProgress(meta.getLore(), Kind.ROD, level, level >= cap ? 0 : xp, cap));
+        de.aetherion.items.item.LoreLocale.writeLore(meta, withProgress(de.aetherion.items.item.LoreLocale.canonicalLore(meta), Kind.ROD, level, level >= cap ? 0 : xp, cap));
         ItemPresentation.polish(meta);
         item.setItemMeta(meta);
         if (writeBack != null) {
@@ -251,7 +251,7 @@ public final class FishingRodProgress {
         }
         ItemMeta meta = item.getItemMeta();
         int cap = maxLevel(item);
-        meta.setLore(withProgress(meta.getLore(), Kind.ROD, level(item), xp(item), cap));
+        de.aetherion.items.item.LoreLocale.writeLore(meta, withProgress(de.aetherion.items.item.LoreLocale.canonicalLore(meta), Kind.ROD, level(item), xp(item), cap));
         item.setItemMeta(meta);
     }
 

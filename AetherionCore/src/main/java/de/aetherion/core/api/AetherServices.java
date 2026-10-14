@@ -24,6 +24,13 @@ public final class AetherServices {
     private static volatile HarvestAccess harvest;
     private static volatile DungeonAccess dungeons;
     private static volatile TestBotsAccess testBots;
+    private static volatile TalkAccess talk;
+    private static volatile StoryAccess story;
+    private static volatile LangAccess lang;
+    private static volatile CharacterTransport transport;
+    private static volatile IslandAccess islands;
+    private static final java.util.List<java.util.function.Consumer<org.bukkit.entity.Player>> LANG_LISTENERS =
+            new java.util.concurrent.CopyOnWriteArrayList<>();
 
     private AetherServices() {
     }
@@ -88,6 +95,27 @@ public final class AetherServices {
         testBots = access;
     }
 
+    public static void registerTalk(TalkAccess access) {
+        talk = access;
+    }
+
+    public static void registerStory(StoryAccess access) {
+        story = access;
+    }
+
+    public static void registerLang(LangAccess access) {
+        lang = access;
+    }
+
+    /** AetherionDungeons on mmo-r / mmo-d. Core serves mmo-c / mmo-i itself when nothing registered. */
+    public static void registerTransport(CharacterTransport access) {
+        transport = access;
+    }
+
+    public static void registerIslands(IslandAccess access) {
+        islands = access;
+    }
+
     public static PartyAccess party() {
         return party;
     }
@@ -146,6 +174,58 @@ public final class AetherServices {
 
     public static TestBotsAccess testBots() {
         return testBots;
+    }
+
+    /** In-world talk bubbles (AetherionQuests), or null. */
+    public static TalkAccess talk() {
+        return talk;
+    }
+
+    /** Main-story stage + flags (AetherionQuests), or null. */
+    public static StoryAccess story() {
+        return story;
+    }
+
+    /** Player-language preference (AetherionQuests), or null = everyone English. */
+    public static LangAccess lang() {
+        return lang;
+    }
+
+    /** Cross-backend character hop registered by a plugin (Dungeons), or null. */
+    public static CharacterTransport transport() {
+        return transport;
+    }
+
+    /** Island homes (AetherionGuilds, island backend only), or null. */
+    public static IslandAccess islands() {
+        return islands;
+    }
+
+    /** True when the player chose German and a language provider is registered. */
+    public static boolean german(org.bukkit.entity.Player player) {
+        LangAccess access = lang;
+        return access != null && player != null && access.german(player);
+    }
+
+    /** Called by the language provider after a player's language changed (items re-localize). */
+    public static void addLangListener(java.util.function.Consumer<org.bukkit.entity.Player> listener) {
+        if (listener != null) {
+            LANG_LISTENERS.add(listener);
+        }
+    }
+
+    public static void removeLangListener(java.util.function.Consumer<org.bukkit.entity.Player> listener) {
+        LANG_LISTENERS.remove(listener);
+    }
+
+    public static void notifyLangChanged(org.bukkit.entity.Player player) {
+        for (java.util.function.Consumer<org.bukkit.entity.Player> listener : LANG_LISTENERS) {
+            try {
+                listener.accept(player);
+            } catch (RuntimeException ignored) {
+                // a listener must never break the language switch
+            }
+        }
     }
 
     public static void clearParty(PartyAccess access) {
@@ -235,6 +315,36 @@ public final class AetherServices {
     public static void clearTestBots(TestBotsAccess access) {
         if (testBots == access) {
             testBots = null;
+        }
+    }
+
+    public static void clearTalk(TalkAccess access) {
+        if (talk == access) {
+            talk = null;
+        }
+    }
+
+    public static void clearLang(LangAccess access) {
+        if (lang == access) {
+            lang = null;
+        }
+    }
+
+    public static void clearStory(StoryAccess access) {
+        if (story == access) {
+            story = null;
+        }
+    }
+
+    public static void clearTransport(CharacterTransport access) {
+        if (transport == access) {
+            transport = null;
+        }
+    }
+
+    public static void clearIslands(IslandAccess access) {
+        if (islands == access) {
+            islands = null;
         }
     }
 }

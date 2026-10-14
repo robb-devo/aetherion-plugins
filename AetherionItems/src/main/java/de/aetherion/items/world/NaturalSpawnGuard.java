@@ -23,6 +23,12 @@ import org.bukkit.plugin.java.JavaPlugin;
  * World overworld: no vanilla/hostile natural spawns (MobZone / borderlands use CUSTOM).
  * Also culls lingering vanilla hostiles outside borderlands.
  * Borderlands: no animals — combat waste only. CUSTOM MobZone borderlands mobs stay.
+ * <p>
+ * Combat lives in the Borderlands (+ Crypt below it), Eldervale deep and the deliberate arenas.
+ * Outside those, only hard-protected mobs stay (BossEngine / system-owned, fishing encounters,
+ * ore trolls, pets) plus plain MobZone mobs away from the towns. A Borderlands / Eldervale zone
+ * mob that followed someone out, and any T2+ tiered mob, is culled out there — and the towns
+ * and roads (Harbour, Capital, Farm, Path) never keep a hostile.
  */
 public final class NaturalSpawnGuard implements Listener, Runnable {
 
@@ -89,6 +95,7 @@ public final class NaturalSpawnGuard implements Listener, Runnable {
         MobZoneService mobs = plugin.getMobZones();
         cullBorderlandsAnimals(areas, mobs);
         cullHostilesOutsideBorderlands(areas, mobs);
+        cullTieredAnimalsOutsideBorderlands(areas, mobs);
         cullVanillaBats();
     }
 
@@ -136,10 +143,58 @@ public final class NaturalSpawnGuard implements Listener, Runnable {
                 if (inEldervale(living.getLocation(), areas, mobs)) {
                     continue;
                 }
-                if (isProtectedHostile(living)) {
+                if (keepOutsideCombat(living, areas, mobs)) {
                     continue;
                 }
                 living.remove();
+            }
+        }
+    }
+
+    /**
+     * Outside the Borderlands / Eldervale: BossEngine, system-owned, fishing encounters, ore trolls
+     * always stay. Zone mobs stay only if their zone is a plain one and they aren't in a town;
+     * Borderlands / Eldervale members that wandered out go (the zone refills itself). T2+ tiers
+     * never live out here.
+     */
+    private static boolean keepOutsideCombat(LivingEntity living, AreaService areas, MobZoneService mobs) {
+        if (isHardProtected(living)) {
+            return true;
+        }
+        if (WildlifeLooks.tierOf(living) != WildlifeLooks.TIER_NORMAL) {
+            return false;
+        }
+        String zoneProfile = mobs == null ? null : mobs.zoneProfileOf(living);
+        if (zoneProfile == null) {
+            // Not a (live) zone mob: lingering vanilla / stray CUSTOM hostile.
+            return false;
+        }
+        if (!zoneProfile.isEmpty()) {
+            return false;
+        }
+        return !inTownArea(living.getLocation(), areas);
+    }
+
+    /** Tiered (T2+) animals from the old every-spawn Sturdy roll: tidy them out of hub fields. */
+    private void cullTieredAnimalsOutsideBorderlands(AreaService areas, MobZoneService mobs) {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            World world = player.getWorld();
+            if (!applies(world)) {
+                continue;
+            }
+            for (Entity entity : world.getNearbyEntities(player.getLocation(), 96, 48, 96)) {
+                if (!(entity instanceof Animals animal) || !animal.isValid()
+                        || WildlifeLooks.tierOf(animal) == WildlifeLooks.TIER_NORMAL) {
+                    continue;
+                }
+                if (isPet(animal) || isProtectedEntity(animal)
+                        || (animal instanceof org.bukkit.entity.Tameable tame && tame.isTamed())) {
+                    continue;
+                }
+                if (inBorderlands(animal.getLocation(), areas, mobs)) {
+                    continue;
+                }
+                animal.remove();
             }
         }
     }
@@ -175,8 +230,52 @@ public final class NaturalSpawnGuard implements Listener, Runnable {
         }
     }
 
-    private static boolean isProtectedHostile(LivingEntity living) {
-        return isProtectedEntity(living);
+    /** Never culled anywhere: bosses, system-owned (rites, NPC hosts), fishing encounters, ore trolls. */
+    private static boolean isHardProtected(Entity entity) {
+        try {
+            if (de.aetherion.core.AetherEntities.isSystemOwned(entity)
+                    || de.aetherion.core.AetherEntities.isBoss(entity)) {
+                return true;
+            }
+        } catch (NoClassDefFoundError | Exception ignored) {
+        }
+        try {
+            if (entity.getPersistentDataContainer().has(
+                    de.aetherion.core.AetherKeys.FISHING_ENCOUNTER,
+                    PersistentDataType.BYTE
+            )) {
+                return true;
+            }
+        } catch (NoClassDefFoundError | Exception ignored) {
+        }
+        try {
+            return de.aetherion.items.mining.OreTrollListener.isOreTroll(entity);
+        } catch (NoClassDefFoundError | Exception ignored) {
+            return false;
+        }
+    }
+
+    /** Areas that must stay hostile-free: Harbour, Capital, the hub Farm and the roads. */
+    private static final java.util.Set<AreaType> TOWN_AREAS = java.util.EnumSet.of(
+            AreaType.STARTER_PORT, AreaType.CAPITAL, AreaType.FARM, AreaType.PATH);
+
+    /** A town / road area, and not inside a Borderlands or Eldervale MobZone disk. */
+    public static boolean inTownArea(Location location) {
+        AetherionItems plugin = AetherionItems.getInstance();
+        return plugin != null && inTownArea(location, plugin.getAreas());
+    }
+
+    private static boolean inTownArea(Location location, AreaService areas) {
+        if (location == null || areas == null) {
+            return false;
+        }
+        AetherionItems plugin = AetherionItems.getInstance();
+        MobZoneService mobs = plugin == null ? null : plugin.getMobZones();
+        if (mobs != null && (mobs.containsBorderlands(location) || mobs.containsEldervale(location))) {
+            return false;
+        }
+        AreaType type = areas.typeAt(location);
+        return type != null && TOWN_AREAS.contains(type);
     }
 
     private static boolean isProtectedEntity(Entity entity) {

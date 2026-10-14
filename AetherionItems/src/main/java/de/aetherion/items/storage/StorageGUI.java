@@ -1,5 +1,7 @@
 package de.aetherion.items.storage;
 
+import de.aetherion.items.util.ManagerChrome;
+
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -15,6 +17,7 @@ public class StorageGUI {
     public static final String MAIN_MENU_TITLE =
             ChatColor.DARK_RED + "Aetherion";
 
+    /** Legacy title string — keep for any external refs; menu uses {@link ManagerChrome#STORAGE}. */
     public static final String STORAGE_TITLE =
             "Aetherion Storage";
 
@@ -114,14 +117,14 @@ public class StorageGUI {
         }
 
 
+        StorageHolder holder = new StorageHolder(page);
         Inventory inventory =
                 Bukkit.createInventory(
-                        null,
+                        holder,
                         StorageInventory.PAGE_SIZE,
-                        getStorageTitle(
-                                page
-                        )
+                        ManagerChrome.STORAGE
                 );
+        holder.bind(inventory);
 
 
         /*

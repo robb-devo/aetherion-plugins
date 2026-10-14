@@ -51,6 +51,20 @@ public final class CodexDetailGUI {
         }
 
         @Override
+        protected net.kyori.adventure.text.Component chrome() {
+            CodexBook.Card card = CodexBook.card(key);
+            if (card == null) {
+                return de.aetherion.items.util.ManagerChrome.CODEX;
+            }
+            if (card.ledger() == CodexBook.Ledger.COLLECTION) {
+                return de.aetherion.items.util.ManagerChrome.COLLECTION;
+            }
+            return card.ledger() == CodexBook.Ledger.BESTIARY
+                    ? de.aetherion.items.util.ManagerChrome.BESTIARY
+                    : de.aetherion.items.util.ManagerChrome.CODEX;
+        }
+
+        @Override
         protected String title() {
             CodexBook.Card card = CodexBook.card(key);
             return "§8" + (card == null ? "Codex" : card.ledger().title() + " §8» " + card.name());

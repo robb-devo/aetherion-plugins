@@ -1,93 +1,104 @@
 package de.aetherion.quests.editor.gui;
 
-import de.aetherion.quests.editor.NpcEditor;
-
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryDragEvent;
-import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.InventoryHolder;
 
-public final class HelpMenu implements Listener {
+/**
+ * The short studio guide. Every screen also has its own "?" tooltip, so this is rarely needed.
+ */
+public final class HelpMenu {
 
-    private static final int BACK = 22;
-
-    public HelpMenu(NpcEditor editor) {
-        editor.plugin().getServer().getPluginManager().registerEvents(this, editor.plugin());
+    private HelpMenu() {
     }
 
-    public static void open(Player player) {
-        Inventory inventory = Bukkit.createInventory(
-                new Holder(),
-                27,
-                EditorItems.title(player, "npc_help", "§8NPC Help")
-        );
-        EditorItems.fill(inventory);
-        inventory.setItem(10, EditorItems.button(
-                Material.COMMAND_BLOCK,
-                "§eCommands",
-                "§f/npc §7— this menu",
-                "§f/npc create [name]",
-                "§f/npc edit §7| §fnearby §7| §flist",
-                "§f/npc move §7| §fduplicate §7| §fdelete",
-                "§f/npc wand §7| §fhelp",
-                "§8Aliases: /aethernpc /npceditor"
-        ));
-        inventory.setItem(12, EditorItems.button(
-                Material.BLAZE_ROD,
-                "§6Wand",
-                "§7Right-click air — menu.",
-                "§7Right-click an editor NPC — edit.",
-                "§7Sneak + right-click — delete confirm.",
-                "§8Story NPCs are never deleted here."
-        ));
-        inventory.setItem(14, EditorItems.button(
-                Material.CHEST,
-                "§bStorage",
-                "§7plugins/AetherionQuests/editor-npcs.yml",
-                "§7Survives restart. Jar never overwrites it.",
-                "§7Story cast stays in npcs.yml."
-        ));
-        inventory.setItem(16, EditorItems.button(
-                Material.NAME_TAG,
-                "§aPermission",
-                "§faetherion.npc.editor",
-                "§7LuckPerms group §fmoderator",
-                "§7Not the same as §faetherionquests.admin"
-        ));
-        inventory.setItem(BACK, EditorItems.button(Material.ARROW, "§7Back"));
-        player.openInventory(inventory);
-    }
+    public static void open(Player player, Runnable back) {
+        Menu menu = Frame.screen(Frame.title("NPC Studio", "Guide"));
+        menu.set(4, EditorItems.icon(Material.NETHER_STAR)
+                .name("§b§lNPC Studio")
+                .text("Make NPCs that talk, hand out quests and run commands — all in-game, no files.")
+                .blank()
+                .lore("§8Everything saves the moment you change it.")
+                .build());
 
-    @EventHandler
-    public void onClick(InventoryClickEvent event) {
-        if (!(event.getInventory().getHolder() instanceof Holder)) {
-            return;
-        }
-        event.setCancelled(true);
-        if (!(event.getWhoClicked() instanceof Player player)) {
-            return;
-        }
-        if (event.getRawSlot() == BACK) {
-            MainMenu.open(player);
-        }
-    }
+        menu.set(19, EditorItems.icon(Material.LIME_DYE)
+                .name("§a① Create")
+                .text("Home → + New NPC. Pick a starting point, type a name. It appears where you stand.")
+                .build());
+        menu.set(21, EditorItems.icon(Material.LEATHER_CHESTPLATE)
+                .name("§6② Look")
+                .text("Name, subtitle, skin (any player name) and outfit.")
+                .build());
+        menu.set(23, EditorItems.icon(Material.WRITABLE_BOOK)
+                .name("§d③ Dialogue")
+                .text("Pages of lines the NPC says. After a page the player picks a reply: continue to another "
+                        + "page, end the chat, handle a quest or run a command.")
+                .build());
+        menu.set(25, EditorItems.icon(Material.MAP)
+                .name("§a④ Quest")
+                .text("Pick the quest the NPC hands out. ⚡ Set up as quest giver builds the whole chat; "
+                        + "stages choose what the NPC says before, during and after the quest.")
+                .build());
 
-    @EventHandler
-    public void onDrag(InventoryDragEvent event) {
-        if (event.getInventory().getHolder() instanceof Holder) {
-            event.setCancelled(true);
-        }
-    }
+        menu.set(29, EditorItems.icon(Material.OAK_BUTTON)
+                .name("§eControls")
+                .lore("§eClick §8→ §7open / edit",
+                        "§eShift-click §8→ §7move earlier",
+                        "§eShift-right-click §8→ §7move later",
+                        "§eRight-click §8→ §7preview (pages, stages)",
+                        "§cQ §8→ §7delete (always undo-able)",
+                        "",
+                        "§7Typing happens in chat — click",
+                        "§e[✎ Edit current text] §7to tweak instead",
+                        "§7of retyping. §fcancel §7stops typing.")
+                .build());
+        menu.set(31, EditorItems.icon(Material.BLAZE_ROD)
+                .name("§6Wand")
+                .lore("§7Right-click §fair §8→ §7open the studio",
+                        "§7Right-click §fan NPC §8→ §7edit it",
+                        "§7Sneak-right-click §fan NPC §8→ §7talk to it",
+                        "§8  for real (quests + commands run)",
+                        "",
+                        "§7Get one on the studio home screen.")
+                .build());
+        menu.set(33, EditorItems.icon(Material.SHIELD)
+                .name("§aSafe by default")
+                .lore("§7• Story NPCs (Egon, Twig, …) never show",
+                        "§7  up here and can't be edited.",
+                        "§7• ▶ Preview only describes commands",
+                        "§7  and quests — nothing runs.",
+                        "§7• Dangerous commands are blocked.",
+                        "§7• ↶ Undo for every change; a backup",
+                        "§7  of the NPC file is made each start.")
+                .build());
+        menu.set(37, EditorItems.icon(Material.WRITTEN_BOOK)
+                .name("§b§lGuides §8(EN + DE)")
+                .lore("§7Gives two written books:",
+                        "§fEnglish §7+ §fDeutsch",
+                        "§7Full step-by-step walkthrough.",
+                        "§eClick to receive.")
+                .blank()
+                .click("Click", "to get both books")
+                .build(), click -> {
+            GuideBook.giveBoth(click.player());
+            click.player().closeInventory();
+        });
+        menu.set(40, EditorItems.icon(Material.COMMAND_BLOCK)
+                .name("§fCommands")
+                .lore("§f/aethernpc §8→ §7this studio",
+                        "§f/aethernpc create §7[name] §8· §f/aethernpc edit §7[name]",
+                        "§f/aethernpc move §8· §f/aethernpc tp §8· §f/aethernpc duplicate",
+                        "§f/aethernpc preview §8· §f/aethernpc delete §8· §f/aethernpc undo",
+                        "§f/aethernpc wand §8· §f/aethernpc help §8· §f/aethernpc guide",
+                        "",
+                        "§8Without a name they use the nearest NPC.",
+                        "§8Alias: /npceditor · FancyNpcs keeps /npc",
+                        "§8Permission: aetherion.npc.editor",
+                        "§8Data: plugins/AetherionQuests/editor-npcs.yml")
+                .build());
 
-    public record Holder() implements InventoryHolder {
-        @Override
-        public Inventory getInventory() {
-            return null;
+        if (back != null) {
+            Frame.back(menu, "where you were", back);
         }
+        Frame.show(menu, player);
     }
 }

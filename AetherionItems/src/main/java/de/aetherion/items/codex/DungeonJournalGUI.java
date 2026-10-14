@@ -59,6 +59,11 @@ public final class DungeonJournalGUI {
         }
 
         @Override
+        protected net.kyori.adventure.text.Component chrome() {
+            return de.aetherion.items.util.ManagerChrome.JOURNAL;
+        }
+
+        @Override
         protected String title() {
             return TITLE;
         }

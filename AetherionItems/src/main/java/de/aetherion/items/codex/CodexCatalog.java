@@ -311,6 +311,17 @@ public final class CodexCatalog {
         block("fish_treasure", "Treasure", Material.NAUTILUS_SHELL, BLOCK_FISHING, precious, "Books, shells, bows… the lake's lost and found.");
         block("fish_junk", "Junk", Material.LILY_PAD, BLOCK_FISHING, common, "Boots, bowls, string. Somebody has to clean the lake.");
 
+        // Progression Signatures (P1): hand-earned isle finds the T4/T5 ladders ask for. No block aliases;
+        // counted when a player finds one (ItemFactoryAccess#noteSignature).
+        block("sig_crystal_find", "Crystal Finds", Material.AMETHYST_CLUSTER, BLOCK_ORES, precious,
+                "Cracked by hand on Mining Eldervale. Quarries can't make them.");
+        block("sig_heartwood", "Isle Heartwood", Material.DARK_OAK_LOG, BLOCK_WOOD, precious,
+                "Paid logs on Foraging Eldervale, now and then. Quarries can't make them.");
+        block("sig_prize_crop", "Prize Crops", Material.GOLDEN_CARROT, BLOCK_CROPS, precious,
+                "Hand harvests on the Farm Isle throw one out. Grab it before it wilts.");
+        block("sig_fish_trophy", "Trophy Fish", Material.PLAYER_HEAD, BLOCK_FISHING, precious,
+                "Rare, legendary or record-heavy catches on Fishing Eldervale.");
+
         block("netherrack", "Netherrack", Material.NETHERRACK, BLOCK_NETHER, bulk, "The Nether's filler.", "NETHERRACK");
         block("soul_sand", "Soul Sand", Material.SOUL_SAND, BLOCK_NETHER, common, "Soul sand valleys.", "SOUL_SAND", "SOUL_SOIL");
         block("basalt", "Basalt", Material.BASALT, BLOCK_NETHER, common, "Basalt deltas.", "BASALT", "SMOOTH_BASALT", "POLISHED_BASALT");

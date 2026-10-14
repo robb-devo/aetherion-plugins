@@ -69,6 +69,7 @@ public class DevMenu {
         WEAPONS_DUNGEON,
         WEAPONS_SPECIAL,
         WEAPONS_GOD,
+        WEAPONS_TRAVERSAL,
         SETS,
         BOOSTERS,
         BOOSTER_LAB,
@@ -122,6 +123,7 @@ public class DevMenu {
         MINE_ISLE_PROGRESS,
         AMBIENT,
         PLAYER_WIPE,
+        LORE,
         // DEV // AETHERION command center — category hubs + power pages.
         CAT_CONTENT,
         CAT_COMBAT,
@@ -254,7 +256,7 @@ public class DevMenu {
         }
         if (action.equals("close") || action.equals("back") || action.equals("noop")
                 || action.equals("root") || action.equals("npc-wand") || action.equals("flight-toggle")
-                || action.equals("npc-editor") || action.startsWith("npc-editor:") || action.equals("open:aethernpc")) {
+                || action.equals("open:aethernpc")) {
             return true;
         }
         if (action.startsWith("page:")) {
@@ -281,37 +283,17 @@ public class DevMenu {
                 || action.equals("farmtool:haywagon");
     }
 
-    /** Opens the FancyNPC + quest creator ({@code /npc}). */
-    private void giveNpcWand(Player player) {
+    /** Opens the Opus NPC studio ({@code /aethernpc}). Never FancyNpcs {@code /npc}. */
+    private void openAetherNpcEditor(Player player) {
         if (!player.hasPermission("aetherion.npc.editor") && !isFullDev(player) && !player.isOp()) {
             player.sendMessage("§cNeed §faetherion.npc.editor §c(Monkey / admin).");
             return;
         }
         player.closeInventory();
-        if (player.performCommand("npc")) {
-            return;
-        }
         if (player.performCommand("aethernpc") || player.performCommand("npceditor")) {
             return;
         }
-        if (player.performCommand("npc wand")) {
-            player.sendMessage("§eWand given. Use §f/npc §efor the creator menu.");
-            return;
-        }
-        player.sendMessage("§c/npc failed. Is AetherionQuests loaded?");
-    }
-
-    /** NPC / Quest editor section (cursor monkey-dev-menu): {@code /npc <sub>} from AetherionQuests. */
-    private void runNpcEditor(Player player, String sub) {
-        if (!player.hasPermission("aetherion.npc.editor") && !isFullDev(player)) {
-            player.sendMessage("§cYou need §faetherion.npc.editor §cto use the NPC editor.");
-            return;
-        }
-        player.closeInventory();
-        String command = sub == null || sub.isBlank() ? "npc" : "npc " + sub;
-        if (!player.performCommand(command)) {
-            player.sendMessage("§c/" + command + " failed. Is AetherionQuests loaded?");
-        }
+        player.sendMessage("§c/aethernpc failed. Is AetherionQuests loaded?");
     }
 
     public void open(Player player) {
@@ -347,7 +329,9 @@ public class DevMenu {
         Holder previous = currentHolder(player);
         Page titlePage = page == Page.ROOT && contentOnly(player) ? Page.CONTENT_KIT : page;
         Inventory inventory = Bukkit.createInventory(spec, 54, DevTheme.title(titlePage, titleSuffix(spec)));
-        render(inventory, spec, player);
+        try (de.aetherion.items.item.LoreLocale.Scope ignored = de.aetherion.items.item.LoreLocale.viewing(player)) {
+            render(inventory, spec, player);
+        }
         player.openInventory(inventory);
         if (previous == null || previous.page() != page) {
             DevTheme.sound(player, page);
@@ -493,6 +477,13 @@ public class DevMenu {
     }
 
     public void handle(Player player, ItemStack clicked, int slot, ClickType click) {
+        // items the admin receives are written in the admin's own language
+        try (de.aetherion.items.item.LoreLocale.Scope ignored = de.aetherion.items.item.LoreLocale.viewing(player)) {
+            handleLocalized(player, clicked, slot, click);
+        }
+    }
+
+    private void handleLocalized(Player player, ItemStack clicked, int slot, ClickType click) {
         if (clicked == null || !clicked.hasItemMeta()) {
             return;
         }
@@ -600,29 +591,15 @@ public class DevMenu {
             runConfirmed(player);
             return;
         }
-        if (action.equals("npc-wand")) {
-            giveNpcWand(player);
+        if (action.equals("npc-wand") || action.equals("open:aethernpc")
+                || action.equals("npc-editor") || action.startsWith("npc-editor:")) {
+            openAetherNpcEditor(player);
             return;
         }
         if (action.equals("flight-toggle")) {
             player.closeInventory();
             if (!player.performCommand("flight") && !player.performCommand("fly")) {
                 player.sendMessage("§cFlight command unavailable.");
-            }
-            return;
-        }
-        if (action.equals("npc-editor") || action.startsWith("npc-editor:")) {
-            runNpcEditor(player, action.equals("npc-editor") ? "" : action.substring("npc-editor:".length()));
-            return;
-        }
-        if (action.equals("open:aethernpc")) {
-            player.closeInventory();
-            if (!player.hasPermission("aetherion.npc.editor") && !isFullDev(player)) {
-                player.sendMessage("§cYou need the NPC editor permission.");
-                return;
-            }
-            if (!player.performCommand("aethernpc")) {
-                player.sendMessage("§cCould not open /aethernpc. Is AetherionQuests loaded?");
             }
             return;
         }
@@ -871,6 +848,14 @@ public class DevMenu {
             player.closeInventory();
             if (!player.performCommand("grove dev")) {
                 player.sendMessage("§cAetherionForaging offline.");
+            }
+            return;
+        }
+        if (action.equals("originisle:open")) {
+            // Origin Isle DEV hub lives in AetherionHub (/origin dev) — this tile only opens it.
+            player.closeInventory();
+            if (!player.performCommand("origin dev")) {
+                player.sendMessage("§cAetherionHub offline.");
             }
             return;
         }
@@ -1445,49 +1430,26 @@ public class DevMenu {
                 "§7BlockDisplay scenery — place freely.",
                 "§7Scarecrow · wagon · world props.",
                 "§8No tick · safe to place many."));
-        inventory.setItem(23, npcEditorButton());
+        inventory.setItem(23, button(Material.WRITABLE_BOOK, "§b§lNPC Editor", "open:aethernpc",
+                "§7Opus studio — dialogue + quest link.",
+                "§7Command: §f/aethernpc",
+                "§8Permission: §faetherion.npc.editor"));
         inventory.setItem(24, button(Material.FEATHER, "§aToggle /flight", "flight-toggle",
                 "§7Same as EssentialsX fly.",
                 "§8essentials.fly · aetherion.flight"));
-        inventory.setItem(31, button(Material.WRITABLE_BOOK, "§b§lNPC / Quest Editor", "page:NPC_EDITOR",
-                "§7Create · nearby · wand · list · help",
-                "§7and §f/aethernpc§7."));
     }
 
-    /** Cursor monkey-dev-menu NPC / Quest editor section, rebuilt on {@code /npc} subcommands. */
     private void drawNpcEditorSection(Inventory inventory) {
-        inventory.setItem(4, button(Material.WRITABLE_BOOK, "§b§lNPC / Quest Editor", "root",
-                "§7Dedicated staff section.",
-                "§7Also §f/npc §7· §f/aethernpc",
-                "§8Story NPCs stay in npcs.yml."));
-        inventory.setItem(11, button(Material.NETHER_STAR, "§bOpen editor", "npc-editor",
-                "§7Full /npc menu.",
-                "§7Create, edit, list, wand."));
-        inventory.setItem(13, button(Material.EMERALD_BLOCK, "§aCreate NPC", "npc-editor:create",
-                "§7Name in chat, then place at your feet."));
-        inventory.setItem(15, button(Material.COMPASS, "§eEdit nearby", "npc-editor:nearby",
-                "§7Closest editor NPC within 8 blocks."));
-        inventory.setItem(21, button(Material.BLAZE_ROD, "§6Get wand", "npc-editor:wand",
-                "§7Right-click air — editor menu.",
-                "§7Right-click an editor NPC — edit."));
-        inventory.setItem(22, button(Material.WRITABLE_BOOK, "§dNPC & Quest Editor", "open:aethernpc",
-                "§7Create a talking NPC in under a minute.",
-                "§7Optional: give them a simple quest.",
-                "§8Story NPCs stay untouched.",
-                "§eOpens /aethernpc"));
-        inventory.setItem(23, button(Material.BOOK, "§6List NPCs", "npc-editor:list",
-                "§7Every editor NPC you created."));
-        inventory.setItem(31, button(Material.KNOWLEDGE_BOOK, "§fHelp", "npc-editor:help",
-                "§7Commands and permissions."));
+        // Legacy page kept for old bookmarks — one door only into Opus /aethernpc.
+        inventory.setItem(4, button(Material.WRITABLE_BOOK, "§b§lNPC Editor", "root",
+                "§7Opus studio (dialogue + quest link).",
+                "§7Command: §f/aethernpc",
+                "§8FancyNpcs /npc is unrelated."));
+        inventory.setItem(22, button(Material.NETHER_STAR, "§b§lOpen NPC Editor", "open:aethernpc",
+                "§7Same as §f/aethernpc§7.",
+                "§8Story NPCs in npcs.yml stay untouched."));
         inventory.setItem(45, button(Material.ARROW, "§eBack", "back", "§7Return to DEV menu."));
         inventory.setItem(49, button(Material.BARRIER, "§cClose", "close"));
-    }
-
-    private ItemStack npcEditorButton() {
-        return button(Material.BLAZE_ROD, "§6§lNPC Editor", "npc-wand",
-                "§7FancyNPC + quest creator.",
-                "§7Opens §f/npc §7(same as §f/npc wand§7).",
-                "§8Permission: §faetherion.npc.editor");
     }
 
     private void drawPage(Inventory inventory, Page page, UUID target, int index) {
@@ -1670,6 +1632,9 @@ public class DevMenu {
                 "§7Cores and relic weapons."));
         inventory.setItem(16, button(Material.NETHERITE_SWORD, "§6Test Extras", "page:WEAPONS_GOD",
                 "§7Void stick / leftovers."));
+        inventory.setItem(19, button(Material.FISHING_ROD, "§3Traversal", "page:WEAPONS_TRAVERSAL",
+                "§7Portal Gun · Grappling Hook · Skyreaver.",
+                "§8Movement toys — additive shelf."));
         inventory.setItem(22, button(Material.CHERRY_LEAVES, "§dSpecial Weapons", "page:WEAPONS_SPECIAL",
                 "§7Boss-drop showpieces.",
                 "§dAshen Katana"));
@@ -2016,6 +1981,7 @@ public class DevMenu {
                 items.add(itemButton(customItem.createIronLongbow(), "iron_longbow"));
                 items.add(itemButton(customItem.createSimpleShortbow(), "simple_shortbow"));
                 items.add(itemButton(customItem.createReinforcedShortbow(), "reinforced_shortbow"));
+                items.add(itemButton(customItem.createHunterCrossbow(), "hunter_crossbow"));
             }
             case WEAPONS_PROGRESSION -> {
                 items.add(itemButton(customItem.progression().createCopperSword(), "copper_sword"));
@@ -2064,6 +2030,8 @@ public class DevMenu {
                 items.add(itemButton(customItem.createDungeonCore(), "dungeon_core"));
                 items.add(itemButton(customItem.createDungeonCore2(), "dungeon_core_2"));
                 items.add(itemButton(customItem.createDungeonCore3(), "dungeon_core_3"));
+                items.add(itemButton(customItem.createSpectacleStar(), "spectacle_star"));
+                items.add(itemButton(customItem.createAetherionSummons(), "aetherion_summons"));
                 items.add(itemButton(customItem.createDungeonWeaponRelic(de.aetherion.items.dungeon.DungeonGearTier.T2), "dungeon_relic_t2_weapon"));
                 items.add(itemButton(customItem.createDungeonWeaponRelic(de.aetherion.items.dungeon.DungeonGearTier.T3), "dungeon_relic_t3_weapon"));
                 items.add(itemButton(customItem.createWeaponSchematic(), "weapon_schematic"));
@@ -2076,6 +2044,11 @@ public class DevMenu {
                 items.add(itemButton(customItem.createAetherionVoidStick(), "void_stick"));
                 items.add(itemButton(customItem.createRottenCleaver(), "rotten_cleaver"));
                 items.add(itemButton(customItem.createWebweaveFang(), "webweave_fang"));
+            }
+            case WEAPONS_TRAVERSAL -> {
+                items.add(itemButton(customItem.createPortalGun(), "portal_gun"));
+                items.add(itemButton(customItem.createGrapplingHook(), "grappling_hook"));
+                items.add(itemButton(customItem.createSkyreaverSpools(), "skyreaver_spools"));
             }
             case SETS -> {
                 items.add(setButton(Material.LEATHER_CHESTPLATE, "§2Rotten Set", "rotten"));
@@ -2148,6 +2121,12 @@ public class DevMenu {
                 items.add(itemButton(storage.createStorage(), "storage"));
                 items.add(itemButton(de.aetherion.items.storage.SackItems.create(de.aetherion.items.storage.SackType.RESOURCE), "resource_sack"));
                 items.add(itemButton(de.aetherion.items.storage.SackItems.create(de.aetherion.items.storage.SackType.BOOSTER), "booster_sack"));
+                for (var sackSkill : de.aetherion.items.storage.SkillSack.Skill.values()) {
+                    for (var sackTier : de.aetherion.items.storage.SkillSack.Tier.values()) {
+                        items.add(itemButton(de.aetherion.items.storage.SkillSack.create(sackSkill, sackTier),
+                                de.aetherion.items.storage.SkillSack.itemId(sackSkill, sackTier)));
+                    }
+                }
                 items.add(button(Material.HAY_BLOCK, "§aAnimal Anchor", "give:animal", "§7Place in the world."));
                 items.add(button(Material.ROTTEN_FLESH, "§cMob Anchor", "give:mob", "§7Hostiles, same radius."));
                 items.add(button(Material.COARSE_DIRT, "§6Borderlands Marker", "give:borderlands",
@@ -2350,6 +2329,13 @@ public class DevMenu {
                         : de.aetherion.items.economy.IsleHeartwood.contentOrdered()) {
                     items.add(itemButton(heart.create(), heart.itemId()));
                 }
+                // P2 Signatures: recipe-test samples (fit T4/T5 slots; no grade/weight, no isle-NPC value).
+                for (String signature : new String[] {
+                        de.aetherion.items.economy.Signatures.CRYSTAL_FIND,
+                        de.aetherion.items.economy.Signatures.PRIZE_CROP,
+                        de.aetherion.items.economy.Signatures.FISH_TROPHY}) {
+                    items.add(itemButton(de.aetherion.items.economy.Signatures.display(signature), signature));
+                }
             }
             case AREAS -> {
                 items.add(button(
@@ -2448,6 +2434,12 @@ public class DevMenu {
                 items.add(itemButton(customItem.accessories().shinyCharm(), de.aetherion.items.item.AccessoryItems.SHINY_ID));
                 items.add(itemButton(customItem.accessories().forgeCharm(), de.aetherion.items.item.AccessoryItems.FORGE_ID));
                 items.add(itemButton(customItem.accessories().estateCharm(), de.aetherion.items.item.AccessoryItems.ESTATE_ID));
+            }
+            case LORE -> {
+                // Story finds (Das Schlaflied) — no stats. Quests unlocks the Chronicle page on grant/turn-in.
+                for (de.aetherion.items.lore.StoryLore lore : de.aetherion.items.lore.StoryLore.values()) {
+                    items.add(itemButton(lore.create(), lore.itemId()));
+                }
             }
             default -> {
             }
@@ -2580,6 +2572,7 @@ public class DevMenu {
             case "iron_longbow" -> customItem.createIronLongbow();
             case "simple_shortbow" -> customItem.createSimpleShortbow();
             case "reinforced_shortbow" -> customItem.createReinforcedShortbow();
+            case "hunter_crossbow" -> customItem.createHunterCrossbow();
             case "wooden_rod" -> customItem.createWoodenRod();
             case "copper_rod" -> customItem.createCopperRod();
             case "frost_shard" -> customItem.createFrostShard();
@@ -2617,6 +2610,8 @@ public class DevMenu {
             case "dungeon_core" -> customItem.createDungeonCore();
             case "dungeon_core_2" -> customItem.createDungeonCore2();
             case "dungeon_core_3" -> customItem.createDungeonCore3();
+            case "spectacle_star" -> customItem.createSpectacleStar();
+            case "aetherion_summons" -> customItem.createAetherionSummons();
             case "dungeon_vestige_helmet" -> customItem.createDungeonVestigeHelmet();
             case "dungeon_vestige_chestplate" -> customItem.createDungeonVestigeChestplate();
             case "dungeon_vestige_leggings" -> customItem.createDungeonVestigeLeggings();
@@ -2674,6 +2669,9 @@ public class DevMenu {
             case "dungeon_weapon_schematic" -> customItem.createDungeonWeaponSchematic();
             case "rotten_cleaver" -> customItem.createRottenCleaver();
             case "webweave_fang" -> customItem.createWebweaveFang();
+            case "portal_gun" -> customItem.createPortalGun();
+            case "grappling_hook" -> customItem.createGrapplingHook();
+            case "skyreaver_spools" -> customItem.createSkyreaverSpools();
             case "catcher_gaff" -> customItem.catcher().gaff(1);
             case "simple_helmet" -> customItem.createSimpleHelmet();
             case "simple_chest" -> customItem.createSimpleChestplate();
@@ -2685,6 +2683,14 @@ public class DevMenu {
             case "resource_sack" -> de.aetherion.items.storage.SackItems.create(de.aetherion.items.storage.SackType.RESOURCE);
             case "booster_sack" -> de.aetherion.items.storage.SackItems.create(de.aetherion.items.storage.SackType.BOOSTER);
             default -> {
+                ItemStack skillSack = de.aetherion.items.storage.SkillSack.fromId(id);
+                if (skillSack != null) {
+                    yield skillSack;
+                }
+                ItemStack lore = de.aetherion.items.lore.StoryLore.create(id);
+                if (lore != null) {
+                    yield lore;
+                }
                 ItemStack progression = customItem.progression().byId(id);
                 if (progression != null) {
                     yield progression;
@@ -2718,7 +2724,11 @@ public class DevMenu {
                     yield found;
                 }
                 ItemStack heart = de.aetherion.items.economy.IsleHeartwood.fromItemId(id);
-                yield heart != null ? heart : de.aetherion.items.economy.QuarryItems.fromId(id);
+                if (heart != null) {
+                    yield heart;
+                }
+                ItemStack signature = de.aetherion.items.economy.Signatures.display(id);
+                yield signature != null ? signature : de.aetherion.items.economy.QuarryItems.fromId(id);
             }
         };
     }
@@ -2776,6 +2786,11 @@ public class DevMenu {
         if (meta != null) {
             meta.getPersistentDataContainer().remove(ItemKeys.devAction());
             meta.getPersistentDataContainer().remove(DevItems.VIA);
+            if (de.aetherion.items.storage.SackItems.isSack(give)) {
+                // Each given sack gets its own contents file, not the shelf icon's.
+                meta.getPersistentDataContainer().set(ItemKeys.sackId(),
+                        org.bukkit.persistence.PersistentDataType.STRING, java.util.UUID.randomUUID().toString());
+            }
             give.setItemMeta(meta);
         }
         return give;
@@ -2888,7 +2903,7 @@ public class DevMenu {
         ));
         inventory.setItem(38, homieRankButton(ranks, "rank-set:monkey", monkeyOn, "§b§lMonkey §8· celestial",
                 "§7Celestial dye #B2FFFF, then the level tag.",
-                "§7Content Kit: flight, /npc, Resources,",
+                "§7Content Kit: flight, /aethernpc, Resources,",
                 "§7Ambient Props, self shards — not full admin."));
         inventory.setItem(39, homieRankButton(ranks, "rank-set:citrus", citrusOn, "§e§lCitrus",
                 "§7Citrus dye, then the level tag."));

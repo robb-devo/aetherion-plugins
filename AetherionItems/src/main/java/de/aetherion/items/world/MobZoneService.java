@@ -51,25 +51,27 @@ public class MobZoneService implements Runnable {
     public static final int ELDERVALE_DEFAULT_RADIUS = 200;
 
     /**
-     * Surface hostiles across the whole disk (not clustered on the player).
-     * Target band ~200–280 for typical large Borderlands (r≈140).
+     * Surface hostiles across the Borderlands disk.
+     * Keep this lean — each mob also carries a TextDisplay HP label.
      */
-    private static final double SURFACE_DENSITY = 0.0041;
-    private static final int SURFACE_MIN = 200;
-    private static final int SURFACE_MAX = 280;
+    private static final double SURFACE_DENSITY = 0.00028;
+    private static final int SURFACE_MIN = 16;
+    private static final int SURFACE_MAX = 36;
     /** Crypt hostiles — own budget, never counted toward surface. */
-    private static final double CRYPT_DENSITY = 0.00115;
-    private static final int CRYPT_MIN = 10;
-    private static final int CRYPT_MAX = 55;
+    private static final double CRYPT_DENSITY = 0.00028;
+    private static final int CRYPT_MIN = 8;
+    private static final int CRYPT_MAX = 22;
     /** Eldervale deep pack — active when players are on the island. */
     private static final double ELDERVALE_DENSITY = 0.0012;
     private static final int ELDERVALE_MIN = 14;
     private static final int ELDERVALE_MAX = 40;
-    /** Soft entrance around Vex — max surface mobs (T1 only) outside the taboo. */
-    private static final int VEX_SURFACE_CAP = 10;
+    /** Soft gate around Vex — max surface mobs in the thin entrance bubble. */
+    private static final int VEX_SURFACE_CAP = 6;
     /** Absolute no-mob bubble at Vex — spawn + walk-in forbidden. */
     private static final double VEX_TABOO_RADIUS = 15.0;
     private static final double VEX_TABOO_RADIUS_SQ = VEX_TABOO_RADIUS * VEX_TABOO_RADIUS;
+    /** Edge grace: keep hostiles while a player is still on the Borderlands rim. */
+    private static final double BORDERLANDS_PRESENCE_GRACE = 12.0;
 
     private static final Map<EntityType, Integer> MIX = new EnumMap<>(EntityType.class);
     private static final Map<EntityType, Integer> BORDERLANDS_MIX = new EnumMap<>(EntityType.class);
@@ -103,6 +105,10 @@ public class MobZoneService implements Runnable {
     private final JavaPlugin plugin;
     private final File file;
     private final Map<UUID, AnimalZone> zones = new ConcurrentHashMap<>();
+    /** Same-tick cache so enforce/seed/countNearVex don't re-scan the whole disk. */
+    private AnimalZone taggedCacheZone;
+    private int taggedCacheTick = -1;
+    private List<LivingEntity> taggedCache = List.of();
 
     public MobZoneService(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -110,12 +116,72 @@ public class MobZoneService implements Runnable {
         load();
         ensureBorderlandsZone();
         ensureEldervaleZone();
+        // Zone hostiles are disposable combat trash — never survive restarts as persistent entities.
+        plugin.getServer().getScheduler().runTaskLater(plugin, this::purgeAllZoneHostiles, 40L);
+        // AreaService boots after us — snap the combat disk to the marked Borderlands area.
+        plugin.getServer().getScheduler().runTaskLater(plugin, this::syncBorderlandsToArea, 60L);
         plugin.getServer().getScheduler().runTaskTimer(plugin, this, 40L, 60L);
     }
 
-    /** Borderlands is placed with the Dev Menu anchor — overlaps are consolidated to one. */
+    /** Borderlands combat disk must match the marked Area (TAB / map), not an old offset stub. */
     private void ensureBorderlandsZone() {
         consolidateBorderlandsZones();
+        syncBorderlandsToArea();
+    }
+
+    /**
+     * Pull the single Borderlands mob disk onto the live {@link AreaType#BORDERLANDS} marker
+     * so hostiles exist everywhere the area is marked.
+     */
+    private void syncBorderlandsToArea() {
+        if (!(plugin instanceof de.aetherion.items.AetherionItems items)) {
+            return;
+        }
+        AreaService areas = items.getAreas();
+        if (areas == null) {
+            return;
+        }
+        List<AreaZone> marked = areas.zonesOf(AreaType.BORDERLANDS);
+        if (marked.isEmpty()) {
+            return;
+        }
+        AreaZone area = marked.get(0);
+        int radius = Math.max(40, Math.min(320, area.getRadius()));
+        AnimalZone current = null;
+        for (AnimalZone zone : zones.values()) {
+            if (isBorderlands(zone)) {
+                current = zone;
+                break;
+            }
+        }
+        if (current != null
+                && current.getWorldName().equalsIgnoreCase(area.getWorldName())
+                && Math.abs(current.getX() - area.getX()) < 0.6
+                && Math.abs(current.getZ() - area.getZ()) < 0.6
+                && current.getRadius() == radius) {
+            return;
+        }
+        UUID keepId = current != null
+                ? current.getId()
+                : UUID.fromString("a1b2c3d4-e5f6-4789-a012-3456789abcde");
+        if (current != null) {
+            removeMarker(current);
+            despawnTagged(current);
+            zones.remove(current.getId());
+        }
+        AnimalZone synced = new AnimalZone(
+                keepId,
+                area.getWorldName(),
+                area.getX(),
+                area.getY(),
+                area.getZ(),
+                radius,
+                "borderlands"
+        );
+        zones.put(synced.getId(), synced);
+        save();
+        plugin.getLogger().info("Synced Borderlands mob zone to area marker ("
+                + radius + "m @ " + String.format(Locale.ROOT, "%.1f,%.1f", area.getX(), area.getZ()) + ").");
     }
 
     /** Always keep one Eldervale deep disk (invalid YAML UUIDs used to drop it silently). */
@@ -181,7 +247,7 @@ public class MobZoneService implements Runnable {
             need = Math.max(need, Math.sqrt(dx * dx + dz * dz) + zone.getRadius());
         }
         int radius = (int) Math.ceil(need);
-        radius = Math.max(40, Math.min(250, radius));
+        radius = Math.max(40, Math.min(320, radius));
         AnimalZone merged = new AnimalZone(
                 UUID.fromString("a1b2c3d4-e5f6-4789-a012-3456789abcde"),
                 worldName,
@@ -425,6 +491,29 @@ public class MobZoneService implements Runnable {
         return false;
     }
 
+    /**
+     * Profile of the zone this mob was spawned / claimed by ({@code borderlands}, {@code eldervale},
+     * {@code ""} for a plain zone), or null when it isn't a zone mob (or the zone is gone).
+     */
+    public String zoneProfileOf(Entity entity) {
+        if (entity == null) {
+            return null;
+        }
+        String tagged = entity.getPersistentDataContainer().get(ItemKeys.zoneSpawn(), PersistentDataType.STRING);
+        if (tagged == null) {
+            return null;
+        }
+        try {
+            AnimalZone zone = zones.get(UUID.fromString(tagged));
+            if (zone == null) {
+                return null;
+            }
+            return zone.getProfile() == null ? "" : zone.getProfile().toLowerCase(java.util.Locale.ROOT);
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
+    }
+
     public boolean inCrypt(Location location) {
         return location != null
                 && containsBorderlands(location)
@@ -507,12 +596,17 @@ public class MobZoneService implements Runnable {
 
     @Override
     public void run() {
+        syncBorderlandsToArea();
         for (AnimalZone zone : zones.values()) {
             World world = Bukkit.getWorld(zone.getWorldName());
             if (world == null || isDungeonWorld(world)) {
                 continue;
             }
             if (!playersNearZone(zone, world)) {
+                // Nobody in the Borderlands / Eldervale disk → no hostiles. Not a "few blocks away" purge.
+                if (isBorderlands(zone) || isEldervale(zone)) {
+                    despawnTagged(zone);
+                }
                 continue;
             }
             ensureMarker(zone);
@@ -528,13 +622,12 @@ public class MobZoneService implements Runnable {
                 int surfaceHave = countSurface(zone, world);
                 int surfaceWant = surfaceTargetFor(zone);
                 if (surfaceHave < surfaceWant) {
-                    // Bigger refill batches so the disk stays warm, not just the player bubble.
-                    seed(zone, Math.min(36, surfaceWant - surfaceHave), false);
+                    seed(zone, Math.min(6, surfaceWant - surfaceHave), false);
                 }
                 int cryptHave = countCrypt(zone, world);
                 int cryptWant = cryptTargetFor(zone);
                 if (cryptHave < cryptWant) {
-                    seed(zone, Math.min(10, cryptWant - cryptHave), true);
+                    seed(zone, Math.min(3, cryptWant - cryptHave), true);
                 }
                 continue;
             }
@@ -556,12 +649,12 @@ public class MobZoneService implements Runnable {
         }
     }
 
-    /** Huge Borderlands / Eldervale disks must tick when a player is inside — horizontal only. */
+    /** Despawn only when nobody is inside the combat disk (tiny rim grace, not +40). */
     private boolean playersNearZone(AnimalZone zone, World world) {
         Location center = zone.center(world);
-        double reach = zone.getRadius() + 40;
-        double reachSq = reach * reach;
         boolean horizontal = isBorderlands(zone) || isEldervale(zone);
+        double reach = zone.getRadius() + (horizontal ? BORDERLANDS_PRESENCE_GRACE : 40);
+        double reachSq = reach * reach;
         for (Player player : world.getPlayers()) {
             Location at = player.getLocation();
             double dx = at.getX() - center.getX();
@@ -678,6 +771,10 @@ public class MobZoneService implements Runnable {
             if (BorderlandsRiteService.isMobSafeZone(spot)) {
                 continue;
             }
+            if (!borderlands && !eldervale && NaturalSpawnGuard.inTownArea(spot)) {
+                // Towns and roads stay hostile-free, whatever zone someone dropped there.
+                continue;
+            }
             // Refuse wrong band so surface seed never fills crypt slots and vice versa.
             if (borderlands) {
                 boolean cryptSpot = spot.getY() <= CRYPT_CEILING_Y;
@@ -778,9 +875,40 @@ public class MobZoneService implements Runnable {
     }
 
     private void decorate(LivingEntity entity, AnimalZone zone) {
-        entity.setRemoveWhenFarAway(false);
-        entity.setPersistent(true);
+        // Monsters, not pets: despawn when far / unload / restart. Never write into world saves.
+        entity.setRemoveWhenFarAway(true);
+        entity.setPersistent(false);
+        entity.setGlowing(false);
         tag(entity, zone.getId());
+    }
+
+    /** Wipe every zone-tagged hostile in loaded worlds (startup + empty-zone cleanup). */
+    private void purgeAllZoneHostiles() {
+        int removed = 0;
+        for (World world : Bukkit.getWorlds()) {
+            if (isDungeonWorld(world)) {
+                continue;
+            }
+            for (LivingEntity living : world.getLivingEntities()) {
+                if (!(living instanceof Monster) || living instanceof Player) {
+                    continue;
+                }
+                if (de.aetherion.core.AetherEntities.isSystemOwned(living)) {
+                    continue;
+                }
+                String tagged = living.getPersistentDataContainer().get(
+                        ItemKeys.zoneSpawn(), PersistentDataType.STRING);
+                if (tagged == null || tagged.isBlank()) {
+                    continue;
+                }
+                living.setPersistent(false);
+                removeHostile(living);
+                removed++;
+            }
+        }
+        if (removed > 0) {
+            plugin.getLogger().info("Purged " + removed + " leftover zone hostiles (non-persistent).");
+        }
     }
 
     private void tag(LivingEntity entity, UUID zoneId) {
@@ -818,14 +946,22 @@ public class MobZoneService implements Runnable {
     }
 
     private List<LivingEntity> tagged(AnimalZone zone, World world) {
+        int tick = Bukkit.getCurrentTick();
+        if (taggedCacheZone == zone && taggedCacheTick == tick && taggedCache != null) {
+            return taggedCache;
+        }
         List<LivingEntity> found = new ArrayList<>();
         Location center = zone.center(world);
         if (center == null) {
+            taggedCacheZone = zone;
+            taggedCacheTick = tick;
+            taggedCache = found;
             return found;
         }
         double scan = zone.getRadius() + 8;
         // Eldervale deep miners sit far below the surface marker — need full column scan.
-        double scanY = isEldervale(zone) || isBorderlands(zone) ? 320.0 : 24.0;
+        // Borderlands: surface band only for the fat scan (crypt counted separately where needed).
+        double scanY = isEldervale(zone) ? 320.0 : (isBorderlands(zone) ? 96.0 : 24.0);
         for (Entity entity : world.getNearbyEntities(center, scan, scanY, scan)) {
             if (entity instanceof LivingEntity living
                     && isManaged(living)
@@ -833,31 +969,63 @@ public class MobZoneService implements Runnable {
                 found.add(living);
             }
         }
+        taggedCacheZone = zone;
+        taggedCacheTick = tick;
+        taggedCache = found;
         return found;
     }
 
     private void enforce(AnimalZone zone, World world) {
         Location center = zone.center(world);
         List<LivingEntity> members = tagged(zone, world);
-        double claimRadius = zone.getRadius() + 8;
-        double claimY = isEldervale(zone) || isBorderlands(zone) ? 320.0 : 24.0;
-        for (Entity entity : world.getNearbyEntities(center, claimRadius, claimY, claimRadius)) {
-            if (!isManaged(entity) || belongs(entity, zone.getId())) {
-                continue;
+        // Borderlands: never vacuum the whole disk — seeded tags only. Claim scans of r=250×Y320 murdered TPS.
+        boolean borderlands = isBorderlands(zone);
+        if (!borderlands) {
+            double claimRadius = zone.getRadius() + 8;
+            double claimY = isEldervale(zone) ? 48.0 : 24.0;
+            for (Entity entity : world.getNearbyEntities(center, claimRadius, claimY, claimRadius)) {
+                if (!isManaged(entity) || belongs(entity, zone.getId())) {
+                    continue;
+                }
+                LivingEntity living = (LivingEntity) entity;
+                if (de.aetherion.core.AetherEntities.isSystemOwned(living)) {
+                    continue;
+                }
+                Location claimAt = living.getLocation();
+                if (canClaimIntoBand(zone, living) && !BorderlandsRiteService.isMobSafeZone(claimAt)) {
+                    tag(living, zone.getId());
+                    living.setRemoveWhenFarAway(true);
+                    living.setPersistent(false);
+                    living.setGlowing(false);
+                    members.add(living);
+                } else if (!BorderlandsRiteService.isMobSafeZone(claimAt)) {
+                    removeHostile(living);
+                } else {
+                    removeHostile(living);
+                }
             }
-            LivingEntity living = (LivingEntity) entity;
-            if (de.aetherion.core.AetherEntities.isSystemOwned(living)) {
-                continue;
-            }
-            if (canClaimIntoBand(zone, living) && !BorderlandsRiteService.isMobSafeZone(living.getLocation())) {
-                tag(living, zone.getId());
-                living.setRemoveWhenFarAway(false);
-                living.setPersistent(true);
-                members.add(living);
-            } else if (!BorderlandsRiteService.isMobSafeZone(living.getLocation())) {
-                living.remove();
-            } else {
-                living.remove();
+        } else {
+            // Kill untagged hostiles near players only (cheap), so the disk doesn't double-fill from vanilla.
+            for (Player player : world.getPlayers()) {
+                Location at = player.getLocation();
+                double dx = at.getX() - center.getX();
+                double dz = at.getZ() - center.getZ();
+                double reach = zone.getRadius() + BORDERLANDS_PRESENCE_GRACE;
+                if (dx * dx + dz * dz > reach * reach) {
+                    continue;
+                }
+                for (Entity entity : world.getNearbyEntities(at, 28, 20, 28)) {
+                    if (!isManaged(entity) || belongs(entity, zone.getId())) {
+                        continue;
+                    }
+                    if (de.aetherion.core.AetherEntities.isSystemOwned(entity)) {
+                        continue;
+                    }
+                    if (BorderlandsRiteService.isMobSafeZone(entity.getLocation())) {
+                        continue;
+                    }
+                    removeHostile((LivingEntity) entity);
+                }
             }
         }
         members.removeIf(de.aetherion.core.AetherEntities::isSystemOwned);
@@ -867,18 +1035,26 @@ public class MobZoneService implements Runnable {
                 return false;
             }
             if (!de.aetherion.core.AetherEntities.isSystemOwned(living)) {
-                living.remove();
+                removeHostile(living);
             }
             return true;
         });
-        boolean borderlands = isBorderlands(zone);
         boolean eldervale = isEldervale(zone);
         if (borderlands) {
+            for (LivingEntity living : members) {
+                if (living.isValid() && living.isGlowing()) {
+                    living.setGlowing(false);
+                }
+            }
             trimBand(members, zone, world, false, surfaceTargetFor(zone));
             trimBand(members, zone, world, true, cryptTargetFor(zone));
             clearVexTaboo(members, zone, world);
             trimVexRing(members, zone, world);
-            unclumpDarkSurface(members, zone, world);
+            // Heavy reshuffles only every other enforce (~6s) — not every tick.
+            if ((System.currentTimeMillis() / 1000L) % 2L == 0L) {
+                spreadSurfaceAcrossDisk(members, zone, world);
+                unclumpDarkSurface(members, zone, world);
+            }
             cullAboveSurfaceMax(members);
         } else if (eldervale) {
             trimEldervale(members, zone, world);
@@ -893,7 +1069,7 @@ public class MobZoneService implements Runnable {
                 if (de.aetherion.core.AetherEntities.isSystemOwned(extra)) {
                     continue;
                 }
-                extra.remove();
+                removeHostile(extra);
             }
         }
         double maxDistSq = (zone.getRadius() + 6) * (zone.getRadius() + 6);
@@ -906,12 +1082,12 @@ public class MobZoneService implements Runnable {
             double dz = at.getZ() - center.getZ();
             double distSq = borderlands || eldervale ? dx * dx + dz * dz : at.distanceSquared(center);
             if (distSq <= maxDistSq) {
-                // Height-band only (surface vs crypt). Vex T1 ring no longer hard-kills wander-ins.
+                // Wrong lane tier → retag in place (T1 to altar, T2/T3 past it). Don't delete.
                 if (borderlands && mismatchedTier(living, at)) {
-                    living.remove();
+                    WildlifeLooks.applyBorderlandsTier(living, at);
                 }
                 if (eldervale && at.getY() > ELDERVALE_CEILING_Y) {
-                    living.remove();
+                    removeHostile(living);
                 }
                 continue;
             }
@@ -930,7 +1106,7 @@ public class MobZoneService implements Runnable {
             }
             if (living.getLocation().getY() > ELDERVALE_CEILING_Y) {
                 if (!de.aetherion.core.AetherEntities.isSystemOwned(living)) {
-                    living.remove();
+                    removeHostile(living);
                 }
                 members.remove(living);
                 continue;
@@ -946,7 +1122,7 @@ public class MobZoneService implements Runnable {
             LivingEntity extra = deep.remove(0);
             members.remove(extra);
             if (!de.aetherion.core.AetherEntities.isSystemOwned(extra)) {
-                extra.remove();
+                removeHostile(extra);
             }
         }
     }
@@ -984,7 +1160,7 @@ public class MobZoneService implements Runnable {
             LivingEntity extra = band.remove(0);
             members.remove(extra);
             if (!de.aetherion.core.AetherEntities.isSystemOwned(extra)) {
-                extra.remove();
+                removeHostile(extra);
             }
         }
     }
@@ -1014,7 +1190,7 @@ public class MobZoneService implements Runnable {
                 members.remove(living);
                 if (!de.aetherion.core.AetherEntities.isSystemOwned(living)) {
                     if (!WildlifeLooks.ejectFromVexRadius(living, WildlifeLooks.VEX_T1_RADIUS)) {
-                        living.remove();
+                        removeHostile(living);
                     }
                 }
                 continue;
@@ -1027,7 +1203,7 @@ public class MobZoneService implements Runnable {
             if (!de.aetherion.core.AetherEntities.isSystemOwned(extra)) {
                 // Excess T1: push outward past the ring instead of deleting.
                 if (!WildlifeLooks.ejectFromVexRadius(extra, WildlifeLooks.VEX_T1_RADIUS)) {
-                    extra.remove();
+                    removeHostile(extra);
                 }
             }
         }
@@ -1039,21 +1215,21 @@ public class MobZoneService implements Runnable {
         if (y <= CRYPT_CEILING_Y) {
             return tier != WildlifeLooks.TIER_CRYPT;
         }
-        // Soft T1-only combat around Vex — higher tiers don't belong in the entrance ring.
-        if (WildlifeLooks.nearVexStarter(at) && tier != WildlifeLooks.TIER_NORMAL) {
+        // Crypt trash on surface is always wrong.
+        if (tier == WildlifeLooks.TIER_CRYPT) {
             return true;
         }
-        // Crypt mobs on surface still wrong — Vex ring wander-ins are handled softly elsewhere.
-        return tier == WildlifeLooks.TIER_CRYPT;
+        // Vex → vial altar: T1 only. Altar → Seraphine: T2/T3 only.
+        if (WildlifeLooks.isBorderlandsT1Surface(at)) {
+            return tier != WildlifeLooks.TIER_NORMAL;
+        }
+        return tier != WildlifeLooks.TIER_STURDY && tier != WildlifeLooks.TIER_BRUTE;
     }
 
-    /** Absolute no-mob bubble at Vex — push out (no hard despawn). */
+    /** Absolute no-mob bubble at Vex — push out tagged members only (no full-world scan). */
     private void clearVexTaboo(List<LivingEntity> members, AnimalZone zone, World world) {
-        for (LivingEntity living : world.getLivingEntities()) {
-            if (!(living instanceof Monster) || living instanceof Player) {
-                continue;
-            }
-            if (de.aetherion.core.AetherEntities.isSystemOwned(living)) {
+        for (LivingEntity living : List.copyOf(members)) {
+            if (!living.isValid() || de.aetherion.core.AetherEntities.isSystemOwned(living)) {
                 continue;
             }
             Location at = living.getLocation();
@@ -1065,6 +1241,14 @@ public class MobZoneService implements Runnable {
             }
             WildlifeLooks.ejectFromVexRadius(living, VEX_TABOO_RADIUS);
         }
+    }
+
+    private static void removeHostile(LivingEntity living) {
+        if (living == null) {
+            return;
+        }
+        WildlifeLooks.discard(living);
+        living.remove();
     }
 
     /** Pull surface packs out of dark pockets onto open sky. */
@@ -1101,7 +1285,7 @@ public class MobZoneService implements Runnable {
             }
             double y = living.getLocation().getY();
             if (y > SURFACE_MAX_Y) {
-                living.remove();
+                removeHostile(living);
                 members.remove(living);
             }
         }
@@ -1113,8 +1297,10 @@ public class MobZoneService implements Runnable {
             return;
         }
         for (LivingEntity entity : tagged(zone, world)) {
-            entity.remove();
+            removeHostile(entity);
         }
+        // Stray HP labels that detached during teleports / culls.
+        WildlifeLooks.purgeOrphanLabels(world);
     }
 
     public void revealToLater(Player player) {
@@ -1179,9 +1365,9 @@ public class MobZoneService implements Runnable {
                     dist = 8 + random.nextDouble() * Math.max(10, zone.getRadius() - 8);
                 }
             } else if (borderlands && !preferCrypt) {
-                // Full-disk only — never bias toward the player.
+                // Area-uniform across the whole disk (sqrt), never player-anchored.
                 anchor = center;
-                dist = 10 + random.nextDouble() * Math.max(12, zone.getRadius() - 10);
+                dist = Math.max(12.0, reach * Math.sqrt(random.nextDouble()));
             } else if (borderlands && preferCrypt) {
                 // Crypt: random disk samples, search downward — not player-anchored.
                 anchor = center;
@@ -1224,7 +1410,8 @@ public class MobZoneService implements Runnable {
                 int originY = Math.min(center.getBlockY(), CRYPT_CEILING_Y - 2);
                 ground = standOnCrypt(world, x, originY, z);
             } else if (borderlands) {
-                ground = standOnSurface(world, x, z);
+                // Top of world column only — never drop into dark caves / tree shade pockets.
+                ground = standOnSurface(world, x, z, true);
             } else {
                 ground = standOn(world, x, anchor.getBlockY(), z);
             }
@@ -1249,9 +1436,13 @@ public class MobZoneService implements Runnable {
                 if (!preferCrypt && WildlifeLooks.nearVex(ground, VEX_TABOO_RADIUS_SQ)) {
                     continue;
                 }
-                // Soft entrance beyond taboo: T1-only ring capped.
+                // Soft entrance beyond taboo: keep it thin. Prefer the outer waste.
                 if (!preferCrypt && WildlifeLooks.nearVexStarter(ground)) {
                     if (vexHave >= VEX_SURFACE_CAP) {
+                        continue;
+                    }
+                    // Even under the cap, only ~12% of surface rolls may land in the gate ring.
+                    if (random.nextDouble() >= 0.12) {
                         continue;
                     }
                 }
@@ -1293,22 +1484,135 @@ public class MobZoneService implements Runnable {
         return count;
     }
 
-    /** Surface stand on open sky — avoids dark cave/overhang clumps. Cap: Y ≤ 67. */
+    /** Surface stand — open sky only. Never prefer dark caves / underhangs. */
     private Location standOnSurface(World world, int x, int z) {
+        return standOnSurface(world, x, z, true);
+    }
+
+    private Location standOnSurface(World world, int x, int z, boolean requireBrightSky) {
         int top = world.getHighestBlockYAt(x, z, org.bukkit.HeightMap.MOTION_BLOCKING_NO_LEAVES);
-        int start = Math.min(top + 1, SURFACE_MAX_Y);
-        int floor = Math.max(world.getMinHeight() + 2, CRYPT_CEILING_Y + 1);
-        for (int y = start; y >= floor; y--) {
-            Location ground = standAt(world, x, y, z);
-            if (ground == null || ground.getY() <= CRYPT_CEILING_Y || ground.getY() > SURFACE_MAX_Y) {
+        if (top <= CRYPT_CEILING_Y || top > SURFACE_MAX_Y) {
+            return null;
+        }
+        Location ground = standAt(world, x, top, z);
+        if (ground == null || ground.getY() <= CRYPT_CEILING_Y || ground.getY() > SURFACE_MAX_Y) {
+            return null;
+        }
+        // Always demand open sky for Borderlands surface — dark priority is banned.
+        int minSky = requireBrightSky ? 13 : 12;
+        int sky = Math.max(
+                ground.getBlock().getLightFromSky(),
+                ground.clone().add(0, 1, 0).getBlock().getLightFromSky());
+        if (sky < minSky) {
+            return null;
+        }
+        return ground;
+    }
+
+    /**
+     * Push excess gate packs into the outer Borderlands disk so the entrance stays thin
+     * and the rest of the waste actually has fights.
+     */
+    private void spreadSurfaceAcrossDisk(List<LivingEntity> members, AnimalZone zone, World world) {
+        List<LivingEntity> atGate = new ArrayList<>();
+        List<LivingEntity> outer = new ArrayList<>();
+        for (LivingEntity living : members) {
+            if (!living.isValid()) {
                 continue;
             }
-            // Require open sky so packs don't pool in dark dips/caves.
-            if (ground.getBlock().getLightFromSky() < 12
-                    && ground.clone().add(0, 1, 0).getBlock().getLightFromSky() < 12) {
+            Location at = living.getLocation();
+            if (at.getY() <= CRYPT_CEILING_Y) {
                 continue;
             }
-            return ground;
+            if (WildlifeLooks.nearVex(at, VEX_TABOO_RADIUS_SQ)) {
+                continue;
+            }
+            if (WildlifeLooks.nearVexStarter(at)) {
+                atGate.add(living);
+            } else {
+                outer.add(living);
+            }
+        }
+        int moved = 0;
+        // Always bleed the gate down to the soft cap.
+        while (atGate.size() > VEX_SURFACE_CAP && moved < 24) {
+            LivingEntity living = atGate.remove(atGate.size() - 1);
+            Location spot = findOuterSurfaceSpot(zone, world);
+            if (spot == null) {
+                break;
+            }
+            living.teleport(spot);
+            if (living instanceof Mob mob) {
+                mob.setTarget(null);
+            }
+            members.remove(living);
+            members.add(living);
+            outer.add(living);
+            moved++;
+        }
+        // Keep bleeding the gate — never let more than the soft cap camp the entrance.
+        while (atGate.size() > VEX_SURFACE_CAP && moved < 48) {
+            LivingEntity living = atGate.remove(atGate.size() - 1);
+            Location spot = findOuterSurfaceSpot(zone, world);
+            if (spot == null) {
+                break;
+            }
+            living.teleport(spot);
+            if (living instanceof Mob mob) {
+                mob.setTarget(null);
+            }
+            moved++;
+        }
+    }
+
+    /** Spawn/teleport helper that must land outside the Vex starter ring. */
+    private Location findOuterSurfaceSpot(AnimalZone zone, World world) {
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        Location center = zone.center(world);
+        double reach = zone.getRadius();
+        double reachSq = reach * reach;
+        for (int i = 0; i < 48; i++) {
+            double angle = random.nextDouble() * Math.PI * 2;
+            // Area-uniform from zone center; reject near Vex below filters the gate.
+            double dist = Math.max(16.0, reach * Math.sqrt(random.nextDouble()));
+            if (dist > reach) {
+                dist = reach - 2.0;
+            }
+            int x = center.getBlockX() + (int) Math.round(Math.cos(angle) * dist);
+            int z = center.getBlockZ() + (int) Math.round(Math.sin(angle) * dist);
+            double dx = x + 0.5 - center.getX();
+            double dz = z + 0.5 - center.getZ();
+            if (dx * dx + dz * dz > reachSq) {
+                continue;
+            }
+            world.getChunkAt(x >> 4, z >> 4);
+            // Outer waste also demands open sky — no dark cave camping.
+            Location ground = standOnSurface(world, x, z, true);
+            if (ground == null) {
+                continue;
+            }
+            if (ground.getY() <= CRYPT_CEILING_Y || ground.getY() > SURFACE_MAX_Y) {
+                continue;
+            }
+            if (WildlifeLooks.nearVexStarter(ground) || WildlifeLooks.nearVex(ground, VEX_TABOO_RADIUS_SQ)) {
+                continue;
+            }
+            if (BorderlandsRiteService.isMobSafeZone(ground)) {
+                continue;
+            }
+            if (playerTooClose(world, ground, 9.0)) {
+                continue;
+            }
+            boolean crowded = false;
+            for (Entity nearbyEntity : world.getNearbyEntities(ground, 5.0, 3, 5.0)) {
+                if (nearbyEntity instanceof Monster) {
+                    crowded = true;
+                    break;
+                }
+            }
+            if (!crowded) {
+                return ground;
+            }
         }
         return null;
     }

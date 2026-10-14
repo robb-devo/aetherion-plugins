@@ -19,6 +19,20 @@ public class QuestCommand implements CommandExecutor {
         this.questManager = questManager;
     }
 
+    private static boolean isQuestAdmin(CommandSender sender) {
+        return sender.isOp()
+                || sender.hasPermission("aetherionquests.admin")
+                || sender.hasPermission("aetherion.dev");
+    }
+
+    private static boolean denyUnlessAdmin(CommandSender sender) {
+        if (isQuestAdmin(sender)) {
+            return false;
+        }
+        sender.sendMessage("§cDEV only.");
+        return true;
+    }
+
     @Override
     public boolean onCommand(
             CommandSender sender,
@@ -38,11 +52,10 @@ public class QuestCommand implements CommandExecutor {
             sender.sendMessage("§bAetherionQuests");
             sender.sendMessage("§7/aquest accept <questId>");
             sender.sendMessage("§7/aquest deny <questId>");
-            sender.sendMessage("§7/aquest start <questId>");
-            sender.sendMessage("§7/aquest complete <questId>");
-            sender.sendMessage("§7/aquest reset <questId|all>");
             sender.sendMessage("§7/aquest info <questId>");
-            sender.sendMessage("§7/aquest cleanup");
+            if (isQuestAdmin(sender)) {
+                sender.sendMessage("§8/aquest start|complete|reset|cleanup|orbit §7(DEV)");
+            }
 
             return true;
         }
@@ -163,6 +176,10 @@ public class QuestCommand implements CommandExecutor {
 
         if (args[0].equalsIgnoreCase("start")) {
 
+            if (denyUnlessAdmin(sender)) {
+                return true;
+            }
+
             if (!(sender instanceof Player player)) {
 
                 sender.sendMessage(
@@ -221,6 +238,10 @@ public class QuestCommand implements CommandExecutor {
          */
 
         if (args[0].equalsIgnoreCase("complete")) {
+
+            if (denyUnlessAdmin(sender)) {
+                return true;
+            }
 
             if (!(sender instanceof Player player)) {
 
@@ -296,6 +317,10 @@ public class QuestCommand implements CommandExecutor {
          */
 
         if (args[0].equalsIgnoreCase("reset")) {
+
+            if (denyUnlessAdmin(sender)) {
+                return true;
+            }
 
             if (!(sender instanceof Player player)) {
 
@@ -430,6 +455,27 @@ public class QuestCommand implements CommandExecutor {
 
         /*
          * =========================================================
+         * OPENING ORBIT (DEV replay)
+         * =========================================================
+         */
+
+        if (args[0].equalsIgnoreCase("orbit") || args[0].equalsIgnoreCase("openingorbit")) {
+
+            if (denyUnlessAdmin(sender)) {
+                return true;
+            }
+
+            if (!(sender instanceof Player player)) {
+                sender.sendMessage("§cOnly players can use this.");
+                return true;
+            }
+
+            de.aetherion.quests.ui.OpeningOrbit.replay(player);
+            return true;
+        }
+
+        /*
+         * =========================================================
          * NPC CLEANUP
          * =========================================================
          *
@@ -446,6 +492,10 @@ public class QuestCommand implements CommandExecutor {
          */
 
         if (args[0].equalsIgnoreCase("cleanup")) {
+
+            if (denyUnlessAdmin(sender)) {
+                return true;
+            }
 
             if (!(sender instanceof Player player)) {
 

@@ -30,7 +30,7 @@ public final class BloodstoneArenaCommand implements CommandExecutor, TabComplet
             return true;
         }
         if (args.length >= 1 && args[0].equalsIgnoreCase("set")) {
-            if (!player.isOp() && !player.hasPermission("aetherion.devmenu")) {
+            if (!player.isOp() && !player.hasPermission("aetherion.dev")) {
                 player.sendMessage("§cDEV / OP only.");
                 return true;
             }
@@ -43,7 +43,7 @@ public final class BloodstoneArenaCommand implements CommandExecutor, TabComplet
             return true;
         }
         if (args.length >= 1 && args[0].equalsIgnoreCase("bossset")) {
-            if (!player.isOp() && !player.hasPermission("aetherion.devmenu")) {
+            if (!player.isOp() && !player.hasPermission("aetherion.dev")) {
                 player.sendMessage("§cDEV / OP only.");
                 return true;
             }
@@ -65,7 +65,7 @@ public final class BloodstoneArenaCommand implements CommandExecutor, TabComplet
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
-        if (args.length == 1 && (sender.isOp() || sender.hasPermission("aetherion.devmenu"))) {
+        if (args.length == 1 && (sender.isOp() || sender.hasPermission("aetherion.dev"))) {
             return List.of("set", "bossset").stream()
                     .filter(s -> s.startsWith(args[0].toLowerCase()))
                     .toList();

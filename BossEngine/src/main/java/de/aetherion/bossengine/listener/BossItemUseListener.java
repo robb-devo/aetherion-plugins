@@ -19,6 +19,7 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.persistence.PersistentDataType;
 
 import java.util.Map;
 import java.util.Optional;
@@ -52,6 +53,10 @@ public class BossItemUseListener implements Listener {
         }
 
         ItemStack item = event.getItem();
+        if (PINNACLE_KEY.equals(aetherionItemId(item))) {
+            usePinnacleKey(event, item);
+            return;
+        }
         Optional<SpawnItemDefinition> definitionOpt = items.fromItem(item);
         if (definitionOpt.isEmpty()) {
             return;
@@ -136,5 +141,68 @@ public class BossItemUseListener implements Listener {
         }
 
         player.sendMessage(TextUtil.component("&aSummoned &r" + definition.getBossId() + "&a."));
+    }
+
+    /*
+     * P6 pinnacle key — the Items-crafted "aetherion_summons". A player item, so no bossengine.spawn
+     * permission: it calls the open-world Aetherion raid at its anchor (spawner "aetherion_home", set
+     * with /boss give aetherion_anchor) and nowhere else. Consumed only when the raid actually starts.
+     */
+    private static final String PINNACLE_KEY = "aetherion_summons";
+    private static final String PINNACLE_BOSS = "aetherion";
+    private static final String PINNACLE_ANCHOR = "aetherion_home";
+    private static final double PINNACLE_RANGE = 64.0;
+
+    private static String aetherionItemId(ItemStack item) {
+        if (item == null || !item.hasItemMeta()) {
+            return null;
+        }
+        return item.getItemMeta().getPersistentDataContainer()
+                .get(de.aetherion.core.AetherKeys.ITEM_ID, PersistentDataType.STRING);
+    }
+
+    private void usePinnacleKey(PlayerInteractEvent event, ItemStack item) {
+        event.setCancelled(true);
+        Player player = event.getPlayer();
+        long now = System.currentTimeMillis();
+        Long last = cooldowns.get(player.getUniqueId());
+        if (last != null && now - last < 3_000L) {
+            return;
+        }
+        cooldowns.put(player.getUniqueId(), now);
+
+        Location anchor = spawnerManager.get(PINNACLE_ANCHOR)
+                .map(spawner -> spawner.getDefinition().toLocation())
+                .orElse(null);
+        if (anchor == null || anchor.getWorld() == null) {
+            player.sendMessage(TextUtil.component("&5The Summons hums. Nothing answers. "
+                    + "&8(No Aetherion anchor on this server yet.)"));
+            return;
+        }
+        if (!anchor.getWorld().equals(player.getWorld())
+                || anchor.distanceSquared(player.getLocation()) > PINNACLE_RANGE * PINNACLE_RANGE) {
+            player.sendMessage(TextUtil.component("&7Aetherion answers only at the Veil &8("
+                    + anchor.getWorld().getName() + " " + anchor.getBlockX() + " " + anchor.getBlockY()
+                    + " " + anchor.getBlockZ() + ")&7."));
+            return;
+        }
+        if (!bossManager.getByTemplate(PINNACLE_BOSS).isEmpty()) {
+            player.sendMessage(TextUtil.component("&cAetherion is already awake."));
+            return;
+        }
+        boolean spawned = bossManager.spawn(PINNACLE_BOSS, anchor, SpawnCause.ITEM, player).isPresent();
+        if (!spawned) {
+            player.sendMessage(TextUtil.component("&cThe Veil holds. &7(The raid could not start; nothing was used.)"));
+            return;
+        }
+        if (item != null) {
+            item.setAmount(item.getAmount() - 1);
+        }
+        for (Player nearby : anchor.getWorld().getPlayers()) {
+            if (nearby.getLocation().distanceSquared(anchor) <= 160.0 * 160.0) {
+                nearby.sendMessage(TextUtil.component("&5&l✦ &f" + player.getName()
+                        + " &7tore open the Veil. &5Aetherion &7answers."));
+            }
+        }
     }
 }

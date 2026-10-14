@@ -81,8 +81,6 @@ public final class DungeonRelic {
     public static List<String> lore(DungeonGearTier tier, DungeonPiece piece, ItemStats stats) {
         DungeonGearTier safe = tier == null || tier == DungeonGearTier.T1 ? DungeonGearTier.T2 : tier;
         List<String> lore = new ArrayList<>();
-        lore.add(safe.rarityLine());
-        lore.add("");
         DungeonArmor.addRelicStatLines(piece == null ? weaponId(safe) : itemId(safe, piece), stats, lore);
         lore.add("");
         lore.add("§7Unidentified overworld " + (piece == null ? "weapon" : piece.display().toLowerCase(Locale.ROOT)) + ".");
@@ -103,6 +101,8 @@ public final class DungeonRelic {
             }
             lore.add(sets.toString());
         }
+        lore.add("§8Overworld: " + Math.round(safe.overworldMultiplier() * 100.0d)
+                + "% of its stats. Full power in dungeons.");
         lore.add("§8Not dungeon gear until a matching core.");
         lore.add("§8There is no undo.");
         return lore;

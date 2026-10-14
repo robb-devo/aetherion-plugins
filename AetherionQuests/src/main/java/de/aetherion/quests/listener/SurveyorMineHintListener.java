@@ -50,7 +50,7 @@ public final class SurveyorMineHintListener implements Listener, Runnable {
         }
         // Don't point at Surveyor mid-tutorial — he says so himself.
         if (plugin.getQuestManager() == null
-                || !de.aetherion.quests.util.QuestStoryGate.tutorialDone(player, plugin.getQuestManager())) {
+                || !de.aetherion.quests.util.QuestStoryGate.graduated(player, plugin.getQuestManager())) {
             return;
         }
         if (!eligible(player)) {

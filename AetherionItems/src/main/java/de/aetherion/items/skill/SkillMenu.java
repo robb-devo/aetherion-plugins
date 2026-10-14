@@ -88,7 +88,7 @@ public final class SkillMenu implements Listener {
                 ? category
                 : defaultCategory(player);
         Holder holder = new Holder(shown);
-        Inventory inventory = Bukkit.createInventory(holder, 54, TITLE);
+        Inventory inventory = Bukkit.createInventory(holder, 54, de.aetherion.items.util.ManagerChrome.SKILLS);
         holder.inventory = inventory;
         render(inventory, player, shown);
         player.openInventory(inventory);

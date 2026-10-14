@@ -81,6 +81,59 @@ public final class BossSpawnAccessImpl implements BossSpawnAccess {
         }
     }
 
+    /**
+     * Doors from the exile island into bosses that keep their own world. Helios runs its normal party entry
+     * ({@code /helios enter}); the Last Seed takes the player to the site's arrival point. Nothing is created
+     * here: a missing world answers {@code not-built} so staff see it.
+     */
+    @Override
+    public String enterArena(Player player, String arena) {
+        if (player == null || arena == null) {
+            return "unsupported";
+        }
+        switch (arena.toLowerCase(java.util.Locale.ROOT)) {
+            case "helios", "helios_requiem" -> {
+                de.aetherion.bossengine.helios.HeliosModule helios = plugin.helios();
+                return helios == null ? "disabled" : helios.enter(player);
+            }
+            case "world_eater", "nihil", "unbroken", "last_seed" -> {
+                de.aetherion.bossengine.instance.worldeater.WorldEaterSite site =
+                        de.aetherion.bossengine.instance.worldeater.WorldEaterSite.get();
+                if (site == null) {
+                    return "disabled";
+                }
+                if (site.world() == null || !site.built()) {
+                    return "not-built";
+                }
+                Location arrival = site.arrival();
+                if (arrival == null) {
+                    return "not-built";
+                }
+                player.teleport(arrival);
+                return "ok";
+            }
+            default -> {
+                return "unsupported";
+            }
+        }
+    }
+
+    @Override
+    public boolean alive(String templateId) {
+        BossEngineAPI api = BossEngine.getAPI();
+        if (api == null || templateId == null) {
+            return false;
+        }
+        for (BossInstance instance : api.getActiveBosses()) {
+            if (instance != null && instance.getTemplate() != null
+                    && templateId.equalsIgnoreCase(instance.getTemplate().getId())
+                    && instance.getState() == de.aetherion.bossengine.instance.BossState.ALIVE) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     @Override
     public void tagCompactHearths(Entity entity) {
         if (entity == null || plugin.getKeys() == null) {

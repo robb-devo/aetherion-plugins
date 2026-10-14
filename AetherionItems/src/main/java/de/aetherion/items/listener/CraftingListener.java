@@ -82,7 +82,24 @@ public class CraftingListener implements Listener {
         if (recipeService.isAetherionRecipe(event.getRecipe())
                 || itemManager.isAetherionItem(current)) {
             inventory.setResult(null);
+            return;
         }
+        // Never unpack Aetherion compressed/compacted (etc.) into vanilla via 2×2/3×3.
+        if (matrixHasAetherion(inventory.getMatrix())) {
+            inventory.setResult(null);
+        }
+    }
+
+    private boolean matrixHasAetherion(ItemStack[] matrix) {
+        if (matrix == null) {
+            return false;
+        }
+        for (ItemStack stack : matrix) {
+            if (itemManager.isAetherionItem(stack)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -133,7 +150,8 @@ public class CraftingListener implements Listener {
 
         if (matched == null) {
             if (recipeService.isAetherionRecipe(event.getRecipe())
-                    || itemManager.isAetherionItem(event.getCurrentItem())) {
+                    || itemManager.isAetherionItem(event.getCurrentItem())
+                    || matrixHasAetherion(event.getInventory().getMatrix())) {
                 event.setCancelled(true);
             }
             return;
@@ -238,6 +256,17 @@ public class CraftingListener implements Listener {
             }
 
             break;
+        }
+
+        // Skill sack upgrade keeps the same sack id so stored counts carry over.
+        if (de.aetherion.items.storage.SkillSack.is(result)
+                && de.aetherion.items.storage.SkillSack.is(previousItem)) {
+            java.util.UUID keep = de.aetherion.items.storage.SackItems.idOf(previousItem);
+            var skill = de.aetherion.items.storage.SkillSack.skillOf(result);
+            var tier = de.aetherion.items.storage.SkillSack.tierOf(result);
+            if (keep != null && skill != null && tier != null) {
+                return de.aetherion.items.storage.SkillSack.create(skill, tier, keep);
+            }
         }
 
         return itemManager.applyUpgradeProgress(result, previousItem, previousTemplate);

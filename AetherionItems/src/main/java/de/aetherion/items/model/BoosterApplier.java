@@ -73,11 +73,11 @@ public final class BoosterApplier {
         }
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
         items.saveItemStats(meta, stats);
-        List<String> existing = meta.getLore();
+        List<String> existing = de.aetherion.items.item.LoreLocale.canonicalLore(meta);
         if (existing != null) {
             List<String> lore = new ArrayList<>(existing);
             ItemLore.updateDisplayedStats(lore, stats, profile);
-            meta.setLore(lore);
+            de.aetherion.items.item.LoreLocale.writeLore(meta, lore);
         }
         ItemPresentation.polish(meta);
         item.setItemMeta(meta);
@@ -108,11 +108,11 @@ public final class BoosterApplier {
             return Status.NOT_ITEM;
         }
         items.saveItemStats(meta, stats);
-        List<String> existing = meta.getLore();
+        List<String> existing = de.aetherion.items.item.LoreLocale.canonicalLore(meta);
         if (existing != null) {
             List<String> lore = new ArrayList<>(existing);
             ItemLore.updateDisplayedStats(lore, stats, profile);
-            meta.setLore(lore);
+            de.aetherion.items.item.LoreLocale.writeLore(meta, lore);
         }
         ItemPresentation.polish(meta);
         item.setItemMeta(meta);

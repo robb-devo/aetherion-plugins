@@ -115,6 +115,8 @@ final class ExploreChestLoot {
                         .forEach(left -> player.getWorld().dropItemNaturally(player.getLocation(), left));
             }
         }
+        // "Letters Signed M": while that story step runs, world chests may hold the next letter.
+        de.aetherion.quests.story.LoreFinds.onExploreChest(player);
     }
 
     static String nameOf(Drop drop) {

@@ -839,6 +839,30 @@ public class StorageInventory {
         saveStorage(uuid);
     }
 
+    /** Every stored item across all pages (read-only view for skill sacks). */
+    public java.util.List<ItemStack> storedItems(UUID uuid) {
+        java.util.List<ItemStack> out = new java.util.ArrayList<>();
+        if (uuid == null) {
+            return out;
+        }
+        loadStorage(uuid);
+        ItemStack[][] pages = storageContents.get(uuid);
+        if (pages == null) {
+            return out;
+        }
+        for (ItemStack[] page : pages) {
+            if (page == null) {
+                continue;
+            }
+            for (ItemStack item : page) {
+                if (item != null && !item.getType().isAir()) {
+                    out.add(item);
+                }
+            }
+        }
+        return out;
+    }
+
     public void invalidateAndReload(UUID uuid) {
         if (uuid == null) {
             return;
@@ -846,4 +870,4 @@ public class StorageInventory {
         storageContents.remove(uuid);
         loadStorage(uuid);
     }
-}
+}

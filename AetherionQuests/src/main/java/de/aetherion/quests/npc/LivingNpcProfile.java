@@ -2,7 +2,6 @@ package de.aetherion.quests.npc;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextDecoration;
 
 import org.bukkit.Color;
 import org.bukkit.Material;
@@ -52,7 +51,7 @@ public final class LivingNpcProfile {
                 .hand(Material.IRON_HOE).leather(Color.fromRGB(120, 140, 60)).chest().boots()
                 .skinFile("farmer.png"));
         put(p("craftsman", "Market Forge", NamedTextColor.GRAY, "§7")
-                .hand(Material.IRON_INGOT).leather(Color.fromRGB(90, 90, 95)).chest().legs().boots()
+                .hand(Material.IRON_PICKAXE).leather(Color.fromRGB(90, 90, 95)).chest().legs().boots()
                 .skinFile("miner.png"));
         put(p("collector", "Shinies", NamedTextColor.GOLD, "§6")
                 .hand(Material.GOLD_NUGGET).leather(Color.fromRGB(160, 120, 40)).chest().boots()
@@ -194,8 +193,8 @@ public final class LivingNpcProfile {
                 .hand(Material.KELP).leather(Color.fromRGB(50, 90, 100)).chest().boots()
                 .slim().skinFile("alex_slim.png"));
 
-        // Hub farm portal guide (FancyNpc)
-        put(p("farm_isle_guide", "Isle Gate", NamedTextColor.GREEN, "§a")
+        // Harlow — hub Farm Isle guide, far end of the barn (FancyNpc)
+        put(p("farm_isle_guide", "Farm Isle Road", NamedTextColor.GREEN, "§a")
                 .hand(Material.WHEAT).leather(Color.fromRGB(110, 130, 55)).chest().boots()
                 .skinFile("farmer.png"));
 
@@ -234,6 +233,9 @@ public final class LivingNpcProfile {
         put(p("liquidator", "Crystal Desk", NamedTextColor.LIGHT_PURPLE, "§d")
                 .hand(Material.AMETHYST_SHARD).leather(Color.fromRGB(72, 36, 110))
                 .fullLeather().slim().skinFile("mystic.png"));
+        put(p("amethyst_mines_guide", "Amethyst Mines", NamedTextColor.LIGHT_PURPLE, "§d")
+                .hand(Material.AMETHYST_CLUSTER).leather(Color.fromRGB(90, 40, 140))
+                .fullLeather().slim().skinFile("mystic.png"));
     }
 
     static {
@@ -247,6 +249,81 @@ public final class LivingNpcProfile {
         put(p("lamp_lighter", "Lamp Round", NamedTextColor.YELLOW, "§e")
                 .hand(Material.LANTERN).leather(Color.fromRGB(30, 42, 58)).chest().boots()
                 .skinFile("scout.png"));
+    }
+
+    static {
+        // Origin island cast (SAITAMA pass) — cast skins carry the look; leather is the pre-sign fallback.
+        put(p("harbourmaster", "Harbourmaster", NamedTextColor.DARK_AQUA, "§3")
+                .hand(Material.WRITABLE_BOOK).leather(Color.fromRGB(30, 44, 78)).chest().legs().boots()
+                .skinFile("guard.png"));
+        put(p("crane_hand", "Crane Hand", NamedTextColor.GOLD, "§6")
+                .hand(Material.CHAIN).leather(Color.fromRGB(110, 74, 40)).chest().legs().boots()
+                .skinFile("worker.png"));
+        put(p("lighthouse_keeper", "Lighthouse Keeper", NamedTextColor.YELLOW, "§e")
+                .hand(Material.SPYGLASS).leather(Color.fromRGB(214, 176, 40)).chest().boots().slim()
+                .skinFile("sailor.png"));
+        put(p("shanty_busker", "Shanty Busker", NamedTextColor.AQUA, "§b")
+                .hand(Material.GOAT_HORN).leather(Color.fromRGB(40, 70, 120)).chest().boots()
+                .skinFile("sailor.png"));
+        put(p("beekeeper", "Old Mead House", NamedTextColor.GOLD, "§6")
+                .hand(Material.HONEYCOMB).leather(Color.fromRGB(226, 196, 96)).chest().boots().slim()
+                .skinFile("farmer.png"));
+        put(p("painter", "Plein-Air Painter", NamedTextColor.LIGHT_PURPLE, "§d")
+                .hand(Material.PAINTING).leather(Color.fromRGB(110, 60, 120)).chest().boots().slim()
+                .skinFile("scholar.png"));
+        put(p("hermit", "Whisperwood Hermit", NamedTextColor.DARK_GREEN, "§2")
+                .hand(Material.STICK).leather(Color.fromRGB(70, 92, 52)).chest().legs().boots()
+                .skinFile("mystic.png"));
+        put(p("bookie", "Wagers on Legs", NamedTextColor.GREEN, "§a")
+                .hand(Material.PAPER).leather(Color.fromRGB(60, 52, 44)).chest().legs().boots()
+                .skinFile("rogue.png"));
+        put(p("mushroom_forager", "Mushroom Forager", NamedTextColor.RED, "§c")
+                .hand(Material.RED_MUSHROOM).leather(Color.fromRGB(90, 110, 60)).chest().boots()
+                .skinFile("scout.png"));
+        put(p("lost_tourist", "Lost Tourist", NamedTextColor.YELLOW, "§e")
+                .hand(Material.MAP).leather(Color.fromRGB(200, 170, 120)).chest().boots()
+                .skinFile("alex.png"));
+    }
+
+    static {
+        // Main story "Das Schlaflied" (/questnpc story) — not placed by default.
+        put(p("ysolde", "Archive Desk", NamedTextColor.DARK_AQUA, "§3")
+                .hand(Material.WRITTEN_BOOK).leather(Color.fromRGB(46, 62, 70)).fullLeather()
+                .slim().skinFile("alex_slim.png"));
+        put(p("berit", "Edge of Town", NamedTextColor.GOLD, "§6")
+                .hand(Material.CANDLE).leather(Color.fromRGB(122, 92, 74)).chest().boots()
+                .slim().skinFile("alex_slim.png"));
+        put(p("nell", "Harbour Lane", NamedTextColor.YELLOW, "§e")
+                .hand(Material.LANTERN).leather(Color.fromRGB(196, 150, 90)).chest().boots()
+                .slim().skinFile("alex_slim.png"));
+        put(p("hesper", "Anchor Camp", NamedTextColor.GRAY, "§7")
+                .hand(Material.CHAIN).leather(Color.fromRGB(58, 58, 64)).fullLeather()
+                .skinFile("guard.png"));
+        put(p("ferryman", "Veil Quay", NamedTextColor.DARK_GRAY, "§8")
+                .hand(Material.OAK_BOAT).leather(Color.fromRGB(150, 156, 160)).fullLeather()
+                .skinFile("sailor.png"));
+        // Act III — the exile island. The Faded wear washed-out cast skins (skins/cast/exile_*.png).
+        put(p("orrin", "Observatory of the Sun", NamedTextColor.GOLD, "§6")
+                .hand(Material.CLOCK).leather(Color.fromRGB(92, 70, 48)).fullLeather()
+                .skinFile("scholar.png"));
+        put(p("exile_lamplighter", "Faded · The Court", NamedTextColor.GRAY, "§7")
+                .hand(Material.LANTERN).leather(Color.fromRGB(170, 166, 160)).chest().boots()
+                .skinFile("worker.png"));
+        put(p("exile_sentry", "Faded · Sun Guard", NamedTextColor.GRAY, "§7")
+                .hand(Material.GOLDEN_SWORD).leather(Color.fromRGB(200, 186, 150)).fullLeather()
+                .skinFile("guard.png"));
+        put(p("exile_usher", "Faded · Little Theatre", NamedTextColor.GRAY, "§7")
+                .hand(Material.CANDLE).leather(Color.fromRGB(150, 110, 120)).chest().boots()
+                .skinFile("rogue.png"));
+        put(p("exile_gardener", "Faded · Root-Ground", NamedTextColor.GRAY, "§7")
+                .hand(Material.BONE_MEAL).leather(Color.fromRGB(150, 168, 140)).chest().boots()
+                .skinFile("farmer.png"));
+        put(p("exile_mother", "Faded · The Court", NamedTextColor.GRAY, "§7")
+                .hand(Material.LEATHER_BOOTS).leather(Color.fromRGB(176, 160, 168)).chest().boots()
+                .slim().skinFile("alex_slim.png"));
+        put(p("exile_keeper", "Faded · The Last Bell", NamedTextColor.GRAY, "§7")
+                .hand(Material.GLASS_BOTTLE).leather(Color.fromRGB(150, 140, 126)).chest().boots()
+                .skinFile("worker.png"));
     }
 
     private static Builder p(String id, String subtitle, NamedTextColor color, String chat) {
@@ -329,11 +406,18 @@ public final class LivingNpcProfile {
         return skinUsername;
     }
 
+    /** Name colour refined for in-world chrome (plate, bubble rim, focused reply, quest card). */
+    public net.kyori.adventure.text.format.TextColor accent() {
+        return de.aetherion.quests.talk.TalkChrome.accent(nameColor);
+    }
+
+    /**
+     * Two quiet lines over the head: name in the accent, role in small caps. The talk bubble
+     * floats right above it, so the plate also names the speaker while they talk.
+     */
     public Component nametag(String displayName) {
         String name = displayName == null ? id : displayName;
-        return Component.text(name, nameColor, TextDecoration.BOLD)
-                .append(Component.newline())
-                .append(Component.text(subtitle, NamedTextColor.GRAY));
+        return de.aetherion.quests.talk.TalkChrome.nameplate(name, accent(), subtitle);
     }
 
     public String formatChatLine(String displayName, String line) {
@@ -356,8 +440,11 @@ public final class LivingNpcProfile {
         enqueueSay(player, npcId, displayName, line);
     }
 
-    private static final java.util.Map<java.util.UUID, Integer> SAY_QUEUES = new java.util.concurrent.ConcurrentHashMap<>();
-
+    /**
+     * Queue a line on the player's speech clock ({@link de.aetherion.quests.dialog.DialogPace}):
+     * it starts once whatever is being said has typed out and had its read gap — same rhythm
+     * at the start of a conversation and in the middle of it.
+     */
     private static void enqueueSay(
             org.bukkit.entity.Player player,
             String npcId,
@@ -369,21 +456,12 @@ public final class LivingNpcProfile {
             sayNow(player, npcId, displayName, line);
             return;
         }
-        java.util.UUID id = player.getUniqueId();
-        int slot = SAY_QUEUES.merge(id, 1, Integer::sum) - 1;
-        long delay = slot * de.aetherion.quests.dialog.DialogPace.LINE_GAP_TICKS;
+        String filled = de.aetherion.quests.talk.TalkText.fill(player, line);
+        long delay = de.aetherion.quests.dialog.DialogPace.reserve(player, filled);
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-            if (!player.isOnline()) {
-                SAY_QUEUES.remove(id);
-                return;
+            if (player.isOnline()) {
+                sayNow(player, npcId, displayName, line);
             }
-            sayNow(player, npcId, displayName, line);
-            SAY_QUEUES.compute(id, (k, v) -> {
-                if (v == null || v <= 1) {
-                    return null;
-                }
-                return v - 1;
-            });
         }, delay);
     }
 

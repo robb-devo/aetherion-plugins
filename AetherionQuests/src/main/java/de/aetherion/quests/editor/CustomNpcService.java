@@ -75,6 +75,13 @@ public final class CustomNpcService {
     }
 
     public CustomNpc spawn(CustomNpc npc) {
+        return spawn(npc, false);
+    }
+
+    /**
+     * @param urgent editor changes want the skin right away; bulk restores stagger Mojang lookups
+     */
+    private CustomNpc spawn(CustomNpc npc, boolean urgent) {
         if (npc == null) {
             return null;
         }
@@ -108,7 +115,7 @@ public final class CustomNpcService {
             Object manager = FancyNpcFacade.manager();
             FancyNpcFacade.register(manager, fancyNpc);
             FancyNpcFacade.spawnForAll(fancyNpc);
-            scheduleSkin(fancyNpc, npc);
+            scheduleSkin(fancyNpc, npc, urgent);
             hideVanilla(fancyNpc);
             ensureHologram(npc, at);
             return npc;
@@ -118,11 +125,55 @@ public final class CustomNpcService {
         }
     }
 
-    public void refresh(CustomNpc npc) {
+    /** Respawns the NPC (gear / skin / position changed). Returns null when it couldn't spawn. */
+    public CustomNpc refresh(CustomNpc npc) {
+        if (npc == null) {
+            return null;
+        }
+        return spawn(npc, true);
+    }
+
+    /** Name tag only — rebuilds the hologram without respawning the FancyNPC (no skin flicker). */
+    public void refreshLabel(CustomNpc npc) {
         if (npc == null) {
             return;
         }
-        spawn(npc);
+        Location at = npc.location();
+        if (at == null) {
+            return;
+        }
+        if (available() && findFancy(npc.getId()) == null) {
+            spawn(npc, true);
+            return;
+        }
+        ensureHologram(npc, at);
+    }
+
+    /** Moves the live FancyNPC + hologram to the NPC's stored location (already saved by the caller). */
+    public boolean syncPosition(CustomNpc npc) {
+        Location location = npc == null ? null : npc.location();
+        if (location == null) {
+            return false;
+        }
+        if (!available()) {
+            return true;
+        }
+        Object fancy = findFancy(npc.getId());
+        if (fancy == null) {
+            return spawn(npc, true) != null;
+        }
+        try {
+            Object data = FancyNpcFacade.data(fancy);
+            FancyNpcFacade.setLocation(data, location.clone());
+            FancyNpcFacade.applyVisibility(data, visibilityDistance());
+            FancyNpcFacade.moveForAll(fancy, false);
+            FancyNpcFacade.updateForAll(fancy, false);
+            ensureHologram(npc, location);
+            return true;
+        } catch (ReflectiveOperationException ex) {
+            plugin.getLogger().warning("Editor NPC move failed: " + ex.getMessage());
+            return spawn(npc, true) != null;
+        }
     }
 
     public boolean move(CustomNpc npc, Location location) {
@@ -260,7 +311,7 @@ public final class CustomNpcService {
         }
     }
 
-    private void scheduleSkin(Object fancy, CustomNpc npc) {
+    private void scheduleSkin(Object fancy, CustomNpc npc, boolean urgent) {
         if (fancy == null || npc == null) {
             return;
         }
@@ -268,26 +319,7 @@ public final class CustomNpcService {
         if (username == null || username.isBlank()) {
             return;
         }
-        // Presets (and old preset defaults that were creators' accounts) wear an anonymous
-        // cast skin. Only a username a moderator typed on purpose goes to Mojang.
-        String castId = de.aetherion.quests.npc.LivingNpcSkins.castIdForEditorSkin(username);
-        if (castId != null) {
-            de.aetherion.quests.npc.LivingNpcSkins skins = de.aetherion.quests.npc.LivingNpcSkins.get();
-            if (skins != null) {
-                try {
-                    Object data = FancyNpcFacade.data(fancy);
-                    if (data != null) {
-                        skins.apply(data, castId);
-                        FancyNpcFacade.removeFromPlayersQuiet(fancy);
-                        FancyNpcFacade.spawnForAll(fancy);
-                    }
-                } catch (ReflectiveOperationException | RuntimeException ex) {
-                    plugin.getLogger().fine("Editor cast skin failed: " + ex.getMessage());
-                }
-            }
-            return;
-        }
-        long delay = 4L + (SKIN_SLOT.getAndIncrement() % 20) * 6L;
+        long delay = urgent ? 1L : 4L + (SKIN_SLOT.getAndIncrement() % 20) * 6L;
         boolean slim = npc.isSlim();
         Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, () -> {
             MojangSkinFetcher.Textures textures = MojangSkinFetcher.fetch(username);
@@ -353,9 +385,12 @@ public final class CustomNpcService {
         Location textAt = at.clone().add(0, 2.15, 0);
         float view = Math.max(0.4f, visibilityDistance() / 64.0f);
         TextDisplay holo = at.getWorld().spawn(textAt, TextDisplay.class, text -> {
-            text.text(Component.text(npc.getName(), NamedTextColor.AQUA, TextDecoration.BOLD)
-                    .append(Component.newline())
-                    .append(Component.text(npc.getSubtitle(), NamedTextColor.GRAY)));
+            Component label = Component.text(npc.getName(), NamedTextColor.AQUA, TextDecoration.BOLD);
+            if (npc.hasSubtitle()) {
+                label = label.append(Component.newline())
+                        .append(Component.text(npc.getSubtitle(), NamedTextColor.GRAY));
+            }
+            text.text(label);
             text.setBillboard(Display.Billboard.CENTER);
             text.setAlignment(TextDisplay.TextAlignment.CENTER);
             text.setSeeThrough(false);

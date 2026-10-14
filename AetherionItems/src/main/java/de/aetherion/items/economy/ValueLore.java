@@ -20,7 +20,7 @@ public final class ValueLore {
         if (meta == null) {
             return;
         }
-        List<String> lore = meta.getLore() == null ? new ArrayList<>() : new ArrayList<>(meta.getLore());
+        List<String> lore = de.aetherion.items.item.LoreLocale.loreOrEmpty(meta);
         int index = valueLineIndex(lore);
         if (!values.showsListedValue(stack)) {
             if (index < 0) {
@@ -30,7 +30,7 @@ public final class ValueLore {
             if (index > 0 && index - 1 < lore.size() && lore.get(index - 1).isBlank()) {
                 lore.remove(index - 1);
             }
-            meta.setLore(lore);
+            de.aetherion.items.item.LoreLocale.writeLore(meta, lore);
             stack.setItemMeta(meta);
             return;
         }
@@ -52,14 +52,19 @@ public final class ValueLore {
             }
             lore.add(line);
         }
-        meta.setLore(lore);
+        de.aetherion.items.item.LoreLocale.writeLore(meta, lore);
         stack.setItemMeta(meta);
     }
 
     private static int valueLineIndex(List<String> lore) {
         for (int i = 0; i < lore.size(); i++) {
             String existing = lore.get(i);
-            if (existing.contains("Value:") || existing.contains("AH value:") || existing.contains("Trade value:")) {
+            if (existing == null) {
+                continue;
+            }
+            // English spine is normal; German leftovers only if reverse translation failed once.
+            if (existing.contains("Value:") || existing.contains("AH value:") || existing.contains("Trade value:")
+                    || existing.contains("Wert:") || existing.contains("AH-Wert:") || existing.contains("Handelswert:")) {
                 return i;
             }
         }

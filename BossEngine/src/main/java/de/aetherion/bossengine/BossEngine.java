@@ -69,10 +69,12 @@ public final class BossEngine extends JavaPlugin {
         saveResourceIfMissing("bosses/baron_von_wurm.yml");
         saveResourceIfMissing("bosses/insolvent_wither.yml");
         saveResourceIfMissing("bosses/pathwarden.yml");
+        saveResourceIfMissing("melodies/balkan_bump.nbs");
         saveResourceIfMissing("bosses/hollow_sun.yml");
         saveResourceIfMissing("bosses/ashen_chainwarden.yml");
         saveResourceIfMissing("bosses/cinder_herald.yml");
         saveResourceIfMissing("bosses/hanging_saint.yml");
+        saveResourceIfMissing("bosses/eggquelizer.yml");
         saveResourceIfMissing("bosses/world_eater_unbroken.yml");
         saveResourceIfMissing("bosses/world_eater.yml");
         de.aetherion.bossengine.helios.HeliosModule.syncResource(this, "bosses/helios_herald.yml");
@@ -147,6 +149,11 @@ public final class BossEngine extends JavaPlugin {
         );
         getServer().getPluginManager().registerEvents(
                 new de.aetherion.bossengine.listener.WorldEaterSiteListener(),
+                this
+        );
+        // Progression telemetry (P0): one CSV row per paid boss death -> plugins/BossEngine/fight-log.csv
+        getServer().getPluginManager().registerEvents(
+                new de.aetherion.bossengine.telemetry.BossFightLog(this),
                 this
         );
         // The Last Seed: the World Eater's void world. Idle unless that world is loaded and built.

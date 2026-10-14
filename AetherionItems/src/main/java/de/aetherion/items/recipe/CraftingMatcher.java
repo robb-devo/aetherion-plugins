@@ -124,7 +124,8 @@ public class CraftingMatcher {
         }
 
         if (itemManager.isAetherionItem(required)) {
-            if (!itemManager.isSameAetherionItem(actual, required)) {
+            if (!itemManager.isSameAetherionItem(actual, required)
+                    && !RecipeSignatures.legacyMatch(actual, itemManager.getItemId(required))) {
                 return false;
             }
         } else if (actual.getType() != required.getType()) {

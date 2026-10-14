@@ -86,13 +86,9 @@ public enum IsleHeartwood {
         if (meta != null) {
             meta.setDisplayName(color + "§l" + display);
             meta.setLore(List.of(
-                    "§5✦ §dRARE §8· §7Forage Isle",
-                    "",
                     "§7A rare heartwood that only grows",
                     "§7on Eldervale's forage isle.",
-                    "§8Offer pairs at the Grove table.",
-                    "",
-                    "§8Aetherion Foraging"
+                    "§8Offer pairs at the Grove table."
             ));
             meta.getPersistentDataContainer().set(ItemKeys.item(), PersistentDataType.STRING, itemId());
             ItemManager manager = AetherionItems.getInstance() == null

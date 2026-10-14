@@ -97,6 +97,25 @@ public final class BossJournal {
         return null;
     }
 
+    /**
+     * "Recommended" prep for a boss (P6, design §5): mechanical advice from existing stats and effects,
+     * never a gate. Empty for bosses without advice.
+     */
+    public static List<String> recommended(String id) {
+        List<String> lines = new ArrayList<>();
+        if (id == null || !"aetherion".equalsIgnoreCase(id)) {
+            return lines;
+        }
+        lines.add("");
+        lines.add("§dRecommended §8· Pinnacle (End)");
+        lines.add(" §7Defense §f300+ §8· §7Health §f300+");
+        lines.add(" §7Boss Grudge equipped");
+        lines.add(" §7Allay pet for drop chance");
+        lines.add(" §7Party of four. It is a raid, not a duel.");
+        lines.add("§8Called with the Aetherion Summons at the Veil.");
+        return lines;
+    }
+
     /** Loot lines grouped by role ({@code Killer}, {@code Shared}, …), at most {@code max} drops. */
     public static List<String> dropLines(Entry entry, int max) {
         List<String> lines = new ArrayList<>();

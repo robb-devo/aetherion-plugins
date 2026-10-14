@@ -23,3 +23,21 @@ Other plugins: `depend: [AetherionCore]` and Maven `de.aetherion:AetherionCore:1
 | `wipe.dry-run` | `false` | Log intended flag writes / deletes; do not change files. Pending flags are left in place. |
 
 Do not set `dry-run: true` on live backends unless you are probing paths.
+
+## Network (hub · mmo-r · mmo-d · mmo-c · mmo-i)
+
+`ServerNames` holds the fixed roles (mmo-i = 25570 islands). `NetworkRouter.travel(player, server, route)` is the
+one way across: a route file (`shared/transfer/routes/`) says what to finish on arrival, a `CharacterTransport`
+moves the character (v6, one owner, ledger). AetherionDungeons registers its pipeline on mmo-r / mmo-d;
+`CharacterHost` is Core's port of it for backends without the Dungeons jar (mmo-c, mmo-i — never the hub).
+
+| Class | Does |
+|-------|------|
+| `CharacterHost` / `CharacterStore` / `CharacterLedger` / `CharacterGuard` | v6 pack → freeze → Connect → rollback; apply once on join; quit / shutdown pack; crash redirect; guest sessions |
+| `NetworkRouter` + `RouteBook` | travel + "finish this on arrival" (replay a command, silent hub warp) |
+| `MainCommandRouter` | on mmo-c / mmo-i: `/capital`, hub warps, `/bazaar` `/ah` → mmo-r; `/dhub` → mmo-d |
+| `IslandLink` | where Guilds does not run: `/island` `/guild` `/friend` → mmo-i (+ one "your island awaits" nudge on mmo-r) |
+| `IslandsHost` | mmo-i only: land arrivals on their island, respawn there, void Isle Dock as main world |
+| `/aetransfer [player]` | admin: holder, pending snapshot, route, hold state |
+
+Config: `network.*` in `config.yml` (all keys optional; defaults = the fixed roles).

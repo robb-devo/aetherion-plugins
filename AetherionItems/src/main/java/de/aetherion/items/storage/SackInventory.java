@@ -22,6 +22,7 @@ public final class SackInventory {
     private final JavaPlugin plugin;
     private final File folder;
     private final BoosterSackMenu boosters;
+    private final SkillSackMenu skills;
 
     public SackInventory(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -33,10 +34,15 @@ public final class SackInventory {
                 ? aetherion.getItemManager()
                 : AetherionItems.getInstance() == null ? null : AetherionItems.getInstance().getItemManager();
         this.boosters = new BoosterSackMenu(plugin, items);
+        this.skills = new SkillSackMenu(plugin, items);
     }
 
     public BoosterSackMenu boosters() {
         return boosters;
+    }
+
+    public SkillSackMenu skills() {
+        return skills;
     }
 
     public void open(Player player, ItemStack sackItem) {
@@ -44,6 +50,10 @@ public final class SackInventory {
             return;
         }
         SackItems.ensureId(sackItem);
+        if (SkillSack.is(sackItem)) {
+            skills.open(player, sackItem);
+            return;
+        }
         SackType type = SackItems.typeOf(sackItem);
         UUID id = SackItems.idOf(sackItem);
         if (type == null || id == null) {

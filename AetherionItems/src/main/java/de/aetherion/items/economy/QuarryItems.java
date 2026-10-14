@@ -40,8 +40,6 @@ public final class QuarryItems {
             meta.addEnchant(Enchantment.UNBREAKING, 1, true);
             meta.addItemFlags(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ATTRIBUTES);
             meta.setLore(List.of(
-                    "§7✦ §aUNCOMMON",
-                    "",
                     "§7A splinter of a Quarry Core.",
                     "§7Four shards craft one Core.",
                     "",
@@ -63,8 +61,6 @@ public final class QuarryItems {
             meta.addEnchant(Enchantment.UNBREAKING, 1, true);
             meta.addItemFlags(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ATTRIBUTES);
             meta.setLore(List.of(
-                    "§7✦ §5EPIC",
-                    "",
                     "§7The heart of an Island Quarry.",
                     "§7Craft with 8 Compressed items",
                     "§7around this core.",
@@ -87,8 +83,6 @@ public final class QuarryItems {
             meta.addEnchant(Enchantment.UNBREAKING, 1, true);
             meta.addItemFlags(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ATTRIBUTES);
             meta.setLore(List.of(
-                    "§7✦ §bRARE",
-                    "",
                     "§7Install on an island quarry.",
                     "§7Crafts Compressed while it runs.",
                     "§7Leftover under 128 stays raw.",
@@ -111,8 +105,6 @@ public final class QuarryItems {
             meta.addEnchant(Enchantment.UNBREAKING, 1, true);
             meta.addItemFlags(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ATTRIBUTES);
             meta.setLore(List.of(
-                    "§7✦ §5EPIC",
-                    "",
                     "§7Install on an island quarry.",
                     "§7Crafts Compacted while it runs.",
                     "§7If not enough for Compacted,",
@@ -139,8 +131,6 @@ public final class QuarryItems {
             meta.addEnchant(Enchantment.UNBREAKING, 1, true);
             meta.addItemFlags(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ATTRIBUTES);
             meta.setLore(List.of(
-                    "§7✦ §bRARE",
-                    "",
                     "§7Place on your private or guild island.",
                     "§7Produces §f" + resource.prettyName(),
                     "§7while the server is online.",

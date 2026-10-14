@@ -79,6 +79,11 @@ public final class SkillOverviewGUI {
         private List<AetherSkill> order = List.of();
 
         @Override
+        protected net.kyori.adventure.text.Component chrome() {
+            return de.aetherion.items.util.ManagerChrome.SKILLS_OVERVIEW;
+        }
+
+        @Override
         protected String title() {
             return "§8Skills » Overview";
         }

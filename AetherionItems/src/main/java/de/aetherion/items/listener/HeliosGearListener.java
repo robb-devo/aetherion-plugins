@@ -98,12 +98,12 @@ public class HeliosGearListener implements Listener {
         long now = System.currentTimeMillis();
         Long last = lastLance.get(player.getUniqueId());
         if (last != null && now - last < SOLSTICE_CD_MS) {
-            long left = (SOLSTICE_CD_MS - (now - last) + 999) / 1000;
-            player.sendActionBar(net.kyori.adventure.text.Component.text("Constellation: " + left + "s",
-                    net.kyori.adventure.text.format.NamedTextColor.GOLD));
+            de.aetherion.items.combat.AbilityCooldownHud.denied(player, "helios_solstice");
             return;
         }
         lastLance.put(player.getUniqueId(), now);
+        de.aetherion.items.combat.AbilityCooldownHud.armMs(player, "helios_solstice", "Constellation", SOLSTICE_CD_MS,
+                player.getInventory().getItemInMainHand());
         constellation(player);
     }
 

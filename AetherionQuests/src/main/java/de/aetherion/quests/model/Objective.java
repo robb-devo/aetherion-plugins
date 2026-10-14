@@ -89,6 +89,26 @@ public class Objective {
             return "Merchant Chest";
         }
 
+        // Main story: lore finds by their item name, story TALK targets by their name.
+        if (target.toLowerCase().startsWith("lore_")) {
+            de.aetherion.items.lore.StoryLore lore = de.aetherion.items.lore.StoryLore.byId(target);
+            if (lore != null) {
+                return "§6" + lore.displayName();
+            }
+        }
+        if (type == ObjectiveType.TALK) {
+            String story = switch (target.toLowerCase()) {
+                case "berit" -> "Talk to Mother Berit";
+                case "ysolde" -> "Talk to Ysolde Thorne";
+                case "hesper" -> "Talk to Hesper Kael";
+                case "bellkeeper" -> "Talk to Sister Aurel";
+                default -> null;
+            };
+            if (story != null) {
+                return story;
+            }
+        }
+
         String[] parts = target.toLowerCase().split("_");
         StringBuilder result = new StringBuilder();
 

@@ -30,6 +30,12 @@ public class AetherionCommand implements CommandExecutor {
             return true;
         }
 
+        // All /aetherionitems aliases grant gear (kits, boosters, combat, tools, …).
+        // Same gate as Dev menu — never leave these open to every player.
+        if (!DevMenu.canUse(player)) {
+            player.sendMessage("§cDEV only.");
+            return true;
+        }
 
         /*
          * =====================================================
@@ -62,7 +68,7 @@ public class AetherionCommand implements CommandExecutor {
 
         if (input.equals("dev") || input.equals("devmenu") || input.equals("adev")) {
             DevMenu menu = AetherionItems.getInstance().getDevMenu();
-            if (menu == null || !DevMenu.canUse(player)) {
+            if (menu == null) {
                 player.sendMessage("§cDEV only.");
                 return true;
             }

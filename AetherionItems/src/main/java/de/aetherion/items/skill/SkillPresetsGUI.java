@@ -67,6 +67,11 @@ public final class SkillPresetsGUI {
     public static final class Holder extends CodexView {
 
         @Override
+        protected net.kyori.adventure.text.Component chrome() {
+            return de.aetherion.items.util.ManagerChrome.SKILLS_PRESETS;
+        }
+
+        @Override
         protected String title() {
             return "§8Skills » Presets";
         }

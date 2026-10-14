@@ -297,7 +297,7 @@ public final class BoosterSackMenu {
                     "§7Stored: §f" + amount + "§8/§f" + MAX_PER_TYPE,
                     "",
                     amount > 0 ? "§eClick §7to take 1" : "§8Empty",
-                    "§8Boosters stay unstacked in your inventory."
+                    "§8Stackable in inventory · sack holds many."
             ));
             meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS);
             stack.setItemMeta(meta);

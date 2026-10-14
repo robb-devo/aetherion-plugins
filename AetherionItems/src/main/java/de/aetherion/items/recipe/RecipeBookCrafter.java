@@ -193,7 +193,8 @@ public final class RecipeBookCrafter {
             return false;
         }
         if (itemManager.isAetherionItem(required)) {
-            return itemManager.isSameAetherionItem(actual, required);
+            return itemManager.isSameAetherionItem(actual, required)
+                    || RecipeSignatures.legacyMatch(actual, itemManager.getItemId(required));
         }
         return actual.getType() == required.getType() && !itemManager.isAetherionItem(actual);
     }

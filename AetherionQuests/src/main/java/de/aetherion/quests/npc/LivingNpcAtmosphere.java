@@ -660,7 +660,7 @@ public final class LivingNpcAtmosphere {
             if (audience.isEmpty()) {
                 continue;
             }
-            String line = CastBook.idle(id);
+            String line = CastBook.idle(id, mostlyGerman(audience));
             if (line == null) {
                 continue;
             }
@@ -722,11 +722,29 @@ public final class LivingNpcAtmosphere {
             if (audience.isEmpty()) {
                 continue;
             }
+            List<CastBook.Beat> spoken = beats;
+            if (mostlyGerman(audience)) {
+                spoken = CastBook.banterGerman(index);
+                if (spoken == null) {
+                    continue;
+                }
+            }
             pairAt.put(index, socialTick);
             lastBanter = socialTick;
-            playBanter(plugin, beats, audience);
+            playBanter(plugin, spoken, audience);
             return;
         }
+    }
+
+    /** Shared barks show one text to everyone in range: majority language wins, ties stay English. */
+    private static boolean mostlyGerman(List<Player> audience) {
+        int german = 0;
+        for (Player p : audience) {
+            if (de.aetherion.quests.lang.LangPack.german(p)) {
+                german++;
+            }
+        }
+        return german * 2 > audience.size();
     }
 
     private static void playBanter(AetherionQuests plugin, List<CastBook.Beat> beats, List<Player> audience) {

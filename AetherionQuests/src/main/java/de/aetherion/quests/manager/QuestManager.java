@@ -553,7 +553,8 @@ public class QuestManager {
         if (gateFail == null
                 && !de.aetherion.quests.util.QuestStoryGate.tutorialDone(player, this)
                 && !de.aetherion.quests.util.QuestStoryGate.isTutorialQuest(quest.getId())) {
-            gateFail = "§eComplete the tutorial first. §7Miss Ledger closes orientation after the Fields.";
+            gateFail = de.aetherion.quests.lang.LangPack.say(player, "gate.tutorial_first",
+                    "§eComplete the tutorial first. §7Miss Ledger closes orientation after the Fields.");
         }
         if (gateFail != null) {
             player.sendMessage(gateFail);
@@ -801,6 +802,9 @@ public class QuestManager {
                 player,
                 quest
         );
+
+        // Story side effects (Chronicle pages, storybook, Veil Quay) — no-op for other quests.
+        de.aetherion.quests.story.StoryState.onQuestCompleted(player, quest);
 
         // Rod comes from Dock Pass handoff (Tackle) — not again on fishing turn-in.
         // Anvil unlocks with Temper (lesson_boost), not craftsman.
@@ -1724,6 +1728,12 @@ public class QuestManager {
     /**
      * Full harbour / beta wipe: every quest back to AVAILABLE, kits cleared, tracking off.
      */
+    public void forgetPlayer(UUID uuid) {
+        if (uuid != null) {
+            playerData.remove(uuid);
+        }
+    }
+
     public void resetAllQuests(Player player) {
         if (player == null) {
             return;

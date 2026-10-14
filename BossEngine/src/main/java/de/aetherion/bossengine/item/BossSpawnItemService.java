@@ -393,6 +393,9 @@ public class BossSpawnItemService {
         changed |= ensureItem(root, "hanging_saint_core", "hanging_saint", "SUMMON",
                 "STRING", "&fHanging Saint Core",
                 List.of("&7Right-click to summon Seraphine here (test).", "&8Test-Item · BossEngine"), true);
+        changed |= ensureItem(root, "eggquelizer_core", "eggquelizer", "SUMMON",
+                "EGG", "&fEggquelizer Core",
+                List.of("&7Right-click to summon the Eggquelizer here (test).", "&8Test-Item · BossEngine"), true);
 
         // Sandbox / Test Arena prototypes (no live anchors)
         changed |= ensureItem(root, "test_echo_core", "test_echo", "SUMMON",

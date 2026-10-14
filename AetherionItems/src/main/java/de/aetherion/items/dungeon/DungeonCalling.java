@@ -115,11 +115,11 @@ public enum DungeonCalling {
     }
 
     public String displayName(DungeonGearTier tier, DungeonPiece piece) {
-        String base = color + setName + " " + piece.display();
         if (tier == null || tier == DungeonGearTier.T1) {
-            return base;
+            // Floor I: the Warden's Prison sets (Turnkey, Escapist, Riot Warden, Chaplain, Sculkbound).
+            return WardenPrisonLook.pieceName(this, piece);
         }
-        return base + " " + tier.roman();
+        return color + setName + " " + piece.display() + " " + tier.roman();
     }
 
     public Material material(DungeonPiece piece) {

@@ -211,32 +211,30 @@ public class BoosterStats {
     public static List<String> createItemLore(BoosterType boosterType) {
         List<String> lore = new ArrayList<>();
         boolean core = boosterType.isCore();
-
-        lore.add(core ? "§7✦ §fBooster" : "§7✦ §eSpecial Booster");
-        lore.add("");
-        lore.add("§7Stat: §f" + statLabel(boosterType));
-        lore.add("§7Applies to: §f" + appliesTo(boosterType));
-        lore.add("");
-        lore.add(core
-                ? "§7Adds a flat amount to compatible stats:"
-                : "§7Adds a flat amount to the stat:");
-        lore.add("");
-
         boolean percent = !core && loreAsPercent(boosterType);
+
+        lore.add("§7Adds to §f" + statLabel(boosterType) + "§7.");
+        lore.add("§8Works on: " + appliesTo(boosterType));
+        lore.add("");
+        lore.add("§7Per item rarity:");
         for (Rarity rarity : Rarity.values()) {
             double value = core
                     ? getCoreFlat(boosterType, rarity)
                     : getSpecialStat(boosterType, rarity);
             lore.add(rarity.getChatColor()
-                    + rarity.name()
-                    + ": §a+"
+                    + titleCase(rarity.name())
+                    + " §a+"
                     + ItemLore.formatStat(value)
                     + (percent ? "%" : ""));
         }
-
         lore.add("");
-        lore.add("§8" + BoosterLimits.MAX_TOTAL + " boosters total per item.");
+        lore.add("§eSocket §7at the Custom Anvil. §8Max " + BoosterLimits.MAX_TOTAL + " per item.");
         return lore;
+    }
+
+    private static String titleCase(String name) {
+        String lower = name.toLowerCase(java.util.Locale.ROOT);
+        return Character.toUpperCase(lower.charAt(0)) + lower.substring(1);
     }
 
     public static String statLabel(BoosterType boosterType) {
@@ -281,4 +279,4 @@ public class BoosterStats {
 
     private BoosterStats() {
     }
-}
+}

@@ -171,7 +171,6 @@ public final class ForagingItems {
         lore.add("");
         lore.add(axe ? "§a🪓 Foraging Tool" : "§a🪓 Foraging Armor");
         lore.add("");
-        lore.add("§8Aetherion Foraging Set");
         ItemProfile profile = ItemProfile.fromItemId(id);
         ItemLore.ensureStatLines(lore, stats, profile);
         ItemLore.appendBoosterSections(lore, stats, profile);

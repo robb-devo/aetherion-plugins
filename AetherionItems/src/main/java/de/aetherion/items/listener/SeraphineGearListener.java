@@ -173,8 +173,7 @@ public final class SeraphineGearListener implements Listener {
         long tick = Bukkit.getCurrentTick();
         Long next = nextUseTick.get(player.getUniqueId());
         if (next != null && tick < next) {
-            long left = Math.max(1, (next - tick + 19) / 20);
-            player.sendActionBar(Component.text("§6Severance §7rethreading… §f" + left + "s"));
+            de.aetherion.items.combat.AbilityCooldownHud.denied(player, NEEDLE);
             return;
         }
 
@@ -184,6 +183,7 @@ public final class SeraphineGearListener implements Listener {
         }
         int cooldown = ProgressionEffects.cooldownTicks(player, itemManager, (int) COOLDOWN_TICKS);
         nextUseTick.put(player.getUniqueId(), tick + cooldown);
+        de.aetherion.items.combat.AbilityCooldownHud.arm(player, NEEDLE, "Severance", tick + cooldown, player.getInventory().getItemInMainHand());
     }
 
     private boolean castFiveStrings(Player player, double damage) {

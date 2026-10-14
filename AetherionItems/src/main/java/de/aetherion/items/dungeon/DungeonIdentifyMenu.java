@@ -79,9 +79,9 @@ public final class DungeonIdentifyMenu implements Listener {
         if (session.schematic) {
             inventory.setItem(4, GuiItems.named(
                     org.bukkit.Material.PAPER,
-                    "§5Dungeon Weapon Schematic",
+                    session.tier == DungeonGearTier.T1 ? WardenPrisonLook.SCHEMATIC_NAME : "§5Dungeon Weapon Schematic",
                     "§7Pick the weapon that matches a vestige class.",
-                    "§8Tank · Assassin · Soldier · Healer · Shaman",
+                    "§bTurnkey §8· §5Escapist §8· §cRiot Warden §8· §eChaplain §8· §3Sculkbound",
                     "§8Floor " + session.tier.roman() + ". No farm tools."
             ));
         } else {
@@ -210,8 +210,12 @@ public final class DungeonIdentifyMenu implements Listener {
         player.playSound(player.getLocation(), Sound.BLOCK_ENCHANTMENT_TABLE_USE, 0.8f, 1.05f);
         player.playSound(player.getLocation(), Sound.ITEM_ARMOR_EQUIP_NETHERITE, 0.7f, 0.9f);
         player.sendMessage(chosen + (session.schematic
-                ? " §7chosen. Same class as the vestige armor."
+                ? " §7— requisitioned from the Warden's armory."
                 : " §7chosen. Core it before the dungeon cares."));
+        if (WardenPrisonLook.isMarked(identified)) {
+            player.playSound(player.getLocation(), Sound.BLOCK_SCULK_SHRIEKER_SHRIEK, 0.5f, 0.8f);
+            player.sendMessage("§3✦ Warden-Marked. §7It heard you take it.");
+        }
     }
 
     private boolean matches(ItemStack item, String relicId) {

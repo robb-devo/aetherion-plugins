@@ -36,4 +36,11 @@ public interface ProgressAccess {
     void refreshManager(Player player);
 
     void openManager(Player player);
+
+    /**
+     * After a snapshot import that included skills YAML, re-apply the Aetherion
+     * account level bar from Skills. Default no-op if Skills is offline.
+     */
+    default void syncAccountLevel(Player player) {
+    }
 }

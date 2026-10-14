@@ -124,10 +124,7 @@ public class AetherbladeListener implements Listener {
         Long next = nextUseTick.get(player.getUniqueId());
         if (next != null && tick < next) {
             dancing.remove(player.getUniqueId());
-            long left = Math.max(1, (next - tick + 19) / 20);
-            player.sendActionBar(net.kyori.adventure.text.Component.text(
-                    "§5Rift Dance §7recharging… §f" + left + "s"
-            ));
+            de.aetherion.items.combat.AbilityCooldownHud.denied(player, "aetherblade");
             return;
         }
 

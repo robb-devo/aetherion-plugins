@@ -1,6 +1,8 @@
 package de.aetherion.bossengine.instance;
 
 import de.aetherion.bossengine.combat.BossHits;
+import de.aetherion.bossengine.music.FightMusic;
+import de.aetherion.bossengine.music.NbsSong;
 import de.aetherion.bossengine.util.TextUtil;
 
 import org.bukkit.Bukkit;
@@ -11,6 +13,7 @@ import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.World;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
@@ -20,13 +23,17 @@ import org.bukkit.inventory.meta.ArmorMeta;
 import org.bukkit.inventory.meta.trim.ArmorTrim;
 import org.bukkit.inventory.meta.trim.TrimMaterial;
 import org.bukkit.inventory.meta.trim.TrimPattern;
+import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
 
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
+import java.util.logging.Level;
 
 /**
  * Early pathblocker: sluggish giant, dual held blades,
@@ -50,6 +57,8 @@ final class PathwardenDirector {
     private static final double BEAM_BLAST = 4.2;
     private static final int DEATH_TICKS = 128;
 
+    private static final double MUSIC_RANGE = 48.0;
+
     private final BossInstance instance;
     private final boolean[] beamUsed = new boolean[3];
 
@@ -69,6 +78,7 @@ final class PathwardenDirector {
     private Vector deathAzureVel;
     private Vector deathCrimsonVel;
     private int smashCd;
+    private FightMusic music;
 
     PathwardenDirector(BossInstance instance) {
         this.instance = instance;
@@ -100,9 +110,11 @@ final class PathwardenDirector {
         for (int i = 0; i < beamUsed.length; i++) {
             beamUsed[i] = false;
         }
+        startMusic();
     }
 
     void abort() {
+        stopMusic();
         clearProps();
         deathTicks = -1;
         spinPhase = -1;
@@ -139,13 +151,90 @@ final class PathwardenDirector {
         world.playSound(deathFocus, Sound.BLOCK_BEACON_DEACTIVATE, 1.2f, 0.55f);
         world.playSound(deathFocus, Sound.ITEM_TRIDENT_THUNDER, 0.9f, 0.65f);
         shout("&4&lPathwarden&7: &fThe gate keeps the toll.");
+        stopMusic();
         initEnergyBlades(deathFocus);
         return true;
+    }
+
+    private void startMusic() {
+        stopMusic();
+        JavaPlugin plugin = instance.getPlugin();
+        FileConfiguration cfg = plugin.getConfig();
+        if (!cfg.getBoolean("pathwarden-music.enabled", true)) {
+            return;
+        }
+        String track = cfg.getString("pathwarden-music.track", "balkan_bump");
+        if (track == null || track.isBlank()) {
+            track = "balkan_bump";
+        }
+        String resource = "melodies/" + track.trim().toLowerCase(Locale.ROOT) + ".nbs";
+        try (InputStream in = plugin.getResource(resource)) {
+            if (in == null) {
+                plugin.getLogger().warning("[Pathwarden] Music missing: " + resource);
+                return;
+            }
+            NbsSong song = NbsSong.load(in, plugin.getLogger());
+            if (song.isEmpty()) {
+                plugin.getLogger().warning("[Pathwarden] Music empty: " + resource);
+                return;
+            }
+            music = new FightMusic(song, this::musicAudience, this::musicOrigin);
+            music.volume((float) cfg.getDouble("pathwarden-music.volume", 0.85));
+            music.loop(cfg.getBoolean("pathwarden-music.loop", true));
+            music.followPlayers(cfg.getBoolean("pathwarden-music.follow-players", true));
+            music.play();
+            plugin.getLogger().info("[Pathwarden] Music: " + resource + " (" + music.size() + " notes, "
+                    + song.ticksPerSecond() + " tps)");
+        } catch (Exception ex) {
+            plugin.getLogger().log(Level.WARNING, "[Pathwarden] Music load failed", ex);
+        }
+    }
+
+    private void stopMusic() {
+        if (music != null) {
+            music.stop();
+            music = null;
+        }
+    }
+
+    private List<Player> musicAudience() {
+        List<Player> out = new ArrayList<>();
+        Location origin = musicOrigin();
+        if (origin == null || origin.getWorld() == null) {
+            return out;
+        }
+        double rangeSq = MUSIC_RANGE * MUSIC_RANGE;
+        for (Player player : origin.getWorld().getPlayers()) {
+            if (player == null || !player.isOnline()) {
+                continue;
+            }
+            if (player.getGameMode() == GameMode.SPECTATOR) {
+                continue;
+            }
+            if (player.getLocation().distanceSquared(origin) <= rangeSq) {
+                out.add(player);
+            }
+        }
+        return out;
+    }
+
+    private Location musicOrigin() {
+        LivingEntity entity = instance.getEntity();
+        if (entity != null && entity.isValid()) {
+            return entity.getLocation();
+        }
+        if (deathFocus != null) {
+            return deathFocus;
+        }
+        return instance.getSpawnLocation();
     }
 
     boolean tick() {
         if (!isPathwarden()) {
             return false;
+        }
+        if (music != null) {
+            music.tick();
         }
         if (isDying()) {
             return tickDeath();

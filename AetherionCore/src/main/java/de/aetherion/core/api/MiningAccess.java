@@ -27,6 +27,11 @@ public interface MiningAccess {
 
     boolean isVeinsWorld(World world);
 
+    /** Enter the Amethyst Mine dig world ({@code /amethyst}). Quiet no-op if Mining is offline. */
+    default boolean enterAmethystMine(Player player) {
+        return false;
+    }
+
     /**
      * Seal an ore for vacuum/spread harvest without firing {@code BlockBreakEvent}.
      * Open-mine / veins callers should set AIR themselves instead of calling this.

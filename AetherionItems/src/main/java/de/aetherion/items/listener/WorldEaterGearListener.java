@@ -86,12 +86,11 @@ public class WorldEaterGearListener implements Listener {
         long now = System.currentTimeMillis();
         Long last = lastDevour.get(player.getUniqueId());
         if (last != null && now - last < COOLDOWN_MS) {
-            long left = (COOLDOWN_MS - (now - last) + 999) / 1000;
-            player.sendActionBar(net.kyori.adventure.text.Component.text("Devour: " + left + "s",
-                    net.kyori.adventure.text.format.NamedTextColor.DARK_PURPLE));
+            de.aetherion.items.combat.AbilityCooldownHud.denied(player, "worldbite");
             return;
         }
         lastDevour.put(player.getUniqueId(), now);
+        de.aetherion.items.combat.AbilityCooldownHud.armMs(player, "worldbite", "Devour", COOLDOWN_MS, player.getInventory().getItemInMainHand());
         devour(player);
     }
 

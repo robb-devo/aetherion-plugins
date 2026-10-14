@@ -106,11 +106,7 @@ public final class VeinSiphonListener implements Listener {
         long tick = Bukkit.getCurrentTick();
         Long next = nextUseTick.get(player.getUniqueId());
         if (next != null && tick < next) {
-            long remain = (next - tick + 19) / 20;
-            player.sendActionBar(net.kyori.adventure.text.Component.text(
-                    "Ore Vacuum · " + remain + "s",
-                    net.kyori.adventure.text.format.NamedTextColor.GRAY
-            ));
+            AbilityCooldownHud.denied(player, ITEM_ID);
             return;
         }
 

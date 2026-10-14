@@ -1,0 +1,1349 @@
+# =====================================================================================================
+#  Origin Isle - exploration layer (curiosities, storytelling chests, prop spots, ambient life).
+#  Same rules as origin.yml: missing keys are merged from the jar on every start, your edits stay.
+#  Every spot below was checked against the original map: standable, reachable on foot from the plaza
+#  (or from an updraft top; "swim" lilies are a short swim from the shore), and line of sight for look/touch.
+# =====================================================================================================
+
+# Curiosities: small hidden finds. kind: step (stand there) | look (hold your gaze on it) | touch (right-click it)
+# | listen (sneak and keep still). at = where you stand (for look/touch: a spot it can be seen from).
+# target = the block for look/touch. when: any | day | night | dusk | dawn | rain. requires: prop:<spot> = only
+# once that prop spot is pasted. Rewards: rewards.curiosity per find, rewards.curio-district per district swept.
+curiosity-settings:
+  glint-radius: 9          # undiscovered finds glint faintly within this distance (particles on)
+  look-hold-checks: 3      # 8-tick checks your gaze must stay on a look-curiosity (~1.2 s)
+  listen-checks: 7         # 8-tick checks of sneaking still for a listen-curiosity (~2.8 s)
+  milestones:
+    curious:       {title: "§dCurious", count: 10, reward: curious, fallback: 300}
+    keen_eyed:     {title: "§dKeen-Eyed", count: 25, reward: keen_eyed, fallback: 800}
+    lorekeeper:    {title: "§5Lorekeeper", count: 45, reward: lorekeeper, fallback: 1500}
+    small_wonders: {title: "§d§lKeeper of Small Wonders", count: 0, reward: small_wonders, fallback: 4000}  # 0 = every curiosity
+curiosities:
+  fountain_turtles:
+    name: "Turtles in Town"
+    district: capital
+    kind: look
+    at: "-42.5 59 -79.5"
+    target: "-45 59 -82"
+    range: 10
+    radius: 0.9
+    icon: TURTLE_EGG
+    clue: "Someone is keeping something warm by the fountain."
+    note: "Turtle eggs in a planter, nowhere near the sea. Nobody admits to putting them there. Everybody checks on them."
+  windmill_garden:
+    name: "The Windowsill Garden"
+    district: capital
+    kind: step
+    at: "89.5 59 -15.5"
+    radius: 3
+    icon: FLOWER_POT
+    clue: "Under the great mill, somebody grows a desert, a swamp and a beach in pots."
+    note: "A cactus, a dripleaf and a clutch of eggs in one tiny garden. The miller calls it the world, small enough to water."
+  snow_never_melts:
+    name: "The Snow That Stays"
+    district: capital
+    kind: step
+    at: "-99.5 63 -4.5"
+    radius: 1.6
+    icon: SNOWBALL
+    clue: "One handful of winter refuses to leave the Capital."
+    note: "A single layer of snow in a sunny lane. It has not melted since the city was built. The scholars measure it every spring."
+  capital_roofs:
+    name: "Over the Rooftops"
+    district: capital
+    kind: step
+    at: "-86.5 72 -137.5"
+    radius: 2.5
+    icon: DARK_OAK_TRAPDOOR
+    clue: "The Capital looks different from where the cats walk."
+    note: "From up here the fountain is a coin and the Grand Stair a ribbon. The tiles are warm. A cat watches you, unimpressed."
+  collectors_shelf:
+    name: "The Collector's Shelf"
+    district: capital
+    kind: look
+    at: "63.5 64 110.5"
+    target: "61 67 112"
+    range: 8
+    radius: 0.9
+    icon: SKELETON_SKULL
+    clue: "Behind the Market Hall, somebody keeps a shelf of things that grin."
+    note: "Two skulls and three locked ender chests. The label says 'not for sale'. The skulls seem to agree."
+  quiet_enchanter:
+    name: "The Quiet Enchanter"
+    district: capital
+    kind: touch
+    at: "-59.5 59 -79.5"
+    target: "-59 59 -80"
+    icon: ENCHANTING_TABLE
+    clue: "A reading room by the fountain where the books read back."
+    note: "The table hums under your hand, like it remembers somebody. The shelves lean in to listen."
+  aurels_specimen:
+    name: "Sister Aurel's Specimen"
+    district: capital
+    kind: touch
+    at: "-166.5 61 3.5"
+    target: "-167 61 3"
+    icon: HORN_CORAL
+    clue: "In a hall of lecterns, a piece of the sea is kept dry."
+    note: "Horn coral on a scholar's desk, labelled: 'Exhibit One. Proof the sea once reached the city.' There is no Exhibit Two."
+  canopy_walk:
+    name: "The Canopy Walk"
+    district: meres
+    kind: step
+    at: "131.5 100 -160.5"
+    radius: 3
+    icon: OAK_LEAVES
+    clue: "East of the Mountain Gate grows a tree you can walk across the top of."
+    note: "Leaves underfoot, sky overhead. From the crown you can see the harbour masts and the summit at once."
+  silent_crew:
+    name: "The Silent Crew"
+    district: anker_harbour
+    kind: look
+    at: "305.5 63 -402.5"
+    target: "305 64 -406"
+    range: 10
+    radius: 0.9
+    icon: PLAYER_HEAD
+    clue: "On the moored ships, part of the crew never goes ashore."
+    note: "Carved heads along the rail. Sailors say each one is a captain who never came home. Quill logs them as ballast."
+  chartroom:
+    name: "The Chartroom"
+    district: anker_harbour
+    kind: touch
+    at: "288.5 64 -292.5"
+    target: "288 64 -294"
+    icon: CARTOGRAPHY_TABLE
+    clue: "Where the twin bells hang, somebody still draws the sea."
+    note: "Chart tables and looms: maps on one side, sails on the other. Every chart ends at the island's edge with 'and then the sky'."
+  storm_catcher:
+    name: "The Storm Catcher"
+    district: anker_harbour
+    kind: look
+    at: "149.5 65 -451.5"
+    target: "149 66 -455"
+    range: 18
+    radius: 0.9
+    icon: LIGHTNING_ROD
+    clue: "One roof west of the harbour is asking for lightning."
+    note: "The only lightning rod on Origin. Old Moll swears it was struck the night the Halcyon first flew."
+  lily_raft:
+    name: "A Lily Big Enough"
+    district: anker_harbour
+    kind: step
+    at: "325.5 62 -477.5"
+    radius: 3
+    icon: LILY_PAD
+    clue: "Out in the bay grow lilies you could sleep on."
+    note: "You climbed onto a lily the size of a raft. It holds. The gulls are furious about it."
+  sailors_hex:
+    name: "The Sailors' Hex Room"
+    district: anker_harbour
+    kind: touch
+    at: "200.5 65 -317.5"
+    target: "201 65 -318"
+    icon: ENCHANTED_BOOK
+    clue: "Behind the forge, a sailor's superstition has its own table."
+    note: "Charms against drowning, against storms, against cats. Every book in here is full of knots."
+  whalebone_deck:
+    name: "The Whalebone Deck"
+    district: anker_harbour
+    kind: step
+    at: "309.5 66 -398.5"
+    radius: 2.5
+    icon: BONE
+    clue: "One ship in the harbour is built partly from something that used to swim."
+    note: "The planks give way to bleached bone. Haul says it's whalebone. Haul has never seen a whale."
+  lamp_smith:
+    name: "The Lamp Smith's Anvil"
+    district: anker_harbour
+    kind: touch
+    at: "129.5 63 -441.5"
+    target: "130 64 -442"
+    icon: ANVIL
+    clue: "West of the harbour, a lamp post was forged right where it stands."
+    note: "An anvil and a cauldron under a sea-lantern lamp. The lamplighter mends his own posts. Don't mention the lean."
+  frosted_shelf:
+    name: "The Frosted Shelf"
+    district: seawatch
+    kind: step
+    at: "429.5 74 -374.5"
+    radius: 3
+    icon: SNOW_BLOCK
+    clue: "On Seawatch, a red cap wears snow in summer."
+    note: "Snow on a giant red cap, a whole season out of place. The sea wind keeps it cold and the gulls keep it company."
+  listening_cap:
+    name: "The Listening Cap"
+    district: seawatch
+    kind: listen
+    at: "421.5 61 -429.5"
+    radius: 3
+    icon: BROWN_MUSHROOM
+    sound: BLOCK_CONDUIT_AMBIENT_SHORT
+    clue: "Under a broad brown cap by the shore, the sea sounds different."
+    note: "Crouched under the cap you hear the bay as if through a shell: boats, bells, and a voice calling a name you almost catch."
+  white_seam:
+    name: "The White Seam"
+    district: ore_ridge
+    kind: step
+    at: "156.5 93 -315.5"
+    radius: 3
+    icon: CALCITE
+    clue: "High on the ridge, the rock turns pale as milk."
+    note: "Chalk-white calcite breaks the surface, full of tiny scratches where someone once tried to write a name."
+  too_good:
+    name: "Too Good to Be True"
+    district: ore_ridge
+    kind: step
+    at: "62.5 58 -358.5"
+    radius: 3
+    icon: DIAMOND
+    clue: "Somewhere under Ore Ridge the floor is worth a fortune. Probably."
+    note: "The floor glitters blue-white. A sign once read DO NOT PRY. Someone pried. Miss Ledger says it's painted stone."
+  gilded_ledge:
+    name: "The Gilded Ledge"
+    district: skyreach
+    kind: step
+    at: "-49.5 171 -256.5"
+    radius: 3
+    icon: GOLD_BLOCK
+    clue: "Below the Golden Willows, something drips and sets."
+    note: "Where the willows drip gold it pools and hardens into a ledge. Pim would weep."
+  violet_bloom:
+    name: "The Violet Bloom"
+    district: skyreach
+    kind: step
+    at: "12.5 183 -241.5"
+    radius: 3
+    icon: PURPLE_DYE
+    clue: "Near the summit, a flower big enough to stand in."
+    note: "Purple petals as wide as a room. Up here even the flowers forgot to stop growing."
+  hermits_seat:
+    name: "The Hermit's Seat"
+    district: skyreach
+    kind: step
+    at: "-137.5 162 -269.5"
+    radius: 2.5
+    icon: TUFF
+    clue: "On Skyreach's west shoulder there's a stone chair worn smooth."
+    note: "A seat-shaped rock, polished by years of sitting. Moss says he came up here before the city got loud."
+  topmost_mushroom:
+    name: "The Topmost Mushroom"
+    district: skyreach
+    kind: step
+    at: "-95.5 197 -265.5"
+    radius: 2.5
+    icon: BROWN_MUSHROOM
+    clue: "The highest mushroom on Origin grows among the willow roots."
+    note: "A brown cap clinging to the roots at the top of the world. Fen Glowmoor wants a cutting. Fen will not climb."
+  cliff_bloom:
+    name: "The Cliff Bloom"
+    district: skyreach
+    kind: step
+    at: "4.5 126 -345.5"
+    radius: 3
+    icon: PURPLE_CONCRETE
+    clue: "On Skyreach's north face, a bloom hangs over nothing."
+    note: "A violet bloom clings to the north cliff with its petals over the drop. The wind tugs. It doesn't let go."
+  giants_stump:
+    name: "The Giant's Stump"
+    district: whisperwood
+    kind: step
+    at: "-383.5 76 -547.5"
+    radius: 2.5
+    icon: STRIPPED_SPRUCE_LOG
+    clue: "In the north woods, a tree so old it is now a floor."
+    note: "Wide enough to dance on, and somebody did: there are scuff marks in a perfect circle."
+  above_birches:
+    name: "Above the Birches"
+    district: whisperwood
+    kind: step
+    at: "-249.5 92 -260.5"
+    radius: 3
+    icon: BIRCH_LEAVES
+    clue: "By the Crossing Bridge, the birches hold up a second floor."
+    note: "You're standing on birch leaves high above the road. They hold. The river below is a pencil line."
+  river_words:
+    name: "What the River Says"
+    district: whisperwood
+    kind: listen
+    at: "-268.5 57 -260.5"
+    radius: 3
+    icon: OAK_PLANKS
+    sound: BLOCK_WATER_AMBIENT
+    clue: "Stand still on the old bridge and the Whisper earns its name."
+    note: "Under the planks the river says the same three words over and over. Nobody agrees on what they are."
+  old_trap:
+    name: "An Old Trap"
+    district: whisperwood
+    kind: look
+    at: "-283.5 58 -239.5"
+    target: "-287 59 -240"
+    range: 8
+    radius: 0.9
+    icon: DISPENSER
+    clue: "On the west road, something is still aiming at travellers."
+    note: "A dispenser in the bridge-house wall, pointed at the road. Empty. Probably. The tollkeeper denies everything."
+  brazier_walk:
+    name: "The Brazier Keeper's Walk"
+    district: whisperwood
+    kind: step
+    at: "-265.5 78 -503.5"
+    radius: 2.5
+    icon: CAMPFIRE
+    clue: "Above the Old Shrine, the braziers need someone to tend them."
+    note: "Up by the braziers the stones are warm even at dawn. Somebody left a broom and a very old sandwich."
+  moon_on_the_lake:
+    name: "Moon on Lily Lake"
+    district: whisperwood
+    kind: step
+    at: "-444.5 58 -337.5"
+    radius: 3
+    when: night
+    icon: LILY_PAD
+    clue: "Lily Lake keeps one lily for the moon. Visit after dark."
+    note: "Out on the great lily at night the lake goes still and the moon sits in it like a coin. Even the frogs hush."
+  flat_top_tree:
+    name: "The Flat-Top Tree"
+    district: whisperwood
+    kind: step
+    at: "-306.5 79 -280.5"
+    radius: 2.5
+    icon: ACACIA_LEAVES
+    clue: "Near the bridge, one tree grew flat on top, like a table."
+    note: "An acacia far from anywhere acacias belong, with a crown you can stand on. Someone left a trail of picnic crumbs."
+  night_choir:
+    name: "The Night Choir"
+    district: whisperwood
+    kind: listen
+    at: "-392.5 66 -343.5"
+    radius: 3
+    when: night
+    icon: BROWN_MUSHROOM_BLOCK
+    sound: ENTITY_ALLAY_AMBIENT_WITHOUT_ITEM
+    clue: "Under the big cap by Lily Lake, the night sings if you let it."
+    note: "Something small and many, singing in rounds. It stops the moment you stand up."
+  moss_throne:
+    name: "The Moss Throne"
+    district: bloomfield
+    kind: step
+    at: "-73.5 73 -545.5"
+    radius: 2.5
+    icon: MOSS_BLOCK
+    clue: "North of the Bloom Road, a hill wears a green chair."
+    note: "A mossy hump shaped exactly like a throne. Sit, and the blossoms below look like a crowd."
+  north_lip:
+    name: "The North Lip"
+    district: bloomfield
+    kind: step
+    at: "38.5 80 -591.5"
+    radius: 3
+    icon: RAW_IRON
+    clue: "Where Bloomfield ends, the island's lip shows its ore."
+    note: "Iron and copper in the very edge of the island. Beyond it nothing, just sky, all the way down."
+  fools_gold:
+    name: "Fool's Gold"
+    district: bloomfield
+    kind: look
+    at: "-76.5 58 -533.5"
+    target: "-77 59 -537"
+    range: 10
+    radius: 0.9
+    icon: GILDED_BLACKSTONE
+    clue: "Among Bloomfield's stones, a glitter that isn't quite gold."
+    note: "Gilded blackstone, a fleck of somewhere hotter in a meadow. Odds Mulligan has sold a piece of it twice."
+  sulking_cap:
+    name: "The Sulking Cap"
+    district: colosseum
+    kind: step
+    at: "-452.5 65 -147.5"
+    radius: 3
+    icon: RED_MUSHROOM
+    clue: "West of the arena, a red cap low enough to climb."
+    note: "A giant red mushroom with a dent in the top, just your size. Fighters come here to sulk after losing."
+  fallen_candle:
+    name: "A Candle for the Fallen"
+    district: colosseum
+    kind: step
+    at: "-395.5 64 -81.5"
+    radius: 2
+    icon: CANDLE
+    clue: "South of the arena, one candle is kept for someone."
+    note: "A grey candle and a dripleaf by a stone plate. No name. The Proctor says: everyone who lost here, once."
+  silver_cap:
+    name: "The Silver Cap"
+    district: glowcap_crags
+    kind: step
+    at: "-434.5 69 268.5"
+    radius: 3
+    icon: IRON_BLOCK
+    clue: "Near the Twin Glowcaps, one mushroom turned to metal."
+    note: "This cap rings when you stamp on it. Fen Glowmoor says it's just a phase."
+  copper_shelf:
+    name: "The Copper Shelf"
+    district: glowcap_crags
+    kind: step
+    at: "-382.5 96 150.5"
+    radius: 2.5
+    icon: RAW_COPPER
+    clue: "Halfway up the crags, the rock turns green-gold."
+    note: "A shelf of copper ore underfoot, weathering slowly. In a hundred years it'll match the moss."
+  mud_springs:
+    name: "The Mud Springs"
+    district: glowcap_crags
+    kind: step
+    at: "-342.5 83 21.5"
+    radius: 3
+    icon: MUD
+    clue: "Below Crag Peak, the ground goes soft and warm."
+    note: "Warm mud between the rocks. Your boots will never be the same. Locals swear it's good for the knees."
+  dreaming_hollow:
+    name: "The Dreaming Hollow"
+    district: glowcap_crags
+    kind: step
+    at: "-366.5 74 149.5"
+    radius: 3
+    when: night
+    icon: GLOWSTONE_DUST
+    clue: "Under the giant caps of the crags, a hollow that only wakes at night."
+    note: "After dark the stems around this hollow glow faintly, as if the mushrooms are dreaming out loud."
+  southern_lily:
+    name: "The Southern Lily"
+    district: glowcap_crags
+    kind: step
+    at: "-332.5 57 293.5"
+    radius: 3
+    icon: LILY_PAD
+    clue: "In the crags' south pond, one lily is big enough for a nap."
+    note: "A raft of lily with a quartz step carved into its edge. Who carves a lily?"
+  hay_mountain:
+    name: "Hay Mountain"
+    district: clucksworth
+    kind: step
+    at: "-261.5 62 200.5"
+    radius: 3
+    icon: HAY_BLOCK
+    clue: "Behind the big barn, the hay piles higher than the roof wants."
+    note: "You climbed the hay. Everyone does once. The chickens are still talking about it."
+  quench_cauldron:
+    name: "The Quench Cauldron"
+    district: clucksworth
+    kind: touch
+    at: "-159.5 65 214.5"
+    target: "-160 65 215"
+    icon: WATER_BUCKET
+    clue: "At the farm smithy, the water still hisses."
+    note: "The smith's quench, still full. Warm, and it smells of iron. The twin bells hang right overhead."
+  unlucky_anvil:
+    name: "The Unlucky Anvil"
+    district: clucksworth
+    kind: touch
+    at: "-145.5 67 173.5"
+    target: "-145 68 173"
+    icon: CHIPPED_ANVIL
+    clue: "In Clucksworth a cracked anvil is kept for luck. Bad luck."
+    note: "Chipped, cracked and still in use. They swear every tool forged on it breaks on a Tuesday."
+  turnip_head:
+    name: "Old Turnip-Head"
+    district: clucksworth
+    kind: look
+    at: "-164.5 59 139.5"
+    target: "-163 62 141"
+    range: 10
+    radius: 0.9
+    icon: CARVED_PUMPKIN
+    clue: "Something in the fields has been watching the crows for years."
+    note: "A scarecrow with a pumpkin face and a chain for a belt. The crows stopped being afraid. Now they sit on his shoulders."
+  shabby_deep:
+    name: "The Shabby Deep"
+    district: southwood
+    kind: step
+    at: "-28.5 48 246.5"
+    radius: 4
+    icon: IRON_ORE
+    clue: "Under Mine Hill, the old tunnels go deeper than the maps."
+    note: "Iron in the walls, cold air and old footprints. The Shabby Mine has a downstairs nobody mentions."
+  sponge_gallery:
+    name: "The Sponge Gallery"
+    district: southwood
+    kind: step
+    at: "-62.5 45 263.5"
+    radius: 4
+    icon: SPONGE
+    clue: "The old mine has a room where the walls drink."
+    note: "Dry sponge in the rock, soaking up every drip. Someone drained a flooded tunnel and forgot to take the sponges home."
+  wild_honey:
+    name: "Wild Honey"
+    district: southwood
+    kind: touch
+    at: "-7.5 100 245.5"
+    target: "-9 100 245"
+    icon: HONEYCOMB
+    sound: BLOCK_BEEHIVE_WORK
+    clue: "On Mine Hill, the bees built something bigger than a hive."
+    note: "Honeycomb grown into the hilltop itself. Hettie would pay for this spot. Don't tell her you found it first."
+  gold_in_the_moss:
+    name: "Gold in the Moss"
+    district: southwood
+    kind: step
+    at: "-11.5 105 256.5"
+    radius: 2.5
+    icon: RAW_GOLD
+    clue: "The very crown of Mine Hill hides a fortune under the moss."
+    note: "Raw gold and emerald in the hilltop, right under the moss. The mine below digs sideways. Nobody thought to dig up."
+  still_digging:
+    name: "Someone Still Digging"
+    district: southwood
+    kind: listen
+    at: "45.5 49 244.5"
+    radius: 3
+    icon: IRON_PICKAXE
+    sound: BLOCK_DEEPSLATE_HIT
+    clue: "At the east end of the old mine, keep still and listen."
+    note: "Tap. Tap. Tap. A pickaxe somewhere in the rock. When you hold your breath, it stops too."
+  hilltop_reef:
+    name: "The Hilltop Reef"
+    district: southwood
+    kind: step
+    at: "73.5 96 271.5"
+    radius: 2.5
+    icon: FIRE_CORAL
+    clue: "East of the mine, a reef grew on a hill far from any sea."
+    note: "Fire coral, dry and red, on a hilltop. Either the sea was once very high here, or someone is very good at lying."
+  pit_floor:
+    name: "The Bottom of the Pit"
+    district: borderlands
+    kind: step
+    at: "218.5 23 278.5"
+    radius: 4
+    icon: PODZOL
+    clue: "The Borderlands sinkhole has a floor. Few have stood on it."
+    note: "Down here the sky is a coin and the wind can't reach you. Old spruce boards underfoot: someone lived here once."
+  pits_coin:
+    name: "The Pit's Coin"
+    district: borderlands
+    kind: step
+    at: "237.5 23 292.5"
+    radius: 1.6
+    icon: GOLD_BLOCK
+    clue: "At the bottom of the sinkhole, one block shines."
+    note: "One block of gold at the bottom of the pit, set like a coin in a fountain. A wish? A payment? The pit isn't saying."
+  soul_prints:
+    name: "Soul Prints"
+    district: borderlands
+    kind: step
+    at: "384.5 62 214.5"
+    radius: 2
+    icon: SOUL_SAND
+    clue: "In the east of the wastes, footprints that hum when you stand in them."
+    note: "Soul sand in the shape of footprints, leading nowhere. Stand in one and you feel slow, and a little sad."
+  giants_heartbeat:
+    name: "The Giant's Heartbeat"
+    district: borderlands
+    kind: listen
+    at: "298.5 64 133.5"
+    radius: 4
+    icon: BONE
+    sound: ENTITY_WARDEN_HEARTBEAT
+    clue: "Inside the Ribcage, crouch where the heart used to be."
+    note: "Thump. Thump. Slow as weather. Vex says it's the ground settling. Vex doesn't come in here."
+  pit_lights:
+    name: "Pit Lights"
+    district: borderlands
+    kind: look
+    at: "249.5 36 262.5"
+    target: "250 40 262"
+    range: 36
+    radius: 2.5
+    when: night
+    icon: GLOWSTONE_DUST
+    clue: "At night, lights drift in the Borderlands sinkhole. Look at them."
+    note: "Will-o'-wisps in the pit, circling something you can't see. They blinked back at you."
+  bone_stair:
+    name: "The Bone Stair"
+    district: borderlands
+    kind: step
+    at: "278.5 60 239.5"
+    radius: 3
+    icon: BONE_BLOCK
+    clue: "On the pit's rim, steps made of something that used to walk."
+    note: "A stair of bone down the sinkhole's edge. Every step is a different shade of old."
+  hetties_smoker:
+    name: "Hettie's Smoker"
+    district: eastwood
+    kind: touch
+    at: "274.5 61 -10.5"
+    target: "273 63 -11"
+    icon: CAMPFIRE
+    sound: BLOCK_CAMPFIRE_CRACKLE
+    clue: "Beside the Old Mead House, a fire that never quite goes out."
+    note: "A netherrack hearth for the bee smoker. A puff calms the hive. Hettie says it calms beekeepers too."
+  hive_wall:
+    name: "The Hive Wall"
+    district: eastwood
+    kind: listen
+    at: "311.5 61 -37.5"
+    radius: 3
+    icon: BEEHIVE
+    sound: BLOCK_BEEHIVE_WORK
+    clue: "At the Mead House, put your ear to the hives."
+    note: "The hive wall thrums like a choir holding one long note. Somewhere inside, a queen is giving orders."
+  lumberjacks_umbrella:
+    name: "The Lumberjack's Umbrella"
+    district: eastwood
+    kind: step
+    at: "397.5 65 -274.5"
+    radius: 3
+    icon: BROWN_MUSHROOM_BLOCK
+    clue: "In Eastwood a brown cap shelters the woodcutters' lunch."
+    note: "The lumberjacks eat under this cap when it rains. Their initials are carved in the stem. One of them is just NO."
+  library_rain:
+    name: "Rain on the Library"
+    district: capital
+    kind: listen
+    at: "-51.5 60 104.5"
+    radius: 3
+    when: rain
+    icon: BOOKSHELF
+    sound: WEATHER_RAIN_ABOVE
+    clue: "When it rains, the Great Library has something to say."
+    note: "Inside, between the shelves, the rain on the roof sounds like two hundred pages turning at once."
+  mere_rain_choir:
+    name: "The Rain Choir"
+    district: meres
+    kind: step
+    at: "228.5 55 -149.5"
+    radius: 3
+    when: rain
+    icon: LILY_PAD
+    sound: ENTITY_FROG_AMBIENT
+    clue: "The Great Mere only sings when it rains."
+    note: "Every frog in the Meres starts at once, as if the rain were a cue. It is. They've been rehearsing."
+  last_light:
+    name: "The Last Light"
+    district: glowcap_crags
+    kind: look
+    at: "-418.5 97 -46.5"
+    target: "-449 101 -47"
+    range: 36
+    radius: 3
+    when: dusk
+    icon: CLAY_BALL
+    clue: "From Sunset Bluff, watch the sky past the edge at dusk."
+    note: "For one moment the light goes green out over nothing, and then it's gone. You saw it. Nobody believes you."
+  first_light:
+    name: "First Light"
+    district: skyreach
+    kind: step
+    at: "-5.5 200 -268.5"
+    radius: 4
+    when: dawn
+    icon: SUNFLOWER
+    clue: "Be on the summit when the sun comes up."
+    note: "The first light of the day hits Skyreach before anything else on Origin. For a minute the whole island is still asleep but you."
+  fallen_anchor:
+    name: "The Fallen Anchor"
+    district: glowcap_crags
+    kind: look
+    at: "-445.5 56 -96.5"
+    target: "-458 66 -98"
+    range: 26
+    radius: 1.6
+    requires: prop:fallen_anchor
+    icon: ANVIL
+    clue: "Out west, past the arena, something heavy came down out of the sky."
+    note: "An anchor taller than a house, driven into the meadow. Hesper Kael's people camp in its shadow and don't talk about the chain."
+
+# Storytelling chests. place: chest | barrel (put on an empty, checked spot once; undo removes exactly those)
+# | existing (a container the map already had). Opening one shows a per-player view: the note (a book) and,
+# the first time, a little flavour loot + rewards.tale coins. loot: "MATERIAL amount Name | lore | lore".
+tale-settings:
+  auto-place: true         # first start places the missing chests once (recorded in origin-tales.yml)
+  glint-radius: 8
+tales:
+  quills_log:
+    name: "Quill's Harbour Log"
+    district: anker_harbour
+    at: "214 64 -397"
+    place: existing
+    author: "Quill, Harbourmaster"
+    clue: "The harbourmaster keeps a log nobody is supposed to read."
+    note:
+      - "§lDay 4,117.§r\nTide normal. Gulls abnormal. The Halcyon came in eleven minutes late. The captain blamed the wind. The wind declined to comment."
+      - "§lDay 4,118.§r\nOne crate overboard. Contents: hats. The fish are wearing them now. Do not log this.\n\n(Logged.)"
+      - "§lDay 4,119.§r\nA stranger asked where the sea ends. Told them: it doesn't. The island does. They went quiet. Most do."
+    loot:
+      - "PAPER 1 §fTorn Tide Table | §7High water at noon, they say."
+      - "COD 2 §fYesterday's Catch"
+  unsent_letter:
+    name: "A Letter That Never Sailed"
+    district: anker_harbour
+    at: "307 63 -409"
+    place: existing
+    author: "R., deckhand"
+    clue: "On a moored ship, a letter is still waiting for the mail boat."
+    note:
+      - "Dear Mira,\n\nThe ship is fine. The food is not. I've learned eleven knots and forgotten your birthday, which is why this letter is late."
+      - "They say the Halcyon flies over places nobody has walked. I'd like to see one. I'd like more to see you.\n\nTell the chickens hello.\n\n— R."
+    loot:
+      - "PAPER 1 §fSealed Letter | §7To: Mira, Clucksworth. | §8It was never sent."
+      - "STRING 3"
+  confiscated:
+    name: "Confiscated at Customs"
+    district: anker_harbour
+    at: "168 64 -475"
+    place: existing
+    author: "Customs Office, Anker Harbour"
+    clue: "North of the docks, Customs keeps what it took."
+    note:
+      - "§lSEIZED:§r\n1 bottle, label 'NOT RUM'. Is rum.\n3 sacks sugar, declared as 'sand, sweet'.\n1 parrot (escaped)."
+      - "§lSEIZED:§r\n1 map to 'treasure'. The treasure is the Fish Market. Owner fined for wasting everyone's afternoon."
+    loot:
+      - "GLASS_BOTTLE 1 §fBottle, 'NOT RUM' | §7Empty. Of course it's empty."
+      - "SUGAR 3"
+  clucksworth_ledger:
+    name: "The Clucksworth Ledger"
+    district: clucksworth
+    at: "-282 59 124"
+    place: existing
+    author: "Mira Thatch, Clucksworth"
+    clue: "A farm office keeps careful count of something that clucks."
+    note:
+      - "§lEggs this week§r\nDuchess: 7\nPepper: 6\nOld Ruth: 0 (retired, refuses to discuss it)\nThe Baron: 1\n(The Baron is a rooster. Investigating.)"
+      - "Note to self: write back to R. at the harbour. Tell him the chickens say hello.\n\nThey don't. Tell him anyway."
+    loot:
+      - "EGG 2 §fPrize Egg | §7Laid by Duchess, apparently."
+      - "WHEAT_SEEDS 8"
+  smithy_orders:
+    name: "Orders for the Farm Smithy"
+    district: clucksworth
+    at: "-213 61 174"
+    place: existing
+    author: "the Farm Smithy"
+    clue: "Near the barn, the smith's order book lies open."
+    note:
+      - "Hoe, mended.\nHoe, mended again.\nSame hoe. Tell Pepper's owner to stop hitting stones with it.\n\nBell brackets, two. The twin bells need a rest."
+      - "Special order: one anvil, uncracked.\n\nCancelled. Apparently the cracked one is 'tradition'."
+    loot:
+      - "IRON_NUGGET 4 §fBent Nails"
+      - "FLINT 1"
+  misfiled_papers:
+    name: "Misfiled Papers"
+    district: capital
+    at: "107 58 -1"
+    place: existing
+    author: "Miss Ledger"
+    clue: "East of the plaza, a chest of papers that belong somewhere else."
+    note:
+      - "Form 7-B: Request to be excused from Form 7-A.\nStatus: misfiled.\n\nForm 12: Application to name the fountain.\nStatus: denied. It already has a name. The name is 'the fountain'."
+      - "If found, return to Ledger's Court. Do not read.\n\nIf you have read this, please file Form 7-C (Regret)."
+    loot:
+      - "PAPER 2 §fForm 7-C (Regret) | §7Stamped twice. Approved by nobody."
+      - "INK_SAC 1"
+  mead_book:
+    name: "Hettie's Mead Book"
+    district: eastwood
+    at: "290 61 -8"
+    place: existing
+    author: "Hettie Comb"
+    clue: "Among the casks of the Mead House, one barrel holds a recipe."
+    note:
+      - "§lOld Mead§r\nHoney from the north yard. Never the south: the south bees are moody.\nWater from the pond.\nPatience: one winter."
+      - "Do not tell the queen what the honey is for. She knows. She pretends not to. It's a whole thing."
+    loot:
+      - "HONEY_BOTTLE 1 §6Jar of Old Mead | §7Hettie's. Ask nicely."
+      - "HONEYCOMB 2"
+  moss_cache:
+    name: "Notes on Listening"
+    district: whisperwood
+    at: "-406 59 -234"
+    place: chest
+    facing: east
+    author: "Moss"
+    clue: "Near the hermit's hollow, someone keeps notes about silence."
+    note:
+      - "Things I have heard in Whisperwood:\n\nA fox laughing.\nThe river saying three words.\nA tree falling with nobody there. It made a sound. I checked."
+      - "If you are reading this, sit down.\n\nNot for long. Long enough."
+    loot:
+      - "SWEET_BERRIES 6 §fForest Berries"
+      - "PAPER 1 §fA Pressed Leaf | §7From the oldest tree. Probably."
+  shrine_roster:
+    name: "The Brazier Roster"
+    district: whisperwood
+    at: "-285 69 -493"
+    place: chest
+    facing: north
+    author: "Keepers of the Old Shrine"
+    clue: "Below the Old Shrine, a duty roster nobody follows."
+    note:
+      - "Brazier duty:\nMonday: Ilse\nTuesday: Ilse\nWednesday: Ilse\nEveryone else: 'busy'.\n\n(Ilse would like a word.)"
+      - "The fires on the tower have not gone out in two hundred years. Ilse would like it known that she lit most of them."
+    loot:
+      - "CANDLE 2"
+      - "CHARCOAL 3 §fBrazier Charcoal"
+  frog_census:
+    name: "Lily Lake Frog Census"
+    district: whisperwood
+    at: "-420 59 -358"
+    place: chest
+    facing: south
+    author: "Fen Glowmoor, amateur naturalist"
+    clue: "On Lily Lake's shore, somebody tried to count the frogs."
+    note:
+      - "Frogs counted: 41.\nFrogs counted again: 38.\nFrogs that were the same frog: unclear.\nFrogs that looked at me funny: all of them."
+      - "Conclusion: the frogs are fine.\n\nRecommendation: stop counting frogs."
+    loot:
+      - "LILY_PAD 2"
+      - "SLIME_BALL 1 §fFrog Spit | §7Allegedly lucky."
+  star_chart:
+    name: "Stellan's Star Chart"
+    district: skyreach
+    at: "-4 198 -268"
+    place: chest
+    facing: east
+    author: "Stellan Voss"
+    clue: "On the summit, the stargazer keeps his charts out of the wind."
+    note:
+      - "The bright one over the harbour is not a star. It is the Halcyon's lamp.\n\nI have named it anyway: Persistence."
+      - "The aurora comes from the north. The starfall comes from everywhere.\n\nMake your wish quickly. The sky does not wait."
+    loot:
+      - "GLOWSTONE_DUST 3 §eStardust | §7Swept off the summit."
+      - "FEATHER 1"
+  willow_postcard:
+    name: "A Postcard from the Willows"
+    district: skyreach
+    at: "-81 192 -259"
+    place: chest
+    facing: east
+    author: "a tourist, years ago"
+    clue: "Under the Golden Willows, a postcard nobody posted."
+    note:
+      - "Wish you were here! The willows drip actual gold. Don't tell anyone.\n\nThe updraft was terrifying. Would do again."
+      - "P.S. If a nervous man called Pim ever asks: YES. It is worth the climb."
+    loot:
+      - "GOLD_NUGGET 3 §6Willow Gold | §7It drips. Then it doesn't."
+  slag_drafts:
+    name: "The Slag Poet's Drafts"
+    district: ore_ridge
+    at: "79 66 -352"
+    place: chest
+    facing: west
+    author: "the Slag Poet"
+    clue: "On Ore Ridge, a poet threw away his best attempts."
+    note:
+      - "§oO slag, grey slag,\nthou stuff of slag...§r\n\n(crossed out)"
+      - "§oThe ridge is iron,\nthe iron is sleep,\nthe miners dig\nand the mountain weeps.§r\n\nBetter. Still not about slag."
+    loot:
+      - "COAL 3"
+      - "PAPER 1 §fA Poem About Slag | §7It rhymes 'slag' with 'slag'."
+  shift_log:
+    name: "Shift Log, Shabby Mine"
+    district: southwood
+    at: "33 55 180"
+    place: chest
+    facing: north
+    author: "Foreman Dunn"
+    clue: "By the Mine Road, the foreman's log waits for the next shift."
+    note:
+      - "Shift 1: iron.\nShift 2: iron.\nShift 3: tapping in the east tunnel. Nobody down there. Sent Wilks. Wilks came back. Wilks would not say."
+      - "Shift 4: the sponges in the deep gallery drank the flood. Good sponges.\n\nDo not wring the sponges."
+    loot:
+      - "TORCH 6"
+      - "BREAD 2 §fMiner's Lunch | §7Slightly dusty."
+  vex_orders:
+    name: "Standing Orders"
+    district: borderlands
+    at: "160 58 77"
+    place: chest
+    facing: north
+    author: "Sgt. Vex"
+    clue: "At Vex's Gate, the sergeant's orders are kept somewhere obvious."
+    note:
+      - "§lORDER 1:§r Stay behind the line.\n§lORDER 2:§r See Order 1.\n§lORDER 3:§r No, the Ribcage is not 'just bones'."
+      - "If you are reading this, you crossed the line to reach the chest.\n\nWe will be discussing this."
+    loot:
+      - "ARROW 8"
+      - "PAPER 1 §fStanding Order | §7STAY BEHIND THE LINE."
+  warden_notes:
+    name: "Margins of the Rite"
+    district: borderlands
+    at: "250 59 171"
+    place: chest
+    facing: south
+    author: "the Rite Warden"
+    clue: "Near the Rite Circle, the warden writes in the margins."
+    note:
+      - "The stones are not a door. People keep asking.\n\nThe stones are a promise: whatever fell here stays here."
+      - "Light no fires in the circle. Speak no names in the pit.\n\nLeave the gold where it lies. That one is for someone else."
+    loot:
+      - "BONE 3"
+      - "CANDLE 1"
+  pit_camp:
+    name: "The Last Camp in the Pit"
+    district: borderlands
+    at: "218 23 277"
+    place: chest
+    facing: south
+    author: "unsigned"
+    clue: "At the bottom of the sinkhole, somebody once made camp."
+    note:
+      - "We came down for the gold and stayed for the quiet. Up there the wind never stops. Down here it can't reach."
+      - "Lights at night. Not ours. They don't come close. We don't go close.\n\nMutual respect."
+    loot:
+      - "BOWL 1"
+      - "STICK 4"
+      - "PAPER 1 §fA Child's Drawing | §7The sky, drawn as a small circle."
+  molls_wager:
+    name: "Old Moll's Wager"
+    district: seawatch
+    at: "406 56 -399"
+    place: chest
+    facing: north
+    author: "Old Moll"
+    clue: "On Seawatch, across the bay from the lighthouse, a bet is written down."
+    note:
+      - "I bet that gull my spectacles it couldn't reach the top of the lighthouse.\n\nIt could. It did. It kept the spectacles."
+      - "If you see a gull wearing spectacles, it owes me forty years of reading."
+    loot:
+      - "GLASS_PANE 1 §fMoll's Spare Lens | §7Cracked. Still better than the gull's."
+      - "FEATHER 2 §fGull Feather"
+  oak_grievances:
+    name: "Grievances of the Oaks"
+    district: eastwood
+    at: "352 66 -329"
+    place: chest
+    facing: north
+    author: "the Lumberjack, for the oaks"
+    clue: "At the lumber camp, a list of complaints from the trees."
+    note:
+      - "The oaks wish to state:\n1. They were here first.\n2. Axes are rude.\n3. They accept saplings as an apology."
+      - "The lumberjack wishes to state: he plants three for every one he cuts.\n\nThe oaks have not acknowledged this."
+    loot:
+      - "OAK_SAPLING 1 §fAn Apology Sapling"
+      - "STICK 3"
+  betting_slips:
+    name: "Ringside Betting Slips"
+    district: colosseum
+    at: "-332 62 -128"
+    place: chest
+    facing: north
+    author: "Odds Mulligan's runners"
+    clue: "Outside the Colosseum, the bookie's runners stash their slips."
+    note:
+      - "Slip 1: 10 on the challenger. LOST.\nSlip 2: 10 on the champion. LOST.\nSlip 3: 10 on 'nobody'. Under review."
+      - "House rules: the house wins. Exceptions: none.\n\nOdds Mulligan would like you to know he is a fair man."
+    loot:
+      - "PAPER 3 §fLosing Slips"
+      - "GOLD_NUGGET 2 §6Change from a Bet"
+  fens_diary:
+    name: "Fen's Glowcap Diary"
+    district: glowcap_crags
+    at: "-407 64 243"
+    place: chest
+    facing: east
+    author: "Fen Glowmoor"
+    clue: "Near the Twin Glowcaps, the tender's diary is tucked away."
+    note:
+      - "Day 1: the Twin Glowcaps are not twins. One is older.\n\nDo not tell the younger one."
+      - "Day 40: tried to grow a cutting. It glowed for a week and then sulked.\n\nI understand completely."
+    loot:
+      - "GLOW_BERRIES 3"
+      - "BROWN_MUSHROOM 2"
+  pickers_map:
+    name: "A Flower Picker's Map"
+    district: bloomfield
+    at: "-41 55 -445"
+    place: chest
+    facing: north
+    author: "a picker from Bloomfield"
+    clue: "By the Bloom Road, a picker hid a map of every flower."
+    note:
+      - "X marks a bloom. There are many X's. That's the whole map. It's mostly X's.\n\nI may have overdone it."
+      - "Best blossoms: north of the road, under the big tree.\n\nSecond best: everywhere else."
+    loot:
+      - "PINK_PETALS 4"
+      - "PAPER 1 §fPicker's Map | §7Every X is a bloom. There are a lot of X's."
+
+# Prop paste layer (DEV): the Hub prop schematics at pre-checked spots. /origin dev props <list|paste|undo|tp|show>.
+# at = the FAWE paste origin (first-pass props anchor on the feet block, second-pass ones on the ground block;
+# both were fitted that way). Checked: nothing above the ground layer collides, >= 80% of the ground layer sits
+# on solid ground, no roads, walkable approach, and no NPC seat, landmark, curiosity or tale inside the box.
+prop-settings:
+  # Hesper Kael stays a manual story placement: /questnpc story -> Hesper's anchor -> right-click this spot.
+  hesper-seat: "-475.5 56 -93.5 -115"
+props:
+  fallen_anchor: {prop: ae_prop_anchor_monument, at: "-458 55 -98", rotate: 270, group: fallen_anchor, name: "The Fallen Anchor", note: "Hesper Kael's camp: the anchor that came down out west. Plaque faces the island."}
+  anchor_camp: {prop: ae_prop_forest_campsite, at: "-475 56 -92", rotate: 270, group: fallen_anchor, name: "Anchor Camp", note: "The Anchorkin's tent and fire under the anchor. Hesper's seat is by the fire."}
+  anchor_lantern: {prop: ae_prop_lantern_post, at: "-465 56 -88", rotate: 270, group: fallen_anchor, name: "Camp Lantern", note: "Lights the path in from the Colosseum side."}
+  anchor_board: {prop: ae_prop_notice_board, at: "-442 57 -104", rotate: 270, group: fallen_anchor, name: "Camp Notices", note: "Board on the east edge of the camp, readable from the road."}
+  whisper_stones: {prop: ae_forest_standing_stones, at: "-234 68 -472", rotate: 270, group: whisperwood, name: "Whisperwood Stones", note: "A ring in the glade east of the Old Shrine."}
+  whisper_log: {prop: ae_prop_fallen_log, at: "-198 68 -510", rotate: 270, group: whisperwood, name: "Fallen Giant", note: "Walk-through hollow log in the shrine woods."}
+  whisper_shrine: {prop: ae_prop_wayside_shrine, at: "-163 60 -463", rotate: 270, group: whisperwood, name: "Wayside Shrine", note: "On the east edge of the wilds, toward Bloomfield."}
+  whisper_boulders: {prop: ae_prop_mossy_boulders, at: "-182 58 -446", rotate: 90, group: whisperwood, name: "Split Boulder", note: "Mossy boulders between the wilds and the bloom road."}
+  eastwood_timber: {prop: ae_prop_timber_stack, at: "354 63 -300", rotate: 90, group: eastwood, name: "Timber Stack", note: "The lumber camp's drying stack."}
+  eastwood_hut: {prop: ae_ranger_hut, at: "417 61 -137", rotate: 270, group: eastwood, name: "Ranger Hut", note: "A ranger's hut in the south of Eastwood."}
+  eastwood_treehouse: {prop: ae_forest_treehouse, at: "324 63 -278", rotate: 270, group: eastwood, name: "Treehouse", note: "North Eastwood, between the lumber camp and the forage skyway."}
+  bloom_cart: {prop: ae_prop_flower_cart, at: "-42 54 -436", rotate: 270, group: bloomfield, name: "Flower Cart", note: "By the Bloom Road."}
+  bloom_well: {prop: ae_prop_well, at: "118 59 -536", rotate: 270, group: bloomfield, name: "Meadow Well", note: "East Bloomfield meadow."}
+  seawatch_bench: {prop: ae_prop_overlook_bench, at: "424 73 -358", rotate: 270, group: seawatch, name: "Overlook Bench", note: "High bench on Seawatch facing the open sky."}
+  mine_carts: {prop: ae_prop_ore_carts, at: "46 56 166", rotate: 180, group: southwood, name: "Ore Carts", note: "Off the Mine Road."}
+  mine_heap: {prop: ae_prop_ore_heap, at: "67 57 170", rotate: 90, group: southwood, name: "Ore Heap", note: "Spoil heap east of the Mine Road."}
+  clucks_windmill: {prop: ae_edge_windmill, at: "-244 65 256", rotate: 180, group: clucksworth, name: "South Windmill", note: "Clucksworth's south fields."}
+  bay_pots: {prop: ae_prop_lobster_pots, at: "320 63 -568", rotate: 180, group: harbour_north, name: "Lobster Pots", note: "North shore of the bay."}
+  bay_rack: {prop: ae_prop_fish_rack, at: "296 64 -561", rotate: 180, group: harbour_north, name: "Fish Rack", note: "North shore of the bay."}
+  sign_crossing: {prop: ae_prop_signpost, at: "-263 60 -277", rotate: 270, group: signposts, name: "Crossing Signpost", note: "South end of the Crossing Bridge."}
+  sign_vex: {prop: ae_prop_signpost, at: "151 57 95", rotate: 270, group: signposts, name: "Borderlands Signpost", note: "Before Vex's Gate."}
+  sign_mine: {prop: ae_prop_signpost, at: "39 57 183", rotate: 270, group: signposts, name: "Mine Road Signpost", note: "At the Mine Road."}
+
+# Ambient density (OriginLife). Generated from the map: hive clusters, open-sky chimney campfires (far-range
+# smoke; vanilla already smokes up close), water and flower glades, mushroom caps, canopies, cave ceilings,
+# the Borderlands flats, street lanterns and falling water. "x y z [radius]".
+life:
+  enabled: true
+  near: 20                 # rich motion within this distance
+  far: 44                  # cheap pulse out to here
+  smoke-range: 96          # chimney smoke carries further
+  budget: 70               # max particles per player per second (all kinds together)
+  smoke:
+    - "-256 103 -508.5"
+    - "-256 103 -489.5"
+    - "-12 71 -193"
+    - "-12 67 -185"
+    - "-45.5 74 -119.5"
+    - "-45.5 74 -99.5"
+    - "-162.5 83 177"
+    - "-160 83 177"
+    - "186 108 -477.5"
+    - "183.5 109 -357"
+    - "13 71 -193"
+    - "13 67 -185"
+    - "48.5 74 -99.5"
+    - "48.5 74 -79.5"
+    - "298 106 -15.5"
+    - "91 92 19.5"
+    - "52 82 122"
+    - "54.5 82 122"
+    - "268.5 64 250.5"
+  hives:
+    - "-166 62.2 4.5"
+    - "-166.5 63.5 8.5"
+    - "-166.5 63.5 0.5"
+    - "-108.8 66.8 28"
+    - "-107.9 62.9 43"
+    - "-110.8 62.8 37.5"
+    - "-147.9 59.6 48.9"
+    - "-123.9 59.1 58.3"
+    - "-10.1 59.6 57.1"
+    - "-287.1 60.6 97.1"
+    - "-253.1 59.6 98.1"
+    - "-282.5 60 122"
+    - "-278.5 60 141"
+    - "-213.9 62.9 167.7"
+    - "-210 62 173.5"
+    - "-251.9 63.8 214.4"
+    - "167.5 65 -477"
+    - "182.5 65 -475"
+    - "215.5 65 -394"
+    - "96.1 59.6 -118.1"
+    - "291.9 62.6 -85.9"
+    - "313.1 62.6 -37.1"
+    - "330.9 62.6 -32.1"
+    - "47.1 59.1 -4.7"
+    - "201.9 59.6 -1.9"
+    - "314.9 62.6 -9.1"
+    - "108.5 59 2"
+    - "207.9 59.6 12.9"
+    - "302.1 62.6 14.9"
+    - "328.9 62.6 14.9"
+    - "332.9 63.6 26.9"
+    - "323.9 63.6 22.9"
+    - "91.5 67.5 34.5"
+    - "95.5 67.5 34.5"
+  fireflies:
+    - "-304.5 58 273.5 7"
+    - "-166.5 59 90.5 7"
+    - "-320.5 58 198.5 7"
+    - "-296.5 59 174.5 7"
+    - "423.5 61 -184.5 7"
+    - "330.5 65 -241.5 7"
+    - "-168.5 94 -168.5 7"
+    - "-277.5 55 -80.5 7"
+    - "-243.5 61 -352.5 7"
+    - "-231.5 68 -451.5 7"
+    - "-396.5 59 -417.5 7"
+    - "-247.5 55 -86.5 7"
+    - "175.5 57 13.5 7"
+    - "-328.5 63 -426.5 7"
+    - "-290.5 61 -369.5 7"
+    - "-162.5 58 -386.5 7"
+    - "-78.5 55 -559.5 7"
+    - "384.5 64 -267.5 7"
+    - "-306.5 61 -404.5 7"
+    - "-107.5 58 -30.5 7"
+    - "-170.5 61 142.5 7"
+    - "-69.5 58 -482.5 7"
+    - "376.5 64 -224.5 7"
+    - "-330.5 58 250.5 7"
+    - "-324.5 58 162.5 7"
+    - "-198.5 63 275.5 7"
+    - "-154.5 58 61.5 7"
+    - "28.5 55 -463.5 7"
+    - "-311.5 60 -120.5 7"
+    - "138.5 60 -120.5 7"
+    - "277.5 63 -359.5 7"
+    - "-36.5 55 -478.5 7"
+    - "-366.5 61 -152.5 7"
+    - "-350.5 61 -397.5 7"
+    - "-197.5 96 -176.5 7"
+    - "-353.5 58 192.5 7"
+    - "56.5 58 -80.5 7"
+    - "-29.5 59 85.5 7"
+    - "-261.5 60 -379.5 7"
+    - "-116.5 53 -564.5 7"
+    - "239.5 59 -183.5 7"
+    - "-213.5 55 -93.5 7"
+    - "18.5 55 -432.5 7"
+    - "113.5 61 -417.5 7"
+    - "-231.5 58 104.5 7"
+    - "-231.5 59 154.5 7"
+    - "-231.5 61 203.5 7"
+    - "-231.5 66 237.5 7"
+  mist:
+    - "-349.5 48 -595.5 7"
+    - "288.5 61 -520.5 7"
+    - "-123.5 57 -408.5 7"
+    - "-435.5 57 -408.5 7"
+    - "-328.5 56 236.5 7"
+    - "255.5 61 -515.5 7"
+    - "-470.5 57 -379.5 7"
+    - "334.5 61 -395.5 7"
+    - "350.5 60 -211.5 7"
+    - "360.5 61 -455.5 7"
+    - "-101.5 61 -31.5 7"
+    - "402.5 61 -492.5 7"
+    - "212.5 54 -160.5 7"
+    - "-355.5 58 -292.5 7"
+    - "284.5 61 -443.5 7"
+    - "295.5 61 -373.5 7"
+    - "-357.5 57 -410.5 7"
+    - "-241.5 57 -358.5 7"
+    - "318.5 61 -355.5 7"
+    - "-349.5 58 -515.5 7"
+    - "-446.5 57 -334.5 7"
+    - "-156.5 57 -120.5 7"
+    - "423.5 61 -540.5 7"
+    - "-239.5 55 -231.5 7"
+    - "-336.5 56 115.5 7"
+    - "-117.5 53 -560.5 7"
+    - "-211.5 57 -361.5 7"
+    - "-305.5 57 -399.5 7"
+    - "-417.5 57 -445.5 7"
+    - "287.5 61 -474.5 7"
+    - "273.5 61 -393.5 7"
+    - "350.5 61 -566.5 7"
+    - "435.5 60 -167.5 7"
+    - "345.5 61 -483.5 7"
+  spores:
+    - "-404.5 90.5 -15.5 3"
+    - "-245.5 121.5 298.5 3"
+    - "-257.5 120.5 321.5 3"
+    - "62.5 101.5 -64.5 3"
+    - "140.5 96.5 28.5 3"
+    - "335.5 98.5 85.5 3"
+    - "-471.5 87.5 -164.5 3"
+    - "-449.5 87.5 -145.5 3"
+    - "-242.5 112.5 320.5 3"
+    - "-451.5 110.5 -578.5 3"
+    - "168.5 97.5 280.5 3"
+    - "3.5 110.5 -397.5 3"
+    - "-111.5 106.5 88.5 3"
+    - "-166.5 66.5 -26.5 3"
+    - "368.5 72.5 208.5 3"
+    - "179.5 84.5 -137.5 3"
+    - "-6.5 107.5 -422.5 3"
+    - "-147.5 66.5 51.5 3"
+    - "39.5 208.5 -271.5 3"
+    - "72.5 103.5 -75.5 3"
+    - "155.5 92.5 38.5 3"
+    - "170.5 70.5 -65.5 3"
+    - "-218.5 95.5 -15.5 3"
+    - "-412.5 134.5 157.5 3"
+    - "-307.5 106.5 248.5 3"
+    - "153.5 80.5 -57.5 3"
+    - "7.5 110.5 -411.5 3"
+    - "25.5 193.5 -247.5 3"
+    - "96.5 89.5 74.5 3"
+    - "-147.5 80.5 -52.5 3"
+    - "-204.5 69.5 7.5 3"
+    - "-223.5 80.5 15.5 3"
+    - "66.5 180.5 -313.5 3"
+    - "193.5 106.5 -151.5 3"
+    - "-177.5 57.5 338.5 3"
+    - "-265.5 97.5 -46.5 3"
+    - "-479.5 80.5 -313.5 3"
+    - "364.5 120.5 -93.5 3"
+    - "-434.5 150.5 96.5 3"
+    - "-88.5 204.5 -270.5 3"
+  leaves:
+    - "90.5 123 76.5 5"
+    - "-70.5 100 225.5 5"
+    - "-217.5 89 -543.5 5"
+    - "341.5 74 -321.5 5"
+    - "169.5 106 16.5 5"
+    - "-112.5 87 259.5 5"
+    - "168.5 107 -537.5 5"
+    - "-287.5 79 -441.5 5"
+    - "-459.5 83 -434.5 5"
+    - "96.5 103 217.5 5"
+    - "-267.5 139 319.5 5"
+    - "160.5 95 -125.5 5"
+    - "139.5 82 41.5 5"
+    - "-103.5 136 139.5 5"
+    - "179.5 78 -156.5 5"
+    - "-233.5 98 11.5 5"
+    - "-414.5 112 -528.5 5"
+    - "-191.5 88 -3.5 5"
+    - "354.5 91 -289.5 5"
+    - "-423.5 128 -201.5 5"
+    - "192.5 116 -281.5 5"
+    - "-203.5 96 -335.5 5"
+    - "-313.5 85 -533.5 5"
+    - "140.5 82 -349.5 5"
+    - "7.5 98 305.5 5"
+    - "-369.5 128 235.5 5"
+    - "187.5 132 -234.5 5"
+    - "-239.5 101 -58.5 5"
+    - "124.5 89 -402.5 5"
+    - "67.5 107 301.5 5"
+    - "-307.5 73 92.5 5"
+    - "-383.5 106 204.5 5"
+    - "-293.5 68 -560.5 5"
+    - "-436.5 144 117.5 5"
+    - "-202.5 85 -441.5 5"
+    - "-303.5 138 29.5 5"
+  drips:
+    - "224.5 44.8 238.5 1.5"
+    - "258.5 51.8 248.5 1.5"
+    - "289.5 55.8 267.5 1.5"
+    - "223.5 35.8 275.5 1.5"
+    - "-80.5 60.8 267.5 1.5"
+    - "269.5 50.8 239.5 1.5"
+    - "226.5 43.8 263.5 1.5"
+    - "-69.5 60.8 278.5 1.5"
+    - "206.5 36.8 280.5 1.5"
+    - "249.5 45.8 268.5 1.5"
+    - "280.5 51.8 244.5 1.5"
+    - "234.5 32.8 288.5 1.5"
+    - "257.5 47.8 217.5 1.5"
+    - "68.5 61.8 268.5 1.5"
+    - "236.5 45.8 256.5 1.5"
+    - "-23.5 55.8 257.5 1.5"
+  devils:
+    - "138.5 58 174.5 9"
+    - "215.5 59 207.5 9"
+    - "157.5 58 97.5 9"
+    - "291.5 58 207.5 9"
+    - "412.5 57 276.5 9"
+    - "348.5 61 142.5 9"
+    - "352.5 58 252.5 9"
+  moths:
+    - "59.5 61.4 -2.5 0.6"
+    - "-132.5 63.4 -30.5 0.6"
+    - "-298.5 63.4 312.5 0.6"
+    - "78.5 61.4 10.5 0.6"
+    - "-204.5 63.4 130.5 0.6"
+    - "-126.5 65.4 104.5 0.6"
+    - "-3.5 70.4 94.5 0.6"
+    - "26.5 61.4 -15.5 0.6"
+    - "330.5 63.4 15.5 0.6"
+    - "-55.5 63.4 86.5 0.6"
+    - "287.5 71.4 -21.5 0.6"
+    - "-63.5 67.4 1.5 0.6"
+    - "-256.5 63.4 27.5 0.6"
+    - "-37.5 63.4 -10.5 0.6"
+    - "37.5 61.4 29.5 0.6"
+    - "31.5 63.4 -52.5 0.6"
+    - "13.5 63.4 93.5 0.6"
+    - "-176.5 61.4 -27.5 0.6"
+    - "-42.5 63.4 31.5 0.6"
+    - "41.5 60.4 -7.5 0.6"
+    - "232.5 64.4 4.5 0.6"
+    - "203.5 60.4 -2.5 0.6"
+    - "-292.5 64.4 163.5 0.6"
+    - "175.5 68.4 -432.5 0.6"
+    - "-105.5 63.4 76.5 0.6"
+    - "-27.5 60.4 -29.5 0.6"
+    - "-27.5 60.4 -38.5 0.6"
+    - "351.5 65.4 -11.5 0.6"
+    - "243.5 67.4 -387.5 0.6"
+    - "257.5 68.4 -360.5 0.6"
+    - "-277.5 64.4 138.5 0.6"
+    - "316.5 63.4 -8.5 0.6"
+    - "141.5 63.4 64.5 0.6"
+    - "333.5 64.4 28.5 0.6"
+    - "-266.5 63.4 60.5 0.6"
+    - "-80.5 60.4 84.5 0.6"
+    - "-98.5 63.4 5.5 0.6"
+    - "-34.5 59.4 -129.5 0.6"
+    - "-145.5 64.4 93.5 0.6"
+    - "403.5 65.4 5.5 0.6"
+    - "-287.5 66.4 225.5 0.6"
+    - "-243.5 61.4 0.5 0.6"
+    - "-222.5 61.4 9.5 0.6"
+    - "-235.5 63.4 39.5 0.6"
+    - "-245.5 63.4 70.5 0.6"
+    - "-229.5 60.4 -20.5 0.6"
+    - "12.5 63.4 115.5 0.6"
+    - "-257.5 63.4 115.5 0.6"
+    - "-263.5 68.4 225.5 0.6"
+    - "-277.5 63.4 318.5 0.6"
+    - "180.5 66.4 -379.5 0.6"
+    - "-285.5 66.4 -239.5 0.6"
+    - "-201.5 64.4 153.5 0.6"
+    - "-258.5 64.4 154.5 0.6"
+    - "356.5 65.4 -35.5 0.6"
+    - "325.5 64.4 23.5 0.6"
+    - "66.5 62.4 32.5 0.6"
+    - "-22.5 61.4 39.5 0.6"
+    - "281.5 67.4 -336.5 0.6"
+    - "-265.5 70.4 278.5 0.6"
+    - "-214.5 63.4 166.5 0.6"
+    - "57.5 62.4 -14.5 0.6"
+    - "-133.5 63.4 -54.5 0.6"
+    - "247.5 65.4 -435.5 0.6"
+    - "175.5 74.4 -483.5 0.6"
+    - "57.5 67.4 49.5 0.6"
+    - "-39.5 63.4 83.5 0.6"
+    - "122.5 63.4 48.5 0.6"
+    - "-61.5 63.4 -44.5 0.6"
+    - "-28.5 61.4 31.5 0.6"
+  falls:
+    - "-481.5 48.2 -342.5 1.5"
+    - "-479 50.2 -356.4 1.5"
+    - "-480 50.2 -349.8 1.5"
+    - "-477.7 50.2 -362.6 1.5"
+    - "-479.2 51.2 -345.2 1.5"
+    - "-476 50.2 -368 1.5"
+    - "-468.3 46.2 -381.1 1.5"
+    - "-468.5 49.2 -409.5 1.5"
+    - "-468.3 49.2 -374.5 1.5"
+    - "-468.5 50.2 -369.5 1.5"
+    - "-467.9 51.2 -364.8 1.5"
+    - "-465.7 47.2 -386.8 1.5"
+    - "-466.2 53.2 -361.9 1.5"
+    - "-463.3 47.2 -408 1.5"
+    - "-462.7 46.2 -391.3 1.5"
+    - "-463.2 50.2 -381 1.5"
+    - "-463.5 51.2 -374.5 1.5"
+    - "-463.5 51.2 -369.5 1.5"
+    - "-463.8 52.2 -410.2 1.5"
+    - "-462.8 52.2 -364.7 1.5"
+    - "-460.4 50.2 -386.5 1.5"
+    - "-460.8 53.2 -362.3 1.5"
+    - "-458.9 46.2 -396.1 1.5"
+    - "-458.3 47.2 -404.7 1.5"
+    - "-457.5 49.2 -390.5 1.5"
+    - "-458.2 51.2 -381 1.5"
+    - "-458.5 52.2 -408.5 1.5"
+    - "-458.5 52.2 -374.5 1.5"
+    - "-458.5 52.2 -369.5 1.5"
+    - "-457.8 53.2 -364.7 1.5"

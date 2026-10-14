@@ -31,6 +31,12 @@ public final class LivingNpcService {
 
     private final Map<String, UUID> sentinels = new ConcurrentHashMap<>();
     private final Map<String, String> fancyNames = new ConcurrentHashMap<>();
+    /**
+     * Unspawned living NPCs (unplaced cast, other servers' cast) used to cost a reflective scan of
+     * every FancyNpc on each social tick. A miss is remembered for a few seconds; the cheap by-name
+     * lookups still run, so a freshly spawned NPC is found on the next pass.
+     */
+    private final Map<String, Long> fancyMiss = new ConcurrentHashMap<>();
     /** Living NPCs currently mid-escort / scripted walk — do not snap home. */
     private final Set<String> movementLocked = ConcurrentHashMap.newKeySet();
     private final AetherionQuests plugin;
@@ -628,6 +634,13 @@ public final class LivingNpcService {
                     return found;
                 }
             }
+            String missKey = npcId.toLowerCase(Locale.ROOT);
+            Long missUntil = fancyMiss.get(missKey);
+            long nowMs = System.currentTimeMillis();
+            if (missUntil != null && nowMs < missUntil) {
+                return null;
+            }
+            fancyMiss.put(missKey, nowMs + 8_000L);
 
             for (Object npc : FancyNpcFacade.allNpcs(manager)) {
                 Object data = FancyNpcFacade.data(npc);
@@ -638,6 +651,8 @@ public final class LivingNpcService {
                 Object id = data.getClass().getMethod("getId").invoke(data);
                 if (expected.equalsIgnoreCase(String.valueOf(name))
                         || expected.equalsIgnoreCase(String.valueOf(id))) {
+                    fancyMiss.remove(missKey);
+                    fancyNames.put(missKey, String.valueOf(name));
                     return npc;
                 }
             }

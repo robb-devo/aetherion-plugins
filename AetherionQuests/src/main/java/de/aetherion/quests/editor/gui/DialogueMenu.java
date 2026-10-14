@@ -1,302 +1,180 @@
 package de.aetherion.quests.editor.gui;
 
 import de.aetherion.quests.editor.CustomNpc;
-import de.aetherion.quests.editor.DialogueAction;
-import de.aetherion.quests.editor.EditorSessions;
+import de.aetherion.quests.editor.NpcCheck;
 import de.aetherion.quests.editor.NpcEditor;
+import de.aetherion.quests.editor.TextInput;
+import de.aetherion.quests.model.QuestState;
 
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryDragEvent;
-import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.InventoryHolder;
+import org.bukkit.inventory.ItemStack;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
-public final class DialogueMenu implements Listener {
+/**
+ * NPC workspace — Dialogue tab: the conversation map. Every page as a card showing what the NPC says,
+ * how the player can reply and where each reply leads.
+ */
+public final class DialogueMenu {
 
-    private final NpcEditor editor;
+    private static final int FIRST = 18;
+    private static final int PER_SCREEN = 27;
 
-    public DialogueMenu(NpcEditor editor) {
-        this.editor = editor;
-        editor.plugin().getServer().getPluginManager().registerEvents(this, editor.plugin());
+    private DialogueMenu() {
     }
 
-    public static void openTree(Player player, CustomNpc npc) {
-        Inventory inventory = Bukkit.createInventory(
-                new Holder(Kind.TREE, npc.getId(), null, -1),
-                54,
-                EditorItems.title(player, "npc_dialogue", "§8Dialogue")
-        );
-        EditorItems.fill(inventory);
-        inventory.setItem(4, EditorItems.button(
-                Material.WRITABLE_BOOK,
-                "§dDialogue tree",
-                "§7Start page §f" + npc.getStartPage(),
-                "§7Click a page to edit lines & choices."
-        ));
-        int slot = 9;
-        for (CustomNpc.DialoguePage page : npc.pages().values()) {
-            if (slot >= 44) {
-                break;
-            }
-            boolean start = page.id().equalsIgnoreCase(npc.getStartPage());
-            inventory.setItem(slot++, EditorItems.button(
-                    start ? Material.WRITTEN_BOOK : Material.BOOK,
-                    (start ? "§a" : "§e") + page.id(),
-                    "§7" + page.lines().size() + " line(s)",
-                    "§7" + page.choices().size() + " choice(s)",
-                    start ? "§aStart page" : "§7Click to edit"
-            ));
-        }
-        inventory.setItem(45, EditorItems.button(Material.EMERALD, "§aAdd page", "§7Type a short id in chat."));
-        inventory.setItem(49, EditorItems.button(Material.ARROW, "§7Back"));
-        player.openInventory(inventory);
+    public static void open(Player player, String npcId) {
+        open(player, npcId, 0);
     }
 
-    public static void openPage(Player player, CustomNpc npc, String pageId) {
-        CustomNpc.DialoguePage page = npc.page(pageId);
-        if (page == null) {
-            openTree(player, npc);
-            return;
-        }
-        Inventory inventory = Bukkit.createInventory(
-                new Holder(Kind.PAGE, npc.getId(), page.id(), -1),
-                54,
-                "§8Page · " + page.id()
-        );
-        EditorItems.fill(inventory);
-        inventory.setItem(4, EditorItems.button(
-                Material.BOOK,
-                "§e" + page.id(),
-                "§7Lines then player choices."
-        ));
-        for (int i = 0; i < Math.min(page.lines().size(), 7); i++) {
-            inventory.setItem(10 + i, EditorItems.button(
-                    Material.PAPER,
-                    "§f" + page.lines().get(i),
-                    "§cShift-click to remove"
-            ));
-        }
-        inventory.setItem(17, EditorItems.button(Material.EMERALD, "§aAdd line", "§7Type the line in chat."));
-        for (int i = 0; i < Math.min(page.choices().size(), 7); i++) {
-            CustomNpc.DialogueChoice choice = page.choices().get(i);
-            inventory.setItem(28 + i, EditorItems.button(
-                    Material.OAK_SIGN,
-                    "§e" + choice.text(),
-                    "§7" + choice.action().label(),
-                    choice.target().isBlank() ? "§8no target" : "§f" + choice.target()
-            ));
-        }
-        inventory.setItem(35, EditorItems.button(Material.LIME_DYE, "§aAdd choice"));
-        boolean start = page.id().equalsIgnoreCase(npc.getStartPage());
-        inventory.setItem(45, EditorItems.button(
-                start ? Material.LIME_CONCRETE : Material.YELLOW_CONCRETE,
-                start ? "§aStart page" : "§eMake start page"
-        ));
-        if (!CustomNpc.START_PAGE.equalsIgnoreCase(page.id()) || npc.pages().size() > 1) {
-            inventory.setItem(47, EditorItems.button(Material.BARRIER, "§cDelete page"));
-        }
-        inventory.setItem(49, EditorItems.button(Material.ARROW, "§7Back"));
-        player.openInventory(inventory);
-    }
-
-    public static void openChoice(Player player, CustomNpc npc, String pageId, int index) {
-        CustomNpc.DialoguePage page = npc.page(pageId);
-        if (page == null || index < 0 || index >= page.choices().size()) {
-            openPage(player, npc, pageId);
-            return;
-        }
-        CustomNpc.DialogueChoice choice = page.choices().get(index);
-        Inventory inventory = Bukkit.createInventory(
-                new Holder(Kind.CHOICE, npc.getId(), page.id(), index),
-                27,
-                "§8Choice"
-        );
-        EditorItems.fill(inventory);
-        inventory.setItem(4, EditorItems.button(Material.OAK_SIGN, "§e" + choice.text(), "§7Click to rewrite."));
-        inventory.setItem(11, EditorItems.button(Material.REPEATER, "§6Action", "§f" + choice.action().label(), "§7Click to cycle."));
-        inventory.setItem(13, EditorItems.button(
-                Material.COMPASS,
-                "§bTarget",
-                choice.target().isBlank() ? "§8empty" : "§f" + choice.target(),
-                targetHint(choice.action())
-        ));
-        inventory.setItem(15, EditorItems.button(Material.BARRIER, "§cRemove choice"));
-        inventory.setItem(22, EditorItems.button(Material.ARROW, "§7Back"));
-        player.openInventory(inventory);
-    }
-
-    private static String targetHint(DialogueAction action) {
-        return switch (action) {
-            case PAGE -> "§7Page id to open.";
-            case RUN_CONSOLE, RUN_PLAYER -> "§7Command without leading /";
-            case OFFER_QUEST, START_QUEST, TURN_IN_QUEST -> "§7Existing quest id (or empty = linked).";
-            case CLOSE -> "§7No target.";
-        };
-    }
-
-    @EventHandler
-    public void onClick(InventoryClickEvent event) {
-        if (!(event.getInventory().getHolder() instanceof Holder holder)) {
-            return;
-        }
-        event.setCancelled(true);
-        if (!(event.getWhoClicked() instanceof Player player) || !NpcEditor.allowed(player)) {
-            return;
-        }
-        if (event.getClickedInventory() == null || event.getClickedInventory() != event.getView().getTopInventory()) {
-            return;
-        }
-        CustomNpc npc = editor.storage().get(holder.npcId());
+    public static void open(Player player, String npcId, int requested) {
+        CustomNpc npc = Frame.require(player, npcId);
         if (npc == null) {
             return;
         }
-        editor.sessions().of(player).setNpcId(npc.getId());
-        editor.sessions().of(player).setPageId(holder.pageId());
-        switch (holder.kind()) {
-            case TREE -> clickTree(player, npc, event.getRawSlot());
-            case PAGE -> clickPage(player, npc, holder.pageId(), event);
-            case CHOICE -> clickChoice(player, npc, holder, event.getRawSlot());
-        }
-    }
+        NpcEditor editor = Frame.editor();
+        List<CustomNpc.DialoguePage> pages = npc.orderedPages();
+        boolean canAdd = pages.size() < CustomNpc.MAX_PAGES;
+        int tiles = pages.size() + (canAdd ? 1 : 0);
+        int screens = Math.max(1, (tiles + PER_SCREEN - 1) / PER_SCREEN);
+        int screen = Math.max(0, Math.min(requested, screens - 1));
+        Runnable reopen = () -> open(player, npcId, screen);
+        Menu menu = Frame.workspace(player, npc, Frame.Tab.DIALOGUE, reopen);
 
-    private void clickTree(Player player, CustomNpc npc, int slot) {
-        if (slot == 49) {
-            EditMenu.open(player, npc);
-            return;
-        }
-        if (slot == 45) {
-            editor.sessions().of(player).setChoiceIndex(-1);
-            editor.prompt(player, EditorSessions.Prompt.PAGE_ID, "Type a page id (e.g. more, goodbye)");
-            return;
-        }
-        if (slot < 9 || slot > 44) {
-            return;
-        }
-        List<CustomNpc.DialoguePage> pages = new ArrayList<>(npc.pages().values());
-        int index = slot - 9;
-        if (index >= 0 && index < pages.size()) {
-            openPage(player, npc, pages.get(index).id());
-        }
-    }
-
-    private void clickPage(Player player, CustomNpc npc, String pageId, InventoryClickEvent event) {
-        CustomNpc.DialoguePage page = npc.page(pageId);
-        if (page == null) {
-            return;
-        }
-        int slot = event.getRawSlot();
-        if (slot == 49) {
-            openTree(player, npc);
-            return;
-        }
-        if (slot == 17) {
-            editor.sessions().of(player).setPageId(page.id());
-            editor.prompt(player, EditorSessions.Prompt.LINE, "Type a dialogue line");
-            return;
-        }
-        if (slot == 35) {
-            page.choices().add(new CustomNpc.DialogueChoice("…", DialogueAction.CLOSE, ""));
-            editor.persistQuiet(npc);
-            openPage(player, npc, page.id());
-            return;
-        }
-        if (slot == 45) {
-            npc.setStartPage(page.id());
-            editor.persistQuiet(npc);
-            openPage(player, npc, page.id());
-            return;
-        }
-        if (slot == 47) {
-            npc.removePage(page.id());
-            editor.persistQuiet(npc);
-            openTree(player, npc);
-            return;
-        }
-        if (slot >= 10 && slot <= 16) {
-            int index = slot - 10;
-            if (index < page.lines().size() && event.isShiftClick()) {
-                page.lines().remove(index);
-                if (page.lines().isEmpty()) {
-                    page.lines().add("…");
+        List<NpcCheck.Issue> issues = NpcCheck.run(npc, editor.quests());
+        Set<String> reachable = NpcCheck.reachable(npc);
+        int start = screen * PER_SCREEN;
+        for (int i = start; i < tiles && i < start + PER_SCREEN; i++) {
+            int slot = FIRST + (i - start);
+            if (i >= pages.size()) {
+                menu.set(slot, EditorItems.icon(Material.LIME_DYE)
+                        .name("§a+ New page")
+                        .text("Another part of the conversation. Replies with \"Continue talking\" lead to it.")
+                        .blank()
+                        .click("Click", "and type a short title")
+                        .build(), click -> newPage(click.player(), npcId, null, p -> open(p, npcId)));
+                continue;
+            }
+            CustomNpc.DialoguePage page = pages.get(i);
+            String pageId = page.id();
+            menu.set(slot, card(player, npc, page, NpcCheck.forPage(issues, pageId), reachable.contains(pageId)), click -> {
+                if (click.drop()) {
+                    ConfirmMenu.deletePage(click.player(), npcId, pageId);
+                } else if (click.right()) {
+                    editor.preview(click.player(), editor.npc(npcId), pageId, null, reopen);
+                } else {
+                    PageMenu.open(click.player(), npcId, pageId);
                 }
-                editor.persistQuiet(npc);
-                openPage(player, npc, page.id());
+            });
+        }
+
+        menu.set(Frame.LEFT, EditorItems.icon(Material.ENDER_EYE)
+                .name("§a▶ Preview from the start")
+                .text("Plays the conversation to you. Commands and quests are only described.")
+                .build(), click -> editor.preview(click.player(), editor.npc(npcId), null, null, reopen));
+        Frame.pages(menu, screen, screens, next -> open(player, npcId, next));
+        Frame.help(menu, reopen,
+                "§7A conversation is a set of §fpages§7.",
+                "§7On each page the NPC says its lines,",
+                "§7then the player picks a §freply§7.",
+                "§7Replies can continue to another page,",
+                "§7end the chat, handle a quest or run",
+                "§7a command.",
+                "",
+                "§a★ §7marks the page every chat starts on.",
+                "§eRight-click §7a page to preview from it.");
+        Frame.show(menu, player);
+    }
+
+    /**
+     * Asks for a title, creates the page and opens it — or hands the new id to {@code linkFrom} (e.g. a reply).
+     */
+    static void newPage(Player player, String npcId, BiConsumer<Player, String> linkFrom, Consumer<Player> onCancel) {
+        NpcEditor editor = Frame.editor();
+        String[] created = new String[1];
+        editor.ask(player, TextInput.builder("Title for the new page")
+                .hint("A short name only you see, e.g. §fShop§7, §fAbout the mine§7, §fGoodbye§7.")
+                .max(24)
+                .handler((p, text) -> {
+                    CustomNpc npc = editor.npc(npcId);
+                    if (npc == null) {
+                        return "That NPC doesn't exist anymore.";
+                    }
+                    if (npc.pages().size() >= CustomNpc.MAX_PAGES) {
+                        return "This NPC already has " + CustomNpc.MAX_PAGES + " pages.";
+                    }
+                    editor.change(p, npc, "New page " + text, n -> created[0] = n.createPage(text).id());
+                    return null;
+                })
+                .then(p -> {
+                    if (linkFrom != null) {
+                        linkFrom.accept(p, created[0]);
+                    } else {
+                        PageMenu.open(p, npcId, created[0]);
+                    }
+                })
+                .onCancel(onCancel)
+                .build());
+    }
+
+    private static ItemStack card(Player player, CustomNpc npc, CustomNpc.DialoguePage page,
+                                  List<NpcCheck.Issue> issues, boolean reachable) {
+        boolean first = npc.isStartPage(page.id());
+        QuestState stage = npc.stageOpening(page.id());
+        EditorItems.Builder icon = EditorItems.icon(first ? Material.WRITTEN_BOOK : stage != null ? Material.KNOWLEDGE_BOOK : Material.BOOK)
+                .name((first ? "§a§l★ " : "§e§l") + page.title())
+                .glow(first);
+        if (first) {
+            icon.lore("§8Every conversation starts here");
+        } else if (stage != null && npc.hasLinkedQuest()) {
+            icon.lore("§8Opens when the quest is " + NpcCheck.stageName(stage).toLowerCase());
+        }
+        icon.blank().lore("§7NPC says:");
+        List<String> lines = page.spokenLines();
+        if (lines.isEmpty()) {
+            icon.lore("§8  (nothing)");
+        }
+        for (int i = 0; i < lines.size() && i < 3; i++) {
+            icon.lore("§f  " + EditorItems.quote(lines.get(i).replace("{player}", player.getName()), 32));
+        }
+        if (lines.size() > 3) {
+            icon.lore("§8  +" + (lines.size() - 3) + " more");
+        }
+        icon.blank().lore("§7Player replies:");
+        if (page.choices().isEmpty()) {
+            icon.lore(npc.hasLinkedQuest() ? "§8  (none — offers the main quest)" : "§8  (none — the chat ends)");
+        }
+        for (int i = 0; i < page.choices().size() && i < 4; i++) {
+            CustomNpc.DialogueChoice choice = page.choices().get(i);
+            icon.lore("§e  ▸ " + EditorItems.truncate(choice.text(), 18) + " §8→ " + Frame.describe(npc, choice));
+        }
+        if (page.choices().size() > 4) {
+            icon.lore("§8  +" + (page.choices().size() - 4) + " more");
+        }
+        List<CustomNpc.Link> links = npc.linksTo(page.id());
+        if (!first && stage == null) {
+            icon.blank();
+            if (!reachable || links.isEmpty()) {
+                icon.lore("§e⚠ Nothing leads here yet");
+            } else {
+                CustomNpc.Link link = links.get(0);
+                icon.lore("§7Reached from §f" + EditorItems.quote(link.choice().text(), 18)
+                        + " §8on " + CustomNpc.pageTitle(link.pageId())
+                        + (links.size() > 1 ? " §8+" + (links.size() - 1) : ""));
             }
-            return;
         }
-        if (slot >= 28 && slot <= 34) {
-            int index = slot - 28;
-            if (index < page.choices().size()) {
-                openChoice(player, npc, page.id(), index);
-            }
+        long problems = NpcCheck.problems(issues);
+        if (problems > 0) {
+            icon.lore("§c✖ " + EditorItems.plural((int) problems, "problem") + " on this page");
         }
-    }
-
-    private void clickChoice(Player player, CustomNpc npc, Holder holder, int slot) {
-        CustomNpc.DialoguePage page = npc.page(holder.pageId());
-        if (page == null || holder.choiceIndex() < 0 || holder.choiceIndex() >= page.choices().size()) {
-            return;
-        }
-        CustomNpc.DialogueChoice choice = page.choices().get(holder.choiceIndex());
-        editor.sessions().of(player).setChoiceIndex(holder.choiceIndex());
-        if (slot == 22) {
-            openPage(player, npc, page.id());
-            return;
-        }
-        if (slot == 4) {
-            editor.prompt(player, EditorSessions.Prompt.CHOICE_TEXT, "Type the choice label the player sees");
-            return;
-        }
-        if (slot == 11) {
-            DialogueAction[] all = DialogueAction.values();
-            int next = (choice.action().ordinal() + 1) % all.length;
-            choice.setAction(all[next]);
-            editor.persistQuiet(npc);
-            openChoice(player, npc, page.id(), holder.choiceIndex());
-            return;
-        }
-        if (slot == 13) {
-            switch (choice.action()) {
-                case PAGE -> editor.prompt(player, EditorSessions.Prompt.PAGE_ID, "Type the page id to open");
-                case RUN_CONSOLE, RUN_PLAYER ->
-                        editor.prompt(player, EditorSessions.Prompt.COMMAND, "Type the command (no /). {player} works.");
-                case OFFER_QUEST, START_QUEST, TURN_IN_QUEST ->
-                        editor.prompt(player, EditorSessions.Prompt.QUEST_ID, "Type an existing quest id");
-                case CLOSE -> player.sendMessage("§7Close needs no target.");
-            }
-            return;
-        }
-        if (slot == 15) {
-            page.choices().remove(holder.choiceIndex());
-            editor.persistQuiet(npc);
-            openPage(player, npc, page.id());
-        }
-    }
-
-    @EventHandler
-    public void onDrag(InventoryDragEvent event) {
-        if (event.getInventory().getHolder() instanceof Holder) {
-            event.setCancelled(true);
-        }
-    }
-
-    enum Kind {
-        TREE,
-        PAGE,
-        CHOICE
-    }
-
-    public record Holder(Kind kind, String npcId, String pageId, int choiceIndex) implements InventoryHolder {
-        @Override
-        public Inventory getInventory() {
-            return null;
-        }
+        return icon.blank()
+                .click("Click", "to edit")
+                .click("Right-click", "to preview from here")
+                .danger("Press Q", "to delete…")
+                .build();
     }
 }

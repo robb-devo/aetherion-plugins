@@ -86,6 +86,8 @@ public class BossInstance {
     private final SandboxDirector sandboxDirector = new SandboxDirector(this);
     private final de.aetherion.bossengine.instance.saint.HangingSaintDirector saintDirector =
             new de.aetherion.bossengine.instance.saint.HangingSaintDirector(this);
+    private final de.aetherion.bossengine.instance.eggquelizer.EggquelizerDirector eggDirector =
+            new de.aetherion.bossengine.instance.eggquelizer.EggquelizerDirector(this);
     private final de.aetherion.bossengine.instance.worldeater.UnbrokenDirector unbrokenDirector =
             new de.aetherion.bossengine.instance.worldeater.UnbrokenDirector(this);
     private final de.aetherion.bossengine.instance.worldeater.WorldEaterDirector worldEaterDirector =
@@ -313,6 +315,7 @@ public class BossInstance {
             sovereignDirector.onBind();
             sandboxDirector.onBind();
             saintDirector.onBind();
+            eggDirector.onBind();
             unbrokenDirector.onBind();
             worldEaterDirector.onBind();
             if (script != null) {
@@ -360,13 +363,14 @@ public class BossInstance {
             sovereignDirector.onBind();
             sandboxDirector.onBind();
             saintDirector.onBind();
+            eggDirector.onBind();
             unbrokenDirector.onBind();
             worldEaterDirector.onBind();
             if (script != null) {
                 script.onBind();
             }
             // Soft-arena bosses stay where they were — never blink home on rebind.
-            if (script == null && !refusesHardArenaSnap() && !saintDirector.isMine() && !ownsWorldEaterBody()) {
+            if (script == null && !refusesHardArenaSnap() && !saintDirector.isMine() && !eggDirector.isMine() && !ownsWorldEaterBody()) {
                 snapToArena();
             }
             clearBodyUnloaded();
@@ -462,6 +466,7 @@ public class BossInstance {
                 || sovereignDirector.isDying()
                 || signatureDirector.isDying()
                 || saintDirector.isDying()
+                || eggDirector.isDying()
                 || unbrokenDirector.isDying()
                 || worldEaterDirector.isDying()
                 || (script != null && script.isDying()));
@@ -479,6 +484,7 @@ public class BossInstance {
         signatureDirector.abort();
         sandboxDirector.abort();
         saintDirector.abort();
+        eggDirector.abort();
         unbrokenDirector.abort();
         worldEaterDirector.abort();
         if (script != null) {
@@ -527,6 +533,7 @@ public class BossInstance {
         eliteDirector.clearFx();
         de.aetherion.bossengine.skill.t2.T2Mechanics.clearInstanceProps(this);
         saintDirector.clear();
+        eggDirector.clear();
         unbrokenDirector.clear();
         worldEaterDirector.clear();
         if (script != null) {
@@ -570,6 +577,7 @@ public class BossInstance {
                 || sovereignDirector.blocksDamage()
                 || signatureDirector.isDying()
                 || saintDirector.blocksDamage()
+                || eggDirector.blocksDamage()
                 || unbrokenDirector.blocksDamage()
                 || worldEaterDirector.blocksDamage()
                 || sandboxDirector.blocksDamage()
@@ -579,6 +587,10 @@ public class BossInstance {
 
     public SandboxDirector sandbox() {
         return sandboxDirector;
+    }
+
+    public de.aetherion.bossengine.instance.worldeater.WorldEaterDirector worldEater() {
+        return worldEaterDirector;
     }
 
     public boolean isInternalTeleport() {
@@ -626,6 +638,7 @@ public class BossInstance {
                 || hollowSunDirector.beginDeath()
                 || sovereignDirector.beginDeath()
                 || saintDirector.beginDeath()
+                || eggDirector.beginDeath()
                 || unbrokenDirector.beginDeath()
                 || worldEaterDirector.beginDeath()
                 || signatureDirector.beginDeath()) {
@@ -757,6 +770,10 @@ public class BossInstance {
             ticksAlive++;
             return saintDirector.tick();
         }
+        if (eggDirector.isDying()) {
+            ticksAlive++;
+            return eggDirector.tick();
+        }
         if (unbrokenDirector.isDying()) {
             ticksAlive++;
             return unbrokenDirector.tick();
@@ -784,6 +801,7 @@ public class BossInstance {
         sovereignDirector.tick();
         sandboxDirector.tick();
         saintDirector.tick();
+        eggDirector.tick();
         unbrokenDirector.tick();
         worldEaterDirector.tick();
         if (ticksAlive == 20 || ticksAlive == 100) {
@@ -964,8 +982,9 @@ public class BossInstance {
             if (transition.isFreezeAi() && entity instanceof Mob mob) {
                 mob.setAI(false);
             }
-            if (saintDirector.ownsTransition() || unbrokenDirector.ownsTransition() || worldEaterDirector.ownsTransition()) {
-                // Hanging Saint, the Unbroken and the World Eater stage their own transitions.
+            if (saintDirector.ownsTransition() || eggDirector.ownsTransition()
+                    || unbrokenDirector.ownsTransition() || worldEaterDirector.ownsTransition()) {
+                // Hanging Saint, Eggquelizer, the Unbroken and the World Eater stage their own transitions.
                 return;
             }
             if (hollowSunDirector.isMine()) {
@@ -1032,7 +1051,8 @@ public class BossInstance {
         }
         transitionTick++;
         double progress = (double) transitionTick / Math.max(1, transition.getDurationTicks());
-        if (saintDirector.ownsTransition() || unbrokenDirector.ownsTransition() || worldEaterDirector.ownsTransition()) {
+        if (saintDirector.ownsTransition() || eggDirector.ownsTransition()
+                || unbrokenDirector.ownsTransition() || worldEaterDirector.ownsTransition()) {
             // Choreography runs inside the director's tick(); only the timer lives here.
         } else if (hollowSunDirector.isMine()) {
             // The director flies the body for the whole transition; no phase-return snap.
@@ -2114,10 +2134,23 @@ public class BossInstance {
             }
             return;
         }
-        if (saintDirector.ownsBody()) {
+        if (saintDirector.ownsBody() || eggDirector.ownsBody()) {
             if (entity instanceof Mob mob) {
                 mob.setAI(false);
                 mob.setAware(false);
+            }
+            // Must stay collidable: projectiles otherwise pass through the invisible hitbox.
+            if (!entity.isCollidable()) {
+                entity.setCollidable(true);
+            }
+            // Phase transitions set invulnerable=true; these directors own the body and used to
+            // early-return without clearing it — bosses stayed immune forever after the first gate.
+            boolean armored = isTransitioning()
+                    || phaseArmorTicks > 0
+                    || (saintDirector.ownsBody() && saintDirector.blocksDamage())
+                    || (eggDirector.ownsBody() && eggDirector.blocksDamage());
+            if (!armored && entity.isInvulnerable()) {
+                entity.setInvulnerable(false);
             }
             return;
         }
@@ -2265,8 +2298,8 @@ public class BossInstance {
             // Cave boss: zero leash, zero pulls, zero ports.
             return;
         }
-        if (saintDirector.isMine()) {
-            // Stage fight: the director owns her seat; leash would yank the husk off the boards.
+        if (saintDirector.isMine() || eggDirector.isMine()) {
+            // Stage fight: the director owns the body; leash would yank the hitbox off the boards.
             return;
         }
         if (ownsWorldEaterBody()) {
@@ -2634,7 +2667,7 @@ public class BossInstance {
 
     private void unstickIfNeeded() {
         if (entity == null || !entity.isValid() || sovereignDirector.holdsBody() || saintDirector.ownsBody()
-                || unbrokenDirector.ownsBody() || worldEaterDirector.ownsBody()) {
+                || eggDirector.ownsBody() || unbrokenDirector.ownsBody() || worldEaterDirector.ownsBody()) {
             return;
         }
         if (isHollowLurker()) {

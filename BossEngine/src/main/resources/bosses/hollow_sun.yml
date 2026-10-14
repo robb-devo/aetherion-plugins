@@ -92,25 +92,39 @@ loot:
   experience: 9000
 
   killer-bonus:
-    - source: VANILLA
-      material: NETHER_STAR
+    # P0: NETHER_STAR -> tagged spectacle_star (Trophy; vanilla Wither stars can't stand in)
+    - source: AETHERION
+      item-id: spectacle_star
       amount: 1
       chance: 1.0
 
+  # D2 (P2): the Remnant of the Hollow Sun set now drops here (normalised one step above Helios).
   rank-loot:
     1:
       - source: AETHERION
         item-id: random_booster
         amount: 2
         chance: 0.75
+      - source: AETHERION
+        item-id: random_hollow_sun_armor
+        amount: 1
+        chance: 1.0
     2:
       - source: AETHERION
         item-id: random_booster
         amount: 1
         chance: 0.55
+      - source: AETHERION
+        item-id: random_hollow_sun_armor
+        amount: 1
+        chance: 0.70
     3:
       - source: AETHERION
         item-id: random_booster
+        amount: 1
+        chance: 0.35
+      - source: AETHERION
+        item-id: random_hollow_sun_armor
         amount: 1
         chance: 0.35
 

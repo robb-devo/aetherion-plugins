@@ -21,6 +21,10 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Soft exploration hint (not a quest) — bossbar + compass arrow only.
+ * <p>
+ * Targets are NPC ids, or fixed waypoints ({@code spot:<key>}, e.g. an isle jump pad) whose
+ * spot comes from config {@code road-spots.<key>} with a code default. Road targets (isle
+ * guides, Tackle, pads) end their trail once the player reaches them.
  */
 public final class QuestHint {
 
@@ -33,8 +37,70 @@ public final class QuestHint {
     /** Soft trail remembered across side-quests; restored when idle. */
     private static final Map<UUID, Hint> PENDING = new ConcurrentHashMap<>();
     private static final Map<UUID, BossBar> BARS = new ConcurrentHashMap<>();
+    /** Road hints (isle guides) that the player has walked up to — dropped on the next tick. */
+    private static final Map<UUID, String> ARRIVED_AT = new ConcurrentHashMap<>();
+
+    /** Waypoint ids: {@code spot:<key>} (see {@link #showSpot}). */
+    public static final String SPOT_PREFIX = "spot:";
+
+    /** Live hub pad spots (MMO-R scout 2026-10-03), used when config has no {@code road-spots.<key>}. */
+    private static final Map<String, double[]> SPOT_DEFAULTS = Map.of(
+            // origin_to_farming: hub footprint -296..-291, 54, 339..341
+            "farm_pad", new double[] {-293.0, 55.0, 340.5},
+            // origin_to_fishing: hub footprint -368..-363, 62, -489..-488
+            "fish_pad", new double[] {-365.5, 63.0, -488.5},
+            // origin_to_forage: hub footprint 435..441, 54..56, -237..-231
+            "forage_pad", new double[] {438.0, 55.0, -234.0}
+    );
 
     private QuestHint() {
+    }
+
+    /** Point the soft arrow at a fixed waypoint (a pad, a landing) instead of an NPC. */
+    public static void showSpot(Player player, String spotKey, String label) {
+        if (spotKey == null || spotKey.isBlank()) {
+            return;
+        }
+        show(player, SPOT_PREFIX + spotKey.toLowerCase(Locale.ROOT), label);
+    }
+
+    /** Exile island doors (Runde 7, world {@code aetherion_exile}): where the soft arrow points on mmo-c. */
+    private static final Map<String, double[]> EXILE_SPOTS = Map.of(
+            "exile_lift", new double[] {134.5, 74.0, 26.5},
+            "exile_crater", new double[] {73.5, 120.0, -69.5},
+            "exile_observatory", new double[] {-91.5, 157.0, -165.5},
+            "exile_ring", new double[] {-125.5, 157.0, -165.5},
+            "exile_theater", new double[] {13.5, 143.0, 69.5},
+            "exile_garden", new double[] {-54.5, 135.0, 120.5},
+            "exile_maw", new double[] {-127.5, 135.0, 84.5},
+            "exile_doors", new double[] {13.5, 143.0, 0.5}
+    );
+
+    /** Spot for {@code road-spots.<key>} ({@code world, x, y, z}), else the code default, else null. */
+    public static Location spotLocation(String key) {
+        if (key == null) {
+            return null;
+        }
+        if (key.equals("veil_quay")) {
+            return de.aetherion.core.api.ExilePlaces.quayBoard();
+        }
+        double[] exile = EXILE_SPOTS.get(key);
+        if (exile != null) {
+            org.bukkit.World w = Bukkit.getWorld(de.aetherion.core.api.ExilePlaces.EXILE_WORLD);
+            return w == null ? null : new Location(w, exile[0], exile[1], exile[2]);
+        }
+        AetherionQuests plugin = AetherionQuests.getInstance();
+        String world = "world";
+        double[] xyz = SPOT_DEFAULTS.get(key);
+        if (plugin != null) {
+            var section = plugin.getConfig().getConfigurationSection("road-spots." + key);
+            if (section != null) {
+                world = section.getString("world", world);
+                xyz = new double[] {section.getDouble("x"), section.getDouble("y"), section.getDouble("z")};
+            }
+        }
+        org.bukkit.World w = xyz == null ? null : Bukkit.getWorld(world);
+        return w == null ? null : new Location(w, xyz[0], xyz[1], xyz[2]);
     }
 
     public static void show(Player player, String npcId, String label) {
@@ -48,6 +114,7 @@ public final class QuestHint {
         }
         String name = label == null || label.isBlank() ? pretty(npcId) : label;
         Hint hint = new Hint(npcId.toLowerCase(Locale.ROOT), name, note);
+        ARRIVED_AT.remove(player.getUniqueId());
         HINTS.put(player.getUniqueId(), hint);
         PENDING.put(player.getUniqueId(), hint);
         tickPlayer(player);
@@ -59,7 +126,20 @@ public final class QuestHint {
             return;
         }
         String name = label == null || label.isBlank() ? pretty(npcId) : label;
+        ARRIVED_AT.remove(player.getUniqueId());
         PENDING.put(player.getUniqueId(), new Hint(npcId.toLowerCase(Locale.ROOT), name, null));
+    }
+
+    /** NPC id of the remembered soft trail (visible or waiting), or null. */
+    public static String pendingNpc(Player player) {
+        if (player == null) {
+            return null;
+        }
+        Hint hint = PENDING.get(player.getUniqueId());
+        if (hint == null) {
+            hint = HINTS.get(player.getUniqueId());
+        }
+        return hint == null ? null : hint.npcId();
     }
 
     public static void clear(Player player) {
@@ -78,6 +158,7 @@ public final class QuestHint {
         clear(player);
         if (player != null) {
             PENDING.remove(player.getUniqueId());
+            ARRIVED_AT.remove(player.getUniqueId());
         }
     }
 
@@ -105,7 +186,7 @@ public final class QuestHint {
             return;
         }
         for (Player player : Bukkit.getOnlinePlayers()) {
-            if (isFarmIsland(player.getWorld())) {
+            if (hiddenFor(player)) {
                 BossBar bar = BARS.get(player.getUniqueId());
                 if (bar != null) {
                     bar.setVisible(false);
@@ -140,6 +221,10 @@ public final class QuestHint {
             return false;
         }
         String npc = pending.npcId().toLowerCase(Locale.ROOT);
+        if (npc.startsWith(SPOT_PREFIX)) {
+            // Waypoints (isle pads): the trail ends once you stand on it.
+            return !npc.equals(ARRIVED_AT.get(player.getUniqueId()));
+        }
         // Orientation trail drops after stamp — except Miss Ledger (graduation visit).
         if (de.aetherion.quests.util.QuestStoryGate.tutorialDone(player, questManager)
                 && isTutorialTrailNpc(npc)
@@ -151,12 +236,36 @@ public final class QuestHint {
             case "quartermaster" -> stillNeeds(questManager, player, "forge_coal");
             case "foreman", "craftsman" -> stillNeeds(questManager, player, "first_shift");
             case "booster_tutor" -> stillNeeds(questManager, player, "lesson_boost");
+            // Ledger: her skills lesson, then the graduation visit — the pin retires once she has stamped.
             case "ledger" -> stillNeeds(questManager, player, "lesson_manager")
-                    || de.aetherion.quests.util.QuestStoryGate.tutorialDone(player, questManager);
+                    || (de.aetherion.quests.util.QuestStoryGate.tutorialDone(player, questManager)
+                    && !de.aetherion.quests.util.QuestStoryGate.graduated(player, questManager));
             case "farmer" -> stillNeeds(questManager, player, "farm_hand");
             case "lark" -> stillNeeds(questManager, player, "pocket_zoo");
+            case "vex" -> stillNeeds(questManager, player, "lesson_steel");
+            case "rite_keeper" -> stillNeeds(questManager, player, "border_rites");
+            // Isle roads (Ledger's picker / harbour crumbs): the trail ends once you reach the guide.
+            case "forage_pad_guide", "farm_isle_guide" -> !npc.equals(ARRIVED_AT.get(player.getUniqueId()));
+            // Tackle: quest bar owns the pin while his lesson runs; otherwise until you reach him.
+            case "fisher" -> !npc.equals(ARRIVED_AT.get(player.getUniqueId()))
+                    && !running(questManager, player, "a_good_catch");
             default -> true;
         };
+    }
+
+    private static boolean running(QuestManager questManager, Player player, String questId) {
+        var quest = questManager.getQuest(questId);
+        if (quest == null) {
+            return false;
+        }
+        var state = questManager.getQuestState(player, quest);
+        return state == de.aetherion.quests.model.QuestState.ACTIVE
+                || state == de.aetherion.quests.model.QuestState.READY;
+    }
+
+    private static boolean isRoadNpc(String npcId) {
+        return "forage_pad_guide".equals(npcId) || "farm_isle_guide".equals(npcId) || "fisher".equals(npcId)
+                || (npcId != null && npcId.startsWith(SPOT_PREFIX));
     }
 
     /** Quest not yet finished — drop pending once ACTIVE/READY/COMPLETED (quest bar owns the pin). */
@@ -187,7 +296,7 @@ public final class QuestHint {
         if (hint == null) {
             return;
         }
-        if (isFarmIsland(player.getWorld())) {
+        if (hiddenFor(player)) {
             BossBar bar = BARS.get(player.getUniqueId());
             if (bar != null) {
                 bar.setVisible(false);
@@ -221,6 +330,9 @@ public final class QuestHint {
         double dz = target.getZ() - player.getLocation().getZ();
         double dist = Math.sqrt(dx * dx + dz * dz);
         if (dist <= ARRIVED) {
+            if (isRoadNpc(hint.npcId())) {
+                ARRIVED_AT.put(player.getUniqueId(), hint.npcId());
+            }
             bar.setTitle("§7" + de.aetherion.quests.lang.LangPack.ui(player, "hint", "Hint")
                 + " §8• §a" + hint.label() + note + " §8• §a●");
             bar.setColor(BarColor.GREEN);
@@ -255,6 +367,9 @@ public final class QuestHint {
     }
 
     private static Location npcLocation(String npcId) {
+        if (npcId != null && npcId.startsWith(SPOT_PREFIX)) {
+            return spotLocation(npcId.substring(SPOT_PREFIX.length()));
+        }
         QuestNPC npc = QuestNPCRegistry.getNPC(npcId);
         if (npc == null) {
             return null;
@@ -290,6 +405,14 @@ public final class QuestHint {
             sb.append(Character.toUpperCase(part.charAt(0))).append(part.substring(1));
         }
         return sb.toString();
+    }
+
+    /**
+     * The hint bar steps aside on the farm isle and wherever a place owns the whole top bar (Core
+     * {@link de.aetherion.core.api.QuestBars#suppressAll}: a player's own / guild island).
+     */
+    private static boolean hiddenFor(Player player) {
+        return isFarmIsland(player.getWorld()) || de.aetherion.core.api.QuestBars.hintsHidden(player.getUniqueId());
     }
 
     private static boolean isFarmIsland(org.bukkit.World world) {

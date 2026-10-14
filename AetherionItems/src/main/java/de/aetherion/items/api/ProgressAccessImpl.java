@@ -65,8 +65,10 @@ public final class ProgressAccessImpl implements ProgressAccess {
         if (plugin.getCodex() != null) {
             plugin.getCodex().save();
         }
-        // ranks.save() was invoked reflectively but RankBadgeService.save() is private —
-        // getMethod("save") never succeeded. Do not start flushing ranks here.
+        // ranks.flush() — public; former reflective save() never worked (private).
+        if (plugin.ranks() != null) {
+            plugin.ranks().flush();
+        }
         if (plugin.getMarket() != null) {
             plugin.getMarket().save();
         }
@@ -131,6 +133,19 @@ public final class ProgressAccessImpl implements ProgressAccess {
         }
         if (player != null && plugin.xpBarSync() != null) {
             plugin.xpBarSync().sync(player);
+        }
+        // Late transfer apply: join-time discoverFor already ran with empty unlocks.
+        if (player != null && plugin.getRecipeService() != null) {
+            plugin.getRecipeService().discoverFor(player);
+        }
+        if (player != null && plugin.recipeUnlocks() != null) {
+            plugin.recipeUnlocks().syncOwnedRecipes(player);
+        }
+        // Skill@100 / hop: old max-health+speed stuck until something else refreshed — force now.
+        if (player != null && plugin.getHealthListener() != null) {
+            plugin.getHealthListener().refreshCombatStats(player);
+            plugin.getServer().getScheduler().runTaskLater(plugin,
+                    () -> plugin.getHealthListener().refreshCombatStats(player), 10L);
         }
     }
 
@@ -199,6 +214,18 @@ public final class ProgressAccessImpl implements ProgressAccess {
             return;
         }
         plugin.getManager().open(player);
+    }
+
+    @Override
+    public void syncAccountLevel(Player player) {
+        if (player == null || plugin == null || plugin.getSkills() == null) {
+            return;
+        }
+        int level = plugin.getSkills().accountLevel(player);
+        player.setLevel(Math.max(0, level));
+        if (plugin.ranks() != null) {
+            plugin.ranks().syncProgression(player, level);
+        }
     }
 
     private static ProgressionService.Flag flag(String flagName) {

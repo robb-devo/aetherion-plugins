@@ -142,9 +142,15 @@ public class BukkitRecipeService {
                 continue;
             }
 
+            // P2: a Signature slot takes any find of its family (crystals / crops / heads differ in
+            // material). Offer all of them so the vanilla recipe still matches and consumes the grid.
+            List<org.bukkit.Material> family = de.aetherion.items.economy.Signatures.choiceMaterials(
+                    de.aetherion.items.economy.Signatures.idOf(ingredient));
             recipe.setIngredient(
                     entry.getKey(),
-                    new RecipeChoice.MaterialChoice(ingredient.getType())
+                    family.isEmpty()
+                            ? new RecipeChoice.MaterialChoice(ingredient.getType())
+                            : new RecipeChoice.MaterialChoice(family)
             );
         }
 

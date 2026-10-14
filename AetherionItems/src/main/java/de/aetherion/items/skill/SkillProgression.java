@@ -52,6 +52,21 @@ public final class SkillProgression {
         };
     }
 
+    /**
+     * Boss Grudge (P4 / L3): +10% at level 1 to +30% at {@link #MAX_LEVEL}, linear. Was 10% x
+     * {@link #effectMultiplier(int)} (+65% at 100), which stacked with crit into the End blow-up.
+     */
+    public static double bossGrudge(int level) {
+        int clamped = clampLevel(level);
+        return 0.10d + 0.20d * (clamped - 1) / (double) (MAX_LEVEL - 1);
+    }
+
+    /** Floor Grudge (P4 / L3, design B6): +12% at level 1 to +36% at {@link #MAX_LEVEL}, dungeons only. */
+    public static double floorGrudge(int level) {
+        int clamped = clampLevel(level);
+        return 0.12d + 0.24d * (clamped - 1) / (double) (MAX_LEVEL - 1);
+    }
+
     public static double effectMultiplier(int level) {
         int clamped = clampLevel(level);
         int early = Math.min(clamped, 50);

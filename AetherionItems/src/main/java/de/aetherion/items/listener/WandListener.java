@@ -86,8 +86,7 @@ public final class WandListener implements Listener {
         String cdKey = player.getUniqueId() + ":" + (itemId != null ? itemId : "wand");
         Long ready = cooldown.get(cdKey);
         if (ready != null && ready > now) {
-            long left = (ready - now + 999L) / 1000L;
-            player.sendMessage("§7Still gathering. §f" + left + "s");
+            de.aetherion.items.combat.AbilityCooldownHud.denied(player, itemId != null ? itemId : "wand");
             return;
         }
         double range = itemManager.getWandRange(item);
@@ -95,7 +94,9 @@ public final class WandListener implements Listener {
         if (target == null || target.getWorld() == null) {
             return;
         }
-        cooldown.put(cdKey, now + de.aetherion.items.listener.ProgressionEffects.cooldownMs(player, itemManager, itemManager.getWandCooldownMs(item)));
+        long wandCdMs = de.aetherion.items.listener.ProgressionEffects.cooldownMs(player, itemManager, itemManager.getWandCooldownMs(item));
+        cooldown.put(cdKey, now + wandCdMs);
+        de.aetherion.items.combat.AbilityCooldownHud.armMs(player, itemId != null ? itemId : "wand", null, wandCdMs, item);
 
         String type = itemManager.getWandType(item);
         double blast = itemManager.getWandBlast(item);

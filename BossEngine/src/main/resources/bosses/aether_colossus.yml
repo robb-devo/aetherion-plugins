@@ -145,19 +145,22 @@ loot:
   participation-threshold-percent: 5.0
   experience: 62000
 
+  # P0: was T1 combat_sword (souvenir). Now feeds the Combat T4 cross recipe.
   killer-bonus:
     - source: AETHERION
-      item-id: combat_sword
+      item-id: compacted_bone
       amount: 1
       chance: 1.0
 
   shared:
-    - source: VANILLA
-      material: NETHER_STAR
+    # P0: NETHER_STAR -> tagged spectacle_star (Trophy; vanilla Wither stars can't stand in)
+    - source: AETHERION
+      item-id: spectacle_star
       amount: 1
       chance: 1.0
+    # P0: was T1 combat_chestplate 35% (souvenir) -> Combat T4 material.
     - source: AETHERION
-      item-id: combat_chestplate
+      item-id: compacted_raw_gold
       amount: 1
       chance: 0.35
 
