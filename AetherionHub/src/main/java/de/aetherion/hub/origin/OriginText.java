@@ -1,5 +1,7 @@
 package de.aetherion.hub.origin;
 
+import de.aetherion.core.api.ActionBarLane;
+
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.title.Title;
@@ -30,7 +32,7 @@ public final class OriginText {
     /** Action bar that the wayfinder leaves alone for a couple of seconds. */
     public static void bar(Player player, String text) {
         if (player != null) {
-            player.sendActionBar(legacy(text));
+            ActionBarLane.show(player, legacy(text));
             hold(player, 2500L);
         }
     }

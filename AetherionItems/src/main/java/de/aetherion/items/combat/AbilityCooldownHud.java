@@ -26,11 +26,11 @@ import java.util.function.Predicate;
 /**
  * Per-weapon ability cooldown for the shared ActionBar (HP + CD).
  *
- * <p>HealthListener owns the bar (2-tick refresh); this keeps an independent
- * gate per item id so swapping weapons preserves each tool's remaining
- * cooldown. Readout: {@code Label ▮▮▮▮▮▯▯▯ 3.4s} while cooling, a short red
- * pulse when the player presses during CD, and a green {@code ✔ Label ready}
- * flash (with one soft ping) when it comes back.
+ * <p>{@link PlayerHud} owns the bar (checked every 2 ticks, sent on change); this keeps an
+ * independent gate per item id so swapping weapons preserves each tool's remaining
+ * cooldown. Glyph HUD: a filling bar per gate ({@link #rows}). Text HUD:
+ * {@code Label ▮▮▮▮▮▯▯▯ 3.4s} ({@link #fragment}). Both show a short red pulse when the
+ * player presses during CD, and a green ready flash (with one soft ping) when it comes back.
  *
  * <p>Pinned gates (set-armor / off-hand abilities) show regardless of the
  * held item, after the held weapon's gate.
@@ -194,7 +194,7 @@ public final class AbilityCooldownHud {
         return false;
     }
 
-    /** Appended by {@link de.aetherion.items.listener.HealthListener} every HUD tick. */
+    /** Appended by {@link PlayerHud}'s text HUD. */
     public static Component fragment(Player player, String heldItemId) {
         return fragment(player, heldItemId, true);
     }
@@ -203,34 +203,11 @@ public final class AbilityCooldownHud {
      * @param withSeparator leading {@code ·} for the no-defense (HP-adjacent) layout
      */
     public static Component fragment(Player player, String heldItemId, boolean withSeparator) {
-        if (player == null) {
-            return Component.empty();
-        }
-        Map<String, Gate> byItem = GATES.get(player.getUniqueId());
-        if (byItem == null || byItem.isEmpty()) {
-            return Component.empty();
-        }
-        prune(byItem);
-        if (byItem.isEmpty()) {
-            GATES.remove(player.getUniqueId(), byItem);
-            return Component.empty();
-        }
-
-        long tick = Bukkit.getCurrentTick();
-        String held = heldItemId == null || heldItemId.isBlank() ? null : key(heldItemId);
-        List<Gate> shown = new ArrayList<>(1 + MAX_PINNED_SHOWN);
-        Gate heldGate = held == null ? null : byItem.get(held);
-        if (heldGate != null && !heldGate.pinned) {
-            shown.add(heldGate);
-        }
-        byItem.values().stream()
-                .filter(g -> g.pinned)
-                .sorted(Comparator.comparingLong(g -> g.readyTick))
-                .limit(MAX_PINNED_SHOWN)
-                .forEach(shown::add);
+        List<Gate> shown = shown(player, heldItemId);
         if (shown.isEmpty()) {
             return Component.empty();
         }
+        long tick = Bukkit.getCurrentTick();
 
         TextComponent.Builder out = Component.text();
         boolean first = true;
@@ -244,13 +221,77 @@ public final class AbilityCooldownHud {
         return out.build().decoration(TextDecoration.ITALIC, false);
     }
 
+    /** Cooldown as the glyph HUD draws it: one bar per shown gate, held weapon first. */
+    public record Row(String label, double progress, long leftTicks, State state, boolean pinned) {
+    }
+
+    public enum State {
+        COOLING, DENIED, READY, READY_DIM
+    }
+
+    /** Same gates, order and ready ping as {@link #fragment}, for {@link PlayerHud}'s glyph bars. */
+    public static List<Row> rows(Player player, String heldItemId) {
+        List<Gate> shown = shown(player, heldItemId);
+        if (shown.isEmpty()) {
+            return List.of();
+        }
+        long tick = Bukkit.getCurrentTick();
+        List<Row> rows = new ArrayList<>(shown.size());
+        for (Gate gate : shown) {
+            if (tick >= gate.readyTick) {
+                ping(player, gate);
+                boolean bright = tick - gate.readyTick < READY_FLASH_TICKS / 2;
+                rows.add(new Row(gate.label, 1.0, 0L, bright ? State.READY : State.READY_DIM, gate.pinned));
+                continue;
+            }
+            long left = gate.readyTick - tick;
+            long total = Math.max(1L, gate.readyTick - gate.startTick);
+            double done = 1.0 - Math.min(1.0, (double) left / (double) total);
+            rows.add(new Row(gate.label, done, left, tick < gate.deniedUntil ? State.DENIED : State.COOLING, gate.pinned));
+        }
+        return rows;
+    }
+
+    /** Held weapon's gate first, then up to {@link #MAX_PINNED_SHOWN} pinned gates, soonest first. */
+    private static List<Gate> shown(Player player, String heldItemId) {
+        if (player == null) {
+            return List.of();
+        }
+        Map<String, Gate> byItem = GATES.get(player.getUniqueId());
+        if (byItem == null || byItem.isEmpty()) {
+            return List.of();
+        }
+        prune(byItem);
+        if (byItem.isEmpty()) {
+            GATES.remove(player.getUniqueId(), byItem);
+            return List.of();
+        }
+        String held = heldItemId == null || heldItemId.isBlank() ? null : key(heldItemId);
+        List<Gate> shown = new ArrayList<>(1 + MAX_PINNED_SHOWN);
+        Gate heldGate = held == null ? null : byItem.get(held);
+        if (heldGate != null && !heldGate.pinned) {
+            shown.add(heldGate);
+        }
+        byItem.values().stream()
+                .filter(g -> g.pinned)
+                .sorted(Comparator.comparingLong(g -> g.readyTick))
+                .limit(MAX_PINNED_SHOWN)
+                .forEach(shown::add);
+        return shown;
+    }
+
+    /** One soft chime when a gate comes back, whichever renderer sees it first. */
+    private static void ping(Player player, Gate gate) {
+        if (!gate.pinged) {
+            gate.pinged = true;
+            player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, SoundCategory.PLAYERS, 0.45f, 1.6f);
+        }
+    }
+
     private static Component render(Player player, Gate gate, long tick) {
         if (tick >= gate.readyTick) {
             long since = tick - gate.readyTick;
-            if (!gate.pinged) {
-                gate.pinged = true;
-                player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, SoundCategory.PLAYERS, 0.45f, 1.6f);
-            }
+            ping(player, gate);
             boolean bright = since < READY_FLASH_TICKS / 2;
             return Component.text()
                     .append(Component.text("✔ ", bright ? READY : READY_DIM).decoration(TextDecoration.BOLD, bright))

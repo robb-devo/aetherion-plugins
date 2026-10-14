@@ -1,5 +1,7 @@
 package de.aetherion.fishing;
 
+import de.aetherion.core.api.ActionBarLane;
+
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
@@ -235,7 +237,7 @@ public final class FishingController implements Listener {
                     session.school.clear();
                     it.remove();
                     hud.hide(player);
-                    player.sendActionBar(Component.text("Cast into water.", NamedTextColor.GRAY));
+                    ActionBarLane.show(player, Component.text("Cast into water.", NamedTextColor.GRAY));
                     if (hook.isValid()) {
                         hook.remove();
                     }
@@ -461,7 +463,7 @@ public final class FishingController implements Listener {
         int streak = streaks.bump(player.getUniqueId());
         Location at = hook != null ? hook.getLocation() : player.getLocation();
         plugin.getServer().getScheduler().runTaskLater(plugin, session.school::clear, 50L);
-        player.sendActionBar(LEGACY.deserialize(resultWord(perfect) + StrikeBar.streakTag(streak)));
+        ActionBarLane.show(player, LEGACY.deserialize(resultWord(perfect) + StrikeBar.streakTag(streak)));
         player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.18f, 1.8f);
         player.playSound(player.getLocation(), Sound.ENTITY_FISHING_BOBBER_RETRIEVE, 0.7f, 1.35f);
         if (perfect) {
@@ -507,7 +509,7 @@ public final class FishingController implements Listener {
         if (credit != null) {
             line.append("  §8│  ").append(credit);
         }
-        player.sendActionBar(LEGACY.deserialize(line.toString()));
+        ActionBarLane.show(player, LEGACY.deserialize(line.toString()));
         if (credit == null && tipped.add(id)) {
             player.sendMessage("§8Tip: equip a Fishing skill in §7/skills fishing §8— it levels on every catch,"
                     + " and perfect reels pay extra.");
@@ -549,7 +551,7 @@ public final class FishingController implements Listener {
         int kept = forgiven ? streaks.current(player.getUniqueId()) : 0;
         String lostTag = kept >= 2 ? " §8· §7streak §e✦" + kept + " §akept"
                 : lost >= 2 ? " §8· §7streak §e✦" + lost + " §7lost" : "";
-        player.sendActionBar(LEGACY.deserialize("§7" + line + lostTag));
+        ActionBarLane.show(player, LEGACY.deserialize("§7" + line + lostTag));
         player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 0.55f, timeout ? 0.6f : 0.45f);
         player.playSound(player.getLocation(), Sound.ENTITY_FISH_SWIM, 0.8f, 1.1f);
         if (hook != null && hook.isValid()) {
@@ -568,7 +570,7 @@ public final class FishingController implements Listener {
         hud.hide(player);
         session.school.clear();
         if (message) {
-            player.sendActionBar(Component.empty());
+            ActionBarLane.clear(player);
         }
     }
 

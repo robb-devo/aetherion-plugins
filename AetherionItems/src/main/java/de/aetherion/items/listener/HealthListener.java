@@ -1,13 +1,12 @@
 package de.aetherion.items.listener;
 
 import com.destroystokyo.paper.event.player.PlayerArmorChangeEvent;
+import de.aetherion.core.api.ActionBarLane;
+import de.aetherion.items.combat.PlayerHud;
 import de.aetherion.items.core.ItemKeys;
 import de.aetherion.items.manager.ActiveEquipmentStats;
 import de.aetherion.items.manager.ItemManager;
 import de.aetherion.items.model.ItemCapability;
-
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
@@ -44,6 +43,7 @@ public class HealthListener implements Listener {
 
     private int regenPulse;
     private final Map<UUID, Integer> lastDamageTick = new ConcurrentHashMap<>();
+    private final PlayerHud hud;
 
     public HealthListener(
             JavaPlugin plugin,
@@ -57,8 +57,27 @@ public class HealthListener implements Listener {
                 );
         this.storedHealthKey = new NamespacedKey(plugin, "stored_player_health");
         this.maxHealthAttribute = resolveMaxHealthAttribute();
+        this.hud = new PlayerHud(plugin, new PlayerHud.Source() {
+            @Override
+            public double maxHealth(Player player) {
+                AttributeInstance maxHealth = maxHealthOf(player);
+                return maxHealth == null ? VANILLA_HEALTH : Math.max(VANILLA_HEALTH, maxHealth.getValue());
+            }
 
-        // Every 2 ticks so OriginCompass / fishing tips cannot permanently eat the HP/DEF line.
+            @Override
+            public double defense(Player player) {
+                return equipmentStats.getStat(player, ItemCapability.DEFENSE);
+            }
+
+            @Override
+            public String heldItemId(Player player) {
+                return itemManager.getItemId(player.getInventory().getItemInMainHand());
+            }
+        });
+        // Compass / fishing lines now ride on the HUD's own packet instead of fighting it.
+        ActionBarLane.register(hud);
+
+        // Every 2 ticks: health sync + HUD check. The HUD only sends when its picture changed (+1 Hz keep-alive).
         plugin.getServer().getScheduler().runTaskTimer(
                 plugin,
                 this::tickHealthDisplay,
@@ -205,6 +224,8 @@ public class HealthListener implements Listener {
         Player player = event.getPlayer();
         storeHealth(player);
         lastDamageTick.remove(player.getUniqueId());
+        hud.forget(player.getUniqueId());
+        ActionBarLane.forget(player.getUniqueId());
         player.setHealthScaled(false);
         AttributeInstance movement = movementSpeedOf(player);
         if (movement != null) {
@@ -321,17 +342,21 @@ public class HealthListener implements Listener {
         }
 
         setPlayerHealth(player, Math.min(appliedMax, desired));
-        applyHealthScale(player, appliedMax);
+        applyHealthScale(player, appliedMax, Math.abs(appliedMax - oldMax) > 0.01);
         storeHealth(player);
         showHealthBar(player);
     }
 
-    private void applyHealthScale(Player player, double maxHealth) {
+    private void applyHealthScale(Player player, double maxHealth, boolean maxChanged) {
         if (maxHealth > VANILLA_HEALTH + 0.05) {
             /*
              * Exactly 10 hearts. Fill amount is current/max, so 271/271 is a
              * full row and 135/271 is five hearts — not a single leftover half.
+             * Already scaled and max unchanged: nothing to resend (this runs every 2 ticks).
              */
+            if (!maxChanged && player.isHealthScaled() && Math.abs(player.getHealthScale() - VANILLA_HEALTH) < 0.01) {
+                return;
+            }
             player.setHealthScaled(true);
             player.setHealthScale(VANILLA_HEALTH);
             player.sendHealthUpdate();
@@ -384,54 +409,11 @@ public class HealthListener implements Listener {
         if (!player.isOnline()) {
             return;
         }
+        hud.paint(player);
+    }
 
-        AttributeInstance maxHealth = maxHealthOf(player);
-        double max = maxHealth == null ? VANILLA_HEALTH : Math.max(VANILLA_HEALTH, maxHealth.getValue());
-        double current = Math.max(0.0, Math.min(player.getHealth(), max));
-        double defense = equipmentStats.getStat(player, ItemCapability.DEFENSE);
-
-        // Fixed HP slot: current HP is right-aligned to the width of max HP, so 100 → 99 never wiggles the line.
-        String currentText = formatHp(current);
-        String maxText = formatHp(max);
-        String hpPad = de.aetherion.items.combat.HudWidth.padTo(
-                de.aetherion.items.combat.HudWidth.of(currentText, false),
-                de.aetherion.items.combat.HudWidth.of(maxText, false));
-        Component health = Component.text()
-                .append(Component.text("❤ ", NamedTextColor.RED))
-                .append(Component.text(hpPad + currentText, NamedTextColor.WHITE))
-                .append(Component.text(" / ", NamedTextColor.DARK_GRAY))
-                .append(Component.text(maxText, NamedTextColor.RED))
-                .build();
-
-        Component bar = health;
-        if (defense > 0.05) {
-            Component defenseHud = Component.text()
-                    .append(Component.text("🛡 ", NamedTextColor.AQUA))
-                    .append(Component.text(formatHp(defense), NamedTextColor.WHITE))
-                    .build();
-            bar = health.append(Component.text("                      ")).append(defenseHud);
-        }
-
-        String heldId = itemManager.getItemId(player.getInventory().getItemInMainHand());
-        if (de.aetherion.items.combat.AbilityCooldownHud.showing(player, heldId)) {
-            Component cooldown = de.aetherion.items.combat.AbilityCooldownHud.fragment(
-                    player,
-                    heldId,
-                    defense <= 0.05
-            );
-            Component lane = defense > 0.05
-                    ? Component.text("  ·  ", NamedTextColor.DARK_GRAY).append(cooldown)
-                    : cooldown;
-            /*
-             * Reserved CD lane: the ActionBar is centred, so the cooldown on the right would drag hearts and
-             * defense left by half its width. Mirror its width as blank padding on the left — the centre
-             * (and every HP / defense glyph) stays exactly where it sits without a cooldown.
-             */
-            int lanePx = de.aetherion.items.combat.HudWidth.of(lane);
-            bar = de.aetherion.items.combat.HudWidth.balance(lanePx).append(bar).append(lane);
-        }
-
-        player.sendActionBar(bar);
+    public PlayerHud hud() {
+        return hud;
     }
 
     private void setPlayerHealth(Player player, double amount) {
@@ -447,6 +429,8 @@ public class HealthListener implements Listener {
         try {
             if (Math.abs(player.getHealth() - clamped) > 0.01) {
                 player.setHealth(clamped);
+                // Only when it moved: this runs every 2 ticks for every player.
+                player.sendHealthUpdate();
             }
         } catch (IllegalArgumentException exception) {
             plugin.getLogger().warning(
@@ -454,7 +438,6 @@ public class HealthListener implements Listener {
                             + " to " + formatHp(clamped) + " / " + formatHp(max)
             );
         }
-        player.sendHealthUpdate();
     }
 
     private void storeHealth(Player player) {

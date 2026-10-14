@@ -1,5 +1,6 @@
 package de.aetherion.hub.origin;
 
+import de.aetherion.core.api.ActionBarLane;
 import de.aetherion.hub.model.HubSpawn;
 
 import net.kyori.adventure.text.Component;
@@ -244,8 +245,9 @@ public final class OriginCompass {
         if (OriginText.held(player)) {
             return;
         }
-        player.sendActionBar(OriginText.legacy("§e" + OriginText.arrow(player, target.at()) + " §f" + target.name()
-                + " §8· §7" + OriginText.distance(dist) + OriginText.vertical(player, target.at())));
+        // Re-posted every 10 ticks; the lane keeps it above the HP bar instead of erasing it.
+        ActionBarLane.show(player, OriginText.legacy("§e" + OriginText.arrow(player, target.at()) + " §f" + target.name()
+                + " §8· §7" + OriginText.distance(dist) + OriginText.vertical(player, target.at())), 30);
     }
 
     /**

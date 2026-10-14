@@ -570,6 +570,10 @@ public class AetherionItems extends JavaPlugin {
             loreLocaleListener = null;
         }
         de.aetherion.items.item.LoreLocale.shutdown();
+        if (healthListener != null) {
+            // Hub / Fishing fall back to plain ActionBars until the HUD painter is back.
+            de.aetherion.core.api.ActionBarLane.unregister(healthListener.hud());
+        }
         de.aetherion.items.listener.AshenKatanaListener.shutdown();
         de.aetherion.items.listener.SeraphineGearListener.clearAll();
         de.aetherion.items.listener.HollowSunSetListener.shutdown();

@@ -1,8 +1,7 @@
 package de.aetherion.fishing;
 
+import de.aetherion.core.api.ActionBarLane;
 import de.aetherion.core.api.QuestBars;
-
-import net.kyori.adventure.text.Component;
 
 import org.bukkit.Bukkit;
 import org.bukkit.boss.BarColor;
@@ -62,7 +61,7 @@ final class FishingHud {
             return;
         }
         hide(player.getUniqueId());
-        player.sendActionBar(Component.empty());
+        ActionBarLane.clear(player);
     }
 
     /** Hide the bar only — the caller is about to write its own result line. */

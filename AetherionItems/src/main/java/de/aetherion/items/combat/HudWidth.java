@@ -11,18 +11,19 @@ import net.kyori.adventure.text.format.TextDecoration;
  * its width. {@link #balance(int)} returns blank padding of the same width for the left edge: the
  * centre stays put and HP / defense never move when a cooldown comes or goes.
  *
- * <p>ASCII widths are exact (ascii.png advances). Symbols from the pack's fallback pages are best
- * estimates — if a cooldown still nudges the bar by a pixel or two, tune {@link #BAR_CELL} /
- * {@link #CHECK} first (they appear 8× and 1× in the cooldown fragment).
+ * <p>Advances are measured from the 1.21.1 client: ascii / accented / nonlatin_european bitmap pages
+ * (opaque width + 1) and unifont 15.1.05 (glyph width / 2 + 1) for symbols those pages lack. They
+ * matter twice: the text HUD's cooldown balance, and centring an {@link de.aetherion.core.api.ActionBarLane}
+ * line above the glyph HUD (an error of e px moves the HUD by e/2 while that line shows).
  */
 public final class HudWidth {
 
     /** Plain space advance. */
     public static final int SPACE = 4;
-    /** {@code ▮ / ▯} cooldown cells (nonlatin page). Eight per cooldown → biggest lever when tuning. */
-    static final int BAR_CELL = 5;
-    /** {@code ✔} ready mark. */
-    static final int CHECK = 8;
+    /** {@code ▮ / ▯} cooldown cells (unifont). */
+    static final int BAR_CELL = 3;
+    /** {@code ✔} ready mark (nonlatin page). */
+    static final int CHECK = 7;
     /** {@code ❤}. */
     static final int HEART = 8;
 
@@ -104,6 +105,22 @@ public final class HudWidth {
                 return CHECK;
             case 0x2764: // ❤
                 return HEART;
+            case 0x2022: // •
+                return 3;
+            case 0x2196: case 0x2197: case 0x2198: case 0x2199: // ↖ ↗ ↘ ↙
+                return 4;
+            case 0x2191: case 0x2193: case 0x2502: // ↑ ↓ │
+            case 0x25B2: case 0x25BC: case 0x25C6: case 0x25C7: // ▲ ▼ ◆ ◇
+                return 6;
+            case 0x00AB: case 0x00BB: case 0x25B6: case 0x25C0: // « » ▶ ◀
+            case 0x1F6E1: // 🛡
+                return 7;
+            case 0x2026: case 0x2190: case 0x2192: // … ← →
+            case 0x2605: case 0x2606: case 0x2620: case 0x2694: // ★ ☆ ☠ ⚔
+            case 0x2726: case 0x2727: case 0x2728: // ✦ ✧ ✨
+                return 8;
+            case 0x2014: case 0x2500: case 0x2588: case 0x2593: // — ─ █ ▓
+                return 9;
             default:
                 return cp < 0x20 ? 0 : 6;
         }

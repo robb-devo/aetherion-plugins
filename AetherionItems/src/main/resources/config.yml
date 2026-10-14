@@ -2,6 +2,11 @@
 manager:
   hotbar-enabled: true
 
+# Player HUD: HP / DEF / cooldown bars drawn from pack font aetherion:hud over the hidden hearts.
+# false = old text line (use while the served pack is older than the plugin, or glyphs show as boxes).
+hud:
+  pack-glyphs: true
+
 # Skills / Aetherion level. Leave sync-from empty unless a server explicitly pulls another file.
 skills:
   persist: true
