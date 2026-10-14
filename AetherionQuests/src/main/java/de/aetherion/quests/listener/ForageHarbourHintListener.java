@@ -50,6 +50,9 @@ public final class ForageHarbourHintListener implements Listener, Runnable {
         if (!QuestStoryGate.graduated(player, plugin.getQuestManager())) {
             return; // Fields done but not stamped yet: the arrow stays on Miss Ledger
         }
+        if (de.aetherion.quests.ui.SkillRoads.done(player, de.aetherion.quests.ui.SkillRoads.Road.FORAGE)) {
+            return; // Miss Canopy already taught them the isle
+        }
 
         plugin.getPlayerQuestStorage().markStarterKit(player.getUniqueId(), HINT_KEY);
         de.aetherion.quests.npc.NpcMemory memory = de.aetherion.quests.npc.NpcMemory.get();

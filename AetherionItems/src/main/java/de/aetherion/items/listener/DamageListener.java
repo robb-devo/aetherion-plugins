@@ -9,6 +9,7 @@ import de.aetherion.items.model.ItemCapability;
 import de.aetherion.items.world.WildlifeLooks;
 
 import org.bukkit.Location;
+import org.bukkit.NamespacedKey;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
@@ -18,6 +19,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.persistence.PersistentDataType;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -301,7 +303,8 @@ public class DamageListener implements Listener {
         if (event.getDamager() instanceof org.bukkit.entity.Projectile projectile) {
             // Stamp projectile damage before BossEngine (HIGHEST) absorbs combat HP.
             if (event.isCancelled() && event.getEntity() instanceof LivingEntity living
-                    && (AetherEntities.isBoss(living) || AetherEntities.isBossMinion(living))) {
+                    && (AetherEntities.isBoss(living) || AetherEntities.isBossMinion(living)
+                    || isSamuraiBossHitbox(living))) {
                 event.setCancelled(false);
             }
             applyShortbowProjectile(event, projectile);
@@ -350,7 +353,8 @@ public class DamageListener implements Listener {
             }
             boolean reclaim = WildlifeCombatListener.allowsPlayerHit(player, living)
                     || AetherEntities.isBoss(living)
-                    || AetherEntities.isBossMinion(living);
+                    || AetherEntities.isBossMinion(living)
+                    || isSamuraiBossHitbox(living);
             if (!reclaim) {
                 return;
             }
@@ -1021,5 +1025,17 @@ public class DamageListener implements Listener {
             return critChance;
         }
         return CRIT_SOFT_CAP + (critChance - CRIT_SOFT_CAP) / 2.0;
+    }
+
+    /** SamuraiBoss invisible hitbox — PDC {@code samuraiboss:owned=hitbox}. */
+    private static boolean isSamuraiBossHitbox(Entity entity) {
+        if (entity == null) {
+            return false;
+        }
+        String owned = entity.getPersistentDataContainer().get(
+                new NamespacedKey("samuraiboss", "owned"),
+                PersistentDataType.STRING
+        );
+        return "hitbox".equals(owned);
     }
 }

@@ -60,6 +60,7 @@ public final class ForageIsle implements Listener {
     private final ForageCast cast;
     private final ForageMenus menus;
     private final ForageDev dev;
+    private final GroveLesson lesson;
 
     private final List<Lure> lures = new ArrayList<>();
     private final List<Integer> tasks = new ArrayList<>();
@@ -99,6 +100,7 @@ public final class ForageIsle implements Listener {
         this.cast = new ForageCast(this);
         this.menus = new ForageMenus(this);
         this.dev = new ForageDev(this);
+        this.lesson = new GroveLesson(this);
         var pm = Bukkit.getPluginManager();
         pm.registerEvents(this, plugin);
         pm.registerEvents(woodwright, plugin);
@@ -165,6 +167,7 @@ public final class ForageIsle implements Listener {
             Bukkit.getScheduler().cancelTask(id);
         }
         tasks.clear();
+        lesson.shutdown();
         finds.clear();
         critters.clear();
         events.shutdown();
@@ -192,6 +195,9 @@ public final class ForageIsle implements Listener {
         }
         if (tick % 10 == 0 && !onIsle.isEmpty()) {
             compass.tick(onIsle);
+        }
+        if (tick % 10 == 5) {
+            lesson.tick(onIsle);
         }
         if (tick % 20 == 0) {
             events.tick();
@@ -500,6 +506,14 @@ public final class ForageIsle implements Listener {
                 player.sendMessage("§6★ Isle record §8· §7largest fell in " + grove.colored() + " §8· §f" + ctx.logs() + " logs");
             }
         }
+        lesson.onFell(player, ctx);
+    }
+
+    /** A missed fell bar (the chop listener calls this for every miss; isle trees only count). */
+    public void onMiss(Player player, Location at) {
+        if (player != null && onIsle(at)) {
+            lesson.onMiss(player);
+        }
     }
 
     /** Called when the deadfall beat succeeds (Widowmaker dodged). */
@@ -582,9 +596,14 @@ public final class ForageIsle implements Listener {
         return dev;
     }
 
+    public GroveLesson lesson() {
+        return lesson;
+    }
+
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
         UUID id = event.getPlayer().getUniqueId();
+        lesson.forget(id);
         compass.forget(id);
         critters.forget(id);
         cast.forget(id);

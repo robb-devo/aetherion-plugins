@@ -61,6 +61,18 @@ public class Objective {
             return "§eEquip a Skill";
         }
 
+        if (target.equalsIgnoreCase("AETHER_CODEX")) {
+            return "§eOpen the Codex";
+        }
+
+        if (target.equalsIgnoreCase("COMBAT_READY")) {
+            return "§cArmour on · blade up";
+        }
+
+        if (target.equalsIgnoreCase("ANY_ORE")) {
+            return "Ore gathered";
+        }
+
         if (target.equalsIgnoreCase("APPLY_BOOSTER") || target.equalsIgnoreCase("AETHER_ANVIL")) {
             return "§6Apply a Booster";
         }

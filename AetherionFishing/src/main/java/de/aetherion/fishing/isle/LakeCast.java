@@ -89,7 +89,8 @@ public final class LakeCast implements Listener {
         LakeRole maren = LakeRole.HARBOURMASTER;
         return new TalkDesk(isle.plugin(), "fish_isle_harbourmaster", maren.display(), maren.color(), "fishmonger",
                 () -> liveLocation(maren), () -> liveHologram(maren),
-                player -> "Welcome to the harbour, {player}. Every water here keeps its own fish.",
+                player -> LakeLesson.t(player, "Back on the water, {player}? Every water here keeps its own fish.",
+                        "Wieder am Wasser, {player}? Jedes Gewässer hier hat seine eigenen Fische."),
                 List.of(
                         TalkDesk.Topic.of("The waters?", net.kyori.adventure.text.format.NamedTextColor.AQUA,
                                 "Where do I fish?",
@@ -376,11 +377,31 @@ public final class LakeCast implements Listener {
         }
         clickCool.put(player.getUniqueId(), now + 400L);
         player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_AMBIENT, SoundCategory.NEUTRAL, 0.7f, 1.1f);
+        // First visit: Maren runs the isle lesson; the rest of the cast send you back to her.
+        if (role == LakeRole.HARBOURMASTER && isle.lesson().onTeacher(player)) {
+            return;
+        }
+        if (role != LakeRole.HARBOURMASTER && isle.lesson().deferring(player)) {
+            say(player, role, LakeLesson.t(player,
+                    "Maren's lesson first, love — the bar up top shows the way. Then come see me.",
+                    "Erst Marens Lektion — die Leiste oben zeigt den Weg. Dann komm zu mir."));
+            return;
+        }
         // Maren talks first (bubble + chips); her angler card sits behind "Card…".
         if (role == LakeRole.HARBOURMASTER && harbourDesk.click(player)) {
             return;
         }
         isle.menus().open(player, role);
+    }
+
+    /** Lesson click pre-check on Maren's bubble (see {@link TalkDesk#busy}). */
+    boolean teacherBusy(Player player) {
+        return harbourDesk.busy(player);
+    }
+
+    /** A scripted lesson beat in Maren's bubble. False when it can't open (classic chat, too far). */
+    boolean teacherScript(Player player, List<String> lines, List<de.aetherion.core.api.TalkAccess.Reply> replies) {
+        return harbourDesk.script(player, lines, replies);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)

@@ -354,11 +354,7 @@ public class DialogManager implements Listener {
                         QuestStoryGate.ledgerBlockedLines()
                 ));
                 playDialog(player, npc, blocked, false, false);
-                QuestHint.show(player, "foreman", "Shaft Foreman");
-                player.sendActionBar(net.kyori.adventure.text.Component.text(
-                        de.aetherion.quests.lang.LangPack.ui(player, "tip.mines_foreman", "Hint · Mines · Shaft Foreman"),
-                        net.kyori.adventure.text.format.NamedTextColor.YELLOW
-                ));
+                QuestStoryGate.point(player, QuestStoryGate.nextStop(player, questManager));
                 return;
             }
         }
@@ -427,6 +423,13 @@ public class DialogManager implements Listener {
                 playDialog(player, npc, lines, false);
                 return;
             }
+        }
+
+        // Orientation Act III: Sergeant Vex runs the combat beat before his Borderlands lesson.
+        Quest spine = QuestStoryGate.spineQuestFor(player, npc, questManager);
+        if (spine != null && de.aetherion.quests.tutorial.CombatTeach.QUEST_ID.equalsIgnoreCase(spine.getId())) {
+            playDialog(player, npc, cleanLines(de.aetherion.quests.tutorial.CombatTeach.introLines(player)), true);
+            return;
         }
 
         String[] lines = cleanLines(de.aetherion.quests.lang.LangPack.dialogs(
@@ -708,6 +711,7 @@ public class DialogManager implements Listener {
 
         Quest quest =
                 questManager.getQuestForNpc(
+                        player,
                         npc
                 );
 
@@ -743,10 +747,10 @@ public class DialogManager implements Listener {
 
 
         String gateFail = QuestSkillGate.failReason(player, quest);
-        if (gateFail == null && "lesson_manager".equalsIgnoreCase(quest.getId())) {
-            gateFail = QuestStoryGate.ledgerFailReason(player, questManager);
+        if (gateFail == null) {
+            gateFail = QuestStoryGate.spineGateFail(player, questManager, quest.getId());
             if (gateFail != null) {
-                QuestHint.show(player, "foreman", "Shaft Foreman");
+                QuestStoryGate.point(player, QuestStoryGate.nextStop(player, questManager));
             }
         }
         Quest conflicting = gateFail == null ? getConflictingQuest(player, quest) : null;
@@ -1306,8 +1310,8 @@ public class DialogManager implements Listener {
 
 
         String gateFail = QuestSkillGate.failReason(player, quest);
-        if (gateFail == null && "lesson_manager".equalsIgnoreCase(quest.getId())) {
-            gateFail = QuestStoryGate.ledgerFailReason(player, questManager);
+        if (gateFail == null) {
+            gateFail = QuestStoryGate.spineGateFail(player, questManager, quest.getId());
         }
         if (gateFail == null && "border_rites".equalsIgnoreCase(quest.getId())) {
             gateFail = QuestStoryGate.riteKeeperFailReason(player, questManager);
@@ -1319,7 +1323,7 @@ public class DialogManager implements Listener {
             if ("lesson_manager".equalsIgnoreCase(quest.getId())
                     && !QuestStoryGate.ledgerUnlocked(player, questManager)) {
                 String speaking = activeDialogNpc.get(player.getUniqueId());
-                QuestStoryGate.redirectToForeman(player, speaking != null ? "Miss Ledger" : "Miss Ledger");
+                QuestStoryGate.redirectBeforeLedger(player, "Miss Ledger");
             }
             if ("border_rites".equalsIgnoreCase(quest.getId())
                     && !QuestStoryGate.riteKeeperUnlocked(player, questManager)) {
@@ -1650,9 +1654,9 @@ public class DialogManager implements Listener {
 
             return new String[] {
                     "{player}, right? Egon. I kit out rookies. You look like one.",
-                    "Kit costs ten oak logs. The §eLumberjack§f up the hill lends the axe.",
-                    "Calls himself the Forager. Humour him.",
-                    "§eYellow arrow up top§f knows the way. I mostly know the pier."
+                    "We talk like this here: my words up top, your answers floating beside me. Look at one, click.",
+                    "Kit costs ten oak. The §eForager§f up the hill lends the axe — and shows you how trees fall here.",
+                    "§eYellow bar up top§f points at your next job. Trust it more than me."
             };
 
         }
@@ -1859,9 +1863,9 @@ public class DialogManager implements Listener {
 
         if (dialogId.equalsIgnoreCase("booster_tutor_intro")) {
             return new String[] {
-                    "Temper. I fuse things. Boosters onto gear — mining power, fortune, damage.",
-                    "Say yes and you get an Emerald Booster. Fuse it once. That's the lesson.",
-                    "Manager → §eAnvil§f. Gear left, booster right. Sparks are normal."
+                    "Temper. Skills are half your build, {player}. Boosters are the other half.",
+                    "Every piece has sockets — the §eAnvil§f holds fourteen. Damage, Defense, Mining Power, Fortune.",
+                    "Say yes: one Emerald Booster. Nether Star → §eAnvil§f. Gear left, booster right."
             };
         }
 
@@ -1883,9 +1887,10 @@ public class DialogManager implements Listener {
 
         if (dialogId.equalsIgnoreCase("ledger_intro")) {
             return new String[] {
-                    "Miss Ledger. Skills — and I stamp orientation shut when you're done.",
-                    "Hotbar §e9§f → Nether Star → Manager → §dSkills§f. It blinks. Equip §eany one§f skill.",
-                    "Come back when it's equipped, {player}. I'll keep the stamp warm."
+                    "Miss Ledger. I run orientation — and I keep the books on you.",
+                    "Your §dloadout§f: seven skill slots, one open. A skill levels as you work its trade.",
+                    "Nether Star, hotbar §e9§f → §dSkills§f — it blinks. Equip one. Then your §eCodex§f, top-left.",
+                    "Codex logs every tree, ore and kill. Tiers pay coins; coins open more slots. That's the loop."
             };
         }
 
@@ -2044,7 +2049,7 @@ public class DialogManager implements Listener {
         if (dialogId.equalsIgnoreCase("farm_isle_guide_intro")) {
             return new String[] {
                     "Farm Isle's down the road — Eldervale fields, long rows, better soil.",
-                    "Pad at the bottom takes you at Farming §e10§f. Arrow's on it.",
+                    "Pad at the bottom. §aElsie§f teaches the rest. Arrow's on it.",
                     "The Farmer next door thinks he's the real farmer. Cute."
             };
         }
@@ -2052,8 +2057,8 @@ public class DialogManager implements Listener {
         if (dialogId.equalsIgnoreCase("forage_pad_guide_intro")) {
             return new String[] {
                     "Slime pad → Forage Isle. Jump. Don't overthink it.",
-                    "Trees out there drop what they are — spruce is spruce, birch is birch.",
-                    "§eCanopy Clerk§f on the isle wants compressed samples. Follow the arrow, {player}."
+                    "Same Fell bar as here — except isle trees keep score.",
+                    "§aMiss Canopy§f teaches the isle. Follow the arrow, {player}."
             };
         }
 
@@ -2359,11 +2364,11 @@ public class DialogManager implements Listener {
                             "§eYellow arrow up top§f. Trust it more than me."
                     });
             case "farmer" -> farmerCompletedLines(player);
-            case "ledger" -> new String[] {
-                    "Skill's equipped. Good. Stamped.",
-                    "Next: the fields — §eFarmer§f (wheat) and §eLark§f (pets), same area.",
+            case "ledger" -> de.aetherion.quests.lang.LangPack.completed(player, "ledger_spine", new String[] {
+                    "Loadout's set. Good. Stamped.",
+                    "Next: §eTemper§f on the south road, then §cSergeant Vex§f at the Borderlands gate.",
                     "Come back after both, {player}. I close orientation — and I keep a help desk."
-            };
+            });
             case "lark" -> QuestStoryGate.tutorialDone(player, questManager)
                     ? de.aetherion.quests.lang.LangPack.completed(player, "lark.graduate", new String[] {
                             "{player}! Your pet still likes you. Pistachio's jealous.",

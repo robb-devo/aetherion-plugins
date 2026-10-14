@@ -1,5 +1,7 @@
 package de.aetherion.foraging.isle;
 
+import de.aetherion.core.api.BarChrome;
+
 import net.kyori.adventure.bossbar.BossBar;
 
 import org.bukkit.Location;
@@ -40,7 +42,6 @@ public final class GroveCompass {
     private final Map<UUID, Target> targets = new HashMap<>();
     private final Map<UUID, BossBar> wayBars = new HashMap<>();
     private final Map<UUID, Long> cardCooldown = new HashMap<>();
-    private final Map<UUID, Boolean> greeted = new HashMap<>();
 
     GroveCompass(ForageIsle isle) {
         this.isle = isle;
@@ -52,9 +53,6 @@ public final class GroveCompass {
             Location at = player.getLocation();
             UUID id = player.getUniqueId();
             ForageProfile profile = isle.profiles().get(player);
-            if (greeted.putIfAbsent(id, Boolean.TRUE) == null && profile.tourStep == 0 && profile.groves.isEmpty()) {
-                player.sendMessage("§2❦ Foraging Eldervale §8· §7seven forests, one island. §7Tip: §f/grove tour §7walks the cast, or just explore.");
-            }
             Grove grove = isle.grove(at);
             Grove before = current.put(id, grove);
             if (grove != null && grove != before) {
@@ -151,8 +149,9 @@ public final class GroveCompass {
         }
         // Cap progress so distant targets still show a thin bar; never touch ActionBar (HP/CD HUD).
         float progress = (float) Math.max(0.05d, Math.min(1.0d, 1.0d - (dist / 120.0d)));
-        String title = "§e" + ForageText.arrow(player, target.at()) + " §f" + target.name()
-                + " §8· §7" + (int) dist + "m" + ForageText.vertical(player, target.at());
+        String title = BarChrome.legacy(BarChrome.Family.GATHER, BarChrome.Icon.COMPASS,
+                "§e" + ForageText.arrow(player, target.at()) + " §f" + target.name()
+                        + " §8· §7" + (int) dist + "m" + ForageText.vertical(player, target.at()));
         BossBar bar = wayBars.computeIfAbsent(player.getUniqueId(), id -> {
             BossBar created = BossBar.bossBar(ForageText.legacy(title), progress, BossBar.Color.GREEN,
                     BossBar.Overlay.PROGRESS);
@@ -264,7 +263,6 @@ public final class GroveCompass {
         currentPlace.remove(id);
         targets.remove(id);
         cardCooldown.remove(id);
-        greeted.remove(id);
         BossBar bar = wayBars.remove(id);
         if (bar != null) {
             Player player = org.bukkit.Bukkit.getPlayer(id);

@@ -6,6 +6,8 @@ import org.bukkit.Material;
 
 public enum ExploreChestKind {
 
+    COMMON("Common Chest", NamedTextColor.WHITE, "§f", Material.BARREL),
+    UNCOMMON("Uncommon Chest", NamedTextColor.GREEN, "§a", Material.LIME_SHULKER_BOX),
     RARE("Rare Chest", NamedTextColor.AQUA, "§b", Material.CHEST),
     EPIC("Epic Chest", NamedTextColor.DARK_PURPLE, "§5", Material.TRAPPED_CHEST),
     LEGENDARY("Legendary Chest", NamedTextColor.GOLD, "§6", Material.ENDER_CHEST),

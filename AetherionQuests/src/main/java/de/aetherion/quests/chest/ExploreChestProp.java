@@ -30,6 +30,10 @@ import java.util.concurrent.ThreadLocalRandom;
  * everything on it hang from one hinge at the back edge, so opening is a single
  * rotation. Each rarity has its own silhouette and its own idle:
  * <ul>
+ *   <li><b>Common</b> — wayside crate: a size smaller, oak with dark spruce straps and a
+ *       wooden peg for a latch, straw packed inside.</li>
+ *   <li><b>Uncommon</b> — ranger's chest: birch, bright copper bands, a small green gem
+ *       on the hasp.</li>
  *   <li><b>Rare</b> — harbour strongbox: spruce, verdigris copper bands, iron hasp.
  *       Breathes: the lid lifts a finger's width now and then.</li>
  *   <li><b>Epic</b> — warded coffer: dark oak, amethyst bands, a lit gem on the hasp,
@@ -84,6 +88,8 @@ final class ExploreChestProp {
     private final Location origin;
     private final float yaw;
     private final float base;
+    /** Uniform scale of the whole prop (the Common crate is a size smaller). */
+    private final float size;
     private final List<Part> parts = new ArrayList<>();
     private final List<ItemDisplay> orbiters = new ArrayList<>();
     private final List<BlockDisplay> halo = new ArrayList<>();
@@ -109,6 +115,7 @@ final class ExploreChestProp {
             case MYTHIC -> 0.2f;
             default -> 0.0f;
         };
+        this.size = kind == ExploreChestKind.COMMON ? 0.84f : 1.0f;
         this.restLid = kind == ExploreChestKind.MYTHIC ? (float) Math.toRadians(7.0) : 0f;
         this.lid = restLid;
         this.nextBreath = ThreadLocalRandom.current().nextLong(60L, 200L);
@@ -167,7 +174,7 @@ final class ExploreChestProp {
             block(world, p.band, Group.LID, new Matrix4f().translate(x0 - 0.045f, -0.002f, D + 0.02f).scale(0.09f, LH + 0.018f, 0.014f), -1);
         }
         block(world, p.latch, Group.LID, new Matrix4f().translate(-0.06f, -0.15f, D + 0.02f).scale(0.12f, 0.19f, 0.04f), -1);
-        if (kind == ExploreChestKind.EPIC || kind == ExploreChestKind.MYTHIC) {
+        if (kind == ExploreChestKind.UNCOMMON || kind == ExploreChestKind.EPIC || kind == ExploreChestKind.MYTHIC) {
             // A lit gem set into the hasp.
             block(world, p.gem, Group.LID, new Matrix4f()
                     .translate(0.0f, -0.065f, D + 0.062f)
@@ -236,7 +243,8 @@ final class ExploreChestProp {
         if (group != Group.STATIC) {
             m.translate(0.0f, hover, 0.0f);
         }
-        return m.rotateY(yaw);
+        m.rotateY(yaw);
+        return size == 1.0f ? m : m.scale(size);
     }
 
     private Matrix4f matrixFor(Group group, Matrix4f local) {
@@ -402,8 +410,13 @@ final class ExploreChestProp {
         if (world == null) {
             return;
         }
-        Location at = origin.clone().add(0.0, base + BH + hover, 0.0);
+        Location at = origin.clone().add(0.0, (base + BH) * size + hover, 0.0);
         switch (kind) {
+            case COMMON -> world.playSound(at, Sound.BLOCK_BARREL_OPEN, SoundCategory.BLOCKS, 0.6f, 1.15f);
+            case UNCOMMON -> {
+                world.playSound(at, Sound.ITEM_ARMOR_EQUIP_LEATHER, SoundCategory.BLOCKS, 0.5f, 1.2f);
+                world.playSound(at, Sound.BLOCK_CHEST_OPEN, SoundCategory.BLOCKS, 0.55f, 1.2f);
+            }
             case RARE -> {
                 world.playSound(at, Sound.ITEM_ARMOR_EQUIP_CHAIN, SoundCategory.BLOCKS, 0.4f, 1.4f);
                 world.playSound(at, Sound.BLOCK_CHEST_OPEN, SoundCategory.BLOCKS, 0.55f, 1.1f);
@@ -450,7 +463,11 @@ final class ExploreChestProp {
         tweenLid(restLid);
         World world = origin.getWorld();
         if (world != null) {
-            Sound sound = kind == ExploreChestKind.MYTHIC ? Sound.BLOCK_ENDER_CHEST_CLOSE : Sound.BLOCK_CHEST_CLOSE;
+            Sound sound = switch (kind) {
+                case MYTHIC -> Sound.BLOCK_ENDER_CHEST_CLOSE;
+                case COMMON -> Sound.BLOCK_BARREL_CLOSE;
+                default -> Sound.BLOCK_CHEST_CLOSE;
+            };
             plugin.getServer().getScheduler().runTaskLater(plugin, () ->
                     world.playSound(origin, sound, SoundCategory.BLOCKS, 0.5f, 1.0f), 5L);
         }
@@ -492,6 +509,8 @@ final class ExploreChestProp {
         Particle.DustOptions dust = new Particle.DustOptions(Palette.of(kind).tone, bright ? 1.1f : 0.8f);
         world.spawnParticle(Particle.DUST, at, bright ? 12 : 7, 0.25, 0.15, 0.18, 0.0, dust);
         Particle accent = switch (kind) {
+            case COMMON -> Particle.WHITE_ASH;
+            case UNCOMMON -> Particle.COMPOSTER;
             case RARE -> Particle.GLOW;
             case EPIC -> Particle.WITCH;
             case LEGENDARY -> Particle.WAX_ON;
@@ -502,7 +521,7 @@ final class ExploreChestProp {
 
     /** Top of the open chest (world space) — where the light comes out. */
     Location light() {
-        return origin.clone().add(0.0, base + BH + hover + 0.08, 0.0);
+        return origin.clone().add(0.0, (base + BH) * size + hover + 0.08, 0.0);
     }
 
     Color tone() {
@@ -573,6 +592,14 @@ final class ExploreChestProp {
             this.tone = tone;
         }
 
+        private static final Palette COMMON = new Palette(
+                Material.OAK_PLANKS, Material.STRIPPED_OAK_WOOD, Material.STRIPPED_DARK_OAK_WOOD,
+                Material.SPRUCE_PLANKS, Material.SPRUCE_PLANKS, Material.HAY_BLOCK, Material.OAK_PLANKS,
+                Color.fromRGB(226, 210, 160));
+        private static final Palette UNCOMMON = new Palette(
+                Material.BIRCH_PLANKS, Material.STRIPPED_BIRCH_WOOD, Material.WAXED_CUT_COPPER,
+                Material.WAXED_COPPER_BLOCK, Material.EMERALD_BLOCK, Material.VERDANT_FROGLIGHT, Material.BIRCH_PLANKS,
+                Color.fromRGB(110, 222, 110));
         private static final Palette RARE = new Palette(
                 Material.SPRUCE_PLANKS, Material.STRIPPED_SPRUCE_WOOD, Material.WAXED_OXIDIZED_CUT_COPPER,
                 Material.IRON_BLOCK, Material.PRISMARINE_BRICKS, Material.SEA_LANTERN, Material.SPRUCE_PLANKS,
@@ -592,6 +619,8 @@ final class ExploreChestProp {
 
         static Palette of(ExploreChestKind kind) {
             return switch (kind) {
+                case COMMON -> COMMON;
+                case UNCOMMON -> UNCOMMON;
                 case RARE -> RARE;
                 case EPIC -> EPIC;
                 case LEGENDARY -> LEGENDARY;

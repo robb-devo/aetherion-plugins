@@ -50,6 +50,7 @@ public final class FarmIsle implements Listener, StatProvider {
     private final IsleCast cast;
     private final IsleMenus menus;
     private final IsleDev dev;
+    private final FieldLesson lesson;
     private boolean itemsHooked;
 
     public FarmIsle(AetherionFarming plugin) {
@@ -66,6 +67,7 @@ public final class FarmIsle implements Listener, StatProvider {
         this.cast = new IsleCast(this);
         this.menus = new IsleMenus(this);
         this.dev = new IsleDev(this);
+        this.lesson = new FieldLesson(this);
     }
 
     public void start() {
@@ -79,6 +81,7 @@ public final class FarmIsle implements Listener, StatProvider {
         events.start();
         compass.start();
         cast.start();
+        lesson.start();
         try {
             ActiveEquipmentStats.registerProvider(this);
             itemsHooked = true;
@@ -94,6 +97,7 @@ public final class FarmIsle implements Listener, StatProvider {
             ActiveEquipmentStats.unregisterProvider(this);
             itemsHooked = false;
         }
+        lesson.shutdown();
         events.shutdown();
         rhythm.shutdown();
         prizes.shutdown();
@@ -135,6 +139,7 @@ public final class FarmIsle implements Listener, StatProvider {
         if (!spread) {
             rhythm.onHarvest(player, at);
             prizes.roll(player, crop, at);
+            lesson.onHarvest(player, crop, at);
         }
         events.onHarvest(player, at);
         int foodXp = bakehouse.xpPerHarvest(player);
@@ -146,6 +151,7 @@ public final class FarmIsle implements Listener, StatProvider {
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
         var id = event.getPlayer().getUniqueId();
+        lesson.forget(id);
         rhythm.clear(id);
         compass.forget(id);
         events.onQuit(id);
@@ -254,5 +260,9 @@ public final class FarmIsle implements Listener, StatProvider {
 
     public IsleDev dev() {
         return dev;
+    }
+
+    public FieldLesson lesson() {
+        return lesson;
     }
 }

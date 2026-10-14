@@ -49,6 +49,8 @@ public final class AnglerProfiles {
         int eldermaw;
         int bestStreak;
         long catches;
+        /** Isle lesson stage ({@link LakeLesson}): 0 new … 5 done. */
+        int lesson;
         final Map<Bait, Integer> bait = new EnumMap<>(Bait.class);
         Bait activeBait;
 
@@ -224,6 +226,7 @@ public final class AnglerProfiles {
         profile.eldermaw = section.getInt("eldermaw", 0);
         profile.bestStreak = section.getInt("best-streak", 0);
         profile.catches = section.getLong("catches", 0L);
+        profile.lesson = section.getInt("lesson", 0);
         ConfigurationSection bait = section.getConfigurationSection("bait");
         if (bait != null) {
             for (String key : bait.getKeys(false)) {
@@ -252,6 +255,7 @@ public final class AnglerProfiles {
         section.set("eldermaw", profile.eldermaw);
         section.set("best-streak", profile.bestStreak);
         section.set("catches", profile.catches);
+        section.set("lesson", profile.lesson);
         profile.bait.forEach((kind, charges) -> {
             if (charges > 0) {
                 section.set("bait." + kind.id(), charges);

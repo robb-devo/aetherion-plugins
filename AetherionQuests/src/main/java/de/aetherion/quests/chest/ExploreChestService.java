@@ -40,6 +40,7 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -94,6 +95,8 @@ public final class ExploreChestService {
     private final Map<String, Long> noticed = new HashMap<>();
     /** playerUuid|chestKey seen this session. */
     private final Set<String> sighted = new HashSet<>();
+    /** Authored scatter spots already placed once (spot id → chest key): a removed find never comes back by itself. */
+    private final Map<String, String> seeded = new LinkedHashMap<>();
     private BukkitTask proximity;
     private BukkitTask propTicker;
     private int glintCycle;
@@ -180,9 +183,19 @@ public final class ExploreChestService {
     }
 
     public void remove(Player player, Block block) {
-        ExploreChestKind kind = kindOf(block);
+        ExploreChestKind kind = drop(block);
         if (kind == null) {
             return;
+        }
+        player.sendMessage("§eRemoved " + kind.display() + ".");
+        player.playSound(player.getLocation(), Sound.BLOCK_CHEST_CLOSE, 0.8f, 0.8f);
+    }
+
+    /** Takes a chest out of the world and the yml. @return its kind, or null if there was none */
+    public ExploreChestKind drop(Block block) {
+        ExploreChestKind kind = kindOf(block);
+        if (kind == null) {
+            return null;
         }
         String id = key(block);
         clearFx(block);
@@ -192,8 +205,67 @@ public final class ExploreChestService {
         facings.remove(id);
         block.setType(Material.AIR, false);
         save();
-        player.sendMessage("§eRemoved " + kind.display() + ".");
-        player.playSound(player.getLocation(), Sound.BLOCK_CHEST_CLOSE, 0.8f, 0.8f);
+        return kind;
+    }
+
+    /**
+     * Places an authored scatter chest (no player). The caller has checked the ground; a spot that
+     * already holds an exploration chest is only marked as seeded.
+     */
+    public void seed(String spot, Block target, ExploreChestKind kind, BlockFace face) {
+        String id = key(target);
+        if (!isExploreChest(target)) {
+            target.setType(Material.BARRIER, false);
+            chests.add(id);
+            kinds.put(id, kind);
+            facings.put(id, horizontal(face));
+        }
+        seeded.put(spot, id);
+        save();
+        ensureFx(target);
+    }
+
+    /** Marks a scatter spot as handled without placing anything (re-tiers, spots that moved on). */
+    public void markSeeded(String spot, String chestKey) {
+        seeded.put(spot, chestKey);
+        save();
+    }
+
+    public String seededAt(String spot) {
+        return seeded.get(spot);
+    }
+
+    /** Changes a placed chest's rarity in place. Cooldowns are per chest key, so they carry over. */
+    public boolean retier(Block block, ExploreChestKind to) {
+        ExploreChestKind from = kindOf(block);
+        if (from == null || to == null || from == to) {
+            return false;
+        }
+        kinds.put(key(block), to);
+        save();
+        if (loaded(block)) {
+            ensureFx(block);
+        }
+        return true;
+    }
+
+    public Map<ExploreChestKind, Integer> counts() {
+        Map<ExploreChestKind, Integer> out = new EnumMap<>(ExploreChestKind.class);
+        for (String id : chests) {
+            ExploreChestKind kind = kinds.get(id);
+            if (kind != null) {
+                out.merge(kind, 1, Integer::sum);
+            }
+        }
+        return out;
+    }
+
+    public static String keyOf(Block block) {
+        return key(block);
+    }
+
+    public static Block blockAt(String chestKey) {
+        return blockOf(chestKey);
     }
 
     public void tryOpen(Player player, Block block) {
@@ -242,7 +314,7 @@ public final class ExploreChestService {
     public void restoreAll() {
         for (String id : new ArrayList<>(chests)) {
             Block block = blockOf(id);
-            if (block == null || !block.getChunk().isLoaded()) {
+            if (block == null || !loaded(block)) {
                 continue;
             }
             ExploreChestKind kind = kinds.get(id);
@@ -314,6 +386,11 @@ public final class ExploreChestService {
             opens.add(row);
         }
         yaml.set("last-open", opens);
+        List<String> scattered = new ArrayList<>();
+        for (Map.Entry<String, String> entry : seeded.entrySet()) {
+            scattered.add(entry.getKey() + "|" + entry.getValue());
+        }
+        yaml.set("seeded", scattered);
         try {
             if (!file.getParentFile().exists()) {
                 file.getParentFile().mkdirs();
@@ -354,6 +431,12 @@ public final class ExploreChestService {
             try {
                 facings.put(raw.substring(0, cut), horizontal(BlockFace.valueOf(raw.substring(cut + 1))));
             } catch (IllegalArgumentException ignored) {
+            }
+        }
+        for (String raw : yaml.getStringList("seeded")) {
+            int cut = raw == null ? -1 : raw.indexOf('|');
+            if (cut > 0) {
+                seeded.put(raw.substring(0, cut), raw.substring(cut + 1));
             }
         }
         List<?> opens = yaml.getList("last-open");
@@ -655,6 +738,10 @@ public final class ExploreChestService {
         }
     }
 
+    private static boolean loaded(Block block) {
+        return block.getWorld().isChunkLoaded(block.getX() >> 4, block.getZ() >> 4);
+    }
+
     private static BlockFace horizontal(BlockFace face) {
         if (face == null) {
             return BlockFace.SOUTH;
@@ -719,7 +806,8 @@ public final class ExploreChestService {
                 continue;
             }
             Block block = blockOf(id);
-            if (block == null || !block.getChunk().isLoaded() || !isExploreChest(block)) {
+            // isChunkLoaded, not getChunk(): the latter loads the chunk, every half second, for every chest.
+            if (block == null || !loaded(block) || !isExploreChest(block)) {
                 continue;
             }
             ExploreChestKind kind = kindOf(block);
@@ -786,6 +874,8 @@ public final class ExploreChestService {
                 prop.notice();
             }
             switch (kind) {
+                case COMMON -> player.playSound(top, Sound.BLOCK_WOODEN_TRAPDOOR_CLOSE, SoundCategory.BLOCKS, 0.2f, 1.5f);
+                case UNCOMMON -> player.playSound(top, Sound.BLOCK_CHEST_LOCKED, SoundCategory.BLOCKS, 0.22f, 1.35f);
                 case RARE -> player.playSound(top, Sound.BLOCK_CHEST_LOCKED, SoundCategory.BLOCKS, 0.25f, 1.6f);
                 case EPIC -> player.playSound(top, Sound.BLOCK_AMETHYST_BLOCK_CHIME, SoundCategory.BLOCKS, 0.45f, 1.2f);
                 case LEGENDARY -> player.playSound(top, Sound.BLOCK_NOTE_BLOCK_BELL, SoundCategory.BLOCKS, 0.3f, 1.6f);
@@ -855,6 +945,8 @@ public final class ExploreChestService {
             return;
         }
         Particle spark = switch (kind) {
+            case COMMON -> Particle.WHITE_ASH;
+            case UNCOMMON -> Particle.COMPOSTER;
             case RARE -> Particle.WAX_OFF;
             case EPIC -> Particle.WITCH;
             case LEGENDARY -> Particle.WAX_ON;

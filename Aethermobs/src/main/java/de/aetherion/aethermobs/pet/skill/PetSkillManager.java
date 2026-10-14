@@ -3872,13 +3872,15 @@ public class PetSkillManager implements Listener {
 
             boolean sense = nextPets.contains(id);
             pet.setCatchBeacon(sense);
-            if (sense) {
-                RarityGlow.apply(
-                        pet.getEntity(),
-                        pet.getPetInstance().getRarity()
-                );
-            } else {
-                RarityGlow.clear(pet.getEntity());
+            if (pet.getBody() == null) {
+                if (sense) {
+                    RarityGlow.apply(
+                            pet.getEntity(),
+                            pet.getPetInstance().getRarity()
+                    );
+                } else {
+                    RarityGlow.clear(pet.getEntity());
+                }
             }
         }
 

@@ -1,6 +1,7 @@
 package de.aetherion.items.world;
 
 import de.aetherion.core.api.AetherServices;
+import de.aetherion.core.api.BarChrome;
 import de.aetherion.core.api.BossSpawnAccess;
 
 import net.kyori.adventure.bossbar.BossBar;
@@ -210,7 +211,8 @@ public final class ColosseumEscortService implements Listener {
         player.sendMessage("§6Colosseum §8» §fCalling §6" + display + "§f… stand ready.");
 
         BossBar bar = BossBar.bossBar(
-                Component.text("Summoning " + display, NamedTextColor.GOLD, TextDecoration.BOLD),
+                BarChrome.component(BarChrome.Family.BOSS, BarChrome.Icon.SIGIL,
+                        Component.text("Summoning " + display, NamedTextColor.GOLD, TextDecoration.BOLD)),
                 1.0f,
                 BossBar.Color.YELLOW,
                 BossBar.Overlay.PROGRESS

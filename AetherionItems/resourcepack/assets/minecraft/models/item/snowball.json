@@ -1,0 +1,92 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "minecraft:item/snowball"
+  },
+  "overrides": [
+    {
+      "predicate": {
+        "custom_model_data": 3601
+      },
+      "model": "minecraft:item/aether_sphere_common"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3602
+      },
+      "model": "minecraft:item/aether_sphere_rare"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3603
+      },
+      "model": "minecraft:item/aether_sphere_epic"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3604
+      },
+      "model": "minecraft:item/aether_sphere_legendary"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3605
+      },
+      "model": "minecraft:item/aether_sphere_beta"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3606
+      },
+      "model": "minecraft:item/aether_sphere_shell_bottom"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3607
+      },
+      "model": "minecraft:item/aether_sphere_lid_common"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3608
+      },
+      "model": "minecraft:item/aether_sphere_lid_rare"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3609
+      },
+      "model": "minecraft:item/aether_sphere_lid_epic"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3610
+      },
+      "model": "minecraft:item/aether_sphere_lid_legendary"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3611
+      },
+      "model": "minecraft:item/aether_sphere_lid_beta"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3612
+      },
+      "model": "minecraft:item/snowball_vanilla"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3613
+      },
+      "model": "minecraft:item/aether_sphere_companion"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3614
+      },
+      "model": "minecraft:item/snowball_vanilla"
+    }
+  ]
+}

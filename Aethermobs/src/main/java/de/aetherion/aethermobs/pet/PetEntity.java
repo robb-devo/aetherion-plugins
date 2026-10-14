@@ -3,6 +3,9 @@ package de.aetherion.aethermobs.pet;
 import de.aetherion.core.AetherKeys;
 import de.aetherion.aethermobs.AetherMobs;
 import de.aetherion.aethermobs.model.PetVariant;
+import de.aetherion.aethermobs.pet.body.PetBody;
+import de.aetherion.aethermobs.pet.body.Rig;
+import de.aetherion.aethermobs.pet.body.Skeleton;
 import de.aetherion.items.model.Rarity;
 
 import org.bukkit.Bukkit;
@@ -157,6 +160,30 @@ public class PetEntity {
 
     private double orbitAngle;
 
+    /** The creature: display parts riding the invisible anchor ({@link #entity}). Null = legacy skull. */
+    private PetBody body;
+
+    private boolean beaconOn;
+
+    private int ownerAirTicks;
+
+    private int ownerGroundTicks;
+
+    private int ownerDiveTicks;
+
+    private int ownerStillTicks;
+
+    private Location ownerLastSeen;
+
+    /** Small flyers ride their owner's shoulder while the owner stands still. */
+    private boolean perched;
+
+    private float nameplateHeight = Float.NaN;
+
+    private boolean nameplateHidden;
+
+    private static boolean bodyFailureLogged;
+
 
     public PetEntity(
             PetInstance petInstance
@@ -275,6 +302,11 @@ public class PetEntity {
                 && DungeonWorlds.isTestArena(location.getWorld())) {
             return;
         }
+
+        body =
+                createBody(
+                        force
+                );
 
         if (isEquipped()) {
 
@@ -404,19 +436,22 @@ public class PetEntity {
         }
 
 
+        location =
+                carriageAdjusted(
+                        location
+                );
+
         entity =
                 location.getWorld()
                         .spawn(
                                 location,
-                                ItemDisplay.class
+                                ItemDisplay.class,
+                                anchor -> anchor.getPersistentDataContainer().set(
+                                        PET_ENTITY_KEY,
+                                        PET_ENTITY_KEY_TYPE,
+                                        (byte) 1
+                                )
                         );
-
-
-        entity.setItemStack(
-                PetHead.create(
-                        petInstance
-                )
-        );
 
 
         entity.setBillboard(
@@ -427,11 +462,10 @@ public class PetEntity {
                 ItemDisplay.ItemDisplayTransform.FIXED
         );
 
-        entity.setTransformation(
-                bodyTransform(
-                        BODY_SCALE
-                )
-        );
+        if (body == null) {
+
+            legacySkull();
+        }
 
 
         entity.setGravity(
@@ -460,6 +494,8 @@ public class PetEntity {
                 (byte) 1
         );
 
+
+        attachBody();
 
         spawnNameplate();
         updateDisplayName();
@@ -579,6 +615,9 @@ public class PetEntity {
 
                         if (!isSpawned()) {
 
+                            // Anchor gone (unload / swept by another plugin): body and name go with it.
+                            remove();
+
                             cancel();
 
                             return;
@@ -607,9 +646,14 @@ public class PetEntity {
                                 return;
                             }
 
-                            followOwner(
-                                    owner
-                            );
+                            trackOwnerStill();
+
+                            if (!perchOnOwner()) {
+
+                                followOwner(
+                                        owner
+                                );
+                            }
                         }
 
 
@@ -617,7 +661,7 @@ public class PetEntity {
 
                         updateShinyEffect();
 
-                        updateAuraEffect();
+                        tickBody();
                     }
                 };
 
@@ -649,6 +693,9 @@ public class PetEntity {
                     public void run() {
 
                         if (!isSpawned()) {
+
+                            // Anchor gone (unload / swept by another plugin): body and name go with it.
+                            remove();
 
                             cancel();
 
@@ -688,7 +735,7 @@ public class PetEntity {
 
                         updateShinyEffect();
 
-                        updateAuraEffect();
+                        tickBody();
                     }
                 };
 
@@ -718,7 +765,9 @@ public class PetEntity {
                 );
 
         double desiredY =
-                host.getY()
+                groundCarriage()
+                        ? companionFloorY(target, host)
+                        : host.getY()
                         + HOVER_HEIGHT;
 
         double currentY =
@@ -872,13 +921,13 @@ public class PetEntity {
 
         base.add(
                 along.multiply(
-                        -FOLLOW_DISTANCE * 0.55
+                        -FOLLOW_DISTANCE * 0.55 * followScale()
                 )
         );
 
         base.add(
                 side.multiply(
-                        FOLLOW_SIDE * 0.9
+                        FOLLOW_SIDE * 0.9 * followScale()
                 )
         );
 
@@ -965,6 +1014,16 @@ public class PetEntity {
     private void updateCompanionHover() {
 
         if (!isSpawned()) {
+
+            return;
+        }
+
+        if (groundCarriage()) {
+
+            smoothedHoverY =
+                    entity.getLocation().getY();
+
+            lastHoverBob = 0;
 
             return;
         }
@@ -1251,13 +1310,13 @@ public class PetEntity {
 
         playerLoc.add(
                 along.multiply(
-                        -FOLLOW_DISTANCE
+                        -FOLLOW_DISTANCE * followScale()
                 )
         );
 
         playerLoc.add(
                 side.multiply(
-                        FOLLOW_SIDE
+                        FOLLOW_SIDE * followScale()
                 )
         );
 
@@ -1385,7 +1444,19 @@ public class PetEntity {
     private void updateEquippedHover() {
 
         if (!isSpawned()
-                || owner == null) {
+                || owner == null
+                || perched) {
+
+            return;
+        }
+
+        if (groundCarriage()) {
+
+            // Walkers stand on the floor: no hover bob, the gait carries the life.
+            smoothedHoverY =
+                    entity.getLocation().getY();
+
+            lastHoverBob = 0;
 
             return;
         }
@@ -1457,6 +1528,9 @@ public class PetEntity {
 
                         if (!isSpawned()) {
 
+                            // Anchor gone (unload / swept by another plugin): body and name go with it.
+                            remove();
+
                             cancel();
 
                             return;
@@ -1473,7 +1547,7 @@ public class PetEntity {
 
                         updateShinyEffect();
 
-                        updateAuraEffect();
+                        tickBody();
                     }
                 };
 
@@ -1760,8 +1834,12 @@ public class PetEntity {
             }
 
             double desiredY =
-                    groundY
-                            + HOVER_HEIGHT;
+                    surfaceY(
+                            next.getWorld(),
+                            next.getBlockX(),
+                            groundY,
+                            next.getBlockZ()
+                    );
 
             if (Double.isNaN(smoothedHoverY)) {
 
@@ -1797,7 +1875,8 @@ public class PetEntity {
                 || spawnType == PetSpawnType.DUNGEON
                 || spawnType == PetSpawnType.NETHER) {
 
-            if (!isValidCavePosition(next)) {
+            if (!groundCarriage()
+                    && !isValidCavePosition(next)) {
 
                 wildDirection =
                         createRandomWildDirection(
@@ -1805,6 +1884,63 @@ public class PetEntity {
                         );
 
                 return;
+            }
+
+            if (groundCarriage()) {
+
+                // Cave walkers keep their feet on the cave floor: one-block steps up,
+                // short drops down, never into a chasm or a wall.
+                double floor =
+                        floorUnder(
+                                next.clone().add(0.0, 1.0, 0.0),
+                                6
+                        );
+
+                if (Double.isNaN(floor)
+                        || floor - current.getY() > 1.05
+                        || current.getY() - floor > 4.5) {
+
+                    wildDirection =
+                            createRandomWildDirection(
+                                    spawnType
+                            );
+
+                    return;
+                }
+
+                Location stand =
+                        next.clone();
+
+                stand.setY(
+                        floor + 0.05
+                );
+
+                if (!isValidCavePosition(stand)) {
+
+                    wildDirection =
+                            createRandomWildDirection(
+                                    spawnType
+                            );
+
+                    return;
+                }
+
+                if (Double.isNaN(smoothedHoverY)) {
+
+                    smoothedHoverY =
+                            current.getY();
+                }
+
+                smoothedHoverY =
+                        approachY(
+                                smoothedHoverY,
+                                floor,
+                                0.22
+                        );
+
+                next.setY(
+                        smoothedHoverY
+                );
             }
         }
 
@@ -1964,6 +2100,15 @@ public class PetEntity {
                 2.15d + Math.sin(orbitAngle * 0.85d) * 0.45d,
                 Math.sin(orbitAngle) * 2.85d
         );
+        if (groundCarriage()) {
+            dest.setY(
+                    groundYNear(
+                            fisher.getLocation(),
+                            dest.getX(),
+                            dest.getZ()
+                    )
+            );
+        }
         Location current = entity.getLocation();
         if (current.getWorld() == null || dest.getWorld() == null) {
             return false;
@@ -1976,6 +2121,11 @@ public class PetEntity {
         double dist = step.length();
         if (dist > 0.04d) {
             movePet(current.add(step.normalize().multiply(Math.min(dist, 0.48d))));
+        }
+        if (groundCarriage()) {
+            // Keep the hover pass from pulling a walker back up to its spawn height.
+            smoothedHoverY = entity.getLocation().getY();
+            lastHoverBob = 0;
         }
         return true;
     }
@@ -2059,6 +2209,7 @@ public class PetEntity {
                 0.0;
 
         if (!surfaceSwim
+                && !groundCarriage()
                 && (spawnType == PetSpawnType.SKY
                 || spawnType == PetSpawnType.AQUATIC
                 || spawnType == PetSpawnType.CAVE
@@ -2528,7 +2679,13 @@ public class PetEntity {
                         ? hoverY
                         : smoothedHoverY;
 
-        if (maxY < minY) {
+        if (groundCarriage()) {
+
+            dest.setY(
+                    hoverY
+            );
+
+        } else if (maxY < minY) {
 
             dest.setY(
                     (floorTop + ceilingBottom) * 0.5
@@ -2616,16 +2773,22 @@ public class PetEntity {
             side.normalize();
         }
 
+        double fd =
+                FOLLOW_DISTANCE * followScale();
+
+        double fs =
+                FOLLOW_SIDE * followScale();
+
         double[][] offsets = {
-                { -FOLLOW_DISTANCE, FOLLOW_SIDE },
-                { -FOLLOW_DISTANCE, -FOLLOW_SIDE },
-                { -FOLLOW_DISTANCE * 0.55, FOLLOW_SIDE * 0.7 },
-                { -FOLLOW_DISTANCE * 0.55, -FOLLOW_SIDE * 0.7 },
-                { -0.35, FOLLOW_SIDE * 0.85 },
-                { -0.35, -FOLLOW_SIDE * 0.85 },
-                { 0.0, FOLLOW_SIDE * 0.55 },
-                { 0.0, -FOLLOW_SIDE * 0.55 },
-                { -FOLLOW_DISTANCE * 0.35, 0.35 },
+                { -fd, fs },
+                { -fd, -fs },
+                { -fd * 0.55, fs * 0.7 },
+                { -fd * 0.55, -fs * 0.7 },
+                { -0.35, fs * 0.85 },
+                { -0.35, -fs * 0.85 },
+                { 0.0, fs * 0.55 },
+                { 0.0, -fs * 0.55 },
+                { -fd * 0.35, 0.35 },
                 { -0.55, 0.0 }
         };
 
@@ -2769,6 +2932,14 @@ public class PetEntity {
             return ownerLoc.getY() + HOVER_HEIGHT_TIGHT;
         }
 
+        if (groundCarriage()) {
+            return equippedGroundY(
+                    player,
+                    x,
+                    z
+            );
+        }
+
         double floorTop =
                 equippedFloorTop(
                         world,
@@ -2793,7 +2964,7 @@ public class PetEntity {
                         || player.isInWater()
                         || player.isSwimming()
                         ? HOVER_HEIGHT_TIGHT
-                        : HOVER_HEIGHT;
+                        : equippedHoverHeight();
 
         double desired =
                 ownerLoc.getY()
@@ -3093,7 +3264,9 @@ public class PetEntity {
         }
 
         Block block =
-                location.getBlock();
+                groundCarriage()
+                        ? location.clone().add(0.0, 0.4, 0.0).getBlock()
+                        : location.getBlock();
 
         Material type =
                 block.getType();
@@ -3194,7 +3367,9 @@ public class PetEntity {
         }
 
         double minClearY =
-                toGround + 0.72;
+                groundCarriage()
+                        ? surfaceY(world, to.getBlockX(), toGround, to.getBlockZ()) - 0.05
+                        : toGround + 0.72;
 
         Location dest =
                 to.clone();
@@ -3207,7 +3382,7 @@ public class PetEntity {
             climb.setY(
                     approachY(
                             from.getY(),
-                            toGround + HOVER_HEIGHT,
+                            surfaceY(world, to.getBlockX(), toGround, to.getBlockZ()),
                             yStep
                     )
             );
@@ -3236,7 +3411,7 @@ public class PetEntity {
         rise.setY(
                 approachY(
                         from.getY(),
-                        toGround + HOVER_HEIGHT,
+                        surfaceY(world, to.getBlockX(), toGround, to.getBlockZ()),
                         yStep
                 )
         );
@@ -3278,7 +3453,12 @@ public class PetEntity {
                 );
 
         double hover =
-                ground + HOVER_HEIGHT;
+                surfaceY(
+                        world,
+                        Location.locToBlock(x),
+                        ground,
+                        Location.locToBlock(z)
+                );
 
         Location probe =
                 new Location(
@@ -3289,7 +3469,7 @@ public class PetEntity {
                 );
 
         if (!solidAt(probe)
-                && y >= ground + 0.55) {
+                && y >= (groundCarriage() ? hover - 0.02 : ground + 0.55)) {
 
             return y;
         }
@@ -3314,7 +3494,9 @@ public class PetEntity {
                 location.getBlockX();
 
         int y =
-                location.getBlockY();
+                groundCarriage()
+                        ? Location.locToBlock(location.getY() + 0.55)
+                        : location.getBlockY();
 
         int z =
                 location.getBlockZ();
@@ -3425,7 +3607,7 @@ public class PetEntity {
                     if (!isGentleSurfaceStep(fromGround, groundY)) {
                         continue;
                     }
-                    Location candidate = new Location(world, x + 0.5, groundY + HOVER_HEIGHT, z + 0.5);
+                    Location candidate = new Location(world, x + 0.5, surfaceY(world, x, groundY, z), z + 0.5);
                     if (!isValidSurfacePosition(candidate)) {
                         continue;
                     }
@@ -3954,7 +4136,7 @@ public class PetEntity {
                 Math.sin(
                         hoverTime
                 )
-                        * HOVER_RANGE;
+                        * bobRange();
 
 
         if (catching) {
@@ -4158,6 +4340,10 @@ public class PetEntity {
                         petName
                 )
         );
+
+        if (body != null) {
+            body.happy();
+        }
     }
 
     private static float yawToward(
@@ -4289,7 +4475,9 @@ public class PetEntity {
 
         location.add(
                 0,
-                SHINY_PARTICLE_HEIGHT,
+                body != null
+                        ? body.rig().scaledMiddle() + 0.2
+                        : SHINY_PARTICLE_HEIGHT,
                 0
         );
 
@@ -4622,7 +4810,8 @@ public class PetEntity {
 
                                     display.setTransformation(
                                             nameplateTransform(
-                                                    NAMEPLATE_SCALE
+                                                    NAMEPLATE_SCALE,
+                                                    currentNameplateHeight()
                                             )
                                     );
 
@@ -4642,6 +4831,14 @@ public class PetEntity {
                                             );
                                 }
                         );
+
+        // Riding the anchor: one move packet carries the name too.
+        entity.addPassenger(
+                nameplate
+        );
+
+        nameplateHeight =
+                currentNameplateHeight();
     }
 
 
@@ -4659,7 +4856,17 @@ public class PetEntity {
         Location dest =
                 location.clone();
 
-        entity.teleport(
+        if (!dest.getWorld().equals(entity.getWorld())) {
+
+            hopWorld(
+                    dest
+            );
+
+            return;
+        }
+
+        Rig.moveAnchor(
+                entity,
                 dest
         );
 
@@ -4667,14 +4874,6 @@ public class PetEntity {
                 || !nameplate.isValid()) {
 
             spawnNameplate();
-        }
-
-        if (nameplate != null
-                && nameplate.isValid()) {
-
-            nameplate.teleport(
-                    dest
-            );
         }
     }
 
@@ -4930,6 +5129,11 @@ public class PetEntity {
             movementTask = null;
         }
 
+        if (body != null) {
+
+            body.remove();
+        }
+
 
         if (nameplate != null) {
 
@@ -4965,9 +5169,27 @@ public class PetEntity {
             return;
         }
 
-        entity.setGlowing(
-                enabled
-        );
+        if (beaconOn == enabled) {
+
+            return;
+        }
+
+        beaconOn =
+                enabled;
+
+        if (body != null) {
+
+            body.setGlow(
+                    enabled,
+                    rarityGlowColor()
+            );
+
+        } else {
+
+            entity.setGlowing(
+                    enabled
+            );
+        }
 
         if (nameplate != null
                 && nameplate.isValid()) {
@@ -5002,21 +5224,34 @@ public class PetEntity {
             return;
         }
 
-        entity.setInterpolationDelay(0);
-        entity.setInterpolationDuration(0);
-        entity.setTransformation(bodyTransform(0.001f));
+        if (body != null) {
+
+            body.presence(
+                    0.001f,
+                    1f,
+                    ticks
+            );
+
+        } else {
+
+            entity.setInterpolationDelay(0);
+            entity.setInterpolationDuration(0);
+            entity.setTransformation(bodyTransform(0.001f));
+        }
 
         if (nameplate != null
                 && nameplate.isValid()) {
 
             nameplate.setInterpolationDelay(0);
             nameplate.setInterpolationDuration(0);
-            nameplate.setTransformation(nameplateTransform(0.001f));
+            nameplate.setTransformation(nameplateTransform(0.001f, currentNameplateHeight()));
         }
 
         AetherMobs plugin = getPlugin();
         if (plugin == null || !plugin.isEnabled()) {
-            entity.setTransformation(bodyTransform(BODY_SCALE));
+            if (body == null) {
+                entity.setTransformation(bodyTransform(BODY_SCALE));
+            }
             return;
         }
 
@@ -5025,14 +5260,16 @@ public class PetEntity {
             if (!isSpawned()) {
                 return;
             }
-            entity.setInterpolationDelay(0);
-            entity.setInterpolationDuration(ticks);
-            entity.setTransformation(bodyTransform(BODY_SCALE));
+            if (body == null) {
+                entity.setInterpolationDelay(0);
+                entity.setInterpolationDuration(ticks);
+                entity.setTransformation(bodyTransform(BODY_SCALE));
+            }
             if (nameplate != null
                     && nameplate.isValid()) {
                 nameplate.setInterpolationDelay(0);
                 nameplate.setInterpolationDuration(ticks);
-                nameplate.setTransformation(nameplateTransform(NAMEPLATE_SCALE));
+                nameplate.setTransformation(nameplateTransform(NAMEPLATE_SCALE, currentNameplateHeight()));
             }
         }, 2L);
     }
@@ -5069,16 +5306,33 @@ public class PetEntity {
             return;
         }
 
-        entity.setInterpolationDelay(0);
-        entity.setInterpolationDuration(ticks);
-        entity.setTransformation(bodyTransform(0.001f));
+        PetBody leaving =
+                body;
+
+        if (leaving != null) {
+
+            leaving.fade(
+                    ticks
+            );
+
+        } else {
+
+            entity.setInterpolationDelay(0);
+            entity.setInterpolationDuration(ticks);
+            entity.setTransformation(bodyTransform(0.001f));
+        }
 
         ItemDisplay shrinking = entity;
         entity = null;
 
         Bukkit.getScheduler().runTaskLater(
                 plugin,
-                shrinking::remove,
+                () -> {
+                    if (leaving != null) {
+                        leaving.remove();
+                    }
+                    shrinking.remove();
+                },
                 ticks + 1L
         );
     }
@@ -5104,13 +5358,14 @@ public class PetEntity {
     }
 
     private static Transformation nameplateTransform(
-            float scale
+            float scale,
+            float height
     ) {
 
         return new Transformation(
                 new Vector3f(
                         0f,
-                        0.82f * (scale / NAMEPLATE_SCALE),
+                        height * (scale / NAMEPLATE_SCALE),
                         0f
                 ),
                 new Quaternionf(),
@@ -5120,6 +5375,922 @@ public class PetEntity {
                         scale
                 ),
                 new Quaternionf()
+        );
+    }
+
+
+    /*
+     * =========================================================
+     * BODY
+     * =========================================================
+     *
+     * The anchor (entity) keeps every movement rule it always had.
+     * The body is a rig of display parts riding it. Anything that
+     * goes wrong inside the body falls back to the old skull look so
+     * a rendering bug can never take pets (or the server) down.
+     */
+
+    private PetBody createBody(
+            boolean force
+    ) {
+
+        try {
+
+            return PetBody.create(
+                    petInstance,
+                    isEquipped() || companionHost != null,
+                    force || ignoreHabitatRules
+            );
+
+        } catch (Throwable throwable) {
+
+            logBodyFailure(throwable);
+            return null;
+        }
+    }
+
+    private void attachBody() {
+
+        if (body == null || !isSpawned()) {
+            return;
+        }
+
+        AetherMobs plugin = getPlugin();
+
+        if (plugin == null || !plugin.isEnabled()) {
+            return;
+        }
+
+        try {
+
+            body.attach(
+                    plugin,
+                    entity
+            );
+
+            if ((isEquipped() || companionHost != null)
+                    && body.skeleton() == Skeleton.DRAGON) {
+
+                body.setFlying(true);
+            }
+
+        } catch (Throwable throwable) {
+
+            disableBody(throwable);
+        }
+    }
+
+    private void legacySkull() {
+
+        if (entity == null) {
+            return;
+        }
+
+        entity.setItemStack(
+                PetHead.create(
+                        petInstance
+                )
+        );
+
+        entity.setTransformation(
+                bodyTransform(
+                        BODY_SCALE
+                )
+        );
+    }
+
+    private void disableBody(
+            Throwable throwable
+    ) {
+
+        logBodyFailure(throwable);
+
+        if (body != null) {
+
+            try {
+                body.remove();
+            } catch (Throwable ignored) {
+            }
+        }
+
+        body = null;
+
+        if (isSpawned()) {
+
+            legacySkull();
+            nameplateHeight = Float.NaN;
+            syncNameplateHeight();
+        }
+    }
+
+    private static void logBodyFailure(
+            Throwable throwable
+    ) {
+
+        if (bodyFailureLogged) {
+            return;
+        }
+
+        bodyFailureLogged = true;
+
+        AetherMobs plugin = (AetherMobs) Bukkit.getPluginManager().getPlugin("AetherMobs");
+
+        if (plugin != null) {
+            plugin.getLogger().log(
+                    java.util.logging.Level.WARNING,
+                    "Pet body failed, falling back to skull look: " + throwable,
+                    throwable
+            );
+        }
+    }
+
+    private void tickBody() {
+
+        if (!isSpawned()) {
+            return;
+        }
+
+        if (body == null) {
+
+            updateAuraEffect();
+            return;
+        }
+
+        try {
+
+            updateCarryMode();
+
+            Location at =
+                    entity.getLocation();
+
+            body.tick(
+                    2,
+                    at,
+                    at.getYaw(),
+                    false
+            );
+
+            syncNameplateHeight();
+
+        } catch (Throwable throwable) {
+
+            disableBody(throwable);
+        }
+    }
+
+    /** Sphere when the owner leaves the ground, paddle in water, bubble for fish on land. */
+    private void updateCarryMode() {
+
+        if (catching || body.mode() == PetBody.Mode.CAPTURED) {
+            return;
+        }
+
+        Skeleton skeleton =
+                body.skeleton();
+
+        boolean companion =
+                isEquipped() || companionHost != null;
+
+        boolean inWater =
+                anchorInWater();
+
+        PetBody.Mode want =
+                PetBody.Mode.NORMAL;
+
+        if (skeleton.aquatic()) {
+
+            if (!inWater && (companion || ignoreHabitatRules)) {
+                want = PetBody.Mode.BUBBLE;
+            }
+
+        } else {
+
+            boolean ground =
+                    skeleton.carriage() == Skeleton.Carriage.GROUND;
+
+            if (owner != null
+                    && (ownerDiving() || ground && ownerAirborne())) {
+                want = PetBody.Mode.BALL;
+            } else if (ground && inWater) {
+                want = PetBody.Mode.PADDLE;
+            }
+
+            if (skeleton == Skeleton.DRAGON && owner != null) {
+                dragonLandOrFly();
+            }
+        }
+
+        if (want != body.mode()) {
+
+            PetBody.Mode before = body.mode();
+            body.setMode(want);
+
+            if (before == PetBody.Mode.BALL || want == PetBody.Mode.BALL) {
+
+                // Snap the anchor to the new carriage height at once.
+                smoothedHoverY = Double.NaN;
+                lastHoverBob = 0;
+            }
+        }
+    }
+
+    private boolean ownerAirborne() {
+
+        boolean air;
+
+        try {
+
+            Location at = owner.getLocation();
+            World world = at.getWorld();
+            boolean high = world != null
+                    && !owner.isInWater()
+                    && at.getY() - equippedFloorTop(world, at.getX(), at.getY(), at.getZ()) > 4.5;
+
+            air = owner.isGliding()
+                    || owner.isFlying()
+                    || owner.isInsideVehicle()
+                    || owner.isRiptiding()
+                    || high;
+
+        } catch (Throwable ignored) {
+
+            air = false;
+        }
+
+        if (air) {
+            ownerAirTicks += 2;
+            ownerGroundTicks = 0;
+        } else {
+            ownerGroundTicks += 2;
+            ownerAirTicks = 0;
+        }
+
+        if (body.mode() == PetBody.Mode.BALL) {
+            return ownerGroundTicks < 8;
+        }
+
+        boolean instant = owner.isGliding() || owner.isInsideVehicle() || owner.isRiptiding();
+        return ownerAirTicks >= (instant ? 2 : 12);
+    }
+
+    private void trackOwnerStill() {
+
+        Location now =
+                owner.getLocation();
+
+        boolean still;
+
+        try {
+
+            still = ownerLastSeen != null
+                    && ownerLastSeen.getWorld() == now.getWorld()
+                    && ownerLastSeen.distanceSquared(now) < 0.0025
+                    && owner.isOnGround()
+                    && !owner.isInWater()
+                    && !owner.isGliding()
+                    && !owner.isFlying()
+                    && !owner.isInsideVehicle();
+
+        } catch (Throwable ignored) {
+
+            still = false;
+        }
+
+        ownerLastSeen = now;
+
+        ownerStillTicks =
+                still
+                        ? ownerStillTicks + 2
+                        : 0;
+    }
+
+    /**
+     * Shoulder ride: after a few still seconds a small flyer lands on its owner's shoulder,
+     * wings folded, and takes off the moment they move. Returns true while it rides.
+     */
+    private boolean perchOnOwner() {
+
+        boolean able =
+                body != null
+                        && body.mode() == PetBody.Mode.NORMAL
+                        && !body.rig().isDragon()
+                        && switch (body.skeleton()) {
+                    case FLAP, SOAR, FLUTTER, HOVER -> true;
+                    default -> false;
+                };
+
+        if (!able || ownerStillTicks < (perched ? 1 : 80)) {
+
+            if (perched) {
+
+                perched = false;
+                if (body != null) {
+                    body.setPerched(false);
+                }
+                nameplateHidden = false;
+                nameplateHeight = Float.NaN;
+                smoothedHoverY = Double.NaN;
+                lastHoverBob = 0;
+            }
+
+            return false;
+        }
+
+        if (!perched) {
+
+            perched = true;
+            body.setPerched(true);
+            nameplateHidden = true;
+            nameplateHeight = Float.NaN;
+        }
+
+        Location ownerLoc =
+                owner.getLocation();
+
+        float yaw =
+                bodyYaw(owner);
+
+        Vector forward =
+                yawVector(yaw);
+
+        Vector right =
+                new Vector(
+                        -forward.getZ(),
+                        0.0,
+                        forward.getX()
+                );
+
+        Location shoulder =
+                ownerLoc.clone()
+                        .add(right.multiply(0.37))
+                        .add(forward.multiply(-0.03))
+                        .add(0.0, owner.isSneaking() ? 1.16 : 1.4, 0.0);
+
+        shoulder.setYaw(yaw);
+        shoulder.setPitch(0.0F);
+
+        lookYaw = yaw;
+
+        movePet(
+                shoulder
+        );
+
+        return true;
+    }
+
+    /** Owner fully under water for a second: every non-swimmer rides in its sphere. */
+    private boolean ownerDiving() {
+
+        boolean under;
+
+        try {
+            under = owner.isInWater()
+                    && owner.getEyeLocation().getBlock().getType() == Material.WATER;
+        } catch (Throwable ignored) {
+            under = false;
+        }
+
+        ownerDiveTicks =
+                under
+                        ? ownerDiveTicks + 2
+                        : 0;
+
+        if (body.mode() == PetBody.Mode.BALL && under) {
+            return true;
+        }
+
+        return ownerDiveTicks >= 20;
+    }
+
+    /** Equipped dragons fly in the open and land to walk (wings folded) under low ceilings. */
+    private void dragonLandOrFly() {
+
+        Location at = owner.getLocation();
+        World world = at.getWorld();
+
+        if (world == null) {
+            return;
+        }
+
+        double clearance =
+                equippedCeilingBottom(world, at.getX(), at.getY(), at.getZ())
+                        - equippedFloorTop(world, at.getX(), at.getY(), at.getZ());
+
+        // Land beside an owner who stands around (wings folded, breathing), take off when they move.
+        boolean idle =
+                ownerStillTicks >= 100;
+
+        if (body.isFlying() && (clearance < 3.0 || idle)) {
+
+            body.setFlying(false);
+            smoothedHoverY = Double.NaN;
+
+        } else if (!body.isFlying() && clearance > 3.6 && !idle) {
+
+            body.setFlying(true);
+            smoothedHoverY = Double.NaN;
+        }
+    }
+
+    private boolean anchorInWater() {
+
+        Block block =
+                entity.getLocation()
+                        .add(0.0, 0.25, 0.0)
+                        .getBlock();
+
+        return block.getType() == Material.WATER
+                || PetWalkSurface.isWatery(block) && block.isLiquid();
+    }
+
+    /** True while the body walks on the floor (feet at the anchor). */
+    private boolean groundCarriage() {
+
+        return body != null
+                && body.skeleton().grounded()
+                && !body.isFlying()
+                && body.mode() != PetBody.Mode.BALL;
+    }
+
+    private double bobRange() {
+
+        return groundCarriage()
+                ? 0.0
+                : HOVER_RANGE;
+    }
+
+    /** Anchor height above the ground block for wild surface movement. */
+    private double surfaceLift() {
+
+        if (body == null) {
+            return HOVER_HEIGHT;
+        }
+
+        if (groundCarriage()) {
+            return 1.0;
+        }
+
+        return switch (body.skeleton()) {
+            case FLAP, SOAR -> 1.95;
+            case HOVER, FLUTTER -> 1.7;
+            case DRIFT, HAUNT, WYRM -> 1.55;
+            default -> HOVER_HEIGHT;
+        };
+    }
+
+    /** Wild surface target Y: walkers stand on the block top (slabs included), others hover. */
+    private double surfaceY(
+            World world,
+            int x,
+            int groundY,
+            int z
+    ) {
+
+        if (groundCarriage() && world != null) {
+
+            return groundY
+                    + equippedBlockTop(
+                    world.getBlockAt(
+                            x,
+                            groundY,
+                            z
+                    )
+            );
+        }
+
+        return groundY
+                + surfaceLift();
+    }
+
+    /** First standable floor top within {@code depth} blocks below, or NaN (water / chasm). */
+    private static double floorUnder(
+            Location location,
+            int depth
+    ) {
+
+        World world =
+                location.getWorld();
+
+        if (world == null) {
+            return Double.NaN;
+        }
+
+        int x = location.getBlockX();
+        int z = location.getBlockZ();
+        int start = Location.locToBlock(location.getY() + 0.3);
+
+        for (int i = 0; i <= depth; i++) {
+
+            Block block =
+                    world.getBlockAt(
+                            x,
+                            start - i,
+                            z
+                    );
+
+            if (block.isLiquid()) {
+                return Double.NaN;
+            }
+
+            if (isEquippedFloorBlock(block)) {
+
+                double top = block.getY() + equippedBlockTop(block);
+
+                if (top <= location.getY() + 0.55) {
+                    return top;
+                }
+            }
+        }
+
+        return Double.NaN;
+    }
+
+    /** Wild spawn spots were picked for hover heights; walkers drop to the floor. */
+    private Location carriageAdjusted(
+            Location location
+    ) {
+
+        if (body == null
+                || isEquipped()
+                || companionHost != null
+                || location == null) {
+
+            return location;
+        }
+
+        Location out =
+                location.clone();
+
+        if (groundCarriage()) {
+
+            double floor =
+                    floorUnder(
+                            out,
+                            5
+                    );
+
+            if (!Double.isNaN(floor)) {
+                out.setY(floor);
+            }
+
+        } else if (!body.skeleton().aquatic()
+                && movementSpawnType() == PetSpawnType.SURFACE) {
+
+            out.setY(
+                    out.getY()
+                            - HOVER_HEIGHT
+                            + surfaceLift()
+            );
+        }
+
+        return out;
+    }
+
+    /** Big bodies keep more room beside their owner. */
+    private double followScale() {
+
+        if (body == null) {
+            return 1.0;
+        }
+
+        if (body.skeleton() == Skeleton.DRAGON || body.skeleton() == Skeleton.WYRM) {
+            return 1.6;
+        }
+
+        return body.rig().scaledTop() > 1.45
+                ? 1.3
+                : 1.0;
+    }
+
+    private double equippedHoverHeight() {
+
+        if (body != null
+                && body.rig().isDragon()) {
+
+            return 1.5;
+        }
+
+        return HOVER_HEIGHT;
+    }
+
+    /** Walkers beside the owner: the floor under the follow spot, the water line when swimming. */
+    private double equippedGroundY(
+            Player player,
+            double x,
+            double z
+    ) {
+
+        return groundYNear(
+                player.getLocation(),
+                x,
+                z
+        );
+    }
+
+    /** Floor (or water line) under (x, z), searched from the height of {@code ownerLoc}. */
+    private double groundYNear(
+            Location ownerLoc,
+            double x,
+            double z
+    ) {
+
+        World world =
+                ownerLoc.getWorld();
+
+        if (world == null) {
+            return ownerLoc.getY();
+        }
+
+        double floor =
+                equippedFloorTop(
+                        world,
+                        x,
+                        ownerLoc.getY() + 0.9,
+                        z
+                );
+
+        double water =
+                waterTopAbove(
+                        world,
+                        x,
+                        floor,
+                        z,
+                        ownerLoc.getY() + 1.2
+                );
+
+        if (!Double.isNaN(water)) {
+
+            return water
+                    - 0.22 * (body == null ? 1.0 : body.rig().size());
+        }
+
+        if (ownerLoc.getY() - floor > 6.0) {
+            return ownerLoc.getY() - 0.2;
+        }
+
+        return floor;
+    }
+
+    private double companionFloorY(
+            Location target,
+            Location host
+    ) {
+
+        World world =
+                host.getWorld();
+
+        if (world == null) {
+            return host.getY();
+        }
+
+        double floor =
+                equippedFloorTop(
+                        world,
+                        target.getX(),
+                        host.getY() + 0.9,
+                        target.getZ()
+                );
+
+        return host.getY() - floor > 6.0
+                ? host.getY()
+                : floor;
+    }
+
+    /** Top of a water column standing on {@code floor}, or NaN when the column is dry. */
+    private static double waterTopAbove(
+            World world,
+            double x,
+            double floor,
+            double z,
+            double limit
+    ) {
+
+        int bx = Location.locToBlock(x);
+        int bz = Location.locToBlock(z);
+        int y = Location.locToBlock(floor + 0.1);
+        double top = Double.NaN;
+
+        for (int i = 0; i < 6 && y + i <= Location.locToBlock(limit); i++) {
+
+            Block block = world.getBlockAt(bx, y + i, bz);
+
+            if (block.getType() == Material.WATER) {
+                top = block.getY() + 0.9;
+            } else if (!Double.isNaN(top)) {
+                break;
+            }
+        }
+
+        return top;
+    }
+
+    private float currentNameplateHeight() {
+
+        if (body == null) {
+            return 0.82f;
+        }
+
+        return Math.max(0.6f, body.nameplateHeight());
+    }
+
+    private void syncNameplateHeight() {
+
+        if (nameplate == null
+                || !nameplate.isValid()) {
+
+            return;
+        }
+
+        float height =
+                nameplateHidden
+                        ? 0f
+                        : currentNameplateHeight();
+
+        if (!Float.isNaN(nameplateHeight)
+                && Math.abs(height - nameplateHeight) < 0.06f) {
+
+            return;
+        }
+
+        nameplateHeight = height;
+        nameplate.setInterpolationDelay(0);
+        nameplate.setInterpolationDuration(4);
+        nameplate.setTransformation(
+                nameplateTransform(
+                        nameplateHidden ? 0.001f : NAMEPLATE_SCALE,
+                        Math.max(0.6f, height)
+                )
+        );
+    }
+
+    /** Passengers cannot cross worlds: drop the body, hop, rebuild it there. */
+    private void hopWorld(
+            Location dest
+    ) {
+
+        if (body != null) {
+            body.rig().teardown();
+        }
+
+        if (nameplate != null) {
+            nameplate.remove();
+            nameplate = null;
+        }
+
+        entity.eject();
+        entity.teleport(dest);
+
+        attachBody();
+        spawnNameplate();
+        updateDisplayName();
+    }
+
+    private Color rarityGlowColor() {
+
+        Rarity rarity =
+                petInstance.getRarity();
+
+        if (rarity == null) {
+            return Color.WHITE;
+        }
+
+        return switch (rarity) {
+            case COMMON -> Color.fromRGB(240, 240, 240);
+            case UNCOMMON -> Color.fromRGB(85, 255, 85);
+            case RARE -> Color.fromRGB(85, 255, 255);
+            case EPIC -> Color.fromRGB(170, 0, 170);
+            case LEGENDARY -> Color.fromRGB(255, 170, 0);
+            case MYTHIC -> Color.fromRGB(255, 85, 255);
+            case AETHERED -> Color.fromRGB(170, 0, 0);
+        };
+    }
+
+    /*
+     * =========================================================
+     * CATCH HOOKS (sphere ritual)
+     * =========================================================
+     */
+
+    public PetBody getBody() {
+
+        return body;
+    }
+
+    /** Where a thrown sphere should aim / count a hit: the middle of the body, not the feet. */
+    public Location getCatchCenter() {
+
+        if (!isSpawned()) {
+            return null;
+        }
+
+        return entity.getLocation()
+                .add(
+                        0.0,
+                        body != null
+                                ? body.rig().scaledMiddle()
+                                : 0.55,
+                        0.0
+                );
+    }
+
+    /** Extra hit radius for big bodies (dragons, golems) so a sphere on the wing still counts. */
+    public double getCatchRadiusBonus() {
+
+        if (body == null) {
+            return 0.0;
+        }
+
+        return Math.max(
+                0.0,
+                Math.min(
+                        1.6,
+                        body.rig().scaledTop() * 0.45 - 0.45
+                )
+        );
+    }
+
+    /** The body streams into the sphere at {@code ball}; the name fades with it. */
+    public void captureInto(
+            Location ball,
+            int ticks
+    ) {
+
+        nameplateHidden = true;
+        nameplateHeight = Float.NaN;
+        syncNameplateHeight();
+
+        if (body != null) {
+
+            body.capture(
+                    ball,
+                    ticks
+            );
+
+        } else if (isSpawned()) {
+
+            entity.setInterpolationDelay(0);
+            entity.setInterpolationDuration(ticks);
+            entity.setTransformation(bodyTransform(0.001f));
+        }
+    }
+
+    /** The sphere broke: the body grows back out of it. */
+    public void releaseFrom(
+            int ticks
+    ) {
+
+        nameplateHidden = false;
+        nameplateHeight = Float.NaN;
+        syncNameplateHeight();
+
+        if (body != null) {
+
+            body.release(
+                    ticks
+            );
+
+        } else if (isSpawned()) {
+
+            entity.setInterpolationDelay(0);
+            entity.setInterpolationDuration(ticks);
+            entity.setTransformation(bodyTransform(BODY_SCALE));
+        }
+    }
+
+    /** Joy beat: dragons rear up and breathe, everyone else hops, wags or waves. */
+    public void cheer() {
+
+        if (body == null || !isSpawned()) {
+            return;
+        }
+
+        try {
+
+            if (body.rig().isDragon()) {
+                body.breathe();
+            } else {
+                body.happy();
+            }
+
+        } catch (Throwable throwable) {
+
+            disableBody(throwable);
+        }
+    }
+
+    /** Move the pet (anchor + body + name) without touching its movement brain. */
+    public void nudge(
+            Location to
+    ) {
+
+        if (!isSpawned()
+                || to == null) {
+
+            return;
+        }
+
+        movePet(
+                to
         );
     }
 

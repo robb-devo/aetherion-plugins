@@ -518,7 +518,7 @@ public class QuestMarkerManager implements Listener {
 
     private MarkerKind kindFor(Player player, QuestNPC npc) {
 
-        Quest quest = resolveQuest(npc);
+        Quest quest = questManager.getQuestForNpc(player, npc);
 
         if (quest == null) {
             return MarkerKind.HIDDEN;
@@ -531,6 +531,11 @@ public class QuestMarkerManager implements Listener {
         }
 
         if (state == QuestState.AVAILABLE) {
+            // Orientation: one "!" at a time — only on the spine's next stop.
+            if (!de.aetherion.quests.util.QuestStoryGate.tutorialDone(player, questManager)
+                    && !npc.getId().equalsIgnoreCase(de.aetherion.quests.util.QuestStoryGate.spineNpc(player, questManager))) {
+                return MarkerKind.HIDDEN;
+            }
             return MarkerKind.AVAILABLE;
         }
 

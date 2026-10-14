@@ -54,7 +54,7 @@ public class QuestCommand implements CommandExecutor {
             sender.sendMessage("§7/aquest deny <questId>");
             sender.sendMessage("§7/aquest info <questId>");
             if (isQuestAdmin(sender)) {
-                sender.sendMessage("§8/aquest start|complete|reset|cleanup|orbit §7(DEV)");
+                sender.sendMessage("§8/aquest start|complete|reset|cleanup|orbit|chests §7(DEV)");
             }
 
             return true;
@@ -471,6 +471,66 @@ public class QuestCommand implements CommandExecutor {
             }
 
             de.aetherion.quests.ui.OpeningOrbit.replay(player);
+            return true;
+        }
+
+        /*
+         * =========================================================
+         * EXPLORATION CHESTS (DEV)
+         * =========================================================
+         */
+
+        if (args[0].equalsIgnoreCase("chests")) {
+
+            if (denyUnlessAdmin(sender)) {
+                return true;
+            }
+
+            de.aetherion.quests.AetherionQuests plugin = de.aetherion.quests.AetherionQuests.getInstance();
+            de.aetherion.quests.chest.ExploreChestService chests = plugin == null ? null : plugin.getExploreChests();
+            de.aetherion.quests.chest.ExploreChestScatter scatter = plugin == null ? null : plugin.getExploreScatter();
+            if (chests == null || scatter == null) {
+                sender.sendMessage("§cExploration chests are not running.");
+                return true;
+            }
+            String sub = args.length < 2 ? "" : args[1].toLowerCase(java.util.Locale.ROOT);
+            switch (sub) {
+                case "give" -> {
+                    if (!(sender instanceof Player player)) {
+                        sender.sendMessage("§cOnly players can use this.");
+                        return true;
+                    }
+                    org.bukkit.inventory.ItemStack placer = args.length < 3
+                            ? null
+                            : de.aetherion.quests.listener.ExploreChestListener.create(args[2]);
+                    if (placer == null) {
+                        player.sendMessage("§cUsage: /aquest chests give <common|uncommon|rare|epic|legendary|mythic>");
+                        return true;
+                    }
+                    player.getInventory().addItem(placer).values()
+                            .forEach(left -> player.getWorld().dropItemNaturally(player.getLocation(), left));
+                    player.sendMessage("§aGave " + placer.getItemMeta().getDisplayName() + " §aplacer.");
+                }
+                case "scatter" -> {
+                    String result = scatter.run(true);
+                    sender.sendMessage(result == null || result.isBlank() ? "§7Nothing to scatter here." : result);
+                }
+                case "unscatter" -> sender.sendMessage(scatter.undo());
+                default -> {
+                    StringBuilder line = new StringBuilder("§bExploration chests§7:");
+                    java.util.Map<de.aetherion.quests.chest.ExploreChestKind, Integer> counts = chests.counts();
+                    int total = 0;
+                    for (de.aetherion.quests.chest.ExploreChestKind kind : de.aetherion.quests.chest.ExploreChestKind.values()) {
+                        int n = counts.getOrDefault(kind, 0);
+                        total += n;
+                        line.append(' ').append(kind.chat()).append(kind.name().charAt(0))
+                                .append(kind.name().substring(1).toLowerCase(java.util.Locale.ROOT)).append(" §f").append(n);
+                    }
+                    sender.sendMessage(line.append(" §7· total §f").append(total).toString());
+                    sender.sendMessage("§8/aquest chests give <kind> | scatter | unscatter §7("
+                            + de.aetherion.quests.chest.ExploreChestScatter.spotCount() + " authored spots)");
+                }
+            }
             return true;
         }
 

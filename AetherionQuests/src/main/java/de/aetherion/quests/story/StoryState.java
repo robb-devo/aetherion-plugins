@@ -171,6 +171,11 @@ public final class StoryState implements StoryAccess {
 
     @Override
     public boolean playerFlag(Player player, String key) {
+        if ("orientation_stamped".equalsIgnoreCase(key)) {
+            // Miss Ledger's stamp: the Hub opens every island pad on it.
+            de.aetherion.quests.AetherionQuests plugin = de.aetherion.quests.AetherionQuests.getInstance();
+            return plugin != null && de.aetherion.quests.util.QuestStoryGate.graduated(player, plugin.getQuestManager());
+        }
         return hasPlayerFlag(player, key);
     }
 

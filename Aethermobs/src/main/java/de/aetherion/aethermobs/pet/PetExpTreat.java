@@ -118,6 +118,7 @@ public final class PetExpTreat implements Listener {
         long xp = amount == null ? 180L : amount;
         int previousLevel = pet.getLevel();
         pet.addExperience(xp);
+        entity.cheer();
         hand.setAmount(hand.getAmount() - 1);
         String label = pet.getDefinition() == null ? "Pet" : pet.getDefinition().getDisplayName();
         player.sendMessage("§a✦ §f" + label + " §7gained §a+" + xp + " EXP§7.");

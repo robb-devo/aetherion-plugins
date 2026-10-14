@@ -13,7 +13,7 @@ commands:
 
   pet:
     description: AetherMobs pet DEV/test command (spawns / spheres)
-    usage: /pet <shiny|collection|sphere|beta>
+    usage: /pet <shiny|collection|sphere|beta|spawn|parade|bodies>
     permission: aetherion.dev
 
   pets:

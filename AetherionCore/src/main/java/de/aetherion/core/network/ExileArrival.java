@@ -583,8 +583,8 @@ public final class ExileArrival implements Listener {
             host.finishArrival(player, true, feet);
             if (!s.quitting && (completed || s.tick >= 0)) {
                 player.sendMessage(Say.t(player,
-                        "§8Exile §8» §7The Königskai. The chain ends here. §8(§f/exile return§8 takes the ferry back)",
-                        "§8Exil §8» §7Der Königskai. Hier endet die Kette. §8(§f/exile return§8 nimmt die Fähre zurück)"));
+                        "§8Exile §8» §7The King's Quay. The chain ends here. §8(§f/exile return§8 or the Ferryman takes you back)",
+                        "§8Exil §8» §7Der Königskai. Hier endet die Kette. §8(§f/exile return§8 oder der Fährmann bringt dich zurück)"));
                 Bukkit.getPluginManager().callEvent(new ExileArrivalEvent(player, first && reached));
             }
         }

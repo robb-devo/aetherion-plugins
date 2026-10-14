@@ -1,5 +1,8 @@
 package de.aetherion.dungeons.instance;
 
+import de.aetherion.core.api.BarChrome;
+import de.aetherion.core.api.BarSync;
+
 import org.bukkit.Bukkit;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
@@ -88,20 +91,19 @@ public final class DungeonProgressHud {
         int total = Math.max(1, session.layout().combatCount());
         int cleared = Math.max(0, Math.min(total, session.clearedCount()));
         BossBar bar = BARS.computeIfAbsent(player.getUniqueId(), ignored -> {
-            BossBar created = Bukkit.createBossBar("Dungeon", BarColor.PURPLE, BarStyle.SEGMENTED_10);
+            BossBar created = Bukkit.createBossBar("", BarColor.PURPLE, BarStyle.SEGMENTED_10);
             created.setVisible(true);
             return created;
         });
         if (!bar.getPlayers().contains(player)) {
             bar.addPlayer(player);
         }
-        bar.setVisible(true);
-        bar.setProgress(cleared / (double) total);
-        if (cleared <= 0) {
-            bar.setTitle("§5Dungeon §8· §7Clear the chambers §f0§7/" + total);
-        } else {
-            bar.setTitle("§5Dungeon §8· §f" + cleared + "§7/" + total + " §8chambers");
-        }
+        BarSync.visible(bar, true);
+        BarSync.progress(bar, cleared / (double) total);
+        String title = cleared <= 0
+                ? "§5Dungeon §8· §7Clear the chambers §f0§7/" + total
+                : "§5Dungeon §8· §f" + cleared + "§7/" + total + " §8chambers";
+        BarSync.title(bar, BarChrome.legacy(BarChrome.Family.DUNGEON, BarChrome.Icon.CHAMBER, title));
     }
 
     public static void hide(Player player) {

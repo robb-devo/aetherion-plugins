@@ -89,7 +89,8 @@ public final class IsleCast implements Listener {
         IsleRole warden = IsleRole.WARDEN;
         return new TalkDesk(isle.plugin(), "farm_isle_warden", warden.display(), warden.color(), "isle_hand",
                 () -> liveLocation(warden), () -> liveHologram(warden),
-                player -> "Welcome to Eldervale, {player}. Ask away — or just start pulling carrots.",
+                player -> FieldLesson.t(player, "Back on the rows, {player}? Ask away — or keep the rhythm going.",
+                        "Wieder auf den Feldern, {player}? Frag ruhig — oder halt den Rhythmus am Laufen."),
                 List.of(
                         TalkDesk.Topic.of("What is this place?", net.kyori.adventure.text.format.NamedTextColor.GREEN,
                                 "What's on Eldervale?",
@@ -416,11 +417,31 @@ public final class IsleCast implements Listener {
             say(player, role, barks.get(ThreadLocalRandom.current().nextInt(barks.size())));
             return;
         }
+        // First visit: Elsie runs the isle lesson; the rest of the cast send you back to her.
+        if (role == IsleRole.WARDEN && isle.lesson().onTeacher(player)) {
+            return;
+        }
+        if (role != IsleRole.WARDEN && isle.lesson().deferring(player)) {
+            say(player, role, FieldLesson.t(player,
+                    "Elsie's lesson first — the bar up top shows the way. Then come see me.",
+                    "Erst Elsies Lektion — die Leiste oben zeigt den Weg. Dann komm zu mir."));
+            return;
+        }
         // The Warden talks first (bubble + chips); her board sits behind "Board…".
         if (role == IsleRole.WARDEN && wardenDesk.click(player)) {
             return;
         }
         isle.menus().open(player, role);
+    }
+
+    /** Lesson click pre-check on Elsie's bubble (see {@link TalkDesk#busy}). */
+    boolean teacherBusy(Player player) {
+        return wardenDesk.busy(player);
+    }
+
+    /** A scripted lesson beat in Elsie's bubble. False when it can't open (classic chat, too far). */
+    boolean teacherScript(Player player, List<String> lines, List<de.aetherion.core.api.TalkAccess.Reply> replies) {
+        return wardenDesk.script(player, lines, replies);
     }
 
     void say(Player player, IsleRole role, String line) {

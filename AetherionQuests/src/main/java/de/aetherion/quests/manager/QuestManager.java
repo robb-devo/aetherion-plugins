@@ -544,8 +544,8 @@ public class QuestManager {
 
 
         String gateFail = de.aetherion.quests.util.QuestSkillGate.failReason(player, quest);
-        if (gateFail == null && "lesson_manager".equalsIgnoreCase(quest.getId())) {
-            gateFail = de.aetherion.quests.util.QuestStoryGate.ledgerFailReason(player, this);
+        if (gateFail == null) {
+            gateFail = de.aetherion.quests.util.QuestStoryGate.spineGateFail(player, this, quest.getId());
         }
         if (gateFail == null && "border_rites".equalsIgnoreCase(quest.getId())) {
             gateFail = de.aetherion.quests.util.QuestStoryGate.riteKeeperFailReason(player, this);
@@ -553,14 +553,14 @@ public class QuestManager {
         if (gateFail == null
                 && !de.aetherion.quests.util.QuestStoryGate.tutorialDone(player, this)
                 && !de.aetherion.quests.util.QuestStoryGate.isTutorialQuest(quest.getId())) {
-            gateFail = de.aetherion.quests.lang.LangPack.say(player, "gate.tutorial_first",
-                    "§eComplete the tutorial first. §7Miss Ledger closes orientation after the Fields.");
+            gateFail = de.aetherion.quests.lang.LangPack.say(player, "gate.orientation_first",
+                    "§eOrientation first. §7Miss Ledger stamps you through — follow the yellow bar.");
         }
         if (gateFail != null) {
             player.sendMessage(gateFail);
             if ("lesson_manager".equalsIgnoreCase(quest.getId())
                     && !de.aetherion.quests.util.QuestStoryGate.ledgerUnlocked(player, this)) {
-                de.aetherion.quests.util.QuestStoryGate.redirectToForeman(player, "Miss Ledger");
+                de.aetherion.quests.util.QuestStoryGate.redirectBeforeLedger(player, "Miss Ledger");
             }
             if ("border_rites".equalsIgnoreCase(quest.getId())
                     && !de.aetherion.quests.util.QuestStoryGate.riteKeeperUnlocked(player, this)) {
@@ -1560,6 +1560,14 @@ public class QuestManager {
         if (player == null) {
             return;
         }
+        // The Recipe Book opens with the stamp (the Craftsman still opens it earlier for anyone who visits).
+        // Silent: the stamp, QUEST COMPLETE and THE ROADS ARE OPEN already own the screen.
+        de.aetherion.core.api.ProgressAccess progress = de.aetherion.core.api.AetherServices.progress();
+        if (progress != null && progress.unlockSilent(player, "WORKBENCH")) {
+            player.sendMessage(de.aetherion.quests.lang.LangPack.ui(player, "stamp_recipes",
+                    "§a✦ Recipe Book open §8· §7Nether Star → green book. Gear upgrades live there."));
+            progress.refreshManager(player);
+        }
         boolean outer = beginRewardBatch(player);
         try {
             giveCoins(player, 250);
@@ -2114,6 +2122,12 @@ public class QuestManager {
 
     }
 
+
+    /** The quest this NPC offers this player right now (spine beats first, e.g. Vex's combat beat). */
+    public Quest getQuestForNpc(Player player, QuestNPC npc) {
+        Quest spine = QuestStoryGate.spineQuestFor(player, npc, this);
+        return spine != null ? spine : getQuestForNpc(npc);
+    }
 
     public Quest getQuestForNpc(QuestNPC npc) {
 

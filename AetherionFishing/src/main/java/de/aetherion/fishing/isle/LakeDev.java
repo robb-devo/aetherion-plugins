@@ -69,6 +69,14 @@ public final class LakeDev {
                 yield "§eYour Fishing Eldervale profile was wiped §7(Log, waters, trophies, rank, bait).";
             }
             case "landing" -> setLanding(player);
+            case "lesson" -> {
+                if ("done".equals(verb)) {
+                    isle.lesson().skip(player);
+                    yield "§aIsle lesson marked done.";
+                }
+                isle.lesson().replay(player);
+                yield "§aIsle lesson restarted §8(veteran skip off for you).";
+            }
             case "config" -> isle.reload();
             default -> "§cUnknown Fishing Island action: " + raw;
         };

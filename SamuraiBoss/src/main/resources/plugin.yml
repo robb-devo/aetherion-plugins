@@ -1,0 +1,21 @@
+name: SamuraiBoss
+version: '${project.version}'
+main: net.aetherion.samuraiboss.SamuraiBossPlugin
+api-version: '1.21'
+description: "Sakuragi Jinsai – Sword Saint of Falling Blossoms. Display-entity boss fight with a destructible dojo."
+author: Aetherion
+load: POSTWORLD
+softdepend: [AetherionCore, AetherionItems, AetherionQuests]
+commands:
+  samuraiboss:
+    description: Build the dojo, start/stop the fight, reset the arena.
+    usage: /<command> help
+    aliases: [kensei, samurai]
+    permission: samuraiboss.admin
+permissions:
+  samuraiboss.admin:
+    description: All SamuraiBoss commands.
+    default: op
+  samuraiboss.challenge:
+    description: Start the fight by striking the temple bell (arena.bell-challenge).
+    default: true

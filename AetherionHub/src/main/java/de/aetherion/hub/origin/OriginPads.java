@@ -130,7 +130,7 @@ public final class OriginPads {
         if (m.islandPad()) {
             IslandLaunchPads pads = isle.plugin().getLaunchPads();
             if (pads != null && !pads.openFor(player, m.id())) {
-                state = " §8· §csealed §7— stamp a Surveyor blueprint";
+                state = " §8· §csealed §7— Miss Ledger's stamp opens it";
             }
         }
         boolean known = isle.profiles().get(player).rides.contains(rideKey(m.id()));

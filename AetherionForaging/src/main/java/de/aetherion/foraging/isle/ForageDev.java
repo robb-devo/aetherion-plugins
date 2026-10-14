@@ -257,8 +257,16 @@ public final class ForageDev {
                         profile.addCharge(Woodwright.CHARGE_SHAKER, 5);
                         return "§a+5 Crown Shaker charges.";
                     }
+                    case "lesson" -> {
+                        if (arg.equals("done")) {
+                            isle.lesson().skip(player);
+                            return "§aIsle lesson marked done.";
+                        }
+                        isle.lesson().replay(player);
+                        return "§aIsle lesson restarted §8(veteran skip off for you).";
+                    }
                     default -> {
-                        return "§7profile:reset|standing[:n]|marks|mastery[:tier]|cabinet|discover|shaker";
+                        return "§7profile:reset|standing[:n]|marks|mastery[:tier]|cabinet|discover|shaker|lesson[:done]";
                     }
                 }
             }

@@ -94,6 +94,9 @@ public final class StoryFlow {
             String remind = "story_" + id + ".remind_" + step.beat();
             if (id.equals(step.giver()) && (state == QuestState.ACTIVE || state == QuestState.READY)
                     && StoryLines.has(remind)) {
+                if (LullabyQuests.FERRY.equals(step.id()) && !onExile(player) && ExileStory.desk(player, npc, qm)) {
+                    return true; // ticket in hand: his desk carries the "Cross the Veil" chip
+                }
                 speak(player, npc, dm, remind, null);
                 QuestProgressDisplay.showProgress(player, qm);
                 return true;
@@ -102,6 +105,15 @@ public final class StoryFlow {
 
         LullabyQuests.Step next = nextOpen(qm, player);
         if (next != null && id.equals(next.giver())) {
+            if (LullabyQuests.FERRY.equals(next.id()) && onExile(player) && gateOk(qm, player, next)) {
+                // Rang the bell without taking the ticket: the crossing was the errand. Close it here
+                // instead of offering "ring the bell" on the far shore.
+                qm.startQuest(player, qm.getQuest(next.id()));
+                if (state(qm, player, next) == QuestState.ACTIVE) {
+                    finishTalk(player, npc, qm, dm, next);
+                    return true;
+                }
+            }
             if (gateOk(qm, player, next)) {
                 speak(player, npc, dm, "story_" + id + ".offer_" + next.beat(), next.id());
                 return true;
@@ -258,7 +270,7 @@ public final class StoryFlow {
             case LullabyQuests.SILENT_ROAD -> {
                 tip(player, "story_next.veil", "The Veil Quay is open · the ferry waits for Level 75", NamedTextColor.AQUA);
                 if (de.aetherion.core.api.ExilePlaces.quayBoard() != null) {
-                    QuestHint.showSpot(player, "veil_quay", "The Veil Quay");
+                    QuestHint.showSpot(player, "veil_quay", LangPack.say(player, "exile.door.veil_quay", "The Veil Quay"));
                 }
             }
             case LullabyQuests.CAPTAIN -> {

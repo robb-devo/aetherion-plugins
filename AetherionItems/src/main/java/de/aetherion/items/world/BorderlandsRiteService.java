@@ -2,6 +2,7 @@ package de.aetherion.items.world;
 
 import de.aetherion.core.AetherEntities;
 import de.aetherion.core.api.AetherServices;
+import de.aetherion.core.api.BarChrome;
 import de.aetherion.core.api.BossSpawnAccess;
 import de.aetherion.items.core.ItemKeys;
 import de.aetherion.items.util.QuestProgressHook;
@@ -518,7 +519,8 @@ public final class BorderlandsRiteService implements Listener {
         player.sendMessage("§cRite §8» §fCalling §c" + boss.display() + "§f… stand ready.");
 
         BossBar bar = BossBar.bossBar(
-                Component.text("Summoning " + boss.display(), NamedTextColor.RED, TextDecoration.BOLD),
+                BarChrome.component(BarChrome.Family.BOSS, BarChrome.Icon.SIGIL,
+                        Component.text("Summoning " + boss.display(), NamedTextColor.RED, TextDecoration.BOLD)),
                 1.0f,
                 BossBar.Color.RED,
                 BossBar.Overlay.PROGRESS

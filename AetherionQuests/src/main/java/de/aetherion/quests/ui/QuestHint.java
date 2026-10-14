@@ -1,5 +1,7 @@
 package de.aetherion.quests.ui;
 
+import de.aetherion.core.api.BarChrome;
+import de.aetherion.core.api.BarSync;
 import de.aetherion.quests.AetherionQuests;
 import de.aetherion.quests.data.NPCDataStorage;
 import de.aetherion.quests.manager.QuestManager;
@@ -50,7 +52,9 @@ public final class QuestHint {
             // origin_to_fishing: hub footprint -368..-363, 62, -489..-488
             "fish_pad", new double[] {-365.5, 63.0, -488.5},
             // origin_to_forage: hub footprint 435..441, 54..56, -237..-231
-            "forage_pad", new double[] {438.0, 55.0, -234.0}
+            "forage_pad", new double[] {438.0, 55.0, -234.0},
+            // origin_to_mining: hub footprint 20..24, 54, 304..306
+            "mine_pad", new double[] {22.5, 55.0, 305.5}
     );
 
     private QuestHint() {
@@ -305,22 +309,24 @@ public final class QuestHint {
         }
         Location target = npcLocation(hint.npcId());
         BossBar bar = BARS.computeIfAbsent(player.getUniqueId(), id -> {
-            BossBar created = Bukkit.createBossBar("", BarColor.WHITE, BarStyle.SOLID);
+            BossBar created = Bukkit.createBossBar("", BarColor.PINK, BarStyle.SOLID);
             created.setProgress(1.0);
             return created;
         });
         if (!bar.getPlayers().contains(player)) {
             bar.addPlayer(player);
         }
-        bar.setVisible(true);
-        bar.setColor(BarColor.YELLOW);
+        // Quiet: the ghost hairline (PINK in the pack) and a 5px mark, never a full bar.
+        BarSync.visible(bar, true);
+        BarSync.color(bar, BarColor.PINK);
 
         String note = hint.note() == null || hint.note().isBlank() ? "" : " §8· §7" + hint.note();
 
         if (target == null || target.getWorld() == null
                 || player.getWorld() == null
                 || !player.getWorld().equals(target.getWorld())) {
-            bar.setTitle("§7Hint §8• §e" + hint.label() + note + " §8• §7◆");
+            BarSync.title(bar, BarChrome.legacy(BarChrome.Family.HINT, BarChrome.Icon.HINT_AWAY,
+                    "§7Hint §8• §7" + hint.label() + note));
             return;
         }
 
@@ -333,9 +339,9 @@ public final class QuestHint {
             if (isRoadNpc(hint.npcId())) {
                 ARRIVED_AT.put(player.getUniqueId(), hint.npcId());
             }
-            bar.setTitle("§7" + de.aetherion.quests.lang.LangPack.ui(player, "hint", "Hint")
-                + " §8• §a" + hint.label() + note + " §8• §a●");
-            bar.setColor(BarColor.GREEN);
+            BarSync.title(bar, BarChrome.legacy(BarChrome.Family.HINT, BarChrome.Icon.HINT_HERE,
+                    "§7" + de.aetherion.quests.lang.LangPack.ui(player, "hint", "Hint")
+                            + " §8• §a" + hint.label() + note));
             return;
         }
 
@@ -343,8 +349,9 @@ public final class QuestHint {
         String distText = dist >= 1000
                 ? String.format(Locale.US, "%.1fkm", dist / 1000.0)
                 : Math.round(dist) + "m";
-        bar.setTitle("§7" + de.aetherion.quests.lang.LangPack.ui(player, "hint", "Hint")
-                + " §8• §e" + hint.label() + note + " §8• §e" + arrow + " §f" + distText);
+        BarSync.title(bar, BarChrome.legacy(BarChrome.Family.HINT, BarChrome.Icon.HINT,
+                "§7" + de.aetherion.quests.lang.LangPack.ui(player, "hint", "Hint")
+                        + " §8• §f" + hint.label() + note + " §8• §e" + arrow + " §7" + distText));
     }
 
     private static String arrowToward(float yaw, double dx, double dz) {

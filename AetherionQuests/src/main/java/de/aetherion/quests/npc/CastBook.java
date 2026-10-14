@@ -369,7 +369,7 @@ public final class CastBook {
         topic(v, "What happened here?", "Exams, monsters and paperwork, in that order.", "These days it's mostly paperwork, sadly.");
 
         v = voice("farm_isle_guide");
-        v.greetNew = new String[] {"Harlow. Farm Isle pad's down the road, {player}. Farming §e10§f."};
+        v.greetNew = new String[] {"Harlow. Farm Isle pad's down the road, {player}. Elsie teaches the rest."};
         v.greet = new String[] {"Pad's that way, {player}. Arrow knows.", "Soil's good today, {player}."};
         v.idle = new String[] {
                 "The soil on the Farm Isle is better than here. Don't tell the farmer I said that.",

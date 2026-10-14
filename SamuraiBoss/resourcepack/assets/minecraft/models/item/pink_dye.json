@@ -1,0 +1,92 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "minecraft:item/pink_dye"
+  },
+  "overrides": [
+    {
+      "predicate": {
+        "custom_model_data": 7310001
+      },
+      "model": "samurai:item/katana"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 7310002
+      },
+      "model": "samurai:item/katana_ghost"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 7310003
+      },
+      "model": "samurai:item/saya"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 7310004
+      },
+      "model": "samurai:item/petal"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 7310005
+      },
+      "model": "samurai:item/petal_white"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 7310006
+      },
+      "model": "samurai:item/slash"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 7310007
+      },
+      "model": "samurai:item/slash_pink"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 7310008
+      },
+      "model": "samurai:item/seal"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 7310009
+      },
+      "model": "samurai:item/seal_ring"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 7310010
+      },
+      "model": "samurai:item/mon"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 7310011
+      },
+      "model": "samurai:item/crest"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 7310012
+      },
+      "model": "samurai:item/menpo"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 7310013
+      },
+      "model": "samurai:item/moon"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 7310014
+      },
+      "model": "samurai:item/hilt"
+    }
+  ]
+}

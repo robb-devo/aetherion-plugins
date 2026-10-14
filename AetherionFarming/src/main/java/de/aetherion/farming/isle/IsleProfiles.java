@@ -41,6 +41,8 @@ public final class IsleProfiles {
         int ordersDone;
         String food;
         long foodUntil;
+        /** Isle lesson stage ({@link FieldLesson}): 0 new … 5 done. */
+        int lesson;
 
         public Set<String> plots() {
             return plots;
@@ -206,6 +208,7 @@ public final class IsleProfiles {
         profile.ordersDone = section.getInt("orders-done", 0);
         profile.food = section.getString("food");
         profile.foodUntil = section.getLong("food-until", 0L);
+        profile.lesson = section.getInt("lesson", 0);
         return profile;
     }
 
@@ -233,6 +236,7 @@ public final class IsleProfiles {
         section.set("orders-done", profile.ordersDone);
         section.set("food", profile.food);
         section.set("food-until", profile.foodUntil);
+        section.set("lesson", profile.lesson);
     }
 
     private void loadRecords() {

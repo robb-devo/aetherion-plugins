@@ -74,6 +74,14 @@ public final class IsleDev {
                 isle.profiles().reset(player.getUniqueId());
                 yield "§eYour Eldervale profile was wiped §7(plots, mastery, prizes, orders, food).";
             }
+            case "lesson" -> {
+                if ("done".equals(verb)) {
+                    isle.lesson().skip(player);
+                    yield "§aIsle lesson marked done.";
+                }
+                isle.lesson().replay(player);
+                yield "§aIsle lesson restarted §8(veteran skip off for you).";
+            }
             case "config" -> isle.reload();
             case "seed" -> plugin().seeder() == null ? "§cSeeder offline." : plugin().seeder().start("force".equals(verb));
             default -> "§cUnknown Farming Island action: " + raw;

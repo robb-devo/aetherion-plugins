@@ -135,6 +135,21 @@ public final class PrizeCrops implements Listener {
         spawn(player, crop, rollKg(player, crop), block);
     }
 
+    /** The isle lesson's guaranteed prize. False while this finder already has one up. */
+    boolean lessonPop(Player player, IsleCrop crop, Location block) {
+        if (crop == null || block == null || popsByFinder.containsKey(player.getUniqueId())) {
+            return false;
+        }
+        lastPrizeAt.put(player.getUniqueId(), System.currentTimeMillis());
+        spawn(player, crop, rollKg(player, crop), block);
+        return true;
+    }
+
+    /** This finder's prize is up and waiting to be grabbed. */
+    boolean popping(UUID finder) {
+        return popsByFinder.containsKey(finder);
+    }
+
     private double rollKg(Player player, IsleCrop crop) {
         ThreadLocalRandom rng = ThreadLocalRandom.current();
         double roll = rng.nextDouble();
@@ -264,6 +279,7 @@ public final class PrizeCrops implements Listener {
             IsleText.bar(finder, "§7The " + pop.crop.prizeName() + " wilted. §8Faster next time.");
         }
         remove(pop);
+        isle.lesson().onWilt(pop.finder);
     }
 
     private void remove(Pop pop) {
@@ -352,6 +368,7 @@ public final class PrizeCrops implements Listener {
             if (original != null) {
                 original.sendMessage("§7" + player.getName() + " grabbed your " + pop.crop.prizeName() + ". §8Farming is a contact sport.");
             }
+            isle.lesson().onWilt(pop.finder);
         }
         if (isle.profiles().offerRecord(pop.crop, player, pop.kg)) {
             String line = "§6✦ Isle record! §f" + player.getName() + " §7grabbed a §6" + IsleText.kg(pop.kg)
@@ -361,6 +378,7 @@ public final class PrizeCrops implements Listener {
             }
             player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, SoundCategory.PLAYERS, 0.8f, 0.9f);
         }
+        isle.lesson().onPrize(player);
     }
 
     // ------------------------------------------------------------------ items

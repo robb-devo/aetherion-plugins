@@ -71,6 +71,8 @@ public final class MineProfiles {
         long shards;
         String tracking;
         boolean compassOff;
+        /** Isle lesson stage ({@link MineLesson}): 0 new … 5 done. */
+        int lesson;
         final Set<String> met = new LinkedHashSet<>();
         long canaryUntil;
         long gloamUntil;
@@ -361,6 +363,7 @@ public final class MineProfiles {
         profile.shards = section.getLong("shards", 0L);
         profile.tracking = section.getString("tracking");
         profile.compassOff = section.getBoolean("compass-off", false);
+        profile.lesson = section.getInt("lesson", 0);
         profile.met.addAll(section.getStringList("met"));
         profile.canaryUntil = section.getLong("canary-until", 0L);
         profile.gloamUntil = section.getLong("gloam-until", 0L);
@@ -420,6 +423,7 @@ public final class MineProfiles {
         section.set("shards", profile.shards);
         section.set("tracking", profile.tracking);
         section.set("compass-off", profile.compassOff);
+        section.set("lesson", profile.lesson);
         section.set("met", List.copyOf(profile.met));
         section.set("canary-until", profile.canaryUntil);
         section.set("gloam-until", profile.gloamUntil);

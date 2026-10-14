@@ -45,6 +45,8 @@ public final class ForageProfile {
     public long frostlitUntil;
     public long tailwindUntil;
     public int tourStep;
+    /** Isle lesson stage ({@link GroveLesson}): 0 new … 5 done. */
+    public int lesson;
 
     public int totalFells;
     public int perfects;
@@ -107,6 +109,7 @@ public final class ForageProfile {
         sec.set("orders-reroll-at", ordersRerollAt);
         sec.set("incense-until", incenseUntil > System.currentTimeMillis() ? incenseUntil : null);
         sec.set("tour-step", tourStep);
+        sec.set("lesson", lesson);
         sec.set("stats.fells", totalFells);
         sec.set("stats.perfects", perfects);
         sec.set("stats.titans", titans);
@@ -149,6 +152,7 @@ public final class ForageProfile {
         p.ordersRerollAt = sec.getLong("orders-reroll-at", 0L);
         p.incenseUntil = sec.getLong("incense-until", 0L);
         p.tourStep = sec.getInt("tour-step", 0);
+        p.lesson = sec.getInt("lesson", 0);
         p.totalFells = sec.getInt("stats.fells", 0);
         p.perfects = sec.getInt("stats.perfects", 0);
         p.titans = sec.getInt("stats.titans", 0);

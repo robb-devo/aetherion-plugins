@@ -390,10 +390,8 @@ public class BetaSphereManager implements Listener {
                 sphere.getId()
         );
 
-        // Fly the sphere's own model, not a vanilla snowball.
-        ItemStack look = item.clone();
-        look.setAmount(1);
-        projectile.setItem(look);
+        // Fly the sphere's own ball model (resource pack), never the held stack itself.
+        projectile.setItem(de.aetherion.aethermobs.pet.body.CatchBall.thrownLook(sphere.getId()));
 
         if (sphere.isInfinite()) {
             projectile.getPersistentDataContainer().set(
@@ -424,6 +422,11 @@ public class BetaSphereManager implements Listener {
         }
         at.getWorld().playSound(at, Sound.BLOCK_AMETHYST_BLOCK_HIT, 0.45f, 1.7f);
         at.getWorld().spawnParticle(Particle.WHITE_ASH, at, 4, 0.1, 0.05, 0.1, 0.0);
+        AetherMobs mobs = AetherMobs.getInstance();
+        if (mobs != null && mobs.isEnabled() && event.getHitEntity() == null) {
+            String id = snowball.getPersistentDataContainer().get(SPHERE_PROJECTILE_KEY, PersistentDataType.STRING);
+            de.aetherion.aethermobs.pet.body.CatchBall.miss(mobs, at, snowball.getVelocity(), id, event.getHitBlockFace());
+        }
     }
 
     private void consumeSphere(Player player, EquipmentSlot hand) {

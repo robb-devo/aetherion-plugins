@@ -128,6 +128,15 @@ public final class QuestSkillGate {
         return skills.highestLevel(player, category);
     }
 
+    /** Aetherion (account) level, or -1 when Items is offline. */
+    public static int accountLevel(Player player) {
+        SkillService skills = skills();
+        if (skills == null || player == null) {
+            return -1;
+        }
+        return skills.accountLevel(player);
+    }
+
     private static SkillService skills() {
         AetherionItems items = AetherionItems.getInstance();
         if (items == null) {

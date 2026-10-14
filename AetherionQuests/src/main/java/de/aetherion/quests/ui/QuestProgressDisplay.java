@@ -1,6 +1,8 @@
 package de.aetherion.quests.ui;
 
 
+import de.aetherion.core.api.BarChrome;
+import de.aetherion.core.api.BarSync;
 import de.aetherion.quests.AetherionQuests;
 import de.aetherion.quests.manager.QuestManager;
 import de.aetherion.quests.model.Objective;
@@ -109,8 +111,8 @@ public class QuestProgressDisplay {
         QuestState state = questManager.getQuestState(player, quest);
 
         BossBar bar = getOrCreateBar(player);
-        bar.setStyle(BarStyle.SOLID);
-        bar.setVisible(true);
+        BarSync.style(bar, BarStyle.SOLID);
+        BarSync.visible(bar, true);
 
         if (state == QuestState.READY) {
             String npcName = turnInName(quest);
@@ -121,9 +123,7 @@ public class QuestProgressDisplay {
             } catch (IllegalArgumentException ignored) {
                 ret = "Return to " + npcName;
             }
-            bar.setTitle(withCompass(player, "§f" + title + " §8• §a" + ret));
-            bar.setProgress(1.0);
-            bar.setColor(BarColor.GREEN);
+            paint(player, bar, "§f" + title + " §8• §a" + ret, 1.0, BarColor.GREEN);
             return;
         }
 
@@ -181,22 +181,24 @@ public class QuestProgressDisplay {
                 : Math.min(1.0, Math.max(0.0, (double) totalProgress / totalRequired));
 
         String title = de.aetherion.quests.lang.LangPack.questTitle(player, quest.getId(), quest.getTitle());
-        if (totalRequired <= 0) {
-            bar.setTitle(withCompass(player, "§f" + title));
-        } else {
-            bar.setTitle(withCompass(player, "§f" + title + " §8• " + objectiveText));
-        }
+        String line = totalRequired <= 0 ? "§f" + title : "§f" + title + " §8• " + objectiveText;
+        BarColor color = progress < 0.34 ? BarColor.RED : progress < 0.67 ? BarColor.YELLOW : BarColor.GREEN;
+        paint(player, bar, line, progress, color);
 
-        bar.setProgress(progress);
+    }
 
-        if (progress < 0.34) {
-            bar.setColor(BarColor.RED);
-        } else if (progress < 0.67) {
-            bar.setColor(BarColor.YELLOW);
-        } else {
-            bar.setColor(BarColor.GREEN);
-        }
-
+    /**
+     * Quest frame: bronze rails, scroll socket. The icon follows the state the colour already tells —
+     * a tick once it's time to hand in, a star on the guided specials (purple), the scroll otherwise.
+     * Change-only: this runs every progress tick and with the compass line.
+     */
+    private static void paint(Player player, BossBar bar, String title, double progress, BarColor color) {
+        BarChrome.Icon icon = progress >= 1.0 && color == BarColor.GREEN ? BarChrome.Icon.QUEST_READY
+                : color == BarColor.PURPLE ? BarChrome.Icon.QUEST_SPECIAL
+                : BarChrome.Icon.QUEST;
+        BarSync.title(bar, BarChrome.legacy(BarChrome.Family.QUEST, icon, withCompass(player, title)));
+        BarSync.progress(bar, progress);
+        BarSync.color(bar, color);
     }
 
 
@@ -215,24 +217,18 @@ public class QuestProgressDisplay {
             } catch (IllegalArgumentException ignored) {
                 ret = "Return to " + turnInName(quest);
             }
-            bar.setTitle(withCompass(player, "§f" + title + " §8• §a" + ret));
-            bar.setProgress(1.0);
-            bar.setColor(BarColor.GREEN);
+            paint(player, bar, "§f" + title + " §8• §a" + ret, 1.0, BarColor.GREEN);
             return;
         }
         if (!hasBorderlandsSpiritVial(player)) {
-            bar.setTitle(withCompass(player, "§f" + title + " §8• §c"
+            paint(player, bar, "§f" + title + " §8• §c"
                     + de.aetherion.quests.lang.LangPack.progress(
-                            player, "obtain_vial", "Obtain a spirit vial")));
-            bar.setProgress(0.25);
-            bar.setColor(BarColor.RED);
+                            player, "obtain_vial", "Obtain a spirit vial"), 0.25, BarColor.RED);
             return;
         }
-        bar.setTitle(withCompass(player, "§f" + title + " §8• §e"
+        paint(player, bar, "§f" + title + " §8• §e"
                 + de.aetherion.quests.lang.LangPack.progress(
-                        player, "spawn_boss", "Spawn a boss")));
-        bar.setProgress(0.6);
-        bar.setColor(BarColor.YELLOW);
+                        player, "spawn_boss", "Spawn a boss"), 0.6, BarColor.YELLOW);
     }
 
     static boolean hasBorderlandsSpiritVial(Player player) {
@@ -273,32 +269,26 @@ public class QuestProgressDisplay {
 
         String title = de.aetherion.quests.lang.LangPack.questTitle(player, quest.getId(), quest.getTitle());
         if (catchProgress < 1) {
-            bar.setTitle(withCompass(player, "§f" + title + " §8• §f"
+            paint(player, bar, "§f" + title + " §8• §f"
                     + de.aetherion.quests.lang.LangPack.progress(player, "catch_pet", "Catch a pet")
-                    + " §e0§7/§f1"));
-            bar.setProgress(0.25);
-            bar.setColor(BarColor.YELLOW);
+                    + " §e0§7/§f1", 0.25, BarColor.YELLOW);
             return;
         }
         if (!equipLesson || equipProgress < 1) {
             if (!equipLesson) {
-                bar.setTitle(withCompass(player, "§f" + title + " §8• §a"
-                        + de.aetherion.quests.lang.LangPack.progress(player, "talk_to_lark", "Talk to Lark")));
-                bar.setProgress(0.55);
-                bar.setColor(BarColor.GREEN);
+                paint(player, bar, "§f" + title + " §8• §a"
+                        + de.aetherion.quests.lang.LangPack.progress(player, "talk_to_lark", "Talk to Lark"),
+                        0.55, BarColor.GREEN);
                 return;
             }
-            bar.setTitle(withCompass(player, "§f" + title + " §8• §d"
+            paint(player, bar, "§f" + title + " §8• §d"
                     + de.aetherion.quests.lang.LangPack.progress(player, "equip_pet", "Equip a Pet")
-                    + " §e" + Math.min(1, equipProgress) + "§7/§f1"));
-            bar.setProgress(0.75);
-            bar.setColor(BarColor.PURPLE);
+                    + " §e" + Math.min(1, equipProgress) + "§7/§f1", 0.75, BarColor.PURPLE);
             return;
         }
-        bar.setTitle(withCompass(player, "§f" + title + " §8• §a"
-                + de.aetherion.quests.lang.LangPack.progress(player, "return_to_lark", "Return to Lark")));
-        bar.setProgress(1.0);
-        bar.setColor(BarColor.GREEN);
+        paint(player, bar, "§f" + title + " §8• §a"
+                + de.aetherion.quests.lang.LangPack.progress(player, "return_to_lark", "Return to Lark"),
+                1.0, BarColor.GREEN);
     }
 
 

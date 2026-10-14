@@ -66,6 +66,7 @@ public final class MineIsle implements Listener, StatProvider {
     private final MineHazards hazards;
     private final AmethystMine amethyst;
     private final MineDev dev;
+    private final MineLesson lesson;
     private boolean itemsHooked;
     /** Ore / crystal blocks a player placed: breaking them again feeds no loop (no place-break farming). */
     private final java.util.Map<UUID, java.util.Set<Long>> placedBlocks = new java.util.concurrent.ConcurrentHashMap<>();
@@ -92,6 +93,7 @@ public final class MineIsle implements Listener, StatProvider {
         this.hazards = new MineHazards(this);
         this.amethyst = new AmethystMine(this);
         this.dev = new MineDev(this);
+        this.lesson = new MineLesson(this);
     }
 
     /**
@@ -121,6 +123,7 @@ public final class MineIsle implements Listener, StatProvider {
         critters.start();
         hazards.start();
         amethyst.start();
+        lesson.start();
         try {
             ActiveEquipmentStats.registerProvider(this);
             itemsHooked = true;
@@ -133,6 +136,7 @@ public final class MineIsle implements Listener, StatProvider {
 
     public void shutdown() {
         HandlerList.unregisterAll(this);
+        lesson.shutdown();
         if (itemsHooked) {
             try {
                 ActiveEquipmentStats.unregisterProvider(this);
@@ -239,6 +243,7 @@ public final class MineIsle implements Listener, StatProvider {
         if (ore != IsleOre.STONE) {
             crystals.roll(player, ore, at, false);
         }
+        lesson.onStrike(player, ore, at);
         critters.onMined(player, ore, at, band);
         hazards.onMined(player, ore, at, band);
         if (band.bonusXp() > 0 && ore != IsleOre.STONE) {
@@ -341,6 +346,7 @@ public final class MineIsle implements Listener, StatProvider {
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
         UUID id = event.getPlayer().getUniqueId();
+        lesson.forget(id);
         rhythm.clear(id);
         events.onQuit(id);
         compass.forget(id);
@@ -566,5 +572,9 @@ public final class MineIsle implements Listener, StatProvider {
 
     public MineDev dev() {
         return dev;
+    }
+
+    MineLesson lesson() {
+        return lesson;
     }
 }

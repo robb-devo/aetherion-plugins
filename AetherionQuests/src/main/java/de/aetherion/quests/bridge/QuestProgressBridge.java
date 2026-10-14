@@ -101,6 +101,10 @@ public final class QuestProgressBridge {
         if (player == null || target == null || target.isBlank()) {
             return;
         }
+        // An isle plugin finished its lesson (ISLE_LESSON_FORAGE …): Ledger's road picker ticks it off.
+        if (de.aetherion.quests.ui.SkillRoads.noteIsleLesson(player, target)) {
+            return;
+        }
         QuestManager manager = manager();
         if (manager == null) {
             return;
@@ -117,6 +121,7 @@ public final class QuestProgressBridge {
                     continue;
                 }
                 manager.addProgress(player, quest.getId(), objective.getTarget(), 1);
+                de.aetherion.quests.tutorial.OrientationWatch.noteLesson(player, quest.getId(), objective.getTarget());
             }
         }
     }

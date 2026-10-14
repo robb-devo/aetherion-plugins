@@ -51,7 +51,6 @@ public final class IsleGuideNpc implements Listener {
 
     private static final String HIDE_TEAM = "ae_forage_hide_npc";
     public static final String HOLO_TAG = "ae_miss_canopy_holo";
-    private static final long BRIEFING_DELAY_TICKS = 28L;
 
     private final AetherionForaging plugin;
     private final Map<UUID, Long> coolUntil = new ConcurrentHashMap<>();
@@ -60,7 +59,6 @@ public final class IsleGuideNpc implements Listener {
 
     public IsleGuideNpc(AetherionForaging plugin) {
         this.plugin = plugin;
-        new IsleGuideBriefingGUI(plugin);
         this.desk = canopyDesk();
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
         Bukkit.getScheduler().runTaskLater(plugin, this::ensureIfPlaced, 100L);
@@ -100,17 +98,16 @@ public final class IsleGuideNpc implements Listener {
     }
 
     /**
-     * Miss Canopy — Ledger-style desk for Foraging Eldervale (Fell Pulse, Crown Finds, cast, bark).
-     * Chest briefing stays as "Briefing…" / fallback when the bubble can't run.
+     * Miss Canopy — Foraging Eldervale's teacher. First visit: the isle lesson ({@code GroveLesson}) owns her
+     * bubble. After it she's a plain desk (the chop, Crown Finds, who's who, bark & events).
      */
     private TalkDesk canopyDesk() {
         return new TalkDesk(plugin, "forage_isle_canopy", DISPLAY, "§a", "canopy_clerk",
                 this::guideLocation, this::livingHologram,
-                player -> "Hey, {player}. First: hit a glowing trunk — green on the bar is a clean cut. Then ask.",
+                player -> de.aetherion.core.api.AetherServices.german(player)
+                        ? "Wieder da, {player}? Frag ruhig — oder geh was fällen."
+                        : "Back again, {player}? Ask away — or go fell something.",
                 List.of(
-                        TalkDesk.Topic.of("Do this first", NamedTextColor.GREEN, "What should I do first?",
-                                "Axe out. Walk to a living trunk. Swing and watch the timing bar — green is clean.",
-                                "Stack clean cuts for a streak. Miss once and that trunk needs a short breath — other trees stay free."),
                         TalkDesk.Topic.of("The chop?", NamedTextColor.DARK_GREEN, "How do I fell trees here?",
                                 "Hit a trunk and watch the timing bar — green is a clean cut. Stack clean cuts for a streak.",
                                 "Big trunks (Titans) need two clean cuts. Miss and the streak cools. Same axe feel, deeper payoff."),
@@ -124,8 +121,23 @@ public final class IsleGuideNpc implements Listener {
                                 "§6Elderbark§f and §8Nightbark§f are rare heartwoods from chops. Two different kinds feed the magic table by the dock.",
                                 "§cBark Blight§f is an isle event — beetles nip at your ankles. Squash them for coins and Standing.")
                 ),
-                "Briefing…", player -> IsleGuideBriefingGUI.open(player, DISPLAY),
+                null, null,
                 "Off you go. The trees won't fell themselves.");
+    }
+
+    /** True when this click is already handled by a bubble beat in flight (see {@link TalkDesk#busy}). */
+    public boolean busy(Player player) {
+        return desk.busy(player);
+    }
+
+    /** A scripted lesson beat in her bubble. False when the bubble can't open. */
+    public boolean script(Player player, List<String> lines, List<de.aetherion.core.api.TalkAccess.Reply> replies) {
+        return desk.script(player, lines, replies);
+    }
+
+    /** Where she stands (null while she isn't placed). */
+    public Location location() {
+        return plugin.getConfig().getBoolean("isle-guide.placed", false) ? guideLocation() : null;
     }
 
     public void reload() {
@@ -242,7 +254,14 @@ public final class IsleGuideNpc implements Listener {
                 isle.compass().talked(player, "guide");
             }
         }
-        // Bubble + reply chips first; the chest briefing is "Briefing…" and the fallback.
+        // First visit: the isle lesson takes the click. After it: her desk (bubble + chips).
+        de.aetherion.foraging.isle.ForageIsle isle = de.aetherion.foraging.isle.ForageIsle.get();
+        if (isle != null && isle.lesson().onTeacher(player)) {
+            if (fresh) {
+                player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_YES, 0.55f, 1.25f);
+            }
+            return;
+        }
         if (desk.click(player)) {
             if (fresh) {
                 player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_YES, 0.55f, 1.25f);
@@ -252,13 +271,11 @@ public final class IsleGuideNpc implements Listener {
         if (!fresh) {
             return;
         }
+        // Classic chat: one useful line instead of a chest of tooltips.
         player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_YES, 0.55f, 1.25f);
-        player.sendMessage("§a" + DISPLAY + " §8» §fHey — short tour of the isle?");
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            if (player.isOnline()) {
-                IsleGuideBriefingGUI.open(player, DISPLAY);
-            }
-        }, BRIEFING_DELAY_TICKS);
+        player.sendMessage("§a" + DISPLAY + " §8» §f" + (de.aetherion.core.api.AetherServices.german(player)
+                ? "Grün ist sauber, Serien zahlen, Kronenfunde fangen. §ePell§f kauft Holz auf Bestellung, §f/grove§f ist dein Journal."
+                : "Green is clean, streaks pay, catch the Crown Finds. §ePell§f buys wood by order, §f/grove§f is your journal."));
     }
 
     @EventHandler(priority = EventPriority.HIGH)

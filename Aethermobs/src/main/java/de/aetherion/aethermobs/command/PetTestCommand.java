@@ -5,6 +5,10 @@ import de.aetherion.aethermobs.model.PetVariant;
 import de.aetherion.aethermobs.pet.PetDefinition;
 import de.aetherion.aethermobs.pet.PetEntity;
 import de.aetherion.aethermobs.pet.PetInstance;
+import de.aetherion.aethermobs.pet.body.PetBodies;
+import de.aetherion.aethermobs.pet.body.PetBody;
+import de.aetherion.aethermobs.pet.body.Skeleton;
+import de.aetherion.items.model.Rarity;
 
 import org.bukkit.Location;
 import org.bukkit.command.Command;
@@ -12,8 +16,12 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 public class PetTestCommand implements CommandExecutor {
 
@@ -85,6 +93,27 @@ public class PetTestCommand implements CommandExecutor {
             return true;
         }
 
+        if (args.length > 0
+                && args[0].equalsIgnoreCase("spawn")) {
+
+            spawnBody(player, args);
+            return true;
+        }
+
+        if (args.length > 0
+                && args[0].equalsIgnoreCase("parade")) {
+
+            parade(player, args);
+            return true;
+        }
+
+        if (args.length > 0
+                && args[0].equalsIgnoreCase("bodies")) {
+
+            bodies(player);
+            return true;
+        }
+
         Collection<PetDefinition> definitions =
                 plugin.getPetRegistry()
                         .getAll();
@@ -148,6 +177,115 @@ public class PetTestCommand implements CommandExecutor {
         );
 
         return true;
+    }
+
+    /*
+     * =========================================================
+     * BODY SMOKE TESTS
+     * =========================================================
+     */
+
+    /** /pet spawn <id> [rarity] — one forced wild pet three blocks ahead. */
+    private void spawnBody(Player player, String[] args) {
+        if (args.length < 2) {
+            player.sendMessage("§7/pet spawn <id> [common..mythic|aethered]");
+            return;
+        }
+        PetDefinition definition = plugin.getPetRegistry().get(args[1].toLowerCase(Locale.ROOT));
+        if (definition == null) {
+            player.sendMessage("§cUnknown pet id §f" + args[1]);
+            return;
+        }
+        PetInstance pet = plugin.getPetGenerator().generate(definition);
+        if (args.length >= 3) {
+            try {
+                pet.setRarity(Rarity.valueOf(args[2].toUpperCase(Locale.ROOT)));
+            } catch (IllegalArgumentException ignored) {
+                player.sendMessage("§7Unknown rarity, keeping §f" + pet.getRarity());
+            }
+        }
+        Location ahead = player.getLocation().clone();
+        org.bukkit.util.Vector dir = ahead.getDirection().setY(0.0);
+        if (dir.lengthSquared() < 0.01) {
+            dir = new org.bukkit.util.Vector(0, 0, 1);
+        }
+        ahead.add(dir.normalize().multiply(3.0)).add(0.0, 0.5, 0.0);
+        PetEntity entity = spawnForced(pet, ahead);
+        PetBody body = entity == null ? null : entity.getBody();
+        player.sendMessage("§d✦ §f" + definition.getDisplayName() + " §8· §7" + pet.getRarity()
+                + " §8· §b" + PetBodies.skeletonOf(definition)
+                + (body == null ? " §c(skull fallback)" : " §8· §7" + body.rig().partCount() + " parts"));
+    }
+
+    /** /pet parade [skeleton] — the whole catalog (or one skeleton) on a grid in front of you. */
+    private void parade(Player player, String[] args) {
+        Skeleton only = null;
+        if (args.length >= 2) {
+            try {
+                only = Skeleton.valueOf(args[1].toUpperCase(Locale.ROOT));
+            } catch (IllegalArgumentException ignored) {
+                player.sendMessage("§cUnknown skeleton §f" + args[1]);
+                return;
+            }
+        }
+        List<PetDefinition> defs = new ArrayList<>();
+        for (PetDefinition definition : plugin.getPetRegistry().getAll()) {
+            if (only == null || PetBodies.skeletonOf(definition) == only) {
+                defs.add(definition);
+            }
+        }
+        Location origin = player.getLocation().clone();
+        org.bukkit.util.Vector forward = origin.getDirection().setY(0.0);
+        if (forward.lengthSquared() < 0.01) {
+            forward = new org.bukkit.util.Vector(0, 0, 1);
+        }
+        forward.normalize();
+        org.bukkit.util.Vector right = new org.bukkit.util.Vector(-forward.getZ(), 0.0, forward.getX());
+        int columns = 9;
+        int spawned = 0;
+        int parts = 0;
+        for (int i = 0; i < defs.size() && i < 90; i++) {
+            int row = i / columns;
+            int col = i % columns - columns / 2;
+            Location at = origin.clone()
+                    .add(forward.clone().multiply(4.0 + row * 4.0))
+                    .add(right.clone().multiply(col * 3.5))
+                    .add(0.0, 0.5, 0.0);
+            PetInstance pet = plugin.getPetGenerator().generate(defs.get(i));
+            PetEntity entity = spawnForced(pet, at);
+            if (entity != null) {
+                spawned++;
+                if (entity.getBody() != null) {
+                    parts += entity.getBody().rig().partCount();
+                }
+            }
+        }
+        player.sendMessage("§d✦ Parade §8· §f" + spawned + " pets §8· §7" + parts + " display parts"
+                + (only == null ? "" : " §8· §b" + only));
+    }
+
+    /** /pet bodies — catalog map: skeleton -> ids. */
+    private void bodies(Player player) {
+        Map<Skeleton, List<String>> map = new EnumMap<>(Skeleton.class);
+        for (PetDefinition definition : plugin.getPetRegistry().getAll()) {
+            map.computeIfAbsent(PetBodies.skeletonOf(definition), k -> new ArrayList<>()).add(definition.getId());
+        }
+        player.sendMessage("§d✦ Pet bodies §8· §f" + map.size() + " skeletons");
+        for (Map.Entry<Skeleton, List<String>> entry : map.entrySet()) {
+            player.sendMessage("§b" + entry.getKey() + " §8(" + entry.getValue().size() + ") §7"
+                    + String.join(", ", entry.getValue()));
+        }
+    }
+
+    private PetEntity spawnForced(PetInstance pet, Location at) {
+        PetEntity entity = new PetEntity(pet);
+        entity.spawn(at, true);
+        if (!entity.isSpawned()) {
+            return null;
+        }
+        entity.materialize(10);
+        plugin.getPetSpawnManager().registerTestPet(entity);
+        return entity;
     }
 
     private void giveSphere(Player player, String[] args) {

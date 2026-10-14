@@ -58,7 +58,8 @@ public final class ExileLink {
             return false;
         }
         if (isExileServer()) {
-            player.sendMessage("§8Exil §8» §7You're already on the exile shore.");
+            player.sendMessage(de.aetherion.core.exile.Say.t(player, "§8Exile §8» §7You're already on the exile shore.",
+                    "§8Exil §8» §7Du bist schon am Ufer des Exils."));
             return true;
         }
         NetworkRouter router = plugin.router();
@@ -105,7 +106,8 @@ public final class ExileLink {
             return false;
         }
         if (link.isMainWorld()) {
-            player.sendMessage("§8Exil §8» §7You're already on Aetherion.");
+            player.sendMessage(de.aetherion.core.exile.Say.t(player, "§8Exile §8» §7You're already on Aetherion.",
+                    "§8Exil §8» §7Du bist schon auf Aetherion."));
             return true;
         }
         String main = link.mainServer();

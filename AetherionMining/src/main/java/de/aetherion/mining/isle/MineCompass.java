@@ -41,7 +41,6 @@ public final class MineCompass {
     private final Map<UUID, String> lastDistrict = new ConcurrentHashMap<>();
     private final Map<UUID, MineDistricts.Band> lastBand = new ConcurrentHashMap<>();
     private final Map<UUID, Guide> guides = new ConcurrentHashMap<>();
-    private final Map<UUID, Boolean> welcomed = new ConcurrentHashMap<>();
     private BukkitTask task;
 
     MineCompass(MineIsle isle) {
@@ -66,7 +65,6 @@ public final class MineCompass {
         lastDistrict.remove(id);
         lastBand.remove(id);
         guides.remove(id);
-        welcomed.remove(id);
     }
 
     // ------------------------------------------------------------------ guiding
@@ -170,13 +168,6 @@ public final class MineCompass {
                 lastBand.remove(id);
                 continue;
             }
-            if (!welcomed.containsKey(id)) {
-                welcomed.put(id, Boolean.TRUE);
-                MineProfiles.Profile profile = isle.profiles().of(player);
-                if (profile.met.isEmpty() && profile.districts.isEmpty() && !profile.compassOff()) {
-                    welcome(player);
-                }
-            }
             MineDistricts.Band band = isle.districts().band(player.getLocation());
             MineDistricts.Band beforeBand = lastBand.put(id, band);
             if (beforeBand != null && beforeBand != band && guide == null && !isle.profiles().of(player).compassOff()) {
@@ -255,20 +246,6 @@ public final class MineCompass {
         MineText.bar(player, band.colored() + " §8· §7Y " + player.getLocation().getBlockY() + " §8· " + extra);
         if (band.deep()) {
             player.playSound(player.getLocation(), Sound.AMBIENT_CAVE, SoundCategory.AMBIENT, 0.5f, 0.7f);
-        }
-    }
-
-    /** First step on the isle: say hello and walk them to Old Wick. */
-    private void welcome(Player player) {
-        player.sendMessage("§6⚒ Welcome to Mining Eldervale. §7Seven quarries, four depths, one very old forge.");
-        player.sendMessage("§7Every strike here feeds something: rhythm, mastery, contracts, and sometimes a crystal the size of your fist.");
-        if (isle.cast().isPlaced(MineRole.LAMPWARDEN)) {
-            player.sendMessage("§7Old Wick keeps the lamps. §eFollow the arrow§7, he'll give you the lay of the rock.");
-            Bukkit.getScheduler().runTaskLater(isle.plugin(), () -> {
-                if (player.isOnline()) {
-                    guide(player, MineRole.LAMPWARDEN);
-                }
-            }, 50L);
         }
     }
 

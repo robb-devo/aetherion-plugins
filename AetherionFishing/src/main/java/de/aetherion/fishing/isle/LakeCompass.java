@@ -37,7 +37,6 @@ public final class LakeCompass {
     private final FishIsle isle;
     private final Map<UUID, String> lastWater = new ConcurrentHashMap<>();
     private final Map<UUID, Guide> guides = new ConcurrentHashMap<>();
-    private final Map<UUID, Boolean> welcomed = new ConcurrentHashMap<>();
     private BukkitTask task;
 
     LakeCompass(FishIsle isle) {
@@ -60,7 +59,6 @@ public final class LakeCompass {
     void forget(UUID id) {
         lastWater.remove(id);
         guides.remove(id);
-        welcomed.remove(id);
     }
 
     public void guide(Player player, String label, Location target) {
@@ -70,6 +68,10 @@ public final class LakeCompass {
         }
         guides.put(player.getUniqueId(), new Guide(label, target.clone(), System.currentTimeMillis() + GUIDE_MS));
         player.playSound(player.getLocation(), Sound.ITEM_LODESTONE_COMPASS_LOCK, SoundCategory.PLAYERS, 0.8f, 1.2f);
+    }
+
+    public void stopGuide(Player player) {
+        guides.remove(player.getUniqueId());
     }
 
     private void tick() {
@@ -86,12 +88,6 @@ public final class LakeCompass {
             if (!LakeWorld.onIsle(player)) {
                 lastWater.remove(id);
                 continue;
-            }
-            if (!welcomed.containsKey(id)) {
-                welcomed.put(id, Boolean.TRUE);
-                if (isle.profiles().of(player).catches() == 0 && isle.profiles().of(player).waters().isEmpty()) {
-                    welcome(player);
-                }
             }
             Waters.Water water = isle.waters().at(player.getLocation());
             String waterId = water == null ? null : water.id();
@@ -159,20 +155,6 @@ public final class LakeCompass {
         }
     }
 
-    /** First step on the isle: say hello and walk them to the Harbourmaster. */
-    private void welcome(Player player) {
-        player.sendMessage("§b✦ Welcome to Fishing Eldervale. §7Every water here has its own fish —"
-                + " and some of them only come out at night.");
-        Location at = isle.cast().whereabouts(LakeRole.HARBOURMASTER);
-        if (at != null && isle.cast().isPlaced(LakeRole.HARBOURMASTER)) {
-            player.sendMessage("§7Maren runs the harbour — follow the arrow, she'll hand you an Angler's Log.");
-            Bukkit.getScheduler().runTaskLater(isle.plugin(), () -> {
-                if (player.isOnline()) {
-                    guide(player, LakeRole.HARBOURMASTER.display() + " §7(Harbourmaster)", at);
-                }
-            }, 50L);
-        }
-    }
 
     public int countKnown(AnglerProfiles.Profile profile) {
         int count = 0;

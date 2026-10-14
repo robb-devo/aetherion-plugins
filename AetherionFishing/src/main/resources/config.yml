@@ -12,20 +12,20 @@ encounter-despawn-seconds: 90
 
 # ---------------------------------------------------------------------------
 # Fishing Eldervale — the fishing destination (docs/FISHING_ELDERVALE.md)
-# Coordinates match `/aetherpaste fishing` at -585 90 -649: schem local (x, y, z)
-# lands at world (x - 800, y - 42, z - 864); the main lake surface is y 89.
+# Coordinates match `/aetherpaste fishing` at -382 90 -900: schem local (x, y, z)
+# lands at world (x - 597, y - 42, z - 1115); the main lake surface is y 89.
 # New keys are copied into live configs on boot; existing values are never changed.
 # ---------------------------------------------------------------------------
 fish-isle:
   enabled: true
   footprint:
     world: world
-    min-x: -775
-    max-x: -415
-    min-z: -805
-    max-z: -455
+    min-x: -572
+    max-x: -212
+    min-z: -1056
+    max-z: -706
   # Plaza north of the Wishing Fountain. Point the hub pad / `/hubadmin set <id>` spawn here.
-  landing: {world: world, x: -583.5, y: 90.0, z: -643.5, yaw: 180.0}
+  landing: {world: world, x: -380.0, y: 90.0, z: -815.5, yaw: 180.0}
   lake-surface-y: 89
 
 # Named waters. circles: "x z radius" (world). kind: lake (lake level only), tarn (above it), fountain.
@@ -34,71 +34,71 @@ waters:
     name: Mirror Reach
     kind: lake
     blurb: "Wide, still, and full of sky"
-    circles: ["-501.5 -573.5 25", "-497.5 -548.5 18", "-476.5 -580.5 16", "-524.5 -563.5 16", "-460.5 -581.5 15",
-              "-477.5 -564.5 15", "-475.5 -635.5 14", "-494.5 -607.5 14", "-526.5 -579.5 14", "-499.5 -530.5 14"]
+    circles: ["-298.5 -824.5 25", "-294.5 -799.5 18", "-273.5 -831.5 16", "-321.5 -814.5 16", "-257.5 -832.5 15",
+              "-274.5 -815.5 15", "-272.5 -886.5 14", "-291.5 -858.5 14", "-323.5 -830.5 14", "-296.5 -781.5 14"]
   south_deep:
     name: South Deep
     kind: lake
     blurb: "The lighthouse water. Deep enough to lose a boat"
-    circles: ["-588.5 -515.5 23", "-587.5 -542.5 22", "-555.5 -572.5 15", "-555.5 -556.5 15", "-627.5 -506.5 14",
-              "-612.5 -506.5 14", "-576.5 -495.5 12", "-570.5 -557.5 11", "-565.5 -544.5 11", "-525.5 -490.5 12",
-              "-537.5 -493.5 9"]
+    circles: ["-385.5 -766.5 23", "-384.5 -793.5 22", "-352.5 -823.5 15", "-352.5 -807.5 15", "-424.5 -757.5 14",
+              "-409.5 -757.5 14", "-373.5 -746.5 12", "-367.5 -808.5 11", "-362.5 -795.5 11", "-322.5 -741.5 12",
+              "-334.5 -744.5 9"]
   lantern_cove:
     name: Lantern Cove
     kind: lake
     blurb: "Piers off the plaza. Eels after dark"
-    circles: ["-557.5 -703.5 18", "-539.5 -701.5 14", "-574.5 -697.5 13", "-559.5 -721.5 11", "-525.5 -700.5 11",
-              "-581.5 -686.5 11"]
+    circles: ["-354.5 -954.5 18", "-336.5 -952.5 14", "-371.5 -948.5 13", "-356.5 -972.5 11", "-322.5 -951.5 11",
+              "-378.5 -937.5 11"]
   reedwater:
     name: Reedwater
     kind: lake
     blurb: "Pike country"
-    circles: ["-617.5 -677.5 18", "-635.5 -679.5 12", "-601.5 -686.5 9", "-647.5 -677.5 7"]
+    circles: ["-414.5 -928.5 18", "-432.5 -930.5 12", "-398.5 -937.5 9", "-444.5 -928.5 7"]
   westwater:
     name: Westwater
     kind: lake
     blurb: "The long channel under the west ridge"
-    circles: ["-653.5 -617.5 18", "-637.5 -607.5 15", "-675.5 -638.5 14", "-634.5 -592.5 11", "-687.5 -654.5 10"]
+    circles: ["-450.5 -868.5 18", "-434.5 -858.5 15", "-472.5 -889.5 14", "-431.5 -843.5 11", "-484.5 -905.5 10"]
   boathouse_reach:
     name: Boathouse Reach
     kind: lake
     blurb: "Tilly's water. Mind the nets"
-    circles: ["-683.5 -546.5 14", "-707.5 -599.5 11", "-663.5 -522.5 10", "-718.5 -583.5 9", "-678.5 -572.5 9",
-              "-677.5 -563.5 9", "-674.5 -535.5 9"]
+    circles: ["-480.5 -797.5 14", "-504.5 -850.5 11", "-460.5 -773.5 10", "-515.5 -834.5 9", "-475.5 -823.5 9",
+              "-474.5 -814.5 9", "-471.5 -786.5 9"]
   bellwater_cove:
     name: Bellwater Cove
     kind: lake
     blurb: "Where the Crown Falls come down"
-    circles: ["-579.5 -766.5 15", "-557.5 -756.5 14", "-547.5 -746.5 12", "-559.5 -742.5 10", "-575.5 -781.5 9",
-              "-530.5 -767.5 8"]
+    circles: ["-376.5 -1017.5 15", "-354.5 -1007.5 14", "-344.5 -997.5 12", "-356.5 -993.5 10", "-372.5 -1032.5 9",
+              "-327.5 -1018.5 8"]
   wishing_fountain:
     name: Wishing Fountain
     kind: fountain
     blurb: "Somebody's wishes are down there"
-    circles: ["-585.5 -628.5 9"]
+    circles: ["-382.5 -879.5 9"]
   skyfall_tarns:
     name: Skyfall Tarns
     kind: tarn
     blurb: "Terraced pools under the north-west falls"
-    circles: ["-641.5 -757.5 19", "-694.5 -728.5 13", "-629.5 -742.5 11", "-638.5 -777.5 10", "-656.5 -745.5 10",
-              "-648.5 -776.5 9", "-661.5 -754.5 9"]
+    circles: ["-438.5 -1008.5 19", "-491.5 -979.5 13", "-426.5 -993.5 11", "-435.5 -1028.5 10", "-453.5 -996.5 10",
+              "-445.5 -1027.5 9", "-458.5 -1005.5 9"]
   westcliff_pools:
     name: Westcliff Pools
     kind: tarn
     blurb: "Cold pools on the west cliffs"
-    circles: ["-734.5 -605.5 15", "-727.5 -683.5 14", "-724.5 -617.5 13", "-731.5 -642.5 12", "-730.5 -669.5 11",
-              "-729.5 -658.5 11", "-729.5 -630.5 10"]
+    circles: ["-531.5 -856.5 15", "-524.5 -934.5 14", "-521.5 -868.5 13", "-528.5 -893.5 12", "-527.5 -920.5 11",
+              "-526.5 -909.5 11", "-526.5 -881.5 10"]
   eastridge_tarns:
     name: Eastridge Tarns
     kind: tarn
     blurb: "Warm springs on the east ridge"
-    circles: ["-493.5 -722.5 13", "-440.5 -645.5 12", "-480.5 -723.5 10", "-482.5 -689.5 9", "-453.5 -675.5 9",
-              "-435.5 -634.5 8", "-486.5 -733.5 7"]
+    circles: ["-290.5 -973.5 13", "-237.5 -896.5 12", "-277.5 -974.5 10", "-279.5 -940.5 9", "-250.5 -926.5 9",
+              "-232.5 -885.5 8", "-283.5 -984.5 7"]
   tower_pools:
     name: Tower Pools
     kind: tarn
     blurb: "Up on the lighthouse rock"
-    circles: ["-530.5 -537.5 9", "-525.5 -529.5 8", "-517.5 -527.5 8", "-550.5 -535.5 7", "-556.5 -526.5 7"]
+    circles: ["-327.5 -788.5 9", "-322.5 -780.5 8", "-314.5 -778.5 8", "-347.5 -786.5 7", "-353.5 -777.5 7"]
 
 # The roaming shoal. Spots: deep lake water 5-11 blocks from a pier or shore ("x y z").
 shoals:
@@ -107,14 +107,14 @@ shoals:
   stock: 24
   radius: 6.0
   spots:
-    mirror_reach: ["-481.5 89 -579.5", "-511.5 89 -510.5", "-473.5 89 -645.5", "-532.5 89 -571.5", "-447.5 89 -607.5",
-                   "-487.5 89 -540.5"]
-    south_deep: ["-599.5 89 -536.5", "-550.5 89 -577.5", "-573.5 89 -488.5", "-649.5 89 -515.5", "-616.5 89 -503.5",
-                 "-566.5 89 -546.5"]
-    lantern_cove: ["-533.5 89 -697.5", "-584.5 89 -685.5", "-563.5 89 -707.5"]
-    reedwater: ["-642.5 89 -679.5", "-605.5 89 -686.5", "-621.5 89 -687.5"]
-    westwater: ["-636.5 89 -619.5", "-687.5 89 -655.5", "-636.5 89 -584.5"]
-    boathouse_reach: ["-712.5 89 -588.5", "-655.5 89 -522.5", "-695.5 89 -545.5"]
+    mirror_reach: ["-278.5 89 -830.5", "-308.5 89 -761.5", "-270.5 89 -896.5", "-329.5 89 -822.5", "-244.5 89 -858.5",
+                   "-284.5 89 -791.5"]
+    south_deep: ["-396.5 89 -787.5", "-347.5 89 -828.5", "-370.5 89 -739.5", "-446.5 89 -766.5", "-413.5 89 -754.5",
+                 "-363.5 89 -797.5"]
+    lantern_cove: ["-330.5 89 -948.5", "-381.5 89 -936.5", "-360.5 89 -958.5"]
+    reedwater: ["-439.5 89 -930.5", "-402.5 89 -937.5", "-418.5 89 -938.5"]
+    westwater: ["-433.5 89 -870.5", "-484.5 89 -906.5", "-433.5 89 -835.5"]
+    boathouse_reach: ["-509.5 89 -839.5", "-452.5 89 -773.5", "-492.5 89 -796.5"]
 
 # Silver Run / The Eldermaw, alternating, while anglers are on the isle.
 lake-events:
@@ -123,16 +123,16 @@ lake-events:
   interval-ticks: 21600
   eldermaw:
     # "x z radius" swim circles, checked clear of islets at y 84-88.
-    circuits: ["-509.5 -577.5 14", "-592.5 -521.5 14"]
+    circuits: ["-306.5 -828.5 14", "-389.5 -772.5 14"]
     swim-y: 85.4
   # The schem's six bells (they "ring" before each event).
-  bells: ["-599.5 92 -704.5", "-585.5 92 -611.5", "-464.5 94 -617.5", "-680.5 100 -696.5", "-497.5 100 -670.5",
-          "-497.5 100 -640.5"]
+  bells: ["-396.5 92 -955.5", "-382.5 92 -862.5", "-261.5 94 -868.5", "-477.5 100 -947.5", "-294.5 100 -921.5",
+          "-294.5 100 -891.5"]
 
 # NPC presets: standable spots by each building, measured from the schem.
 isle-cast:
   presets:
-    harbourmaster: {world: world, x: -594.5, y: 90.0, z: -713.5, yaw: 0.0}
-    bait: {world: world, x: -685.5, y: 90.0, z: -572.5, yaw: -90.0}
-    taxidermist: {world: world, x: -517.5, y: 90.0, z: -659.5, yaw: 90.0}
-    lakewatcher: {world: world, x: -539.5, y: 90.0, z: -570.5, yaw: 180.0}
+    harbourmaster: {world: world, x: -391.5, y: 90.0, z: -964.5, yaw: 0.0}
+    bait: {world: world, x: -482.5, y: 90.0, z: -823.5, yaw: -90.0}
+    taxidermist: {world: world, x: -314.5, y: 90.0, z: -910.5, yaw: 90.0}
+    lakewatcher: {world: world, x: -336.5, y: 90.0, z: -821.5, yaw: 180.0}

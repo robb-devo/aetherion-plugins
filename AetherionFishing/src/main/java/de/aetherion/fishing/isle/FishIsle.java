@@ -49,6 +49,7 @@ public final class FishIsle implements CastHooks, Listener, StatProvider {
     private final LakeCast cast;
     private final LakeMenus menus;
     private final LakeDev dev;
+    private final LakeLesson lesson;
     private final List<Location> bells = new ArrayList<>();
     private boolean itemsHooked;
 
@@ -67,6 +68,7 @@ public final class FishIsle implements CastHooks, Listener, StatProvider {
         this.cast = new LakeCast(this);
         this.menus = new LakeMenus(this);
         this.dev = new LakeDev(this);
+        this.lesson = new LakeLesson(this);
         loadBells();
     }
 
@@ -81,6 +83,7 @@ public final class FishIsle implements CastHooks, Listener, StatProvider {
         events.start();
         compass.start();
         cast.start();
+        lesson.start();
         try {
             ActiveEquipmentStats.registerProvider(this);
             itemsHooked = true;
@@ -93,6 +96,7 @@ public final class FishIsle implements CastHooks, Listener, StatProvider {
 
     public void shutdown() {
         HandlerList.unregisterAll(this);
+        lesson.shutdown();
         if (itemsHooked) {
             ActiveEquipmentStats.unregisterProvider(this);
             itemsHooked = false;
@@ -172,6 +176,7 @@ public final class FishIsle implements CastHooks, Listener, StatProvider {
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
         UUID id = event.getPlayer().getUniqueId();
+        lesson.forget(id);
         compass.forget(id);
         events.onQuit(id);
         profiles.unload(id);
@@ -263,5 +268,9 @@ public final class FishIsle implements CastHooks, Listener, StatProvider {
 
     public LakeDev dev() {
         return dev;
+    }
+
+    LakeLesson lesson() {
+        return lesson;
     }
 }

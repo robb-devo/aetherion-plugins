@@ -110,6 +110,11 @@ public final class TheLine {
         forced.put(player.getUniqueId(), species);
     }
 
+    /** A forced bite is still waiting for this player's next cast. */
+    boolean forced(UUID id) {
+        return forced.containsKey(id);
+    }
+
     // ------------------------------------------------------------------ hooks
 
     double settle(Player player, Location hook) {
@@ -291,6 +296,7 @@ public final class TheLine {
         String fountain = "wishing_fountain".equals(bite.water()) ? fountainCoin(player) : null;
         heatBeat(player, streak);
         isle.log().settleRank(player);
+        isle.lesson().onCatch(player, species, isle.waters().at(hook));
 
         StringBuilder out = new StringBuilder(species.colored()).append(" §f").append(LakeText.kg(kg));
         if (first) {
@@ -317,6 +323,7 @@ public final class TheLine {
         UUID id = player.getUniqueId();
         lastBeat.put(id, System.currentTimeMillis());
         chains.remove(id);
+        isle.lesson().onMiss(player, session.tag() instanceof Bite bite ? bite.species() : null);
         if (session.tag() instanceof Bite bite) {
             Species species = bite.species();
             if (species.rarity() == Species.Rarity.RARE || species.rarity() == Species.Rarity.LEGENDARY) {

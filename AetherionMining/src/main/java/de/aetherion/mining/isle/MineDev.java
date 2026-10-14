@@ -106,6 +106,14 @@ public final class MineDev {
             }
             case "prop" -> isle.props().placeHere(verb, player);
             case "landing" -> setLanding(player);
+            case "lesson" -> {
+                if ("done".equals(verb)) {
+                    isle.lesson().skip(player);
+                    yield "§aIsle lesson marked done.";
+                }
+                isle.lesson().replay(player);
+                yield "§aIsle lesson restarted §8(veteran skip off for you).";
+            }
             case "config" -> isle.reload();
             case "where" -> where(player);
             case "give" -> {

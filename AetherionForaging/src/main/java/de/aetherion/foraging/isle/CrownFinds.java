@@ -224,6 +224,7 @@ public final class CrownFinds implements Runnable {
                 ForageDisplays.forget(drop.body);
                 drop.body.remove();
                 it.remove();
+                isle.lesson().onWilt(drop.finder);
             }
         }
     }
@@ -278,6 +279,17 @@ public final class CrownFinds implements Runnable {
             }
         }
         ForageBridge.bonus(player, 6 * data.grade().valueMult);
+        isle.lesson().onFind(player, midAir);
+    }
+
+    /** A find this player shook loose is still in the air or on the ground. */
+    public boolean hasDropFor(java.util.UUID finder) {
+        for (Drop drop : drops) {
+            if (finder.equals(drop.finder)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** Removes every falling find (disable / reload). */

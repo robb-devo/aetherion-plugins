@@ -95,12 +95,26 @@ spawns:
     unlocked-by-default: false
 
   eldervale:
-    display-name: "Eldervale"
-    description: "Mining island past the slime jump pad. Walk in to unlock."
+    display-name: "Mining Eldervale"
+    description: "Quarries, shafts, the Deep Forge. Past the slime jump pad. Unlocks with the pad / stamp."
     icon: DEEPSLATE_DIAMOND_ORE
     slot: 20
     unlocked-by-default: false
     discover-radius: 36
+
+  fishing_eldervale:
+    display-name: "Fishing Eldervale"
+    description: "Lake isle — The Line, shoals, and the Angler's Log. Unlocks with the pad / stamp."
+    icon: FISHING_ROD
+    slot: 22
+    unlocked-by-default: false
+    location:
+      world: world
+      x: -380.0
+      y: 90.0
+      z: -815.5
+      yaw: 0.0
+      pitch: 0.0
 
 # /aetherpaste — FAWE async Eldervale island schematics (console/ops).
 # Schems are loaded from plugins/FastAsyncWorldEdit/schematics or WorldEdit/schematics.

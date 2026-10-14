@@ -61,6 +61,8 @@ public final class AetherionQuests extends JavaPlugin {
 
     private ExploreChestService exploreChests;
 
+    private de.aetherion.quests.chest.ExploreChestScatter exploreScatter;
+
     private EgonHintParticles egonHintParticles;
 
     private LumberjackHintParticles lumberjackHintParticles;
@@ -361,6 +363,7 @@ public final class AetherionQuests extends JavaPlugin {
                 new de.aetherion.quests.listener.VexDeathHintListener(this, questManager),
                 this
         );
+        de.aetherion.quests.tutorial.OrientationWatch.start(this, questManager);
         de.aetherion.quests.listener.SurveyorMineHintListener surveyorHint =
                 new de.aetherion.quests.listener.SurveyorMineHintListener(this);
         Bukkit.getPluginManager().registerEvents(surveyorHint, this);
@@ -452,6 +455,9 @@ public final class AetherionQuests extends JavaPlugin {
                 exploreChests.restoreAll();
             }
         }, 50L);
+        // The authored Common → Mythic scatter on the Origin map: each spot once, after the restore.
+        exploreScatter = new de.aetherion.quests.chest.ExploreChestScatter(this, exploreChests);
+        Bukkit.getScheduler().runTaskLater(this, exploreScatter::autoSeed, 140L);
 
 
 
@@ -680,6 +686,10 @@ public final class AetherionQuests extends JavaPlugin {
 
     public ExploreChestService getExploreChests() {
         return exploreChests;
+    }
+
+    public de.aetherion.quests.chest.ExploreChestScatter getExploreScatter() {
+        return exploreScatter;
     }
 
 

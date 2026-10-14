@@ -159,6 +159,8 @@ public class ActivePetManager implements Listener {
                 10
         );
 
+        summoned.cheer();
+
         player.playSound(
                 player.getLocation(),
                 Sound.BLOCK_AMETHYST_BLOCK_CHIME,

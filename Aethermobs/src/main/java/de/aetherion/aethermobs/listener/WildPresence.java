@@ -111,7 +111,7 @@ public final class WildPresence implements Listener, Runnable {
             if (d2 <= SIGHT_RADIUS_SQ
                     && collection != null
                     && !collection.hasRevealed(definition.getId())
-                    && player.hasLineOfSight(pet.getEntity())) {
+                    && seesBody(player, pet)) {
                 sight(player, collection, definition);
                 return;
             }
@@ -168,6 +168,15 @@ public final class WildPresence implements Listener, Runnable {
                     shiny ? "§e✨ §7Something glimmers nearby…" : "§6✦ §7Something rare stirs nearby…"
             ));
         }
+    }
+
+    /** Line of sight to the middle of the body (walkers' anchors sit on the floor). */
+    private static boolean seesBody(Player player, PetEntity pet) {
+        Location centre = pet.getCatchCenter();
+        if (centre == null) {
+            return player.hasLineOfSight(pet.getEntity());
+        }
+        return player.hasLineOfSight(centre);
     }
 
     private boolean alreadyStirred(Player player, PetEntity pet) {

@@ -21,7 +21,7 @@ commands:
     usage: /wipe beta confirm
   exile:
     description: Cross to the exile island (mmo-c) or return
-    usage: /exile [go|return|replay|stop|where]
+    usage: /exile [go|return|replay|stop|where|causeway|paste|placequay|clearsaint|quayundo]
     aliases: [exil]
   aetransfer:
     description: Network transfer state of a player, or hop yourself (admin)

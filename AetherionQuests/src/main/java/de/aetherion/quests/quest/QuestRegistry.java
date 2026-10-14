@@ -170,7 +170,7 @@ public class QuestRegistry {
                 new Quest(
                         "first_shift",
                         "First Shift",
-                        "Mine thirty-two ores in the Shabby Mine, then report back to the Shaft Foreman."
+                        "Gather thirty-two ore in the Shabby Mine, then report back to the Shaft Foreman."
                 );
 
         firstShift.setServiceId("foreman");
@@ -263,7 +263,7 @@ firstHunt.addReward(
                 new Quest(
                         "gather_wood",
                         "Egon's Timber Run",
-                        "Chop oak with the Forager's axe, then deliver 10 logs to Egon."
+                        "Fell oak with the Forager's axe — swing on the green — then bring Egon 10 logs."
                 );
 
 
@@ -302,6 +302,14 @@ firstHunt.addReward(
                 new Reward(
                         "XP",
                         80
+                )
+        );
+
+        // Act II starts at the Capital: the Teleports tab and the first camp come with the kit.
+        gatherWood.addReward(
+                new Reward(
+                        "spawn:capital",
+                        1
                 )
         );
 
@@ -703,6 +711,7 @@ openUp.addReward(
         lessonBoost.addObjective(new Objective(ObjectiveType.USE, "APPLY_BOOSTER", 1));
         lessonBoost.addReward(new Reward("Coins", 100));
         lessonBoost.addReward(new Reward("XP", 80));
+        lessonBoost.addReward(new Reward("spawn:mines", 1));
         questManager.registerQuest(lessonBoost);
 
         Quest borderRites = new Quest(
@@ -718,14 +727,18 @@ openUp.addReward(
 
         Quest lessonManager = new Quest(
                 "lesson_manager",
-                "Lesson: Skills",
-                "Miss Ledger wants you to equip one skill in the Aetherion Manager."
+                "Your Loadout",
+                "Miss Ledger wants one skill in your loadout and your Codex opened. Nether Star → Skills."
         );
         lessonManager.setServiceId("ledger");
         lessonManager.addObjective(new Objective(ObjectiveType.USE, "AETHER_SKILL", 1));
+        lessonManager.addObjective(new Objective(ObjectiveType.USE, de.aetherion.quests.tutorial.OrientationWatch.CODEX, 1));
         lessonManager.addReward(new Reward("Coins", 90));
         lessonManager.addReward(new Reward("XP", 80));
         questManager.registerQuest(lessonManager);
+
+        // Orientation Act III — combat beat, reserved for the combat elevate (TODO(combat-sat) in CombatTeach).
+        de.aetherion.quests.tutorial.CombatTeach.register(questManager);
 
         Quest lessonBones = new Quest(
                 "lesson_bones",

@@ -212,28 +212,63 @@ def geometry(rows):
     }
 
 
-def draw_wells(cv, th, x0, y0, cols, rows_):
+# GIGA elevate: metal rim, recessed wells, bracketed trays, banner plate. Geometry is unchanged.
+RIM_HI = hx('#6e6888')
+RIM_MID = hx('#433e58')
+RIM_LO = hx('#16131f')
+
+
+def draw_wells(cv, th, x0, y0, cols, rows_, brackets=(True, True, True, True)):
     # tray rim
     cv.rect(x0 - 1, y0 - 1, x0 + 18 * cols, y0 + 18 * rows_, th.t(TRAY))
+    well = mix(th.t(WELL), th.t(OUT), 0.10)
+    lip_sh = mix(th.t(WELL_SH), th.t(OUT), 0.35)
+    lip_hi = mix(mix(th.t(WELL_HI), th.acc, 0.30), (255, 255, 255), 0.06)
+    sh2 = mix(well, lip_sh, 0.55)
+    hi2 = mix(well, lip_hi, 0.30)
     for r in range(rows_):
         for c in range(cols):
             x, y = x0 + 18 * c, y0 + 18 * r
-            cv.rect(x, y, x + 17, y + 17, th.t(WELL))
-            cv.hline(x, x + 17, y, th.t(WELL_SH))
-            cv.vline(x, y, y + 17, th.t(WELL_SH))
-            cv.hline(x + 1, x + 17, y + 17, th.t(WELL_HI))
-            cv.vline(x + 17, y + 1, y + 17, th.t(WELL_HI))
+            cv.rect(x, y, x + 17, y + 17, well)
+            # two-step inner shadow under the top/left lip, soft light on the far lip
+            cv.hline(x + 1, x + 16, y + 1, sh2)
+            cv.vline(x + 1, y + 1, y + 16, sh2)
+            cv.hline(x + 2, x + 16, y + 16, hi2)
+            cv.vline(x + 16, y + 2, y + 16, hi2)
+            cv.hline(x, x + 17, y, lip_sh)
+            cv.vline(x, y, y + 17, lip_sh)
+            cv.hline(x + 1, x + 17, y + 17, lip_hi)
+            cv.vline(x + 17, y + 1, y + 17, lip_hi)
             cv.put(x + 17, y, th.t(WELL_MID))
             cv.put(x, y + 17, th.t(WELL_MID))
+    # accent brackets hugging the tray corners (outside the rim)
+    xa, ya, xb, yb = x0 - 2, y0 - 2, x0 + 18 * cols + 1, y0 + 18 * rows_ + 1
+    for on, (cx, cy, dx, dy) in zip(brackets, ((xa, ya, 1, 1), (xb, ya, -1, 1), (xa, yb, 1, -1), (xb, yb, -1, -1))):
+        if not on:
+            continue
+        cv.put(cx, cy, th.acc_dim)
+        for k in (1, 2):
+            cv.put(cx + dx * k, cy, th.acc_faint)
+            cv.put(cx, cy + dy * k, th.acc_faint)
 
 
 def draw_corner(cv, th, x, y, dx, dy):
-    """Tooltip-family corner bracket at ring corner (x,y); dx/dy point inward."""
-    for k in range(1, 5):
-        cv.put(x + dx * k, y, th.acc)
-        cv.put(x, y + dy * k, th.acc)
+    """Corner ornament on the inner ring at (x, y); dx/dy point inward: bracket arms + a gem."""
+    for k in range(2, 9):
+        c = th.acc if k <= 5 else th.acc_dim
+        cv.put(x + dx * k, y, c)
+        cv.put(x, y + dy * k, c)
+    for k in range(2, 6):
+        cv.put(x + dx * k, y + dy, th.acc_deep)
+        cv.put(x + dx, y + dy * k, th.acc_deep)
+    # curl at the end of each arm
+    cv.put(x + dx * 9, y + dy, th.acc_dim)
+    cv.put(x + dx, y + dy * 9, th.acc_dim)
+    cv.put(x + dx * 2, y + dy * 2, th.acc_dim)
     cv.put(x, y, th.acc_hi)
-    cv.put(x + dx, y + dy, th.acc_dim)  # soft inner fleck
+    cv.put(x + dx, y, th.acc)
+    cv.put(x, y + dy, th.acc)
+    cv.put(x + dx, y + dy, th.acc_hi)
 
 
 def draw_diamond(cv, cx, cy, r, fill, edge=None):
@@ -244,65 +279,115 @@ def draw_diamond(cv, cx, cy, r, fill, edge=None):
             cv.put(cx + dx, cy + dy, edge if (edge and on_edge) else fill)
 
 
+def draw_gem(cv, th, cx, cy, r):
+    """Faceted accent gem: dark edge, lit top-left facet, bright pip."""
+    draw_diamond(cv, cx, cy, r, th.acc_dim, th.t(OUT))
+    for dy in range(-r + 1, r):
+        w = r - 1 - abs(dy)
+        for dx in range(-w, w + 1):
+            cv.put(cx + dx, cy + dy, th.acc if dx + dy < 0 else th.acc_dim)
+    cv.put(cx, cy, th.acc_hi)
+    if r > 1:
+        cv.put(cx - 1, cy - 1, mix(th.acc_hi, (255, 255, 255), 0.5))
+
+
 def draw_panel(cv, th, g):
     x0, y0, x1, y1 = -2, -2, 177, g['h'] + 1
     cv.rect(x0, y0, x1, y1, th.t(OUT))
-    # bevel
-    cv.rect(x0 + 1, y0 + 1, x1 - 1, y1 - 1, th.t(BEV_LO))
-    cv.hline(x0 + 1, x1 - 2, y0 + 1, th.t(BEV_HI))
-    cv.vline(x0 + 1, y0 + 1, y1 - 2, th.t(BEV_HI))
-    # body
-    cv.rect(x0 + 2, y0 + 2, x1 - 2, y1 - 2, th.t(BODY))
-    # very soft top light: the first two body rows a touch brighter
-    light = mix(th.t(BODY), th.t(BEV_HI), 0.22)
-    cv.hline(x0 + 2, x1 - 2, y0 + 2, light)
-    # rounded outer corners (1px chamfer)
-    for (cx, cy) in ((x0, y0), (x1, y0), (x0, y1), (x1, y1)):
+    # metal rim: lit top/left, shaded bottom/right
+    rim_hi = mix(th.t(RIM_HI), th.acc, 0.45)
+    rim_mid = mix(th.t(RIM_MID), th.acc, 0.22)
+    cv.rect(x0 + 1, y0 + 1, x1 - 1, y1 - 1, rim_mid)
+    cv.hline(x0 + 1, x1 - 1, y0 + 1, rim_hi)
+    cv.vline(x0 + 1, y0 + 1, y1 - 1, rim_hi)
+    cv.hline(x0 + 1, x1 - 1, y1 - 1, th.t(RIM_LO))
+    cv.vline(x1 - 1, y0 + 1, y1 - 1, th.t(RIM_LO))
+    # groove + body, soft top light and a darker foot
+    cv.rect(x0 + 2, y0 + 2, x1 - 2, y1 - 2, th.t(BEV_LO))
+    body = th.t(BODY)
+    cv.rect(x0 + 3, y0 + 3, x1 - 3, y1 - 3, body)
+    for k, t in ((0, 0.24), (1, 0.12), (2, 0.05)):
+        cv.hline(x0 + 3, x1 - 3, y0 + 3 + k, mix(body, th.t(BEV_HI), t))
+    for k, t in ((0, 0.30), (1, 0.14)):
+        cv.hline(x0 + 3, x1 - 3, y1 - 3 - k, mix(body, th.t(OUT), t))
+    # header band: the strip the title plate sits on, lit from above, closed by an accent rule
+    for y in range(2, 14):
+        t = (y - 2) / 11.0
+        c = mix(mix(body, th.acc, 0.16), body, t)
+        cv.hline(2, 173, y, c)
+    cv.hline(2, 173, 14, mix(body, th.acc, 0.30))
+    cv.hline(2, 173, 15, mix(body, th.t(OUT), 0.35))
+    # rivets on the rim
+    for x in range(x0 + 12, x1 - 8, 24):
+        cv.put(x, y1 - 1, rim_mid)
+    for y in range(y0 + 14, y1 - 8, 24):
+        cv.put(x0 + 1, y, mix(rim_hi, (255, 255, 255), 0.35))
+        cv.put(x1 - 1, y, rim_mid)
+    # chamfered outer corners (2px)
+    for (cx, cy, dx, dy) in ((x0, y0, 1, 1), (x1, y0, -1, 1), (x0, y1, 1, -1), (x1, y1, -1, -1)):
         cv.put(cx, cy, (0, 0, 0), 0)
+        cv.put(cx + dx, cy, (0, 0, 0), 0)
+        cv.put(cx, cy + dy, (0, 0, 0), 0)
+        cv.put(cx + dx, cy + dy, th.t(OUT))
 
     # inner accent ring (tooltip language)
     rx0, ry0, rx1, ry1 = 1, 1, 174, g['h'] - 2
-    cv.hline(rx0, rx1, ry0, th.acc_faint)
-    cv.hline(rx0, rx1, ry1, th.acc_faint)
-    cv.vline(rx0, ry0, ry1, th.acc_faint)
-    cv.vline(rx1, ry0, ry1, th.acc_faint)
+    ring = mix(th.acc_faint, th.acc_dim, 0.5)
+    cv.hline(rx0, rx1, ry0, ring)
+    cv.hline(rx0, rx1, ry1, ring)
+    cv.vline(rx0, ry0, ry1, ring)
+    cv.vline(rx1, ry0, ry1, ring)
     draw_corner(cv, th, rx0, ry0, 1, 1)
     draw_corner(cv, th, rx1, ry0, -1, 1)
     draw_corner(cv, th, rx0, ry1, 1, -1)
     draw_corner(cv, th, rx1, ry1, -1, -1)
 
-    # bottom keystone
+    # bottom keystone gem with little wings
     cx = 87
-    draw_diamond(cv, cx, ry1, 2, th.acc_dim, th.acc)
-    cv.put(cx, ry1, th.acc_hi)
+    for k in range(4, 9):
+        cv.put(cx - k, ry1, th.acc_dim if k < 7 else th.acc_faint)
+        cv.put(cx + k, ry1, th.acc_dim if k < 7 else th.acc_faint)
+    draw_gem(cv, th, cx, ry1, 3)
 
 
 def draw_divider(cv, th, g):
-    """Quiet rune line between the container and the player inventory."""
+    """Rune line between the container and the player inventory."""
     top = g['cont_bot'] + 2       # first free row under the container tray rim
     bot = g['inv_top'] - 2        # last free row above the inventory tray rim
     cy = (top + bot) // 2
     cx = 87
     # leave the "Inventory" label zone (x 8..58) clean
-    x_left, x_right = 66, 108
+    x_left, x_right = 64, 110
     for x in range(x_left, x_right + 1):
         d = abs(x - cx)
-        if d <= 3:
+        if d <= 4:
             continue
-        # fade toward the ends: dim -> faint
-        c = th.acc_dim if d < 12 else th.acc_faint
+        c = th.acc if d < 9 else (th.acc_dim if d < 17 else th.acc_faint)
         cv.put(x, cy, c)
+        if d < 13:
+            cv.put(x, cy + 1, th.acc_deep)
+    for side in (-1, 1):
+        sx = cx + side * 14
+        cv.put(sx, cy - 1, th.acc_dim)
+        cv.put(sx, cy + 1, th.acc_dim)
+        cv.put(sx, cy, th.acc_hi)
+        cv.put(cx + side * 5, cy - 1, th.acc_dim)
+        cv.put(cx + side * 6, cy - 2, th.acc_faint)
     cv.put(x_left - 2, cy, th.acc_faint)
     cv.put(x_right + 2, cy, th.acc_faint)
-    draw_diamond(cv, cx, cy, 3, th.acc_deep, th.acc)
-    cv.put(cx, cy, th.acc_hi)
+    # side studs on the ring at the divider height
+    for sx in (1, 174):
+        cv.put(sx, cy, th.acc)
+        cv.put(sx, cy - 1, th.acc_dim)
+        cv.put(sx, cy + 1, th.acc_dim)
+    draw_gem(cv, th, cx, cy, 3)
 
 
 def draw_hotbar_seam(cv, th, g):
     y = (g['inv_bot'] + g['bar_top']) // 2  # in the 4px gap
-    # two tiny ticks either side, nothing more
     for x in (3, 4, 171, 172):
         cv.put(x, y, th.acc_faint)
+    cv.put(87, y, th.acc_faint)
 
 
 def draw_plate(cv, th):
@@ -318,45 +403,82 @@ def draw_plate(cv, th):
     x0 = cx - w // 2
     x1 = x0 + w - 1
     y0, y1 = -8, 10
+    border = th.plate_border
+    border_hi = mix(border, (255, 255, 255), 0.30)
+    border_lo = mix(border, (0, 0, 0), 0.35)
+    tail = mix(th.acc_deep, th.acc, 0.25)
+    # swallowtail ribbons behind the plate ends
+    for side in (-1, 1):
+        ex = x0 if side < 0 else x1
+        for k in range(1, 7):
+            x = ex + side * k
+            for y in range(-5, 4):
+                if k >= 5 and -2 <= y <= 0 and (k == 6 or y == -1):
+                    continue
+                if y in (-5, 3) or k == 6 or (k == 5 and y in (-3, 1)):
+                    c = th.t(OUT)
+                elif y == -4:
+                    c = th.acc_dim
+                elif y == 2:
+                    c = mix(tail, (0, 0, 0), 0.35)
+                else:
+                    c = tail
+                cv.put(x, y, c)
     # shadow under plate (1px, onto panel)
     cv.hline(x0 + 1, x1 + 1, y1 + 1, th.t(BEV_LO))
     cv.vline(x1 + 1, y0 + 2, y1 + 1, th.t(BEV_LO))
-    # wings: filigree that grows out of the plate along the inner ring
+    # wings: filigree that grows out past the ribbons along the inner ring
     for side in (-1, 1):
         base = x1 + 1 if side > 0 else x0 - 1
-        for k in range(1, 22):
+        for k in range(7, 24):
             x = base + side * k
             if not (8 <= x <= 167):
                 break
-            c = th.acc if k <= 5 else (th.acc_dim if k <= 13 else th.acc_faint)
+            c = th.acc if k <= 10 else (th.acc_dim if k <= 17 else th.acc_faint)
             cv.put(x, 1, c)
-            if k <= 3:
-                cv.put(x, 0, th.acc_dim)
-                cv.put(x, 2, th.acc_dim)
-        # end bead (only when there is room before the corner bracket)
-        bead = base + side * 24
+            if k <= 9:
+                cv.put(x, 2, th.acc_deep)
+        bead = base + side * 26
         if 8 <= bead <= 167:
             cv.put(bead, 1, th.acc_dim)
-    # outline
+            cv.put(bead, 0, th.acc_faint)
+            cv.put(bead, 2, th.acc_faint)
+    # outline + bevelled accent border
     cv.rect(x0, y0, x1, y1, th.t(OUT))
-    # accent border
-    cv.rect(x0 + 1, y0 + 1, x1 - 1, y1 - 1, th.plate_border)
+    cv.rect(x0 + 1, y0 + 1, x1 - 1, y1 - 1, border)
+    cv.hline(x0 + 1, x1 - 1, y0 + 1, border_hi)
+    cv.vline(x0 + 1, y0 + 1, y1 - 1, border_hi)
+    cv.hline(x0 + 1, x1 - 1, y1 - 1, border_lo)
+    cv.vline(x1 - 1, y0 + 1, y1 - 1, border_lo)
     # inset gap (double-line frame)
     cv.rect(x0 + 2, y0 + 2, x1 - 2, y1 - 2, th.plate_lo)
-    # fill
-    cv.rect(x0 + 3, y0 + 3, x1 - 3, y1 - 3, th.plate)
-    cv.hline(x0 + 3, x1 - 3, y0 + 3, th.plate_hi)
+    # fill: lit top, deeper foot
+    ya, yb = y0 + 3, y1 - 3
+    for y in range(ya, yb + 1):
+        t = (y - ya) / max(1, yb - ya)
+        if y == ya:
+            c = th.plate_hi
+        elif t < 0.5:
+            c = mix(th.plate_hi, th.plate, min(1.0, 0.45 + t * 1.6))
+        else:
+            c = mix(th.plate, mix(th.plate, (0, 0, 0), 0.22), (t - 0.5) / 0.5)
+        cv.hline(x0 + 3, x1 - 3, y, c)
     # chamfered corners
     for (x, y) in ((x0, y0), (x1, y0), (x0, y1), (x1, y1)):
         cv.put(x, y, (0, 0, 0), 0)
     for (x, y) in ((x0 + 1, y0 + 1), (x1 - 1, y0 + 1), (x0 + 1, y1 - 1), (x1 - 1, y1 - 1)):
         cv.put(x, y, th.t(OUT))
     for (x, y) in ((x0 + 2, y0 + 2), (x1 - 2, y0 + 2), (x0 + 2, y1 - 2), (x1 - 2, y1 - 2)):
-        cv.put(x, y, th.plate_border)
+        cv.put(x, y, border)
+    # pips on the side borders
+    for x in (x0 + 1, x1 - 1):
+        cv.put(x, 1, th.acc_hi)
 
     tx = x0 + 1 + pad + 1
     ty = y0 + 6
-    # sigils
+    # sigils with a drop shadow, like the lettering
+    cv.bitmap(sig, tx, ty + 1, th.ink_sh)
+    cv.bitmap_mirror(sig, x1 - 1 - pad - sw, ty + 1, th.ink_sh)
     cv.bitmap(sig, tx, ty, th.sigil_c)
     cv.bitmap_mirror(sig, x1 - 1 - pad - sw, ty, th.sigil_c)
     # text with drop shadow
@@ -371,8 +493,8 @@ def render(th, rows):
     cv = Canvas()
     draw_panel(cv, th, g)
     draw_wells(cv, th, 7, g['cont_top'], 9, rows)
-    draw_wells(cv, th, 7, g['inv_top'], 9, 3)
-    draw_wells(cv, th, 7, g['bar_top'], 9, 1)
+    draw_wells(cv, th, 7, g['inv_top'], 9, 3, brackets=(True, True, False, False))
+    draw_wells(cv, th, 7, g['bar_top'], 9, 1, brackets=(False, False, True, True))
     draw_divider(cv, th, g)
     draw_hotbar_seam(cv, th, g)
     draw_plate(cv, th)

@@ -1,6 +1,7 @@
 package de.aetherion.bossengine.helios.encounter;
 
 import de.aetherion.bossengine.util.TextUtil;
+import de.aetherion.core.api.BarChrome;
 
 import net.kyori.adventure.bossbar.BossBar;
 
@@ -24,7 +25,8 @@ import java.util.UUID;
  * </ul>
  *
  * The bars also carry the sky flags ({@code DARKEN_SCREEN}, {@code CREATE_WORLD_FOG}) per phase.
- * The bar fills up on arrival instead of popping in.
+ * The bar fills up on arrival instead of popping in. Look: the main bar wears the boss frame with the act's
+ * sigil (crown for the Herald, sun for Helios); the movement bar wears the slim phase frame under it.
  */
 public final class HeliosBars {
 
@@ -32,6 +34,7 @@ public final class HeliosBars {
     private BossBar movement;
     private final Set<UUID> viewers = new HashSet<>();
     private String name = "";
+    private BarChrome.Icon sigil = BarChrome.Icon.SUN;
     private double[] gates = new double[0];
     private float shown;
     private float fillRate = 1f;
@@ -75,6 +78,13 @@ public final class HeliosBars {
         }
     }
 
+    /** The medallion icon on the main bar. */
+    public void sigil(BarChrome.Icon icon) {
+        if (icon != null) {
+            this.sigil = icon;
+        }
+    }
+
     public void visible(boolean on) {
         this.visible = on;
     }
@@ -99,7 +109,7 @@ public final class HeliosBars {
             }
         }
         title.append("  &8| &f").append((int) Math.ceil(percent)).append('%');
-        main.name(TextUtil.component(title.toString()));
+        main.name(TextUtil.component(BarChrome.legacy(BarChrome.Family.BOSS, sigil, TextUtil.color(title.toString()))));
         main.color(blocked ? BossBar.Color.WHITE : color);
         flag(main, BossBar.Flag.DARKEN_SCREEN, darken);
         flag(main, BossBar.Flag.CREATE_WORLD_FOG, fog);
@@ -114,7 +124,7 @@ public final class HeliosBars {
         if (movement == null) {
             return;
         }
-        movement.name(TextUtil.component(title));
+        movement.name(TextUtil.component(BarChrome.legacy(BarChrome.Family.PHASE, null, TextUtil.color(title))));
         movement.progress(Math.max(0f, Math.min(1f, progress)));
         movement.color(color);
     }

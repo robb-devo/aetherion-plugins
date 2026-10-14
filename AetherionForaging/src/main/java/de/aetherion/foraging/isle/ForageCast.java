@@ -459,6 +459,14 @@ public final class ForageCast implements Listener {
             return;
         }
         talkCooldown.put(player.getUniqueId(), now + 700L);
+        if (isle.lesson().deferring(player)) {
+            // Isle lesson first (the lesson bar already points the way): one line, no board yet.
+            player.sendMessage("§a" + member.name() + " §8» §f" + GroveLesson.t(player,
+                    "Miss Canopy's lesson first — the bar up top shows the way. Then my board's yours.",
+                    "Erst Miss Canopys Lektion — die Leiste oben zeigt den Weg. Dann gehört mein Brett dir."));
+            player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_AMBIENT, 0.5f, 1.2f);
+            return;
+        }
         String line = member.lines()[java.util.concurrent.ThreadLocalRandom.current().nextInt(member.lines().length)];
         player.sendMessage("§a" + member.name() + " §8» §f" + line);
         player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_AMBIENT, 0.5f, 1.2f);

@@ -17,6 +17,11 @@
 # Rite Warden / Proctor (Borderlands rites) keep their existing lines — owned by the Hub pass.
 
 ui:
+  stamp_recipes: "§a✦ Rezeptbuch offen §8· §7Nether Star → grünes Buch. Dort leben die Ausrüstungs-Upgrades."
+  act3_subtitle: "Stahl · Teleports · der Stempel"
+  act3_title: "AKT III · DIE STRASSEN"
+  act2_subtitle: "dein Loadout · dein Codex · Booster"
+  act2_title: "AKT II · DIE CAPITAL"
   hint: "Hinweis"
   quest_offer: "§8Quest-Angebot"
   quest_accepted: "Quest angenommen: {0}"
@@ -61,6 +66,7 @@ ui:
   graduation_filed: "✔ Orientierung abgelegt · die Karte gehört dir"
   roads_open_title: "DIE STRASSEN SIND OFFEN"
   roads_open_subtitle: "§aForage §8· §eFarm §8· §bAngeln §8· §cStahl"
+  isles_open_subtitle: "§aForage §8· §eFarm §8· §bAngeln §8· §6Bergbau"
   # In-world talk: reply chips, quest card, action-bar hints (TalkUx)
   talk_ux:
     accept_default: "Bin dabei."
@@ -91,11 +97,23 @@ ui:
     moved_on: "Das Gespräch ist vorbei. Nochmal rechtsklicken."
   # Action-bar hints spoken around talk
   tip:
+    isle_forage: "→ Forage-Isle-Pad · Miss Canopy bringt dir die Insel bei"
+    isle_farm: "→ Farm-Isle-Pad · Elsie bringt dir die Insel bei"
+    isle_fish: "→ Fishing-Eldervale-Pad · Maren bringt dir die Insel bei"
+    isle_mine: "→ Mining-Eldervale-Pad · Old Wick bringt dir die Insel bei"
+    kit_to_capital: "Kit an · Nether Star (Slot 9) → Teleports → Capital · oder /capital"
+    tutorial_stamp: "Akt III · Miss Ledgers Stempel · /capital"
+    tutorial_vex_gate: "Akt III · Sergeant Vex · Tor zu den Borderlands"
+    tutorial_temper_boost: "Akt II · Temper · Südstraße · Booster"
+    tutorial_ledger_loadout: "Akt II · Miss Ledger · Capital · Nether Star → Teleports"
+    tutorial_egon_oak: "Akt I · zehn Eiche zu Egon · am Pier"
+    tutorial_forager: "Akt I · der Forager · Eiche fällen auf Grün"
+    tutorial_egon_pier: "Akt I · Egon · am Pier"
     story_next:
       deed: "Weiter · Deed, der Isle Clerk · ab Aetherion Level 20"
       nell: "Weiter · Nell · Hafengassen · Aetherion Level 50"
       ysolde_road: "Erzähl's Ysolde · Archiv · Aetherion Level 60"
-      veil: "Der Veil Quay ist offen · die Fähre wartet auf Level 75"
+      veil: "Der Schleierkai ist offen · die Fähre wartet auf Level 75"
       orrin: "Weiter · Orrin · das Observatorium, weit im Westen der Hofstadt"
       gardener: "Weiter · der Gärtnerjunge · am Tor zum Wurzelgrund"
       doors: "Die Großen Tore des Schlosses · vielleicht hören sie jetzt zu"
@@ -133,7 +151,7 @@ ui:
     road_forage: "→ Twig · Schleim-Pad · Forage Isle"
     road_farm: "→ Harlow · hinteres Scheunenende · Farm Isle"
     farm_pad: "→ Farm-Isle-Pad · den Weg runter von der Scheune"
-    forage_pad: "→ Forage-Isle-Pad · springen · Miss Canopy begrüßt dich"
+    forage_pad: "→ Forage-Isle-Pad · springen · Miss Canopy bringt dir die Insel bei"
     fish_pad: "→ Fishing-Eldervale-Pad · weit im Westen"
     temper: "→ Temper · Booster Tutor · auf dem Weg zur Capital"
     road_fish: "→ Tackle · Hafenpier · Angeln"
@@ -153,11 +171,20 @@ ui:
     farm_pad: "Farm-Isle-Pad"
     forage_pad: "Forage-Isle-Pad"
     fish_pad: "Fishing-Eldervale-Pad"
+    mine_pad: "Mining-Eldervale-Pad"
     temper: "Temper"
   hint_note:
     temper: "Booster Tutor"
   # /guide + Discord tips (QuestStoryGate#guideTips) — one "next" at a time
   guide:
+    autopickup: "Auto-Pickup schaltet sich bei Aetherion-Level §f5§7 ein — du bist Level §f{0}§7."
+    vex_gate: "Als Nächstes: §cSergeant Vex §7am Tor zu den Borderlands — Rüstung an, Klinge hoch."
+    temper_south: "Als Nächstes: §eTemper §7an der Südstraße Richtung Minen — verschmilz einen Booster."
+    ledger_capital: "Als Nächstes: §dMiss Ledger §7in der Capital — Nether Star → Teleports → Capital, oder §f/capital§7."
+    forager_fell: "§aDer Forager §7oben am Hügel zeigt dir das Fällen — schlag zu, wenn der Balken grün ist."
+    act3: "Akt III · Die Straßen — Sergeant Vex, dann der Stempel"
+    act2: "Akt II · Die Capital — Loadout & Codex, dann Booster"
+    act1: "Akt I · Anker Harbour — Egon, das Fällen, dein Kit"
     no_quests: "Sprich mit §aEgon §7am Pier von Anker Harbour — da beginnt die Orientierung."
     active: "Aktive Quest: §f{0}§7 — {1}"
     egon: "Geh zu §aEgon §7am Pier von §fAnker Harbour§7. Er ist deine erste Station."
@@ -198,6 +225,9 @@ msg:
   harbour_pad: "§a✦ §7Hafen-Pad: §aTwig§7 zeigt dir den Schleimsprung → §aForage Isle§7."
 
 quests:
+  lesson_combat:
+    description: "Sergeant Vex will dich ausgerüstet sehen: Rüstung an, Klinge in der Hand. Der volle Drill kommt mit dem neuen Kampf."
+    title: "So kämpft man hier"
   # Das Schlaflied (main story, Act I–II)
   lullaby_old_tale:
     title: "Eine alte Geschichte"
@@ -246,13 +276,13 @@ quests:
     description: "Sprich mit dem Forager oben am Hügel über Anker Harbour."
   gather_wood:
     title: "Egons Holzlauf"
-    description: "Hack Eiche mit der Axt vom Forager und bring Egon 10 Stämme."
+    description: "Fäll Eiche mit der Axt des Foragers — schlag auf Grün — und bring Egon 10 Stämme."
   forge_coal:
     title: "Kohle für die Schmiede"
     description: "Bring dem Quartermaster 20 Kohle vom Ore Ridge."
   first_shift:
     title: "Erste Schicht"
-    description: "Bau 32 Erze in der Shabby Mine ab und melde dich beim Shaft Foreman."
+    description: "Sammle zweiunddreißig Erz in der Shabby Mine und melde dich dann beim Shaft Foreman."
   first_hunt:
     title: "Erste Jagd"
     description: "Hilf, den Hof von ein paar Tieren zu befreien."
@@ -326,8 +356,8 @@ quests:
     title: "Border-Riten"
     description: "Spirit-Fläschchen farmen, am Pulver-Altar zünden — ein Borderlands-Boss."
   lesson_manager:
-    title: "Lektion: Skills"
-    description: "Miss Ledger will, dass du im Aetherion Manager einen Skill ausrüstest."
+    title: "Dein Loadout"
+    description: "Miss Ledger will einen Skill in deinem Loadout und deinen Codex offen sehen. Nether Star → Skills."
   lesson_bones:
     title: "Lektion: Dungeons"
     description: "Rook will zehn Knochen. Dungeon-Hausaufgaben ohne Dungeon."
@@ -375,23 +405,30 @@ quests:
     description: "Dock Scaler will einen Trophy Fish. Bauern düngen T4-Erde mit Fischmehl; T5-Kämpfer füttern ihre Platte mit Schuppen."
 
 dialogs:
+  egon_kit_capital:
+    - "Zehn Stämme. Zweimal gezählt. Hier ist dein Kit — Spitzhacke, Schwert, Hacke, Rüstung."
+    - "Ausrüstung hat hier Zahlen — Schaden, Verteidigung, Mining Power. Fahr mit der Maus drüber. Das ist dein Build."
+    - "Alles andere lebt im §eNether Star§f, Slot 9. Dein Manager."
+    - "Der Capital-Teleport ist jetzt da drin — §eTeleports§f. §dMiss Ledger§f leitet die Orientierung. Los, {player}."
+  vex_combat_intro:
+    - "Sergeant Vex. Kämpfen heißt hier nicht: Klick halten und beten."
+    - "Der Drill wird gerade neu gebaut — Beinarbeit, Timing, alles. Wenn er steht, jag ich dich durch."
+    - "Heute: Rüstung an — Egons ganzes Kit — und eine Klinge in die Hand. Dann sieh mich an."
   # ---------------------------------------------------------------- gates
   fishing_before_egon:
     - "Moment. Erst Egon fertig machen — dann reden wir übers Angeln."
   tutorial_blocked:
     - "Noch nicht, {player}. Dieser Schalter öffnet nach der Orientierung."
-    - "Hafen → Mine → Temper → Miss Ledger → Felder. Dann bist du frei."
+    - "Miss Ledger stempelt dich durch. Dann gehör ich ganz dir."
   ledger_blocked:
-    - "Zu früh, {player}. Skills bleiben zu, bis die Minenschicht durch ist."
-    - "§eShaft Foreman§f, an den Minen. Schicht fertig machen, dann zurückkommen."
-    - "Dann öffne ich den Skills-Tab. Keine Minute früher."
-
-  # ---------------------------------------------------------------- Harbour spine
+    - "Zu früh, {player}. Kein Kit, kein Loadout."
+    - "§aEgon§f, am Hafenpier. Zehn Eiche — der Forager zeigt dir wie."
+    - "Dann öffne ich deine Skills. Keine Minute früher."
   egon_intro:
-    - "{player}, richtig? Egon. Ich rüste Rookies aus. Du siehst aus wie einer."
-    - "Das Kit kostet zehn Eichenstämme. Der §eLumberjack§f am Hügel leiht dir die Axt."
-    - "Nennt sich Forager. Lass ihm den Spaß."
-    - "Der §egelbe Pfeil oben§f kennt den Weg. Ich kenn hauptsächlich den Pier."
+    - "{player}, oder? Egon. Ich rüste Rookies aus. Du siehst aus wie einer."
+    - "Hier redet man so: meine Worte oben, deine Antworten schweben neben mir. Schau eine an, klick."
+    - "Das Kit kostet zehn Eiche. Der §eForager§f oben am Hügel leiht dir die Axt — und zeigt dir, wie Bäume hier fallen."
+    - "Der §egelbe Balken oben§f zeigt auf deinen nächsten Job. Vertrau ihm mehr als mir."
   egon_arrival_call:
     - "Hey — neues Gesicht! Hier drüben, beim grünen Leuchten."
   egon_greet_near:
@@ -425,13 +462,14 @@ dialogs:
       - "Crafting ist jetzt offen. Grünes Recipe Book, im Manager."
       - "Mining Pickaxe und etwas Rüstung helfen da unten."
   booster_tutor_intro:
-    - "Temper. Ich fuse Zeug. Booster aufs Gear — Mining Power, Fortune, Damage."
-    - "Sag ja, und du kriegst einen Emerald Booster. Einmal fusen. Das ist die Lektion."
-    - "Manager → §eAnvil§f. Gear links, Booster rechts. Funken sind normal."
+    - "Temper. Skills sind die Hälfte deines Builds, {player}. Booster sind die andere."
+    - "Jedes Teil hat Sockel — der §eAmboss§f hält vierzehn. Schaden, Verteidigung, Mining Power, Fortune."
+    - "Sag ja: ein Emerald Booster. Nether Star → §eAnvil§f. Ausrüstung links, Booster rechts."
   ledger_intro:
-    - "Miss Ledger. Skills — und ich stemple die Orientierung zu, wenn du durch bist."
-    - "Hotbar §e9§f → Nether Star → Manager → §dSkills§f. Blinkt. Rüste §eirgendeinen§f Skill aus."
-    - "Komm wieder, wenn er sitzt, {player}. Ich halte den Stempel warm."
+    - "Miss Ledger. Ich leite die Orientierung — und führe Buch über dich."
+    - "Dein §dLoadout§f: sieben Skill-Slots, einer offen. Ein Skill levelt, während du sein Handwerk machst."
+    - "Nether Star, Hotbar §e9§f → §dSkills§f — es blinkt. Rüste einen aus. Dann dein §eCodex§f, oben links."
+    - "Der Codex zählt jeden Baum, jedes Erz, jeden Kill. Stufen zahlen Münzen; Münzen öffnen Slots. Das ist der Kreislauf."
   farmer_intro:
     default:
       - "Weizen von diesen Feldern. Vögel weg von der Saat. Das ist der Job, {player}."
@@ -480,12 +518,12 @@ dialogs:
   # ---------------------------------------------------------------- Hub / Capital / isles
   farm_isle_guide_intro:
     - "Die Farm Isle liegt den Weg runter — Eldervale-Felder, lange Reihen, besserer Boden."
-    - "Das Pad unten bringt dich hin, ab Farming §e10§f. Der Pfeil zeigt drauf."
+    - "Pad unten. §aElsie§f bringt dir den Rest bei. Der Pfeil zeigt drauf."
     - "Der Farmer nebenan hält sich für den echten Farmer. Süß."
   forage_pad_guide_intro:
     - "Schleim-Pad → Forage Isle. Springen. Nicht nachdenken."
-    - "Die Bäume da droppen, was sie sind — Fichte ist Fichte, Birke ist Birke."
-    - "Der §eCanopy Clerk§f auf der Insel will komprimierte Proben. Folg dem Pfeil, {player}."
+    - "Dieselbe Fäll-Leiste wie hier — nur zählen Inselbäume mit."
+    - "§aMiss Canopy§f bringt dir die Insel bei. Folg dem Pfeil, {player}."
   eldervale_welcome_intro:
     - "Willkommen auf Eldervale, {player}."
     - "Bergbauinsel. Tiefes Gestein, dünne Luft."
@@ -892,10 +930,10 @@ dialogs:
       - "Komm bald wieder. Bis dahin weiß ich den Weg wieder."
     offer_ferry:
       - "Ein Fahrgast. Sogar mit Schreiben. Der Nebel ist heute dünn genug."
-      - "Steig auf die Fähre und läute die Glocke. Einmal. Das zählt."
+      - "Läute die Glocke am Steg. Einmal. Das zählt. Oder steig an Bord und schleich."
       - "Wir sehen uns auf der anderen Seite. Ich bin immer auf der anderen Seite."
     remind_ferry:
-      - "An Bord, {player}. Einmal läuten, oder einfach auf dem Deck stehen und warten."
+      - "An Bord, {player}. Einmal läuten, oder aufs Deck stellen und schleichen."
       - "Der Nebel wartet nicht. Na ja. Er schon. Ich nicht."
     ferry_done:
       - "Hab ich doch gesagt. Irgendwie immer auf dieser Seite."
@@ -1026,6 +1064,10 @@ dialogs:
     - "Alle sagen 'geh einfach hoch'. Hoch ist eine sehr große Richtung."
 
 completed:
+  ledger_spine:
+    - "Loadout steht. Gut. Gestempelt."
+    - "Als Nächstes: §eTemper§f an der Südstraße, dann §cSergeant Vex§f am Tor zu den Borderlands."
+    - "Komm nach beiden zurück, {player}. Ich schließe die Orientierung — und hab einen Hilfeschalter."
   default:
     - "Wir sind quitt. Sagt das Klemmbrett."
     - "Geh und mach jemand anderem den Tag ein bisschen schlechter."
@@ -1209,10 +1251,23 @@ talk:
     hello: "Kristall-Guide. Die Amethyst Mine geht durch mich — Geoden, Resonance, Heartstones."
     send: "Bereit? Ich setz dich am violetten Hub ab. §e/amethyst§f macht dasselbe."
   booster_tutor:
+    next_vex: "Als Nächstes: §cSergeant Vex§f, Tor zu den Borderlands, östlich von hier. Der Minen-Teleport gehört dir auch."
+    mining_line: "Mining Power öffnet härteres Erz, Fortune vervielfacht es. Crystal Finds und Dungeon-Core-Picken kommen später."
+    upgrade_warning: "Sitzt ein Booster einmal drin, bleibt er — bis du ihn hier rausholst. Upgrades werfen ihn nicht raus."
     fused: "Booster gefust! Riechst du das? Fortschritt. Und leicht verbrannt."
     next_ledger_short: "Als Nächstes — §dMiss Ledger§f in der Capital."
     next_ledger: "Als Nächstes — §dMiss Ledger§f in der Capital. Skills."
   ledger:
+    next_temper: "Als Nächstes: §eTemper§f, Südstraße Richtung Minen. Booster — die andere Hälfte deines Builds."
+    autopickup_soon: "Achte auf den Balken unten: Level §e5§f, und Drops fliegen zu dir. Du bist Level §e{0}§f."
+    loadout_ok: "Loadout steht, Codex offen. Gut. Gestempelt."
+    skill_next: "Jetzt §dSkills§f — der blinkende Tab. Rüste einen aus."
+    codex_seen: "Dein Kontobuch. Jeder Baum, jedes Erz, jeder Kill landet da drin — Stufen zahlen Münzen."
+    codex_next: "Jetzt dein §eCodex§f — oben links auf derselben Seite, oder §e/codex§f."
+    loadout_set: "Da — das ist ein Loadout. Der Skill levelt, während du sein Handwerk machst."
+    autopickup_on: "Hörst du das? Aetherion-Level §e5§f, {player}. Drops fliegen jetzt zu dir — Auto-Pickup."
+    early_egon: "§aEgon§f, Hafenpier. Zehn Eiche. Dann komm zurück."
+    early_kit: "Zu früh, {player}. Kein Kit, kein Loadout."
     skill_ok: "Skill sitzt. Gut. Gestempelt."
     next_fields: "Als Nächstes: die Felder. §eFarmer§f braucht Weizen, §eLark§f macht Pets. Dann zurück zu mir."
     fields_farmer: "Wenn du so weit bist: die Felder. §eFarmer§f braucht Weizen — ernten, Vögel verscheuchen."
@@ -1256,6 +1311,32 @@ talk:
         label: "Ich schau mich um."
         echo: "Ich schau mich erst mal um."
         line: "Gut. Die Karte gehört dir. Mein Schalter läuft nicht weg."
+    # Acts IV–VII — the four skill isles after the stamp (ui/SkillRoads.java)
+    isles:
+      intro: "Skills wachsen auf den Inseln, {player}. Jede bringt dir ihr eigenes Handwerk bei — durchs Machen."
+      list: "Vier Schleim-Pads auf Origin: §aForage§f, §eFarm§f, §bAngeln§f, §6Bergbau§f. Der gelbe Pfeil bringt dich zu einem."
+      menu: "Vier Inseln, vier Handwerke. Such dir eins aus — der Pfeil bringt dich zu seinem Pad."
+      menu_more: "Abgehakt ist, was du schon gelernt hast. Auf den anderen wartet noch ein Lehrer."
+      menu_all: "Alle vier Inseln gelernt. Jede abgehakt. Nimm trotzdem ein Pad — die schließen nicht."
+      wander:
+        line: "Gut. Die Karte gehört dir — Sergeant Vex am Borderlands-Tor, wenn du Streit suchst."
+      forage:
+        label: "Forage Isle"
+        line: "§aForage Isle§f — wieder die Fäll-Leiste, aber die Bäume zählen mit. Pad im Nordosten; §aMiss Canopy§f empfängt dich."
+        line_done: "Wieder Holz? Pells Brett hat neue Aufträge. Der Pfeil zeigt aufs Pad."
+      farm:
+        label: "Farm Isle"
+        line: "§eFarm Isle§f — ernte im Rhythmus, und das Feld zahlt mehr. Pad im Südwesten; §eElsie§f empfängt dich."
+        line_done: "Zurück auf die Felder? Hatties Aufträge zahlen doppelt. Der Pfeil zeigt aufs Pad."
+      fish:
+        label: "Angel-Insel"
+        line: "§bFishing Eldervale§f — zwölf Gewässer, ein ehrlicher Zug. Pad im Nordwesten; §bMaren§f empfängt dich."
+        line_done: "Wieder an den See? Odiles Buch hat Lücken, hab ich gehört. Der Pfeil zeigt aufs Pad."
+      mine:
+        label: "Bergbau-Insel"
+        echo: "Fels. Tiefer Fels."
+        line: "§6Mining Eldervale§f — die Kraft deiner Spitzhacke gegen den Fels. Pad im Süden; §6Old Wick§f empfängt dich."
+        line_done: "Wieder in den Fels? Ottos Aufträge erledigen sich nicht selbst. Der Pfeil zeigt aufs Pad."
     desk_prompt: "Auffrischung, {player}? Such dir ein Thema aus."
     desk:
       more: "Mehr Themen…"
@@ -1342,6 +1423,7 @@ talk:
   farm_isle_guide:
     open: "Die Farm Isle liegt den Weg runter, {player}. Das Pad unten bringt dich hin, ab Farming §e10§f."
     open_ready: "Die Farm Isle liegt den Weg runter, {player}. Pad unten — du darfst rüber. Der Pfeil zeigt drauf."
+    open_isle: "Die Farm Isle liegt den Weg runter, {player}. Pad unten — Elsie bringt dir den Rest bei. Der Pfeil zeigt drauf."
     desk:
       isle:
         label: "Was gibt's da draußen?"
@@ -1349,6 +1431,9 @@ talk:
         lines:
           - "Eldervale-Felder. Lange Reihen, eine Harvest Hall, ein Ofenhaus, das nie kalt wird."
           - "§aElsie§f, die Field Warden, wartet am Landeplatz. Die kennt jede Ecke."
+        lesson:
+          - "Eldervale-Felder. Reihen, die sich selbst nachpflanzen, ein Ofenhaus, das nie kalt wird."
+          - "§aElsie§f in der Erntehalle bringt dir den Rhythmus bei. Bleib dran, und das Feld zahlt mehr."
       level:
         label: "Farming 10?"
         echo: "Warum Farming 10?"
@@ -1369,6 +1454,7 @@ talk:
   eldervale_welcome:
     desk:
       open: "Willkommen auf Eldervale, {player}. Tiefer Fels, dünne Luft — erst fragen, dann springen."
+      open_wick: "Neu hier, {player}? §eOld Wick§f an der Lampe macht deine erste Schicht. Ich beantworte nur Fragen."
       crew:
         label: "Wer ist wer?"
         echo: "Wer hat hier das Sagen?"
@@ -1403,12 +1489,18 @@ talk:
         lines:
           - "Bäume, die droppen, was sie sind — Fichte ist Fichte, Birke ist Birke."
           - "§aMiss Canopy§f macht die Führung. Heartwoods, der Zaubertisch, alles."
+        lesson:
+          - "Sieben Wälder, dieselbe Fäll-Leiste — nur zählen Inselbäume mit."
+          - "Drei saubere am Stück, und aus einer Krone fällt was. Fang es."
       who:
         label: "Zu wem soll ich?"
         echo: "Wer wartet da drüben?"
         lines:
           - "Der §eCanopy Clerk§f will komprimierte Proben. Der Pfeil zeigt auf ihn."
           - "Miss Canopy lehrt. Der Clerk zahlt. Gutes System."
+        lesson:
+          - "§aMiss Canopy§f am Anleger bringt dir die Insel bei. Fünf Minuten, höchstens."
+          - "Danach kauft §ePell§f Holz auf Bestellung. Gutes System."
       safe:
         label: "Ist das Pad sicher?"
         echo: "Ist das Ding sicher?"
@@ -1420,6 +1512,11 @@ talk:
     shop_open: "Der Shop ist offen für T1-Gear — Rute und Rüstung. Sprich mich an, wenn du stöbern willst."
     lesson: "Willst du Tackles Angelstunde? Kauf hier 'ne Rute, dann zurück zu ihm."
   vex:
+    combat_stamp: "Jetzt §dMiss Ledgers§f Stempel. §e/capital§f — den Teleport hast du."
+    combat_kit: "Vor dem Ödland: ein Kampf-Skill ins Loadout, Schadens-Booster auf die Klinge."
+    combat_pass: "Ausreichend. Bestanden — für heute."
+    combat_armour: "Rüstung in die Rüstungsslots, {player}. Egons ganzes Kit. Dann die Klinge."
+    combat_blade: "Rüstung: passt. Hände: leer. §eKlinge§f in die Haupthand, {player}."
     ten_down: "Zehn erledigt, {player}. Stahl abgeheftet. Du bist weniger ein Risiko."
     tip_fallback: "§7Kleiner Tipp — Combat-Set und Booster aufrüsten, bevor's ins härtere Ödland geht."
     rite_fallback: "Loser Faden — §cRite Warden§f im Ödland, für Bosse. Oder nicht. Die Karte gehört dir."
@@ -1458,6 +1555,12 @@ talk:
   root_cellar:
     first: "Mühlstein-Speisekammer, Schätzchen. Compacted Crops rein, feine Vorräte raus."
   redirect:
+    vex_gate: "§cSergeant Vex§f, Tor zu den Borderlands. Er will dich ausgerüstet sehen."
+    temper_south: "§eTemper§f, Südstraße Richtung Minen. Booster."
+    ledger_capital: "§dMiss Ledger§f, Capital. Nether Star → Teleports, oder §e/capital§f."
+    egon_oak: "§aEgon§f wartet auf seine Eiche. Pier."
+    forager: "§aDer Forager§f, oben am Hügel hinter dem Pier. Eiche, auf Grün."
+    egon_pier: "§aEgon §fam Pier. Er rüstet dich aus — da fängt alles an."
     lead: "Wo du eigentlich hingehörst:"
     ledger_fields: "§eMiss Ledger §fschließt die Orientierung nach den Feldern."
     egon: "§aEgon §fam Pier — erst Eiche. Dann der Quartermaster."
@@ -1469,6 +1572,9 @@ talk:
     lark: "§dLark §fam Zaun — ein Fang für seine Sammlung."
     stamp: "§dMiss Ledger §fschließt die Orientierung. Hol dir den Stempel."
   gate:
+    orientation_first: "§eErst die Orientierung. §7Miss Ledger stempelt dich durch — folg dem gelben Balken."
+    ledger_kit_first: "§eErst Egons Kit. §7Zehn Eiche am Hafenpier, dann öffne ich dein Loadout."
+    kit_first: "§eErst Egons Kit. §7Zehn Eiche am Hafenpier."
     ledger_foreman_first: "§eErst der Shaft Foreman. §7Minenschicht, dann öffnen wir Skills."
     tutorial_first: "§eErst das Tutorial. §7Miss Ledger schließt die Orientierung nach den Feldern."
 
@@ -1480,6 +1586,7 @@ talk:
     hint: "Der Fährmann"
     desk:
       open: "Die Fähre wartet. Tut sie immer."
+      open_ticket: "Du hast das Schreiben. Sag Bescheid, oder läute die Glocke am Steg."
       open_exile: "Immer noch hier. Irgendwie bin ich immer auf dieser Seite."
       where:
         label: "Wohin fährt sie?"
@@ -1666,6 +1773,7 @@ talk:
           - "Klopf da nicht an. Seit tausend Jahren hat keiner aufgemacht."
   exile:
     door:
+      veil_quay: "Der Schleierkai"
       crater: "Der Eisenring"
       observatory: "Das Observatorium"
       ring: "Der Sternenring"
@@ -2046,7 +2154,7 @@ cast:
       - label: "Die Narbe?"
         lines: ["Trainingsunfall.", "Das Training hat gewonnen."]
   farm_isle_guide:
-    greet_new: ["Die Insel ist offen, {player}. Wenn deine Hände es sind."]
+    greet_new: ["Harlow. Das Farm-Isle-Pad ist den Weg runter, {player}. Elsie bringt dir den Rest bei."]
     greet: ["Guter Boden heute, {player}."]
     idle: ["Der Boden drüben auf der Farm Isle ist besser als hier. Sag dem Bauern nicht, dass ich das gesagt hab.", "Das Pad wummert den ganzen Tag. Ich hör's seit Jahren nicht mehr.", "Auf einem Halm kauen hilft mir beim Denken. Hilft nicht wirklich, aber ich probier's weiter."]
     farewell: ["Knie beugen auf dem Pad. Keine Experimente."]

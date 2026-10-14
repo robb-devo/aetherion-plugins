@@ -1,0 +1,156 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+#   SamuraiBoss  ·  Sakuragi Jinsai  ·  Sword Saint of Falling Blossoms
+#   Server language = ENGLISH. German strings live under messages-de ( /language de ).
+#   Times in TICKS (20 = 1s). After edits: /samuraiboss reload
+# ═══════════════════════════════════════════════════════════════════════════════
+
+boss:
+  # Virtual HP (not vanilla cap). Tuned for Aetherion custom weapon damage.
+  # ~50k solo — below Hollow Sun / Seraphine, enough that custom weapons don't melt him.
+  health: 50000
+  health-per-extra-player: 14000
+  scale: 1.0
+  hitbox-entity: IRON_GOLEM
+  hitbox-scale: 0.92
+  walk-speed: 1.0
+  movement-attribute: 0.27
+  ignore-creative: true
+  # Soften Aetherion stamped weapon damage so the fight lasts.
+  damage-reduction: 0.35
+
+phases:
+  arashi-at: 0.66
+  sange-at: 0.33
+  ultimate-at: 0.12
+  ultimate-timeout: 1400
+  exhausted-ticks: 120
+  exhausted-damage-multiplier: 1.5
+
+intro:
+  enabled: true
+
+damage:
+  # Base hits were vanilla-scale (6–8) and felt like zero under Aetherion HP/armor.
+  # Multiplier brings ability hits into the mid-fight band — not Pathwarden/Hollow Sun.
+  issen: 8.0
+  kesagiri: 7.0
+  kazekiri: 6.0
+  utsusemi: 6.0
+  tsubame: 6.5
+  thousand-blades: 4.0
+  tornado: 2.5
+  tornado-blind-ticks: 50
+  shadow-clone: 5.0
+  star: 7.0
+  blade-rain: 5.0
+  afterimage: 6.0
+  ultimate: 16.0
+  ultimate-lethal: false
+  multiplier: 7.0
+
+cooldowns:
+  global-min: 28
+  global-max: 55
+  issen: 150
+  kesagiri: 50
+  kazekiri: 110
+  utsusemi: 220
+  tsubame: 90
+  thousand-blades: 320
+  tornado: 380
+  shadow-clones: 420
+  triple-issen: 260
+  star: 360
+  blade-rain: 320
+  afterimage: 300
+
+arena:
+  protect-during-fight: true
+  ruin-seconds: 6
+  rebuild-per-tick: 18
+  rebuild-flight-ticks: 26
+  build-animated: true
+  build-per-tick: 14
+  empty-reset-seconds: 30
+  clear-drops-on-reset: true
+  bell-challenge: false
+  restore-per-tick: 4000
+  keep-inventory: true
+
+performance:
+  model-update-interval: 2
+  max-effect-displays: 420
+  # Was 1600 — floated debris melted TPS. Keep the spectacle, cut the spam.
+  max-debris-displays: 520
+  ambient-petals: 28
+  effect-density: 0.55
+  floating-debris: true
+
+effects:
+  screen-shake: true
+  sky: true
+  red-tint: true
+  music: true
+  music-volume: 0.85
+  sound-volume: 1.0
+  particles: true
+  titles: true
+
+resource-pack:
+  enabled: false
+  base-material: PINK_DYE
+  model-data:
+    katana: 7310001
+    katana-ghost: 7310002
+    saya: 7310003
+    petal: 7310004
+    petal-white: 7310005
+    slash: 7310006
+    slash-pink: 7310007
+    seal: 7310008
+    seal-ring: 7310009
+    mon: 7310010
+    crest: 7310011
+    menpo: 7310012
+    moon: 7310013
+    hilt: 7310014
+  font: "samurai:kanji"
+  custom-sounds: true
+
+rewards:
+  commands: []
+  broadcast: true
+
+# ── English (default / server language) ───────────────────────────────────────
+messages:
+  prefix: "<gradient:#ffd1dc:#ff6f91>桜</gradient> <dark_gray>»</dark_gray> "
+  boss-name: "<gradient:#ffe3ea:#ff8fab>Sakuragi Jinsai</gradient>"
+  boss-title: "<gray>Sword Saint of Falling Blossoms</gray>"
+  bossbar: "<gradient:#ffe3ea:#ff8fab><b>Sakuragi Jinsai</b></gradient> <dark_gray>·</dark_gray> <gray>{phase}</gray> <dark_gray>·</dark_gray> <white>{hp}</white><dark_gray>/</dark_gray><gray>{max}</gray>"
+  phase-1: "Form I 「静」 Stillness"
+  phase-2: "Form II 「嵐」 Storm"
+  phase-3: "Form III 「散華」 Falling Blossoms"
+  phase-ruin: "Final Form 「無」 Void"
+  ultimate-bar: "<white><b>Tenchi Issen</b></white> <gray>— Bow! (Sneak)</gray>"
+  no-permission: "<red>No permission.</red>"
+  fight-start: "<gray>The temple bell tolls. <white>The Kensei awakens…</white></gray>"
+  victory-broadcast: "<gradient:#ffd1dc:#ff6f91><b>Flawless</b></gradient> <gray>— {players} defeated</gray> <white>Sakuragi Jinsai</white><gray>!</gray>"
+  defeat: "<gray>The Kensei returns to sleep beneath the cherry tree…</gray>"
+  bow-saved: "<gradient:#ffd1dc:#ff6f91>Accepted</gradient> <gray>— your bow was seen.</gray>"
+
+# ── German (only if player chose /language de) ────────────────────────────────
+messages-de:
+  prefix: "<gradient:#ffd1dc:#ff6f91>桜</gradient> <dark_gray>»</dark_gray> "
+  boss-name: "<gradient:#ffe3ea:#ff8fab>桜木 刃斎</gradient>"
+  boss-title: "<gray>Schwertheiliger der fallenden Blüten</gray>"
+  bossbar: "<gradient:#ffe3ea:#ff8fab><b>桜木 刃斎</b></gradient> <dark_gray>·</dark_gray> <gray>{phase}</gray> <dark_gray>·</dark_gray> <white>{hp}</white><dark_gray>/</dark_gray><gray>{max}</gray>"
+  phase-1: "一の型 「静」 Stille"
+  phase-2: "二の型 「嵐」 Sturm"
+  phase-3: "三の型 「散華」 Fallende Blüten"
+  phase-ruin: "終の型 「無」 Leere"
+  ultimate-bar: "<white><b>天地一閃</b></white> <gray>— Verneigt euch! (Schleichen)</gray>"
+  no-permission: "<red>Dafür fehlt dir die Berechtigung.</red>"
+  fight-start: "<gray>Die Tempelglocke schlägt. <white>Der Kensei erwacht…</white></gray>"
+  victory-broadcast: "<gradient:#ffd1dc:#ff6f91><b>見事</b></gradient> <gray>— {players} haben</gray> <white>Sakuragi Jinsai</white> <gray>besiegt!</gray>"
+  defeat: "<gray>Der Kensei kehrt in seinen Schlaf unter der Kirsche zurück…</gray>"
+  bow-saved: "<gradient:#ffd1dc:#ff6f91>見事</gradient> <gray>— deine Verneigung wurde angenommen.</gray>"

@@ -43,6 +43,8 @@ final class TalkDesk {
     }
 
     private static final int MAX_CHIPS = 5;
+    /** A scripted beat holds the NPC this long against repeat clicks while its lines type out. */
+    private static final long SCRIPT_HOLD_MS = 5000L;
 
     private final JavaPlugin plugin;
     private final TalkAccess.Speaker speaker;
@@ -54,6 +56,7 @@ final class TalkDesk {
     private final String farewell;
     private final Map<UUID, Set<String>> asked = new ConcurrentHashMap<>();
     private final Set<UUID> hidden = ConcurrentHashMap.newKeySet();
+    private final Map<UUID, Long> scripted = new ConcurrentHashMap<>();
 
     TalkDesk(JavaPlugin plugin, String id, String displayName, String nameColor, String voice,
              Supplier<Location> anchor, Supplier<Entity> hologram, Function<Player, String> opener,
@@ -93,6 +96,53 @@ final class TalkDesk {
         asked.put(player.getUniqueId(), ConcurrentHashMap.newKeySet());
         hideHologram(player);
         offer(player);
+        return true;
+    }
+
+    /**
+     * Before a scripted beat: true when this click is already handled — the echo of a chip pick, or chips
+     * still waiting (they get a nudge).
+     */
+    boolean busy(Player player) {
+        TalkAccess talk = AetherServices.talk();
+        if (talk == null || player == null || !talk.bubbles(player)) {
+            return false;
+        }
+        talk.registerSpeaker(speaker);
+        if (talk.recentlyPicked(player)) {
+            return true;
+        }
+        if (talk.hasReplies(player, speaker.id())) {
+            talk.pulse(player);
+            return true;
+        }
+        // Lines still typing out: don't start the same beat twice.
+        Long last = scripted.get(player.getUniqueId());
+        return last != null && System.currentTimeMillis() - last < SCRIPT_HOLD_MS
+                && talk.talkingWith(player, speaker.id());
+    }
+
+    /**
+     * One scripted beat in this NPC's bubble (an isle lesson): the lines, then the chips. The desk's topics
+     * stay out of it. False when the bubble can't open; the caller then says it in chat.
+     */
+    boolean script(Player player, List<String> lines, List<TalkAccess.Reply> replies) {
+        TalkAccess talk = AetherServices.talk();
+        if (talk == null || player == null || !talk.bubbles(player) || lines.isEmpty()) {
+            return false;
+        }
+        talk.registerSpeaker(speaker);
+        if (!talk.say(player, speaker.id(), lines.get(0))) {
+            return false;
+        }
+        for (int i = 1; i < lines.size(); i++) {
+            talk.say(player, speaker.id(), lines.get(i));
+        }
+        scripted.put(player.getUniqueId(), System.currentTimeMillis());
+        hideHologram(player);
+        if (!replies.isEmpty()) {
+            talk.replies(player, speaker.id(), replies);
+        }
         return true;
     }
 
@@ -154,12 +204,14 @@ final class TalkDesk {
             if (player == null) {
                 hidden.remove(id);
                 asked.remove(id);
+                scripted.remove(id);
                 continue;
             }
             if (talk == null || !talk.talkingWith(player, speaker.id())) {
                 showHologram(player);
                 hidden.remove(id);
                 asked.remove(id);
+                scripted.remove(id);
             }
         }
     }
@@ -173,6 +225,7 @@ final class TalkDesk {
         }
         hidden.clear();
         asked.clear();
+        scripted.clear();
         TalkAccess talk = AetherServices.talk();
         if (talk != null) {
             talk.unregisterSpeaker(speaker.id());

@@ -6,6 +6,7 @@ import de.aetherion.aethermobs.pet.CatchSphere;
 import de.aetherion.aethermobs.pet.PetEntity;
 import de.aetherion.aethermobs.pet.PetInstance;
 import de.aetherion.aethermobs.pet.PlayerPetCollection;
+import de.aetherion.aethermobs.pet.body.CatchBall;
 import de.aetherion.items.AetherionItems;
 import de.aetherion.items.manager.ActiveEquipmentStats;
 import de.aetherion.items.model.ItemCapability;
@@ -50,8 +51,10 @@ import java.util.concurrent.ThreadLocalRandom;
  * The catch ritual. A sphere hit holds the pet; the player gets one timing window;
  * then the sphere settles, shakes, and either clicks shut or cracks open.
  *
- * <p>Beats are carried by sound and a held pause, not by particles. The catch
- * odds, timing window, flee rule and rewards are unchanged from the original flow.
+ * <p>The sphere is a real ball now: it bonks off the pet, opens, the body streams in,
+ * it snaps shut, drops, bounces and rocks while the timing bar runs, then shakes and
+ * either clicks and flies home or cracks and the pet bursts back out. The catch odds,
+ * timing window, flee rule and rewards are unchanged from the original flow.
  */
 public class PetCatchListener implements Listener {
 
@@ -66,8 +69,16 @@ public class PetCatchListener implements Listener {
     /** Ticks between shakes. */
     private static final int SHAKE_GAP = 9;
     private static final int SHAKES_TO_CATCH = 3;
-    /** Yaw wiggle per tick of a shake; empty tail keeps the pet still between beats. */
-    private static final float[] SHAKE_YAW = {16.0f, -16.0f, 9.0f, 0.0f};
+    /** Ball rock per shake beat (degrees about the travel axis), keyed by tick within the gap. */
+    private static final int[] SHAKE_BEAT_TICK = {0, 2, 5, 7};
+    private static final float[] SHAKE_ROCK = {24.0f, -24.0f, 11.0f, 0.0f};
+    private static final int[] SHAKE_INTERP = {2, 3, 2, 2};
+
+    /** Window choreography (ticks into the 36-tick window). */
+    private static final int BALL_OPEN_TICK = 4;
+    private static final int BALL_ABSORB_TICKS = 7;
+    private static final int BALL_CLOSE_TICK = 12;
+    private static final int BALL_DROP_TICK = 14;
 
     private final AetherMobs plugin;
     private final Map<UUID, Ritual> rituals = new ConcurrentHashMap<>();
@@ -161,7 +172,11 @@ public class PetCatchListener implements Listener {
             CatchSphere sphere
     ) {
 
+        Particle.DustOptions trail = new Particle.DustOptions(CatchBall.tierColor(sphere.getId()), 0.75f);
+
         new BukkitRunnable() {
+
+            private int age;
 
             @Override
             public void run() {
@@ -169,6 +184,13 @@ public class PetCatchListener implements Listener {
                 if (!snowball.isValid() || snowball.isDead()) {
                     cancel();
                     return;
+                }
+
+                // A sphere in flight leaves a short tier-coloured streak.
+                Location streak = snowball.getLocation();
+                snowball.getWorld().spawnParticle(Particle.DUST, streak, 1, 0.02, 0.02, 0.02, 0.0, trail);
+                if (age++ % 3 == 0) {
+                    snowball.getWorld().spawnParticle(Particle.END_ROD, streak, 1, 0.0, 0.0, 0.0, 0.0);
                 }
 
                 for (PetEntity pet : plugin.getPetSpawnManager().getActivePets()) {
@@ -181,11 +203,15 @@ public class PetCatchListener implements Listener {
                         continue;
                     }
 
-                    double distanceSquared = pet.getEntity()
-                            .getLocation()
-                            .distanceSquared(snowball.getLocation());
+                    Location aim = pet.getCatchCenter();
+                    if (aim == null) {
+                        continue;
+                    }
 
-                    if (distanceSquared > CATCH_RADIUS * CATCH_RADIUS) {
+                    double distanceSquared = aim.distanceSquared(snowball.getLocation());
+                    double radius = CATCH_RADIUS + pet.getCatchRadiusBonus();
+
+                    if (distanceSquared > radius * radius) {
                         continue;
                     }
 
@@ -199,8 +225,10 @@ public class PetCatchListener implements Listener {
                         continue;
                     }
 
+                    Location hitAt = snowball.getLocation();
+                    Vector incoming = snowball.getVelocity();
                     snowball.remove();
-                    startCatch(player, pet, sphere);
+                    startCatch(player, pet, sphere, hitAt, incoming);
                     cancel();
                     return;
                 }
@@ -224,7 +252,9 @@ public class PetCatchListener implements Listener {
     private void startCatch(
             Player player,
             PetEntity pet,
-            CatchSphere sphere
+            CatchSphere sphere,
+            Location hitAt,
+            Vector incoming
     ) {
 
         Ritual prior = rituals.remove(player.getUniqueId());
@@ -241,6 +271,7 @@ public class PetCatchListener implements Listener {
         }
 
         Ritual ritual = new Ritual(player, pet, sphere);
+        ritual.throwBall(hitAt, incoming);
         rituals.put(player.getUniqueId(), ritual);
         ritual.announceHit();
         ritual.runTaskTimer(plugin, 0L, 1L);
@@ -257,8 +288,7 @@ public class PetCatchListener implements Listener {
 
         private Phase phase = Phase.WINDOW;
         private int phaseTick;
-        private double baseY = Double.NaN;
-        private float baseYaw;
+        private CatchBall ball;
 
         private boolean caught;
         private boolean firstSphere;
@@ -279,9 +309,32 @@ public class PetCatchListener implements Listener {
             );
         }
 
+        /** The sphere bonks off the pet and pops up, ready to open. */
+        private void throwBall(Location hitAt, Vector incoming) {
+            Location at = hitAt == null ? pet.getCatchCenter() : hitAt;
+            if (at == null) {
+                return;
+            }
+            ball = CatchBall.spawn(plugin, at, sphere.getId());
+            Vector back = incoming == null ? new Vector() : incoming.clone().setY(0.0);
+            if (back.lengthSquared() > 0.0001) {
+                back.normalize().multiply(-0.07);
+            }
+            ball.toss(back.setY(0.27));
+            ball.flash(Color.WHITE, 2);
+        }
+
+        private Location ballAt() {
+            if (ball != null && ball.isValid()) {
+                return ball.center();
+            }
+            Location c = pet.getCatchCenter();
+            return c != null ? c : player.getLocation();
+        }
+
         /** The sphere lands: one crystalline hit, one line, the bar appears. */
         private void announceHit() {
-            Location at = pet.getEntity().getLocation().add(0.0, 0.55, 0.0);
+            Location at = ballAt();
             World world = at.getWorld();
             world.playSound(at, Sound.BLOCK_AMETHYST_BLOCK_HIT, 0.9f, 1.3f);
             player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.8f, 1.4f);
@@ -317,12 +370,11 @@ public class PetCatchListener implements Listener {
             if (!pet.isSpawned() || pet.getEntity().isDead()) {
                 rituals.remove(playerId, this);
                 session.close();
+                if (ball != null) {
+                    ball.remove();
+                }
                 cancel();
                 return;
-            }
-
-            if (Double.isNaN(baseY)) {
-                baseY = pet.getEntity().getLocation().getY();
             }
 
             switch (phase) {
@@ -340,31 +392,75 @@ public class PetCatchListener implements Listener {
                 player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_HAT, 0.45f, 1.75f);
             }
 
-            double progress = session.ticks / (double) CatchTimingSession.DURATION_TICKS;
-            double struggle = Math.sin(progress * Math.PI * 5.0) * (0.10 + progress * 0.06);
+            choreograph(session.ticks);
 
-            Location location = pet.getEntity().getLocation();
-            location.setY(baseY + struggle);
-            location.setYaw(location.getYaw() + 6.0f + (float) (progress * 8.0));
-            pet.getEntity().teleport(location);
-
-            if (session.ticks % 6 == 0) {
-                location.getWorld().spawnParticle(
-                        Particle.END_ROD,
-                        location.clone().add(0, 0.55, 0),
-                        1, 0.15, 0.15, 0.15, 0.005
-                );
+            if (session.justEnteredZone() && ball != null) {
+                ball.flash(Color.fromRGB(120, 255, 140), 2);
             }
 
             if (session.done()) {
                 session.close();
                 resolve();
-                Location still = pet.getEntity().getLocation();
-                still.setY(baseY);
-                pet.getEntity().teleport(still);
-                baseYaw = still.getYaw();
+                if (ball != null) {
+                    ball.rock(0.0f, 0.0f, 3);
+                }
                 phase = Phase.SETTLE;
                 phaseTick = 0;
+            }
+        }
+
+        /** Open, absorb, snap shut, drop, then a restless rock until the window closes. */
+        private void choreograph(int tick) {
+            if (ball == null || !ball.isValid()) {
+                return;
+            }
+            Location at = ball.center();
+            World world = at.getWorld();
+            if (tick == BALL_OPEN_TICK) {
+                ball.hold();
+                ball.lid(1.0f, 3);
+                world.playSound(at, Sound.BLOCK_IRON_TRAPDOOR_OPEN, 0.6f, 1.75f);
+                world.playSound(at, Sound.BLOCK_BEACON_POWER_SELECT, 0.35f, 1.9f);
+                pet.captureInto(at, BALL_ABSORB_TICKS);
+            }
+            if (tick >= BALL_OPEN_TICK && tick < BALL_OPEN_TICK + BALL_ABSORB_TICKS) {
+                Location from = pet.getCatchCenter();
+                if (from != null) {
+                    beam(from, at, tick - BALL_OPEN_TICK);
+                }
+            }
+            if (tick == BALL_CLOSE_TICK) {
+                ball.lid(0.0f, 2);
+                ball.flash(rarityDust(instance.getRarity()), 3);
+                world.playSound(at, Sound.BLOCK_IRON_TRAPDOOR_CLOSE, 0.75f, 1.8f);
+                world.spawnParticle(Particle.DUST, at, 6, 0.12, 0.12, 0.12, 0.0,
+                        new Particle.DustOptions(rarityDust(instance.getRarity()), 0.8f));
+            }
+            if (tick == BALL_DROP_TICK) {
+                ball.toss(new Vector(0.0, 0.02, 0.0));
+            }
+            if (tick > BALL_DROP_TICK && ball.isResting() && tick % 5 == 0) {
+                float rock = (tick / 5) % 2 == 0 ? 7.0f : -7.0f;
+                ball.rock(0.0f, rock, 2);
+            }
+        }
+
+        /** The body streams into the sphere along a rarity-coloured line. */
+        private void beam(Location from, Location to, int step) {
+            World world = to.getWorld();
+            Particle.DustOptions dust = new Particle.DustOptions(rarityDust(instance.getRarity()), 0.7f);
+            Vector line = to.toVector().subtract(from.toVector());
+            double length = line.length();
+            if (length < 0.05) {
+                return;
+            }
+            int points = (int) Math.min(10, Math.max(3, length * 4));
+            for (int i = 0; i < points; i++) {
+                double k = ((i + step * 0.37) % points) / points;
+                world.spawnParticle(Particle.DUST, from.clone().add(line.clone().multiply(k)), 1, 0.0, 0.0, 0.0, 0.0, dust);
+            }
+            if (step == 0) {
+                world.spawnParticle(Particle.END_ROD, from, 4, 0.15, 0.15, 0.15, 0.02);
             }
         }
 
@@ -395,18 +491,23 @@ public class PetCatchListener implements Listener {
                 shakesDone++;
             }
 
-            if (beat < SHAKE_YAW.length) {
-                Location location = pet.getEntity().getLocation();
-                location.setYaw(baseYaw + SHAKE_YAW[beat]);
-                location.setY(baseY - (beat == 0 ? 0.04 : 0.0));
-                pet.getEntity().teleport(location);
+            if (ball != null) {
+                for (int i = 0; i < SHAKE_BEAT_TICK.length; i++) {
+                    if (beat == SHAKE_BEAT_TICK[i]) {
+                        ball.rock(0.0f, SHAKE_ROCK[i], SHAKE_INTERP[i]);
+                    }
+                }
             }
 
             phaseTick++;
         }
 
         private void shake(int index) {
-            Location at = pet.getEntity().getLocation().add(0.0, 0.55, 0.0);
+            Location at = ballAt();
+            if (ball != null) {
+                ball.flash(rarityDust(instance.getRarity()), 2);
+                at.getWorld().playSound(at, Sound.BLOCK_STONE_BUTTON_CLICK_ON, 0.5f, 1.2f + index * 0.12f);
+            }
             at.getWorld().playSound(at, Sound.BLOCK_AMETHYST_BLOCK_HIT, 0.8f, 0.85f + index * 0.14f);
             at.getWorld().spawnParticle(Particle.DUST, at, 3, 0.12, 0.12, 0.12, 0.0,
                     new Particle.DustOptions(rarityDust(instance.getRarity()), 0.8f));
@@ -435,7 +536,11 @@ public class PetCatchListener implements Listener {
         private void abort() {
             cancel();
             session.close();
+            if (ball != null) {
+                ball.remove();
+            }
             if (pet.isSpawned()) {
+                pet.releaseFrom(4);
                 pet.stopCatching();
             }
         }
@@ -454,7 +559,7 @@ public class PetCatchListener implements Listener {
         PetInstance petInstance = ritual.instance;
         boolean perfect = ritual.session.multiplier() > 1.0d;
 
-        Location at = pet.getEntity().getLocation().add(0.0, 0.55, 0.0);
+        Location at = ritual.ballAt();
         World world = at.getWorld();
 
         // The click: sphere seals, then a warm lift for the owner.
@@ -463,6 +568,9 @@ public class PetCatchListener implements Listener {
         player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.55f, 1.45f);
 
         sealRing(at, petInstance);
+        if (ritual.ball != null) {
+            ritual.ball.seal(rarityDust(petInstance.getRarity()), player);
+        }
         pet.vanish(6);
 
         String color = getRarityColor(petInstance.getRarity());
@@ -528,16 +636,14 @@ public class PetCatchListener implements Listener {
         PetEntity pet = ritual.pet;
         PetInstance petInstance = ritual.instance;
 
-        Location at = pet.getEntity().getLocation().add(0.0, 0.55, 0.0);
+        Location at = ritual.ballAt();
         World world = at.getWorld();
 
         world.playSound(at, Sound.BLOCK_AMETHYST_CLUSTER_BREAK, 0.9f, 1.15f);
         world.spawnParticle(Particle.DUST, at, 8, 0.25, 0.25, 0.25, 0.0,
                 new Particle.DustOptions(rarityDust(petInstance.getRarity()), 1.0f));
-        world.spawnParticle(Particle.POOF, at, 3, 0.15, 0.15, 0.15, 0.02);
 
         pet.registerCatchAttempt();
-        pet.stopCatching();
 
         boolean flees = pet.getCatchAttempts() >= FLEE_AFTER_ATTEMPTS
                 && Math.random() * 100.0 < FLEE_CHANCE;
@@ -545,9 +651,25 @@ public class PetCatchListener implements Listener {
         String name = getRarityColor(petInstance.getRarity()) + petInstance.getDefinition().getDisplayName();
         player.sendActionBar(legacy("§c✦ Broke free"));
 
+        // The sphere cracks open and the pet bursts back out of it; a flee starts from there.
+        Runnable out = () -> {
+            if (!pet.isSpawned()) {
+                return;
+            }
+            pet.releaseFrom(8);
+            pet.stopCatching();
+            if (flees) {
+                startFleeAnimation(player, pet);
+            }
+        };
+        if (ritual.ball != null) {
+            ritual.ball.burst(out);
+        } else {
+            out.run();
+        }
+
         if (flees) {
             player.sendMessage("§c✦ " + name + " §7broke free §8(" + formatChance(ritual.finalChance) + ")");
-            startFleeAnimation(player, pet);
             return;
         }
 
@@ -612,7 +734,8 @@ public class PetCatchListener implements Listener {
                 }
 
                 Location location = pet.getEntity().getLocation().add(fleeDirection);
-                pet.getEntity().teleport(location);
+                location.setYaw((float) Math.toDegrees(Math.atan2(-fleeDirection.getX(), fleeDirection.getZ())));
+                pet.nudge(location);
 
                 if (ticks % 2 == 0) {
                     pet.getEntity().getWorld().spawnParticle(

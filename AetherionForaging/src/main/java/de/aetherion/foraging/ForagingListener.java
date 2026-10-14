@@ -1047,6 +1047,9 @@ public class ForagingListener implements Listener {
                 player.sendMessage("§7Missed the timing. §fThat trunk§7 needs a breather — a few seconds at first,"
                         + " longer if you keep fumbling it. §fOther trees are free.");
             }
+            if (isle != null) {
+                isle.onMiss(player, pulse.job.baseLocation());
+            }
         }
     }
 

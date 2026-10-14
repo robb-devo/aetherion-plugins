@@ -880,6 +880,11 @@ public final class AetherMobs extends JavaPlugin implements Listener {
         } catch (Throwable ignored) {
         }
 
+        try {
+            de.aetherion.aethermobs.pet.body.CatchBall.removeAll();
+        } catch (Throwable ignored) {
+        }
+
         if (activePetManager != null) {
 
             activePetManager.removeAll();

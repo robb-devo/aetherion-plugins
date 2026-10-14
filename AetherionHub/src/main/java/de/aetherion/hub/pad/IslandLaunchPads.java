@@ -165,9 +165,19 @@ public final class IslandLaunchPads implements Listener {
             if (player.hasPermission("aetherionhub.admin") || player.hasPermission("aetherion.mines.admin")) {
                 return true;
             }
-            return hasStampedBlueprint(player, pad.requireIds);
+            return orientationStamped(player) || hasStampedBlueprint(player, pad.requireIds);
         }
         return true;
+    }
+
+    /** Miss Ledger stamped this player's orientation: "the roads are open" means every island pad. */
+    private static boolean orientationStamped(Player player) {
+        try {
+            de.aetherion.core.api.StoryAccess story = de.aetherion.core.api.AetherServices.story();
+            return story != null && story.playerFlag(player, "orientation_stamped");
+        } catch (RuntimeException | LinkageError ex) {
+            return false;
+        }
     }
 
     private static int intAt(ConfigurationSection s, String dotted, String section, String key, int def) {
@@ -471,11 +481,11 @@ public final class IslandLaunchPads implements Listener {
         if (player.hasPermission("aetherionhub.admin") || player.hasPermission("aetherion.mines.admin")) {
             return true;
         }
-        if (hasStampedBlueprint(player, pad.requireIds)) {
+        if (orientationStamped(player) || hasStampedBlueprint(player, pad.requireIds)) {
             return true;
         }
         player.sendMessage("§cJump pad sealed.");
-        player.sendMessage("§7Stamp a §eSurveyor blueprint §7into a tool first — then this pad opens.");
+        player.sendMessage("§7Finish orientation — §dMiss Ledger§7's stamp opens every road. §8(A stamped Surveyor blueprint works too.)");
         de.aetherion.hub.origin.OriginHooks.padSealed(player, pad.id());
         player.playSound(player.getLocation(), org.bukkit.Sound.BLOCK_IRON_TRAPDOOR_CLOSE, 0.7f, 0.6f);
         nudgeOffPad(player, pad);

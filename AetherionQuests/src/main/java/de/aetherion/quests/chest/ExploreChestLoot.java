@@ -51,6 +51,22 @@ final class ExploreChestLoot {
         List<ItemStack> shown = new ArrayList<>();
         CustomItem custom = custom();
         switch (kind) {
+            case COMMON -> {
+                shown.add(coins(30));
+                add(shown, single(CompressedResource.WHEAT));
+                add(shown, single(CompressedResource.COAL));
+                add(shown, single(CompressedResource.OAK_LOG));
+                add(shown, single(CompressedResource.COD));
+            }
+            case UNCOMMON -> {
+                shown.add(coins(70));
+                add(shown, single(CompressedResource.RAW_COPPER));
+                add(shown, single(CompressedResource.RAW_IRON));
+                add(shown, booster());
+                if (custom != null) {
+                    shown.add(custom.createMiningPickaxe());
+                }
+            }
             case RARE -> {
                 shown.add(coins(80));
                 add(shown, compressed(CompressedResource.COAL));
@@ -138,6 +154,27 @@ final class ExploreChestLoot {
 
     private static List<Entry> table(ExploreChestKind kind) {
         return switch (kind) {
+            // Roadside crates: pocket money and a bundle of whatever the island makes. Boosters are a lucky find.
+            case COMMON -> List.of(
+                    e(55, () -> Drop.coins(range(15, 45))),
+                    e(12, () -> Drop.item(single(CompressedResource.WHEAT))),
+                    e(10, () -> Drop.item(single(CompressedResource.OAK_LOG))),
+                    e(10, () -> Drop.item(single(CompressedResource.COD))),
+                    e(6, () -> Drop.item(single(CompressedResource.COAL))),
+                    e(5, () -> Drop.item(single(CompressedResource.RAW_COPPER))),
+                    e(2, () -> Drop.item(booster()))
+            );
+            // A step off the road: more coin, the first ore bundles, a starter tool now and then.
+            case UNCOMMON -> List.of(
+                    e(36, () -> Drop.coins(range(35, 100))),
+                    e(14, () -> Drop.item(single(CompressedResource.COAL))),
+                    e(12, () -> Drop.item(single(CompressedResource.RAW_COPPER))),
+                    e(10, () -> Drop.item(compressed(CompressedResource.WHEAT))),
+                    e(8, () -> Drop.item(single(CompressedResource.RAW_IRON))),
+                    e(8, () -> Drop.item(booster())),
+                    e(6, () -> Drop.item(sword(1))),
+                    e(6, () -> Drop.item(pick(1)))
+            );
             case RARE -> List.of(
                     e(28, () -> Drop.coins(range(50, 150))),
                     e(16, () -> Drop.item(compressed(CompressedResource.COAL))),
@@ -213,6 +250,12 @@ final class ExploreChestLoot {
     private static ItemStack compressed(CompressedResource resource) {
         ItemStack stack = resource.compressed();
         stack.setAmount(1 + ThreadLocalRandom.current().nextInt(2));
+        return stack;
+    }
+
+    private static ItemStack single(CompressedResource resource) {
+        ItemStack stack = resource.compressed();
+        stack.setAmount(1);
         return stack;
     }
 

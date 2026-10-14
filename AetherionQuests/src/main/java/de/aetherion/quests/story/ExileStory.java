@@ -244,10 +244,15 @@ public final class ExileStory implements Listener {
         switch (id) {
             case "ferryman" -> {
                 if (!exile) {
-                    if (!StoryState.hasPlayerFlag(p, StoryState.CROSSED) && !StoryState.completed(qm, p, LullabyQuests.FERRY)) {
+                    Quest ferry = qm.getQuest(LullabyQuests.FERRY);
+                    boolean ticket = ferry != null && qm.getQuestState(p, ferry) == QuestState.ACTIVE;
+                    if (!ticket && !StoryState.hasPlayerFlag(p, StoryState.CROSSED)
+                            && !StoryState.completed(qm, p, LullabyQuests.FERRY)) {
                         return false; // before the first crossing his stage lines carry the gate
                     }
-                    open = l(p, "ferryman.desk.open", "Ferry's waiting. It always is.");
+                    open = ticket
+                            ? l(p, "ferryman.desk.open_ticket", "You've the writ. Say the word, or ring the bell by the gangway.")
+                            : l(p, "ferryman.desk.open", "Ferry's waiting. It always is.");
                     d.topic(l(p, "ferryman.desk.where.label", "Where does it go?"), NamedTextColor.AQUA,
                                     l(p, "ferryman.desk.where.echo", "Where does the ferry go?"),
                                     ls(p, "ferryman.desk.where.lines",

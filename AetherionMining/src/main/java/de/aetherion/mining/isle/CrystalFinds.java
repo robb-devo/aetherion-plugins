@@ -188,6 +188,21 @@ public final class CrystalFinds implements Listener {
         spawn(player, ore, grade, rollCarats(player, ore, grade), block, veins);
     }
 
+    /** The isle lesson's guaranteed geode (Flawless). False while this finder already has one up. */
+    boolean lessonPop(Player player, IsleOre ore, Location block) {
+        if (ore == null || !ore.hasCrystal() || block == null || byFinder.containsKey(player.getUniqueId())) {
+            return false;
+        }
+        lastFind.put(player.getUniqueId(), System.currentTimeMillis());
+        spawn(player, ore, Grade.FLAWLESS, rollCarats(player, ore, Grade.FLAWLESS), block, false);
+        return true;
+    }
+
+    /** This finder's geode is up and waiting to be cracked. */
+    boolean hasGeode(UUID finder) {
+        return byFinder.containsKey(finder);
+    }
+
     private Grade rollGrade(Player player, boolean veins) {
         ThreadLocalRandom rng = ThreadLocalRandom.current();
         if (veins) {
@@ -364,6 +379,7 @@ public final class CrystalFinds implements Listener {
             MineText.bar(finder, "§7The " + geode.ore.crystalName() + " sank back into the rock. §8Swing faster next time.");
         }
         remove(geode);
+        isle.lesson().onLost(geode.finder);
     }
 
     private void remove(Geode geode) {
@@ -508,7 +524,9 @@ public final class CrystalFinds implements Listener {
                 original.sendMessage("§7" + player.getName() + " cracked your " + geode.ore.crystalName()
                         + " open first. §8Mining is a contact sport.");
             }
+            isle.lesson().onLost(geode.finder);
         }
+        isle.lesson().onGeode(player);
         isle.ledger().onSpecimen(player, geode.ore, geode.grade);
         if (isle.profiles().offerRecord(geode.ore, player, geode.carats, geode.grade)) {
             String line = "§d✦ Isle record! §f" + player.getName() + " §7cracked a §d" + MineText.carats(geode.carats)

@@ -75,13 +75,72 @@ public final class MineCast implements Listener {
     private final Map<UUID, Long> clickCool = new ConcurrentHashMap<>();
     private boolean seeded;
     private BukkitTask task;
+    private final TalkDesk wickDesk;
 
     MineCast(MineIsle isle) {
         this.isle = isle;
         this.npcKey = new NamespacedKey(isle.plugin(), "mine_npc");
         this.anchorKey = new NamespacedKey(isle.plugin(), "mine_npc_anchor");
         this.file = new File(isle.plugin().getDataFolder(), "mine-cast.yml");
+        this.wickDesk = wickDesk();
         load();
+    }
+
+    /**
+     * Old Wick by the landing lamp: the isle's front desk in the talk bubble — where to dig, how deep it
+     * goes, who's who, what bites; his map board stays one chip away. First visit belongs to {@link MineLesson}.
+     */
+    private TalkDesk wickDesk() {
+        MineRole wick = MineRole.LAMPWARDEN;
+        return new TalkDesk(isle.plugin(), "mine_isle_lampwarden", wick.display(), wick.color(), "isle_hand",
+                () -> liveLocation(wick), () -> liveHologram(wick),
+                player -> MineLesson.t(player, "Lamp's lit, {player}. Ask — or go make the rock sing.",
+                        "Die Lampe brennt, {player}. Frag ruhig — oder bring den Fels zum Singen."),
+                List.of(
+                        TalkDesk.Topic.of("Where do I dig?", net.kyori.adventure.text.format.NamedTextColor.GOLD,
+                                "Where should I dig?",
+                                "Any rock feeds the rhythm, ore feeds it double. Seven quarries — the Terraces east keep an ore depot.",
+                                "Check your pick's ⛏ before you swing at a vein. Too soft and the rock just laughs."),
+                        TalkDesk.Topic.of("How deep?", net.kyori.adventure.text.format.NamedTextColor.YELLOW,
+                                "How deep does it go?",
+                                "Galleries, Deep Works, then the Undercroft. Deeper rock, more Fortune.",
+                                "First time in a band you get a card and some XP. Mind the heat in the Emberseam."),
+                        TalkDesk.Topic.of("Who's who?", net.kyori.adventure.text.format.NamedTextColor.AQUA,
+                                "Who runs this rock?",
+                                "§6Otto§f hands out contracts. §6Nan§f at the Hearth feeds you — in ore.",
+                                "§dIlse§f buys specimens up at the Assay Office. §6Brann§f runs the Deep Forge on the pit floor."),
+                        TalkDesk.Topic.of("Anything bite?", net.kyori.adventure.text.format.NamedTextColor.RED,
+                                "What should I watch for?",
+                                "Strain the rock and it caves in. You'll hear it first — move.",
+                                "Stonejaws guard the rich seams. Sixteen good hits and they pay.")
+                ),
+                "Map…", player -> isle.menus().open(player, MineRole.LAMPWARDEN),
+                "Mind your lamp.");
+    }
+
+    /** Where the NPC actually stands right now (spawned villager), else its placed spot. */
+    private Location liveLocation(MineRole role) {
+        Spawned spawned = live.get(role);
+        Entity villager = spawned == null ? null : Bukkit.getEntity(spawned.villager());
+        if (villager != null && villager.isValid()) {
+            return villager.getLocation();
+        }
+        return location(role);
+    }
+
+    private Entity liveHologram(MineRole role) {
+        Spawned spawned = live.get(role);
+        return spawned == null || spawned.hologram() == null ? null : Bukkit.getEntity(spawned.hologram());
+    }
+
+    /** Lesson click pre-check on Wick's bubble (see {@link TalkDesk#busy}). */
+    boolean teacherBusy(Player player) {
+        return wickDesk.busy(player);
+    }
+
+    /** A scripted lesson beat in Wick's bubble. False when it can't open (classic chat, too far). */
+    boolean teacherScript(Player player, List<String> lines, List<de.aetherion.core.api.TalkAccess.Reply> replies) {
+        return wickDesk.script(player, lines, replies);
     }
 
     void start() {
@@ -111,6 +170,7 @@ public final class MineCast implements Listener {
             task.cancel();
             task = null;
         }
+        wickDesk.shutdown();
         for (MineRole role : MineRole.values()) {
             despawn(role);
         }
@@ -373,7 +433,21 @@ public final class MineCast implements Listener {
         }
         clickCool.put(player.getUniqueId(), now + 400L);
         player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_AMBIENT, SoundCategory.NEUTRAL, 0.7f, 1.1f);
+        // First visit: Old Wick runs the isle lesson; the rest of the crew send you back to him.
+        if (role == MineRole.LAMPWARDEN && isle.lesson().onTeacher(player)) {
+            return;
+        }
+        if (role != MineRole.LAMPWARDEN && isle.lesson().deferring(player)) {
+            say(player, role, MineLesson.t(player,
+                    "Old Wick's lesson first — the bar up top shows the way. Then come see me.",
+                    "Erst Old Wicks Lektion — die Leiste oben zeigt den Weg. Dann komm zu mir."));
+            return;
+        }
         isle.compass().met(player, role);
+        // Wick talks first (bubble + chips); his map sits behind "Map…".
+        if (role == MineRole.LAMPWARDEN && wickDesk.click(player)) {
+            return;
+        }
         isle.menus().open(player, role);
     }
 
@@ -413,6 +487,7 @@ public final class MineCast implements Listener {
     }
 
     private void tick() {
+        wickDesk.tick();
         if (Bukkit.getCurrentTick() % 100 < 10) {
             ensureAll();
         }

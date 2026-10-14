@@ -134,6 +134,14 @@ public final class ExileQuay implements Listener {
         }
     }
 
+    /** Wire anchors after an automated paste (config already written). */
+    public void setOrigin(World w, int[] o) {
+        if (w == null || o == null || o.length < 3) {
+            return;
+        }
+        place(w, o);
+    }
+
     /** {@code /exile setquay}: the admin stands on the block where they pasted the islet. */
     public void setHere(Player admin) {
         Location at = admin.getLocation();
@@ -186,6 +194,15 @@ public final class ExileQuay implements Listener {
 
     public boolean placed() {
         return world != null && origin != null;
+    }
+
+    public World world() {
+        return world;
+    }
+
+    /** Paste origin (east landing, feet), or null when not placed. */
+    public int[] origin() {
+        return origin == null ? null : origin.clone();
     }
 
     private Location at(double[] rel) {
@@ -589,20 +606,24 @@ public final class ExileQuay implements Listener {
         }
     }
 
-    /** Back from the exile: off the ferry onto the pier, facing the road home. */
+    /** Back from the exile: off the ferry onto the pier, facing the way home (the Borderlands lie west). */
     public void landHere(Player p) {
         Location g = at(GANGWAY);
         if (g == null) {
             return;
         }
-        g.setYaw(-90f);
+        boolean causeway = ExileCauseway.laid(plugin);
+        g.setYaw(causeway ? 90f : -90f);
         p.teleport(g);
         p.setFallDistance(0f);
         p.playSound(g, Sound.BLOCK_WOOD_PLACE, SoundCategory.BLOCKS, 0.7f, 0.55f);
         p.playSound(g, Sound.BLOCK_CHAIN_STEP, SoundCategory.BLOCKS, 0.6f, 0.5f);
         world.spawnParticle(Particle.WHITE_ASH, g.clone().add(-6, 1, 0), 30, 4, 1.5, 3, 0);
-        p.sendActionBar(Component.text(Say.t(p, "The Veil Quay. The road home runs east.",
-                "Der Schleierkai. Der Weg nach Hause führt nach Osten."), NamedTextColor.GRAY));
+        p.sendActionBar(Component.text(causeway
+                ? Say.t(p, "The Veil Quay. The causeway home leaves past the Veil lamp, west.",
+                        "Der Schleierkai. Der Damm nach Hause beginnt an der Schleierlampe, im Westen.")
+                : Say.t(p, "The Veil Quay. /spawn takes you home.",
+                        "Der Schleierkai. /spawn bringt dich nach Hause."), NamedTextColor.GRAY));
     }
 
     public boolean isDeparting(Player p) {

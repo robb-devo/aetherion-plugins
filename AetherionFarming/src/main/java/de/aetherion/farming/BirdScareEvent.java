@@ -1,5 +1,6 @@
 package de.aetherion.farming;
 
+import de.aetherion.core.api.BarChrome;
 import de.aetherion.core.api.QuestBars;
 import de.aetherion.farming.island.FarmIslandService;
 import de.aetherion.farming.island.FarmIsleZones;
@@ -804,7 +805,7 @@ public final class BirdScareEvent implements Listener, StatProvider, Runnable {
             return;
         }
         float clamped = Math.max(0.0f, Math.min(1.0f, progress));
-        Component name = LEGACY.deserialize(title);
+        Component name = LEGACY.deserialize(BarChrome.legacy(BarChrome.Family.EVENT, BarChrome.Icon.BIRD, title));
         BossBar bar = bars.get(player.getUniqueId());
         if (bar == null) {
             bar = BossBar.bossBar(name, clamped, color, BossBar.Overlay.NOTCHED_20);

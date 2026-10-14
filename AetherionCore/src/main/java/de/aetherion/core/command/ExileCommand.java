@@ -30,8 +30,93 @@ public final class ExileCommand implements CommandExecutor, TabCompleter {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        String sub = args.length == 0 ? "go" : args[0].toLowerCase(Locale.ROOT);
+        boolean consoleLike = !(sender instanceof Player);
+        boolean admin = consoleLike || sender.hasPermission("aetherion.core.admin");
+        // Console / RCON / admin: paste full island into aetherion_exile (void world).
+        if ("paste".equals(sub) || "pastegesamt".equals(sub) || "map".equals(sub)) {
+            if (!admin) {
+                sender.sendMessage("§cNo permission.");
+                return true;
+            }
+            de.aetherion.core.exile.ExileMapPaste.start(plugin, sender);
+            return true;
+        }
+        if ("quayundo".equals(sub) || "undoclear".equals(sub)) {
+            if (!admin) {
+                sender.sendMessage("§cNo permission.");
+                return true;
+            }
+            int times = 2;
+            if (args.length >= 2) {
+                try {
+                    times = Integer.parseInt(args[1]);
+                } catch (NumberFormatException ignored) {
+                }
+            }
+            de.aetherion.core.exile.ExileFaweUndo.undo(plugin, sender, "world", null, times);
+            return true;
+        }
+        if ("clearsaint".equals(sub) || "rmseraphine".equals(sub) || "rmsaint".equals(sub)) {
+            if (!admin) {
+                sender.sendMessage("§cNo permission.");
+                return true;
+            }
+            String worldName = args.length >= 2 ? args[1] : "world";
+            de.aetherion.core.exile.ExileSaintClear.clear(plugin, sender, worldName);
+            return true;
+        }
+        // Walk from the Borderlands cliff to the pier head: stand where it should leave the cliff. "undo" takes it back.
+        if ("causeway".equals(sub)) {
+            if (!admin) {
+                sender.sendMessage("§cNo permission.");
+                return true;
+            }
+            if (args.length >= 2 && "undo".equalsIgnoreCase(args[1])) {
+                de.aetherion.core.exile.ExileCauseway.undo(plugin, sender);
+            } else if (sender instanceof Player p) {
+                de.aetherion.core.exile.ExileCauseway.build(plugin, sender, p.getLocation());
+            } else {
+                sender.sendMessage("§cStand on the Borderlands cliff in-game: §f/exile causeway§c (or §f/exile causeway undo§c).");
+            }
+            return true;
+        }
+        // Clear Seraphine arena + paste Veil Quay (main world). Optional: world x y z.
+        // No bare "quay" alias: this airs a 150-block box at the target, it must never be a typo away.
+        if ("placequay".equals(sub) || "pastequay".equals(sub)) {
+            if (!admin) {
+                sender.sendMessage("§cNo permission.");
+                return true;
+            }
+            String worldName = "world";
+            int x = de.aetherion.core.exile.ExileQuayPaste.DEFAULT_X;
+            int y = de.aetherion.core.exile.ExileQuayPaste.DEFAULT_Y;
+            int z = de.aetherion.core.exile.ExileQuayPaste.DEFAULT_Z;
+            if (args.length >= 4) {
+                try {
+                    int i = 1;
+                    if (args.length >= 5) {
+                        worldName = args[1];
+                        i = 2;
+                    }
+                    x = Integer.parseInt(args[i]);
+                    y = Integer.parseInt(args[i + 1]);
+                    z = Integer.parseInt(args[i + 2]);
+                } catch (NumberFormatException ex) {
+                    sender.sendMessage("§cUsage: /exile placequay [world] <x> <y> <z>");
+                    return true;
+                }
+            } else if (sender instanceof Player p) {
+                worldName = p.getWorld().getName();
+                x = p.getLocation().getBlockX();
+                y = p.getLocation().getBlockY();
+                z = p.getLocation().getBlockZ();
+            }
+            de.aetherion.core.exile.ExileQuayPaste.start(plugin, sender, worldName, x, y, z);
+            return true;
+        }
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("§cPlayers only.");
+            sender.sendMessage("§cPlayers only (or §f/exile paste§c from console/RCON).");
             return true;
         }
         ExileLink link = plugin.exile();
@@ -40,11 +125,11 @@ public final class ExileCommand implements CommandExecutor, TabCompleter {
             player.sendMessage("§cExile link offline.");
             return true;
         }
-        String sub = args.length == 0 ? "go" : args[0].toLowerCase(Locale.ROOT);
         switch (sub) {
             case "go", "enter", "ferry" -> {
                 if (link.isExileServer()) {
-                    player.sendMessage("§8Exil §8» §7Already here. §f/exile return §7leaves.");
+                    player.sendMessage(Say.t(player, "§8Exile §8» §7Already here. §f/exile return §7leaves.",
+                            "§8Exil §8» §7Schon da. §f/exile return §7bringt dich zurück."));
                     return true;
                 }
                 ExileQuay quay = plugin.exileQuay();
@@ -55,8 +140,8 @@ public final class ExileCommand implements CommandExecutor, TabCompleter {
                         link.send(player);
                     } else {
                         player.sendMessage(Say.t(player,
-                                "§8Ferry §8» §7The ferry leaves from the Veil Quay, at the end of the King's Road.",
-                                "§8Fähre §8» §7Die Fähre legt am Schleierkai ab, am Ende der Königsstraße."));
+                                "§8Ferry §8» §7The ferry leaves from the Veil Quay, off the far east edge of the Borderlands, in the fog.",
+                                "§8Fähre §8» §7Die Fähre legt am Schleierkai ab, am äußersten Ostrand der Borderlands, im Nebel."));
                     }
                     return true;
                 }
@@ -106,7 +191,8 @@ public final class ExileCommand implements CommandExecutor, TabCompleter {
                 if (!link.isExileServer()) {
                     // From any non-exile backend just refuse; from exile hop home.
                     if (plugin.link() != null && plugin.link().isMainWorld()) {
-                        player.sendMessage("§8Exil §8» §7You're on Aetherion already.");
+                        player.sendMessage(Say.t(player, "§8Exile §8» §7You're on Aetherion already.",
+                                "§8Exil §8» §7Du bist schon auf Aetherion."));
                     } else {
                         link.returnToMain(player);
                     }
@@ -132,15 +218,15 @@ public final class ExileCommand implements CommandExecutor, TabCompleter {
                 }
             }
             case "where" -> {
-                player.sendMessage("§8Exil §8» §7backend §f" + plugin.link().serverName()
+                player.sendMessage("§8Exile §8» §7backend §f" + plugin.link().serverName()
                         + " §8· §7exile-server §f" + link.exileServer()
                         + (link.isExileServer() ? " §a(here)" : ""));
                 if (plugin.exileQuay() != null) {
                     player.sendMessage(plugin.exileQuay().describe());
                 }
             }
-            default -> player.sendMessage("§7/exile §8[§7go · return · replay · stop · where" 
-                    + (player.hasPermission("aetherion.core.admin") ? " · setquay" : "") + "§8]");
+            default -> player.sendMessage("§7/exile §8[§7go · return · replay · stop · where"
+                    + (player.hasPermission("aetherion.core.admin") ? " · setquay · causeway · paste" : "") + "§8]");
         }
         return true;
     }
@@ -152,8 +238,11 @@ public final class ExileCommand implements CommandExecutor, TabCompleter {
         }
         String prefix = args[0].toLowerCase(Locale.ROOT);
         List<String> out = new ArrayList<>();
-        for (String s : sender.hasPermission("aetherion.core.admin")
-                ? List.of("go", "return", "replay", "stop", "where", "setquay")
+        boolean admin = sender.hasPermission("aetherion.core.admin")
+                || sender instanceof org.bukkit.command.ConsoleCommandSender;
+        for (String s : admin
+                ? List.of("go", "return", "replay", "stop", "where", "setquay", "causeway", "paste",
+                        "placequay", "quayundo", "clearsaint")
                 : List.of("go", "return", "replay", "stop", "where")) {
             if (s.startsWith(prefix)) {
                 out.add(s);

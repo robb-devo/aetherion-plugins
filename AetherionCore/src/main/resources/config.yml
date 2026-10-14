@@ -85,6 +85,9 @@ exile:
   quay:
     world: ""
     origin: ""
+    # The walk from the Borderlands cliff to the pier head (air-only, undoable). Written by /exile causeway
+    # (stand on the cliff where it should leave); a quay re-paste lays it again from here.
+    causeway: ""
 
 # wipe.* is used by /wipe beta and NetworkWipeWatch (Crafty multi-backend).
 # Empty / omitted keys keep historical production behavior:
@@ -113,3 +116,8 @@ wipe:
   # false = real wipe (current production). Flags are also left untouched in dry-run
   # so a later boot with dry-run: false still runs the pending wipe.
   dry-run: false
+
+# Top boss bars: typed frames + icons from the server pack (font glyphs U+E900..E99F).
+# false = plain titles (use while the served pack is older than these jars).
+bars:
+  pack-glyphs: true

@@ -1,0 +1,88 @@
+{
+  "katana.draw": {
+    "sounds": [
+      {
+        "name": "samurai:katana/draw",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.samurai.katana.draw"
+  },
+  "katana.click": {
+    "sounds": [
+      {
+        "name": "samurai:katana/click",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.samurai.katana.click"
+  },
+  "bell": {
+    "sounds": [
+      {
+        "name": "samurai:bell",
+        "attenuation_distance": 96
+      }
+    ],
+    "subtitle": "subtitles.samurai.bell"
+  },
+  "taiko": {
+    "sounds": [
+      {
+        "name": "samurai:taiko",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "subtitles.samurai.taiko"
+  },
+  "slash": {
+    "sounds": [
+      {
+        "name": "samurai:slash",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.samurai.slash"
+  },
+  "timestop": {
+    "sounds": [
+      {
+        "name": "samurai:timestop",
+        "attenuation_distance": 64
+      }
+    ],
+    "subtitle": "subtitles.samurai.timestop"
+  },
+  "shatter": {
+    "sounds": [
+      {
+        "name": "samurai:shatter",
+        "attenuation_distance": 32
+      }
+    ],
+    "subtitle": "subtitles.samurai.shatter"
+  },
+  "wind": {
+    "sounds": [
+      {
+        "name": "samurai:wind",
+        "attenuation_distance": 32
+      }
+    ],
+    "subtitle": "subtitles.samurai.wind"
+  },
+  "koto": {
+    "sounds": [
+      {
+        "name": "samurai:koto"
+      }
+    ]
+  },
+  "shakuhachi": {
+    "sounds": [
+      {
+        "name": "samurai:shakuhachi"
+      }
+    ]
+  }
+}

@@ -1,7 +1,7 @@
 # Fishing — Eldervale expansion
 
 Branch `claude/fishing-eldervale-expansion`. Turns the pasted Fishing Eldervale island
-(`/aetherpaste fishing` at −585 90 −649, hub `world`) into the Fishing destination.
+(`/aetherpaste fishing` at −382 90 −900, hub `world`; re-pasted from −585 90 −649, config shifted +203 x, −251 z on 2026-10-15) into the Fishing destination.
 Off the isle nothing changes — the harbour tutorial and every other water fish exactly as before.
 
 ## Base lineage
@@ -13,8 +13,8 @@ set), imported as commit `83389c1` so the Items jar built here does not regress 
 ## Map
 
 Schem `Fishing-Eldervale-Island.schem`: Offset (−215, −132, −215), so schem local (x, y, z) lands at
-world **(x − 800, y − 42, z − 864)**. Main lake surface: world **y 89**. Island footprint used by the
-isle loops: x −775…−415, z −805…−455 (`fish-isle.footprint`).
+world **(x − 597, y − 42, z − 1115)**. Main lake surface: world **y 89**. Island footprint used by the
+isle loops: x −572…−212, z −1056…−706 (`fish-isle.footprint`).
 
 Every coordinate in config was measured from the schem (surface scan, water-body fit, standable-spot
 search) — nothing is eyeballed:

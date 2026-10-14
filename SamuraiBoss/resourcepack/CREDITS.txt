@@ -1,0 +1,5 @@
+SamuraiBoss Resource Pack
+
+Pinsel-Kanji gerendert aus der Schrift „Yuji Syuku“ von Kinuta Font Factory,
+lizenziert unter der SIL Open Font License 1.1 (siehe OFL.txt).
+Alle übrigen Texturen, Modelle und Klänge wurden für dieses Pack erzeugt.

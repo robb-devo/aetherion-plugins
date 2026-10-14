@@ -39,3 +39,15 @@ AetherionStressBots/runner/node_modules/
 
 # Kotlin
 .kotlin/
+
+# Local junk / backups (never ship)
+*.bak
+*.bak-*
+*.pre-*-bak
+_bak_*/
+_opus_*.zip
+aethermobs-pet-bodies.patch
+texturepack-giga/
+SamuraiBoss/*.jar
+SamuraiBoss/*-ResourcePack.zip
+SamuraiBoss/*-ResourcePack.sha1

@@ -3,11 +3,9 @@ package de.aetherion.quests.ui;
 import de.aetherion.quests.AetherionQuests;
 import de.aetherion.quests.dialog.DialogPace;
 import de.aetherion.quests.lang.LangPack;
-import de.aetherion.quests.manager.QuestManager;
 import de.aetherion.quests.npc.LivingNpcProfile;
 import de.aetherion.quests.npc.QuestNPC;
 import de.aetherion.quests.talk.TalkUx;
-import de.aetherion.quests.util.QuestStoryGate;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -16,13 +14,16 @@ import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
- * Red thread after orientation: Miss Ledger hands the player the "open roads" —
- * Forage Isle (Twig), Farm Isle (Harlow), Fishing (Tackle) and Steel (Vex, later Rite Warden).
+ * Red thread after orientation: Miss Ledger hands the player the four skill isles (Acts IV–VII, see
+ * {@code docs/ONBOARDING_ACT_MAP.md}). Each road points straight at its Origin slime pad; the isle itself
+ * runs the lesson (its teacher, its loop) and reports back with {@code ISLE_LESSON_<ISLE>}, which ticks the
+ * road off here.
  * <p>
- * Soft by design: the player picks one road (reply chips) or wanders. Exactly one soft
- * compass target is set at a time. No quest state is touched and nothing is locked.
+ * Soft by design: the player picks one road (reply chips) or wanders. Exactly one soft compass target is
+ * set at a time. No quest state is touched and nothing is locked.
  */
 public final class SkillRoads {
 
@@ -30,7 +31,27 @@ public final class SkillRoads {
     public static final String FORAGE_POINTED_KEY = "forage_harbour_pad_hint";
 
     public enum Road {
-        FORAGE, FARM, FISH, STEEL
+        FORAGE("forage", "forage_pad", "ISLE_LESSON_FORAGE", NamedTextColor.GREEN),
+        FARM("farm", "farm_pad", "ISLE_LESSON_FARM", NamedTextColor.YELLOW),
+        FISH("fish", "fish_pad", "ISLE_LESSON_FISH", NamedTextColor.AQUA),
+        MINE("mine", "mine_pad", "ISLE_LESSON_MINE", NamedTextColor.GOLD);
+
+        final String key;
+        final String spot;
+        final String note;
+        final NamedTextColor color;
+
+        Road(String key, String spot, String note, NamedTextColor color) {
+            this.key = key;
+            this.spot = spot;
+            this.note = note;
+            this.color = color;
+        }
+
+        /** Starter-kit flag set when this isle's lesson is done. */
+        String doneFlag() {
+            return "isle_lesson_" + key;
+        }
     }
 
     private SkillRoads() {
@@ -46,26 +67,23 @@ public final class SkillRoads {
         if (player == null || ledger == null || !player.isOnline()) {
             return;
         }
-        QuestManager qm = questManager();
-        Road fallback = defaultRoad(player, qm);
+        Road fallback = defaultRoad(player);
         // Default target so the bossbar never goes blank (and drops Ledger's own pin) — a chip replaces it.
         QuestHint.clearPending(player);
-        QuestHint.show(player, npcId(player, qm, fallback), hintLabel(player, qm, fallback));
+        QuestHint.showSpot(player, fallback.spot, hintLabel(player, fallback));
         doorOpens(player);
 
-        say(player, ledger, LangPack.say(player, "ledger.roads.intro",
-                "Skills grow out there, {player}. Not at my desk."));
+        say(player, ledger, LangPack.say(player, "ledger.isles.intro",
+                "Skills grow on the isles, {player}. Each one teaches its own trade — by doing it."));
 
         if (!talkReady(player)) {
-            say(player, ledger, LangPack.say(player, "ledger.roads.list",
-                    "§aTwig§f's pad: Forage Isle. §eHarlow§f, back of the barn: Farm Isle. §bTackle§f: fishing."));
-            say(player, ledger, LangPack.say(player, "ledger.arrow_habit",
-                    "One habit: always watch the §eyellow arrow up top§f. It points to your current job."));
+            say(player, ledger, LangPack.say(player, "ledger.isles.list",
+                    "Four slime pads on Origin: §aForage§f, §eFarm§f, §bFishing§f, §6Mining§f. The yellow arrow takes you to one."));
             point(player, ledger, fallback, false);
             return;
         }
-        say(player, ledger, LangPack.say(player, "ledger.roads.menu",
-                "Wood, wheat, fish — or steel. Pick one. The arrow follows."));
+        say(player, ledger, LangPack.say(player, "ledger.isles.menu",
+                "Four isles, four trades. Pick one — the arrow takes you to its pad."));
         later(player, DialogPace.untilReplies(player), () -> {
             if (!offer(player, ledger)) {
                 point(player, ledger, fallback, true);
@@ -82,7 +100,7 @@ public final class SkillRoads {
                 Component.text(LangPack.ui(player, "roads_open_title", "THE ROADS ARE OPEN"), NamedTextColor.LIGHT_PURPLE,
                         net.kyori.adventure.text.format.TextDecoration.BOLD),
                 net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().deserialize(
-                        LangPack.ui(player, "roads_open_subtitle", "§aForage §8· §eFarm §8· §bFishing §8· §cSteel")),
+                        LangPack.ui(player, "isles_open_subtitle", "§aForage §8· §eFarm §8· §bFishing §8· §6Mining")),
                 net.kyori.adventure.title.Title.Times.times(java.time.Duration.ofMillis(400),
                         java.time.Duration.ofMillis(2600), java.time.Duration.ofMillis(800))));
         org.bukkit.Location at = player.getLocation();
@@ -92,39 +110,43 @@ public final class SkillRoads {
                 org.bukkit.SoundCategory.PLAYERS, 0.9f, 1.2f));
     }
 
-    /** Ledger desk chip "Where next?": same picker, one prompt line. */
+    /** Ledger desk chip "Where next?": same picker, one prompt line (ticks show the isles already learned). */
     public static void deskPrompt(Player player, QuestNPC ledger) {
         if (player == null || ledger == null) {
             return;
         }
-        say(player, ledger, LangPack.say(player, "ledger.roads.menu",
-                "Wood, wheat, fish — or steel. Pick one. The arrow follows."));
+        int done = doneCount(player);
+        String prompt = done >= Road.values().length
+                ? LangPack.say(player, "ledger.isles.menu_all",
+                        "All four isles learned. Ticked off, every one. Pick a pad anyway — they don't close.")
+                : done > 0
+                ? LangPack.say(player, "ledger.isles.menu_more",
+                        "Ticked ones you've learned. The rest still have a teacher waiting.")
+                : LangPack.say(player, "ledger.isles.menu",
+                        "Four isles, four trades. Pick one — the arrow takes you to its pad.");
+        say(player, ledger, prompt);
         later(player, DialogPace.untilReplies(player), () -> {
             if (!offer(player, ledger)) {
-                point(player, ledger, defaultRoad(player, questManager()), true);
+                point(player, ledger, defaultRoad(player), true);
             }
         });
     }
 
-    /** Road chips beside Ledger (max 5: four roads + "I'll wander."). */
+    /** Road chips beside Ledger (max 5: four isles + "I'll wander."). */
     public static boolean offer(Player player, QuestNPC ledger) {
         TalkUx talk = TalkUx.get();
         if (talk == null || player == null || ledger == null || !talk.enabledFor(player)) {
             return false;
         }
-        QuestManager qm = questManager();
         List<TalkUx.Choice> choices = new ArrayList<>();
         for (Road road : Road.values()) {
-            if (road == Road.STEEL && steelDone(player, qm)) {
-                continue;
-            }
-            String key = labelKey(player, qm, road);
+            boolean done = done(player, road);
             choices.add(new TalkUx.Choice(
-                    label(player, key),
-                    color(road),
+                    (done ? "✓ " : "") + label(player, road),
+                    done ? NamedTextColor.GRAY : road.color,
                     () -> point(player, ledger, road, true),
                     false,
-                    echo(player, key)
+                    echo(player, road)
             ));
         }
         choices.add(new TalkUx.Choice(
@@ -133,8 +155,8 @@ public final class SkillRoads {
                 () -> {
                     // Their call: no compass nag. The desk's "Where next?" brings the roads back.
                     QuestHint.clearPending(player);
-                    say(player, ledger, LangPack.say(player, "ledger.roads.wander.line",
-                            "Good. The map's yours. My desk isn't going anywhere."));
+                    say(player, ledger, LangPack.say(player, "ledger.isles.wander.line",
+                            "Good. The map's yours — Sergeant Vex at the Borderlands gate when you want a fight."));
                 },
                 false,
                 LangPack.say(player, "ledger.roads.wander.echo", "I'll look around.")
@@ -143,39 +165,30 @@ public final class SkillRoads {
     }
 
     /**
-     * Point at one road: speaker line, one compass target, one action-bar tip.
+     * Point at one road: speaker line, one compass target (the isle's pad), one action-bar tip.
      * {@code speak=false} skips the line (already covered by a summary).
      */
     public static void point(Player player, QuestNPC speaker, Road road, boolean speak) {
         if (player == null || road == null || !player.isOnline()) {
             return;
         }
-        QuestManager qm = questManager();
-        String key = labelKey(player, qm, road);
         if (speak && speaker != null) {
-            say(player, speaker, line(player, lineKey(player, qm, road)));
+            say(player, speaker, done(player, road) ? lineDone(player, road) : line(player, road));
         }
         QuestHint.clearPending(player);
-        // After Tackle's lesson: pin the fishing pad (Twig-pattern), not Tackle himself again.
-        if (road == Road.FISH && qm != null && QuestStoryGate.questCompleted(player, qm, "a_good_catch")) {
-            QuestHint.showSpot(player, "fish_pad",
-                    LangPack.ui(player, "hint_label.fish_pad", "Fishing Eldervale Pad"));
-            player.sendActionBar(Component.text(
-                    LangPack.ui(player, "tip.fish_pad", "→ Fishing Eldervale pad · out west"),
-                    color(road)));
-            return;
-        }
-        QuestHint.show(player, npcId(player, qm, road), hintLabel(player, qm, road));
-        player.sendActionBar(Component.text(tip(player, key), color(road)));
+        QuestHint.showSpot(player, road.spot, hintLabel(player, road));
+        player.sendActionBar(Component.text(tip(player, road), road.color));
         if (road == Road.FORAGE) {
             markForagePointed(player);
         }
     }
 
-    /** Plain default when the player doesn't pick: the harbour lesson first, then the isle trees. */
-    public static Road defaultRoad(Player player, QuestManager qm) {
-        if (qm != null && player != null && !QuestStoryGate.questCompleted(player, qm, "a_good_catch")) {
-            return Road.FISH;
+    /** First isle whose lesson isn't done yet (Forage → Farm → Fish → Mine), else Forage. */
+    public static Road defaultRoad(Player player) {
+        for (Road road : Road.values()) {
+            if (!done(player, road)) {
+                return road;
+            }
         }
         return Road.FORAGE;
     }
@@ -187,109 +200,107 @@ public final class SkillRoads {
         }
     }
 
-    /* ------------------------------------------------------------------ lookups */
+    /* ------------------------------------------------------------------ isle lessons */
 
-    static String npcId(Player player, QuestManager qm, Road road) {
-        return switch (road) {
-            case FORAGE -> "forage_pad_guide";
-            case FARM -> "farm_isle_guide";
-            case FISH -> "fisher";
-            case STEEL -> vexDone(player, qm) ? "rite_keeper" : "vex";
-        };
-    }
-
-    private static String hintLabel(Player player, QuestManager qm, Road road) {
-        return switch (road) {
-            case FORAGE -> "Twig · Forage Pad";
-            case FARM -> "Harlow · Farm Isle";
-            case FISH -> "Tackle · Fishing";
-            case STEEL -> vexDone(player, qm) ? "Rite Warden" : "Sergeant Vex";
-        };
-    }
-
-    /** Label / tip key: forage, farm, fish, steel (Vex) or rite (after Vex). */
-    private static String labelKey(Player player, QuestManager qm, Road road) {
-        return switch (road) {
-            case FORAGE -> "forage";
-            case FARM -> "farm";
-            case FISH -> "fish";
-            case STEEL -> vexDone(player, qm) ? "rite" : "steel";
-        };
-    }
-
-    private static String lineKey(Player player, QuestManager qm, Road road) {
-        String key = labelKey(player, qm, road);
-        if (road == Road.FISH && qm != null && QuestStoryGate.questCompleted(player, qm, "a_good_catch")) {
-            return key + ".line_done";
+    /**
+     * {@code ISLE_LESSON_<ISLE>} from an isle plugin (via {@code QuestProgressAccess.noteUsed}): file the road as
+     * learned. True when the target was an isle lesson note (nothing else should read it).
+     */
+    public static boolean noteIsleLesson(Player player, String target) {
+        if (player == null || target == null || !target.toUpperCase(Locale.ROOT).startsWith("ISLE_LESSON_")) {
+            return false;
         }
-        return key + ".line";
+        AetherionQuests plugin = AetherionQuests.getInstance();
+        for (Road road : Road.values()) {
+            if (road.note.equalsIgnoreCase(target) && plugin != null && plugin.getPlayerQuestStorage() != null) {
+                plugin.getPlayerQuestStorage().markStarterKit(player.getUniqueId(), road.doneFlag());
+            }
+        }
+        return true;
     }
+
+    /** This isle's lesson is done (the isle reported it). */
+    public static boolean done(Player player, Road road) {
+        AetherionQuests plugin = AetherionQuests.getInstance();
+        return player != null && plugin != null && plugin.getPlayerQuestStorage() != null
+                && plugin.getPlayerQuestStorage().hasStarterKit(player.getUniqueId(), road.doneFlag());
+    }
+
+    private static int doneCount(Player player) {
+        int n = 0;
+        for (Road road : Road.values()) {
+            if (done(player, road)) {
+                n++;
+            }
+        }
+        return n;
+    }
+
+    /* ------------------------------------------------------------------ lookups */
 
     // Explicit keys (no string building) so the DE validator and grep see every one.
 
-    private static String label(Player player, String key) {
-        return switch (key) {
-            case "forage" -> LangPack.say(player, "ledger.roads.forage.label", "Forage Isle · Twig");
-            case "farm" -> LangPack.say(player, "ledger.roads.farm.label", "Farm Isle · Harlow");
-            case "fish" -> LangPack.say(player, "ledger.roads.fish.label", "Fishing · Tackle");
-            case "rite" -> LangPack.say(player, "ledger.roads.rite.label", "Bosses · Rite Warden");
-            default -> LangPack.say(player, "ledger.roads.steel.label", "Combat · Vex");
-        };
-    }
-
-    private static String echo(Player player, String key) {
-        return switch (key) {
-            case "forage" -> LangPack.say(player, "ledger.roads.forage.echo", "Trees, please.");
-            case "farm" -> LangPack.say(player, "ledger.roads.farm.echo", "Fields for me.");
-            case "fish" -> LangPack.say(player, "ledger.roads.fish.echo", "I'll fish.");
-            case "rite" -> LangPack.say(player, "ledger.roads.rite.echo", "Bigger things to hit.");
-            default -> LangPack.say(player, "ledger.roads.steel.echo", "Something to hit.");
-        };
-    }
-
-    private static String line(Player player, String lineKey) {
-        return switch (lineKey) {
-            case "forage.line" -> LangPack.say(player, "ledger.roads.forage.line",
-                    "§aTwig§f's slime pad, by the Forager. Isle trees, bigger chop.");
-            case "farm.line" -> LangPack.say(player, "ledger.roads.farm.line",
-                    "§eHarlow§f, far end of the barn. He knows the way down — Farming §e10§f gets you in.");
-            case "fish.line" -> LangPack.say(player, "ledger.roads.fish.line",
-                    "§bTackle§f, end of the harbour pier. Rod, patience, five fish.");
-            case "fish.line_done" -> LangPack.say(player, "ledger.roads.fish.line_done",
-                    "§bTackle§f's still on the pier. Ask him where the big ones went.");
-            case "rite.line" -> LangPack.say(player, "ledger.roads.rite.line",
-                    "§cRite Warden§f, out in the waste. Bring a vial. And nerve.");
-            default -> LangPack.say(player, "ledger.roads.steel.line",
-                    "§cSergeant Vex§f, Borderlands gate. Armour on before you knock.");
-        };
-    }
-
-    private static String tip(Player player, String key) {
-        return switch (key) {
-            case "forage" -> LangPack.ui(player, "tip.road_forage", "→ Twig · slime pad · Forage Isle");
-            case "farm" -> LangPack.ui(player, "tip.road_farm", "→ Harlow · barn far end · Farm Isle");
-            case "fish" -> LangPack.ui(player, "tip.road_fish", "→ Tackle · harbour pier · fishing");
-            case "rite" -> LangPack.ui(player, "tip.road_rite", "→ Rite Warden · Borderlands");
-            default -> LangPack.ui(player, "tip.road_steel", "→ Sergeant Vex · gear on first");
-        };
-    }
-
-    private static NamedTextColor color(Road road) {
+    private static String hintLabel(Player player, Road road) {
         return switch (road) {
-            case FORAGE -> NamedTextColor.GREEN;
-            case FARM -> NamedTextColor.YELLOW;
-            case FISH -> NamedTextColor.AQUA;
-            case STEEL -> NamedTextColor.RED;
+            case FORAGE -> LangPack.ui(player, "hint_label.forage_pad", "Forage Isle Pad");
+            case FARM -> LangPack.ui(player, "hint_label.farm_pad", "Farm Isle Pad");
+            case FISH -> LangPack.ui(player, "hint_label.fish_pad", "Fishing Eldervale Pad");
+            case MINE -> LangPack.ui(player, "hint_label.mine_pad", "Mining Eldervale Pad");
         };
     }
 
-    private static boolean vexDone(Player player, QuestManager qm) {
-        return qm != null && player != null && QuestStoryGate.questCompleted(player, qm, "lesson_steel");
+    private static String label(Player player, Road road) {
+        return switch (road) {
+            case FORAGE -> LangPack.say(player, "ledger.isles.forage.label", "Forage Isle");
+            case FARM -> LangPack.say(player, "ledger.isles.farm.label", "Farm Isle");
+            case FISH -> LangPack.say(player, "ledger.isles.fish.label", "Fishing Isle");
+            case MINE -> LangPack.say(player, "ledger.isles.mine.label", "Mining Isle");
+        };
     }
 
-    /** Vex and the Rite are both filed — the steel road has nothing left to point at. */
-    private static boolean steelDone(Player player, QuestManager qm) {
-        return vexDone(player, qm) && QuestStoryGate.questCompleted(player, qm, "border_rites");
+    private static String echo(Player player, Road road) {
+        return switch (road) {
+            case FORAGE -> LangPack.say(player, "ledger.roads.forage.echo", "Trees, please.");
+            case FARM -> LangPack.say(player, "ledger.roads.farm.echo", "Fields for me.");
+            case FISH -> LangPack.say(player, "ledger.roads.fish.echo", "I'll fish.");
+            case MINE -> LangPack.say(player, "ledger.isles.mine.echo", "Rock. Deep rock.");
+        };
+    }
+
+    /** One sentence per isle: what its trade feels like, and who meets you there. */
+    private static String line(Player player, Road road) {
+        return switch (road) {
+            case FORAGE -> LangPack.say(player, "ledger.isles.forage.line",
+                    "§aForage Isle§f — the Fell bar again, but the trees keep score. Pad's north-east; §aMiss Canopy§f meets you.");
+            case FARM -> LangPack.say(player, "ledger.isles.farm.line",
+                    "§eFarm Isle§f — harvest in rhythm and the field pays more. Pad's south-west; §eElsie§f meets you.");
+            case FISH -> LangPack.say(player, "ledger.isles.fish.line",
+                    "§bFishing Eldervale§f — twelve waters, one honest pull. Pad's north-west; §bMaren§f meets you.");
+            case MINE -> LangPack.say(player, "ledger.isles.mine.line",
+                    "§6Mining Eldervale§f — your pick's power against the rock. Pad's south; §6Old Wick§f meets you.");
+        };
+    }
+
+    private static String lineDone(Player player, Road road) {
+        return switch (road) {
+            case FORAGE -> LangPack.say(player, "ledger.isles.forage.line_done",
+                    "Forage again? Pell's board will have fresh orders. Arrow's on the pad.");
+            case FARM -> LangPack.say(player, "ledger.isles.farm.line_done",
+                    "Back to the rows? Hattie's orders pay double. Arrow's on the pad.");
+            case FISH -> LangPack.say(player, "ledger.isles.fish.line_done",
+                    "The lake again? Odile's Log has gaps, I'm told. Arrow's on the pad.");
+            case MINE -> LangPack.say(player, "ledger.isles.mine.line_done",
+                    "Down the rock again? Otto's contracts don't fill themselves. Arrow's on the pad.");
+        };
+    }
+
+    private static String tip(Player player, Road road) {
+        return switch (road) {
+            case FORAGE -> LangPack.ui(player, "tip.isle_forage", "→ Forage Isle pad · Miss Canopy teaches the isle");
+            case FARM -> LangPack.ui(player, "tip.isle_farm", "→ Farm Isle pad · Elsie teaches the isle");
+            case FISH -> LangPack.ui(player, "tip.isle_fish", "→ Fishing Eldervale pad · Maren teaches the isle");
+            case MINE -> LangPack.ui(player, "tip.isle_mine", "→ Mining Eldervale pad · Old Wick teaches the isle");
+        };
     }
 
     /* ------------------------------------------------------------------ plumbing */
@@ -314,10 +325,5 @@ public final class SkillRoads {
                 task.run();
             }
         }, ticks);
-    }
-
-    private static QuestManager questManager() {
-        AetherionQuests plugin = AetherionQuests.getInstance();
-        return plugin == null ? null : plugin.getQuestManager();
     }
 }

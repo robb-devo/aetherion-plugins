@@ -112,6 +112,7 @@ public class PetExperienceListener implements Listener {
             PetEntity active = activePetManager.getActivePet(player);
             if (active != null) {
                 active.updateDisplayName();
+                active.cheer();
             }
             if (collection != null) {
                 plugin.getPetDataManager().save(collection);

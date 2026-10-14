@@ -225,10 +225,10 @@ public final class StoryLines {
                 "Come back soon. I'll have remembered the way by then.");
         en("story_ferryman.offer_ferry",
                 "A passenger. With a writ, even. The fog's thin enough today.",
-                "Step onto the barge and ring the bell. Once. It counts.",
+                "Ring the bell by the gangway. Once. It counts. Or step aboard and crouch.",
                 "I'll see you on the other side. I'm always on the other side.");
         en("story_ferryman.remind_ferry",
-                "Aboard, {player}. Ring the bell once, or just stand on the deck and wait.",
+                "Aboard, {player}. Ring the bell once, or stand on the deck and crouch.",
                 "The fog doesn't wait. Well. It does. I don't.");
         en("story_ferryman.ferry_done",
                 "Told you. Always on this side, somehow.",

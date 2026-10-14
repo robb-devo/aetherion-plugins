@@ -1,6 +1,7 @@
 package de.aetherion.fishing.isle;
 
 import de.aetherion.core.AetherKeys;
+import de.aetherion.core.api.BarChrome;
 import de.aetherion.core.api.QuestBars;
 import de.aetherion.fishing.FishingSkills;
 import de.aetherion.items.util.InventoryDrops;
@@ -346,7 +347,7 @@ public final class LakeEvents implements Listener {
                     ? (float) Math.max(0.0d, 1.0d - activeTicks / (double) total())
                     : (float) Math.max(0.0d, Math.min(1.0d, hp / (double) Math.max(1, hpMax)));
             bar.progress(progress);
-            bar.name(LakeText.legacy(barTitle()));
+            bar.name(LakeText.legacy(BarChrome.legacy(BarChrome.Family.EVENT, BarChrome.Icon.FISH, barTitle())));
         }
         if (kind == Kind.SILVER_RUN && activeTicks % 10 == 0) {
             for (Player visitor : visitors) {
@@ -391,7 +392,8 @@ public final class LakeEvents implements Listener {
         } else {
             sub = "§7Lake bites ×3 faster §8· §fone miss forgiven §8· §7+" + RUN_COINS + " coins a fish";
         }
-        bar = BossBar.bossBar(LakeText.legacy(barTitle()), 1.0f, kind.color, BossBar.Overlay.NOTCHED_10);
+        bar = BossBar.bossBar(LakeText.legacy(BarChrome.legacy(BarChrome.Family.EVENT, BarChrome.Icon.FISH,
+                barTitle())), 1.0f, kind.color, BossBar.Overlay.NOTCHED_10);
         for (Player visitor : LakeWorld.visitors()) {
             visitor.showTitle(Title.title(
                     LakeText.legacy((kind == Kind.ELDERMAW ? "§5§l" : "§f§l") + kind.display),
@@ -556,7 +558,8 @@ public final class LakeEvents implements Listener {
         breachTicks = 0;
         if (bar != null) {
             bar.progress(0.0f);
-            bar.name(LakeText.legacy("§5§lThe Eldermaw breaches!"));
+            bar.name(LakeText.legacy(BarChrome.legacy(BarChrome.Family.EVENT, BarChrome.Icon.FISH,
+                    "§5§lThe Eldermaw breaches!")));
         }
         List<Map.Entry<UUID, Integer>> pulls = new ArrayList<>(tally.entrySet());
         pulls.sort((a, b) -> Integer.compare(b.getValue(), a.getValue()));
