@@ -1,6 +1,7 @@
 package de.aetherion.fishing;
 
 import de.aetherion.core.AetherKeys;
+import de.aetherion.core.api.ActionBarLane;
 import de.aetherion.items.AetherionItems;
 import de.aetherion.items.economy.CompressedResource;
 import de.aetherion.items.manager.ActiveEquipmentStats;
@@ -180,7 +181,7 @@ public final class FishingEncounterListener implements Listener {
         killer.playSound(killer.getLocation(), Sound.ENTITY_DROWNED_DEATH, 0.55f, 1.15f);
         killer.playSound(killer.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, 0.5f, 1.5f);
         String credit = FishingSkills.credit(killer);
-        killer.sendActionBar(net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection()
+        ActionBarLane.show(killer, net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection()
                 .deserialize("§b" + tier.displayName() + " sank. §7Something useful floated up."
                         + (credit == null ? "" : "  §8│  " + credit)));
     }

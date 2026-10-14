@@ -1,0 +1,172 @@
+{
+  "providers": [
+    {
+      "type": "space",
+      "advances": {
+        "\uf801": -1,
+        "\uf802": -2,
+        "\uf803": -4,
+        "\uf804": -8,
+        "\uf805": -16,
+        "\uf806": -32,
+        "\uf807": -64,
+        "\uf808": -128,
+        "\uf821": 1,
+        "\uf822": 2,
+        "\uf823": 4,
+        "\uf824": 8,
+        "\uf825": 16,
+        "\uf826": 32,
+        "\uf827": 64,
+        "\uf828": 128
+      }
+    },
+    {
+      "type": "bitmap",
+      "file": "aetherion:font/hud/frames.png",
+      "ascent": -24,
+      "height": 11,
+      "chars": [
+        "\ue100\ue101\ue102\ue103\ue104"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "aetherion:font/hud/icons.png",
+      "ascent": -26,
+      "height": 7,
+      "chars": [
+        "\ue110\ue111\ue112\ue113\ue114\ue115\ue116\ue117\ue118\ue119"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "aetherion:font/hud/fill.png",
+      "ascent": -26,
+      "height": 7,
+      "chars": [
+        "\ue120\ue121\ue122\ue123\ue124\ue125\ue126\ue127",
+        "\ue128\ue129\ue12a\ue12b\ue12c\ue12d\ue12e\ue12f",
+        "\ue130\ue131\ue132\ue133\ue134\ue135\ue136\ue137",
+        "\ue138\ue139\ue13a\ue13b\ue13c\ue13d\ue13e\ue13f",
+        "\ue140\ue141\ue142\ue143\ue144\ue145\ue146\ue147",
+        "\ue148\ue149\ue14a\ue14b\ue14c\ue14d\ue14e\ue14f",
+        "\ue150\ue151\ue152\ue153\ue154\ue155\ue156\ue157",
+        "\ue158\ue159\ue15a\ue15b\ue15c\ue15d\ue15e\ue15f",
+        "\ue160\ue161\ue162\u0000\u0000\u0000\u0000\u0000"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "aetherion:font/hud/text.png",
+      "ascent": -26,
+      "height": 7,
+      "chars": [
+        "\u0000\ue181\u0000\u0000\u0000\ue185\u0000\ue187\ue188\ue189\u0000\ue18b\ue18c\ue18d\ue18e\ue18f",
+        "\ue190\ue191\ue192\ue193\ue194\ue195\ue196\ue197\ue198\ue199\ue19a\u0000\u0000\u0000\u0000\ue19f",
+        "\u0000\ue1a1\ue1a2\ue1a3\ue1a4\ue1a5\ue1a6\ue1a7\ue1a8\ue1a9\ue1aa\ue1ab\ue1ac\ue1ad\ue1ae\ue1af",
+        "\ue1b0\ue1b1\ue1b2\ue1b3\ue1b4\ue1b5\ue1b6\ue1b7\ue1b8\ue1b9\ue1ba\u0000\u0000\u0000\u0000\u0000",
+        "\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\ue1cb\u0000\ue1cd\u0000\u0000",
+        "\u0000\u0000\u0000\ue1d3\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "aetherion:font/hud/frames.png",
+      "ascent": -12,
+      "height": 11,
+      "chars": [
+        "\ue200\ue201\ue202\ue203\ue204"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "aetherion:font/hud/icons.png",
+      "ascent": -14,
+      "height": 7,
+      "chars": [
+        "\ue210\ue211\ue212\ue213\ue214\ue215\ue216\ue217\ue218\ue219"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "aetherion:font/hud/fill.png",
+      "ascent": -14,
+      "height": 7,
+      "chars": [
+        "\ue220\ue221\ue222\ue223\ue224\ue225\ue226\ue227",
+        "\ue228\ue229\ue22a\ue22b\ue22c\ue22d\ue22e\ue22f",
+        "\ue230\ue231\ue232\ue233\ue234\ue235\ue236\ue237",
+        "\ue238\ue239\ue23a\ue23b\ue23c\ue23d\ue23e\ue23f",
+        "\ue240\ue241\ue242\ue243\ue244\ue245\ue246\ue247",
+        "\ue248\ue249\ue24a\ue24b\ue24c\ue24d\ue24e\ue24f",
+        "\ue250\ue251\ue252\ue253\ue254\ue255\ue256\ue257",
+        "\ue258\ue259\ue25a\ue25b\ue25c\ue25d\ue25e\ue25f",
+        "\ue260\ue261\ue262\u0000\u0000\u0000\u0000\u0000"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "aetherion:font/hud/text.png",
+      "ascent": -14,
+      "height": 7,
+      "chars": [
+        "\u0000\ue281\u0000\u0000\u0000\ue285\u0000\ue287\ue288\ue289\u0000\ue28b\ue28c\ue28d\ue28e\ue28f",
+        "\ue290\ue291\ue292\ue293\ue294\ue295\ue296\ue297\ue298\ue299\ue29a\u0000\u0000\u0000\u0000\ue29f",
+        "\u0000\ue2a1\ue2a2\ue2a3\ue2a4\ue2a5\ue2a6\ue2a7\ue2a8\ue2a9\ue2aa\ue2ab\ue2ac\ue2ad\ue2ae\ue2af",
+        "\ue2b0\ue2b1\ue2b2\ue2b3\ue2b4\ue2b5\ue2b6\ue2b7\ue2b8\ue2b9\ue2ba\u0000\u0000\u0000\u0000\u0000",
+        "\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\ue2cb\u0000\ue2cd\u0000\u0000",
+        "\u0000\u0000\u0000\ue2d3\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "aetherion:font/hud/frames.png",
+      "ascent": 0,
+      "height": 11,
+      "chars": [
+        "\ue300\ue301\ue302\ue303\ue304"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "aetherion:font/hud/icons.png",
+      "ascent": -2,
+      "height": 7,
+      "chars": [
+        "\ue310\ue311\ue312\ue313\ue314\ue315\ue316\ue317\ue318\ue319"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "aetherion:font/hud/fill.png",
+      "ascent": -2,
+      "height": 7,
+      "chars": [
+        "\ue320\ue321\ue322\ue323\ue324\ue325\ue326\ue327",
+        "\ue328\ue329\ue32a\ue32b\ue32c\ue32d\ue32e\ue32f",
+        "\ue330\ue331\ue332\ue333\ue334\ue335\ue336\ue337",
+        "\ue338\ue339\ue33a\ue33b\ue33c\ue33d\ue33e\ue33f",
+        "\ue340\ue341\ue342\ue343\ue344\ue345\ue346\ue347",
+        "\ue348\ue349\ue34a\ue34b\ue34c\ue34d\ue34e\ue34f",
+        "\ue350\ue351\ue352\ue353\ue354\ue355\ue356\ue357",
+        "\ue358\ue359\ue35a\ue35b\ue35c\ue35d\ue35e\ue35f",
+        "\ue360\ue361\ue362\u0000\u0000\u0000\u0000\u0000"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "aetherion:font/hud/text.png",
+      "ascent": -2,
+      "height": 7,
+      "chars": [
+        "\u0000\ue381\u0000\u0000\u0000\ue385\u0000\ue387\ue388\ue389\u0000\ue38b\ue38c\ue38d\ue38e\ue38f",
+        "\ue390\ue391\ue392\ue393\ue394\ue395\ue396\ue397\ue398\ue399\ue39a\u0000\u0000\u0000\u0000\ue39f",
+        "\u0000\ue3a1\ue3a2\ue3a3\ue3a4\ue3a5\ue3a6\ue3a7\ue3a8\ue3a9\ue3aa\ue3ab\ue3ac\ue3ad\ue3ae\ue3af",
+        "\ue3b0\ue3b1\ue3b2\ue3b3\ue3b4\ue3b5\ue3b6\ue3b7\ue3b8\ue3b9\ue3ba\u0000\u0000\u0000\u0000\u0000",
+        "\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\ue3cb\u0000\ue3cd\u0000\u0000",
+        "\u0000\u0000\u0000\ue3d3\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000"
+      ]
+    }
+  ]
+}

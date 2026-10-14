@@ -1,5 +1,7 @@
 package de.aetherion.fishing.isle;
 
+import de.aetherion.core.api.ActionBarLane;
+
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
@@ -24,7 +26,7 @@ public final class LakeText {
 
     public static void bar(Player player, String text) {
         if (player != null) {
-            player.sendActionBar(legacy(text));
+            ActionBarLane.show(player, legacy(text));
         }
     }
 
