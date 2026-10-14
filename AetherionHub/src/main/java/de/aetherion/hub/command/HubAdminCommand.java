@@ -259,25 +259,33 @@ public final class HubAdminCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage("§aGave a Homestead Marker (" + spawnId + ") to §f" + target.getName() + "§a.");
     }
 
+    private static boolean isGerman(Player player) {
+        de.aetherion.core.api.LangAccess lang = de.aetherion.core.api.AetherServices.lang();
+        return lang != null && lang.german(player);
+    }
+
     public void sendHint(Player player) {
+        boolean german = isGerman(player);
         String title = plugin.getConfig().getString(
-                "starter-hint.title",
-                "§6§lFIND EGON"
+                german ? "starter-hint.title-de" : "starter-hint.title",
+                german ? "§6§lFINDE EGON" : "§6§lFIND EGON"
         );
         String subtitle = plugin.getConfig().getString(
-                "starter-hint.subtitle",
-                "§eGreen glow on the pier · right-click him"
+                german ? "starter-hint.subtitle-de" : "starter-hint.subtitle",
+                german ? "§eGrünes Leuchten am Pier · Rechtsklick auf ihn" : "§eGreen glow on the pier · right-click him"
         );
         String actionbar = plugin.getConfig().getString(
-                "starter-hint.actionbar",
-                "§aLook for the green glow — Egon kits rookies"
+                german ? "starter-hint.actionbar-de" : "starter-hint.actionbar",
+                german ? "§aSuch das grüne Leuchten — Egon hilft Rookies" : "§aLook for the green glow — Egon kits rookies"
         );
 
         player.showTitle(net.kyori.adventure.title.Title.title(
                 net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection()
-                        .deserialize(title == null ? "§6§lFIND EGON" : title),
+                        .deserialize(title == null ? (german ? "§6§lFINDE EGON" : "§6§lFIND EGON") : title),
                 net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection()
-                        .deserialize(subtitle == null ? "§eGreen glow on the pier" : subtitle),
+                        .deserialize(subtitle == null
+                                ? (german ? "§eGrünes Leuchten am Pier" : "§eGreen glow on the pier")
+                                : subtitle),
                 net.kyori.adventure.title.Title.Times.times(
                         java.time.Duration.ofMillis(300),
                         java.time.Duration.ofSeconds(4),
@@ -285,14 +293,19 @@ public final class HubAdminCommand implements CommandExecutor, TabCompleter {
                 )
         ));
         player.sendActionBar(net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection()
-                .deserialize(actionbar == null ? "§aLook for the green aura — Egon" : actionbar));
+                .deserialize(actionbar == null
+                        ? (german ? "§aSuch die grüne Aura — Egon" : "§aLook for the green aura — Egon")
+                        : actionbar));
         player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1f, 1.3f);
 
         // Optional chat flavor — players may ignore it.
         if (plugin.getConfig().getBoolean("starter-hint.also-chat", false)) {
-            List<String> messages = plugin.getConfig().getStringList("starter-hint.messages");
+            List<String> messages = plugin.getConfig().getStringList(
+                    german ? "starter-hint.messages-de" : "starter-hint.messages");
             if (messages.isEmpty()) {
-                player.sendMessage("§6§lHint: §eTalk to Egon and Quartermaster to start your journey");
+                player.sendMessage(german
+                        ? "§6§lTipp: §eSprich mit Egon und dem Quartermaster, um zu starten"
+                        : "§6§lHint: §eTalk to Egon and Quartermaster to start your journey");
             } else {
                 for (String line : messages) {
                     player.sendMessage(line);

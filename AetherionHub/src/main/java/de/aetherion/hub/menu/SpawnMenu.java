@@ -21,6 +21,9 @@ import java.util.Set;
 public final class SpawnMenu {
 
     public static final String TITLE = "§8Aetherion Spawns";
+    /** Pack overlay (Aetherion Manager chrome): \uE005 shift + \uE024 spawns panel. */
+    private static final net.kyori.adventure.text.Component CHROME = net.kyori.adventure.text.Component.text(
+            "\uE005\uE024", net.kyori.adventure.text.format.NamedTextColor.WHITE);
     public static final int BACK_SLOT = 49;
     public static final int INFO_SLOT = 4;
     private static final int MENU_SIZE = 54;
@@ -37,7 +40,6 @@ public final class SpawnMenu {
             case "mines" -> 12;
             case "capital" -> 13;
             case "forage_isle" -> 14;
-            case "fishing_eldervale" -> 22;
             case "farm" -> 15;
             case "farm_isle" -> 16;
             case "colosseum" -> 19;
@@ -54,7 +56,7 @@ public final class SpawnMenu {
     }
 
     public void open(Player player) {
-        Inventory inventory = Bukkit.createInventory(new Holder(), MENU_SIZE, TITLE);
+        Inventory inventory = Bukkit.createInventory(new Holder(), MENU_SIZE, CHROME);
         fillBorder(inventory);
 
         inventory.setItem(INFO_SLOT, item(
