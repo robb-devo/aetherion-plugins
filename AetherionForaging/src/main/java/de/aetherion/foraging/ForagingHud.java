@@ -1,5 +1,7 @@
 package de.aetherion.foraging;
 
+import de.aetherion.core.api.BarChrome;
+import de.aetherion.core.api.BarSync;
 import de.aetherion.core.api.QuestBars;
 
 import org.bukkit.Bukkit;
@@ -95,7 +97,7 @@ final class ForagingHud {
             return;
         }
         BossBar bar = bars.computeIfAbsent(player.getUniqueId(), id -> {
-            BossBar created = Bukkit.createBossBar(title, color, BarStyle.SEGMENTED_20);
+            BossBar created = Bukkit.createBossBar("", color, BarStyle.SEGMENTED_20);
             created.setVisible(true);
             return created;
         });
@@ -103,9 +105,10 @@ final class ForagingHud {
             QuestBars.suppress(player, LEASE);
             bar.addPlayer(player);
         }
-        bar.setTitle(title);
-        bar.setProgress(Math.max(0.0d, Math.min(1.0d, progress)));
-        bar.setColor(color);
-        bar.setVisible(true);
+        // Gather frame + axe; per tick, so only what changed goes out.
+        BarSync.title(bar, BarChrome.legacy(BarChrome.Family.GATHER, BarChrome.Icon.AXE, title));
+        BarSync.progress(bar, progress);
+        BarSync.color(bar, color);
+        BarSync.visible(bar, true);
     }
 }

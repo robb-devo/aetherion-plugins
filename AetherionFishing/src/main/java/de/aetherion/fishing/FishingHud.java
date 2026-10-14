@@ -1,6 +1,8 @@
 package de.aetherion.fishing;
 
 import de.aetherion.core.api.ActionBarLane;
+import de.aetherion.core.api.BarChrome;
+import de.aetherion.core.api.BarSync;
 import de.aetherion.core.api.QuestBars;
 
 import org.bukkit.Bukkit;
@@ -100,7 +102,7 @@ final class FishingHud {
             return;
         }
         BossBar bar = bars.computeIfAbsent(player.getUniqueId(), id -> {
-            BossBar created = Bukkit.createBossBar(title, color, style);
+            BossBar created = Bukkit.createBossBar("", color, style);
             created.setVisible(true);
             return created;
         });
@@ -108,11 +110,12 @@ final class FishingHud {
             QuestBars.suppress(player, LEASE);
             bar.addPlayer(player);
         }
-        bar.setTitle(title);
-        bar.setProgress(clamp(progress));
-        bar.setColor(color);
-        bar.setStyle(style);
-        bar.setVisible(true);
+        // Gather frame + float; per tick, so only what changed goes out (the strike marker still moves every tick).
+        BarSync.title(bar, BarChrome.legacy(BarChrome.Family.GATHER, BarChrome.Icon.BOBBER, title));
+        BarSync.progress(bar, clamp(progress));
+        BarSync.color(bar, color);
+        BarSync.style(bar, style);
+        BarSync.visible(bar, true);
     }
 
     private static double clamp(double value) {

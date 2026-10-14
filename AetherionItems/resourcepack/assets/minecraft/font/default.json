@@ -28,6 +28,11 @@
     {"type": "bitmap", "file": "minecraft:font/gui_aetherion_storage.png", "ascent": 23, "height": 256, "chars": ["\ue022"]},
     {"type": "bitmap", "file": "minecraft:font/gui_aetherion_loadouts.png", "ascent": 23, "height": 256, "chars": ["\ue023"]},
     {"type": "bitmap", "file": "minecraft:font/gui_aetherion_spawns.png", "ascent": 23, "height": 256, "chars": ["\ue024"]},
-    {"type": "bitmap", "file": "minecraft:font/gui_aetherion_pets.png", "ascent": 23, "height": 256, "chars": ["\ue025"]}
+    {"type": "bitmap", "file": "minecraft:font/gui_aetherion_pets.png", "ascent": 23, "height": 256, "chars": ["\ue025"]},
+    {"type": "space", "advances": {"\ue980": -1, "\ue981": -2, "\ue982": -4, "\ue983": -8, "\ue984": -16, "\ue985": -32, "\ue986": -64, "\ue987": -128, "\ue988": -256, "\ue990": 1, "\ue991": 2, "\ue992": 4, "\ue993": 8, "\ue994": 16, "\ue995": 32, "\ue996": 64, "\ue997": 128, "\ue998": 256}},
+    {"type": "bitmap", "file": "aetherion:font/bar/frames.png", "ascent": 3, "height": 16, "chars": ["\ue900", "\ue901", "\ue902", "\ue903", "\ue904", "\ue905", "\ue906", "\ue907"]},
+    {"type": "bitmap", "file": "aetherion:font/bar/icons_boss.png", "ascent": 0, "height": 9, "chars": ["\ue940\ue941\ue942\ue943"]},
+    {"type": "bitmap", "file": "aetherion:font/bar/icons.png", "ascent": -1, "height": 7, "chars": ["\ue920\ue921\ue922\ue923\ue924\ue925\ue926\ue927\ue928\ue929\ue92a\ue92b\ue92c\ue92d\ue92e\ue92f\ue930\ue931\ue932\ue933\ue934\ue935\ue936\ue937\ue938"]},
+    {"type": "bitmap", "file": "aetherion:font/bar/icons_hint.png", "ascent": -2, "height": 5, "chars": ["\ue950\ue951\ue952"]}
   ]
 }

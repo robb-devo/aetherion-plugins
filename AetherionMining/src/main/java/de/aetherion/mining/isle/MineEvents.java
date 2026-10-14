@@ -1,5 +1,6 @@
 package de.aetherion.mining.isle;
 
+import de.aetherion.core.api.BarChrome;
 import de.aetherion.core.api.QuestBars;
 
 import net.kyori.adventure.bossbar.BossBar;
@@ -414,7 +415,7 @@ public final class MineEvents implements Listener {
         syncViewers(visitors);
         if (bar != null) {
             bar.progress((float) Math.max(0.0d, 1.0d - activeTicks / (double) totalTicks()));
-            bar.name(MineText.legacy(barTitle()));
+            bar.name(MineText.legacy(BarChrome.legacy(BarChrome.Family.EVENT, BarChrome.Icon.PICK, barTitle())));
         }
         switch (kind) {
             case RICH_VEIN -> {
@@ -466,7 +467,8 @@ public final class MineEvents implements Listener {
         if (kind == Kind.TREMOR) {
             goal = Math.max(15, 10 * MineWorld.miners(isle.plugin()).size());
         }
-        bar = BossBar.bossBar(MineText.legacy(barTitle()), 1.0f, kind.color, BossBar.Overlay.PROGRESS);
+        bar = BossBar.bossBar(MineText.legacy(BarChrome.legacy(BarChrome.Family.EVENT, BarChrome.Icon.PICK,
+                barTitle())), 1.0f, kind.color, BossBar.Overlay.PROGRESS);
         String sub = switch (kind) {
             case RICH_VEIN -> "§6" + district.name() + " §7· +1 ore (50%) and +" + RICH_XP + " XP per ore";
             case EMBER_HOUR -> "§7Crystal Finds ×" + (int) EMBER_MULT + " for two minutes";

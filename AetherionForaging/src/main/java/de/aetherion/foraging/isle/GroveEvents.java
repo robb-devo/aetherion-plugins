@@ -1,5 +1,7 @@
 package de.aetherion.foraging.isle;
 
+import de.aetherion.core.api.BarChrome;
+
 import net.kyori.adventure.bossbar.BossBar;
 
 import org.bukkit.Bukkit;
@@ -57,7 +59,7 @@ public final class GroveEvents implements Listener {
     public enum Kind {
         GOLDEN_SAP("§6✦ Golden Sap", 150, BossBar.Color.YELLOW),
         WINDFALL("§f≋ Windfall", 120, BossBar.Color.WHITE),
-        BLOSSOM_STORM("§d❀ Blossom Storm", 120, BossBar.Color.PINK),
+        BLOSSOM_STORM("§d❀ Blossom Storm", 120, BossBar.Color.PURPLE),
         BARK_BLIGHT("§c✸ Bark Blight", 150, BossBar.Color.RED);
 
         public final String title;
@@ -169,8 +171,9 @@ public final class GroveEvents implements Listener {
         }
         if (warming != null) {
             long left = startsAt - now;
-            bar.name(ForageText.legacy(warming.title + " §7in §f" + Math.max(1, (left + 999) / 1000) + "s"
-                    + (warming == Kind.GOLDEN_SAP && hotspot != null ? " §8· " + hotspot.colored() : "")));
+            bar.name(ForageText.legacy(BarChrome.legacy(BarChrome.Family.EVENT, BarChrome.Icon.LEAF,
+                    warming.title + " §7in §f" + Math.max(1, (left + 999) / 1000) + "s"
+                    + (warming == Kind.GOLDEN_SAP && hotspot != null ? " §8· " + hotspot.colored() : ""))));
             bar.progress(1.0f - (float) Math.max(0, Math.min(1.0, left / (1000.0d * warmupSeconds()))));
             if (left <= 0) {
                 begin(onIsle);
@@ -183,7 +186,7 @@ public final class GroveEvents implements Listener {
             return;
         }
         bar.progress((float) Math.max(0.0d, Math.min(1.0d, left / (active.seconds * 1000.0d))));
-        bar.name(ForageText.legacy(barName(left)));
+        bar.name(ForageText.legacy(BarChrome.legacy(BarChrome.Family.EVENT, BarChrome.Icon.LEAF, barName(left))));
         switch (active) {
             case WINDFALL -> tickWindfall(onIsle, now);
             case BLOSSOM_STORM -> {

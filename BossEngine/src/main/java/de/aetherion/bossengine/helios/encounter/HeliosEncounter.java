@@ -523,6 +523,8 @@ public final class HeliosEncounter {
             bars.sync(List.of());
             return;
         }
+        bars.sigil(act == Act.HELIOS
+                ? de.aetherion.core.api.BarChrome.Icon.SUN : de.aetherion.core.api.BarChrome.Icon.CROWN);
         bars.update(boss.healthPercent(), script.blocksDamage(),
                 act == Act.HELIOS ? BossBar.Color.RED : BossBar.Color.YELLOW, sky.darken(), sky.fog());
         bars.sync(audience());

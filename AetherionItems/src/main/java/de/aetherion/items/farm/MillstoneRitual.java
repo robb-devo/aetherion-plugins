@@ -1,5 +1,6 @@
 package de.aetherion.items.farm;
 
+import de.aetherion.core.api.BarChrome;
 import de.aetherion.items.AetherionItems;
 import de.aetherion.items.economy.CompressedResource;
 
@@ -59,7 +60,8 @@ public final class MillstoneRitual {
         ItemStack result = crop.refined();
         BlockDisplay arm = MillstoneCabinet.findArm(stationId, stationAt);
         BossBar bar = BossBar.bossBar(
-                Component.text("Milling " + strip(crop.refinedName()), NamedTextColor.GOLD, TextDecoration.BOLD),
+                BarChrome.component(BarChrome.Family.RITUAL, BarChrome.Icon.MILL,
+                        Component.text("Milling " + strip(crop.refinedName()), NamedTextColor.GOLD, TextDecoration.BOLD)),
                 1.0f,
                 BossBar.Color.YELLOW,
                 BossBar.Overlay.PROGRESS
@@ -110,11 +112,11 @@ public final class MillstoneRitual {
         int leftSec = (int) Math.ceil(leftTicks / 20.0);
         float progress = Math.max(0f, Math.min(1f, leftTicks / (float) (SECONDS * 20L)));
         session.bar.progress(progress);
-        session.bar.name(Component.text(
+        session.bar.name(BarChrome.component(BarChrome.Family.RITUAL, BarChrome.Icon.MILL, Component.text(
                 "Milling · " + Math.max(0, leftSec) + "s",
                 NamedTextColor.GOLD,
                 TextDecoration.BOLD
-        ));
+        )));
         Player player = Bukkit.getPlayer(session.playerId);
         if (player != null && player.isOnline()) {
             player.showBossBar(session.bar);

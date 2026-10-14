@@ -1,6 +1,8 @@
 package de.aetherion.aethermobs.listener;
 
 import de.aetherion.aethermobs.pet.PetEntity;
+import de.aetherion.core.api.BarChrome;
+import de.aetherion.core.api.BarSync;
 import de.aetherion.core.api.QuestBars;
 
 import org.bukkit.Bukkit;
@@ -42,7 +44,8 @@ final class CatchTimingSession {
         this.pet = pet;
         this.baseChance = baseChance;
         QuestBars.suppress(player);
-        this.bar = Bukkit.createBossBar(title(false), BarColor.PURPLE, BarStyle.SOLID);
+        this.bar = Bukkit.createBossBar("", BarColor.PURPLE, BarStyle.SOLID);
+        BarSync.title(bar, title(false));
         this.bar.setProgress(1.0d);
         this.bar.addPlayer(player);
         this.bar.setVisible(true);
@@ -63,9 +66,9 @@ final class CatchTimingSession {
         boolean hot = inZone();
         justEntered = hot && !wasHot && !locked;
         wasHot = hot;
-        bar.setColor(perfect ? BarColor.GREEN : (hot && !locked ? BarColor.YELLOW : BarColor.PURPLE));
-        bar.setTitle(title(hot));
-        bar.setProgress(Math.max(0.0d, 1.0d - ticks / (double) DURATION_TICKS));
+        BarSync.color(bar, perfect ? BarColor.GREEN : (hot && !locked ? BarColor.YELLOW : BarColor.PURPLE));
+        BarSync.title(bar, title(hot));
+        BarSync.progress(bar, 1.0d - ticks / (double) DURATION_TICKS);
     }
 
     /** True on the tick the marker slides into the green — the listener ticks a cue. */
@@ -79,8 +82,8 @@ final class CatchTimingSession {
         }
         locked = true;
         perfect = inZone();
-        bar.setColor(perfect ? BarColor.GREEN : BarColor.WHITE);
-        bar.setTitle(title(perfect));
+        BarSync.color(bar, perfect ? BarColor.GREEN : BarColor.WHITE);
+        BarSync.title(bar, title(perfect));
         return true;
     }
 
@@ -116,7 +119,12 @@ final class CatchTimingSession {
         return marker >= ZONE_START && marker < ZONE_START + ZONE_SIZE;
     }
 
+    /** Gather frame (same timing family as the cast and the fell) with a paw in the socket. */
     private String title(boolean hot) {
+        return BarChrome.legacy(BarChrome.Family.GATHER, BarChrome.Icon.PAW, line(hot));
+    }
+
+    private String line(boolean hot) {
         StringBuilder builder = new StringBuilder();
         if (perfect) {
             builder.append("§a✦ Perfect  ");

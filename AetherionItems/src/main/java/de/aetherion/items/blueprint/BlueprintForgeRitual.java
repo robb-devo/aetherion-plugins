@@ -1,5 +1,6 @@
 package de.aetherion.items.blueprint;
 
+import de.aetherion.core.api.BarChrome;
 import de.aetherion.items.AetherionItems;
 import de.aetherion.items.core.ItemKeys;
 
@@ -126,7 +127,8 @@ public final class BlueprintForgeRitual implements Listener {
         });
 
         BossBar bar = BossBar.bossBar(
-                Component.text("Forging Tier " + BlueprintUpgrade.roman(tier), NamedTextColor.GOLD, TextDecoration.BOLD),
+                BarChrome.component(BarChrome.Family.RITUAL, BarChrome.Icon.ANVIL,
+                        Component.text("Forging Tier " + BlueprintUpgrade.roman(tier), NamedTextColor.GOLD, TextDecoration.BOLD)),
                 1.0f,
                 BossBar.Color.YELLOW,
                 BossBar.Overlay.PROGRESS
@@ -194,11 +196,11 @@ public final class BlueprintForgeRitual implements Listener {
                 ? 0f
                 : Math.max(0f, Math.min(1f, leftTicks / (float) (session.totalSeconds * 20L)));
         session.bar.progress(progress);
-        session.bar.name(Component.text(
+        session.bar.name(BarChrome.component(BarChrome.Family.RITUAL, BarChrome.Icon.ANVIL, Component.text(
                 "Forging Tier " + BlueprintUpgrade.roman(session.tier) + " · " + Math.max(0, leftSec) + "s",
                 NamedTextColor.GOLD,
                 TextDecoration.BOLD
-        ));
+        )));
         Player player = Bukkit.getPlayer(session.playerId);
         if (player != null && player.isOnline()) {
             player.showBossBar(session.bar);

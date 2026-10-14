@@ -113,3 +113,8 @@ wipe:
   # false = real wipe (current production). Flags are also left untouched in dry-run
   # so a later boot with dry-run: false still runs the pending wipe.
   dry-run: false
+
+# Top boss bars: typed frames + icons from the server pack (font glyphs U+E900..E99F).
+# false = plain titles (use while the served pack is older than these jars).
+bars:
+  pack-glyphs: true

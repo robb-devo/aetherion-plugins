@@ -1,6 +1,8 @@
 package de.aetherion.dungeons.instance;
 
 import de.aetherion.core.AetherKeys;
+import de.aetherion.core.api.BarChrome;
+import de.aetherion.core.api.BarSync;
 import de.aetherion.dungeons.bridge.BossEngineBridge;
 
 import org.bukkit.Bukkit;
@@ -203,7 +205,8 @@ public final class AshesEncounter {
             }
         }
 
-        BossBar bar = Bukkit.createBossBar("§cClearance §8· §f0%", BarColor.RED, BarStyle.SEGMENTED_10);
+        BossBar bar = Bukkit.createBossBar("", BarColor.RED, BarStyle.SEGMENTED_10);
+        BarSync.title(bar, BarChrome.legacy(BarChrome.Family.DUNGEON, BarChrome.Icon.GATE, "§cClearance §8· §f0%"));
         bar.setProgress(0.0);
         bar.setVisible(true);
         state.bar = bar;
@@ -346,14 +349,15 @@ public final class AshesEncounter {
             return;
         }
         double progress = state.progress();
-        state.bar.setProgress(progress);
+        BarSync.progress(state.bar, progress);
         int pct = (int) Math.round(progress * 100.0);
         if (state.doorOpen) {
-            state.bar.setTitle("§aGate open §8· §5Aetherion");
-            state.bar.setColor(BarColor.PURPLE);
+            BarSync.title(state.bar, BarChrome.legacy(BarChrome.Family.DUNGEON, BarChrome.Icon.GATE_OPEN,
+                    "§aGate open §8· §5Aetherion"));
+            BarSync.color(state.bar, BarColor.PURPLE);
         } else {
-            state.bar.setTitle("§cClearance §8· §f" + pct + "% §8(§7need §f"
-                    + state.killsNeeded + " §7kills§8)");
+            BarSync.title(state.bar, BarChrome.legacy(BarChrome.Family.DUNGEON, BarChrome.Icon.GATE,
+                    "§cClearance §8· §f" + pct + "% §8(§7need §f" + state.killsNeeded + " §7kills§8)"));
         }
     }
 

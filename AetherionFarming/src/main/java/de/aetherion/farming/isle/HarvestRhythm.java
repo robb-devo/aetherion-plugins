@@ -1,5 +1,6 @@
 package de.aetherion.farming.isle;
 
+import de.aetherion.core.api.BarChrome;
 import de.aetherion.core.api.QuestBars;
 import de.aetherion.farming.FarmingSkills;
 
@@ -38,7 +39,7 @@ public final class HarvestRhythm {
         NONE(0, "", 0, 0, BossBar.Color.WHITE, "§7"),
         STEADY(20, "Steady", 10, 0, BossBar.Color.GREEN, "§a"),
         GROOVE(50, "In the Groove", 25, 10, BossBar.Color.YELLOW, "§e"),
-        SONG(100, "Harvest Song", 50, 25, BossBar.Color.PINK, "§d");
+        SONG(100, "Harvest Song", 50, 25, BossBar.Color.PURPLE, "§d");
 
         final int from;
         final String label;
@@ -265,12 +266,13 @@ public final class HarvestRhythm {
                 : state.tier.chat + "♪ " + state.tier.label + " §f" + (int) state.stacks
                 + " §8· §7+" + (int) state.tier.fortune + " crop Fortune";
         if (state.bar == null) {
-            state.bar = BossBar.bossBar(IsleText.legacy(title), progress, state.tier.color, BossBar.Overlay.NOTCHED_10);
+            state.bar = BossBar.bossBar(IsleText.legacy(BarChrome.legacy(BarChrome.Family.GATHER, BarChrome.Icon.WHEAT,
+                    title)), progress, state.tier.color, BossBar.Overlay.NOTCHED_10);
             QuestBars.suppress(player, LEASE);
             player.showBossBar(state.bar);
             return;
         }
-        state.bar.name(IsleText.legacy(title));
+        state.bar.name(IsleText.legacy(BarChrome.legacy(BarChrome.Family.GATHER, BarChrome.Icon.WHEAT, title)));
         state.bar.progress(progress);
         state.bar.color(state.tier.color);
     }

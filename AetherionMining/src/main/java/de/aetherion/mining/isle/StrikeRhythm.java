@@ -1,5 +1,6 @@
 package de.aetherion.mining.isle;
 
+import de.aetherion.core.api.BarChrome;
 import de.aetherion.core.api.QuestBars;
 
 import net.kyori.adventure.bossbar.BossBar;
@@ -353,12 +354,13 @@ public final class StrikeRhythm {
                 : state.tier.chat + "⚒ " + state.tier.label + " §f" + (int) state.stacks
                 + " §8· §7+" + (int) state.tier.fortune + " ore Fortune" + seam;
         if (state.bar == null) {
-            state.bar = BossBar.bossBar(MineText.legacy(title), progress, state.tier.color, BossBar.Overlay.NOTCHED_10);
+            state.bar = BossBar.bossBar(MineText.legacy(BarChrome.legacy(BarChrome.Family.GATHER, BarChrome.Icon.PICK,
+                    title)), progress, state.tier.color, BossBar.Overlay.NOTCHED_10);
             QuestBars.suppress(player, LEASE);
             player.showBossBar(state.bar);
             return;
         }
-        state.bar.name(MineText.legacy(title));
+        state.bar.name(MineText.legacy(BarChrome.legacy(BarChrome.Family.GATHER, BarChrome.Icon.PICK, title)));
         state.bar.progress(progress);
         state.bar.color(state.tier.color);
     }

@@ -1,5 +1,7 @@
 package de.aetherion.foraging.isle;
 
+import de.aetherion.core.api.BarChrome;
+
 import net.kyori.adventure.bossbar.BossBar;
 
 import org.bukkit.Location;
@@ -151,8 +153,9 @@ public final class GroveCompass {
         }
         // Cap progress so distant targets still show a thin bar; never touch ActionBar (HP/CD HUD).
         float progress = (float) Math.max(0.05d, Math.min(1.0d, 1.0d - (dist / 120.0d)));
-        String title = "§e" + ForageText.arrow(player, target.at()) + " §f" + target.name()
-                + " §8· §7" + (int) dist + "m" + ForageText.vertical(player, target.at());
+        String title = BarChrome.legacy(BarChrome.Family.GATHER, BarChrome.Icon.COMPASS,
+                "§e" + ForageText.arrow(player, target.at()) + " §f" + target.name()
+                        + " §8· §7" + (int) dist + "m" + ForageText.vertical(player, target.at()));
         BossBar bar = wayBars.computeIfAbsent(player.getUniqueId(), id -> {
             BossBar created = BossBar.bossBar(ForageText.legacy(title), progress, BossBar.Color.GREEN,
                     BossBar.Overlay.PROGRESS);

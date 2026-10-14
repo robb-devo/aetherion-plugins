@@ -1,5 +1,6 @@
 package de.aetherion.farming.isle;
 
+import de.aetherion.core.api.BarChrome;
 import de.aetherion.core.api.QuestBars;
 import de.aetherion.farming.FarmingSkills;
 
@@ -302,7 +303,7 @@ public final class IsleEvents {
         syncViewers(visitors);
         if (bar != null) {
             bar.progress((float) Math.max(0.0d, 1.0d - activeTicks / (double) totalTicks()));
-            bar.name(IsleText.legacy(barTitle()));
+            bar.name(IsleText.legacy(BarChrome.legacy(BarChrome.Family.EVENT, BarChrome.Icon.WHEAT, barTitle())));
         }
         if (kind == Kind.BEE_BLOOM && plot != null) {
             swirl(plot, 5);
@@ -322,7 +323,8 @@ public final class IsleEvents {
     private void activate() {
         phase = Phase.ACTIVE;
         activeTicks = 0;
-        bar = BossBar.bossBar(IsleText.legacy(barTitle()), 1.0f, kind.color, BossBar.Overlay.PROGRESS);
+        bar = BossBar.bossBar(IsleText.legacy(BarChrome.legacy(BarChrome.Family.EVENT, BarChrome.Icon.WHEAT,
+                barTitle())), 1.0f, kind.color, BossBar.Overlay.PROGRESS);
         String sub = kind == Kind.BEE_BLOOM
                 ? "§6" + plot.name() + " §7· +1 crop (50%) and +" + BLOOM_XP + " XP per harvest"
                 : "§7Prize Crops ×" + (int) MOON_PRIZE_MULT + " for two minutes";

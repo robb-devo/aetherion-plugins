@@ -1,5 +1,6 @@
 package de.aetherion.mining.isle;
 
+import de.aetherion.core.api.BarChrome;
 import de.aetherion.core.api.QuestBars;
 
 import net.kyori.adventure.bossbar.BossBar;
@@ -51,8 +52,8 @@ public final class AmethystMine implements Listener {
 
     public enum Stage {
         QUIET(0, "Quiet", 0.0d, 1.0d, BossBar.Color.WHITE, "§7"),
-        HUMMING(30, "Humming", 10.0d, 1.25d, BossBar.Color.PURPLE, "§d"),
-        SINGING(60, "Singing Walls", 20.0d, 1.6d, BossBar.Color.PINK, "§5"),
+        HUMMING(30, "Humming", 10.0d, 1.25d, BossBar.Color.BLUE, "§d"),
+        SINGING(60, "Singing Walls", 20.0d, 1.6d, BossBar.Color.PURPLE, "§5"),
         SHATTERPOINT(90, "Shatterpoint", 30.0d, 2.0d, BossBar.Color.RED, "§c");
 
         final int from;
@@ -317,12 +318,13 @@ public final class AmethystMine implements Listener {
                 + (state.stage == Stage.QUIET ? "" : " §8· §7+" + (int) state.stage.fortune + " Fortune · Crystal ×"
                 + MineText.num(state.stage.crystal));
         if (state.bar == null) {
-            state.bar = BossBar.bossBar(MineText.legacy(title), progress, state.stage.color, BossBar.Overlay.NOTCHED_10);
+            state.bar = BossBar.bossBar(MineText.legacy(BarChrome.legacy(BarChrome.Family.GATHER, BarChrome.Icon.CRYSTAL,
+                    title)), progress, state.stage.color, BossBar.Overlay.NOTCHED_10);
             QuestBars.suppress(player, LEASE);
             player.showBossBar(state.bar);
             return;
         }
-        state.bar.name(MineText.legacy(title));
+        state.bar.name(MineText.legacy(BarChrome.legacy(BarChrome.Family.GATHER, BarChrome.Icon.CRYSTAL, title)));
         state.bar.progress(progress);
         state.bar.color(state.stage.color);
     }

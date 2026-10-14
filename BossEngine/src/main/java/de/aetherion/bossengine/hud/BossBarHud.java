@@ -1,6 +1,8 @@
 package de.aetherion.bossengine.hud;
 
 import de.aetherion.bossengine.instance.BossInstance;
+import de.aetherion.core.api.BarChrome;
+import de.aetherion.core.api.BarSync;
 import de.aetherion.core.api.QuestBars;
 import de.aetherion.bossengine.util.TextUtil;
 
@@ -22,7 +24,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * One yellow bar per player, only while they are at the fight.
+ * One yellow bar per player, only while they are at the fight, in the boss frame (medallion + skull).
  * Leaves on world-change, death, or 15s without hits once they walk off.
  */
 public class BossBarHud {
@@ -132,22 +134,22 @@ public class BossBarHud {
                 Bukkit.createBossBar("", BarColor.YELLOW, BarStyle.SEGMENTED_20)
         );
         float progress = (float) Math.max(0, Math.min(1, instance.healthPercent() / 100.0));
-        bar.setProgress(progress);
-        bar.setTitle(TextUtil.color(
+        BarSync.progress(bar, progress);
+        BarSync.title(bar, BarChrome.legacy(BarChrome.Family.BOSS, BarChrome.Icon.SKULL, TextUtil.color(
                 instance.replacePlaceholders(
                         instance.getTemplate().getDisplayName()
                                 + " &8• &f{health}&8/&f{max-health}"
                                 + (instance.isTransitioning() ? " &e✦" : "")
                 )
-        ));
+        )));
         if (instance.isTransitioning() || instance.isCinematicDying()) {
-            bar.setColor(BarColor.WHITE);
+            BarSync.color(bar, BarColor.WHITE);
         } else if (progress <= 0.5f) {
-            bar.setColor(BarColor.RED);
+            BarSync.color(bar, BarColor.RED);
         } else {
-            bar.setColor(BarColor.YELLOW);
+            BarSync.color(bar, BarColor.YELLOW);
         }
-        bar.setVisible(true);
+        BarSync.visible(bar, true);
     }
 
     private void showOnly(UUID playerId, BossInstance instance) {

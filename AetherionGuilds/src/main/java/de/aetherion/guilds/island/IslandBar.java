@@ -1,5 +1,6 @@
 package de.aetherion.guilds.island;
 
+import de.aetherion.core.api.BarChrome;
 import de.aetherion.core.api.QuestBars;
 import de.aetherion.guilds.logistics.LogisticsService;
 import de.aetherion.guilds.model.Guild;
@@ -102,23 +103,27 @@ public final class IslandBar implements Listener {
         String text;
         float progress;
         BossBar.Color color;
+        BarChrome.Icon icon;
         boolean member = hosts.isMember(player, host);
         String objective = !host.isGuild() && member && guide != null ? guide.objective(host.id()) : null;
         String[] warn;
         if (objective != null) {
             int done = guide.progress(host.id());
             int total = guide.total();
-            text = "§e✦ " + guide.name() + " §8› §f" + objective + " §8(" + Math.min(total, done + 1) + "/" + total + ")";
+            text = "§e" + guide.name() + " §8› §f" + objective + " §8(" + Math.min(total, done + 1) + "/" + total + ")";
             progress = Math.max(0.05f, done / (float) total);
             color = BossBar.Color.YELLOW;
+            icon = BarChrome.Icon.STAR;
         } else if (!member) {
             text = "§7Visiting §f" + hosts.title(host) + " §8· §7Tier §f" + hosts.tier(host);
             progress = 1f;
             color = BossBar.Color.WHITE;
+            icon = BarChrome.Icon.EYE;
         } else if ((warn = warningOrGoal(host)) != null) {
             text = warn[0];
             progress = Float.parseFloat(warn[1]);
             color = warn[2].equals("red") ? BossBar.Color.RED : BossBar.Color.BLUE;
+            icon = warn[2].equals("red") ? BarChrome.Icon.WARN : BarChrome.Icon.ARROW;
         } else {
             String project = host.isGuild() ? projectLine(host) : null;
             long used = 0L;
@@ -137,7 +142,7 @@ public final class IslandBar implements Listener {
                     running++;
                 }
             }
-            StringBuilder line = new StringBuilder(host.isGuild() ? "§6⚑ " : "§6✦ ").append("§f")
+            StringBuilder line = new StringBuilder("§f")
                     .append(hosts.title(host)).append(" §8· §7Tier §f").append(hosts.tier(host))
                     .append(" §8· §7Quarries §f").append(hosts.minions(host).size())
                     .append(" §8· §7Belts ").append(running > 0 ? "§a" + running + " running" : "§8none yet");
@@ -149,7 +154,10 @@ public final class IslandBar implements Listener {
             text = line.toString();
             progress = cap <= 0 ? 1f : Math.max(0f, Math.min(1f, (float) used / cap));
             color = project != null ? BossBar.Color.PURPLE : host.isGuild() ? BossBar.Color.BLUE : BossBar.Color.GREEN;
+            icon = host.isGuild() ? BarChrome.Icon.FLAG : BarChrome.Icon.HOUSE;
         }
+        // Island frame: one leaf rail, octagon badge; the badge icon replaces the old leading symbol.
+        text = BarChrome.legacy(BarChrome.Family.ISLAND, icon, text);
         BossBar bar = bars.get(player.getUniqueId());
         if (bar == null) {
             bar = BossBar.bossBar(legacy(text), progress, color, BossBar.Overlay.PROGRESS);
@@ -171,7 +179,7 @@ public final class IslandBar implements Listener {
     }
 
     /**
-     * After the tour the bar points at what matters: a problem on the line ("⚠ Storage Hut: Full"), else the
+     * After the tour the bar points at what matters: a line problem ("Storage Hut: Full", warning badge), else the
      * next factory goal. Both present: they take turns every few seconds. Null when neither applies.
      */
     private String[] warningOrGoal(IslandHost host) {
@@ -180,7 +188,7 @@ public final class IslandBar implements Listener {
         FactoryGoals.Goal next = goals == null || (host.isGuild() && projectLine(host) != null) ? null : goals.next(host);
         boolean showProblem = problem != null && (next == null || (ticks / 5L) % 2L == 0L);
         if (showProblem) {
-            return new String[]{"§c⚠ §f" + problem + (host.isGuild() ? " §8· §7see its floating tag"
+            return new String[]{"§f" + problem + (host.isGuild() ? " §8· §7see its floating tag"
                     : " §8· §7/island → Production"), "1", "red"};
         }
         if (next != null) {
@@ -192,7 +200,7 @@ public final class IslandBar implements Listener {
             if (line.length() > 96) {
                 line = next.title(); // too long for the bar: the title alone, Hollis / /island carry the how
             }
-            return new String[]{"§b➤ §f" + line + " §8(" + (done + 1) + "/" + total + ")",
+            return new String[]{"§f" + line + " §8(" + (done + 1) + "/" + total + ")",
                     String.valueOf(Math.max(0.03f, done / (float) total)), "blue"};
         }
         return null;

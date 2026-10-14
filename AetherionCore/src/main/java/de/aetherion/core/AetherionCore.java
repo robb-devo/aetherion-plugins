@@ -124,6 +124,7 @@ public final class AetherionCore extends JavaPlugin {
             transferCmd.setTabCompleter(transferCommand);
         }
 
+        de.aetherion.core.api.BarChrome.enabled(getConfig().getBoolean("bars.pack-glyphs", true));
         Bukkit.getPluginManager().registerEvents(new ShutdownCountdown(this), this);
         getLogger().info("Shared keys and hit flags ready. Game plugins keep the loop.");
         getLogger().info("ShutdownCountdown armed (10→8→6→4→2). Bypass: stop now|force.");
