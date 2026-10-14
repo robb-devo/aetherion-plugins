@@ -486,7 +486,8 @@ public final class LoreLayout {
         if (line == null) {
             return false;
         }
-        return line.contains("Value:") || line.contains("AH value:") || line.contains("Trade value:");
+        return line.contains("Value:") || line.contains("AH value:") || line.contains("Trade value:")
+                || line.contains("Wert:") || line.contains("AH-Wert:") || line.contains("Handelswert:");
     }
 
     static boolean isMarkLine(String line) {

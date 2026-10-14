@@ -50,6 +50,11 @@ public final class OriginIsle implements Listener {
     private final OriginSoftLight softlight;
     private final OriginDev dev;
     private final OriginFountain fountain;
+    private final OriginBay bay;
+    private final OriginCuriosities curiosities;
+    private final OriginTales tales;
+    private final OriginProps props;
+    private final OriginLife life;
     private BukkitTask task;
     private long tick;
     private boolean running;
@@ -73,6 +78,11 @@ public final class OriginIsle implements Listener {
         this.softlight = new OriginSoftLight(this);
         this.dev = new OriginDev(this);
         this.fountain = new OriginFountain(this);
+        this.bay = new OriginBay(this);
+        this.curiosities = new OriginCuriosities(this);
+        this.tales = new OriginTales(this);
+        this.props = new OriginProps(this);
+        this.life = new OriginLife(this);
     }
 
     /** Called from {@code AetherionHub#onEnable}. Never throws: a broken Origin must not take the Hub down. */
@@ -96,6 +106,10 @@ public final class OriginIsle implements Listener {
             pm.registerEvents(cast, plugin);
             pm.registerEvents(menus, plugin);
             pm.registerEvents(fountain, plugin);
+            pm.registerEvents(bay, plugin);
+            pm.registerEvents(curiosities, plugin);
+            pm.registerEvents(tales, plugin);
+            summary += " · " + loadExplore();
             OriginHooks.bind(this);
             if (!config.enabled()) {
                 plugin.getLogger().info("Origin Isle: disabled in origin.yml (DEV and /origin dev still work).");
@@ -104,8 +118,10 @@ public final class OriginIsle implements Listener {
             running = true;
             waystones.start();
             cast.start();
+            bay.start();
             task = Bukkit.getScheduler().runTaskTimer(plugin, this::loop, 20L, 1L);
             Bukkit.getScheduler().runTaskLater(plugin, this::seedSpawns, 40L);
+            Bukkit.getScheduler().runTaskLater(plugin, this::placeTales, 80L);
             plugin.getLogger().info("Origin Isle: " + summary);
         } catch (Throwable throwable) {
             running = false;
@@ -127,6 +143,7 @@ public final class OriginIsle implements Listener {
             vistas.clear();
             waystones.shutdown();
             cast.shutdown();
+            bay.shutdown();
             softlight.cancel();
             profiles.saveAll();
         } catch (Throwable throwable) {
@@ -135,11 +152,26 @@ public final class OriginIsle implements Listener {
         OriginHooks.unbind(this);
     }
 
+    /** Exploration layer: curiosities, storytelling chests, prop spots, ambient life (origin-explore.yml). */
+    private String loadExplore() {
+        return curiosities.load() + " curiosities · " + tales.load() + " tales · " + props.load() + " prop spots · "
+                + life.load() + " life sources";
+    }
+
+    private void placeTales() {
+        try {
+            tales.autoPlace();
+        } catch (Throwable throwable) {
+            plugin.getLogger().warning("Origin tales: " + throwable);
+        }
+    }
+
     /** DEV reload: re-reads origin.yml and rebuilds the placed pieces. */
     public String reload() {
-        String summary = config.load();
+        String summary = config.load() + " · " + loadExplore();
         waystones.shutdown();
         cast.shutdown();
+        bay.shutdown();
         if (config.enabled()) {
             if (!running) {
                 running = true;
@@ -147,6 +179,7 @@ public final class OriginIsle implements Listener {
             }
             waystones.start();
             cast.start();
+            bay.start();
         } else {
             running = false;
             if (task != null) {
@@ -168,6 +201,7 @@ public final class OriginIsle implements Listener {
         try {
             flight.tick();
             traversal.rideTick();
+            bay.tick();
             if (tick % 2 == 0) {
                 events.tick(tick);
             }
@@ -177,6 +211,10 @@ public final class OriginIsle implements Listener {
             List<Player> onIsle = onIsle();
             traversal.triggerTick(onIsle);
             flight.triggerTick(onIsle);
+            life.fast(onIsle, tick);
+            if (tick % 8 == 0) {
+                curiosities.tick(onIsle);
+            }
             if (tick % 10 == 0) {
                 compass.tick(onIsle);
                 waystones.tick(onIsle);
@@ -187,6 +225,9 @@ public final class OriginIsle implements Listener {
             if (tick % 20 == 0) {
                 ambience.emitters(onIsle, tick);
                 cast.tick(onIsle);
+                bay.scan(onIsle);
+                life.slow(onIsle, tick);
+                curiosities.glints(onIsle);
             } else if (tick % 4 == 0) {
                 ambience.fastEmitters(onIsle, tick);
             }
@@ -247,11 +288,31 @@ public final class OriginIsle implements Listener {
      * soft sounds, no tour offer — the Harbour Hour keeps the stage.
      */
     public boolean quiet(Player player) {
+        if (orientationOpen(player)) {
+            // The harbour funnel (Egon → … → Miss Ledger's stamp) owns titles and the screen until it's filed.
+            return true;
+        }
         String gate = config.quietUntil();
         if (gate.isBlank() || hub.spawn(gate) == null) {
             return false;
         }
         return !hub.isUnlocked(player, gate);
+    }
+
+    /**
+     * Quests reports the pseudo quest {@code orientation} as completed once Miss Ledger stamped the tutorial.
+     * Without Quests (or on any error) Origin falls back to its own camp gate.
+     */
+    private static boolean orientationOpen(Player player) {
+        de.aetherion.core.api.QuestProgressAccess quests = de.aetherion.core.api.AetherServices.quests();
+        if (quests == null || player == null) {
+            return false;
+        }
+        try {
+            return !quests.isQuestCompleted(player, "orientation");
+        } catch (Throwable ignored) {
+            return false;
+        }
     }
 
     /** Coins through the Core wallet (Items). Silently skipped when Items is offline. */
@@ -327,6 +388,8 @@ public final class OriginIsle implements Listener {
         events.forget(id);
         bells.forget(id);
         fountain.forget(id);
+        curiosities.forget(id);
+        tales.forget(id);
         OriginText.forget(id);
         profiles.unload(id);
     }
@@ -406,8 +469,28 @@ public final class OriginIsle implements Listener {
         return softlight;
     }
 
+    public OriginBay bay() {
+        return bay;
+    }
+
     public OriginDev dev() {
         return dev;
+    }
+
+    public OriginCuriosities curiosities() {
+        return curiosities;
+    }
+
+    public OriginTales tales() {
+        return tales;
+    }
+
+    public OriginProps props() {
+        return props;
+    }
+
+    public OriginLife life() {
+        return life;
     }
 
     public boolean running() {

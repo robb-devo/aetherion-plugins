@@ -79,6 +79,15 @@ public class HealthListener implements Listener {
         updateSpeed(player);
     }
 
+    /** After skill overlay / MAX ALL / network import — re-apply HP + speed from gear+skills. */
+    public void refreshCombatStats(Player player) {
+        if (player == null || !player.isOnline()) {
+            return;
+        }
+        updateHealth(player, ApplyMode.NORMAL);
+        updateSpeed(player);
+    }
+
     @EventHandler(
             priority = EventPriority.MONITOR
     )
@@ -381,11 +390,17 @@ public class HealthListener implements Listener {
         double current = Math.max(0.0, Math.min(player.getHealth(), max));
         double defense = equipmentStats.getStat(player, ItemCapability.DEFENSE);
 
+        // Fixed HP slot: current HP is right-aligned to the width of max HP, so 100 → 99 never wiggles the line.
+        String currentText = formatHp(current);
+        String maxText = formatHp(max);
+        String hpPad = de.aetherion.items.combat.HudWidth.padTo(
+                de.aetherion.items.combat.HudWidth.of(currentText, false),
+                de.aetherion.items.combat.HudWidth.of(maxText, false));
         Component health = Component.text()
                 .append(Component.text("❤ ", NamedTextColor.RED))
-                .append(Component.text(formatHp(current), NamedTextColor.WHITE))
+                .append(Component.text(hpPad + currentText, NamedTextColor.WHITE))
                 .append(Component.text(" / ", NamedTextColor.DARK_GRAY))
-                .append(Component.text(formatHp(max), NamedTextColor.RED))
+                .append(Component.text(maxText, NamedTextColor.RED))
                 .build();
 
         Component bar = health;
@@ -404,11 +419,16 @@ public class HealthListener implements Listener {
                     heldId,
                     defense <= 0.05
             );
-            if (defense > 0.05) {
-                bar = bar.append(Component.text("  ·  ", NamedTextColor.DARK_GRAY)).append(cooldown);
-            } else {
-                bar = bar.append(cooldown);
-            }
+            Component lane = defense > 0.05
+                    ? Component.text("  ·  ", NamedTextColor.DARK_GRAY).append(cooldown)
+                    : cooldown;
+            /*
+             * Reserved CD lane: the ActionBar is centred, so the cooldown on the right would drag hearts and
+             * defense left by half its width. Mirror its width as blank padding on the left — the centre
+             * (and every HP / defense glyph) stays exactly where it sits without a cooldown.
+             */
+            int lanePx = de.aetherion.items.combat.HudWidth.of(lane);
+            bar = de.aetherion.items.combat.HudWidth.balance(lanePx).append(bar).append(lane);
         }
 
         player.sendActionBar(bar);

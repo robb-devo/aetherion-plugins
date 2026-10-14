@@ -125,6 +125,43 @@ public class QuestNPCCommand implements CommandExecutor {
         }
 
 
+        // Act III cast back to their Runde 7 spots (exile backend), or the Ferryman to the Veil Quay (main).
+        if (action.equals("exile")) {
+            de.aetherion.quests.story.ExileStory exile = de.aetherion.quests.story.ExileStory.get();
+            int n = exile == null ? 0 : exile.replaceAll();
+            player.sendMessage(ChatColor.GREEN + "Exile cast placed: " + ChatColor.WHITE + n
+                    + ChatColor.GRAY + (n == 0 ? " (no exile world here and no Veil Quay yet — /exile setquay first)" : ""));
+            return true;
+        }
+
+        // Origin island cast seeding (isle.IsleCast) + errand status (isle.IsleErrands).
+        if (action.equals("seed")) {
+            de.aetherion.quests.isle.IsleCast cast = de.aetherion.quests.AetherionQuests.getInstance() == null ? null
+                    : de.aetherion.quests.AetherionQuests.getInstance().getIslandCast();
+            if (cast == null) {
+                player.sendMessage(ChatColor.RED + "Island cast not ready.");
+                return true;
+            }
+            String sub = args.length > 1 ? args[1].toLowerCase() : "status";
+            String out = switch (sub) {
+                case "run" -> cast.seed(args.length > 2 && args[2].equalsIgnoreCase("all"));
+                case "undo" -> cast.undo();
+                case "list" -> cast.list();
+                default -> cast.status();
+            };
+            player.sendMessage(out == null || out.isBlank() ? ChatColor.GRAY + "Nothing to seed." : out);
+            return true;
+        }
+        if (action.equals("errands")) {
+            de.aetherion.quests.isle.IsleErrands errands = de.aetherion.quests.isle.IsleErrands.get();
+            if (errands == null) {
+                player.sendMessage(ChatColor.RED + "Errands not running.");
+                return true;
+            }
+            player.sendMessage(args.length > 1 && args[1].equalsIgnoreCase("reset") ? errands.reset(player) : errands.status(player));
+            return true;
+        }
+
         // "story" opens the same page: idea NPCs on top, the Das Schlaflied cast below.
         if (action.equals("extras") || action.equals("story")) {
 
@@ -1004,6 +1041,13 @@ public class QuestNPCCommand implements CommandExecutor {
                         + "/questnpc story"
                         + ChatColor.GRAY
                         + " - Das Schlaflied cast: Ysolde, Berit, Nell, Hesper, Ferryman"
+        );
+
+        player.sendMessage(
+                ChatColor.YELLOW
+                        + "/questnpc exile"
+                        + ChatColor.GRAY
+                        + " - exile cast to their spots (mmo-c) / Ferryman to the Veil Quay (main)"
         );
 
 

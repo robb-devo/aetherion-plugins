@@ -88,6 +88,7 @@ public final class AetherionGuilds extends JavaPlugin {
     private de.aetherion.guilds.island.FactoryGoals goals;
     private de.aetherion.guilds.island.IslandFiles islandFiles;
     private de.aetherion.guilds.island.FactoryProgress progress;
+    private de.aetherion.core.api.IslandAccess islandAccess;
 
     @Override
     public void onEnable() {
@@ -171,8 +172,13 @@ public final class AetherionGuilds extends JavaPlugin {
         de.aetherion.guilds.island.HubRitual hubRitual = new de.aetherion.guilds.island.HubRitual(this);
         structures.onHubFounded(hubRitual::play);
         logistics.setHubFooter(host -> {
-            de.aetherion.guilds.structure.BuildCosts.Unlock unlock = progress.next(host);
-            String board = unlock == null ? ""
+            de.aetherion.guilds.structure.StructureType tour = guide == null ? null : guide.tourUnlock(host);
+            de.aetherion.guilds.structure.BuildCosts.Unlock unlock = tour != null
+                    ? de.aetherion.guilds.structure.BuildCosts.unlock(tour) : progress.next(host);
+            String board = tour != null
+                    ? "§6◆ Unlock: §f" + de.aetherion.guilds.structure.PlacementService.Part.of(tour).label()
+                    + " §8(free on " + guide.name() + "'s tour)\n"
+                    : unlock == null ? ""
                     : structures.hubLevel(host) >= unlock.hubLevel()
                     ? "§6◆ Next unlock: §f" + de.aetherion.guilds.structure.PlacementService.Part.of(unlock.type()).label()
                     + " §8(" + de.aetherion.guilds.structure.BuildCosts.describe(unlock.price()) + ")\n"
@@ -184,6 +190,10 @@ public final class AetherionGuilds extends JavaPlugin {
 
         guide = new IslandGuide(this, hosts, structures, logistics, placement, minions);
         guide.attachMenus(islandMenu::open, buildMenu::open);
+        guide.attachLectern(hubMenu::open);
+        hubMenu.attachTour(guide::tourUnlock, guide::inFactoryTour, guide.name());
+        structures.attachFreeFirst(guide::freeFirst);
+        goals.attachTitleOwner(guide::ownsTitle);
         guide.register();
         unlock.attachGuide(guide);
         unlock.onClaim(host -> progress.milestone(host, "start"));
@@ -325,6 +335,10 @@ public final class AetherionGuilds extends JavaPlugin {
             new GuildPlaceholderExpansion(this).register();
         }
 
+        // Core (island backend) lands arrivals on their island and respawns them there.
+        islandAccess = new de.aetherion.guilds.island.IslandAccessImpl(personal, guilds, islands);
+        de.aetherion.core.api.AetherServices.registerIslands(islandAccess);
+
         getLogger().info("AetherionGuilds enabled. Private + guild island worlds, quarries tick while the server runs."
                 + " Island highlight: starters, land, structures, belts, projects.");
     }
@@ -403,6 +417,10 @@ public final class AetherionGuilds extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (islandAccess != null) {
+            de.aetherion.core.api.AetherServices.clearIslands(islandAccess);
+            islandAccess = null;
+        }
         if (islandBar != null) {
             islandBar.shutdown();
         }

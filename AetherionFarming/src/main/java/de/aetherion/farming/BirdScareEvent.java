@@ -92,6 +92,8 @@ public final class BirdScareEvent implements Listener, StatProvider, Runnable {
     private static final int BOLD_HITS = 2;
     /** A bold crow ignores hits for a moment after hopping (also eats off-hand double events). */
     private static final int BOLD_GRACE_TICKS = 6;
+    /** Last stretch of the timer: bar turns red and the field gets one "hurry" cue. */
+    private static final int HURRY_TICKS = 80;
     /** Fallback when config has no view-range — bossbar / birds only this close. */
     private static final double DEFAULT_VIEW_RANGE = 25.0d;
 
@@ -236,6 +238,7 @@ public final class BirdScareEvent implements Listener, StatProvider, Runnable {
             return;
         }
         ticksLeft--;
+        timerCues();
         pruneBirds();
         if (ticksLeft % 10 == 0) {
             syncBirdVisibility();
@@ -478,7 +481,9 @@ public final class BirdScareEvent implements Listener, StatProvider, Runnable {
         player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.25f, 1.6f);
         int left = birdIds.size();
         if (left > 0) {
-            player.sendActionBar(LEGACY.deserialize("§eShooed. §f" + left + " §7left."));
+            boolean sweepOpen = ticksLeft >= eventTicks * CLEAN_SWEEP_TIME_LEFT;
+            player.sendActionBar(LEGACY.deserialize("§eShooed. §f" + left + " §7left."
+                    + (sweepOpen ? " §8· §6sweep still on" : "")));
         }
         updateBars();
         if (birdIds.isEmpty()) {
@@ -646,6 +651,27 @@ public final class BirdScareEvent implements Listener, StatProvider, Runnable {
         }
     }
 
+    /**
+     * Two one-shot tells on the timer so the result is never a surprise: the Clean-sweep window closing,
+     * and the last few seconds before the flock gives up on you.
+     */
+    private void timerCues() {
+        if (center == null) {
+            return;
+        }
+        int sweepEdge = (int) Math.ceil(eventTicks * CLEAN_SWEEP_TIME_LEFT);
+        if (ticksLeft == sweepEdge - 1) {
+            for (Player nearby : nearbyNow) {
+                nearby.playSound(nearby.getLocation(), Sound.BLOCK_NOTE_BLOCK_HAT, 0.4f, 1.1f);
+            }
+        } else if (ticksLeft == HURRY_TICKS) {
+            for (Player nearby : nearbyNow) {
+                nearby.playSound(nearby.getLocation(), Sound.BLOCK_NOTE_BLOCK_HAT, 0.45f, 0.7f);
+                nearby.playSound(center, Sound.ENTITY_PARROT_FLY, 0.5f, 0.75f);
+            }
+        }
+    }
+
     private void pruneBirds() {
         Iterator<UUID> it = birdIds.iterator();
         while (it.hasNext()) {
@@ -754,7 +780,9 @@ public final class BirdScareEvent implements Listener, StatProvider, Runnable {
         int left = birdIds.size();
         int bold = boldLeft();
         Location aim = nearestBirdLocation();
-        BossBar.Color color = ticksLeft < 80 ? BossBar.Color.RED : BossBar.Color.YELLOW;
+        boolean sweepOpen = ticksLeft >= eventTicks * CLEAN_SWEEP_TIME_LEFT;
+        BossBar.Color color = ticksLeft < HURRY_TICKS ? BossBar.Color.RED
+                : sweepOpen ? BossBar.Color.GREEN : BossBar.Color.YELLOW;
         for (Player nearby : nearbyNow) {
             if (viewers.add(nearby.getUniqueId())) {
                 nearby.sendActionBar(LEGACY.deserialize("§aBirds on the crops. §fClick them."));
@@ -762,7 +790,8 @@ public final class BirdScareEvent implements Listener, StatProvider, Runnable {
             String arrow = directionArrow(nearby.getLocation(), aim != null ? aim : center);
             String title = label + " §8• §f" + arrow + " §eShoo the birds §8• §f" + left
                     + "§7/§f" + Math.max(birdsTotal, left)
-                    + (bold > 0 ? " §8· §7" + bold + " bold" : "");
+                    + (bold > 0 ? " §8· §7" + bold + " bold" : "")
+                    + (sweepOpen ? " §8· §6✦ sweep" : ticksLeft < HURRY_TICKS ? " §8· §churry" : "");
             paint(nearby, title, (float) progress, color);
         }
     }

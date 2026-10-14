@@ -131,6 +131,10 @@ public final class OriginCompass {
                 offerTour(player, profile);
             }
         } else {
+            if ("capital".equals(district.id()) && !quiet) {
+                // Capital was found during orientation (quiet): the first walk back into town afterwards offers it.
+                offerTour(player, profile);
+            }
             Long cool = cardCooldown.get(player.getUniqueId());
             if (cool == null || now >= cool) {
                 if (!OriginText.held(player)) {
@@ -263,6 +267,14 @@ public final class OriginCompass {
             OriginRole role = OriginRole.byId(key.substring(5));
             Location at = role == null ? null : isle.cast().whereabouts(role);
             return at == null ? null : new Object[]{role.display(), at};
+        }
+        if (key.startsWith("curio:")) {
+            OriginCuriosities.Curio curio = isle.curiosities().get(key.substring(6));
+            return curio == null ? null : new Object[]{curio.name(), config.location(curio.focus())};
+        }
+        if (key.startsWith("tale:")) {
+            OriginTales.Tale tale = isle.tales().get(key.substring(5));
+            return tale == null ? null : new Object[]{tale.name(), config.location(new double[]{tale.at()[0] + 0.5d, tale.at()[1], tale.at()[2] + 0.5d})};
         }
         if (key.startsWith("updraft:")) {
             OriginConfig.Updraft draft = config.updrafts().get(key.substring(8));

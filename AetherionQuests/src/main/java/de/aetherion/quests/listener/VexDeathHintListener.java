@@ -1,5 +1,8 @@
 package de.aetherion.quests.listener;
 
+import de.aetherion.items.AetherionItems;
+import de.aetherion.items.item.BoosterItems;
+import de.aetherion.items.item.CustomItem;
 import de.aetherion.quests.manager.QuestManager;
 import de.aetherion.quests.model.Quest;
 import de.aetherion.quests.model.QuestState;
@@ -12,6 +15,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Map;
@@ -19,12 +23,13 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Soft nudge during Vex's Borderlands lesson after a death.
+ * Soft nudge during Vex's Borderlands lesson after a death — plus a stingy care package.
  */
 public final class VexDeathHintListener implements Listener {
 
     private static final String QUEST_ID = "lesson_steel";
     private static final long COOLDOWN_MS = 90_000L;
+    private static final int CARE_COAL = 4;
 
     private final JavaPlugin plugin;
     private final QuestManager questManager;
@@ -47,7 +52,7 @@ public final class VexDeathHintListener implements Listener {
         if (last != null && now - last < COOLDOWN_MS) {
             return;
         }
-        // Mark once on death; whisper only after respawn (avoids double dialog).
+        // Mark once on death; whisper + care pack only after respawn (avoids double dialog).
         pendingHint.put(player.getUniqueId(), Boolean.TRUE);
         lastHint.put(player.getUniqueId(), now);
     }
@@ -74,8 +79,13 @@ public final class VexDeathHintListener implements Listener {
         if (player == null || !player.isOnline() || !isOnLessonSteel(player)) {
             return;
         }
+        boolean gifted = giftCoalBoosters(player);
         player.sendMessage("");
         player.sendMessage("§cSergeant Vex §8» §f" + de.aetherion.quests.lang.LangPack.say(player, "vex.death_up", "You're vertical again."));
+        if (gifted) {
+            player.sendMessage("§cSergeant Vex §8» §7" + de.aetherion.quests.lang.LangPack.say(player, "vex.death_care",
+                    "Four §8Coal Boosters§7. Don't make me write a receipt. Fuse them — or eat dirt again."));
+        }
         if (QuestStoryGate.questCompleted(player, questManager, "lesson_boost")) {
             player.sendMessage("§cSergeant Vex §8» §7" + de.aetherion.quests.lang.LangPack.say(player, "vex.death_gear",
                     "Trouble? Combat set + boosters. Recipe Book and anvil. Then finish the ten."));
@@ -85,5 +95,30 @@ public final class VexDeathHintListener implements Listener {
             de.aetherion.quests.ui.QuestHint.show(player, "booster_tutor", "Temper");
         }
         player.sendMessage("");
+    }
+
+    /** Once per death-cooldown: 4 coal boosters into inventory (or drop at feet). */
+    private boolean giftCoalBoosters(Player player) {
+        try {
+            AetherionItems items = AetherionItems.getInstance();
+            if (items == null || items.getItemManager() == null) {
+                return false;
+            }
+            ItemStack stack = new CustomItem(items.getItemManager()).boosters().coal();
+            if (stack == null || stack.getType().isAir()) {
+                return false;
+            }
+            int amount = Math.min(CARE_COAL, BoosterItems.MAX_STACK);
+            stack.setAmount(amount);
+            Map<Integer, ItemStack> left = player.getInventory().addItem(stack);
+            if (!left.isEmpty()) {
+                for (ItemStack spill : left.values()) {
+                    player.getWorld().dropItemNaturally(player.getLocation(), spill);
+                }
+            }
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
     }
 }

@@ -84,6 +84,20 @@ public final class QuestStoryGate {
         return true;
     }
 
+    /**
+     * Orientation is not only done but <b>filed</b>: Miss Ledger stamped it.
+     * Between the Fields and the stamp the arrow belongs to Ledger alone — Vex / Borderlands must not
+     * count as "graduated" or strangers skip the SkillRoads beat (seen live: fox finished steel, never stamped).
+     */
+    public static boolean graduated(Player player, QuestManager questManager) {
+        if (!tutorialDone(player, questManager)) {
+            return false;
+        }
+        de.aetherion.quests.AetherionQuests plugin = de.aetherion.quests.AetherionQuests.getInstance();
+        return plugin != null && plugin.getPlayerQuestStorage() != null
+                && plugin.getPlayerQuestStorage().hasStarterKit(player.getUniqueId(), "tutorial_graduation");
+    }
+
     public static boolean questCompleted(Player player, QuestManager questManager, String questId) {
         if (player == null || questManager == null || questId == null) {
             return false;
@@ -368,6 +382,59 @@ public final class QuestStoryGate {
                 de.aetherion.quests.lang.LangPack.ui(player, "tip.tutorial_graduation", "Tutorial · Miss Ledger · graduation"),
                 net.kyori.adventure.text.format.NamedTextColor.LIGHT_PURPLE
         ));
+    }
+
+    /**
+     * Back after a relog or restart mid-orientation with nothing tracked: the soft arrow (in memory only) is gone,
+     * so put the funnel's next stop back on the bar — no speech, one action-bar line. Never after the stamp, never
+     * over a running quest or a trail that already exists.
+     */
+    public static void resumeTrail(Player player) {
+        QuestManager qm = questManager();
+        if (player == null || !player.isOnline() || qm == null || graduated(player, qm)) {
+            return;
+        }
+        if (qm.findActiveOrReadyQuest(player) != null || QuestHint.pendingNpc(player) != null) {
+            return;
+        }
+        String[] stop = nextStop(player, qm);
+        if (stop == null) {
+            return;
+        }
+        QuestHint.show(player, stop[0], stop[1]);
+        player.sendActionBar(net.kyori.adventure.text.Component.text(
+                de.aetherion.quests.lang.LangPack.ui(player, stop[2], stop[3]),
+                net.kyori.adventure.text.format.NamedTextColor.YELLOW));
+    }
+
+    /** {npcId, label, tip key, tip English} of the next orientation stop, or null (Egon's own nudge covers it). */
+    private static String[] nextStop(Player player, QuestManager qm) {
+        if (!questCompleted(player, qm, "gather_wood")) {
+            Quest welcome = qm.getQuest("welcome_aboard");
+            if (welcome == null || qm.getQuestState(player, welcome) != QuestState.COMPLETED) {
+                return null;
+            }
+            return new String[] {"lumberjack", "Forager", "tip.tutorial_egon", "Tutorial · Egon · wood"};
+        }
+        if (!questCompleted(player, qm, "forge_coal")) {
+            return new String[] {"quartermaster", "Quartermaster", "tip.tutorial_quartermaster", "Tutorial · Quartermaster · coal"};
+        }
+        if (!questCompleted(player, qm, "first_shift")) {
+            return new String[] {"foreman", "Shaft Foreman", "tip.tutorial_foreman", "Tutorial · Mines · Shaft Foreman"};
+        }
+        if (!questCompleted(player, qm, "lesson_boost")) {
+            return new String[] {"booster_tutor", "Temper", "tip.tutorial_temper", "Tutorial · Temper first"};
+        }
+        if (!questCompleted(player, qm, "lesson_manager")) {
+            return new String[] {"ledger", "Miss Ledger", "tip.tutorial_ledger", "Tutorial · Miss Ledger · Skills"};
+        }
+        if (!questCompleted(player, qm, "farm_hand")) {
+            return new String[] {"farmer", "Farmer", "tip.tutorial_farmer", "Tutorial · Fields · Farmer"};
+        }
+        if (!questCompleted(player, qm, "pocket_zoo")) {
+            return new String[] {"lark", "Lark", "tip.tutorial_lark", "Tutorial · Fields · Lark"};
+        }
+        return new String[] {"ledger", "Miss Ledger", "tip.tutorial_graduation", "Tutorial · Miss Ledger · graduation"};
     }
 
     private static QuestManager questManager() {

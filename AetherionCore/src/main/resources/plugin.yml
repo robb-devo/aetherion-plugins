@@ -23,6 +23,10 @@ commands:
     description: Cross to the exile island (mmo-c) or return
     usage: /exile [go|return|replay|stop|where]
     aliases: [exil]
+  aetransfer:
+    description: Network transfer state of a player, or hop yourself (admin)
+    usage: /aetransfer [player] | /aetransfer go <mmo-r|mmo-d|mmo-c|mmo-i>
+    permission: aetherion.core.admin
 
 permissions:
   aetherion.core.admin:

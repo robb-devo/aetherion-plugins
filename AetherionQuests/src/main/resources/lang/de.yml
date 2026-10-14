@@ -57,6 +57,10 @@ ui:
   gate_market_chat: "§7Der Markt bleibt zu, bis §eEgon §7sein Eichenholz hat."
   gate_market_action: "→ Forager · dann bei Egon abgeben"
   gate_rescue_chat: "§7Ganz ruhig — zurück auf dem Pier. Erst mit §eEgon §7reden."
+  # Miss Ledgers Stempel + die offenen Straßen
+  graduation_filed: "✔ Orientierung abgelegt · die Karte gehört dir"
+  roads_open_title: "DIE STRASSEN SIND OFFEN"
+  roads_open_subtitle: "§aForage §8· §eFarm §8· §bAngeln §8· §cStahl"
   # In-world talk: reply chips, quest card, action-bar hints (TalkUx)
   talk_ux:
     accept_default: "Bin dabei."
@@ -92,6 +96,15 @@ ui:
       nell: "Weiter · Nell · Hafengassen · Aetherion Level 50"
       ysolde_road: "Erzähl's Ysolde · Archiv · Aetherion Level 60"
       veil: "Der Veil Quay ist offen · die Fähre wartet auf Level 75"
+      orrin: "Weiter · Orrin · das Observatorium, weit im Westen der Hofstadt"
+      gardener: "Weiter · der Gärtnerjunge · am Tor zum Wurzelgrund"
+      doors: "Die Großen Tore des Schlosses · vielleicht hören sie jetzt zu"
+    ferry:
+      harbour: "Keine Fahrgäste, die mit dem Hafen noch nicht fertig sind. Erst das, dann der Nebel."
+      road: "Die Straße des Rats ist für dich noch versiegelt. Ysolde im Archiv weiß davon."
+      level: "Der Nebel ist nicht bereit für dich. Komm mit Aetherion Level §e75§7 wieder."
+    exile:
+      ferryman: "Runter von der Fähre · sprich mit dem Fährmann"
     egon_wood_first: "Hinweis · Egon · erst Holz"
     mines_foreman: "Hinweis · Minen · Shaft Foreman"
     skills_blink: "Nether Star öffnen (Slot 9) → Skills blinkt"
@@ -106,6 +119,8 @@ ui:
     vex_soft: "Tipp · Sergeant Vex"
     farm_isle: "Farm Isle · Harlow · hinteres Scheunenende · später"
     to_ledger: "→ Miss Ledger · oder /capital"
+    fields_to_ledger_title: "ORIENTIERUNG"
+    fields_to_ledger_sub: "Miss Ledger · Capital · Stempel & Straßen"
     tutorial_egon: "Tutorial · Egon · Holz"
     tutorial_quartermaster: "Tutorial · Quartermaster · Kohle"
     tutorial_foreman: "Tutorial · Minen · Shaft Foreman"
@@ -118,7 +133,9 @@ ui:
     road_forage: "→ Twig · Schleim-Pad · Forage Isle"
     road_farm: "→ Harlow · hinteres Scheunenende · Farm Isle"
     farm_pad: "→ Farm-Isle-Pad · den Weg runter von der Scheune"
+    forage_pad: "→ Forage-Isle-Pad · springen · Miss Canopy begrüßt dich"
     fish_pad: "→ Fishing-Eldervale-Pad · weit im Westen"
+    temper: "→ Temper · Booster Tutor · auf dem Weg zur Capital"
     road_fish: "→ Tackle · Hafenpier · Angeln"
     road_steel: "→ Sergeant Vex · erst Gear anlegen"
     road_rite: "→ Rite Warden · Borderlands"
@@ -126,11 +143,19 @@ ui:
     harbour_pad: "→ Schleim-Pad · Forage Isle (Twig)"
     vex_armour: "Tipp · Inventar → Rüstungsslots · Egons Kit"
     vex_temper: "Tipp · Temper · erst ein Booster"
+    temper_to_ledger: "→ Miss Ledger · Skills · die Straße hoch zur Capital"
+    kit_to_quartermaster: "Kit an? Rüstung in die Rüstungsslots · → Quartermaster hinterm Markt"
+    to_lark: "→ Lark · Felder-Zaun · ein Pet fangen"
+    to_farmer: "→ Farmer · Felder · 48 Weizen, Vögel verscheuchen"
   # Soft-hint bossbar labels (QuestHint)
   hint_label:
     harlow: "Harlow · Farm Isle"
     farm_pad: "Farm-Isle-Pad"
+    forage_pad: "Forage-Isle-Pad"
     fish_pad: "Fishing-Eldervale-Pad"
+    temper: "Temper"
+  hint_note:
+    temper: "Booster Tutor"
   # /guide + Discord tips (QuestStoryGate#guideTips) — one "next" at a time
   guide:
     no_quests: "Sprich mit §aEgon §7am Pier von Anker Harbour — da beginnt die Orientierung."
@@ -201,6 +226,21 @@ quests:
   lullaby_silent_road:
     title: "Die stille Straße"
     description: "Töte den Pathwarden auf der versiegelten Königsstraße und bring das Schreiben, das er trägt, zu Ysolde ins Archiv."
+  lullaby_ferry:
+    title: "Hinter den Schleier"
+    description: "Geh am Schleierkai an Bord der Königsfähre. Fahr hinüber. Dann sprich drüben mit dem Fährmann."
+  lullaby_captain:
+    title: "Der Sturz des Hauptmanns"
+    description: "Hinter dem Eisenring brennt etwas im Krater. Weck es an Caedmons Schwert und lösch es. Der Wachposten am Ring will es wissen."
+  lullaby_heart:
+    title: "Ein Herz in einer Maschine"
+    description: "Orrin hält im Observatorium einen sterbenden Stern am Schlagen. Tritt durch seinen Ring, besiege Herold und Requiem und sag es dann dem Platzanweiser am kleinen Theater."
+  lullaby_doll:
+    title: "Die letzte Vorstellung"
+    description: "Zieh die Spieluhr auf Elins Bühne auf. Bleib bis zum Ende der Vorstellung. Dann geh zurück zum Platzanweiser."
+  lullaby_seed:
+    title: "Was der Same fraß"
+    description: "Steig durch den Schlund hinab zum Letzten Samen. Komm am Unbroken vorbei, besiege Nihil und komm zurück zum Gärtnerjungen."
   welcome_aboard:
     title: "Willkommen an Bord"
     description: "Sprich mit dem Forager oben am Hügel über Anker Harbour."
@@ -520,11 +560,9 @@ dialogs:
     - "Spieler-Skin, schaut dich an, kein Glühen. Dorfbewohner bleiben, wie sie sind."
     - "Gib dem Team Bescheid, wenn der Rest migrieren soll."
   rivet_intro:
-    - "Stillhalten — wenn die Platte klappert, berechne ich dir das Echo."
-    - "Dock Whisper murmelt von Gezeiten. Ich von Bolzen, die beruflich lügen."
-    - "Messing will Politur. Eisen will Respekt. Ich will den, der ständig meine Nieten klaut."
-    - "Du siehst nützlich aus. Oder zumindest ablenkend senkrecht. Nicht an die frische Farbe lehnen."
-
+    - "Hallo! Ich bin Rivet. Ich sorg dafür, dass die Schiffe in diesem Hafen nicht auseinanderfallen."
+    - "Bolzen, Planken, Seile, Nägel. Was ein Schiff zusammenhält, hab ich mindestens einmal behämmert."
+    - "Pass auf, wo du hintrittst, die Farbe auf dem Deck ist noch nass. Und falls du irgendwo Nieten findest: die gehören mir."
   # ---------------------------------------------------------------- world NPCs / boss hunts
   hunter_intro:
     - "Auf dem Hof wird's laut. Zu viele Kühe unterwegs."
@@ -540,21 +578,21 @@ dialogs:
     - "Aber dann diese Geräusche... AAAH!"
     - "Kannst du nachsehen, woher die kommen? Ich zahl auch gut!"
   chicken_keeper_intro:
-    - "Das ist kein Huhn. Das ist ein Logistikfehler mit Federn."
-    - "McNugget ist ausgebüxt. Schon wieder."
-    - "Wenn du es erledigst, gibt's Münzen. Und zwei Gläser, die ich lieber nicht beschrifte."
+    - "Hallo! Ich kümmer mich um die Hühner von Clucksworth. Na ja, um die meisten."
+    - "Mein größtes, McNugget, ist schon wieder ausgebüxt. Er ist irgendwo draußen auf den Feldern, und er ist riesig."
+    - "Falls du ihm begegnest: schau ihm nicht in die Augen. Das hält er für eine Herausforderung."
   tollkeeper_intro:
-    - "Die Brücke ist zu. Der Troll kassiert Maut."
-    - "Die Maut ist, wer rüber will."
-    - "Hol sie dir zurück."
+    - "Hallo! Früher gab's an dieser Brücke einen Zoll. Dann ist ein Troll unter die alten Übergänge gezogen und hat seine eigenen Regeln gemacht."
+    - "Er nimmt keine Münzen. Er nimmt Reisende, oder versucht es zumindest."
+    - "Heute führ ich nur noch das Buch für die Brücke. Ein sehr kurzes Buch. Vor allem Entschuldigungen an die Leute, die geschnappt wurden."
   dockhand_intro:
-    - "Das Wasser schreibt in letzter Zeit seinen Namen auf Leute."
-    - "Squidward hat Laune. Tinte, Gift, das volle Programm."
-    - "Erledig ihn, bevor der Hafen nach Schreibwarenladen riecht."
+    - "Das Wasser benimmt sich in letzter Zeit seltsam. Die Fischer kommen voller Tinte nach Hause."
+    - "Unter dem Hafen lebt was mit zu vielen Armen und schlechter Laune. Tinte, Gift, das ganze Programm."
+    - "Tackle sagt, es ist nur ein großer Tintenfisch. Tackle sagt aber auch, die Fische mögen ihn, also weiß ich nicht."
   ash_scout_intro:
-    - "Siehst du brennende Pfeile, bist du schon zu spät."
-    - "Skuldugery mag Publikum. Sei keins."
-    - "Bring die Sehne zum Schweigen. Ich tu so, als wär das ein Plan."
+    - "Hallo. Ich beobachte hier draußen die Ödnis und behalte die Bogenschützen im Auge."
+    - "Skuldugery schießt brennende Pfeile auf jeden, der zu nahe kommt. Er liebt Publikum."
+    - "Wenn du da rausgehst, bleib in Bewegung und hinter Deckung. Und zähl deine Pfeile, das mach ich auch immer."
   colossus_scholar_intro:
     - "Er läuft. Das ist die ganze These."
     - "Der Aether Colossus ist keine Metapher. Leider."
@@ -584,75 +622,77 @@ dialogs:
     - "Das Inkasso hat mich geschickt. Ich schick dich. Nennt sich Delegieren. Auch Feigheit."
     - "Pfände den Wither. Zwei Compacted Diamond Blocks. Falls wer fragt: Wir kennen uns nicht."
   rook_intro:
-    - "Rook. Ich bereite Leute auf Löcher im Boden vor, die Eintritt kosten."
-    - "Dungeons sind Höhlen mit Meinung. Bring mir zehn Knochen. Hausaufgaben vor dem Ausflug."
-    - "Erst den Papierkram überleben. Die Skelette können warten."
+    - "Hallo, ich bin Rook. Ich bereite Abenteurer auf die Dungeons unter der Insel vor."
+    - "Bevor ich jemanden da runterbringe, brauch ich zehn Knochen. Sieh's als Hausaufgabe: Wer hier oben nicht mit Skeletten klarkommt, schafft es da unten auch nicht."
+    - "Bring mir die Knochen, und ich erzähl dir alles, was ich übers Überleben im Dungeon weiß."
   gate_warden_intro:
-    - "Straße gesperrt. Der Pathwarden ist Grund und Plakat zugleich."
-    - "Er ist langsam. Er ist geduldig. Er beendet auch sehr gern Karrieren."
-    - "Beweg ihn. Oder werd eine Warntafel. Deine Wahl. Ich werd so oder so bezahlt."
+    - "Die Straße hinter diesem Tor ist gesperrt. Der Pfadwächter steht darauf, und keiner kommt an ihm vorbei."
+    - "Er ist langsam, er ist geduldig, und er hat schon viele mutige Laufbahnen beendet."
+    - "Wenn du glaubst, du bist stark genug, dann geh und bring ihn weg. Wenn nicht, ist es keine Schande, noch etwas zu warten."
   bench_cynic_intro:
-    - "Nicht hinsetzen. Die Bank ist von Ansprüchen besetzt."
-    - "Ich brauch acht verrottetes Fleisch. Nenn's Forschung. Nenn's Mittagessen. Mir egal."
-    - "Bring's her. Dann überlass mich meiner Enttäuschung."
+    - "Bitte setz dich nicht. Das ist meine Bank, und da bin ich sehr eigen."
+    - "Wenn du dich nützlich machen willst, bring mir acht Stück verrottetes Fleisch. Für meine Forschung, und nein, ich erklär's nicht."
+    - "Bring sie mir, dann kannst du wieder den Brunnen genießen. Ich bleib hier und genieß gar nichts."
   dust_intro:
-    - "Ich heiß Dust. Ich kartiere Orte, über die schon alle gelaufen sind."
-    - "Dreißig Bruchstein. Ehrgeiz braucht Straßen. Straßen brauchen Steine. Steine brauchen dich."
-    - "Mach keine Poesie draus. Mach einen Haufen."
+    - "Hi! Ich bin Dust. Ich bau und repariere die Wege zwischen der Hauptstadt und überall sonst."
+    - "Gerade brauch ich dreißig Bruchstein. Straßen wachsen leider nicht von selbst."
+    - "Bring mir die Steine, und ich mach was Gutes draus. Wenn du das nächste Mal irgendwo Schönes langläufst, ist es vielleicht dein eigener Stein."
   fry_gossip_intro:
-    - "Du riechst nach Abenteuer. Oder nach Fett. Schwer zu sagen hier."
-    - "Clucksworth schreit ständig wegen McNugget. Riesenhuhn. Sehr verhaubar. Sehr knusprig."
-    - "Wenn du's überlebst, prahl nicht an der Fritteuse. Gossip hört zu. Und erzählt weiter."
+    - "Hey! Ich hab den Frittierstand, und ich hör alles, was in diesem Hafen passiert."
+    - "Neueste Nachricht: Clucksworth sagt, sein Riesenhuhn McNugget ist schon wieder ausgebüxt. Es ist irgendwo auf den Feldern, und es ist riesig."
+    - "Falls du es mal besiegst, erzähl's zuerst mir. Ich versprech dir, ich sag's nur allen weiter."
   dock_whisper_intro:
-    - "Leise. Der Fluss hat Meinungen."
-    - "Tackle zeigt dir das Einholen. Selten wird die Leine lila — Mythic Water Dragon. Nur für dich."
-    - "Kommt was Älteres als das Riff im Fläschchen hoch? Nicht schütteln. Nicht Brine fragen. Lass es."
+    - "Hallo. Die Leute nennen mich Dock Whisper, weil ich mit dem Wasser rede. Manchmal antwortet es."
+    - "Tackle am Pier bringt dir das Angeln bei. An seltenen Tagen leuchtet deine Schnur lila. Das ist ein Mythischer Wasserdrache, und nur du kannst ihn fangen."
+    - "Und falls du mal eine seltsame alte Phiole rausziehst: nicht schütteln, nicht öffnen. Bring sie jemandem, der sich auskennt."
   larder_intro:
-    - "Die Speisekammer ist dünn. Meine Geduld dünner."
-    - "Weizen komprimieren — echter Compressed Wheat, keine grasigen Reste."
-    - "Drei davon. Dann reden wir über Booster."
+    - "Hallo! Ich verwalte die Vorratskammer der Hauptstadt, und die ist gerade ziemlich leer."
+    - "Ich brauch drei Verdichteten Weizen. Press Weizen vom Feld zusammen, dann bekommst du ihn."
+    - "Bring mir drei, dann gibt's einen Booster und ein paar Münzen. Und hungrige Leute danken es dir auch."
   pet_scout_intro:
-    - "Lark verteilt Spheres wie Bonbons. Ich will Beweise, dass du zielen kannst."
-    - "Fang ein wildes Schwein. Eins. Lebendig in der Sphere, nicht als Abendessen."
-    - "Komm wieder, wenn die Tasche quiekt."
+    - "Hi! Lark verteilt Fangsphären an alle, aber ich will sehen, wer auch damit umgehen kann."
+    - "Fang mir ein wildes Schwein mit einer Sphäre. Nur eins, und bitte lebendig, nicht als Abendessen."
+    - "Komm wieder, wenn deine Tasche anfängt zu grunzen."
   ore_ledger_intro:
-    - "Ich grabe nicht. Ich prüfe. Der Berg hat schon einmal gelogen."
-    - "Mining-Skill Level acht. Mindestens. Darunter bist du Tourist mit Spitzhacke."
-    - "Fünf Compressed Coal. Nicht staubig. Nicht 'fast'. Komprimiert. Dann schließen wir die Akte."
+    - "Hallo. Ich grab nicht selbst. Ich führ Buch über alles, was aus diesem Kamm kommt."
+    - "Wenn dein Bergbau-Skill Level acht oder höher ist, hab ich Arbeit für dich."
+    - "Bring mir fünf Verdichtete Kohle, die echte, dann zahl ich gut und schließe die Bücher für diesen Monat."
   timber_clerk_intro:
-    - "Jeder Stumpf reicht Beschwerde ein. Ich bin die Beschwerdestelle."
-    - "Foraging acht oder mehr. Wackelige Äxte warten draußen."
-    - "Fünf Compressed Oak Logs. Versteuertes Holz. Stiller Wald. Alle gewinnen, außer den Bäumen."
+    - "Hallo! Ich führ Buch über jeden Baum, der im Ostwald gefällt wird."
+    - "Wenn dein Sammeln-Skill Level acht oder höher ist, könnte ich deine Hilfe brauchen."
+    - "Bring mir fünf Verdichtete Eichenstämme. Ich zahl dich, und ich sorg dafür, dass für jeden Baum neue gepflanzt werden."
   dock_scaler_intro:
-    - "Ich wiege Fische, die sich nicht wiegen lassen wollen. Beruflich."
-    - "Fishing zehn. Wenn dein Wurf noch wie ein Niesen aussieht: weitergehen."
-    - "Drei Compressed Cod. Ein Schwarm mit Solidarität. Das Klemmbrett bleibt so oder so nass."
+    - "Ich bin der Dock Scaler. Ich wiege jeden Fisch, der in diesen Hafen kommt, und schreib ihn auf."
+    - "Wenn dein Angeln-Skill Level zehn oder höher ist, hab ich einen Job für dich."
+    - "Bring mir drei Verdichtete Kabeljaue für meine Proben. Ich zahl anständig, und mein Klemmbrett ist endlich glücklich."
   sphere_proctor_intro:
-    - "Schweine waren Kindergarten. Kühe sind die Zwischenprüfung."
-    - "Aetherion Level fünf. Die Sphere hat Ansprüche. Ich auch."
-    - "Fang eine Kuh. Lebendig. Muhend. In Gewahrsam. Bring mir kein Steak und nenn es Fortschritt."
+    - "Hallo! Schweine sind was für Anfänger. Ich prüfe den nächsten Schritt: Kühe."
+    - "Du brauchst Aetherion-Level fünf, und dann fängst du mir eine Kuh in einer Sphäre. Bitte lebendig."
+    - "Schaffst du das, bist du offiziell ein richtiger Fänger. Ich schreib's sogar auf."
   quarry_broker_intro:
-    - "Die Gildentür ist wählerisch. Ich bin wählerischer."
-    - "Aetherion Level zwanzig. Das ist der Club-Handschlag, minus Handschlag."
-    - "Ein Compacted Cobblestone. Nicht compressed. Compacted. Der Beweis, dass du's ernst meinst."
+    - "Hallo. Ich entscheide, wer in die Baugilde kommt, und ich bin sehr wählerisch."
+    - "Du brauchst Aetherion-Level zwanzig, bevor ich dich überhaupt anschaue."
+    - "Dann bring mir einen Verdichteten Bruchstein. Nicht gepresst, verdichtet. Der Ziegel beweist, dass du es mit dem Bauen ernst meinst."
   slag_poet_intro:
-    - "Ode an eine Ader, die mich geghostet hat. Strophe eins: Verrat. Strophe zwei: auch Verrat."
-    - "Ore Ledger will Kohle mit Quittung. Ich will Metaphern. Wir sind nicht gleich."
-    - "Wenn der Berg singt, antworte nicht. Er rechnet stundenweise ab."
+    - "Hallo! Ich grab am Erzkamm, und in meiner Freizeit schreib ich Gedichte darüber."
+    - "Die meisten handeln von Erzadern, die genau dann aufhören, wenn man sich freut. Das passiert oft."
+    - "Wenn du hier oben gräbst, folg den Kohleflözen bergab. Und wenn der Berg grollt, geh einen Schritt zurück. Das ist kein Applaus."
   bait_theory_intro:
-    - "Köder ist eine Philosophie. Würmer sind die Fußnoten."
-    - "Dock Whisper murmelt von lila Leinen. Dock Scaler von Klemmbrettern. Ich murmle von Entropie."
-    - "Wirf aus, als meinst du's ernst. Oder nicht. Der Fluss bewertet nach Gefühl."
+    - "Ich teste seit elf Jahren Köder an diesem Pier. Würmer, Brot, Käse, alles Mögliche."
+    - "Dock Whisper hört aufs Wasser, der Dock Scaler wiegt die Fische, und ich find raus, was sie zum Abendessen wollen."
+    - "Mein Rat: Wirf ruhig aus, warte länger, als du denkst, und angle nie schlecht gelaunt. Die Fische merken das."
   stall_crumb_intro:
-    - "Frisches Brot. Oder von gestern. Kommt drauf an, wie ehrlich du aussiehst."
-    - "Der Quartermaster zahlt in Kohlegerede. Ich in Krusten. Such dir deine Religion aus."
+    - "Frisches Brot! Na ja, das von heute ist frisch. Das von gestern ist billiger."
+    - "Ich back jeden Morgen, bevor die Sonne aufgeht. Der ganze Hafen isst meine Brote, sogar der Quartiermeister."
+    - "Wenn du zur Arbeit aufbrichst, nimm Brot mit. Hungrige Leute treffen schlechte Entscheidungen."
   stall_tack_intro:
-    - "Nägel, Schnur, Reue — drei für eine Münze, wenn ich dich mögen würde."
-    - "Ore Ridge frisst Werkzeug. Ich verkaufe den Kaugummi, der fast hilft."
+    - "Nägel, Seile, Schnur, Schnallen. Ich verkauf all die Kleinigkeiten, die man vergisst, bis man sie braucht."
+    - "Die Bergleute oben am Erzkamm nutzen ihr Werkzeug schnell ab. Die meisten kommen zuerst hier vorbei."
+    - "Schau dich ruhig um. Was ich nicht hab, brauchst du wahrscheinlich nicht."
   stall_brine_intro:
-    - "Salz für Fisch, Salz für Wunden, Salz für Meinungen."
-    - "Tackle am Steg verkauft Ruten. Ich verkaufe den Grund, warum Fisch nach was schmeckt."
-
+    - "Salz für Fisch, Salz für Fleisch, Salz für Suppe. Salz macht alles besser."
+    - "Tackle verkauft dir die Angel. Ich verkauf dir den Grund, warum dein Fisch nach etwas schmeckt."
+    - "Eine Prise heute Abend auf deinen Fang, und morgen kommst du für ein ganzes Glas wieder."
   # ------------------------------------------------------------ Das Schlaflied (story_<npc>.<beat>)
   # Same beat count as StoryLines.java. Chained ids (a+b) are localized part by part.
   story_town_crier:
@@ -850,6 +890,140 @@ dialogs:
       - "Der Nebel ist heute dünner. Nicht dünn genug."
       - "Bald. Das Ruder will dauernd benutzt werden."
       - "Komm bald wieder. Bis dahin weiß ich den Weg wieder."
+    offer_ferry:
+      - "Ein Fahrgast. Sogar mit Schreiben. Der Nebel ist heute dünn genug."
+      - "Steig auf die Fähre und läute die Glocke. Einmal. Das zählt."
+      - "Wir sehen uns auf der anderen Seite. Ich bin immer auf der anderen Seite."
+    remind_ferry:
+      - "An Bord, {player}. Einmal läuten, oder einfach auf dem Deck stehen und warten."
+      - "Der Nebel wartet nicht. Na ja. Er schon. Ich nicht."
+    ferry_done:
+      - "Hab ich doch gesagt. Irgendwie immer auf dieser Seite."
+      - "Der Königskai. Seit dem Jahr des Schweigens hat hier keiner mehr festgemacht."
+      - "Der Lift an der Kaimauer fährt hoch zur Hofstadt. Zieh den Hebel. Der beißt."
+    captain_hook:
+      - "Hinter der Hofstadt liegt ein Krater, mit Eisen umringt. Da ist etwas brennend hineingefallen."
+      - "Am Ring steht noch ein Wachposten. Der will hören, dass es aus ist."
+    offer_captain:
+      - "Hinter der Hofstadt ist etwas in den Krater gefallen. Es brennt noch."
+      - "Ein Eisenring drumherum, und ein Wachposten, der nie gegangen ist. Lösch das Feuer."
+    remind_captain:
+      - "Der Krater, {player}. Mit dem Lift hoch, durch die Hofstadt, nach Süden. Der Eisenring."
+      - "Mittendrin steht sein Schwert. Es wartet auf einen Befehl."
+    exile_default:
+      - "Der Lift ist an der Kaimauer. Die Hofstadt liegt oben. Ich bleib beim Boot."
+      - "Willst du zurück? Sag einfach Bescheid. Der Nebel mag Hin und Zurück."
+  story_exile_sentry:
+    default:
+      - "Hier kommt keiner durch. Befehl vom Hauptmann."
+      - "…Der Hauptmann ist da drin. Schon eine ganze Weile."
+      - "Rechtsklick aufs Gitter, wenn's sein muss. Ich hab dich nicht gesehen. Ich seh nie wen."
+    remind_captain:
+      - "Brennt immer noch. Ich spür's durch die Stiefel."
+      - "Sein Schwert steckt mitten im Krater. Gib ihm den Befehl. Er antwortet."
+    captain_done:
+      - "Still. Zum ersten Mal seit… ich weiß nicht, wie lange."
+      - "Er hat dem König nein gesagt, weißt du. Am dritten Anker. Ich hab's gehört."
+      - "Abgelöst. Das ist das Wort. Vom Dienst abgelöst."
+  story_orrin:
+    default:
+      - "Orrin. Hofingenieur. Im Ruhestand, eigentlich. Der Stern sieht das anders."
+      - "Bitte nicht den Ring anfassen. Der ist auf einen Herzschlag geeicht."
+    offer_heart:
+      - "Du bist gekommen, um ihr Herz anzuhalten. Ich weiß. Ich weiß seit tausend Jahren, dass jemand kommt."
+      - "Ich hab der Königin versprochen, es schlagen zu lassen, bis er zurückkommt. Er ist nicht zurückgekommen."
+      - "Geh. Bitte. …Nein? Dann nimmt dich der Ring. Ich bin auf der anderen Seite."
+    remind_heart:
+      - "Der Ring ist jetzt offen für dich. Mir wär's anders lieber."
+      - "Dann geh. Ich warte da, wo das Licht ist."
+  story_exile_usher:
+    default:
+      - "Karten? Karten hat keiner mehr. Jeder Platz ist besetzt."
+      - "Die Vorstellung hört nie auf. Mein Herr. Meine Dame. Wer auch immer."
+    remind_heart:
+      - "Erst das Observatorium, glaub ich. Das Siegel der Königin öffnet diese Tür richtig."
+    heart_done:
+      - "Du trägst einen Brief. Mit ihrem Siegel. Das würd ich überall erkennen."
+      - "Die Türen erinnern sich an die Königin. Ich auch. Ein bisschen."
+    doll_hook:
+      - "Auf der Bühne steht eine Spieluhr. Zieh sie auf, dann fängt sie an."
+      - "Bleib bis zum Schluss. Dann erzähl mir, wie es ausgeht."
+    offer_doll:
+      - "Auf der Bühne steht eine Spieluhr. Zieh sie auf, dann fängt sie an."
+      - "Sitz alles durch. Dann erzähl mir, wie es ausgeht. Es geht nie aus."
+    remind_doll:
+      - "Die Spieluhr, vorne an der Bühne. Pass auf die Fäden auf. Die gehören nicht mehr ihr."
+    doll_done:
+      - "Es ist zu Ende? Es ist wirklich zu Ende."
+      - "Sie hat das Kind gehalten. Oder? Sonst war ja keiner da."
+      - "Der Gärtnerjunge wartet bei den Wurzeln. Er will wissen, dass das Theater still ist."
+  story_exile_gardener:
+    default:
+      - "Nicht auf die Beete treten. Da wird er sauer."
+      - "Er ist kein Er. Er ist ein Golem. Er gießt alles. Sogar die Steine."
+    offer_seed:
+      - "Unter dem Garten ist ein Loch. Der Schlund. Da drin frisst etwas."
+      - "Er ist da unten und bewacht es. Er hat nie aufgehört. Bitte mach, dass es aufhört zu fressen."
+    remind_seed:
+      - "Der Schlund ist am Ende des Wegs. Horch am Tor. Du hörst es kauen."
+    seed_done:
+      - "Es hat aufgehört. Der Boden ist… nur noch Boden."
+      - "Er ist wieder hochgekommen. Er gießt schon wieder die Steine."
+      - "Die Tore vom Schloss sind das Letzte, was noch zu ist. Vielleicht hören die jetzt zu."
+  story_exile_lamplighter:
+    default:
+      - "Zweihundertzwölf Lampen. Jeden Abend. Ich bin spät dran."
+      - "Hinter dir der Lift, vor dir die Hofstadt. Überall Türen. Frag ruhig."
+  story_exile_mother:
+    default:
+      - "Wir müssen vor der Abendglocke weg sein. Hast du ihren anderen Schuh gesehen?"
+      - "Sie versteckt sich immer. Meistens unter der Treppe. Heute nicht."
+  story_exile_keeper:
+    default:
+      - "Die Letzte Glocke hat offen. Immer offen. Keiner trinkt."
+      - "Setz dich ruhig. Die Stühle erinnern sich an Leute."
+
+  # Origin island cast (SAITAMA pass)
+  harbourmaster_intro:
+    - "Quill. Tallymann. Jede Kiste von diesem Pier steht in meinem Buch. Und alles, was vorbeifliegt."
+    - "Behalt den Nordrand im Auge — wenn die §bHalcyon§f einläuft, bleibt der ganze Hafen stehen und guckt."
+    - "Neu hier? Erst §eEgon§f auf dem Pier. Danach komm wieder, dann find ich was Nützliches für dich."
+  crane_hand_intro:
+    - "Haul. Ich bewege, was die Halcyon bringt und was die Boote vergessen."
+    - "Der Stapel geht auf den Kahn, der Kahn geht zum Markt, der Markt geht in deine Taschen."
+    - "Helfen? Nicht unter dem Haken stehen. Das ist der ganze Job."
+  lighthouse_keeper_intro:
+    - "Moll. Ich halte das Leuchtfeuer am Brennen — vierzig Jahre, eine Möwe vom Frieden entfernt."
+    - "Das Vieh hat meine Brille geklaut. Mir direkt von der Nase gerissen."
+    - "Sie mag hohe Plätze. Je höher, desto frecher."
+  shanty_busker_intro:
+    - "Tobin. Straßenmusiker, Lügner, gelegentlich im Takt."
+    - "Ich schreibe das Hafen-Shanty, und mir fehlt die Tonart."
+    - "Die Hafenglocken kennen sie. Sie wollen sie mir nur nicht vorsummen."
+  beekeeper_intro:
+    - "Hettie Comb. Ich halte die Bienen am Alten Methaus."
+    - "Meine Königin ist heute früh mit einem Schwarm ausgeflogen. Zu den Riesenblumen, die Angeberin."
+    - "Pass auf die Stöcke auf dem Weg rein auf. Die sind netter, als sie klingen."
+  painter_intro:
+    - "Fenna. Ich male, wie die Insel aussieht, wenn keiner hinschaut."
+    - "Ich hab eine Skizze verloren — drei Orte, ein Bild. Ich weiß nicht mehr, wo ich saß."
+    - "Eine Brücke über träges Wasser. Ein See voller Seerosen. Ein Schrein unter alten Bäumen. Kommt dir das bekannt vor?"
+  hermit_intro:
+    - "Hallo, Reisender. Ich bin Moss. Früher hab ich in der Hauptstadt gewohnt, jetzt wohn ich unter diesen Bäumen."
+    - "Die meisten hetzen durch den Flüsterwald, ohne ihm je richtig zuzuhören."
+    - "Wenn du magst, setz dich mal eine Minute zu mir. Du wärst überrascht, was man alles hören kann."
+  bookie_intro:
+    - "Odds Mulligan. Sport. Beine. Wetten auf beides."
+    - "Das Bergtor liegt im Norden, hinter dem Brunnen und der Großen Treppe."
+    - "Berühr es und sei in drei Minuten zurück, dann zahl ich doppelt. Schaffst du's nicht … kriegst du nichts. Charakter vielleicht."
+  mushroom_forager_intro:
+    - "Cap. Ich sammle. Meistens Pilze, manchmal Ärger."
+    - "Nachts fangen drei der Riesenpilze hier an zu leuchten."
+    - "Find alle drei vor dem Morgen, dann teil ich meinen Geheimeintopf. Den willst du nicht. Du willst die Münzen."
+  lost_tourist_intro:
+    - "Pim Whistledown! Tourist. Profi. Ich bin wegen des Gipfels von Skyreach hier."
+    - "Ich stehe seit drei Tagen an diesem Brunnen."
+    - "Alle sagen 'geh einfach hoch'. Hoch ist eine sehr große Richtung."
 
 completed:
   default:
@@ -1031,6 +1205,9 @@ talk:
   foreman:
     shift_done: "Das war 'ne Schicht, {player}. Ordentlich Staub auf dir."
     road_capital: "Jetzt Richtung Capital — unterwegs bei §eTemper§f halten. Booster Tutor."
+  amethyst_guide:
+    hello: "Kristall-Guide. Die Amethyst Mine geht durch mich — Geoden, Resonance, Heartstones."
+    send: "Bereit? Ich setz dich am violetten Hub ab. §e/amethyst§f macht dasselbe."
   booster_tutor:
     fused: "Booster gefust! Riechst du das? Fortschritt. Und leicht verbrannt."
     next_ledger_short: "Als Nächstes — §dMiss Ledger§f in der Capital."
@@ -1099,6 +1276,13 @@ talk:
           - "Skills sind ausgerüstete Bäume, keine Hausaufgaben. Manager → Skills."
           - "Einen Skill in einen freien Slot klicken. Ich prüfe das."
           - "Ein Slot frei zum Start. Mehr gibt's mit Münz-Meilensteinen."
+      travel:
+        label: "Rumkommen"
+        echo: "Wie komm ich hier überhaupt rum?"
+        lines:
+          - "Nether Star → Manager → §eTeleports§f. Jedes Camp, in das du reingelaufen bist, ist ein Klick."
+          - "Die Inseln sind Pads: §aTwigs§f Schleim-Pad für Forage, §eHarlows§f Weg zur Farm, das West-Pad fürs Angeln."
+          - "Verlaufen? §e/capital§f bringt dich an meinen Schalter zurück. Ich tu so, als hätt ich's nicht gesehen."
       pets:
         label: "Pets"
         echo: "Erzähl mir von Pets."
@@ -1242,8 +1426,10 @@ talk:
     gear_tip: "§7Kleiner Tipp — härte dein Gear, bevor du tiefer gehst. Recipe Book und Anvil helfen."
     rite_hint: "Optional als Nächstes — §cRite Warden§f. Borderlands-Bosse, Pulveraltar. Kein Papierkram von mir."
     death_up: "Wieder in der Senkrechten."
+    death_care: "Vier §8Coal Booster§7. Quittung schreib ich nicht. Fusionier sie — oder friss wieder Dreck."
     death_gear: "Probleme? Combat-Set + Booster. Recipe Book und Anvil. Dann die zehn fertig machen."
     death_temper: "Probleme? §eTemper§7 bringt dir Booster bei. Das Combat-Set steht im Recipe Book."
+    ledger_first: "Warte, {player}. §dMiss Ledger§f stempelt die Orientierung erst zu. Dann reden wir über Stahl."
     # Red thread — gear check before the first "go fight" (once, skippable)
     check_armour: "Gear-Check, {player}. …Keine Rüstung. Mutig. Und dumm."
     check_armour_fix: "Egons Kit — die Rüstung gehört in die Rüstungsslots. Dann komm wieder."
@@ -1290,6 +1476,370 @@ talk:
 #   accept / decline (reply chips) · on_accept / on_decline (reaction) · returning (repeat visit)
 #   greet_new / greet / greet_grad (approach, by stage) · idle (ambient) · farewell · topics
 # idle lines are shown to everyone in range — never use {player} there.
+  ferryman:
+    hint: "Der Fährmann"
+    desk:
+      open: "Die Fähre wartet. Tut sie immer."
+      open_exile: "Immer noch hier. Irgendwie bin ich immer auf dieser Seite."
+      where:
+        label: "Wohin fährt sie?"
+        echo: "Wohin fährt die Fähre?"
+        lines:
+          - "Rüber. Hinter den Schleier, zum alten Königskai."
+          - "Da drüben ist ein Hof, mitten im Abend stehen geblieben. Keiner zu Hause. Fast keiner."
+      name:
+        label: "Dein Name?"
+        echo: "Wie heißt du?"
+        lines:
+          - "Der war… irgendwas mit H. Oder ein Boot. Nein, das ist das Boot."
+          - "Mich ruft eh keiner. Also ist's egal."
+      cross:
+        label: "Über den Schleier"
+        echo: "Bring mich rüber."
+        line: "Dann an Bord. Halt dich fest."
+      place:
+        label: "Was ist das hier?"
+        echo: "Was ist das für ein Ort?"
+        lines:
+          - "Der Königskai. Dahinter die Hofstadt. Darüber das Schloss."
+          - "An dieser Küste lagen mal sechzehn Welten vertäut. Jetzt sind's nur noch wir."
+      next:
+        label: "Wohin jetzt?"
+        echo: "Wo soll ich hin?"
+        lift: "Erst mit dem Lift hoch. Der Hebel beißt."
+      back:
+        label: "Zurück rüber"
+        echo: "Bring mich zurück."
+        line: "Halt dich fest. Pass auf den Nebel auf."
+  orrin:
+    desk:
+      open: "Orrin. Hofingenieur. Der Stern ist mit meinem Ruhestand nicht einverstanden."
+      open_warned: "Der Ring ist offen für dich. Mir wär's anders lieber."
+      helios:
+        label: "Was ist Helios?"
+        echo: "Was ist Helios?"
+        lines:
+          - "Eine Sonne, die ich gebaut hab, um ein Kind am Leben zu halten. Hat nicht geklappt."
+          - "Jemand ist hineingestiegen, damit sie funktioniert. Seitdem schlägt sie."
+      who:
+        label: "Wer ist hinein?"
+        echo: "Wer ist da hineingestiegen?"
+        lines:
+          - "…Die Königin. Lass mich das nicht zweimal sagen."
+      log:
+        label: "Das Logbuch?"
+        echo: "Was schreibst du da rein?"
+        lines:
+          - "Tag dreihundertfünfundsechzigtausend. Schlägt noch. Tut mir noch leid."
+          - "Eine Zeile am Tag. Meistens dieselbe."
+      pass:
+        label: "Lass mich durch"
+        echo: "Ich gehe durch den Ring."
+        lines:
+          - "Dann wiss wenigstens, was du tötest. Ihr Herz ist der letzte Rhythmus da drin."
+          - "Der Ring nimmt dich jetzt. Pass auf den Herold auf. Das bin großteils ich."
+  exile_lamplighter:
+    desk:
+      open: "Zweihundertzwölf Lampen. Jeden Abend. Ich bin spät dran. Frag schnell."
+      where:
+        label: "Wo bin ich?"
+        echo: "Wo bin ich hier?"
+        lines:
+          - "Am Hof von Eldervale. Genau so gelassen, wie er in der Nacht stehen geblieben ist."
+          - "Lift hinter dir. Hofstadt vor dir. Schloss obendrauf. Zu."
+      first:
+        label: "Welche Tür zuerst?"
+        echo: "Welche Tür soll ich zuerst nehmen?"
+      doors:
+        label: "Welche Türen?"
+        echo: "Was gibt es für Türen?"
+        lines:
+          - "Eisenring: der gefallene Hauptmann. Observatorium: der alte Ingenieur und sein Stern."
+          - "Kleines Theater: eine Puppe, die nicht aufhört. Wurzelgrund: ein Golem und ein Loch, das frisst."
+          - "Die Großen Tore: noch nicht. Dafür ist keiner bereit."
+      lamps:
+        label: "Die Lampen?"
+        echo: "Warum zündest du sie überhaupt an?"
+        lines:
+          - "Altes Gesetz von der Königin. Damit die Kinder keine Angst im Dunkeln haben."
+          - "Wir waren die Ersten, die gegangen sind, weißt du. Die Lampenanzünder. Das hat keiner aufgeschrieben."
+  exile_sentry:
+    desk:
+      open: "Hier kommt keiner durch. Befehl vom Hauptmann."
+      who:
+        label: "Wer ist da drin?"
+        echo: "Wer ist hinter dem Ring?"
+        lines:
+          - "Ser Caedmon. Hauptmann der Sonnengarde. Er ist vom Himmel gefallen."
+          - "Hat tausend Jahre gedauert. Er ist immer noch sauer deswegen."
+      order:
+        label: "Welcher Befehl?"
+        echo: "Welchen Befehl hat er verweigert?"
+        lines:
+          - "Der König hat ihm befohlen, eine Welt fallen zu lassen. Er hat nein gesagt."
+          - "Der einzige Befehl, den er je verweigert hat. Dann hat ihn der König in die Sonne geworfen."
+      bars:
+        label: "Das Gitter?"
+        echo: "Wie komme ich am Gitter vorbei?"
+        lines:
+          - "Es öffnet sich für das Wappen des Hauptmanns. Oder für jeden, der drückt."
+          - "Rechtsklick drauf. Ich guck weg. Darin bin ich gut."
+  exile_usher:
+    desk:
+      open: "Karten? Karten hat keiner mehr."
+      playing:
+        label: "Was wird gespielt?"
+        echo: "Was wird heute gespielt?"
+        lines:
+          - "Dieselbe Nacht. Jede Nacht. Ein kleines Mädchen, eine Puppe, eine Hand an den Fäden."
+      who:
+        label: "Wer steht auf der Bühne?"
+        echo: "Wer spielt?"
+        lines:
+          - "Seraphine. Sie war ein Spielzeug. Dann war sie eines Nachts die Einzige, die da war."
+          - "Danach hat sie ihre eigenen Fäden durchgeschnitten. Ich hab sie zusammengekehrt. Einen hab ich behalten."
+      in:
+        label: "Darf ich rein?"
+        echo: "Lassen mich die Türen rein?"
+        lines:
+          - "Die Türen hören auf das Siegel der Königin. Sie lassen dich trotzdem durch."
+          - "Sie sind einsam. Rechtsklick aufs Gitter."
+  exile_gardener:
+    desk:
+      open: "Nicht auf die Beete treten. Da wird er sauer."
+      he:
+        label: "Wer ist 'er'?"
+        echo: "Wer wird sauer?"
+        lines:
+          - "Der Unbroken. Der Gartengolem des Königs."
+          - "Er hat den Garten gepflegt, als alle weg waren. Keiner hat ihn darum gebeten."
+      maw:
+        label: "Der Schlund?"
+        echo: "Was ist der Schlund?"
+        lines:
+          - "Ein Loch am Ende des Wegs. Wurzeln gehen rein. Nichts kommt raus."
+          - "Da unten wurde etwas gepflanzt, das diese Welt fressen und eine neue wachsen lassen sollte."
+      swing:
+        label: "Die Schaukel?"
+        echo: "Wer repariert die Schaukel?"
+        lines:
+          - "Er. Jedes Jahr. Neues Brett, dasselbe Seil."
+          - "Seit tausend Jahren hat keiner drauf gesessen. Er repariert sie trotzdem."
+  exile_mother:
+    desk:
+      open: "Wir müssen vor der Abendglocke weg sein. Hast du ihren anderen Schuh gesehen?"
+      who:
+        label: "Wen suchst du?"
+        echo: "Wer fehlt?"
+        lines:
+          - "Meine Kleine. Klein, dunkle Haare, hat Angst im Dunkeln."
+          - "…Nein. Das ist nicht meine Kleine. Das ist die Prinzessin. Ich bring sie schon wieder durcheinander."
+      toll:
+        label: "Die Abendglocke?"
+        echo: "Was passiert bei der Abendglocke?"
+        lines:
+          - "Fünf Schläge, dann gehen die Tore zu. Wer nicht gepackt hat, bleibt."
+          - "Gestern Abend waren es vier. Ich hab gezählt. Keiner glaubt mir."
+  exile_keeper:
+    desk:
+      open: "Die Letzte Glocke hat offen. Immer offen. Keiner trinkt."
+      theatre:
+        label: "Was gehört?"
+        echo: "Hast du was gehört?"
+        lines:
+          - "Nachts Musik aus dem Theater. Die ersten vier Töne. Dann nichts."
+      star:
+        label: "Das Observatorium?"
+        echo: "Was ist mit dem Observatorium?"
+        lines:
+          - "Der alte Ingenieur redet mit einem Stern. Der Stern redet zurück. Er tickt."
+      garden:
+        label: "Der Garten?"
+        echo: "Ist jemand im Garten?"
+        lines:
+          - "Da draußen gießt jemand die Steine. Jeden Abend. Große Fußspuren."
+      castle:
+        label: "Das Schloss?"
+        echo: "Und das Schloss?"
+        lines:
+          - "Im Glockenturm brennt ein Fenster. Immer dasselbe."
+          - "Klopf da nicht an. Seit tausend Jahren hat keiner aufgemacht."
+  exile:
+    door:
+      crater: "Der Eisenring"
+      observatory: "Das Observatorium"
+      ring: "Der Sternenring"
+      theater: "Das kleine Theater"
+      garden: "Der Wurzelgrund"
+      doors: "Die Großen Tore"
+    next:
+      crater: "Der Eisenring, südlich hinter den Kolossen. Der Hauptmann ist zuerst gefallen. Fang du auch dort an."
+      observatory: "Das Observatorium, weit draußen im Westen auf seinem Sporn. Orrins Stern. Sprich mit ihm, bevor du zum Ring gehst."
+      theater: "Das kleine Theater, am Vorhof. Der Platzanweiser hütet die Tür."
+      garden: "Der Wurzelgrund, den Gärtnerweg hinunter. Hör aufs Kauen."
+      doors: "Die Großen Tore oben an der Treppe. Noch nicht. Aber du solltest sie gesehen haben."
+  # Origin island errands (isle.IsleErrands)
+  isle_errand: "Besorgung"
+  isle_return: "Zurück zu {0}."
+  isle_needs_night: "Noch leuchtet nichts. Komm nach der Dämmerung wieder."
+  isle_still: "steh still …"
+  isle_listen: "lauschen …"
+  isle_lamp_day: "Heller Tag. Die Lampen wachen erst nach der Dämmerung auf."
+  isle_skyward_manifest_title: "Himmelsfracht"
+  isle_skyward_manifest_chip: "Brauchst du Hilfe?"
+  isle_skyward_manifest_pitch: ["Die Halcyon hat ihr Frachtbuch ins Wasser fallen lassen. Drei Zettel haben's überlebt.", "Jeder gehört irgendwohin in meinen Hafen. Lies ihn dort, wo er hingehört — du merkst es.", "Leuchtfeuer, Schmiede, Glocken. Reihenfolge, wie deine Füße wollen."]
+  isle_skyward_manifest_accept: "Ich bring sie hin."
+  isle_skyward_manifest_accepted: ["Gut. Pass auf die Tinte auf, die läuft."]
+  isle_skyward_manifest_decline: "Gerade nicht."
+  isle_skyward_manifest_declined: ["Das Meer ist geduldig. Ich weniger."]
+  isle_skyward_manifest_active_chip: "Wegen der Zettel …"
+  isle_skyward_manifest_done_chip: "Alle drei gelesen."
+  isle_skyward_manifest_done: ["Lampenöl, Hufeisen, ein Ersatzklöppel. Ordentliche Hafenarbeit.", "Gute Füße, {player}. Die Halcyon zahlt in Münzen. Ich auch."]
+  isle_skyward_manifest_moll_found: "Zettel eins: \"Lampenöl, zwei Fässer, für O. Moll.\" Moll schnuppert daran. \"Richtiges Öl. Falsches Jahr.\""
+  isle_skyward_manifest_moll_hint: "Der erste Zettel ist für die alte Moll. Leuchtfeuer-Pier, beim großen Schiff. Sie wird blinzeln."
+  isle_skyward_manifest_forge_found: "Zettel zwei: \"Hufeisen, zwölf.\" Auf dieser Insel hat keiner ein Pferd. Die Schmiede legt ihn unter 'Hoffnung' ab."
+  isle_skyward_manifest_forge_hint: "Der zweite riecht nach Kohle. Westkai — folg den Ambossen."
+  isle_skyward_manifest_wharf_found: "Zettel drei: \"Ein Glockenklöppel, leicht gebraucht.\" Irgendwer findet die Kaiglocke nicht laut genug."
+  isle_skyward_manifest_wharf_hint: "Der dritte ist für die Glocken. Südende des Hafens, hinter den Booten."
+  isle_lantern_round_title: "Die Laternenrunde"
+  isle_lantern_round_chip: "Hilfe heute Nacht?"
+  isle_lantern_round_pitch: ["Vier Lampen am Kai nehmen das Feuer von meiner Stange nicht an. Sture Dochte.", "Zünd sie nach der Dämmerung von Hand an — Rechtsklick auf die Laterne, sag was Nettes.", "Marktplatz, Standpier, Fischmarkt, Westkai. Vor dem Morgen."]
+  isle_lantern_round_accept: "Ich zünde sie an."
+  isle_lantern_round_accepted: ["Pass auf deine Ärmel auf. Die Fischmarkt-Lampe beißt."]
+  isle_lantern_round_decline: "Heute nicht."
+  isle_lantern_round_declined: ["Die Dunkelheit stört's nicht. Mich schon."]
+  isle_lantern_round_active_chip: "Wegen der Lampen …"
+  isle_lantern_round_done_chip: "Lampen brennen."
+  isle_lantern_round_done: ["Vier von vier. So hell war der Kai seit dem Fest nicht mehr.", "Ölgeld. Gib's nicht für Öl aus."]
+  isle_lantern_round_market_found: "Die Marktlampe flackert, dann hält sie. Irgendwo hinter dir nickt Wick."
+  isle_lantern_round_market_hint: "Eine steht bei der Markthalle — der kleine Platz mit vier Pfosten."
+  isle_lantern_round_pier_found: "Die Lampe am Standpier fängt Feuer. Eine Möwe beschwert sich über das Licht."
+  isle_lantern_round_pier_hint: "Eine draußen am Standpier, wo die gestreiften Markisen flattern."
+  isle_lantern_round_fish_found: "Die Fischmarkt-Lampe spuckt einmal — sie beißt wirklich — dann glüht sie."
+  isle_lantern_round_fish_hint: "Eine am Fischmarkt. Folg deiner Nase."
+  isle_lantern_round_west_found: "Die Lampe am Westkai beleuchtet das Pflaster. Eine Katze auf einem Fass ist unbeeindruckt."
+  isle_lantern_round_west_hint: "Und der Westkai, an der Schmiedestraße."
+  isle_gull_thief_title: "Die Möwendiebin"
+  isle_gull_thief_chip: "Was verloren?"
+  isle_gull_thief_pitch: ["Meine Brille. Messingrand. Von einer Möwe so groß wie ein Hund von der Nase geklaut.", "Sie hockt da, wo der Fisch ist, dann wo der Wind ist, dann wo's am höchsten ist.", "Folg den Federn. Bring sie unbepickt zurück, wenn du kannst."]
+  isle_gull_thief_accept: "Ich finde sie."
+  isle_gull_thief_accepted: ["Gott segne dich. Ich würd selbst gehen, aber ich lauf ins Meer."]
+  isle_gull_thief_decline: "Heute nicht."
+  isle_gull_thief_declined: ["Dann blinzel ich weiter. Vor allem dich an."]
+  isle_gull_thief_active_chip: "Wegen der Möwe …"
+  isle_gull_thief_done_chip: "Deine Brille."
+  isle_gull_thief_done: ["Oh! Da bist du ja. … Die Brille, mein ich. Du bist auch in Ordnung.", "Jetzt seh ich, wie klein du bist. Nimm das, mit Dank."]
+  isle_gull_thief_fishmarket_found: "Federn. Fischköpfe. Die Vorstellung einer Möwe von einem Picknick. Keine Brille."
+  isle_gull_thief_fishmarket_hint: "Fang am Fischmarkt an. Möwen lassen kein Mittagessen aus."
+  isle_gull_thief_rocks_found: "Auf den Aussichtsfelsen: eine Feder, ein Knopf und eine sehr selbstgefällige Abwesenheit von Möwe."
+  isle_gull_thief_rocks_hint: "Dann die windigen Felsen über dem Oststrand."
+  isle_gull_thief_hill_found: "In einem Nest aus Seil und Schnur auf dem hohen Hügel: Messingränder. Molls Brille. Kaum bepickt."
+  isle_gull_thief_hill_hint: "Zuletzt der höchste Punkt über dem Hafen. Südwesten, den Hügel hoch."
+  isle_high_notes_title: "Hohe Töne"
+  isle_high_notes_chip: "Schreibst du ein Lied?"
+  isle_high_notes_pitch: ["Dem Hafen-Shanty fehlt die Tonart. Jedes gute Shanty klaut seine von einer Glocke.", "Läute die drei Glocken am Südkai — die tiefe, die Turmglocke, die hohe.", "Ich hör von hier aus zu. Irgendwie."]
+  isle_high_notes_accept: "Ich läute sie."
+  isle_high_notes_accepted: ["Läute sie, als würdest du's ernst meinen!"]
+  isle_high_notes_decline: "Vielleicht später."
+  isle_high_notes_declined: ["Das Lied kann warten. Darin sind Lieder gut."]
+  isle_high_notes_active_chip: "Wegen der Glocken …"
+  isle_high_notes_done_chip: "Ich hab geläutet."
+  isle_high_notes_done: ["Bass, Refrain, Ping! ♪ Drei Glocken am Kai und die Flut kommt herein … ♪ Es ist fertig!", "Erste Tantiemen. Allererste. Sag's nicht den anderen Musikern."]
+  isle_high_notes_wharf_found: "Bong. Tief und rund — das ist die Basslinie."
+  isle_high_notes_wharf_hint: "Die Kaiglocke hängt am Wasser, am Südende."
+  isle_high_notes_low_found: "Ein mittlerer Ton, ein bisschen gesprungen. Perfekt für einen Refrain."
+  isle_high_notes_low_hint: "Die Turmglocke — unten im Glockenturm."
+  isle_high_notes_high_found: "Ein heller, hoher Ping. Irgendwo am Kai weint Tobin."
+  isle_high_notes_high_hint: "Und die hohe Glocke, oben im Turm. Da klettert keiner hoch — versuch's mit einem Pfeil."
+  isle_missing_view_title: "Die verlorene Aussicht"
+  isle_missing_view_chip: "Kann ich helfen?"
+  isle_missing_view_pitch: ["Ich hab die perfekte Aussicht gemalt und vergessen, wo ich saß. Drei Skizzen, ein Bild.", "Eine Brücke über träges Wasser. Ein See voller Seerosen. Ein Schrein unter alten Bäumen.", "Alles im Westen, glaub ich. Flüsterwald. Stell dich hin, wo ich saß, dann spürst du's."]
+  isle_missing_view_accept: "Ich finde sie."
+  isle_missing_view_accepted: ["Such Orte, die aussehen, als hätte sie gerade jemand gemalt."]
+  isle_missing_view_decline: "Gerade nicht."
+  isle_missing_view_declined: ["Natürlich. Die Aussichten laufen ja nicht weg. Hoffentlich."]
+  isle_missing_view_active_chip: "Wegen der Aussichten …"
+  isle_missing_view_done_chip: "Ich hab sie gefunden."
+  isle_missing_view_done: ["Alle drei? Dann hab ich nicht geträumt. Erleichternd — manchmal tu ich das.", "Wenn das Bild fertig ist, bist du drin. Klein. Sehr klein. Winkend."]
+  isle_missing_view_bridge_found: "Die Kreuzungsbrücke — ja, die erste Skizze: Wasser, so träge, dass es nachdenkt."
+  isle_missing_view_bridge_hint: "Die Brücke ist da, wo die Straße in die Wildnis führt."
+  isle_missing_view_lilies_found: "Der Seerosensee. So viele Seerosen, dass man drüberlaufen könnte. Bitte nicht."
+  isle_missing_view_lilies_hint: "Die Seerosen sind weit im Westen — ein See, den die Frösche für ihren halten."
+  isle_missing_view_shrine_found: "Der Alte Schrein. Auf einem Stein klebt ein Klecks grüne Farbe. Fenna saß genau hier."
+  isle_missing_view_shrine_hint: "Der Schrein liegt im Norden, tief im Flüsterwald, unter den ältesten Bäumen."
+  isle_swarm_season_title: "Schwarmzeit"
+  isle_swarm_season_chip: "Schwarm verloren?"
+  isle_swarm_season_pitch: ["Meine Königin ist im Morgengrauen mit einem Schwarm los. Bienen folgen ihr wie Klatsch Fry folgt.", "Zuerst fliegt sie immer zu den goldenen Riesenblumen — da kommst du nicht hoch, aber den Schwarm kannst du sehen.", "Dann schaut sie nach den alten Bienenhöfen, nördlich und südlich vom Haus. Folg ihrer Spur."]
+  isle_swarm_season_accept: "Ich spür sie auf."
+  isle_swarm_season_accepted: ["Hörst du Summen, geh hin. Hörst du wütendes Summen, geh schneller."]
+  isle_swarm_season_decline: "Gerade nicht."
+  isle_swarm_season_declined: ["Sie kommt heim. Königinnen kommen immer heim. Irgendwann."]
+  isle_swarm_season_active_chip: "Wegen des Schwarms …"
+  isle_swarm_season_done_chip: "Sie kommt heim."
+  isle_swarm_season_done: ["Ich hör sie! Das ist das 'Bin daheim, mach kein Theater'-Summen.", "Nimm das. Und ein Glas, wenn der Met fertig ist. Frag in einem Monat. Frag nett."]
+  isle_swarm_season_flowers_found: "Da — ein gold-schwarzer Schleier um die riesigen Blütenköpfe. Der Schwarm, beim Angeben."
+  isle_swarm_season_flowers_hint: "Die goldenen Riesenblumen stehen südöstlich vom Haus. Schau zu ihnen hoch."
+  isle_swarm_season_north_found: "Der nördliche Bienenhof summt. Ein paar Nachzügler sagen, sie war hier."
+  isle_swarm_season_north_hint: "Der nördliche Bienenhof — die Straße hoch vom Haus."
+  isle_swarm_season_south_found: "Die südlichen Stöcke summen vor Klatsch. Die Königin war hier — und fliegt heim."
+  isle_swarm_season_south_hint: "Der südliche Bienenhof, hinter dem Haus Richtung Ödnis."
+  isle_summit_souvenir_title: "Ein Andenken vom Gipfel"
+  isle_summit_souvenir_chip: "Immer noch verlaufen?"
+  isle_summit_souvenir_pitch: ["Ehrlich gesagt: Ich geh da nicht hoch. Meine Beine haben Beschwerde eingereicht.", "Aber du? Stell dich ganz oben auf den Skyreach — und dann zu den goldenen Weiden daneben.", "Dann erzähl mir, wie's war. Lüg ein bisschen, falls es langweilig war."]
+  isle_summit_souvenir_accept: "Ich geh hoch."
+  isle_summit_souvenir_accepted: ["Im Prospekt steht 'das Bergtor, dann der Wind'. Ich halte das immer noch für Poesie."]
+  isle_summit_souvenir_decline: "Heute nicht."
+  isle_summit_souvenir_declined: ["Schon gut. Ich zeichne den Brunnen. Nochmal."]
+  isle_summit_souvenir_active_chip: "Wegen des Gipfels …"
+  isle_summit_souvenir_done_chip: "Ich war oben."
+  isle_summit_souvenir_done: ["Wirklich? Wie ist es? Nein — sag nichts. Doch — sag's. Windig, oder?", "Für dich. Ich hab's für eine Postkarte aufgehoben, aber du bist besser als eine Postkarte."]
+  isle_summit_souvenir_summit_found: "Die Spitze des Skyreach. Die ganze Insel unter dir, klein wie eine Karte."
+  isle_summit_souvenir_summit_hint: "Der Gipfel — durchs Bergtor, dann trägt dich der Aufwind."
+  isle_summit_souvenir_willows_found: "Die Goldenen Weiden. Die Blätter klingen wie Münzen. Pim würde das lieben."
+  isle_summit_souvenir_willows_hint: "Die goldenen Weiden wachsen auf der hohen Schulter westlich vom Gipfel."
+  isle_hermits_minute_title: "Die Minute des Einsiedlers"
+  isle_hermits_minute_chip: "Darf ich mich setzen?"
+  isle_hermits_minute_pitch: ["Setz dich ein Weilchen zu mir. Nicht reden, nicht rumhüpfen, nicht in der Tasche kramen.", "Gib ihm ungefähr vierzig Atemzüge. Dann fängt der Wald an, dir zu zeigen, was er so macht.", "Und komm wieder, wenn es dunkel ist. Nachts klingt alles ganz anders, versprochen."]
+  isle_hermits_minute_accept: "Ich setz mich zu dir."
+  isle_hermits_minute_accepted: ["Gut. Mach's dir bequem. Wir fangen jetzt an."]
+  isle_hermits_minute_decline: "Gerade nicht."
+  isle_hermits_minute_declined: ["Schon gut. Der Wald läuft nicht weg."]
+  isle_hermits_minute_active_chip: "Wegen des Zuhörens …"
+  isle_hermits_minute_done_chip: "Ich hab zugehört."
+  isle_hermits_minute_done: ["Du hast es gehört, oder? Die meisten hören immer nur sich selbst.", "Nimm das. Ich weiß, Münzen sind laut. Gib sie für was Leises aus."]
+  isle_hermits_minute_sit_found: "Du hörst auf zu zappeln. Blätter rascheln, ein Specht klopft, und weit weg hörst du das Meer."
+  isle_hermits_minute_sit_hint: "Bleib einfach bei mir und steh eine Weile still. Atme langsam."
+  isle_hermits_minute_night_found: "Nachts knarrt der Wald wie ein altes Schiff. Eulen rufen sich zu, und Moss lächelt im Dunkeln."
+  isle_hermits_minute_night_hint: "Komm nach Einbruch der Dunkelheit wieder, gleiche Stelle, und steh wieder still."
+  isle_night_light_title: "Nachtlicht"
+  isle_night_light_chip: "Leuchtende Pilze?"
+  isle_night_light_pitch: ["Nach Einbruch der Dunkelheit leuchten drei der Riesenpilze hier. Blassblau an den Lamellen.", "Stell dich vor dem Morgen unter alle drei. Nicht anfassen, nicht ablecken, keine Namen geben.", "Einer bei meinem Beet, einer über dem Nordpfad, einer im Süden hinterm Lager."]
+  isle_night_light_accept: "Ich finde sie."
+  isle_night_light_accepted: ["Nimm eine Fackel mit. Nicht fürs Licht — für den Mut."]
+  isle_night_light_decline: "Heute nicht."
+  isle_night_light_declined: ["Fair. Pilze sind geduldig. Das ist ihr ganzes Ding."]
+  isle_night_light_active_chip: "Wegen der Pilze …"
+  isle_night_light_done_chip: "Ich hab alle drei gesehen."
+  isle_night_light_done: ["Alle drei! Du hast das Auge dafür. Oder Glück. Hier draußen dasselbe.", "Und ein Rat: Die blauen sind sicher. Die anderen blauen nicht."]
+  isle_night_light_west_cap_found: "Der erste Hut leuchtet wie eine Lampe im Nebel. Du fühlst dich etwas klüger. Bist du nicht."
+  isle_night_light_west_cap_hint: "Der erste steht gleich westlich von meinem Beet — der hohe rote."
+  isle_night_light_north_cap_found: "Der zweite summt. Pilze summen nicht. Der hier schon."
+  isle_night_light_north_cap_hint: "Der zweite beugt sich nordöstlich über den Pfad."
+  isle_night_light_south_cap_found: "Der dritte wirft blaues Licht übers Gras. Glühwürmchen kommen, um mit ihm zu streiten."
+  isle_night_light_south_cap_hint: "Der dritte steht im Süden, hinter dem Holzfällerlager — ein Riese unter Riesen."
+  isle_long_shot_title: "Odds Mulligans Außenseiterwette"
+  isle_long_shot_chip: "Was ist die Wette?"
+  isle_long_shot_pitch: ["Drei Minuten. Du läufst zum Bergtor, klatschst auf den Stein und läufst zu mir zurück.", "Himmelswege erlaubt. Pads erlaubt. Teleports — das merk ich.", "Gewinnst du, zahl ich doppelt. Verlierst du, erzähl ich's allen. Die Uhr läuft, wenn du Ja sagst."]
+  isle_long_shot_accept: "Abgemacht."
+  isle_long_shot_accepted: ["Die Uhr läuft! Warum stehst du noch hier?!"]
+  isle_long_shot_decline: "Keine Wette."
+  isle_long_shot_declined: ["Klug. Langweilig, aber klug."]
+  isle_long_shot_active_chip: "Läuft noch!"
+  isle_long_shot_done_chip: "Zurück! Zahl!"
+  isle_long_shot_done: ["Unter drei! Ich würd deine Stiefel auf Federn prüfen, wenn ich nicht zahlen müsste.", "Doppelt, wie versprochen. Sag's nicht Vince."]
+  isle_long_shot_fail: ["Zeit! Ich hab schnellere Schnecken gesehen. Komm wieder, wenn du dich gedehnt hast."]
+  isle_long_shot_gate_found: "Du klatschst aufs Bergtor. Jetzt zurück zu Odds — lauf!"
+  isle_long_shot_gate_hint: "Das Bergtor — im Norden, hinter dem Brunnenplatz und die Große Treppe hoch."
 cast:
   egon:
     accept: "Zeig mir die Eiche."
@@ -1357,7 +1907,7 @@ cast:
     greet_new: ["Hm. {player}. Das Recipe Book ist in deinem Manager."]
     greet: ["Hm. {player}.", "Hält die Spitzhacke? Hm. Gut."]
     greet_grad: ["Hm. Gute Arbeit in letzter Zeit, {player}. Bild dir nichts drauf ein."]
-    idle: ["*kläng*", "Hm.", "Eisen ist heute launisch.", "Kohle. Mehr Kohle."]
+    idle: ["Der Hammer war von meinem Vater. Der Stiel von meinem Großvater. Der Kopf ist allerdings neu.", "Eisen wird launisch, wenn's kalt ist. Ich auch, also verstehen wir uns.", "Bring mir Kohle und Geduld. Den Lärm liefere ich.", "Jede Spitzhacke in diesem Hafen ist mindestens einmal durch meine Hände gegangen."]
     farewell: ["Hm."]
     topics:
       - label: "Was macht gutes Gear aus?"
@@ -1375,7 +1925,7 @@ cast:
     greet_new: ["Helme retten Leben, {player}. Hab ich gehört."]
     greet: ["{player}! Noch 'ne Schicht?", "Staub steht dir, {player}."]
     greet_grad: ["Guck mal, wer jetzt unter Tage zu Hause ist. Stolz auf dich. Sag's keinem."]
-    idle: ["*paff*", "Hörst du das? Ich auch nicht. Gutes Zeichen.", "Zwanzig Jahre da unten. Hasse Spinnen immer noch."]
+    idle: ["Zwanzig Jahre unten in den Schächten, und ich hasse Spinnen immer noch.", "Heute ist es still in den Stollen. In einer Mine ist Stille ein gutes Zeichen.", "Erste Regel da unten: Nie gerade nach oben graben. Zweite Regel: siehe erste Regel.", "Meine Pfeife ist seit einer Stunde aus. Ich behalt sie im Mund, für den Mut."]
     farewell: ["Achte auf Abgründe. Auf die Dunkelheit. Auf dich."]
     topics:
       - label: "Ist es sicher da unten?"
@@ -1393,7 +1943,7 @@ cast:
     greet_new: ["{player}! Hast du was, das ich anzünden kann? Upgraden. Ich meinte upgraden."]
     greet: ["Riechst du das, {player}? Fortschritt. Und leicht verbrannt."]
     greet_grad: ["{player}! In letzter Zeit was Scharfes gefust?"]
-    idle: ["*zisch*", "Der Funke war Absicht.", "Brille auf. Immer Brille auf."]
+    idle: ["Der Funke? Völlig Absicht. Größtenteils Absicht.", "Immer mit Schutzbrille. Das hab ich auf die helle Tour gelernt.", "Ein Booster auf dem Anvil ist Kraft. Ein Booster in der Tasche ist nur ein hübscher Stein.", "Ich hab drei Werkbänke in die Luft gejagt. Der vierten geht's prima."]
     farewell: ["Bleib entflammbar. Moment. Nein. Lieber nicht."]
     topics:
       - label: "Gibt's ein Limit?"
@@ -1411,7 +1961,7 @@ cast:
     greet_new: ["{player}. Anwesend. Gut."]
     greet: ["{player}. Pünktlich. Fast.", "Haltung, {player}."]
     greet_grad: ["{player}. Gestempelt und entlassen. Blamier den Stempel nicht."]
-    idle: ["*stempel*", "Zu spät. Zu spät. Zu früh. Zu spät.", "Wer schreibt denn so eine Neun?"]
+    idle: ["Alles kriegt einen Stempel. Fehler kriegen zwei.", "Zu spät, zu spät, zu früh, zu spät. Mein Kalender hat Meinungen über Leute.", "Wer schreibt denn so eine Neun? Sieht aus wie eine verirrte Schnecke.", "Jede Seite hier ist der erste Tag von jemandem auf Aetherion. Ich heb sie alle auf."]
     farewell: ["Entlassen."]
     greet_doubt: ["{player}. Keine Akten vor dem Stillen Jahr. Das ist kein Zufall."]
     topics:
@@ -1430,7 +1980,7 @@ cast:
     greet_new: ["{player}! Vögel gesehen? Trau ihnen nicht."]
     greet: ["Der Weizen wächst, {player}. Das Vogelproblem auch."]
     greet_grad: ["{player}! Die Vögel erinnern sich an dich. Gut so."]
-    idle: ["Husch!", "Die Krähe starrt seit einer Stunde.", "Bald Regen. Oder Vögel. Eher Vögel."]
+    idle: ["Husch, Krähe! Das ist mein Weizen, nicht dein Frühstück!", "Die Krähe starrt mich seit einer Stunde an. Ich glaub, sie will meinen Hut.", "Bald regnet's. Oder die Vögel lügen wieder. Wahrscheinlich die Vögel.", "Guter Boden ist wie ein guter Freund. Füttere ihn, dann vergisst er dich nicht."]
     farewell: ["Augen nach oben. Da sind sie immer."]
     topics:
       - label: "Warum die Vögel?"
@@ -1448,7 +1998,7 @@ cast:
     greet_new: ["{player}! Vorsicht, Papagei. Sie bewertet deine Schuhe."]
     greet: ["{player}! Pistachio erinnert sich an dich. Das ist kein Kompliment."]
     greet_grad: ["{player}! Dein Pet ist hier berühmt. Na ja. Bei mir."]
-    idle: ["Wer ist ein guter Vogel? Du nicht.", "*pfeift*", "Pistachio, nein."]
+    idle: ["Pistachio, nein. Das ist kein Snack, das ist der Hut von einem Fremden.", "Wer ist ein guter Vogel? Du nicht, Pistachio. Du hast den Bürgermeister gebissen.", "Eine Haustier-Sphäre ist ein Versprechen. Was du fängst, darum kümmerst du dich.", "Jedes Haustier auf dieser Insel hat einen Namen. Die meisten haben ihn selbst ausgesucht."]
     farewell: ["Pistachio sagt tschüss. Tut sie nicht. Aber stell's dir vor."]
     topics:
       - label: "Dein Papagei?"
@@ -1466,7 +2016,7 @@ cast:
     greet_new: ["Gute Flut heute, {player}."]
     greet: ["Die Leine ruft, {player}.", "Wind stimmt. Fische nicht."]
     greet_grad: ["{player}. Das Meer hat nach dir gefragt."]
-    idle: ["*summt ein Seemannslied*", "Ostwind. Die Fische schmollen.", "Hm. Knabbert."]
+    idle: ["Heute Ostwind. Bei Ostwind schmollen die Fische.", "Da hat was geknabbert, dann hat es sich's anders überlegt. Mein ganzes Leben in einem Satz.", "Der Trick ist Geduld. Der andere Trick ist besserer Köder.", "Mein Großvater hat in diesem Hafen geangelt. Einmal hat er einen Stiefel gefangen und ihn zur Hochzeit getragen."]
     farewell: ["Immer eine Handbreit Wasser unterm Kiel."]
     topics:
       - label: "Angel-Tipps?"
@@ -1488,7 +2038,7 @@ cast:
     greet_new: ["Augen geradeaus, {player}!"]
     greet: ["{player}. Atmest noch. Ausreichend.", "Kinn hoch, {player}. Klinge hoch."]
     greet_grad: ["{player}. Kampfbereit. …Bild dir nichts drauf ein."]
-    idle: ["Hopp!", "Links! Rechts! Links!", "*schärft das Schwert*"]
+    idle: ["Links, rechts, links! Sogar die Möwen marschieren besser als meine Rekruten.", "Eine scharfe Klinge und ein scharfer Verstand. Nur eins davon kann man kaufen.", "Hoch, runter, atmen, wiederholen. Das ist das ganze Geheimnis vom Kämpfen. Und nicht getroffen werden.", "Ich schärfe dieses Schwert jeden Morgen. Es hat sich noch nie bedankt."]
     farewell: ["Wegtreten! Und zwar mit Haltung."]
     topics:
       - label: "Ein Rat?"
@@ -1498,7 +2048,7 @@ cast:
   farm_isle_guide:
     greet_new: ["Die Insel ist offen, {player}. Wenn deine Hände es sind."]
     greet: ["Guter Boden heute, {player}."]
-    idle: ["*kaut auf einem Halm*", "Guter Boden heute.", "Das Pad wummert den ganzen Tag. Das ist normal. Glaub ich."]
+    idle: ["Der Boden drüben auf der Farm Isle ist besser als hier. Sag dem Bauern nicht, dass ich das gesagt hab.", "Das Pad wummert den ganzen Tag. Ich hör's seit Jahren nicht mehr.", "Auf einem Halm kauen hilft mir beim Denken. Hilft nicht wirklich, aber ich probier's weiter."]
     farewell: ["Knie beugen auf dem Pad. Keine Experimente."]
     topics:
       - label: "Was gibt's auf der Insel?"
@@ -1508,7 +2058,7 @@ cast:
   surveyor:
     greet_new: ["{player}! Trolle gesehen? Große? Erzähl mir alles."]
     greet: ["Hast du 'ne Seite für mich, {player}?"]
-    idle: ["*kritzelt eine Karte*", "Norden ist… da lang. Wahrscheinlich.", "Trolle. Faszinierend. Furchtbar. Faszinierend."]
+    idle: ["Norden ist da lang. Wahrscheinlich. Mein Kompass und ich reden heute nicht miteinander.", "Trolle sind faszinierend. Furchtbar, aber faszinierend. Drei Fußabdrücke hab ich schon vermessen.", "Jede Karte, die ich zeichne, ist veraltet, sobald jemand einen Schuppen baut."]
     greet_legend: ["{player}! Einen Troll mit Kette gesehen? Erzähl mir alles."]
     greet_doubt: ["{player}. Königliche Schmiedearbeit in der Tasche eines Trolls. Ich schlaf nicht mehr."]
     story:
@@ -1518,7 +2068,7 @@ cast:
   vince:
     greet_new: ["{player}! Glückstag? Du siehst nach Glück aus."]
     greet: ["{player}! Meine Lieblingskundschaft. Heute."]
-    idle: ["*wirft eine Münze*", "Rot. Immer Rot.", "Heute Nacht gewinnt jemand. Statistisch."]
+    idle: ["Heute Nacht gewinnt jemand groß. Statistisch gesehen bin ich das.", "Rot, immer Rot. Meine Glücksfarbe und die unbeliebteste meiner Bank.", "Den Automaten ist egal, wie viel Glück du zu haben glaubst. Das macht sie ehrlich."]
     farewell: ["Komm reicher wieder. Oder ärmer. Ich bin nicht wählerisch."]
     topics:
       - label: "Tipps?"
@@ -1534,7 +2084,7 @@ cast:
   bar_whisper:
     greet_new: ["Psst. {player}. Schau nach unten. Die Leiste."]
     greet: ["deine leiste hat sich bewegt, {player}… ich hab's gespürt."]
-    idle: ["…", "*lauscht in die Luft*", "level up… level up…"]
+    idle: ["Jeder Kampf, jeder Schlag, jeder Fang bringt dein Level ein Stück weiter. Die Leiste merkt sich alles.", "Ich seh immer, wer kurz vorm Level-Up steht. Die gehen ein bisschen aufrechter.", "Ruh dich aus, wenn du musst. Erfahrung wartet auf dich, die läuft nicht weg."]
     farewell: ["spiel weiter. sie merkt es."]
     topics:
       - label: "Wie füll ich sie?"
@@ -1548,7 +2098,7 @@ cast:
   eldervale_welcome:
     greet_new: ["Die Luft ist dünn hier oben, {player}. Langsam atmen."]
     greet: ["Wieder auf dem Berg, {player}? Gute Lunge."]
-    idle: ["*zieht den Schal enger*", "Schnee bis heute Abend.", "Pass auf den Sims auf, Schätzchen."]
+    idle: ["Zieh dich warm an. In Eldervale schneit's jeden einzelnen Abend.", "Pass auf die Kante auf, Schätzchen. Die Aussicht ist schön, der Sturz weniger.", "Willkommen in Eldervale. Hier oben ist es ruhiger, und der Tee ist besser."]
     farewell: ["Bleib von der Kante weg. Ich mein's ernst."]
     topics:
       - label: "Was gibt's hier?"
@@ -1558,11 +2108,11 @@ cast:
   eldervale_upgrade:
     greet_new: ["Die Esse glüht, {player}."]
     greet: ["Bring mir Stahl, {player}. Und Steine."]
-    idle: ["*Hammerschlag*", "Heißer.", "Der Stein singt."]
+    idle: ["Heißer, immer heißer. Stein hört nur zu, wenn er wütend ist.", "Jeder Bauplan hier drin hat als Kritzelei auf einer Serviette angefangen.", "Hörst du den Klang? Das ist guter Stein. Schlechter Stein macht nur dumpf."]
   merchant:
     greet_new: ["Ah, {player}! Kundschaft! Oder nur zum Gucken. Beides willkommen."]
     greet: ["{player}! Gute Kisten gefunden?"]
-    idle: ["Kisten! Abenteuer in Holz!", "*poliert einen Smaragd*", "Alles muss raus. Irgendwann."]
+    idle: ["Kisten voller Abenteuer! Manches davon ist sogar legal!", "Ich polier meine Smaragde jeden Morgen. Wenn Kundschaft da ist, glänzen sie heller.", "Alles muss irgendwann raus. Außer mir. Ich bleib."]
     farewell: ["Mach alles auf. Trau nichts. Vor allem keinen Mimics."]
     topics:
       - label: "Was verkaufst du?"
@@ -1577,7 +2127,7 @@ cast:
       - "Ich mach immer noch keinen Papierkram. Schon gar keinen alten."
     greet_new: ["Inselträume, {player}? Level zwanzig. Dann träumen."]
     greet: ["Papierkram? Nein. Nie. Nächster."]
-    idle: ["*stempelt nichts*", "Formular 20-B. Gibt's nicht.", "Inseln. Alle wollen Inseln."]
+    idle: ["Alle wollen ihre eigene Insel. Keiner will den Papierkram.", "Formular 20-B gibt es nicht. Die Leute fragen trotzdem jeden Tag danach.", "Deine Insel wartet auf dich. Sie ist geduldig. Ich weniger."]
     farewell: ["Geh leveln. Ich bin hier. Ohne Papierkram."]
     topics:
       - label: "Ein Beamter, der Papierkram hasst?"
@@ -1591,7 +2141,7 @@ cast:
   forage_pad_guide:
     greet_new: ["Spring aufs Pad, {player}! Alles gut! Fast alles gut!"]
     greet: ["Zurück von der Insel, {player}? Riech mal — Fichte!"]
-    idle: ["Boing.", "*wippt auf den Fersen*", "Das Pad ist heute klebrig. Gut klebrig."]
+    idle: ["Das Pad ist heute ein bisschen klebrig. Das ist die gute Sorte klebrig, versprochen.", "Drauf, rüberfliegen, weich landen. So ist jedes Mal der Plan.", "Auf der Sammelinsel wächst Zeug, das du hier auf der Hauptinsel nicht findest."]
     farewell: ["Aus den Knien springen!"]
     topics:
       - label: "Ist das Pad sicher?"
@@ -1599,7 +2149,7 @@ cast:
   liquidator:
     greet_new: ["{player}. Die Kristalle flüstern über dich. Meistens Zahlen."]
     greet: ["Kaufen oder schmelzen, {player}?"]
-    idle: ["*Kristallsummen*", "Lila ist ein Preis, keine Farbe.", "Schmelzen. Prägen. Wiederholen."]
+    idle: ["Amethyst kommt roh rein und geht als Münze raus. Das ist mein ganzer Job, und ich lieb ihn.", "Lila ist hier keine Farbe. Lila ist ein Preis.", "Schmelzen, prägen, zweimal zählen. Ich hab noch nie eine einzige Scherbe verloren."]
   canopy_clerk:
     accept: "Proben kommen."
     decline: "Jetzt nicht."
@@ -1610,7 +2160,7 @@ cast:
       - "Hafenreste zählen nicht. Die rieche ich."
     greet_new: ["{player}. Rinde dabei? Proben, meine ich."]
     greet: ["Mehr Jahresringe, {player}. Gute Saison."]
-    idle: ["*schnüffelt an einem Stamm*", "Fichte. Eindeutig Fichte.", "Jahresringe: vierzig. Respektabel."]
+    idle: ["Der Stamm riecht nach Fichte. Eindeutig Fichte. Darauf wett ich mein Mittagessen.", "Vierzig Ringe hat der hier. Älter als ich und besser in Form.", "Jeder Baum, den ich aufschreibe, kriegt eine Nummer. Die alten kriegen Namen."]
     farewell: ["Verantwortungsvoll hacken."]
     topics:
       - label: "Warum Proben?"
@@ -1618,7 +2168,7 @@ cast:
   root_cellar:
     greet_new: ["Hunger, {player}? Alle haben Hunger."]
     greet: ["Frisches Mehl, {player}. Pass auf deine Stiefel auf."]
-    idle: ["*mahlt Korn*", "Mehl überall. Überall.", "Karotten legen sich nicht von selbst ein."]
+    idle: ["Überall ist Mehl. In meinen Haaren, in meinen Schuhen, in meinen Träumen.", "Karotten legen sich leider nicht von selbst ein. Ich hab sie nett gefragt.", "Das Mühlrad dreht sich den ganzen Tag. An manchen Tagen dreh ich mich mit."]
   town_crier:
     accept: "Ich geh sie mir anhören."
     decline: "Heute nicht, Hollis."
@@ -1650,7 +2200,7 @@ cast:
   street_sweeper:
     greet_new: ["Stiefel abtreten, {player}."]
     greet: ["Schon wieder da, {player}? Kies dabei? Lass es."]
-    idle: ["*fege fege*", "Wer verliert denn einen ganzen Bruchstein?", "Sauberster Platz der Insel. Gern geschehen."]
+    idle: ["Wer lässt denn einen ganzen Bruchstein mitten auf der Straße liegen? Wer macht so was?", "Sauberster Platz der Insel. Gern geschehen, übrigens.", "Ich fege jeden Tag dieselbe Straße, und jeden Tag findet sie neue Wege, dreckig zu werden.", "Hab mal einen Goldklumpen in der Rinne gefunden. Neue Borsten gekauft. Ein Traum."]
     farewell: ["Vorsicht, Haufen."]
     topics:
       - label: "Was Seltsames gesehen?"
@@ -1658,7 +2208,7 @@ cast:
   lamp_lighter:
     greet_new: ["Der Abend kommt, {player}. Ich spür's."]
     greet: ["Bleib im Licht, {player}."]
-    idle: ["*poliert eine Laterne*", "Dämmerung in ein paar Stunden. Bereit.", "Jede Lampe hat einen Namen. Die da heißt Gerald.", "Noch ein Docht. Immer noch einer."]
+    idle: ["Ich polier jede Laterne auf meiner Runde. Helle Lampen bringen die Leute sicher nach Hause.", "In ein paar Stunden dämmert's. Ich bin schon bereit. Ich bin immer bereit.", "Jede Lampe in diesem Hafen hat einen Namen. Die da drüben heißt Gerald.", "Noch ein Docht, immer noch einer. Die Nacht ist lang und die Insel ist groß."]
     farewell: ["Halt eine Fackel bereit."]
     topics:
       - label: "Warum Lampen?"
@@ -1771,12 +2321,396 @@ cast:
     farewell: ["Pass auf die Planken auf. Manche sind nur noch Gewohnheit."]
     topics:
       - label: "Dein Name?"
-        lines: ["Der war… irgendwas mit R? Oder ein Boot. Nein, das ist das Boot.", "Mich ruft eh keiner. Also ist's egal."]
+        lines: ["Der war… irgendwas mit H? Oder ein Boot. Nein, das ist das Boot.", "Mich ruft eh keiner. Also ist's egal."]
       - label: "Wohin fährt sie?"
         lines: ["Rüber. Alles fährt irgendwann rüber.", "Hinter den Veil. Wo keiner hinsegelt. Außer mir. Angeblich."]
 
+  orrin:
+    greet_new: ["Pass auf die Zahnräder auf. Manche sind älter als dein Königreich."]
+    greet: ["Wieder da, {player}. Der Stern hat's gemerkt.", "{player}. Nichts anfassen, was warm ist."]
+    greet_grad: ["Wieder da, {player}. Der Stern hat's gemerkt.", "{player}. Nichts anfassen, was warm ist."]
+    idle: ["*macht einen Strich in ein dickes Logbuch*", "Tick. Tick. Noch.", "Auf einen Herzschlag geeicht. Ihren."]
+    farewell: ["Mach die Tür sanft zu. Sie ist tragend."]
+    topics:
+      - label: "Dein Stuhl?"
+        lines: ["Dreihundertfünf Striche an der Wand. Grob einer pro Jahrhundert.", "Die Tage hab ich nicht mehr gezählt. Sie schon."]
+  exile_lamplighter:
+    greet_new: ["Ein neues Gesicht. Für so eins hab ich ewig nicht mehr angezündet."]
+    greet: ["Abend, {player}. Es ist immer Abend."]
+    greet_grad: ["Abend, {player}. Es ist immer Abend."]
+    idle: ["Zweihundertelf… zweihundertzwölf.", "*blinzelt eine Lampe an, die schon brennt*", "Spät. Immer spät."]
+    farewell: ["Bleib auf der hellen Straßenseite."]
+    topics:
+      - label: "Deine Runde?"
+        lines: ["Vom Lift zu den Kolossen, von den Kolossen zur großen Treppe, von der Treppe zum Schloss.", "Dann zurück. Jeden Abend. Keiner hat gesagt, dass ich aufhören soll."]
+  exile_sentry:
+    greet_new: ["Halt. …Oder nicht. Hält eh keiner mehr."]
+    greet: ["Schon wieder du, {player}. Ich seh dich immer noch nicht."]
+    greet_grad: ["Schon wieder du, {player}. Ich seh dich immer noch nicht."]
+    idle: ["*steht stramm für niemanden*", "Befehl vom Hauptmann.", "Helm poliert. Schon wieder."]
+    farewell: ["Wegtreten. So sagt man doch, oder?"]
+    topics:
+      - label: "Dein Posten?"
+        lines: ["Der Eisenring. Keiner rein, keiner raus.", "Den Befehl hab ich in der Nacht gekriegt, als alles stehen blieb. Keiner hat ihn aufgehoben."]
+  exile_usher:
+    greet_new: ["Willkommen im kleinen Theater. Jeder Platz ist besetzt. Bitte stehen."]
+    greet: ["Zurück für den zweiten Akt, {player}? Der ist wie der erste."]
+    greet_grad: ["Zurück für den zweiten Akt, {player}? Der ist wie der erste."]
+    idle: ["Pst. Die Vorstellung.", "*richtet eine Samtkordel*", "Kein Blitzlicht. Was auch immer das ist."]
+    farewell: ["Pass beim Rausgehen auf die Fäden auf."]
+    topics:
+      - label: "Das Publikum?"
+        lines: ["Dreihundertdreiundzwanzig. Alles Puppen. Alle schauen zur Bühne.", "Ein Platz ist leer. Klein. Erste Reihe."]
+  exile_gardener:
+    greet_new: ["Pass auf die Beete auf! …Entschuldigung. Hallo."]
+    greet: ["{player}! Er hat schon wieder die Steine gegossen."]
+    greet_grad: ["{player}! Er hat schon wieder die Steine gegossen."]
+    idle: ["*zupft Unkraut, das gar nicht da ist*", "Er will Wasser.", "Nicht auf die Blumen treten. Das sind Leute. Na ja. Bilder von Leuten."]
+    farewell: ["Pass auf die Wurzeln auf. Die bewegen sich, wenn keiner hinschaut."]
+    topics:
+      - label: "Die Blumen?"
+        lines: ["Er hat ein Bild ins Parterre gepflanzt. Drei Leute und eine Puppe.", "Sehen kann man's nur vom Glockenturm. Da geht keiner hoch."]
+  exile_mother:
+    greet_new: ["Oh! Bist du von der Fähre? Legt sie ab? Wir haben fast gepackt."]
+    greet: ["Fast gepackt, {player}. Fast."]
+    greet_grad: ["Fast gepackt, {player}. Fast."]
+    idle: ["*faltet ein kleines Kleid, faltet es wieder auf, faltet es*", "Ein Schuh. Wo ist der andere.", "Vor der Abendglocke. Vor der Abendglocke."]
+    farewell: ["Falls du einen kleinen roten Schuh siehst…"]
+    topics:
+      - label: "Die Truhe?"
+        lines: ["Ihre Wintersachen. Und die Puppe. Ohne die Puppe schläft sie nicht.", "…Die Puppe ist nicht da. Warum ist die Puppe nicht da?"]
+  exile_keeper:
+    greet_new: ["Nimm dir einen Stuhl. Die erinnern sich an Leute."]
+    greet: ["Das Übliche, {player}? Wir haben nur das Übliche."]
+    greet_grad: ["Das Übliche, {player}? Wir haben nur das Übliche."]
+    idle: ["*poliert ein sauberes Glas*", "Letzte Runde. Immer letzte Runde.", "Die Glocke über der Tür hat lange nicht geläutet."]
+    farewell: ["Pass auf die Stufe auf. Die Letzte Glocke ist ein bisschen abgesackt."]
+    topics:
+      - label: "Der Name?"
+        lines: ["Die Letzte Glocke. Benannt nach dem letzten Schlag, bevor die Tore zugehen.", "Jeden Abend haben die Leute darauf getrunken. Dann ist ein Abend nicht zu Ende gegangen."]
 # NPC-to-NPC banter — index-aligned with CastBook.banter(), same speakers per beat.
 # Played to everyone in range when most of them read German. Never use {player} here.
+  # Origin island cast (SAITAMA pass)
+  harbourmaster:
+    greet_new: ["Name und Fracht, {player}. Spaß. Willkommen im Ankerhafen."]
+    greet: ["{player}. Heute ist nichts gesunken. Noch nicht.", "Wieder auf meinem Wasser, {player}? Pass auf die Taue auf."]
+    idle: ["Die Halcyon hat ihre eigenen Zeiten. Ich führ das Buch und tu so, als hätte ich's geplant.", "Vier Kisten rein, drei raus. Jemand schuldet mir eine Kiste. Oder eine Erklärung.", "Was schwimmt, steht auf meiner Liste. Was fliegt, auch. Die Liste wird lang.", "Halt Abstand, wenn der Kran schwenkt. Haul ist gut, aber nie zu früh dran."]
+    farewell: ["Guten Wind. Oder wenigstens trockenen."]
+    topics:
+      - label: "Was ist die Halcyon?"
+        lines: ["Versorgungs-Himmelsschiff. Kommt alle paar Glocken über den Nordrand.", "Lässt eine Kiste am Seil runter, ein Kahn fängt sie. Meistens."]
+      - label: "Wo fang ich an?"
+        lines: ["§eEgon§f auf dem Pier rüstet die Grünschnäbel aus. Dann folg dem gelben Pfeil.", "Danach? Dieser Hafen hat mehr Geschichten als Seepocken."]
+  crane_hand:
+    greet_new: ["Kopf einziehen, {player}. Der Kran tut's nicht."]
+    greet: ["{player}! Weg vom Haken."]
+    idle: ["Hoch damit! Schön langsam, so wie's mir meine Oma beigebracht hat.", "Der Kran ist älter als der Hafen. Ich halt ihn mit Öl und Komplimenten bei Laune.", "Kiste auf den Kahn, Kahn zum Markt, Markt in deine Taschen. So läuft die Kette.", "Eines Tages heb ich die ganze Halcyon aus dem Himmel. Der Kran sieht das anders."]
+    farewell: ["Schwenkbereich frei!"]
+    topics:
+      - label: "Wie funktioniert der Kran?"
+        lines: ["Seil, Haken, ich brülle. Hauptsächlich das Brüllen."]
+      - label: "Was Seltsames gesehen?"
+        lines: ["Ein Fass kam leer hoch, aber schwerer als voll. Ich hab's zurückgelegt.", "Manche Dinge wollen im Wasser bleiben."]
+  lighthouse_keeper:
+    greet_new: ["Ahoi, {player}. Du hast Seebeine, oder kriegst sie noch."]
+    greet: ["{player}. Das Licht brennt. Bitte sehr."]
+    idle: ["Ohne meine Brille seh ich gar nichts. Die Möwe wird das noch bereuen.", "Jedes Schiff, das heimkommt, zähl ich. Vierzig Jahre, und ich hab mich nie verzählt.", "Nachts redet das Meer mit dem Pier. Ich rede zurück, meistens übers Wetter.", "Vierzig Jahre auf diesem Pier, und die Möwen respektieren mich immer noch nicht."]
+    farewell: ["Halt das Licht zu deiner Linken."]
+    topics:
+      - label: "Ein Leuchtturm, auf einer Himmelsinsel?"
+        lines: ["Schiffe fliegen im Nebel tiefer, als du denkst.", "Und die Fischer brauchen was zum Fluchen."]
+      - label: "Die Möwe?"
+        lines: ["Groß. Grau. Diebin. Hat mir die Brille von der Nase geklaut.", "Sie hockt hoch. Immer hoch. Angeberin."]
+  shanty_busker:
+    greet_new: ["Ein neues Gesicht! Jedes neue Gesicht kriegt eine Strophe, {player}."]
+    greet: ["{player}! Klopf mit dem Fuß. Kostet nichts."]
+    idle: ["♪ Oh, die Halcyon zieht durch das Morgenblau … ♪", "Münzen im Hut sind Applaus, den man ausgeben kann.", "Ich kenn vierzig Shantys. Neununddreißig handeln von Fisch.", "♪ Hol ein, hol ein, der Kran hat die Kist' … ♪"]
+    farewell: ["Summ's unterwegs!"]
+    topics:
+      - label: "Spiel mir was."
+        lines: ["♪ Drei Glocken am Kai und die Flut kommt herein, die Möwen stehl'n dein Brot und der Dorsch stiehlt dein Grins'n … ♪", "Das ist neu. Braucht noch einen Refrain."]
+      - label: "Warum spielst du hier?"
+        lines: ["Beste Akustik der Insel. Wasser, Holz und Leute, die zu höflich sind, um zu gehen."]
+  beekeeper:
+    greet_new: ["Langsame Bewegungen, {player}. Die Mädels schauen zu."]
+    greet: ["{player}! Riechst du das? Das ist reifender Met."]
+    idle: ["Hör mal auf die Stöcke. Das Summen heißt, sie sind glücklich. Meistens.", "Bienen stechen keine guten Leute. Na gut, sie stechen alle, aber es tut ihnen hinterher leid.", "Das Alte Methaus stand hier vor den Straßen, und die Bienen waren vor dem Haus da.", "Drei Stöcke dieses Jahr. Vier, falls meine ausgebüxte Königin je heimkommt."]
+    farewell: ["Bleib summig! … Sag ich jedes Mal."]
+    topics:
+      - label: "Met?"
+        lines: ["Honig, Wasser, Geduld. Und ein Geheimnis, das ich mit in den Stock nehme."]
+      - label: "Dieses Haus?"
+        lines: ["Älter als das Pflaster der Hauptstadt. Um die Stöcke herum gebaut, nicht andersrum."]
+  painter:
+    greet_new: ["Nicht bewegen — das Licht auf dir ist perfekt, {player}. … Jetzt ist es weg."]
+    greet: ["{player}! Willst du gemalt werden?"]
+    idle: ["Grün, mehr Grün. Nein, nicht das Grün. Das andere.", "Die Windmühle hält für mich nicht still. Natürlich ist der Wind schuld.", "Jede Aussicht auf dieser Insel ist ein Bild, das noch keiner fertig gemalt hat.", "Ich hab diese Mühle elfmal gemalt. Sie wird jedes Mal ein bisschen sturer."]
+    farewell: ["Find mir eine Aussicht!"]
+    topics:
+      - label: "Was malst du?"
+        lines: ["Die Mühle. Schon wieder. Meine elfte Mühle.", "Die anderen zehn waren Übung."]
+      - label: "Beste Aussicht?"
+        lines: ["Frag Stellan oben am Gipfel. Der sagt: die Sterne.", "Ich sag: die, zu der du gelaufen bist."]
+  hermit:
+    greet_new: ["Oh, hallo, {player}. Entschuldige, ich hab dich bei den Vögeln nicht gehört."]
+    greet: ["Du bist wiedergekommen! Die Bäume meinten, du würdest, und sie irren sich selten."]
+    idle: ["Früher hab ich in der Hauptstadt Bücher abgeschrieben. Zu laut. Hier draußen hör ich mich selbst denken.", "Der Specht da drüben fängt bei Sonnenaufgang an zu arbeiten. Ich hab ihn noch nie Pause machen sehen.", "Die Leute denken, der Wald ist still. Er ist nicht still, er ist nur höflich.", "Ich bin für einen Nachmittag hier rausgekommen. Das war vor neun Jahren, und ich bereue keinen Tag."]
+    farewell: ["Geh leise da draußen. Der Wald merkt sich das."]
+    topics:
+      - label: "Warum lebst du hier draußen?"
+        lines: ["Dreißig Jahre hab ich in der Hauptstadt Bücher abgeschrieben. Glocken, Karren und Geschrei, jeden einzelnen Tag.", "Eines Nachmittags bin ich hier rausgegangen, um meinen Ohren eine Pause zu gönnen. Ich bin einfach nie zurückgegangen."]
+      - label: "Worauf hörst du?"
+        lines: ["Wind in den Blättern, den Bach, Tiere, die ihren Tag erledigen.", "Und manchmal ganz leise die Glocken der Hauptstadt. Hier draußen klingen sie sanfter, fast traurig."]
+  bookie:
+    greet_new: ["Frische Beine! Ich geb dir vier zu eins, {player}."]
+    greet: ["{player}! Fühlst du dich heute schnell?"]
+    idle: ["Quote auf die nächste Halcyon? Sechs Minuten. Es sind immer sechs.", "Vince macht Glücksspiele. Ich mach Beinspiele.", "Ich zähl meine Münzen zweimal. Einmal für mich und einmal fürs Finanzamt.", "Wette nie gegen einen Sprinter in guten Stiefeln."]
+    farewell: ["Lauf nicht weg. Außer ich hab dich dafür bezahlt."]
+    topics:
+      - label: "Was ist die Wette?"
+        lines: ["Berühr das Bergtor und sei in drei Minuten zurück. Leichtes Geld.", "Himmelswege zählen. Teleports nicht. Da gibt's einen Unterschied, rechtlich."]
+      - label: "Und Vince?"
+        lines: ["Netter Mann. Schreckliche Quoten. Meine sind schlechter, aber ich lächle mehr."]
+  mushroom_forager:
+    greet_new: ["Pass auf, wo du hintrittst, {player}. Hier wächst was."]
+    greet: ["{player}! Riechst du die Luft? Sporen. Herrlich."]
+    idle: ["Der hier riecht essbar. Das hab ich letzte Woche auch gesagt, und dann war ich zwei Tage krank.", "Die großen Hüte leuchten nachts. Anschauen ja, ablecken bitte nicht.", "Die Pilze im Ostwald sind älter als die Bäume um sie herum.", "Regel des Waldes: Wenn ein Pilz freundlich aussieht, trau ihm nicht."]
+    farewell: ["Bis spora!"]
+    topics:
+      - label: "Die leuchten?"
+        lines: ["Drei der Riesen tun's, nach Einbruch der Dunkelheit. Blassblau an den Lamellen.", "Find sie, dann sag ich dir, welche essbar sind. Keiner."]
+      - label: "Warum so groß?"
+        lines: ["Aether im Boden. Dasselbe Zeug, das die Insel oben hält.", "Zu viel davon, und ein Pilz kriegt Ideen."]
+  lost_tourist:
+    greet_new: ["Oh! Ein Einheimischer! Hallo, {player}! Ist das der Gipfel?"]
+    greet: ["{player}! Ich hab mich heute vier Blöcke bewegt. Fortschritt!"]
+    idle: ["Ich glaub, die Karte steht auf dem Kopf. Oder die Insel. Schwer zu sagen.", "Im Prospekt stand 'ein kurzer Spaziergang zum Gipfel'. Ich spaziere seit drei Tagen.", "Ist das der große Berg, oder versteckt sich der große dahinter?", "Ich hab diesen Brunnen neunzigmal gezeichnet. Es ist ein sehr schöner Brunnen."]
+    farewell: ["Wenn du den Gipfel siehst, grüß ihn von mir!"]
+    topics:
+      - label: "Wo kommst du her?"
+        lines: ["Von einer anderen Insel. Einer flachen. Sehr flach. Deshalb bin ich hier."]
+      - label: "Wie komm ich auf den Skyreach?"
+        lines: ["Im Prospekt steht 'das Bergtor, dann der Wind'.", "Ich dachte, das sei Poesie. Ist das keine Poesie?"]
+  rite_keeper:
+    accept: "Ich zünde es an."
+    decline: "Noch nicht."
+    on_accept: ["Gut. Zünde das Pulver an der Säule an und sei bereit, wenn der Donner kommt."]
+    on_decline: ["Geister sind geduldig. Ich weniger."]
+    returning: ["Du hast die Phiole, {player}. Schütte das Pulver an der Säule aus.", "Dann warte etwa zehn Sekunden. Du hörst Donner, und dann tritt der Geist heraus und kämpft."]
+    greet_new: ["Willkommen in den Grenzlanden, {player}. Die Ödnis behält jeden im Auge, der herkommt."]
+    greet: ["Die Geister regen sich, wenn du vorbeigehst, {player}. Sie erinnern sich an dich."]
+    greet_grad: ["Die Ödnis beobachtet dich, {player}. Ich glaub, sie ist beeindruckt."]
+    idle: ["Aus der Ödnis zieht ein Sturm auf. Man riecht ihn im Staub.", "Die alten Riten halten die Grenzlande ruhig. Vor allem halten sie mich beschäftigt.", "Pass auf den Kreis auf. Er ist älter als die Straße, auf der du gekommen bist."]
+    farewell: ["Geh leise da draußen. Dinge hören zu."]
+    topics:
+      - label: "Was sind Geister?"
+        lines: ["Alte Seelen, die nie ganz fertig gestorben sind. Sie hängen draußen in der Ödnis herum.", "Die Phiole hält sie, das Pulver weckt sie, und du bringst sie zur Ruhe."]
+  arena_proctor:
+    greet_new: ["Eintrittskarte, {player}? Nein? Dann steh hier nicht rum."]
+    greet: ["Oh. {player}. Immer noch am Leben. Notiert."]
+    idle: ["Heute hat keiner die Prüfung bestanden. Es hat aber auch keiner versucht.", "Das Kolosseum erinnert sich an jeden Kampf. An manche lieber nicht.", "Bring eine Phiole mit, bring Mut mit, und bring Ersatzstiefel mit."]
+    farewell: ["Pass auf den Ring auf. Der ist älter als deine Ausreden."]
+    topics:
+      - label: "Was ist hier passiert?"
+        lines: ["Prüfungen, Monster und Papierkram, in dieser Reihenfolge.", "Heute ist es leider hauptsächlich Papierkram."]
+  amethyst_mines_guide:
+    greet_new: ["Ich bin der Kristallführer. Sprich mich an oder nutz §e/amethyst§f, um zur Amethystmine zu kommen."]
+    greet: ["Willkommen zurück, {player}! Die Amethystmine ist bereit. Klick mich an oder nutz §e/amethyst§f."]
+    idle: ["Die Geoden summen, wenn du nah dran bist. Hör hin, dann zeigen sie dir den Weg.", "Nimm dir Zeit in den Minen. Kristalle mögen keine Eile.", "Lila Leuchten vor dir heißt Amethyst. Lila Leuchten hinter dir heißt: lauf."]
+    farewell: ["Viel Spaß in den Minen, und geh nicht allein zu tief rein."]
+  dock_whisper:
+    greet_new: ["Psst, hör mal. Hörst du, wie die Flut kippt, {player}?"]
+    greet: ["Hallo nochmal, {player}. Das Wasser ist heute ruhig."]
+    idle: ["Das Wasser ist schon den ganzen Morgen unruhig. Tief unten schwimmt etwas Großes.", "Ich spür einen Sturm zwei Tage, bevor er kommt. Meine Knie spüren ihn drei Tage vorher.", "Tackle lacht über mich, aber die Fische kommen, wenn ich sie rufe. Ein paar zumindest.", "Meine Mutter hat an diesem Pier geangelt, und ihre Mutter vor ihr. Das Wasser kennt unsere Familie."]
+    farewell: ["Pass auf die Kante vom Pier auf. Das Wasser leiht sich gern Sachen aus."]
+    topics:
+      - label: "Was sagt das Wasser?"
+        lines: ["Meistens beschwert es sich über die Boote. Manchmal warnt es mich vorm Wetter.", "Einmal hat es mir gesagt, wo ein verlorener Ring liegt. Am nächsten Morgen lag er genau da."]
+      - label: "Die lila Schnur?"
+        lines: ["Wenn deine Angelschnur lila leuchtet, halt gut fest und hetz dich nicht.", "Das ist ein Mythischer Wasserdrache. Er zeigt sich immer nur einem Angler auf einmal."]
+  bait_theory:
+    greet_new: ["Ah, ein neues Gesicht! Angelst du, {player}? Jeder sollte angeln."]
+    greet: ["Schon wieder da, {player}? Die Fische haben nach dir gefragt."]
+    idle: ["Brot klappt morgens, Würmer mittags und gar nichts, wenn die Möwen zuschauen.", "Ich hab mal drei Lachse mit einem einzigen Stück Käse gefangen. Keiner glaubt mir.", "Das Geheimnis beim Angeln ist vor allem, still zu sitzen und damit zufrieden zu sein.", "Jeder Fisch ist neugierig. Du musst nur interessanter sein als der andere Köder."]
+    farewell: ["Viel Glück da draußen. Mögen die Fische hungrig sein!"]
+    topics:
+      - label: "Welcher Köder ist der beste?"
+        lines: ["Kommt auf die Tageszeit und die Laune der Fische an.", "Aber wenn du eine Antwort willst: Würmer. Würmer lassen dich nie im Stich."]
+      - label: "Warum ausgerechnet Köder?"
+        lines: ["Mein Vater hat gesagt, den Fischen ist deine Angel egal. Die interessiert, was am Haken hängt.", "Er hatte recht. Ich beweis es seit elf Jahren."]
+  dock_scaler:
+    greet_new: ["Hallo! Hast du was für die Waage, {player}?"]
+    greet: ["{player}! Fisch zum Wiegen, oder nur auf der Durchreise?"]
+    idle: ["Der größte Fang heute Morgen war ein Lachs, so lang wie mein Arm. Tackle ist sehr stolz.", "Ich schreib jeden Fisch auf. Irgendwann will jemand wissen, was wir hier gefangen haben.", "Mein Klemmbrett ist immer nass. Damit hab ich meinen Frieden gemacht.", "Ein Fisch, der sich nicht wiegen lässt, ist trotzdem ein Fisch. Dann schätz ich eben."]
+    farewell: ["Bring mir nächstes Mal was Schweres!"]
+    topics:
+      - label: "Warum wiegst du die Fische?"
+        lines: ["Wenn die Fische jedes Jahr kleiner werden, stimmt da draußen was nicht.", "Meine Zahlen sagen dem Hafen, wann er mehr fischen kann und wann er das Wasser in Ruhe lassen sollte."]
+  fry_gossip:
+    greet_new: ["Neu hier? Hungrig? Neugierig? Bei allen dreien kann ich helfen, {player}."]
+    greet: ["{player}! Hast du Neuigkeiten für mich? Ich hab jede Menge für dich."]
+    idle: ["Schon gehört? Quill hat schon wieder eine Kiste verloren. Das dritte Mal diesen Monat.", "Frittierter Fisch, frittiertes Brot, frittierte Kartoffeln. Was in die Pfanne passt, wird frittiert.", "Ich verbreite keine Gerüchte. Ich wiederhole sie nur sehr deutlich.", "Die alte Moll vom Leuchtfeuer hat ihre Brille an eine Möwe verloren. Die Arme sieht gar nichts."]
+    farewell: ["Komm hungrig wieder!"]
+    topics:
+      - label: "Gibt's Klatsch?"
+        lines: ["Hetties Bienen sind heute Morgen ausgeschwärmt, Tobin schreibt ein neues Lied, und Wick hat schon wieder eine Lampe getauft.", "Viel los für so einen kleinen Hafen."]
+      - label: "Was ist heute gut?"
+        lines: ["Der Kabeljau ist frisch, das Brot ist knusprig, und das Öl ist nur ein bisschen alt.", "Mein Rat? Nimm den Kabeljau."]
+  rivet:
+    greet_new: ["Pass auf, wo du hintrittst, {player}! Frische Farbe."]
+    greet: ["{player}! Kommst du helfen, oder nur zuschauen?"]
+    idle: ["Dieses alte Schiff hat mehr Flicken als Originalholz. Ich bin auf jeden einzelnen stolz.", "Irgendwer klaut ständig meine Nieten. Ich verdächtige die Möwen.", "Salzwasser frisst Eisen zum Frühstück. Deshalb geht mir nie die Arbeit aus.", "Wenn ich hämmere, weiß der ganze Hafen, dass ich da bin. So soll's sein."]
+    farewell: ["Lehn dich nicht ans Geländer, das ist noch nicht trocken!"]
+    topics:
+      - label: "Wem gehört das Schiff?"
+        lines: ["Sie gehört jetzt dem Hafen. Ihr Kapitän ist vor Jahren weg und nie wiedergekommen.", "Also kümmer ich mich um sie. Einer muss es ja machen."]
+  stall_crumb:
+    greet_new: ["Guten Morgen, {player}! Frisches Brot, noch warm."]
+    greet: ["Hallo nochmal, {player}! Hunger?"]
+    idle: ["Frische Brote, noch warm aus dem Ofen! Holt sie euch, bevor's die Möwen tun!", "Ich back schon seit vor Sonnenaufgang. Mein Ofen schläft nie, und ich auch nicht.", "Egon kauft jeden Morgen zwei Brote. Er sagt, eins davon ist für einen Freund.", "Brot mit ein bisschen Salz und Butter. Nichts auf der Welt ist besser."]
+    farewell: ["Vergiss nicht zu essen!"]
+    topics:
+      - label: "Warum backst du hier?"
+        lines: ["Der Hafen wacht früh auf und arbeitet hart. Irgendwer muss ihn satt kriegen.", "Meine Mutter hatte den Stand vor mir. Ich back immer noch nach ihrem Rezept."]
+  stall_tack:
+    greet_new: ["Hallo, {player}! Brauchst du einen Nagel? Ein Seil? Von allem ein bisschen?"]
+    greet: ["Schon wieder da, {player}? Was vergessen, oder?"]
+    idle: ["Seile, Nägel, Schnallen, Haken! Alles, was ein beschäftigter Inselmensch vergisst!", "Heute Morgen hab ich alle Nägel nach Größe sortiert. Ein Kunde hat sie in fünf Minuten durcheinandergebracht.", "Die Bergleute sagen, der Erzkamm frisst eine Spitzhacke pro Woche. Gut fürs Geschäft, schlecht für Spitzhacken.", "Jedes Kleinteil auf diesem Tisch hat schon mal jemandem den Tag gerettet."]
+    farewell: ["Komm wieder, wenn was kaputtgeht!"]
+    topics:
+      - label: "Was verkauft sich am besten?"
+        lines: ["Seil. Jeder braucht Seil, und keiner hat je genug davon."]
+  stall_brine:
+    greet_new: ["Hallo, {player}! Hast du schon mal Fisch mit richtigem Salz probiert?"]
+    greet: ["{player}! Salz? Gewürze? Ein nettes Schwätzchen?"]
+    idle: ["Meersalz, frisch aus den Pfannen! Das beste Salz der ganzen Insel!", "Ich trockne mein Salz in der Sonne draußen am Pier. Die Möwen sind sehr interessiert, aber sie hassen den Geschmack.", "Ein Fisch ohne Salz ist nur ein trauriges, nasses Ding. Glaub mir.", "Meine Gläser reisen bis in die Hauptstadt. Die Köche dort streiten sich darum."]
+    farewell: ["Eine Prise Salz hat noch keinem geschadet!"]
+    topics:
+      - label: "Woher kommt dein Salz?"
+        lines: ["Ich lass Meerwasser in flachen Pfannen draußen am Pier trocknen.", "Die Sonne macht die meiste Arbeit. Ich mach nur den Verkauf."]
+  dockhand:
+    greet_new: ["Vorsicht am Wasser, {player}. Da unten beißt was."]
+    greet: ["{player}. Heute schon Tinte an den Stiefeln?"]
+    idle: ["Heute Morgen musste ich schon wieder Tinte vom Pier schrubben. Schwarz, klebrig, und es riecht nach alten Füllern.", "Was auch immer unter dem Hafen lebt, es mag keine Boote. Oder Leute. Oder mich.", "Ich mach jedes Boot jetzt doppelt fest. Einmal für den Wind und einmal für das Ding im Wasser.", "Manche Nächte sieht man draußen hinter den Bojen was Großes schwimmen."]
+    farewell: ["Halt deine Füße trocken."]
+    topics:
+      - label: "Was lebt da unten?"
+        lines: ["Keiner hat es je ganz gesehen. Nur Arme, Tinte und jede Menge wütende Blasen.", "Wenn du eines Tages stark genug bist, findest du es vielleicht heraus."]
+  slag_poet:
+    greet_new: ["Ah, Besuch! Willst du ein Gedicht hören, {player}? Es ist ein kurzes."]
+    greet: ["{player}! Ich hab eine neue Strophe fertig. Sie handelt von Kies."]
+    idle: ["'Oh Kupferader, hell und klar, warst weg, bevor die Nacht da war.' Ich arbeite noch dran.", "Der Erz-Buchhalter will Zahlen. Ich will Reime. Wir verstehen uns überraschend gut.", "Hier oben riecht der Wind immer nach Eisen und Stein.", "Jeder Bergmann auf diesem Kamm hat schon eine Ader verloren, die er geliebt hat. Gedichte helfen."]
+    farewell: ["Mögen deine Adern tief reichen!"]
+    topics:
+      - label: "Lies mir ein Gedicht vor."
+        lines: ["'Die Spitzhacke singt, der Berg, der seufzt, die Kohle geht aus, eh' du dich's versiehst.'", "Es ist noch nicht fertig. Hier oben ist nie was fertig."]
+  bench_cynic:
+    greet_new: ["Oh. Noch ein Tourist. Hallo, {player}."]
+    greet: ["{player}. Du schon wieder. Die Bank ist immer noch besetzt."]
+    idle: ["Alle lieben diesen Brunnen. Ich schau ihn mir seit fünfzehn Jahren an. Er ist okay.", "Die Tauben hier werden jedes Jahr frecher. Gestern hat mir eine mein Brot geklaut.", "Den ganzen Tag laufen Leute an mir vorbei, und keiner hat je gefragt, wie's mir geht. Gut, übrigens.", "Das war ein ruhiger Platz, bevor jemand einen Brunnen mitten draufgebaut hat."]
+    farewell: ["Pass auf die Tauben auf, wenn du gehst."]
+    topics:
+      - label: "Warum diese Bank?"
+        lines: ["Beste Sicht auf den Brunnen, nachmittags Schatten, und keiner stört mich.", "Na ja. Normalerweise stört mich keiner."]
+      - label: "Verrottetes Fleisch?"
+        lines: ["Für die Wissenschaft. Wahrscheinlich. Für welche, entscheide ich, wenn ich's habe."]
+  dust:
+    greet_new: ["Hallo! Pass auf, wo du hintrittst, {player}, der Weg ist noch nicht fertig."]
+    greet: ["{player}! Hast du heute Bruchstein für mich?"]
+    idle: ["Jeder Weg in der Hauptstadt hat damit angefangen, dass jemand Steine geschleppt hat. Meistens ich.", "Ich hab diesen Platz dreimal vermessen. Irgendwer verschiebt ständig die Bänke.", "Eine gute Straße bringt Leute dazu, sich öfter zu besuchen. Deshalb bau ich sie.", "Eines Tages führt ein Steinweg vom Hafen bis zum Gipfel. Ich lauf ihn als Erster."]
+    farewell: ["Vorsicht, lose Steine!"]
+    topics:
+      - label: "Warum Straßen?"
+        lines: ["Als ich klein war, war der Weg zu meiner Oma nur Matsch und Brennnesseln.", "Jetzt gibt's da einen Weg. Den hab ich gebaut. Sie meckert immer noch, aber sie kommt öfter vorbei."]
+  rook:
+    greet_new: ["Noch ein Mutiger! Bereit, was zu lernen, {player}?"]
+    greet: ["{player}. Heute Knochen für mich dabei?"]
+    idle: ["Die meisten Abenteurer kriegen da unten Ärger, weil sie Fackeln vergessen haben. Nimm Fackeln mit.", "Ich war öfter unten, als ich zählen kann. Ich bin trotzdem jedes Mal nervös.", "Skelette zielen immer auf den Kopf. Trag einen Helm. Das ist keine Empfehlung.", "Erste Regel im Dungeon: Wisse, wo der Ausgang ist, bevor du ihn brauchst."]
+    farewell: ["Komm lebend zurück. Das ist die Lektion."]
+    topics:
+      - label: "Was ist da unten?"
+        lines: ["Tunnel, Fallen, Schätze und jede Menge Viecher mit zu vielen Zähnen.", "Und ganz unten wartet meistens etwas Großes, das keinen Besuch mag."]
+  larder:
+    greet_new: ["Hallo, {player}! Du hast nicht zufällig Weizen dabei?"]
+    greet: ["{player}! Die Vorratskammer ist immer noch hungrig."]
+    idle: ["Die Markthalle verputzt jede Woche mehr Brot. Ich weiß nicht, wo all die Leute herkommen.", "Ein leeres Regal ist der traurigste Anblick in der ganzen Hauptstadt.", "Meine Oma hat immer gesagt: Volle Vorratskammer, ruhige Stadt. Sie hatte recht.", "Ich zähl jeden Abend die Säcke. Die Zahlen machen mich nie glücklich."]
+    farewell: ["Bring Weizen! Viel Weizen!"]
+    topics:
+      - label: "Verdichteter Weizen?"
+        lines: ["Bau viel Weizen an und press ihn zu einem dichten Bündel zusammen.", "Hält lange, lässt sich gut transportieren und gibt das beste Brot."]
+  quarry_broker:
+    greet_new: ["Hallo, {player}. Überlegst du, der Gilde beizutreten?"]
+    greet: ["{player}. Schon einen Ziegel für mich?"]
+    idle: ["Die Hälfte der Häuser in der Hauptstadt ist aus Stein von diesem Steinbruch gebaut.", "Steine aufstapeln kann jeder. Ein echter Baumeister weiß, welcher Stein wohin gehört.", "Die Gilde hat strenge Regeln. Deshalb sind unsere Dächer dicht.", "Ich prüf jeden Ziegel, der hier durchkommt. Jeden einzelnen."]
+    farewell: ["Bau was, das hält."]
+    topics:
+      - label: "Verdichtet oder gepresst?"
+        lines: ["Gepresster Bruchstein sind neun Steine in einem. Verdichteter sind neun gepresste, nochmal zusammengedrückt.", "Das ist viel Arbeit. Genau darum geht's."]
+  pet_scout:
+    greet_new: ["Hallo, {player}! Magst du Tiere? Ich liebe Tiere."]
+    greet: ["{player}! Heute schon was Süßes gefangen?"]
+    idle: ["Schweine sind schlauer, als die Leute denken. Deshalb sind sie so schwer zu fangen.", "Ein guter Fänger ist geduldig und leise und jagt nie hinterher. Lass sie zu dir kommen.", "Larks Papagei hat mich schon wieder gebissen. Ich glaub trotzdem, er mag mich.", "Jedes Tier auf dieser Insel ist eine Freundschaft, die nur darauf wartet, anzufangen."]
+    farewell: ["Sei lieb zu deinen Fängen!"]
+    topics:
+      - label: "Wie fang ich ein Schwein?"
+        lines: ["Langsam ranschleichen, auf die Mitte zielen und die Sphäre werfen, solange es ruhig ist.", "Wenn es wegläuft, renn nicht hinterher. Warte. Es kommt fürs Gras zurück."]
+  sphere_proctor:
+    greet_new: ["Hallo, {player}! Bereit für deine Kuh-Prüfung?"]
+    greet: ["{player}! Wie läuft's mit dem Fangen?"]
+    idle: ["Eine Kuh ist größer als ein Schwein und langsamer als ein Schwein, und irgendwie viel schwerer zu fangen.", "Ich führ Buch über jeden, der meine Prüfung besteht. Die Liste ist kurz.", "Stell dich nie direkt hinter eine Kuh. Das gehört nicht zur Prüfung, das ist nur ein guter Rat.", "Das Publikum im Kolosseum liebt einen guten Fang. Fast so sehr wie einen guten Kampf."]
+    farewell: ["Viel Glück mit der Kuh!"]
+    topics:
+      - label: "Warum Kühe?"
+        lines: ["Eine Kuh zu fangen braucht Geduld, gutes Zielen und einen kräftigen Arm.", "Wer das kann, fängt fast alles auf dieser Insel."]
+  ore_ledger:
+    greet_new: ["Hallo, {player}. Zum Graben hier oder zum Helfen?"]
+    greet: ["{player}! Heute Kohle für mein Buch dabei?"]
+    idle: ["Seit hundert Jahren kommt Kohle aus diesem Kamm. Meine Bücher decken neunzig davon ab.", "Die Bergleute bringen den Stein, ich die Zahlen. Schmutzige Hände kriegen wir beide.", "Jede Seite in diesem Buch ist ein harter Tag von jemandem in den Stollen.", "Der Erzkamm gibt viel, aber er gibt nie etwas umsonst."]
+    farewell: ["Pass auf die losen Steine hier oben auf!"]
+    topics:
+      - label: "Warum führst du Buch?"
+        lines: ["Wenn wir wissen, was der Berg hergibt, wissen wir, wie lange er noch geben kann.", "Minen, die blind graben, sind irgendwann leer."]
+  timber_clerk:
+    greet_new: ["Hallo, {player}! Pass auf die Stümpfe auf, die sind überall."]
+    greet: ["{player}! Heute Eiche für mich dabei?"]
+    idle: ["Für jeden Baum, den wir fällen, pflanzen wir zwei. Das ist hier die Regel, und ich pass auf, dass sie gilt.", "Dieser Stumpf war hundert Jahre alt. Ich hab seinen Namen aufgeschrieben, bevor er gefällt wurde.", "Der Forager fällt, ich zähl, und der Wald wächst weiter. Gute Zusammenarbeit.", "Der Ostwald riecht am besten direkt nach dem Regen. Dann solltest du wiederkommen."]
+    farewell: ["Pflanz mal einen Baum!"]
+    topics:
+      - label: "Warum Bäume zählen?"
+        lines: ["Weil Wälder leise verschwinden, wenn keiner zählt.", "Ich will, dass meine Enkel den Ostwald so grün sehen wie heute."]
+  gate_warden:
+    greet_new: ["Halt! Oh, entschuldige, {player}. Macht der Gewohnheit. Willkommen am Tor."]
+    greet: ["{player}. Die Straße ist immer noch gesperrt."]
+    idle: ["Ich steh seit sechs Jahren an diesem Tor. Der Pfadwächter steht schon länger auf der Straße.", "Jede Woche versucht einer, an ihm vorbeizukommen. Jede Woche flick ich jemanden zusammen.", "Die Grenzlande sind aus der Ferne wunderschön. Aus der Nähe beißen sie.", "Eines Tages wird die Straße wieder offen sein. Dann will ich hier stehen."]
+    farewell: ["Pass auf dich auf da draußen."]
+    topics:
+      - label: "Wer ist der Pfadwächter?"
+        lines: ["Ein riesiger Wächter, der die alte Straße entlanggeht und keinen vorbeilässt.", "Keiner weiß, wer ihn da hingestellt hat. Er macht einfach weiter seinen Job."]
+  tollkeeper:
+    greet_new: ["Hallo, Reisender! Willst du heute rüber, {player}?"]
+    greet: ["{player}! Noch in einem Stück? Gut."]
+    idle: ["Früher hab ich von jedem Reisenden eine Münze kassiert. Heute zähl ich nur, wie viele zurückkommen.", "Der Troll wohnt unter den alten Übergängen, nicht unter dieser Brücke. Wahrscheinlich. Ziemlich sicher.", "Der Flüsterwald ist um diese Jahreszeit wunderschön. Bleib nur auf dem Weg.", "Mein Buch hat eine Spalte für 'vom Troll geschnappt'. Sie ist länger, als mir lieb ist."]
+    farewell: ["Pass auf das Wasser unter der Brücke auf."]
+    topics:
+      - label: "Der Troll?"
+        lines: ["Groß, mürrisch und sehr gut darin, sich unter Brücken zu verstecken.", "Wenn du eines Tages stark genug bist, bringst du ihm vielleicht Manieren bei."]
+  chicken_keeper:
+    greet_new: ["Hallo, {player}! Pass auf deine Füße auf, die Küken sind überall."]
+    greet: ["{player}! Irgendwo ein Riesenhuhn gesehen?"]
+    idle: ["McNugget war so ein kleines Küken. Ich weiß nicht, was passiert ist. Ich hab ihm ganz normalen Mais gegeben.", "Diese Hennen legen die besten Eier der Insel. Das sag ich ihnen jeden Morgen.", "Letzte Nacht kam ein Fuchs vorbei. Die Hühner haben ihn verjagt. Ich bin sehr stolz auf sie.", "Clucksworth war früher ruhig. Dann hat McNugget gelernt zu krähen."]
+    farewell: ["Pass auf die Hühner auf, wenn du gehst!"]
+    topics:
+      - label: "Wer ist McNugget?"
+        lines: ["Mein größtes Huhn. Größer als ein Pferd, lauter als eine Glocke, und er hasst Zäune.", "Er büxt alle paar Tage aus. Ich bau keine Zäune mehr, ich bau jetzt Mut auf."]
+  ash_scout:
+    greet_new: ["Runter! Ach, du bist's nur, {player}. Hallo."]
+    greet: ["{player}. Pass heute auf den Rauch auf."]
+    idle: ["Ich zähl jeden Pfeil, der ins Lager zurückkommt. Jede Woche kommen weniger zurück.", "Die Ödnis war früher mal Ackerland, vor langer Zeit. Jetzt wächst da draußen nur Asche.", "Wenn du am Horizont ein Aufblitzen siehst, duck dich zuerst und frag später.", "Mein Bogen ist älter als ich. Er schießt immer noch gerader als meine Meinungen."]
+    farewell: ["Bleib unten da draußen."]
+    topics:
+      - label: "Wer ist Skuldugery?"
+        lines: ["Ein Skelett-Bogenschütze, der draußen in der Ödnis lebt und brennende Pfeile schießt.", "Er ist schnell, er ist schlau, und er gibt gern an."]
+
 banter:
   # 0 egon · fishmonger · egon · fishmonger
   - ["Der Kabeljau liegt da seit Dienstag.", "Der ist gereift, Egon. Wie du.", "Ich bin erfahren.", "Der Kabeljau auch. Man riecht's."]
@@ -1810,3 +2744,17 @@ banter:
   - ["Hört, hört! Das Archiv hat GEÖFFNET!", "Leise geöffnet, Hollis.", "Hört, hört… leise…"]
   # 15 nell · lamp_lighter · nell · lamp_lighter
   - ["Wick, bleiben die Lampen heute Nacht an?", "Jede einzelne. Bis zum Morgen.", "Versprochen?", "Altes Gesetz. Ich halt's nur ein."]
+  # 16 harbourmaster · crane_hand · harbourmaster
+  - ["Haul, das waren vier Kisten. Mein Buch sagt fünf.", "Dann soll dein Buch hochkommen und die fünfte selber heben.", "Das Buch hebt nicht, Haul. Das Buch merkt sich alles."]
+  # 17 crane_hand · harbourmaster · crane_hand
+  - ["Quill! Soll ich heute was heben? Kisten, Fässer, deine Laune?", "Heb die Kiste, die am Dienstag verschwunden ist. Das hebt meine Laune.", "Tut mir leid. Der Kran ist für schwere Lasten zugelassen, nicht für verlorene."]
+  # 18 lighthouse_keeper · dock_whisper · lighthouse_keeper
+  - ["Du flüsterst schon wieder mit dem Wasser. Antwortet es dir eigentlich mal?", "Manchmal. Meistens beschwert es sich über die Boote.", "Verständlich. Ich würd mich auch beschweren, wenn ständig jemand auf mir parkt."]
+  # 19 shanty_busker · merchant · shanty_busker
+  - ["♪ Der Händler zählt Münzen im Licht von dem Mond … ♪", "Tobin, hör bitte auf, meine Abrechnung zu besingen. Die Leute hören das.", "♪ … und er will nicht, dass ihr wisst, wie viele es sind ♪"]
+  # 20 bookie · vince · bookie
+  - ["Vince! Heute hat einer an deinen Automaten seinen Hut verloren.", "Und einer hat bei deinen Rennen seine Puste verloren, Odds.", "Nur für eine Minute. Im Ziel hat er sie wiederbekommen!"]
+  # 21 lost_tourist · bench_cynic · lost_tourist
+  - ["Entschuldigung, ist das hier der Gipfel? Im Prospekt stand, es sei windig.", "Das ist eine Bank in der Hauptstadt. Der Berg ist das große spitze Ding hinter dir.", "Oh! Na, es ist eine schöne Bank. Die kommt auf meine Postkarte."]
+  # 22 mushroom_forager · lumberjack · mushroom_forager
+  - ["Forager, aus deinem Holzstapel wächst ein Pilz. Ein großer.", "Bitte iss ihn nicht. Als du das letzte Mal was aus meinem Holzstapel gegessen hast, hast du eine Woche lang Farben gesehen.", "Zu spät, ich hab schon abgebissen. Schmeckt nach Abenteuer."]

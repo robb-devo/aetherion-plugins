@@ -25,7 +25,7 @@ import java.util.Locale;
  */
 public final class OriginCommand implements CommandExecutor, TabCompleter {
 
-    private static final List<String> SUBS = List.of("journal", "go", "stop", "tour", "settings", "wish", "help");
+    private static final List<String> SUBS = List.of("journal", "go", "stop", "tour", "settings", "wish", "curiosities", "tales", "help");
 
     private final OriginIsle isle;
 
@@ -79,6 +79,9 @@ public final class OriginCommand implements CommandExecutor, TabCompleter {
                 }
             }
             case "settings" -> isle.menus().openPage(player, "settings");
+            case "curiosities", "curios", "curio" -> isle.menus().openPage(player, "curios");
+            case "tales", "chests" -> isle.menus().openPage(player, "tales");
+            case "landmarks" -> isle.menus().openPage(player, "landmarks");
             case "wish", "wishes" -> {
                 OriginProfile profile = isle.profiles().get(player);
                 boolean falling = isle.events().active() == OriginEvents.Kind.STARFALL;
@@ -97,9 +100,9 @@ public final class OriginCommand implements CommandExecutor, TabCompleter {
                 }
             }
             default -> {
-                player.sendMessage("§6Origin §8· §f/origin §7journal §8· §f/origin go <place> §8· §f/origin stop §8· §f/origin tour §8· §f/origin settings §8· §f/origin wish");
+                player.sendMessage("§6Origin §8· §f/origin §7journal §8· §f/origin go <place> §8· §f/origin stop §8· §f/origin tour §8· §f/origin settings §8· §f/origin wish §8· §f/origin curiosities §8· §f/origin tales");
                 if (dev(player)) {
-                    player.sendMessage("§c/origin dev §7[status|reload|event <kind|stop>|toll|anchor <role>|cast <presets|remove|role>|seed|softlight <district|all|here|undo|cancel>|tp <place>|updraft <id>|fly <id>|vista <id>|profile <reset|complete>]");
+                    player.sendMessage("§c/origin dev §7[status|reload|event <kind|stop>|toll|anchor <role>|cast <presets|remove|role>|seed|softlight <district|all|here|undo|cancel>|tp <place>|updraft <id>|fly <id>|vista <id>|profile <reset|complete>|props <list|paste|undo|tp|show>|tales <place|undo|tp|reset>|curio <tp|find|next|reset>|life|explore]");
                 }
             }
         }
@@ -121,6 +124,23 @@ public final class OriginCommand implements CommandExecutor, TabCompleter {
         } else if (dev(sender) && args[0].equalsIgnoreCase("dev")) {
             if (args.length == 2) {
                 options.addAll(OriginDev.ACTIONS);
+            } else if (args.length == 4) {
+                String group = args[1].toLowerCase(Locale.ROOT);
+                String sub = args[2].toLowerCase(Locale.ROOT);
+                if (group.equals("props") && (sub.equals("paste") || sub.equals("undo") || sub.equals("tp") || sub.equals("show"))) {
+                    options.addAll(isle.props().all().keySet());
+                    if (!sub.equals("show")) {
+                        options.addAll(isle.props().groups());
+                        options.add(sub.equals("tp") ? "hesper" : "all");
+                    }
+                    if (sub.equals("undo")) {
+                        options.add("last");
+                    }
+                } else if (group.equals("tales") && sub.equals("tp")) {
+                    options.addAll(isle.tales().all().keySet());
+                } else if (group.equals("curio") && (sub.equals("tp") || sub.equals("find"))) {
+                    options.addAll(isle.curiosities().all().keySet());
+                }
             } else if (args.length == 3) {
                 switch (args[1].toLowerCase(Locale.ROOT)) {
                     case "event" -> {
@@ -150,6 +170,10 @@ public final class OriginCommand implements CommandExecutor, TabCompleter {
                     case "fly" -> options.addAll(isle.config().flights().keySet());
                     case "vista" -> options.addAll(isle.config().vistas().keySet());
                     case "profile" -> options.addAll(List.of("reset", "complete", "show"));
+                    case "bay" -> options.addAll(List.of("arrive", "depart", "reset", "status"));
+                    case "props" -> options.addAll(List.of("list", "paste", "undo", "tp", "show"));
+                    case "tales" -> options.addAll(List.of("place", "undo", "tp", "reset"));
+                    case "curio" -> options.addAll(List.of("tp", "find", "next", "reset"));
                     default -> {
                     }
                 }

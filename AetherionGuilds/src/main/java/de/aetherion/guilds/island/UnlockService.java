@@ -365,7 +365,7 @@ public final class UnlockService {
                     .forEach(left -> player.getWorld().dropItemNaturally(player.getLocation(), left));
         }
         player.sendMessage("  §f2. §7Place the " + (quarry != null ? "§6Cobble Quarry §7(in your bag) " : "quarry ")
-                + "near it. Lay a belt from its §6orange arrow §7to the hut's §agreen arrows§7.");
+                + "near it. Belt: right-click its §6orange chute§7, then the hut. It snaps in.");
         player.sendMessage(legacy("  §f3. §7Buy land to grow outward. ")
                 .append(buttonComponent("§a[Expand]", "/island land", "§7Opens the land map")));
         player.sendMessage("");
@@ -380,6 +380,8 @@ public final class UnlockService {
         player.sendMessage("  §7The §fproject board §7(lectern on the plaza) starts guild builds.");
         player.sendMessage(legacy("  §7Start the §fGuild Hall§7, everyone chips in: ")
                 .append(buttonComponent("§a[Projects]", "/guild project", "§7Opens guild projects")));
+        player.sendMessage(legacy("  §7Factory, same as your own island: §fStorage Hut §7(free), a quarry, a belt chute → hut §8(first belt free)§7. ")
+                .append(buttonComponent("§a[Build Tool]", "/guild build", "§7Build Tool in hand (on the guild island)")));
         player.sendMessage(legacy("  §7Invite people: ")
                 .append(suggestComponent("§a[/guild invite]", "/guild invite ", "§7/guild invite <player>")));
         player.sendMessage("");

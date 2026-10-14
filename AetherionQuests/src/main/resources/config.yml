@@ -54,8 +54,10 @@ editor-npc-visibility-distance: 48
 # Admin replay: /aquest orbit
 #
 # servers: Velocity/port names where Ankerhold orbit may play.
-# mmo-c is the exile backend now — do not list it here.
-# Add mmo-r when Ankerhold is the live hub.
+#   [] (default) = auto: main/hub backends only, and only while Egon
+#   really stands at the Ankerhold pier head (old map = plain arrival,
+#   never a camera through the wrong island). mmo-c / mmo-i never.
+#   List names to force it, e.g. [mmo-r].
 
 opening-orbit:
   enabled: true

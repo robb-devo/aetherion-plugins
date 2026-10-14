@@ -47,8 +47,8 @@ public final class ForageHarbourHintListener implements Listener, Runnable {
         if (plugin.getPlayerQuestStorage().hasStarterKit(player.getUniqueId(), HINT_KEY)) {
             return;
         }
-        if (!QuestStoryGate.tutorialDone(player, plugin.getQuestManager())) {
-            return;
+        if (!QuestStoryGate.graduated(player, plugin.getQuestManager())) {
+            return; // Fields done but not stamped yet: the arrow stays on Miss Ledger
         }
 
         plugin.getPlayerQuestStorage().markStarterKit(player.getUniqueId(), HINT_KEY);

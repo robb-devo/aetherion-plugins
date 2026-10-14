@@ -58,6 +58,7 @@ final class GhostView {
     private final List<BlockDisplay> legs = new ArrayList<>();
     private BlockDisplay cursor;
     private final List<BlockDisplay> chutes = new ArrayList<>();
+    private final List<BlockDisplay> inputs = new ArrayList<>();
 
     GhostView(Plugin plugin, Player viewer) {
         this.plugin = plugin;
@@ -322,24 +323,33 @@ final class GhostView {
 
     /** Orange markers on the output chutes near the player (where belts start). */
     void chutes(World in, List<int[]> ports) {
-        while (chutes.size() > ports.size()) {
-            chutes.remove(chutes.size() - 1).remove();
+        markers(chutes, in, ports, Material.ORANGE_STAINED_GLASS, PORT, 0.5f);
+    }
+
+    /** Green pads beside the huts and machines near the player (where a belt's end snaps in). */
+    void inputs(World in, List<int[]> cells) {
+        markers(inputs, in, cells, Material.LIME_STAINED_GLASS, OK, 0.36f);
+    }
+
+    private void markers(List<BlockDisplay> list, World in, List<int[]> cells, Material look, Color glow, float size) {
+        while (list.size() > cells.size()) {
+            list.remove(list.size() - 1).remove();
         }
-        for (int i = 0; i < ports.size(); i++) {
-            int[] p = ports.get(i);
+        float inset = (1f - size) / 2f;
+        for (int i = 0; i < cells.size(); i++) {
+            int[] p = cells.get(i);
             Location at = new Location(in, p[0], p[1], p[2]);
-            if (i < chutes.size() && chutes.get(i).isValid() && chutes.get(i).getWorld() == in) {
-                BlockDisplay marker = chutes.get(i);
+            if (i < list.size() && list.get(i).isValid() && list.get(i).getWorld() == in) {
+                BlockDisplay marker = list.get(i);
                 marker.setTeleportDuration(0);
                 marker.teleport(at);
             } else {
-                BlockDisplay marker = spawn(at, Material.ORANGE_STAINED_GLASS.createBlockData(),
-                        box(0.25f, 0.02f, 0.25f, 0.5f, 0.08f, 0.5f), PORT);
-                if (i < chutes.size()) {
-                    chutes.get(i).remove();
-                    chutes.set(i, marker);
+                BlockDisplay marker = spawn(at, look.createBlockData(), box(inset, 0.02f, inset, size, 0.08f, size), glow);
+                if (i < list.size()) {
+                    list.get(i).remove();
+                    list.set(i, marker);
                 } else {
-                    chutes.add(marker);
+                    list.add(marker);
                 }
             }
         }
@@ -371,6 +381,10 @@ final class GhostView {
             marker.remove();
         }
         chutes.clear();
+        for (BlockDisplay marker : inputs) {
+            marker.remove();
+        }
+        inputs.clear();
     }
 
     // ------------------------------------------------------------------------------------------------

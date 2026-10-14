@@ -28,6 +28,8 @@ import java.util.Map;
 public final class OriginConfig {
 
     public static final String FILE = "origin.yml";
+    /** The exploration layer (curiosities, storytelling chests, prop spots, ambient life). Same merge rules. */
+    public static final String EXPLORE_FILE = "origin-explore.yml";
 
     public record District(String id, String name, String color, Material icon, String tagline,
                            List<double[]> circles, double minY, double maxY, double[] anchor, String soundscape) {
@@ -106,6 +108,7 @@ public final class OriginConfig {
 
     private final JavaPlugin plugin;
     private YamlConfiguration yaml = new YamlConfiguration();
+    private YamlConfiguration explore = new YamlConfiguration();
 
     private boolean enabled;
     private String worldName;
@@ -135,29 +138,36 @@ public final class OriginConfig {
 
     /** Loads {@code origin.yml}, merging jar defaults into the live file. Returns a one-line summary. */
     public String load() {
-        File file = new File(plugin.getDataFolder(), FILE);
-        if (!file.exists()) {
-            plugin.getDataFolder().mkdirs();
-            plugin.saveResource(FILE, false);
-        }
-        yaml = YamlConfiguration.loadConfiguration(file);
-        try (InputStream in = plugin.getResource(FILE)) {
-            if (in != null) {
-                YamlConfiguration defaults = YamlConfiguration.loadConfiguration(new InputStreamReader(in, StandardCharsets.UTF_8));
-                boolean missing = missingKeys(yaml, defaults);
-                yaml.setDefaults(defaults);
-                yaml.options().copyDefaults(true);
-                if (missing) {
-                    yaml.save(file);
-                }
-            }
-        } catch (IOException exception) {
-            plugin.getLogger().warning("origin.yml: could not merge defaults: " + exception.getMessage());
-        }
+        yaml = loadMerged(FILE);
+        explore = loadMerged(EXPLORE_FILE);
         parse();
         return districts.size() + " districts · " + landmarks.size() + " landmarks · " + waystones.size() + " waystones · "
                 + vistas.size() + " vistas · " + bells.size() + " bells · " + updrafts.size() + " updrafts · "
                 + flights.size() + " flights · " + emitters.size() + " emitters";
+    }
+
+    /** One Origin file from the data folder, with missing jar keys merged in (your values are never changed). */
+    private YamlConfiguration loadMerged(String name) {
+        File file = new File(plugin.getDataFolder(), name);
+        if (!file.exists() && plugin.getResource(name) != null) {
+            plugin.getDataFolder().mkdirs();
+            plugin.saveResource(name, false);
+        }
+        YamlConfiguration out = YamlConfiguration.loadConfiguration(file);
+        try (InputStream in = plugin.getResource(name)) {
+            if (in != null) {
+                YamlConfiguration defaults = YamlConfiguration.loadConfiguration(new InputStreamReader(in, StandardCharsets.UTF_8));
+                boolean missing = missingKeys(out, defaults);
+                out.setDefaults(defaults);
+                out.options().copyDefaults(true);
+                if (missing) {
+                    out.save(file);
+                }
+            }
+        } catch (IOException exception) {
+            plugin.getLogger().warning(name + ": could not merge defaults: " + exception.getMessage());
+        }
+        return out;
     }
 
     private static boolean missingKeys(YamlConfiguration live, YamlConfiguration defaults) {
@@ -199,6 +209,14 @@ public final class OriginConfig {
                 }
                 List<double[]> circles = new ArrayList<>();
                 for (String raw : s.getStringList("circles")) {
+                    double[] c = nums(raw);
+                    if (c != null && c.length >= 3) {
+                        circles.add(c);
+                    }
+                }
+                // Exploration pass: fitted over the walkable ground between districts. A separate key so live
+                // configs pick it up; never overlaps ground another district already owns.
+                for (String raw : s.getStringList("extra-circles")) {
                     double[] c = nums(raw);
                     if (c != null && c.length >= 3) {
                         circles.add(c);
@@ -347,6 +365,10 @@ public final class OriginConfig {
 
     public YamlConfiguration raw() {
         return yaml;
+    }
+
+    public YamlConfiguration explore() {
+        return explore;
     }
 
     public boolean enabled() {

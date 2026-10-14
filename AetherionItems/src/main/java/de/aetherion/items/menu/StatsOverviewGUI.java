@@ -24,7 +24,7 @@ public class StatsOverviewGUI {
     }
 
     public void open(Player player) {
-        Inventory inventory = Bukkit.createInventory(new Holder(), 54, TITLE);
+        Inventory inventory = Bukkit.createInventory(new Holder(), 54, de.aetherion.items.util.ManagerChrome.STATS);
 
         ItemStack pane = named(Material.GRAY_STAINED_GLASS_PANE, " ");
         for (int slot = 0; slot < inventory.getSize(); slot++) {

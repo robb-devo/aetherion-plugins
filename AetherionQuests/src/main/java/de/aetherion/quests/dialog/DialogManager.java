@@ -1477,11 +1477,17 @@ public class DialogManager implements Listener {
         }
         java.util.List<de.aetherion.quests.npc.CastBook.Topic> topics =
                 de.aetherion.quests.npc.CastBook.topics(npc.getId(), player);
-        if (topics.isEmpty()) {
+        // Isle errand chip (isle.IsleErrands) — one extra reply, never a quest offer.
+        de.aetherion.quests.talk.TalkUx.Choice errand =
+                de.aetherion.quests.isle.IsleErrands.chip(player, npc, () -> offerTopics(player, npc));
+        if (topics.isEmpty() && errand == null) {
             return;
         }
         java.util.Set<String> asked = askedTopics.computeIfAbsent(player.getUniqueId(), k -> new java.util.HashSet<>());
         java.util.List<de.aetherion.quests.talk.TalkUx.Choice> choices = new ArrayList<>();
+        if (errand != null) {
+            choices.add(errand);
+        }
         for (de.aetherion.quests.npc.CastBook.Topic topic : topics) {
             String key = npc.getId() + ":" + topic.label();
             if (asked.contains(key) || choices.size() >= 3) {
@@ -1626,6 +1632,11 @@ public class DialogManager implements Listener {
                 return story;
             }
         }
+        // Origin island cast (SAITAMA pass) — EN in isle.IsleLines, DE in dialogs.<id>_intro.
+        String[] isle = de.aetherion.quests.isle.IsleLines.intro(dialogId);
+        if (isle != null) {
+            return isle;
+        }
 
         /*
          * =====================================================
@@ -1751,33 +1762,33 @@ public class DialogManager implements Listener {
 
         if (dialogId.equalsIgnoreCase("chicken_keeper_intro")) {
             return new String[] {
-                    "That is not a chicken. That is a logistics error with feathers.",
-                    "McNugget got out. Again.",
-                    "If you can put it down, I have coins. And two mystery jars I refuse to label."
+                    "Hello! I keep the chickens of Clucksworth. Well, most of them.",
+                    "My biggest one, McNugget, got out again. He's somewhere out on the farmlands, and he's enormous.",
+                    "If you meet him, don't look him in the eye. He takes that as a challenge."
             };
         }
 
         if (dialogId.equalsIgnoreCase("tollkeeper_intro")) {
             return new String[] {
-                    "Bridge is closed. The troll is collecting a toll.",
-                    "The toll is whoever tries to cross.",
-                    "Go collect it back."
+                    "Hello! This bridge used to have a toll. Then a troll moved in under the old crossings and made his own rules.",
+                    "He doesn't take coins. He takes travellers, or at least he tries to.",
+                    "These days I just keep the books for the bridge. Very short books. Mostly apologies to the people who got grabbed."
             };
         }
 
         if (dialogId.equalsIgnoreCase("dockhand_intro")) {
             return new String[] {
-                    "Water's been writing its name on people lately.",
-                    "Squidward's in a mood. Ink, poison, the works.",
-                    "Kill it before the harbor smells like a stationery shop."
+                    "The water has been acting strange lately. Fishermen come home covered in ink.",
+                    "There's something under the harbour with too many arms and a bad temper. Ink, poison, the whole show.",
+                    "Tackle says it's just a big squid. Tackle also says the fish like him, so I'm not sure."
             };
         }
 
         if (dialogId.equalsIgnoreCase("ash_scout_intro")) {
             return new String[] {
-                    "If you see flaming arrows, you're already late.",
-                    "Skuldugery likes an audience. Don't be one.",
-                    "Bring the bowstring to a stop. I'll pretend that's a plan."
+                    "Hello. I watch the wastes out here and keep an eye on the archers.",
+                    "Skuldugery shoots burning arrows at anyone who comes too close. He loves an audience.",
+                    "If you head out there, keep moving and stay behind cover. And count your arrows, I always do."
             };
         }
 
@@ -1880,81 +1891,81 @@ public class DialogManager implements Listener {
 
         if (dialogId.equalsIgnoreCase("rook_intro")) {
             return new String[] {
-                    "Rook. I prepare people for holes in the ground that charge admission.",
-                    "Dungeons are caves with opinions. Bring me ten bones. Homework before the field trip.",
-                    "Survive the paperwork first. The skeletons can wait their turn."
+                    "Hello, I'm Rook. I prepare adventurers for the dungeons under the island.",
+                    "Before I take anyone down there, I need ten bones. Think of it as homework: if you can't handle skeletons up here, you can't handle them down there.",
+                    "Bring me the bones, and I'll tell you everything I know about surviving a dungeon."
             };
         }
 
         if (dialogId.equalsIgnoreCase("gate_warden_intro")) {
             return new String[] {
-                    "Road's closed. The Pathwarden is the reason and the billboard.",
-                    "He is slow. He is patient. He is also very good at ending careers.",
-                    "Move him. Or become a cautionary plaque. Your choice. I get paid either way."
+                    "The road beyond this gate is closed. The Pathwarden stands on it, and nobody gets past him.",
+                    "He's slow, he's patient, and he's ended a lot of brave careers.",
+                    "If you think you're strong enough, go and move him. If not, there's no shame in waiting a while longer."
             };
         }
 
         if (dialogId.equalsIgnoreCase("bench_cynic_intro")) {
             return new String[] {
-                    "Don't sit. This bench is occupied by standards.",
-                    "I need eight rotten flesh. Call it research. Call it lunch. I don't care.",
-                    "Bring it. Then leave me to my disappointment."
+                    "Please don't sit down. This bench is mine, and I'm very particular about it.",
+                    "If you want to be useful, bring me eight pieces of rotten flesh. It's for my research, and no, I won't explain.",
+                    "Bring them, and then you can go back to enjoying the fountain. I'll stay here and enjoy nothing."
             };
         }
 
         if (dialogId.equalsIgnoreCase("dust_intro")) {
             return new String[] {
-                    "Name's Dust. I map places people already walked over.",
-                    "Thirty cobblestone. Ambition needs roads. Roads need rocks. Rocks need you.",
-                    "Don't make it poetry. Make it a pile."
+                    "Hi! I'm Dust. I build and fix the paths between the Capital and everywhere else.",
+                    "Right now I need thirty cobblestone. Roads don't grow by themselves, unfortunately.",
+                    "Bring me the stone and I'll put it to good use. Next time you walk somewhere nice, you might be walking on your own cobble."
             };
         }
 
         if (dialogId.equalsIgnoreCase("fry_gossip_intro")) {
             return new String[] {
-                    "You smell like adventure. Or grease. Hard to tell around here.",
-                    "Clucksworth keeps screaming about McNugget. Giant chicken. Very punchable. Very crispy.",
-                    "If you survive it, don't brag near the fryer. The Gossip listens. And repeats."
+                    "Hey there! I run the fry stand, and I hear everything that happens in this harbour.",
+                    "Latest news: Clucksworth says his giant chicken McNugget escaped again. It's out on the farmlands somewhere, and it's huge.",
+                    "If you ever beat it, come and tell me first. I promise I'll only tell everybody."
             };
         }
 
         if (dialogId.equalsIgnoreCase("dock_whisper_intro")) {
             return new String[] {
-                    "Quiet. The river has opinions.",
-                    "Tackle will teach you the reel. Rare days, the line goes purple — Mythic Water Dragon. Only yours to catch.",
-                    "And if something older than the reef comes up in a vial? Don't shake it. Don't ask Brine. Just... don't."
+                    "Hello. People call me Dock Whisper, because I talk to the water. Sometimes it talks back.",
+                    "Tackle on the pier teaches you to fish. On rare days your line glows purple. That's a Mythic Water Dragon, and only you can catch it.",
+                    "And if you ever fish up a strange old vial, don't shake it and don't open it. Bring it to someone who knows."
             };
         }
 
         if (dialogId.equalsIgnoreCase("larder_intro")) {
             return new String[] {
-                    "Pantry's thin. My patience thinner.",
-                    "Compress wheat — real Compressed Wheat, not the grassy leftovers.",
-                    "Three of those. Then we talk boosters."
+                    "Hello! I run the Capital's pantry, and right now it's looking very empty.",
+                    "I need three Compressed Wheat. Press farm wheat together and you'll get it.",
+                    "Bring me three, and I'll reward you with a booster and some coins. Hungry people will thank you too."
             };
         }
 
         if (dialogId.equalsIgnoreCase("pet_scout_intro")) {
             return new String[] {
-                    "Lark hands out spheres like candy. I want proof you can aim.",
-                    "Catch a wild pig. One. Alive in a sphere, not as dinner.",
-                    "Come back when the pocket squeals."
+                    "Hi! Lark hands out catch spheres to everyone, but I want to see who can actually use one.",
+                    "Catch me a wild pig with a sphere. Just one, and alive please, not as dinner.",
+                    "Come back when your pocket starts oinking."
             };
         }
 
         if (dialogId.equalsIgnoreCase("ore_ledger_intro")) {
             return new String[] {
-                    "I don't dig. I audit. The mountain already lied once.",
-                    "Mining skill level eight. Minimum. Below that you're a tourist with a pickaxe.",
-                    "Five Compressed Coal. Not dusty. Not 'almost'. Compressed. Then we close the ledger."
+                    "Hello. I don't mine myself. I keep the records of everything that comes out of this ridge.",
+                    "If your Mining skill is level eight or higher, I have work for you.",
+                    "Bring me five Compressed Coal, the real thing, and I'll pay you well and close this month's books."
             };
         }
 
         if (dialogId.equalsIgnoreCase("timber_clerk_intro")) {
             return new String[] {
-                    "Every stump files a complaint. I'm the complaints department.",
-                    "Foraging eight or higher. Axes that still wobble can wait outside.",
-                    "Five Compressed Oak Logs. Taxed wood. Quiet forest. Everybody wins except the trees."
+                    "Hello! I keep track of every tree that gets cut in Eastwood.",
+                    "If your Foraging skill is level eight or higher, I could use your help.",
+                    "Bring me five Compressed Oak Logs. I'll pay you, and I'll make sure we plant new trees for every one we take."
             };
         }
 
@@ -1968,62 +1979,65 @@ public class DialogManager implements Listener {
 
         if (dialogId.equalsIgnoreCase("dock_scaler_intro")) {
             return new String[] {
-                    "I weigh fish that refuse to be weighed. Professionally.",
-                    "Fishing ten. If your cast still looks like a sneeze, keep walking.",
-                    "Three Compressed Cod. School that learned solidarity. Clipboard stays wet either way."
+                    "I'm the Dock Scaler. I weigh and record every fish that comes into this harbour.",
+                    "If your Fishing skill is level ten or higher, I have a job for you.",
+                    "Bring me three Compressed Cod for my samples. I pay properly, and my clipboard will finally be happy."
             };
         }
 
         if (dialogId.equalsIgnoreCase("sphere_proctor_intro")) {
             return new String[] {
-                    "Pigs were kindergarten. Cows are the midterm.",
-                    "Aetherion Level five. The sphere has standards. So do I.",
-                    "Catch one cow. Alive. Mooving. In custody. Do not bring me a steak and call it progress."
+                    "Hello! Pigs are for beginners. I test the next step: cows.",
+                    "You need Aetherion level five, and then you catch me one cow in a sphere. Alive, please.",
+                    "Do that, and you're officially a proper catcher. I'll even write it down."
             };
         }
 
         if (dialogId.equalsIgnoreCase("quarry_broker_intro")) {
             return new String[] {
-                    "Guild door's picky. I'm pickier.",
-                    "Aetherion Level twenty. That's the club handshake, minus the handshake.",
-                    "One Compacted Cobblestone. Not compressed. Compacted. The brick that proves you meant it."
+                    "Hello. I decide who gets into the Builders' Guild, and I'm very picky.",
+                    "You'll need Aetherion level twenty before I even look at you.",
+                    "Then bring me one Compacted Cobblestone. Not compressed, compacted. That brick proves you're serious about building."
             };
         }
 
         if (dialogId.equalsIgnoreCase("slag_poet_intro")) {
             return new String[] {
-                    "Ode to a vein that ghosted me. Stanza one: betrayal. Stanza two: also betrayal.",
-                    "Ore Ledger wants coal with receipts. I want metaphors. We are not the same.",
-                    "If the mountain sings, don't answer. It bills by the hour."
+                    "Hello! I mine on Ore Ridge, and in my free time I write poems about it.",
+                    "Most of my poems are about ore veins that run out right when you get excited. That happens a lot.",
+                    "If you're mining up here, follow the coal seams downhill. And if the mountain rumbles, step back. That's not applause."
             };
         }
 
         if (dialogId.equalsIgnoreCase("bait_theory_intro")) {
             return new String[] {
-                    "Bait is a philosophy. Worms are the footnotes.",
-                    "Dock Whisper mutters about purple lines. Dock Scaler mutters about clipboards. I mutter about entropy.",
-                    "Cast like you mean it. Or cast like you don't. The river grades on vibes."
+                    "I've been testing bait on this pier for eleven years. Worms, bread, cheese, you name it.",
+                    "Dock Whisper listens to the water, Dock Scaler weighs the fish, and I figure out what they want for dinner.",
+                    "My advice: cast calmly, wait longer than you think, and never fish in a bad mood. The fish can tell."
             };
         }
 
         if (dialogId.equalsIgnoreCase("stall_crumb_intro")) {
             return new String[] {
-                    "Fresh loaf. Or yesterday's. Depends how honest you look.",
-                    "Quartermaster pays in coal talk. I pay in crusts. Pick your religion."
+                    "Fresh bread! Well, today's bread is fresh. Yesterday's is cheaper.",
+                    "I bake every morning before the sun is up. The whole harbour eats my loaves, even the Quartermaster.",
+                    "If you're heading out to work, take some bread with you. Hungry people make bad decisions."
             };
         }
 
         if (dialogId.equalsIgnoreCase("stall_tack_intro")) {
             return new String[] {
-                    "Nails, twine, regret — three for a coin if I liked you.",
-                    "Ore Ridge chews tools. I sell the chewing gum that almost helps."
+                    "Nails, rope, twine, buckles. I sell all the little things you forget until you need them.",
+                    "The miners up on Ore Ridge wear out their tools fast. Most of them stop here first.",
+                    "Have a look around. If I don't have it, you probably don't need it."
             };
         }
 
         if (dialogId.equalsIgnoreCase("stall_brine_intro")) {
             return new String[] {
-                    "Salt for fish, salt for wounds, salt for opinions.",
-                    "Tackle on the dock sells rods. I sell the reason fish taste like something."
+                    "Salt for fish, salt for meat, salt for soup. Salt makes everything better.",
+                    "Tackle sells you the rod. I sell you the reason your fish tastes like something.",
+                    "One pinch on your catch tonight, and you'll be back tomorrow for a whole jar."
             };
         }
 
@@ -2091,10 +2105,9 @@ public class DialogManager implements Listener {
 
         if (dialogId.equalsIgnoreCase("rivet_intro")) {
             return new String[] {
-                    "Hold still — if that plate rattles, I'm charging you for the echo.",
-                    "Dock Whisper mutters about tides. I mutter about bolts that lie for a living.",
-                    "Brass wants polish. Iron wants respect. Me? I want whoever keeps stealing my rivets.",
-                    "You look useful. Or at least distractingly vertical. Don't lean on the wet paint."
+                    "Hello there! I'm Rivet. I keep the ships in this harbour from falling apart.",
+                    "Bolts, planks, rope, nails. If it holds a ship together, I've hammered it at least once.",
+                    "Careful where you step, the paint on this deck is still wet. And if you find any rivets lying around, they're mine."
             };
         }
 

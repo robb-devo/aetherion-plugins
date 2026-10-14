@@ -115,6 +115,13 @@ public class CodexBrowser extends CodexView {
     }
 
     @Override
+    protected net.kyori.adventure.text.Component chrome() {
+        return ledger == CodexBook.Ledger.COLLECTION
+                ? de.aetherion.items.util.ManagerChrome.COLLECTION
+                : de.aetherion.items.util.ManagerChrome.BESTIARY;
+    }
+
+    @Override
     protected String title() {
         return "§8" + ledger.title() + " §8» " + CodexCatalog.categoryTitle(category);
     }

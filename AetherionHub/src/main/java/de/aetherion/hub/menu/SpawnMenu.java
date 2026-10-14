@@ -21,6 +21,9 @@ import java.util.Set;
 public final class SpawnMenu {
 
     public static final String TITLE = "§8Aetherion Spawns";
+    /** Pack overlay (Aetherion Manager chrome): \uE005 shift + \uE024 spawns panel. */
+    private static final net.kyori.adventure.text.Component CHROME = net.kyori.adventure.text.Component.text(
+            "\uE005\uE024", net.kyori.adventure.text.format.NamedTextColor.WHITE);
     public static final int BACK_SLOT = 49;
     public static final int INFO_SLOT = 4;
     private static final int MENU_SIZE = 54;
@@ -37,15 +40,11 @@ public final class SpawnMenu {
             case "mines" -> 12;
             case "capital" -> 13;
             case "forage_isle" -> 14;
-            case "fishing_eldervale" -> 22;
             case "farm" -> 15;
             case "farm_isle" -> 16;
             case "colosseum" -> 19;
             case "eldervale" -> 20;
             case "borderlands" -> 21;
-            case "summit" -> 23;
-            case "whisperwood" -> 24;
-            case "bloodstone" -> 25;
             default -> spawn.slot();
         };
     }
@@ -57,7 +56,7 @@ public final class SpawnMenu {
     }
 
     public void open(Player player) {
-        Inventory inventory = Bukkit.createInventory(new Holder(), MENU_SIZE, TITLE);
+        Inventory inventory = Bukkit.createInventory(new Holder(), MENU_SIZE, CHROME);
         fillBorder(inventory);
 
         inventory.setItem(INFO_SLOT, item(
@@ -149,13 +148,8 @@ public final class SpawnMenu {
         if (!unlocked) {
             lore.add("§cLocked");
             if ("farm".equalsIgnoreCase(spawn.id()) || "capital".equalsIgnoreCase(spawn.id())
-                    || "borderlands".equalsIgnoreCase(spawn.id()) || "ore_ridge".equalsIgnoreCase(spawn.id())
-                    || "summit".equalsIgnoreCase(spawn.id()) || "whisperwood".equalsIgnoreCase(spawn.id())) {
+                    || "borderlands".equalsIgnoreCase(spawn.id()) || "ore_ridge".equalsIgnoreCase(spawn.id())) {
                 lore.add("§7Walk there to unlock.");
-                String hint = de.aetherion.hub.origin.OriginHooks.lockedHint(player, spawn.id());
-                if (hint != null && spawn.hasLocation()) {
-                    lore.add(hint.replace("§e/origin go camp:" + spawn.id() + " §7points the way.", "").trim());
-                }
             } else {
                 lore.add("§7Unlock through the story,");
                 lore.add("§7or discover it in the world.");

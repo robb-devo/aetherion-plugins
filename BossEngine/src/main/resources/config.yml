@@ -23,6 +23,14 @@ announce-death: false
 # Debug-Logs für Skills, Spawner und WorldGuard-Bypass.
 debug: false
 
+# Pathwarden fight bed — OpenNBS .nbs (v5). Tempo from file header (tps×100), not hardcoded.
+pathwarden-music:
+  enabled: true
+  track: balkan_bump
+  volume: 0.85
+  loop: true
+  follow-players: true
+
 # World Eater: "the Last Seed", its own void world (approach road, the Unbroken's
 # gate, the island Nihil eats). /boss worldeater create|build|go|reset|open|status
 world-eater:

@@ -49,6 +49,9 @@ public class PlayerJoinListener implements Listener {
                 de.aetherion.quests.lang.LangMenu.openIfNeeded(player);
             } else {
                 nudgeIfEgonWaiting(player, plugin);
+                // Mid-orientation with nothing tracked (relog / restart wiped the soft arrow): put it back.
+                plugin.getServer().getScheduler().runTaskLater(plugin, () ->
+                        de.aetherion.quests.util.QuestStoryGate.resumeTrail(player), 70L);
             }
 
             Quest quest = questManager.getTrackedQuest(player);

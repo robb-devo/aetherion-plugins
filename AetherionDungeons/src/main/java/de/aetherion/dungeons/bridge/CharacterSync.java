@@ -250,8 +250,10 @@ public final class CharacterSync implements Listener {
                     + "§c — nothing was deleted. You are here as a guest; this session will not overwrite it.");
             return;
         }
-        boolean knownBackend = remote != null
-                && (holder.equalsIgnoreCase(remote.targetServer()) || holder.equalsIgnoreCase(remote.returnServer()));
+        // mmo-c / mmo-i hold characters too (Core's port of this sync): redirect there, never take over.
+        boolean knownBackend = (remote != null
+                && (holder.equalsIgnoreCase(remote.targetServer()) || holder.equalsIgnoreCase(remote.returnServer())))
+                || de.aetherion.core.network.ServerNames.isCharacterBackend(holder);
         if (!knownBackend) {
             plugin.getLogger().warning("[Transfer] Unknown holder '" + holder + "' for " + player.getName()
                     + " — taking over on " + here);
@@ -261,7 +263,8 @@ public final class CharacterSync implements Listener {
         }
         plugin.getLogger().warning("[Transfer] REDIRECT " + player.getName() + " → " + holder
                 + " (character is held there, no snapshot pending)");
-        player.sendMessage("§5Dungeon Gate§7: Your character is on §f" + holder + "§7 — taking you there…");
+        player.sendMessage("§7You are still expected on §f" + de.aetherion.core.network.ServerNames.display(holder)
+                + "§7 — taking you there…");
         remote.connect(player, holder);
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             if (!player.isOnline() || guard.phase(id) != TransferGuard.Phase.WAITING) {
@@ -271,7 +274,8 @@ public final class CharacterSync implements Listener {
             guests.add(id);
             plugin.getLogger().severe("[Transfer] " + player.getName() + " could not reach " + holder
                     + " — guest session on " + here + " (their gear stays on " + holder + ").");
-            player.sendMessage("§f" + holder + " §cis not reachable right now. Your gear is safe there. "
+            player.sendMessage("§f" + de.aetherion.core.network.ServerNames.display(holder)
+                    + " §cis out of reach right now. Your gear is safe there. "
                     + "You can look around here, but this visit will not be saved over it.");
         }, 200L);
     }

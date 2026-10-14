@@ -7,6 +7,7 @@
 | **AetherionCore** | PDC keys, entity identity helpers, hit flags, cross-plugin service interfaces (`de.aetherion.core.api`), `VoidChunkGenerator`, FancyNpcs reflection facade, beta wipe paths | Game ticks, combat math, loot, quests |
 | **AetherionItems** | Custom items/recipes, economy (coins/shards/market), skills/loadouts, party, codex, combat stats | World regen, dungeon instances, boss AI |
 | **BossEngine** | Boss templates (YAML), phases/skills, spawners | Player economy, quests |
+| **AetherionGnomon** | GNOMON encounter: display rig, dial arena, adaptive AI, its own cleanup. Runs as a `BossScript` (dedicated plugin, Robb's call 2026-10-07) | HP pool, phase gates, loot (BossEngine YAML `gnomon.yml`), keys (Core) |
 | **AetherionQuests** | Quest state, NPCs, compass/markers, rewards hooks | Item definitions |
 | **AetherionHub** | Unlockable spawns, `/spawn` `/hub` | Islands, guilds |
 | **AetherionDungeons** | Temp instances, warm pool, dungeon flow | Boss AI (uses BossEngine), item defs (uses Items) |

@@ -142,6 +142,11 @@ public final class LogisticsService {
         final Map<UUID, Double> inRate = new HashMap<>();
         /** Bumped whenever tiles change, so the conveyor dressing re-merges its runs. */
         int version;
+        /** First-chain allowance used (free tiles so the very first quarry belt never needs stored cobble). */
+        int bootUsed;
+        /** Tiles on the island that were laid free (tour / first chain): taking one up returns the allowance, not cobble. */
+        int bootHeld;
+        int tourHeld;
     }
 
     private final JavaPlugin plugin;
@@ -171,6 +176,48 @@ public final class LogisticsService {
         int freeTiles(IslandHost host);
 
         void useFree(IslandHost host, int tiles);
+
+        /** A free tile was taken up again: hand it back to the kit (default: nothing). */
+        default void returnFree(IslandHost host, int tiles) {
+        }
+    }
+
+    /**
+     * Free tiles for the island's very first quarry belt, tour or not, personal or guild: belts cost cobble from
+     * storage, and storage only fills through a belt. Without this a skipped tour or a fresh guild island can't start.
+     * Lifetime allowance per island, only while no quarry belt reaches anything yet.
+     */
+    public int bootstrapLeft(IslandHost host) {
+        if (host == null) {
+            return 0;
+        }
+        int allowance = Math.max(0, plugin.getConfig().getInt("logistics.first-chain-free-tiles", 24));
+        Net net = nets.get(host.key());
+        int left = Math.max(0, allowance - (net == null ? 0 : net.bootUsed));
+        if (left == 0) {
+            return 0;
+        }
+        for (Route route : routes(host)) {
+            if (route.to() != null && route.from().type() == StructureType.QUARRY_HOUSING) {
+                return 0;
+            }
+        }
+        return left;
+    }
+
+    /** Tour kit tiles still free on this island. */
+    public int tourLeft(IslandHost host) {
+        return beltPass == null || host == null ? 0 : Math.max(0, beltPass.freeTiles(host));
+    }
+
+    /** Every free tile this island can lay right now (tour kit + first-chain allowance). */
+    public int freeTiles(IslandHost host) {
+        return tourLeft(host) + bootstrapLeft(host);
+    }
+
+    /** "free (tour)" or "free (first chain)", whichever pays first. */
+    public String freeLabel(IslandHost host) {
+        return tourLeft(host) > 0 ? "free (tour)" : "free (first chain)";
     }
 
     public void setBeltPass(BeltPass pass) {
@@ -274,6 +321,15 @@ public final class LogisticsService {
 
     /** Cells + directions of an L-shaped run from start to end (inclusive). Null when heights differ. */
     public static List<Object[]> plan(int[] start, int[] end, BlockFace fallback) {
+        return plan(start, end, fallback, null, null);
+    }
+
+    /**
+     * Like {@link #plan(int[], int[], BlockFace)}, with the bend forced ({@code xFirst}: run along x first; null =
+     * the longer leg first) and the last tile turned {@code into} a building (null = keep running straight). That
+     * is how a belt aimed at a hut snaps into its side instead of ending beside it.
+     */
+    public static List<Object[]> plan(int[] start, int[] end, BlockFace fallback, Boolean forceXFirst, BlockFace into) {
         if (start[1] != end[1]) {
             return null;
         }
@@ -281,10 +337,10 @@ public final class LogisticsService {
         int dx = end[0] - start[0];
         int dz = end[2] - start[2];
         if (dx == 0 && dz == 0) {
-            cells.add(new Object[]{start.clone(), fallback});
+            cells.add(new Object[]{start.clone(), into != null ? into : fallback});
             return cells;
         }
-        boolean xFirst = Math.abs(dx) >= Math.abs(dz);
+        boolean xFirst = forceXFirst != null ? forceXFirst : Math.abs(dx) >= Math.abs(dz);
         int x = start[0];
         int z = start[2];
         List<int[]> points = new ArrayList<>();
@@ -317,7 +373,7 @@ public final class LogisticsService {
                 dir = face(n[0] - p[0], n[2] - p[2]);
                 last = dir;
             } else {
-                dir = last;
+                dir = into != null ? into : last;
             }
             cells.add(new Object[]{p, dir});
         }
@@ -364,6 +420,12 @@ public final class LogisticsService {
     }
 
     public boolean lay(Player player, IslandHost host, int[] start, int[] end, BlockFace fallback) {
+        return lay(player, host, start, end, fallback, null, null);
+    }
+
+    /** Lays exactly the run {@link #plan(int[], int[], BlockFace, Boolean, BlockFace)} previews (ghost = truth). */
+    public boolean lay(Player player, IslandHost host, int[] start, int[] end, BlockFace fallback, Boolean xFirst,
+                       BlockFace into) {
         World world = hosts.world(host);
         if (world == null) {
             return false;
@@ -372,7 +434,7 @@ public final class LogisticsService {
             player.sendMessage(hosts.rankHint(host, "lay belts"));
             return false;
         }
-        List<Object[]> cells = plan(start, end, fallback);
+        List<Object[]> cells = plan(start, end, fallback, xFirst, into);
         if (cells == null) {
             player.sendMessage("§cBelts run flat: start and end must be at the same height.");
             return false;
@@ -402,7 +464,9 @@ public final class LogisticsService {
                     + ". Raise the tier for more.");
             return false;
         }
-        int free = beltPass == null ? 0 : Math.max(0, Math.min(fresh, beltPass.freeTiles(host)));
+        int tourFree = Math.min(fresh, tourLeft(host));
+        int bootFree = Math.min(fresh - tourFree, bootstrapLeft(host));
+        int free = tourFree + bootFree;
         // belts are made of what the island makes: a cobblestone a tile from storage (plus coins if configured)
         List<de.aetherion.guilds.structure.BuildCosts.Line> bill = new ArrayList<>();
         long tiles = fresh - free;
@@ -416,9 +480,13 @@ public final class LogisticsService {
         if (!structures.pay(player, host, bill)) {
             return false;
         }
-        long price = tiles;
-        if (free > 0) {
-            beltPass.useFree(host, free);
+        if (tourFree > 0) {
+            beltPass.useFree(host, tourFree);
+            net.tourHeld += tourFree;
+        }
+        if (bootFree > 0) {
+            net.bootUsed += bootFree;
+            net.bootHeld += bootFree;
         }
         Map<Long, String> index = worldIndex.computeIfAbsent(world.getName(), k -> new HashMap<>());
         List<Belt> touched = new ArrayList<>();
@@ -457,10 +525,18 @@ public final class LogisticsService {
                 }
             }, 1L + i);
         }
-        player.sendMessage("§a" + fresh + " belt tile" + (fresh == 1 ? "" : "s") + " laid"
-                + (price > 0 ? " §8(" + GuildFormat.compact(price) + " Cobblestone from storage)" : "")
-                + (free > 0 ? " §8(§e" + free + " free, starter kit§8)" : "")
-                + "§a. §7" + count(host) + "/" + cap(host) + " tiles.");
+        long cobble = tiles * de.aetherion.guilds.structure.BuildCosts.BELT_COBBLE;
+        if (cobble > 0) {
+            lastLayCostLine = "§e−" + GuildFormat.compact(cobble) + " Cobble from storage";
+        } else if (tourFree > 0) {
+            lastLayCostLine = "§afree (tour)";
+        } else if (bootFree > 0) {
+            lastLayCostLine = "§afree (first chain)";
+        } else {
+            lastLayCostLine = "§afree";
+        }
+        player.sendMessage("§a" + fresh + " belt tile" + (fresh == 1 ? "" : "s") + " laid §8· "
+                + lastLayCostLine + " §8· §7" + count(host) + "/" + cap(host));
         structures.milestone(host, "first_belt");
         connections(player, host, world, linkedBefore);
         return true;
@@ -482,10 +558,23 @@ public final class LogisticsService {
      * first goods ride it at once. A run that ends in the open gets a one-line nudge instead.
      */
     private boolean lastLayTalked;
+    private String lastLayCostLine = "§afree";
 
     /** Did the last belt lay already put something on the action bar (connected / ends in the open)? */
     public boolean lastLayTalked() {
         return lastLayTalked;
+    }
+
+    private String lastRemoveLine = "";
+
+    /** What taking the last belt tile up gave back ("+1 Cobblestone back" / "free tile back"). */
+    public String lastRemoveLine() {
+        return lastRemoveLine;
+    }
+
+    /** Cost toast from the last successful lay ("−N Cobble from storage" / "free (tour)"). */
+    public String lastLayCostLine() {
+        return lastLayCostLine == null ? "§afree" : lastLayCostLine;
     }
 
     private void connections(Player player, IslandHost host, World world, Set<String> before) {
@@ -509,7 +598,8 @@ public final class LogisticsService {
             world.playSound(port, Sound.BLOCK_COPPER_BULB_TURN_ON, 1f, 1.1f);
             world.playSound(port, Sound.BLOCK_IRON_TRAPDOOR_CLOSE, 0.9f, 0.7f);
             player.sendActionBar(net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection()
-                    .deserialize("§a✔ Connected: §f" + label(route.from()) + " §8→ §f" + label(route.to())));
+                    .deserialize("§a✔ Connected: §f" + label(route.from()) + " §8→ §f" + label(route.to())
+                            + " §8· " + lastLayCostLine()));
             // the first goods ride it right away (the island is lively while you stand on it)
             Res icon = route.lastRes;
             if (icon == null && route.from().type() == StructureType.QUARRY_HOUSING) {
@@ -527,7 +617,8 @@ public final class LogisticsService {
             for (Route route : routes(host)) {
                 if (route.to() == null && !route.path.isEmpty()) {
                     player.sendActionBar(net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection()
-                            .deserialize("§e" + label(route.from()) + "'s belt ends in the open §7· run it onto a §agreen arrow"));
+                            .deserialize("§e" + label(route.from()) + "'s belt ends in the open §7· aim the end at a hut or"
+                                    + " machine §8(§agreen pads§8)§7, it snaps in"));
                     lastLayTalked = true;
                     break;
                 }
@@ -557,13 +648,42 @@ public final class LogisticsService {
         if (block.getType() == BELT_BLOCK || block.getType() == Material.RAIL) {
             block.setType(Material.AIR, false);
         }
-        structures.giveGoods(player, host, de.aetherion.guilds.structure.BuildCosts.COBBLE,
-                de.aetherion.guilds.structure.BuildCosts.BELT_COBBLE);
+        if (net.tourHeld > 0) {
+            // a free tile goes back to the kit it came from (never turns into cobble)
+            net.tourHeld--;
+            if (beltPass != null) {
+                beltPass.returnFree(host, 1);
+            }
+            lastRemoveLine = "free tile back";
+        } else if (net.bootHeld > 0) {
+            net.bootHeld--;
+            net.bootUsed = Math.max(0, net.bootUsed - 1);
+            lastRemoveLine = "free tile back";
+        } else {
+            structures.giveGoods(player, host, de.aetherion.guilds.structure.BuildCosts.COBBLE,
+                    de.aetherion.guilds.structure.BuildCosts.BELT_COBBLE);
+            lastRemoveLine = "+" + de.aetherion.guilds.structure.BuildCosts.BELT_COBBLE + " Cobblestone back";
+        }
         net.routesDirty = true;
         net.version++;
         dirty = true;
         world.playSound(block.getLocation(), Sound.BLOCK_CHAIN_BREAK, 0.8f, 1f);
         return true;
+    }
+
+    /** Takes up every belt tile leading away from this structure (Hollis' "pull up the old belt"). Tiles refund. */
+    public int pullUp(Player player, IslandHost host, PlacedStructure from) {
+        List<Belt> tiles = new ArrayList<>();
+        for (Route route : exits(from)) {
+            tiles.addAll(route.path);
+        }
+        int removed = 0;
+        for (Belt belt : tiles) {
+            if (remove(player, host, belt.x(), belt.y(), belt.z())) {
+                removed++;
+            }
+        }
+        return removed;
     }
 
     private void refreshAround(World world, Net net, Belt belt) {
@@ -2141,6 +2261,8 @@ public final class LogisticsService {
             }
             section.set("last-flow", net.lastFlow);
             section.set("tiles", belts);
+            section.set("first-chain-free-used", net.bootUsed > 0 ? net.bootUsed : null);
+            section.set("free-held", net.bootHeld + net.tourHeld > 0 ? net.bootHeld + "," + net.tourHeld : null);
         }
         savedHosts.clear();
         savedHosts.addAll(nets.keySet());
@@ -2191,6 +2313,16 @@ public final class LogisticsService {
         }
         Net net = net(host);
         net.lastFlow = section.getLong("last-flow", 0L);
+        net.bootUsed = Math.max(0, section.getInt("first-chain-free-used", 0));
+        String held = section.getString("free-held", "");
+        if (held != null && held.contains(",")) {
+            try {
+                net.bootHeld = Math.max(0, Integer.parseInt(held.substring(0, held.indexOf(',')).trim()));
+                net.tourHeld = Math.max(0, Integer.parseInt(held.substring(held.indexOf(',') + 1).trim()));
+            } catch (NumberFormatException ignored) {
+                // a hand-edited value: free tiles then refund cobble like any other
+            }
+        }
         Map<Long, String> index = worldIndex.computeIfAbsent(world.getName(), k -> new HashMap<>());
         int loaded = 0;
         for (String raw : section.getStringList(listKey)) {

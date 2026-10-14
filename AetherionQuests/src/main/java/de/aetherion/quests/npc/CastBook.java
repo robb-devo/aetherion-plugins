@@ -151,7 +151,12 @@ public final class CastBook {
         v.greetNew = new String[] {"Hm. {player}. Recipe Book's in your Manager."};
         v.greet = new String[] {"Hm. {player}.", "Pick's holding? Hm. Good."};
         v.greetGrad = new String[] {"Hm. Good work lately, {player}. Don't let it go to your head."};
-        v.idle = new String[] {"*clang*", "Hm.", "Iron's moody today.", "Coal. More coal."};
+        v.idle = new String[] {
+                "This hammer was my father's. The handle was my grandfather's. The head is new, though.",
+                "Iron gets moody when it's cold. So do I, so we understand each other.",
+                "Bring me coal and patience. I'll supply the noise.",
+                "Every pickaxe on this harbour has been through my hands at least once."
+        };
         v.farewell = new String[] {"Hm."};
         topic(v, "What makes good gear?",
                 "Old piece in the middle. Resources around it. That's the whole secret.",
@@ -171,7 +176,12 @@ public final class CastBook {
         v.greetNew = new String[] {"Hard hats save lives, {player}. I'm told."};
         v.greet = new String[] {"{player}! Back for another shift?", "Dust suits you, {player}."};
         v.greetGrad = new String[] {"Look who's a miner now. Proud of you. Don't tell anyone."};
-        v.idle = new String[] {"*puff*", "Hear that? Neither do I. Good sign.", "Twenty years down there. Still hate spiders."};
+        v.idle = new String[] {
+                "Twenty years down in the shafts, and I still hate spiders.",
+                "Quiet in the tunnels today. In a mine, quiet is a good sign.",
+                "First rule down there: never dig straight up. Second rule: see the first rule.",
+                "My pipe went out an hour ago. I keep it in my mouth for courage."
+        };
         v.farewell = new String[] {"Watch the drops. Watch the dark. Watch yourself."};
         topic(v, "Is it safe down there?",
                 "Safe? It's a mine, {player}.",
@@ -191,7 +201,12 @@ public final class CastBook {
         v.greetNew = new String[] {"{player}! Got anything I can set on fire? Upgrade. I meant upgrade."};
         v.greet = new String[] {"Smell that, {player}? Progress. Also mild burning."};
         v.greetGrad = new String[] {"{player}! Fused anything spicy lately?"};
-        v.idle = new String[] {"*sizzle*", "That spark was intentional.", "Goggles on. Always goggles on."};
+        v.idle = new String[] {
+                "That spark? Completely intentional. Mostly intentional.",
+                "Goggles on, always. I learned that the bright way.",
+                "A booster on the Anvil is power. A booster in your pocket is just a pretty rock.",
+                "I've blown up three workbenches. The fourth one is doing great."
+        };
         v.farewell = new String[] {"Stay flammable. Wait. No. Don't."};
         topic(v, "Is there a limit?",
                 "There's a cap. Don't ask me to raise it.",
@@ -210,7 +225,12 @@ public final class CastBook {
         v.greetNew = new String[] {"{player}. Present. Good."};
         v.greet = new String[] {"{player}. On time. Almost.", "Posture, {player}."};
         v.greetGrad = new String[] {"Graduate {player}. Try not to embarrass the stamp."};
-        v.idle = new String[] {"*stamp*", "Late. Late. Early. Late.", "Who writes a nine like that?"};
+        v.idle = new String[] {
+                "Everything gets a stamp. Mistakes get two.",
+                "Late, late, early, late. My calendar has opinions about people.",
+                "Who writes a nine like that? It looks like a lost snail.",
+                "Every page in here is somebody's first day on Aetherion. I keep them all."
+        };
         v.farewell = new String[] {"Dismissed."};
         v.greetDoubt = lines("{player}. No records before the Silent Year. That's no accident.");
         v.doubtStage = 3;
@@ -233,7 +253,12 @@ public final class CastBook {
         v.greetNew = new String[] {"{player}! Seen any birds? Don't trust them."};
         v.greet = new String[] {"Wheat's growing, {player}. So's the bird problem."};
         v.greetGrad = new String[] {"{player}! The birds remember you. Good."};
-        v.idle = new String[] {"Shoo!", "That crow's been staring for an hour.", "Rain soon. Or birds. Probably birds."};
+        v.idle = new String[] {
+                "Shoo, crow! That's my wheat, not your breakfast!",
+                "That crow has been staring at me for an hour. I think it wants my hat.",
+                "It'll rain soon. Or the birds are lying again. Probably the birds.",
+                "Good soil is like a good friend. Feed it, and it remembers you."
+        };
         v.farewell = new String[] {"Eyes up. They're always up there."};
         topic(v, "Why the birds?", "They know what they did.", "Every season. Same birds. I recognise that one.");
         topic(v, "Farm Isle?", "Harlow, far end of the barn. He knows the way down.", "Farming ten. Bigger fields. Fewer birds.");
@@ -250,7 +275,12 @@ public final class CastBook {
         v.greetNew = new String[] {"{player}! Mind the parrot. She's judging your shoes."};
         v.greet = new String[] {"{player}! Pistachio remembers you. That's not a compliment."};
         v.greetGrad = new String[] {"{player}! Your pet's famous around here. Well. To me."};
-        v.idle = new String[] {"Who's a good bird? Not you.", "*whistles*", "Pistachio, no."};
+        v.idle = new String[] {
+                "Pistachio, no. That's not a snack, that's a stranger's hat.",
+                "Who's a good bird? Not you, Pistachio. You bit the mayor.",
+                "A pet sphere is a promise. You catch something, you look after it.",
+                "Every pet on this island has a name. Most of them chose it themselves."
+        };
         v.farewell = new String[] {"Pistachio says bye. She doesn't. But imagine."};
         topic(v, "Your parrot?",
                 "Pistachio. Don't make eye contact.",
@@ -266,10 +296,15 @@ public final class CastBook {
                 "Five fish, {player}. Cast. Wait. §eREEL§f on green.",
                 "Miss the window, the fish leaves. So would I."
         };
-        v.greetNew = new String[] {"Tide's good, {player}."};
+        v.greetNew = new String[] {"Tackle. Harbour practice first, {player}. Then the west pad."};
         v.greet = new String[] {"Line's calling, {player}.", "Wind's right. Fish aren't."};
-        v.greetGrad = new String[] {"{player}. The sea asked about you."};
-        v.idle = new String[] {"*hums a sea shanty*", "Wind's from the east. Fish sulk.", "Hm. Nibble."};
+        v.greetGrad = new String[] {"{player}. Real water's on the west pad — Fishing Eldervale."};
+        v.idle = new String[] {
+                "East wind today. The fish sulk when it blows from the east.",
+                "Something nibbled, then it changed its mind. That's my whole life in one sentence.",
+                "The trick is patience. The other trick is better bait.",
+                "My grandfather fished this harbour. He caught a boot once and wore it to his wedding."
+        };
         v.farewell = new String[] {"Fair winds."};
         topic(v, "Fishing tips?", "Patience, {player}.", "And green. Reel on green. The rest is weather.");
         topic(v, "Seen anything big?", "Once.", "Didn't reel it. Still think about it.");
@@ -291,7 +326,12 @@ public final class CastBook {
         v.greetNew = new String[] {"Eyes front, {player}!"};
         v.greet = new String[] {"{player}. Still breathing. Adequate.", "Chin up, {player}. Blade up."};
         v.greetGrad = new String[] {"{player}. Soldier. …Don't let that go to your head."};
-        v.idle = new String[] {"Hup!", "Left! Right! Left!", "*sharpens sword*"};
+        v.idle = new String[] {
+                "Left, right, left! Even the gulls march better than my recruits.",
+                "A sharp blade and a sharp mind. Only one of those can be bought.",
+                "Up, down, breathe, repeat. That's the whole secret of fighting. And don't get hit.",
+                "I sharpen this sword every morning. It has never once thanked me."
+        };
         v.farewell = new String[] {"Dismissed! Walk like you mean it."};
         topic(v, "Any advice?", "Swing first. Think second. Survive third.", "Actually — think first. Write that down.");
         topic(v, "The scar?", "Training accident.", "The training won.");
@@ -299,31 +339,43 @@ public final class CastBook {
         v = voice("rite_keeper");
         v.accept = "I'll light it.";
         v.decline = "Not yet.";
-        v.onAccept = new String[] {"The powder remembers. So will you."};
+        v.onAccept = new String[] {"Good. Light the powder at the pillar, and be ready when the thunder comes."};
         v.onDecline = new String[] {"Spirits are patient. I am less so."};
         v.returning = new String[] {
-                "The vial, {player}. The powder. The pillar.",
-                "Ten seconds. Thunder. Then it walks."
+                "You have the vial, {player}. Pour the powder out at the pillar.",
+                "Then wait about ten seconds. You'll hear thunder, and then the spirit steps out to fight."
         };
-        v.greetNew = new String[] {"The waste watches, {player}."};
-        v.greet = new String[] {"Spirits stir when you pass, {player}."};
-        v.greetGrad = new String[] {"The waste watches, {player}. It seems… impressed."};
-        v.idle = new String[] {"*murmurs*", "Thunder soon.", "The powder is restless."};
-        v.farewell = new String[] {"Walk softly. Things listen out there."};
-        topic(v, "What are spirits?", "Old things that didn't finish dying.",
-                "The vial holds them. The powder wakes them. You end them.");
+        v.greetNew = new String[] {"Welcome to the Borderlands, {player}. The wastes keep an eye on everyone who comes here."};
+        v.greet = new String[] {"The spirits stir when you walk past, {player}. They remember you."};
+        v.greetGrad = new String[] {"The wastes are watching you, {player}. I think they are impressed."};
+        v.idle = new String[] {
+                "A storm is coming in from the wastes. You can smell it in the dust.",
+                "The old rites keep the Borderlands calm. Mostly, they keep me busy.",
+                "Mind the circle. It's older than the road you came in on."
+        };
+        v.farewell = new String[] {"Walk softly out there. Things are listening."};
+        topic(v, "What are spirits?", "Old souls that never quite finished dying. They linger out in the wastes.",
+                "The vial holds them, the powder wakes them, and you put them to rest.");
 
         v = voice("arena_proctor");
         v.greetNew = new String[] {"Ticket, {player}? No? Then don't loiter."};
         v.greet = new String[] {"Oh. {player}. Still alive. Noted."};
-        v.idle = new String[] {"*checks clipboard*", "Nobody's passed today. Nobody took it either.", "Hm."};
+        v.idle = new String[] {
+                "Nobody has passed the trial today. Nobody tried, either.",
+                "The Colosseum remembers every fight. Some of them it would rather forget.",
+                "Bring a vial, bring courage, and bring a spare pair of boots."
+        };
         v.farewell = new String[] {"Mind the ring. It's older than your excuses."};
-        topic(v, "What happened here?", "Exams. Monsters. Paperwork. In that order.", "Now it's mostly paperwork.");
+        topic(v, "What happened here?", "Exams, monsters and paperwork, in that order.", "These days it's mostly paperwork, sadly.");
 
         v = voice("farm_isle_guide");
-        v.greetNew = new String[] {"Isle's open, {player}. If your hands are."};
-        v.greet = new String[] {"Soil's good today, {player}."};
-        v.idle = new String[] {"*chews wheat*", "Soil's good today.", "Pad thumps all day. That's normal. I think."};
+        v.greetNew = new String[] {"Harlow. Farm Isle pad's down the road, {player}. Farming §e10§f."};
+        v.greet = new String[] {"Pad's that way, {player}. Arrow knows.", "Soil's good today, {player}."};
+        v.idle = new String[] {
+                "The soil on the Farm Isle is better than here. Don't tell the farmer I said that.",
+                "The pad thumps all day long. I stopped hearing it years ago.",
+                "Chewing on wheat helps me think. It doesn't really help, but I keep trying."
+        };
         v.farewell = new String[] {"Knees bent on the pad. Don't get clever."};
         topic(v, "What's on the isle?", "Bigger fields. Fewer birds. Better soil.", "Don't tell the Farmer.");
         topic(v, "You and the Farmer?", "He thinks he's the real farmer.", "Cute.");
@@ -331,7 +383,11 @@ public final class CastBook {
         v = voice("surveyor");
         v.greetNew = new String[] {"{player}! Seen any trolls? Big ones? Tell me everything."};
         v.greet = new String[] {"Got a page for me, {player}?"};
-        v.idle = new String[] {"*scribbles a map*", "North is… that way. Probably.", "Trolls. Fascinating. Terrible. Fascinating."};
+        v.idle = new String[] {
+                "North is that way. Probably. My compass and I aren't speaking today.",
+                "Trolls are fascinating. Terrible, but fascinating. I've measured three footprints so far.",
+                "Every map I draw is out of date the moment someone builds a shed."
+        };
         v.greetLegend = lines("{player}! Seen a troll with chain? Tell me everything.");
         v.greetDoubt = lines("{player}. Royal forge-work in a troll's pocket. I can't sleep.");
         story(v, 5, "Troll chain?",
@@ -343,7 +399,11 @@ public final class CastBook {
         v = voice("vince");
         v.greetNew = new String[] {"{player}! Feeling lucky? You look lucky."};
         v.greet = new String[] {"{player}! My favourite customer. Today."};
-        v.idle = new String[] {"*flips a coin*", "Red. Always red.", "Somebody's winning tonight. Statistically."};
+        v.idle = new String[] {
+                "Somebody's going to win big tonight. Statistically, it's me.",
+                "Red, always red. My lucky colour, and my bank's least favourite.",
+                "The machines don't care how lucky you feel. That's what makes them honest."
+        };
         v.farewell = new String[] {"Come back richer. Or poorer. I'm not picky."};
         topic(v, "Any tips?", "House always wins.", "I'm the house's cousin. I do alright.");
         topic(v, "Are you actually lucky?", "Lucky Vince. It's in the name.", "Names lie, {player}.");
@@ -358,7 +418,11 @@ public final class CastBook {
         v = voice("bar_whisper");
         v.greetNew = new String[] {"Psst. {player}. Look down. The bar."};
         v.greet = new String[] {"your bar moved, {player}… i felt it."};
-        v.idle = new String[] {"…", "*listens to the air*", "level up… level up…"};
+        v.idle = new String[] {
+                "Every fight, every swing, every catch adds a little to your level. The bar remembers.",
+                "I can always tell who's close to a level up. They walk a little taller.",
+                "Rest when you need to. Experience waits for you, it doesn't run away."
+        };
         v.farewell = new String[] {"keep playing. it notices."};
         topic(v, "How do I fill it?", "Play. Quest. Mine. Fish.", "Everything whispers to it, {player}.");
         v.greetLegend = lines("the bar remembers you, {player}…");
@@ -370,9 +434,13 @@ public final class CastBook {
                         "Then the people go quiet too. Keep playing. Please."));
 
         v = voice("eldervale_welcome");
-        v.greetNew = new String[] {"Air's thin up here, {player}. Breathe slow."};
+        v.greetNew = new String[] {"Maren. Eldervale landing, {player}. Ask before you dig deep."};
         v.greet = new String[] {"Back on the mountain, {player}? Good lungs."};
-        v.idle = new String[] {"*wraps scarf tighter*", "Snow by nightfall.", "Mind the ledge, love."};
+        v.idle = new String[] {
+                "Wrap up warm. Snow comes to Eldervale by nightfall, every single night.",
+                "Mind the ledge, love. The view is lovely, the fall less so.",
+                "Welcome to Eldervale. It's quieter up here, and the tea is better."
+        };
         v.farewell = new String[] {"Stay off the edge. I mean it."};
         topic(v, "What's here?", "Ore the mainland forgot.", "And a forge that remembers everything.");
         topic(v, "How far is the drop?", "Long.", "Nobody's reported back. That's the joke.");
@@ -380,12 +448,20 @@ public final class CastBook {
         v = voice("eldervale_upgrade");
         v.greetNew = new String[] {"Heat's up, {player}."};
         v.greet = new String[] {"Bring me steel, {player}. And stones."};
-        v.idle = new String[] {"*hammer strike*", "Hotter.", "Stone's singing."};
+        v.idle = new String[] {
+                "Hotter, always hotter. Stone only listens when it's angry.",
+                "Every blueprint in here started as a scribble on a napkin.",
+                "Hear that ring? That's good stone. Bad stone just thuds."
+        };
 
         v = voice("merchant");
         v.greetNew = new String[] {"Ah, {player}! A customer! Or a browser. Both welcome."};
         v.greet = new String[] {"{player}! Found any good chests?"};
-        v.idle = new String[] {"Chests! Adventure in a box!", "*polishes emerald*", "Everything must go. Eventually."};
+        v.idle = new String[] {
+                "Chests full of adventure! Some of it is even legal!",
+                "I polish my emeralds every morning. They shine brighter when customers are near.",
+                "Everything must go eventually. Except me. I'm staying."
+        };
         v.farewell = new String[] {"Open everything. Trust nothing. Especially mimics."};
         topic(v, "What do you sell?", "Opportunity. Wrapped in wood.", "The chests, {player}. I sell the idea of chests.");
 
@@ -401,7 +477,11 @@ public final class CastBook {
         };
         v.greetNew = new String[] {"Island dreams, {player}? Level twenty. Then dream."};
         v.greet = new String[] {"Paperwork? No. Never. Next."};
-        v.idle = new String[] {"*stamps nothing*", "Form 20-B. Doesn't exist.", "Islands. Everyone wants islands."};
+        v.idle = new String[] {
+                "Everyone wants their own island. Nobody wants the paperwork.",
+                "Form 20-B doesn't exist. People still ask me for it every day.",
+                "Your island is waiting for you. It's patient. I'm less patient."
+        };
         v.farewell = new String[] {"Go level. I'll be here. Not doing paperwork."};
         topic(v, "A clerk who hates paperwork?", "Yes.", "I know.");
         v.greetLegend = lines("Old seals on old deeds, {player}. Ignore them. I do.");
@@ -413,16 +493,34 @@ public final class CastBook {
                         "So I stopped. I'm very good at stopping."));
 
         v = voice("forage_pad_guide");
-        v.greetNew = new String[] {"Jump the pad, {player}! It's fine! Mostly fine!"};
-        v.greet = new String[] {"Back from the isle, {player}? Smell that spruce!"};
-        v.idle = new String[] {"Boing.", "*bounces on heels*", "The pad's sticky today. Good sticky."};
+        v.greetNew = new String[] {"Twig! Slime pad → Forage Isle, {player}. Jump. Arrow's on it."};
+        v.greet = new String[] {"Pad's right there, {player}. Knees bent!", "Back from the isle, {player}? Smell that spruce!"};
+        v.idle = new String[] {
+                "The pad is a bit sticky today. That's the good kind of sticky, I promise.",
+                "Hop on, fly over, land soft. That's the plan every single time.",
+                "The forage isle grows things you won't find on the main island."
+        };
         v.farewell = new String[] {"Jump with your knees!"};
         topic(v, "Is the pad safe?", "Totally.", "Ninety percent totally.");
 
         v = voice("liquidator");
         v.greetNew = new String[] {"{player}. Crystals whisper about you. Mostly numbers."};
         v.greet = new String[] {"Buying or melting, {player}?"};
-        v.idle = new String[] {"*crystal hum*", "Purple is a price, not a colour.", "Melt. Mint. Repeat."};
+        v.idle = new String[] {
+                "Amethyst comes in raw and leaves as coin. That's my whole job, and I love it.",
+                "Purple isn't a colour around here. It's a price.",
+                "Melt it, mint it, count it twice. I've never lost a single shard."
+        };
+
+        v = voice("amethyst_mines_guide");
+        v.greetNew = new String[] {"I'm the crystal guide. Talk to me or use §e/amethyst§f to get to the Amethyst Mine."};
+        v.greet = new String[] {"Welcome back, {player}! The Amethyst Mine is ready. Click me or use §e/amethyst§f."};
+        v.idle = new String[] {
+                "The geodes hum when you get close. Listen, and they'll show you the way.",
+                "Take your time in the mines. Crystals don't like to be rushed.",
+                "A purple glow ahead means amethyst. A purple glow behind you means run."
+        };
+        v.farewell = new String[] {"Have fun in the mines, and don't wander too deep on your own."};
 
         v = voice("canopy_clerk");
         v.accept = "Samples coming.";
@@ -435,14 +533,22 @@ public final class CastBook {
         };
         v.greetNew = new String[] {"{player}. Any bark on you? Samples, I mean."};
         v.greet = new String[] {"Ring count's up, {player}. Nice season."};
-        v.idle = new String[] {"*sniffs a log*", "Spruce. Definitely spruce.", "Ring count: forty. Respectable."};
+        v.idle = new String[] {
+                "This log smells like spruce. Definitely spruce. I'd bet my lunch on it.",
+                "Forty rings on this one. Older than me, and in better shape.",
+                "Every tree I write down gets a number. The old ones get names."
+        };
         v.farewell = new String[] {"Chop responsibly."};
         topic(v, "Why samples?", "Proof the isle grows real wood.", "The canopy keeps a ledger. So do I.");
 
         v = voice("root_cellar");
         v.greetNew = new String[] {"Hungry, {player}? Everyone's hungry."};
         v.greet = new String[] {"Fresh flour, {player}. Mind your boots."};
-        v.idle = new String[] {"*grinds grain*", "Flour everywhere. Everywhere.", "Carrots don't pickle themselves."};
+        v.idle = new String[] {
+                "There's flour everywhere. In my hair, in my shoes, in my dreams.",
+                "Carrots don't pickle themselves, sadly. I've asked them nicely.",
+                "The mill wheel turns all day. Some days I turn with it."
+        };
 
         // ------------------------------------------------------------ Idea NPCs (extras)
         v = voice("town_crier");
@@ -478,15 +584,24 @@ public final class CastBook {
         v = voice("street_sweeper");
         v.greetNew = new String[] {"Wipe your boots, {player}."};
         v.greet = new String[] {"Back again, {player}? Bring any gravel? Don't."};
-        v.idle = new String[] {"*sweep sweep*", "Who drops a whole cobblestone?", "Cleanest square on the island. You're welcome."};
+        v.idle = new String[] {
+                "Who drops a whole cobblestone in the middle of the street? Who does that?",
+                "Cleanest square on the island. You're welcome, by the way.",
+                "I sweep the same street every day, and every day it finds new ways to get dirty.",
+                "Found a gold nugget in the gutter once. Bought new bristles. Living the dream."
+        };
         v.farewell = new String[] {"Mind the pile."};
         topic(v, "Seen anything odd?", "A troll's footprint by the mines. Size of a boat.", "I swept it. Evidence gone. Shouldn't have.");
 
         v = voice("lamp_lighter");
         v.greetNew = new String[] {"Evening's coming, {player}. I can feel it."};
         v.greet = new String[] {"Stay in the light, {player}."};
-        v.idle = new String[] {"*polishes a lantern*", "Dusk in a few hours. Ready.",
-                "Every lamp has a name. That one's Gerald.", "One more wick. Always one more."};
+        v.idle = new String[] {
+                "I polish every lantern on my round. Bright lamps get people home safely.",
+                "Dusk in a few hours. I'm already ready. I'm always ready.",
+                "Every lamp on this harbour has a name. That one over there is Gerald.",
+                "One more wick, always one more. The night is long and the island is big."
+        };
         v.farewell = new String[] {"Keep a torch handy."};
         topic(v, "Why lamps?", "Hostiles hate light. I love it. We have a truce.", "Mostly they just avoid me.");
         v.greetLegend = lines("Every lamp lit till dawn, {player}. Old law. I just keep it.");
@@ -604,10 +719,67 @@ public final class CastBook {
         v.greetGrad = v.greetNew;
         v.idle = new String[] {"Ferry! …No? No one.", "*polishes an oar he never uses*", "Fog's thick. Fog's always thick."};
         v.farewell = new String[] {"Mind the planks. Some of them are only habit."};
-        topic(v, "Your name?", "It was… something with an R? Or a boat. No, that's the boat.",
+        topic(v, "Your name?", "It was… something with an H? Or a boat. No, that's the boat.",
                 "Nobody calls me anything. So it hardly matters.");
         topic(v, "Where does it go?", "Across. Everything goes across eventually.",
                 "Past the Veil. Where nobody sails. Except me. Allegedly.");
+
+        // ------------------------------------------------------------ Act III · the exile island
+        v = voice("orrin");
+        v.greetNew = new String[] {"Mind the gears. Some of them are older than your kingdom."};
+        v.greet = new String[] {"Back, {player}. The star noticed.", "{player}. Don't touch anything warm."};
+        v.greetGrad = v.greet;
+        v.idle = new String[] {"*makes a mark in a thick logbook*", "Tick. Tick. Still.", "Calibrated to a heartbeat. Hers."};
+        v.farewell = new String[] {"Close the door gently. It's load-bearing."};
+        topic(v, "Your chair?", "Three hundred and five tally marks on the wall. One per century, roughly.", "I lost count of the days. Not of her.");
+
+        v = voice("exile_lamplighter");
+        v.greetNew = new String[] {"A new face. Haven't lit for one of those in ages."};
+        v.greet = new String[] {"Evening, {player}. It's always evening."};
+        v.greetGrad = v.greet;
+        v.idle = new String[] {"Two hundred and eleven... two hundred and twelve.", "*squints at a lamp that is already lit*", "Late. Always late."};
+        v.farewell = new String[] {"Keep to the lit side of the street."};
+        topic(v, "Your round?", "Lift to the colossi, colossi to the great stair, stair to the castle.", "Then back. Every evening. Nobody told me to stop.");
+
+        v = voice("exile_sentry");
+        v.greetNew = new String[] {"Halt. ...Or don't. Nobody does anymore."};
+        v.greet = new String[] {"You again, {player}. Still not seeing you."};
+        v.greetGrad = v.greet;
+        v.idle = new String[] {"*stands at attention for no one*", "Captain's orders.", "Polished my helmet. Again."};
+        v.farewell = new String[] {"Dismissed. That's what they say, isn't it?"};
+        topic(v, "Your post?", "The Iron Ring. Nobody in, nobody out.", "I got the order the night everything stopped. Nobody cancelled it.");
+
+        v = voice("exile_usher");
+        v.greetNew = new String[] {"Welcome to the Little Theatre. Every seat is taken. Please stand."};
+        v.greet = new String[] {"Back for the second act, {player}? It's the same as the first."};
+        v.greetGrad = v.greet;
+        v.idle = new String[] {"Shh. The performance.", "*straightens a velvet rope*", "No flash photography. Whatever that is."};
+        v.farewell = new String[] {"Mind the strings on your way out."};
+        topic(v, "The audience?", "Three hundred and twenty-three. All puppets. All facing the stage.", "One seat is empty. Small. Front row.");
+
+        v = voice("exile_gardener");
+        v.greetNew = new String[] {"Mind the beds! ...Sorry. Hello."};
+        v.greet = new String[] {"{player}! He watered the stones again."};
+        v.greetGrad = v.greet;
+        v.idle = new String[] {"*pulls a weed that isn't there*", "He'll want water.", "Don't step on the flowers. They're people. Well. Pictures of people."};
+        v.farewell = new String[] {"Mind the roots. They move when nobody looks."};
+        topic(v, "The flowers?", "He planted a picture into the parterre. Three people and a doll.", "You can only see it from the bell tower. Nobody goes up there.");
+
+        v = voice("exile_mother");
+        v.greetNew = new String[] {"Oh! Are you from the ferry? Is it leaving? We're nearly packed."};
+        v.greet = new String[] {"Nearly packed, {player}. Nearly."};
+        v.greetGrad = v.greet;
+        v.idle = new String[] {"*folds a small dress, unfolds it, folds it*", "One shoe. Where's the other one.", "Before the dusk toll. Before the dusk toll."};
+        v.farewell = new String[] {"If you see a little red shoe..."};
+        topic(v, "The trunk?", "Her winter things. And the doll. She won't sleep without the doll.", "...The doll isn't here. Why isn't the doll here?");
+
+        v = voice("exile_keeper");
+        v.greetNew = new String[] {"Pull up a chair. They remember people."};
+        v.greet = new String[] {"Your usual, {player}? We only have the usual."};
+        v.greetGrad = v.greet;
+        v.idle = new String[] {"*polishes a clean glass*", "Last orders. Always last orders.", "The bell's over the door. It hasn't rung in a long while."};
+        v.farewell = new String[] {"Mind the step. The Last Bell's a bit sunk."};
+        topic(v, "The name?", "The Last Bell. Named for the last toll before the gates shut.", "Folk drank to it every night. Then one night it didn't end.");
 
         // ------------------------------------------------------------ NPC-to-NPC banter
         banter(new Beat("egon", "That cod's been out since Tuesday."),
@@ -660,6 +832,452 @@ public final class CastBook {
                 new Beat("lamp_lighter", "Every one. Till dawn."),
                 new Beat("nell", "Promise?"),
                 new Beat("lamp_lighter", "Old law. I just keep it."));
+
+        // ------------------------------------------------------------ Origin island cast (SAITAMA pass)
+        // Errands for these voices live in isle.IsleErrands; German in cast.<id> / talk.isle_*.
+        v = voice("harbourmaster");
+        v.greetNew = new String[] {"Name and cargo, {player}. Kidding. Welcome to Anker Harbour."};
+        v.greet = new String[] {"{player}. Nothing's sunk today. Yet.", "Back on my water, {player}? Mind the ropes."};
+        v.idle = new String[] {
+                "The Halcyon keeps her own hours. I keep the book and pretend I planned it.",
+                "Four crates came in, three went out. Somebody owes me a crate, or an explanation.",
+                "If it floats, it's on my list. If it flies, it's on my list too. The list is getting long.",
+                "Keep clear of the crane when it swings. Haul is good, but he's never early."
+        };
+        v.farewell = new String[] {"Fair winds. Or at least dry ones."};
+        topic(v, "What's the Halcyon?", "Supply skyship. Comes in over the north rim every few bells.",
+                "Lowers a crate on a rope, a skiff catches it. Most days.");
+        topic(v, "Where do I start?", "§eEgon§f on the pier kits out the green ones. Then follow the yellow arrow.",
+                "After that? This harbour has more stories than barnacles.");
+
+        v = voice("crane_hand");
+        v.greetNew = new String[] {"Mind your head, {player}. The crane doesn't."};
+        v.greet = new String[] {"{player}! Stand clear of the hook."};
+        v.idle = new String[] {
+                "Up she goes! Nice and slow, just like my grandmother taught me.",
+                "This crane is older than the harbour. I keep it happy with oil and compliments.",
+                "Crate onto the punt, punt to the market, market into your pockets. That's the chain.",
+                "One day I'll lift the whole Halcyon out of the sky. The crane disagrees."
+        };
+        v.farewell = new String[] {"Clear the swing!"};
+        topic(v, "How does the crane work?", "Rope, hook, me shouting. Mostly the shouting.");
+        topic(v, "Seen anything strange?", "A barrel came up empty but heavier than full. I put it back.",
+                "Some things want to stay in the water.");
+
+        v = voice("lighthouse_keeper");
+        v.greetNew = new String[] {"Ahoy, {player}. You've got sea legs, or you will."};
+        v.greet = new String[] {"{player}. The light's lit. You're welcome."};
+        v.idle = new String[] {
+                "I can't see a thing without my spectacles. That gull is going to regret this.",
+                "I count every ship that comes home. Forty years, and I've never lost count.",
+                "At night the sea talks to the pier. I talk back, mostly about the weather.",
+                "Forty years on this pier, and the gulls still don't respect me."
+        };
+        v.farewell = new String[] {"Keep the light on your left."};
+        topic(v, "A lighthouse, on a sky island?", "Ships fly lower than you'd think in fog.",
+                "And the fishermen need something to swear at.");
+        topic(v, "The gull?", "Big. Grey. Thief. Took my spectacles right off my nose.", "It perches high. Always high. Showing off.");
+
+        v = voice("shanty_busker");
+        v.greetNew = new String[] {"A new face! Every new face gets a verse, {player}."};
+        v.greet = new String[] {"{player}! Tap your foot. It's free."};
+        v.idle = new String[] {
+                "♪ Oh the Halcyon rides on the morning blue… ♪",
+                "Coins in the hat are applause you can spend.",
+                "I know forty shanties. Thirty-nine are about fish.",
+                "♪ Haul away, haul away, the crane's got the crate… ♪"
+        };
+        v.farewell = new String[] {"Hum it on the road!"};
+        topic(v, "Play me something.", "♪ Three bells at the wharf and the tide coming in, the gulls take your bread and the cod takes your grin… ♪",
+                "That one's new. Needs a chorus.");
+        topic(v, "Why busk here?", "Best acoustics on the island. Water, wood, and people too polite to leave.");
+
+        v = voice("beekeeper");
+        v.greetNew = new String[] {"Slow movements, {player}. The girls are watching."};
+        v.greet = new String[] {"{player}! Smell that? That's mead, ageing."};
+        v.idle = new String[] {
+                "Listen to the hives. That humming means they're happy. Mostly.",
+                "Bees don't sting good people. Well, they sting everyone, but they feel sorry afterwards.",
+                "The Old Mead House was here before the roads, and the bees were here before the house.",
+                "Three hives this year. Four, if my runaway queen ever comes home."
+        };
+        v.farewell = new String[] {"Bee-have! …I say it every time."};
+        topic(v, "Mead?", "Honey, water, patience. And one secret I'll take to the hive.");
+        topic(v, "This house?", "Older than the Capital's paving. Built round the hives, not the other way.");
+
+        v = voice("painter");
+        v.greetNew = new String[] {"Don't move — the light's perfect on you, {player}. …Now it's gone."};
+        v.greet = new String[] {"{player}! Come to be painted?"};
+        v.idle = new String[] {
+                "Green, more green. No, not that green. The other one.",
+                "The windmill won't hold still for me. I blame the wind, obviously.",
+                "Every view on this island is a painting nobody has finished yet.",
+                "I've painted this mill eleven times. It gets a little more stubborn every time."
+        };
+        v.farewell = new String[] {"Go find me a view!"};
+        topic(v, "What are you painting?", "The mill. Again. It's my eleventh mill.", "The other ten were practice.");
+        topic(v, "Best view?", "Ask Stellan, up on the summit. He'll say the stars.", "I say: the one you walked to.");
+
+        v = voice("hermit");
+        v.greetNew = new String[] {"Oh, hello there, {player}. Sorry, I didn't hear you over the birds."};
+        v.greet = new String[] {"You came back! The trees said you might, and they're rarely wrong."};
+        v.idle = new String[] {
+                "I used to copy books in the Capital. Too loud. Out here I can hear myself think.",
+                "The woodpecker over there starts work at dawn. I've never seen him take a break.",
+                "People think the forest is quiet. It isn't quiet, it's just polite.",
+                "I came out here for one afternoon. That was nine years ago, and I don't regret a day."
+        };
+        v.farewell = new String[] {"Walk softly out there. The wood notices."};
+        topic(v, "Why do you live out here?", "I copied books in the Capital for thirty years. Bells, carts and shouting, every single day.", "One afternoon I walked out here to rest my ears. I just never walked back.");
+        topic(v, "What do you listen to?", "Wind in the leaves, the stream, animals going about their day.", "And sometimes the bells of the Capital, very faint. Out here they sound gentler, almost sad.");
+
+        v = voice("bookie");
+        v.greetNew = new String[] {"Fresh legs! I'll give you four to one, {player}."};
+        v.greet = new String[] {"{player}! Feeling fast today?"};
+        v.idle = new String[] {
+                "Odds on the next Halcyon? Six minutes. It's always six.",
+                "Vince runs games of chance. I run games of legs.",
+                "I count my coins twice. Once for me, and once for the taxman.",
+                "Never bet against a sprinter in good boots."
+        };
+        v.farewell = new String[] {"Don't run off. Unless I paid you to."};
+        topic(v, "What's the bet?", "Touch the Mountain Gate and get back to me inside three minutes. Easy coin.",
+                "Skyways count. Teleports don't. There's a difference, legally.");
+        topic(v, "And Vince?", "Lovely man. Terrible odds. Mine are worse, but I smile more.");
+
+        v = voice("mushroom_forager");
+        v.greetNew = new String[] {"Careful where you step, {player}. Things grow here."};
+        v.greet = new String[] {"{player}! Smell the air? Spores. Lovely."};
+        v.idle = new String[] {
+                "This one smells edible. I said that last week too, and I was sick for two days.",
+                "The big caps glow at night. Look, but please don't lick them.",
+                "Eastwood's mushrooms are older than the trees around them.",
+                "Rule of the forest: if a mushroom looks friendly, don't trust it."
+        };
+        v.farewell = new String[] {"Spore you later."};
+        topic(v, "They glow?", "Three of the giants do, after dark. Pale blue at the gills.",
+                "Find them and I'll tell you which ones are safe to eat. None.");
+        topic(v, "Why so big?", "Aether in the soil. Same stuff that keeps the island up.", "Too much of it and a mushroom gets ideas.");
+
+        v = voice("lost_tourist");
+        v.greetNew = new String[] {"Oh! A local! Hello, {player}! Is this the summit?"};
+        v.greet = new String[] {"{player}! I've moved four blocks today. Progress!"};
+        v.idle = new String[] {
+                "I think this map is upside down. Or the island is. Hard to tell.",
+                "The brochure said 'a short stroll to the summit'. I've been strolling for three days.",
+                "Is that the big mountain, or is the big one hiding behind it?",
+                "I've sketched this fountain ninety times. It's a very nice fountain."
+        };
+        v.farewell = new String[] {"If you see the summit, say hello from me!"};
+        topic(v, "Where are you from?", "Another island. A flat one. Very flat. That's why I'm here.");
+        topic(v, "How do I get up Skyreach?", "The brochure says 'the Mountain Gate, then the wind'.",
+                "I assumed that was poetry. Is it not poetry?");
+
+        v = voice("dock_whisper");
+        v.greetNew = new String[] {"Shh, listen. Can you hear the tide turning, {player}?"};
+        v.greet = new String[] {"Hello again, {player}. The water is calm today."};
+        v.idle = new String[] {
+                "The water has been restless all morning. Something big is swimming far below.",
+                "I can feel a storm two days before it arrives. My knees can feel it three days before.",
+                "Tackle laughs at me, but the fish come when I call them. Some of them, anyway.",
+                "My mother fished this pier, and her mother before her. The water knows our family."
+        };
+        v.farewell = new String[] {"Mind the edge of the pier. The water likes to borrow things."};
+        topic(v, "What does the water say?", "Mostly it complains about the boats. Sometimes it warns me about the weather.", "Once it told me where a lost ring was. I found it the next morning, right where it said.");
+        topic(v, "The purple line?", "When your fishing line glows purple, hold on tight and don't rush.", "That's a Mythic Water Dragon. It only shows itself to one fisher at a time.");
+
+        v = voice("bait_theory");
+        v.greetNew = new String[] {"Ah, a new face! Do you fish, {player}? Everyone should fish."};
+        v.greet = new String[] {"Back again, {player}? The fish were asking about you."};
+        v.idle = new String[] {
+                "Bread works in the morning, worms at noon, and nothing at all when the gulls are watching.",
+                "I once caught three salmon with a single piece of cheese. Nobody believes me.",
+                "The secret of fishing is mostly sitting still and being fine with it.",
+                "Every fish is curious. You just have to be more interesting than the other bait."
+        };
+        v.farewell = new String[] {"Good luck out there. May the fish be hungry!"};
+        topic(v, "What's the best bait?", "It depends on the time of day and the mood of the fish.", "But if you want one answer: worms. Worms never let you down.");
+        topic(v, "Why bait?", "My father said the fish don't care about your rod. They care about what's on the hook.", "He was right. I've spent eleven years proving it.");
+
+        v = voice("dock_scaler");
+        v.greetNew = new String[] {"Hello! Got anything for the scales, {player}?"};
+        v.greet = new String[] {"{player}! Fish to weigh, or just passing by?"};
+        v.idle = new String[] {
+                "This morning's biggest catch was a salmon as long as my arm. Tackle is very proud.",
+                "I write down every fish. One day someone will want to know what we caught here.",
+                "My clipboard is always wet. I've made my peace with that.",
+                "A fish that refuses to be weighed is still a fish. I just estimate."
+        };
+        v.farewell = new String[] {"Bring me something heavy next time!"};
+        topic(v, "Why weigh the fish?", "If the fish get smaller every year, something is wrong out there.", "My numbers tell the harbour when to fish more and when to leave the water alone.");
+
+        v = voice("fry_gossip");
+        v.greetNew = new String[] {"New in town? Hungry? Curious? I can help with all three, {player}."};
+        v.greet = new String[] {"{player}! Got any news for me? I've got plenty for you."};
+        v.idle = new String[] {
+                "Did you hear? Quill the tallyman lost a crate again. Third time this month.",
+                "Fried fish, fried bread, fried potatoes. If it fits in the pan, I'll fry it.",
+                "I don't spread rumours. I just repeat them very clearly.",
+                "Old Moll from the lighthouse lost her spectacles to a gull. Poor woman can't see a thing."
+        };
+        v.farewell = new String[] {"Come back hungry!"};
+        topic(v, "Any gossip?", "Hettie's bees swarmed this morning, Tobin is writing a new song, and Wick named another lamp.", "Busy day for such a small harbour.");
+        topic(v, "What's good today?", "The cod is fresh, the bread is crispy, and the oil is only a little bit old.", "My advice? Get the cod.");
+
+        v = voice("rivet");
+        v.greetNew = new String[] {"Watch your step, {player}! Fresh paint."};
+        v.greet = new String[] {"{player}! Come to help, or just to watch me work?"};
+        v.idle = new String[] {
+                "This old ship has more patches than original wood. I'm proud of every single one.",
+                "Somebody keeps stealing my rivets. I suspect the gulls.",
+                "Salt water eats iron for breakfast. That's why I'm never out of work.",
+                "When I hammer, the whole harbour knows I'm here. That's the idea."
+        };
+        v.farewell = new String[] {"Don't lean on the railing, it isn't dry yet!"};
+        topic(v, "Whose ship is this?", "She belongs to the harbour now. Her captain left years ago and never came back.", "So I look after her. Somebody has to.");
+
+        v = voice("stall_crumb");
+        v.greetNew = new String[] {"Good morning, {player}! Fresh bread, still warm."};
+        v.greet = new String[] {"Hello again, {player}! Hungry?"};
+        v.idle = new String[] {
+                "Fresh loaves, still warm from the oven! Get them before the gulls do!",
+                "I've been baking since before dawn. My oven never sleeps, and neither do I.",
+                "Egon buys two loaves every morning. He says one of them is for a friend.",
+                "Bread with a little salt and butter. Nothing in the world beats it."
+        };
+        v.farewell = new String[] {"Don't forget to eat!"};
+        topic(v, "Why bake here?", "The harbour wakes up early and works hard. Somebody has to feed it.", "My mother ran this stall before me. I still use her recipe.");
+
+        v = voice("stall_tack");
+        v.greetNew = new String[] {"Hello, {player}! Need a nail? A rope? A little bit of everything?"};
+        v.greet = new String[] {"Back again, {player}? Forgot something, didn't you?"};
+        v.idle = new String[] {
+                "Rope, nails, buckles, hooks! Everything a busy islander forgets!",
+                "I sorted all my nails by size this morning. A customer mixed them up in five minutes.",
+                "The miners say Ore Ridge eats a pickaxe a week. Good for business, bad for pickaxes.",
+                "Every little thing on this table has saved somebody's day at least once."
+        };
+        v.farewell = new String[] {"Come back when something breaks!"};
+        topic(v, "What sells best?", "Rope. Everybody needs rope, and nobody ever has enough of it.");
+
+        v = voice("stall_brine");
+        v.greetNew = new String[] {"Hello, {player}! Have you ever tasted fish with proper salt?"};
+        v.greet = new String[] {"{player}! Salt? Spices? A friendly chat?"};
+        v.idle = new String[] {
+                "Sea salt, fresh from the pans! The best salt on the whole island!",
+                "I dry my salt in the sun out on the pier. The gulls are very interested, but they hate the taste.",
+                "A fish without salt is just a sad, wet thing. Trust me.",
+                "My jars travel all the way to the Capital. The cooks there fight over them."
+        };
+        v.farewell = new String[] {"A pinch of salt never hurt anybody!"};
+        topic(v, "Where does your salt come from?", "I let seawater dry in shallow pans out on the pier.", "The sun does most of the work. I just do the selling.");
+
+        v = voice("dockhand");
+        v.greetNew = new String[] {"Careful near the water, {player}. Something down there bites."};
+        v.greet = new String[] {"{player}. Any ink on your boots today?"};
+        v.idle = new String[] {
+                "I had to scrub ink off the pier again this morning. Black, sticky, and it smells like old pens.",
+                "Whatever lives under the harbour, it doesn't like boats. Or people. Or me.",
+                "I tie every boat twice now. Once for the wind, and once for the thing in the water.",
+                "Some nights you can see something big moving out past the buoys."
+        };
+        v.farewell = new String[] {"Keep your feet dry."};
+        topic(v, "What lives down there?", "Nobody has seen all of it. Just arms, ink and a lot of angry bubbles.", "If you're strong enough one day, maybe you'll be the one to find out.");
+
+        v = voice("slag_poet");
+        v.greetNew = new String[] {
+                "Ah, a visitor! Would you like to hear a poem, {player}? It's a short one."
+        };
+        v.greet = new String[] {"{player}! I finished a new verse. It's about gravel."};
+        v.idle = new String[] {
+                "'Oh copper vein, you shone so bright, then you were gone before the night.' I'm still working on it.",
+                "The Ore Ledger wants numbers. I want rhymes. We get along surprisingly well.",
+                "Up here the wind always smells of iron and stone.",
+                "Every miner on this ridge has lost a vein they loved. Poetry helps."
+        };
+        v.farewell = new String[] {"May your veins run deep!"};
+        topic(v, "Read me a poem.", "'The pickaxe sings, the mountain sighs, the coal runs out before my eyes.'", "It's not finished yet. Nothing up here ever is.");
+
+        v = voice("bench_cynic");
+        v.greetNew = new String[] {"Oh. Another tourist. Hello, {player}."};
+        v.greet = new String[] {"{player}. You again. The bench is still taken."};
+        v.idle = new String[] {
+                "Everybody loves this fountain. I've been looking at it for fifteen years. It's fine.",
+                "The pigeons here get bolder every year. One stole my sandwich yesterday.",
+                "People walk past me all day, and not one of them has ever asked how I am. I'm fine, by the way.",
+                "This was a quiet square before somebody built a fountain in the middle of it."
+        };
+        v.farewell = new String[] {"Mind the pigeons on your way out."};
+        topic(v, "Why this bench?", "Best view of the fountain, shade in the afternoon, and nobody bothers me.", "Well. Usually nobody bothers me.");
+        topic(v, "Rotten flesh?", "It's for science. Probably. I'll decide what kind once I have it.");
+
+        v = voice("dust");
+        v.greetNew = new String[] {"Hello! Watch your step, {player}, this path isn't finished yet."};
+        v.greet = new String[] {"{player}! Got any cobblestone for me today?"};
+        v.idle = new String[] {
+                "Every path in the Capital started with somebody carrying stones. Usually me.",
+                "I've mapped this square three times. Somebody keeps moving the benches.",
+                "A good road makes people visit each other more often. That's why I build them.",
+                "One day there'll be a stone path from the harbour to the summit. I'll be the first to walk it."
+        };
+        v.farewell = new String[] {"Mind the loose stones!"};
+        topic(v, "Why roads?", "When I was little, the walk to my grandma's house was all mud and nettles.", "Now there's a path. I built it. She still complains, but she visits more.");
+
+        v = voice("rook");
+        v.greetNew = new String[] {"Another brave one! Ready to learn something, {player}?"};
+        v.greet = new String[] {"{player}. Any bones for me today?"};
+        v.idle = new String[] {
+                "Most adventurers get into trouble down there because they forgot torches. Bring torches.",
+                "I've been down below more times than I can count. I still get nervous every time.",
+                "Skeletons always aim for your head. Wear a helmet. It's not optional.",
+                "First rule of a dungeon: know where the exit is before you need it."
+        };
+        v.farewell = new String[] {"Come back alive. That's the lesson."};
+        topic(v, "What's down there?", "Tunnels, traps, treasure and a lot of things with too many teeth.", "And at the bottom there's usually something big that doesn't like visitors.");
+
+        v = voice("larder");
+        v.greetNew = new String[] {"Hello, {player}! You don't happen to have any wheat on you?"};
+        v.greet = new String[] {"{player}! The pantry is still hungry."};
+        v.idle = new String[] {
+                "The Market Hall eats more bread every week. I don't know where all these people come from.",
+                "An empty shelf is the saddest sight in the whole Capital.",
+                "My grandmother always said: a full pantry means a calm city. She was right.",
+                "I count the sacks every evening. The numbers never make me happy."
+        };
+        v.farewell = new String[] {"Bring wheat! Lots of wheat!"};
+        topic(v, "Compressed Wheat?", "Farm a lot of wheat and press it together into one dense bundle.", "It keeps well, it travels well, and it makes the best bread.");
+
+        v = voice("quarry_broker");
+        v.greetNew = new String[] {"Hello, {player}. Thinking about joining the Guild?"};
+        v.greet = new String[] {"{player}. Brought me a brick yet?"};
+        v.idle = new String[] {
+                "Half the houses in the Capital were built with stone from this quarry.",
+                "Anyone can pile up rocks. A real builder knows which rock goes where.",
+                "The Guild has strict standards. That's why our roofs don't leak.",
+                "I check every brick that comes through here. Every single one."
+        };
+        v.farewell = new String[] {"Build something that lasts."};
+        topic(v, "Compacted or compressed?", "Compressed cobblestone is nine stones squeezed into one. Compacted is nine compressed ones squeezed again.", "It's a lot of work. That's exactly the point.");
+
+        v = voice("pet_scout");
+        v.greetNew = new String[] {"Hello, {player}! Do you like animals? I love animals."};
+        v.greet = new String[] {"{player}! Caught anything cute today?"};
+        v.idle = new String[] {
+                "Pigs are smarter than people think. That's why they're so hard to catch.",
+                "A good catcher is patient and quiet, and never chases. Let them come to you.",
+                "Lark's parrot bit me again. I still think he likes me.",
+                "Every animal on this island is a friendship waiting to happen."
+        };
+        v.farewell = new String[] {"Be gentle with your catches!"};
+        topic(v, "How do I catch a pig?", "Get close slowly, aim for the middle and throw the sphere while it's calm.", "If it runs, don't chase it. Wait. It'll come back for the grass.");
+
+        v = voice("sphere_proctor");
+        v.greetNew = new String[] {"Hello, {player}! Ready for your cow exam?"};
+        v.greet = new String[] {"{player}! How is the catching going?"};
+        v.idle = new String[] {
+                "A cow is bigger than a pig and slower than a pig, and somehow much harder to catch.",
+                "I keep notes on every catcher who passes my test. The list is short.",
+                "Never stand right behind a cow. That's not part of the test, it's just good advice.",
+                "The Colosseum crowd loves a good catch. Almost as much as a good fight."
+        };
+        v.farewell = new String[] {"Good luck with the cow!"};
+        topic(v, "Why cows?", "Catching a cow takes patience, good aim and a strong arm.", "If you can do that, you can catch almost anything on this island.");
+
+        v = voice("ore_ledger");
+        v.greetNew = new String[] {"Hello, {player}. Here to mine, or here to help?"};
+        v.greet = new String[] {"{player}! Any coal for my ledger today?"};
+        v.idle = new String[] {
+                "Coal has come out of this ridge for a hundred years. My books cover ninety of them.",
+                "The miners bring the stone. I bring the numbers. We both get dirty hands.",
+                "Every page in this ledger is somebody's hard day in the tunnels.",
+                "Ore Ridge gives a lot, but it never gives anything for free."
+        };
+        v.farewell = new String[] {"Mind the loose rocks up here!"};
+        topic(v, "Why keep records?", "If we know what the mountain gives, we know how long it can keep giving.", "Mines that dig blindly end up empty.");
+
+        v = voice("timber_clerk");
+        v.greetNew = new String[] {"Hello, {player}! Mind the stumps, they're everywhere."};
+        v.greet = new String[] {"{player}! Got any oak for me today?"};
+        v.idle = new String[] {
+                "For every tree we cut, we plant two. That's the rule here, and I make sure of it.",
+                "This stump was a hundred years old. I wrote its name down before it was cut.",
+                "The Forager cuts, I count, and the forest keeps growing. Good teamwork.",
+                "Eastwood smells best right after the rain. You should come back then."
+        };
+        v.farewell = new String[] {"Plant a tree sometime!"};
+        topic(v, "Why count trees?", "Because forests disappear quietly if nobody is counting.", "I want my grandchildren to see Eastwood as green as it is today.");
+
+        v = voice("gate_warden");
+        v.greetNew = new String[] {"Halt! Oh, sorry, {player}. Habit. Welcome to the gate."};
+        v.greet = new String[] {"{player}. The road is still closed."};
+        v.idle = new String[] {
+                "I've stood at this gate for six years. The Pathwarden has stood on that road for longer.",
+                "Every week somebody tries to get past him. Every week I patch someone up.",
+                "The Borderlands are beautiful from a distance. Up close, they bite.",
+                "Someday that road will open again. I'd like to be standing here when it does."
+        };
+        v.farewell = new String[] {"Stay safe out there."};
+        topic(v, "Who is the Pathwarden?", "A huge guardian who walks the old road and doesn't let anyone pass.", "Nobody knows who put him there. He just keeps doing his job.");
+
+        v = voice("tollkeeper");
+        v.greetNew = new String[] {"Hello, traveller! Crossing today, {player}?"};
+        v.greet = new String[] {"{player}! Still in one piece? Good."};
+        v.idle = new String[] {
+                "I used to collect a coin from every traveller. Now I just count how many come back.",
+                "The troll lives under the old crossings, not under this bridge. Probably. Almost certainly.",
+                "Whisperwood is lovely this time of year. Just stay on the path.",
+                "My ledger has a column for 'grabbed by the troll'. It's longer than I'd like."
+        };
+        v.farewell = new String[] {"Mind the water under the bridge."};
+        topic(v, "The troll?", "Big, grumpy and very good at hiding under bridges.", "If you're strong enough one day, maybe you can teach him some manners.");
+
+        v = voice("chicken_keeper");
+        v.greetNew = new String[] {"Hello, {player}! Watch your feet, the chicks are everywhere."};
+        v.greet = new String[] {"{player}! Seen a giant chicken anywhere?"};
+        v.idle = new String[] {
+                "McNugget was such a small chick. I don't know what happened. I fed him normal corn.",
+                "These hens lay the best eggs on the island. I tell them so every morning.",
+                "A fox came by last night. The chickens chased it away. I'm very proud of them.",
+                "Clucksworth used to be quiet. Then McNugget learned how to crow."
+        };
+        v.farewell = new String[] {"Mind the chickens on your way out!"};
+        topic(v, "Who is McNugget?", "My biggest chicken. Bigger than a horse, louder than a bell, and he hates fences.", "He escapes every few days. I've stopped building fences and started building courage.");
+
+        v = voice("ash_scout");
+        v.greetNew = new String[] {"Get down! Oh, it's just you, {player}. Hello."};
+        v.greet = new String[] {"{player}. Mind the smoke today."};
+        v.idle = new String[] {
+                "I count every arrow that comes back to camp. Fewer come back every week.",
+                "The wastes used to be farmland, long ago. Now only ash grows out there.",
+                "If you see a flash on the horizon, duck first and ask questions later.",
+                "My bow is older than I am. It still shoots straighter than my opinions."
+        };
+        v.farewell = new String[] {"Stay low out there."};
+        topic(v, "Who is Skuldugery?", "A skeleton archer who lives out in the wastes and shoots burning arrows.", "He's fast, he's clever and he loves to show off.");
+
+        // Quill and Haul work the pier-head crane together (harbour elevate): their banter stays at the crane,
+        // so no bubble pops up behind Egon while a newcomer is talking to him.
+        banter(new Beat("harbourmaster", "Haul, that was four crates. My book says five."),
+                new Beat("crane_hand", "Then your book can come up here and lift the fifth one itself."),
+                new Beat("harbourmaster", "The book doesn't lift, Haul. The book remembers."));
+        banter(new Beat("crane_hand", "Quill! Need anything lifted today? Crates, barrels, your spirits?"),
+                new Beat("harbourmaster", "Lift the crate that went missing on Tuesday. That would lift my spirits."),
+                new Beat("crane_hand", "Sorry. The crane is rated for heavy loads, not lost ones."));
+        banter(new Beat("lighthouse_keeper", "You're whispering at the water again. Does it ever answer you?"),
+                new Beat("dock_whisper", "Sometimes. Mostly it complains about the boats."),
+                new Beat("lighthouse_keeper", "Fair enough. I'd complain too if people kept parking on me."));
+        banter(new Beat("shanty_busker", "♪ The merchant counts coins by the light of the moon… ♪"),
+                new Beat("merchant", "Tobin, please stop putting my accounts into songs. People can hear you."),
+                new Beat("shanty_busker", "♪ …and he'd rather you didn't know how many he's got ♪"));
+        banter(new Beat("bookie", "Vince! A man lost his hat on your machines today."),
+                new Beat("vince", "And a man lost his breath in your races, Odds."),
+                new Beat("bookie", "Only for a minute. He got it back at the finish line!"));
+        banter(new Beat("lost_tourist", "Excuse me, is this the summit? The brochure said it would be windy."),
+                new Beat("bench_cynic", "This is a bench in the Capital. The mountain is that big pointy thing behind you."),
+                new Beat("lost_tourist", "Oh! Well, it's a lovely bench. I'll put it on my postcard."));
+        banter(new Beat("mushroom_forager", "Forager, there's a mushroom growing out of your woodpile. A big one."),
+                new Beat("lumberjack", "Please don't eat it. The last time you ate something from my woodpile, you saw colours for a week."),
+                new Beat("mushroom_forager", "Too late, I already had a bite. It tastes like adventure."));
     }
 
     private static Voice voice(String id) {

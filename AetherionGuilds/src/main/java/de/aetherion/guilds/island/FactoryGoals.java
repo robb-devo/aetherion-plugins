@@ -2,6 +2,8 @@ package de.aetherion.guilds.island;
 
 import de.aetherion.core.persist.AtomicYaml;
 import de.aetherion.guilds.logistics.LogisticsService;
+import de.aetherion.guilds.logistics.Res;
+import de.aetherion.guilds.model.QuarryType;
 import de.aetherion.guilds.structure.PlacedStructure;
 import de.aetherion.guilds.structure.StructureService;
 import de.aetherion.guilds.structure.StructureType;
@@ -42,27 +44,33 @@ public final class FactoryGoals {
     private final Map<String, Set<String>> rewarded = new HashMap<>();
     private boolean dirty;
 
+    /*
+     * The first five are the guided line Hollis walks (quarry → Hub → Mill → Forge → Compacted Cobble in the hut);
+     * the island bar, /island, the Hub, Production and Hollis all show the first one not done, so they always agree.
+     */
     private final List<Goal> goals = List.of(
-            new Goal("first_chain", "Run your first chain", "Quarry → belt → Storage Hut. Lay the belt from the chute.",
+            new Goal("first_chain", "First chain", "Belt quarry chute → Storage Hut",
                     2_000L, (g, h) -> g.sourceLines(h) >= 1),
-            new Goal("hub", "Found your Hub", "Build Tool → Hub. At its lectern you unlock new machines.",
+            new Goal("hub", "Found your Hub", "Build Tool → Hub (unlocks machines)",
                     3_000L, (g, h) -> g.structures.hasWorkshop(h)),
-            new Goal("mill_line", "Put a Mill in your line", "Unlock the Mill at the Hub. Belt in, belt out into the hut. Raw in, Compressed out.",
+            new Goal("mill_line", "Mill in the line", "Unlock → build → belt quarry → Mill → hut",
                     5_000L, (g, h) -> g.inLine(h, StructureType.MILL)),
+            new Goal("forge_line", "Forge in the line", "Unlock → build → belt Mill → Forge → hut",
+                    8_000L, (g, h) -> g.inLine(h, StructureType.FORGE)),
+            new Goal("compacted", "Compacted Cobble in storage", "Quarry → Mill → Forge → hut",
+                    12_000L, (g, h) -> g.compactedInStorage(h) > 0L),
             new Goal("two_quarries", "Run two quarries into your line", "Set down a second quarry and belt it into the same line.",
                     8_000L, (g, h) -> g.sourceLines(h) >= 2),
             new Goal("split", "Split a line with a Splitter", "Unlock it at the Hub. Build Tool → Splitter onto a belt, then a second belt away from its side.",
                     10_000L, (g, h) -> g.pieceExits(h, StructureType.SPLITTER) >= 2),
             new Goal("loft", "Grow your Storage Hut into a Loft", "Right-click the hut → Upgrade.",
                     15_000L, (g, h) -> g.level(h, StructureType.STORAGE_HUT) >= 2),
-            new Goal("hub2", "Raise your Hub to the Foreman's Hall", "Hub lectern → Hub tier. Then the Forge, Overflow Gate and Sorter can be unlocked.",
+            new Goal("hub2", "Raise your Hub to the Foreman's Hall", "Hub lectern → Hub tier. Then the Overflow Gate and Sorter can be unlocked.",
                     18_000L, (g, h) -> g.structures.hubLevel(h) >= 2),
             new Goal("sort", "Sort goods with a Sorter", "Set a Sorter into a line, pick a good, give it a front and a side belt.",
                     20_000L, (g, h) -> g.sorterWorks(h)),
             new Goal("overflow", "Catch the spill with an Overflow Gate", "Front belt to one hut, side belt to another: the side fills when the front is full.",
                     25_000L, (g, h) -> g.pieceExits(h, StructureType.OVERFLOW) >= 2),
-            new Goal("forge_line", "Put a Forge in your line", "Mill → Forge → storage. Compressed in, Compacted out.",
-                    40_000L, (g, h) -> g.inLine(h, StructureType.FORGE)),
             new Goal("long_line", "Build a line through 4 machines", "Quarry → piece → Mill → Forge → hut, or any line four stops long.",
                     60_000L, (g, h) -> g.longestLine(h) >= 4),
             new Goal("tier3", "Raise your Island Tier to 3", "Island menu → Tier. More belts and one more of every machine.",
@@ -71,6 +79,13 @@ public final class FactoryGoals {
                     100_000L, (g, h) -> g.structures.hubLevel(h) >= 3),
             new Goal("warehouse", "Grow a Warehouse", "Right-click the Storage Loft → Upgrade.",
                     120_000L, (g, h) -> g.level(h, StructureType.STORAGE_HUT) >= 3));
+
+    /** Goals whose moment someone else stages with its own title (the first chain and Hub, Hollis' finale). */
+    private BiPredicate<IslandHost, String> titleOwned = (host, id) -> false;
+
+    public void attachTitleOwner(BiPredicate<IslandHost, String> titleOwned) {
+        this.titleOwned = titleOwned == null ? (host, id) -> false : titleOwned;
+    }
 
     private final IslandFiles files;
 
@@ -137,8 +152,8 @@ public final class FactoryGoals {
             dirty = true;
             hosts.refund(player, host, goal.reward());
             Goal next = next(host);
-            if (!goal.id().equals("first_chain")) {
-                // (the first chain already gets Hollis' own title)
+            if (!goal.id().equals("first_chain") && !goal.id().equals("hub") && !titleOwned.test(host, goal.id())) {
+                // (the first chain gets Hollis' own title, the Hub its ritual, the tour's finale its own)
                 player.sendTitle("§b✦ " + goal.title() + " §b✦", next == null ? "§7Every factory goal done."
                         : "§7Next: §f" + next.title(), 8, 60, 16);
             }
@@ -165,6 +180,25 @@ public final class FactoryGoals {
             }
         }
         return n;
+    }
+
+    /** Compacted goods (any quarry type) sitting in the island's Storage Huts and Depots. */
+    long compactedInStorage(IslandHost host) {
+        long have = 0L;
+        for (QuarryType type : QuarryType.values()) {
+            have += structures.stock(host, Res.of(type, Res.Form.COMPACTED));
+        }
+        return have;
+    }
+
+    /** Is this goal done on the island right now (by id; false for an unknown id)? */
+    public boolean done(IslandHost host, String id) {
+        for (Goal goal : goals) {
+            if (goal.id().equals(id)) {
+                return goal.done().test(this, host);
+            }
+        }
+        return false;
     }
 
     /** A machine of this type that something feeds and whose output reaches another machine. */

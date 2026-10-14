@@ -56,7 +56,7 @@ public class RecipeBookGUI {
         Inventory inventory = Bukkit.createInventory(
                 new RecipeBookHolder(GUIType.CATEGORIES, null, null),
                 RecipeBookLayout.SIZE,
-                CATEGORY_TITLE
+                de.aetherion.items.util.ManagerChrome.RECIPES
         );
 
         fillBackground(inventory);
@@ -169,7 +169,7 @@ public class RecipeBookGUI {
         Inventory inventory = Bukkit.createInventory(
                 new RecipeBookHolder(GUIType.RECIPE_LIST, category, null, currentPage),
                 RecipeBookLayout.SIZE,
-                RECIPE_LIST_TITLE
+                de.aetherion.items.util.ManagerChrome.RECIPES
         );
 
         fillBackground(inventory);
@@ -251,7 +251,7 @@ public class RecipeBookGUI {
         Inventory inventory = Bukkit.createInventory(
                 new RecipeBookHolder(GUIType.RECIPE_LIST, category, null, currentPage),
                 RecipeBookLayout.SIZE,
-                RECIPE_LIST_TITLE
+                de.aetherion.items.util.ManagerChrome.RECIPES
         );
 
         fillBackground(inventory);
@@ -380,7 +380,7 @@ public class RecipeBookGUI {
         Inventory inventory = Bukkit.createInventory(
                 new RecipeBookHolder(GUIType.RECIPE_DETAIL, recipe.getCategory(), recipe, page, fromReady),
                 RecipeBookLayout.SIZE,
-                RECIPE_DETAIL_TITLE
+                de.aetherion.items.util.ManagerChrome.RECIPES
         );
 
         fillBackground(inventory);
@@ -582,7 +582,7 @@ public class RecipeBookGUI {
         Inventory inventory = Bukkit.createInventory(
                 new RecipeBookHolder(GUIType.READY, null, null, currentPage),
                 RecipeBookLayout.SIZE,
-                "§8Recipes · Ready to craft"
+                de.aetherion.items.util.ManagerChrome.RECIPES
         );
         fillBackground(inventory);
 

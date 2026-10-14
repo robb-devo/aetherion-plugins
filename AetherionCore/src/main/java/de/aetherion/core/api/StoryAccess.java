@@ -48,4 +48,12 @@ public interface StoryAccess {
     default List<String> talk(Player player, String speakerId) {
         return List.of();
     }
+
+    /**
+     * The Veil ferry asks before it casts off. {@code null} = this player may cross to the exile; otherwise a
+     * short line in the player's language saying what is still missing (the Ferryman speaks it).
+     */
+    default String ferryBlock(Player player) {
+        return null;
+    }
 }

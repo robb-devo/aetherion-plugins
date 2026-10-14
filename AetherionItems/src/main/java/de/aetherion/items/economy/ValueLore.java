@@ -59,7 +59,12 @@ public final class ValueLore {
     private static int valueLineIndex(List<String> lore) {
         for (int i = 0; i < lore.size(); i++) {
             String existing = lore.get(i);
-            if (existing.contains("Value:") || existing.contains("AH value:") || existing.contains("Trade value:")) {
+            if (existing == null) {
+                continue;
+            }
+            // English spine is normal; German leftovers only if reverse translation failed once.
+            if (existing.contains("Value:") || existing.contains("AH value:") || existing.contains("Trade value:")
+                    || existing.contains("Wert:") || existing.contains("AH-Wert:") || existing.contains("Handelswert:")) {
                 return i;
             }
         }

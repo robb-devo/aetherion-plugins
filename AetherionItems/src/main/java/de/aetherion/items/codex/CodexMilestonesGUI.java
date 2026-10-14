@@ -36,6 +36,11 @@ public final class CodexMilestonesGUI {
     public static final class Holder extends CodexView {
 
         @Override
+        protected net.kyori.adventure.text.Component chrome() {
+            return de.aetherion.items.util.ManagerChrome.MILESTONES;
+        }
+
+        @Override
         protected String title() {
             return "§8Codex » Milestones";
         }

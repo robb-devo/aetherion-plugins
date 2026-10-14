@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Main story "Das Schlaflied", Act I–II (quests 1–9). Additive: registered after the existing
+ * Main story "Das Schlaflied", Act I–III (quests 1–10, 12–15). Additive: registered after the existing
  * quest table, uses only TALK / KILL / DELIVER, and never replaces an existing quest id.
  * <p>
  * Who offers, who receives and the soft account-level gates live in {@link #STEPS}; the click
@@ -34,6 +34,15 @@ public final class LullabyQuests {
     public static final String THIRD_ANCHOR = "lullaby_third_anchor";
     public static final String FORGOTTEN = "lullaby_forgotten";
     public static final String SILENT_ROAD = "lullaby_silent_road";
+    // Act III — the Exile (mmo-c, Runde 7). Doors live in Core (ExileDoors); these give each door a reason.
+    public static final String FERRY = "lullaby_ferry";
+    public static final String CAPTAIN = "lullaby_captain";
+    public static final String HEART = "lullaby_heart";
+    public static final String DOLL = "lullaby_doll";
+    public static final String SEED = "lullaby_seed";
+
+    /** The exile island world (TALK on the Ferryman only counts over there). */
+    public static final String EXILE_WORLD = "aetherion_exile";
 
     /** Sister Aurel (AetherionHub Origin cast). Quests only receives her TALK through StoryAccess. */
     public static final String BELLKEEPER = "bellkeeper";
@@ -47,7 +56,12 @@ public final class LullabyQuests {
             new Step(LETTERS, "letters", "ysolde", null, "ysolde", 30),
             new Step(THIRD_ANCHOR, "third_anchor", "ysolde", "hesper", null, 40),
             new Step(FORGOTTEN, "forgotten", "nell", "berit", null, 50),
-            new Step(SILENT_ROAD, "silent_road", "ysolde", null, "ysolde", 60)
+            new Step(SILENT_ROAD, "silent_road", "ysolde", null, "ysolde", 60),
+            new Step(FERRY, "ferry", "ferryman", "ferryman", null, 75),
+            new Step(CAPTAIN, "captain", "ferryman", null, "exile_sentry", 0),
+            new Step(HEART, "heart", "orrin", null, "exile_usher", 0),
+            new Step(DOLL, "doll", "exile_usher", null, "exile_usher", 0),
+            new Step(SEED, "seed", "exile_gardener", null, "exile_gardener", 0)
     );
 
     private LullabyQuests() {
@@ -140,10 +154,45 @@ public final class LullabyQuests {
                 List.of(new Objective(ObjectiveType.KILL, "pathwarden", 1),
                         new Objective(ObjectiveType.DELIVER, "lore_sealed_writ_silent_year", 1)),
                 1500, 2000);
+
+        // ---------------------------------------------------------------- Act III · the Exile
+        quest(questManager, FERRY, "Across the Veil",
+                "Board the King's Ferry at the Veil Quay. Cross. Then speak to the Ferryman "
+                        + "on the other side.",
+                List.of(new Objective(ObjectiveType.TALK, "ferryman", 1)),
+                1000, 1200);
+
+        Quest captain = quest(questManager, CAPTAIN, "The Captain's Fall",
+                "Something burns in the crater behind the Iron Ring. Wake it at Caedmon's sword "
+                        + "and put it out. The Sentry at the Ring wants to know.",
+                List.of(new Objective(ObjectiveType.KILL, "hollow_sun", 1)),
+                2500, 3000);
+        captain.setWaypoint(EXILE_WORLD, 73.5, 120.0, -69.5);
+
+        Quest heart = quest(questManager, HEART, "A Heart in a Machine",
+                "Orrin keeps a dying star beating in the Observatory. Step through his ring, "
+                        + "end the Herald and the Requiem, then tell the Usher at the Little Theatre.",
+                List.of(new Objective(ObjectiveType.KILL, "helios_requiem", 1)),
+                4000, 5000);
+        heart.setWaypoint(EXILE_WORLD, -126.5, 157.0, -165.5);
+
+        Quest doll = quest(questManager, DOLL, "The Last Performance",
+                "Wind the music box on Elin's stage. Sit through the performance. "
+                        + "Then go back out to the Usher.",
+                List.of(new Objective(ObjectiveType.KILL, "hanging_saint", 1)),
+                4000, 5000);
+        doll.setWaypoint(EXILE_WORLD, -35.5, 146.0, 69.5);
+
+        Quest seed = quest(questManager, SEED, "What the Seed Ate",
+                "Go down through the Maw to the Last Seed. Get past the Unbroken, end Nihil, "
+                        + "and come back up to the Gardener's Boy.",
+                List.of(new Objective(ObjectiveType.KILL, "world_eater", 1)),
+                5000, 6000);
+        seed.setWaypoint(EXILE_WORLD, -127.5, 135.0, 84.5);
     }
 
-    private static void quest(QuestManager questManager, String id, String title, String description,
-                              List<Objective> objectives, int coins, int xp) {
+    private static Quest quest(QuestManager questManager, String id, String title, String description,
+                               List<Objective> objectives, int coins, int xp) {
         Step step = step(id);
         Quest quest = new Quest(id, title, description);
         quest.setServiceId(step.giver());
@@ -158,5 +207,6 @@ public final class LullabyQuests {
         quest.addReward(new Reward("Coins", coins));
         quest.addReward(new Reward("XP", xp));
         questManager.registerQuest(quest);
+        return quest;
     }
 }

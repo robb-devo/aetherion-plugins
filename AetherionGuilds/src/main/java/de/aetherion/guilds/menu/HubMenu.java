@@ -54,6 +54,25 @@ public final class HubMenu implements MenuKit.Menu {
         this.progress = progress;
     }
 
+    /** Island tour: the part the tour wants unlocked right now (free, the only glowing tile), or null. */
+    private java.util.function.Function<IslandHost, StructureType> tourUnlock = host -> null;
+    private String tourName = "the tour";
+
+    private java.util.function.Predicate<IslandHost> touring = host -> false;
+
+    public void attachTour(java.util.function.Function<IslandHost, StructureType> tourUnlock,
+                           java.util.function.Predicate<IslandHost> touring, String tourName) {
+        this.tourUnlock = tourUnlock == null ? host -> null : tourUnlock;
+        this.touring = touring == null ? host -> false : touring;
+        if (tourName != null) {
+            this.tourName = tourName;
+        }
+    }
+
+    private StructureType tourWants(IslandHost host) {
+        return host == null || host.isGuild() ? null : tourUnlock.apply(host);
+    }
+
     public HubMenu(HostService hosts, StructureService structures, LogisticsService logistics, PlacementService placement,
                    BuildMenu build, ProductionMenu production, MarketMenu market, FactoryGoals goals) {
         this.hosts = hosts;
@@ -102,6 +121,12 @@ public final class HubMenu implements MenuKit.Menu {
             head.add("§c⚠ " + problem);
         }
         head.add("");
+        StructureType tour = tourWants(host);
+        if (tour != null) {
+            PlacementService.Part tourPart = PlacementService.Part.of(tour);
+            head.add("§6◆ " + tourName + ": §funlock the " + (tourPart == null ? tour.display() : tourPart.label())
+                    + " §8(glowing, free)");
+        }
         head.add("§8Top row: unlock new parts.");
         head.add("§8Build them anywhere with the Build Tool.");
         inventory.setItem(HEADER, MenuKit.glow(MenuKit.named(Material.LECTERN, "§6§l✦ " + LogisticsService.hubName(hub.level()), head)));
@@ -205,7 +230,10 @@ public final class HubMenu implements MenuKit.Menu {
     /** Fills the unlock row (kept in a tiny helper so the layout reads top to bottom above). */
     private static final class BuildCostsView {
         static void fill(HubMenu menu, Inventory inventory, Player player, IslandHost host, int hubLevel) {
-            BuildCosts.Unlock next = menu.progress.next(host);
+            StructureType tour = menu.tourWants(host);
+            // mid-tour only the tour's part glows; nothing else competes for the eye
+            BuildCosts.Unlock next = tour != null ? BuildCosts.unlock(tour)
+                    : menu.touring.test(host) ? null : menu.progress.next(host);
             for (int i = 0; i < BuildCosts.UNLOCKS.size(); i++) {
                 inventory.setItem(UNLOCKS + i, menu.unlockTile(player, host, BuildCosts.UNLOCKS.get(i), hubLevel,
                         BuildCosts.UNLOCKS.get(i) == next));
@@ -225,6 +253,12 @@ public final class HubMenu implements MenuKit.Menu {
             lore.add("");
             lore.add("§a✔ Unlocked §8· §e▶ Click: Build Tool with it");
             return MenuKit.named(icon, "§a" + name, lore);
+        }
+        if (type == tourWants(host)) {
+            lore.add("§7Unlock: §afree §8(" + tourName + "'s tour)");
+            lore.add("");
+            lore.add("§e▶ Click to unlock §8· §7then build it");
+            return MenuKit.glow(MenuKit.named(icon, "§6§l" + name + " §6◆ unlock this", lore));
         }
         lore.add("§7Unlock: " + placement.costLine(player, host, unlock.price()));
         lore.add("");
@@ -251,6 +285,15 @@ public final class HubMenu implements MenuKit.Menu {
             player.sendMessage(hosts.rankHint(host, "unlock parts"));
             return;
         }
+        if (type == tourWants(host)) {
+            // the tour's unlock: free, any Hub tier, and straight into the Build Tool (no second menu)
+            progress.unlock(host, type);
+            structures.milestone(host, "first_unlock");
+            celebrateUnlock(player, host, hub, type, "free, " + tourName + "'s tour");
+            player.closeInventory();
+            placement.openTool(player, host, PlacementService.Part.of(type));
+            return;
+        }
         if (hub.level() < unlock.hubLevel()) {
             player.sendMessage("§cUpgrade your Hub to tier " + unlock.hubLevel() + " first.");
             player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 0.7f, 0.8f);
@@ -264,10 +307,15 @@ public final class HubMenu implements MenuKit.Menu {
         }
         progress.unlock(host, type);
         structures.milestone(host, "first_unlock");
+        celebrateUnlock(player, host, hub, type, BuildCosts.describe(unlock.price()));
+        open(player, host);
+    }
+
+    private void celebrateUnlock(Player player, IslandHost host, PlacedStructure hub, StructureType type, String paid) {
         PlacementService.Part part = PlacementService.Part.of(type);
         String name = part == null ? type.display() : part.label();
         player.sendTitle("§6✦ Unlocked §6✦", "§e" + name, 5, 40, 12);
-        player.sendMessage("§a" + name + " unlocked §8(" + BuildCosts.describe(unlock.price()) + ")§a. §7It's in your"
+        player.sendMessage("§a" + name + " unlocked §8(" + paid + ")§a. §7It's in your"
                 + " Build Tool now: sneak + scroll to it.");
         player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.7f, 1.2f);
         org.bukkit.World world = hosts.world(host);
@@ -275,6 +323,5 @@ public final class HubMenu implements MenuKit.Menu {
             org.bukkit.Location top = new org.bukkit.Location(world, hub.x() + 0.5, hub.maxY() + 1.0, hub.z() + 0.5);
             world.spawnParticle(org.bukkit.Particle.TOTEM_OF_UNDYING, top, 40, 0.8, 0.6, 0.8, 0.25);
         }
-        open(player, host);
     }
 }

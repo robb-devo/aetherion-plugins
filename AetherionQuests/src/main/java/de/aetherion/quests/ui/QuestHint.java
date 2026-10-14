@@ -48,7 +48,9 @@ public final class QuestHint {
             // origin_to_farming: hub footprint -296..-291, 54, 339..341
             "farm_pad", new double[] {-293.0, 55.0, 340.5},
             // origin_to_fishing: hub footprint -368..-363, 62, -489..-488
-            "fish_pad", new double[] {-365.5, 63.0, -488.5}
+            "fish_pad", new double[] {-365.5, 63.0, -488.5},
+            // origin_to_forage: hub footprint 435..441, 54..56, -237..-231
+            "forage_pad", new double[] {438.0, 55.0, -234.0}
     );
 
     private QuestHint() {
@@ -62,10 +64,30 @@ public final class QuestHint {
         show(player, SPOT_PREFIX + spotKey.toLowerCase(Locale.ROOT), label);
     }
 
+    /** Exile island doors (Runde 7, world {@code aetherion_exile}): where the soft arrow points on mmo-c. */
+    private static final Map<String, double[]> EXILE_SPOTS = Map.of(
+            "exile_lift", new double[] {134.5, 74.0, 26.5},
+            "exile_crater", new double[] {73.5, 120.0, -69.5},
+            "exile_observatory", new double[] {-91.5, 157.0, -165.5},
+            "exile_ring", new double[] {-125.5, 157.0, -165.5},
+            "exile_theater", new double[] {13.5, 143.0, 69.5},
+            "exile_garden", new double[] {-54.5, 135.0, 120.5},
+            "exile_maw", new double[] {-127.5, 135.0, 84.5},
+            "exile_doors", new double[] {13.5, 143.0, 0.5}
+    );
+
     /** Spot for {@code road-spots.<key>} ({@code world, x, y, z}), else the code default, else null. */
     public static Location spotLocation(String key) {
         if (key == null) {
             return null;
+        }
+        if (key.equals("veil_quay")) {
+            return de.aetherion.core.api.ExilePlaces.quayBoard();
+        }
+        double[] exile = EXILE_SPOTS.get(key);
+        if (exile != null) {
+            org.bukkit.World w = Bukkit.getWorld(de.aetherion.core.api.ExilePlaces.EXILE_WORLD);
+            return w == null ? null : new Location(w, exile[0], exile[1], exile[2]);
         }
         AetherionQuests plugin = AetherionQuests.getInstance();
         String world = "world";
@@ -214,8 +236,10 @@ public final class QuestHint {
             case "quartermaster" -> stillNeeds(questManager, player, "forge_coal");
             case "foreman", "craftsman" -> stillNeeds(questManager, player, "first_shift");
             case "booster_tutor" -> stillNeeds(questManager, player, "lesson_boost");
+            // Ledger: her skills lesson, then the graduation visit — the pin retires once she has stamped.
             case "ledger" -> stillNeeds(questManager, player, "lesson_manager")
-                    || de.aetherion.quests.util.QuestStoryGate.tutorialDone(player, questManager);
+                    || (de.aetherion.quests.util.QuestStoryGate.tutorialDone(player, questManager)
+                    && !de.aetherion.quests.util.QuestStoryGate.graduated(player, questManager));
             case "farmer" -> stillNeeds(questManager, player, "farm_hand");
             case "lark" -> stillNeeds(questManager, player, "pocket_zoo");
             case "vex" -> stillNeeds(questManager, player, "lesson_steel");

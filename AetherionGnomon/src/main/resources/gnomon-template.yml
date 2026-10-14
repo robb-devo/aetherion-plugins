@@ -1,0 +1,97 @@
+# gnomon-version: 1   (AetherionGnomon copies this to plugins/BossEngine/bosses/gnomon.yml on start;
+#                      an older version is backed up to gnomon.yml.v<old>.bak and replaced)
+# ============================================================
+# GNOMON - the surveyor that learns you.
+# The whole fight lives in the AetherionGnomon plugin (de.aetherion.gnomon.*).
+# This file only supplies: HP pool, phase gates, the hitbox (its plumb-bob heart) and loot.
+# Attack damage, telegraph timings, AI memory: plugins/AetherionGnomon/config.yml
+#
+#   100%  survey    teaching -> it learns your habits and starts using them
+#    50%  verdict   "The Ledger Opens": the floor turns to ink, recital, walls
+#   death         legs buckle, lens cracks, the ledger lifts into the sky
+# ============================================================
+
+id: gnomon
+display-name: "&f&lGnomon"
+# Invisible hitbox riding the plumb bob. Slime size 5 x scale 0.62 = a ~1.6 block cube.
+entity-type: SLIME
+model-engine-id: ""
+
+attributes:
+  # Party scaling is applied by the plugin at fight start (config: scaling.*).
+  max-health: 48000
+  movement-speed: 0.0
+  attack-damage: 0
+  scale: 0.62
+  follow-range: 64
+  knockback-resistance: 1.0
+
+options:
+  glowing: false
+  custom-name-visible: false
+  silent: true
+  invulnerable-spawn-ticks: 0
+  persistent: false
+  remove-when-far-away: false
+  prevent-item-pickup: true
+
+conditions:
+  max-instances: 1
+  leash-radius: 0
+  leash-action: TELEPORT
+
+phases:
+  - id: survey
+    health-percent: 100
+    display-name: "&f&lGnomon &8· &7Survey"
+    skills: []
+  - id: verdict
+    health-percent: 50
+    display-name: "&f&lGnomon &8· &cVerdict"
+    skills: []
+
+skills: []
+
+# Placeholder loot (balance pass later). Item ids are the ones Helios already uses, so they resolve.
+loot:
+  damage-based: true
+  participation-threshold-percent: 4.0
+  experience: 12000
+
+  killer-bonus:
+    - source: AETHERION
+      item-id: spectacle_star
+      amount: 1
+      chance: 1.0
+
+  rank-loot:
+    1:
+      - source: AETHERION
+        item-id: random_booster
+        amount: 2
+        chance: 0.8
+    2:
+      - source: AETHERION
+        item-id: random_booster
+        amount: 1
+        chance: 0.6
+    3:
+      - source: AETHERION
+        item-id: random_booster
+        amount: 1
+        chance: 0.4
+
+  shared:
+    - source: VANILLA
+      material: AMETHYST_SHARD
+      min-amount: 8
+      max-amount: 16
+      chance: 1.0
+
+  per-damager:
+    - source: VANILLA
+      material: EXPERIENCE_BOTTLE
+      min-amount: 8
+      max-amount: 20
+      chance: 1.0
+      scale-with-damage: true

@@ -145,19 +145,28 @@ public final class IslandMenu implements MenuKit.Menu {
                     "§7it, right-click to build. Start with",
                     "§7a Storage Hut, a belt, then your §6Hub§7.",
                     ""));
-            switch (next) {
-                case HUT -> lore.add("§6◆ Next: §fStorage Hut §7(first one free)");
-                case WORKSHOP_OR_BELT -> lore.add("§6◆ Next: §fa belt from the quarry chute");
-                default -> {
+            // one "next" everywhere: Hollis' objective while he tours, else the same steps the bar shows
+            String tour = guide == null ? null : guide.objective(island.ownerId());
+            de.aetherion.guilds.island.FactoryGoals.Goal goal = null;
+            if (tour != null) {
+                lore.add("§6◆ Next: §f" + tour.replace("§7", "§8"));
+            } else {
+                switch (next) {
+                    case HUT -> lore.add("§6◆ Next: §fStorage Hut §7(first one free)");
+                    case QUARRY -> lore.add("§6◆ Next: §fplace a quarry near the hut");
+                    case WORKSHOP_OR_BELT -> lore.add("§6◆ Next: §fa belt from the quarry chute");
+                    default -> {
+                    }
+                }
+                goal = next == Next.NONE && goals != null ? goals.next(host) : null;
+                if (goal != null) {
+                    lore.add("§b➤ Next goal: §f" + goal.title());
                 }
             }
-            de.aetherion.guilds.island.FactoryGoals.Goal goal = next == Next.NONE && goals != null ? goals.next(host) : null;
-            if (goal != null) {
-                lore.add("§b➤ Next goal: §f" + goal.title());
-            }
-            lore.add(hasHub ? "§e▶ Show me the Hub" : "§e▶ Open Build");
+            boolean here = hosts != null && host.equals(hosts.at(player.getLocation()));
+            lore.add(here ? "§e▶ Build Tool in hand §8(F: all parts)" : "§e▶ Pick a part");
             inventory.setItem(BUILD, MenuKit.tile(Material.CRAFTING_TABLE, "§6§lBuild", lore,
-                    next == Next.HUT || next == Next.WORKSHOP_OR_BELT || goal != null));
+                    tour != null || next == Next.HUT || next == Next.WORKSHOP_OR_BELT || goal != null));
         }
         if (production != null) {
             inventory.setItem(PRODUCTION, MenuKit.tile(Material.BLAST_FURNACE, "§a§lProduction",
@@ -299,11 +308,13 @@ public final class IslandMenu implements MenuKit.Menu {
         String objective = guide.objective(island.ownerId());
         List<String> lore = new ArrayList<>();
         lore.add("§7The isle hand. He walks you");
-        lore.add("§7through hut → quarry → belt.");
+        lore.add("§7through hut → quarry → belt,");
+        lore.add("§7then Hub → Mill → Forge →");
+        lore.add("§bCompacted Cobble§7.");
         lore.add("");
         if (objective != null) {
             lore.add("§6◆ " + "§f" + objective.replace("§7", "§8"));
-            lore.add("§7Tour: §f" + guide.progress(island.ownerId()) + "§8/§f3 §7done");
+            lore.add("§7Tour: §f" + guide.progress(island.ownerId()) + "§8/§f" + guide.total() + " §7done");
             lore.add("");
             lore.add("§e▶ Carry on with " + guide.name());
         } else if (step == IslandGuide.Step.SKIPPED) {
@@ -395,7 +406,13 @@ public final class IslandMenu implements MenuKit.Menu {
         switch (slot) {
             case BUILD -> {
                 if (build != null) {
-                    build.open(player, host);
+                    if (hosts != null && host.equals(hosts.at(player.getLocation()))) {
+                        // on the island: no second menu, the tool goes straight into the hand
+                        player.closeInventory();
+                        build.placement().openTool(player, host, null);
+                    } else {
+                        build.open(player, host);
+                    }
                 }
             }
             case PRODUCTION -> {

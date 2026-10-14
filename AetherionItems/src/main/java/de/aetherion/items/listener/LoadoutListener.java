@@ -2,6 +2,7 @@ package de.aetherion.items.listener;
 
 import de.aetherion.items.AetherionItems;
 import de.aetherion.items.storage.LoadoutGUI;
+import de.aetherion.items.storage.LoadoutHolder;
 import de.aetherion.items.storage.LoadoutManager;
 import de.aetherion.items.util.InventoryDrops;
 
@@ -192,25 +193,12 @@ public class LoadoutListener implements Listener {
             InventoryClickEvent event
     ) {
 
-        if (
-                !event.getView()
-                        .getTitle()
-                        .equals(
-                                LoadoutGUI.LOADOUT_TITLE
-                        )
-        ) {
-
+        if (!(event.getView().getTopInventory().getHolder() instanceof LoadoutHolder)) {
             return;
         }
 
-
-        if (
-                !(event.getWhoClicked()
-                        instanceof Player)
-        ) {
-
+        if (!(event.getWhoClicked() instanceof Player)) {
             event.setCancelled(true);
-
             return;
         }
 
@@ -1372,17 +1360,9 @@ public class LoadoutListener implements Listener {
             InventoryDragEvent event
     ) {
 
-        if (
-                !event.getView()
-                        .getTitle()
-                        .equals(
-                                LoadoutGUI.LOADOUT_TITLE
-                        )
-        ) {
-
+        if (!(event.getView().getTopInventory().getHolder() instanceof LoadoutHolder)) {
             return;
         }
-
 
         event.setCancelled(true);
     }

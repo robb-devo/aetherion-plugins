@@ -27,11 +27,14 @@ public final class NetworkPlayerDataSync {
             new String[]{"player-ranks.yml", "players", "extras"},
             new String[]{"shards.yml", "players"},
             new String[]{"xp-boosts.yml", "players"},
-            new String[]{"recipe_unlocks.yml", "players"},
+            // RecipeUnlockService stores crafted.<uuid> / obtained.<uuid> (+ full-unlock list).
+            // Old "players.<uuid>" path never matched → recipes looked broken after clean hops.
+            new String[]{"recipe_unlocks.yml", "crafted", "obtained"},
             new String[]{"unlocked_blueprints.yml", "players"},
-            new String[]{"areas.yml", "players"},
             new String[]{"codex.yml", "players"},
-            new String[]{"colosseum-unlock.yml", "players"}
+            // Mid-forge ritual stash (pending.<uuid> Base64 item).
+            new String[]{"blueprint-forge-pending.yml", "pending"}
+            // colosseum-unlock.yml is UUID lists — handled in exportColosseum / importColosseum.
     );
 
     private final Plugin plugin;
@@ -91,6 +94,14 @@ public final class NetworkPlayerDataSync {
             putFile(out, NetworkDataKeys.blob("storage"), new File(folder, "storage/" + key + ".yml"));
             putFile(out, NetworkDataKeys.blob("loadout"), new File(folder, "loadouts/" + key + ".yml"));
             putFile(out, NetworkDataKeys.blob("sack"), new File(folder, "sacks/" + key + ".yml"));
+            exportColosseum(out, id, new File(folder, "colosseum-unlock.yml"));
+            exportRecipeFullUnlock(out, id, new File(folder, "recipe_unlocks.yml"));
+        }
+
+        Plugin hub = Bukkit.getPluginManager().getPlugin("AetherionHub");
+        if (hub != null) {
+            flushHubPlayer(id);
+            putFile(out, NetworkDataKeys.blob("hub"), new File(hub.getDataFolder(), "players/" + key + ".yml"));
         }
 
         Plugin mobs = Bukkit.getPluginManager().getPlugin("AetherMobs");
@@ -140,11 +151,19 @@ public final class NetworkPlayerDataSync {
             importBlob(plain, "storage", new File(folder, "storage/" + key + ".yml"), true);
             importBlob(plain, "loadout", new File(folder, "loadouts/" + key + ".yml"), false);
             importBlob(plain, "sack", new File(folder, "sacks/" + key + ".yml"), false);
+            importColosseum(plain, id, new File(folder, "colosseum-unlock.yml"));
+            importRecipeFullUnlock(plain, id, new File(folder, "recipe_unlocks.yml"));
             applyCoinsInMemory(id, plain);
             de.aetherion.core.api.ProgressAccess progress = de.aetherion.core.api.AetherServices.progress();
             if (progress != null) {
                 progress.reloadAfterImport(player);
             }
+        }
+
+        Plugin hub = Bukkit.getPluginManager().getPlugin("AetherionHub");
+        if (hub != null) {
+            importBlob(plain, "hub", new File(hub.getDataFolder(), "players/" + key + ".yml"), false);
+            invalidateHubPlayer(id);
         }
 
         de.aetherion.core.api.PetAccess pets = de.aetherion.core.api.AetherServices.pets();
@@ -393,6 +412,183 @@ public final class NetworkPlayerDataSync {
             yaml.set(entry.getKey(), toPlainValue(entry.getValue()));
         }
         de.aetherion.core.persist.AtomicYaml.save(yaml, file, plugin.getLogger());
+    }
+
+    /** Colosseum uses unlocked/taught UUID lists — not players.&lt;uuid&gt;. */
+    private void exportColosseum(Map<String, Object> out, UUID id, File file) {
+        if (out == null || id == null) {
+            return;
+        }
+        boolean unlocked = false;
+        boolean taught = false;
+        try {
+            Object gate = Class.forName("de.aetherion.items.world.ColosseumGateService")
+                    .getMethod("get")
+                    .invoke(null);
+            if (gate != null) {
+                unlocked = Boolean.TRUE.equals(gate.getClass()
+                        .getMethod("transferUnlocked", UUID.class).invoke(gate, id));
+                taught = Boolean.TRUE.equals(gate.getClass()
+                        .getMethod("transferTaught", UUID.class).invoke(gate, id));
+            }
+        } catch (Throwable ignored) {
+            if (file != null && file.isFile()) {
+                var yaml = org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(file);
+                String key = id.toString();
+                unlocked = yaml.getStringList("unlocked").contains(key);
+                taught = yaml.getStringList("taught").contains(key);
+            }
+        }
+        if (!unlocked && !taught) {
+            return;
+        }
+        Map<String, Object> fragment = new LinkedHashMap<>();
+        fragment.put("member.unlocked", unlocked);
+        fragment.put("member.taught", taught || unlocked);
+        out.put(NetworkDataKeys.yamlFile("colosseum-unlock.yml"), dumpFragment(fragment));
+    }
+
+    private void importColosseum(Map<String, Object> plain, UUID id, File file) {
+        if (plain == null || id == null) {
+            return;
+        }
+        Object raw = NetworkDataKeys.lookupYaml(plain, "colosseum-unlock.yml");
+        if (raw == null) {
+            return;
+        }
+        org.bukkit.configuration.file.YamlConfiguration incoming = asYaml(raw);
+        if (incoming == null) {
+            return;
+        }
+        boolean unlocked = incoming.getBoolean("member.unlocked", false);
+        boolean taught = incoming.getBoolean("member.taught", false);
+        if (!unlocked && !taught) {
+            return;
+        }
+        try {
+            Object gate = Class.forName("de.aetherion.items.world.ColosseumGateService")
+                    .getMethod("get")
+                    .invoke(null);
+            if (gate != null) {
+                gate.getClass()
+                        .getMethod("applyTransferFlags", UUID.class, boolean.class, boolean.class)
+                        .invoke(gate, id, unlocked, taught);
+                return;
+            }
+        } catch (Throwable ignored) {
+        }
+        // Fallback: merge into YAML lists on disk when Items isn't loaded yet.
+        if (file == null) {
+            return;
+        }
+        try {
+            if (file.getParentFile() != null) {
+                file.getParentFile().mkdirs();
+            }
+            de.aetherion.core.persist.AtomicYaml.recoverTemp(file, plugin.getLogger());
+            var yaml = file.isFile()
+                    ? org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(file)
+                    : new org.bukkit.configuration.file.YamlConfiguration();
+            String key = id.toString();
+            java.util.LinkedHashSet<String> unlockedList = new java.util.LinkedHashSet<>(yaml.getStringList("unlocked"));
+            java.util.LinkedHashSet<String> taughtList = new java.util.LinkedHashSet<>(yaml.getStringList("taught"));
+            if (unlocked) {
+                unlockedList.add(key);
+            }
+            if (taught || unlocked) {
+                taughtList.add(key);
+            }
+            yaml.set("unlocked", unlockedList.stream().sorted().toList());
+            yaml.set("taught", taughtList.stream().sorted().toList());
+            de.aetherion.core.persist.AtomicYaml.save(yaml, file, plugin.getLogger());
+        } catch (Exception ex) {
+            plugin.getLogger().log(Level.WARNING, "Import failed for colosseum-unlock.yml", ex);
+        }
+    }
+
+    /** Dev unlock-all membership list in recipe_unlocks.yml. */
+    private void exportRecipeFullUnlock(Map<String, Object> out, UUID id, File file) {
+        if (out == null || id == null || file == null || !file.isFile()) {
+            return;
+        }
+        var yaml = org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(file);
+        if (!yaml.getStringList("full-unlock").contains(id.toString())) {
+            return;
+        }
+        Map<String, Object> fragment = new LinkedHashMap<>();
+        fragment.put("member.full-unlock", true);
+        // Merge into existing recipe yaml payload if present.
+        Object existing = out.get(NetworkDataKeys.yamlFile("recipe_unlocks.yml"));
+        if (existing instanceof String text && !text.isBlank()) {
+            try {
+                org.bukkit.configuration.file.YamlConfiguration base = new org.bukkit.configuration.file.YamlConfiguration();
+                base.loadFromString(text);
+                base.set("member.full-unlock", true);
+                out.put(NetworkDataKeys.yamlFile("recipe_unlocks.yml"), base.saveToString());
+                return;
+            } catch (Exception ignored) {
+            }
+        }
+        out.put(NetworkDataKeys.yamlFile("recipe_unlocks.yml"), dumpFragment(fragment));
+    }
+
+    private void importRecipeFullUnlock(Map<String, Object> plain, UUID id, File file) {
+        if (plain == null || id == null || file == null) {
+            return;
+        }
+        Object raw = NetworkDataKeys.lookupYaml(plain, "recipe_unlocks.yml");
+        org.bukkit.configuration.file.YamlConfiguration incoming = asYaml(raw);
+        if (incoming == null || !incoming.getBoolean("member.full-unlock", false)) {
+            return;
+        }
+        try {
+            if (file.getParentFile() != null) {
+                file.getParentFile().mkdirs();
+            }
+            de.aetherion.core.persist.AtomicYaml.recoverTemp(file, plugin.getLogger());
+            var yaml = file.isFile()
+                    ? org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(file)
+                    : new org.bukkit.configuration.file.YamlConfiguration();
+            java.util.LinkedHashSet<String> list = new java.util.LinkedHashSet<>(yaml.getStringList("full-unlock"));
+            if (list.add(id.toString())) {
+                yaml.set("full-unlock", list.stream().sorted().toList());
+                de.aetherion.core.persist.AtomicYaml.save(yaml, file, plugin.getLogger());
+            }
+        } catch (Exception ex) {
+            plugin.getLogger().log(Level.WARNING, "Import failed for recipe full-unlock", ex);
+        }
+    }
+
+    private static void flushHubPlayer(UUID id) {
+        try {
+            Object hubPlugin = Class.forName("de.aetherion.hub.AetherionHub")
+                    .getMethod("getInstance")
+                    .invoke(null);
+            if (hubPlugin == null) {
+                return;
+            }
+            Object hub = hubPlugin.getClass().getMethod("getHub").invoke(hubPlugin);
+            if (hub != null) {
+                hub.getClass().getMethod("flushPlayer", UUID.class).invoke(hub, id);
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private static void invalidateHubPlayer(UUID id) {
+        try {
+            Object hubPlugin = Class.forName("de.aetherion.hub.AetherionHub")
+                    .getMethod("getInstance")
+                    .invoke(null);
+            if (hubPlugin == null) {
+                return;
+            }
+            Object hub = hubPlugin.getClass().getMethod("getHub").invoke(hubPlugin);
+            if (hub != null) {
+                hub.getClass().getMethod("invalidate", UUID.class).invoke(hub, id);
+            }
+        } catch (Throwable ignored) {
+        }
     }
 
     private void putFile(Map<String, Object> out, String key, File file) {

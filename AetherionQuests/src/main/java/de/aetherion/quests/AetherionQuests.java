@@ -45,6 +45,7 @@ public final class AetherionQuests extends JavaPlugin {
     private QuestManager questManager;
 
     private NPCDataStorage npcDataStorage;
+    private de.aetherion.quests.isle.IsleCast islandCast;
 
     private PlayerQuestStorage playerQuestStorage;
 
@@ -220,6 +221,7 @@ public final class AetherionQuests extends JavaPlugin {
 
         de.aetherion.quests.lang.LangMenu.register(this);
         de.aetherion.quests.ui.OpeningOrbit.register(this);
+        de.aetherion.quests.ui.GraduationStamp.init(this);
         de.aetherion.quests.lang.LangPack.reload();
         if (getCommand("language") != null) {
             de.aetherion.quests.command.LanguageCommand languageCommand =
@@ -435,6 +437,13 @@ public final class AetherionQuests extends JavaPlugin {
                 markerManager.refreshAll();
             }
         }, 200L);
+        // Origin island cast: seed the unplaced registry NPCs once, after restore + uniqueness sweep.
+        islandCast = new de.aetherion.quests.isle.IsleCast(this);
+        Bukkit.getScheduler().runTaskLater(this, () -> {
+            if (!isDungeonBackend()) {
+                islandCast.autoSeed();
+            }
+        }, 260L);
         Bukkit.getScheduler().runTaskLater(this, () -> {
             if (merchantChests != null) {
                 merchantChests.restoreAll();
@@ -466,6 +475,10 @@ public final class AetherionQuests extends JavaPlugin {
         // Player language for other plugins (Items tooltips). Missing Quests = everyone English.
         langAccess = new de.aetherion.quests.lang.PlayerLangAccess();
         de.aetherion.core.api.AetherServices.registerLang(langAccess);
+        // Act III: the exile cast (placement, desks, arrival pointer) — see story/ExileStory.
+        Bukkit.getPluginManager().registerEvents(new de.aetherion.quests.story.ExileStory(this), this);
+        // Isle errands: map-smart favours beside the quest log (never cancel a quest).
+        de.aetherion.quests.isle.IsleErrands.start(this);
         // Story finds from boss kills — only when BossEngine is here (soft dependency).
         if (Bukkit.getPluginManager().getPlugin("BossEngine") != null) {
             Bukkit.getPluginManager().registerEvents(new de.aetherion.quests.story.LoreFindListener(), this);
@@ -510,9 +523,14 @@ public final class AetherionQuests extends JavaPlugin {
     @Override
     public void onDisable() {
 
+        if (de.aetherion.quests.isle.IsleErrands.get() != null) {
+            de.aetherion.quests.isle.IsleErrands.get().stop();
+        }
         // Land any kit still mid-handoff before player data is flushed.
         de.aetherion.quests.reward.StarterKitCeremony.shutdown();
         de.aetherion.quests.ui.OpeningOrbit.shutdown();
+        // A stamp mid-scene files its reward immediately and clears its displays.
+        de.aetherion.quests.ui.GraduationStamp.shutdown();
 
         // Talk bubbles / reply chips / emotes are client-only displays — clear them first.
         de.aetherion.quests.npc.LivingNpcAtmosphere.stopSocial();
@@ -607,6 +625,10 @@ public final class AetherionQuests extends JavaPlugin {
     }
 
 
+
+    public de.aetherion.quests.isle.IsleCast getIslandCast() {
+        return islandCast;
+    }
 
     public NPCDataStorage getNpcDataStorage() {
 

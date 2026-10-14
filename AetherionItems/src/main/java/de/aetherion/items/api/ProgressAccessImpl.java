@@ -134,6 +134,19 @@ public final class ProgressAccessImpl implements ProgressAccess {
         if (player != null && plugin.xpBarSync() != null) {
             plugin.xpBarSync().sync(player);
         }
+        // Late transfer apply: join-time discoverFor already ran with empty unlocks.
+        if (player != null && plugin.getRecipeService() != null) {
+            plugin.getRecipeService().discoverFor(player);
+        }
+        if (player != null && plugin.recipeUnlocks() != null) {
+            plugin.recipeUnlocks().syncOwnedRecipes(player);
+        }
+        // Skill@100 / hop: old max-health+speed stuck until something else refreshed — force now.
+        if (player != null && plugin.getHealthListener() != null) {
+            plugin.getHealthListener().refreshCombatStats(player);
+            plugin.getServer().getScheduler().runTaskLater(plugin,
+                    () -> plugin.getHealthListener().refreshCombatStats(player), 10L);
+        }
     }
 
     @Override

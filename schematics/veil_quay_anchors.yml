@@ -1,0 +1,29 @@
+# THE VEIL QUAY (Schleierkai) — ferry islet for the main world (mmo-r). Schematic: veil_quay.schem
+# All positions are RELATIVE to the paste origin = the block you stand in when you //paste (local 0 0 0).
+# Frame: +x east, +y up, +z south. The ferry points WEST (-x) into the Veil. Size 126 x 69 x 61.
+#
+# Robb, to place it:
+#   1. Stand where the road from the Borderlands should arrive (the islet grows WEST of you), feet on the
+#      walking level you want. No //rotate.
+#   2. //schem load veil_quay   then   //paste        (not -o; the origin sits at your feet)
+#   3. Stay on that same block:  /exile setquay      (writes exile.quay.world + origin in AetherionCore config)
+#   Done: bell, deck trigger, Veil curtain, Ferryman (walks there by himself within ~10 s), compass spot.
+#   Optional: bridge/path from your Borderlands edge to the landing stub at local x +6.
+
+origin: [0, 0, 0]             # east landing, feet; the King's Road arrives here from +x
+landing: [0.5, 0, 0.5, 90]    # arrival from the Borderlands road; quitting mid-departure lands here
+council_gate: [-5, 0, 0]      # torn-down Council barrier + placards ("LET NO ONE WALK TO HIM.")
+kings_arch: [-15, 0, 0]       # broken triumphal arch framing the pier
+plaza_sun: [-26, -1, 0]       # gold sun inlay, quay plaza centre
+ferryman_hut: [-24, 1, -10]   # door (north side of the plaza)
+ferryman_stand: [-38.5, 0, -3.5, -90]   # Quests places "ferryman" here (faces arrivals)
+gangway: [-39.5, 0, 0.5, 90]  # step down onto the barge here; /exile return puts people back here
+ferry_bell: [-39, 2, 4]       # right-click = cast off (story gate applies)
+deck_box: [[-54, -1, -2], [-42, 0, 2]]   # feet on the barge deck: sneak = cast off
+barge_box: [[-54, -3, -2], [-42, 3, 2]]  # block-for-block copy of the Runde 7 berth barge (Exile ferry_box)
+barge_root: [-47.5, -1.0, 0.5]           # deck-surface centre; the departure rig moves from here
+royal_bollard: [-60, 0, -12]  # the last chain leaves here, west and down into the Veil (to ~[-114, -26, -13])
+veil_lamp: [-60, 17, 9]       # cold beacon (soul fire) on the south pier head — the landmark from afar
+veil_curtain_x: [-74, -104]   # Core hangs persistent mist sheets here (spawned by /exile setquay / boot)
+last_watch_camp: [-26, 0, 11] # abandoned Council warden post (tent, cold brazier, notice)
+wardens_ring: [-9, 0, 10]     # small open combat pocket (r ~5, broken pillars) — drop a spawner if wanted

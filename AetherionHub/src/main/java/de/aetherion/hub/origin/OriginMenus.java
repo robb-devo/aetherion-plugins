@@ -62,8 +62,14 @@ public final class OriginMenus implements Listener {
             {"stargazer", "§dStargazer", "every vista"},
             {"skyrider", "§bSkyrider", "every skyway, glide and updraft"},
             {"tour_done", "§6Tour complete", "Orla's tour"},
-            {"wishmaker", "§dWishmaker", "seven wishes on falling stars"}
+            {"wishmaker", "§dWishmaker", "seven wishes on falling stars"},
+            {"curious", "§dCurious", "10 curiosities"},
+            {"keen_eyed", "§dKeen-Eyed", "25 curiosities"},
+            {"lorekeeper", "§5Lorekeeper", "45 curiosities"},
+            {"small_wonders", "§d§lKeeper of Small Wonders", "every curiosity"},
+            {"taleteller", "§6Taleteller", "every storytelling chest"}
     };
+    private static final int PAGE = 45;
 
     private final OriginIsle isle;
 
@@ -94,6 +100,44 @@ public final class OriginMenus implements Listener {
             stack.setItemMeta(meta);
         }
         return stack;
+    }
+
+    /** Splits a lore line at word boundaries, carrying the leading colour code onto every piece. */
+    static List<String> wrap(String text, int width) {
+        List<String> out = new ArrayList<>();
+        if (text == null || text.isBlank()) {
+            return out;
+        }
+        String color = text.startsWith("§") && text.length() > 1 ? text.substring(0, 2) : "§7";
+        String body = text.startsWith("§") && text.length() > 1 ? text.substring(2) : text;
+        StringBuilder line = new StringBuilder();
+        for (String word : body.split(" ")) {
+            int visible = line.toString().replaceAll("§.", "").length();
+            if (visible > 0 && visible + 1 + word.replaceAll("§.", "").length() > width) {
+                out.add(color + line);
+                line.setLength(0);
+            }
+            if (!line.isEmpty()) {
+                line.append(' ');
+            }
+            line.append(word);
+        }
+        if (!line.isEmpty()) {
+            out.add(color + line);
+        }
+        return out;
+    }
+
+    private static void pager(Holder holder, String page, int current, int pages) {
+        if (current > 0) {
+            put(holder, 45, item(Material.ARROW, "§7← Page " + current, List.of(), false), "page:" + page + ":" + (current - 1));
+        }
+        if (current + 1 < pages) {
+            put(holder, 53, item(Material.ARROW, "§7Page " + (current + 2) + " →", List.of(), false), "page:" + page + ":" + (current + 1));
+        }
+        if (pages > 1) {
+            put(holder, 47, item(Material.PAPER, "§7Page §f" + (current + 1) + "§8/§f" + pages, List.of(), false), null);
+        }
     }
 
     private static Holder holder(String page, int size, String title) {
@@ -148,6 +192,8 @@ public final class OriginMenus implements Listener {
         head.add("§7Bells §f" + count(c.bells().keySet(), p.bells) + "§8/§f" + c.bells().size());
         head.add("§7Vistas §f" + count(c.vistas().keySet(), p.vistas) + "§8/§f" + c.vistas().size());
         head.add("§7Skyways §f" + isle.pads().ridden(p) + "§8/§f" + isle.pads().allRides().size());
+        head.add("§7Curiosities §f" + isle.curiosities().found(p) + "§8/§f" + isle.curiosities().all().size());
+        head.add("§7Tales §f" + isle.tales().found(p) + "§8/§f" + isle.tales().all().size());
         head.add("§7Wishes §f" + p.wishes);
         head.add("§7Coins found on Origin §6" + OriginText.coins(p.coinsEarned));
         head.add("");
@@ -178,6 +224,10 @@ public final class OriginMenus implements Listener {
                 lore.add("§7" + d.tagline());
                 lore.add("");
                 lore.add("§7Landmarks §f" + lmFound + "§8/§f" + lmTotal);
+                long cuTotal = isle.curiosities().inDistrict(d.id());
+                if (cuTotal > 0) {
+                    lore.add("§7Curiosities §f" + isle.curiosities().foundInDistrict(p, d.id()) + "§8/§f" + cuTotal);
+                }
                 if (d.anchor() != null) {
                     lore.add(where(player, d.anchor()));
                 }
@@ -194,7 +244,12 @@ public final class OriginMenus implements Listener {
             }
         }
 
-        put(h, 37, item(Material.MAP, "§e§lLandmarks", List.of("§7" + count(c.landmarks().keySet(), p.landmarks) + "/" + c.landmarks().size() + " found", "§e▸ Open"), false), "page:landmarks");
+        put(h, 36, item(Material.MAP, "§e§lLandmarks", List.of("§7" + count(c.landmarks().keySet(), p.landmarks) + "/" + c.landmarks().size() + " found", "§e▸ Open"), false), "page:landmarks");
+        int curioFound = isle.curiosities().found(p);
+        put(h, 37, item(Material.AMETHYST_SHARD, "§d§lCuriosities", List.of("§7" + curioFound + "/" + isle.curiosities().all().size() + " found",
+                "§8Small hidden things. Look up, look", "§8down, listen, touch.", "§e▸ Open"), curioFound > 0), "page:curios");
+        put(h, 44, item(Material.CHEST, "§6§lTales", List.of("§7" + isle.tales().found(p) + "/" + isle.tales().all().size() + " opened",
+                "§8Dressed chests with a story inside.", "§e▸ Open"), false), "page:tales");
         put(h, 38, item(Material.SHROOMLIGHT, "§9§lGlowcaps", List.of("§7" + count(c.waystones().keySet(), p.waystones) + "/" + c.waystones().size() + " attuned", "§e▸ Open"), false), "page:waystones");
         put(h, 39, item(Material.BELL, "§e§lThe Seven Bells", List.of("§7" + count(c.bells().keySet(), p.bells) + "/" + c.bells().size() + " rung", "§e▸ Open"), false), "page:bells");
         put(h, 40, item(Material.SPYGLASS, "§d§lVistas", List.of("§7" + count(c.vistas().keySet(), p.vistas) + "/" + c.vistas().size() + " seen", "§e▸ Open"), false), "page:vistas");
@@ -233,24 +288,135 @@ public final class OriginMenus implements Listener {
         return out;
     }
 
-    private void openLandmarks(Player player) {
+    private void openLandmarks(Player player, int page) {
         OriginProfile p = isle.profiles().get(player);
         OriginConfig c = isle.config();
-        Holder h = holder("landmarks", 54, "§e✧ Landmarks §8· §7" + count(c.landmarks().keySet(), p.landmarks) + "/" + c.landmarks().size());
+        List<OriginConfig.Landmark> all = new ArrayList<>(c.landmarks().values());
+        int pages = Math.max(1, (all.size() + PAGE - 1) / PAGE);
+        int current = Math.max(0, Math.min(page, pages - 1));
+        Holder h = holder("landmarks", 54, "§e✧ Landmarks §8· §7" + count(c.landmarks().keySet(), p.landmarks) + "/" + c.landmarks().size()
+                + (pages > 1 ? " §8(" + (current + 1) + "/" + pages + ")" : ""));
         int slot = 0;
-        for (OriginConfig.Landmark l : c.landmarks().values()) {
-            if (slot > 44) {
-                break;
-            }
+        for (OriginConfig.Landmark l : all.subList(current * PAGE, Math.min(all.size(), (current + 1) * PAGE))) {
             OriginConfig.District d = c.district(l.district());
             String dn = d == null ? "" : d.colored();
             if (p.landmarks.contains(l.id())) {
-                put(h, slot, item(l.icon(), (d == null ? "§e" : d.color()) + l.name(),
-                        List.of("§7" + l.blurb(), dn, where(player, l.at()), "", "§e▸ Click §7to point the way"), false), "go:landmark:" + l.id());
+                List<String> lore = new ArrayList<>(wrap("§7" + l.blurb(), 36));
+                lore.add(dn);
+                lore.add(where(player, l.at()));
+                lore.add("");
+                lore.add("§e▸ Click §7to point the way");
+                put(h, slot, item(l.icon(), (d == null ? "§e" : d.color()) + l.name(), lore, false), "go:landmark:" + l.id());
             } else {
                 boolean districtKnown = d != null && p.districts.contains(d.id());
                 put(h, slot, item(Material.GRAY_DYE, "§8???", List.of(districtKnown ? "§7Somewhere in " + dn : "§8In a district you haven't found.",
                         "§e▸ Click §7for a hint"), false), "lhint:" + l.id());
+            }
+            slot++;
+        }
+        pager(h, "landmarks", current, pages);
+        back(h, 49);
+        fill(h, 45, 53);
+        player.openInventory(h.inventory);
+    }
+
+    private void openCurios(Player player, int page) {
+        OriginProfile p = isle.profiles().get(player);
+        OriginConfig c = isle.config();
+        OriginCuriosities cu = isle.curiosities();
+        List<OriginCuriosities.Curio> all = new ArrayList<>(cu.all().values());
+        int pages = Math.max(1, (all.size() + PAGE - 1) / PAGE);
+        int current = Math.max(0, Math.min(page, pages - 1));
+        int found = cu.found(p);
+        Holder h = holder("curios", 54, "§d✧ Curiosities §8· §7" + found + "/" + all.size() + (pages > 1 ? " §8(" + (current + 1) + "/" + pages + ")" : ""));
+        int slot = 0;
+        for (OriginCuriosities.Curio k : all.subList(current * PAGE, Math.min(all.size(), (current + 1) * PAGE))) {
+            OriginConfig.District d = c.district(k.district());
+            String dn = d == null ? "§7Origin" : d.colored();
+            if (p.curiosities.contains(k.id())) {
+                List<String> lore = new ArrayList<>(wrap("§7" + k.note(), 36));
+                lore.add(dn);
+                lore.add(where(player, k.focus()));
+                lore.add("");
+                lore.add("§e▸ Click §7to point the way back");
+                put(h, slot, item(k.icon(), (d == null ? "§d" : d.color()) + k.name(), lore, false), "go:curio:" + k.id());
+            } else if (d != null && p.districts.contains(d.id())) {
+                List<String> lore = new ArrayList<>(wrap("§7“" + k.clue() + "”", 36));
+                lore.add("§7In " + dn);
+                String how = switch (k.kind()) {
+                    case STEP -> "Go and stand there.";
+                    case LOOK -> "You'll need to look at it.";
+                    case TOUCH -> "Touch it.";
+                    case LISTEN -> "Sneak, keep still and listen.";
+                };
+                String when = switch (k.when().toLowerCase(java.util.Locale.ROOT)) {
+                    case "night" -> " After dark.";
+                    case "day" -> " By day.";
+                    case "dusk" -> " Only at dusk.";
+                    case "dawn" -> " Only at dawn.";
+                    case "rain" -> " Only in the rain.";
+                    default -> "";
+                };
+                lore.add("§8" + how + when);
+                lore.add("");
+                lore.add("§e▸ Click §7for a direction");
+                put(h, slot, item(Material.GRAY_DYE, "§8???", lore, false), "chint:" + k.id());
+            } else {
+                put(h, slot, item(Material.GRAY_STAINED_GLASS_PANE, "§8???", List.of("§8In a district you haven't found."), false), null);
+            }
+            slot++;
+        }
+        List<String> titles = new ArrayList<>();
+        OriginCuriosities.Milestone next = null;
+        for (OriginCuriosities.Milestone m : cu.milestones()) {
+            boolean have = p.flag(m.flag());
+            int need = m.count() <= 0 ? all.size() : m.count();
+            titles.add((have ? "§a✔ " : "§8○ ") + m.title() + " §8· §7" + need);
+            if (!have && next == null) {
+                next = m;
+            }
+        }
+        if (next != null) {
+            int need = next.count() <= 0 ? all.size() : next.count();
+            titles.add("");
+            titles.add("§7Next: " + next.title() + " §7in §f" + Math.max(0, need - found));
+        }
+        put(h, 51, item(Material.AMETHYST_CLUSTER, "§dTitles", titles, next == null && !titles.isEmpty()), null);
+        pager(h, "curios", current, pages);
+        back(h, 49);
+        fill(h, 45, 53);
+        player.openInventory(h.inventory);
+    }
+
+    private void openTales(Player player) {
+        OriginProfile p = isle.profiles().get(player);
+        OriginConfig c = isle.config();
+        OriginTales tl = isle.tales();
+        Holder h = holder("tales", 54, "§6✉ Tales §8· §7" + tl.found(p) + "/" + tl.all().size());
+        int slot = 0;
+        for (OriginTales.Tale t : tl.all().values()) {
+            if (slot >= PAGE) {
+                break;
+            }
+            OriginConfig.District d = c.district(t.district());
+            String dn = d == null ? "§7Origin" : d.colored();
+            double[] at = {t.at()[0] + 0.5d, t.at()[1], t.at()[2] + 0.5d};
+            if (p.tales.contains(t.id())) {
+                List<String> lore = new ArrayList<>();
+                lore.add("§7by §f" + t.author());
+                lore.add(dn);
+                lore.add(where(player, at));
+                lore.add("");
+                lore.add("§e▸ Click §7to read again");
+                lore.add("§8Right-click: point the way");
+                put(h, slot, item(Material.WRITTEN_BOOK, (d == null ? "§6" : d.color()) + t.name(), lore, false), "tale:" + t.id());
+            } else if (d != null && p.districts.contains(d.id()) && tl.present(t)) {
+                List<String> lore = new ArrayList<>(wrap("§7“" + t.clue() + "”", 36));
+                lore.add("§7In " + dn);
+                put(h, slot, item(Material.GRAY_DYE, "§8???", lore, false), null);
+            } else {
+                put(h, slot, item(Material.GRAY_STAINED_GLASS_PANE, "§8???",
+                        List.of(tl.present(t) ? "§8In a district you haven't found." : "§8Not in the world yet."), false), null);
             }
             slot++;
         }
@@ -436,6 +602,9 @@ public final class OriginMenus implements Listener {
         put(h, 22, item(Material.GOLD_NUGGET, "§b§lThe Wishing Fountain", List.of("§7Fountain Square, north of the plaza.",
                 "§7Sneak + right-click the water, empty hand:", "§7one coin, one fortune. Sometimes it gives back.",
                 "", "§e▸ Click §7to point the way"), p.flag("fountain_favour")), "go:landmark:fountain_square");
+        int curios = isle.curiosities().found(p);
+        put(h, 20, item(Material.AMETHYST_SHARD, "§d§lA curious rumour", List.of("§7Orla hears things. Ask her for one", "§7small thing worth finding nearby.",
+                "§7Curiosities §f" + curios + "/" + isle.curiosities().all().size()), curios > 0), "rumour");
         long found = count(c.districts().keySet(), p.districts);
         put(h, 4, item(Material.PAPER, "§7Districts §f" + found + "/" + c.districts().size(),
                 List.of(found >= c.districts().size() ? "§a✔ Wayfarer" : "§7Walk them all: §6Wayfarer"), false), null);
@@ -467,6 +636,37 @@ public final class OriginMenus implements Listener {
         }
         isle.cast().say(player, OriginRole.GUIDE, "Try " + best.colored() + "§f. " + best.tagline());
         isle.compass().go(player, "district:" + best.id());
+    }
+
+    /** Orla's rumour: the riddle of the nearest unfound curiosity in a district you know, and roughly which way. */
+    private void rumour(Player player) {
+        OriginProfile p = isle.profiles().get(player);
+        OriginCuriosities.Curio best = null;
+        double bestD = Double.MAX_VALUE;
+        for (OriginCuriosities.Curio k : isle.curiosities().all().values()) {
+            if (p.curiosities.contains(k.id()) || !p.districts.contains(k.district())) {
+                continue;
+            }
+            Location at = isle.config().location(k.focus());
+            if (at == null || at.getWorld() != player.getWorld()) {
+                continue;
+            }
+            double d = at.distanceSquared(player.getLocation());
+            if (d < bestD) {
+                bestD = d;
+                best = k;
+            }
+        }
+        if (best == null) {
+            isle.cast().say(player, OriginRole.GUIDE, isle.curiosities().found(p) >= isle.curiosities().all().size()
+                    ? "You've found every small wonder I ever heard of. Now you tell me one."
+                    : "Nothing I'd swear to around here. Walk a new district and come back.");
+            return;
+        }
+        OriginConfig.District d = isle.config().district(best.district());
+        Location at = isle.config().location(best.focus());
+        isle.cast().say(player, OriginRole.GUIDE, "They say: “" + best.clue() + "” §7Somewhere " + OriginText.compass(player.getLocation(), at)
+                + " of here" + (d == null ? "" : ", in " + d.colored()) + "§f.");
     }
 
     // ------------------------------------------------------------------ DEV hub
@@ -531,6 +731,56 @@ public final class OriginMenus implements Listener {
         put(h, 46, item(Material.KNOWLEDGE_BOOK, "§aComplete my Origin", List.of("§7Marks everything found (no coins)."), false), "dev:profile complete");
         put(h, 47, item(Material.TNT, "§cReset my Origin", List.of("§7Wipes your origin-players file."), false), "dev:profile reset");
         put(h, 49, item(Material.OAK_DOOR, "§7Close", List.of(), false), "close");
+        put(h, 51, item(Material.SPYGLASS, "§d§lExplore layer", List.of("§7Props §f" + isle.props().pastedCount() + "/" + isle.props().all().size() + " §7pasted",
+                "§7Tales §f" + isle.tales().placedCount() + "/" + isle.tales().all().size() + " §7in the world",
+                "§7Curiosities §f" + isle.curiosities().all().size(), "§e▸ Open"), false), "page:devx");
+        fill(h, 0, 53);
+        player.openInventory(h.inventory);
+    }
+
+    /** DEV: prop spots (click paste, right-click undo, shift-click TP + outline), tales, curiosities, life. */
+    public void openDevExplore(Player player) {
+        Holder h = holder("devx", 54, "§c§lDEV §8· §dExplore layer");
+        OriginProps props = isle.props();
+        int slot = 0;
+        for (OriginProps.Spot spot : props.all().values()) {
+            if (slot > 35) {
+                break;
+            }
+            boolean down = props.pasted(spot.id());
+            de.aetherion.hub.prop.PropCatalog.Prop prop = de.aetherion.hub.prop.PropCatalog.get(spot.prop());
+            List<String> lore = new ArrayList<>();
+            lore.add("§8" + spot.prop() + " · r" + spot.rotate());
+            lore.add("§7" + spot.at()[0] + " " + spot.at()[1] + " " + spot.at()[2] + " §8· §7" + spot.group());
+            lore.addAll(wrap("§8" + spot.note(), 34));
+            lore.add(down ? "§a✔ pasted" : "§7not pasted");
+            lore.add("");
+            lore.add(down ? "§e▸ Right-click §7to undo" : "§e▸ Click §7to paste");
+            lore.add("§8Shift-click: TP + outline");
+            put(h, slot++, item(prop == null ? Material.PAPER : prop.icon(), (down ? "§a" : "§f") + spot.name(), lore, down), "devprop:" + spot.id());
+        }
+        put(h, 36, item(Material.EMERALD_BLOCK, "§aPaste all", List.of("§7Every spot that isn't down yet.", "§8One at a time through FAWE."), false), "dev:props paste all");
+        put(h, 37, item(Material.REDSTONE_BLOCK, "§cUndo all", List.of("§7Newest first. Restores the snapshots."), false), "dev:props undo all");
+        put(h, 38, item(Material.CLOCK, "§eUndo last", List.of(), false), "dev:props undo last");
+        double[] seat = props.hesperSeat();
+        put(h, 40, item(Material.ANVIL, "§6Fallen Anchor §8· §7Hesper's seat", List.of(
+                seat == null ? "§cNo seat in origin-explore.yml" : "§7" + (int) Math.floor(seat[0]) + " " + (int) Math.floor(seat[1]) + " " + (int) Math.floor(seat[2]),
+                "§7Camp " + (props.groupPasted("fallen_anchor") ? "§apasted" : "§cnot pasted"),
+                "§7Hesper stays manual: §f/questnpc story", "§7→ Hesper's anchor → right-click the seat.", "", "§e▸ Click §7to TP there"), false),
+                "dev:props tp hesper");
+        put(h, 42, item(Material.CHEST, "§6Tales §8· §aplace", List.of("§7" + isle.tales().placedCount() + "/" + isle.tales().all().size() + " in the world",
+                "§7Places any missing chest/barrel", "§7(only on an empty, checked spot)."), false), "dev:tales place");
+        put(h, 43, item(Material.BARRIER, "§6Tales §8· §cundo", List.of("§7Removes the chests Origin placed."), false), "dev:tales undo");
+        put(h, 45, item(Material.ARROW, "§7← DEV", List.of(), false), "page:dev");
+        put(h, 46, item(Material.AMETHYST_SHARD, "§dCuriosity §8· §7nearest unfound", List.of("§7Points the wayfinder at it."), false), "dev:curio next");
+        put(h, 47, item(Material.TNT, "§dCuriosities §8· §creset mine", List.of(), false), "dev:curio reset");
+        put(h, 48, item(Material.WRITABLE_BOOK, "§6Tales §8· §creset mine", List.of(), false), "dev:tales reset");
+        List<String> life = new ArrayList<>();
+        for (String line : isle.life().status().split("\n")) {
+            life.addAll(wrap(line, 40));
+        }
+        put(h, 50, item(Material.HONEYCOMB, "§eAmbient life", life, false), "dev:life");
+        put(h, 49, item(Material.OAK_DOOR, "§7Close", List.of(), false), "close");
         fill(h, 0, 53);
         player.openInventory(h.inventory);
     }
@@ -551,7 +801,7 @@ public final class OriginMenus implements Listener {
             return;
         }
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, SoundCategory.PLAYERS, 0.4f, 1.4f);
-        handle(player, holder, action, event.isRightClick());
+        handle(player, holder, action, event.isRightClick(), event.isShiftClick());
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -561,7 +811,7 @@ public final class OriginMenus implements Listener {
         }
     }
 
-    private void handle(Player player, Holder holder, String action, boolean right) {
+    private void handle(Player player, Holder holder, String action, boolean right, boolean shift) {
         int colon = action.indexOf(':');
         String verb = colon < 0 ? action : action.substring(0, colon);
         String arg = colon < 0 ? "" : action.substring(colon + 1);
@@ -587,6 +837,50 @@ public final class OriginMenus implements Listener {
                     boolean known = d != null && isle.profiles().get(player).districts.contains(d.id());
                     player.sendMessage("§e✧ §7Hint: " + (known ? "in " + d.colored() + "§7, " : "") + "§f" + where(player, l.at()).substring(2)
                             + "§7. §8(" + OriginText.pretty(l.icon().name()) + ")");
+                }
+            }
+            case "rumour" -> {
+                player.closeInventory();
+                rumour(player);
+            }
+            case "chint" -> {
+                OriginCuriosities.Curio k = isle.curiosities().get(arg);
+                if (k != null) {
+                    OriginConfig.District d = isle.config().district(k.district());
+                    Location to = isle.config().location(k.focus());
+                    String dir = to == null || to.getWorld() != player.getWorld() ? "somewhere" : "§f" + OriginText.compass(player.getLocation(), to) + " §7of you";
+                    player.sendMessage("§d✧ §7“" + k.clue() + "” §8· §7" + dir + (d == null ? "" : ", in " + d.colored()) + "§7.");
+                }
+            }
+            case "tale" -> {
+                OriginTales.Tale t = isle.tales().get(arg);
+                if (t != null) {
+                    player.closeInventory();
+                    if (right) {
+                        isle.compass().point(player, "§6" + t.name(), isle.config().location(new double[]{t.at()[0] + 0.5d, t.at()[1], t.at()[2] + 0.5d}));
+                    } else {
+                        isle.tales().read(player, t);
+                    }
+                }
+            }
+            case "devprop" -> {
+                if (!OriginCommand.dev(player)) {
+                    return;
+                }
+                String result;
+                if (shift) {
+                    player.closeInventory();
+                    result = isle.props().tp(player, arg);
+                } else if (right) {
+                    result = isle.props().undo(player, arg);
+                } else {
+                    result = isle.props().paste(player, arg);
+                }
+                if (result != null) {
+                    player.sendMessage(result);
+                }
+                if (!shift) {
+                    openDevExplore(player);
                 }
             }
             case "travel" -> {
@@ -648,10 +942,12 @@ public final class OriginMenus implements Listener {
                     player.sendMessage(result);
                 }
                 if (arg.startsWith("anchor") || arg.startsWith("tp") || arg.startsWith("updraft") || arg.startsWith("fly")
-                        || arg.startsWith("softlight")) {
+                        || arg.startsWith("softlight") || arg.startsWith("props tp") || arg.startsWith("curio next")) {
                     player.closeInventory();
                 } else if (player.getOpenInventory().getTopInventory().getHolder() instanceof Holder open && open.page().equals("dev")) {
                     openDev(player);
+                } else if (player.getOpenInventory().getTopInventory().getHolder() instanceof Holder open && open.page().equals("devx")) {
+                    openDevExplore(player);
                 }
             }
             default -> {
@@ -660,9 +956,21 @@ public final class OriginMenus implements Listener {
     }
 
     public void openPage(Player player, String page) {
-        switch (page) {
+        String base = page;
+        int number = 0;
+        int colon = page.indexOf(':');
+        if (colon > 0) {
+            base = page.substring(0, colon);
+            try {
+                number = Integer.parseInt(page.substring(colon + 1));
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        switch (base) {
             case "journal" -> openJournal(player);
-            case "landmarks" -> openLandmarks(player);
+            case "landmarks" -> openLandmarks(player, number);
+            case "curios", "curiosities" -> openCurios(player, number);
+            case "tales" -> openTales(player);
             case "waystones" -> openWaystones(player, null);
             case "bells" -> openBells(player, false);
             case "vistas" -> openVistas(player, false);
@@ -672,6 +980,11 @@ public final class OriginMenus implements Listener {
             case "dev" -> {
                 if (OriginCommand.dev(player)) {
                     openDev(player);
+                }
+            }
+            case "devx" -> {
+                if (OriginCommand.dev(player)) {
+                    openDevExplore(player);
                 }
             }
             default -> openJournal(player);

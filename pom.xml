@@ -29,6 +29,7 @@
         <module>AetherionFishing</module>
         <module>AetherionBeta</module>
         <module>AetherionStressBots</module>
+        <module>AetherionGnomon</module>
     </modules>
 
     <properties>

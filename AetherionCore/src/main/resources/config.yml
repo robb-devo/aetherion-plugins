@@ -1,20 +1,63 @@
 # AetherionCore — shared library. No gameplay tick.
 #
 # network: which Velocity backend this jar is running on.
-# Blank this-server uses the Velocity GetServer reply, then the live port map
-# (hub 25566, mmo-r 25567, mmo-d 25568, mmo-c 25569).
+# Blank this-server uses the live port map (hub 25566, mmo-r 25567, mmo-d 25568,
+# mmo-c 25569, mmo-i 25570), then the Velocity GetServer reply.
 # Warps that belong on the main world connect to main-server unless this backend IS mmo-r.
+#
+# Roles (fixed): hub = lobby + pit · mmo-r = main world · mmo-d = dungeons ONLY ·
+# mmo-c = exile (story / ferry) · mmo-i = private + guild islands ONLY.
 
 network:
   this-server: ""
   main-server: mmo-r
-  # Lean exile backend (Velocity name). Port 25569.
+  # Exile backend (Velocity name). Port 25569.
   exile-server: mmo-c
+  # Private + guild islands (Velocity name). Port 25570.
+  islands-server: mmo-i
+  dungeon-server: mmo-d
   # Empty = Crafty shared/transfer (same folder AetherionDungeons already uses).
   shared-dir: ""
+  # How long "what they asked for" (/capital typed on the isles, /island home typed in the capital)
+  # waits for the character on the target backend.
+  route-ttl-seconds: 120
+  # Transfer v6 for backends WITHOUT the AetherionDungeons jar (mmo-c, mmo-i). Same files + ledger as
+  # Dungeons on mmo-r / mmo-d. auto = arm on a character backend without Dungeons, never on the hub.
+  character:
+    host: auto
+    arrival-wait-ms: 6000
+    connect-timeout-ms: 8000
+    keep-history-days: 3
+  # Commands that belong to another backend cross there and run on arrival.
+  # 'on' lists where this is armed. mmo-d keeps its own /dungeon home; add it here only after testing.
+  routed-commands:
+    on: [mmo-c, mmo-i]
+    main: [spawn, hub, spawns, hubs, spawnmenu, harbour, oreridge, ore_ridge, mines, capital, forage,
+           forageisle, farm, farmisle, borderlands, colosseum, eldervale, mining, miningisle, fishing,
+           fishingisle, summit, skyreach, whisperwood, wilds, origin, originisle, originjournal]
+    dungeon: [dhub, dungeonhub, dh]
+    # One economy: Bazaar / Auction House live on mmo-r only (one market.yml). These cross even though Items
+    # answers them locally. Empty list = keep a local market on that backend (not recommended).
+    force-main: [bazaar, bz, aetherbazaar, ah, auction, auctionhouse, aetherah]
+  islands:
+    # /island /guild /friend cross to mmo-i on backends that do not run AetherionGuilds themselves.
+    route-commands: true
+    # mmo-r only: one clickable "your island awaits" line when the island gate opens (Guilds plays the
+    # full unlock beat on the isles at the first visit).
+    nudge: true
+    # mmo-i only: the void main world is the Isle Dock (no island yet, kicked off one, plain first join).
+    lobby:
+      world: ""
+      x: 0.5
+      y: 100.0
+      z: 0.5
+      yaw: 0.0
+      pitch: 0.0
+      build-dock: true
+      hint-ticks: 60
 
-# Exile island host (only arms on mmo-c). Cutscene + world hygiene live in Core
-# so that backend stays jar-light (no Quests / Items / Dungeons).
+# Exile island host (only arms on mmo-c). Cutscene + world hygiene live in Core.
+# mmo-c runs the gameplay stack minus Dungeons (see aetherion-ops docs/NETWORK_WIRING.md).
 exile:
   world: aetherion_exile
   spawn:
@@ -23,6 +66,8 @@ exile:
     z: 6.5
     yaw: 90.0
     pitch: -8.0
+  # helios_requiem (Helios instance) and world_eater (the Last Seed) are always kept as well: the exile's
+  # boss doors open into them.
   keep-worlds:
     - aetherion_exile
   # Unloaded on enable when present. Folders can be moved to _retired/ by ops.
@@ -33,6 +78,13 @@ exile:
   unload-foreign-worlds: true
   cutscene:
     enabled: true
+    # Crossings after the first ride too (sneak steps off early). false = land on the quay at once.
+    replay-on-return: true
+  # The Veil Quay islet on the MAIN world (ferry departure). Paste schematics/veil_quay.schem without //rotate,
+  # stand on the block you pasted from and run /exile setquay — it fills in these two lines.
+  quay:
+    world: ""
+    origin: ""
 
 # wipe.* is used by /wipe beta and NetworkWipeWatch (Crafty multi-backend).
 # Empty / omitted keys keep historical production behavior:

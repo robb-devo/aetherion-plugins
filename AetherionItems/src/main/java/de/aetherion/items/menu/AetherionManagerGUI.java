@@ -197,7 +197,7 @@ public class AetherionManagerGUI {
                 progress == null ? "§7Craftsman unlocks this with Crafting." : progress.hint(ProgressionService.Flag.WORKBENCH),
                 "§7Browse every Aetherion recipe.");
 
-        boolean guildPlugin = Bukkit.getPluginManager().isPluginEnabled("AetherionGuilds");
+        boolean guildPlugin = NetworkHooks.islandsAvailable();
         put(inventory, ISLAND_SLOT, guildPlugin && (progress == null || progress.island(player)),
                 Material.GRASS_BLOCK, "§aIsland",
                 !guildPlugin ? "§7Requires AetherionGuilds."
@@ -778,7 +778,7 @@ public class AetherionManagerGUI {
                 progress.bestiaryHint()));
         gates.add(new Gate(JOURNAL_SLOT, journalOpen(player, progress), "journal", "Journal",
                 progress.journalHint()));
-        if (Bukkit.getPluginManager().isPluginEnabled("AetherionGuilds")) {
+        if (NetworkHooks.islandsAvailable()) {
             gates.add(new Gate(ISLAND_SLOT, progress.island(player), "island", "Island", progress.islandHint()));
             gates.add(new Gate(GUILD_SLOT, progress.guild(player), "guild", "Guild", progress.guildHint()));
         }

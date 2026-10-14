@@ -298,7 +298,7 @@ public final class HighlightListener implements Listener {
         }
         if (logistics.isBelt(world, block.getX(), block.getY(), block.getZ())) {
             event.setCancelled(true);
-            player.sendMessage("§7That's a belt. Take it up with the Build Tool (pick §fTake down§7, or left-click it with §fBelt§7).");
+            player.sendMessage("§7That's a belt. Take it up with the Build Tool: §fsneak + scroll §7to §fTake down§7, right-click it.");
             return;
         }
         if (logistics.isBeltSupport(world, block.getX(), block.getY(), block.getZ())) {

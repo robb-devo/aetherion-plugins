@@ -1,0 +1,27 @@
+name: AetherionGnomon
+version: 1.0.0
+main: de.aetherion.gnomon.GnomonPlugin
+api-version: 1.21
+author: Aetherion
+description: "GNOMON - the surveyor that learns you. Adaptive boss encounter (rig, arena, AI) on BossEngine."
+
+# BossEngine keeps HP, phase gates, damage tracker, HUD bar and loot (BossScript contract, like Helios).
+# Core gives the shared keys / language. Load after both.
+depend:
+  - AetherionCore
+  - BossEngine
+
+softdepend:
+  - AetherionItems
+  - AetherionQuests
+
+commands:
+  gnomon:
+    description: GNOMON encounter (admin tools)
+    usage: /gnomon <start|stop|setarena|debug|brain|force|hp|cleanup|reload|status>
+    permission: gnomon.admin
+
+permissions:
+  gnomon.admin:
+    description: Start, stop, tune and debug the GNOMON encounter
+    default: op

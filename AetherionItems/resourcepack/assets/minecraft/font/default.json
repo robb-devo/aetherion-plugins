@@ -1,11 +1,33 @@
 {
   "providers": [
-    {
-      "type": "bitmap",
-      "file": "aetherion:font/badge_wanderer.png",
-      "ascent": 8,
-      "height": 12,
-      "chars": ["\uE001"]
-    }
+    {"type": "reference", "id": "minecraft:include/space"},
+    {"type": "reference", "id": "minecraft:include/default"},
+    {"type": "reference", "id": "minecraft:include/unifont"},
+    {"type": "space", "advances": {"\ue005": -48}},
+    {"type": "bitmap", "file": "minecraft:font/space_neg.png", "ascent": -32768, "height": -48, "chars": ["\ue007"]},
+    {"type": "bitmap", "file": "aetherion:font/badge_wanderer.png", "ascent": 8, "height": 12, "chars": ["\ue001"]},
+    {"type": "bitmap", "file": "minecraft:font/gui_aetherion_manager.png", "ascent": 23, "height": 256, "chars": ["\ue004"]},
+    {"type": "bitmap", "file": "minecraft:font/gui_aetherion_shop.png", "ascent": 23, "height": 256, "chars": ["\ue010"]},
+    {"type": "bitmap", "file": "minecraft:font/gui_aetherion_shop_boosts.png", "ascent": 23, "height": 256, "chars": ["\ue011"]},
+    {"type": "bitmap", "file": "minecraft:font/gui_aetherion_shop_materials.png", "ascent": 23, "height": 256, "chars": ["\ue012"]},
+    {"type": "bitmap", "file": "minecraft:font/gui_aetherion_shop_exclusive.png", "ascent": 23, "height": 256, "chars": ["\ue013"]},
+    {"type": "bitmap", "file": "minecraft:font/gui_aetherion_bazaar.png", "ascent": 23, "height": 256, "chars": ["\ue014"]},
+    {"type": "bitmap", "file": "minecraft:font/gui_aetherion_auction.png", "ascent": 23, "height": 256, "chars": ["\ue015"]},
+    {"type": "bitmap", "file": "minecraft:font/gui_aetherion_market_list.png", "ascent": 23, "height": 256, "chars": ["\ue016"]},
+    {"type": "bitmap", "file": "minecraft:font/gui_aetherion_market_confirm.png", "ascent": 23, "height": 256, "chars": ["\ue017"]},
+    {"type": "bitmap", "file": "minecraft:font/gui_aetherion_skills.png", "ascent": 23, "height": 256, "chars": ["\ue018"]},
+    {"type": "bitmap", "file": "minecraft:font/gui_aetherion_skills_overview.png", "ascent": 23, "height": 256, "chars": ["\ue019"]},
+    {"type": "bitmap", "file": "minecraft:font/gui_aetherion_skills_presets.png", "ascent": 23, "height": 256, "chars": ["\ue01a"]},
+    {"type": "bitmap", "file": "minecraft:font/gui_aetherion_recipes.png", "ascent": 23, "height": 256, "chars": ["\ue01b"]},
+    {"type": "bitmap", "file": "minecraft:font/gui_aetherion_bestiary.png", "ascent": 23, "height": 256, "chars": ["\ue01c"]},
+    {"type": "bitmap", "file": "minecraft:font/gui_aetherion_collection.png", "ascent": 23, "height": 256, "chars": ["\ue01d"]},
+    {"type": "bitmap", "file": "minecraft:font/gui_aetherion_codex.png", "ascent": 23, "height": 256, "chars": ["\ue01e"]},
+    {"type": "bitmap", "file": "minecraft:font/gui_aetherion_milestones.png", "ascent": 23, "height": 256, "chars": ["\ue01f"]},
+    {"type": "bitmap", "file": "minecraft:font/gui_aetherion_journal.png", "ascent": 23, "height": 256, "chars": ["\ue020"]},
+    {"type": "bitmap", "file": "minecraft:font/gui_aetherion_stats.png", "ascent": 23, "height": 256, "chars": ["\ue021"]},
+    {"type": "bitmap", "file": "minecraft:font/gui_aetherion_storage.png", "ascent": 23, "height": 256, "chars": ["\ue022"]},
+    {"type": "bitmap", "file": "minecraft:font/gui_aetherion_loadouts.png", "ascent": 23, "height": 256, "chars": ["\ue023"]},
+    {"type": "bitmap", "file": "minecraft:font/gui_aetherion_spawns.png", "ascent": 23, "height": 256, "chars": ["\ue024"]},
+    {"type": "bitmap", "file": "minecraft:font/gui_aetherion_pets.png", "ascent": 23, "height": 256, "chars": ["\ue025"]}
   ]
 }

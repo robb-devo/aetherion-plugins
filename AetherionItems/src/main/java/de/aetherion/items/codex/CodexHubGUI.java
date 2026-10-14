@@ -63,6 +63,11 @@ public final class CodexHubGUI {
         private List<String> nextUp = List.of();
 
         @Override
+        protected net.kyori.adventure.text.Component chrome() {
+            return de.aetherion.items.util.ManagerChrome.CODEX;
+        }
+
+        @Override
         protected String title() {
             return "§8Aetherion Codex";
         }

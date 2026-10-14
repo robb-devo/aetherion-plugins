@@ -273,12 +273,8 @@ public class NpcListener implements Listener {
                 dialogManager.startDialog(player, npc);
             }
             if ("forage_pad_guide".equalsIgnoreCase(npc.getId())) {
-                de.aetherion.quests.ui.QuestHint.show(player, "canopy_clerk", "Canopy Clerk");
-                player.sendActionBar(net.kyori.adventure.text.Component.text(
-                        de.aetherion.quests.lang.LangPack.ui(player, "tip.canopy_clerk", "Hint · Canopy Clerk · Forage Isle"),
-                        net.kyori.adventure.text.format.NamedTextColor.GREEN
-                ));
-                // Found the pad on their own — the harbour pad crumb has nothing left to say.
+                // Pad first (same world) — Canopy Clerk waits on the isle after the bounce.
+                pointForagePad(player);
                 de.aetherion.quests.ui.SkillRoads.markForagePointed(player);
             }
             return;
@@ -467,6 +463,19 @@ public class NpcListener implements Listener {
          */
 
         if (state == QuestState.AVAILABLE) {
+
+            // Fields done → Miss Ledger stamps first. Vex is a road *after* the stamp, not a bypass.
+            if ("lesson_steel".equalsIgnoreCase(quest.getId())
+                    && de.aetherion.quests.util.QuestStoryGate.tutorialDone(player, questManager)
+                    && !de.aetherion.quests.util.QuestStoryGate.graduated(player, questManager)) {
+                npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "vex.ledger_first",
+                        "Hold up, {player}. §dMiss Ledger§f stamps orientation shut first. Then we talk steel."));
+                de.aetherion.quests.ui.QuestHint.show(player, "ledger", "Miss Ledger");
+                player.sendActionBar(net.kyori.adventure.text.Component.text(
+                        de.aetherion.quests.lang.LangPack.ui(player, "tip.to_ledger", "→ Miss Ledger · or /capital"),
+                        net.kyori.adventure.text.format.NamedTextColor.LIGHT_PURPLE));
+                return;
+            }
 
             // Sergeant Vex: one gear check before the first "go fight" (soft — once, skippable).
             if ("lesson_steel".equalsIgnoreCase(quest.getId()) && vexGearCheck(player, npc)) {
@@ -1161,13 +1170,32 @@ public class NpcListener implements Listener {
 
 
     private void escortToCapital(Player player, QuestNPC npc) {
-        String name = npc.getName();
         npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "foreman.shift_done", "That's a shift, {player}. Proper dust on you."));
         npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "foreman.road_capital", "Road to Capital next — stop at §eTemper§f on the way. Booster Tutor."));
+        pinTemper(player);
+        // Re-assert after other completion noise (mines tip / manager refresh) can steal the pin.
+        AetherionQuests plugin = AetherionQuests.getInstance();
+        if (plugin != null) {
+            plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                if (player.isOnline()) {
+                    pinTemper(player);
+                }
+            }, 40L);
+            plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                if (player.isOnline()) {
+                    pinTemper(player);
+                }
+            }, 100L);
+        }
+    }
+
+    private static void pinTemper(Player player) {
         de.aetherion.quests.ui.QuestHint.clearPending(player);
-        de.aetherion.quests.ui.QuestHint.show(player, "booster_tutor", "Temper");
+        de.aetherion.quests.ui.QuestHint.show(player, "booster_tutor",
+                de.aetherion.quests.lang.LangPack.ui(player, "hint_label.temper", "Temper"),
+                de.aetherion.quests.lang.LangPack.ui(player, "hint_note.temper", "Booster Tutor"));
         player.sendActionBar(net.kyori.adventure.text.Component.text(
-                "→ Temper · Booster Tutor",
+                de.aetherion.quests.lang.LangPack.ui(player, "tip.temper", "→ Temper · Booster Tutor · on the road to Capital"),
                 net.kyori.adventure.text.format.NamedTextColor.GOLD
         ));
     }
@@ -1276,7 +1304,7 @@ public class NpcListener implements Listener {
             }
             npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "booster_tutor.next_ledger", "Next — §dMiss Ledger§f at Capital. Skills."));
             player.sendActionBar(net.kyori.adventure.text.Component.text(
-                    "→ Miss Ledger · Skills (Capital)",
+                    de.aetherion.quests.lang.LangPack.ui(player, "tip.temper_to_ledger", "→ Miss Ledger · Skills · up the road to Capital"),
                     net.kyori.adventure.text.format.NamedTextColor.LIGHT_PURPLE
             ));
             de.aetherion.quests.ui.QuestHint.show(player, "ledger", "Miss Ledger");
@@ -1308,11 +1336,11 @@ public class NpcListener implements Listener {
             }
             npcSay(player, npc,
                     de.aetherion.quests.lang.LangPack.say(player, "farmer.isle_peek", "Far end of the barn — that's §eHarlow§f. He knows the way down to the Farm Isle. Later."));
+            // The arrow and the tip name the same next stop (Lark); Harlow stays a spoken "later".
             player.sendActionBar(net.kyori.adventure.text.Component.text(
-                    de.aetherion.quests.lang.LangPack.ui(player, "tip.farm_isle", "Farm Isle · Harlow · barn far end · later"),
-                    net.kyori.adventure.text.format.NamedTextColor.GREEN
+                    de.aetherion.quests.lang.LangPack.ui(player, "tip.to_lark", "→ Lark · Fields fence · one pet catch"),
+                    net.kyori.adventure.text.format.NamedTextColor.LIGHT_PURPLE
             ));
-            // Soft compass only — Lark was already covered in his intro.
             de.aetherion.quests.ui.QuestHint.show(player, "lark", "Lark");
         }, 45L);
     }
@@ -1329,12 +1357,15 @@ public class NpcListener implements Listener {
 
         npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "lark.farmer_left", "§eFarmer§f still wants wheat if you skipped him — same area."));
         de.aetherion.quests.ui.QuestHint.show(player, "farmer", "Farmer");
+        player.sendActionBar(net.kyori.adventure.text.Component.text(
+                de.aetherion.quests.lang.LangPack.ui(player, "tip.to_farmer", "→ Farmer · Fields · 48 wheat, shoo the birds"),
+                net.kyori.adventure.text.format.NamedTextColor.YELLOW
+        ));
     }
 
     /** Soft graduation pointer — only Miss Ledger opens the briefing desk. */
     private void briefBackToLedger(Player player, QuestNPC npc) {
         AetherionQuests plugin = AetherionQuests.getInstance();
-        String name = npc.getName();
 
         de.aetherion.quests.ui.QuestHint.clearPending(player);
 
@@ -1350,6 +1381,18 @@ public class NpcListener implements Listener {
             }
             npcSay(player, npc,
                     de.aetherion.quests.lang.LangPack.say(player, "fields.done_ledger", "§aFields done. §f§dMiss Ledger§f stamps the tutorial shut. Questions go to her."));
+            player.showTitle(net.kyori.adventure.title.Title.title(
+                    net.kyori.adventure.text.Component.text(
+                            de.aetherion.quests.lang.LangPack.ui(player, "fields_to_ledger_title", "ORIENTATION"),
+                            net.kyori.adventure.text.format.NamedTextColor.LIGHT_PURPLE,
+                            net.kyori.adventure.text.format.TextDecoration.BOLD),
+                    net.kyori.adventure.text.Component.text(
+                            de.aetherion.quests.lang.LangPack.ui(player, "fields_to_ledger_sub", "Miss Ledger · Capital · stamp & roads"),
+                            net.kyori.adventure.text.format.NamedTextColor.GRAY),
+                    net.kyori.adventure.title.Title.Times.times(
+                            java.time.Duration.ofMillis(300),
+                            java.time.Duration.ofMillis(2200),
+                            java.time.Duration.ofMillis(500))));
             player.sendActionBar(net.kyori.adventure.text.Component.text(
                     de.aetherion.quests.lang.LangPack.ui(player, "tip.to_ledger", "→ Miss Ledger · or /capital"),
                     net.kyori.adventure.text.format.NamedTextColor.LIGHT_PURPLE
@@ -1386,30 +1429,37 @@ public class NpcListener implements Listener {
             return;
         }
 
-        // Same QUEST COMPLETE block as every other turn-in, then rewards, blank, Ledger in her colour.
-        if (plugin != null && plugin.getQuestFeedback() != null) {
-            plugin.getQuestFeedback().playComplete(
-                    player,
-                    de.aetherion.quests.lang.LangPack.ui(player, "tutorial_name", "Tutorial")
-            );
+        // The stamp comes down on an orientation slip at her desk (GraduationStamp, ~3.5 s, listener only);
+        // QUEST COMPLETE + the coins land on the hit — or at once if the scene can't play. Nothing is lost.
+        Runnable file = () -> {
+            if (plugin != null && plugin.getQuestFeedback() != null) {
+                plugin.getQuestFeedback().playComplete(
+                        player,
+                        de.aetherion.quests.lang.LangPack.ui(player, "tutorial_name", "Tutorial")
+                );
+            }
+            questManager.giftTutorialGraduation(player);
+        };
+        boolean staged = plugin != null && de.aetherion.quests.ui.GraduationStamp.play(player, file);
+        if (!staged) {
+            file.run();
         }
-        questManager.giftTutorialGraduation(player);
         LivingNpcProfile.say(player, npc, de.aetherion.quests.lang.LangPack.say(player, "ledger.graduated", "Well done, {player}. Orientation's filed — map's yours."));
-        LivingNpcProfile.say(player, npc,
-                de.aetherion.quests.lang.LangPack.say(player, "ledger.arrow_habit", "One habit: always watch the §eyellow arrow up top§f. It points to your current job."));
 
         if (plugin == null) {
+            LivingNpcProfile.say(player, npc,
+                    de.aetherion.quests.lang.LangPack.say(player, "ledger.arrow_habit", "One habit: always watch the §eyellow arrow up top§f. It points to your current job."));
             return;
         }
 
         // Red thread: the stamp opens the roads — Forage / Farm / Fishing / Steel. Player picks
-        // one (reply chips) or wanders; one soft compass target either way. Replaces the old
-        // Vex-only pointer (ledger.hint_vex / hint_rite / hint_help keys kept for rollback).
+        // one (reply chips) or wanders; one soft compass target either way. The arrow habit line
+        // rides along with the roads (one door, one beat) instead of a lecture before them.
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
             if (player.isOnline()) {
                 de.aetherion.quests.ui.SkillRoads.graduation(player, npc);
             }
-        }, 50L);
+        }, staged ? 76L : 40L);
     }
 
 
@@ -1553,6 +1603,10 @@ public class NpcListener implements Listener {
                 plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
                     if (player.isOnline()) {
                         de.aetherion.quests.ui.QuestHint.show(player, "quartermaster", "Quartermaster");
+                        player.sendActionBar(net.kyori.adventure.text.Component.text(
+                                de.aetherion.quests.lang.LangPack.ui(player, "tip.kit_to_quartermaster",
+                                        "Kit on? Armour in the armour slots · → Quartermaster past the market"),
+                                net.kyori.adventure.text.format.NamedTextColor.YELLOW));
                     }
                 }, afterLast);
             } else {
@@ -2521,6 +2575,15 @@ public class NpcListener implements Listener {
                 net.kyori.adventure.text.format.NamedTextColor.YELLOW));
     }
 
+    private static void pointForagePad(Player player) {
+        de.aetherion.quests.ui.QuestHint.clearPending(player);
+        de.aetherion.quests.ui.QuestHint.showSpot(player, "forage_pad",
+                de.aetherion.quests.lang.LangPack.ui(player, "hint_label.forage_pad", "Forage Isle Pad"));
+        player.sendActionBar(net.kyori.adventure.text.Component.text(
+                de.aetherion.quests.lang.LangPack.ui(player, "tip.forage_pad", "→ Forage Isle pad · jump · Miss Canopy greets you"),
+                net.kyori.adventure.text.format.NamedTextColor.GREEN));
+    }
+
     private static void pointFishPad(Player player) {
         de.aetherion.quests.ui.QuestHint.clearPending(player);
         de.aetherion.quests.ui.QuestHint.showSpot(player, "fish_pad",
@@ -2822,7 +2885,8 @@ public class NpcListener implements Listener {
                 false,
                 de.aetherion.quests.lang.LangPack.say(player, "ledger.desk.where_next.echo", "Where to now?")
         ));
-        for (String key : java.util.List.of("Aetherion Manager", "Skills", "Pets")) {
+        // Pets moved behind "More topics…" (Lark teaches them): strangers ask "how do I get anywhere?" far more.
+        for (String key : java.util.List.of("Aetherion Manager", "Skills")) {
             String[] english = topics.get(key);
             if (english == null) {
                 continue;
@@ -2853,6 +2917,32 @@ public class NpcListener implements Listener {
                             "Tell me about " + key.toLowerCase(java.util.Locale.ROOT) + ".")
             ));
         }
+        String[] travel = de.aetherion.quests.lang.LangPack.sayLines(player, "ledger.desk.travel.lines", new String[] {
+                "Nether Star → Manager → §eTeleports§f. Every camp you've walked into is one click.",
+                "The isles are pads: §aTwig§f's slime pad for Forage, §eHarlow§f's road for the Farm, the west pad for Fishing.",
+                "Lost? §e/capital§f puts you back at my desk. I'll pretend not to notice."
+        });
+        choices.add(new de.aetherion.quests.talk.TalkUx.Choice(
+                de.aetherion.quests.lang.LangPack.say(player, "ledger.desk.travel.label", "Getting around"),
+                net.kyori.adventure.text.format.NamedTextColor.AQUA,
+                () -> {
+                    for (String line : travel) {
+                        npcSay(player, npc, line);
+                    }
+                    AetherionQuests host = AetherionQuests.getInstance();
+                    if (host != null) {
+                        host.getServer().getScheduler().runTaskLater(host, () -> {
+                            de.aetherion.quests.talk.TalkUx t = de.aetherion.quests.talk.TalkUx.get();
+                            if (player.isOnline() && t != null && t.isTalkingWith(player, npc.getId())
+                                    && !t.hasChips(player)) {
+                                offerLedgerDesk(player, npc);
+                            }
+                        }, de.aetherion.quests.dialog.DialogPace.untilReplies(player));
+                    }
+                },
+                false,
+                de.aetherion.quests.lang.LangPack.say(player, "ledger.desk.travel.echo", "How do I get anywhere?")
+        ));
         choices.add(new de.aetherion.quests.talk.TalkUx.Choice(
                 de.aetherion.quests.lang.LangPack.say(player, "ledger.desk.more", "More topics…"),
                 net.kyori.adventure.text.format.NamedTextColor.GRAY,

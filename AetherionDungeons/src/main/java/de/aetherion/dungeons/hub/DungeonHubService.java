@@ -50,6 +50,8 @@ public final class DungeonHubService implements Listener {
         }
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
         Bukkit.getScheduler().runTaskLater(plugin, this::bootstrap, 60L);
+        // Capital leftovers (AH / Casino / Vince) can respawn from shared world pastes — keep them gone.
+        Bukkit.getScheduler().runTaskTimer(plugin, this::cleanupClutter, 20L * 90, 20L * 120);
     }
 
     private void bootstrap() {
@@ -309,16 +311,60 @@ public final class DungeonHubService implements Listener {
                 removed++;
                 continue;
             }
+            if (isCapitalMarketOrCasino(entity)) {
+                entity.remove();
+                removed++;
+                continue;
+            }
             String name = entity.getCustomName();
             if (name != null && (name.contains("Egon") || name.contains("Temper") || name.contains("Ledger")
                     || name.contains("Quartermaster") || name.contains("Craftsman") || name.contains("Vex")
                     || name.contains("Lumberjack") || name.contains("Fishmonger") || name.contains("Tackle")
-                    || name.contains("Farmer") || name.contains("Lark") || name.contains("Foreman"))) {
+                    || name.contains("Farmer") || name.contains("Lark") || name.contains("Foreman")
+                    || nameContainsIgnoreCase(name, "Vince")
+                    || nameContainsIgnoreCase(name, "Bazaar")
+                    || nameContainsIgnoreCase(name, "Auction")
+                    || nameContainsIgnoreCase(name, "Casino")
+                    || nameContainsIgnoreCase(name, "Lucky Vince"))) {
                 entity.remove();
                 removed++;
             }
         }
         plugin.getLogger().info("Dungeon hub cleanup removed " + removed + " leftover entities.");
+    }
+
+    private static boolean nameContainsIgnoreCase(String name, String needle) {
+        return name != null && needle != null
+                && name.toLowerCase(Locale.ROOT).contains(needle.toLowerCase(Locale.ROOT));
+    }
+
+    /** Bazaar / Auction NPCs and casino furniture tagged by AetherionItems PDC. */
+    private static boolean isCapitalMarketOrCasino(Entity entity) {
+        if (entity == null) {
+            return false;
+        }
+        var pdc = entity.getPersistentDataContainer();
+        try {
+            Class<?> keys = Class.forName("de.aetherion.items.core.ItemKeys");
+            org.bukkit.NamespacedKey bazaar = (org.bukkit.NamespacedKey) keys.getMethod("bazaarNpc").invoke(null);
+            org.bukkit.NamespacedKey auction = (org.bukkit.NamespacedKey) keys.getMethod("auctionNpc").invoke(null);
+            org.bukkit.NamespacedKey casino = (org.bukkit.NamespacedKey) keys.getMethod("casinoNpc").invoke(null);
+            org.bukkit.NamespacedKey casinoProp = org.bukkit.NamespacedKey.fromString("aetherion:casino_prop_id");
+            if (bazaar != null && pdc.has(bazaar, org.bukkit.persistence.PersistentDataType.STRING)) {
+                return true;
+            }
+            if (auction != null && pdc.has(auction, org.bukkit.persistence.PersistentDataType.STRING)) {
+                return true;
+            }
+            if (casino != null && pdc.has(casino, org.bukkit.persistence.PersistentDataType.STRING)) {
+                return true;
+            }
+            if (casinoProp != null && pdc.has(casinoProp, org.bukkit.persistence.PersistentDataType.STRING)) {
+                return true;
+            }
+        } catch (Throwable ignored) {
+        }
+        return false;
     }
 
     public boolean isHubWorld(World world) {

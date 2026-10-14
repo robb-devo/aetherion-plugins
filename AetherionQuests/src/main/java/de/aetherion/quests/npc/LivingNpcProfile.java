@@ -252,6 +252,40 @@ public final class LivingNpcProfile {
     }
 
     static {
+        // Origin island cast (SAITAMA pass) — cast skins carry the look; leather is the pre-sign fallback.
+        put(p("harbourmaster", "Tallyman", NamedTextColor.DARK_AQUA, "§3")
+                .hand(Material.WRITABLE_BOOK).leather(Color.fromRGB(30, 44, 78)).chest().legs().boots()
+                .skinFile("guard.png"));
+        put(p("crane_hand", "Crane Hand", NamedTextColor.GOLD, "§6")
+                .hand(Material.CHAIN).leather(Color.fromRGB(110, 74, 40)).chest().legs().boots()
+                .skinFile("worker.png"));
+        put(p("lighthouse_keeper", "Lighthouse Keeper", NamedTextColor.YELLOW, "§e")
+                .hand(Material.SPYGLASS).leather(Color.fromRGB(214, 176, 40)).chest().boots().slim()
+                .skinFile("sailor.png"));
+        put(p("shanty_busker", "Shanty Busker", NamedTextColor.AQUA, "§b")
+                .hand(Material.GOAT_HORN).leather(Color.fromRGB(40, 70, 120)).chest().boots()
+                .skinFile("sailor.png"));
+        put(p("beekeeper", "Old Mead House", NamedTextColor.GOLD, "§6")
+                .hand(Material.HONEYCOMB).leather(Color.fromRGB(226, 196, 96)).chest().boots().slim()
+                .skinFile("farmer.png"));
+        put(p("painter", "Plein-Air Painter", NamedTextColor.LIGHT_PURPLE, "§d")
+                .hand(Material.PAINTING).leather(Color.fromRGB(110, 60, 120)).chest().boots().slim()
+                .skinFile("scholar.png"));
+        put(p("hermit", "Whisperwood Hermit", NamedTextColor.DARK_GREEN, "§2")
+                .hand(Material.STICK).leather(Color.fromRGB(70, 92, 52)).chest().legs().boots()
+                .skinFile("mystic.png"));
+        put(p("bookie", "Wagers on Legs", NamedTextColor.GREEN, "§a")
+                .hand(Material.PAPER).leather(Color.fromRGB(60, 52, 44)).chest().legs().boots()
+                .skinFile("rogue.png"));
+        put(p("mushroom_forager", "Mushroom Forager", NamedTextColor.RED, "§c")
+                .hand(Material.RED_MUSHROOM).leather(Color.fromRGB(90, 110, 60)).chest().boots()
+                .skinFile("scout.png"));
+        put(p("lost_tourist", "Lost Tourist", NamedTextColor.YELLOW, "§e")
+                .hand(Material.MAP).leather(Color.fromRGB(200, 170, 120)).chest().boots()
+                .skinFile("alex.png"));
+    }
+
+    static {
         // Main story "Das Schlaflied" (/questnpc story) — not placed by default.
         put(p("ysolde", "Archive Desk", NamedTextColor.DARK_AQUA, "§3")
                 .hand(Material.WRITTEN_BOOK).leather(Color.fromRGB(46, 62, 70)).fullLeather()
@@ -268,6 +302,28 @@ public final class LivingNpcProfile {
         put(p("ferryman", "Veil Quay", NamedTextColor.DARK_GRAY, "§8")
                 .hand(Material.OAK_BOAT).leather(Color.fromRGB(150, 156, 160)).fullLeather()
                 .skinFile("sailor.png"));
+        // Act III — the exile island. The Faded wear washed-out cast skins (skins/cast/exile_*.png).
+        put(p("orrin", "Observatory of the Sun", NamedTextColor.GOLD, "§6")
+                .hand(Material.CLOCK).leather(Color.fromRGB(92, 70, 48)).fullLeather()
+                .skinFile("scholar.png"));
+        put(p("exile_lamplighter", "Faded · The Court", NamedTextColor.GRAY, "§7")
+                .hand(Material.LANTERN).leather(Color.fromRGB(170, 166, 160)).chest().boots()
+                .skinFile("worker.png"));
+        put(p("exile_sentry", "Faded · Sun Guard", NamedTextColor.GRAY, "§7")
+                .hand(Material.GOLDEN_SWORD).leather(Color.fromRGB(200, 186, 150)).fullLeather()
+                .skinFile("guard.png"));
+        put(p("exile_usher", "Faded · Little Theatre", NamedTextColor.GRAY, "§7")
+                .hand(Material.CANDLE).leather(Color.fromRGB(150, 110, 120)).chest().boots()
+                .skinFile("rogue.png"));
+        put(p("exile_gardener", "Faded · Root-Ground", NamedTextColor.GRAY, "§7")
+                .hand(Material.BONE_MEAL).leather(Color.fromRGB(150, 168, 140)).chest().boots()
+                .skinFile("farmer.png"));
+        put(p("exile_mother", "Faded · The Court", NamedTextColor.GRAY, "§7")
+                .hand(Material.LEATHER_BOOTS).leather(Color.fromRGB(176, 160, 168)).chest().boots()
+                .slim().skinFile("alex_slim.png"));
+        put(p("exile_keeper", "Faded · The Last Bell", NamedTextColor.GRAY, "§7")
+                .hand(Material.GLASS_BOTTLE).leather(Color.fromRGB(150, 140, 126)).chest().boots()
+                .skinFile("worker.png"));
     }
 
     private static Builder p(String id, String subtitle, NamedTextColor color, String chat) {

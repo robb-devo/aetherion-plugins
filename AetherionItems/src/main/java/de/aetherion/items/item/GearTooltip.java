@@ -54,18 +54,35 @@ public final class GearTooltip implements Listener {
         if (meta == null) {
             return false;
         }
-        String raw = meta.getPersistentDataContainer().get(ItemKeys.loreCache(), PersistentDataType.STRING);
-        if (raw == null || raw.isBlank()) {
+        List<String> cached = cachedEnglish(meta);
+        if (cached == null) {
             return false;
-        }
-        List<String> cached = new ArrayList<>();
-        for (String line : raw.split(String.valueOf(JOIN), -1)) {
-            cached.add(line);
         }
         meta.setLore(cached);
         // the cache is always English: whatever language the item showed before, it is English now
         LoreLocale.setTag(meta, false);
         return true;
+    }
+
+    /** English tooltip spine from {@code lore_cache}, or null when missing. Never reverse-translates. */
+    public static List<String> cachedEnglish(ItemMeta meta) {
+        if (meta == null) {
+            return null;
+        }
+        String raw = meta.getPersistentDataContainer().get(ItemKeys.loreCache(), PersistentDataType.STRING);
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        List<String> cached = new ArrayList<>();
+        for (String line : raw.split(String.valueOf(JOIN), -1)) {
+            cached.add(line);
+        }
+        return cached;
+    }
+
+    /** Persists the English lore spine. Display language is applied separately via {@link LoreLocale#present}. */
+    public static void cacheEnglish(ItemMeta meta, List<String> english) {
+        store(meta, english);
     }
 
     public static void finish(ItemStack item, ItemManager items, boolean expanded) {

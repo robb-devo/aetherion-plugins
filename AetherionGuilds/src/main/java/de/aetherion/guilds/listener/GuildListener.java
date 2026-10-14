@@ -302,6 +302,14 @@ public final class GuildListener implements Listener {
         }
         if (personal != null && personal.isPersonalWorld(player.getWorld())) {
             PersonalIsland island = personal.byPlot(personal.plotAt(player.getLocation()));
+            if (island != null && !island.islandBuilt()) {
+                // still rising: never drop them over the same void again — off to safety, home once it stands
+                islands.teleportHome(player, Bukkit.getWorlds().isEmpty() ? player.getLocation() : Bukkit.getWorlds().get(0).getSpawnLocation());
+                if (island.ownerId().equals(player.getUniqueId())) {
+                    personal.goHome(player);
+                }
+                return;
+            }
             if (island != null) {
                 player.teleport(personal.spawn(island));
                 Bukkit.getScheduler().runTask(personalWorldPlugin(), () -> personal.refreshFlight(player));
@@ -314,6 +322,13 @@ public final class GuildListener implements Listener {
             return;
         }
         Guild guild = guilds.byPlot(islands.plotAt(player.getLocation()));
+        if (guild != null && !guild.islandBuilt()) {
+            islands.teleportHome(player, Bukkit.getWorlds().isEmpty() ? player.getLocation() : Bukkit.getWorlds().get(0).getSpawnLocation());
+            if (guild.equals(guilds.byPlayer(player.getUniqueId()))) {
+                guilds.goHome(player); // "The harbour is still rising…", then carried over
+            }
+            return;
+        }
         if (guild != null) {
             player.teleport(islands.spawn(guild));
             return;

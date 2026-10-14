@@ -33,6 +33,8 @@ public final class ExileHost implements Listener {
     private final ExileLink link;
     private final TransferSnapshotStore snapshots;
     private final ExileArrival arrival;
+    private de.aetherion.core.exile.ExileDoors doors;
+    private de.aetherion.core.exile.ExileLift lift;
     private final Set<UUID> arriving = ConcurrentHashMap.newKeySet();
 
     private final String worldName;
@@ -42,6 +44,8 @@ public final class ExileHost implements Listener {
     private final float spawnYaw;
     private final float spawnPitch;
     private final Set<String> keepWorlds;
+    /** Boss worlds that live on this backend next to the island (instances / sites). Never retired. */
+    private static final Set<String> BOSS_WORLDS = Set.of("helios_requiem", "world_eater");
     private final List<String> retireWorlds;
 
     public ExileHost(AetherionCore plugin, ExileLink link, TransferSnapshotStore snapshots) {
@@ -64,6 +68,7 @@ public final class ExileHost implements Listener {
         if (keepWorlds.isEmpty()) {
             keepWorlds.add(worldName.toLowerCase(Locale.ROOT));
         }
+        keepWorlds.addAll(BOSS_WORLDS);
         this.retireWorlds = cfg.getStringList("exile.retire-worlds");
         this.arrival = new ExileArrival(plugin, this);
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
@@ -79,6 +84,21 @@ public final class ExileHost implements Listener {
 
     public ExileLink link() {
         return link;
+    }
+
+    /** Gates, boss rituals and the sealed castle (mmo-c only, null elsewhere). */
+    public de.aetherion.core.exile.ExileDoors doors() {
+        return doors;
+    }
+
+    public void shutdown() {
+        arrival.shutdown();
+        if (doors != null) {
+            doors.shutdown();
+        }
+        if (lift != null) {
+            lift.shutdown();
+        }
     }
 
     World exileWorld() {
@@ -116,6 +136,10 @@ public final class ExileHost implements Listener {
             tuneWorld(world);
             arrival.purgeRigs(world);
             world.setSpawnLocation(spawnLocation());
+            doors = new de.aetherion.core.exile.ExileDoors(plugin);
+            doors.build(world);
+            lift = new de.aetherion.core.exile.ExileLift(plugin);
+            lift.arm(world);
         }
         retireForeignWorlds();
     }
@@ -182,7 +206,30 @@ public final class ExileHost implements Listener {
         }
         Player player = event.getPlayer();
         arriving.add(player.getUniqueId());
+        // Read the route now: the router drops it a few ticks after join.
+        boolean byFerry = cameByFerry(player);
+        if (arrival.wantsRide(player, byFerry)) {
+            // Open in the Veil at once, before the island can flash up; the ride waits for the character.
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                if (player.isOnline()) {
+                    arrival.begin(player);
+                }
+            }, 1L);
+        }
         Bukkit.getScheduler().runTaskLater(plugin, () -> arrive(player), 8L);
+    }
+
+    private boolean cameByFerry(Player player) {
+        try {
+            NetworkRouter router = plugin.router();
+            if (router == null) {
+                return false;
+            }
+            RouteBook.Route route = router.routes().pendingFor(player.getUniqueId(), router.here());
+            return route != null && !ServerNames.isExile(route.from());
+        } catch (RuntimeException ex) {
+            return false;
+        }
     }
 
     private void arrive(Player player) {
@@ -205,27 +252,33 @@ public final class ExileHost implements Listener {
             player.sendMessage("§cExile world missing — ask staff.");
             return;
         }
+        if (arrival.isPlaying(player)) {
+            // The crossing owns the player; it lands them itself.
+            return;
+        }
         player.teleport(spawn);
         if (player.getGameMode() == GameMode.SURVIVAL || player.getGameMode() == GameMode.SPECTATOR) {
             player.setGameMode(GameMode.ADVENTURE);
         }
-        // First visit → ferry cutscene; returnees land quietly.
-        arrival.playIfFirst(player);
+        arriving.remove(player.getUniqueId());
     }
 
-    /** Called by {@link ExileArrival} when the cutscene ends or is skipped. */
-    void finishArrival(Player player, boolean fromCutscene) {
+    /**
+     * Called by {@link ExileArrival} when the crossing ends or is skipped. {@code landed} is where the ride put
+     * the player (on the docked barge); null = the configured quay spawn.
+     */
+    void finishArrival(Player player, boolean fromCutscene, Location landed) {
         if (player == null) {
             return;
         }
         arriving.remove(player.getUniqueId());
-        Location spawn = spawnLocation();
-        if (spawn != null && player.isOnline()) {
-            if (!fromCutscene || player.getWorld() != spawn.getWorld()
-                    || player.getLocation().distanceSquared(spawn) > 25.0) {
-                player.teleport(spawn);
+        Location target = landed != null ? landed : spawnLocation();
+        if (target != null && player.isOnline()) {
+            if (!fromCutscene || player.getWorld() != target.getWorld()
+                    || player.getLocation().distanceSquared(target) > 4.0) {
+                player.teleport(target);
             }
-            if (player.getGameMode() == GameMode.SPECTATOR) {
+            if (player.getGameMode() == GameMode.SPECTATOR || player.getGameMode() == GameMode.SURVIVAL) {
                 player.setGameMode(GameMode.ADVENTURE);
             }
         }

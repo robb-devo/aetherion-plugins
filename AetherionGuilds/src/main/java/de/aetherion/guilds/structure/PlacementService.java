@@ -41,7 +41,8 @@ import java.util.UUID;
  *   them (locked ones show where to unlock them).</li>
  *   <li><b>Right-click</b> builds what's picked where the hologram stands, <b>left-click</b> turns it. You keep
  *   building after each click; every copy is paid from your island's storage.</li>
- *   <li><b>Belt</b>: right-click a start, right-click an end (straight or one bend); it keeps chaining.</li>
+ *   <li><b>Belt</b>: right-click a chute (or the quarry), then the hut or machine it should feed: the run picks
+ *   the nearest free side and turns its last tile in. An end in the open keeps chaining; left-click clears it.</li>
  *   <li><b>Take down</b>: look at a belt or a building (it turns red), right-click. Buildings ask for a second
  *   click; half their cost goes back to storage.</li>
  *   <li>Right-click one of your buildings with a part picked: it opens, like without the tool.</li>
@@ -68,9 +69,9 @@ public final class PlacementService {
         STORAGE_HUT(StructureType.STORAGE_HUT, "Storage Hut", Material.BARREL, "Holds what your belts bring in."),
         HUB(StructureType.WORKSHOP, "Hub", Material.LECTERN, "Your factory's heart: unlocks and upgrades."),
         DEPOT(StructureType.DEPOT, "Depot", Material.CHEST, "More storage. Belts can end here or pass through."),
-        MILL(StructureType.MILL, "Mill", Material.GRINDSTONE, "Presses 9 goods into 1 compressed."),
+        MILL(StructureType.MILL, "Mill", Material.GRINDSTONE, "Grinds 128 raw into 1 Compressed."),
         SPLITTER(StructureType.SPLITTER, "Splitter", Material.WAXED_COPPER_GRATE, "Splits one belt into equal shares."),
-        FORGE(StructureType.FORGE, "Forge", Material.BLAST_FURNACE, "Presses compressed goods once more."),
+        FORGE(StructureType.FORGE, "Forge", Material.BLAST_FURNACE, "Presses 128 Compressed into 1 Compacted."),
         OVERFLOW(StructureType.OVERFLOW, "Overflow Gate", Material.WAXED_WEATHERED_COPPER_GRATE, "Front first, sides take the spill."),
         SORTER(StructureType.SORTER, "Sorter", Material.WAXED_OXIDIZED_COPPER_GRATE, "One good out the front, the rest out the sides."),
         DISMANTLE(null, "Take down", Material.BARRIER, "Removes belts and buildings. Half the cost comes back.");
@@ -231,6 +232,13 @@ public final class PlacementService {
         if (logistics.count(host) == 0) {
             return Part.BELT;
         }
+        if (!structures.hasWorkshop(host)) {
+            for (LogisticsService.Route route : logistics.routes(host)) {
+                if (route.to() != null && route.from().type() == StructureType.QUARRY_HOUSING) {
+                    return Part.HUB; // first chain runs: the Hub is next
+                }
+            }
+        }
         Part last = lastPart.get(player.getUniqueId());
         if (last != null && lockReason(host, last) == null) {
             return last;
@@ -293,8 +301,9 @@ public final class PlacementService {
                 lore.add("");
                 switch (part) {
                     case BELT -> {
-                        lore.add("§fRight-click §7start, then end");
-                        lore.add("§fLeft-click §7a belt: take it up");
+                        lore.add("§fRight-click §7orange chute, then the hut (snaps in)");
+                        lore.add("§fLeft-click §7cancel start");
+                        lore.add("§fQ §7put away · Take down for remove");
                     }
                     case DISMANTLE -> lore.add("§fRight-click §7take down what's red");
                     default -> {
@@ -488,7 +497,8 @@ public final class PlacementService {
                     + " §fQ §7puts it away.");
         }
         player.sendMessage(switch (part) {
-            case BELT -> "§7Belt: §fright-click §7a start (an §6orange §7mark), then the end (a hut or machine).";
+            case BELT -> "§7Belt: §fright-click §7the §6orange chute§7, then §fright-click §7the hut or machine §8(§agreen pads§8)§7 — it snaps in."
+                    + " Ending in the open keeps chaining. §fLeft-click §7cancels the start.";
             case DISMANTLE -> "§7Take down: look at a belt or building, it turns §cred§7, then §fright-click§7.";
             case SPLITTER, OVERFLOW, SORTER -> "§7" + part.label() + ": §fright-click §7a belt to cut it in. "
                     + part.line();
@@ -745,7 +755,7 @@ public final class PlacementService {
         Belt belt = beltAt(world, target);
         if (belt != null) {
             if (logistics.remove(player, session.host, belt.x(), belt.y(), belt.z())) {
-                actionBar(player, "§7Belt taken up §8(+" + BuildCosts.BELT_COBBLE + " Cobblestone back)");
+                actionBar(player, "§7Belt taken up §8(" + logistics.lastRemoveLine() + ")");
                 session.quietUntil = System.currentTimeMillis() + 800L;
             }
             return;
@@ -787,8 +797,7 @@ public final class PlacementService {
         Belt belt = beltAt(world, target);
         if (belt != null) {
             session.ghost.mark(world, belt.x(), belt.y(), belt.z(), belt.x(), belt.y(), belt.z());
-            bar(player, session, "§c✖ Belt §8· §fright-click §7takes it up §8(+" + BuildCosts.BELT_COBBLE
-                    + " Cobblestone back)");
+            bar(player, session, "§c✖ Belt §8· §fright-click §7takes it up §8(refunded)");
             return;
         }
         PlacedStructure structure = buildingAt(session.host, target);
@@ -818,55 +827,367 @@ public final class PlacementService {
             // past arm's reach the client reports an air click; the preview reaches 24 blocks, so do the clicks
             clicked = player.getTargetBlockExact(24);
         }
-        if (clicked == null) {
-            if (!rightClick) {
-                session.beltStart = null;
-                actionBar(player, "§7Start cleared.");
-            }
-            return;
-        }
+        // Left-click always cancels the start (Satisfactory-style). Never removes belts here —
+        // that is Take down / /island done. One cancel rule, taught once.
         if (!rightClick) {
-            Belt belt = logistics.belt(world, clicked.getX(), clicked.getY(), clicked.getZ());
-            if (belt == null && logistics.isBeltSupport(world, clicked.getX(), clicked.getY(), clicked.getZ())) {
-                belt = logistics.belt(world, clicked.getX(), clicked.getY() + 1, clicked.getZ());
-            }
-            if (belt != null) {
-                if (logistics.remove(player, session.host, belt.x(), belt.y(), belt.z())) {
-                    actionBar(player, "§7Belt taken up §8(refunded)");
-                }
-            } else {
+            if (session.beltStart != null) {
                 session.beltStart = null;
-                actionBar(player, "§7Start cleared.");
+                session.ghost.clearRun();
+                actionBar(player, "§7Start cleared §8· §fright-click §7a chute to begin again");
+                player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.5f, 0.8f);
+            } else {
+                actionBar(player, "§7No start set §8· §fQ §7puts the Build Tool away");
             }
             return;
         }
-        int[] cell = cellOf(world, clicked);
-        IslandHost here = hosts.at(clicked.getLocation());
-        if (here == null || !here.equals(session.host)) {
-            player.sendMessage("§cThat's not on this island.");
+        if (clicked == null) {
+            actionBar(player, "§7Look at the §6orange chute §7or the ground");
             return;
         }
         if (session.beltStart == null) {
+            int[] cell = startCell(player, session.host, world, clicked);
+            IslandHost here = hosts.at(new org.bukkit.Location(world, cell[0] + 0.5, cell[1], cell[2] + 0.5));
+            if (here == null || !here.equals(session.host)) {
+                player.sendMessage("§cThat's not on this island.");
+                return;
+            }
             boolean continuing = logistics.belt(world, cell[0], cell[1], cell[2]) != null;
             String problem = logistics.cellProblem(session.host, world, cell[0], cell[1], cell[2], continuing);
             if (problem != null) {
                 player.sendMessage("§cCan't start there: " + problem + ".");
+                actionBar(player, "§c✖ " + problem);
+                player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 0.6f, 0.6f);
                 return;
             }
             session.beltStart = cell;
             player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_HAT, 0.8f, 1.4f);
-            actionBar(player, "§aStart set §7· right-click where the belt should end");
+            actionBar(player, "§aStart set §7· now aim at the §fhut §7or machine, §fright-click §8· §fleft-click §7cancel");
+            session.quietUntil = System.currentTimeMillis() + 1200L;
             return;
         }
         BlockFace fallback = StateRotator.facingOfYaw(player.getLocation().getYaw());
-        if (logistics.lay(player, session.host, session.beltStart, cell, fallback)) {
-            session.beltStart = cell;
-            if (!logistics.lastLayTalked()) {
-                actionBar(player, "§aLaid §8· §7keep clicking to extend");
+        EndAim aim = endAim(player, session, world, clicked, fallback);
+        IslandHost here = hosts.at(new org.bukkit.Location(world, aim.cell[0] + 0.5, aim.cell[1], aim.cell[2] + 0.5));
+        if (here == null || !here.equals(session.host)) {
+            player.sendMessage("§cThat's not on this island.");
+            return;
+        }
+        if (aim.problem != null) {
+            player.sendMessage("§c" + aim.problem + ".");
+            actionBar(player, "§c✖ " + aim.problem);
+            player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 0.6f, 0.6f);
+            return;
+        }
+        int maxRun = maxRun();
+        if (aim.plan.size() > maxRun) {
+            String why = "Too long (" + aim.plan.size() + "). Max " + maxRun + " tiles — click a closer end first, then keep going.";
+            player.sendMessage("§c" + why);
+            actionBar(player, "§c✖ " + why);
+            return;
+        }
+        if (logistics.lay(player, session.host, session.beltStart, aim.cell, fallback, aim.xFirst, aim.into)) {
+            String cost = logistics.lastLayCostLine();
+            if (aim.feeds != null) {
+                // plugged into a hut / machine: this belt is done; the next click starts a new one
+                session.beltStart = null;
+                session.ghost.clearRun();
+                session.quietUntil = System.currentTimeMillis() + 2600L;
+                if (!logistics.lastLayTalked()) {
+                    actionBar(player, "§a✔ Into your §f" + aim.feeds.label() + " §8· " + cost
+                            + " §8· §7right-click another chute for a new belt");
+                }
+                return;
             }
-            if (logistics.lastLayTalked()) {
+            session.beltStart = aim.cell;
+            if (!logistics.lastLayTalked()) {
+                actionBar(player, "§a✔ Laid §8· " + cost + " §8· §7keep clicking to extend §8· §fleft-click §7cancel");
+                session.quietUntil = System.currentTimeMillis() + 1800L;
+            } else {
                 session.quietUntil = System.currentTimeMillis() + 2500L; // let the "Connected" line stay up
             }
+        }
+    }
+
+    private int maxRun() {
+        return Math.max(8, plugin.getConfig().getInt("logistics.max-run", 64));
+    }
+
+    /** One of the island's buildings at this block (its own blocks, or anything inside its footprint). */
+    private PlacedStructure structureAt(IslandHost host, World world, Block block) {
+        PlacedStructure structure = structures.owner(block);
+        if (structure == null) {
+            structure = structures.atColumn(world, block.getX(), block.getZ());
+            if (structure != null && (block.getY() < structure.minY() - 1 || block.getY() > structure.maxY() + 1)) {
+                structure = null;
+            }
+        }
+        return structure != null && structure.host().equals(host) ? structure : null;
+    }
+
+    /**
+     * Where a belt starts when the player clicks here: aiming anywhere at a quarry or machine starts on its
+     * orange chute (frameless quarries: the side facing you); otherwise the cell itself, snapped to a chute
+     * within a step and a half.
+     */
+    private int[] startCell(Player player, IslandHost host, World world, Block target) {
+        if (logistics.belt(world, target.getX(), target.getY(), target.getZ()) == null
+                && !logistics.isBeltSupport(world, target.getX(), target.getY(), target.getZ())) {
+            PlacedStructure structure = structureAt(host, world, target);
+            if (structure != null && structure.type().hasOutput() && !structure.type().router()) {
+                int[] port = structures.outputPort(structure);
+                if (port != null) {
+                    return port.clone();
+                }
+                if (structure.frameless() || structure.type() == StructureType.QUARRY_HOUSING) {
+                    return besideToward(structure, player.getLocation().getX(), player.getLocation().getZ());
+                }
+            }
+        }
+        return snapBeltCell(host, world, cellOf(world, target));
+    }
+
+    /**
+     * Soft snap toward a nearby machine chute (same Y, within ~1.5 blocks). Already on a belt → keep the cell.
+     * Opus Session-1 zip dropped this helper while still calling it — restored so belts compile.
+     */
+    private int[] snapBeltCell(IslandHost host, World world, int[] cell) {
+        if (logistics.belt(world, cell[0], cell[1], cell[2]) != null) {
+            return cell;
+        }
+        int[] best = null;
+        double bestDist = 2.25; // 1.5²
+        for (PlacedStructure structure : structures.of(host)) {
+            int[] port = structures.outputPort(structure);
+            if (port == null || port[1] != cell[1]) {
+                continue;
+            }
+            double dx = port[0] - cell[0];
+            double dz = port[2] - cell[2];
+            double dist = dx * dx + dz * dz;
+            if (dist < bestDist) {
+                bestDist = dist;
+                best = port;
+            }
+        }
+        return best != null ? best.clone() : cell;
+    }
+
+    /** The cell right beside a structure on the side facing (px, pz), one above its ground. */
+    private static int[] besideToward(PlacedStructure structure, double px, double pz) {
+        double cx = (structure.minX() + structure.maxX() + 1) / 2.0;
+        double cz = (structure.minZ() + structure.maxZ() + 1) / 2.0;
+        int y = structure.y() + 1;
+        if (Math.abs(px - cx) >= Math.abs(pz - cz)) {
+            int x = px >= cx ? structure.maxX() + 1 : structure.minX() - 1;
+            return new int[]{x, y, clamp((int) Math.floor(pz), structure.minZ(), structure.maxZ())};
+        }
+        int z = pz >= cz ? structure.maxZ() + 1 : structure.minZ() - 1;
+        return new int[]{clamp((int) Math.floor(px), structure.minX(), structure.maxX()), y, z};
+    }
+
+    private static int clamp(int v, int lo, int hi) {
+        return Math.max(lo, Math.min(hi, v));
+    }
+
+    /** A belt run as the tool will lay it: the end cell, the forced bend / last turn, and what it feeds. */
+    private static final class EndAim {
+        int[] cell;
+        Boolean xFirst;
+        BlockFace into;
+        List<Object[]> plan;
+        PlacedStructure feeds;
+        String problem;
+    }
+
+    /** The structure that owns this chute cell (so a belt never snaps back into where it came from). */
+    private PlacedStructure ownerOfPort(IslandHost host, int[] cell) {
+        for (PlacedStructure structure : structures.of(host)) {
+            int[] port = structures.outputPort(structure);
+            if (port != null && port[0] == cell[0] && port[1] == cell[1] && port[2] == cell[2]) {
+                return structure;
+            }
+        }
+        return null;
+    }
+
+    /** The first problem on a planned run (null when every tile can go down). */
+    private String runProblem(IslandHost host, World world, List<Object[]> plan) {
+        for (Object[] step : plan) {
+            int[] p = (int[]) step[0];
+            boolean continuing = logistics.belt(world, p[0], p[1], p[2]) != null;
+            String problem = logistics.cellProblem(host, world, p[0], p[1], p[2], continuing);
+            if (problem != null) {
+                return problem;
+            }
+        }
+        return null;
+    }
+
+    /** What the last tile of this run points into (a hut, depot, machine or belt piece), or null. */
+    private PlacedStructure feedsInto(World world, List<Object[]> plan, PlacedStructure from) {
+        if (plan == null || plan.isEmpty()) {
+            return null;
+        }
+        Object[] last = plan.get(plan.size() - 1);
+        int[] p = (int[]) last[0];
+        BlockFace dir = (BlockFace) last[1];
+        int nx = p[0] + dir.getModX();
+        int nz = p[2] + dir.getModZ();
+        PlacedStructure hit = structures.atColumn(world, nx, nz);
+        return hit != null && hit != from && structures.acceptsAt(hit, nx, p[1], nz) ? hit : null;
+    }
+
+    /**
+     * Satisfactory snap: aim the end at a hut or machine (or at the ground right beside one) and the run picks
+     * the nearest free cell on the side facing you and turns its last tile into it. Anything else runs flat at
+     * the start's height to where you aim. The preview and the click both use this, so the ghost never lies.
+     */
+    private EndAim endAim(Player player, Session session, World world, Block target, BlockFace fallback) {
+        IslandHost host = session.host;
+        int[] start = session.beltStart;
+        PlacedStructure from = ownerOfPort(host, start);
+        EndAim aim = new EndAim();
+        boolean onBelt = logistics.belt(world, target.getX(), target.getY(), target.getZ()) != null
+                || logistics.isBeltSupport(world, target.getX(), target.getY(), target.getZ());
+        PlacedStructure aimed = onBelt ? null : structureAt(host, world, target);
+        if (aimed != null && aimed != from && aimed.type().acceptsInput() && !aimed.building()) {
+            if (snapInto(host, world, aimed, start, fallback, aim)) {
+                return aim;
+            }
+        }
+        int[] raw = cellOf(world, target);
+        int[] cell = onBelt ? raw : snapBeltCell(host, world, raw);
+        if (cell[1] != start[1]) {
+            cell = new int[]{cell[0], start[1], cell[2]}; // belts run flat: follow the aim at the start's height
+        }
+        aim.cell = cell;
+        aim.plan = LogisticsService.plan(start, cell, fallback);
+        aim.feeds = feedsInto(world, aim.plan, from);
+        if (aim.feeds == null && aim.plan != null && !onBelt) {
+            // ended right beside a hut / machine but running past it: turn the last tile in
+            for (BlockFace face : new BlockFace[]{BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST}) {
+                int nx = cell[0] + face.getModX();
+                int nz = cell[2] + face.getModZ();
+                PlacedStructure next = structures.atColumn(world, nx, nz);
+                if (next == null || next == from || !structures.acceptsAt(next, nx, cell[1], nz)
+                        || structures.atColumn(world, cell[0], cell[2]) != null) {
+                    continue;
+                }
+                boolean alongX = face == BlockFace.EAST || face == BlockFace.WEST;
+                List<Object[]> turned = LogisticsService.plan(start, cell, fallback, !alongX, face);
+                if (turned != null) {
+                    aim.xFirst = !alongX;
+                    aim.into = face;
+                    aim.plan = turned;
+                    aim.feeds = next;
+                }
+                break;
+            }
+        }
+        if (aim.plan == null) {
+            aim.problem = "Belts run flat — aim at ground level with the start";
+            aim.plan = List.of();
+            return aim;
+        }
+        String problem = runProblem(host, world, aim.plan);
+        if (problem != null) {
+            aim.problem = problem.equals("a block is in the way") || problem.equals("belts need solid ground")
+                    ? problem + " (belts run flat at the start's height)" : problem;
+        }
+        return aim;
+    }
+
+    /** Fill {@code aim} with the best run from start into one side of {@code target}. False if no side fits. */
+    private boolean snapInto(IslandHost host, World world, PlacedStructure target, int[] start, BlockFace fallback,
+                             EndAim aim) {
+        int y = start[1];
+        if (y < target.y() || y > target.y() + 3) {
+            aim.cell = start.clone();
+            aim.plan = List.of();
+            aim.problem = "Your " + target.label() + " sits at another height — start a belt on its level";
+            return true;
+        }
+        List<Object[]> options = new ArrayList<>(); // {cell, xFirst, into}
+        int minX = target.minX();
+        int maxX = target.maxX();
+        int minZ = target.minZ();
+        int maxZ = target.maxZ();
+        if (start[0] < minX) {
+            addSide(options, minX - 1, true, minZ, maxZ, start[2], y, false, BlockFace.EAST);
+        }
+        if (start[0] > maxX) {
+            addSide(options, maxX + 1, true, minZ, maxZ, start[2], y, false, BlockFace.WEST);
+        }
+        if (start[2] < minZ) {
+            addSide(options, minZ - 1, false, minX, maxX, start[0], y, true, BlockFace.SOUTH);
+        }
+        if (start[2] > maxZ) {
+            addSide(options, maxZ + 1, false, minX, maxX, start[0], y, true, BlockFace.NORTH);
+        }
+        if (options.isEmpty()) {
+            return false;
+        }
+        options.sort(java.util.Comparator.comparingInt(o -> {
+            int[] c = (int[]) o[0];
+            return Math.abs(c[0] - start[0]) + Math.abs(c[2] - start[2]);
+        }));
+        EndAim firstTry = null;
+        int tried = 0;
+        for (Object[] option : options) {
+            if (tried++ >= 8) {
+                break;
+            }
+            int[] cell = (int[]) option[0];
+            Boolean xFirst = (Boolean) option[1];
+            BlockFace into = (BlockFace) option[2];
+            List<Object[]> plan = LogisticsService.plan(start, cell, fallback, xFirst, into);
+            if (plan == null) {
+                continue;
+            }
+            String problem = runProblem(host, world, plan);
+            if (problem == null) {
+                aim.cell = cell;
+                aim.xFirst = xFirst;
+                aim.into = into;
+                aim.plan = plan;
+                aim.feeds = target;
+                aim.problem = null;
+                return true;
+            }
+            if (firstTry == null) {
+                firstTry = new EndAim();
+                firstTry.cell = cell;
+                firstTry.xFirst = xFirst;
+                firstTry.into = into;
+                firstTry.plan = plan;
+                firstTry.feeds = target;
+                firstTry.problem = problem + " (on the way into your " + target.label() + ")";
+            }
+        }
+        if (firstTry == null) {
+            return false;
+        }
+        aim.cell = firstTry.cell;
+        aim.xFirst = firstTry.xFirst;
+        aim.into = firstTry.into;
+        aim.plan = firstTry.plan;
+        aim.feeds = firstTry.feeds;
+        aim.problem = firstTry.problem;
+        return true;
+    }
+
+    /** Cells along one side of a footprint, nearest the start first (up to three per side). */
+    private static void addSide(List<Object[]> out, int fixed, boolean fixedIsX, int lo, int hi, int toward, int y,
+                                boolean xFirst, BlockFace into) {
+        List<Integer> along = new ArrayList<>();
+        for (int v = lo; v <= hi; v++) {
+            along.add(v);
+        }
+        along.sort(java.util.Comparator.comparingInt(v -> Math.abs(v - toward)));
+        for (int i = 0; i < along.size() && i < 3; i++) {
+            int v = along.get(i);
+            int[] cell = fixedIsX ? new int[]{fixed, y, v} : new int[]{v, y, fixed};
+            out.add(new Object[]{cell, xFirst, into});
         }
     }
 
@@ -1086,75 +1407,103 @@ public final class PlacementService {
         World world = player.getWorld();
         if (session.clock % 5 == 1) {
             List<int[]> ports = new ArrayList<>();
+            List<int[]> pads = new ArrayList<>();
             int px = player.getLocation().getBlockX();
             int pz = player.getLocation().getBlockZ();
             for (PlacedStructure structure : structures.of(session.host)) {
+                if (Math.abs(structure.x() - px) > 32 || Math.abs(structure.z() - pz) > 32) {
+                    continue;
+                }
                 int[] p = structures.outputPort(structure);
-                if (p != null && Math.abs(p[0] - px) <= 32 && Math.abs(p[2] - pz) <= 32 && ports.size() < 16) {
+                if (p != null && ports.size() < 16) {
                     ports.add(p);
+                }
+                if (structure.type().acceptsInput() && !structure.type().router() && !structure.building()
+                        && pads.size() < 24) {
+                    int y = structure.y() + 1;
+                    int midX = (structure.minX() + structure.maxX()) / 2;
+                    int midZ = (structure.minZ() + structure.maxZ()) / 2;
+                    int[][] sides = {{structure.minX() - 1, y, midZ}, {structure.maxX() + 1, y, midZ},
+                            {midX, y, structure.minZ() - 1}, {midX, y, structure.maxZ() + 1}};
+                    for (int[] side : sides) {
+                        if (p != null && p[0] == side[0] && p[2] == side[2]) {
+                            continue; // its own chute side stays orange
+                        }
+                        pads.add(side);
+                    }
                 }
             }
             session.ghost.chutes(world, ports);
+            session.ghost.inputs(world, pads);
         }
         Block target = player.getTargetBlockExact(24);
         if (session.beltStart == null) {
             if (target == null) {
                 session.ghost.clearRun();
-                bar(player, session, "§6⚒ §eBelt §8· §7look at the ground to start §8· §fsneak + scroll §7other part");
+                bar(player, session, "§6⚒ §eBelt §8· §7aim at an §6orange chute §7(or the quarry) · §fright-click §7start");
                 return;
             }
             Belt looked = logistics.belt(world, target.getX(), target.getY(), target.getZ());
-            int[] cell = cellOf(world, target);
+            int[] cell = startCell(player, session.host, world, target);
             boolean continuing = logistics.belt(world, cell[0], cell[1], cell[2]) != null;
             String problem = logistics.cellProblem(session.host, world, cell[0], cell[1], cell[2], continuing);
             session.ghost.cursor(world, cell[0], cell[1], cell[2], problem == null);
             if (looked != null) {
-                bar(player, session, "§6⚒ §7Belt → §f" + pretty(looked.dir()) + " §8· §fright-click §7extends from here §8· §fleft-click §7takes it up");
+                bar(player, session, "§a✔ Extend this belt §8· §fright-click §7· §fleft-click §7cancel §8· §fQ §7away");
                 return;
             }
+            PlacedStructure source = ownerOfPort(session.host, cell);
             bar(player, session, problem == null
-                    ? "§6⚒ §eBelt §8· §fright-click §7sets the start §8· §7belts §f" + logistics.count(session.host) + "§8/" + logistics.cap(session.host)
+                    ? (source != null ? "§a✔ Start at your §f" + source.label() + "§a's chute" : "§a✔ Start here")
+                    + " §8· §fright-click §7· belts §f" + logistics.count(session.host) + "§8/"
+                    + logistics.cap(session.host) + " §8· §fQ §7away"
                     : "§c✖ " + problem);
             return;
         }
         if (target == null) {
             session.ghost.clearRun();
-            bar(player, session, "§6⚒ §7Look where the belt should end §8· §fleft-click §7clears the start");
+            bar(player, session, "§6⚒ §7Aim at a §fhut §7or machine §8(§agreen pads§8) §8· §fleft-click §7cancel start");
             return;
         }
-        int[] end = cellOf(world, target);
-        List<Object[]> plan = LogisticsService.plan(session.beltStart, end,
-                StateRotator.facingOfYaw(player.getLocation().getYaw()));
-        if (plan == null) {
-            session.ghost.cursor(world, end[0], end[1], end[2], false);
-            bar(player, session, "§c✖ Belts run flat: pick an end at the same height");
+        EndAim aim = endAim(player, session, world, target, StateRotator.facingOfYaw(player.getLocation().getYaw()));
+        if (aim.plan.isEmpty()) {
+            session.ghost.cursor(world, aim.cell[0], aim.cell[1], aim.cell[2], false);
+            bar(player, session, "§c✖ " + aim.problem);
             return;
         }
-        String first = null;
+        List<int[]> points = new ArrayList<>(aim.plan.size());
         int fresh = 0;
-        List<int[]> points = new ArrayList<>(plan.size());
-        for (Object[] step : plan) {
+        for (Object[] step : aim.plan) {
             int[] p = (int[]) step[0];
             points.add(p);
-            boolean continuing = logistics.belt(world, p[0], p[1], p[2]) != null;
-            if (!continuing) {
+            if (logistics.belt(world, p[0], p[1], p[2]) == null) {
                 fresh++;
             }
-            if (first == null) {
-                first = logistics.cellProblem(session.host, world, p[0], p[1], p[2], continuing);
-            }
         }
-        LogisticsService.BeltPass pass = logistics.beltPass();
-        int free = pass == null ? 0 : Math.max(0, Math.min(fresh, pass.freeTiles(session.host)));
+        int maxRun = maxRun();
+        if (aim.plan.size() > maxRun) {
+            session.ghost.run(world, points, false);
+            bar(player, session, "§c✖ Too long (" + aim.plan.size() + "). Max " + maxRun + " — click a closer end first");
+            return;
+        }
+        if (logistics.count(session.host) + fresh > logistics.cap(session.host)) {
+            session.ghost.run(world, points, false);
+            bar(player, session, "§c✖ Belt limit " + logistics.cap(session.host) + " — raise Island Tier");
+            return;
+        }
+        int free = Math.max(0, Math.min(fresh, logistics.freeTiles(session.host)));
         List<BuildCosts.Line> bill = fresh - free <= 0 ? List.of()
                 : List.of(new BuildCosts.Line(BuildCosts.COBBLE, (fresh - free) * BuildCosts.BELT_COBBLE));
         String missing = structures.missing(player, session.host, bill);
-        session.ghost.run(world, points, first == null && missing == null);
-        String cost = (bill.isEmpty() ? "§afree" : costLine(player, session.host, bill))
+        session.ghost.run(world, points, aim.problem == null && missing == null);
+        String cost = bill.isEmpty()
+                ? (free > 0 ? "§a" + logistics.freeLabel(session.host) : "§afree")
+                : "§e−" + GuildFormat.compact((fresh - free) * BuildCosts.BELT_COBBLE) + " Cobble"
                 + (free > 0 ? " §8(§e" + free + " free§8)" : "");
-        bar(player, session, first != null ? "§c✖ " + first
-                : missing != null ? "§e✖ " + plan.size() + " tiles §8· §c" + missing
-                : "§a✔ " + plan.size() + " tiles §8· " + cost + " §8· §fright-click §7lay");
+        String where = aim.feeds != null ? " §8→ §f" + aim.feeds.label() : " §8· §eends in the open";
+        bar(player, session, aim.problem != null ? "§c✖ " + aim.problem
+                : missing != null ? "§e✖ " + aim.plan.size() + " tiles §8· §c" + missing + " §8· §7a quarry belt fills it"
+                : "§a✔ " + aim.plan.size() + " tiles" + where + " §8· " + cost + " §8· §fright-click §7lay");
     }
 
     private static void bar(Player player, Session session, String text) {

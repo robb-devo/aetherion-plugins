@@ -8,8 +8,8 @@ public enum MachineState {
 
     RUNNING("§a", "●", "Running", "All good."),
     RECEIVING("§a", "●", "Filling up", "Belts are bringing goods in."),
-    NEEDS_BELT("§6", "○", "Needs belt out", "Lay a belt from its orange chute to a green arrow."),
-    NEEDS_BELT_IN("§6", "○", "Needs belt in", "Run a belt onto one of its green arrows."),
+    NEEDS_BELT("§6", "○", "Needs belt out", "Belt from its orange chute; aim the end at a hut, it snaps in."),
+    NEEDS_BELT_IN("§6", "○", "Needs belt in", "Aim a belt's end at it (green pads); it snaps in."),
     NEEDS_BELT_OUT("§6", "○", "Needs belt out", "Lay a belt away from its orange chute."),
     DEAD_END("§c", "✖", "Belt leads nowhere", "Run that belt into a hut, depot or machine."),
     FULL("§c", "■", "Full", "Take goods out, upgrade it, or belt it to more storage."),

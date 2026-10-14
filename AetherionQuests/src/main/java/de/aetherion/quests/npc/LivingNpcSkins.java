@@ -39,7 +39,8 @@ public final class LivingNpcSkins {
     private static final String FOLDER = "aetherion";
 
     /** Cast skins painted with slim (3px) arms. */
-    private static final Set<String> SLIM = Set.of("ledger", "preset_mystic", "preset_townsfolk");
+    private static final Set<String> SLIM = Set.of("ledger", "preset_mystic", "preset_townsfolk", "exile_mother",
+            "lighthouse_keeper", "beekeeper", "painter");
 
     /** Every bundled cast skin (placed NPCs + editor presets). */
     private static final Set<String> CAST = Set.of(
@@ -48,6 +49,12 @@ public final class LivingNpcSkins {
             "farm_isle_guide", "surveyor", "vince", "bar_whisper", "eldervale_welcome", "eldervale_upgrade",
             "merchant", "isle_clerk", "forage_pad_guide", "liquidator", "amethyst_mines_guide", "canopy_clerk", "root_cellar",
             "town_crier", "street_sweeper", "lamp_lighter",
+            // Origin island cast (SAITAMA pass)
+            "harbourmaster", "crane_hand", "lighthouse_keeper", "shanty_busker", "beekeeper", "painter", "hermit",
+            "bookie", "mushroom_forager", "lost_tourist",
+            // Act III: the Ferryman, Orrin and the Faded of the exile island (washed-out cast skins)
+            "ferryman", "orrin", "exile_lamplighter", "exile_sentry", "exile_usher", "exile_gardener",
+            "exile_mother", "exile_keeper",
             "preset_worker", "preset_sailor", "preset_farmer", "preset_guard", "preset_scholar",
             "preset_mystic", "preset_scout", "preset_rogue", "preset_miner", "preset_townsfolk"
     );

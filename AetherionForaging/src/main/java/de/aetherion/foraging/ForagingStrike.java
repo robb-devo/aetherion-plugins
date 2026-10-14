@@ -14,6 +14,8 @@ final class ForagingStrike {
     static final int HOT_STREAK = 5;
     /** Best Foraging skill level that permanently widens the window by one cell. */
     static final int WIDE_WINDOW_LEVEL = 50;
+    /** Share of the time budget after which the bar reads "slipping" (same as fishing's StrikeBar). */
+    static final double SLIP_SHARE = 0.72d;
     private static final int MAX_ZONE = 8;
 
     private ForagingStrike() {
@@ -75,6 +77,12 @@ final class ForagingStrike {
     }
 
     static String title(int marker, int zoneStart, int zoneSize, boolean hot, boolean ready, int streak) {
+        return title(marker, zoneStart, zoneSize, hot, ready, false, streak);
+    }
+
+    /** {@code slipping}: last stretch of the budget — idle word becomes a warning (ready still wins). */
+    static String title(int marker, int zoneStart, int zoneSize, boolean hot, boolean ready, boolean slipping,
+                        int streak) {
         StringBuilder out = new StringBuilder("§2Fell  §8[");
         paintBar(out, marker, zoneStart, zoneSize, hot);
         out.append("§8]  ");
@@ -84,6 +92,8 @@ final class ForagingStrike {
             out.append("§aCHOP");
         } else if (ready) {
             out.append("§eready");
+        } else if (slipping) {
+            out.append("§cslipping");
         } else {
             out.append("§7hit green");
         }
@@ -104,7 +114,7 @@ final class ForagingStrike {
         StringBuilder out = new StringBuilder("§2Fell  §8[");
         paintBar(out, 0, zoneStart, zoneSize, false);
         long sec = Math.max(1L, secondsLeft);
-        out.append("§8]  §c").append(sec).append("s §8· §7other trees OK");
+        out.append("§8]  §c").append(sec).append("s §8· §7other trees free");
         return out.toString();
     }
 

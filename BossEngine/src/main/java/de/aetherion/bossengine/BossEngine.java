@@ -69,6 +69,7 @@ public final class BossEngine extends JavaPlugin {
         saveResourceIfMissing("bosses/baron_von_wurm.yml");
         saveResourceIfMissing("bosses/insolvent_wither.yml");
         saveResourceIfMissing("bosses/pathwarden.yml");
+        saveResourceIfMissing("melodies/balkan_bump.nbs");
         saveResourceIfMissing("bosses/hollow_sun.yml");
         saveResourceIfMissing("bosses/ashen_chainwarden.yml");
         saveResourceIfMissing("bosses/cinder_herald.yml");

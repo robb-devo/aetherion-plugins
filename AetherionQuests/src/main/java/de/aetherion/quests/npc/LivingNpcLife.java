@@ -41,6 +41,11 @@ import java.util.concurrent.ThreadLocalRandom;
  * an optional patrol beat — so the harbour cast reads as people with jobs, not random noise.</p>
  *
  * <ul>
+ *   <li><b>Work sets, not dice:</b> job beats come in short sets (2–3 beats in the persona's routine
+ *       order, small gaps), then a real rest with at most one idle beat. Reads as "doing a job",
+ *       not as a random generator. Patrols only start between sets.</li>
+ *   <li><b>Presence glances:</b> idle glances go to a player who is watching (within reach of the
+ *       head, never over the shoulder) or back toward the work — no random head flicks mid-task.</li>
  *   <li><b>Talk is sacred:</b> TalkUx busy, a player within {@link #CLOSE}, or a forager
  *       chop-demo nearby puts the NPC into <i>calm</i>: pending beat steps are cancelled
  *       (generation token), the job prop goes back, pose stands, head faces front.</li>
@@ -59,7 +64,7 @@ public final class LivingNpcLife {
     private static LivingNpcLife instance;
 
     private static final double VIEW = 24.0;
-    private static final double CLOSE = 5.5;
+    private static final double CLOSE = 3.5;
     private static final double CHOP_CALM = 12.0;
     /** Motion loop (head turns, patrol steps). Brain (beats/glances) runs every {@link #BRAIN} loops. */
     private static final long PERIOD = 2L;
@@ -70,6 +75,10 @@ public final class LivingNpcLife {
     private static final int GESTURE_GAP = 50;        // talk gestures
     private static final int CROUCH_COOLDOWN = 900;
     private static final int SNACK_COOLDOWN = 2400;
+    /** Presence: a watcher this close (but outside {@link #CLOSE}) can draw an acknowledging glance. */
+    private static final double NOTICE = 14.0;
+    /** Max head turn (from the NPC's front) when acknowledging someone — no owl necks. */
+    private static final float NOTICE_YAW = 70f;
     private static final double WALK = 0.085;         // blocks / tick average (eased)
     private static final double HURRY = 0.22;
 
@@ -99,6 +108,10 @@ public final class LivingNpcLife {
         boolean calm;
         boolean headOff;
         String lastBeat;
+        /** Last job (non-idle) beat — routine order continues from here. */
+        String lastWork;
+        /** Job beats left in the current work set (0 = resting). */
+        int workLeft;
         // eased head turn
         float turnFromYaw;
         float turnToYaw;
@@ -118,6 +131,11 @@ public final class LivingNpcLife {
         boolean patrolBroken;
         boolean needTurn;
         boolean hurry;
+        // rounds (isle.IsleRounds): absolute waypoints walked out and back
+        List<Location> round;
+        int roundStep;
+        int roundDir;
+        boolean roundTalk;
 
         State(String id, Location home) {
             this.id = id;
@@ -180,6 +198,11 @@ public final class LivingNpcLife {
         fresh.crouchReadyAt = life.now + r.nextInt(400);
         fresh.snackReadyAt = life.now + 1200 + r.nextInt(1200);
         fresh.route = routeFor(id);
+        fresh.round = de.aetherion.quests.isle.IsleRounds.routeFor(id, at);
+        if (fresh.round != null) {
+            // Island cast with a walking round: out on it sooner, and more often (see brainTick).
+            fresh.nextPatrol = life.now + 80 + r.nextInt(240);
+        }
         life.states.put(id, fresh);
     }
 
@@ -326,18 +349,67 @@ public final class LivingNpcLife {
         }
         boolean idle = free && s.lookBackAt < 0 && !s.headOff
                 && s.restoreHandAt < 0 && s.standAt < 0 && s.stopUseAt < 0;
+        boolean resting = s.workLeft <= 0;
         if (idle && now >= s.nextGlance) {
-            float offset = (float) r.nextDouble(20.0, 55.0) * (r.nextBoolean() ? 1 : -1);
-            startTurn(living, s, at, s.home.getYaw() + offset, (float) r.nextDouble(-6.0, 8.0), 4);
-            s.lookBackAt = now + 40 + r.nextInt(60);
-            s.nextGlance = now + (long) ((200 + r.nextInt(240)) * pace);
+            if (!resting) {
+                // Mid-set: eyes stay on the work. Try again once the set is done.
+                s.nextGlance = Math.max(s.nextGlance, s.nextBeat + 20);
+                return;
+            }
+            presenceGlance(living, s, at, viewers, r);
+            s.nextGlance = now + (long) ((260 + r.nextInt(260)) * pace);
             return;
         }
-        if (idle && patrols && s.route != null && !s.patrolBroken && now >= s.nextPatrol
+        if (idle && resting && patrols && s.round != null && !s.patrolBroken && now >= s.nextPatrol
+                && now >= s.busyUntil + 10) {
+            s.nextPatrol = now + (long) ((260 + r.nextInt(420)) * pace * de.aetherion.quests.isle.IsleRounds.pace(s.id));
+            // Harbour framing: one walker per glance, the lamplighter after dark (isle.IsleRounds).
+            if (de.aetherion.quests.isle.IsleRounds.mayStart(s.id, s.home, at.getWorld().getTime(), walkingRounds(s))) {
+                beginRound(living, s, at);
+            }
+            return;
+        }
+        if (idle && resting && patrols && s.route != null && !s.patrolBroken && now >= s.nextPatrol
                 && now >= s.busyUntil + 10) {
             s.nextPatrol = now + (long) ((600 + r.nextInt(900)) * pace);
             beginPatrol(living, s, at);
         }
+    }
+
+    /**
+     * Presence: if someone is watching from a few blocks away (and is in front of us), look at them
+     * for a moment — an acknowledgement, not a stare. Otherwise a small, slow look toward the work.
+     */
+    private void presenceGlance(LivingNpcService living, State s, Location at, List<Player> viewers,
+                                ThreadLocalRandom r) {
+        Player watcher = null;
+        double best = NOTICE * NOTICE;
+        for (Player p : viewers) {
+            double d = p.getLocation().distanceSquared(at);
+            if (d < best && d > CLOSE * CLOSE) {
+                best = d;
+                watcher = p;
+            }
+        }
+        float homeYaw = s.home.getYaw();
+        if (watcher != null && r.nextDouble() < 0.7) {
+            Location eye = watcher.getEyeLocation();
+            float toward = yaw(at, eye);
+            float rel = wrap(toward - homeYaw);
+            if (Math.abs(rel) <= NOTICE_YAW) {
+                double dx = eye.getX() - at.getX();
+                double dz = eye.getZ() - at.getZ();
+                double dy = eye.getY() - (at.getY() + 1.62);
+                float pitch = (float) -Math.toDegrees(Math.atan2(dy, Math.sqrt(dx * dx + dz * dz)));
+                startTurn(living, s, at, homeYaw + rel, Math.max(-20f, Math.min(20f, pitch)), 5);
+                s.lookBackAt = now + 36 + r.nextInt(30);
+                return;
+            }
+        }
+        // Nobody to acknowledge: a calm look along the work, small and slow.
+        float offset = (float) r.nextDouble(10.0, 26.0) * (r.nextBoolean() ? 1 : -1);
+        startTurn(living, s, at, homeYaw + offset, (float) r.nextDouble(0.0, 10.0), 6);
+        s.lookBackAt = now + 30 + r.nextInt(30);
     }
 
     private void calm(LivingNpcService living, State s) {
@@ -347,6 +419,8 @@ public final class LivingNpcLife {
         s.calm = true;
         s.gen++;
         s.busyUntil = now;
+        // Talk ends the set: after the conversation the NPC starts fresh instead of "finishing" a stroke.
+        s.workLeft = 0;
         s.lookBackAt = -1;
         s.turnSteps = 0;
         if (s.restoreHandAt >= 0) {
@@ -413,7 +487,8 @@ public final class LivingNpcLife {
         int run(LivingNpcLife life, State s, Ctx c);
     }
 
-    private record Beat(String key, double weight, BeatAction act) {
+    /** {@code idle}: a look-around / break beat — never part of a work set. */
+    private record Beat(String key, double weight, BeatAction act, boolean idle) {
     }
 
     private record Persona(int gapMin, int gapMax, Beat patrolBeat, Beat... beats) {
@@ -427,6 +502,10 @@ public final class LivingNpcLife {
         }
     }
 
+    /**
+     * Work rhythm: a set of 2–3 job beats in routine order with short gaps, then a proper rest.
+     * Between sets the NPC may take one idle beat (look around, snack) — never in the middle of a set.
+     */
     private void runBeat(State s, Location at) {
         ThreadLocalRandom r = ThreadLocalRandom.current();
         Persona p = s.persona;
@@ -434,6 +513,61 @@ public final class LivingNpcLife {
             s.nextBeat = now + 1200;
             return;
         }
+        List<Beat> work = new ArrayList<>(p.beats().length);
+        List<Beat> rest = new ArrayList<>(p.beats().length);
+        for (Beat b : p.beats()) {
+            (b.idle() ? rest : work).add(b);
+        }
+        if (work.size() < 1) {
+            // Pure ambient persona: the old weighted pick is the right feel.
+            runPicked(s, at, p, r);
+            return;
+        }
+        Ctx c = ctx(s, at);
+        boolean resting = s.workLeft <= 0;
+        if (resting && !rest.isEmpty() && !isIdleKey(p, s.lastBeat) && r.nextDouble() < 0.45) {
+            // One idle beat between sets, then the next set starts after a medium gap.
+            Beat b = pickFrom(rest, s.lastBeat, null, r);
+            int dur = b.act().run(this, s, c);
+            if (dur > 0) {
+                s.lastBeat = b.key();
+                s.busyUntil = now + dur;
+                s.nextBeat = s.busyUntil + (long) (between(p.gapMin() / 2, p.gapMin(), r) * pace);
+                return;
+            }
+        }
+        if (resting) {
+            // A one-trick persona (a wave, a chime) does it once per set — never twice in a row.
+            s.workLeft = work.size() == 1 ? 1 : 2 + r.nextInt(2);
+        }
+        int dur = 0;
+        String skip = null;
+        for (int attempt = 0; attempt < 3 && dur <= 0; attempt++) {
+            Beat b = nextWork(work, s.lastWork, skip, r);
+            skip = b.key();
+            dur = b.act().run(this, s, c);
+            if (dur > 0) {
+                s.lastBeat = b.key();
+                s.lastWork = b.key();
+            }
+        }
+        if (dur <= 0) {
+            s.workLeft = 0;
+            s.nextBeat = now + 40;
+            return;
+        }
+        s.workLeft--;
+        s.busyUntil = now + dur;
+        int gap = s.workLeft > 0
+                // Inside a set: a short breath between strokes — the job keeps going.
+                ? between(Math.max(20, p.gapMin() / 4), Math.max(30, p.gapMin() / 2), r)
+                // Set done: a real rest, a bit longer than the old single-beat gap.
+                : between(p.gapMin() + p.gapMin() / 4, p.gapMax() + p.gapMax() / 4, r);
+        s.nextBeat = s.busyUntil + (long) (gap * pace);
+    }
+
+    /** Legacy single weighted pick (personas without job beats). */
+    private void runPicked(State s, Location at, Persona p, ThreadLocalRandom r) {
         Ctx c = ctx(s, at);
         int dur = 0;
         Beat tried = null;
@@ -452,6 +586,63 @@ public final class LivingNpcLife {
         s.busyUntil = now + dur;
         int gap = p.gapMin() + r.nextInt(Math.max(1, p.gapMax() - p.gapMin()));
         s.nextBeat = s.busyUntil + (long) (gap * pace);
+    }
+
+    /**
+     * Routine order: usually the job beat declared after the last one (inspect → trim → polish …),
+     * sometimes a weighted pick so it never turns into a metronome.
+     */
+    private static Beat nextWork(List<Beat> work, String lastWork, String skip, ThreadLocalRandom r) {
+        if (work.size() == 1) {
+            return work.get(0);
+        }
+        if (skip == null && lastWork != null && r.nextDouble() < 0.65) {
+            for (int i = 0; i < work.size(); i++) {
+                if (work.get(i).key().equals(lastWork)) {
+                    return work.get((i + 1) % work.size());
+                }
+            }
+        }
+        return pickFrom(work, lastWork, skip, r);
+    }
+
+    private static Beat pickFrom(List<Beat> beats, String last, String skip, ThreadLocalRandom r) {
+        double total = 0;
+        for (Beat b : beats) {
+            if (!b.key().equals(last) && !b.key().equals(skip)) {
+                total += b.weight();
+            }
+        }
+        if (total <= 0) {
+            return beats.get(r.nextInt(beats.size()));
+        }
+        double roll = r.nextDouble() * total;
+        for (Beat b : beats) {
+            if (b.key().equals(last) || b.key().equals(skip)) {
+                continue;
+            }
+            roll -= b.weight();
+            if (roll <= 0) {
+                return b;
+            }
+        }
+        return beats.get(beats.size() - 1);
+    }
+
+    private static boolean isIdleKey(Persona p, String key) {
+        if (key == null) {
+            return false;
+        }
+        for (Beat b : p.beats()) {
+            if (b.key().equals(key)) {
+                return b.idle();
+            }
+        }
+        return false;
+    }
+
+    private static int between(int min, int max, ThreadLocalRandom r) {
+        return max <= min ? min : min + r.nextInt(max - min);
     }
 
     private Ctx ctx(State s, Location at) {
@@ -488,7 +679,12 @@ public final class LivingNpcLife {
     }
 
     private static Beat beat(String key, double weight, BeatAction act) {
-        return new Beat(key, weight, act);
+        return new Beat(key, weight, act, false);
+    }
+
+    /** Idle beat: glances, stretches, snacks — the rest between work sets. */
+    private static Beat idle(String key, double weight, BeatAction act) {
+        return new Beat(key, weight, act, true);
     }
 
     /* ---- reusable beat shapes ---------------------------------------------------------- */
@@ -589,12 +785,42 @@ public final class LivingNpcLife {
         };
     }
 
+    /** Tobin's shanty: eight guitar notes, a swing on every other one, notes rising over his head. */
+    private static BeatAction shanty() {
+        return (l, s, c) -> {
+            float[] tune = {0.75f, 0.94f, 1.12f, 0.94f, 0.84f, 0.75f, 0.63f, 0.75f};
+            for (int i = 0; i < tune.length; i++) {
+                final float note = tune[i];
+                final int k = i;
+                l.step(s, 6 + i * 7, () -> {
+                    if (k % 2 == 0) {
+                        l.swingNow(s);
+                    }
+                    l.sound(c.at(), Sound.BLOCK_NOTE_BLOCK_GUITAR, 0.45f, note);
+                    if (k % 3 == 0) {
+                        c.w().spawnParticle(Particle.NOTE, c.at().clone().add(0, 2.3, 0), 1, 0.3, 0.1, 0.3, 0.0);
+                    }
+                });
+            }
+            l.lookBack(s, 64);
+            return 70;
+        };
+    }
+
     /* ---- the cast ---------------------------------------------------------------------- */
 
     private static Persona personaFor(String id) {
         return switch (id) {
             // ---------- Harbour spine ----------
-            case "egon" -> new Persona(150, 290, null,
+            case "egon" -> new Persona(150, 290,
+                    // His little walk has a reason: check the rack at the far end, then back to the bench.
+                    beat("rack", 1, (l, s, c) -> {
+                        l.look(s, c, 0f, 18f, 3);
+                        l.step(s, 8, () -> l.sound(c.at(), Sound.ITEM_ARMOR_EQUIP_CHAIN, 0.2f, 1.05f));
+                        l.step(s, 24, () -> l.sound(c.at(), Sound.ITEM_ARMOR_EQUIP_IRON, 0.16f, 1.15f));
+                        l.lookBack(s, 34);
+                        return 40;
+                    }),
                     beat("inspect", 3, (l, s, c) -> {
                         l.look(s, c, 0f, 24f, 3);
                         l.step(s, 12, () -> l.sound(c.at(), Sound.ITEM_ARMOR_EQUIP_IRON, 0.22f, 0.95f));
@@ -620,7 +846,7 @@ public final class LivingNpcLife {
                         l.lookBack(s, 36);
                         return 40;
                     }),
-                    beat("sizeup", 1.2, gaze(38, -3f, 2f, 40)));
+                    idle("sizeup", 1.2, gaze(38, -3f, 2f, 40)));
 
             case "lumberjack" -> new Persona(120, 230, null,
                     beat("chop", 4, stroke(null, 14f, Sound.BLOCK_WOOD_HIT, 0.4f, 0.9f, Material.OAK_LOG, 26)),
@@ -644,8 +870,8 @@ public final class LivingNpcLife {
                         l.lookBack(s, 36);
                         return 40;
                     }),
-                    beat("treeline", 1.5, gaze(45, -8f, -2f, 50)),
-                    beat("snack", 0.4, (l, s, c) -> {
+                    idle("treeline", 1.5, gaze(45, -8f, -2f, 50)),
+                    idle("snack", 0.4, (l, s, c) -> {
                         if (!l.snack(s)) {
                             return 0;
                         }
@@ -675,7 +901,7 @@ public final class LivingNpcLife {
                         l.lookBack(s, 46);
                         return 50;
                     }),
-                    beat("nod", 0.8, (l, s, c) -> {
+                    idle("nod", 0.8, (l, s, c) -> {
                         l.look(s, c, 0f, 14f, 2);
                         l.lookBack(s, 8);
                         return 16;
@@ -684,7 +910,7 @@ public final class LivingNpcLife {
             case "foreman" -> new Persona(140, 270, null,
                     beat("tap", 3, stroke(null, 22f, Sound.BLOCK_STONE_HIT, 0.32f, 1.1f, Material.STONE, 24)),
                     beat("clipboard", 2.5, write(Material.PAPER, 48)),
-                    beat("shaft", 1.5, gaze(28, 18f, 26f, 44)),
+                    idle("shaft", 1.5, gaze(28, 18f, 26f, 44)),
                     beat("kneel", 0.8, kneel(Material.STONE, Sound.BLOCK_STONE_STEP, 36)));
 
             case "ledger" -> new Persona(120, 230, null,
@@ -704,7 +930,7 @@ public final class LivingNpcLife {
                         l.lookBack(s, 30);
                         return 34;
                     }),
-                    beat("peer", 1.5, gaze(20, -5f, -2f, 36)));
+                    idle("peer", 1.5, gaze(20, -5f, -2f, 36)));
 
             case "farmer" -> new Persona(130, 250,
                     beat("till", 1, stroke(null, 26f, Sound.ITEM_HOE_TILL, 0.3f, 1.05f, Material.FARMLAND, 28)),
@@ -732,7 +958,7 @@ public final class LivingNpcLife {
                         l.lookBack(s, 34);
                         return 42;
                     }),
-                    beat("sky", 1, gaze(18, -20f, -14f, 42)));
+                    idle("sky", 1, gaze(18, -20f, -14f, 42)));
 
             case "vex" -> new Persona(110, 210,
                     beat("cut", 1, vexCut(false)),
@@ -744,13 +970,13 @@ public final class LivingNpcLife {
                         l.lookBack(s, 40);
                         return 44;
                     }),
-                    beat("line", 2, gaze(40, -2f, 2f, 30)));
+                    idle("line", 2, gaze(40, -2f, 2f, 30)));
 
             case "fisher" -> new Persona(150, 290, null,
                     beat("cast", 3, fisherCast(false)),
                     beat("catch", 0.8, fisherCast(true)),
                     beat("bait", 0.7, kneel(null, Sound.ENTITY_ITEM_PICKUP, 30)),
-                    beat("horizon", 1.5, gaze(24, -6f, -2f, 52)));
+                    idle("horizon", 1.5, gaze(24, -6f, -2f, 52)));
 
             // ---------- Ambient townsfolk ----------
             case "town_crier" -> new Persona(220, 400,
@@ -773,10 +999,10 @@ public final class LivingNpcLife {
             case "street_sweeper" -> new Persona(130, 250,
                     beat("sweep", 1, sweep()),
                     beat("sweep", 3, sweep()),
-                    beat("lean", 1.5, gaze(28, 2f, 6f, 52)),
+                    idle("lean", 1.5, gaze(28, 2f, 6f, 52)),
                     beat("pickup", 0.6, kneel(null, Sound.ENTITY_ITEM_PICKUP, 24)));
 
-            case "lamp_lighter" -> new Persona(170, 330, null,
+            case "lamp_lighter" -> new Persona(170, 330, beat("post", 1, once(Sound.ITEM_FLINTANDSTEEL_USE, 0.2f, 1.3f, -28f)),
                     beat("light", 3, (l, s, c) -> {
                         long time = c.w().getTime();
                         if (time < 12000L || time > 23000L) {
@@ -801,7 +1027,7 @@ public final class LivingNpcLife {
                         l.lookBack(s, 30);
                         return 36;
                     }),
-                    beat("rounds", 2, gaze(32, -22f, -14f, 42)));
+                    idle("rounds", 2, gaze(32, -22f, -14f, 42)));
 
             // ---------- Everyone else (kept, cleaned up) ----------
             case "craftsman" -> new Persona(130, 250, null,
@@ -825,7 +1051,7 @@ public final class LivingNpcLife {
                         l.lookBack(s, 36);
                         return 40;
                     }),
-                    beat("glance", 1, gaze(30, -2f, 4f, 36)));
+                    idle("glance", 1, gaze(30, -2f, 4f, 36)));
 
             case "booster_tutor" -> new Persona(130, 250, null,
                     beat("spark", 2, (l, s, c) -> {
@@ -844,7 +1070,7 @@ public final class LivingNpcLife {
                         l.step(s, 10, () -> l.sound(c.at(), Sound.BLOCK_FIRE_EXTINGUISH, 0.16f, 1.6f));
                         return 20;
                     }),
-                    beat("study", 1, gaze(0, 26f, 26f, 36)));
+                    idle("study", 1, gaze(0, 26f, 26f, 36)));
 
             case "lark" -> new Persona(140, 270, null,
                     beat("birds", 2, (l, s, c) -> {
@@ -866,7 +1092,7 @@ public final class LivingNpcLife {
                         l.lookBack(s, 44);
                         return 52;
                     }),
-                    beat("ice", 1, gaze(0, 30f, 30f, 34)));
+                    idle("ice", 1, gaze(0, 30f, 30f, 34)));
 
             case "rite_keeper" -> new Persona(140, 270, null,
                     beat("incense", 2, (l, s, c) -> {
@@ -877,12 +1103,12 @@ public final class LivingNpcLife {
                         return 38;
                     }),
                     beat("kneel", 1, kneel(null, Sound.BLOCK_SOUL_SAND_STEP, 36)),
-                    beat("gaze", 1, gaze(15, -22f, -14f, 44)));
+                    idle("gaze", 1, gaze(15, -22f, -14f, 44)));
 
             case "arena_proctor" -> new Persona(130, 250,
                     beat("tally", 1, write(Material.WRITABLE_BOOK, 44)),
                     beat("tally", 3, write(Material.WRITABLE_BOOK, 44)),
-                    beat("watch", 2, gaze(35, -2f, 3f, 36)));
+                    idle("watch", 2, gaze(35, -2f, 3f, 36)));
 
             case "farm_isle_guide" -> new Persona(140, 270, null,
                     beat("point", 2, (l, s, c) -> {
@@ -892,7 +1118,7 @@ public final class LivingNpcLife {
                         return 38;
                     }),
                     beat("soil", 1, kneel(Material.DIRT, Sound.BLOCK_GRAVEL_STEP, 36)),
-                    beat("sky", 1, gaze(18, -18f, -12f, 40)));
+                    idle("sky", 1, gaze(18, -18f, -12f, 40)));
 
             case "surveyor" -> new Persona(140, 270, null,
                     beat("spyglass", 2, spyglass(62)),
@@ -929,11 +1155,11 @@ public final class LivingNpcLife {
                         c.w().spawnParticle(Particle.ENCHANT, c.hands().clone().add(0, 0.5, 0), 10, 0.3, 0.4, 0.3, 0.5);
                         return 20;
                     }),
-                    beat("lean", 1, gaze(22, 4f, 8f, 50)));
+                    idle("lean", 1, gaze(22, 4f, 8f, 50)));
 
             case "eldervale_welcome" -> new Persona(150, 290, null,
                     beat("wave", 2, once(null, 0f, 1f, -4f)),
-                    beat("look", 1, gaze(35, -4f, 4f, 40)));
+                    idle("look", 1, gaze(35, -4f, 4f, 40)));
 
             case "eldervale_upgrade" -> new Persona(140, 270, null,
                     beat("strike", 2, (l, s, c) -> {
@@ -950,7 +1176,7 @@ public final class LivingNpcLife {
                         l.lookBack(s, 34);
                         return 40;
                     }),
-                    beat("inspect", 1, gaze(0, 30f, 30f, 36)));
+                    idle("inspect", 1, gaze(0, 30f, 30f, 36)));
 
             case "merchant" -> new Persona(130, 250,
                     beat("crate", 1, merchantCrate()),
@@ -965,7 +1191,7 @@ public final class LivingNpcLife {
 
             case "isle_clerk" -> new Persona(130, 250, null,
                     beat("file", 2, write(Material.PAPER, 44)),
-                    beat("peer", 1, gaze(22, -4f, 0f, 36)));
+                    idle("peer", 1, gaze(22, -4f, 0f, 36)));
 
             case "forage_pad_guide" -> new Persona(170, 330, null,
                     beat("bounce", 2, (l, s, c) -> {
@@ -976,7 +1202,7 @@ public final class LivingNpcLife {
                         });
                         return 24;
                     }),
-                    beat("look", 1, gaze(35, -8f, 2f, 40)));
+                    idle("look", 1, gaze(35, -8f, 2f, 40)));
 
             case "liquidator" -> new Persona(150, 290, null,
                     beat("chime", 1.5, (l, s, c) -> {
@@ -987,7 +1213,7 @@ public final class LivingNpcLife {
                         });
                         return 20;
                     }),
-                    beat("appraise", 1, gaze(0, 28f, 28f, 36)));
+                    idle("appraise", 1, gaze(0, 28f, 28f, 36)));
 
             case "canopy_clerk" -> new Persona(140, 270, null,
                     beat("log", 2, (l, s, c) -> {
@@ -998,7 +1224,7 @@ public final class LivingNpcLife {
                         l.lookBack(s, 44);
                         return 52;
                     }),
-                    beat("canopy", 1, gaze(25, -24f, -16f, 44)));
+                    idle("canopy", 1, gaze(25, -24f, -16f, 44)));
 
             case "root_cellar" -> new Persona(140, 270, null,
                     beat("grind", 2, (l, s, c) -> {
@@ -1017,6 +1243,121 @@ public final class LivingNpcLife {
                         l.lookBack(s, 36);
                         return 42;
                     }));
+
+            // ---------- Origin island cast (SAITAMA pass) ----------
+            // Persona(gapMin, gapMax, stopBeat, beats...): the stop beat plays at waypoints of the
+            // NPC's walking round (isle.IsleRounds); the rest is standing work between rounds.
+            case "harbourmaster" -> new Persona(130, 260, beat("stop", 1, spyglass(46)),
+                    beat("log", 3, write(Material.WRITABLE_BOOK, 40)),
+                    beat("rim", 1.5, spyglass(52)),
+                    idle("pier", 1.5, gaze(36, -4f, 4f, 46)));
+
+            case "crane_hand" -> new Persona(100, 200, beat("stop", 1, stroke(Material.CHAIN, 14f, Sound.BLOCK_CHAIN_PLACE, 0.25f, 0.9f, null, 26)),
+                    beat("rope", 3, stroke(Material.CHAIN, 12f, Sound.BLOCK_CHAIN_PLACE, 0.25f, 0.9f, null, 30)),
+                    beat("signal", 2, once(Sound.BLOCK_WOODEN_TRAPDOOR_OPEN, 0.18f, 0.6f, -28f)),
+                    idle("jib", 1.5, gaze(24, -32f, -20f, 44)));
+
+            case "lighthouse_keeper" -> new Persona(140, 280, beat("stop", 1, spyglass(56)),
+                    beat("watch", 3, spyglass(56)),
+                    beat("count", 1, write(Material.PAPER, 34)),
+                    idle("sea", 2, gaze(30, -6f, 0f, 54)));
+
+            case "shanty_busker" -> new Persona(110, 220, beat("stop", 1, shanty()),
+                    beat("shanty", 3, shanty()),
+                    beat("bow", 1, once(Sound.ENTITY_VILLAGER_CELEBRATE, 0.18f, 1.3f, 12f)),
+                    idle("crowd", 2, gaze(40, -4f, 4f, 40)));
+
+            case "beekeeper" -> new Persona(120, 240, beat("stop", 1, kneel(null, Sound.BLOCK_BEEHIVE_WORK, 34)),
+                    beat("frame", 3, stroke(Material.HONEYCOMB, 18f, Sound.BLOCK_BEEHIVE_WORK, 0.3f, 1.0f, null, 34)),
+                    beat("flowers", 1.5, kneel(null, Sound.ENTITY_BEE_POLLINATE, 30)),
+                    idle("hum", 2, gaze(30, -10f, 2f, 48)));
+
+            case "painter" -> new Persona(110, 220, beat("stop", 1, gaze(40, -6f, 2f, 60)),
+                    beat("dab", 3, stroke(Material.BRUSH, 8f, Sound.ITEM_BRUSH_BRUSHING_GENERIC, 0.22f, 1.4f, null, 30)),
+                    beat("measure", 1.5, once(null, 0f, 1f, -6f)),
+                    idle("view", 2, gaze(34, -8f, 2f, 52)));
+
+            case "hermit" -> new Persona(200, 380, null,
+                    beat("listen", 2, gaze(20, -12f, 8f, 80)),
+                    beat("moss", 1, kneel(Material.MOSS_BLOCK, Sound.BLOCK_MOSS_STEP, 40)),
+                    idle("still", 3, gaze(0, 0f, 0f, 90)));
+
+            case "bookie" -> new Persona(100, 200, beat("stop", 1, write(Material.PAPER, 28)),
+                    beat("odds", 3, write(Material.PAPER, 32)),
+                    beat("coins", 2, once(Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.12f, 0.8f, 18f)),
+                    idle("track", 1.5, gaze(44, -6f, 2f, 40)));
+
+            case "mushroom_forager" -> new Persona(120, 240, beat("stop", 1, kneel(Material.RED_MUSHROOM_BLOCK, Sound.BLOCK_FUNGUS_BREAK, 32)),
+                    beat("pick", 3, kneel(Material.RED_MUSHROOM_BLOCK, Sound.BLOCK_FUNGUS_BREAK, 32)),
+                    beat("sniff", 1.5, once(Sound.ENTITY_FOX_SNIFF, 0.2f, 1.2f, 20f)),
+                    idle("caps", 2, gaze(36, -30f, -12f, 46)));
+
+            case "lost_tourist" -> new Persona(100, 200, beat("stop", 1, gaze(50, -24f, -10f, 44)),
+                    beat("map", 3, write(Material.MAP, 30)),
+                    beat("mountain", 2, gaze(50, -24f, -12f, 44)),
+                    idle("fountain", 1.5, gaze(30, 2f, 10f, 40)));
+
+            // Harbour regulars and island folk placed by isle.IsleCast (had no body language before).
+            case "stall_crumb" -> new Persona(110, 220, beat("stop", 1, stroke(Material.BREAD, 14f, Sound.ITEM_BUNDLE_INSERT, 0.25f, 1.1f, null, 30)),
+                    beat("loaves", 3, stroke(Material.BREAD, 22f, Sound.ITEM_BUNDLE_INSERT, 0.25f, 1.1f, null, 30)),
+                    beat("call", 1.5, once(null, 0f, 1f, -4f)),
+                    idle("street", 1.5, gaze(40, -2f, 4f, 40)));
+
+            case "stall_tack" -> new Persona(110, 220, beat("stop", 1, stroke(Material.CHEST, 18f, Sound.BLOCK_CHEST_CLOSE, 0.18f, 1.2f, null, 30)),
+                    beat("sort", 3, stroke(Material.IRON_NUGGET, 24f, Sound.BLOCK_CHAIN_STEP, 0.2f, 1.4f, null, 28)),
+                    beat("count", 1.5, write(Material.PAPER, 30)),
+                    idle("street", 1.5, gaze(40, -2f, 4f, 40)));
+
+            case "stall_brine" -> new Persona(110, 220, beat("stop", 1, stroke(Material.SUGAR, 20f, Sound.BLOCK_SAND_STEP, 0.2f, 1.2f, null, 30)),
+                    beat("salt", 3, stroke(Material.SUGAR, 24f, Sound.BLOCK_SAND_STEP, 0.2f, 1.2f, null, 30)),
+                    beat("jar", 1.5, stroke(Material.GLASS_BOTTLE, 16f, Sound.ITEM_BOTTLE_FILL, 0.2f, 1.1f, null, 28)),
+                    idle("pier", 1.5, gaze(36, -4f, 2f, 44)));
+
+            case "dock_scaler" -> new Persona(110, 220, beat("stop", 1, stroke(Material.COD, 24f, Sound.ENTITY_COD_FLOP, 0.2f, 1.0f, null, 30)),
+                    beat("weigh", 3, stroke(Material.COD, 26f, Sound.BLOCK_CHAIN_STEP, 0.2f, 1.1f, null, 30)),
+                    beat("note", 2, write(Material.PAPER, 30)),
+                    idle("stalls", 1.5, gaze(36, -2f, 4f, 40)));
+
+            case "fry_gossip" -> new Persona(110, 220, beat("stop", 1, once(null, 0f, 1f, 0f)),
+                    beat("fryer", 3, stroke(Material.COOKED_COD, 20f, Sound.BLOCK_FIRE_EXTINGUISH, 0.12f, 1.6f, null, 30)),
+                    beat("lean", 1.5, gaze(50, -2f, 4f, 50)),
+                    idle("street", 1.5, gaze(40, -4f, 4f, 40)));
+
+            case "rivet" -> new Persona(100, 200, beat("stop", 1, stroke(Material.IRON_INGOT, 26f, Sound.BLOCK_ANVIL_USE, 0.14f, 1.4f, null, 28)),
+                    beat("hammer", 3, stroke(Material.IRON_INGOT, 30f, Sound.BLOCK_ANVIL_USE, 0.14f, 1.4f, null, 28)),
+                    beat("plank", 1.5, kneel(Material.SPRUCE_PLANKS, Sound.BLOCK_WOOD_PLACE, 30)),
+                    idle("mast", 1.5, gaze(30, -30f, -14f, 44)));
+
+            case "dockhand" -> new Persona(110, 220, beat("stop", 1, stroke(Material.LEAD, 14f, Sound.ENTITY_LEASH_KNOT_PLACE, 0.2f, 1.0f, null, 28)),
+                    beat("rope", 3, stroke(Material.LEAD, 16f, Sound.ENTITY_LEASH_KNOT_PLACE, 0.2f, 1.0f, null, 28)),
+                    beat("water", 1.5, gaze(30, 18f, 26f, 50)),
+                    idle("bay", 1.5, gaze(40, -4f, 2f, 44)));
+
+            case "bait_theory" -> new Persona(130, 260, beat("stop", 1, fisherCast(false)),
+                    beat("cast", 3, fisherCast(false)),
+                    beat("catch", 0.8, fisherCast(true)),
+                    idle("bucket", 1.5, kneel(null, Sound.ENTITY_ITEM_PICKUP, 26)));
+
+            case "dock_whisper" -> new Persona(160, 320, null,
+                    beat("water", 3, gaze(26, 20f, 30f, 60)),
+                    beat("listen", 1.5, gaze(40, -2f, 2f, 60)),
+                    idle("tide", 1.5, kneel(null, Sound.ENTITY_GENERIC_SPLASH, 30)));
+
+            case "bench_cynic" -> new Persona(160, 320, null,
+                    beat("tut", 2, once(null, 0f, 1f, 6f)),
+                    beat("judge", 3, gaze(50, -2f, 4f, 60)),
+                    idle("pigeons", 1.5, gaze(30, 14f, 24f, 50)));
+
+            case "dust", "gate_warden", "tollkeeper", "timber_clerk", "chicken_keeper" -> new Persona(120, 240, beat("stop", 1, write(Material.PAPER, 28)),
+                    beat("notes", 3, write(Material.PAPER, 32)),
+                    beat("look", 2, gaze(44, -6f, 4f, 46)),
+                    idle("rest", 1.5, gaze(30, -2f, 6f, 40)));
+
+            case "rook", "larder", "quarry_broker", "pet_scout", "sphere_proctor", "ore_ledger", "slag_poet", "ash_scout" ->
+                    new Persona(140, 280, null,
+                            beat("notes", 2, write(Material.PAPER, 32)),
+                            beat("look", 3, gaze(44, -6f, 4f, 46)),
+                            idle("rest", 1.5, gaze(30, -2f, 6f, 40)));
 
             default -> null;
         };
@@ -1203,7 +1544,60 @@ public final class LivingNpcLife {
         s.lookBackAt = -1;
     }
 
+    /** Where every other NPC out on an island round is heading right now. */
+    private List<Location> walkingRounds(State self) {
+        List<Location> out = new ArrayList<>();
+        for (State other : states.values()) {
+            if (other != self && other.round != null && other.leg >= 0 && other.walkTo != null) {
+                out.add(other.walkTo);
+            }
+        }
+        return out;
+    }
+
+    /** Island rounds: walk the waypoints out, a stop beat at each, then back the same way. */
+    private void beginRound(LivingNpcService living, State s, Location at) {
+        if (!loaded(s.home) || s.round == null || s.round.size() < 2) {
+            return;
+        }
+        Location first = s.round.get(1);
+        if (!loaded(first)) {
+            return;
+        }
+        Location ground = LivingNpcService.plantFeet(first.clone(), first.getY());
+        if (!safeLeg(ground, at, first)) {
+            s.patrolBroken = true;
+            plugin.getLogger().fine("Round disabled for " + s.id + " (unsafe ground)");
+            return;
+        }
+        living.setMovementLocked(s.id, true);
+        s.leg = 0;
+        s.roundStep = 1;
+        s.roundDir = 1;
+        s.roundTalk = false;
+        s.walkFrom = at.clone();
+        s.walkTo = ground;
+        s.walkU = 0;
+        s.hurry = false;
+        s.needTurn = true;
+        s.patrolPauseUntil = 0;
+        s.lookBackAt = -1;
+    }
+
+    /** A step on a round leg is fine if the ground holds within a block of either end of the leg. */
+    private static boolean safeLeg(Location feet, Location from, Location to) {
+        if (feet == null || from == null || to == null) {
+            return false;
+        }
+        Location ref = Math.abs(feet.getY() - from.getY()) <= Math.abs(feet.getY() - to.getY()) ? from : to;
+        return safeGround(feet, ref);
+    }
+
     private void patrolTick(LivingNpcService living, State s, Location at) {
+        if (s.round != null && s.leg == 0) {
+            roundTick(living, s, at);
+            return;
+        }
         if (busy(s.id)) {
             // Talk is sacred: be exactly where the conversation expects us.
             finishPatrol(living, s, true);
@@ -1271,6 +1665,150 @@ public final class LivingNpcLife {
         if (s.walkU >= 1.0) {
             arrive(living, s);
         }
+    }
+
+    /**
+     * One step of a round. Talk parks the NPC where it stands (no snap home); someone walking up
+     * makes it stop and look at them instead of hurrying away.
+     */
+    private void roundTick(LivingNpcService living, State s, Location at) {
+        if (busy(s.id)) {
+            if (!s.roundTalk) {
+                s.roundTalk = true;
+                calm(living, s);
+                s.calm = false;
+            }
+            return;
+        }
+        if (s.roundTalk) {
+            s.roundTalk = false;
+            s.needTurn = true;
+            s.patrolPauseUntil = now + 30;
+        }
+        if (s.walkTo == null || !loaded(s.walkTo) || !loaded(s.home)) {
+            finishPatrol(living, s, true);
+            return;
+        }
+        if (s.turnSteps > 0) {
+            stepTurn(living, s, at);
+            return;
+        }
+        Player near = nearest(at, 3.0);
+        if (near != null) {
+            // Someone came up to us mid-round: stop, look at them, carry on when they step back.
+            if (s.patrolPauseUntil <= now + 2) {
+                float face = yaw(at, near.getLocation());
+                startTurn(living, s, at, face, 4f, 3);
+            }
+            s.patrolPauseUntil = now + 40;
+            return;
+        }
+        if (now < s.patrolPauseUntil) {
+            return;
+        }
+        if (s.needTurn) {
+            s.needTurn = false;
+            startTurn(living, s, at, yaw(s.walkFrom, s.walkTo), 8f, 3);
+            s.patrolPauseUntil = now + 4;
+            return;
+        }
+        double dist = s.walkFrom.distance(s.walkTo);
+        if (dist < 0.05) {
+            roundArrive(living, s);
+            return;
+        }
+        s.walkU = Math.min(1.0, s.walkU + (WALK * 1.15 * PERIOD) / dist);
+        double t = ease(s.walkU);
+        Location next = s.walkFrom.clone().add(s.walkTo.clone().subtract(s.walkFrom).toVector().multiply(t));
+        double hintY = s.walkFrom.getY() + (s.walkTo.getY() - s.walkFrom.getY()) * t;
+        Location feet = LivingNpcService.plantFeet(next, hintY);
+        if (!safeLeg(feet, s.walkFrom, s.walkTo)) {
+            finishPatrol(living, s, true);
+            s.patrolBroken = true;
+            return;
+        }
+        feet.setYaw(yaw(s.walkFrom, s.walkTo));
+        feet.setPitch(8f);
+        living.moveTo(s.id, feet);
+        living.followName(s.id, feet);
+        s.headOff = true;
+        walkFx(s, feet);
+        if (s.walkU >= 1.0) {
+            roundArrive(living, s);
+        }
+    }
+
+    /** Little sounds of a working walk: the sweeper sweeps, the crier rings, the lamplighter's lantern glows. */
+    private void walkFx(State s, Location feet) {
+        if (now - s.lastWalkFx < 16 || s.walkU <= 0.15 || s.walkU >= 0.85) {
+            return;
+        }
+        switch (s.id) {
+            case "street_sweeper" -> {
+                s.lastWalkFx = now;
+                swingNow(s);
+                sound(feet, Sound.ITEM_BRUSH_BRUSHING_GENERIC, 0.22f, 1.05f);
+                dust(feet.clone().add(0, 0.1, 0), Material.GRAVEL, 3);
+            }
+            case "town_crier" -> {
+                if (now - s.lastWalkFx >= 60) {
+                    s.lastWalkFx = now;
+                    swingNow(s);
+                    sound(feet, Sound.BLOCK_BELL_USE, 0.18f, 1.5f);
+                }
+            }
+            case "lamp_lighter" -> {
+                long time = feet.getWorld().getTime();
+                if (time > 12000L && time < 23500L) {
+                    s.lastWalkFx = now;
+                    feet.getWorld().spawnParticle(Particle.SMALL_FLAME, feet.clone().add(0, 1.3, 0), 1, 0.05, 0.05, 0.05, 0.0);
+                }
+            }
+            default -> {
+            }
+        }
+    }
+
+    private void roundArrive(LivingNpcService living, State s) {
+        List<Location> round = s.round;
+        int last = round.size() - 1;
+        boolean home = s.roundDir < 0 && s.roundStep <= 0;
+        if (home) {
+            finishPatrol(living, s, false);
+            return;
+        }
+        // A stop: the persona's patrol beat (or a glance along the way) and a breath.
+        int dur = 0;
+        Location at = living.locationOf(s.id);
+        Persona p = s.persona;
+        boolean far = s.roundStep == last;
+        if (at != null && p != null && p.patrolBeat() != null && (far || ThreadLocalRandom.current().nextDouble() < 0.55)) {
+            dur = p.patrolBeat().act().run(this, s, ctx(s, at));
+            s.lastBeat = p.patrolBeat().key();
+        }
+        s.patrolPauseUntil = now + Math.max(far ? 40 : 16, dur + 8) + ThreadLocalRandom.current().nextInt(far ? 40 : 20);
+        if (s.roundDir > 0 && s.roundStep >= last) {
+            s.roundDir = -1;
+        }
+        s.roundStep += s.roundDir;
+        Location to = round.get(Math.max(0, Math.min(last, s.roundStep)));
+        s.walkFrom = s.walkTo.clone();
+        s.walkTo = s.roundStep <= 0 ? s.home.clone() : LivingNpcService.plantFeet(to.clone(), to.getY());
+        s.walkU = 0;
+        s.needTurn = true;
+    }
+
+    private static Player nearest(Location at, double radius) {
+        Player best = null;
+        double r2 = radius * radius;
+        for (Player p : at.getWorld().getPlayers()) {
+            double d = p.getLocation().distanceSquared(at);
+            if (d <= r2) {
+                best = p;
+                r2 = d;
+            }
+        }
+        return best;
     }
 
     private void arrive(LivingNpcService living, State s) {

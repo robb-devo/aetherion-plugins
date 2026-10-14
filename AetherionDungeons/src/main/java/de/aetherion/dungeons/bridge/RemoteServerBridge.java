@@ -127,6 +127,14 @@ public final class RemoteServerBridge implements PluginMessageListener {
      * The single hop: pack once, freeze, Connect. Returns false when nothing left this server.
      */
     public boolean send(Player player, String server, int pendingFloor, boolean bossOnly, String reason) {
+        return send(player, server, pendingFloor, bossOnly, reason, null);
+    }
+
+    /**
+     * Same hop for Core's network router (islands, exile, main-world warps): {@code departLine} replaces the
+     * Dungeon Gate chat lines so players never read a server id. Null keeps the gate wording.
+     */
+    public boolean send(Player player, String server, int pendingFloor, boolean bossOnly, String reason, String departLine) {
         if (player == null || !player.isOnline()) {
             return false;
         }
@@ -150,7 +158,11 @@ public final class RemoteServerBridge implements PluginMessageListener {
         if (sync != null && sync.isGuest(id)) {
             // Guest session: the real character lives on another backend's playerdata.
             // Do not pack this copy over it — just walk them over.
-            player.sendMessage("§5Dungeon Gate§7: Crossing to §f" + server + "§7…");
+            if (departLine == null) {
+                player.sendMessage("§5Dungeon Gate§7: Crossing to §f" + server + "§7…");
+            } else if (!departLine.isBlank()) {
+                player.sendMessage(departLine);
+            }
             return connect(player, server);
         }
         TransferSnapshotStore.SaveResult saved = snapshots == null
@@ -164,7 +176,11 @@ public final class RemoteServerBridge implements PluginMessageListener {
         if (guard != null) {
             guard.beginOutbound(player, snapshotId, connectTimeoutMs, () -> rollback(player, snapshotId, server));
         }
-        if (pendingFloor > 0) {
+        if (departLine != null) {
+            if (!departLine.isBlank()) {
+                player.sendMessage(departLine);
+            }
+        } else if (pendingFloor > 0) {
             player.sendMessage("§5Dungeon Gate§7: Crossing to §f" + server
                     + "§7 · Floor §f" + pendingFloor + "§7…");
         } else {
@@ -192,7 +208,8 @@ public final class RemoteServerBridge implements PluginMessageListener {
             guard.release(id);
         }
         if (reclaimed) {
-            player.sendMessage("§5Dungeon Gate§7: §f" + server + " §7did not answer. You stay here — nothing moved.");
+            player.sendMessage("§7The way to §f" + de.aetherion.core.network.ServerNames.display(server)
+                    + " §7is closed right now. You stay here — nothing moved.");
             return;
         }
         // Claimed elsewhere, yet the player is still here. Keep the live copy (no deletion);

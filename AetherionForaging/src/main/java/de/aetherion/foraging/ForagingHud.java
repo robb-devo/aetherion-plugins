@@ -28,11 +28,17 @@ final class ForagingHud {
     }
 
     void striking(Player player, int marker, int zoneStart, int zoneSize, boolean hot, boolean ready, int streak) {
+        striking(player, marker, zoneStart, zoneSize, hot, ready, false, streak);
+    }
+
+    /** Green on the window, yellow while hunting it, red once the swing is about to be "too slow". */
+    void striking(Player player, int marker, int zoneStart, int zoneSize, boolean hot, boolean ready,
+                  boolean slipping, int streak) {
         paint(
                 player,
-                ForagingStrike.title(marker, zoneStart, zoneSize, hot, ready, streak),
+                ForagingStrike.title(marker, zoneStart, zoneSize, hot, ready, slipping, streak),
                 ForagingStrike.progress(marker),
-                hot ? BarColor.GREEN : BarColor.YELLOW
+                hot ? BarColor.GREEN : slipping && !ready ? BarColor.RED : BarColor.YELLOW
         );
     }
 

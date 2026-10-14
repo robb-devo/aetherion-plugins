@@ -56,6 +56,13 @@ public class ForagingListener implements Listener {
 
     private static final long REGROW_TICKS = 20L * 20;
     private static final long CHOP_MISS_COOLDOWN_MS = 60_000L;
+    /**
+     * Graduated per-trunk lock: a first miss is a short breather, repeat misses on the same trunk climb
+     * to the full minute. Keeps the bar honest without hard-locking a tree you just fumbled once.
+     */
+    private static final long[] CHOP_MISS_STEPS_MS = {12_000L, 30_000L, CHOP_MISS_COOLDOWN_MS};
+    /** Miss strikes on a trunk are forgotten this long after the last miss. */
+    private static final long CHOP_MISS_MEMORY_MS = 180_000L;
     private static final long CANOPY_CLEAVER_COOLDOWN_MS = 20_000L;
     /** Incomplete trees without progress get restored so jobs/regenerating cannot leak forever. */
     private static final long IDLE_ABANDON_TICKS = 20L * 90;
@@ -86,6 +93,8 @@ public class ForagingListener implements Listener {
     private final Map<UUID, FellPulse> pulses = new ConcurrentHashMap<>();
     /** Per-player cooldown on a failed tree only (uuid|treeId → untilMillis). */
     private final Map<String, Long> chopMissUntil = new ConcurrentHashMap<>();
+    /** Recent misses on a trunk (uuid|treeId → [count, lastMissMillis]) for the graduated lock. */
+    private final Map<String, long[]> chopMissStrikes = new ConcurrentHashMap<>();
     /** Canopy Cleaver perfect-fell cooldown (uuid → untilMillis). */
     private final Map<UUID, Long> canopyCleaverUntil = new ConcurrentHashMap<>();
     /** Players whose tree is collapsing — suppress arm swing / dig spam. */
@@ -454,7 +463,8 @@ public class ForagingListener implements Listener {
     void tick() {
         int now = Bukkit.getCurrentTick();
         // Look-preview runs even with empty jobs — never createJob / entities from staring.
-        if (now % 2 == 0) {
+        // Every 8 ticks (~2.5/s) is enough for the soft bar and cuts raycast churn vs every 2.
+        if (now % 8 == 0) {
             tickLookPreviews(now);
         }
         if (!jobs.isEmpty() && now % 100 == 0) {
@@ -473,8 +483,11 @@ public class ForagingListener implements Listener {
             if (pulse.readyEdge()) {
                 ForagingFx.creak(player);
             }
+            if (pulse.slipEdge()) {
+                ForagingFx.slip(player);
+            }
             hud.striking(player, pulse.marker, pulse.zoneStart, pulse.zoneSize, pulse.hot(), pulse.ready(),
-                    streaks.current(pulse.playerId));
+                    pulse.slipping(), streaks.current(pulse.playerId));
             if (timedOut) {
                 resolveChop(pulse);
             }
@@ -674,6 +687,7 @@ public class ForagingListener implements Listener {
         // Per-tree miss locks and cleaver cooldowns are short-lived — don't let them pile up.
         long nowMs = System.currentTimeMillis();
         chopMissUntil.values().removeIf(until -> until <= nowMs);
+        chopMissStrikes.values().removeIf(strike -> nowMs - strike[1] > CHOP_MISS_MEMORY_MS);
         canopyCleaverUntil.values().removeIf(until -> until <= nowMs);
     }
 
@@ -1018,19 +1032,20 @@ public class ForagingListener implements Listener {
         pulse.job.felling = false;
         // Keep fell mark — only this player is locked from THIS tree briefly.
         // Other trees stay instantly available (no global chop cooldown).
-        markMissCooldown(pulse.playerId, pulse.job);
+        long lockMs = markMissCooldown(pulse.playerId, pulse.job);
         Player player = Bukkit.getPlayer(pulse.playerId);
         ForageIsle isle = ForageIsle.get();
         boolean secondWind = player != null && isle != null && isle.secondWind(player, pulse.job.baseLocation());
         int lost = secondWind ? 0 : streaks.reset(pulse.playerId);
         hud.hide(pulse.playerId);
         if (player != null && player.isOnline()) {
-            ForagingFx.miss(player, pulse.missReason(), lost, missCooldownMs(pulse.playerId, pulse.job) / 1000L);
+            ForagingFx.miss(player, pulse.missReason(), lost, Math.max(1L, (lockMs + 999L) / 1000L));
             if (secondWind) {
                 player.sendMessage("§b✦ Second Wind §8· §7Sure Grip kept your streak alive.");
             }
             if (taughtMiss.add(pulse.playerId)) {
-                player.sendMessage("§7Missed the timing. §fThat trunk§7 cools ~1 min — other trees are free.");
+                player.sendMessage("§7Missed the timing. §fThat trunk§7 needs a breather — a few seconds at first,"
+                        + " longer if you keep fumbling it. §fOther trees are free.");
             }
         }
     }
@@ -1071,28 +1086,46 @@ public class ForagingListener implements Listener {
         return Math.max(0L, until - System.currentTimeMillis());
     }
 
-    private void markMissCooldown(UUID playerId, TreeJob job) {
+    /** Locks this trunk for this player and returns the lock length (ms). */
+    private long markMissCooldown(UUID playerId, TreeJob job) {
         if (playerId == null || job == null || job.treeId == null) {
-            return;
+            return 0L;
         }
-        chopMissUntil.put(missKey(playerId, job.treeId), System.currentTimeMillis() + missCooldownMs(playerId, job));
+        String key = missKey(playerId, job.treeId);
+        long now = System.currentTimeMillis();
+        long[] strike = chopMissStrikes.compute(key, (k, prev) -> {
+            if (prev == null || now - prev[1] > CHOP_MISS_MEMORY_MS) {
+                return new long[]{1L, now};
+            }
+            return new long[]{prev[0] + 1L, now};
+        });
+        long ms = missCooldownMs(playerId, job, (int) strike[0]);
+        chopMissUntil.put(key, now + ms);
+        return ms;
     }
 
-    /** One minute, shortened on the isle by the Sure Grip mark and the Steady Hands skill. */
-    private static long missCooldownMs(UUID playerId, TreeJob job) {
+    /**
+     * Graduated base (12s → 30s → 60s for repeat misses on the same trunk), then shortened on the isle by
+     * the Sure Grip mark and the Steady Hands skill.
+     */
+    private static long missCooldownMs(UUID playerId, TreeJob job, int strikes) {
+        int step = Math.max(0, Math.min(CHOP_MISS_STEPS_MS.length - 1, strikes - 1));
+        long base = CHOP_MISS_STEPS_MS[step];
         ForageIsle isle = ForageIsle.get();
         Player player = playerId == null ? null : Bukkit.getPlayer(playerId);
         if (isle == null || player == null || job == null) {
-            return CHOP_MISS_COOLDOWN_MS;
+            return base;
         }
-        return isle.missCooldown(player, job.baseLocation(), CHOP_MISS_COOLDOWN_MS);
+        return isle.missCooldown(player, job.baseLocation(), base);
     }
 
     private void clearMissCooldown(UUID playerId, TreeJob job) {
         if (playerId == null || job == null || job.treeId == null) {
             return;
         }
-        chopMissUntil.remove(missKey(playerId, job.treeId));
+        String key = missKey(playerId, job.treeId);
+        chopMissUntil.remove(key);
+        chopMissStrikes.remove(key);
     }
 
     private static String missKey(UUID playerId, String treeId) {

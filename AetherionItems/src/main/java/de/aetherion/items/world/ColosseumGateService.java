@@ -215,4 +215,33 @@ public final class ColosseumGateService implements Listener, Runnable {
         save();
     }
 
+    /**
+     * Transfer import: merge membership flags for one player (UUID lists on disk, not players.&lt;uuid&gt;).
+     */
+    public void applyTransferFlags(UUID playerId, boolean wasUnlocked, boolean wasTaught) {
+        if (playerId == null || (!wasUnlocked && !wasTaught)) {
+            return;
+        }
+        boolean changed = false;
+        if (wasUnlocked) {
+            changed |= unlocked.add(playerId);
+        }
+        if (wasTaught || wasUnlocked) {
+            changed |= taught.add(playerId);
+        }
+        if (changed) {
+            save();
+        }
+    }
+
+    /** True when this UUID is on the unlocked list (for transfer export). */
+    public boolean transferUnlocked(UUID playerId) {
+        return playerId != null && unlocked.contains(playerId);
+    }
+
+    /** True when this UUID is on the taught list (for transfer export). */
+    public boolean transferTaught(UUID playerId) {
+        return playerId != null && taught.contains(playerId);
+    }
+
 }

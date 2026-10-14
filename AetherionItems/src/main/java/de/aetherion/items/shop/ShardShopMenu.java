@@ -44,7 +44,7 @@ public final class ShardShopMenu implements Listener {
     }
 
     public void open(Player player) {
-        Inventory inventory = Bukkit.createInventory(new Holder(View.ROOT), 45, TITLE);
+        Inventory inventory = Bukkit.createInventory(new Holder(View.ROOT), 45, de.aetherion.items.util.ManagerChrome.SHOP);
         fillPanes(inventory);
         inventory.setItem(BALANCE_SLOT, balanceIcon(player));
 
@@ -76,7 +76,7 @@ public final class ShardShopMenu implements Listener {
     }
 
     public void openBoosts(Player player) {
-        Inventory inventory = Bukkit.createInventory(new Holder(View.BOOSTS), 45, TITLE_BOOSTS);
+        Inventory inventory = Bukkit.createInventory(new Holder(View.BOOSTS), 45, de.aetherion.items.util.ManagerChrome.SHOP_BOOSTS);
         fillPanes(inventory);
         inventory.setItem(BALANCE_SLOT, balanceIcon(player));
 
@@ -88,7 +88,7 @@ public final class ShardShopMenu implements Listener {
     }
 
     public void openMaterials(Player player) {
-        Inventory inventory = Bukkit.createInventory(new Holder(View.MATERIALS), 45, TITLE_MATERIALS);
+        Inventory inventory = Bukkit.createInventory(new Holder(View.MATERIALS), 45, de.aetherion.items.util.ManagerChrome.SHOP_MATERIALS);
         fillPanes(inventory);
         inventory.setItem(BALANCE_SLOT, balanceIcon(player));
 
@@ -100,7 +100,7 @@ public final class ShardShopMenu implements Listener {
     }
 
     public void openExclusive(Player player) {
-        Inventory inventory = Bukkit.createInventory(new Holder(View.EXCLUSIVE), 45, TITLE_EXCLUSIVE);
+        Inventory inventory = Bukkit.createInventory(new Holder(View.EXCLUSIVE), 45, de.aetherion.items.util.ManagerChrome.SHOP_EXCLUSIVE);
         fillPanes(inventory);
         inventory.setItem(BALANCE_SLOT, balanceIcon(player));
 

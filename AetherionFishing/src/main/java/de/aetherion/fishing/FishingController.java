@@ -319,8 +319,15 @@ public final class FishingController implements Listener {
             if (!hot) {
                 session.enteredZone = false;
             }
+            boolean slipping = session.slipping();
+            if (slipping && !session.slipCued) {
+                // Fail telegraph: one low tick so "It let go." is never a surprise.
+                session.slipCued = true;
+                player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_HAT, 0.45f, 0.7f);
+                player.playSound(player.getLocation(), Sound.ENTITY_FISHING_BOBBER_SPLASH, 0.35f, 0.8f);
+            }
             hud.striking(player, session.marker, session.zoneStart, session.zoneSize, session.perfectWidth(), hot,
-                    streaks.current(entry.getKey()));
+                    slipping, streaks.current(entry.getKey()));
             spark(hook.getLocation(), hot);
             if (session.strikeTicks >= session.strikeLimit) {
                 miss(player, session, hook, true);

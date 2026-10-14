@@ -12,6 +12,8 @@ final class StrikeBar {
     static final int SIZE = 21;
     /** Streak that earns "hot water": one extra lure fish and one extra green cell. */
     static final int HOT_STREAK = 5;
+    /** Share of the strike budget after which the bar reads "slipping" (shared with the fell bar). */
+    static final double SLIP_SHARE = 0.72d;
     private static final int MAX_ZONE = 8;
 
     private StrikeBar() {
@@ -77,6 +79,12 @@ final class StrikeBar {
     }
 
     static String strikeTitle(int marker, int zoneStart, int zoneSize, int perfectWidth, boolean hot, int streak) {
+        return strikeTitle(marker, zoneStart, zoneSize, perfectWidth, hot, false, streak);
+    }
+
+    /** {@code slipping}: last stretch of the window — the idle word turns into a warning. */
+    static String strikeTitle(int marker, int zoneStart, int zoneSize, int perfectWidth, boolean hot,
+                              boolean slipping, int streak) {
         StringBuilder out = new StringBuilder("§bFishing  §8[");
         int zoneEnd = zoneStart + zoneSize;
         int perfectFrom = perfectStart(zoneStart, zoneSize, perfectWidth);
@@ -94,7 +102,7 @@ final class StrikeBar {
             }
         }
         out.append("§8]  ");
-        out.append(onPerfect ? "§6NOW" : hot ? "§eREEL" : "§7hit green");
+        out.append(onPerfect ? "§6NOW" : hot ? "§eREEL" : slipping ? "§cslipping" : "§7hit green");
         out.append(streakTag(streak));
         return out.toString();
     }

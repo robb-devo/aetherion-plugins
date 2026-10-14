@@ -51,6 +51,7 @@ public final class SkillRoads {
         // Default target so the bossbar never goes blank (and drops Ledger's own pin) — a chip replaces it.
         QuestHint.clearPending(player);
         QuestHint.show(player, npcId(player, qm, fallback), hintLabel(player, qm, fallback));
+        doorOpens(player);
 
         say(player, ledger, LangPack.say(player, "ledger.roads.intro",
                 "Skills grow out there, {player}. Not at my desk."));
@@ -58,6 +59,8 @@ public final class SkillRoads {
         if (!talkReady(player)) {
             say(player, ledger, LangPack.say(player, "ledger.roads.list",
                     "§aTwig§f's pad: Forage Isle. §eHarlow§f, back of the barn: Farm Isle. §bTackle§f: fishing."));
+            say(player, ledger, LangPack.say(player, "ledger.arrow_habit",
+                    "One habit: always watch the §eyellow arrow up top§f. It points to your current job."));
             point(player, ledger, fallback, false);
             return;
         }
@@ -68,6 +71,25 @@ public final class SkillRoads {
                 point(player, ledger, fallback, true);
             }
         });
+    }
+
+    /**
+     * The door: orientation is filed, the four roads open. One title card + a low gate sound + a chime,
+     * listener only. Plays once, on the first stamp (the desk's "Where next?" doesn't repeat it).
+     */
+    private static void doorOpens(Player player) {
+        player.showTitle(net.kyori.adventure.title.Title.title(
+                Component.text(LangPack.ui(player, "roads_open_title", "THE ROADS ARE OPEN"), NamedTextColor.LIGHT_PURPLE,
+                        net.kyori.adventure.text.format.TextDecoration.BOLD),
+                net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().deserialize(
+                        LangPack.ui(player, "roads_open_subtitle", "§aForage §8· §eFarm §8· §bFishing §8· §cSteel")),
+                net.kyori.adventure.title.Title.Times.times(java.time.Duration.ofMillis(400),
+                        java.time.Duration.ofMillis(2600), java.time.Duration.ofMillis(800))));
+        org.bukkit.Location at = player.getLocation();
+        player.playSound(at, org.bukkit.Sound.BLOCK_IRON_DOOR_OPEN, org.bukkit.SoundCategory.PLAYERS, 0.7f, 0.6f);
+        player.playSound(at, org.bukkit.Sound.BLOCK_BEACON_ACTIVATE, org.bukkit.SoundCategory.PLAYERS, 0.5f, 1.4f);
+        later(player, 10L, () -> player.playSound(player.getLocation(), org.bukkit.Sound.BLOCK_AMETHYST_BLOCK_CHIME,
+                org.bukkit.SoundCategory.PLAYERS, 0.9f, 1.2f));
     }
 
     /** Ledger desk chip "Where next?": same picker, one prompt line. */
@@ -134,6 +156,15 @@ public final class SkillRoads {
             say(player, speaker, line(player, lineKey(player, qm, road)));
         }
         QuestHint.clearPending(player);
+        // After Tackle's lesson: pin the fishing pad (Twig-pattern), not Tackle himself again.
+        if (road == Road.FISH && qm != null && QuestStoryGate.questCompleted(player, qm, "a_good_catch")) {
+            QuestHint.showSpot(player, "fish_pad",
+                    LangPack.ui(player, "hint_label.fish_pad", "Fishing Eldervale Pad"));
+            player.sendActionBar(Component.text(
+                    LangPack.ui(player, "tip.fish_pad", "→ Fishing Eldervale pad · out west"),
+                    color(road)));
+            return;
+        }
         QuestHint.show(player, npcId(player, qm, road), hintLabel(player, qm, road));
         player.sendActionBar(Component.text(tip(player, key), color(road)));
         if (road == Road.FORAGE) {

@@ -14,6 +14,7 @@ Paste that link into another chat when you need plugin context; `main` is the cu
 | [AetherionCore](AetherionCore/) | Shared keys / identity only (no game loop) |
 | [AetherionItems](AetherionItems/) | Items, economy, boosters, Codex/Skills, DevMenu, combat abilities, arenas |
 | [BossEngine](BossEngine/) | Bosses (Helios, Seraphine/Saint, Hollow Sun, World Eater, …) |
+| [AetherionGnomon](AetherionGnomon/) | GNOMON: adaptive boss encounter (display rig, dial arena, learning AI) on BossEngine — mmo-r |
 | [Aethermobs](Aethermobs/) | Pets / wild mobs / catch |
 | [AetherionQuests](AetherionQuests/) | Quests, NPC talk/cast, dialog |
 | [AetherionHub](AetherionHub/) | Hub spawns, goto, spawn menu |
@@ -34,9 +35,14 @@ Velocity proxy in front of Crafty Paper backends:
 | Backend | Role |
 |---------|------|
 | **Hub** | Lobby + Pit (safe spawn, PvP outside the red line). Runs **AetherionPit**. |
-| **mmo-r** | RPG / capital (Items, AetherionHub, Quests, gather, Guilds, …). |
-| **mmo-d** | Dungeon hub + instances. |
-| **mmo-c** | Extra dungeon/Ashes world (Multiverse mark). |
+| **mmo-r** | Main world: capital, skill isles, bosses, the one Bazaar / Auction House (Items, AetherionHub, Quests, gather, …). |
+| **mmo-d** | Dungeons ONLY (dungeon hub + instances). |
+| **mmo-c** | Exile (`aetherion_exile`) — story / ferry. Gameplay stack minus Dungeons. |
+| **mmo-i** | Private + guild islands ONLY (AetherionGuilds runs here, nowhere else). |
+
+Players move between them with their whole character (transfer v6: AetherionDungeons on mmo-r / mmo-d, Core's
+`CharacterHost` on mmo-c / mmo-i) and the command they typed finishes on arrival (`/island` on mmo-r lands on your
+island, `/capital` on the isles lands in the capital). Runbook + smoke test: `aetherion-ops/docs/NETWORK_WIRING.md`.
 
 **Hub needs AetherionCore.** Pit `depend`s on Core (`FancyNpcFacade`). Drop `AetherionCore.jar` on Hub, not only mmo-r / mmo-d.
 

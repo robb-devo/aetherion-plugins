@@ -223,6 +223,97 @@ public final class StoryLines {
                 "Fog's thinner today. Not thin enough.",
                 "Soon. The oar keeps wanting to be used.",
                 "Come back soon. I'll have remembered the way by then.");
+        en("story_ferryman.offer_ferry",
+                "A passenger. With a writ, even. The fog's thin enough today.",
+                "Step onto the barge and ring the bell. Once. It counts.",
+                "I'll see you on the other side. I'm always on the other side.");
+        en("story_ferryman.remind_ferry",
+                "Aboard, {player}. Ring the bell once, or just stand on the deck and wait.",
+                "The fog doesn't wait. Well. It does. I don't.");
+        en("story_ferryman.ferry_done",
+                "Told you. Always on this side, somehow.",
+                "The King's Quay. Nobody's tied up here since the Silent Year.",
+                "The lift on the quay wall goes up to the court. Pull the lever. It bites.");
+        en("story_ferryman.captain_hook",
+                "Up past the court there's a crater, ringed in iron. Something fell in, burning.",
+                "A sentry still stands at the ring. He'll want to hear it's out.");
+        en("story_ferryman.offer_captain",
+                "Something fell into the crater past the court. Still burning.",
+                "There's an iron ring around it, and a sentry who never left. Put the fire out.");
+        en("story_ferryman.remind_captain",
+                "The crater, {player}. Up the lift, past the court, south. The iron ring.",
+                "His sword stands in the middle. It's waiting for an order.");
+        en("story_ferryman.exile_default",
+                "The lift's on the quay wall. The court's up top. I stay with the boat.",
+                "Want to go back across? Just say so. The fog likes a round trip.");
+
+        // ------------------------------------------------------------ Act III · the Exile
+        en("story_exile_sentry.default",
+                "Nobody through. Captain's orders.",
+                "...The Captain's in there. Has been for a while.",
+                "Right-click the bars if you must. I didn't see you. I never see anyone.");
+        en("story_exile_sentry.remind_captain",
+                "Still burning. I feel it through my boots.",
+                "His sword's in the middle of the crater. Give it the order. He'll answer.");
+        en("story_exile_sentry.captain_done",
+                "Quiet. First time in... I don't know how long.",
+                "He told the King no, you know. At the third anchor. I heard it.",
+                "Relieved. That's the word. Relieved of duty.");
+
+        en("story_orrin.default",
+                "Orrin. Court engineer. Retired, technically. The star disagrees.",
+                "Please don't touch the ring. It's calibrated to a heartbeat.");
+        en("story_orrin.offer_heart",
+                "You came to stop her heart. I know. I've known for a thousand years someone would.",
+                "I promised the Queen I'd keep it beating until he came back. He hasn't.",
+                "Leave. Please. ...No? Then the ring will take you. I'll be on the other side of it.");
+        en("story_orrin.remind_heart",
+                "The ring is open for you now. I'd rather it weren't.",
+                "Go, then. I'll be waiting where the light is.");
+
+        en("story_exile_usher.default",
+                "Tickets? Nobody has tickets anymore. Every seat is taken.",
+                "The performance never ends. Sir. Madam. Whoever you are.");
+        en("story_exile_usher.remind_heart",
+                "You'll want the Observatory first, I think. The Queen's seal opens this door properly.");
+        en("story_exile_usher.heart_done",
+                "You're carrying a letter. Sealed with her mark. I'd know it anywhere.",
+                "The doors remember the Queen. So do I. A little.");
+        en("story_exile_usher.doll_hook",
+                "There's a music box on the stage. Wind it, and she'll begin.",
+                "Stay for the whole performance. Then come tell me how it ends.");
+        en("story_exile_usher.offer_doll",
+                "There's a music box on the stage. Wind it, and she'll begin.",
+                "Sit through all of it. Then tell me how it ends. It never does.");
+        en("story_exile_usher.remind_doll",
+                "The music box, front of the stage. Mind the strings. They aren't hers anymore.");
+        en("story_exile_usher.doll_done",
+                "It ended? It actually ended.",
+                "She held the child. Didn't she. Nobody else was there.",
+                "The gardener's boy waits by the roots. He'll want to know the theatre's quiet.");
+
+        en("story_exile_gardener.default",
+                "Don't step on the beds. He gets upset.",
+                "He's not a he. He's a golem. He waters everything. Even the stones.");
+        en("story_exile_gardener.offer_seed",
+                "Below the garden there's a hole. The Maw. Something in it eats.",
+                "He's down there, guarding it. He never stopped. Please make it stop eating.");
+        en("story_exile_gardener.remind_seed",
+                "The Maw's at the end of the path. Listen at the gate. You'll hear it chew.");
+        en("story_exile_gardener.seed_done",
+                "It stopped. The ground's... just ground now.",
+                "He came back up. He's watering the stones again.",
+                "The castle doors are the last thing still shut. Maybe they'll listen now.");
+
+        en("story_exile_lamplighter.default",
+                "Two hundred and twelve lamps. Every evening. I'm late.",
+                "Lift's behind you, court's ahead. Doors everywhere. Ask, if you like.");
+        en("story_exile_mother.default",
+                "We have to be gone before the dusk toll. Have you seen her other shoe?",
+                "She's always hiding. Under the stairs, usually. Not today.");
+        en("story_exile_keeper.default",
+                "The Last Bell's open. Always open. Nobody drinks.",
+                "Sit if you like. The chairs remember people.");
     }
 
     private StoryLines() {

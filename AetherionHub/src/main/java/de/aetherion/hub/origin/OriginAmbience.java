@@ -253,7 +253,7 @@ public final class OriginAmbience {
         }
     }
 
-    private static boolean active(String when, OriginIsle.Phase phase) {
+    static boolean active(String when, OriginIsle.Phase phase) {
         return switch (when == null ? "any" : when.toLowerCase(java.util.Locale.ROOT)) {
             case "day" -> phase == OriginIsle.Phase.DAY || phase == OriginIsle.Phase.DAWN;
             case "night" -> phase == OriginIsle.Phase.NIGHT || phase == OriginIsle.Phase.DUSK;

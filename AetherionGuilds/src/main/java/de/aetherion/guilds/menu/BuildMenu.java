@@ -128,6 +128,10 @@ public final class BuildMenu implements MenuKit.Menu {
         player.openInventory(inventory);
     }
 
+    public PlacementService placement() {
+        return placement;
+    }
+
     /** Kept for the Hub and other screens that used to open the Build desk: it's the picker now. */
     public void openDesk(Player player, IslandHost host) {
         open(player, host);

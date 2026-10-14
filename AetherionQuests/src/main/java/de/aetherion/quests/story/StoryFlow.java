@@ -38,7 +38,8 @@ import java.util.Set;
  */
 public final class StoryFlow {
 
-    public static final Set<String> STORY_NPCS = Set.of("ysolde", "berit", "nell", "hesper", "ferryman");
+    public static final Set<String> STORY_NPCS = Set.of("ysolde", "berit", "nell", "hesper", "ferryman",
+            "orrin", "exile_lamplighter", "exile_sentry", "exile_usher", "exile_gardener", "exile_mother", "exile_keeper");
 
     /** Existing cast that hands out a story step. */
     private static final Set<String> GIVERS = Set.of("town_crier", "isle_clerk");
@@ -73,6 +74,10 @@ public final class StoryFlow {
 
         for (LullabyQuests.Step step : LullabyQuests.STEPS) {
             if (id.equals(step.talk()) && state(qm, player, step) == QuestState.ACTIVE) {
+                if (LullabyQuests.FERRY.equals(step.id()) && !onExile(player)) {
+                    // Talking to him on this side is the ticket, not the crossing.
+                    continue;
+                }
                 finishTalk(player, npc, qm, dm, step);
                 return true;
             }
@@ -110,11 +115,19 @@ public final class StoryFlow {
             return false;
         }
 
+        if (story && ExileStory.desk(player, npc, qm)) {
+            return true;
+        }
         if (story) {
             speak(player, npc, dm, flavor(player, qm, id), null);
             return true;
         }
         return false;
+    }
+
+    /** On the exile island (mmo-c, Runde 7 world). */
+    public static boolean onExile(Player player) {
+        return player != null && player.getWorld().getName().equalsIgnoreCase(LullabyQuests.EXILE_WORLD);
     }
 
     /**
@@ -201,6 +214,8 @@ public final class StoryFlow {
         return switch (next.id()) {
             case LullabyQuests.GEAR -> "story_berit.gear_hook";
             case LullabyQuests.INSIGNIA -> "story_ysolde.offer_insignia";
+            case LullabyQuests.CAPTAIN -> "story_ferryman.captain_hook";
+            case LullabyQuests.DOLL -> "story_exile_usher.doll_hook";
             case LullabyQuests.SHORT_TOLL -> "story_ysolde.offer_short_toll";
             case LullabyQuests.LETTERS -> "story_ysolde.letters_hook";
             case LullabyQuests.THIRD_ANCHOR -> "story_ysolde.third_anchor_hook";
@@ -222,6 +237,7 @@ public final class StoryFlow {
             case LullabyQuests.THIRD_ANCHOR -> "story_ysolde.musing_letters+story_ysolde.anchor_gate";
             case LullabyQuests.SILENT_ROAD -> "story_ysolde.musing_fading+story_ysolde.road_gate";
             case LullabyQuests.FORGOTTEN -> "story_nell.wait";
+            case LullabyQuests.FERRY -> "story_ferryman.waiting";
             default -> null;
         };
     }
@@ -239,8 +255,24 @@ public final class StoryFlow {
                 QuestHint.show(player, "ysolde", "Ysolde Thorne");
                 tip(player, "story_next.ysolde_road", "Tell Ysolde · Archive · Aetherion Level 60", NamedTextColor.GOLD);
             }
-            case LullabyQuests.SILENT_ROAD -> tip(player, "story_next.veil",
-                    "The Veil Quay is open · the ferry waits for Level 75", NamedTextColor.AQUA);
+            case LullabyQuests.SILENT_ROAD -> {
+                tip(player, "story_next.veil", "The Veil Quay is open · the ferry waits for Level 75", NamedTextColor.AQUA);
+                if (de.aetherion.core.api.ExilePlaces.quayBoard() != null) {
+                    QuestHint.showSpot(player, "veil_quay", "The Veil Quay");
+                }
+            }
+            case LullabyQuests.CAPTAIN -> {
+                QuestHint.show(player, "orrin", "Orrin");
+                tip(player, "story_next.orrin", "Next · Orrin · the Observatory, far west of the court", NamedTextColor.GOLD);
+            }
+            case LullabyQuests.DOLL -> {
+                QuestHint.show(player, "exile_gardener", "The Gardener's Boy");
+                tip(player, "story_next.gardener", "Next · the Gardener's Boy · the Root-Ground gate", NamedTextColor.GREEN);
+            }
+            case LullabyQuests.SEED -> {
+                QuestHint.showSpot(player, "exile_doors", "The Great Doors");
+                tip(player, "story_next.doors", "The castle's Great Doors · they may finally listen", NamedTextColor.WHITE);
+            }
             default -> {
             }
         }
@@ -263,7 +295,8 @@ public final class StoryFlow {
                     : "story_berit.default";
             case "nell" -> stage >= 6 ? "story_nell.after" : "story_nell.default";
             case "hesper" -> stage >= 5 ? "story_hesper.after" : "story_hesper.default";
-            case "ferryman" -> !StoryState.hasPlayerFlag(player, StoryState.VEIL_QUAY) ? "story_ferryman.default"
+            case "ferryman" -> onExile(player) ? "story_ferryman.exile_default"
+                    : !StoryState.hasPlayerFlag(player, StoryState.VEIL_QUAY) ? "story_ferryman.default"
                     : meetsLevel(player, 75) ? "story_ferryman.soon" : "story_ferryman.waiting";
             default -> "story_" + id + ".default";
         };
@@ -293,7 +326,7 @@ public final class StoryFlow {
         return quest != null && QuestSkillGate.failReason(player, quest) == null;
     }
 
-    private static boolean meetsLevel(Player player, int level) {
+    static boolean meetsLevel(Player player, int level) {
         Quest probe = new Quest("story_level_probe", "", "");
         probe.requireAccountLevel(level);
         return QuestSkillGate.failReason(player, probe) == null;

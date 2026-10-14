@@ -5,6 +5,7 @@ import de.aetherion.items.storage.AetherionStorage;
 import de.aetherion.items.storage.LoadoutGUI;
 import de.aetherion.items.storage.LoadoutManager;
 import de.aetherion.items.storage.StorageGUI;
+import de.aetherion.items.storage.StorageHolder;
 import de.aetherion.items.storage.StorageInventory;
 
 import org.bukkit.ChatColor;
@@ -194,30 +195,12 @@ public class StorageListener implements Listener {
             InventoryClickEvent event
     ) {
 
-        String title =
-                event.getView()
-                        .getTitle();
-
-
-        /*
-         * =====================================================
-         * STORAGE
-         * =====================================================
-         */
-
-        if (
-                title.startsWith(
-                        StorageGUI.STORAGE_TITLE
-                )
-        ) {
-
-            handleStorageClick(
-                    event
-            );
-
+        if (event.getView().getTopInventory().getHolder() instanceof StorageHolder) {
+            handleStorageClick(event);
             return;
         }
 
+        String title = event.getView().getTitle();
 
         /*
          * =====================================================
@@ -434,11 +417,7 @@ public class StorageListener implements Listener {
                         event.getWhoClicked();
 
 
-        int currentPage =
-                getCurrentPage(
-                        event.getView()
-                                .getTitle()
-                );
+        int currentPage = currentPage(event.getView().getTopInventory());
 
 
         int unlockedPages =
@@ -687,41 +666,11 @@ public class StorageListener implements Listener {
      * =========================================================
      */
 
-    private int getCurrentPage(
-            String title
-    ) {
-
-        String prefix =
-                StorageGUI.STORAGE_TITLE
-                        + " - Page ";
-
-
-        if (
-                !title.startsWith(prefix)
-        ) {
-
-            return 1;
+    private int currentPage(Inventory inventory) {
+        if (inventory != null && inventory.getHolder() instanceof StorageHolder holder) {
+            return holder.getPage();
         }
-
-
-        String pageString =
-                title.substring(
-                        prefix.length()
-                );
-
-
-        try {
-
-            return Integer.parseInt(
-                    pageString
-            );
-
-        } catch (
-                NumberFormatException exception
-        ) {
-
-            return 1;
-        }
+        return 1;
     }
 
 
@@ -884,47 +833,15 @@ public class StorageListener implements Listener {
             InventoryCloseEvent event
     ) {
 
-        String title =
-                event.getView()
-                        .getTitle();
-
-
-        if (
-                !title.startsWith(
-                        StorageGUI.STORAGE_TITLE
-                                + " - Page "
-                )
-        ) {
-
+        if (!(event.getView().getTopInventory().getHolder() instanceof StorageHolder holder)) {
             return;
         }
 
-
-        if (
-                !(event.getPlayer()
-                        instanceof Player)
-        ) {
-
+        if (!(event.getPlayer() instanceof Player player)) {
             return;
         }
 
-
-        Player player =
-                (Player)
-                        event.getPlayer();
-
-
-        int page =
-                getCurrentPage(
-                        title
-                );
-
-
-        saveCurrentPage(
-                player,
-                event.getInventory(),
-                page
-        );
+        saveCurrentPage(player, event.getInventory(), holder.getPage());
     }
 
 
@@ -942,41 +859,14 @@ public class StorageListener implements Listener {
             InventoryDragEvent event
     ) {
 
-        String title =
-                event.getView()
-                        .getTitle();
+        String title = event.getView().getTitle();
 
-
-        /*
-         * =====================================================
-         * MAIN MENU
-         * =====================================================
-         */
-
-        if (
-                title.equals(
-                        StorageGUI.MAIN_MENU_TITLE
-                )
-        ) {
-
+        if (title.equals(StorageGUI.MAIN_MENU_TITLE)) {
             event.setCancelled(true);
-
             return;
         }
 
-
-        /*
-         * =====================================================
-         * STORAGE
-         * =====================================================
-         */
-
-        if (
-                !title.startsWith(
-                        StorageGUI.STORAGE_TITLE
-                )
-        ) {
-
+        if (!(event.getView().getTopInventory().getHolder() instanceof StorageHolder)) {
             return;
         }
 

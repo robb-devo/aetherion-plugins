@@ -21,7 +21,10 @@ import java.util.logging.Level;
 /**
  * One path for main-world warps: already on {@code mmo-r} means a local teleport;
  * every other Velocity backend connects to {@code mmo-r} with a pending destination.
- * The snapshot never clears the live inventory.
+ *
+ * <p>Where a character transport exists (every MMO backend) the hop goes through
+ * {@link NetworkRouter} (transfer v6 + route). The v5 snapshot below is only the fallback for
+ * backends without one (hub, mixed old jars); it never clears the live inventory.
  */
 public final class MainWorldLink implements PluginMessageListener, Listener {
 
@@ -98,11 +101,20 @@ public final class MainWorldLink implements PluginMessageListener, Listener {
         if (isMainWorld()) {
             return false;
         }
+        String warp = spawnId == null ? "" : spawnId.trim().toLowerCase(Locale.ROOT);
+        NetworkRouter router = plugin.router();
+        if (router != null && router.canTravel()) {
+            // v6: the character moves (ledger, freeze, rollback); the warp is finished on arrival.
+            if (!router.travel(player, mainServer,
+                    warp.isBlank() ? RouteBook.Kind.NONE : RouteBook.Kind.WARP, warp, NetworkRouter.DEPART_MAIN, "warp")) {
+                player.sendMessage("§cCould not reach Aetherion right now. Nothing moved.");
+            }
+            return true;
+        }
         DungeonAccess dungeons = AetherServices.dungeons();
         if (dungeons != null) {
             dungeons.leaveInstance(player);
         }
-        String warp = spawnId == null ? "" : spawnId.trim().toLowerCase(Locale.ROOT);
         long savedAt = snapshots == null ? -1L : snapshots.save(
                 player, 0, false, warp.isBlank() ? null : warp, mainServer);
         if (savedAt < 0L) {

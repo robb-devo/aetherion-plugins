@@ -329,6 +329,16 @@ public final class HubService {
         return data;
     }
 
+    /** Persist one player before network transfer export. */
+    public void flushPlayer(UUID uuid) {
+        storage.flushPlayer(uuid);
+    }
+
+    /** Drop cache after transfer import overwrote the YAML on disk. */
+    public void invalidate(UUID uuid) {
+        storage.invalidate(uuid);
+    }
+
     public void unload(UUID uuid) {
         storage.unload(uuid);
     }

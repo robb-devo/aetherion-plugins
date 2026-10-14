@@ -1,5 +1,7 @@
 package de.aetherion.items.storage;
 
+import de.aetherion.items.util.ManagerChrome;
+
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -13,6 +15,7 @@ import java.util.List;
 
 public class LoadoutGUI {
 
+    /** Legacy title — menu uses {@link ManagerChrome#LOADOUTS}. */
     public static final String LOADOUT_TITLE =
             "Aetherion Loadouts";
 
@@ -139,12 +142,14 @@ public class LoadoutGUI {
             Integer activeLoadout
     ) {
 
+        LoadoutHolder holder = new LoadoutHolder();
         Inventory inventory =
                 Bukkit.createInventory(
-                        null,
+                        holder,
                         54,
-                        LOADOUT_TITLE
+                        ManagerChrome.LOADOUTS
                 );
+        holder.bind(inventory);
 
 
         /*

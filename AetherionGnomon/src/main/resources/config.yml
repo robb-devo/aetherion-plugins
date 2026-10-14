@@ -1,0 +1,155 @@
+# ============================================================
+#  AetherionGnomon - feel-tuning knobs
+#  Everything here is read at fight start (/gnomon reload between fights).
+#  Damage values are BossHits "power" (same scale BossEngine uses: % of the player's HP bar, defense applies).
+# ============================================================
+config-version: 1
+
+# ------------------------------------------------------------ arena
+arena:
+  # Where /gnomon start builds the fight. Set it in-game with /gnomon setarena [radius].
+  # Empty world = /gnomon start needs "here".
+  world: ""
+  x: 0.5
+  y: 64.0
+  z: 0.5
+  # Play radius (the dial). Needs a flat, open floor this wide.
+  radius: 24
+  # Players further than this from the center leave the fight (and get their sky / border back).
+  leave-radius: 40
+  # Private world border per participant at radius + 4: red vignette at the edge, solid for the client.
+  seal: true
+  # Night sky per participant while fighting (only the boss's lens is "the sun").
+  night: true
+  # Nobody on the dial for this long during the fight = the Gnomon folds away (fight resets, no loot).
+  empty-reset-seconds: 45
+
+# ------------------------------------------------------------ rig (the body)
+rig:
+  hub-height: 13.0
+  hip-radius: 1.3
+  thigh: 8.5
+  shin: 9.5
+  # Distance of a resting foot from the hub's floor point.
+  stance: 6.5
+  # Gait: a foot steps when it is this far from where it wants to be.
+  step-threshold: 3.2
+  step-ticks: 12
+  step-lift: 3.5
+  # Hub travel speed (blocks/tick) and turn speed (degrees/tick). Heavy on purpose.
+  max-speed: 0.17
+  turn-speed: 2.2
+  # Pendulum (the heart / hitbox).
+  bob-rest-height: 3.0
+  pendulum-gravity: 0.075
+  pendulum-damping: 0.985
+  hit-recoil: 0.10
+  # Pose packets: every N ticks (1 = smoothest). Interpolation covers the gap.
+  update-interval: 1
+  view-range: 1.6
+
+# ------------------------------------------------------------ combat numbers (BossHits power)
+damage:
+  stomp: 62
+  stride-foot: 30
+  hour-hand: 55
+  plumb-drop: 80
+  trap-ring: 68
+  survey-line: 50
+  interdict-tick: 14
+  recital: 56
+  # Extra damage the heart takes while it glows gold.
+  opening-multiplier: 1.6
+  stagger-multiplier: 1.35
+
+# ------------------------------------------------------------ telegraphs (ticks)
+telegraph:
+  stomp: 24
+  stomp-commit: 9          # last N ticks the shadow stops tracking (always >= fairness.min-commit)
+  feint-real-warning: 14   # the real foot's shadow shows at least this long before it lands
+  hour-hand: 32
+  hour-hand-sweep: 54      # ticks for the 270 degree sweep
+  plumb-drop: 30
+  opening: 52
+  false-opening-snap: 22   # ticks of fake gold before the snap
+  trap-warning: 12
+  survey-line: 28
+  survey-commit: 9
+  interdict: 30
+  recital-lead: 22         # each replayed point glows at least this long before it bursts
+  stagger: 40
+
+fairness:
+  # Hard floors. The AI's timing reads can never push a telegraph below these.
+  min-telegraph-ticks: 16
+  min-commit-ticks: 8
+  # Players above the floor by this much are over ground waves (Survey Line, trap ring, Recital).
+  jump-clearance: 1.05
+
+# ------------------------------------------------------------ the mind
+ai:
+  # How long evidence lives (seconds until it counts half). Phase II memory is stickier.
+  memory-half-life: 40
+  memory-half-life-verdict: 70
+  # Read thresholds (confidence 0..1): noticed -> exploited -> forgotten (hysteresis).
+  notice: 0.35
+  exploit: 0.55
+  forget: 0.25
+  # Seconds of pure observation at the start (long telegraphs, no exploits). The "teaching" window.
+  teach-seconds: 35
+  # Evidence needed before a read can be trusted at all.
+  min-dodges: 4
+  min-orbit-seconds: 6
+  min-range-seconds: 6
+  min-opening-hits: 4
+  min-sector-seconds: 20
+  # A failed exploit (you did the opposite) multiplies that read's evidence by this.
+  outplayed-forgetting: 0.45
+  # Decision noise. 0 = always the top-scoring move. Small values keep it from being a metronome.
+  temperature: 0.12
+  # Repetition penalty per recent use of the same move (last 4 picks).
+  repeat-penalty: 0.45
+  # Focus (multiplayer): minimum seconds on one target, maximum before it must reconsider.
+  focus-min-seconds: 5
+  focus-max-seconds: 14
+  # Posture hysteresis (seconds).
+  posture-min-seconds: 8
+  # Recovery gap between moves per posture (ticks).
+  gap-observe: 30
+  gap-press: 14
+  gap-deny: 18
+  gap-prey: 20
+  # Every N moves the Gnomon takes a breath: silence, the lens scans. Pacing.
+  breath-every: 4
+  breath-ticks: 40
+
+# ------------------------------------------------------------ background music (note-block transcription)
+music:
+  enabled: true
+  # Resource under melodies/<track>.nbm inside the jar (transcribed from the note-block Stalemate cover).
+  # stalemate = 20 t/s grid-locked (~150 BPM, perfectly even) | stalemate_174 = original 174 BPM (notes +-25 ms)
+  track: gnomon_song
+  # Bed under combat SFX. SoundCategory.RECORDS (client "Music/Records" slider).
+  volume: 0.75
+  loop: true
+  # true = every fighter hears the bed at their own feet (whole dial, no falloff).
+  # false = play at the hub; raise volume (~ leave-radius/16) if you want distance falloff.
+  follow-players: true
+
+# ------------------------------------------------------------ ledger (chalk trails on the floor)
+ledger:
+  max-segments: 160
+  per-player: 44
+  min-step: 1.6
+  sample-ticks: 8
+
+# ------------------------------------------------------------ party scaling (applied at fight start)
+scaling:
+  # HP x (1 + per-extra-player * (players - 1)), capped.
+  per-extra-player: 0.55
+  max-health-multiplier: 4.0
+
+# ------------------------------------------------------------ debug
+debug:
+  # Log every decision (move, scores, reads) to the console.
+  log-decisions: false

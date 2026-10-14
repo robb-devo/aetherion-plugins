@@ -23,6 +23,11 @@ public abstract class CodexView implements InventoryHolder {
     /** Inventory title for this page. */
     protected abstract String title();
 
+    /** Pack overlay title (Manager chrome). {@code null} falls back to the plain {@link #title()}. */
+    protected net.kyori.adventure.text.Component chrome() {
+        return null;
+    }
+
     protected int size() {
         return 54;
     }
@@ -32,7 +37,10 @@ public abstract class CodexView implements InventoryHolder {
         if (player == null) {
             return;
         }
-        inventory = Bukkit.createInventory(this, size(), title());
+        net.kyori.adventure.text.Component chrome = chrome();
+        inventory = chrome != null
+                ? Bukkit.createInventory(this, size(), chrome)
+                : Bukkit.createInventory(this, size(), title());
         render(player);
         player.openInventory(inventory);
     }

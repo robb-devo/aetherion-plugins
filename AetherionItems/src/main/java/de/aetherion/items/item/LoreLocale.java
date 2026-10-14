@@ -317,9 +317,19 @@ public final class LoreLocale {
      * LORE / NAME ENTRY POINTS
      * ========================================================= */
 
-    /** English lore of {@code meta}, whatever language it currently shows. */
+    /**
+     * English lore of {@code meta}. Prefers {@code lore_cache} (authoritative spine) so German display
+     * never feeds the layout pipeline — reverse-translating wrapped DE lines caused tooltip duplication.
+     */
     public static List<String> canonicalLore(ItemMeta meta) {
-        if (meta == null || !meta.hasLore() || meta.getLore() == null) {
+        if (meta == null) {
+            return null;
+        }
+        List<String> cached = GearTooltip.cachedEnglish(meta);
+        if (cached != null) {
+            return new ArrayList<>(cached);
+        }
+        if (!meta.hasLore() || meta.getLore() == null) {
             return null;
         }
         List<String> lore = new ArrayList<>(meta.getLore());
@@ -359,18 +369,54 @@ public final class LoreLocale {
     /**
      * Last step of every tooltip write: the finished English lore becomes what this item should show
      * (German or English) and the tag follows. While {@link #holding()} the English lore is returned untouched.
+     * Always writes {@code lore_cache} with the English spine so the next refresh never layouts German.
      */
     public static List<String> present(ItemMeta meta, String itemId, List<String> english) {
         if (english == null || holding()) {
             return english;
         }
+        List<String> spine = english;
+        // Guard: never feed already-localized display lore into toGerman (that stacked tooltips).
+        // Only rewrite the *input* when it looks German — tagged+fresh English (ValueLore etc.) must stick.
+        if (looksLocalized(spine)) {
+            List<String> cached = GearTooltip.cachedEnglish(meta);
+            spine = cached != null ? cached : toEnglish(spine, itemId);
+        }
+        GearTooltip.cacheEnglish(meta, spine);
         boolean german = target(meta);
         boolean was = tagged(meta);
         setTag(meta, german);
         if (german || was) {
             localizeBook(meta, german);
         }
-        return german ? toGerman(english, itemId) : english;
+        return german ? toGerman(spine, itemId) : spine;
+    }
+
+    /** True when lore already carries German chrome (Wert / Passt / glossary hits) — must not re-localize. */
+    private static boolean looksLocalized(List<String> lore) {
+        if (lore == null || !ready()) {
+            return false;
+        }
+        for (String line : lore) {
+            if (line == null || line.isBlank()) {
+                continue;
+            }
+            String plain = key(line);
+            if (plain.startsWith("Wert:") || plain.startsWith("AH-Wert:") || plain.startsWith("Handelswert:")) {
+                return true;
+            }
+            String fits = LoreGlossary.chromeGerman("fits");
+            if (fits != null && plain.startsWith(fits + ":")) {
+                return true;
+            }
+            if (machineToEnglish(line) != null) {
+                return true;
+            }
+            if (tables.byDe.containsKey(plain)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** Readable story finds carry their pages, title and author in the book itself. */
@@ -401,6 +447,7 @@ public final class LoreLocale {
         if (meta == null) {
             return;
         }
+        // present() also caches the English spine
         meta.setLore(present(meta, itemId(meta), english));
     }
 

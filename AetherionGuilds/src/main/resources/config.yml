@@ -49,6 +49,7 @@ guide:
   title: Isle Hand
   skin: MHF_Villager
   free-belt-tiles: 16             # the first belt Hollis hands out: these tiles cost nothing
+  factory-belt-tiles: 24          # act two (Mill, Forge): free belt tiles topped up at each machine
 island-bar:
   enabled: true                   # calm island status bar; quest/hint bars step aside on island worlds either way
 

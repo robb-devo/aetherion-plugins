@@ -90,8 +90,9 @@ public final class IslandBar implements Listener {
                 continue;
             }
             show(player, host);
-            if (goals != null && ticks % 4L == 0L && !host.isGuild() && hosts.isMember(player, host)
-                    && (guide == null || guide.objective(host.id()) == null)) {
+            // same ladder on guild islands (beats once per island, coins to the guild bank)
+            if (goals != null && ticks % 4L == 0L && hosts.isMember(player, host)
+                    && (host.isGuild() || guide == null || !guide.firstAct(host.id()))) {
                 goals.check(player, host);
             }
         }
@@ -106,8 +107,9 @@ public final class IslandBar implements Listener {
         String[] warn;
         if (objective != null) {
             int done = guide.progress(host.id());
-            text = "§e✦ " + guide.name() + " §8› §f" + objective + " §8(" + (done + 1) + "/3)";
-            progress = Math.max(0.05f, done / 3f);
+            int total = guide.total();
+            text = "§e✦ " + guide.name() + " §8› §f" + objective + " §8(" + Math.min(total, done + 1) + "/" + total + ")";
+            progress = Math.max(0.05f, done / (float) total);
             color = BossBar.Color.YELLOW;
         } else if (!member) {
             text = "§7Visiting §f" + hosts.title(host) + " §8· §7Tier §f" + hosts.tier(host);
@@ -174,18 +176,37 @@ public final class IslandBar implements Listener {
      */
     private String[] warningOrGoal(IslandHost host) {
         String problem = logistics.worstProblem(host);
-        FactoryGoals.Goal next = goals == null || host.isGuild() ? null : goals.next(host);
+        // a guild with a project running keeps the project line; goals then wait their turn
+        FactoryGoals.Goal next = goals == null || (host.isGuild() && projectLine(host) != null) ? null : goals.next(host);
         boolean showProblem = problem != null && (next == null || (ticks / 5L) % 2L == 0L);
         if (showProblem) {
-            return new String[]{"§c⚠ §f" + problem + " §8· §7/island → Production", "1", "red"};
+            return new String[]{"§c⚠ §f" + problem + (host.isGuild() ? " §8· §7see its floating tag"
+                    : " §8· §7/island → Production"), "1", "red"};
         }
         if (next != null) {
             int done = goals.doneCount(host);
             int total = goals.all().size();
-            return new String[]{"§b➤ Next: §f" + next.title() + " §8(" + (done + 1) + "/" + total + ")",
+            // One sentence next step — title + how, same text Hollis / /island use.
+            String how = "first_chain".equals(next.id()) ? firstStep(host, next.how()) : next.how();
+            String line = how == null || how.isBlank() ? next.title() : next.title() + " §8— §7" + how;
+            if (line.length() > 96) {
+                line = next.title(); // too long for the bar: the title alone, Hollis / /island carry the how
+            }
+            return new String[]{"§b➤ §f" + line + " §8(" + (done + 1) + "/" + total + ")",
                     String.valueOf(Math.max(0.03f, done / (float) total)), "blue"};
         }
         return null;
+    }
+
+    /** Before the first chain: the one thing missing (hut, quarry, belt), same order Hollis walks. */
+    private String firstStep(IslandHost host, String fallback) {
+        if (structures.count(host, StructureType.STORAGE_HUT) == 0) {
+            return "Build Tool → Storage Hut (free)";
+        }
+        if (hosts.minions(host).isEmpty()) {
+            return "set a quarry down near the hut";
+        }
+        return fallback + " (first belt free)";
     }
 
     private String projectLine(IslandHost host) {

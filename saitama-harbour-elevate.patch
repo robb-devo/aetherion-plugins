@@ -1,0 +1,931 @@
+diff --git a/AetherionHub/src/main/java/de/aetherion/hub/origin/OriginBay.java b/AetherionHub/src/main/java/de/aetherion/hub/origin/OriginBay.java
+index b8b84d4e..4126fca2 100644
+--- a/AetherionHub/src/main/java/de/aetherion/hub/origin/OriginBay.java
++++ b/AetherionHub/src/main/java/de/aetherion/hub/origin/OriginBay.java
+@@ -40,7 +40,7 @@ import java.util.concurrent.ThreadLocalRandom;
+ /**
+  * The living bay of Anker Harbour: the supply skyship <i>Halcyon</i> that drifts in over the
+  * north rim, anchors above the water and lowers a crate to a skiff; fishing skiffs rowing their
+- * rounds; bobbing channel buoys; and the dock crane swinging crates onto the cargo punt.
++ * rounds; bobbing channel buoys; and the cargo crane at the pier head loading the lighter.
+  * <p>
+  * Pure Hub-side scenery: non-persistent display entities, two boats with villager rowers, no
+  * blocks touched. Everything sleeps (and is removed) while nobody is near the harbour; positions
+@@ -109,9 +109,13 @@ public final class OriginBay implements Listener {
+                 buoys.add(new Buoy(p, parts.length >= 4 ? parts[3] : "red"));
+             }
+         }
+-        // "dock-crane" (part 2, moved clear of the moored sloop) wins over the first "crane" spot:
+-        // a live origin.yml keeps old values for existing keys, so the move needs a new key.
+-        ConfigurationSection crs = s.getConfigurationSection("dock-crane");
++        // Newest crane key wins: "cargo-crane" (harbour elevate, pier head) over "dock-crane" (part 2,
++        // finger pier) over the first "crane". A live origin.yml keeps old values for existing keys,
++        // so every move of the crane needs a new key.
++        ConfigurationSection crs = s.getConfigurationSection("cargo-crane");
++        if (crs == null) {
++            crs = s.getConfigurationSection("dock-crane");
++        }
+         if (crs == null) {
+             crs = s.getConfigurationSection("crane");
+         }
+@@ -254,9 +258,10 @@ public final class OriginBay implements Listener {
+                 start();
+                 yield "§aBay rebuilt from origin.yml.";
+             }
++            case "crane" -> crane == null ? "§cNo crane configured." : crane.report();
+             default -> "§6Bay §8· §7courier " + (courier == null ? "§8none" : courier.state()) + " §8· §7skiffs " + skiffs.size()
+                     + " §8· §7buoys " + buoys.size() + " §8· §7crane " + (crane == null ? "§8none" : crane.phaseName())
+-                    + " §8· §7watchers " + watchers.size() + " §8· §e/origin dev bay <arrive|depart|reset>";
++                    + " §8· §7watchers " + watchers.size() + " §8· §e/origin dev bay <arrive|depart|crane|reset>";
+         };
+     }
+ 
+@@ -1249,13 +1254,25 @@ public final class OriginBay implements Listener {
+         }
+     }
+ 
+-    // ================================================================== the dock crane
++    // ================================================================== the cargo crane
++
++    /** Crane: ticks between updates while it moves. */
++    private static final int CRANE_STEP = 2;
++    /**
++     * Client glide per update. Longer than {@link #CRANE_STEP} on purpose: each update starts from wherever the
++     * last glide got to, so a late packet never parks the jib (the old 5-tick step with a 5-tick glide did).
++     */
++    private static final int CRANE_GLIDE = 4;
++
++    /** One work cycle, in order: hook a crate off the stack, swing it out, lower it into the lighter, and back. */
++    private enum CraneMove { HOIST, SWING_OUT, LOWER, RELEASE, HOIST_EMPTY, SWING_BACK, LOWER_EMPTY, HOOK, REST }
+ 
+     private final class Crane {
+         private final double[] base;
+         private final float height;
+         private final float pickYaw;
+-        private final float dropYaw;
++        /** Signed degrees from the pick to the drop, the way round {@code swing} asks for. */
++        private final float span;
+         private final float pickR;
+         private final float dropR;
+         private final float pickDrop;
+@@ -1263,6 +1280,7 @@ public final class OriginBay implements Listener {
+         private final float liftDrop = 2.2f;
+         private final float jibLen;
+         private final double[] punt;
++        private final double wake;
+         private final List<double[]> pile = new ArrayList<>();
+ 
+         private final List<BlockDisplay> fixed = new ArrayList<>();
+@@ -1270,23 +1288,36 @@ public final class OriginBay implements Listener {
+         private BlockDisplay jib;
+         private BlockDisplay counter;
+         private BlockDisplay weight;
++        private BlockDisplay post;
++        private BlockDisplay tie;
++        private BlockDisplay backTie;
+         private BlockDisplay trolley;
+         private BlockDisplay rope;
+         private BlockDisplay load;
+         private BlockDisplay lamp;
++        private BlockDisplay hold;
+         private Boat puntBoat;
+         private Villager puntHand;
+ 
+-        private float yaw;
++        private CraneMove move = CraneMove.REST;
++        private int t;
++        private int len = 60;
++        /** Degrees swung from the pick toward the drop (0 at the stack, {@link #span} over the lighter). */
++        private float slew;
+         private float radius;
+         private float drop;
++        /** Rope length when the current hoist or lower began. */
++        private float from;
+         private boolean loaded = true;
+-        private int phase;
+-        private int timer;
++        /** Damped sway of the hanging load after a swing stops (degrees across the jib). */
++        private float swayAmp;
++        private int swayT;
++        private final List<String> fit = new ArrayList<>();
++        private boolean fitChecked;
+ 
+         Crane(ConfigurationSection cs, double[] base) {
+             this.base = base;
+-            this.height = (float) cs.getDouble("height", 10.0d);
++            this.height = (float) cs.getDouble("height", 11.0d);
+             double[] pick = OriginConfig.nums(cs.getString("pick"));
+             double[] dropAt = OriginConfig.nums(cs.getString("drop"));
+             if (pick == null) {
+@@ -1296,7 +1327,16 @@ public final class OriginBay implements Listener {
+                 dropAt = new double[]{base[0] + 6.0d, base[1] - 2.0d, base[2] - 7.0d};
+             }
+             this.pickYaw = yawOf(pick[0] - base[0], pick[2] - base[2]);
+-            this.dropYaw = yawOf(dropAt[0] - base[0], dropAt[2] - base[2]);
++            float dropYaw = yawOf(dropAt[0] - base[0], dropAt[2] - base[2]);
++            // MC yaw grows clockwise seen from above (south → west → north), so "cw" is the positive way round.
++            float way = wrap(dropYaw - pickYaw);
++            String swing = cs.getString("swing", "short").trim().toLowerCase(java.util.Locale.ROOT);
++            if ("cw".equals(swing) && way < 0.0f) {
++                way += 360.0f;
++            } else if ("ccw".equals(swing) && way > 0.0f) {
++                way -= 360.0f;
++            }
++            this.span = way;
+             this.pickR = (float) Math.max(2.0d, Math.hypot(pick[0] - base[0], pick[2] - base[2]));
+             this.dropR = (float) Math.max(2.0d, Math.hypot(dropAt[0] - base[0], dropAt[2] - base[2]));
+             // rope length so the 0.8 load rests on the target surface
+@@ -1310,13 +1350,34 @@ public final class OriginBay implements Listener {
+                 }
+             }
+             this.jibLen = Math.max(pickR, dropR) + 0.6f;
+-            this.yaw = pickYaw;
++            this.wake = Math.max(24.0d, cs.getDouble("wake-radius", 96.0d));
+             this.radius = pickR;
+             this.drop = pickDrop;
++            this.from = pickDrop;
++            this.len = 40;
+         }
+ 
+         String phaseName() {
+-            return head == null ? "asleep" : "phase " + phase;
++            if (head == null) {
++                return "asleep";
++            }
++            return move.name().toLowerCase(java.util.Locale.ROOT) + (!fitChecked ? "" : fit.isEmpty() ? " §a(fit ok)" : " §c(" + fit.size() + " in the swing)");
++        }
++
++        String report() {
++            StringBuilder out = new StringBuilder("§6Crane §8· §7" + phaseName() + " §8· §7swing " + Math.round(span) + "° §8· §7reach "
++                    + String.format(java.util.Locale.ROOT, "%.1f", jibLen) + " §8· §7height " + Math.round(height));
++            if (!fitChecked) {
++                out.append(" §8· §7fit not checked yet (walk to the pier head)");
++            } else if (fit.isEmpty()) {
++                out.append("\n§a  Nothing on the live map is in the way of the mast, jib, ties, rope or load.");
++            } else {
++                out.append("\n§c  In the way on the live map:");
++                for (String line : fit) {
++                    out.append("\n§7  · ").append(line);
++                }
++            }
++            return out.toString();
+         }
+ 
+         void tick(World world) {
+@@ -1327,92 +1388,159 @@ public final class OriginBay implements Listener {
+             if (head == null || !head.isValid()) {
+                 spawn(world);
+             }
+-            if (puntBoat != null && puntBoat.isValid() && tick % 4 == 0 && punt != null) {
+-                double bob = Math.sin(tick * 0.07d) * 0.04d;
+-                puntBoat.teleport(new Location(world, punt[0], punt[1] + bob, punt[2], (float) (punt.length > 3 ? punt[3] : 0.0d), 0.0f),
+-                        TeleportFlag.EntityState.RETAIN_PASSENGERS);
++            if (!fitChecked && areaLoaded(world)) {
++                checkFit(world);
+             }
+-            Location at = new Location(world, base[0], base[1], base[2]);
+-            if (near(at, 64.0d).isEmpty()) {
+-                return; // frozen mid-motion while nobody watches
++            if (tick % 40 == 0) {
++                anchorPunt(world);
+             }
+-            if (tick % 5 != 0) {
++            if (tick % CRANE_STEP != 0) {
+                 return;
+             }
+-            timer++;
+-            switch (phase) {
+-                case 0 -> step(at, yaw, radius, liftDrop, 6, 1, Sound.BLOCK_CHAIN_STEP);                // hoist
+-                case 1 -> swing(at, dropYaw, dropR, 12, 2);                                              // swing out
+-                case 2 -> step(at, yaw, radius, dropDrop, 7, 3, Sound.BLOCK_CHAIN_STEP);                // lower
+-                case 3 -> {                                                                              // release
+-                    if (timer == 1) {
+-                        loaded = false;
+-                        draw(5);
+-                        Location tip = tip(at);
+-                        sound(tip, Sound.BLOCK_WOOD_PLACE, 0.9f, 0.7f, 40.0d);
+-                        particles(tip, Particle.SPLASH, 8, 0.4d, 0.05d, 40.0d);
+-                        if (puntHand != null && puntHand.isValid()) {
+-                            puntHand.swingMainHand();
+-                        }
+-                    }
+-                    if (timer >= 6) {
+-                        next(4);
+-                    }
++            Location at = new Location(world, base[0], base[1], base[2]);
++            if (near(at, wake).isEmpty()) {
++                return; // nobody close enough to watch: hold still mid-move, carry on when someone comes back
++            }
++            advance(at);
++        }
++
++        private void advance(Location at) {
++            t += CRANE_STEP;
++            float p = Math.min(1.0f, t / (float) Math.max(1, len));
++            float e = p * p * (3.0f - 2.0f * p); // ease in and out: a crane never starts or stops dead
++            boolean moving = true;
++            switch (move) {
++                case HOIST, HOIST_EMPTY -> drop = from + (liftDrop - from) * e;
++                case LOWER -> drop = from + (dropDrop - from) * e;
++                case LOWER_EMPTY -> drop = from + (pickDrop - from) * e;
++                case SWING_OUT -> {
++                    slew = span * e;
++                    radius = pickR + (dropR - pickR) * e;
++                }
++                case SWING_BACK -> {
++                    slew = span * (1.0f - e);
++                    radius = dropR + (pickR - dropR) * e;
+                 }
+-                case 4 -> step(at, yaw, radius, liftDrop, 5, 5, Sound.BLOCK_CHAIN_STEP);                // hoist empty
+-                case 5 -> swing(at, pickYaw, pickR, 12, 6);                                              // swing back
+-                case 6 -> step(at, yaw, radius, pickDrop, 6, 7, Sound.BLOCK_CHAIN_STEP);                // lower to the pile
+-                case 7 -> {                                                                              // hook a new crate
+-                    if (timer == 4) {
+-                        loaded = true;
+-                        draw(3);
+-                        sound(tip(at), Sound.BLOCK_CHAIN_HIT, 0.8f, 1.0f, 40.0d);
++                case RELEASE -> {
++                    moving = false;
++                    if (t == CRANE_STEP * 3) {
++                        release(at);
+                     }
+-                    if (timer >= 10) {
+-                        next(0);
++                }
++                case HOOK -> {
++                    moving = false;
++                    if (t == CRANE_STEP * 7) {
++                        hook(at);
+                     }
+                 }
+-                default -> next(0);
++                default -> moving = false;
++            }
++            if (swayAmp != 0.0f) {
++                swayT += CRANE_STEP;
++                moving = true;
++                if (swayT >= 80) {
++                    swayAmp = 0.0f;
++                }
++            }
++            if (moving) {
++                draw(CRANE_GLIDE);
++            }
++            cue(at);
++            if (t >= len) {
++                next();
+             }
+         }
+ 
+-        private void next(int phase) {
+-            this.phase = phase;
+-            this.timer = 0;
++        private void next() {
++            switch (move) {
++                case HOIST -> begin(CraneMove.SWING_OUT, swingTicks());
++                case SWING_OUT -> {
++                    sway(Math.signum(span));
++                    begin(CraneMove.LOWER, 44);
++                }
++                case LOWER -> begin(CraneMove.RELEASE, 24);
++                case RELEASE -> begin(CraneMove.HOIST_EMPTY, 30);
++                case HOIST_EMPTY -> begin(CraneMove.SWING_BACK, swingTicks());
++                case SWING_BACK -> {
++                    sway(-Math.signum(span));
++                    begin(CraneMove.LOWER_EMPTY, 36);
++                }
++                case LOWER_EMPTY -> begin(CraneMove.HOOK, 30);
++                case HOOK -> begin(CraneMove.REST, 40 + ThreadLocalRandom.current().nextInt(90));
++                default -> begin(CraneMove.HOIST, 36);
++            }
+         }
+ 
+-        private void step(Location at, float y, float r, float targetDrop, int steps, int nextPhase, Sound cue) {
+-            float delta = (targetDrop - drop) / Math.max(1, steps - timer + 1);
+-            drop += delta;
+-            draw(5);
+-            if (timer % 3 == 1) {
+-                sound(tip(at), cue, 0.5f, 0.8f, 36.0d);
+-            }
+-            if (timer >= steps) {
+-                drop = targetDrop;
+-                draw(5);
+-                next(nextPhase);
++        private void begin(CraneMove next, int ticks) {
++            move = next;
++            len = Math.max(CRANE_STEP, ticks);
++            t = 0;
++            from = drop;
++        }
++
++        /** About 0.6 ticks a degree: the long way round over the pier head takes a slow, readable seven seconds. */
++        private int swingTicks() {
++            return Math.max(50, Math.round(Math.abs(span) * 0.6f));
++        }
++
++        /** The load runs on a little past where the jib stopped, then settles. */
++        private void sway(float direction) {
++            // Swinging toward higher yaw moves the hook toward model -X; the load overshoots that way.
++            swayAmp = -direction * 6.0f;
++            swayT = 0;
++        }
++
++        private void cue(Location at) {
++            switch (move) {
++                case HOIST, HOIST_EMPTY, LOWER, LOWER_EMPTY -> {
++                    if (t % 12 == CRANE_STEP) {
++                        sound(tip(at), Sound.BLOCK_CHAIN_STEP, 0.5f, move == CraneMove.HOIST ? 0.75f : 0.85f, 36.0d);
++                    }
++                }
++                case SWING_OUT, SWING_BACK -> {
++                    if (t == CRANE_STEP) {
++                        sound(at.clone().add(0, height, 0), Sound.BLOCK_WOODEN_TRAPDOOR_OPEN, 0.7f, 0.55f, 48.0d);
++                    } else if (t == len / 2 - (len / 2) % CRANE_STEP) {
++                        sound(at.clone().add(0, height, 0), Sound.BLOCK_LADDER_STEP, 0.5f, 0.5f, 40.0d);
++                    }
++                }
++                default -> {
++                }
+             }
+         }
+ 
+-        private void swing(Location at, float targetYaw, float targetR, int steps, int nextPhase) {
+-            int left = Math.max(1, steps - timer + 1);
+-            yaw = wrap(yaw + wrap(targetYaw - yaw) / left);
+-            radius += (targetR - radius) / left;
+-            draw(5);
+-            if (timer == 1) {
+-                sound(at.clone().add(0, height, 0), Sound.BLOCK_WOODEN_TRAPDOOR_OPEN, 0.7f, 0.55f, 48.0d);
++        private void release(Location at) {
++            loaded = false;
++            draw(3);
++            Location tip = tip(at);
++            sound(tip, Sound.BLOCK_BARREL_CLOSE, 0.9f, 0.8f, 40.0d);
++            sound(tip, Sound.BLOCK_WOOD_PLACE, 0.8f, 0.7f, 40.0d);
++            particles(tip.clone().add(0, -0.4, 0), Particle.SPLASH, 8, 0.4d, 0.05d, 40.0d);
++            if (puntHand != null && puntHand.isValid()) {
++                puntHand.swingMainHand();
+             }
+-            if (timer >= steps) {
+-                yaw = targetYaw;
+-                radius = targetR;
+-                draw(5);
+-                next(nextPhase);
++        }
++
++        private void hook(Location at) {
++            loaded = true;
++            draw(3);
++            sound(tip(at), Sound.BLOCK_CHAIN_HIT, 0.8f, 1.0f, 40.0d);
++        }
++
++        private float yaw() {
++            return wrap(pickYaw + slew);
++        }
++
++        private float swayDeg() {
++            if (swayAmp == 0.0f) {
++                return 0.0f;
+             }
++            return (float) (swayAmp * Math.exp(-swayT / 26.0d) * Math.sin(swayT * (Math.PI * 2.0d / 44.0d)));
+         }
+ 
++        /** The hook: where the load hangs right now (world). */
+         private Location tip(Location at) {
+-            double rad = Math.toRadians(yaw);
++            double rad = Math.toRadians(yaw());
+             return at.clone().add(-Math.sin(rad) * radius, height + 0.15d - drop, Math.cos(rad) * radius);
+         }
+ 
+@@ -1420,12 +1548,11 @@ public final class OriginBay implements Listener {
+             despawn();
+             Location at = new Location(world, base[0], base[1], base[2]);
+             float h = height;
+-            // fixed: plinth, mast, two braces, a crate pile at the pick spot
++            // fixed: plinth, mast, two braces, the crate stack at the pick spot
+             add(world, at, "minecraft:stone_bricks", box(0f, 0f, 0.3f, 0f, 1.7f, 0.6f, 1.7f, null));
+             add(world, at, "minecraft:stripped_dark_oak_log[axis=y]", box(0f, 0f, 0.6f + (h - 0.6f) / 2f, 0f, 0.7f, h - 0.6f, 0.7f, null));
+             add(world, at, "minecraft:dark_oak_planks", box(0f, 0.75f, 2.1f, 0f, 0.22f, 3.6f, 0.22f, new Quaternionf().rotateZ((float) Math.toRadians(-14))));
+             add(world, at, "minecraft:dark_oak_planks", box(0f, -0.75f, 2.1f, 0f, 0.22f, 3.6f, 0.22f, new Quaternionf().rotateZ((float) Math.toRadians(14))));
+-            // crate pile beside the pick spot (absolute cells from origin.yml, checked free on the map)
+             for (double[] c : pile) {
+                 float rx = (float) (c[0] - base[0]);
+                 float ry = (float) (c[1] - base[1]);
+@@ -1433,18 +1560,22 @@ public final class OriginBay implements Listener {
+                 add(world, at, c.length > 3 && c[3] > 0 ? "minecraft:barrel[facing=east]" : "minecraft:barrel[facing=up]",
+                         box(0f, rx, ry + 0.4f, rz, 0.8f, 0.8f, 0.8f, null));
+             }
+-            // moving: head, jib, counter-jib, counterweight, trolley, rope, load, tip lamp
++            // slewing: head, jib, counter-jib, counterweight, king post + two ties, trolley, rope, load, tip lamp
+             head = display(world, at, "minecraft:spruce_planks", 2.5f, 0);
+             jib = display(world, at, "minecraft:dark_oak_planks", 2.5f, 0);
+             counter = display(world, at, "minecraft:dark_oak_planks", 2.5f, 0);
+             weight = display(world, at, "minecraft:cobblestone", 2.5f, 0);
++            post = display(world, at, "minecraft:stripped_dark_oak_log[axis=y]", 2.5f, 0);
++            tie = display(world, at, "minecraft:brown_wool", 2.5f, 0);
++            backTie = display(world, at, "minecraft:brown_wool", 2.5f, 0);
+             trolley = display(world, at, "minecraft:iron_block", 2.5f, 0);
+             rope = display(world, at, "minecraft:chain[axis=y]", 2.5f, 0);
+             load = display(world, at, "minecraft:barrel[facing=up]", 2.5f, 0);
+             lamp = display(world, at, "minecraft:lantern[hanging=true]", 2.5f, 15);
+             draw(0);
+             if (punt != null && loaded(world, punt[0], punt[2])) {
+-                Location p = new Location(world, punt[0], punt[1], punt[2], (float) (punt.length > 3 ? punt[3] : 0.0d), 0.0f);
++                float puntYaw = (float) (punt.length > 3 ? punt[3] : 0.0d);
++                Location p = new Location(world, punt[0], punt[1], punt[2], puntYaw, 0.0f);
+                 puntBoat = world.spawn(p, Boat.class, b -> {
+                     b.setPersistent(false);
+                     b.addScoreboardTag(TAG);
+@@ -1462,29 +1593,134 @@ public final class OriginBay implements Listener {
+                     v.setVillagerType(Villager.Type.TAIGA);
+                 });
+                 puntBoat.addPassenger(puntHand);
++                // a crate already stowed in the bow, so the lighter reads as cargo from the pier
++                double rad = Math.toRadians(puntYaw);
++                Location bow = new Location(world, punt[0] - Math.sin(rad) * 0.75d, punt[1] + 0.2d, punt[2] + Math.cos(rad) * 0.75d);
++                hold = display(world, bow, "minecraft:barrel[facing=up]", 2.0f, 0);
++                hold.setTransformation(box(puntYaw, 0f, 0.28f, 0f, 0.56f, 0.56f, 0.56f, null));
+             }
+         }
+ 
+-        private void add(World world, Location at, String state, Transformation t) {
++        /** The lighter has no gravity and no AI; only a shove can move it. Put it back if one did (no per-tick teleports: those jittered). */
++        private void anchorPunt(World world) {
++            if (punt == null || puntBoat == null || !puntBoat.isValid()) {
++                return;
++            }
++            Location now = puntBoat.getLocation();
++            if (Math.abs(now.getX() - punt[0]) > 0.3d || Math.abs(now.getZ() - punt[2]) > 0.3d || Math.abs(now.getY() - punt[1]) > 0.3d) {
++                puntBoat.teleport(new Location(world, punt[0], punt[1], punt[2], (float) (punt.length > 3 ? punt[3] : 0.0d), 0.0f),
++                        TeleportFlag.EntityState.RETAIN_PASSENGERS);
++            }
++        }
++
++        private void add(World world, Location at, String state, Transformation tr) {
+             BlockDisplay d = display(world, at, state, 2.5f, 0);
+-            d.setTransformation(t);
++            d.setTransformation(tr);
+             fixed.add(d);
+         }
+ 
+         private void draw(int ticks) {
++            float yaw = yaw();
+             float h = height;
+             morph(head, box(yaw, 0f, h + 0.4f, 0f, 1.2f, 0.8f, 1.2f, null), ticks);
+             morph(jib, box(yaw, 0f, h + 0.6f, jibLen / 2f, 0.5f, 0.45f, jibLen, null), ticks);
+             morph(counter, box(yaw, 0f, h + 0.6f, -1.6f, 0.5f, 0.45f, 3.2f, null), ticks);
+             morph(weight, box(yaw, 0f, h + 0.3f, -3.0f, 1.3f, 1.2f, 1.3f, null), ticks);
++            // king post with a stay to the jib tip and one to the counterweight: reads as a crane from across the bay
++            morph(post, box(yaw, 0f, h + 1.6f, 0f, 0.22f, 1.6f, 0.22f, null), ticks);
++            float rise = 1.57f;
++            float reach = jibLen - 0.2f;
++            morph(tie, box(yaw, 0f, h + 2.4f - rise / 2f, reach / 2f, 0.07f, 0.07f, (float) Math.hypot(reach, rise),
++                    new Quaternionf().rotateX((float) Math.atan2(rise, reach))), ticks);
++            morph(backTie, box(yaw, 0f, h + 2.4f - rise / 2f, -1.5f, 0.07f, 0.07f, (float) Math.hypot(3.0d, rise),
++                    new Quaternionf().rotateX((float) -Math.atan2(rise, 3.0d))), ticks);
+             morph(trolley, box(yaw, 0f, h + 0.25f, radius, 0.5f, 0.25f, 0.6f, null), ticks);
++            // rope and load hang from the trolley and sway about it (across the jib)
+             float d = Math.max(0.05f, drop);
+-            morph(rope, box(yaw, 0f, h + 0.15f - d / 2f, radius, 1.0f, d, 1.0f, null), ticks);
++            float sway = (float) Math.toRadians(swayDeg());
++            float sin = (float) Math.sin(sway);
++            float cos = (float) Math.cos(sway);
++            float pivot = h + 0.15f;
++            Quaternionf tilt = sway == 0.0f ? null : new Quaternionf().rotateZ(sway);
++            morph(rope, box(yaw, d / 2f * sin, pivot - d / 2f * cos, radius, 1.0f, d, 1.0f, tilt), ticks);
+             float s = loaded ? 0.8f : 0.001f;
+-            morph(load, box(yaw, 0f, h + 0.15f - d - 0.4f, radius, s, s, s, null), ticks);
++            float hang = d + 0.4f;
++            morph(load, box(yaw, hang * sin, pivot - hang * cos, radius, s, s, s, tilt), ticks);
+             morph(lamp, box(yaw, 0f, h + 0.05f, jibLen - 0.25f, 0.5f, 0.5f, 0.5f, null), ticks);
+         }
+ 
++        /**
++         * Once per start, on the live world: is anything solid where the crane works? Mast, jib, ties and
++         * counterweight over the whole swing, the hanging load at lift height and both rope drops. The map
++         * survey said no; this is the check that a later build on the pier hasn't changed that.
++         */
++        private void checkFit(World world) {
++            fitChecked = true;
++            fit.clear();
++            float h = height;
++            for (double y = base[1] + 1.0d; y <= base[1] + h; y += 1.0d) {
++                probe(world, base[0], y, base[2], "mast");
++            }
++            int n = Math.max(2, (int) Math.ceil(Math.abs(span) / 3.0f));
++            for (int i = 0; i <= n; i++) {
++                float f = i / (float) n;
++                float yaw = wrap(pickYaw + span * f);
++                float r = pickR + (dropR - pickR) * f;
++                for (float lz = -3.6f; lz <= jibLen + 0.01f; lz += 0.5f) {
++                    probeLocal(world, yaw, 0.0f, h + 0.6f, lz, "jib");
++                }
++                for (float k = 0.0f; k <= 1.0f; k += 0.1f) {
++                    probeLocal(world, yaw, 0.0f, h + 2.4f - 1.6f * k, jibLen * k, "tie");
++                    probeLocal(world, yaw, 0.0f, h + 2.4f - 1.6f * k, -3.0f * k, "tie");
++                }
++                for (float ly = h + 0.15f - liftDrop - 0.8f; ly <= h + 0.15f; ly += 0.5f) {
++                    probeLocal(world, yaw, 0.0f, ly, r, "load");
++                }
++            }
++            float dropYaw = wrap(pickYaw + span);
++            for (float ly = h + 0.15f - pickDrop + 0.1f; ly <= h; ly += 0.5f) {
++                probeLocal(world, pickYaw, 0.0f, ly, pickR, "pick rope");
++            }
++            for (float ly = h + 0.15f - dropDrop + 0.4f; ly <= h; ly += 0.5f) {
++                probeLocal(world, dropYaw, 0.0f, ly, dropR, "drop rope");
++            }
++            if (!fit.isEmpty()) {
++                isle.plugin().getLogger().warning("Origin bay: the cargo crane at " + (int) Math.floor(base[0]) + " " + (int) Math.floor(base[1]) + " "
++                        + (int) Math.floor(base[2]) + " swings through " + fit.size() + " block(s): " + String.join("; ", fit)
++                        + " — move it in origin.yml → bay.cargo-crane (/origin dev bay crane)");
++            }
++        }
++
++        private boolean areaLoaded(World world) {
++            double r = jibLen + 4.0d;
++            return loaded(world, base[0] - r, base[2] - r) && loaded(world, base[0] + r, base[2] - r)
++                    && loaded(world, base[0] - r, base[2] + r) && loaded(world, base[0] + r, base[2] + r);
++        }
++
++        private void probeLocal(World world, float yaw, float lx, float ly, float lz, String what) {
++            double rad = Math.toRadians(yaw);
++            double x = base[0] + lx * Math.cos(rad) - lz * Math.sin(rad);
++            double z = base[2] + lx * Math.sin(rad) + lz * Math.cos(rad);
++            probe(world, x, base[1] + ly, z, what);
++        }
++
++        private void probe(World world, double x, double y, double z, String what) {
++            if (fit.size() >= 8 || !loaded(world, x, z)) {
++                return;
++            }
++            org.bukkit.block.Block block = world.getBlockAt((int) Math.floor(x), (int) Math.floor(y), (int) Math.floor(z));
++            if (block.isEmpty() || block.isPassable() || block.isLiquid()) {
++                return;
++            }
++            String line = what + " " + block.getX() + " " + block.getY() + " " + block.getZ() + " (" + block.getType().getKey().getKey() + ")";
++            for (String seen : fit) {
++                if (seen.endsWith(block.getX() + " " + block.getY() + " " + block.getZ() + " (" + block.getType().getKey().getKey() + ")")) {
++                    return;
++                }
++            }
++            fit.add(line);
++        }
++
+         void despawn() {
+             for (BlockDisplay d : fixed) {
+                 remove(d);
+@@ -1494,11 +1730,16 @@ public final class OriginBay implements Listener {
+             remove(jib);
+             remove(counter);
+             remove(weight);
++            remove(post);
++            remove(tie);
++            remove(backTie);
+             remove(trolley);
+             remove(rope);
+             remove(load);
+             remove(lamp);
++            remove(hold);
+             head = null;
++            hold = null;
+             remove(puntHand);
+             remove(puntBoat);
+             puntHand = null;
+diff --git a/AetherionHub/src/main/resources/origin.yml b/AetherionHub/src/main/resources/origin.yml
+index 2473f8e2..72145d81 100644
+--- a/AetherionHub/src/main/resources/origin.yml
++++ b/AetherionHub/src/main/resources/origin.yml
+@@ -424,10 +424,10 @@ softlight:
+   exclude: [borderlands]
+ 
+ # The living bay of Anker Harbour (OriginBay): the supply skyship Halcyon, fishing skiffs, channel
+-# buoys and the dock crane. Display entities + two boats, nothing persistent, nothing pasted. All of
++# buoys and the cargo crane. Display entities + three boats, nothing persistent, nothing pasted. All of
+ # it sleeps while nobody is within `wake-radius` of `centre`. Lanes were checked against the map:
+ # the sky paths clear every roof/tree by 3+ blocks, the skiff loops keep 5+ blocks of open water.
+-# DEV: /origin dev bay <arrive|depart|reset|status>
++# DEV: /origin dev bay <arrive|depart|crane|reset|status>
+ bay:
+   enabled: true
+   centre: "300.5 61 -430.5"
+@@ -447,14 +447,22 @@ bay:
+     a: ["296 -436", "300 -452", "300.5 -464.5", "302 -492", "318 -505", "338 -500", "350 -482", "352 -460", "340 -446", "318 -440"]
+     b: ["325 -515", "345 -508", "365 -512", "374 -526", "362 -536", "340 -532", "318 -528"]
+   buoys: ["290.5 60.85 -441.5 red", "320.5 60.85 -432.5 green", "300.5 60.85 -500.5 yellow", "346.5 60.85 -454.5 red", "364.5 60.85 -520.5 yellow"]
+-  # Part 2: the crane moved onto the finger pier between the moored sloops. The whole swing (mast,
+-  # jib, counterweight, rope, hanging crate, both lowering columns) was checked block by block: nothing
+-  # it passes through. New key on purpose: live configs keep old values for existing keys.
+-  dock-crane:
++  # Harbour elevate: the cargo crane stands at the head of the spawn pier, by the chandler's stall and
++  # its barrels: one cargo beat at the end of the pier that Egon's trail walks to. It hooks crates off
++  # the stack on the deck, swings them the long way round over the pier and the beach channel (the
++  # short way runs into the east sloop's stern flag) and lowers them into the stern of the lighter
++  # moored between the sloop and the beach. Mast, jib, ties, counterweight, hanging load and both rope
++  # drops were checked block by block against the map; on the live world the crane checks again when
++  # it first wakes (/origin dev bay crane). New key on purpose: live configs keep old values for
++  # existing keys, so "dock-crane" (part 2) and "crane" are ignored while this one exists.
++  # swing: cw | ccw (seen from above) | short. wake-radius: the crane holds still mid-move beyond it.
++  cargo-crane:
+     enabled: true
+-    base: "312.5 64 -397.5"
+-    height: 11
+-    pick: "315.5 63 -396.5"        # crate pick-up on the pier
+-    drop: "310.17 61.1 -388.81"    # into the cargo punt off the sloop's stern
+-    punt: "310.17 60.72 -388.81 90"
+-    pile: ["314.5 63 -398.5", "315.5 63 -398.5 1", "314.5 63.8 -398.5"]
++    base: "325.5 63 -382.5"
++    height: 12
++    pick: "322.5 63 -382.5"        # crates come off the stack here
++    drop: "330.5 61.1 -387.5"      # into the lighter's stern
++    swing: ccw
++    punt: "330.5 60.72 -388.3 180"
++    pile: ["321.5 63 -383.5", "322.5 63 -383.5", "321.5 63 -382.5 1", "321.5 63.8 -383.5"]
++    wake-radius: 96
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/isle/IsleCast.java b/AetherionQuests/src/main/java/de/aetherion/quests/isle/IsleCast.java
+index c62d5ff5..954bfa43 100644
+--- a/AetherionQuests/src/main/java/de/aetherion/quests/isle/IsleCast.java
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/isle/IsleCast.java
+@@ -42,9 +42,12 @@ public final class IsleCast {
+ 
+     /** Curated standing spots (feet block, yaw). Groups are only labels for /questnpc seed. */
+     public static final List<Seat> SEATS = List.of(
+-            // Anker Harbour — the arrival crowd (all outside the pier cage, none on Egon's trail)
+-            seat("harbourmaster", 287.5, 63, -380.5, -90f, "harbour"),
+-            seat("crane_hand", 314.5, 63, -394.5, -60f, "harbour"),
++            // Anker Harbour — workers at their stations, all outside the pier cage. Nobody stands in the
++            // spawn → Egon → market sightline: Egon is the only "talk to me first" on the arrival pier.
++            // Quill (tallyman) and Haul work the cargo crane at the pier head together, 4 blocks apart on
++            // purpose: one crew, one beat at the end of the pier (Hub origin.yml → bay.cargo-crane).
++            seat("harbourmaster", 323.5, 63, -383.5, 45f, "harbour"),
++            seat("crane_hand", 327.5, 63, -383.5, -143f, "harbour"),
+             seat("lighthouse_keeper", 266.5, 63, -461.5, -90f, "harbour"),
+             seat("shanty_busker", 236.5, 64, -366.5, -139f, "harbour"),
+             seat("lamp_lighter", 262.5, 63, -386.5, 0f, "harbour"),
+@@ -190,9 +193,12 @@ public final class IsleCast {
+         return "§aSeeding §f" + todo.size() + "§a NPC(s) over the next " + Math.max(1, todo.size() * 6 / 20) + "s…";
+     }
+ 
+-    /** Seats that moved in a later pass: an NPC still standing on its old seat walks over to the new one. */
++    /** Seats that moved in a later pass: an NPC still standing on an old seat walks over to the new one. */
+     private static final Object[][] MOVED = {
+-            {"crane_hand", 324.5, 63.0, -383.5}
++            {"crane_hand", 324.5, 63.0, -383.5},
++            // harbour elevate: the crane went to the pier head, and Quill off Egon's back to tally beside it
++            {"crane_hand", 314.5, 63.0, -394.5},
++            {"harbourmaster", 287.5, 63.0, -380.5}
+     };
+ 
+     private void relocateMoved(World world, NPCDataStorage storage) {
+@@ -204,9 +210,21 @@ public final class IsleCast {
+                 continue;
+             }
+             for (Seat seat : SEATS) {
+-                if (seat.npcId().equals(id)) {
+-                    new QuestNPCSpawnService().spawnNPC(id, new Location(world, seat.x(), seat.y(), seat.z(), seat.yaw(), 0.0f));
++                if (!seat.npcId().equals(id)) {
++                    continue;
+                 }
++                // Chunk first (async), and only onto ground that is still standable on the live map.
++                world.getChunkAtAsync(((int) Math.floor(seat.x())) >> 4, ((int) Math.floor(seat.z())) >> 4).thenAccept(chunk -> {
++                    double y = groundNear(world, seat);
++                    if (Double.isNaN(y)) {
++                        plugin.getLogger().warning("Island cast: " + id + " stays on its old seat — the new one at "
++                                + (int) Math.floor(seat.x()) + " " + (int) Math.floor(seat.y()) + " " + (int) Math.floor(seat.z())
++                                + " isn't standable any more.");
++                        return;
++                    }
++                    new QuestNPCSpawnService().spawnNPC(id, new Location(world, seat.x(), y, seat.z(), seat.yaw(), 0.0f));
++                    plugin.getLogger().info("Island cast: " + id + " moved to its new seat.");
++                });
+             }
+         }
+     }
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/isle/IsleLines.java b/AetherionQuests/src/main/java/de/aetherion/quests/isle/IsleLines.java
+index b7e0cceb..517a2313 100644
+--- a/AetherionQuests/src/main/java/de/aetherion/quests/isle/IsleLines.java
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/isle/IsleLines.java
+@@ -13,7 +13,7 @@ public final class IsleLines {
+ 
+     private static final Map<String, String[]> INTROS = Map.ofEntries(
+             Map.entry("harbourmaster_intro", new String[] {
+-                    "Quill. Harbourmaster. I log everything that floats, sinks or flies over my water.",
++                    "Quill. Tallyman. Every crate off this pier goes in my book. So does anything that flies past.",
+                     "Watch the north rim — when the §bHalcyon§f comes in, the whole harbour stops to look.",
+                     "New here? §eEgon§f on the pier first. Then come back and I'll find you something useful."
+             }),
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/isle/IsleRounds.java b/AetherionQuests/src/main/java/de/aetherion/quests/isle/IsleRounds.java
+index 7d5bad8f..fce469c5 100644
+--- a/AetherionQuests/src/main/java/de/aetherion/quests/isle/IsleRounds.java
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/isle/IsleRounds.java
+@@ -3,9 +3,11 @@ package de.aetherion.quests.isle;
+ import org.bukkit.Location;
+ 
+ import java.util.ArrayList;
++import java.util.HashSet;
+ import java.util.List;
+ import java.util.Locale;
+ import java.util.Map;
++import java.util.Set;
+ 
+ /**
+  * Walking rounds for the Origin island cast: absolute waypoints, walked out and back (ping-pong)
+@@ -14,6 +16,11 @@ import java.util.Map;
+  * <p>
+  * The first point is the NPC's seat. A round is only used while the NPC still stands within
+  * 3 blocks of it — move an NPC with an anchor and it simply goes back to standing work.
++ * <p>
++ * Harbour framing (harbour elevate): the arrival harbour should read as a composed scene, not a
++ * crowd on the move. Harbour rounds start {@link #HARBOUR_PACE}× less often and never while another
++ * walker is out within {@link #SPACING} blocks, so any one glance holds at most one figure walking;
++ * the lamplighter walks from dusk to dawn only. Quill and Haul have no round: they work the crane.
+  */
+ public final class IsleRounds {
+ 
+@@ -21,9 +28,7 @@ public final class IsleRounds {
+     }
+ 
+     private static final Map<String, double[][]> ROUTES = Map.ofEntries(
+-            Map.entry("crane_hand", new double[][] {{314.5, 63, -394.5}, {315.5, 63, -395.5}, {313.5, 63, -398.5}}),
+             Map.entry("lamp_lighter", new double[][] {{262.5, 63, -386.5}, {276.5, 63, -372.5}, {262.5, 63, -385.5}, {250.5, 64, -383.5}}),
+-            Map.entry("harbourmaster", new double[][] {{287.5, 63, -380.5}, {272.5, 63, -381.5}, {287.5, 63, -380.5}, {291.5, 63, -383.5}}),
+             Map.entry("stall_crumb", new double[][] {{238.5, 64, -399.5}, {231.5, 64, -399.5}, {238.5, 64, -398.5}, {245.5, 64, -398.5}}),
+             Map.entry("stall_tack", new double[][] {{202.5, 64, -462.5}, {196.5, 64, -461.5}, {208.5, 64, -462.5}}),
+             Map.entry("stall_brine", new double[][] {{252.5, 63, -450.5}, {256.5, 63, -452.5}, {250.5, 63, -450.5}, {248.5, 63, -450.5}}),
+@@ -48,6 +53,56 @@ public final class IsleRounds {
+             Map.entry("beekeeper", new double[][] {{290.5, 61, -44.5}, {295.5, 61, -54.5}, {294.5, 61, -57.5}, {291.5, 61, -58.5}, {294.5, 61, -70.5}, {290.5, 61, -74.5}, {290.5, 61, -79.5}})
+     );
+ 
++    /** Gap between two harbour rounds, relative to everyone else's. */
++    private static final double HARBOUR_PACE = 1.6;
++    /** No harbour round starts while another walker is out this close (blocks). */
++    private static final double SPACING = 36.0;
++    /** Rounds that only make sense after dark: the lamplighter lights the quay, he doesn't stroll it at noon. */
++    private static final Set<String> NIGHT_ONLY = Set.of("lamp_lighter");
++    private static final Set<String> HARBOUR = harbourCast();
++
++    private static Set<String> harbourCast() {
++        Set<String> out = new HashSet<>();
++        for (IsleCast.Seat seat : IsleCast.SEATS) {
++            if ("harbour".equals(seat.group())) {
++                out.add(seat.npcId());
++            }
++        }
++        return Set.copyOf(out);
++    }
++
++    /** Multiplier for the wait between two rounds of this NPC (1 = unchanged). */
++    public static double pace(String npcId) {
++        return npcId != null && HARBOUR.contains(npcId.toLowerCase(Locale.ROOT)) ? HARBOUR_PACE : 1.0d;
++    }
++
++    /**
++     * May this NPC set off on its round right now? Harbour framing only; everyone else always may.
++     *
++     * @param worldTime the world's time of day (0 = sunrise, 12000 = sunset)
++     * @param walking   where the other NPCs out on a round are heading
++     */
++    public static boolean mayStart(String npcId, Location home, long worldTime, List<Location> walking) {
++        if (npcId == null || home == null) {
++            return true;
++        }
++        String id = npcId.toLowerCase(Locale.ROOT);
++        long time = Math.floorMod(worldTime, 24000L);
++        if (NIGHT_ONLY.contains(id) && time > 1000L && time < 11800L) {
++            return false;
++        }
++        if (!HARBOUR.contains(id)) {
++            return true;
++        }
++        for (Location other : walking) {
++            if (other != null && other.getWorld() != null && other.getWorld().equals(home.getWorld())
++                    && other.distanceSquared(home) <= SPACING * SPACING) {
++                return false;
++            }
++        }
++        return true;
++    }
++
+     /** The round for this NPC at this home, or null (no round, other world, or moved away from its seat). */
+     public static List<Location> routeFor(String npcId, Location home) {
+         if (npcId == null || home == null || home.getWorld() == null) {
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/npc/CastBook.java b/AetherionQuests/src/main/java/de/aetherion/quests/npc/CastBook.java
+index 8954409f..ea8c0621 100644
+--- a/AetherionQuests/src/main/java/de/aetherion/quests/npc/CastBook.java
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/npc/CastBook.java
+@@ -1015,7 +1015,7 @@ public final class CastBook {
+         v.greetNew = new String[] {"New in town? Hungry? Curious? I can help with all three, {player}."};
+         v.greet = new String[] {"{player}! Got any news for me? I've got plenty for you."};
+         v.idle = new String[] {
+-                "Did you hear? The Harbourmaster lost a crate again. Third time this month.",
++                "Did you hear? Quill the tallyman lost a crate again. Third time this month.",
+                 "Fried fish, fried bread, fried potatoes. If it fits in the pan, I'll fry it.",
+                 "I don't spread rumours. I just repeat them very clearly.",
+                 "Old Moll from the lighthouse lost her spectacles to a gull. Poor woman can't see a thing."
+@@ -1255,12 +1255,14 @@ public final class CastBook {
+         v.farewell = new String[] {"Stay low out there."};
+         topic(v, "Who is Skuldugery?", "A skeleton archer who lives out in the wastes and shoots burning arrows.", "He's fast, he's clever and he loves to show off.");
+ 
+-        banter(new Beat("harbourmaster", "Egon, your rookies keep saluting the crane. Did you tell them to do that?"),
+-                new Beat("egon", "No, but it's a very official-looking crane. I'd salute it too."),
+-                new Beat("harbourmaster", "It's not in my book, Egon. Nothing gets saluted unless it's in my book."));
+-        banter(new Beat("crane_hand", "Egon! Need anything lifted today? Crates, barrels, your spirits?"),
+-                new Beat("egon", "My spirits, please. The new rookie dropped my fish into the harbour."),
+-                new Beat("crane_hand", "Sorry, mate. The crane is rated for heavy loads, not heavy hearts."));
++        // Quill and Haul work the pier-head crane together (harbour elevate): their banter stays at the crane,
++        // so no bubble pops up behind Egon while a newcomer is talking to him.
++        banter(new Beat("harbourmaster", "Haul, that was four crates. My book says five."),
++                new Beat("crane_hand", "Then your book can come up here and lift the fifth one itself."),
++                new Beat("harbourmaster", "The book doesn't lift, Haul. The book remembers."));
++        banter(new Beat("crane_hand", "Quill! Need anything lifted today? Crates, barrels, your spirits?"),
++                new Beat("harbourmaster", "Lift the crate that went missing on Tuesday. That would lift my spirits."),
++                new Beat("crane_hand", "Sorry. The crane is rated for heavy loads, not lost ones."));
+         banter(new Beat("lighthouse_keeper", "You're whispering at the water again. Does it ever answer you?"),
+                 new Beat("dock_whisper", "Sometimes. Mostly it complains about the boats."),
+                 new Beat("lighthouse_keeper", "Fair enough. I'd complain too if people kept parking on me."));
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/npc/LivingNpcLife.java b/AetherionQuests/src/main/java/de/aetherion/quests/npc/LivingNpcLife.java
+index 6aea9170..d2b18466 100644
+--- a/AetherionQuests/src/main/java/de/aetherion/quests/npc/LivingNpcLife.java
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/npc/LivingNpcLife.java
+@@ -362,8 +362,11 @@ public final class LivingNpcLife {
+         }
+         if (idle && resting && patrols && s.round != null && !s.patrolBroken && now >= s.nextPatrol
+                 && now >= s.busyUntil + 10) {
+-            s.nextPatrol = now + (long) ((260 + r.nextInt(420)) * pace);
+-            beginRound(living, s, at);
++            s.nextPatrol = now + (long) ((260 + r.nextInt(420)) * pace * de.aetherion.quests.isle.IsleRounds.pace(s.id));
++            // Harbour framing: one walker per glance, the lamplighter after dark (isle.IsleRounds).
++            if (de.aetherion.quests.isle.IsleRounds.mayStart(s.id, s.home, at.getWorld().getTime(), walkingRounds(s))) {
++                beginRound(living, s, at);
++            }
+             return;
+         }
+         if (idle && resting && patrols && s.route != null && !s.patrolBroken && now >= s.nextPatrol
+@@ -1541,6 +1544,17 @@ public final class LivingNpcLife {
+         s.lookBackAt = -1;
+     }
+ 
++    /** Where every other NPC out on an island round is heading right now. */
++    private List<Location> walkingRounds(State self) {
++        List<Location> out = new ArrayList<>();
++        for (State other : states.values()) {
++            if (other != self && other.round != null && other.leg >= 0 && other.walkTo != null) {
++                out.add(other.walkTo);
++            }
++        }
++        return out;
++    }
++
+     /** Island rounds: walk the waypoints out, a stop beat at each, then back the same way. */
+     private void beginRound(LivingNpcService living, State s, Location at) {
+         if (!loaded(s.home) || s.round == null || s.round.size() < 2) {
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/npc/LivingNpcProfile.java b/AetherionQuests/src/main/java/de/aetherion/quests/npc/LivingNpcProfile.java
+index 98039cc5..c8552594 100644
+--- a/AetherionQuests/src/main/java/de/aetherion/quests/npc/LivingNpcProfile.java
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/npc/LivingNpcProfile.java
+@@ -253,7 +253,7 @@ public final class LivingNpcProfile {
+ 
+     static {
+         // Origin island cast (SAITAMA pass) — cast skins carry the look; leather is the pre-sign fallback.
+-        put(p("harbourmaster", "Harbourmaster", NamedTextColor.DARK_AQUA, "§3")
++        put(p("harbourmaster", "Tallyman", NamedTextColor.DARK_AQUA, "§3")
+                 .hand(Material.WRITABLE_BOOK).leather(Color.fromRGB(30, 44, 78)).chest().legs().boots()
+                 .skinFile("guard.png"));
+         put(p("crane_hand", "Crane Hand", NamedTextColor.GOLD, "§6")
+diff --git a/AetherionQuests/src/main/resources/lang/de.yml b/AetherionQuests/src/main/resources/lang/de.yml
+index 71cb0187..c0a06ec3 100644
+--- a/AetherionQuests/src/main/resources/lang/de.yml
++++ b/AetherionQuests/src/main/resources/lang/de.yml
+@@ -985,7 +985,7 @@ dialogs:
+ 
+   # Origin island cast (SAITAMA pass)
+   harbourmaster_intro:
+-    - "Quill. Hafenmeister. Ich schreibe alles auf, was über mein Wasser schwimmt, sinkt oder fliegt."
++    - "Quill. Tallymann. Jede Kiste von diesem Pier steht in meinem Buch. Und alles, was vorbeifliegt."
+     - "Behalt den Nordrand im Auge — wenn die §bHalcyon§f einläuft, bleibt der ganze Hafen stehen und guckt."
+     - "Neu hier? Erst §eEgon§f auf dem Pier. Danach komm wieder, dann find ich was Nützliches für dich."
+   crane_hand_intro:
+@@ -2549,7 +2549,7 @@ cast:
+   fry_gossip:
+     greet_new: ["Neu hier? Hungrig? Neugierig? Bei allen dreien kann ich helfen, {player}."]
+     greet: ["{player}! Hast du Neuigkeiten für mich? Ich hab jede Menge für dich."]
+-    idle: ["Schon gehört? Der Hafenmeister hat schon wieder eine Kiste verloren. Das dritte Mal diesen Monat.", "Frittierter Fisch, frittiertes Brot, frittierte Kartoffeln. Was in die Pfanne passt, wird frittiert.", "Ich verbreite keine Gerüchte. Ich wiederhole sie nur sehr deutlich.", "Die alte Moll vom Leuchtfeuer hat ihre Brille an eine Möwe verloren. Die Arme sieht gar nichts."]
++    idle: ["Schon gehört? Quill hat schon wieder eine Kiste verloren. Das dritte Mal diesen Monat.", "Frittierter Fisch, frittiertes Brot, frittierte Kartoffeln. Was in die Pfanne passt, wird frittiert.", "Ich verbreite keine Gerüchte. Ich wiederhole sie nur sehr deutlich.", "Die alte Moll vom Leuchtfeuer hat ihre Brille an eine Möwe verloren. Die Arme sieht gar nichts."]
+     farewell: ["Komm hungrig wieder!"]
+     topics:
+       - label: "Gibt's Klatsch?"
+@@ -2744,10 +2744,10 @@ banter:
+   - ["Hört, hört! Das Archiv hat GEÖFFNET!", "Leise geöffnet, Hollis.", "Hört, hört… leise…"]
+   # 15 nell · lamp_lighter · nell · lamp_lighter
+   - ["Wick, bleiben die Lampen heute Nacht an?", "Jede einzelne. Bis zum Morgen.", "Versprochen?", "Altes Gesetz. Ich halt's nur ein."]
+-  # 16 harbourmaster · egon · harbourmaster
+-  - ["Egon, deine Grünschnäbel salutieren ständig dem Kran. Hast du ihnen das gesagt?", "Nein, aber es ist ein sehr offiziell aussehender Kran. Ich würd ihm auch salutieren.", "Der steht nicht in meinem Buch, Egon. Salutiert wird nur, was in meinem Buch steht."]
+-  # 17 crane_hand · egon · crane_hand
+-  - ["Egon! Soll ich heute was heben? Kisten, Fässer, deine Laune?", "Meine Laune, bitte. Der neue Grünschnabel hat meinen Fisch ins Hafenbecken fallen lassen.", "Tut mir leid, Kumpel. Der Kran ist für schwere Lasten zugelassen, nicht für schweres Herz."]
++  # 16 harbourmaster · crane_hand · harbourmaster
++  - ["Haul, das waren vier Kisten. Mein Buch sagt fünf.", "Dann soll dein Buch hochkommen und die fünfte selber heben.", "Das Buch hebt nicht, Haul. Das Buch merkt sich alles."]
++  # 17 crane_hand · harbourmaster · crane_hand
++  - ["Quill! Soll ich heute was heben? Kisten, Fässer, deine Laune?", "Heb die Kiste, die am Dienstag verschwunden ist. Das hebt meine Laune.", "Tut mir leid. Der Kran ist für schwere Lasten zugelassen, nicht für verlorene."]
+   # 18 lighthouse_keeper · dock_whisper · lighthouse_keeper
+   - ["Du flüsterst schon wieder mit dem Wasser. Antwortet es dir eigentlich mal?", "Manchmal. Meistens beschwert es sich über die Boote.", "Verständlich. Ich würd mich auch beschweren, wenn ständig jemand auf mir parkt."]
+   # 19 shanty_busker · merchant · shanty_busker

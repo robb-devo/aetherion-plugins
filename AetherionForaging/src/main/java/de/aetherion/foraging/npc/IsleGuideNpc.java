@@ -106,9 +106,12 @@ public final class IsleGuideNpc implements Listener {
     private TalkDesk canopyDesk() {
         return new TalkDesk(plugin, "forage_isle_canopy", DISPLAY, "§a", "canopy_clerk",
                 this::guideLocation, this::livingHologram,
-                player -> "Hey, {player}. Welcome to the grove. Ask — then go chop.",
+                player -> "Hey, {player}. First: hit a glowing trunk — green on the bar is a clean cut. Then ask.",
                 List.of(
-                        TalkDesk.Topic.of("The chop?", NamedTextColor.GREEN, "How do I fell trees here?",
+                        TalkDesk.Topic.of("Do this first", NamedTextColor.GREEN, "What should I do first?",
+                                "Axe out. Walk to a living trunk. Swing and watch the timing bar — green is clean.",
+                                "Stack clean cuts for a streak. Miss once and that trunk needs a short breath — other trees stay free."),
+                        TalkDesk.Topic.of("The chop?", NamedTextColor.DARK_GREEN, "How do I fell trees here?",
                                 "Hit a trunk and watch the timing bar — green is a clean cut. Stack clean cuts for a streak.",
                                 "Big trunks (Titans) need two clean cuts. Miss and the streak cools. Same axe feel, deeper payoff."),
                         TalkDesk.Topic.of("Crown Finds?", NamedTextColor.GOLD, "What's a Crown Find?",

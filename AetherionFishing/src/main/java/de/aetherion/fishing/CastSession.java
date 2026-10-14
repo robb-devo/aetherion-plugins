@@ -37,6 +37,8 @@ public final class CastSession {
     int lastRemaining;
     /** Approach telegraph fired ("ready…") — plays its cue once. */
     boolean readyCued;
+    /** Fail telegraph fired ("slipping") — the fish is about to let go; cue plays once. */
+    boolean slipCued;
     /** HUD suffix from the hooks, refreshed while waiting. */
     String hudTag;
     /** Gold cells in the middle of the window (1 normally). */
@@ -65,6 +67,15 @@ public final class CastSession {
         this.marker = 0;
         this.direction = 1;
         this.enteredZone = false;
+        this.slipCued = false;
+    }
+
+    /**
+     * Last stretch of the strike window — same share as the fell bar's "slipping" tell, so a
+     * timeout is always telegraphed before it lands.
+     */
+    boolean slipping() {
+        return phase == Phase.STRIKE && strikeLimit > 0 && strikeTicks >= strikeLimit * StrikeBar.SLIP_SHARE;
     }
 
     /** True on the ticks the marker should step. */

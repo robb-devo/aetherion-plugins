@@ -48,6 +48,7 @@ public final class AetherionDungeons extends JavaPlugin {
     private DungeonTpsProbe tpsProbe;
     private DungeonHubService hubService;
     private de.aetherion.core.api.DungeonAccess dungeonAccess;
+    private de.aetherion.core.api.CharacterTransport characterTransport;
 
     @Override
     public void onEnable() {
@@ -109,6 +110,11 @@ public final class AetherionDungeons extends JavaPlugin {
         getLogger().info("AetherionDungeons enabled. Temporary instances only.");
         dungeonAccess = new de.aetherion.dungeons.api.DungeonAccessImpl(this);
         de.aetherion.core.api.AetherServices.registerDungeons(dungeonAccess);
+        // Core's network router (islands / exile / main-world warps) moves characters through this pipeline.
+        if (remote.enabled() && characterSync.enabled()) {
+            characterTransport = new de.aetherion.dungeons.bridge.DungeonCharacterTransport(remote, snapshots, transferGuard);
+            de.aetherion.core.api.AetherServices.registerTransport(characterTransport);
+        }
     }
 
     @Override
@@ -128,6 +134,10 @@ public final class AetherionDungeons extends JavaPlugin {
         if (dungeonAccess != null) {
             de.aetherion.core.api.AetherServices.clearDungeons(dungeonAccess);
             dungeonAccess = null;
+        }
+        if (characterTransport != null) {
+            de.aetherion.core.api.AetherServices.clearTransport(characterTransport);
+            characterTransport = null;
         }
         instance = null;
         getLogger().info("AetherionDungeons disabled.");

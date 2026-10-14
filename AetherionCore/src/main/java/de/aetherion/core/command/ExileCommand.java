@@ -1,6 +1,8 @@
 package de.aetherion.core.command;
 
 import de.aetherion.core.AetherionCore;
+import de.aetherion.core.exile.ExileQuay;
+import de.aetherion.core.exile.Say;
 import de.aetherion.core.network.ExileHost;
 import de.aetherion.core.network.ExileLink;
 
@@ -45,9 +47,62 @@ public final class ExileCommand implements CommandExecutor, TabCompleter {
                     player.sendMessage("§8Exil §8» §7Already here. §f/exile return §7leaves.");
                     return true;
                 }
+                ExileQuay quay = plugin.exileQuay();
+                if (quay != null && quay.placed()) {
+                    if (quay.near(player, 48)) {
+                        quay.board(player, "command");
+                    } else if (player.hasPermission("aetherion.core.admin")) {
+                        link.send(player);
+                    } else {
+                        player.sendMessage(Say.t(player,
+                                "§8Ferry §8» §7The ferry leaves from the Veil Quay, at the end of the King's Road.",
+                                "§8Fähre §8» §7Die Fähre legt am Schleierkai ab, am Ende der Königsstraße."));
+                    }
+                    return true;
+                }
+                // No islet placed yet: the old direct hop, but the story still decides who may cross.
+                String no = quay == null ? null : quay.refusal(player);
+                if (no != null) {
+                    player.sendMessage(Say.t(player, "§8Ferryman §8» §7", "§8Fährmann §8» §7") + no);
+                    return true;
+                }
                 link.send(player);
             }
+            case "landing" -> {
+                // Run on arrival back on the main world: step off the ferry at the Veil Quay (or the harbour).
+                ExileQuay quay = plugin.exileQuay();
+                if (quay != null && quay.placed()) {
+                    quay.landHere(player);
+                } else {
+                    de.aetherion.core.api.HubAccess hub = de.aetherion.core.api.AetherServices.hub();
+                    org.bukkit.Location harbour = hub == null ? null : hub.location("harbour");
+                    if (harbour != null && harbour.getWorld() != null) {
+                        player.teleport(harbour);
+                    }
+                }
+            }
+            case "setquay" -> {
+                if (!player.hasPermission("aetherion.core.admin")) {
+                    player.sendMessage("§cNo permission.");
+                    return true;
+                }
+                ExileQuay quay = plugin.exileQuay();
+                if (quay == null) {
+                    player.sendMessage("§cThe Veil Quay lives on the main world, not on the exile backend.");
+                    return true;
+                }
+                quay.setHere(player);
+            }
             case "return", "leave", "back", "main" -> {
+                if (link.isExileServer() && host != null && host.doors() != null
+                        && !player.getWorld().getName().equalsIgnoreCase(plugin.getConfig().getString("exile.world", "aetherion_exile"))) {
+                    org.bukkit.Location back = host.doors().returnPoint(player.getWorld().getName());
+                    if (back != null) {
+                        // Out of a boss world beside the island: back to its door, not off the island.
+                        player.teleport(back);
+                        return true;
+                    }
+                }
                 if (!link.isExileServer()) {
                     // From any non-exile backend just refuse; from exile hop home.
                     if (plugin.link() != null && plugin.link().isMainWorld()) {
@@ -76,10 +131,16 @@ public final class ExileCommand implements CommandExecutor, TabCompleter {
                     player.sendMessage("§7Cutscene stopped.");
                 }
             }
-            case "where" -> player.sendMessage("§8Exil §8» §7backend §f" + plugin.link().serverName()
-                    + " §8· §7exile-server §f" + link.exileServer()
-                    + (link.isExileServer() ? " §a(here)" : ""));
-            default -> player.sendMessage("§7/exile §8[§7go · return · replay · stop · where§8]");
+            case "where" -> {
+                player.sendMessage("§8Exil §8» §7backend §f" + plugin.link().serverName()
+                        + " §8· §7exile-server §f" + link.exileServer()
+                        + (link.isExileServer() ? " §a(here)" : ""));
+                if (plugin.exileQuay() != null) {
+                    player.sendMessage(plugin.exileQuay().describe());
+                }
+            }
+            default -> player.sendMessage("§7/exile §8[§7go · return · replay · stop · where" 
+                    + (player.hasPermission("aetherion.core.admin") ? " · setquay" : "") + "§8]");
         }
         return true;
     }
@@ -91,7 +152,9 @@ public final class ExileCommand implements CommandExecutor, TabCompleter {
         }
         String prefix = args[0].toLowerCase(Locale.ROOT);
         List<String> out = new ArrayList<>();
-        for (String s : List.of("go", "return", "replay", "stop", "where")) {
+        for (String s : sender.hasPermission("aetherion.core.admin")
+                ? List.of("go", "return", "replay", "stop", "where", "setquay")
+                : List.of("go", "return", "replay", "stop", "where")) {
             if (s.startsWith(prefix)) {
                 out.add(s);
             }

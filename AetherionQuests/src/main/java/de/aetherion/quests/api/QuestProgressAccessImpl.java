@@ -66,7 +66,28 @@ public final class QuestProgressAccessImpl implements QuestProgressAccess {
 
     @Override
     public boolean isQuestCompleted(Player player, String questId) {
+        if (ORIENTATION.equalsIgnoreCase(questId)) {
+            return orientationFiled(player);
+        }
         return QuestProgressBridge.isQuestCompleted(player, questId);
+    }
+
+    /**
+     * Pseudo quest id {@value #ORIENTATION}: true once Miss Ledger has stamped orientation shut (or the player is
+     * clearly past it — the dev skip, or Vex's post-tutorial lesson filed). Other plugins (Hub Origin) use it to
+     * stay quiet while the harbour funnel owns the screen.
+     */
+    public static final String ORIENTATION = "orientation";
+
+    private boolean orientationFiled(Player player) {
+        if (player == null || plugin == null) {
+            return false;
+        }
+        if (plugin.getPlayerQuestStorage() != null
+                && plugin.getPlayerQuestStorage().hasStarterKit(player.getUniqueId(), "tutorial_graduation")) {
+            return true;
+        }
+        return QuestProgressBridge.isQuestCompleted(player, "lesson_steel");
     }
 
     @Override

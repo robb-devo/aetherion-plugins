@@ -20,6 +20,9 @@ public final class OriginProfile {
     public final Set<String> rides = new LinkedHashSet<>();
     public final Set<String> met = new LinkedHashSet<>();
     public final Set<String> flags = new LinkedHashSet<>();
+    /** Exploration layer: small hidden finds and the storytelling chests. */
+    public final Set<String> curiosities = new LinkedHashSet<>();
+    public final Set<String> tales = new LinkedHashSet<>();
     /** -1 = never started; 0..n = current step; >= steps = done. */
     public int tourStep = -1;
     public int wishes;
@@ -45,6 +48,8 @@ public final class OriginProfile {
         rides.addAll(s.getStringList("rides"));
         met.addAll(s.getStringList("met"));
         flags.addAll(s.getStringList("flags"));
+        curiosities.addAll(s.getStringList("curiosities"));
+        tales.addAll(s.getStringList("tales"));
         tourStep = s.getInt("tour-step", -1);
         wishes = s.getInt("wishes", 0);
         lastWishEvent = s.getLong("last-wish-event", 0L);
@@ -63,6 +68,8 @@ public final class OriginProfile {
         y.set("rides", new ArrayList<>(rides));
         y.set("met", new ArrayList<>(met));
         y.set("flags", new ArrayList<>(flags));
+        y.set("curiosities", new ArrayList<>(curiosities));
+        y.set("tales", new ArrayList<>(tales));
         y.set("tour-step", tourStep);
         y.set("wishes", wishes);
         y.set("last-wish-event", lastWishEvent);

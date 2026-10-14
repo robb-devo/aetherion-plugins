@@ -41,11 +41,17 @@ final class FishingHud {
     }
 
     void striking(Player player, int marker, int zoneStart, int zoneSize, int perfectWidth, boolean hot, int streak) {
+        striking(player, marker, zoneStart, zoneSize, perfectWidth, hot, false, streak);
+    }
+
+    /** Green on the window, yellow while hunting it, red once the fish is about to let go. */
+    void striking(Player player, int marker, int zoneStart, int zoneSize, int perfectWidth, boolean hot,
+                  boolean slipping, int streak) {
         paint(
                 player,
-                StrikeBar.strikeTitle(marker, zoneStart, zoneSize, perfectWidth, hot, streak),
+                StrikeBar.strikeTitle(marker, zoneStart, zoneSize, perfectWidth, hot, slipping, streak),
                 StrikeBar.strikeProgress(marker),
-                hot ? BarColor.GREEN : BarColor.YELLOW,
+                hot ? BarColor.GREEN : slipping ? BarColor.RED : BarColor.YELLOW,
                 BarStyle.SEGMENTED_20
         );
     }

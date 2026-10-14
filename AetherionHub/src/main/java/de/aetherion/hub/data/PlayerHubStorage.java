@@ -53,6 +53,27 @@ public final class PlayerHubStorage {
         }
     }
 
+    /** Write one player's hub YAML now (transfer flush) without dropping the cache. */
+    public void flushPlayer(UUID uuid) {
+        if (uuid == null) {
+            return;
+        }
+        PlayerHubData data = cache.get(uuid);
+        if (data != null) {
+            write(data);
+            dirty.remove(uuid);
+        }
+    }
+
+    /** Drop RAM after an external transfer write so the next load() re-reads disk. */
+    public void invalidate(UUID uuid) {
+        if (uuid == null) {
+            return;
+        }
+        dirty.remove(uuid);
+        cache.remove(uuid);
+    }
+
     /** Full hub wipe: delete player file + drop cache (teleports / unlocks). */
     public void wipePlayer(UUID uuid) {
         if (uuid == null) {

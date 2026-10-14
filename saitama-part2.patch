@@ -1,0 +1,2559 @@
+diff --git a/AetherionHub/src/main/java/de/aetherion/hub/origin/OriginBay.java b/AetherionHub/src/main/java/de/aetherion/hub/origin/OriginBay.java
+index 530a9c8..ba5c8ac 100644
+--- a/AetherionHub/src/main/java/de/aetherion/hub/origin/OriginBay.java
++++ b/AetherionHub/src/main/java/de/aetherion/hub/origin/OriginBay.java
+@@ -109,7 +109,12 @@ public final class OriginBay implements Listener {
+                 buoys.add(new Buoy(p, parts.length >= 4 ? parts[3] : "red"));
+             }
+         }
+-        ConfigurationSection crs = s.getConfigurationSection("crane");
++        // "dock-crane" (part 2, moved clear of the moored sloop) wins over the first "crane" spot:
++        // a live origin.yml keeps old values for existing keys, so the move needs a new key.
++        ConfigurationSection crs = s.getConfigurationSection("dock-crane");
++        if (crs == null) {
++            crs = s.getConfigurationSection("crane");
++        }
+         if (crs != null && crs.getBoolean("enabled", true)) {
+             double[] base = OriginConfig.nums(crs.getString("base"));
+             if (base != null) {
+@@ -1258,6 +1263,7 @@ public final class OriginBay implements Listener {
+         private final float liftDrop = 2.2f;
+         private final float jibLen;
+         private final double[] punt;
++        private final List<double[]> pile = new ArrayList<>();
+ 
+         private final List<BlockDisplay> fixed = new ArrayList<>();
+         private BlockDisplay head;
+@@ -1297,6 +1303,12 @@ public final class OriginBay implements Listener {
+             this.pickDrop = (float) (base[1] + height + 0.15d - 0.8d - pick[1]);
+             this.dropDrop = (float) (base[1] + height + 0.15d - 0.8d - dropAt[1]);
+             this.punt = OriginConfig.nums(cs.getString("punt"));
++            for (String raw : cs.getStringList("pile")) {
++                double[] p = OriginConfig.nums(raw);
++                if (p != null && p.length >= 3) {
++                    pile.add(p);
++                }
++            }
+             this.jibLen = Math.max(pickR, dropR) + 0.6f;
+             this.yaw = pickYaw;
+             this.radius = pickR;
+@@ -1413,13 +1425,14 @@ public final class OriginBay implements Listener {
+             add(world, at, "minecraft:stripped_dark_oak_log[axis=y]", box(0f, 0f, 0.6f + (h - 0.6f) / 2f, 0f, 0.7f, h - 0.6f, 0.7f, null));
+             add(world, at, "minecraft:dark_oak_planks", box(0f, 0.75f, 2.1f, 0f, 0.22f, 3.6f, 0.22f, new Quaternionf().rotateZ((float) Math.toRadians(-14))));
+             add(world, at, "minecraft:dark_oak_planks", box(0f, -0.75f, 2.1f, 0f, 0.22f, 3.6f, 0.22f, new Quaternionf().rotateZ((float) Math.toRadians(14))));
+-            double rad = Math.toRadians(pickYaw);
+-            float px = (float) (-Math.sin(rad) * pickR);
+-            float pz = (float) (Math.cos(rad) * pickR);
+-            float floor = (float) (base[1] + h + 0.15d - 0.8d - pickDrop - base[1]);
+-            add(world, at, "minecraft:barrel[facing=up]", box(0f, px + 1.0f, floor + 0.4f, pz + 0.6f, 0.8f, 0.8f, 0.8f, null));
+-            add(world, at, "minecraft:barrel[facing=east]", box(0f, px + 0.9f, floor + 0.4f, pz - 0.5f, 0.8f, 0.8f, 0.8f, null));
+-            add(world, at, "minecraft:barrel[facing=up]", box(0f, px + 0.95f, floor + 1.2f, pz + 0.05f, 0.8f, 0.8f, 0.8f, null));
++            // crate pile beside the pick spot (absolute cells from origin.yml, checked free on the map)
++            for (double[] c : pile) {
++                float rx = (float) (c[0] - base[0]);
++                float ry = (float) (c[1] - base[1]);
++                float rz = (float) (c[2] - base[2]);
++                add(world, at, c.length > 3 && c[3] > 0 ? "minecraft:barrel[facing=east]" : "minecraft:barrel[facing=up]",
++                        box(0f, rx, ry + 0.4f, rz, 0.8f, 0.8f, 0.8f, null));
++            }
+             // moving: head, jib, counter-jib, counterweight, trolley, rope, load, tip lamp
+             head = display(world, at, "minecraft:spruce_planks", 2.5f, 0);
+             jib = display(world, at, "minecraft:dark_oak_planks", 2.5f, 0);
+diff --git a/AetherionHub/src/main/resources/origin.yml b/AetherionHub/src/main/resources/origin.yml
+index fab1b87..643fa37 100644
+--- a/AetherionHub/src/main/resources/origin.yml
++++ b/AetherionHub/src/main/resources/origin.yml
+@@ -396,10 +396,14 @@ bay:
+     a: ["296 -436", "300 -452", "300.5 -464.5", "302 -492", "318 -505", "338 -500", "350 -482", "352 -460", "340 -446", "318 -440"]
+     b: ["325 -515", "345 -508", "365 -512", "374 -526", "362 -536", "340 -532", "318 -528"]
+   buoys: ["290.5 60.85 -441.5 red", "320.5 60.85 -432.5 green", "300.5 60.85 -500.5 yellow", "346.5 60.85 -454.5 red", "364.5 60.85 -520.5 yellow"]
+-  crane:
++  # Part 2: the crane moved onto the finger pier between the moored sloops. The whole swing (mast,
++  # jib, counterweight, rope, hanging crate, both lowering columns) was checked block by block: nothing
++  # it passes through. New key on purpose: live configs keep old values for existing keys.
++  dock-crane:
+     enabled: true
+-    base: "326.5 63 -383.5"        # boardwalk, east end
+-    height: 14                     # jib clears the moored sloop's rigging
+-    pick: "322.5 63 -382.5"        # crate pile on the boardwalk
+-    drop: "330.5 61.1 -392.5"      # into the cargo punt
+-    punt: "330.5 60.72 -392.5 0"
++    base: "312.5 64 -397.5"
++    height: 11
++    pick: "315.5 63 -396.5"        # crate pick-up on the pier
++    drop: "310.17 61.1 -388.81"    # into the cargo punt off the sloop's stern
++    punt: "310.17 60.72 -388.81 90"
++    pile: ["314.5 63 -398.5", "315.5 63 -398.5 1", "314.5 63.8 -398.5"]
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/dialog/DialogManager.java b/AetherionQuests/src/main/java/de/aetherion/quests/dialog/DialogManager.java
+index 0a81b2e..727327f 100644
+--- a/AetherionQuests/src/main/java/de/aetherion/quests/dialog/DialogManager.java
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/dialog/DialogManager.java
+@@ -1762,33 +1762,33 @@ public class DialogManager implements Listener {
+ 
+         if (dialogId.equalsIgnoreCase("chicken_keeper_intro")) {
+             return new String[] {
+-                    "That is not a chicken. That is a logistics error with feathers.",
+-                    "McNugget got out. Again. Somewhere out on the farmlands, being enormous.",
+-                    "If you meet it, don't make eye contact. It thinks that's a challenge."
++                    "Hello! I keep the chickens of Clucksworth. Well, most of them.",
++                    "My biggest one, McNugget, got out again. He's somewhere out on the farmlands, and he's enormous.",
++                    "If you meet him, don't look him in the eye. He takes that as a challenge."
+             };
+         }
+ 
+         if (dialogId.equalsIgnoreCase("tollkeeper_intro")) {
+             return new String[] {
+-                    "This bridge used to have a toll. Then a troll had opinions about it.",
+-                    "He lives under the old crossings now. Pays himself in travellers.",
+-                    "I just keep the ledger. Short ledger. Mostly apologies."
++                    "Hello! This bridge used to have a toll. Then a troll moved in under the old crossings and made his own rules.",
++                    "He doesn't take coins. He takes travellers, or at least he tries to.",
++                    "These days I just keep the books for the bridge. Very short books. Mostly apologies to the people who got grabbed."
+             };
+         }
+ 
+         if (dialogId.equalsIgnoreCase("dockhand_intro")) {
+             return new String[] {
+-                    "Water's been writing its name on people lately.",
+-                    "There's something under the harbour with too many arms and a temper. Ink, poison, the works.",
+-                    "Tackle says it's a squid. Tackle also says the fish like him."
++                    "The water has been acting strange lately. Fishermen come home covered in ink.",
++                    "There's something under the harbour with too many arms and a bad temper. Ink, poison, the whole show.",
++                    "Tackle says it's just a big squid. Tackle also says the fish like him, so I'm not sure."
+             };
+         }
+ 
+         if (dialogId.equalsIgnoreCase("ash_scout_intro")) {
+             return new String[] {
+-                    "If you see flaming arrows, you're already late.",
+-                    "Skuldugery likes an audience out in the wastes. Don't be one.",
+-                    "I count the arrows that come back. Fewer every week."
++                    "Hello. I watch the wastes out here and keep an eye on the archers.",
++                    "Skuldugery shoots burning arrows at anyone who comes too close. He loves an audience.",
++                    "If you head out there, keep moving and stay behind cover. And count your arrows, I always do."
+             };
+         }
+ 
+@@ -1891,81 +1891,81 @@ public class DialogManager implements Listener {
+ 
+         if (dialogId.equalsIgnoreCase("rook_intro")) {
+             return new String[] {
+-                    "Rook. I prepare people for holes in the ground that charge admission.",
+-                    "Dungeons are caves with opinions. Bring me ten bones. Homework before the field trip.",
+-                    "Survive the paperwork first. The skeletons can wait their turn."
++                    "Hello, I'm Rook. I prepare adventurers for the dungeons under the island.",
++                    "Before I take anyone down there, I need ten bones. Think of it as homework: if you can't handle skeletons up here, you can't handle them down there.",
++                    "Bring me the bones, and I'll tell you everything I know about surviving a dungeon."
+             };
+         }
+ 
+         if (dialogId.equalsIgnoreCase("gate_warden_intro")) {
+             return new String[] {
+-                    "Road's closed. The Pathwarden is the reason and the billboard.",
+-                    "He is slow. He is patient. He is also very good at ending careers.",
+-                    "Move him. Or become a cautionary plaque. Your choice. I get paid either way."
++                    "The road beyond this gate is closed. The Pathwarden stands on it, and nobody gets past him.",
++                    "He's slow, he's patient, and he's ended a lot of brave careers.",
++                    "If you think you're strong enough, go and move him. If not, there's no shame in waiting a while longer."
+             };
+         }
+ 
+         if (dialogId.equalsIgnoreCase("bench_cynic_intro")) {
+             return new String[] {
+-                    "Don't sit. This bench is occupied by standards.",
+-                    "I need eight rotten flesh. Call it research. Call it lunch. I don't care.",
+-                    "Bring it. Then leave me to my disappointment."
++                    "Please don't sit down. This bench is mine, and I'm very particular about it.",
++                    "If you want to be useful, bring me eight pieces of rotten flesh. It's for my research, and no, I won't explain.",
++                    "Bring them, and then you can go back to enjoying the fountain. I'll stay here and enjoy nothing."
+             };
+         }
+ 
+         if (dialogId.equalsIgnoreCase("dust_intro")) {
+             return new String[] {
+-                    "Name's Dust. I map places people already walked over.",
+-                    "Thirty cobblestone. Ambition needs roads. Roads need rocks. Rocks need you.",
+-                    "Don't make it poetry. Make it a pile."
++                    "Hi! I'm Dust. I build and fix the paths between the Capital and everywhere else.",
++                    "Right now I need thirty cobblestone. Roads don't grow by themselves, unfortunately.",
++                    "Bring me the stone and I'll put it to good use. Next time you walk somewhere nice, you might be walking on your own cobble."
+             };
+         }
+ 
+         if (dialogId.equalsIgnoreCase("fry_gossip_intro")) {
+             return new String[] {
+-                    "You smell like adventure. Or grease. Hard to tell around here.",
+-                    "Clucksworth keeps screaming about McNugget. Giant chicken. Very punchable. Very crispy.",
+-                    "If you survive it, don't brag near the fryer. The Gossip listens. And repeats."
++                    "Hey there! I run the fry stand, and I hear everything that happens in this harbour.",
++                    "Latest news: Clucksworth says his giant chicken McNugget escaped again. It's out on the farmlands somewhere, and it's huge.",
++                    "If you ever beat it, come and tell me first. I promise I'll only tell everybody."
+             };
+         }
+ 
+         if (dialogId.equalsIgnoreCase("dock_whisper_intro")) {
+             return new String[] {
+-                    "Quiet. The river has opinions.",
+-                    "Tackle will teach you the reel. Rare days, the line goes purple — Mythic Water Dragon. Only yours to catch.",
+-                    "And if something older than the reef comes up in a vial? Don't shake it. Don't ask Brine. Just... don't."
++                    "Hello. People call me Dock Whisper, because I talk to the water. Sometimes it talks back.",
++                    "Tackle on the pier teaches you to fish. On rare days your line glows purple. That's a Mythic Water Dragon, and only you can catch it.",
++                    "And if you ever fish up a strange old vial, don't shake it and don't open it. Bring it to someone who knows."
+             };
+         }
+ 
+         if (dialogId.equalsIgnoreCase("larder_intro")) {
+             return new String[] {
+-                    "Pantry's thin. My patience thinner.",
+-                    "Compress wheat — real Compressed Wheat, not the grassy leftovers.",
+-                    "Three of those. Then we talk boosters."
++                    "Hello! I run the Capital's pantry, and right now it's looking very empty.",
++                    "I need three Compressed Wheat. Press farm wheat together and you'll get it.",
++                    "Bring me three, and I'll reward you with a booster and some coins. Hungry people will thank you too."
+             };
+         }
+ 
+         if (dialogId.equalsIgnoreCase("pet_scout_intro")) {
+             return new String[] {
+-                    "Lark hands out spheres like candy. I want proof you can aim.",
+-                    "Catch a wild pig. One. Alive in a sphere, not as dinner.",
+-                    "Come back when the pocket squeals."
++                    "Hi! Lark hands out catch spheres to everyone, but I want to see who can actually use one.",
++                    "Catch me a wild pig with a sphere. Just one, and alive please, not as dinner.",
++                    "Come back when your pocket starts oinking."
+             };
+         }
+ 
+         if (dialogId.equalsIgnoreCase("ore_ledger_intro")) {
+             return new String[] {
+-                    "I don't dig. I audit. The mountain already lied once.",
+-                    "Mining skill level eight. Minimum. Below that you're a tourist with a pickaxe.",
+-                    "Five Compressed Coal. Not dusty. Not 'almost'. Compressed. Then we close the ledger."
++                    "Hello. I don't mine myself. I keep the records of everything that comes out of this ridge.",
++                    "If your Mining skill is level eight or higher, I have work for you.",
++                    "Bring me five Compressed Coal, the real thing, and I'll pay you well and close this month's books."
+             };
+         }
+ 
+         if (dialogId.equalsIgnoreCase("timber_clerk_intro")) {
+             return new String[] {
+-                    "Every stump files a complaint. I'm the complaints department.",
+-                    "Foraging eight or higher. Axes that still wobble can wait outside.",
+-                    "Five Compressed Oak Logs. Taxed wood. Quiet forest. Everybody wins except the trees."
++                    "Hello! I keep track of every tree that gets cut in Eastwood.",
++                    "If your Foraging skill is level eight or higher, I could use your help.",
++                    "Bring me five Compressed Oak Logs. I'll pay you, and I'll make sure we plant new trees for every one we take."
+             };
+         }
+ 
+@@ -1979,62 +1979,65 @@ public class DialogManager implements Listener {
+ 
+         if (dialogId.equalsIgnoreCase("dock_scaler_intro")) {
+             return new String[] {
+-                    "I weigh fish that refuse to be weighed. Professionally.",
+-                    "Fishing ten. If your cast still looks like a sneeze, keep walking.",
+-                    "Three Compressed Cod. School that learned solidarity. Clipboard stays wet either way."
++                    "I'm the Dock Scaler. I weigh and record every fish that comes into this harbour.",
++                    "If your Fishing skill is level ten or higher, I have a job for you.",
++                    "Bring me three Compressed Cod for my samples. I pay properly, and my clipboard will finally be happy."
+             };
+         }
+ 
+         if (dialogId.equalsIgnoreCase("sphere_proctor_intro")) {
+             return new String[] {
+-                    "Pigs were kindergarten. Cows are the midterm.",
+-                    "Aetherion Level five. The sphere has standards. So do I.",
+-                    "Catch one cow. Alive. Mooving. In custody. Do not bring me a steak and call it progress."
++                    "Hello! Pigs are for beginners. I test the next step: cows.",
++                    "You need Aetherion level five, and then you catch me one cow in a sphere. Alive, please.",
++                    "Do that, and you're officially a proper catcher. I'll even write it down."
+             };
+         }
+ 
+         if (dialogId.equalsIgnoreCase("quarry_broker_intro")) {
+             return new String[] {
+-                    "Guild door's picky. I'm pickier.",
+-                    "Aetherion Level twenty. That's the club handshake, minus the handshake.",
+-                    "One Compacted Cobblestone. Not compressed. Compacted. The brick that proves you meant it."
++                    "Hello. I decide who gets into the Builders' Guild, and I'm very picky.",
++                    "You'll need Aetherion level twenty before I even look at you.",
++                    "Then bring me one Compacted Cobblestone. Not compressed, compacted. That brick proves you're serious about building."
+             };
+         }
+ 
+         if (dialogId.equalsIgnoreCase("slag_poet_intro")) {
+             return new String[] {
+-                    "Ode to a vein that ghosted me. Stanza one: betrayal. Stanza two: also betrayal.",
+-                    "Ore Ledger wants coal with receipts. I want metaphors. We are not the same.",
+-                    "If the mountain sings, don't answer. It bills by the hour."
++                    "Hello! I mine on Ore Ridge, and in my free time I write poems about it.",
++                    "Most of my poems are about ore veins that run out right when you get excited. That happens a lot.",
++                    "If you're mining up here, follow the coal seams downhill. And if the mountain rumbles, step back. That's not applause."
+             };
+         }
+ 
+         if (dialogId.equalsIgnoreCase("bait_theory_intro")) {
+             return new String[] {
+-                    "Bait is a philosophy. Worms are the footnotes.",
+-                    "Dock Whisper mutters about purple lines. Dock Scaler mutters about clipboards. I mutter about entropy.",
+-                    "Cast like you mean it. Or cast like you don't. The river grades on vibes."
++                    "I've been testing bait on this pier for eleven years. Worms, bread, cheese, you name it.",
++                    "Dock Whisper listens to the water, Dock Scaler weighs the fish, and I figure out what they want for dinner.",
++                    "My advice: cast calmly, wait longer than you think, and never fish in a bad mood. The fish can tell."
+             };
+         }
+ 
+         if (dialogId.equalsIgnoreCase("stall_crumb_intro")) {
+             return new String[] {
+-                    "Fresh loaf. Or yesterday's. Depends how honest you look.",
+-                    "Quartermaster pays in coal talk. I pay in crusts. Pick your religion."
++                    "Fresh bread! Well, today's bread is fresh. Yesterday's is cheaper.",
++                    "I bake every morning before the sun is up. The whole harbour eats my loaves, even the Quartermaster.",
++                    "If you're heading out to work, take some bread with you. Hungry people make bad decisions."
+             };
+         }
+ 
+         if (dialogId.equalsIgnoreCase("stall_tack_intro")) {
+             return new String[] {
+-                    "Nails, twine, regret — three for a coin if I liked you.",
+-                    "Ore Ridge chews tools. I sell the chewing gum that almost helps."
++                    "Nails, rope, twine, buckles. I sell all the little things you forget until you need them.",
++                    "The miners up on Ore Ridge wear out their tools fast. Most of them stop here first.",
++                    "Have a look around. If I don't have it, you probably don't need it."
+             };
+         }
+ 
+         if (dialogId.equalsIgnoreCase("stall_brine_intro")) {
+             return new String[] {
+-                    "Salt for fish, salt for wounds, salt for opinions.",
+-                    "Tackle on the dock sells rods. I sell the reason fish taste like something."
++                    "Salt for fish, salt for meat, salt for soup. Salt makes everything better.",
++                    "Tackle sells you the rod. I sell you the reason your fish tastes like something.",
++                    "One pinch on your catch tonight, and you'll be back tomorrow for a whole jar."
+             };
+         }
+ 
+@@ -2102,10 +2105,9 @@ public class DialogManager implements Listener {
+ 
+         if (dialogId.equalsIgnoreCase("rivet_intro")) {
+             return new String[] {
+-                    "Hold still — if that plate rattles, I'm charging you for the echo.",
+-                    "Dock Whisper mutters about tides. I mutter about bolts that lie for a living.",
+-                    "Brass wants polish. Iron wants respect. Me? I want whoever keeps stealing my rivets.",
+-                    "You look useful. Or at least distractingly vertical. Don't lean on the wet paint."
++                    "Hello there! I'm Rivet. I keep the ships in this harbour from falling apart.",
++                    "Bolts, planks, rope, nails. If it holds a ship together, I've hammered it at least once.",
++                    "Careful where you step, the paint on this deck is still wet. And if you find any rivets lying around, they're mine."
+             };
+         }
+ 
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/isle/IsleCast.java b/AetherionQuests/src/main/java/de/aetherion/quests/isle/IsleCast.java
+index e98c356..4a52ee1 100644
+--- a/AetherionQuests/src/main/java/de/aetherion/quests/isle/IsleCast.java
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/isle/IsleCast.java
+@@ -44,7 +44,7 @@ public final class IsleCast {
+     public static final List<Seat> SEATS = List.of(
+             // Anker Harbour — the arrival crowd (all outside the pier cage, none on Egon's trail)
+             seat("harbourmaster", 287.5, 63, -380.5, -90f, "harbour"),
+-            seat("crane_hand", 324.5, 63, -383.5, -162f, "harbour"),
++            seat("crane_hand", 314.5, 63, -394.5, -60f, "harbour"),
+             seat("lighthouse_keeper", 266.5, 63, -461.5, -90f, "harbour"),
+             seat("shanty_busker", 236.5, 64, -366.5, -139f, "harbour"),
+             seat("lamp_lighter", 262.5, 63, -386.5, 0f, "harbour"),
+@@ -150,6 +150,7 @@ public final class IsleCast {
+         if (!originMap(world)) {
+             return "§7Not the Origin map here — nothing seeded.";
+         }
++        relocateMoved(world, storage);
+         List<Seat> todo = new ArrayList<>();
+         for (Seat seat : SEATS) {
+             if (QuestNPCRegistry.getNPC(seat.npcId()) == null || storage.hasSavedNPC(seat.npcId())) {
+@@ -189,6 +190,27 @@ public final class IsleCast {
+         return "§aSeeding §f" + todo.size() + "§a NPC(s) over the next " + Math.max(1, todo.size() * 6 / 20) + "s…";
+     }
+ 
++    /** Seats that moved in a later pass: an NPC still standing on its old seat walks over to the new one. */
++    private static final Object[][] MOVED = {
++            {"crane_hand", 324.5, 63.0, -383.5}
++    };
++
++    private void relocateMoved(World world, NPCDataStorage storage) {
++        for (Object[] m : MOVED) {
++            String id = (String) m[0];
++            Location saved = storage.getSavedLocation(id);
++            if (saved == null || saved.getWorld() == null || !saved.getWorld().equals(world)
++                    || Math.abs(saved.getX() - (double) m[1]) > 2.0d || Math.abs(saved.getZ() - (double) m[3]) > 2.0d) {
++                continue;
++            }
++            for (Seat seat : SEATS) {
++                if (seat.npcId().equals(id)) {
++                    new QuestNPCSpawnService().spawnNPC(id, new Location(world, seat.x(), seat.y(), seat.z(), seat.yaw(), 0.0f));
++                }
++            }
++        }
++    }
++
+     private void finish(List<String> placed, List<String> skipped) {
+         running = false;
+         save();
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/isle/IsleErrands.java b/AetherionQuests/src/main/java/de/aetherion/quests/isle/IsleErrands.java
+index 7a8b77c..0ddb4bb 100644
+--- a/AetherionQuests/src/main/java/de/aetherion/quests/isle/IsleErrands.java
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/isle/IsleErrands.java
+@@ -333,20 +333,20 @@ public final class IsleErrands implements Listener {
+ 
+         add(new Builder("hermits_minute", "hermit", "The Hermit's Minute", 120)
+                 .chip("Can I sit with you?")
+-                .pitch("Sit. Here. Don't talk. Don't jump. Don't open your bags.",
+-                        "Forty breaths, and the wood starts talking.",
+-                        "Then come back when it's dark and listen again. The night voice is different.")
+-                .accept("I'll sit.", "Good. Starting… now. No — now.")
+-                .decline("Not now.", "The forest says 'fine'. The forest is lying.")
++                .pitch("Sit here with me for a little while. No talking, no jumping around, no rummaging in your bag.",
++                        "Give it about forty breaths. Then the forest starts to show you what it's doing.",
++                        "And come back once it's dark. The night sounds completely different, I promise.")
++                .accept("I'll sit with you.", "Good. Get comfortable. We start now.")
++                .decline("Not right now.", "That's alright. The forest isn't going anywhere.")
+                 .active("About listening…")
+                 .linger("sit", -409.5, 58, -238.5, 3.5, 40, false,
+-                        "You stop fidgeting. Leaves. A woodpecker. Something far away that might be the sea.",
+-                        "Just stay near me. Stand still. Breathe.")
++                        "You stop fidgeting. Leaves rustle, a woodpecker knocks, and far away you can hear the sea.",
++                        "Just stay near me and stand still for a while. Breathe slowly.")
+                 .linger("night", -409.5, 58, -238.5, 3.5, 20, true,
+-                        "At night the wood creaks like a ship. Owls trade gossip. Moss is smiling in the dark.",
+-                        "Come back after dark. Same spot. Same stillness.")
+-                .done("I listened.", "You heard it. Most people only hear themselves.",
+-                        "Take this. Coins are noise, I know. Quiet noise."));
++                        "At night the wood creaks like an old ship. Owls call to each other, and Moss smiles in the dark.",
++                        "Come back after dark, same spot, and stand still again.")
++                .done("I listened.", "You heard it, didn't you? Most people only ever hear themselves.",
++                        "Take this. I know, coins are noisy. Spend them on something quiet."));
+ 
+         add(new Builder("night_light", "mushroom_forager", "Night Light", 150)
+                 .chip("Glowing mushrooms?")
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/isle/IsleLines.java b/AetherionQuests/src/main/java/de/aetherion/quests/isle/IsleLines.java
+index 10cd0bf..e3bd367 100644
+--- a/AetherionQuests/src/main/java/de/aetherion/quests/isle/IsleLines.java
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/isle/IsleLines.java
+@@ -43,9 +43,9 @@ public final class IsleLines {
+                     "A bridge over slow water. A lake of lilies. A shrine under old trees. Sound familiar?"
+             }),
+             Map.entry("hermit_intro", new String[] {
+-                    "Moss. I live here. Well — I sit here. The living is incidental.",
+-                    "Most people walk through Whisperwood. Nobody listens to it.",
+-                    "Sit with me a minute sometime. Don't fidget. You'll hear it."
++                    "Hello, traveller. I'm Moss. I used to live in the Capital, now I live under these trees.",
++                    "Most people hurry through Whisperwood without ever really listening to it.",
++                    "If you like, sit with me for a minute sometime. You'd be surprised what you can hear."
+             }),
+             Map.entry("bookie_intro", new String[] {
+                     "Odds Mulligan. Sports. Legs. Wagers on both.",
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/isle/IsleRounds.java b/AetherionQuests/src/main/java/de/aetherion/quests/isle/IsleRounds.java
+new file mode 100644
+index 0000000..6e0814f
+--- /dev/null
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/isle/IsleRounds.java
+@@ -0,0 +1,72 @@
++package de.aetherion.quests.isle;
++
++import org.bukkit.Location;
++
++import java.util.ArrayList;
++import java.util.List;
++import java.util.Locale;
++import java.util.Map;
++
++/**
++ * Walking rounds for the Origin island cast: absolute waypoints, walked out and back (ping-pong)
++ * by {@code LivingNpcLife}. Every leg was checked on the live map — standable the whole way,
++ * at most one block up or down per step, no water, outside the pier cage, clear of other NPCs.
++ * <p>
++ * The first point is the NPC's seat. A round is only used while the NPC still stands within
++ * 3 blocks of it — move an NPC with an anchor and it simply goes back to standing work.
++ */
++public final class IsleRounds {
++
++    private IsleRounds() {
++    }
++
++    private static final Map<String, double[][]> ROUTES = Map.ofEntries(
++            Map.entry("crane_hand", new double[][] {{314.5, 63, -394.5}, {315.5, 63, -395.5}, {313.5, 63, -398.5}}),
++            Map.entry("lamp_lighter", new double[][] {{262.5, 63, -386.5}, {276.5, 63, -372.5}, {262.5, 63, -385.5}, {250.5, 64, -383.5}}),
++            Map.entry("harbourmaster", new double[][] {{287.5, 63, -380.5}, {272.5, 63, -381.5}, {287.5, 63, -380.5}, {291.5, 63, -383.5}}),
++            Map.entry("stall_crumb", new double[][] {{238.5, 64, -399.5}, {231.5, 64, -399.5}, {238.5, 64, -398.5}, {245.5, 64, -398.5}}),
++            Map.entry("stall_tack", new double[][] {{202.5, 64, -462.5}, {196.5, 64, -461.5}, {208.5, 64, -462.5}}),
++            Map.entry("stall_brine", new double[][] {{252.5, 63, -450.5}, {256.5, 63, -452.5}, {250.5, 63, -450.5}, {248.5, 63, -450.5}}),
++            Map.entry("fry_gossip", new double[][] {{206.5, 64, -359.5}, {212.5, 64, -355.5}, {200.5, 64, -353.5}}),
++            Map.entry("bait_theory", new double[][] {{260.5, 63, -426.5}, {256.5, 63, -431.5}}),
++            Map.entry("painter", new double[][] {{64.5, 58, -48.5}, {60.5, 58, -39.5}}),
++            Map.entry("mushroom_forager", new double[][] {{353.5, 67, -354.5}, {354.5, 68, -361.5}, {349.5, 68, -364.5}, {358.5, 69, -371.5}}),
++            Map.entry("gate_warden", new double[][] {{168.5, 58, 87.5}, {158.5, 58, 84.5}}),
++            Map.entry("tollkeeper", new double[][] {{-261.5, 56, -258.5}, {-265.5, 58, -261.5}}),
++            Map.entry("timber_clerk", new double[][] {{338.5, 65, -317.5}, {330.5, 65, -311.5}}),
++            Map.entry("street_sweeper", new double[][] {{210.5, 64, -404.5}, {204.5, 64, -403.5}, {204.5, 64, -413.5}, {212.5, 64, -412.5}}),
++            Map.entry("lighthouse_keeper", new double[][] {{266.5, 63, -461.5}, {257.5, 63, -461.5}, {256.5, 63, -454.5}}),
++            Map.entry("rivet", new double[][] {{287.5, 62, -394.5}, {288.5, 62, -395.5}, {288.5, 62, -398.5}, {286.5, 62, -402.5}}),
++            Map.entry("dockhand", new double[][] {{278.5, 63, -427.5}, {272.5, 63, -423.5}, {272.5, 63, -416.5}}),
++            Map.entry("lost_tourist", new double[][] {{9.5, 58, -67.5}, {-3.5, 58, -63.5}, {-12.5, 58, -71.5}, {-11.5, 58, -81.5}}),
++            Map.entry("dust", new double[][] {{-29.5, 58, -19.5}, {-30.5, 58, -21.5}, {-28.5, 58, -29.5}, {-29.5, 58, -23.5}, {-36.5, 58, -23.5}}),
++            Map.entry("bookie", new double[][] {{6.5, 58, 79.5}, {6.5, 58, 76.5}, {10.5, 58, 76.5}, {4.5, 58, 73.5}}),
++            Map.entry("chicken_keeper", new double[][] {{-261.5, 61, 170.5}, {-265.5, 61, 176.5}, {-269.5, 60, 170.5}}),
++            Map.entry("town_crier", new double[][] {{187.5, 64, -432.5}, {178.5, 64, -435.5}, {178.5, 64, -447.5}, {190.5, 64, -449.5}, {194.5, 65, -444.5}}),
++            Map.entry("dock_scaler", new double[][] {{266.5, 63, -365.5}, {272.5, 64, -361.5}, {260.5, 65, -365.5}}),
++            Map.entry("shanty_busker", new double[][] {{236.5, 64, -366.5}, {232.5, 64, -371.5}, {232.5, 64, -374.5}}),
++            Map.entry("beekeeper", new double[][] {{290.5, 61, -44.5}, {295.5, 61, -54.5}, {294.5, 61, -57.5}, {291.5, 61, -58.5}, {294.5, 61, -70.5}, {290.5, 61, -74.5}, {290.5, 61, -79.5}})
++    );
++
++    /** The round for this NPC at this home, or null (no round, other world, or moved away from its seat). */
++    public static List<Location> routeFor(String npcId, Location home) {
++        if (npcId == null || home == null || home.getWorld() == null) {
++            return null;
++        }
++        double[][] pts = ROUTES.get(npcId.toLowerCase(Locale.ROOT));
++        if (pts == null || pts.length < 2) {
++            return null;
++        }
++        double dx = home.getX() - pts[0][0];
++        double dz = home.getZ() - pts[0][2];
++        if (dx * dx + dz * dz > 9.0d || Math.abs(home.getY() - pts[0][1]) > 2.0d) {
++            return null;
++        }
++        List<Location> out = new ArrayList<>(pts.length);
++        out.add(home.clone());
++        for (int i = 1; i < pts.length; i++) {
++            out.add(new Location(home.getWorld(), pts[i][0], pts[i][1], pts[i][2]));
++        }
++        return out;
++    }
++}
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/npc/CastBook.java b/AetherionQuests/src/main/java/de/aetherion/quests/npc/CastBook.java
+index 885a22a..8647ff1 100644
+--- a/AetherionQuests/src/main/java/de/aetherion/quests/npc/CastBook.java
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/npc/CastBook.java
+@@ -151,7 +151,12 @@ public final class CastBook {
+         v.greetNew = new String[] {"Hm. {player}. Recipe Book's in your Manager."};
+         v.greet = new String[] {"Hm. {player}.", "Pick's holding? Hm. Good."};
+         v.greetGrad = new String[] {"Hm. Good work lately, {player}. Don't let it go to your head."};
+-        v.idle = new String[] {"*clang*", "Hm.", "Iron's moody today.", "Coal. More coal."};
++        v.idle = new String[] {
++                "This hammer was my father's. The handle was my grandfather's. The head is new, though.",
++                "Iron gets moody when it's cold. So do I, so we understand each other.",
++                "Bring me coal and patience. I'll supply the noise.",
++                "Every pickaxe on this harbour has been through my hands at least once."
++        };
+         v.farewell = new String[] {"Hm."};
+         topic(v, "What makes good gear?",
+                 "Old piece in the middle. Resources around it. That's the whole secret.",
+@@ -171,7 +176,12 @@ public final class CastBook {
+         v.greetNew = new String[] {"Hard hats save lives, {player}. I'm told."};
+         v.greet = new String[] {"{player}! Back for another shift?", "Dust suits you, {player}."};
+         v.greetGrad = new String[] {"Look who's a miner now. Proud of you. Don't tell anyone."};
+-        v.idle = new String[] {"*puff*", "Hear that? Neither do I. Good sign.", "Twenty years down there. Still hate spiders."};
++        v.idle = new String[] {
++                "Twenty years down in the shafts, and I still hate spiders.",
++                "Quiet in the tunnels today. In a mine, quiet is a good sign.",
++                "First rule down there: never dig straight up. Second rule: see the first rule.",
++                "My pipe went out an hour ago. I keep it in my mouth for courage."
++        };
+         v.farewell = new String[] {"Watch the drops. Watch the dark. Watch yourself."};
+         topic(v, "Is it safe down there?",
+                 "Safe? It's a mine, {player}.",
+@@ -191,7 +201,12 @@ public final class CastBook {
+         v.greetNew = new String[] {"{player}! Got anything I can set on fire? Upgrade. I meant upgrade."};
+         v.greet = new String[] {"Smell that, {player}? Progress. Also mild burning."};
+         v.greetGrad = new String[] {"{player}! Fused anything spicy lately?"};
+-        v.idle = new String[] {"*sizzle*", "That spark was intentional.", "Goggles on. Always goggles on."};
++        v.idle = new String[] {
++                "That spark? Completely intentional. Mostly intentional.",
++                "Goggles on, always. I learned that the bright way.",
++                "A booster on the Anvil is power. A booster in your pocket is just a pretty rock.",
++                "I've blown up three workbenches. The fourth one is doing great."
++        };
+         v.farewell = new String[] {"Stay flammable. Wait. No. Don't."};
+         topic(v, "Is there a limit?",
+                 "There's a cap. Don't ask me to raise it.",
+@@ -210,7 +225,12 @@ public final class CastBook {
+         v.greetNew = new String[] {"{player}. Present. Good."};
+         v.greet = new String[] {"{player}. On time. Almost.", "Posture, {player}."};
+         v.greetGrad = new String[] {"Graduate {player}. Try not to embarrass the stamp."};
+-        v.idle = new String[] {"*stamp*", "Late. Late. Early. Late.", "Who writes a nine like that?"};
++        v.idle = new String[] {
++                "Everything gets a stamp. Mistakes get two.",
++                "Late, late, early, late. My calendar has opinions about people.",
++                "Who writes a nine like that? It looks like a lost snail.",
++                "Every page in here is somebody's first day on Aetherion. I keep them all."
++        };
+         v.farewell = new String[] {"Dismissed."};
+         v.greetDoubt = lines("{player}. No records before the Silent Year. That's no accident.");
+         v.doubtStage = 3;
+@@ -233,7 +253,12 @@ public final class CastBook {
+         v.greetNew = new String[] {"{player}! Seen any birds? Don't trust them."};
+         v.greet = new String[] {"Wheat's growing, {player}. So's the bird problem."};
+         v.greetGrad = new String[] {"{player}! The birds remember you. Good."};
+-        v.idle = new String[] {"Shoo!", "That crow's been staring for an hour.", "Rain soon. Or birds. Probably birds."};
++        v.idle = new String[] {
++                "Shoo, crow! That's my wheat, not your breakfast!",
++                "That crow has been staring at me for an hour. I think it wants my hat.",
++                "It'll rain soon. Or the birds are lying again. Probably the birds.",
++                "Good soil is like a good friend. Feed it, and it remembers you."
++        };
+         v.farewell = new String[] {"Eyes up. They're always up there."};
+         topic(v, "Why the birds?", "They know what they did.", "Every season. Same birds. I recognise that one.");
+         topic(v, "Farm Isle?", "Harlow, far end of the barn. He knows the way down.", "Farming ten. Bigger fields. Fewer birds.");
+@@ -250,7 +275,12 @@ public final class CastBook {
+         v.greetNew = new String[] {"{player}! Mind the parrot. She's judging your shoes."};
+         v.greet = new String[] {"{player}! Pistachio remembers you. That's not a compliment."};
+         v.greetGrad = new String[] {"{player}! Your pet's famous around here. Well. To me."};
+-        v.idle = new String[] {"Who's a good bird? Not you.", "*whistles*", "Pistachio, no."};
++        v.idle = new String[] {
++                "Pistachio, no. That's not a snack, that's a stranger's hat.",
++                "Who's a good bird? Not you, Pistachio. You bit the mayor.",
++                "A pet sphere is a promise. You catch something, you look after it.",
++                "Every pet on this island has a name. Most of them chose it themselves."
++        };
+         v.farewell = new String[] {"Pistachio says bye. She doesn't. But imagine."};
+         topic(v, "Your parrot?",
+                 "Pistachio. Don't make eye contact.",
+@@ -269,7 +299,12 @@ public final class CastBook {
+         v.greetNew = new String[] {"Tackle. Harbour practice first, {player}. Then the west pad."};
+         v.greet = new String[] {"Line's calling, {player}.", "Wind's right. Fish aren't."};
+         v.greetGrad = new String[] {"{player}. Real water's on the west pad — Fishing Eldervale."};
+-        v.idle = new String[] {"*hums a sea shanty*", "Wind's from the east. Fish sulk.", "Hm. Nibble."};
++        v.idle = new String[] {
++                "East wind today. The fish sulk when it blows from the east.",
++                "Something nibbled, then it changed its mind. That's my whole life in one sentence.",
++                "The trick is patience. The other trick is better bait.",
++                "My grandfather fished this harbour. He caught a boot once and wore it to his wedding."
++        };
+         v.farewell = new String[] {"Fair winds."};
+         topic(v, "Fishing tips?", "Patience, {player}.", "And green. Reel on green. The rest is weather.");
+         topic(v, "Seen anything big?", "Once.", "Didn't reel it. Still think about it.");
+@@ -291,7 +326,12 @@ public final class CastBook {
+         v.greetNew = new String[] {"Eyes front, {player}!"};
+         v.greet = new String[] {"{player}. Still breathing. Adequate.", "Chin up, {player}. Blade up."};
+         v.greetGrad = new String[] {"{player}. Soldier. …Don't let that go to your head."};
+-        v.idle = new String[] {"Hup!", "Left! Right! Left!", "*sharpens sword*"};
++        v.idle = new String[] {
++                "Left, right, left! Even the gulls march better than my recruits.",
++                "A sharp blade and a sharp mind. Only one of those can be bought.",
++                "Up, down, breathe, repeat. That's the whole secret of fighting. And don't get hit.",
++                "I sharpen this sword every morning. It has never once thanked me."
++        };
+         v.farewell = new String[] {"Dismissed! Walk like you mean it."};
+         topic(v, "Any advice?", "Swing first. Think second. Survive third.", "Actually — think first. Write that down.");
+         topic(v, "The scar?", "Training accident.", "The training won.");
+@@ -299,31 +339,43 @@ public final class CastBook {
+         v = voice("rite_keeper");
+         v.accept = "I'll light it.";
+         v.decline = "Not yet.";
+-        v.onAccept = new String[] {"The powder remembers. So will you."};
++        v.onAccept = new String[] {"Good. Light the powder at the pillar, and be ready when the thunder comes."};
+         v.onDecline = new String[] {"Spirits are patient. I am less so."};
+         v.returning = new String[] {
+-                "The vial, {player}. The powder. The pillar.",
+-                "Ten seconds. Thunder. Then it walks."
++                "You have the vial, {player}. Pour the powder out at the pillar.",
++                "Then wait about ten seconds. You'll hear thunder, and then the spirit steps out to fight."
++        };
++        v.greetNew = new String[] {"Welcome to the Borderlands, {player}. The wastes keep an eye on everyone who comes here."};
++        v.greet = new String[] {"The spirits stir when you walk past, {player}. They remember you."};
++        v.greetGrad = new String[] {"The wastes are watching you, {player}. I think they are impressed."};
++        v.idle = new String[] {
++                "A storm is coming in from the wastes. You can smell it in the dust.",
++                "The old rites keep the Borderlands calm. Mostly, they keep me busy.",
++                "Mind the circle. It's older than the road you came in on."
+         };
+-        v.greetNew = new String[] {"The waste watches, {player}."};
+-        v.greet = new String[] {"Spirits stir when you pass, {player}."};
+-        v.greetGrad = new String[] {"The waste watches, {player}. It seems… impressed."};
+-        v.idle = new String[] {"*murmurs*", "Thunder soon.", "The powder is restless."};
+-        v.farewell = new String[] {"Walk softly. Things listen out there."};
+-        topic(v, "What are spirits?", "Old things that didn't finish dying.",
+-                "The vial holds them. The powder wakes them. You end them.");
++        v.farewell = new String[] {"Walk softly out there. Things are listening."};
++        topic(v, "What are spirits?", "Old souls that never quite finished dying. They linger out in the wastes.",
++                "The vial holds them, the powder wakes them, and you put them to rest.");
+ 
+         v = voice("arena_proctor");
+         v.greetNew = new String[] {"Ticket, {player}? No? Then don't loiter."};
+         v.greet = new String[] {"Oh. {player}. Still alive. Noted."};
+-        v.idle = new String[] {"*checks clipboard*", "Nobody's passed today. Nobody took it either.", "Hm."};
++        v.idle = new String[] {
++                "Nobody has passed the trial today. Nobody tried, either.",
++                "The Colosseum remembers every fight. Some of them it would rather forget.",
++                "Bring a vial, bring courage, and bring a spare pair of boots."
++        };
+         v.farewell = new String[] {"Mind the ring. It's older than your excuses."};
+-        topic(v, "What happened here?", "Exams. Monsters. Paperwork. In that order.", "Now it's mostly paperwork.");
++        topic(v, "What happened here?", "Exams, monsters and paperwork, in that order.", "These days it's mostly paperwork, sadly.");
+ 
+         v = voice("farm_isle_guide");
+         v.greetNew = new String[] {"Harlow. Farm Isle pad's down the road, {player}. Farming §e10§f."};
+         v.greet = new String[] {"Pad's that way, {player}. Arrow knows.", "Soil's good today, {player}."};
+-        v.idle = new String[] {"*chews wheat*", "Soil's good today.", "Pad thumps all day. That's normal. I think."};
++        v.idle = new String[] {
++                "The soil on the Farm Isle is better than here. Don't tell the farmer I said that.",
++                "The pad thumps all day long. I stopped hearing it years ago.",
++                "Chewing on wheat helps me think. It doesn't really help, but I keep trying."
++        };
+         v.farewell = new String[] {"Knees bent on the pad. Don't get clever."};
+         topic(v, "What's on the isle?", "Bigger fields. Fewer birds. Better soil.", "Don't tell the Farmer.");
+         topic(v, "You and the Farmer?", "He thinks he's the real farmer.", "Cute.");
+@@ -331,7 +383,11 @@ public final class CastBook {
+         v = voice("surveyor");
+         v.greetNew = new String[] {"{player}! Seen any trolls? Big ones? Tell me everything."};
+         v.greet = new String[] {"Got a page for me, {player}?"};
+-        v.idle = new String[] {"*scribbles a map*", "North is… that way. Probably.", "Trolls. Fascinating. Terrible. Fascinating."};
++        v.idle = new String[] {
++                "North is that way. Probably. My compass and I aren't speaking today.",
++                "Trolls are fascinating. Terrible, but fascinating. I've measured three footprints so far.",
++                "Every map I draw is out of date the moment someone builds a shed."
++        };
+         v.greetLegend = lines("{player}! Seen a troll with chain? Tell me everything.");
+         v.greetDoubt = lines("{player}. Royal forge-work in a troll's pocket. I can't sleep.");
+         story(v, 5, "Troll chain?",
+@@ -343,7 +399,11 @@ public final class CastBook {
+         v = voice("vince");
+         v.greetNew = new String[] {"{player}! Feeling lucky? You look lucky."};
+         v.greet = new String[] {"{player}! My favourite customer. Today."};
+-        v.idle = new String[] {"*flips a coin*", "Red. Always red.", "Somebody's winning tonight. Statistically."};
++        v.idle = new String[] {
++                "Somebody's going to win big tonight. Statistically, it's me.",
++                "Red, always red. My lucky colour, and my bank's least favourite.",
++                "The machines don't care how lucky you feel. That's what makes them honest."
++        };
+         v.farewell = new String[] {"Come back richer. Or poorer. I'm not picky."};
+         topic(v, "Any tips?", "House always wins.", "I'm the house's cousin. I do alright.");
+         topic(v, "Are you actually lucky?", "Lucky Vince. It's in the name.", "Names lie, {player}.");
+@@ -358,7 +418,11 @@ public final class CastBook {
+         v = voice("bar_whisper");
+         v.greetNew = new String[] {"Psst. {player}. Look down. The bar."};
+         v.greet = new String[] {"your bar moved, {player}… i felt it."};
+-        v.idle = new String[] {"…", "*listens to the air*", "level up… level up…"};
++        v.idle = new String[] {
++                "Every fight, every swing, every catch adds a little to your level. The bar remembers.",
++                "I can always tell who's close to a level up. They walk a little taller.",
++                "Rest when you need to. Experience waits for you, it doesn't run away."
++        };
+         v.farewell = new String[] {"keep playing. it notices."};
+         topic(v, "How do I fill it?", "Play. Quest. Mine. Fish.", "Everything whispers to it, {player}.");
+         v.greetLegend = lines("the bar remembers you, {player}…");
+@@ -372,7 +436,11 @@ public final class CastBook {
+         v = voice("eldervale_welcome");
+         v.greetNew = new String[] {"Maren. Eldervale landing, {player}. Ask before you dig deep."};
+         v.greet = new String[] {"Back on the mountain, {player}? Good lungs."};
+-        v.idle = new String[] {"*wraps scarf tighter*", "Snow by nightfall.", "Mind the ledge, love."};
++        v.idle = new String[] {
++                "Wrap up warm. Snow comes to Eldervale by nightfall, every single night.",
++                "Mind the ledge, love. The view is lovely, the fall less so.",
++                "Welcome to Eldervale. It's quieter up here, and the tea is better."
++        };
+         v.farewell = new String[] {"Stay off the edge. I mean it."};
+         topic(v, "What's here?", "Ore the mainland forgot.", "And a forge that remembers everything.");
+         topic(v, "How far is the drop?", "Long.", "Nobody's reported back. That's the joke.");
+@@ -380,12 +448,20 @@ public final class CastBook {
+         v = voice("eldervale_upgrade");
+         v.greetNew = new String[] {"Heat's up, {player}."};
+         v.greet = new String[] {"Bring me steel, {player}. And stones."};
+-        v.idle = new String[] {"*hammer strike*", "Hotter.", "Stone's singing."};
++        v.idle = new String[] {
++                "Hotter, always hotter. Stone only listens when it's angry.",
++                "Every blueprint in here started as a scribble on a napkin.",
++                "Hear that ring? That's good stone. Bad stone just thuds."
++        };
+ 
+         v = voice("merchant");
+         v.greetNew = new String[] {"Ah, {player}! A customer! Or a browser. Both welcome."};
+         v.greet = new String[] {"{player}! Found any good chests?"};
+-        v.idle = new String[] {"Chests! Adventure in a box!", "*polishes emerald*", "Everything must go. Eventually."};
++        v.idle = new String[] {
++                "Chests full of adventure! Some of it is even legal!",
++                "I polish my emeralds every morning. They shine brighter when customers are near.",
++                "Everything must go eventually. Except me. I'm staying."
++        };
+         v.farewell = new String[] {"Open everything. Trust nothing. Especially mimics."};
+         topic(v, "What do you sell?", "Opportunity. Wrapped in wood.", "The chests, {player}. I sell the idea of chests.");
+ 
+@@ -401,7 +477,11 @@ public final class CastBook {
+         };
+         v.greetNew = new String[] {"Island dreams, {player}? Level twenty. Then dream."};
+         v.greet = new String[] {"Paperwork? No. Never. Next."};
+-        v.idle = new String[] {"*stamps nothing*", "Form 20-B. Doesn't exist.", "Islands. Everyone wants islands."};
++        v.idle = new String[] {
++                "Everyone wants their own island. Nobody wants the paperwork.",
++                "Form 20-B doesn't exist. People still ask me for it every day.",
++                "Your island is waiting for you. It's patient. I'm less patient."
++        };
+         v.farewell = new String[] {"Go level. I'll be here. Not doing paperwork."};
+         topic(v, "A clerk who hates paperwork?", "Yes.", "I know.");
+         v.greetLegend = lines("Old seals on old deeds, {player}. Ignore them. I do.");
+@@ -415,20 +495,32 @@ public final class CastBook {
+         v = voice("forage_pad_guide");
+         v.greetNew = new String[] {"Twig! Slime pad → Forage Isle, {player}. Jump. Arrow's on it."};
+         v.greet = new String[] {"Pad's right there, {player}. Knees bent!", "Back from the isle, {player}? Smell that spruce!"};
+-        v.idle = new String[] {"Boing.", "*bounces on heels*", "The pad's sticky today. Good sticky."};
++        v.idle = new String[] {
++                "The pad is a bit sticky today. That's the good kind of sticky, I promise.",
++                "Hop on, fly over, land soft. That's the plan every single time.",
++                "The forage isle grows things you won't find on the main island."
++        };
+         v.farewell = new String[] {"Jump with your knees!"};
+         topic(v, "Is the pad safe?", "Totally.", "Ninety percent totally.");
+ 
+         v = voice("liquidator");
+         v.greetNew = new String[] {"{player}. Crystals whisper about you. Mostly numbers."};
+         v.greet = new String[] {"Buying or melting, {player}?"};
+-        v.idle = new String[] {"*crystal hum*", "Purple is a price, not a colour.", "Melt. Mint. Repeat."};
++        v.idle = new String[] {
++                "Amethyst comes in raw and leaves as coin. That's my whole job, and I love it.",
++                "Purple isn't a colour around here. It's a price.",
++                "Melt it, mint it, count it twice. I've never lost a single shard."
++        };
+ 
+         v = voice("amethyst_mines_guide");
+-        v.greetNew = new String[] {"Crystal Guide. Amethyst Mine through me — or §e/amethyst§f."};
+-        v.greet = new String[] {"Violet hub ready, {player}. Click me or §e/amethyst§f."};
+-        v.idle = new String[] {"*chime*", "Geodes hum when you're close.", "Resonance likes patience."};
+-        v.farewell = new String[] {"Don't stare into the deep too long."};
++        v.greetNew = new String[] {"I'm the crystal guide. Talk to me or use §e/amethyst§f to get to the Amethyst Mine."};
++        v.greet = new String[] {"Welcome back, {player}! The Amethyst Mine is ready. Click me or use §e/amethyst§f."};
++        v.idle = new String[] {
++                "The geodes hum when you get close. Listen, and they'll show you the way.",
++                "Take your time in the mines. Crystals don't like to be rushed.",
++                "A purple glow ahead means amethyst. A purple glow behind you means run."
++        };
++        v.farewell = new String[] {"Have fun in the mines, and don't wander too deep on your own."};
+ 
+         v = voice("canopy_clerk");
+         v.accept = "Samples coming.";
+@@ -441,14 +533,22 @@ public final class CastBook {
+         };
+         v.greetNew = new String[] {"{player}. Any bark on you? Samples, I mean."};
+         v.greet = new String[] {"Ring count's up, {player}. Nice season."};
+-        v.idle = new String[] {"*sniffs a log*", "Spruce. Definitely spruce.", "Ring count: forty. Respectable."};
++        v.idle = new String[] {
++                "This log smells like spruce. Definitely spruce. I'd bet my lunch on it.",
++                "Forty rings on this one. Older than me, and in better shape.",
++                "Every tree I write down gets a number. The old ones get names."
++        };
+         v.farewell = new String[] {"Chop responsibly."};
+         topic(v, "Why samples?", "Proof the isle grows real wood.", "The canopy keeps a ledger. So do I.");
+ 
+         v = voice("root_cellar");
+         v.greetNew = new String[] {"Hungry, {player}? Everyone's hungry."};
+         v.greet = new String[] {"Fresh flour, {player}. Mind your boots."};
+-        v.idle = new String[] {"*grinds grain*", "Flour everywhere. Everywhere.", "Carrots don't pickle themselves."};
++        v.idle = new String[] {
++                "There's flour everywhere. In my hair, in my shoes, in my dreams.",
++                "Carrots don't pickle themselves, sadly. I've asked them nicely.",
++                "The mill wheel turns all day. Some days I turn with it."
++        };
+ 
+         // ------------------------------------------------------------ Idea NPCs (extras)
+         v = voice("town_crier");
+@@ -484,15 +584,24 @@ public final class CastBook {
+         v = voice("street_sweeper");
+         v.greetNew = new String[] {"Wipe your boots, {player}."};
+         v.greet = new String[] {"Back again, {player}? Bring any gravel? Don't."};
+-        v.idle = new String[] {"*sweep sweep*", "Who drops a whole cobblestone?", "Cleanest square on the island. You're welcome."};
++        v.idle = new String[] {
++                "Who drops a whole cobblestone in the middle of the street? Who does that?",
++                "Cleanest square on the island. You're welcome, by the way.",
++                "I sweep the same street every day, and every day it finds new ways to get dirty.",
++                "Found a gold nugget in the gutter once. Bought new bristles. Living the dream."
++        };
+         v.farewell = new String[] {"Mind the pile."};
+         topic(v, "Seen anything odd?", "A troll's footprint by the mines. Size of a boat.", "I swept it. Evidence gone. Shouldn't have.");
+ 
+         v = voice("lamp_lighter");
+         v.greetNew = new String[] {"Evening's coming, {player}. I can feel it."};
+         v.greet = new String[] {"Stay in the light, {player}."};
+-        v.idle = new String[] {"*polishes a lantern*", "Dusk in a few hours. Ready.",
+-                "Every lamp has a name. That one's Gerald.", "One more wick. Always one more."};
++        v.idle = new String[] {
++                "I polish every lantern on my round. Bright lamps get people home safely.",
++                "Dusk in a few hours. I'm already ready. I'm always ready.",
++                "Every lamp on this harbour has a name. That one over there is Gerald.",
++                "One more wick, always one more. The night is long and the island is big."
++        };
+         v.farewell = new String[] {"Keep a torch handy."};
+         topic(v, "Why lamps?", "Hostiles hate light. I love it. We have a truce.", "Mostly they just avoid me.");
+         v.greetLegend = lines("Every lamp lit till dawn, {player}. Old law. I just keep it.");
+@@ -730,10 +839,10 @@ public final class CastBook {
+         v.greetNew = new String[] {"Name and cargo, {player}. Kidding. Welcome to Anker Harbour."};
+         v.greet = new String[] {"{player}. Nothing's sunk today. Yet.", "Back on my water, {player}? Mind the ropes."};
+         v.idle = new String[] {
+-                "The Halcyon keeps her own hours. I keep the book.",
+-                "*licks pencil* Four crates in, three out. Where's the fourth?",
+-                "If it floats, it's mine. If it flies, it's also mine. The paperwork grows.",
+-                "Mind the crane. Haul swings like he's late for something."
++                "The Halcyon keeps her own hours. I keep the book and pretend I planned it.",
++                "Four crates came in, three went out. Somebody owes me a crate, or an explanation.",
++                "If it floats, it's on my list. If it flies, it's on my list too. The list is getting long.",
++                "Keep clear of the crane when it swings. Haul is good, but he's never early."
+         };
+         v.farewell = new String[] {"Fair winds. Or at least dry ones."};
+         topic(v, "What's the Halcyon?", "Supply skyship. Comes in over the north rim every few bells.",
+@@ -744,8 +853,12 @@ public final class CastBook {
+         v = voice("crane_hand");
+         v.greetNew = new String[] {"Mind your head, {player}. The crane doesn't."};
+         v.greet = new String[] {"{player}! Stand clear of the hook."};
+-        v.idle = new String[] {"Up she goes!", "*whistles at the crane*", "Crate, punt, crate, punt. Poetry.",
+-                "One day I'll lift the whole Halcyon. One day."};
++        v.idle = new String[] {
++                "Up she goes! Nice and slow, just like my grandmother taught me.",
++                "This crane is older than the harbour. I keep it happy with oil and compliments.",
++                "Crate onto the punt, punt to the market, market into your pockets. That's the chain.",
++                "One day I'll lift the whole Halcyon out of the sky. The crane disagrees."
++        };
+         v.farewell = new String[] {"Clear the swing!"};
+         topic(v, "How does the crane work?", "Rope, hook, me shouting. Mostly the shouting.");
+         topic(v, "Seen anything strange?", "A barrel came up empty but heavier than full. I put it back.",
+@@ -755,10 +868,10 @@ public final class CastBook {
+         v.greetNew = new String[] {"Ahoy, {player}. You've got sea legs, or you will."};
+         v.greet = new String[] {"{player}. The light's lit. You're welcome."};
+         v.idle = new String[] {
+-                "*squints* Can't see a thing without my spectacles. Blasted gull.",
+-                "Every ship that comes home, I count. Every one.",
+-                "The sea talks at night. I talk back.",
+-                "Forty years on this pier. The gulls still don't respect me."
++                "I can't see a thing without my spectacles. That gull is going to regret this.",
++                "I count every ship that comes home. Forty years, and I've never lost count.",
++                "At night the sea talks to the pier. I talk back, mostly about the weather.",
++                "Forty years on this pier, and the gulls still don't respect me."
+         };
+         v.farewell = new String[] {"Keep the light on your left."};
+         topic(v, "A lighthouse, on a sky island?", "Ships fly lower than you'd think in fog.",
+@@ -782,8 +895,12 @@ public final class CastBook {
+         v = voice("beekeeper");
+         v.greetNew = new String[] {"Slow movements, {player}. The girls are watching."};
+         v.greet = new String[] {"{player}! Smell that? That's mead, ageing."};
+-        v.idle = new String[] {"*hums along with the hives*", "Bees don't sting good people. Mostly.",
+-                "The Old Mead House was here before the roads.", "Three hives this year. Four if the swarm comes home."};
++        v.idle = new String[] {
++                "Listen to the hives. That humming means they're happy. Mostly.",
++                "Bees don't sting good people. Well, they sting everyone, but they feel sorry afterwards.",
++                "The Old Mead House was here before the roads, and the bees were here before the house.",
++                "Three hives this year. Four, if my runaway queen ever comes home."
++        };
+         v.farewell = new String[] {"Bee-have! …I say it every time."};
+         topic(v, "Mead?", "Honey, water, patience. And one secret I'll take to the hive.");
+         topic(v, "This house?", "Older than the Capital's paving. Built round the hives, not the other way.");
+@@ -791,28 +908,38 @@ public final class CastBook {
+         v = voice("painter");
+         v.greetNew = new String[] {"Don't move — the light's perfect on you, {player}. …Now it's gone."};
+         v.greet = new String[] {"{player}! Come to be painted?"};
+-        v.idle = new String[] {"*dabs at the canvas*", "Green. More green. No — the other green.",
+-                "The windmill won't hold still. It's the wind's fault.",
+-                "Every view on this island is a painting nobody finished."};
++        v.idle = new String[] {
++                "Green, more green. No, not that green. The other one.",
++                "The windmill won't hold still for me. I blame the wind, obviously.",
++                "Every view on this island is a painting nobody has finished yet.",
++                "I've painted this mill eleven times. It gets a little more stubborn every time."
++        };
+         v.farewell = new String[] {"Go find me a view!"};
+         topic(v, "What are you painting?", "The mill. Again. It's my eleventh mill.", "The other ten were practice.");
+         topic(v, "Best view?", "Ask Stellan, up on the summit. He'll say the stars.", "I say: the one you walked to.");
+ 
+         v = voice("hermit");
+-        v.greetNew = new String[] {"Shh. …Oh. Hello, {player}."};
+-        v.greet = new String[] {"You came back. The trees said you might."};
+-        v.idle = new String[] {"…", "*breathes very slowly*", "The bark is talking. Rude things, mostly.",
+-                "I came out here for a minute. That was nine years ago."};
+-        v.farewell = new String[] {"Walk softly."};
+-        topic(v, "Why live out here?", "The Capital is loud. The harbour is louder. Out here, even the wind whispers.");
+-        topic(v, "What do the trees say?", "That the bells used to sound different.", "I don't ask what that means. Neither should you. Yet.");
++        v.greetNew = new String[] {"Oh, hello there, {player}. Sorry, I didn't hear you over the birds."};
++        v.greet = new String[] {"You came back! The trees said you might, and they're rarely wrong."};
++        v.idle = new String[] {
++                "I used to copy books in the Capital. Too loud. Out here I can hear myself think.",
++                "The woodpecker over there starts work at dawn. I've never seen him take a break.",
++                "People think the forest is quiet. It isn't quiet, it's just polite.",
++                "I came out here for one afternoon. That was nine years ago, and I don't regret a day."
++        };
++        v.farewell = new String[] {"Walk softly out there. The wood notices."};
++        topic(v, "Why do you live out here?", "I copied books in the Capital for thirty years. Bells, carts and shouting, every single day.", "One afternoon I walked out here to rest my ears. I just never walked back.");
++        topic(v, "What do you listen to?", "Wind in the leaves, the stream, animals going about their day.", "And sometimes the bells of the Capital, very faint. Out here they sound gentler, almost sad.");
+ 
+         v = voice("bookie");
+         v.greetNew = new String[] {"Fresh legs! I'll give you four to one, {player}."};
+         v.greet = new String[] {"{player}! Feeling fast today?"};
+-        v.idle = new String[] {"Odds on the next Halcyon? Six minutes. Always six.",
+-                "Vince runs games of chance. I run games of legs.", "*counts coins twice*",
+-                "Never bet against a sprinter in good boots."};
++        v.idle = new String[] {
++                "Odds on the next Halcyon? Six minutes. It's always six.",
++                "Vince runs games of chance. I run games of legs.",
++                "I count my coins twice. Once for me, and once for the taxman.",
++                "Never bet against a sprinter in good boots."
++        };
+         v.farewell = new String[] {"Don't run off. Unless I paid you to."};
+         topic(v, "What's the bet?", "Touch the Mountain Gate and get back to me inside three minutes. Easy coin.",
+                 "Skyways count. Teleports don't. There's a difference, legally.");
+@@ -821,8 +948,12 @@ public final class CastBook {
+         v = voice("mushroom_forager");
+         v.greetNew = new String[] {"Careful where you step, {player}. Things grow here."};
+         v.greet = new String[] {"{player}! Smell the air? Spores. Lovely."};
+-        v.idle = new String[] {"*sniffs a mushroom* Edible. Probably.", "The big ones glow at night. Don't lick them.",
+-                "Eastwood's mushrooms are older than the trees.", "Never eat a mushroom that knows your name."};
++        v.idle = new String[] {
++                "This one smells edible. I said that last week too, and I was sick for two days.",
++                "The big caps glow at night. Look, but please don't lick them.",
++                "Eastwood's mushrooms are older than the trees around them.",
++                "Rule of the forest: if a mushroom looks friendly, don't trust it."
++        };
+         v.farewell = new String[] {"Spore you later."};
+         topic(v, "They glow?", "Three of the giants do, after dark. Pale blue at the gills.",
+                 "Find them and I'll tell you which ones are safe to eat. None.");
+@@ -831,35 +962,320 @@ public final class CastBook {
+         v = voice("lost_tourist");
+         v.greetNew = new String[] {"Oh! A local! Hello, {player}! Is this the summit?"};
+         v.greet = new String[] {"{player}! I've moved four blocks today. Progress!"};
+-        v.idle = new String[] {"*turns the map upside down*", "The brochure said 'a short stroll to the summit'.",
+-                "Is that the big mountain, or is the big one behind it?",
+-                "I've sketched this fountain ninety times. Very nice fountain."};
++        v.idle = new String[] {
++                "I think this map is upside down. Or the island is. Hard to tell.",
++                "The brochure said 'a short stroll to the summit'. I've been strolling for three days.",
++                "Is that the big mountain, or is the big one hiding behind it?",
++                "I've sketched this fountain ninety times. It's a very nice fountain."
++        };
+         v.farewell = new String[] {"If you see the summit, say hello from me!"};
+         topic(v, "Where are you from?", "Another island. A flat one. Very flat. That's why I'm here.");
+         topic(v, "How do I get up Skyreach?", "The brochure says 'the Mountain Gate, then the wind'.",
+                 "I assumed that was poetry. Is it not poetry?");
+ 
+-        banter(new Beat("harbourmaster", "Egon. Your rookies keep saluting the crane."),
+-                new Beat("egon", "It's a very official crane."),
+-                new Beat("harbourmaster", "It's not in the book."));
+-        banter(new Beat("crane_hand", "Egon! Need anything lifted?"),
+-                new Beat("egon", "My spirits."),
+-                new Beat("crane_hand", "Crane's not rated for that."));
+-        banter(new Beat("lighthouse_keeper", "You're muttering at the water again."),
+-                new Beat("dock_whisper", "It started it."),
+-                new Beat("lighthouse_keeper", "…Fair."));
++        v = voice("dock_whisper");
++        v.greetNew = new String[] {"Shh, listen. Can you hear the tide turning, {player}?"};
++        v.greet = new String[] {"Hello again, {player}. The water is calm today."};
++        v.idle = new String[] {
++                "The water has been restless all morning. Something big is swimming far below.",
++                "I can feel a storm two days before it arrives. My knees can feel it three days before.",
++                "Tackle laughs at me, but the fish come when I call them. Some of them, anyway.",
++                "My mother fished this pier, and her mother before her. The water knows our family."
++        };
++        v.farewell = new String[] {"Mind the edge of the pier. The water likes to borrow things."};
++        topic(v, "What does the water say?", "Mostly it complains about the boats. Sometimes it warns me about the weather.", "Once it told me where a lost ring was. I found it the next morning, right where it said.");
++        topic(v, "The purple line?", "When your fishing line glows purple, hold on tight and don't rush.", "That's a Mythic Water Dragon. It only shows itself to one fisher at a time.");
++
++        v = voice("bait_theory");
++        v.greetNew = new String[] {"Ah, a new face! Do you fish, {player}? Everyone should fish."};
++        v.greet = new String[] {"Back again, {player}? The fish were asking about you."};
++        v.idle = new String[] {
++                "Bread works in the morning, worms at noon, and nothing at all when the gulls are watching.",
++                "I once caught three salmon with a single piece of cheese. Nobody believes me.",
++                "The secret of fishing is mostly sitting still and being fine with it.",
++                "Every fish is curious. You just have to be more interesting than the other bait."
++        };
++        v.farewell = new String[] {"Good luck out there. May the fish be hungry!"};
++        topic(v, "What's the best bait?", "It depends on the time of day and the mood of the fish.", "But if you want one answer: worms. Worms never let you down.");
++        topic(v, "Why bait?", "My father said the fish don't care about your rod. They care about what's on the hook.", "He was right. I've spent eleven years proving it.");
++
++        v = voice("dock_scaler");
++        v.greetNew = new String[] {"Hello! Got anything for the scales, {player}?"};
++        v.greet = new String[] {"{player}! Fish to weigh, or just passing by?"};
++        v.idle = new String[] {
++                "This morning's biggest catch was a salmon as long as my arm. Tackle is very proud.",
++                "I write down every fish. One day someone will want to know what we caught here.",
++                "My clipboard is always wet. I've made my peace with that.",
++                "A fish that refuses to be weighed is still a fish. I just estimate."
++        };
++        v.farewell = new String[] {"Bring me something heavy next time!"};
++        topic(v, "Why weigh the fish?", "If the fish get smaller every year, something is wrong out there.", "My numbers tell the harbour when to fish more and when to leave the water alone.");
++
++        v = voice("fry_gossip");
++        v.greetNew = new String[] {"New in town? Hungry? Curious? I can help with all three, {player}."};
++        v.greet = new String[] {"{player}! Got any news for me? I've got plenty for you."};
++        v.idle = new String[] {
++                "Did you hear? The Harbourmaster lost a crate again. Third time this month.",
++                "Fried fish, fried bread, fried potatoes. If it fits in the pan, I'll fry it.",
++                "I don't spread rumours. I just repeat them very clearly.",
++                "Old Moll from the lighthouse lost her spectacles to a gull. Poor woman can't see a thing."
++        };
++        v.farewell = new String[] {"Come back hungry!"};
++        topic(v, "Any gossip?", "Hettie's bees swarmed this morning, Tobin is writing a new song, and Wick named another lamp.", "Busy day for such a small harbour.");
++        topic(v, "What's good today?", "The cod is fresh, the bread is crispy, and the oil is only a little bit old.", "My advice? Get the cod.");
++
++        v = voice("rivet");
++        v.greetNew = new String[] {"Watch your step, {player}! Fresh paint."};
++        v.greet = new String[] {"{player}! Come to help, or just to watch me work?"};
++        v.idle = new String[] {
++                "This old ship has more patches than original wood. I'm proud of every single one.",
++                "Somebody keeps stealing my rivets. I suspect the gulls.",
++                "Salt water eats iron for breakfast. That's why I'm never out of work.",
++                "When I hammer, the whole harbour knows I'm here. That's the idea."
++        };
++        v.farewell = new String[] {"Don't lean on the railing, it isn't dry yet!"};
++        topic(v, "Whose ship is this?", "She belongs to the harbour now. Her captain left years ago and never came back.", "So I look after her. Somebody has to.");
++
++        v = voice("stall_crumb");
++        v.greetNew = new String[] {"Good morning, {player}! Fresh bread, still warm."};
++        v.greet = new String[] {"Hello again, {player}! Hungry?"};
++        v.idle = new String[] {
++                "Fresh loaves, still warm from the oven! Get them before the gulls do!",
++                "I've been baking since before dawn. My oven never sleeps, and neither do I.",
++                "Egon buys two loaves every morning. He says one of them is for a friend.",
++                "Bread with a little salt and butter. Nothing in the world beats it."
++        };
++        v.farewell = new String[] {"Don't forget to eat!"};
++        topic(v, "Why bake here?", "The harbour wakes up early and works hard. Somebody has to feed it.", "My mother ran this stall before me. I still use her recipe.");
++
++        v = voice("stall_tack");
++        v.greetNew = new String[] {"Hello, {player}! Need a nail? A rope? A little bit of everything?"};
++        v.greet = new String[] {"Back again, {player}? Forgot something, didn't you?"};
++        v.idle = new String[] {
++                "Rope, nails, buckles, hooks! Everything a busy islander forgets!",
++                "I sorted all my nails by size this morning. A customer mixed them up in five minutes.",
++                "The miners say Ore Ridge eats a pickaxe a week. Good for business, bad for pickaxes.",
++                "Every little thing on this table has saved somebody's day at least once."
++        };
++        v.farewell = new String[] {"Come back when something breaks!"};
++        topic(v, "What sells best?", "Rope. Everybody needs rope, and nobody ever has enough of it.");
++
++        v = voice("stall_brine");
++        v.greetNew = new String[] {"Hello, {player}! Have you ever tasted fish with proper salt?"};
++        v.greet = new String[] {"{player}! Salt? Spices? A friendly chat?"};
++        v.idle = new String[] {
++                "Sea salt, fresh from the pans! The best salt on the whole island!",
++                "I dry my salt in the sun out on the pier. The gulls are very interested, but they hate the taste.",
++                "A fish without salt is just a sad, wet thing. Trust me.",
++                "My jars travel all the way to the Capital. The cooks there fight over them."
++        };
++        v.farewell = new String[] {"A pinch of salt never hurt anybody!"};
++        topic(v, "Where does your salt come from?", "I let seawater dry in shallow pans out on the pier.", "The sun does most of the work. I just do the selling.");
++
++        v = voice("dockhand");
++        v.greetNew = new String[] {"Careful near the water, {player}. Something down there bites."};
++        v.greet = new String[] {"{player}. Any ink on your boots today?"};
++        v.idle = new String[] {
++                "I had to scrub ink off the pier again this morning. Black, sticky, and it smells like old pens.",
++                "Whatever lives under the harbour, it doesn't like boats. Or people. Or me.",
++                "I tie every boat twice now. Once for the wind, and once for the thing in the water.",
++                "Some nights you can see something big moving out past the buoys."
++        };
++        v.farewell = new String[] {"Keep your feet dry."};
++        topic(v, "What lives down there?", "Nobody has seen all of it. Just arms, ink and a lot of angry bubbles.", "If you're strong enough one day, maybe you'll be the one to find out.");
++
++        v = voice("slag_poet");
++        v.greetNew = new String[] {
++                "Ah, a visitor! Would you like to hear a poem, {player}? It's a short one."
++        };
++        v.greet = new String[] {"{player}! I finished a new verse. It's about gravel."};
++        v.idle = new String[] {
++                "'Oh copper vein, you shone so bright, then you were gone before the night.' I'm still working on it.",
++                "The Ore Ledger wants numbers. I want rhymes. We get along surprisingly well.",
++                "Up here the wind always smells of iron and stone.",
++                "Every miner on this ridge has lost a vein they loved. Poetry helps."
++        };
++        v.farewell = new String[] {"May your veins run deep!"};
++        topic(v, "Read me a poem.", "'The pickaxe sings, the mountain sighs, the coal runs out before my eyes.'", "It's not finished yet. Nothing up here ever is.");
++
++        v = voice("bench_cynic");
++        v.greetNew = new String[] {"Oh. Another tourist. Hello, {player}."};
++        v.greet = new String[] {"{player}. You again. The bench is still taken."};
++        v.idle = new String[] {
++                "Everybody loves this fountain. I've been looking at it for fifteen years. It's fine.",
++                "The pigeons here get bolder every year. One stole my sandwich yesterday.",
++                "People walk past me all day, and not one of them has ever asked how I am. I'm fine, by the way.",
++                "This was a quiet square before somebody built a fountain in the middle of it."
++        };
++        v.farewell = new String[] {"Mind the pigeons on your way out."};
++        topic(v, "Why this bench?", "Best view of the fountain, shade in the afternoon, and nobody bothers me.", "Well. Usually nobody bothers me.");
++        topic(v, "Rotten flesh?", "It's for science. Probably. I'll decide what kind once I have it.");
++
++        v = voice("dust");
++        v.greetNew = new String[] {"Hello! Watch your step, {player}, this path isn't finished yet."};
++        v.greet = new String[] {"{player}! Got any cobblestone for me today?"};
++        v.idle = new String[] {
++                "Every path in the Capital started with somebody carrying stones. Usually me.",
++                "I've mapped this square three times. Somebody keeps moving the benches.",
++                "A good road makes people visit each other more often. That's why I build them.",
++                "One day there'll be a stone path from the harbour to the summit. I'll be the first to walk it."
++        };
++        v.farewell = new String[] {"Mind the loose stones!"};
++        topic(v, "Why roads?", "When I was little, the walk to my grandma's house was all mud and nettles.", "Now there's a path. I built it. She still complains, but she visits more.");
++
++        v = voice("rook");
++        v.greetNew = new String[] {"Another brave one! Ready to learn something, {player}?"};
++        v.greet = new String[] {"{player}. Any bones for me today?"};
++        v.idle = new String[] {
++                "Most adventurers get into trouble down there because they forgot torches. Bring torches.",
++                "I've been down below more times than I can count. I still get nervous every time.",
++                "Skeletons always aim for your head. Wear a helmet. It's not optional.",
++                "First rule of a dungeon: know where the exit is before you need it."
++        };
++        v.farewell = new String[] {"Come back alive. That's the lesson."};
++        topic(v, "What's down there?", "Tunnels, traps, treasure and a lot of things with too many teeth.", "And at the bottom there's usually something big that doesn't like visitors.");
++
++        v = voice("larder");
++        v.greetNew = new String[] {"Hello, {player}! You don't happen to have any wheat on you?"};
++        v.greet = new String[] {"{player}! The pantry is still hungry."};
++        v.idle = new String[] {
++                "The Market Hall eats more bread every week. I don't know where all these people come from.",
++                "An empty shelf is the saddest sight in the whole Capital.",
++                "My grandmother always said: a full pantry means a calm city. She was right.",
++                "I count the sacks every evening. The numbers never make me happy."
++        };
++        v.farewell = new String[] {"Bring wheat! Lots of wheat!"};
++        topic(v, "Compressed Wheat?", "Farm a lot of wheat and press it together into one dense bundle.", "It keeps well, it travels well, and it makes the best bread.");
++
++        v = voice("quarry_broker");
++        v.greetNew = new String[] {"Hello, {player}. Thinking about joining the Guild?"};
++        v.greet = new String[] {"{player}. Brought me a brick yet?"};
++        v.idle = new String[] {
++                "Half the houses in the Capital were built with stone from this quarry.",
++                "Anyone can pile up rocks. A real builder knows which rock goes where.",
++                "The Guild has strict standards. That's why our roofs don't leak.",
++                "I check every brick that comes through here. Every single one."
++        };
++        v.farewell = new String[] {"Build something that lasts."};
++        topic(v, "Compacted or compressed?", "Compressed cobblestone is nine stones squeezed into one. Compacted is nine compressed ones squeezed again.", "It's a lot of work. That's exactly the point.");
++
++        v = voice("pet_scout");
++        v.greetNew = new String[] {"Hello, {player}! Do you like animals? I love animals."};
++        v.greet = new String[] {"{player}! Caught anything cute today?"};
++        v.idle = new String[] {
++                "Pigs are smarter than people think. That's why they're so hard to catch.",
++                "A good catcher is patient and quiet, and never chases. Let them come to you.",
++                "Lark's parrot bit me again. I still think he likes me.",
++                "Every animal on this island is a friendship waiting to happen."
++        };
++        v.farewell = new String[] {"Be gentle with your catches!"};
++        topic(v, "How do I catch a pig?", "Get close slowly, aim for the middle and throw the sphere while it's calm.", "If it runs, don't chase it. Wait. It'll come back for the grass.");
++
++        v = voice("sphere_proctor");
++        v.greetNew = new String[] {"Hello, {player}! Ready for your cow exam?"};
++        v.greet = new String[] {"{player}! How is the catching going?"};
++        v.idle = new String[] {
++                "A cow is bigger than a pig and slower than a pig, and somehow much harder to catch.",
++                "I keep notes on every catcher who passes my test. The list is short.",
++                "Never stand right behind a cow. That's not part of the test, it's just good advice.",
++                "The Colosseum crowd loves a good catch. Almost as much as a good fight."
++        };
++        v.farewell = new String[] {"Good luck with the cow!"};
++        topic(v, "Why cows?", "Catching a cow takes patience, good aim and a strong arm.", "If you can do that, you can catch almost anything on this island.");
++
++        v = voice("ore_ledger");
++        v.greetNew = new String[] {"Hello, {player}. Here to mine, or here to help?"};
++        v.greet = new String[] {"{player}! Any coal for my ledger today?"};
++        v.idle = new String[] {
++                "Coal has come out of this ridge for a hundred years. My books cover ninety of them.",
++                "The miners bring the stone. I bring the numbers. We both get dirty hands.",
++                "Every page in this ledger is somebody's hard day in the tunnels.",
++                "Ore Ridge gives a lot, but it never gives anything for free."
++        };
++        v.farewell = new String[] {"Mind the loose rocks up here!"};
++        topic(v, "Why keep records?", "If we know what the mountain gives, we know how long it can keep giving.", "Mines that dig blindly end up empty.");
++
++        v = voice("timber_clerk");
++        v.greetNew = new String[] {"Hello, {player}! Mind the stumps, they're everywhere."};
++        v.greet = new String[] {"{player}! Got any oak for me today?"};
++        v.idle = new String[] {
++                "For every tree we cut, we plant two. That's the rule here, and I make sure of it.",
++                "This stump was a hundred years old. I wrote its name down before it was cut.",
++                "The Forager cuts, I count, and the forest keeps growing. Good teamwork.",
++                "Eastwood smells best right after the rain. You should come back then."
++        };
++        v.farewell = new String[] {"Plant a tree sometime!"};
++        topic(v, "Why count trees?", "Because forests disappear quietly if nobody is counting.", "I want my grandchildren to see Eastwood as green as it is today.");
++
++        v = voice("gate_warden");
++        v.greetNew = new String[] {"Halt! Oh, sorry, {player}. Habit. Welcome to the gate."};
++        v.greet = new String[] {"{player}. The road is still closed."};
++        v.idle = new String[] {
++                "I've stood at this gate for six years. The Pathwarden has stood on that road for longer.",
++                "Every week somebody tries to get past him. Every week I patch someone up.",
++                "The Borderlands are beautiful from a distance. Up close, they bite.",
++                "Someday that road will open again. I'd like to be standing here when it does."
++        };
++        v.farewell = new String[] {"Stay safe out there."};
++        topic(v, "Who is the Pathwarden?", "A huge guardian who walks the old road and doesn't let anyone pass.", "Nobody knows who put him there. He just keeps doing his job.");
++
++        v = voice("tollkeeper");
++        v.greetNew = new String[] {"Hello, traveller! Crossing today, {player}?"};
++        v.greet = new String[] {"{player}! Still in one piece? Good."};
++        v.idle = new String[] {
++                "I used to collect a coin from every traveller. Now I just count how many come back.",
++                "The troll lives under the old crossings, not under this bridge. Probably. Almost certainly.",
++                "Whisperwood is lovely this time of year. Just stay on the path.",
++                "My ledger has a column for 'grabbed by the troll'. It's longer than I'd like."
++        };
++        v.farewell = new String[] {"Mind the water under the bridge."};
++        topic(v, "The troll?", "Big, grumpy and very good at hiding under bridges.", "If you're strong enough one day, maybe you can teach him some manners.");
++
++        v = voice("chicken_keeper");
++        v.greetNew = new String[] {"Hello, {player}! Watch your feet, the chicks are everywhere."};
++        v.greet = new String[] {"{player}! Seen a giant chicken anywhere?"};
++        v.idle = new String[] {
++                "McNugget was such a small chick. I don't know what happened. I fed him normal corn.",
++                "These hens lay the best eggs on the island. I tell them so every morning.",
++                "A fox came by last night. The chickens chased it away. I'm very proud of them.",
++                "Clucksworth used to be quiet. Then McNugget learned how to crow."
++        };
++        v.farewell = new String[] {"Mind the chickens on your way out!"};
++        topic(v, "Who is McNugget?", "My biggest chicken. Bigger than a horse, louder than a bell, and he hates fences.", "He escapes every few days. I've stopped building fences and started building courage.");
++
++        v = voice("ash_scout");
++        v.greetNew = new String[] {"Get down! Oh, it's just you, {player}. Hello."};
++        v.greet = new String[] {"{player}. Mind the smoke today."};
++        v.idle = new String[] {
++                "I count every arrow that comes back to camp. Fewer come back every week.",
++                "The wastes used to be farmland, long ago. Now only ash grows out there.",
++                "If you see a flash on the horizon, duck first and ask questions later.",
++                "My bow is older than I am. It still shoots straighter than my opinions."
++        };
++        v.farewell = new String[] {"Stay low out there."};
++        topic(v, "Who is Skuldugery?", "A skeleton archer who lives out in the wastes and shoots burning arrows.", "He's fast, he's clever and he loves to show off.");
++
++        banter(new Beat("harbourmaster", "Egon, your rookies keep saluting the crane. Did you tell them to do that?"),
++                new Beat("egon", "No, but it's a very official-looking crane. I'd salute it too."),
++                new Beat("harbourmaster", "It's not in my book, Egon. Nothing gets saluted unless it's in my book."));
++        banter(new Beat("crane_hand", "Egon! Need anything lifted today? Crates, barrels, your spirits?"),
++                new Beat("egon", "My spirits, please. The new rookie dropped my fish into the harbour."),
++                new Beat("crane_hand", "Sorry, mate. The crane is rated for heavy loads, not heavy hearts."));
++        banter(new Beat("lighthouse_keeper", "You're whispering at the water again. Does it ever answer you?"),
++                new Beat("dock_whisper", "Sometimes. Mostly it complains about the boats."),
++                new Beat("lighthouse_keeper", "Fair enough. I'd complain too if people kept parking on me."));
+         banter(new Beat("shanty_busker", "♪ The merchant counts coins by the light of the moon… ♪"),
+-                new Beat("merchant", "Stop rhyming my ledger."),
+-                new Beat("shanty_busker", "♪ …and he hates it when you rhyme with his ledger ♪"));
+-        banter(new Beat("bookie", "Vince! Your machines took a man's hat today."),
+-                new Beat("vince", "Your races took his legs."),
+-                new Beat("bookie", "Temporarily!"));
+-        banter(new Beat("lost_tourist", "Excuse me — is this the summit?"),
+-                new Beat("bench_cynic", "It's a bench."),
+-                new Beat("lost_tourist", "Lovely bench."));
+-        banter(new Beat("mushroom_forager", "Found one growing out of your woodpile."),
+-                new Beat("lumberjack", "Don't eat it."),
+-                new Beat("mushroom_forager", "Too late."));
++                new Beat("merchant", "Tobin, please stop putting my accounts into songs. People can hear you."),
++                new Beat("shanty_busker", "♪ …and he'd rather you didn't know how many he's got ♪"));
++        banter(new Beat("bookie", "Vince! A man lost his hat on your machines today."),
++                new Beat("vince", "And a man lost his breath in your races, Odds."),
++                new Beat("bookie", "Only for a minute. He got it back at the finish line!"));
++        banter(new Beat("lost_tourist", "Excuse me, is this the summit? The brochure said it would be windy."),
++                new Beat("bench_cynic", "This is a bench in the Capital. The mountain is that big pointy thing behind you."),
++                new Beat("lost_tourist", "Oh! Well, it's a lovely bench. I'll put it on my postcard."));
++        banter(new Beat("mushroom_forager", "Forager, there's a mushroom growing out of your woodpile. A big one."),
++                new Beat("lumberjack", "Please don't eat it. The last time you ate something from my woodpile, you saw colours for a week."),
++                new Beat("mushroom_forager", "Too late, I already had a bite. It tastes like adventure."));
+     }
+ 
+     private static Voice voice(String id) {
+diff --git a/AetherionQuests/src/main/java/de/aetherion/quests/npc/LivingNpcLife.java b/AetherionQuests/src/main/java/de/aetherion/quests/npc/LivingNpcLife.java
+index 64d715c..f49d0f1 100644
+--- a/AetherionQuests/src/main/java/de/aetherion/quests/npc/LivingNpcLife.java
++++ b/AetherionQuests/src/main/java/de/aetherion/quests/npc/LivingNpcLife.java
+@@ -64,7 +64,7 @@ public final class LivingNpcLife {
+     private static LivingNpcLife instance;
+ 
+     private static final double VIEW = 24.0;
+-    private static final double CLOSE = 5.5;
++    private static final double CLOSE = 3.5;
+     private static final double CHOP_CALM = 12.0;
+     /** Motion loop (head turns, patrol steps). Brain (beats/glances) runs every {@link #BRAIN} loops. */
+     private static final long PERIOD = 2L;
+@@ -131,6 +131,11 @@ public final class LivingNpcLife {
+         boolean patrolBroken;
+         boolean needTurn;
+         boolean hurry;
++        // rounds (isle.IsleRounds): absolute waypoints walked out and back
++        List<Location> round;
++        int roundStep;
++        int roundDir;
++        boolean roundTalk;
+ 
+         State(String id, Location home) {
+             this.id = id;
+@@ -193,6 +198,11 @@ public final class LivingNpcLife {
+         fresh.crouchReadyAt = life.now + r.nextInt(400);
+         fresh.snackReadyAt = life.now + 1200 + r.nextInt(1200);
+         fresh.route = routeFor(id);
++        fresh.round = de.aetherion.quests.isle.IsleRounds.routeFor(id, at);
++        if (fresh.round != null) {
++            // Island cast with a walking round: out on it sooner, and more often (see brainTick).
++            fresh.nextPatrol = life.now + 80 + r.nextInt(240);
++        }
+         life.states.put(id, fresh);
+     }
+ 
+@@ -350,6 +360,12 @@ public final class LivingNpcLife {
+             s.nextGlance = now + (long) ((260 + r.nextInt(260)) * pace);
+             return;
+         }
++        if (idle && resting && patrols && s.round != null && !s.patrolBroken && now >= s.nextPatrol
++                && now >= s.busyUntil + 10) {
++            s.nextPatrol = now + (long) ((260 + r.nextInt(420)) * pace);
++            beginRound(living, s, at);
++            return;
++        }
+         if (idle && resting && patrols && s.route != null && !s.patrolBroken && now >= s.nextPatrol
+                 && now >= s.busyUntil + 10) {
+             s.nextPatrol = now + (long) ((600 + r.nextInt(900)) * pace);
+@@ -766,6 +782,28 @@ public final class LivingNpcLife {
+         };
+     }
+ 
++    /** Tobin's shanty: eight guitar notes, a swing on every other one, notes rising over his head. */
++    private static BeatAction shanty() {
++        return (l, s, c) -> {
++            float[] tune = {0.75f, 0.94f, 1.12f, 0.94f, 0.84f, 0.75f, 0.63f, 0.75f};
++            for (int i = 0; i < tune.length; i++) {
++                final float note = tune[i];
++                final int k = i;
++                l.step(s, 6 + i * 7, () -> {
++                    if (k % 2 == 0) {
++                        l.swingNow(s);
++                    }
++                    l.sound(c.at(), Sound.BLOCK_NOTE_BLOCK_GUITAR, 0.45f, note);
++                    if (k % 3 == 0) {
++                        c.w().spawnParticle(Particle.NOTE, c.at().clone().add(0, 2.3, 0), 1, 0.3, 0.1, 0.3, 0.0);
++                    }
++                });
++            }
++            l.lookBack(s, 64);
++            return 70;
++        };
++    }
++
+     /* ---- the cast ---------------------------------------------------------------------- */
+ 
+     private static Persona personaFor(String id) {
+@@ -961,7 +999,7 @@ public final class LivingNpcLife {
+                     idle("lean", 1.5, gaze(28, 2f, 6f, 52)),
+                     beat("pickup", 0.6, kneel(null, Sound.ENTITY_ITEM_PICKUP, 24)));
+ 
+-            case "lamp_lighter" -> new Persona(170, 330, null,
++            case "lamp_lighter" -> new Persona(170, 330, beat("post", 1, once(Sound.ITEM_FLINTANDSTEEL_USE, 0.2f, 1.3f, -28f)),
+                     beat("light", 3, (l, s, c) -> {
+                         long time = c.w().getTime();
+                         if (time < 12000L || time > 23000L) {
+@@ -1204,73 +1242,120 @@ public final class LivingNpcLife {
+                     }));
+ 
+             // ---------- Origin island cast (SAITAMA pass) ----------
+-            case "harbourmaster" -> new Persona(170, 320,
++            // Persona(gapMin, gapMax, stopBeat, beats...): the stop beat plays at waypoints of the
++            // NPC's walking round (isle.IsleRounds); the rest is standing work between rounds.
++            case "harbourmaster" -> new Persona(130, 260, beat("stop", 1, spyglass(46)),
+                     beat("log", 3, write(Material.WRITABLE_BOOK, 40)),
+-                    beat("rim", 2, spyglass(52)),
++                    beat("rim", 1.5, spyglass(52)),
+                     idle("pier", 1.5, gaze(36, -4f, 4f, 46)));
+ 
+-            case "crane_hand" -> new Persona(120, 240,
++            case "crane_hand" -> new Persona(100, 200, beat("stop", 1, stroke(Material.CHAIN, 14f, Sound.BLOCK_CHAIN_PLACE, 0.25f, 0.9f, null, 26)),
+                     beat("rope", 3, stroke(Material.CHAIN, 12f, Sound.BLOCK_CHAIN_PLACE, 0.25f, 0.9f, null, 30)),
+                     beat("signal", 2, once(Sound.BLOCK_WOODEN_TRAPDOOR_OPEN, 0.18f, 0.6f, -28f)),
+                     idle("jib", 1.5, gaze(24, -32f, -20f, 44)));
+ 
+-            case "lighthouse_keeper" -> new Persona(180, 340,
++            case "lighthouse_keeper" -> new Persona(140, 280, beat("stop", 1, spyglass(56)),
+                     beat("watch", 3, spyglass(56)),
+                     beat("count", 1, write(Material.PAPER, 34)),
+                     idle("sea", 2, gaze(30, -6f, 0f, 54)));
+ 
+-            case "shanty_busker" -> new Persona(150, 280,
+-                    beat("shanty", 3, (l, s, c) -> {
+-                        float[] tune = {0.75f, 0.94f, 1.12f, 0.94f, 0.84f, 0.75f, 0.63f, 0.75f};
+-                        for (int i = 0; i < tune.length; i++) {
+-                            final float note = tune[i];
+-                            final int k = i;
+-                            l.step(s, 6 + i * 7, () -> {
+-                                if (k % 2 == 0) {
+-                                    l.swingNow(s);
+-                                }
+-                                l.sound(c.at(), Sound.BLOCK_NOTE_BLOCK_GUITAR, 0.45f, note);
+-                                if (k % 3 == 0) {
+-                                    c.w().spawnParticle(Particle.NOTE, c.at().clone().add(0, 2.3, 0), 1, 0.3, 0.1, 0.3, 0.0);
+-                                }
+-                            });
+-                        }
+-                        l.lookBack(s, 64);
+-                        return 70;
+-                    }),
++            case "shanty_busker" -> new Persona(110, 220, beat("stop", 1, shanty()),
++                    beat("shanty", 3, shanty()),
+                     beat("bow", 1, once(Sound.ENTITY_VILLAGER_CELEBRATE, 0.18f, 1.3f, 12f)),
+                     idle("crowd", 2, gaze(40, -4f, 4f, 40)));
+ 
+-            case "beekeeper" -> new Persona(160, 300,
++            case "beekeeper" -> new Persona(120, 240, beat("stop", 1, kneel(null, Sound.BLOCK_BEEHIVE_WORK, 34)),
+                     beat("frame", 3, stroke(Material.HONEYCOMB, 18f, Sound.BLOCK_BEEHIVE_WORK, 0.3f, 1.0f, null, 34)),
+                     beat("flowers", 1.5, kneel(null, Sound.ENTITY_BEE_POLLINATE, 30)),
+                     idle("hum", 2, gaze(30, -10f, 2f, 48)));
+ 
+-            case "painter" -> new Persona(140, 260,
++            case "painter" -> new Persona(110, 220, beat("stop", 1, gaze(40, -6f, 2f, 60)),
+                     beat("dab", 3, stroke(Material.BRUSH, 8f, Sound.ITEM_BRUSH_BRUSHING_GENERIC, 0.22f, 1.4f, null, 30)),
+                     beat("measure", 1.5, once(null, 0f, 1f, -6f)),
+                     idle("view", 2, gaze(34, -8f, 2f, 52)));
+ 
+-            case "hermit" -> new Persona(260, 460,
++            case "hermit" -> new Persona(200, 380, null,
+                     beat("listen", 2, gaze(20, -12f, 8f, 80)),
+                     beat("moss", 1, kneel(Material.MOSS_BLOCK, Sound.BLOCK_MOSS_STEP, 40)),
+                     idle("still", 3, gaze(0, 0f, 0f, 90)));
+ 
+-            case "bookie" -> new Persona(130, 250,
++            case "bookie" -> new Persona(100, 200, beat("stop", 1, write(Material.PAPER, 28)),
+                     beat("odds", 3, write(Material.PAPER, 32)),
+                     beat("coins", 2, once(Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.12f, 0.8f, 18f)),
+                     idle("track", 1.5, gaze(44, -6f, 2f, 40)));
+ 
+-            case "mushroom_forager" -> new Persona(150, 290,
++            case "mushroom_forager" -> new Persona(120, 240, beat("stop", 1, kneel(Material.RED_MUSHROOM_BLOCK, Sound.BLOCK_FUNGUS_BREAK, 32)),
+                     beat("pick", 3, kneel(Material.RED_MUSHROOM_BLOCK, Sound.BLOCK_FUNGUS_BREAK, 32)),
+                     beat("sniff", 1.5, once(Sound.ENTITY_FOX_SNIFF, 0.2f, 1.2f, 20f)),
+                     idle("caps", 2, gaze(36, -30f, -12f, 46)));
+ 
+-            case "lost_tourist" -> new Persona(140, 260,
++            case "lost_tourist" -> new Persona(100, 200, beat("stop", 1, gaze(50, -24f, -10f, 44)),
+                     beat("map", 3, write(Material.MAP, 30)),
+                     beat("mountain", 2, gaze(50, -24f, -12f, 44)),
+                     idle("fountain", 1.5, gaze(30, 2f, 10f, 40)));
+ 
++            // Harbour regulars and island folk placed by isle.IsleCast (had no body language before).
++            case "stall_crumb" -> new Persona(110, 220, beat("stop", 1, stroke(Material.BREAD, 14f, Sound.ITEM_BUNDLE_INSERT, 0.25f, 1.1f, null, 30)),
++                    beat("loaves", 3, stroke(Material.BREAD, 22f, Sound.ITEM_BUNDLE_INSERT, 0.25f, 1.1f, null, 30)),
++                    beat("call", 1.5, once(null, 0f, 1f, -4f)),
++                    idle("street", 1.5, gaze(40, -2f, 4f, 40)));
++
++            case "stall_tack" -> new Persona(110, 220, beat("stop", 1, stroke(Material.CHEST, 18f, Sound.BLOCK_CHEST_CLOSE, 0.18f, 1.2f, null, 30)),
++                    beat("sort", 3, stroke(Material.IRON_NUGGET, 24f, Sound.BLOCK_CHAIN_STEP, 0.2f, 1.4f, null, 28)),
++                    beat("count", 1.5, write(Material.PAPER, 30)),
++                    idle("street", 1.5, gaze(40, -2f, 4f, 40)));
++
++            case "stall_brine" -> new Persona(110, 220, beat("stop", 1, stroke(Material.SUGAR, 20f, Sound.BLOCK_SAND_STEP, 0.2f, 1.2f, null, 30)),
++                    beat("salt", 3, stroke(Material.SUGAR, 24f, Sound.BLOCK_SAND_STEP, 0.2f, 1.2f, null, 30)),
++                    beat("jar", 1.5, stroke(Material.GLASS_BOTTLE, 16f, Sound.ITEM_BOTTLE_FILL, 0.2f, 1.1f, null, 28)),
++                    idle("pier", 1.5, gaze(36, -4f, 2f, 44)));
++
++            case "dock_scaler" -> new Persona(110, 220, beat("stop", 1, stroke(Material.COD, 24f, Sound.ENTITY_COD_FLOP, 0.2f, 1.0f, null, 30)),
++                    beat("weigh", 3, stroke(Material.COD, 26f, Sound.BLOCK_CHAIN_STEP, 0.2f, 1.1f, null, 30)),
++                    beat("note", 2, write(Material.PAPER, 30)),
++                    idle("stalls", 1.5, gaze(36, -2f, 4f, 40)));
++
++            case "fry_gossip" -> new Persona(110, 220, beat("stop", 1, once(null, 0f, 1f, 0f)),
++                    beat("fryer", 3, stroke(Material.COOKED_COD, 20f, Sound.BLOCK_FIRE_EXTINGUISH, 0.12f, 1.6f, null, 30)),
++                    beat("lean", 1.5, gaze(50, -2f, 4f, 50)),
++                    idle("street", 1.5, gaze(40, -4f, 4f, 40)));
++
++            case "rivet" -> new Persona(100, 200, beat("stop", 1, stroke(Material.IRON_INGOT, 26f, Sound.BLOCK_ANVIL_USE, 0.14f, 1.4f, null, 28)),
++                    beat("hammer", 3, stroke(Material.IRON_INGOT, 30f, Sound.BLOCK_ANVIL_USE, 0.14f, 1.4f, null, 28)),
++                    beat("plank", 1.5, kneel(Material.SPRUCE_PLANKS, Sound.BLOCK_WOOD_PLACE, 30)),
++                    idle("mast", 1.5, gaze(30, -30f, -14f, 44)));
++
++            case "dockhand" -> new Persona(110, 220, beat("stop", 1, stroke(Material.LEAD, 14f, Sound.ENTITY_LEASH_KNOT_PLACE, 0.2f, 1.0f, null, 28)),
++                    beat("rope", 3, stroke(Material.LEAD, 16f, Sound.ENTITY_LEASH_KNOT_PLACE, 0.2f, 1.0f, null, 28)),
++                    beat("water", 1.5, gaze(30, 18f, 26f, 50)),
++                    idle("bay", 1.5, gaze(40, -4f, 2f, 44)));
++
++            case "bait_theory" -> new Persona(130, 260, beat("stop", 1, fisherCast(false)),
++                    beat("cast", 3, fisherCast(false)),
++                    beat("catch", 0.8, fisherCast(true)),
++                    idle("bucket", 1.5, kneel(null, Sound.ENTITY_ITEM_PICKUP, 26)));
++
++            case "dock_whisper" -> new Persona(160, 320, null,
++                    beat("water", 3, gaze(26, 20f, 30f, 60)),
++                    beat("listen", 1.5, gaze(40, -2f, 2f, 60)),
++                    idle("tide", 1.5, kneel(null, Sound.ENTITY_GENERIC_SPLASH, 30)));
++
++            case "bench_cynic" -> new Persona(160, 320, null,
++                    beat("tut", 2, once(null, 0f, 1f, 6f)),
++                    beat("judge", 3, gaze(50, -2f, 4f, 60)),
++                    idle("pigeons", 1.5, gaze(30, 14f, 24f, 50)));
++
++            case "dust", "gate_warden", "tollkeeper", "timber_clerk", "chicken_keeper" -> new Persona(120, 240, beat("stop", 1, write(Material.PAPER, 28)),
++                    beat("notes", 3, write(Material.PAPER, 32)),
++                    beat("look", 2, gaze(44, -6f, 4f, 46)),
++                    idle("rest", 1.5, gaze(30, -2f, 6f, 40)));
++
++            case "rook", "larder", "quarry_broker", "pet_scout", "sphere_proctor", "ore_ledger", "slag_poet", "ash_scout" ->
++                    new Persona(140, 280, null,
++                            beat("notes", 2, write(Material.PAPER, 32)),
++                            beat("look", 3, gaze(44, -6f, 4f, 46)),
++                            idle("rest", 1.5, gaze(30, -2f, 6f, 40)));
++
+             default -> null;
+         };
+     }
+@@ -1456,7 +1541,49 @@ public final class LivingNpcLife {
+         s.lookBackAt = -1;
+     }
+ 
++    /** Island rounds: walk the waypoints out, a stop beat at each, then back the same way. */
++    private void beginRound(LivingNpcService living, State s, Location at) {
++        if (!loaded(s.home) || s.round == null || s.round.size() < 2) {
++            return;
++        }
++        Location first = s.round.get(1);
++        if (!loaded(first)) {
++            return;
++        }
++        Location ground = LivingNpcService.plantFeet(first.clone(), first.getY());
++        if (!safeLeg(ground, at, first)) {
++            s.patrolBroken = true;
++            plugin.getLogger().fine("Round disabled for " + s.id + " (unsafe ground)");
++            return;
++        }
++        living.setMovementLocked(s.id, true);
++        s.leg = 0;
++        s.roundStep = 1;
++        s.roundDir = 1;
++        s.roundTalk = false;
++        s.walkFrom = at.clone();
++        s.walkTo = ground;
++        s.walkU = 0;
++        s.hurry = false;
++        s.needTurn = true;
++        s.patrolPauseUntil = 0;
++        s.lookBackAt = -1;
++    }
++
++    /** A step on a round leg is fine if the ground holds within a block of either end of the leg. */
++    private static boolean safeLeg(Location feet, Location from, Location to) {
++        if (feet == null || from == null || to == null) {
++            return false;
++        }
++        Location ref = Math.abs(feet.getY() - from.getY()) <= Math.abs(feet.getY() - to.getY()) ? from : to;
++        return safeGround(feet, ref);
++    }
++
+     private void patrolTick(LivingNpcService living, State s, Location at) {
++        if (s.round != null && s.leg == 0) {
++            roundTick(living, s, at);
++            return;
++        }
+         if (busy(s.id)) {
+             // Talk is sacred: be exactly where the conversation expects us.
+             finishPatrol(living, s, true);
+@@ -1526,6 +1653,150 @@ public final class LivingNpcLife {
+         }
+     }
+ 
++    /**
++     * One step of a round. Talk parks the NPC where it stands (no snap home); someone walking up
++     * makes it stop and look at them instead of hurrying away.
++     */
++    private void roundTick(LivingNpcService living, State s, Location at) {
++        if (busy(s.id)) {
++            if (!s.roundTalk) {
++                s.roundTalk = true;
++                calm(living, s);
++                s.calm = false;
++            }
++            return;
++        }
++        if (s.roundTalk) {
++            s.roundTalk = false;
++            s.needTurn = true;
++            s.patrolPauseUntil = now + 30;
++        }
++        if (s.walkTo == null || !loaded(s.walkTo) || !loaded(s.home)) {
++            finishPatrol(living, s, true);
++            return;
++        }
++        if (s.turnSteps > 0) {
++            stepTurn(living, s, at);
++            return;
++        }
++        Player near = nearest(at, 3.0);
++        if (near != null) {
++            // Someone came up to us mid-round: stop, look at them, carry on when they step back.
++            if (s.patrolPauseUntil <= now + 2) {
++                float face = yaw(at, near.getLocation());
++                startTurn(living, s, at, face, 4f, 3);
++            }
++            s.patrolPauseUntil = now + 40;
++            return;
++        }
++        if (now < s.patrolPauseUntil) {
++            return;
++        }
++        if (s.needTurn) {
++            s.needTurn = false;
++            startTurn(living, s, at, yaw(s.walkFrom, s.walkTo), 8f, 3);
++            s.patrolPauseUntil = now + 4;
++            return;
++        }
++        double dist = s.walkFrom.distance(s.walkTo);
++        if (dist < 0.05) {
++            roundArrive(living, s);
++            return;
++        }
++        s.walkU = Math.min(1.0, s.walkU + (WALK * 1.15 * PERIOD) / dist);
++        double t = ease(s.walkU);
++        Location next = s.walkFrom.clone().add(s.walkTo.clone().subtract(s.walkFrom).toVector().multiply(t));
++        double hintY = s.walkFrom.getY() + (s.walkTo.getY() - s.walkFrom.getY()) * t;
++        Location feet = LivingNpcService.plantFeet(next, hintY);
++        if (!safeLeg(feet, s.walkFrom, s.walkTo)) {
++            finishPatrol(living, s, true);
++            s.patrolBroken = true;
++            return;
++        }
++        feet.setYaw(yaw(s.walkFrom, s.walkTo));
++        feet.setPitch(8f);
++        living.moveTo(s.id, feet);
++        living.followName(s.id, feet);
++        s.headOff = true;
++        walkFx(s, feet);
++        if (s.walkU >= 1.0) {
++            roundArrive(living, s);
++        }
++    }
++
++    /** Little sounds of a working walk: the sweeper sweeps, the crier rings, the lamplighter's lantern glows. */
++    private void walkFx(State s, Location feet) {
++        if (now - s.lastWalkFx < 16 || s.walkU <= 0.15 || s.walkU >= 0.85) {
++            return;
++        }
++        switch (s.id) {
++            case "street_sweeper" -> {
++                s.lastWalkFx = now;
++                swingNow(s);
++                sound(feet, Sound.ITEM_BRUSH_BRUSHING_GENERIC, 0.22f, 1.05f);
++                dust(feet.clone().add(0, 0.1, 0), Material.GRAVEL, 3);
++            }
++            case "town_crier" -> {
++                if (now - s.lastWalkFx >= 60) {
++                    s.lastWalkFx = now;
++                    swingNow(s);
++                    sound(feet, Sound.BLOCK_BELL_USE, 0.18f, 1.5f);
++                }
++            }
++            case "lamp_lighter" -> {
++                long time = feet.getWorld().getTime();
++                if (time > 12000L && time < 23500L) {
++                    s.lastWalkFx = now;
++                    feet.getWorld().spawnParticle(Particle.SMALL_FLAME, feet.clone().add(0, 1.3, 0), 1, 0.05, 0.05, 0.05, 0.0);
++                }
++            }
++            default -> {
++            }
++        }
++    }
++
++    private void roundArrive(LivingNpcService living, State s) {
++        List<Location> round = s.round;
++        int last = round.size() - 1;
++        boolean home = s.roundDir < 0 && s.roundStep <= 0;
++        if (home) {
++            finishPatrol(living, s, false);
++            return;
++        }
++        // A stop: the persona's patrol beat (or a glance along the way) and a breath.
++        int dur = 0;
++        Location at = living.locationOf(s.id);
++        Persona p = s.persona;
++        boolean far = s.roundStep == last;
++        if (at != null && p != null && p.patrolBeat() != null && (far || ThreadLocalRandom.current().nextDouble() < 0.55)) {
++            dur = p.patrolBeat().act().run(this, s, ctx(s, at));
++            s.lastBeat = p.patrolBeat().key();
++        }
++        s.patrolPauseUntil = now + Math.max(far ? 40 : 16, dur + 8) + ThreadLocalRandom.current().nextInt(far ? 40 : 20);
++        if (s.roundDir > 0 && s.roundStep >= last) {
++            s.roundDir = -1;
++        }
++        s.roundStep += s.roundDir;
++        Location to = round.get(Math.max(0, Math.min(last, s.roundStep)));
++        s.walkFrom = s.walkTo.clone();
++        s.walkTo = s.roundStep <= 0 ? s.home.clone() : LivingNpcService.plantFeet(to.clone(), to.getY());
++        s.walkU = 0;
++        s.needTurn = true;
++    }
++
++    private static Player nearest(Location at, double radius) {
++        Player best = null;
++        double r2 = radius * radius;
++        for (Player p : at.getWorld().getPlayers()) {
++            double d = p.getLocation().distanceSquared(at);
++            if (d <= r2) {
++                best = p;
++                r2 = d;
++            }
++        }
++        return best;
++    }
++
+     private void arrive(LivingNpcService living, State s) {
+         if (s.leg == 0 && !s.hurry) {
+             // Far point: one job beat, a breath, turn around, stroll home.
+diff --git a/AetherionQuests/src/main/resources/lang/de.yml b/AetherionQuests/src/main/resources/lang/de.yml
+index 25d8649..dbd597b 100644
+--- a/AetherionQuests/src/main/resources/lang/de.yml
++++ b/AetherionQuests/src/main/resources/lang/de.yml
+@@ -560,11 +560,9 @@ dialogs:
+     - "Spieler-Skin, schaut dich an, kein Glühen. Dorfbewohner bleiben, wie sie sind."
+     - "Gib dem Team Bescheid, wenn der Rest migrieren soll."
+   rivet_intro:
+-    - "Stillhalten — wenn die Platte klappert, berechne ich dir das Echo."
+-    - "Dock Whisper murmelt von Gezeiten. Ich von Bolzen, die beruflich lügen."
+-    - "Messing will Politur. Eisen will Respekt. Ich will den, der ständig meine Nieten klaut."
+-    - "Du siehst nützlich aus. Oder zumindest ablenkend senkrecht. Nicht an die frische Farbe lehnen."
+-
++    - "Hallo! Ich bin Rivet. Ich sorg dafür, dass die Schiffe in diesem Hafen nicht auseinanderfallen."
++    - "Bolzen, Planken, Seile, Nägel. Was ein Schiff zusammenhält, hab ich mindestens einmal behämmert."
++    - "Pass auf, wo du hintrittst, die Farbe auf dem Deck ist noch nass. Und falls du irgendwo Nieten findest: die gehören mir."
+   # ---------------------------------------------------------------- world NPCs / boss hunts
+   hunter_intro:
+     - "Auf dem Hof wird's laut. Zu viele Kühe unterwegs."
+@@ -580,21 +578,21 @@ dialogs:
+     - "Aber dann diese Geräusche... AAAH!"
+     - "Kannst du nachsehen, woher die kommen? Ich zahl auch gut!"
+   chicken_keeper_intro:
+-    - "Das ist kein Huhn. Das ist ein Logistikfehler mit Federn."
+-    - "McNugget ist wieder ausgebüxt. Irgendwo draußen auf den Feldern, riesig."
+-    - "Wenn du ihm begegnest: kein Blickkontakt. Das hält es für eine Herausforderung."
++    - "Hallo! Ich kümmer mich um die Hühner von Clucksworth. Na ja, um die meisten."
++    - "Mein größtes, McNugget, ist schon wieder ausgebüxt. Er ist irgendwo draußen auf den Feldern, und er ist riesig."
++    - "Falls du ihm begegnest: schau ihm nicht in die Augen. Das hält er für eine Herausforderung."
+   tollkeeper_intro:
+-    - "Diese Brücke hatte mal einen Zoll. Dann hatte ein Troll eine Meinung dazu."
+-    - "Er wohnt jetzt unter den alten Übergängen. Bezahlt sich selbst in Reisenden."
+-    - "Ich führ nur das Buch. Kurzes Buch. Meistens Entschuldigungen."
++    - "Hallo! Früher gab's an dieser Brücke einen Zoll. Dann ist ein Troll unter die alten Übergänge gezogen und hat seine eigenen Regeln gemacht."
++    - "Er nimmt keine Münzen. Er nimmt Reisende, oder versucht es zumindest."
++    - "Heute führ ich nur noch das Buch für die Brücke. Ein sehr kurzes Buch. Vor allem Entschuldigungen an die Leute, die geschnappt wurden."
+   dockhand_intro:
+-    - "Das Wasser schreibt in letzter Zeit seinen Namen auf Leute."
+-    - "Unter dem Hafen lebt was mit zu vielen Armen und schlechter Laune. Tinte, Gift, das volle Programm."
+-    - "Tackle sagt, es ist ein Tintenfisch. Tackle sagt auch, die Fische mögen ihn."
++    - "Das Wasser benimmt sich in letzter Zeit seltsam. Die Fischer kommen voller Tinte nach Hause."
++    - "Unter dem Hafen lebt was mit zu vielen Armen und schlechter Laune. Tinte, Gift, das ganze Programm."
++    - "Tackle sagt, es ist nur ein großer Tintenfisch. Tackle sagt aber auch, die Fische mögen ihn, also weiß ich nicht."
+   ash_scout_intro:
+-    - "Wenn du brennende Pfeile siehst, bist du schon zu spät."
+-    - "Skuldugery mag Publikum draußen in der Ödnis. Sei keins."
+-    - "Ich zähle die Pfeile, die zurückkommen. Jede Woche weniger."
++    - "Hallo. Ich beobachte hier draußen die Ödnis und behalte die Bogenschützen im Auge."
++    - "Skuldugery schießt brennende Pfeile auf jeden, der zu nahe kommt. Er liebt Publikum."
++    - "Wenn du da rausgehst, bleib in Bewegung und hinter Deckung. Und zähl deine Pfeile, das mach ich auch immer."
+   colossus_scholar_intro:
+     - "Er läuft. Das ist die ganze These."
+     - "Der Aether Colossus ist keine Metapher. Leider."
+@@ -624,75 +622,77 @@ dialogs:
+     - "Das Inkasso hat mich geschickt. Ich schick dich. Nennt sich Delegieren. Auch Feigheit."
+     - "Pfände den Wither. Zwei Compacted Diamond Blocks. Falls wer fragt: Wir kennen uns nicht."
+   rook_intro:
+-    - "Rook. Ich bereite Leute auf Löcher im Boden vor, die Eintritt kosten."
+-    - "Dungeons sind Höhlen mit Meinung. Bring mir zehn Knochen. Hausaufgaben vor dem Ausflug."
+-    - "Erst den Papierkram überleben. Die Skelette können warten."
++    - "Hallo, ich bin Rook. Ich bereite Abenteurer auf die Dungeons unter der Insel vor."
++    - "Bevor ich jemanden da runterbringe, brauch ich zehn Knochen. Sieh's als Hausaufgabe: Wer hier oben nicht mit Skeletten klarkommt, schafft es da unten auch nicht."
++    - "Bring mir die Knochen, und ich erzähl dir alles, was ich übers Überleben im Dungeon weiß."
+   gate_warden_intro:
+-    - "Straße gesperrt. Der Pathwarden ist Grund und Plakat zugleich."
+-    - "Er ist langsam. Er ist geduldig. Er beendet auch sehr gern Karrieren."
+-    - "Beweg ihn. Oder werd eine Warntafel. Deine Wahl. Ich werd so oder so bezahlt."
++    - "Die Straße hinter diesem Tor ist gesperrt. Der Pfadwächter steht darauf, und keiner kommt an ihm vorbei."
++    - "Er ist langsam, er ist geduldig, und er hat schon viele mutige Laufbahnen beendet."
++    - "Wenn du glaubst, du bist stark genug, dann geh und bring ihn weg. Wenn nicht, ist es keine Schande, noch etwas zu warten."
+   bench_cynic_intro:
+-    - "Nicht hinsetzen. Die Bank ist von Ansprüchen besetzt."
+-    - "Ich brauch acht verrottetes Fleisch. Nenn's Forschung. Nenn's Mittagessen. Mir egal."
+-    - "Bring's her. Dann überlass mich meiner Enttäuschung."
++    - "Bitte setz dich nicht. Das ist meine Bank, und da bin ich sehr eigen."
++    - "Wenn du dich nützlich machen willst, bring mir acht Stück verrottetes Fleisch. Für meine Forschung, und nein, ich erklär's nicht."
++    - "Bring sie mir, dann kannst du wieder den Brunnen genießen. Ich bleib hier und genieß gar nichts."
+   dust_intro:
+-    - "Ich heiß Dust. Ich kartiere Orte, über die schon alle gelaufen sind."
+-    - "Dreißig Bruchstein. Ehrgeiz braucht Straßen. Straßen brauchen Steine. Steine brauchen dich."
+-    - "Mach keine Poesie draus. Mach einen Haufen."
++    - "Hi! Ich bin Dust. Ich bau und repariere die Wege zwischen der Hauptstadt und überall sonst."
++    - "Gerade brauch ich dreißig Bruchstein. Straßen wachsen leider nicht von selbst."
++    - "Bring mir die Steine, und ich mach was Gutes draus. Wenn du das nächste Mal irgendwo Schönes langläufst, ist es vielleicht dein eigener Stein."
+   fry_gossip_intro:
+-    - "Du riechst nach Abenteuer. Oder nach Fett. Schwer zu sagen hier."
+-    - "Clucksworth schreit ständig wegen McNugget. Riesenhuhn. Sehr verhaubar. Sehr knusprig."
+-    - "Wenn du's überlebst, prahl nicht an der Fritteuse. Gossip hört zu. Und erzählt weiter."
++    - "Hey! Ich hab den Frittierstand, und ich hör alles, was in diesem Hafen passiert."
++    - "Neueste Nachricht: Clucksworth sagt, sein Riesenhuhn McNugget ist schon wieder ausgebüxt. Es ist irgendwo auf den Feldern, und es ist riesig."
++    - "Falls du es mal besiegst, erzähl's zuerst mir. Ich versprech dir, ich sag's nur allen weiter."
+   dock_whisper_intro:
+-    - "Leise. Der Fluss hat Meinungen."
+-    - "Tackle zeigt dir das Einholen. Selten wird die Leine lila — Mythic Water Dragon. Nur für dich."
+-    - "Kommt was Älteres als das Riff im Fläschchen hoch? Nicht schütteln. Nicht Brine fragen. Lass es."
++    - "Hallo. Die Leute nennen mich Dock Whisper, weil ich mit dem Wasser rede. Manchmal antwortet es."
++    - "Tackle am Pier bringt dir das Angeln bei. An seltenen Tagen leuchtet deine Schnur lila. Das ist ein Mythischer Wasserdrache, und nur du kannst ihn fangen."
++    - "Und falls du mal eine seltsame alte Phiole rausziehst: nicht schütteln, nicht öffnen. Bring sie jemandem, der sich auskennt."
+   larder_intro:
+-    - "Die Speisekammer ist dünn. Meine Geduld dünner."
+-    - "Weizen komprimieren — echter Compressed Wheat, keine grasigen Reste."
+-    - "Drei davon. Dann reden wir über Booster."
++    - "Hallo! Ich verwalte die Vorratskammer der Hauptstadt, und die ist gerade ziemlich leer."
++    - "Ich brauch drei Verdichteten Weizen. Press Weizen vom Feld zusammen, dann bekommst du ihn."
++    - "Bring mir drei, dann gibt's einen Booster und ein paar Münzen. Und hungrige Leute danken es dir auch."
+   pet_scout_intro:
+-    - "Lark verteilt Spheres wie Bonbons. Ich will Beweise, dass du zielen kannst."
+-    - "Fang ein wildes Schwein. Eins. Lebendig in der Sphere, nicht als Abendessen."
+-    - "Komm wieder, wenn die Tasche quiekt."
++    - "Hi! Lark verteilt Fangsphären an alle, aber ich will sehen, wer auch damit umgehen kann."
++    - "Fang mir ein wildes Schwein mit einer Sphäre. Nur eins, und bitte lebendig, nicht als Abendessen."
++    - "Komm wieder, wenn deine Tasche anfängt zu grunzen."
+   ore_ledger_intro:
+-    - "Ich grabe nicht. Ich prüfe. Der Berg hat schon einmal gelogen."
+-    - "Mining-Skill Level acht. Mindestens. Darunter bist du Tourist mit Spitzhacke."
+-    - "Fünf Compressed Coal. Nicht staubig. Nicht 'fast'. Komprimiert. Dann schließen wir die Akte."
++    - "Hallo. Ich grab nicht selbst. Ich führ Buch über alles, was aus diesem Kamm kommt."
++    - "Wenn dein Bergbau-Skill Level acht oder höher ist, hab ich Arbeit für dich."
++    - "Bring mir fünf Verdichtete Kohle, die echte, dann zahl ich gut und schließe die Bücher für diesen Monat."
+   timber_clerk_intro:
+-    - "Jeder Stumpf reicht Beschwerde ein. Ich bin die Beschwerdestelle."
+-    - "Foraging acht oder mehr. Wackelige Äxte warten draußen."
+-    - "Fünf Compressed Oak Logs. Versteuertes Holz. Stiller Wald. Alle gewinnen, außer den Bäumen."
++    - "Hallo! Ich führ Buch über jeden Baum, der im Ostwald gefällt wird."
++    - "Wenn dein Sammeln-Skill Level acht oder höher ist, könnte ich deine Hilfe brauchen."
++    - "Bring mir fünf Verdichtete Eichenstämme. Ich zahl dich, und ich sorg dafür, dass für jeden Baum neue gepflanzt werden."
+   dock_scaler_intro:
+-    - "Ich wiege Fische, die sich nicht wiegen lassen wollen. Beruflich."
+-    - "Fishing zehn. Wenn dein Wurf noch wie ein Niesen aussieht: weitergehen."
+-    - "Drei Compressed Cod. Ein Schwarm mit Solidarität. Das Klemmbrett bleibt so oder so nass."
++    - "Ich bin der Dock Scaler. Ich wiege jeden Fisch, der in diesen Hafen kommt, und schreib ihn auf."
++    - "Wenn dein Angeln-Skill Level zehn oder höher ist, hab ich einen Job für dich."
++    - "Bring mir drei Verdichtete Kabeljaue für meine Proben. Ich zahl anständig, und mein Klemmbrett ist endlich glücklich."
+   sphere_proctor_intro:
+-    - "Schweine waren Kindergarten. Kühe sind die Zwischenprüfung."
+-    - "Aetherion Level fünf. Die Sphere hat Ansprüche. Ich auch."
+-    - "Fang eine Kuh. Lebendig. Muhend. In Gewahrsam. Bring mir kein Steak und nenn es Fortschritt."
++    - "Hallo! Schweine sind was für Anfänger. Ich prüfe den nächsten Schritt: Kühe."
++    - "Du brauchst Aetherion-Level fünf, und dann fängst du mir eine Kuh in einer Sphäre. Bitte lebendig."
++    - "Schaffst du das, bist du offiziell ein richtiger Fänger. Ich schreib's sogar auf."
+   quarry_broker_intro:
+-    - "Die Gildentür ist wählerisch. Ich bin wählerischer."
+-    - "Aetherion Level zwanzig. Das ist der Club-Handschlag, minus Handschlag."
+-    - "Ein Compacted Cobblestone. Nicht compressed. Compacted. Der Beweis, dass du's ernst meinst."
++    - "Hallo. Ich entscheide, wer in die Baugilde kommt, und ich bin sehr wählerisch."
++    - "Du brauchst Aetherion-Level zwanzig, bevor ich dich überhaupt anschaue."
++    - "Dann bring mir einen Verdichteten Bruchstein. Nicht gepresst, verdichtet. Der Ziegel beweist, dass du es mit dem Bauen ernst meinst."
+   slag_poet_intro:
+-    - "Ode an eine Ader, die mich geghostet hat. Strophe eins: Verrat. Strophe zwei: auch Verrat."
+-    - "Ore Ledger will Kohle mit Quittung. Ich will Metaphern. Wir sind nicht gleich."
+-    - "Wenn der Berg singt, antworte nicht. Er rechnet stundenweise ab."
++    - "Hallo! Ich grab am Erzkamm, und in meiner Freizeit schreib ich Gedichte darüber."
++    - "Die meisten handeln von Erzadern, die genau dann aufhören, wenn man sich freut. Das passiert oft."
++    - "Wenn du hier oben gräbst, folg den Kohleflözen bergab. Und wenn der Berg grollt, geh einen Schritt zurück. Das ist kein Applaus."
+   bait_theory_intro:
+-    - "Köder ist eine Philosophie. Würmer sind die Fußnoten."
+-    - "Dock Whisper murmelt von lila Leinen. Dock Scaler von Klemmbrettern. Ich murmle von Entropie."
+-    - "Wirf aus, als meinst du's ernst. Oder nicht. Der Fluss bewertet nach Gefühl."
++    - "Ich teste seit elf Jahren Köder an diesem Pier. Würmer, Brot, Käse, alles Mögliche."
++    - "Dock Whisper hört aufs Wasser, der Dock Scaler wiegt die Fische, und ich find raus, was sie zum Abendessen wollen."
++    - "Mein Rat: Wirf ruhig aus, warte länger, als du denkst, und angle nie schlecht gelaunt. Die Fische merken das."
+   stall_crumb_intro:
+-    - "Frisches Brot. Oder von gestern. Kommt drauf an, wie ehrlich du aussiehst."
+-    - "Der Quartermaster zahlt in Kohlegerede. Ich in Krusten. Such dir deine Religion aus."
++    - "Frisches Brot! Na ja, das von heute ist frisch. Das von gestern ist billiger."
++    - "Ich back jeden Morgen, bevor die Sonne aufgeht. Der ganze Hafen isst meine Brote, sogar der Quartiermeister."
++    - "Wenn du zur Arbeit aufbrichst, nimm Brot mit. Hungrige Leute treffen schlechte Entscheidungen."
+   stall_tack_intro:
+-    - "Nägel, Schnur, Reue — drei für eine Münze, wenn ich dich mögen würde."
+-    - "Ore Ridge frisst Werkzeug. Ich verkaufe den Kaugummi, der fast hilft."
++    - "Nägel, Seile, Schnur, Schnallen. Ich verkauf all die Kleinigkeiten, die man vergisst, bis man sie braucht."
++    - "Die Bergleute oben am Erzkamm nutzen ihr Werkzeug schnell ab. Die meisten kommen zuerst hier vorbei."
++    - "Schau dich ruhig um. Was ich nicht hab, brauchst du wahrscheinlich nicht."
+   stall_brine_intro:
+-    - "Salz für Fisch, Salz für Wunden, Salz für Meinungen."
+-    - "Tackle am Steg verkauft Ruten. Ich verkaufe den Grund, warum Fisch nach was schmeckt."
+-
++    - "Salz für Fisch, Salz für Fleisch, Salz für Suppe. Salz macht alles besser."
++    - "Tackle verkauft dir die Angel. Ich verkauf dir den Grund, warum dein Fisch nach etwas schmeckt."
++    - "Eine Prise heute Abend auf deinen Fang, und morgen kommst du für ein ganzes Glas wieder."
+   # ------------------------------------------------------------ Das Schlaflied (story_<npc>.<beat>)
+   # Same beat count as StoryLines.java. Chained ids (a+b) are localized part by part.
+   story_town_crier:
+@@ -1009,9 +1009,9 @@ dialogs:
+     - "Ich hab eine Skizze verloren — drei Orte, ein Bild. Ich weiß nicht mehr, wo ich saß."
+     - "Eine Brücke über träges Wasser. Ein See voller Seerosen. Ein Schrein unter alten Bäumen. Kommt dir das bekannt vor?"
+   hermit_intro:
+-    - "Moss. Ich wohne hier. Na ja — ich sitze hier. Das Wohnen ergibt sich."
+-    - "Die meisten laufen durch den Flüsterwald. Keiner hört ihm zu."
+-    - "Setz dich mal eine Minute zu mir. Nicht zappeln. Dann hörst du's."
++    - "Hallo, Reisender. Ich bin Moss. Früher hab ich in der Hauptstadt gewohnt, jetzt wohn ich unter diesen Bäumen."
++    - "Die meisten hetzen durch den Flüsterwald, ohne ihm je richtig zuzuhören."
++    - "Wenn du magst, setz dich mal eine Minute zu mir. Du wärst überrascht, was man alles hören kann."
+   bookie_intro:
+     - "Odds Mulligan. Sport. Beine. Wetten auf beides."
+     - "Das Bergtor liegt im Norden, hinter dem Brunnen und der Großen Treppe."
+@@ -1024,6 +1024,7 @@ dialogs:
+     - "Pim Whistledown! Tourist. Profi. Ich bin wegen des Gipfels von Skyreach hier."
+     - "Ich stehe seit drei Tagen an diesem Brunnen."
+     - "Alle sagen 'geh einfach hoch'. Hoch ist eine sehr große Richtung."
++
+ completed:
+   default:
+     - "Wir sind quitt. Sagt das Klemmbrett."
+@@ -1798,18 +1799,18 @@ talk:
+   isle_summit_souvenir_willows_hint: "Die goldenen Weiden wachsen auf der hohen Schulter westlich vom Gipfel."
+   isle_hermits_minute_title: "Die Minute des Einsiedlers"
+   isle_hermits_minute_chip: "Darf ich mich setzen?"
+-  isle_hermits_minute_pitch: ["Setz dich. Hier. Nicht reden. Nicht springen. Nicht in die Taschen schauen.", "Vierzig Atemzüge, dann fängt der Wald an zu reden.", "Dann komm wieder, wenn's dunkel ist, und hör nochmal hin. Die Nachtstimme ist anders."]
+-  isle_hermits_minute_accept: "Ich setz mich."
+-  isle_hermits_minute_accepted: ["Gut. Ab … jetzt. Nein — jetzt."]
++  isle_hermits_minute_pitch: ["Setz dich ein Weilchen zu mir. Nicht reden, nicht rumhüpfen, nicht in der Tasche kramen.", "Gib ihm ungefähr vierzig Atemzüge. Dann fängt der Wald an, dir zu zeigen, was er so macht.", "Und komm wieder, wenn es dunkel ist. Nachts klingt alles ganz anders, versprochen."]
++  isle_hermits_minute_accept: "Ich setz mich zu dir."
++  isle_hermits_minute_accepted: ["Gut. Mach's dir bequem. Wir fangen jetzt an."]
+   isle_hermits_minute_decline: "Gerade nicht."
+-  isle_hermits_minute_declined: ["Der Wald sagt 'na gut'. Der Wald lügt."]
++  isle_hermits_minute_declined: ["Schon gut. Der Wald läuft nicht weg."]
+   isle_hermits_minute_active_chip: "Wegen des Zuhörens …"
+   isle_hermits_minute_done_chip: "Ich hab zugehört."
+-  isle_hermits_minute_done: ["Du hast es gehört. Die meisten hören nur sich selbst.", "Nimm das. Münzen sind Lärm, ich weiß. Leiser Lärm."]
+-  isle_hermits_minute_sit_found: "Du hörst auf zu zappeln. Blätter. Ein Specht. Etwas weit weg, das das Meer sein könnte."
+-  isle_hermits_minute_sit_hint: "Bleib einfach bei mir. Steh still. Atme."
+-  isle_hermits_minute_night_found: "Nachts knarrt der Wald wie ein Schiff. Eulen tauschen Klatsch. Moss lächelt im Dunkeln."
+-  isle_hermits_minute_night_hint: "Komm nach Einbruch der Dunkelheit wieder. Gleicher Platz. Gleiche Stille."
++  isle_hermits_minute_done: ["Du hast es gehört, oder? Die meisten hören immer nur sich selbst.", "Nimm das. Ich weiß, Münzen sind laut. Gib sie für was Leises aus."]
++  isle_hermits_minute_sit_found: "Du hörst auf zu zappeln. Blätter rascheln, ein Specht klopft, und weit weg hörst du das Meer."
++  isle_hermits_minute_sit_hint: "Bleib einfach bei mir und steh eine Weile still. Atme langsam."
++  isle_hermits_minute_night_found: "Nachts knarrt der Wald wie ein altes Schiff. Eulen rufen sich zu, und Moss lächelt im Dunkeln."
++  isle_hermits_minute_night_hint: "Komm nach Einbruch der Dunkelheit wieder, gleiche Stelle, und steh wieder still."
+   isle_night_light_title: "Nachtlicht"
+   isle_night_light_chip: "Leuchtende Pilze?"
+   isle_night_light_pitch: ["Nach Einbruch der Dunkelheit leuchten drei der Riesenpilze hier. Blassblau an den Lamellen.", "Stell dich vor dem Morgen unter alle drei. Nicht anfassen, nicht ablecken, keine Namen geben.", "Einer bei meinem Beet, einer über dem Nordpfad, einer im Süden hinterm Lager."]
+@@ -1906,7 +1907,7 @@ cast:
+     greet_new: ["Hm. {player}. Das Recipe Book ist in deinem Manager."]
+     greet: ["Hm. {player}.", "Hält die Spitzhacke? Hm. Gut."]
+     greet_grad: ["Hm. Gute Arbeit in letzter Zeit, {player}. Bild dir nichts drauf ein."]
+-    idle: ["*kläng*", "Hm.", "Eisen ist heute launisch.", "Kohle. Mehr Kohle."]
++    idle: ["Der Hammer war von meinem Vater. Der Stiel von meinem Großvater. Der Kopf ist allerdings neu.", "Eisen wird launisch, wenn's kalt ist. Ich auch, also verstehen wir uns.", "Bring mir Kohle und Geduld. Den Lärm liefere ich.", "Jede Spitzhacke in diesem Hafen ist mindestens einmal durch meine Hände gegangen."]
+     farewell: ["Hm."]
+     topics:
+       - label: "Was macht gutes Gear aus?"
+@@ -1924,7 +1925,7 @@ cast:
+     greet_new: ["Helme retten Leben, {player}. Hab ich gehört."]
+     greet: ["{player}! Noch 'ne Schicht?", "Staub steht dir, {player}."]
+     greet_grad: ["Guck mal, wer jetzt unter Tage zu Hause ist. Stolz auf dich. Sag's keinem."]
+-    idle: ["*paff*", "Hörst du das? Ich auch nicht. Gutes Zeichen.", "Zwanzig Jahre da unten. Hasse Spinnen immer noch."]
++    idle: ["Zwanzig Jahre unten in den Schächten, und ich hasse Spinnen immer noch.", "Heute ist es still in den Stollen. In einer Mine ist Stille ein gutes Zeichen.", "Erste Regel da unten: Nie gerade nach oben graben. Zweite Regel: siehe erste Regel.", "Meine Pfeife ist seit einer Stunde aus. Ich behalt sie im Mund, für den Mut."]
+     farewell: ["Achte auf Abgründe. Auf die Dunkelheit. Auf dich."]
+     topics:
+       - label: "Ist es sicher da unten?"
+@@ -1942,7 +1943,7 @@ cast:
+     greet_new: ["{player}! Hast du was, das ich anzünden kann? Upgraden. Ich meinte upgraden."]
+     greet: ["Riechst du das, {player}? Fortschritt. Und leicht verbrannt."]
+     greet_grad: ["{player}! In letzter Zeit was Scharfes gefust?"]
+-    idle: ["*zisch*", "Der Funke war Absicht.", "Brille auf. Immer Brille auf."]
++    idle: ["Der Funke? Völlig Absicht. Größtenteils Absicht.", "Immer mit Schutzbrille. Das hab ich auf die helle Tour gelernt.", "Ein Booster auf dem Anvil ist Kraft. Ein Booster in der Tasche ist nur ein hübscher Stein.", "Ich hab drei Werkbänke in die Luft gejagt. Der vierten geht's prima."]
+     farewell: ["Bleib entflammbar. Moment. Nein. Lieber nicht."]
+     topics:
+       - label: "Gibt's ein Limit?"
+@@ -1960,7 +1961,7 @@ cast:
+     greet_new: ["{player}. Anwesend. Gut."]
+     greet: ["{player}. Pünktlich. Fast.", "Haltung, {player}."]
+     greet_grad: ["{player}. Gestempelt und entlassen. Blamier den Stempel nicht."]
+-    idle: ["*stempel*", "Zu spät. Zu spät. Zu früh. Zu spät.", "Wer schreibt denn so eine Neun?"]
++    idle: ["Alles kriegt einen Stempel. Fehler kriegen zwei.", "Zu spät, zu spät, zu früh, zu spät. Mein Kalender hat Meinungen über Leute.", "Wer schreibt denn so eine Neun? Sieht aus wie eine verirrte Schnecke.", "Jede Seite hier ist der erste Tag von jemandem auf Aetherion. Ich heb sie alle auf."]
+     farewell: ["Entlassen."]
+     greet_doubt: ["{player}. Keine Akten vor dem Stillen Jahr. Das ist kein Zufall."]
+     topics:
+@@ -1979,7 +1980,7 @@ cast:
+     greet_new: ["{player}! Vögel gesehen? Trau ihnen nicht."]
+     greet: ["Der Weizen wächst, {player}. Das Vogelproblem auch."]
+     greet_grad: ["{player}! Die Vögel erinnern sich an dich. Gut so."]
+-    idle: ["Husch!", "Die Krähe starrt seit einer Stunde.", "Bald Regen. Oder Vögel. Eher Vögel."]
++    idle: ["Husch, Krähe! Das ist mein Weizen, nicht dein Frühstück!", "Die Krähe starrt mich seit einer Stunde an. Ich glaub, sie will meinen Hut.", "Bald regnet's. Oder die Vögel lügen wieder. Wahrscheinlich die Vögel.", "Guter Boden ist wie ein guter Freund. Füttere ihn, dann vergisst er dich nicht."]
+     farewell: ["Augen nach oben. Da sind sie immer."]
+     topics:
+       - label: "Warum die Vögel?"
+@@ -1997,7 +1998,7 @@ cast:
+     greet_new: ["{player}! Vorsicht, Papagei. Sie bewertet deine Schuhe."]
+     greet: ["{player}! Pistachio erinnert sich an dich. Das ist kein Kompliment."]
+     greet_grad: ["{player}! Dein Pet ist hier berühmt. Na ja. Bei mir."]
+-    idle: ["Wer ist ein guter Vogel? Du nicht.", "*pfeift*", "Pistachio, nein."]
++    idle: ["Pistachio, nein. Das ist kein Snack, das ist der Hut von einem Fremden.", "Wer ist ein guter Vogel? Du nicht, Pistachio. Du hast den Bürgermeister gebissen.", "Eine Haustier-Sphäre ist ein Versprechen. Was du fängst, darum kümmerst du dich.", "Jedes Haustier auf dieser Insel hat einen Namen. Die meisten haben ihn selbst ausgesucht."]
+     farewell: ["Pistachio sagt tschüss. Tut sie nicht. Aber stell's dir vor."]
+     topics:
+       - label: "Dein Papagei?"
+@@ -2015,7 +2016,7 @@ cast:
+     greet_new: ["Gute Flut heute, {player}."]
+     greet: ["Die Leine ruft, {player}.", "Wind stimmt. Fische nicht."]
+     greet_grad: ["{player}. Das Meer hat nach dir gefragt."]
+-    idle: ["*summt ein Seemannslied*", "Ostwind. Die Fische schmollen.", "Hm. Knabbert."]
++    idle: ["Heute Ostwind. Bei Ostwind schmollen die Fische.", "Da hat was geknabbert, dann hat es sich's anders überlegt. Mein ganzes Leben in einem Satz.", "Der Trick ist Geduld. Der andere Trick ist besserer Köder.", "Mein Großvater hat in diesem Hafen geangelt. Einmal hat er einen Stiefel gefangen und ihn zur Hochzeit getragen."]
+     farewell: ["Immer eine Handbreit Wasser unterm Kiel."]
+     topics:
+       - label: "Angel-Tipps?"
+@@ -2037,7 +2038,7 @@ cast:
+     greet_new: ["Augen geradeaus, {player}!"]
+     greet: ["{player}. Atmest noch. Ausreichend.", "Kinn hoch, {player}. Klinge hoch."]
+     greet_grad: ["{player}. Kampfbereit. …Bild dir nichts drauf ein."]
+-    idle: ["Hopp!", "Links! Rechts! Links!", "*schärft das Schwert*"]
++    idle: ["Links, rechts, links! Sogar die Möwen marschieren besser als meine Rekruten.", "Eine scharfe Klinge und ein scharfer Verstand. Nur eins davon kann man kaufen.", "Hoch, runter, atmen, wiederholen. Das ist das ganze Geheimnis vom Kämpfen. Und nicht getroffen werden.", "Ich schärfe dieses Schwert jeden Morgen. Es hat sich noch nie bedankt."]
+     farewell: ["Wegtreten! Und zwar mit Haltung."]
+     topics:
+       - label: "Ein Rat?"
+@@ -2047,7 +2048,7 @@ cast:
+   farm_isle_guide:
+     greet_new: ["Die Insel ist offen, {player}. Wenn deine Hände es sind."]
+     greet: ["Guter Boden heute, {player}."]
+-    idle: ["*kaut auf einem Halm*", "Guter Boden heute.", "Das Pad wummert den ganzen Tag. Das ist normal. Glaub ich."]
++    idle: ["Der Boden drüben auf der Farm Isle ist besser als hier. Sag dem Bauern nicht, dass ich das gesagt hab.", "Das Pad wummert den ganzen Tag. Ich hör's seit Jahren nicht mehr.", "Auf einem Halm kauen hilft mir beim Denken. Hilft nicht wirklich, aber ich probier's weiter."]
+     farewell: ["Knie beugen auf dem Pad. Keine Experimente."]
+     topics:
+       - label: "Was gibt's auf der Insel?"
+@@ -2057,7 +2058,7 @@ cast:
+   surveyor:
+     greet_new: ["{player}! Trolle gesehen? Große? Erzähl mir alles."]
+     greet: ["Hast du 'ne Seite für mich, {player}?"]
+-    idle: ["*kritzelt eine Karte*", "Norden ist… da lang. Wahrscheinlich.", "Trolle. Faszinierend. Furchtbar. Faszinierend."]
++    idle: ["Norden ist da lang. Wahrscheinlich. Mein Kompass und ich reden heute nicht miteinander.", "Trolle sind faszinierend. Furchtbar, aber faszinierend. Drei Fußabdrücke hab ich schon vermessen.", "Jede Karte, die ich zeichne, ist veraltet, sobald jemand einen Schuppen baut."]
+     greet_legend: ["{player}! Einen Troll mit Kette gesehen? Erzähl mir alles."]
+     greet_doubt: ["{player}. Königliche Schmiedearbeit in der Tasche eines Trolls. Ich schlaf nicht mehr."]
+     story:
+@@ -2067,7 +2068,7 @@ cast:
+   vince:
+     greet_new: ["{player}! Glückstag? Du siehst nach Glück aus."]
+     greet: ["{player}! Meine Lieblingskundschaft. Heute."]
+-    idle: ["*wirft eine Münze*", "Rot. Immer Rot.", "Heute Nacht gewinnt jemand. Statistisch."]
++    idle: ["Heute Nacht gewinnt jemand groß. Statistisch gesehen bin ich das.", "Rot, immer Rot. Meine Glücksfarbe und die unbeliebteste meiner Bank.", "Den Automaten ist egal, wie viel Glück du zu haben glaubst. Das macht sie ehrlich."]
+     farewell: ["Komm reicher wieder. Oder ärmer. Ich bin nicht wählerisch."]
+     topics:
+       - label: "Tipps?"
+@@ -2083,7 +2084,7 @@ cast:
+   bar_whisper:
+     greet_new: ["Psst. {player}. Schau nach unten. Die Leiste."]
+     greet: ["deine leiste hat sich bewegt, {player}… ich hab's gespürt."]
+-    idle: ["…", "*lauscht in die Luft*", "level up… level up…"]
++    idle: ["Jeder Kampf, jeder Schlag, jeder Fang bringt dein Level ein Stück weiter. Die Leiste merkt sich alles.", "Ich seh immer, wer kurz vorm Level-Up steht. Die gehen ein bisschen aufrechter.", "Ruh dich aus, wenn du musst. Erfahrung wartet auf dich, die läuft nicht weg."]
+     farewell: ["spiel weiter. sie merkt es."]
+     topics:
+       - label: "Wie füll ich sie?"
+@@ -2097,7 +2098,7 @@ cast:
+   eldervale_welcome:
+     greet_new: ["Die Luft ist dünn hier oben, {player}. Langsam atmen."]
+     greet: ["Wieder auf dem Berg, {player}? Gute Lunge."]
+-    idle: ["*zieht den Schal enger*", "Schnee bis heute Abend.", "Pass auf den Sims auf, Schätzchen."]
++    idle: ["Zieh dich warm an. In Eldervale schneit's jeden einzelnen Abend.", "Pass auf die Kante auf, Schätzchen. Die Aussicht ist schön, der Sturz weniger.", "Willkommen in Eldervale. Hier oben ist es ruhiger, und der Tee ist besser."]
+     farewell: ["Bleib von der Kante weg. Ich mein's ernst."]
+     topics:
+       - label: "Was gibt's hier?"
+@@ -2107,11 +2108,11 @@ cast:
+   eldervale_upgrade:
+     greet_new: ["Die Esse glüht, {player}."]
+     greet: ["Bring mir Stahl, {player}. Und Steine."]
+-    idle: ["*Hammerschlag*", "Heißer.", "Der Stein singt."]
++    idle: ["Heißer, immer heißer. Stein hört nur zu, wenn er wütend ist.", "Jeder Bauplan hier drin hat als Kritzelei auf einer Serviette angefangen.", "Hörst du den Klang? Das ist guter Stein. Schlechter Stein macht nur dumpf."]
+   merchant:
+     greet_new: ["Ah, {player}! Kundschaft! Oder nur zum Gucken. Beides willkommen."]
+     greet: ["{player}! Gute Kisten gefunden?"]
+-    idle: ["Kisten! Abenteuer in Holz!", "*poliert einen Smaragd*", "Alles muss raus. Irgendwann."]
++    idle: ["Kisten voller Abenteuer! Manches davon ist sogar legal!", "Ich polier meine Smaragde jeden Morgen. Wenn Kundschaft da ist, glänzen sie heller.", "Alles muss irgendwann raus. Außer mir. Ich bleib."]
+     farewell: ["Mach alles auf. Trau nichts. Vor allem keinen Mimics."]
+     topics:
+       - label: "Was verkaufst du?"
+@@ -2126,7 +2127,7 @@ cast:
+       - "Ich mach immer noch keinen Papierkram. Schon gar keinen alten."
+     greet_new: ["Inselträume, {player}? Level zwanzig. Dann träumen."]
+     greet: ["Papierkram? Nein. Nie. Nächster."]
+-    idle: ["*stempelt nichts*", "Formular 20-B. Gibt's nicht.", "Inseln. Alle wollen Inseln."]
++    idle: ["Alle wollen ihre eigene Insel. Keiner will den Papierkram.", "Formular 20-B gibt es nicht. Die Leute fragen trotzdem jeden Tag danach.", "Deine Insel wartet auf dich. Sie ist geduldig. Ich weniger."]
+     farewell: ["Geh leveln. Ich bin hier. Ohne Papierkram."]
+     topics:
+       - label: "Ein Beamter, der Papierkram hasst?"
+@@ -2140,7 +2141,7 @@ cast:
+   forage_pad_guide:
+     greet_new: ["Spring aufs Pad, {player}! Alles gut! Fast alles gut!"]
+     greet: ["Zurück von der Insel, {player}? Riech mal — Fichte!"]
+-    idle: ["Boing.", "*wippt auf den Fersen*", "Das Pad ist heute klebrig. Gut klebrig."]
++    idle: ["Das Pad ist heute ein bisschen klebrig. Das ist die gute Sorte klebrig, versprochen.", "Drauf, rüberfliegen, weich landen. So ist jedes Mal der Plan.", "Auf der Sammelinsel wächst Zeug, das du hier auf der Hauptinsel nicht findest."]
+     farewell: ["Aus den Knien springen!"]
+     topics:
+       - label: "Ist das Pad sicher?"
+@@ -2148,7 +2149,7 @@ cast:
+   liquidator:
+     greet_new: ["{player}. Die Kristalle flüstern über dich. Meistens Zahlen."]
+     greet: ["Kaufen oder schmelzen, {player}?"]
+-    idle: ["*Kristallsummen*", "Lila ist ein Preis, keine Farbe.", "Schmelzen. Prägen. Wiederholen."]
++    idle: ["Amethyst kommt roh rein und geht als Münze raus. Das ist mein ganzer Job, und ich lieb ihn.", "Lila ist hier keine Farbe. Lila ist ein Preis.", "Schmelzen, prägen, zweimal zählen. Ich hab noch nie eine einzige Scherbe verloren."]
+   canopy_clerk:
+     accept: "Proben kommen."
+     decline: "Jetzt nicht."
+@@ -2159,7 +2160,7 @@ cast:
+       - "Hafenreste zählen nicht. Die rieche ich."
+     greet_new: ["{player}. Rinde dabei? Proben, meine ich."]
+     greet: ["Mehr Jahresringe, {player}. Gute Saison."]
+-    idle: ["*schnüffelt an einem Stamm*", "Fichte. Eindeutig Fichte.", "Jahresringe: vierzig. Respektabel."]
++    idle: ["Der Stamm riecht nach Fichte. Eindeutig Fichte. Darauf wett ich mein Mittagessen.", "Vierzig Ringe hat der hier. Älter als ich und besser in Form.", "Jeder Baum, den ich aufschreibe, kriegt eine Nummer. Die alten kriegen Namen."]
+     farewell: ["Verantwortungsvoll hacken."]
+     topics:
+       - label: "Warum Proben?"
+@@ -2167,7 +2168,7 @@ cast:
+   root_cellar:
+     greet_new: ["Hunger, {player}? Alle haben Hunger."]
+     greet: ["Frisches Mehl, {player}. Pass auf deine Stiefel auf."]
+-    idle: ["*mahlt Korn*", "Mehl überall. Überall.", "Karotten legen sich nicht von selbst ein."]
++    idle: ["Überall ist Mehl. In meinen Haaren, in meinen Schuhen, in meinen Träumen.", "Karotten legen sich leider nicht von selbst ein. Ich hab sie nett gefragt.", "Das Mühlrad dreht sich den ganzen Tag. An manchen Tagen dreh ich mich mit."]
+   town_crier:
+     accept: "Ich geh sie mir anhören."
+     decline: "Heute nicht, Hollis."
+@@ -2199,7 +2200,7 @@ cast:
+   street_sweeper:
+     greet_new: ["Stiefel abtreten, {player}."]
+     greet: ["Schon wieder da, {player}? Kies dabei? Lass es."]
+-    idle: ["*fege fege*", "Wer verliert denn einen ganzen Bruchstein?", "Sauberster Platz der Insel. Gern geschehen."]
++    idle: ["Wer lässt denn einen ganzen Bruchstein mitten auf der Straße liegen? Wer macht so was?", "Sauberster Platz der Insel. Gern geschehen, übrigens.", "Ich fege jeden Tag dieselbe Straße, und jeden Tag findet sie neue Wege, dreckig zu werden.", "Hab mal einen Goldklumpen in der Rinne gefunden. Neue Borsten gekauft. Ein Traum."]
+     farewell: ["Vorsicht, Haufen."]
+     topics:
+       - label: "Was Seltsames gesehen?"
+@@ -2207,7 +2208,7 @@ cast:
+   lamp_lighter:
+     greet_new: ["Der Abend kommt, {player}. Ich spür's."]
+     greet: ["Bleib im Licht, {player}."]
+-    idle: ["*poliert eine Laterne*", "Dämmerung in ein paar Stunden. Bereit.", "Jede Lampe hat einen Namen. Die da heißt Gerald.", "Noch ein Docht. Immer noch einer."]
++    idle: ["Ich polier jede Laterne auf meiner Runde. Helle Lampen bringen die Leute sicher nach Hause.", "In ein paar Stunden dämmert's. Ich bin schon bereit. Ich bin immer bereit.", "Jede Lampe in diesem Hafen hat einen Namen. Die da drüben heißt Gerald.", "Noch ein Docht, immer noch einer. Die Nacht ist lang und die Insel ist groß."]
+     farewell: ["Halt eine Fackel bereit."]
+     topics:
+       - label: "Warum Lampen?"
+@@ -2393,7 +2394,7 @@ cast:
+   harbourmaster:
+     greet_new: ["Name und Fracht, {player}. Spaß. Willkommen im Ankerhafen."]
+     greet: ["{player}. Heute ist nichts gesunken. Noch nicht.", "Wieder auf meinem Wasser, {player}? Pass auf die Taue auf."]
+-    idle: ["Die Halcyon hat ihre eigenen Zeiten. Ich hab das Buch.", "*leckt am Bleistift* Vier Kisten rein, drei raus. Wo ist die vierte?", "Was schwimmt, gehört mir. Was fliegt, auch. Der Papierkram wächst.", "Pass auf den Kran auf. Haul schwenkt, als wär er zu spät dran."]
++    idle: ["Die Halcyon hat ihre eigenen Zeiten. Ich führ das Buch und tu so, als hätte ich's geplant.", "Vier Kisten rein, drei raus. Jemand schuldet mir eine Kiste. Oder eine Erklärung.", "Was schwimmt, steht auf meiner Liste. Was fliegt, auch. Die Liste wird lang.", "Halt Abstand, wenn der Kran schwenkt. Haul ist gut, aber nie zu früh dran."]
+     farewell: ["Guten Wind. Oder wenigstens trockenen."]
+     topics:
+       - label: "Was ist die Halcyon?"
+@@ -2403,7 +2404,7 @@ cast:
+   crane_hand:
+     greet_new: ["Kopf einziehen, {player}. Der Kran tut's nicht."]
+     greet: ["{player}! Weg vom Haken."]
+-    idle: ["Hoch damit!", "*pfeift dem Kran zu*", "Kiste, Kahn, Kiste, Kahn. Poesie.", "Eines Tages heb ich die ganze Halcyon. Eines Tages."]
++    idle: ["Hoch damit! Schön langsam, so wie's mir meine Oma beigebracht hat.", "Der Kran ist älter als der Hafen. Ich halt ihn mit Öl und Komplimenten bei Laune.", "Kiste auf den Kahn, Kahn zum Markt, Markt in deine Taschen. So läuft die Kette.", "Eines Tages heb ich die ganze Halcyon aus dem Himmel. Der Kran sieht das anders."]
+     farewell: ["Schwenkbereich frei!"]
+     topics:
+       - label: "Wie funktioniert der Kran?"
+@@ -2413,7 +2414,7 @@ cast:
+   lighthouse_keeper:
+     greet_new: ["Ahoi, {player}. Du hast Seebeine, oder kriegst sie noch."]
+     greet: ["{player}. Das Licht brennt. Bitte sehr."]
+-    idle: ["*blinzelt* Ohne Brille seh ich gar nichts. Verdammte Möwe.", "Jedes Schiff, das heimkommt, zähl ich. Jedes einzelne.", "Nachts redet das Meer. Ich rede zurück.", "Vierzig Jahre auf diesem Pier. Die Möwen respektieren mich immer noch nicht."]
++    idle: ["Ohne meine Brille seh ich gar nichts. Die Möwe wird das noch bereuen.", "Jedes Schiff, das heimkommt, zähl ich. Vierzig Jahre, und ich hab mich nie verzählt.", "Nachts redet das Meer mit dem Pier. Ich rede zurück, meistens übers Wetter.", "Vierzig Jahre auf diesem Pier, und die Möwen respektieren mich immer noch nicht."]
+     farewell: ["Halt das Licht zu deiner Linken."]
+     topics:
+       - label: "Ein Leuchtturm, auf einer Himmelsinsel?"
+@@ -2433,7 +2434,7 @@ cast:
+   beekeeper:
+     greet_new: ["Langsame Bewegungen, {player}. Die Mädels schauen zu."]
+     greet: ["{player}! Riechst du das? Das ist reifender Met."]
+-    idle: ["*summt mit den Stöcken*", "Bienen stechen keine guten Leute. Meistens.", "Das Alte Methaus stand hier schon vor den Straßen.", "Drei Stöcke dieses Jahr. Vier, wenn der Schwarm heimkommt."]
++    idle: ["Hör mal auf die Stöcke. Das Summen heißt, sie sind glücklich. Meistens.", "Bienen stechen keine guten Leute. Na gut, sie stechen alle, aber es tut ihnen hinterher leid.", "Das Alte Methaus stand hier vor den Straßen, und die Bienen waren vor dem Haus da.", "Drei Stöcke dieses Jahr. Vier, falls meine ausgebüxte Königin je heimkommt."]
+     farewell: ["Bleib summig! … Sag ich jedes Mal."]
+     topics:
+       - label: "Met?"
+@@ -2443,7 +2444,7 @@ cast:
+   painter:
+     greet_new: ["Nicht bewegen — das Licht auf dir ist perfekt, {player}. … Jetzt ist es weg."]
+     greet: ["{player}! Willst du gemalt werden?"]
+-    idle: ["*tupft auf die Leinwand*", "Grün. Mehr Grün. Nein — das andere Grün.", "Die Windmühle hält nicht still. Ist die Schuld vom Wind.", "Jede Aussicht auf dieser Insel ist ein Bild, das keiner fertig gemalt hat."]
++    idle: ["Grün, mehr Grün. Nein, nicht das Grün. Das andere.", "Die Windmühle hält für mich nicht still. Natürlich ist der Wind schuld.", "Jede Aussicht auf dieser Insel ist ein Bild, das noch keiner fertig gemalt hat.", "Ich hab diese Mühle elfmal gemalt. Sie wird jedes Mal ein bisschen sturer."]
+     farewell: ["Find mir eine Aussicht!"]
+     topics:
+       - label: "Was malst du?"
+@@ -2451,19 +2452,19 @@ cast:
+       - label: "Beste Aussicht?"
+         lines: ["Frag Stellan oben am Gipfel. Der sagt: die Sterne.", "Ich sag: die, zu der du gelaufen bist."]
+   hermit:
+-    greet_new: ["Psst. … Oh. Hallo, {player}."]
+-    greet: ["Du bist wiedergekommen. Die Bäume meinten, du würdest."]
+-    idle: ["…", "*atmet sehr langsam*", "Die Rinde redet. Meistens Frechheiten.", "Ich bin für eine Minute hier rausgekommen. Das war vor neun Jahren."]
+-    farewell: ["Geh leise."]
++    greet_new: ["Oh, hallo, {player}. Entschuldige, ich hab dich bei den Vögeln nicht gehört."]
++    greet: ["Du bist wiedergekommen! Die Bäume meinten, du würdest, und sie irren sich selten."]
++    idle: ["Früher hab ich in der Hauptstadt Bücher abgeschrieben. Zu laut. Hier draußen hör ich mich selbst denken.", "Der Specht da drüben fängt bei Sonnenaufgang an zu arbeiten. Ich hab ihn noch nie Pause machen sehen.", "Die Leute denken, der Wald ist still. Er ist nicht still, er ist nur höflich.", "Ich bin für einen Nachmittag hier rausgekommen. Das war vor neun Jahren, und ich bereue keinen Tag."]
++    farewell: ["Geh leise da draußen. Der Wald merkt sich das."]
+     topics:
+       - label: "Warum lebst du hier draußen?"
+-        lines: ["Die Hauptstadt ist laut. Der Hafen ist lauter. Hier draußen flüstert sogar der Wind."]
+-      - label: "Was sagen die Bäume?"
+-        lines: ["Dass die Glocken früher anders klangen.", "Ich frag nicht, was das heißt. Solltest du auch nicht. Noch nicht."]
++        lines: ["Dreißig Jahre hab ich in der Hauptstadt Bücher abgeschrieben. Glocken, Karren und Geschrei, jeden einzelnen Tag.", "Eines Nachmittags bin ich hier rausgegangen, um meinen Ohren eine Pause zu gönnen. Ich bin einfach nie zurückgegangen."]
++      - label: "Worauf hörst du?"
++        lines: ["Wind in den Blättern, den Bach, Tiere, die ihren Tag erledigen.", "Und manchmal ganz leise die Glocken der Hauptstadt. Hier draußen klingen sie sanfter, fast traurig."]
+   bookie:
+     greet_new: ["Frische Beine! Ich geb dir vier zu eins, {player}."]
+     greet: ["{player}! Fühlst du dich heute schnell?"]
+-    idle: ["Quote auf die nächste Halcyon? Sechs Minuten. Immer sechs.", "Vince macht Glücksspiele. Ich mach Beinspiele.", "*zählt die Münzen zweimal*", "Wette nie gegen einen Sprinter in guten Stiefeln."]
++    idle: ["Quote auf die nächste Halcyon? Sechs Minuten. Es sind immer sechs.", "Vince macht Glücksspiele. Ich mach Beinspiele.", "Ich zähl meine Münzen zweimal. Einmal für mich und einmal fürs Finanzamt.", "Wette nie gegen einen Sprinter in guten Stiefeln."]
+     farewell: ["Lauf nicht weg. Außer ich hab dich dafür bezahlt."]
+     topics:
+       - label: "Was ist die Wette?"
+@@ -2473,7 +2474,7 @@ cast:
+   mushroom_forager:
+     greet_new: ["Pass auf, wo du hintrittst, {player}. Hier wächst was."]
+     greet: ["{player}! Riechst du die Luft? Sporen. Herrlich."]
+-    idle: ["*schnüffelt an einem Pilz* Essbar. Wahrscheinlich.", "Die großen leuchten nachts. Nicht ablecken.", "Die Pilze im Ostwald sind älter als die Bäume.", "Iss nie einen Pilz, der deinen Namen kennt."]
++    idle: ["Der hier riecht essbar. Das hab ich letzte Woche auch gesagt, und dann war ich zwei Tage krank.", "Die großen Hüte leuchten nachts. Anschauen ja, ablecken bitte nicht.", "Die Pilze im Ostwald sind älter als die Bäume um sie herum.", "Regel des Waldes: Wenn ein Pilz freundlich aussieht, trau ihm nicht."]
+     farewell: ["Bis spora!"]
+     topics:
+       - label: "Die leuchten?"
+@@ -2483,13 +2484,233 @@ cast:
+   lost_tourist:
+     greet_new: ["Oh! Ein Einheimischer! Hallo, {player}! Ist das der Gipfel?"]
+     greet: ["{player}! Ich hab mich heute vier Blöcke bewegt. Fortschritt!"]
+-    idle: ["*dreht die Karte auf den Kopf*", "Im Prospekt stand 'ein kurzer Spaziergang zum Gipfel'.", "Ist das der große Berg, oder ist der große dahinter?", "Ich hab diesen Brunnen neunzigmal gezeichnet. Sehr schöner Brunnen."]
++    idle: ["Ich glaub, die Karte steht auf dem Kopf. Oder die Insel. Schwer zu sagen.", "Im Prospekt stand 'ein kurzer Spaziergang zum Gipfel'. Ich spaziere seit drei Tagen.", "Ist das der große Berg, oder versteckt sich der große dahinter?", "Ich hab diesen Brunnen neunzigmal gezeichnet. Es ist ein sehr schöner Brunnen."]
+     farewell: ["Wenn du den Gipfel siehst, grüß ihn von mir!"]
+     topics:
+       - label: "Wo kommst du her?"
+         lines: ["Von einer anderen Insel. Einer flachen. Sehr flach. Deshalb bin ich hier."]
+       - label: "Wie komm ich auf den Skyreach?"
+         lines: ["Im Prospekt steht 'das Bergtor, dann der Wind'.", "Ich dachte, das sei Poesie. Ist das keine Poesie?"]
++  rite_keeper:
++    accept: "Ich zünde es an."
++    decline: "Noch nicht."
++    on_accept: ["Gut. Zünde das Pulver an der Säule an und sei bereit, wenn der Donner kommt."]
++    on_decline: ["Geister sind geduldig. Ich weniger."]
++    returning: ["Du hast die Phiole, {player}. Schütte das Pulver an der Säule aus.", "Dann warte etwa zehn Sekunden. Du hörst Donner, und dann tritt der Geist heraus und kämpft."]
++    greet_new: ["Willkommen in den Grenzlanden, {player}. Die Ödnis behält jeden im Auge, der herkommt."]
++    greet: ["Die Geister regen sich, wenn du vorbeigehst, {player}. Sie erinnern sich an dich."]
++    greet_grad: ["Die Ödnis beobachtet dich, {player}. Ich glaub, sie ist beeindruckt."]
++    idle: ["Aus der Ödnis zieht ein Sturm auf. Man riecht ihn im Staub.", "Die alten Riten halten die Grenzlande ruhig. Vor allem halten sie mich beschäftigt.", "Pass auf den Kreis auf. Er ist älter als die Straße, auf der du gekommen bist."]
++    farewell: ["Geh leise da draußen. Dinge hören zu."]
++    topics:
++      - label: "Was sind Geister?"
++        lines: ["Alte Seelen, die nie ganz fertig gestorben sind. Sie hängen draußen in der Ödnis herum.", "Die Phiole hält sie, das Pulver weckt sie, und du bringst sie zur Ruhe."]
++  arena_proctor:
++    greet_new: ["Eintrittskarte, {player}? Nein? Dann steh hier nicht rum."]
++    greet: ["Oh. {player}. Immer noch am Leben. Notiert."]
++    idle: ["Heute hat keiner die Prüfung bestanden. Es hat aber auch keiner versucht.", "Das Kolosseum erinnert sich an jeden Kampf. An manche lieber nicht.", "Bring eine Phiole mit, bring Mut mit, und bring Ersatzstiefel mit."]
++    farewell: ["Pass auf den Ring auf. Der ist älter als deine Ausreden."]
++    topics:
++      - label: "Was ist hier passiert?"
++        lines: ["Prüfungen, Monster und Papierkram, in dieser Reihenfolge.", "Heute ist es leider hauptsächlich Papierkram."]
++  amethyst_mines_guide:
++    greet_new: ["Ich bin der Kristallführer. Sprich mich an oder nutz §e/amethyst§f, um zur Amethystmine zu kommen."]
++    greet: ["Willkommen zurück, {player}! Die Amethystmine ist bereit. Klick mich an oder nutz §e/amethyst§f."]
++    idle: ["Die Geoden summen, wenn du nah dran bist. Hör hin, dann zeigen sie dir den Weg.", "Nimm dir Zeit in den Minen. Kristalle mögen keine Eile.", "Lila Leuchten vor dir heißt Amethyst. Lila Leuchten hinter dir heißt: lauf."]
++    farewell: ["Viel Spaß in den Minen, und geh nicht allein zu tief rein."]
++  dock_whisper:
++    greet_new: ["Psst, hör mal. Hörst du, wie die Flut kippt, {player}?"]
++    greet: ["Hallo nochmal, {player}. Das Wasser ist heute ruhig."]
++    idle: ["Das Wasser ist schon den ganzen Morgen unruhig. Tief unten schwimmt etwas Großes.", "Ich spür einen Sturm zwei Tage, bevor er kommt. Meine Knie spüren ihn drei Tage vorher.", "Tackle lacht über mich, aber die Fische kommen, wenn ich sie rufe. Ein paar zumindest.", "Meine Mutter hat an diesem Pier geangelt, und ihre Mutter vor ihr. Das Wasser kennt unsere Familie."]
++    farewell: ["Pass auf die Kante vom Pier auf. Das Wasser leiht sich gern Sachen aus."]
++    topics:
++      - label: "Was sagt das Wasser?"
++        lines: ["Meistens beschwert es sich über die Boote. Manchmal warnt es mich vorm Wetter.", "Einmal hat es mir gesagt, wo ein verlorener Ring liegt. Am nächsten Morgen lag er genau da."]
++      - label: "Die lila Schnur?"
++        lines: ["Wenn deine Angelschnur lila leuchtet, halt gut fest und hetz dich nicht.", "Das ist ein Mythischer Wasserdrache. Er zeigt sich immer nur einem Angler auf einmal."]
++  bait_theory:
++    greet_new: ["Ah, ein neues Gesicht! Angelst du, {player}? Jeder sollte angeln."]
++    greet: ["Schon wieder da, {player}? Die Fische haben nach dir gefragt."]
++    idle: ["Brot klappt morgens, Würmer mittags und gar nichts, wenn die Möwen zuschauen.", "Ich hab mal drei Lachse mit einem einzigen Stück Käse gefangen. Keiner glaubt mir.", "Das Geheimnis beim Angeln ist vor allem, still zu sitzen und damit zufrieden zu sein.", "Jeder Fisch ist neugierig. Du musst nur interessanter sein als der andere Köder."]
++    farewell: ["Viel Glück da draußen. Mögen die Fische hungrig sein!"]
++    topics:
++      - label: "Welcher Köder ist der beste?"
++        lines: ["Kommt auf die Tageszeit und die Laune der Fische an.", "Aber wenn du eine Antwort willst: Würmer. Würmer lassen dich nie im Stich."]
++      - label: "Warum ausgerechnet Köder?"
++        lines: ["Mein Vater hat gesagt, den Fischen ist deine Angel egal. Die interessiert, was am Haken hängt.", "Er hatte recht. Ich beweis es seit elf Jahren."]
++  dock_scaler:
++    greet_new: ["Hallo! Hast du was für die Waage, {player}?"]
++    greet: ["{player}! Fisch zum Wiegen, oder nur auf der Durchreise?"]
++    idle: ["Der größte Fang heute Morgen war ein Lachs, so lang wie mein Arm. Tackle ist sehr stolz.", "Ich schreib jeden Fisch auf. Irgendwann will jemand wissen, was wir hier gefangen haben.", "Mein Klemmbrett ist immer nass. Damit hab ich meinen Frieden gemacht.", "Ein Fisch, der sich nicht wiegen lässt, ist trotzdem ein Fisch. Dann schätz ich eben."]
++    farewell: ["Bring mir nächstes Mal was Schweres!"]
++    topics:
++      - label: "Warum wiegst du die Fische?"
++        lines: ["Wenn die Fische jedes Jahr kleiner werden, stimmt da draußen was nicht.", "Meine Zahlen sagen dem Hafen, wann er mehr fischen kann und wann er das Wasser in Ruhe lassen sollte."]
++  fry_gossip:
++    greet_new: ["Neu hier? Hungrig? Neugierig? Bei allen dreien kann ich helfen, {player}."]
++    greet: ["{player}! Hast du Neuigkeiten für mich? Ich hab jede Menge für dich."]
++    idle: ["Schon gehört? Der Hafenmeister hat schon wieder eine Kiste verloren. Das dritte Mal diesen Monat.", "Frittierter Fisch, frittiertes Brot, frittierte Kartoffeln. Was in die Pfanne passt, wird frittiert.", "Ich verbreite keine Gerüchte. Ich wiederhole sie nur sehr deutlich.", "Die alte Moll vom Leuchtfeuer hat ihre Brille an eine Möwe verloren. Die Arme sieht gar nichts."]
++    farewell: ["Komm hungrig wieder!"]
++    topics:
++      - label: "Gibt's Klatsch?"
++        lines: ["Hetties Bienen sind heute Morgen ausgeschwärmt, Tobin schreibt ein neues Lied, und Wick hat schon wieder eine Lampe getauft.", "Viel los für so einen kleinen Hafen."]
++      - label: "Was ist heute gut?"
++        lines: ["Der Kabeljau ist frisch, das Brot ist knusprig, und das Öl ist nur ein bisschen alt.", "Mein Rat? Nimm den Kabeljau."]
++  rivet:
++    greet_new: ["Pass auf, wo du hintrittst, {player}! Frische Farbe."]
++    greet: ["{player}! Kommst du helfen, oder nur zuschauen?"]
++    idle: ["Dieses alte Schiff hat mehr Flicken als Originalholz. Ich bin auf jeden einzelnen stolz.", "Irgendwer klaut ständig meine Nieten. Ich verdächtige die Möwen.", "Salzwasser frisst Eisen zum Frühstück. Deshalb geht mir nie die Arbeit aus.", "Wenn ich hämmere, weiß der ganze Hafen, dass ich da bin. So soll's sein."]
++    farewell: ["Lehn dich nicht ans Geländer, das ist noch nicht trocken!"]
++    topics:
++      - label: "Wem gehört das Schiff?"
++        lines: ["Sie gehört jetzt dem Hafen. Ihr Kapitän ist vor Jahren weg und nie wiedergekommen.", "Also kümmer ich mich um sie. Einer muss es ja machen."]
++  stall_crumb:
++    greet_new: ["Guten Morgen, {player}! Frisches Brot, noch warm."]
++    greet: ["Hallo nochmal, {player}! Hunger?"]
++    idle: ["Frische Brote, noch warm aus dem Ofen! Holt sie euch, bevor's die Möwen tun!", "Ich back schon seit vor Sonnenaufgang. Mein Ofen schläft nie, und ich auch nicht.", "Egon kauft jeden Morgen zwei Brote. Er sagt, eins davon ist für einen Freund.", "Brot mit ein bisschen Salz und Butter. Nichts auf der Welt ist besser."]
++    farewell: ["Vergiss nicht zu essen!"]
++    topics:
++      - label: "Warum backst du hier?"
++        lines: ["Der Hafen wacht früh auf und arbeitet hart. Irgendwer muss ihn satt kriegen.", "Meine Mutter hatte den Stand vor mir. Ich back immer noch nach ihrem Rezept."]
++  stall_tack:
++    greet_new: ["Hallo, {player}! Brauchst du einen Nagel? Ein Seil? Von allem ein bisschen?"]
++    greet: ["Schon wieder da, {player}? Was vergessen, oder?"]
++    idle: ["Seile, Nägel, Schnallen, Haken! Alles, was ein beschäftigter Inselmensch vergisst!", "Heute Morgen hab ich alle Nägel nach Größe sortiert. Ein Kunde hat sie in fünf Minuten durcheinandergebracht.", "Die Bergleute sagen, der Erzkamm frisst eine Spitzhacke pro Woche. Gut fürs Geschäft, schlecht für Spitzhacken.", "Jedes Kleinteil auf diesem Tisch hat schon mal jemandem den Tag gerettet."]
++    farewell: ["Komm wieder, wenn was kaputtgeht!"]
++    topics:
++      - label: "Was verkauft sich am besten?"
++        lines: ["Seil. Jeder braucht Seil, und keiner hat je genug davon."]
++  stall_brine:
++    greet_new: ["Hallo, {player}! Hast du schon mal Fisch mit richtigem Salz probiert?"]
++    greet: ["{player}! Salz? Gewürze? Ein nettes Schwätzchen?"]
++    idle: ["Meersalz, frisch aus den Pfannen! Das beste Salz der ganzen Insel!", "Ich trockne mein Salz in der Sonne draußen am Pier. Die Möwen sind sehr interessiert, aber sie hassen den Geschmack.", "Ein Fisch ohne Salz ist nur ein trauriges, nasses Ding. Glaub mir.", "Meine Gläser reisen bis in die Hauptstadt. Die Köche dort streiten sich darum."]
++    farewell: ["Eine Prise Salz hat noch keinem geschadet!"]
++    topics:
++      - label: "Woher kommt dein Salz?"
++        lines: ["Ich lass Meerwasser in flachen Pfannen draußen am Pier trocknen.", "Die Sonne macht die meiste Arbeit. Ich mach nur den Verkauf."]
++  dockhand:
++    greet_new: ["Vorsicht am Wasser, {player}. Da unten beißt was."]
++    greet: ["{player}. Heute schon Tinte an den Stiefeln?"]
++    idle: ["Heute Morgen musste ich schon wieder Tinte vom Pier schrubben. Schwarz, klebrig, und es riecht nach alten Füllern.", "Was auch immer unter dem Hafen lebt, es mag keine Boote. Oder Leute. Oder mich.", "Ich mach jedes Boot jetzt doppelt fest. Einmal für den Wind und einmal für das Ding im Wasser.", "Manche Nächte sieht man draußen hinter den Bojen was Großes schwimmen."]
++    farewell: ["Halt deine Füße trocken."]
++    topics:
++      - label: "Was lebt da unten?"
++        lines: ["Keiner hat es je ganz gesehen. Nur Arme, Tinte und jede Menge wütende Blasen.", "Wenn du eines Tages stark genug bist, findest du es vielleicht heraus."]
++  slag_poet:
++    greet_new: ["Ah, Besuch! Willst du ein Gedicht hören, {player}? Es ist ein kurzes."]
++    greet: ["{player}! Ich hab eine neue Strophe fertig. Sie handelt von Kies."]
++    idle: ["'Oh Kupferader, hell und klar, warst weg, bevor die Nacht da war.' Ich arbeite noch dran.", "Der Erz-Buchhalter will Zahlen. Ich will Reime. Wir verstehen uns überraschend gut.", "Hier oben riecht der Wind immer nach Eisen und Stein.", "Jeder Bergmann auf diesem Kamm hat schon eine Ader verloren, die er geliebt hat. Gedichte helfen."]
++    farewell: ["Mögen deine Adern tief reichen!"]
++    topics:
++      - label: "Lies mir ein Gedicht vor."
++        lines: ["'Die Spitzhacke singt, der Berg, der seufzt, die Kohle geht aus, eh' du dich's versiehst.'", "Es ist noch nicht fertig. Hier oben ist nie was fertig."]
++  bench_cynic:
++    greet_new: ["Oh. Noch ein Tourist. Hallo, {player}."]
++    greet: ["{player}. Du schon wieder. Die Bank ist immer noch besetzt."]
++    idle: ["Alle lieben diesen Brunnen. Ich schau ihn mir seit fünfzehn Jahren an. Er ist okay.", "Die Tauben hier werden jedes Jahr frecher. Gestern hat mir eine mein Brot geklaut.", "Den ganzen Tag laufen Leute an mir vorbei, und keiner hat je gefragt, wie's mir geht. Gut, übrigens.", "Das war ein ruhiger Platz, bevor jemand einen Brunnen mitten draufgebaut hat."]
++    farewell: ["Pass auf die Tauben auf, wenn du gehst."]
++    topics:
++      - label: "Warum diese Bank?"
++        lines: ["Beste Sicht auf den Brunnen, nachmittags Schatten, und keiner stört mich.", "Na ja. Normalerweise stört mich keiner."]
++      - label: "Verrottetes Fleisch?"
++        lines: ["Für die Wissenschaft. Wahrscheinlich. Für welche, entscheide ich, wenn ich's habe."]
++  dust:
++    greet_new: ["Hallo! Pass auf, wo du hintrittst, {player}, der Weg ist noch nicht fertig."]
++    greet: ["{player}! Hast du heute Bruchstein für mich?"]
++    idle: ["Jeder Weg in der Hauptstadt hat damit angefangen, dass jemand Steine geschleppt hat. Meistens ich.", "Ich hab diesen Platz dreimal vermessen. Irgendwer verschiebt ständig die Bänke.", "Eine gute Straße bringt Leute dazu, sich öfter zu besuchen. Deshalb bau ich sie.", "Eines Tages führt ein Steinweg vom Hafen bis zum Gipfel. Ich lauf ihn als Erster."]
++    farewell: ["Vorsicht, lose Steine!"]
++    topics:
++      - label: "Warum Straßen?"
++        lines: ["Als ich klein war, war der Weg zu meiner Oma nur Matsch und Brennnesseln.", "Jetzt gibt's da einen Weg. Den hab ich gebaut. Sie meckert immer noch, aber sie kommt öfter vorbei."]
++  rook:
++    greet_new: ["Noch ein Mutiger! Bereit, was zu lernen, {player}?"]
++    greet: ["{player}. Heute Knochen für mich dabei?"]
++    idle: ["Die meisten Abenteurer kriegen da unten Ärger, weil sie Fackeln vergessen haben. Nimm Fackeln mit.", "Ich war öfter unten, als ich zählen kann. Ich bin trotzdem jedes Mal nervös.", "Skelette zielen immer auf den Kopf. Trag einen Helm. Das ist keine Empfehlung.", "Erste Regel im Dungeon: Wisse, wo der Ausgang ist, bevor du ihn brauchst."]
++    farewell: ["Komm lebend zurück. Das ist die Lektion."]
++    topics:
++      - label: "Was ist da unten?"
++        lines: ["Tunnel, Fallen, Schätze und jede Menge Viecher mit zu vielen Zähnen.", "Und ganz unten wartet meistens etwas Großes, das keinen Besuch mag."]
++  larder:
++    greet_new: ["Hallo, {player}! Du hast nicht zufällig Weizen dabei?"]
++    greet: ["{player}! Die Vorratskammer ist immer noch hungrig."]
++    idle: ["Die Markthalle verputzt jede Woche mehr Brot. Ich weiß nicht, wo all die Leute herkommen.", "Ein leeres Regal ist der traurigste Anblick in der ganzen Hauptstadt.", "Meine Oma hat immer gesagt: Volle Vorratskammer, ruhige Stadt. Sie hatte recht.", "Ich zähl jeden Abend die Säcke. Die Zahlen machen mich nie glücklich."]
++    farewell: ["Bring Weizen! Viel Weizen!"]
++    topics:
++      - label: "Verdichteter Weizen?"
++        lines: ["Bau viel Weizen an und press ihn zu einem dichten Bündel zusammen.", "Hält lange, lässt sich gut transportieren und gibt das beste Brot."]
++  quarry_broker:
++    greet_new: ["Hallo, {player}. Überlegst du, der Gilde beizutreten?"]
++    greet: ["{player}. Schon einen Ziegel für mich?"]
++    idle: ["Die Hälfte der Häuser in der Hauptstadt ist aus Stein von diesem Steinbruch gebaut.", "Steine aufstapeln kann jeder. Ein echter Baumeister weiß, welcher Stein wohin gehört.", "Die Gilde hat strenge Regeln. Deshalb sind unsere Dächer dicht.", "Ich prüf jeden Ziegel, der hier durchkommt. Jeden einzelnen."]
++    farewell: ["Bau was, das hält."]
++    topics:
++      - label: "Verdichtet oder gepresst?"
++        lines: ["Gepresster Bruchstein sind neun Steine in einem. Verdichteter sind neun gepresste, nochmal zusammengedrückt.", "Das ist viel Arbeit. Genau darum geht's."]
++  pet_scout:
++    greet_new: ["Hallo, {player}! Magst du Tiere? Ich liebe Tiere."]
++    greet: ["{player}! Heute schon was Süßes gefangen?"]
++    idle: ["Schweine sind schlauer, als die Leute denken. Deshalb sind sie so schwer zu fangen.", "Ein guter Fänger ist geduldig und leise und jagt nie hinterher. Lass sie zu dir kommen.", "Larks Papagei hat mich schon wieder gebissen. Ich glaub trotzdem, er mag mich.", "Jedes Tier auf dieser Insel ist eine Freundschaft, die nur darauf wartet, anzufangen."]
++    farewell: ["Sei lieb zu deinen Fängen!"]
++    topics:
++      - label: "Wie fang ich ein Schwein?"
++        lines: ["Langsam ranschleichen, auf die Mitte zielen und die Sphäre werfen, solange es ruhig ist.", "Wenn es wegläuft, renn nicht hinterher. Warte. Es kommt fürs Gras zurück."]
++  sphere_proctor:
++    greet_new: ["Hallo, {player}! Bereit für deine Kuh-Prüfung?"]
++    greet: ["{player}! Wie läuft's mit dem Fangen?"]
++    idle: ["Eine Kuh ist größer als ein Schwein und langsamer als ein Schwein, und irgendwie viel schwerer zu fangen.", "Ich führ Buch über jeden, der meine Prüfung besteht. Die Liste ist kurz.", "Stell dich nie direkt hinter eine Kuh. Das gehört nicht zur Prüfung, das ist nur ein guter Rat.", "Das Publikum im Kolosseum liebt einen guten Fang. Fast so sehr wie einen guten Kampf."]
++    farewell: ["Viel Glück mit der Kuh!"]
++    topics:
++      - label: "Warum Kühe?"
++        lines: ["Eine Kuh zu fangen braucht Geduld, gutes Zielen und einen kräftigen Arm.", "Wer das kann, fängt fast alles auf dieser Insel."]
++  ore_ledger:
++    greet_new: ["Hallo, {player}. Zum Graben hier oder zum Helfen?"]
++    greet: ["{player}! Heute Kohle für mein Buch dabei?"]
++    idle: ["Seit hundert Jahren kommt Kohle aus diesem Kamm. Meine Bücher decken neunzig davon ab.", "Die Bergleute bringen den Stein, ich die Zahlen. Schmutzige Hände kriegen wir beide.", "Jede Seite in diesem Buch ist ein harter Tag von jemandem in den Stollen.", "Der Erzkamm gibt viel, aber er gibt nie etwas umsonst."]
++    farewell: ["Pass auf die losen Steine hier oben auf!"]
++    topics:
++      - label: "Warum führst du Buch?"
++        lines: ["Wenn wir wissen, was der Berg hergibt, wissen wir, wie lange er noch geben kann.", "Minen, die blind graben, sind irgendwann leer."]
++  timber_clerk:
++    greet_new: ["Hallo, {player}! Pass auf die Stümpfe auf, die sind überall."]
++    greet: ["{player}! Heute Eiche für mich dabei?"]
++    idle: ["Für jeden Baum, den wir fällen, pflanzen wir zwei. Das ist hier die Regel, und ich pass auf, dass sie gilt.", "Dieser Stumpf war hundert Jahre alt. Ich hab seinen Namen aufgeschrieben, bevor er gefällt wurde.", "Der Forager fällt, ich zähl, und der Wald wächst weiter. Gute Zusammenarbeit.", "Der Ostwald riecht am besten direkt nach dem Regen. Dann solltest du wiederkommen."]
++    farewell: ["Pflanz mal einen Baum!"]
++    topics:
++      - label: "Warum Bäume zählen?"
++        lines: ["Weil Wälder leise verschwinden, wenn keiner zählt.", "Ich will, dass meine Enkel den Ostwald so grün sehen wie heute."]
++  gate_warden:
++    greet_new: ["Halt! Oh, entschuldige, {player}. Macht der Gewohnheit. Willkommen am Tor."]
++    greet: ["{player}. Die Straße ist immer noch gesperrt."]
++    idle: ["Ich steh seit sechs Jahren an diesem Tor. Der Pfadwächter steht schon länger auf der Straße.", "Jede Woche versucht einer, an ihm vorbeizukommen. Jede Woche flick ich jemanden zusammen.", "Die Grenzlande sind aus der Ferne wunderschön. Aus der Nähe beißen sie.", "Eines Tages wird die Straße wieder offen sein. Dann will ich hier stehen."]
++    farewell: ["Pass auf dich auf da draußen."]
++    topics:
++      - label: "Wer ist der Pfadwächter?"
++        lines: ["Ein riesiger Wächter, der die alte Straße entlanggeht und keinen vorbeilässt.", "Keiner weiß, wer ihn da hingestellt hat. Er macht einfach weiter seinen Job."]
++  tollkeeper:
++    greet_new: ["Hallo, Reisender! Willst du heute rüber, {player}?"]
++    greet: ["{player}! Noch in einem Stück? Gut."]
++    idle: ["Früher hab ich von jedem Reisenden eine Münze kassiert. Heute zähl ich nur, wie viele zurückkommen.", "Der Troll wohnt unter den alten Übergängen, nicht unter dieser Brücke. Wahrscheinlich. Ziemlich sicher.", "Der Flüsterwald ist um diese Jahreszeit wunderschön. Bleib nur auf dem Weg.", "Mein Buch hat eine Spalte für 'vom Troll geschnappt'. Sie ist länger, als mir lieb ist."]
++    farewell: ["Pass auf das Wasser unter der Brücke auf."]
++    topics:
++      - label: "Der Troll?"
++        lines: ["Groß, mürrisch und sehr gut darin, sich unter Brücken zu verstecken.", "Wenn du eines Tages stark genug bist, bringst du ihm vielleicht Manieren bei."]
++  chicken_keeper:
++    greet_new: ["Hallo, {player}! Pass auf deine Füße auf, die Küken sind überall."]
++    greet: ["{player}! Irgendwo ein Riesenhuhn gesehen?"]
++    idle: ["McNugget war so ein kleines Küken. Ich weiß nicht, was passiert ist. Ich hab ihm ganz normalen Mais gegeben.", "Diese Hennen legen die besten Eier der Insel. Das sag ich ihnen jeden Morgen.", "Letzte Nacht kam ein Fuchs vorbei. Die Hühner haben ihn verjagt. Ich bin sehr stolz auf sie.", "Clucksworth war früher ruhig. Dann hat McNugget gelernt zu krähen."]
++    farewell: ["Pass auf die Hühner auf, wenn du gehst!"]
++    topics:
++      - label: "Wer ist McNugget?"
++        lines: ["Mein größtes Huhn. Größer als ein Pferd, lauter als eine Glocke, und er hasst Zäune.", "Er büxt alle paar Tage aus. Ich bau keine Zäune mehr, ich bau jetzt Mut auf."]
++  ash_scout:
++    greet_new: ["Runter! Ach, du bist's nur, {player}. Hallo."]
++    greet: ["{player}. Pass heute auf den Rauch auf."]
++    idle: ["Ich zähl jeden Pfeil, der ins Lager zurückkommt. Jede Woche kommen weniger zurück.", "Die Ödnis war früher mal Ackerland, vor langer Zeit. Jetzt wächst da draußen nur Asche.", "Wenn du am Horizont ein Aufblitzen siehst, duck dich zuerst und frag später.", "Mein Bogen ist älter als ich. Er schießt immer noch gerader als meine Meinungen."]
++    farewell: ["Bleib unten da draußen."]
++    topics:
++      - label: "Wer ist Skuldugery?"
++        lines: ["Ein Skelett-Bogenschütze, der draußen in der Ödnis lebt und brennende Pfeile schießt.", "Er ist schnell, er ist schlau, und er gibt gern an."]
++
+ banter:
+   # 0 egon · fishmonger · egon · fishmonger
+   - ["Der Kabeljau liegt da seit Dienstag.", "Der ist gereift, Egon. Wie du.", "Ich bin erfahren.", "Der Kabeljau auch. Man riecht's."]
+@@ -2524,16 +2745,16 @@ banter:
+   # 15 nell · lamp_lighter · nell · lamp_lighter
+   - ["Wick, bleiben die Lampen heute Nacht an?", "Jede einzelne. Bis zum Morgen.", "Versprochen?", "Altes Gesetz. Ich halt's nur ein."]
+   # 16 harbourmaster · egon · harbourmaster
+-  - ["Egon. Deine Grünschnäbel salutieren dem Kran.", "Es ist ein sehr offizieller Kran.", "Er steht nicht im Buch."]
++  - ["Egon, deine Grünschnäbel salutieren ständig dem Kran. Hast du ihnen das gesagt?", "Nein, aber es ist ein sehr offiziell aussehender Kran. Ich würd ihm auch salutieren.", "Der steht nicht in meinem Buch, Egon. Salutiert wird nur, was in meinem Buch steht."]
+   # 17 crane_hand · egon · crane_hand
+-  - ["Egon! Soll ich was heben?", "Meine Laune.", "Dafür ist der Kran nicht zugelassen."]
++  - ["Egon! Soll ich heute was heben? Kisten, Fässer, deine Laune?", "Meine Laune, bitte. Der neue Grünschnabel hat meinen Fisch ins Hafenbecken fallen lassen.", "Tut mir leid, Kumpel. Der Kran ist für schwere Lasten zugelassen, nicht für schweres Herz."]
+   # 18 lighthouse_keeper · dock_whisper · lighthouse_keeper
+-  - ["Du murmelst schon wieder aufs Wasser.", "Es hat angefangen.", "… Fair."]
++  - ["Du flüsterst schon wieder mit dem Wasser. Antwortet es dir eigentlich mal?", "Manchmal. Meistens beschwert es sich über die Boote.", "Verständlich. Ich würd mich auch beschweren, wenn ständig jemand auf mir parkt."]
+   # 19 shanty_busker · merchant · shanty_busker
+-  - ["♪ Der Händler zählt Münzen im Licht von dem Mond … ♪", "Hör auf, mein Kassenbuch zu reimen.", "♪ … und er hasst es, wenn man auf sein Kassenbuch reimt ♪"]
++  - ["♪ Der Händler zählt Münzen im Licht von dem Mond … ♪", "Tobin, hör bitte auf, meine Abrechnung zu besingen. Die Leute hören das.", "♪ … und er will nicht, dass ihr wisst, wie viele es sind ♪"]
+   # 20 bookie · vince · bookie
+-  - ["Vince! Deine Automaten haben heut einem Mann den Hut abgenommen.", "Deine Rennen haben ihm die Beine abgenommen.", "Vorübergehend!"]
++  - ["Vince! Heute hat einer an deinen Automaten seinen Hut verloren.", "Und einer hat bei deinen Rennen seine Puste verloren, Odds.", "Nur für eine Minute. Im Ziel hat er sie wiederbekommen!"]
+   # 21 lost_tourist · bench_cynic · lost_tourist
+-  - ["Entschuldigung — ist das der Gipfel?", "Das ist eine Bank.", "Schöne Bank."]
++  - ["Entschuldigung, ist das hier der Gipfel? Im Prospekt stand, es sei windig.", "Das ist eine Bank in der Hauptstadt. Der Berg ist das große spitze Ding hinter dir.", "Oh! Na, es ist eine schöne Bank. Die kommt auf meine Postkarte."]
+   # 22 mushroom_forager · lumberjack · mushroom_forager
+-  - ["Hab einen aus deinem Holzstapel wachsen sehen.", "Nicht essen.", "Zu spät."]
++  - ["Forager, aus deinem Holzstapel wächst ein Pilz. Ein großer.", "Bitte iss ihn nicht. Als du das letzte Mal was aus meinem Holzstapel gegessen hast, hast du eine Woche lang Farben gesehen.", "Zu spät, ich hab schon abgebissen. Schmeckt nach Abenteuer."]

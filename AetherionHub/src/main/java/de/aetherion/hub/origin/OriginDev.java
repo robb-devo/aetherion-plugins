@@ -15,7 +15,7 @@ public final class OriginDev {
 
     public static final List<String> ACTIONS = List.of(
             "status", "reload", "event", "toll", "anchor", "cast", "seed", "softlight", "tp", "updraft", "fly",
-            "vista", "profile");
+            "vista", "profile", "bay", "props", "tales", "curio", "life", "explore");
 
     private final OriginIsle isle;
 
@@ -89,6 +89,15 @@ public final class OriginDev {
                     yield null;
                 }
                 case "profile" -> profile(player, arg);
+                case "bay" -> isle.bay().dev(arg);
+                case "props" -> isle.props().dev(player, player, parts);
+                case "tales" -> isle.tales().dev(player, parts);
+                case "curio" -> isle.curiosities().dev(player, parts);
+                case "life" -> isle.life().status();
+                case "explore" -> {
+                    isle.menus().openDevExplore(player);
+                    yield null;
+                }
                 default -> "§7DEV actions: " + String.join(", ", ACTIONS);
             };
         } catch (Throwable throwable) {
@@ -106,7 +115,9 @@ public final class OriginDev {
                 + isle.cast().placedCount() + "/" + OriginRole.values().length + " §8· §7on isle " + isle.onIsle().size()
                 + " §8· §7flying " + isle.flight().flyers() + ", riding " + isle.traversal().riders()
                 + " §8· §7moment " + (moment == null ? "none" : moment.id() + " (" + isle.events().secondsLeft() + "s)")
-                + " §8· §7softlight on record " + isle.softlight().recorded();
+                + " §8· §7softlight on record " + isle.softlight().recorded()
+                + " §8· §7curiosities " + isle.curiosities().all().size() + ", tales " + isle.tales().placedCount() + "/" + isle.tales().all().size()
+                + ", props " + isle.props().pastedCount() + "/" + isle.props().all().size() + (isle.props().busy() ? " (busy)" : "");
     }
 
     private String stopEvent() {
@@ -182,6 +193,8 @@ public final class OriginDev {
                 for (OriginRole role : OriginRole.values()) {
                     p.met.add(role.id());
                 }
+                p.curiosities.addAll(isle.curiosities().all().keySet());
+                p.tales.addAll(isle.tales().all().keySet());
                 p.dirty = true;
                 return "§aEverything on Origin marked found (no coins, no titles).";
             }
@@ -189,7 +202,8 @@ public final class OriginDev {
                 OriginProfile p = isle.profiles().get(player);
                 return "§7Profile §8· §7districts " + p.districts.size() + ", landmarks " + p.landmarks.size() + ", glowcaps "
                         + p.waystones.size() + ", bells " + p.bells.size() + ", vistas " + p.vistas.size() + ", rides " + p.rides.size()
-                        + ", met " + p.met.size() + ", tour " + p.tourStep + ", wishes " + p.wishes + ", coins " + p.coinsEarned
+                        + ", met " + p.met.size() + ", curiosities " + p.curiosities.size() + ", tales " + p.tales.size()
+                        + ", tour " + p.tourStep + ", wishes " + p.wishes + ", coins " + p.coinsEarned
                         + " §8· §7flags " + p.flags;
             }
         }

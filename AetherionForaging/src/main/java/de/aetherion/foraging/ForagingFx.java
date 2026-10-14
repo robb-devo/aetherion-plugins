@@ -54,8 +54,18 @@ final class ForagingFx {
         player.playSound(player.getLocation(), Sound.BLOCK_WOOD_HIT, 0.45f, 0.65f);
     }
 
+    /** Fail telegraph — the swing window is running out. One soft, low knock per chop. */
+    static void slip(Player player) {
+        player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_HAT, 0.45f, 0.7f);
+    }
+
     static void success(Player player, Location at) {
         player.sendActionBar(Component.text("Clean fell.", NamedTextColor.GREEN));
+        impact(player, at);
+    }
+
+    /** Sound + chips of the cut itself (no text) — shared by every success path. */
+    private static void impact(Player player, Location at) {
         player.playSound(player.getLocation(), Sound.ENTITY_ZOMBIE_BREAK_WOODEN_DOOR, 0.4f, 0.9f);
         player.playSound(player.getLocation(), Sound.BLOCK_WOOD_BREAK, 0.85f, 0.75f);
         if (at != null && at.getWorld() != null) {
@@ -67,7 +77,8 @@ final class ForagingFx {
     }
 
     static void success(Player player, Location at, boolean perfect, int streak) {
-        success(player, at);
+        // One result line — no "Clean fell." flash before "Perfect fell.".
+        impact(player, at);
         player.sendActionBar(LEGACY.deserialize(word(perfect) + ForagingStrike.streakTag(streak)));
         if (perfect) {
             player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, 0.6f, 2.0f);

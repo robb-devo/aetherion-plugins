@@ -98,7 +98,14 @@ public final class GuildCommand implements CommandExecutor, TabCompleter {
                 }
                 IslandHost host = IslandHost.guild(guild.id());
                 switch (action) {
-                    case "build" -> highlight.buildMenu().open(player, host);
+                    case "build" -> {
+                        // standing on the guild island: the Build Tool straight into your hand, like /island build
+                        if (host.equals(highlight.hosts().at(player.getLocation()))) {
+                            highlight.placement().openTool(player, host, null);
+                        } else {
+                            highlight.buildMenu().open(player, host);
+                        }
+                    }
                     case "land" -> highlight.landMenu().open(player, host);
                     default -> highlight.placement().startBelts(player, host);
                 }

@@ -24,6 +24,8 @@ final class FellPulse {
     private boolean early;
     /** Ready tell already played on this pass toward the window. */
     private boolean readyCued;
+    /** Slipping tell already played (once per chop). */
+    private boolean slipCued;
 
     FellPulse(Player player, ForagingListener.TreeJob job, int strikeTicks, int zoneSize) {
         this(player, job, strikeTicks, zoneSize, 1.0d);
@@ -102,6 +104,20 @@ final class FellPulse {
         }
         if (!ready && !hot()) {
             readyCued = false;
+        }
+        return false;
+    }
+
+    /** Last stretch of the time budget — same share as fishing's "slipping" so both loops warn alike. */
+    boolean slipping() {
+        return !resolved && ticks >= strikeTicks * ForagingStrike.SLIP_SHARE;
+    }
+
+    /** True once, the tick the chop starts slipping. */
+    boolean slipEdge() {
+        if (!slipCued && slipping()) {
+            slipCued = true;
+            return true;
         }
         return false;
     }

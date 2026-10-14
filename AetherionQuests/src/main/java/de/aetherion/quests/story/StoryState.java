@@ -29,6 +29,9 @@ import java.util.Set;
  * 1  lullaby_old_tale done   (legend)        5  lullaby_third_anchor done (worlds fell)
  * 2  lullaby_short_toll done (short toll)    6  lullaby_forgotten done    (the Fading is personal)
  * 3  lullaby_old_seal done   (Eldervale)     7  lullaby_silent_road done  (road open)
+ * 8  lullaby_ferry done      (crossed)       9  lullaby_captain done      (Caedmon said no)
+ * 10 lullaby_heart done      (Maelis)        11 lullaby_doll done         (the puppet was there)
+ * 12 lullaby_seed done       (nothing brings them back)
  * </pre>
  * Per-player flags and Chronicle pages live in the player's quest file (starter-kit keys
  * {@code story:flag:<key>} / {@code story:page:<id>}), so wipes and transfers treat them like
@@ -37,6 +40,9 @@ import java.util.Set;
 public final class StoryState implements StoryAccess {
 
     public static final String VEIL_QUAY = "veil_quay_unlocked";
+    /** Heard Orrin out in the Observatory (Core's star ring opens for this). */
+    public static final String ORRIN_WARNED = "orrin_warned";
+    public static final String CROSSED = "exile_crossed";
 
     private static final String[][] STAGES = {
             {LullabyQuests.OLD_TALE, "1"},
@@ -45,7 +51,12 @@ public final class StoryState implements StoryAccess {
             {LullabyQuests.LETTERS, "4"},
             {LullabyQuests.THIRD_ANCHOR, "5"},
             {LullabyQuests.FORGOTTEN, "6"},
-            {LullabyQuests.SILENT_ROAD, "7"}
+            {LullabyQuests.SILENT_ROAD, "7"},
+            {LullabyQuests.FERRY, "8"},
+            {LullabyQuests.CAPTAIN, "9"},
+            {LullabyQuests.HEART, "10"},
+            {LullabyQuests.DOLL, "11"},
+            {LullabyQuests.SEED, "12"}
     };
 
     private static StoryState instance;
@@ -186,6 +197,32 @@ public final class StoryState implements StoryAccess {
         return StoryFlow.talkFromElsewhere(player, speakerId);
     }
 
+    /** The Ferryman's answer before he casts off (null = aboard). */
+    @Override
+    public String ferryBlock(Player player) {
+        AetherionQuests plugin = AetherionQuests.getInstance();
+        QuestManager qm = plugin == null ? null : plugin.getQuestManager();
+        if (player == null || qm == null) {
+            return null;
+        }
+        if (hasPlayerFlag(player, CROSSED)) {
+            return null;
+        }
+        if (!QuestStoryGate.tutorialDone(player, qm)) {
+            return de.aetherion.quests.lang.LangPack.ui(player, "tip.ferry.harbour",
+                    "No passengers who haven't finished their harbour business. Then the fog.");
+        }
+        if (!hasPlayerFlag(player, VEIL_QUAY)) {
+            return de.aetherion.quests.lang.LangPack.ui(player, "tip.ferry.road",
+                    "The Council's road is still sealed for you. Ysolde at the Archive knows about that.");
+        }
+        if (!StoryFlow.meetsLevel(player, 75)) {
+            return de.aetherion.quests.lang.LangPack.ui(player, "tip.ferry.level",
+                    "The fog isn't ready for you. Come back at Aetherion Level §e75§7.");
+        }
+        return null;
+    }
+
     // ------------------------------------------------------------------ quest completion hook
 
     /**
@@ -210,6 +247,8 @@ public final class StoryState implements StoryAccess {
                 unlockPage(player, StoryLore.SEALED_WRIT.findId());
                 setPlayerFlag(player, VEIL_QUAY);
             }
+            case LullabyQuests.FERRY -> setPlayerFlag(player, CROSSED);
+            case LullabyQuests.HEART -> setPlayerFlag(player, ORRIN_WARNED);
             default -> {
             }
         }

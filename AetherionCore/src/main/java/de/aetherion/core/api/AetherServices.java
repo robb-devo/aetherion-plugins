@@ -27,6 +27,8 @@ public final class AetherServices {
     private static volatile TalkAccess talk;
     private static volatile StoryAccess story;
     private static volatile LangAccess lang;
+    private static volatile CharacterTransport transport;
+    private static volatile IslandAccess islands;
     private static final java.util.List<java.util.function.Consumer<org.bukkit.entity.Player>> LANG_LISTENERS =
             new java.util.concurrent.CopyOnWriteArrayList<>();
 
@@ -105,6 +107,15 @@ public final class AetherServices {
         lang = access;
     }
 
+    /** AetherionDungeons on mmo-r / mmo-d. Core serves mmo-c / mmo-i itself when nothing registered. */
+    public static void registerTransport(CharacterTransport access) {
+        transport = access;
+    }
+
+    public static void registerIslands(IslandAccess access) {
+        islands = access;
+    }
+
     public static PartyAccess party() {
         return party;
     }
@@ -178,6 +189,16 @@ public final class AetherServices {
     /** Player-language preference (AetherionQuests), or null = everyone English. */
     public static LangAccess lang() {
         return lang;
+    }
+
+    /** Cross-backend character hop registered by a plugin (Dungeons), or null. */
+    public static CharacterTransport transport() {
+        return transport;
+    }
+
+    /** Island homes (AetherionGuilds, island backend only), or null. */
+    public static IslandAccess islands() {
+        return islands;
     }
 
     /** True when the player chose German and a language provider is registered. */
@@ -312,6 +333,18 @@ public final class AetherServices {
     public static void clearStory(StoryAccess access) {
         if (story == access) {
             story = null;
+        }
+    }
+
+    public static void clearTransport(CharacterTransport access) {
+        if (transport == access) {
+            transport = null;
+        }
+    }
+
+    public static void clearIslands(IslandAccess access) {
+        if (islands == access) {
+            islands = null;
         }
     }
 }

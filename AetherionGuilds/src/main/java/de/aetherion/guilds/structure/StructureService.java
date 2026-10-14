@@ -575,11 +575,12 @@ public final class StructureService {
         if (type.needsWorkshop() && !hasWorkshop(host)) {
             return "Build your Hub first.";
         }
-        if ((type == StructureType.FORGE || type == StructureType.OVERFLOW || type == StructureType.SORTER)
-                && hubLevel(host) < 2) {
-            return "Needs Hub tier 2 (upgrade it at the Hub).";
-        }
         if (!unlocks.test(host, type)) {
+            // the tier gate guards the unlock; once a part is unlocked (Hollis' tour hands out the Forge early) it builds
+            if ((type == StructureType.FORGE || type == StructureType.OVERFLOW || type == StructureType.SORTER)
+                    && hubLevel(host) < 2) {
+                return "Needs Hub tier 2 (upgrade it at the Hub).";
+            }
             return "Unlock it at your Hub first.";
         }
         return null;
@@ -621,7 +622,17 @@ public final class StructureService {
     }
 
     public List<BuildCosts.Line> buildCost(IslandHost host, StructureType type) {
+        if (count(host, type) == 0 && freeFirst.test(host, type)) {
+            return List.of(); // the island tour pays for the first one
+        }
         return BuildCosts.build(type, type == StructureType.STORAGE_HUT && count(host, StructureType.STORAGE_HUT) == 0);
+    }
+
+    private java.util.function.BiPredicate<IslandHost, StructureType> freeFirst = (host, type) -> false;
+
+    /** The island guide: while its tour runs, the first Hub / Mill / Forge cost nothing. */
+    public void attachFreeFirst(java.util.function.BiPredicate<IslandHost, StructureType> freeFirst) {
+        this.freeFirst = freeFirst == null ? (host, type) -> false : freeFirst;
     }
 
     /** What's missing to pay this bill ("needs 40 more Cobblestone in storage"), or null when it can be paid. */

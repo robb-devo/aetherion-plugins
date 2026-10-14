@@ -33,7 +33,11 @@ import java.util.concurrent.ThreadLocalRandom;
 
 final class CasinoGames {
 
-    private static final long[] BETS = {10L, 50L, 100L, 250L, 500L, 1_000L, 2_500L, 5_000L, 10_000L, 25_000L, 50_000L};
+    private static final long[] BETS = {
+            10L, 50L, 100L, 250L, 500L, 1_000L, 2_500L, 5_000L, 10_000L, 25_000L, 50_000L,
+            100_000L, 250_000L, 500_000L, 1_000_000L, 2_500_000L, 5_000_000L, 10_000_000L,
+            25_000_000L, 50_000_000L, 100_000_000L, 250_000_000L, 500_000_000L, 1_000_000_000L
+    };
     private static final int[] REDS = {
             1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36
     };

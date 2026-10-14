@@ -1013,6 +1013,26 @@ public class QuestNPCRegistry {
         registerNPC(new QuestNPC("nell", "Nell", NPCType.FLAVOR, "", "story_nell.default", ""));
         registerNPC(new QuestNPC("hesper", "Hesper Kael", NPCType.FLAVOR, "", "story_hesper.default", ""));
         registerNPC(new QuestNPC("ferryman", "Ferryman", NPCType.FLAVOR, "", "story_ferryman.default", ""));
+        // Act III — the exile island (mmo-c). Placed by ExileStory at their Runde 7 spots; /questnpc exile re-places.
+        registerNPC(new QuestNPC("orrin", "Orrin", NPCType.FLAVOR, "", "story_orrin.default", ""));
+        registerNPC(new QuestNPC("exile_lamplighter", "The Last Lamplighter", NPCType.FLAVOR, "", "story_exile_lamplighter.default", ""));
+        registerNPC(new QuestNPC("exile_sentry", "Sentry of the Iron Ring", NPCType.FLAVOR, "", "story_exile_sentry.default", ""));
+        registerNPC(new QuestNPC("exile_usher", "The Usher", NPCType.FLAVOR, "", "story_exile_usher.default", ""));
+        registerNPC(new QuestNPC("exile_gardener", "The Gardener's Boy", NPCType.FLAVOR, "", "story_exile_gardener.default", ""));
+        registerNPC(new QuestNPC("exile_mother", "A Mother, Packing", NPCType.FLAVOR, "", "story_exile_mother.default", ""));
+        registerNPC(new QuestNPC("exile_keeper", "Keeper of The Last Bell", NPCType.FLAVOR, "", "story_exile_keeper.default", ""));
+
+        // Origin island cast (SAITAMA pass) — placed by isle.IsleCast, errands in isle.IsleErrands.
+        registerNPC(new QuestNPC("harbourmaster", "Quill", NPCType.FLAVOR, "", "harbourmaster_intro", ""));
+        registerNPC(new QuestNPC("crane_hand", "Haul", NPCType.FLAVOR, "", "crane_hand_intro", ""));
+        registerNPC(new QuestNPC("lighthouse_keeper", "Old Moll", NPCType.FLAVOR, "", "lighthouse_keeper_intro", ""));
+        registerNPC(new QuestNPC("shanty_busker", "Tobin", NPCType.FLAVOR, "", "shanty_busker_intro", ""));
+        registerNPC(new QuestNPC("beekeeper", "Hettie Comb", NPCType.FLAVOR, "", "beekeeper_intro", ""));
+        registerNPC(new QuestNPC("painter", "Fenna", NPCType.FLAVOR, "", "painter_intro", ""));
+        registerNPC(new QuestNPC("hermit", "Moss", NPCType.FLAVOR, "", "hermit_intro", ""));
+        registerNPC(new QuestNPC("bookie", "Odds Mulligan", NPCType.FLAVOR, "", "bookie_intro", ""));
+        registerNPC(new QuestNPC("mushroom_forager", "Cap", NPCType.FLAVOR, "", "mushroom_forager_intro", ""));
+        registerNPC(new QuestNPC("lost_tourist", "Pim Whistledown", NPCType.FLAVOR, "", "lost_tourist_intro", ""));
 
     }
 
@@ -1023,7 +1043,8 @@ public class QuestNPCRegistry {
 
     /** Main-story cast (Das Schlaflied) offered on /questnpc story — none are placed by default. */
     public static java.util.List<String> storyNpcIds() {
-        return java.util.List.of("ysolde", "berit", "nell", "hesper", "ferryman");
+        return java.util.List.of("ysolde", "berit", "nell", "hesper", "ferryman",
+                "orrin", "exile_lamplighter", "exile_sentry", "exile_usher", "exile_gardener", "exile_mother", "exile_keeper");
     }
 
     public static String linkedBoss(String npcId) {

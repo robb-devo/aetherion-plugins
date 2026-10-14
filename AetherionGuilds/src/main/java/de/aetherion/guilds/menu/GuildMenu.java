@@ -270,7 +270,14 @@ public final class GuildMenu {
             }
             case BUILD_SLOT -> {
                 if (build != null) {
-                    build.open(player, IslandHost.guild(guild.id()));
+                    IslandHost host = IslandHost.guild(guild.id());
+                    if (islands.onOwnIsland(player, guild)) {
+                        // on the guild island: the Build Tool straight into the hand (F: all parts)
+                        player.closeInventory();
+                        build.placement().openTool(player, host, null);
+                    } else {
+                        build.open(player, host);
+                    }
                 }
             }
             case LAND_SLOT -> {

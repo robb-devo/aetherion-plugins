@@ -14,6 +14,7 @@ import de.aetherion.aethermobs.pet.PlayerPetCollection;
 import de.aetherion.aethermobs.pet.skill.PetSkill;
 import de.aetherion.items.model.ItemCapability;
 import de.aetherion.items.model.Rarity;
+import de.aetherion.items.util.ManagerChrome;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -22,6 +23,7 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.event.EventHandler;
@@ -42,8 +44,38 @@ public class PetMenu implements Listener {
     private static final int INVENTORY_SIZE = 54;
     private static final int PET_SLOTS = 44;
 
+    /** Legacy title — collection menu uses {@link ManagerChrome#PETS}. */
     private static final String TITLE =
             "§5§l✦ YOUR PETS ✦";
+
+    /** Holder so chrome titles stay routeable. */
+    public static final class Holder implements InventoryHolder {
+        public enum Kind {
+            COLLECTION,
+            DETAILS,
+            AETHERLEX
+        }
+
+        private final Kind kind;
+        private Inventory inventory;
+
+        public Holder(Kind kind) {
+            this.kind = kind;
+        }
+
+        public Kind kind() {
+            return kind;
+        }
+
+        void bind(Inventory inventory) {
+            this.inventory = inventory;
+        }
+
+        @Override
+        public Inventory getInventory() {
+            return inventory;
+        }
+    }
 
     private static final String DETAILS_TITLE =
             "§5§l✦ PET DETAILS ✦";
@@ -177,12 +209,14 @@ public class PetMenu implements Listener {
                         )
                 );
 
+        Holder holder = new Holder(Holder.Kind.COLLECTION);
         Inventory inventory =
                 Bukkit.createInventory(
-                        null,
+                        holder,
                         INVENTORY_SIZE,
-                        TITLE
+                        ManagerChrome.PETS
                 );
+        holder.bind(inventory);
 
         fillBackground(
                 inventory
@@ -1674,6 +1708,21 @@ public class PetMenu implements Listener {
                 || title.equals(AETHERLEX_DUNGEON_TITLE);
     }
 
+    private boolean isCollectionMenu(Inventory inventory) {
+        return inventory != null
+                && inventory.getHolder() instanceof Holder h
+                && h.kind() == Holder.Kind.COLLECTION;
+    }
+
+    private boolean isPetChromeOrLegacy(Inventory inventory, String title) {
+        if (inventory != null && inventory.getHolder() instanceof Holder h) {
+            return h.kind() == Holder.Kind.COLLECTION
+                    || h.kind() == Holder.Kind.DETAILS
+                    || h.kind() == Holder.Kind.AETHERLEX;
+        }
+        return isStorageMenu(title) || title.equals(DETAILS_TITLE);
+    }
+
     private boolean handleStorageTabClick(
             Player player,
             int slot
@@ -1793,13 +1842,10 @@ public class PetMenu implements Listener {
             InventoryClickEvent event
     ) {
 
-        String title =
-                event.getView()
-                        .getTitle();
+        String title = event.getView().getTitle();
+        Inventory top = event.getView().getTopInventory();
 
-        if (!isStorageMenu(title)
-                && !title.equals(DETAILS_TITLE)) {
-
+        if (!isPetChromeOrLegacy(top, title)) {
             return;
         }
 
@@ -1818,7 +1864,7 @@ public class PetMenu implements Listener {
             return;
         }
 
-        if (title.equals(TITLE)) {
+        if (isCollectionMenu(top) || title.equals(TITLE)) {
 
             handleCollectionClick(
                     player,
@@ -1829,7 +1875,8 @@ public class PetMenu implements Listener {
             return;
         }
 
-        if (isStorageMenu(title)) {
+        if (isStorageMenu(title)
+                || (top.getHolder() instanceof Holder h && h.kind() == Holder.Kind.AETHERLEX)) {
 
             handleAetherlexClick(
                     player,
@@ -2242,13 +2289,8 @@ public class PetMenu implements Listener {
             InventoryDragEvent event
     ) {
 
-        String title =
-                event.getView()
-                        .getTitle();
-
-        if (!isStorageMenu(title)
-                && !title.equals(DETAILS_TITLE)) {
-
+        String title = event.getView().getTitle();
+        if (!isPetChromeOrLegacy(event.getView().getTopInventory(), title)) {
             return;
         }
 

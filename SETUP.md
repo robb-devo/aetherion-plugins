@@ -34,6 +34,7 @@ See `AetherionCore/README.md` and the comments in Core `config.yml`.
 | AetherionMining / Farming / Foraging | WorldGuard hard; Items soft. Farming also WorldEdit + AetherMobs. Foraging also WorldEdit + FancyNpcs. |
 | BossEngine | Items, AetherMobs, Quests, WorldGuard (+ DeluxeHub / MythicMobs / WorldGuardExtraFlagsPlus for spawn-protect load order) |
 | AetherionPit | WorldEdit/FAWE, FancyNpcs, PlaceholderAPI, DiscordSRV (hard-depend AetherionCore) |
+| AetherionGnomon | Items, Quests (hard-depend AetherionCore + BossEngine; mmo-r only) |
 
 ## Smoke test (every deploy)
 

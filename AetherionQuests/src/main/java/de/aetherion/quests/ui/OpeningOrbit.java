@@ -47,6 +47,10 @@ public final class OpeningOrbit implements Listener {
 
     private static final String EGON = "egon";
     private static final double GATE_RADIUS = 48.0;
+    /** Egon's Ankerhold pier-head spot (design feet coords) and how far he may wander from it. */
+    private static final double EGON_X = 141.5;
+    private static final double EGON_Z = 3.5;
+    private static final double EGON_SLACK = 10.0;
     private static final double START_X = 166.5;
     private static final double START_Y = 65.0;
     private static final double START_Z = 8.5;
@@ -121,9 +125,13 @@ public final class OpeningOrbit implements Listener {
         }
         if (!instance.onAllowedServer()) {
             player.sendMessage("§cOpening orbit is gated to "
-                    + String.join(", ", instance.allowedServers())
+                    + (instance.autoGate() ? "main/hub backends" : String.join(", ", instance.allowedServers()))
                     + " (this server=" + instance.thisServer() + ").");
             return;
+        }
+        if (instance.autoGate() && !instance.ankerholdLive(player.getWorld())) {
+            player.sendMessage("§eEgon isn't at the Ankerhold pier head in this world, so new players won't get the"
+                    + " orbit here (auto gate). Replaying anyway for you.");
         }
         if (instance.baked.isEmpty()) {
             player.sendMessage("§copening_orbit.yml missing / empty.");
@@ -138,12 +146,18 @@ public final class OpeningOrbit implements Listener {
     }
 
     /**
-     * Empty list = orbit never auto-plays (safe default).
-     * mmo-c is exile now — list {@code mmo-r} only when Ankerhold is the live hub.
+     * Named servers where the orbit may play. Empty (the default) = <b>auto</b>: any main / hub backend (never
+     * exile, islands or dungeons), and only while the live map proves to be Ankerhold — Egon actually standing at
+     * the Ankerhold pier head. On the old map that check fails and arrivals get the plain HarbourArrival, so the
+     * camera can never fly through the wrong island.
      */
     private List<String> allowedServers() {
         List<String> configured = plugin.getConfig().getStringList("opening-orbit.servers");
         return configured == null ? List.of() : configured;
+    }
+
+    private boolean autoGate() {
+        return allowedServers().isEmpty();
     }
 
     private String thisServer() {
@@ -152,6 +166,9 @@ public final class OpeningOrbit implements Listener {
 
     private boolean onAllowedServer() {
         String here = thisServer();
+        if (autoGate()) {
+            return here == null || here.isBlank() || ServerNames.isMain(here) || ServerNames.isHub(here);
+        }
         if (here == null || here.isBlank()) {
             return false;
         }
@@ -163,6 +180,18 @@ public final class OpeningOrbit implements Listener {
         return false;
     }
 
+    /** Is the authored Ankerhold pier live in this world? (Egon within a few blocks of his pier-head spot.) */
+    private boolean ankerholdLive(World world) {
+        LivingNpcService living = plugin.getLivingNpcService();
+        Location egon = living == null ? null : living.locationOf(EGON);
+        if (egon == null || egon.getWorld() == null || world == null || !egon.getWorld().equals(world)) {
+            return false;
+        }
+        double dx = egon.getX() - EGON_X;
+        double dz = egon.getZ() - EGON_Z;
+        return dx * dx + dz * dz <= EGON_SLACK * EGON_SLACK && Math.abs(egon.getY() - END_Y) <= 4.0;
+    }
+
     private boolean shouldOrbit(Player player, boolean force) {
         if (!enabled() || !onAllowedServer() || baked.isEmpty()) {
             return false;
@@ -172,6 +201,9 @@ public final class OpeningOrbit implements Listener {
             if (storage != null && storage.hasOpeningOrbitShown(player.getUniqueId())) {
                 return false;
             }
+        }
+        if (autoGate() && !ankerholdLive(player.getWorld())) {
+            return false;
         }
         return nearHarbour(player.getLocation());
     }
