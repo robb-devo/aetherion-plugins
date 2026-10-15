@@ -24,6 +24,7 @@ _pack_merge/
 
 # Large assets (not needed for plugin source)
 Aetherion_texturepack.zip
+Aetherion_texturepack_GIGA_*.zip
 Aetherion_texturepack_extract/
 
 # Secrets / local deploy

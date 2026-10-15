@@ -1,0 +1,2 @@
+# The patch carries CRLF hunks for gen_hud.py / gen_bars.py; keep its bytes exactly as generated.
+twin-sync.patch -text
