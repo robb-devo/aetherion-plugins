@@ -3,6 +3,7 @@ import { clickSlot, closeWindow, isQuestOfferWindow, parseQuestAcceptCommand, SL
 import { applyIslandMovements, cancelPath, wanderOnIsland } from './safety.js'
 import { markError, note, sleep } from './util.js'
 import { ACTIVITIES, fidget } from './playstyle.js'
+import { shouldYield } from './mind.js'
 
 const { goals, Movements, pathfinder } = pathfinderPkg
 
@@ -98,8 +99,14 @@ export function createQuestLoop(bot, cfg, log) {
 
   async function tick() {
     if (!bot.entity || bot.qaSuspended) return
+    if (shouldYield(bot)) return
     if (!bot.pathfinder.movements) {
       bot.pathfinder.setMovements(applyIslandMovements(new Movements(bot), { canDig: false, maxDrop: 2 }))
+    }
+    if ((bot.qaPersona?.patience ?? 1) < 0.32 && Math.random() < 0.18) {
+      note(bot, 'wandered off mid-errand', 'pathing')
+      wanderOnIsland(bot, bot.qaHome || bot.entity.position, wanderRadius, goals)
+      return
     }
     if (isQuestOfferWindow(windowTitle(bot))) {
       try {

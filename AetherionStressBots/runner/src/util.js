@@ -11,7 +11,8 @@ export function jitter(base, spread = 0.35) {
 export function fidget(bot, activity) {
   const roll = Math.random()
   try {
-    if (roll < 0.34) {
+    // Pathfinder owns jump. An extra jump key makes the bot hop in place and float in tunnels.
+    if (!bot?.pathfinder && roll < 0.34) {
       bot.setControlState('jump', true)
       setTimeout(() => bot.setControlState('jump', false), jitter(220, 0.3))
       note(bot, 'jump', activity)
@@ -54,6 +55,7 @@ export function markError(bot, err) {
   const message = err && err.message ? err.message : String(err || 'error')
   bot.qaActivity = 'error'
   bot.qaLastError = message
+  bot.qaErrorAt = Date.now()
   note(bot, `error: ${message}`, 'error')
 }
 
@@ -76,7 +78,7 @@ export function tossJunk(bot) {
   }
 }
 
-export function findMatchingBlock(bot, nameSet, radius, yRange = 6, origin = bot.entity?.position) {
+export function findMatchingBlock(bot, nameSet, radius, yRange = 6, origin = bot.entity?.position, accept = null) {
   if (!bot?.entity?.position || !origin) return null
   const originVec = bot.entity.position.offset(0, 0, 0)
   originVec.x = origin.x
@@ -94,6 +96,7 @@ export function findMatchingBlock(bot, nameSet, radius, yRange = 6, origin = bot
         const block = bot.blockAt(pos)
         if (!block || !block.name) continue
         if (!nameSet.has(block.name.toLowerCase())) continue
+        if (accept && !accept(block)) continue
         const prefer = block.name.includes('ore') || block.name.includes('log') ? -2 : 0
         const score = dist + prefer
         if (score < bestDist) {
