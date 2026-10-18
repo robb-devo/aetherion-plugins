@@ -1,0 +1,208 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Cinzel", ui-serif, Georgia, "Times New Roman", serif;
+  --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --color-void: #07060f;
+  --color-ink: #0c0a18;
+  --color-mist: #c9c2de;
+  --color-amethyst: #c084fc;
+  --color-amethyst-deep: #7c3aed;
+  --color-cyan: #22d3ee;
+  --color-gold: #f5c56b;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+section[id] {
+  scroll-margin-top: 5.75rem;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--color-void);
+  color: #efeafc;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: color-mix(in oklab, var(--color-amethyst) 55%, transparent);
+  color: #fff;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.glass {
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, white 8%, transparent),
+    color-mix(in oklab, white 2.5%, transparent)
+  );
+  border: 1px solid color-mix(in oklab, #e9d5ff 16%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, black 35%, transparent),
+    0 18px 50px color-mix(in oklab, black 38%, transparent);
+  backdrop-filter: blur(18px);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  border-radius: 999px;
+  padding: 0.8rem 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  cursor: pointer;
+  border: 0;
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.btn > * {
+  position: relative;
+  z-index: 1;
+}
+
+.btn-primary {
+  color: #071018;
+  background: linear-gradient(120deg, #e9d5ff 0%, var(--color-cyan) 100%);
+  box-shadow: 0 10px 30px color-mix(in oklab, var(--color-cyan) 28%, transparent);
+}
+
+.btn-primary::after,
+.btn-gold::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    115deg,
+    transparent 25%,
+    color-mix(in oklab, white 38%, transparent),
+    transparent 75%
+  );
+  transform: translateX(-130%);
+  transition: transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.btn-primary:hover::after,
+.btn-gold:hover::after {
+  transform: translateX(130%);
+}
+
+.btn-ghost {
+  color: #f6f1ff;
+  background: color-mix(in oklab, white 6%, transparent);
+  border: 1px solid color-mix(in oklab, white 16%, transparent);
+  transition:
+    border-color 0.35s ease,
+    background 0.35s ease;
+}
+
+.btn-ghost:hover {
+  border-color: color-mix(in oklab, white 28%, transparent);
+  background: color-mix(in oklab, white 10%, transparent);
+}
+
+.btn-gold {
+  color: #1a1204;
+  background: linear-gradient(120deg, #ffe7a8, var(--color-gold));
+  box-shadow: 0 10px 28px color-mix(in oklab, var(--color-gold) 22%, transparent);
+}
+
+.hero-word {
+  background-size: 180% 180%;
+  animation: gradient-shift 10s ease-in-out infinite;
+}
+
+.aurora {
+  background:
+    radial-gradient(900px 500px at 85% -10%, color-mix(in oklab, var(--color-amethyst) 28%, transparent), transparent 60%),
+    radial-gradient(700px 420px at 5% 10%, color-mix(in oklab, var(--color-cyan) 16%, transparent), transparent 55%),
+    radial-gradient(600px 400px at 50% 120%, color-mix(in oklab, var(--color-amethyst-deep) 22%, transparent), transparent 50%),
+    var(--color-void);
+}
+
+.starfield {
+  background-image:
+    radial-gradient(1.2px 1.2px at 12% 18%, rgba(255, 255, 255, 0.55), transparent),
+    radial-gradient(1px 1px at 28% 72%, rgba(34, 211, 238, 0.55), transparent),
+    radial-gradient(1.4px 1.4px at 67% 24%, rgba(192, 132, 252, 0.7), transparent),
+    radial-gradient(1px 1px at 81% 64%, rgba(255, 255, 255, 0.4), transparent),
+    radial-gradient(1.1px 1.1px at 44% 40%, rgba(255, 255, 255, 0.35), transparent),
+    radial-gradient(1px 1px at 91% 12%, rgba(34, 211, 238, 0.45), transparent);
+}
+
+.float-slow {
+  animation: float-slow 9s ease-in-out infinite;
+}
+
+.pulse-glow {
+  animation: pulse-glow 3.6s ease-in-out infinite;
+}
+
+@keyframes float-slow {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes pulse-glow {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
+@keyframes gradient-shift {
+  0%,
+  100% {
+    background-position: 0% 40%;
+  }
+  50% {
+    background-position: 100% 60%;
+  }
+}
+
+.pack-card {
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .float-slow,
+  .pulse-glow,
+  .hero-word,
+  .btn-primary::after,
+  .btn-gold::after {
+    animation: none;
+    transition: none;
+    opacity: 1;
+    transform: none;
+  }
+}

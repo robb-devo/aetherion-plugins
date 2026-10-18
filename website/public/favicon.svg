@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Aetherion">
+  <defs>
+    <linearGradient id="g" x1="6" y1="4" x2="26" y2="28" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f5e9ff"/>
+      <stop offset="0.45" stop-color="#c084fc"/>
+      <stop offset="1" stop-color="#22d3ee"/>
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" rx="9" fill="#0a0814"/>
+  <path d="M16 5.2 26.2 14.4 16 27.6 5.8 14.4Z" fill="url(#g)"/>
+  <path d="M16 10.2 21.2 14.5 16 21.4 10.8 14.5Z" fill="#07060f" opacity="0.45"/>
+</svg>
