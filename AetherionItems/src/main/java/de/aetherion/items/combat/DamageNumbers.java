@@ -5,12 +5,15 @@ import de.aetherion.items.core.ItemKeys;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.Entity;
@@ -37,6 +40,33 @@ import java.util.concurrent.ThreadLocalRandom;
 public final class DamageNumbers implements Listener {
 
     private static final Map<UUID, Integer> critTicks = new ConcurrentHashMap<>();
+    /** Per attacker: how the combat kit read this tick's swing on one victim (light, heavy, finisher...). */
+    private static final Map<UUID, Marked> styles = new ConcurrentHashMap<>();
+
+    /** Number look. NORMAL is the old look; the rest come from the combat kit's swing read. */
+    public enum Style {
+        NORMAL(TextColor.color(0xFFFFFF), "", 0.85f, false),
+        LIGHT(TextColor.color(0x9A9A9A), "", 0.62f, false),
+        HEAVY(TextColor.color(0xFFF1D0), "", 1.0f, true),
+        AERIAL(TextColor.color(0x9FE3FF), "▼ ", 1.05f, true),
+        FINISHER(TextColor.color(0xFF9A3C), "✸ ", 1.25f, true),
+        RIPOSTE(TextColor.color(0xE58BFF), "» ", 1.2f, true);
+
+        final TextColor color;
+        final String prefix;
+        final float scale;
+        final boolean bold;
+
+        Style(TextColor color, String prefix, float scale, boolean bold) {
+            this.color = color;
+            this.prefix = prefix;
+            this.scale = scale;
+            this.bold = bold;
+        }
+    }
+
+    private record Marked(int tick, UUID victim, Style style) {
+    }
 
     private DamageNumbers() {
     }
@@ -63,6 +93,24 @@ public final class DamageNumbers implements Listener {
         entity.getPersistentDataContainer().set(ItemKeys.critHit(), PersistentDataType.BYTE, (byte) 1);
     }
 
+    /** Tags the number this attacker's hit on {@code victim} will show this tick. */
+    public static void markStyle(Player attacker, Entity victim, Style style) {
+        AetherionItems plugin = AetherionItems.getInstance();
+        if (attacker == null || victim == null || style == null || plugin == null) {
+            return;
+        }
+        styles.put(attacker.getUniqueId(), new Marked(plugin.getServer().getCurrentTick(), victim.getUniqueId(), style));
+    }
+
+    /** Short floating word over an entity (PARRY, STAGGER), same motion as a number. */
+    public static void word(Entity over, String text, TextColor color, float scale) {
+        if (over == null || text == null || text.isBlank()) {
+            return;
+        }
+        Location at = over.getLocation().add(0, over.getHeight() + 0.55, 0);
+        floatLabel(at, Component.text(text, color).decorate(TextDecoration.BOLD), scale);
+    }
+
     public static boolean isCrit(Entity entity) {
         if (entity == null) {
             return false;
@@ -80,7 +128,7 @@ public final class DamageNumbers implements Listener {
                 victim.getHeight() + 0.35d,
                 (ThreadLocalRandom.current().nextDouble() - 0.5d) * 0.55d
         );
-        spawn(at, amount, crit);
+        spawn(at, amount, crit, Style.NORMAL, 0.0d);
         if (crit) {
             playCrit(attacker, victim.getLocation().add(0, victim.getHeight() * 0.6d, 0));
         }
@@ -114,7 +162,35 @@ public final class DamageNumbers implements Listener {
             return;
         }
         boolean crit = isCrit(event.getDamager()) || wasCritThisTick(attacker);
-        show(attacker, victim, amount, crit);
+        Style style = styleFor(attacker, victim);
+        if (style == Style.NORMAL) {
+            show(attacker, victim, amount, crit);
+            return;
+        }
+        Location at = victim.getLocation().add(
+                (ThreadLocalRandom.current().nextDouble() - 0.5d) * 0.55d,
+                victim.getHeight() + 0.35d,
+                (ThreadLocalRandom.current().nextDouble() - 0.5d) * 0.55d
+        );
+        spawn(at, amount, crit, style, amount / maxHealth((LivingEntity) victim));
+        if (crit) {
+            playCrit(attacker, victim.getLocation().add(0, victim.getHeight() * 0.6d, 0));
+        }
+    }
+
+    private static Style styleFor(Player attacker, Entity victim) {
+        Marked marked = styles.get(attacker.getUniqueId());
+        AetherionItems plugin = AetherionItems.getInstance();
+        if (marked == null || plugin == null || marked.tick() != plugin.getServer().getCurrentTick()
+                || !marked.victim().equals(victim.getUniqueId())) {
+            return Style.NORMAL;
+        }
+        return marked.style();
+    }
+
+    private static double maxHealth(LivingEntity victim) {
+        AttributeInstance max = victim.getAttribute(Attribute.GENERIC_MAX_HEALTH);
+        return max == null ? 20.0d : Math.max(1.0d, max.getValue());
     }
 
     private static boolean wasCritThisTick(Player player) {
@@ -140,7 +216,24 @@ public final class DamageNumbers implements Listener {
         return null;
     }
 
-    private static void spawn(Location at, double amount, boolean crit) {
+    private static void spawn(Location at, double amount, boolean crit, Style style, double share) {
+        String text = format(amount);
+        TextColor color = crit ? NamedTextColor.GOLD : style.color;
+        String prefix = crit ? "✦ " : style.prefix;
+        Component component = Component.text(prefix + text, color);
+        if (crit || style.bold) {
+            component = component.decorate(TextDecoration.BOLD);
+        }
+        // Chunks of the victim's health read bigger: +0..50% for a 0..50% bite.
+        float scale = style.scale * (float) (1.0d + Math.max(0.0d, Math.min(0.5d, share)));
+        floatLabel(at, component, scale);
+    }
+
+    /**
+     * Spawns one floating label and animates it client-side: a short pop (scale), then a rise.
+     * Two transformation updates and a removal instead of a teleport every tick.
+     */
+    private static void floatLabel(Location at, Component component, float scale) {
         if (at == null || at.getWorld() == null) {
             return;
         }
@@ -148,11 +241,7 @@ public final class DamageNumbers implements Listener {
         if (plugin == null) {
             return;
         }
-        String text = format(amount);
-        NamedTextColor color = crit ? NamedTextColor.GOLD : NamedTextColor.WHITE;
-        Component component = crit
-                ? Component.text("✦ " + text, color).decorate(TextDecoration.BOLD)
-                : Component.text(text, color);
+        float pop = scale * 1.35f;
         TextDisplay display = at.getWorld().spawn(at, TextDisplay.class, spawned -> {
             spawned.text(component);
             spawned.setBillboard(Display.Billboard.CENTER);
@@ -164,23 +253,42 @@ public final class DamageNumbers implements Listener {
             spawned.setTransformation(new Transformation(
                     new Vector3f(),
                     new Quaternionf(),
-                    new Vector3f(0.85f, 0.85f, 0.85f),
+                    new Vector3f(pop, pop, pop),
                     new Quaternionf()
             ));
         });
-        plugin.getServer().getScheduler().runTaskTimer(plugin, task -> {
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
             if (!display.isValid()) {
-                task.cancel();
                 return;
             }
-            int age = display.getTicksLived();
-            if (age >= 18) {
+            display.setInterpolationDelay(0);
+            display.setInterpolationDuration(3);
+            display.setTransformation(new Transformation(
+                    new Vector3f(0.0f, 0.08f, 0.0f),
+                    new Quaternionf(),
+                    new Vector3f(scale, scale, scale),
+                    new Quaternionf()
+            ));
+        }, 1L);
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            if (!display.isValid()) {
+                return;
+            }
+            float end = scale * 0.8f;
+            display.setInterpolationDelay(0);
+            display.setInterpolationDuration(13);
+            display.setTransformation(new Transformation(
+                    new Vector3f(0.0f, 0.72f, 0.0f),
+                    new Quaternionf(),
+                    new Vector3f(end, end, end),
+                    new Quaternionf()
+            ));
+        }, 4L);
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            if (display.isValid()) {
                 display.remove();
-                task.cancel();
-                return;
             }
-            display.teleport(display.getLocation().add(0.0, 0.045, 0.0));
-        }, 1L, 1L);
+        }, 18L);
     }
 
     private static String format(double amount) {

@@ -1,0 +1,49 @@
+{
+ "providers": [
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/vfx/slash.png",
+   "ascent": 18,
+   "height": 32,
+   "chars": [
+    "\ue500"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/vfx/ring.png",
+   "ascent": 18,
+   "height": 32,
+   "chars": [
+    "\ue501"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/vfx/rune.png",
+   "ascent": 18,
+   "height": 32,
+   "chars": [
+    "\ue502"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/vfx/tele_edge.png",
+   "ascent": 18,
+   "height": 32,
+   "chars": [
+    "\ue503"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/vfx/tele_fill.png",
+   "ascent": 18,
+   "height": 32,
+   "chars": [
+    "\ue504"
+   ]
+  }
+ ]
+}

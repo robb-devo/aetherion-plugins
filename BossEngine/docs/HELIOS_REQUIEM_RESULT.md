@@ -89,7 +89,7 @@ pixelgenaue Phasenmarker in der Bossbar, eigene Himmelsfarbe.
 
 ## Rüstung & Waffe: bewusst noch nicht gebaut
 
-`docs/OPUS_POLISH_PASS_AUDIT.md` nennt „bloating `CustomItem`“ als Freeze-Gate. Deshalb liegt hier der
+`docs/prompts/OPUS_POLISH_PASS_AUDIT.md` nennt „bloating `CustomItem`“ als Freeze-Gate. Deshalb liegt hier der
 Entwurf, nicht der Code; auf euer OK baue ich es nach dem Muster von Worldhide/Worldbite:
 
 * **Set „Requiem des Herolds“** (4 Teile, Netherite-Basis, CMD 4201–4204):

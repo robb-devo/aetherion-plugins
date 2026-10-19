@@ -211,6 +211,36 @@ public final class RecipeUnlockService {
     }
 
     /**
+     * LOCKED booster carry-over: which piece in the craft grid is the previous gear.
+     * Tier suffix first, then explicit {@link CraftedPredecessorRequirement}.
+     */
+    public static String predecessorForCraft(RecipeDefinition recipe) {
+        if (recipe == null) {
+            return null;
+        }
+        String tiered = predecessorRecipeId(recipe.getId());
+        if (tiered != null && !tiered.isBlank()) {
+            return tiered;
+        }
+        return craftedPredecessorId(recipe.getUnlockRequirement());
+    }
+
+    private static String craftedPredecessorId(UnlockRequirement requirement) {
+        if (requirement instanceof CraftedPredecessorRequirement crafted) {
+            return crafted.previousRecipeId();
+        }
+        if (requirement instanceof AllUnlockRequirements all) {
+            for (UnlockRequirement part : all.parts()) {
+                String id = craftedPredecessorId(part);
+                if (id != null && !id.isBlank()) {
+                    return id;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
      * DEV helper: unlock every recipe gate (ignore level / obtained / blueprint / spawn).
      * Marks all recipes crafted, all resources obtained, maxes account XP, unlocks blueprints.
      */

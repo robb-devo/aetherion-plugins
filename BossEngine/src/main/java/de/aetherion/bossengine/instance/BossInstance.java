@@ -1524,9 +1524,19 @@ public class BossInstance {
         }
     }
 
+    /** Last tick a display telegraph went down (the particle rim is redrawn every call). */
+    private long vfxTelegraphTick = Long.MIN_VALUE;
+
     private void drawSlamTelegraph(Location center) {
         if (center == null || center.getWorld() == null || slamRadius <= 0) {
             return;
+        }
+        long nowTick = org.bukkit.Bukkit.getCurrentTick();
+        if (nowTick - vfxTelegraphTick >= 16) {
+            vfxTelegraphTick = nowTick;
+            de.aetherion.core.api.Vfx.telegraph(center, slamRadius, 16, org.bukkit.Color.fromRGB(0xFF3B2F));
+            de.aetherion.core.api.Vfx.sound(center, de.aetherion.core.api.Vfx.BOSS_TELEGRAPH,
+                    org.bukkit.SoundCategory.MASTER, 1.0f, 1.0f);
         }
         World world = center.getWorld();
         int points = Math.max(20, (int) (slamRadius * 8));
@@ -1545,6 +1555,9 @@ public class BossInstance {
         if (world == null || radius <= 0) {
             return;
         }
+        de.aetherion.core.api.Vfx.ring(center, org.bukkit.Color.fromRGB(0xFFB15A), radius, 12);
+        de.aetherion.core.api.Vfx.sound(center, de.aetherion.core.api.Vfx.BOSS_IMPACT,
+                org.bukkit.SoundCategory.MASTER, 1.2f, 1.0f);
         Particle ring = particle == null ? Particle.CLOUD : particle;
         int rings = 5;
         for (int r = 1; r <= rings; r++) {

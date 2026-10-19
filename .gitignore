@@ -51,3 +51,8 @@ texturepack-giga/
 SamuraiBoss/*.jar
 SamuraiBoss/*-ResourcePack.zip
 SamuraiBoss/*-ResourcePack.sha1
+
+# Build leftovers extracted into the repo root
+/config.yml
+/plugin.yml
+/de/

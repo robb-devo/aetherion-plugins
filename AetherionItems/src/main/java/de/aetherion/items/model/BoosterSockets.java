@@ -52,7 +52,11 @@ public final class BoosterSockets {
         item.setItemMeta(meta);
     }
 
-    /** Copy sockets onto a crafted or upgraded result. Counts/stats are merged separately. */
+    /**
+     * LOCKED: once socketed, boosters stay until the player removes them.
+     * Craft upgrades / blueprint upgrades must call this (never strip sockets on tier-up).
+     * Counts/stats are merged separately via {@code ItemStats.upgradeFrom}.
+     */
     public static void copyOnto(ItemManager items, ItemStack from, ItemStack to) {
         if (items == null || from == null || to == null || !items.isAetherionItem(from)) {
             return;

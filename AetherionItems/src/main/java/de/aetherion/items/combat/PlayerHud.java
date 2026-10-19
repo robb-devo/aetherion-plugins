@@ -79,6 +79,29 @@ public final class PlayerHud implements ActionBarLane.Painter {
         return plugin.getConfig().getBoolean("hud.pack-glyphs", true);
     }
 
+    /** {@code hud.layout: panel} (default) = status panel top-left + radar; {@code classic} = bars over the hotbar. */
+    private boolean panel() {
+        return !"classic".equalsIgnoreCase(plugin.getConfig().getString("hud.layout", "panel"));
+    }
+
+    /** Status panel + radar painter, set by AetherionItems when the hud package is up. */
+    public interface PanelPainter {
+        Component paint(Player player, Snapshot hud, long tick);
+
+        void forget(UUID playerId);
+    }
+
+    /** What the HUD knows this paint, for the panel layout. */
+    public record Snapshot(double current, double max, double absorb, Tone tone, int ghostPx, double defense,
+                           List<AbilityCooldownHud.Row> cooldowns, StaminaHud.Bar stamina) {
+    }
+
+    private volatile PanelPainter panelPainter;
+
+    public void panelPainter(PanelPainter painter) {
+        this.panelPainter = painter;
+    }
+
     /** Repaint if anything changed (or the keep-alive is due). Safe to call every tick. */
     @Override
     public void paint(Player player) {
@@ -108,6 +131,10 @@ public final class PlayerHud implements ActionBarLane.Painter {
     public void forget(UUID playerId) {
         painted.remove(playerId);
         ghosts.remove(playerId);
+        PanelPainter panel = panelPainter;
+        if (panel != null) {
+            panel.forget(playerId);
+        }
     }
 
     /* ------------------------------------------------------------------ glyph HUD */
@@ -127,14 +154,14 @@ public final class PlayerHud implements ActionBarLane.Painter {
     }
 
     /** Heart / fill colour of the HP bar, like vanilla's poisoned / withered / frozen hearts. */
-    enum Tone {
+    public enum Tone {
         NORMAL(HP_FILL, HudGlyphs.Icon.HEART),
         POISON(HP_POISON, HudGlyphs.Icon.HEART_POISON),
         WITHER(HP_WITHER, HudGlyphs.Icon.HEART_WITHER),
         FROZEN(HP_FROZEN, HudGlyphs.Icon.HEART_FROZEN);
 
-        final TextColor fill;
-        final HudGlyphs.Icon heart;
+        public final TextColor fill;
+        public final HudGlyphs.Icon heart;
 
         Tone(TextColor fill, HudGlyphs.Icon heart) {
             this.fill = fill;
@@ -149,33 +176,48 @@ public final class PlayerHud implements ActionBarLane.Painter {
                 : player.hasPotionEffect(PotionEffectType.POISON) ? Tone.POISON
                 : player.isFrozen() ? Tone.FROZEN : Tone.NORMAL;
         int ghost = ghost(player.getUniqueId(), fillPx(current, max), tick);
+        PanelPainter panel = panelPainter;
+        if (panel != null && panel()) {
+            return panel.paint(player, new Snapshot(current, max, player.getAbsorptionAmount(), tone, ghost,
+                    source.defense(player), AbilityCooldownHud.rows(player, source.heldItemId(player)),
+                    StaminaHud.bar(player)), tick);
+        }
         return layout(current, max, player.getAbsorptionAmount(), tone, ghost, source.defense(player),
-                AbilityCooldownHud.rows(player, source.heldItemId(player)));
+                AbilityCooldownHud.rows(player, source.heldItemId(player)), StaminaHud.bar(player));
     }
 
     /** The whole glyph HUD from plain values (net advance 0). */
     static Component layout(double current, double max, double absorb, Tone tone, int ghostPx, double defense,
                             List<AbilityCooldownHud.Row> rows) {
+        return layout(current, max, absorb, tone, ghostPx, defense, rows, null);
+    }
+
+    /** The whole glyph HUD plus the combat-kit stamina row (left column, above DEF / HP). */
+    static Component layout(double current, double max, double absorb, Tone tone, int ghostPx, double defense,
+                            List<AbilityCooldownHud.Row> rows, StaminaHud.Bar stamina) {
         HudGlyphs.Pen pen = new HudGlyphs.Pen();
-        health(pen, current, max, absorb, tone, ghostPx);
-        defense(pen, defense);
+        health(pen, HudGlyphs.LEFT_X, 0, current, max, absorb, tone, ghostPx);
+        defense(pen, HudGlyphs.LEFT_X, 1, defense);
         for (int i = 0; i < rows.size() && i < HudGlyphs.ROWS; i++) {
-            cooldown(pen, i, rows.get(i));
+            cooldown(pen, HudGlyphs.RIGHT_X, i, rows.get(i));
         }
+        StaminaHud.draw(pen, stamina, defense > 0.05 ? 2 : 1);
         return pen.build();
     }
 
-    private static void health(HudGlyphs.Pen pen, double current, double max, double absorb, Tone tone, int ghost) {
+    /** HP frame at {@code x0} on {@code row}: fill, ghost trail, numbers, heart. */
+    public static void health(HudGlyphs.Pen pen, int x0, int row, double current, double max, double absorb,
+                              Tone tone, int ghost) {
         int px = fillPx(current, max);
-        int well = HudGlyphs.LEFT_X + HudGlyphs.HP_WELL;
+        int well = x0 + HudGlyphs.HP_WELL;
 
-        pen.at(HudGlyphs.LEFT_X).frame(0, HudGlyphs.Frame.HP);
+        pen.at(x0).frame(row, HudGlyphs.Frame.HP);
         if (ghost > px) {
-            pen.at(well).fill(0, ghost, HP_GHOST);
+            pen.at(well).fill(row, ghost, HP_GHOST);
         }
         HudGlyphs.Icon heart = tone.heart;
         if (px > 0) {
-            pen.at(well).fill(0, px, tone.fill);
+            pen.at(well).fill(row, px, tone.fill);
         }
 
         String cur = number(current);
@@ -187,26 +229,28 @@ public final class PlayerHud implements ActionBarLane.Painter {
         if (!extra.isEmpty()) {
             tx = Math.max(well + 1, Math.min(tx, ex - 3 - textW));
         }
-        pen.at(tx).text(0, cur, HP_TEXT).text(0, "/", HP_SLASH).text(0, mx, HP_MAX);
+        pen.at(tx).text(row, cur, HP_TEXT).text(row, "/", HP_SLASH).text(row, mx, HP_MAX);
         if (!extra.isEmpty()) {
-            pen.at(ex).text(0, extra, ABSORB);
+            pen.at(ex).text(row, extra, ABSORB);
             heart = HudGlyphs.Icon.HEART_GOLD;
         }
-        pen.at(HudGlyphs.LEFT_X + HudGlyphs.ICON_INSET).icon(0, heart);
+        pen.at(x0 + HudGlyphs.ICON_INSET).icon(row, heart);
     }
 
-    private static void defense(HudGlyphs.Pen pen, double defense) {
+    /** DEF badge (45 px) at {@code x0}; nothing without defense. */
+    public static void defense(HudGlyphs.Pen pen, int x0, int row, double defense) {
         if (defense <= 0.05) {
             return;
         }
         String text = HudGlyphs.fit(number(defense), HudGlyphs.DEF_TEXT_W);
-        pen.at(HudGlyphs.LEFT_X).frame(1, HudGlyphs.Frame.DEFENSE);
-        pen.at(HudGlyphs.LEFT_X + HudGlyphs.DEF_TEXT + (HudGlyphs.DEF_TEXT_W - HudGlyphs.width(text)) / 2)
-                .text(1, text, DEF_TEXT);
-        pen.at(HudGlyphs.LEFT_X + HudGlyphs.ICON_INSET).icon(1, HudGlyphs.Icon.SHIELD);
+        pen.at(x0).frame(row, HudGlyphs.Frame.DEFENSE);
+        pen.at(x0 + HudGlyphs.DEF_TEXT + (HudGlyphs.DEF_TEXT_W - HudGlyphs.width(text)) / 2)
+                .text(row, text, DEF_TEXT);
+        pen.at(x0 + HudGlyphs.ICON_INSET).icon(row, HudGlyphs.Icon.SHIELD);
     }
 
-    private static void cooldown(HudGlyphs.Pen pen, int row, AbilityCooldownHud.Row cd) {
+    /** One cooldown frame at {@code x0} on {@code row}. */
+    public static void cooldown(HudGlyphs.Pen pen, int x0, int row, AbilityCooldownHud.Row cd) {
         boolean ready = cd.state() == AbilityCooldownHud.State.READY || cd.state() == AbilityCooldownHud.State.READY_DIM;
         boolean denied = cd.state() == AbilityCooldownHud.State.DENIED;
         HudGlyphs.Frame frame = ready ? HudGlyphs.Frame.COOLDOWN_READY
@@ -217,10 +261,10 @@ public final class PlayerHud implements ActionBarLane.Painter {
             case READY -> CD_READY;
             case READY_DIM -> CD_READY_DIM;
         };
-        int well = HudGlyphs.RIGHT_X + HudGlyphs.CD_WELL;
+        int well = x0 + HudGlyphs.CD_WELL;
         int px = ready ? HudGlyphs.WELL : (int) Math.floor(Math.max(0.0, Math.min(1.0, cd.progress())) * HudGlyphs.WELL);
 
-        pen.at(HudGlyphs.RIGHT_X).frame(row, frame);
+        pen.at(x0).frame(row, frame);
         if (px > 0) {
             pen.at(well).fill(row, px, tint);
         }
@@ -238,7 +282,7 @@ public final class PlayerHud implements ActionBarLane.Painter {
         HudGlyphs.Icon icon = ready ? HudGlyphs.Icon.CHECK
                 : denied ? HudGlyphs.Icon.CROSS
                 : cd.pinned() ? HudGlyphs.Icon.STAR : HudGlyphs.Icon.HOURGLASS;
-        pen.at(HudGlyphs.RIGHT_X + HudGlyphs.CD_SOCKET + HudGlyphs.ICON_INSET).icon(row, icon);
+        pen.at(x0 + HudGlyphs.CD_SOCKET + HudGlyphs.ICON_INSET).icon(row, icon);
     }
 
     /** Never full while hurt, never empty while alive. */
@@ -299,6 +343,11 @@ public final class PlayerHud implements ActionBarLane.Painter {
             bar = health.append(Component.text("                      ")).append(defenseHud);
         }
 
+        Component stamina = StaminaHud.text(StaminaHud.bar(player));
+        if (stamina != null) {
+            bar = bar.append(Component.text("   ")).append(stamina);
+        }
+
         String heldId = source.heldItemId(player);
         if (AbilityCooldownHud.showing(player, heldId)) {
             Component cooldown = AbilityCooldownHud.fragment(player, heldId, defense <= 0.05);
@@ -316,7 +365,7 @@ public final class PlayerHud implements ActionBarLane.Painter {
     }
 
     /** 271, 135.5, 12.3k. */
-    static String number(double value) {
+    public static String number(double value) {
         if (value >= 10_000.0) {
             String k = String.format(Locale.ROOT, "%.1f", value / 1000.0);
             return (k.endsWith(".0") ? k.substring(0, k.length() - 2) : k) + "k";

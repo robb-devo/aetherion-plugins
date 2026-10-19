@@ -446,6 +446,11 @@ public class QuestCompass {
     }
 
 
+    /** Live entity spot, else the saved spot (HUD radar). */
+    public Location locationOf(QuestNPC npc) {
+        return npcLocation(npc);
+    }
+
     private Location npcLocation(QuestNPC npc) {
         if (npc == null) {
             return null;

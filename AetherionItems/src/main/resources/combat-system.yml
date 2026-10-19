@@ -1,0 +1,143 @@
+# Aetherion combat system: the shared player kit (owner: AetherionItems, package combat.system).
+#
+# Bindings (vanilla client, no mod):
+#   Parry / Guard : F (swap hands) with a weapon in hand. Tap as the hit lands.
+#                   Sneak + F still swaps hands normally.
+#   Dash          : while sprinting, tap Sneak. Short ground burst where you are heading.
+#   Roll          : hold Sneak and press Jump. Brief i-frames. Standing still = backstep.
+#   Heavy         : swing at full charge (crosshair attack indicator full). Jump-crit = aerial heavy.
+#   Finisher      : three timed hits on the same target in a row.
+#   Riposte       : hit the attacker right after a parry.
+#
+# /combat reload re-reads this file. /combat dummy spawns a training dummy (aetherion.dev).
+# Ticks: 20 = one second.
+#
+# FEEL PRESETS (copy the numbers over the keys below, then /combat reload):
+#   sekiro (default) : parry.perfect-ticks 6, guard-ticks 12, whiff-lockout 14, stamina.exhausted-ticks 28,
+#                      roll.cost 24, dummy windup 20 / slam 28. Readable windows, punishing whiffs.
+#   souls            : parry.perfect-ticks 4, guard-ticks 8, whiff-lockout 18, roll.cost 28, roll.iframe-ticks 6,
+#                      stamina.regen-per-second 28. Heavier, fewer second chances.
+#   learner          : parry.perfect-ticks 8, guard-ticks 14, whiff-lockout 10, stamina.exhausted-ticks 20,
+#                      dummy.windup-ticks 26, slam-windup-ticks 34. For first sessions on the dummy.
+# Before this pass: perfect 5, guard 11, exhausted 34, roll.cost 26, dummy windup 16 (slam the same).
+
+enabled: true
+
+# Worlds where the kit is off entirely (lobbies, cutscene worlds). Names are case-insensitive.
+disabled-worlds: []
+
+# true: dash / roll / parry need a weapon (sword, axe, mace, trident, bow, crossbow, wand, Aetherion weapon) in hand.
+require-weapon: true
+
+stamina:
+  max: 100
+  regen-per-second: 34
+  # Regen pauses this long after any spend.
+  regen-delay-ticks: 14
+  # Hitting 0 = winded: no dash / roll / parry, slight slow, until this passes.
+  exhausted-ticks: 28
+  # Hide the gauge this long after it refills out of combat.
+  hide-after-full-ticks: 60
+
+dash:
+  enabled: true
+  cost: 22
+  cooldown-ticks: 16
+  # Launch speed in blocks/tick (about 5.5 blocks of travel at 1.15). Shortened before ledges, walls, lava.
+  speed: 1.15
+  lift: 0.12
+  # Sneak may arrive a few ticks after the client already dropped sprint.
+  sprint-grace-ticks: 4
+  # A timed swing that lands this soon after the dash starts is a dash strike.
+  strike-window-ticks: 16
+  strike-mult: 1.15
+
+roll:
+  enabled: true
+  cost: 24
+  iframe-ticks: 7
+  # No second roll until this passes.
+  recovery-ticks: 12
+  # Lands while the jump is already rising: about 3.5 to 4 blocks at 0.62. Shortened before ledges, walls, lava.
+  speed: 0.62
+  lift: 0.1
+  # Rolling again this soon after the last roll ended = fatigued roll: fewer i-frames, higher cost.
+  chain-window-ticks: 20
+  fatigue-iframe-ticks: 3
+  fatigue-cost-mult: 1.6
+  # Dodging a real hit inside the i-frames = perfect dodge.
+  perfect-refund: 14
+  # false: boss hits ignore i-frames (only trash and the training golem can be rolled through).
+  bosses: true
+
+parry:
+  enabled: true
+  cost: 12
+  # Perfect window right after F, then a softer guard window.
+  perfect-ticks: 6
+  guard-ticks: 12
+  # Damage taken from a hit caught in the guard window (after the perfect window).
+  guard-taken: 0.5
+  # Nothing caught = whiff: guard is locked for this long.
+  whiff-lockout-ticks: 14
+  success-refund: 22
+  riposte-window-ticks: 30
+  riposte-mult: 1.5
+  # Perfect parry on trash / elites (never bosses): AI paused this long, then extra damage taken for a while.
+  stagger-ticks: 30
+  vulnerable-ticks: 50
+  vulnerable-mult: 1.25
+  # Perfect parry sends arrows / tridents back at a non-boss shooter.
+  reflect-projectiles: true
+  # Bosses: negate (perfect parry cancels the hit, no stagger, riposte still opens), guard (only the guard cut), off.
+  bosses: negate
+
+melee:
+  enabled: true
+  # Charge (0..1) at or above this = timed hit.
+  timed-charge: 0.9
+  # Early swings scale like vanilla: floor + (1 - floor) * charge^2.
+  light-floor: 0.2
+  aerial-mult: 1.25
+  combo-window-ticks: 34
+  finisher-hits: 3
+  finisher-mult: 1.35
+  # Upper bound on the stacked bonus (aerial x finisher x riposte x vulnerable x dash strike).
+  max-mult: 2.4
+  # Bonus part only, against bosses (0.5 = half the bonus). Early-swing penalty applies in full.
+  boss-bonus-scale: 0.5
+  # Item ids (prefix match) the cadence never touches. Blossom Blade and Gravwell Cleaver are LOCKED.
+  exempt-items:
+    - ashen_katana
+    - gravwell_cleaver
+
+feedback:
+  # 0 = silent, 0.5 = calm, 1 = full.
+  intensity: 1.0
+  # Mob freeze on heavy / aerial / dash hits; finisher and riposte hold 2 ticks longer.
+  hitstop-ticks: 2
+  # Short centre-line callouts (PARRY, PERFECT DODGE, FINISHER) through ActionBarLane.
+  callouts: true
+  # Light camera kick on heavy hits taken.
+  hurt-cam: true
+  # Light camera tilt (the client's hurt shake, no damage) on perfect parry, finisher and riposte.
+  screen-kick: true
+  # Pack screen glyphs (font aetherion:combat, title slot, a few ticks): parry burst, dodge streak, winded ring,
+  # red 危 on slams, finisher / riposte slashes, guard arc. Needs the Aetherion pack; without it nothing shows.
+  screen-glyphs: true
+
+tutorial:
+  enabled: true
+
+dummy:
+  # Strikes in this order, looping. jab = parry it, slam = roll through it (unparryable).
+  pattern: [jab, jab, slam]
+  # Jab windup: gold charge + rising tick every 4 ticks, white flash 4 ticks before impact = press F.
+  windup-ticks: 20
+  # Slam windup: fat red ring at reach, closing inner ring, bass pulse that speeds up, ground cracks last 6 ticks.
+  slam-windup-ticks: 28
+  gap-ticks: 34
+  reach: 3.6
+  # Damage as a share of the target player's max HP (goes through normal defense).
+  hit-share: 0.12
+  lifetime-seconds: 900

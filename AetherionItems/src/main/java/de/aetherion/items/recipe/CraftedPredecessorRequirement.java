@@ -13,6 +13,11 @@ public final class CraftedPredecessorRequirement implements UnlockRequirement {
         this.previousRecipeId = previousRecipeId;
     }
 
+    /** Previous tier / piece recipe id (used for booster carry-over on craft). */
+    public String previousRecipeId() {
+        return previousRecipeId;
+    }
+
     @Override
     public boolean isUnlocked(Player player) {
         AetherionItems plugin = AetherionItems.getInstance();

@@ -219,4 +219,45 @@ public final class QuestProgressAccessImpl implements QuestProgressAccess {
         }
         return name;
     }
+
+    @Override
+    public org.bukkit.Location questTarget(Player player) {
+        de.aetherion.quests.ui.QuestCompass compass = plugin.getQuestCompass();
+        return compass == null || player == null ? null : compass.targetLocation(player);
+    }
+
+    /** Saved NPC spots, re-read every 2s: the radar asks several times a second per player. */
+    private java.util.List<org.bukkit.Location> npcSpots = java.util.List.of();
+    private long npcSpotsTick = Long.MIN_VALUE;
+
+    @Override
+    public java.util.List<org.bukkit.Location> npcsNear(Player player, double radius) {
+        if (player == null) {
+            return java.util.List.of();
+        }
+        long now = org.bukkit.Bukkit.getCurrentTick();
+        if (now - npcSpotsTick >= 40L) {
+            npcSpotsTick = now;
+            de.aetherion.quests.ui.QuestCompass compass = plugin.getQuestCompass();
+            java.util.List<org.bukkit.Location> spots = new java.util.ArrayList<>();
+            if (compass != null) {
+                for (de.aetherion.quests.npc.QuestNPC npc : de.aetherion.quests.npc.QuestNPCRegistry.getAll().values()) {
+                    org.bukkit.Location at = compass.locationOf(npc);
+                    if (at != null && at.getWorld() != null) {
+                        spots.add(at);
+                    }
+                }
+            }
+            npcSpots = spots;
+        }
+        org.bukkit.Location here = player.getLocation();
+        double r2 = radius * radius;
+        java.util.List<org.bukkit.Location> out = new java.util.ArrayList<>();
+        for (org.bukkit.Location at : npcSpots) {
+            if (at.getWorld() == here.getWorld() && at.distanceSquared(here) <= r2) {
+                out.add(at);
+            }
+        }
+        return out;
+    }
 }

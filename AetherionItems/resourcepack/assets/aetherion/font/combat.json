@@ -1,0 +1,67 @@
+{
+  "providers": [
+    {
+      "type": "bitmap",
+      "file": "aetherion:font/combat/parry.png",
+      "ascent": 32,
+      "height": 64,
+      "chars": [
+        "\ue900"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "aetherion:font/combat/dodge.png",
+      "ascent": 32,
+      "height": 64,
+      "chars": [
+        "\ue901"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "aetherion:font/combat/winded.png",
+      "ascent": 32,
+      "height": 64,
+      "chars": [
+        "\ue902"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "aetherion:font/combat/peril.png",
+      "ascent": 32,
+      "height": 64,
+      "chars": [
+        "\ue903"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "aetherion:font/combat/finisher.png",
+      "ascent": 32,
+      "height": 64,
+      "chars": [
+        "\ue904"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "aetherion:font/combat/riposte.png",
+      "ascent": 32,
+      "height": 64,
+      "chars": [
+        "\ue905"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "aetherion:font/combat/guard.png",
+      "ascent": 32,
+      "height": 64,
+      "chars": [
+        "\ue906"
+      ]
+    }
+  ]
+}

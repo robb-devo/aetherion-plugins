@@ -70,4 +70,4 @@ Ship tree: `mining-eldervale-progression` / live-hardening. Nothing in this list
 - Sat: combat jar + fill `CombatTeach` TODOs.
 - Commit when you want.
 - Farm/Fish lesson replay cmds (alt / DevMenu wipe for now).
-- Giga texture-pack Max session → `docs/OPUS_TEXTUREPACK_GIGA_PROMPT.md`.
+- Giga texture-pack Max session → `docs/prompts/OPUS_TEXTUREPACK_GIGA_PROMPT.md`.

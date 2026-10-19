@@ -67,6 +67,7 @@ public class AetherionItems extends JavaPlugin {
     private RecipeBookGUI recipeBookGUI;
     private BukkitRecipeService recipeService;
     private HealthListener healthListener;
+    private de.aetherion.items.hud.DisplayVfx displayVfx;
     private HarvestListener harvestListener;
     private de.aetherion.core.api.HarvestAccess harvestAccess;
     private de.aetherion.items.mining.OreTrollListener oreTrollListener;
@@ -253,6 +254,8 @@ public class AetherionItems extends JavaPlugin {
         registerMenusAndPlayerCommands();
         registerIntegrations();
 
+        try { de.aetherion.items.combat.system.CombatSystem.enable(this); } catch (Throwable t) { getLogger().log(java.util.logging.Level.WARNING, "Combat kit failed to start; AetherionItems keeps running without it", t); }
+
         getLogger().info("AetherionItems enabled!");
         getLogger().info("Registered Aetherion recipes: " + recipeManager.getRecipeCount());
     }
@@ -413,6 +416,15 @@ public class AetherionItems extends JavaPlugin {
     private void registerProgressionAndSocial() {
         healthListener = new HealthListener(this, itemManager);
         getServer().getPluginManager().registerEvents(healthListener, this);
+        try {
+            displayVfx = new de.aetherion.items.hud.DisplayVfx(this);
+            displayVfx.sweep();
+            de.aetherion.core.api.Vfx.register(displayVfx);
+            healthListener.hud().panelPainter(
+                    new de.aetherion.items.hud.StatusPanel(this, new de.aetherion.items.hud.RadarHud()));
+        } catch (Throwable t) {
+            getLogger().log(java.util.logging.Level.WARNING, "Status panel / VFX failed to start, classic HUD stays", t);
+        }
         if (skills != null) {
             skills.setHealthListener(healthListener);
         }
@@ -565,6 +577,12 @@ public class AetherionItems extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (displayVfx != null) {
+            de.aetherion.core.api.Vfx.unregister(displayVfx);
+            try { displayVfx.sweep(); } catch (Throwable ignored) { }
+            displayVfx = null;
+        }
+        try { de.aetherion.items.combat.system.CombatSystem.disable(); } catch (Throwable t) { getLogger().log(java.util.logging.Level.WARNING, "Combat kit shutdown failed", t); }
         if (loreLocaleListener != null) {
             loreLocaleListener.shutdown();
             loreLocaleListener = null;

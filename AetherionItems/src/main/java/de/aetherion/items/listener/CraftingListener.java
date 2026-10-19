@@ -235,27 +235,52 @@ public class CraftingListener implements Listener {
 
     private ItemStack buildCraftResult(RecipeDefinition recipe, ItemStack[] matrix) {
         ItemStack result = recipe.getResult();
-        if (recipe.hasStackedIngredients()) {
-            return result;
-        }
         ItemStack previousTemplate = null;
         ItemStack previousItem = null;
 
-        for (ItemStack expected : recipe.getIngredients().values()) {
-            if (!itemManager.isAetherionItem(expected)) {
-                continue;
+        // LOCKED: boosters stay through upgrades. Never pick "first Aetherion ingredient" —
+        // ladder mats (compressed/compacted) are Aetherion too and would wipe sockets.
+        String predecessorId = de.aetherion.items.recipe.RecipeUnlockService.predecessorForCraft(recipe);
+        if (predecessorId != null) {
+            previousTemplate = findIngredientById(recipe, predecessorId);
+            previousItem = findMatrixById(matrix, predecessorId);
+        }
+        // Ladder recipes put the previous piece on shape key 'C'.
+        if (previousItem == null) {
+            ItemStack center = recipe.getIngredients().get('C');
+            if (itemManager.isAetherionItem(center)) {
+                previousTemplate = center;
+                previousItem = findMatrixMatch(matrix, center);
             }
-
-            previousTemplate = expected;
-
-            for (ItemStack slot : matrix) {
-                if (itemManager.isSameAetherionItem(slot, expected)) {
-                    previousItem = slot;
-                    break;
+        }
+        // Last resort: matrix Aetherion piece that matches a recipe ingredient and has the most sockets.
+        if (previousItem == null) {
+            int bestScore = -1;
+            for (ItemStack expected : recipe.getIngredients().values()) {
+                if (!itemManager.isAetherionItem(expected)) {
+                    continue;
+                }
+                for (ItemStack slot : matrixOrEmpty(matrix)) {
+                    if (!itemManager.isSameAetherionItem(slot, expected)) {
+                        continue;
+                    }
+                    int score = de.aetherion.items.model.BoosterSockets.filled(
+                            de.aetherion.items.model.BoosterSockets.read(itemManager, slot)
+                    );
+                    if (score < itemManager.getItemStats(slot).getTotalBoosters()) {
+                        score = itemManager.getItemStats(slot).getTotalBoosters();
+                    }
+                    // Prefer real gear (damage/defense/etc.) over pure mat items when scores tie.
+                    if (looksLikeGear(slot)) {
+                        score += 1000;
+                    }
+                    if (score > bestScore) {
+                        bestScore = score;
+                        previousItem = slot;
+                        previousTemplate = expected;
+                    }
                 }
             }
-
-            break;
         }
 
         // Skill sack upgrade keeps the same sack id so stored counts carry over.
@@ -269,6 +294,62 @@ public class CraftingListener implements Listener {
             }
         }
 
+        // Stacked crafts still carry boosters when a predecessor is in the grid.
+        if (recipe.hasStackedIngredients() && previousItem == null) {
+            return result;
+        }
+
         return itemManager.applyUpgradeProgress(result, previousItem, previousTemplate);
+    }
+
+    private ItemStack findIngredientById(RecipeDefinition recipe, String itemId) {
+        if (recipe == null || itemId == null) {
+            return null;
+        }
+        for (ItemStack expected : recipe.getIngredients().values()) {
+            if (itemId.equalsIgnoreCase(itemManager.getItemId(expected))) {
+                return expected;
+            }
+        }
+        return null;
+    }
+
+    private ItemStack findMatrixById(ItemStack[] matrix, String itemId) {
+        if (itemId == null) {
+            return null;
+        }
+        for (ItemStack slot : matrixOrEmpty(matrix)) {
+            if (itemId.equalsIgnoreCase(itemManager.getItemId(slot))) {
+                return slot;
+            }
+        }
+        return null;
+    }
+
+    private ItemStack findMatrixMatch(ItemStack[] matrix, ItemStack expected) {
+        for (ItemStack slot : matrixOrEmpty(matrix)) {
+            if (itemManager.isSameAetherionItem(slot, expected)) {
+                return slot;
+            }
+        }
+        return null;
+    }
+
+    private static ItemStack[] matrixOrEmpty(ItemStack[] matrix) {
+        return matrix != null ? matrix : new ItemStack[0];
+    }
+
+    private boolean looksLikeGear(ItemStack item) {
+        if (item == null || !itemManager.isAetherionItem(item)) {
+            return false;
+        }
+        var stats = itemManager.getItemStats(item);
+        return stats.getDamage() > 0.0
+                || stats.getDefense() > 0.0
+                || stats.getHealth() > 0.0
+                || stats.getMiningPower() > 0.0
+                || stats.getFortune() > 0.0
+                || stats.getFishingSpeed() > 0.0
+                || stats.getHarvestSpread() > 0.0;
     }
 }
