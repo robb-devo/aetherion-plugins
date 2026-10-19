@@ -264,16 +264,8 @@ public class CraftingListener implements Listener {
                     if (!itemManager.isSameAetherionItem(slot, expected)) {
                         continue;
                     }
-                    int score = de.aetherion.items.model.BoosterSockets.filled(
-                            de.aetherion.items.model.BoosterSockets.read(itemManager, slot)
-                    );
-                    if (score < itemManager.getItemStats(slot).getTotalBoosters()) {
-                        score = itemManager.getItemStats(slot).getTotalBoosters();
-                    }
-                    // Prefer real gear (damage/defense/etc.) over pure mat items when scores tie.
-                    if (looksLikeGear(slot)) {
-                        score += 1000;
-                    }
+                    // Boosters first; real gear outranks pure mat items when scores tie.
+                    int score = de.aetherion.items.recipe.UpgradePredecessor.score(itemManager, slot);
                     if (score > bestScore) {
                         bestScore = score;
                         previousItem = slot;
@@ -337,19 +329,5 @@ public class CraftingListener implements Listener {
 
     private static ItemStack[] matrixOrEmpty(ItemStack[] matrix) {
         return matrix != null ? matrix : new ItemStack[0];
-    }
-
-    private boolean looksLikeGear(ItemStack item) {
-        if (item == null || !itemManager.isAetherionItem(item)) {
-            return false;
-        }
-        var stats = itemManager.getItemStats(item);
-        return stats.getDamage() > 0.0
-                || stats.getDefense() > 0.0
-                || stats.getHealth() > 0.0
-                || stats.getMiningPower() > 0.0
-                || stats.getFortune() > 0.0
-                || stats.getFishingSpeed() > 0.0
-                || stats.getHarvestSpread() > 0.0;
     }
 }
