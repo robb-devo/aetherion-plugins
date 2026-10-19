@@ -56,7 +56,6 @@ BossEngine `0b4760db`, Gnomon `684013f0`.
 | AetherMobs | 078432e9 (10-14) | `AetherMobs.jar` (10-02) | 86f4f8bd (10-04, no pets) | 86f4f8bd | – |
 | Guilds | 60342686 | 008d60ca | – | 60342686 | – |
 | Beta | ed9d1621 | e067b4c0 | – | – | – |
-| StressBots | f173a00b | f173a00b | – | – | – |
 | SamuraiBoss / Pit | mmo-r only | | | | Pit on hub |
 
 Bold and dated cells are drift; the parity work is tracked in the audit.
