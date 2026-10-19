@@ -199,6 +199,24 @@ ui:
     farmer: "Als Nächstes: §eFarmer §7auf den Feldern — 48 Weizen, Vögel verscheuchen."
     lark: "Als Nächstes: §dLark §7am Feldzaun — ein Pet fangen."
     stamp: "Zurück zu §dMiss Ledger §7— sie stempelt die Orientierung zu und zeigt dir die Inseln."
+  fields_to_ledger_title: "ORIENTIERUNG"
+  fields_to_ledger_sub: "Miss Ledger · Capital · Stempel & Wege"
+  roads:
+    gui_title: "§8Miss Ledger · Offene Wege"
+    gui_header: "§dOffene Wege"
+    gui_header_1: "§7Die Orientierung ist abgeheftet. Nichts davon ist Hausaufgabe."
+    gui_header_2: "§7Such dir einen Weg aus — ich richte den Pfeil aus."
+    gui_filed: "Wege abgeheftet"
+    gui_briefing: "§eBriefing-Themen"
+    gui_briefing_1: "§7Manager, Booster, Pets, Lager…"
+    gui_briefing_2: "§7Der Auffrischungs-Schalter."
+    card_filed: "§a✔ Abgeheftet. Komm jederzeit zurück."
+    card_next: "§e➜ Vorschlag als Nächstes"
+    card_click: "§eKlick §7und der Pfeil zeigt hierhin."
+    card_click_wilds: "§eKlick §7— kein Pfeil. Geh einfach los."
+    ledger_wilds: "Dafür gibt's keinen Pfeil. Halt Ausschau nach einem Glitzern abseits vom Weg."
+    tip_next: "Nächster Weg:"
+    wilds_action: "Die Karte gehört dir · halt Ausschau nach einem Glitzern abseits vom Weg"
 
 progress:
   catch_pet: "Fang ein Pet"
@@ -524,6 +542,9 @@ dialogs:
     - "Schleim-Pad → Forage Isle. Springen. Nicht nachdenken."
     - "Dieselbe Fäll-Leiste wie hier — nur zählen Inselbäume mit."
     - "§aMiss Canopy§f bringt dir die Insel bei. Folg dem Pfeil, {player}."
+  amethyst_mines_guide_intro:
+    - "Kristall-Guide. Die Amethyst-Mine geht nur über mich — Geoden, Resonanz, Heartstones."
+    - "Bereit? Ich setz dich am violetten Hub ab. /amethyst funktioniert genauso."
   eldervale_welcome_intro:
     - "Willkommen auf Eldervale, {player}."
     - "Bergbauinsel. Tiefes Gestein, dünne Luft."

@@ -264,16 +264,8 @@ public class CraftingListener implements Listener {
                     if (!itemManager.isSameAetherionItem(slot, expected)) {
                         continue;
                     }
-                    int score = de.aetherion.items.model.BoosterSockets.filled(
-                            de.aetherion.items.model.BoosterSockets.read(itemManager, slot)
-                    );
-                    if (score < itemManager.getItemStats(slot).getTotalBoosters()) {
-                        score = itemManager.getItemStats(slot).getTotalBoosters();
-                    }
-                    // Prefer real gear (damage/defense/etc.) over pure mat items when scores tie.
-                    if (looksLikeGear(slot)) {
-                        score += 1000;
-                    }
+                    // Boosters first; real gear outranks pure mat items when scores tie.
+                    int score = de.aetherion.items.recipe.UpgradePredecessor.score(itemManager, slot);
                     if (score > bestScore) {
                         bestScore = score;
                         previousItem = slot;
@@ -284,14 +276,9 @@ public class CraftingListener implements Listener {
         }
 
         // Skill sack upgrade keeps the same sack id so stored counts carry over.
-        if (de.aetherion.items.storage.SkillSack.is(result)
-                && de.aetherion.items.storage.SkillSack.is(previousItem)) {
-            java.util.UUID keep = de.aetherion.items.storage.SackItems.idOf(previousItem);
-            var skill = de.aetherion.items.storage.SkillSack.skillOf(result);
-            var tier = de.aetherion.items.storage.SkillSack.tierOf(result);
-            if (keep != null && skill != null && tier != null) {
-                return de.aetherion.items.storage.SkillSack.create(skill, tier, keep);
-            }
+        ItemStack sack = de.aetherion.items.recipe.UpgradePredecessor.keepSackId(result, previousItem);
+        if (sack != null) {
+            return sack;
         }
 
         // Stacked crafts still carry boosters when a predecessor is in the grid.
@@ -337,19 +324,5 @@ public class CraftingListener implements Listener {
 
     private static ItemStack[] matrixOrEmpty(ItemStack[] matrix) {
         return matrix != null ? matrix : new ItemStack[0];
-    }
-
-    private boolean looksLikeGear(ItemStack item) {
-        if (item == null || !itemManager.isAetherionItem(item)) {
-            return false;
-        }
-        var stats = itemManager.getItemStats(item);
-        return stats.getDamage() > 0.0
-                || stats.getDefense() > 0.0
-                || stats.getHealth() > 0.0
-                || stats.getMiningPower() > 0.0
-                || stats.getFortune() > 0.0
-                || stats.getFishingSpeed() > 0.0
-                || stats.getHarvestSpread() > 0.0;
     }
 }

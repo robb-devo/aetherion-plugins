@@ -61,30 +61,70 @@ public final class RecipeBookCrafter {
             return null;
         }
 
+        // LOCKED: boosters stay through upgrades. Same previous-piece rule as the crafting grid.
+        PlayerInventory inventory = player.getInventory();
+        ItemStack[] storage = inventory.getStorageContents();
+        ItemStack named = UpgradePredecessor.namedIngredient(recipe, itemManager);
         ItemStack previousTemplate = null;
-        ItemStack previousItem = null;
+        int previousSlot = -1;
+        int bestScore = -1;
         for (ItemStack expected : recipe.getIngredients().values()) {
-            if (!itemManager.isAetherionItem(expected)) {
+            if (!itemManager.isAetherionItem(expected) || (named != null && !expected.isSimilar(named))) {
                 continue;
             }
-            previousTemplate = expected;
-            previousItem = findInStorage(player.getInventory(), expected, itemManager);
-            break;
+            for (int i = 0; i < storage.length; i++) {
+                if (!matches(storage[i], expected, itemManager)) {
+                    continue;
+                }
+                int score = UpgradePredecessor.score(itemManager, storage[i]);
+                if (score > bestScore) {
+                    bestScore = score;
+                    previousTemplate = expected;
+                    previousSlot = i;
+                }
+            }
+        }
+
+        // Take the chosen piece first, so the copy whose boosters carry over is the one consumed.
+        ItemStack previousItem = null;
+        boolean previousTaken = true;
+        if (previousSlot >= 0) {
+            previousItem = storage[previousSlot].clone();
+            previousItem.setAmount(1);
+            takeOne(storage, previousSlot);
+            inventory.setStorageContents(storage);
+            previousTaken = false;
         }
 
         for (ItemStack required : flattenRequirements(recipe)) {
             int need = Math.max(1, required.getAmount());
-            if (!removeFromStorage(player.getInventory(), required, need, itemManager)) {
+            if (!previousTaken && required.isSimilar(previousTemplate)) {
+                previousTaken = true;
+                need--;
+            }
+            if (need > 0 && !removeFromStorage(inventory, required, need, itemManager)) {
                 return null;
             }
         }
 
         ItemStack result = recipe.getResult();
         result.setAmount(1);
-        if (!recipe.hasStackedIngredients()) {
-            result = itemManager.applyUpgradeProgress(result, previousItem, previousTemplate);
+        // Skill sack upgrade keeps the same sack id so stored counts carry over (same as the grid).
+        ItemStack sack = UpgradePredecessor.keepSackId(result, previousItem);
+        if (sack != null) {
+            return sack;
         }
-        return result;
+        // Stacked recipes (ladder mats x N) carry boosters too when a previous piece is part of them.
+        return itemManager.applyUpgradeProgress(result, previousItem, previousTemplate);
+    }
+
+    private static void takeOne(ItemStack[] storage, int slot) {
+        ItemStack stack = storage[slot];
+        if (stack.getAmount() <= 1) {
+            storage[slot] = null;
+        } else {
+            stack.setAmount(stack.getAmount() - 1);
+        }
     }
 
     public static List<ItemStack> flattenRequirements(RecipeDefinition recipe) {
@@ -119,19 +159,6 @@ public final class RecipeBookCrafter {
             clone[i] = stack == null || stack.getType().isAir() ? null : stack.clone();
         }
         return clone;
-    }
-
-    private static ItemStack findInStorage(
-            PlayerInventory inventory,
-            ItemStack required,
-            ItemManager itemManager
-    ) {
-        for (ItemStack stack : inventory.getStorageContents()) {
-            if (matches(stack, required, itemManager)) {
-                return stack;
-            }
-        }
-        return null;
     }
 
     private static boolean removeFromStorage(
