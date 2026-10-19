@@ -40,9 +40,9 @@ Backends: **hub** (lobby + Pit), **mmo-r** (main world, capital, isles, bosses, 
   ~6000 dirty files. Do not build or commit from it.
 - Agent prompts and briefs live in `docs/prompts/`; they are history, not specs.
 
-## Live plugin builds (sha1 prefix, 2026-10-19 17:30)
+## Live plugin builds (sha1 prefix, 2026-10-19 18:16)
 
-Same on every server that loads them: Core `536b35c5`, Items `5419e52f`, Quests `1bc884e1`,
+Same on every server that loads them: Core `536b35c5`, Items `d2dcf068`, Quests `1bc884e1`,
 BossEngine `0b4760db`, Gnomon `684013f0`, AetherMobs `078432e9`, Guilds `60342686`. Each of these is
 byte-identical to a build of `main` (classes and resources).
 
@@ -52,11 +52,10 @@ byte-identical to a build of `main` (classes and resources).
 | Mining / Foraging / Farming / Fishing | fde4cece / f9de95e9 / 5e8a58ce / a6aae3f0 | Fishing **03aedf90 (10-02)** | same as mmo-r | – | – |
 | Hub | 96ed909c | **`AetherionHub.jar` (09-22)** | – | – | **d1a097e7 (10-05)** |
 | Beta | ed9d1621 | ed9d1621 | – | – | – |
-| StressBots | f173a00b | f173a00b | – | – | – |
 | SamuraiBoss / Pit | mmo-r only | | | | Pit on hub |
 
 Bold cells are still drift on purpose: a newer Hub would switch on Origin systems (props, chests, NPCs)
-in the lobby and dungeon worlds, and Fishing/Hub/StressBots on mmo-d are a removal decision.
+in the lobby and dungeon worlds, and Fishing/Hub on mmo-d are a removal decision. StressBots left mmo-r and mmo-d on 10-19 (jar in the ship backup, data folder kept).
 Old Farming left mmo-d on 10-19 (it piled ~283k ambient mobs into one chunk).
 
 ## Content state (verified against live 2026-10-19)
