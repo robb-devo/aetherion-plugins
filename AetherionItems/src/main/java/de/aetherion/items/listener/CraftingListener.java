@@ -276,14 +276,9 @@ public class CraftingListener implements Listener {
         }
 
         // Skill sack upgrade keeps the same sack id so stored counts carry over.
-        if (de.aetherion.items.storage.SkillSack.is(result)
-                && de.aetherion.items.storage.SkillSack.is(previousItem)) {
-            java.util.UUID keep = de.aetherion.items.storage.SackItems.idOf(previousItem);
-            var skill = de.aetherion.items.storage.SkillSack.skillOf(result);
-            var tier = de.aetherion.items.storage.SkillSack.tierOf(result);
-            if (keep != null && skill != null && tier != null) {
-                return de.aetherion.items.storage.SkillSack.create(skill, tier, keep);
-            }
+        ItemStack sack = de.aetherion.items.recipe.UpgradePredecessor.keepSackId(result, previousItem);
+        if (sack != null) {
+            return sack;
         }
 
         // Stacked crafts still carry boosters when a predecessor is in the grid.

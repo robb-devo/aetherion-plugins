@@ -109,6 +109,11 @@ public final class RecipeBookCrafter {
 
         ItemStack result = recipe.getResult();
         result.setAmount(1);
+        // Skill sack upgrade keeps the same sack id so stored counts carry over (same as the grid).
+        ItemStack sack = UpgradePredecessor.keepSackId(result, previousItem);
+        if (sack != null) {
+            return sack;
+        }
         // Stacked recipes (ladder mats x N) carry boosters too when a previous piece is part of them.
         return itemManager.applyUpgradeProgress(result, previousItem, previousTemplate);
     }

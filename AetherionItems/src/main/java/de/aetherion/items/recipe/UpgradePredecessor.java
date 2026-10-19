@@ -4,7 +4,12 @@ import de.aetherion.items.manager.ItemManager;
 import de.aetherion.items.model.BoosterSockets;
 import de.aetherion.items.model.ItemStats;
 
+import de.aetherion.items.storage.SackItems;
+import de.aetherion.items.storage.SkillSack;
+
 import org.bukkit.inventory.ItemStack;
+
+import java.util.UUID;
 
 /**
  * LOCKED booster rule: on an upgrade craft, the previous gear piece hands its sockets to the result.
@@ -43,6 +48,23 @@ public final class UpgradePredecessor {
             score += 1000;
         }
         return score;
+    }
+
+    /**
+     * A skill sack upgrade keeps the old sack's id, so its stored counts carry over.
+     * Returns the re-issued sack, or null when this craft is not a sack upgrade.
+     */
+    public static ItemStack keepSackId(ItemStack result, ItemStack previousItem) {
+        if (!SkillSack.is(result) || !SkillSack.is(previousItem)) {
+            return null;
+        }
+        UUID keep = SackItems.idOf(previousItem);
+        var skill = SkillSack.skillOf(result);
+        var tier = SkillSack.tierOf(result);
+        if (keep == null || skill == null || tier == null) {
+            return null;
+        }
+        return SkillSack.create(skill, tier, keep);
     }
 
     public static boolean looksLikeGear(ItemManager items, ItemStack item) {
