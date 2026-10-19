@@ -1,0 +1,108 @@
+{
+  "ui.click": {
+    "sounds": [
+      {
+        "name": "aetherion:ui/click"
+      }
+    ]
+  },
+  "ui.open": {
+    "sounds": [
+      {
+        "name": "aetherion:ui/open"
+      }
+    ]
+  },
+  "ui.confirm": {
+    "sounds": [
+      {
+        "name": "aetherion:ui/confirm"
+      }
+    ]
+  },
+  "ui.deny": {
+    "sounds": [
+      {
+        "name": "aetherion:ui/deny"
+      }
+    ]
+  },
+  "ui.quest_ping": {
+    "sounds": [
+      {
+        "name": "aetherion:ui/quest_ping"
+      }
+    ]
+  },
+  "ui.levelup": {
+    "sounds": [
+      {
+        "name": "aetherion:ui/levelup"
+      }
+    ]
+  },
+  "combat.slash": {
+    "sounds": [
+      {
+        "name": "aetherion:combat/slash"
+      },
+      {
+        "name": "minecraft:entity/player/attack/sweep1",
+        "pitch": 1.25,
+        "volume": 0.45
+      }
+    ]
+  },
+  "combat.heavy": {
+    "sounds": [
+      {
+        "name": "aetherion:combat/heavy"
+      },
+      {
+        "name": "minecraft:entity/player/attack/strong1",
+        "pitch": 0.7,
+        "volume": 0.6
+      }
+    ]
+  },
+  "combat.ring": {
+    "sounds": [
+      {
+        "name": "aetherion:combat/ring"
+      }
+    ]
+  },
+  "boss.telegraph": {
+    "sounds": [
+      {
+        "name": "aetherion:boss/telegraph"
+      }
+    ]
+  },
+  "boss.impact": {
+    "sounds": [
+      {
+        "name": "aetherion:boss/impact"
+      },
+      {
+        "name": "minecraft:random/explode1",
+        "pitch": 0.6,
+        "volume": 0.5
+      }
+    ]
+  },
+  "boss.rune": {
+    "sounds": [
+      {
+        "name": "aetherion:boss/rune"
+      }
+    ]
+  },
+  "boss.appear": {
+    "sounds": [
+      {
+        "name": "aetherion:boss/appear"
+      }
+    ]
+  }
+}

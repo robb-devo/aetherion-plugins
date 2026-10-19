@@ -1,0 +1,151 @@
+{
+ "providers": [
+  {
+   "type": "space",
+   "advances": {
+    "\uf801": -1,
+    "\uf821": 1,
+    "\uf802": -2,
+    "\uf822": 2,
+    "\uf803": -4,
+    "\uf823": 4,
+    "\uf804": -8,
+    "\uf824": 8,
+    "\uf805": -16,
+    "\uf825": 16,
+    "\uf806": -32,
+    "\uf826": 32,
+    "\uf807": -64,
+    "\uf827": 64,
+    "\uf808": -128,
+    "\uf828": 128
+   }
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/panel/plate_top.png",
+   "ascent": -23,
+   "height": 12,
+   "chars": [
+    "\ue400"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/panel/plate_mid.png",
+   "ascent": -23,
+   "height": 12,
+   "chars": [
+    "\ue401"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/panel/plate_bot.png",
+   "ascent": -23,
+   "height": 12,
+   "chars": [
+    "\ue402"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/panel/icon_coin.png",
+   "ascent": -26,
+   "height": 7,
+   "chars": [
+    "\ue410"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/panel/icon_shard.png",
+   "ascent": -26,
+   "height": 7,
+   "chars": [
+    "\ue411"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/panel/icon_pin.png",
+   "ascent": -26,
+   "height": 7,
+   "chars": [
+    "\ue412"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/panel/icon_cloud.png",
+   "ascent": -26,
+   "height": 7,
+   "chars": [
+    "\ue413"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/panel/icon_crest.png",
+   "ascent": -26,
+   "height": 7,
+   "chars": [
+    "\ue414"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/panel/radar.png",
+   "ascent": -24,
+   "height": 64,
+   "chars": [
+    "\ue420"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/panel/dot_quest.png",
+   "ascent": -24,
+   "height": 7,
+   "chars": [
+    "\ue421"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/panel/dot_npc.png",
+   "ascent": -24,
+   "height": 5,
+   "chars": [
+    "\ue422"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/panel/dot_party.png",
+   "ascent": -24,
+   "height": 5,
+   "chars": [
+    "\ue423"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/panel/dot_boss.png",
+   "ascent": -24,
+   "height": 7,
+   "chars": [
+    "\ue424"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/panel/dot_north.png",
+   "ascent": -24,
+   "height": 5,
+   "chars": [
+    "\ue425"
+   ]
+  }
+ ]
+}

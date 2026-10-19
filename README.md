@@ -5,7 +5,7 @@ Paper plugin suite for the Aetherion MMO — **full Java source** for every live
 **Repo (public):** https://github.com/robb-devo/aetherion-plugins  
 Paste that link into another chat when you need plugin context; `main` is the current tree.
 
-**Cloud chat handoff:** [docs/CLOUD_CHAT_HANDOFF.md](docs/CLOUD_CHAT_HANDOFF.md) — one-pager for a new Cursor Cloud session (locks + Opus dialog/DE status).
+**Start here:** [CLAUDE.md](CLAUDE.md) → [docs/PROJECT_STATE.md](docs/PROJECT_STATE.md) (live builds, content, where code lives) and [docs/BETA_AUDIT_2026-10-19.md](docs/BETA_AUDIT_2026-10-19.md) (open work by priority). Old agent prompts and briefs: [docs/prompts/](docs/prompts/).
 
 ## Plugins (source roots)
 
@@ -46,7 +46,6 @@ island, `/capital` on the isles lands in the capital). Runbook + smoke test: `ae
 
 **Hub needs AetherionCore.** Pit `depend`s on Core (`FancyNpcFacade`). Drop `AetherionCore.jar` on Hub, not only mmo-r / mmo-d.
 
-Crafty layout: `/var/opt/minecraft/crafty/` (`servers/<id>/` backends, `shared/` for transfer + wipe).
 
 ## Docs
 

@@ -6,6 +6,9 @@ manager:
 # false = old text line (use while the served pack is older than the plugin, or glyphs show as boxes).
 hud:
   pack-glyphs: true
+  # panel = status panel top-left + radar right (needs the pack's text shader); classic = bars over the hotbar.
+  layout: panel
+  radar: true
 
 # Skills / Aetherion level. Leave sync-from empty unless a server explicitly pulls another file.
 skills:

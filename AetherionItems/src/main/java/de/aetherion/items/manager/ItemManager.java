@@ -579,6 +579,10 @@ public class ItemManager {
         return value != null ? value : 0.0;
     }
 
+    /**
+     * LOCKED booster rule: socketed boosters survive every craft / forge tier-up.
+     * Callers must pass the previous gear piece (not a compressed mat in the same recipe).
+     */
     public ItemStack applyUpgradeProgress(
             ItemStack result,
             ItemStack previousItem,

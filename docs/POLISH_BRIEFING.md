@@ -154,7 +154,7 @@ Erwartung: Onboarding klarer, Dialoge lesbar, Recipe Book nicht nervig, Borderla
 ### Opus handoff (ready)
 
 Creative implement pass: paste boot from  
-[`docs/OPUS_POLISH_A_F_PROMPT.md`](./OPUS_POLISH_A_F_PROMPT.md)  
+[`docs/prompts/OPUS_POLISH_A_F_PROMPT.md`](./OPUS_POLISH_A_F_PROMPT.md)  
 (live coords + allowlist + LOCKED already inlined).
 
 After Opus lands code: Composer merge/compile/deploy/restart MMO-R (unless `-NoRestart`).

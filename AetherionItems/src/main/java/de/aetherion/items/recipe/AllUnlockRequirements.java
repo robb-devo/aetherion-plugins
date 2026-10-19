@@ -13,6 +13,10 @@ public final class AllUnlockRequirements implements UnlockRequirement {
         this.parts = parts == null ? new UnlockRequirement[0] : parts;
     }
 
+    public UnlockRequirement[] parts() {
+        return parts.clone();
+    }
+
     @Override
     public boolean isUnlocked(Player player) {
         for (UnlockRequirement part : parts) {

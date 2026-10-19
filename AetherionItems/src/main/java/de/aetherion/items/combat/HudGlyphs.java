@@ -52,16 +52,16 @@ public final class HudGlyphs {
     /** Fill steps 1..WELL px; the well is 7 px tall (frame rows 2..8). */
     public static final int WELL = 67;
     /** Socket interior offset inside a frame. */
-    static final int ICON_INSET = 2;
-    static final int ICON_ADVANCE = 8;
+    public static final int ICON_INSET = 2;
+    public static final int ICON_ADVANCE = 8;
 
     /** Left column = the hearts (x -91..-11), right column = the food (x 10..90). */
     public static final int LEFT_X = -91;
     public static final int RIGHT_X = 10;
     /** Well start inside an HP frame (socket left) and a cooldown frame (socket right). */
-    static final int HP_WELL = 12;
-    static final int CD_WELL = 2;
-    static final int CD_SOCKET = 70;
+    public static final int HP_WELL = 12;
+    public static final int CD_WELL = 2;
+    public static final int CD_SOCKET = 70;
     /** DEF number plate inside the 45px badge: x 11..42. */
     static final int DEF_TEXT = 11;
     static final int DEF_TEXT_W = 32;
@@ -102,12 +102,12 @@ public final class HudGlyphs {
     }
 
     /** Painted width including the outline on both ends. */
-    static int width(String text) {
+    public static int width(String text) {
         return text.isEmpty() ? 0 : advance(text) + 1;
     }
 
     /** Upper-case label in the pixel font's alphabet (umlauts folded, anything else dropped). */
-    static String label(String raw) {
+    public static String label(String raw) {
         if (raw == null) {
             return "";
         }
@@ -124,7 +124,7 @@ public final class HudGlyphs {
     }
 
     /** Longest prefix of {@code text} whose painted width fits {@code px}. */
-    static String fit(String text, int px) {
+    public static String fit(String text, int px) {
         String out = text;
         while (!out.isEmpty() && width(out) > px) {
             out = out.substring(0, out.length() - 1).stripTrailing();
@@ -135,7 +135,7 @@ public final class HudGlyphs {
     /* ------------------------------------------------------------------ spaces */
 
     /** Space-provider chars totalling {@code px} (powers of two, either sign). */
-    static String space(int px) {
+    public static String space(int px) {
         if (px == 0) {
             return "";
         }
@@ -154,39 +154,64 @@ public final class HudGlyphs {
 
     /* ------------------------------------------------------------------ pen */
 
-    /** Builds one HUD string; {@link #build()} walks the pen back to the centre (net advance 0). */
-    static final class Pen {
+    /**
+     * Builds one HUD string; {@link #build()} walks the pen back to the centre (net advance 0).
+     *
+     * <p>Anchored pen ({@link #Pen(Anchor)}): every glyph comes from the row-0 font and its colour carries
+     * the row and tint instead, so the pack's text shader can move it (status panel, radar).
+     */
+    public static final class Pen {
+
+        /** Maps (row, tint) to the colour the shader decodes. */
+        public interface Anchor {
+            TextColor encode(int row, TextColor tint);
+        }
 
         private final TextComponent.Builder out = Component.text();
         private final StringBuilder run = new StringBuilder();
+        private final Anchor anchor;
         private TextColor runColor;
+        private Key runFont = FONT;
         private int x;
 
-        Pen at(int target) {
+        public Pen() {
+            this(null);
+        }
+
+        public Pen(Anchor anchor) {
+            this.anchor = anchor;
+        }
+
+        private int base(int row) {
+            return anchor != null ? ROW_BASE[0] : ROW_BASE[row];
+        }
+
+        public Pen at(int target) {
             run.append(space(target - x));
             x = target;
             return this;
         }
 
-        Pen frame(int row, Frame frame) {
-            return glyph(ROW_BASE[row] + FRAME_OFF + frame.ordinal(), frame.width + 1, null);
+        public Pen frame(int row, Frame frame) {
+            return glyph(FONT, base(row) + FRAME_OFF + frame.ordinal(), frame.width + 1, tint(row, null));
         }
 
-        Pen icon(int row, Icon icon) {
-            return glyph(ROW_BASE[row] + ICON_OFF + icon.ordinal(), ICON_ADVANCE, null);
+        public Pen icon(int row, Icon icon) {
+            return glyph(FONT, base(row) + ICON_OFF + icon.ordinal(), ICON_ADVANCE, tint(row, null));
         }
 
         /** {@code px} wide fill strip (1..WELL), tinted. */
-        Pen fill(int row, int px, TextColor tint) {
+        public Pen fill(int row, int px, TextColor tint) {
             int clamped = Math.max(0, Math.min(WELL, px));
             if (clamped == 0) {
                 return this;
             }
-            return glyph(ROW_BASE[row] + FILL_OFF + clamped - 1, clamped + 1, tint);
+            return glyph(FONT, base(row) + FILL_OFF + clamped - 1, clamped + 1, tint(row, tint));
         }
 
         /** Pixel-font text: glyph advance is core + 3, the -2 kern shares the outline column. */
-        Pen text(int row, String text, TextColor color) {
+        public Pen text(int row, String text, TextColor color) {
+            TextColor tint = tint(row, color);
             for (int i = 0; i < text.length(); i++) {
                 char c = text.charAt(i);
                 if (c == ' ') {
@@ -196,28 +221,43 @@ public final class HudGlyphs {
                 if (!drawable(c)) {
                     continue;
                 }
-                glyph(ROW_BASE[row] + TEXT_OFF + (c - 0x20), core(c) + 3, color);
+                glyph(FONT, base(row) + TEXT_OFF + (c - 0x20), core(c) + 3, tint);
                 at(x - 2);
             }
             return this;
         }
 
-        int x() {
+        /** One glyph from another font, coloured exactly (that font must carry the same space chars). */
+        public Pen raw(Key font, int codepoint, int advance, TextColor exact) {
+            return glyph(font, codepoint, advance, exact);
+        }
+
+        /** A glyph from another font on an anchored row, tinted like the HUD glyphs. */
+        public Pen art(Key font, int row, int codepoint, int advance, TextColor tint) {
+            return glyph(font, codepoint, advance, tint(row, tint));
+        }
+
+        public int x() {
             return x;
         }
 
-        private Pen glyph(int codepoint, int advance, TextColor color) {
+        private TextColor tint(int row, TextColor color) {
             TextColor tint = color == null ? WHITE : color;
-            if (runColor != null && !runColor.equals(tint)) {
+            return anchor == null ? tint : anchor.encode(row, tint);
+        }
+
+        private Pen glyph(Key font, int codepoint, int advance, TextColor tint) {
+            if (runColor != null && (!runColor.equals(tint) || !runFont.equals(font))) {
                 flush();
             }
             runColor = tint;
+            runFont = font;
             run.append((char) codepoint);
             x += advance;
             return this;
         }
 
-        Component build() {
+        public Component build() {
             at(0);
             flush();
             return out.build();
@@ -227,10 +267,10 @@ public final class HudGlyphs {
             if (run.length() == 0) {
                 return;
             }
-            out.append(Component.text(run.toString(), runColor == null ? WHITE : runColor).font(FONT));
+            out.append(Component.text(run.toString(), runColor == null ? WHITE : runColor).font(runFont));
             run.setLength(0);
         }
     }
 
-    static final TextColor WHITE = TextColor.color(0xFFFFFF);
+    public static final TextColor WHITE = TextColor.color(0xFFFFFF);
 }

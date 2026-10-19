@@ -1,5 +1,6 @@
 package de.aetherion.core.api;
 
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -67,4 +68,14 @@ public interface QuestProgressAccess {
     ItemStack exploreChest(String kind);
 
     String despawnNpc(Entity entity);
+
+    /** Where the active quest points this player (HUD radar), or null. */
+    default Location questTarget(Player player) {
+        return null;
+    }
+
+    /** Quest NPC spots in the player's world within {@code radius} blocks (HUD radar). */
+    default List<Location> npcsNear(Player player, double radius) {
+        return List.of();
+    }
 }
