@@ -40,26 +40,24 @@ Backends: **hub** (lobby + Pit), **mmo-r** (main world, capital, isles, bosses, 
   ~6000 dirty files. Do not build or commit from it.
 - Agent prompts and briefs live in `docs/prompts/`; they are history, not specs.
 
-## Live plugin builds (sha1 prefix, 2026-10-19)
+## Live plugin builds (sha1 prefix, 2026-10-19 17:30)
 
-Same on every server that loads them: Core `536b35c5`, Items `c152a4fe`, Quests `720e8f10`,
-BossEngine `0b4760db`, Gnomon `684013f0`.
+Same on every server that loads them: Core `536b35c5`, Items `5419e52f`, Quests `1bc884e1`,
+BossEngine `0b4760db`, Gnomon `684013f0`, AetherMobs `078432e9`, Guilds `60342686`. Each of these is
+byte-identical to a build of `main` (classes and resources).
 
 | Jar | mmo-r | mmo-d | mmo-c | mmo-i | hub |
 |---|---|---|---|---|---|
-| Dungeons | a92a2c42 (10-14) | c79e5323 (10-11) **+ old `AetherionDungeons.jar`** | – | – | – |
-| Mining | fde4cece (10-15) | – | fa60aca5 (10-04) | – | – |
-| Foraging | f9de95e9 (10-15) | – | 05939104 (10-06) | – | – |
-| Farming | 5e8a58ce (10-15) | `AetherionFarming.jar` (09-25) | b955331c (10-03) | – | – |
-| Fishing | a6aae3f0 (10-15) | 03aedf90 (10-02) | a7cfb032 (10-03) | – | – |
-| Hub | 96ed909c (10-15) | `AetherionHub.jar` (09-22) | – | – | d1a097e7 (10-05) |
-| AetherMobs | 078432e9 (10-14) | `AetherMobs.jar` (10-02) | 86f4f8bd (10-04, no pets) | 86f4f8bd | – |
-| Guilds | 60342686 | 008d60ca | – | 60342686 | – |
-| Beta | ed9d1621 | e067b4c0 | – | – | – |
+| Dungeons | a92a2c42 | a92a2c42 | – | – | – |
+| Mining / Foraging / Farming / Fishing | fde4cece / f9de95e9 / 5e8a58ce / a6aae3f0 | Fishing **03aedf90 (10-02)** | same as mmo-r | – | – |
+| Hub | 96ed909c | **`AetherionHub.jar` (09-22)** | – | – | **d1a097e7 (10-05)** |
+| Beta | ed9d1621 | ed9d1621 | – | – | – |
 | StressBots | f173a00b | f173a00b | – | – | – |
 | SamuraiBoss / Pit | mmo-r only | | | | Pit on hub |
 
-Bold and dated cells are drift; the parity work is tracked in the audit.
+Bold cells are still drift on purpose: a newer Hub would switch on Origin systems (props, chests, NPCs)
+in the lobby and dungeon worlds, and Fishing/Hub/StressBots on mmo-d are a removal decision.
+Old Farming left mmo-d on 10-19 (it piled ~283k ambient mobs into one chunk).
 
 ## Content state (verified against live 2026-10-19)
 
