@@ -1,5 +1,6 @@
 package de.aetherion.items.storage;
 
+import de.aetherion.items.util.GuiIcons;
 import de.aetherion.items.util.ManagerChrome;
 
 import org.bukkit.Bukkit;
@@ -604,36 +605,8 @@ public class LoadoutGUI {
      */
 
     private ItemStack createNeutralGlass() {
-
-        ItemStack item =
-                new ItemStack(
-                        Material.GRAY_STAINED_GLASS_PANE
-                );
-
-
-        ItemMeta meta =
-                item.getItemMeta();
-
-
-        if (
-                meta == null
-        ) {
-
-            return item;
-        }
-
-
-        meta.setDisplayName(
-                " "
-        );
-
-
-        item.setItemMeta(
-                meta
-        );
-
-
-        return item;
+        // The LOADOUTS chrome draws the panel and wells; the filler stays invisible.
+        return GuiIcons.spacer();
     }
 
 

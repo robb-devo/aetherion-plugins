@@ -1,5 +1,6 @@
 package de.aetherion.items.shop;
 
+import de.aetherion.items.util.GuiIcons;
 import de.aetherion.items.economy.CompressedResource;
 import de.aetherion.items.economy.ShardService;
 import de.aetherion.items.rank.RankBadgeService;
@@ -390,7 +391,7 @@ public final class ShardShopMenu implements Listener {
     }
 
     private void fillPanes(Inventory inventory) {
-        ItemStack pane = named(Material.LIGHT_BLUE_STAINED_GLASS_PANE, " ");
+        ItemStack pane = GuiIcons.spacer();
         for (int slot = 0; slot < inventory.getSize(); slot++) {
             inventory.setItem(slot, pane.clone());
         }

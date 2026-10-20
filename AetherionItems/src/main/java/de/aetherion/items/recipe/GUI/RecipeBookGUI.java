@@ -1,5 +1,6 @@
 package de.aetherion.items.recipe.GUI;
 
+import de.aetherion.items.util.GuiIcons;
 import de.aetherion.items.AetherionItems;
 import de.aetherion.items.economy.TexturedHeads;
 import de.aetherion.items.manager.ItemManager;
@@ -406,7 +407,7 @@ public class RecipeBookGUI {
                 if (symbol == ' ' || !recipe.getIngredients().containsKey(symbol)) {
                     inventory.setItem(
                             RecipeBookLayout.CRAFTING_GRID_SLOTS[index],
-                            createSimpleItem(Material.LIGHT_GRAY_STAINED_GLASS_PANE, "§8", List.of())
+                            GuiIcons.spacer()
                     );
                     continue;
                 }
@@ -1191,15 +1192,9 @@ public class RecipeBookGUI {
     }
 
     private void fillBackground(Inventory inventory) {
-        ItemStack filler = createSimpleItem(Material.GRAY_STAINED_GLASS_PANE, "§8", List.of());
-        ItemStack border = createSimpleItem(Material.BLACK_STAINED_GLASS_PANE, "§8", List.of());
-        int rows = inventory.getSize() / 9;
-
+        // The RECIPES chrome draws the panel and wells, so every free slot gets an invisible spacer.
         for (int i = 0; i < inventory.getSize(); i++) {
-            int row = i / 9;
-            int column = i % 9;
-            boolean edge = row == 0 || row == rows - 1 || column == 0 || column == 8;
-            inventory.setItem(i, edge ? border : filler);
+            inventory.setItem(i, GuiIcons.spacer());
         }
     }
 

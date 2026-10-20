@@ -1,5 +1,6 @@
 package de.aetherion.items.economy;
 
+import de.aetherion.items.util.GuiIcons;
 import de.aetherion.core.persist.AtomicYaml;
 import de.aetherion.items.AetherionItems;
 import de.aetherion.items.core.ItemKeys;
@@ -544,7 +545,7 @@ public final class MarketService implements Listener {
                              boolean reclaim) {
         Inventory inventory = Bukkit.createInventory(new ConfirmHolder(channel, page, mine, listing.id(), reclaim), 27,
                 de.aetherion.items.util.ManagerChrome.MARKET_CONFIRM);
-        ItemStack pane = button(Material.GRAY_STAINED_GLASS_PANE, " ");
+        ItemStack pane = GuiIcons.spacer();
         for (int slot = 0; slot < inventory.getSize(); slot++) {
             inventory.setItem(slot, pane.clone());
         }
@@ -747,8 +748,9 @@ public final class MarketService implements Listener {
         int waiting = returns.getOrDefault(me, List.of()).size();
         int own = countOwn(me, channel);
         inventory.setItem(PREV_SLOT, safePage > 0
-                ? button(Material.ARROW, "§ePrevious page", "§7Page " + safePage + "/" + pages)
-                : button(Material.GRAY_STAINED_GLASS_PANE, "§8Previous page", "§8You're on the first page."));
+                ? GuiIcons.icon(button(Material.ARROW, "§ePrevious page", "§7Page " + safePage + "/" + pages), GuiIcons.PREV)
+                : GuiIcons.icon(button(Material.GRAY_STAINED_GLASS_PANE, "§8Previous page", "§8You're on the first page."),
+                        GuiIcons.PREV_OFF));
         inventory.setItem(INFO_SLOT, button(
                 Material.SUNFLOWER,
                 "§6" + label(channel) + (mine ? " §8· §7your listings" : ""),
@@ -761,8 +763,9 @@ public final class MarketService implements Listener {
                 waiting > 0 ? "§eExpired returns: §f" + waiting + " §8(hopper)" : "§8No expired returns."
         ));
         inventory.setItem(NEXT_SLOT, safePage + 1 < pages
-                ? button(Material.ARROW, "§eNext page", "§7Page " + (safePage + 2) + "/" + pages)
-                : button(Material.GRAY_STAINED_GLASS_PANE, "§8Next page", "§8You're on the last page."));
+                ? GuiIcons.icon(button(Material.ARROW, "§eNext page", "§7Page " + (safePage + 2) + "/" + pages), GuiIcons.NEXT)
+                : GuiIcons.icon(button(Material.GRAY_STAINED_GLASS_PANE, "§8Next page", "§8You're on the last page."),
+                        GuiIcons.NEXT_OFF));
         inventory.setItem(LIST_SLOT, button(
                 Material.WRITABLE_BOOK,
                 "§aSell from your bag",
@@ -1099,7 +1102,7 @@ public final class MarketService implements Listener {
     }
 
     private static void fill(Inventory inventory) {
-        ItemStack pane = button(Material.GRAY_STAINED_GLASS_PANE, " ");
+        ItemStack pane = GuiIcons.spacer();
         for (int slot = 45; slot < inventory.getSize(); slot++) {
             inventory.setItem(slot, pane.clone());
         }
