@@ -28,6 +28,7 @@ from PIL import Image
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from gen_gui_chrome import BODY, OUT, TRAY, hx, mix  # noqa: E402  one art language with the Manager chrome
+import gen_hud_hd as hd  # noqa: E402  frames and fills at 2x, icons at 4x
 
 # ----------------------------------------------------------------------------- geometry
 
@@ -324,9 +325,14 @@ def main(root):
 
     tex = os.path.join(root, 'assets/aetherion/textures/font/hud')
     os.makedirs(tex, exist_ok=True)
-    sheet([frame(k) for k in FRAMES], len(FRAMES), FRAME_W, FRAME_H).save(os.path.join(tex, 'frames.png'), optimize=True)
-    sheet([icon(n) for n in ICONS], len(ICONS), 7, INNER).save(os.path.join(tex, 'icons.png'), optimize=True)
-    sheet([fill(k) for k in range(1, WELL + 1)], 8, WELL, INNER).save(os.path.join(tex, 'fill.png'), optimize=True)
+    accents = {'hp': CRIMSON, 'cd': BRONZE, 'cd_deny': DENY, 'cd_ready': READY, 'def': TEAL}
+    fs, ics = hd.FS, hd.IS
+    sheet([hd.frame(k, accents[k], FRAME_W, FRAME_H, DEF_W, WELL, 12, FRAME_W - 11) for k in FRAMES], len(FRAMES),
+          FRAME_W * fs, FRAME_H * fs).save(os.path.join(tex, 'frames.png'), optimize=True)
+    sheet([hd.icon(n, ICON_COLOURS[n]) for n in ICONS], len(ICONS), 7 * ics, INNER * ics).save(
+        os.path.join(tex, 'icons.png'), optimize=True)
+    sheet([hd.fill_strip(k, WELL, INNER) for k in range(1, WELL + 1)], 8, WELL * fs, INNER * fs).save(
+        os.path.join(tex, 'fill.png'), optimize=True)
     text_cells = [text_glyph(chr(c)) if chr(c) in FONT else None for c in range(0x20, 0x80)]
     sheet(text_cells, 16, 7, INNER).save(os.path.join(tex, 'text.png'), optimize=True)
 

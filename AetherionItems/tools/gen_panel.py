@@ -1,5 +1,7 @@
 """Status panel, radar and VFX art + the HUD anchor shader + generated sounds.
 
+Usage: python gen_panel.py [art]   ("art" skips the ffmpeg sounds, which re-encode to new bytes every run)
+
 Writes into AetherionItems/resourcepack:
   assets/aetherion/font/panel.json, font/vfx.json, textures/font/panel/*, textures/font/vfx/*
   assets/minecraft/shaders/core/rendertype_text.vsh   (palette parsed from PanelPalette.java)
@@ -16,19 +18,16 @@ from PIL import Image
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-from gen_gui_chrome import BODY, OUT, TRAY, hx, mix  # noqa: E402
+from gen_gui_chrome import hx  # noqa: E402
+import gen_panel_hd as hd  # noqa: E402
 
 PACK = os.path.join(HERE, '..', 'resourcepack')
 JAVA = os.path.join(HERE, '..', 'src', 'main', 'java', 'de', 'aetherion', 'items', 'hud', 'PanelPalette.java')
 
 NEG_SPACE, POS_SPACE = 0xF801, 0xF821
-GOLD = hx('#d9a441')
-VIOLET = hx('#a77bea')
-
 # Shader geometry (GUI px). Mirrored in StatusPanel / RadarHud.
 PANEL_X, PANEL_Y, ROW_H = 2, 3, 12
 RADAR_W, RADAR_RIGHT, RADAR_Y = 64, 3, 54
-PLATE_W = 87
 
 
 def out(*parts):
@@ -49,116 +48,10 @@ def spaces():
     return {'type': 'space', 'advances': adv}
 
 
-# ----------------------------------------------------------------------------- panel art
+# ----------------------------------------------------------------------------- panel + radar art (gen_panel_hd.py)
 
-def plate(kind):
-    im = img(PLATE_W, 12)
-    px = im.load()
-    body = BODY + (214,)
-    for y in range(12):
-        for x in range(PLATE_W):
-            px[x, y] = body
-    for y in range(12):
-        px[0, y] = OUT + (255,)
-        px[PLATE_W - 1, y] = OUT + (255,)
-        px[1, y] = mix(TRAY, GOLD, 0.25) + (255,)
-    if kind == 'top':
-        for x in range(PLATE_W):
-            px[x, 0] = OUT + (255,)
-            px[x, 1] = mix(BODY, GOLD, 0.55) + (255,)
-        px[0, 0] = px[PLATE_W - 1, 0] = (0, 0, 0, 0)
-    if kind == 'bot':
-        for x in range(PLATE_W):
-            px[x, 11] = OUT + (255,)
-            px[x, 10] = mix(BODY, OUT, 0.5) + (230,)
-        px[0, 11] = px[PLATE_W - 1, 11] = (0, 0, 0, 0)
-    return im
-
-
-ICONS = {
-    'coin': ['..###..', '.#+++#.', '#++#++#', '#+#+#+#', '#++#++#', '.#+++#.', '..###..'],
-    'shard': ['...#...', '..#+#..', '.#+++#.', '#+++++#', '.#+++#.', '..#+#..', '...#...'],
-    'pin': ['.#####.', '#+++++#', '#++#++#', '#+++++#', '.#+++#.', '..#+#..', '...#...'],
-    'cloud': ['.......', '..###..', '.#+++##', '#++++++', '#++++++', '.######', '.......'],
-    'crest': ['#.#.#.#', '#######', '#+++++#', '#++#++#', '.#+++#.', '..#+#..', '...#...'],
-}
-ICON_INK = {'coin': hx('#f5c542'), 'shard': hx('#9ee6ff'), 'pin': hx('#e86f5a'),
-            'cloud': hx('#cfe3f2'), 'crest': hx('#ffe08a')}
-
-
-def icon(name):
-    im = img(7, 7)
-    px = im.load()
-    ink = ICON_INK[name]
-    for y, row in enumerate(ICONS[name]):
-        for x, ch in enumerate(row):
-            if ch == '#':
-                px[x, y] = OUT + (255,)
-            elif ch == '+':
-                px[x, y] = mix(ink, (255, 255, 255), 0.25 if y < 3 else 0.0) + (255,)
-    return im
-
-
-# ----------------------------------------------------------------------------- radar art
-
-def disc():
-    n = RADAR_W
-    im = img(n, n)
-    px = im.load()
-    c = (n - 1) / 2
-    for y in range(n):
-        for x in range(n):
-            d = math.hypot(x - c, y - c)
-            if d > 31.6:
-                continue
-            if d > 30.0:
-                px[x, y] = OUT + (255,)
-            elif d > 28.6:
-                px[x, y] = mix(TRAY, GOLD, 0.55 if y < c else 0.35) + (255,)
-            elif d > 27.6:
-                px[x, y] = OUT + (220,)
-            else:
-                a = 170
-                col = mix(BODY, (8, 10, 16), 0.35)
-                if abs(d - 18) < 0.5 or abs(d - 9) < 0.5:
-                    col, a = mix(col, GOLD, 0.25), 200
-                if (abs(x - c) < 0.6 or abs(y - c) < 0.6) and d > 4:
-                    col, a = mix(col, (255, 255, 255), 0.08), 190
-                px[x, y] = col + (a,)
-    # player chevron, always up (the map turns, not the player)
-    chevron = ['..#..', '.###.', '#####', '##.##', '#...#']
-    for dy, row in enumerate(chevron):
-        for dx, ch in enumerate(row):
-            if ch == '#':
-                px[int(c) - 2 + dx, int(c) - 2 + dy] = (255, 255, 255, 255)
-    return im
-
-
-DOTS = {
-    'quest': (['...#...', '..###..', '.##+##.', '###+###', '.##+##.', '..###..', '...#...'], hx('#ffd34d')),
-    'npc': (['.###.', '#+++#', '#+++#', '#+++#', '.###.'], hx('#62d977')),
-    'party': (['.###.', '#+++#', '#+++#', '#+++#', '.###.'], hx('#6fb8ff')),
-    'boss': (['#.....#', '.#####.', '.#+++#.', '.#+#+#.', '.#+++#.', '..#+#..', '...#...'], hx('#ff4a3d')),
-    'north': (['#...#', '##..#', '#.#.#', '#..##', '#...#'], hx('#ffffff')),
-}
-
-
-def dot(name):
-    rows, ink = DOTS[name]
-    im = img(len(rows[0]), len(rows))
-    px = im.load()
-    for y, row in enumerate(rows):
-        for x, ch in enumerate(row):
-            if ch == '#':
-                px[x, y] = (ink if name == 'north' else mix(ink, OUT, 0.55)) + (255,)
-            elif ch == '+':
-                px[x, y] = mix(ink, (255, 255, 255), 0.35) + (255,)
-    if name in ('npc', 'party'):
-        for y, row in enumerate(rows):
-            for x, ch in enumerate(row):
-                if ch == '#':
-                    px[x, y] = ink + (255,)
-    return im
+# Marker glyphs from U+E421 on, in this order. Sizes are GUI px (the HD textures are 4x).
+DOT_SIZES = {'quest': 7, 'npc': 5, 'party': 5, 'boss': 7, 'north': 5, 'quest_up': 7, 'quest_down': 7}
 
 
 # ----------------------------------------------------------------------------- vfx art (white, tinted in game)
@@ -350,25 +243,25 @@ def sounds():
 
 def main():
     tex = ('assets', 'aetherion', 'textures', 'font', 'panel')
-    for k in ('top', 'mid', 'bot'):
-        plate(k).save(out(*tex, 'plate_%s.png' % k))
-    for k in ICONS:
-        icon(k).save(out(*tex, 'icon_%s.png' % k))
-    disc().save(out(*tex, 'radar.png'))
-    for k in DOTS:
-        dot(k).save(out(*tex, 'dot_%s.png' % k))
+    for k, im in hd.plates().items():
+        im.save(out(*tex, 'plate_%s.png' % k))
+    icons = hd.icons()
+    for k, im in icons.items():
+        im.save(out(*tex, 'icon_%s.png' % k))
+    hd.radar().save(out(*tex, 'radar.png'))
+    for k, im in hd.markers().items():
+        im.save(out(*tex, 'dot_%s.png' % k))
 
     prov = [spaces(),
-            {'type': 'bitmap', 'file': 'aetherion:font/panel/plate_top.png', 'ascent': -23, 'height': 12, 'chars': ['']},
-            {'type': 'bitmap', 'file': 'aetherion:font/panel/plate_mid.png', 'ascent': -23, 'height': 12, 'chars': ['']},
-            {'type': 'bitmap', 'file': 'aetherion:font/panel/plate_bot.png', 'ascent': -23, 'height': 12, 'chars': ['']}]
-    for i, k in enumerate(ICONS):
+            {'type': 'bitmap', 'file': 'aetherion:font/panel/plate_top.png', 'ascent': -23, 'height': 12, 'chars': ['\ue400']},
+            {'type': 'bitmap', 'file': 'aetherion:font/panel/plate_mid.png', 'ascent': -23, 'height': 12, 'chars': ['\ue401']},
+            {'type': 'bitmap', 'file': 'aetherion:font/panel/plate_bot.png', 'ascent': -23, 'height': 12, 'chars': ['\ue402']}]
+    for i, k in enumerate(icons):
         prov.append({'type': 'bitmap', 'file': 'aetherion:font/panel/icon_%s.png' % k, 'ascent': -26, 'height': 7,
                      'chars': [chr(0xE410 + i)]})
     prov.append({'type': 'bitmap', 'file': 'aetherion:font/panel/radar.png', 'ascent': -24, 'height': RADAR_W,
-                 'chars': ['']})
-    for i, k in enumerate(DOTS):
-        h = len(DOTS[k][0])
+                 'chars': ['\ue420']})
+    for i, (k, h) in enumerate(DOT_SIZES.items()):
         prov.append({'type': 'bitmap', 'file': 'aetherion:font/panel/dot_%s.png' % k, 'ascent': -24, 'height': h,
                      'chars': [chr(0xE421 + i)]})
     with open(out('assets', 'aetherion', 'font', 'panel.json'), 'w', encoding='utf-8', newline='\n') as f:
@@ -386,6 +279,9 @@ def main():
     with open(out('assets', 'minecraft', 'shaders', 'core', 'rendertype_text.vsh'), 'w', encoding='utf-8', newline='\n') as f:
         f.write(shader(palette()))
 
+    if 'art' in sys.argv[1:]:
+        print('panel/radar/vfx art and shader written (sounds skipped)')
+        return
     sounds()
     print('panel/radar/vfx art, shader and %d sounds written' % len(SOUNDS))
 

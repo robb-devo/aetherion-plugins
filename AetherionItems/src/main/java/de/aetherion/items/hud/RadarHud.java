@@ -22,7 +22,8 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Round radar on the right, below the potion icons: quest target, quest NPCs, party, bosses, north.
  * The map turns with the player's view (forward is always up). Out-of-range quest, party and boss
- * markers sit on the rim so they still point the way; NPCs only show inside the range.
+ * markers sit on the rim so they still point the way; NPCs only show inside the range. The quest
+ * marker carries an arrow when the target is well above or below the player.
  */
 public final class RadarHud {
 
@@ -32,12 +33,16 @@ public final class RadarHud {
     private static final int DOT_PARTY = 0xE423;
     private static final int DOT_BOSS = 0xE424;
     private static final int DOT_NORTH = 0xE425;
+    private static final int DOT_QUEST_UP = 0xE426;
+    private static final int DOT_QUEST_DOWN = 0xE427;
     private static final int SIZE = 64;
     private static final int CENTRE = 32;
     /** Marker ring radius in px, and the blocks it stands for. */
     private static final int R = 25;
     private static final double RANGE = 48.0;
     private static final long SCAN_TICKS = 10L;
+    /** Height difference (blocks) at which the quest marker shows an up or down arrow. */
+    private static final double LEVEL_GAP = 4.0;
 
     private record Scan(long tick, List<Entity> bosses, List<Location> npcs, Location quest) {
     }
@@ -68,7 +73,9 @@ public final class RadarHud {
             }
         }
         if (scan.quest() != null) {
-            mark(pen, here, yaw, scan.quest(), DOT_QUEST, 7, true);
+            double rise = scan.quest().getY() - here.getY();
+            int glyph = rise > LEVEL_GAP ? DOT_QUEST_UP : rise < -LEVEL_GAP ? DOT_QUEST_DOWN : DOT_QUEST;
+            mark(pen, here, yaw, scan.quest(), glyph, 7, true);
         }
         for (Entity boss : scan.bosses()) {
             if (boss.isValid()) {
