@@ -17,6 +17,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -41,6 +42,8 @@ public final class VeinsWorld {
     private boolean digZonesReady;
     private boolean painting;
     private boolean schematicReady;
+    /** The world on disk was created as the schematic's void host (not the retired Deep Mines dig world). */
+    private boolean schematicHost;
 
     public VeinsWorld(AetherionMining plugin) {
         this.plugin = plugin;
@@ -66,6 +69,33 @@ public final class VeinsWorld {
 
     public long resetMillis() {
         return Math.max(1L, plugin.getConfig().getLong("veins.reset-hours", 24)) * 60L * 60L * 1000L;
+    }
+
+    /**
+     * When the next reset is due. {@code veins.reset-hour} (0-23, server time) pins it to that hour every day,
+     * e.g. a quiet maintenance window; -1 keeps the rolling {@code veins.reset-hours} interval.
+     */
+    private long nextResetTime() {
+        int hour = plugin.getConfig().getInt("veins.reset-hour", -1);
+        if (hour < 0 || hour > 23) {
+            return System.currentTimeMillis() + resetMillis();
+        }
+        ZonedDateTime now = ZonedDateTime.now();
+        ZonedDateTime next = now.withHour(hour).withMinute(0).withSecond(0).withNano(0);
+        if (!next.isAfter(now)) {
+            next = next.plusDays(1);
+        }
+        return next.toInstant().toEpochMilli();
+    }
+
+    /** {@code veins.daily-reset: false} turns the timed reset off (mmo-c only carries the jar for parity). */
+    public boolean dailyResetEnabled() {
+        return plugin.getConfig().getBoolean("veins.daily-reset", true);
+    }
+
+    /** True while the schematic is being pasted; entry stays closed until it finishes. */
+    public boolean isRestoring() {
+        return AmethystPaste.isBusy();
     }
 
     public boolean keepInventory() {
@@ -286,7 +316,7 @@ public final class VeinsWorld {
             layout = LAYOUT;
             digZonesReady = false;
             if (nextReset <= 0L) {
-                nextReset = System.currentTimeMillis() + resetMillis();
+                nextReset = nextResetTime();
             }
             saveData();
         }
@@ -309,7 +339,7 @@ public final class VeinsWorld {
             ensureDigZones(null, false);
         }
         if (nextReset <= 0L) {
-            nextReset = System.currentTimeMillis() + resetMillis();
+            nextReset = nextResetTime();
             saveData();
         }
         return world;
@@ -317,7 +347,8 @@ public final class VeinsWorld {
 
     /**
      * Hand-built Amethyst Mines map. Never runs Deep Mines chunk gen / dig paint.
-     * First boot (or when schematic-ready is false) wipes the procedural world and pastes the schem.
+     * A pasted map on disk is loaded as it is, so a restart no longer wipes and re-pastes it.
+     * Only the retired Deep Mines dig world (or no world at all) is wiped and pasted fresh.
      */
     private World ensureSchematicWorld() {
         if (world != null && Bukkit.getWorld(world.getUID()) != null) {
@@ -325,27 +356,48 @@ public final class VeinsWorld {
             return world;
         }
         World existing = Bukkit.getWorld(worldName());
-        if (existing != null && schematicReady) {
-            world = existing;
-            applyWorld(world);
+        boolean onDisk = new File(Bukkit.getWorldContainer(), worldName()).isDirectory();
+        if ((existing != null || onDisk) && schematicHost) {
+            world = existing != null ? existing : createVoid();
+            if (world != null) {
+                applyWorld(world);
+                if (!schematicReady) {
+                    // A reset or first paste did not finish (crash, stop): restore in place, off the main thread.
+                    plugin.getLogger().info("Amethyst Mines map incomplete — restoring from amethyst-mines.schem");
+                    pasteSchematic(Bukkit.getConsoleSender(), true);
+                }
+            }
             return world;
         }
-        // Dig world still present, or first schematic install — wipe and paste the real map.
+        // Retired dig world on disk, or first schematic install: wipe and paste the real map.
         plugin.getLogger().info("Amethyst Mines schematic mode — installing amethyst-mines.schem (Deep Mines retired)");
         rebuildNow();
         world = createVoid();
         if (world != null) {
+            schematicHost = true;
             applyWorld(world);
-            pasteSchematic(Bukkit.getConsoleSender());
+            pasteSchematic(Bukkit.getConsoleSender(), false);
         }
         if (nextReset <= 0L) {
-            nextReset = System.currentTimeMillis() + resetMillis();
-            saveData();
+            nextReset = nextResetTime();
         }
+        saveData();
         return world;
     }
 
+    /** Admin paste ({@code /deepmines paste}): pastes with the configured {@code veins.ignore-air}. */
     public boolean pasteSchematic(CommandSender sender) {
+        return pasteSchematic(sender, false);
+    }
+
+    /**
+     * Starts the schematic paste. With FAWE it runs on the async queue and this returns right away;
+     * the map counts as ready once the paste reports back on the main thread.
+     *
+     * @param restore paste air too, so the map comes back exactly as built
+     * @return false when nothing was started (no world, schematic missing, or a paste already running)
+     */
+    public boolean pasteSchematic(CommandSender sender, boolean restore) {
         World target = world != null ? world : Bukkit.getWorld(worldName());
         if (target == null) {
             target = ensureLoaded();
@@ -354,21 +406,27 @@ public final class VeinsWorld {
             return false;
         }
         world = target;
-        boolean ok = AmethystPaste.paste(plugin, target, sender);
-        if (ok) {
+        World pasted = target;
+        return AmethystPaste.pasteAsync(plugin, pasted, sender, restore, ok -> {
+            if (!ok) {
+                return;
+            }
             schematicReady = true;
+            schematicHost = true;
             digZonesReady = true;
             layout = LAYOUT;
             Location spawn = hubSpawn();
-            if (spawn != null) {
-                target.setSpawnLocation(spawn);
+            if (spawn != null && spawn.getWorld() != null) {
+                spawn.getWorld().setSpawnLocation(spawn);
             }
             if (npcs != null) {
-                npcs.spawnExit(target, (int) Math.floor(plugin.getConfig().getDouble("veins.spawn-y", 18.0)));
+                npcs.spawnExit(pasted, (int) Math.floor(plugin.getConfig().getDouble("veins.spawn-y", 18.0)));
+            }
+            if (plugin.getIsle() != null) {
+                plugin.getIsle().forgetPlaced(pasted);
             }
             saveData();
-        }
-        return ok;
+        });
     }
 
     public void rememberExit(Player player) {
@@ -392,6 +450,10 @@ public final class VeinsWorld {
     }
 
     public boolean enter(Player player) {
+        if (player != null && schematicMode() && isRestoring()) {
+            player.sendMessage("§dThe Amethyst Mine §7is being restored. Try again in a moment.");
+            return false;
+        }
         World veins = ensureLoaded();
         if (player == null || veins == null) {
             return false;
@@ -421,8 +483,11 @@ public final class VeinsWorld {
     }
 
     public void tickReset() {
+        if (!dailyResetEnabled() || isRestoring()) {
+            return;
+        }
         if (nextReset <= 0L) {
-            nextReset = System.currentTimeMillis() + resetMillis();
+            nextReset = nextResetTime();
             saveData();
             return;
         }
@@ -467,7 +532,7 @@ public final class VeinsWorld {
             deleteLater(new File(Bukkit.getWorldContainer(), worldName()), 20L);
         }
         generation++;
-        nextReset = System.currentTimeMillis() + resetMillis();
+        nextReset = nextResetTime();
         saveData();
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             world = create();
@@ -478,7 +543,16 @@ public final class VeinsWorld {
         plugin.getLogger().info("The Veins reset. Generation " + generation + ".");
     }
 
+    /**
+     * Daily reset in schematic mode: players out, loose entities gone, then the schematic is pasted over the
+     * live world in place. The world is no longer unloaded, deleted and recreated, and the paste runs on FAWE's
+     * async queue, so the main thread never stalls on it (10-18 watchdog stop on mmo-r).
+     */
     private void resetSchematic(String reason) {
+        if (isRestoring()) {
+            plugin.getLogger().warning("Amethyst Mines paste still running. Reset skipped.");
+            return;
+        }
         World current = world != null ? world : Bukkit.getWorld(worldName());
         Location fallback = overworldSpawn();
         if (current != null) {
@@ -488,19 +562,23 @@ public final class VeinsWorld {
                 occupant.setFallDistance(0f);
                 exits.remove(occupant.getUniqueId());
             }
+            current.getEntities().forEach(entity -> {
+                if (!(entity instanceof Player)) {
+                    entity.remove();
+                }
+            });
         }
         schematicReady = false;
         generation++;
-        nextReset = System.currentTimeMillis() + resetMillis();
+        nextReset = nextResetTime();
         saveData();
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            rebuildNow();
-            world = createVoid();
-            if (world != null) {
-                applyWorld(world);
-                pasteSchematic(Bukkit.getConsoleSender());
+            World target = ensureSchematicWorld();
+            // ensureSchematicWorld already started a paste when it had to load or build the world.
+            if (target != null && !isRestoring() && !schematicReady) {
+                pasteSchematic(Bukkit.getConsoleSender(), true);
             }
-        }, 100L);
+        }, 40L);
         plugin.getLogger().info("Amethyst Mines schematic reset. Generation " + generation + ".");
     }
 
@@ -680,6 +758,8 @@ public final class VeinsWorld {
         layout = yaml.getInt("layout", 0);
         digZonesReady = yaml.getBoolean("dig-zones-ready", layout >= LAYOUT);
         schematicReady = yaml.getBoolean("schematic-ready", false);
+        // Older veins.yml has no flag: a map that was pasted once sits in a void host.
+        schematicHost = yaml.getBoolean("schematic-host", schematicReady);
         exits.clear();
         if (yaml.isConfigurationSection("exits")) {
             for (String key : yaml.getConfigurationSection("exits").getKeys(false)) {
@@ -714,6 +794,7 @@ public final class VeinsWorld {
         yaml.set("layout", layout);
         yaml.set("dig-zones-ready", digZonesReady);
         yaml.set("schematic-ready", schematicReady);
+        yaml.set("schematic-host", schematicHost);
         exits.forEach((id, location) -> {
             if (location == null || location.getWorld() == null) {
                 return;
