@@ -17,6 +17,20 @@
       "aetherion:item/gui/loadouts"
     ]
   ],
+  "arrow": [
+    [
+      7724,
+      "aetherion:item/gui/back"
+    ],
+    [
+      7725,
+      "aetherion:item/gui/prev"
+    ],
+    [
+      7726,
+      "aetherion:item/gui/next_page"
+    ]
+  ],
   "barrier": [
     [
       7720,
@@ -24,6 +38,18 @@
     ]
   ],
   "black_stained_glass_pane": [
+    [
+      7729,
+      "aetherion:item/gui/section_combat"
+    ],
+    [
+      7730,
+      "aetherion:item/gui/section_gathering"
+    ],
+    [
+      7731,
+      "aetherion:item/gui/section_fishing"
+    ],
     [
       7700,
       "aetherion:item/gui/empty"
@@ -90,6 +116,14 @@
     ]
   ],
   "gray_stained_glass_pane": [
+    [
+      7727,
+      "aetherion:item/gui/prev_off"
+    ],
+    [
+      7728,
+      "aetherion:item/gui/next_off"
+    ],
     [
       7700,
       "aetherion:item/gui/empty"

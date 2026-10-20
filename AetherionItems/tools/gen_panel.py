@@ -19,7 +19,7 @@ from PIL import Image
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 from gen_gui_chrome import hx  # noqa: E402
-import gen_panel_hd as hd  # noqa: E402
+import gen_panel_art as art  # noqa: E402
 
 PACK = os.path.join(HERE, '..', 'resourcepack')
 JAVA = os.path.join(HERE, '..', 'src', 'main', 'java', 'de', 'aetherion', 'items', 'hud', 'PanelPalette.java')
@@ -48,9 +48,9 @@ def spaces():
     return {'type': 'space', 'advances': adv}
 
 
-# ----------------------------------------------------------------------------- panel + radar art (gen_panel_hd.py)
+# ----------------------------------------------------------------------------- panel + radar art (gen_panel_art.py)
 
-# Marker glyphs from U+E421 on, in this order. Sizes are GUI px (the HD textures are 4x).
+# Marker glyphs from U+E421 on, in this order. Sizes are GUI px (the textures hold 2 texels per px).
 DOT_SIZES = {'quest': 7, 'npc': 5, 'party': 5, 'boss': 7, 'north': 5, 'quest_up': 7, 'quest_down': 7}
 
 
@@ -243,13 +243,13 @@ def sounds():
 
 def main():
     tex = ('assets', 'aetherion', 'textures', 'font', 'panel')
-    for k, im in hd.plates().items():
+    for k, im in art.plates().items():
         im.save(out(*tex, 'plate_%s.png' % k))
-    icons = hd.icons()
+    icons = art.icons()
     for k, im in icons.items():
         im.save(out(*tex, 'icon_%s.png' % k))
-    hd.radar().save(out(*tex, 'radar.png'))
-    for k, im in hd.markers().items():
+    art.radar().save(out(*tex, 'radar.png'))
+    for k, im in art.markers().items():
         im.save(out(*tex, 'dot_%s.png' % k))
 
     prov = [spaces(),
@@ -270,7 +270,7 @@ def main():
     vt = ('assets', 'aetherion', 'textures', 'font', 'vfx')
     vprov = []
     for i, k in enumerate(('slash', 'ring', 'rune', 'tele_edge', 'tele_fill')):
-        vfx(k).save(out(*vt, k + '.png'))
+        art.vfx(k).save(out(*vt, k + '.png'))
         vprov.append({'type': 'bitmap', 'file': 'aetherion:font/vfx/%s.png' % k, 'ascent': 18, 'height': 32,
                       'chars': [chr(0xE500 + i)]})
     with open(out('assets', 'aetherion', 'font', 'vfx.json'), 'w', encoding='utf-8', newline='\n') as f:

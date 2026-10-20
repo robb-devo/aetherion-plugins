@@ -27,8 +27,8 @@ import sys
 from PIL import Image
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from gen_gui_chrome import BODY, OUT, TRAY, hx, mix  # noqa: E402  one art language with the Manager chrome
-import gen_hud_hd as hd  # noqa: E402  frames and fills at 2x, icons at 4x
+from px_art import hx  # noqa: E402
+import gen_hud_art as art  # noqa: E402  frames, fills and icons: pixel art at 2 texels per GUI px
 
 # ----------------------------------------------------------------------------- geometry
 
@@ -49,12 +49,6 @@ POS_SPACE = 0xF821        # +1, +2, +4 ... +128
 
 # ----------------------------------------------------------------------------- palette
 
-CRIMSON = hx('#d0343c')
-BRONZE = hx('#d9a441')
-DENY = hx('#ff5a4a')
-READY = hx('#62d977')
-TEAL = hx('#52baa9')
-WELL_BG = hx('#120f17')
 INK_OUT = hx('#0d0b12')
 
 # ----------------------------------------------------------------------------- pixel font (3x5 core)
@@ -113,35 +107,6 @@ FONT = {
     ')': ["#.", ".#", ".#", ".#", "#."],
 }
 
-# ----------------------------------------------------------------------------- icons (7x7, painted)
-
-ICON_ART = {
-    # '#' body, '+' highlight, '-' shade
-    'heart': [".##.##.", "#+####-", "#+#####", "######-", ".####-.", "..##-..", "...#..."],
-    'hourglass': ["#######", ".#...#.", "..#+#..", "...#...", "..#.#..", ".#+++#.", "#######"],
-    'check': ["......#", ".....##", "#...##.", "##.##..", ".###...", "..#....", "......."],
-    'cross': ["##...##", ".##.##.", "..###..", "...#...", "..###..", ".##.##.", "##...##"],
-    'shield': ["#######", "#+++++#", "#+#-#+#", "#+---+#", ".#+-+#.", "..#+#..", "...#..."],
-    'star': ["...#...", "..#+#..", "##+++##", ".#+++#.", "..#-#..", ".##.##.", ".#...#."],
-}
-ICON_COLOURS = {
-    'heart': (hx('#d8333b'), hx('#ff8a8f'), hx('#8e1b22')),
-    'heart_poison': (hx('#5fae2e'), hx('#b4ec7c'), hx('#386b17')),
-    'heart_wither': (hx('#3a3540'), hx('#77707f'), hx('#1c1920')),
-    'heart_frozen': (hx('#7cc8ec'), hx('#dff5ff'), hx('#3f86ad')),
-    'heart_gold': (hx('#e8b83c'), hx('#fff0a8'), hx('#a1741a')),
-    'hourglass': (hx('#c9ad7e'), hx('#f2cf63'), hx('#7e6a4b')),
-    'check': (hx('#62d977'), hx('#c8ffd2'), hx('#2f8a40')),
-    'cross': (hx('#ff5a4a'), hx('#ffb0a6'), hx('#a3271c')),
-    'shield': (hx('#9fe3d8'), hx('#3f9c8d'), hx('#24564f')),
-    'star': (hx('#e2c766'), hx('#fff3b0'), hx('#9c7f2a')),
-}
-
-
-def icon_art(name):
-    return ICON_ART['heart'] if name.startswith('heart') else ICON_ART[name]
-
-
 # ----------------------------------------------------------------------------- drawing helpers
 
 
@@ -159,92 +124,6 @@ class Cell:
         for y in range(y0, y1 + 1):
             for x in range(x0, x1 + 1):
                 self.put(x, y, c, a)
-
-
-def box(cv, x0, y0, x1, y1, ring, body):
-    """Outline + bevelled accent ring (lit top/left, shaded bottom/right) + body, clipped corners."""
-    cv.rect(x0, y0, x1, y1, OUT)
-    for x, y in ((x0, y0), (x1, y0), (x0, y1), (x1, y1)):
-        cv.put(x, y, (0, 0, 0), 0)
-    cv.rect(x0 + 1, y0 + 1, x1 - 1, y1 - 1, ring)
-    cv.rect(x0 + 1, y0 + 1, x1 - 1, y0 + 1, mix(ring, (255, 255, 255), 0.22))
-    cv.rect(x0 + 1, y0 + 1, x0 + 1, y1 - 1, mix(ring, (255, 255, 255), 0.14))
-    cv.rect(x0 + 1, y1 - 1, x1 - 1, y1 - 1, mix(ring, OUT, 0.40))
-    cv.rect(x1 - 1, y0 + 1, x1 - 1, y1 - 1, mix(ring, OUT, 0.30))
-    cv.rect(x0 + 2, y0 + 2, x1 - 2, y1 - 2, body)
-
-
-def ticks(cv, x0, y0, x1, y1, c):
-    """Tooltip-style brackets: the clipped corner reads as a bright accent chevron."""
-    for (x, y), (dx, dy) in (((x0, y0), (1, 1)), ((x1, y0), (-1, 1)), ((x0, y1), (1, -1)), ((x1, y1), (-1, -1))):
-        cv.put(x + dx, y, c)
-        cv.put(x, y + dy, c)
-
-
-def socket(cv, x0, ring, bg):
-    cv.rect(x0 + 1, 1, x0 + 9, 9, ring)
-    cv.rect(x0 + 1, 1, x0 + 9, 1, mix(ring, (255, 255, 255), 0.22))
-    cv.rect(x0 + 1, 9, x0 + 9, 9, mix(ring, OUT, 0.40))
-    cv.rect(x0 + 2, 2, x0 + 8, 8, bg)
-    # lit bowl: brighter toward the top-left, a rim of shadow at the bottom
-    cv.rect(x0 + 2, 2, x0 + 7, 3, mix(bg, (255, 255, 255), 0.08))
-    cv.rect(x0 + 2, 8, x0 + 8, 8, mix(bg, OUT, 0.30))
-    for x, y in ((x0 + 2, 2), (x0 + 8, 2), (x0 + 2, 8), (x0 + 8, 8)):
-        cv.put(x, y, ring)
-
-
-def frame(kind):
-    accent = {'hp': CRIMSON, 'cd': BRONZE, 'cd_deny': DENY, 'cd_ready': READY, 'def': TEAL}[kind]
-    ring = mix(TRAY, accent, 0.50)
-    hi = mix(accent, (255, 255, 255), 0.40)
-    well = mix(WELL_BG, accent, 0.10)
-    socket_bg = mix(BODY, accent, 0.18)
-    cv = Cell(FRAME_W, FRAME_H)
-    if kind == 'def':
-        # Shield socket + a 31px number plate (digits from x 12).
-        box(cv, 0, 0, DEF_W - 1, FRAME_H - 1, ring, well)
-        socket(cv, 0, ring, socket_bg)
-        cv.rect(10, 0, 10, FRAME_H - 1, OUT)
-        cv.rect(11, 2, DEF_W - 3, 2, mix(well, OUT, 0.55))
-        ticks(cv, 0, 0, DEF_W - 1, FRAME_H - 1, hi)
-        return cv.im
-    box(cv, 0, 0, FRAME_W - 1, FRAME_H - 1, ring, well)
-    if kind == 'hp':
-        sx, wx0 = 0, 12                     # socket left, well x 12..78
-    else:
-        sx, wx0 = FRAME_W - 11, 2           # socket right, well x 2..68
-    socket(cv, sx, ring, socket_bg)
-    cv.rect(sx + (10 if kind == 'hp' else 0), 0, sx + (10 if kind == 'hp' else 0), FRAME_H - 1, OUT)
-    # Inner lip under the ring so the well reads as recessed, and quarter marks on its floor.
-    cv.rect(wx0, 2, wx0 + WELL - 1, 2, mix(well, OUT, 0.55))
-    cv.rect(wx0, 8, wx0 + WELL - 1, 8, mix(well, accent, 0.12))
-    for q in (1, 2, 3):
-        x = wx0 + round(WELL * q / 4) - 1
-        cv.put(x, 8, mix(well, accent, 0.45))
-        cv.put(x, 7, mix(well, accent, 0.22))
-    ticks(cv, 0, 0, FRAME_W - 1, FRAME_H - 1, hi)
-    return cv.im
-
-
-# Grey ramp, tinted per state by the text colour (glyph colour multiplies the texture).
-# GIGA: glossy top, deeper foot, a faint seam every 8px so the bar reads as segments.
-FILL_ROWS = (255, 242, 222, 206, 190, 168, 126)
-
-
-def fill(k):
-    cv = Cell(WELL, INNER)
-    for x in range(k):
-        edge = k >= 3 and x == k - 1
-        seam = x % 8 == 7 and not edge
-        for y, v in enumerate(FILL_ROWS):
-            if edge:
-                c = min(255, v + 40)
-            elif seam and 1 <= y <= 5:
-                c = int(v * 0.84)
-            else:
-                c = v
-            cv.put(x, y, (c, c, c))
-    return cv.im
 
 
 def text_glyph(ch):
@@ -267,18 +146,6 @@ def text_glyph(ch):
         cv.put(x, y, (255, 255, 255))
     # Bitmap advance = rightmost opaque column + 1, so the right outline column must exist.
     assert any(cv.px[w + 1, y][3] for y in range(INNER)), ch
-    return cv.im
-
-
-def icon(name):
-    body, hi, lo = ICON_COLOURS[name]
-    cv = Cell(7, INNER)
-    for y, r in enumerate(icon_art(name)):
-        for x, c in enumerate(r):
-            colour = {'#': body, '+': hi, '-': lo}.get(c)
-            if colour:
-                cv.put(x, y, colour)
-    assert any(cv.px[6, y][3] for y in range(INNER)), name
     return cv.im
 
 
@@ -325,13 +192,12 @@ def main(root):
 
     tex = os.path.join(root, 'assets/aetherion/textures/font/hud')
     os.makedirs(tex, exist_ok=True)
-    accents = {'hp': CRIMSON, 'cd': BRONZE, 'cd_deny': DENY, 'cd_ready': READY, 'def': TEAL}
-    fs, ics = hd.FS, hd.IS
-    sheet([hd.frame(k, accents[k], FRAME_W, FRAME_H, DEF_W, WELL, 12, FRAME_W - 11) for k in FRAMES], len(FRAMES),
-          FRAME_W * fs, FRAME_H * fs).save(os.path.join(tex, 'frames.png'), optimize=True)
-    sheet([hd.icon(n, ICON_COLOURS[n]) for n in ICONS], len(ICONS), 7 * ics, INNER * ics).save(
+    s = art.S
+    sheet([art.frame(k, FRAME_W, FRAME_H, DEF_W, WELL, 12, FRAME_W - 11) for k in FRAMES], len(FRAMES),
+          FRAME_W * s, FRAME_H * s).save(os.path.join(tex, 'frames.png'), optimize=True)
+    sheet([art.icon(n) for n in ICONS], len(ICONS), 7 * s, INNER * s).save(
         os.path.join(tex, 'icons.png'), optimize=True)
-    sheet([hd.fill_strip(k, WELL, INNER) for k in range(1, WELL + 1)], 8, WELL * fs, INNER * fs).save(
+    sheet([art.fill_strip(k, WELL, INNER) for k in range(1, WELL + 1)], 8, WELL * s, INNER * s).save(
         os.path.join(tex, 'fill.png'), optimize=True)
     text_cells = [text_glyph(chr(c)) if chr(c) in FONT else None for c in range(0x20, 0x80)]
     sheet(text_cells, 16, 7, INNER).save(os.path.join(tex, 'text.png'), optimize=True)
