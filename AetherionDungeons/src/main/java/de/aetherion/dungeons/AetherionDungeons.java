@@ -105,6 +105,8 @@ public final class AetherionDungeons extends JavaPlugin {
             });
         }
 
+        registerHomeFallbacks();
+
         getServer().getScheduler().runTaskLater(this, keeper::load, 40L);
         getServer().getScheduler().runTaskLater(this, guide::load, 45L);
         getLogger().info("AetherionDungeons enabled. Temporary instances only.");
@@ -114,6 +116,38 @@ public final class AetherionDungeons extends JavaPlugin {
         if (remote.enabled() && characterSync.enabled()) {
             characterTransport = new de.aetherion.dungeons.bridge.DungeonCharacterTransport(remote, snapshots, transferGuard);
             de.aetherion.core.api.AetherServices.registerTransport(characterTransport);
+        }
+    }
+
+    /**
+     * mmo-d runs without AetherionHub, so nothing there owns /spawn or /hub. On such a server both take the
+     * player home to the main world, like {@code /dungeon home}. Skipped where Hub is installed or another
+     * plugin already registered the command.
+     */
+    private void registerHomeFallbacks() {
+        if (getServer().getPluginManager().getPlugin("AetherionHub") != null || remote == null || !remote.enabled()) {
+            return;
+        }
+        org.bukkit.command.CommandMap map = getServer().getCommandMap();
+        for (String name : List.of("spawn", "hub")) {
+            if (map.getCommand(name) != null) {
+                continue;
+            }
+            map.register("aetheriondungeons", new org.bukkit.command.Command(name, "Back to the main world", "/" + name,
+                    List.of()) {
+                @Override
+                public boolean execute(org.bukkit.command.CommandSender sender, String label, String[] args) {
+                    if (!(sender instanceof Player player)) {
+                        sender.sendMessage("Players only.");
+                        return true;
+                    }
+                    if (!remote.transferHome(player)) {
+                        player.sendMessage("§cCould not reach the main world. Try §e/dhub§c.");
+                    }
+                    return true;
+                }
+            });
+            getLogger().info("No AetherionHub here: /" + name + " takes players home.");
         }
     }
 
