@@ -1,6 +1,7 @@
 package de.aetherion.mining.island;
 
 import de.aetherion.mining.AetherionMining;
+import de.aetherion.mining.FaweQueue;
 
 import com.sk89q.worldedit.WorldEdit;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
@@ -24,6 +25,7 @@ import java.util.logging.Level;
 
 /**
  * One-shot paste of Mining Eldervale Island south of the Origin slime pad.
+ * With FastAsyncWorldEdit the paste runs on FAWE's async queue; plain WorldEdit pastes on the main thread.
  */
 public final class EldervalePaste {
 
@@ -49,23 +51,24 @@ public final class EldervalePaste {
         int z = plugin.getConfig().getInt("eldervale.paste.z", 580);
         boolean ignoreAir = plugin.getConfig().getBoolean("eldervale.ignore-air", true);
 
+        boolean queued = FaweQueue.present();
         sender.sendMessage("§ePasting Eldervale at §f" + x + " " + y + " " + z
-                + " §e(ignoreAir=" + ignoreAir + ") — may lag a few seconds…");
+                + " §e(ignoreAir=" + ignoreAir + ")" + (queued ? " §7· FAWE async" : " §e— may lag a few seconds…"));
         world.setGameRule(org.bukkit.GameRule.RANDOM_TICK_SPEED, 0);
 
-        Bukkit.getScheduler().runTask(plugin, () -> {
+        Runnable task = () -> {
             long start = System.currentTimeMillis();
             try {
                 ClipboardFormat format = ClipboardFormats.findByFile(schem);
                 if (format == null) {
-                    sender.sendMessage("§cUnknown schematic format.");
+                    tell(plugin, sender, queued, "§cUnknown schematic format.");
                     return;
                 }
                 Clipboard clipboard;
                 try (ClipboardReader reader = format.getReader(new FileInputStream(schem))) {
                     clipboard = reader.read();
                 }
-                try (EditSession editSession = WorldEdit.getInstance()
+                try (EditSession editSession = queued ? FaweQueue.session(world) : WorldEdit.getInstance()
                         .newEditSessionBuilder()
                         .world(BukkitAdapter.adapt(world))
                         .maxBlocks(-1)
@@ -78,14 +81,34 @@ public final class EldervalePaste {
                     Operations.complete(op);
                 }
                 long ms = System.currentTimeMillis() - start;
-                sender.sendMessage("§aEldervale pasted in §f" + ms + "ms§a.");
-                reloadHubPads(world, sender);
-                sender.sendMessage("§7Return slime pad ready. Test bounce from §f22 55 305§7.");
+                Runnable finish = () -> {
+                    sender.sendMessage("§aEldervale pasted in §f" + ms + "ms§a.");
+                    reloadHubPads(world, sender);
+                    sender.sendMessage("§7Return slime pad ready. Test bounce from §f22 55 305§7.");
+                };
+                if (queued) {
+                    FaweQueue.runMain(plugin, finish);
+                } else {
+                    finish.run();
+                }
             } catch (Throwable t) {
                 plugin.getLogger().log(Level.SEVERE, "Eldervale paste failed", t);
-                sender.sendMessage("§cPaste failed: " + t.getMessage());
+                tell(plugin, sender, queued, "§cPaste failed: " + t.getMessage());
             }
-        });
+        };
+        if (queued) {
+            FaweQueue.runAsync(plugin, task);
+        } else {
+            Bukkit.getScheduler().runTask(plugin, task);
+        }
+    }
+
+    private static void tell(AetherionMining plugin, CommandSender sender, boolean async, String line) {
+        if (async) {
+            FaweQueue.runMain(plugin, () -> sender.sendMessage(line));
+        } else {
+            sender.sendMessage(line);
+        }
     }
 
     private static void reloadHubPads(World world, CommandSender sender) {
