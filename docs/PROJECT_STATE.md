@@ -1,6 +1,6 @@
 # Aetherion — Project state (read this first)
 
-Snapshot: **2026-10-19**. One page so a new session does not have to rescan the
+Snapshot: **2026-10-20**. One page so a new session does not have to rescan the
 repo. Update the dated sections when they change.
 Open work and priorities: [BETA_AUDIT_2026-10-19.md](BETA_AUDIT_2026-10-19.md).
 Ops, hosting and access details are deliberately **not** in this repo; they live in
@@ -40,29 +40,39 @@ Backends: **hub** (lobby + Pit), **mmo-r** (main world, capital, isles, bosses, 
   ~6000 dirty files. Do not build or commit from it.
 - Agent prompts and briefs live in `docs/prompts/`; they are history, not specs.
 
-## Live plugin builds (sha1 prefix, 2026-10-19 18:16)
+## Live plugin builds (sha1 prefix, 2026-10-20 16:50)
 
-Same on every server that loads them: Core `536b35c5`, Items `d2dcf068`, Quests `1bc884e1`,
+Same on every server that loads them: Core `536b35c5`, Items `896321bb` (10-20, PR #77/#78; mmo-r, mmo-d, mmo-c, mmo-i; not on hub), Quests `1bc884e1`,
 BossEngine `0b4760db`, Gnomon `684013f0`, AetherMobs `078432e9`, Guilds `60342686`. Each of these is
 byte-identical to a build of `main` (classes and resources).
 
 | Jar | mmo-r | mmo-d | mmo-c | mmo-i | hub |
 |---|---|---|---|---|---|
-| Dungeons | a92a2c42 | a92a2c42 | – | – | – |
-| Mining / Foraging / Farming / Fishing | d55c57f6 / 8d58797b (10-20) / 5e8a58ce / a6aae3f0 | Fishing **03aedf90 (10-02)** | same as mmo-r | – | – |
-| Hub | 96ed909c | **`AetherionHub.jar` (09-22)** | – | – | **d1a097e7 (10-05)** |
+| Dungeons | sha256 cd896d99 (10-20, PR #76) | same | – | – | – |
+| Mining / Foraging / Farming / Fishing | d55c57f6 / 8d58797b (10-20) / 5e8a58ce / a6aae3f0 | – | same as mmo-r | – | – |
+| Hub | 96ed909c | – | – | – | **d1a097e7 (10-05)** |
 | Beta | ed9d1621 | ed9d1621 | – | – | – |
 | SamuraiBoss / Pit | mmo-r only | | | | Pit on hub |
 
-Bold cells are still drift on purpose: a newer Hub would switch on Origin systems (props, chests, NPCs)
-in the lobby and dungeon worlds, and Fishing/Hub on mmo-d are a removal decision. StressBots left mmo-r and mmo-d on 10-19 (jar in the ship backup, data folder kept).
+The bold cell is drift on purpose: a newer Hub would switch on Origin systems (props, chests, NPCs) in the
+lobby. Hub and Fishing left mmo-d on 10-20 (jars in `plugins.bak-pre-mmod-cleanup-*`, data folders kept);
+there Dungeons registers `/spawn` and `/hub` itself and sends players back to the main world. StressBots left mmo-r and mmo-d on 10-19 (jar in the ship backup, data folder kept).
 Old Farming left mmo-d on 10-19 (it piled ~283k ambient mobs into one chunk).
+
+## Resource pack (2026-10-20)
+
+Served zip sha1 `eb2d6026` (10-20): the 10-18 GIGA pack plus the HD HUD files, the Manager chrome and
+icons from `AetherionItems/resourcepack`, and the icon overrides merged by
+`AetherionItems/tools/merge_gui_overrides.py`. `resource-pack-sha1` matches on all five backends; mmo-c and
+mmo-i leave `resource-pack=` empty (players arrive with the pack from hub or mmo-r). The repo pack is only
+the HUD/GUI source, not the full pack; build the served zip from the live one.
 
 ## Content state (verified against live 2026-10-19)
 
 Live and committed: onboarding v2 (Acts I–VII incl. skill-isle lessons), exile crossing,
 explore-chest scatter, pet bodies, Saitama main island (parts 1–3 + harbour), Codex/Skills
-overhaul, GIGA texture pack, German overlay, player HUD + boss bars, HUD panel + radar,
+overhaul, GIGA texture pack, German overlay, player HUD + boss bars, HUD panel + radar (HD art since 10-20,
+radar quest marker shows above/below), Manager GUI icons and invisible fillers (10-20),
 combat system (guard, cadence, mobility, stamina HUD), SamuraiBoss.
 
 Known gaps:
