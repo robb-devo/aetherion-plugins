@@ -3,7 +3,7 @@
 Snapshot: **2026-10-19**. One page so a new session does not have to rescan the
 repo. Update the dated sections when they change.
 Open work and priorities: [BETA_AUDIT_2026-10-19.md](BETA_AUDIT_2026-10-19.md).
-Ops, hosting and access details are deliberately **not** in this public repo; they live in
+Ops, hosting and access details are deliberately **not** in this repo; they live in
 the private `aetherion-ops/` folder on Robb's PC (`docs/OPUS_SESSION_BIBLE.md`,
 `docs/LIVE_STATE_*.md`, `docs/BETA_AUDIT_OPS_*.md`).
 

@@ -32,7 +32,7 @@ If blocked: write `LOCKED … CONFLICT: …` and **stop**.
 
 ## Live facts (MMO-R scout 2026-10-03 — use these, don’t rediscover)
 
-Server: Crafty `a28d676a-…` = MMO-R. World: `world`.
+Server: MMO-R. World: `world`.
 
 ### Placed NPCs (`plugins/AetherionQuests/npcs.yml`)
 
