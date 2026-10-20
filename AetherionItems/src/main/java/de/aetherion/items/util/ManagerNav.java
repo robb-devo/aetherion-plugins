@@ -24,11 +24,11 @@ public final class ManagerNav {
     }
 
     public static ItemStack button() {
-        return GuiItems.named(
+        return GuiIcons.icon(GuiItems.named(
                 Material.ARROW,
                 "§eBack",
                 "§7Return to the Aetherion Manager."
-        );
+        ), GuiIcons.BACK);
     }
 
     public static void openManager(Player player) {

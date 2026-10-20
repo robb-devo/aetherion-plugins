@@ -393,6 +393,107 @@ def later():
     return finish(cv)
 
 
+def _nav_disc(top, bottom):
+    cv = Canvas(N, N)
+    disc = sd_circle(cv, S(16), S(16), S(13))
+    body(cv, disc, top, bottom, 0, 0, N, N)
+    return cv, disc
+
+
+def _glyph(cv, sd, colour, edge=hx('#2a1a04')):
+    """A white-ish stroke shape with a dark rim, so it reads on any disc colour."""
+    cv.paint(fill(sd - S(1.0), 1.5), edge, 0.7)
+    cv.paint(fill(sd, 1.5), colour)
+
+
+def _chevron(cv, direction):
+    tip, back_x = (S(11.5), S(19.5)) if direction < 0 else (S(20.5), S(12.5))
+    return np.minimum(sd_segment(cv, back_x, S(9.5), tip, S(16)), sd_segment(cv, tip, S(16), back_x, S(22.5))) - S(1.9)
+
+
+def back():
+    cv, disc = _nav_disc(hx('#ffe08a'), hx('#a8671a'))
+    shaft = sd_segment(cv, S(13), S(16), S(22.5), S(16)) - S(1.9)
+    head = sd_polygon(cv, [(S(8), S(16)), (S(15), S(9.5)), (S(15), S(22.5))])
+    _glyph(cv, np.minimum(shaft, head), WHITE)
+    shine(cv, disc, 0.4)
+    return finish(cv)
+
+
+def prev_page():
+    cv, disc = _nav_disc(hx('#ffe08a'), hx('#a8671a'))
+    _glyph(cv, _chevron(cv, -1), WHITE)
+    shine(cv, disc, 0.4)
+    return finish(cv)
+
+
+def next_page():
+    cv, disc = _nav_disc(hx('#ffe08a'), hx('#a8671a'))
+    _glyph(cv, _chevron(cv, 1), WHITE)
+    shine(cv, disc, 0.4)
+    return finish(cv)
+
+
+def _page_off(direction):
+    cv, disc = _nav_disc(hx('#6e6a7c'), hx('#2c2a36'))
+    _glyph(cv, _chevron(cv, direction), hx('#9a96a8'), edge=hx('#1a1822'))
+    return finish(cv)
+
+
+def prev_off():
+    return _page_off(-1)
+
+
+def next_off():
+    return _page_off(1)
+
+
+def _section(accent):
+    """Row-label badge for list pages: dark plaque, accent rim, symbol on top."""
+    cv = Canvas(N, N)
+    plaque = sd_box(cv, S(3), S(5), S(29), S(27), S(4))
+    cv.paint(fill(plaque - SS, 1.5), INK)
+    cv.paint(fill(plaque, 1.5), lerp(hx('#2c2638'), hx('#16121e'), linear(cv, 0, S(5), 0, S(27))))
+    cv.paint(band(plaque + S(1.2), S(0.6), 1.5), accent, 0.85)
+    return cv
+
+
+def _stroke(cv, sd, half, colour):
+    cv.paint(band(sd, half + SS, 1.5), INK)
+    cv.paint(band(sd, half, 1.5), colour)
+
+
+def section_combat():
+    cv = _section(hx('#ff6b5e'))
+    _stroke(cv, sd_segment(cv, S(11), S(21), S(22.5), S(9.5)), S(1.6), hx('#eef3f8'))
+    _stroke(cv, sd_segment(cv, S(9), S(17.5), S(14.5), S(23)), S(1.2), hx('#ffcf5a'))
+    _stroke(cv, sd_segment(cv, S(8.5), S(23.5), S(11), S(21)), S(1.2), hx('#8a5a2a'))
+    return finish(cv)
+
+
+def section_gathering():
+    cv = _section(hx('#7ee08a'))
+    _stroke(cv, sd_segment(cv, S(9), S(23.5), S(20), S(12.5)), S(1.2), hx('#c79a5e'))
+    arc = sd_circle(cv, S(17.5), S(17.5), S(9))
+    head = band(arc, S(1.6), 1.5) * fill(sd_segment(cv, S(11), S(8.5), S(26.5), S(14)) - S(4.5), 1.5)
+    cv.paint(np.clip(head * 0 + band(arc, S(2.6), 1.5) * fill(sd_segment(cv, S(11), S(8.5), S(26.5), S(14)) - S(4.5), 1.5), 0, 1), INK)
+    cv.paint(head, hx('#dfe8ef'))
+    return finish(cv)
+
+
+def section_fishing():
+    cv = _section(hx('#6fd3e8'))
+    shank = sd_segment(cv, S(18), S(8), S(18), S(18))
+    bend = sd_circle(cv, S(14), S(18), S(4)) * 1.0
+    lower = (cv.y > S(18)).astype(float)
+    hook = np.minimum(shank, np.where(lower > 0, np.abs(bend), 1e9))
+    cv.paint(band(hook, S(1.4) + SS, 1.5), INK)
+    cv.paint(band(hook, S(1.4), 1.5), hx('#dfe8ef'))
+    _stroke(cv, sd_segment(cv, S(10), S(18), S(10), S(15.5)), S(1.1), hx('#dfe8ef'))
+    cv.paint(fill(sd_circle(cv, S(18), S(8), S(1.8)), 1.5), hx('#6fd3e8'))
+    return finish(cv)
+
+
 def empty():
     return Image.new('RGBA', (16, 16), (0, 0, 0, 0))
 
@@ -422,6 +523,15 @@ ICONS = {
     'locked': (7721, 'gray_dye', locked),
     'next': (7722, 'lime_dye', next_unlock),
     'later': (7723, 'light_gray_stained_glass_pane', later),
+    # menu navigation, shared by every chrome menu (GuiIcons in Java)
+    'back': (7724, 'arrow', back),
+    'prev': (7725, 'arrow', prev_page),
+    'next_page': (7726, 'arrow', next_page),
+    'prev_off': (7727, 'gray_stained_glass_pane', prev_off),
+    'next_off': (7728, 'gray_stained_glass_pane', next_off),
+    'section_combat': (7729, 'black_stained_glass_pane', section_combat),
+    'section_gathering': (7730, 'black_stained_glass_pane', section_gathering),
+    'section_fishing': (7731, 'black_stained_glass_pane', section_fishing),
 }
 # Fillers: the same CMD on every pane colour draws nothing, so the chrome under it shows.
 FILLER_CMD = 7700

@@ -2,6 +2,7 @@ package de.aetherion.items.codex;
 
 import de.aetherion.items.AetherionItems;
 import de.aetherion.items.progress.ProgressionService;
+import de.aetherion.items.util.GuiIcons;
 import de.aetherion.items.util.GuiItems;
 
 import org.bukkit.Material;
@@ -79,7 +80,7 @@ public final class CodexChrome {
         for (Tab tab : Tab.values()) {
             inventory.setItem(tab.slot(), tabItem(player, tab, tab == active));
         }
-        inventory.setItem(CLOSE, GuiItems.named(Material.BARRIER, "§cClose", "§8Esc works too."));
+        inventory.setItem(CLOSE, GuiIcons.icon(GuiItems.named(Material.BARRIER, "§cClose", "§8Esc works too."), GuiIcons.CLOSE));
     }
 
     /** Tints the side columns of the body in a category's pane color. */
@@ -97,20 +98,23 @@ public final class CodexChrome {
         }
     }
 
+    /** Every page has chrome, so blank panes are invisible spacers whatever colour the caller asks for. */
     public static ItemStack pane(Material material) {
-        return GuiItems.named(material, " ");
+        return GuiIcons.spacer();
     }
 
     public static ItemStack back(String to) {
-        return GuiItems.named(Material.ARROW, "§eBack", "§7To " + to + ".");
+        return GuiIcons.icon(GuiItems.named(Material.ARROW, "§eBack", "§7To " + to + "."), GuiIcons.BACK);
     }
 
     public static ItemStack prev(int page, int pages) {
-        return GuiItems.named(Material.ARROW, "§ePrevious Page", "§7Page §f" + (page - 1) + "§8/§7" + pages);
+        return GuiIcons.icon(GuiItems.named(Material.ARROW, "§ePrevious Page", "§7Page §f" + (page - 1) + "§8/§7" + pages),
+                GuiIcons.PREV);
     }
 
     public static ItemStack next(int page, int pages) {
-        return GuiItems.named(Material.ARROW, "§eNext Page", "§7Page §f" + (page + 1) + "§8/§7" + pages);
+        return GuiIcons.icon(GuiItems.named(Material.ARROW, "§eNext Page", "§7Page §f" + (page + 1) + "§8/§7" + pages),
+                GuiIcons.NEXT);
     }
 
     // ------------------------------------------------------------------ tabs

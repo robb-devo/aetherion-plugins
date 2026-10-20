@@ -5,6 +5,8 @@ import de.aetherion.items.manager.ActiveEquipmentStats;
 import de.aetherion.items.manager.ItemManager;
 import de.aetherion.items.model.ItemCapability;
 
+import de.aetherion.items.util.GuiIcons;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -26,13 +28,9 @@ public class StatsOverviewGUI {
     public void open(Player player) {
         Inventory inventory = Bukkit.createInventory(new Holder(), 54, de.aetherion.items.util.ManagerChrome.STATS);
 
-        ItemStack pane = named(Material.GRAY_STAINED_GLASS_PANE, " ");
+        ItemStack spacer = GuiIcons.spacer();
         for (int slot = 0; slot < inventory.getSize(); slot++) {
-            inventory.setItem(slot, pane.clone());
-        }
-        ItemStack edge = named(Material.BLACK_STAINED_GLASS_PANE, " ");
-        for (int slot : new int[]{0, 8, 9, 17, 18, 26, 27, 35, 36, 44, 45, 53}) {
-            inventory.setItem(slot, edge.clone());
+            inventory.setItem(slot, spacer.clone());
         }
 
         inventory.setItem(4, named(
@@ -42,7 +40,7 @@ public class StatsOverviewGUI {
                 "§7already added together."
         ));
 
-        inventory.setItem(10, named(Material.BLACK_STAINED_GLASS_PANE, "§7Combat"));
+        inventory.setItem(10, GuiIcons.icon(named(Material.BLACK_STAINED_GLASS_PANE, "§7Combat"), GuiIcons.SECTION_COMBAT));
         inventory.setItem(11, stat(player, Material.DIAMOND_SWORD, "§cDamage", ItemCapability.DAMAGE, false));
         inventory.setItem(12, stat(player, Material.GHAST_TEAR, "§fCrit Chance", ItemCapability.CRIT_CHANCE, true));
         inventory.setItem(13, stat(player, Material.BLAZE_POWDER, "§6Crit Damage", ItemCapability.CRIT_DAMAGE, true));
@@ -50,7 +48,7 @@ public class StatsOverviewGUI {
         inventory.setItem(15, stat(player, Material.GLISTERING_MELON_SLICE, "§cHealth", ItemCapability.HEALTH, false));
         inventory.setItem(16, stat(player, Material.SUGAR, "§eSpeed", ItemCapability.SPEED, true));
 
-        inventory.setItem(19, named(Material.BLACK_STAINED_GLASS_PANE, "§7Gathering"));
+        inventory.setItem(19, GuiIcons.icon(named(Material.BLACK_STAINED_GLASS_PANE, "§7Gathering"), GuiIcons.SECTION_GATHERING));
         inventory.setItem(20, stat(player, Material.IRON_PICKAXE, "§7Mining Power", ItemCapability.MINING_POWER, false));
         inventory.setItem(21, stat(player, Material.RABBIT_FOOT, "§eFortune", ItemCapability.FORTUNE, false));
         inventory.setItem(22, stat(player, Material.EMERALD, "§aSpread", ItemCapability.SPREAD, false));
@@ -58,7 +56,7 @@ public class StatsOverviewGUI {
         inventory.setItem(24, stat(player, Material.GOLDEN_HOE, "§6Harvest", ItemCapability.HARVEST_SPREAD, false));
         inventory.setItem(25, stat(player, Material.LEAD, "§6Catch Rate", ItemCapability.PET_CATCH_RATE, true));
 
-        inventory.setItem(28, named(Material.BLACK_STAINED_GLASS_PANE, "§7Fishing"));
+        inventory.setItem(28, GuiIcons.icon(named(Material.BLACK_STAINED_GLASS_PANE, "§7Fishing"), GuiIcons.SECTION_FISHING));
         inventory.setItem(29, stat(player, Material.FISHING_ROD, "§bFish Speed", ItemCapability.FISHING_SPEED, false));
         inventory.setItem(30, stat(player, Material.COD, "§3Fish Catch", ItemCapability.FISHING_CATCH, false));
 

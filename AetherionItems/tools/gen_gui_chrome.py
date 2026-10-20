@@ -563,9 +563,11 @@ THEMES = [
     ('loadouts',         'LOADOUTS',          '#93a7bf', 'armor',    6, ''),
     ('spawns',           'SPAWNS',            '#a9c46c', 'compass',  6, ''),
     ('pets',             'PETS',              '#e083b3', 'paw',      6, ''),
+    ('chronicle',        'CHRONICLE',         '#c9ad7e', 'book',     6, ''),
+    ('journal_hub',      'JOURNAL',           '#c9ad7e', 'skull',    3, ''),
 ]
 
-PARCHMENT = {'journal'}
+PARCHMENT = {'journal', 'chronicle', 'journal_hub'}
 
 
 def make_theme(key, label, accent, sigil):
