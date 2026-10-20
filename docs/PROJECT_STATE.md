@@ -40,9 +40,9 @@ Backends: **hub** (lobby + Pit), **mmo-r** (main world, capital, isles, bosses, 
   ~6000 dirty files. Do not build or commit from it.
 - Agent prompts and briefs live in `docs/prompts/`; they are history, not specs.
 
-## Live plugin builds (sha1 prefix, 2026-10-20 16:50)
+## Live plugin builds (sha1 prefix, 2026-10-20 23:20)
 
-Same on every server that loads them: Core `536b35c5`, Items `896321bb` (10-20, PR #77/#78; mmo-r, mmo-d, mmo-c, mmo-i; not on hub), Quests `1bc884e1`,
+Same on every server that loads them: Core `536b35c5`, Items `bd77dce7` (10-20, main `b2feecac`, PR #80/#81; mmo-r, mmo-d, mmo-c, mmo-i; not on hub), Quests `06201980` (same build; not on hub),
 BossEngine `0b4760db`, Gnomon `684013f0`, AetherMobs `078432e9`, Guilds `60342686`. Each of these is
 byte-identical to a build of `main` (classes and resources).
 
@@ -61,9 +61,11 @@ Old Farming left mmo-d on 10-19 (it piled ~283k ambient mobs into one chunk).
 
 ## Resource pack (2026-10-20)
 
-Served zip sha1 `eb2d6026` (10-20): the 10-18 GIGA pack plus the HD HUD files, the Manager chrome and
-icons from `AetherionItems/resourcepack`, and the icon overrides merged by
-`AetherionItems/tools/merge_gui_overrides.py`. `resource-pack-sha1` matches on all five backends; mmo-c and
+Two served zips (10-20 23:20, from `eb2d6026` plus only the GUI paths of PR #80; never copy the repo pack's
+item models/textures, they are stale). `Aetherion_texturepack.zip` sha1 `59efc5d3` on mmo-r, mmo-d, mmo-c, mmo-i:
+pixel-art HUD, radar, panel, emblems and combat glyphs, and it blanks the vanilla heart/food/armour sprites
+for the Aetherion HUD. `Aetherion_texturepack_hub.zip` sha1 `36fe897c` on the hub only: the same pack without
+`minecraft/textures/gui/sprites/hud/`, so vanilla bars show where no Aetherion HUD runs. mmo-c and
 mmo-i leave `resource-pack=` empty (players arrive with the pack from hub or mmo-r). The repo pack is only
 the HUD/GUI source, not the full pack; build the served zip from the live one.
 
