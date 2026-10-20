@@ -301,17 +301,17 @@ def icon_pin():
     return _icon(['....oooooo....',
                   '...ollllllo...',
                   '..olhhllllmo..',
-                  '.olhlooooomso.',
+                  '.olhloooommso.',
                   '.olloWWWWomso.',
-                  '.olmoWWWWomso.',
                   '.olmoWWWWosso.',
-                  '..olmoooossdo.',
-                  '..olmmmmsssdo.',
-                  '...olmmssddo..',
-                  '....olmsddo...',
-                  '.....olsdo....',
-                  '......odo.....',
-                  '.......o......'], _r(CRIMSON))
+                  '.olmmoooossso.',
+                  '.olmmmmmsssdo.',
+                  '..olmmmssddo..',
+                  '...olmssddo...',
+                  '....olsddo....',
+                  '.....oddo.....',
+                  '......oo......',
+                  '..............'], _r(CRIMSON))
 
 
 def icon_cloud():
@@ -378,7 +378,7 @@ def plate(kind):
     p.put(p.g.rect(5, 0, 6, h), SLATE[3], BODY_ALPHA)
     # a stud on the rail in the middle of every row
     mid = h // 2
-    p.sprite(['oo', 'hl', 'ls', 'oo'], {'o': GOLD[0], 'h': GOLD[5], 'l': GOLD[4], 's': GOLD[1]}, 1, mid - 2)
+    p.sprite(['hl', 'ls'], {'h': GOLD[5], 'l': GOLD[4], 's': GOLD[1]}, 1, mid - 1)
     # right edge: outline and a shaded inner line
     p.put(p.g.rect(w - 1, 0, w, h), SLATE[0])
     p.put(p.g.rect(w - 2, 0, w - 1, h), SLATE[1], BODY_ALPHA)
