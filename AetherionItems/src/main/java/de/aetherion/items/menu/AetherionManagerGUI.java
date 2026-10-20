@@ -172,8 +172,8 @@ public class AetherionManagerGUI {
             boolean petsQuest = petsUnlocked && QuestProgressHook.shouldGuidePetsEquip(player);
         if (!manager.hasPetMenu()) {
             inventory.setItem(PETS_SLOT, button(
-                    Material.BARRIER,
-                    "§cPet Collection",
+                    Material.GRAY_DYE,
+                    "§8Pet Collection",
                     "§7Requires AetherMobs."
             ));
         } else if (petsUnlocked) {
@@ -472,7 +472,7 @@ public class AetherionManagerGUI {
             meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
             item.setItemMeta(meta);
         }
-        return item;
+        return ManagerIcons.apply(item);
     }
 
     public static void stopPetsBlink(Player player) {
@@ -584,7 +584,7 @@ public class AetherionManagerGUI {
             meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
             item.setItemMeta(meta);
         }
-        return item;
+        return ManagerIcons.apply(item);
     }
 
     private ItemStack petsButton(boolean highlight, boolean pulseBright) {
@@ -617,7 +617,7 @@ public class AetherionManagerGUI {
             meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
             item.setItemMeta(meta);
         }
-        return item;
+        return ManagerIcons.apply(item);
     }
 
     private void startSkillsBlink(Player player) {
@@ -678,7 +678,7 @@ public class AetherionManagerGUI {
             meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
             item.setItemMeta(meta);
         }
-        return item;
+        return ManagerIcons.apply(item);
     }
 
     /** "Level 12 · 3 to claim" for a Codex ledger button. */
@@ -811,30 +811,15 @@ public class AetherionManagerGUI {
     }
 
     private void fill(Inventory inventory) {
-        ItemStack pane = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
-        ItemMeta meta = pane.getItemMeta();
-
-        if (meta != null) {
-            meta.setDisplayName(" ");
-            pane.setItemMeta(meta);
-        }
-        // Dark top and bottom rails frame the tabs so the page reads as a panel, not a pile of glass.
-        ItemStack rail = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
-        ItemMeta railMeta = rail.getItemMeta();
-        if (railMeta != null) {
-            railMeta.setDisplayName(" ");
-            rail.setItemMeta(railMeta);
-        }
-
-        int size = inventory.getSize();
-        for (int slot = 0; slot < size; slot++) {
-            boolean edge = slot < 9 || slot >= size - 9;
-            inventory.setItem(slot, edge ? rail.clone() : pane.clone());
+        // Invisible spacers: the pack's Manager chrome draws the panel and the button wells underneath.
+        ItemStack spacer = ManagerIcons.filler(Material.GRAY_STAINED_GLASS_PANE);
+        for (int slot = 0; slot < inventory.getSize(); slot++) {
+            inventory.setItem(slot, spacer.clone());
         }
     }
 
     private ItemStack button(Material material, String name, String... lore) {
-        return de.aetherion.items.util.GuiItems.named(material, name, lore);
+        return ManagerIcons.apply(de.aetherion.items.util.GuiItems.named(material, name, lore));
     }
 
     public static final class Holder implements InventoryHolder {

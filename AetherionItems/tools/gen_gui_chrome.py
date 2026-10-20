@@ -488,11 +488,45 @@ def draw_plate(cv, th):
     return x0, x1
 
 
+# Manager hub: only the button slots get wells (its fillers are invisible, see ManagerIcons), grouped per
+# row like AetherionManagerGUI lays them out. Slot = 9 * row + column.
+MANAGER_GROUPS = [(0, 4, 4), (1, 1, 1), (1, 3, 5), (2, 2, 6), (3, 1, 7), (4, 4, 4), (5, 4, 4)]
+
+
+def draw_crest(cv, th, x, y):
+    """Round-shouldered gold socket for the hub's header slot (well at x..x+17, y..y+17)."""
+    gold = hx('#d9a441')
+    for k, c in ((3, th.t(OUT)), (2, mix(gold, th.t(OUT), 0.35)), (1, gold)):
+        cv.rect(x - k, y - k + 1, x + 17 + k, y + 16 + k, c)
+        cv.rect(x - k + 1, y - k, x + 16 + k, y + 17 + k, c)
+    cv.hline(x - 1, x + 18, y - 2, mix(gold, (255, 255, 255), 0.45))
+    cv.vline(x - 2, y - 1, y + 18, mix(gold, (255, 255, 255), 0.25))
+    for side in (-1, 1):
+        ex = x - 4 if side < 0 else x + 21
+        for k in range(0, 14):
+            px = ex + side * k
+            cv.put(px, y + 8, gold if k < 5 else (th.acc if k < 9 else th.acc_dim))
+            if k < 4:
+                cv.put(px, y + 9, mix(gold, th.t(OUT), 0.5))
+        draw_gem(cv, th, ex + side * 16, y + 8, 2)
+
+
+def draw_dashboard(cv, th, g):
+    for row, c0, c1 in MANAGER_GROUPS:
+        x, y = 7 + 18 * c0, g['cont_top'] + 18 * row
+        if row == 0:
+            draw_crest(cv, th, x, y)
+        draw_wells(cv, th, x, y, c1 - c0 + 1, 1)
+
+
 def render(th, rows):
     g = geometry(rows)
     cv = Canvas()
     draw_panel(cv, th, g)
-    draw_wells(cv, th, 7, g['cont_top'], 9, rows)
+    if th.key == 'manager':
+        draw_dashboard(cv, th, g)
+    else:
+        draw_wells(cv, th, 7, g['cont_top'], 9, rows)
     draw_wells(cv, th, 7, g['inv_top'], 9, 3, brackets=(True, True, False, False))
     draw_wells(cv, th, 7, g['bar_top'], 9, 1, brackets=(False, False, True, True))
     draw_divider(cv, th, g)
