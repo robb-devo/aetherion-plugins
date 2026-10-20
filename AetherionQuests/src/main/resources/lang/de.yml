@@ -18,7 +18,7 @@
 
 ui:
   stamp_recipes: "§a✦ Rezeptbuch offen §8· §7Nether Star → grünes Buch. Dort leben die Ausrüstungs-Upgrades."
-  act3_subtitle: "Stahl · Teleports · der Stempel"
+  act3_subtitle: "der Drill · der Stempel · die Straßen"
   act3_title: "AKT III · DIE STRASSEN"
   act2_subtitle: "dein Loadout · dein Codex · Booster"
   act2_title: "AKT II · DIE CAPITAL"
@@ -176,7 +176,7 @@ ui:
   # /guide + Discord tips (QuestStoryGate#guideTips) — one "next" at a time
   guide:
     autopickup: "Auto-Pickup schaltet sich bei Aetherion-Level §f5§7 ein — du bist Level §f{0}§7."
-    vex_gate: "Als Nächstes: §cSergeant Vex §7am Tor zu den Borderlands — Rüstung an, Klinge hoch."
+    vex_gate: "Als Nächstes: §cSergeant Vex §7am Tor zu den Borderlands — ein kurzer Kampf-Drill an seinem Golem."
     temper_south: "Als Nächstes: §eTemper §7an der Südstraße Richtung Minen — verschmilz einen Booster."
     ledger_capital: "Als Nächstes: §dMiss Ledger §7in der Capital — Nether Star → Teleports → Capital, oder §f/capital§7."
     forager_fell: "§aDer Forager §7oben am Hügel zeigt dir das Fällen — schlag zu, wenn der Balken grün ist."
@@ -242,7 +242,7 @@ msg:
 
 quests:
   lesson_combat:
-    description: "Sergeant Vex will dich ausgerüstet sehen: Rüstung an, Klinge in der Hand. Der volle Drill kommt mit dem neuen Kampf."
+    description: "Sergeant Vex' Drill am Tor zu den Borderlands: Parier seinen Golem, roll durch den Stampfer, lande einen Finisher."
     title: "So kämpft man hier"
   # Das Schlaflied (main story, Act I–II)
   lullaby_old_tale:
@@ -430,6 +430,11 @@ dialogs:
     - "Sergeant Vex. Kämpfen heißt hier nicht: Klick halten und beten."
     - "Der Drill wird gerade neu gebaut — Beinarbeit, Timing, alles. Wenn er steht, jag ich dich durch."
     - "Heute: Rüstung an — Egons ganzes Kit — und eine Klinge in die Hand. Dann sieh mich an."
+  vex_combat_drill:
+    - "Sergeant Vex. Da draußen bringt dich Dauerklicken um. Also drillen wir."
+    - "Mein Golem schlägt zurück. Gelbes §e!§f — tipp §eF§f, wenn seine Faust blitzt. Das ist eine Parade."
+    - "Rotes §c!!§f — das blockst du nicht. §eSchleichen + Springen§f, roll durch."
+    - "Dann drei volle Schläge am Stück, kein Spam: ein §6Finisher§f. Kit an, Klinge hoch. Bereit?"
   # ---------------------------------------------------------------- gates
   fishing_before_egon:
     - "Moment. Erst Egon fertig machen — dann reden wir übers Angeln."
@@ -1084,13 +1089,17 @@ dialogs:
 
 completed:
   ledger_spine:
-    - "Loadout steht. Gut. Gestempelt."
+    - "Loadout steht. Gut. Abgeheftet."
     - "Als Nächstes: §eTemper§f an der Südstraße, dann §cSergeant Vex§f am Tor zu den Borderlands."
     - "Komm nach beiden zurück, {player}. Ich schließe die Orientierung — und hab einen Hilfeschalter."
   default:
     - "Wir sind quitt. Sagt das Klemmbrett."
     - "Geh und mach jemand anderem den Tag ein bisschen schlechter."
   egon:
+    orientation:
+      - "Passt das Kit? Gut. Sag's mir nicht, wenn nicht."
+      - "Dein nächster Halt steht im §egelben Balken oben§f. Trau ihm mehr als mir."
+      - "Verlaufen? Nether Star → §eTeleports§f → Capital. §dMiss Ledger§f regelt den Rest."
     default:
       - "Passt das Kit? Gut. Sag's mir nicht, wenn nicht."
       - "Der §eQuartermaster§f hinter dem kleinen Markt will dich als Nächstes."
@@ -1122,13 +1131,13 @@ completed:
   booster_tutor:
     default:
       - "Booster gefust. Rezepte bleiben jederzeit im §eRecipe Book§f."
-      - "Als Nächstes: §eMiss Ledger§f in der Capital — Skills. Dann die Felder."
+      - "Als Nächstes: §eMiss Ledger§f in der Capital — dein Loadout. Dann §cSergeant Vex§f."
     after_skills:
       - "In letzter Zeit was Scharfes gefust, {player}?"
       - "Der Anvil ist immer im Manager. Rezepte im §eRecipe Book§f."
   ledger:
-    - "Skill sitzt. Gut. Gestempelt."
-    - "Als Nächstes: die Felder — §eFarmer§f (Weizen) und §eLark§f (Pets), gleiche Ecke."
+    - "Loadout steht. Gut. Abgeheftet."
+    - "Als Nächstes: §eTemper§f an der Südstraße, dann §cSergeant Vex§f am Tor zu den Borderlands."
     - "Komm nach beiden zurück, {player}. Ich schließe die Orientierung — und hab einen Hilfeschalter."
   farmer:
     default:
@@ -1279,7 +1288,7 @@ talk:
   ledger:
     next_temper: "Als Nächstes: §eTemper§f, Südstraße Richtung Minen. Booster — die andere Hälfte deines Builds."
     autopickup_soon: "Achte auf den Balken unten: Level §e5§f, und Drops fliegen zu dir. Du bist Level §e{0}§f."
-    loadout_ok: "Loadout steht, Codex offen. Gut. Gestempelt."
+    loadout_ok: "Loadout steht, Codex offen. Gut. Abgeheftet."
     skill_next: "Jetzt §dSkills§f — der blinkende Tab. Rüste einen aus."
     codex_seen: "Dein Kontobuch. Jeder Baum, jedes Erz, jeder Kill landet da drin — Stufen zahlen Münzen."
     codex_next: "Jetzt dein §eCodex§f — oben links auf derselben Seite, oder §e/codex§f."
@@ -1536,6 +1545,21 @@ talk:
     combat_pass: "Ausreichend. Bestanden — für heute."
     combat_armour: "Rüstung in die Rüstungsslots, {player}. Egons ganzes Kit. Dann die Klinge."
     combat_blade: "Rüstung: passt. Hände: leer. §eKlinge§f in die Haupthand, {player}."
+    combat_go: "Gut. Kit an, Klinge hoch. Dann sieh mich an."
+    # Combat drill (tutorial/CombatTeach.java)
+    drill_go: "Gut. Der Golem kommt neben dir hoch. Achte auf seine Faust, nicht auf mein Gesicht."
+    drill_no_room: "Kein Platz für den Golem. Freier Boden, dann sprich mich an — oder jeder Feind hinterm Tor."
+    drill_rearm: "Frischer Golem, neben dir. Nochmal."
+    drill_off: "Der Drill fällt heute aus. Kit an zählt — melde dich."
+    drill_hint_parry: "Gelbes §e!§f über dem Kopf: tipp §eF§f, sobald die Faust weiß blitzt. Nicht vorher."
+    drill_hint_dodge: "Rotes §c!!§f und ein Ring am Boden: §eSchleichen§f halten, §eSpringen§f, wenn der Boden reißt."
+    drill_hint_finisher: "Drei Treffer aufs selbe Ziel, jeder voll aufgeladen. Spam setzt zurück."
+    drill_parried: "Saubere Parade. Er taumelt — das ist deine Lücke."
+    drill_rolled: "Durch, nicht weg. Gut."
+    drill_finished: "Drei saubere Schläge. Das ist ein Finisher. Spam kommt da nie hin."
+    drill_done: "Das war der Drill. Melden, {player}."
+    drill_pass: "Parade, Rolle, Finisher. Bestanden — diesmal richtig."
+    drill_riposte: "Gratis-Tipp: ein voller Schlag direkt nach der Parade ist ein §dKonter§f. §e/combat§f zeigt den Rest."
     ten_down: "Zehn erledigt, {player}. Stahl abgeheftet. Du bist weniger ein Risiko."
     tip_fallback: "§7Kleiner Tipp — Combat-Set und Booster aufrüsten, bevor's ins härtere Ödland geht."
     rite_fallback: "Loser Faden — §cRite Warden§f im Ödland, für Bosse. Oder nicht. Die Karte gehört dir."
@@ -1574,7 +1598,7 @@ talk:
   root_cellar:
     first: "Mühlstein-Speisekammer, Schätzchen. Compacted Crops rein, feine Vorräte raus."
   redirect:
-    vex_gate: "§cSergeant Vex§f, Tor zu den Borderlands. Er will dich ausgerüstet sehen."
+    vex_gate: "§cSergeant Vex§f, Tor zu den Borderlands. Er drillt Rookies."
     temper_south: "§eTemper§f, Südstraße Richtung Minen. Booster."
     ledger_capital: "§dMiss Ledger§f, Capital. Nether Star → Teleports, oder §e/capital§f."
     egon_oak: "§aEgon§f wartet auf seine Eiche. Pier."

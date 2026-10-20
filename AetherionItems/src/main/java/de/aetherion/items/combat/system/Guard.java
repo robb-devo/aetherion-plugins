@@ -161,6 +161,7 @@ final class Guard {
                 state.rollDodged = true;
                 system.refund(state, system.config().perfectDodgeRefund);
                 system.feedback().perfectDodge(player);
+                system.drill(player, CombatSystem.DRILL_DODGE);
             }
             system.markCombat(player, tick);
             return;
@@ -254,6 +255,9 @@ final class Guard {
             state.riposteUntil = tick + cfg.riposteWindow;
             state.riposteTarget = source == null ? null : AetherEntities.root(source).getUniqueId();
             system.feedback().perfectParry(player, source, boss);
+            if (first) {
+                system.drill(player, CombatSystem.DRILL_PARRY);
+            }
         } else {
             system.feedback().guarded(player, source);
         }

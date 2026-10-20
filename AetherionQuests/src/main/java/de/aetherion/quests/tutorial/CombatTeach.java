@@ -6,77 +6,120 @@ import de.aetherion.quests.manager.QuestManager;
 import de.aetherion.quests.model.Objective;
 import de.aetherion.quests.model.ObjectiveType;
 import de.aetherion.quests.model.Quest;
+import de.aetherion.quests.model.QuestState;
+import de.aetherion.quests.npc.LivingNpcProfile;
+import de.aetherion.quests.npc.QuestNPC;
+import de.aetherion.quests.npc.QuestNPCRegistry;
 import de.aetherion.quests.reward.Reward;
 
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 /**
- * Orientation Act III, beat 6 — "How You Fight Here". <b>Reserved for the combat elevate (Saturday).</b>
+ * Orientation Act III, beat 6 — "How You Fight Here": Sergeant Vex's combat drill at the Borderlands gate.
  * <p>
- * Today it is a stub: Sergeant Vex says the drill is being rebuilt and only checks the kit is on
- * (two armour pieces and a weapon in hand). Everything the new combat needs is already wired — quest id,
- * NPC, spot, objective hook, lines, the spine gate — so Saturday fills {@code TODO(combat-sat)} here and in
- * nothing else of the spine.
+ * Kit check plus three moves, each on the Items combat kit's training golem (yellow "!" jab, red "!!" slam):
  * <ul>
- *   <li>Quest {@value #QUEST_ID}, registered by {@link #register}; offered by {@value #NPC_ID} ahead of his
- *       Borderlands lesson ({@code QuestStoryGate.spineQuestFor}).</li>
- *   <li>Spot: Vex at the Borderlands gate (live npcs.yml, world 161.5 58 73.5). Walking in unlocks the
- *       Borderlands teleport, which the spine uses as its walk-in lesson.</li>
- *   <li>Objective {@value #READY}: noted by {@link OrientationWatch} once {@link #ready} holds.</li>
+ *   <li>{@value #READY}: two armour pieces and a weapon in hand, noted by {@link OrientationWatch}.</li>
+ *   <li>{@value #PARRY}: a perfect parry (F) — the golem's jab.</li>
+ *   <li>{@value #DODGE}: a perfect dodge (Sneak + Jump roll) — through the golem's unparryable slam.</li>
+ *   <li>{@value #FINISHER}: three timed (full-charge) hits on one target.</li>
  * </ul>
+ * The moves are reported by Items ({@code combat.system.CombatSystem#drill} → {@code QuestProgressHook.noteUsed})
+ * from any fight, so Borderlands mobs count too, but the golem means nobody waits for a mob: Vex puts one up
+ * beside the player on accept and again on any visit without one. A refused spawn gets a "find open ground"
+ * line instead.
+ * <p>
+ * The drill needs the Items kit. {@value #LIVE_PATH} (default on) and the kit running at startup put the moves
+ * on the quest; otherwise it stays the gear-check stub. If the kit goes off later, {@link OrientationWatch}
+ * credits the moves once the kit check passes, so nobody is stuck. Players who passed the stub stay passed
+ * ({@code QuestStoryGate.tutorialDone} only reads the quest state).
  */
 public final class CombatTeach {
 
     public static final String QUEST_ID = "lesson_combat";
     public static final String NPC_ID = "vex";
-    /** Kit on, blade up. Today's only objective. */
+    /** Kit on, blade up. */
     public static final String READY = "COMBAT_READY";
-    /** Config switch for the real drill (default off = stub lines). */
+    /** Drill moves, reported by Items {@code CombatSystem} (keep the strings in step). */
+    public static final String PARRY = "COMBAT_PARRY";
+    public static final String DODGE = "COMBAT_DODGE";
+    public static final String FINISHER = "COMBAT_FINISHER";
+    /** Config switch for the drill; on unless a server sets it false (then the gear-check stub runs). */
     public static final String LIVE_PATH = "onboarding.combat-teach.live";
 
-    // TODO(combat-sat): the drill's objectives. The Items combat system reports each move through
-    // QuestProgressHook.noteUsed(player, "<TARGET>") and register() adds them below READY, e.g.
-    //   COMBAT_DODGE  — dash/roll through a telegraphed hit
-    //   COMBAT_GUARD  — one clean guard / parry window
-    //   COMBAT_HEAVY  — one charged / heavy hit that lands
-    // Add a display name per target in model.Objective#getDisplayName. Nothing else in the spine changes.
+    private static final String[] MOVES = {PARRY, DODGE, FINISHER};
+    /** A golem farther away than this counts as gone: Vex puts up a fresh one. */
+    private static final double GOLEM_RANGE = 16.0;
+
+    /** Set by {@link #register}: the quest carries the drill moves (not the stub). */
+    private static boolean drill;
 
     private CombatTeach() {
     }
 
-    /** Registers the spine quest. Called from {@code QuestRegistry.registerAll}. */
+    /** Registers the spine quest. Called from {@code QuestRegistry.registerAll}, after Items is enabled. */
     public static void register(QuestManager questManager) {
+        drill = switchOn() && kitRunning();
         Quest quest = new Quest(
                 QUEST_ID,
                 "How You Fight Here",
-                "Sergeant Vex wants you kitted: armour on, blade in hand. The full drill lands with the new combat."
+                drill
+                        ? "Sergeant Vex's drill at the Borderlands gate: parry his golem, roll through its slam, land a finisher."
+                        : "Sergeant Vex wants you kitted: armour on, blade in hand. The full drill lands with the new combat."
         );
         quest.setServiceId(NPC_ID);
         quest.setTurnInNpcId(NPC_ID);
         quest.addObjective(new Objective(ObjectiveType.USE, READY, 1));
-        // TODO(combat-sat): when live(), add the drill objectives here (see the targets above).
+        if (drill) {
+            for (String move : MOVES) {
+                quest.addObjective(new Objective(ObjectiveType.USE, move, 1));
+            }
+        }
         quest.addReward(new Reward("Coins", 60));
         quest.addReward(new Reward("XP", 60));
         questManager.registerQuest(quest);
     }
 
-    /**
-     * True once the new combat ships and the drill should run instead of the stub.
-     * TODO(combat-sat): also read the Items combat kill switch ({@code combat.system.enabled}) so a disabled
-     * combat system falls back to the stub on its own.
-     */
+    /** True when the quest runs the drill (switch on and the Items kit was up at startup). */
     public static boolean live() {
-        AetherionQuests plugin = AetherionQuests.getInstance();
-        return plugin != null && plugin.getConfig().getBoolean(LIVE_PATH, false);
+        return drill;
     }
 
-    /** Today's pass: two armour pieces worn and a weapon in the main hand. */
+    private static boolean switchOn() {
+        AetherionQuests plugin = AetherionQuests.getInstance();
+        return plugin == null || plugin.getConfig().getBoolean(LIVE_PATH, true);
+    }
+
+    /** The Items combat kit is loaded and enabled (an older Items jar without the drill API counts as off). */
+    public static boolean kitRunning() {
+        try {
+            return de.aetherion.items.combat.system.CombatSystem.running();
+        } catch (LinkageError ignored) {
+            return false;
+        }
+    }
+
+    public static boolean isMove(String target) {
+        for (String move : MOVES) {
+            if (move.equalsIgnoreCase(target)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /* =========================================================
+     * KIT CHECK
+     * ========================================================= */
+
+    /** Kit check: two armour pieces worn and a weapon in the main hand. */
     public static boolean ready(Player player) {
-        // TODO(combat-sat): the live drill completes on its own objectives; keep this as the entry check.
         return player != null && armourPieces(player) >= 2 && holdsWeapon(player);
     }
 
@@ -119,14 +162,49 @@ public final class CombatTeach {
         return false;
     }
 
-    /** Vex's offer lines for this beat (dialog id {@code vex_combat_intro}). */
+    /* =========================================================
+     * LINES + FLOW
+     * ========================================================= */
+
+    /** Vex's offer: the drill in four lines (dialog {@code vex_combat_drill}), or the stub's kit check. */
     public static String[] introLines(Player player) {
-        // TODO(combat-sat): when live(), the drill's intro — what the new combat asks of a rookie, in Vex's voice.
+        if (drill) {
+            return LangPack.dialogs(player, "vex_combat_drill", new String[] {
+                    "Sergeant Vex. Out there, spam-clicking gets you killed. So we drill.",
+                    "My golem hits back. Yellow §e!§f — tap §eF§f as its fist flashes. That's a parry.",
+                    "Red §c!!§f — you can't block that. §eSneak + Jump§f and roll through it.",
+                    "Then three full swings in a row, no spam: a §6finisher§f. Kit on, blade up. Ready?"
+            });
+        }
         return LangPack.dialogs(player, "vex_combat_intro", new String[] {
                 "Sergeant Vex. Fighting here isn't hold-click-and-pray.",
                 "The drill's being rebuilt — footwork, timing, the lot. When it lands, I put you through it.",
                 "Today: armour on — all of Egon's kit — and a blade in your hand. Then look at me."
         });
+    }
+
+    /** Vex's answer to "Sir, yes sir" (replaces his Borderlands "ten hostiles" bark for this beat). */
+    public static String acceptLine(Player player) {
+        return drill
+                ? LangPack.say(player, "vex.drill_go", "Good. Golem's coming up beside you. Watch its fist, not my face.")
+                : LangPack.say(player, "vex.combat_go", "Good. Kit on, blade up. Then look at me.");
+    }
+
+    /** Quest accepted: the golem goes up beside the player; Vex adds what is still missing. */
+    public static void started(Player player) {
+        if (player == null || !player.isOnline()) {
+            return;
+        }
+        List<String> lines = new ArrayList<>();
+        if (drill && kitRunning() && !armGolem(player)) {
+            lines.add(noRoomLine(player));
+        }
+        if (!ready(player)) {
+            lines.addAll(List.of(notReadyLines(player)));
+        }
+        for (String line : lines) {
+            vex(player, line);
+        }
     }
 
     /** Short nudge while the beat is running and the kit isn't on yet. */
@@ -137,13 +215,137 @@ public final class CombatTeach {
                 : new String[] {LangPack.say(player, "vex.combat_armour", "Armour in the armour slots, {player}. All of Egon's kit. Then the blade.")};
     }
 
+    /**
+     * Talking to Vex while the beat runs: the kit first, then a golem if theirs is gone (relog, wandered off,
+     * expired) and one hint for the next move still open.
+     */
+    public static String[] visitLines(Player player) {
+        if (!ready(player)) {
+            return notReadyLines(player);
+        }
+        if (!drill) {
+            return notReadyLines(player);
+        }
+        if (!kitRunning()) {
+            return new String[] {LangPack.say(player, "vex.drill_off", "Drill's grounded today. Kit on counts — report.")};
+        }
+        List<String> lines = new ArrayList<>();
+        if (!hasGolem(player)) {
+            lines.add(armGolem(player)
+                    ? LangPack.say(player, "vex.drill_rearm", "Fresh golem, beside you. Again.")
+                    : noRoomLine(player));
+        }
+        String hint = hintLine(player);
+        if (hint != null) {
+            lines.add(hint);
+        }
+        return lines.toArray(new String[0]);
+    }
+
+    /** One line for the first open move, in drill order. Null when all three are in. */
+    private static String hintLine(Player player) {
+        QuestManager qm = questManager();
+        if (qm == null) {
+            return null;
+        }
+        if (qm.getProgress(player, QUEST_ID, PARRY) < 1) {
+            return LangPack.say(player, "vex.drill_hint_parry",
+                    "Yellow §e!§f over its head: tap §eF§f the moment the fist flashes white. Not before.");
+        }
+        if (qm.getProgress(player, QUEST_ID, DODGE) < 1) {
+            return LangPack.say(player, "vex.drill_hint_dodge",
+                    "Red §c!!§f and a ring on the ground: hold §eSneak§f, hit §eJump§f as the ground cracks.");
+        }
+        if (qm.getProgress(player, QUEST_ID, FINISHER) < 1) {
+            return LangPack.say(player, "vex.drill_hint_finisher",
+                    "Three hits, same target, each at full charge. Spam resets the count.");
+        }
+        return null;
+    }
+
+    /**
+     * A drill move counted for the first time (QuestProgressBridge, after the progress landed): Vex calls it,
+     * and closes the drill once the last objective is in.
+     */
+    public static void noteMove(Player player, String target) {
+        if (player == null || target == null || !isMove(target)) {
+            return;
+        }
+        String line;
+        if (PARRY.equalsIgnoreCase(target)) {
+            line = LangPack.say(player, "vex.drill_parried", "Clean parry. It reels — that's your opening.");
+        } else if (DODGE.equalsIgnoreCase(target)) {
+            line = LangPack.say(player, "vex.drill_rolled", "Through it, not away from it. Good.");
+        } else {
+            line = LangPack.say(player, "vex.drill_finished", "Three clean swings. That's a finisher. Spam never gets there.");
+        }
+        vex(player, line);
+        QuestManager qm = questManager();
+        Quest quest = qm == null ? null : qm.getQuest(QUEST_ID);
+        if (quest != null && qm.getQuestState(player, quest) == QuestState.READY) {
+            vex(player, LangPack.say(player, "vex.drill_done", "That's the drill. Report, {player}."));
+        }
+    }
+
     /** Vex's lines once the pass is in (turn-in brief). */
     public static String[] passLines(Player player) {
-        // TODO(combat-sat): the drill's debrief (what they just did right) replaces the first line when live().
-        return new String[] {
-                LangPack.say(player, "vex.combat_pass", "Adequate. That's a pass — for today."),
-                LangPack.say(player, "vex.combat_kit", "Before the waste: a combat skill in your loadout, damage boosters on the blade."),
-                LangPack.say(player, "vex.combat_stamp", "Now §dMiss Ledger§f's stamp. §e/capital§f — you've got the teleport.")
-        };
+        List<String> lines = new ArrayList<>();
+        if (drill) {
+            lines.add(LangPack.say(player, "vex.drill_pass", "Parry, roll, finisher. That's a pass — a real one."));
+            lines.add(LangPack.say(player, "vex.drill_riposte",
+                    "Free tip: a full swing right after a parry is a §dRiposte§f. §e/combat§f lists the rest."));
+        } else {
+            lines.add(LangPack.say(player, "vex.combat_pass", "Adequate. That's a pass — for today."));
+        }
+        lines.add(LangPack.say(player, "vex.combat_kit", "Before the waste: a combat skill in your loadout, damage boosters on the blade."));
+        lines.add(LangPack.say(player, "vex.combat_stamp", "Now §dMiss Ledger§f's stamp. §e/capital§f — you've got the teleport."));
+        return lines.toArray(new String[0]);
+    }
+
+    /** Drill passed: the golem goes, so it doesn't swing at whoever walks past the gate next. */
+    public static void passed(Player player) {
+        try {
+            de.aetherion.items.combat.system.CombatSystem.clearGolem(player);
+        } catch (LinkageError ignored) {
+        }
+    }
+
+    /* =========================================================
+     * HELPERS
+     * ========================================================= */
+
+    private static String noRoomLine(Player player) {
+        return LangPack.say(player, "vex.drill_no_room",
+                "No room for my golem here. Open ground and talk to me — or past the gate, any hostile counts.");
+    }
+
+    private static boolean armGolem(Player player) {
+        try {
+            return de.aetherion.items.combat.system.CombatSystem.drillGolem(player);
+        } catch (LinkageError ignored) {
+            return false;
+        }
+    }
+
+    private static boolean hasGolem(Player player) {
+        try {
+            return de.aetherion.items.combat.system.CombatSystem.hasGolem(player, GOLEM_RANGE);
+        } catch (LinkageError ignored) {
+            return false;
+        }
+    }
+
+    private static void vex(Player player, String line) {
+        QuestNPC npc = QuestNPCRegistry.getNPC(NPC_ID);
+        if (npc != null) {
+            LivingNpcProfile.say(player, npc, line);
+        } else {
+            LivingNpcProfile.say(player, NPC_ID, "Sergeant Vex", line);
+        }
+    }
+
+    private static QuestManager questManager() {
+        AetherionQuests plugin = AetherionQuests.getInstance();
+        return plugin == null ? null : plugin.getQuestManager();
     }
 }

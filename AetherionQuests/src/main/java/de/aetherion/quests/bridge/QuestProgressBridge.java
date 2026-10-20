@@ -120,8 +120,14 @@ public final class QuestProgressBridge {
                 if (objective.getTarget() == null || !objective.getTarget().equalsIgnoreCase(target)) {
                     continue;
                 }
+                int before = manager.getProgress(player, quest.getId(), objective.getTarget());
                 manager.addProgress(player, quest.getId(), objective.getTarget(), 1);
                 de.aetherion.quests.tutorial.OrientationWatch.noteLesson(player, quest.getId(), objective.getTarget());
+                // Vex calls each drill move once, the first time it counts.
+                if (de.aetherion.quests.tutorial.CombatTeach.QUEST_ID.equalsIgnoreCase(quest.getId())
+                        && manager.getProgress(player, quest.getId(), objective.getTarget()) > before) {
+                    de.aetherion.quests.tutorial.CombatTeach.noteMove(player, objective.getTarget());
+                }
             }
         }
     }

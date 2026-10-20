@@ -6,6 +6,7 @@ import de.aetherion.items.AetherionItems;
 import de.aetherion.items.manager.ActiveEquipmentStats;
 import de.aetherion.items.manager.ItemManager;
 import de.aetherion.items.model.ItemCapability;
+import de.aetherion.items.util.QuestProgressHook;
 
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -139,6 +140,53 @@ public final class CombatSystem {
     /** pulse: a move was paid for in the last few ticks (the bar flashes). blink: phase for the winded flash. */
     public record Gauge(double fraction, boolean denied, boolean exhausted, boolean guarding, boolean perfect,
                         boolean pulse, boolean blink) {
+    }
+
+    /* =========================================================
+     * ONBOARDING DRILL (Quests lesson_combat, Sergeant Vex)
+     * ========================================================= */
+
+    /** Vex's drill quest; a clean move is reported only while it runs. */
+    static final String DRILL_QUEST = "lesson_combat";
+    /** USE targets the drill counts (mirrored in Quests {@code tutorial.CombatTeach}). */
+    static final String DRILL_PARRY = "COMBAT_PARRY";
+    static final String DRILL_DODGE = "COMBAT_DODGE";
+    static final String DRILL_FINISHER = "COMBAT_FINISHER";
+
+    /** True while the kit runs ({@code enabled} in combat-system.yml). Quests falls back to its gear check otherwise. */
+    public static boolean running() {
+        CombatSystem system = instance;
+        return system != null && system.config.enabled;
+    }
+
+    /**
+     * Puts this player's training golem up beside them for the drill, replacing an old one. False when the kit
+     * is off, the golem cap is reached, there is no open ground, or a protection plugin refused the spawn.
+     */
+    public static boolean drillGolem(Player player) {
+        CombatSystem system = instance;
+        return system != null && player != null && player.isOnline() && system.dummies.spawnNear(player);
+    }
+
+    /** True while this player's training golem stands within {@code range} blocks of them. */
+    public static boolean hasGolem(Player player, double range) {
+        CombatSystem system = instance;
+        return system != null && player != null && system.dummies.hasNear(player, range);
+    }
+
+    /** Removes this player's training golem (drill passed). */
+    public static void clearGolem(Player player) {
+        CombatSystem system = instance;
+        if (system != null && player != null) {
+            system.dummies.clear(player);
+        }
+    }
+
+    /** A clean move for Vex's drill: one quest lookup per clean move, a USE note only while the quest runs. */
+    void drill(Player player, String target) {
+        if (player != null && QuestProgressHook.isQuestActive(player, DRILL_QUEST)) {
+            QuestProgressHook.noteUsed(player, target);
+        }
     }
 
     /* =========================================================

@@ -575,10 +575,19 @@ public class NpcListener implements Listener {
 
             if (state == QuestState.ACTIVE
                     && de.aetherion.quests.tutorial.CombatTeach.QUEST_ID.equalsIgnoreCase(quest.getId())) {
-                for (String line : de.aetherion.quests.tutorial.CombatTeach.notReadyLines(player)) {
+                for (String line : de.aetherion.quests.tutorial.CombatTeach.visitLines(player)) {
                     npcSay(player, npc, line);
                 }
                 de.aetherion.quests.ui.QuestProgressDisplay.showProgress(player, questManager);
+                return;
+            }
+
+            // READY under the gear-check stub, before the drill objectives existed: addProgress ignores READY
+            // quests, so the old pass still hands in instead of waiting on moves it can never count.
+            if (state == QuestState.READY
+                    && de.aetherion.quests.tutorial.CombatTeach.QUEST_ID.equalsIgnoreCase(quest.getId())
+                    && !questManager.areAllObjectivesComplete(player, quest)) {
+                completeQuestNPCQuest(player, npc, quest);
                 return;
             }
 
@@ -1224,7 +1233,7 @@ public class NpcListener implements Listener {
         AetherionQuests plugin = AetherionQuests.getInstance();
         String name = npc.getName();
 
-        npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "ledger.loadout_ok", "Loadout set, Codex open. Good. Stamped."));
+        npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "ledger.loadout_ok", "Loadout set, Codex open. Good. Filed."));
         int level = de.aetherion.quests.util.QuestSkillGate.accountLevel(player);
         if (level >= 0 && level < de.aetherion.quests.util.QuestStoryGate.AUTO_PICKUP_LEVEL) {
             npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "ledger.autopickup_soon",
@@ -1521,6 +1530,7 @@ public class NpcListener implements Listener {
 
         if (de.aetherion.quests.tutorial.CombatTeach.QUEST_ID.equalsIgnoreCase(quest.getId())) {
             de.aetherion.quests.ui.QuestHint.clearPending(player);
+            de.aetherion.quests.tutorial.CombatTeach.passed(player);
             for (String line : de.aetherion.quests.tutorial.CombatTeach.passLines(player)) {
                 npcSay(player, npc, line);
             }

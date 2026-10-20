@@ -35,7 +35,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * <ul>
  *   <li>Codex opened → {@value #CODEX} for Miss Ledger's loadout lesson (Items has no hook for it).</li>
  *   <li>Kit on + blade up → {@link CombatTeach#READY} for Vex's combat beat (checked once a second, only
- *       while that quest runs).</li>
+ *       while that quest runs). If the Items combat kit went off after startup, the drill moves are credited
+ *       with it, so the beat never waits on a kit that isn't there.</li>
  *   <li>Aetherion Level 4 → 5 while online: Ledger names the auto-pickup unlock once, so the Items title
  *       isn't the only clue.</li>
  *   <li>Act cards for Act II and III, once per player.</li>
@@ -89,10 +90,17 @@ public final class OrientationWatch implements Listener {
 
     private void tick() {
         Quest combat = questManager.getQuest(CombatTeach.QUEST_ID);
+        // Drill on the quest but the Items kit switched off since startup: the kit check alone passes it.
+        boolean kitDown = CombatTeach.live() && !CombatTeach.kitRunning();
         for (Player player : Bukkit.getOnlinePlayers()) {
             if (combat != null && questManager.getQuestState(player, combat) == QuestState.ACTIVE
                     && CombatTeach.ready(player)) {
                 QuestProgressBridge.noteUsed(player, CombatTeach.READY);
+                if (kitDown) {
+                    for (String move : new String[] {CombatTeach.PARRY, CombatTeach.DODGE, CombatTeach.FINISHER}) {
+                        questManager.addProgress(player, CombatTeach.QUEST_ID, move, 1);
+                    }
+                }
             }
             watchLevel(player);
         }
@@ -172,7 +180,7 @@ public final class OrientationWatch implements Listener {
                 : LangPack.ui(player, "act3_title", "ACT III · THE ROADS");
         String subtitle = act == 2
                 ? LangPack.ui(player, "act2_subtitle", "your loadout · your Codex · boosters")
-                : LangPack.ui(player, "act3_subtitle", "steel · teleports · the stamp");
+                : LangPack.ui(player, "act3_subtitle", "the drill · the stamp · the roads");
         player.showTitle(Title.title(
                 Component.text(title, act == 2 ? NamedTextColor.LIGHT_PURPLE : NamedTextColor.RED, TextDecoration.BOLD),
                 Component.text(subtitle, NamedTextColor.GRAY),

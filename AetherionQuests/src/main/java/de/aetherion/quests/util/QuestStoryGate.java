@@ -26,7 +26,7 @@ import java.util.Set;
  * <pre>
  *   Act I   · Anker Harbour   Egon (welcome_aboard) → Forager (gather_wood: the Fell) → Egon's kit + Capital teleport
  *   Act II  · The Capital     Miss Ledger (lesson_manager: loadout + Codex) → Temper (lesson_boost)
- *   Act III · The Roads       Sergeant Vex (lesson_combat — combat stub) → Miss Ledger's stamp → the pads
+ *   Act III · The Roads       Sergeant Vex (lesson_combat — combat drill) → Miss Ledger's stamp → the pads
  * </pre>
  * Act map: {@code docs/ONBOARDING_ACT_MAP.md}. Quartermaster, Foreman, Farmer, Lark and Tackle are side roads
  * after the stamp now; their quests still run for anyone who already holds them.
@@ -366,7 +366,7 @@ public final class QuestStoryGate {
         } else if (stop == TEMPER) {
             tips.add(guide(player, "temper_south", "Next: §eTemper §7on the south road toward the Mines — fuse one booster."));
         } else if (stop == VEX) {
-            tips.add(guide(player, "vex_gate", "Next: §cSergeant Vex §7at the Borderlands gate — armour on, blade up."));
+            tips.add(guide(player, "vex_gate", "Next: §cSergeant Vex §7at the Borderlands gate — a short combat drill on his golem."));
         } else {
             tips.add(guide(player, "stamp", "Back to §dMiss Ledger §7— she stamps orientation shut and shows you the isles."));
         }
@@ -454,7 +454,7 @@ public final class QuestStoryGate {
             return LangPack.say(player, "redirect.temper_south", "§eTemper§f, south road toward the Mines. Boosters.");
         }
         if (stop == VEX) {
-            return LangPack.say(player, "redirect.vex_gate", "§cSergeant Vex§f, Borderlands gate. He wants you kitted.");
+            return LangPack.say(player, "redirect.vex_gate", "§cSergeant Vex§f, Borderlands gate. He drills rookies.");
         }
         return LangPack.say(player, "redirect.stamp", "§dMiss Ledger §fcloses orientation. Go get stamped.");
     }
