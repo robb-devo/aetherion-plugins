@@ -49,7 +49,7 @@ byte-identical to a build of `main` (classes and resources).
 | Jar | mmo-r | mmo-d | mmo-c | mmo-i | hub |
 |---|---|---|---|---|---|
 | Dungeons | a92a2c42 | a92a2c42 | – | – | – |
-| Mining / Foraging / Farming / Fishing | 4d838858 (10-20) / f9de95e9 / 5e8a58ce / a6aae3f0 | Fishing **03aedf90 (10-02)** | same as mmo-r | – | – |
+| Mining / Foraging / Farming / Fishing | d55c57f6 / 8d58797b (10-20) / 5e8a58ce / a6aae3f0 | Fishing **03aedf90 (10-02)** | same as mmo-r | – | – |
 | Hub | 96ed909c | **`AetherionHub.jar` (09-22)** | – | – | **d1a097e7 (10-05)** |
 | Beta | ed9d1621 | ed9d1621 | – | – | – |
 | SamuraiBoss / Pit | mmo-r only | | | | Pit on hub |
@@ -70,11 +70,14 @@ Known gaps:
 - 18 newer Quests lines lack German (`validate_de_overlay.py`: `ui.roads.*`,
   `dialogs.amethyst_mines_guide_intro`).
 - `CombatTeach` (tutorial combat beat) is still a stub.
-- Veins reset fixed 10-20 (PR #71, Mining `4d838858` on mmo-r and mmo-c): the schematic is pasted
-  in place on FAWE's async queue (~1 s, no main-thread stall). mmo-c has `veins.daily-reset: false`.
-  Other synchronous FAWE pastes (Eldervale, Exile, Dungeons, Foraging, Hub, Pit, Guilds) still open.
-- `AetherionItems` test sources do not compile (`CelestialDyeTest`), so local builds need
-  `-Dmaven.test.skip=true`.
+- Veins reset fixed 10-20 (PR #71): the schematic is pasted in place on FAWE's async queue (~1 s, no
+  main-thread stall). mmo-c has `veins.daily-reset: false`. The Eldervale and Forage isle pastes moved to
+  the same queue (PR #73, Mining `d55c57f6` / Foraging `8d58797b` on mmo-r and mmo-c). Exile, Hub, Pit and
+  Guilds already paste async; Dungeons endless stays synchronous until mmo-d has FAWE.
+- ServerWaypoint 2.8.4 on mmo-r fails to enable (its data file has the wrong format); third-party.
+- `AetherionItems` test sources do not compile, so local builds need `-Dmaven.test.skip=true`.
+  `CelestialDyeTest` asserts an unshipped rank change (Monkey/Citrus/Beta/MVP++ no longer LuckPerms
+  parents, which would drop Monkey's content kit); see closed PR #74. Needs a product decision.
 - Quests on `main` drops two unused `de.yml` keys (PR #72); live Quests still carries them until the
   next Quests deploy. No behaviour difference.
 
