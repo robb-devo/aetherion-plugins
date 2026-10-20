@@ -1,6 +1,7 @@
 package de.aetherion.mining.veins;
 
 import de.aetherion.mining.AetherionMining;
+import de.aetherion.mining.FaweQueue;
 
 import com.sk89q.worldedit.WorldEdit;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
@@ -12,7 +13,6 @@ import com.sk89q.worldedit.function.operation.Operation;
 import com.sk89q.worldedit.function.operation.Operations;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.session.ClipboardHolder;
-import com.sk89q.worldedit.util.SideEffectSet;
 import com.sk89q.worldedit.EditSession;
 
 import org.bukkit.Bukkit;
@@ -21,7 +21,6 @@ import org.bukkit.command.CommandSender;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.lang.reflect.Method;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.logging.Level;
@@ -74,7 +73,7 @@ public final class AmethystPaste {
         boolean ignoreAir = !restore && plugin.getConfig().getBoolean("veins.ignore-air", false);
         world.setGameRule(org.bukkit.GameRule.RANDOM_TICK_SPEED, 0);
 
-        if (!fawePresent()) {
+        if (!FaweQueue.present()) {
             message(sender, "§dPasting Amethyst Mines at §f" + x + " " + y + " " + z
                     + " §d(ignoreAir=" + ignoreAir + ", WorldEdit, main thread)…");
             boolean ok;
@@ -102,7 +101,7 @@ public final class AmethystPaste {
             }
         };
         try {
-            runAsync(plugin, task);
+            FaweQueue.runAsync(plugin, task);
         } catch (RuntimeException exception) {
             BUSY.set(false);
             plugin.getLogger().log(Level.SEVERE, "Could not start the Amethyst Mines paste", exception);
@@ -127,17 +126,11 @@ public final class AmethystPaste {
                 clipboard = reader.read();
             }
             int changed;
-            try (EditSession editSession = queued ? buildQueuedSession(world) : WorldEdit.getInstance()
+            try (EditSession editSession = queued ? FaweQueue.session(world) : WorldEdit.getInstance()
                     .newEditSessionBuilder()
                     .world(BukkitAdapter.adapt(world))
                     .maxBlocks(-1)
                     .build()) {
-                if (queued) {
-                    try {
-                        editSession.setSideEffectApplier(SideEffectSet.none());
-                    } catch (Throwable ignored) {
-                    }
-                }
                 Operation op = new ClipboardHolder(clipboard)
                         .createPaste(editSession)
                         .to(BlockVector3.at(x, y, z))
@@ -158,74 +151,6 @@ public final class AmethystPaste {
             plugin.getLogger().log(Level.SEVERE, "Amethyst Mines paste failed", ex);
             message(plugin, sender, queued, "§cPaste failed: " + ex.getMessage());
             return false;
-        }
-    }
-
-    private static boolean fawePresent() {
-        if (Bukkit.getPluginManager().getPlugin("FastAsyncWorldEdit") != null) {
-            return true;
-        }
-        try {
-            Class.forName("com.fastasyncworldedit.core.FaweAPI");
-            return true;
-        } catch (ClassNotFoundException ignored) {
-            return false;
-        }
-    }
-
-    private static void runAsync(AetherionMining plugin, Runnable task) {
-        try {
-            Class<?> faweApi = Class.forName("com.fastasyncworldedit.core.FaweAPI");
-            Object manager = faweApi.getMethod("getTaskManager").invoke(null);
-            manager.getClass().getMethod("async", Runnable.class).invoke(manager, task);
-            return;
-        } catch (Throwable ignored) {
-        }
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, task);
-    }
-
-    /**
-     * FAWE EditSessionBuilder: unrestricted limits, no history, chunk queue.
-     * The FAWE-only builder methods are invoked reflectively so this compiles against WorldEdit 7.3
-     * (same approach as AetherionHub's FaweIslandPaste).
-     */
-    private static EditSession buildQueuedSession(World world) {
-        Object builder = WorldEdit.getInstance().newEditSessionBuilder()
-                .world(BukkitAdapter.adapt(world))
-                .maxBlocks(-1);
-        builder = invokeNoArg(builder, "limitUnlimited");
-        builder = invokeNoArg(builder, "allowedRegionsEverywhere");
-        builder = invokeNoArg(builder, "changeSetNull");
-        builder = invokeOne(builder, "fastMode", Boolean.class, Boolean.TRUE);
-        builder = invokeOne(builder, "checkMemory", Boolean.class, Boolean.FALSE);
-        try {
-            Object session = builder.getClass().getMethod("build").invoke(builder);
-            if (!(session instanceof EditSession editSession)) {
-                throw new IllegalStateException("EditSessionBuilder.build() did not return an EditSession");
-            }
-            return editSession;
-        } catch (ReflectiveOperationException exception) {
-            throw new IllegalStateException("Could not build FAWE EditSession", exception);
-        }
-    }
-
-    private static Object invokeNoArg(Object target, String name) {
-        try {
-            Method method = target.getClass().getMethod(name);
-            Object result = method.invoke(target);
-            return result != null ? result : target;
-        } catch (ReflectiveOperationException ignored) {
-            return target;
-        }
-    }
-
-    private static Object invokeOne(Object target, String name, Class<?> type, Object value) {
-        try {
-            Method method = target.getClass().getMethod(name, type);
-            Object result = method.invoke(target, value);
-            return result != null ? result : target;
-        } catch (ReflectiveOperationException ignored) {
-            return target;
         }
     }
 

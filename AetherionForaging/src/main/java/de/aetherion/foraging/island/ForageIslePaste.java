@@ -1,6 +1,7 @@
 package de.aetherion.foraging.island;
 
 import de.aetherion.foraging.AetherionForaging;
+import de.aetherion.foraging.FaweQueue;
 
 import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.WorldEdit;
@@ -31,6 +32,10 @@ import java.util.logging.Level;
 /**
  * Paste / clear Crystal Forage Isle. Plugin pastes are NOT in WorldEdit //undo —
  * use {@link #clear} to remove the last paste footprint.
+ * <p>
+ * With FastAsyncWorldEdit, reading the schematic and the block work run on FAWE's async queue; config
+ * writes, the return pad and Hub pad sync stay on the main thread. Plain WorldEdit keeps the old
+ * main-thread path.
  */
 public final class ForageIslePaste {
 
@@ -78,90 +83,150 @@ public final class ForageIslePaste {
         }
 
         final Location centerTarget = atPlayer != null ? atPlayer.clone() : null;
-        Bukkit.getScheduler().runTask(plugin, () -> {
-            long start = System.currentTimeMillis();
+        boolean queued = FaweQueue.present();
+        long start = System.currentTimeMillis();
+        // Step 1 (async with FAWE): read the schematic.
+        Runnable read = () -> {
+            Clipboard loaded;
             try {
-                Clipboard clipboard = readClipboard(schem);
-                if (clipboard == null) {
-                    sender.sendMessage("§cCould not read schematic.");
-                    return;
-                }
-
-                int px;
-                int py;
-                int pz;
-                if (centerTarget != null) {
-                    BlockVector3 pasteAt = pasteOriginForCenter(
-                            clipboard,
-                            centerTarget.getBlockX(),
-                            centerTarget.getBlockY(),
-                            centerTarget.getBlockZ());
-                    px = pasteAt.getBlockX();
-                    py = pasteAt.getBlockY();
-                    pz = pasteAt.getBlockZ();
-
-                    plugin.getConfig().set("forage-isle.world", world.getName());
-                    plugin.getConfig().set("forage-isle.paste.x", px);
-                    plugin.getConfig().set("forage-isle.paste.y", py);
-                    plugin.getConfig().set("forage-isle.paste.z", pz);
-                    // Return pad around where you stood (island center).
-                    int cx = centerTarget.getBlockX();
-                    int cy = centerTarget.getBlockY();
-                    int cz = centerTarget.getBlockZ();
-                    plugin.getConfig().set("forage-isle.return-platform.min.x", cx - 2);
-                    plugin.getConfig().set("forage-isle.return-platform.min.y", cy - 1);
-                    plugin.getConfig().set("forage-isle.return-platform.min.z", cz - 2);
-                    plugin.getConfig().set("forage-isle.return-platform.max.x", cx + 2);
-                    plugin.getConfig().set("forage-isle.return-platform.max.y", cy - 1);
-                    plugin.getConfig().set("forage-isle.return-platform.max.z", cz + 2);
-                    plugin.saveConfig();
-
-                    BlockVector3 dims = clipboard.getDimensions();
-                    sender.sendMessage("§7Schem size §f" + dims.getBlockX() + "×" + dims.getBlockY()
-                            + "×" + dims.getBlockZ() + " §7· WE paste-origin §f" + px + " " + py + " " + pz);
-                } else {
-                    px = plugin.getConfig().getInt("forage-isle.paste.x", 450);
-                    py = plugin.getConfig().getInt("forage-isle.paste.y", 90);
-                    pz = plugin.getConfig().getInt("forage-isle.paste.z", -500);
-                }
-
-                try (EditSession editSession = WorldEdit.getInstance()
-                        .newEditSessionBuilder()
-                        .world(BukkitAdapter.adapt(world))
-                        .maxBlocks(-1)
-                        .build()) {
-                    // Large floating isles (500³+) must skip history or the main thread
-                    // + Paper watchdog die mid-paste (OOM / NPE on flush).
-                    editSession.setFastMode(true);
-                    ClipboardHolder holder = new ClipboardHolder(clipboard);
-                    if (rotateY != 0) {
-                        holder.setTransform(new AffineTransform().rotateY(rotateY));
-                    }
-                    Operation op = holder
-                            .createPaste(editSession)
-                            .to(BlockVector3.at(px, py, pz))
-                            .ignoreAirBlocks(ignoreAir)
-                            .build();
-                    Operations.complete(op);
-                }
-                long ms = System.currentTimeMillis() - start;
-                if (centerTarget != null) {
-                    sender.sendMessage("§aForage Isle pasted in §f" + ms + "ms§a — center at §f"
-                            + centerTarget.getBlockX() + " " + centerTarget.getBlockY() + " "
-                            + centerTarget.getBlockZ() + "§a.");
-                } else {
-                    sender.sendMessage("§aForage Isle pasted in §f" + ms + "ms§a at §f"
-                            + px + " " + py + " " + pz + "§a.");
-                }
-                placeReturnPad(plugin, world);
-                syncHubForagePads(plugin, world, sender);
-                reloadHubPads(sender);
-                sender.sendMessage("§7Clear anytime with §f/forageadmin isle clear§7 (not WorldEdit //undo).");
+                loaded = readClipboard(schem);
             } catch (Throwable t) {
-                plugin.getLogger().log(Level.SEVERE, "Forage Isle paste failed", t);
-                sender.sendMessage("§cPaste failed: " + t.getMessage());
+                fail(plugin, sender, queued, "Forage Isle paste failed", "§cPaste failed: ", t);
+                return;
             }
-        });
+            final Clipboard clipboard = loaded;
+            if (clipboard == null) {
+                tell(plugin, sender, queued, "§cCould not read schematic.");
+                return;
+            }
+            // Step 2 (main thread): work out the origin and save it to config.
+            onMain(plugin, queued, () -> {
+                BlockVector3 at = pasteOrigin(plugin, sender, clipboard, world, centerTarget);
+                // Step 3 (async with FAWE): the paste itself.
+                onQueue(plugin, queued, () -> {
+                    try (EditSession editSession = openSession(world, queued)) {
+                        ClipboardHolder holder = new ClipboardHolder(clipboard);
+                        if (rotateY != 0) {
+                            holder.setTransform(new AffineTransform().rotateY(rotateY));
+                        }
+                        Operation op = holder
+                                .createPaste(editSession)
+                                .to(at)
+                                .ignoreAirBlocks(ignoreAir)
+                                .build();
+                        Operations.complete(op);
+                    } catch (Throwable t) {
+                        fail(plugin, sender, queued, "Forage Isle paste failed", "§cPaste failed: ", t);
+                        return;
+                    }
+                    long ms = System.currentTimeMillis() - start;
+                    // Step 4 (main thread): return pad, Hub pads, messages.
+                    onMain(plugin, queued, () -> {
+                        if (centerTarget != null) {
+                            sender.sendMessage("§aForage Isle pasted in §f" + ms + "ms§a — center at §f"
+                                    + centerTarget.getBlockX() + " " + centerTarget.getBlockY() + " "
+                                    + centerTarget.getBlockZ() + "§a.");
+                        } else {
+                            sender.sendMessage("§aForage Isle pasted in §f" + ms + "ms§a at §f"
+                                    + at.getBlockX() + " " + at.getBlockY() + " " + at.getBlockZ() + "§a.");
+                        }
+                        placeReturnPad(plugin, world);
+                        syncHubForagePads(plugin, world, sender);
+                        reloadHubPads(sender);
+                        sender.sendMessage("§7Clear anytime with §f/forageadmin isle clear§7 (not WorldEdit //undo).");
+                    });
+                });
+            });
+        };
+        if (queued) {
+            FaweQueue.runAsync(plugin, read);
+        } else {
+            Bukkit.getScheduler().runTask(plugin, read);
+        }
+    }
+
+    /** Paste origin for this run; centring on a player also stores the new origin and return pad in config. */
+    private static BlockVector3 pasteOrigin(AetherionForaging plugin, CommandSender sender, Clipboard clipboard,
+                                            World world, Location centerTarget) {
+        if (centerTarget == null) {
+            return BlockVector3.at(
+                    plugin.getConfig().getInt("forage-isle.paste.x", 450),
+                    plugin.getConfig().getInt("forage-isle.paste.y", 90),
+                    plugin.getConfig().getInt("forage-isle.paste.z", -500));
+        }
+        BlockVector3 pasteAt = pasteOriginForCenter(
+                clipboard,
+                centerTarget.getBlockX(),
+                centerTarget.getBlockY(),
+                centerTarget.getBlockZ());
+        int px = pasteAt.getBlockX();
+        int py = pasteAt.getBlockY();
+        int pz = pasteAt.getBlockZ();
+
+        plugin.getConfig().set("forage-isle.world", world.getName());
+        plugin.getConfig().set("forage-isle.paste.x", px);
+        plugin.getConfig().set("forage-isle.paste.y", py);
+        plugin.getConfig().set("forage-isle.paste.z", pz);
+        // Return pad around where you stood (island center).
+        int cx = centerTarget.getBlockX();
+        int cy = centerTarget.getBlockY();
+        int cz = centerTarget.getBlockZ();
+        plugin.getConfig().set("forage-isle.return-platform.min.x", cx - 2);
+        plugin.getConfig().set("forage-isle.return-platform.min.y", cy - 1);
+        plugin.getConfig().set("forage-isle.return-platform.min.z", cz - 2);
+        plugin.getConfig().set("forage-isle.return-platform.max.x", cx + 2);
+        plugin.getConfig().set("forage-isle.return-platform.max.y", cy - 1);
+        plugin.getConfig().set("forage-isle.return-platform.max.z", cz + 2);
+        plugin.saveConfig();
+
+        BlockVector3 dims = clipboard.getDimensions();
+        sender.sendMessage("§7Schem size §f" + dims.getBlockX() + "×" + dims.getBlockY()
+                + "×" + dims.getBlockZ() + " §7· WE paste-origin §f" + px + " " + py + " " + pz);
+        return pasteAt;
+    }
+
+    /**
+     * FAWE queue session, or a plain WorldEdit one for the main thread.
+     * Large floating isles (500³+) must skip history or the main thread
+     * + Paper watchdog die mid-paste (OOM / NPE on flush).
+     */
+    private static EditSession openSession(World world, boolean queued) {
+        if (queued) {
+            return FaweQueue.session(world);
+        }
+        EditSession editSession = WorldEdit.getInstance()
+                .newEditSessionBuilder()
+                .world(BukkitAdapter.adapt(world))
+                .maxBlocks(-1)
+                .build();
+        editSession.setFastMode(true);
+        return editSession;
+    }
+
+    private static void onMain(AetherionForaging plugin, boolean queued, Runnable task) {
+        if (queued) {
+            FaweQueue.runMain(plugin, task);
+        } else {
+            task.run();
+        }
+    }
+
+    private static void onQueue(AetherionForaging plugin, boolean queued, Runnable task) {
+        if (queued) {
+            FaweQueue.runAsync(plugin, task);
+        } else {
+            task.run();
+        }
+    }
+
+    private static void tell(AetherionForaging plugin, CommandSender sender, boolean queued, String line) {
+        onMain(plugin, queued, () -> sender.sendMessage(line));
+    }
+
+    private static void fail(AetherionForaging plugin, CommandSender sender, boolean queued, String log,
+                             String chat, Throwable t) {
+        plugin.getLogger().log(Level.SEVERE, log, t);
+        tell(plugin, sender, queued, chat + t.getMessage());
     }
 
     /**
@@ -206,12 +271,13 @@ public final class ForageIslePaste {
         sender.sendMessage("§eClearing Forage Isle footprint at §f" + x + " " + y + " " + z
                 + " §e(rotateY=" + rotateY + ")…");
 
-        Bukkit.getScheduler().runTask(plugin, () -> {
+        boolean queued = FaweQueue.present();
+        Runnable task = () -> {
             long start = System.currentTimeMillis();
             try {
                 Clipboard clipboard = readClipboard(schem);
                 if (clipboard == null) {
-                    sender.sendMessage("§cCould not read schematic.");
+                    tell(plugin, sender, queued, "§cCould not read schematic.");
                     return;
                 }
                 BlockVector3 pasteAt = BlockVector3.at(x, y, z);
@@ -220,12 +286,7 @@ public final class ForageIslePaste {
                         ? null
                         : new AffineTransform().rotateY(rotateY);
                 int cleared = 0;
-                try (EditSession editSession = WorldEdit.getInstance()
-                        .newEditSessionBuilder()
-                        .world(BukkitAdapter.adapt(world))
-                        .maxBlocks(-1)
-                        .build()) {
-                    editSession.setFastMode(true);
+                try (EditSession editSession = openSession(world, queued)) {
                     for (BlockVector3 pos : clipboard.getRegion()) {
                         var state = clipboard.getBlock(pos);
                         if (state.getBlockType().getMaterial().isAir()) {
@@ -243,15 +304,22 @@ public final class ForageIslePaste {
                         cleared++;
                     }
                 }
-                clearReturnPad(plugin, world);
                 long ms = System.currentTimeMillis() - start;
-                sender.sendMessage("§aCleared §f" + cleared + "§a schem blocks (+ return pad) in §f" + ms + "ms§a.");
-                sender.sendMessage("§7Stand at the island center, then §f/forageadmin isle paste here§7.");
+                int count = cleared;
+                onMain(plugin, queued, () -> {
+                    clearReturnPad(plugin, world);
+                    sender.sendMessage("§aCleared §f" + count + "§a schem blocks (+ return pad) in §f" + ms + "ms§a.");
+                    sender.sendMessage("§7Stand at the island center, then §f/forageadmin isle paste here§7.");
+                });
             } catch (Throwable t) {
-                plugin.getLogger().log(Level.SEVERE, "Forage Isle clear failed", t);
-                sender.sendMessage("§cClear failed: " + t.getMessage());
+                fail(plugin, sender, queued, "Forage Isle clear failed", "§cClear failed: ", t);
             }
-        });
+        };
+        if (queued) {
+            FaweQueue.runAsync(plugin, task);
+        } else {
+            Bukkit.getScheduler().runTask(plugin, task);
+        }
     }
 
     private static int normalizeRotateY(int degrees) {
