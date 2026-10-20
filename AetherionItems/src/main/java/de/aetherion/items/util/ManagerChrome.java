@@ -46,4 +46,6 @@ public final class ManagerChrome {
     public static final Component LOADOUTS = overlay('\uE023');
     public static final Component SPAWNS = overlay('\uE024');
     public static final Component PETS = overlay('\uE025');
+    public static final Component CHRONICLE = overlay('\uE026');
+    public static final Component JOURNAL_HUB = overlay('\uE027');  // 27
 }

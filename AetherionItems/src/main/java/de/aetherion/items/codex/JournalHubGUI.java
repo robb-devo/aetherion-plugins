@@ -57,6 +57,11 @@ public final class JournalHubGUI {
         }
 
         @Override
+        protected net.kyori.adventure.text.Component chrome() {
+            return de.aetherion.items.util.ManagerChrome.JOURNAL_HUB;
+        }
+
+        @Override
         protected int size() {
             return 27;
         }

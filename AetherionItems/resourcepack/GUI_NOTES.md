@@ -91,6 +91,13 @@ black or light-grey pane maps to an empty model and the Java side hides their to
 keeps its vanilla material and gets a 32×32 icon via CMD **7701–7723** (`ManagerIcons` in Java,
 `tools/gen_gui_icons.py` for the art, `tools/gui_icons.json` for the material → CMD table). Those values
 sit above every item CMD in the pack (max 4206), so no real item on these materials changes look.
+Shared menu icons (back, page arrows, section labels) use **7724–7731** (`GuiIcons`).
+
+The icons are emblems built exactly like the pack's `charm_*` medallions: gold ring (pewter when
+locked or disabled), a dark coloured disc, a 10×10 line pictogram. The same art rules hold for the HUD,
+the status panel, the radar and the combat glyphs (`tools/px_art.py`): hard pixel edges, no
+anti-aliasing, a few hand-picked tones per material, outlines tinted toward the material's hue, light
+from the top left, and 2 texels per GUI pixel for every HUD glyph (the density of the pack's items).
 
 The icon textures and models live under `assets/aetherion/`. The overrides have to go into the
 **full** pack's `assets/minecraft/models/item/<material>.json`, so after copying `assets/` run

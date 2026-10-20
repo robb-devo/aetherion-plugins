@@ -812,7 +812,7 @@ public class AetherionManagerGUI {
 
     private void fill(Inventory inventory) {
         // Invisible spacers: the pack's Manager chrome draws the panel and the button wells underneath.
-        ItemStack spacer = ManagerIcons.filler(Material.GRAY_STAINED_GLASS_PANE);
+        ItemStack spacer = de.aetherion.items.util.GuiIcons.spacer();
         for (int slot = 0; slot < inventory.getSize(); slot++) {
             inventory.setItem(slot, spacer.clone());
         }

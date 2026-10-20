@@ -13,11 +13,9 @@ import java.util.Map;
  * <p>Each icon is a CustomModelData override in that material's item model (the pack's
  * {@code tools/gen_gui_icons.py} writes the art and {@code tools/gui_icons.json}). The values sit
  * above every item CMD in the pack (max 4206), so no real item on these materials changes look.
- * Glass panes get {@link #FILLER}, an empty model, so the Manager chrome under them shows through.
+ * Fillers are {@link de.aetherion.items.util.GuiIcons#spacer()}.
  */
 final class ManagerIcons {
-
-    static final int FILLER = 7700;
 
     private static final Map<Material, Integer> BY_MATERIAL = new EnumMap<>(Material.class);
 
@@ -62,18 +60,6 @@ final class ManagerIcons {
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
             meta.setCustomModelData(cmd);
-            item.setItemMeta(meta);
-        }
-        return item;
-    }
-
-    /** Turns a glass pane into an invisible, tooltip-less spacer. */
-    static ItemStack filler(Material pane) {
-        ItemStack item = new ItemStack(pane);
-        ItemMeta meta = item.getItemMeta();
-        if (meta != null) {
-            meta.setCustomModelData(FILLER);
-            meta.setHideTooltip(true);
             item.setItemMeta(meta);
         }
         return item;

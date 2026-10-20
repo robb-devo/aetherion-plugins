@@ -53,6 +53,11 @@ public final class ChronicleGUI {
         }
 
         @Override
+        protected net.kyori.adventure.text.Component chrome() {
+            return de.aetherion.items.util.ManagerChrome.CHRONICLE;
+        }
+
+        @Override
         public void render(Player player) {
             ItemStack header = CodexChrome.pane(Material.BLACK_STAINED_GLASS_PANE);
             ItemStack body = CodexChrome.pane(Material.GRAY_STAINED_GLASS_PANE);
