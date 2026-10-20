@@ -56,3 +56,4 @@ SamuraiBoss/*-ResourcePack.sha1
 /config.yml
 /plugin.yml
 /de/
+__pycache__/

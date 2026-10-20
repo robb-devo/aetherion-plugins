@@ -146,6 +146,24 @@
    "chars": [
     "\ue425"
    ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/panel/dot_quest_up.png",
+   "ascent": -24,
+   "height": 7,
+   "chars": [
+    "\ue426"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/panel/dot_quest_down.png",
+   "ascent": -24,
+   "height": 7,
+   "chars": [
+    "\ue427"
+   ]
   }
  ]
 }
