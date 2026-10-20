@@ -1,0 +1,156 @@
+{
+  "amethyst_shard": [
+    [
+      7702,
+      "aetherion:item/gui/shop"
+    ]
+  ],
+  "anvil": [
+    [
+      7718,
+      "aetherion:item/gui/anvil"
+    ]
+  ],
+  "armor_stand": [
+    [
+      7715,
+      "aetherion:item/gui/loadouts"
+    ]
+  ],
+  "barrier": [
+    [
+      7720,
+      "aetherion:item/gui/close"
+    ]
+  ],
+  "black_stained_glass_pane": [
+    [
+      7700,
+      "aetherion:item/gui/empty"
+    ]
+  ],
+  "bone": [
+    [
+      7706,
+      "aetherion:item/gui/bestiary"
+    ]
+  ],
+  "chest": [
+    [
+      7703,
+      "aetherion:item/gui/bazaar"
+    ]
+  ],
+  "command_block": [
+    [
+      7719,
+      "aetherion:item/gui/dev"
+    ]
+  ],
+  "compass": [
+    [
+      7716,
+      "aetherion:item/gui/spawns"
+    ]
+  ],
+  "crafting_table": [
+    [
+      7717,
+      "aetherion:item/gui/craft"
+    ]
+  ],
+  "ender_chest": [
+    [
+      7714,
+      "aetherion:item/gui/storage"
+    ]
+  ],
+  "experience_bottle": [
+    [
+      7713,
+      "aetherion:item/gui/stats"
+    ]
+  ],
+  "gold_block": [
+    [
+      7705,
+      "aetherion:item/gui/auction"
+    ]
+  ],
+  "grass_block": [
+    [
+      7711,
+      "aetherion:item/gui/island"
+    ]
+  ],
+  "gray_dye": [
+    [
+      7721,
+      "aetherion:item/gui/locked"
+    ]
+  ],
+  "gray_stained_glass_pane": [
+    [
+      7700,
+      "aetherion:item/gui/empty"
+    ]
+  ],
+  "iron_pickaxe": [
+    [
+      7707,
+      "aetherion:item/gui/collection"
+    ]
+  ],
+  "knowledge_book": [
+    [
+      7710,
+      "aetherion:item/gui/recipes"
+    ]
+  ],
+  "lead": [
+    [
+      7708,
+      "aetherion:item/gui/pets"
+    ]
+  ],
+  "light_gray_stained_glass_pane": [
+    [
+      7723,
+      "aetherion:item/gui/later"
+    ],
+    [
+      7700,
+      "aetherion:item/gui/empty"
+    ]
+  ],
+  "lime_dye": [
+    [
+      7722,
+      "aetherion:item/gui/next"
+    ]
+  ],
+  "nether_star": [
+    [
+      7701,
+      "aetherion:item/gui/manager"
+    ]
+  ],
+  "netherite_scrap": [
+    [
+      7704,
+      "aetherion:item/gui/skills"
+    ]
+  ],
+  "writable_book": [
+    [
+      7709,
+      "aetherion:item/gui/journal"
+    ]
+  ],
+  "yellow_banner": [
+    [
+      7712,
+      "aetherion:item/gui/guild"
+    ]
+  ]
+}

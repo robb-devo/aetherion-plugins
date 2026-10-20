@@ -83,8 +83,22 @@ Live title text that used to show extra info is gone: the Bazaar/Auction page co
 the Codex category or entry name, and the Bazaar/Auction name on the price picker. The menus
 already show that info in their header and nav items.
 
+## Manager icons
+
+The Manager hub draws its own wells only behind the button slots (`MANAGER_GROUPS` in
+`gen_gui_chrome.py`), and its glass-pane fillers are invisible: CustomModelData **7700** on any grey,
+black or light-grey pane maps to an empty model and the Java side hides their tooltip. Every button
+keeps its vanilla material and gets a 32×32 icon via CMD **7701–7723** (`ManagerIcons` in Java,
+`tools/gen_gui_icons.py` for the art, `tools/gui_icons.json` for the material → CMD table). Those values
+sit above every item CMD in the pack (max 4206), so no real item on these materials changes look.
+
+The icon textures and models live under `assets/aetherion/`. The overrides have to go into the
+**full** pack's `assets/minecraft/models/item/<material>.json`, so after copying `assets/` run
+`python tools/merge_gui_overrides.py <full_pack_dir> <1.21.1 client jar>`. It keeps the existing
+overrides, appends ours, and refuses if a material already uses a CMD at or above 7700.
+
 ## Regenerating
 
 `tools/gen_gui_chrome.py` (in the Items repo) is parametric: the theme table, row counts,
 accent hex values and sigils sit at the bottom. Run `python gen_gui_chrome.py <out_dir>` and
-copy `assets/` into both packs.
+copy `assets/` into both packs. Icons: `python gen_gui_icons.py <out_dir>`, then the merge above.
