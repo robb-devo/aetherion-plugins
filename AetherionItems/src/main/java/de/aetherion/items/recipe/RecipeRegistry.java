@@ -1698,6 +1698,10 @@ public class RecipeRegistry {
         if (common == null || rare == null || epic == null) {
             return;
         }
+        // The retry after AetherMobs enables registers the same ids again; the manager refuses duplicates.
+        recipeManager.unregister("catch_sphere_common");
+        recipeManager.unregister("catch_sphere_rare");
+        recipeManager.unregister("catch_sphere_epic");
 
         Map<Character, ItemStack> c = new LinkedHashMap<>();
         c.put('W', new ItemStack(Material.OAK_PLANKS));
