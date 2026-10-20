@@ -183,7 +183,14 @@ public final class MineIsle implements Listener, StatProvider {
 
     @EventHandler
     public void onWorldUnload(WorldUnloadEvent event) {
-        placedBlocks.remove(event.getWorld().getUID());
+        forgetPlaced(event.getWorld());
+    }
+
+    /** Drops the placed-block marks of a world whose blocks were replaced (unload, Amethyst Mines reset). */
+    public void forgetPlaced(org.bukkit.World world) {
+        if (world != null) {
+            placedBlocks.remove(world.getUID());
+        }
     }
 
     private static long blockKey(Block block) {

@@ -37,6 +37,10 @@ veins:
   spawn-yaw: 0.0
   spawn-pitch: 0.0
   reset-hours: 24
+  # Pin the daily reset to this hour (0-23, server time), e.g. a quiet maintenance window. -1 = every reset-hours.
+  reset-hour: -1
+  # false turns the timed reset off (servers that only carry the jar for parity, e.g. mmo-c).
+  daily-reset: true
   keep-inventory: true
 
 # Mining Eldervale Island (Blocky Verse) — paste south of Origin slime pad.
