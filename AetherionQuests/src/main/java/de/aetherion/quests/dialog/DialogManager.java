@@ -1339,6 +1339,12 @@ public class DialogManager implements Listener {
         );
         reactToOffer(player, quest, true);
 
+        // Vex's drill: the training golem goes up beside the player (TalkUx or classic, chips or not).
+        if (de.aetherion.quests.tutorial.CombatTeach.QUEST_ID.equalsIgnoreCase(quest.getId())
+                && questManager.getQuestState(player, quest) == QuestState.ACTIVE) {
+            de.aetherion.quests.tutorial.CombatTeach.started(player);
+        }
+
         // gather_wood: axe is granted on start; chop unlock waits for ForagerChopDemo.
         if ("gather_wood".equalsIgnoreCase(quest.getId())) {
             plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
@@ -1457,8 +1463,12 @@ public class DialogManager implements Listener {
         if (ctx.gateFail() != null) {
             return;
         }
+        // Vex's combat beat: his voice sheet's accept bark is the Borderlands "ten hostiles" one.
+        boolean combatBeat = de.aetherion.quests.tutorial.CombatTeach.QUEST_ID.equalsIgnoreCase(quest.getId());
         String line = accepted
-                ? de.aetherion.quests.npc.CastBook.acceptReaction(ctx.npc().getId(), player)
+                ? (combatBeat
+                        ? de.aetherion.quests.tutorial.CombatTeach.acceptLine(player)
+                        : de.aetherion.quests.npc.CastBook.acceptReaction(ctx.npc().getId(), player))
                 : de.aetherion.quests.npc.CastBook.declineReaction(ctx.npc().getId(), player);
         if (line != null && LivingNpcProfile.isLiving(ctx.npc().getId())) {
             LivingNpcProfile.say(player, ctx.npc(), line);
@@ -2358,6 +2368,13 @@ public class DialogManager implements Listener {
                             "Kit holding up, {player}? Good. Don't tell me if it isn't.",
                             "Pier's quiet. §bTackle§f fishes off the end, if you fancy a rod."
                     })
+                    // Mid-orientation the Quartermaster's desk is shut (side road after the stamp): point at the spine.
+                    : !QuestStoryGate.tutorialDone(player, questManager)
+                    ? de.aetherion.quests.lang.LangPack.completed(player, "egon.orientation", new String[] {
+                            "Kit fits? Good. Don't tell me if it doesn't.",
+                            "Your next stop's on the §eyellow bar up top§f. Trust it more than me.",
+                            "Lost? Nether Star → §eTeleports§f → Capital. §dMiss Ledger§f sorts you out."
+                    })
                     : de.aetherion.quests.lang.LangPack.completed(player, "egon.default", new String[] {
                             "Kit fits? Good. Don't tell me if it doesn't.",
                             "§eQuartermaster§f past the little market wants you next.",
@@ -2365,7 +2382,7 @@ public class DialogManager implements Listener {
                     });
             case "farmer" -> farmerCompletedLines(player);
             case "ledger" -> de.aetherion.quests.lang.LangPack.completed(player, "ledger_spine", new String[] {
-                    "Loadout's set. Good. Stamped.",
+                    "Loadout's set. Good. Filed.",
                     "Next: §eTemper§f on the south road, then §cSergeant Vex§f at the Borderlands gate.",
                     "Come back after both, {player}. I close orientation — and I keep a help desk."
             });
@@ -2414,7 +2431,7 @@ public class DialogManager implements Listener {
                     })
                     : de.aetherion.quests.lang.LangPack.completed(player, "booster_tutor.default", new String[] {
                             "Booster fused. Recipes stay in the §eRecipe Book§f anytime.",
-                            "Next: §eMiss Ledger§f at Capital — Skills. Then the Fields."
+                            "Next: §eMiss Ledger§f at Capital — your loadout. Then §cSergeant Vex§f."
                     });
             case "surveyor" -> new String[] {
                     "Desk stays open. Collection up top, stamp a blueprint into its tool below.",

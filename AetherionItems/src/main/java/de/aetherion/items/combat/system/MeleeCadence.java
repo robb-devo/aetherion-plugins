@@ -215,5 +215,8 @@ final class MeleeCadence {
         }
         system.feedback().strike(player, hit.victim(), hit.kind(), hit.boss());
         system.markCombat(player, tick);
+        if (hit.finisher()) {
+            system.drill(player, CombatSystem.DRILL_FINISHER);
+        }
     }
 }

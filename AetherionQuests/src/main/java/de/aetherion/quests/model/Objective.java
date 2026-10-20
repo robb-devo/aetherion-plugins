@@ -69,6 +69,19 @@ public class Objective {
             return "§cArmour on · blade up";
         }
 
+        // Sergeant Vex's drill (tutorial.CombatTeach), reported by the Items combat kit.
+        if (target.equalsIgnoreCase("COMBAT_PARRY")) {
+            return "§eParry (F)";
+        }
+
+        if (target.equalsIgnoreCase("COMBAT_DODGE")) {
+            return "§bRoll through";
+        }
+
+        if (target.equalsIgnoreCase("COMBAT_FINISHER")) {
+            return "§6Finisher";
+        }
+
         if (target.equalsIgnoreCase("ANY_ORE")) {
             return "Ore gathered";
         }

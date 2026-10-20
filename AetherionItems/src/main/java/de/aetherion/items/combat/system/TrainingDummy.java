@@ -84,16 +84,52 @@ final class TrainingDummy {
     /** Spawns the owner's golem a few blocks ahead (replacing their old one). Returns false if there is no room. */
     boolean spawn(Player owner) {
         clear(owner);
-        if (!system.config().enabled || dummies.size() >= MAX_DUMMIES) {
+        return canSpawn() && place(owner, CombatSystem.facing(owner));
+    }
+
+    /**
+     * Sergeant Vex's drill: the owner usually faces the NPC who sent them, so the golem goes beside them
+     * first, then behind, then ahead. False when there is no open ground or the spawn was refused.
+     */
+    boolean spawnNear(Player owner) {
+        clear(owner);
+        if (!canSpawn()) {
             return false;
         }
-        Vector facing = CombatSystem.facing(owner);
+        Vector ahead = CombatSystem.facing(owner);
+        Vector side = new Vector(-ahead.getZ(), 0.0, ahead.getX());
+        for (Vector dir : List.of(side, side.clone().multiply(-1), ahead.clone().multiply(-1), ahead)) {
+            if (place(owner, dir)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** True while the owner's golem stands within {@code range} blocks of them. */
+    boolean hasNear(Player owner, double range) {
+        for (Dummy dummy : dummies.values()) {
+            if (dummy.owner.equals(owner.getUniqueId()) && dummy.golem.isValid()
+                    && dummy.golem.getWorld() == owner.getWorld()
+                    && dummy.golem.getLocation().distanceSquared(owner.getLocation()) <= range * range) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean canSpawn() {
+        return system.config().enabled && dummies.size() < MAX_DUMMIES;
+    }
+
+    /** One golem {@code 2..3} blocks from the owner along {@code facing}, turned toward them. */
+    private boolean place(Player owner, Vector facing) {
         double room = Mobility.safeReach(owner, facing, 3.0);
         if (room < 2.0) {
             return false;
         }
         Location at = owner.getLocation().add(facing.clone().multiply(room));
-        at.setYaw(owner.getLocation().getYaw() + 180.0f);
+        at.setYaw((float) Math.toDegrees(Math.atan2(facing.getX(), -facing.getZ())));
         at.setPitch(0.0f);
         String name = CombatSystem.t(owner, "Training Golem", "Übungsgolem");
         IronGolem golem = owner.getWorld().spawn(at, IronGolem.class, spawned -> {
@@ -112,6 +148,14 @@ final class TrainingDummy {
             }
             spawned.setHealth(MAX_HP);
         });
+        if (!golem.isValid()) {
+            // A protection plugin cancelled the spawn: nothing stands there.
+            golem.remove();
+            return false;
+        }
+        World world = golem.getWorld();
+        world.playSound(at, Sound.ENTITY_IRON_GOLEM_REPAIR, 0.8f, 0.8f);
+        world.spawnParticle(Particle.CLOUD, at.clone().add(0, 0.3, 0), 12, 0.4, 0.1, 0.4, 0.02);
         long tick = Bukkit.getCurrentTick();
         Dummy dummy = new Dummy(golem, owner.getUniqueId(), name, tick);
         dummy.nextAt = tick + 30;
