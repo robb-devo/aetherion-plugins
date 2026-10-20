@@ -49,7 +49,7 @@ byte-identical to a build of `main` (classes and resources).
 | Jar | mmo-r | mmo-d | mmo-c | mmo-i | hub |
 |---|---|---|---|---|---|
 | Dungeons | a92a2c42 | a92a2c42 | – | – | – |
-| Mining / Foraging / Farming / Fishing | fde4cece / f9de95e9 / 5e8a58ce / a6aae3f0 | Fishing **03aedf90 (10-02)** | same as mmo-r | – | – |
+| Mining / Foraging / Farming / Fishing | 4d838858 (10-20) / f9de95e9 / 5e8a58ce / a6aae3f0 | Fishing **03aedf90 (10-02)** | same as mmo-r | – | – |
 | Hub | 96ed909c | **`AetherionHub.jar` (09-22)** | – | – | **d1a097e7 (10-05)** |
 | Beta | ed9d1621 | ed9d1621 | – | – | – |
 | SamuraiBoss / Pit | mmo-r only | | | | Pit on hub |
@@ -70,8 +70,13 @@ Known gaps:
 - 18 newer Quests lines lack German (`validate_de_overlay.py`: `ui.roads.*`,
   `dialogs.amethyst_mines_guide_intro`).
 - `CombatTeach` (tutorial combat beat) is still a stub.
-- The daily Veins reset in AetherionMining (world delete + synchronous FAWE paste) caused a
-  watchdog stop on mmo-r on 10-18; needs an async/chunked rework.
+- Veins reset fixed 10-20 (PR #71, Mining `4d838858` on mmo-r and mmo-c): the schematic is pasted
+  in place on FAWE's async queue (~1 s, no main-thread stall). mmo-c has `veins.daily-reset: false`.
+  Other synchronous FAWE pastes (Eldervale, Exile, Dungeons, Foraging, Hub, Pit, Guilds) still open.
+- `AetherionItems` test sources do not compile (`CelestialDyeTest`), so local builds need
+  `-Dmaven.test.skip=true`.
+- Quests on `main` drops two unused `de.yml` keys (PR #72); live Quests still carries them until the
+  next Quests deploy. No behaviour difference.
 
 ## Uncommitted work in other worktrees
 
