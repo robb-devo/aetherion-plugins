@@ -16,8 +16,7 @@ Aufgabe: Das Aetherion-Netzwerk so verdrahten, dass MMO-C und MMO-I genauso smoo
 | mmo-c | 25569 | Exile (aetherion_exile) — Story/Ferry |
 | mmo-i | 25570 | Private + Guild islands ONLY (blank shell already provisioned) |
 
-MMO-I Crafty id (live): d57d33a4-ee99-4b94-89de-cd676e548513
-Pfad: /var/opt/minecraft/crafty/servers/d57d33a4-ee99-4b94-89de-cd676e548513
+MMO-I server id and path: see `aetherion-ops/docs/SERVERS.md` (private).
 auto_start=0, plugins/ leer, paper.jar + Velocity-forwarder-Config vom Donor. Velocity.toml hat bereits `mmo-i = "127.0.0.1:25570"` (Proxy ggf. reload/restart nötig).
 
 ## Was Robb will

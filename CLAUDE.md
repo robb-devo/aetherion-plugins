@@ -2,8 +2,8 @@
 
 - Current state (modules, live builds, content, where code lives): `docs/PROJECT_STATE.md`
 - Open beta work, by priority: `docs/BETA_AUDIT_2026-10-19.md`
-- Ops, hosting and access details are private: `aetherion-ops/docs/` on Robb's PC. This repo is
-  public, so never commit hosts, keys, passwords, ports or server ids.
+- Ops, hosting and access details are private: `aetherion-ops/docs/` on Robb's PC. Never commit
+  hosts, keys, passwords, ports or server ids here, even though the repo is private.
 
 Rules that keep breaking things when ignored:
 - `main` equals live. Build and deploy only from the ship worktree, then commit, push and merge.
