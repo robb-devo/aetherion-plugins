@@ -75,8 +75,8 @@ public final class VeinsCommand implements CommandExecutor, TabCompleter {
                 return true;
             }
             veins.ensureLoaded();
-            if (veins.pasteSchematic(sender)) {
-                sender.sendMessage("§aAmethyst Mines schematic applied.");
+            if (veins.pasteSchematic(sender) && veins.isRestoring()) {
+                sender.sendMessage("§7Paste queued. Entry stays closed until it reports back.");
             }
             return true;
         }
