@@ -534,14 +534,6 @@ public class AetherionManagerListener implements Listener {
                 Bukkit.getScheduler().runTask(AetherionItems.getInstance(), () ->
                         de.aetherion.items.menu.BoosterSocketMenu.open(player));
             }
-            case AetherionManagerGUI.DEV_SLOT -> {
-                var dev = AetherionItems.getInstance().getDevMenu();
-                if (dev == null || !de.aetherion.items.menu.dev.DevMenu.canUse(player)) {
-                    player.sendMessage("§cDEV only.");
-                    return;
-                }
-                dev.open(player);
-            }
             default -> {
             }
         }

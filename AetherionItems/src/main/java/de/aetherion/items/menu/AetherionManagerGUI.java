@@ -50,7 +50,6 @@ public class AetherionManagerGUI {
     public static final int GUILD_SLOT = 44;
 
     /** Ops only, between the bottom captions. */
-    public static final int DEV_SLOT = 52;
 
     private static final String SKILLS_QUEST_ID = "lesson_manager";
     private static final String PETS_QUEST_ID = "pocket_zoo";
@@ -72,7 +71,7 @@ public class AetherionManagerGUI {
     /** Slots of the lock that opens next — set per open() (main thread only). */
     private final java.util.Set<Integer> nextSlots = new java.util.HashSet<>();
     /** Caption state per tile for the open being built (main thread only). */
-    private final Map<Integer, ManagerCaptions.State> captionState = new java.util.HashMap<>();
+    private final Map<Integer, de.aetherion.core.api.BookPage.State> captionState = new java.util.HashMap<>();
 
     public AetherionManagerGUI(AetherionManager manager, StorageInventory storageInventory) {
         this.manager = manager;
@@ -114,7 +113,7 @@ public class AetherionManagerGUI {
         boolean skillsQuest = skillsUnlocked && QuestProgressHook.isQuestActive(player, SKILLS_QUEST_ID);
         if (skillsUnlocked) {
             inventory.setItem(SKILLS_SLOT, skillsButton(skillsQuest, false));
-            captionState.put(SKILLS_SLOT, ManagerCaptions.State.OPEN);
+            captionState.put(SKILLS_SLOT, de.aetherion.core.api.BookPage.State.OPEN);
         } else {
             put(inventory, SKILLS_SLOT, false,
                     Material.NETHERITE_SCRAP, "§dSkills",
@@ -129,10 +128,10 @@ public class AetherionManagerGUI {
                     "§8Pet Collection",
                     "§7Requires AetherMobs."
             ));
-            captionState.put(PETS_SLOT, ManagerCaptions.State.LOCKED);
+            captionState.put(PETS_SLOT, de.aetherion.core.api.BookPage.State.LOCKED);
         } else if (petsUnlocked) {
             inventory.setItem(PETS_SLOT, petsButton(petsQuest, false));
-            captionState.put(PETS_SLOT, ManagerCaptions.State.OPEN);
+            captionState.put(PETS_SLOT, de.aetherion.core.api.BookPage.State.OPEN);
         } else {
             put(inventory, PETS_SLOT, false,
                     Material.LEAD, "§dPet Collection",
@@ -153,19 +152,19 @@ public class AetherionManagerGUI {
         profile.add("§eClick §7for your active stats");
         inventory.setItem(STATS_SLOT, button(Material.EXPERIENCE_BOTTLE, "§b" + player.getName(),
                 profile.toArray(String[]::new)));
-        captionState.put(STATS_SLOT, ManagerCaptions.State.OPEN);
+        captionState.put(STATS_SLOT, de.aetherion.core.api.BookPage.State.OPEN);
         inventory.setItem(STORAGE_SLOT, button(
                 Material.ENDER_CHEST,
                 "§5Aetherion Storage",
                 "§7Open your personal storage."
         ));
-        captionState.put(STORAGE_SLOT, ManagerCaptions.State.OPEN);
+        captionState.put(STORAGE_SLOT, de.aetherion.core.api.BookPage.State.OPEN);
         inventory.setItem(LOADOUT_SLOT, button(
                 Material.ARMOR_STAND,
                 "§bLoadouts",
                 "§7Save and swap armor sets."
         ));
-        captionState.put(LOADOUT_SLOT, ManagerCaptions.State.OPEN);
+        captionState.put(LOADOUT_SLOT, de.aetherion.core.api.BookPage.State.OPEN);
 
         // ---- row 2: trade and the world
         inventory.setItem(SHOP_SLOT, button(
@@ -176,7 +175,7 @@ public class AetherionManagerGUI {
                 "",
                 "§eClick to open"
         ));
-        captionState.put(SHOP_SLOT, ManagerCaptions.State.OPEN);
+        captionState.put(SHOP_SLOT, de.aetherion.core.api.BookPage.State.OPEN);
         put(inventory, BAZAAR_SLOT, progress != null && progress.bazaar(player),
                 Material.CHEST, "§6Bazaar",
                 progress == null ? "§7The trader has a face. Use it once." : progress.hint(ProgressionService.Flag.TRADER),
@@ -192,7 +191,7 @@ public class AetherionManagerGUI {
         boolean spawnTip = spawnUnlocked && hasHomesteadMarker(player);
         if (spawnTip) {
             inventory.setItem(SPAWN_SLOT, spawnsButton(true, true));
-            captionState.put(SPAWN_SLOT, ManagerCaptions.State.OPEN);
+            captionState.put(SPAWN_SLOT, de.aetherion.core.api.BookPage.State.OPEN);
         } else {
             put(inventory, SPAWN_SLOT, spawnUnlocked,
                     Material.COMPASS, "§6Spawns",
@@ -247,15 +246,6 @@ public class AetherionManagerGUI {
             inventory.setItem(RECIPE_SLOT, recipeQuestButton(true));
         }
 
-        if (player.isOp() || player.hasPermission("aetherion.dev")) {
-            inventory.setItem(DEV_SLOT, button(
-                    Material.COMMAND_BLOCK,
-                    "§cDEV Menu",
-                    "§7Sets, items, bosses, animals,",
-                    "§7pets and NPCs. One click."
-            ));
-        }
-
         Inventory page = Bukkit.createInventory(new Holder(), 54, ManagerCaptions.title(captions(german)));
         page.setContents(inventory.getContents());
         player.openInventory(page);
@@ -287,8 +277,8 @@ public class AetherionManagerGUI {
     }
 
     /** One caption per tile, in the player's language, coloured by what put() / open() decided. */
-    private List<ManagerCaptions.Caption> captions(boolean german) {
-        List<ManagerCaptions.Caption> out = new java.util.ArrayList<>();
+    private List<de.aetherion.core.api.BookPage.Caption> captions(boolean german) {
+        List<de.aetherion.core.api.BookPage.Caption> out = new java.util.ArrayList<>();
         caption(out, SKILLS_SLOT, "Skills");
         caption(out, PETS_SLOT, "Pets");
         caption(out, STATS_SLOT, german ? "Werte" : "Stats");
@@ -307,8 +297,8 @@ public class AetherionManagerGUI {
         return out;
     }
 
-    private void caption(List<ManagerCaptions.Caption> out, int slot, String text) {
-        out.add(new ManagerCaptions.Caption(slot, text, captionState.getOrDefault(slot, ManagerCaptions.State.LOCKED)));
+    private void caption(List<de.aetherion.core.api.BookPage.Caption> out, int slot, String text) {
+        out.add(new de.aetherion.core.api.BookPage.Caption(slot, text, captionState.getOrDefault(slot, de.aetherion.core.api.BookPage.State.LOCKED)));
     }
 
     /** The Codex tile opens with any of its books: Collection, Bestiary or the Journal. */
@@ -373,9 +363,6 @@ public class AetherionManagerGUI {
 
     /** True for slots the hub actually reacts to — everything else is filler glass. */
     public static boolean isActionSlot(int slot) {
-        if (slot == DEV_SLOT) {
-            return true;
-        }
         for (int tab : TAB_SLOTS) {
             if (tab == slot) {
                 return true;
@@ -698,10 +685,10 @@ public class AetherionManagerGUI {
     ) {
         if (unlocked) {
             inventory.setItem(slot, button(material, name, unlockedLore));
-            captionState.put(slot, ManagerCaptions.State.OPEN);
+            captionState.put(slot, de.aetherion.core.api.BookPage.State.OPEN);
             return;
         }
-        captionState.put(slot, nextSlots.contains(slot) ? ManagerCaptions.State.NEXT : ManagerCaptions.State.LOCKED);
+        captionState.put(slot, nextSlots.contains(slot) ? de.aetherion.core.api.BookPage.State.NEXT : de.aetherion.core.api.BookPage.State.LOCKED);
         if (nextSlots.contains(slot)) {
             // The one lock worth reading right now.
             ItemStack next = ManagerIcons.next(button(
