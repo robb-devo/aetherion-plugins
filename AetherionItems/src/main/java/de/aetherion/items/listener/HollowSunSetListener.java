@@ -482,7 +482,7 @@ public final class HollowSunSetListener implements Listener, Runnable, StatProvi
             Location feet = victim.getLocation();
             victim.getWorld().playSound(feet, Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.55f, 1.85f);
             ring(feet.clone().add(0, 0.08, 0), ringRadius(victim) + 0.25, GOLD, 20, 1.1f);
-            victim.getWorld().spawnParticle(Particle.END_ROD, feet.clone().add(0, victim.getHeight() + 0.25, 0), 4, 0.1, 0.05, 0.1, 0.01);
+            de.aetherion.core.api.Vfx.puff(feet.clone().add(0, victim.getHeight() + 0.25, 0), Particle.END_ROD, 4, Math.max(0.1, 0.1), null);
         }
     }
 
@@ -531,7 +531,7 @@ public final class HollowSunSetListener implements Listener, Runnable, StatProvi
         Location chest = player.getLocation().add(0, 1.25, 0);
         world.playSound(chest, Sound.BLOCK_BEACON_POWER_SELECT, 0.45f, 1.7f);
         world.spawnParticle(Particle.FLASH, chest, 1, 0, 0, 0, 0);
-        world.spawnParticle(Particle.DUST, chest, 14, 0.22, 0.25, 0.22, 0, new Particle.DustOptions(SOLAR, 1.2f));
+        de.aetherion.core.api.Vfx.puff(chest, Particle.DUST, 14, Math.max(0.22, 0.22), new Particle.DustOptions(SOLAR, 1.2f));
     }
 
     private void corona(Player player, LivingEntity victim, double hit) {
@@ -544,7 +544,7 @@ public final class HollowSunSetListener implements Listener, Runnable, StatProvi
         world.playSound(center, Sound.BLOCK_BEACON_POWER_SELECT, 0.9f, 1.25f);
         world.playSound(center, Sound.ENTITY_BLAZE_SHOOT, 0.8f, 0.6f);
         world.spawnParticle(Particle.FLASH, center.clone().add(0, 1.0, 0), 1, 0, 0, 0, 0);
-        world.spawnParticle(Particle.DUST, center.clone().add(0, 1.0, 0), 26, 0.4, 0.5, 0.4, 0, new Particle.DustOptions(HOT, 1.4f));
+        de.aetherion.core.api.Vfx.puff(center.clone().add(0, 1.0, 0), Particle.DUST, 26, Math.max(0.4, 0.4), new Particle.DustOptions(HOT, 1.4f));
         new BukkitRunnable() {
             int t;
 
@@ -558,7 +558,7 @@ public final class HollowSunSetListener implements Listener, Runnable, StatProvi
                     List<LivingEntity> caught = targetsNear(center, CORONA_RADIUS);
                     for (LivingEntity target : caught) {
                         strike(target, player, amount);
-                        world.spawnParticle(Particle.FLAME, target.getLocation().add(0, target.getHeight() * 0.5, 0), 6, 0.2, 0.3, 0.2, 0.02);
+                        de.aetherion.core.api.Vfx.puff(target.getLocation().add(0, target.getHeight() * 0.5, 0), Particle.FLAME, 6, Math.max(0.2, 0.2), null);
                     }
                 }
                 if (t >= 5) {
@@ -588,11 +588,11 @@ public final class HollowSunSetListener implements Listener, Runnable, StatProvi
         if (on) {
             world.playSound(mid, Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 0.55f, 0.65f);
             world.playSound(mid, Sound.ENTITY_BLAZE_SHOOT, 0.45f, 0.5f);
-            world.spawnParticle(Particle.DUST, mid, 30, 0.45, 0.6, 0.45, 0, new Particle.DustOptions(FLARE, 1.4f));
-            world.spawnParticle(Particle.FLAME, mid, 12, 0.35, 0.5, 0.35, 0.03);
+            de.aetherion.core.api.Vfx.puff(mid, Particle.DUST, 30, Math.max(0.45, 0.45), new Particle.DustOptions(FLARE, 1.4f));
+            de.aetherion.core.api.Vfx.puff(mid, Particle.FLAME, 12, Math.max(0.35, 0.35), null);
             applySwellScale(player);
         } else {
-            world.spawnParticle(Particle.SMOKE, mid, 10, 0.3, 0.45, 0.3, 0.01);
+            de.aetherion.core.api.Vfx.puff(mid, Particle.SMOKE, 10, Math.max(0.3, 0.3), null);
             clearSwellScale(player);
         }
     }
@@ -601,8 +601,7 @@ public final class HollowSunSetListener implements Listener, Runnable, StatProvi
         Map<UUID, Flare> byTarget = flares.computeIfAbsent(player.getUniqueId(), id -> new ConcurrentHashMap<>());
         double perPulse = Math.max(1.0, hit * FLARE_SHARE);
         byTarget.put(victim.getUniqueId(), new Flare(perPulse, Bukkit.getCurrentTick() + FLARE_PERIOD));
-        victim.getWorld().spawnParticle(Particle.DUST, victim.getLocation().add(0, victim.getHeight() * 0.5, 0), 8,
-                0.25, 0.35, 0.25, 0, new Particle.DustOptions(FLARE, 1.1f));
+        de.aetherion.core.api.Vfx.puff(victim.getLocation().add(0, victim.getHeight() * 0.5, 0), Particle.DUST, 8, Math.max(0.25, 0.25), new Particle.DustOptions(FLARE, 1.1f));
     }
 
     private void tickFlares(int now) {
@@ -623,9 +622,8 @@ public final class HollowSunSetListener implements Listener, Runnable, StatProvi
                     continue;
                 }
                 strike(target, player, flare.perPulse);
-                target.getWorld().spawnParticle(Particle.FLAME, target.getLocation().add(0, target.getHeight() * 0.6, 0), 5, 0.2, 0.3, 0.2, 0.01);
-                target.getWorld().spawnParticle(Particle.DUST, target.getLocation().add(0, target.getHeight() * 0.6, 0), 4, 0.2, 0.3, 0.2, 0,
-                        new Particle.DustOptions(FLARE, 1.0f));
+                de.aetherion.core.api.Vfx.puff(target.getLocation().add(0, target.getHeight() * 0.6, 0), Particle.FLAME, 5, Math.max(0.2, 0.2), null);
+                de.aetherion.core.api.Vfx.puff(target.getLocation().add(0, target.getHeight() * 0.6, 0), Particle.DUST, 4, Math.max(0.2, 0.2), new Particle.DustOptions(FLARE, 1.0f));
                 flare.pulses++;
                 flare.nextTick = now + FLARE_PERIOD;
                 if (flare.pulses >= FLARE_PULSES) {
@@ -714,7 +712,7 @@ public final class HollowSunSetListener implements Listener, Runnable, StatProvi
             }
             player.setVelocity(new Vector(0, -STARFALL_SPEED, 0));
             player.setFallDistance(0f);
-            world.spawnParticle(Particle.DUST, at.clone().add(0, 1.2, 0), 4, 0.18, 0.5, 0.18, 0, new Particle.DustOptions(CRIMSON, 1.3f));
+            de.aetherion.core.api.Vfx.puff(at.clone().add(0, 1.2, 0), Particle.DUST, 4, Math.max(0.18, 0.18), new Particle.DustOptions(CRIMSON, 1.3f));
             world.spawnParticle(Particle.END_ROD, at.clone().add(0, 1.8, 0), 1, 0.1, 0.3, 0.1, 0.0);
             double drop = heightAboveGround(at);
             Location floor = at.clone().subtract(0, drop, 0);
@@ -747,7 +745,7 @@ public final class HollowSunSetListener implements Listener, Runnable, StatProvi
         world.spawnParticle(Particle.FLASH, feet.clone().add(0, 0.4, 0), 1, 0, 0, 0, 0);
         Block below = feet.clone().subtract(0, 0.2, 0).getBlock();
         if (below.getType().isSolid()) {
-            world.spawnParticle(Particle.BLOCK, feet.clone().add(0, 0.1, 0), 40, 1.4, 0.1, 1.4, 0.2, below.getBlockData());
+            de.aetherion.core.api.Vfx.puff(feet.clone().add(0, 0.1, 0), Particle.BLOCK, 40, Math.max(1.4, 1.4), below.getBlockData());
         }
         for (LivingEntity target : targetsNear(feet, STARFALL_RADIUS)) {
             strike(target, player, amount);
@@ -804,7 +802,7 @@ public final class HollowSunSetListener implements Listener, Runnable, StatProvi
                         strike(victim, player, amount);
                     }
                     world.spawnParticle(Particle.FLASH, impact.clone().add(0, 0.5, 0), 1, 0, 0, 0, 0);
-                    world.spawnParticle(Particle.DUST, impact.clone().add(0, 0.6, 0), 20, 0.3, 0.4, 0.3, 0, new Particle.DustOptions(SOLAR, 1.3f));
+                    de.aetherion.core.api.Vfx.puff(impact.clone().add(0, 0.6, 0), Particle.DUST, 20, Math.max(0.3, 0.3), new Particle.DustOptions(SOLAR, 1.3f));
                     ring(impact.clone().add(0, 0.1, 0), 1.3, HOT, 18, 1.3f);
                     world.playSound(impact, Sound.BLOCK_AMETHYST_BLOCK_RESONATE, 0.7f, 1.4f);
                     if (lance != null && lance.isValid()) {
@@ -856,8 +854,8 @@ public final class HollowSunSetListener implements Listener, Runnable, StatProvi
         world.playSound(mid, Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 1.0f, 0.55f);
         world.playSound(mid, Sound.BLOCK_FIRE_AMBIENT, 1.0f, 0.7f);
         world.spawnParticle(Particle.FLASH, mid, 1, 0, 0, 0, 0);
-        world.spawnParticle(Particle.DUST, mid, 40, 0.6, 0.7, 0.6, 0, new Particle.DustOptions(FLARE, 1.6f));
-        world.spawnParticle(Particle.FLAME, mid, 20, 0.5, 0.6, 0.5, 0.05);
+        de.aetherion.core.api.Vfx.puff(mid, Particle.DUST, 40, Math.max(0.6, 0.6), new Particle.DustOptions(FLARE, 1.6f));
+        de.aetherion.core.api.Vfx.puff(mid, Particle.FLAME, 20, Math.max(0.5, 0.5), null);
         player.sendActionBar(net.kyori.adventure.text.Component.text("§c§lRED GIANT §7— §fI can burn brighter."));
     }
 
@@ -891,7 +889,7 @@ public final class HollowSunSetListener implements Listener, Runnable, StatProvi
             double angle = Math.atan2(to.getZ(), to.getX());
             if (nearBeam(angle, state.beamAngle) || nearBeam(angle, state.beamAngle + Math.PI)) {
                 strike(target, player, burn);
-                world.spawnParticle(Particle.FLAME, target.getLocation().add(0, target.getHeight() * 0.5, 0), 5, 0.2, 0.3, 0.2, 0.02);
+                de.aetherion.core.api.Vfx.puff(target.getLocation().add(0, target.getHeight() * 0.5, 0), Particle.FLAME, 5, Math.max(0.2, 0.2), null);
             }
         }
     }
@@ -904,7 +902,7 @@ public final class HollowSunSetListener implements Listener, Runnable, StatProvi
     private void endRedGiant(Player player) {
         World world = player.getWorld();
         world.playSound(player.getLocation(), Sound.BLOCK_FIRE_EXTINGUISH, 0.5f, 0.8f);
-        world.spawnParticle(Particle.SMOKE, player.getLocation().add(0, 1.0, 0), 14, 0.4, 0.5, 0.4, 0.02);
+        de.aetherion.core.api.Vfx.puff(player.getLocation().add(0, 1.0, 0), Particle.SMOKE, 14, Math.max(0.4, 0.4), null);
     }
 
     // ------------------------------------------------------------------ Collapse
@@ -986,7 +984,7 @@ public final class HollowSunSetListener implements Listener, Runnable, StatProvi
                 world.spawnParticle(Particle.SMOKE, from, 0, in.getX(), in.getY(), in.getZ(), 0.22);
                 world.spawnParticle(Particle.DUST, from, 1, 0.05, 0.05, 0.05, 0, new Particle.DustOptions(VOID, 1.3f));
             }
-            world.spawnParticle(Particle.DUST, chest, 4, 0.18, 0.18, 0.18, 0, new Particle.DustOptions(VIOLET, 1.1f));
+            de.aetherion.core.api.Vfx.puff(chest, Particle.DUST, 4, Math.max(0.18, 0.18), new Particle.DustOptions(VIOLET, 1.1f));
             world.spawnParticle(Particle.REVERSE_PORTAL, chest, 3, 0.25, 0.25, 0.25, 0.02);
         }
 
@@ -1003,8 +1001,8 @@ public final class HollowSunSetListener implements Listener, Runnable, StatProvi
         private void nova(World world, Location feet, Location chest) {
             removeCore();
             world.spawnParticle(Particle.FLASH, chest, 3, 0.2, 0.2, 0.2, 0);
-            world.spawnParticle(Particle.END_ROD, chest, 40, 0.3, 0.3, 0.3, 0.35);
-            world.spawnParticle(Particle.DUST, chest, 40, 0.6, 0.6, 0.6, 0, new Particle.DustOptions(PHOTON, 1.6f));
+            de.aetherion.core.api.Vfx.puff(chest, Particle.END_ROD, 40, Math.max(0.3, 0.3), null);
+            de.aetherion.core.api.Vfx.puff(chest, Particle.DUST, 40, Math.max(0.6, 0.6), new Particle.DustOptions(PHOTON, 1.6f));
             world.playSound(chest, Sound.ENTITY_WARDEN_SONIC_BOOM, 1.1f, 0.75f);
             world.playSound(chest, Sound.BLOCK_RESPAWN_ANCHOR_DEPLETE, 1.0f, 0.6f);
             double weapon = weaponDamage(player);
@@ -1274,8 +1272,7 @@ public final class HollowSunSetListener implements Listener, Runnable, StatProvi
             ring(center, radius * 0.6, color, 20, 1.2f);
             World world = center.getWorld();
             if (world != null) {
-                world.spawnParticle(Particle.DUST, center, 12, radius * 0.35, 0.02, radius * 0.35, 0,
-                        new Particle.DustOptions(color, 1.1f));
+                de.aetherion.core.api.Vfx.puff(center, Particle.DUST, 12, Math.max(radius * 0.35, radius * 0.35), new Particle.DustOptions(color, 1.1f));
             }
         }
     }

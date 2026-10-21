@@ -188,7 +188,7 @@ public final class StormcallerTempest {
             if (tick <= DURATION + OUTRO) {
                 poseCloud(Math.max(0.02, Math.pow(1.0 - k, 0.7)), 1.0 + k * 1.2, k * 1.4);
                 if (tick % 3 == 0) {
-                    world.spawnParticle(Particle.CLOUD, cloud, 4, 2.4, 0.5, 2.2, 0.03);
+                    de.aetherion.core.api.Vfx.puff(cloud, Particle.CLOUD, 4, Math.max(2.4, 2.2), null);
                 }
             } else if (!puffs.isEmpty()) {
                 for (Puff puff : puffs) {
@@ -321,7 +321,7 @@ public final class StormcallerTempest {
         Location head = maulHead();
         Location root = cloud.clone().add(0, -0.4, 0);
         spawnBolt(head, jag(head.toVector(), root.toVector(), 3, 0.2), List.of(), 0.05f);
-        world.spawnParticle(Particle.ELECTRIC_SPARK, head, 6, 0.12, 0.12, 0.12, 0.05);
+        de.aetherion.core.api.Vfx.puff(head, Particle.ELECTRIC_SPARK, 6, Math.max(0.12, 0.12), null);
         world.playSound(head, Sound.BLOCK_COPPER_BULB_TURN_OFF, 0.35f, 1.9f);
     }
 
@@ -347,11 +347,10 @@ public final class StormcallerTempest {
             double speed = random.nextDouble(0.32, 0.46);
             world.spawnParticle(Particle.CLOUD, floor, 0, Math.cos(a), 0.02, Math.sin(a), speed);
             if (i % 2 == 0) {
-                world.spawnParticle(Particle.SPLASH,
-                        floor.clone().add(Math.cos(a) * 1.2, 0, Math.sin(a) * 1.2), 4, 0.2, 0.0, 0.2, 0.0);
+                de.aetherion.core.api.Vfx.puff(floor.clone().add(Math.cos(a) * 1.2, 0, Math.sin(a) * 1.2), Particle.SPLASH, 4, Math.max(0.2, 0.2), null);
             }
         }
-        world.spawnParticle(Particle.WHITE_SMOKE, floor, 10, 0.8, 0.05, 0.8, 0.04);
+        de.aetherion.core.api.Vfx.puff(floor, Particle.WHITE_SMOKE, 10, Math.max(0.8, 0.8), null);
         world.playSound(floor, Sound.ENTITY_BREEZE_WIND_BURST, 0.55f, 0.6f);
         world.playSound(floor, Sound.WEATHER_RAIN_ABOVE, 0.8f, 0.55f);
     }
@@ -393,7 +392,7 @@ public final class StormcallerTempest {
         Location top = cloud.clone().add(0, -0.3, 0);
         List<Vector> path = jag(head.toVector(), top.toVector(), 3, 0.18);
         spawnBolt(head, path, List.of(), 0.11f);
-        world.spawnParticle(Particle.ELECTRIC_SPARK, head, 14, 0.2, 0.2, 0.2, 0.08);
+        de.aetherion.core.api.Vfx.puff(head, Particle.ELECTRIC_SPARK, 14, Math.max(0.2, 0.2), null);
         world.spawnParticle(Particle.FLASH, top, 1, 0, 0, 0, 0);
         world.playSound(head, Sound.ITEM_TRIDENT_THUNDER, 0.5f, 1.25f);
         world.playSound(head, Sound.ENTITY_LIGHTNING_BOLT_IMPACT, 0.45f, 1.7f);
@@ -466,7 +465,7 @@ public final class StormcallerTempest {
         }
         if (streamer && lead.target != null && lead.target.isValid()) {
             Location head = lead.target.getLocation().add(0, lead.target.getHeight(), 0);
-            world.spawnParticle(Particle.ELECTRIC_SPARK, head, 5, 0.12, 0.1, 0.12, 0.04);
+            de.aetherion.core.api.Vfx.puff(head, Particle.ELECTRIC_SPARK, 5, Math.max(0.12, 0.12), null);
             for (int i = 1; i <= 3; i++) {
                 world.spawnParticle(Particle.DUST, head.clone().add(0, i * 0.25, 0), 1, 0.03, 0, 0.03, 0, dim);
             }
@@ -764,7 +763,7 @@ public final class StormcallerTempest {
                 }
             }
             if (age == 11) {
-                world.spawnParticle(Particle.SMOKE, floor.clone().add(0, 0.1, 0), 5, 0.5, 0.02, 0.5, 0.01);
+                de.aetherion.core.api.Vfx.puff(floor.clone().add(0, 0.1, 0), Particle.SMOKE, 5, Math.max(0.5, 0.5), null);
             }
             return true;
         }

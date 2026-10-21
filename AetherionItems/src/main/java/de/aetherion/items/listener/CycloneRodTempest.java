@@ -152,7 +152,7 @@ public final class CycloneRodTempest {
 
         Location tip = rodTip();
         world.spawnParticle(Particle.GUST, tip, 1, 0, 0, 0, 0);
-        world.spawnParticle(Particle.CLOUD, tip, 8, 0.15, 0.15, 0.15, 0.06);
+        de.aetherion.core.api.Vfx.puff(tip, Particle.CLOUD, 8, Math.max(0.15, 0.15), null);
         world.playSound(tip, Sound.ENTITY_BREEZE_INHALE, 0.9f, 0.7f);
         world.playSound(tip, Sound.ENTITY_BREEZE_WHIRL, 0.7f, 0.6f);
         world.playSound(tip, Sound.ITEM_TRIDENT_RIPTIDE_1, 0.5f, 0.8f);
@@ -247,7 +247,7 @@ public final class CycloneRodTempest {
         }
         Location at = living.getLocation().add(0, living.getHeight() * 0.5, 0);
         world.spawnParticle(Particle.GUST, at, 1, 0, 0, 0, 0);
-        world.spawnParticle(Particle.BLOCK, living.getLocation().add(0, 0.1, 0), 10, 0.3, 0.05, 0.3, 0.1, floorData);
+        de.aetherion.core.api.Vfx.puff(living.getLocation().add(0, 0.1, 0), Particle.BLOCK, 10, Math.max(0.3, 0.3), floorData);
         world.playSound(at, Sound.ENTITY_BREEZE_SLIDE, 0.45f, 0.9f + ThreadLocalRandom.current().nextFloat() * 0.3f);
     }
 
@@ -466,8 +466,8 @@ public final class CycloneRodTempest {
                         base.clone().add(Math.cos(ang) * 2.2, 1.0, Math.sin(ang) * 2.2), 1, 0, 0, 0, 0);
             }
         }
-        world.spawnParticle(Particle.BLOCK, base.clone().add(0, 0.2, 0), 50, 2.0, 0.2, 2.0, 0.3, floorData);
-        world.spawnParticle(Particle.WHITE_SMOKE, core, 30, 1.2, 1.0, 1.2, 0.12);
+        de.aetherion.core.api.Vfx.puff(base.clone().add(0, 0.2, 0), Particle.BLOCK, 50, Math.max(2.0, 2.0), floorData);
+        de.aetherion.core.api.Vfx.puff(core, Particle.WHITE_SMOKE, 30, Math.max(1.2, 1.2), null);
 
         world.playSound(core, Sound.ENTITY_BREEZE_WIND_BURST, 1.2f, 0.6f);
         world.playSound(core, Sound.ENTITY_BREEZE_SHOOT, 0.9f, 0.7f);
@@ -495,7 +495,7 @@ public final class CycloneRodTempest {
 
             Location at = living.getLocation().add(0, living.getHeight() * 0.5, 0);
             world.spawnParticle(Particle.SWEEP_ATTACK, at, 1, 0, 0, 0, 0);
-            world.spawnParticle(Particle.DAMAGE_INDICATOR, at, 6, 0.3, 0.3, 0.3, 0);
+            de.aetherion.core.api.Vfx.puff(at, Particle.DAMAGE_INDICATOR, 6, Math.max(0.3, 0.3), null);
             if (flung.size() < MAX_TRAILS) {
                 flung.add(new Flung(living));
                 world.spawnParticle(Particle.GUST, at, 1, 0, 0, 0, 0);
@@ -572,8 +572,7 @@ public final class CycloneRodTempest {
             for (Chunk chunk : debris) {
                 if (chunk.at != null) {
                     ease(chunk.display, cube(chunk.at, chunk.tumble, 0.001f), 4);
-                    world.spawnParticle(Particle.BLOCK, base.clone().add(chunk.at.x, 0.2, chunk.at.z), 4,
-                            0.15, 0.05, 0.15, 0.05, chunk.display.getBlock());
+                    de.aetherion.core.api.Vfx.puff(base.clone().add(chunk.at.x, 0.2, chunk.at.z), Particle.BLOCK, 4, Math.max(0.15, 0.15), chunk.display.getBlock());
                 }
             }
         }

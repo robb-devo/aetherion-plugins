@@ -285,7 +285,7 @@ public class BridgedAxeListener implements Listener {
         }
         Location release = eye.clone().add(look.clone().multiply(1.1));
         player.getWorld().spawnParticle(Particle.SWEEP_ATTACK, release, 1, 0, 0, 0, 0);
-        player.getWorld().spawnParticle(Particle.CRIT, release, 8, 0.1, 0.1, 0.1, 0.05);
+        de.aetherion.core.api.Vfx.puff(release, Particle.CRIT, 8, Math.max(0.1, 0.1), null);
 
         player.getWorld().playSound(eye, Sound.ITEM_TRIDENT_THROW, 1.05f, 0.75f);
         player.getWorld().playSound(eye, Sound.ENTITY_PLAYER_ATTACK_SWEEP, 0.7f, 0.8f);
@@ -310,14 +310,14 @@ public class BridgedAxeListener implements Listener {
             Location p = chest.clone().add(diag.clone().multiply(t * 0.75)).add(fwd.clone().multiply(-0.35 * (1 - t * t)));
             world.spawnParticle(Particle.DUST, p, 1, 0, 0, 0, 0, slash);
         }
-        world.spawnParticle(Particle.CRIT, living.getEyeLocation(), 14, 0.25, 0.25, 0.25, 0.2);
+        de.aetherion.core.api.Vfx.puff(living.getEyeLocation(), Particle.CRIT, 14, Math.max(0.25, 0.25), null);
         world.spawnParticle(Particle.SWEEP_ATTACK, living.getLocation().add(0, 1, 0), 1);
-        world.spawnParticle(Particle.BLOCK, chest, 10, 0.2, 0.25, 0.2, 0.1, Material.SPRUCE_PLANKS.createBlockData());
+        de.aetherion.core.api.Vfx.puff(chest, Particle.BLOCK, 10, Math.max(0.2, 0.2), Material.SPRUCE_PLANKS.createBlockData());
         world.playSound(living.getLocation(), Sound.ITEM_TRIDENT_HIT, 1.05f, 0.7f);
         world.playSound(living.getLocation(), Sound.BLOCK_ANVIL_LAND, 0.55f, 1.35f);
         world.playSound(living.getLocation(), Sound.ITEM_AXE_STRIP, 0.7f, 0.7f);
         if (crit) {
-            world.spawnParticle(Particle.ENCHANTED_HIT, chest, 16, 0.3, 0.35, 0.3, 0.3);
+            de.aetherion.core.api.Vfx.puff(chest, Particle.ENCHANTED_HIT, 16, Math.max(0.3, 0.3), null);
             world.playSound(living.getLocation(), Sound.ENTITY_PLAYER_ATTACK_CRIT, 0.9f, 0.8f);
         }
         if (toll) {
@@ -333,7 +333,7 @@ public class BridgedAxeListener implements Listener {
                         home.getZ() + random.nextDouble(-0.3, 0.3),
                         random.nextDouble(0.28, 0.42), COIN);
             }
-            world.spawnParticle(Particle.DUST, chest, 5, 0.2, 0.25, 0.2, 0, new Particle.DustOptions(BLOOD, 1.1f));
+            de.aetherion.core.api.Vfx.puff(chest, Particle.DUST, 5, Math.max(0.2, 0.2), new Particle.DustOptions(BLOOD, 1.1f));
         }
     }
 
@@ -344,9 +344,9 @@ public class BridgedAxeListener implements Listener {
             return;
         }
         if (block != null && block.getType().isSolid()) {
-            world.spawnParticle(Particle.BLOCK, at, 14, 0.15, 0.15, 0.15, 0.1, block.getBlockData());
+            de.aetherion.core.api.Vfx.puff(at, Particle.BLOCK, 14, Math.max(0.15, 0.15), block.getBlockData());
         }
-        world.spawnParticle(Particle.CRIT, at, 8, 0.15, 0.15, 0.15, 0.05);
+        de.aetherion.core.api.Vfx.puff(at, Particle.CRIT, 8, Math.max(0.15, 0.15), null);
         world.playSound(at, Sound.BLOCK_ANVIL_PLACE, 0.7f, 1.4f);
         world.playSound(at, Sound.ITEM_TRIDENT_HIT_GROUND, 0.8f, 0.8f);
         world.playSound(at, Sound.ITEM_AXE_STRIP, 0.6f, 1.0f);
@@ -552,14 +552,14 @@ public class BridgedAxeListener implements Listener {
             double shudder = phaseAge <= 5 ? Math.sin(phaseAge * 2.6) * 0.28 * (1.0 - phaseAge / 6.0) : 0.0;
             pose(at, heading, spin, shudder);
             if (phaseAge >= LODGE_TICKS) {
-                world.spawnParticle(Particle.CRIT, at, 6, 0.12, 0.12, 0.12, 0.08);
+                de.aetherion.core.api.Vfx.puff(at, Particle.CRIT, 6, Math.max(0.12, 0.12), null);
                 if (host == null) {
                     Block block = at.getBlock();
                     if (block.getType().isSolid()) {
-                        world.spawnParticle(Particle.BLOCK, at, 8, 0.12, 0.12, 0.12, 0.08, block.getBlockData());
+                        de.aetherion.core.api.Vfx.puff(at, Particle.BLOCK, 8, Math.max(0.12, 0.12), block.getBlockData());
                     }
                 } else if (carriesToll) {
-                    world.spawnParticle(Particle.DUST, at, 4, 0.1, 0.1, 0.1, 0, new Particle.DustOptions(BLOOD, 1.0f));
+                    de.aetherion.core.api.Vfx.puff(at, Particle.DUST, 4, Math.max(0.1, 0.1), new Particle.DustOptions(BLOOD, 1.0f));
                 }
                 world.playSound(at, Sound.BLOCK_CHAIN_BREAK, 0.5f, 1.3f);
                 world.playSound(at, Sound.ENTITY_PLAYER_ATTACK_SWEEP, 0.45f, 1.3f);
@@ -606,7 +606,7 @@ public class BridgedAxeListener implements Listener {
                     world.spawnParticle(Particle.DUST, hand.clone().add(Math.cos(a) * 0.35, 0, Math.sin(a) * 0.35), 1,
                             0, 0, 0, 0, glint);
                 }
-                world.spawnParticle(Particle.CRIT, hand, 4, 0.1, 0.1, 0.1, 0.05);
+                de.aetherion.core.api.Vfx.puff(hand, Particle.CRIT, 4, Math.max(0.1, 0.1), null);
                 finish();
             }
         }

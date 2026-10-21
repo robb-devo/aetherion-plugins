@@ -155,8 +155,8 @@ public class HeliosGearListener implements Listener {
 
     private void strike(Player player, World world, Location at) {
         world.spawnParticle(Particle.EXPLOSION, at.clone().add(0, 0.3, 0), 1, 0, 0, 0, 0, null, true);
-        world.spawnParticle(Particle.END_ROD, at.clone().add(0, 0.5, 0), 40, 1.2, 0.3, 1.2, 0.05, null, true);
-        world.spawnParticle(Particle.DUST, at.clone().add(0, 0.2, 0), 30, 1.6, 0.1, 1.6, 0, new Particle.DustOptions(GOLD, 1.6f), true);
+        de.aetherion.core.api.Vfx.puff(at.clone().add(0, 0.5, 0), Particle.END_ROD, 40, Math.max(1.2, 1.2), null);
+        de.aetherion.core.api.Vfx.puff(at.clone().add(0, 0.2, 0), Particle.DUST, 30, Math.max(1.6, 1.6), new Particle.DustOptions(GOLD, 1.6f));
         world.playSound(at, Sound.ENTITY_GENERIC_EXPLODE, SoundCategory.PLAYERS, 0.7f, 1.4f);
         DamageSource source = DamageSource.builder(DamageType.MAGIC).withCausingEntity(player).withDirectEntity(player).build();
         for (Entity e : world.getNearbyEntities(at, LANCE_RADIUS, 4.0, LANCE_RADIUS)) {
@@ -246,7 +246,7 @@ public class HeliosGearListener implements Listener {
         world.playSound(at, Sound.BLOCK_BEACON_ACTIVATE, SoundCategory.PLAYERS, 1f, 1.4f);
         world.playSound(at, Sound.ITEM_TOTEM_USE, SoundCategory.PLAYERS, 0.8f, 1.3f);
         world.playSound(at, Sound.ENTITY_GENERIC_EXPLODE, SoundCategory.PLAYERS, 0.6f, 1.6f);
-        world.spawnParticle(Particle.END_ROD, at.clone().add(0, 1, 0), 30, 0.6, 0.8, 0.6, 0.15, null, true);
+        de.aetherion.core.api.Vfx.puff(at.clone().add(0, 1, 0), Particle.END_ROD, 30, Math.max(0.6, 0.6), null);
         DamageSource source = DamageSource.builder(DamageType.MAGIC).withCausingEntity(player).withDirectEntity(player).build();
         for (int k = 0; k < 8; k++) {
             final double r = 1.0 + k * (NOVA_RADIUS / 8.0);

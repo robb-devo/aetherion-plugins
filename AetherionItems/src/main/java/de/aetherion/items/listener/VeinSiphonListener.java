@@ -188,9 +188,8 @@ public final class VeinSiphonListener implements Listener {
 
     private static void sputter(Player player) {
         Location at = intake(player);
-        player.getWorld().spawnParticle(Particle.SMOKE, at, 6, 0.08, 0.08, 0.08, 0.02);
-        player.getWorld().spawnParticle(Particle.DUST_COLOR_TRANSITION, at, 4, 0.1, 0.1, 0.1, 0,
-                new Particle.DustTransition(INTAKE, DEEP, 0.6f));
+        de.aetherion.core.api.Vfx.puff(at, Particle.SMOKE, 6, Math.max(0.08, 0.08), null);
+        de.aetherion.core.api.Vfx.puff(at, Particle.DUST_COLOR_TRANSITION, 4, Math.max(0.1, 0.1), new Particle.DustTransition(INTAKE, DEEP, 0.6f));
         player.playSound(at, Sound.ENTITY_BREEZE_INHALE, 0.35f, 0.6f);
     }
 
@@ -298,8 +297,7 @@ public final class VeinSiphonListener implements Listener {
             Location at = intake(player);
             world.playSound(at, Sound.ENTITY_BREEZE_INHALE, 0.8f, 1.3f);
             world.playSound(at, Sound.BLOCK_BEACON_ACTIVATE, 0.4f, 1.7f);
-            world.spawnParticle(Particle.DUST_COLOR_TRANSITION, at, 8, 0.15, 0.15, 0.15, 0,
-                    new Particle.DustTransition(PALE, INTAKE, 0.8f));
+            de.aetherion.core.api.Vfx.puff(at, Particle.DUST_COLOR_TRANSITION, 8, Math.max(0.15, 0.15), new Particle.DustTransition(PALE, INTAKE, 0.8f));
         }
 
         @Override
@@ -363,8 +361,7 @@ public final class VeinSiphonListener implements Listener {
         private void mark(Pull pull) {
             pull.stage = Stage.MARKED;
             pull.ghost = ghost(pull);
-            world.spawnParticle(Particle.DUST_COLOR_TRANSITION, pull.from, 4, 0.35, 0.35, 0.35, 0,
-                    new Particle.DustTransition(pull.color, PALE, 0.8f));
+            de.aetherion.core.api.Vfx.puff(pull.from, Particle.DUST_COLOR_TRANSITION, 4, Math.max(0.35, 0.35), new Particle.DustTransition(pull.color, PALE, 0.8f));
             if (sounds++ < 2) {
                 world.playSound(pull.from, Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.4f, (float) (1.2 + 0.6 * pull.reach));
             }
@@ -388,9 +385,8 @@ public final class VeinSiphonListener implements Listener {
             pulled++;
             pull.stage = Stage.FLYING;
             pull.last = pull.from.clone();
-            world.spawnParticle(Particle.BLOCK, pull.from, 14, 0.3, 0.3, 0.3, 0.1, pull.data);
-            world.spawnParticle(Particle.DUST_COLOR_TRANSITION, pull.from, 6, 0.3, 0.3, 0.3, 0,
-                    new Particle.DustTransition(pull.color, PALE, 1.0f));
+            de.aetherion.core.api.Vfx.puff(pull.from, Particle.BLOCK, 14, Math.max(0.3, 0.3), pull.data);
+            de.aetherion.core.api.Vfx.puff(pull.from, Particle.DUST_COLOR_TRANSITION, 6, Math.max(0.3, 0.3), new Particle.DustTransition(pull.color, PALE, 1.0f));
             if (sounds++ < 3) {
                 Sound crack;
                 try {
@@ -444,8 +440,7 @@ public final class VeinSiphonListener implements Listener {
                 pull.ghost = null;
                 pull.stage = Stage.DONE;
                 caught++;
-                world.spawnParticle(Particle.DUST_COLOR_TRANSITION, mouth, 5, 0.1, 0.1, 0.1, 0,
-                        new Particle.DustTransition(pull.color, PALE, 0.7f));
+                de.aetherion.core.api.Vfx.puff(mouth, Particle.DUST_COLOR_TRANSITION, 5, Math.max(0.1, 0.1), new Particle.DustTransition(pull.color, PALE, 0.7f));
                 if (sounds++ < 4) {
                     world.playSound(mouth, Sound.ENTITY_ITEM_PICKUP, 0.3f, (float) Math.min(2.0, 0.9 + caught * 0.05));
                 }
@@ -485,7 +480,7 @@ public final class VeinSiphonListener implements Listener {
                     double a = Math.PI * 2 * i / 16;
                     world.spawnParticle(Particle.DUST_COLOR_TRANSITION, mouth, 0, Math.cos(a), 0.4, Math.sin(a), 0.08, burst);
                 }
-                world.spawnParticle(Particle.WAX_OFF, mouth, 8, 0.25, 0.25, 0.25, 0.4);
+                de.aetherion.core.api.Vfx.puff(mouth, Particle.WAX_OFF, 8, Math.max(0.25, 0.25), null);
                 world.playSound(mouth, Sound.BLOCK_AMETHYST_BLOCK_RESONATE, 0.6f, 1.5f);
                 world.playSound(mouth, Sound.BLOCK_BEACON_DEACTIVATE, 0.3f, 2.0f);
             } else {

@@ -144,9 +144,8 @@ public final class SkuldugeryShortbowFx {
         }
         World world = target.getWorld();
         Location at = arrow.getLocation();
-        world.spawnParticle(Particle.DUST_COLOR_TRANSITION, at, 6, 0.18, 0.18, 0.18, 0,
-                new Particle.DustTransition(trail.crit ? GILT : EMBER, ASH, 0.9f));
-        world.spawnParticle(Particle.ASH, at, 5, 0.25, 0.25, 0.25, 0);
+        de.aetherion.core.api.Vfx.puff(at, Particle.DUST_COLOR_TRANSITION, 6, Math.max(0.18, 0.18), new Particle.DustTransition(trail.crit ? GILT : EMBER, ASH, 0.9f));
+        de.aetherion.core.api.Vfx.puff(at, Particle.ASH, 5, Math.max(0.25, 0.25), null);
         world.spawnParticle(Particle.SMOKE, at, 2, 0.08, 0.08, 0.08, 0.01);
         world.playSound(at, Sound.BLOCK_CANDLE_EXTINGUISH, 0.35f, 1.1f);
 
@@ -185,8 +184,7 @@ public final class SkuldugeryShortbowFx {
         World world = arrow.getWorld();
         Location at = arrow.getLocation();
         world.spawnParticle(Particle.SMOKE, at, 3, 0.06, 0.06, 0.06, 0.01);
-        world.spawnParticle(Particle.DUST_COLOR_TRANSITION, at, 4, 0.12, 0.12, 0.12, 0,
-                new Particle.DustTransition(EMBER, ASH, 0.7f));
+        de.aetherion.core.api.Vfx.puff(at, Particle.DUST_COLOR_TRANSITION, 4, Math.max(0.12, 0.12), new Particle.DustTransition(EMBER, ASH, 0.7f));
         world.spawnParticle(Particle.ASH, at, 3, 0.15, 0.15, 0.15, 0);
         world.playSound(at, Sound.BLOCK_CANDLE_EXTINGUISH, 0.25f, 1.5f);
     }
@@ -213,9 +211,9 @@ public final class SkuldugeryShortbowFx {
         fizzleGate.put(enderman.getUniqueId(), now + FIZZLE_GAP_TICKS);
         World world = enderman.getWorld();
         Location at = enderman.getLocation().add(0, 1.4, 0);
-        world.spawnParticle(Particle.REVERSE_PORTAL, at, 10, 0.3, 0.9, 0.3, 0.02);
-        world.spawnParticle(Particle.SMOKE, at, 6, 0.25, 0.7, 0.25, 0.01);
-        world.spawnParticle(Particle.ASH, at, 6, 0.3, 0.8, 0.3, 0);
+        de.aetherion.core.api.Vfx.puff(at, Particle.REVERSE_PORTAL, 10, Math.max(0.3, 0.3), null);
+        de.aetherion.core.api.Vfx.puff(at, Particle.SMOKE, 6, Math.max(0.25, 0.25), null);
+        de.aetherion.core.api.Vfx.puff(at, Particle.ASH, 6, Math.max(0.3, 0.3), null);
         world.playSound(at, Sound.BLOCK_FIRE_EXTINGUISH, 0.35f, 1.7f);
     }
 
@@ -282,7 +280,7 @@ public final class SkuldugeryShortbowFx {
             if (!body.isValid() || body.isDead() || snare.age > SNARE_TICKS) {
                 if (body.isValid()) {
                     Location at = body.getLocation().add(0, 1.2, 0);
-                    body.getWorld().spawnParticle(Particle.ASH, at, 10, 0.35, 0.9, 0.35, 0);
+                    de.aetherion.core.api.Vfx.puff(at, Particle.ASH, 10, Math.max(0.35, 0.35), null);
                     body.getWorld().playSound(at, Sound.BLOCK_CHAIN_BREAK, 0.5f, 1.2f);
                 }
                 it.remove();
@@ -410,10 +408,9 @@ public final class SkuldugeryShortbowFx {
             World world = base.getWorld();
             if (world != null) {
                 Location at = base.clone().add(0, 0.9, 0);
-                world.spawnParticle(Particle.ASH, at, 10, 0.15, 0.15, 0.15, 0);
+                de.aetherion.core.api.Vfx.puff(at, Particle.ASH, 10, Math.max(0.15, 0.15), null);
                 world.spawnParticle(Particle.SMOKE, at, 3, 0.08, 0.08, 0.08, 0.01);
-                world.spawnParticle(Particle.DUST_COLOR_TRANSITION, at, 6, 0.18, 0.18, 0.18, 0,
-                        new Particle.DustTransition(gilt ? GILT : EMBER, ASH, 0.7f));
+                de.aetherion.core.api.Vfx.puff(at, Particle.DUST_COLOR_TRANSITION, 6, Math.max(0.18, 0.18), new Particle.DustTransition(gilt ? GILT : EMBER, ASH, 0.7f));
                 if (gilt) {
                     world.spawnParticle(Particle.SMALL_FLAME, at, 3, 0.1, 0.1, 0.1, 0.01);
                 }

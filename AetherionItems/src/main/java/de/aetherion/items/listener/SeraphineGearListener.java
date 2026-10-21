@@ -374,7 +374,7 @@ public final class SeraphineGearListener implements Listener {
             }
             Location at = anchorAt(end.x, end.y, end.z);
             world.playSound(at, Sound.BLOCK_TRIPWIRE_ATTACH, SoundCategory.PLAYERS, 1.1f, 1.45f + f * 0.08f);
-            world.spawnParticle(Particle.DUST, at, 8, 0.12, 0.12, 0.12, 0, new Particle.DustOptions(GOLD, 1.0f));
+            de.aetherion.core.api.Vfx.puff(at, Particle.DUST, 8, Math.max(0.12, 0.12), new Particle.DustOptions(GOLD, 1.0f));
         }
 
         /** The tell from the fight: every thread snaps straight at once, then they lift. */
@@ -433,8 +433,8 @@ public final class SeraphineGearListener implements Listener {
                 world.playSound(chest, Sound.BLOCK_AMETHYST_BLOCK_HIT, SoundCategory.PLAYERS, 1.2f,
                         1.2f + random.nextFloat() * 0.4f);
                 world.playSound(chest, Sound.BLOCK_GLASS_HIT, SoundCategory.PLAYERS, 0.9f, 1.6f);
-                world.spawnParticle(Particle.DUST, chest, 6, 0.25, 0.3, 0.25, 0, new Particle.DustOptions(WHITE, 0.9f));
-                world.spawnParticle(Particle.DUST, chest, 4, 0.2, 0.25, 0.2, 0, new Particle.DustOptions(GOLD, 0.8f));
+                de.aetherion.core.api.Vfx.puff(chest, Particle.DUST, 6, Math.max(0.25, 0.25), new Particle.DustOptions(WHITE, 0.9f));
+                de.aetherion.core.api.Vfx.puff(chest, Particle.DUST, 4, Math.max(0.2, 0.2), new Particle.DustOptions(GOLD, 0.8f));
                 hurt(mark, damage * 0.45);
             }
         }
@@ -486,11 +486,10 @@ public final class SeraphineGearListener implements Listener {
                     continue;
                 }
                 Location at = mark.getLocation().add(0, 0.4, 0);
-                world.spawnParticle(Particle.BLOCK, at, 36, 0.5, 0.4, 0.5, 0,
-                        Material.WHITE_GLAZED_TERRACOTTA.createBlockData());
-                world.spawnParticle(Particle.BLOCK, at, 20, 0.5, 0.4, 0.5, 0, Material.SMOOTH_QUARTZ.createBlockData());
-                world.spawnParticle(Particle.DUST, at, 24, 0.7, 0.5, 0.7, 0, new Particle.DustOptions(GOLD, 1.5f));
-                world.spawnParticle(Particle.DUST, at, 18, 0.7, 0.5, 0.7, 0, new Particle.DustOptions(WHITE, 1.2f));
+                de.aetherion.core.api.Vfx.puff(at, Particle.BLOCK, 36, Math.max(0.5, 0.5), Material.WHITE_GLAZED_TERRACOTTA.createBlockData());
+                de.aetherion.core.api.Vfx.puff(at, Particle.BLOCK, 20, Math.max(0.5, 0.5), Material.SMOOTH_QUARTZ.createBlockData());
+                de.aetherion.core.api.Vfx.puff(at, Particle.DUST, 24, Math.max(0.7, 0.7), new Particle.DustOptions(GOLD, 1.5f));
+                de.aetherion.core.api.Vfx.puff(at, Particle.DUST, 18, Math.max(0.7, 0.7), new Particle.DustOptions(WHITE, 1.2f));
                 world.spawnParticle(Particle.FLASH, at, 1, 0, 0, 0, 0);
                 world.playSound(at, Sound.BLOCK_GLASS_BREAK, SoundCategory.PLAYERS, 1.2f, 0.6f);
                 world.playSound(at, Sound.BLOCK_GLASS_BREAK, SoundCategory.PLAYERS, 1.0f, 0.9f);
@@ -505,7 +504,7 @@ public final class SeraphineGearListener implements Listener {
                 tip[f].y += 8f;
             }
             placeFingers(1f, 18);
-            world.spawnParticle(Particle.CLOUD, anchorAt(0f, SKY + 2.4f, 0f), 40, 2.0, 0.3, 2.0, 0.01);
+            de.aetherion.core.api.Vfx.puff(anchorAt(0f, SKY + 2.4f, 0f), Particle.CLOUD, 40, Math.max(2.0, 2.0), null);
         }
 
         /* ------------------------------------------------------------ drawing */
@@ -776,7 +775,7 @@ public final class SeraphineGearListener implements Listener {
         world.playSound(at, Sound.BLOCK_TRIPWIRE_CLICK_ON, SoundCategory.PLAYERS, 0.9f, 1.4f);
         world.playSound(at, Sound.ITEM_CROSSBOW_LOADING_END, SoundCategory.PLAYERS, 0.6f, 1.6f);
         chime(world, at, LULLABY[0], 0.7f);
-        world.spawnParticle(Particle.DUST, at.clone().add(0, 1.4, 0), 10, 0.2, 0.3, 0.2, 0, new Particle.DustOptions(GOLD, 0.9f));
+        de.aetherion.core.api.Vfx.puff(at.clone().add(0, 1.4, 0), Particle.DUST, 10, Math.max(0.2, 0.2), new Particle.DustOptions(GOLD, 0.9f));
     }
 
     private boolean wearingFullSet(Player player) {

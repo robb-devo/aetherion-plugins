@@ -175,7 +175,7 @@ public final class WandListener implements Listener {
             known.add(next.getUniqueId());
             hit.add(next);
             drawSpark(world, from.getLocation().add(0, 1, 0), next.getLocation().add(0, 1, 0));
-            world.spawnParticle(Particle.ELECTRIC_SPARK, next.getLocation().add(0, 1, 0), 12, 0.2, 0.4, 0.2, 0.04);
+            de.aetherion.core.api.Vfx.puff(next.getLocation().add(0, 1, 0), Particle.ELECTRIC_SPARK, 12, Math.max(0.2, 0.2), null);
             from = next;
         }
     }
@@ -207,7 +207,7 @@ public final class WandListener implements Listener {
 
     private void castHeal(Player player, Location target, World world, double blast) {
         world.playSound(target, Sound.BLOCK_BELL_USE, 0.9f, 1.4f);
-        world.spawnParticle(Particle.HAPPY_VILLAGER, target.clone().add(0, 1, 0), 32, 1.2, 0.8, 1.2, 0.02);
+        de.aetherion.core.api.Vfx.puff(target.clone().add(0, 1, 0), Particle.HAPPY_VILLAGER, 32, Math.max(1.2, 1.2), null);
         int healed = 0;
         for (Entity entity : world.getNearbyEntities(player.getLocation(), 8, 8, 8)) {
             if (entity instanceof Player nearby && !nearby.isDead()) {
@@ -217,7 +217,7 @@ public final class WandListener implements Listener {
                     double missing = max - current;
                     double heal = Math.max(4.0, missing * 0.15);
                     nearby.setHealth(Math.min(max, current + heal));
-                    world.spawnParticle(Particle.HAPPY_VILLAGER, nearby.getLocation().add(0, 1, 0), 8, 0.3, 0.5, 0.3, 0.01);
+                    de.aetherion.core.api.Vfx.puff(nearby.getLocation().add(0, 1, 0), Particle.HAPPY_VILLAGER, 8, Math.max(0.3, 0.3), null);
                     healed++;
                 }
             }
@@ -232,19 +232,19 @@ public final class WandListener implements Listener {
     private void playCast(World world, Location target, String type) {
         if ("frost".equals(type)) {
             world.playSound(target, Sound.ENTITY_PLAYER_HURT_FREEZE, 0.9f, 0.7f);
-            world.spawnParticle(Particle.SNOWFLAKE, target.clone().add(0, 1, 0), 28, 0.5, 0.7, 0.5, 0.02);
-            world.spawnParticle(Particle.CLOUD, target.clone().add(0, 0.4, 0), 8, 0.3, 0.2, 0.3, 0.01);
+            de.aetherion.core.api.Vfx.puff(target.clone().add(0, 1, 0), Particle.SNOWFLAKE, 28, Math.max(0.5, 0.5), null);
+            de.aetherion.core.api.Vfx.puff(target.clone().add(0, 0.4, 0), Particle.CLOUD, 8, Math.max(0.3, 0.3), null);
             return;
         }
         if ("ember".equals(type)) {
             world.playSound(target, Sound.ENTITY_BLAZE_SHOOT, 0.9f, 0.8f);
-            world.spawnParticle(Particle.FLAME, target.clone().add(0, 1, 0), 36, 0.6, 0.8, 0.6, 0.04);
-            world.spawnParticle(Particle.LAVA, target.clone().add(0, 0.5, 0), 8, 0.3, 0.3, 0.3, 0.01);
+            de.aetherion.core.api.Vfx.puff(target.clone().add(0, 1, 0), Particle.FLAME, 36, Math.max(0.6, 0.6), null);
+            de.aetherion.core.api.Vfx.puff(target.clone().add(0, 0.5, 0), Particle.LAVA, 8, Math.max(0.3, 0.3), null);
             return;
         }
         world.strikeLightningEffect(target);
         world.playSound(target, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.85f, "chain".equals(type) ? 1.35f : 1.15f);
-        world.spawnParticle(Particle.ELECTRIC_SPARK, target.clone().add(0, 1, 0), 24, 0.4, 0.8, 0.4, 0.05);
+        de.aetherion.core.api.Vfx.puff(target.clone().add(0, 1, 0), Particle.ELECTRIC_SPARK, 24, Math.max(0.4, 0.4), null);
     }
 
     private DamageType damageType(String type) {
