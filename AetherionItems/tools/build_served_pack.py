@@ -33,8 +33,10 @@ COPY = (
     'assets/minecraft/textures/gui/sprites/boss_bar/blue_background.png',
     'assets/aetherion/textures/item/gui',
     'assets/aetherion/models/item/gui',
-    # The Manager's book page and its caption fonts (gen_gui_chrome.py: render + write_caption_fonts).
+    # The Manager's book pages and their caption fonts (gen_gui_chrome.py: render + write_caption_fonts).
     'assets/minecraft/textures/font/gui_aetherion_manager.png',
+    'assets/minecraft/textures/font/gui_aetherion_stats.png',
+    'assets/minecraft/textures/font/gui_aetherion_spawns.png',
     'assets/aetherion/font/mgr_caption_1.json',
     'assets/aetherion/font/mgr_caption_2.json',
     'assets/aetherion/font/mgr_caption_3.json',

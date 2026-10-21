@@ -16,36 +16,48 @@ import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 public final class SpawnMenu {
 
     public static final String TITLE = "§8Aetherion Spawns";
-    /** Pack overlay (Aetherion Manager chrome): \uE005 shift + \uE024 spawns panel. */
-    private static final net.kyori.adventure.text.Component CHROME = net.kyori.adventure.text.Component.text(
-            "\uE005\uE024", net.kyori.adventure.text.format.NamedTextColor.WHITE);
-    public static final int BACK_SLOT = 49;
-    public static final int INFO_SLOT = 4;
+    /** Same slot as every Manager page's Back (ManagerNav.SLOT). */
+    public static final int BACK_SLOT = 45;
+    public static final int INFO_SLOT = 49;
     private static final int MENU_SIZE = 54;
 
-    /** Left + right edge columns stay glass. Content lives in columns 1–7. */
-    private static final Set<Integer> EDGE_SLOTS = Set.of(
-            0, 8, 9, 17, 18, 26, 27, 35, 36, 44, 45, 53
-    );
-
+    /**
+     * Book page tiles (gen_gui_chrome.py BOOK_TILES['spawns']): short names four to a row on top, the long ones three
+     * to a row below, so every name fits under its seal in both languages.
+     */
     private static int displaySlot(HubSpawn spawn) {
         return switch (spawn.id()) {
-            case "harbour" -> 10;
-            case "ore_ridge" -> 11;
-            case "mines" -> 12;
-            case "capital" -> 13;
-            case "forage_isle" -> 14;
-            case "farm" -> 15;
-            case "farm_isle" -> 16;
-            case "colosseum" -> 19;
-            case "eldervale" -> 20;
-            case "borderlands" -> 21;
-            default -> spawn.slot();
+            case "harbour" -> 1;
+            case "ore_ridge" -> 3;
+            case "mines" -> 5;
+            case "farm" -> 7;
+            case "capital" -> 19;
+            case "forage_isle" -> 22;
+            case "farm_isle" -> 25;
+            case "colosseum" -> 37;
+            case "eldervale" -> 40;
+            case "borderlands" -> 43;
+            default -> -1;
+        };
+    }
+
+    private static String caption(HubSpawn spawn, boolean german) {
+        return switch (spawn.id()) {
+            case "harbour" -> german ? "Hafen" : "Harbor";
+            case "ore_ridge" -> german ? "Erzgrat" : "Ridge";
+            case "mines" -> german ? "Minen" : "Mines";
+            case "farm" -> "Farm";
+            case "capital" -> german ? "Hauptstadt" : "Capital";
+            case "forage_isle" -> german ? "Waldinsel" : "Forage";
+            case "farm_isle" -> german ? "Farminsel" : "Farm Isle";
+            case "colosseum" -> german ? "Kolosseum" : "Colosseum";
+            case "eldervale" -> "Eldervale";
+            case "borderlands" -> german ? "Grenzland" : "Borderlands";
+            default -> spawn.displayName();
         };
     }
 
@@ -56,24 +68,18 @@ public final class SpawnMenu {
     }
 
     public void open(Player player) {
-        Inventory inventory = Bukkit.createInventory(new Holder(), MENU_SIZE, CHROME);
-        fillBorder(inventory);
-
+        boolean german = de.aetherion.core.api.AetherServices.german(player);
+        Inventory inventory = Bukkit.createInventory(new Holder(), MENU_SIZE);
         inventory.setItem(INFO_SLOT, item(
                 Material.COMPASS,
-                "§6Your Spawns",
-                List.of(
-                        "§7Camps unlock as you explore.",
-                        "§cRed §7= locked · walk there or finish the quest.",
-                        "",
-                        "§7Harbour → Ore Ridge → Mines → Capital",
-                        "§7Forage · Farm · Farm Isle · Borderlands",
-                        "",
-                        "§eLeft-click §7→ set /spawn",
-                        "§eRight-click §7→ teleport now"
-                )
+                german ? "§6Deine Spawns" : "§6Your Spawns",
+                german
+                        ? List.of("§7Lager schaltest du beim Erkunden frei.", "§8Blass = gesperrt, Gold = dein /spawn.", "",
+                                "§eLinksklick §7→ als /spawn setzen", "§eRechtsklick §7→ sofort hin")
+                        : List.of("§7Camps unlock as you explore.", "§8Faded = locked, gold = your /spawn.", "",
+                                "§eLeft-click §7→ set /spawn", "§eRight-click §7→ teleport now")
         ));
-
+        List<de.aetherion.core.api.BookPage.Caption> captions = new ArrayList<>();
         HubSpawn selected = hub.selected(player);
 
         for (HubSpawn spawn : hub.spawns()) {
@@ -84,14 +90,20 @@ public final class SpawnMenu {
             if (slot < 0 || slot >= inventory.getSize() || slot == INFO_SLOT || slot == BACK_SLOT) {
                 continue;
             }
-            if (EDGE_SLOTS.contains(slot)) {
-                continue;
-            }
             inventory.setItem(slot, spawnItem(player, spawn, selected));
+            de.aetherion.core.api.BookPage.State state = !hub.isUnlocked(player, spawn.id())
+                    ? de.aetherion.core.api.BookPage.State.LOCKED
+                    : selected != null && selected.id().equals(spawn.id())
+                    ? de.aetherion.core.api.BookPage.State.NEXT
+                    : de.aetherion.core.api.BookPage.State.OPEN;
+            captions.add(new de.aetherion.core.api.BookPage.Caption(slot, caption(spawn, german), state));
         }
-
-        inventory.setItem(BACK_SLOT, item(Material.ARROW, "§eBack", List.of("§7Return to the Aetherion Manager.")));
-        player.openInventory(inventory);
+        inventory.setItem(BACK_SLOT, item(Material.ARROW, german ? "§eZurück" : "§eBack",
+                List.of(german ? "§7Zum Aetherion Manager." : "§7Return to the Aetherion Manager.")));
+        Inventory page = Bukkit.createInventory(new Holder(), MENU_SIZE,
+                de.aetherion.core.api.BookPage.title('', captions));
+        page.setContents(inventory.getContents());
+        player.openInventory(page);
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.7f, 1.2f);
     }
 
@@ -182,20 +194,6 @@ public final class SpawnMenu {
             }
         }
         return item;
-    }
-
-    private void fillBorder(Inventory inventory) {
-        ItemStack pane = item(Material.GRAY_STAINED_GLASS_PANE, " ", List.of());
-        // Top + bottom rows
-        for (int slot = 0; slot < 9; slot++) {
-            inventory.setItem(slot, pane.clone());
-            inventory.setItem(45 + slot, pane.clone());
-        }
-        // Left + right columns
-        for (int row = 1; row <= 4; row++) {
-            inventory.setItem(row * 9, pane.clone());
-            inventory.setItem(row * 9 + 8, pane.clone());
-        }
     }
 
     private static void openManager(Player player) {

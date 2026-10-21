@@ -492,6 +492,15 @@ def draw_plate(cv, th):
 # seal with a caption band under it; the captions themselves are vanilla-font text in the title (ManagerCaptions,
 # fonts aetherion:mgr_caption_1..3). Slot = 9 * row + column.
 MANAGER_TILES = [(r, c) for r in (0, 2, 4) for c in (0, 2, 4, 6, 8)]
+# Pages in the Manager's book language: their tiles get a seal and a caption band (the captions are in the title,
+# de.aetherion.core.api.BookPage). Keep these in step with the slots the menus use.
+BOOK_TILES = {
+    'manager': MANAGER_TILES,
+    # StatsOverviewGUI: 14 stats, rows 0, 2, 4
+    'stats': [(r, c) for r in (0, 2, 4) for c in (0, 2, 4, 6, 8) if (r, c) != (4, 8)],
+    # Hub SpawnMenu: short names four to a row, long names three to a row, the help compass on the nav row
+    'spawns': [(0, 1), (0, 3), (0, 5), (0, 7), (2, 1), (2, 4), (2, 7), (4, 1), (4, 4), (4, 7), (5, 4)],
+}
 PAGE = hx('#e3d1a4')
 PAGE_DARK = hx('#cdb787')
 INK = hx('#3b2a1a')
@@ -505,7 +514,7 @@ def _grain(x, y):
     return ((v >> 8) & 0xFF) / 127.5 - 1.0
 
 
-def draw_book(cv, th, g):
+def draw_book(cv, th, g, tiles):
     x0, y0, x1, y1 = 3, 16, 172, g['cont_bot'] + 3
     # parchment with grain, a warm vignette toward the edges and a soft gutter shadow down the middle
     for y in range(y0, y1 + 1):
@@ -527,7 +536,7 @@ def draw_book(cv, th, g):
     seal = mix(PAGE_DARK, INK_SOFT, 0.18)
     seal_in = mix(PAGE, PAGE_DARK, 0.65)
     band = mix(PAGE, PAGE_DARK, 0.45)
-    for r, c in MANAGER_TILES:
+    for r, c in tiles:
         # item area is (8 + 18c, 18 + 18r) .. +15; the seal is a 20 px disc around it
         cx, cy = 15.5 + 18 * c, 25.5 + 18 * r
         for y in range(int(cy) - 11, int(cy) + 13):
@@ -539,9 +548,12 @@ def draw_book(cv, th, g):
                     cv.put(x, y, seal)
                 elif d <= 9.9:
                     cv.put(x, y, INK_SOFT if (x + y) % 7 else INK)
-        # caption band under the seal (the text is drawn by the title, GUI y 37 + 36k)
+        if r % 2 or r > 4:
+            continue                                   # no caption row under this one
+        # caption band under the seal (the text is drawn by the title, GUI y 37 + 36k), as wide as the gap allows
+        gap = min([abs(c2 - c) for r2, c2 in tiles if r2 == r and c2 != c] or [3])
         by = 18 + 18 * r + 18
-        bx0, bx1 = int(cx) - 19, int(cx) + 20
+        bx0, bx1 = int(cx) - (9 * gap + 1), int(cx) + (9 * gap + 2)
         for x in range(max(x0 + 3, bx0), min(x1 - 3, bx1) + 1):
             fade = min(x - bx0, bx1 - x)
             if fade < 3:
@@ -553,12 +565,30 @@ def draw_book(cv, th, g):
     cv.put(255 - OX, 120, INK, 1)
 
 
+# where each page's bookmark hangs: in a gap between the top row's seals
+RIBBON_X = {'stats': 139, 'spawns': 158}
+
+
+def draw_ribbon(cv, th):
+    """A bookmark in the page's accent hanging from the top edge: which book of the Manager you are in."""
+    x0 = RIBBON_X.get(th.key, 158)
+    x1 = x0 + 5
+    for y in range(16, 33):
+        for x in range(x0, x1 + 1):
+            if y >= 29 and abs(x - (x0 + 2.5)) < (y - 28):  # the notch at the tail
+                continue
+            shade = 0.25 if x in (x0, x1) else 0.0
+            cv.put(x, y, mix(th.acc, INK, shade))
+
+
 def render(th, rows):
     g = geometry(rows)
     cv = Canvas()
     draw_panel(cv, th, g)
-    if th.key == 'manager':
-        draw_book(cv, th, g)
+    if th.key in BOOK_TILES:
+        draw_book(cv, th, g, BOOK_TILES[th.key])
+        if th.key != 'manager':
+            draw_ribbon(cv, th)
     else:
         draw_wells(cv, th, 7, g['cont_top'], 9, rows)
     draw_wells(cv, th, 7, g['inv_top'], 9, 3, brackets=(True, True, False, False))

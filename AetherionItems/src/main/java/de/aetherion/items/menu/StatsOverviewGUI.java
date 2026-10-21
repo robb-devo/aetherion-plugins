@@ -1,5 +1,7 @@
 package de.aetherion.items.menu;
 
+import de.aetherion.core.api.AetherServices;
+import de.aetherion.core.api.BookPage;
 import de.aetherion.items.item.ItemLore;
 import de.aetherion.items.manager.ActiveEquipmentStats;
 import de.aetherion.items.manager.ItemManager;
@@ -14,10 +16,40 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * The stats page in the Manager's book language: one sealed tile per stat with its value written under it, so the
+ * whole build reads at a glance. Survival and damage on top, speed and gathering in the middle, pets and fishing
+ * below. Zero values are written faded.
+ */
 public class StatsOverviewGUI {
 
     public static final String TITLE = "§8Aetherion Stats";
     public static final int BACK_SLOT = de.aetherion.items.util.ManagerNav.SLOT;
+
+    private record Stat(int slot, Material icon, String colour, String en, String de, ItemCapability capability,
+                        boolean percent) {
+    }
+
+    /** Book tiles: rows 0, 2 and 4, every other column (gen_gui_chrome.py BOOK_TILES['stats']). */
+    private static final List<Stat> STATS = List.of(
+            new Stat(0, Material.GLISTERING_MELON_SLICE, "§c", "Health", "Leben", ItemCapability.HEALTH, false),
+            new Stat(2, Material.SHIELD, "§b", "Defense", "Abwehr", ItemCapability.DEFENSE, false),
+            new Stat(4, Material.DIAMOND_SWORD, "§c", "Damage", "Schaden", ItemCapability.DAMAGE, false),
+            new Stat(6, Material.GHAST_TEAR, "§f", "Crit Chance", "Krit-Chance", ItemCapability.CRIT_CHANCE, true),
+            new Stat(8, Material.BLAZE_POWDER, "§6", "Crit Damage", "Krit-Schaden", ItemCapability.CRIT_DAMAGE, true),
+            new Stat(18, Material.SUGAR, "§e", "Speed", "Tempo", ItemCapability.SPEED, true),
+            new Stat(20, Material.REDSTONE, "§c", "Attack Spread", "Angriffsstreuung", ItemCapability.ATTACK_SPREAD, false),
+            new Stat(22, Material.IRON_PICKAXE, "§7", "Mining Power", "Abbaukraft", ItemCapability.MINING_POWER, false),
+            new Stat(24, Material.RABBIT_FOOT, "§e", "Fortune", "Glück", ItemCapability.FORTUNE, false),
+            new Stat(26, Material.EMERALD, "§a", "Spread", "Streuung", ItemCapability.SPREAD, false),
+            new Stat(36, Material.GOLDEN_HOE, "§6", "Harvest", "Ernte", ItemCapability.HARVEST_SPREAD, false),
+            new Stat(38, Material.LEAD, "§6", "Catch Rate", "Fangrate", ItemCapability.PET_CATCH_RATE, true),
+            new Stat(40, Material.FISHING_ROD, "§b", "Fish Speed", "Angeltempo", ItemCapability.FISHING_SPEED, false),
+            new Stat(42, Material.COD, "§3", "Fish Catch", "Fang", ItemCapability.FISHING_CATCH, false)
+    );
 
     private final ActiveEquipmentStats equipmentStats;
 
@@ -26,59 +58,27 @@ public class StatsOverviewGUI {
     }
 
     public void open(Player player) {
-        Inventory inventory = Bukkit.createInventory(new Holder(), 54, de.aetherion.items.util.ManagerChrome.STATS);
-
+        boolean german = AetherServices.german(player);
+        List<BookPage.Caption> captions = new ArrayList<>();
+        ItemStack[] contents = new ItemStack[54];
         ItemStack spacer = GuiIcons.spacer();
-        for (int slot = 0; slot < inventory.getSize(); slot++) {
-            inventory.setItem(slot, spacer.clone());
+        for (int slot = 0; slot < contents.length; slot++) {
+            contents[slot] = spacer.clone();
         }
+        for (Stat stat : STATS) {
+            double value = equipmentStats.getStat(player, stat.capability());
+            String amount = ItemLore.formatStat(value) + (stat.percent() ? "%" : "");
+            contents[stat.slot()] = de.aetherion.items.util.GuiItems.named(stat.icon(),
+                    stat.colour() + (german ? stat.de() : stat.en()) + " §f" + amount,
+                    german ? "§7Ausrüstung, Pet und Skills zusammen." : "§7Gear, pet and skills, added up.");
+            captions.add(new BookPage.Caption(stat.slot(), amount,
+                    Math.abs(value) < 0.005 ? BookPage.State.LOCKED : BookPage.State.OPEN));
+        }
+        contents[BACK_SLOT] = de.aetherion.items.util.ManagerNav.button();
 
-        inventory.setItem(4, named(
-                Material.EXPERIENCE_BOTTLE,
-                "§bActive stats",
-                "§7Gear, pet and equipped skills,",
-                "§7already added together."
-        ));
-
-        inventory.setItem(10, GuiIcons.icon(named(Material.BLACK_STAINED_GLASS_PANE, "§7Combat"), GuiIcons.SECTION_COMBAT));
-        inventory.setItem(11, stat(player, Material.DIAMOND_SWORD, "§cDamage", ItemCapability.DAMAGE, false));
-        inventory.setItem(12, stat(player, Material.GHAST_TEAR, "§fCrit Chance", ItemCapability.CRIT_CHANCE, true));
-        inventory.setItem(13, stat(player, Material.BLAZE_POWDER, "§6Crit Damage", ItemCapability.CRIT_DAMAGE, true));
-        inventory.setItem(14, stat(player, Material.SHIELD, "§bDefense", ItemCapability.DEFENSE, false));
-        inventory.setItem(15, stat(player, Material.GLISTERING_MELON_SLICE, "§cHealth", ItemCapability.HEALTH, false));
-        inventory.setItem(16, stat(player, Material.SUGAR, "§eSpeed", ItemCapability.SPEED, true));
-
-        inventory.setItem(19, GuiIcons.icon(named(Material.BLACK_STAINED_GLASS_PANE, "§7Gathering"), GuiIcons.SECTION_GATHERING));
-        inventory.setItem(20, stat(player, Material.IRON_PICKAXE, "§7Mining Power", ItemCapability.MINING_POWER, false));
-        inventory.setItem(21, stat(player, Material.RABBIT_FOOT, "§eFortune", ItemCapability.FORTUNE, false));
-        inventory.setItem(22, stat(player, Material.EMERALD, "§aSpread", ItemCapability.SPREAD, false));
-        inventory.setItem(23, stat(player, Material.REDSTONE, "§cAttack Spread", ItemCapability.ATTACK_SPREAD, false));
-        inventory.setItem(24, stat(player, Material.GOLDEN_HOE, "§6Harvest", ItemCapability.HARVEST_SPREAD, false));
-        inventory.setItem(25, stat(player, Material.LEAD, "§6Catch Rate", ItemCapability.PET_CATCH_RATE, true));
-
-        inventory.setItem(28, GuiIcons.icon(named(Material.BLACK_STAINED_GLASS_PANE, "§7Fishing"), GuiIcons.SECTION_FISHING));
-        inventory.setItem(29, stat(player, Material.FISHING_ROD, "§bFish Speed", ItemCapability.FISHING_SPEED, false));
-        inventory.setItem(30, stat(player, Material.COD, "§3Fish Catch", ItemCapability.FISHING_CATCH, false));
-
-        inventory.setItem(BACK_SLOT, de.aetherion.items.util.ManagerNav.button());
-
+        Inventory inventory = Bukkit.createInventory(new Holder(), 54, BookPage.title('', captions));
+        inventory.setContents(contents);
         player.openInventory(inventory);
-    }
-
-    private ItemStack stat(
-            Player player,
-            Material material,
-            String name,
-            ItemCapability capability,
-            boolean percent
-    ) {
-        double value = equipmentStats.getStat(player, capability);
-        String amount = ItemLore.formatStat(value) + (percent ? "%" : "");
-        return named(material, name + " §f" + amount, "§7From gear, pets and skills.");
-    }
-
-    private ItemStack named(Material material, String name, String... lore) {
-        return de.aetherion.items.util.GuiItems.named(material, name, lore);
     }
 
     public static final class Holder implements InventoryHolder {
