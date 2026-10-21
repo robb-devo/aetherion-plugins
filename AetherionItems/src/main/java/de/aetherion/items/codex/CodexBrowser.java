@@ -175,7 +175,7 @@ public class CodexBrowser extends CodexView {
             inv.setItem(31, emptyState());
         }
 
-        inv.setItem(CodexChrome.BACK, de.aetherion.items.util.ManagerNav.button());
+        inv.setItem(CodexChrome.BACK, CodexChrome.back("the Codex"));
         if (page > 1) {
             inv.setItem(CodexChrome.PREV, CodexChrome.prev(page, pages));
         }
@@ -353,7 +353,7 @@ public class CodexBrowser extends CodexView {
         }
         if (slot == CodexChrome.BACK) {
             CodexChrome.click(player);
-            de.aetherion.items.util.ManagerNav.openManager(player);
+            CodexMenus.openHub(player);
             return;
         }
         if (slot == CodexChrome.TOOL_B) {

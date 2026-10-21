@@ -84,7 +84,7 @@ public final class CodexMenus implements Listener {
             case COLLECTION -> openCollection(player, null);
             case BESTIARY -> openBestiary(player, null);
             case JOURNAL -> openJournal(player);
-            case SKILLS -> openSkills(player);
+            case SKILLS -> de.aetherion.items.skill.SkillOverviewGUI.open(player);
             case MILESTONES -> openMilestones(player);
         }
     }

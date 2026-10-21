@@ -71,6 +71,8 @@ public final class SkillMenu implements Listener {
     private static final String FLOOR_ONE_BOSS = "dungeon_sentinel";
 
     private final SkillService skills;
+    /** Opened from the Codex skill overview: Back goes there, not to the Manager. */
+    private final java.util.Set<java.util.UUID> fromOverview = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
     public SkillMenu(SkillService skills) {
         this.skills = skills;
@@ -80,13 +82,26 @@ public final class SkillMenu implements Listener {
         open(player, null);
     }
 
+    public void openFromOverview(Player player, AetherSkill.Category category) {
+        open(player, category, true);
+    }
+
     public void open(Player player, AetherSkill.Category category) {
+        open(player, category, false);
+    }
+
+    private void open(Player player, AetherSkill.Category category, boolean overview) {
         if (player == null) {
             return;
         }
         AetherSkill.Category shown = category != null && categoryUnlocked(player, category)
                 ? category
                 : defaultCategory(player);
+        if (overview) {
+            fromOverview.add(player.getUniqueId());
+        } else {
+            fromOverview.remove(player.getUniqueId());
+        }
         Holder holder = new Holder(shown);
         Inventory inventory = Bukkit.createInventory(holder, 54, de.aetherion.items.util.ManagerChrome.SKILLS);
         holder.inventory = inventory;
@@ -132,7 +147,9 @@ public final class SkillMenu implements Listener {
             ));
         }
 
-        inventory.setItem(BACK_SLOT, de.aetherion.items.util.ManagerNav.button());
+        inventory.setItem(BACK_SLOT, fromOverview.contains(player.getUniqueId())
+                ? de.aetherion.items.codex.CodexChrome.back("the skill overview")
+                : de.aetherion.items.util.ManagerNav.button());
     }
 
     @EventHandler
@@ -151,7 +168,11 @@ public final class SkillMenu implements Listener {
         int slot = event.getRawSlot();
         if (slot == BACK_SLOT) {
             click(player, Sound.UI_BUTTON_CLICK, 0.9f);
-            de.aetherion.items.util.ManagerNav.openManager(player);
+            if (fromOverview.contains(player.getUniqueId())) {
+                SkillOverviewGUI.open(player);
+            } else {
+                de.aetherion.items.util.ManagerNav.openManager(player);
+            }
             return;
         }
         if (slot == CODEX_SLOT) {

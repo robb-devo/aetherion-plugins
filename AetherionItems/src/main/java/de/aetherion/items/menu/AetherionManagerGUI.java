@@ -26,35 +26,31 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class AetherionManagerGUI {
 
-    /**
-     * Manager-only chest overlay via pack font bitmap.
-     * {@code \uE005} = -48px nudge, {@code \uE004} = GUI texture (vanilla-aligned).
-     * Must be Adventure Component — Paper 1.21 String titles are deprecated and can drop PUA glyphs.
+    /*
+     * The Manager is a book page (pack glyph , tools/gen_gui_chrome.py): fifteen tiles, five a row on rows
+     * 0, 2 and 4, each with its name written under it (ManagerCaptions, in the title). You first, then trade and
+     * the world, then the workbench and home. Bestiary, Collection and Journal live in the Codex.
      */
-    public static final Component TITLE = Component.text("\uE005\uE004", NamedTextColor.WHITE);
+    public static final int SKILLS_SLOT = 0;
+    public static final int PETS_SLOT = 2;
+    public static final int STATS_SLOT = 4;
+    public static final int STORAGE_SLOT = 6;
+    public static final int LOADOUT_SLOT = 8;
 
-    public static final int SHOP_SLOT = 10;
-    public static final int BAZAAR_SLOT = 12;
-    public static final int SKILLS_SLOT = 13;
-    public static final int AUCTION_SLOT = 14;
+    public static final int SHOP_SLOT = 18;
+    public static final int BAZAAR_SLOT = 20;
+    public static final int AUCTION_SLOT = 22;
+    public static final int SPAWN_SLOT = 24;
+    public static final int CODEX_SLOT = 26;
 
-    public static final int BESTIARY_SLOT = 20;
-    public static final int COLLECTION_SLOT = 21;
-    public static final int PETS_SLOT = 22;
-    public static final int JOURNAL_SLOT = 23;
-    public static final int RECIPE_SLOT = 24;
+    public static final int CRAFT_SLOT = 36;
+    public static final int RECIPE_SLOT = 38;
+    public static final int ANVIL_SLOT = 40;
+    public static final int ISLAND_SLOT = 42;
+    public static final int GUILD_SLOT = 44;
 
-    public static final int GUILD_SLOT = 28;
-    public static final int STATS_SLOT = 29;
-    public static final int STORAGE_SLOT = 30;
-    public static final int LOADOUT_SLOT = 31;
-    public static final int SPAWN_SLOT = 32;
-    public static final int CRAFT_SLOT = 33;
-    public static final int ANVIL_SLOT = 34;
-
-    public static final int ISLAND_SLOT = 40;
-    public static final int DEV_SLOT = 45;
-    public static final int CLOSE_SLOT = 49;
+    /** Ops only, between the bottom captions. */
+    public static final int DEV_SLOT = 52;
 
     private static final String SKILLS_QUEST_ID = "lesson_manager";
     private static final String PETS_QUEST_ID = "pocket_zoo";
@@ -64,18 +60,19 @@ public class AetherionManagerGUI {
     private static final Map<UUID, BukkitTask> petsBlinkTasks = new ConcurrentHashMap<>();
     private static final Map<UUID, BukkitTask> craftBlinkTasks = new ConcurrentHashMap<>();
 
-    /** Every clickable hub tab, in layout order. Drives the header tally and click routing. */
+    /** Every clickable hub tab, in layout order. Drives the tally and click routing. */
     private static final int[] TAB_SLOTS = {
-            SHOP_SLOT, BAZAAR_SLOT, SKILLS_SLOT, AUCTION_SLOT,
-            BESTIARY_SLOT, COLLECTION_SLOT, PETS_SLOT, JOURNAL_SLOT, RECIPE_SLOT,
-            GUILD_SLOT, STATS_SLOT, STORAGE_SLOT, LOADOUT_SLOT, SPAWN_SLOT, CRAFT_SLOT, ANVIL_SLOT,
-            ISLAND_SLOT
+            SKILLS_SLOT, PETS_SLOT, STATS_SLOT, STORAGE_SLOT, LOADOUT_SLOT,
+            SHOP_SLOT, BAZAAR_SLOT, AUCTION_SLOT, SPAWN_SLOT, CODEX_SLOT,
+            CRAFT_SLOT, RECIPE_SLOT, ANVIL_SLOT, ISLAND_SLOT, GUILD_SLOT
     };
 
     private final AetherionManager manager;
     private final StorageInventory storageInventory;
     /** Slots of the lock that opens next — set per open() (main thread only). */
     private final java.util.Set<Integer> nextSlots = new java.util.HashSet<>();
+    /** Caption state per tile for the open being built (main thread only). */
+    private final Map<Integer, ManagerCaptions.State> captionState = new java.util.HashMap<>();
 
     public AetherionManagerGUI(AetherionManager manager, StorageInventory storageInventory) {
         this.manager = manager;
@@ -83,14 +80,16 @@ public class AetherionManagerGUI {
     }
 
     public void open(Player player) {
-        Inventory inventory = Bukkit.createInventory(new Holder(), 54, TITLE); // Component title → font overlay
+        // Filled first, then copied into the real inventory: the captions in the title depend on what is open.
+        Inventory inventory = Bukkit.createInventory(null, 54);
         fill(inventory);
         ProgressionService progress = AetherionItems.getInstance() == null
                 ? null
                 : AetherionItems.getInstance().progress();
+        boolean german = de.aetherion.items.item.LoreLocale.german(player);
+        captionState.clear();
 
-        // Early on most of this is locked. Say how far along you are, light up the one
-        // lock that opens next, and let the far-future ones (journal, island, guild) recede.
+        // Early on most of this is locked: light up the one lock that opens next.
         List<Gate> gates = gates(player, progress);
         nextSlots.clear();
         int open = 0;
@@ -109,22 +108,66 @@ public class AetherionManagerGUI {
                 }
             }
         }
-        List<String> headerLore = new java.util.ArrayList<>();
-        headerLore.add("§7Your hub. It grows as you do.");
+
+        // ---- row 0: you
+        boolean skillsUnlocked = progress == null || progress.skills(player);
+        boolean skillsQuest = skillsUnlocked && QuestProgressHook.isQuestActive(player, SKILLS_QUEST_ID);
+        if (skillsUnlocked) {
+            inventory.setItem(SKILLS_SLOT, skillsButton(skillsQuest, false));
+            captionState.put(SKILLS_SLOT, ManagerCaptions.State.OPEN);
+        } else {
+            put(inventory, SKILLS_SLOT, false,
+                    Material.NETHERITE_SCRAP, "§dSkills",
+                    progress == null ? "§7Miss Ledger unlocks this." : progress.hint(ProgressionService.Flag.SKILLS),
+                    "§7Seven slots. One to start.");
+        }
+        boolean petsUnlocked = manager.hasPetMenu() && (progress == null || progress.pets(player));
+        boolean petsQuest = petsUnlocked && QuestProgressHook.shouldGuidePetsEquip(player);
+        if (!manager.hasPetMenu()) {
+            inventory.setItem(PETS_SLOT, button(
+                    Material.GRAY_DYE,
+                    "§8Pet Collection",
+                    "§7Requires AetherMobs."
+            ));
+            captionState.put(PETS_SLOT, ManagerCaptions.State.LOCKED);
+        } else if (petsUnlocked) {
+            inventory.setItem(PETS_SLOT, petsButton(petsQuest, false));
+            captionState.put(PETS_SLOT, ManagerCaptions.State.OPEN);
+        } else {
+            put(inventory, PETS_SLOT, false,
+                    Material.LEAD, "§dPet Collection",
+                    progress == null ? "§7Lark unlocks this with Catch Spheres." : progress.hint(ProgressionService.Flag.PETS),
+                    "§7Open your caught pets.");
+        }
+        // The old header star lives on the stat sheet tile now: who you are, how far, what opens next.
+        List<String> profile = new java.util.ArrayList<>(List.of(profileLines(player)));
         if (!gates.isEmpty()) {
-            headerLore.add("");
-            headerLore.add("§7Open: §f" + open + "§7/§f" + gates.size() + "  " + bar(open, gates.size()));
+            profile.add("");
+            profile.add("§7Open: §f" + open + "§7/§f" + gates.size() + "  " + bar(open, gates.size()));
             if (next != null) {
-                headerLore.add("§7Next: §e" + next.name());
-                headerLore.add(next.hint());
+                profile.add("§7Next: §e" + next.name());
+                profile.add(next.hint());
             }
         }
-        inventory.setItem(4, button(
-                Material.NETHER_STAR,
-                "§6Aetherion Manager",
-                headerLore.toArray(String[]::new)
+        profile.add("");
+        profile.add("§eClick §7for your active stats");
+        inventory.setItem(STATS_SLOT, button(Material.EXPERIENCE_BOTTLE, "§b" + player.getName(),
+                profile.toArray(String[]::new)));
+        captionState.put(STATS_SLOT, ManagerCaptions.State.OPEN);
+        inventory.setItem(STORAGE_SLOT, button(
+                Material.ENDER_CHEST,
+                "§5Aetherion Storage",
+                "§7Open your personal storage."
         ));
+        captionState.put(STORAGE_SLOT, ManagerCaptions.State.OPEN);
+        inventory.setItem(LOADOUT_SLOT, button(
+                Material.ARMOR_STAND,
+                "§bLoadouts",
+                "§7Save and swap armor sets."
+        ));
+        captionState.put(LOADOUT_SLOT, ManagerCaptions.State.OPEN);
 
+        // ---- row 2: trade and the world
         inventory.setItem(SHOP_SLOT, button(
                 Material.AMETHYST_SHARD,
                 "§bAether Shop",
@@ -133,70 +176,56 @@ public class AetherionManagerGUI {
                 "",
                 "§eClick to open"
         ));
+        captionState.put(SHOP_SLOT, ManagerCaptions.State.OPEN);
         put(inventory, BAZAAR_SLOT, progress != null && progress.bazaar(player),
                 Material.CHEST, "§6Bazaar",
                 progress == null ? "§7The trader has a face. Use it once." : progress.hint(ProgressionService.Flag.TRADER),
                 "§7Player listings for resources.",
                 "§7The trader also buys these.");
-        boolean skillsUnlocked = progress == null || progress.skills(player);
-        boolean skillsQuest = skillsUnlocked && QuestProgressHook.isQuestActive(player, SKILLS_QUEST_ID);
-        if (skillsUnlocked) {
-            inventory.setItem(SKILLS_SLOT, skillsButton(skillsQuest, false));
-        } else {
-            put(inventory, SKILLS_SLOT, false,
-                    Material.NETHERITE_SCRAP, "§dSkills",
-                    progress == null ? "§7Miss Ledger unlocks this." : progress.hint(ProgressionService.Flag.SKILLS),
-                    "§7Seven slots. One to start.");
-        }
         put(inventory, AUCTION_SLOT, progress != null && progress.auction(player),
                 Material.GOLD_BLOCK, "§eAuction House",
                 progress == null ? "§7The trader has a face. Use it once." : progress.hint(ProgressionService.Flag.TRADER),
                 "§7Gear and tools only.",
                 "§7Buyout listings, no instant trader.");
-
-        put(inventory, BESTIARY_SLOT, progress != null && progress.bestiary(player),
-                Material.BONE, "§6Bestiary",
-                progress == null ? "§7Make your first kill. The mobs are keeping score." : progress.bestiaryHint(),
-                "§7Every mob you have killed,",
-                "§7nine tiers each, plus leaderboards.",
-                codexLine(player, de.aetherion.items.codex.CodexBook.Ledger.BESTIARY),
-                "§8/bestiary");
-        put(inventory, COLLECTION_SLOT, progress != null && progress.collection(player),
-                Material.IRON_PICKAXE, "§aCollection",
-                progress == null ? "§7Break one block. Paperwork follows." : progress.collectionHint(),
-                "§7Ores, wood, crops, catches and",
-                "§7more — nine tiers each.",
-                codexLine(player, de.aetherion.items.codex.CodexBook.Ledger.COLLECTION),
-                "§8/collection · /codex");
-        boolean petsUnlocked = manager.hasPetMenu() && (progress == null || progress.pets(player));
-            boolean petsQuest = petsUnlocked && QuestProgressHook.shouldGuidePetsEquip(player);
-        if (!manager.hasPetMenu()) {
-            inventory.setItem(PETS_SLOT, button(
-                    Material.GRAY_DYE,
-                    "§8Pet Collection",
-                    "§7Requires AetherMobs."
-            ));
-        } else if (petsUnlocked) {
-            inventory.setItem(PETS_SLOT, petsButton(petsQuest, false));
+        boolean hubPlugin = Bukkit.getPluginManager().isPluginEnabled("AetherionHub");
+        boolean spawnUnlocked = hubPlugin && (progress == null || progress.spawns(player));
+        boolean spawnTip = spawnUnlocked && hasHomesteadMarker(player);
+        if (spawnTip) {
+            inventory.setItem(SPAWN_SLOT, spawnsButton(true, true));
+            captionState.put(SPAWN_SLOT, ManagerCaptions.State.OPEN);
         } else {
-            put(inventory, PETS_SLOT, false,
-                    Material.LEAD, "§dPet Collection",
-                    progress == null ? "§7Lark unlocks this with Catch Spheres." : progress.hint(ProgressionService.Flag.PETS),
-                    "§7Open your caught pets.");
+            put(inventory, SPAWN_SLOT, spawnUnlocked,
+                    Material.COMPASS, "§6Spawns",
+                    !hubPlugin ? "§7Requires AetherionHub."
+                            : (progress == null ? "§7Your first spawn unlocker. Then the map has opinions." : progress.hint(ProgressionService.Flag.SPAWN_UNLOCKER)),
+                    "§7World camps. Boss quests unlock them.",
+                    "§7Locked spots stay visible.");
         }
-        put(inventory, JOURNAL_SLOT, journalOpen(player, progress),
-                Material.WRITABLE_BOOK, "§5Journal",
-                progress == null ? "§7A dungeon boss. Then the receipts." : progress.journalHint(),
-                "§7Boss Journal: boss kills and",
-                "§7what they can drop.",
-                "§7Chronicle: the old story,",
-                "§7one find at a time.",
-                "§8/codex journal");
+        put(inventory, CODEX_SLOT, codexOpen(player, progress),
+                Material.WRITABLE_BOOK, "§dAetherion Codex",
+                progress == null ? "§7Break one block. Paperwork follows." : progress.collectionHint(),
+                "§aCollection " + codexLine(player, de.aetherion.items.codex.CodexBook.Ledger.COLLECTION),
+                "§6Bestiary " + codexLine(player, de.aetherion.items.codex.CodexBook.Ledger.BESTIARY),
+                "§5Journal §7· boss kills and the Chronicle",
+                "§bSkills §7· every skill and its level",
+                "",
+                "§eClick to open §8· /codex");
+
+        // ---- row 4: the workbench and home
+        boolean craftUnlocked = progress != null && progress.craftingTable(player);
+        put(inventory, CRAFT_SLOT, craftUnlocked,
+                Material.CRAFTING_TABLE, "§eCrafting Table",
+                progress == null ? "§7Craftsman unlocks this." : progress.hint(ProgressionService.Flag.WORKBENCH),
+                "§7Open a portable workbench.");
         put(inventory, RECIPE_SLOT, progress != null && progress.recipeBook(player),
                 Material.KNOWLEDGE_BOOK, "§6Recipe Book",
                 progress == null ? "§7Craftsman unlocks this with Crafting." : progress.hint(ProgressionService.Flag.WORKBENCH),
                 "§7Browse every Aetherion recipe.");
-
+        put(inventory, ANVIL_SLOT, progress != null && progress.anvil(player),
+                Material.ANVIL, "§eAnvil",
+                progress == null ? "§7Talk to Temper first." : progress.hint(ProgressionService.Flag.ANVIL),
+                "§7Open booster sockets.",
+                "§714 slots. Swap anytime.");
         boolean guildPlugin = NetworkHooks.islandsAvailable();
         put(inventory, ISLAND_SLOT, guildPlugin && (progress == null || progress.island(player)),
                 Material.GRASS_BLOCK, "§aIsland",
@@ -212,45 +241,6 @@ public class AetherionManagerGUI {
                 "§7Shared island, invites, ranks",
                 "§7and guild quarries.",
                 "§8Opens in chat.");
-        inventory.setItem(STATS_SLOT, button(
-                Material.EXPERIENCE_BOTTLE,
-                "§bStat Overview",
-                "§7See your currently active",
-                "§7Aetherion stats."
-        ));
-        inventory.setItem(STORAGE_SLOT, button(
-                Material.ENDER_CHEST,
-                "§5Aetherion Storage",
-                "§7Open your personal storage."
-        ));
-        inventory.setItem(LOADOUT_SLOT, button(
-                Material.ARMOR_STAND,
-                "§bLoadouts",
-                "§7Save and swap armor sets."
-        ));
-        boolean hubPlugin = Bukkit.getPluginManager().isPluginEnabled("AetherionHub");
-        boolean spawnUnlocked = hubPlugin && (progress == null || progress.spawns(player));
-        boolean spawnTip = spawnUnlocked && hasHomesteadMarker(player);
-        if (spawnTip) {
-            inventory.setItem(SPAWN_SLOT, spawnsButton(true, true));
-        } else {
-            put(inventory, SPAWN_SLOT, spawnUnlocked,
-                    Material.COMPASS, "§6Spawns",
-                    !hubPlugin ? "§7Requires AetherionHub."
-                            : (progress == null ? "§7Your first spawn unlocker. Then the map has opinions." : progress.hint(ProgressionService.Flag.SPAWN_UNLOCKER)),
-                    "§7World camps. Boss quests unlock them.",
-                    "§7Locked spots stay visible.");
-        }
-        boolean craftUnlocked = progress != null && progress.craftingTable(player);
-        put(inventory, CRAFT_SLOT, craftUnlocked,
-                Material.CRAFTING_TABLE, "§eCrafting Table",
-                progress == null ? "§7Craftsman unlocks this." : progress.hint(ProgressionService.Flag.WORKBENCH),
-                "§7Open a portable workbench.");
-        put(inventory, ANVIL_SLOT, progress != null && progress.anvil(player),
-                Material.ANVIL, "§eAnvil",
-                progress == null ? "§7Talk to Temper first." : progress.hint(ProgressionService.Flag.ANVIL),
-                "§7Open booster sockets.",
-                "§714 slots. Swap anytime.");
         // Craft quest points at exactly one tab: the Recipe Book. No second highlight to chase.
         boolean craftQuest = craftUnlocked && QuestProgressHook.isQuestActive(player, CRAFT_QUEST_ID);
         if (craftQuest) {
@@ -266,15 +256,9 @@ public class AetherionManagerGUI {
             ));
         }
 
-        inventory.setItem(CLOSE_SLOT, button(
-                Material.BARRIER,
-                "§cClose",
-                "§7Close this menu."
-        ));
-
-        inventory.setItem(4, header(player, inventory));
-
-        player.openInventory(inventory);
+        Inventory page = Bukkit.createInventory(new Holder(), 54, ManagerCaptions.title(captions(german)));
+        page.setContents(inventory.getContents());
+        player.openInventory(page);
         if (skillsQuest) {
             startSkillsBlink(player);
             player.sendActionBar(net.kyori.adventure.text.Component.text(
@@ -302,25 +286,37 @@ public class AetherionManagerGUI {
         }
     }
 
-    /** Built last so it can count the tabs that ended up unlocked. */
-    private ItemStack header(Player player, Inventory inventory) {
-        int open = 0;
-        for (int slot : TAB_SLOTS) {
-            ItemStack tab = inventory.getItem(slot);
-            Material type = tab == null ? Material.AIR : tab.getType();
-            if (type != Material.AIR && type != Material.GRAY_DYE && type != Material.BARRIER
-                    && type != Material.LIME_DYE && type != Material.LIGHT_GRAY_STAINED_GLASS_PANE) {
-                open++;
-            }
-        }
-        return button(
-                Material.NETHER_STAR,
-                "§6" + player.getName(),
-                profileLines(player, open)
-        );
+    /** One caption per tile, in the player's language, coloured by what put() / open() decided. */
+    private List<ManagerCaptions.Caption> captions(boolean german) {
+        List<ManagerCaptions.Caption> out = new java.util.ArrayList<>();
+        caption(out, SKILLS_SLOT, "Skills");
+        caption(out, PETS_SLOT, "Pets");
+        caption(out, STATS_SLOT, german ? "Werte" : "Stats");
+        caption(out, STORAGE_SLOT, german ? "Lager" : "Storage");
+        caption(out, LOADOUT_SLOT, "Sets");
+        caption(out, SHOP_SLOT, "Shop");
+        caption(out, BAZAAR_SLOT, german ? "Basar" : "Bazaar");
+        caption(out, AUCTION_SLOT, german ? "Auktion" : "Auction");
+        caption(out, SPAWN_SLOT, "Spawns");
+        caption(out, CODEX_SLOT, "Codex");
+        caption(out, CRAFT_SLOT, german ? "Bauen" : "Craft");
+        caption(out, RECIPE_SLOT, german ? "Rezepte" : "Recipes");
+        caption(out, ANVIL_SLOT, german ? "Sockel" : "Anvil");
+        caption(out, ISLAND_SLOT, german ? "Insel" : "Island");
+        caption(out, GUILD_SLOT, german ? "Gilde" : "Guild");
+        return out;
     }
 
-    private String[] profileLines(Player player, int open) {
+    private void caption(List<ManagerCaptions.Caption> out, int slot, String text) {
+        out.add(new ManagerCaptions.Caption(slot, text, captionState.getOrDefault(slot, ManagerCaptions.State.LOCKED)));
+    }
+
+    /** The Codex tile opens with any of its books: Collection, Bestiary or the Journal. */
+    private static boolean codexOpen(Player player, ProgressionService progress) {
+        return progress == null || progress.collection(player) || progress.bestiary(player) || journalOpen(player, progress);
+    }
+
+    private String[] profileLines(Player player) {
         java.util.List<String> lines = new java.util.ArrayList<>();
         AetherionItems plugin = AetherionItems.getInstance();
         if (plugin != null && plugin.getSkills() != null) {
@@ -342,8 +338,6 @@ public class AetherionManagerGUI {
             lines.add("§7Crystals: §b" + plugin.getShards().formatted(player));
         }
         lines.add("§7Pet: §f" + petLine(player));
-        lines.add("");
-        lines.add("§7Tabs open: §a" + open + "§7/§f" + TAB_SLOTS.length);
         return lines.toArray(String[]::new);
     }
 
@@ -379,7 +373,7 @@ public class AetherionManagerGUI {
 
     /** True for slots the hub actually reacts to — everything else is filler glass. */
     public static boolean isActionSlot(int slot) {
-        if (slot == DEV_SLOT || slot == CLOSE_SLOT) {
+        if (slot == DEV_SLOT) {
             return true;
         }
         for (int tab : TAB_SLOTS) {
@@ -704,8 +698,10 @@ public class AetherionManagerGUI {
     ) {
         if (unlocked) {
             inventory.setItem(slot, button(material, name, unlockedLore));
+            captionState.put(slot, ManagerCaptions.State.OPEN);
             return;
         }
+        captionState.put(slot, nextSlots.contains(slot) ? ManagerCaptions.State.NEXT : ManagerCaptions.State.LOCKED);
         if (nextSlots.contains(slot)) {
             // The one lock worth reading right now.
             ItemStack next = ManagerIcons.next(button(
@@ -724,7 +720,7 @@ public class AetherionManagerGUI {
             inventory.setItem(slot, next);
             return;
         }
-        if (slot == JOURNAL_SLOT || slot == ISLAND_SLOT || slot == GUILD_SLOT) {
+        if (slot == ISLAND_SLOT || slot == GUILD_SLOT) {
             // Far future: a quiet silhouette, not another grey "nope".
             inventory.setItem(slot, ManagerIcons.later(button(
                     Material.LIGHT_GRAY_STAINED_GLASS_PANE,
@@ -773,12 +769,7 @@ public class AetherionManagerGUI {
         String trader = progress.hint(ProgressionService.Flag.TRADER);
         gates.add(new Gate(BAZAAR_SLOT, progress.bazaar(player), "trader", "Bazaar + Auction House", trader));
         gates.add(new Gate(AUCTION_SLOT, progress.auction(player), "trader", "Bazaar + Auction House", trader));
-        gates.add(new Gate(COLLECTION_SLOT, progress.collection(player), "collection", "Collection",
-                progress.collectionHint()));
-        gates.add(new Gate(BESTIARY_SLOT, progress.bestiary(player), "bestiary", "Bestiary",
-                progress.bestiaryHint()));
-        gates.add(new Gate(JOURNAL_SLOT, journalOpen(player, progress), "journal", "Journal",
-                progress.journalHint()));
+        gates.add(new Gate(CODEX_SLOT, codexOpen(player, progress), "codex", "Codex", progress.collectionHint()));
         if (NetworkHooks.islandsAvailable()) {
             gates.add(new Gate(ISLAND_SLOT, progress.island(player), "island", "Island", progress.islandHint()));
             gates.add(new Gate(GUILD_SLOT, progress.guild(player), "guild", "Guild", progress.guildHint()));

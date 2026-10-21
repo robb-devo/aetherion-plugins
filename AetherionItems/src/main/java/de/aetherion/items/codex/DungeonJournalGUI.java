@@ -73,6 +73,11 @@ public final class DungeonJournalGUI {
             CodexService service = CodexRewards.service();
             Inventory inv = inventory;
             CodexChrome.frame(inv, player, CodexChrome.Tab.JOURNAL);
+            int chronicle = ChronicleGUI.pages(player).size();
+            if (chronicle > 0) {
+                inv.setItem(CodexChrome.TOOL_B, de.aetherion.items.util.GuiItems.named(org.bukkit.Material.LECTERN,
+                        "§6Chronicle", "§7The old lullaby, as you found it.", "§7Pages: §f" + chronicle, "", "§eClick to open"));
+            }
             CodexChrome.row(inv, 1, Material.PURPLE_STAINED_GLASS_PANE);
             if (service == null) {
                 return;
@@ -134,7 +139,7 @@ public final class DungeonJournalGUI {
                 inv.setItem(31, GuiItems.named(Material.BARRIER, "§cNo bosses loaded",
                         "§7BossEngine is missing", "§7or has no templates."));
             }
-            inv.setItem(CodexChrome.BACK, de.aetherion.items.util.ManagerNav.button());
+            inv.setItem(CodexChrome.BACK, CodexChrome.back("the Codex"));
             if (page > 1) {
                 inv.setItem(CodexChrome.PREV, CodexChrome.prev(page, pages));
             }
@@ -185,12 +190,17 @@ public final class DungeonJournalGUI {
 
         @Override
         public void click(Player player, int slot, ClickType click) {
+            if (slot == CodexChrome.TOOL_B && !ChronicleGUI.pages(player).isEmpty()) {
+                CodexChrome.click(player);
+                ChronicleGUI.open(player);
+                return;
+            }
             if (CodexChrome.clickTab(player, slot, CodexChrome.Tab.JOURNAL)) {
                 return;
             }
             if (slot == CodexChrome.BACK) {
                 CodexChrome.click(player);
-                de.aetherion.items.util.ManagerNav.openManager(player);
+                CodexMenus.openHub(player);
                 return;
             }
             if (slot == ALL_SLOT || slot == WORLD_SLOT || slot == DUNGEON_SLOT) {

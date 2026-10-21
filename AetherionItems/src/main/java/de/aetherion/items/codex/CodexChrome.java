@@ -215,7 +215,7 @@ public final class CodexChrome {
         return switch (tab) {
             case COLLECTION -> progress.collection(player) ? null : progress.collectionHint();
             case BESTIARY -> progress.bestiary(player) ? null : progress.bestiaryHint();
-            case JOURNAL -> progress.journal(player) ? null : progress.journalHint();
+            case JOURNAL -> progress.journal(player) || !ChronicleGUI.pages(player).isEmpty() ? null : progress.journalHint();
             case SKILLS -> progress.skills(player) ? null : progress.hint(ProgressionService.Flag.SKILLS);
             default -> null;
         };
