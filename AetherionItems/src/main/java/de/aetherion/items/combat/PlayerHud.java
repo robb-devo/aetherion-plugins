@@ -93,8 +93,11 @@ public final class PlayerHud implements ActionBarLane.Painter {
         /** Draws (or updates) the panel; sends nothing when it did not change. */
         void paint(Player player, Snapshot hud, long tick);
 
-        /** Takes the panel off the player's screen (classic layout, spectators). */
+        /** Takes the panel off the player's screen (classic layout). */
         void clear(Player player);
+
+        /** Keeps the panel's place but draws nothing (spectators), so it stays the top boss bar. */
+        void blank(Player player);
 
         void forget(UUID playerId);
     }
@@ -129,7 +132,7 @@ public final class PlayerHud implements ActionBarLane.Painter {
         Component bar;
         if (panel != null && glyphs() && panel()) {
             if (player.getGameMode() == GameMode.SPECTATOR) {
-                panel.clear(player);
+                panel.blank(player);
             } else {
                 panel.paint(player, snapshot(player, tick), tick);
             }

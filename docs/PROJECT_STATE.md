@@ -43,7 +43,7 @@ Backends: **hub** (lobby + Pit), **mmo-r** (main world, capital, isles, bosses, 
 
 ## Live plugin builds (sha1 prefix, 2026-10-21)
 
-Same on every server that loads them: Core `536b35c5`, Items `e0b18ce1` (10-21, HUD carrier + menu icons; mmo-r, mmo-d, mmo-c, mmo-i; not on hub), Quests `06201980` (10-20; not on hub),
+Same on every server that loads them: Core `536b35c5`, Items `a4ade9d2` (10-21, HUD carrier + menu icons; mmo-r, mmo-d, mmo-c, mmo-i; not on hub), Quests `06201980` (10-20; not on hub),
 BossEngine `0b4760db`, Gnomon `684013f0`, AetherMobs `078432e9`, Guilds `60342686`. Each of these is
 byte-identical to a build of `main` (classes and resources).
 
@@ -55,7 +55,7 @@ byte-identical to a build of `main` (classes and resources).
 | Beta | ed9d1621 | ed9d1621 | – | – | – |
 | SamuraiBoss / Pit | mmo-r only | | | | Pit `7e494d00` (10-21, HP readout) on hub |
 
-The proxy runs **AetherionProxy** `59ea8339` (Velocity 4, built on JDK 25, see "Resource pack").
+The proxy runs **AetherionProxy** `44947554` (Velocity 4, built on JDK 25, see "Resource pack").
 
 The bold cell is drift on purpose: a newer Hub would switch on Origin systems (props, chests, NPCs) in the
 lobby. Hub and Fishing left mmo-d on 10-20 (jars in `plugins.bak-pre-mmod-cleanup-*`, data folders kept);
@@ -72,8 +72,8 @@ hearts are hidden network-wide, and the Pit shows HP as text on the ActionBar.
 
 Pack swap: build with `AetherionItems/tools/build_served_pack.py <live.zip> <out.zip> <1.21.1 client jar>`
 (the live zip plus exactly the HUD/GUI paths the generators own; never copy the repo pack's item models or
-textures, they are stale), upload over the served zip, then on the proxy console `aepack reload` and
-`aepack push`. No `server.properties` edits.
+textures, they are stale) and upload it over the served zip. That is all: the proxy re-reads the zip's hash
+every minute and sends a changed pack to everyone online. No `server.properties` edits, no restarts.
 
 HUD (10-21): status frame top left and radar top right ride an invisible BLUE boss bar
 (`de.aetherion.items.hud.HudCarrier`), not the ActionBar, so they no longer fade on lag or vanish when

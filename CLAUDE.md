@@ -9,6 +9,8 @@ Rules that keep breaking things when ignored:
 - `main` equals live. Build and deploy only from the ship worktree, then commit, push and merge.
 - Never overwrite live plugin YAMLs; patch them.
 - After deploying a jar, restart every server that loads it, and keep exactly one jar file per plugin per server.
-- Resource-pack swap: replace the served zip **and** update `resource-pack-sha1` on every backend.
+- Resource-pack swap: build it with `AetherionItems/tools/build_served_pack.py` from the live zip and replace the
+  served zip. Nothing else: the proxy (AetherionProxy) re-reads the hash every minute and sends it; backends
+  advertise no pack, keep their `resource-pack=` empty.
 - Read `docs/PROJECT_STATE.md` before rescanning the repo or the servers; update it when state changes.
 - Agent prompts live in `docs/prompts/` and are history, not specs.
