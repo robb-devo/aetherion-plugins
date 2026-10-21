@@ -83,6 +83,11 @@ public final class StatusPanel implements PlayerHud.PanelPainter {
     }
 
     @Override
+    public void blank(Player player) {
+        carrier.show(player, Component.empty());
+    }
+
+    @Override
     public void forget(UUID playerId) {
         carrier.forget(playerId);
         if (radar != null) {
