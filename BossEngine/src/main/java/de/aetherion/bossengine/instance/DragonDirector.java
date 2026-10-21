@@ -147,19 +147,19 @@ final class DragonDirector {
         }
         World world = at.getWorld();
         if (world != null) {
-            world.spawnParticle(Particle.PORTAL, at.clone().add(0, 1.5, 0), 18, 1.4, 1.2, 1.4, 0.25);
-            world.spawnParticle(Particle.DRAGON_BREATH, at, 8, 1.1, 0.8, 1.1, 0.02);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at.clone().add(0, 1.5, 0), Particle.PORTAL, 18, Math.max(1.4, 1.4), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.DRAGON_BREATH, 8, Math.max(1.1, 1.1), null);
             if (deathTicks % 12 == 0) {
-                world.spawnParticle(Particle.END_ROD, at, 10, 1.0, 1.0, 1.0, 0.05);
+                de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.END_ROD, 10, Math.max(1.0, 1.0), null);
             }
             if (deathTicks % 18 == 0) {
-                world.spawnParticle(Particle.EXPLOSION, at, 1, 0.4, 0.4, 0.4, 0);
+                de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.EXPLOSION, 1, Math.max(0.4, 0.4), null);
             }
         }
         if (deathTicks >= 165) {
             if (world != null) {
-                world.spawnParticle(Particle.EXPLOSION_EMITTER, at, 3, 1.2, 0.6, 1.2, 0);
-                world.spawnParticle(Particle.FLASH, at, 2, 0.2, 0.2, 0.2, 0);
+                de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.EXPLOSION_EMITTER, 3, Math.max(1.2, 1.2), null);
+                de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.FLASH, 2, Math.max(0.2, 0.2), null);
                 world.playSound(at, Sound.ENTITY_GENERIC_EXPLODE, 1.15f, 0.55f);
                 world.playSound(at, Sound.ENTITY_ENDER_DRAGON_GROWL, 0.7f, 0.4f);
             }
@@ -180,6 +180,20 @@ final class DragonDirector {
             return;
         }
         double progress = tick / (double) Math.max(1, duration);
+        if (de.aetherion.core.api.Vfx.active()) {
+            // The fire spiral as fire: three arms of flame tongues turning up around him, a second, blue one inside.
+            if (tick == 1 || tick % 30 == 0) {
+                int life = Math.min(34, Math.max(12, duration - tick + 4));
+                de.aetherion.core.api.Vfx.spiral(focus, de.aetherion.bossengine.fx.ShapeFx.FIRE, 2.6, 9.0, life, 3);
+                de.aetherion.core.api.Vfx.spiral(focus, de.aetherion.bossengine.fx.ShapeFx.SOUL, 1.4, 6.0, life, 2);
+            }
+            de.aetherion.bossengine.fx.ShapeFx.ring(focus.clone().add(0, 0.1, 0), de.aetherion.bossengine.fx.ShapeFx.FIRE, 1.4 + progress * 3.6);
+            if (tick % 8 == 0) {
+                world.playSound(focus, Sound.BLOCK_BEACON_POWER_SELECT, 0.45f, 0.7f + (float) progress * 0.5f);
+                world.playSound(focus, Sound.ENTITY_BLAZE_SHOOT, 0.25f, 0.55f);
+            }
+            return;
+        }
         double height = 1.2 + progress * 8.0;
         int arms = 3;
         int points = 18;
@@ -189,9 +203,9 @@ final class DragonDirector {
                 double yaw = tick * 0.28 + arm * (Math.PI * 2 / arms) + t * 0.85;
                 double radius = 1.4 + t * 0.45;
                 Location p = focus.clone().add(Math.cos(yaw) * radius, t, Math.sin(yaw) * radius);
-                world.spawnParticle(Particle.FLAME, p, 1, 0, 0, 0, 0);
+                de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.FLAME, 1, Math.max(0, 0), null);
                 if (i % 3 == 0) {
-                    world.spawnParticle(Particle.SOUL_FIRE_FLAME, p, 1, 0, 0, 0, 0);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.SOUL_FIRE_FLAME, 1, Math.max(0, 0), null);
                 }
             }
         }
@@ -199,7 +213,7 @@ final class DragonDirector {
             world.playSound(focus, Sound.BLOCK_BEACON_POWER_SELECT, 0.45f, 0.7f + (float) progress * 0.5f);
             world.playSound(focus, Sound.ENTITY_BLAZE_SHOOT, 0.25f, 0.55f);
         }
-        world.spawnParticle(Particle.LAVA, entity.getLocation(), 3, 0.6, 0.4, 0.6, 0);
+        de.aetherion.bossengine.fx.ShapeFx.puff(entity.getLocation(), Particle.LAVA, 3, Math.max(0.6, 0.6), null);
     }
 
     void tickLightningCharge(PhaseTransition transition, int tick, int duration) {
@@ -233,7 +247,15 @@ final class DragonDirector {
             double damage = transition.getExplodeDamage() > 0 ? transition.getExplodeDamage() : 14.0;
             instance.strikeStormBolt(bolt, damage);
         }
-        world.spawnParticle(Particle.END_ROD, entity.getLocation(), 4, 1.2, 0.8, 1.2, 0.02);
+        if (de.aetherion.core.api.Vfx.active()) {
+            if (tick % 5 == 0) {
+                ThreadLocalRandom rng = ThreadLocalRandom.current();
+                Location body = entity.getLocation().add(0, 1.2, 0);
+                de.aetherion.core.api.Vfx.bolt(body, body.clone().add(rng.nextDouble(-2.5, 2.5), rng.nextDouble(-1.5, 1.5), rng.nextDouble(-2.5, 2.5)), de.aetherion.bossengine.fx.ShapeFx.SPARK, 5);
+            }
+        } else {
+            de.aetherion.bossengine.fx.ShapeFx.puff(entity.getLocation(), Particle.END_ROD, 4, Math.max(1.2, 1.2), null);
+        }
         if (tick == duration) {
             instance.startLightningStorm(
                     transition.getExplodeRadius() > 0 ? transition.getExplodeRadius() : 22.0,
@@ -274,7 +296,7 @@ final class DragonDirector {
         hold.setPitch(18f);
         placeDragon(dragon, hold);
         if (instance.getTicksAlive() % 12 == 0) {
-            spawn.getWorld().spawnParticle(Particle.PORTAL, hold.clone().add(0, 1, 0), 8, 1.2, 0.4, 1.2, 0.15);
+            de.aetherion.bossengine.fx.ShapeFx.puff(hold.clone().add(0, 1, 0), Particle.PORTAL, 8, Math.max(1.2, 1.2), null);
         }
     }
 
@@ -530,6 +552,15 @@ final class DragonDirector {
         if (world == null) {
             return;
         }
+        if (de.aetherion.core.api.Vfx.active()) {
+            // a black orb with two tilted violet orbits
+            if (org.bukkit.Bukkit.getCurrentTick() % 6 == 0) {
+                de.aetherion.core.api.Vfx.orb(center, null, org.bukkit.Color.fromRGB(40, 14, 70), radius * 1.6, 8);
+            }
+            de.aetherion.core.api.Vfx.holdPlane(center, de.aetherion.bossengine.fx.ShapeFx.VOID, radius, new org.joml.Quaternionf().rotateX(0.5f));
+            de.aetherion.core.api.Vfx.holdPlane(center, de.aetherion.bossengine.fx.ShapeFx.VOID, radius * 0.8, new org.joml.Quaternionf().rotateZ(-0.6f));
+            return;
+        }
         int points = 28;
         double phi = Math.PI * (3.0 - Math.sqrt(5.0));
         for (int i = 0; i < points; i++) {
@@ -541,17 +572,21 @@ final class DragonDirector {
                     y * radius * 0.65,
                     Math.sin(theta) * ring * radius
             );
-            world.spawnParticle(Particle.SQUID_INK, p, 1, 0, 0, 0, 0);
+            de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.SQUID_INK, 1, Math.max(0, 0), null);
             if (i % 4 == 0) {
-                world.spawnParticle(Particle.PORTAL, p, 2, 0.05, 0.05, 0.05, 0.02);
+                de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.PORTAL, 2, Math.max(0.05, 0.05), null);
             }
         }
-        world.spawnParticle(Particle.REVERSE_PORTAL, center, 10, 0.35, 0.35, 0.35, 0.05);
+        de.aetherion.bossengine.fx.ShapeFx.puff(center, Particle.REVERSE_PORTAL, 10, Math.max(0.35, 0.35), null);
     }
 
     static void drawSilentBolt(Location ground) {
         World world = ground.getWorld();
         if (world == null) {
+            return;
+        }
+        if (de.aetherion.core.api.Vfx.bolt(ground.clone().add(0, 9.0, 0), ground, de.aetherion.bossengine.fx.ShapeFx.SPARK, 6)) {
+            world.playSound(ground, Sound.ENTITY_LIGHTNING_BOLT_IMPACT, 0.12f, 1.25f);
             return;
         }
         ThreadLocalRandom random = ThreadLocalRandom.current();
@@ -561,9 +596,9 @@ final class DragonDirector {
             xJitter += random.nextDouble(-0.35, 0.35);
             zJitter += random.nextDouble(-0.35, 0.35);
             Location p = ground.clone().add(xJitter, y * 0.65, zJitter);
-            world.spawnParticle(Particle.ELECTRIC_SPARK, p, 2, 0.04, 0.18, 0.04, 0.01);
+            de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.ELECTRIC_SPARK, 2, Math.max(0.04, 0.04), null);
             if (y % 3 == 0) {
-                world.spawnParticle(Particle.END_ROD, p, 1, 0, 0, 0, 0);
+                de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.END_ROD, 1, Math.max(0, 0), null);
             }
         }
         world.playSound(ground, Sound.ENTITY_LIGHTNING_BOLT_IMPACT, 0.12f, 1.25f);

@@ -49,6 +49,10 @@ public final class Vfx {
         default void hold(Location centre, Color color, double radius) {
         }
 
+        /** {@link #hold} in any plane: {@code plane} turns the flat ring (orbits, halos, tilted rims). */
+        default void holdPlane(Location centre, Color color, double radius, org.joml.Quaternionf plane) {
+        }
+
         /** A comet: glowing head, tapering tail, flying from {@code from} to {@code to} in {@code ticks}. */
         default void streak(Location from, Location to, Color color, double width, int ticks) {
         }
@@ -155,6 +159,15 @@ public final class Vfx {
         if (r != null && centre != null && centre.getWorld() != null) {
             r.rune(centre, color, radius, ticks);
         }
+    }
+
+    public static boolean holdPlane(Location centre, Color color, double radius, org.joml.Quaternionf plane) {
+        Renderer r = renderer;
+        if (r == null || centre == null || centre.getWorld() == null || radius <= 0.0 || plane == null) {
+            return false;
+        }
+        r.holdPlane(centre, color, radius, plane);
+        return true;
     }
 
     /** {@link Renderer#hold}: true when a renderer drew it, false when the caller should fall back to particles. */

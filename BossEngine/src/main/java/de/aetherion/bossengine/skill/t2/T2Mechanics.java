@@ -122,7 +122,7 @@ public final class T2Mechanics {
                 player.sendActionBar(net.kyori.adventure.text.Component.text("§aCharms are back. Barely."));
             }
             Location boom = boss.getLocation();
-            boom.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, boom, 1, 0, 0, 0, 0);
+            de.aetherion.bossengine.fx.ShapeFx.puff(boom, Particle.EXPLOSION_EMITTER, 1, Math.max(0, 0), null);
             boom.getWorld().playSound(boom, Sound.ENTITY_GENERIC_EXPLODE, 1.1f, 0.7f);
             for (Player player : nearby(boss, 8)) {
                 BossHits.hurt(player, boss, instance.scaleDamage(55));
@@ -139,15 +139,15 @@ public final class T2Mechanics {
         Location pull = boss.getLocation().add(0, 0.4, 0);
         boss.getWorld().playSound(pull, Sound.ENTITY_ENDERMAN_SCREAM, 1.35f, 0.35f);
         boss.getWorld().playSound(pull, Sound.ENTITY_WARDEN_SONIC_BOOM, 0.7f, 0.55f);
-        boss.getWorld().spawnParticle(Particle.PORTAL, pull, 160, 2.4, 1.8, 2.4, 0.55);
-        boss.getWorld().spawnParticle(Particle.SQUID_INK, pull, 40, 1.1, 0.6, 1.1, 0.02);
+        de.aetherion.bossengine.fx.ShapeFx.puff(pull, Particle.PORTAL, 160, Math.max(2.4, 2.4), null);
+        de.aetherion.bossengine.fx.ShapeFx.puff(pull, Particle.SQUID_INK, 40, Math.max(1.1, 1.1), null);
         for (int i = 0; i < 10; i++) {
             Location column = pull.clone().add(
                     ThreadLocalRandom.current().nextDouble(-range * 0.4, range * 0.4),
                     0,
                     ThreadLocalRandom.current().nextDouble(-range * 0.4, range * 0.4)
             );
-            boss.getWorld().spawnParticle(Particle.REVERSE_PORTAL, column.clone().add(0, 2.2, 0), 18, 0.15, 1.8, 0.15, 0.02);
+            de.aetherion.bossengine.fx.ShapeFx.puff(column.clone().add(0, 2.2, 0), Particle.REVERSE_PORTAL, 18, Math.max(0.15, 0.15), null);
         }
         for (Player player : nearby(boss, range)) {
             Vector to = pull.toVector().subtract(player.getLocation().toVector());
@@ -163,7 +163,7 @@ public final class T2Mechanics {
                 return;
             }
             Location boom = instance.getEntity().getLocation();
-            boom.getWorld().spawnParticle(Particle.SONIC_BOOM, boom.clone().add(0, 1, 0), 1, 0, 0, 0, 0);
+            de.aetherion.bossengine.fx.ShapeFx.puff(boom.clone().add(0, 1, 0), Particle.SONIC_BOOM, 1, Math.max(0, 0), null);
             boom.getWorld().playSound(boom, Sound.ENTITY_GENERIC_EXPLODE, 1.35f, 0.55f);
             double scaled = instance.scaleDamage(aoePower);
             for (Player player : nearby(instance.getEntity(), 7)) {
@@ -244,8 +244,8 @@ public final class T2Mechanics {
                 if (world == null) {
                     return;
                 }
-                world.spawnParticle(Particle.FLAME, boomAt.clone().add(0, 0.4, 0), 36, 0.7, 0.45, 0.7, 0.06);
-                world.spawnParticle(Particle.LAVA, boomAt, 8, 0.35, 0.2, 0.35, 0);
+                de.aetherion.bossengine.fx.ShapeFx.puff(boomAt.clone().add(0, 0.4, 0), Particle.FLAME, 36, Math.max(0.7, 0.7), null);
+                de.aetherion.bossengine.fx.ShapeFx.puff(boomAt, Particle.LAVA, 8, Math.max(0.35, 0.35), null);
                 world.playSound(boomAt, Sound.ENTITY_GENERIC_EXPLODE, 1.05f, 1.15f);
                 LivingEntity source = instance.getEntity();
                 for (Player player : world.getPlayers()) {
@@ -292,8 +292,8 @@ public final class T2Mechanics {
         World world = dig.getWorld();
         if (world != null) {
             world.playSound(dig, Sound.ENTITY_WARDEN_DIG, 1.35f, 0.75f);
-            world.spawnParticle(Particle.BLOCK, dig.clone().add(0, 1.0, 0), 40, 0.7, 0.35, 0.7, 0.08, Material.DIRT.createBlockData());
-            world.spawnParticle(Particle.CLOUD, dig.clone().add(0, 0.8, 0), 16, 0.5, 0.2, 0.5, 0.02);
+            de.aetherion.bossengine.fx.ShapeFx.puff(dig.clone().add(0, 1.0, 0), Particle.BLOCK, 40, Math.max(0.7, 0.7), Material.DIRT.createBlockData());
+            de.aetherion.bossengine.fx.ShapeFx.puff(dig.clone().add(0, 0.8, 0), Particle.CLOUD, 16, Math.max(0.5, 0.5), null);
         }
         BURROWS.put(instance.getInstanceId(), new Burrow(marks, launchPower, Math.max(24, hideTicks)));
     }
@@ -312,7 +312,7 @@ public final class T2Mechanics {
             World world = boss.getWorld();
             if (world != null && burrow.remaining % 4 == 0) {
                 Location at = boss.getLocation().clone().add(0, 1.0, 0);
-                world.spawnParticle(Particle.BLOCK, at, 10, 0.45, 0.15, 0.45, 0.02, Material.DIRT.createBlockData());
+                de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.BLOCK, 10, Math.max(0.45, 0.45), Material.DIRT.createBlockData());
             }
             boss.setInvisible(true);
             boss.setGlowing(false);
@@ -323,8 +323,8 @@ public final class T2Mechanics {
             if (world == null) {
                 continue;
             }
-            world.spawnParticle(Particle.BLOCK, mark.clone().add(0, 0.15, 0), 8, 0.35, 0.05, 0.35, 0.01, Material.DIRT.createBlockData());
-            world.spawnParticle(Particle.CRIT, mark.clone().add(0, 0.2, 0), 2, 0.2, 0.05, 0.2, 0);
+            de.aetherion.bossengine.fx.ShapeFx.puff(mark.clone().add(0, 0.15, 0), Particle.BLOCK, 8, Math.max(0.35, 0.35), Material.DIRT.createBlockData());
+            de.aetherion.bossengine.fx.ShapeFx.puff(mark.clone().add(0, 0.2, 0), Particle.CRIT, 2, Math.max(0.2, 0.2), null);
         }
         burrow.remaining--;
         if (burrow.remaining <= 0 || instance.isTransitioning() || !instance.isAlive()) {
@@ -354,8 +354,8 @@ public final class T2Mechanics {
             World world = strike.getWorld();
             if (world != null) {
                 world.playSound(strike, Sound.ENTITY_WARDEN_EMERGE, 1.35f, 0.85f);
-                world.spawnParticle(Particle.BLOCK, strike.clone().add(0, 0.3, 0), 50, 0.8, 0.4, 0.8, 0.1, Material.DIRT.createBlockData());
-                world.spawnParticle(Particle.CRIT, strike.clone().add(0, 0.5, 0), 18, 0.6, 0.3, 0.6, 0.05);
+                de.aetherion.bossengine.fx.ShapeFx.puff(strike.clone().add(0, 0.3, 0), Particle.BLOCK, 50, Math.max(0.8, 0.8), Material.DIRT.createBlockData());
+                de.aetherion.bossengine.fx.ShapeFx.puff(strike.clone().add(0, 0.5, 0), Particle.CRIT, 18, Math.max(0.6, 0.6), null);
             }
         }
         if (!instance.isAlive() || live == null) {
@@ -415,7 +415,7 @@ public final class T2Mechanics {
         rich.sendActionBar(net.kyori.adventure.text.Component.text(
                 "§eThe Wither audited you. Boosters are taxable."
         ));
-        boss.getWorld().spawnParticle(Particle.SMOKE, rich.getLocation().add(0, 1.2, 0), 24, 0.3, 0.5, 0.3, 0.02);
+        de.aetherion.bossengine.fx.ShapeFx.puff(rich.getLocation().add(0, 1.2, 0), Particle.SMOKE, 24, Math.max(0.3, 0.3), null);
         boss.getWorld().playSound(rich.getLocation(), Sound.ENTITY_WITHER_HURT, 0.9f, 0.6f);
     }
 
@@ -434,7 +434,7 @@ public final class T2Mechanics {
         ));
         player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_LAND, 0.45f, 1.4f);
         if (source != null) {
-            source.getWorld().spawnParticle(Particle.WAX_ON, player.getLocation().add(0, 1, 0), 10, 0.3, 0.4, 0.3, 0.01);
+            de.aetherion.bossengine.fx.ShapeFx.puff(player.getLocation().add(0, 1, 0), Particle.WAX_ON, 10, Math.max(0.3, 0.3), null);
         }
     }
 
@@ -685,7 +685,7 @@ public final class T2Mechanics {
                     Location rim = center.clone().add(Math.cos(angle) * radius, 0.2, Math.sin(angle) * radius);
                     puff(world, used, rim, 2, 0.08, 0.12, 0.08, 0.01);
                     if (index == safeWaves) {
-                        world.spawnParticle(Particle.CRIT, rim.clone().add(0, 0.4, 0), 1, 0, 0, 0, 0);
+                        de.aetherion.bossengine.fx.ShapeFx.puff(rim.clone().add(0, 0.4, 0), Particle.CRIT, 1, Math.max(0, 0), null);
                     }
                 }
                 world.playSound(center, Sound.ENTITY_GENERIC_EXPLODE, 0.35f, 0.55f + index * 0.12f);
@@ -816,8 +816,8 @@ public final class T2Mechanics {
         for (int i = 0; i < points; i++) {
             double angle = (Math.PI * 2 * i) / points;
             Location rim = impact.clone().add(Math.cos(angle) * 3.2, 0.08, Math.sin(angle) * 3.2);
-            world.spawnParticle(Particle.FLAME, rim, 1, 0, 0, 0, 0);
-            world.spawnParticle(Particle.CRIT, rim, 1, 0, 0, 0, 0);
+            de.aetherion.bossengine.fx.ShapeFx.puff(rim, Particle.FLAME, 1, Math.max(0, 0), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(rim, Particle.CRIT, 1, Math.max(0, 0), null);
         }
         world.playSound(impact, Sound.BLOCK_NOTE_BLOCK_BASS, 0.7f, 0.55f);
         JavaPlugin plugin = instance.getPlugin();
@@ -833,7 +833,7 @@ public final class T2Mechanics {
                 de.aetherion.core.api.Vfx.wave(impact.clone().add(0, 0.05, 0), org.bukkit.Color.fromRGB(0xFF8A3A), 3.4, 13);
                 de.aetherion.core.api.Vfx.chips(impact, impact.clone().add(0, -1, 0).getBlock().getBlockData(), 8, 1.4);
             } else {
-                boomWorld.spawnParticle(Particle.EXPLOSION_EMITTER, impact.clone().add(0, 0.3, 0), 1, 0, 0, 0, 0);
+                de.aetherion.bossengine.fx.ShapeFx.puff(impact.clone().add(0, 0.3, 0), Particle.EXPLOSION_EMITTER, 1, Math.max(0, 0), null);
             }
             boomWorld.playSound(impact, Sound.ENTITY_GENERIC_EXPLODE, 1.15f, 0.75f);
             for (Player player : boomWorld.getPlayers()) {
@@ -919,9 +919,9 @@ public final class T2Mechanics {
                 task.cancel();
                 return;
             }
-            world.spawnParticle(Particle.FLAME, at, 5, 0.12, 0.12, 0.12, 0.02);
-            world.spawnParticle(Particle.LAVA, at, 1, 0.05, 0.05, 0.05, 0);
-            world.spawnParticle(Particle.SMOKE, at, 2, 0.08, 0.08, 0.08, 0.01);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.FLAME, 5, Math.max(0.12, 0.12), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.LAVA, 1, Math.max(0.05, 0.05), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.SMOKE, 2, Math.max(0.08, 0.08), null);
         }, 1L, 1L);
     }
 
@@ -1005,9 +1005,9 @@ public final class T2Mechanics {
             return;
         }
         try {
-            world.spawnParticle(particle, location, count, ox, oy, oz, extra);
+            de.aetherion.bossengine.fx.ShapeFx.puff(location, particle, count, Math.max(ox, oz), null);
         } catch (Exception ignored) {
-            world.spawnParticle(Particle.END_ROD, location, Math.max(6, count / 2), ox, oy, oz, extra);
+            de.aetherion.bossengine.fx.ShapeFx.puff(location, Particle.END_ROD, Math.max(6, count / 2), Math.max(ox, oz), null);
         }
     }
 

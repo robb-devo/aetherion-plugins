@@ -1017,7 +1017,7 @@ public class BossInstance {
                 entity.setFallDistance(0);
                 entity.getWorld().playSound(entity.getLocation(), Sound.ENTITY_SQUID_SQUIRT, 1.35f, 0.45f);
                 entity.getWorld().playSound(entity.getLocation(), Sound.ENTITY_ELDER_GUARDIAN_CURSE, 0.7f, 0.7f);
-                entity.getWorld().spawnParticle(Particle.SQUID_INK, entity.getLocation(), 40, 1.1, 0.8, 1.1, 0.08);
+                de.aetherion.bossengine.fx.ShapeFx.puff(entity.getLocation(), Particle.SQUID_INK, 40, Math.max(1.1, 1.1), null);
             } else if (transition.getShape() == TransitionShape.FIRE_SPIRAL) {
                 entity.getWorld().playSound(entity.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 0.9f, 0.7f);
                 entity.getWorld().playSound(entity.getLocation(), Sound.BLOCK_BEACON_ACTIVATE, 0.8f, 0.6f);
@@ -1263,21 +1263,21 @@ public class BossInstance {
                 de.aetherion.core.api.Vfx.wave(entity.getLocation().add(0, 0.05, 0), org.bukkit.Color.fromRGB(0xFF7A2A), transition.getExplodeRadius(), 14);
             }
             if (blossoms) {
-                world.spawnParticle(Particle.CHERRY_LEAVES, center, 30, 1.3, 1.1, 1.3, 0.08);
+                de.aetherion.bossengine.fx.ShapeFx.puff(center, Particle.CHERRY_LEAVES, 30, Math.max(1.3, 1.3), null);
             }
         } else {
-            world.spawnParticle(Particle.EXPLOSION_EMITTER, center, 1, 0, 0, 0, 0);
+            de.aetherion.bossengine.fx.ShapeFx.puff(center, Particle.EXPLOSION_EMITTER, 1, Math.max(0, 0), null);
         }
         if (de.aetherion.core.api.Vfx.active()) {
             // drawn above
         } else if (blossoms) {
-            world.spawnParticle(Particle.CHERRY_LEAVES, center, 80, 1.3, 1.1, 1.3, 0.08);
-            world.spawnParticle(Particle.CHERRY_LEAVES, center.clone().add(0, 1.6, 0), 36, 0.6, 0.9, 0.6, 0.04);
-            world.spawnParticle(Particle.FLASH, center, 1, 0, 0, 0, 0);
+            de.aetherion.bossengine.fx.ShapeFx.puff(center, Particle.CHERRY_LEAVES, 80, Math.max(1.3, 1.3), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(center.clone().add(0, 1.6, 0), Particle.CHERRY_LEAVES, 36, Math.max(0.6, 0.6), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(center, Particle.FLASH, 1, Math.max(0, 0), null);
         } else if (!quiet) {
-            world.spawnParticle(Particle.FLAME, center, 90, 1.1, 1.1, 1.1, 0.08);
-            world.spawnParticle(Particle.LAVA, center, 28, 0.9, 0.9, 0.9, 0);
-            world.spawnParticle(Particle.ELECTRIC_SPARK, center, 40, 1.4, 0.4, 1.4, 0.15);
+            de.aetherion.bossengine.fx.ShapeFx.puff(center, Particle.FLAME, 90, Math.max(1.1, 1.1), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(center, Particle.LAVA, 28, Math.max(0.9, 0.9), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(center, Particle.ELECTRIC_SPARK, 40, Math.max(1.4, 1.4), null);
         }
 
         double radius = transition.getExplodeRadius();
@@ -1342,8 +1342,8 @@ public class BossInstance {
                     de.aetherion.core.api.Vfx.wave(feet.clone().add(0, 0.05, 0), de.aetherion.bossengine.fx.ShapeFx.PALE, 1.2, 8);
                 }
             } else {
-                world.spawnParticle(Particle.CLOUD, feet, 4, 0.25, 0.05, 0.25, 0.01);
-                world.spawnParticle(Particle.CRIT, feet.clone().add(0, 0.4, 0), 3, 0.2, 0.15, 0.2, 0.02);
+                de.aetherion.bossengine.fx.ShapeFx.puff(feet, Particle.CLOUD, 4, Math.max(0.25, 0.25), null);
+                de.aetherion.bossengine.fx.ShapeFx.puff(feet.clone().add(0, 0.4, 0), Particle.CRIT, 3, Math.max(0.2, 0.2), null);
             }
             if (transitionTick % 8 == 0) {
                 world.playSound(feet, Sound.ENTITY_PIGLIN_BRUTE_AMBIENT, 0.7f, 0.55f);
@@ -1384,9 +1384,9 @@ public class BossInstance {
                                 de.aetherion.bossengine.fx.ShapeFx.SPARK, 5);
                     }
                 } else {
-                    world.spawnParticle(Particle.ELECTRIC_SPARK, aura, 10, 0.55, 0.7, 0.55, 0.08);
-                    world.spawnParticle(Particle.END_ROD, aura, 3, 0.35, 0.45, 0.35, 0.01);
-                    world.spawnParticle(Particle.SOUL_FIRE_FLAME, dest.clone().add(0, 0.2, 0), 4, 0.4, 0.1, 0.4, 0.01);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(aura, Particle.ELECTRIC_SPARK, 10, Math.max(0.55, 0.55), null);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(aura, Particle.END_ROD, 3, Math.max(0.35, 0.35), null);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(dest.clone().add(0, 0.2, 0), Particle.SOUL_FIRE_FLAME, 4, Math.max(0.4, 0.4), null);
                 }
             }
 
@@ -1413,8 +1413,8 @@ public class BossInstance {
         entity.setVelocity(new Vector(0, -1.9, 0));
         entity.setFallDistance(0);
         if (!de.aetherion.core.api.Vfx.active()) {
-            world.spawnParticle(Particle.CLOUD, dest, 8, 0.45, 0.15, 0.45, 0.02);
-            world.spawnParticle(Particle.CRIT, dest, 6, 0.3, 0.2, 0.3, 0.05);
+            de.aetherion.bossengine.fx.ShapeFx.puff(dest, Particle.CLOUD, 8, Math.max(0.45, 0.45), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(dest, Particle.CRIT, 6, Math.max(0.3, 0.3), null);
         }
         if (slamProgress > 0.7) {
             world.playSound(dest, Sound.ENTITY_PLAYER_ATTACK_CRIT, 0.55f, 0.45f);
@@ -1443,8 +1443,8 @@ public class BossInstance {
         if (de.aetherion.core.api.Vfx.burst(bolt.clone().add(0, 1.0, 0), de.aetherion.bossengine.fx.ShapeFx.SPARK, 3.0, 10)) {
             de.aetherion.core.api.Vfx.wave(dest.clone().add(0, 0.05, 0), de.aetherion.bossengine.fx.ShapeFx.SOUL, 3.0, 12);
         } else {
-            world.spawnParticle(Particle.FLASH, bolt, 1, 0, 0, 0, 0);
-            world.spawnParticle(Particle.ELECTRIC_SPARK, bolt, 28, 0.7, 1.1, 0.7, 0.25);
+            de.aetherion.bossengine.fx.ShapeFx.puff(bolt, Particle.FLASH, 1, Math.max(0, 0), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(bolt, Particle.ELECTRIC_SPARK, 28, Math.max(0.7, 0.7), null);
         }
         entity.setGlowing(true);
         entity.setFireTicks(0);
@@ -1495,15 +1495,7 @@ public class BossInstance {
             de.aetherion.core.api.Vfx.wave(land.clone().add(0, 0.05, 0), de.aetherion.bossengine.fx.ShapeFx.PALE, Math.max(3.5, transition.getUnderRadius() + 1.0), 14);
             de.aetherion.core.api.Vfx.chips(land, land.clone().add(0, -1, 0).getBlock().getBlockData(), 10, 1.6);
         } else if (transition != null) {
-            entity.getWorld().spawnParticle(
-                    Particle.EXPLOSION_EMITTER,
-                    land.clone().add(0, 0.4, 0),
-                    1,
-                    0,
-                    0,
-                    0,
-                    0
-            );
+            de.aetherion.bossengine.fx.ShapeFx.puff(land.clone().add(0, 0.4, 0), Particle.EXPLOSION_EMITTER, 1, Math.max(0, 0), null);
         }
     }
 
@@ -1592,9 +1584,9 @@ public class BossInstance {
         for (int i = 0; i < points; i++) {
             double angle = (Math.PI * 2 * i) / points;
             Location rim = center.clone().add(Math.cos(angle) * slamRadius, 0.12, Math.sin(angle) * slamRadius);
-            world.spawnParticle(Particle.CRIT, rim, 1, 0, 0, 0, 0);
+            de.aetherion.bossengine.fx.ShapeFx.puff(rim, Particle.CRIT, 1, Math.max(0, 0), null);
             if (i % 3 == 0) {
-                world.spawnParticle(Particle.SMOKE, rim, 1, 0, 0, 0, 0);
+                de.aetherion.bossengine.fx.ShapeFx.puff(rim, Particle.SMOKE, 1, Math.max(0, 0), null);
             }
         }
     }
@@ -1666,7 +1658,7 @@ public class BossInstance {
         World world = from.getWorld();
         if (world != null) {
             world.playSound(from, Sound.ENTITY_SQUID_SQUIRT, 0.85f, 0.85f);
-            world.spawnParticle(Particle.SQUID_INK, from, 5, 0.12, 0.12, 0.12, 0.02);
+            de.aetherion.bossengine.fx.ShapeFx.puff(from, Particle.SQUID_INK, 5, Math.max(0.12, 0.12), null);
         }
     }
 
@@ -1682,8 +1674,8 @@ public class BossInstance {
         for (int i = 0; i < amount; i++) {
             Location spot = findBoilingSpot(origin, spread, i, amount);
             boilingZones.add(new BoilingZone(spot, radius, percentPerSecond));
-            world.spawnParticle(Particle.SPLASH, spot, 18, 0.6, 0.2, 0.6, 0.05);
-            world.spawnParticle(Particle.BUBBLE_COLUMN_UP, spot, 12, 0.4, 0.4, 0.4, 0.02);
+            de.aetherion.bossengine.fx.ShapeFx.puff(spot, Particle.SPLASH, 18, Math.max(0.6, 0.6), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(spot, Particle.BUBBLE_COLUMN_UP, 12, Math.max(0.4, 0.4), null);
         }
     }
 
@@ -1708,8 +1700,8 @@ public class BossInstance {
 
         World world = hold.getWorld();
         if (world != null) {
-            world.spawnParticle(Particle.SQUID_INK, hold.clone().add(0, entity.getHeight() * 0.45, 0), 8, 0.7, 0.45, 0.7, 0.03);
-            world.spawnParticle(Particle.BUBBLE, hold, 6, 0.8, 0.4, 0.8, 0.02);
+            de.aetherion.bossengine.fx.ShapeFx.puff(hold.clone().add(0, entity.getHeight() * 0.45, 0), Particle.SQUID_INK, 8, Math.max(0.7, 0.7), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(hold, Particle.BUBBLE, 6, Math.max(0.8, 0.8), null);
         }
 
         int interval = Math.max(2, transition.getLightningCount() > 0 ? transition.getLightningCount() : 4);
@@ -1929,9 +1921,9 @@ public class BossInstance {
         World world = origin.getWorld();
         Location core = origin.clone().add(0, 1.15, 0);
         if (ticksAlive % 2 == 0) {
-            world.spawnParticle(Particle.SQUID_INK, core, 6, 0.45, 0.45, 0.45, 0.01);
-            world.spawnParticle(Particle.PORTAL, core, 10, 0.7, 0.7, 0.7, 0.12);
-            world.spawnParticle(Particle.REVERSE_PORTAL, core, 4, 0.25, 0.25, 0.25, 0.03);
+            de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.SQUID_INK, 6, Math.max(0.45, 0.45), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.PORTAL, 10, Math.max(0.7, 0.7), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.REVERSE_PORTAL, 4, Math.max(0.25, 0.25), null);
         }
         if (ticksAlive % 16 == 0) {
             world.playSound(core, Sound.BLOCK_PORTAL_AMBIENT, 0.28f, 0.4f);
@@ -1958,7 +1950,7 @@ public class BossInstance {
                 }
                 healCombat(stolen);
                 world.playSound(core, Sound.ENTITY_ENDERMAN_DEATH, 0.7f, 0.5f);
-                world.spawnParticle(Particle.FLASH, core, 1, 0, 0, 0, 0);
+                de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.FLASH, 1, Math.max(0, 0), null);
                 continue;
             }
             Vector pull = core.toVector().subtract(player.getLocation().toVector());
@@ -2032,11 +2024,11 @@ public class BossInstance {
             }
             double bob = 0.18 + Math.sin((ticksAlive + center.getBlockX()) * 0.35) * 0.12;
             Location vis = center.clone().add(0, bob, 0);
-            world.spawnParticle(Particle.BUBBLE_COLUMN_UP, vis, 6, radius * 0.35, 0.45, radius * 0.35, 0.02);
-            world.spawnParticle(Particle.BUBBLE, vis, 5, radius * 0.4, 0.25, radius * 0.4, 0.01);
-            world.spawnParticle(Particle.SPLASH, vis, 3, radius * 0.45, 0.1, radius * 0.45, 0.02);
+            de.aetherion.bossengine.fx.ShapeFx.puff(vis, Particle.BUBBLE_COLUMN_UP, 6, Math.max(radius * 0.35, radius * 0.35), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(vis, Particle.BUBBLE, 5, Math.max(radius * 0.4, radius * 0.4), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(vis, Particle.SPLASH, 3, Math.max(radius * 0.45, radius * 0.45), null);
             if (ticksAlive % 8 == 0) {
-                world.spawnParticle(Particle.CLOUD, vis, 2, radius * 0.3, 0.15, radius * 0.3, 0.01);
+                de.aetherion.bossengine.fx.ShapeFx.puff(vis, Particle.CLOUD, 2, Math.max(radius * 0.3, radius * 0.3), null);
             }
             if (ticksAlive % 25 == 0) {
                 world.playSound(center, Sound.BLOCK_BUBBLE_COLUMN_UPWARDS_AMBIENT, 0.55f, 0.85f);
@@ -2060,7 +2052,7 @@ public class BossInstance {
                 } finally {
                     player.getPersistentDataContainer().remove(AetherKeys.TRUE_DAMAGE);
                 }
-                world.spawnParticle(Particle.DAMAGE_INDICATOR, player.getLocation().add(0, 1, 0), 3, 0.2, 0.2, 0.2, 0);
+                de.aetherion.bossengine.fx.ShapeFx.puff(player.getLocation().add(0, 1, 0), Particle.DAMAGE_INDICATOR, 3, Math.max(0.2, 0.2), null);
             }
         }
     }

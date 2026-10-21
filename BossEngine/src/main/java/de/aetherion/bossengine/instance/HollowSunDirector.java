@@ -644,8 +644,8 @@ final class HollowSunDirector {
                 ease(introStar, centered(new Quaternionf().rotateY(introTick * 0.5f).rotateX(0.6f), 1.2f), 1);
             }
             streak(world, introPrev, at, SOLAR, true);
-            world.spawnParticle(Particle.FLAME, at, 4, 0.2, 0.2, 0.2, 0.02, null, true);
-            world.spawnParticle(Particle.FIREWORK, at, 2, 0.3, 0.3, 0.3, 0.02, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.FLAME, 4, Math.max(0.2, 0.2), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.FIREWORK, 2, Math.max(0.3, 0.3), null);
             introPrev = at.clone();
             if (introTick % 2 == 0) {
                 ring(world, land.clone().add(0, 0.12, 0), 0.8 + 4.2 * (1.0 - p), GOLD, 1.2f);
@@ -661,9 +661,9 @@ final class HollowSunDirector {
             }
             introStar = null;
             Location mid = land.clone().add(0, 0.6, 0);
-            world.spawnParticle(Particle.FLASH, mid, 1, 0, 0, 0, 0, null, true);
-            world.spawnParticle(Particle.EXPLOSION_EMITTER, mid, 1, 0, 0, 0, 0, null, true);
-            world.spawnParticle(Particle.LAVA, mid, 24, 1.2, 0.3, 1.2, 0);
+            de.aetherion.bossengine.fx.ShapeFx.puff(mid, Particle.FLASH, 1, Math.max(0, 0), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(mid, Particle.EXPLOSION_EMITTER, 1, Math.max(0, 0), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(mid, Particle.LAVA, 24, Math.max(1.2, 1.2), null);
             floorBurst(world, land, 60, 1.6);
             burst(world, mid, Particle.END_ROD, 36, 0.45);
             world.playSound(land, Sound.ENTITY_GENERIC_EXPLODE, 1.8f, 0.55f);
@@ -690,8 +690,8 @@ final class HollowSunDirector {
                     dressPiece(entity, 3 - i, Form.MAIN);
                     double y = entity.getHeight() * (0.1 + 0.28 * i);
                     Location piece = entity.getLocation().clone().add(0, y, 0);
-                    world.spawnParticle(Particle.ELECTRIC_SPARK, piece, 14, 0.35, 0.15, 0.35, 0.05);
-                    world.spawnParticle(Particle.FLAME, piece, 6, 0.3, 0.1, 0.3, 0.01);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(piece, Particle.ELECTRIC_SPARK, 14, Math.max(0.35, 0.35), null);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(piece, Particle.FLAME, 6, Math.max(0.3, 0.3), null);
                     world.playSound(piece, Sound.ITEM_ARMOR_EQUIP_NETHERITE, 1.2f, 0.6f + i * 0.08f);
                     world.playSound(piece, Sound.BLOCK_ANVIL_PLACE, 0.35f, 1.4f + i * 0.1f);
                 }
@@ -708,7 +708,7 @@ final class HollowSunDirector {
                 spawnMace(entity);
                 maceShown = true;
                 world.playSound(entity.getLocation(), Sound.ITEM_MACE_SMASH_AIR, 1.1f, 0.6f);
-                world.spawnParticle(Particle.ELECTRIC_SPARK, corePos(entity), 20, 0.6, 0.6, 0.6, 0.1);
+                de.aetherion.bossengine.fx.ShapeFx.puff(corePos(entity), Particle.ELECTRIC_SPARK, 20, Math.max(0.6, 0.6), null);
             }
             syncRig(entity);
         }
@@ -1105,10 +1105,10 @@ final class HollowSunDirector {
             world.playSound(feet, Sound.ENTITY_WARDEN_STEP, 0.9f, 0.55f);
             world.playSound(feet, Sound.BLOCK_NETHERITE_BLOCK_STEP, 0.8f, 0.5f);
             ring(world, feet.clone().add(0, 0.1, 0), 1.4, VIOLET, 0.9f);
-            world.spawnParticle(Particle.REVERSE_PORTAL, feet, 6, 0.4, 0.05, 0.4, 0.02);
+            de.aetherion.bossengine.fx.ShapeFx.puff(feet, Particle.REVERSE_PORTAL, 6, Math.max(0.4, 0.4), null);
         } else {
             world.playSound(feet, Sound.BLOCK_NETHERITE_BLOCK_STEP, 0.75f, 0.65f);
-            world.spawnParticle(Particle.SMALL_FLAME, feet.clone().add(0, 0.05, 0), 3, 0.25, 0.02, 0.25, 0.005);
+            de.aetherion.bossengine.fx.ShapeFx.puff(feet.clone().add(0, 0.05, 0), Particle.SMALL_FLAME, 3, Math.max(0.25, 0.25), null);
         }
     }
 
@@ -1272,7 +1272,7 @@ final class HollowSunDirector {
             }
             windupLances.clear();
             coreBoost = -0.1;
-            world.spawnParticle(Particle.FLASH, corePos(entity), 1, 0, 0, 0, 0);
+            de.aetherion.bossengine.fx.ShapeFx.puff(corePos(entity), Particle.FLASH, 1, Math.max(0, 0), null);
             return;
         }
         if (actionTick >= w + 14) {
@@ -1306,7 +1306,7 @@ final class HollowSunDirector {
             poseLance(lance);
             streak(world, a, b, lance.color, false);
             if (lance.traveled > 0.5 && ((int) (lance.traveled * 2)) % 3 == 0) {
-                world.spawnParticle(Particle.FLAME, b, 2, 0.1, 0.1, 0.1, 0.01);
+                de.aetherion.bossengine.fx.ShapeFx.puff(b, Particle.FLAME, 2, Math.max(0.1, 0.1), null);
             }
             for (Player player : fighters()) {
                 if (lance.struck.contains(player.getUniqueId())) {
@@ -1320,9 +1320,9 @@ final class HollowSunDirector {
                 player.setVelocity(lance.dir.clone().multiply(1.0).setY(0.35));
             }
             if (lance.traveled >= lance.length) {
-                world.spawnParticle(Particle.FLASH, b, 1, 0, 0, 0, 0);
-                world.spawnParticle(Particle.ELECTRIC_SPARK, b, 18, 0.4, 0.4, 0.4, 0.12);
-                world.spawnParticle(Particle.FIREWORK, b, 10, 0.2, 0.2, 0.2, 0.08);
+                de.aetherion.bossengine.fx.ShapeFx.puff(b, Particle.FLASH, 1, Math.max(0, 0), null);
+                de.aetherion.bossengine.fx.ShapeFx.puff(b, Particle.ELECTRIC_SPARK, 18, Math.max(0.4, 0.4), null);
+                de.aetherion.bossengine.fx.ShapeFx.puff(b, Particle.FIREWORK, 10, Math.max(0.2, 0.2), null);
                 world.playSound(b, Sound.ENTITY_FIREWORK_ROCKET_BLAST, 1.0f, 0.6f);
                 world.playSound(b, Sound.BLOCK_BASALT_BREAK, 0.9f, 0.7f);
                 afterglows.add(new Afterglow(Afterglow.SCORCH, lance.origin.clone().subtract(0, 1.1, 0),
@@ -1421,10 +1421,10 @@ final class HollowSunDirector {
         world.playSound(impact, Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 1.5f, 0.7f);
         world.playSound(impact, Sound.ENTITY_GENERIC_EXPLODE, 0.9f, 0.6f);
         world.playSound(impact, Sound.BLOCK_ANVIL_LAND, 0.5f, 0.5f);
-        world.spawnParticle(Particle.EXPLOSION, impact.clone().add(0, 0.3, 0), 1, 0, 0, 0, 0);
-        world.spawnParticle(Particle.FLASH, impact.clone().add(0, 0.4, 0), 1, 0, 0, 0, 0);
+        de.aetherion.bossengine.fx.ShapeFx.puff(impact.clone().add(0, 0.3, 0), Particle.EXPLOSION, 1, Math.max(0, 0), null);
+        de.aetherion.bossengine.fx.ShapeFx.puff(impact.clone().add(0, 0.4, 0), Particle.FLASH, 1, Math.max(0, 0), null);
         floorBurst(world, impact, 46, 1.2);
-        world.spawnParticle(Particle.LAVA, impact, 6, 0.6, 0.1, 0.6, 0);
+        de.aetherion.bossengine.fx.ShapeFx.puff(impact, Particle.LAVA, 6, Math.max(0.6, 0.6), null);
         List<Player> viewers = viewers(impact);
         Color crack = form == Form.COLLAPSE ? VIOLET : EMBER;
         Material hot = form == Form.COLLAPSE ? Material.CRYING_OBSIDIAN : Material.MAGMA_BLOCK;
@@ -1487,8 +1487,7 @@ final class HollowSunDirector {
         maceDir = blend(new Vector(0, -1, 0), new Vector(0, 1, 0), easeInOut(p));
         Location head = maceGrip.clone().add(maceDir.clone().multiply(1.75));
         if (actionTick % 2 == 0) {
-            head.getWorld().spawnParticle(form == Form.COLLAPSE ? Particle.REVERSE_PORTAL : Particle.END_ROD,
-                    head, 0, 0, 1, 0, 0.6);
+            de.aetherion.bossengine.fx.ShapeFx.puff(head, form == Form.COLLAPSE ? Particle.REVERSE_PORTAL : Particle.END_ROD, 0, Math.max(0, 0), null);
         }
         coreBoost = 0.15 + 0.1 * Math.sin(actionTick * 0.5);
         Player near = nearest(feet, fighters());
@@ -1541,15 +1540,15 @@ final class HollowSunDirector {
                 place(m.rock, at, centered(new Quaternionf().rotateY(turn).rotateX(turn * 0.7f), 1.3f), 1);
                 place(m.crust, at, centered(new Quaternionf().rotateZ(turn * 0.8f).rotateY(0.6f), 1.0f), 1);
                 if (m.dark) {
-                    world.spawnParticle(Particle.SOUL_FIRE_FLAME, at, 3, 0.25, 0.25, 0.25, 0.01, null, true);
-                    world.spawnParticle(Particle.REVERSE_PORTAL, at, 4, 0.3, 0.3, 0.3, 0.02, null, true);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.SOUL_FIRE_FLAME, 3, Math.max(0.25, 0.25), null);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.REVERSE_PORTAL, 4, Math.max(0.3, 0.3), null);
                 } else {
-                    world.spawnParticle(Particle.FLAME, at, 3, 0.25, 0.25, 0.25, 0.01, null, true);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.FLAME, 3, Math.max(0.25, 0.25), null);
                     if (m.age % 3 == 0) {
-                        world.spawnParticle(Particle.LAVA, at, 1, 0.2, 0.2, 0.2, 0, null, true);
+                        de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.LAVA, 1, Math.max(0.2, 0.2), null);
                     }
                 }
-                world.spawnParticle(Particle.LARGE_SMOKE, at, 1, 0.2, 0.2, 0.2, 0.01, null, true);
+                de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.LARGE_SMOKE, 1, Math.max(0.2, 0.2), null);
                 if (m.age % 3 == 0) {
                     line(world, at, m.ground.clone().add(0, 0.2, 0), m.dark ? VOID : SOOT, 0.6f, 1.6);
                 }
@@ -1601,19 +1600,19 @@ final class HollowSunDirector {
     private void meteorImpact(LivingEntity entity, Meteor m) {
         World world = m.ground.getWorld();
         Location at = m.ground.clone().add(0, 0.3, 0);
-        world.spawnParticle(Particle.FLASH, at, 1, 0, 0, 0, 0);
-        world.spawnParticle(Particle.EXPLOSION, at, 2, 0.4, 0.2, 0.4, 0);
+        de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.FLASH, 1, Math.max(0, 0), null);
+        de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.EXPLOSION, 2, Math.max(0.4, 0.4), null);
         floorBurst(world, m.ground, 30, 1.0);
         world.playSound(at, Sound.ENTITY_GENERIC_EXPLODE, 1.1f, 0.8f);
         world.playSound(at, Sound.ITEM_MACE_SMASH_GROUND, 1.0f, 0.6f);
         world.playSound(at, Sound.BLOCK_BASALT_BREAK, 1.0f, 0.6f);
         if (m.dark) {
-            world.spawnParticle(Particle.REVERSE_PORTAL, at, 40, 1.2, 0.4, 1.2, 0.1);
-            world.spawnParticle(Particle.SONIC_BOOM, at.clone().add(0, 0.4, 0), 1, 0, 0, 0, 0);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.REVERSE_PORTAL, 40, Math.max(1.2, 1.2), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at.clone().add(0, 0.4, 0), Particle.SONIC_BOOM, 1, Math.max(0, 0), null);
             afterglows.add(new Afterglow(Afterglow.VOID_PULL, m.ground.clone(), null, 18));
         } else {
-            world.spawnParticle(Particle.LAVA, at, 12, 0.8, 0.2, 0.8, 0);
-            world.spawnParticle(Particle.FLAME, at, 20, 1.0, 0.2, 1.0, 0.05);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.LAVA, 12, Math.max(0.8, 0.8), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.FLAME, 20, Math.max(1.0, 1.0), null);
         }
         crater(m.ground, 1.3, m.dark ? Material.CRYING_OBSIDIAN : Material.MAGMA_BLOCK, Material.BLACKSTONE, 70);
         afterglows.add(new Afterglow(Afterglow.SMOKE, m.ground.clone(), null, 28));
@@ -1667,8 +1666,7 @@ final class HollowSunDirector {
                 for (int i = 0; i < 3; i++) {
                     double a = random.nextDouble(Math.PI * 2);
                     double r = random.nextDouble(CORONA_R);
-                    world.spawnParticle(Particle.FLAME, feet.clone().add(Math.cos(a) * r, 0.1, Math.sin(a) * r),
-                            0, 0, 1, 0, 0.06);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(feet.clone().add(Math.cos(a) * r, 0.1, Math.sin(a) * r), Particle.FLAME, 0, Math.max(0, 0), null);
                 }
             }
             if (actionTick % 5 == 0) {
@@ -1682,7 +1680,7 @@ final class HollowSunDirector {
         }
         if (actionTick == w + 1) {
             Location core = corePos(entity);
-            world.spawnParticle(Particle.FLASH, core, 1, 0, 0, 0, 0);
+            de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.FLASH, 1, Math.max(0, 0), null);
             burst(world, core, Particle.FLAME, 36, 0.35);
             burst(world, core, Particle.END_ROD, 20, 0.3);
             world.playSound(core, Sound.ENTITY_BLAZE_SHOOT, 1.3f, 0.5f);
@@ -1774,7 +1772,7 @@ final class HollowSunDirector {
                     beam.setGlowing(true);
                 }
             }
-            world.spawnParticle(Particle.FLASH, corePos(entity), 1, 0, 0, 0, 0);
+            de.aetherion.bossengine.fx.ShapeFx.puff(corePos(entity), Particle.FLASH, 1, Math.max(0, 0), null);
             world.playSound(center, Sound.BLOCK_BEACON_POWER_SELECT, 1.3f, 0.5f);
             world.playSound(center, Sound.ENTITY_BLAZE_SHOOT, 1.2f, 0.5f);
             world.playSound(center, Sound.ITEM_FIRECHARGE_USE, 1.2f, 0.6f);
@@ -1825,8 +1823,7 @@ final class HollowSunDirector {
                     double a = flareAngle + k * Math.PI;
                     for (int i = 0; i < 4; i++) {
                         double r = 1.0 + random.nextDouble(reach - 1.0);
-                        world.spawnParticle(Particle.FLAME, center.clone().add(Math.cos(a) * r, 0.95, Math.sin(a) * r),
-                                1, 0.05, 0.05, 0.05, 0.01);
+                        de.aetherion.bossengine.fx.ShapeFx.puff(center.clone().add(Math.cos(a) * r, 0.95, Math.sin(a) * r), Particle.FLAME, 1, Math.max(0.05, 0.05), null);
                     }
                     line(world, core, center.clone().add(Math.cos(a) * 1.2, 0.3, Math.sin(a) * 1.2), SOLAR, 0.9f, 0.5);
                 }
@@ -1890,7 +1887,7 @@ final class HollowSunDirector {
     private void beamGuide(World world, double angle, double reach, int spin, Color color) {
         Particle.DustOptions dust = new Particle.DustOptions(color, 0.9f);
         for (double r = 1.0; r <= reach; r += 0.8) {
-            world.spawnParticle(Particle.DUST, center.clone().add(Math.cos(angle) * r, 0.12, Math.sin(angle) * r), 1, 0, 0, 0, 0, dust);
+            de.aetherion.bossengine.fx.ShapeFx.puff(center.clone().add(Math.cos(angle) * r, 0.12, Math.sin(angle) * r), Particle.DUST, 1, Math.max(0, 0), dust);
         }
         Vector along = new Vector(Math.cos(angle), 0, Math.sin(angle));
         Vector travel = new Vector(-Math.sin(angle), 0, Math.cos(angle)).multiply(spin);
@@ -1900,7 +1897,7 @@ final class HollowSunDirector {
             for (int s = -1; s <= 1; s += 2) {
                 for (double d = 0.0; d <= 0.7; d += 0.23) {
                     Location p = tip.clone().subtract(travel.clone().multiply(d)).add(along.clone().multiply(s * d));
-                    world.spawnParticle(Particle.DUST, p, 1, 0, 0, 0, 0, chevron);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.DUST, 1, Math.max(0, 0), chevron);
                 }
             }
         }
@@ -1973,8 +1970,8 @@ final class HollowSunDirector {
                     line(world, arc.from.clone().add(0, 0.7, 0), arc.to.clone().add(0, 0.12, 0), EMBER, 0.8f, 0.8);
                 }
                 if (arc.age % 2 == 0) {
-                    world.spawnParticle(Particle.LAVA, arc.from, 2, 0.4, 0.1, 0.4, 0);
-                    world.spawnParticle(Particle.FLAME, arc.from.clone().add(0, 0.3, 0), 0, 0, 1, 0, 0.12);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(arc.from, Particle.LAVA, 2, Math.max(0.4, 0.4), null);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(arc.from.clone().add(0, 0.3, 0), Particle.FLAME, 0, Math.max(0, 0), null);
                 }
                 if (arc.age % 5 == 0) {
                     world.playSound(arc.from, Sound.BLOCK_LAVA_POP, 1.2f, 0.7f);
@@ -1983,7 +1980,7 @@ final class HollowSunDirector {
                     arc.blob = spawnBlock(arc.from, Material.MAGMA_BLOCK.createBlockData(), EMBER, 1);
                     world.playSound(arc.from, Sound.ENTITY_BLAZE_SHOOT, 1.2f, 0.6f);
                     world.playSound(arc.from, Sound.ITEM_BUCKET_EMPTY_LAVA, 1.2f, 0.7f);
-                    world.spawnParticle(Particle.LAVA, arc.from, 10, 0.5, 0.2, 0.5, 0);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(arc.from, Particle.LAVA, 10, Math.max(0.5, 0.5), null);
                     coreKick = 0.2;
                 }
                 continue;
@@ -1993,9 +1990,9 @@ final class HollowSunDirector {
             if (arc.blob != null) {
                 place(arc.blob, at, centered(new Quaternionf().rotateY(arc.age * 0.4f).rotateX(arc.age * 0.3f), 1.0f), 1);
             }
-            world.spawnParticle(Particle.FLAME, at, 3, 0.15, 0.15, 0.15, 0.01, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.FLAME, 3, Math.max(0.15, 0.15), null);
             if (arc.age % 2 == 0) {
-                world.spawnParticle(Particle.FALLING_LAVA, at, 1, 0.1, 0.1, 0.1, 0, null, true);
+                de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.FALLING_LAVA, 1, Math.max(0.1, 0.1), null);
             }
             if (arc.age >= total) {
                 arcImpact(entity, arc);
@@ -2034,9 +2031,9 @@ final class HollowSunDirector {
     private void arcImpact(LivingEntity entity, Arc arc) {
         World world = arc.to.getWorld();
         Location at = arc.to.clone().add(0, 0.3, 0);
-        world.spawnParticle(Particle.LAVA, at, 18, 0.8, 0.2, 0.8, 0);
-        world.spawnParticle(Particle.FLAME, at, 24, 1.1, 0.15, 1.1, 0.04);
-        world.spawnParticle(Particle.EXPLOSION, at, 1, 0, 0, 0, 0);
+        de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.LAVA, 18, Math.max(0.8, 0.8), null);
+        de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.FLAME, 24, Math.max(1.1, 1.1), null);
+        de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.EXPLOSION, 1, Math.max(0, 0), null);
         world.playSound(at, Sound.BLOCK_LAVA_EXTINGUISH, 1.2f, 0.7f);
         world.playSound(at, Sound.ENTITY_GENERIC_EXPLODE, 0.6f, 1.2f);
         ring(world, at.clone().add(0, -0.15, 0), arc.radius, FLARE, 1.4f);
@@ -2128,7 +2125,7 @@ final class HollowSunDirector {
             for (int k = 0; k < 3; k++) {
                 for (double r = WELL_PULL_R; r > WELL_CORE_R; r -= 0.7) {
                     double a = -w.spin + k * Math.PI * 2 / 3 + (WELL_PULL_R - r) * 0.35;
-                    world.spawnParticle(Particle.DUST, w.center.clone().add(Math.cos(a) * r, 0.13, Math.sin(a) * r), 1, 0, 0, 0, 0, arm);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(w.center.clone().add(Math.cos(a) * r, 0.13, Math.sin(a) * r), Particle.DUST, 1, Math.max(0, 0), arm);
                 }
             }
         }
@@ -2159,13 +2156,13 @@ final class HollowSunDirector {
                 }
                 if (d <= WELL_CORE_R && gate("well", player, 16)) {
                     BossHits.hurt(player, entity, 34);
-                    world.spawnParticle(Particle.SONIC_BOOM, pl.clone().add(0, 1, 0), 1, 0, 0, 0, 0);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(pl.clone().add(0, 1, 0), Particle.SONIC_BOOM, 1, Math.max(0, 0), null);
                 }
             }
         }
         if (w.age == 140) {
-            world.spawnParticle(Particle.FLASH, heart, 1, 0, 0, 0, 0);
-            world.spawnParticle(Particle.SONIC_BOOM, heart, 1, 0, 0, 0, 0);
+            de.aetherion.bossengine.fx.ShapeFx.puff(heart, Particle.FLASH, 1, Math.max(0, 0), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(heart, Particle.SONIC_BOOM, 1, Math.max(0, 0), null);
             burst(world, heart, Particle.PORTAL, 30, 0.9);
             world.playSound(heart, Sound.ENTITY_WARDEN_SONIC_BOOM, 0.8f, 1.5f);
             world.playSound(heart, Sound.BLOCK_BEACON_DEACTIVATE, 1.0f, 0.7f);
@@ -2247,7 +2244,7 @@ final class HollowSunDirector {
         if (actionTick == 9) {
             folded = true;
             world.playSound(foldFrom, Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 0.5f);
-            world.spawnParticle(Particle.REVERSE_PORTAL, foldFrom.clone().add(0, 1.2, 0), 30, 0.2, 0.4, 0.2, 0.05);
+            de.aetherion.bossengine.fx.ShapeFx.puff(foldFrom.clone().add(0, 1.2, 0), Particle.REVERSE_PORTAL, 30, Math.max(0.2, 0.2), null);
             afterglows.add(new Afterglow(Afterglow.VOID_MOTE, foldFrom.clone().add(0, 1.4, 0), null, 14));
         }
         if (actionTick <= 30) {
@@ -2263,7 +2260,7 @@ final class HollowSunDirector {
                 for (int k = 0; k < 6; k++) {
                     double a = k * Math.PI / 3 + clock * 0.05;
                     for (double r = 0.6; r < SIGIL_R; r += 0.5) {
-                        world.spawnParticle(Particle.DUST, base.clone().add(Math.cos(a) * r, 0, Math.sin(a) * r), 1, 0, 0, 0, 0, spoke);
+                        de.aetherion.bossengine.fx.ShapeFx.puff(base.clone().add(Math.cos(a) * r, 0, Math.sin(a) * r), Particle.DUST, 1, Math.max(0, 0), spoke);
                     }
                 }
             }
@@ -2299,10 +2296,10 @@ final class HollowSunDirector {
             rigScale = 1.0;
             folded = false;
             Location at = foldSigil.clone().add(0, 0.4, 0);
-            world.spawnParticle(Particle.SONIC_BOOM, at, 1, 0, 0, 0, 0);
-            world.spawnParticle(Particle.EXPLOSION, at, 1, 0, 0, 0, 0);
-            world.spawnParticle(Particle.FLASH, at, 1, 0, 0, 0, 0);
-            world.spawnParticle(Particle.PORTAL, at, 50, 1.4, 0.4, 1.4, 0.6);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.SONIC_BOOM, 1, Math.max(0, 0), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.EXPLOSION, 1, Math.max(0, 0), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.FLASH, 1, Math.max(0, 0), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.PORTAL, 50, Math.max(1.4, 1.4), null);
             floorBurst(world, foldSigil, 30, 1.2);
             world.playSound(at, Sound.ENTITY_WARDEN_SONIC_BOOM, 0.8f, 0.9f);
             world.playSound(at, Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 1.3f, 0.6f);
@@ -2381,7 +2378,7 @@ final class HollowSunDirector {
                     next.setY(floorY);
                     next.setYaw(bodyYaw);
                     teleportBody(entity, next);
-                    world.spawnParticle(Particle.REVERSE_PORTAL, feet.clone().add(0, 0.2, 0), 3, 0.3, 0.05, 0.3, 0.01);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(feet.clone().add(0, 0.2, 0), Particle.REVERSE_PORTAL, 3, Math.max(0.3, 0.3), null);
                 }
                 if (novaTick >= 18) {
                     novaStage = 1;
@@ -2435,7 +2432,7 @@ final class HollowSunDirector {
                 entity.setRotation(bodyYaw, bodyPitch);
                 if (novaTick % 4 == 0) {
                     ring(world, feet.clone().add(0, 0.12, 0), 1.6, OPENING, 1.2f);
-                    world.spawnParticle(Particle.ELECTRIC_SPARK, corePos(entity), 4, 0.3, 0.3, 0.3, 0.05);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(corePos(entity), Particle.ELECTRIC_SPARK, 4, Math.max(0.3, 0.3), null);
                 }
                 if (novaTick >= 90) {
                     endMove();
@@ -2470,8 +2467,8 @@ final class HollowSunDirector {
         }
         World world = entity.getWorld();
         double lost = Math.min(1.0, novaDamage / novaNeed);
-        world.spawnParticle(Particle.ELECTRIC_SPARK, coreOverride, 10, 0.4, 0.4, 0.4, 0.12);
-        world.spawnParticle(Particle.CRIT, coreOverride, 6, 0.4, 0.4, 0.4, 0.2);
+        de.aetherion.bossengine.fx.ShapeFx.puff(coreOverride, Particle.ELECTRIC_SPARK, 10, Math.max(0.4, 0.4), null);
+        de.aetherion.bossengine.fx.ShapeFx.puff(coreOverride, Particle.CRIT, 6, Math.max(0.4, 0.4), null);
         world.playSound(coreOverride, Sound.BLOCK_AMETHYST_BLOCK_HIT, 1.1f, 0.8f + (float) lost * 1.1f);
         world.playSound(coreOverride, Sound.BLOCK_GLASS_HIT, 0.8f, 0.6f + (float) lost);
     }
@@ -2480,7 +2477,7 @@ final class HollowSunDirector {
         World world = entity.getWorld();
         discard(novaShell);
         novaShell = null;
-        world.spawnParticle(Particle.FLASH, over, 1, 0, 0, 0, 0);
+        de.aetherion.bossengine.fx.ShapeFx.puff(over, Particle.FLASH, 1, Math.max(0, 0), null);
         world.playSound(over, Sound.BLOCK_GLASS_BREAK, 1.4f, 0.6f);
         world.playSound(over, Sound.BLOCK_RESPAWN_ANCHOR_DEPLETE, 1.2f, 0.6f);
         world.playSound(over, Sound.ENTITY_WARDEN_SONIC_BOOM, 0.6f, 1.6f);
@@ -2498,8 +2495,8 @@ final class HollowSunDirector {
 
     private void novaDetonate(LivingEntity entity, Location over) {
         World world = entity.getWorld();
-        world.spawnParticle(Particle.FLASH, over, 3, 0.5, 0.5, 0.5, 0, null, true);
-        world.spawnParticle(Particle.EXPLOSION_EMITTER, over, 2, 0.6, 0.6, 0.6, 0, null, true);
+        de.aetherion.bossengine.fx.ShapeFx.puff(over, Particle.FLASH, 3, Math.max(0.5, 0.5), null);
+        de.aetherion.bossengine.fx.ShapeFx.puff(over, Particle.EXPLOSION_EMITTER, 2, Math.max(0.6, 0.6), null);
         burst(world, over, Particle.END_ROD, 60, 0.9);
         world.playSound(over, Sound.ENTITY_GENERIC_EXPLODE, 2.0f, 0.5f);
         world.playSound(over, Sound.ENTITY_WARDEN_SONIC_BOOM, 1.6f, 0.5f);
@@ -2511,7 +2508,7 @@ final class HollowSunDirector {
             novaShell.setTransformation(centered(new Quaternionf(), grown));
         }
         for (Player player : fighters()) {
-            world.spawnParticle(Particle.FLASH, player.getEyeLocation().add(player.getLocation().getDirection()), 1, 0, 0, 0, 0);
+            de.aetherion.bossengine.fx.ShapeFx.puff(player.getEyeLocation().add(player.getLocation().getDirection()), Particle.FLASH, 1, Math.max(0, 0), null);
             BossHits.crush(player, entity, 100);
             Vector out = player.getLocation().toVector().subtract(over.toVector()).setY(0);
             if (out.lengthSquared() < 0.01) {
@@ -2560,8 +2557,7 @@ final class HollowSunDirector {
                 int points = Math.max(8, (int) (wave.radius * 2.0));
                 for (int i = 0; i < points; i += 3) {
                     double a = Math.PI * 2 * i / points;
-                    world.spawnParticle(Particle.BLOCK, base.clone().add(Math.cos(a) * wave.radius, 0, Math.sin(a) * wave.radius),
-                            1, 0.1, 0.05, 0.1, 0, floor);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(base.clone().add(Math.cos(a) * wave.radius, 0, Math.sin(a) * wave.radius), Particle.BLOCK, 1, Math.max(0.1, 0.1), floor);
                 }
                 for (Player player : fighters()) {
                     if (wave.struck.contains(player.getUniqueId())) {
@@ -2608,18 +2604,18 @@ final class HollowSunDirector {
             switch (glow.kind) {
                 case Afterglow.SMOKE -> {
                     if (glow.life % 2 == 0) {
-                        world.spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, glow.at.clone().add(0, 0.3, 0), 1, 0.3, 0.1, 0.3, 0.02);
-                        world.spawnParticle(Particle.SMALL_FLAME, glow.at.clone().add(0, 0.1, 0), 1, 0.5, 0.05, 0.5, 0.005);
+                        de.aetherion.bossengine.fx.ShapeFx.puff(glow.at.clone().add(0, 0.3, 0), Particle.CAMPFIRE_COSY_SMOKE, 1, Math.max(0.3, 0.3), null);
+                        de.aetherion.bossengine.fx.ShapeFx.puff(glow.at.clone().add(0, 0.1, 0), Particle.SMALL_FLAME, 1, Math.max(0.5, 0.5), null);
                     }
                 }
                 case Afterglow.SCORCH, Afterglow.CRACK -> {
                     if (glow.life % 3 == 0 && glow.to != null) {
                         double t = random.nextDouble();
                         Location p = lerp(glow.at, glow.to, t).add(0, 0.15, 0);
-                        world.spawnParticle(Particle.SMALL_FLAME, p, 1, 0.1, 0.02, 0.1, 0.005);
-                        world.spawnParticle(Particle.SMOKE, p, 1, 0.1, 0.05, 0.1, 0.01);
+                        de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.SMALL_FLAME, 1, Math.max(0.1, 0.1), null);
+                        de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.SMOKE, 1, Math.max(0.1, 0.1), null);
                         if (glow.kind == Afterglow.CRACK) {
-                            world.spawnParticle(Particle.DUST, p, 1, 0.05, 0, 0.05, 0, new Particle.DustOptions(EMBER, 0.8f));
+                            de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.DUST, 1, Math.max(0.05, 0.05), new Particle.DustOptions(EMBER, 0.8f));
                         }
                     }
                 }
@@ -2636,8 +2632,8 @@ final class HollowSunDirector {
                     }
                 }
                 case Afterglow.VOID_MOTE -> {
-                    world.spawnParticle(Particle.DUST, glow.at, 2, 0.05, 0.05, 0.05, 0, new Particle.DustOptions(VIOLET, 1.0f));
-                    world.spawnParticle(Particle.REVERSE_PORTAL, glow.at, 1, 0.1, 0.1, 0.1, 0.01);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(glow.at, Particle.DUST, 2, Math.max(0.05, 0.05), new Particle.DustOptions(VIOLET, 1.0f));
+                    de.aetherion.bossengine.fx.ShapeFx.puff(glow.at, Particle.REVERSE_PORTAL, 1, Math.max(0.1, 0.1), null);
                 }
                 default -> {
                 }
@@ -2668,7 +2664,7 @@ final class HollowSunDirector {
     private void fizzleHazards() {
         for (Meteor m : meteors) {
             if (m.locked && m.ground != null && m.ground.getWorld() != null) {
-                m.ground.getWorld().spawnParticle(Particle.LARGE_SMOKE, m.ground.clone().add(0, 0.3, 0), 6, 0.6, 0.2, 0.6, 0.02);
+                de.aetherion.bossengine.fx.ShapeFx.puff(m.ground.clone().add(0, 0.3, 0), Particle.LARGE_SMOKE, 6, Math.max(0.6, 0.6), null);
             }
             discard(m.rock);
             discard(m.crust);
@@ -2683,7 +2679,7 @@ final class HollowSunDirector {
         }
         lances.clear();
         if (well != null && well.center.getWorld() != null) {
-            well.center.getWorld().spawnParticle(Particle.REVERSE_PORTAL, well.center.clone().add(0, 1.3, 0), 30, 0.4, 0.4, 0.4, 0.1);
+            de.aetherion.bossengine.fx.ShapeFx.puff(well.center.clone().add(0, 1.3, 0), Particle.REVERSE_PORTAL, 30, Math.max(0.4, 0.4), null);
         }
         retireWell();
     }
@@ -2717,7 +2713,7 @@ final class HollowSunDirector {
                 for (int i = 0; i < 3; i++) {
                     double a = random.nextDouble(Math.PI * 2);
                     double r = 1.2 + random.nextDouble(1.2);
-                    world.spawnParticle(Particle.FLAME, feet.clone().add(Math.cos(a) * r, 0.1, Math.sin(a) * r), 0, 0, 1, 0, 0.1);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(feet.clone().add(Math.cos(a) * r, 0.1, Math.sin(a) * r), Particle.FLAME, 0, Math.max(0, 0), null);
                 }
             }
             if (t % 5 == 0) {
@@ -2741,14 +2737,14 @@ final class HollowSunDirector {
                 applyRigMaterials(Form.GIANT);
                 dress(entity, Form.GIANT);
                 silhouette = Form.GIANT;
-                world.spawnParticle(Particle.FLASH, corePos(entity), 1, 0, 0, 0, 0);
+                de.aetherion.bossengine.fx.ShapeFx.puff(corePos(entity), Particle.FLASH, 1, Math.max(0, 0), null);
                 world.playSound(feet, Sound.ITEM_FIRECHARGE_USE, 1.3f, 0.5f);
             }
         }
         if (beat(t, 90)) {
             Location core = corePos(entity);
-            world.spawnParticle(Particle.FLASH, core, 1, 0, 0, 0, 0, null, true);
-            world.spawnParticle(Particle.EXPLOSION_EMITTER, core, 1, 0, 0, 0, 0, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.FLASH, 1, Math.max(0, 0), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.EXPLOSION_EMITTER, 1, Math.max(0, 0), null);
             burst(world, core, Particle.FLAME, 50, 0.45);
             world.playSound(core, Sound.ENTITY_GENERIC_EXPLODE, 1.4f, 0.6f);
             world.playSound(core, Sound.BLOCK_RESPAWN_ANCHOR_DEPLETE, 1.3f, 0.6f);
@@ -2773,7 +2769,7 @@ final class HollowSunDirector {
         if (t > 90) {
             coreBoost *= 0.85;
             if (t % 2 == 0) {
-                world.spawnParticle(Particle.FALLING_LAVA, corePos(entity), 2, 0.5, 0.3, 0.5, 0);
+                de.aetherion.bossengine.fx.ShapeFx.puff(corePos(entity), Particle.FALLING_LAVA, 2, Math.max(0.5, 0.5), null);
             }
         }
         syncRig(entity);
@@ -2783,9 +2779,9 @@ final class HollowSunDirector {
         ThreadLocalRandom random = ThreadLocalRandom.current();
         double a = random.nextDouble(Math.PI * 2);
         Location edge = center.clone().add(Math.cos(a) * (arenaRadius + 1.0), -0.5, Math.sin(a) * (arenaRadius + 1.0));
-        world.spawnParticle(Particle.LAVA, edge, 6, 0.4, 0.2, 0.4, 0, null, true);
+        de.aetherion.bossengine.fx.ShapeFx.puff(edge, Particle.LAVA, 6, Math.max(0.4, 0.4), null);
         for (int i = 0; i < 6; i++) {
-            world.spawnParticle(Particle.FLAME, edge.clone().add(0, i * 0.5, 0), 1, 0.1, 0.1, 0.1, 0.01, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(edge.clone().add(0, i * 0.5, 0), Particle.FLAME, 1, Math.max(0.1, 0.1), null);
         }
         world.playSound(edge, Sound.BLOCK_LAVA_POP, 1.3f, 0.6f);
     }
@@ -2875,11 +2871,11 @@ final class HollowSunDirector {
             if (coreA != null && coreA.isValid()) {
                 coreA.setInterpolationDuration(3);
             }
-            world.spawnParticle(Particle.FLASH, core, 2, 0.3, 0.3, 0.3, 0, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.FLASH, 2, Math.max(0.3, 0.3), null);
             for (int i = 0; i < 60; i++) {
                 Vector dir = randomUnit();
                 Location from = core.clone().add(dir.clone().multiply(5.0));
-                world.spawnParticle(Particle.END_ROD, from, 0, -dir.getX(), -dir.getY(), -dir.getZ(), 0.45, null, true);
+                de.aetherion.bossengine.fx.ShapeFx.puff(from, Particle.END_ROD, 0, Math.max(-dir.getX(), -dir.getZ()), null);
             }
             ringForce(world, core, 3.0, HOT, 1.8f);
             world.playSound(core, Sound.ENTITY_WARDEN_SONIC_BOOM, 1.6f, 0.5f);
@@ -2890,8 +2886,7 @@ final class HollowSunDirector {
             Location core = corePos(entity);
             for (int i = 0; i < 10; i++) {
                 double a = i * Math.PI / 5 + t * 0.08;
-                world.spawnParticle(Particle.END_ROD, core.clone().add(Math.cos(a) * 1.1, Math.sin(a * 2) * 0.12, Math.sin(a) * 1.1),
-                        1, 0, 0, 0, 0, null, true);
+                de.aetherion.bossengine.fx.ShapeFx.puff(core.clone().add(Math.cos(a) * 1.1, Math.sin(a * 2) * 0.12, Math.sin(a) * 1.1), Particle.END_ROD, 1, Math.max(0, 0), null);
             }
         }
         if (beat(t, 104)) {
@@ -2925,8 +2920,8 @@ final class HollowSunDirector {
         }
         if (t >= 120 && t < STARFALL_IMPACT) {
             Location core = corePos(entity);
-            world.spawnParticle(Particle.SOUL_FIRE_FLAME, core, 6, 0.4, 0.4, 0.4, 0.02, null, true);
-            world.spawnParticle(Particle.LARGE_SMOKE, core.clone().add(0, 0.8, 0), 3, 0.4, 0.6, 0.4, 0.02, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.SOUL_FIRE_FLAME, 6, Math.max(0.4, 0.4), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(core.clone().add(0, 0.8, 0), Particle.LARGE_SMOKE, 3, Math.max(0.4, 0.4), null);
             lineForce(world, core, core.clone().add(0, 4.0, 0), PHOTON, 1.2f, 0.35);
             lineForce(world, core.clone().add(0.35, 0, 0), core.clone().add(0.35, 3.0, 0), VIOLET, 1.0f, 0.45);
             lineForce(world, core.clone().add(-0.35, 0, 0), core.clone().add(-0.35, 3.0, 0), VIOLET, 1.0f, 0.45);
@@ -2942,8 +2937,8 @@ final class HollowSunDirector {
                 ThreadLocalRandom random = ThreadLocalRandom.current();
                 double a = random.nextDouble(Math.PI * 2);
                 double r = random.nextDouble(impactR);
-                world.spawnParticle(Particle.REVERSE_PORTAL, center.clone().add(Math.cos(a) * r, 0.2, Math.sin(a) * r), 3, 0.2, 0.1, 0.2, 0.02);
-                world.spawnParticle(Particle.WHITE_ASH, center.clone().add(Math.cos(a) * r, 1.5, Math.sin(a) * r), 2, 0.5, 0.5, 0.5, 0.01);
+                de.aetherion.bossengine.fx.ShapeFx.puff(center.clone().add(Math.cos(a) * r, 0.2, Math.sin(a) * r), Particle.REVERSE_PORTAL, 3, Math.max(0.2, 0.2), null);
+                de.aetherion.bossengine.fx.ShapeFx.puff(center.clone().add(Math.cos(a) * r, 1.5, Math.sin(a) * r), Particle.WHITE_ASH, 2, Math.max(0.5, 0.5), null);
             }
             if (beat(t, 190)) {
                 titleNear("&5&lCOLLAPSE", "&7What is left of me is heavier than light.");
@@ -2960,7 +2955,7 @@ final class HollowSunDirector {
             if (beat(t, 222)) {
                 maceShown = true;
                 world.playSound(entity.getLocation(), Sound.ITEM_MACE_SMASH_AIR, 1.2f, 0.5f);
-                world.spawnParticle(Particle.REVERSE_PORTAL, idleMaceGrip(entity), 30, 0.4, 0.8, 0.4, 0.1);
+                de.aetherion.bossengine.fx.ShapeFx.puff(idleMaceGrip(entity), Particle.REVERSE_PORTAL, 30, Math.max(0.4, 0.4), null);
             }
         }
         syncRig(entity);
@@ -2970,14 +2965,14 @@ final class HollowSunDirector {
         stopWhoosh();
         World world = center.getWorld();
         Location mid = center.clone().add(0, 0.5, 0);
-        world.spawnParticle(Particle.FLASH, mid, 3, 1.0, 0.5, 1.0, 0, null, true);
+        de.aetherion.bossengine.fx.ShapeFx.puff(mid, Particle.FLASH, 3, Math.max(1.0, 1.0), null);
         for (int i = 0; i < 3; i++) {
             double a = i * Math.PI * 2 / 3;
-            world.spawnParticle(Particle.EXPLOSION_EMITTER, mid.clone().add(Math.cos(a) * 2.0, 0, Math.sin(a) * 2.0), 1, 0, 0, 0, 0, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(mid.clone().add(Math.cos(a) * 2.0, 0, Math.sin(a) * 2.0), Particle.EXPLOSION_EMITTER, 1, Math.max(0, 0), null);
         }
-        world.spawnParticle(Particle.SONIC_BOOM, mid, 1, 0, 0, 0, 0, null, true);
+        de.aetherion.bossengine.fx.ShapeFx.puff(mid, Particle.SONIC_BOOM, 1, Math.max(0, 0), null);
         floorBurst(world, center, 80, impactR * 0.4);
-        world.spawnParticle(Particle.LAVA, mid, 40, impactR * 0.4, 0.3, impactR * 0.4, 0, null, true);
+        de.aetherion.bossengine.fx.ShapeFx.puff(mid, Particle.LAVA, 40, Math.max(impactR * 0.4, impactR * 0.4), null);
         burst(world, mid, Particle.END_ROD, 40, 0.8);
         burst(world, mid, Particle.SOUL_FIRE_FLAME, 40, 0.6);
         world.playSound(center, Sound.ENTITY_GENERIC_EXPLODE, 2.0f, 0.5f);
@@ -3042,7 +3037,7 @@ final class HollowSunDirector {
             int leaks = 1 + (int) (t * 4);
             for (int i = 0; i < leaks; i++) {
                 Vector dir = randomUnit();
-                world.spawnParticle(Particle.END_ROD, chest.clone().add(dir.clone().multiply(0.4)), 0, dir.getX(), dir.getY(), dir.getZ(), 0.35);
+                de.aetherion.bossengine.fx.ShapeFx.puff(chest.clone().add(dir.clone().multiply(0.4)), Particle.END_ROD, 0, Math.max(dir.getX(), dir.getZ()), null);
             }
             if (deathTick % 8 == 0) {
                 world.playSound(chest, Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 1.0f, 0.6f + (float) t * 0.8f);
@@ -3056,7 +3051,7 @@ final class HollowSunDirector {
             return false;
         }
         if (deathTick == 40) {
-            world.spawnParticle(Particle.FLASH, chest, 1, 0, 0, 0, 0, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(chest, Particle.FLASH, 1, Math.max(0, 0), null);
             burst(world, chest, Particle.END_ROD, 40, 0.5);
             world.playSound(chest, Sound.ENTITY_GENERIC_EXPLODE, 0.9f, 1.3f);
             world.playSound(chest, Sound.BLOCK_GLASS_BREAK, 1.0f, 0.5f);
@@ -3100,9 +3095,9 @@ final class HollowSunDirector {
             double ascend = Math.min(26.0, skyRise + 6.0);
             coreOverride = chest.clone().add(0, ascend * u, 0);
             rigScale = 1.0 - 0.65 * u;
-            world.spawnParticle(Particle.END_ROD, coreOverride, 2, 0.1, 0.1, 0.1, 0.01, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(coreOverride, Particle.END_ROD, 2, Math.max(0.1, 0.1), null);
             if (deathTick % 2 == 0) {
-                world.spawnParticle(Particle.FIREWORK, coreOverride, 1, 0.15, 0.15, 0.15, 0.01, null, true);
+                de.aetherion.bossengine.fx.ShapeFx.puff(coreOverride, Particle.FIREWORK, 1, Math.max(0.15, 0.15), null);
             }
             if ((deathTick - 72) % 5 == 0) {
                 float pitch = 0.6f + (deathTick - 72) / 68.0f * 1.4f;
@@ -3117,7 +3112,7 @@ final class HollowSunDirector {
             if (deathTick == NOVA_REMNANT) {
                 for (Husk husk : husks) {
                     if (husk.stand != null && husk.stand.isValid()) {
-                        world.spawnParticle(Particle.SMOKE, husk.stand.getLocation().add(0, 1.0, 0), 8, 0.2, 0.3, 0.2, 0.01);
+                        de.aetherion.bossengine.fx.ShapeFx.puff(husk.stand.getLocation().add(0, 1.0, 0), Particle.SMOKE, 8, Math.max(0.2, 0.2), null);
                     }
                 }
                 clearHusks();
@@ -3191,14 +3186,13 @@ final class HollowSunDirector {
             Vector dir = randomUnit();
             double r = 4.5 + random.nextDouble(3.5);
             Location from = focus.clone().add(dir.clone().multiply(r));
-            world.spawnParticle(Particle.END_ROD, from, 0, -dir.getX(), -dir.getY(), -dir.getZ(), r * 0.1, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(from, Particle.END_ROD, 0, Math.max(-dir.getX(), -dir.getZ()), null);
         }
         if (t % 2 == 0) {
             ringForce(world, focus, 0.4 + 2.6 * (1.0 - f), f < 0.5 ? EMBER : CRIMSON, 0.9f);
         }
         if (t % 3 == 0) {
-            world.spawnParticle(Particle.DUST, focus, 3, 0.12, 0.12, 0.12, 0,
-                    new Particle.DustOptions(f < 0.5 ? GOLD : CRIMSON, 1.1f), true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(focus, Particle.DUST, 3, Math.max(0.12, 0.12), new Particle.DustOptions(f < 0.5 ? GOLD : CRIMSON, 1.1f));
         }
     }
 
@@ -3316,11 +3310,11 @@ final class HollowSunDirector {
                 tiltedRing(world, focus, deathNovaTilt, r * NOVA_RING_SCALE[1], r * NOVA_RING_LIFT[1], 36, violet);
                 tiltedRing(world, focus, deathNovaTilt, r * NOVA_RING_SCALE[2], r * NOVA_RING_LIFT[2], 36, violet);
                 double cloud = 1.0 + r * 0.4;
-                world.spawnParticle(Particle.FIREWORK, focus, 30, cloud, cloud, cloud, 0.05, null, true);
-                world.spawnParticle(Particle.END_ROD, focus, 16, cloud, cloud, cloud, 0.03, null, true);
+                de.aetherion.bossengine.fx.ShapeFx.puff(focus, Particle.FIREWORK, 30, Math.max(cloud, cloud), null);
+                de.aetherion.bossengine.fx.ShapeFx.puff(focus, Particle.END_ROD, 16, Math.max(cloud, cloud), null);
             }
             if (age == 2) {
-                world.spawnParticle(Particle.FLASH, focus, 4, 3.0, 3.0, 3.0, 0, null, true);
+                de.aetherion.bossengine.fx.ShapeFx.puff(focus, Particle.FLASH, 4, Math.max(3.0, 3.0), null);
                 skySound(focus, Sound.ENTITY_FIREWORK_ROCKET_TWINKLE_FAR, 1.6f, 0.7f);
                 skySound(focus, Sound.BLOCK_AMETHYST_BLOCK_RESONATE, 1.4f, 0.5f);
             }
@@ -3345,8 +3339,8 @@ final class HollowSunDirector {
             stardust(world, 14);
         }
         if (age == calm) {
-            world.spawnParticle(Particle.END_ROD, focus, 12, 0.1, 0.1, 0.1, 0.05, null, true);
-            world.spawnParticle(Particle.FIREWORK, focus, 6, 0.1, 0.1, 0.1, 0.02, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(focus, Particle.END_ROD, 12, Math.max(0.1, 0.1), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(focus, Particle.FIREWORK, 6, Math.max(0.1, 0.1), null);
             skySound(focus, Sound.BLOCK_BEACON_DEACTIVATE, 0.8f, 1.4f);
             skySound(focus, Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.6f, 0.5f);
             clearDeathNova();
@@ -3363,21 +3357,21 @@ final class HollowSunDirector {
 
     private void detonate(World world, Location focus) {
         place(deathNovaSeed, focus, centered(new Quaternionf(), 0.001f), 0);
-        world.spawnParticle(Particle.FLASH, focus, 8, 1.5, 1.5, 1.5, 0, null, true);
-        world.spawnParticle(Particle.EXPLOSION_EMITTER, focus, 4, 1.0, 1.0, 1.0, 0, null, true);
+        de.aetherion.bossengine.fx.ShapeFx.puff(focus, Particle.FLASH, 8, Math.max(1.5, 1.5), null);
+        de.aetherion.bossengine.fx.ShapeFx.puff(focus, Particle.EXPLOSION_EMITTER, 4, Math.max(1.0, 1.0), null);
         for (int i = 0; i < 12; i++) {
             double a = Math.PI * 2 * i / 12;
             Vector3f p = deathNovaTilt.transform(new Vector3f((float) (Math.cos(a) * 2.5), 0, (float) (Math.sin(a) * 2.5)));
-            world.spawnParticle(Particle.SONIC_BOOM, focus.clone().add(p.x, p.y, p.z), 1, 0, 0, 0, 0, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(focus.clone().add(p.x, p.y, p.z), Particle.SONIC_BOOM, 1, Math.max(0, 0), null);
         }
         burst(world, focus, Particle.END_ROD, 140, 1.7);
         burst(world, focus, Particle.FIREWORK, 90, 1.3);
         burst(world, focus, Particle.FLAME, 70, 1.0);
         burst(world, focus, Particle.SOUL_FIRE_FLAME, 40, 0.8);
         burst(world, focus, Particle.ELECTRIC_SPARK, 40, 1.2);
-        world.spawnParticle(Particle.DUST, focus, 80, 2.0, 2.0, 2.0, 0, new Particle.DustOptions(HOT, 2.4f), true);
-        world.spawnParticle(Particle.DUST, focus, 60, 3.0, 3.0, 3.0, 0, new Particle.DustOptions(SOLAR, 2.0f), true);
-        world.spawnParticle(Particle.DUST, focus, 50, 4.0, 4.0, 4.0, 0, new Particle.DustOptions(VIOLET, 1.8f), true);
+        de.aetherion.bossengine.fx.ShapeFx.puff(focus, Particle.DUST, 80, Math.max(2.0, 2.0), new Particle.DustOptions(HOT, 2.4f));
+        de.aetherion.bossengine.fx.ShapeFx.puff(focus, Particle.DUST, 60, Math.max(3.0, 3.0), new Particle.DustOptions(SOLAR, 2.0f));
+        de.aetherion.bossengine.fx.ShapeFx.puff(focus, Particle.DUST, 50, Math.max(4.0, 4.0), new Particle.DustOptions(VIOLET, 1.8f));
         tiltedRing(world, focus, deathNovaTilt, 4.0, 0.0, 48, new Particle.DustOptions(HOT, 2.0f));
         for (Player player : viewers(focus)) {
             Location eye = player.getEyeLocation();
@@ -3522,8 +3516,8 @@ final class HollowSunDirector {
             Ejecta chunk = it.next();
             chunk.life--;
             if (chunk.life <= 0 || chunk.display == null || !chunk.display.isValid() || chunk.pos.getY() < floorY + 3.0) {
-                world.spawnParticle(Particle.END_ROD, chunk.pos, 4, 0.1, 0.1, 0.1, 0.04, null, true);
-                world.spawnParticle(Particle.SMOKE, chunk.pos, 3, 0.1, 0.1, 0.1, 0.01, null, true);
+                de.aetherion.bossengine.fx.ShapeFx.puff(chunk.pos, Particle.END_ROD, 4, Math.max(0.1, 0.1), null);
+                de.aetherion.bossengine.fx.ShapeFx.puff(chunk.pos, Particle.SMOKE, 3, Math.max(0.1, 0.1), null);
                 discard(chunk.display);
                 it.remove();
                 continue;
@@ -3543,7 +3537,7 @@ final class HollowSunDirector {
     private void tickPulsar(World world, Location focus, double p, int t) {
         if (t == 0) {
             setBlock(deathNovaSeed, Material.PEARLESCENT_FROGLIGHT, HOT);
-            world.spawnParticle(Particle.FLASH, focus, 1, 0, 0, 0, 0, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(focus, Particle.FLASH, 1, Math.max(0, 0), null);
             skySound(focus, Sound.BLOCK_BEACON_AMBIENT, 1.2f, 0.6f);
         }
         deathNovaSpin += (float) (0.9 - 0.6 * p);
@@ -3561,11 +3555,11 @@ final class HollowSunDirector {
         }
         if (t % 2 == 0) {
             double spread = 6.0 + 4.0 * p;
-            world.spawnParticle(Particle.DUST, focus, 20, spread, spread * 0.6, spread, 0, new Particle.DustOptions(VIOLET, 1.6f), true);
-            world.spawnParticle(Particle.DUST, focus, 14, spread, spread * 0.6, spread, 0, new Particle.DustOptions(CRIMSON, 1.4f), true);
-            world.spawnParticle(Particle.DUST, focus, 10, spread * 0.5, spread * 0.4, spread * 0.5, 0, new Particle.DustOptions(SOLAR, 1.2f), true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(focus, Particle.DUST, 20, Math.max(spread, spread), new Particle.DustOptions(VIOLET, 1.6f));
+            de.aetherion.bossengine.fx.ShapeFx.puff(focus, Particle.DUST, 14, Math.max(spread, spread), new Particle.DustOptions(CRIMSON, 1.4f));
+            de.aetherion.bossengine.fx.ShapeFx.puff(focus, Particle.DUST, 10, Math.max(spread * 0.5, spread * 0.5), new Particle.DustOptions(SOLAR, 1.2f));
         }
-        world.spawnParticle(Particle.END_ROD, focus.clone().add(axis.x * len, axis.y * len, axis.z * len), 1, 0, 0, 0, 0, null, true);
+        de.aetherion.bossengine.fx.ShapeFx.puff(focus.clone().add(axis.x * len, axis.y * len, axis.z * len), Particle.END_ROD, 1, Math.max(0, 0), null);
     }
 
     /** The shockwave reaching the Bloodstone: a ring of light washing out across the floor. Visual only. */
@@ -3582,9 +3576,9 @@ final class HollowSunDirector {
         for (int i = 0; i < 20; i++) {
             double a = random.nextDouble(Math.PI * 2);
             Location at = floor.clone().add(Math.cos(a) * r, 0.1, Math.sin(a) * r);
-            world.spawnParticle(Particle.WHITE_ASH, at, 2, 0.2, 0.3, 0.2, 0.02, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.WHITE_ASH, 2, Math.max(0.2, 0.2), null);
             if (i % 4 == 0) {
-                world.spawnParticle(Particle.END_ROD, at, 0, 0, 1, 0, 0.12, null, true);
+                de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.END_ROD, 0, Math.max(0, 0), null);
             }
         }
     }
@@ -3600,20 +3594,24 @@ final class HollowSunDirector {
             double r = Math.sqrt(random.nextDouble()) * (arenaRadius + 4.0);
             Location at = mid.clone().add(Math.cos(a) * r, 0, Math.sin(a) * r);
             at.setY(floorY + random.nextDouble(6.0, 16.0));
-            world.spawnParticle(Particle.WHITE_ASH, at, 2, 0.5, 0.5, 0.5, 0.01, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.WHITE_ASH, 2, Math.max(0.5, 0.5), null);
             if (i % 5 == 0) {
-                world.spawnParticle(Particle.END_ROD, at, 0, 0, -1, 0, 0.03, null, true);
+                de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.END_ROD, 0, Math.max(0, 0), null);
             }
         }
     }
 
     private static void dissolve(World world, Location focus, double radius, Color color) {
+        if (de.aetherion.core.api.Vfx.burst(focus, color, Math.max(1.5, radius * 2.2), 14)) {
+            de.aetherion.core.api.Vfx.motes(focus, color, 6, radius * 0.6, new Vector(0, 1.6, 0), 30);
+            return;
+        }
         Particle.DustOptions dust = new Particle.DustOptions(color, 1.6f);
         for (int i = 0; i < 48; i++) {
             Vector dir = randomUnit();
             Location at = focus.clone().add(dir.clone().multiply(radius));
-            world.spawnParticle(Particle.FIREWORK, at, 0, dir.getX(), dir.getY(), dir.getZ(), 0.12, null, true);
-            world.spawnParticle(Particle.DUST, at, 1, 0.3, 0.3, 0.3, 0, dust, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.FIREWORK, 0, Math.max(dir.getX(), dir.getZ()), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.DUST, 1, Math.max(0.3, 0.3), dust);
         }
     }
 
@@ -3633,10 +3631,14 @@ final class HollowSunDirector {
 
     private static void tiltedRing(World world, Location at, Quaternionf plane, double radius, double lift, int points,
                                    Particle.DustOptions dust) {
+        if (de.aetherion.core.api.Vfx.holdPlane(at.clone().add(plane.transform(new Vector3f(0, (float) lift, 0)).x, plane.transform(new Vector3f(0, (float) lift, 0)).y,
+                plane.transform(new Vector3f(0, (float) lift, 0)).z), dust.getColor(), radius, plane)) {
+            return;
+        }
         for (int i = 0; i < points; i++) {
             double a = Math.PI * 2 * i / points;
             Vector3f p = plane.transform(new Vector3f((float) (Math.cos(a) * radius), (float) lift, (float) (Math.sin(a) * radius)));
-            world.spawnParticle(Particle.DUST, at.clone().add(p.x, p.y, p.z), 1, 0, 0, 0, 0, dust, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at.clone().add(p.x, p.y, p.z), Particle.DUST, 1, Math.max(0, 0), dust);
         }
     }
 
@@ -3730,7 +3732,7 @@ final class HollowSunDirector {
                 husk.landed = true;
                 world.playSound(husk.pos, Sound.BLOCK_NETHERITE_BLOCK_FALL, 1.1f, 0.6f);
                 world.playSound(husk.pos, Sound.ITEM_ARMOR_EQUIP_NETHERITE, 0.8f, 0.5f);
-                world.spawnParticle(Particle.SMOKE, husk.pos.clone().add(0, husk.drop, 0), 6, 0.2, 0.05, 0.2, 0.01);
+                de.aetherion.bossengine.fx.ShapeFx.puff(husk.pos.clone().add(0, husk.drop, 0), Particle.SMOKE, 6, Math.max(0.2, 0.2), null);
             }
             husk.stand.teleport(husk.pos);
             double tumble = husk.age * 0.22;
@@ -4047,21 +4049,21 @@ final class HollowSunDirector {
         switch (form) {
             case MAIN -> {
                 if (clock % 5 == 0) {
-                    world.spawnParticle(Particle.SMALL_FLAME, core, 1, 0.3, 0.3, 0.3, 0.005);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.SMALL_FLAME, 1, Math.max(0.3, 0.3), null);
                 }
                 if (clock % 13 == 0) {
-                    world.spawnParticle(Particle.ELECTRIC_SPARK, core, 2, 0.25, 0.25, 0.25, 0.04);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.ELECTRIC_SPARK, 2, Math.max(0.25, 0.25), null);
                 }
             }
             case GIANT -> {
                 if (clock % 3 == 0) {
-                    world.spawnParticle(Particle.DRIPPING_LAVA, core.clone().subtract(0, 0.5, 0), 1, 0.4, 0.1, 0.4, 0);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(core.clone().subtract(0, 0.5, 0), Particle.DRIPPING_LAVA, 1, Math.max(0.4, 0.4), null);
                 }
                 if (clock % 40 == 0) {
                     world.playSound(core, Sound.BLOCK_BEACON_AMBIENT, 0.7f, 0.5f);
                 }
                 if (clock % 6 == 0) {
-                    world.spawnParticle(Particle.FLAME, core, 1, 0.6, 0.6, 0.6, 0.01);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.FLAME, 1, Math.max(0.6, 0.6), null);
                 }
             }
             case COLLAPSE -> {
@@ -4075,7 +4077,7 @@ final class HollowSunDirector {
         }
         if (exposedTicks > 0 && clock % 4 == 0) {
             ring(world, entity.getLocation().clone().add(0, 0.1, 0), 1.3, OPENING, 1.0f);
-            world.spawnParticle(Particle.DUST, core, 3, 0.4, 0.4, 0.4, 0, new Particle.DustOptions(OPENING, 1.0f));
+            de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.DUST, 3, Math.max(0.4, 0.4), new Particle.DustOptions(OPENING, 1.0f));
         }
     }
 
@@ -4248,20 +4250,36 @@ final class HollowSunDirector {
         }
         Vector side = new Vector(-unit.getZ(), 0, unit.getX());
         Location base = from.clone().add(0, 0.12, 0);
+        if (de.aetherion.core.api.Vfx.active()) {
+            // the lane as light: two edge lines, a cap, a solar spine filling toward the end
+            String key = instance.getInstanceId() + "|lane|" + Math.round(from.getX()) + "," + Math.round(from.getZ()) + "|"
+                    + Math.round(unit.getX() * 10) + "," + Math.round(unit.getZ() * 10);
+            Color edgeColor = hot && remaining % 2 == 0 ? HOT : color;
+            Vector off = side.clone().multiply(halfWidth);
+            Location end = base.clone().add(unit.clone().multiply(length));
+            de.aetherion.core.api.Vfx.line(key + "L", base.clone().add(off), end.clone().add(off), edgeColor, hot ? 0.24 : 0.16);
+            de.aetherion.core.api.Vfx.line(key + "R", base.clone().subtract(off), end.clone().subtract(off), edgeColor, hot ? 0.24 : 0.16);
+            de.aetherion.core.api.Vfx.line(key + "C", end.clone().subtract(off), end.clone().add(off), edgeColor, hot ? 0.24 : 0.16);
+            double reach = Math.max(0.0, Math.min(1.0, fill)) * length;
+            if (reach > 0.3) {
+                de.aetherion.core.api.Vfx.line(key + "S", base, base.clone().add(unit.clone().multiply(reach)), SOLAR, 0.34);
+            }
+            return;
+        }
         Particle.DustOptions edge = new Particle.DustOptions(hot && remaining % 2 == 0 ? HOT : color, hot ? 1.25f : 1.0f);
         Particle.DustOptions spine = new Particle.DustOptions(SOLAR, 0.8f);
         for (double d = 0.0; d <= length; d += 0.7) {
             Location on = base.clone().add(unit.clone().multiply(d));
-            world.spawnParticle(Particle.DUST, on.clone().add(side.clone().multiply(halfWidth)), 1, 0, 0, 0, 0, edge);
-            world.spawnParticle(Particle.DUST, on.clone().subtract(side.clone().multiply(halfWidth)), 1, 0, 0, 0, 0, edge);
+            de.aetherion.bossengine.fx.ShapeFx.puff(on.clone().add(side.clone().multiply(halfWidth)), Particle.DUST, 1, Math.max(0, 0), edge);
+            de.aetherion.bossengine.fx.ShapeFx.puff(on.clone().subtract(side.clone().multiply(halfWidth)), Particle.DUST, 1, Math.max(0, 0), edge);
         }
         Location cap = base.clone().add(unit.clone().multiply(length));
         for (double s = -halfWidth; s <= halfWidth + 1.0E-4; s += 0.4) {
-            world.spawnParticle(Particle.DUST, cap.clone().add(side.clone().multiply(s)), 1, 0, 0, 0, 0, edge);
+            de.aetherion.bossengine.fx.ShapeFx.puff(cap.clone().add(side.clone().multiply(s)), Particle.DUST, 1, Math.max(0, 0), edge);
         }
         double reach = Math.max(0.0, Math.min(1.0, fill)) * length;
         for (double d = 0.0; d <= reach; d += 0.5) {
-            world.spawnParticle(Particle.DUST, base.clone().add(unit.clone().multiply(d)), 1, 0, 0, 0, 0, spine);
+            de.aetherion.bossengine.fx.ShapeFx.puff(base.clone().add(unit.clone().multiply(d)), Particle.DUST, 1, Math.max(0, 0), spine);
         }
     }
 
@@ -4273,7 +4291,7 @@ final class HollowSunDirector {
         for (int s = -1; s <= 1; s += 2) {
             Vector ray = rotateY(f, half * s);
             for (double d = 0.8; d <= radius; d += 0.6) {
-                world.spawnParticle(Particle.DUST, base.clone().add(ray.clone().multiply(d)), 1, 0, 0, 0, 0, edge);
+                de.aetherion.bossengine.fx.ShapeFx.puff(base.clone().add(ray.clone().multiply(d)), Particle.DUST, 1, Math.max(0, 0), edge);
             }
         }
         arcDust(world, base, f, radius, half, edge, 0.5);
@@ -4289,7 +4307,7 @@ final class HollowSunDirector {
         for (int s = -1; s <= 1; s += 2) {
             Vector ray = rotateY(f, half * s);
             for (double d = 1.0; d <= radius; d += 0.7) {
-                world.spawnParticle(Particle.DUST, base.clone().add(ray.clone().multiply(d)), 1, 0, 0, 0, 0, edge);
+                de.aetherion.bossengine.fx.ShapeFx.puff(base.clone().add(ray.clone().multiply(d)), Particle.DUST, 1, Math.max(0, 0), edge);
             }
         }
     }
@@ -4298,22 +4316,29 @@ final class HollowSunDirector {
         double step = spacing / Math.max(0.5, radius);
         for (double a = -half; a <= half + 1.0E-4; a += step) {
             Vector ray = rotateY(f, a);
-            world.spawnParticle(Particle.DUST, base.clone().add(ray.multiply(radius)), 1, 0, 0, 0, 0, dust);
+            de.aetherion.bossengine.fx.ShapeFx.puff(base.clone().add(ray.multiply(radius)), Particle.DUST, 1, Math.max(0, 0), dust);
         }
     }
 
     private void sweepArc(Location chest, Vector f, double radius, Color color) {
         World world = chest.getWorld();
+        if (de.aetherion.core.api.Vfx.active()) {
+            // the sweep reads as one burning crescent in front of him, renewed while it is held
+            if (org.bukkit.Bukkit.getCurrentTick() % 4 == 0) {
+                de.aetherion.core.api.Vfx.slash(chest.clone().add(f.clone().normalize().multiply(radius * 0.55)), color, radius * 1.7, 0f);
+            }
+            return;
+        }
         Particle.DustOptions edge = new Particle.DustOptions(color, 1.2f);
         Particle.DustOptions core = new Particle.DustOptions(HOT, 0.6f);
         for (int deg = 80; deg >= -80; deg -= 10) {
             Vector ray = rotateY(f, Math.toRadians(deg));
             Location point = chest.clone().add(ray.clone().multiply(radius));
-            world.spawnParticle(Particle.DUST, point, 1, 0, 0, 0, 0, edge);
-            world.spawnParticle(Particle.DUST, chest.clone().add(ray.multiply(radius - 0.25)), 1, 0, 0, 0, 0, core);
+            de.aetherion.bossengine.fx.ShapeFx.puff(point, Particle.DUST, 1, Math.max(0, 0), edge);
+            de.aetherion.bossengine.fx.ShapeFx.puff(chest.clone().add(ray.multiply(radius - 0.25)), Particle.DUST, 1, Math.max(0, 0), core);
             if (deg % 30 == 0) {
-                world.spawnParticle(Particle.SWEEP_ATTACK, point, 1, 0, 0, 0, 0);
-                world.spawnParticle(Particle.FLAME, point, 1, 0.05, 0.05, 0.05, 0.01);
+                de.aetherion.bossengine.fx.ShapeFx.puff(point, Particle.SWEEP_ATTACK, 1, Math.max(0, 0), null);
+                de.aetherion.bossengine.fx.ShapeFx.puff(point, Particle.FLAME, 1, Math.max(0.05, 0.05), null);
             }
         }
     }
@@ -4335,7 +4360,7 @@ final class HollowSunDirector {
         int points = Math.max(10, (int) Math.ceil(Math.PI * 2 * radius / 0.5));
         for (int i = 0; i < points; i++) {
             double a = Math.PI * 2 * i / points;
-            world.spawnParticle(Particle.DUST, center.clone().add(Math.cos(a) * radius, 0, Math.sin(a) * radius), 1, 0, 0, 0, 0, dust);
+            de.aetherion.bossengine.fx.ShapeFx.puff(center.clone().add(Math.cos(a) * radius, 0, Math.sin(a) * radius), Particle.DUST, 1, Math.max(0, 0), dust);
         }
     }
 
@@ -4347,12 +4372,15 @@ final class HollowSunDirector {
         int points = Math.max(10, (int) Math.ceil(Math.PI * 2 * radius / 0.4));
         for (int i = 0; i < points; i++) {
             double a = Math.PI * 2 * i / points;
-            world.spawnParticle(Particle.DUST, center.clone().add(Math.cos(a) * radius, 0, Math.sin(a) * radius), 1, 0, 0, 0, 0, dust, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(center.clone().add(Math.cos(a) * radius, 0, Math.sin(a) * radius), Particle.DUST, 1, Math.max(0, 0), dust);
         }
     }
 
     private static void ringArc(Location center, double radius, double angle0, double from, double to,
                                 Particle.DustOptions dust, double y) {
+        if (to > from && de.aetherion.bossengine.fx.ShapeFx.ring(center.clone().add(0, y, 0), dust.getColor(), radius)) {
+            return;
+        }
         World world = center.getWorld();
         if (world == null || to <= from) {
             return;
@@ -4362,34 +4390,44 @@ final class HollowSunDirector {
         int last = (int) Math.ceil(points * Math.min(1.0, to));
         for (int i = first; i < last; i++) {
             double a = angle0 + Math.PI * 2 * i / points;
-            world.spawnParticle(Particle.DUST, center.clone().add(Math.cos(a) * radius, y, Math.sin(a) * radius), 1, 0, 0, 0, 0, dust);
+            de.aetherion.bossengine.fx.ShapeFx.puff(center.clone().add(Math.cos(a) * radius, y, Math.sin(a) * radius), Particle.DUST, 1, Math.max(0, 0), dust);
         }
     }
 
     private static void line(World world, Location a, Location b, Color color, float size, double step) {
+        if (de.aetherion.core.api.Vfx.line("hs|" + Math.round(a.getX() * 2) + "," + Math.round(a.getY() * 2) + "," + Math.round(a.getZ() * 2) + "|" + Math.round(b.getX() * 2) + "," + Math.round(b.getY() * 2) + "," + Math.round(b.getZ() * 2) + "|" + color.asRGB(), a, b, color, Math.max(0.12, size * 0.14))) {
+            return;
+        }
         Particle.DustOptions dust = new Particle.DustOptions(color, size);
         double len = a.distance(b);
         if (len < 0.05) {
             return;
         }
         for (double d = 0.0; d <= len; d += step) {
-            world.spawnParticle(Particle.DUST, lerp(a, b, d / len), 1, 0, 0, 0, 0, dust);
+            de.aetherion.bossengine.fx.ShapeFx.puff(lerp(a, b, d / len), Particle.DUST, 1, Math.max(0, 0), dust);
         }
     }
 
     private static void lineForce(World world, Location a, Location b, Color color, float size, double step) {
+        if (de.aetherion.core.api.Vfx.line("hs|" + Math.round(a.getX() * 2) + "," + Math.round(a.getY() * 2) + "," + Math.round(a.getZ() * 2) + "|" + Math.round(b.getX() * 2) + "," + Math.round(b.getY() * 2) + "," + Math.round(b.getZ() * 2) + "|" + color.asRGB(), a, b, color, Math.max(0.12, size * 0.14))) {
+            return;
+        }
         Particle.DustOptions dust = new Particle.DustOptions(color, size);
         double len = a.distance(b);
         if (len < 0.05) {
             return;
         }
         for (double d = 0.0; d <= len; d += step) {
-            world.spawnParticle(Particle.DUST, lerp(a, b, d / len), 1, 0, 0, 0, 0, dust, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(lerp(a, b, d / len), Particle.DUST, 1, Math.max(0, 0), dust);
         }
     }
 
     /** White-hot core with a colored sheath: the look of anything moving at star speed. */
     private static void streak(World world, Location a, Location b, Color color, boolean force) {
+        if (a != null && b != null && a.getWorld() == b.getWorld() && de.aetherion.core.api.Vfx.line("hs|" + Math.round(a.getX() * 2) + "," + Math.round(a.getY() * 2) + "," + Math.round(a.getZ() * 2) + "|" + Math.round(b.getX() * 2) + "," + Math.round(b.getY() * 2) + "," + Math.round(b.getZ() * 2) + "|" + color.asRGB(), a, b, color, 0.42)) {
+            de.aetherion.core.api.Vfx.line("hs|" + Math.round(a.getX() * 2) + "," + Math.round(a.getY() * 2) + "," + Math.round(a.getZ() * 2) + "|" + Math.round(b.getX() * 2) + "," + Math.round(b.getY() * 2) + "," + Math.round(b.getZ() * 2) + "|" + color.asRGB() + ":core", a, b, HOT, 0.16);
+            return;
+        }
         if (a == null || b == null || a.getWorld() != b.getWorld()) {
             return;
         }
@@ -4399,9 +4437,9 @@ final class HollowSunDirector {
         int index = 0;
         for (double d = 0.0; d <= len; d += 0.3, index++) {
             Location p = lerp(a, b, len < 0.01 ? 0 : d / len);
-            world.spawnParticle(Particle.DUST, p, 1, 0, 0, 0, 0, core, force);
+            de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.DUST, 1, Math.max(0, 0), core);
             if (index % 2 == 0) {
-                world.spawnParticle(Particle.DUST, p, 1, 0.08, 0.08, 0.08, 0, sheath, force);
+                de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.DUST, 1, Math.max(0.08, 0.08), sheath);
             }
         }
     }
@@ -4409,21 +4447,30 @@ final class HollowSunDirector {
     private static void burst(World world, Location at, Particle particle, int count, double speed) {
         for (int i = 0; i < count; i++) {
             Vector dir = randomUnit();
-            world.spawnParticle(particle, at, 0, dir.getX(), dir.getY(), dir.getZ(), speed, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at, particle, 0, Math.max(dir.getX(), dir.getZ()), null);
         }
     }
 
     private static void converge(World world, Location at, double radius, Particle particle, int count) {
+        if (de.aetherion.core.api.Vfx.active()) {
+            if (java.util.concurrent.ThreadLocalRandom.current().nextInt(5) == 0) {
+                de.aetherion.core.api.Vfx.orb(at, null, de.aetherion.bossengine.fx.ShapeFx.tint(particle), Math.max(0.6, radius * 0.45), 8);
+            }
+            return;
+        }
         for (int i = 0; i < count; i++) {
             Vector dir = randomUnit();
             Location from = at.clone().add(dir.clone().multiply(radius));
-            world.spawnParticle(particle, from, 0, -dir.getX(), -dir.getY(), -dir.getZ(), radius * 0.09);
+            de.aetherion.bossengine.fx.ShapeFx.puff(from, particle, 0, Math.max(-dir.getX(), -dir.getZ()), null);
         }
     }
 
     private static void floorBurst(World world, Location at, int count, double spread) {
+        if (de.aetherion.core.api.Vfx.chips(at.clone().add(0, 0.3, 0), floorData(at), Math.max(3, Math.min(10, count / 4)), Math.max(0.8, spread * 1.4))) {
+            return;
+        }
         BlockData data = floorData(at);
-        world.spawnParticle(Particle.BLOCK, at.clone().add(0, 0.3, 0), count, spread, 0.3, spread, 0.2, data);
+        de.aetherion.bossengine.fx.ShapeFx.puff(at.clone().add(0, 0.3, 0), Particle.BLOCK, count, Math.max(spread, spread), data);
     }
 
     private static BlockData floorData(Location at) {

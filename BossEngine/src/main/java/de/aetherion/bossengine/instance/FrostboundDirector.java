@@ -218,8 +218,8 @@ final class FrostboundDirector {
         world.playSound(from, Sound.ITEM_FIRECHARGE_USE, 1.15f, 0.85f);
         world.playSound(from, Sound.ENTITY_BLAZE_SHOOT, 0.85f, 0.7f);
         world.playSound(from, Sound.BLOCK_FIRE_AMBIENT, 0.8f, 1.25f);
-        world.spawnParticle(Particle.FLAME, from, 28, 0.25, 0.25, 0.25, 0.06);
-        world.spawnParticle(Particle.LAVA, from, 8, 0.2, 0.2, 0.2, 0.02);
+        de.aetherion.bossengine.fx.ShapeFx.puff(from, Particle.FLAME, 28, Math.max(0.25, 0.25), null);
+        de.aetherion.bossengine.fx.ShapeFx.puff(from, Particle.LAVA, 8, Math.max(0.2, 0.2), null);
         player.sendActionBar(net.kyori.adventure.text.Component.text("§cHearth launched. Don't miss."));
         player.sendMessage(TextUtil.component("&7Hearth's in the air. Two hits. Clock's running."));
         return true;
@@ -235,8 +235,8 @@ final class FrostboundDirector {
         if (world != null) {
             world.playSound(at, Sound.BLOCK_GLASS_BREAK, 0.85f, 1.55f);
             world.playSound(at, Sound.ENTITY_PLAYER_HURT_FREEZE, 0.7f, 1.2f);
-            world.spawnParticle(Particle.SNOWFLAKE, at, 16, 0.5, 0.4, 0.5, 0.03);
-            world.spawnParticle(Particle.SNOWFLAKE, at, 8, 0.3, 0.25, 0.3, 0.02);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.SNOWFLAKE, 16, Math.max(0.5, 0.5), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.SNOWFLAKE, 8, Math.max(0.3, 0.3), null);
         }
         player.sendActionBar(net.kyori.adventure.text.Component.text("§bEiskalt."));
         double power = Math.max(90.0, incoming * 0.85);
@@ -261,11 +261,11 @@ final class FrostboundDirector {
             world.playSound(at, Sound.ENTITY_GENERIC_BURN, 1.15f, 0.65f);
             world.playSound(at, Sound.ENTITY_BLAZE_HURT, 0.85f, 0.55f);
             world.playSound(at, Sound.BLOCK_FIRE_EXTINGUISH, 0.9f, 0.55f);
-            world.spawnParticle(Particle.EXPLOSION, at, 3, 0.25, 0.2, 0.25, 0);
-            world.spawnParticle(Particle.FLAME, at, 36, 0.7, 0.55, 0.7, 0.08);
-            world.spawnParticle(Particle.LAVA, at, 22, 0.55, 0.45, 0.55, 0.04);
-            world.spawnParticle(Particle.SMOKE, at, 18, 0.45, 0.35, 0.45, 0.03);
-            world.spawnParticle(Particle.SOUL_FIRE_FLAME, at, 10, 0.35, 0.3, 0.35, 0.02);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.EXPLOSION, 3, Math.max(0.25, 0.25), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.FLAME, 36, Math.max(0.7, 0.7), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.LAVA, 22, Math.max(0.55, 0.55), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.SMOKE, 18, Math.max(0.45, 0.45), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.SOUL_FIRE_FLAME, 10, Math.max(0.35, 0.35), null);
         }
         hearthHits++;
         say("&b&lThe Frostbound&7: &f" + hearthHits + "/" + HEARTHS_NEEDED + " &7hearths. Ice hates this.");
@@ -320,7 +320,7 @@ final class FrostboundDirector {
             shard.teleport(at);
         }
         if (world != null) {
-            world.spawnParticle(Particle.SNOWFLAKE, core, brutal ? 10 : 6, radius * 0.4, 0.4, radius * 0.4, 0.01);
+            de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.SNOWFLAKE, brutal ? 10 : 6, Math.max(radius * 0.4, radius * 0.4), null);
             if (orbitTicks % 8 == 0) {
                 world.playSound(core, Sound.BLOCK_GLASS_HIT, 0.55f + (float) progress * 0.5f, 0.7f + (float) progress);
             }
@@ -365,8 +365,8 @@ final class FrostboundDirector {
         if (world != null) {
             world.playSound(core, Sound.BLOCK_GLASS_BREAK, 1.35f, 0.45f);
             world.playSound(core, Sound.ENTITY_WITHER_SHOOT, 0.55f, 1.4f);
-            world.spawnParticle(Particle.SNOWFLAKE, core, 30, 1.2, 0.6, 1.2, 0.04);
-            world.spawnParticle(Particle.SNOWFLAKE, core, 18, 0.8, 0.4, 0.8, 0.08);
+            de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.SNOWFLAKE, 30, Math.max(1.2, 1.2), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.SNOWFLAKE, 18, Math.max(0.8, 0.8), null);
         }
         Player target = nearestPlayer(entity, 28);
         for (Entity shard : shards) {
@@ -416,8 +416,8 @@ final class FrostboundDirector {
         Location core = entity.getLocation().clone().add(0, entity.getHeight() * 0.5, 0);
         World world = core.getWorld();
         if (world != null && hearthTicks % 8 == 0) {
-            world.spawnParticle(Particle.SNOWFLAKE, core, 8, 0.8, 0.6, 0.8, 0.01);
-            world.spawnParticle(Particle.END_ROD, core, 2, 0.3, 0.4, 0.3, 0.01);
+            de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.SNOWFLAKE, 8, Math.max(0.8, 0.8), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.END_ROD, 2, Math.max(0.3, 0.3), null);
         }
         int left = Math.max(0, HEARTH_WINDOW - hearthTicks);
         if (hearthTicks % 20 == 0) {
@@ -463,7 +463,7 @@ final class FrostboundDirector {
         if (world != null) {
             world.playSound(entity.getLocation(), Sound.BLOCK_BEACON_POWER_SELECT, 1.1f, 0.55f);
             world.playSound(entity.getLocation(), Sound.ENTITY_PLAYER_HURT_FREEZE, 1.0f, 0.5f);
-            world.spawnParticle(Particle.SNOWFLAKE, entity.getLocation().add(0, 1.2, 0), 40, 1.1, 0.8, 1.1, 0.04);
+            de.aetherion.bossengine.fx.ShapeFx.puff(entity.getLocation().add(0, 1.2, 0), Particle.SNOWFLAKE, 40, Math.max(1.1, 1.1), null);
         }
         startHearthWindow(entity);
     }
@@ -567,8 +567,8 @@ final class FrostboundDirector {
         hearths.add(stand);
         hearths.add(flame);
         hearths.add(hit);
-        world.spawnParticle(Particle.FLAME, location.clone().add(0, 0.7, 0), 22, 0.25, 0.3, 0.25, 0.03);
-        world.spawnParticle(Particle.LAVA, location.clone().add(0, 0.5, 0), 6, 0.15, 0.2, 0.15, 0.01);
+        de.aetherion.bossengine.fx.ShapeFx.puff(location.clone().add(0, 0.7, 0), Particle.FLAME, 22, Math.max(0.25, 0.25), null);
+        de.aetherion.bossengine.fx.ShapeFx.puff(location.clone().add(0, 0.5, 0), Particle.LAVA, 6, Math.max(0.15, 0.15), null);
         world.playSound(location, Sound.ITEM_FIRECHARGE_USE, 0.7f, 0.65f);
         world.playSound(location, Sound.BLOCK_FIRE_AMBIENT, 0.55f, 1.15f);
     }
@@ -595,10 +595,10 @@ final class FrostboundDirector {
                 continue;
             }
             Location at = stand.getLocation().clone().add(0, 0.75, 0);
-            world.spawnParticle(Particle.FLAME, at, 5, 0.18, 0.22, 0.18, 0.012);
-            world.spawnParticle(Particle.SOUL_FIRE_FLAME, at, 2, 0.12, 0.16, 0.12, 0.008);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.FLAME, 5, Math.max(0.18, 0.18), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.SOUL_FIRE_FLAME, 2, Math.max(0.12, 0.12), null);
             if (hearthTicks % 8 == 0) {
-                world.spawnParticle(Particle.LAVA, at, 1, 0.08, 0.08, 0.08, 0);
+                de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.LAVA, 1, Math.max(0.08, 0.08), null);
             }
         }
     }
@@ -623,10 +623,10 @@ final class FrostboundDirector {
             bolt.setVelocity(homing);
             Location at = bolt.getLocation();
             World world = bolt.getWorld();
-            world.spawnParticle(Particle.FLAME, at, 10, 0.16, 0.16, 0.16, 0.03);
-            world.spawnParticle(Particle.SOUL_FIRE_FLAME, at, 4, 0.1, 0.1, 0.1, 0.015);
-            world.spawnParticle(Particle.LAVA, at, 2, 0.08, 0.08, 0.08, 0);
-            world.spawnParticle(Particle.SMOKE, at, 3, 0.1, 0.1, 0.1, 0.01);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.FLAME, 10, Math.max(0.16, 0.16), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.SOUL_FIRE_FLAME, 4, Math.max(0.1, 0.1), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.LAVA, 2, Math.max(0.08, 0.08), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.SMOKE, 3, Math.max(0.1, 0.1), null);
         }
     }
 
@@ -679,9 +679,9 @@ final class FrostboundDirector {
         World world = hold.getWorld();
         Location core = hold.clone().add(0, Math.max(0.2, (body ? entity.getHeight() : 1.8) * 0.35), 0);
         if (world != null) {
-            world.spawnParticle(Particle.DRIPPING_WATER, core, 8, 0.35, 0.25, 0.35, 0);
-            world.spawnParticle(Particle.CLOUD, core, 4, 0.3, 0.15, 0.3, 0.01);
-            world.spawnParticle(Particle.SNOWFLAKE, core, 6, 0.5, 0.3, 0.5, 0.01);
+            de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.DRIPPING_WATER, 8, Math.max(0.35, 0.35), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.CLOUD, 4, Math.max(0.3, 0.3), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.SNOWFLAKE, 6, Math.max(0.5, 0.5), null);
             if (deathTicks % 7 == 0) {
                 world.playSound(core, Sound.BLOCK_LAVA_EXTINGUISH, 0.45f, 0.8f + (float) t);
                 world.playSound(core, Sound.BLOCK_SNOW_BREAK, 0.5f, 0.7f);
@@ -693,8 +693,8 @@ final class FrostboundDirector {
             if (world != null) {
                 world.playSound(hold, Sound.ENTITY_GENERIC_SPLASH, 1.2f, 0.7f);
                 world.playSound(hold, Sound.BLOCK_WATER_AMBIENT, 1.0f, 1.1f);
-                world.spawnParticle(Particle.CLOUD, hold.clone().add(0, 0.2, 0), 24, 0.5, 0.1, 0.5, 0.08);
-                world.spawnParticle(Particle.CLOUD, hold, 16, 0.6, 0.2, 0.6, 0.02);
+                de.aetherion.bossengine.fx.ShapeFx.puff(hold.clone().add(0, 0.2, 0), Particle.CLOUD, 24, Math.max(0.5, 0.5), null);
+                de.aetherion.bossengine.fx.ShapeFx.puff(hold, Particle.CLOUD, 16, Math.max(0.6, 0.6), null);
             }
             clearDress();
             return true;

@@ -60,11 +60,11 @@ public final class FakeDestruction {
                 de.aetherion.core.api.Vfx.flame(at.clone().add(Math.cos(a) * 1.1, 0.05, Math.sin(a) * 1.1), org.bukkit.Color.fromRGB(0xFF7A2A), 1.1, 24);
             }
         } else {
-            world.spawnParticle(Particle.EXPLOSION_EMITTER, at, 1, 0, 0, 0, 0);
-            world.spawnParticle(Particle.EXPLOSION, at.clone().add(0, 0.4, 0), 3, 0.35, 0.2, 0.35, 0);
-            world.spawnParticle(Particle.LAVA, at, 18, 0.55, 0.2, 0.55, 0);
-            world.spawnParticle(Particle.FLAME, at, 28, 0.7, 0.35, 0.7, 0.04);
-            world.spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, at.clone().add(0, 0.4, 0), 8, 0.45, 0.2, 0.45, 0.01);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.EXPLOSION_EMITTER, 1, Math.max(0, 0), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at.clone().add(0, 0.4, 0), Particle.EXPLOSION, 3, Math.max(0.35, 0.35), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.LAVA, 18, Math.max(0.55, 0.55), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.FLAME, 28, Math.max(0.7, 0.7), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at.clone().add(0, 0.4, 0), Particle.CAMPFIRE_COSY_SMOKE, 8, Math.max(0.45, 0.45), null);
         }
         blockBurst(world, at, Material.MAGMA_BLOCK, 22);
         blockBurst(world, at, Material.NETHERRACK, 12);
@@ -111,9 +111,9 @@ public final class FakeDestruction {
         if (de.aetherion.core.api.Vfx.burst(at.clone().add(0, 0.5, 0), org.bukkit.Color.fromRGB(0xFFD9A0), 3.2, 11)) {
             de.aetherion.core.api.Vfx.wave(at.clone().add(0, 0.05, 0), org.bukkit.Color.fromRGB(0xD9D2C5), 3.4, 13);
         } else {
-            world.spawnParticle(Particle.EXPLOSION_EMITTER, at, 1, 0, 0, 0, 0);
-            world.spawnParticle(Particle.EXPLOSION, at.clone().add(0, 0.25, 0), 2, 0.25, 0.1, 0.25, 0);
-            world.spawnParticle(Particle.CLOUD, at, 10, 0.6, 0.2, 0.6, 0.03);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.EXPLOSION_EMITTER, 1, Math.max(0, 0), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at.clone().add(0, 0.25, 0), Particle.EXPLOSION, 2, Math.max(0.25, 0.25), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.CLOUD, 10, Math.max(0.6, 0.6), null);
         }
         blockBurst(world, at, used[0], 18);
         T2Mechanics.runMeteorBoom(() -> world.createExplosion(at, 2.2f, false, false, instance.getEntity()));
@@ -250,10 +250,10 @@ public final class FakeDestruction {
             return;
         }
         try {
-            world.spawnParticle(Particle.BLOCK, at, count, 0.55, 0.25, 0.55, 0.18, data);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.BLOCK, count, Math.max(0.55, 0.55), data);
         } catch (Throwable ignored) {
             try {
-                world.spawnParticle(Particle.FALLING_DUST, at, Math.max(6, count / 2), 0.4, 0.2, 0.4, 0.02, data);
+                de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.FALLING_DUST, Math.max(6, count / 2), Math.max(0.4, 0.4), data);
             } catch (Throwable ignoredToo) {
             }
         }

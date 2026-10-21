@@ -287,7 +287,7 @@ public final class SaintStage {
             Location l = at(last.x(), last.y(), last.z());
             world.playSound(l, Sound.BLOCK_WOOD_PLACE, SoundCategory.BLOCKS, 1.4f, 0.6f + (float) Math.random() * 0.3f);
             world.playSound(l, Sound.BLOCK_CHAIN_PLACE, SoundCategory.BLOCKS, 0.7f, 0.7f);
-            world.spawnParticle(Particle.CLOUD, l.add(0.5, 1.0, 0.5), 3, 0.4, 0.2, 0.4, 0.01);
+            de.aetherion.bossengine.fx.ShapeFx.puff(l.add(0.5, 1.0, 0.5), Particle.CLOUD, 3, Math.max(0.4, 0.4), null);
         }
         if (raiseCursor >= layout.size()) {
             built = true;
@@ -400,7 +400,7 @@ public final class SaintStage {
             if (lastBlock != null) {
                 Location l = lastBlock.getLocation().add(0.5, 0.5, 0.5);
                 world.playSound(l, Sound.BLOCK_WOOD_BREAK, SoundCategory.BLOCKS, 1.2f, 0.55f);
-                world.spawnParticle(Particle.BLOCK, l, 12, 0.6, 0.6, 0.6, 0, Material.DARK_OAK_PLANKS.createBlockData());
+                de.aetherion.bossengine.fx.ShapeFx.puff(l, Particle.BLOCK, 12, Math.max(0.6, 0.6), Material.DARK_OAK_PLANKS.createBlockData());
             }
             if (cursor[0] < 0) {
                 task.cancel();

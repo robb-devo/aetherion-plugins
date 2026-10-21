@@ -725,7 +725,7 @@ final class AshenSovereignDirector {
             world.playSound(center, Sound.ENTITY_ENDER_DRAGON_GROWL, 2.0f, 0.55f);
         }
         if (t % 2 == 0) {
-            world.spawnParticle(Particle.WHITE_ASH, center.clone().add(0, 8, 0), 26, arenaRadius * 0.6, 6, arenaRadius * 0.6, 0.01, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(center.clone().add(0, 8, 0), Particle.WHITE_ASH, 26, Math.max(arenaRadius * 0.6, arenaRadius * 0.6), null);
         }
         if (t <= INTRO_LAND) {
             double u = easeInOut(t / (double) INTRO_LAND);
@@ -754,8 +754,8 @@ final class AshenSovereignDirector {
                 world.playSound(at, Sound.ENTITY_ENDER_DRAGON_FLAP, 1.6f, 0.8f);
             }
             if (t > 30) {
-                world.spawnParticle(Particle.FLAME, partPos(6), 2, 0.6, 0.2, 0.6, 0.01, null, true);
-                world.spawnParticle(Particle.FLAME, partPos(7), 2, 0.6, 0.2, 0.6, 0.01, null, true);
+                de.aetherion.bossengine.fx.ShapeFx.puff(partPos(6), Particle.FLAME, 2, Math.max(0.6, 0.6), null);
+                de.aetherion.bossengine.fx.ShapeFx.puff(partPos(7), Particle.FLAME, 2, Math.max(0.6, 0.6), null);
             }
         }
         if (t == INTRO_LAND) {
@@ -763,9 +763,9 @@ final class AshenSovereignDirector {
             Location land = introPerch();
             // Hard snap onto the Throne floor — never leave the body mid-air from a soft HOVER seek.
             snapBody(entity, land, heading);
-            world.spawnParticle(Particle.EXPLOSION_EMITTER, land.clone().add(0, 0.5, 0), 1, 0, 0, 0, 0, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(land.clone().add(0, 0.5, 0), Particle.EXPLOSION_EMITTER, 1, Math.max(0, 0), null);
             floorBurst(world, land, 90, 2.4);
-            world.spawnParticle(Particle.LAVA, land.clone().add(0, 0.4, 0), 30, 2.0, 0.3, 2.0, 0, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(land.clone().add(0, 0.4, 0), Particle.LAVA, 30, Math.max(2.0, 2.0), null);
             world.playSound(land, Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 2.0f, 0.5f);
             world.playSound(land, Sound.ENTITY_GENERIC_EXPLODE, 1.8f, 0.55f);
             world.playSound(land, Sound.BLOCK_ANVIL_LAND, 1.0f, 0.5f);
@@ -799,7 +799,7 @@ final class AshenSovereignDirector {
             world.playSound(head, Sound.ENTITY_ENDER_DRAGON_GROWL, 2.0f, 0.55f);
             world.playSound(head, Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 1.4f, 0.6f);
             burst(world, head, Particle.FLAME, 60, 0.4);
-            world.spawnParticle(Particle.FLASH, heartPos(), 1, 0, 0, 0, 0, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(heartPos(), Particle.FLASH, 1, Math.max(0, 0), null);
             heartBoost = 1.0;
         }
         if (t == 80) {
@@ -1188,12 +1188,12 @@ final class AshenSovereignDirector {
             Location head = headPos();
             for (int i = 1; i <= 5; i++) {
                 Location q = lerp(head, g, i / 5.0);
-                world.spawnParticle(Particle.FLAME, q, 2, 0.25, 0.25, 0.25, 0.02, null, true);
+                de.aetherion.bossengine.fx.ShapeFx.puff(q, Particle.FLAME, 2, Math.max(0.25, 0.25), null);
             }
-            world.spawnParticle(Particle.FLAME, g.clone().add(0, 0.3, 0), 8, 1.2, 0.2, 1.2, 0.04, null, true);
-            world.spawnParticle(Particle.LARGE_SMOKE, g.clone().add(0, 0.8, 0), 2, 0.8, 0.4, 0.8, 0.02);
+            de.aetherion.bossengine.fx.ShapeFx.puff(g.clone().add(0, 0.3, 0), Particle.FLAME, 8, Math.max(1.2, 1.2), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(g.clone().add(0, 0.8, 0), Particle.LARGE_SMOKE, 2, Math.max(0.8, 0.8), null);
             if (p % 2 == 0) {
-                world.spawnParticle(Particle.LAVA, g, 1, 0.8, 0.1, 0.8, 0);
+                de.aetherion.bossengine.fx.ShapeFx.puff(g, Particle.LAVA, 1, Math.max(0.8, 0.8), null);
             }
             double traveled = u * laneLen;
             if (traveled - lastBurnAt >= 1.4) {
@@ -1275,7 +1275,7 @@ final class AshenSovereignDirector {
         if (actionTick % 12 == 0) {
             World world = center.getWorld();
             world.playSound(pos, Sound.ENTITY_ENDER_DRAGON_FLAP, 1.4f, 0.7f);
-            world.spawnParticle(Particle.WHITE_ASH, pos.clone().add(0, -1, 0), 30, 4.0, 1.0, 4.0, 0.02, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(pos.clone().add(0, -1, 0), Particle.WHITE_ASH, 30, Math.max(4.0, 4.0), null);
         }
         if (actionTick >= windup) {
             endMove();
@@ -1338,7 +1338,7 @@ final class AshenSovereignDirector {
             Location before = pos.clone();
             moveBody(entity, at, flatDir(cinStart, mark, heading));
             streak(world, before.clone().add(0, 1.5, 0), at.clone().add(0, 1.5, 0), form == Form.UNCHAINED ? EMBER : ROYAL, true);
-            world.spawnParticle(Particle.FLAME, at.clone().add(0, 1.5, 0), 6, 1.2, 0.6, 1.2, 0.03, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at.clone().add(0, 1.5, 0), Particle.FLAME, 6, Math.max(1.2, 1.2), null);
             if (t == windup + strobe + dive) {
                 talonImpact(entity, form);
                 start(Move.LANDED, null);
@@ -1352,9 +1352,9 @@ final class AshenSovereignDirector {
         stopWhoosh();
         World world = center.getWorld();
         Location mid = mark.clone().add(0, 0.5, 0);
-        world.spawnParticle(Particle.EXPLOSION_EMITTER, mid, 1, 0, 0, 0, 0, null, true);
+        de.aetherion.bossengine.fx.ShapeFx.puff(mid, Particle.EXPLOSION_EMITTER, 1, Math.max(0, 0), null);
         floorBurst(world, mark, 70, 1.8);
-        world.spawnParticle(Particle.LAVA, mid, 24, 1.6, 0.3, 1.6, 0, null, true);
+        de.aetherion.bossengine.fx.ShapeFx.puff(mid, Particle.LAVA, 24, Math.max(1.6, 1.6), null);
         burst(world, mid, Particle.FLAME, 40, 0.35);
         world.playSound(mark, Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 2.0f, 0.55f);
         world.playSound(mark, Sound.ENTITY_GENERIC_EXPLODE, 1.6f, 0.6f);
@@ -1391,7 +1391,7 @@ final class AshenSovereignDirector {
         }
         World world = center.getWorld();
         if (actionTick % 4 == 0) {
-            world.spawnParticle(Particle.SMOKE, headPos(), 3, 0.2, 0.2, 0.2, 0.02);
+            de.aetherion.bossengine.fx.ShapeFx.puff(headPos(), Particle.SMOKE, 3, Math.max(0.2, 0.2), null);
         }
         if (actionTick == 14 && sweepCd <= 0) {
             for (Player player : fighters()) {
@@ -1415,7 +1415,7 @@ final class AshenSovereignDirector {
         world.playSound(pos, Sound.ITEM_ELYTRA_FLYING, 0.5f, 1.4f);
         ringForce(world, ground(pos).add(0, 0.2, 0), 6.5, ASH, 1.6f);
         floorBurst(world, pos, 50, 3.0);
-        world.spawnParticle(Particle.WHITE_ASH, pos, 60, 4, 0.6, 4, 0.05, null, true);
+        de.aetherion.bossengine.fx.ShapeFx.puff(pos, Particle.WHITE_ASH, 60, Math.max(4, 4), null);
         for (Player player : fighters()) {
             Location pl = player.getLocation();
             if (horizontal(pl, pos) <= 7.0) {
@@ -1495,7 +1495,7 @@ final class AshenSovereignDirector {
                 mark = ground(target.getLocation());
             }
             fly(entity, mark.clone().add(0, high, 0), 1.3, 0.3);
-            world.spawnParticle(Particle.FLAME, pos.clone().add(0, 1, 0), 8, 1.4, 0.8, 1.4, 0.04, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(pos.clone().add(0, 1, 0), Particle.FLAME, 8, Math.max(1.4, 1.4), null);
             if (t % 2 == 0) {
                 ring(world, mark.clone().add(0, 0.12, 0), 6.5, CRIMSON, 1.5f);
                 ring(world, mark.clone().add(0, 0.12, 0), 6.5 * (1.0 - t / 28.0) + 0.3, GOLD, 1.1f);
@@ -1530,8 +1530,8 @@ final class AshenSovereignDirector {
             Location at = lerp(cinStart, mark, u * u * u);
             moveBody(entity, at, heading);
             streak(world, before.clone().add(0, 1.5, 0), at.clone().add(0, 1.5, 0), EMBER, true);
-            world.spawnParticle(Particle.FLAME, at.clone().add(0, 1.5, 0), 20, 2.2, 1.2, 2.2, 0.06, null, true);
-            world.spawnParticle(Particle.LARGE_SMOKE, at.clone().add(0, 3, 0), 6, 1.5, 1.5, 1.5, 0.02, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at.clone().add(0, 1.5, 0), Particle.FLAME, 20, Math.max(2.2, 2.2), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at.clone().add(0, 3, 0), Particle.LARGE_SMOKE, 6, Math.max(1.5, 1.5), null);
             if (t == 50) {
                 meteorImpact(entity);
                 start(Move.LANDED, null);
@@ -1546,7 +1546,7 @@ final class AshenSovereignDirector {
         for (int i = 0; i < 6; i++) {
             Vector dir = rotateY(aim, i * Math.PI / 3);
             for (double d = 2.0; d <= 14.0; d += strength >= 1.0 ? 0.8 : 1.6) {
-                world.spawnParticle(Particle.DUST, mark.clone().add(dir.clone().multiply(d)).add(0, 0.14, 0), 1, 0, 0, 0, 0, dust);
+                de.aetherion.bossengine.fx.ShapeFx.puff(mark.clone().add(dir.clone().multiply(d)).add(0, 0.14, 0), Particle.DUST, 1, Math.max(0, 0), dust);
             }
         }
     }
@@ -1555,13 +1555,13 @@ final class AshenSovereignDirector {
         stopWhoosh();
         World world = center.getWorld();
         Location mid = mark.clone().add(0, 0.6, 0);
-        world.spawnParticle(Particle.FLASH, mid, 2, 0.6, 0.3, 0.6, 0, null, true);
+        de.aetherion.bossengine.fx.ShapeFx.puff(mid, Particle.FLASH, 2, Math.max(0.6, 0.6), null);
         for (int i = 0; i < 3; i++) {
             double a = i * Math.PI * 2 / 3;
-            world.spawnParticle(Particle.EXPLOSION_EMITTER, mid.clone().add(Math.cos(a) * 2.2, 0, Math.sin(a) * 2.2), 1, 0, 0, 0, 0, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(mid.clone().add(Math.cos(a) * 2.2, 0, Math.sin(a) * 2.2), Particle.EXPLOSION_EMITTER, 1, Math.max(0, 0), null);
         }
         floorBurst(world, mark, 100, 3.0);
-        world.spawnParticle(Particle.LAVA, mid, 40, 3.0, 0.4, 3.0, 0, null, true);
+        de.aetherion.bossengine.fx.ShapeFx.puff(mid, Particle.LAVA, 40, Math.max(3.0, 3.0), null);
         burst(world, mid, Particle.FLAME, 70, 0.55);
         world.playSound(mark, Sound.ENTITY_GENERIC_EXPLODE, 2.0f, 0.55f);
         world.playSound(mark, Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 2.0f, 0.5f);
@@ -1625,8 +1625,8 @@ final class AshenSovereignDirector {
             Vector tail = heading.clone().multiply(-1);
             for (double d = 3.0; d <= 9.0; d += 1.5) {
                 Location p = feet.clone().add(tail.clone().multiply(d)).add(0, 0.8, 0);
-                world.spawnParticle(Particle.SWEEP_ATTACK, p, 1, 0, 0, 0, 0);
-                world.spawnParticle(Particle.CRIT, p, 2, 0.2, 0.2, 0.2, 0.1);
+                de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.SWEEP_ATTACK, 1, Math.max(0, 0), null);
+                de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.CRIT, 2, Math.max(0.2, 0.2), null);
             }
             for (Player player : fighters()) {
                 Location pl = player.getLocation();
@@ -1702,12 +1702,12 @@ final class AshenSovereignDirector {
             Location far = ground(feet.clone().add(dir.clone().multiply(15.0)));
             for (int i = 1; i <= 8; i++) {
                 Location q = lerp(head, far, i / 8.0);
-                world.spawnParticle(Particle.FLAME, q, 3, 0.35 + i * 0.08, 0.3, 0.35 + i * 0.08, 0.03, null, true);
+                de.aetherion.bossengine.fx.ShapeFx.puff(q, Particle.FLAME, 3, Math.max(0.35 + i * 0.08, 0.35 + i * 0.08), null);
                 if (i % 3 == 0) {
-                    world.spawnParticle(Particle.LARGE_SMOKE, q.clone().add(0, 0.6, 0), 1, 0.3, 0.3, 0.3, 0.01);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(q.clone().add(0, 0.6, 0), Particle.LARGE_SMOKE, 1, Math.max(0.3, 0.3), null);
                 }
             }
-            world.spawnParticle(Particle.LAVA, far, 2, 1.0, 0.1, 1.0, 0);
+            de.aetherion.bossengine.fx.ShapeFx.puff(far, Particle.LAVA, 2, Math.max(1.0, 1.0), null);
             if (p % 6 == 0) {
                 double d = ThreadLocalRandom.current().nextDouble(6.0, 13.0);
                 addBurn(ground(feet.clone().add(dir.clone().multiply(d))), 1.8, 60, p % 12 == 0, false);
@@ -1734,7 +1734,7 @@ final class AshenSovereignDirector {
             return;
         }
         holdAt(entity, feet, heading, 0.0);
-        world.spawnParticle(Particle.SMOKE, headPos(), 3, 0.2, 0.2, 0.2, 0.02);
+        de.aetherion.bossengine.fx.ShapeFx.puff(headPos(), Particle.SMOKE, 3, Math.max(0.2, 0.2), null);
         if (p >= duration + 6) {
             endMove();
         }
@@ -1768,13 +1768,13 @@ final class AshenSovereignDirector {
         if (t <= 14) {
             holdAt(entity, cinStart.clone().add(0, 2.8 * easeOut(t / 14.0), 0), heading, 0.0);
             if (t % 3 == 0) {
-                world.spawnParticle(Particle.FLAME, heartPos(), 6, 0.3, 0.3, 0.3, 0.03);
+                de.aetherion.bossengine.fx.ShapeFx.puff(heartPos(), Particle.FLAME, 6, Math.max(0.3, 0.3), null);
             }
             return;
         }
         if (t == 15) {
             moveBody(entity, cinStart, heading);
-            world.spawnParticle(Particle.EXPLOSION_EMITTER, cinStart.clone().add(0, 0.5, 0), 1, 0, 0, 0, 0, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(cinStart.clone().add(0, 0.5, 0), Particle.EXPLOSION_EMITTER, 1, Math.max(0, 0), null);
             floorBurst(world, cinStart, 60, 2.0);
             world.playSound(cinStart, Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 2.0f, 0.5f);
             world.playSound(cinStart, Sound.ENTITY_GENERIC_EXPLODE, 1.4f, 0.6f);
@@ -1842,7 +1842,7 @@ final class AshenSovereignDirector {
                 Location jaw = to.clone().add(aim.clone().multiply(2.0));
                 world.playSound(jaw, Sound.ENTITY_EVOKER_FANGS_ATTACK, 1.6f, 0.6f);
                 world.playSound(jaw, Sound.ENTITY_ENDER_DRAGON_HURT, 1.2f, 0.6f);
-                world.spawnParticle(Particle.SWEEP_ATTACK, jaw.clone().add(0, 1, 0), 3, 1.0, 0.3, 1.0, 0);
+                de.aetherion.bossengine.fx.ShapeFx.puff(jaw.clone().add(0, 1, 0), Particle.SWEEP_ATTACK, 3, Math.max(1.0, 1.0), null);
                 for (Player player : fighters()) {
                     Location pl = player.getLocation();
                     if (inCone(to, aim, pl, 5.5, 55.0) && Math.abs(pl.getY() - to.getY()) < 3.0 && gate("bite", player, 20)) {
@@ -1965,7 +1965,7 @@ final class AshenSovereignDirector {
             for (int i = 0; i < CHAINS; i++) {
                 Location a = anchor(i);
                 floorBurst(world, a, 50, 1.2);
-                world.spawnParticle(Particle.REVERSE_PORTAL, a.clone().add(0, 1.2, 0), 40, 0.6, 1.2, 0.6, 0.05, null, true);
+                de.aetherion.bossengine.fx.ShapeFx.puff(a.clone().add(0, 1.2, 0), Particle.REVERSE_PORTAL, 40, Math.max(0.6, 0.6), null);
                 world.playSound(a, Sound.BLOCK_DEEPSLATE_BREAK, 1.6f, 0.5f);
                 world.playSound(a, Sound.ENTITY_WARDEN_DIG, 1.4f, 0.6f);
                 for (Player player : fighters()) {
@@ -1988,13 +1988,13 @@ final class AshenSovereignDirector {
                     world.playSound(pos, Sound.ITEM_TRIDENT_HIT, 1.8f, 0.5f);
                     world.playSound(pos, Sound.BLOCK_ANVIL_PLACE, 0.9f, 0.6f);
                     world.playSound(pos, Sound.ENTITY_ENDER_DRAGON_HURT, 1.6f, 0.6f);
-                    world.spawnParticle(Particle.ELECTRIC_SPARK, attachPoint(chain), 20, 0.3, 0.3, 0.3, 0.2, null, true);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(attachPoint(chain), Particle.ELECTRIC_SPARK, 20, Math.max(0.3, 0.3), null);
                 }
             }
         }
         if (beat(t, 96)) {
             Location land = down.clone();
-            world.spawnParticle(Particle.EXPLOSION_EMITTER, land.clone().add(0, 0.5, 0), 2, 1.0, 0, 1.0, 0, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(land.clone().add(0, 0.5, 0), Particle.EXPLOSION_EMITTER, 2, Math.max(1.0, 1.0), null);
             floorBurst(world, land, 120, 3.0);
             world.playSound(land, Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 2.0f, 0.5f);
             world.playSound(land, Sound.ENTITY_GENERIC_EXPLODE, 2.0f, 0.5f);
@@ -2051,8 +2051,8 @@ final class AshenSovereignDirector {
                         continue;
                     }
                     Location mid = lerp(chain.anchor.clone().add(0, 2.4, 0), attachPoint(chain), random.nextDouble());
-                    world.spawnParticle(Particle.ELECTRIC_SPARK, mid, 3, 0.2, 0.2, 0.2, 0.08);
-                    world.spawnParticle(Particle.FLAME, mid, 2, 0.2, 0.2, 0.2, 0.02);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(mid, Particle.ELECTRIC_SPARK, 3, Math.max(0.2, 0.2), null);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(mid, Particle.FLAME, 2, Math.max(0.2, 0.2), null);
                 }
             }
             if (t % 8 == 0) {
@@ -2073,8 +2073,8 @@ final class AshenSovereignDirector {
             Location top = sunHome.clone().add(0, 6.0, 0);
             Location low = base.clone().add(0, 3.0, 0);
             moveBody(entity, lerp(low, top, u * u), heading);
-            world.spawnParticle(Particle.FLAME, pos.clone().add(0, -1, 0), 14, 1.4, 1.4, 1.4, 0.05, null, true);
-            world.spawnParticle(Particle.LARGE_SMOKE, pos.clone().add(0, -2, 0), 4, 1.0, 1.0, 1.0, 0.02, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(pos.clone().add(0, -1, 0), Particle.FLAME, 14, Math.max(1.4, 1.4), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(pos.clone().add(0, -2, 0), Particle.LARGE_SMOKE, 4, Math.max(1.0, 1.0), null);
             if (t % 5 == 0) {
                 world.playSound(pos, Sound.ENTITY_ENDER_DRAGON_FLAP, 2.0f, 0.9f);
             }
@@ -2101,7 +2101,7 @@ final class AshenSovereignDirector {
             spawnSun(sunHome);
             world.playSound(sunHome, Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 2.0f, 0.5f);
             world.playSound(sunHome, Sound.BLOCK_BEACON_ACTIVATE, 2.0f, 0.5f);
-            world.spawnParticle(Particle.FLASH, sunHome, 2, 0.5, 0.5, 0.5, 0, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(sunHome, Particle.FLASH, 2, Math.max(0.5, 0.5), null);
         }
         if (t >= SKY_SUN && t < SKY_FALL) {
             double grow = easeOut(Math.min(1.0, (t - SKY_SUN) / 36.0));
@@ -2111,7 +2111,7 @@ final class AshenSovereignDirector {
                 world.playSound(sunHome, Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 1.8f, 0.5f + (t - SKY_SUN) * 0.008f);
                 world.playSound(center, Sound.ENTITY_WARDEN_HEARTBEAT, 1.6f, 0.6f);
             }
-            world.spawnParticle(Particle.FALLING_LAVA, sunHome, 4, 2.5, 1.5, 2.5, 0, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(sunHome, Particle.FALLING_LAVA, 4, Math.max(2.5, 2.5), null);
             converge(world, sunHome, 7.0, Particle.FLAME, 6);
         }
         if (beat(t, SKY_WARDS)) {
@@ -2131,7 +2131,7 @@ final class AshenSovereignDirector {
 
         // FALL: he dives into the sun and rides it down
         if (beat(t, SKY_FALL)) {
-            world.spawnParticle(Particle.FLASH, sunHome, 3, 1.0, 1.0, 1.0, 0, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(sunHome, Particle.FLASH, 3, Math.max(1.0, 1.0), null);
             world.playSound(sunHome, Sound.ENTITY_ENDER_DRAGON_GROWL, 2.0f, 0.5f);
             world.playSound(sunHome, Sound.ITEM_FIRECHARGE_USE, 2.0f, 0.5f);
             startWhoosh(center, 1.4f, 0.5f);
@@ -2142,12 +2142,12 @@ final class AshenSovereignDirector {
             sunPos = sunHome.clone().add(0, -(sunH - 2.5) * eased, 0);
             poseSun(1.0 + 0.6 * eased, 1);
             moveBody(entity, sunPos.clone().add(0, -1.5, 0), heading);
-            world.spawnParticle(Particle.WHITE_ASH, center.clone().add(0, 6, 0), 30, arenaRadius * 0.6, 5, arenaRadius * 0.6, 0.02, null, true);
-            world.spawnParticle(Particle.FLAME, sunPos, 12, 3.5, 3.5, 3.5, 0.08, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(center.clone().add(0, 6, 0), Particle.WHITE_ASH, 30, Math.max(arenaRadius * 0.6, arenaRadius * 0.6), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(sunPos, Particle.FLAME, 12, Math.max(3.5, 3.5), null);
             if (t % 3 == 0) {
                 double a = random.nextDouble(Math.PI * 2);
                 double r = random.nextDouble(arenaRadius * 0.8);
-                world.spawnParticle(Particle.LAVA, center.clone().add(Math.cos(a) * r, 0.2, Math.sin(a) * r), 2, 0.2, 0, 0.2, 0);
+                de.aetherion.bossengine.fx.ShapeFx.puff(center.clone().add(Math.cos(a) * r, 0.2, Math.sin(a) * r), Particle.LAVA, 2, Math.max(0.2, 0.2), null);
             }
             if (t % 6 == 0) {
                 world.playSound(center, Sound.ENTITY_WARDEN_HEARTBEAT, 1.8f, 0.5f + (float) u * 0.4f);
@@ -2163,7 +2163,7 @@ final class AshenSovereignDirector {
             Location crater = center.clone();
             if (t < 220) {
                 moveBody(entity, crater, heading);
-                world.spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, crater.clone().add(0, 1, 0), 4, 2.0, 0.5, 2.0, 0.03, null, true);
+                de.aetherion.bossengine.fx.ShapeFx.puff(crater.clone().add(0, 1, 0), Particle.CAMPFIRE_COSY_SMOKE, 4, Math.max(2.0, 2.0), null);
             } else {
                 double u = easeOut(Math.min(1.0, (t - 220) / 20.0));
                 Player near = nearest(crater, fighters());
@@ -2174,7 +2174,7 @@ final class AshenSovereignDirector {
                 if (shown != crownShown) {
                     crownShown = shown;
                     world.playSound(headPos(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 1.2f, 0.6f + shown * 0.12f);
-                    world.spawnParticle(Particle.FLAME, headPos().add(0, 1, 0), 8, 0.3, 0.3, 0.3, 0.04);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(headPos().add(0, 1, 0), Particle.FLAME, 8, Math.max(0.3, 0.3), null);
                 }
             }
             if (beat(t, 236)) {
@@ -2201,14 +2201,14 @@ final class AshenSovereignDirector {
         World world = center.getWorld();
         Location mid = center.clone().add(0, 1.0, 0);
         clearSun();
-        world.spawnParticle(Particle.FLASH, mid, 4, 2.0, 1.0, 2.0, 0, null, true);
-        world.spawnParticle(Particle.SONIC_BOOM, mid, 1, 0, 0, 0, 0, null, true);
+        de.aetherion.bossengine.fx.ShapeFx.puff(mid, Particle.FLASH, 4, Math.max(2.0, 2.0), null);
+        de.aetherion.bossengine.fx.ShapeFx.puff(mid, Particle.SONIC_BOOM, 1, Math.max(0, 0), null);
         for (int i = 0; i < 6; i++) {
             double a = i * Math.PI / 3;
-            world.spawnParticle(Particle.EXPLOSION_EMITTER, mid.clone().add(Math.cos(a) * 4.0, 0, Math.sin(a) * 4.0), 1, 0, 0, 0, 0, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(mid.clone().add(Math.cos(a) * 4.0, 0, Math.sin(a) * 4.0), Particle.EXPLOSION_EMITTER, 1, Math.max(0, 0), null);
         }
         floorBurst(world, center, 160, 4.0);
-        world.spawnParticle(Particle.LAVA, mid, 80, 5.0, 0.6, 5.0, 0, null, true);
+        de.aetherion.bossengine.fx.ShapeFx.puff(mid, Particle.LAVA, 80, Math.max(5.0, 5.0), null);
         burst(world, mid, Particle.FLAME, 120, 0.9);
         world.playSound(center, Sound.ENTITY_GENERIC_EXPLODE, 2.0f, 0.5f);
         world.playSound(center, Sound.ENTITY_WARDEN_SONIC_BOOM, 1.8f, 0.6f);
@@ -2221,7 +2221,7 @@ final class AshenSovereignDirector {
             if (inWard(pl)) {
                 player.showTitle(Title.title(TextUtil.component("&bSHELTERED"),
                         TextUtil.component("&7The Throne kept you."), titleTimes()));
-                world.spawnParticle(Particle.SOUL_FIRE_FLAME, pl.clone().add(0, 1, 0), 20, 0.4, 0.8, 0.4, 0.05);
+                de.aetherion.bossengine.fx.ShapeFx.puff(pl.clone().add(0, 1, 0), Particle.SOUL_FIRE_FLAME, 20, Math.max(0.4, 0.4), null);
                 continue;
             }
             BossHits.crush(player, entity, 115);
@@ -2231,7 +2231,7 @@ final class AshenSovereignDirector {
                     TextUtil.component("&7The Last Sky: shelter in a soul ward."), titleTimes()));
         }
         for (Location ward : wards) {
-            world.spawnParticle(Particle.SOUL_FIRE_FLAME, ward.clone().add(0, 1.5, 0), 60, WARD_R * 0.5, 1.5, WARD_R * 0.5, 0.05, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(ward.clone().add(0, 1.5, 0), Particle.SOUL_FIRE_FLAME, 60, Math.max(WARD_R * 0.5, WARD_R * 0.5), null);
             world.playSound(ward, Sound.BLOCK_RESPAWN_ANCHOR_SET_SPAWN, 1.4f, 0.8f);
         }
         ThreadLocalRandom random = ThreadLocalRandom.current();
@@ -2271,9 +2271,9 @@ final class AshenSovereignDirector {
             heartCoreMat = null;
             setBlock(heartCore, (t / 3) % 2 == 0 ? Material.SHROOMLIGHT : Material.BLACKSTONE);
             if (t % 3 == 0) {
-                world.spawnParticle(Particle.LAVA, partPos(6), 2, 0.8, 0.3, 0.8, 0);
-                world.spawnParticle(Particle.LAVA, partPos(7), 2, 0.8, 0.3, 0.8, 0);
-                world.spawnParticle(Particle.LARGE_SMOKE, partPos(2).add(0, 1, 0), 4, 1.2, 0.6, 1.2, 0.02, null, true);
+                de.aetherion.bossengine.fx.ShapeFx.puff(partPos(6), Particle.LAVA, 2, Math.max(0.8, 0.8), null);
+                de.aetherion.bossengine.fx.ShapeFx.puff(partPos(7), Particle.LAVA, 2, Math.max(0.8, 0.8), null);
+                de.aetherion.bossengine.fx.ShapeFx.puff(partPos(2).add(0, 1, 0), Particle.LARGE_SMOKE, 4, Math.max(1.2, 1.2), null);
             }
             if (t % 12 == 0) {
                 world.playSound(pos, Sound.ENTITY_WARDEN_HEARTBEAT, 1.8f, 0.6f);
@@ -2282,7 +2282,7 @@ final class AshenSovereignDirector {
         }
         if (t == 46) {
             Location heart = heartPos();
-            world.spawnParticle(Particle.FLASH, heart, 2, 0.2, 0.2, 0.2, 0, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(heart, Particle.FLASH, 2, Math.max(0.2, 0.2), null);
             burst(world, heart, Particle.FLAME, 60, 0.4);
             burst(world, heart, Particle.END_ROD, 30, 0.3);
             world.playSound(heart, Sound.BLOCK_GLASS_BREAK, 2.0f, 0.5f);
@@ -2310,8 +2310,8 @@ final class AshenSovereignDirector {
             Location before = pos.clone();
             moveBody(entity, path, face);
             streak(world, before.clone().add(0, 1.2, 0), path.clone().add(0, 1.2, 0), EMBER, true);
-            world.spawnParticle(Particle.FLAME, path.clone().add(0, 1, 0), 10, 1.5, 0.8, 1.5, 0.04, null, true);
-            world.spawnParticle(Particle.LARGE_SMOKE, path.clone().add(0, 2, 0), 3, 1.0, 1.0, 1.0, 0.02, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(path.clone().add(0, 1, 0), Particle.FLAME, 10, Math.max(1.5, 1.5), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(path.clone().add(0, 2, 0), Particle.LARGE_SMOKE, 3, Math.max(1.0, 1.0), null);
         }
         if (t == 88) {
             stopWhoosh();
@@ -2319,9 +2319,9 @@ final class AshenSovereignDirector {
             if (body) {
                 snapBody(entity, land, heading);
             }
-            world.spawnParticle(Particle.EXPLOSION_EMITTER, land.clone().add(0, 0.5, 0), 3, 2.0, 0.2, 2.0, 0, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(land.clone().add(0, 0.5, 0), Particle.EXPLOSION_EMITTER, 3, Math.max(2.0, 2.0), null);
             floorBurst(world, land, 160, 4.0);
-            world.spawnParticle(Particle.LAVA, land.clone().add(0, 0.5, 0), 40, 3.0, 0.3, 3.0, 0, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(land.clone().add(0, 0.5, 0), Particle.LAVA, 40, Math.max(3.0, 3.0), null);
             world.playSound(land, Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 2.0f, 0.45f);
             world.playSound(land, Sound.ENTITY_GENERIC_EXPLODE, 2.0f, 0.5f);
             world.playSound(land, Sound.BLOCK_ANVIL_LAND, 1.4f, 0.45f);
@@ -2349,7 +2349,7 @@ final class AshenSovereignDirector {
                 chain.pylonless = true;
                 chains.add(chain);
                 floorBurst(world, anchor, 30, 0.8);
-                world.spawnParticle(Particle.REVERSE_PORTAL, anchor.clone().add(0, 0.5, 0), 20, 0.4, 0.4, 0.4, 0.05);
+                de.aetherion.bossengine.fx.ShapeFx.puff(anchor.clone().add(0, 0.5, 0), Particle.REVERSE_PORTAL, 20, Math.max(0.4, 0.4), null);
             }
             world.playSound(restAt, Sound.ENTITY_WARDEN_EMERGE, 1.6f, 0.6f);
             shout("&8&oThe Throne&7: &fStay.");
@@ -2378,8 +2378,8 @@ final class AshenSovereignDirector {
         }
         if (t >= 100 && t < 184) {
             if (t % 3 == 0) {
-                world.spawnParticle(Particle.WHITE_ASH, restAt.clone().add(0, 2, 0), 16, 4.0, 1.5, 4.0, 0.01, null, true);
-                world.spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, restAt.clone().add(random.nextDouble(-3, 3), 1.5, random.nextDouble(-3, 3)), 1, 0.2, 0.2, 0.2, 0.02);
+                de.aetherion.bossengine.fx.ShapeFx.puff(restAt.clone().add(0, 2, 0), Particle.WHITE_ASH, 16, Math.max(4.0, 4.0), null);
+                de.aetherion.bossengine.fx.ShapeFx.puff(restAt.clone().add(random.nextDouble(-3, 3), 1.5, random.nextDouble(-3, 3)), Particle.CAMPFIRE_COSY_SMOKE, 1, Math.max(0.2, 0.2), null);
             }
         }
         if (t >= 140 && t < 184) {
@@ -2388,15 +2388,15 @@ final class AshenSovereignDirector {
             Location throne = center.clone().add(0, 3.0, 0);
             Location rise = start.clone().add(0, 3.0, 0);
             heartFloat = u < 0.35 ? lerp(start, rise, u / 0.35) : lerp(rise, throne, (u - 0.35) / 0.65);
-            world.spawnParticle(Particle.END_ROD, heartFloat, 2, 0.1, 0.1, 0.1, 0.01, null, true);
-            world.spawnParticle(Particle.FLAME, heartFloat, 1, 0.05, 0.05, 0.05, 0.01);
+            de.aetherion.bossengine.fx.ShapeFx.puff(heartFloat, Particle.END_ROD, 2, Math.max(0.1, 0.1), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(heartFloat, Particle.FLAME, 1, Math.max(0.05, 0.05), null);
             if (t % 6 == 0) {
                 world.playSound(heartFloat, Sound.BLOCK_NOTE_BLOCK_CHIME, 0.8f, 0.5f + (float) u * 0.8f);
             }
         }
         if (t == 184) {
             Location end = heartFloat != null ? heartFloat : center.clone().add(0, 3, 0);
-            world.spawnParticle(Particle.FLASH, end, 2, 0.1, 0.1, 0.1, 0, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(end, Particle.FLASH, 2, Math.max(0.1, 0.1), null);
             burst(world, end, Particle.END_ROD, 60, 0.35);
             converge(world, end, 3.0, Particle.FLAME, 30);
             world.playSound(end, Sound.BLOCK_BEACON_DEACTIVATE, 1.8f, 0.6f);
@@ -2565,13 +2565,16 @@ final class AshenSovereignDirector {
 
     /** Flat decorative ring for the eclipse corona (visual only). */
     private void tiltedAshRing(World world, Location focus, double radius, double spin) {
+        if (de.aetherion.core.api.Vfx.holdPlane(focus, Color.fromRGB(90, 20, 140), radius, new org.joml.Quaternionf().rotateY((float) spin).rotateX(0.32f))) {
+            return;
+        }
         Particle.DustOptions dust = new Particle.DustOptions(Color.fromRGB(90, 20, 140), 1.2f);
         for (int i = 0; i < 36; i++) {
             double a = spin + i * Math.PI * 2 / 36;
             Location p = focus.clone().add(Math.cos(a) * radius, Math.sin(a * 2) * 0.35, Math.sin(a) * radius);
-            world.spawnParticle(Particle.DUST, p, 1, 0, 0, 0, 0, dust, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.DUST, 1, Math.max(0, 0), dust);
             if (i % 3 == 0) {
-                world.spawnParticle(Particle.FLAME, p, 1, 0, 0, 0, 0, null, true);
+                de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.FLAME, 1, Math.max(0, 0), null);
             }
         }
     }
@@ -2652,9 +2655,8 @@ final class AshenSovereignDirector {
             Vector dir = randomUnit();
             double r = 8.0 + random.nextDouble(12.0);
             Location from = focus.clone().add(dir.clone().multiply(r));
-            world.spawnParticle(Particle.END_ROD, from, 0, -dir.getX(), -dir.getY(), -dir.getZ(), r * 0.08, null, true);
-            world.spawnParticle(Particle.WHITE_ASH, from, 0,
-                    -dir.getX() * 0.15, -dir.getY() * 0.15, -dir.getZ() * 0.15, 0.2, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(from, Particle.END_ROD, 0, Math.max(-dir.getX(), -dir.getZ()), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(from, Particle.WHITE_ASH, 0, Math.max(-dir.getX() * 0.15, -dir.getZ() * 0.15), null);
         }
         if (u % 3 == 0) {
             ringForce(world, focus, 6.0 - u * 0.25, SOUL, 0.85f);
@@ -2676,7 +2678,7 @@ final class AshenSovereignDirector {
                 skyChainFoot.add(anchor);
                 skyChainDir.add(dir);
                 floorBurst(world, anchor, 26, 0.7);
-                world.spawnParticle(Particle.REVERSE_PORTAL, anchor.clone().add(0, 0.6, 0), 18, 0.4, 0.4, 0.4, 0.05);
+                de.aetherion.bossengine.fx.ShapeFx.puff(anchor.clone().add(0, 0.6, 0), Particle.REVERSE_PORTAL, 18, Math.max(0.4, 0.4), null);
             }
             world.playSound(center, Sound.ENTITY_WARDEN_EMERGE, 1.8f, 0.5f);
             world.playSound(center, Sound.BLOCK_CHAIN_PLACE, 2.0f, 0.4f);
@@ -2699,10 +2701,10 @@ final class AshenSovereignDirector {
         }
         if (u % 3 == 0) {
             tearDust(world, tearLen, 0.7f);
-            world.spawnParticle(Particle.WHITE_ASH, focus.clone().add(0, 2, 0), 18, 5.0, 2.0, 5.0, 0.01, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(focus.clone().add(0, 2, 0), Particle.WHITE_ASH, 18, Math.max(5.0, 5.0), null);
         }
         if (u == 19) {
-            world.spawnParticle(Particle.FLASH, eclipseSky, 2, 0.3, 0.1, 0.3, 0, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(eclipseSky, Particle.FLASH, 2, Math.max(0.3, 0.3), null);
             world.playSound(center, Sound.BLOCK_ANVIL_LAND, 1.6f, 0.4f);
             world.playSound(center, Sound.ITEM_TRIDENT_HIT, 1.8f, 0.45f);
             titleNear("&8&lTHE LAST SKY", "&7…is shut.");
@@ -2745,7 +2747,7 @@ final class AshenSovereignDirector {
             put(spear, from, rod(new Vector3f((float) dir.getX(), (float) dir.getY(), (float) dir.getZ()),
                     travel, (float) (2.2 * (1.0 - q * 0.55)), 0.5f), 2);
             if (u == (int) Math.ceil(i * 0.35) + 9) {
-                world.spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, focus, 8, 0.5, 0.5, 0.5, 0.03, null, true);
+                de.aetherion.bossengine.fx.ShapeFx.puff(focus, Particle.CAMPFIRE_COSY_SMOKE, 8, Math.max(0.5, 0.5), null);
                 world.playSound(focus, Sound.BLOCK_GRAVEL_BREAK, 1.3f, 0.4f + i * 0.04f);
             }
         }
@@ -2754,8 +2756,8 @@ final class AshenSovereignDirector {
             tiltedAshRing(world, focus, 6.0 * (1.0 - p) + 0.8, u * 0.3);
         }
         if (u % 3 == 0) {
-            world.spawnParticle(Particle.WHITE_ASH, focus, 20, 4.0, 2.5, 4.0, 0.01, null, true);
-            world.spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, focus, 6, 3.0, 2.0, 3.0, 0.01, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(focus, Particle.WHITE_ASH, 20, Math.max(4.0, 4.0), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(focus, Particle.CAMPFIRE_COSY_SMOKE, 6, Math.max(3.0, 3.0), null);
         }
         if (heartCore != null && heartCore.isValid()) {
             put(heartCore, focus, centered(new Quaternionf().rotateY(u * 0.6f).rotateX(0.4f), 0.16f), 1);
@@ -2795,7 +2797,7 @@ final class AshenSovereignDirector {
         }
         put(eclipseSeed, at, centered(new Quaternionf().rotateY(u * 0.8f).rotateX(0.6f), u < 2 ? 0.3f : 0.08f), 1);
         if (u == 2) {
-            world.spawnParticle(Particle.DUST, focus, 30, 2.0, 2.0, 2.0, 0, new Particle.DustOptions(ASH, 0.8f), true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(focus, Particle.DUST, 30, Math.max(2.0, 2.0), new Particle.DustOptions(ASH, 0.8f));
         }
     }
 
@@ -2843,24 +2845,24 @@ final class AshenSovereignDirector {
     private void ashNova(World world, Location focus) {
         discard(eclipseSeed);
         eclipseSeed = null;
-        world.spawnParticle(Particle.FLASH, focus, 8, 1.4, 1.4, 1.4, 0, null, true);
-        world.spawnParticle(Particle.FLASH, eclipseSky, 4, 2.0, 1.0, 2.0, 0, null, true);
+        de.aetherion.bossengine.fx.ShapeFx.puff(focus, Particle.FLASH, 8, Math.max(1.4, 1.4), null);
+        de.aetherion.bossengine.fx.ShapeFx.puff(eclipseSky, Particle.FLASH, 4, Math.max(2.0, 2.0), null);
         burst(world, eclipseSky, Particle.WHITE_ASH, 90, 2.2);
         burst(world, eclipseSky, Particle.END_ROD, 70, 1.8);
-        world.spawnParticle(Particle.EXPLOSION_EMITTER, focus, 4, 1.0, 1.0, 1.0, 0, null, true);
+        de.aetherion.bossengine.fx.ShapeFx.puff(focus, Particle.EXPLOSION_EMITTER, 4, Math.max(1.0, 1.0), null);
         for (int i = 0; i < 12; i++) {
             double a = Math.PI * 2 * i / 12;
-            world.spawnParticle(Particle.SONIC_BOOM, focus.clone().add(Math.cos(a) * 2.6, 0, Math.sin(a) * 2.6), 1, 0, 0, 0, 0, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(focus.clone().add(Math.cos(a) * 2.6, 0, Math.sin(a) * 2.6), Particle.SONIC_BOOM, 1, Math.max(0, 0), null);
         }
         burst(world, focus, Particle.WHITE_ASH, 160, 1.6);
         burst(world, focus, Particle.SOUL_FIRE_FLAME, 90, 0.9);
         burst(world, focus, Particle.END_ROD, 110, 1.3);
         burst(world, focus, Particle.FLAME, 80, 1.0);
         burst(world, focus, Particle.CAMPFIRE_COSY_SMOKE, 50, 0.7);
-        world.spawnParticle(Particle.REVERSE_PORTAL, focus, 120, 1.4, 1.4, 1.4, 0.5, null, true);
-        world.spawnParticle(Particle.DUST, focus, 80, 2.2, 2.2, 2.2, 0, new Particle.DustOptions(ASH, 2.4f), true);
-        world.spawnParticle(Particle.DUST, focus, 60, 3.2, 3.2, 3.2, 0, new Particle.DustOptions(ROYAL, 2.0f), true);
-        world.spawnParticle(Particle.DUST, focus, 50, 4.2, 4.2, 4.2, 0, new Particle.DustOptions(EMBER, 1.8f), true);
+        de.aetherion.bossengine.fx.ShapeFx.puff(focus, Particle.REVERSE_PORTAL, 120, Math.max(1.4, 1.4), null);
+        de.aetherion.bossengine.fx.ShapeFx.puff(focus, Particle.DUST, 80, Math.max(2.2, 2.2), new Particle.DustOptions(ASH, 2.4f));
+        de.aetherion.bossengine.fx.ShapeFx.puff(focus, Particle.DUST, 60, Math.max(3.2, 3.2), new Particle.DustOptions(ROYAL, 2.0f));
+        de.aetherion.bossengine.fx.ShapeFx.puff(focus, Particle.DUST, 50, Math.max(4.2, 4.2), new Particle.DustOptions(EMBER, 1.8f));
         for (int i = 0; i < 5; i++) {
             ringForce(world, center.clone().add(0, 0.2, 0), 3.0 + i * 4.6, i % 2 == 0 ? EMBER : ROYAL, 1.3f);
         }
@@ -2929,10 +2931,10 @@ final class AshenSovereignDirector {
         poseSeal(easeOut(draw), age * 0.012);
         poseEclipse(world, Math.min(1.0, age / 12.0), age * 0.02, age);
         if (age % 2 == 0) {
-            world.spawnParticle(Particle.WHITE_ASH, center.clone().add(0, 6, 0), 40, arenaRadius * 0.6, 4.0, arenaRadius * 0.6, 0.02, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(center.clone().add(0, 6, 0), Particle.WHITE_ASH, 40, Math.max(arenaRadius * 0.6, arenaRadius * 0.6), null);
         }
         if (age % 3 == 0) {
-            world.spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, center.clone().add(0, 1.5, 0), 4, arenaRadius * 0.5, 1.0, arenaRadius * 0.5, 0.01, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(center.clone().add(0, 1.5, 0), Particle.CAMPFIRE_COSY_SMOKE, 4, Math.max(arenaRadius * 0.5, arenaRadius * 0.5), null);
         }
         // Twin sweeps: one royal, one ember, tracing the seal out to its rim.
         double sweep = age * 0.19;
@@ -2941,9 +2943,9 @@ final class AshenSovereignDirector {
             Color tint = beam == 0 ? ROYAL : EMBER;
             for (int s = 2; s <= 16; s++) {
                 Location at = center.clone().add(Math.cos(a) * s * 0.9, 0.35 + Math.sin(s * 0.3) * 0.25, Math.sin(a) * s * 0.9);
-                world.spawnParticle(Particle.DUST, at, 1, 0, 0, 0, 0, new Particle.DustOptions(tint, 1.1f), true);
+                de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.DUST, 1, Math.max(0, 0), new Particle.DustOptions(tint, 1.1f));
                 if (s % 3 == 0) {
-                    world.spawnParticle(Particle.END_ROD, at, 1, 0, 0, 0, 0, null, true);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.END_ROD, 1, Math.max(0, 0), null);
                 }
             }
         }
@@ -2988,13 +2990,13 @@ final class AshenSovereignDirector {
             world.playSound(center, Sound.BLOCK_DEEPSLATE_BREAK, 1.4f, 0.4f);
             ringForce(world, center.clone().add(0, 0.2, 0), r, GOLD, 1.6f);
             floorBurst(world, center.clone().add(Math.cos(u) * r, 0, Math.sin(u) * r), 40, 2.0);
-            world.spawnParticle(Particle.WHITE_ASH, center.clone().add(0, 1.5, 0), 60, r, 1.2, r, 0.02, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(center.clone().add(0, 1.5, 0), Particle.WHITE_ASH, 60, Math.max(r, r), null);
         }
         if (u % 3 == 0) {
-            world.spawnParticle(Particle.WHITE_ASH, center.clone().add(0, 5, 0), (int) (30 * (1.0 - p)), arenaRadius * 0.5, 3.0, arenaRadius * 0.5, 0.02, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(center.clone().add(0, 5, 0), Particle.WHITE_ASH, (int) (30 * (1.0 - p)), Math.max(arenaRadius * 0.5, arenaRadius * 0.5), null);
         }
         if (u == span - 2) {
-            world.spawnParticle(Particle.FLASH, center.clone().add(0, 0.6, 0), 2, 0.3, 0.1, 0.3, 0, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(center.clone().add(0, 0.6, 0), Particle.FLASH, 2, Math.max(0.3, 0.3), null);
             converge(world, center.clone().add(0, 0.8, 0), 6.0, Particle.SOUL_FIRE_FLAME, 40);
             world.playSound(center, Sound.BLOCK_BEACON_DEACTIVATE, 1.6f, 0.4f);
             world.playSound(center, Sound.BLOCK_RESPAWN_ANCHOR_DEPLETE, 1.2f, 0.35f);
@@ -3018,14 +3020,13 @@ final class AshenSovereignDirector {
         int span = ECLIPSE_CLEAR - ECLIPSE_SETTLE;
         double fade = u / (double) span;
         if (u % 3 == 0) {
-            world.spawnParticle(Particle.WHITE_ASH, center.clone().add(0, 4, 0),
-                    (int) (26 * (1.0 - fade)), arenaRadius * 0.55, 3.0, arenaRadius * 0.55, 0.01, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(center.clone().add(0, 4, 0), Particle.WHITE_ASH, (int) (26 * (1.0 - fade)), Math.max(arenaRadius * 0.55, arenaRadius * 0.55), null);
         }
         if (u % 4 == 0) {
             Location mote = center.clone().add(
                     ThreadLocalRandom.current().nextDouble(-arenaRadius * 0.5, arenaRadius * 0.5), 0.5,
                     ThreadLocalRandom.current().nextDouble(-arenaRadius * 0.5, arenaRadius * 0.5));
-            world.spawnParticle(Particle.END_ROD, mote, 1, 0.05, 0.05, 0.05, 0.04, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(mote, Particle.END_ROD, 1, Math.max(0.05, 0.05), null);
         }
         if (u == 8) {
             restoreSky();
@@ -3054,7 +3055,7 @@ final class AshenSovereignDirector {
         Particle.DustOptions dust = new Particle.DustOptions(ROYAL, size);
         for (double d = -length / 2; d <= length / 2; d += 1.2) {
             Location at = eclipseSky.clone().add(Math.cos(tearYaw) * d, 0, Math.sin(tearYaw) * d);
-            world.spawnParticle(Particle.DUST, at, 1, 0.1, 0.1, 0.1, 0, dust, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.DUST, 1, Math.max(0.1, 0.1), dust);
         }
     }
 
@@ -3104,8 +3105,7 @@ final class AshenSovereignDirector {
             for (int i = 0; i < 20; i++) {
                 double ang = a + i * Math.PI * 2 / 20;
                 Location at = eclipseSky.clone().add(Math.cos(ang) * 7.2, 0, Math.sin(ang) * 7.2);
-                world.spawnParticle(Particle.DUST, at, 1, 0.2, 0.2, 0.2, 0,
-                        new Particle.DustOptions(i % 2 == 0 ? GOLD : ROYAL, 1.6f), true);
+                de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.DUST, 1, Math.max(0.2, 0.2), new Particle.DustOptions(i % 2 == 0 ? GOLD : ROYAL, 1.6f));
             }
         }
     }
@@ -3277,8 +3277,8 @@ final class AshenSovereignDirector {
                 continue;
             }
             Location at = attachPoint(chain);
-            world.spawnParticle(Particle.ELECTRIC_SPARK, at, 6, 0.2, 0.2, 0.2, 0.15);
-            world.spawnParticle(Particle.CRIT, at, 3, 0.2, 0.2, 0.2, 0.2);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.ELECTRIC_SPARK, 6, Math.max(0.2, 0.2), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.CRIT, 3, Math.max(0.2, 0.2), null);
         }
         world.playSound(pos, Sound.BLOCK_CHAIN_STEP, 1.0f, 0.6f);
     }
@@ -3289,15 +3289,15 @@ final class AshenSovereignDirector {
         }
         World world = center.getWorld();
         Location at = attachPoint(chain);
-        world.spawnParticle(Particle.FLASH, at, 1, 0, 0, 0, 0, null, true);
-        world.spawnParticle(Particle.EXPLOSION, at, 2, 0.4, 0.4, 0.4, 0, null, true);
+        de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.FLASH, 1, Math.max(0, 0), null);
+        de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.EXPLOSION, 2, Math.max(0.4, 0.4), null);
         burst(world, at, Particle.ELECTRIC_SPARK, 30, 0.4);
         world.playSound(at, Sound.ITEM_SHIELD_BREAK, 2.0f, 0.5f);
         world.playSound(at, Sound.BLOCK_CHAIN_BREAK, 2.0f, 0.5f);
         world.playSound(at, Sound.ENTITY_GENERIC_EXPLODE, 1.2f, 1.2f);
         crumbleChain(chain);
         if (chain.cap != null && chain.cap.isValid()) {
-            world.spawnParticle(Particle.SOUL_FIRE_FLAME, chain.anchor.clone().add(0, 3.0, 0), 30, 0.3, 0.6, 0.3, 0.05, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(chain.anchor.clone().add(0, 3.0, 0), Particle.SOUL_FIRE_FLAME, 30, Math.max(0.3, 0.3), null);
         }
     }
 
@@ -3403,7 +3403,7 @@ final class AshenSovereignDirector {
                 ease(seg, segment(a, WARD_R, 0.04, (float) (2 * Math.PI * WARD_R / segs * 1.05), 0.12f, 0.18f), 10);
                 wardRings.add(seg);
             }
-            world.spawnParticle(Particle.SOUL_FIRE_FLAME, ward.clone().add(0, 1, 0), 40, WARD_R * 0.4, 0.6, WARD_R * 0.4, 0.04, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(ward.clone().add(0, 1, 0), Particle.SOUL_FIRE_FLAME, 40, Math.max(WARD_R * 0.4, WARD_R * 0.4), null);
             world.playSound(ward, Sound.BLOCK_RESPAWN_ANCHOR_SET_SPAWN, 1.6f, 0.7f);
             world.playSound(ward, Sound.BLOCK_BEACON_ACTIVATE, 1.4f, 1.2f);
         }
@@ -3428,8 +3428,8 @@ final class AshenSovereignDirector {
         }
         for (Location ward : wards) {
             ringForce(world, ward.clone().add(0, 0.2, 0), WARD_R, SOUL, 1.3f);
-            world.spawnParticle(Particle.SOUL_FIRE_FLAME, ward.clone().add(0, 0.4, 0), 4, WARD_R * 0.45, 0.2, WARD_R * 0.45, 0.02);
-            world.spawnParticle(Particle.SOUL, ward.clone().add(0, 2.5, 0), 1, 0.3, 0.6, 0.3, 0.01);
+            de.aetherion.bossengine.fx.ShapeFx.puff(ward.clone().add(0, 0.4, 0), Particle.SOUL_FIRE_FLAME, 4, Math.max(WARD_R * 0.45, WARD_R * 0.45), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(ward.clone().add(0, 2.5, 0), Particle.SOUL, 1, Math.max(0.3, 0.3), null);
         }
     }
 
@@ -3480,7 +3480,7 @@ final class AshenSovereignDirector {
             }
             if (age <= 16 && s % 2 == 0) {
                 Location p = center.clone().add(Math.cos(a) * r, 0.6, Math.sin(a) * r);
-                world.spawnParticle(Particle.FLAME, p, 2, 0.3, 0.6, 0.3, 0.02, null, true);
+                de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.FLAME, 2, Math.max(0.3, 0.3), null);
             }
         }
         if (age >= 30) {
@@ -3579,7 +3579,7 @@ final class AshenSovereignDirector {
             put(e.rock, at, centered(new Quaternionf().rotateY(e.flight * 0.4f).rotateX(e.flight * 0.3f), size), 1);
             put(e.glow, at, centered(new Quaternionf().rotateY(-e.flight * 0.3f).rotateZ(e.flight * 0.2f), size * 1.35f), 1);
             streak(world, e.prev, at, EMBER, true);
-            world.spawnParticle(Particle.FLAME, at, 2, 0.2, 0.2, 0.2, 0.01, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.FLAME, 2, Math.max(0.2, 0.2), null);
             e.prev = at.clone();
             if (e.flight >= e.fall) {
                 emberImpact(entity, e);
@@ -3593,9 +3593,9 @@ final class AshenSovereignDirector {
     private void emberImpact(LivingEntity entity, Ember e) {
         World world = e.ground.getWorld();
         Location mid = e.ground.clone().add(0, 0.4, 0);
-        world.spawnParticle(e.big ? Particle.EXPLOSION_EMITTER : Particle.EXPLOSION, mid, 1, 0.3, 0.1, 0.3, 0, null, true);
-        world.spawnParticle(Particle.LAVA, mid, e.big ? 18 : 8, e.radius * 0.4, 0.2, e.radius * 0.4, 0);
-        world.spawnParticle(Particle.FLAME, mid, 24, e.radius * 0.35, 0.2, e.radius * 0.35, 0.06);
+        de.aetherion.bossengine.fx.ShapeFx.puff(mid, e.big ? Particle.EXPLOSION_EMITTER : Particle.EXPLOSION, 1, Math.max(0.3, 0.3), null);
+        de.aetherion.bossengine.fx.ShapeFx.puff(mid, Particle.LAVA, e.big ? 18 : 8, Math.max(e.radius * 0.4, e.radius * 0.4), null);
+        de.aetherion.bossengine.fx.ShapeFx.puff(mid, Particle.FLAME, 24, Math.max(e.radius * 0.35, e.radius * 0.35), null);
         floorBurst(world, e.ground, e.big ? 50 : 24, e.radius * 0.4);
         world.playSound(mid, Sound.ENTITY_GENERIC_EXPLODE, e.big ? 1.4f : 0.9f, e.big ? 0.7f : 1.15f);
         world.playSound(mid, Sound.BLOCK_LAVA_EXTINGUISH, 0.7f, 0.7f);
@@ -3633,7 +3633,7 @@ final class AshenSovereignDirector {
                 int points = Math.max(8, (int) (wave.radius * 2.0));
                 for (int i = 0; i < points; i += 3) {
                     double a = Math.PI * 2 * i / points;
-                    world.spawnParticle(Particle.BLOCK, base.clone().add(Math.cos(a) * wave.radius, 0, Math.sin(a) * wave.radius), 1, 0.1, 0.05, 0.1, 0, floor);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(base.clone().add(Math.cos(a) * wave.radius, 0, Math.sin(a) * wave.radius), Particle.BLOCK, 1, Math.max(0.1, 0.1), floor);
                 }
                 for (Player player : fighters()) {
                     if (wave.struck.contains(player.getUniqueId())) {
@@ -3684,14 +3684,14 @@ final class AshenSovereignDirector {
                 Location p = lane.from.clone().add(lane.dir.clone().multiply(d));
                 if (lane.slam) {
                     floorBurst(world, p, 6, 0.6);
-                    world.spawnParticle(Particle.CRIT, p.clone().add(0, 0.4, 0), 2, 0.3, 0.2, 0.3, 0.2);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(p.clone().add(0, 0.4, 0), Particle.CRIT, 2, Math.max(0.3, 0.3), null);
                     if (((int) d) % 3 == 0) {
-                        world.spawnParticle(Particle.REVERSE_PORTAL, p.clone().add(0, 0.6, 0), 4, 0.3, 0.2, 0.3, 0.05);
+                        de.aetherion.bossengine.fx.ShapeFx.puff(p.clone().add(0, 0.6, 0), Particle.REVERSE_PORTAL, 4, Math.max(0.3, 0.3), null);
                     }
                 } else {
-                    world.spawnParticle(Particle.FLAME, p.clone().add(0, 1.0, 0), 4, 0.2, 0.9, 0.2, 0.02, null, true);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(p.clone().add(0, 1.0, 0), Particle.FLAME, 4, Math.max(0.2, 0.2), null);
                     if (((int) d) % 2 == 0) {
-                        world.spawnParticle(Particle.LAVA, p, 1, 0.2, 0.1, 0.2, 0);
+                        de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.LAVA, 1, Math.max(0.2, 0.2), null);
                     }
                 }
                 if (lane.burn && ((int) d) % 3 == 0) {
@@ -3745,7 +3745,7 @@ final class AshenSovereignDirector {
                     for (int i = 0; i < points; i++) {
                         double a = Math.PI * 2 * i / points;
                         Location p = rb.center.clone().add(Math.cos(a) * rb.radius, 0.14, Math.sin(a) * rb.radius);
-                        world.spawnParticle(Particle.DUST, p, 1, 0, 0, 0, 0, rb.inGap(a) ? safe : fire);
+                        de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.DUST, 1, Math.max(0, 0), rb.inGap(a) ? safe : fire);
                     }
                 }
                 fuse(rb.center, rb.delay);
@@ -3758,9 +3758,9 @@ final class AshenSovereignDirector {
                     continue;
                 }
                 Location p = rb.center.clone().add(Math.cos(a) * rb.radius, 0, Math.sin(a) * rb.radius);
-                world.spawnParticle(Particle.FLAME, p.clone().add(0, 1.2, 0), 3, 0.15, 1.0, 0.15, 0.02, null, true);
+                de.aetherion.bossengine.fx.ShapeFx.puff(p.clone().add(0, 1.2, 0), Particle.FLAME, 3, Math.max(0.15, 0.15), null);
                 if (i % 6 == 0) {
-                    world.spawnParticle(Particle.LAVA, p, 1, 0.1, 0.1, 0.1, 0);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.LAVA, 1, Math.max(0.1, 0.1), null);
                     floorBurst(world, p, 4, 0.4);
                 }
             }
@@ -3839,9 +3839,9 @@ final class AshenSovereignDirector {
                 double a = random.nextDouble(Math.PI * 2);
                 double r = random.nextDouble(burn.radius);
                 Location p = burn.at.clone().add(Math.cos(a) * r, 0.15, Math.sin(a) * r);
-                world.spawnParticle(Particle.SMALL_FLAME, p, 1, 0.05, 0.02, 0.05, 0.004);
+                de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.SMALL_FLAME, 1, Math.max(0.05, 0.05), null);
                 if (random.nextInt(3) == 0) {
-                    world.spawnParticle(Particle.SMOKE, p, 1, 0.05, 0.05, 0.05, 0.01);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.SMOKE, 1, Math.max(0.05, 0.05), null);
                 }
             }
             if (burn.decal != null && burn.life <= 16) {
@@ -3898,7 +3898,7 @@ final class AshenSovereignDirector {
     private void fizzleHazards() {
         for (Ember e : embers) {
             if (e.ground.getWorld() != null) {
-                e.ground.getWorld().spawnParticle(Particle.LARGE_SMOKE, e.ground.clone().add(0, 0.3, 0), 6, 0.6, 0.2, 0.6, 0.02);
+                de.aetherion.bossengine.fx.ShapeFx.puff(e.ground.clone().add(0, 0.3, 0), Particle.LARGE_SMOKE, 6, Math.max(0.6, 0.6), null);
             }
             discard(e.rock);
             discard(e.glow);
@@ -4004,21 +4004,21 @@ final class AshenSovereignDirector {
         switch (form) {
             case SOVEREIGN -> {
                 if (clock % 4 == 0) {
-                    world.spawnParticle(Particle.WHITE_ASH, partPos(6 + (int) (clock / 4 % 2)), 3, 1.2, 0.3, 1.2, 0.01);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(partPos(6 + (int) (clock / 4 % 2)), Particle.WHITE_ASH, 3, Math.max(1.2, 1.2), null);
                 }
                 if (clock % 10 == 0) {
-                    world.spawnParticle(Particle.REVERSE_PORTAL, partPos(2).add(0, 1, 0), 4, 1.0, 0.6, 1.0, 0.02);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(partPos(2).add(0, 1, 0), Particle.REVERSE_PORTAL, 4, Math.max(1.0, 1.0), null);
                 }
                 if (!grounded && clock % 6 == 0) {
-                    world.spawnParticle(Particle.ASH, pos.clone().add(0, -2, 0), 12, 2.5, 1.5, 2.5, 0.01);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(pos.clone().add(0, -2, 0), Particle.ASH, 12, Math.max(2.5, 2.5), null);
                 }
             }
             case CHAINED -> {
                 if (clock % 3 == 0) {
-                    world.spawnParticle(Particle.SMOKE, headPos(), 2, 0.2, 0.2, 0.2, 0.02);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(headPos(), Particle.SMOKE, 2, Math.max(0.2, 0.2), null);
                 }
                 if (clock % 8 == 0) {
-                    world.spawnParticle(Particle.FLAME, heartPos(), 2, 0.2, 0.2, 0.2, 0.01);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(heartPos(), Particle.FLAME, 2, Math.max(0.2, 0.2), null);
                 }
                 if (clock % 30 == 0) {
                     world.playSound(heartPos(), Sound.ENTITY_WARDEN_HEARTBEAT, 0.9f, 0.6f);
@@ -4026,12 +4026,12 @@ final class AshenSovereignDirector {
             }
             case UNCHAINED -> {
                 int part = 3 + random.nextInt(5);
-                world.spawnParticle(Particle.FLAME, partPos(part), 2, 0.6, 0.3, 0.6, 0.01);
+                de.aetherion.bossengine.fx.ShapeFx.puff(partPos(part), Particle.FLAME, 2, Math.max(0.6, 0.6), null);
                 if (clock % 5 == 0) {
-                    world.spawnParticle(Particle.LAVA, partPos(2).add(0, 1, 0), 1, 0.8, 0.4, 0.8, 0);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(partPos(2).add(0, 1, 0), Particle.LAVA, 1, Math.max(0.8, 0.8), null);
                 }
                 if (clock % 3 == 0) {
-                    world.spawnParticle(Particle.FLAME, partPos(0).add(0, 2.2, 0), 1, 0.15, 0.1, 0.15, 0.01);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(partPos(0).add(0, 2.2, 0), Particle.FLAME, 1, Math.max(0.15, 0.15), null);
                 }
                 if (clock % 26 == 0) {
                     world.playSound(heartPos(), Sound.ENTITY_WARDEN_HEARTBEAT, 1.0f, 0.7f);
@@ -4055,21 +4055,37 @@ final class AshenSovereignDirector {
         }
         Vector side = new Vector(-unit.getZ(), 0, unit.getX());
         Location base = from.clone().add(0, 0.12, 0);
+        if (de.aetherion.core.api.Vfx.active()) {
+            // the lane as light: two edge lines, a cap, a golden spine filling toward the end
+            String key = instance.getInstanceId() + "|lane|" + Math.round(from.getX()) + "," + Math.round(from.getZ()) + "|"
+                    + Math.round(unit.getX() * 10) + "," + Math.round(unit.getZ() * 10);
+            Color edgeColor = hot && remaining % 2 == 0 ? HOT : color;
+            Vector off = side.clone().multiply(halfWidth);
+            Location end = base.clone().add(unit.clone().multiply(length));
+            de.aetherion.core.api.Vfx.line(key + "L", base.clone().add(off), end.clone().add(off), edgeColor, hot ? 0.24 : 0.16);
+            de.aetherion.core.api.Vfx.line(key + "R", base.clone().subtract(off), end.clone().subtract(off), edgeColor, hot ? 0.24 : 0.16);
+            de.aetherion.core.api.Vfx.line(key + "C", end.clone().subtract(off), end.clone().add(off), edgeColor, hot ? 0.24 : 0.16);
+            double reach = Math.max(0.0, Math.min(1.0, fill)) * length;
+            if (reach > 0.3) {
+                de.aetherion.core.api.Vfx.line(key + "S", base, base.clone().add(unit.clone().multiply(reach)), GOLD, 0.34);
+            }
+            return;
+        }
         Particle.DustOptions edge = new Particle.DustOptions(hot && remaining % 2 == 0 ? HOT : color, hot ? 1.25f : 1.0f);
         Particle.DustOptions spine = new Particle.DustOptions(GOLD, 0.8f);
         for (double d = 0.0; d <= length; d += 0.7) {
             Location on = base.clone().add(unit.clone().multiply(d));
-            world.spawnParticle(Particle.DUST, on.clone().add(side.clone().multiply(halfWidth)), 1, 0, 0, 0, 0, edge);
-            world.spawnParticle(Particle.DUST, on.clone().subtract(side.clone().multiply(halfWidth)), 1, 0, 0, 0, 0, edge);
+            de.aetherion.bossengine.fx.ShapeFx.puff(on.clone().add(side.clone().multiply(halfWidth)), Particle.DUST, 1, Math.max(0, 0), edge);
+            de.aetherion.bossengine.fx.ShapeFx.puff(on.clone().subtract(side.clone().multiply(halfWidth)), Particle.DUST, 1, Math.max(0, 0), edge);
         }
         Location cap = base.clone().add(unit.clone().multiply(length));
         for (double s = -halfWidth; s <= halfWidth + 1.0E-4; s += 0.4) {
-            world.spawnParticle(Particle.DUST, cap.clone().add(side.clone().multiply(s)), 1, 0, 0, 0, 0, edge);
-            world.spawnParticle(Particle.DUST, base.clone().add(side.clone().multiply(s)), 1, 0, 0, 0, 0, edge);
+            de.aetherion.bossengine.fx.ShapeFx.puff(cap.clone().add(side.clone().multiply(s)), Particle.DUST, 1, Math.max(0, 0), edge);
+            de.aetherion.bossengine.fx.ShapeFx.puff(base.clone().add(side.clone().multiply(s)), Particle.DUST, 1, Math.max(0, 0), edge);
         }
         double reach = Math.max(0.0, Math.min(1.0, fill)) * length;
         for (double d = 0.0; d <= reach; d += 0.5) {
-            world.spawnParticle(Particle.DUST, base.clone().add(unit.clone().multiply(d)), 1, 0, 0, 0, 0, spine);
+            de.aetherion.bossengine.fx.ShapeFx.puff(base.clone().add(unit.clone().multiply(d)), Particle.DUST, 1, Math.max(0, 0), spine);
         }
     }
 
@@ -4081,7 +4097,7 @@ final class AshenSovereignDirector {
         for (int s = -1; s <= 1; s += 2) {
             Vector ray = rotateY(f, half * s);
             for (double d = 1.5; d <= radius; d += 0.7) {
-                world.spawnParticle(Particle.DUST, base.clone().add(ray.clone().multiply(d)), 1, 0, 0, 0, 0, edge);
+                de.aetherion.bossengine.fx.ShapeFx.puff(base.clone().add(ray.clone().multiply(d)), Particle.DUST, 1, Math.max(0, 0), edge);
             }
         }
         arcDust(world, base, f, radius, half, edge, 0.6);
@@ -4098,7 +4114,7 @@ final class AshenSovereignDirector {
         for (int s = -1; s <= 1; s += 2) {
             Vector ray = rotateY(f, half * s);
             for (double d = 1.5; d <= radius; d += 0.7) {
-                world.spawnParticle(Particle.DUST, base.clone().add(ray.clone().multiply(d)), 1, 0, 0, 0, 0, edge);
+                de.aetherion.bossengine.fx.ShapeFx.puff(base.clone().add(ray.clone().multiply(d)), Particle.DUST, 1, Math.max(0, 0), edge);
             }
         }
     }
@@ -4107,7 +4123,7 @@ final class AshenSovereignDirector {
         double step = spacing / Math.max(0.5, radius);
         for (double a = -half; a <= half + 1.0E-4; a += step) {
             Vector ray = rotateY(f, a);
-            world.spawnParticle(Particle.DUST, base.clone().add(ray.multiply(radius)), 1, 0, 0, 0, 0, dust);
+            de.aetherion.bossengine.fx.ShapeFx.puff(base.clone().add(ray.multiply(radius)), Particle.DUST, 1, Math.max(0, 0), dust);
         }
     }
 
@@ -4124,7 +4140,7 @@ final class AshenSovereignDirector {
             for (int w = -1; w <= 1; w += 2) {
                 Location wing = p.clone().add(tangent.clone().multiply(-0.4)).add(radial.clone().multiply(0.5 * w));
                 for (double s = 0; s <= 1.0; s += 0.25) {
-                    world.spawnParticle(Particle.DUST, lerp(wing, tip, s), 1, 0, 0, 0, 0, dust);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(lerp(wing, tip, s), Particle.DUST, 1, Math.max(0, 0), dust);
                 }
             }
         }
@@ -4147,7 +4163,7 @@ final class AshenSovereignDirector {
         int points = Math.max(10, (int) Math.ceil(Math.PI * 2 * radius / 0.5));
         for (int i = 0; i < points; i++) {
             double a = Math.PI * 2 * i / points;
-            world.spawnParticle(Particle.DUST, center.clone().add(Math.cos(a) * radius, 0, Math.sin(a) * radius), 1, 0, 0, 0, 0, dust);
+            de.aetherion.bossengine.fx.ShapeFx.puff(center.clone().add(Math.cos(a) * radius, 0, Math.sin(a) * radius), Particle.DUST, 1, Math.max(0, 0), dust);
         }
     }
 
@@ -4159,7 +4175,7 @@ final class AshenSovereignDirector {
         int points = Math.max(10, (int) Math.ceil(Math.PI * 2 * radius / 0.45));
         for (int i = 0; i < points; i++) {
             double a = Math.PI * 2 * i / points;
-            world.spawnParticle(Particle.DUST, center.clone().add(Math.cos(a) * radius, 0, Math.sin(a) * radius), 1, 0, 0, 0, 0, dust, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(center.clone().add(Math.cos(a) * radius, 0, Math.sin(a) * radius), Particle.DUST, 1, Math.max(0, 0), dust);
         }
     }
 
@@ -4174,9 +4190,9 @@ final class AshenSovereignDirector {
         int index = 0;
         for (double d = 0.0; d <= len; d += 0.35, index++) {
             Location p = lerp(a, b, len < 0.01 ? 0 : d / len);
-            world.spawnParticle(Particle.DUST, p, 1, 0, 0, 0, 0, core, force);
+            de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.DUST, 1, Math.max(0, 0), core);
             if (index % 2 == 0) {
-                world.spawnParticle(Particle.DUST, p, 1, 0.1, 0.1, 0.1, 0, sheath, force);
+                de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.DUST, 1, Math.max(0.1, 0.1), sheath);
             }
         }
     }
@@ -4184,7 +4200,7 @@ final class AshenSovereignDirector {
     private static void burst(World world, Location at, Particle particle, int count, double speed) {
         for (int i = 0; i < count; i++) {
             Vector dir = randomUnit();
-            world.spawnParticle(particle, at, 0, dir.getX(), dir.getY(), dir.getZ(), speed, null, true);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at, particle, 0, Math.max(dir.getX(), dir.getZ()), null);
         }
     }
 
@@ -4192,13 +4208,13 @@ final class AshenSovereignDirector {
         for (int i = 0; i < count; i++) {
             Vector dir = randomUnit();
             Location from = at.clone().add(dir.clone().multiply(radius));
-            world.spawnParticle(particle, from, 0, -dir.getX(), -dir.getY(), -dir.getZ(), radius * 0.09);
+            de.aetherion.bossengine.fx.ShapeFx.puff(from, particle, 0, Math.max(-dir.getX(), -dir.getZ()), null);
         }
     }
 
     private static void floorBurst(World world, Location at, int count, double spread) {
         BlockData data = floorData(at);
-        world.spawnParticle(Particle.BLOCK, at.clone().add(0, 0.3, 0), count, spread, 0.3, spread, 0.2, data);
+        de.aetherion.bossengine.fx.ShapeFx.puff(at.clone().add(0, 0.3, 0), Particle.BLOCK, count, Math.max(spread, spread), data);
     }
 
     private static BlockData floorData(Location at) {
