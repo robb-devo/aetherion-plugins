@@ -1221,6 +1221,13 @@ public class BossInstance {
         int points = transition.getPoints();
         Particle particle = transition.getParticle();
         Particle extra = transition.getExtraParticle();
+        // A sphere of light: an orb at the core and a ring held round the waist, not a cloud of dots.
+        if (de.aetherion.bossengine.fx.ShapeFx.ring(entity.getLocation().add(0, 0.1, 0), particle, radius)) {
+            if (transitionTick % 6 == 0) {
+                de.aetherion.core.api.Vfx.orb(center, null, de.aetherion.bossengine.fx.ShapeFx.tint(particle), radius * 1.4, 8);
+            }
+            return;
+        }
         double phi = Math.PI * (3.0 - Math.sqrt(5.0));
         int last = Math.max(2, points);
         for (int i = 0; i < last; i++) {
@@ -1250,9 +1257,20 @@ public class BossInstance {
         world.playSound(center, blossoms ? Sound.ITEM_TRIDENT_THUNDER : Sound.ENTITY_GENERIC_EXPLODE, 1.05f, blossoms ? 1.35f : 0.7f);
         world.playSound(center, blossoms ? Sound.BLOCK_CHERRY_LEAVES_BREAK : Sound.BLOCK_ANVIL_LAND, 1.15f, blossoms ? 0.5f : 0.65f);
         world.playSound(center, blossoms ? Sound.ENTITY_PLAYER_ATTACK_SWEEP : Sound.ITEM_FIRECHARGE_USE, 1.2f, blossoms ? 0.45f : 0.55f);
-        world.spawnParticle(Particle.EXPLOSION_EMITTER, center, 1, 0, 0, 0, 0);
         boolean quiet = de.aetherion.bossengine.fx.TierPhaseShow.owns(this);
-        if (blossoms) {
+        if (de.aetherion.core.api.Vfx.burst(center, blossoms ? org.bukkit.Color.fromRGB(0xFFB7D9) : org.bukkit.Color.fromRGB(0xFFC070), 4.2, 12)) {
+            if (!quiet && !blossoms) {
+                de.aetherion.core.api.Vfx.wave(entity.getLocation().add(0, 0.05, 0), org.bukkit.Color.fromRGB(0xFF7A2A), transition.getExplodeRadius(), 14);
+            }
+            if (blossoms) {
+                world.spawnParticle(Particle.CHERRY_LEAVES, center, 30, 1.3, 1.1, 1.3, 0.08);
+            }
+        } else {
+            world.spawnParticle(Particle.EXPLOSION_EMITTER, center, 1, 0, 0, 0, 0);
+        }
+        if (de.aetherion.core.api.Vfx.active()) {
+            // drawn above
+        } else if (blossoms) {
             world.spawnParticle(Particle.CHERRY_LEAVES, center, 80, 1.3, 1.1, 1.3, 0.08);
             world.spawnParticle(Particle.CHERRY_LEAVES, center.clone().add(0, 1.6, 0), 36, 0.6, 0.9, 0.6, 0.04);
             world.spawnParticle(Particle.FLASH, center, 1, 0, 0, 0, 0);
@@ -1319,8 +1337,14 @@ public class BossInstance {
                 entity.setVelocity(step);
             }
             Location feet = entity.getLocation();
-            world.spawnParticle(Particle.CLOUD, feet, 4, 0.25, 0.05, 0.25, 0.01);
-            world.spawnParticle(Particle.CRIT, feet.clone().add(0, 0.4, 0), 3, 0.2, 0.15, 0.2, 0.02);
+            if (de.aetherion.core.api.Vfx.active()) {
+                if (transitionTick % 3 == 0) {
+                    de.aetherion.core.api.Vfx.wave(feet.clone().add(0, 0.05, 0), de.aetherion.bossengine.fx.ShapeFx.PALE, 1.2, 8);
+                }
+            } else {
+                world.spawnParticle(Particle.CLOUD, feet, 4, 0.25, 0.05, 0.25, 0.01);
+                world.spawnParticle(Particle.CRIT, feet.clone().add(0, 0.4, 0), 3, 0.2, 0.15, 0.2, 0.02);
+            }
             if (transitionTick % 8 == 0) {
                 world.playSound(feet, Sound.ENTITY_PIGLIN_BRUTE_AMBIENT, 0.7f, 0.55f);
             }
@@ -1351,9 +1375,19 @@ public class BossInstance {
 
             Location aura = dest.clone().add(0, entity.getHeight() * 0.55, 0);
             if (!de.aetherion.bossengine.fx.TierPhaseShow.owns(this)) {
-                world.spawnParticle(Particle.ELECTRIC_SPARK, aura, 10, 0.55, 0.7, 0.55, 0.08);
-                world.spawnParticle(Particle.END_ROD, aura, 3, 0.35, 0.45, 0.35, 0.01);
-                world.spawnParticle(Particle.SOUL_FIRE_FLAME, dest.clone().add(0, 0.2, 0), 4, 0.4, 0.1, 0.4, 0.01);
+                if (de.aetherion.core.api.Vfx.active()) {
+                    // storm halo: the ground ring under him stays lit, arcs crackle off his body
+                    de.aetherion.bossengine.fx.ShapeFx.ring(center.clone().add(0, 0.1, 0), de.aetherion.bossengine.fx.ShapeFx.SOUL, Math.max(2.0, transition.getUnderRadius()));
+                    if (transitionTick % 6 == 0) {
+                        java.util.concurrent.ThreadLocalRandom rng = java.util.concurrent.ThreadLocalRandom.current();
+                        de.aetherion.core.api.Vfx.bolt(aura, aura.clone().add(rng.nextDouble(-2.2, 2.2), rng.nextDouble(-1.6, 1.0), rng.nextDouble(-2.2, 2.2)),
+                                de.aetherion.bossengine.fx.ShapeFx.SPARK, 5);
+                    }
+                } else {
+                    world.spawnParticle(Particle.ELECTRIC_SPARK, aura, 10, 0.55, 0.7, 0.55, 0.08);
+                    world.spawnParticle(Particle.END_ROD, aura, 3, 0.35, 0.45, 0.35, 0.01);
+                    world.spawnParticle(Particle.SOUL_FIRE_FLAME, dest.clone().add(0, 0.2, 0), 4, 0.4, 0.1, 0.4, 0.01);
+                }
             }
 
             int hoverStart = Math.max(1, (int) Math.round(transition.getDurationTicks() * 0.38));
@@ -1378,8 +1412,10 @@ public class BossInstance {
         runInternalTeleport(() -> entity.teleport(slamDest));
         entity.setVelocity(new Vector(0, -1.9, 0));
         entity.setFallDistance(0);
-        world.spawnParticle(Particle.CLOUD, dest, 8, 0.45, 0.15, 0.45, 0.02);
-        world.spawnParticle(Particle.CRIT, dest, 6, 0.3, 0.2, 0.3, 0.05);
+        if (!de.aetherion.core.api.Vfx.active()) {
+            world.spawnParticle(Particle.CLOUD, dest, 8, 0.45, 0.15, 0.45, 0.02);
+            world.spawnParticle(Particle.CRIT, dest, 6, 0.3, 0.2, 0.3, 0.05);
+        }
         if (slamProgress > 0.7) {
             world.playSound(dest, Sound.ENTITY_PLAYER_ATTACK_CRIT, 0.55f, 0.45f);
         }
@@ -1404,8 +1440,12 @@ public class BossInstance {
         world.strikeLightningEffect(bolt);
         world.playSound(bolt, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1.15f, 0.85f);
         world.playSound(bolt, Sound.ENTITY_LIGHTNING_BOLT_IMPACT, 1.05f, 0.7f);
-        world.spawnParticle(Particle.FLASH, bolt, 1, 0, 0, 0, 0);
-        world.spawnParticle(Particle.ELECTRIC_SPARK, bolt, 28, 0.7, 1.1, 0.7, 0.25);
+        if (de.aetherion.core.api.Vfx.burst(bolt.clone().add(0, 1.0, 0), de.aetherion.bossengine.fx.ShapeFx.SPARK, 3.0, 10)) {
+            de.aetherion.core.api.Vfx.wave(dest.clone().add(0, 0.05, 0), de.aetherion.bossengine.fx.ShapeFx.SOUL, 3.0, 12);
+        } else {
+            world.spawnParticle(Particle.FLASH, bolt, 1, 0, 0, 0, 0);
+            world.spawnParticle(Particle.ELECTRIC_SPARK, bolt, 28, 0.7, 1.1, 0.7, 0.25);
+        }
         entity.setGlowing(true);
         entity.setFireTicks(0);
     }
@@ -1451,7 +1491,10 @@ public class BossInstance {
         entity.setGlowing(template.getOptions().isGlowing());
         entity.getWorld().playSound(land, Sound.ENTITY_GENERIC_EXPLODE, 1.2f, 0.55f);
         entity.getWorld().playSound(land, Sound.BLOCK_ANVIL_LAND, 1.35f, 0.55f);
-        if (transition != null) {
+        if (transition != null && de.aetherion.core.api.Vfx.burst(land.clone().add(0, 0.8, 0), de.aetherion.bossengine.fx.ShapeFx.PALE, 3.6, 12)) {
+            de.aetherion.core.api.Vfx.wave(land.clone().add(0, 0.05, 0), de.aetherion.bossengine.fx.ShapeFx.PALE, Math.max(3.5, transition.getUnderRadius() + 1.0), 14);
+            de.aetherion.core.api.Vfx.chips(land, land.clone().add(0, -1, 0).getBlock().getBlockData(), 10, 1.6);
+        } else if (transition != null) {
             entity.getWorld().spawnParticle(
                     Particle.EXPLOSION_EMITTER,
                     land.clone().add(0, 0.4, 0),
@@ -1542,6 +1585,9 @@ public class BossInstance {
                     org.bukkit.SoundCategory.MASTER, 1.0f, 1.0f);
         }
         World world = center.getWorld();
+        if (de.aetherion.core.api.Vfx.active()) {
+            return;
+        }
         int points = Math.max(20, (int) (slamRadius * 8));
         for (int i = 0; i < points; i++) {
             double angle = (Math.PI * 2 * i) / points;
@@ -1561,6 +1607,9 @@ public class BossInstance {
         de.aetherion.core.api.Vfx.ring(center, org.bukkit.Color.fromRGB(0xFFB15A), radius, 12);
         de.aetherion.core.api.Vfx.sound(center, de.aetherion.core.api.Vfx.BOSS_IMPACT,
                 org.bukkit.SoundCategory.MASTER, 1.2f, 1.0f);
+        if (de.aetherion.core.api.Vfx.wave(center.clone().add(0, 0.05, 0), de.aetherion.bossengine.fx.ShapeFx.tint(particle == null ? Particle.CLOUD : particle), radius, 14)) {
+            return;
+        }
         Particle ring = particle == null ? Particle.CLOUD : particle;
         int rings = 5;
         for (int r = 1; r <= rings; r++) {

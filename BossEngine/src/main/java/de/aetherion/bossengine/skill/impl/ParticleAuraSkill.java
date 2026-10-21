@@ -25,6 +25,11 @@ public class ParticleAuraSkill extends AbstractBossSkill {
     @Override
     public void execute(SkillContext context) {
         LivingEntity entity = context.getEntity();
+        // Presence, not fog: a few motes in the boss's colour rising off it.
+        if (de.aetherion.core.api.Vfx.motes(entity.getLocation().add(0, entity.getHeight() * 0.35, 0), de.aetherion.bossengine.fx.ShapeFx.tint(particle),
+                Math.max(1, Math.min(3, count / 4)), Math.max(0.3, radius * 0.7), new org.bukkit.util.Vector(0, 1.4, 0), 24)) {
+            return;
+        }
         entity.getWorld().spawnParticle(
                 particle,
                 entity.getLocation().add(0, entity.getHeight() * 0.5, 0),

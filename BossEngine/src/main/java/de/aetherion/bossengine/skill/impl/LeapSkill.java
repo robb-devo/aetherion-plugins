@@ -34,6 +34,9 @@ public class LeapSkill extends AbstractBossSkill {
         entity.setVelocity(velocity);
         entity.setFallDistance(0);
         entity.getWorld().playSound(entity.getLocation(), Sound.ENTITY_CHICKEN_HURT, 1.1f, 0.7f);
+        if (de.aetherion.core.api.Vfx.wave(entity.getLocation().add(0, 0.05, 0), de.aetherion.bossengine.fx.ShapeFx.PALE, 1.6, 9)) {
+            return;
+        }
         entity.getWorld().spawnParticle(
                 Particle.CLOUD,
                 entity.getLocation().add(0, 0.2, 0),

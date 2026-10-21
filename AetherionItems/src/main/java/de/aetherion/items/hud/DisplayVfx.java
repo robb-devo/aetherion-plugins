@@ -56,7 +56,7 @@ public final class DisplayVfx implements Vfx.Renderer {
     /** Remove leftovers from a crash or a hard stop. */
     public void sweep() {
         for (World world : Bukkit.getWorlds()) {
-            for (Entity e : world.getEntitiesByClass(TextDisplay.class)) {
+            for (Entity e : world.getEntitiesByClass(Display.class)) {
                 if (e.getScoreboardTags().contains(TAG)) {
                     e.remove();
                 }
@@ -519,6 +519,54 @@ public final class DisplayVfx implements Vfx.Renderer {
         }
         later(life - 30, () -> grow(m, transform(new Vector3f(0, -CENTRE_Y * s * 0.7f, 0), new Quaternionf(), s * 0.7f), 30));
         later(life, () -> kill(m));
+    }
+
+    @Override
+    public void chips(Location at, org.bukkit.block.data.BlockData block, int count, double power) {
+        java.util.concurrent.ThreadLocalRandom rng = java.util.concurrent.ThreadLocalRandom.current();
+        float p = (float) Math.max(0.3, Math.min(2.5, power));
+        for (int i = 0; i < Math.min(12, count); i++) {
+            if (live >= MAX_LIVE || at.getWorld() == null || !at.isChunkLoaded()) {
+                return;
+            }
+            float s = (float) (0.14 + rng.nextDouble() * 0.14);
+            double yaw = rng.nextDouble(Math.PI * 2);
+            float dx = (float) Math.cos(yaw), dz = (float) Math.sin(yaw);
+            float out = p * (0.6f + rng.nextFloat() * 0.9f);
+            Quaternionf spin0 = new Quaternionf().rotateXYZ(rng.nextFloat() * 3f, rng.nextFloat() * 3f, rng.nextFloat() * 3f);
+            Quaternionf spin1 = new Quaternionf(spin0).rotateXYZ(2.2f, 1.4f, 0.8f);
+            Quaternionf spin2 = new Quaternionf(spin1).rotateXYZ(2.0f, 1.9f, 1.1f);
+            Location spot = at.clone();
+            spot.setYaw(0f);
+            spot.setPitch(0f);
+            org.bukkit.entity.BlockDisplay chip = at.getWorld().spawn(spot, org.bukkit.entity.BlockDisplay.class, e -> {
+                e.setBlock(block);
+                e.setPersistent(false);
+                e.addScoreboardTag(TAG);
+                e.setViewRange(0.6f);
+                e.setBrightness(null);
+                e.setTransformation(new Transformation(new Vector3f(-s / 2, 0, -s / 2), spin0, new Vector3f(s, s, s), new Quaternionf()));
+            });
+            live++;
+            float up = 0.6f + rng.nextFloat() * 0.7f * p;
+            later(1, () -> moveChip(chip, new Vector3f(dx * out * 0.55f - s / 2, up, dz * out * 0.55f - s / 2), spin1, s, 5));
+            later(6, () -> moveChip(chip, new Vector3f(dx * out - s / 2, -0.15f, dz * out - s / 2), spin2, s * 0.55f, 8));
+            later(15, () -> {
+                if (chip.isValid()) {
+                    chip.remove();
+                    live = Math.max(0, live - 1);
+                }
+            });
+        }
+    }
+
+    private static void moveChip(org.bukkit.entity.BlockDisplay chip, Vector3f to, Quaternionf spin, float s, int ticks) {
+        if (!chip.isValid()) {
+            return;
+        }
+        chip.setInterpolationDelay(0);
+        chip.setInterpolationDuration(ticks);
+        chip.setTransformation(new Transformation(to, spin, new Vector3f(s, s, s), new Quaternionf()));
     }
 
     /* ------------------------------------------------------------------ shape helpers */

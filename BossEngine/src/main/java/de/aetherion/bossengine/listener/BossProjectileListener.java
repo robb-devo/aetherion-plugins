@@ -93,7 +93,9 @@ public class BossProjectileListener implements Listener {
                 living.damage(damage, shooter);
             }
             living.getWorld().playSound(living.getLocation(), Sound.ENTITY_CHICKEN_EGG, 0.9f, 1.15f);
-            living.getWorld().spawnParticle(Particle.CLOUD, living.getEyeLocation(), 8, 0.2, 0.2, 0.2, 0.02);
+            if (!de.aetherion.core.api.Vfx.burst(living.getEyeLocation(), de.aetherion.bossengine.fx.ShapeFx.PALE, 1.1, 8)) {
+                living.getWorld().spawnParticle(Particle.CLOUD, living.getEyeLocation(), 8, 0.2, 0.2, 0.2, 0.02);
+            }
         }
 
         event.setCancelled(true);
@@ -228,8 +230,13 @@ public class BossProjectileListener implements Listener {
             BossHits.hurt(player, shooter, damage);
         }
         world.playSound(at, Sound.ENTITY_DRAGON_FIREBALL_EXPLODE, 0.7f, 0.85f);
-        world.spawnParticle(Particle.DRAGON_BREATH, at, 24, 0.7, 0.4, 0.7, 0.03);
-        world.spawnParticle(Particle.EXPLOSION, at, 1, 0, 0, 0, 0);
+        if (de.aetherion.core.api.Vfx.burst(at.clone().add(0, 0.5, 0), de.aetherion.bossengine.fx.ShapeFx.VOID, 2.6, 11)) {
+            de.aetherion.core.api.Vfx.wave(at.clone().add(0, 0.05, 0), de.aetherion.bossengine.fx.ShapeFx.VOID, 3.0, 13);
+            de.aetherion.core.api.Vfx.motes(at.clone().add(0, 0.3, 0), de.aetherion.bossengine.fx.ShapeFx.VOID, 4, 0.8, new org.bukkit.util.Vector(0, 1.6, 0), 24);
+        } else {
+            world.spawnParticle(Particle.DRAGON_BREATH, at, 24, 0.7, 0.4, 0.7, 0.03);
+            world.spawnParticle(Particle.EXPLOSION, at, 1, 0, 0, 0, 0);
+        }
         for (Entity nearby : fireball.getNearbyEntities(6, 6, 6)) {
             if (nearby instanceof org.bukkit.entity.AreaEffectCloud) {
                 nearby.remove();

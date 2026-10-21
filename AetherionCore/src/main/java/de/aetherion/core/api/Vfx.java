@@ -104,6 +104,10 @@ public final class Vfx {
         /** A faint bank of mist {@code size} blocks across, drifting by {@code drift} over {@code ticks}. */
         default void mist(Location at, Color color, double size, org.bukkit.util.Vector drift, int ticks) {
         }
+
+        /** Small chips of {@code block} thrown out and falling (impact debris), {@code power} ~1 for a hit. */
+        default void chips(Location at, org.bukkit.block.data.BlockData block, int count, double power) {
+        }
     }
 
     private static volatile Renderer renderer;
@@ -281,6 +285,15 @@ public final class Vfx {
             return false;
         }
         r.mist(at, color, size, drift, ticks);
+        return true;
+    }
+
+    public static boolean chips(Location at, org.bukkit.block.data.BlockData block, int count, double power) {
+        Renderer r = renderer;
+        if (r == null || !placed(at) || block == null || count <= 0) {
+            return false;
+        }
+        r.chips(at, block, count, power);
         return true;
     }
 
