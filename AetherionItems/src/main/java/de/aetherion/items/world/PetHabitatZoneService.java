@@ -238,17 +238,6 @@ public final class PetHabitatZoneService implements Runnable {
                 continue;
             }
             ensureMarker(zone);
-            if (Math.random() < 0.18) {
-                world.spawnParticle(
-                        Particle.HAPPY_VILLAGER,
-                        center.clone().add(0, 1.1, 0),
-                        4,
-                        0.35,
-                        0.25,
-                        0.35,
-                        0
-                );
-            }
         }
     }
 
@@ -318,12 +307,22 @@ public final class PetHabitatZoneService implements Runnable {
     }
 
     private void ensureMarker(PetHabitatZone zone) {
-        if (zone.getMarkerId() != null) {
-            Entity entity = Bukkit.getEntity(zone.getMarkerId());
-            if (entity != null && entity.isValid()) {
-                StaffVisibility.apply(plugin, entity);
-                return;
+        World world = Bukkit.getWorld(zone.getWorldName());
+        if (world == null) {
+            return;
+        }
+        Location centre = zone.center(world);
+        if (!ZoneMarkers.ready(centre)) {
+            return;
+        }
+        ArmorStand stand = ZoneMarkers.keepOne(centre, ItemKeys.petHabitatZone(), zone.getId().toString(), zone.getMarkerId());
+        if (stand != null) {
+            StaffVisibility.apply(plugin, stand);
+            if (!stand.getUniqueId().equals(zone.getMarkerId())) {
+                zone.setMarkerId(stand.getUniqueId());
+                save();
             }
+            return;
         }
         spawnMarker(zone);
         save();

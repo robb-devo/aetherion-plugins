@@ -366,15 +366,17 @@ public final class AreaService {
                 continue;
             }
             Location center = zone.center(world);
-            if (!center.getChunk().isLoaded()) {
+            if (!ZoneMarkers.ready(center)) {
                 continue;
             }
-            if (zone.getMarkerId() != null) {
-                Entity entity = Bukkit.getEntity(zone.getMarkerId());
-                if (entity != null && entity.isValid()) {
-                    applyVisibility(entity);
-                    continue;
+            ArmorStand stand = ZoneMarkers.keepOne(center, ItemKeys.areaZone(), zone.getId().toString(), zone.getMarkerId());
+            if (stand != null) {
+                applyVisibility(stand);
+                if (!stand.getUniqueId().equals(zone.getMarkerId())) {
+                    zone.setMarkerId(stand.getUniqueId());
+                    save();
                 }
+                continue;
             }
             spawnMarker(zone);
             save();

@@ -1,10 +1,15 @@
 package de.aetherion.items.world;
 
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
+/**
+ * Zone label stands are for building, not for playing: staff see them in creative or spectator only, so an admin
+ * testing in survival sees the island the way players do. Re-applied on every zone tick (about 10 s) and on join.
+ */
 public final class StaffVisibility {
 
     private StaffVisibility() {
@@ -29,7 +34,7 @@ public final class StaffVisibility {
             return;
         }
         entity.setVisibleByDefault(false);
-        if (isStaff(player)) {
+        if (isStaff(player) && (player.getGameMode() == GameMode.CREATIVE || player.getGameMode() == GameMode.SPECTATOR)) {
             player.showEntity(plugin, entity);
         } else {
             player.hideEntity(plugin, entity);
