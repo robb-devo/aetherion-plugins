@@ -66,6 +66,23 @@ public final class ExileCommand implements CommandExecutor, TabCompleter {
             de.aetherion.core.exile.ExileSaintClear.clear(plugin, sender, worldName);
             return true;
         }
+        // Borderlands terrain the 10-14/15 quay clears aired, back from FAWE history; arena leftovers out.
+        if ("restoremap".equals(sub) || "cleararena".equals(sub)) {
+            if (!admin) {
+                sender.sendMessage("§cNo permission.");
+                return true;
+            }
+            try {
+                if ("restoremap".equals(sub)) {
+                    de.aetherion.core.exile.ExileMapRestore.restore(plugin, sender, args);
+                } else {
+                    de.aetherion.core.exile.ExileMapRestore.clearArena(plugin, sender, args);
+                }
+            } catch (NumberFormatException ex) {
+                sender.sendMessage("§cBad number: §f" + ex.getMessage());
+            }
+            return true;
+        }
         // Walk from the Borderlands cliff to the pier head: stand where it should leave the cliff. "undo" takes it back.
         if ("causeway".equals(sub)) {
             if (!admin) {
@@ -242,7 +259,7 @@ public final class ExileCommand implements CommandExecutor, TabCompleter {
                 || sender instanceof org.bukkit.command.ConsoleCommandSender;
         for (String s : admin
                 ? List.of("go", "return", "replay", "stop", "where", "setquay", "causeway", "paste",
-                        "placequay", "quayundo", "clearsaint")
+                        "placequay", "quayundo", "clearsaint", "restoremap", "cleararena")
                 : List.of("go", "return", "replay", "stop", "where")) {
             if (s.startsWith(prefix)) {
                 out.add(s);
