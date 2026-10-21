@@ -1414,7 +1414,7 @@ public final class WildlifeLooks implements Listener {
         }
         int current = Math.max(0, (int) Math.ceil(healthNow));
         int max = Math.max(1, (int) Math.ceil(entity.getMaxHealth()));
-        String text = title + " §c" + current + "§8/§7" + max;
+        String text = plate(entity, title, current, max);
         entity.customName(null);
         entity.setCustomNameVisible(false);
         TextDisplay label = labelOf(entity);
@@ -1425,6 +1425,45 @@ public final class WildlifeLooks implements Listener {
             label.setSeeThrough(false);
             // Passenger attach is already near the head — keep a tiny lift only.
             label.setTransformation(labelTransform(entity));
+        }
+    }
+
+    /**
+     * Hostiles read at a glance: a red "!" while they hunt a player, their tier as stars (grey 1, gold 2, red 3,
+     * purple 4), the name, and under it HP plus what they do (⚔ melee, ➶ ranged, ✹ explodes, ☠ poison, ✦ magic).
+     * Animals keep the one-line name + HP. Symbols only: one plate is shared by every viewer, whatever language.
+     */
+    private static String plate(LivingEntity entity, String title, int current, int max) {
+        String hp = "§c" + current + "§8/§7" + max;
+        if (!(entity instanceof org.bukkit.entity.Enemy)) {
+            return title + " " + hp;
+        }
+        String stars = switch (tierOf(entity)) {
+            case TIER_STURDY -> "§6★★";
+            case TIER_BRUTE -> "§c★★★";
+            case TIER_CRYPT -> "§5★★★★";
+            default -> "§7★";
+        };
+        boolean hunting = entity instanceof Mob mob && mob.getTarget() instanceof Player;
+        return (hunting ? "§c§l!§r " : "") + stars + " " + title + "\n" + hp + " §8· " + role(entity.getType());
+    }
+
+    private static String role(EntityType type) {
+        return switch (type) {
+            case CREEPER -> "§e✹";
+            case CAVE_SPIDER, BOGGED -> "§2☠";
+            case WITCH, EVOKER, ILLUSIONER, VEX -> "§d✦";
+            case SKELETON, STRAY, PILLAGER, BLAZE, GHAST, SHULKER, BREEZE, GUARDIAN -> "§7➶";
+            default -> "§7⚔";
+        };
+    }
+
+    /** A hostile picks or drops a player: its plate shows (or loses) the "!" next tick. */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onTarget(org.bukkit.event.entity.EntityTargetLivingEntityEvent event) {
+        if (event.getEntity() instanceof LivingEntity living && living instanceof org.bukkit.entity.Enemy
+                && (event.getTarget() instanceof Player || event.getTarget() == null)) {
+            plugin.getServer().getScheduler().runTask(plugin, () -> refreshLabel(living));
         }
     }
 

@@ -228,8 +228,6 @@ public final class OriginIsle implements Listener {
                 bay.scan(onIsle);
                 life.slow(onIsle, tick);
                 curiosities.glints(onIsle);
-            } else if (tick % 4 == 0) {
-                ambience.fastEmitters(onIsle, tick);
             }
             if (tick % 60 == 0) {
                 ambience.soundscape(onIsle);

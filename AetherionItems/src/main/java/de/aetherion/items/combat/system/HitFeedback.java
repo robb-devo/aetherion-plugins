@@ -8,7 +8,6 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 
-import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
@@ -27,8 +26,9 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Sounds, particles, callouts and hitstop for the kit. Everything scales with {@code feedback.intensity};
- * at 0 the kit is silent and only the stamina gauge still pulses. No flashes, no screen effects.
+ * Sounds, glyphs, callouts and hitstop for the kit. Everything scales with {@code feedback.intensity};
+ * at 0 the kit is silent and only the stamina gauge still pulses. Particles are small accents at the contact
+ * point (the display slash, ground ring and screen glyph do the talking). No flashes, no screen effects.
  */
 final class HitFeedback {
 
@@ -39,13 +39,6 @@ final class HitFeedback {
     static final TextColor RIPOSTE = TextColor.color(0xE58BFF);
     static final TextColor WARN = TextColor.color(0xFF6B5A);
 
-    private static final Particle.DustOptions GUARD_DUST = new Particle.DustOptions(Color.fromRGB(0xCFE3F2), 0.8f);
-    private static final Particle.DustOptions PARRY_DUST = new Particle.DustOptions(Color.fromRGB(0xFFC94A), 1.4f);
-    private static final Particle.DustOptions PARRY_WHITE = new Particle.DustOptions(Color.fromRGB(0xFFF6D8), 1.0f);
-    private static final Particle.DustOptions DODGE_DUST = new Particle.DustOptions(Color.fromRGB(0x9FE3FF), 1.2f);
-    private static final Particle.DustOptions FINISH_DUST = new Particle.DustOptions(Color.fromRGB(0xFF9A3C), 1.3f);
-    private static final Particle.DustOptions RIPOSTE_DUST = new Particle.DustOptions(Color.fromRGB(0xE58BFF), 1.3f);
-    private static final Particle.DustOptions GREY_DUST = new Particle.DustOptions(Color.fromRGB(0x8A8A8A), 0.6f);
 
     private final CombatSystem system;
     /** Mobs held for a hitstop: knockback is parked for a couple of ticks, then given back. */
@@ -79,7 +72,6 @@ final class HitFeedback {
             player.playSound(player, Sound.ENTITY_HORSE_BREATHE, (float) (0.9 * k), 1.35f);
             player.playSound(player, Sound.ENTITY_PLAYER_HURT_DROWN, (float) (0.5 * k), 0.7f);
             player.playSound(player, Sound.ENTITY_WARDEN_HEARTBEAT, (float) (0.9 * k), 1.1f);
-            player.getWorld().spawnParticle(Particle.DUST, chest(player), count(8), 0.3, 0.4, 0.3, 0.0, GREY_DUST);
         }
         CombatGlyphs.flash(system, player, CombatGlyphs.Glyph.WINDED);
         callout(player, "✖ WINDED ✖", "✖ ERSCHÖPFT ✖", WARN, 30);
@@ -95,8 +87,6 @@ final class HitFeedback {
             return;
         }
         player.getWorld().playSound(player.getLocation(), Sound.ITEM_ARMOR_EQUIP_CHAIN, (float) (0.7 * k), 1.55f);
-        Location chest = chest(player).add(CombatSystem.facing(player).multiply(0.7));
-        player.getWorld().spawnParticle(Particle.DUST, chest, count(5), 0.25, 0.3, 0.25, 0.0, GUARD_DUST);
     }
 
     void whiff(Player player) {
@@ -104,8 +94,6 @@ final class HitFeedback {
         if (k > 0.0) {
             player.playSound(player, Sound.ENTITY_PLAYER_ATTACK_NODAMAGE, (float) (0.8 * k), 0.6f);
             player.playSound(player, Sound.BLOCK_CHAIN_FALL, (float) (0.6 * k), 0.6f);
-            player.getWorld().spawnParticle(Particle.DUST, chest(player).add(CombatSystem.facing(player).multiply(0.7)),
-                    count(5), 0.2, 0.2, 0.2, 0.0, GREY_DUST);
         }
         callout(player, "WHIFF · guard locked", "DANEBEN · Block gesperrt", NamedTextColor.GRAY, 16);
     }
@@ -136,18 +124,8 @@ final class HitFeedback {
                 world.playSound(contact, Sound.ENTITY_GENERIC_EXPLODE, 0.45f * v, 1.6f);
                 world.playSound(contact, Sound.ITEM_TRIDENT_THUNDER, 0.35f * v, 1.9f);
             }
-            world.spawnParticle(Particle.FLASH, contact, 1, 0, 0, 0, 0);
-            world.spawnParticle(Particle.DUST, contact, count(24), 0.35, 0.35, 0.35, 0.0, PARRY_DUST);
-            world.spawnParticle(Particle.DUST, contact, count(10), 0.2, 0.2, 0.2, 0.0, PARRY_WHITE);
-            world.spawnParticle(Particle.ELECTRIC_SPARK, contact, count(30), 0.25, 0.25, 0.25, 0.6);
-            world.spawnParticle(Particle.CRIT, contact, count(18), 0.2, 0.2, 0.2, 0.6);
-            world.spawnParticle(Particle.WAX_OFF, contact, count(8), 0.3, 0.3, 0.3, 0.5);
-            Location feet = player.getLocation().add(0, 0.1, 0);
-            for (int i = 0; i < 16; i++) {
-                double a = Math.PI * 2 * i / 16.0;
-                world.spawnParticle(Particle.DUST, feet.clone().add(Math.cos(a) * 1.2, 0, Math.sin(a) * 1.2), 1, 0, 0, 0, 0,
-                        PARRY_DUST);
-            }
+            // The gold ring on the ground and the glyph carry it; one small spark at the clash is enough.
+            world.spawnParticle(Particle.CRIT, contact, count(6), 0.15, 0.15, 0.15, 0.4);
             kick(player, attacker, 0.6);
             CombatGlyphs.flash(system, player, CombatGlyphs.Glyph.PARRY);
         }
@@ -168,8 +146,7 @@ final class HitFeedback {
         World world = player.getWorld();
         world.playSound(contact, Sound.ITEM_SHIELD_BLOCK, (float) (0.9 * k), 0.8f);
         world.playSound(contact, Sound.BLOCK_GRINDSTONE_USE, (float) (0.6 * k), 1.4f);
-        world.spawnParticle(Particle.DUST, contact, count(10), 0.25, 0.25, 0.25, 0.0, GUARD_DUST);
-        world.spawnParticle(Particle.CRIT, contact, count(6), 0.15, 0.15, 0.15, 0.25);
+        world.spawnParticle(Particle.CRIT, contact, count(3), 0.15, 0.15, 0.15, 0.25);
         CombatGlyphs.flash(system, player, CombatGlyphs.Glyph.GUARD);
         callout(player, "GUARD ½", "GEBLOCKT ½", STEEL, 18);
     }
@@ -181,7 +158,7 @@ final class HitFeedback {
         }
         Location head = victim.getLocation().add(0, victim.getHeight() + 0.25, 0);
         victim.getWorld().playSound(head, Sound.ENTITY_ZOMBIE_ATTACK_IRON_DOOR, (float) (0.45 * k), 1.65f);
-        victim.getWorld().spawnParticle(Particle.CRIT, head, count(8), 0.25, 0.1, 0.25, 0.25);
+        victim.getWorld().spawnParticle(Particle.CRIT, head, count(3), 0.2, 0.1, 0.2, 0.2);
     }
 
     /** Small orbit of sparks over a staggered mob, every few ticks while it lasts. */
@@ -205,29 +182,7 @@ final class HitFeedback {
         }
         Location feet = player.getLocation().add(0, 0.15, 0);
         player.getWorld().playSound(feet, Sound.ENTITY_BREEZE_WIND_BURST, (float) (0.45 * k), 1.45f);
-        player.getWorld().spawnParticle(Particle.SMALL_GUST, feet, count(2), 0.2, 0.05, 0.2, 0.0);
-        player.getWorld().spawnParticle(Particle.CLOUD, feet, count(6), 0.25, 0.05, 0.25, 0.02);
-        trail(player, 4, false);
-    }
-
-    /** Dust puffs at the feet for a few ticks, so the travel itself reads (an air trail, not just a start puff). */
-    private void trail(Player player, int ticks, boolean tired) {
-        new org.bukkit.scheduler.BukkitRunnable() {
-            int left = ticks;
-
-            @Override
-            public void run() {
-                if (left-- <= 0 || !player.isOnline() || intensity() <= 0.0) {
-                    cancel();
-                    return;
-                }
-                Location feet = player.getLocation().add(0, 0.15, 0);
-                player.getWorld().spawnParticle(tired ? Particle.POOF : Particle.CLOUD, feet, count(3), 0.15, 0.05, 0.15, 0.01);
-                if (!tired) {
-                    player.getWorld().spawnParticle(Particle.DUST, feet.add(0, 0.6, 0), count(2), 0.15, 0.3, 0.15, 0.0, DODGE_DUST);
-                }
-            }
-        }.runTaskTimer(system.plugin(), 1L, 1L);
+        player.getWorld().spawnParticle(Particle.SMALL_GUST, feet, 1, 0.2, 0.05, 0.2, 0.0);
     }
 
     void roll(Player player, boolean fatigued) {
@@ -238,8 +193,7 @@ final class HitFeedback {
         Location feet = player.getLocation().add(0, 0.1, 0);
         player.getWorld().playSound(feet, Sound.ENTITY_PLAYER_ATTACK_SWEEP, (float) (0.4 * k), fatigued ? 0.8f : 1.55f);
         player.getWorld().playSound(feet, Sound.ITEM_ARMOR_EQUIP_LEATHER, (float) (0.6 * k), 1.2f);
-        player.getWorld().spawnParticle(Particle.POOF, feet, count(fatigued ? 3 : 7), 0.3, 0.05, 0.3, 0.02);
-        trail(player, fatigued ? 2 : 5, fatigued);
+        player.getWorld().spawnParticle(Particle.POOF, feet, count(3), 0.3, 0.05, 0.3, 0.02);
         if (fatigued) {
             callout(player, "TIRED ROLL", "MÜDE ROLLE", WARN, 16);
         }
@@ -255,9 +209,7 @@ final class HitFeedback {
             world.playSound(chest, Sound.ENTITY_BREEZE_WIND_BURST, (float) (0.7 * k), 1.7f);
             player.playSound(player, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, (float) (0.7 * k), 1.4f);
             player.playSound(player, Sound.BLOCK_AMETHYST_BLOCK_CHIME, (float) (0.9 * k), 1.9f);
-            world.spawnParticle(Particle.END_ROD, chest, count(16), 0.35, 0.5, 0.35, 0.06);
-            world.spawnParticle(Particle.DUST, chest, count(18), 0.45, 0.55, 0.45, 0.0, DODGE_DUST);
-            world.spawnParticle(Particle.GUST, player.getLocation().add(0, 0.3, 0), 1, 0, 0, 0, 0);
+            world.spawnParticle(Particle.SMALL_GUST, player.getLocation().add(0, 0.3, 0), 1, 0, 0, 0, 0);
         }
         CombatGlyphs.flash(system, player, CombatGlyphs.Glyph.DODGE);
         callout(player, "≫ PERFECT DODGE ≪", "≫ PERFEKT AUSGEWICHEN ≪", DODGE, 28);
@@ -295,25 +247,19 @@ final class HitFeedback {
             case HEAVY, DASH -> {
                 player.playSound(at, Sound.ENTITY_PLAYER_ATTACK_KNOCKBACK, (float) (0.8 * k), 0.85f);
                 player.playSound(at, Sound.ENTITY_PLAYER_ATTACK_STRONG, (float) (0.6 * k), 0.7f);
-                world.spawnParticle(Particle.CRIT, at, count(10), 0.25, 0.3, 0.25, 0.3);
-                world.spawnParticle(Particle.DAMAGE_INDICATOR, at, count(3), 0.2, 0.2, 0.2, 0.1);
+                world.spawnParticle(Particle.CRIT, at, count(4), 0.2, 0.25, 0.2, 0.3);
             }
             case AERIAL -> {
                 player.playSound(at, Sound.ITEM_MACE_SMASH_AIR, (float) (0.7 * k), 1.3f);
                 player.playSound(at, Sound.ENTITY_PLAYER_ATTACK_CRIT, (float) (0.8 * k), 0.9f);
-                world.spawnParticle(Particle.CRIT, at, count(14), 0.25, 0.35, 0.25, 0.35);
-                world.spawnParticle(Particle.DUST, at, count(8), 0.25, 0.3, 0.25, 0.0, DODGE_DUST);
+                world.spawnParticle(Particle.CRIT, at, count(5), 0.2, 0.3, 0.2, 0.35);
             }
             case FINISHER -> {
                 world.playSound(at, Sound.ITEM_MACE_SMASH_GROUND, (float) (0.9 * k), 1.2f);
                 world.playSound(at, Sound.ENTITY_PLAYER_ATTACK_STRONG, (float) (1.0 * k), 0.7f);
                 world.playSound(at, Sound.ENTITY_BLAZE_SHOOT, (float) (0.5 * k), 1.4f);
                 world.playSound(at, Sound.BLOCK_ANVIL_LAND, (float) (0.35 * k), 0.9f);
-                world.spawnParticle(Particle.SWEEP_ATTACK, at, 2, 0.3, 0.1, 0.3, 0);
-                world.spawnParticle(Particle.CRIT, at, count(24), 0.35, 0.4, 0.35, 0.5);
-                world.spawnParticle(Particle.DUST, at, count(18), 0.4, 0.4, 0.4, 0.0, FINISH_DUST);
-                world.spawnParticle(Particle.FLAME, at, count(10), 0.25, 0.3, 0.25, 0.08);
-                world.spawnParticle(Particle.FLASH, at, 1, 0, 0, 0, 0);
+                world.spawnParticle(Particle.CRIT, at, count(6), 0.25, 0.3, 0.25, 0.4);
                 CombatGlyphs.flash(system, player, CombatGlyphs.Glyph.FINISHER);
                 callout(player, "✸ FINISHER ✸", "✸ FINISHER ✸", FINISH, 24);
                 kick(player, victim, 0.35);
@@ -323,11 +269,7 @@ final class HitFeedback {
                 world.playSound(at, Sound.BLOCK_BELL_USE, (float) (0.6 * k), 1.5f);
                 world.playSound(at, Sound.ENTITY_EVOKER_CAST_SPELL, (float) (0.5 * k), 1.6f);
                 world.playSound(at, Sound.ENTITY_PLAYER_ATTACK_STRONG, (float) (0.9 * k), 0.8f);
-                world.spawnParticle(Particle.SWEEP_ATTACK, at, 1, 0, 0, 0, 0);
-                world.spawnParticle(Particle.ENCHANTED_HIT, at, count(26), 0.3, 0.35, 0.3, 0.5);
-                world.spawnParticle(Particle.DUST, at, count(16), 0.35, 0.4, 0.35, 0.0, RIPOSTE_DUST);
-                world.spawnParticle(Particle.WITCH, at, count(8), 0.3, 0.3, 0.3, 0.1);
-                world.spawnParticle(Particle.FLASH, at, 1, 0, 0, 0, 0);
+                world.spawnParticle(Particle.ENCHANTED_HIT, at, count(6), 0.25, 0.3, 0.25, 0.4);
                 CombatGlyphs.flash(system, player, CombatGlyphs.Glyph.RIPOSTE);
                 callout(player, "» RIPOSTE «", "» KONTER «", RIPOSTE, 24);
                 kick(player, victim, 0.35);

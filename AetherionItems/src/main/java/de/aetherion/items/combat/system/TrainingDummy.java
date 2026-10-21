@@ -63,6 +63,11 @@ final class TrainingDummy {
     private static final Particle.DustOptions JAB_DUST = new Particle.DustOptions(Color.fromRGB(0xFFD24A), 1.0f);
     private static final Particle.DustOptions SLAM_DUST = new Particle.DustOptions(Color.fromRGB(0xFF5A4A), 1.6f);
     private static final Particle.DustOptions SLAM_CORE = new Particle.DustOptions(Color.fromRGB(0xB0201A), 1.1f);
+    private static final Color SLAM_COLOR = Color.fromRGB(0xFF5A4A);
+    /** The slam marker turns white this many ticks before it lands: "roll now". */
+    private static final int SLAM_BEAT = 8;
+    /** A roll started this recently when the slam lands counts, through it or out of it (it's a drill). */
+    private static final int SLAM_ROLL_GRACE = 12;
 
     enum Move { JAB, SLAM }
 
@@ -155,7 +160,7 @@ final class TrainingDummy {
         }
         World world = golem.getWorld();
         world.playSound(at, Sound.ENTITY_IRON_GOLEM_REPAIR, 0.8f, 0.8f);
-        world.spawnParticle(Particle.CLOUD, at.clone().add(0, 0.3, 0), 12, 0.4, 0.1, 0.4, 0.02);
+        world.spawnParticle(Particle.CLOUD, at.clone().add(0, 0.3, 0), 4, 0.4, 0.1, 0.4, 0.02);
         long tick = Bukkit.getCurrentTick();
         Dummy dummy = new Dummy(golem, owner.getUniqueId(), name, tick);
         dummy.nextAt = tick + 30;
@@ -216,8 +221,7 @@ final class TrainingDummy {
         golem.playEffect(EntityEffect.HURT);
         world.playSound(head, Sound.ENTITY_IRON_GOLEM_DAMAGE, 1.0f, 0.7f);
         world.playSound(head, Sound.ENTITY_IRON_GOLEM_REPAIR, 0.6f, 0.6f);
-        world.spawnParticle(Particle.CRIT, head, 20, 0.4, 0.2, 0.4, 0.4);
-        world.spawnParticle(Particle.ELECTRIC_SPARK, head, 14, 0.5, 0.3, 0.5, 0.2);
+        world.spawnParticle(Particle.CRIT, head, 6, 0.3, 0.2, 0.3, 0.3);
         Vector back = forward(golem).multiply(-0.35).setY(0.15);
         golem.setVelocity(back);
     }
@@ -302,6 +306,8 @@ final class TrainingDummy {
         });
         World world = golem.getWorld();
         if (slam) {
+            // One ground warning (display entities: dashed edge + a fill that grows to the edge as the slam lands).
+            de.aetherion.core.api.Vfx.telegraph(golem.getLocation(), cfg.dummyReach, dummy.windupTicks, SLAM_COLOR);
             world.playSound(golem.getLocation(), Sound.ENTITY_RAVAGER_ROAR, 0.8f, 1.3f);
             world.playSound(golem.getLocation(), Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 0.9f, 0.7f);
             world.playSound(golem.getLocation(), Sound.ENTITY_WARDEN_HEARTBEAT, 1.0f, 0.8f);
@@ -319,9 +325,10 @@ final class TrainingDummy {
     }
 
     /**
-     * Windup tells. Jab: a gold charge gathers at the fist with a rising tick every 4 ticks, then a white
-     * flash 4 ticks out (that flash is the "press F now" beat). Slam: a fat red ring at reach, a closing
-     * inner ring, a filled danger disc and a bass pulse that speeds up; last 6 ticks the ground cracks.
+     * Windup tells, mostly sound and the marker. Jab: a few gold motes at the fist and a rising tick every 4 ticks;
+     * 4 ticks out the marker flips to white with a chime (that is the "press F now" beat). Slam: the display
+     * telegraph from {@link #windup} (a thin particle ring only when no display renderer runs) and a bass pulse
+     * that speeds up; the last 6 ticks the ground cracks.
      */
     private void telegraph(Dummy dummy, CombatConfig cfg, long tick) {
         IronGolem golem = dummy.golem;
@@ -330,18 +337,16 @@ final class TrainingDummy {
         long left = dummy.strikeAt - tick;
         double share = Math.max(0.0, left / (double) Math.max(1, dummy.windupTicks));
         if (dummy.move == Move.SLAM) {
-            if (tick % 2 == 0) {
-                double inner = cfg.dummyReach * (1.0 - share * 0.85);
-                ring(world, base, cfg.dummyReach, 28, SLAM_DUST);
-                ring(world, base, cfg.dummyReach - 0.25, 22, SLAM_DUST);
-                ring(world, base, inner, 14, SLAM_CORE);
-                if (left <= 8) {
-                    for (int i = 0; i < 6; i++) {
-                        double a = Math.random() * Math.PI * 2, r = Math.random() * cfg.dummyReach;
-                        world.spawnParticle(Particle.DUST, base.clone().add(Math.cos(a) * r, 0.12, Math.sin(a) * r),
-                                1, 0, 0, 0, 0, SLAM_CORE);
-                    }
+            if (!de.aetherion.core.api.Vfx.active() && tick % 4 == 0) {
+                ring(world, base, cfg.dummyReach, 20, SLAM_DUST);
+                ring(world, base, cfg.dummyReach * (1.0 - share * 0.85), 10, SLAM_CORE);
+            }
+            if (left == SLAM_BEAT) {
+                if (dummy.marker != null && dummy.marker.isValid()) {
+                    dummy.marker.text(dummy.marker.text().color(NamedTextColor.WHITE));
                 }
+                world.playSound(base, Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 0.7f);
+                world.playSound(base, Sound.ITEM_TRIDENT_RETURN, 0.9f, 1.4f);
             }
             int every = left > 12 ? 6 : left > 6 ? 4 : 2;
             if (tick % every == 0) {
@@ -349,20 +354,19 @@ final class TrainingDummy {
             }
             if (left <= 6 && tick % 2 == 0) {
                 world.playSound(base, Sound.BLOCK_DEEPSLATE_BREAK, 0.6f, 0.6f);
-                world.spawnParticle(Particle.LARGE_SMOKE, base.clone().add(0, 0.2, 0), 4, cfg.dummyReach * 0.4, 0.05,
-                        cfg.dummyReach * 0.4, 0.01);
             }
         } else {
             Location fist = base.clone().add(forward(golem).multiply(0.9)).add(0, 1.6, 0);
-            if (tick % 2 == 0) {
-                world.spawnParticle(Particle.DUST, fist, 6, 0.16, 0.16, 0.16, 0.0, JAB_DUST);
-                world.spawnParticle(Particle.ELECTRIC_SPARK, fist, 2, 0.1, 0.1, 0.1, 0.05);
+            if (tick % 4 == 0) {
+                world.spawnParticle(Particle.DUST, fist, 2, 0.12, 0.12, 0.12, 0.0, JAB_DUST);
             }
             if (tick % 4 == 0 && left > 4) {
                 world.playSound(base, Sound.BLOCK_NOTE_BLOCK_HAT, 0.8f, (float) (1.0 + (1.0 - share) * 0.9));
             }
             if (left == 4) {
-                world.spawnParticle(Particle.FLASH, fist, 1, 0, 0, 0, 0);
+                if (dummy.marker != null && dummy.marker.isValid()) {
+                    dummy.marker.text(dummy.marker.text().color(NamedTextColor.WHITE));
+                }
                 world.playSound(base, Sound.BLOCK_AMETHYST_BLOCK_CHIME, 1.2f, 1.9f);
                 world.playSound(base, Sound.BLOCK_NOTE_BLOCK_PLING, 0.9f, 2.0f);
             }
@@ -401,23 +405,29 @@ final class TrainingDummy {
             world.playSound(base, Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 1.0f, 0.8f);
             world.playSound(base, Sound.ENTITY_GENERIC_EXPLODE, 0.6f, 1.2f);
             world.playSound(base, Sound.ENTITY_WARDEN_ATTACK_IMPACT, 0.8f, 0.7f);
-            world.spawnParticle(Particle.GUST_EMITTER_SMALL, base.clone().add(0, 0.2, 0), 1, 0, 0, 0, 0);
+            de.aetherion.core.api.Vfx.ring(base, SLAM_COLOR, cfg.dummyReach, 10);
             BlockData ground = world.getBlockAt(base.getBlockX(), base.getBlockY() - 1, base.getBlockZ()).getBlockData();
             if (ground.getMaterial().isAir()) {
                 ground = org.bukkit.Material.STONE.createBlockData();
             }
-            for (int i = 0; i < 20; i++) {
-                double angle = Math.PI * 2 * i / 20.0;
+            for (int i = 0; i < 12; i++) {
+                double angle = Math.PI * 2 * i / 12.0;
                 Location at = base.clone().add(Math.cos(angle) * cfg.dummyReach, 0.15, Math.sin(angle) * cfg.dummyReach);
-                world.spawnParticle(Particle.BLOCK, at, 6, 0.15, 0.1, 0.15, 0.0, ground);
+                world.spawnParticle(Particle.BLOCK, at, 2, 0.15, 0.1, 0.15, 0.0, ground);
             }
-            world.spawnParticle(Particle.EXPLOSION, base.clone().add(0, 0.3, 0), 1, 0, 0, 0, 0);
         } else {
             world.playSound(base, Sound.ENTITY_IRON_GOLEM_ATTACK, 1.0f, 1.1f);
             Location fist = base.clone().add(forward(golem).multiply(1.4)).add(0, 1.3, 0);
             world.spawnParticle(Particle.SWEEP_ATTACK, fist, 1, 0, 0, 0, 0);
         }
 
+        if (move == Move.SLAM) {
+            for (Player near : world.getPlayers()) {
+                if (horizontal(golem, near) <= cfg.dummyReach + 4.5 && rolledClear(near, tick)) {
+                    targets.remove(near);
+                }
+            }
+        }
         for (Player target : targets) {
             double before = target.getHealth() + target.getAbsorptionAmount();
             // Never lethal before mitigation either, so the set death saves never see a killing blow.
@@ -447,6 +457,21 @@ final class TrainingDummy {
                 }
             }
         }
+    }
+
+    /** Rolled since the white beat: the dodge counts (refund, glyph, drill) and the slam skips them. */
+    private boolean rolledClear(Player player, long tick) {
+        CombatState state = system.peek(player);
+        if (state == null || tick - state.rollStartTick > SLAM_ROLL_GRACE) {
+            return false;
+        }
+        if (!state.rollDodged) {
+            state.rollDodged = true;
+            system.refund(state, system.config().perfectDodgeRefund);
+            system.feedback().perfectDodge(player);
+            system.drill(player, CombatSystem.DRILL_DODGE);
+        }
+        return true;
     }
 
     /* =========================================================
