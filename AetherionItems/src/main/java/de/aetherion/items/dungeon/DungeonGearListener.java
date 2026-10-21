@@ -279,7 +279,15 @@ public final class DungeonGearListener implements Listener, StatProvider, Runnab
             return;
         }
         player.setHealth(Math.min(max, current + amount));
-        de.aetherion.core.api.Vfx.puff(player.getLocation().add(0, 1, 0), Particle.HAPPY_VILLAGER, 5, Math.max(0.25, 0.25), null);
+        player.getWorld().spawnParticle(
+                Particle.HAPPY_VILLAGER,
+                player.getLocation().add(0, 1, 0),
+                5,
+                0.25,
+                0.35,
+                0.25,
+                0.01
+        );
     }
 
     private static void absorb(Player player, double amount) {
@@ -287,6 +295,14 @@ public final class DungeonGearListener implements Listener, StatProvider, Runnab
             return;
         }
         player.setAbsorptionAmount(Math.min(8.0, player.getAbsorptionAmount() + amount));
-        de.aetherion.core.api.Vfx.puff(player.getLocation().add(0, 1, 0), Particle.ENCHANT, 8, Math.max(0.3, 0.3), null);
+        player.getWorld().spawnParticle(
+                Particle.ENCHANT,
+                player.getLocation().add(0, 1, 0),
+                8,
+                0.3,
+                0.4,
+                0.3,
+                0.4
+        );
     }
 }
