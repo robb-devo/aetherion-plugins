@@ -198,9 +198,11 @@ public final class BetaWipe {
         removed += wipePlugin("AetherionQuests", List.of("players.yml"), List.of("players", "data"));
         removed += wipePlugin("AetherMobs", List.of(), List.of("pets"));
         removed += wipePlugin("AetherionBeta", List.of(), List.of("players"));
+        // islands/: per-island factory saves. They go with the island worlds, or Guilds would restore records
+        // for islands that no longer exist (PersonalIslandService.attachFiles).
         removed += wipePlugin("AetherionGuilds",
                 List.of("guilds.yml", "personal_islands.yml", "friends.yml"),
-                List.of());
+                List.of("islands"));
         removed += wipePlugin("AetherionDungeons", List.of(), List.of("transfer-snapshots"));
         removed += wipePlugin("Essentials", List.of(), List.of("userdata"));
         removed += wipePlugin("EssentialsX", List.of(), List.of("userdata"));

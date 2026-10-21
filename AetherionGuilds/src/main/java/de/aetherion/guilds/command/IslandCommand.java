@@ -64,11 +64,17 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
             }
             return true;
         }
+        PersonalIsland own = islands.byOwner(player.getUniqueId());
         if (args.length == 0) {
-            menu.open(player);
+            // An island you already have is never claimed or rebuilt again: /island (/insel) takes you home.
+            // The menu is /island menu.
+            if (own != null) {
+                islands.goHome(player);
+            } else {
+                menu.open(player);
+            }
             return true;
         }
-        PersonalIsland own = islands.byOwner(player.getUniqueId());
         IslandHost host = own == null ? null : IslandHost.personal(own.ownerId());
         switch (action) {
             case "create", "claim", "starter" -> {
@@ -228,6 +234,38 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
                 }
             }
             case "funnel" -> funnel.get().forEach(player::sendMessage);
+            case "plots" -> {
+                // /island admin plots <player>: where that player's record and factory save say the island is.
+                if (args.length < 3) {
+                    player.sendMessage("§7/island admin plots <player>");
+                    return;
+                }
+                org.bukkit.OfflinePlayer target = org.bukkit.Bukkit.getOfflinePlayer(args[2]);
+                PersonalIsland record = islands.byOwner(target.getUniqueId());
+                player.sendMessage("§6Island of §f" + args[2] + " §8(" + target.getUniqueId() + ")");
+                player.sendMessage("§7Record: " + (record == null ? "§cnone" : "§fplot " + record.plot()
+                        + (record.islandBuilt() ? " §7built" : " §cunbuilt")
+                        + (islands.plotHasBlocks(record.plot()) ? " §7· blocks there" : " §c· plot empty")));
+                java.util.Map<Integer, Integer> saved = islands.savedPlots(target.getUniqueId());
+                if (saved.isEmpty()) {
+                    player.sendMessage("§7Factory save: §8no structures");
+                }
+                saved.forEach((plot, count) -> player.sendMessage("§7Factory save: §f" + count + " structures on plot " + plot
+                        + (islands.plotHasBlocks(plot) ? " §7· blocks there" : " §c· plot empty")
+                        + " §8→ §7/island admin moveplot " + args[2] + " " + plot));
+            }
+            case "moveplot" -> {
+                if (args.length < 4) {
+                    player.sendMessage("§7/island admin moveplot <player> <plot>");
+                    return;
+                }
+                try {
+                    org.bukkit.OfflinePlayer target = org.bukkit.Bukkit.getOfflinePlayer(args[2]);
+                    player.sendMessage(islands.movePlot(target.getUniqueId(), Integer.parseInt(args[3])));
+                } catch (NumberFormatException e) {
+                    player.sendMessage("§cPlot must be a number.");
+                }
+            }
             case "info" -> {
                 IslandHost host = highlight.hosts().at(player.getLocation());
                 player.sendMessage("§6Island highlight §8| §7paste jobs: §f" + highlight.paste().pending()
@@ -242,7 +280,8 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
                 }
             }
             default -> player.sendMessage("§7/island admin fx [unlock|foreshadow|guild|guildhint] §8| §7rebuild §8| §7reload-templates"
-                    + " §8| §7void [sweep [force]] §8| §7guide reset §8| §7wipe §8| §7info §8| §7funnel");
+                    + " §8| §7void [sweep [force]] §8| §7guide reset §8| §7wipe §8| §7info §8| §7funnel"
+                    + " §8| §7plots <player> §8| §7moveplot <player> <plot>");
         }
     }
 
@@ -256,7 +295,8 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("admin") && sender.hasPermission("aetherion.guild.admin")) {
             String prefix = args[1].toLowerCase(Locale.ROOT);
-            return Stream.of("fx", "rebuild", "reload-templates", "void", "guide", "wipe", "info", "funnel").filter(o -> o.startsWith(prefix)).toList();
+            return Stream.of("fx", "rebuild", "reload-templates", "void", "guide", "wipe", "info", "funnel", "plots", "moveplot")
+                    .filter(o -> o.startsWith(prefix)).toList();
         }
         return List.of();
     }

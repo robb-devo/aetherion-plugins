@@ -126,6 +126,8 @@ public final class AetherionGuilds extends JavaPlugin {
         land = new LandService(this, hosts);
         islandFiles = new de.aetherion.guilds.island.IslandFiles(this);
         islandFiles.load();
+        // before structures load: an island whose record went missing gets it back instead of a fresh claim
+        personal.attachFiles(islandFiles);
         structures = new StructureService(this, hosts, templates, paste);
         structures.attachFiles(islandFiles);
         structures.load();
