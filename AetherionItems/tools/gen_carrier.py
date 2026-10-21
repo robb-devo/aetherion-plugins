@@ -540,6 +540,7 @@ out float vertexDistance;
 out vec4 vertexColor;
 out vec2 texCoord0;
 
+// aetherion-hud:begin  (newer_clients.py copies this block into the shaders of newer clients)
 const int PAL_N = {len(pal)};
 const vec3 PALETTE[PAL_N] = vec3[](
     {entries}
@@ -548,43 +549,56 @@ const vec3 PALETTE[PAL_N] = vec3[](
 const float MARGIN = 3.0;
 const float RADAR = {float(RADAR):.1f};
 
+// Moves and recolours one vertex of a HUD carrier glyph (pos and col start as Position and Color).
+// Returns true for the drop shadow of a carrier glyph: that vertex is not drawn.
+bool aetherion_hud(inout vec3 pos, inout vec4 col) {{
+    if (ProjMat[3][3] != 1.0 || ProjMat[2][3] != 0.0 || pos.y <= 8.0 || pos.y >= 100.0) {{
+        return false;
+    }}
+    ivec3 c = ivec3(round(col.rgb * 255.0));
+    if (c.r == 19 && c.g < 64) {{
+        return true;
+    }}
+    if (c.r != 76 || (c.g & 3) != 0) {{
+        return false;
+    }}
+    int code = c.g >> 2;
+    float guiW = 2.0 / ProjMat[0][0];
+    // ScreenSize is 0 (or junk) where a client does not hand it to this shader: then draw at GUI scale.
+    bool sized = ScreenSize.x > 0.5 && ScreenSize.y > 0.5 && ScreenSize.x < 32768.0 && ScreenSize.y < 32768.0;
+    float gui = sized ? max(1.0, floor(ScreenSize.x / guiW + 0.5)) : 1.0;
+    sized = sized && gui <= 16.0;
+    gui = sized ? gui : 1.0;
+    float eff = sized ? clamp(floor(min(ScreenSize.y / 320.0, ScreenSize.x / 520.0)), 1.0, gui) : gui;
+    float k = eff / gui;
+    float startX = floor(ceil(guiW - 0.01) * 0.5);
+    vec2 local = vec2(pos.x - startX, pos.y - 10.0);
+    col.rgb = PALETTE[min(c.b, PAL_N - 1)];
+    if (code < 40) {{
+        local.y += float(code) * 2.0;
+        pos.xy = (vec2(MARGIN) + local) * k;
+    }} else {{
+        int part = (code - 40) - ((code - 40) / 8) * 8;
+        int state = (code - 40) / 8;
+        float top = state == 0 ? 3.0 : (state == 1 ? 27.0 : 52.0);
+        if (part == 1) {{
+            local.y += float(c.b) - 64.0;
+            col.rgb = vec3(1.0);
+        }} else if (part >= 2) {{
+            local.y += 66.0 + 4.0 * float(part - 2);
+        }}
+        float left = floor(guiW * gui / eff + 0.001) - MARGIN - RADAR;
+        pos.x = (left + local.x) * k;
+        pos.y = top + local.y * k;
+    }}
+    return false;
+}}
+// aetherion-hud:end
+
 void main() {{
     vec3 pos = Position;
     vec4 col = Color;
-    bool drop = false;
-    if (ProjMat[3][3] == 1.0 && ProjMat[2][3] == 0.0 && Position.y > 8.0 && Position.y < 100.0) {{
-        ivec3 c = ivec3(round(Color.rgb * 255.0));
-        if (c.r == 76 && (c.g & 3) == 0) {{
-            int code = c.g >> 2;
-            float guiW = 2.0 / ProjMat[0][0];
-            bool sized = ScreenSize.x > 0.5;
-            float gui = sized ? max(1.0, floor(ScreenSize.x / guiW + 0.5)) : 1.0;
-            float eff = sized ? clamp(floor(min(ScreenSize.y / 320.0, ScreenSize.x / 520.0)), 1.0, gui) : gui;
-            float k = eff / gui;
-            float startX = floor(ceil(guiW - 0.01) * 0.5);
-            vec2 local = vec2(Position.x - startX, Position.y - 10.0);
-            col.rgb = PALETTE[min(c.b, PAL_N - 1)];
-            if (code < 40) {{
-                local.y += float(code) * 2.0;
-                pos.xy = (vec2(MARGIN) + local) * k;
-            }} else {{
-                int part = (code - 40) - ((code - 40) / 8) * 8;
-                int state = (code - 40) / 8;
-                float top = state == 0 ? 3.0 : (state == 1 ? 27.0 : 52.0);
-                if (part == 1) {{
-                    local.y += float(c.b) - 64.0;
-                    col.rgb = vec3(1.0);
-                }} else if (part >= 2) {{
-                    local.y += 66.0 + 4.0 * float(part - 2);
-                }}
-                float left = floor(guiW * gui / eff + 0.001) - MARGIN - RADAR;
-                pos.x = (left + local.x) * k;
-                pos.y = top + local.y * k;
-            }}
-        }} else if (c.r == 19 && c.g < 64) {{
-            drop = true;
-        }}
-    }}
+    bool drop = aetherion_hud(pos, col);
     gl_Position = drop ? vec4(2.0, 2.0, 2.0, 1.0) : ProjMat * ModelViewMat * vec4(pos, 1.0);
 
     vertexDistance = fog_distance(pos, FogShape);

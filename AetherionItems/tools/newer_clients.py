@@ -3,11 +3,15 @@
 
     python newer_clients.py <pack_root>
 
-1. The core shaders and the HUD carrier art only work on 1.21.1: newer clients changed the shader format, and
+1. The core shaders and the HUD carrier art are written for 1.21.1: newer clients changed the shader format, and
    a shader they cannot compile breaks other rendering (invisible water) and the pack's text. They move into
    the overlay ``v1_21_1`` (pack format 34 only). The base pack keeps a blank carrier font and a clear BLUE
-   bar background, so on a newer client the HUD carrier is simply not drawn.
-2. 1.21.4 dropped CustomModelData overrides in item models for item definitions (assets/minecraft/items).
+   bar background, so a client no overlay below covers simply does not draw the HUD carrier.
+2. Newer clients get the HUD through one overlay per text-shader format (HUD_VARIANTS): the vanilla text shader
+   of that format (vanilla_text/, copied from the client jars) plus the HUD block of the 1.21.1 shader
+   (between ``aetherion-hud:begin`` and ``aetherion-hud:end``, written by gen_carrier.py) and the real carrier
+   font. Their boss bar background stays clear, so the carrier's own bar is invisible there too.
+3. 1.21.4 dropped CustomModelData overrides in item models for item definitions (assets/minecraft/items).
    Each overridden material gets a definition built from its overrides; 1.21.1 ignores that folder.
    Materials whose vanilla definition does more than show one model (bow, compass, chest, ...) are skipped.
 """
@@ -20,6 +24,19 @@ from PIL import Image
 
 OVERLAY = 'v1_21_1'
 FORMATS = [34, 34]
+VANILLA_TEXT = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'vanilla_text')
+# overlay, pack formats it covers, vanilla shader (vanilla_text/<name>.vsh), core shader name, how ScreenSize
+# reaches the shader. 1.21.2-1.21.4 still read core shader JSONs (1.21.5 ignores them and may leave ScreenSize
+# at 0: the HUD block then draws at GUI scale). 1.21.6+ keep ScreenSize in the Globals uniform block.
+HUD_VARIANTS = (
+    ('ae_hud_42', (42, 55), '1.21.2', 'rendertype_text', 'uniform'),
+    ('ae_hud_63', (63, 64), '1.21.6', 'rendertype_text', 'moj_import'),
+    ('ae_hud_69', (69, 75), '1.21.9', 'rendertype_text', 'moj_import'),
+    ('ae_hud_84', (84, 84), '26.1', 'rendertype_text', 'moj_import'),
+    ('ae_hud_88', (88, 88), '26.2', 'text', 'moj_import'),
+    ('ae_hud_97', (97, 97), '26.3', 'text', 'include'),
+)
+HUD_BEGIN, HUD_END = '// aetherion-hud:begin', '// aetherion-hud:end'
 ONLY_1211 = (
     'assets/minecraft/shaders/core',
     'assets/aetherion/font/carrier.json',
@@ -73,11 +90,76 @@ def split_overlay(pack):
         Image.new('RGBA', size, (0, 0, 0, 0)).save(os.path.join(pack, CARRIER_BAR))
 
 
-def write_mcmeta(pack):
+def once(text, old, new):
+    if text.count(old) != 1:
+        raise SystemExit('newer clients: expected exactly one %r in a vanilla text shader' % old)
+    return text.replace(old, new)
+
+
+def hud_shader(template, block, screen):
+    """The vanilla text shader ``template`` drawing the HUD carrier like the 1.21.1 shader does."""
+    s = template
+    if screen == 'uniform':
+        s = once(s, 'uniform int FogShape;\n', 'uniform int FogShape;\nuniform vec2 ScreenSize;\n')
+    else:
+        kw = '#include' if screen == 'include' else '#moj_import'
+        line = kw + ' <minecraft:projection.glsl>\n'
+        s = once(s, line, line + kw + ' <minecraft:globals.glsl>\n')
+    s = once(s, '\nvoid main() {\n', '\n// Aetherion HUD carrier (AetherionItems/tools/gen_carrier.py + newer_clients.py).\n'
+             + block + '\n\nvoid main() {\n')
+    s = once(s, '    gl_Position = ProjMat * ModelViewMat * vec4(Position, 1.0);\n',
+             '    vec3 pos = Position;\n'
+             '    vec4 col = Color;\n'
+             '    bool drop = aetherion_hud(pos, col);\n'
+             '    gl_Position = drop ? vec4(2.0, 2.0, 2.0, 1.0) : ProjMat * ModelViewMat * vec4(pos, 1.0);\n')
+    if 'vertexColor = Color' not in s:
+        raise SystemExit('newer clients: no vertexColor = Color in a vanilla text shader')
+    return s.replace('vertexColor = Color', 'vertexColor = col')
+
+
+def hud_overlays(pack):
+    """One overlay per newer text-shader format: HUD shader + the real carrier font."""
+    src = os.path.join(pack, OVERLAY, 'assets/minecraft/shaders/core/rendertype_text.vsh')
+    font = os.path.join(pack, OVERLAY, CARRIER_FONT)
+    if not (os.path.exists(src) and os.path.exists(font)):
+        return []
+    with open(src, encoding='utf-8') as f:
+        text = f.read()
+    if HUD_BEGIN not in text or HUD_END not in text:
+        raise SystemExit('newer clients: the 1.21.1 text shader has no aetherion-hud block (run gen_carrier.py)')
+    block = text[text.index(HUD_BEGIN):text.index(HUD_END) + len(HUD_END)]
+    entries = []
+    for directory, (lo, hi), vanilla, name, screen in HUD_VARIANTS:
+        root = os.path.join(pack, directory)
+        shutil.rmtree(root, ignore_errors=True)
+        core = os.path.join(root, 'assets/minecraft/shaders/core')
+        os.makedirs(core)
+        with open(os.path.join(VANILLA_TEXT, vanilla + '.vsh'), encoding='utf-8') as f:
+            template = f.read()
+        with open(os.path.join(core, name + '.vsh'), 'w', encoding='utf-8', newline='\n') as f:
+            f.write(hud_shader(template, block, screen))
+        json_src = os.path.join(VANILLA_TEXT, vanilla + '.json')
+        if os.path.exists(json_src):
+            with open(json_src, encoding='utf-8') as f:
+                program = json.load(f)
+            program['uniforms'].append({'name': 'ScreenSize', 'type': 'float', 'count': 2, 'values': [1.0, 1.0]})
+            with open(os.path.join(core, name + '.json'), 'w', encoding='utf-8', newline='\n') as f:
+                json.dump(program, f, indent=4)
+        dst = os.path.join(root, CARRIER_FONT)
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        shutil.copyfile(font, dst)
+        entries.append({'formats': [lo, hi], 'min_format': lo, 'max_format': hi, 'directory': directory})
+    return entries
+
+
+def write_mcmeta(pack, hud_entries):
     path = os.path.join(pack, 'pack.mcmeta')
     with open(path, encoding='utf-8-sig') as f:
         meta = json.load(f)
-    meta['overlays'] = {'entries': [{'formats': FORMATS, 'directory': OVERLAY}]}
+    # Packs that still support format 34 must give each overlay ``formats``; clients from 1.21.9 on also read
+    # min_format / max_format.
+    first = {'formats': FORMATS, 'min_format': FORMATS[0], 'max_format': FORMATS[1], 'directory': OVERLAY}
+    meta['overlays'] = {'entries': [first] + hud_entries}
     with open(path, 'w', encoding='utf-8') as f:
         json.dump(meta, f, indent=2)
 
@@ -130,10 +212,11 @@ def item_definitions(pack):
 
 def main(pack):
     split_overlay(pack)
-    write_mcmeta(pack)
+    hud = hud_overlays(pack)
+    write_mcmeta(pack, hud)
     written, skipped = item_definitions(pack)
-    print('newer clients: overlay %s, %d item definitions (%d special materials left vanilla)'
-          % (OVERLAY, written, skipped))
+    print('newer clients: overlay %s, %d HUD overlays (%s), %d item definitions (%d special materials left vanilla)'
+          % (OVERLAY, len(hud), ', '.join(e['directory'] for e in hud), written, skipped))
 
 
 if __name__ == '__main__':
