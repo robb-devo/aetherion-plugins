@@ -71,7 +71,9 @@ public class ArrowShotSkill extends AbstractBossSkill {
         }
 
         world.playSound(from, Sound.ENTITY_SKELETON_SHOOT, 1.15f, 1.15f);
-        world.spawnParticle(particle, from, 6, 0.12, 0.12, 0.12, 0.01);
+        if (!de.aetherion.core.api.Vfx.spark(from, de.aetherion.bossengine.fx.ShapeFx.tint(particle), 0.8)) {
+            world.spawnParticle(particle, from, 6, 0.12, 0.12, 0.12, 0.01);
+        }
     }
 
     private LivingEntity resolveTarget(LivingEntity boss) {

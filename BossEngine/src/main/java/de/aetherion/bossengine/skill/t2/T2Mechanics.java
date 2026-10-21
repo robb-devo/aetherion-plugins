@@ -47,7 +47,7 @@ public final class T2Mechanics {
     static final String TOTEM = "charm_totem";
 
     private static final int MAX_CORES = 4;
-    private static final int BURST_TELEGRAPH_TICKS = 14;
+    public static final int BURST_TELEGRAPH_TICKS = 14;
     private static final int RING_WINDUP_TICKS = 10;
 
     private static final Map<UUID, Burrow> BURROWS = new ConcurrentHashMap<>();
@@ -812,7 +812,7 @@ public final class T2Mechanics {
         Location impact = ground.clone();
         double scaled = instance.scaleDamage(damage);
         de.aetherion.bossengine.fx.CombatTheatrics.meteor(instance, impact);
-        int points = 22;
+        int points = de.aetherion.core.api.Vfx.active() ? 0 : 22;
         for (int i = 0; i < points; i++) {
             double angle = (Math.PI * 2 * i) / points;
             Location rim = impact.clone().add(Math.cos(angle) * 3.2, 0.08, Math.sin(angle) * 3.2);
@@ -829,7 +829,12 @@ public final class T2Mechanics {
             if (boomWorld == null) {
                 return;
             }
-            boomWorld.spawnParticle(Particle.EXPLOSION_EMITTER, impact.clone().add(0, 0.3, 0), 1, 0, 0, 0, 0);
+            if (de.aetherion.core.api.Vfx.burst(impact.clone().add(0, 0.6, 0), org.bukkit.Color.fromRGB(0xFFC070), 3.2, 11)) {
+                de.aetherion.core.api.Vfx.wave(impact.clone().add(0, 0.05, 0), org.bukkit.Color.fromRGB(0xFF8A3A), 3.4, 13);
+                de.aetherion.core.api.Vfx.chips(impact, impact.clone().add(0, -1, 0).getBlock().getBlockData(), 8, 1.4);
+            } else {
+                boomWorld.spawnParticle(Particle.EXPLOSION_EMITTER, impact.clone().add(0, 0.3, 0), 1, 0, 0, 0, 0);
+            }
             boomWorld.playSound(impact, Sound.ENTITY_GENERIC_EXPLODE, 1.15f, 0.75f);
             for (Player player : boomWorld.getPlayers()) {
                 if (!vulnerable(player)) {

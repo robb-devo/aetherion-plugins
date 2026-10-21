@@ -53,11 +53,19 @@ public final class FakeDestruction {
         world.playSound(at, Sound.ENTITY_GENERIC_EXPLODE, 1.55f, 0.62f);
         world.playSound(at, Sound.ENTITY_GENERIC_EXPLODE, 0.8f, 0.9f);
         world.playSound(at, Sound.ENTITY_GHAST_SHOOT, 0.55f, 0.7f);
-        world.spawnParticle(Particle.EXPLOSION_EMITTER, at, 1, 0, 0, 0, 0);
-        world.spawnParticle(Particle.EXPLOSION, at.clone().add(0, 0.4, 0), 3, 0.35, 0.2, 0.35, 0);
-        world.spawnParticle(Particle.LAVA, at, 18, 0.55, 0.2, 0.55, 0);
-        world.spawnParticle(Particle.FLAME, at, 28, 0.7, 0.35, 0.7, 0.04);
-        world.spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, at.clone().add(0, 0.4, 0), 8, 0.45, 0.2, 0.45, 0.01);
+        if (de.aetherion.core.api.Vfx.burst(at.clone().add(0, 0.6, 0), org.bukkit.Color.fromRGB(0xFFB050), 4.0, 12)) {
+            de.aetherion.core.api.Vfx.wave(at.clone().add(0, 0.05, 0), org.bukkit.Color.fromRGB(0xFF7A2A), Math.max(3.0, radius), 14);
+            for (int i = 0; i < 4; i++) {
+                double a = Math.PI * 2 * i / 4 + 0.4;
+                de.aetherion.core.api.Vfx.flame(at.clone().add(Math.cos(a) * 1.1, 0.05, Math.sin(a) * 1.1), org.bukkit.Color.fromRGB(0xFF7A2A), 1.1, 24);
+            }
+        } else {
+            world.spawnParticle(Particle.EXPLOSION_EMITTER, at, 1, 0, 0, 0, 0);
+            world.spawnParticle(Particle.EXPLOSION, at.clone().add(0, 0.4, 0), 3, 0.35, 0.2, 0.35, 0);
+            world.spawnParticle(Particle.LAVA, at, 18, 0.55, 0.2, 0.55, 0);
+            world.spawnParticle(Particle.FLAME, at, 28, 0.7, 0.35, 0.7, 0.04);
+            world.spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, at.clone().add(0, 0.4, 0), 8, 0.45, 0.2, 0.45, 0.01);
+        }
         blockBurst(world, at, Material.MAGMA_BLOCK, 22);
         blockBurst(world, at, Material.NETHERRACK, 12);
 
@@ -100,9 +108,13 @@ public final class FakeDestruction {
         Material[] used = palette == null || palette.length == 0 ? DEBRIS : palette;
         world.playSound(at, Sound.ENTITY_GENERIC_EXPLODE, 1.25f, 0.7f);
         world.playSound(at, Sound.BLOCK_STONE_BREAK, 0.9f, 0.55f);
-        world.spawnParticle(Particle.EXPLOSION_EMITTER, at, 1, 0, 0, 0, 0);
-        world.spawnParticle(Particle.EXPLOSION, at.clone().add(0, 0.25, 0), 2, 0.25, 0.1, 0.25, 0);
-        world.spawnParticle(Particle.CLOUD, at, 10, 0.6, 0.2, 0.6, 0.03);
+        if (de.aetherion.core.api.Vfx.burst(at.clone().add(0, 0.5, 0), org.bukkit.Color.fromRGB(0xFFD9A0), 3.2, 11)) {
+            de.aetherion.core.api.Vfx.wave(at.clone().add(0, 0.05, 0), org.bukkit.Color.fromRGB(0xD9D2C5), 3.4, 13);
+        } else {
+            world.spawnParticle(Particle.EXPLOSION_EMITTER, at, 1, 0, 0, 0, 0);
+            world.spawnParticle(Particle.EXPLOSION, at.clone().add(0, 0.25, 0), 2, 0.25, 0.1, 0.25, 0);
+            world.spawnParticle(Particle.CLOUD, at, 10, 0.6, 0.2, 0.6, 0.03);
+        }
         blockBurst(world, at, used[0], 18);
         T2Mechanics.runMeteorBoom(() -> world.createExplosion(at, 2.2f, false, false, instance.getEntity()));
         spawnDebris(at, instance, Math.max(4, debrisCount), 0.48, 0.82, 32, used);
@@ -234,6 +246,9 @@ public final class FakeDestruction {
             return;
         }
         BlockData data = material.createBlockData();
+        if (de.aetherion.core.api.Vfx.chips(at, data, Math.max(3, Math.min(10, count / 2)), 1.2)) {
+            return;
+        }
         try {
             world.spawnParticle(Particle.BLOCK, at, count, 0.55, 0.25, 0.55, 0.18, data);
         } catch (Throwable ignored) {

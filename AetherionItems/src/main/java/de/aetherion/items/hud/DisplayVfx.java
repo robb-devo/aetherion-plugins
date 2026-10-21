@@ -49,6 +49,12 @@ public final class DisplayVfx implements Vfx.Renderer {
     private record Held(TextDisplay display, long[] until) {
     }
 
+    /** Lines by key: four cross planes riding one anchor, retargeted on every draw. */
+    private final java.util.Map<String, HeldLine> lines = new java.util.HashMap<>();
+
+    private record HeldLine(TextDisplay[] planes, Location anchor, long[] until) {
+    }
+
     public DisplayVfx(JavaPlugin plugin) {
         this.plugin = plugin;
     }
@@ -56,7 +62,7 @@ public final class DisplayVfx implements Vfx.Renderer {
     /** Remove leftovers from a crash or a hard stop. */
     public void sweep() {
         for (World world : Bukkit.getWorlds()) {
-            for (Entity e : world.getEntitiesByClass(TextDisplay.class)) {
+            for (Entity e : world.getEntitiesByClass(Display.class)) {
                 if (e.getScoreboardTags().contains(TAG)) {
                     e.remove();
                 }
@@ -137,8 +143,70 @@ public final class DisplayVfx implements Vfx.Renderer {
         }
     }
 
+    @Override
+    public void line(String key, Location from, Location to, Color color, double width) {
+        long now = Bukkit.getCurrentTick();
+        HeldLine line = lines.get(key);
+        if (line != null && (!line.planes()[0].isValid() || line.anchor().getWorld() != from.getWorld()
+                || line.anchor().distanceSquared(from) > 48 * 48)) {
+            for (TextDisplay d : line.planes()) {
+                kill(d);
+            }
+            lines.remove(key);
+            line = null;
+        }
+        if (line == null) {
+            TextDisplay[] planes = new TextDisplay[4];
+            for (int i = 0; i < 4; i++) {
+                planes[i] = spawn(from, BEAM, color, Display.Billboard.FIXED, plane(new Quaternionf(), new Vector3f(), 0.01f, 0.01f), 2.0f);
+                if (planes[i] == null) {
+                    for (int k = 0; k < i; k++) {
+                        kill(planes[k]);
+                    }
+                    return;
+                }
+            }
+            line = new HeldLine(planes, from.clone(), new long[] {now + 4});
+            lines.put(key, line);
+            if (heldSweep == null) {
+                heldSweep = Bukkit.getScheduler().runTaskTimer(plugin, this::sweepHeld, 2L, 2L);
+            }
+        }
+        line.until()[0] = now + 4;
+        Vector3f a = between(line.anchor(), from);
+        Vector3f path = between(from, to);
+        float dist = path.length();
+        if (dist < 0.05f) {
+            return;
+        }
+        Vector3f d = new Vector3f(path).normalize();
+        Vector3f mid = new Vector3f(a).add(new Vector3f(path).mul(0.5f));
+        float sx = dist / W_BEAM;
+        float sy = (float) Math.max(0.04, width) / GLYPH;
+        Vector3f[] normals = crossNormals(d);
+        int rgb = color == null ? 0xFFFFFF : color.asRGB();
+        for (int i = 0; i < 4; i++) {
+            TextDisplay p = line.planes()[i];
+            p.setInterpolationDelay(0);
+            p.setInterpolationDuration(2);
+            p.setTransformation(plane(basis(d, normals[i]), mid, sx, sy));
+            if (!TextColor.color(rgb).equals(p.text().color())) {
+                p.text(p.text().color(TextColor.color(rgb)));
+            }
+        }
+    }
+
     private void sweepHeld() {
         long now = Bukkit.getCurrentTick();
+        lines.values().removeIf(line -> {
+            if (line.planes()[0].isValid() && line.until()[0] >= now) {
+                return false;
+            }
+            for (TextDisplay d : line.planes()) {
+                kill(d);
+            }
+            return true;
+        });
         held.values().removeIf(ring -> {
             if (ring.display().isValid() && ring.until()[0] >= now) {
                 return false;
@@ -146,7 +214,7 @@ public final class DisplayVfx implements Vfx.Renderer {
             kill(ring.display());
             return true;
         });
-        if (held.isEmpty() && heldSweep != null) {
+        if (held.isEmpty() && lines.isEmpty() && heldSweep != null) {
             heldSweep.cancel();
             heldSweep = null;
         }
@@ -519,6 +587,54 @@ public final class DisplayVfx implements Vfx.Renderer {
         }
         later(life - 30, () -> grow(m, transform(new Vector3f(0, -CENTRE_Y * s * 0.7f, 0), new Quaternionf(), s * 0.7f), 30));
         later(life, () -> kill(m));
+    }
+
+    @Override
+    public void chips(Location at, org.bukkit.block.data.BlockData block, int count, double power) {
+        java.util.concurrent.ThreadLocalRandom rng = java.util.concurrent.ThreadLocalRandom.current();
+        float p = (float) Math.max(0.3, Math.min(2.5, power));
+        for (int i = 0; i < Math.min(12, count); i++) {
+            if (live >= MAX_LIVE || at.getWorld() == null || !at.isChunkLoaded()) {
+                return;
+            }
+            float s = (float) (0.14 + rng.nextDouble() * 0.14);
+            double yaw = rng.nextDouble(Math.PI * 2);
+            float dx = (float) Math.cos(yaw), dz = (float) Math.sin(yaw);
+            float out = p * (0.6f + rng.nextFloat() * 0.9f);
+            Quaternionf spin0 = new Quaternionf().rotateXYZ(rng.nextFloat() * 3f, rng.nextFloat() * 3f, rng.nextFloat() * 3f);
+            Quaternionf spin1 = new Quaternionf(spin0).rotateXYZ(2.2f, 1.4f, 0.8f);
+            Quaternionf spin2 = new Quaternionf(spin1).rotateXYZ(2.0f, 1.9f, 1.1f);
+            Location spot = at.clone();
+            spot.setYaw(0f);
+            spot.setPitch(0f);
+            org.bukkit.entity.BlockDisplay chip = at.getWorld().spawn(spot, org.bukkit.entity.BlockDisplay.class, e -> {
+                e.setBlock(block);
+                e.setPersistent(false);
+                e.addScoreboardTag(TAG);
+                e.setViewRange(0.6f);
+                e.setBrightness(null);
+                e.setTransformation(new Transformation(new Vector3f(-s / 2, 0, -s / 2), spin0, new Vector3f(s, s, s), new Quaternionf()));
+            });
+            live++;
+            float up = 0.6f + rng.nextFloat() * 0.7f * p;
+            later(1, () -> moveChip(chip, new Vector3f(dx * out * 0.55f - s / 2, up, dz * out * 0.55f - s / 2), spin1, s, 5));
+            later(6, () -> moveChip(chip, new Vector3f(dx * out - s / 2, -0.15f, dz * out - s / 2), spin2, s * 0.55f, 8));
+            later(15, () -> {
+                if (chip.isValid()) {
+                    chip.remove();
+                    live = Math.max(0, live - 1);
+                }
+            });
+        }
+    }
+
+    private static void moveChip(org.bukkit.entity.BlockDisplay chip, Vector3f to, Quaternionf spin, float s, int ticks) {
+        if (!chip.isValid()) {
+            return;
+        }
+        chip.setInterpolationDelay(0);
+        chip.setInterpolationDuration(ticks);
+        chip.setTransformation(new Transformation(to, spin, new Vector3f(s, s, s), new Quaternionf()));
     }
 
     /* ------------------------------------------------------------------ shape helpers */

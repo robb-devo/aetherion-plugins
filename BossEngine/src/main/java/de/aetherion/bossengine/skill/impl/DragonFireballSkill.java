@@ -65,7 +65,9 @@ public class DragonFireballSkill extends AbstractBossSkill {
         ball.getPersistentDataContainer().set(keys.eggDamageKey(), PersistentDataType.DOUBLE, context.getInstance().scaleDamage(damage));
 
         world.playSound(from, Sound.ENTITY_ENDER_DRAGON_SHOOT, 0.85f, 0.85f);
-        world.spawnParticle(Particle.DRAGON_BREATH, from, 8, 0.25, 0.25, 0.25, 0.02);
+        if (!de.aetherion.core.api.Vfx.burst(from, de.aetherion.bossengine.fx.ShapeFx.VOID, 1.4, 8)) {
+            world.spawnParticle(Particle.DRAGON_BREATH, from, 8, 0.25, 0.25, 0.25, 0.02);
+        }
     }
 
     private LivingEntity resolveTarget(LivingEntity boss) {
