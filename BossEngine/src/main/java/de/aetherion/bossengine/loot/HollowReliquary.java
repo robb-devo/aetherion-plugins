@@ -769,11 +769,11 @@ public final class HollowReliquary {
             }
             if (age == 6) {
                 Location impact = at(0, 0.3, 0);
-                world.spawnParticle(Particle.FLASH, impact, 1, 0, 0, 0, 0);
-                world.spawnParticle(Particle.EXPLOSION_EMITTER, impact, 1, 0, 0, 0, 0);
-                world.spawnParticle(Particle.END_ROD, impact, 44, 0.3, 0.1, 0.3, 0.28);
-                world.spawnParticle(Particle.LAVA, impact, 20, 0.6, 0.1, 0.6, 0);
-                world.spawnParticle(Particle.BLOCK, impact, 44, 1.3, 0.05, 1.3, 0, floorData(world));
+                de.aetherion.bossengine.fx.ShapeFx.puff(impact, Particle.FLASH, 1, Math.max(0, 0), null);
+                de.aetherion.bossengine.fx.ShapeFx.puff(impact, Particle.EXPLOSION_EMITTER, 1, Math.max(0, 0), null);
+                de.aetherion.bossengine.fx.ShapeFx.puff(impact, Particle.END_ROD, 44, Math.max(0.3, 0.3), null);
+                de.aetherion.bossengine.fx.ShapeFx.puff(impact, Particle.LAVA, 20, Math.max(0.6, 0.6), null);
+                de.aetherion.bossengine.fx.ShapeFx.puff(impact, Particle.BLOCK, 44, Math.max(1.3, 1.3), floorData(world));
                 world.playSound(impact, Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 0.9f, 1.2f);
                 world.playSound(impact, Sound.ENTITY_GENERIC_EXPLODE, 0.8f, 1.4f);
                 world.playSound(impact, Sound.BLOCK_AMETHYST_BLOCK_RESONATE, 1.3f, 0.7f);
@@ -795,7 +795,7 @@ public final class HollowReliquary {
                 ringParticles(world, at(0, 0.16, 0), 2.15, EMBER, 0.85f, fill);
                 if (age <= 40) {
                     ringParticles(world, at(0, 0.16, 0), 2.7, VIOLET, 0.7f, fill);
-                    world.spawnParticle(Particle.ENCHANT, at(0, 0.7, 0), 10, 1.5, 0.3, 1.5, 0.4);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(at(0, 0.7, 0), Particle.ENCHANT, 10, Math.max(1.5, 1.5), null);
                 }
             }
             if (age == 30) {
@@ -811,15 +811,15 @@ public final class HollowReliquary {
                     float pitch = 0.6f + i * 0.11f;
                     world.playSound(base, Sound.BLOCK_NOTE_BLOCK_BELL, 0.9f, pitch);
                     world.playSound(base, Sound.BLOCK_AMETHYST_BLOCK_PLACE, 0.85f, pitch);
-                    world.spawnParticle(Particle.END_ROD, at(0, 0.3 + i * 0.12, 0), 6, 0.5, 0.1, 0.5, 0.03);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(at(0, 0.3 + i * 0.12, 0), Particle.END_ROD, 6, Math.max(0.5, 0.5), null);
                 }
             }
             if (age == 94) {
                 Location star = at(0, SPINNER_Y + 0.95, 0);
-                world.spawnParticle(Particle.FLASH, star, 1, 0, 0, 0, 0);
-                world.spawnParticle(Particle.TOTEM_OF_UNDYING, star, 46, 0.3, 0.3, 0.3, 0.45);
-                world.spawnParticle(Particle.END_ROD, star, 24, 0.1, 0.1, 0.1, 0.16);
-                world.spawnParticle(Particle.FIREWORK, star, 20, 0.2, 0.2, 0.2, 0.08);
+                de.aetherion.bossengine.fx.ShapeFx.puff(star, Particle.FLASH, 1, Math.max(0, 0), null);
+                de.aetherion.bossengine.fx.ShapeFx.puff(star, Particle.TOTEM_OF_UNDYING, 46, Math.max(0.3, 0.3), null);
+                de.aetherion.bossengine.fx.ShapeFx.puff(star, Particle.END_ROD, 24, Math.max(0.1, 0.1), null);
+                de.aetherion.bossengine.fx.ShapeFx.puff(star, Particle.FIREWORK, 20, Math.max(0.2, 0.2), null);
                 world.playSound(star, Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.85f, 1.0f);
                 world.playSound(star, Sound.BLOCK_BEACON_POWER_SELECT, 1.2f, 1.3f);
                 world.playSound(star, Sound.ITEM_TOTEM_USE, 0.6f, 1.4f);
@@ -836,8 +836,7 @@ public final class HollowReliquary {
             if (age == 110 && !busy()) {
                 setLid(-0.5, 0.12);
                 world.playSound(at(0, 0.93, 0), Sound.BLOCK_VAULT_OPEN_SHUTTER, 0.9f, 0.85f);
-                world.spawnParticle(Particle.DUST, at(0, 1.1, 0), 14, 0.4, 0.1, 0.35, 0,
-                        new Particle.DustOptions(GOLD, 1.0f));
+                de.aetherion.bossengine.fx.ShapeFx.puff(at(0, 1.1, 0), Particle.DUST, 14, Math.max(0.4, 0.35), new Particle.DustOptions(GOLD, 1.0f));
             }
             if (age == 122 && !busy()) {
                 setLid(0.0, 0.25);
@@ -859,20 +858,19 @@ public final class HollowReliquary {
             }
             if (age % 5 == 0) {
                 double h = SPINNER_Y + 1.3 + random.nextDouble(12.0);
-                world.spawnParticle(Particle.DUST, at(0, h, 0), 1, 0.1, 0.2, 0.1, 0,
-                        new Particle.DustOptions(random.nextBoolean() ? SOLAR : PHOTON, 1.0f));
+                de.aetherion.bossengine.fx.ShapeFx.puff(at(0, h, 0), Particle.DUST, 1, Math.max(0.1, 0.1), new Particle.DustOptions(random.nextBoolean() ? SOLAR : PHOTON, 1.0f));
             }
             if (age % 6 == 0) {
                 int sx = random.nextBoolean() ? 1 : -1;
                 int sz = random.nextBoolean() ? 1 : -1;
-                world.spawnParticle(Particle.SMALL_FLAME, at(sx * 0.95, 1.7, sz * 0.95), 1, 0.02, 0.05, 0.02, 0.005);
+                de.aetherion.bossengine.fx.ShapeFx.puff(at(sx * 0.95, 1.7, sz * 0.95), Particle.SMALL_FLAME, 1, Math.max(0.02, 0.02), null);
             }
             if (age % 9 == 0) {
                 Location mote = at(random.nextDouble(-0.6, 0.6), 0.95 + random.nextDouble(0.3), random.nextDouble(-0.6, 0.6));
-                world.spawnParticle(Particle.DUST, mote, 1, 0.02, 0.02, 0.02, 0, new Particle.DustOptions(EMBER, 0.8f));
+                de.aetherion.bossengine.fx.ShapeFx.puff(mote, Particle.DUST, 1, Math.max(0.02, 0.02), new Particle.DustOptions(EMBER, 0.8f));
             }
             if (age % 11 == 0) {
-                world.spawnParticle(Particle.REVERSE_PORTAL, at(0, 0.22, 0), 4, 1.0, 0.05, 1.0, 0.01);
+                de.aetherion.bossengine.fx.ShapeFx.puff(at(0, 0.22, 0), Particle.REVERSE_PORTAL, 4, Math.max(1.0, 1.0), null);
             }
             if (claimOpen && !busy() && age % 8 == 0) {
                 ItemDisplay spin = spinnerDisplay();
@@ -962,7 +960,7 @@ public final class HollowReliquary {
                 slamPending = false;
                 Location seam = at(0, 0.93, 0);
                 world.playSound(seam, Sound.BLOCK_VAULT_CLOSE_SHUTTER, 0.9f, 0.75f);
-                world.spawnParticle(Particle.SMOKE, seam, 6, 0.45, 0.03, 0.4, 0.01);
+                de.aetherion.bossengine.fx.ShapeFx.puff(seam, Particle.SMOKE, 6, Math.max(0.45, 0.4), null);
             }
         }
 
@@ -1019,7 +1017,7 @@ public final class HollowReliquary {
             spinTotal = 22 + ThreadLocalRandom.current().nextInt(6);
             setLid(-0.42, 0.1);
             world.playSound(seam, Sound.BLOCK_VAULT_OPEN_SHUTTER, 0.9f, 0.8f);
-            world.spawnParticle(Particle.DUST, seam, 10, 0.4, 0.05, 0.35, 0, new Particle.DustOptions(GOLD, 0.9f));
+            de.aetherion.bossengine.fx.ShapeFx.puff(seam, Particle.DUST, 10, Math.max(0.4, 0.35), new Particle.DustOptions(GOLD, 0.9f));
             setLabel(TextUtil.component("&7..."));
         }
 
@@ -1053,7 +1051,7 @@ public final class HollowReliquary {
                 spin.setTransformation(spinPose(spinTick * 42f, 0.62f * SPINNER_SCALE));
                 player.playSound(at(0, SPINNER_Y, 0), Sound.UI_BUTTON_CLICK, 0.25f, 1.4f + (spinTick % 5) * 0.08f);
                 if (spinTick % 4 == 0) {
-                    world.spawnParticle(Particle.ENCHANT, at(0, SPINNER_Y, 0), 8, 0.6, 0.6, 0.6, 0.6);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(at(0, SPINNER_Y, 0), Particle.ENCHANT, 8, Math.max(0.6, 0.6), null);
                 }
                 return;
             }
@@ -1070,11 +1068,11 @@ public final class HollowReliquary {
             Location seam = at(0, 1.03, 0);
             world.playSound(core, Sound.BLOCK_VAULT_EJECT_ITEM, 0.9f, 1.0f);
             world.playSound(core, Sound.BLOCK_BEACON_POWER_SELECT, 1.0f, 1.2f);
-            world.spawnParticle(Particle.FLASH, core, 1, 0, 0, 0, 0);
-            world.spawnParticle(Particle.TOTEM_OF_UNDYING, core, 30, 0.3, 0.4, 0.3, 0.35);
-            world.spawnParticle(Particle.END_ROD, core, 26, 0.2, 0.2, 0.2, 0.12);
-            world.spawnParticle(Particle.DUST, seam, 24, 0.5, 0.25, 0.4, 0, new Particle.DustOptions(GOLD, 1.1f));
-            world.spawnParticle(Particle.DUST, core, 14, 0.4, 0.4, 0.4, 0, new Particle.DustOptions(EMBER, 1.0f));
+            de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.FLASH, 1, Math.max(0, 0), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.TOTEM_OF_UNDYING, 30, Math.max(0.3, 0.3), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.END_ROD, 26, Math.max(0.2, 0.2), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(seam, Particle.DUST, 24, Math.max(0.5, 0.4), new Particle.DustOptions(GOLD, 1.1f));
+            de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.DUST, 14, Math.max(0.4, 0.4), new Particle.DustOptions(EMBER, 1.0f));
             ringParticles(world, at(0, 0.18, 0), 1.6, SOLAR, 1.2f, 1.0);
             Temp flare = temp(world, Material.YELLOW_STAINED_GLASS, column(0.7f, 0.001f, (float) SPINNER_Y - 0.4f), 40);
             flare.sky = false;
@@ -1235,7 +1233,7 @@ public final class HollowReliquary {
             Location seam = at(0, 0.93, 0);
             world.playSound(seam, Sound.BLOCK_VAULT_DEACTIVATE, 0.9f, 0.8f);
             world.playSound(seam, Sound.BLOCK_BEACON_DEACTIVATE, 0.7f, 0.7f);
-            world.spawnParticle(Particle.SMOKE, seam, 14, 0.45, 0.05, 0.4, 0.01);
+            de.aetherion.bossengine.fx.ShapeFx.puff(seam, Particle.SMOKE, 14, Math.max(0.45, 0.4), null);
             Iterator<Part> it = parts.iterator();
             while (it.hasNext()) {
                 Part part = it.next();
@@ -1263,7 +1261,7 @@ public final class HollowReliquary {
                     }
                 }
             }
-            world.spawnParticle(Particle.SMOKE, at(0, SPINNER_Y + 1.0, 0), 12, 0.1, 0.8, 0.1, 0.01);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at(0, SPINNER_Y + 1.0, 0), Particle.SMOKE, 12, Math.max(0.1, 0.1), null);
         }
 
         /** The husk crumbles to ash, so nothing of the prop is left standing in the arena. */
@@ -1271,9 +1269,9 @@ public final class HollowReliquary {
             Location base = at(0, 0.5, 0);
             world.playSound(base, Sound.BLOCK_DEEPSLATE_BREAK, 1.1f, 0.6f);
             world.playSound(base, Sound.BLOCK_RESPAWN_ANCHOR_DEPLETE, 0.8f, 0.6f);
-            world.spawnParticle(Particle.WHITE_ASH, base, 60, 1.1, 0.8, 1.1, 0.02);
-            world.spawnParticle(Particle.LARGE_SMOKE, base, 24, 0.9, 0.5, 0.9, 0.02);
-            world.spawnParticle(Particle.BLOCK, base, 40, 1.0, 0.5, 1.0, 0, floorData(world));
+            de.aetherion.bossengine.fx.ShapeFx.puff(base, Particle.WHITE_ASH, 60, Math.max(1.1, 1.1), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(base, Particle.LARGE_SMOKE, 24, Math.max(0.9, 0.9), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(base, Particle.BLOCK, 40, Math.max(1.0, 1.0), floorData(world));
         }
 
         // --- transient fx
@@ -1356,7 +1354,7 @@ public final class HollowReliquary {
                 spark.display.teleport(spark.pos);
                 ease(spark.display, centered(new Quaternionf().rotateY(spark.spin).rotateX(spark.spin * 0.8f), size), 1);
                 if (spark.life % 3 == 0) {
-                    world.spawnParticle(Particle.SMALL_FLAME, spark.pos, 1, 0.03, 0.03, 0.03, 0.005);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(spark.pos, Particle.SMALL_FLAME, 1, Math.max(0.03, 0.03), null);
                 }
             }
         }
@@ -1526,8 +1524,7 @@ public final class HollowReliquary {
         int drawn = (int) Math.ceil(points * Math.max(0.0, Math.min(1.0, fill)));
         for (int i = 0; i < drawn; i++) {
             double a = Math.PI * 2 * i / points;
-            world.spawnParticle(Particle.DUST, center.clone().add(Math.cos(a) * radius, 0, Math.sin(a) * radius),
-                    1, 0, 0, 0, 0, dust);
+            de.aetherion.bossengine.fx.ShapeFx.puff(center.clone().add(Math.cos(a) * radius, 0, Math.sin(a) * radius), Particle.DUST, 1, Math.max(0, 0), dust);
         }
     }
 

@@ -36,6 +36,8 @@ public final class ShapeFx {
     public static final Color WATER = Color.fromRGB(0x6FB6FF);
     public static final Color PALE = Color.fromRGB(0xECE8DE);
 
+    private static final java.util.Map<String, Long> RECENT = new java.util.HashMap<>();
+
     private ShapeFx() {
     }
 
@@ -61,6 +63,17 @@ public final class ShapeFx {
             fallback(at, particle, count, spread, data);
             return;
         }
+        // Code that redrew a burst every tick: one shape per kind and spot every few ticks is plenty.
+        long now = org.bukkit.Bukkit.getCurrentTick();
+        String key = particle.ordinal() + "|" + (at.getBlockX() >> 1) + "|" + (at.getBlockY() >> 1) + "|" + (at.getBlockZ() >> 1);
+        Long last = RECENT.get(key);
+        if (last != null && now - last < 5) {
+            return;
+        }
+        if (RECENT.size() > 4096) {
+            RECENT.clear();
+        }
+        RECENT.put(key, now);
         double size = Math.max(0.5, Math.min(4.0, spread * 2.0 + Math.sqrt(Math.max(1, count)) * 0.15));
         Color color = data instanceof Particle.DustOptions dust ? dust.getColor() : tint(particle);
         switch (particle) {

@@ -292,28 +292,23 @@ public final class HollowBloodstorm {
             ThreadLocalRandom random = ThreadLocalRandom.current();
             Particle.DustOptions ash = new Particle.DustOptions(Color.fromRGB(120, 20, 20), 0.7f);
             for (int i = 0; i < 2; i++) {
-                world.spawnParticle(Particle.DUST,
-                        cloud.clone().add(random.nextDouble(-1.4, 1.4), -0.55, random.nextDouble(-1.3, 1.3)),
-                        1, 0, 0, 0, 0, ash);
+                de.aetherion.bossengine.fx.ShapeFx.puff(cloud.clone().add(random.nextDouble(-1.4, 1.4), -0.55, random.nextDouble(-1.3, 1.3)), Particle.DUST, 1, Math.max(0, 0), ash);
             }
             if (tick % 3 == 0) {
-                world.spawnParticle(Particle.LARGE_SMOKE,
-                        cloud.clone().add(random.nextDouble(-1.8, 1.8), random.nextDouble(-0.3, 0.6), random.nextDouble(-1.7, 1.7)),
-                        1, 0, 0, 0, 0.005);
+                de.aetherion.bossengine.fx.ShapeFx.puff(cloud.clone().add(random.nextDouble(-1.8, 1.8), random.nextDouble(-0.3, 0.6), random.nextDouble(-1.7, 1.7)), Particle.LARGE_SMOKE, 1, Math.max(0, 0), null);
             }
             if (tick % 2 == 0) {
                 Location drop = cloud.clone().add(random.nextDouble(-1.3, 1.3), -0.6, random.nextDouble(-1.2, 1.2));
                 RayTraceResult floor = world.rayTraceBlocks(drop, new Vector(0, -1, 0), cloudHeight + 4.0,
                         FluidCollisionMode.ALWAYS, true);
                 if (floor != null && floor.getHitPosition() != null) {
-                    world.spawnParticle(Particle.SMOKE, floor.getHitPosition().toLocation(world).add(0, 0.1, 0),
-                            2, 0.12, 0.0, 0.12, 0.0);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(floor.getHitPosition().toLocation(world).add(0, 0.1, 0), Particle.SMOKE, 2, Math.max(0.12, 0.12), null);
                 }
             }
         }
 
         private void birthFlash() {
-            world.spawnParticle(Particle.FLASH, cloud, 1, 0, 0, 0, 0);
+            de.aetherion.bossengine.fx.ShapeFx.puff(cloud, Particle.FLASH, 1, Math.max(0, 0), null);
             world.playSound(cloud, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.35f, 0.55f);
             world.playSound(cloud, Sound.WEATHER_RAIN_ABOVE, 0.45f, 0.7f);
         }
@@ -418,18 +413,18 @@ public final class HollowBloodstorm {
                         continue;
                     }
                     Vector at = a.clone().add(seg.clone().multiply(s / Math.max(1.0E-3, len)));
-                    world.spawnParticle(Particle.DUST, at.toLocation(world), 1, 0, 0, 0, 0, dim);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(at.toLocation(world), Particle.DUST, 1, Math.max(0, 0), dim);
                     tip = at;
                 }
             }
             if (tip != null) {
-                world.spawnParticle(Particle.ELECTRIC_SPARK, tip.toLocation(world), 3, 0.08, 0.08, 0.08, 0.03);
+                de.aetherion.bossengine.fx.ShapeFx.puff(tip.toLocation(world), Particle.ELECTRIC_SPARK, 3, Math.max(0.08, 0.08), null);
             }
             if (streamer && lead.target != null && lead.target.isValid()) {
                 Location head = lead.target.getLocation().add(0, lead.target.getHeight(), 0);
-                world.spawnParticle(Particle.ELECTRIC_SPARK, head, 5, 0.12, 0.1, 0.12, 0.04);
+                de.aetherion.bossengine.fx.ShapeFx.puff(head, Particle.ELECTRIC_SPARK, 5, Math.max(0.12, 0.12), null);
                 for (int i = 1; i <= 3; i++) {
-                    world.spawnParticle(Particle.DUST, head.clone().add(0, i * 0.25, 0), 1, 0.03, 0, 0.03, 0, dim);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(head.clone().add(0, i * 0.25, 0), Particle.DUST, 1, Math.max(0.03, 0.03), dim);
                 }
             }
         }
@@ -476,13 +471,11 @@ public final class HollowBloodstorm {
 
             Location impact = end.clone();
             Block floorBlock = floorBelow(impact);
-            world.spawnParticle(Particle.FLASH, impact.clone().add(0, 1.0, 0), 1, 0, 0, 0, 0);
-            world.spawnParticle(Particle.DUST, impact.clone().add(0, 0.3, 0), heavy ? 22 : 10, 0.35, 0.2, 0.35, 0,
-                    new Particle.DustOptions(PALE, 1.2f));
-            world.spawnParticle(Particle.FLAME, impact.clone().add(0, 0.4, 0), heavy ? 10 : 4, 0.35, 0.2, 0.35, 0.02);
+            de.aetherion.bossengine.fx.ShapeFx.puff(impact.clone().add(0, 1.0, 0), Particle.FLASH, 1, Math.max(0, 0), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(impact.clone().add(0, 0.3, 0), Particle.DUST, heavy ? 22 : 10, Math.max(0.35, 0.35), new Particle.DustOptions(PALE, 1.2f));
+            de.aetherion.bossengine.fx.ShapeFx.puff(impact.clone().add(0, 0.4, 0), Particle.FLAME, heavy ? 10 : 4, Math.max(0.35, 0.35), null);
             if (floorBlock != null) {
-                world.spawnParticle(Particle.BLOCK, impact.clone().add(0, 0.15, 0), heavy ? 44 : 22,
-                        heavy ? 1.0 : 0.6, 0.1, heavy ? 1.0 : 0.6, 0.2, floorBlock.getBlockData());
+                de.aetherion.bossengine.fx.ShapeFx.puff(impact.clone().add(0, 0.15, 0), Particle.BLOCK, heavy ? 44 : 22, Math.max(heavy ? 1.0 : 0.6, heavy ? 1.0 : 0.6), floorBlock.getBlockData());
             }
 
             float volume = stray ? 0.3f : 0.65f;
@@ -609,9 +602,9 @@ public final class HollowBloodstorm {
                 double w = Math.max(0.3, body.getWidth() * 0.55);
                 Location at = body.getLocation().add(random.nextDouble(-w, w), random.nextDouble(0.1, body.getHeight()),
                         random.nextDouble(-w, w));
-                world.spawnParticle(Particle.ELECTRIC_SPARK, at, 2, 0.05, 0.05, 0.05, 0.02);
+                de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.ELECTRIC_SPARK, 2, Math.max(0.05, 0.05), null);
                 if (charge.age % 3 == 0) {
-                    world.spawnParticle(Particle.FLAME, at, 1, 0, 0, 0, 0);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.FLAME, 1, Math.max(0, 0), null);
                 }
             }
         }
@@ -649,7 +642,7 @@ public final class HollowBloodstorm {
                 }
                 Particle.DustOptions hot = new Particle.DustOptions(PALE, 0.8f);
                 for (float[] seg : segs) {
-                    world.spawnParticle(Particle.DUST, floor.clone().add(seg[2], 0.08, seg[3]), 1, 0, 0, 0, 0, hot);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(floor.clone().add(seg[2], 0.08, seg[3]), Particle.DUST, 1, Math.max(0, 0), hot);
                 }
             }
 
@@ -704,11 +697,11 @@ public final class HollowBloodstorm {
                     ThreadLocalRandom random = ThreadLocalRandom.current();
                     for (int i = 0; i < 2; i++) {
                         float[] seg = segs.get(random.nextInt(segs.size()));
-                        world.spawnParticle(Particle.FLAME, floor.clone().add(seg[2], 0.1, seg[3]), 1, 0, 0, 0, 0);
+                        de.aetherion.bossengine.fx.ShapeFx.puff(floor.clone().add(seg[2], 0.1, seg[3]), Particle.FLAME, 1, Math.max(0, 0), null);
                     }
                 }
                 if (age == 11) {
-                    world.spawnParticle(Particle.SMOKE, floor.clone().add(0, 0.1, 0), 5, 0.5, 0.02, 0.5, 0.01);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(floor.clone().add(0, 0.1, 0), Particle.SMOKE, 5, Math.max(0.5, 0.5), null);
                 }
                 return true;
             }

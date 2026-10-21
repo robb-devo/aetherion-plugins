@@ -64,16 +64,16 @@ final class TransitionSpectacles {
                 double yaw = tick * 0.42 + arm * (Math.PI * 2 / arms) + t * 0.95;
                 double radius = 0.55 + t * 0.38;
                 Location p = focus.clone().add(Math.cos(yaw) * radius, t * 0.22, Math.sin(yaw) * radius);
-                world.spawnParticle(Particle.PORTAL, p, 2, 0.02, 0.04, 0.02, 0.12);
+                de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.PORTAL, 2, Math.max(0.02, 0.02), null);
                 if (i % 2 == 0) {
-                    world.spawnParticle(Particle.REVERSE_PORTAL, p, 1, 0, 0, 0, 0);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.REVERSE_PORTAL, 1, Math.max(0, 0), null);
                 }
                 if (i % 4 == 0) {
-                    world.spawnParticle(Particle.WITCH, p, 1, 0.04, 0.08, 0.04, 0);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.WITCH, 1, Math.max(0.04, 0.04), null);
                 }
             }
         }
-        world.spawnParticle(Particle.DRAGON_BREATH, focus.clone().add(0, 1.1, 0), 6, 0.45, 0.8, 0.45, 0.01);
+        de.aetherion.bossengine.fx.ShapeFx.puff(focus.clone().add(0, 1.1, 0), Particle.DRAGON_BREATH, 6, Math.max(0.45, 0.45), null);
         if (tick % 7 == 0) {
             world.playSound(focus, Sound.BLOCK_PORTAL_AMBIENT, 0.55f, 0.7f + (float) progress * 0.45f);
             world.playSound(focus, Sound.ENTITY_ENDERMAN_AMBIENT, 0.35f, 0.45f);
@@ -177,9 +177,9 @@ final class TransitionSpectacles {
         Particle core = high ? Particle.END_ROD : Particle.DRAGON_BREATH;
         for (double d = 0; d <= length; d += 0.7) {
             Location p = start.clone().add(dir.clone().multiply(d));
-            world.spawnParticle(core, p, 1, 0.02, 0.02, 0.02, 0);
+            de.aetherion.bossengine.fx.ShapeFx.puff(p, core, 1, Math.max(0.02, 0.02), null);
             if ((int) (d * 10) % 14 == 0) {
-                world.spawnParticle(Particle.REVERSE_PORTAL, p, 1, 0.04, 0.04, 0.04, 0);
+                de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.REVERSE_PORTAL, 1, Math.max(0.04, 0.04), null);
             }
         }
     }
@@ -191,9 +191,9 @@ final class TransitionSpectacles {
             double radius = 1.4 + t * 11.0;
             double angle = yaw + t * Math.PI * 3.2;
             Location p = focus.clone().add(Math.cos(angle) * radius, 0.12, Math.sin(angle) * radius);
-            world.spawnParticle(Particle.PORTAL, p, 1, 0, 0, 0, 0);
+            de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.PORTAL, 1, Math.max(0, 0), null);
             if (i % 3 == 0) {
-                world.spawnParticle(Particle.SQUID_INK, p, 1, 0.05, 0.02, 0.05, 0);
+                de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.SQUID_INK, 1, Math.max(0.05, 0.05), null);
             }
         }
     }
@@ -233,7 +233,7 @@ final class TransitionSpectacles {
             BossHits.hurt(player, boss, instance.scaleDamage(damage));
             scatter(player, scatter);
             world.playSound(player.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 1.15f, 0.7f);
-            world.spawnParticle(Particle.REVERSE_PORTAL, player.getLocation().add(0, 1.0, 0), 18, 0.3, 0.5, 0.3, 0.12);
+            de.aetherion.bossengine.fx.ShapeFx.puff(player.getLocation().add(0, 1.0, 0), Particle.REVERSE_PORTAL, 18, Math.max(0.3, 0.3), null);
             player.sendActionBar(net.kyori.adventure.text.Component.text("§5The bag found you."));
         }
     }

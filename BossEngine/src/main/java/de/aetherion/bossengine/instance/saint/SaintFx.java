@@ -274,12 +274,11 @@ final class SaintFx {
     }
 
     void particle(Particle particle, Vector3f at, int count, double spread, double speed) {
-        world.spawnParticle(particle, at(at), count, spread, spread, spread, speed);
+        de.aetherion.bossengine.fx.ShapeFx.puff(at(at), particle, count, Math.max(spread, spread), null);
     }
 
     void dust(Vector3f at, Color color, float size, int count, double spread) {
-        world.spawnParticle(Particle.DUST, at(at), count, spread, spread, spread, 0,
-                new Particle.DustOptions(color, size));
+        de.aetherion.bossengine.fx.ShapeFx.puff(at(at), Particle.DUST, count, Math.max(spread, spread), new Particle.DustOptions(color, size));
     }
 
     void title(String main, String sub, int fadeIn, int stay, int fadeOut) {

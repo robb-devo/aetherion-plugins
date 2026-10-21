@@ -196,6 +196,31 @@ public final class DisplayVfx implements Vfx.Renderer {
         }
     }
 
+    @Override
+    public void holdPlane(Location centre, Color color, double radius, Quaternionf plane) {
+        long now = Bukkit.getCurrentTick();
+        String key = centre.getWorld().getName() + '|' + Math.round(centre.getX() * 4) + '|' + Math.round(centre.getY() * 4)
+                + '|' + Math.round(centre.getZ() * 4) + '|' + Math.round(radius * 4) + '|' + (color == null ? 0 : color.asRGB())
+                + '|' + Math.round(plane.x * 20) + ',' + Math.round(plane.y * 20) + ',' + Math.round(plane.z * 20) + ',' + Math.round(plane.w * 20);
+        Held ring = held.get(key);
+        if (ring != null && ring.display().isValid()) {
+            ring.until()[0] = now + 4;
+            return;
+        }
+        float s = (float) (radius * 2.0) / GLYPH;
+        Quaternionf q = new Quaternionf(plane).rotateX((float) (-Math.PI / 2));
+        Vector3f lift = q.transform(new Vector3f(0, CENTRE_Y * s, 0));
+        TextDisplay d = spawn(centre, RING, color, Display.Billboard.FIXED,
+                new Transformation(lift.negate(), q, new Vector3f(s, s, s), new Quaternionf()), 2.0f);
+        if (d == null) {
+            return;
+        }
+        held.put(key, new Held(d, new long[] {now + 4}));
+        if (heldSweep == null) {
+            heldSweep = Bukkit.getScheduler().runTaskTimer(plugin, this::sweepHeld, 2L, 2L);
+        }
+    }
+
     private void sweepHeld() {
         long now = Bukkit.getCurrentTick();
         lines.values().removeIf(line -> {

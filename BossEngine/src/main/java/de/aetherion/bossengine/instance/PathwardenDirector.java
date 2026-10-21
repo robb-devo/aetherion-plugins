@@ -313,7 +313,7 @@ final class PathwardenDirector {
                 world.playSound(at, Sound.ENTITY_ENDER_DRAGON_FLAP, 0.9f, 0.55f);
                 world.playSound(at, Sound.ITEM_TRIDENT_RIPTIDE_3, 1.0f, 0.7f);
                 if (!de.aetherion.core.api.Vfx.burst(at.clone().add(0, 2.5, 0), WHITE, 3.0, 9)) {
-                    world.spawnParticle(Particle.FLASH, at.clone().add(0, 2.5, 0), 1, 0, 0, 0, 0);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(at.clone().add(0, 2.5, 0), Particle.FLASH, 1, Math.max(0, 0), null);
                 }
             }
             return;
@@ -331,7 +331,7 @@ final class PathwardenDirector {
             if (active == SPIN_ACTIVE) {
                 world.playSound(at, Sound.ENTITY_IRON_GOLEM_REPAIR, 0.9f, 0.6f);
                 if (!de.aetherion.core.api.Vfx.wave(at.clone().add(0, 0.05, 0), WHITE, 4.0, 14)) {
-                    world.spawnParticle(Particle.CLOUD, at.clone().add(0, 0.3, 0), 30, 2.2, 0.1, 2.2, 0.04);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(at.clone().add(0, 0.3, 0), Particle.CLOUD, 30, Math.max(2.2, 2.2), null);
                 }
             }
             if (active % 5 == 0) {
@@ -407,9 +407,9 @@ final class PathwardenDirector {
             drawSeekBeam(from, beamFocus.clone().add(0, 0.2, 0), mix);
             drawDangerZone(beamFocus, zone, true);
             if (firing && beamTick % 4 == 0 && !de.aetherion.core.api.Vfx.pillar(beamFocus, WHITE, 0.6, 4.0, 6)) {
-                world.spawnParticle(Particle.END_ROD, beamFocus.clone().add(0, 1.5, 0), 4, 0.08, 1.4, 0.08, 0);
+                de.aetherion.bossengine.fx.ShapeFx.puff(beamFocus.clone().add(0, 1.5, 0), Particle.END_ROD, 4, Math.max(0.08, 0.08), null);
             } else if (firing && !de.aetherion.core.api.Vfx.active()) {
-                world.spawnParticle(Particle.END_ROD, beamFocus.clone().add(0, 1.5, 0), 4, 0.08, 1.4, 0.08, 0);
+                de.aetherion.bossengine.fx.ShapeFx.puff(beamFocus.clone().add(0, 1.5, 0), Particle.END_ROD, 4, Math.max(0.08, 0.08), null);
             }
             if (beamTick % 6 == 0) {
                 world.playSound(beamFocus, Sound.BLOCK_NOTE_BLOCK_PLING, 0.4f, (float) (0.7 + t));
@@ -449,10 +449,10 @@ final class PathwardenDirector {
             de.aetherion.core.api.Vfx.wave(beamFocus.clone().add(0, 0.07, 0), AZURE, BEAM_BLAST * 0.45, 12);
             de.aetherion.core.api.Vfx.pillar(beamFocus, WHITE, 1.2, 9.0, 16);
         } else {
-            world.spawnParticle(Particle.EXPLOSION_EMITTER, beamFocus.clone().add(0, 0.4, 0), 1, 0, 0, 0, 0);
+            de.aetherion.bossengine.fx.ShapeFx.puff(beamFocus.clone().add(0, 0.4, 0), Particle.EXPLOSION_EMITTER, 1, Math.max(0, 0), null);
             ringParticles(beamFocus, BEAM_BLAST, CRIMSON, WHITE, 40);
             ringParticles(beamFocus, BEAM_BLAST * 0.45, AZURE, WHITE, 20);
-            world.spawnParticle(Particle.END_ROD, beamFocus.clone().add(0, 1.2, 0), 6, 0.08, 0.6, 0.08, 0.01);
+            de.aetherion.bossengine.fx.ShapeFx.puff(beamFocus.clone().add(0, 1.2, 0), Particle.END_ROD, 6, Math.max(0.08, 0.08), null);
         }
         boolean hitAnyone = false;
         double r2 = BEAM_BLAST * BEAM_BLAST;
@@ -479,7 +479,7 @@ final class PathwardenDirector {
         if (!hitAnyone) {
             world.playSound(beamFocus, Sound.BLOCK_FIRE_EXTINGUISH, 1.1f, 0.7f);
             if (!de.aetherion.core.api.Vfx.wave(beamFocus.clone().add(0, 0.05, 0), Color.fromRGB(200, 200, 205), 2.0, 12)) {
-                world.spawnParticle(Particle.CLOUD, beamFocus.clone().add(0, 0.4, 0), 18, 0.45, 0.2, 0.45, 0.02);
+                de.aetherion.bossengine.fx.ShapeFx.puff(beamFocus.clone().add(0, 0.4, 0), Particle.CLOUD, 18, Math.max(0.45, 0.45), null);
             }
             shout("&7Judgment &fmisses&7 — the path holds.");
         }
@@ -505,8 +505,8 @@ final class PathwardenDirector {
             if (deathTicks == 1 && de.aetherion.core.api.Vfx.burst(deathAzureStart, AZURE, 2.6, 10)) {
                 de.aetherion.core.api.Vfx.burst(deathCrimsonStart, CRIMSON, 2.6, 10);
             } else if (!de.aetherion.core.api.Vfx.active()) {
-                world.spawnParticle(Particle.FLASH, deathAzureStart, deathTicks == 1 ? 1 : 0, 0, 0, 0, 0);
-                world.spawnParticle(Particle.FLASH, deathCrimsonStart, deathTicks == 1 ? 1 : 0, 0, 0, 0, 0);
+                de.aetherion.bossengine.fx.ShapeFx.puff(deathAzureStart, Particle.FLASH, deathTicks == 1 ? 1 : 0, Math.max(0, 0), null);
+                de.aetherion.bossengine.fx.ShapeFx.puff(deathCrimsonStart, Particle.FLASH, deathTicks == 1 ? 1 : 0, Math.max(0, 0), null);
             }
             if (deathTicks == 1 || deathTicks == 8) {
                 world.playSound(deathFocus, Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 1.0f, 0.55f + deathTicks * 0.04f);
@@ -562,7 +562,7 @@ final class PathwardenDirector {
                     de.aetherion.core.api.Vfx.bolt(bladeAzure, bladeCrimson, WHITE, 4);
                 }
             } else {
-                world.spawnParticle(Particle.ELECTRIC_SPARK, strike, 10, 0.5, 0.6, 0.5, 0.02);
+                de.aetherion.bossengine.fx.ShapeFx.puff(strike, Particle.ELECTRIC_SPARK, 10, Math.max(0.5, 0.5), null);
             }
             if (deathTicks % 3 == 0) {
                 world.playSound(strike, Sound.BLOCK_NOTE_BLOCK_PLING, 0.45f, 1.6f);
@@ -682,11 +682,11 @@ final class PathwardenDirector {
         for (int i = 0; i < 36; i++) {
             double ang = Math.PI * 2 * i / 36.0;
             Location p = at.clone().add(Math.cos(ang) * SMASH_RADIUS, 0.15, Math.sin(ang) * SMASH_RADIUS);
-            world.spawnParticle(Particle.BLOCK, p, 2, 0.1, 0.05, 0.1, 0.05, Material.IRON_BLOCK.createBlockData());
-            world.spawnParticle(Particle.DUST, p, 1, 0, 0, 0, new Particle.DustOptions(i % 2 == 0 ? AZURE : CRIMSON, 1.5f));
+            de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.BLOCK, 2, Math.max(0.1, 0.1), Material.IRON_BLOCK.createBlockData());
+            de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.DUST, 1, Math.max(0, 0), null);
         }
-        world.spawnParticle(Particle.CRIT, at.clone().add(0, 0.6, 0), 30, 1.6, 0.3, 1.6, 0.2);
-        world.spawnParticle(Particle.EXPLOSION, at.clone().add(0, 0.4, 0), 1, 0, 0, 0, 0);
+        de.aetherion.bossengine.fx.ShapeFx.puff(at.clone().add(0, 0.6, 0), Particle.CRIT, 30, Math.max(1.6, 1.6), null);
+        de.aetherion.bossengine.fx.ShapeFx.puff(at.clone().add(0, 0.4, 0), Particle.EXPLOSION, 1, Math.max(0, 0), null);
         world.playSound(at, Sound.ITEM_MACE_SMASH_GROUND, 1.0f, 0.6f);
     }
 
@@ -758,8 +758,8 @@ final class PathwardenDirector {
             de.aetherion.core.api.Vfx.orb(c, null, CRIMSON, 1.1, 6);
             return;
         }
-        world.spawnParticle(Particle.DUST, a, 3, 0.12, 0.22, 0.12, new Particle.DustOptions(AZURE, 1.15f));
-        world.spawnParticle(Particle.DUST, c, 3, 0.12, 0.22, 0.12, new Particle.DustOptions(CRIMSON, 1.15f));
+        de.aetherion.bossengine.fx.ShapeFx.puff(a, Particle.DUST, 3, Math.max(0.12, 0.12), null);
+        de.aetherion.bossengine.fx.ShapeFx.puff(c, Particle.DUST, 3, Math.max(0.12, 0.12), null);
     }
 
     private Location strikePoint() {
@@ -826,19 +826,19 @@ final class PathwardenDirector {
             double t = i / (double) steps;
             Location p = lerp(butt, tip, t);
             float size = (0.85f + (float) t * 1.15f) * Math.max(0.7f, power);
-            world.spawnParticle(Particle.DUST, p, charged ? 3 : 2, 0.03, 0.03, 0.03, new Particle.DustOptions(color, size));
+            de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.DUST, charged ? 3 : 2, Math.max(0.03, 0.03), null);
             if (i % 2 == 0) {
-                world.spawnParticle(Particle.END_ROD, p, 1, 0.01, 0.01, 0.01, 0);
+                de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.END_ROD, 1, Math.max(0.01, 0.01), null);
             }
             if (charged && i % 3 == 0) {
-                world.spawnParticle(Particle.DUST, p, 1, 0.05, 0.05, 0.05, new Particle.DustOptions(WHITE, size * 0.7f));
+                de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.DUST, 1, Math.max(0.05, 0.05), null);
             }
             if (color.getBlue() > color.getRed()) {
                 if (i % 2 == 0) {
-                    world.spawnParticle(Particle.SOUL_FIRE_FLAME, p, 1, 0.02, 0.02, 0.02, 0.001);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.SOUL_FIRE_FLAME, 1, Math.max(0.02, 0.02), null);
                 }
             } else if (i % 2 == 0) {
-                world.spawnParticle(Particle.FLAME, p, 1, 0.02, 0.02, 0.02, 0.001);
+                de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.FLAME, 1, Math.max(0.02, 0.02), null);
             }
         }
         // Crossguard flare
@@ -847,13 +847,13 @@ final class PathwardenDirector {
             side = new Vector(1, 0, 0);
         }
         side.normalize().multiply(0.55 + power * 0.12);
-        world.spawnParticle(Particle.DUST, butt.clone().add(side), 4, 0.05, 0.05, 0.05, new Particle.DustOptions(color, 1.4f * power));
-        world.spawnParticle(Particle.DUST, butt.clone().subtract(side), 4, 0.05, 0.05, 0.05, new Particle.DustOptions(color, 1.4f * power));
+        de.aetherion.bossengine.fx.ShapeFx.puff(butt.clone().add(side), Particle.DUST, 4, Math.max(0.05, 0.05), null);
+        de.aetherion.bossengine.fx.ShapeFx.puff(butt.clone().subtract(side), Particle.DUST, 4, Math.max(0.05, 0.05), null);
         // Tip star
-        world.spawnParticle(Particle.GLOW, tip, charged ? 8 : 3, 0.08, 0.08, 0.08, 0);
-        world.spawnParticle(Particle.ELECTRIC_SPARK, tip, charged ? 10 : 3, 0.1, 0.1, 0.1, 0.01);
+        de.aetherion.bossengine.fx.ShapeFx.puff(tip, Particle.GLOW, charged ? 8 : 3, Math.max(0.08, 0.08), null);
+        de.aetherion.bossengine.fx.ShapeFx.puff(tip, Particle.ELECTRIC_SPARK, charged ? 10 : 3, Math.max(0.1, 0.1), null);
         if (charged) {
-            world.spawnParticle(Particle.FLASH, tip, 1, 0, 0, 0, 0);
+            de.aetherion.bossengine.fx.ShapeFx.puff(tip, Particle.FLASH, 1, Math.max(0, 0), null);
         }
     }
 
@@ -865,8 +865,8 @@ final class PathwardenDirector {
         if (de.aetherion.core.api.Vfx.spark(at, color, 0.8)) {
             return;
         }
-        world.spawnParticle(Particle.DUST, at, 8, 0.15, 0.15, 0.15, new Particle.DustOptions(color, 1.5f));
-        world.spawnParticle(Particle.END_ROD, at, 2, 0.08, 0.08, 0.08, 0.01);
+        de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.DUST, 8, Math.max(0.15, 0.15), null);
+        de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.END_ROD, 2, Math.max(0.08, 0.08), null);
     }
 
     private void guillotineImpact(World world, Location strike) {
@@ -882,10 +882,10 @@ final class PathwardenDirector {
             bloodBurst(world, strike);
             return;
         }
-        world.spawnParticle(Particle.FLASH, strike, 3, 0.2, 0.3, 0.2, 0);
-        world.spawnParticle(Particle.EXPLOSION_EMITTER, strike, 1, 0, 0, 0, 0);
-        world.spawnParticle(Particle.DUST, strike, 80, 0.7, 0.9, 0.7, new Particle.DustOptions(AZURE, 2.0f));
-        world.spawnParticle(Particle.DUST, strike, 80, 0.7, 0.9, 0.7, new Particle.DustOptions(CRIMSON, 2.0f));
+        de.aetherion.bossengine.fx.ShapeFx.puff(strike, Particle.FLASH, 3, Math.max(0.2, 0.2), null);
+        de.aetherion.bossengine.fx.ShapeFx.puff(strike, Particle.EXPLOSION_EMITTER, 1, Math.max(0, 0), null);
+        de.aetherion.bossengine.fx.ShapeFx.puff(strike, Particle.DUST, 80, Math.max(0.7, 0.7), null);
+        de.aetherion.bossengine.fx.ShapeFx.puff(strike, Particle.DUST, 80, Math.max(0.7, 0.7), null);
         bloodBurst(world, strike);
         // Shock ring
         for (int i = 0; i < 36; i++) {
@@ -914,10 +914,9 @@ final class PathwardenDirector {
         } else {
             for (int i = 0; i < 48; i++) {
                 double ang = Math.PI * 2 * i / 48.0;
-                world.spawnParticle(Particle.END_ROD, floor.clone().add(Math.cos(ang) * 3.2, 0, Math.sin(ang) * 3.2),
-                        0, Math.cos(ang) * 0.25, 0.02, Math.sin(ang) * 0.25, 1);
+                de.aetherion.bossengine.fx.ShapeFx.puff(floor.clone().add(Math.cos(ang) * 3.2, 0, Math.sin(ang) * 3.2), Particle.END_ROD, 0, Math.max(Math.cos(ang) * 0.25, Math.sin(ang) * 0.25), null);
             }
-            world.spawnParticle(Particle.SOUL, floor.clone().add(0, 1.0, 0), 20, 0.6, 1.4, 0.6, 0.03);
+            de.aetherion.bossengine.fx.ShapeFx.puff(floor.clone().add(0, 1.0, 0), Particle.SOUL, 20, Math.max(0.6, 0.6), null);
         }
         shout("&8&o…the iron gives way. &7The path is &fopen&7.");
     }
@@ -937,10 +936,10 @@ final class PathwardenDirector {
             return;
         }
         bloodBurst(world, strike.clone().add(0, -0.4 + t * 0.2, 0));
-        world.spawnParticle(Particle.DUST, strike, 24, 1.1, 1.4, 1.1, new Particle.DustOptions(AZURE, 1.6f));
-        world.spawnParticle(Particle.DUST, strike, 24, 1.1, 1.4, 1.1, new Particle.DustOptions(CRIMSON, 1.6f));
-        world.spawnParticle(Particle.SOUL, strike, 6, 0.7, 1.0, 0.7, 0.01);
-        world.spawnParticle(Particle.DAMAGE_INDICATOR, strike, 12, 0.8, 1.0, 0.8, 0);
+        de.aetherion.bossengine.fx.ShapeFx.puff(strike, Particle.DUST, 24, Math.max(1.1, 1.1), null);
+        de.aetherion.bossengine.fx.ShapeFx.puff(strike, Particle.DUST, 24, Math.max(1.1, 1.1), null);
+        de.aetherion.bossengine.fx.ShapeFx.puff(strike, Particle.SOUL, 6, Math.max(0.7, 0.7), null);
+        de.aetherion.bossengine.fx.ShapeFx.puff(strike, Particle.DAMAGE_INDICATOR, 12, Math.max(0.8, 0.8), null);
         if (deathTicks % 5 == 0) {
             world.playSound(strike, Sound.BLOCK_LAVA_POP, 0.5f, 0.4f);
         }
@@ -949,8 +948,7 @@ final class PathwardenDirector {
             double ang = Math.toRadians(deathTicks * 18 + i * 60);
             double r = 1.2 + t * 2.5;
             Location p = strike.clone().add(Math.cos(ang) * r, 1.5 - t * 2.2, Math.sin(ang) * r);
-            world.spawnParticle(Particle.DUST, p, 2, 0.05, 0.05, 0.05,
-                    new Particle.DustOptions(i % 2 == 0 ? AZURE : CRIMSON, 1.3f));
+            de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.DUST, 2, Math.max(0.05, 0.05), null);
         }
     }
 
@@ -1001,16 +999,16 @@ final class PathwardenDirector {
         int steps = 26;
         for (int i = 0; i <= steps; i++) {
             Location p = from.clone().add(delta.clone().multiply(i / (double) steps));
-            world.spawnParticle(Particle.DUST, p, 2, 0.04, 0.04, 0.04, new Particle.DustOptions(color, 1.45f));
+            de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.DUST, 2, Math.max(0.04, 0.04), null);
             if (i % 2 == 0) {
-                world.spawnParticle(Particle.END_ROD, p, 1, 0.01, 0.01, 0.01, 0);
+                de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.END_ROD, 1, Math.max(0.01, 0.01), null);
             }
             if (i % 4 == 0) {
-                world.spawnParticle(Particle.ELECTRIC_SPARK, p, 1, 0.02, 0.02, 0.02, 0);
+                de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.ELECTRIC_SPARK, 1, Math.max(0.02, 0.02), null);
             }
         }
-        world.spawnParticle(Particle.DUST, to.clone().add(0, 0.15, 0), 14, 0.35, 0.08, 0.35, new Particle.DustOptions(color, 1.7f));
-        world.spawnParticle(Particle.GLOW, to.clone().add(0, 0.25, 0), 6, 0.2, 0.1, 0.2, 0);
+        de.aetherion.bossengine.fx.ShapeFx.puff(to.clone().add(0, 0.15, 0), Particle.DUST, 14, Math.max(0.35, 0.35), null);
+        de.aetherion.bossengine.fx.ShapeFx.puff(to.clone().add(0, 0.25, 0), Particle.GLOW, 6, Math.max(0.2, 0.2), null);
     }
 
     private void drawFireBeam(Location from, Location to) {
@@ -1027,14 +1025,14 @@ final class PathwardenDirector {
         Vector delta = to.toVector().subtract(from.toVector());
         for (int i = 0; i <= 32; i++) {
             Location p = from.clone().add(delta.clone().multiply(i / 32.0));
-            world.spawnParticle(Particle.DUST, p, 5, 0.1, 0.1, 0.1, new Particle.DustOptions(CRIMSON, 2.1f));
-            world.spawnParticle(Particle.FLAME, p, 2, 0.06, 0.06, 0.06, 0.015);
+            de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.DUST, 5, Math.max(0.1, 0.1), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.FLAME, 2, Math.max(0.06, 0.06), null);
             if (i % 3 == 0) {
-                world.spawnParticle(Particle.LAVA, p, 1, 0, 0, 0, 0);
+                de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.LAVA, 1, Math.max(0, 0), null);
             }
         }
-        world.spawnParticle(Particle.FLASH, to.clone().add(0, 0.5, 0), 2, 0, 0, 0, 0);
-        world.spawnParticle(Particle.EXPLOSION, to.clone().add(0, 0.3, 0), 2, 0.2, 0.1, 0.2, 0);
+        de.aetherion.bossengine.fx.ShapeFx.puff(to.clone().add(0, 0.5, 0), Particle.FLASH, 2, Math.max(0, 0), null);
+        de.aetherion.bossengine.fx.ShapeFx.puff(to.clone().add(0, 0.3, 0), Particle.EXPLOSION, 2, Math.max(0.2, 0.2), null);
     }
 
     private void tornado(Location at) {
@@ -1083,8 +1081,8 @@ final class PathwardenDirector {
             );
         }
         // Ground scrape ring
-        world.spawnParticle(Particle.CLOUD, at.clone().add(0, 0.15, 0), 6, 1.4, 0.05, 1.4, 0.01);
-        world.spawnParticle(Particle.SWEEP_ATTACK, at.clone().add(0, 1.2, 0), 2, 1.8, 0.4, 1.8, 0);
+        de.aetherion.bossengine.fx.ShapeFx.puff(at.clone().add(0, 0.15, 0), Particle.CLOUD, 6, Math.max(1.4, 1.4), null);
+        de.aetherion.bossengine.fx.ShapeFx.puff(at.clone().add(0, 1.2, 0), Particle.SWEEP_ATTACK, 2, Math.max(1.8, 1.8), null);
     }
 
     private void ringParticles(Location at, double radius, Color a, Color b, int points) {
@@ -1138,10 +1136,10 @@ final class PathwardenDirector {
             world.playSound(at, Sound.ENTITY_PLAYER_HURT, 1.2f, 0.5f);
             return;
         }
-        world.spawnParticle(Particle.DUST, at, 90, 0.9, 1.2, 0.9, new Particle.DustOptions(CRIMSON, 2.0f));
-        world.spawnParticle(Particle.DAMAGE_INDICATOR, at, 40, 0.8, 1.0, 0.8, 0);
-        world.spawnParticle(Particle.BLOCK, at, 70, 0.7, 0.9, 0.7, 0.08, Material.REDSTONE_BLOCK.createBlockData());
-        world.spawnParticle(Particle.BLOCK, at, 35, 0.5, 0.7, 0.5, 0.04, Material.RED_CONCRETE.createBlockData());
+        de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.DUST, 90, Math.max(0.9, 0.9), null);
+        de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.DAMAGE_INDICATOR, 40, Math.max(0.8, 0.8), null);
+        de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.BLOCK, 70, Math.max(0.7, 0.7), Material.REDSTONE_BLOCK.createBlockData());
+        de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.BLOCK, 35, Math.max(0.5, 0.5), Material.RED_CONCRETE.createBlockData());
         world.playSound(at, Sound.ENTITY_PLAYER_HURT, 1.2f, 0.5f);
     }
 

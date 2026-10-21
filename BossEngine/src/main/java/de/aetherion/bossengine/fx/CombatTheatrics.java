@@ -257,10 +257,10 @@ public final class CombatTheatrics {
                 for (int i = 0; i < 3; i++) {
                     double angle = tick * 0.35 + i * Math.PI * 2 / 3;
                     double r = 1.6 - t * 0.6;
-                    world.spawnParticle(Particle.FLAME, at.clone().add(Math.cos(angle) * r, (tick % 20) * 0.15, Math.sin(angle) * r), 1, 0, 0, 0, 0);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(at.clone().add(Math.cos(angle) * r, (tick % 20) * 0.15, Math.sin(angle) * r), Particle.FLAME, 1, Math.max(0, 0), null);
                 }
                 if (tick % 4 == 0) {
-                    world.spawnParticle(Particle.WHITE_ASH, at.clone().add(0, 2.0, 0), 12, 2.2, 1.0, 2.2, 0);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(at.clone().add(0, 2.0, 0), Particle.WHITE_ASH, 12, Math.max(2.2, 2.2), null);
                 }
                 if (tick % 12 == 0) {
                     world.playSound(at, Sound.BLOCK_FIRE_AMBIENT, 1.0f, 0.6f + (float) t);
@@ -271,8 +271,8 @@ public final class CombatTheatrics {
                 if (Vfx.active() && tick % 6 == 0) {
                     Vfx.motes(at.clone().add(0, 0.2, 0), Color.fromRGB(255, 196, 64), 3, 0.9, new Vector(0, 1.2, 0), 18);
                 } else if (!Vfx.active() && tick % 3 == 0) {
-                    world.spawnParticle(Particle.DRIPPING_HONEY, at.clone().add(0, 0.2, 0), 4, 1.2, 0.1, 1.2, 0);
-                    world.spawnParticle(Particle.BUBBLE_POP, at.clone().add(0, 0.2, 0), 4, 1.2, 0.1, 1.2, 0.02);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(at.clone().add(0, 0.2, 0), Particle.DRIPPING_HONEY, 4, Math.max(1.2, 1.2), null);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(at.clone().add(0, 0.2, 0), Particle.BUBBLE_POP, 4, Math.max(1.2, 1.2), null);
                 }
                 if (tick % 8 == 0) {
                     world.playSound(at, Sound.BLOCK_NOTE_BLOCK_BIT, 0.8f, 0.8f + (float) t * 1.1f);
@@ -304,7 +304,7 @@ public final class CombatTheatrics {
                     Vfx.burst(at.clone().add(0, 1.2, 0), Color.fromRGB(90, 230, 255), 2.4, 10);
                 } else {
                     dustRing(world, at, 4.5, Color.fromRGB(90, 230, 255), 1.4f);
-                    world.spawnParticle(Particle.SONIC_BOOM, at.clone().add(0, 1.2, 0), 1, 0, 0, 0, 0);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(at.clone().add(0, 1.2, 0), Particle.SONIC_BOOM, 1, Math.max(0, 0), null);
                 }
             }
             case "skuldugery" -> {
@@ -315,7 +315,7 @@ public final class CombatTheatrics {
                     flameRing(at, Color.fromRGB(255, 122, 32), 2.2, 6, 1.0, 20);
                 } else {
                     dustRing(world, at, 4.0, Color.fromRGB(255, 122, 32), 1.8f);
-                    world.spawnParticle(Particle.LAVA, at.clone().add(0, 0.6, 0), 14, 1.0, 0.3, 1.0, 0);
+                    de.aetherion.bossengine.fx.ShapeFx.puff(at.clone().add(0, 0.6, 0), Particle.LAVA, 14, Math.max(1.0, 1.0), null);
                 }
             }
             case "mcnugget" -> {
@@ -351,9 +351,9 @@ public final class CombatTheatrics {
         World world = at.getWorld();
         world.playSound(at, Sound.ENTITY_GENERIC_EXPLODE, 0.85f, 0.7f);
         world.playSound(at, Sound.ENTITY_GHAST_SHOOT, 0.7f, 0.55f);
-        world.spawnParticle(Particle.EXPLOSION, at.clone().add(0, 0.3, 0), 2, 0.35, 0.1, 0.35, 0);
-        world.spawnParticle(Particle.FLAME, at, 28, 0.9, 0.2, 0.9, 0.04);
-        world.spawnParticle(Particle.LAVA, at, 10, 0.55, 0.1, 0.55, 0);
+        de.aetherion.bossengine.fx.ShapeFx.puff(at.clone().add(0, 0.3, 0), Particle.EXPLOSION, 2, Math.max(0.35, 0.35), null);
+        de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.FLAME, 28, Math.max(0.9, 0.9), null);
+        de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.LAVA, 10, Math.max(0.55, 0.55), null);
         FakeDestruction.blockBurst(world, at, Material.MAGMA_BLOCK, 14);
     }
 
@@ -361,8 +361,8 @@ public final class CombatTheatrics {
         World world = at.getWorld();
         world.playSound(at, Sound.ENTITY_RAVAGER_ATTACK, 1.2f, 0.55f);
         world.playSound(at, Sound.BLOCK_AMETHYST_BLOCK_BREAK, 1.0f, 0.5f);
-        world.spawnParticle(Particle.PORTAL, at.clone().add(0, 0.4, 0), 40, 0.9, 0.8, 0.9, 0.55);
-        world.spawnParticle(Particle.ENCHANT, at, 18, 0.8, 0.5, 0.8, 0.6);
+        de.aetherion.bossengine.fx.ShapeFx.puff(at.clone().add(0, 0.4, 0), Particle.PORTAL, 40, Math.max(0.9, 0.9), null);
+        de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.ENCHANT, 18, Math.max(0.8, 0.8), null);
         FakeDestruction.blockBurst(world, at, Material.AMETHYST_BLOCK, 16);
         pillars(world, at, Particle.REVERSE_PORTAL, 4, 3.2, 4.5);
     }
@@ -378,7 +378,7 @@ public final class CombatTheatrics {
         }
         dustRing(world, at, 2.6, Color.fromRGB(48, 196, 188), 1.3f);
         dustRing(world, at, 1.1, Color.fromRGB(12, 40, 48), 1.0f);
-        world.spawnParticle(Particle.SCULK_SOUL, at.clone().add(0, 0.15, 0), 6, 0.25, 0.05, 0.25, 0.01);
+        de.aetherion.bossengine.fx.ShapeFx.puff(at.clone().add(0, 0.15, 0), Particle.SCULK_SOUL, 6, Math.max(0.25, 0.25), null);
     }
 
     private static void slamSkull(Location at) {
@@ -390,7 +390,7 @@ public final class CombatTheatrics {
             return;
         }
         dustRing(world, at, 2.4, Color.fromRGB(255, 112, 28), 1.35f);
-        world.spawnParticle(Particle.SMALL_FLAME, at.clone().add(0, 0.2, 0), 6, 0.2, 0.05, 0.2, 0.01);
+        de.aetherion.bossengine.fx.ShapeFx.puff(at.clone().add(0, 0.2, 0), Particle.SMALL_FLAME, 6, Math.max(0.2, 0.2), null);
     }
 
     private static void slamNugget(Location at) {
@@ -419,8 +419,8 @@ public final class CombatTheatrics {
         World world = at.getWorld();
         world.playSound(at, Sound.ENTITY_SQUID_SQUIRT, 1.2f, 0.55f);
         world.playSound(at, Sound.ENTITY_ELDER_GUARDIAN_FLOP, 0.6f, 0.7f);
-        world.spawnParticle(Particle.SQUID_INK, at.clone().add(0, 0.4, 0), 30, 0.7, 0.4, 0.7, 0.04);
-        world.spawnParticle(Particle.BUBBLE, at, 20, 0.8, 0.5, 0.8, 0.3);
+        de.aetherion.bossengine.fx.ShapeFx.puff(at.clone().add(0, 0.4, 0), Particle.SQUID_INK, 30, Math.max(0.7, 0.7), null);
+        de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.BUBBLE, 20, Math.max(0.8, 0.8), null);
         ring(world, at, 3.0, Particle.BUBBLE_COLUMN_UP, 0.1);
     }
 
@@ -428,9 +428,9 @@ public final class CombatTheatrics {
         World world = at.getWorld();
         world.playSound(at, Sound.ENTITY_EVOKER_CAST_SPELL, 1.1f, 0.75f);
         world.playSound(at, Sound.ITEM_TOTEM_USE, 0.35f, 1.4f);
-        world.spawnParticle(Particle.WITCH, at, 22, 0.8, 0.5, 0.8, 0.02);
-        world.spawnParticle(Particle.ENCHANT, at.clone().add(0, 0.6, 0), 24, 0.7, 0.6, 0.7, 0.7);
-        world.spawnParticle(Particle.TOTEM_OF_UNDYING, at, 10, 0.4, 0.5, 0.4, 0.15);
+        de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.WITCH, 22, Math.max(0.8, 0.8), null);
+        de.aetherion.bossengine.fx.ShapeFx.puff(at.clone().add(0, 0.6, 0), Particle.ENCHANT, 24, Math.max(0.7, 0.7), null);
+        de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.TOTEM_OF_UNDYING, 10, Math.max(0.4, 0.4), null);
     }
 
     private static void slamBaron(Location at) {
@@ -439,7 +439,7 @@ public final class CombatTheatrics {
         world.playSound(at, Sound.ENTITY_SILVERFISH_HURT, 0.9f, 0.45f);
         FakeDestruction.blockBurst(world, at, Material.DIRT, 22);
         FakeDestruction.blockBurst(world, at, Material.COARSE_DIRT, 10);
-        world.spawnParticle(Particle.MYCELIUM, at, 16, 0.8, 0.15, 0.8, 0);
+        de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.MYCELIUM, 16, Math.max(0.8, 0.8), null);
         geyser(world, at, Material.DIRT, 5.5);
     }
 
@@ -447,8 +447,8 @@ public final class CombatTheatrics {
         World world = at.getWorld();
         world.playSound(at, Sound.ENTITY_WITHER_HURT, 0.95f, 0.7f);
         world.playSound(at, Sound.ENTITY_WITHER_SHOOT, 0.55f, 0.5f);
-        world.spawnParticle(Particle.SMOKE, at, 22, 0.8, 0.4, 0.8, 0.02);
-        world.spawnParticle(Particle.SOUL, at, 10, 0.5, 0.3, 0.5, 0.02);
+        de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.SMOKE, 22, Math.max(0.8, 0.8), null);
+        de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.SOUL, 10, Math.max(0.5, 0.5), null);
         itemBurst(world, at, Material.GOLD_NUGGET, 10);
         dust(world, at, Color.fromRGB(40, 40, 40), 14);
     }
@@ -457,8 +457,8 @@ public final class CombatTheatrics {
         World world = at.getWorld();
         world.playSound(at, Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 0.55f);
         world.playSound(at, Sound.BLOCK_END_PORTAL_FRAME_FILL, 0.8f, 0.7f);
-        world.spawnParticle(Particle.PORTAL, at, 36, 0.8, 0.7, 0.8, 0.6);
-        world.spawnParticle(Particle.REVERSE_PORTAL, at.clone().add(0, 0.5, 0), 14, 0.4, 0.4, 0.4, 0.15);
+        de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.PORTAL, 36, Math.max(0.8, 0.8), null);
+        de.aetherion.bossengine.fx.ShapeFx.puff(at.clone().add(0, 0.5, 0), Particle.REVERSE_PORTAL, 14, Math.max(0.4, 0.4), null);
         beams(world, at, 6.0, Particle.END_ROD);
     }
 
@@ -469,8 +469,8 @@ public final class CombatTheatrics {
         if (Vfx.wave(at, Color.fromRGB(150, 205, 255), 3.0, 11)) {
             arcs(at, Color.fromRGB(150, 205, 255), 3, 2.6);
         } else {
-            world.spawnParticle(Particle.ELECTRIC_SPARK, at, 28, 0.9, 0.5, 0.9, 0.05);
-            world.spawnParticle(Particle.CRIT, at, 16, 0.7, 0.3, 0.7, 0.08);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.ELECTRIC_SPARK, 28, Math.max(0.9, 0.9), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.CRIT, 16, Math.max(0.7, 0.7), null);
         }
         FakeDestruction.blockBurst(world, at, Material.IRON_BLOCK, 10);
     }
@@ -480,7 +480,7 @@ public final class CombatTheatrics {
         world.playSound(at, Sound.BLOCK_GLASS_BREAK, 1.25f, 0.55f);
         world.playSound(at, Sound.ENTITY_PLAYER_HURT_FREEZE, 0.7f, 0.7f);
         if (!Vfx.wave(at, Color.fromRGB(190, 236, 255), 3.0, 12)) {
-            world.spawnParticle(Particle.SNOWFLAKE, at, 28, 0.9, 0.4, 0.9, 0.02);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.SNOWFLAKE, 28, Math.max(0.9, 0.9), null);
         }
         FakeDestruction.blockBurst(world, at, Material.PACKED_ICE, 16);
         FakeDestruction.blockBurst(world, at, Material.SNOW_BLOCK, 8);
@@ -495,8 +495,8 @@ public final class CombatTheatrics {
             Vfx.motes(at.clone().add(0, 0.3, 0), Color.fromRGB(176, 92, 255), 5, 0.8, new Vector(0, 1.8, 0), 24);
             return;
         }
-        world.spawnParticle(Particle.DRAGON_BREATH, at.clone().add(0, 0.5, 0), 24, 0.8, 0.4, 0.8, 0.04);
-        world.spawnParticle(Particle.PORTAL, at, 20, 0.7, 0.5, 0.7, 0.4);
+        de.aetherion.bossengine.fx.ShapeFx.puff(at.clone().add(0, 0.5, 0), Particle.DRAGON_BREATH, 24, Math.max(0.8, 0.8), null);
+        de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.PORTAL, 20, Math.max(0.7, 0.7), null);
     }
 
     private static void slamDefault(Location at) {
@@ -507,15 +507,15 @@ public final class CombatTheatrics {
             Vfx.chips(at, at.clone().add(0, -1, 0).getBlock().getBlockData(), 6, 1.0);
             return;
         }
-        world.spawnParticle(Particle.CLOUD, at, 18, 0.8, 0.15, 0.8, 0.03);
-        world.spawnParticle(Particle.CRIT, at, 12, 0.6, 0.2, 0.6, 0.06);
+        de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.CLOUD, 18, Math.max(0.8, 0.8), null);
+        de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.CRIT, 12, Math.max(0.6, 0.6), null);
     }
 
     private static void ringSparky(Location at, double radius) {
         World world = at.getWorld();
         world.playSound(at, Sound.ENTITY_GENERIC_EXPLODE, 0.7f, 0.65f);
         ring(world, at, radius, Particle.FLAME, 0.25);
-        world.spawnParticle(Particle.LAVA, at, 12, 0.6, 0.2, 0.6, 0);
+        de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.LAVA, 12, Math.max(0.6, 0.6), null);
     }
 
     private static void ringColossus(Location at, double radius) {
@@ -547,7 +547,7 @@ public final class CombatTheatrics {
             return;
         }
         dustRing(world, at, radius, Color.fromRGB(255, 112, 28), 1.3f);
-        world.spawnParticle(Particle.SMALL_FLAME, at.clone().add(0, 0.2, 0), 4, 0.15, 0.05, 0.15, 0.01);
+        de.aetherion.bossengine.fx.ShapeFx.puff(at.clone().add(0, 0.2, 0), Particle.SMALL_FLAME, 4, Math.max(0.15, 0.15), null);
     }
 
     private static void ringNugget(Location at, double radius) {
@@ -586,14 +586,14 @@ public final class CombatTheatrics {
         World world = at.getWorld();
         world.playSound(at, Sound.ENTITY_SQUID_SQUIRT, 0.9f, 0.5f);
         ring(world, at, radius, Particle.SQUID_INK, 0.45);
-        world.spawnParticle(Particle.BUBBLE_COLUMN_UP, at.clone().add(0, 0.2, 0), 18, 0.4, 0.4, 0.4, 0.4);
+        de.aetherion.bossengine.fx.ShapeFx.puff(at.clone().add(0, 0.2, 0), Particle.BUBBLE_COLUMN_UP, 18, Math.max(0.4, 0.4), null);
     }
 
     private static void ringBalthazar(Location at, double radius) {
         World world = at.getWorld();
         world.playSound(at, Sound.ENTITY_EVOKER_PREPARE_WOLOLO, 0.85f, 0.9f);
         ring(world, at, radius, Particle.WITCH, 0.3);
-        world.spawnParticle(Particle.ENCHANT, at.clone().add(0, 1.0, 0), 28, radius * 0.25, 0.8, radius * 0.25, 0.8);
+        de.aetherion.bossengine.fx.ShapeFx.puff(at.clone().add(0, 1.0, 0), Particle.ENCHANT, 28, Math.max(radius * 0.25, radius * 0.25), null);
     }
 
     private static void ringBaron(Location at, double radius) {
@@ -609,7 +609,7 @@ public final class CombatTheatrics {
         world.playSound(at, Sound.ENTITY_WITHER_HURT, 0.7f, 0.55f);
         ring(world, at, radius, Particle.SMOKE, 0.35);
         itemBurst(world, at, Material.GOLD_NUGGET, 12);
-        world.spawnParticle(Particle.SOUL, at, 10, 0.5, 0.3, 0.5, 0.02);
+        de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.SOUL, 10, Math.max(0.5, 0.5), null);
     }
 
     private static void ringCleaner(Location at, double radius) {
@@ -627,7 +627,7 @@ public final class CombatTheatrics {
             return;
         }
         ring(world, at, radius, Particle.ELECTRIC_SPARK, 0.25);
-        world.spawnParticle(Particle.CRIT, at.clone().add(0, 0.6, 0), 16, 0.5, 0.4, 0.5, 0.08);
+        de.aetherion.bossengine.fx.ShapeFx.puff(at.clone().add(0, 0.6, 0), Particle.CRIT, 16, Math.max(0.5, 0.5), null);
     }
 
     private static void ringFrost(Location at, double radius) {
@@ -651,7 +651,7 @@ public final class CombatTheatrics {
     private static void meteorSparky(Location ground) {
         World world = ground.getWorld();
         column(world, ground, Particle.FLAME, Particle.LAVA, 14);
-        world.spawnParticle(Particle.EXPLOSION, ground.clone().add(0, 0.4, 0), 2, 0.2, 0.1, 0.2, 0);
+        de.aetherion.bossengine.fx.ShapeFx.puff(ground.clone().add(0, 0.4, 0), Particle.EXPLOSION, 2, Math.max(0.2, 0.2), null);
         world.playSound(ground, Sound.ENTITY_GENERIC_EXPLODE, 0.95f, 0.75f);
         world.playSound(ground, Sound.ENTITY_BLAZE_SHOOT, 0.8f, 0.55f);
         FakeDestruction.blockBurst(world, ground, Material.MAGMA_BLOCK, 10);
@@ -710,14 +710,14 @@ public final class CombatTheatrics {
         World world = ground.getWorld();
         column(world, ground, Particle.SQUID_INK, Particle.BUBBLE, 14);
         world.playSound(ground, Sound.ENTITY_SQUID_SQUIRT, 1.0f, 0.6f);
-        world.spawnParticle(Particle.BUBBLE_COLUMN_UP, ground, 16, 0.3, 0.8, 0.3, 0.4);
+        de.aetherion.bossengine.fx.ShapeFx.puff(ground, Particle.BUBBLE_COLUMN_UP, 16, Math.max(0.3, 0.3), null);
     }
 
     private static void meteorBalthazar(Location ground) {
         World world = ground.getWorld();
         column(world, ground, Particle.WITCH, Particle.ENCHANT, 16);
         world.playSound(ground, Sound.ENTITY_EVOKER_CAST_SPELL, 0.9f, 0.8f);
-        world.spawnParticle(Particle.TOTEM_OF_UNDYING, ground.clone().add(0, 0.4, 0), 12, 0.25, 0.4, 0.25, 0.2);
+        de.aetherion.bossengine.fx.ShapeFx.puff(ground.clone().add(0, 0.4, 0), Particle.TOTEM_OF_UNDYING, 12, Math.max(0.25, 0.25), null);
     }
 
     private static void meteorBaron(Location ground) {
@@ -740,7 +740,7 @@ public final class CombatTheatrics {
         World world = ground.getWorld();
         column(world, ground, Particle.PORTAL, Particle.REVERSE_PORTAL, 16);
         world.playSound(ground, Sound.ENTITY_ENDERMAN_TELEPORT, 0.9f, 0.6f);
-        world.spawnParticle(Particle.END_ROD, ground.clone().add(0, 0.4, 0), 10, 0.25, 0.4, 0.25, 0.02);
+        de.aetherion.bossengine.fx.ShapeFx.puff(ground.clone().add(0, 0.4, 0), Particle.END_ROD, 10, Math.max(0.25, 0.25), null);
     }
 
     private static void meteorSentinel(Location ground) {
@@ -814,15 +814,15 @@ public final class CombatTheatrics {
         for (int i = 0; i < points; i++) {
             double angle = (Math.PI * 2 * i) / points;
             Location rim = at.clone().add(Math.cos(angle) * radius, y, Math.sin(angle) * radius);
-            world.spawnParticle(particle, rim, 1, 0, 0, 0, 0);
+            de.aetherion.bossengine.fx.ShapeFx.puff(rim, particle, 1, Math.max(0, 0), null);
         }
     }
 
     private static void column(World world, Location ground, Particle primary, Particle extra, int height) {
         for (int y = height; y >= 0; y -= 2) {
             Location at = ground.clone().add(0, y, 0);
-            world.spawnParticle(primary, at, 8, 0.12, 0.25, 0.12, 0.02);
-            world.spawnParticle(extra, at, 2, 0.08, 0.1, 0.08, 0.01);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at, primary, 8, Math.max(0.12, 0.12), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at, extra, 2, Math.max(0.08, 0.08), null);
         }
     }
 
@@ -831,7 +831,7 @@ public final class CombatTheatrics {
             double angle = (Math.PI * 2 * i) / count;
             Location base = at.clone().add(Math.cos(angle) * radius, 0.1, Math.sin(angle) * radius);
             for (double y = 0; y < height; y += 0.45) {
-                world.spawnParticle(particle, base.clone().add(0, y, 0), 2, 0.05, 0.05, 0.05, 0.01);
+                de.aetherion.bossengine.fx.ShapeFx.puff(base.clone().add(0, y, 0), particle, 2, Math.max(0.05, 0.05), null);
             }
         }
     }
@@ -841,18 +841,17 @@ public final class CombatTheatrics {
             double angle = (Math.PI * 2 * i) / count;
             Location base = at.clone().add(Math.cos(angle) * radius, 0.05, Math.sin(angle) * radius);
             for (double y = 0; y < height; y += 0.35) {
-                world.spawnParticle(Particle.BLOCK, base.clone().add(0, y, 0), 3, 0.04, 0.08, 0.04, 0.02,
-                        Material.PACKED_ICE.createBlockData());
-                world.spawnParticle(Particle.SNOWFLAKE, base.clone().add(0, y, 0), 1, 0, 0, 0, 0);
+                de.aetherion.bossengine.fx.ShapeFx.puff(base.clone().add(0, y, 0), Particle.BLOCK, 3, Math.max(0.04, 0.04), Material.PACKED_ICE.createBlockData());
+                de.aetherion.bossengine.fx.ShapeFx.puff(base.clone().add(0, y, 0), Particle.SNOWFLAKE, 1, Math.max(0, 0), null);
             }
         }
     }
 
     private static void geyser(World world, Location at, Material material, double height) {
         for (double y = 0; y < height; y += 0.4) {
-            world.spawnParticle(Particle.BLOCK, at.clone().add(0, y, 0), 6, 0.12, 0.08, 0.12, 0.08, material.createBlockData());
+            de.aetherion.bossengine.fx.ShapeFx.puff(at.clone().add(0, y, 0), Particle.BLOCK, 6, Math.max(0.12, 0.12), material.createBlockData());
         }
-        world.spawnParticle(Particle.CLOUD, at.clone().add(0, 0.2, 0), 8, 0.25, 0.1, 0.25, 0.02);
+        de.aetherion.bossengine.fx.ShapeFx.puff(at.clone().add(0, 0.2, 0), Particle.CLOUD, 8, Math.max(0.25, 0.25), null);
     }
 
     private static void beams(World world, Location at, double length, Particle particle) {
@@ -864,17 +863,16 @@ public final class CombatTheatrics {
         };
         for (Vector dir : dirs) {
             for (double d = 0.4; d <= length; d += 0.45) {
-                world.spawnParticle(particle, at.clone().add(dir.clone().multiply(d)).add(0, 1.1, 0), 1, 0, 0, 0, 0);
+                de.aetherion.bossengine.fx.ShapeFx.puff(at.clone().add(dir.clone().multiply(d)).add(0, 1.1, 0), particle, 1, Math.max(0, 0), null);
             }
         }
     }
 
     private static void itemBurst(World world, Location at, Material material, int count) {
-        world.spawnParticle(Particle.ITEM, at.clone().add(0, 0.4, 0), count, 0.45, 0.3, 0.45, 0.08, new ItemStack(material));
+        de.aetherion.bossengine.fx.ShapeFx.puff(at.clone().add(0, 0.4, 0), Particle.ITEM, count, Math.max(0.45, 0.45), new ItemStack(material));
     }
 
     private static void dust(World world, Location at, Color color, int count) {
-        world.spawnParticle(Particle.DUST, at.clone().add(0, 0.35, 0), count, 0.5, 0.3, 0.5, 0,
-                new Particle.DustOptions(color, 1.35f));
+        de.aetherion.bossengine.fx.ShapeFx.puff(at.clone().add(0, 0.35, 0), Particle.DUST, count, Math.max(0.5, 0.5), new Particle.DustOptions(color, 1.35f));
     }
 }

@@ -94,7 +94,7 @@ public class BossProjectileListener implements Listener {
             }
             living.getWorld().playSound(living.getLocation(), Sound.ENTITY_CHICKEN_EGG, 0.9f, 1.15f);
             if (!de.aetherion.core.api.Vfx.burst(living.getEyeLocation(), de.aetherion.bossengine.fx.ShapeFx.PALE, 1.1, 8)) {
-                living.getWorld().spawnParticle(Particle.CLOUD, living.getEyeLocation(), 8, 0.2, 0.2, 0.2, 0.02);
+                de.aetherion.bossengine.fx.ShapeFx.puff(living.getEyeLocation(), Particle.CLOUD, 8, Math.max(0.2, 0.2), null);
             }
         }
 
@@ -159,12 +159,12 @@ public class BossProjectileListener implements Listener {
             if (keys.isIceShard(snowball)) {
                 living.getWorld().playSound(living.getLocation(), Sound.BLOCK_GLASS_BREAK, 1.05f, 0.85f);
                 living.getWorld().playSound(living.getLocation(), Sound.ENTITY_PLAYER_HURT_FREEZE, 0.9f, 0.7f);
-                living.getWorld().spawnParticle(Particle.SNOWFLAKE, living.getEyeLocation(), 22, 0.4, 0.4, 0.4, 0.04);
-                living.getWorld().spawnParticle(Particle.SNOWFLAKE, living.getEyeLocation(), 10, 0.25, 0.25, 0.25, 0.02);
+                de.aetherion.bossengine.fx.ShapeFx.puff(living.getEyeLocation(), Particle.SNOWFLAKE, 22, Math.max(0.4, 0.4), null);
+                de.aetherion.bossengine.fx.ShapeFx.puff(living.getEyeLocation(), Particle.SNOWFLAKE, 10, Math.max(0.25, 0.25), null);
             } else {
                 living.getWorld().playSound(living.getLocation(), Sound.ENTITY_SQUID_SQUIRT, 1.05f, 0.7f);
-                living.getWorld().spawnParticle(Particle.SQUID_INK, living.getEyeLocation(), 18, 0.35, 0.35, 0.35, 0.04);
-                living.getWorld().spawnParticle(Particle.SMOKE, living.getEyeLocation(), 8, 0.25, 0.25, 0.25, 0.01);
+                de.aetherion.bossengine.fx.ShapeFx.puff(living.getEyeLocation(), Particle.SQUID_INK, 18, Math.max(0.35, 0.35), null);
+                de.aetherion.bossengine.fx.ShapeFx.puff(living.getEyeLocation(), Particle.SMOKE, 8, Math.max(0.25, 0.25), null);
             }
 
             if (living instanceof Player player) {
@@ -182,10 +182,10 @@ public class BossProjectileListener implements Listener {
                 }
             }
         } else if (keys.isIceShard(snowball)) {
-            snowball.getWorld().spawnParticle(Particle.SNOWFLAKE, snowball.getLocation(), 12, 0.25, 0.2, 0.25, 0.03);
+            de.aetherion.bossengine.fx.ShapeFx.puff(snowball.getLocation(), Particle.SNOWFLAKE, 12, Math.max(0.25, 0.25), null);
             snowball.getWorld().playSound(snowball.getLocation(), Sound.BLOCK_GLASS_BREAK, 0.5f, 1.3f);
         } else {
-            snowball.getWorld().spawnParticle(Particle.SQUID_INK, snowball.getLocation(), 10, 0.2, 0.2, 0.2, 0.02);
+            de.aetherion.bossengine.fx.ShapeFx.puff(snowball.getLocation(), Particle.SQUID_INK, 10, Math.max(0.2, 0.2), null);
             snowball.getWorld().playSound(snowball.getLocation(), Sound.ENTITY_SQUID_SQUIRT, 0.55f, 1.2f);
         }
 
@@ -234,8 +234,8 @@ public class BossProjectileListener implements Listener {
             de.aetherion.core.api.Vfx.wave(at.clone().add(0, 0.05, 0), de.aetherion.bossengine.fx.ShapeFx.VOID, 3.0, 13);
             de.aetherion.core.api.Vfx.motes(at.clone().add(0, 0.3, 0), de.aetherion.bossengine.fx.ShapeFx.VOID, 4, 0.8, new org.bukkit.util.Vector(0, 1.6, 0), 24);
         } else {
-            world.spawnParticle(Particle.DRAGON_BREATH, at, 24, 0.7, 0.4, 0.7, 0.03);
-            world.spawnParticle(Particle.EXPLOSION, at, 1, 0, 0, 0, 0);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.DRAGON_BREATH, 24, Math.max(0.7, 0.7), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.EXPLOSION, 1, Math.max(0, 0), null);
         }
         for (Entity nearby : fireball.getNearbyEntities(6, 6, 6)) {
             if (nearby instanceof org.bukkit.entity.AreaEffectCloud) {
@@ -271,7 +271,7 @@ public class BossProjectileListener implements Listener {
         }
         if (instance == null) {
             at.getWorld().playSound(at, Sound.ENTITY_GENERIC_EXPLODE, 1.2f, 0.7f);
-            at.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, at, 1, 0, 0, 0, 0);
+            de.aetherion.bossengine.fx.ShapeFx.puff(at, Particle.EXPLOSION_EMITTER, 1, Math.max(0, 0), null);
             return;
         }
         de.aetherion.bossengine.fx.FakeDestruction.boom(at, instance, damage, 4.4, true);

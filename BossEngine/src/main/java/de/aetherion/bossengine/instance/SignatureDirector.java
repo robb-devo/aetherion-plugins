@@ -155,15 +155,15 @@ final class SignatureDirector {
     }
 
     private void colossus(World world, Location core, LivingEntity entity) {
-        world.spawnParticle(Particle.PORTAL, core, 18, 1.0, 0.8, 1.0, 0.45);
-        world.spawnParticle(Particle.ENCHANT, core, 12, 0.8, 0.6, 0.8, 0.5);
+        de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.PORTAL, 18, Math.max(1.0, 1.0), null);
+        de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.ENCHANT, 12, Math.max(0.8, 0.8), null);
         int pillars = 6;
         for (int i = 0; i < pillars; i++) {
             double angle = (Math.PI * 2 * i) / pillars + deathTicks * 0.04;
             double radius = 3.4 - Math.min(2.4, deathTicks * 0.028);
             Location base = core.clone().add(Math.cos(angle) * radius, -0.6, Math.sin(angle) * radius);
             for (double y = 0; y < 5.2; y += 0.4) {
-                world.spawnParticle(Particle.REVERSE_PORTAL, base.clone().add(0, y, 0), 1, 0.04, 0.04, 0.04, 0.01);
+                de.aetherion.bossengine.fx.ShapeFx.puff(base.clone().add(0, y, 0), Particle.REVERSE_PORTAL, 1, Math.max(0.04, 0.04), null);
             }
         }
         if (deathTicks % 12 == 0) {
@@ -172,7 +172,7 @@ final class SignatureDirector {
             FakeDestruction.blockBurst(world, core, Material.AMETHYST_BLOCK, 8);
         }
         if (deathTicks == 96) {
-            world.spawnParticle(Particle.PORTAL, core, 80, 0.2, 0.2, 0.2, 1.2);
+            de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.PORTAL, 80, Math.max(0.2, 0.2), null);
             world.playSound(core, Sound.BLOCK_END_PORTAL_SPAWN, 0.7f, 0.55f);
             FakeDestruction.blockBurst(world, core, Material.CRYING_OBSIDIAN, 18);
         }
@@ -185,8 +185,8 @@ final class SignatureDirector {
             double glance = Math.sin(deathTicks * 0.18) * 0.35;
             Location eyes = core.clone().add(0, 1.0 + deathTicks * 0.032, 0);
             Particle.DustOptions eye = new Particle.DustOptions(Color.fromRGB(90, 230, 255), 1.1f);
-            world.spawnParticle(Particle.DUST, eyes.clone().add(glance - 0.22, 0, 0), 1, 0, 0, 0, eye);
-            world.spawnParticle(Particle.DUST, eyes.clone().add(glance + 0.22, 0, 0), 1, 0, 0, 0, eye);
+            de.aetherion.bossengine.fx.ShapeFx.puff(eyes.clone().add(glance - 0.22, 0, 0), Particle.DUST, 1, Math.max(0, 0), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(eyes.clone().add(glance + 0.22, 0, 0), Particle.DUST, 1, Math.max(0, 0), null);
         }
         if (deathTicks == 20) {
             world.playSound(core, Sound.BLOCK_SCULK_SHRIEKER_SHRIEK, 0.9f, 0.6f);
@@ -198,35 +198,32 @@ final class SignatureDirector {
             Vector reach = core.toVector().subtract(root.toVector()).multiply(1.0 / 8);
             Particle.DustOptions ink = new Particle.DustOptions(Color.fromRGB(12, 30, 36), 1.3f);
             for (int i = 0; i < 8; i++) {
-                world.spawnParticle(Particle.DUST, root.clone().add(reach.clone().multiply(i)), 1, 0.03, 0.03, 0.03, ink);
+                de.aetherion.bossengine.fx.ShapeFx.puff(root.clone().add(reach.clone().multiply(i)), Particle.DUST, 1, Math.max(0.03, 0.03), null);
             }
         }
         if (deathTicks > 80) {
             double roll = 1.5 + (deathTicks - 80) * 0.4;
             for (int i = 0; i < 20; i++) {
                 double angle = Math.PI * 2 * i / 20.0;
-                world.spawnParticle(Particle.SQUID_INK, core.clone().add(Math.cos(angle) * roll, -0.9, Math.sin(angle) * roll),
-                        1, 0.05, 0.02, 0.05, 0);
+                de.aetherion.bossengine.fx.ShapeFx.puff(core.clone().add(Math.cos(angle) * roll, -0.9, Math.sin(angle) * roll), Particle.SQUID_INK, 1, Math.max(0.05, 0.05), null);
             }
             if (deathTicks % 4 == 0) {
                 world.playSound(core, Sound.BLOCK_SCULK_SENSOR_CLICKING_STOP, 0.6f, 0.5f);
             }
         }
-        world.spawnParticle(Particle.SOUL, core, 14, 0.5, 0.35, 0.5, 0.02);
-        world.spawnParticle(Particle.SCULK_SOUL, core.clone().add(0, -0.4, 0), 8, 0.4, 0.15, 0.4, 0.01);
+        de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.SOUL, 14, Math.max(0.5, 0.5), null);
+        de.aetherion.bossengine.fx.ShapeFx.puff(core.clone().add(0, -0.4, 0), Particle.SCULK_SOUL, 8, Math.max(0.4, 0.4), null);
         double ring = Math.max(0.6, 4.2 - deathTicks * 0.045);
         int points = 16;
         for (int i = 0; i < points; i++) {
             double angle = (Math.PI * 2 * i) / points;
-            world.spawnParticle(Particle.SOUL_FIRE_FLAME,
-                    core.clone().add(Math.cos(angle) * ring, -0.7, Math.sin(angle) * ring),
-                    1, 0, 0, 0, 0);
+            de.aetherion.bossengine.fx.ShapeFx.puff(core.clone().add(Math.cos(angle) * ring, -0.7, Math.sin(angle) * ring), Particle.SOUL_FIRE_FLAME, 1, Math.max(0, 0), null);
         }
         if (deathTicks % 10 == 0) {
             world.playSound(core, Sound.ENTITY_WARDEN_HEARTBEAT, 0.55f, 0.7f - deathTicks * 0.004f);
         }
         if (deathTicks == 78) {
-            world.spawnParticle(Particle.SOUL, core.clone().add(0, -0.8, 0), 40, 0.3, 0.2, 0.3, 0.04);
+            de.aetherion.bossengine.fx.ShapeFx.puff(core.clone().add(0, -0.8, 0), Particle.SOUL, 40, Math.max(0.3, 0.3), null);
             world.playSound(core, Sound.ENTITY_WARDEN_DEATH, 0.9f, 0.55f);
             FakeDestruction.blockBurst(world, core, Material.SCULK, 14);
         }
@@ -239,38 +236,37 @@ final class SignatureDirector {
             double orbit = 2.6 - deathTicks * 0.022;
             for (int i = 0; i < 4; i++) {
                 double angle = deathTicks * 0.22 + i * Math.PI / 2;
-                world.spawnParticle(Particle.ITEM, core.clone().add(Math.cos(angle) * orbit, 0.3 * Math.sin(deathTicks * 0.3 + i), Math.sin(angle) * orbit),
-                        1, 0, 0, 0, 0, new ItemStack(Material.BONE));
+                de.aetherion.bossengine.fx.ShapeFx.puff(core.clone().add(Math.cos(angle) * orbit, 0.3 * Math.sin(deathTicks * 0.3 + i), Math.sin(angle) * orbit), Particle.ITEM, 1, Math.max(0, 0), new ItemStack(Material.BONE));
             }
         }
         if (deathTicks >= 56 && deathTicks < 88) {
             Location skullAt = core.clone().add(0, 1.1, 0);
-            world.spawnParticle(Particle.SOUL_FIRE_FLAME, skullAt.clone().add(0.18, 0, 0), 1, 0.01, 0.01, 0.01, 0);
-            world.spawnParticle(Particle.SOUL_FIRE_FLAME, skullAt.clone().add(-0.18, 0, 0), 1, 0.01, 0.01, 0.01, 0);
+            de.aetherion.bossengine.fx.ShapeFx.puff(skullAt.clone().add(0.18, 0, 0), Particle.SOUL_FIRE_FLAME, 1, Math.max(0.01, 0.01), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(skullAt.clone().add(-0.18, 0, 0), Particle.SOUL_FIRE_FLAME, 1, Math.max(0.01, 0.01), null);
             if (deathTicks == 56) {
                 world.playSound(core, Sound.ENTITY_WITHER_SKELETON_AMBIENT, 1.0f, 0.5f);
             }
         }
         if (deathTicks > 88) {
-            world.spawnParticle(Particle.WHITE_ASH, core.clone().add(0, 3.0, 0), 30, 3.5, 0.6, 3.5, 0);
-            world.spawnParticle(Particle.SMALL_FLAME, core.clone().add(0, -0.6, 0), 3, 1.4, 0.1, 1.4, 0.01);
+            de.aetherion.bossengine.fx.ShapeFx.puff(core.clone().add(0, 3.0, 0), Particle.WHITE_ASH, 30, Math.max(3.5, 3.5), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(core.clone().add(0, -0.6, 0), Particle.SMALL_FLAME, 3, Math.max(1.4, 1.4), null);
             if (deathTicks % 6 == 0) {
                 world.playSound(core, Sound.BLOCK_FIRE_AMBIENT, 0.7f, 0.6f);
             }
         }
-        world.spawnParticle(Particle.FLAME, core, 10, 0.6, 0.5, 0.6, 0.02);
+        de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.FLAME, 10, Math.max(0.6, 0.6), null);
         if (deathTicks % 5 == 0) {
             double yaw = ThreadLocalRandom.current().nextDouble() * Math.PI * 2;
             Location from = core.clone().add(Math.cos(yaw) * 7.5, 3.5 + ThreadLocalRandom.current().nextDouble(), Math.sin(yaw) * 7.5);
             Vector to = core.toVector().subtract(from.toVector()).normalize().multiply(0.35);
             for (int i = 0; i < 8; i++) {
-                world.spawnParticle(Particle.FLAME, from.clone().add(to.clone().multiply(i * 1.1)), 1, 0, 0, 0, 0);
+                de.aetherion.bossengine.fx.ShapeFx.puff(from.clone().add(to.clone().multiply(i * 1.1)), Particle.FLAME, 1, Math.max(0, 0), null);
             }
             world.playSound(core, Sound.ENTITY_SKELETON_SHOOT, 0.45f, 0.7f);
         }
         if (deathTicks == 88) {
-            world.spawnParticle(Particle.FLAME, core, 50, 1.2, 0.8, 1.2, 0.08);
-            world.spawnParticle(Particle.ITEM, core, 28, 0.8, 0.6, 0.8, 0.12, new ItemStack(Material.BONE));
+            de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.FLAME, 50, Math.max(1.2, 1.2), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.ITEM, 28, Math.max(0.8, 0.8), new ItemStack(Material.BONE));
             world.playSound(core, Sound.ENTITY_BLAZE_DEATH, 1.1f, 0.55f);
             world.playSound(core, Sound.ENTITY_SKELETON_DEATH, 1.0f, 0.5f);
             world.playSound(core, Sound.BLOCK_BONE_BLOCK_BREAK, 1.2f, 0.6f);
@@ -280,8 +276,8 @@ final class SignatureDirector {
     }
 
     private void nugget(World world, Location core, LivingEntity entity) {
-        world.spawnParticle(Particle.CLOUD, core, 8, 0.6, 0.4, 0.6, 0.02);
-        world.spawnParticle(Particle.ITEM, core, 6, 0.5, 0.4, 0.5, 0.04, new ItemStack(Material.FEATHER));
+        de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.CLOUD, 8, Math.max(0.6, 0.6), null);
+        de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.ITEM, 6, Math.max(0.5, 0.5), new ItemStack(Material.FEATHER));
         double inflate = startScale * (1.0 + Math.min(1.15, deathTicks / 55.0));
         AttributeUtil.setBase(entity, AttributeUtil.scale(), inflate);
         if (deathTicks % 8 == 0) {
@@ -289,7 +285,7 @@ final class SignatureDirector {
         }
         // Fryer timer: oil spits, beeps speed up until the DING.
         if (deathTicks < 82) {
-            world.spawnParticle(Particle.DRIPPING_HONEY, core.clone().add(0, -0.3, 0), 2, 0.8, 0.3, 0.8, 0);
+            de.aetherion.bossengine.fx.ShapeFx.puff(core.clone().add(0, -0.3, 0), Particle.DRIPPING_HONEY, 2, Math.max(0.8, 0.8), null);
             if (deathTicks % 7 == 0) {
                 world.playSound(core, Sound.BLOCK_FIRE_EXTINGUISH, 0.35f, 1.8f);
             }
@@ -300,16 +296,16 @@ final class SignatureDirector {
         }
         if (deathTicks == 82) {
             world.playSound(core, Sound.BLOCK_NOTE_BLOCK_BELL, 1.4f, 1.9f);
-            world.spawnParticle(Particle.ITEM, core, 24, 0.8, 0.6, 0.8, 0.18, new ItemStack(Material.GOLD_NUGGET));
+            de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.ITEM, 24, Math.max(0.8, 0.8), new ItemStack(Material.GOLD_NUGGET));
         }
         if (deathTicks > 82) {
-            world.spawnParticle(Particle.ITEM, core.clone().add(0, 2.2, 0), 3, 1.6, 0.3, 1.6, 0.0, new ItemStack(Material.FEATHER));
-            world.spawnParticle(Particle.WAX_ON, core, 2, 0.8, 0.5, 0.8, 0.02);
+            de.aetherion.bossengine.fx.ShapeFx.puff(core.clone().add(0, 2.2, 0), Particle.ITEM, 3, Math.max(1.6, 1.6), new ItemStack(Material.FEATHER));
+            de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.WAX_ON, 2, Math.max(0.8, 0.8), null);
         }
         if (deathTicks == 82) {
-            world.spawnParticle(Particle.CLOUD, core, 40, 1.1, 0.8, 1.1, 0.08);
-            world.spawnParticle(Particle.ITEM, core, 40, 1.0, 0.8, 1.0, 0.15, new ItemStack(Material.FEATHER));
-            world.spawnParticle(Particle.ITEM, core, 12, 0.5, 0.4, 0.5, 0.1, new ItemStack(Material.EGG));
+            de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.CLOUD, 40, Math.max(1.1, 1.1), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.ITEM, 40, Math.max(1.0, 1.0), new ItemStack(Material.FEATHER));
+            de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.ITEM, 12, Math.max(0.5, 0.5), new ItemStack(Material.EGG));
             world.playSound(core, Sound.ENTITY_CHICKEN_DEATH, 1.3f, 0.6f);
             world.playSound(core, Sound.ENTITY_CHICKEN_EGG, 1.1f, 0.5f);
             AttributeUtil.setBase(entity, AttributeUtil.scale(), 0.35);
@@ -318,7 +314,7 @@ final class SignatureDirector {
 
     private void troll(World world, Location core, LivingEntity entity) {
         if (deathTicks < 36) {
-            world.spawnParticle(Particle.ELECTRIC_SPARK, core, 8, 0.5, 0.6, 0.5, 0.03);
+            de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.ELECTRIC_SPARK, 8, Math.max(0.5, 0.5), null);
             if (deathTicks % 6 == 0) {
                 toss(core, Material.GOLD_NUGGET, 0.35, 0.55);
                 world.playSound(core, Sound.ENTITY_PIGLIN_BRUTE_AMBIENT, 0.5f, 0.7f);
@@ -326,11 +322,11 @@ final class SignatureDirector {
         } else if (deathTicks == 38) {
             world.playSound(focus, Sound.BLOCK_ANVIL_LAND, 1.55f, 0.4f);
             world.playSound(focus, Sound.ENTITY_GENERIC_EXPLODE, 0.55f, 0.8f);
-            world.spawnParticle(Particle.GUST, focus.clone().add(0, 0.2, 0), 3, 0.4, 0.05, 0.4, 0);
-            world.spawnParticle(Particle.ITEM, focus, 24, 0.9, 0.3, 0.9, 0.12, new ItemStack(Material.GOLD_INGOT));
+            de.aetherion.bossengine.fx.ShapeFx.puff(focus.clone().add(0, 0.2, 0), Particle.GUST, 3, Math.max(0.4, 0.4), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(focus, Particle.ITEM, 24, Math.max(0.9, 0.9), new ItemStack(Material.GOLD_INGOT));
             FakeDestruction.blockBurst(world, focus, Material.GOLD_BLOCK, 12);
         } else {
-            world.spawnParticle(Particle.CRIT, core, 6, 0.5, 0.2, 0.5, 0.04);
+            de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.CRIT, 6, Math.max(0.5, 0.5), null);
         }
     }
 
@@ -346,32 +342,32 @@ final class SignatureDirector {
                         Math.sin(pitch) * radius,
                         Math.sin(a) * Math.cos(pitch) * radius
                 );
-                world.spawnParticle(Particle.SQUID_INK, p, 1, 0, 0, 0, 0);
+                de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.SQUID_INK, 1, Math.max(0, 0), null);
             }
         }
-        world.spawnParticle(Particle.BUBBLE, core, 8, 0.4, 0.4, 0.4, 0.2);
+        de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.BUBBLE, 8, Math.max(0.4, 0.4), null);
         if (deathTicks % 10 == 0) {
             world.playSound(core, Sound.ENTITY_SQUID_SQUIRT, 0.55f, 0.5f);
         }
         if (deathTicks == 108) {
-            world.spawnParticle(Particle.BUBBLE_COLUMN_UP, core, 40, 0.3, 1.4, 0.3, 0.55);
+            de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.BUBBLE_COLUMN_UP, 40, Math.max(0.3, 0.3), null);
             world.playSound(core, Sound.ENTITY_ELDER_GUARDIAN_CURSE, 0.8f, 0.55f);
         }
         scaleToward(entity, 0.4);
     }
 
     private void balthazar(World world, Location core, LivingEntity entity) {
-        world.spawnParticle(Particle.WITCH, core, 10, 0.7, 0.6, 0.7, 0.02);
-        world.spawnParticle(Particle.ENCHANT, core, 16, 0.9, 0.7, 0.9, 0.7);
+        de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.WITCH, 10, Math.max(0.7, 0.7), null);
+        de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.ENCHANT, 16, Math.max(0.9, 0.9), null);
         if (deathTicks % 9 == 0) {
             double yaw = ThreadLocalRandom.current().nextDouble() * Math.PI * 2;
             Location ghost = core.clone().add(Math.cos(yaw) * 2.6, 0.2, Math.sin(yaw) * 2.6);
-            world.spawnParticle(Particle.WITCH, ghost, 12, 0.2, 0.7, 0.2, 0.01);
-            world.spawnParticle(Particle.FLASH, ghost, 1, 0, 0, 0, 0);
+            de.aetherion.bossengine.fx.ShapeFx.puff(ghost, Particle.WITCH, 12, Math.max(0.2, 0.2), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(ghost, Particle.FLASH, 1, Math.max(0, 0), null);
             world.playSound(core, Sound.ENTITY_ILLUSIONER_MIRROR_MOVE, 0.7f, 0.8f);
         }
         if (deathTicks == 100) {
-            world.spawnParticle(Particle.TOTEM_OF_UNDYING, core, 50, 0.7, 1.0, 0.7, 0.35);
+            de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.TOTEM_OF_UNDYING, 50, Math.max(0.7, 0.7), null);
             world.playSound(core, Sound.ITEM_TOTEM_USE, 1.05f, 0.75f);
             world.playSound(core, Sound.ENTITY_EVOKER_PREPARE_WOLOLO, 1.0f, 0.7f);
         }
@@ -381,8 +377,7 @@ final class SignatureDirector {
     private void baron(World world, Location core, LivingEntity entity) {
         Location hole = (focus == null ? core : focus).clone();
         if (deathTicks < 48) {
-            world.spawnParticle(Particle.BLOCK, hole.clone().add(0, 0.1, 0), 14, 0.45, 0.08, 0.45, 0.12,
-                    Material.DIRT.createBlockData());
+            de.aetherion.bossengine.fx.ShapeFx.puff(hole.clone().add(0, 0.1, 0), Particle.BLOCK, 14, Math.max(0.45, 0.45), Material.DIRT.createBlockData());
             if (deathTicks % 8 == 0) {
                 world.playSound(core, Sound.BLOCK_GRAVEL_BREAK, 0.8f, 0.45f);
             }
@@ -397,19 +392,18 @@ final class SignatureDirector {
                     new Material[]{Material.DIRT, Material.COARSE_DIRT, Material.GRAVEL, Material.ROOTED_DIRT});
         }
         if (deathTicks > 52) {
-            world.spawnParticle(Particle.CLOUD, hole.clone().add(0, 2.5, 0), 6, 0.35, 0.8, 0.35, 0.02);
+            de.aetherion.bossengine.fx.ShapeFx.puff(hole.clone().add(0, 2.5, 0), Particle.CLOUD, 6, Math.max(0.35, 0.35), null);
         }
     }
 
     private void wither(World world, Location core, LivingEntity entity) {
-        world.spawnParticle(Particle.SMOKE, core, 10, 0.7, 0.6, 0.7, 0.02);
+        de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.SMOKE, 10, Math.max(0.7, 0.7), null);
         for (int i = 0; i < 3; i++) {
             double a = deathTicks * 0.18 + i * (Math.PI * 2 / 3);
             Location orbit = core.clone().add(Math.cos(a) * 2.6, 0.9 + Math.sin(deathTicks * 0.12 + i) * 0.4, Math.sin(a) * 2.6);
-            world.spawnParticle(Particle.SMOKE, orbit, 3, 0.05, 0.05, 0.05, 0);
-            world.spawnParticle(Particle.SOUL, orbit, 2, 0.04, 0.04, 0.04, 0);
-            world.spawnParticle(Particle.DUST, orbit, 2, 0.05, 0.05, 0.05, 0,
-                    new Particle.DustOptions(Color.fromRGB(20, 20, 20), 1.4f));
+            de.aetherion.bossengine.fx.ShapeFx.puff(orbit, Particle.SMOKE, 3, Math.max(0.05, 0.05), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(orbit, Particle.SOUL, 2, Math.max(0.04, 0.04), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(orbit, Particle.DUST, 2, Math.max(0.05, 0.05), new Particle.DustOptions(Color.fromRGB(20, 20, 20), 1.4f));
         }
         if (deathTicks % 4 == 0) {
             toss(core, Material.GOLD_NUGGET, 0.28, 0.7);
@@ -418,15 +412,15 @@ final class SignatureDirector {
             world.playSound(core, Sound.ENTITY_WITHER_AMBIENT, 0.4f, 0.65f);
         }
         if (deathTicks == 118) {
-            world.spawnParticle(Particle.SMOKE, core, 40, 1.1, 0.8, 1.1, 0.04);
-            world.spawnParticle(Particle.ITEM, core, 28, 0.9, 0.7, 0.9, 0.14, new ItemStack(Material.GOLD_INGOT));
+            de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.SMOKE, 40, Math.max(1.1, 1.1), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.ITEM, 28, Math.max(0.9, 0.9), new ItemStack(Material.GOLD_INGOT));
             world.playSound(core, Sound.ENTITY_WITHER_DEATH, 1.15f, 0.7f);
         }
         scaleToward(entity, 0.45);
     }
 
     private void cleaner(World world, Location core, LivingEntity entity) {
-        world.spawnParticle(Particle.PORTAL, core, 16, 0.7, 0.6, 0.7, 0.4);
+        de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.PORTAL, 16, Math.max(0.7, 0.7), null);
         double length = Math.max(0.4, 8.0 - deathTicks * 0.07);
         Vector[] dirs = {
                 new Vector(1, 0, 0), new Vector(-1, 0, 0),
@@ -435,8 +429,8 @@ final class SignatureDirector {
         for (Vector dir : dirs) {
             for (double d = 0.3; d <= length; d += 0.4) {
                 Location p = core.clone().add(dir.clone().multiply(d));
-                world.spawnParticle(Particle.END_ROD, p, 1, 0, 0, 0, 0);
-                world.spawnParticle(Particle.REVERSE_PORTAL, p, 1, 0, 0, 0, 0);
+                de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.END_ROD, 1, Math.max(0, 0), null);
+                de.aetherion.bossengine.fx.ShapeFx.puff(p, Particle.REVERSE_PORTAL, 1, Math.max(0, 0), null);
             }
         }
         if (deathTicks % 8 == 0) {
@@ -444,22 +438,22 @@ final class SignatureDirector {
         }
         pullPlayers(core, 0.07);
         if (deathTicks == 118) {
-            world.spawnParticle(Particle.REVERSE_PORTAL, core, 50, 0.3, 0.3, 0.3, 0.4);
+            de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.REVERSE_PORTAL, 50, Math.max(0.3, 0.3), null);
             world.playSound(core, Sound.BLOCK_END_PORTAL_SPAWN, 0.85f, 0.65f);
         }
         scaleToward(entity, 0.4);
     }
 
     private void sentinel(World world, Location core, LivingEntity entity) {
-        world.spawnParticle(Particle.ELECTRIC_SPARK, core, 10, 0.6, 0.5, 0.6, 0.04);
-        world.spawnParticle(Particle.CRIT, core, 6, 0.4, 0.3, 0.4, 0.05);
+        de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.ELECTRIC_SPARK, 10, Math.max(0.6, 0.6), null);
+        de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.CRIT, 6, Math.max(0.4, 0.4), null);
         if (deathTicks % 7 == 0) {
             toss(core, deathTicks % 14 == 0 ? Material.IRON_INGOT : Material.CHAIN, 0.32, 0.45);
             world.playSound(core, Sound.BLOCK_CHAIN_BREAK, 0.6f, 0.7f + deathTicks * 0.003f);
         }
         if (deathTicks == 86) {
-            world.spawnParticle(Particle.ELECTRIC_SPARK, core, 40, 1.0, 0.8, 1.0, 0.08);
-            world.spawnParticle(Particle.SMOKE, core, 16, 0.6, 0.5, 0.6, 0.02);
+            de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.ELECTRIC_SPARK, 40, Math.max(1.0, 1.0), null);
+            de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.SMOKE, 16, Math.max(0.6, 0.6), null);
             world.playSound(core, Sound.ENTITY_IRON_GOLEM_DEATH, 1.15f, 0.7f);
             world.playSound(core, Sound.BLOCK_ANVIL_LAND, 0.7f, 0.85f);
         }
@@ -467,15 +461,14 @@ final class SignatureDirector {
     }
 
     private void frost(World world, Location core, LivingEntity entity) {
-        world.spawnParticle(Particle.SNOWFLAKE, core, 12, 0.8, 0.5, 0.8, 0.02);
+        de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.SNOWFLAKE, 12, Math.max(0.8, 0.8), null);
         int spikes = 8;
         double height = Math.min(4.8, deathTicks * 0.055);
         for (int i = 0; i < spikes; i++) {
             double angle = (Math.PI * 2 * i) / spikes;
             Location base = (focus == null ? core : focus).clone().add(Math.cos(angle) * 2.4, 0.05, Math.sin(angle) * 2.4);
             for (double y = 0; y < height; y += 0.3) {
-                world.spawnParticle(Particle.BLOCK, base.clone().add(0, y, 0), 2, 0.03, 0.05, 0.03, 0.01,
-                        Material.PACKED_ICE.createBlockData());
+                de.aetherion.bossengine.fx.ShapeFx.puff(base.clone().add(0, y, 0), Particle.BLOCK, 2, Math.max(0.03, 0.03), Material.PACKED_ICE.createBlockData());
             }
         }
         if (deathTicks % 9 == 0) {
@@ -484,7 +477,7 @@ final class SignatureDirector {
         if (deathTicks == 92) {
             FakeDestruction.blockBurst(world, core, Material.PACKED_ICE, 24);
             FakeDestruction.blockBurst(world, core, Material.BLUE_ICE, 12);
-            world.spawnParticle(Particle.SNOWFLAKE, core, 40, 1.2, 0.8, 1.2, 0.04);
+            de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.SNOWFLAKE, 40, Math.max(1.2, 1.2), null);
             world.playSound(core, Sound.BLOCK_GLASS_BREAK, 1.4f, 0.4f);
             world.playSound(core, Sound.ENTITY_PLAYER_HURT_FREEZE, 0.9f, 0.55f);
         }
@@ -492,9 +485,9 @@ final class SignatureDirector {
     }
 
     private void generic(World world, Location core, LivingEntity entity) {
-        world.spawnParticle(Particle.SMOKE, core, 8, 0.5, 0.4, 0.5, 0.02);
+        de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.SMOKE, 8, Math.max(0.5, 0.5), null);
         if (deathTicks == 40) {
-            world.spawnParticle(Particle.CLOUD, core, 16, 0.6, 0.4, 0.6, 0.03);
+            de.aetherion.bossengine.fx.ShapeFx.puff(core, Particle.CLOUD, 16, Math.max(0.6, 0.6), null);
             world.playSound(core, Sound.ENTITY_GENERIC_EXPLODE, 0.7f, 0.9f);
         }
         scaleToward(entity, 0.65);
@@ -503,8 +496,7 @@ final class SignatureDirector {
     private void geyserUp(World world, Location hole, int tick) {
         double height = Math.min(7.5, tick * 0.22);
         for (double y = 0; y < height; y += 0.35) {
-            world.spawnParticle(Particle.BLOCK, hole.clone().add(0, y, 0), 5, 0.15, 0.08, 0.15, 0.06,
-                    Material.DIRT.createBlockData());
+            de.aetherion.bossengine.fx.ShapeFx.puff(hole.clone().add(0, y, 0), Particle.BLOCK, 5, Math.max(0.15, 0.15), Material.DIRT.createBlockData());
         }
     }
 
