@@ -1661,6 +1661,17 @@ talk:
         label: "Zurück rüber"
         echo: "Bring mich zurück."
         line: "Halt dich fest. Pass auf den Nebel auf."
+      open_writ: "Der Nebel ist dünn genug für dich. Ysoldes Schreiben, und ich bring dich rüber."
+      how:
+        label: "Wie komm ich rüber?"
+        echo: "Wie komme ich hinüber?"
+        intro: "Drei Dinge, dann lässt dich der Nebel durch."
+        harbour: "Erst deine Sachen im Hafen. Das Tutorial."
+        road: "Die Straße des Rats. Ysoldes Kapitel im Archiv, bis zur stillen Straße und dem Schreiben des Pathwarden."
+        level: "Aetherion Level §e75§7."
+        then: "Dann hol dir bei mir das Schreiben und läute die Glocke am Steg."
+      staff:
+        label: "Über den Schleier (Team)"
   orrin:
     desk:
       open: "Orrin. Hofingenieur. Der Stern ist mit meinem Ruhestand nicht einverstanden."
