@@ -38,6 +38,7 @@ public final class AetherionPit extends JavaPlugin {
         transfer = new TransferBridge(this);
         hubNpcs = new HubNpcService(this);
         xpHud = new PitXpBarHud(this);
+        new de.aetherion.pit.hud.PitHealthHud(this);
         getServer().getPluginManager().registerEvents(new PitZoneListener(this), this);
         getServer().getPluginManager().registerEvents(new HubRulesListener(this), this);
         getServer().getPluginManager().registerEvents(new PitCombatListener(this), this);

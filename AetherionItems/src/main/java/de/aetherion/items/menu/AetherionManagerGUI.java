@@ -308,7 +308,8 @@ public class AetherionManagerGUI {
         for (int slot : TAB_SLOTS) {
             ItemStack tab = inventory.getItem(slot);
             Material type = tab == null ? Material.AIR : tab.getType();
-            if (type != Material.AIR && type != Material.GRAY_DYE && type != Material.BARRIER) {
+            if (type != Material.AIR && type != Material.GRAY_DYE && type != Material.BARRIER
+                    && type != Material.LIME_DYE && type != Material.LIGHT_GRAY_STAINED_GLASS_PANE) {
                 open++;
             }
         }
@@ -707,13 +708,13 @@ public class AetherionManagerGUI {
         }
         if (nextSlots.contains(slot)) {
             // The one lock worth reading right now.
-            ItemStack next = button(
+            ItemStack next = ManagerIcons.next(button(
                     Material.LIME_DYE,
                     "§e" + strip(name) + " §8· next",
                     "§e➜ Opens next",
                     "",
                     lockedHint
-            );
+            ), material);
             ItemMeta meta = next.getItemMeta();
             if (meta != null) {
                 meta.addEnchant(Enchantment.UNBREAKING, 1, true);
@@ -725,20 +726,20 @@ public class AetherionManagerGUI {
         }
         if (slot == JOURNAL_SLOT || slot == ISLAND_SLOT || slot == GUILD_SLOT) {
             // Far future: a quiet silhouette, not another grey "nope".
-            inventory.setItem(slot, button(
+            inventory.setItem(slot, ManagerIcons.later(button(
                     Material.LIGHT_GRAY_STAINED_GLASS_PANE,
                     "§8" + strip(name) + " · later",
                     lockedHint
-            ));
+            ), material));
             return;
         }
-        inventory.setItem(slot, button(
+        inventory.setItem(slot, ManagerIcons.locked(button(
                 Material.GRAY_DYE,
                 "§8" + strip(name),
                 "§7Locked",
                 "",
                 lockedHint
-        ));
+        ), material));
     }
 
     /** One lockable tab: its slot, whether it's open, the unlock it belongs to, and how to open it. */

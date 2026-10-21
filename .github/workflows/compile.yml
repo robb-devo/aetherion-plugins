@@ -16,3 +16,16 @@ jobs:
           cache: maven
       - name: Compile
         run: mvn -B -DskipTests compile
+
+  # Velocity 4 ships its API as Java 25 class files, so the proxy plugin builds on its own JDK.
+  compile-proxy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+      - name: Compile AetherionProxy
+        run: mvn -B -f AetherionProxy/pom.xml compile

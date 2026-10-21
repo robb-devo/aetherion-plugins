@@ -76,7 +76,7 @@ public final class HudGlyphs {
     /* ------------------------------------------------------------------ text metrics */
 
     /** Core width of a pixel-font glyph (cell = core + 1px outline each side). */
-    static int core(char c) {
+    public static int core(char c) {
         return switch (c) {
             case '!', '\'', ',', '.', ':' -> 1;
             case '(', ')' -> 2;
@@ -86,7 +86,7 @@ public final class HudGlyphs {
         };
     }
 
-    static boolean drawable(char c) {
+    public static boolean drawable(char c) {
         return c == ' ' || (c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || c == 's' || c == 'm' || c == 'k'
                 || ".,:!'?/+-%()".indexOf(c) >= 0;
     }

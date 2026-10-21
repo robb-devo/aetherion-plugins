@@ -5,6 +5,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -14,8 +15,21 @@ import java.util.Map;
  * {@code tools/gen_gui_icons.py} writes the art and {@code tools/gui_icons.json}). The values sit
  * above every item CMD in the pack (max 4206), so no real item on these materials changes look.
  * Fillers are {@link de.aetherion.items.util.GuiIcons#spacer()}.
+ *
+ * <p>A lockable tab that is not open yet keeps its own picture: grey with a padlock (locked, on grey
+ * dye), in colour with a green arrow (opens next, on lime dye) or as a quiet silhouette (later, on a
+ * light-grey pane).
  */
 final class ManagerIcons {
+
+    /** Lockable tabs by their open material, in the pack's TABS order: CMD = variant base + index. */
+    private static final List<Material> TABS = List.of(
+            Material.CHEST, Material.NETHERITE_SCRAP, Material.GOLD_BLOCK, Material.BONE, Material.IRON_PICKAXE,
+            Material.LEAD, Material.WRITABLE_BOOK, Material.KNOWLEDGE_BOOK, Material.GRASS_BLOCK,
+            Material.YELLOW_BANNER, Material.COMPASS, Material.CRAFTING_TABLE, Material.ANVIL);
+    private static final int LOCKED = 7740;
+    private static final int NEXT = 7760;
+    private static final int LATER = 7780;
 
     private static final Map<Material, Integer> BY_MATERIAL = new EnumMap<>(Material.class);
 
@@ -46,6 +60,34 @@ final class ManagerIcons {
     }
 
     private ManagerIcons() {
+    }
+
+    /** {@code item} (grey dye) shows tab {@code tab} locked. */
+    static ItemStack locked(ItemStack item, Material tab) {
+        return variant(item, tab, LOCKED);
+    }
+
+    /** {@code item} (lime dye) shows tab {@code tab} as the next one to open. */
+    static ItemStack next(ItemStack item, Material tab) {
+        return variant(item, tab, NEXT);
+    }
+
+    /** {@code item} (light-grey pane) shows tab {@code tab} as far off. */
+    static ItemStack later(ItemStack item, Material tab) {
+        return variant(item, tab, LATER);
+    }
+
+    private static ItemStack variant(ItemStack item, Material tab, int base) {
+        int index = TABS.indexOf(tab);
+        if (item == null || index < 0) {
+            return item;
+        }
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            meta.setCustomModelData(base + index);
+            item.setItemMeta(meta);
+        }
+        return item;
     }
 
     /** Puts the button icon for this item's material on it, if there is one. Returns the same stack. */

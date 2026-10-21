@@ -20,8 +20,12 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Owns the bottom ActionBar: HP, defense and weapon cooldowns, plus any line another plugin posted on
- * {@link ActionBarLane}.
+ * Owns the HUD and the bottom ActionBar.
+ *
+ * <p>Panel layout ({@code hud.layout: panel}, default): the {@link PanelPainter} draws HP, stamina, DEF,
+ * cooldowns and the radar into a boss bar (see {@code de.aetherion.items.hud.HudCarrier}), and the ActionBar
+ * only carries the line another plugin posted on {@link ActionBarLane}. Classic layout: everything on the
+ * ActionBar, as below.
  *
  * <p>Glyph HUD ({@code hud.pack-glyphs}, default on): the pack hides vanilla hearts, food and armor, and
  * {@link HudGlyphs} draws an HP bar over the heart row, a DEF badge over the armor row and up to three
@@ -86,7 +90,11 @@ public final class PlayerHud implements ActionBarLane.Painter {
 
     /** Status panel + radar painter, set by AetherionItems when the hud package is up. */
     public interface PanelPainter {
-        Component paint(Player player, Snapshot hud, long tick);
+        /** Draws (or updates) the panel; sends nothing when it did not change. */
+        void paint(Player player, Snapshot hud, long tick);
+
+        /** Takes the panel off the player's screen (classic layout, spectators). */
+        void clear(Player player);
 
         void forget(UUID playerId);
     }
@@ -117,7 +125,21 @@ public final class PlayerHud implements ActionBarLane.Painter {
         }
         long tick = Bukkit.getCurrentTick();
         Component line = ActionBarLane.line(player);
-        Component bar = glyphs() ? glyphBar(player, line, tick) : textBar(player, line);
+        PanelPainter panel = panelPainter;
+        Component bar;
+        if (panel != null && glyphs() && panel()) {
+            if (player.getGameMode() == GameMode.SPECTATOR) {
+                panel.clear(player);
+            } else {
+                panel.paint(player, snapshot(player, tick), tick);
+            }
+            bar = line == null ? Component.empty() : line;
+        } else {
+            if (panel != null) {
+                panel.clear(player);
+            }
+            bar = glyphs() ? glyphBar(player, line, tick) : textBar(player, line);
+        }
         boolean blank = bar.equals(Component.empty());
         UUID id = player.getUniqueId();
         Painted last = painted.get(id);
@@ -170,19 +192,18 @@ public final class PlayerHud implements ActionBarLane.Painter {
     }
 
     private Component hud(Player player, long tick) {
+        Snapshot s = snapshot(player, tick);
+        return layout(s.current(), s.max(), s.absorb(), s.tone(), s.ghostPx(), s.defense(), s.cooldowns(), s.stamina());
+    }
+
+    private Snapshot snapshot(Player player, long tick) {
         double max = Math.max(1.0, source.maxHealth(player));
         double current = Math.max(0.0, Math.min(player.getHealth(), max));
         Tone tone = player.hasPotionEffect(PotionEffectType.WITHER) ? Tone.WITHER
                 : player.hasPotionEffect(PotionEffectType.POISON) ? Tone.POISON
                 : player.isFrozen() ? Tone.FROZEN : Tone.NORMAL;
         int ghost = ghost(player.getUniqueId(), fillPx(current, max), tick);
-        PanelPainter panel = panelPainter;
-        if (panel != null && panel()) {
-            return panel.paint(player, new Snapshot(current, max, player.getAbsorptionAmount(), tone, ghost,
-                    source.defense(player), AbilityCooldownHud.rows(player, source.heldItemId(player)),
-                    StaminaHud.bar(player)), tick);
-        }
-        return layout(current, max, player.getAbsorptionAmount(), tone, ghost, source.defense(player),
+        return new Snapshot(current, max, player.getAbsorptionAmount(), tone, ghost, source.defense(player),
                 AbilityCooldownHud.rows(player, source.heldItemId(player)), StaminaHud.bar(player));
     }
 
