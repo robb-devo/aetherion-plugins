@@ -249,7 +249,7 @@ final class CascadeTorrent {
                         1, 0.01, 0.01, 0.01, 0, sheet);
             }
         }
-        world.spawnParticle(Particle.SPLASH, tip, 10, 0.15, 0.1, 0.15, 0.1);
+        de.aetherion.core.api.Vfx.puff(tip, Particle.SPLASH, 10, Math.max(0.15, 0.15), null);
         world.spawnParticle(Particle.FALLING_WATER, tip, 3, 0.2, 0.05, 0.2, 0);
         world.playSound(eye, Sound.ENTITY_ARROW_SHOOT, 1.0f, 0.7f);
         world.playSound(eye, Sound.ITEM_BUCKET_EMPTY, 0.6f, 1.3f);
@@ -304,9 +304,9 @@ final class CascadeTorrent {
 
     /** A landing: splash at the head, a crown at the feet, and the target left dripping. */
     private void land(LivingEntity target, Location head, int index, boolean last) {
-        world.spawnParticle(Particle.SPLASH, head, 16, 0.3, 0.3, 0.3, 0.12);
-        world.spawnParticle(Particle.DUST, head, 8, 0.25, 0.25, 0.25, 0, new Particle.DustOptions(FOAM, 1.1f));
-        world.spawnParticle(Particle.BUBBLE_POP, head, 6, 0.3, 0.3, 0.3, 0.02);
+        de.aetherion.core.api.Vfx.puff(head, Particle.SPLASH, 16, Math.max(0.3, 0.3), null);
+        de.aetherion.core.api.Vfx.puff(head, Particle.DUST, 8, Math.max(0.25, 0.25), new Particle.DustOptions(FOAM, 1.1f));
+        de.aetherion.core.api.Vfx.puff(head, Particle.BUBBLE_POP, 6, Math.max(0.3, 0.3), null);
 
         float drip = (float) Math.max(0.6, 1.9 - index * 0.12);
         world.playSound(head, Sound.BLOCK_POINTED_DRIPSTONE_DRIP_WATER_INTO_CAULDRON, 0.9f, drip);
@@ -318,7 +318,7 @@ final class CascadeTorrent {
         if (LIVE.size() < MAX_LIVE) {
             crowns.add(new Crown(floor, scale, last));
         } else {
-            world.spawnParticle(Particle.SPLASH, floor.clone().add(0, 0.2, 0), 20, 0.5, 0.1, 0.5, 0.2);
+            de.aetherion.core.api.Vfx.puff(floor.clone().add(0, 0.2, 0), Particle.SPLASH, 20, Math.max(0.5, 0.5), null);
         }
         if (drench.size() < MAX_DRENCH) {
             drench.add(new Drench(target));
@@ -327,12 +327,11 @@ final class CascadeTorrent {
 
     /** End of the staircase: the last pool bursts into a fountain of spray, drips and sunlit glints. */
     private void plunge(Location at) {
-        world.spawnParticle(Particle.SPLASH, at, 40, 0.8, 0.6, 0.8, 0.25);
-        world.spawnParticle(Particle.FALLING_WATER, at.clone().add(0, 1.2, 0), 18, 1.2, 0.3, 1.2, 0);
-        world.spawnParticle(Particle.DUST, at, 16, 0.6, 0.5, 0.6, 0, new Particle.DustOptions(FOAM, 1.4f));
-        world.spawnParticle(Particle.DUST, at.clone().add(0, 0.5, 0), 10, 0.8, 0.6, 0.8, 0,
-                new Particle.DustOptions(GLINT, 0.8f));
-        world.spawnParticle(Particle.DOLPHIN, at, 20, 0.7, 0.6, 0.7, 0.05);
+        de.aetherion.core.api.Vfx.puff(at, Particle.SPLASH, 40, Math.max(0.8, 0.8), null);
+        de.aetherion.core.api.Vfx.puff(at.clone().add(0, 1.2, 0), Particle.FALLING_WATER, 18, Math.max(1.2, 1.2), null);
+        de.aetherion.core.api.Vfx.puff(at, Particle.DUST, 16, Math.max(0.6, 0.6), new Particle.DustOptions(FOAM, 1.4f));
+        de.aetherion.core.api.Vfx.puff(at.clone().add(0, 0.5, 0), Particle.DUST, 10, Math.max(0.8, 0.8), new Particle.DustOptions(GLINT, 0.8f));
+        de.aetherion.core.api.Vfx.puff(at, Particle.DOLPHIN, 20, Math.max(0.7, 0.7), null);
         world.playSound(at, Sound.ENTITY_PLAYER_SPLASH_HIGH_SPEED, 0.85f, 0.8f);
         world.playSound(at, Sound.ENTITY_GENERIC_SPLASH, 0.8f, 0.6f);
         world.playSound(at, Sound.ITEM_BUCKET_EMPTY, 0.7f, 0.6f);
@@ -347,7 +346,7 @@ final class CascadeTorrent {
                 ? ray.getHitPosition().toLocation(world)
                 : eye.clone().add(dir.clone().multiply(16.0));
         pour(muzzlePoint(end), end, 0);
-        world.spawnParticle(Particle.SPLASH, end, 18, 0.35, 0.2, 0.35, 0.15);
+        de.aetherion.core.api.Vfx.puff(end, Particle.SPLASH, 18, Math.max(0.35, 0.35), null);
         world.playSound(end, Sound.ENTITY_FISHING_BOBBER_SPLASH, 0.6f, 1.1f);
         if (ray != null && ray.getHitBlock() != null && LIVE.size() < MAX_LIVE) {
             crowns.add(new Crown(floorUnder(end.clone().add(0, 0.3, 0)), 0.8f, false));
@@ -433,7 +432,7 @@ final class CascadeTorrent {
                 for (int i = 0; i < beads.size(); i += 2) {
                     world.spawnParticle(Particle.SPLASH, beadAt(i, 1.0), 2, 0.05, 0.02, 0.05, 0.05);
                 }
-                world.spawnParticle(Particle.SPLASH, base.clone().add(0, 0.1, 0), 6, 0.3 * s, 0.02, 0.3 * s, 0.05);
+                de.aetherion.core.api.Vfx.puff(base.clone().add(0, 0.1, 0), Particle.SPLASH, 6, Math.max(0.3 * s, 0.3 * s), null);
                 removeAll(petals);
                 removeAll(beads);
                 discard(jet);
@@ -600,7 +599,7 @@ final class CascadeTorrent {
             Location eye = player.getEyeLocation();
             Vector look = eye.getDirection().normalize();
             Location tip = eye.clone().add(look.clone().multiply(0.9)).add(0, -0.15, 0);
-            world.spawnParticle(Particle.SPLASH, tip, 4, 0.08, 0.05, 0.08, 0.05);
+            de.aetherion.core.api.Vfx.puff(tip, Particle.SPLASH, 4, Math.max(0.08, 0.08), null);
             world.spawnParticle(Particle.DUST, tip.clone().add(look.clone().multiply(0.3)), 2, 0.03, 0.03, 0.03, 0,
                     new Particle.DustOptions(AQUA, 0.9f));
             world.playSound(eye, Sound.ENTITY_ARROW_SHOOT, 0.85f, 1.45f);
@@ -648,8 +647,8 @@ final class CascadeTorrent {
             }
             World world = arrow.getWorld();
             Location at = arrow.getLocation();
-            world.spawnParticle(Particle.SPLASH, at, 10, 0.2, 0.2, 0.2, 0.1);
-            world.spawnParticle(Particle.DUST, at, 4, 0.15, 0.15, 0.15, 0, new Particle.DustOptions(FOAM, 0.9f));
+            de.aetherion.core.api.Vfx.puff(at, Particle.SPLASH, 10, Math.max(0.2, 0.2), null);
+            de.aetherion.core.api.Vfx.puff(at, Particle.DUST, 4, Math.max(0.15, 0.15), new Particle.DustOptions(FOAM, 0.9f));
             world.playSound(at, Sound.ENTITY_FISHING_BOBBER_SPLASH, 0.5f, 1.4f);
         }
 
@@ -659,7 +658,7 @@ final class CascadeTorrent {
             }
             World world = arrow.getWorld();
             Location at = arrow.getLocation();
-            world.spawnParticle(Particle.SPLASH, at, 6, 0.12, 0.05, 0.12, 0.08);
+            de.aetherion.core.api.Vfx.puff(at, Particle.SPLASH, 6, Math.max(0.12, 0.12), null);
             world.playSound(at, Sound.ENTITY_FISHING_BOBBER_SPLASH, 0.3f, 1.6f);
         }
 

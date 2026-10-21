@@ -264,8 +264,8 @@ public final class ResonanceScytheWave {
         Location chest = living.getLocation().add(0, living.getHeight() * 0.55, 0);
         world.playSound(chest, Sound.BLOCK_AMETHYST_BLOCK_HIT, 0.9f, 0.6f);
         world.playSound(chest, Sound.BLOCK_SCULK_SENSOR_CLICKING, 0.6f, 1.5f);
-        world.spawnParticle(Particle.SCULK_CHARGE_POP, chest, 8, 0.3, 0.35, 0.3, 0.02);
-        world.spawnParticle(Particle.CRIT, chest, 6, 0.25, 0.3, 0.25, 0.02);
+        de.aetherion.core.api.Vfx.puff(chest, Particle.SCULK_CHARGE_POP, 8, Math.max(0.3, 0.3), null);
+        de.aetherion.core.api.Vfx.puff(chest, Particle.CRIT, 6, Math.max(0.25, 0.25), null);
         try {
             Location home = player.getLocation().add(0, 1.0, 0);
             int arrival = (int) Math.max(6, Math.min(20, chest.distance(home) * 1.2));
@@ -312,7 +312,7 @@ public final class ResonanceScytheWave {
         for (int i = 0; i < 32; i++) {
             world.spawnParticle(Particle.DUST_COLOR_TRANSITION, ring(end, Math.PI * 2 * i / 32, 2.6), 1, 0, 0, 0, 0, flare);
         }
-        world.spawnParticle(Particle.SCULK_CHARGE_POP, end, 10, 0.6, 0.6, 0.6, 0.02);
+        de.aetherion.core.api.Vfx.puff(end, Particle.SCULK_CHARGE_POP, 10, Math.max(0.6, 0.6), null);
         world.playSound(end, Sound.BLOCK_BELL_RESONATE, 0.55f, 1.3f);
         world.playSound(end, Sound.BLOCK_AMETHYST_CLUSTER_BREAK, 0.45f, 1.6f);
     }

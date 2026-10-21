@@ -171,8 +171,7 @@ public final class MeteorMaceCrash {
         world.playSound(origin, Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 0.8f, 0.7f);
         world.playSound(origin, Sound.ITEM_FIRECHARGE_USE, 0.7f, 0.55f);
         world.playSound(zone, Sound.BLOCK_LAVA_AMBIENT, 0.8f, 0.6f);
-        world.spawnParticle(Particle.BLOCK, origin.clone().add(0, 0.1, 0), 18, 0.5, 0.05, 0.5, 0.1,
-                floorBlockData(origin));
+        de.aetherion.core.api.Vfx.puff(origin.clone().add(0, 0.1, 0), Particle.BLOCK, 18, Math.max(0.5, 0.5), floorBlockData(origin));
 
         new BukkitRunnable() {
             @Override
@@ -380,7 +379,7 @@ public final class MeteorMaceCrash {
                 }
             }
             Location head = fissure.get(shown - 1).point(1.0).add(0, 0.1, 0);
-            world.spawnParticle(Particle.BLOCK, head, 4, 0.2, 0.05, 0.2, 0.05, floorData);
+            de.aetherion.core.api.Vfx.puff(head, Particle.BLOCK, 4, Math.max(0.2, 0.2), floorData);
             if (tick % 3 == 0) {
                 world.playSound(head, Sound.BLOCK_BASALT_BREAK, 0.5f, 0.6f);
                 world.playSound(head, Sound.BLOCK_LAVA_POP, 0.45f, 0.7f + random.nextFloat() * 0.3f);
@@ -427,7 +426,7 @@ public final class MeteorMaceCrash {
     private void thump(int beat) {
         Location at = player.getLocation();
         world.playSound(at, Sound.ITEM_MACE_SMASH_GROUND, 0.45f + beat * 0.08f, 0.6f + beat * 0.07f);
-        world.spawnParticle(Particle.BLOCK, at.clone().add(0, 0.1, 0), 10, 0.5, 0.05, 0.5, 0.1, floorBlockData(at));
+        de.aetherion.core.api.Vfx.puff(at.clone().add(0, 0.1, 0), Particle.BLOCK, 10, Math.max(0.5, 0.5), floorBlockData(at));
         drawRing(at.clone().add(0, 0.1, 0), 1.0 + beat * 0.12, 16, new Particle.DustOptions(EMBER, 1.0f), 0, false);
         world.spawnParticle(Particle.DUST_PILLAR, zone.clone().add(0, 0.1, 0), 5 + beat * 2, 1.4, 0.05, 1.4, 0,
                 floorData);
@@ -481,8 +480,8 @@ public final class MeteorMaceCrash {
     private void erupt() {
         Location c = zone.clone().add(0, 0.2, 0);
         ThreadLocalRandom random = ThreadLocalRandom.current();
-        world.spawnParticle(Particle.DUST_PILLAR, c, 50, 1.6, 0.1, 1.6, 0, floorData);
-        world.spawnParticle(Particle.LAVA, c, 16, 1.5, 0.2, 1.5, 0);
+        de.aetherion.core.api.Vfx.puff(c, Particle.DUST_PILLAR, 50, Math.max(1.6, 1.6), floorData);
+        de.aetherion.core.api.Vfx.puff(c, Particle.LAVA, 16, Math.max(1.5, 1.5), null);
         world.spawnParticle(Particle.EXPLOSION, c.clone().add(0, 0.6, 0), 3, 1.0, 0.3, 1.0, 0);
         for (int i = 0; i < 26; i++) {
             Location at = c.clone().add(random.nextDouble(-2.0, 2.0), 0, random.nextDouble(-2.0, 2.0));
@@ -519,7 +518,7 @@ public final class MeteorMaceCrash {
         }
         double reach = Math.min(1.0, f / 4.0);
         Location tip = flareBase.clone().add(flareSpan.clone().multiply(reach));
-        world.spawnParticle(Particle.FLAME, tip, 4, 0.15, 0.15, 0.15, 0.03);
+        de.aetherion.core.api.Vfx.puff(tip, Particle.FLAME, 4, Math.max(0.15, 0.15), null);
         world.spawnParticle(Particle.FIREWORK, tip, 2, 0.1, 0.1, 0.1, 0.02);
         world.spawnParticle(Particle.DUST, flareBase.clone().add(flareSpan.clone().multiply(reach * 0.5)), 2,
                 0.1, 0.4, 0.1, 0, new Particle.DustOptions(MOLTEN, 1.2f));
@@ -670,12 +669,12 @@ public final class MeteorMaceCrash {
         world.spawnParticle(Particle.FLASH, c, 1, 0, 0, 0, 0);
         world.spawnParticle(Particle.FLASH, c.clone().add(0, 2.0, 0), 1, 0, 0, 0, 0);
         world.spawnParticle(Particle.EXPLOSION_EMITTER, c.clone().add(0, 0.6, 0), 2, 0.8, 0.3, 0.8, 0);
-        world.spawnParticle(Particle.EXPLOSION, c.clone().add(0, 0.8, 0), 8, 2.5, 0.6, 2.5, 0);
-        world.spawnParticle(Particle.LAVA, c, 40, 2.0, 0.4, 2.0, 0);
-        world.spawnParticle(Particle.BLOCK, c, 80, 2.5, 0.3, 2.5, 0.3, floorData);
-        world.spawnParticle(Particle.DUST_PILLAR, c, 50, 2.0, 0.1, 2.0, 0, floorData);
-        world.spawnParticle(Particle.CAMPFIRE_SIGNAL_SMOKE, c, 14, 1.5, 0.4, 1.5, 0.02);
-        world.spawnParticle(Particle.LARGE_SMOKE, c.clone().add(0, 0.8, 0), 30, 2.0, 0.6, 2.0, 0.04);
+        de.aetherion.core.api.Vfx.puff(c.clone().add(0, 0.8, 0), Particle.EXPLOSION, 8, Math.max(2.5, 2.5), null);
+        de.aetherion.core.api.Vfx.puff(c, Particle.LAVA, 40, Math.max(2.0, 2.0), null);
+        de.aetherion.core.api.Vfx.puff(c, Particle.BLOCK, 80, Math.max(2.5, 2.5), floorData);
+        de.aetherion.core.api.Vfx.puff(c, Particle.DUST_PILLAR, 50, Math.max(2.0, 2.0), floorData);
+        de.aetherion.core.api.Vfx.puff(c, Particle.CAMPFIRE_SIGNAL_SMOKE, 14, Math.max(1.5, 1.5), null);
+        de.aetherion.core.api.Vfx.puff(c.clone().add(0, 0.8, 0), Particle.LARGE_SMOKE, 30, Math.max(2.0, 2.0), null);
         for (int i = 0; i < 40; i++) {
             double a = Math.PI * 2 * i / 40 + random.nextDouble(-0.05, 0.05);
             world.spawnParticle(Particle.FLAME, c, 0, Math.cos(a), 0.05, Math.sin(a), random.nextDouble(0.35, 0.55));
@@ -717,8 +716,7 @@ public final class MeteorMaceCrash {
                 }
                 living.setVelocity(away.normalize().multiply(1.7).setY(0.8));
             }
-            world.spawnParticle(Particle.FLAME, living.getLocation().add(0, living.getHeight() * 0.5, 0), 6,
-                    0.25, 0.3, 0.25, 0.03);
+            de.aetherion.core.api.Vfx.puff(living.getLocation().add(0, living.getHeight() * 0.5, 0), Particle.FLAME, 6, Math.max(0.25, 0.25), null);
         }
 
         crater();
@@ -830,7 +828,7 @@ public final class MeteorMaceCrash {
         if (a <= 24 && a % 2 == 0) {
             double h = 1.0 + a * 0.3;
             double spread = 0.4 + a * 0.04;
-            world.spawnParticle(Particle.FLAME, zone.clone().add(0, h, 0), 4, spread, 0.3, spread, 0.02);
+            de.aetherion.core.api.Vfx.puff(zone.clone().add(0, h, 0), Particle.FLAME, 4, Math.max(spread, spread), null);
             world.spawnParticle(Particle.LARGE_SMOKE, zone.clone().add(0, h + 0.4, 0), 3, spread, 0.3, spread, 0.02);
             if (a % 6 == 0) {
                 world.spawnParticle(Particle.CAMPFIRE_SIGNAL_SMOKE, zone.clone().add(0, 0.5, 0), 3, 0.8, 0.2, 0.8, 0.01);
@@ -908,7 +906,7 @@ public final class MeteorMaceCrash {
             world.spawnParticle(Particle.FLAME, zone.clone().add(Math.cos(a) * POOL_RADIUS, 0.1, Math.sin(a) * POOL_RADIUS),
                     0, 0, 1, 0, random.nextDouble(0.08, 0.16));
         }
-        world.spawnParticle(Particle.LAVA, zone.clone().add(0, 0.2, 0), 6, 1.5, 0.1, 1.5, 0);
+        de.aetherion.core.api.Vfx.puff(zone.clone().add(0, 0.2, 0), Particle.LAVA, 6, Math.max(1.5, 1.5), null);
         world.playSound(zone, Sound.BLOCK_LAVA_POP, 0.8f, 0.7f);
         world.playSound(zone, Sound.ITEM_FIRECHARGE_USE, 0.5f, 1.4f);
         if (!player.isOnline()) {
@@ -1079,7 +1077,7 @@ public final class MeteorMaceCrash {
             velocity.setX(velocity.getX() * 0.98);
             velocity.setZ(velocity.getZ() * 0.98);
             if ((velocity.getY() < 0 && at.getY() <= zone.getY() + 0.15) || age > 34) {
-                world.spawnParticle(Particle.BLOCK, at, 6, 0.15, 0.05, 0.15, 0.05, display.getBlock());
+                de.aetherion.core.api.Vfx.puff(at, Particle.BLOCK, 6, Math.max(0.15, 0.15), display.getBlock());
                 world.spawnParticle(Particle.SMOKE, at, 2, 0.1, 0.05, 0.1, 0.01);
                 return false;
             }

@@ -385,8 +385,7 @@ public class VoidStickListener implements Listener {
                     break;
                 }
                 Location chest = target.getLocation().add(0, target.getHeight() * 0.55, 0);
-                world.spawnParticle(Particle.DUST_COLOR_TRANSITION, chest, 6, 0.25, 0.3, 0.25, 0,
-                        new Particle.DustTransition(LIFE, INK, 1.3f));
+                de.aetherion.core.api.Vfx.puff(chest, Particle.DUST_COLOR_TRANSITION, 6, Math.max(0.25, 0.25), new Particle.DustTransition(LIFE, INK, 1.3f));
                 world.spawnParticle(Particle.SQUID_INK, chest, 3, 0.2, 0.2, 0.2, 0.02);
                 if (swallows.size() < MAX_STRAWS * 2) {
                     swallows.add(new Swallow(chest));
@@ -447,7 +446,7 @@ public class VoidStickListener implements Listener {
                     double a = Math.PI * 2 * i / 10;
                     world.spawnParticle(Particle.GLOW_SQUID_INK, maw, 0, Math.cos(a), 0.2, Math.sin(a), 0.15);
                 }
-                world.spawnParticle(Particle.SQUID_INK, maw, 6, 0.15, 0.15, 0.15, 0.03);
+                de.aetherion.core.api.Vfx.puff(maw, Particle.SQUID_INK, 6, Math.max(0.15, 0.15), null);
                 world.playSound(maw, Sound.ENTITY_GLOW_SQUID_SQUIRT, 0.5f, 0.6f);
                 world.playSound(maw, Sound.BLOCK_CONDUIT_DEACTIVATE, 0.4f, 0.9f);
                 plugin.getServer().getScheduler().runTaskLater(plugin, () -> {

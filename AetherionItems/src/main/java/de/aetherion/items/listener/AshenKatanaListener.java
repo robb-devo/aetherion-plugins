@@ -244,9 +244,9 @@ public final class AshenKatanaListener implements Listener {
         world.playSound(at, Sound.BLOCK_CHERRY_LEAVES_BREAK, 1.0f, 0.5f);
         world.playSound(at, Sound.BLOCK_AMETHYST_BLOCK_BREAK, 0.7f, 0.6f);
         world.spawnParticle(Particle.FLASH, at.clone().add(0, 0.3, 0), 1, 0, 0, 0, 0);
-        world.spawnParticle(Particle.CHERRY_LEAVES, at.clone().add(0, 0.4, 0), 28, 1.1, 0.3, 1.1, 0.05);
-        world.spawnParticle(Particle.BLOCK, at.clone().add(0, 0.15, 0), 36, 1.6, 0.1, 1.6, 0.1, cherryLeaves());
-        world.spawnParticle(Particle.ASH, at.clone().add(0, 0.8, 0), 40, 1.8, 0.6, 1.8, 0.02);
+        de.aetherion.core.api.Vfx.puff(at.clone().add(0, 0.4, 0), Particle.CHERRY_LEAVES, 28, Math.max(1.1, 1.1), null);
+        de.aetherion.core.api.Vfx.puff(at.clone().add(0, 0.15, 0), Particle.BLOCK, 36, Math.max(1.6, 1.6), cherryLeaves());
+        de.aetherion.core.api.Vfx.puff(at.clone().add(0, 0.8, 0), Particle.ASH, 40, Math.max(1.8, 1.8), null);
         float turn = (float) Math.toRadians(player.getLocation().getYaw());
         crest(world, at, SLAM_RADIUS, turn, new Particle.DustOptions(BLOSSOM, 1.35f));
         crest(world, at, SLAM_RADIUS * 0.5, turn + (float) (Math.PI / 5.0), new Particle.DustOptions(ASHEN, 1.1f));

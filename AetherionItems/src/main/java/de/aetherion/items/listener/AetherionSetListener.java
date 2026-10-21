@@ -112,8 +112,8 @@ public class AetherionSetListener implements Listener, Runnable {
         player.setNoDamageTicks(40);
         player.getWorld().playSound(player.getLocation(), Sound.ITEM_TOTEM_USE, 0.85f, 0.7f);
         player.getWorld().playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 0.45f, 1.4f);
-        player.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, player.getLocation().add(0, 1, 0), 40, 0.5, 0.8, 0.5, 0.15);
-        player.getWorld().spawnParticle(Particle.PORTAL, player.getLocation(), 24, 0.6, 0.8, 0.6, 0.2);
+        de.aetherion.core.api.Vfx.puff(player.getLocation().add(0, 1, 0), Particle.TOTEM_OF_UNDYING, 40, Math.max(0.5, 0.5), null);
+        de.aetherion.core.api.Vfx.puff(player.getLocation(), Particle.PORTAL, 24, Math.max(0.6, 0.6), null);
         int minutes = (int) Math.max(1L, de.aetherion.items.item.DungeonCore.aetherionSaveCooldownMs(tier) / 60000L);
         player.sendMessage("§5Aetherion §7refused your death. §8(" + minutes + "m)");
     }

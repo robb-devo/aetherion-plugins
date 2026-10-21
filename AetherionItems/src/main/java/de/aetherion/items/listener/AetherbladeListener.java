@@ -169,7 +169,7 @@ public class AetherbladeListener implements Listener {
         for (double y = 0.5; y <= 1.9; y += 0.12) {
             world.spawnParticle(Particle.DUST_COLOR_TRANSITION, blade.clone().add(0, y, 0), 1, 0, 0, 0, 0, line);
         }
-        world.spawnParticle(Particle.ELECTRIC_SPARK, blade.clone().add(0, 1.2, 0), 6, 0.05, 0.5, 0.05, 0.03);
+        de.aetherion.core.api.Vfx.puff(blade.clone().add(0, 1.2, 0), Particle.ELECTRIC_SPARK, 6, Math.max(0.05, 0.05), null);
         world.playSound(blade, Sound.BLOCK_BEACON_POWER_SELECT, 0.35f, 1.9f);
         world.playSound(blade, Sound.ITEM_CROSSBOW_LOADING_END, 0.55f, 1.5f);
         world.playSound(blade, Sound.ITEM_TRIDENT_RIPTIDE_1, 0.4f, 1.85f);
@@ -180,9 +180,8 @@ public class AetherbladeListener implements Listener {
         if (world == null) {
             return;
         }
-        world.spawnParticle(Particle.SMOKE, at, 5, 0.1, 0.15, 0.1, 0.01);
-        world.spawnParticle(Particle.DUST_COLOR_TRANSITION, at, 4, 0.12, 0.15, 0.12, 0,
-                new Particle.DustTransition(EDGE, CORE, 0.6f));
+        de.aetherion.core.api.Vfx.puff(at, Particle.SMOKE, 5, Math.max(0.1, 0.1), null);
+        de.aetherion.core.api.Vfx.puff(at, Particle.DUST_COLOR_TRANSITION, 4, Math.max(0.12, 0.12), new Particle.DustTransition(EDGE, CORE, 0.6f));
     }
 
     /** One Rift Dance: hop timing matches the old per-hop schedule (hop i at i × 8 ticks). */
@@ -294,7 +293,7 @@ public class AetherbladeListener implements Listener {
                 Location leave = from.clone().add(0, 1.0, 0);
                 world.playSound(leave, Sound.ENTITY_SHEEP_SHEAR, 0.7f, 1.35f + index * 0.05f);
                 world.playSound(leave, Sound.ENTITY_ENDERMAN_TELEPORT, 0.4f, 1.1f + index * 0.08f);
-                world.spawnParticle(Particle.ELECTRIC_SPARK, leave, 6, 0.15, 0.35, 0.15, 0.03);
+                de.aetherion.core.api.Vfx.puff(leave, Particle.ELECTRIC_SPARK, 6, Math.max(0.15, 0.15), null);
             }
 
             player.teleport(dest);
@@ -355,7 +354,7 @@ public class AetherbladeListener implements Listener {
             }
             world.playSound(at, Sound.BLOCK_BEACON_DEACTIVATE, 0.4f, 1.8f);
             world.playSound(at, Sound.BLOCK_END_PORTAL_FRAME_FILL, 0.5f, 1.2f);
-            world.spawnParticle(Particle.ELECTRIC_SPARK, at, 8, 0.25, 0.45, 0.25, 0.04);
+            de.aetherion.core.api.Vfx.puff(at, Particle.ELECTRIC_SPARK, 8, Math.max(0.25, 0.25), null);
         }
 
         private void clear() {
@@ -396,7 +395,7 @@ public class AetherbladeListener implements Listener {
         world.spawnParticle(Particle.SWEEP_ATTACK, center, 1, 0, 0, 0, 0);
         world.spawnParticle(Particle.ELECTRIC_SPARK, center, last ? 14 : 7, 0.25, 0.3, 0.25, 0.05);
         if (last) {
-            world.spawnParticle(Particle.END_ROD, center, 6, 0.1, 0.1, 0.1, 0.08);
+            de.aetherion.core.api.Vfx.puff(center, Particle.END_ROD, 6, Math.max(0.1, 0.1), null);
         }
     }
 
@@ -405,9 +404,8 @@ public class AetherbladeListener implements Listener {
         if (world == null) {
             return;
         }
-        world.spawnParticle(Particle.DUST_COLOR_TRANSITION, at, 10, 0.2, 0.2, 0.2, 0,
-                new Particle.DustTransition(EDGE, CORE, 0.8f));
-        world.spawnParticle(Particle.ELECTRIC_SPARK, at, 6, 0.15, 0.15, 0.15, 0.05);
+        de.aetherion.core.api.Vfx.puff(at, Particle.DUST_COLOR_TRANSITION, 10, Math.max(0.2, 0.2), new Particle.DustTransition(EDGE, CORE, 0.8f));
+        de.aetherion.core.api.Vfx.puff(at, Particle.ELECTRIC_SPARK, 6, Math.max(0.15, 0.15), null);
     }
 
     /**
@@ -480,9 +478,8 @@ public class AetherbladeListener implements Listener {
                 zipAge++;
                 if (zipAge == ZIP_TICKS) {
                     Location tip = end.clone();
-                    world.spawnParticle(Particle.DUST_COLOR_TRANSITION, tip, 8, 0.12, 0.12, 0.12, 0,
-                            new Particle.DustTransition(HOT, EDGE, 0.9f));
-                    world.spawnParticle(Particle.ELECTRIC_SPARK, tip, 6, 0.1, 0.1, 0.1, 0.05);
+                    de.aetherion.core.api.Vfx.puff(tip, Particle.DUST_COLOR_TRANSITION, 8, Math.max(0.12, 0.12), new Particle.DustTransition(HOT, EDGE, 0.9f));
+                    de.aetherion.core.api.Vfx.puff(tip, Particle.ELECTRIC_SPARK, 6, Math.max(0.1, 0.1), null);
                     world.spawnParticle(Particle.END_ROD, tip, 2, 0.05, 0.05, 0.05, 0.03);
                     world.playSound(tip, Sound.BLOCK_END_PORTAL_FRAME_FILL, 0.45f, 1.6f);
                     remove();

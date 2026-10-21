@@ -165,9 +165,9 @@ public class WorldEaterGearListener implements Listener {
         world.playSound(center, Sound.ENTITY_EVOKER_FANGS_ATTACK, SoundCategory.PLAYERS, 1.2f, 0.5f);
         world.playSound(center, Sound.ENTITY_GENERIC_EAT, SoundCategory.PLAYERS, 1.2f, 0.5f);
         world.playSound(center, Sound.ENTITY_PLAYER_BURP, SoundCategory.PLAYERS, 0.5f, 0.6f);
-        world.spawnParticle(Particle.REVERSE_PORTAL, center.clone().add(0, 0.8, 0), 80, 1.8, 0.6, 1.8, 0.2);
-        world.spawnParticle(Particle.DUST, center.clone().add(0, 0.6, 0), 30, 1.2, 0.4, 1.2, 0, new Particle.DustOptions(VOID, 1.6f), true);
-        world.spawnParticle(Particle.BLOCK, center.clone().add(0, 0.2, 0), 40, 1.5, 0.2, 1.5, 0, Material.GRASS_BLOCK.createBlockData());
+        de.aetherion.core.api.Vfx.puff(center.clone().add(0, 0.8, 0), Particle.REVERSE_PORTAL, 80, Math.max(1.8, 1.8), null);
+        de.aetherion.core.api.Vfx.puff(center.clone().add(0, 0.6, 0), Particle.DUST, 30, Math.max(1.2, 1.2), new Particle.DustOptions(VOID, 1.6f));
+        de.aetherion.core.api.Vfx.puff(center.clone().add(0, 0.2, 0), Particle.BLOCK, 40, Math.max(1.5, 1.5), Material.GRASS_BLOCK.createBlockData());
         double drained = 0;
         DamageSource source = DamageSource.builder(DamageType.MAGIC).withCausingEntity(player).withDirectEntity(player).build();
         for (LivingEntity living : caught) {
@@ -212,7 +212,7 @@ public class WorldEaterGearListener implements Listener {
             }
             player.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 60, 0, true, false, true));
             player.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, 60, 0, true, false, true));
-            player.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, player.getLocation().add(0, 0.1, 0), 4, 0.4, 0.05, 0.4, 0);
+            de.aetherion.core.api.Vfx.puff(player.getLocation().add(0, 0.1, 0), Particle.HAPPY_VILLAGER, 4, Math.max(0.4, 0.4), null);
         }
     }
 
