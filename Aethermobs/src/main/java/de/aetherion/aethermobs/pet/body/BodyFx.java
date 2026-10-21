@@ -135,20 +135,19 @@ final class BodyFx {
         ThreadLocalRandom r = ThreadLocalRandom.current();
         double spread = 0.35 * size;
         Particle.DustOptions dust = new Particle.DustOptions(tint, ord >= Rarity.LEGENDARY.ordinal() ? 0.9f : 0.65f);
-        world.spawnParticle(Particle.DUST, center.clone().add(r.nextGaussian() * spread, r.nextDouble() * 0.3 * size,
-                r.nextGaussian() * spread), 1, 0.0, 0.0, 0.0, 0.0, dust);
+        de.aetherion.core.api.Vfx.puff(center.clone().add(r.nextGaussian() * spread, r.nextDouble() * 0.3 * size,
+                r.nextGaussian() * spread), Particle.DUST, 1, Math.max(0.0, 0.0), dust);
         if (ord >= Rarity.LEGENDARY.ordinal()) {
             // A slow halo pulse: three motes on a ring around the body.
             double a = clock * 0.21;
             double radius = 0.45 * size + 0.15;
             for (int i = 0; i < 2; i++) {
                 double ang = a + i * Math.PI;
-                world.spawnParticle(Particle.DUST, center.clone().add(Math.cos(ang) * radius, 0.05, Math.sin(ang) * radius),
-                        1, 0.0, 0.0, 0.0, 0.0, dust);
+                de.aetherion.core.api.Vfx.puff(center.clone().add(Math.cos(ang) * radius, 0.05, Math.sin(ang) * radius), Particle.DUST, 1, Math.max(0.0, 0.0), dust);
             }
         }
         if (rarity == Rarity.AETHERED && clock % (every * 3) < 2) {
-            world.spawnParticle(Particle.SOUL_FIRE_FLAME, center, 1, 0.1, 0.1, 0.1, 0.0);
+            de.aetherion.core.api.Vfx.puff(center, Particle.SOUL_FIRE_FLAME, 1, Math.max(0.1, 0.1), null);
         }
     }
 
@@ -160,38 +159,36 @@ final class BodyFx {
         double s = 0.3 * size;
         Location at = center.clone().add(r.nextGaussian() * s, r.nextDouble() * s, r.nextGaussian() * s);
         switch (element) {
-            case FROST -> world.spawnParticle(Particle.SNOWFLAKE, at, 1, 0.0, 0.0, 0.0, 0.004);
-            case FLAME -> world.spawnParticle(Particle.SMALL_FLAME, at, 1, 0.0, 0.02, 0.0, 0.004);
-            case SPORE -> world.spawnParticle(Particle.MYCELIUM, at, 2, 0.1, 0.1, 0.1, 0.0);
-            case LEAF -> world.spawnParticle(Particle.COMPOSTER, at, 1, 0.0, 0.0, 0.0, 0.0);
+            case FROST -> de.aetherion.core.api.Vfx.puff(at, Particle.SNOWFLAKE, 1, Math.max(0.0, 0.0), null);
+            case FLAME -> de.aetherion.core.api.Vfx.puff(at, Particle.SMALL_FLAME, 1, Math.max(0.0, 0.0), null);
+            case SPORE -> de.aetherion.core.api.Vfx.puff(at, Particle.MYCELIUM, 2, Math.max(0.1, 0.1), null);
+            case LEAF -> de.aetherion.core.api.Vfx.puff(at, Particle.COMPOSTER, 1, Math.max(0.0, 0.0), null);
             case BLOOM -> {
                 if (moving) {
-                    world.spawnParticle(Particle.DUST, at, 1, 0.0, 0.0, 0.0, 0.0,
-                            new Particle.DustOptions(Color.fromRGB(255, 170, 220), 0.6f));
+                    de.aetherion.core.api.Vfx.puff(at, Particle.DUST, 1, Math.max(0.0, 0.0), new Particle.DustOptions(Color.fromRGB(255, 170, 220), 0.6f));
                 }
             }
-            case GLOW -> world.spawnParticle(Particle.GLOW, at, 1, 0.05, 0.05, 0.05, 0.0);
-            case SPARK -> world.spawnParticle(Particle.ELECTRIC_SPARK, at, 2, 0.1, 0.1, 0.1, 0.0);
-            case TIDE -> world.spawnParticle(Particle.BUBBLE_POP, at, 1, 0.05, 0.05, 0.05, 0.0);
-            case SOUL -> world.spawnParticle(Particle.SOUL, at, 1, 0.0, 0.01, 0.0, 0.004);
-            case GEM -> world.spawnParticle(Particle.WAX_OFF, at, 1, 0.05, 0.05, 0.05, 0.0);
-            case AETHER -> world.spawnParticle(Particle.REVERSE_PORTAL, at, 2, 0.1, 0.1, 0.1, 0.01);
-            case SAND -> world.spawnParticle(Particle.FALLING_DUST, at, 1, 0.1, 0.05, 0.1, 0.0, SAND);
-            case WITHER -> world.spawnParticle(Particle.SMOKE, at, 1, 0.05, 0.05, 0.05, 0.0);
+            case GLOW -> de.aetherion.core.api.Vfx.puff(at, Particle.GLOW, 1, Math.max(0.05, 0.05), null);
+            case SPARK -> de.aetherion.core.api.Vfx.puff(at, Particle.ELECTRIC_SPARK, 2, Math.max(0.1, 0.1), null);
+            case TIDE -> de.aetherion.core.api.Vfx.puff(at, Particle.BUBBLE_POP, 1, Math.max(0.05, 0.05), null);
+            case SOUL -> de.aetherion.core.api.Vfx.puff(at, Particle.SOUL, 1, Math.max(0.0, 0.0), null);
+            case GEM -> de.aetherion.core.api.Vfx.puff(at, Particle.WAX_OFF, 1, Math.max(0.05, 0.05), null);
+            case AETHER -> de.aetherion.core.api.Vfx.puff(at, Particle.REVERSE_PORTAL, 2, Math.max(0.1, 0.1), null);
+            case SAND -> de.aetherion.core.api.Vfx.puff(at, Particle.FALLING_DUST, 1, Math.max(0.1, 0.1), SAND);
+            case WITHER -> de.aetherion.core.api.Vfx.puff(at, Particle.SMOKE, 1, Math.max(0.05, 0.05), null);
             case SLIME -> {
                 if (moving && clock % 32 < 2) {
-                    world.spawnParticle(Particle.ITEM_SLIME, center.clone().add(0, -0.25 * size, 0), 2, 0.15, 0.0, 0.15, 0.0);
+                    de.aetherion.core.api.Vfx.puff(center.clone().add(0, -0.25 * size, 0), Particle.ITEM_SLIME, 2, Math.max(0.15, 0.15), null);
                 }
             }
             case GLITCH -> {
                 if (r.nextInt(3) == 0) {
-                    world.spawnParticle(Particle.DUST, at, 1, 0.0, 0.0, 0.0, 0.0,
-                            new Particle.DustOptions(Color.fromRGB(80, 255, 120), 0.5f));
+                    de.aetherion.core.api.Vfx.puff(at, Particle.DUST, 1, Math.max(0.0, 0.0), new Particle.DustOptions(Color.fromRGB(80, 255, 120), 0.5f));
                 }
             }
             case NECTAR -> {
                 if (r.nextInt(4) == 0) {
-                    world.spawnParticle(Particle.FALLING_NECTAR, at, 1, 0.0, 0.0, 0.0, 0.0);
+                    de.aetherion.core.api.Vfx.puff(at, Particle.FALLING_NECTAR, 1, Math.max(0.0, 0.0), null);
                 }
             }
             default -> {
@@ -214,10 +211,10 @@ final class BodyFx {
             Location r = rig.worldPoint(wings[3], -0.6f, 0f, -0.1f);
             Particle trail = trailParticle();
             if (l != null) {
-                world.spawnParticle(trail, l, 1, 0.0, 0.0, 0.0, 0.0);
+                de.aetherion.core.api.Vfx.puff(l, trail, 1, Math.max(0.0, 0.0), null);
             }
             if (r != null) {
-                world.spawnParticle(trail, r, 1, 0.0, 0.0, 0.0, 0.0);
+                de.aetherion.core.api.Vfx.puff(r, trail, 1, Math.max(0.0, 0.0), null);
             }
         }
         if (rig.skeleton == Skeleton.WYRM && moving && clock % 4 == 0 && budget(1)) {
@@ -225,7 +222,7 @@ final class BodyFx {
             if (segs.length > 0) {
                 Location tail = rig.worldPoint(segs[segs.length - 1], 0f, 0f, -0.2f);
                 if (tail != null) {
-                    world.spawnParticle(trailParticle(), tail, 1, 0.02, 0.02, 0.02, 0.0);
+                    de.aetherion.core.api.Vfx.puff(tail, trailParticle(), 1, Math.max(0.02, 0.02), null);
                 }
             }
         }
@@ -239,7 +236,7 @@ final class BodyFx {
             ThreadLocalRandom rnd = ThreadLocalRandom.current();
             double s = 0.45 * rig.size();
             Location at = c.add(rnd.nextGaussian() * s, rnd.nextDouble() * s, rnd.nextGaussian() * s);
-            world.spawnParticle(trailParticle(), at, 1, 0.0, 0.02, 0.0, 0.003);
+            de.aetherion.core.api.Vfx.puff(at, trailParticle(), 1, Math.max(0.0, 0.0), null);
         }
     }
 
@@ -291,13 +288,12 @@ final class BodyFx {
         ThreadLocalRandom r = ThreadLocalRandom.current();
         for (int i = 0; i < 3; i++) {
             Vector v = dir.clone().add(new Vector(r.nextGaussian() * 0.12, r.nextGaussian() * 0.08, r.nextGaussian() * 0.12));
-            world.spawnParticle(core == Particle.DRIPPING_WATER ? Particle.BUBBLE : core, mouth, 0,
-                    v.getX(), v.getY(), v.getZ(), 0.22);
+            de.aetherion.core.api.Vfx.puff(mouth, core == Particle.DRIPPING_WATER ? Particle.BUBBLE : core, 0, Math.max(v.getX(), v.getZ()), null);
         }
         if (element == Element.FLAME || element == Element.SOUL) {
-            world.spawnParticle(Particle.SMOKE, mouth, 0, dir.getX(), dir.getY() + 0.1, dir.getZ(), 0.08);
+            de.aetherion.core.api.Vfx.puff(mouth, Particle.SMOKE, 0, Math.max(dir.getX(), dir.getZ()), null);
         } else if (element == Element.FROST) {
-            world.spawnParticle(Particle.CLOUD, mouth, 0, dir.getX(), dir.getY(), dir.getZ(), 0.1);
+            de.aetherion.core.api.Vfx.puff(mouth, Particle.CLOUD, 0, Math.max(dir.getX(), dir.getZ()), null);
         }
     }
 
@@ -310,8 +306,8 @@ final class BodyFx {
         Location at = rig.anchor().getLocation().add(0.0, 0.1, 0.0);
         World world = at.getWorld();
         Particle.DustOptions dust = new Particle.DustOptions(tint, 0.9f);
-        world.spawnParticle(Particle.DUST, at, 8, 0.18, 0.18, 0.18, 0.0, dust);
-        world.spawnParticle(Particle.END_ROD, at, 3, 0.1, 0.1, 0.1, 0.02);
+        de.aetherion.core.api.Vfx.puff(at, Particle.DUST, 8, Math.max(0.18, 0.18), dust);
+        de.aetherion.core.api.Vfx.puff(at, Particle.END_ROD, 3, Math.max(0.1, 0.1), null);
         world.playSound(at, into ? Sound.BLOCK_IRON_TRAPDOOR_CLOSE : Sound.BLOCK_IRON_TRAPDOOR_OPEN,
                 SoundCategory.NEUTRAL, 0.35f, into ? 1.8f : 1.6f);
         world.playSound(at, Sound.BLOCK_AMETHYST_BLOCK_CHIME, SoundCategory.NEUTRAL, 0.4f, into ? 1.2f : 1.6f);

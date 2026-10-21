@@ -311,7 +311,7 @@ public final class OriginWaystones implements Listener {
         to.add(stone.sprout() ? -0.9 : 0.0, 0.0, stone.sprout() ? -0.9 : 0.0);
         Location from = player.getLocation();
         if (from.getWorld() != null) {
-            from.getWorld().spawnParticle(Particle.GLOW, from.clone().add(0, 1, 0), 40, 0.4, 0.9, 0.4, 0.05);
+            de.aetherion.core.api.Vfx.puff(from.clone().add(0, 1, 0), Particle.GLOW, 40, Math.max(0.4, 0.4), null);
             from.getWorld().playSound(from, Sound.BLOCK_AMETHYST_CLUSTER_BREAK, SoundCategory.PLAYERS, 0.7f, 1.3f);
         }
         travelCool.put(player.getUniqueId(), now + TRAVEL_COOLDOWN_MS);
@@ -320,8 +320,8 @@ public final class OriginWaystones implements Listener {
         player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_FALLING, 30, 0, false, false, true));
         World world = to.getWorld();
         if (world != null) {
-            world.spawnParticle(Particle.GLOW, to.clone().add(0, 1, 0), 40, 0.4, 0.9, 0.4, 0.05);
-            world.spawnParticle(Particle.END_ROD, to.clone().add(0, 1.2, 0), 16, 0.3, 0.6, 0.3, 0.04);
+            de.aetherion.core.api.Vfx.puff(to.clone().add(0, 1, 0), Particle.GLOW, 40, Math.max(0.4, 0.4), null);
+            de.aetherion.core.api.Vfx.puff(to.clone().add(0, 1.2, 0), Particle.END_ROD, 16, Math.max(0.3, 0.3), null);
             world.playSound(to, Sound.BLOCK_AMETHYST_BLOCK_RESONATE, SoundCategory.PLAYERS, 0.9f, 1.1f);
         }
         OriginText.bar(player, "§9✦ " + stone.name() + " §8· §7" + stone.blurb());

@@ -444,8 +444,8 @@ public final class GuildProjectService {
     private void celebrate(Guild guild, GuildProjectType type, int stage, String stageName, boolean finished, Location site) {
         World world = site.getWorld();
         if (world != null) {
-            world.spawnParticle(Particle.TOTEM_OF_UNDYING, site.clone().add(0, 3, 0), 120, 3, 3, 3, 0.4);
-            world.spawnParticle(Particle.FIREWORK, site.clone().add(0, 5, 0), 80, 4, 2, 4, 0.05);
+            de.aetherion.core.api.Vfx.puff(site.clone().add(0, 3, 0), Particle.TOTEM_OF_UNDYING, 120, Math.max(3, 3), null);
+            de.aetherion.core.api.Vfx.puff(site.clone().add(0, 5, 0), Particle.FIREWORK, 80, Math.max(4, 4), null);
             world.playSound(site, Sound.EVENT_RAID_HORN, 2f, 1.1f);
             world.playSound(site, Sound.BLOCK_BELL_USE, 2f, 0.8f);
         }

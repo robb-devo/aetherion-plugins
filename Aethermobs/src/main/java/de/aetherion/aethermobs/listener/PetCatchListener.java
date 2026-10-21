@@ -188,9 +188,9 @@ public class PetCatchListener implements Listener {
 
                 // A sphere in flight leaves a short tier-coloured streak.
                 Location streak = snowball.getLocation();
-                snowball.getWorld().spawnParticle(Particle.DUST, streak, 1, 0.02, 0.02, 0.02, 0.0, trail);
+                de.aetherion.core.api.Vfx.puff(streak, Particle.DUST, 1, Math.max(0.02, 0.02), trail);
                 if (age++ % 3 == 0) {
-                    snowball.getWorld().spawnParticle(Particle.END_ROD, streak, 1, 0.0, 0.0, 0.0, 0.0);
+                    de.aetherion.core.api.Vfx.puff(streak, Particle.END_ROD, 1, Math.max(0.0, 0.0), null);
                 }
 
                 for (PetEntity pet : plugin.getPetSpawnManager().getActivePets()) {
@@ -338,8 +338,7 @@ public class PetCatchListener implements Listener {
             World world = at.getWorld();
             world.playSound(at, Sound.BLOCK_AMETHYST_BLOCK_HIT, 0.9f, 1.3f);
             player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.8f, 1.4f);
-            world.spawnParticle(Particle.DUST, at, 10, 0.2, 0.2, 0.2, 0.0,
-                    new Particle.DustOptions(rarityDust(instance.getRarity()), 0.9f));
+            de.aetherion.core.api.Vfx.puff(at, Particle.DUST, 10, Math.max(0.2, 0.2), new Particle.DustOptions(rarityDust(instance.getRarity()), 0.9f));
 
             String color = getRarityColor(instance.getRarity());
             String name = color + instance.getDefinition().getDisplayName();
@@ -433,8 +432,7 @@ public class PetCatchListener implements Listener {
                 ball.lid(0.0f, 2);
                 ball.flash(rarityDust(instance.getRarity()), 3);
                 world.playSound(at, Sound.BLOCK_IRON_TRAPDOOR_CLOSE, 0.75f, 1.8f);
-                world.spawnParticle(Particle.DUST, at, 6, 0.12, 0.12, 0.12, 0.0,
-                        new Particle.DustOptions(rarityDust(instance.getRarity()), 0.8f));
+                de.aetherion.core.api.Vfx.puff(at, Particle.DUST, 6, Math.max(0.12, 0.12), new Particle.DustOptions(rarityDust(instance.getRarity()), 0.8f));
             }
             if (tick == BALL_DROP_TICK) {
                 ball.toss(new Vector(0.0, 0.02, 0.0));
@@ -457,10 +455,10 @@ public class PetCatchListener implements Listener {
             int points = (int) Math.min(10, Math.max(3, length * 4));
             for (int i = 0; i < points; i++) {
                 double k = ((i + step * 0.37) % points) / points;
-                world.spawnParticle(Particle.DUST, from.clone().add(line.clone().multiply(k)), 1, 0.0, 0.0, 0.0, 0.0, dust);
+                de.aetherion.core.api.Vfx.puff(from.clone().add(line.clone().multiply(k)), Particle.DUST, 1, Math.max(0.0, 0.0), dust);
             }
             if (step == 0) {
-                world.spawnParticle(Particle.END_ROD, from, 4, 0.15, 0.15, 0.15, 0.02);
+                de.aetherion.core.api.Vfx.puff(from, Particle.END_ROD, 4, Math.max(0.15, 0.15), null);
             }
         }
 
@@ -509,8 +507,7 @@ public class PetCatchListener implements Listener {
                 at.getWorld().playSound(at, Sound.BLOCK_STONE_BUTTON_CLICK_ON, 0.5f, 1.2f + index * 0.12f);
             }
             at.getWorld().playSound(at, Sound.BLOCK_AMETHYST_BLOCK_HIT, 0.8f, 0.85f + index * 0.14f);
-            at.getWorld().spawnParticle(Particle.DUST, at, 3, 0.12, 0.12, 0.12, 0.0,
-                    new Particle.DustOptions(rarityDust(instance.getRarity()), 0.8f));
+            de.aetherion.core.api.Vfx.puff(at, Particle.DUST, 3, Math.max(0.12, 0.12), new Particle.DustOptions(rarityDust(instance.getRarity()), 0.8f));
 
             StringBuilder dots = new StringBuilder();
             for (int i = 0; i < SHAKES_TO_CATCH; i++) {
@@ -640,8 +637,7 @@ public class PetCatchListener implements Listener {
         World world = at.getWorld();
 
         world.playSound(at, Sound.BLOCK_AMETHYST_CLUSTER_BREAK, 0.9f, 1.15f);
-        world.spawnParticle(Particle.DUST, at, 8, 0.25, 0.25, 0.25, 0.0,
-                new Particle.DustOptions(rarityDust(petInstance.getRarity()), 1.0f));
+        de.aetherion.core.api.Vfx.puff(at, Particle.DUST, 8, Math.max(0.25, 0.25), new Particle.DustOptions(rarityDust(petInstance.getRarity()), 1.0f));
 
         pet.registerCatchAttempt();
 
@@ -686,13 +682,9 @@ public class PetCatchListener implements Listener {
         int points = 14;
         for (int i = 0; i < points; i++) {
             double angle = Math.PI * 2.0 * i / points;
-            world.spawnParticle(
-                    Particle.DUST,
-                    at.clone().add(Math.cos(angle) * 0.6, 0.0, Math.sin(angle) * 0.6),
-                    1, 0.0, 0.0, 0.0, 0.0, dust
-            );
+            de.aetherion.core.api.Vfx.puff(at.clone().add(Math.cos(angle) * 0.6, 0.0, Math.sin(angle) * 0.6), Particle.DUST, 1, Math.max(0.0, 0.0), dust);
         }
-        world.spawnParticle(Particle.END_ROD, at, 5, 0.12, 0.2, 0.12, 0.02);
+        de.aetherion.core.api.Vfx.puff(at, Particle.END_ROD, 5, Math.max(0.12, 0.12), null);
     }
 
     private void startFleeAnimation(
@@ -738,11 +730,7 @@ public class PetCatchListener implements Listener {
                 pet.nudge(location);
 
                 if (ticks % 2 == 0) {
-                    pet.getEntity().getWorld().spawnParticle(
-                            Particle.CLOUD,
-                            location.clone().add(0, 0.3, 0),
-                            1, 0.15, 0.1, 0.15, 0.01
-                    );
+                    de.aetherion.core.api.Vfx.puff(location.clone().add(0, 0.3, 0), Particle.CLOUD, 1, Math.max(0.15, 0.15), null);
                 }
 
                 ticks++;
@@ -754,7 +742,7 @@ public class PetCatchListener implements Listener {
                 cancel();
 
                 Location last = pet.getEntity().getLocation().add(0, 0.4, 0);
-                last.getWorld().spawnParticle(Particle.POOF, last, 6, 0.25, 0.25, 0.25, 0.03);
+                de.aetherion.core.api.Vfx.puff(last, Particle.POOF, 6, Math.max(0.25, 0.25), null);
                 last.getWorld().playSound(last, Sound.ENTITY_BAT_TAKEOFF, 0.6f, 1.4f);
 
                 String petName = pet.getPetInstance().getDefinition().getDisplayName();

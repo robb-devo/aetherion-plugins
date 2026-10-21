@@ -142,8 +142,8 @@ public final class DamageNumbers implements Listener {
         player.playSound(player, Sound.ENTITY_PLAYER_ATTACK_STRONG, 0.85f, 0.92f);
         player.playSound(player, Sound.BLOCK_AMETHYST_CLUSTER_BREAK, 0.9f, 1.72f);
         if (at != null && at.getWorld() != null) {
-            at.getWorld().spawnParticle(Particle.CRIT, at, 18, 0.22, 0.28, 0.22, 0.18);
-            at.getWorld().spawnParticle(Particle.ENCHANTED_HIT, at, 10, 0.18, 0.22, 0.18, 0.12);
+            de.aetherion.core.api.Vfx.puff(at, Particle.CRIT, 18, Math.max(0.22, 0.22), null);
+            de.aetherion.core.api.Vfx.puff(at, Particle.ENCHANTED_HIT, 10, Math.max(0.18, 0.18), null);
         }
     }
 

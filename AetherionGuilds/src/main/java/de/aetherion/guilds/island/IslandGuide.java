@@ -837,7 +837,7 @@ public final class IslandGuide implements Listener {
             }
         }, 8L);
         if (hand.at != null && hand.at.getWorld() != null) {
-            hand.at.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, hand.at.clone().add(0, 1.2, 0), 40, 0.5, 0.8, 0.5, 0.3);
+            de.aetherion.core.api.Vfx.puff(hand.at.clone().add(0, 1.2, 0), Particle.TOTEM_OF_UNDYING, 40, Math.max(0.5, 0.5), null);
         }
         if (state.step == Step.HUB) {
             placement.openTool(player, host, PlacementService.Part.HUB);
@@ -1068,8 +1068,8 @@ public final class IslandGuide implements Listener {
             return;
         }
         Location top = new Location(world, structure.x() + 0.5, structure.maxY() + 0.8, structure.z() + 0.5);
-        world.spawnParticle(Particle.BLOCK, top, 30, 0.6, 0.3, 0.6, 0.0, Material.COBBLESTONE.createBlockData());
-        world.spawnParticle(Particle.CLOUD, top, 10, 0.5, 0.2, 0.5, 0.02);
+        de.aetherion.core.api.Vfx.puff(top, Particle.BLOCK, 30, Math.max(0.6, 0.6), Material.COBBLESTONE.createBlockData());
+        de.aetherion.core.api.Vfx.puff(top, Particle.CLOUD, 10, Math.max(0.5, 0.5), null);
         world.playSound(top, Sound.BLOCK_GRAVEL_BREAK, 1f, 0.7f);
         world.playSound(top, Sound.BLOCK_BARREL_OPEN, 0.8f, 0.9f);
     }
@@ -1089,8 +1089,8 @@ public final class IslandGuide implements Listener {
         World world = hosts.world(host);
         if (hut != null && world != null) {
             Location top = new Location(world, hut.x() + 0.5, hut.maxY() + 1.0, hut.z() + 0.5);
-            world.spawnParticle(Particle.TOTEM_OF_UNDYING, top, 50, 0.8, 0.6, 0.8, 0.3);
-            world.spawnParticle(Particle.END_ROD, top, 20, 0.6, 0.8, 0.6, 0.05);
+            de.aetherion.core.api.Vfx.puff(top, Particle.TOTEM_OF_UNDYING, 50, Math.max(0.8, 0.8), null);
+            de.aetherion.core.api.Vfx.puff(top, Particle.END_ROD, 20, Math.max(0.6, 0.6), null);
         }
         boolean compacted = goals != null && goals.compactedInStorage(host) > 0L;
         speak(player, hand, List.of(

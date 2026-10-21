@@ -142,10 +142,10 @@ public final class OriginTraversal implements Listener {
                 player.setVelocity(new Vector(center.getX(), Math.min(1.1d, 0.3d + toTop * 0.2d), center.getZ()));
                 player.setFallDistance(0f);
                 if (ride.age % 2 == 0) {
-                    world.spawnParticle(Particle.CLOUD, at.clone().add(0, -0.3, 0), 2, 0.25, 0.1, 0.25, 0.01);
+                    de.aetherion.core.api.Vfx.puff(at.clone().add(0, -0.3, 0), Particle.CLOUD, 2, Math.max(0.25, 0.25), null);
                 }
                 if (ride.age % 5 == 0) {
-                    world.spawnParticle(Particle.END_ROD, at.clone().add(0, -1.2, 0), 1, 0.4, 0.4, 0.4, 0.01);
+                    de.aetherion.core.api.Vfx.puff(at.clone().add(0, -1.2, 0), Particle.END_ROD, 1, Math.max(0.4, 0.4), null);
                 }
                 if (ride.age % 30 == 0) {
                     player.playSound(at, Sound.ITEM_ELYTRA_FLYING, SoundCategory.PLAYERS, 0.25f, 1.6f);

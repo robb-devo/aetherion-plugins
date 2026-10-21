@@ -1068,15 +1068,7 @@ public class PetSkillManager implements Listener {
                         : player.getLocation();
 
         if (fx != null && fx.getWorld() != null) {
-            fx.getWorld().spawnParticle(
-                    Particle.ENCHANT,
-                    fx.clone().add(0, 0.6, 0),
-                    28,
-                    0.45,
-                    0.45,
-                    0.45,
-                    0.6
-            );
+            de.aetherion.core.api.Vfx.puff(fx.clone().add(0, 0.6, 0), Particle.ENCHANT, 28, Math.max(0.45, 0.45), null);
             fx.getWorld().playSound(
                     fx,
                     Sound.BLOCK_RESPAWN_ANCHOR_CHARGE,
@@ -2257,6 +2249,17 @@ public class PetSkillManager implements Listener {
                         )
                 );
 
+        // the guardian beam as a light line that grows toward its target
+        if (de.aetherion.core.api.Vfx.line(
+                "petbeam|" + Math.round(start.getX() * 2) + "," + Math.round(start.getY() * 2) + "," + Math.round(start.getZ() * 2),
+                start,
+                start.clone().add(direction.clone().multiply(visibleLength)),
+                Color.fromRGB(40, 230, 255),
+                0.22
+        )) {
+            return;
+        }
+
         Particle.DustOptions dust =
                 new Particle.DustOptions(
                         Color.fromRGB(
@@ -2454,7 +2457,7 @@ public class PetSkillManager implements Listener {
         snowflakeReadyAt.put(player.getUniqueId(), now + 50L);
 
         Location impact = target.getLocation().add(0, 1.0, 0);
-        target.getWorld().spawnParticle(Particle.SNOWFLAKE, impact, 18, 0.35, 0.45, 0.35, 0.02);
+        de.aetherion.core.api.Vfx.puff(impact, Particle.SNOWFLAKE, 18, Math.max(0.35, 0.35), null);
         target.getWorld().playSound(impact, Sound.BLOCK_POWDER_SNOW_BREAK, 0.7f, 1.35f);
         target.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 40, 0, true, false, false));
         dealPetDamage(player, target, 5.5 + 0.04 * Math.max(1, pet.getLevel()));
@@ -2552,24 +2555,8 @@ public class PetSkillManager implements Listener {
                             false
                     )
             );
-            target.getWorld().spawnParticle(
-                    Particle.SNOWFLAKE,
-                    impact,
-                    28,
-                    0.45,
-                    0.55,
-                    0.45,
-                    0.03
-            );
-            target.getWorld().spawnParticle(
-                    Particle.ITEM_SNOWBALL,
-                    impact,
-                    10,
-                    0.25,
-                    0.35,
-                    0.25,
-                    0.08
-            );
+            de.aetherion.core.api.Vfx.puff(impact, Particle.SNOWFLAKE, 28, Math.max(0.45, 0.45), null);
+            de.aetherion.core.api.Vfx.puff(impact, Particle.ITEM_SNOWBALL, 10, Math.max(0.25, 0.25), null);
             target.getWorld().playSound(
                     impact,
                     Sound.ENTITY_PLAYER_HURT_FREEZE,
@@ -2725,35 +2712,11 @@ public class PetSkillManager implements Listener {
                     return;
                 }
                 cursor.add(step);
-                cursor.getWorld().spawnParticle(
-                        aether ? Particle.PORTAL : Particle.FLAME,
-                        cursor,
-                        aether ? 12 : blaze ? 4 : 8,
-                        0.18,
-                        0.16,
-                        0.18,
-                        aether ? 0.12 : 0.01
-                );
+                de.aetherion.core.api.Vfx.puff(cursor, aether ? Particle.PORTAL : Particle.FLAME, aether ? 12 : blaze ? 4 : 8, Math.max(0.18, 0.18), null);
                 if (!aether) {
-                    cursor.getWorld().spawnParticle(
-                            Particle.SMOKE,
-                            cursor,
-                            2,
-                            0.12,
-                            0.12,
-                            0.12,
-                            0.0
-                    );
+                    de.aetherion.core.api.Vfx.puff(cursor, Particle.SMOKE, 2, Math.max(0.12, 0.12), null);
                 } else {
-                    cursor.getWorld().spawnParticle(
-                            Particle.WITCH,
-                            cursor,
-                            3,
-                            0.12,
-                            0.12,
-                            0.12,
-                            0.0
-                    );
+                    de.aetherion.core.api.Vfx.puff(cursor, Particle.WITCH, 3, Math.max(0.12, 0.12), null);
                 }
                 if (tick % 3 != 0) {
                     return;
@@ -2809,8 +2772,8 @@ public class PetSkillManager implements Listener {
                         Math.cos(angle) * 0.42
                 ));
                 Location at = target.getLocation().add(0, 0.4, 0);
-                at.getWorld().spawnParticle(Particle.BUBBLE_POP, at, 6, 0.35, 0.35, 0.35, 0.02);
-                at.getWorld().spawnParticle(Particle.SPLASH, at, 4, 0.4, 0.2, 0.4, 0.0);
+                de.aetherion.core.api.Vfx.puff(at, Particle.BUBBLE_POP, 6, Math.max(0.35, 0.35), null);
+                de.aetherion.core.api.Vfx.puff(at, Particle.SPLASH, 4, Math.max(0.4, 0.4), null);
             }
         }.runTaskTimer(plugin, 0L, 1L);
     }
@@ -2842,9 +2805,9 @@ public class PetSkillManager implements Listener {
         cloud.getWorld().playSound(cloud, Sound.BLOCK_ANVIL_LAND, SoundCategory.PLAYERS, 0.12f, 1.55f);
         dealPetDamage(player, target, damage);
         target.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, poisonTicks, 0, true, true, true));
-        cloud.getWorld().spawnParticle(Particle.CRIT, cloud, 16, 0.35, 0.4, 0.35, 0.12);
-        cloud.getWorld().spawnParticle(Particle.BLOCK, cloud, 10, 0.3, 0.25, 0.3, 0.02, Material.DEEPSLATE_IRON_ORE.createBlockData());
-        cloud.getWorld().spawnParticle(Particle.ASH, cloud, 8, 0.4, 0.3, 0.4, 0.01);
+        de.aetherion.core.api.Vfx.puff(cloud, Particle.CRIT, 16, Math.max(0.35, 0.35), null);
+        de.aetherion.core.api.Vfx.puff(cloud, Particle.BLOCK, 10, Math.max(0.3, 0.3), Material.DEEPSLATE_IRON_ORE.createBlockData());
+        de.aetherion.core.api.Vfx.puff(cloud, Particle.ASH, 8, Math.max(0.4, 0.4), null);
     }
 
     private void tryChainBolt(
@@ -2901,9 +2864,9 @@ public class PetSkillManager implements Listener {
                 Location cursor = from.clone();
                 for (int i = 0; i < points; i++) {
                     cursor.add(step);
-                    cursor.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, cursor, 2, 0.04, 0.04, 0.04, 0.0);
+                    de.aetherion.core.api.Vfx.puff(cursor, Particle.ELECTRIC_SPARK, 2, Math.max(0.04, 0.04), null);
                 }
-                to.getWorld().spawnParticle(Particle.FLASH, to, 1, 0, 0, 0, 0);
+                de.aetherion.core.api.Vfx.puff(to, Particle.FLASH, 1, Math.max(0, 0), null);
                 to.getWorld().playSound(
                         to,
                         Sound.ENTITY_LIGHTNING_BOLT_IMPACT,
@@ -2950,15 +2913,7 @@ public class PetSkillManager implements Listener {
                 0.8f,
                 llama ? 1.15f : 0.9f
         );
-        at.getWorld().spawnParticle(
-                llama ? Particle.SPIT : Particle.ITEM_SLIME,
-                at,
-                llama ? 14 : 18,
-                0.45,
-                0.35,
-                0.45,
-                0.05
-        );
+        de.aetherion.core.api.Vfx.puff(at, llama ? Particle.SPIT : Particle.ITEM_SLIME, llama ? 14 : 18, Math.max(0.45, 0.45), null);
         for (LivingEntity living : targets) {
             Vector push = living.getLocation().toVector().subtract(at.toVector());
             if (push.lengthSquared() < 0.01) {
@@ -3006,7 +2961,7 @@ public class PetSkillManager implements Listener {
                 if (!target.isValid() || target.isDead() || tick++ > 10) {
                     if (target.isValid() && !target.isDead()) {
                         Location hit = target.getEyeLocation();
-                        hit.getWorld().spawnParticle(Particle.EXPLOSION, hit, 2, 0.15, 0.15, 0.15, 0.0);
+                        de.aetherion.core.api.Vfx.puff(hit, Particle.EXPLOSION, 2, Math.max(0.15, 0.15), null);
                         hit.getWorld().playSound(hit, Sound.ENTITY_GENERIC_EXPLODE, 0.45f, 1.35f);
                         target.setFireTicks(Math.max(target.getFireTicks(), 40));
                         dealPetDamage(player, target, damage);
@@ -3019,8 +2974,8 @@ public class PetSkillManager implements Listener {
                 if (delta.lengthSquared() > 0.01) {
                     cursor.add(delta.normalize().multiply(1.15));
                 }
-                cursor.getWorld().spawnParticle(Particle.FLAME, cursor, 3, 0.08, 0.08, 0.08, 0.0);
-                cursor.getWorld().spawnParticle(Particle.SMOKE, cursor, 2, 0.08, 0.08, 0.08, 0.0);
+                de.aetherion.core.api.Vfx.puff(cursor, Particle.FLAME, 3, Math.max(0.08, 0.08), null);
+                de.aetherion.core.api.Vfx.puff(cursor, Particle.SMOKE, 2, Math.max(0.08, 0.08), null);
             }
         }.runTaskTimer(plugin, 0L, 1L);
     }

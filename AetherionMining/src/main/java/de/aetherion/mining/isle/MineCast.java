@@ -483,7 +483,7 @@ public final class MineCast implements Listener {
         if (at == null || at.getWorld() == null) {
             return;
         }
-        at.getWorld().spawnParticle(particle, at.clone().add(0, 1.2, 0), count, 0.3, 0.4, 0.3, 0.02);
+        de.aetherion.core.api.Vfx.puff(at.clone().add(0, 1.2, 0), particle, count, Math.max(0.3, 0.3), null);
     }
 
     private void tick() {

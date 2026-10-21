@@ -726,7 +726,7 @@ public final class OriginCast implements Listener {
         if (at == null || at.getWorld() == null) {
             return;
         }
-        at.getWorld().spawnParticle(particle, at.clone().add(0, 1.2, 0), count, 0.3, 0.4, 0.3, 0.02);
+        de.aetherion.core.api.Vfx.puff(at.clone().add(0, 1.2, 0), particle, count, Math.max(0.3, 0.3), null);
     }
 
     /** Every 20 ticks from the Origin loop. */
@@ -786,11 +786,11 @@ public final class OriginCast implements Listener {
         if (isle.night()) {
             Location stellan = spots.get(OriginRole.STARGAZER);
             if (stellan != null && stellan.getWorld() != null) {
-                stellan.getWorld().spawnParticle(Particle.END_ROD, stellan.clone().add(0, 2.1, 0), 1, 0.15, 0.1, 0.15, 0.0);
+                de.aetherion.core.api.Vfx.puff(stellan.clone().add(0, 2.1, 0), Particle.END_ROD, 1, Math.max(0.15, 0.15), null);
             }
             Location fen = spots.get(OriginRole.TENDER);
             if (fen != null && fen.getWorld() != null) {
-                fen.getWorld().spawnParticle(Particle.GLOW, fen.clone().add(0, 1.0, 0), 2, 0.4, 0.5, 0.4, 0.0);
+                de.aetherion.core.api.Vfx.puff(fen.clone().add(0, 1.0, 0), Particle.GLOW, 2, Math.max(0.4, 0.4), null);
             }
         }
     }

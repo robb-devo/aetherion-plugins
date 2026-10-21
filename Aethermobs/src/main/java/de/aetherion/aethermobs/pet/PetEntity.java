@@ -4311,15 +4311,7 @@ public class PetEntity {
          */
         if (world != null) {
 
-            world.spawnParticle(
-                    Particle.HEART,
-                    at,
-                    2,
-                    0.18,
-                    0.14,
-                    0.18,
-                    0.0
-            );
+            de.aetherion.core.api.Vfx.puff(at, Particle.HEART, 2, Math.max(0.18, 0.18), null);
         }
 
         player.playSound(
@@ -4579,131 +4571,32 @@ public class PetEntity {
                 entity.getWorld();
 
         if (id.equals("ice_dragon")) {
-            world.spawnParticle(
-                    Particle.SNOWFLAKE,
-                    location,
-                    2,
-                    0.18,
-                    0.22,
-                    0.18,
-                    0.01
-            );
+            de.aetherion.core.api.Vfx.puff(location, Particle.SNOWFLAKE, 2, Math.max(0.18, 0.18), null);
         } else if (id.equals("fire_dragon")
                 || id.equals("blaze")) {
-            world.spawnParticle(
-                    Particle.FLAME,
-                    location,
-                    1,
-                    0.12,
-                    0.16,
-                    0.12,
-                    0.005
-            );
+            de.aetherion.core.api.Vfx.puff(location, Particle.FLAME, 1, Math.max(0.12, 0.12), null);
         } else if (id.equals("water_dragon")) {
-            world.spawnParticle(
-                    Particle.BUBBLE,
-                    location,
-                    2,
-                    0.16,
-                    0.20,
-                    0.16,
-                    0.01
-            );
+            de.aetherion.core.api.Vfx.puff(location, Particle.BUBBLE, 2, Math.max(0.16, 0.16), null);
         } else if (id.equals("nature_dragon")) {
-            world.spawnParticle(
-                    Particle.HAPPY_VILLAGER,
-                    location,
-                    2,
-                    0.16,
-                    0.20,
-                    0.16,
-                    0.0
-            );
+            de.aetherion.core.api.Vfx.puff(location, Particle.HAPPY_VILLAGER, 2, Math.max(0.16, 0.16), null);
         } else if (id.equals("mining_dragon") || id.equals("poison_dragon")) {
-            world.spawnParticle(
-                    Particle.CRIT,
-                    location,
-                    2,
-                    0.14,
-                    0.18,
-                    0.14,
-                    0.01
-            );
+            de.aetherion.core.api.Vfx.puff(location, Particle.CRIT, 2, Math.max(0.14, 0.14), null);
         } else if (id.equals("forest_dragon")) {
-            world.spawnParticle(
-                    Particle.HAPPY_VILLAGER,
-                    location,
-                    1,
-                    0.14,
-                    0.18,
-                    0.14,
-                    0.0
-            );
-            world.spawnParticle(
-                    Particle.BLOCK,
-                    location,
-                    1,
-                    0.1,
-                    0.12,
-                    0.1,
-                    0.0,
-                    Material.OAK_LEAVES.createBlockData()
-            );
+            de.aetherion.core.api.Vfx.puff(location, Particle.HAPPY_VILLAGER, 1, Math.max(0.14, 0.14), null);
+            de.aetherion.core.api.Vfx.puff(location, Particle.BLOCK, 1, Math.max(0.1, 0.1), Material.OAK_LEAVES.createBlockData());
         } else if (id.equals("lightning_dragon")) {
-            world.spawnParticle(
-                    Particle.ELECTRIC_SPARK,
-                    location,
-                    1,
-                    0.16,
-                    0.20,
-                    0.16,
-                    0.0
-            );
+            de.aetherion.core.api.Vfx.puff(location, Particle.ELECTRIC_SPARK, 1, Math.max(0.16, 0.16), null);
         } else if (id.equals("ghast")) {
-            world.spawnParticle(
-                    Particle.CLOUD,
-                    location,
-                    1,
-                    0.14,
-                    0.16,
-                    0.14,
-                    0.0
-            );
+            de.aetherion.core.api.Vfx.puff(location, Particle.CLOUD, 1, Math.max(0.14, 0.14), null);
         } else if (id.equals("aetherion")) {
-            world.spawnParticle(
-                    Particle.DUST,
-                    location,
-                    2,
-                    0.16,
-                    0.20,
-                    0.16,
-                    0.0,
-                    AETHERION_AURA
-            );
+            de.aetherion.core.api.Vfx.puff(location, Particle.DUST, 2, Math.max(0.16, 0.16), AETHERION_AURA);
         }
 
         // Soft crimson veil on Aethered dragons — on top of their normal aura.
         if (dragon && petInstance.getRarity() == Rarity.AETHERED) {
-            world.spawnParticle(
-                    Particle.DUST,
-                    location.clone().add(0.0, 0.12, 0.0),
-                    1,
-                    0.10,
-                    0.14,
-                    0.10,
-                    0.0,
-                    AETHERED_AURA
-            );
+            de.aetherion.core.api.Vfx.puff(location.clone().add(0.0, 0.12, 0.0), Particle.DUST, 1, Math.max(0.10, 0.10), AETHERED_AURA);
             if (auraParticleStep % (AURA_PARTICLE_INTERVAL * 3) == 0) {
-                world.spawnParticle(
-                        Particle.SOUL_FIRE_FLAME,
-                        location,
-                        1,
-                        0.08,
-                        0.10,
-                        0.08,
-                        0.0
-                );
+                de.aetherion.core.api.Vfx.puff(location, Particle.SOUL_FIRE_FLAME, 1, Math.max(0.08, 0.08), null);
             }
         }
     }

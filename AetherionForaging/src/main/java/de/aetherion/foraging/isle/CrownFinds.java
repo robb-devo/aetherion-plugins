@@ -206,8 +206,7 @@ public final class CrownFinds implements Runnable {
             drop.body.teleport(drop.at);
             drop.body.setTransformation(scale(landed ? 0.55f : 0.7f, drop.spin));
             if (drop.age % 6 == 0) {
-                drop.at.getWorld().spawnParticle(landed ? Particle.GLOW : Particle.END_ROD, drop.at.clone().add(0, 0.2, 0),
-                        1, 0.08, 0.08, 0.08, 0.0);
+                de.aetherion.core.api.Vfx.puff(drop.at.clone().add(0, 0.2, 0), landed ? Particle.GLOW : Particle.END_ROD, 1, Math.max(0.08, 0.08), null);
             }
             Player catcher = catcher(drop);
             if (catcher != null) {
@@ -216,7 +215,7 @@ public final class CrownFinds implements Runnable {
                 continue;
             }
             if (landed && drop.landedAge > LANDED_TICKS) {
-                drop.at.getWorld().spawnParticle(Particle.SMOKE, drop.at, 6, 0.15, 0.1, 0.15, 0.01);
+                de.aetherion.core.api.Vfx.puff(drop.at, Particle.SMOKE, 6, Math.max(0.15, 0.15), null);
                 Player finder = drop.finder == null ? null : Bukkit.getPlayer(drop.finder);
                 if (finder != null) {
                     ForageText.bar(finder, "§7The " + drop.data.find().display + " §7wilted before anyone picked it up.");

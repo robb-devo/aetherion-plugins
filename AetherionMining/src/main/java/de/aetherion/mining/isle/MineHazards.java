@@ -185,7 +185,7 @@ public final class MineHazards implements Listener {
         World world = spot.getWorld();
         world.playSound(spot, Sound.ENTITY_GENERIC_EXPLODE, SoundCategory.BLOCKS, 0.6f, 0.5f);
         world.playSound(spot, Sound.BLOCK_GRAVEL_BREAK, SoundCategory.BLOCKS, 1.4f, 0.5f);
-        world.spawnParticle(Particle.BLOCK, spot.clone().add(0, 1.5, 0), 90, 1.4, 1.0, 1.4, 0.1, Material.GRAVEL.createBlockData());
+        de.aetherion.core.api.Vfx.puff(spot.clone().add(0, 1.5, 0), Particle.BLOCK, 90, Math.max(1.4, 1.4), Material.GRAVEL.createBlockData());
         dropRubble(spot);
         boolean caught = player.getWorld().equals(world) && player.getLocation().distanceSquared(spot) <= COLLAPSE_RADIUS * COLLAPSE_RADIUS;
         if (caught) {
@@ -253,8 +253,7 @@ public final class MineHazards implements Listener {
                 if (now >= state.collapseAt) {
                     collapse(player, state);
                 } else if (state.collapseSpot != null && state.collapseSpot.getWorld() != null) {
-                    state.collapseSpot.getWorld().spawnParticle(Particle.FALLING_DUST, state.collapseSpot.clone().add(0, 3.0, 0),
-                            14, COLLAPSE_RADIUS * 0.6, 0.1, COLLAPSE_RADIUS * 0.6, 0.0, Material.GRAVEL.createBlockData());
+                    de.aetherion.core.api.Vfx.puff(state.collapseSpot.clone().add(0, 3.0, 0), Particle.FALLING_DUST, 14, Math.max(COLLAPSE_RADIUS * 0.6, COLLAPSE_RADIUS * 0.6), Material.GRAVEL.createBlockData());
                 }
             }
             if (!MineWorld.onIsle(isle.plugin(), player) || player.getGameMode() != org.bukkit.GameMode.SURVIVAL) {

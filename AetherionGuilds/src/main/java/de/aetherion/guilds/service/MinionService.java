@@ -624,12 +624,11 @@ public final class MinionService {
             if (now > 0 && (now / 200L + minion.id().hashCode()) % 3L == 0L) {
                 Location tip = stand.getLocation().add(0, 0.95, 0);
                 try {
-                    tip.getWorld().spawnParticle(Particle.BLOCK, tip, 1 + level / 3, 0.12, 0.05, 0.12, 0.02,
-                            visualHelmet(type, level).createBlockData());
+                    de.aetherion.core.api.Vfx.puff(tip, Particle.BLOCK, 1 + level / 3, Math.max(0.12, 0.12), visualHelmet(type, level).createBlockData());
                 } catch (IllegalArgumentException ignored) {
                 }
                 if (level >= 5) {
-                    tip.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, tip, 1, 0.1, 0.05, 0.1, 0.01);
+                    de.aetherion.core.api.Vfx.puff(tip, Particle.ELECTRIC_SPARK, 1, Math.max(0.1, 0.1), null);
                 }
             }
             return;
@@ -656,20 +655,20 @@ public final class MinionService {
         }
         int count = 1 + level / 2;
         try {
-            world.spawnParticle(Particle.BLOCK, at, count, 0.18, 0.22, 0.18, 0.02, helmet.createBlockData());
+            de.aetherion.core.api.Vfx.puff(at, Particle.BLOCK, count, Math.max(0.18, 0.18), helmet.createBlockData());
         } catch (IllegalArgumentException ignored) {
         }
         if (level >= 3) {
-            world.spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, at, 1, 0.05, 0.12, 0.05, 0.001);
+            de.aetherion.core.api.Vfx.puff(at, Particle.CAMPFIRE_COSY_SMOKE, 1, Math.max(0.05, 0.05), null);
         }
         if (level >= 5) {
-            world.spawnParticle(type == QuarryType.OAK_LOG ? Particle.HAPPY_VILLAGER : Particle.CRIT, at, 2, 0.15, 0.2, 0.15, 0.01);
+            de.aetherion.core.api.Vfx.puff(at, type == QuarryType.OAK_LOG ? Particle.HAPPY_VILLAGER : Particle.CRIT, 2, Math.max(0.15, 0.15), null);
         }
         if (level >= 6) {
-            world.spawnParticle(Particle.END_ROD, at, 1 + (level - 5), 0.12, 0.25, 0.12, 0.01);
+            de.aetherion.core.api.Vfx.puff(at, Particle.END_ROD, 1 + (level - 5), Math.max(0.12, 0.12), null);
         }
         if (level >= 7) {
-            world.spawnParticle(Particle.ELECTRIC_SPARK, at, 3, 0.2, 0.25, 0.2, 0.01);
+            de.aetherion.core.api.Vfx.puff(at, Particle.ELECTRIC_SPARK, 3, Math.max(0.2, 0.2), null);
         }
     }
 

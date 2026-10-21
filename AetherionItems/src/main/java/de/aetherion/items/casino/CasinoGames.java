@@ -582,7 +582,7 @@ final class CasinoGames {
         ));
         player.playSound(player.getLocation(), Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1f, 1.2f);
         player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.7f, 1.55f);
-        player.getWorld().spawnParticle(Particle.ENCHANT, player.getLocation().add(0, 1.2, 0), 40, 0.5, 0.6, 0.5, 0.8);
+        de.aetherion.core.api.Vfx.puff(player.getLocation().add(0, 1.2, 0), Particle.ENCHANT, 40, Math.max(0.5, 0.5), null);
         fireworksBooks(player);
     }
 
@@ -646,9 +646,8 @@ final class CasinoGames {
         }
         CasinoService.say(player, "§a§l+" + format(win) + " coins §8· " + String.join("§8, ", hits));
         player.sendActionBar(Component.text("+" + format(win) + " COINS", NamedTextColor.GOLD, TextDecoration.BOLD));
-        player.getWorld().spawnParticle(Particle.CRIT, player.getLocation().add(0, 1.2, 0), 18, 0.4, 0.4, 0.4, 0.15);
-        player.getWorld().spawnParticle(Particle.ITEM, player.getLocation().add(0, 1.4, 0), 14, 0.25, 0.2, 0.25, 0.12,
-                new ItemStack(Material.GOLD_NUGGET));
+        de.aetherion.core.api.Vfx.puff(player.getLocation().add(0, 1.2, 0), Particle.CRIT, 18, Math.max(0.4, 0.4), null);
+        de.aetherion.core.api.Vfx.puff(player.getLocation().add(0, 1.4, 0), Particle.ITEM, 14, Math.max(0.25, 0.25), new ItemStack(Material.GOLD_NUGGET));
         if (isJackpot(streak, symbol)) {
             Bukkit.broadcastMessage("§6Lucky Vince §8» §e" + player.getName() + " just made the floor sweat.");
             CasinoService.razzBigWin(player);
@@ -658,7 +657,7 @@ final class CasinoGames {
             player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1f, 1.05f);
             player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 0.35f, 1.4f);
             player.playSound(player.getLocation(), Sound.ITEM_TOTEM_USE, 0.4f, 1.3f);
-            player.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, player.getLocation().add(0, 1.1, 0), 40, 0.5, 0.7, 0.5, 0.15);
+            de.aetherion.core.api.Vfx.puff(player.getLocation().add(0, 1.1, 0), Particle.TOTEM_OF_UNDYING, 40, Math.max(0.5, 0.5), null);
             fireworks(player, 5, true);
             return;
         }
@@ -669,7 +668,7 @@ final class CasinoGames {
             }
             player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.8f, 1.2f);
             player.playSound(player.getLocation(), Sound.BLOCK_BELL_USE, 0.5f, 1.4f);
-            player.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, player.getLocation().add(0, 1.1, 0), 20, 0.4, 0.5, 0.4, 0);
+            de.aetherion.core.api.Vfx.puff(player.getLocation().add(0, 1.1, 0), Particle.HAPPY_VILLAGER, 20, Math.max(0.4, 0.4), null);
             fireworks(player, 2, false);
             return;
         }
@@ -688,7 +687,7 @@ final class CasinoGames {
         float pitch = 0.7f + col * 0.12f;
         player.playSound(player.getLocation(), Sound.BLOCK_IRON_DOOR_CLOSE, 0.5f, pitch);
         player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 0.4f, 0.8f + col * 0.16f);
-        player.getWorld().spawnParticle(Particle.CRIT, player.getLocation().add(0, 1, 0), 6, 0.2, 0.2, 0.2, 0.05);
+        de.aetherion.core.api.Vfx.puff(player.getLocation().add(0, 1, 0), Particle.CRIT, 6, Math.max(0.2, 0.2), null);
     }
 
     private void spinRoulette(Player player, Inventory inventory, RouletteHolder holder) {
@@ -767,9 +766,8 @@ final class CasinoGames {
         if (won) {
             CasinoService.say(player, hit.winLine(number) + " §a+" + format(payout) + " coins§f.");
             player.sendActionBar(Component.text("+" + format(payout) + " COINS", NamedTextColor.GREEN, TextDecoration.BOLD));
-            player.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, player.getLocation().add(0, 1.1, 0), 22, 0.45, 0.5, 0.45, 0);
-            player.getWorld().spawnParticle(Particle.ITEM, player.getLocation().add(0, 1.4, 0), 14, 0.25, 0.2, 0.25, 0.12,
-                    new ItemStack(Material.GOLD_NUGGET));
+            de.aetherion.core.api.Vfx.puff(player.getLocation().add(0, 1.1, 0), Particle.HAPPY_VILLAGER, 22, Math.max(0.45, 0.45), null);
+            de.aetherion.core.api.Vfx.puff(player.getLocation().add(0, 1.4, 0), Particle.ITEM, 14, Math.max(0.25, 0.25), new ItemStack(Material.GOLD_NUGGET));
             if (hit == WheelColor.GREEN) {
                 CasinoService.razzBigWin(player);
                 countUp(player, "ZERO", NamedTextColor.GREEN, payout, 16, true);

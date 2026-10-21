@@ -428,7 +428,7 @@ public final class GroveEvents implements Listener {
             if (log.body.isValid()) {
                 log.body.teleport(spot);
                 world.playSound(spot, Sound.BLOCK_WOOD_FALL, SoundCategory.BLOCKS, 1.0f, 0.6f);
-                world.spawnParticle(Particle.BLOCK, spot.clone().add(0, 0.3, 0), 12, 0.8, 0.1, 0.8, 0.05, data);
+                de.aetherion.core.api.Vfx.puff(spot.clone().add(0, 0.3, 0), Particle.BLOCK, 12, Math.max(0.8, 0.8), data);
             }
         }, 1L);
         logs.add(log);
@@ -449,7 +449,7 @@ public final class GroveEvents implements Listener {
         log.hits++;
         Location at = log.hitbox.getLocation();
         at.getWorld().playSound(at, Sound.BLOCK_WOOD_HIT, SoundCategory.BLOCKS, 1.0f, 0.8f + log.hits * 0.15f);
-        at.getWorld().spawnParticle(Particle.BLOCK, at.clone().add(0, 0.4, 0), 8, 0.4, 0.2, 0.4, 0.05, log.wood.createBlockData());
+        de.aetherion.core.api.Vfx.puff(at.clone().add(0, 0.4, 0), Particle.BLOCK, 8, Math.max(0.4, 0.4), log.wood.createBlockData());
         if (log.hits < 3) {
             return;
         }

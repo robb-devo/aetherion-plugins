@@ -95,7 +95,7 @@ public final class OriginBells implements Listener {
         World world = at.getWorld();
         if (world != null) {
             world.playSound(at, Sound.BLOCK_NOTE_BLOCK_BELL, SoundCategory.BLOCKS, 1.2f, pitch);
-            world.spawnParticle(Particle.NOTE, at.clone().add(0, 1.0, 0), 1, 0, 0, 0, (index % 12) / 24.0d);
+            de.aetherion.core.api.Vfx.puff(at.clone().add(0, 1.0, 0), Particle.NOTE, 1, Math.max(0, 0), null);
         }
         OriginProfile profile = isle.profiles().get(player);
         if (!profile.bells.add(bell.id())) {

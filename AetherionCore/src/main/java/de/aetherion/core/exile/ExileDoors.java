@@ -420,7 +420,7 @@ public final class ExileDoors implements Listener {
         }
         int[] b = g.box();
         Location mid = new Location(world, (b[0] + b[3]) / 2.0 + 0.5, (b[1] + b[4]) / 2.0 + 0.5, (b[2] + b[5]) / 2.0 + 0.5);
-        world.spawnParticle(Particle.END_ROD, mid, 18, 0.6, 1.4, 0.6, 0.02);
+        de.aetherion.core.api.Vfx.puff(mid, Particle.END_ROD, 18, Math.max(0.6, 0.6), null);
         p.playSound(mid, Sound.BLOCK_IRON_DOOR_OPEN, SoundCategory.BLOCKS, 0.9f, 0.6f);
         p.playSound(mid, Sound.BLOCK_CHAIN_PLACE, SoundCategory.BLOCKS, 0.7f, 0.5f);
         p.addPotionEffect(new PotionEffect(PotionEffectType.DARKNESS, 30, 0, false, false, false));
@@ -606,11 +606,11 @@ public final class ExileDoors implements Listener {
                     if (k % 20 == 0 && k / 20 < 4) {
                         world.playSound(at, Sound.BLOCK_NOTE_BLOCK_CHIME, SoundCategory.RECORDS, 0.9f, HYMN[k / 20]);
                     }
-                    world.spawnParticle(Particle.NOTE, at.clone().add(0, 1.3, 0), 1, 0.3, 0.2, 0.3, 0.8);
-                    world.spawnParticle(Particle.WHITE_ASH, spawn.clone().add(0, 6, 0), 12, 4, 3, 4, 0.0);
+                    de.aetherion.core.api.Vfx.puff(at.clone().add(0, 1.3, 0), Particle.NOTE, 1, Math.max(0.3, 0.3), null);
+                    de.aetherion.core.api.Vfx.puff(spawn.clone().add(0, 6, 0), Particle.WHITE_ASH, 12, Math.max(4, 4), null);
                 } else {
-                    world.spawnParticle(Particle.FLAME, at.clone().add(0, 1, 0), 8, 1.4, 0.4, 1.4, 0.06);
-                    world.spawnParticle(Particle.LAVA, spawn, 2, 2, 2, 2, 0);
+                    de.aetherion.core.api.Vfx.puff(at.clone().add(0, 1, 0), Particle.FLAME, 8, Math.max(1.4, 1.4), null);
+                    de.aetherion.core.api.Vfx.puff(spawn, Particle.LAVA, 2, Math.max(2, 2), null);
                     if (k % 20 == 0) {
                         world.playSound(at, Sound.BLOCK_BEACON_AMBIENT, SoundCategory.HOSTILE, 1.0f, 0.5f + k / 200f);
                     }

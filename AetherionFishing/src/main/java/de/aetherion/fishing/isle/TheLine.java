@@ -500,7 +500,7 @@ public final class TheLine {
                 + LakeText.coins(Trophies.value(species, kg)) + " coins §7at the §dTrophy House§7.");
         player.playSound(player.getLocation(), Sound.ENTITY_FIREWORK_ROCKET_TWINKLE, SoundCategory.PLAYERS, 0.6f, 1.3f);
         Location at = player.getLocation().add(0, 1.2, 0);
-        player.getWorld().spawnParticle(Particle.WAX_ON, at, 10, 0.4, 0.4, 0.4, 0.0);
+        de.aetherion.core.api.Vfx.puff(at, Particle.WAX_ON, 10, Math.max(0.4, 0.4), null);
     }
 
     private void legendary(Player player, Species species, double kg) {
@@ -515,8 +515,8 @@ public final class TheLine {
                 Title.Times.times(Duration.ofMillis(100), Duration.ofMillis(3500), Duration.ofMillis(900))
         ));
         World world = player.getWorld();
-        world.spawnParticle(Particle.FIREWORK, player.getLocation().add(0, 1.5, 0), 60, 0.6, 0.8, 0.6, 0.12);
-        world.spawnParticle(Particle.END_ROD, player.getLocation().add(0, 1.0, 0), 30, 0.5, 1.2, 0.5, 0.04);
+        de.aetherion.core.api.Vfx.puff(player.getLocation().add(0, 1.5, 0), Particle.FIREWORK, 60, Math.max(0.6, 0.6), null);
+        de.aetherion.core.api.Vfx.puff(player.getLocation().add(0, 1.0, 0), Particle.END_ROD, 30, Math.max(0.5, 0.5), null);
     }
 
     /** Heat steps get a card; a Whirlpool is news for the whole isle. */

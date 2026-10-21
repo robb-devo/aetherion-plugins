@@ -195,9 +195,9 @@ public final class OriginFlight implements Listener {
         }
         player.setVelocity(v);
         player.setFallDistance(0f);
-        world.spawnParticle(Particle.CLOUD, at.clone().add(0, 0.4, 0), 1, 0.15, 0.1, 0.15, 0.0);
+        de.aetherion.core.api.Vfx.puff(at.clone().add(0, 0.4, 0), Particle.CLOUD, 1, Math.max(0.15, 0.15), null);
         if (a.age % 3 == 0) {
-            world.spawnParticle(Particle.END_ROD, at.clone().add(0, 0.9, 0), 1, 0.2, 0.2, 0.2, 0.01);
+            de.aetherion.core.api.Vfx.puff(at.clone().add(0, 0.9, 0), Particle.END_ROD, 1, Math.max(0.2, 0.2), null);
         }
         if (a.age % 25 == 0) {
             player.playSound(at, Sound.ITEM_ELYTRA_FLYING, SoundCategory.PLAYERS, 0.3f, 1.25f);
@@ -221,7 +221,7 @@ public final class OriginFlight implements Listener {
             player.setVelocity(new Vector(0, -0.1, 0));
             Location at = player.getLocation();
             if (at.getWorld() != null) {
-                at.getWorld().spawnParticle(Particle.CLOUD, at.clone().add(0, 0.1, 0), 16, 0.8, 0.05, 0.8, 0.02);
+                de.aetherion.core.api.Vfx.puff(at.clone().add(0, 0.1, 0), Particle.CLOUD, 16, Math.max(0.8, 0.8), null);
             }
             player.playSound(at, Sound.BLOCK_AMETHYST_BLOCK_RESONATE, SoundCategory.PLAYERS, 0.7f, 1.3f);
             isle.pads().rodeFlight(player, a.flight);

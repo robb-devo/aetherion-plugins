@@ -752,8 +752,8 @@ public final class StructureService {
             dirty = true;
             changeListener.accept(host);
             Location center = new Location(world, ax + 0.5, ay + 2, az + 0.5);
-            world.spawnParticle(Particle.CLOUD, center, 24, 1.6, 0.8, 1.6, 0.02);
-            world.spawnParticle(Particle.END_ROD, center.clone().add(0, 1.2, 0), 14, 1.2, 0.9, 1.2, 0.03);
+            de.aetherion.core.api.Vfx.puff(center, Particle.CLOUD, 24, Math.max(1.6, 1.6), null);
+            de.aetherion.core.api.Vfx.puff(center.clone().add(0, 1.2, 0), Particle.END_ROD, 14, Math.max(1.2, 1.2), null);
             world.playSound(center, Sound.BLOCK_SMITHING_TABLE_USE, 0.9f, 1.1f);
             world.playSound(center, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.4f);
             if (type == StructureType.WORKSHOP && count(host, StructureType.WORKSHOP) == 1) {
@@ -808,7 +808,7 @@ public final class StructureService {
             paste.paste(template, world, housing.x(), housing.y(), housing.z(), rot, PasteService.Mode.ONLY_REPLACEABLE,
                     true, job -> {
                         Location top = new Location(world, housing.x() + 0.5, housing.y() + 4.2, housing.z() + 0.5);
-                        world.spawnParticle(Particle.CLOUD, top, 10, 0.8, 0.4, 0.8, 0.02);
+                        de.aetherion.core.api.Vfx.puff(top, Particle.CLOUD, 10, Math.max(0.8, 0.8), null);
                         world.playSound(top, Sound.BLOCK_PISTON_EXTEND, 0.6f, 0.8f);
                         world.playSound(top, Sound.BLOCK_CHAIN_PLACE, 0.8f, 0.8f);
                     });
@@ -1372,8 +1372,8 @@ public final class StructureService {
         milestone.accept(structure.host(), "first_upgrade");
         if (world != null) {
             Location top = new Location(world, structure.x() + 0.5, structure.maxY() + 1.0, structure.z() + 0.5);
-            world.spawnParticle(Particle.TOTEM_OF_UNDYING, top, 40, 1.2, 1.0, 1.2, 0.25);
-            world.spawnParticle(Particle.CLOUD, top.clone().add(0, -1.5, 0), 20, 1.5, 0.8, 1.5, 0.02);
+            de.aetherion.core.api.Vfx.puff(top, Particle.TOTEM_OF_UNDYING, 40, Math.max(1.2, 1.2), null);
+            de.aetherion.core.api.Vfx.puff(top.clone().add(0, -1.5, 0), Particle.CLOUD, 20, Math.max(1.5, 1.5), null);
             world.playSound(top, Sound.BLOCK_SMITHING_TABLE_USE, 1f, 0.9f);
             world.playSound(top, Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.7f, 1.3f);
         }

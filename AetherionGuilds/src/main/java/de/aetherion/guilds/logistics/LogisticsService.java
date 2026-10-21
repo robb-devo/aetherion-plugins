@@ -593,8 +593,8 @@ public final class LogisticsService {
                     ? new Location(world, route.to().x() + 0.5, route.to().y() + 1.2, route.to().z() + 0.5)
                     : new Location(world, route.path.get(route.path.size() - 1).nextX() + 0.5,
                     route.path.get(route.path.size() - 1).y() + 0.5, route.path.get(route.path.size() - 1).nextZ() + 0.5);
-            world.spawnParticle(Particle.ELECTRIC_SPARK, port, 18, 0.25, 0.25, 0.25, 0.12);
-            world.spawnParticle(Particle.WAX_OFF, port, 8, 0.3, 0.3, 0.3, 0.02);
+            de.aetherion.core.api.Vfx.puff(port, Particle.ELECTRIC_SPARK, 18, Math.max(0.25, 0.25), null);
+            de.aetherion.core.api.Vfx.puff(port, Particle.WAX_OFF, 8, Math.max(0.3, 0.3), null);
             world.playSound(port, Sound.BLOCK_COPPER_BULB_TURN_ON, 1f, 1.1f);
             world.playSound(port, Sound.BLOCK_IRON_TRAPDOOR_CLOSE, 0.9f, 0.7f);
             player.sendActionBar(net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection()
@@ -1836,11 +1836,10 @@ public final class LogisticsService {
                     Location spout = structures.chute(structure);
                     if (minion != null && spout != null) {
                         int tier = PropBodies.quarryTier(minion.level());
-                        world.spawnParticle(Particle.ITEM, spout.clone().add(0, 0.3, 0), 3 + tier * 3, 0.12, 0.1, 0.12,
-                                0.08 + tier * 0.03, new ItemStack(minion.quarryType().product()));
-                        world.spawnParticle(Particle.SMOKE, spout.clone().add(0, 0.4, 0), 2, 0.1, 0.05, 0.1, 0.01);
+                        de.aetherion.core.api.Vfx.puff(spout.clone().add(0, 0.3, 0), Particle.ITEM, 3 + tier * 3, Math.max(0.12, 0.12), new ItemStack(minion.quarryType().product()));
+                        de.aetherion.core.api.Vfx.puff(spout.clone().add(0, 0.4, 0), Particle.SMOKE, 2, Math.max(0.1, 0.1), null);
                         if (tier >= 3) {
-                            world.spawnParticle(Particle.WAX_OFF, spout.clone().add(0, 0.5, 0), 4, 0.2, 0.2, 0.2, 0.02);
+                            de.aetherion.core.api.Vfx.puff(spout.clone().add(0, 0.5, 0), Particle.WAX_OFF, 4, Math.max(0.2, 0.2), null);
                         }
                         world.playSound(spout, Sound.BLOCK_GRAVEL_FALL, 0.35f, 0.8f + tier * 0.1f);
                     }
@@ -2156,7 +2155,7 @@ public final class LogisticsService {
         Location at = new Location(world, x + 0.5, y + 0.5, z + 0.5);
         world.playSound(at, Sound.BLOCK_COPPER_GRATE_PLACE, 1f, 0.9f);
         world.playSound(at, Sound.BLOCK_CHAIN_PLACE, 0.7f, 1.3f);
-        world.spawnParticle(Particle.WAX_OFF, at, 10, 0.35, 0.35, 0.35, 0.02);
+        de.aetherion.core.api.Vfx.puff(at, Particle.WAX_OFF, 10, Math.max(0.35, 0.35), null);
         player.sendMessage("§a" + type.display() + " set down §8(" + price + ")§a. §7" + switch (type) {
             case SORTER -> "Right-click it to pick what goes out the front.";
             case OVERFLOW -> "Front belt first, sides take the spill.";

@@ -586,7 +586,7 @@ public final class MineEvents implements Listener {
                 Bukkit.getCurrentTick());
         rubbleByPart.put(display.getUniqueId(), rubble);
         rubbleByPart.put(hitbox.getUniqueId(), rubble);
-        world.spawnParticle(Particle.BLOCK, spot.clone().add(0, 0.4, 0), 20, 0.3, 0.3, 0.3, 0.1, Material.DEEPSLATE.createBlockData());
+        de.aetherion.core.api.Vfx.puff(spot.clone().add(0, 0.4, 0), Particle.BLOCK, 20, Math.max(0.3, 0.3), Material.DEEPSLATE.createBlockData());
         world.playSound(spot, Sound.BLOCK_POINTED_DRIPSTONE_FALL, SoundCategory.BLOCKS, 1.0f, 0.7f);
         MineText.bar(miner, "§f⛏ Loose seam! §7" + ore.colored() + " §7rubble shook out nearby — strike it.");
     }
@@ -646,8 +646,7 @@ public final class MineEvents implements Listener {
             }
         }
         if (crumble && rubble.at().getWorld() != null) {
-            rubble.at().getWorld().spawnParticle(Particle.BLOCK, rubble.at().clone().add(0, 0.3, 0), 12, 0.25, 0.2, 0.25, 0.05,
-                    Material.GRAVEL.createBlockData());
+            de.aetherion.core.api.Vfx.puff(rubble.at().clone().add(0, 0.3, 0), Particle.BLOCK, 12, Math.max(0.25, 0.25), Material.GRAVEL.createBlockData());
         }
     }
 
@@ -713,8 +712,7 @@ public final class MineEvents implements Listener {
         World world = rubble.at().getWorld();
         if (world != null) {
             world.playSound(rubble.at(), Sound.BLOCK_DEEPSLATE_HIT, SoundCategory.PLAYERS, 1.0f, 0.8f + hits * 0.2f);
-            world.spawnParticle(Particle.BLOCK, rubble.at().clone().add(0, 0.4, 0), 8, 0.2, 0.2, 0.2, 0.05,
-                    rubble.ore().showcase().createBlockData());
+            de.aetherion.core.api.Vfx.puff(rubble.at().clone().add(0, 0.4, 0), Particle.BLOCK, 8, Math.max(0.2, 0.2), rubble.ore().showcase().createBlockData());
         }
         if (hits < 2) {
             return;

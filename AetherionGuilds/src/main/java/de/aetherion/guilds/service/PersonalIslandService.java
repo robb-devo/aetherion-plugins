@@ -390,7 +390,7 @@ public final class PersonalIslandService {
         player.sendTitle("§6✦ Island Tier " + island.islandLevel() + " ✦", "§7Radius §f" + buildRadius(island)
                 + " §8· §7more belts & machines", 5, 50, 15);
         player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.9f, 1.2f);
-        player.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, player.getLocation().add(0, 1, 0), 40, 0.5, 0.8, 0.5, 0.3);
+        de.aetherion.core.api.Vfx.puff(player.getLocation().add(0, 1, 0), Particle.TOTEM_OF_UNDYING, 40, Math.max(0.5, 0.5), null);
         player.sendMessage("§aIsland Tier §f" + island.islandLevel()
                 + "§a. Build radius is now §f" + buildRadius(island) + "§a; more belts and machines unlocked.");
     }

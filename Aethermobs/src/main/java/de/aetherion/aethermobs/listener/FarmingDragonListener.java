@@ -72,8 +72,8 @@ public final class FarmingDragonListener implements Listener {
         player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.55f, 0.75f);
         player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_FLAP, 0.65f, 1.45f);
         player.playSound(player.getLocation(), Sound.BLOCK_GRASS_BREAK, 0.9f, 0.55f);
-        player.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, player.getLocation().add(0, 1.2, 0), 28, 0.55, 0.45, 0.55, 0.0);
-        player.getWorld().spawnParticle(Particle.SPORE_BLOSSOM_AIR, player.getLocation().add(0, 1.4, 0), 22, 0.5, 0.55, 0.5, 0.02);
+        de.aetherion.core.api.Vfx.puff(player.getLocation().add(0, 1.2, 0), Particle.HAPPY_VILLAGER, 28, Math.max(0.55, 0.55), null);
+        de.aetherion.core.api.Vfx.puff(player.getLocation().add(0, 1.4, 0), Particle.SPORE_BLOSSOM_AIR, 22, Math.max(0.5, 0.5), null);
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
             if (!player.isOnline()) {
                 return;

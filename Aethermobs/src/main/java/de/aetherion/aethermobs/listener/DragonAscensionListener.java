@@ -85,15 +85,7 @@ public final class DragonAscensionListener implements Listener {
         player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.8f, 0.7f);
         player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 0.45f, 1.4f);
         if (active.isSpawned()) {
-            active.getEntity().getWorld().spawnParticle(
-                    Particle.SOUL_FIRE_FLAME,
-                    active.getEntity().getLocation().add(0, 1.0, 0),
-                    40,
-                    0.45,
-                    0.6,
-                    0.45,
-                    0.02
-            );
+            de.aetherion.core.api.Vfx.puff(active.getEntity().getLocation().add(0, 1.0, 0), Particle.SOUL_FIRE_FLAME, 40, Math.max(0.45, 0.45), null);
         }
     }
 

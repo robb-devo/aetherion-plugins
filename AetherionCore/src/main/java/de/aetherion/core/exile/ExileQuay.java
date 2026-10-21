@@ -259,12 +259,12 @@ public final class ExileQuay implements Listener {
         Location veil = at(new double[] {-76, -2, 0.5});
         Particle.DustOptions mist = new Particle.DustOptions(Color.fromRGB(226, 228, 238), 4.0f);
         for (int i = 0; i < 6; i++) {
-            world.spawnParticle(Particle.DUST, veil.clone().add((Math.random() - 0.5) * 10, (Math.random() - 0.3) * 16,
-                    (Math.random() - 0.5) * 50), 1, 0, 0, 0, 0, mist);
+            de.aetherion.core.api.Vfx.puff(veil.clone().add((Math.random() - 0.5) * 10, (Math.random() - 0.3) * 16,
+                    (Math.random() - 0.5) * 50), Particle.DUST, 1, Math.max(0, 0), mist);
         }
         Location lamp = at(VEIL_LAMP);
-        world.spawnParticle(Particle.SOUL_FIRE_FLAME, lamp, 2, 0.25, 0.3, 0.25, 0.005);
-        world.spawnParticle(Particle.WHITE_ASH, at(new double[] {-60, 4, 0.5}), 6, 6, 3, 5, 0.0);
+        de.aetherion.core.api.Vfx.puff(lamp, Particle.SOUL_FIRE_FLAME, 2, Math.max(0.25, 0.25), null);
+        de.aetherion.core.api.Vfx.puff(at(new double[] {-60, 4, 0.5}), Particle.WHITE_ASH, 6, Math.max(6, 5), null);
     }
 
     // ------------------------------------------------------------------ boarding
@@ -618,7 +618,7 @@ public final class ExileQuay implements Listener {
         p.setFallDistance(0f);
         p.playSound(g, Sound.BLOCK_WOOD_PLACE, SoundCategory.BLOCKS, 0.7f, 0.55f);
         p.playSound(g, Sound.BLOCK_CHAIN_STEP, SoundCategory.BLOCKS, 0.6f, 0.5f);
-        world.spawnParticle(Particle.WHITE_ASH, g.clone().add(-6, 1, 0), 30, 4, 1.5, 3, 0);
+        de.aetherion.core.api.Vfx.puff(g.clone().add(-6, 1, 0), Particle.WHITE_ASH, 30, Math.max(4, 3), null);
         p.sendActionBar(Component.text(causeway
                 ? Say.t(p, "The Veil Quay. The causeway home leaves past the Veil lamp, west.",
                         "Der Schleierkai. Der Damm nach Hause beginnt an der Schleierlampe, im Westen.")

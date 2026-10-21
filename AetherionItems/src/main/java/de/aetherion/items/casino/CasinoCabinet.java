@@ -160,7 +160,7 @@ public final class CasinoCabinet implements Listener {
         player.playSound(at, Sound.BLOCK_ANVIL_PLACE, 0.35f, 1.35f);
         player.playSound(at, Sound.BLOCK_NOTE_BLOCK_CHIME, 0.5f, 1.4f);
         player.playSound(at, Sound.BLOCK_BEACON_ACTIVATE, 0.35f, 1.8f);
-        at.getWorld().spawnParticle(Particle.WAX_ON, at.clone().add(0, 0.6, 0), 24, 0.35, 0.6, 0.35, 0.4);
+        de.aetherion.core.api.Vfx.puff(at.clone().add(0, 0.6, 0), Particle.WAX_ON, 24, Math.max(0.35, 0.35), null);
         player.sendMessage("§aSlot machine is up. Click it to play.");
     }
 
@@ -381,7 +381,7 @@ public final class CasinoCabinet implements Listener {
             case TIER_JACKPOT -> {
                 machine.set(Mode.JACKPOT, 120);
                 machine.light(15);
-                world.spawnParticle(Particle.TOTEM_OF_UNDYING, top, 50, 0.35, 0.4, 0.35, 0.35);
+                de.aetherion.core.api.Vfx.puff(top, Particle.TOTEM_OF_UNDYING, 50, Math.max(0.35, 0.35), null);
                 world.spawnParticle(Particle.ITEM, tray, 40, 0.12, 0.08, 0.12, 0.16, new ItemStack(Material.GOLD_NUGGET));
                 world.spawnParticle(Particle.ITEM, tray, 16, 0.12, 0.08, 0.12, 0.14, new ItemStack(Material.GOLD_INGOT));
                 for (Player other : near) {
@@ -392,7 +392,7 @@ public final class CasinoCabinet implements Listener {
             case TIER_BIG -> {
                 machine.set(Mode.BIG, 80);
                 machine.light(14);
-                world.spawnParticle(Particle.WAX_ON, top, 30, 0.35, 0.3, 0.35, 0.5);
+                de.aetherion.core.api.Vfx.puff(top, Particle.WAX_ON, 30, Math.max(0.35, 0.35), null);
                 world.spawnParticle(Particle.ITEM, tray, 24, 0.12, 0.08, 0.12, 0.14, new ItemStack(Material.GOLD_NUGGET));
                 for (Player other : near) {
                     other.playSound(top, Sound.BLOCK_BELL_USE, 0.6f, 1.45f);
@@ -402,8 +402,8 @@ public final class CasinoCabinet implements Listener {
             case TIER_FREE -> {
                 machine.set(Mode.FREE, 90);
                 machine.light(13);
-                world.spawnParticle(Particle.ENCHANT, top, 60, 0.4, 0.5, 0.4, 0.9);
-                world.spawnParticle(Particle.WITCH, top, 14, 0.3, 0.3, 0.3, 0.05);
+                de.aetherion.core.api.Vfx.puff(top, Particle.ENCHANT, 60, Math.max(0.4, 0.4), null);
+                de.aetherion.core.api.Vfx.puff(top, Particle.WITCH, 14, Math.max(0.3, 0.3), null);
                 for (Player other : near) {
                     other.playSound(top, Sound.BLOCK_ENCHANTMENT_TABLE_USE, 0.6f, 1.2f);
                 }
@@ -412,7 +412,7 @@ public final class CasinoCabinet implements Listener {
                 machine.set(Mode.WIN, 50);
                 machine.light(13);
                 world.spawnParticle(Particle.ITEM, tray, 10, 0.1, 0.06, 0.1, 0.11, new ItemStack(Material.GOLD_NUGGET));
-                world.spawnParticle(Particle.WAX_ON, top, 10, 0.3, 0.2, 0.3, 0.3);
+                de.aetherion.core.api.Vfx.puff(top, Particle.WAX_ON, 10, Math.max(0.3, 0.3), null);
                 for (Player other : near) {
                     other.playSound(top, Sound.BLOCK_NOTE_BLOCK_BELL, 0.45f, 1.6f);
                 }

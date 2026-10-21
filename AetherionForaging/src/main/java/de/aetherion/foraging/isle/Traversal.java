@@ -135,7 +135,7 @@ public final class Traversal implements Listener {
                 player.setVelocity(new Vector(center.getX(), Math.min(speed, 0.25d + toTop * 0.2d), center.getZ()));
                 player.setFallDistance(0f);
                 if (ride.age % 2 == 0) {
-                    at.getWorld().spawnParticle(Particle.CLOUD, at.clone().add(0, -0.3, 0), 2, 0.25, 0.1, 0.25, 0.01);
+                    de.aetherion.core.api.Vfx.puff(at.clone().add(0, -0.3, 0), Particle.CLOUD, 2, Math.max(0.25, 0.25), null);
                 }
                 return;
             }
@@ -181,8 +181,8 @@ public final class Traversal implements Listener {
                 }
             }
             if (near) {
-                world.spawnParticle(Particle.CLOUD, vent.clone().add(0, 0.2, 0), 4, 0.35, 0.05, 0.35, 0.02);
-                world.spawnParticle(Particle.CLOUD, vent.clone().add(0, 1.6, 0), 2, 0.2, 0.6, 0.2, 0.04);
+                de.aetherion.core.api.Vfx.puff(vent.clone().add(0, 0.2, 0), Particle.CLOUD, 4, Math.max(0.35, 0.35), null);
+                de.aetherion.core.api.Vfx.puff(vent.clone().add(0, 1.6, 0), Particle.CLOUD, 2, Math.max(0.2, 0.2), null);
             }
         }
     }

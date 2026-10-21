@@ -90,7 +90,7 @@ public final class FishingDragonListener implements Listener {
         ));
         player.playSound(player.getLocation(), Sound.ENTITY_FISHING_BOBBER_SPLASH, 0.9f, 0.85f);
         player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.4f, 1.4f);
-        player.getWorld().spawnParticle(Particle.SPLASH, player.getLocation().add(0, 1.1, 0), 22, 0.45, 0.35, 0.45, 0.06);
+        de.aetherion.core.api.Vfx.puff(player.getLocation().add(0, 1.1, 0), Particle.SPLASH, 22, Math.max(0.45, 0.45), null);
         if ("water_dragon".equals(petId)) {
             announceDragon(player);
         }
@@ -144,8 +144,8 @@ public final class FishingDragonListener implements Listener {
         player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.55f, 0.7f);
         player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_FLAP, 0.7f, 1.35f);
         player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.8f, 0.85f);
-        player.getWorld().spawnParticle(Particle.SPLASH, player.getLocation().add(0, 1.2, 0), 28, 0.5, 0.4, 0.5, 0.08);
-        player.getWorld().spawnParticle(Particle.WITCH, player.getLocation().add(0, 1.4, 0), 18, 0.45, 0.5, 0.45, 0.02);
+        de.aetherion.core.api.Vfx.puff(player.getLocation().add(0, 1.2, 0), Particle.SPLASH, 28, Math.max(0.5, 0.5), null);
+        de.aetherion.core.api.Vfx.puff(player.getLocation().add(0, 1.4, 0), Particle.WITCH, 18, Math.max(0.45, 0.45), null);
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
             if (!player.isOnline()) {
                 return;

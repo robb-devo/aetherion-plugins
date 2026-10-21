@@ -72,7 +72,7 @@ public final class Widowmaker {
         ForageText.bar(player, "§c⚠ Widowmaker §7— a limb is loose above you. §fMove!");
         for (int t = 0; t < tell; t += 4) {
             Bukkit.getScheduler().runTaskLater(isle.plugin(), () ->
-                    world.spawnParticle(Particle.FALLING_DUST, spot.clone().add(0, 5.5, 0), 6, 0.6, 0.2, 0.6, 0.0, dust), t);
+                    de.aetherion.core.api.Vfx.puff(spot.clone().add(0, 5.5, 0), Particle.FALLING_DUST, 6, Math.max(0.6, 0.6), dust), t);
         }
         Bukkit.getScheduler().runTaskLater(isle.plugin(), () -> drop(player, ctx, spot, wood, dancer), tell);
     }
@@ -107,7 +107,7 @@ public final class Widowmaker {
         World world = spot.getWorld();
         world.playSound(spot, Sound.BLOCK_WOOD_BREAK, SoundCategory.BLOCKS, 1.3f, 0.6f);
         world.playSound(spot, Sound.ENTITY_GENERIC_EXPLODE, SoundCategory.BLOCKS, 0.25f, 1.6f);
-        world.spawnParticle(Particle.BLOCK, spot.clone().add(0, 0.4, 0), 24, 0.8, 0.2, 0.4, 0.1, wood.createBlockData());
+        de.aetherion.core.api.Vfx.puff(spot.clone().add(0, 0.4, 0), Particle.BLOCK, 24, Math.max(0.8, 0.4), wood.createBlockData());
         Bukkit.getScheduler().runTaskLater(isle.plugin(), () -> {
             ForageDisplays.forget(limb);
             limb.remove();

@@ -223,8 +223,8 @@ public final class PrizeCrops implements Listener {
         world.playSound(at, Sound.BLOCK_AMETHYST_BLOCK_CHIME, SoundCategory.PLAYERS, 1.0f, 0.8f);
         world.playSound(at, Sound.ENTITY_PLAYER_LEVELUP, SoundCategory.PLAYERS, 0.6f, 1.8f);
         world.playSound(at, Sound.BLOCK_ROOTED_DIRT_BREAK, SoundCategory.PLAYERS, 1.0f, 0.7f);
-        world.spawnParticle(Particle.TOTEM_OF_UNDYING, at, 40, 0.4, 0.6, 0.4, 0.35);
-        world.spawnParticle(Particle.BLOCK, at, 30, 0.4, 0.2, 0.4, 0.1, Material.ROOTED_DIRT.createBlockData());
+        de.aetherion.core.api.Vfx.puff(at, Particle.TOTEM_OF_UNDYING, 40, Math.max(0.4, 0.4), null);
+        de.aetherion.core.api.Vfx.puff(at, Particle.BLOCK, 30, Math.max(0.4, 0.4), Material.ROOTED_DIRT.createBlockData());
         finder.sendMessage("§6✦ Prize find! §fA " + crop.prizeName() + " §7(" + IsleText.kg(kg)
                 + ") burst out of the soil. §eClick it before it wilts.");
         IsleText.bar(finder, "§6§l✦ " + crop.prizeName() + " §e" + IsleText.kg(kg) + " §7— grab it!");
@@ -252,7 +252,7 @@ public final class PrizeCrops implements Listener {
             ));
         }
         if (age % 10 == 0 && pop.at.getWorld() != null) {
-            pop.at.getWorld().spawnParticle(Particle.WAX_ON, pop.at.clone().add(0, 0.8, 0), 3, 0.5, 0.6, 0.5, 0.0);
+            de.aetherion.core.api.Vfx.puff(pop.at.clone().add(0, 0.8, 0), Particle.WAX_ON, 3, Math.max(0.5, 0.5), null);
         }
         if (age == FINDER_TICKS) {
             Player finder = Bukkit.getPlayer(pop.finder);
@@ -271,7 +271,7 @@ public final class PrizeCrops implements Listener {
         }
         World world = pop.at.getWorld();
         if (world != null) {
-            world.spawnParticle(Particle.SMOKE, pop.at.clone().add(0, 0.8, 0), 20, 0.4, 0.5, 0.4, 0.02);
+            de.aetherion.core.api.Vfx.puff(pop.at.clone().add(0, 0.8, 0), Particle.SMOKE, 20, Math.max(0.4, 0.4), null);
             world.playSound(pop.at, Sound.BLOCK_COMPOSTER_FILL, SoundCategory.PLAYERS, 0.9f, 0.6f);
         }
         Player finder = Bukkit.getPlayer(pop.finder);
@@ -356,7 +356,7 @@ public final class PrizeCrops implements Listener {
 
         World world = pop.at.getWorld();
         if (world != null) {
-            world.spawnParticle(Particle.FIREWORK, pop.at.clone().add(0, 1.0, 0), 30, 0.4, 0.5, 0.4, 0.08);
+            de.aetherion.core.api.Vfx.puff(pop.at.clone().add(0, 1.0, 0), Particle.FIREWORK, 30, Math.max(0.4, 0.4), null);
             world.playSound(pop.at, Sound.ENTITY_FIREWORK_ROCKET_TWINKLE, SoundCategory.PLAYERS, 0.8f, 1.2f);
         }
         player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, SoundCategory.PLAYERS, 0.6f, 1.4f);

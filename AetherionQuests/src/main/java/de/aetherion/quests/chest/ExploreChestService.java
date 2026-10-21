@@ -952,8 +952,8 @@ public final class ExploreChestService {
             case LEGENDARY -> Particle.WAX_ON;
             case MYTHIC -> Particle.END_ROD;
         };
-        world.spawnParticle(spark, at, 10, 0.28, 0.28, 0.28, 0.02);
-        world.spawnParticle(Particle.HAPPY_VILLAGER, at, 6, 0.2, 0.25, 0.2, 0);
+        de.aetherion.core.api.Vfx.puff(at, spark, 10, Math.max(0.28, 0.28), null);
+        de.aetherion.core.api.Vfx.puff(at, Particle.HAPPY_VILLAGER, 6, Math.max(0.2, 0.2), null);
         player.playSound(at, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.7f, 1.25f);
         player.playSound(at, Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.55f, 1.35f);
     }

@@ -225,8 +225,8 @@ public final class AmethystMine implements Listener {
         world.playSound(center, Sound.BLOCK_AMETHYST_CLUSTER_BREAK, SoundCategory.BLOCKS, 1.6f, 0.5f);
         world.playSound(center, Sound.BLOCK_GLASS_BREAK, SoundCategory.BLOCKS, 1.4f, 0.6f);
         world.playSound(center, Sound.ENTITY_ELDER_GUARDIAN_CURSE, SoundCategory.BLOCKS, 0.4f, 1.8f);
-        world.spawnParticle(Particle.BLOCK, center, 120, 1.5, 1.2, 1.5, 0.2, Material.AMETHYST_BLOCK.createBlockData());
-        world.spawnParticle(Particle.END_ROD, center, 40, 1.2, 1.2, 1.2, 0.15);
+        de.aetherion.core.api.Vfx.puff(center, Particle.BLOCK, 120, Math.max(1.5, 1.5), Material.AMETHYST_BLOCK.createBlockData());
+        de.aetherion.core.api.Vfx.puff(center, Particle.END_ROD, 40, Math.max(1.2, 1.2), null);
         for (Player near : world.getPlayers()) {
             if (near.getLocation().distanceSquared(center) <= 4.5d * 4.5d) {
                 near.damage(Math.max(0.5d, near.getMaxHealth() * 0.12d * isle.forge().hazardFactor(near)));

@@ -130,7 +130,7 @@ public final class ForagerChopDemo {
                         swingFx(world, foragerAt, fellAt);
                         if (world != null) {
                             world.playSound(fellAt, Sound.BLOCK_WOOD_BREAK, 0.75f, 0.85f);
-                            world.spawnParticle(Particle.CRIT, fellAt, 10, 0.3, 0.3, 0.3, 0.04);
+                            de.aetherion.core.api.Vfx.puff(fellAt, Particle.CRIT, 10, Math.max(0.3, 0.3), null);
                         }
                         ForagingFx.success(viewer, fellAt);
                         foragerSay(viewer, "§aCHOP!");
@@ -223,7 +223,7 @@ public final class ForagerChopDemo {
         if (world == null || at == null) {
             return;
         }
-        world.spawnParticle(Particle.HAPPY_VILLAGER, at, 8, 0.25, 0.35, 0.25, 0);
+        de.aetherion.core.api.Vfx.puff(at, Particle.HAPPY_VILLAGER, 8, Math.max(0.25, 0.25), null);
         world.playSound(at, Sound.BLOCK_NOTE_BLOCK_CHIME, 0.35f, 1.4f);
     }
 
@@ -233,14 +233,14 @@ public final class ForagerChopDemo {
         }
         Location origin = from != null ? from.clone().add(0, 1.2, 0) : at;
         world.playSound(origin, Sound.ENTITY_PLAYER_ATTACK_SWEEP, 0.55f, 0.85f);
-        world.spawnParticle(Particle.SWEEP_ATTACK, at, 1, 0, 0, 0, 0);
-        world.spawnParticle(Particle.BLOCK, at, 8, 0.15, 0.15, 0.15, 0.02, Material.OAK_LOG.createBlockData());
+        de.aetherion.core.api.Vfx.puff(at, Particle.SWEEP_ATTACK, 1, Math.max(0, 0), null);
+        de.aetherion.core.api.Vfx.puff(at, Particle.BLOCK, 8, Math.max(0.15, 0.15), Material.OAK_LOG.createBlockData());
         if (from != null) {
             Vector dir = at.toVector().subtract(from.toVector());
             if (dir.lengthSquared() > 0.01) {
                 dir.normalize();
                 Location mid = from.clone().add(0, 1.0, 0).add(dir.multiply(0.8));
-                world.spawnParticle(Particle.CRIT, mid, 4, 0.08, 0.08, 0.08, 0.01);
+                de.aetherion.core.api.Vfx.puff(mid, Particle.CRIT, 4, Math.max(0.08, 0.08), null);
             }
         }
     }

@@ -437,7 +437,7 @@ public final class IsleEvents {
             Entity bee = Bukkit.getEntity(id);
             if (bee != null) {
                 if (bee.getWorld() != null) {
-                    bee.getWorld().spawnParticle(Particle.WAX_OFF, bee.getLocation(), 3, 0.2, 0.2, 0.2, 0.0);
+                    de.aetherion.core.api.Vfx.puff(bee.getLocation(), Particle.WAX_OFF, 3, Math.max(0.2, 0.2), null);
                 }
                 bee.remove();
             }

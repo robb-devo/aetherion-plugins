@@ -169,9 +169,9 @@ public final class BlueprintForgeRitual implements Listener {
                     return;
                 }
                 world.playSound(session.slam, Sound.BLOCK_ANVIL_LAND, 0.55f, 0.85f);
-                world.spawnParticle(Particle.LAVA, session.slam.clone().add(0, -0.2, 0), 4, 0.15, 0.05, 0.15, 0.01);
-                world.spawnParticle(Particle.FLAME, session.slam.clone().add(0, -0.15, 0), 8, 0.2, 0.1, 0.2, 0.01);
-                world.spawnParticle(Particle.CRIT, session.slam, 10, 0.25, 0.1, 0.25, 0.15);
+                de.aetherion.core.api.Vfx.puff(session.slam.clone().add(0, -0.2, 0), Particle.LAVA, 4, Math.max(0.15, 0.15), null);
+                de.aetherion.core.api.Vfx.puff(session.slam.clone().add(0, -0.15, 0), Particle.FLAME, 8, Math.max(0.2, 0.2), null);
+                de.aetherion.core.api.Vfx.puff(session.slam, Particle.CRIT, 10, Math.max(0.25, 0.25), null);
                 if (session.toolDisplay != null && session.toolDisplay.isValid()) {
                     session.toolDisplay.teleport(session.toolDisplay.getLocation().add(0, 0.04, 0));
                     Bukkit.getScheduler().runTaskLater(plugin, () -> {
@@ -182,7 +182,7 @@ public final class BlueprintForgeRitual implements Listener {
                 }
             }, 10L);
         } else {
-            world.spawnParticle(Particle.SMOKE, session.rest.clone().add(0, -0.2, 0), 3, 0.1, 0.15, 0.1, 0.01);
+            de.aetherion.core.api.Vfx.puff(session.rest.clone().add(0, -0.2, 0), Particle.SMOKE, 3, Math.max(0.1, 0.1), null);
         }
     }
 
@@ -207,8 +207,8 @@ public final class BlueprintForgeRitual implements Listener {
         }
         Location at = station.anvilCenter();
         if (at != null && at.getWorld() != null && leftSec % 2 == 0) {
-            at.getWorld().spawnParticle(Particle.FLAME, at, 3, 0.2, 0.15, 0.2, 0.01);
-            at.getWorld().spawnParticle(Particle.SMOKE, at.clone().add(0, 0.3, 0), 2, 0.15, 0.1, 0.15, 0.01);
+            de.aetherion.core.api.Vfx.puff(at, Particle.FLAME, 3, Math.max(0.2, 0.2), null);
+            de.aetherion.core.api.Vfx.puff(at.clone().add(0, 0.3, 0), Particle.SMOKE, 2, Math.max(0.15, 0.15), null);
         }
         if (leftTicks <= 0) {
             complete(session);
@@ -243,7 +243,7 @@ public final class BlueprintForgeRitual implements Listener {
             player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.45f, 1.35f);
             Location at = station.anvilCenter();
             if (at != null && at.getWorld() != null) {
-                at.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, at.clone().add(0, 0.4, 0), 18, 0.3, 0.4, 0.3, 0.15);
+                de.aetherion.core.api.Vfx.puff(at.clone().add(0, 0.4, 0), Particle.TOTEM_OF_UNDYING, 18, Math.max(0.3, 0.3), null);
                 at.getWorld().playSound(at, Sound.BLOCK_ANVIL_USE, 0.9f, 1.2f);
             }
         } else {
