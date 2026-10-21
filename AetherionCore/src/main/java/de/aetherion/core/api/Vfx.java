@@ -41,6 +41,13 @@ public final class Vfx {
 
         /** Ground warning: dashed edge at {@code radius} plus a fill that grows to it over {@code ticks}. */
         void telegraph(Location centre, double radius, int ticks, Color color);
+
+        /**
+         * Flat ring on the ground that stays while it is drawn again within a few ticks. Lets code that redraws a
+         * shape every tick or two (boss telegraphs, arena edges) draw one display instead of a ring of particles.
+         */
+        default void hold(Location centre, Color color, double radius) {
+        }
     }
 
     private static volatile Renderer renderer;
@@ -81,6 +88,16 @@ public final class Vfx {
         if (r != null && centre != null && centre.getWorld() != null) {
             r.rune(centre, color, radius, ticks);
         }
+    }
+
+    /** {@link Renderer#hold}: true when a renderer drew it, false when the caller should fall back to particles. */
+    public static boolean hold(Location centre, Color color, double radius) {
+        Renderer r = renderer;
+        if (r == null || centre == null || centre.getWorld() == null || radius <= 0.0) {
+            return false;
+        }
+        r.hold(centre, color, radius);
+        return true;
     }
 
     public static void telegraph(Location centre, double radius, int ticks, Color color) {

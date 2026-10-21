@@ -53,6 +53,9 @@ final class SandboxFx {
     }
 
     static void ring(World world, Location center, Particle particle, double radius, int points) {
+        if (de.aetherion.bossengine.fx.ShapeFx.ring(center, particle, radius)) {
+            return;
+        }
         for (int i = 0; i < points; i++) {
             double a = (Math.PI * 2 * i) / points;
             Location p = center.clone().add(Math.cos(a) * radius, 0, Math.sin(a) * radius);
@@ -61,6 +64,9 @@ final class SandboxFx {
     }
 
     static void dustRing(World world, Location center, Color color, double radius, int points, float size) {
+        if (de.aetherion.bossengine.fx.ShapeFx.ring(center.clone().add(0, 0.05, 0), color, radius)) {
+            return;
+        }
         Particle.DustOptions dust = new Particle.DustOptions(color, size);
         for (int i = 0; i < points; i++) {
             double a = (Math.PI * 2 * i) / points;

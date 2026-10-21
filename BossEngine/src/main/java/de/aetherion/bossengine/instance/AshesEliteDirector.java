@@ -1099,6 +1099,9 @@ final class AshesEliteDirector {
         if (world == null || radius <= 0.05) {
             return;
         }
+        if (de.aetherion.bossengine.fx.ShapeFx.ring(center.clone().add(0, 0.12, 0), color, radius)) {
+            return;
+        }
         Particle.DustOptions dust = new Particle.DustOptions(color, size);
         for (int i = 0; i < points; i++) {
             double angle = Math.PI * 2 * i / points;
