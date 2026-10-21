@@ -105,6 +105,13 @@ public final class Vfx {
         default void mist(Location at, Color color, double size, org.bukkit.util.Vector drift, int ticks) {
         }
 
+        /**
+         * A glowing line that stays while it is drawn again within a few ticks and follows its ends: energy blades,
+         * tracking beams, tethers. {@code key} names it (one line per key); redraw it every tick or two.
+         */
+        default void line(String key, Location from, Location to, Color color, double width) {
+        }
+
         /** Small chips of {@code block} thrown out and falling (impact debris), {@code power} ~1 for a hit. */
         default void chips(Location at, org.bukkit.block.data.BlockData block, int count, double power) {
         }
@@ -285,6 +292,15 @@ public final class Vfx {
             return false;
         }
         r.mist(at, color, size, drift, ticks);
+        return true;
+    }
+
+    public static boolean line(String key, Location from, Location to, Color color, double width) {
+        Renderer r = renderer;
+        if (r == null || key == null || !placed(from) || !placed(to) || from.getWorld() != to.getWorld()) {
+            return false;
+        }
+        r.line(key, from, to, color, width);
         return true;
     }
 

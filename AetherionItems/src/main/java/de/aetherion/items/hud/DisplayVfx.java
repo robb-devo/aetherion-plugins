@@ -49,6 +49,12 @@ public final class DisplayVfx implements Vfx.Renderer {
     private record Held(TextDisplay display, long[] until) {
     }
 
+    /** Lines by key: four cross planes riding one anchor, retargeted on every draw. */
+    private final java.util.Map<String, HeldLine> lines = new java.util.HashMap<>();
+
+    private record HeldLine(TextDisplay[] planes, Location anchor, long[] until) {
+    }
+
     public DisplayVfx(JavaPlugin plugin) {
         this.plugin = plugin;
     }
@@ -137,8 +143,70 @@ public final class DisplayVfx implements Vfx.Renderer {
         }
     }
 
+    @Override
+    public void line(String key, Location from, Location to, Color color, double width) {
+        long now = Bukkit.getCurrentTick();
+        HeldLine line = lines.get(key);
+        if (line != null && (!line.planes()[0].isValid() || line.anchor().getWorld() != from.getWorld()
+                || line.anchor().distanceSquared(from) > 48 * 48)) {
+            for (TextDisplay d : line.planes()) {
+                kill(d);
+            }
+            lines.remove(key);
+            line = null;
+        }
+        if (line == null) {
+            TextDisplay[] planes = new TextDisplay[4];
+            for (int i = 0; i < 4; i++) {
+                planes[i] = spawn(from, BEAM, color, Display.Billboard.FIXED, plane(new Quaternionf(), new Vector3f(), 0.01f, 0.01f), 2.0f);
+                if (planes[i] == null) {
+                    for (int k = 0; k < i; k++) {
+                        kill(planes[k]);
+                    }
+                    return;
+                }
+            }
+            line = new HeldLine(planes, from.clone(), new long[] {now + 4});
+            lines.put(key, line);
+            if (heldSweep == null) {
+                heldSweep = Bukkit.getScheduler().runTaskTimer(plugin, this::sweepHeld, 2L, 2L);
+            }
+        }
+        line.until()[0] = now + 4;
+        Vector3f a = between(line.anchor(), from);
+        Vector3f path = between(from, to);
+        float dist = path.length();
+        if (dist < 0.05f) {
+            return;
+        }
+        Vector3f d = new Vector3f(path).normalize();
+        Vector3f mid = new Vector3f(a).add(new Vector3f(path).mul(0.5f));
+        float sx = dist / W_BEAM;
+        float sy = (float) Math.max(0.04, width) / GLYPH;
+        Vector3f[] normals = crossNormals(d);
+        int rgb = color == null ? 0xFFFFFF : color.asRGB();
+        for (int i = 0; i < 4; i++) {
+            TextDisplay p = line.planes()[i];
+            p.setInterpolationDelay(0);
+            p.setInterpolationDuration(2);
+            p.setTransformation(plane(basis(d, normals[i]), mid, sx, sy));
+            if (!TextColor.color(rgb).equals(p.text().color())) {
+                p.text(p.text().color(TextColor.color(rgb)));
+            }
+        }
+    }
+
     private void sweepHeld() {
         long now = Bukkit.getCurrentTick();
+        lines.values().removeIf(line -> {
+            if (line.planes()[0].isValid() && line.until()[0] >= now) {
+                return false;
+            }
+            for (TextDisplay d : line.planes()) {
+                kill(d);
+            }
+            return true;
+        });
         held.values().removeIf(ring -> {
             if (ring.display().isValid() && ring.until()[0] >= now) {
                 return false;
@@ -146,7 +214,7 @@ public final class DisplayVfx implements Vfx.Renderer {
             kill(ring.display());
             return true;
         });
-        if (held.isEmpty() && heldSweep != null) {
+        if (held.isEmpty() && lines.isEmpty() && heldSweep != null) {
             heldSweep.cancel();
             heldSweep = null;
         }
