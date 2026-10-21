@@ -1103,6 +1103,9 @@ public final class WorldEaterDirector {
         if (len < 0.5f) {
             return;
         }
+        if (de.aetherion.core.api.Vfx.line("we-gaze:" + System.identityHashCode(this), fx.at(from), fx.at(to), WeProps.VOID, 0.05)) {
+            return;
+        }
         int n = Math.min(24, (int) (len / 1.2f));
         for (int i = 1; i <= n; i++) {
             fx.dust(new Vector3f(from).fma(i / (float) n, d), WeProps.VOID, 0.8f, 1, 0.02);

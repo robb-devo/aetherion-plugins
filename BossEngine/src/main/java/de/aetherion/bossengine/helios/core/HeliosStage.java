@@ -421,21 +421,20 @@ public final class HeliosStage {
 
     public void particle(Particle particle, Vector3fc at, int count, double spread, double speed) {
         if (world != null) {
-            world.spawnParticle(particle, at(at), count, spread, spread, spread, speed, null, true);
+            de.aetherion.core.api.Vfx.puff(at(at), particle, count, spread, null);
         }
     }
 
     public void dust(Vector3fc at, Color color, float size, int count, double spread) {
         if (world != null) {
-            world.spawnParticle(Particle.DUST, at(at), count, spread, spread, spread, 0,
-                    new Particle.DustOptions(color, size), true);
+            de.aetherion.core.api.Vfx.puff(at(at), Particle.DUST, count, spread, new Particle.DustOptions(color, size));
         }
     }
 
+    /** Rubble: real block chips flying off the impact. */
     public void blockDust(Vector3fc at, Material material, int count, double spread) {
         if (world != null) {
-            world.spawnParticle(Particle.BLOCK, at(at), count, spread, spread * 0.5, spread, 0,
-                    material.createBlockData(), true);
+            de.aetherion.core.api.Vfx.puff(at(at), Particle.BLOCK, count, spread, material.createBlockData());
         }
     }
 }

@@ -3279,7 +3279,7 @@ public final class HangingSaintDirector {
         fx.sound(ground, Sound.BLOCK_ANVIL_LAND, 0.7f, 0.5f);
         fx.sound(ground, Sound.BLOCK_WOOD_BREAK, 2f, 0.5f);
         fx.particle(Particle.EXPLOSION, new Vector3f(ground).add(0, 0.3f, 0), 2, 0.4, 0);
-        fx.world().spawnParticle(Particle.BLOCK, fx.at(new Vector3f(ground).add(0, 0.2f, 0)), 60, radius * 0.4, 0.2, radius * 0.4, 0,
+        de.aetherion.core.api.Vfx.puff(fx.at(new Vector3f(ground).add(0, 0.2f, 0)), Particle.BLOCK, 60, radius * 0.4,
                 Material.DARK_OAK_PLANKS.createBlockData());
         stageBounce(radius * 2.5f, 0.28f);
     }

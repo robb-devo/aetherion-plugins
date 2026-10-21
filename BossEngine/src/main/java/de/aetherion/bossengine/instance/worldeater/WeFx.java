@@ -418,47 +418,49 @@ public final class WeFx {
 
     /* ------------------------------------------------------------------ particles */
 
+    // Garnish goes through Core's shape translator (Vfx.puff): rubble flies as real block chips, sparks
+    // twinkle, smoke rolls out as a ground wave. Without a renderer it falls back to the old particles.
+
     public void particle(Particle particle, Vector3f at, int count, double spread, double speed) {
         if (world != null) {
-            world.spawnParticle(particle, at(at), count, spread, spread, spread, speed, null, true);
+            de.aetherion.core.api.Vfx.puff(at(at), particle, count, spread, null);
         }
     }
 
     public void particle(Particle particle, Vector3f at, int count, double sx, double sy, double sz, double speed) {
         if (world != null) {
-            world.spawnParticle(particle, at(at), count, sx, sy, sz, speed, null, true);
+            de.aetherion.core.api.Vfx.puff(at(at), particle, count, Math.max(sx, sz), null);
         }
     }
 
     public void dust(Vector3f at, Color color, float size, int count, double spread) {
         if (world != null) {
-            world.spawnParticle(Particle.DUST, at(at), count, spread, spread, spread, 0,
-                    new Particle.DustOptions(color, size), true);
+            de.aetherion.core.api.Vfx.puff(at(at), Particle.DUST, count, spread, new Particle.DustOptions(color, size));
         }
     }
 
     public void blockDust(Vector3f at, Material material, int count, double spread) {
         if (world != null) {
-            world.spawnParticle(Particle.BLOCK, at(at), count, spread, spread * 0.5, spread, 0,
-                    material.createBlockData(), true);
+            de.aetherion.core.api.Vfx.puff(at(at), Particle.BLOCK, count, spread, material.createBlockData());
         }
     }
 
-    /** Dust that sifts down slowly off something heavy (FALLING_DUST needs block data). */
+    /** Dust that sifts down slowly off something heavy. */
     public void fallingDust(Vector3f at, Material material, int count, double spread) {
         if (world != null) {
-            world.spawnParticle(Particle.FALLING_DUST, at(at), count, spread, spread * 0.3, spread, 0,
-                    material.createBlockData(), true);
+            de.aetherion.core.api.Vfx.puff(at(at), Particle.FALLING_DUST, count, spread, material.createBlockData());
         }
     }
 
-    /** A particle that flies from {@code from} toward {@code to} (directional spawn, count 0). */
+    /** Something that flies from {@code from} toward {@code to}: a thin streak along the path. */
     public void stream(Particle particle, Vector3f from, Vector3f to, double speed) {
         if (world == null) {
             return;
         }
-        Vector3f d = new Vector3f(to).sub(from);
-        world.spawnParticle(particle, at(from), 0, d.x, d.y, d.z, speed, null, true);
+        if (!de.aetherion.core.api.Vfx.streak(at(from), at(to), de.aetherion.core.api.Vfx.tint(particle), 0.12, 6)) {
+            Vector3f d = new Vector3f(to).sub(from);
+            world.spawnParticle(particle, at(from), 0, d.x, d.y, d.z, speed, null, true);
+        }
     }
 
     /* ------------------------------------------------------------------ text */

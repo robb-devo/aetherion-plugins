@@ -349,10 +349,9 @@ public final class SeraphineMusicBox {
         world.playSound(floor, Sound.BLOCK_AMETHYST_BLOCK_CHIME, SoundCategory.BLOCKS, 1.0f, 1.2f);
         for (int i = 0; i < 16; i++) {
             double a = i * Math.PI / 8.0;
-            world.spawnParticle(Particle.DUST, floor.clone().add(Math.cos(a) * 1.9, 0, Math.sin(a) * 1.5),
-                    2, 0.05, 0.02, 0.05, 0, new Particle.DustOptions(DUST_GOLD, 1.1f));
+            de.aetherion.core.api.Vfx.puff(floor.clone().add(Math.cos(a) * 1.9, 0, Math.sin(a) * 1.5), Particle.DUST, 2, Math.max(0.05, 0.05), new Particle.DustOptions(DUST_GOLD, 1.1f));
         }
-        world.spawnParticle(Particle.WHITE_ASH, floor, 30, 1.4, 0.1, 1.1, 0.02);
+        de.aetherion.core.api.Vfx.puff(floor, Particle.WHITE_ASH, 30, Math.max(1.4, 1.1), null);
     }
 
     private void open() {
@@ -361,8 +360,8 @@ public final class SeraphineMusicBox {
         Location top = boxTop();
         world.playSound(top, Sound.BLOCK_CHEST_OPEN, SoundCategory.BLOCKS, 0.9f, 1.3f);
         world.playSound(top, Sound.BLOCK_AMETHYST_BLOCK_RESONATE, SoundCategory.BLOCKS, 0.8f, 1.7f);
-        world.spawnParticle(Particle.END_ROD, top, 24, 0.7, 0.3, 0.5, 0.03);
-        world.spawnParticle(Particle.DUST, top, 20, 0.8, 0.3, 0.6, 0, new Particle.DustOptions(DUST_GOLD, 1.0f));
+        de.aetherion.core.api.Vfx.puff(top, Particle.END_ROD, 24, Math.max(0.7, 0.5), null);
+        de.aetherion.core.api.Vfx.puff(top, Particle.DUST, 20, Math.max(0.8, 0.6), new Particle.DustOptions(DUST_GOLD, 1.0f));
         tune.play(8f, 1f, 1.3f, true);
     }
 
@@ -417,12 +416,10 @@ public final class SeraphineMusicBox {
         }
         if (playTick % 16 == 0) {
             Location note = at(0f, BODY_TOP + 2.2f, 0f);
-            world.spawnParticle(Particle.NOTE, note.add(rand(-0.6, 0.6), rand(0, 0.4), rand(-0.4, 0.4)),
-                    0, ThreadLocalRandom.current().nextInt(25) / 24.0, 0, 0, 1);
+            de.aetherion.core.api.Vfx.puff(note.add(rand(-0.6, 0.6), rand(0, 0.4), rand(-0.4, 0.4)), Particle.NOTE, 0, Math.max(ThreadLocalRandom.current().nextInt(25) / 24.0, 0), null);
         }
         if (playTick % 10 == 0) {
-            world.spawnParticle(Particle.DUST, at(0f, BODY_TOP + 1.0f, 0f), 2, 0.5, 0.6, 0.5, 0,
-                    new Particle.DustOptions(DUST_GOLD, 0.7f));
+            de.aetherion.core.api.Vfx.puff(at(0f, BODY_TOP + 1.0f, 0f), Particle.DUST, 2, Math.max(0.5, 0.5), new Particle.DustOptions(DUST_GOLD, 0.7f));
         }
         if (playTick % 20 == 0) {
             updateLabel();
@@ -523,7 +520,7 @@ public final class SeraphineMusicBox {
                 }
             }
             world.playSound(boxTop(), Sound.BLOCK_AMETHYST_BLOCK_RESONATE, SoundCategory.BLOCKS, 1.0f, 0.6f);
-            world.spawnParticle(Particle.DUST, at(0f, BODY_MID, 0f), 30, 1.1, 0.5, 0.8, 0, new Particle.DustOptions(DUST_GOLD, 1.3f));
+            de.aetherion.core.api.Vfx.puff(at(0f, BODY_MID, 0f), Particle.DUST, 30, Math.max(1.1, 0.8), new Particle.DustOptions(DUST_GOLD, 1.3f));
         }
         if (t == 112) {
             shatter();
@@ -617,14 +614,13 @@ public final class SeraphineMusicBox {
             Vector3f chest = chestOf(player);
             push(line, beam(from, chest, 0.05f), 4);
             Location mid = at((chest.x + from.x) * 0.5f, (chest.y + from.y) * 0.5f, (chest.z + from.z) * 0.5f);
-            world.spawnParticle(Particle.DUST, mid, 12, 0.6, 0.4, 0.6, 0, new Particle.DustOptions(DUST_GOLD, 0.8f));
+            de.aetherion.core.api.Vfx.puff(mid, Particle.DUST, 12, Math.max(0.6, 0.6), new Particle.DustOptions(DUST_GOLD, 0.8f));
         }, 1L);
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             Vector3f chest = chestOf(player);
             push(line, beam(new Vector3f(chest).sub(0f, 0.02f, 0f), chest, 0.02f), 6);
             if (player.isOnline() && player.getWorld() == world) {
-                world.spawnParticle(Particle.DUST, player.getLocation().add(0, 1.2, 0), 10, 0.25, 0.35, 0.25, 0,
-                        new Particle.DustOptions(DUST_GOLD, 0.9f));
+                de.aetherion.core.api.Vfx.puff(player.getLocation().add(0, 1.2, 0), Particle.DUST, 10, Math.max(0.25, 0.25), new Particle.DustOptions(DUST_GOLD, 0.9f));
             }
         }, 9L);
         Bukkit.getScheduler().runTaskLater(plugin, () -> kill(line), 17L);
@@ -825,9 +821,9 @@ public final class SeraphineMusicBox {
         world.playSound(mid, Sound.BLOCK_GLASS_BREAK, SoundCategory.BLOCKS, 1.2f, 0.75f);
         world.playSound(mid, Sound.BLOCK_GLASS_BREAK, SoundCategory.BLOCKS, 1.2f, 1.0f);
         world.playSound(mid, Sound.BLOCK_AMETHYST_CLUSTER_BREAK, SoundCategory.BLOCKS, 1.0f, 0.5f);
-        world.spawnParticle(Particle.BLOCK, mid, 50, 1.0, 0.5, 0.8, 0, Material.WHITE_GLAZED_TERRACOTTA.createBlockData());
-        world.spawnParticle(Particle.DUST, mid, 50, 1.2, 0.6, 0.9, 0, new Particle.DustOptions(DUST_GOLD, 1.8f));
-        world.spawnParticle(Particle.DUST, mid, 30, 1.2, 0.6, 0.9, 0, new Particle.DustOptions(DUST_WHITE, 1.4f));
+        de.aetherion.core.api.Vfx.puff(mid, Particle.BLOCK, 50, Math.max(1.0, 0.8), Material.WHITE_GLAZED_TERRACOTTA.createBlockData());
+        de.aetherion.core.api.Vfx.puff(mid, Particle.DUST, 50, Math.max(1.2, 0.9), new Particle.DustOptions(DUST_GOLD, 1.8f));
+        de.aetherion.core.api.Vfx.puff(mid, Particle.DUST, 30, Math.max(1.2, 0.9), new Particle.DustOptions(DUST_WHITE, 1.4f));
     }
 
     /** The shards rise like ash. */
@@ -844,8 +840,8 @@ public final class SeraphineMusicBox {
             push(part.display, transformation(part.freeMatrix), 40 + (i % 20) * 2);
             i++;
         }
-        world.spawnParticle(Particle.WHITE_ASH, at(0f, 2f, 0f), 40, 1.5, 1.0, 1.5, 0.02);
-        world.spawnParticle(Particle.END_ROD, at(0f, 2.5f, 0f), 12, 1.2, 1.0, 1.2, 0.02);
+        de.aetherion.core.api.Vfx.puff(at(0f, 2f, 0f), Particle.WHITE_ASH, 40, Math.max(1.5, 1.5), null);
+        de.aetherion.core.api.Vfx.puff(at(0f, 2.5f, 0f), Particle.END_ROD, 12, Math.max(1.2, 1.2), null);
         world.playSound(at(0f, 2f, 0f), Sound.BLOCK_BELL_USE, SoundCategory.BLOCKS, 1.0f, 0.5f);
     }
 
@@ -935,8 +931,7 @@ public final class SeraphineMusicBox {
         double angle = tick * 0.4 + finaleTick * 0.4;
         for (int i = 0; i < 5; i++) {
             double a = angle + i * Math.PI * 0.4;
-            world.spawnParticle(Particle.CLOUD, sky.clone().add(Math.cos(a) * radius, 0, Math.sin(a) * radius),
-                    2, 0.5, 0.15, 0.5, 0.0);
+            de.aetherion.core.api.Vfx.puff(sky.clone().add(Math.cos(a) * radius, 0, Math.sin(a) * radius), Particle.CLOUD, 2, Math.max(0.5, 0.5), null);
         }
     }
 
