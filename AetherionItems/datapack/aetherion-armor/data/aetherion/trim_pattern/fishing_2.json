@@ -1,0 +1,8 @@
+{
+  "asset_id": "aetherion:fishing_2",
+  "decal": false,
+  "description": {
+    "text": "Fishing 2"
+  },
+  "template_item": "minecraft:barrier"
+}

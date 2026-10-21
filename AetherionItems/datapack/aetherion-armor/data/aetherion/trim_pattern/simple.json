@@ -1,0 +1,8 @@
+{
+  "asset_id": "aetherion:simple",
+  "decal": false,
+  "description": {
+    "text": "Simple"
+  },
+  "template_item": "minecraft:barrier"
+}

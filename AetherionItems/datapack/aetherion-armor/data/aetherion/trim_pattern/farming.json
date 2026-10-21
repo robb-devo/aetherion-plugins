@@ -1,0 +1,8 @@
+{
+  "asset_id": "aetherion:farming",
+  "decal": false,
+  "description": {
+    "text": "Farming"
+  },
+  "template_item": "minecraft:barrier"
+}

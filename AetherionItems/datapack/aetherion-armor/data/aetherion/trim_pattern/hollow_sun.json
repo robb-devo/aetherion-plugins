@@ -1,0 +1,8 @@
+{
+  "asset_id": "aetherion:hollow_sun",
+  "decal": false,
+  "description": {
+    "text": "Hollow Sun"
+  },
+  "template_item": "minecraft:barrier"
+}
