@@ -188,12 +188,28 @@ public class BossCommand implements CommandExecutor, TabCompleter {
     }
 
     private void stage(CommandSender sender, String[] args) {
+        if (args.length >= 2 && "sweep".equalsIgnoreCase(args[1])) {
+            // Seraphine's old arena: find leftovers in a box and strike them by layout (console-safe).
+            org.bukkit.World world = args.length >= 7 ? org.bukkit.Bukkit.getWorld(args[2]) : null;
+            if (world == null) {
+                sender.sendMessage(TextUtil.component("&cUsage: /boss stage sweep <world> <x1> <z1> <x2> <z2> [apply]"));
+                return;
+            }
+            try {
+                de.aetherion.bossengine.instance.saint.StageSweep.run(plugin, sender, world,
+                        Integer.parseInt(args[3]), Integer.parseInt(args[4]), Integer.parseInt(args[5]),
+                        Integer.parseInt(args[6]), args.length >= 8 && "apply".equalsIgnoreCase(args[7]));
+            } catch (NumberFormatException ex) {
+                sender.sendMessage(TextUtil.component("&cCoordinates must be whole numbers."));
+            }
+            return;
+        }
         if (!(sender instanceof Player player)) {
             sender.sendMessage(TextUtil.component("&cPlayers only."));
             return;
         }
         if (args.length < 2) {
-            sender.sendMessage(TextUtil.component("&cUsage: /boss stage <build|remove>"));
+            sender.sendMessage(TextUtil.component("&cUsage: /boss stage <build|remove|sweep>"));
             return;
         }
         String action = args[1].toLowerCase(Locale.ROOT);
@@ -299,7 +315,7 @@ public class BossCommand implements CommandExecutor, TabCompleter {
             return filter(args[1], ids);
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("stage")) {
-            return filter(args[1], List.of("build", "remove"));
+            return filter(args[1], List.of("build", "remove", "sweep"));
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("worldeater")) {
             return filter(args[1], List.of("create", "build", "go", "reset", "open", "status"));

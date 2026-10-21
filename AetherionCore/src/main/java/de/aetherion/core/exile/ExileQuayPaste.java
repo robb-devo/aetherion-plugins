@@ -184,7 +184,7 @@ public final class ExileQuayPaste {
         });
     }
 
-    private static File resolve(AetherionCore plugin, String name) {
+    static File resolve(AetherionCore plugin, String name) {
         File plugins = plugin.getDataFolder().getParentFile();
         File[] candidates = {
                 new File(plugins, "FastAsyncWorldEdit/schematics/" + name),

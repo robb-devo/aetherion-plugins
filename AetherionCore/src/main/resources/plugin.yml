@@ -22,7 +22,7 @@ commands:
     usage: /wipe beta confirm
   exile:
     description: Cross to the exile island (mmo-c) or return
-    usage: /exile [go|return|replay|stop|where|causeway|paste|placequay|clearsaint|quayundo]
+    usage: /exile [go|return|replay|stop|where|causeway|paste|placequay|clearsaint|quayundo|repairquay]
     aliases: [exil]
   raidban:
     description: Anti bot-raid menu - pick players by join order and IP-ban them on every server

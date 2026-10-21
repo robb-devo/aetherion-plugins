@@ -83,6 +83,15 @@ public final class ExileCommand implements CommandExecutor, TabCompleter {
             }
             return true;
         }
+        // Mooring chain (and the causeway) back where the Seraphine clears cut them. Dry run unless "apply".
+        if ("repairquay".equals(sub)) {
+            if (!admin) {
+                sender.sendMessage("§cNo permission.");
+                return true;
+            }
+            de.aetherion.core.exile.ExileQuayRepair.run(plugin, sender, args.length >= 2 && "apply".equalsIgnoreCase(args[1]));
+            return true;
+        }
         // Walk from the Borderlands cliff to the pier head: stand where it should leave the cliff. "undo" takes it back.
         if ("causeway".equals(sub)) {
             if (!admin) {
@@ -259,7 +268,7 @@ public final class ExileCommand implements CommandExecutor, TabCompleter {
                 || sender instanceof org.bukkit.command.ConsoleCommandSender;
         for (String s : admin
                 ? List.of("go", "return", "replay", "stop", "where", "setquay", "causeway", "paste",
-                        "placequay", "quayundo", "clearsaint", "restoremap", "cleararena")
+                        "placequay", "quayundo", "clearsaint", "restoremap", "cleararena", "repairquay")
                 : List.of("go", "return", "replay", "stop", "where")) {
             if (s.startsWith(prefix)) {
                 out.add(s);
