@@ -113,6 +113,58 @@
     [
       7721,
       "aetherion:item/gui/locked"
+    ],
+    [
+      7740,
+      "aetherion:item/gui/bazaar_locked"
+    ],
+    [
+      7741,
+      "aetherion:item/gui/skills_locked"
+    ],
+    [
+      7742,
+      "aetherion:item/gui/auction_locked"
+    ],
+    [
+      7743,
+      "aetherion:item/gui/bestiary_locked"
+    ],
+    [
+      7744,
+      "aetherion:item/gui/collection_locked"
+    ],
+    [
+      7745,
+      "aetherion:item/gui/pets_locked"
+    ],
+    [
+      7746,
+      "aetherion:item/gui/journal_locked"
+    ],
+    [
+      7747,
+      "aetherion:item/gui/recipes_locked"
+    ],
+    [
+      7748,
+      "aetherion:item/gui/island_locked"
+    ],
+    [
+      7749,
+      "aetherion:item/gui/guild_locked"
+    ],
+    [
+      7750,
+      "aetherion:item/gui/spawns_locked"
+    ],
+    [
+      7751,
+      "aetherion:item/gui/craft_locked"
+    ],
+    [
+      7752,
+      "aetherion:item/gui/anvil_locked"
     ]
   ],
   "gray_stained_glass_pane": [
@@ -153,6 +205,58 @@
       "aetherion:item/gui/later"
     ],
     [
+      7780,
+      "aetherion:item/gui/bazaar_later"
+    ],
+    [
+      7781,
+      "aetherion:item/gui/skills_later"
+    ],
+    [
+      7782,
+      "aetherion:item/gui/auction_later"
+    ],
+    [
+      7783,
+      "aetherion:item/gui/bestiary_later"
+    ],
+    [
+      7784,
+      "aetherion:item/gui/collection_later"
+    ],
+    [
+      7785,
+      "aetherion:item/gui/pets_later"
+    ],
+    [
+      7786,
+      "aetherion:item/gui/journal_later"
+    ],
+    [
+      7787,
+      "aetherion:item/gui/recipes_later"
+    ],
+    [
+      7788,
+      "aetherion:item/gui/island_later"
+    ],
+    [
+      7789,
+      "aetherion:item/gui/guild_later"
+    ],
+    [
+      7790,
+      "aetherion:item/gui/spawns_later"
+    ],
+    [
+      7791,
+      "aetherion:item/gui/craft_later"
+    ],
+    [
+      7792,
+      "aetherion:item/gui/anvil_later"
+    ],
+    [
       7700,
       "aetherion:item/gui/empty"
     ]
@@ -161,6 +265,58 @@
     [
       7722,
       "aetherion:item/gui/next"
+    ],
+    [
+      7760,
+      "aetherion:item/gui/bazaar_next"
+    ],
+    [
+      7761,
+      "aetherion:item/gui/skills_next"
+    ],
+    [
+      7762,
+      "aetherion:item/gui/auction_next"
+    ],
+    [
+      7763,
+      "aetherion:item/gui/bestiary_next"
+    ],
+    [
+      7764,
+      "aetherion:item/gui/collection_next"
+    ],
+    [
+      7765,
+      "aetherion:item/gui/pets_next"
+    ],
+    [
+      7766,
+      "aetherion:item/gui/journal_next"
+    ],
+    [
+      7767,
+      "aetherion:item/gui/recipes_next"
+    ],
+    [
+      7768,
+      "aetherion:item/gui/island_next"
+    ],
+    [
+      7769,
+      "aetherion:item/gui/guild_next"
+    ],
+    [
+      7770,
+      "aetherion:item/gui/spawns_next"
+    ],
+    [
+      7771,
+      "aetherion:item/gui/craft_next"
+    ],
+    [
+      7772,
+      "aetherion:item/gui/anvil_next"
     ]
   ],
   "nether_star": [

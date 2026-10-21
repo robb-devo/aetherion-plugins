@@ -1,0 +1,918 @@
+{
+ "providers": [
+  {
+   "type": "space",
+   "advances": {
+    "\uf801": -1,
+    "\uf821": 1,
+    "\uf802": -2,
+    "\uf822": 2,
+    "\uf803": -4,
+    "\uf823": 4,
+    "\uf804": -8,
+    "\uf824": 8,
+    "\uf805": -16,
+    "\uf825": 16,
+    "\uf806": -32,
+    "\uf826": 32,
+    "\uf807": -64,
+    "\uf827": 64,
+    "\uf808": -128,
+    "\uf828": 128
+   }
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/plate_0.png",
+   "ascent": 0,
+   "height": 43,
+   "chars": [
+    "\ue700"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/plate_1.png",
+   "ascent": 0,
+   "height": 57,
+   "chars": [
+    "\ue701"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/plate_2.png",
+   "ascent": 0,
+   "height": 69,
+   "chars": [
+    "\ue702"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/plate_3.png",
+   "ascent": 0,
+   "height": 81,
+   "chars": [
+    "\ue703"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/crest.png",
+   "ascent": 0,
+   "height": 24,
+   "chars": [
+    "\ue704"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/frame_hp.png",
+   "ascent": 0,
+   "height": 11,
+   "chars": [
+    "\ue705"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/frame_stamina.png",
+   "ascent": 0,
+   "height": 7,
+   "chars": [
+    "\ue706"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/frame_xp.png",
+   "ascent": 0,
+   "height": 4,
+   "chars": [
+    "\ue707"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/frame_cd.png",
+   "ascent": 0,
+   "height": 9,
+   "chars": [
+    "\ue708"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/frame_cd_ready.png",
+   "ascent": 0,
+   "height": 9,
+   "chars": [
+    "\ue709"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/frame_cd_deny.png",
+   "ascent": 0,
+   "height": 9,
+   "chars": [
+    "\ue70a"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/icon_heart.png",
+   "ascent": 0,
+   "height": 7,
+   "chars": [
+    "\ue710"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/icon_heart.png",
+   "ascent": -1,
+   "height": 7,
+   "chars": [
+    "\ue760"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/icon_heart_poison.png",
+   "ascent": 0,
+   "height": 7,
+   "chars": [
+    "\ue711"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/icon_heart_poison.png",
+   "ascent": -1,
+   "height": 7,
+   "chars": [
+    "\ue761"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/icon_heart_wither.png",
+   "ascent": 0,
+   "height": 7,
+   "chars": [
+    "\ue712"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/icon_heart_wither.png",
+   "ascent": -1,
+   "height": 7,
+   "chars": [
+    "\ue762"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/icon_heart_frozen.png",
+   "ascent": 0,
+   "height": 7,
+   "chars": [
+    "\ue713"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/icon_heart_frozen.png",
+   "ascent": -1,
+   "height": 7,
+   "chars": [
+    "\ue763"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/icon_heart_gold.png",
+   "ascent": 0,
+   "height": 7,
+   "chars": [
+    "\ue714"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/icon_heart_gold.png",
+   "ascent": -1,
+   "height": 7,
+   "chars": [
+    "\ue764"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/icon_shield.png",
+   "ascent": 0,
+   "height": 7,
+   "chars": [
+    "\ue715"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/icon_shield.png",
+   "ascent": -1,
+   "height": 7,
+   "chars": [
+    "\ue765"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/icon_coin.png",
+   "ascent": 0,
+   "height": 7,
+   "chars": [
+    "\ue716"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/icon_coin.png",
+   "ascent": -1,
+   "height": 7,
+   "chars": [
+    "\ue766"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/icon_shard.png",
+   "ascent": 0,
+   "height": 7,
+   "chars": [
+    "\ue717"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/icon_shard.png",
+   "ascent": -1,
+   "height": 7,
+   "chars": [
+    "\ue767"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/icon_hourglass.png",
+   "ascent": 0,
+   "height": 7,
+   "chars": [
+    "\ue718"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/icon_hourglass.png",
+   "ascent": -1,
+   "height": 7,
+   "chars": [
+    "\ue768"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/icon_check.png",
+   "ascent": 0,
+   "height": 7,
+   "chars": [
+    "\ue719"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/icon_check.png",
+   "ascent": -1,
+   "height": 7,
+   "chars": [
+    "\ue769"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/icon_cross.png",
+   "ascent": 0,
+   "height": 7,
+   "chars": [
+    "\ue71a"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/icon_cross.png",
+   "ascent": -1,
+   "height": 7,
+   "chars": [
+    "\ue76a"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/icon_star.png",
+   "ascent": 0,
+   "height": 7,
+   "chars": [
+    "\ue71b"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/icon_star.png",
+   "ascent": -1,
+   "height": 7,
+   "chars": [
+    "\ue76b"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/icon_cloud.png",
+   "ascent": 0,
+   "height": 7,
+   "chars": [
+    "\ue71c"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/icon_cloud.png",
+   "ascent": -1,
+   "height": 7,
+   "chars": [
+    "\ue76c"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/icon_divider.png",
+   "ascent": 0,
+   "height": 7,
+   "chars": [
+    "\ue71d"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/icon_divider.png",
+   "ascent": -1,
+   "height": 7,
+   "chars": [
+    "\ue76d"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/fill_hp_1.png",
+   "ascent": -1,
+   "height": 9,
+   "chars": [
+    "\ue720"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/fill_hp_2.png",
+   "ascent": -1,
+   "height": 9,
+   "chars": [
+    "\ue721"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/fill_hp_4.png",
+   "ascent": -1,
+   "height": 9,
+   "chars": [
+    "\ue722"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/fill_hp_8.png",
+   "ascent": -1,
+   "height": 9,
+   "chars": [
+    "\ue723"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/fill_hp_16.png",
+   "ascent": -1,
+   "height": 9,
+   "chars": [
+    "\ue724"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/fill_hp_32.png",
+   "ascent": -1,
+   "height": 9,
+   "chars": [
+    "\ue725"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/fill_hp_64.png",
+   "ascent": -1,
+   "height": 9,
+   "chars": [
+    "\ue726"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/fill_stamina_1.png",
+   "ascent": -1,
+   "height": 5,
+   "chars": [
+    "\ue728"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/fill_stamina_2.png",
+   "ascent": -1,
+   "height": 5,
+   "chars": [
+    "\ue729"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/fill_stamina_4.png",
+   "ascent": -1,
+   "height": 5,
+   "chars": [
+    "\ue72a"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/fill_stamina_8.png",
+   "ascent": -1,
+   "height": 5,
+   "chars": [
+    "\ue72b"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/fill_stamina_16.png",
+   "ascent": -1,
+   "height": 5,
+   "chars": [
+    "\ue72c"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/fill_stamina_32.png",
+   "ascent": -1,
+   "height": 5,
+   "chars": [
+    "\ue72d"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/fill_stamina_64.png",
+   "ascent": -1,
+   "height": 5,
+   "chars": [
+    "\ue72e"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/fill_xp_1.png",
+   "ascent": -1,
+   "height": 2,
+   "chars": [
+    "\ue730"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/fill_xp_2.png",
+   "ascent": -1,
+   "height": 2,
+   "chars": [
+    "\ue731"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/fill_xp_4.png",
+   "ascent": -1,
+   "height": 2,
+   "chars": [
+    "\ue732"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/fill_xp_8.png",
+   "ascent": -1,
+   "height": 2,
+   "chars": [
+    "\ue733"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/fill_xp_16.png",
+   "ascent": -1,
+   "height": 2,
+   "chars": [
+    "\ue734"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/fill_xp_32.png",
+   "ascent": -1,
+   "height": 2,
+   "chars": [
+    "\ue735"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/fill_xp_64.png",
+   "ascent": -1,
+   "height": 2,
+   "chars": [
+    "\ue736"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/fill_cd_1.png",
+   "ascent": -1,
+   "height": 7,
+   "chars": [
+    "\ue738"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/fill_cd_2.png",
+   "ascent": -1,
+   "height": 7,
+   "chars": [
+    "\ue739"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/fill_cd_4.png",
+   "ascent": -1,
+   "height": 7,
+   "chars": [
+    "\ue73a"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/fill_cd_8.png",
+   "ascent": -1,
+   "height": 7,
+   "chars": [
+    "\ue73b"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/fill_cd_16.png",
+   "ascent": -1,
+   "height": 7,
+   "chars": [
+    "\ue73c"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/fill_cd_32.png",
+   "ascent": -1,
+   "height": 7,
+   "chars": [
+    "\ue73d"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/fill_cd_64.png",
+   "ascent": -1,
+   "height": 7,
+   "chars": [
+    "\ue73e"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/radar.png",
+   "ascent": 0,
+   "height": 64,
+   "chars": [
+    "\ue740"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/mark_quest.png",
+   "ascent": 0,
+   "height": 7,
+   "chars": [
+    "\ue741"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/mark_quest_up.png",
+   "ascent": 0,
+   "height": 7,
+   "chars": [
+    "\ue742"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/mark_quest_down.png",
+   "ascent": 0,
+   "height": 7,
+   "chars": [
+    "\ue743"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/mark_npc.png",
+   "ascent": 0,
+   "height": 5,
+   "chars": [
+    "\ue744"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/mark_party.png",
+   "ascent": 0,
+   "height": 5,
+   "chars": [
+    "\ue745"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/mark_boss.png",
+   "ascent": 0,
+   "height": 7,
+   "chars": [
+    "\ue746"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/mark_north.png",
+   "ascent": 0,
+   "height": 7,
+   "chars": [
+    "\ue747"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/loc_left.png",
+   "ascent": -2,
+   "height": 13,
+   "chars": [
+    "\ue750"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/loc_right.png",
+   "ascent": -2,
+   "height": 13,
+   "chars": [
+    "\ue751"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/loc_mid_1.png",
+   "ascent": -2,
+   "height": 13,
+   "chars": [
+    "\ue752"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/loc_mid_2.png",
+   "ascent": -2,
+   "height": 13,
+   "chars": [
+    "\ue753"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/loc_mid_4.png",
+   "ascent": -2,
+   "height": 13,
+   "chars": [
+    "\ue754"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/loc_mid_8.png",
+   "ascent": -2,
+   "height": 13,
+   "chars": [
+    "\ue755"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/loc_mid_16.png",
+   "ascent": -2,
+   "height": 13,
+   "chars": [
+    "\ue756"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/loc_mid_32.png",
+   "ascent": -2,
+   "height": 13,
+   "chars": [
+    "\ue757"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/loc_mid_64.png",
+   "ascent": -2,
+   "height": 13,
+   "chars": [
+    "\ue758"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/chip_left.png",
+   "ascent": -2,
+   "height": 11,
+   "chars": [
+    "\ue770"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/chip_right.png",
+   "ascent": -2,
+   "height": 11,
+   "chars": [
+    "\ue771"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/chip_mid_1.png",
+   "ascent": -2,
+   "height": 11,
+   "chars": [
+    "\ue772"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/chip_mid_2.png",
+   "ascent": -2,
+   "height": 11,
+   "chars": [
+    "\ue773"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/chip_mid_4.png",
+   "ascent": -2,
+   "height": 11,
+   "chars": [
+    "\ue774"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/chip_mid_8.png",
+   "ascent": -2,
+   "height": 11,
+   "chars": [
+    "\ue775"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/chip_mid_16.png",
+   "ascent": -2,
+   "height": 11,
+   "chars": [
+    "\ue776"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/chip_mid_32.png",
+   "ascent": -2,
+   "height": 11,
+   "chars": [
+    "\ue777"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/chip_mid_64.png",
+   "ascent": -2,
+   "height": 11,
+   "chars": [
+    "\ue778"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/small_0.png",
+   "ascent": 0,
+   "height": 7,
+   "chars": [
+    "\u0000\ue781\u0000\u0000\u0000\ue785\u0000\ue787\ue788\ue789\u0000\ue78b\ue78c\ue78d\ue78e\ue78f",
+    "\ue790\ue791\ue792\ue793\ue794\ue795\ue796\ue797\ue798\ue799\ue79a\u0000\u0000\u0000\u0000\ue79f",
+    "\u0000\ue7a1\ue7a2\ue7a3\ue7a4\ue7a5\ue7a6\ue7a7\ue7a8\ue7a9\ue7aa\ue7ab\ue7ac\ue7ad\ue7ae\ue7af",
+    "\ue7b0\ue7b1\ue7b2\ue7b3\ue7b4\ue7b5\ue7b6\ue7b7\ue7b8\ue7b9\ue7ba\u0000\u0000\u0000\u0000\u0000",
+    "\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\ue7cb\u0000\ue7cd\u0000\u0000",
+    "\u0000\u0000\u0000\ue7d3\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/small_1.png",
+   "ascent": 0,
+   "height": 8,
+   "chars": [
+    "\u0000\ue801\u0000\u0000\u0000\ue805\u0000\ue807\ue808\ue809\u0000\ue80b\ue80c\ue80d\ue80e\ue80f",
+    "\ue810\ue811\ue812\ue813\ue814\ue815\ue816\ue817\ue818\ue819\ue81a\u0000\u0000\u0000\u0000\ue81f",
+    "\u0000\ue821\ue822\ue823\ue824\ue825\ue826\ue827\ue828\ue829\ue82a\ue82b\ue82c\ue82d\ue82e\ue82f",
+    "\ue830\ue831\ue832\ue833\ue834\ue835\ue836\ue837\ue838\ue839\ue83a\u0000\u0000\u0000\u0000\u0000",
+    "\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\ue84b\u0000\ue84d\u0000\u0000",
+    "\u0000\u0000\u0000\ue853\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/big_0.png",
+   "ascent": 0,
+   "height": 9,
+   "chars": [
+    "\u0000\u0000\u0000\u0000\u0000\u0000\u0000\ue887\ue888\ue889\u0000\u0000\u0000\ue88d\ue88e\u0000",
+    "\ue890\ue891\ue892\ue893\ue894\ue895\ue896\ue897\ue898\ue899\u0000\u0000\u0000\u0000\u0000\u0000",
+    "\u0000\ue8a1\ue8a2\ue8a3\ue8a4\ue8a5\ue8a6\ue8a7\ue8a8\ue8a9\ue8aa\ue8ab\ue8ac\ue8ad\ue8ae\ue8af",
+    "\ue8b0\ue8b1\ue8b2\ue8b3\ue8b4\ue8b5\ue8b6\ue8b7\ue8b8\ue8b9\ue8ba\u0000\u0000\u0000\u0000\u0000",
+    "\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000",
+    "\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/carrier/big_1.png",
+   "ascent": 0,
+   "height": 10,
+   "chars": [
+    "\u0000\u0000\u0000\u0000\u0000\u0000\u0000\ue907\ue908\ue909\u0000\u0000\u0000\ue90d\ue90e\u0000",
+    "\ue910\ue911\ue912\ue913\ue914\ue915\ue916\ue917\ue918\ue919\u0000\u0000\u0000\u0000\u0000\u0000",
+    "\u0000\ue921\ue922\ue923\ue924\ue925\ue926\ue927\ue928\ue929\ue92a\ue92b\ue92c\ue92d\ue92e\ue92f",
+    "\ue930\ue931\ue932\ue933\ue934\ue935\ue936\ue937\ue938\ue939\ue93a\u0000\u0000\u0000\u0000\u0000",
+    "\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000",
+    "\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000"
+   ]
+  }
+ ]
+}

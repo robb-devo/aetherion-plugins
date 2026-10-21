@@ -68,6 +68,7 @@ public class AetherionItems extends JavaPlugin {
     private BukkitRecipeService recipeService;
     private HealthListener healthListener;
     private de.aetherion.items.hud.DisplayVfx displayVfx;
+    private de.aetherion.items.hud.HudCarrier hudCarrier;
     private HarvestListener harvestListener;
     private de.aetherion.core.api.HarvestAccess harvestAccess;
     private de.aetherion.items.mining.OreTrollListener oreTrollListener;
@@ -420,8 +421,11 @@ public class AetherionItems extends JavaPlugin {
             displayVfx = new de.aetherion.items.hud.DisplayVfx(this);
             displayVfx.sweep();
             de.aetherion.core.api.Vfx.register(displayVfx);
+            hudCarrier = new de.aetherion.items.hud.HudCarrier(() -> getConfig().getBoolean("hud.pack-glyphs", true)
+                    && !"classic".equalsIgnoreCase(getConfig().getString("hud.layout", "panel")));
+            getServer().getPluginManager().registerEvents(hudCarrier, this);
             healthListener.hud().panelPainter(
-                    new de.aetherion.items.hud.StatusPanel(this, new de.aetherion.items.hud.RadarHud()));
+                    new de.aetherion.items.hud.StatusPanel(this, new de.aetherion.items.hud.RadarHud(), hudCarrier));
         } catch (Throwable t) {
             getLogger().log(java.util.logging.Level.WARNING, "Status panel / VFX failed to start, classic HUD stays", t);
         }
@@ -577,6 +581,10 @@ public class AetherionItems extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (hudCarrier != null) {
+            try { hudCarrier.shutdown(); } catch (Throwable ignored) { }
+            hudCarrier = null;
+        }
         if (displayVfx != null) {
             de.aetherion.core.api.Vfx.unregister(displayVfx);
             try { displayVfx.sweep(); } catch (Throwable ignored) { }

@@ -5,13 +5,14 @@ import de.aetherion.core.api.AetherServices;
 import de.aetherion.core.api.PartyAccess;
 import de.aetherion.core.api.QuestProgressAccess;
 import de.aetherion.core.api.Vfx;
-import de.aetherion.items.combat.HudGlyphs;
 
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,25 +21,16 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Round radar on the right, below the potion icons: quest target, quest NPCs, party, bosses, north.
- * The map turns with the player's view (forward is always up). Out-of-range quest, party and boss
- * markers sit on the rim so they still point the way; NPCs only show inside the range. The quest
- * marker carries an arrow when the target is well above or below the player.
+ * Round radar top right: quest target, quest NPCs, party, bosses, north. The map turns with the player's
+ * view (forward is always up). Out-of-range quest, party and boss markers sit on the rim so they still
+ * point the way; NPCs only show inside the range. The quest marker becomes an up or down arrow when the
+ * target is well above or below the player. It drops under the vanilla effect icons while they show.
  */
 public final class RadarHud {
 
-    private static final int DISC = 0xE420;
-    private static final int DOT_QUEST = 0xE421;
-    private static final int DOT_NPC = 0xE422;
-    private static final int DOT_PARTY = 0xE423;
-    private static final int DOT_BOSS = 0xE424;
-    private static final int DOT_NORTH = 0xE425;
-    private static final int DOT_QUEST_UP = 0xE426;
-    private static final int DOT_QUEST_DOWN = 0xE427;
-    private static final int SIZE = 64;
-    private static final int CENTRE = 32;
+    private static final int CENTRE = HudPen.RADAR_W / 2;
     /** Marker ring radius in px, and the blocks it stands for. */
-    private static final int R = 25;
+    private static final int R = 23;
     private static final double RANGE = 48.0;
     private static final long SCAN_TICKS = 10L;
     /** Height difference (blocks) at which the quest marker shows an up or down arrow. */
@@ -50,41 +42,56 @@ public final class RadarHud {
     private final Map<UUID, Scan> scans = new ConcurrentHashMap<>();
     private final Map<UUID, Location> lastQuest = new ConcurrentHashMap<>();
 
-    void draw(HudGlyphs.Pen pen, Player player, long tick) {
+    /** Vanilla effect icon rows the radar has to clear: 0 none, 1 beneficial row, 2 the second row too. */
+    static int effectRows(Player player) {
+        int rows = 0;
+        for (PotionEffect effect : player.getActivePotionEffects()) {
+            if (!effect.hasIcon()) {
+                continue;
+            }
+            if (effect.getType().getEffectCategory() != PotionEffectType.Category.BENEFICIAL) {
+                return 2;
+            }
+            rows = 1;
+        }
+        return rows;
+    }
+
+    void draw(HudPen pen, Player player, long tick, int state) {
         UUID id = player.getUniqueId();
         Scan scan = scans.get(id);
         if (scan == null || tick - scan.tick() >= SCAN_TICKS || tick < scan.tick()) {
             scan = scan(player, tick);
             scans.put(id, scan);
         }
-        pen.at(0).raw(StatusPanel.FONT, DISC, SIZE + 1, PanelPalette.radarBody(HudGlyphs.WHITE));
+        pen.at(0).glyph(HudPen.RADAR, HudPen.RADAR_W + 1, PanelPalette.radar(state, PanelPalette.PART_DISC, PanelPalette.WHITE));
 
         Location here = player.getLocation();
         double yaw = Math.toRadians(here.getYaw());
         for (Location npc : scan.npcs()) {
-            mark(pen, here, yaw, npc, DOT_NPC, 5, false);
+            mark(pen, state, here, yaw, npc, HudPen.Mark.NPC, false);
         }
         PartyAccess party = AetherServices.party();
         if (party != null && party.inParty(player)) {
             for (Player mate : party.onlineMembers(player)) {
                 if (!mate.equals(player) && mate.getWorld().equals(player.getWorld())) {
-                    mark(pen, here, yaw, mate.getLocation(), DOT_PARTY, 5, true);
+                    mark(pen, state, here, yaw, mate.getLocation(), HudPen.Mark.PARTY, true);
                 }
             }
         }
         if (scan.quest() != null) {
             double rise = scan.quest().getY() - here.getY();
-            int glyph = rise > LEVEL_GAP ? DOT_QUEST_UP : rise < -LEVEL_GAP ? DOT_QUEST_DOWN : DOT_QUEST;
-            mark(pen, here, yaw, scan.quest(), glyph, 7, true);
+            HudPen.Mark glyph = rise > LEVEL_GAP ? HudPen.Mark.QUEST_UP : rise < -LEVEL_GAP ? HudPen.Mark.QUEST_DOWN : HudPen.Mark.QUEST;
+            mark(pen, state, here, yaw, scan.quest(), glyph, true);
         }
         for (Entity boss : scan.bosses()) {
             if (boss.isValid()) {
-                mark(pen, here, yaw, boss.getLocation(), DOT_BOSS, 7, true);
+                mark(pen, state, here, yaw, boss.getLocation(), HudPen.Mark.BOSS, true);
             }
         }
         // North on the rim: direction (0, -1) in world x/z.
         Location north = here.clone().add(0, 0, -RANGE * 4);
-        mark(pen, here, yaw, north, DOT_NORTH, 5, true);
+        mark(pen, state, here, yaw, north, HudPen.Mark.NORTH, true);
     }
 
     void forget(UUID playerId) {
@@ -127,7 +134,8 @@ public final class RadarHud {
     }
 
     /** Projects {@code at} into the disc and draws {@code glyph} centred on it. */
-    private static void mark(HudGlyphs.Pen pen, Location here, double yaw, Location at, int glyph, int size, boolean clamp) {
+    private static void mark(HudPen pen, int state, Location here, double yaw, Location at, HudPen.Mark glyph, boolean clamp) {
+        int size = glyph.size;
         double dx = at.getX() - here.getX();
         double dz = at.getZ() - here.getZ();
         double sin = Math.sin(yaw);
@@ -148,6 +156,6 @@ public final class RadarHud {
         }
         int x = CENTRE + (int) Math.round(px) - size / 2;
         int y = CENTRE + (int) Math.round(py) - size / 2;
-        pen.at(x).raw(StatusPanel.FONT, glyph, size + 1, PanelPalette.radarMark(y));
+        pen.at(x).mark(glyph, PanelPalette.radar(state, PanelPalette.PART_MARK, y + 64));
     }
 }

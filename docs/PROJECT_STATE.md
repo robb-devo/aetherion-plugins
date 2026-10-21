@@ -1,6 +1,6 @@
 # Aetherion — Project state (read this first)
 
-Snapshot: **2026-10-20**. One page so a new session does not have to rescan the
+Snapshot: **2026-10-21**. One page so a new session does not have to rescan the
 repo. Update the dated sections when they change.
 Open work and priorities: [BETA_AUDIT_2026-10-19.md](BETA_AUDIT_2026-10-19.md).
 Ops, hosting and access details are deliberately **not** in this repo; they live in
@@ -10,7 +10,7 @@ the private `aetherion-ops/` folder on Robb's PC (`docs/OPUS_SESSION_BIBLE.md`,
 ## What this is
 
 Minecraft MMORPG network "Aetherion" on Paper 1.21.1 behind a Velocity proxy.
-17 Maven modules (one plugin each), ~470k lines of Java, 4 unit tests.
+17 Maven modules (one plugin each) plus the Velocity plugin AetherionProxy, ~470k lines of Java, 4 unit tests.
 CI (`.github/workflows/compile.yml`) only compiles.
 
 | Module | Role | Java LOC |
@@ -27,6 +27,7 @@ CI (`.github/workflows/compile.yml`) only compiles.
 | AetherionMining / Foraging / Farming / Fishing | Gathering isles (Eldervale) | 15k / 16k / 11k / 9k |
 | AetherionGnomon | Adaptive boss encounter | 9k |
 | AetherionBeta / Pit / StressBots | Beta tooling, Pit minigame, QA load bots | 3k / 2k / 4k |
+| AetherionProxy | Velocity plugin: sends the resource pack once per session (own build, JDK 25) | 0.2k |
 
 Backends: **hub** (lobby + Pit), **mmo-r** (main world, capital, isles, bosses, market),
 **mmo-d** (dungeons only), **mmo-c** (exile/story), **mmo-i** (private + guild islands).
@@ -40,9 +41,9 @@ Backends: **hub** (lobby + Pit), **mmo-r** (main world, capital, isles, bosses, 
   ~6000 dirty files. Do not build or commit from it.
 - Agent prompts and briefs live in `docs/prompts/`; they are history, not specs.
 
-## Live plugin builds (sha1 prefix, 2026-10-20 23:20)
+## Live plugin builds (sha1 prefix, 2026-10-21)
 
-Same on every server that loads them: Core `536b35c5`, Items `bd77dce7` (10-20, main `b2feecac`, PR #80/#81; mmo-r, mmo-d, mmo-c, mmo-i; not on hub), Quests `06201980` (same build; not on hub),
+Same on every server that loads them: Core `536b35c5`, Items `e0b18ce1` (10-21, HUD carrier + menu icons; mmo-r, mmo-d, mmo-c, mmo-i; not on hub), Quests `06201980` (10-20; not on hub),
 BossEngine `0b4760db`, Gnomon `684013f0`, AetherMobs `078432e9`, Guilds `60342686`. Each of these is
 byte-identical to a build of `main` (classes and resources).
 
@@ -52,29 +53,40 @@ byte-identical to a build of `main` (classes and resources).
 | Mining / Foraging / Farming / Fishing | d55c57f6 / 8d58797b (10-20) / 5e8a58ce / a6aae3f0 | – | same as mmo-r | – | – |
 | Hub | 96ed909c | – | – | – | **d1a097e7 (10-05)** |
 | Beta | ed9d1621 | ed9d1621 | – | – | – |
-| SamuraiBoss / Pit | mmo-r only | | | | Pit on hub |
+| SamuraiBoss / Pit | mmo-r only | | | | Pit `7e494d00` (10-21, HP readout) on hub |
+
+The proxy runs **AetherionProxy** `59ea8339` (Velocity 4, built on JDK 25, see "Resource pack").
 
 The bold cell is drift on purpose: a newer Hub would switch on Origin systems (props, chests, NPCs) in the
 lobby. Hub and Fishing left mmo-d on 10-20 (jars in `plugins.bak-pre-mmod-cleanup-*`, data folders kept);
 there Dungeons registers `/spawn` and `/hub` itself and sends players back to the main world. StressBots left mmo-r and mmo-d on 10-19 (jar in the ship backup, data folder kept).
 Old Farming left mmo-d on 10-19 (it piled ~283k ambient mobs into one chunk).
 
-## Resource pack (2026-10-20)
+## Resource pack (2026-10-21)
 
-Two served zips (10-20 23:20, from `eb2d6026` plus only the GUI paths of PR #80; never copy the repo pack's
-item models/textures, they are stale). `Aetherion_texturepack.zip` sha1 `59efc5d3` on mmo-r, mmo-d, mmo-c, mmo-i:
-pixel-art HUD, radar, panel, emblems and combat glyphs, and it blanks the vanilla heart/food/armour sprites
-for the Aetherion HUD. `Aetherion_texturepack_hub.zip` sha1 `36fe897c` on the hub only: the same pack without
-`minecraft/textures/gui/sprites/hud/`, so vanilla bars show where no Aetherion HUD runs. mmo-c and
-mmo-i leave `resource-pack=` empty (players arrive with the pack from hub or mmo-r). The repo pack is only
-the HUD/GUI source, not the full pack; build the served zip from the live one.
+**One pack for the whole network, sent once by the proxy.** `Aetherion_texturepack.zip` sha1 `52784940`.
+The Velocity plugin `AetherionProxy` offers it when a player first reaches a backend (required, hash read
+from the served zip); no backend advertises a pack any more (`resource-pack=` empty everywhere), so moving
+between hub, mmo-r, mmo-d, mmo-c and mmo-i never reloads resources. The hub has the full pack too: vanilla
+hearts are hidden network-wide, and the Pit shows HP as text on the ActionBar.
+
+Pack swap: build with `AetherionItems/tools/build_served_pack.py <live.zip> <out.zip> <1.21.1 client jar>`
+(the live zip plus exactly the HUD/GUI paths the generators own; never copy the repo pack's item models or
+textures, they are stale), upload over the served zip, then on the proxy console `aepack reload` and
+`aepack push`. No `server.properties` edits.
+
+HUD (10-21): status frame top left and radar top right ride an invisible BLUE boss bar
+(`de.aetherion.items.hud.HudCarrier`), not the ActionBar, so they no longer fade on lag or vanish when
+something else writes to the ActionBar. Art, font and shaders: `tools/gen_carrier.py`; the text shader also
+caps the HUD's size on large GUI scales. Manager and menu icons: `tools/gen_gui_icons.py` (16 px objects in
+each menu's accent colour; locked tabs keep their picture, greyed with a padlock).
 
 ## Content state (verified against live 2026-10-19)
 
 Live and committed: onboarding v2 (Acts I–VII incl. skill-isle lessons), exile crossing,
 explore-chest scatter, pet bodies, Saitama main island (parts 1–3 + harbour), Codex/Skills
-overhaul, GIGA texture pack, German overlay, player HUD + boss bars, HUD panel + radar (HD art since 10-20,
-radar quest marker shows above/below), Manager GUI icons and invisible fillers (10-20),
+overhaul, GIGA texture pack, German overlay, player HUD + boss bars, HUD frame + radar on the boss-bar carrier
+(10-21, radar quest marker shows above/below), Manager GUI icons (redrawn 10-21) and invisible fillers,
 combat system (guard, cadence, mobility, stamina HUD), SamuraiBoss.
 
 Known gaps:

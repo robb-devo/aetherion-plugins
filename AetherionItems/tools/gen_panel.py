@@ -1,10 +1,9 @@
-"""Status panel, radar and VFX art + the HUD anchor shader + generated sounds.
+"""World VFX glyphs + generated sounds. The HUD (frame, radar, its shaders) is gen_carrier.py.
 
 Usage: python gen_panel.py [art]   ("art" skips the ffmpeg sounds, which re-encode to new bytes every run)
 
 Writes into AetherionItems/resourcepack:
-  assets/aetherion/font/panel.json, font/vfx.json, textures/font/panel/*, textures/font/vfx/*
-  assets/minecraft/shaders/core/rendertype_text.vsh   (palette parsed from PanelPalette.java)
+  assets/aetherion/font/vfx.json, textures/font/vfx/*
   assets/aetherion/sounds.json + sounds/*.ogg          (synthesized with ffmpeg, original audio)
 """
 import json
@@ -22,12 +21,8 @@ from gen_gui_chrome import hx  # noqa: E402
 import gen_panel_art as art  # noqa: E402
 
 PACK = os.path.join(HERE, '..', 'resourcepack')
-JAVA = os.path.join(HERE, '..', 'src', 'main', 'java', 'de', 'aetherion', 'items', 'hud', 'PanelPalette.java')
 
 NEG_SPACE, POS_SPACE = 0xF801, 0xF821
-# Shader geometry (GUI px). Mirrored in StatusPanel / RadarHud.
-PANEL_X, PANEL_Y, ROW_H = 2, 3, 12
-RADAR_W, RADAR_RIGHT, RADAR_Y = 64, 3, 54
 
 
 def out(*parts):
@@ -46,12 +41,6 @@ def spaces():
         adv[chr(NEG_SPACE + i)] = -(1 << i)
         adv[chr(POS_SPACE + i)] = 1 << i
     return {'type': 'space', 'advances': adv}
-
-
-# ----------------------------------------------------------------------------- panel + radar art (gen_panel_art.py)
-
-# Marker glyphs from U+E421 on, in this order. Sizes are GUI px (the textures hold 2 texels per px).
-DOT_SIZES = {'quest': 7, 'npc': 5, 'party': 5, 'boss': 7, 'north': 5, 'quest_up': 7, 'quest_down': 7}
 
 
 # ----------------------------------------------------------------------------- vfx art (white, tinted in game)
@@ -103,87 +92,6 @@ def vfx(kind, n=128):
             if a > 0.01:
                 px[x, y] = (255, 255, 255, int(255 * min(1.0, a)))
     return im
-
-
-# ----------------------------------------------------------------------------- shader
-
-def palette():
-    src = open(JAVA, encoding='utf-8').read()
-    block = src[src.index('palette:start'):src.index('palette:end')]
-    return [int(h, 16) for h in re.findall(r'0x([0-9A-Fa-f]{6})', block)]
-
-
-def shader(pal):
-    entries = ',\n    '.join('vec3(%.4f, %.4f, %.4f)' % ((c >> 16 & 255) / 255, (c >> 8 & 255) / 255, (c & 255) / 255)
-                            for c in pal)
-    return f'''#version 150
-
-#moj_import <fog.glsl>
-
-// Vanilla rendertype_text plus the Aetherion HUD anchor (AetherionItems/tools/gen_panel.py).
-// ActionBar glyphs coloured (76, 32 + 4 * code, b) are moved: code 0..15 = status panel row (top-left,
-// b = palette index), 16 = radar body (top-right), 17 = radar marker (b = y offset + 128).
-// Their drop shadows (76/4, 8..26) are dropped. Everything else renders exactly like vanilla.
-
-in vec3 Position;
-in vec4 Color;
-in vec2 UV0;
-in ivec2 UV2;
-
-uniform sampler2D Sampler2;
-
-uniform mat4 ModelViewMat;
-uniform mat4 ProjMat;
-uniform int FogShape;
-
-out float vertexDistance;
-out vec4 vertexColor;
-out vec2 texCoord0;
-
-const int PAL_N = {len(pal)};
-const vec3 PALETTE[PAL_N] = vec3[](
-    {entries}
-);
-
-void main() {{
-    vec3 pos = Position;
-    vec4 col = Color;
-    bool drop = false;
-    if (ProjMat[3][3] == 1.0 && ProjMat[2][3] == 0.0) {{
-        float guiW = 2.0 / ProjMat[0][0];
-        float guiH = -2.0 / ProjMat[1][1];
-        float fromBottom = guiH - Position.y;
-        if (fromBottom > -96.0 && fromBottom < 160.0) {{
-            ivec3 c = ivec3(round(Color.rgb * 255.0));
-            if (c.r == 76 && c.g >= 32 && c.g <= 104 && (c.g & 3) == 0) {{
-                int code = (c.g - 32) >> 2;
-                float y = Position.y - guiH + 41.0;
-                if (code < 16) {{
-                    pos.x = Position.x - guiW * 0.5 + {PANEL_X:.1f};
-                    pos.y = y + {PANEL_Y:.1f} + float(code) * {ROW_H:.1f};
-                    col.rgb = PALETTE[min(c.b, PAL_N - 1)];
-                }} else {{
-                    pos.x = Position.x - guiW * 0.5 + guiW - {RADAR_RIGHT + RADAR_W:.1f};
-                    pos.y = y + {RADAR_Y:.1f};
-                    if (code == 16) {{
-                        col.rgb = PALETTE[min(c.b, PAL_N - 1)];
-                    }} else {{
-                        pos.y += float(c.b - 128);
-                        col.rgb = vec3(1.0);
-                    }}
-                }}
-            }} else if (c.r == 19 && c.g >= 8 && c.g <= 26) {{
-                drop = true;
-            }}
-        }}
-    }}
-    gl_Position = drop ? vec4(2.0, 2.0, 2.0, 1.0) : ProjMat * ModelViewMat * vec4(pos, 1.0);
-
-    vertexDistance = fog_distance(pos, FogShape);
-    vertexColor = col * texelFetch(Sampler2, UV2 / 16, 0);
-    texCoord0 = UV0;
-}}
-'''
 
 
 # ----------------------------------------------------------------------------- sounds (ffmpeg lavfi synthesis)
@@ -242,31 +150,6 @@ def sounds():
 # ----------------------------------------------------------------------------- write
 
 def main():
-    tex = ('assets', 'aetherion', 'textures', 'font', 'panel')
-    for k, im in art.plates().items():
-        im.save(out(*tex, 'plate_%s.png' % k))
-    icons = art.icons()
-    for k, im in icons.items():
-        im.save(out(*tex, 'icon_%s.png' % k))
-    art.radar().save(out(*tex, 'radar.png'))
-    for k, im in art.markers().items():
-        im.save(out(*tex, 'dot_%s.png' % k))
-
-    prov = [spaces(),
-            {'type': 'bitmap', 'file': 'aetherion:font/panel/plate_top.png', 'ascent': -23, 'height': 12, 'chars': ['\ue400']},
-            {'type': 'bitmap', 'file': 'aetherion:font/panel/plate_mid.png', 'ascent': -23, 'height': 12, 'chars': ['\ue401']},
-            {'type': 'bitmap', 'file': 'aetherion:font/panel/plate_bot.png', 'ascent': -23, 'height': 12, 'chars': ['\ue402']}]
-    for i, k in enumerate(icons):
-        prov.append({'type': 'bitmap', 'file': 'aetherion:font/panel/icon_%s.png' % k, 'ascent': -26, 'height': 7,
-                     'chars': [chr(0xE410 + i)]})
-    prov.append({'type': 'bitmap', 'file': 'aetherion:font/panel/radar.png', 'ascent': -24, 'height': RADAR_W,
-                 'chars': ['\ue420']})
-    for i, (k, h) in enumerate(DOT_SIZES.items()):
-        prov.append({'type': 'bitmap', 'file': 'aetherion:font/panel/dot_%s.png' % k, 'ascent': -24, 'height': h,
-                     'chars': [chr(0xE421 + i)]})
-    with open(out('assets', 'aetherion', 'font', 'panel.json'), 'w', encoding='utf-8', newline='\n') as f:
-        json.dump({'providers': prov}, f, indent=1)
-
     vt = ('assets', 'aetherion', 'textures', 'font', 'vfx')
     vprov = []
     for i, k in enumerate(('slash', 'ring', 'rune', 'tele_edge', 'tele_fill')):
@@ -276,14 +159,11 @@ def main():
     with open(out('assets', 'aetherion', 'font', 'vfx.json'), 'w', encoding='utf-8', newline='\n') as f:
         json.dump({'providers': vprov}, f, indent=1)
 
-    with open(out('assets', 'minecraft', 'shaders', 'core', 'rendertype_text.vsh'), 'w', encoding='utf-8', newline='\n') as f:
-        f.write(shader(palette()))
-
     if 'art' in sys.argv[1:]:
-        print('panel/radar/vfx art and shader written (sounds skipped)')
+        print('vfx art written (sounds skipped)')
         return
     sounds()
-    print('panel/radar/vfx art, shader and %d sounds written' % len(SOUNDS))
+    print('vfx art and %d sounds written' % len(SOUNDS))
 
 
 if __name__ == '__main__':

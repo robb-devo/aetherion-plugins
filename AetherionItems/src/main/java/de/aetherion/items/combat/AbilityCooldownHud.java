@@ -324,7 +324,7 @@ public final class AbilityCooldownHud {
     }
 
     /** 3.4s under ten seconds, 12s under a minute, 1m05s beyond. */
-    static String formatLeft(long ticks) {
+    public static String formatLeft(long ticks) {
         if (ticks < 200L) {
             long tenths = Math.max(1L, (ticks + 1L) / 2L);
             return (tenths / 10L) + "." + (tenths % 10L) + "s";

@@ -2,82 +2,77 @@ package de.aetherion.items.hud;
 
 import net.kyori.adventure.text.format.TextColor;
 
-import java.util.HashMap;
-import java.util.Map;
-
 /**
- * Colour code the pack's text shader decodes ({@code assets/minecraft/shaders/core/rendertype_text.vsh}).
+ * Colour code the pack's text shader decodes ({@code assets/minecraft/shaders/core/rendertype_text.vsh},
+ * written by {@code AetherionItems/tools/gen_carrier.py}).
  *
- * <p>An anchored glyph is coloured {@code (76, 32 + 4 * code, b)}: code 0..15 is a status-panel row and
- * {@code b} indexes {@link #PALETTE}; code 16 is the radar body, code 17 a radar marker with {@code b} = its
- * y offset + 128. {@code AetherionItems/tools/gen_panel.py} bakes the palette below into the shader, so the
- * list is append-only: re-run the generator after adding a colour.
+ * <p>A HUD glyph is coloured {@code (76, 4 * code, b)}. Code 0..39 is the status frame, top left, moved down
+ * {@code 2 * code} px; code 40..63 is the radar block, top right: {@code (code - 40) / 8} is how far it
+ * steps down for the vanilla effect icons, {@code (code - 40) % 8} is 0 for the disc, 1 for a marker
+ * ({@code b} = its y + 64) and 2..7 for a label row 66 + 4 * (part - 2) px under the radar's top.
+ * Everywhere else {@code b} is an index into {@link #PALETTE}, the colour the glyph is drawn in.
+ * The generator bakes the palette into the shader: re-run it after changing the list.
  */
 public final class PanelPalette {
 
     // palette:start
     static final int[] PALETTE = {
-            0xFFFFFF, 0xD93A40, 0x6DBB3A, 0x5A5462, 0x86CDEE, 0xF2D9CF, 0xB5A9BC, 0xFFC9CC,
-            0xF2C94C, 0xCFF5EF, 0xD9A441, 0xFF5A4A, 0x62D977, 0x4FA862, 0xFFF1DA, 0xFFC2BA,
-            0xF2C14E, 0xE0703A, 0xBFD9EC, 0xFFD86B, 0x8A1E16, 0xFFF3DA, 0xFFC0BA, 0xA77BEA,
-            0xFFE08A, 0xF5C542, 0x9EE6FF, 0xCFC7D9, 0x8F86A0, 0x7FD3FF
+            0xFFFFFF, 0xE0404E, 0x6DBB3A, 0x6A6474, 0x86CDEE, 0xF2D9CF, 0xB5A9BC, 0xFFC9CC,
+            0xF2C94C, 0xF2C14E, 0xE0703A, 0xBFD9EC, 0xFFD86B, 0xFF5A4A, 0x8A1E16, 0xB08A3A,
+            0xFFF3DA, 0xFFC0BA, 0xA77BEA, 0xFFE08A, 0xF5C542, 0x9EE6FF, 0x8FE3D2, 0xCFC7E6,
+            0x8F86A0, 0x7FD3FF, 0xD9A441, 0x62D977, 0x4FA862, 0xFFF1DA
     };
     // palette:end
 
-    public static final TextColor XP_FILL = TextColor.color(0xA77BEA);
-    public static final TextColor LEVEL = TextColor.color(0xFFE08A);
-    public static final TextColor COIN = TextColor.color(0xF5C542);
-    public static final TextColor SHARD = TextColor.color(0x9EE6FF);
-    public static final TextColor PLACE = TextColor.color(0xCFC7D9);
-    public static final TextColor DIM = TextColor.color(0x8F86A0);
-    public static final TextColor WEATHER = TextColor.color(0x7FD3FF);
+    public static final int WHITE = 0;
+    public static final int HP_FILL = 1;
+    public static final int HP_POISON = 2;
+    public static final int HP_WITHER = 3;
+    public static final int HP_FROZEN = 4;
+    public static final int HP_GHOST = 5;
+    public static final int HP_SLASH = 6;
+    public static final int HP_MAX = 7;
+    public static final int ABSORB = 8;
+    public static final int ST_FILL = 9;
+    public static final int ST_LOW = 10;
+    public static final int ST_GUARD = 11;
+    public static final int ST_PERFECT = 12;
+    public static final int DENY = 13;
+    public static final int DENY_DIM = 14;
+    public static final int ST_IDLE = 15;
+    public static final int LABEL = 16;
+    public static final int LABEL_DENY = 17;
+    public static final int XP_FILL = 18;
+    public static final int LEVEL = 19;
+    public static final int COIN = 20;
+    public static final int SHARD = 21;
+    public static final int DEF = 22;
+    public static final int PLACE = 23;
+    public static final int DIM = 24;
+    public static final int WEATHER = 25;
+    public static final int CD_FILL = 26;
+    public static final int CD_READY = 27;
+    public static final int CD_READY_DIM = 28;
+    public static final int CD_LABEL = 29;
 
     private static final int MARK = 76;
-    private static final Map<Integer, Integer> INDEX = new HashMap<>();
-
-    static {
-        for (int i = 0; i < PALETTE.length; i++) {
-            INDEX.putIfAbsent(PALETTE[i], i);
-        }
-    }
+    /** Codes of the radar block: 40 + 8 * state + part. */
+    static final int RADAR_BASE = 40;
+    static final int PART_DISC = 0;
+    static final int PART_MARK = 1;
+    static final int PART_LABEL = 2;
 
     private PanelPalette() {
     }
 
-    /** Status-panel row {@code row} (0..15) in {@code tint}. */
-    public static TextColor panel(int row, TextColor tint) {
-        return TextColor.color(MARK, 32 + 4 * Math.max(0, Math.min(15, row)), index(tint));
+    /** Status frame glyph {@code 2 * step} px down, drawn in palette colour {@code tint}. */
+    static TextColor frame(int step, int tint) {
+        return TextColor.color(MARK, 4 * Math.max(0, Math.min(39, step)), tint);
     }
 
-    public static TextColor radarBody(TextColor tint) {
-        return TextColor.color(MARK, 96, index(tint));
-    }
-
-    /** Radar marker drawn {@code yOffset} px below the radar's top edge. */
-    public static TextColor radarMark(int yOffset) {
-        return TextColor.color(MARK, 100, Math.max(0, Math.min(255, 128 + yOffset)));
-    }
-
-    /** Exact entry, else the nearest one. */
-    static int index(TextColor tint) {
-        int rgb = tint == null ? 0xFFFFFF : tint.value();
-        Integer hit = INDEX.get(rgb);
-        if (hit != null) {
-            return hit;
-        }
-        int best = 0;
-        long bestD = Long.MAX_VALUE;
-        for (int i = 0; i < PALETTE.length; i++) {
-            int p = PALETTE[i];
-            long dr = (p >> 16 & 255) - (rgb >> 16 & 255);
-            long dg = (p >> 8 & 255) - (rgb >> 8 & 255);
-            long db = (p & 255) - (rgb & 255);
-            long d = dr * dr + dg * dg + db * db;
-            if (d < bestD) {
-                bestD = d;
-                best = i;
-            }
-        }
-        return best;
+    /** Radar block glyph: {@code state} 0..2 (effect icon rows to clear), {@code part} as in the class doc. */
+    static TextColor radar(int state, int part, int b) {
+        int code = RADAR_BASE + 8 * Math.max(0, Math.min(2, state)) + Math.max(0, Math.min(7, part));
+        return TextColor.color(MARK, 4 * code, Math.max(0, Math.min(255, b)));
     }
 }
