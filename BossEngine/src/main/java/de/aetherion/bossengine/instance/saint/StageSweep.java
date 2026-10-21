@@ -142,6 +142,8 @@ public final class StageSweep {
             Bukkit.getScheduler().runTask(plugin, () -> {
                 if (lines.isEmpty()) {
                     sender.sendMessage("§7No stage leftovers in that box.");
+                    plugin.getLogger().info("[StageSweep] no stage leftovers in " + world.getName() + " " + x1 + " " + z1
+                            + " " + x2 + " " + z2);
                 }
                 for (String line : lines) {
                     sender.sendMessage(line);
@@ -149,13 +151,14 @@ public final class StageSweep {
                 }
                 if (!apply) {
                     sender.sendMessage("§7Dry run. Add §fapply §7to strike the §agreen §7ones.");
+                    plugin.getLogger().info("[StageSweep] done: " + strike.size() + " to strike (dry run)");
                     return;
                 }
                 for (Location at : strike) {
                     SaintStage.strikePermanent(plugin, at);
                 }
                 sender.sendMessage("§aStruck " + strike.size() + " stage(s) by layout.");
-                plugin.getLogger().info("[StageSweep] struck " + strike.size() + " stage(s)");
+                plugin.getLogger().info("[StageSweep] done: struck " + strike.size() + " stage(s)");
             });
         });
     }

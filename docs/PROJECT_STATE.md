@@ -81,6 +81,26 @@ something else writes to the ActionBar. Art, font and shaders: `tools/gen_carrie
 caps the HUD's size on large GUI scales. Manager and menu icons: `tools/gen_gui_icons.py` (16 px objects in
 each menu's accent colour; locked tabs keep their picture, greyed with a padlock).
 
+## Robb's list (2026-10-21, cloud session)
+
+One PR, deployed with `deploy-robb-list.ps1` from Robb's PC (build of `main`, served pack, jars by plugin name only where a
+server already runs them, AetherMobs on mmo-r only, one restart per backend, backups under `backups/robb-list-<time>`).
+- Pack: HUD frame + radar on clients newer than 1.21.1 (`newer_clients.py`), rank and level badges (font `aetherion:badges`,
+  U+EA00..EAFB, referenced from every `minecraft:default`), every Manager page as a book page (`gen_gui_chrome.py` PAGES,
+  page glyphs E000..E02C added to the default fonts by `build_served_pack.py`).
+- Items: Owner rank for Robb (group key still `admin`), pink Co-Owner bound to Shuminite's UUID (`bound.coowner` in
+  `player-ranks.yml`), BookPage captions on Shop, Codex front page and Recipe Book index.
+- Guilds: `/insel` warps to an existing island and never claims again (records restored from factory saves).
+- Core: raid menu for moderators (`/raidban`, aliases `raidmenu`, `antiraid`; heads of the whole network in join order,
+  click = barrier, confirm = IP ban on every backend with the bot-raid message); Ferryman always answers on the quay and
+  explains what the crossing still needs; `/exile repairquay [apply]`;
+  one-time exile void trim (`plugins/AetherionCore/exile-void-trim.armed` on mmo-c, needs
+  `worlds.aetherion_exile.generator: AetherionCore` in bukkit.yml).
+- BossEngine: `/boss stage sweep <world> <x1> <z1> <x2> <z2> [apply]` for Seraphine stage leftovers; Helios returns
+  people to the Star Ring; Quests: boss kill credit 128 blocks, Lark's pet catch is part of tutorial Act II.
+- AetherMobs: pet bodies polished (cow and mooshroom patches, upright blaze rods, framed hacker terminal, 12-spike
+  guardian, glow squid teal, dolphin slate, cat tail, butterfly wing borders).
+
 ## Content state (verified against live 2026-10-19)
 
 Live and committed: onboarding v2 (Acts I–VII incl. skill-isle lessons), exile crossing,
