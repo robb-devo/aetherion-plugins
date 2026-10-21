@@ -83,6 +83,7 @@ public class BossInstance {
     private final HollowSunDirector hollowSunDirector = new HollowSunDirector(this);
     private final AshenSovereignDirector sovereignDirector = new AshenSovereignDirector(this);
     private final SignatureDirector signatureDirector = new SignatureDirector(this);
+    private final RiteDirector riteDirector = new RiteDirector(this);
     private final SandboxDirector sandboxDirector = new SandboxDirector(this);
     private final de.aetherion.bossengine.instance.saint.HangingSaintDirector saintDirector =
             new de.aetherion.bossengine.instance.saint.HangingSaintDirector(this);
@@ -804,6 +805,7 @@ public class BossInstance {
         eggDirector.tick();
         unbrokenDirector.tick();
         worldEaterDirector.tick();
+        riteDirector.tick();
         if (ticksAlive == 20 || ticksAlive == 100) {
             SkeletonUtil.prepareBoss(entity);
             if (entity instanceof org.bukkit.entity.PiglinAbstract piglin) {
