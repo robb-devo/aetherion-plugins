@@ -143,7 +143,7 @@ ui:
     tutorial_temper: "Tutorial · erst Temper"
     tutorial_ledger: "Tutorial · Miss Ledger · Skills"
     tutorial_farmer: "Tutorial · Felder · Farmer"
-    tutorial_lark: "Tutorial · Felder · Lark"
+    tutorial_lark: "Akt II · Lark · Feldzaun · ein Pet fangen"
     tutorial_graduation: "Tutorial · Miss Ledger · Abschluss"
     # Red thread — Ledger's roads, harbour crumb, Twig, Vex gear check
     road_forage: "→ Twig · Schleim-Pad · Forage Isle"
@@ -181,7 +181,7 @@ ui:
     ledger_capital: "Als Nächstes: §dMiss Ledger §7in der Capital — Nether Star → Teleports → Capital, oder §f/capital§7."
     forager_fell: "§aDer Forager §7oben am Hügel zeigt dir das Fällen — schlag zu, wenn der Balken grün ist."
     act3: "Akt III · Die Straßen — Sergeant Vex, dann der Stempel"
-    act2: "Akt II · Die Capital — Loadout & Codex, dann Booster"
+    act2: "Akt II · Die Capital — Loadout & Codex, Booster, dann ein Pet"
     act1: "Akt I · Anker Harbour — Egon, das Fällen, dein Kit"
     no_quests: "Sprich mit §aEgon §7am Pier von Anker Harbour — da beginnt die Orientierung."
     active: "Aktive Quest: §f{0}§7 — {1}"
@@ -1090,8 +1090,8 @@ dialogs:
 completed:
   ledger_spine:
     - "Loadout steht. Gut. Abgeheftet."
-    - "Als Nächstes: §eTemper§f an der Südstraße, dann §cSergeant Vex§f am Tor zu den Borderlands."
-    - "Komm nach beiden zurück, {player}. Ich schließe die Orientierung — und hab einen Hilfeschalter."
+    - "Als Nächstes: §eTemper§f an der Südstraße, §dLark§f am Feldzaun, dann §cSergeant Vex§f am Tor zu den Borderlands."
+    - "Komm nach allen dreien zurück, {player}. Ich schließe die Orientierung — und hab einen Hilfeschalter."
   default:
     - "Wir sind quitt. Sagt das Klemmbrett."
     - "Geh und mach jemand anderem den Tag ein bisschen schlechter."
@@ -1131,14 +1131,14 @@ completed:
   booster_tutor:
     default:
       - "Booster gefust. Rezepte bleiben jederzeit im §eRecipe Book§f."
-      - "Als Nächstes: §eMiss Ledger§f in der Capital — dein Loadout. Dann §cSergeant Vex§f."
+      - "Als Nächstes: §eMiss Ledger§f in der Capital — dein Loadout. Dann §dLark§f und §cSergeant Vex§f."
     after_skills:
       - "In letzter Zeit was Scharfes gefust, {player}?"
       - "Der Anvil ist immer im Manager. Rezepte im §eRecipe Book§f."
   ledger:
     - "Loadout steht. Gut. Abgeheftet."
-    - "Als Nächstes: §eTemper§f an der Südstraße, dann §cSergeant Vex§f am Tor zu den Borderlands."
-    - "Komm nach beiden zurück, {player}. Ich schließe die Orientierung — und hab einen Hilfeschalter."
+    - "Als Nächstes: §eTemper§f an der Südstraße, §dLark§f am Feldzaun, dann §cSergeant Vex§f am Tor zu den Borderlands."
+    - "Komm nach allen dreien zurück, {player}. Ich schließe die Orientierung — und hab einen Hilfeschalter."
   farmer:
     default:
       - "Weizen erledigt. Die Vögel schmollen. Gute Arbeit, {player}."
@@ -1152,7 +1152,7 @@ completed:
   lark:
     default:
       - "Fang erledigt. Dein Pet mag dich. Wahrscheinlich."
-      - "§eMiss Ledger§f schließt die Orientierung — §e/capital§f, wenn du faul bist. Fragen an sie."
+      - "Als Nächstes §cSergeant Vex§f am Tor zu den Borderlands, dann der Stempel bei §eMiss Ledger§f."
     graduate:
       - "{player}! Dein Pet mag dich immer noch. Pistachio ist eifersüchtig."
       - "Wilde laufen über die Felder. Fang mehr, wenn du neugierig bist."
@@ -1280,6 +1280,7 @@ talk:
     send: "Bereit? Ich setz dich am violetten Hub ab. §e/amethyst§f macht dasselbe."
   booster_tutor:
     next_vex: "Als Nächstes: §cSergeant Vex§f, Tor zu den Borderlands, östlich von hier. Der Minen-Teleport gehört dir auch."
+    next_lark: "Als Nächstes: §dLark§f am Feldzaun. Er gibt dir Catch Spheres, du bringst ein Pet zurück."
     mining_line: "Mining Power öffnet härteres Erz, Fortune vervielfacht es. Crystal Finds und Dungeon-Core-Picken kommen später."
     upgrade_warning: "Sitzt ein Booster einmal drin, bleibt er — bis du ihn hier rausholst. Upgrades werfen ihn nicht raus."
     fused: "Booster gefust! Riechst du das? Fortschritt. Und leicht verbrannt."
@@ -1414,6 +1415,8 @@ talk:
     nice_catch: "Schöner Fang, {player}. Die Tasche quiekt."
     equip_now: "Jetzt ausrüsten: §eManager → Pets§f — blinkt. Deinen Fang auswählen."
     catch_done: "Fang erledigt. Dein Pet mag dich. Wahrscheinlich."
+    pets_explained: "Es folgt dir, kämpft mit dir und levelt mit dir. Mehr Spheres im Shop, seltenere bei mir."
+    next_vex: "Als Nächstes: §cSergeant Vex§f am Tor zu den Borderlands. Nimm das Pet mit, es mag Kämpfe."
     farmer_left: "§eFarmer§f will noch Weizen, falls du ihn ausgelassen hast — gleiche Ecke."
   fields:
     back_ledger: "Zurück zu §dMiss Ledger§f — sie schließt die Orientierung. Oder §e/capital§f."

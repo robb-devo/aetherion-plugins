@@ -1297,8 +1297,13 @@ public class NpcListener implements Listener {
                 "Once a booster's socketed, it stays until you pull it here. Upgrades don't knock them out."));
         npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "booster_tutor.mining_line",
                 "Mining Power opens harder ore, Fortune multiplies it. Crystal Finds and Dungeon-Core picks come later."));
-        npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "booster_tutor.next_vex",
-                "Next: §cSergeant Vex§f, Borderlands gate, east of here. Mines teleport's yours too."));
+        if (de.aetherion.quests.util.QuestStoryGate.questCompleted(player, questManager, "pocket_zoo")) {
+            npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "booster_tutor.next_vex",
+                    "Next: §cSergeant Vex§f, Borderlands gate, east of here. Mines teleport's yours too."));
+        } else {
+            npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "booster_tutor.next_lark",
+                    "Next: §dLark§f at the Fields fence. He hands you Catch Spheres, you bring back a pet."));
+        }
         afterSpeech(player, () -> de.aetherion.quests.util.QuestStoryGate.point(player,
                 de.aetherion.quests.util.QuestStoryGate.nextStop(player, questManager)));
     }
@@ -1340,6 +1345,21 @@ public class NpcListener implements Listener {
     private void briefPocketZooNext(Player player, QuestNPC npc) {
         String name = npc.getName();
         npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "lark.catch_done", "Catch done. Your pet likes you. Probably."));
+        npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "lark.pets_explained",
+                "It follows you, fights with you and levels with you. More spheres from the Shop, rarer ones from me."));
+
+        // Orientation spine: the pet is Act II's last stop, Sergeant Vex's drill is next (or the stamp).
+        if (!de.aetherion.quests.util.QuestStoryGate.tutorialDone(player, questManager)) {
+            npcSay(player, npc, de.aetherion.quests.lang.LangPack.say(player, "lark.next_vex",
+                    "Next: §cSergeant Vex§f at the Borderlands gate. Bring the pet, it likes a fight."));
+            afterSpeech(player, () -> de.aetherion.quests.util.QuestStoryGate.point(player,
+                    de.aetherion.quests.util.QuestStoryGate.nextStop(player, questManager)));
+            return;
+        }
+        if (!de.aetherion.quests.util.QuestStoryGate.graduated(player, questManager)) {
+            briefBackToLedger(player, npc);
+            return;
+        }
 
         // Both Fields stops done → Miss Ledger closes tutorial (not Lark).
         if (de.aetherion.quests.util.QuestStoryGate.questCompleted(player, questManager, "farm_hand")) {
