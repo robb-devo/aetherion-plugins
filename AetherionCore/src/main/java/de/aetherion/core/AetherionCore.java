@@ -73,6 +73,25 @@ public final class AetherionCore extends JavaPlugin {
             betaWipe.run();
             betaWipe.clearPending();
         }
+        trimExileOnce();
+    }
+
+    /** Before any world loads: cut the old overworld out of the exile world when an op armed it (see ExileVoidTrim). */
+    private void trimExileOnce() {
+        java.io.File armed = new java.io.File(getDataFolder(), "exile-void-trim.armed");
+        if (!armed.isFile()) {
+            return;
+        }
+        java.io.File world = new java.io.File(getServer().getWorldContainer(), getConfig().getString("exile.world", "aetherion_exile"));
+        String result = world.isDirectory()
+                ? de.aetherion.core.exile.ExileVoidTrim.run(world, (int) Math.floor(getConfig().getDouble("exile.spawn.x", 162.5)),
+                        (int) Math.floor(getConfig().getDouble("exile.spawn.z", 6.5)), getLogger())
+                : "skipped: no world folder " + world.getName();
+        getLogger().info("[ExileVoid] " + world.getName() + ": " + result);
+        java.io.File done = new java.io.File(getDataFolder(), "exile-void-trim." + (result.startsWith("aborted") ? "aborted" : "done"));
+        if (!armed.renameTo(done)) {
+            armed.delete();
+        }
     }
 
     @Override

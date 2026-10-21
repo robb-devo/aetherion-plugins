@@ -133,6 +133,14 @@ public final class ExileHost implements Listener {
         if (world == null) {
             plugin.getLogger().warning("Exile world '" + worldName + "' is not loaded. Load it with Multiverse.");
         } else {
+            if (!(world.getGenerator() instanceof de.aetherion.core.world.VoidChunkGenerator)) {
+                plugin.getLogger().warning("[ExileVoid] " + worldName + " generates terrain for new chunks ("
+                        + (world.getGenerator() == null ? "vanilla" : world.getGenerator().getClass().getSimpleName())
+                        + "). Set worlds." + worldName + ".generator: AetherionCore in bukkit.yml and no generator "
+                        + "for it in Multiverse.");
+            } else {
+                plugin.getLogger().info("[ExileVoid] " + worldName + " uses the void generator.");
+            }
             tuneWorld(world);
             arrival.purgeRigs(world);
             world.setSpawnLocation(spawnLocation());
