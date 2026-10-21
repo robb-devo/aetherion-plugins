@@ -43,7 +43,7 @@ Backends: **hub** (lobby + Pit), **mmo-r** (main world, capital, isles, bosses, 
 
 ## Live plugin builds (sha1 prefix, 2026-10-21)
 
-Same on every server that loads them: Core `536b35c5`, Items `e0b18ce1` (10-21, HUD carrier + menu icons; mmo-r, mmo-d, mmo-c, mmo-i; not on hub), Quests `06201980` (10-20; not on hub),
+Same on every server that loads them: Core `536b35c5`, Items `a4ade9d2` (10-21, HUD carrier + menu icons; mmo-r, mmo-d, mmo-c, mmo-i; not on hub), Quests `06201980` (10-20; not on hub),
 BossEngine `0b4760db`, Gnomon `684013f0`, AetherMobs `078432e9`, Guilds `60342686`. Each of these is
 byte-identical to a build of `main` (classes and resources).
 
