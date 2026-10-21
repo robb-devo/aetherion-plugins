@@ -655,7 +655,13 @@ public final class T2Mechanics {
         Location pinned = boss.getLocation().clone();
         de.aetherion.bossengine.fx.CombatTheatrics.ringAnnounce(instance, pinned);
         World announceWorld = pinned.getWorld();
-        if (announceWorld != null) {
+        org.bukkit.Color tone = de.aetherion.bossengine.fx.ShapeFx.tint(used);
+        if (de.aetherion.core.api.Vfx.active()) {
+            for (int preview = 1; preview <= safeWaves; preview++) {
+                de.aetherion.core.api.Vfx.ring(pinned.clone().add(0, 0.12, 0), tone, preview * safeStep,
+                        (int) RING_WINDUP_TICKS + (preview - 1) * 6);
+            }
+        } else if (announceWorld != null) {
             for (int preview = 1; preview <= safeWaves; preview++) {
                 double radius = preview * safeStep;
                 int points = Math.max(12, (int) (radius * 4));
@@ -680,6 +686,9 @@ public final class T2Mechanics {
                 }
                 double radius = index * safeStep;
                 int points = Math.max(18, (int) (radius * 8));
+                if (de.aetherion.core.api.Vfx.wave(center.clone().add(0, 0.2, 0), tone, radius, 10)) {
+                    points = 0;
+                }
                 for (int i = 0; i < points; i++) {
                     double angle = (Math.PI * 2 * i) / points;
                     Location rim = center.clone().add(Math.cos(angle) * radius, 0.2, Math.sin(angle) * radius);
