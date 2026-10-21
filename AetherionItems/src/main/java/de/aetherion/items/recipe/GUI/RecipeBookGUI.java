@@ -33,8 +33,9 @@ public class RecipeBookGUI {
     private static final String RECIPE_LIST_TITLE = "§8Aetherion Recipes";
     private static final String RECIPE_DETAIL_TITLE = "§8Recipe Details";
 
-    /** Categories page: extra cards in the two free category cells. */
-    public static final int READY_SLOT = 40;
+    /** Categories page (a captioned book page): ready to craft, the book itself and where recipes come from. */
+    public static final int READY_SLOT = 38;
+    public static final int INDEX_HEADER_SLOT = 40;
     public static final int SOURCES_SLOT = 42;
     /** List views: "+N more to discover" sits in the bottom rail. */
     private static final int MORE_SLOT = 49;
@@ -54,14 +55,6 @@ public class RecipeBookGUI {
     public void openCategories(Player player) {
         syncOwned(player);
 
-        Inventory inventory = Bukkit.createInventory(
-                new RecipeBookHolder(GUIType.CATEGORIES, null, null),
-                RecipeBookLayout.SIZE,
-                de.aetherion.items.util.ManagerChrome.RECIPES
-        );
-
-        fillBackground(inventory);
-
         RecipeCategory[] categories = RecipeCategory.values();
         int knownTotal = 0;
         int allTotal = 0;
@@ -79,8 +72,31 @@ public class RecipeBookGUI {
         }
         List<RecipeDefinition> ready = readyRecipes(player);
 
+        // Under every category how much of it you know, faded while it is locked; amber where something is ready.
+        boolean german = de.aetherion.core.api.AetherServices.german(player);
+        List<de.aetherion.core.api.BookPage.Caption> captions = new ArrayList<>();
+        for (int i = 0; i < categories.length && i < RecipeBookLayout.CATEGORY_SLOTS.length; i++) {
+            captions.add(new de.aetherion.core.api.BookPage.Caption(RecipeBookLayout.CATEGORY_SLOTS[i],
+                    known[i] + "/" + total[i], isCategoryUnlocked(player, categories[i])
+                    ? de.aetherion.core.api.BookPage.State.OPEN : de.aetherion.core.api.BookPage.State.LOCKED));
+        }
+        captions.add(new de.aetherion.core.api.BookPage.Caption(READY_SLOT,
+                ready.isEmpty() ? (german ? "nichts" : "none") : ready.size() + (german ? " bereit" : " ready"),
+                ready.isEmpty() ? de.aetherion.core.api.BookPage.State.LOCKED : de.aetherion.core.api.BookPage.State.NEXT));
+        captions.add(new de.aetherion.core.api.BookPage.Caption(INDEX_HEADER_SLOT, knownTotal + "/" + allTotal,
+                de.aetherion.core.api.BookPage.State.OPEN));
+        captions.add(new de.aetherion.core.api.BookPage.Caption(SOURCES_SLOT, german ? "Quellen" : "Sources",
+                de.aetherion.core.api.BookPage.State.OPEN));
+        Inventory inventory = Bukkit.createInventory(
+                new RecipeBookHolder(GUIType.CATEGORIES, null, null),
+                RecipeBookLayout.SIZE,
+                de.aetherion.core.api.BookPage.title(de.aetherion.items.util.ManagerChrome.RECIPES_INDEX_GLYPH, captions)
+        );
+
+        fillBackground(inventory);
+
         inventory.setItem(
-                RecipeBookLayout.HEADER_SLOT,
+                INDEX_HEADER_SLOT,
                 createSimpleItem(
                         Material.KNOWLEDGE_BOOK,
                         "§6Aetherion Recipe Book",
@@ -214,28 +230,20 @@ public class RecipeBookGUI {
 
         inventory.setItem(
                 RecipeBookLayout.BACK_SLOT,
-                createSimpleItem(Material.ARROW, "§eBack", List.of("§7Return to categories"))
+                backButton("§7Return to categories")
         );
 
         if (totalPages > 1 && currentPage > 1) {
             inventory.setItem(
                     RecipeBookLayout.PREV_PAGE_SLOT,
-                    createSimpleItem(
-                            Material.ARROW,
-                            "§ePrevious Page",
-                            List.of("", "§7Page " + (currentPage - 1) + " / " + totalPages)
-                    )
+                    pageButton(false, currentPage - 1, totalPages)
             );
         }
 
         if (totalPages > 1 && currentPage < totalPages) {
             inventory.setItem(
                     RecipeBookLayout.NEXT_PAGE_SLOT,
-                    createSimpleItem(
-                            Material.ARROW,
-                            "§eNext Page",
-                            List.of("", "§7Page " + (currentPage + 1) + " / " + totalPages)
-                    )
+                    pageButton(true, currentPage + 1, totalPages)
             );
         }
 
@@ -298,28 +306,20 @@ public class RecipeBookGUI {
 
         inventory.setItem(
                 RecipeBookLayout.BACK_SLOT,
-                createSimpleItem(Material.ARROW, "§eBack", List.of("§7Return to categories"))
+                backButton("§7Return to categories")
         );
 
         if (totalPages > 1 && currentPage > 1) {
             inventory.setItem(
                     RecipeBookLayout.PREV_PAGE_SLOT,
-                    createSimpleItem(
-                            Material.ARROW,
-                            "§ePrevious Page",
-                            List.of("", "§7Page " + (currentPage - 1) + " / " + totalPages)
-                    )
+                    pageButton(false, currentPage - 1, totalPages)
             );
         }
 
         if (totalPages > 1 && currentPage < totalPages) {
             inventory.setItem(
                     RecipeBookLayout.NEXT_PAGE_SLOT,
-                    createSimpleItem(
-                            Material.ARROW,
-                            "§eNext Page",
-                            List.of("", "§7Page " + (currentPage + 1) + " / " + totalPages)
-                    )
+                    pageButton(true, currentPage + 1, totalPages)
             );
         }
 
@@ -381,7 +381,7 @@ public class RecipeBookGUI {
         Inventory inventory = Bukkit.createInventory(
                 new RecipeBookHolder(GUIType.RECIPE_DETAIL, recipe.getCategory(), recipe, page, fromReady),
                 RecipeBookLayout.SIZE,
-                de.aetherion.items.util.ManagerChrome.RECIPES
+                de.aetherion.items.util.ManagerChrome.RECIPES_CRAFT
         );
 
         fillBackground(inventory);
@@ -420,11 +420,6 @@ public class RecipeBookGUI {
         }
 
         inventory.setItem(
-                RecipeBookLayout.ARROW_SLOT,
-                createSimpleItem(Material.ARROW, "§6➜", List.of("§7Crafting result"))
-        );
-
-        inventory.setItem(
                 RecipeBookLayout.RESULT_SLOT,
                 createResultItem(recipe.getResult())
         );
@@ -436,7 +431,7 @@ public class RecipeBookGUI {
 
         inventory.setItem(
                 RecipeBookLayout.BACK_SLOT,
-                createSimpleItem(Material.ARROW, "§eBack", List.of("§7Return to recipes"))
+                backButton("§7Return to recipes")
         );
 
         player.openInventory(inventory);
@@ -613,14 +608,12 @@ public class RecipeBookGUI {
         }
 
         inventory.setItem(RecipeBookLayout.BACK_SLOT,
-                createSimpleItem(Material.ARROW, "§eBack", List.of("§7Return to categories")));
+                backButton("§7Return to categories"));
         if (totalPages > 1 && currentPage > 1) {
-            inventory.setItem(RecipeBookLayout.PREV_PAGE_SLOT, createSimpleItem(
-                    Material.ARROW, "§ePrevious Page", List.of("", "§7Page " + (currentPage - 1) + " / " + totalPages)));
+            inventory.setItem(RecipeBookLayout.PREV_PAGE_SLOT, pageButton(false, currentPage - 1, totalPages));
         }
         if (totalPages > 1 && currentPage < totalPages) {
-            inventory.setItem(RecipeBookLayout.NEXT_PAGE_SLOT, createSimpleItem(
-                    Material.ARROW, "§eNext Page", List.of("", "§7Page " + (currentPage + 1) + " / " + totalPages)));
+            inventory.setItem(RecipeBookLayout.NEXT_PAGE_SLOT, pageButton(true, currentPage + 1, totalPages));
         }
         player.openInventory(inventory);
         playBookSound(player);
@@ -1172,6 +1165,15 @@ public class RecipeBookGUI {
         if (plugin != null && plugin.recipeUnlocks() != null) {
             plugin.recipeUnlocks().syncOwnedRecipes(player);
         }
+    }
+
+    private ItemStack backButton(String lore) {
+        return GuiIcons.icon(createSimpleItem(Material.ARROW, "§eBack", List.of(lore)), GuiIcons.BACK);
+    }
+
+    private ItemStack pageButton(boolean next, int page, int totalPages) {
+        return GuiIcons.icon(createSimpleItem(Material.ARROW, next ? "§eNext Page" : "§ePrevious Page",
+                List.of("", "§7Page " + page + " / " + totalPages)), next ? GuiIcons.NEXT : GuiIcons.PREV);
     }
 
     private ItemStack createSimpleItem(Material material, String name, List<String> lore) {

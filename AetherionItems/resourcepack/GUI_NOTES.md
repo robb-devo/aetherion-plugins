@@ -1,9 +1,20 @@
 # Aetherion Manager GUI chrome
 
 One art language for the whole Manager family: dark stone panel, a thin accent ring with
-tooltip-style corner brackets, an engraved slot grid, a quiet rune divider above the player
-inventory, and a banner title plate (sigil · NAME · sigil) that sits on the top edge.
-Each category changes only its accent hue and sigil. The Boss Journal uses a parchment plate.
+tooltip-style corner brackets, a quiet rune divider above the player inventory, and a banner title
+plate (sigil · NAME · sigil) that sits on the top edge. Each category changes only its accent hue and
+sigil. The Boss Journal uses a parchment plate.
+
+Every Manager page is a **book page**: the container area is inked parchment, and what sits on it
+follows the menu's own slots (`PAGES` in `tools/gen_gui_chrome.py`, keep it in step with the Java):
+round ink **seals** under a hub's tiles, small **button seals** under tabs and nav buttons, **ledger
+pockets** for lists and anything you put items into, a **caption band** under captioned tiles and a
+**bookmark ribbon** in the page's accent where the top row has a gap. Captions are vanilla-font text in
+the title (`de.aetherion.core.api.BookPage`, fonts `aetherion:mgr_caption_1..3`), only under rows 0, 2
+and 4; they run over the row below, so nothing sits under a captioned tile. Pages with captions: the
+Manager, Stats, Spawns, the Aether Shop (prices), the Codex front page (levels, next tier, rewards
+ready) and the Recipe Book index (known/total per category). Empty pockets and seals hold an invisible
+pane (CMD 7700) so the page shows through; one that still needs a tooltip keeps it.
 
 Both pack trees ship identical files:
 `aetherion-texturepack/` and `AetherionItems/resourcepack/`.
@@ -48,10 +59,10 @@ container slots `(8+18c, 18+18r)`, player inventory `103+18r+(rows−4)·18`, ho
 | `` | gui_aetherion_skills.png              | 6 | `SkillMenu` |
 | `` | gui_aetherion_skills_overview.png     | 6 | `SkillOverviewGUI.Holder` |
 | `` | gui_aetherion_skills_presets.png      | 3 | `SkillPresetsGUI.Holder` |
-| `` | gui_aetherion_recipes.png             | 6 | **not wired**: `RecipeBookGUI` (see below) |
-| `` | gui_aetherion_bestiary.png            | 6 | `CodexBrowser` (Bestiary), `CodexDetailGUI` (Bestiary cards) |
-| `` | gui_aetherion_collection.png          | 6 | `CodexBrowser` (Collection), `CodexDetailGUI` (Collection cards) |
-| `` | gui_aetherion_codex.png               | 6 | `CodexHubGUI.Holder`, detail fallback |
+| `` | gui_aetherion_recipes.png             | 6 | `RecipeBookGUI` lists (category, gear sets, ready) |
+| `` | gui_aetherion_bestiary.png            | 6 | `CodexBrowser` (Bestiary) |
+| `` | gui_aetherion_collection.png          | 6 | `CodexBrowser` (Collection) |
+| `` | gui_aetherion_codex.png               | 6 | `CodexHubGUI.Holder` (captioned), detail fallback |
 | `` | gui_aetherion_milestones.png          | 6 | `CodexMilestonesGUI.Holder` |
 | `` | gui_aetherion_journal.png             | 6 | `DungeonJournalGUI.Holder` (Boss Journal) |
 | `` | gui_aetherion_stats.png               | 6 | `StatsOverviewGUI` |
@@ -59,6 +70,16 @@ container slots `(8+18c, 18+18r)`, player inventory `103+18r+(rows−4)·18`, ho
 | `` | gui_aetherion_loadouts.png            | 6 | `LoadoutGUI` + `LoadoutHolder` |
 | `` | gui_aetherion_spawns.png              | 6 | `AetherionHub` `SpawnMenu` |
 | `` | gui_aetherion_pets.png                | 6 | `Aethermobs` `PetMenu` collection (Holder) |
+| `` | gui_aetherion_chronicle.png           | 6 | `ChronicleGUI` |
+| `` | gui_aetherion_journal_hub.png         | 3 | unused (the Journal shelf moved into the Codex) |
+| `` | gui_aetherion_recipes_index.png       | 6 | `RecipeBookGUI` categories (captioned) |
+| `` | gui_aetherion_recipes_craft.png       | 6 | `RecipeBookGUI` one recipe (grid, inked arrow, result) |
+| `` | gui_aetherion_collection_entry.png    | 6 | `CodexDetailGUI` (Collection cards) |
+| `` | gui_aetherion_bestiary_entry.png      | 6 | `CodexDetailGUI` (Bestiary cards) |
+| `` | gui_aetherion_anvil.png               | 6 | `BoosterSocketMenu` (Manager → Anvil) |
+
+`tools/build_served_pack.py` copies every page in `gen_gui_chrome.THEMES` and appends any page glyph the
+live `minecraft:default` fonts (base and overlays) do not have yet (`add_page_glyphs`).
 
 Kept: `` (Wanderer badge), `` (−48 shift), `` (space_neg).
 Java constants live in `de.aetherion.items.util.ManagerChrome`. The old `String TITLE`
@@ -75,7 +96,7 @@ journal parchment · stats teal · storage copper · loadouts steel · spawns mo
 - **Storage / Loadouts / Pets / Recipes**: wired via `InventoryHolder` + `ManagerChrome.*`
   (page on `StorageHolder`). Pack glyphs already on Hetzner `:8088`.
 - **Not chest UIs / out of scope**: Craft (vanilla workbench), Island and Guild (chat),
-  Booster Sockets / Anvil (LOCKED), DevMenu. Aetherlex / Pet Details still use legacy titles.
+  DevMenu. Aetherlex / Pet Details still use legacy titles. Booster Sockets has its page (``).
 
 ## What overlay titles lose
 

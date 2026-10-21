@@ -33,7 +33,10 @@ public class StatsOverviewGUI {
                         boolean percent) {
     }
 
-    /** Book tiles: rows 0, 2 and 4, every other column (gen_gui_chrome.py BOOK_TILES['stats']). */
+    /**
+     * Book tiles: rows 0, 2 and 4, every other column; the last row sits one tile right so no caption runs over
+     * Back (gen_gui_chrome.py PAGES['stats']).
+     */
     private static final List<Stat> STATS = List.of(
             new Stat(0, Material.GLISTERING_MELON_SLICE, "§c", "Health", "Leben", ItemCapability.HEALTH, false),
             new Stat(2, Material.SHIELD, "§b", "Defense", "Abwehr", ItemCapability.DEFENSE, false),
@@ -45,10 +48,10 @@ public class StatsOverviewGUI {
             new Stat(22, Material.IRON_PICKAXE, "§7", "Mining Power", "Abbaukraft", ItemCapability.MINING_POWER, false),
             new Stat(24, Material.RABBIT_FOOT, "§e", "Fortune", "Glück", ItemCapability.FORTUNE, false),
             new Stat(26, Material.EMERALD, "§a", "Spread", "Streuung", ItemCapability.SPREAD, false),
-            new Stat(36, Material.GOLDEN_HOE, "§6", "Harvest", "Ernte", ItemCapability.HARVEST_SPREAD, false),
-            new Stat(38, Material.LEAD, "§6", "Catch Rate", "Fangrate", ItemCapability.PET_CATCH_RATE, true),
-            new Stat(40, Material.FISHING_ROD, "§b", "Fish Speed", "Angeltempo", ItemCapability.FISHING_SPEED, false),
-            new Stat(42, Material.COD, "§3", "Fish Catch", "Fang", ItemCapability.FISHING_CATCH, false)
+            new Stat(38, Material.GOLDEN_HOE, "§6", "Harvest", "Ernte", ItemCapability.HARVEST_SPREAD, false),
+            new Stat(40, Material.LEAD, "§6", "Catch Rate", "Fangrate", ItemCapability.PET_CATCH_RATE, true),
+            new Stat(42, Material.FISHING_ROD, "§b", "Fish Speed", "Angeltempo", ItemCapability.FISHING_SPEED, false),
+            new Stat(44, Material.COD, "§3", "Fish Catch", "Fang", ItemCapability.FISHING_CATCH, false)
     );
 
     private final ActiveEquipmentStats equipmentStats;

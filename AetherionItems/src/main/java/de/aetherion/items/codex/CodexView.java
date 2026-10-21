@@ -28,6 +28,11 @@ public abstract class CodexView implements InventoryHolder {
         return null;
     }
 
+    /** Overlay title for {@code player}: book pages write their captions into it ({@code BookPage}). */
+    protected net.kyori.adventure.text.Component chrome(Player player) {
+        return chrome();
+    }
+
     protected int size() {
         return 54;
     }
@@ -37,7 +42,7 @@ public abstract class CodexView implements InventoryHolder {
         if (player == null) {
             return;
         }
-        net.kyori.adventure.text.Component chrome = chrome();
+        net.kyori.adventure.text.Component chrome = chrome(player);
         inventory = chrome != null
                 ? Bukkit.createInventory(this, size(), chrome)
                 : Bukkit.createInventory(this, size(), title());

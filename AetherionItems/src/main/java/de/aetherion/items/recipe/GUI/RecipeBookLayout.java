@@ -12,15 +12,13 @@ public final class RecipeBookLayout {
     public static final int PREV_PAGE_SLOT = 52;
     public static final int NEXT_PAGE_SLOT = 53;
 
-    public static final int ARROW_SLOT = 16;
     public static final int RESULT_SLOT = 25;
     public static final int INFO_SLOT = 34;
 
+    /** The index is a book page: five categories on row 0, five on row 2, each with a caption under it. */
     public static final int[] CATEGORY_SLOTS = {
-            11, 13, 15,
-            20, 22, 24,
-            29, 31, 33,
-            38, 40, 42
+            0, 2, 4, 6, 8,
+            18, 20, 22, 24, 26
     };
 
     public static final int[] RECIPE_SLOTS = {

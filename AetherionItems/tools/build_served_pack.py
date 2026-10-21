@@ -20,6 +20,7 @@ import zipfile
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO_PACK = os.path.normpath(os.path.join(HERE, '..', 'resourcepack'))
 sys.path.insert(0, HERE)
+import gen_gui_chrome  # noqa: E402
 import merge_gui_overrides  # noqa: E402
 import newer_clients  # noqa: E402
 
@@ -34,10 +35,8 @@ COPY = (
     'assets/minecraft/textures/gui/sprites/boss_bar/blue_background.png',
     'assets/aetherion/textures/item/gui',
     'assets/aetherion/models/item/gui',
-    # The Manager's book pages and their caption fonts (gen_gui_chrome.py: render + write_caption_fonts).
-    'assets/minecraft/textures/font/gui_aetherion_manager.png',
-    'assets/minecraft/textures/font/gui_aetherion_stats.png',
-    'assets/minecraft/textures/font/gui_aetherion_spawns.png',
+    # The Manager's book pages (every gui_aetherion_*.png, see PAGE_TEXTURES) and their caption fonts
+    # (gen_gui_chrome.py: render + write_caption_fonts).
     'assets/aetherion/font/mgr_caption_1.json',
     'assets/aetherion/font/mgr_caption_2.json',
     'assets/aetherion/font/mgr_caption_3.json',
@@ -51,6 +50,11 @@ COPY = (
     'assets/aetherion/font/badges.json',
     'assets/aetherion/textures/font/badges',
 )
+# Every menu page of gen_gui_chrome.THEMES: copied, and registered in minecraft:default by add_page_glyphs.
+PAGE_TEXTURES = tuple(
+    ('gui_aetherion_manager.png' if key == 'manager' else 'gui_aetherion_%s.png' % key, glyph)
+    for key, _label, _accent, _sigil, _rows, glyph in gen_gui_chrome.THEMES)
+COPY += tuple('assets/minecraft/textures/font/' + name for name, _glyph in PAGE_TEXTURES)
 BADGES = 'aetherion:badges'
 BADGE_RANGE = (0xEA00, 0xEAFF)
 # The ActionBar status panel the carrier replaced.
@@ -82,6 +86,7 @@ def main(live, out, vanilla):
                 os.makedirs(os.path.dirname(dst), exist_ok=True)
                 shutil.copyfile(src, dst)
         add_badge_reference(work)
+        add_page_glyphs(work)
         merge_gui_overrides.main(work, vanilla)
         newer_clients.main(work)
         files = []
@@ -123,6 +128,38 @@ def add_badge_reference(work):
                 raise SystemExit('%s: %s already uses %s' % (path, p.get('file', p.get('type')), ', '.join(clash[:5])))
         if not any(p.get('type') == 'reference' and p.get('id') == BADGES for p in providers):
             providers.append({'type': 'reference', 'id': BADGES})
+            with open(path, 'w', encoding='utf-8', newline='\n') as f:
+                json.dump(font, f, indent=2)
+                f.write('\n')
+
+
+def add_page_glyphs(work):
+    """Make sure every Manager page glyph resolves in every minecraft:default font of the pack (base and overlays).
+
+    Pages the live pack already maps to the same texture stay as they are; new ones are appended. Refuses to build
+    when a page's character is already taken by another provider.
+    """
+    for root, _, names in os.walk(work):
+        if 'default.json' not in names or not root.replace(os.sep, '/').endswith('assets/minecraft/font'):
+            continue
+        path = os.path.join(root, 'default.json')
+        with open(path, encoding='utf-8') as f:
+            font = json.load(f)
+        providers = font.setdefault('providers', [])
+        taken = {}
+        for p in providers:
+            for c in ''.join(p.get('chars', [])) + ''.join(p.get('advances', {})):
+                taken.setdefault(c, p)
+        added = 0
+        for name, glyph in PAGE_TEXTURES:
+            texture = 'minecraft:font/' + name
+            owner = taken.get(glyph)
+            if owner is None:
+                providers.append({'type': 'bitmap', 'file': texture, 'ascent': 23, 'height': 256, 'chars': [glyph]})
+                added += 1
+            elif owner.get('file') != texture:
+                raise SystemExit('%s: %s is already %s, not %s' % (path, hex(ord(glyph)), owner.get('file'), texture))
+        if added:
             with open(path, 'w', encoding='utf-8', newline='\n') as f:
                 json.dump(font, f, indent=2)
                 f.write('\n')

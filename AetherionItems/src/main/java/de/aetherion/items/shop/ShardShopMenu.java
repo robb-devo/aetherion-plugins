@@ -1,6 +1,9 @@
 package de.aetherion.items.shop;
 
+import de.aetherion.core.api.AetherServices;
+import de.aetherion.core.api.BookPage;
 import de.aetherion.items.util.GuiIcons;
+import de.aetherion.items.util.ManagerChrome;
 import de.aetherion.items.economy.CompressedResource;
 import de.aetherion.items.economy.ShardService;
 import de.aetherion.items.rank.RankBadgeService;
@@ -31,9 +34,17 @@ public final class ShardShopMenu implements Listener {
     public static final String TITLE_MATERIALS = "§bAether Shop §8· §aMaterials";
     public static final String TITLE_EXCLUSIVE = "§bAether Shop §8· §5Exclusive";
 
+    /*
+     * A book page like the Manager's: the balance on top, the shelves on row 2 with their name or price written
+     * under them (BookPage captions), the way back on the last row (tools/gen_gui_chrome.py PAGES['shop*']).
+     */
     public static final int BALANCE_SLOT = 4;
     public static final int CLOSE_SLOT = de.aetherion.items.util.ManagerNav.SLOT_45;
     public static final int BACK_SLOT = 40;
+    private static final int BOOSTS_SLOT = 19;
+    private static final int MATERIALS_SLOT = 22;
+    private static final int EXCLUSIVE_SLOT = 25;
+    private static final int MVP_SLOT = 22;
 
     public static final long HACKER_RARE_PRICE = 450L;
     public static final long HACKER_EPIC_PRICE = 850L;
@@ -45,25 +56,32 @@ public final class ShardShopMenu implements Listener {
     }
 
     public void open(Player player) {
-        Inventory inventory = Bukkit.createInventory(new Holder(View.ROOT), 45, de.aetherion.items.util.ManagerChrome.SHOP);
+        boolean german = AetherServices.german(player);
+        List<BookPage.Caption> captions = new ArrayList<>();
+        captions.add(balanceCaption(player));
+        captions.add(new BookPage.Caption(BOOSTS_SLOT, german ? "Booster" : "Boosts", BookPage.State.OPEN));
+        captions.add(new BookPage.Caption(MATERIALS_SLOT, german ? "Materialien" : "Materials", BookPage.State.OPEN));
+        captions.add(new BookPage.Caption(EXCLUSIVE_SLOT, german ? "Exklusiv" : "Exclusive", BookPage.State.OPEN));
+        Inventory inventory = Bukkit.createInventory(new Holder(View.ROOT), 45,
+                BookPage.title(ManagerChrome.SHOP_GLYPH, captions));
         fillPanes(inventory);
         inventory.setItem(BALANCE_SLOT, balanceIcon(player));
 
-        inventory.setItem(20, named(
+        inventory.setItem(BOOSTS_SLOT, named(
                 Material.EXPERIENCE_BOTTLE,
                 "§dBoosts & Charms",
                 "§7XP vials and utility charms.",
                 "",
                 "§eClick to browse."
         ));
-        inventory.setItem(22, named(
+        inventory.setItem(MATERIALS_SLOT, named(
                 Material.DIAMOND,
                 "§aMaterials",
                 "§7Compressed and refined stock.",
                 "",
                 "§eClick to browse."
         ));
-        inventory.setItem(24, named(
+        inventory.setItem(EXCLUSIVE_SLOT, named(
                 Material.PLAYER_HEAD,
                 "§5Exclusive",
                 "§7Shop-only pets and oddities.",
@@ -77,47 +95,51 @@ public final class ShardShopMenu implements Listener {
     }
 
     public void openBoosts(Player player) {
-        Inventory inventory = Bukkit.createInventory(new Holder(View.BOOSTS), 45, de.aetherion.items.util.ManagerChrome.SHOP_BOOSTS);
-        fillPanes(inventory);
-        inventory.setItem(BALANCE_SLOT, balanceIcon(player));
-
-        placeOffers(player, inventory, boostOffers());
-
-        inventory.setItem(BACK_SLOT, named(Material.ARROW, "§7← Back"));
-        inventory.setItem(CLOSE_SLOT, de.aetherion.items.util.ManagerNav.button());
-        player.openInventory(inventory);
+        openShelf(player, View.BOOSTS, ManagerChrome.SHOP_BOOSTS_GLYPH, boostOffers());
     }
 
     public void openMaterials(Player player) {
-        Inventory inventory = Bukkit.createInventory(new Holder(View.MATERIALS), 45, de.aetherion.items.util.ManagerChrome.SHOP_MATERIALS);
+        openShelf(player, View.MATERIALS, ManagerChrome.SHOP_MATERIALS_GLYPH, materialOffers());
+    }
+
+    public void openExclusive(Player player) {
+        openShelf(player, View.EXCLUSIVE, ManagerChrome.SHOP_EXCLUSIVE_GLYPH, exclusiveOffers());
+    }
+
+    /** One shelf: its offers on row 2 with the price under each (faded when you can't afford it). */
+    private void openShelf(Player player, View view, char page, Offer[] offers) {
+        List<BookPage.Caption> captions = new ArrayList<>();
+        captions.add(balanceCaption(player));
+        long balance = shards.get(player);
+        for (Offer offer : offers) {
+            captions.add(new BookPage.Caption(offer.slot, String.format(Locale.US, "%,d", offer.price),
+                    balance >= offer.price ? BookPage.State.OPEN : BookPage.State.LOCKED));
+        }
+        if (view == View.EXCLUSIVE) {
+            captions.add(new BookPage.Caption(MVP_SLOT, "MVP++", BookPage.State.NEXT));
+        }
+        Inventory inventory = Bukkit.createInventory(new Holder(view), 45, BookPage.title(page, captions));
         fillPanes(inventory);
         inventory.setItem(BALANCE_SLOT, balanceIcon(player));
 
-        placeOffers(player, inventory, materialOffers());
+        placeOffers(player, inventory, offers);
+        if (view == View.EXCLUSIVE) {
+            inventory.setItem(MVP_SLOT, named(
+                    Material.NETHER_STAR,
+                    "§6MVP§c++",
+                    "§7Not for sale.",
+                    "§7Some ranks you just have.",
+                    "§8A Hypixel homage, nothing more."
+            ));
+        }
 
-        inventory.setItem(BACK_SLOT, named(Material.ARROW, "§7← Back"));
+        inventory.setItem(BACK_SLOT, GuiIcons.icon(named(Material.ARROW, "§eBack", "§7To the Aether Shop."), GuiIcons.BACK));
         inventory.setItem(CLOSE_SLOT, de.aetherion.items.util.ManagerNav.button());
         player.openInventory(inventory);
     }
 
-    public void openExclusive(Player player) {
-        Inventory inventory = Bukkit.createInventory(new Holder(View.EXCLUSIVE), 45, de.aetherion.items.util.ManagerChrome.SHOP_EXCLUSIVE);
-        fillPanes(inventory);
-        inventory.setItem(BALANCE_SLOT, balanceIcon(player));
-
-        placeOffers(player, inventory, exclusiveOffers());
-
-        inventory.setItem(31, named(
-                Material.NETHER_STAR,
-                "§6MVP§c++",
-                "§7Not for sale.",
-                "§7Some ranks you just have.",
-                "§8A Hypixel homage, nothing more."
-        ));
-
-        inventory.setItem(BACK_SLOT, named(Material.ARROW, "§7← Back"));
-        inventory.setItem(CLOSE_SLOT, de.aetherion.items.util.ManagerNav.button());
-        player.openInventory(inventory);
+    private BookPage.Caption balanceCaption(Player player) {
+        return new BookPage.Caption(BALANCE_SLOT, shards.formatted(player), BookPage.State.NEXT);
     }
 
     @EventHandler
@@ -137,11 +159,11 @@ public final class ShardShopMenu implements Listener {
         }
 
         if (holder.view == View.ROOT) {
-            if (slot == 20) {
+            if (slot == BOOSTS_SLOT) {
                 openBoosts(player);
-            } else if (slot == 22) {
+            } else if (slot == MATERIALS_SLOT) {
                 openMaterials(player);
-            } else if (slot == 24) {
+            } else if (slot == EXCLUSIVE_SLOT) {
                 openExclusive(player);
             }
             return;
@@ -152,7 +174,7 @@ public final class ShardShopMenu implements Listener {
             return;
         }
 
-        if (holder.view == View.EXCLUSIVE && slot == 31) {
+        if (holder.view == View.EXCLUSIVE && slot == MVP_SLOT) {
             de.aetherion.items.AetherionItems plugin = de.aetherion.items.AetherionItems.getInstance();
             RankBadgeService ranks = plugin == null ? null : plugin.ranks();
             if (ranks != null && ranks.hasMvpPlusPlus(player.getUniqueId())) {
@@ -341,11 +363,11 @@ public final class ShardShopMenu implements Listener {
 
     private static Offer[] boostOffers() {
         return new Offer[]{
-                new Offer(11, AetherBloodVial.LESSER_PRICE, "lesser_phial",
+                new Offer(19, AetherBloodVial.LESSER_PRICE, "lesser_phial",
                         AetherBloodVial::createLesser, null, null),
-                new Offer(13, AetherBloodVial.PRICE, "phial",
+                new Offer(22, AetherBloodVial.PRICE, "phial",
                         AetherBloodVial::create, null, null),
-                new Offer(15, 350L, "charm_estate",
+                new Offer(25, 350L, "charm_estate",
                         () -> {
                             de.aetherion.items.AetherionItems plugin = de.aetherion.items.AetherionItems.getInstance();
                             return plugin == null || plugin.getCustomItem() == null
@@ -357,22 +379,22 @@ public final class ShardShopMenu implements Listener {
 
     private static Offer[] materialOffers() {
         return new Offer[]{
-                new Offer(11, 80L, "refined_wheat",
+                new Offer(19, 80L, "refined_wheat",
                         () -> stack(CompressedResource.WHEAT.refined(), 1), null, null),
-                new Offer(13, 90L, "compacted_iron",
+                new Offer(21, 90L, "compacted_iron",
                         () -> stack(CompressedResource.RAW_IRON.compacted(), 1), null, null),
-                new Offer(15, 220L, "compacted_diamond",
+                new Offer(23, 220L, "compacted_diamond",
                         () -> stack(CompressedResource.DIAMOND.compacted(), 1), null, null),
-                new Offer(22, 45L, "compressed_diamond_x8",
+                new Offer(25, 45L, "compressed_diamond_x8",
                         () -> stack(CompressedResource.DIAMOND.compressed(), 8), null, null)
         };
     }
 
     private static Offer[] exclusiveOffers() {
         return new Offer[]{
-                new Offer(12, HACKER_RARE_PRICE, "pet_hacker_rare",
+                new Offer(19, HACKER_RARE_PRICE, "pet_hacker_rare",
                         null, "hacker", "RARE"),
-                new Offer(14, HACKER_EPIC_PRICE, "pet_hacker_epic",
+                new Offer(25, HACKER_EPIC_PRICE, "pet_hacker_epic",
                         null, "hacker", "EPIC")
         };
     }

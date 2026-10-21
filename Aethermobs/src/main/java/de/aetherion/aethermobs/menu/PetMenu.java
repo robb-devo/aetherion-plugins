@@ -501,11 +501,11 @@ public class PetMenu implements Listener {
 
         inventory.setItem(
                 BACK_SLOT,
-                createActionItem(
+                de.aetherion.items.util.GuiIcons.icon(createActionItem(
                         Material.ARROW,
                         "§e§lBack",
                         "§7Return to your collection."
-                )
+                ), de.aetherion.items.util.GuiIcons.BACK)
         );
 
         player.openInventory(
@@ -915,6 +915,14 @@ public class PetMenu implements Listener {
             Inventory inventory
     ) {
 
+        // The collection page is a book page (ManagerChrome.PETS): its nav row stays invisible over the seals.
+        if (inventory.getHolder() instanceof Holder) {
+            for (int slot = 45; slot < 54; slot++) {
+                inventory.setItem(slot, de.aetherion.items.util.GuiIcons.spacer());
+            }
+            return;
+        }
+
         ItemStack filler =
                 new ItemStack(
                         Material.GRAY_STAINED_GLASS_PANE
@@ -1115,25 +1123,21 @@ public class PetMenu implements Listener {
 
             inventory.setItem(
                     PREVIOUS_SLOT,
-                    createNavigationItem(
+                    de.aetherion.items.util.GuiIcons.icon(createNavigationItem(
                             Material.ARROW,
                             "§e§lPrevious Page",
                             "§7Go to page "
                                     + collectionPage
                                     + ".",
                             collectionPage
-                    )
+                    ), de.aetherion.items.util.GuiIcons.PREV)
             );
 
         } else {
 
             inventory.setItem(
                     MANAGER_BACK_SLOT,
-                    createActionItem(
-                            Material.ARROW,
-                            "§e§lBack",
-                            "§7Return to the Aetherion Manager."
-                    )
+                    de.aetherion.items.util.ManagerNav.button()
             );
         }
 
@@ -1142,12 +1146,12 @@ public class PetMenu implements Listener {
 
             inventory.setItem(
                     NEXT_SLOT,
-                    createNavigationItem(
+                    de.aetherion.items.util.GuiIcons.icon(createNavigationItem(
                             Material.ARROW,
                             "§e§lNext Page",
                             "§7Open the next storage page.",
                             collectionPage
-                    )
+                    ), de.aetherion.items.util.GuiIcons.NEXT)
             );
         }
     }

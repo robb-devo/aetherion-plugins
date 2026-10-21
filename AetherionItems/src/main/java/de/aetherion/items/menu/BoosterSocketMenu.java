@@ -37,6 +37,8 @@ import java.util.List;
 public final class BoosterSocketMenu implements Listener {
 
     public static final int SIZE = 54;
+    /** A book page (ManagerChrome.ANVIL): the gear on its seal, the sockets as ledger pockets below. */
+    public static final int INFO_SLOT = 0;
     public static final int GEAR_SLOT = 13;
     public static final int CLOSE_SLOT = 49;
     /** Top-right of the chest. Opens the normal Minecraft anvil. */
@@ -65,7 +67,7 @@ public final class BoosterSocketMenu implements Listener {
 
     private void openMenu(Player player) {
         Holder holder = new Holder();
-        Inventory inventory = Bukkit.createInventory(holder, SIZE, "§8Booster Sockets");
+        Inventory inventory = Bukkit.createInventory(holder, SIZE, de.aetherion.items.util.ManagerChrome.ANVIL);
         holder.inventory = inventory;
         paint(holder);
         player.openInventory(inventory);
@@ -306,7 +308,7 @@ public final class BoosterSocketMenu implements Listener {
         for (int i = 0; i < SIZE; i++) {
             inventory.setItem(i, pane());
         }
-        inventory.setItem(4, info(gear, slots));
+        inventory.setItem(INFO_SLOT, info(gear, slots));
         inventory.setItem(GEAR_SLOT, gear == null ? gearHint() : gear);
         for (int i = 0; i < SOCKET_SLOTS.length; i++) {
             BoosterType type = i < slots.length ? slots[i] : null;
@@ -417,9 +419,9 @@ public final class BoosterSocketMenu implements Listener {
     }
 
     private ItemStack emptySocket(int number) {
-        return named(Material.LIGHT_GRAY_STAINED_GLASS_PANE, "§7Socket " + number,
+        return de.aetherion.items.util.GuiIcons.icon(named(Material.LIGHT_GRAY_STAINED_GLASS_PANE, "§7Socket " + number,
                 "§8Empty",
-                "§7Click with a booster to socket it.");
+                "§7Click with a booster to socket it."), de.aetherion.items.util.GuiIcons.SPACER);
     }
 
     private ItemStack socketIcon(BoosterType type, int number) {
@@ -443,11 +445,12 @@ public final class BoosterSocketMenu implements Listener {
     }
 
     private ItemStack pane() {
-        return named(Material.BLACK_STAINED_GLASS_PANE, " ");
+        return de.aetherion.items.util.GuiIcons.spacer();
     }
 
     private ItemStack close() {
-        return named(Material.BARRIER, "§cClose", "§7Your item returns to you.");
+        return de.aetherion.items.util.GuiIcons.icon(named(Material.BARRIER, "§cClose", "§7Your item returns to you."),
+                de.aetherion.items.util.GuiIcons.CLOSE);
     }
 
     private ItemStack vanillaAnvil() {
