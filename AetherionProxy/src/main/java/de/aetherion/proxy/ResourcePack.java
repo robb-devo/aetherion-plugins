@@ -24,13 +24,17 @@ import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.HexFormat;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
-/** {@code pack.properties} plus the SHA-1 of the zip it points at. */
+/**
+ * {@code pack.properties} plus the SHA-1 of the zip it points at. {@link #reload} runs at start and then
+ * every minute: when the served zip changed, everyone online gets the new one right away.
+ */
 final class ResourcePack {
 
     private static final String FILE = "pack.properties";
@@ -77,6 +81,11 @@ final class ResourcePack {
                 boolean required = Boolean.parseBoolean(config.getProperty("required", "true").trim());
                 Component prompt = MiniMessage.miniMessage().deserialize(config.getProperty("prompt", DEFAULT_PROMPT));
                 byte[] sha1 = sha1(packUrl);
+                ResourcePackInfo before = info;
+                boolean changed = before != null && (!Arrays.equals(before.getHash(), sha1) || !packUrl.equals(url));
+                if (before != null && !changed && source == null) {
+                    return;
+                }
                 url = packUrl;
                 info = proxy.createResourcePackBuilder(packUrl)
                         .setId(UUID.nameUUIDFromBytes(("aetherion:" + packUrl).getBytes(StandardCharsets.UTF_8)))
@@ -86,9 +95,16 @@ final class ResourcePack {
                         .build();
                 status = "ready, sha1 " + HexFormat.of().formatHex(sha1) + (required ? ", required" : ", optional");
                 logger.info("Resource pack {}: {}", packUrl, status);
+                if (changed) {
+                    logger.info("Resource pack changed: sent to {} players online", pushAll());
+                }
             } catch (IOException | RuntimeException e) {
-                status = "failed: " + e.getMessage();
-                logger.error("Resource pack not loaded, players join without it", e);
+                if (info == null) {
+                    status = "failed: " + e.getMessage();
+                    logger.error("Resource pack not loaded, players join without it", e);
+                } else {
+                    logger.warn("Resource pack check failed, keeping the current one: {}", e.getMessage());
+                }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 status = "interrupted";
@@ -145,7 +161,7 @@ final class ResourcePack {
         config.setProperty("prompt", DEFAULT_PROMPT);
         try (Writer out = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
             config.store(out, "Aetherion resource pack, sent once per session by the proxy. "
-                    + "After replacing the zip: aepack reload, then aepack push.");
+                    + "The zip's hash is re-read every minute; a new zip reaches everyone online.");
         }
         return config;
     }

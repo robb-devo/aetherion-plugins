@@ -13,14 +13,15 @@ import com.velocitypowered.api.proxy.ProxyServer;
 import org.slf4j.Logger;
 
 import java.nio.file.Path;
+import java.util.concurrent.TimeUnit;
 
 /**
  * The network's one resource pack, sent by the proxy when a player first lands on a backend.
  *
  * <p>Backends advertise no pack. A pack pushed by a backend makes the client reload all its resources on
  * every server switch, even when it is the same pack; sent once from here, it stays applied while the
- * player moves between hub, mmo-r, mmo-d, mmo-c and mmo-i. The SHA-1 is read from the served zip, so a pack
- * swap is: replace the zip, then {@code aepack reload} (and {@code aepack push} for players already online).
+ * player moves between hub, mmo-r, mmo-d, mmo-c and mmo-i. The SHA-1 is read from the served zip and checked
+ * every minute, so a pack swap is just: replace the zip. Players online get the new pack within a minute.
  */
 @Plugin(id = "aetherion-proxy", name = "AetherionProxy", version = "1.0.0",
         description = "Sends the Aetherion resource pack once per session.", authors = {"Robb"})
@@ -38,6 +39,10 @@ public final class AetherionProxy {
     @Subscribe
     public void onInitialize(ProxyInitializeEvent event) {
         pack.reload(null);
+        proxy.getScheduler().buildTask(this, () -> pack.reload(null))
+                .delay(1, TimeUnit.MINUTES)
+                .repeat(1, TimeUnit.MINUTES)
+                .schedule();
         proxy.getCommandManager().register(
                 proxy.getCommandManager().metaBuilder("aepack").plugin(this).build(), new PackCommand(pack));
     }
