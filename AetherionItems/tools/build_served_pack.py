@@ -5,9 +5,9 @@
 
 AetherionItems/resourcepack is only the source of the HUD and GUI art; its item models and textures are
 stale, so they are never copied. This takes the zip that is live now, swaps in exactly the paths in COPY,
-drops the ones in DROP, merges the menu icon overrides into the item models (merge_gui_overrides.py) and
-writes a deterministic zip. Then: upload it over the served zip, ``aepack reload`` + ``aepack push`` on
-the proxy. The backends advertise no pack; the proxy sends it once per session.
+drops the ones in DROP, merges the menu icon overrides into the item models (merge_gui_overrides.py), makes
+it safe for clients newer than 1.21.1 (newer_clients.py) and writes a deterministic zip. Then: upload it over
+the served zip, ``aepack reload`` + ``aepack push`` on the proxy. The backends advertise no pack; the proxy sends it once per session.
 """
 import hashlib
 import os
@@ -20,6 +20,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REPO_PACK = os.path.normpath(os.path.join(HERE, '..', 'resourcepack'))
 sys.path.insert(0, HERE)
 import merge_gui_overrides  # noqa: E402
+import newer_clients  # noqa: E402
 
 # Owned by the generators in this folder (gen_carrier.py, gen_gui_icons.py).
 COPY = (
@@ -62,6 +63,7 @@ def main(live, out, vanilla):
                 os.makedirs(os.path.dirname(dst), exist_ok=True)
                 shutil.copyfile(src, dst)
         merge_gui_overrides.main(work, vanilla)
+        newer_clients.main(work)
         files = []
         for root, _, names in os.walk(work):
             for name in names:
