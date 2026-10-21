@@ -1,0 +1,8 @@
+{
+  "asset_id": "aetherion:catcher",
+  "decal": false,
+  "description": {
+    "text": "Catcher"
+  },
+  "template_item": "minecraft:barrier"
+}

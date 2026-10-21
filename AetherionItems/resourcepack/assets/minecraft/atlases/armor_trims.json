@@ -1,0 +1,612 @@
+{
+ "sources": [
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/aetherion_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/aetherion_leggings_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid/aetherion_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid_leggings/aetherion_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/catcher_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/catcher_leggings_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid/catcher_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid_leggings/catcher_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/catcher_2_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/catcher_2_leggings_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid/catcher_2_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid_leggings/catcher_2_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/catcher_3_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/catcher_3_leggings_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid/catcher_3_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid_leggings/catcher_3_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/combat_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/combat_leggings_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid/combat_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid_leggings/combat_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/combat_2_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/combat_2_leggings_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid/combat_2_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid_leggings/combat_2_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/combat_3_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/combat_3_leggings_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid/combat_3_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid_leggings/combat_3_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/combat_4_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/combat_4_leggings_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid/combat_4_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid_leggings/combat_4_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/combat_5_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/combat_5_leggings_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid/combat_5_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid_leggings/combat_5_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/diving_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/diving_leggings_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid/diving_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid_leggings/diving_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/dungeon_t2_relic_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/dungeon_t2_relic_leggings_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid/dungeon_t2_relic_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid_leggings/dungeon_t2_relic_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/dungeon_t3_relic_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/dungeon_t3_relic_leggings_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid/dungeon_t3_relic_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid_leggings/dungeon_t3_relic_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/farming_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/farming_leggings_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid/farming_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid_leggings/farming_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/farming_2_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/farming_2_leggings_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid/farming_2_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid_leggings/farming_2_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/farming_3_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/farming_3_leggings_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid/farming_3_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid_leggings/farming_3_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/farming_4_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/farming_4_leggings_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid/farming_4_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid_leggings/farming_4_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/farming_5_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/farming_5_leggings_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid/farming_5_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid_leggings/farming_5_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/fishing_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/fishing_leggings_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid/fishing_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid_leggings/fishing_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/fishing_2_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/fishing_2_leggings_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid/fishing_2_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid_leggings/fishing_2_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/fishing_3_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/fishing_3_leggings_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid/fishing_3_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid_leggings/fishing_3_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/fishing_4_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/fishing_4_leggings_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid/fishing_4_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid_leggings/fishing_4_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/fishing_5_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/fishing_5_leggings_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid/fishing_5_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid_leggings/fishing_5_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/foraging_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/foraging_leggings_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid/foraging_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid_leggings/foraging_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/foraging_2_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/foraging_2_leggings_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid/foraging_2_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid_leggings/foraging_2_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/foraging_3_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/foraging_3_leggings_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid/foraging_3_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid_leggings/foraging_3_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/foraging_4_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/foraging_4_leggings_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid/foraging_4_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid_leggings/foraging_4_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/foraging_5_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/foraging_5_leggings_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid/foraging_5_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid_leggings/foraging_5_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/helios_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/helios_leggings_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid/helios_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid_leggings/helios_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/hollow_sun_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/hollow_sun_leggings_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid/hollow_sun_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid_leggings/hollow_sun_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/ironhide_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/ironhide_leggings_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid/ironhide_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid_leggings/ironhide_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/mining_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/mining_leggings_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid/mining_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid_leggings/mining_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/mining_2_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/mining_2_leggings_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid/mining_2_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid_leggings/mining_2_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/mining_3_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/mining_3_leggings_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid/mining_3_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid_leggings/mining_3_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/mining_4_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/mining_4_leggings_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid/mining_4_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid_leggings/mining_4_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/mining_5_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/mining_5_leggings_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid/mining_5_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid_leggings/mining_5_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/seraphine_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/seraphine_leggings_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid/seraphine_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid_leggings/seraphine_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/simple_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/simple_leggings_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid/simple_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid_leggings/simple_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/worldhide_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/models/armor/worldhide_leggings_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid/worldhide_aether"
+  },
+  {
+   "type": "single",
+   "resource": "aetherion:trims/entity/humanoid_leggings/worldhide_aether"
+  }
+ ]
+}

@@ -1,0 +1,8 @@
+{
+  "asset_id": "aetherion:dungeon_t2_relic",
+  "decal": false,
+  "description": {
+    "text": "Dungeon T2 Relic"
+  },
+  "template_item": "minecraft:barrier"
+}

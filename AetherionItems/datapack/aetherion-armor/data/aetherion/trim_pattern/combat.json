@@ -1,0 +1,8 @@
+{
+  "asset_id": "aetherion:combat",
+  "decal": false,
+  "description": {
+    "text": "Combat"
+  },
+  "template_item": "minecraft:barrier"
+}

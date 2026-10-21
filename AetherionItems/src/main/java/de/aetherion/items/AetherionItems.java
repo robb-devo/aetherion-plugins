@@ -352,6 +352,7 @@ public class AetherionItems extends JavaPlugin {
         );
         de.aetherion.items.item.LoreLocale.load(this);
         new de.aetherion.items.item.GearTooltip(this, itemManager);
+        new de.aetherion.items.item.ArmorLooks(this);
         loreLocaleListener = new de.aetherion.items.item.LoreLocaleListener(this, itemManager);
         de.aetherion.items.world.WildlifeLooks.register(this);
         de.aetherion.items.world.BorderlandsLightPass.schedule(this);

@@ -1,0 +1,8 @@
+{
+  "asset_id": "aetherion:helios",
+  "decal": false,
+  "description": {
+    "text": "Helios"
+  },
+  "template_item": "minecraft:barrier"
+}

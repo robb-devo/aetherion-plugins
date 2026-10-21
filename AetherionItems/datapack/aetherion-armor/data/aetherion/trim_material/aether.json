@@ -1,0 +1,9 @@
+{
+  "asset_name": "aether",
+  "description": {
+    "text": "Aether",
+    "color": "#B294E6"
+  },
+  "ingredient": "minecraft:barrier",
+  "item_model_index": 0.05
+}

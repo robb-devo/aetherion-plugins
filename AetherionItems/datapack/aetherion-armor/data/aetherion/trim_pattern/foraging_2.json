@@ -1,0 +1,8 @@
+{
+  "asset_id": "aetherion:foraging_2",
+  "decal": false,
+  "description": {
+    "text": "Foraging 2"
+  },
+  "template_item": "minecraft:barrier"
+}

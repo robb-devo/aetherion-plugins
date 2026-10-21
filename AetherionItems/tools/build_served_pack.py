@@ -40,6 +40,9 @@ COPY = (
     'assets/aetherion/font/mgr_caption_1.json',
     'assets/aetherion/font/mgr_caption_2.json',
     'assets/aetherion/font/mgr_caption_3.json',
+    # Worn armor: one trim texture per set for 1.21.1 and 1.21.2+ clients, and their atlas (gen_armor_trims.py).
+    'assets/aetherion/textures/trims',
+    'assets/minecraft/atlases/armor_trims.json',
     # Display-effect glyphs (gen_vfx_art.py), drawn by DisplayVfx.
     'assets/aetherion/font/vfx.json',
     'assets/aetherion/textures/font/vfx',
