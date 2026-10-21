@@ -37,7 +37,9 @@ import java.util.concurrent.ThreadLocalRandom;
  *   <li>McNugget, Golden Egg: a lobbed egg bursts where it lands, three at once when he panics.</li>
  *   <li>Bridge Troll, Toll Sweep: a wide axe swing in front of him; in the storm a full spin.</li>
  *   <li>Hollow Lurker, Soul Grasp: soul tethers mark players, then the dark reaches up under them.</li>
+ *   <li>Prototype Sentinel (dungeon floor one), Overload Lance: a tracking sightline locks, then fires.</li>
  * </ul>
+ * Pathwarden and the Frostbound keep their own directors and only get the intro card.
  */
 final class RiteDirector {
 
@@ -51,7 +53,9 @@ final class RiteDirector {
         NUGGET("&e&lMcNugget", "Terror of the Coop", "Schrecken des Hühnerstalls", ShapeFx.GOLD, 280, 200),
         TROLL("&6&lBridge Troll", "Keeper of the Toll", "Hüter des Zolls", TOLL, 260, 200),
         LURKER("&8&lHollow Lurker", "What Waits Below", "Was unten wartet", ShapeFx.SOUL, 260, 190),
+        SENTINEL("&5&lPrototype Sentinel", "The Forge's First Draft", "Der erste Entwurf der Schmiede", ShapeFx.VOID, 240, 180),
         WARDEN("&3&lPathwarden", "Warden of the Path", "Wächter des Pfads", ShapeFx.SOUL, 0, 0),
+        FROST("&b&lThe Frostbound", "Winter With a Grudge", "Ein Winter mit Groll", ShapeFx.ICE, 0, 0),
         NONE("", "", "", WHITE, 0, 0);
 
         final String name;
@@ -76,7 +80,9 @@ final class RiteDirector {
                 case "mcnugget" -> NUGGET;
                 case "bridge_troll" -> TROLL;
                 case "hollow_lurker" -> LURKER;
+                case "dungeon_sentinel" -> SENTINEL;
                 case "pathwarden" -> WARDEN;
+                case "dungeon_frostbound" -> FROST;
                 default -> NONE;
             };
         }
@@ -87,11 +93,13 @@ final class RiteDirector {
     private final List<Player> marked = new ArrayList<>();
     private Kind kind;
     private boolean introduced;
-    private int cooldown = 140;
+    private int cooldown = 100;
     private int windup = -1;
     private int length;
     private int followUp = -1;
     private float sweepYaw;
+    private Location lanceFrom;
+    private Location lanceTo;
 
     RiteDirector(BossInstance instance) {
         this.instance = instance;
@@ -139,6 +147,7 @@ final class RiteDirector {
     }
 
     private void reset() {
+        lanceTo = null;
         marks.clear();
         marked.clear();
         windup = -1;
@@ -243,6 +252,15 @@ final class RiteDirector {
                 boss.getWorld().playSound(at, Sound.AMBIENT_SOUL_SAND_VALLEY_MOOD, SoundCategory.HOSTILE, 1.0f, 0.8f);
                 cue(marked, "&3Soul Grasp &7· step out of the mark", "&3Seelengriff &7· raus aus der Markierung");
             }
+            case SENTINEL -> {
+                length = 24;
+                marked.add(near.get(ThreadLocalRandom.current().nextInt(near.size())));
+                lanceFrom = boss.getEyeLocation();
+                lanceTo = null;
+                boss.getWorld().playSound(at, Sound.BLOCK_BEACON_POWER_SELECT, SoundCategory.HOSTILE, 1.2f, 0.6f);
+                boss.getWorld().playSound(at, Sound.ENTITY_WARDEN_SONIC_CHARGE, SoundCategory.HOSTILE, 0.8f, 1.3f);
+                cue(marked, "&5Overload Lance &7· step off the line", "&5Überlast-Lanze &7· runter von der Linie");
+            }
             default -> {
                 return;
             }
@@ -284,6 +302,20 @@ final class RiteDirector {
                         Vfx.line(instance.getInstanceId() + ":grasp:" + i, from, p.getLocation().add(0, 1.0, 0),
                                 windup <= FLASH ? WHITE : ShapeFx.SOUL, 0.08);
                     }
+                }
+            }
+            case SENTINEL -> {
+                if (windup > FLASH && !marked.isEmpty() && marked.get(0).isValid() && marked.get(0).getWorld() == boss.getWorld()) {
+                    // tracks until the flash, then the line is locked and only the step off it saves you
+                    lanceFrom = boss.getEyeLocation();
+                    Vector aim = marked.get(0).getLocation().add(0, 1.0, 0).toVector().subtract(lanceFrom.toVector());
+                    if (aim.lengthSquared() > 0.01) {
+                        lanceTo = lanceFrom.clone().add(aim.normalize().multiply(16));
+                    }
+                }
+                if (lanceTo != null) {
+                    Vfx.line(instance.getInstanceId() + ":lance", lanceFrom, lanceTo, windup <= FLASH ? WHITE : ShapeFx.VOID,
+                            windup <= FLASH ? 0.12 : 0.05);
                 }
             }
             case TROLL -> {
@@ -333,6 +365,26 @@ final class RiteDirector {
                 } else {
                     sweep(boss);
                 }
+            }
+            case SENTINEL -> {
+                if (lanceTo == null) {
+                    return;
+                }
+                Vfx.beam(lanceFrom, lanceTo, ShapeFx.VOID, 0.6, 8);
+                Vfx.burst(lanceTo, ShapeFx.VOID, 1.6, 8);
+                world.playSound(lanceFrom, Sound.ENTITY_WARDEN_SONIC_BOOM, SoundCategory.HOSTILE, 0.7f, 1.4f);
+                world.playSound(lanceFrom, Sound.BLOCK_BEACON_DEACTIVATE, SoundCategory.HOSTILE, 1.0f, 1.2f);
+                Vector a = lanceFrom.toVector();
+                Vector ab = lanceTo.toVector().subtract(a);
+                double len2 = ab.lengthSquared();
+                for (Player p : T2Mechanics.nearby(boss, 20)) {
+                    Vector ap = p.getLocation().add(0, 1.0, 0).toVector().subtract(a);
+                    double t = Math.max(0, Math.min(1, ap.dot(ab) / len2));
+                    if (ap.subtract(ab.clone().multiply(t)).lengthSquared() <= 1.3 * 1.3) {
+                        BossHits.hurt(p, boss, instance.scaleDamage(late ? 30 : 26));
+                    }
+                }
+                lanceTo = null;
             }
             case LURKER -> {
                 for (Location m : marks) {

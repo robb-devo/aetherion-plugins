@@ -237,7 +237,7 @@ public final class WorldEaterBonusChest {
         if (t == lidAt) {
             play(Sound.BLOCK_GRASS_PLACE, 1.4f, 0.8f);
             play(Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.7f, 1.3f);
-            world.spawnParticle(Particle.HAPPY_VILLAGER, at(0f, HOVER + layerTop(4), 0f), 14, 0.6, 0.1, 0.6, 0);
+            de.aetherion.core.api.Vfx.puff(at(0f, HOVER + layerTop(4), 0f), Particle.HAPPY_VILLAGER, 14, Math.max(0.6, 0.6), null);
         }
         if (t >= lidAt) {
             lift = smooth((t - lidAt) / 10f);
@@ -249,7 +249,7 @@ public final class WorldEaterBonusChest {
                 Location l = rodTip(i);
                 world.playSound(l, Sound.BLOCK_AMETHYST_CLUSTER_PLACE, SoundCategory.BLOCKS, 1f, 0.8f + i * 0.15f);
                 world.playSound(l, Sound.BLOCK_BEACON_POWER_SELECT, SoundCategory.BLOCKS, 0.4f, 1.6f + i * 0.1f);
-                world.spawnParticle(Particle.END_ROD, l, 10, 0.05, 0.2, 0.05, 0.03);
+                de.aetherion.core.api.Vfx.puff(l, Particle.END_ROD, 10, Math.max(0.05, 0.05), null);
                 placeLight(i, 13);
             }
             rodGrow[i] = smooth((t - at) / 6f);
@@ -268,7 +268,7 @@ public final class WorldEaterBonusChest {
             pushBeam(beam, t < BLOOM + 40 ? 3 : 20);
             if (t < BLOOM + 30 && t % 2 == 0) {
                 Location heartAt = at(0f, HOVER + layerTop(3) + 0.3f, 0f);
-                world.spawnParticle(Particle.END_ROD, heartAt, 6, 0.3, 0.2, 0.3, 0.12);
+                de.aetherion.core.api.Vfx.puff(heartAt, Particle.END_ROD, 6, Math.max(0.3, 0.3), null);
             }
         }
         if (t >= READY) {
@@ -287,9 +287,9 @@ public final class WorldEaterBonusChest {
         play(Sound.BLOCK_END_PORTAL_SPAWN, 0.35f, 1.6f);
         play(Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.8f, 1.2f);
         Location top = at(0f, HOVER + layerTop(4), 0f);
-        world.spawnParticle(Particle.END_ROD, top, 60, 0.2, 0.4, 0.2, 0.25);
-        world.spawnParticle(Particle.HAPPY_VILLAGER, top, 30, 0.9, 0.3, 0.9, 0);
-        world.spawnParticle(Particle.DUST, top, 40, 1.2, 0.6, 1.2, 0, new Particle.DustOptions(SEED_GREEN, 1.4f), true);
+        de.aetherion.core.api.Vfx.puff(top, Particle.END_ROD, 60, Math.max(0.2, 0.2), null);
+        de.aetherion.core.api.Vfx.puff(top, Particle.HAPPY_VILLAGER, 30, Math.max(0.9, 0.9), null);
+        de.aetherion.core.api.Vfx.puff(top, Particle.DUST, 40, Math.max(1.2, 1.2), new Particle.DustOptions(SEED_GREEN, 1.4f));
         for (Player p : world.getPlayers()) {
             if (p.getLocation().distanceSquared(anchor) < 64 * 64) {
                 p.playSound(p.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, SoundCategory.RECORDS, 0.7f, 0.6f);
@@ -357,9 +357,8 @@ public final class WorldEaterBonusChest {
         if (readyTick % 5 == 0) {
             ThreadLocalRandom r = ThreadLocalRandom.current();
             Location heartAt = at(0f, HOVER + layerTop(3) + 0.35f, 0f);
-            world.spawnParticle(Particle.END_ROD, heartAt.clone().add(r.nextDouble(-0.4, 0.4), r.nextDouble(0, 1.2), r.nextDouble(-0.4, 0.4)),
-                    1, 0, 0.02, 0, 0.01);
-            world.spawnParticle(Particle.SCULK_SOUL, heartAt, 1, 0.3, 0.1, 0.3, 0.01);
+            de.aetherion.core.api.Vfx.puff(heartAt.clone().add(r.nextDouble(-0.4, 0.4), r.nextDouble(0, 1.2), r.nextDouble(-0.4, 0.4)), Particle.END_ROD, 1, Math.max(0, 0), null);
+            de.aetherion.core.api.Vfx.puff(heartAt, Particle.SCULK_SOUL, 1, Math.max(0.3, 0.3), null);
         }
         if (readyTick % 40 == 0) {
             world.playSound(at(0f, 1.5f, 0f), Sound.BLOCK_AMETHYST_BLOCK_CHIME, SoundCategory.BLOCKS, 0.5f,
@@ -393,7 +392,7 @@ public final class WorldEaterBonusChest {
             if (t == i * 6) {
                 Location l = rodTip(i);
                 world.playSound(l, Sound.BLOCK_BEACON_DEACTIVATE, SoundCategory.BLOCKS, 0.4f, 1.8f);
-                world.spawnParticle(Particle.SMOKE, l, 8, 0.05, 0.1, 0.05, 0.01);
+                de.aetherion.core.api.Vfx.puff(l, Particle.SMOKE, 8, Math.max(0.05, 0.05), null);
             }
             rodGrow[i] = Math.min(rodGrow[i], 1f - smooth((t - i * 6) / 5f));
         }
@@ -528,9 +527,9 @@ public final class WorldEaterBonusChest {
                 for (int i = 0; i <= 10; i++) {
                     double u = i / 10.0;
                     Location p = from.clone().add(d.clone().multiply(u)).add(0, Math.sin(u * Math.PI) * 0.8, 0);
-                    world.spawnParticle(Particle.END_ROD, p, 1, 0.03, 0.03, 0.03, 0.0);
+                    de.aetherion.core.api.Vfx.puff(p, Particle.END_ROD, 1, Math.max(0.03, 0.03), null);
                 }
-                world.spawnParticle(Particle.DUST, to, 6, 0.25, 0.35, 0.25, 0, new Particle.DustOptions(SEED_GREEN, 1.0f), true);
+                de.aetherion.core.api.Vfx.puff(to, Particle.DUST, 6, Math.max(0.25, 0.25), new Particle.DustOptions(SEED_GREEN, 1.0f));
             }, delayTicks);
         }
     }
@@ -807,7 +806,7 @@ public final class WorldEaterBonusChest {
     }
 
     private void dust(Location at, Color color, int count, double spread) {
-        world.spawnParticle(Particle.DUST, at, count, spread, spread * 0.5, spread, 0, new Particle.DustOptions(color, 1.0f), true);
+        de.aetherion.core.api.Vfx.puff(at, Particle.DUST, count, Math.max(spread, spread), new Particle.DustOptions(color, 1.0f));
     }
 
     private void actionBar(String text) {

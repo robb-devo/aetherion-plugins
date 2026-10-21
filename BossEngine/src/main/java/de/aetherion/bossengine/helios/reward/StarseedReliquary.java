@@ -300,7 +300,7 @@ public final class StarseedReliquary {
                 String nm = i.hasItemMeta() && i.getItemMeta().hasDisplayName() ? i.getItemMeta().getDisplayName() : i.getType().name();
                 p.sendMessage(TextUtil.component("&6✦ &7Starseed &8» &f" + (i.getAmount() > 1 ? i.getAmount() + "x " : "") + nm));
             }
-            stage.world().spawnParticle(Particle.END_ROD, p.getLocation().add(0, 1, 0), 24, 0.4, 0.8, 0.4, 0.02, null, true);
+            de.aetherion.core.api.Vfx.puff(p.getLocation().add(0, 1, 0), Particle.END_ROD, 24, 0.8, null);
             if (hitbox != null && hitbox.isValid()) {
                 hitbox.remove();
             }

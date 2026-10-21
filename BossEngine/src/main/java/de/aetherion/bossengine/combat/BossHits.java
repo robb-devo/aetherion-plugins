@@ -58,15 +58,7 @@ public final class BossHits {
             player.getPersistentDataContainer().remove(APPLYING);
             player.getPersistentDataContainer().remove(TRUE_DAMAGE);
         }
-        player.getWorld().spawnParticle(
-                Particle.DAMAGE_INDICATOR,
-                player.getLocation().add(0, 1.05, 0),
-                5,
-                0.25,
-                0.35,
-                0.25,
-                0
-        );
+        de.aetherion.core.api.Vfx.puff(player.getLocation().add(0, 1.05, 0), Particle.DAMAGE_INDICATOR, 5, 0.35, null);
     }
 
     /**

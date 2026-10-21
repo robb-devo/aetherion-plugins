@@ -713,7 +713,7 @@ public final class WorldEaterSite {
             }
             p.playSound(p.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, SoundCategory.MASTER, 1f, 0.5f);
             p.playSound(p.getLocation(), Sound.BLOCK_PORTAL_TRAVEL, SoundCategory.MASTER, 0.25f, 1.8f);
-            w.spawnParticle(Particle.REVERSE_PORTAL, p.getLocation().add(0, 1, 0), 40, 0.4, 0.8, 0.4, 0.05);
+            de.aetherion.core.api.Vfx.puff(p.getLocation().add(0, 1, 0), Particle.REVERSE_PORTAL, 40, Math.max(0.4, 0.4), null);
             Long last = rescued.put(p.getUniqueId(), now);
             if (told.add(p.getUniqueId()) || last == null || now - last > 60_000L) {
                 p.sendMessage(TextUtil.component(state == State.FEAST
