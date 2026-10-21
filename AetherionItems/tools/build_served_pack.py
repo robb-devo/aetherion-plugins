@@ -10,6 +10,7 @@ it safe for clients newer than 1.21.1 (newer_clients.py) and writes a determinis
 the served zip, ``aepack reload`` + ``aepack push`` on the proxy. The backends advertise no pack; the proxy sends it once per session.
 """
 import hashlib
+import json
 import os
 import shutil
 import sys
@@ -46,7 +47,12 @@ COPY = (
     # Display-effect glyphs (gen_vfx_art.py), drawn by DisplayVfx.
     'assets/aetherion/font/vfx.json',
     'assets/aetherion/textures/font/vfx',
+    # Rank and level badges (gen_rank_badges.py); minecraft:default references them, see add_badge_reference.
+    'assets/aetherion/font/badges.json',
+    'assets/aetherion/textures/font/badges',
 )
+BADGES = 'aetherion:badges'
+BADGE_RANGE = (0xEA00, 0xEAFF)
 # The ActionBar status panel the carrier replaced.
 DROP = (
     'assets/aetherion/font/panel.json',
@@ -75,6 +81,7 @@ def main(live, out, vanilla):
             else:
                 os.makedirs(os.path.dirname(dst), exist_ok=True)
                 shutil.copyfile(src, dst)
+        add_badge_reference(work)
         merge_gui_overrides.main(work, vanilla)
         newer_clients.main(work)
         files = []
@@ -94,6 +101,31 @@ def main(live, out, vanilla):
     with open(out, 'rb') as f:
         sha1 = hashlib.sha1(f.read()).hexdigest()
     print('%s  %d files  sha1 %s' % (out, len(files), sha1))
+
+
+def add_badge_reference(work):
+    """Point every minecraft:default font in the pack (base and overlays) at aetherion:badges.
+
+    The rank prefixes are legacy strings, which cannot name a font, so the badge characters have to resolve in
+    the default font. Refuses to build when another provider there already uses U+EA00..U+EAFF.
+    """
+    for root, _, names in os.walk(work):
+        if 'default.json' not in names or not root.replace(os.sep, '/').endswith('assets/minecraft/font'):
+            continue
+        path = os.path.join(root, 'default.json')
+        with open(path, encoding='utf-8') as f:
+            font = json.load(f)
+        providers = font.setdefault('providers', [])
+        for p in providers:
+            chars = ''.join(p.get('chars', [])) + ''.join(p.get('advances', {}))
+            clash = sorted({hex(ord(c)) for c in chars if BADGE_RANGE[0] <= ord(c) <= BADGE_RANGE[1]})
+            if clash:
+                raise SystemExit('%s: %s already uses %s' % (path, p.get('file', p.get('type')), ', '.join(clash[:5])))
+        if not any(p.get('type') == 'reference' and p.get('id') == BADGES for p in providers):
+            providers.append({'type': 'reference', 'id': BADGES})
+            with open(path, 'w', encoding='utf-8', newline='\n') as f:
+                json.dump(font, f, indent=2)
+                f.write('\n')
 
 
 if __name__ == '__main__':

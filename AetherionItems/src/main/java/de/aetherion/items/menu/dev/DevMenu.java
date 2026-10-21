@@ -712,7 +712,9 @@ public class DevMenu {
             }
             if (!ranks.setRank(target, group)) {
                 if ("admin".equalsIgnoreCase(group) && !DevRankBridge.isRobb(target)) {
-                    player.sendMessage("§cAdmin is Robb's cosmetic rank. OP does not grant it.");
+                    player.sendMessage("§cOwner is Robb's cosmetic rank. OP does not grant it.");
+                } else if ("coowner".equalsIgnoreCase(group)) {
+                    player.sendMessage("§cCo-Owner is Shuminite's cosmetic rank only.");
                 } else {
                     player.sendMessage("§cCould not set that rank.");
                 }
@@ -737,7 +739,7 @@ public class DevMenu {
             OfflinePlayer targetPlayer = Bukkit.getOfflinePlayer(target);
             player.sendMessage("§aRank matched to account level: §f" + nameOf(targetPlayer)
                     + " §7→ " + ranks.rankByGroup(ranks.rankOf(target)).display());
-            player.sendMessage("§7Ultra ranks (Citrus / Monkey / Beta / MVP++ / Admin) stay until you remove them.");
+            player.sendMessage("§7Ultra ranks (Citrus / Monkey / Beta / MVP++ / Co-Owner / Owner) stay until you remove them.");
             player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.8f, 1.15f);
             open(player, Page.RANKS, target);
             return;
@@ -2889,17 +2891,26 @@ public class DevMenu {
             ));
         }
         boolean adminOn = extra != null && extra.group().equals("admin");
+        boolean coOwnerOn = extra != null && extra.group().equals("coowner");
         boolean monkeyOn = extra != null && extra.group().equals("monkey");
         boolean citrusOn = extra != null && extra.group().equals("citrus");
         boolean betaOn = extra != null && extra.group().equals("beta");
         boolean mvpOn = extra != null && extra.group().equals("mvpplusplus");
-        inventory.setItem(37, button(
+        inventory.setItem(36, button(
                 rankIcon("admin"),
-                (adminOn ? "§a▶ " : "") + "§cAdmin",
+                (adminOn ? "§a▶ " : "") + "§6§lOwner",
                 "rank-set:admin",
                 "§7Robb only. OP does not grant this.",
                 "§7Stays on top of the level tag.",
                 adminOn ? "§eClick again to remove." : "§7Click to grant."
+        ));
+        inventory.setItem(37, button(
+                rankIcon("coowner"),
+                (coOwnerOn ? "§a▶ " : "") + "§x§f§f§3§f§b§f§lCo-Owner",
+                "rank-set:coowner",
+                "§7Shuminite only. Cosmetic, bright pink.",
+                "§7Stays on top of the level tag.",
+                coOwnerOn ? "§eClick again to remove." : "§7Click to grant."
         ));
         inventory.setItem(38, homieRankButton(ranks, "rank-set:monkey", monkeyOn, "§b§lMonkey §8· celestial",
                 "§7Celestial dye #B2FFFF, then the level tag.",
@@ -2923,7 +2934,7 @@ public class DevMenu {
                 "rank-sync",
                 "§7Clear the DEV progression override.",
                 "§7Does not remove Citrus / Monkey / Beta /",
-                "§7MVP++ / Admin. Click those to remove."
+                "§7MVP++ / Co-Owner / Owner. Click those to remove."
         ));
     }
 
@@ -3568,7 +3579,8 @@ public class DevMenu {
             case "eternal" -> Material.ECHO_SHARD;
             case "aetherion" -> Material.DRAGON_EGG;
             case "mvpplusplus" -> Material.NETHER_STAR;
-            case "admin" -> Material.BARRIER;
+            case "admin" -> Material.BEACON;
+            case "coowner" -> Material.PINK_DYE;
             case "monkey" -> Material.LIGHT_BLUE_DYE;
             case "citrus" -> Material.LIME_DYE;
             case "beta" -> Material.MAGENTA_DYE;

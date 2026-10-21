@@ -46,7 +46,10 @@ public final class RankBadgeService implements Listener {
             new Rank("beta", 93, RainbowDye.prefixStatic(), "§d§lBeta Tester"),
             new Rank("citrus", 94, CitrusDye.prefixStatic(), "§e§lCitrus"),
             new Rank("monkey", 95, CelestialDye.monkeyPrefixStatic(), "§b§lMonkey"),
-            new Rank("admin", 100, "&c[Admin] &f", "§cAdmin")
+            // Shuminite only. Display-only like Owner: no LuckPerms prefix or parent group.
+            new Rank("coowner", 99, "&#FF3FBF[Co-Owner] &f", "§x§f§f§3§f§b§f§lCo-Owner"),
+            // Group key stays "admin" (player-ranks.yml, LuckPerms, Dev Menu); Robb's rank is shown as Owner.
+            new Rank("admin", 100, "&4[&6Owner&4] &f", "§6§lOwner")
     );
 
     /**
@@ -63,7 +66,7 @@ public final class RankBadgeService implements Listener {
      * <p>
      * Ultras stay until removed — XP progression sync never overwrites them.
      */
-    private static final Set<String> EXTRA = Set.of("admin", "monkey", "citrus", "beta", "mvpplusplus");
+    private static final Set<String> EXTRA = Set.of("admin", "coowner", "monkey", "citrus", "beta", "mvpplusplus");
 
     private static final String DEFAULT_GROUP = "mvpplusplus";
     private static final String DEFAULT_PREFIX = "&6[MVP&c++&6] ";
@@ -75,6 +78,10 @@ public final class RankBadgeService implements Listener {
      * Admin cosmetic display is exclusive to this id, and only when the rank menu stored it.
      */
     public static final UUID ROBB = UUID.fromString("c46afc0c-488b-430f-83a7-98f8a5df3ac5");
+    /** Co-Owner's name. Bound to his UUID once (server user cache or first join), then kept by UUID. */
+    private static final String COOWNER_NAME = "Shuminite";
+    /** Shuminite's profile once bound ({@code bound.coowner} in player-ranks.yml, or {@code ranks.coowner.uuid}). */
+    private static volatile UUID coOwner;
 
     private final JavaPlugin plugin;
     private final File file;
@@ -88,7 +95,9 @@ public final class RankBadgeService implements Listener {
     public RankBadgeService(JavaPlugin plugin) {
         this.plugin = plugin;
         this.file = new File(plugin.getDataFolder(), "player-ranks.yml");
+        RankGlyphs.enabled(plugin.getConfig().getBoolean("ranks.badges", true));
         load();
+        bindCoOwner();
     }
 
     public static RankBadgeService apply(JavaPlugin plugin) {
@@ -140,6 +149,9 @@ public final class RankBadgeService implements Listener {
         }
         if (group.equalsIgnoreCase("owner")) {
             group = "admin";
+        }
+        if (group.equalsIgnoreCase("co-owner")) {
+            group = "coowner";
         }
         String key = group.toLowerCase(Locale.ROOT);
         for (Rank rank : RANKS) {
@@ -257,6 +269,11 @@ public final class RankBadgeService implements Listener {
         String levelTag = "";
         de.aetherion.items.AetherionItems items = de.aetherion.items.AetherionItems.getInstance();
         if (items != null && items.getSkills() != null) {
+            if (RankGlyphs.enabled()) {
+                // Pack badges: cosmetic pill, then the level pill. Plain characters, so TAB, chat and nametags carry them.
+                return RankGlyphs.cosmetic(cosmeticGroup(player)) + RankGlyphs.level(items.getSkills().accountLevel(player))
+                        + " §f";
+            }
             levelTag = items.getSkills().accountTag(player);
         }
         return composePrefix(cosmeticGroup(player), levelTag, true);
@@ -276,6 +293,10 @@ public final class RankBadgeService implements Listener {
         return prefix.toString();
     }
 
+    /** Text fallback when pack badges are off (ranks.badges: false). */
+    private static final String OWNER_TEXT = "§4[§6§lOwner§4] ";
+    private static final String COOWNER_TEXT = "§x§f§f§3§f§b§f[§x§f§f§8§b§d§c§lCo-Owner§x§f§f§3§f§b§f] ";
+
     /**
      * Chat / compact TAB / nametag dye.
      * {@code citrus} → citrus letters; {@code monkey} → #B2FFFF; {@code beta} → rainbow.
@@ -285,7 +306,8 @@ public final class RankBadgeService implements Listener {
             return "";
         }
         return switch (extraGroup.toLowerCase(Locale.ROOT)) {
-            case "admin" -> "§c[Admin] ";
+            case "admin" -> OWNER_TEXT;
+            case "coowner" -> COOWNER_TEXT;
             case "mvpplusplus" -> "§6[MVP§c++§6] ";
             case "monkey" -> CelestialDye.monkeyBadge();
             case "citrus" -> CitrusDye.badge();
@@ -300,7 +322,8 @@ public final class RankBadgeService implements Listener {
             return "";
         }
         return switch (extraGroup.toLowerCase(Locale.ROOT)) {
-            case "admin" -> "§c[Admin] ";
+            case "admin" -> OWNER_TEXT;
+            case "coowner" -> COOWNER_TEXT;
             case "mvpplusplus" -> "§6[MVP§c++§6] ";
             case "monkey" -> CelestialDye.monkeyPrefixStatic();
             case "citrus" -> CitrusDye.prefixStatic();
@@ -374,7 +397,7 @@ public final class RankBadgeService implements Listener {
             return false;
         }
         Rank rank = rankByGroup(group);
-        if ("admin".equals(rank.group()) && !isRobb(playerId)) {
+        if (!isDisplayableExtra(playerId, rank.group()) && isExtra(rank.group())) {
             return false;
         }
         if (isExtra(rank.group())) {
@@ -427,7 +450,43 @@ public final class RankBadgeService implements Listener {
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
+        if (coOwner == null && COOWNER_NAME.equalsIgnoreCase(player.getName())) {
+            bind(player.getUniqueId());
+        }
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> applyTo(player), 40L);
+    }
+
+    /** {@code ranks.coowner.uuid} wins; otherwise the stored binding; otherwise this server's user cache. */
+    private void bindCoOwner() {
+        String configured = plugin.getConfig().getString("ranks.coowner.uuid", "");
+        if (configured != null && !configured.isBlank()) {
+            try {
+                UUID id = UUID.fromString(configured.trim());
+                if (!id.equals(coOwner)) {
+                    bind(id);
+                }
+                return;
+            } catch (IllegalArgumentException ex) {
+                plugin.getLogger().warning("ranks.coowner.uuid is not a UUID: " + configured);
+            }
+        }
+        if (coOwner == null) {
+            org.bukkit.OfflinePlayer cached = Bukkit.getOfflinePlayerIfCached(COOWNER_NAME);
+            if (cached != null) {
+                bind(cached.getUniqueId());
+            }
+        }
+    }
+
+    /** Ties the Co-Owner rank to this profile and gives it to him (once; the Dev Menu can change it later). */
+    private void bind(UUID playerId) {
+        coOwner = playerId;
+        plugin.getLogger().info("Co-Owner bound to " + COOWNER_NAME + " (" + playerId + ").");
+        if (!"coowner".equalsIgnoreCase(extras.get(playerId))) {
+            setRank(playerId, "coowner");
+        } else {
+            save();
+        }
     }
 
     public void applyTo(Player player) {
@@ -474,6 +533,9 @@ public final class RankBadgeService implements Listener {
         if ("admin".equals(key) && !isRobb(playerId)) {
             return null;
         }
+        if ("coowner".equals(key) && !isCoOwner(playerId)) {
+            return null;
+        }
         return key;
     }
 
@@ -482,9 +544,17 @@ public final class RankBadgeService implements Listener {
         return playerId != null && ROBB.equals(playerId);
     }
 
+    /** Shuminite, once bound. The Co-Owner cosmetic is exclusive to this profile. */
+    public static boolean isCoOwner(UUID playerId) {
+        return playerId != null && playerId.equals(coOwner);
+    }
+
     private static boolean isDisplayableExtra(UUID playerId, String stored) {
         if (stored == null || !isPermanentExtra(stored)) {
             return false;
+        }
+        if ("coowner".equalsIgnoreCase(stored)) {
+            return isCoOwner(playerId);
         }
         return !"admin".equalsIgnoreCase(stored) || isRobb(playerId);
     }
@@ -565,10 +635,10 @@ public final class RankBadgeService implements Listener {
 
     /**
      * LuckPerms may mirror Monkey, Citrus, Beta, and MVP++.
-     * Admin is display-only and is never written as a parent group.
+     * Owner (admin) and Co-Owner are display-only and are never written as a parent group.
      */
     private static String luckPermsExtraName(Rank extra) {
-        if (extra == null || "admin".equalsIgnoreCase(extra.group())) {
+        if (extra == null || "admin".equalsIgnoreCase(extra.group()) || "coowner".equalsIgnoreCase(extra.group())) {
             return null;
         }
         return extra.group();
@@ -588,12 +658,13 @@ public final class RankBadgeService implements Listener {
             return;
         }
         YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
+        readBinding(config);
         String key = playerId.toString();
         ConfigurationSection section = config.getConfigurationSection("players");
         if (section != null && section.contains(key)) {
             try {
                 String group = rankByGroup(section.getString(key, "adventurer")).group();
-                if ("admin".equals(group) && !isRobb(playerId)) {
+                if (isPermanentExtra(group) && !isDisplayableExtra(playerId, group)) {
                     extras.remove(playerId);
                     clearedExtras.add(playerId);
                 } else if (isPermanentExtra(group)) {
@@ -632,6 +703,7 @@ public final class RankBadgeService implements Listener {
             return;
         }
         YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
+        readBinding(config);
         boolean droppedForeignAdmin = false;
         ConfigurationSection section = config.getConfigurationSection("players");
         if (section != null) {
@@ -642,6 +714,9 @@ public final class RankBadgeService implements Listener {
                     if ("admin".equals(group) && !isRobb(id)) {
                         droppedForeignAdmin = true;
                         clearedExtras.add(id);
+                        continue;
+                    }
+                    if ("coowner".equals(group) && !isCoOwner(id)) {
                         continue;
                     }
                     if (isPermanentExtra(group)) {
@@ -684,6 +759,17 @@ public final class RankBadgeService implements Listener {
         save();
     }
 
+    private static void readBinding(YamlConfiguration config) {
+        String bound = config.getString("bound.coowner", "");
+        if (coOwner == null && bound != null && !bound.isBlank()) {
+            try {
+                coOwner = UUID.fromString(bound.trim());
+            } catch (IllegalArgumentException ignored) {
+                // hand-edited junk; the user cache or his next join binds again
+            }
+        }
+    }
+
     /**
      * Merge onto disk so a shared network {@code player-ranks.yml} keeps extras
      * and XP ranks written by peer JVMs. Never full-rewrite from this JVM alone.
@@ -707,6 +793,9 @@ public final class RankBadgeService implements Listener {
                 }
             }
             clearedExtras.clear();
+            if (coOwner != null) {
+                config.set("bound.coowner", coOwner.toString());
+            }
             // Preserve peer-JVM forced UUIDs we do not know; rewrite ours from memory.
             LinkedHashSet<String> forcedIds = new LinkedHashSet<>(config.getStringList("forced"));
             assigned.keySet().forEach(id -> forcedIds.remove(id.toString()));

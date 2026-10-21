@@ -378,7 +378,7 @@ final class DevHubs {
 
     private static void drawAdmin(Inventory inventory) {
         inventory.setItem(10, tile(Material.NAME_TAG, "§6Ranks", "page:RANKS",
-                "§7Level ranks + ultras (MVP++ / Admin", "§7/ Homie ranks when the backend has them)."));
+                "§7Level ranks + ultras (MVP++ / Owner", "§7/ Co-Owner / Homie ranks)."));
         inventory.setItem(11, tile(Material.AMETHYST_SHARD, "§bAether Shards", "page:SHARDS",
                 "§7Give shards to any online player."));
         inventory.setItem(12, tile(Material.PLAYER_HEAD, "§bTestbots", "page:TESTBOTS",
