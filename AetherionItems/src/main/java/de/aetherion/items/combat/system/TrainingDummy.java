@@ -60,7 +60,6 @@ final class TrainingDummy {
     private static final int DPS_WINDOW = 100;
     private static final TextColor JAB = TextColor.color(0xFFD24A);
     private static final TextColor SLAM = TextColor.color(0xFF5A4A);
-    private static final Particle.DustOptions JAB_DUST = new Particle.DustOptions(Color.fromRGB(0xFFD24A), 1.0f);
     private static final Particle.DustOptions SLAM_DUST = new Particle.DustOptions(Color.fromRGB(0xFF5A4A), 1.6f);
     private static final Particle.DustOptions SLAM_CORE = new Particle.DustOptions(Color.fromRGB(0xB0201A), 1.1f);
     private static final Color SLAM_COLOR = Color.fromRGB(0xFF5A4A);
@@ -160,7 +159,7 @@ final class TrainingDummy {
         }
         World world = golem.getWorld();
         world.playSound(at, Sound.ENTITY_IRON_GOLEM_REPAIR, 0.8f, 0.8f);
-        world.spawnParticle(Particle.CLOUD, at.clone().add(0, 0.3, 0), 4, 0.4, 0.1, 0.4, 0.02);
+        de.aetherion.core.api.Vfx.wave(at.clone().add(0, 0.05, 0), Color.fromRGB(0xE7E2D8), 1.8, 10);
         long tick = Bukkit.getCurrentTick();
         Dummy dummy = new Dummy(golem, owner.getUniqueId(), name, tick);
         dummy.nextAt = tick + 30;
@@ -221,7 +220,7 @@ final class TrainingDummy {
         golem.playEffect(EntityEffect.HURT);
         world.playSound(head, Sound.ENTITY_IRON_GOLEM_DAMAGE, 1.0f, 0.7f);
         world.playSound(head, Sound.ENTITY_IRON_GOLEM_REPAIR, 0.6f, 0.6f);
-        world.spawnParticle(Particle.CRIT, head, 6, 0.3, 0.2, 0.3, 0.3);
+        de.aetherion.core.api.Vfx.burst(head, Color.fromRGB(0xFFD24A), 1.2, 8);
         Vector back = forward(golem).multiply(-0.35).setY(0.15);
         golem.setVelocity(back);
     }
@@ -357,8 +356,9 @@ final class TrainingDummy {
             }
         } else {
             Location fist = base.clone().add(forward(golem).multiply(0.9)).add(0, 1.6, 0);
-            if (tick % 4 == 0) {
-                world.spawnParticle(Particle.DUST, fist, 2, 0.12, 0.12, 0.12, 0.0, JAB_DUST);
+            if (left == dummy.windupTicks - 1) {
+                // the jab charges in the fist: one orb that swells until the strike
+                de.aetherion.core.api.Vfx.orb(fist, null, Color.fromRGB(0xFFD24A), 0.45, dummy.windupTicks);
             }
             if (tick % 4 == 0 && left > 4) {
                 world.playSound(base, Sound.BLOCK_NOTE_BLOCK_HAT, 0.8f, (float) (1.0 + (1.0 - share) * 0.9));
@@ -410,15 +410,18 @@ final class TrainingDummy {
             if (ground.getMaterial().isAir()) {
                 ground = org.bukkit.Material.STONE.createBlockData();
             }
-            for (int i = 0; i < 12; i++) {
-                double angle = Math.PI * 2 * i / 12.0;
-                Location at = base.clone().add(Math.cos(angle) * cfg.dummyReach, 0.15, Math.sin(angle) * cfg.dummyReach);
-                world.spawnParticle(Particle.BLOCK, at, 2, 0.15, 0.1, 0.15, 0.0, ground);
+            de.aetherion.core.api.Vfx.wave(base.clone().add(0, 0.05, 0), SLAM_COLOR, cfg.dummyReach + 0.6, 12);
+            if (!de.aetherion.core.api.Vfx.active()) {
+                for (int i = 0; i < 12; i++) {
+                    double angle = Math.PI * 2 * i / 12.0;
+                    Location at = base.clone().add(Math.cos(angle) * cfg.dummyReach, 0.15, Math.sin(angle) * cfg.dummyReach);
+                    world.spawnParticle(Particle.BLOCK, at, 2, 0.15, 0.1, 0.15, 0.0, ground);
+                }
             }
         } else {
             world.playSound(base, Sound.ENTITY_IRON_GOLEM_ATTACK, 1.0f, 1.1f);
             Location fist = base.clone().add(forward(golem).multiply(1.4)).add(0, 1.3, 0);
-            world.spawnParticle(Particle.SWEEP_ATTACK, fist, 1, 0, 0, 0, 0);
+            de.aetherion.core.api.Vfx.slash(fist, Color.fromRGB(0xFFD24A), 1.6, 0f);
         }
 
         if (move == Move.SLAM) {
