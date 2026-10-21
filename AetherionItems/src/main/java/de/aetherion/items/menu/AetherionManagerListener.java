@@ -444,33 +444,14 @@ public class AetherionManagerListener implements Listener {
                 }
             }
             case AetherionManagerGUI.STATS_SLOT -> manager.getStatsGUI().open(player);
-            case AetherionManagerGUI.BESTIARY_SLOT -> {
-                if (progress != null && !progress.bestiary(player)) {
-                    player.sendMessage(progress.bestiaryHint());
-                    return;
-                }
-                if (manager.getBestiaryGUI() != null) {
-                    manager.getBestiaryGUI().open(player);
-                }
-            }
-            case AetherionManagerGUI.COLLECTION_SLOT -> {
-                if (progress != null && !progress.collection(player)) {
+            case AetherionManagerGUI.CODEX_SLOT -> {
+                boolean anyBook = progress == null || progress.collection(player) || progress.bestiary(player)
+                        || de.aetherion.items.codex.JournalHubGUI.available(player);
+                if (!anyBook) {
                     player.sendMessage(progress.collectionHint());
                     return;
                 }
-                if (manager.getCollectionGUI() != null) {
-                    manager.getCollectionGUI().open(player);
-                }
-            }
-            case AetherionManagerGUI.JOURNAL_SLOT -> {
-                // Journal hub: Boss Journal (own gate) + Chronicle (story finds).
-                if (!de.aetherion.items.codex.JournalHubGUI.available(player)) {
-                    if (progress != null) {
-                        player.sendMessage(progress.journalHint());
-                    }
-                    return;
-                }
-                de.aetherion.items.codex.JournalHubGUI.open(player);
+                de.aetherion.items.codex.CodexMenus.openHub(player);
             }
             case AetherionManagerGUI.ISLAND_SLOT -> {
                 if (!NetworkHooks.islandsAvailable()) {
@@ -561,7 +542,6 @@ public class AetherionManagerListener implements Listener {
                 }
                 dev.open(player);
             }
-            case AetherionManagerGUI.CLOSE_SLOT -> player.closeInventory();
             default -> {
             }
         }

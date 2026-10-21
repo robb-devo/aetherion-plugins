@@ -22,12 +22,14 @@ import java.util.concurrent.ThreadLocalRandom;
  * <ul>
  *   <li><b>Soundscapes</b> — each district has a day and a night palette (gulls and rigging at the harbour, chatter
  *   and the fountain in the Capital, wind and chimes on Skyreach, frogs and owls in the wilds, bones creaking in the
- *   Borderlands…). Every few seconds one quiet sample plays somewhere around you. Fireflies at night, drifting petals
- *   and motes by day.</li>
- *   <li><b>Emitters</b> — measured spots of the map: forges and kitchens, the alchemist's counter, the beacon pier's
- *   sweeping lighthouse beam and the ships' mast lights at night, the fountain, glowcap spores and humming starbells
- *   after dark, the shrine braziers, library pages, Vince's coins.</li>
+ *   Borderlands…). Every few seconds one quiet sample plays somewhere around you. A few fireflies at night, drifting
+ *   petals and motes by day.</li>
+ *   <li><b>Emitters</b> — measured spots of the map: forges and kitchens, the alchemist's counter, the ships' mast
+ *   lights at night, the fountain, glowcap spores and humming starbells after dark, the shrine braziers, library
+ *   pages, Vince's coins.</li>
  * </ul>
+ * Particles are accents, not weather: small counts, close to their source. The lighthouse has no beam any more
+ * (old {@code lighthouse} emitters in a live origin.yml are skipped).
  */
 public final class OriginAmbience {
 
@@ -164,18 +166,17 @@ public final class OriginAmbience {
             }
             Location feet = player.getLocation();
             if ((night || phase == OriginIsle.Phase.DUSK) && palette.fireflies()) {
-                for (int i = 0; i < 6; i++) {
-                    Location f = around(feet, 2.0d, 9.0d, rng).add(0, 0.6 + rng.nextDouble() * 2.2, 0);
+                for (int i = 0; i < 3; i++) {
+                    Location f = around(feet, 3.0d, 9.0d, rng).add(0, 0.6 + rng.nextDouble() * 1.6, 0);
                     player.spawnParticle(Particle.DUST, f, 1, 0.1, 0.1, 0.1, 0.0,
-                            new Particle.DustOptions(Color.fromRGB(215, 255, 120), 0.7f));
+                            new Particle.DustOptions(Color.fromRGB(215, 255, 120), 0.6f));
                 }
-                player.spawnParticle(Particle.GLOW, around(feet, 2.0d, 7.0d, rng).add(0, 1.2, 0), 2, 0.8, 0.5, 0.8, 0.005);
             }
             if (!night && palette.petals()) {
-                player.spawnParticle(Particle.CHERRY_LEAVES, feet.clone().add(0, 6, 0), 5, 6.0, 1.5, 6.0, 0.0);
+                player.spawnParticle(Particle.CHERRY_LEAVES, feet.clone().add(0, 6, 0), 2, 6.0, 1.5, 6.0, 0.0);
             }
             if (palette.motes()) {
-                player.spawnParticle(Particle.WHITE_ASH, feet.clone().add(0, 2, 0), 14, 7.0, 3.0, 7.0, 0.0);
+                player.spawnParticle(Particle.WHITE_ASH, feet.clone().add(0, 2, 0), 5, 7.0, 3.0, 7.0, 0.0);
             }
         }
     }
@@ -211,45 +212,6 @@ public final class OriginAmbience {
                 OriginProfile profile = isle.profiles().get(player);
                 emit(player, profile, e, at, rng, tick);
             }
-        }
-    }
-
-    /** Every 4 ticks: the few emitters that must move smoothly (the lighthouse beam). */
-    void fastEmitters(List<Player> onIsle, long tick) {
-        if (onIsle.isEmpty() || !isle.night()) {
-            return;
-        }
-        World world = isle.config().world();
-        if (world == null) {
-            return;
-        }
-        for (OriginConfig.Emitter e : isle.config().emitters()) {
-            if (!"lighthouse".equals(e.kind())) {
-                continue;
-            }
-            List<Player> near = new ArrayList<>();
-            for (Player player : near(onIsle, e)) {
-                if (isle.profiles().get(player).particles) {
-                    near.add(player);
-                }
-            }
-            if (near.isEmpty()) {
-                continue;
-            }
-            Location lamp = new Location(world, e.at()[0], e.at()[1], e.at()[2]);
-            double angle = Math.toRadians((tick * 3L) % 360L);
-            for (int ray = 0; ray < 2; ray++) {
-                double a = angle + ray * Math.PI;
-                double cos = Math.cos(a);
-                double sin = Math.sin(a);
-                for (int k = 1; k <= 12; k++) {
-                    double d = k * 3.0d;
-                    new ParticleBuilder(Particle.END_ROD).location(lamp.clone().add(cos * d, -k * 0.12d, sin * d)).count(1)
-                            .offset(0.05, 0.05, 0.05).extra(0.0).receivers(near).force(true).spawn();
-                }
-            }
-            new ParticleBuilder(Particle.DUST).location(lamp).count(3).offset(0.25, 0.25, 0.25)
-                    .data(new Particle.DustOptions(Color.fromRGB(255, 244, 200), 1.6f)).receivers(near).force(true).spawn();
         }
     }
 
@@ -319,14 +281,11 @@ public final class OriginAmbience {
             }
             case "fountain" -> {
                 if (fx) {
-                    player.spawnParticle(Particle.SPLASH, at.clone().add(0, 1.0, 0), 14, 1.2, 0.3, 1.2, 0.1);
-                    player.spawnParticle(Particle.FALLING_WATER, at.clone().add(0, 2.2, 0), 6, 0.6, 0.2, 0.6, 0.0);
+                    player.spawnParticle(Particle.SPLASH, at.clone().add(0, 1.0, 0), 6, 1.0, 0.2, 1.0, 0.1);
+                    player.spawnParticle(Particle.FALLING_WATER, at.clone().add(0, 2.2, 0), 3, 0.6, 0.2, 0.6, 0.0);
                 }
                 if (sound && rng.nextDouble() < 0.6d) {
                     player.playSound(at, Sound.BLOCK_WATER_AMBIENT, SoundCategory.AMBIENT, 0.55f, 1.1f);
-                }
-                if (fx && rng.nextDouble() < 0.12d) {
-                    player.spawnParticle(Particle.WAX_ON, at.clone().add(0, 0.4, 0), 3, 1.0, 0.1, 1.0, 0.0);
                 }
             }
             case "gulls" -> {
@@ -334,16 +293,10 @@ public final class OriginAmbience {
                     Location gull = around(at, 4.0d, 18.0d, rng);
                     player.playSound(gull, Sound.ENTITY_PARROT_AMBIENT, SoundCategory.AMBIENT, 0.5f, 1.8f + rng.nextFloat() * 0.2f);
                 }
-                if (fx && rng.nextDouble() < 0.5d) {
-                    double a = (tick % 360) * 0.05d + rng.nextDouble();
-                    Location bird = at.clone().add(Math.cos(a) * 14.0d, 4 + rng.nextDouble() * 4, Math.sin(a) * 14.0d);
-                    new ParticleBuilder(Particle.DUST).location(bird).count(2).offset(0.3, 0.05, 0.3)
-                            .data(new Particle.DustOptions(Color.fromRGB(245, 245, 245), 1.2f)).receivers(player).force(true).spawn();
-                }
             }
             case "surf" -> {
                 if (fx) {
-                    player.spawnParticle(Particle.SPLASH, around(at, 0.0d, 6.0d, rng), 10, 1.5, 0.1, 1.5, 0.05);
+                    player.spawnParticle(Particle.SPLASH, around(at, 0.0d, 6.0d, rng), 5, 1.5, 0.1, 1.5, 0.05);
                 }
                 if (sound && rng.nextDouble() < 0.4d) {
                     player.playSound(at, Sound.BLOCK_WATER_AMBIENT, SoundCategory.AMBIENT, 0.6f, 0.7f);
@@ -351,9 +304,8 @@ public final class OriginAmbience {
             }
             case "starbell" -> {
                 if (fx) {
-                    player.spawnParticle(Particle.END_ROD, at, 3, 2.5, 2.0, 2.5, 0.01);
-                    player.spawnParticle(Particle.DUST_COLOR_TRANSITION, at.clone().add(0, 2, 0), 4, 2.0, 1.5, 2.0, 0.0,
-                            new Particle.DustTransition(Color.fromRGB(190, 110, 255), Color.fromRGB(110, 255, 220), 1.1f));
+                    player.spawnParticle(Particle.DUST_COLOR_TRANSITION, at.clone().add(0, 2, 0), 2, 2.0, 1.5, 2.0, 0.0,
+                            new Particle.DustTransition(Color.fromRGB(190, 110, 255), Color.fromRGB(110, 255, 220), 1.0f));
                 }
                 if (sound && rng.nextDouble() < 0.3d) {
                     player.playSound(at, Sound.BLOCK_AMETHYST_BLOCK_CHIME, SoundCategory.AMBIENT, 0.6f, 0.6f + rng.nextFloat() * 0.8f);
@@ -361,9 +313,7 @@ public final class OriginAmbience {
             }
             case "glowcap" -> {
                 if (fx) {
-                    new ParticleBuilder(Particle.GLOW).location(at).count(4).offset(2.5, 1.0, 2.5).extra(0.01)
-                            .receivers(player).force(true).spawn();
-                    new ParticleBuilder(Particle.DUST).location(at.clone().add(0, -2, 0)).count(3).offset(3.0, 2.0, 3.0)
+                    new ParticleBuilder(Particle.DUST).location(at.clone().add(0, -2, 0)).count(2).offset(3.0, 2.0, 3.0)
                             .data(new Particle.DustOptions(Color.fromRGB(90, 200, 255), 0.9f)).receivers(player).force(true).spawn();
                 }
             }
@@ -390,7 +340,7 @@ public final class OriginAmbience {
                             0.6f, 0.8f + rng.nextFloat() * 0.9f);
                 }
                 if (fx) {
-                    player.spawnParticle(Particle.WHITE_ASH, at, 10, 6.0, 3.0, 6.0, 0.0);
+                    player.spawnParticle(Particle.WHITE_ASH, at, 4, 6.0, 3.0, 6.0, 0.0);
                 }
             }
             case "bones" -> {
@@ -398,7 +348,7 @@ public final class OriginAmbience {
                     player.playSound(around(at, 2.0d, 10.0d, rng), Sound.BLOCK_BONE_BLOCK_STEP, SoundCategory.AMBIENT, 0.6f, 0.5f);
                 }
                 if (fx) {
-                    player.spawnParticle(Particle.ASH, at, 12, 8.0, 3.0, 8.0, 0.0);
+                    player.spawnParticle(Particle.ASH, at, 5, 8.0, 3.0, 8.0, 0.0);
                 }
             }
             case "farm" -> {
@@ -413,15 +363,13 @@ public final class OriginAmbience {
             }
             case "brazier" -> {
                 if (fx) {
-                    new ParticleBuilder(Particle.FLAME).location(at).count(4).offset(1.2, 0.3, 1.2).extra(0.01)
-                            .receivers(player).force(true).spawn();
-                    new ParticleBuilder(Particle.SMALL_FLAME).location(at.clone().add(0, 0.5, 0)).count(3).offset(1.0, 0.3, 1.0).extra(0.02)
+                    new ParticleBuilder(Particle.SMALL_FLAME).location(at.clone().add(0, 0.5, 0)).count(2).offset(1.0, 0.3, 1.0).extra(0.02)
                             .receivers(player).force(true).spawn();
                 }
             }
             case "pages" -> {
                 if (fx) {
-                    player.spawnParticle(Particle.ENCHANT, at.clone().add(0, 1.5, 0), 10, 1.5, 1.0, 1.5, 0.4);
+                    player.spawnParticle(Particle.ENCHANT, at.clone().add(0, 1.5, 0), 4, 1.5, 1.0, 1.5, 0.4);
                 }
                 if (sound && rng.nextDouble() < 0.3d) {
                     player.playSound(at, Sound.ITEM_BOOK_PAGE_TURN, SoundCategory.AMBIENT, 0.5f, 0.9f + rng.nextFloat() * 0.2f);

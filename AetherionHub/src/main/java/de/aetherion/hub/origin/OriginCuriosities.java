@@ -389,8 +389,7 @@ public final class OriginCuriosities implements Listener {
                 }
                 Location at = new Location(player.getWorld(), f[0], f[1] + (c.kind() == Kind.STEP || c.kind() == Kind.LISTEN ? 0.4d : 0.1d), f[2]);
                 if (c.kind() == Kind.LOOK && c.when().equalsIgnoreCase("night")) {
-                    player.spawnParticle(Particle.END_ROD, at, 2, 0.6, 0.4, 0.6, 0.004);
-                    player.spawnParticle(Particle.GLOW, at, 3, 0.8, 0.5, 0.8, 0.0);
+                    player.spawnParticle(Particle.GLOW, at, 1, 0.6, 0.4, 0.6, 0.0);
                 } else {
                     player.spawnParticle(Particle.WAX_ON, at, 2, 0.25, 0.2, 0.25, 0.0);
                 }
@@ -452,8 +451,7 @@ public final class OriginCuriosities implements Listener {
             player.playSound(at, c.sound(), SoundCategory.AMBIENT, 0.6f, 1.0f);
         }
         if (profile.particles) {
-            player.spawnParticle(Particle.END_ROD, at.clone().add(0, 0.3, 0), 10, 0.3, 0.3, 0.3, 0.03);
-            player.spawnParticle(Particle.WAX_ON, at.clone().add(0, 0.2, 0), 8, 0.4, 0.3, 0.4, 0.0);
+            player.spawnParticle(Particle.WAX_ON, at.clone().add(0, 0.2, 0), 5, 0.4, 0.3, 0.4, 0.0);
         }
         // A whole district swept.
         if (!c.district().isBlank()) {

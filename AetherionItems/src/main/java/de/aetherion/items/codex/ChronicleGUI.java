@@ -85,7 +85,7 @@ public final class ChronicleGUI {
                         ? page(lore)
                         : GuiItems.named(Material.GRAY_DYE, "§8???", "§7Not found yet."));
             }
-            inventory.setItem(CodexChrome.BACK, CodexChrome.back("the Journal"));
+            inventory.setItem(CodexChrome.BACK, CodexChrome.back("the Boss Journal"));
             inventory.setItem(CodexChrome.CLOSE, GuiItems.named(Material.BARRIER, "§cClose", "§8Esc works too."));
         }
 
@@ -104,7 +104,7 @@ public final class ChronicleGUI {
         public void click(Player player, int slot, ClickType click) {
             if (slot == CodexChrome.BACK) {
                 CodexChrome.click(player);
-                JournalHubGUI.open(player);
+                CodexMenus.openJournal(player);
                 return;
             }
             Set<String> unlocked = pages(player);

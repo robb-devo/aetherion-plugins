@@ -22,7 +22,7 @@ sys.path.insert(0, HERE)
 import merge_gui_overrides  # noqa: E402
 import newer_clients  # noqa: E402
 
-# Owned by the generators in this folder (gen_carrier.py, gen_gui_icons.py).
+# Owned by the generators in this folder (gen_carrier.py, gen_gui_icons.py, gen_gui_chrome.py).
 COPY = (
     'assets/aetherion/font/carrier.json',
     'assets/aetherion/textures/font/carrier',
@@ -33,6 +33,11 @@ COPY = (
     'assets/minecraft/textures/gui/sprites/boss_bar/blue_background.png',
     'assets/aetherion/textures/item/gui',
     'assets/aetherion/models/item/gui',
+    # The Manager's book page and its caption fonts (gen_gui_chrome.py: render + write_caption_fonts).
+    'assets/minecraft/textures/font/gui_aetherion_manager.png',
+    'assets/aetherion/font/mgr_caption_1.json',
+    'assets/aetherion/font/mgr_caption_2.json',
+    'assets/aetherion/font/mgr_caption_3.json',
 )
 # The ActionBar status panel the carrier replaced.
 DROP = (

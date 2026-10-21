@@ -488,35 +488,69 @@ def draw_plate(cv, th):
     return x0, x1
 
 
-# Manager hub: only the button slots get wells (its fillers are invisible, see ManagerIcons), grouped per
-# row like AetherionManagerGUI lays them out. Slot = 9 * row + column.
-MANAGER_GROUPS = [(0, 4, 4), (1, 1, 1), (1, 3, 5), (2, 2, 6), (3, 1, 7), (4, 4, 4), (5, 4, 4)]
+# Manager hub: a book page. Fifteen tiles, five a row on rows 0, 2 and 4 (AetherionManagerGUI), each in a round ink
+# seal with a caption band under it; the captions themselves are vanilla-font text in the title (ManagerCaptions,
+# fonts aetherion:mgr_caption_1..3). Slot = 9 * row + column.
+MANAGER_TILES = [(r, c) for r in (0, 2, 4) for c in (0, 2, 4, 6, 8)]
+PAGE = hx('#e3d1a4')
+PAGE_DARK = hx('#cdb787')
+INK = hx('#3b2a1a')
+INK_SOFT = hx('#7a5c38')
 
 
-def draw_crest(cv, th, x, y):
-    """Round-shouldered gold socket for the hub's header slot (well at x..x+17, y..y+17)."""
-    gold = hx('#d9a441')
-    for k, c in ((3, th.t(OUT)), (2, mix(gold, th.t(OUT), 0.35)), (1, gold)):
-        cv.rect(x - k, y - k + 1, x + 17 + k, y + 16 + k, c)
-        cv.rect(x - k + 1, y - k, x + 16 + k, y + 17 + k, c)
-    cv.hline(x - 1, x + 18, y - 2, mix(gold, (255, 255, 255), 0.45))
-    cv.vline(x - 2, y - 1, y + 18, mix(gold, (255, 255, 255), 0.25))
-    for side in (-1, 1):
-        ex = x - 4 if side < 0 else x + 21
-        for k in range(0, 14):
-            px = ex + side * k
-            cv.put(px, y + 8, gold if k < 5 else (th.acc if k < 9 else th.acc_dim))
-            if k < 4:
-                cv.put(px, y + 9, mix(gold, th.t(OUT), 0.5))
-        draw_gem(cv, th, ex + side * 16, y + 8, 2)
+def _grain(x, y):
+    """Deterministic paper grain in [-1, 1]."""
+    v = (x * 73856093) ^ (y * 19349663) ^ 0x5bd1e995
+    v = (v ^ (v >> 13)) * 0x27d4eb2d & 0xFFFFFFFF
+    return ((v >> 8) & 0xFF) / 127.5 - 1.0
 
 
-def draw_dashboard(cv, th, g):
-    for row, c0, c1 in MANAGER_GROUPS:
-        x, y = 7 + 18 * c0, g['cont_top'] + 18 * row
-        if row == 0:
-            draw_crest(cv, th, x, y)
-        draw_wells(cv, th, x, y, c1 - c0 + 1, 1)
+def draw_book(cv, th, g):
+    x0, y0, x1, y1 = 3, 16, 172, g['cont_bot'] + 3
+    # parchment with grain, a warm vignette toward the edges and a soft gutter shadow down the middle
+    for y in range(y0, y1 + 1):
+        for x in range(x0, x1 + 1):
+            edge = min(x - x0, x1 - x, y - y0, y1 - y)
+            t = 0.0 if edge >= 8 else (8 - edge) / 8.0 * 0.55
+            gutter = max(0.0, 1.0 - abs(x - 87.5) / 5.0) * 0.18
+            c = mix(PAGE, PAGE_DARK, min(1.0, t + gutter))
+            n = _grain(x, y) * 5
+            cv.put(x, y, tuple(max(0, min(255, round(v + n))) for v in c))
+    # inked double rule around the page
+    for k, c in ((0, INK), (2, INK_SOFT)):
+        cv.hline(x0 + k, x1 - k, y0 + k, c)
+        cv.hline(x0 + k, x1 - k, y1 - k, c)
+        cv.vline(x0 + k, y0 + k, y1 - k, c)
+        cv.vline(x1 - k, y0 + k, y1 - k, c)
+    for (cx, cy) in ((x0 + 4, y0 + 4), (x1 - 4, y0 + 4), (x0 + 4, y1 - 4), (x1 - 4, y1 - 4)):
+        draw_diamond(cv, cx, cy, 1, INK_SOFT)
+    seal = mix(PAGE_DARK, INK_SOFT, 0.18)
+    seal_in = mix(PAGE, PAGE_DARK, 0.65)
+    band = mix(PAGE, PAGE_DARK, 0.45)
+    for r, c in MANAGER_TILES:
+        # item area is (8 + 18c, 18 + 18r) .. +15; the seal is a 20 px disc around it
+        cx, cy = 15.5 + 18 * c, 25.5 + 18 * r
+        for y in range(int(cy) - 11, int(cy) + 13):
+            for x in range(int(cx) - 11, int(cx) + 13):
+                d = ((x - cx) ** 2 + (y - cy) ** 2) ** 0.5
+                if d <= 8.2:
+                    cv.put(x, y, mix(seal_in, PAGE_DARK, max(0.0, (y - cy) / 12.0)))
+                elif d <= 9.1:
+                    cv.put(x, y, seal)
+                elif d <= 9.9:
+                    cv.put(x, y, INK_SOFT if (x + y) % 7 else INK)
+        # caption band under the seal (the text is drawn by the title, GUI y 37 + 36k)
+        by = 18 + 18 * r + 18
+        bx0, bx1 = int(cx) - 19, int(cx) + 20
+        for x in range(max(x0 + 3, bx0), min(x1 - 3, bx1) + 1):
+            fade = min(x - bx0, bx1 - x)
+            if fade < 3:
+                continue
+            for y in range(by, by + 10):
+                cv.put(x, y, mix(band, PAGE, 0.35 if y in (by, by + 9) else 0.0))
+    # a pin at image column 255 (1 alpha, invisible): the client then measures the glyph 256 wide, advance 257,
+    # which ManagerCaptions counts on to place the captions after it.
+    cv.put(255 - OX, 120, INK, 1)
 
 
 def render(th, rows):
@@ -524,7 +558,7 @@ def render(th, rows):
     cv = Canvas()
     draw_panel(cv, th, g)
     if th.key == 'manager':
-        draw_dashboard(cv, th, g)
+        draw_book(cv, th, g)
     else:
         draw_wells(cv, th, 7, g['cont_top'], 9, rows)
     draw_wells(cv, th, 7, g['inv_top'], 9, 3, brackets=(True, True, False, False))
@@ -576,6 +610,30 @@ def make_theme(key, label, accent, sigil):
         return Theme(key, label, accent, sigil, plate='#d8c49a', ink='#3b2a1a', tint=0.08)
     tint = 0.07 if key in ('storage', 'recipes') else 0.05
     return Theme(key, label, accent, sigil, tint=tint)
+
+
+CAPTION_TOPS = (37, 73, 109)   # GUI y of the caption text under tile rows 0, 2, 4
+
+
+def write_caption_fonts(out_root, jar_path=None):
+    """aetherion:mgr_caption_N = the vanilla default pages moved down so text starts at GUI y CAPTION_TOPS[N-1]."""
+    import zipfile
+    jar_path = jar_path or os.path.expandvars(r'%APPDATA%\.minecraft\versions\1.21.1\1.21.1.jar')
+    with zipfile.ZipFile(jar_path) as jar:
+        vanilla = json.loads(jar.read('assets/minecraft/font/include/default.json'))['providers']
+    font_dir = os.path.join(out_root, 'assets/aetherion/font')
+    os.makedirs(font_dir, exist_ok=True)
+    for n, top in enumerate(CAPTION_TOPS, start=1):
+        providers = [{'type': 'space', 'advances': {' ': 4, '‌': 0}}]
+        for p in vanilla:
+            if p.get('type') != 'bitmap':
+                continue
+            q = dict(p)
+            # title y 6: glyph top = 6 + 7 - ascent, so moving the text down by (top - 6) lowers the ascent as much
+            q['ascent'] = p.get('ascent', 7) - (top - 6)
+            providers.append(q)
+        with open(os.path.join(font_dir, 'mgr_caption_%d.json' % n), 'w', encoding='utf-8') as f:
+            json.dump({'providers': providers}, f, ensure_ascii=True, separators=(',', ':'))
 
 
 def main(out_root):

@@ -612,9 +612,6 @@ public class MobZoneService implements Runnable {
             ensureMarker(zone);
             enforce(zone, world);
             Location center = zone.center(world);
-            if (ThreadLocalRandom.current().nextInt(5) == 0 && center.getChunk().isLoaded()) {
-                world.spawnParticle(Particle.SOUL, center.clone().add(0, 1.2, 0), 5, 0.4, 0.3, 0.4, 0);
-            }
             if (ShabbyMineGuard.inShabbyMine(center)) {
                 continue;
             }
@@ -1747,12 +1744,22 @@ public class MobZoneService implements Runnable {
     }
 
     private void ensureMarker(AnimalZone zone) {
-        if (zone.getMarkerId() != null) {
-            Entity entity = Bukkit.getEntity(zone.getMarkerId());
-            if (entity != null && entity.isValid()) {
-                StaffVisibility.apply(plugin, entity);
-                return;
+        World world = Bukkit.getWorld(zone.getWorldName());
+        if (world == null) {
+            return;
+        }
+        Location centre = zone.center(world);
+        if (!ZoneMarkers.ready(centre)) {
+            return;
+        }
+        ArmorStand stand = ZoneMarkers.keepOne(centre, ItemKeys.mobZone(), zone.getId().toString(), zone.getMarkerId());
+        if (stand != null) {
+            StaffVisibility.apply(plugin, stand);
+            if (!stand.getUniqueId().equals(zone.getMarkerId())) {
+                zone.setMarkerId(stand.getUniqueId());
+                save();
             }
+            return;
         }
         spawnMarker(zone);
         save();

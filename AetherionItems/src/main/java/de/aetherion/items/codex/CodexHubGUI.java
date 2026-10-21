@@ -288,10 +288,8 @@ public final class CodexHubGUI {
                 case SKILLS -> {
                     if (CodexChrome.gate(player, CodexChrome.Tab.SKILLS) != null) {
                         CodexMenus.openGated(player, CodexChrome.Tab.SKILLS);
-                    } else if (click.isRightClick()) {
-                        de.aetherion.items.skill.SkillOverviewGUI.open(player);
                     } else {
-                        CodexMenus.openSkills(player);
+                        de.aetherion.items.skill.SkillOverviewGUI.open(player);
                     }
                 }
                 case CLAIM_ALL -> {

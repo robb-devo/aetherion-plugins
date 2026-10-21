@@ -432,8 +432,8 @@ dialogs:
     - "Heute: Rüstung an — Egons ganzes Kit — und eine Klinge in die Hand. Dann sieh mich an."
   vex_combat_drill:
     - "Sergeant Vex. Da draußen bringt dich Dauerklicken um. Also drillen wir."
-    - "Mein Golem schlägt zurück. Gelbes §e!§f — tipp §eF§f, wenn seine Faust blitzt. Das ist eine Parade."
-    - "Rotes §c!!§f — das blockst du nicht. §eSchleichen + Springen§f, roll durch."
+    - "Mein Golem schlägt zurück. Gelbes §e!§f — wird es weiß, tipp §eF§f. Das ist eine Parade."
+    - "Rotes §c!!§f blockst du nicht. Wird es weiß: §eSchleichen + Springen§f, und du rollst raus."
     - "Dann drei volle Schläge am Stück, kein Spam: ein §6Finisher§f. Kit an, Klinge hoch. Bereit?"
   # ---------------------------------------------------------------- gates
   fishing_before_egon:
@@ -1552,10 +1552,10 @@ talk:
     drill_rearm: "Frischer Golem, neben dir. Nochmal."
     drill_off: "Der Drill fällt heute aus. Kit an zählt — melde dich."
     drill_hint_parry: "Gelbes §e!§f über dem Kopf: tipp §eF§f, sobald die Faust weiß blitzt. Nicht vorher."
-    drill_hint_dodge: "Rotes §c!!§f und ein Ring am Boden: §eSchleichen§f halten, §eSpringen§f, wenn der Boden reißt."
+    drill_hint_dodge: "Rotes §c!!§f: §eSchleichen§f halten, §eSpringen§f, sobald es weiß wird."
     drill_hint_finisher: "Drei Treffer aufs selbe Ziel, jeder voll aufgeladen. Spam setzt zurück."
     drill_parried: "Saubere Parade. Er taumelt — das ist deine Lücke."
-    drill_rolled: "Durch, nicht weg. Gut."
+    drill_rolled: "Raus aus dem Schlag. Gut."
     drill_finished: "Drei saubere Schläge. Das ist ein Finisher. Spam kommt da nie hin."
     drill_done: "Das war der Drill. Melden, {player}."
     drill_pass: "Parade, Rolle, Finisher. Bestanden — diesmal richtig."

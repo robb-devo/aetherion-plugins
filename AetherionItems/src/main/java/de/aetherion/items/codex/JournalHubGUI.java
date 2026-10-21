@@ -95,7 +95,7 @@ public final class JournalHubGUI {
                         "",
                         "§eClick to open"));
             }
-            inventory.setItem(ManagerNav.SLOT_27, ManagerNav.button());
+            inventory.setItem(ManagerNav.SLOT_27, CodexChrome.back("the Codex"));
             inventory.setItem(CLOSE_SLOT, GuiItems.named(Material.BARRIER, "§cClose", "§8Esc works too."));
         }
 
@@ -103,7 +103,7 @@ public final class JournalHubGUI {
         public void click(Player player, int slot, ClickType click) {
             if (slot == ManagerNav.SLOT_27) {
                 CodexChrome.click(player);
-                ManagerNav.openManager(player);
+                CodexMenus.openHub(player);
                 return;
             }
             if (slot == CLOSE_SLOT) {

@@ -99,6 +99,8 @@ public final class SkillOverviewGUI {
             }
             inv.setItem(CodexChrome.HEADER, header(player, skills, codex));
             inv.setItem(CodexChrome.TOOL_A, session(player, skills));
+            inv.setItem(CodexChrome.TOOL_B, GuiItems.named(Material.NETHERITE_SCRAP, "§bYour Loadout",
+                    "§7Equip and swap skills.", "", "§eClick to open"));
 
             List<AetherSkill> list = visible(player, skills, codex);
             order = list;
@@ -115,7 +117,7 @@ public final class SkillOverviewGUI {
                 inv.setItem(22, GuiItems.named(Material.STRUCTURE_VOID, "§7Nothing to show",
                         "§8No skills match §f" + show.label + "§8.", "", "§eClick the spyglass §7to change it."));
             }
-            inv.setItem(CodexChrome.BACK, CodexChrome.back("your loadout"));
+            inv.setItem(CodexChrome.BACK, CodexChrome.back("the Codex"));
             if (page > 1) {
                 inv.setItem(CodexChrome.PREV, CodexChrome.prev(page, pages));
             }
@@ -259,8 +261,7 @@ public final class SkillOverviewGUI {
 
         @Override
         public void click(Player player, int slot, ClickType click) {
-            if (slot == CodexChrome.Tab.SKILLS.slot()) {
-                // Already on Skills — the tab takes you to the loadout.
+            if (slot == CodexChrome.TOOL_B) {
                 openLoadout(player, null);
                 return;
             }
@@ -273,7 +274,8 @@ public final class SkillOverviewGUI {
                 return;
             }
             if (slot == CodexChrome.BACK) {
-                openLoadout(player, null);
+                CodexChrome.click(player);
+                de.aetherion.items.codex.CodexMenus.openHub(player);
                 return;
             }
             if (slot == CodexChrome.PREV) {
@@ -362,7 +364,7 @@ public final class SkillOverviewGUI {
             var plugin = de.aetherion.items.AetherionItems.getInstance();
             if (plugin != null && plugin.getSkillMenu() != null) {
                 CodexChrome.click(player);
-                plugin.getSkillMenu().open(player, category);
+                plugin.getSkillMenu().openFromOverview(player, category);
             }
         }
     }

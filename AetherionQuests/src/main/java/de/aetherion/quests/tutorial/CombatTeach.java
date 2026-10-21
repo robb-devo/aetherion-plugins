@@ -27,7 +27,7 @@ import java.util.Locale;
  * <ul>
  *   <li>{@value #READY}: two armour pieces and a weapon in hand, noted by {@link OrientationWatch}.</li>
  *   <li>{@value #PARRY}: a perfect parry (F) — the golem's jab.</li>
- *   <li>{@value #DODGE}: a perfect dodge (Sneak + Jump roll) — through the golem's unparryable slam.</li>
+ *   <li>{@value #DODGE}: a roll (Sneak + Jump) when the golem's unparryable slam turns white.</li>
  *   <li>{@value #FINISHER}: three timed (full-charge) hits on one target.</li>
  * </ul>
  * The moves are reported by Items ({@code combat.system.CombatSystem#drill} → {@code QuestProgressHook.noteUsed})
@@ -171,8 +171,8 @@ public final class CombatTeach {
         if (drill) {
             return LangPack.dialogs(player, "vex_combat_drill", new String[] {
                     "Sergeant Vex. Out there, spam-clicking gets you killed. So we drill.",
-                    "My golem hits back. Yellow §e!§f — tap §eF§f as its fist flashes. That's a parry.",
-                    "Red §c!!§f — you can't block that. §eSneak + Jump§f and roll through it.",
+                    "My golem hits back. Yellow §e!§f — when it turns white, tap §eF§f. That's a parry.",
+                    "Red §c!!§f you can't block. When it turns white: §eSneak + Jump§f, and you roll clear.",
                     "Then three full swings in a row, no spam: a §6finisher§f. Kit on, blade up. Ready?"
             });
         }
@@ -254,7 +254,7 @@ public final class CombatTeach {
         }
         if (qm.getProgress(player, QUEST_ID, DODGE) < 1) {
             return LangPack.say(player, "vex.drill_hint_dodge",
-                    "Red §c!!§f and a ring on the ground: hold §eSneak§f, hit §eJump§f as the ground cracks.");
+                    "Red §c!!§f: hold §eSneak§f, press §eJump§f the moment it turns white.");
         }
         if (qm.getProgress(player, QUEST_ID, FINISHER) < 1) {
             return LangPack.say(player, "vex.drill_hint_finisher",
@@ -275,7 +275,7 @@ public final class CombatTeach {
         if (PARRY.equalsIgnoreCase(target)) {
             line = LangPack.say(player, "vex.drill_parried", "Clean parry. It reels — that's your opening.");
         } else if (DODGE.equalsIgnoreCase(target)) {
-            line = LangPack.say(player, "vex.drill_rolled", "Through it, not away from it. Good.");
+            line = LangPack.say(player, "vex.drill_rolled", "Out from under it. Good.");
         } else {
             line = LangPack.say(player, "vex.drill_finished", "Three clean swings. That's a finisher. Spam never gets there.");
         }

@@ -170,9 +170,6 @@ public class AnimalZoneService implements Runnable {
             ensureMarker(zone);
             enforce(zone, world);
             trimChunkDensity(zone, world);
-            if (ThreadLocalRandom.current().nextInt(4) == 0) {
-                world.spawnParticle(Particle.HAPPY_VILLAGER, center.clone().add(0, 1.2, 0), 6, 0.4, 0.3, 0.4, 0);
-            }
             int living = count(zone, world);
             if (living >= TARGET) {
                 continue;
@@ -544,12 +541,22 @@ public class AnimalZoneService implements Runnable {
     }
 
     private void ensureMarker(AnimalZone zone) {
-        if (zone.getMarkerId() != null) {
-            Entity entity = Bukkit.getEntity(zone.getMarkerId());
-            if (entity != null && entity.isValid()) {
-                StaffVisibility.apply(plugin, entity);
-                return;
+        World world = Bukkit.getWorld(zone.getWorldName());
+        if (world == null) {
+            return;
+        }
+        Location centre = zone.center(world);
+        if (!ZoneMarkers.ready(centre)) {
+            return;
+        }
+        ArmorStand stand = ZoneMarkers.keepOne(centre, ItemKeys.animalZone(), zone.getId().toString(), zone.getMarkerId());
+        if (stand != null) {
+            StaffVisibility.apply(plugin, stand);
+            if (!stand.getUniqueId().equals(zone.getMarkerId())) {
+                zone.setMarkerId(stand.getUniqueId());
+                save();
             }
+            return;
         }
         spawnMarker(zone);
         save();

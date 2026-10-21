@@ -38,9 +38,9 @@ import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Island-wide moments. Every {@code events.interval-minutes} (while anyone is on Origin) the island does something
- * that fits the hour: a <b>Lantern Festival</b> over Fountain Square at dusk, the <b>Aurora</b> or a <b>Starfall</b>
- * at night (sneak and look up to make a wish), a <b>Petal Storm</b> or <b>Harbour Fog</b> in the morning, and a
- * <b>Rainbow</b> whenever the rain stops by day. Cosmetic only: particles, sounds, non-persistent displays and
+ * that fits the hour: a <b>Lantern Festival</b> over Fountain Square from dusk, a <b>Petal Storm</b> or <b>Harbour
+ * Fog</b> in the morning, and a <b>Rainbow</b> whenever the rain stops by day. <b>Aurora</b> and <b>Starfall</b>
+ * (sneak and look up to make a wish) only run when forced. Cosmetic only: particles, sounds, non-persistent displays and
  * harmless tagged fireworks. The per-player particle setting ({@code /origin settings}) turns them off.
  */
 public final class OriginEvents implements Listener {
@@ -161,12 +161,9 @@ public final class OriginEvents implements Listener {
         return switch (isle.phase()) {
             case DAWN -> rng.nextBoolean() ? Kind.HARBOUR_FOG : Kind.PETAL_STORM;
             case DAY -> rng.nextInt(4) == 0 ? Kind.HARBOUR_FOG : Kind.PETAL_STORM;
-            case DUSK -> Kind.LANTERN_FESTIVAL;
-            case NIGHT -> switch (rng.nextInt(3)) {
-                case 0 -> Kind.AURORA;
-                case 1 -> Kind.STARFALL;
-                default -> Kind.LANTERN_FESTIVAL;
-            };
+            // The night sky belongs to the shader now: Aurora and Starfall (particle curtains and streaks over every
+            // player) only run when forced. Lanterns are display entities, so they stay.
+            case DUSK, NIGHT -> Kind.LANTERN_FESTIVAL;
         };
     }
 
@@ -271,7 +268,7 @@ public final class OriginEvents implements Listener {
                 }
             }
             case STARFALL -> {
-                if (step % 5 == 0) {
+                if (step % 20 == 0) {
                     for (Player player : audience) {
                         shootingStar(player, ThreadLocalRandom.current().nextInt(3) == 0);
                     }
