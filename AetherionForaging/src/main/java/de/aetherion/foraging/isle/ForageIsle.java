@@ -361,7 +361,7 @@ public final class ForageIsle implements Listener {
             if (lure.until() <= now) {
                 it.remove();
             } else if (tick % 60 == 0 && lure.at().getWorld() != null) {
-                lure.at().getWorld().spawnParticle(org.bukkit.Particle.DRIPPING_HONEY, lure.at(), 2, 0.25, 0.3, 0.25, 0.0);
+                de.aetherion.core.api.Vfx.puff(lure.at(), org.bukkit.Particle.DRIPPING_HONEY, 2, Math.max(0.25, 0.25), null);
             }
         }
     }

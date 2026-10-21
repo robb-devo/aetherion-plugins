@@ -92,9 +92,8 @@ public final class ForagingDragonListener implements Listener {
         player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.55f, 0.8f);
         player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_FLAP, 0.65f, 1.4f);
         player.playSound(player.getLocation(), Sound.BLOCK_WOOD_BREAK, 0.95f, 0.55f);
-        player.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, player.getLocation().add(0, 1.2, 0), 24, 0.55, 0.45, 0.55, 0.0);
-        player.getWorld().spawnParticle(Particle.BLOCK, player.getLocation().add(0, 1.3, 0), 18, 0.45, 0.4, 0.45, 0.02,
-                Material.OAK_LEAVES.createBlockData());
+        de.aetherion.core.api.Vfx.puff(player.getLocation().add(0, 1.2, 0), Particle.HAPPY_VILLAGER, 24, Math.max(0.55, 0.55), null);
+        de.aetherion.core.api.Vfx.puff(player.getLocation().add(0, 1.3, 0), Particle.BLOCK, 18, Math.max(0.45, 0.45), Material.OAK_LEAVES.createBlockData());
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
             if (!player.isOnline()) {
                 return;

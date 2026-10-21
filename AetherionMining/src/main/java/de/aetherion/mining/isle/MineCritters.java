@@ -232,7 +232,7 @@ public final class MineCritters implements Listener {
         }
         World world = spot.getWorld();
         world.playSound(spot, Sound.ENTITY_WARDEN_EMERGE, SoundCategory.HOSTILE, 0.8f, 1.3f);
-        world.spawnParticle(Particle.BLOCK, spot, 80, 1.0, 0.4, 1.0, 0.1, Material.DEEPSLATE.createBlockData());
+        de.aetherion.core.api.Vfx.puff(spot, Particle.BLOCK, 80, Math.max(1.0, 1.0), Material.DEEPSLATE.createBlockData());
         for (Player visitor : MineWorld.visitors(isle.plugin())) {
             if (visitor.getWorld().equals(world) && visitor.getLocation().distanceSquared(spot) < 64.0d * 64.0d) {
                 visitor.sendMessage("§4☠ The rock opens its mouth. §cA Stonejaw §7has woken up near §f" + player.getName()
@@ -358,7 +358,7 @@ public final class MineCritters implements Listener {
         switch (kind) {
             case CINDER_MITE -> {
                 world.playSound(at, Sound.ENTITY_SILVERFISH_AMBIENT, SoundCategory.HOSTILE, 0.8f, 0.6f);
-                world.spawnParticle(Particle.FLAME, at, 8, 0.2, 0.1, 0.2, 0.02);
+                de.aetherion.core.api.Vfx.puff(at, Particle.FLAME, 8, Math.max(0.2, 0.2), null);
             }
             case GLOAM_MOTH -> world.playSound(at, Sound.BLOCK_AMETHYST_BLOCK_CHIME, SoundCategory.NEUTRAL, 0.7f, 1.8f);
             case STONEJAW -> {
@@ -367,7 +367,7 @@ public final class MineCritters implements Listener {
             }
             case SHARDLING -> {
                 world.playSound(at, Sound.BLOCK_AMETHYST_CLUSTER_PLACE, SoundCategory.HOSTILE, 1.0f, 0.7f);
-                world.spawnParticle(Particle.END_ROD, at, 10, 0.3, 0.3, 0.3, 0.02);
+                de.aetherion.core.api.Vfx.puff(at, Particle.END_ROD, 10, Math.max(0.3, 0.3), null);
             }
         }
         return critter;
@@ -512,10 +512,10 @@ public final class MineCritters implements Listener {
                     new Quaternionf()));
         }
         if (critter.kind == Kind.CINDER_MITE && ThreadLocalRandom.current().nextInt(4) == 0) {
-            next.getWorld().spawnParticle(Particle.SMALL_FLAME, next.clone().add(0, 0.2, 0), 1, 0.1, 0.0, 0.1, 0.0);
+            de.aetherion.core.api.Vfx.puff(next.clone().add(0, 0.2, 0), Particle.SMALL_FLAME, 1, Math.max(0.1, 0.1), null);
         }
         if (critter.kind == Kind.GLOAM_MOTH && ThreadLocalRandom.current().nextInt(3) == 0) {
-            next.getWorld().spawnParticle(Particle.GLOW, next, 1, 0.1, 0.1, 0.1, 0.0);
+            de.aetherion.core.api.Vfx.puff(next, Particle.GLOW, 1, Math.max(0.1, 0.1), null);
         }
     }
 
@@ -588,8 +588,8 @@ public final class MineCritters implements Listener {
         World world = at.getWorld();
         world.playSound(at, Sound.ENTITY_GENERIC_EXPLODE, SoundCategory.HOSTILE, 0.8f, 0.6f);
         world.playSound(at, Sound.BLOCK_ANVIL_LAND, SoundCategory.HOSTILE, 1.0f, 0.5f);
-        world.spawnParticle(Particle.BLOCK, at, 60, 1.6, 0.2, 1.6, 0.1, Material.DEEPSLATE.createBlockData());
-        world.spawnParticle(Particle.EXPLOSION, at.clone().add(0, 0.4, 0), 2, 0.6, 0.1, 0.6, 0.0);
+        de.aetherion.core.api.Vfx.puff(at, Particle.BLOCK, 60, Math.max(1.6, 1.6), Material.DEEPSLATE.createBlockData());
+        de.aetherion.core.api.Vfx.puff(at.clone().add(0, 0.4, 0), Particle.EXPLOSION, 2, Math.max(0.6, 0.6), null);
         if (critter.jaw != null && critter.jaw.isValid()) {
             critter.jaw.setInterpolationDelay(0);
             critter.jaw.setInterpolationDuration(3);
@@ -621,7 +621,7 @@ public final class MineCritters implements Listener {
         step.normalize().multiply(0.5d);
         Location cursor = from.clone().add(0, 0.4, 0);
         for (double walked = 0; walked < length; walked += 0.5d) {
-            from.getWorld().spawnParticle(particle, cursor, 1, 0.0, 0.0, 0.0, 0.0);
+            de.aetherion.core.api.Vfx.puff(cursor, particle, 1, Math.max(0.0, 0.0), null);
             cursor.add(step);
         }
     }
@@ -629,7 +629,7 @@ public final class MineCritters implements Listener {
     private static void ring(Location at, double radius, Particle particle) {
         for (int i = 0; i < 20; i++) {
             double a = Math.PI * 2.0d * i / 20.0d;
-            at.getWorld().spawnParticle(particle, at.clone().add(Math.cos(a) * radius, 0.15, Math.sin(a) * radius), 1, 0, 0, 0, 0);
+            de.aetherion.core.api.Vfx.puff(at.clone().add(Math.cos(a) * radius, 0.15, Math.sin(a) * radius), particle, 1, Math.max(0, 0), null);
         }
     }
 
@@ -675,7 +675,7 @@ public final class MineCritters implements Listener {
             case SHARDLING -> Sound.BLOCK_AMETHYST_CLUSTER_HIT;
         };
         world.playSound(critter.at, sound, SoundCategory.HOSTILE, 1.0f, critter.kind == Kind.STONEJAW ? 0.6f : 1.2f);
-        world.spawnParticle(Particle.CRIT, critter.at.clone().add(0, 0.5, 0), 6, 0.2, 0.2, 0.2, 0.1);
+        de.aetherion.core.api.Vfx.puff(critter.at.clone().add(0, 0.5, 0), Particle.CRIT, 6, Math.max(0.2, 0.2), null);
         if (critter.hp <= 0) {
             die(player, critter);
             return;
@@ -690,7 +690,7 @@ public final class MineCritters implements Listener {
 
     private void fizzle(Critter critter) {
         if (critter.body != null && critter.body.isValid() && critter.at != null && critter.at.getWorld() != null) {
-            critter.at.getWorld().spawnParticle(Particle.SMOKE, critter.at.clone().add(0, 0.4, 0), 8, 0.2, 0.2, 0.2, 0.02);
+            de.aetherion.core.api.Vfx.puff(critter.at.clone().add(0, 0.4, 0), Particle.SMOKE, 8, Math.max(0.2, 0.2), null);
         }
         remove(critter);
     }
@@ -705,7 +705,7 @@ public final class MineCritters implements Listener {
         ThreadLocalRandom rng = ThreadLocalRandom.current();
         switch (critter.kind) {
             case CINDER_MITE -> {
-                world.spawnParticle(Particle.LAVA, at, 6, 0.2, 0.1, 0.2, 0.0);
+                de.aetherion.core.api.Vfx.puff(at, Particle.LAVA, 6, Math.max(0.2, 0.2), null);
                 world.playSound(at, Sound.ENTITY_SILVERFISH_DEATH, SoundCategory.HOSTILE, 1.0f, 0.7f);
                 MineSkills.give(killer, new ItemStack(Material.COAL, 1 + rng.nextInt(3)));
                 if (rng.nextInt(3) == 0) {
@@ -715,14 +715,14 @@ public final class MineCritters implements Listener {
             }
             case GLOAM_MOTH -> {
                 profile.gloamUntil = System.currentTimeMillis() + 60_000L;
-                world.spawnParticle(Particle.GLOW, at, 30, 0.4, 0.4, 0.4, 0.05);
+                de.aetherion.core.api.Vfx.puff(at, Particle.GLOW, 30, Math.max(0.4, 0.4), null);
                 world.playSound(at, Sound.BLOCK_AMETHYST_BLOCK_CHIME, SoundCategory.PLAYERS, 1.0f, 2.0f);
                 MineSkills.give(killer, new ItemStack(Material.GLOW_BERRIES, 2 + rng.nextInt(3)));
                 MineSkills.bonus(killer, 10);
                 MineText.bar(killer, "§b✧ Gloam-lit! §7Crystal Finds §d×1.5 §7for a minute. §8The moth dust makes the rock whisper.");
             }
             case SHARDLING -> {
-                world.spawnParticle(Particle.END_ROD, at, 16, 0.3, 0.3, 0.3, 0.05);
+                de.aetherion.core.api.Vfx.puff(at, Particle.END_ROD, 16, Math.max(0.3, 0.3), null);
                 world.playSound(at, Sound.BLOCK_AMETHYST_CLUSTER_BREAK, SoundCategory.HOSTILE, 1.0f, 1.0f);
                 int shards = 1 + rng.nextInt(3);
                 profile.shards += shards;
@@ -737,8 +737,8 @@ public final class MineCritters implements Listener {
         World world = at.getWorld();
         world.playSound(at, Sound.ENTITY_IRON_GOLEM_DEATH, SoundCategory.HOSTILE, 1.0f, 0.5f);
         world.playSound(at, Sound.ENTITY_GENERIC_EXPLODE, SoundCategory.HOSTILE, 0.7f, 0.8f);
-        world.spawnParticle(Particle.BLOCK, at, 120, 1.2, 0.8, 1.2, 0.2, Material.DEEPSLATE_BRICKS.createBlockData());
-        world.spawnParticle(Particle.FIREWORK, at.clone().add(0, 1.0, 0), 40, 0.6, 0.6, 0.6, 0.1);
+        de.aetherion.core.api.Vfx.puff(at, Particle.BLOCK, 120, Math.max(1.2, 1.2), Material.DEEPSLATE_BRICKS.createBlockData());
+        de.aetherion.core.api.Vfx.puff(at.clone().add(0, 1.0, 0), Particle.FIREWORK, 40, Math.max(0.6, 0.6), null);
         MineDistricts.Band band = isle.districts().band(at);
         IsleOre burst = switch (band) {
             case UNDERCROFT -> IsleOre.DIAMOND;

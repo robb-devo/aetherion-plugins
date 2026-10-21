@@ -573,16 +573,15 @@ final class MachineFx {
         }
         Location center = new Location(world, s.x() + 0.5, s.y() + 1.0, s.z() + 0.5);
         switch (s.type()) {
-            case MILL -> world.spawnParticle(Particle.WHITE_ASH, center.clone().add(0, 0.6, 0), s.level() >= 2 ? 10 : 6,
-                    0.6, 0.3, 0.6, 0.01);
+            case MILL -> de.aetherion.core.api.Vfx.puff(center.clone().add(0, 0.6, 0), Particle.WHITE_ASH, s.level() >= 2 ? 10 : 6, Math.max(0.6, 0.6), null);
             case WORKSHOP -> {
                 // the holo core hums: a few glyphs drift into it, the Grand Hub sends light up its tower
                 Location gem = new Location(world, s.x() + 0.5, s.y() + 3.45, s.z() + 0.5);
                 int[] back = de.aetherion.guilds.template.StateRotator.rotateXZ(0, -1, s.rot());
                 gem.add(back[0] * 0.45, 0, back[1] * 0.45);
-                world.spawnParticle(Particle.ENCHANT, gem, 4, 0.6, 0.4, 0.6, 0.6);
+                de.aetherion.core.api.Vfx.puff(gem, Particle.ENCHANT, 4, Math.max(0.6, 0.6), null);
                 if (s.level() >= 3) {
-                    world.spawnParticle(Particle.END_ROD, gem.clone().add(back[0] * 1.1, 2.5, back[1] * 1.1), 1, 0.15, 0.4, 0.15, 0.01);
+                    de.aetherion.core.api.Vfx.puff(gem.clone().add(back[0] * 1.1, 2.5, back[1] * 1.1), Particle.END_ROD, 1, Math.max(0.15, 0.15), null);
                 }
             }
             case FORGE -> {
@@ -597,14 +596,13 @@ final class MachineFx {
                 int tier = PropBodies.quarryTier(view.level());
                 PropBodies.Skin skin = PropBodies.skinOf(view.quarry());
                 switch (skin) {
-                    case FARMING -> world.spawnParticle(Particle.COMPOSTER, center.clone().add(-0.8, 0.6, 0.6), 3, 0.4, 0.2, 0.5, 0);
+                    case FARMING -> de.aetherion.core.api.Vfx.puff(center.clone().add(-0.8, 0.6, 0.6), Particle.COMPOSTER, 3, Math.max(0.4, 0.5), null);
                     case FISHING -> {
-                        world.spawnParticle(Particle.SPLASH, center.clone().add(0, 0.15, 0.4), 8, 0.4, 0.05, 0.6, 0.1);
-                        world.spawnParticle(Particle.BUBBLE_POP, center.clone().add(0, 0.15, 0.4), 3, 0.3, 0.05, 0.5, 0.01);
+                        de.aetherion.core.api.Vfx.puff(center.clone().add(0, 0.15, 0.4), Particle.SPLASH, 8, Math.max(0.4, 0.6), null);
+                        de.aetherion.core.api.Vfx.puff(center.clone().add(0, 0.15, 0.4), Particle.BUBBLE_POP, 3, Math.max(0.3, 0.5), null);
                     }
-                    case FORAGING -> world.spawnParticle(Particle.SPORE_BLOSSOM_AIR, center.clone().add(0, 3.0 + tier * 0.35, 0),
-                            6, 1.2, 0.3, 1.2, 0);
-                    case COMBAT -> world.spawnParticle(Particle.CRIT, center.clone().add(0.8, 1.3, -0.6), 4, 0.3, 0.3, 0.3, 0.1);
+                    case FORAGING -> de.aetherion.core.api.Vfx.puff(center.clone().add(0, 3.0 + tier * 0.35, 0), Particle.SPORE_BLOSSOM_AIR, 6, Math.max(1.2, 1.2), null);
+                    case COMBAT -> de.aetherion.core.api.Vfx.puff(center.clone().add(0.8, 1.3, -0.6), Particle.CRIT, 4, Math.max(0.3, 0.3), null);
                     default -> {
                     }
                 }
@@ -612,10 +610,10 @@ final class MachineFx {
                     return;
                 }
                 if (tier >= 2) {
-                    world.spawnParticle(Particle.ELECTRIC_SPARK, center.clone().add(0, 0.9, 0), 3 + tier, 0.25, 0.2, 0.25, 0.04);
+                    de.aetherion.core.api.Vfx.puff(center.clone().add(0, 0.9, 0), Particle.ELECTRIC_SPARK, 3 + tier, Math.max(0.25, 0.25), null);
                 }
                 if (tier >= 3) {
-                    world.spawnParticle(Particle.END_ROD, center.clone().add(0, 3.8, 0), 2, 0.6, 0.3, 0.6, 0.01);
+                    de.aetherion.core.api.Vfx.puff(center.clone().add(0, 3.8, 0), Particle.END_ROD, 2, Math.max(0.6, 0.6), null);
                 }
             }
             default -> {
@@ -692,8 +690,8 @@ final class MachineFx {
             Location anvil = new Location(at.getWorld(), props.x + 0.5 + r[0] * 0.9, props.y + 1.9, props.z + 0.5 + r[1] * 0.75);
             World world = anvil.getWorld();
             if (world != null) {
-                world.spawnParticle(Particle.ELECTRIC_SPARK, anvil, 6, 0.15, 0.05, 0.15, 0.1);
-                world.spawnParticle(Particle.LAVA, anvil, 1, 0.05, 0.02, 0.05, 0);
+                de.aetherion.core.api.Vfx.puff(anvil, Particle.ELECTRIC_SPARK, 6, Math.max(0.15, 0.15), null);
+                de.aetherion.core.api.Vfx.puff(anvil, Particle.LAVA, 1, Math.max(0.05, 0.05), null);
                 if (sounds) {
                     world.playSound(anvil, Sound.BLOCK_ANVIL_USE, SoundCategory.BLOCKS, 0.2f, 1.7f);
                 }

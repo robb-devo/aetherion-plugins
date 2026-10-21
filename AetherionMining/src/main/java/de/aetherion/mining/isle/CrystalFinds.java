@@ -312,16 +312,15 @@ public final class CrystalFinds implements Listener {
         world.playSound(at, Sound.BLOCK_AMETHYST_BLOCK_RESONATE, SoundCategory.PLAYERS, 1.0f, 0.7f);
         world.playSound(at, Sound.BLOCK_DEEPSLATE_BREAK, SoundCategory.PLAYERS, 1.0f, 0.6f);
         world.playSound(at, Sound.ENTITY_PLAYER_LEVELUP, SoundCategory.PLAYERS, 0.5f, 1.9f);
-        world.spawnParticle(Particle.BLOCK, at, 40, 0.4, 0.3, 0.4, 0.1, Material.DEEPSLATE.createBlockData());
-        world.spawnParticle(Particle.DUST, at.clone().add(0, 0.4, 0), 24, 0.45, 0.45, 0.45, 0.0,
-                new Particle.DustOptions(ore.glow(), 1.6f));
+        de.aetherion.core.api.Vfx.puff(at, Particle.BLOCK, 40, Math.max(0.4, 0.4), Material.DEEPSLATE.createBlockData());
+        de.aetherion.core.api.Vfx.puff(at.clone().add(0, 0.4, 0), Particle.DUST, 24, Math.max(0.45, 0.45), new Particle.DustOptions(ore.glow(), 1.6f));
         String where = veins ? " §8(The Veins)" : "";
         finder.sendMessage("§d✦ Crystal Find! §fA " + grade.colored() + " " + ore.color() + ore.crystalName()
                 + " §7(" + MineText.carats(carats) + ")" + where + " §eStrike it open §7— " + cracks + " cracks.");
         MineText.bar(finder, "§d§l✦ " + ore.crystalName() + " §f" + MineText.carats(carats) + " §7— mine it open!");
         if (grade == Grade.HEARTSTONE) {
             world.playSound(at, Sound.BLOCK_BEACON_POWER_SELECT, SoundCategory.PLAYERS, 1.0f, 0.6f);
-            world.spawnParticle(Particle.END_ROD, at.clone().add(0, 0.6, 0), 30, 0.3, 0.8, 0.3, 0.05);
+            de.aetherion.core.api.Vfx.puff(at.clone().add(0, 0.6, 0), Particle.END_ROD, 30, Math.max(0.3, 0.3), null);
         }
         geode.task = Bukkit.getScheduler().runTaskTimer(isle.plugin(), () -> tick(geode), 1L, 2L);
     }
@@ -350,8 +349,7 @@ public final class CrystalFinds implements Listener {
             geode.stone.setTransformation(scaled(Math.max(0.5f, size), bob, spin));
         }
         if (age % 12 < 2 && geode.at.getWorld() != null) {
-            geode.at.getWorld().spawnParticle(Particle.DUST, geode.at.clone().add(0, 0.5, 0), 3, 0.4, 0.4, 0.4, 0.0,
-                    new Particle.DustOptions(geode.ore.glow(), 1.0f));
+            de.aetherion.core.api.Vfx.puff(geode.at.clone().add(0, 0.5, 0), Particle.DUST, 3, Math.max(0.4, 0.4), new Particle.DustOptions(geode.ore.glow(), 1.0f));
         }
         if (age >= FINDER_TICKS && !geode.announced) {
             geode.announced = true;
@@ -371,7 +369,7 @@ public final class CrystalFinds implements Listener {
         }
         World world = geode.at.getWorld();
         if (world != null) {
-            world.spawnParticle(Particle.BLOCK, geode.at, 25, 0.35, 0.3, 0.35, 0.1, Material.DEEPSLATE.createBlockData());
+            de.aetherion.core.api.Vfx.puff(geode.at, Particle.BLOCK, 25, Math.max(0.35, 0.35), Material.DEEPSLATE.createBlockData());
             world.playSound(geode.at, Sound.BLOCK_DEEPSLATE_BREAK, SoundCategory.PLAYERS, 0.9f, 0.5f);
         }
         Player finder = Bukkit.getPlayer(geode.finder);
@@ -455,8 +453,7 @@ public final class CrystalFinds implements Listener {
         if (world != null) {
             world.playSound(geode.at, Sound.BLOCK_AMETHYST_BLOCK_HIT, SoundCategory.PLAYERS, 1.0f, pitch);
             world.playSound(geode.at, Sound.BLOCK_STONE_HIT, SoundCategory.PLAYERS, 0.8f, pitch);
-            world.spawnParticle(Particle.BLOCK, geode.at.clone().add(0, 0.4, 0), 14, 0.3, 0.3, 0.3, 0.1,
-                    geode.ore.showcase().createBlockData());
+            de.aetherion.core.api.Vfx.puff(geode.at.clone().add(0, 0.4, 0), Particle.BLOCK, 14, Math.max(0.3, 0.3), geode.ore.showcase().createBlockData());
         }
         if (geode.cracks < geode.cracksNeeded) {
             if (geode.label != null && geode.label.isValid()) {
@@ -507,9 +504,8 @@ public final class CrystalFinds implements Listener {
 
         World world = geode.at.getWorld();
         if (world != null) {
-            world.spawnParticle(Particle.FIREWORK, geode.at.clone().add(0, 0.6, 0), 30, 0.4, 0.4, 0.4, 0.08);
-            world.spawnParticle(Particle.DUST, geode.at.clone().add(0, 0.6, 0), 30, 0.5, 0.5, 0.5, 0.0,
-                    new Particle.DustOptions(geode.ore.glow(), 1.8f));
+            de.aetherion.core.api.Vfx.puff(geode.at.clone().add(0, 0.6, 0), Particle.FIREWORK, 30, Math.max(0.4, 0.4), null);
+            de.aetherion.core.api.Vfx.puff(geode.at.clone().add(0, 0.6, 0), Particle.DUST, 30, Math.max(0.5, 0.5), new Particle.DustOptions(geode.ore.glow(), 1.8f));
             world.playSound(geode.at, Sound.BLOCK_AMETHYST_CLUSTER_BREAK, SoundCategory.PLAYERS, 1.0f, 0.9f);
             world.playSound(geode.at, Sound.ENTITY_FIREWORK_ROCKET_TWINKLE, SoundCategory.PLAYERS, 0.8f, 1.2f);
         }

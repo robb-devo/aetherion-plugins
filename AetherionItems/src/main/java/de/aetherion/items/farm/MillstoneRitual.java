@@ -96,8 +96,8 @@ public final class MillstoneRitual {
         Location at = session.stationAt;
         if (at != null && at.getWorld() != null) {
             World world = at.getWorld();
-            world.spawnParticle(Particle.CLOUD, at.clone().add(0, 1.2, 0), 3, 0.25, 0.1, 0.25, 0.01);
-            world.spawnParticle(Particle.CRIT, at.clone().add(0, 1.15, 0), 2, 0.2, 0.05, 0.2, 0.02);
+            de.aetherion.core.api.Vfx.puff(at.clone().add(0, 1.2, 0), Particle.CLOUD, 3, Math.max(0.25, 0.25), null);
+            de.aetherion.core.api.Vfx.puff(at.clone().add(0, 1.15, 0), Particle.CRIT, 2, Math.max(0.2, 0.2), null);
             if (Bukkit.getCurrentTick() % 20L == 0L) {
                 world.playSound(at, Sound.BLOCK_GRINDSTONE_USE, 0.35f, 1.1f);
             }
@@ -156,11 +156,7 @@ public final class MillstoneRitual {
             }
         }
         if (session.stationAt != null && session.stationAt.getWorld() != null) {
-            session.stationAt.getWorld().spawnParticle(
-                    Particle.HAPPY_VILLAGER,
-                    session.stationAt.clone().add(0, 1.3, 0),
-                    16, 0.35, 0.35, 0.35, 0.02
-            );
+            de.aetherion.core.api.Vfx.puff(session.stationAt.clone().add(0, 1.3, 0), Particle.HAPPY_VILLAGER, 16, Math.max(0.35, 0.35), null);
         }
     }
 

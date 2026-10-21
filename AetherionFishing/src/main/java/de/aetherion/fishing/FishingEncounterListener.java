@@ -124,10 +124,8 @@ public final class FishingEncounterListener implements Listener {
                     return;
                 }
                 double lift = 0.2d + at * 0.02d;
-                spot.getWorld().spawnParticle(Particle.BUBBLE_COLUMN_UP, spot.clone().add(0, 0.2, 0),
-                        6, 0.18, lift, 0.18, 0.02);
-                spot.getWorld().spawnParticle(Particle.BUBBLE_POP, spot.clone().add(0, 0.6, 0),
-                        4, 0.25, 0.05, 0.25, 0.01);
+                de.aetherion.core.api.Vfx.puff(spot.clone().add(0, 0.2, 0), Particle.BUBBLE_COLUMN_UP, 6, Math.max(0.18, 0.18), null);
+                de.aetherion.core.api.Vfx.puff(spot.clone().add(0, 0.6, 0), Particle.BUBBLE_POP, 4, Math.max(0.25, 0.25), null);
             }, delay);
         }
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
@@ -258,8 +256,8 @@ public final class FishingEncounterListener implements Listener {
         aloneSince.remove(entity.getUniqueId());
         player.sendMessage("§bSomething angry took the bait. " + tier.coloredName() + "§b.");
         player.playSound(player.getLocation(), Sound.ENTITY_DROWNED_AMBIENT, 0.7f, 0.85f);
-        world.spawnParticle(Particle.SPLASH, spot.clone().add(0, 0.4, 0), 24, 0.35, 0.2, 0.35, 0.05);
-        world.spawnParticle(Particle.BUBBLE, spot, 16, 0.25, 0.2, 0.25, 0.02);
+        de.aetherion.core.api.Vfx.puff(spot.clone().add(0, 0.4, 0), Particle.SPLASH, 24, Math.max(0.35, 0.35), null);
+        de.aetherion.core.api.Vfx.puff(spot, Particle.BUBBLE, 16, Math.max(0.25, 0.25), null);
     }
 
     @SuppressWarnings("unchecked")
@@ -360,7 +358,7 @@ public final class FishingEncounterListener implements Listener {
             it.remove();
             Location at = entity.getLocation();
             if (at.getWorld() != null) {
-                at.getWorld().spawnParticle(Particle.CLOUD, at.clone().add(0, 0.6, 0), 10, 0.2, 0.3, 0.2, 0.01);
+                de.aetherion.core.api.Vfx.puff(at.clone().add(0, 0.6, 0), Particle.CLOUD, 10, Math.max(0.2, 0.2), null);
             }
             entity.remove();
         }

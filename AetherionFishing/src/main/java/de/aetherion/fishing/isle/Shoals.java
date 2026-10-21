@@ -226,7 +226,7 @@ public final class Shoals {
         }
         World world = was.at().getWorld();
         if (world != null) {
-            world.spawnParticle(Particle.SPLASH, was.at().clone().add(0, 0.4, 0), 40, 2.0, 0.2, 2.0, 0.1);
+            de.aetherion.core.api.Vfx.puff(was.at().clone().add(0, 0.4, 0), Particle.SPLASH, 40, Math.max(2.0, 2.0), null);
         }
         for (Player visitor : LakeWorld.visitors()) {
             if (visitor.getLocation().distanceSquared(was.at()) < 64.0d * 64.0d) {
@@ -274,8 +274,8 @@ public final class Shoals {
         double r = radius() * 0.7d;
         for (int i = 0; i < 2; i++) {
             Location puff = at.clone().add(rng.nextDouble(-r, r), 0.15, rng.nextDouble(-r, r));
-            world.spawnParticle(Particle.BUBBLE_COLUMN_UP, puff, 4, 0.15, 0.05, 0.15, 0.02);
-            world.spawnParticle(Particle.SPLASH, puff.add(0, 0.2, 0), 3, 0.3, 0.02, 0.3, 0.02);
+            de.aetherion.core.api.Vfx.puff(puff, Particle.BUBBLE_COLUMN_UP, 4, Math.max(0.15, 0.15), null);
+            de.aetherion.core.api.Vfx.puff(puff.add(0, 0.2, 0), Particle.SPLASH, 3, Math.max(0.3, 0.3), null);
         }
         if (ticks % 40 == 0) {
             leap(at);
@@ -306,14 +306,14 @@ public final class Shoals {
                     new Vector3f(0.55f, 0.55f, 0.55f), new AxisAngle4f()));
             spawned.getPersistentDataContainer().set(leapKey, PersistentDataType.BYTE, (byte) 1);
         });
-        world.spawnParticle(Particle.SPLASH, from, 12, 0.2, 0.05, 0.2, 0.08);
+        de.aetherion.core.api.Vfx.puff(from, Particle.SPLASH, 12, Math.max(0.2, 0.2), null);
         int[] step = {0};
         final int steps = 14;
         Bukkit.getScheduler().runTaskTimer(isle.plugin(), task -> {
             step[0]++;
             if (!fish.isValid() || step[0] > steps) {
                 if (fish.isValid()) {
-                    world.spawnParticle(Particle.SPLASH, fish.getLocation(), 14, 0.2, 0.05, 0.2, 0.08);
+                    de.aetherion.core.api.Vfx.puff(fish.getLocation(), Particle.SPLASH, 14, Math.max(0.2, 0.2), null);
                     world.playSound(fish.getLocation(), Sound.ENTITY_FISH_SWIM, SoundCategory.AMBIENT, 0.5f, 1.3f);
                     fish.remove();
                 }

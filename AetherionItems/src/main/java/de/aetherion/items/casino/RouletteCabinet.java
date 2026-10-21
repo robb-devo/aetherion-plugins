@@ -151,7 +151,7 @@ public final class RouletteCabinet implements Listener {
         player.playSound(at, Sound.BLOCK_ANVIL_PLACE, 0.35f, 1.2f);
         player.playSound(at, Sound.BLOCK_NOTE_BLOCK_CHIME, 0.45f, 0.85f);
         player.playSound(at, Sound.BLOCK_BEACON_ACTIVATE, 0.3f, 1.6f);
-        at.getWorld().spawnParticle(Particle.WAX_ON, at, 20, 0.45, 0.2, 0.45, 0.4);
+        de.aetherion.core.api.Vfx.puff(at, Particle.WAX_ON, 20, Math.max(0.45, 0.45), null);
         player.sendMessage("§aRoulette table is up. Click it to play.");
     }
 
@@ -326,16 +326,16 @@ public final class RouletteCabinet implements Listener {
         if (won && number == 0) {
             table.set(Mode.ZERO, 120);
             table.light(15);
-            world.spawnParticle(Particle.TOTEM_OF_UNDYING, top, 50, 0.4, 0.3, 0.4, 0.3);
-            world.spawnParticle(Particle.HAPPY_VILLAGER, top, 20, 0.45, 0.2, 0.45, 0);
+            de.aetherion.core.api.Vfx.puff(top, Particle.TOTEM_OF_UNDYING, 50, Math.max(0.4, 0.4), null);
+            de.aetherion.core.api.Vfx.puff(top, Particle.HAPPY_VILLAGER, 20, Math.max(0.45, 0.45), null);
             for (Player other : near) {
                 other.playSound(top, Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.6f, 1.2f);
             }
         } else if (won) {
             table.set(Mode.WIN, 60);
             table.light(13);
-            world.spawnParticle(Particle.WAX_ON, top, 18, 0.4, 0.2, 0.4, 0.4);
-            world.spawnParticle(Particle.HAPPY_VILLAGER, top, 12, 0.4, 0.15, 0.4, 0);
+            de.aetherion.core.api.Vfx.puff(top, Particle.WAX_ON, 18, Math.max(0.4, 0.4), null);
+            de.aetherion.core.api.Vfx.puff(top, Particle.HAPPY_VILLAGER, 12, Math.max(0.4, 0.4), null);
             for (Player other : near) {
                 other.playSound(top, Sound.BLOCK_NOTE_BLOCK_BELL, 0.5f, 1.5f);
             }

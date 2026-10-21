@@ -936,8 +936,7 @@ public class ForagingListener implements Listener {
         player.playSound(player.getLocation(), Sound.ENTITY_ZOMBIE_BREAK_WOODEN_DOOR, 0.6f, 0.6f);
         player.playSound(player.getLocation(), Sound.BLOCK_WOOD_BREAK, 1.0f, 0.5f);
         if (at != null && at.getWorld() != null) {
-            at.getWorld().spawnParticle(org.bukkit.Particle.BLOCK, at.clone().add(0.0, 0.8, 0.0), 30, 0.5, 0.6, 0.5, 0.1,
-                    job.family.createBlockData());
+            de.aetherion.core.api.Vfx.puff(at.clone().add(0.0, 0.8, 0.0), org.bukkit.Particle.BLOCK, 30, Math.max(0.5, 0.5), job.family.createBlockData());
         }
         ForageText.bar(player, "§6✦ Notched! §7The Titan groans — §fone more cut.");
         player.clearActiveItem();

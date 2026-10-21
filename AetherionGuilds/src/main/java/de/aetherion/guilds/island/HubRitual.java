@@ -53,8 +53,8 @@ public final class HubRitual {
         }
         later(30L, () -> world.playSound(base, Sound.BLOCK_BEACON_ACTIVATE, SoundCategory.BLOCKS, 1f, 1.2f));
         later(48L, () -> {
-            world.spawnParticle(Particle.FIREWORK, top, 60, 1.5, 1.0, 1.5, 0.12);
-            world.spawnParticle(Particle.TOTEM_OF_UNDYING, top, 40, 1.2, 0.8, 1.2, 0.3);
+            de.aetherion.core.api.Vfx.puff(top, Particle.FIREWORK, 60, Math.max(1.5, 1.5), null);
+            de.aetherion.core.api.Vfx.puff(top, Particle.TOTEM_OF_UNDYING, 40, Math.max(1.2, 1.2), null);
             world.playSound(top, Sound.UI_TOAST_CHALLENGE_COMPLETE, SoundCategory.PLAYERS, 0.9f, 1.1f);
             if (!player.isOnline()) {
                 return;

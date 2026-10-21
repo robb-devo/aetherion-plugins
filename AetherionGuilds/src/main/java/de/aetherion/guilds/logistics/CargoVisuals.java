@@ -122,7 +122,7 @@ final class CargoVisuals {
                 Location end = c.entity.getLocation();
                 World world = end.getWorld();
                 if (world != null) {
-                    world.spawnParticle(Particle.POOF, end, 2, 0.1, 0.1, 0.1, 0.01);
+                    de.aetherion.core.api.Vfx.puff(end, Particle.POOF, 2, Math.max(0.1, 0.1), null);
                 }
                 c.entity.remove();
                 it.remove();

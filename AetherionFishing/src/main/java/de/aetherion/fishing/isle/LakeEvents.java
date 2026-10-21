@@ -208,7 +208,7 @@ public final class LakeEvents implements Listener {
         Entity entity = maw == null ? null : Bukkit.getEntity(maw);
         if (entity != null) {
             World world = entity.getWorld();
-            world.spawnParticle(Particle.SPLASH, entity.getLocation().add(0, 1.5, 0), 18, 1.2, 0.3, 1.2, 0.1);
+            de.aetherion.core.api.Vfx.puff(entity.getLocation().add(0, 1.5, 0), Particle.SPLASH, 18, Math.max(1.2, 1.2), null);
             if (hp > 0 && (hp * 4 / Math.max(1, hpMax)) != ((hp + heave) * 4 / Math.max(1, hpMax))) {
                 world.playSound(entity.getLocation(), Sound.ENTITY_ELDER_GUARDIAN_HURT, SoundCategory.HOSTILE, 2.5f, 0.6f);
                 for (Player visitor : LakeWorld.visitors()) {
@@ -508,7 +508,7 @@ public final class LakeEvents implements Listener {
             }
         });
         maw = guardian.getUniqueId();
-        world.spawnParticle(Particle.SPLASH, at.clone().add(0, 3, 0), 60, 2.5, 0.4, 2.5, 0.2);
+        de.aetherion.core.api.Vfx.puff(at.clone().add(0, 3, 0), Particle.SPLASH, 60, Math.max(2.5, 2.5), null);
         world.playSound(at, Sound.ENTITY_ELDER_GUARDIAN_AMBIENT, SoundCategory.HOSTILE, 3.0f, 0.5f);
     }
 
@@ -532,8 +532,8 @@ public final class LakeEvents implements Listener {
             entity.teleport(up);
             if (breachTicks == 10) {
                 World world = entity.getWorld();
-                world.spawnParticle(Particle.SPLASH, up, 120, 3.0, 1.0, 3.0, 0.3);
-                world.spawnParticle(Particle.BUBBLE_COLUMN_UP, up, 60, 2.5, 1.0, 2.5, 0.1);
+                de.aetherion.core.api.Vfx.puff(up, Particle.SPLASH, 120, Math.max(3.0, 3.0), null);
+                de.aetherion.core.api.Vfx.puff(up, Particle.BUBBLE_COLUMN_UP, 60, Math.max(2.5, 2.5), null);
                 world.playSound(up, Sound.ENTITY_GENERIC_SPLASH, SoundCategory.HOSTILE, 3.0f, 0.5f);
             }
             return;
@@ -544,12 +544,12 @@ public final class LakeEvents implements Listener {
         if (bob > 0.85d) {
             next.add(0, 1.4d * (bob - 0.85d) / 0.15d, 0);
             if (activeTicks % 8 == 0) {
-                entity.getWorld().spawnParticle(Particle.SPLASH, next.clone().add(0, 2.4, 0), 20, 1.4, 0.1, 1.4, 0.05);
+                de.aetherion.core.api.Vfx.puff(next.clone().add(0, 2.4, 0), Particle.SPLASH, 20, Math.max(1.4, 1.4), null);
             }
         }
         entity.teleport(next);
         if (activeTicks % 20 == 0) {
-            entity.getWorld().spawnParticle(Particle.BUBBLE_COLUMN_UP, next.clone().add(0, 1.0, 0), 10, 1.2, 0.4, 1.2, 0.05);
+            de.aetherion.core.api.Vfx.puff(next.clone().add(0, 1.0, 0), Particle.BUBBLE_COLUMN_UP, 10, Math.max(1.2, 1.2), null);
         }
     }
 
@@ -601,7 +601,7 @@ public final class LakeEvents implements Listener {
         Entity entity = maw == null ? null : Bukkit.getEntity(maw);
         if (entity != null) {
             if (dive) {
-                entity.getWorld().spawnParticle(Particle.BUBBLE_COLUMN_UP, entity.getLocation(), 40, 2.0, 1.0, 2.0, 0.1);
+                de.aetherion.core.api.Vfx.puff(entity.getLocation(), Particle.BUBBLE_COLUMN_UP, 40, Math.max(2.0, 2.0), null);
                 entity.getWorld().playSound(entity.getLocation(), Sound.ENTITY_ELDER_GUARDIAN_AMBIENT, SoundCategory.HOSTILE, 2.0f, 0.4f);
             }
             entity.remove();

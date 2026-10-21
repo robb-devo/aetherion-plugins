@@ -239,8 +239,7 @@ public final class PasteService {
                 applySign(block, sign);
             }
             if (job.reveal && placedThisTick % 40 == 1) {
-                job.world.spawnParticle(Particle.BLOCK, block.getLocation().add(0.5, 0.6, 0.5), 5,
-                        0.3, 0.3, 0.3, 0.05, data);
+                de.aetherion.core.api.Vfx.puff(block.getLocation().add(0.5, 0.6, 0.5), Particle.BLOCK, 5, Math.max(0.3, 0.3), data);
             }
             job.lastPlaced = block;
             job.lastData = data;

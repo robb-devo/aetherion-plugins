@@ -355,8 +355,7 @@ public final class CatchBall {
             if (impact > 0.08) {
                 world.playSound(next, Sound.BLOCK_STONE_BUTTON_CLICK_ON, SoundCategory.NEUTRAL, 0.55f, 1.7f - bounces * 0.1f);
                 world.playSound(next, Sound.BLOCK_AMETHYST_BLOCK_STEP, SoundCategory.NEUTRAL, 0.5f, 1.3f);
-                world.spawnParticle(Particle.DUST, next.clone().add(0, -radius, 0), 3, 0.1, 0.0, 0.1, 0.0,
-                        new Particle.DustOptions(tint, 0.6f));
+                de.aetherion.core.api.Vfx.puff(next.clone().add(0, -radius, 0), Particle.DUST, 3, Math.max(0.1, 0.1), new Particle.DustOptions(tint, 0.6f));
             }
             if (velocity.getY() < 0.05 || bounces >= 4) {
                 velocity.zero();
@@ -421,13 +420,13 @@ public final class CatchBall {
         lid(0f, 1);
         rock(0f, 0f, 2);
         world.playSound(at, Sound.BLOCK_IRON_TRAPDOOR_CLOSE, SoundCategory.NEUTRAL, 0.8f, 1.9f);
-        world.spawnParticle(Particle.END_ROD, at, 10, 0.05, 0.05, 0.05, 0.09);
-        world.spawnParticle(Particle.WAX_ON, at, 8, 0.25, 0.2, 0.25, 0.0);
+        de.aetherion.core.api.Vfx.puff(at, Particle.END_ROD, 10, Math.max(0.05, 0.05), null);
+        de.aetherion.core.api.Vfx.puff(at, Particle.WAX_ON, 8, Math.max(0.25, 0.25), null);
         Particle.DustOptions dust = new Particle.DustOptions(petColor, 1.1f);
         for (int i = 0; i < 12; i++) {
             double a = Math.PI * 2.0 * i / 12.0;
             Vector out = new Vector(Math.cos(a), 0.35, Math.sin(a));
-            world.spawnParticle(Particle.DUST, at.clone().add(out.multiply(0.5)), 1, 0.0, 0.0, 0.0, 0.0, dust);
+            de.aetherion.core.api.Vfx.puff(at.clone().add(out.multiply(0.5)), Particle.DUST, 1, Math.max(0.0, 0.0), dust);
         }
         new BukkitRunnable() {
             int tick;
@@ -453,7 +452,7 @@ public final class CatchBall {
                 int fly = tick - 12;
                 if (thrower == null || !thrower.isOnline() || !thrower.getWorld().equals(from.getWorld()) || fly > 12) {
                     Location end = center();
-                    end.getWorld().spawnParticle(Particle.END_ROD, end, 4, 0.05, 0.05, 0.05, 0.03);
+                    de.aetherion.core.api.Vfx.puff(end, Particle.END_ROD, 4, Math.max(0.05, 0.05), null);
                     if (thrower != null && thrower.isOnline()) {
                         thrower.playSound(thrower.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.6f, 1.9f);
                     }
@@ -471,7 +470,7 @@ public final class CatchBall {
                 pose(1);
                 root.teleport(p, TeleportFlag.EntityState.RETAIN_PASSENGERS);
                 if (fly % 2 == 0) {
-                    p.getWorld().spawnParticle(Particle.DUST, p, 1, 0.0, 0.0, 0.0, 0.0, new Particle.DustOptions(tint, 0.7f));
+                    de.aetherion.core.api.Vfx.puff(p, Particle.DUST, 1, Math.max(0.0, 0.0), new Particle.DustOptions(tint, 0.7f));
                 }
             }
         }.runTaskTimer(plugin, 1L, 1L);
@@ -510,9 +509,9 @@ public final class CatchBall {
                     glow(Color.WHITE);
                     world.playSound(at, Sound.BLOCK_GLASS_BREAK, SoundCategory.NEUTRAL, 0.7f, 1.45f);
                     world.playSound(at, Sound.BLOCK_IRON_TRAPDOOR_OPEN, SoundCategory.NEUTRAL, 0.7f, 1.3f);
-                    world.spawnParticle(Particle.ITEM, at, 10, 0.12, 0.12, 0.12, 0.12, thrownLook(sphereId));
-                    world.spawnParticle(Particle.FLASH, at, 1, 0.0, 0.0, 0.0, 0.0);
-                    world.spawnParticle(Particle.POOF, at, 4, 0.15, 0.15, 0.15, 0.02);
+                    de.aetherion.core.api.Vfx.puff(at, Particle.ITEM, 10, Math.max(0.12, 0.12), thrownLook(sphereId));
+                    de.aetherion.core.api.Vfx.puff(at, Particle.FLASH, 1, Math.max(0.0, 0.0), null);
+                    de.aetherion.core.api.Vfx.puff(at, Particle.POOF, 4, Math.max(0.15, 0.15), null);
                     if (onOpen != null) {
                         onOpen.run();
                     }
@@ -560,9 +559,8 @@ public final class CatchBall {
                 }
                 if (tick == 26) {
                     Location c = ball.center();
-                    c.getWorld().spawnParticle(Particle.DUST, c, 6, 0.12, 0.12, 0.12, 0.0,
-                            new Particle.DustOptions(ball.tint, 0.8f));
-                    c.getWorld().spawnParticle(Particle.END_ROD, c, 2, 0.05, 0.05, 0.05, 0.02);
+                    de.aetherion.core.api.Vfx.puff(c, Particle.DUST, 6, Math.max(0.12, 0.12), new Particle.DustOptions(ball.tint, 0.8f));
+                    de.aetherion.core.api.Vfx.puff(c, Particle.END_ROD, 2, Math.max(0.05, 0.05), null);
                     c.getWorld().playSound(c, Sound.BLOCK_AMETHYST_BLOCK_RESONATE, SoundCategory.NEUTRAL, 0.35f, 1.8f);
                 }
                 if (tick > 26) {

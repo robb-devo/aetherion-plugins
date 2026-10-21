@@ -671,8 +671,8 @@ public final class MerchantChestService {
         if (world == null) {
             return;
         }
-        world.spawnParticle(Particle.WAX_ON, at, 8, 0.25, 0.25, 0.25, 0);
-        world.spawnParticle(Particle.HAPPY_VILLAGER, at, 6, 0.2, 0.25, 0.2, 0);
+        de.aetherion.core.api.Vfx.puff(at, Particle.WAX_ON, 8, Math.max(0.25, 0.25), null);
+        de.aetherion.core.api.Vfx.puff(at, Particle.HAPPY_VILLAGER, 6, Math.max(0.2, 0.2), null);
         player.playSound(at, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.7f, 1.25f);
         player.playSound(at, Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.55f, 1.35f);
     }

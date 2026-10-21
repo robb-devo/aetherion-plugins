@@ -167,7 +167,7 @@ public final class Woodwright implements Listener {
         ForageBridge.bonus(player, 30 * next);
         player.playSound(player.getLocation(), Sound.BLOCK_SMITHING_TABLE_USE, 0.8f, 1.1f);
         player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.8f, 1.3f);
-        player.getWorld().spawnParticle(Particle.WAX_ON, player.getLocation().add(0, 1.2, 0), 18, 0.4, 0.4, 0.4, 0.0);
+        de.aetherion.core.api.Vfx.puff(player.getLocation().add(0, 1.2, 0), Particle.WAX_ON, 18, Math.max(0.4, 0.4), null);
         return "§6✦ Grove Mark §8· " + line.color() + line.display() + " " + ForageText.roman(next) + " §8· §7"
                 + line.perTier()[next - 1];
     }
@@ -306,7 +306,7 @@ public final class Woodwright implements Listener {
                 ForageText.bar(player, "§d✦ Heartwood Incense §8· §7heartwood ×2 for §f"
                         + ForageText.clock((profile.incenseUntil - now) / 1000L));
                 player.playSound(player.getLocation(), Sound.ITEM_FIRECHARGE_USE, 0.6f, 1.5f);
-                player.getWorld().spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, player.getLocation().add(0, 1.8, 0), 3, 0.1, 0.1, 0.1, 0.01);
+                de.aetherion.core.api.Vfx.puff(player.getLocation().add(0, 1.8, 0), Particle.CAMPFIRE_COSY_SMOKE, 3, Math.max(0.1, 0.1), null);
             }
             case SAP_LURE -> {
                 Block block = event.getClickedBlock();
@@ -322,7 +322,7 @@ public final class Woodwright implements Listener {
                 consume(player, hand);
                 ForageText.bar(player, "§6✦ Sap Lure hung §8· §7fells within 6 blocks: Crown Finds ×3 for 3:00");
                 player.playSound(block.getLocation(), Sound.BLOCK_HONEY_BLOCK_PLACE, 1.0f, 0.9f);
-                block.getWorld().spawnParticle(Particle.DRIPPING_HONEY, block.getLocation().add(0.5, 0.9, 0.5), 8, 0.3, 0.2, 0.3, 0.0);
+                de.aetherion.core.api.Vfx.puff(block.getLocation().add(0.5, 0.9, 0.5), Particle.DRIPPING_HONEY, 8, Math.max(0.3, 0.3), null);
             }
         }
     }

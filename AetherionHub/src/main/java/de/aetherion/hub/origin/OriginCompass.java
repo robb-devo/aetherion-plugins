@@ -177,8 +177,8 @@ public final class OriginCompass {
         if (world == null) {
             return;
         }
-        world.spawnParticle(Particle.END_ROD, at.clone().add(0, 1.0, 0), 18, 0.35, 0.8, 0.35, 0.02);
-        world.spawnParticle(Particle.CLOUD, at.clone().add(0, 0.1, 0), 12, 0.6, 0.05, 0.6, 0.01);
+        de.aetherion.core.api.Vfx.puff(at.clone().add(0, 1.0, 0), Particle.END_ROD, 18, Math.max(0.35, 0.35), null);
+        de.aetherion.core.api.Vfx.puff(at.clone().add(0, 0.1, 0), Particle.CLOUD, 12, Math.max(0.6, 0.6), null);
         player.playSound(at, Sound.BLOCK_AMETHYST_BLOCK_RESONATE, SoundCategory.PLAYERS, 0.6f, 1.4f);
         OriginConfig.District district = isle.config().districtAt(at);
         if (district != null) {

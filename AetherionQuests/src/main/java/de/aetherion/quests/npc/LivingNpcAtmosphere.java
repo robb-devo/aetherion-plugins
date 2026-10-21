@@ -169,9 +169,9 @@ public final class LivingNpcAtmosphere {
         }
         World world = at.getWorld();
         // Enchant-table glyph motes drifting upward around him.
-        world.spawnParticle(Particle.ENCHANT, at, 18, 0.45, 0.55, 0.45, 0.55);
+        de.aetherion.core.api.Vfx.puff(at, Particle.ENCHANT, 18, Math.max(0.45, 0.45), null);
         // Soft amethyst shimmer — mysterious without being loud.
-        world.spawnParticle(Particle.WITCH, at.clone().add(0.0, 0.35, 0.0), 2, 0.25, 0.35, 0.25, 0.0);
+        de.aetherion.core.api.Vfx.puff(at.clone().add(0.0, 0.35, 0.0), Particle.WITCH, 2, Math.max(0.25, 0.25), null);
     }
 
     /* =========================================================
@@ -250,28 +250,28 @@ public final class LivingNpcAtmosphere {
     /** Harbour kit man: light catches freshly oiled iron in his hands. */
     private static void egonAmbient(World world, Location at, ThreadLocalRandom rng) {
         if (rng.nextDouble() < 0.28) {
-            world.spawnParticle(Particle.WAX_OFF, at.clone().add(0.0, 1.15, 0.0), 1, 0.22, 0.12, 0.22, 0.0);
+            de.aetherion.core.api.Vfx.puff(at.clone().add(0.0, 1.15, 0.0), Particle.WAX_OFF, 1, Math.max(0.22, 0.22), null);
         }
     }
 
     /** Forager: whittling — oak chips drop off the axe now and then. */
     private static void foragerAmbient(World world, Location at, ThreadLocalRandom rng) {
         if (rng.nextDouble() < 0.34) {
-            world.spawnParticle(Particle.BLOCK, at.clone().add(0.0, 1.05, 0.0), 2, 0.2, 0.08, 0.2, 0.0, OAK_CHIPS);
+            de.aetherion.core.api.Vfx.puff(at.clone().add(0.0, 1.05, 0.0), Particle.BLOCK, 2, Math.max(0.2, 0.2), OAK_CHIPS);
         }
     }
 
     /** Shaft Foreman: pipe on, always. */
     private static void foremanAmbient(World world, Location at, ThreadLocalRandom rng) {
         if (rng.nextDouble() < 0.5) {
-            world.spawnParticle(Particle.SMOKE, at.clone().add(0.0, 1.85, 0.0), 1, 0.06, 0.02, 0.06, 0.004);
+            de.aetherion.core.api.Vfx.puff(at.clone().add(0.0, 1.85, 0.0), Particle.SMOKE, 1, Math.max(0.06, 0.06), null);
         }
     }
 
     /** Miss Ledger: ink specks off the quill. */
     private static void ledgerAmbient(World world, Location at, ThreadLocalRandom rng) {
         if (spineCycle % 2 == 0 && rng.nextDouble() < 0.6) {
-            world.spawnParticle(Particle.DUST, at.clone().add(0.0, 1.1, 0.0), 1, 0.18, 0.06, 0.18, 0.0, LEDGER_INK);
+            de.aetherion.core.api.Vfx.puff(at.clone().add(0.0, 1.1, 0.0), Particle.DUST, 1, Math.max(0.18, 0.18), LEDGER_INK);
         }
     }
 

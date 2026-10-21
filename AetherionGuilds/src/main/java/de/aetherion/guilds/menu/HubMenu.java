@@ -321,7 +321,7 @@ public final class HubMenu implements MenuKit.Menu {
         org.bukkit.World world = hosts.world(host);
         if (world != null) {
             org.bukkit.Location top = new org.bukkit.Location(world, hub.x() + 0.5, hub.maxY() + 1.0, hub.z() + 0.5);
-            world.spawnParticle(org.bukkit.Particle.TOTEM_OF_UNDYING, top, 40, 0.8, 0.6, 0.8, 0.25);
+            de.aetherion.core.api.Vfx.puff(top, org.bukkit.Particle.TOTEM_OF_UNDYING, 40, Math.max(0.8, 0.8), null);
         }
     }
 }

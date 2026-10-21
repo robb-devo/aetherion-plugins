@@ -30,8 +30,8 @@ final class ForagingFx {
             return;
         }
         Location center = at.clone().add(0.5, 0.35, 0.5);
-        world.spawnParticle(Particle.HAPPY_VILLAGER, center, 2, 0.16, 0.2, 0.16, 0.0);
-        world.spawnParticle(Particle.COMPOSTER, center, 1, 0.12, 0.16, 0.12, 0.0);
+        de.aetherion.core.api.Vfx.puff(center, Particle.HAPPY_VILLAGER, 2, Math.max(0.16, 0.16), null);
+        de.aetherion.core.api.Vfx.puff(center, Particle.COMPOSTER, 1, Math.max(0.12, 0.12), null);
     }
 
     static void start(Player player) {
@@ -70,9 +70,8 @@ final class ForagingFx {
         player.playSound(player.getLocation(), Sound.BLOCK_WOOD_BREAK, 0.85f, 0.75f);
         if (at != null && at.getWorld() != null) {
             Location center = at.clone().add(0.5, 0.5, 0.5);
-            at.getWorld().spawnParticle(Particle.CRIT, center, 14, 0.3, 0.35, 0.3, 0.1);
-            at.getWorld().spawnParticle(Particle.BLOCK, center, 18, 0.35, 0.4, 0.35, 0.08,
-                    Material.OAK_LOG.createBlockData());
+            de.aetherion.core.api.Vfx.puff(center, Particle.CRIT, 14, Math.max(0.3, 0.3), null);
+            de.aetherion.core.api.Vfx.puff(center, Particle.BLOCK, 18, Math.max(0.35, 0.35), Material.OAK_LOG.createBlockData());
         }
     }
 
@@ -84,7 +83,7 @@ final class ForagingFx {
             player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, 0.6f, 2.0f);
             player.playSound(player.getLocation(), Sound.ITEM_AXE_STRIP, 0.7f, 1.2f);
             if (at != null && at.getWorld() != null) {
-                at.getWorld().spawnParticle(Particle.WAX_ON, at.clone().add(0.5, 0.8, 0.5), 10, 0.3, 0.4, 0.3, 0.0);
+                de.aetherion.core.api.Vfx.puff(at.clone().add(0.5, 0.8, 0.5), Particle.WAX_ON, 10, Math.max(0.3, 0.3), null);
             }
         }
     }

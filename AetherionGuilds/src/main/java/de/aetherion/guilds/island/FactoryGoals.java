@@ -163,7 +163,7 @@ public final class FactoryGoals {
                 player.sendMessage("§7Next: §f" + next.title() + " §8— §7" + next.how());
             }
             player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.7f, 1.4f);
-            player.getWorld().spawnParticle(Particle.END_ROD, player.getLocation().add(0, 1.2, 0), 24, 0.6, 0.8, 0.6, 0.06);
+            de.aetherion.core.api.Vfx.puff(player.getLocation().add(0, 1.2, 0), Particle.END_ROD, 24, Math.max(0.6, 0.6), null);
             return; // one beat at a time
         }
     }

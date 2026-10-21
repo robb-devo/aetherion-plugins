@@ -108,8 +108,8 @@ public final class OriginFountain implements Listener {
         ThreadLocalRandom rng = ThreadLocalRandom.current();
         World world = splash.getWorld();
         if (world != null) {
-            world.spawnParticle(Particle.SPLASH, splash, 30, 0.35, 0.1, 0.35, 0.1);
-            world.spawnParticle(Particle.BUBBLE_POP, splash, 8, 0.3, 0.1, 0.3, 0.02);
+            de.aetherion.core.api.Vfx.puff(splash, Particle.SPLASH, 30, Math.max(0.35, 0.35), null);
+            de.aetherion.core.api.Vfx.puff(splash, Particle.BUBBLE_POP, 8, Math.max(0.3, 0.3), null);
             world.playSound(splash, Sound.ENTITY_GENERIC_SPLASH, SoundCategory.PLAYERS, 0.5f, 1.6f);
         }
         player.playSound(player.getLocation(), Sound.BLOCK_CHAIN_PLACE, SoundCategory.PLAYERS, 0.6f, 2.0f);
@@ -122,7 +122,7 @@ public final class OriginFountain implements Listener {
             player.sendMessage("§b≈ §fThe Fountain's Favour" + (paid > 0 ? " §8· §6+" + OriginText.coins(paid) + " coins" : "")
                     + " §8· §7the water glitters for a moment.");
             if (world != null) {
-                world.spawnParticle(Particle.END_ROD, splash.clone().add(0, 0.6, 0), 24, 0.4, 0.8, 0.4, 0.05);
+                de.aetherion.core.api.Vfx.puff(splash.clone().add(0, 0.6, 0), Particle.END_ROD, 24, Math.max(0.4, 0.4), null);
             }
             player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, SoundCategory.PLAYERS, 0.6f, 1.4f);
             profile.mark("fountain_favour");

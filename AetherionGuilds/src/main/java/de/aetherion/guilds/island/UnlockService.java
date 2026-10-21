@@ -299,7 +299,7 @@ public final class UnlockService {
         player.sendTitle("§6⚑ " + guild.name(), "§fOur place.", 10, 50, 15);
         player.playSound(player.getLocation(), Sound.BLOCK_BELL_USE, 0.8f, 1f);
         later(8L, () -> player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.9f, 1.2f));
-        player.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, player.getLocation().add(0, 1, 0), 20, 0.8, 0.8, 0.8, 0);
+        de.aetherion.core.api.Vfx.puff(player.getLocation().add(0, 1, 0), Particle.HAPPY_VILLAGER, 20, Math.max(0.8, 0.8), null);
     }
 
     private void descend(Player player, Location spawn, String title, String subtitle, Runnable after) {
@@ -320,7 +320,7 @@ public final class UnlockService {
                     cancel();
                     return;
                 }
-                player.getWorld().spawnParticle(Particle.END_ROD, player.getLocation().add(0, 0.3, 0), 2, 0.3, 0.1, 0.3, 0.01);
+                de.aetherion.core.api.Vfx.puff(player.getLocation().add(0, 0.3, 0), Particle.END_ROD, 2, Math.max(0.3, 0.3), null);
                 if (player.isOnGround() || ticks >= 160) {
                     cancel();
                     player.removePotionEffect(PotionEffectType.SLOW_FALLING);
@@ -394,7 +394,7 @@ public final class UnlockService {
     private void burst(Location at) {
         World world = at.getWorld();
         if (world != null) {
-            world.spawnParticle(Particle.TOTEM_OF_UNDYING, at.clone().add(0, 1, 0), 70, 0.6, 1.0, 0.6, 0.35);
+            de.aetherion.core.api.Vfx.puff(at.clone().add(0, 1, 0), Particle.TOTEM_OF_UNDYING, 70, Math.max(0.6, 0.6), null);
         }
     }
 

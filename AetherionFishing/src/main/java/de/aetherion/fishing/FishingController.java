@@ -472,9 +472,9 @@ public final class FishingController implements Listener {
         }
         if (hook != null) {
             splash(at);
-            hook.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, at.clone().add(0, 0.2, 0), 6, 0.2, 0.15, 0.2, 0.01);
+            de.aetherion.core.api.Vfx.puff(at.clone().add(0, 0.2, 0), Particle.HAPPY_VILLAGER, 6, Math.max(0.2, 0.2), null);
             if (perfect) {
-                hook.getWorld().spawnParticle(Particle.WAX_ON, at.clone().add(0, 0.35, 0), 8, 0.25, 0.2, 0.25, 0.0);
+                de.aetherion.core.api.Vfx.puff(at.clone().add(0, 0.35, 0), Particle.WAX_ON, 8, Math.max(0.25, 0.25), null);
             }
         }
         announceStreak(player, streak);
@@ -745,8 +745,8 @@ public final class FishingController implements Listener {
         if (at == null || at.getWorld() == null) {
             return;
         }
-        at.getWorld().spawnParticle(Particle.BUBBLE, at.clone().add(0, 0.1, 0), count, 0.18, 0.08, 0.18, 0.02);
-        at.getWorld().spawnParticle(Particle.BUBBLE_POP, at, Math.max(2, count / 3), 0.12, 0.05, 0.12, 0.01);
+        de.aetherion.core.api.Vfx.puff(at.clone().add(0, 0.1, 0), Particle.BUBBLE, count, Math.max(0.18, 0.18), null);
+        de.aetherion.core.api.Vfx.puff(at, Particle.BUBBLE_POP, Math.max(2, count / 3), Math.max(0.12, 0.12), null);
     }
 
     /** Small wake behind the biter while it closes in. */
@@ -754,15 +754,15 @@ public final class FishingController implements Listener {
         if (at == null || at.getWorld() == null) {
             return;
         }
-        at.getWorld().spawnParticle(Particle.BUBBLE, at, 2, 0.06, 0.04, 0.06, 0.01);
+        de.aetherion.core.api.Vfx.puff(at, Particle.BUBBLE, 2, Math.max(0.06, 0.06), null);
     }
 
     private static void splash(Location at) {
         if (at == null || at.getWorld() == null) {
             return;
         }
-        at.getWorld().spawnParticle(Particle.SPLASH, at.clone().add(0, 0.15, 0), 22, 0.22, 0.1, 0.22, 0.08);
-        at.getWorld().spawnParticle(Particle.BUBBLE, at, 12, 0.16, 0.1, 0.16, 0.03);
+        de.aetherion.core.api.Vfx.puff(at.clone().add(0, 0.15, 0), Particle.SPLASH, 22, Math.max(0.22, 0.22), null);
+        de.aetherion.core.api.Vfx.puff(at, Particle.BUBBLE, 12, Math.max(0.16, 0.16), null);
     }
 
     private static void spark(Location at, boolean hot) {
@@ -770,9 +770,9 @@ public final class FishingController implements Listener {
             return;
         }
         if (hot) {
-            at.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, at.clone().add(0, 0.2, 0), 2, 0.08, 0.06, 0.08, 0.0);
+            de.aetherion.core.api.Vfx.puff(at.clone().add(0, 0.2, 0), Particle.ELECTRIC_SPARK, 2, Math.max(0.08, 0.08), null);
         } else if (ThreadLocalRandom.current().nextInt(4) == 0) {
-            at.getWorld().spawnParticle(Particle.SPLASH, at, 2, 0.1, 0.04, 0.1, 0.01);
+            de.aetherion.core.api.Vfx.puff(at, Particle.SPLASH, 2, Math.max(0.1, 0.1), null);
         }
     }
 }

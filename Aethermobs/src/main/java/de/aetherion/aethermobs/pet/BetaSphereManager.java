@@ -421,7 +421,7 @@ public class BetaSphereManager implements Listener {
             return;
         }
         at.getWorld().playSound(at, Sound.BLOCK_AMETHYST_BLOCK_HIT, 0.45f, 1.7f);
-        at.getWorld().spawnParticle(Particle.WHITE_ASH, at, 4, 0.1, 0.05, 0.1, 0.0);
+        de.aetherion.core.api.Vfx.puff(at, Particle.WHITE_ASH, 4, Math.max(0.1, 0.1), null);
         AetherMobs mobs = AetherMobs.getInstance();
         if (mobs != null && mobs.isEnabled() && event.getHitEntity() == null) {
             String id = snowball.getPersistentDataContainer().get(SPHERE_PROJECTILE_KEY, PersistentDataType.STRING);

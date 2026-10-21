@@ -1761,7 +1761,7 @@ public final class LivingNpcLife {
                 long time = feet.getWorld().getTime();
                 if (time > 12000L && time < 23500L) {
                     s.lastWalkFx = now;
-                    feet.getWorld().spawnParticle(Particle.SMALL_FLAME, feet.clone().add(0, 1.3, 0), 1, 0.05, 0.05, 0.05, 0.0);
+                    de.aetherion.core.api.Vfx.puff(feet.clone().add(0, 1.3, 0), Particle.SMALL_FLAME, 1, Math.max(0.05, 0.05), null);
                 }
             }
             default -> {
@@ -2099,7 +2099,7 @@ public final class LivingNpcLife {
 
     private void dust(Location at, Material block, int count) {
         if (at != null && at.getWorld() != null) {
-            at.getWorld().spawnParticle(Particle.BLOCK, at, count, 0.25, 0.05, 0.25, 0.0, block.createBlockData());
+            de.aetherion.core.api.Vfx.puff(at, Particle.BLOCK, count, Math.max(0.25, 0.25), block.createBlockData());
         }
     }
 

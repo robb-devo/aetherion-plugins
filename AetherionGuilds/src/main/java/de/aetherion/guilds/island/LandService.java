@@ -247,8 +247,7 @@ public final class LandService {
                     block.setType(material(land, layer, rng), false);
                     placed++;
                     if (placed % 24 == 1) {
-                        world.spawnParticle(Particle.BLOCK, block.getLocation().add(0.5, 0.2, 0.5), 3, 0.3, 0.1, 0.3,
-                                0.02, block.getBlockData());
+                        de.aetherion.core.api.Vfx.puff(block.getLocation().add(0.5, 0.2, 0.5), Particle.BLOCK, 3, Math.max(0.3, 0.3), block.getBlockData());
                     }
                 }
                 if (placed > 0) {

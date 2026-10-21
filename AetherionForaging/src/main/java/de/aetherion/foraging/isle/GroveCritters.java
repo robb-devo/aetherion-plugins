@@ -351,7 +351,7 @@ public final class GroveCritters implements Listener {
         c.body.teleport(next);
         c.hitbox.teleport(next);
         if (flies && c.age % 6 == 0) {
-            next.getWorld().spawnParticle(c.kind == Kind.WISP ? Particle.GLOW : Particle.SNOWFLAKE, next, 1, 0.1, 0.1, 0.1, 0.0);
+            de.aetherion.core.api.Vfx.puff(next, c.kind == Kind.WISP ? Particle.GLOW : Particle.SNOWFLAKE, 1, Math.max(0.1, 0.1), null);
         }
     }
 
@@ -405,7 +405,7 @@ public final class GroveCritters implements Listener {
             return;
         }
         c.hp--;
-        c.at.getWorld().spawnParticle(Particle.CRIT, c.at.clone().add(0, 0.3, 0), 5, 0.15, 0.15, 0.15, 0.05);
+        de.aetherion.core.api.Vfx.puff(c.at.clone().add(0, 0.3, 0), Particle.CRIT, 5, Math.max(0.15, 0.15), null);
         if (c.hp > 0) {
             c.at.getWorld().playSound(c.at, Sound.ENTITY_SILVERFISH_HURT, SoundCategory.NEUTRAL, 0.7f, 1.5f);
             return;
@@ -434,7 +434,7 @@ public final class GroveCritters implements Listener {
             case FROST_MOTH -> {
                 profile.frostlitUntil = System.currentTimeMillis() + 60_000L;
                 world.playSound(at, Sound.BLOCK_AMETHYST_BLOCK_CHIME, SoundCategory.NEUTRAL, 0.8f, 1.6f);
-                world.spawnParticle(Particle.SNOWFLAKE, at, 20, 0.3, 0.3, 0.3, 0.02);
+                de.aetherion.core.api.Vfx.puff(at, Particle.SNOWFLAKE, 20, Math.max(0.3, 0.3), null);
                 ForageText.bar(player, "§b❄ Frostlit §8· §7CHOP window +1 for §f1:00");
                 ForageBridge.bonus(player, 12);
             }

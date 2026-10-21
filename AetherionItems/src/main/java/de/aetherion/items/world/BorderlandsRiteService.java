@@ -408,7 +408,7 @@ public final class BorderlandsRiteService implements Listener {
         if (crypt) {
             killer.sendMessage("§5Crypt §8» §fA stronger spirit vial — §6" + pick.display() + "§f.");
             killer.playSound(killer.getLocation(), Sound.BLOCK_BREWING_STAND_BREW, 0.75f, 0.55f);
-            at.getWorld().spawnParticle(Particle.SOUL_FIRE_FLAME, at.clone().add(0, 1, 0), 22, 0.4, 0.5, 0.4, 0.01);
+            de.aetherion.core.api.Vfx.puff(at.clone().add(0, 1, 0), Particle.SOUL_FIRE_FLAME, 22, Math.max(0.4, 0.4), null);
             // Soft hint toward the Colosseum Proctor.
             try {
                 Class.forName("de.aetherion.quests.ui.QuestHint")
@@ -423,7 +423,7 @@ public final class BorderlandsRiteService implements Listener {
         } else {
             killer.sendMessage("§cBorderlands §8» §fA spirit vial coagulates — §c" + pick.display() + "§f.");
             killer.playSound(killer.getLocation(), Sound.BLOCK_BREWING_STAND_BREW, 0.7f, 0.7f);
-            at.getWorld().spawnParticle(Particle.SOUL, at.clone().add(0, 1, 0), 18, 0.4, 0.5, 0.4, 0.01);
+            de.aetherion.core.api.Vfx.puff(at.clone().add(0, 1, 0), Particle.SOUL, 18, Math.max(0.4, 0.4), null);
         }
     }
 
@@ -548,8 +548,8 @@ public final class BorderlandsRiteService implements Listener {
                     TextDecoration.BOLD
             ));
             if (world != null) {
-                world.spawnParticle(Particle.SOUL_FIRE_FLAME, spawnAt, 10, 0.45, 0.35, 0.45, 0.01);
-                world.spawnParticle(Particle.SMOKE, spawnAt.clone().add(0, 0.4, 0), 8, 0.35, 0.25, 0.35, 0.01);
+                de.aetherion.core.api.Vfx.puff(spawnAt, Particle.SOUL_FIRE_FLAME, 10, Math.max(0.45, 0.45), null);
+                de.aetherion.core.api.Vfx.puff(spawnAt.clone().add(0, 0.4, 0), Particle.SMOKE, 8, Math.max(0.35, 0.35), null);
                 if (left[0] % 2 == 0) {
                     world.playSound(spawnAt, Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 0.35f, 0.75f);
                 }
@@ -570,15 +570,15 @@ public final class BorderlandsRiteService implements Listener {
         player.playSound(player.getLocation(), Sound.BLOCK_BEACON_ACTIVATE, 0.85f, 0.55f);
         player.playSound(player.getLocation(), Sound.BLOCK_RESPAWN_ANCHOR_SET_SPAWN, 0.7f, 0.8f);
 
-        world.spawnParticle(Particle.FLASH, spawnAt.clone().add(0, 1.2, 0), 1);
-        world.spawnParticle(Particle.EXPLOSION, spawnAt.clone().add(0, 0.6, 0), 1);
-        world.spawnParticle(Particle.SOUL_FIRE_FLAME, spawnAt, 55, 0.7, 0.8, 0.7, 0.03);
-        world.spawnParticle(Particle.SOUL, spawnAt.clone().add(0, 1, 0), 35, 0.5, 0.9, 0.5, 0.02);
-        world.spawnParticle(Particle.LAVA, spawnAt, 12, 0.4, 0.2, 0.4, 0);
+        de.aetherion.core.api.Vfx.puff(spawnAt.clone().add(0, 1.2, 0), Particle.FLASH, 1, 0.3, null);
+        de.aetherion.core.api.Vfx.puff(spawnAt.clone().add(0, 0.6, 0), Particle.EXPLOSION, 1, 0.3, null);
+        de.aetherion.core.api.Vfx.puff(spawnAt, Particle.SOUL_FIRE_FLAME, 55, Math.max(0.7, 0.7), null);
+        de.aetherion.core.api.Vfx.puff(spawnAt.clone().add(0, 1, 0), Particle.SOUL, 35, Math.max(0.5, 0.5), null);
+        de.aetherion.core.api.Vfx.puff(spawnAt, Particle.LAVA, 12, Math.max(0.4, 0.4), null);
         for (int y = 0; y < 18; y++) {
             Location column = spawnAt.clone().add(0, y * 0.55, 0);
-            world.spawnParticle(Particle.END_ROD, column, 2, 0.05, 0.1, 0.05, 0);
-            world.spawnParticle(Particle.ELECTRIC_SPARK, column, 3, 0.12, 0.12, 0.12, 0.01);
+            de.aetherion.core.api.Vfx.puff(column, Particle.END_ROD, 2, Math.max(0.05, 0.05), null);
+            de.aetherion.core.api.Vfx.puff(column, Particle.ELECTRIC_SPARK, 3, Math.max(0.12, 0.12), null);
         }
         // Tiny fake strike for the caster only (no real lightning entity / fire).
         player.spawnParticle(Particle.FIREWORK, spawnAt.clone().add(0, 1.5, 0), 25, 0.3, 0.6, 0.3, 0.05);
@@ -602,9 +602,9 @@ public final class BorderlandsRiteService implements Listener {
             if (world != null) {
                 world.playSound(at, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.32f, 1.25f);
                 world.playSound(at, Sound.ENTITY_WITHER_SPAWN, 0.4f, 1.15f);
-                world.spawnParticle(Particle.EXPLOSION_EMITTER, at.clone().add(0, 1, 0), 1);
-                world.spawnParticle(Particle.SOUL_FIRE_FLAME, at, 60, 0.8, 1.0, 0.8, 0.04);
-                world.spawnParticle(Particle.FLASH, at.clone().add(0, 1.5, 0), 1);
+                de.aetherion.core.api.Vfx.puff(at.clone().add(0, 1, 0), Particle.EXPLOSION_EMITTER, 1, 0.3, null);
+                de.aetherion.core.api.Vfx.puff(at, Particle.SOUL_FIRE_FLAME, 60, Math.max(0.8, 0.8), null);
+                de.aetherion.core.api.Vfx.puff(at.clone().add(0, 1.5, 0), Particle.FLASH, 1, 0.3, null);
             }
             // Next tick: latch onto the spawned boss entity and hold the clear bubble.
             plugin.getServer().getScheduler().runTask(plugin, () -> openBossBubble(at));
