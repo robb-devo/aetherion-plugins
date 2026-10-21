@@ -155,7 +155,7 @@ public final class PetBodies {
                 yield rig;
             }
             case "cat" -> BodyKit.quad(Skeleton.TROT, new Quad().body(0.5f, 0.23f, 0.23f).legs(0.21f, 0.07f)
-                            .head(0.62f, 0.07f, 0.02f).tail(Tail.CURL, 0.42f, 0.06f, 55f).ears(Ears.POINTY),
+                            .head(0.62f, 0.07f, 0.02f).tail(Tail.CURL, 0.42f, 0.06f, 22f).ears(Ears.POINTY),
                     Pal.of(GRAY_WOOL, LIGHT_GRAY_WOOL, GRAY_WOOL), face("cat"));
             case "ocelot" -> {
                 Rig rig = BodyKit.quad(Skeleton.TROT, new Quad().body(0.52f, 0.24f, 0.24f).legs(0.23f, 0.075f)
@@ -318,8 +318,15 @@ public final class PetBodies {
                         Pal.of(BLACK_WOOL, GRAY_CONCRETE, BLACK_WOOL), face("hacker"));
                 rig.box(rig.roles().body, bd(BLACK_WOOL), 0f, 0.38f, -0.08f, 0.34f, 0.14f, 0.12f, Rig.DETAIL);
                 int screen = rig.bone("screen", rig.roles().body, 0f, 0.26f, 0.36f);
-                rig.box(screen, bd(LIME_STAINED_GLASS), 0f, 0f, 0f, 0.34f, 0.2f, 0.02f, 10f, 0f, 0f, Rig.CORE).bright();
-                rig.item(screen, it(COMMAND_BLOCK), 0f, -0.16f, -0.02f, 0.18f, 0f, 0f, 0f, Rig.DETAIL).bright();
+                int panel = rig.bone("screen_panel", screen, 0f, 0f, 0f, 10f, 0f, 0f);
+                rig.box(panel, bd(BLACK_CONCRETE), 0f, 0f, -0.014f, 0.38f, 0.24f, 0.012f, Rig.CORE);
+                rig.box(panel, bd(LIME_STAINED_GLASS), 0f, 0f, 0f, 0.34f, 0.2f, 0.016f, Rig.CORE).bright();
+                float[][] code = {{-0.05f, 0.06f, 0.2f}, {-0.02f, 0.02f, 0.26f}, {-0.08f, -0.02f, 0.14f}, {-0.04f, -0.06f, 0.22f}};
+                for (float[] line : code) {
+                    rig.box(panel, bd(LIME_CONCRETE), line[0], line[1], 0.01f, line[2], 0.016f, 0.004f, Rig.DETAIL).bright();
+                }
+                rig.box(screen, bd(GRAY_CONCRETE), 0f, -0.15f, -0.08f, 0.34f, 0.02f, 0.14f, Rig.DETAIL);
+                rig.box(screen, bd(LIME_STAINED_GLASS), 0f, -0.138f, -0.08f, 0.3f, 0.006f, 0.1f, Rig.EXTRA).bright();
                 rig.roles().orbit = new int[]{screen};
                 yield rig;
             }
@@ -437,8 +444,27 @@ public final class PetBodies {
                 rig.box(body, bd(GRAY_CONCRETE), 0f, -0.04f, -0.34f, 0.04f, 0.04f, 0.08f, Rig.DETAIL);
                 yield rig;
             }
-            case "butterfly" -> BodyKit.insect(Skeleton.FLUTTER, 0.06f, 0.06f, 0.28f, 0.42f, BLACK_CONCRETE,
-                    rich ? LIGHT_BLUE_STAINED_GLASS : ORANGE_STAINED_GLASS, 0.36f, 0.32f, true, face("butterfly"));
+            case "butterfly" -> {
+                float ww = 0.36f;
+                float wl = 0.32f;
+                Rig rig = BodyKit.insect(Skeleton.FLUTTER, 0.06f, 0.06f, 0.28f, 0.42f, BLACK_CONCRETE,
+                        rich ? LIGHT_BLUE_STAINED_GLASS : ORANGE_STAINED_GLASS, ww, wl, true, face("butterfly"));
+                // Black wing borders with a white fleck, riding each wing (child bones share its flap).
+                int[] wings = rig.roles().wings;
+                for (int i = 0; i < 4; i++) {
+                    boolean fore = i < 2;
+                    float side = i % 2 == 0 ? 1f : -1f;
+                    float w = fore ? ww : ww * 0.72f;
+                    float l = fore ? wl : wl * 0.7f;
+                    int edge = rig.bone("wing_edge" + i, wings[i], side * w / 2f, 0f, -wl * (fore ? 0.2f : 0.3f),
+                            0f, side * (fore ? -12f : 24f), 0f);
+                    rig.box(edge, bd(BLACK_CONCRETE), side * w * 0.4f, 0.013f, 0f, w * 0.2f, 0.008f, l, Rig.DETAIL);
+                    if (fore) {
+                        rig.box(edge, bd(WHITE_CONCRETE), side * w * 0.42f, 0.019f, l * 0.22f, 0.04f, 0.004f, 0.04f, Rig.EXTRA);
+                    }
+                }
+                yield rig;
+            }
             case "bloom_fairy" -> {
                 Rig rig = BodyKit.insect(Skeleton.FLUTTER, 0.12f, 0.22f, 0.12f, 0.5f, PINK_WOOL,
                         PINK_STAINED_GLASS, 0.38f, 0.34f, true, face("bloom_fairy"));
@@ -572,13 +598,18 @@ public final class PetBodies {
                 Rig rig = BodyKit.spirit(Skeleton.HAUNT, YELLOW_CONCRETE, 0.001f, false, face("blaze"), 0.75f);
                 int body = rig.roles().body;
                 rig.box(body, bd(ORANGE_CONCRETE), 0f, -0.22f, 0f, 0.1f, 0.24f, 0.1f, Rig.CORE).bright();
+                // Upright rods in two rings like the real blaze: solid sticks read from every side while they spin
+                // (a rod sprite turns edge-on and lies diagonal through the head).
                 int rods = rich ? 6 : 4;
                 int[] orbit = new int[rods];
                 for (int i = 0; i < rods; i++) {
                     double a = Math.PI * 2.0 * i / rods;
-                    float y = i % 2 == 0 ? -0.08f : -0.32f;
-                    orbit[i] = rig.bone("orbit_" + i, body, (float) Math.cos(a) * 0.3f, y, (float) Math.sin(a) * 0.3f);
-                    rig.item(orbit[i], it(BLAZE_ROD), 0f, 0f, 0f, 0.55f, 0f, 0f, 0f, Rig.CORE).bright();
+                    boolean upper = i % 2 == 0;
+                    float radius = upper ? 0.34f : 0.3f;
+                    orbit[i] = rig.bone("orbit_" + i, body, (float) Math.cos(a) * radius, upper ? -0.04f : -0.34f,
+                            (float) Math.sin(a) * radius);
+                    rig.box(orbit[i], bd(YELLOW_CONCRETE), 0f, 0f, 0f, 0.07f, 0.34f, 0.07f, Rig.CORE).bright();
+                    rig.box(orbit[i], bd(SHROOMLIGHT), 0f, 0.15f, 0f, 0.08f, 0.05f, 0.08f, Rig.DETAIL).bright();
                 }
                 rig.roles().orbit = orbit;
                 yield rig;
@@ -673,13 +704,19 @@ public final class PetBodies {
                 Rig rig = BodyKit.fish(0.001f, 0.001f, 0.001f, 1.1f, 0.001f,
                         Pal.of(PRISMARINE, DARK_PRISMARINE, PRISMARINE), face("guardian"));
                 int head = rig.roles().head;
-                int[] spikes = new int[6];
-                float[][] at = {{0.3f, 0.1f, 0f}, {-0.3f, 0.1f, 0f}, {0f, 0.3f, 0f}, {0.2f, -0.24f, 0.05f},
-                        {-0.2f, -0.24f, 0.05f}, {0f, 0.1f, -0.3f}};
-                for (int i = 0; i < 6; i++) {
-                    spikes[i] = rig.bone("spike" + i, head, at[i][0], at[i][1], at[i][2] + 0.1f);
-                    rig.box(spikes[i], bd(ORANGE_TERRACOTTA), 0f, 0f, 0f, 0.05f, 0.05f, 0.16f,
-                            at[i][1] > 0.2f ? 90f : 0f, (float) Math.toDegrees(Math.atan2(at[i][0], 0.3f)), 0f, Rig.DETAIL);
+                // One spike on the middle of every edge of the 0.55 head, pointing straight out of that edge.
+                float e = 0.29f;
+                float[][] at = {{e, e, 0f}, {-e, e, 0f}, {0f, e, e}, {0f, e, -e},
+                        {e, 0f, e}, {-e, 0f, e}, {e, 0f, -e}, {-e, 0f, -e},
+                        {e, -e, 0f}, {-e, -e, 0f}, {0f, -e, e}, {0f, -e, -e}};
+                int[] spikes = new int[at.length];
+                for (int i = 0; i < at.length; i++) {
+                    spikes[i] = rig.bone("spike" + i, head, at[i][0], at[i][1], at[i][2] + 0.11f);
+                    org.joml.Vector3f dir = new org.joml.Vector3f(at[i][0], at[i][1], at[i][2]).normalize();
+                    float yaw = (float) Math.toDegrees(Math.atan2(dir.x, dir.z));
+                    float pitch = (float) Math.toDegrees(Math.asin(dir.y));
+                    rig.box(spikes[i], bd(ORANGE_TERRACOTTA), 0f, 0f, 0f, 0.05f, 0.05f, 0.18f, pitch, yaw, 0f,
+                            i < 4 || i >= 8 ? Rig.DETAIL : Rig.CORE);
                 }
                 rig.roles().spikes = spikes;
                 int t1 = rig.roles().tail[0];
@@ -708,7 +745,7 @@ public final class PetBodies {
                 for (int i = 0; i < n; i++) {
                     double a = Math.PI * 2.0 * i / n + Math.PI / n;
                     t[i] = rig.bone("tent" + i, body, (float) Math.cos(a) * 0.12f, -0.2f, (float) Math.sin(a) * 0.12f);
-                    Rig.Part tent = rig.box(t[i], bd(glow ? CYAN_TERRACOTTA : BLUE_TERRACOTTA), 0f, -0.22f, 0f, 0.06f, 0.44f, 0.06f, Rig.CORE);
+                    Rig.Part tent = rig.box(t[i], bd(glow ? WARPED_WART_BLOCK : BLUE_TERRACOTTA), 0f, -0.22f, 0f, 0.06f, 0.44f, 0.06f, Rig.CORE);
                     if (glow) {
                         tent.bright();
                     }
@@ -720,15 +757,15 @@ public final class PetBodies {
             }
             case "dolphin" -> {
                 Rig rig = BodyKit.fish(0.3f, 0.3f, 0.78f, 0.6f, 0.001f,
-                        Pal.of(GRAY_CONCRETE, LIGHT_GRAY_CONCRETE, GRAY_CONCRETE), face("dolphin"));
+                        Pal.of(CYAN_TERRACOTTA, LIGHT_GRAY_CONCRETE, CYAN_TERRACOTTA), face("dolphin"));
                 Rig rebuilt = new Rig(Skeleton.PORPOISE, false);
                 copy(rig, rebuilt);
                 int body = rebuilt.roles().body;
                 int head = rebuilt.roles().head;
                 rebuilt.box(head, bd(LIGHT_GRAY_CONCRETE), 0f, -0.06f, 0.24f, 0.12f, 0.08f, 0.16f, Rig.CORE);
-                rebuilt.box(body, bd(GRAY_CONCRETE), 0f, 0.2f, -0.06f, 0.04f, 0.16f, 0.16f, -30f, 0f, 0f, Rig.CORE);
+                rebuilt.box(body, bd(CYAN_TERRACOTTA), 0f, 0.2f, -0.06f, 0.04f, 0.16f, 0.16f, -30f, 0f, 0f, Rig.CORE);
                 int fluke = rebuilt.roles().tail[0];
-                rebuilt.box(fluke, bd(GRAY_CONCRETE), 0f, 0f, -0.08f, 0.36f, 0.03f, 0.14f, Rig.CORE);
+                rebuilt.box(fluke, bd(CYAN_TERRACOTTA), 0f, 0f, -0.08f, 0.36f, 0.03f, 0.14f, Rig.CORE);
                 rebuilt.box(body, bd(LIGHT_GRAY_CONCRETE), 0f, -0.12f, 0f, 0.26f, 0.08f, 0.5f, Rig.DETAIL);
                 yield rebuilt;
             }
@@ -971,9 +1008,11 @@ public final class PetBodies {
 
     private static void spots(Rig rig, Material m, float w, float h, float l) {
         int body = rig.roles().body;
-        // Two patches that wrap over the back read from both sides and from above.
-        rig.box(body, bd(m), 0f, h * 0.2f + 0.006f, l * 0.14f, w + 0.012f, h * 0.6f, l * 0.26f, Rig.DETAIL);
-        rig.box(body, bd(m), 0f, h * 0.15f + 0.006f, -l * 0.22f, w + 0.012f, h * 0.7f, l * 0.2f, Rig.DETAIL);
+        // Odd, uneven patches: one over the left shoulder onto the back, one down the right haunch, a small one low
+        // on the right flank. Each stands a hair proud of the hide and never mirrors the other side.
+        rig.box(body, bd(m), w * 0.2f + 0.004f, h * 0.18f + 0.006f, l * 0.16f, w * 0.6f + 0.008f, h * 0.66f, l * 0.3f, Rig.DETAIL);
+        rig.box(body, bd(m), -w * 0.24f - 0.004f, h * 0.1f + 0.006f, -l * 0.26f, w * 0.52f + 0.008f, h * 0.82f, l * 0.24f, Rig.DETAIL);
+        rig.box(body, bd(m), -w * 0.3f - 0.004f, -h * 0.14f, l * 0.3f, w * 0.4f + 0.008f, h * 0.34f, l * 0.14f, Rig.EXTRA);
     }
 
     private static void horns(Rig rig, int head, Material m, float headScale) {
