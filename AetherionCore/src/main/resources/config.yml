@@ -121,3 +121,13 @@ wipe:
 # false = plain titles (use while the served pack is older than these jars).
 bars:
   pack-glyphs: true
+
+# Particle diet (needs ProtocolLib): one filter on every particle packet a player receives, from any plugin.
+# Particles are accents: bursts are cut to `scale` (at least 1, at most `max-per-burst`), each player gets at most
+# `budget-per-tick` particles a tick (the rest is dropped), and none are forced past 32 blocks unless `long-range`.
+particles:
+  diet: true
+  scale: 0.35
+  max-per-burst: 10
+  budget-per-tick: 60
+  long-range: false

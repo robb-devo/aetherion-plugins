@@ -1198,6 +1198,9 @@ public class BossInstance {
         int points = transition.getPoints();
         Particle particle = transition.getParticle();
         Particle extra = transition.getExtraParticle();
+        if (de.aetherion.bossengine.fx.ShapeFx.ring(center, particle, radius)) {
+            return;
+        }
         for (int i = 0; i < points; i++) {
             double angle = (Math.PI * 2 * i) / points;
             double x = center.getX() + Math.cos(angle) * radius;

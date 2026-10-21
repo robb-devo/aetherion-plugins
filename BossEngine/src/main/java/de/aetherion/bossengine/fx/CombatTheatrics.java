@@ -650,6 +650,9 @@ public final class CombatTheatrics {
     }
 
     private static void ring(World world, Location at, double radius, Particle particle, double y) {
+        if (ShapeFx.ring(at.clone().add(0, y, 0), particle, radius)) {
+            return;
+        }
         int points = Math.max(18, (int) (radius * 7));
         for (int i = 0; i < points; i++) {
             double angle = (Math.PI * 2 * i) / points;

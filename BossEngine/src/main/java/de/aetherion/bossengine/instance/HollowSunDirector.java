@@ -4328,6 +4328,9 @@ final class HollowSunDirector {
     }
 
     private static void ring(World world, Location center, double radius, Color color, float size) {
+        if (de.aetherion.bossengine.fx.ShapeFx.ring(center, color, radius)) {
+            return;
+        }
         Particle.DustOptions dust = new Particle.DustOptions(color, size);
         int points = Math.max(10, (int) Math.ceil(Math.PI * 2 * radius / 0.5));
         for (int i = 0; i < points; i++) {
@@ -4337,6 +4340,9 @@ final class HollowSunDirector {
     }
 
     private static void ringForce(World world, Location center, double radius, Color color, float size) {
+        if (de.aetherion.bossengine.fx.ShapeFx.ring(center, color, radius)) {
+            return;
+        }
         Particle.DustOptions dust = new Particle.DustOptions(color, size);
         int points = Math.max(10, (int) Math.ceil(Math.PI * 2 * radius / 0.4));
         for (int i = 0; i < points; i++) {

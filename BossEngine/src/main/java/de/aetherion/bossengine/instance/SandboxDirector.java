@@ -2226,6 +2226,9 @@ public final class SandboxDirector {
     }
 
     private void ring(World world, Location center, Particle particle, double radius, int points) {
+        if (de.aetherion.bossengine.fx.ShapeFx.ring(center, particle, radius)) {
+            return;
+        }
         for (int i = 0; i < points; i++) {
             double a = (Math.PI * 2 * i) / points;
             Location p = center.clone().add(Math.cos(a) * radius, 0, Math.sin(a) * radius);

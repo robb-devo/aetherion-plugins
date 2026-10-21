@@ -125,6 +125,14 @@ public final class AetherionCore extends JavaPlugin {
         }
 
         de.aetherion.core.api.BarChrome.enabled(getConfig().getBoolean("bars.pack-glyphs", true));
+        if (getConfig().getBoolean("particles.diet", true)) {
+            // After every plugin is up: ProtocolLib may enable after Core.
+            Bukkit.getScheduler().runTask(this, () -> {
+                if (Bukkit.getPluginManager().isPluginEnabled("ProtocolLib")) {
+                    de.aetherion.core.api.ParticleDiet.install(this, getConfig().getConfigurationSection("particles"));
+                }
+            });
+        }
         Bukkit.getPluginManager().registerEvents(new ShutdownCountdown(this), this);
         getLogger().info("Shared keys and hit flags ready. Game plugins keep the loop.");
         getLogger().info("ShutdownCountdown armed (10→8→6→4→2). Bypass: stop now|force.");

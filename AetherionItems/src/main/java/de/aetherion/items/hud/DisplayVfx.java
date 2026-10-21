@@ -42,6 +42,12 @@ public final class DisplayVfx implements Vfx.Renderer {
 
     private final JavaPlugin plugin;
     private int live;
+    /** Held rings by world + centre + radius + colour; each lives until a few ticks after its last hold. */
+    private final java.util.Map<String, Held> held = new java.util.HashMap<>();
+    private org.bukkit.scheduler.BukkitTask heldSweep;
+
+    private record Held(TextDisplay display, long[] until) {
+    }
 
     public DisplayVfx(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -107,6 +113,42 @@ public final class DisplayVfx implements Vfx.Renderer {
         }
         if (edge != null) {
             later(life, () -> kill(edge));
+        }
+    }
+
+    @Override
+    public void hold(Location centre, Color color, double radius) {
+        long now = Bukkit.getCurrentTick();
+        String key = centre.getWorld().getName() + '|' + Math.round(centre.getX() * 4) + '|' + Math.round(centre.getY() * 2)
+                + '|' + Math.round(centre.getZ() * 4) + '|' + Math.round(radius * 4) + '|' + (color == null ? 0 : color.asRGB());
+        Held ring = held.get(key);
+        if (ring != null && ring.display().isValid()) {
+            ring.until()[0] = now + 4;
+            return;
+        }
+        float s = (float) (radius * 2.0) / GLYPH;
+        TextDisplay d = spawn(centre, TELE_EDGE, color, Display.Billboard.FIXED, flat(s, 0f, 0.06f));
+        if (d == null) {
+            return;
+        }
+        held.put(key, new Held(d, new long[] {now + 4}));
+        if (heldSweep == null) {
+            heldSweep = Bukkit.getScheduler().runTaskTimer(plugin, this::sweepHeld, 2L, 2L);
+        }
+    }
+
+    private void sweepHeld() {
+        long now = Bukkit.getCurrentTick();
+        held.values().removeIf(ring -> {
+            if (ring.display().isValid() && ring.until()[0] >= now) {
+                return false;
+            }
+            kill(ring.display());
+            return true;
+        });
+        if (held.isEmpty() && heldSweep != null) {
+            heldSweep.cancel();
+            heldSweep = null;
         }
     }
 
