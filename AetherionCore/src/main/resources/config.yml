@@ -123,10 +123,11 @@ bars:
   pack-glyphs: true
 
 # Particle diet (needs ProtocolLib): one filter on every particle packet a player receives, from any plugin.
-# Particles are accents: bursts are cut to `scale` (at least 1, at most `max-per-burst`), each player gets at most
-# `budget-per-tick` particles a tick (the rest is dropped), and none are forced past 32 blocks unless `long-range`.
+# Bursts are cut to `scale` (at least 1, at most `max-per-burst`), each player gets at most `budget-per-tick`
+# particles a tick (the rest is dropped), and none are forced past 32 blocks unless `long-range`.
+# Off: the effects are being rebuilt as shapes (Vfx) instead of thinned.
 particles:
-  diet: true
+  diet: false
   scale: 0.35
   max-per-burst: 10
   budget-per-tick: 60

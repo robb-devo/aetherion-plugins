@@ -125,7 +125,7 @@ public final class AetherionCore extends JavaPlugin {
         }
 
         de.aetherion.core.api.BarChrome.enabled(getConfig().getBoolean("bars.pack-glyphs", true));
-        if (getConfig().getBoolean("particles.diet", true)) {
+        if (getConfig().getBoolean("particles.diet", false)) {
             // After every plugin is up: ProtocolLib may enable after Core.
             Bukkit.getScheduler().runTask(this, () -> {
                 if (Bukkit.getPluginManager().isPluginEnabled("ProtocolLib")) {

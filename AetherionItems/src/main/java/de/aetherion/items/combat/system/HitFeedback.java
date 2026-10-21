@@ -125,7 +125,7 @@ final class HitFeedback {
                 world.playSound(contact, Sound.ITEM_TRIDENT_THUNDER, 0.35f * v, 1.9f);
             }
             // The gold ring on the ground and the glyph carry it; one small spark at the clash is enough.
-            world.spawnParticle(Particle.CRIT, contact, count(6), 0.15, 0.15, 0.15, 0.4);
+            de.aetherion.core.api.Vfx.burst(contact, org.bukkit.Color.fromRGB(0xFFD86B), 1.4, 9);
             kick(player, attacker, 0.6);
             CombatGlyphs.flash(system, player, CombatGlyphs.Glyph.PARRY);
         }
@@ -146,7 +146,7 @@ final class HitFeedback {
         World world = player.getWorld();
         world.playSound(contact, Sound.ITEM_SHIELD_BLOCK, (float) (0.9 * k), 0.8f);
         world.playSound(contact, Sound.BLOCK_GRINDSTONE_USE, (float) (0.6 * k), 1.4f);
-        world.spawnParticle(Particle.CRIT, contact, count(3), 0.15, 0.15, 0.15, 0.25);
+        de.aetherion.core.api.Vfx.spark(contact, org.bukkit.Color.fromRGB(0xCFE3F2), 0.8);
         CombatGlyphs.flash(system, player, CombatGlyphs.Glyph.GUARD);
         callout(player, "GUARD ½", "GEBLOCKT ½", STEEL, 18);
     }
@@ -158,7 +158,7 @@ final class HitFeedback {
         }
         Location head = victim.getLocation().add(0, victim.getHeight() + 0.25, 0);
         victim.getWorld().playSound(head, Sound.ENTITY_ZOMBIE_ATTACK_IRON_DOOR, (float) (0.45 * k), 1.65f);
-        victim.getWorld().spawnParticle(Particle.CRIT, head, count(3), 0.2, 0.1, 0.2, 0.2);
+        de.aetherion.core.api.Vfx.spark(head, org.bukkit.Color.WHITE, 0.7);
     }
 
     /** Small orbit of sparks over a staggered mob, every few ticks while it lasts. */
@@ -168,7 +168,8 @@ final class HitFeedback {
         }
         double angle = (tick % 40) / 40.0 * Math.PI * 2;
         Location head = victim.getLocation().add(Math.cos(angle) * 0.4, victim.getHeight() + 0.3, Math.sin(angle) * 0.4);
-        victim.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, head, 1, 0, 0, 0, 0);
+        // dizzy stars: a twinkle walks round the head while the stagger lasts
+        de.aetherion.core.api.Vfx.spark(head, org.bukkit.Color.fromRGB(0xFFF1A0), 0.35);
     }
 
     /* =========================================================
@@ -182,7 +183,8 @@ final class HitFeedback {
         }
         Location feet = player.getLocation().add(0, 0.15, 0);
         player.getWorld().playSound(feet, Sound.ENTITY_BREEZE_WIND_BURST, (float) (0.45 * k), 1.45f);
-        player.getWorld().spawnParticle(Particle.SMALL_GUST, feet, 1, 0.2, 0.05, 0.2, 0.0);
+        Location from = feet.clone().add(0, 0.75, 0);
+        de.aetherion.core.api.Vfx.streak(from, from.clone().add(CombatSystem.facing(player).multiply(3.5)), org.bukkit.Color.fromRGB(0xE8F4FF), 0.35, 5);
     }
 
     void roll(Player player, boolean fatigued) {
@@ -193,7 +195,7 @@ final class HitFeedback {
         Location feet = player.getLocation().add(0, 0.1, 0);
         player.getWorld().playSound(feet, Sound.ENTITY_PLAYER_ATTACK_SWEEP, (float) (0.4 * k), fatigued ? 0.8f : 1.55f);
         player.getWorld().playSound(feet, Sound.ITEM_ARMOR_EQUIP_LEATHER, (float) (0.6 * k), 1.2f);
-        player.getWorld().spawnParticle(Particle.POOF, feet, count(3), 0.3, 0.05, 0.3, 0.02);
+        de.aetherion.core.api.Vfx.wave(feet, fatigued ? org.bukkit.Color.fromRGB(0x9A8F84) : org.bukkit.Color.fromRGB(0xD9D2C5), 1.1, 8);
         if (fatigued) {
             callout(player, "TIRED ROLL", "MÜDE ROLLE", WARN, 16);
         }
@@ -209,7 +211,7 @@ final class HitFeedback {
             world.playSound(chest, Sound.ENTITY_BREEZE_WIND_BURST, (float) (0.7 * k), 1.7f);
             player.playSound(player, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, (float) (0.7 * k), 1.4f);
             player.playSound(player, Sound.BLOCK_AMETHYST_BLOCK_CHIME, (float) (0.9 * k), 1.9f);
-            world.spawnParticle(Particle.SMALL_GUST, player.getLocation().add(0, 0.3, 0), 1, 0, 0, 0, 0);
+            de.aetherion.core.api.Vfx.burst(chest, org.bukkit.Color.fromRGB(0x9FE3FF), 1.3, 8);
         }
         CombatGlyphs.flash(system, player, CombatGlyphs.Glyph.DODGE);
         callout(player, "≫ PERFECT DODGE ≪", "≫ PERFEKT AUSGEWICHEN ≪", DODGE, 28);
@@ -247,19 +249,20 @@ final class HitFeedback {
             case HEAVY, DASH -> {
                 player.playSound(at, Sound.ENTITY_PLAYER_ATTACK_KNOCKBACK, (float) (0.8 * k), 0.85f);
                 player.playSound(at, Sound.ENTITY_PLAYER_ATTACK_STRONG, (float) (0.6 * k), 0.7f);
-                world.spawnParticle(Particle.CRIT, at, count(4), 0.2, 0.25, 0.2, 0.3);
+                de.aetherion.core.api.Vfx.spark(at, org.bukkit.Color.fromRGB(0xF2EEE6), 0.9);
             }
             case AERIAL -> {
                 player.playSound(at, Sound.ITEM_MACE_SMASH_AIR, (float) (0.7 * k), 1.3f);
                 player.playSound(at, Sound.ENTITY_PLAYER_ATTACK_CRIT, (float) (0.8 * k), 0.9f);
-                world.spawnParticle(Particle.CRIT, at, count(5), 0.2, 0.3, 0.2, 0.35);
+                de.aetherion.core.api.Vfx.spark(at, org.bukkit.Color.fromRGB(0x9EE6FF), 1.0);
             }
             case FINISHER -> {
                 world.playSound(at, Sound.ITEM_MACE_SMASH_GROUND, (float) (0.9 * k), 1.2f);
                 world.playSound(at, Sound.ENTITY_PLAYER_ATTACK_STRONG, (float) (1.0 * k), 0.7f);
                 world.playSound(at, Sound.ENTITY_BLAZE_SHOOT, (float) (0.5 * k), 1.4f);
                 world.playSound(at, Sound.BLOCK_ANVIL_LAND, (float) (0.35 * k), 0.9f);
-                world.spawnParticle(Particle.CRIT, at, count(6), 0.25, 0.3, 0.25, 0.4);
+                de.aetherion.core.api.Vfx.burst(at, org.bukkit.Color.fromRGB(0xFF9A3C), 1.6, 9);
+                de.aetherion.core.api.Vfx.wave(victim.getLocation().add(0, 0.05, 0), org.bukkit.Color.fromRGB(0xFF7A3C), 2.2, 10);
                 CombatGlyphs.flash(system, player, CombatGlyphs.Glyph.FINISHER);
                 callout(player, "✸ FINISHER ✸", "✸ FINISHER ✸", FINISH, 24);
                 kick(player, victim, 0.35);
@@ -269,7 +272,7 @@ final class HitFeedback {
                 world.playSound(at, Sound.BLOCK_BELL_USE, (float) (0.6 * k), 1.5f);
                 world.playSound(at, Sound.ENTITY_EVOKER_CAST_SPELL, (float) (0.5 * k), 1.6f);
                 world.playSound(at, Sound.ENTITY_PLAYER_ATTACK_STRONG, (float) (0.9 * k), 0.8f);
-                world.spawnParticle(Particle.ENCHANTED_HIT, at, count(6), 0.25, 0.3, 0.25, 0.4);
+                de.aetherion.core.api.Vfx.burst(at, org.bukkit.Color.fromRGB(0xE58BFF), 1.5, 9);
                 CombatGlyphs.flash(system, player, CombatGlyphs.Glyph.RIPOSTE);
                 callout(player, "» RIPOSTE «", "» KONTER «", RIPOSTE, 24);
                 kick(player, victim, 0.35);

@@ -2,6 +2,8 @@ package de.aetherion.hub.origin;
 
 import com.destroystokyo.paper.ParticleBuilder;
 
+import de.aetherion.core.api.Vfx;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.FireworkEffect;
@@ -38,9 +40,10 @@ import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Island-wide moments. Every {@code events.interval-minutes} (while anyone is on Origin) the island does something
- * that fits the hour: a <b>Lantern Festival</b> over Fountain Square from dusk, a <b>Petal Storm</b> or <b>Harbour
- * Fog</b> in the morning, and a <b>Rainbow</b> whenever the rain stops by day. <b>Aurora</b> and <b>Starfall</b>
- * (sneak and look up to make a wish) only run when forced. Cosmetic only: particles, sounds, non-persistent displays and
+ * that fits the hour: a <b>Lantern Festival</b> over Fountain Square at dusk, the <b>Aurora</b> or a <b>Starfall</b>
+ * at night (sneak and look up to make a wish), a <b>Petal Storm</b> or <b>Harbour Fog</b> in the morning, and a
+ * <b>Rainbow</b> whenever the rain stops by day. The sky moments are shapes, not particles (Core {@code Vfx}):
+ * real shooting stars with head and tail, hanging aurora curtains, a rainbow of six arcs, banks of mist on the bay. Cosmetic only: particles, sounds, non-persistent displays and
  * harmless tagged fireworks. The per-player particle setting ({@code /origin settings}) turns them off.
  */
 public final class OriginEvents implements Listener {
@@ -161,9 +164,12 @@ public final class OriginEvents implements Listener {
         return switch (isle.phase()) {
             case DAWN -> rng.nextBoolean() ? Kind.HARBOUR_FOG : Kind.PETAL_STORM;
             case DAY -> rng.nextInt(4) == 0 ? Kind.HARBOUR_FOG : Kind.PETAL_STORM;
-            // The night sky belongs to the shader now: Aurora and Starfall (particle curtains and streaks over every
-            // player) only run when forced. Lanterns are display entities, so they stay.
-            case DUSK, NIGHT -> Kind.LANTERN_FESTIVAL;
+            case DUSK -> Kind.LANTERN_FESTIVAL;
+            case NIGHT -> switch (rng.nextInt(3)) {
+                case 0 -> Kind.AURORA;
+                case 1 -> Kind.STARFALL;
+                default -> Kind.LANTERN_FESTIVAL;
+            };
         };
     }
 
@@ -261,16 +267,21 @@ public final class OriginEvents implements Listener {
         switch (kind) {
             case LANTERN_FESTIVAL -> lanternFestival(audience, tick);
             case AURORA -> {
-                if (step % 2 == 0) {
+                if (Vfx.active()) {
+                    if (step % 150 == 0) {
+                        curtains(audience);
+                    }
+                } else if (step % 2 == 0) {
                     for (Player player : audience) {
                         aurora(player);
                     }
                 }
             }
             case STARFALL -> {
-                if (step % 20 == 0) {
-                    for (Player player : audience) {
-                        shootingStar(player, ThreadLocalRandom.current().nextInt(3) == 0);
+                if (step % 12 == 0 && !audience.isEmpty()) {
+                    ThreadLocalRandom rng = ThreadLocalRandom.current();
+                    for (int i = 0; i < Math.min(3, audience.size()); i++) {
+                        shootingStar(audience.get(rng.nextInt(audience.size())), rng.nextInt(4) == 0);
                     }
                 }
             }
@@ -280,12 +291,23 @@ public final class OriginEvents implements Listener {
                 }
             }
             case HARBOUR_FOG -> {
-                if (step % 2 == 0) {
+                if (Vfx.active()) {
+                    if (step % 30 == 0) {
+                        mistBanks();
+                    }
+                    if (step % 2 == 0) {
+                        foghorn(audience);
+                    }
+                } else if (step % 2 == 0) {
                     fog(audience);
                 }
             }
             case RAINBOW -> {
-                if (step % 5 == 0) {
+                if (Vfx.active()) {
+                    if (step == 0 || step % 150 == 0) {
+                        arcs(audience);
+                    }
+                } else if (step % 5 == 0) {
                     for (Player player : audience) {
                         rainbow(player);
                     }
@@ -425,6 +447,22 @@ public final class OriginEvents implements Listener {
 
     private void shootingStar(Player player, boolean big) {
         ThreadLocalRandom rng = ThreadLocalRandom.current();
+        Location eye = player.getLocation();
+        double ax = rng.nextDouble(-60.0d, 60.0d);
+        double az = rng.nextDouble(-60.0d, 60.0d);
+        Location from = eye.clone().add(ax, Math.min(300.0d - eye.getY(), rng.nextDouble(50.0d, 72.0d)), az);
+        double heading = rng.nextDouble(Math.PI * 2.0d);
+        double run = big ? 58.0d : 42.0d;
+        Location to = from.clone().add(Math.cos(heading) * run, -rng.nextDouble(12.0d, 20.0d), Math.sin(heading) * run);
+        int ticks = big ? 30 : 22;
+        Color tint = big ? Color.fromRGB(0xFFF2C8) : Color.fromRGB(0xE8F0FF);
+        if (Vfx.streak(from, to, tint, big ? 0.95d : 0.6d, ticks)) {
+            if (big) {
+                Bukkit.getScheduler().runTaskLater(isle.plugin(), () -> Vfx.spark(to, tint, 3.0d), ticks);
+                player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, SoundCategory.AMBIENT, 0.5f, 1.8f);
+            }
+            return;
+        }
         Location base = player.getLocation();
         double sx = base.getX() + rng.nextDouble(-70.0d, 70.0d);
         double sz = base.getZ() + rng.nextDouble(-70.0d, 70.0d);
@@ -449,6 +487,95 @@ public final class OriginEvents implements Listener {
         }
         if (big) {
             player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, SoundCategory.AMBIENT, 0.5f, 1.8f);
+        }
+    }
+
+    /** Aurora curtains: three hanging bands 70 blocks north of anyone who has none near them yet. */
+    private void curtains(List<Player> audience) {
+        ThreadLocalRandom rng = ThreadLocalRandom.current();
+        Color[] tones = {Color.fromRGB(0x3CFF9E), Color.fromRGB(0x2FD6D0), Color.fromRGB(0x8A5CFF)};
+        List<Location> placed = new ArrayList<>();
+        for (Player player : audience) {
+            Location at = player.getLocation();
+            boolean covered = false;
+            for (Location p : placed) {
+                if (p.getWorld() == at.getWorld() && p.distanceSquared(at) < 110.0d * 110.0d) {
+                    covered = true;
+                    break;
+                }
+            }
+            if (covered) {
+                continue;
+            }
+            placed.add(at);
+            for (int i = 0; i < 3; i++) {
+                Location c = at.clone().add(-50.0d + i * 50.0d + rng.nextDouble(-8.0d, 8.0d),
+                        Math.min(300.0d - at.getY(), 46.0d + rng.nextDouble(10.0d)), -70.0d + rng.nextDouble(-12.0d, 12.0d));
+                Vfx.ribbon(c, tones[i], 46.0d, 26.0d, (float) rng.nextDouble(-14.0d, 14.0d), 300 + rng.nextInt(40));
+            }
+        }
+    }
+
+    /** Harbour fog: faint banks of mist drifting in off the bay. */
+    private void mistBanks() {
+        double[] center = isle.config().point("events.harbour-fog.center");
+        double radius = isle.config().raw().getDouble("events.harbour-fog.radius", 60.0d);
+        World world = isle.config().world();
+        if (center == null || world == null) {
+            return;
+        }
+        ThreadLocalRandom rng = ThreadLocalRandom.current();
+        for (int i = 0; i < 6; i++) {
+            double a = rng.nextDouble(Math.PI * 2.0d);
+            double r = Math.sqrt(rng.nextDouble()) * radius;
+            Location at = new Location(world, center[0] + Math.cos(a) * r, center[1] + rng.nextDouble(-1.0d, 3.0d),
+                    center[2] + Math.sin(a) * r);
+            if (!world.isChunkLoaded(at.getBlockX() >> 4, at.getBlockZ() >> 4)) {
+                continue;
+            }
+            Vfx.mist(at, Color.fromRGB(0xDDE6EE), rng.nextDouble(14.0d, 24.0d),
+                    new org.bukkit.util.Vector(rng.nextDouble(4.0d, 9.0d), 0.0d, rng.nextDouble(-3.0d, 3.0d)), 140);
+        }
+    }
+
+    private void foghorn(List<Player> audience) {
+        if (step % 150 != 0) {
+            return;
+        }
+        for (Player player : audience) {
+            Location horn = new Location(player.getWorld(), 274.5, 73, -473.5);
+            if (player.getLocation().distanceSquared(horn) > 220.0d * 220.0d) {
+                continue;
+            }
+            player.playSound(horn, Sound.BLOCK_NOTE_BLOCK_DIDGERIDOO, SoundCategory.AMBIENT, 2.5f, 0.5f);
+            Bukkit.getScheduler().runTaskLater(isle.plugin(), () -> {
+                if (player.isOnline()) {
+                    player.playSound(horn, Sound.BLOCK_NOTE_BLOCK_DIDGERIDOO, SoundCategory.AMBIENT, 2.5f, 0.53f);
+                }
+            }, 24L);
+        }
+    }
+
+    /** Rainbow: six arcs in the northern sky, one set per group of players. */
+    private void arcs(List<Player> audience) {
+        List<Location> placed = new ArrayList<>();
+        for (Player player : audience) {
+            Location base = player.getLocation();
+            boolean covered = false;
+            for (Location p : placed) {
+                if (p.getWorld() == base.getWorld() && p.distanceSquared(base) < 120.0d * 120.0d) {
+                    covered = true;
+                    break;
+                }
+            }
+            if (covered) {
+                continue;
+            }
+            placed.add(base);
+            Location centre = base.clone().add(30.0d, -12.0d, -100.0d);
+            for (int band = 0; band < RAINBOW.length; band++) {
+                Vfx.arc(centre, RAINBOW[band], 72.0d - band * 1.7d, 0f, 300);
+            }
         }
     }
 

@@ -48,6 +48,62 @@ public final class Vfx {
          */
         default void hold(Location centre, Color color, double radius) {
         }
+
+        /** A comet: glowing head, tapering tail, flying from {@code from} to {@code to} in {@code ticks}. */
+        default void streak(Location from, Location to, Color color, double width, int ticks) {
+        }
+
+        /** A straight glowing bar between two points, held for {@code ticks}. */
+        default void beam(Location from, Location to, Color color, double width, int ticks) {
+        }
+
+        /** A jagged lightning bolt between two points that flickers out over {@code ticks}. */
+        default void bolt(Location from, Location to, Color color, int ticks) {
+        }
+
+        /** An eight-point star flash that blooms to {@code size} blocks across and fades. */
+        default void burst(Location at, Color color, double size, int ticks) {
+        }
+
+        /** A soft glowing orb, pulsing for {@code ticks}; it glides to {@code to} when that is given. */
+        default void orb(Location at, Location to, Color color, double size, int ticks) {
+        }
+
+        /** A four-point twinkle that pops in and out. */
+        default void spark(Location at, Color color, double size) {
+        }
+
+        /** A column of light rising from {@code base}. */
+        default void pillar(Location base, Color color, double radius, double height, int ticks) {
+        }
+
+        /** Flame tongues turning in a helix around {@code base}. */
+        default void spiral(Location base, Color color, double radius, double height, int ticks, int arms) {
+        }
+
+        /** A thick shockwave band racing out over the ground to {@code radius}. */
+        default void wave(Location centre, Color color, double radius, int ticks) {
+        }
+
+        /** A flame that burns on a spot for {@code ticks}. */
+        default void flame(Location at, Color color, double size, int ticks) {
+        }
+
+        /** An aurora curtain: a hanging band of light that sways and fades. */
+        default void ribbon(Location centre, Color color, double width, double height, float yaw, int ticks) {
+        }
+
+        /** A few glowing motes drifting from {@code at} by {@code drift} (embers, fireflies, glints). */
+        default void motes(Location at, Color color, int count, double spread, org.bukkit.util.Vector drift, int ticks) {
+        }
+
+        /** An upright half ring (a rainbow band, a halo over a horizon) facing {@code yaw}, for {@code ticks}. */
+        default void arc(Location centre, Color color, double radius, float yaw, int ticks) {
+        }
+
+        /** A faint bank of mist {@code size} blocks across, drifting by {@code drift} over {@code ticks}. */
+        default void mist(Location at, Color color, double size, org.bukkit.util.Vector drift, int ticks) {
+        }
     }
 
     private static volatile Renderer renderer;
@@ -98,6 +154,138 @@ public final class Vfx {
         }
         r.hold(centre, color, radius);
         return true;
+    }
+
+    // Each returns true when a renderer drew it, false when the caller should fall back to its own particles.
+
+    public static boolean streak(Location from, Location to, Color color, double width, int ticks) {
+        Renderer r = renderer;
+        if (r == null || !placed(from) || !placed(to) || from.getWorld() != to.getWorld()) {
+            return false;
+        }
+        r.streak(from, to, color, width, ticks);
+        return true;
+    }
+
+    public static boolean beam(Location from, Location to, Color color, double width, int ticks) {
+        Renderer r = renderer;
+        if (r == null || !placed(from) || !placed(to) || from.getWorld() != to.getWorld()) {
+            return false;
+        }
+        r.beam(from, to, color, width, ticks);
+        return true;
+    }
+
+    public static boolean bolt(Location from, Location to, Color color, int ticks) {
+        Renderer r = renderer;
+        if (r == null || !placed(from) || !placed(to) || from.getWorld() != to.getWorld()) {
+            return false;
+        }
+        r.bolt(from, to, color, ticks);
+        return true;
+    }
+
+    public static boolean burst(Location at, Color color, double size, int ticks) {
+        Renderer r = renderer;
+        if (r == null || !placed(at)) {
+            return false;
+        }
+        r.burst(at, color, size, ticks);
+        return true;
+    }
+
+    public static boolean orb(Location at, Location to, Color color, double size, int ticks) {
+        Renderer r = renderer;
+        if (r == null || !placed(at) || (to != null && to.getWorld() != at.getWorld())) {
+            return false;
+        }
+        r.orb(at, to, color, size, ticks);
+        return true;
+    }
+
+    public static boolean spark(Location at, Color color, double size) {
+        Renderer r = renderer;
+        if (r == null || !placed(at)) {
+            return false;
+        }
+        r.spark(at, color, size);
+        return true;
+    }
+
+    public static boolean pillar(Location base, Color color, double radius, double height, int ticks) {
+        Renderer r = renderer;
+        if (r == null || !placed(base)) {
+            return false;
+        }
+        r.pillar(base, color, radius, height, ticks);
+        return true;
+    }
+
+    public static boolean spiral(Location base, Color color, double radius, double height, int ticks, int arms) {
+        Renderer r = renderer;
+        if (r == null || !placed(base)) {
+            return false;
+        }
+        r.spiral(base, color, radius, height, ticks, arms);
+        return true;
+    }
+
+    public static boolean wave(Location centre, Color color, double radius, int ticks) {
+        Renderer r = renderer;
+        if (r == null || !placed(centre)) {
+            return false;
+        }
+        r.wave(centre, color, radius, ticks);
+        return true;
+    }
+
+    public static boolean flame(Location at, Color color, double size, int ticks) {
+        Renderer r = renderer;
+        if (r == null || !placed(at)) {
+            return false;
+        }
+        r.flame(at, color, size, ticks);
+        return true;
+    }
+
+    public static boolean ribbon(Location centre, Color color, double width, double height, float yaw, int ticks) {
+        Renderer r = renderer;
+        if (r == null || !placed(centre)) {
+            return false;
+        }
+        r.ribbon(centre, color, width, height, yaw, ticks);
+        return true;
+    }
+
+    public static boolean motes(Location at, Color color, int count, double spread, org.bukkit.util.Vector drift, int ticks) {
+        Renderer r = renderer;
+        if (r == null || !placed(at) || count <= 0) {
+            return false;
+        }
+        r.motes(at, color, count, spread, drift, ticks);
+        return true;
+    }
+
+    public static boolean arc(Location centre, Color color, double radius, float yaw, int ticks) {
+        Renderer r = renderer;
+        if (r == null || !placed(centre)) {
+            return false;
+        }
+        r.arc(centre, color, radius, yaw, ticks);
+        return true;
+    }
+
+    public static boolean mist(Location at, Color color, double size, org.bukkit.util.Vector drift, int ticks) {
+        Renderer r = renderer;
+        if (r == null || !placed(at)) {
+            return false;
+        }
+        r.mist(at, color, size, drift, ticks);
+        return true;
+    }
+
+    private static boolean placed(Location at) {
+        return at != null && at.getWorld() != null;
     }
 
     public static void telegraph(Location centre, double radius, int ticks, Color color) {

@@ -38,6 +38,9 @@ COPY = (
     'assets/aetherion/font/mgr_caption_1.json',
     'assets/aetherion/font/mgr_caption_2.json',
     'assets/aetherion/font/mgr_caption_3.json',
+    # Display-effect glyphs (gen_vfx_art.py), drawn by DisplayVfx.
+    'assets/aetherion/font/vfx.json',
+    'assets/aetherion/textures/font/vfx',
 )
 # The ActionBar status panel the carrier replaced.
 DROP = (

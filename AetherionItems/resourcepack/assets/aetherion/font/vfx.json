@@ -44,6 +44,123 @@
    "chars": [
     "\ue504"
    ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/vfx/streak.png",
+   "ascent": 18,
+   "height": 32,
+   "chars": [
+    "\ue505"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/vfx/burst.png",
+   "ascent": 18,
+   "height": 32,
+   "chars": [
+    "\ue506"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/vfx/orb.png",
+   "ascent": 18,
+   "height": 32,
+   "chars": [
+    "\ue507"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/vfx/spark.png",
+   "ascent": 18,
+   "height": 32,
+   "chars": [
+    "\ue508"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/vfx/flame.png",
+   "ascent": 18,
+   "height": 32,
+   "chars": [
+    "\ue509"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/vfx/flame_core.png",
+   "ascent": 18,
+   "height": 32,
+   "chars": [
+    "\ue50a"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/vfx/pillar.png",
+   "ascent": 18,
+   "height": 32,
+   "chars": [
+    "\ue50b"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/vfx/bolt.png",
+   "ascent": 18,
+   "height": 32,
+   "chars": [
+    "\ue50c"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/vfx/ribbon.png",
+   "ascent": 18,
+   "height": 32,
+   "chars": [
+    "\ue50d"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/vfx/mote.png",
+   "ascent": 18,
+   "height": 32,
+   "chars": [
+    "\ue50e"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/vfx/wave.png",
+   "ascent": 18,
+   "height": 32,
+   "chars": [
+    "\ue50f"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/vfx/beam.png",
+   "ascent": 18,
+   "height": 32,
+   "chars": [
+    "\ue510"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "aetherion:font/vfx/arc.png",
+   "ascent": 18,
+   "height": 32,
+   "chars": [
+    "\ue511"
+   ]
   }
  ]
 }
