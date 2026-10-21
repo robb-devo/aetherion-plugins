@@ -294,6 +294,7 @@ public class BossCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(TextUtil.component("&8/boss give [player] [item] &7- spawn/anchor items"));
         sender.sendMessage(TextUtil.component("&8  hanging_saint_core &7/ &fhanging_saint_anchor"));
         sender.sendMessage(TextUtil.component("&8/boss stage <build|remove> &7- Gilded Proscenium"));
+        sender.sendMessage(TextUtil.component("&8/boss stage sweep <world> <x1> <z1> <x2> <z2> [apply] &7- strike stage leftovers"));
         sender.sendMessage(TextUtil.component("&8/boss worldeater <create|build|go|reset|open|status> &7- the Last Seed"));
         sender.sendMessage(TextUtil.component("&8/boss reload"));
     }
