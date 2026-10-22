@@ -151,8 +151,9 @@ public final class ExileStory implements Listener {
         }
         NPCDataStorage store = plugin.getNpcDataStorage();
         Location saved = store == null ? null : store.getSavedLocation("ferryman");
+        // a few blocks of slack only: a turned or re-pasted quay moves his spot by less than a chunk
         if (saved != null && saved.getWorld() != null && saved.getWorld().equals(quay.getWorld())
-                && saved.distanceSquared(quay) < 64 * 64) {
+                && saved.distanceSquared(quay) < 3 * 3) {
             return;
         }
         if (!plugin.getConfig().getBoolean("exile-cast.ferryman-follows-quay", true)) {
@@ -271,8 +272,9 @@ public final class ExileStory implements Listener {
                                             "Nobody calls me anything. So it hardly matters."))
                             .action(l(p, "ferryman.desk.cross.label", "Cross the Veil"), NamedTextColor.GOLD,
                                     l(p, "ferryman.desk.cross.echo", "Take me across."), () -> {
-                                        LivingNpcProfile.say(p, npc, l(p, "ferryman.desk.cross.line", "Aboard, then. Hold the rail."));
-                                        Bukkit.getScheduler().runTaskLater(AetherionQuests.getInstance(), () -> board(p), 30L);
+                                        // he walks the passenger down to the ferry himself (Core's quay does the walk)
+                                        LivingNpcProfile.say(p, npc, l(p, "ferryman.desk.cross.line", "Follow me, then. Mind the planks."));
+                                        Bukkit.getScheduler().runTaskLater(AetherionQuests.getInstance(), () -> board(p), 16L);
                                     });
                 } else {
                     open = l(p, "ferryman.desk.open_exile", "Still here. I'm always on this side, somehow.");
@@ -475,8 +477,8 @@ public final class ExileStory implements Listener {
         if (p.hasPermission("aetherion.core.admin")) {
             d.action(l(p, "ferryman.desk.staff.label", "Cross the Veil (staff)"), NamedTextColor.GOLD,
                     l(p, "ferryman.desk.cross.echo", "Take me across."), () -> {
-                        LivingNpcProfile.say(p, npc, l(p, "ferryman.desk.cross.line", "Aboard, then. Hold the rail."));
-                        Bukkit.getScheduler().runTaskLater(AetherionQuests.getInstance(), () -> board(p), 30L);
+                        LivingNpcProfile.say(p, npc, l(p, "ferryman.desk.cross.line", "Follow me, then. Mind the planks."));
+                        Bukkit.getScheduler().runTaskLater(AetherionQuests.getInstance(), () -> board(p), 16L);
                     });
         }
     }
