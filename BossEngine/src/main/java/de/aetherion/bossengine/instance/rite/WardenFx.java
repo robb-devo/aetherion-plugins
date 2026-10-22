@@ -14,14 +14,16 @@ import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Pathwarden's own pieces, built from displays: the blade cyclone (a real funnel of wind sheets with the floor
  * torn up into it and his two blades cutting the rim), the iron verdict cage that drops where a runner is going
  * to be, the cracked floor of his smash and the judgment pillar. Azure, crimson and iron; nothing from the rite
- * kits.
+ * kits. Telegraphs are rings of glowing slabs ({@link #halo}), not vanilla particles.
  */
 public final class WardenFx {
 
@@ -35,6 +37,7 @@ public final class WardenFx {
     private BlockDisplay lanceShell;
     private BlockDisplay lanceCore;
     private Location lanceAnchor;
+    private final Map<String, Halo> halos = new HashMap<>();
 
     public WardenFx(BossInstance instance) {
         this.instance = instance;
@@ -51,6 +54,7 @@ public final class WardenFx {
         lanceShell = null;
         lanceCore = null;
         lanceAnchor = null;
+        halos.clear();
     }
 
     /* ================================================================== blade cyclone */
@@ -150,21 +154,10 @@ public final class WardenFx {
                 Stage.push(blades.get(k), Stage.cube(c, q, thick, thick, len), 1);
             }
             Location floor = Stage.ground(feet);
-            if (t % 2 == 0) {
-                BlockData under = Stage.floor(floor);
-                ThreadLocalRandom rng = ThreadLocalRandom.current();
-                for (int n = 0; n < 4; n++) {
-                    double a = rng.nextDouble(Math.PI * 2);
-                    double r = rng.nextDouble(1.2, 2.6 + 2.8 * b);
-                    Stage.fx(floor.clone().add(Math.cos(a) * r, 0.15, Math.sin(a) * r), Particle.DUST_PILLAR, 2, 0.2, 0.05, 0.2, 0, under);
-                }
-                Stage.fx(floor.clone().add(0, 0.3, 0), Particle.CLOUD, 2, 1.2 * b, 0.02);
-            }
-            if (t % 5 == 0 && b > 0.6) {
-                for (int side = 0; side < 2; side++) {
-                    double a = spin + side * Math.PI;
-                    Stage.fx(floor.clone().add(Math.cos(a) * 5.4, side == 0 ? 5.2 : 4.2, Math.sin(a) * 5.4), Particle.SWEEP_ATTACK, 1, 0, 0);
-                }
+            if (t % 4 == 0) {
+                double a = ThreadLocalRandom.current().nextDouble(Math.PI * 2);
+                double r = 1.4 + 2.4 * b;
+                Stage.fx(floor.clone().add(Math.cos(a) * r, 0.15, Math.sin(a) * r), Particle.DUST_PILLAR, 2, 0.2, 0.05, 0.2, 0, Stage.floor(floor));
             }
             if (t % 14 == 0) {
                 Stage.sound(floor, Sound.ITEM_ELYTRA_FLYING, 0.5f + (float) b * 0.6f, 0.6f);
@@ -242,8 +235,7 @@ public final class WardenFx {
                 return false;
             });
             Location floor = Stage.ground(feet);
-            Stage.fx(floor.clone().add(0, 1.0, 0), Particle.GUST_EMITTER_SMALL, 1, 0, 0);
-            Stage.fx(floor.clone().add(0, 0.3, 0), Particle.DUST_PILLAR, 60, 3.0, 0.1, 3.0, 0, Stage.floor(floor));
+            Stage.fx(floor.clone().add(0, 0.3, 0), Particle.DUST_PILLAR, 16, 3.0, 0.1, 3.0, 0, Stage.floor(floor));
             Stage.sound(floor, Sound.ENTITY_BREEZE_WIND_BURST, 1.4f, 0.6f);
         }
 
@@ -296,7 +288,7 @@ public final class WardenFx {
         @Override
         public boolean tick(int t) {
             if (t == 1) {
-                shadow = stage.block(floor, Material.BLACK_CONCRETE, Stage.cube(Stage.v(0, 0.02, 0), new Quaternionf(), 0.1f, 0.02f, 0.1f), null, 0);
+                shadow = stage.block(floor, Material.BLACK_CONCRETE, Stage.cube(Stage.v(0, 0.02, 0), new Quaternionf(), 0.1f, 0.02f, 0.1f), CRIMSON, 0);
                 BlockData ew = Material.IRON_BARS.createBlockData("[east=true,west=true]");
                 BlockData ns = Material.IRON_BARS.createBlockData("[north=true,south=true]");
                 for (int side = 0; side < 4; side++) {
@@ -312,13 +304,11 @@ public final class WardenFx {
                 }
                 Stage.push(lid, lidAt(HANG), 6);
             }
-            if (t < tell && t % 2 == 0) {
-                Stage.dustRing(floor, SIZE * 0.62, t >= tell - 6 ? WHITE : CRIMSON, t >= tell - 6 ? 1.8f : 1.2f, 0.45);
-            }
             if (t == tell - 6) {
                 for (BlockDisplay d : bars) {
                     Stage.glow(d, WHITE);
                 }
+                Stage.glow(shadow, WHITE);
                 Stage.sound(floor, Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.9f);
             }
             if (t == tell) {
@@ -334,8 +324,7 @@ public final class WardenFx {
                 Stage.sound(floor, Sound.BLOCK_ANVIL_LAND, 1.5f, 0.5f);
                 Stage.sound(floor, Sound.BLOCK_IRON_DOOR_CLOSE, 1.5f, 0.5f);
                 Stage.sound(floor, Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 1.2f, 0.6f);
-                Stage.fx(floor.clone().add(0, 0.3, 0), Particle.DUST_PILLAR, 40, 1.8, 0.1, 1.8, 0, Stage.floor(floor));
-                Stage.fx(floor.clone().add(0, 0.6, 0), Particle.BLOCK, 24, 1.2, 0.3, 1.2, 0, Material.IRON_BLOCK.createBlockData());
+                Stage.fx(floor.clone().add(0, 0.3, 0), Particle.DUST_PILLAR, 14, 1.8, 0.1, 1.8, 0, Stage.floor(floor));
                 if (onLand != null) {
                     onLand.run();
                 }
@@ -401,10 +390,7 @@ public final class WardenFx {
                 return false;
             });
         }
-        Stage.fx(floor.clone().add(0, 0.3, 0), Particle.DUST_PILLAR, 50, radius * 0.5, 0.1, radius * 0.5, 0, Stage.floor(floor));
-        Stage.fx(floor.clone().add(0, 0.6, 0), Particle.BLOCK, 26, radius * 0.4, 0.3, radius * 0.4, 0, Material.IRON_BLOCK.createBlockData());
-        Stage.dustRing(floor, radius, CRIMSON, 2.0f, 0.5);
-        Stage.dustRing(floor, radius * 0.6, AZURE, 1.6f, 0.5);
+        Stage.fx(floor.clone().add(0, 0.3, 0), Particle.DUST_PILLAR, 14, radius * 0.5, 0.1, radius * 0.5, 0, Stage.floor(floor));
     }
 
     private static Matrix4f crack(Quaternionf q, float len, float width) {
@@ -432,14 +418,126 @@ public final class WardenFx {
             }
             return false;
         });
-        stage.play(t -> {
-            double r = 1.0 + t * (radius + 3.0) / 8.0;
-            Stage.dustRing(floor, r, t % 2 == 0 ? CRIMSON : WHITE, 2.0f, 0.5);
-            return t >= 8;
-        });
+        shockwave(floor, radius + 3.0, 8, CRIMSON_TONE);
         smash(floor, radius);
         Stage.fx(floor.clone().add(0, 1.0, 0), Particle.FLASH, 1, 0, 0);
-        Stage.fx(floor.clone().add(0, 2.0, 0), Particle.END_ROD, 30, 0.6, 0.25);
+    }
+
+    /* ================================================================== halos: telegraph rings */
+
+    /** Tones for {@link #halo}: azure (tracking), crimson (danger), white (about to land), iron (the shock ring). */
+    public static final int AZURE_TONE = 0;
+    public static final int CRIMSON_TONE = 1;
+    public static final int WHITE_TONE = 2;
+    public static final int IRON_TONE = 3;
+
+    /** Places (or moves) the named floor ring; call it every tick it should stay, {@link #haloOff} drops it. */
+    public void halo(String name, Location centre, double radius, int tone) {
+        Halo halo = halos.get(name);
+        if (halo == null || halo.dead() || halo.anchor.getWorld() != centre.getWorld()
+                || halo.anchor.distanceSquared(centre) > 256) {
+            if (halo != null) {
+                halo.remove();
+            }
+            halo = new Halo(centre);
+            halos.put(name, halo);
+        }
+        halo.set(centre, radius, 0.22f, tone, 2);
+    }
+
+    public void haloOff(String name) {
+        Halo halo = halos.remove(name);
+        if (halo != null) {
+            halo.remove();
+        }
+    }
+
+    /**
+     * A ring that runs out from {@code centre} to {@code maxRadius} in {@code ticks}; the radius at tick k is
+     * {@code 1 + (maxRadius - 1) * k / ticks}, the front the director hits players on.
+     */
+    public void shockwave(Location centre, double maxRadius, int ticks, int tone) {
+        Location floor = Stage.ground(centre);
+        Halo ring = new Halo(floor);
+        stage.play(t -> {
+            if (t > ticks) {
+                ring.remove();
+                return true;
+            }
+            double r = 1.0 + (maxRadius - 1.0) * t / ticks;
+            float height = (float) (0.9 * (1.0 - 0.6 * t / (double) ticks));
+            ring.set(floor, r, height, tone, 1);
+            return false;
+        });
+        Stage.fx(floor.clone().add(0, 0.3, 0), Particle.DUST_PILLAR, 12, 1.2, 0.1, 1.2, 0, Stage.floor(floor));
+    }
+
+    /** A ring of short glowing slabs on the floor. */
+    private final class Halo {
+        static final int SEGMENTS = 20;
+        final Location anchor;
+        final List<BlockDisplay> parts = new ArrayList<>();
+        int tone = -1;
+        double lastRadius = -1;
+        float lastHeight;
+        Vector3f lastCentre;
+
+        Halo(Location centre) {
+            this.anchor = centre.clone();
+            this.anchor.setYaw(0f);
+            this.anchor.setPitch(0f);
+            for (int i = 0; i < SEGMENTS; i++) {
+                BlockDisplay d = stage.block(anchor, Material.LIGHT_BLUE_CONCRETE, Stage.gone(Stage.v(0, 0.05, 0)), AZURE, 15);
+                if (d != null) {
+                    parts.add(d);
+                }
+            }
+        }
+
+        boolean dead() {
+            return parts.isEmpty() || !Stage.alive(parts.get(0));
+        }
+
+        void set(Location centre, double radius, float height, int tone, int interp) {
+            if (tone != this.tone) {
+                this.tone = tone;
+                Material m = switch (tone) {
+                    case CRIMSON_TONE -> Material.RED_CONCRETE;
+                    case WHITE_TONE -> Material.WHITE_CONCRETE;
+                    case IRON_TONE -> Material.IRON_BLOCK;
+                    default -> Material.LIGHT_BLUE_CONCRETE;
+                };
+                Color glow = tone == AZURE_TONE ? AZURE : tone == WHITE_TONE ? WHITE : CRIMSON;
+                BlockData data = m.createBlockData();
+                for (BlockDisplay d : parts) {
+                    if (Stage.alive(d)) {
+                        d.setBlock(data);
+                        Stage.glow(d, glow);
+                    }
+                }
+            }
+            Vector3f c = Stage.offset(anchor, Stage.ground(centre));
+            if (lastCentre != null && lastCentre.distanceSquared(c) < 1.0e-4 && Math.abs(lastRadius - radius) < 0.01
+                    && Math.abs(lastHeight - height) < 0.01f) {
+                return;
+            }
+            lastCentre = c;
+            lastRadius = radius;
+            lastHeight = height;
+            float chord = (float) (Math.PI * 2 * radius / SEGMENTS * 0.92);
+            for (int i = 0; i < parts.size(); i++) {
+                double a = i * Math.PI * 2 / SEGMENTS;
+                Vector3f p = new Vector3f(c).add((float) (Math.cos(a) * radius), 0.03f + height / 2f, (float) (Math.sin(a) * radius));
+                Stage.push(parts.get(i), Stage.cube(p, Stage.yaw(-(a + Math.PI / 2)), chord, height, 0.14f), interp);
+            }
+        }
+
+        void remove() {
+            for (BlockDisplay d : parts) {
+                stage.remove(d);
+            }
+            parts.clear();
+        }
     }
 
     /* ================================================================== judgment lance */
@@ -474,12 +572,6 @@ public final class WardenFx {
         Stage.glow(lanceShell, color);
         Stage.push(lanceShell, Stage.beam(a, b, width), 2);
         Stage.push(lanceCore, Stage.beam(a, b, width * 0.3f), 2);
-        if (hot) {
-            Stage.fx(to.clone().add(0, 0.4, 0), Particle.LAVA, 2, 0.5, 0);
-            Stage.fx(to.clone().add(0, 0.3, 0), Particle.DUST_PILLAR, 6, 0.8, 0.1, 0.8, 0, Stage.floor(to));
-        } else {
-            Stage.fx(to.clone().add(0, 0.2, 0), Particle.ELECTRIC_SPARK, 2, 0.3, 0.02);
-        }
     }
 
     public void lanceOff() {
@@ -488,14 +580,5 @@ public final class WardenFx {
         lanceShell = null;
         lanceCore = null;
         lanceAnchor = null;
-    }
-
-    /** Thin dust ring in the two blade colours (telegraphs). */
-    public static void rim(Location at, double radius, Color a, Color b) {
-        Location floor = at.clone();
-        Stage.dustRing(floor, radius, a, 1.3f, 0.5);
-        if (!a.equals(b)) {
-            Stage.dustRing(floor, Math.max(0.3, radius - 0.25), b, 1.0f, 0.7);
-        }
     }
 }

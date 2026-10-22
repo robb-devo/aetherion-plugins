@@ -26,7 +26,9 @@ import java.util.UUID;
  * <ul>
  *   <li>Charge is read in {@code PrePlayerAttackEntityEvent}, before vanilla resets the ticker. A hit with
  *       no swing snapshot this tick (reflects, procs, other plugins' nested hits) is left alone.</li>
- *   <li>Early swings on stamped weapons: {@code floor + (1 - floor) * charge^2}, like vanilla. Attack-spread
+ *   <li>Early swings on stamped weapons: {@code charge * (floor + (1 - floor) * charge)}. Per swing that is
+ *       close to vanilla's curve, but damage per second now always drops the earlier you swing (vanilla's floor
+ *       made ten weak clicks beat one charged swing). {@link WeaponTempo} sets how long a charge takes. Attack-spread
  *       hits from the same swing take the same penalty, nothing else.</li>
  *   <li>Timed swings ({@code charge >= timed-charge}) build a combo on one target; the Nth is a finisher.
  *       Aerial (jump-crit), riposte, dash strike and vulnerable (staggered) stack, capped at max-mult.</li>
@@ -107,7 +109,7 @@ final class MeleeCadence {
         float charge = state.swingCharge;
         boolean stamped = system.stamped(player);
         boolean timed = charge >= cfg.timedCharge;
-        double penalty = stamped && !timed ? cfg.lightFloor + (1.0 - cfg.lightFloor) * charge * charge : 1.0;
+        double penalty = stamped && !timed ? charge * (cfg.lightFloor + (1.0 - cfg.lightFloor) * charge) : 1.0;
 
         if (DamageListener.isSpreadHit(player.getUniqueId())) {
             // Spread copies of this swing: same penalty, no bonus, no bookkeeping.
