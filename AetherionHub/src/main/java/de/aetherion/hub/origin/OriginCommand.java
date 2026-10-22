@@ -45,6 +45,10 @@ public final class OriginCommand implements CommandExecutor, TabCompleter {
         if (!(sender instanceof Player player)) {
             if (sub.equals("dev") && args.length > 1 && args[1].equalsIgnoreCase("status")) {
                 sender.sendMessage(isle.running() ? "Origin Isle running." : "Origin Isle stopped.");
+            } else if (sub.equals("dev") && args.length > 1 && args[1].equalsIgnoreCase("underside")) {
+                sender.sendMessage(OriginUnderside.run(isle, sender, args.length > 2 && args[2].equalsIgnoreCase("apply")));
+            } else if (sub.equals("dev") && args.length > 2 && args[1].equalsIgnoreCase("bay")) {
+                sender.sendMessage(isle.bay().dev(args[2].toLowerCase(Locale.ROOT)));
             } else {
                 sender.sendMessage("§7/origin is a player command.");
             }
@@ -170,7 +174,7 @@ public final class OriginCommand implements CommandExecutor, TabCompleter {
                     case "fly" -> options.addAll(isle.config().flights().keySet());
                     case "vista" -> options.addAll(isle.config().vistas().keySet());
                     case "profile" -> options.addAll(List.of("reset", "complete", "show"));
-                    case "bay" -> options.addAll(List.of("arrive", "depart", "reset", "status"));
+                    case "bay" -> options.addAll(List.of("arrive", "depart", "crane", "pier", "reset", "status"));
                     case "props" -> options.addAll(List.of("list", "paste", "undo", "tp", "show"));
                     case "tales" -> options.addAll(List.of("place", "undo", "tp", "reset"));
                     case "curio" -> options.addAll(List.of("tp", "find", "next", "reset"));

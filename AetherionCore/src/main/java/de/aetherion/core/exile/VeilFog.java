@@ -158,6 +158,16 @@ public final class VeilFog {
         return sheets.isEmpty();
     }
 
+    /** True when {@code e} is one of this fog's sheets. */
+    public boolean owns(Entity e) {
+        for (Sheet s : sheets) {
+            if (s.display().getUniqueId().equals(e.getUniqueId())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public void remove() {
         for (Sheet s : sheets) {
             try {

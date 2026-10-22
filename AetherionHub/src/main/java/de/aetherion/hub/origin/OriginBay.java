@@ -23,6 +23,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.event.world.EntitiesLoadEvent;
 import org.bukkit.event.vehicle.VehicleDamageEvent;
 import org.bukkit.event.vehicle.VehicleDestroyEvent;
 import org.bukkit.event.vehicle.VehicleEnterEvent;
@@ -34,7 +35,10 @@ import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -42,10 +46,14 @@ import java.util.concurrent.ThreadLocalRandom;
  * north rim, anchors above the water and lowers a crate to a skiff; fishing skiffs rowing their
  * rounds; bobbing channel buoys; and the cargo crane at the pier head loading the lighter.
  * <p>
- * Pure Hub-side scenery: non-persistent display entities, two boats with villager rowers, no
- * blocks touched. Everything sleeps (and is removed) while nobody is near the harbour; positions
- * come from {@code origin.yml → bay} and were checked against the live map (open water, clear
- * sky lanes). Players can't board, break or trade with any of it.
+ * Pure Hub-side scenery: non-persistent display entities, boats rowed by FancyNpcs boatmen (a
+ * villager only when FancyNpcs is missing), no blocks touched. Everything sleeps (and is removed)
+ * while nobody is near the harbour; positions come from {@code origin.yml → bay} and were checked
+ * against the live map (open water, clear sky lanes). Players can't board, break or trade with any of it.
+ * <p>
+ * Every entity spawned here is tracked by UUID. A removal never depends on {@code isValid()} (an entity
+ * in a resting chunk reports false and used to stay behind, which stacked skyships and doubled buoys),
+ * and a sweep removes any tagged entity this run does not own.
  */
 public final class OriginBay implements Listener {
 
@@ -57,9 +65,13 @@ public final class OriginBay implements Listener {
     private double[] centre;
     private double wakeRadius = 170.0d;
     private Courier courier;
+    private SkyPier pier;
     private final List<Skiff> skiffs = new ArrayList<>();
     private final List<Buoy> buoys = new ArrayList<>();
     private Crane crane;
+    /** UUIDs of every entity this run spawned and still owns. */
+    private final Set<UUID> owned = new HashSet<>();
+    private int swept;
     /** Players near the harbour (refreshed every 20 ticks). */
     private final List<Player> watchers = new ArrayList<>();
     private boolean awake;
@@ -85,6 +97,10 @@ public final class OriginBay implements Listener {
         ConfigurationSection cs = s.getConfigurationSection("courier");
         if (cs != null && cs.getBoolean("enabled", true)) {
             courier = new Courier(cs);
+            String where = cs.getString("sky-pier", "auto");
+            if (!courier.pathIn.isEmpty() && !"off".equalsIgnoreCase(where.trim())) {
+                pier = new SkyPier(courier.pathIn.get(courier.pathIn.size() - 1), where);
+            }
         }
         ConfigurationSection ss = s.getConfigurationSection("skiffs");
         if (ss != null) {
@@ -131,6 +147,9 @@ public final class OriginBay implements Listener {
         if (courier != null) {
             courier.despawn();
         }
+        if (pier != null) {
+            pier.despawn();
+        }
         for (Skiff skiff : skiffs) {
             skiff.despawn();
         }
@@ -141,6 +160,7 @@ public final class OriginBay implements Listener {
             crane.despawn();
         }
         courier = null;
+        pier = null;
         skiffs.clear();
         buoys.clear();
         crane = null;
@@ -150,15 +170,46 @@ public final class OriginBay implements Listener {
 
     /** Removes leftovers of an earlier run (reloads, crashes) in loaded chunks. */
     private void purgeStale() {
+        owned.clear();
+        sweep();
+    }
+
+    /** Removes every tagged entity in loaded chunks that this run does not own. */
+    private int sweep() {
         World world = isle.config().world();
         if (world == null) {
-            return;
+            return 0;
         }
+        int n = 0;
         for (Entity entity : world.getEntities()) {
-            if (entity.getScoreboardTags().contains(TAG)) {
+            if (entity.getScoreboardTags().contains(TAG) && !owned.contains(entity.getUniqueId())) {
+                entity.remove();
+                n++;
+            }
+        }
+        if (n > 0) {
+            swept += n;
+            isle.plugin().getLogger().info("Origin bay: removed " + n + " stray harbour entit" + (n == 1 ? "y" : "ies")
+                    + " (" + swept + " this run).");
+        }
+        return n;
+    }
+
+    /** A chunk coming back with a tagged entity from an earlier run (it should never have been saved). */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onEntitiesLoad(EntitiesLoadEvent event) {
+        for (Entity entity : event.getEntities()) {
+            if (entity.getScoreboardTags().contains(TAG) && !owned.contains(entity.getUniqueId())) {
                 entity.remove();
             }
         }
+    }
+
+    private <T extends Entity> T own(T entity) {
+        if (entity != null) {
+            owned.add(entity.getUniqueId());
+        }
+        return entity;
     }
 
     boolean ours(Entity entity) {
@@ -184,6 +235,9 @@ public final class OriginBay implements Listener {
         }
         if (!watchers.isEmpty()) {
             sleepTicks = 0;
+            if (!awake || tick % 200 < 20) {
+                sweep();
+            }
             awake = true;
         } else if (awake && (sleepTicks += 20) >= 1200) {
             // A minute with nobody around: tidy everything away until someone walks back.
@@ -191,6 +245,9 @@ public final class OriginBay implements Listener {
             if (courier != null) {
                 courier.despawn();
                 courier.reset();
+            }
+            if (pier != null) {
+                pier.despawn();
             }
             for (Skiff skiff : skiffs) {
                 skiff.despawn();
@@ -201,6 +258,7 @@ public final class OriginBay implements Listener {
             if (crane != null) {
                 crane.despawn();
             }
+            sweep();
         }
         if (courier != null) {
             courier.maybeSchedule();
@@ -216,6 +274,9 @@ public final class OriginBay implements Listener {
         World world = isle.config().world();
         if (world == null) {
             return;
+        }
+        if (pier != null) {
+            safe("pier", () -> pier.tick(world));
         }
         if (courier != null) {
             safe("courier", () -> courier.tick(world));
@@ -259,9 +320,11 @@ public final class OriginBay implements Listener {
                 yield "§aBay rebuilt from origin.yml.";
             }
             case "crane" -> crane == null ? "§cNo crane configured." : crane.report();
+            case "pier" -> pier == null ? "§7No sky pier (bay.courier.sky-pier: off)." : "§6Sky pier §8· " + pier.report();
             default -> "§6Bay §8· §7courier " + (courier == null ? "§8none" : courier.state()) + " §8· §7skiffs " + skiffs.size()
                     + " §8· §7buoys " + buoys.size() + " §8· §7crane " + (crane == null ? "§8none" : crane.phaseName())
-                    + " §8· §7watchers " + watchers.size() + " §8· §e/origin dev bay <arrive|depart|crane|reset>";
+                    + " §8· §7pier " + (pier == null ? "§8off" : pier.report()) + " §8· §7watchers " + watchers.size()
+                    + " §8· §e/origin dev bay <arrive|depart|crane|pier|reset>";
         };
     }
 
@@ -274,7 +337,8 @@ public final class OriginBay implements Listener {
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onEnter(VehicleEnterEvent event) {
-        if (ours(event.getVehicle()) && event.getEntered() instanceof Player) {
+        // players, and anything else the empty boats would scoop up (drowned, strays); our own passengers only
+        if (ours(event.getVehicle()) && !ours(event.getEntered())) {
             event.setCancelled(true);
         }
     }
@@ -312,8 +376,8 @@ public final class OriginBay implements Listener {
         if (ours(event.getRightClicked())) {
             event.setCancelled(true);
             Player player = event.getPlayer();
-            if (event.getRightClicked() instanceof Villager) {
-                OriginText.bar(player, "§7The rower nods, but doesn't stop rowing.");
+            if (event.getRightClicked() instanceof Villager || event.getRightClicked() instanceof Boat) {
+                OriginText.bar(player, "§7The boatman nods, but doesn't stop rowing.");
             }
         }
     }
@@ -378,8 +442,8 @@ public final class OriginBay implements Listener {
         }
     }
 
-    private static BlockDisplay display(World world, Location at, String blockState, float viewRange, int light) {
-        return world.spawn(at, BlockDisplay.class, d -> {
+    private BlockDisplay display(World world, Location at, String blockState, float viewRange, int light) {
+        return own(world.spawn(at, BlockDisplay.class, d -> {
             d.setBlock(block(blockState));
             d.setPersistent(false);
             d.addScoreboardTag(TAG);
@@ -388,7 +452,7 @@ public final class OriginBay implements Listener {
             if (light > 0) {
                 d.setBrightness(new Display.Brightness(light, light));
             }
-        });
+        }));
     }
 
     /** Yaw-rotated box: centre {@code c}, size {@code s}, optional extra rotation applied in the model frame. */
@@ -413,13 +477,26 @@ public final class OriginBay implements Listener {
         display.setTransformation(to);
     }
 
-    private static void remove(Entity entity) {
-        if (entity != null && entity.isValid()) {
-            for (Entity passenger : new ArrayList<>(entity.getPassengers())) {
-                passenger.remove();
-            }
-            entity.remove();
+    /** Removes the entity and its passengers whatever state their chunk is in (no {@code isValid()} gate). */
+    private void remove(Entity entity) {
+        if (entity == null) {
+            return;
         }
+        for (Entity passenger : new ArrayList<>(entity.getPassengers())) {
+            owned.remove(passenger.getUniqueId());
+            passenger.remove();
+        }
+        owned.remove(entity.getUniqueId());
+        entity.remove();
+    }
+
+    /** A box from {@code a} to {@code b} (display-local), {@code w} by {@code d} thick, its axis on the line. */
+    static Transformation bar(Vector3f a, Vector3f b, float w, float d) {
+        Vector3f dir = new Vector3f(b).sub(a);
+        float len = Math.max(0.001f, dir.length());
+        Quaternionf q = new Quaternionf().rotationTo(new Vector3f(0f, 1f, 0f), dir.normalize());
+        Vector3f t = new Vector3f(a).sub(q.transform(new Vector3f(w / 2f, 0f, d / 2f)));
+        return new Transformation(t, q, new Vector3f(w, len, d), new Quaternionf());
     }
 
     /** MC yaw of a heading (yaw 0 = +Z). */
@@ -680,6 +757,9 @@ public final class OriginBay implements Listener {
             double dz = ahead[2] - p[2];
             if (dx * dx + dz * dz > 1.0e-4) {
                 float target = yawOf(dx, dz);
+                if (arriving && pier != null && pier.ready() && length(path) - at < 24.0d) {
+                    target = pier.berthYaw(); // square up to the sky pier for the last stretch
+                }
                 yaw = root == null ? target : approachYaw(yaw, target, 1.6f);
             }
             if (root == null || !root.isValid()) {
@@ -706,9 +786,21 @@ public final class OriginBay implements Listener {
             }
             held++;
             double[] end = pathIn.get(pathIn.size() - 1);
+            boolean atPier = pier != null && pier.ready();
             if (clock % 4 == 0) {
-                double bob = Math.sin(clock * Math.PI * 2.0d / 120.0d) * 0.22d;
+                // moored to the pier she barely moves; free over the water she rides the air a little more
+                double bob = Math.sin(clock * Math.PI * 2.0d / 120.0d) * (atPier ? 0.06d : 0.22d);
                 root.teleport(new Location(world, end[0], end[1] + bob, end[2]), TeleportFlag.EntityState.RETAIN_PASSENGERS);
+                if (atPier && Math.abs(wrap(yaw - pier.berthYaw())) > 0.2f) {
+                    yaw = approachYaw(yaw, pier.berthYaw(), 2.0f);
+                    pose(4);
+                }
+            }
+            if (atPier && held == 24) {
+                pier.berth(true);
+            }
+            if (atPier && held == holdTicks - 30) {
+                pier.berth(false);
             }
             if (held % 2 == 0 && held < 60) {
                 spinBlades(2); // winding down
@@ -722,7 +814,9 @@ public final class OriginBay implements Listener {
                 for (Player player : near(at, 150.0d)) {
                     OriginProfile profile = isle.profiles().get(player);
                     if (profile.mark("bay_courier") && !isle.quiet(player)) {
-                        OriginText.bar(player, "§b⛵ The Halcyon §8· §7the supply skyship is in. Watch the crate come down.");
+                        OriginText.bar(player, atPier
+                                ? "§b⛵ The Halcyon §8· §7the supply skyship is in at the sky pier. Watch the crate come down."
+                                : "§b⛵ The Halcyon §8· §7the supply skyship is in. Watch the crate come down.");
                     }
                 }
             }
@@ -757,6 +851,9 @@ public final class OriginBay implements Listener {
             if (held >= holdTicks && ropeLen <= 0.0d) {
                 if (!crateHanded) {
                     handCrate(world);
+                }
+                if (pier != null) {
+                    pier.berth(false);
                 }
                 state = CourierState.DEPARTING;
                 s = 0.0d;
@@ -961,13 +1058,25 @@ public final class OriginBay implements Listener {
 
     // ================================================================== fishing skiffs
 
+    /** The boatman's spot in a skiff (boat frame, +Z = bow): aft of the middle, feet on the floorboards. */
+    private static final double HAND_AFT = -0.42d;
+    private static final double HAND_UP = 0.32d;
+    /** One sculling stroke, there and back (ticks). */
+    private static final int STROKE = 36;
+
     private final class Skiff {
         private final String id;
         private final List<double[]> loop;
         private final double surface;
         private final double speed = 0.12d;
+        /** The boatman (FancyNpcs); {@link #rower} stands in only when FancyNpcs is missing. */
+        private final OriginHand hand;
         private Boat boat;
         private Villager rower;
+        private BlockDisplay shaft;
+        private BlockDisplay blade;
+        private Location feet;
+        private boolean rodOut;
         private BlockDisplay cargo;
         private int seg;
         private double t;
@@ -985,6 +1094,7 @@ public final class OriginBay implements Listener {
             this.loop = loop;
             this.surface = surface;
             this.seg = Math.abs(id.hashCode()) % loop.size();
+            this.hand = new OriginHand("aeth_bay_boatman_" + id);
         }
 
         private double[] vertex(int i) {
@@ -1000,7 +1110,7 @@ public final class OriginBay implements Listener {
                 despawn();
                 return;
             }
-            if (boat == null || !boat.isValid() || rower == null || !rower.isValid()) {
+            if (boat == null || !boat.isValid() || (!hand.alive() && (rower == null || !rower.isValid()))) {
                 spawn(world, x, z);
             }
             float target = yawOf(b[0] - a[0], b[1] - a[1]);
@@ -1022,7 +1132,9 @@ public final class OriginBay implements Listener {
                 }
             }
             if (boat != null) {
-                boat.teleport(new Location(world, x, surface + bob, z, yaw, 0.0f), TeleportFlag.EntityState.RETAIN_PASSENGERS);
+                Location hull = new Location(world, x, surface + bob, z, yaw, 0.0f);
+                boat.teleport(hull, TeleportFlag.EntityState.RETAIN_PASSENGERS);
+                crew(hull);
             }
             if (catchFx != null) {
                 catchTick(world, x, z);
@@ -1033,6 +1145,60 @@ public final class OriginBay implements Listener {
                 if (boat != null) {
                     sound(boat.getLocation(), Sound.BLOCK_BARREL_CLOSE, 0.7f, 1.1f, 40.0d);
                 }
+            }
+        }
+
+        /**
+         * The boatman stands aft and sculls one long oar over the stern, leaning into each stroke; he ships the oar
+         * along the gunwale to fish (turned to the bobber) or to wait for the Halcyon's crate (looking up at her).
+         */
+        private void crew(Location hull) {
+            if (!hand.alive()) {
+                return;
+            }
+            boolean rowing = !waitingForCrate && pause <= 0;
+            int phase = (int) ((tick + Math.abs(id.hashCode())) % STROKE);
+            double sweep = Math.sin(phase * Math.PI * 2.0d / STROKE);
+            double rad = Math.toRadians(yaw);
+            float face = rowing ? wrap(yaw + (float) (sweep * 9.0d)) : pause > 0 ? wrap(yaw + 90.0f) : yaw;
+            float pitch = waitingForCrate ? -50.0f : pause > 0 ? 14.0f : 10.0f;
+            feet = new Location(hull.getWorld(), hull.getX() - Math.sin(rad) * HAND_AFT, hull.getY() + HAND_UP,
+                    hull.getZ() + Math.cos(rad) * HAND_AFT, face, pitch);
+            hand.move(feet, rowing && (phase == 0 || phase == STROKE / 2));
+            if (pause > 0 && !rodOut) {
+                rodOut = true;
+                hand.hold(new ItemStack(Material.FISHING_ROD));
+            } else if (pause <= 0 && rodOut) {
+                rodOut = false;
+                hand.hold(null);
+            }
+            if (shaft == null || blade == null || tick % 2 != 0) {
+                return;
+            }
+            Location oar = feet.clone();
+            oar.setYaw(yaw);
+            oar.setPitch(0.0f);
+            shaft.teleport(oar);
+            blade.teleport(oar);
+            Vector3f grip;
+            Vector3f tip;
+            if (rowing) {
+                grip = new Vector3f((float) (-0.1d - sweep * 0.2d), 1.02f, 0.08f);
+                tip = new Vector3f((float) (sweep * 0.85d), -0.95f, -2.45f);
+            } else {
+                grip = new Vector3f(0.42f, 0.1f, -0.25f);
+                tip = new Vector3f(0.42f, 0.16f, 1.9f);
+            }
+            morph(shaft, bar(grip, tip, 0.09f, 0.09f), 2);
+            Vector3f from = new Vector3f(grip).lerp(tip, 0.72f);
+            morph(blade, bar(from, tip, 0.3f, 0.05f), 2);
+        }
+
+        private void swingHand() {
+            if (hand.alive() && feet != null) {
+                hand.move(feet, true);
+            } else if (rower != null) {
+                rower.swingMainHand();
             }
         }
 
@@ -1070,9 +1236,7 @@ public final class OriginBay implements Listener {
                 bobber = new Location(world, x - Math.sin(side) * 3.5d, surface + 0.3d, z + Math.cos(side) * 3.5d);
             }
             if (fishing == 8) {
-                if (rower != null) {
-                    rower.swingMainHand();
-                }
+                swingHand();
                 sound(bobber, Sound.ENTITY_FISHING_BOBBER_THROW, 0.6f, 0.9f, 32.0d);
             }
             if (fishing > 12 && fishing % 30 == 0) {
@@ -1083,16 +1247,14 @@ public final class OriginBay implements Listener {
                 sound(bobber, Sound.ENTITY_FISHING_BOBBER_SPLASH, 0.7f, 1.0f, 36.0d);
             }
             if (pause == 20 && catchFx == null) {
-                if (rower != null) {
-                    rower.swingMainHand();
-                }
+                swingHand();
                 sound(bobber, Sound.ENTITY_FISHING_BOBBER_RETRIEVE, 0.7f, 1.0f, 36.0d);
                 Material fish = switch (ThreadLocalRandom.current().nextInt(5)) {
                     case 0, 1 -> Material.COD;
                     case 2, 3 -> Material.SALMON;
                     default -> Material.TROPICAL_FISH;
                 };
-                catchFx = world.spawn(bobber, ItemDisplay.class, d -> {
+                catchFx = own(world.spawn(bobber, ItemDisplay.class, d -> {
                     d.setItemStack(new ItemStack(fish));
                     d.setPersistent(false);
                     d.addScoreboardTag(TAG);
@@ -1100,7 +1262,7 @@ public final class OriginBay implements Listener {
                     d.setViewRange(1.0f);
                     d.setBillboard(Display.Billboard.FIXED);
                     d.setTransformation(new Transformation(new Vector3f(), new Quaternionf(), new Vector3f(0.6f, 0.6f, 0.6f), new Quaternionf()));
-                });
+                }));
                 catchTicks = 0;
             }
         }
@@ -1130,13 +1292,13 @@ public final class OriginBay implements Listener {
                 return;
             }
             Location at = boat.getLocation();
-            cargo = world.spawn(at, BlockDisplay.class, d -> {
+            cargo = own(world.spawn(at, BlockDisplay.class, d -> {
                 d.setBlock(block("minecraft:barrel[facing=up]"));
                 d.setPersistent(false);
                 d.addScoreboardTag(TAG);
                 d.setViewRange(2.0f);
                 d.setTransformation(new Transformation(new Vector3f(-0.4f, 0.1f, -0.4f), new Quaternionf(), new Vector3f(0.8f, 0.8f, 0.8f), new Quaternionf()));
-            });
+            }));
             if (!boat.addPassenger(cargo)) {
                 remove(cargo);
                 cargo = null;
@@ -1149,7 +1311,7 @@ public final class OriginBay implements Listener {
         private void spawn(World world, double x, double z) {
             despawn();
             Location at = new Location(world, x, surface, z, Float.isNaN(yaw) ? 0.0f : yaw, 0.0f);
-            boat = world.spawn(at, Boat.class, b -> {
+            boat = own(world.spawn(at, Boat.class, b -> {
                 b.setPersistent(false);
                 b.addScoreboardTag(TAG);
                 b.setGravity(false);
@@ -1159,8 +1321,17 @@ public final class OriginBay implements Listener {
                 } catch (Throwable ignored) {
                     // newer servers split boat kinds into entity types; the default boat is fine
                 }
-            });
-            rower = world.spawn(at, Villager.class, v -> {
+            }));
+            Color coat = "a".equals(id) ? Color.fromRGB(46, 92, 110) : Color.fromRGB(122, 74, 40);
+            if (hand.spawn(at.clone().add(0.0d, HAND_UP, 0.0d), coat, null, isle.plugin().getLogger())) {
+                shaft = display(world, at, "minecraft:stripped_spruce_log[axis=y]", 1.5f, 0);
+                blade = display(world, at, "minecraft:spruce_planks", 1.5f, 0);
+                shaft.setTeleportDuration(2);
+                blade.setTeleportDuration(2);
+                rodOut = false;
+                return;
+            }
+            rower = own(world.spawn(at, Villager.class, v -> {
                 v.setPersistent(false);
                 v.addScoreboardTag(TAG);
                 v.setAI(false);
@@ -1172,7 +1343,7 @@ public final class OriginBay implements Listener {
                 v.setVillagerType(Villager.Type.SWAMP);
                 v.setVillagerLevel(2);
                 v.getEquipment().setItemInMainHand(new ItemStack(Material.FISHING_ROD));
-            });
+            }));
             boat.addPassenger(rower);
         }
 
@@ -1183,6 +1354,12 @@ public final class OriginBay implements Listener {
             cargo = null;
             remove(rower);
             rower = null;
+            remove(shaft);
+            remove(blade);
+            shaft = null;
+            blade = null;
+            hand.despawn();
+            feet = null;
             remove(boat);
             boat = null;
             waitingForCrate = false;
@@ -1210,6 +1387,7 @@ public final class OriginBay implements Listener {
                 return;
             }
             if (body == null || !body.isValid()) {
+                despawn(); // a resting chunk reports its old buoy invalid: never leave it behind
                 Location l = new Location(world, at[0], at[1], at[2]);
                 String paint = switch (colour) {
                     case "green" -> "minecraft:green_concrete";
@@ -1251,6 +1429,306 @@ public final class OriginBay implements Listener {
             body = null;
             band = null;
             lamp = null;
+        }
+    }
+
+    // ================================================================== the sky pier
+
+    /** Tower centre to the Halcyon's centre line: her hull and canvas wings reach 4.6, the platform 2.2. */
+    private static final double PIER_OFFSET = 7.2d;
+
+    /**
+     * Where the Halcyon berths: a timber mooring tower standing in the bay beside her hold point, its platform
+     * level with her deck. When she is in, the pier hand throws two lines across and lowers a gangplank onto her
+     * rail; the crate still goes down from her keel into the skiff waiting under the hull. The side (east or west
+     * of her) is picked on the live map: the first whose column is open water up to clear sky. With no room on
+     * either side she holds over the water as before. Display entities only, no blocks.
+     */
+    private final class SkyPier {
+        private final double[] hover;
+        private final String mode;
+        private int side;
+        private boolean off;
+        private double cx;
+        private double cz;
+        private double top;
+        private int water;
+        private int bed;
+        private final List<BlockDisplay> fixed = new ArrayList<>();
+        private BlockDisplay plank;
+        private BlockDisplay lineBow;
+        private BlockDisplay lineStern;
+        private BlockDisplay sock;
+        private BlockDisplay sockTip;
+        private final OriginHand hand = new OriginHand("aeth_bay_pierhand");
+        private Location handAt;
+        private boolean docked;
+
+        SkyPier(double[] hover, String mode) {
+            this.hover = hover;
+            this.mode = mode == null ? "auto" : mode.trim().toLowerCase(java.util.Locale.ROOT);
+        }
+
+        boolean ready() {
+            return side != 0 && !off;
+        }
+
+        /** She berths bow first, the way she comes in from the north. */
+        float berthYaw() {
+            return 0.0f;
+        }
+
+        String report() {
+            if (off) {
+                return "§8no room (she holds over the water)";
+            }
+            if (side == 0) {
+                return "§7not placed yet";
+            }
+            return (side > 0 ? "§aeast" : "§awest") + " §7at §f" + Math.round(cx) + " " + Math.round(top) + " " + Math.round(cz)
+                    + " §8(water " + water + ", bed " + bed + ")" + (docked ? " §a· berthed" : "");
+        }
+
+        void tick(World world) {
+            if (off) {
+                return;
+            }
+            if (!loaded(world, hover[0] - PIER_OFFSET - 3, hover[2] - 3) || !loaded(world, hover[0] + PIER_OFFSET + 3, hover[2] + 3)) {
+                despawn();
+                return;
+            }
+            if (side == 0 && !choose(world)) {
+                return;
+            }
+            if (fixed.isEmpty() || !fixed.get(0).isValid()) {
+                spawn(world);
+            }
+            if (tick % 40 == 0) {
+                sockSway(40);
+            }
+        }
+
+        private boolean choose(World world) {
+            List<Integer> order = switch (mode) {
+                case "east" -> List.of(1);
+                case "west" -> List.of(-1);
+                case "off", "none", "false" -> List.of();
+                default -> List.of(1, -1);
+            };
+            List<String> why = new ArrayList<>();
+            for (int s : order) {
+                double x = hover[0] + s * PIER_OFFSET;
+                String no = fits(world, x, hover[2]);
+                if (no == null) {
+                    side = s;
+                    cx = x;
+                    cz = hover[2];
+                    isle.plugin().getLogger().info("Origin bay: sky pier stands " + (s > 0 ? "east" : "west") + " of the Halcyon's berth at "
+                            + Math.round(cx) + " " + Math.round(top) + " " + Math.round(cz) + " (water " + water + ", bed " + bed + ").");
+                    return true;
+                }
+                why.add((s > 0 ? "east: " : "west: ") + no);
+            }
+            off = true;
+            isle.plugin().getLogger().warning("Origin bay: no room for the sky pier " + why + "; the Halcyon holds over the water.");
+            return false;
+        }
+
+        /** Null when a tower at {@code x z} stands in open water with clear air up to above its platform. */
+        private String fits(World world, double x, double z) {
+            top = hover[1] + 1.5d;
+            int bx = (int) Math.floor(x);
+            int bz = (int) Math.floor(z);
+            int y = (int) Math.floor(top) + 4;
+            int found = Integer.MIN_VALUE;
+            for (int scan = y; scan > world.getMinHeight() && scan > y - 70; scan--) {
+                org.bukkit.block.Block b = world.getBlockAt(bx, scan, bz);
+                if (b.getType() == Material.WATER) {
+                    found = scan;
+                    break;
+                }
+                if (!b.isPassable()) {
+                    return "solid " + b.getType().name().toLowerCase(java.util.Locale.ROOT) + " at y " + scan;
+                }
+            }
+            if (found == Integer.MIN_VALUE) {
+                return "no water below";
+            }
+            water = found;
+            for (int dx = -2; dx <= 2; dx++) {
+                for (int dz = -2; dz <= 2; dz++) {
+                    for (int yy = water + 1; yy <= y; yy++) {
+                        org.bukkit.block.Block b = world.getBlockAt(bx + dx, yy, bz + dz);
+                        if (!b.isPassable() || b.getType() == Material.LAVA) {
+                            return b.getType().name().toLowerCase(java.util.Locale.ROOT) + " at " + b.getX() + " " + yy + " " + b.getZ();
+                        }
+                    }
+                    if (Math.abs(dx) <= 1 && Math.abs(dz) <= 1 && world.getBlockAt(bx + dx, water, bz + dz).getType() != Material.WATER) {
+                        return "not open water at " + (bx + dx) + " " + water + " " + (bz + dz);
+                    }
+                }
+            }
+            bed = water - 30;
+            for (int yy = water - 1; yy > world.getMinHeight() && yy > water - 48; yy--) {
+                org.bukkit.block.Block b = world.getBlockAt(bx, yy, bz);
+                if (b.getType() != Material.WATER && !b.isPassable()) {
+                    bed = yy + 1;
+                    break;
+                }
+            }
+            return null;
+        }
+
+        private void add(World world, Location at, String state, Transformation tr) {
+            BlockDisplay d = display(world, at, state, 2.5f, 0);
+            d.setTransformation(tr);
+            fixed.add(d);
+        }
+
+        private void spawn(World world) {
+            despawn();
+            Location a = new Location(world, cx, top, cz);
+            float s = side;
+            float capTop = (float) (water + 1.5d - top);
+            float capBottom = (float) (water - 0.6d - top);
+            float bedRel = (float) (bed - top);
+            // footing to the sea bed, the stone caisson at the waterline and its cap
+            if (capBottom - bedRel > 0.2f) {
+                add(world, a, "minecraft:stone_bricks", box(0f, 0f, (bedRel + capBottom) / 2f, 0f, 3.0f, capBottom - bedRel, 3.0f, null));
+            }
+            add(world, a, "minecraft:stone_bricks", box(0f, 0f, (capBottom + capTop) / 2f, 0f, 3.6f, capTop - capBottom, 3.6f, null));
+            add(world, a, "minecraft:smooth_stone", box(0f, 0f, capTop + 0.06f, 0f, 3.8f, 0.12f, 3.8f, null));
+            // four posts, a girt every four blocks and one brace per face and bay
+            float under = -0.28f;
+            float postH = under - capTop;
+            for (float px : new float[]{-1.25f, 1.25f}) {
+                for (float pz : new float[]{-1.25f, 1.25f}) {
+                    add(world, a, "minecraft:stripped_dark_oak_log[axis=y]", box(0f, px, capTop + postH / 2f, pz, 0.36f, postH, 0.36f, null));
+                }
+            }
+            int bays = Math.max(1, Math.round(postH / 4.0f));
+            float step = postH / bays;
+            for (int i = 0; i < bays; i++) {
+                float y0 = capTop + i * step;
+                float y1 = y0 + step;
+                if (i > 0) {
+                    for (float f : new float[]{-1.25f, 1.25f}) {
+                        add(world, a, "minecraft:dark_oak_planks", box(0f, 0f, y0, f, 2.5f, 0.16f, 0.16f, null));
+                        add(world, a, "minecraft:dark_oak_planks", box(0f, f, y0, 0f, 0.16f, 0.16f, 2.5f, null));
+                    }
+                }
+                float flip = i % 2 == 0 ? 1f : -1f;
+                for (float f : new float[]{-1.25f, 1.25f}) {
+                    add(world, a, "minecraft:dark_oak_planks",
+                            bar(new Vector3f(f, y0, -1.25f * flip), new Vector3f(f, y1, 1.25f * flip), 0.12f, 0.12f));
+                    add(world, a, "minecraft:dark_oak_planks",
+                            bar(new Vector3f(-1.25f * flip, y0, f), new Vector3f(1.25f * flip, y1, f), 0.12f, 0.12f));
+                }
+            }
+            // deck on two beams, rails with a gap on her side for the gangplank
+            add(world, a, "minecraft:dark_oak_planks", box(0f, 0f, -0.42f, 0f, 4.4f, 0.28f, 0.34f, null));
+            add(world, a, "minecraft:dark_oak_planks", box(0f, 0f, -0.42f, 0f, 0.34f, 0.28f, 4.4f, null));
+            add(world, a, "minecraft:spruce_planks", box(0f, 0f, -0.13f, 0f, 4.4f, 0.26f, 4.4f, null));
+            for (float px : new float[]{-2.05f, 2.05f}) {
+                for (float pz : new float[]{-2.05f, 2.05f}) {
+                    add(world, a, "minecraft:dark_oak_planks", box(0f, px, 0.5f, pz, 0.14f, 1.0f, 0.14f, null));
+                }
+            }
+            add(world, a, "minecraft:dark_oak_planks", box(0f, s * 2.05f, 0.95f, 0f, 0.1f, 0.1f, 4.2f, null));
+            add(world, a, "minecraft:dark_oak_planks", box(0f, 0f, 0.95f, -2.05f, 4.2f, 0.1f, 0.1f, null));
+            add(world, a, "minecraft:dark_oak_planks", box(0f, 0f, 0.95f, 2.05f, 4.2f, 0.1f, 0.1f, null));
+            add(world, a, "minecraft:dark_oak_planks", box(0f, -s * 2.05f, 0.95f, -0.8f, 0.1f, 0.1f, 2.5f, null));
+            // a ladder up the far face
+            String ladder = "minecraft:ladder[facing=" + (side > 0 ? "east" : "west") + "]";
+            for (float y = capTop + 0.5f; y < under - 0.4f; y += 1.0f) {
+                add(world, a, ladder, box(0f, s * 1.93f, y, 0.0f, 1.0f, 1.0f, 1.0f, null));
+            }
+            // mooring bollards on her side, the lamp post and the windsock on the far corners
+            for (float pz : new float[]{-1.7f, 1.7f}) {
+                add(world, a, "minecraft:polished_deepslate", box(0f, -s * 1.8f, 0.25f, pz, 0.32f, 0.5f, 0.32f, null));
+            }
+            add(world, a, "minecraft:dark_oak_planks", box(0f, s * 1.9f, 1.3f, -1.9f, 0.14f, 2.6f, 0.14f, null));
+            add(world, a, "minecraft:dark_oak_planks", box(0f, s * 1.6f, 2.55f, -1.9f, 0.62f, 0.1f, 0.1f, null));
+            BlockDisplay lamp = display(world, a, "minecraft:lantern[hanging=true]", 2.5f, 15);
+            lamp.setTransformation(box(0f, s * 1.38f, 2.2f, -1.9f, 0.5f, 0.5f, 0.5f, null));
+            fixed.add(lamp);
+            add(world, a, "minecraft:stripped_spruce_log[axis=y]", box(0f, s * 1.9f, 1.8f, 1.9f, 0.12f, 3.6f, 0.12f, null));
+            sock = display(world, a, "minecraft:red_wool", 2.5f, 0);
+            sockTip = display(world, a, "minecraft:white_wool", 2.5f, 0);
+            sockSway(0);
+            // gangplank and lines, stowed until she is in
+            plank = display(world, a, "minecraft:spruce_planks", 2.5f, 0);
+            lineBow = display(world, a, "minecraft:chain[axis=y]", 2.5f, 0);
+            lineStern = display(world, a, "minecraft:chain[axis=y]", 2.5f, 0);
+            dock(docked, 0);
+            handAt = new Location(world, cx - s * 1.1d, top, cz + 0.4d, yawOf(-s, 0.0d), 6.0f);
+            hand.spawn(handAt, Color.fromRGB(150, 110, 60), new ItemStack(Material.LEAD), isle.plugin().getLogger());
+        }
+
+        private void sockSway(int ticks) {
+            if (sock == null) {
+                return;
+            }
+            double wind = Math.toRadians(35.0d * Math.sin(tick * 0.004d) + 8.0d * Math.sin(tick * 0.031d));
+            float s = side;
+            Vector3f root = new Vector3f(s * 1.9f, 3.45f, 1.9f);
+            Vector3f mid = new Vector3f(root).add((float) (Math.cos(wind) * 0.7d * s), -0.12f, (float) (Math.sin(wind) * 0.7d));
+            Vector3f end = new Vector3f(root).add((float) (Math.cos(wind) * 1.3d * s), -0.3f, (float) (Math.sin(wind) * 1.3d));
+            morph(sock, bar(root, mid, 0.34f, 0.34f), ticks);
+            morph(sockTip, bar(mid, end, 0.26f, 0.26f), ticks);
+        }
+
+        /** Lines across and the gangplank down onto her rail ({@code true}), or both stowed. */
+        void dock(boolean in, int ticks) {
+            docked = in;
+            if (plank == null) {
+                return;
+            }
+            float s = side;
+            Vector3f foot = new Vector3f(-s * 2.15f, 0.05f, 1.2f);
+            Vector3f bollardBow = new Vector3f(-s * 1.8f, 0.5f, 1.7f);
+            Vector3f bollardStern = new Vector3f(-s * 1.8f, 0.5f, -1.7f);
+            if (in) {
+                morph(plank, bar(foot, new Vector3f(-s * 4.9f, 0.66f, 1.2f), 0.1f, 0.9f), ticks);
+                morph(lineBow, bar(bollardBow, new Vector3f(-s * 4.95f, 0.62f, 4.5f), 1.0f, 1.0f), ticks);
+                morph(lineStern, bar(bollardStern, new Vector3f(-s * 4.95f, 0.62f, -4.0f), 1.0f, 1.0f), ticks);
+            } else {
+                morph(plank, bar(foot, new Vector3f(foot).add(0f, 2.6f, 0f), 0.1f, 0.9f), ticks);
+                morph(lineBow, bar(bollardBow, new Vector3f(bollardBow).add(0f, 0.01f, 0f), 0.001f, 0.001f), ticks);
+                morph(lineStern, bar(bollardStern, new Vector3f(bollardStern).add(0f, 0.01f, 0f), 0.001f, 0.001f), ticks);
+            }
+        }
+
+        /** Called by the Halcyon: she is in (lines over, plank down) or about to cast off. */
+        void berth(boolean in) {
+            if (!ready() || plank == null || docked == in) {
+                return;
+            }
+            dock(in, in ? 20 : 14);
+            Location at = new Location(plank.getWorld(), cx - side * 2.5d, top + 0.5d, cz);
+            sound(at, in ? Sound.BLOCK_CHAIN_PLACE : Sound.BLOCK_CHAIN_BREAK, 1.1f, 0.7f, 70.0d);
+            sound(at, Sound.BLOCK_WOOD_PLACE, 1.0f, in ? 0.7f : 0.9f, 60.0d);
+            if (hand.alive() && handAt != null) {
+                hand.move(handAt, true);
+            }
+        }
+
+        void despawn() {
+            for (BlockDisplay d : fixed) {
+                remove(d);
+            }
+            fixed.clear();
+            remove(plank);
+            remove(lineBow);
+            remove(lineStern);
+            remove(sock);
+            remove(sockTip);
+            plank = null;
+            lineBow = null;
+            lineStern = null;
+            sock = null;
+            sockTip = null;
+            hand.despawn();
         }
     }
 
@@ -1297,6 +1775,9 @@ public final class OriginBay implements Listener {
         private BlockDisplay lamp;
         private BlockDisplay hold;
         private Boat puntBoat;
+        /** The lighterman (FancyNpcs); {@link #puntHand} only when FancyNpcs is missing. */
+        private final OriginHand lighterman = new OriginHand("aeth_bay_lighterman");
+        private Location lightermanAt;
         private Villager puntHand;
 
         private CraneMove move = CraneMove.REST;
@@ -1516,7 +1997,9 @@ public final class OriginBay implements Listener {
             sound(tip, Sound.BLOCK_BARREL_CLOSE, 0.9f, 0.8f, 40.0d);
             sound(tip, Sound.BLOCK_WOOD_PLACE, 0.8f, 0.7f, 40.0d);
             particles(tip.clone().add(0, -0.4, 0), Particle.SPLASH, 8, 0.4d, 0.05d, 40.0d);
-            if (puntHand != null && puntHand.isValid()) {
+            if (lighterman.alive()) {
+                lighterman.move(lightermanAt, true);
+            } else if (puntHand != null && puntHand.isValid()) {
                 puntHand.swingMainHand();
             }
         }
@@ -1576,25 +2059,30 @@ public final class OriginBay implements Listener {
             if (punt != null && loaded(world, punt[0], punt[2])) {
                 float puntYaw = (float) (punt.length > 3 ? punt[3] : 0.0d);
                 Location p = new Location(world, punt[0], punt[1], punt[2], puntYaw, 0.0f);
-                puntBoat = world.spawn(p, Boat.class, b -> {
+                puntBoat = own(world.spawn(p, Boat.class, b -> {
                     b.setPersistent(false);
                     b.addScoreboardTag(TAG);
                     b.setGravity(false);
                     b.setInvulnerable(true);
-                });
-                puntHand = world.spawn(p, Villager.class, v -> {
-                    v.setPersistent(false);
-                    v.addScoreboardTag(TAG);
-                    v.setAI(false);
-                    v.setSilent(true);
-                    v.setInvulnerable(true);
-                    v.setCollidable(false);
-                    v.setProfession(Villager.Profession.MASON);
-                    v.setVillagerType(Villager.Type.TAIGA);
-                });
-                puntBoat.addPassenger(puntHand);
-                // a crate already stowed in the bow, so the lighter reads as cargo from the pier
+                }));
                 double rad = Math.toRadians(puntYaw);
+                // he stands just forward of the middle and faces the stern, where the crane lowers the load
+                lightermanAt = new Location(world, punt[0] - Math.sin(rad) * 0.12d, punt[1] + HAND_UP, punt[2] + Math.cos(rad) * 0.12d,
+                        wrap(puntYaw + 180.0f), 18.0f);
+                if (!lighterman.spawn(lightermanAt, Color.fromRGB(96, 104, 70), null, isle.plugin().getLogger())) {
+                    puntHand = own(world.spawn(p, Villager.class, v -> {
+                        v.setPersistent(false);
+                        v.addScoreboardTag(TAG);
+                        v.setAI(false);
+                        v.setSilent(true);
+                        v.setInvulnerable(true);
+                        v.setCollidable(false);
+                        v.setProfession(Villager.Profession.MASON);
+                        v.setVillagerType(Villager.Type.TAIGA);
+                    }));
+                    puntBoat.addPassenger(puntHand);
+                }
+                // a crate already stowed in the bow, so the lighter reads as cargo from the pier
                 Location bow = new Location(world, punt[0] - Math.sin(rad) * 0.75d, punt[1] + 0.2d, punt[2] + Math.cos(rad) * 0.75d);
                 hold = display(world, bow, "minecraft:barrel[facing=up]", 2.0f, 0);
                 hold.setTransformation(box(puntYaw, 0f, 0.28f, 0f, 0.56f, 0.56f, 0.56f, null));
@@ -1741,6 +2229,7 @@ public final class OriginBay implements Listener {
             head = null;
             hold = null;
             remove(puntHand);
+            lighterman.despawn();
             remove(puntBoat);
             puntHand = null;
             puntBoat = null;

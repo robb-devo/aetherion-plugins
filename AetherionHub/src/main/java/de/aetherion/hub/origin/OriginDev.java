@@ -15,7 +15,7 @@ public final class OriginDev {
 
     public static final List<String> ACTIONS = List.of(
             "status", "reload", "event", "toll", "anchor", "cast", "seed", "softlight", "tp", "updraft", "fly",
-            "vista", "profile", "bay", "props", "tales", "curio", "life", "explore");
+            "vista", "profile", "bay", "underside", "props", "tales", "curio", "life", "explore");
 
     private final OriginIsle isle;
 
@@ -90,6 +90,7 @@ public final class OriginDev {
                 }
                 case "profile" -> profile(player, arg);
                 case "bay" -> isle.bay().dev(arg);
+                case "underside" -> OriginUnderside.run(isle, player, "apply".equals(arg));
                 case "props" -> isle.props().dev(player, player, parts);
                 case "tales" -> isle.tales().dev(player, parts);
                 case "curio" -> isle.curiosities().dev(player, parts);
