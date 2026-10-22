@@ -138,6 +138,7 @@ final class CombatListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onQuit(PlayerQuitEvent event) {
+        system.tempo().clear(event.getPlayer());
         system.forget(event.getPlayer().getUniqueId());
     }
 

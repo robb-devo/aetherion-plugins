@@ -10,6 +10,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -79,6 +80,9 @@ public final class CombatConfig {
     final double maxMult;
     final double bossBonusScale;
     final List<String> exemptItems;
+    final boolean tempo;
+    /** Swings per second by weapon class (see {@link WeaponTempo#kind}). */
+    final Map<String, Double> tempoSpeeds;
 
     final double intensity;
     final int hitstopTicks;
@@ -161,6 +165,19 @@ public final class CombatConfig {
         bossBonusScale = clamp(m.getDouble("boss-bonus-scale", 0.5), 0.0, 1.0);
         exemptItems = m.getStringList("exempt-items").stream()
                 .map(id -> id.toLowerCase(Locale.ROOT)).filter(id -> !id.isBlank()).toList();
+        ConfigurationSection t = m.getConfigurationSection("attack-speed");
+        tempo = t == null || t.getBoolean("enabled", true);
+        tempoSpeeds = Map.of(
+                "dagger", speed(t, "dagger", 2.0),
+                "blade", speed(t, "blade", 1.8),
+                "sword", speed(t, "sword", 1.6),
+                "scythe", speed(t, "scythe", 1.2),
+                "spear", speed(t, "spear", 1.1),
+                "axe", speed(t, "axe", 1.0),
+                "heavy", speed(t, "heavy", 0.8),
+                "mace", speed(t, "mace", 0.7),
+                "tool", speed(t, "tool", 1.2),
+                "other", speed(t, "other", 1.6));
 
         ConfigurationSection f = section(y, "feedback");
         intensity = clamp(f.getDouble("intensity", 1.0), 0.0, 1.0);
@@ -229,6 +246,10 @@ public final class CombatConfig {
         } catch (IllegalArgumentException ex) {
             return BossParry.NEGATE;
         }
+    }
+
+    private static double speed(ConfigurationSection section, String key, double fallback) {
+        return clamp(section == null ? fallback : section.getDouble(key, fallback), 0.25, 4.0);
     }
 
     private static double clamp(double v, double lo, double hi) {

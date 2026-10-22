@@ -59,6 +59,7 @@ public final class CombatSystem {
     private final Mobility mobility;
     private final Guard guard;
     private final MeleeCadence cadence;
+    private final WeaponTempo tempo;
     private final CombatTutorial tutorial;
     private final TrainingDummy dummies;
     private BukkitTask task;
@@ -72,6 +73,7 @@ public final class CombatSystem {
         this.mobility = new Mobility(this);
         this.guard = new Guard(this);
         this.cadence = new MeleeCadence(this);
+        this.tempo = new WeaponTempo(this);
         this.tutorial = new CombatTutorial(this);
         this.dummies = new TrainingDummy(this);
     }
@@ -99,6 +101,9 @@ public final class CombatSystem {
             system.task.cancel();
         }
         CombatCommand.unregister(system.plugin);
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            system.tempo.clear(player);
+        }
         system.dummies.removeAll();
         system.guard.releaseAll();
         system.feedback.releaseAll();
@@ -223,6 +228,10 @@ public final class CombatSystem {
 
     MeleeCadence cadence() {
         return cadence;
+    }
+
+    WeaponTempo tempo() {
+        return tempo;
     }
 
     CombatTutorial tutorial() {
@@ -398,6 +407,11 @@ public final class CombatSystem {
             regen(state, cfg, tick);
             guard.tick(player, state, tick);
             mobility.tick(player, state, tick);
+        }
+        if (tick % 2 == 0) {
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                tempo.refresh(player);
+            }
         }
         guard.tickStaggers(tick);
         feedback.tick(tick);

@@ -59,8 +59,9 @@ final class PathwardenDirector {
     private static final double SPIN_RADIUS = 5.8;
     private static final double SMASH_RADIUS = 4.4;
     private static final int SMASH_TELL = 8;
-    private static final int BEAM_SEEK = 80;
-    private static final int BEAM_LOCK = 45;
+    private static final int BEAM_SEEK = 60;
+    // Locked to blast in 0.8 s: only a player already running gets out.
+    private static final int BEAM_LOCK = 16;
     private static final int BEAM_FIRE = 14;
     private static final double BEAM_ZONE = 4.2;
     private static final double BEAM_BLAST = 4.2;
@@ -73,6 +74,11 @@ final class PathwardenDirector {
     private static final int VERDICT_TELL = 20;
     private static final double VERDICT_RADIUS = 2.2;
     private static final int BEAM_LEAD = 8;
+    private static final double REBUKE_RANGE = 5.0;
+    private static final int REBUKE_CROWD = 50;
+    private static final int REBUKE_TELL = 10;
+    private static final int REBUKE_WAVE = 8;
+    private static final double REBUKE_RADIUS = 7.5;
 
     private static final double MUSIC_RANGE = 48.0;
 
@@ -100,6 +106,11 @@ final class PathwardenDirector {
     private int smashCd;
     private int kiteTicks;
     private int verdictCd;
+    private int crowdTicks;
+    private int rebukeCd;
+    private int rebukeTick = -1;
+    private Location rebukeAt;
+    private final Set<UUID> rebukeHit = new HashSet<>();
     private FightMusic music;
 
     PathwardenDirector(BossInstance instance) {
@@ -130,6 +141,9 @@ final class PathwardenDirector {
         smashCd = 40;
         verdictCd = 120;
         kiteTicks = 0;
+        rebukeCd = 100;
+        crowdTicks = 0;
+        rebukeTick = -1;
         tracks.clear();
         spinPhase = -1;
         beamPhase = -1;
@@ -145,6 +159,7 @@ final class PathwardenDirector {
         deathTicks = -1;
         spinPhase = -1;
         beamPhase = -1;
+        rebukeTick = -1;
     }
 
     boolean beginDeath() {
@@ -271,9 +286,12 @@ final class PathwardenDirector {
             return false;
         }
         track(entity);
-        handAura(entity);
         if (beamPhase >= 0) {
             tickBeam(entity);
+            return false;
+        }
+        if (rebukeTick >= 0) {
+            tickRebuke(entity);
             return false;
         }
         maybeStartBeam(entity);
@@ -295,6 +313,10 @@ final class PathwardenDirector {
             smashCd--;
         }
         watchKiters(entity);
+        watchCrowd(entity);
+        if (rebukeTick >= 0) {
+            return false;
+        }
         slowCrawl(entity);
         return false;
     }
@@ -412,6 +434,82 @@ final class PathwardenDirector {
         });
     }
 
+    /** Standing in his guard and hitting him is answered with the Iron Rebuke, a floor wave you have to jump. */
+    private void watchCrowd(LivingEntity entity) {
+        if (rebukeCd > 0) {
+            rebukeCd--;
+        }
+        Location at = entity.getLocation();
+        boolean crowded = false;
+        for (Player player : entity.getWorld().getPlayers()) {
+            Location l = player.getLocation();
+            double dx = l.getX() - at.getX();
+            double dz = l.getZ() - at.getZ();
+            if (vulnerable(player) && dx * dx + dz * dz <= REBUKE_RANGE * REBUKE_RANGE && Math.abs(l.getY() - at.getY()) < 3.0) {
+                crowded = true;
+                break;
+            }
+        }
+        crowdTicks = crowded ? crowdTicks + 1 : Math.max(0, crowdTicks - 2);
+        if (crowdTicks < REBUKE_CROWD || rebukeCd > 0 || spinPhase >= 0 || (smashCd > 0 && smashCd <= SMASH_TELL)) {
+            return;
+        }
+        crowdTicks = 0;
+        rebukeCd = instance.healthPercent() <= 50.0 ? 100 : 140;
+        rebukeTick = 0;
+        rebukeAt = ground(at);
+        rebukeHit.clear();
+        World world = entity.getWorld();
+        world.playSound(at, Sound.BLOCK_ANVIL_LAND, 0.9f, 0.5f);
+        world.playSound(at, Sound.ITEM_ARMOR_EQUIP_NETHERITE, 1.2f, 0.5f);
+        for (Player player : world.getPlayers()) {
+            if (vulnerable(player) && player.getLocation().distanceSquared(at) <= 14 * 14) {
+                player.sendActionBar(TextUtil.component("&cIron Rebuke &7· jump the wave"));
+            }
+        }
+    }
+
+    /** Ten ticks of tell (iron ring, white on the last beat), then the wave runs out and hits whoever is on the floor at its front. */
+    private void tickRebuke(LivingEntity entity) {
+        rebukeTick++;
+        World world = entity.getWorld();
+        if (rebukeTick <= REBUKE_TELL) {
+            boolean last = REBUKE_TELL - rebukeTick < 4;
+            fx.halo("rebuke", rebukeAt, 1.8, last ? WardenFx.WHITE_TONE : WardenFx.IRON_TONE);
+            if (rebukeTick == REBUKE_TELL) {
+                fx.haloOff("rebuke");
+                fx.shockwave(rebukeAt, REBUKE_RADIUS, REBUKE_WAVE, WardenFx.IRON_TONE);
+                world.playSound(rebukeAt, Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 1.3f, 0.6f);
+                world.playSound(rebukeAt, Sound.ENTITY_GENERIC_EXPLODE, 0.6f, 0.8f);
+            }
+            return;
+        }
+        int k = rebukeTick - REBUKE_TELL;
+        double r = 1.0 + (REBUKE_RADIUS - 1.0) * k / REBUKE_WAVE;
+        for (Player player : world.getPlayers()) {
+            if (!vulnerable(player) || rebukeHit.contains(player.getUniqueId())) {
+                continue;
+            }
+            Location l = player.getLocation();
+            double dx = l.getX() - rebukeAt.getX();
+            double dz = l.getZ() - rebukeAt.getZ();
+            double d = Math.sqrt(dx * dx + dz * dz);
+            double dy = l.getY() - rebukeAt.getY();
+            // a jump clears the wave: anyone more than 0.7 above his floor is airborne
+            if (d < r - 1.0 || d > r + 0.3 || dy > 0.7 || dy < -1.5) {
+                continue;
+            }
+            rebukeHit.add(player.getUniqueId());
+            BossHits.hurt(player, entity, 260);
+            Vector away = d < 0.01 ? new Vector(1, 0, 0) : new Vector(dx / d, 0, dz / d);
+            player.setVelocity(away.multiply(1.4).setY(0.45));
+        }
+        if (k >= REBUKE_WAVE) {
+            rebukeTick = -1;
+            rebukeHit.clear();
+        }
+    }
+
     private void maybeStartBeam(LivingEntity entity) {
         if (spinPhase >= 0) {
             return;
@@ -449,12 +547,8 @@ final class PathwardenDirector {
             fx.cyclone(at, t, spinYaw);
             // Outer ring is the real hit edge; inner ring fills toward it as the clock.
             boolean strobe = SPIN_WINDUP - spinPhase < 6;
-            if (strobe) {
-                ringParticles(at, SPIN_RADIUS, WHITE, WHITE, 40);
-            } else if (spinPhase % 2 == 0) {
-                ringParticles(at, SPIN_RADIUS, CRIMSON, CRIMSON, 32);
-            }
-            ringParticles(at, 1.2 + t * (SPIN_RADIUS - 1.2), AZURE, CRIMSON, 18);
+            fx.halo("spin", at, SPIN_RADIUS, strobe ? WardenFx.WHITE_TONE : WardenFx.CRIMSON_TONE);
+            fx.halo("spinFill", at, 1.2 + t * (SPIN_RADIUS - 1.2), WardenFx.AZURE_TONE);
             if (spinPhase % 7 == 0) {
                 world.playSound(at, Sound.BLOCK_NOTE_BLOCK_BASS, 0.9f, 0.5f + (float) t * 1.2f);
             }
@@ -462,7 +556,7 @@ final class PathwardenDirector {
                 world.playSound(at, Sound.ENTITY_ENDER_DRAGON_FLAP, 0.9f, 0.55f);
                 world.playSound(at, Sound.ITEM_TRIDENT_RIPTIDE_3, 1.0f, 0.7f);
                 world.playSound(at, Sound.ENTITY_BREEZE_WIND_BURST, 1.2f, 0.5f);
-                world.spawnParticle(Particle.GUST_EMITTER_SMALL, at.clone().add(0, 2.5, 0), 1);
+                fx.haloOff("spinFill");
             }
             return;
         }
@@ -487,15 +581,14 @@ final class PathwardenDirector {
                 }
             });
             fx.cyclone(at, 1.0, spinYaw);
+            fx.halo("spin", at, SPIN_RADIUS, WardenFx.CRIMSON_TONE);
             if (active % 4 == 0) {
                 pullIn(entity, at);
-            }
-            if (active % 5 == 0) {
-                ringParticles(at, SPIN_RADIUS, CRIMSON, AZURE, 28);
             }
             if (active == SPIN_ACTIVE) {
                 world.playSound(at, Sound.ENTITY_IRON_GOLEM_REPAIR, 0.9f, 0.6f);
                 fx.cycloneRelease();
+                fx.haloOff("spin");
             }
             if (active % 5 == 0) {
                 hitAround(entity, SPIN_RADIUS, 280);
@@ -522,9 +615,6 @@ final class PathwardenDirector {
                 continue;
             }
             player.setVelocity(player.getVelocity().add(to.normalize().multiply(0.22)));
-            if (instance.getTicksAlive() % 8 == 0) {
-                player.getWorld().spawnParticle(Particle.CLOUD, player.getLocation().add(0, 0.6, 0), 3, 0.3, 0.2, 0.3, 0.02);
-            }
         }
     }
 
@@ -564,7 +654,7 @@ final class PathwardenDirector {
             Location want = locked != null ? ground(predict(entity, locked, BEAM_LEAD)) : beamFocus;
             beamFocus = lerp(beamFocus, want, 0.16);
             drawSeekBeam(from, beamFocus.clone().add(0, 0.2, 0), AZURE);
-            drawDangerZone(beamFocus, AZURE, false);
+            drawDangerZone(beamFocus, WardenFx.AZURE_TONE);
             if (beamTick >= BEAM_SEEK) {
                 beamPhase = 1;
                 beamTick = 0;
@@ -583,22 +673,20 @@ final class PathwardenDirector {
             // Zone freezes — leave the circle or eat the blast.
             double t = beamTick / (double) BEAM_LOCK;
             Color mix = mix(AZURE, CRIMSON, t);
-            boolean firing = BEAM_LOCK - beamTick < 10;
-            Color zone = firing && beamTick % 2 == 0 ? WHITE : mix;
+            boolean firing = BEAM_LOCK - beamTick < 6;
             drawSeekBeam(from, beamFocus.clone().add(0, 0.2, 0), mix);
-            drawDangerZone(beamFocus, zone, true);
-            if (firing) {
-                world.spawnParticle(Particle.END_ROD, beamFocus.clone().add(0, 1.5, 0), 4, 0.3, 1.2, 0.3, 0.02);
+            drawDangerZone(beamFocus, firing && beamTick % 2 == 0 ? WardenFx.WHITE_TONE : WardenFx.CRIMSON_TONE);
+            if (beamTick % 3 == 0) {
+                world.playSound(beamFocus, Sound.BLOCK_NOTE_BLOCK_PLING, 0.5f, (float) (0.7 + t));
             }
-            if (beamTick % 6 == 0) {
-                world.playSound(beamFocus, Sound.BLOCK_NOTE_BLOCK_PLING, 0.4f, (float) (0.7 + t));
-            }
-            if (beamTick == BEAM_LOCK - 10) {
+            if (beamTick == BEAM_LOCK - 6) {
                 world.playSound(beamFocus, Sound.BLOCK_BEACON_POWER_SELECT, 1.2f, 1.6f);
             }
             if (beamTick >= BEAM_LOCK) {
                 beamPhase = 2;
                 beamTick = 0;
+                fx.haloOff("zone");
+                fx.haloOff("zoneCore");
                 world.playSound(beamFocus, Sound.ENTITY_WARDEN_SONIC_BOOM, 1.25f, 0.55f);
                 world.playSound(beamFocus, Sound.ENTITY_GENERIC_EXPLODE, 0.95f, 0.55f);
             }
@@ -623,7 +711,6 @@ final class PathwardenDirector {
     private void fireNuke(LivingEntity entity) {
         World world = entity.getWorld();
         fx.judgment(beamFocus, BEAM_BLAST);
-        world.spawnParticle(Particle.EXPLOSION_EMITTER, beamFocus.clone().add(0, 0.4, 0), 1);
         boolean hitAnyone = false;
         double r2 = BEAM_BLAST * BEAM_BLAST;
         for (Player player : world.getPlayers()) {
@@ -648,7 +735,6 @@ final class PathwardenDirector {
         }
         if (!hitAnyone) {
             world.playSound(beamFocus, Sound.BLOCK_FIRE_EXTINGUISH, 1.1f, 0.7f);
-            world.spawnParticle(Particle.CLOUD, beamFocus.clone().add(0, 0.4, 0), 18, 0.45, 0.2, 0.45, 0.02);
             shout("&7Judgment &fmisses&7 — the path holds.");
         }
     }
@@ -713,12 +799,15 @@ final class PathwardenDirector {
             if (deathTicks % 8 == 0) {
                 world.playSound(strike, Sound.BLOCK_BEACON_AMBIENT, 0.7f, 0.6f + (float) t);
             }
-            ringParticles(strike.clone().add(0, -1.5, 0), 2.2 + t * 2.5, AZURE, CRIMSON, 14);
+            fx.halo("death", strike.clone().add(0, -1.5, 0), 2.2 + t * 2.5, WardenFx.CRIMSON_TONE);
             return false;
         }
 
         // 73-88: charged tremor — blades scream before the cut
         if (deathTicks < 89) {
+            if (deathTicks == 73) {
+                fx.haloOff("death");
+            }
             double shake = Math.sin(deathTicks * 1.4) * 0.18;
             bladeAzure = strike.clone().add(1.35 + shake, 3.6, 0.2);
             bladeCrimson = strike.clone().add(-1.35 - shake, 3.6, -0.2);
@@ -826,8 +915,8 @@ final class PathwardenDirector {
         Location at = entity.getLocation();
         boolean last = smashCd <= 2;
         double t = 1.0 - (smashCd - 1) / (double) SMASH_TELL;
-        ringParticles(at, SMASH_RADIUS, last ? WHITE : CRIMSON, last ? WHITE : CRIMSON, 26);
-        ringParticles(at, 0.8 + t * (SMASH_RADIUS - 0.8), CRIMSON, AZURE, 14);
+        fx.halo("smash", at, SMASH_RADIUS, last ? WardenFx.WHITE_TONE : WardenFx.CRIMSON_TONE);
+        fx.halo("smashFill", at, 0.8 + t * (SMASH_RADIUS - 0.8), WardenFx.AZURE_TONE);
         if (smashCd == SMASH_TELL) {
             world.playSound(at, Sound.ITEM_ARMOR_EQUIP_IRON, 1.1f, 0.5f);
             world.playSound(at, Sound.BLOCK_GRINDSTONE_USE, 0.6f, 0.55f);
@@ -836,8 +925,9 @@ final class PathwardenDirector {
 
     private void smashImpact(LivingEntity entity) {
         Location at = entity.getLocation();
+        fx.haloOff("smash");
+        fx.haloOff("smashFill");
         fx.smash(at, SMASH_RADIUS);
-        entity.getWorld().spawnParticle(Particle.EXPLOSION, at.clone().add(0, 0.4, 0), 1);
         entity.getWorld().playSound(at, Sound.ITEM_MACE_SMASH_GROUND, 1.0f, 0.6f);
     }
 
@@ -889,26 +979,6 @@ final class PathwardenDirector {
         }
         equipment.setItemInMainHand(new ItemStack(Material.AIR));
         equipment.setItemInOffHand(new ItemStack(Material.AIR));
-    }
-
-    /** Soft blue/red dust at hand height so the dual-blade theme still reads. */
-    private void handAura(LivingEntity entity) {
-        if (instance.getTicksAlive() % 4 != 0) {
-            return;
-        }
-        World world = entity.getWorld();
-        Location base = entity.getLocation().clone().add(0, Math.max(5.0, entity.getHeight() * 0.45), 0);
-        float yaw = base.getYaw();
-        double rad = Math.toRadians(yaw);
-        Vector right = new Vector(-Math.cos(rad), 0, -Math.sin(rad)).normalize().multiply(3.6);
-        Vector left = right.clone().multiply(-1);
-        Vector forward = new Vector(-Math.sin(rad), 0, Math.cos(rad)).multiply(1.2);
-        Location a = base.clone().add(right).add(forward);
-        Location c = base.clone().add(left).add(forward);
-        world.spawnParticle(Particle.DUST, a, 3, 0.18, 0.18, 0.18, new Particle.DustOptions(AZURE, 1.5f));
-        world.spawnParticle(Particle.DUST, c, 3, 0.18, 0.18, 0.18, new Particle.DustOptions(CRIMSON, 1.5f));
-        world.spawnParticle(Particle.SOUL_FIRE_FLAME, a, 1, 0.12, 0.12, 0.12, 0.005);
-        world.spawnParticle(Particle.SMALL_FLAME, c, 1, 0.12, 0.12, 0.12, 0.005);
     }
 
     private Location strikePoint() {
@@ -1101,12 +1171,10 @@ final class PathwardenDirector {
         }
     }
 
-    private void drawDangerZone(Location center, Color color, boolean pulsing) {
-        double radius = pulsing ? BEAM_ZONE * (1.0 + 0.06 * Math.sin(beamTick * 0.5)) : BEAM_ZONE;
-        WardenFx.rim(center.clone().add(0, 0.1, 0), radius, color, pulsing ? WHITE : color);
-        if (beamTick % 3 == 0) {
-            WardenFx.rim(center.clone().add(0, 0.1, 0), radius * 0.5, color, color);
-        }
+    /** The blast edge as a floor ring with a half-size ring inside: azure while it tracks, crimson once locked. */
+    private void drawDangerZone(Location center, int tone) {
+        fx.halo("zone", center, BEAM_ZONE, tone);
+        fx.halo("zoneCore", center, BEAM_ZONE * 0.5, tone);
     }
 
     private void drawSeekBeam(Location from, Location to, Color color) {
@@ -1115,10 +1183,6 @@ final class PathwardenDirector {
 
     private void drawFireBeam(Location from, Location to) {
         fx.lance(from, to, CRIMSON, 1.1f, true);
-    }
-
-    private void ringParticles(Location at, double radius, Color a, Color b, int points) {
-        WardenFx.rim(at.clone().add(0, 0.2, 0), radius, a, b);
     }
 
     private void hitAround(LivingEntity entity, double radius, double power) {
@@ -1246,6 +1310,7 @@ final class PathwardenDirector {
     private void clearCombatFx() {
         beamPhase = -1;
         spinPhase = -1;
+        rebukeTick = -1;
         fx.clear();
     }
 
