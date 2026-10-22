@@ -280,15 +280,6 @@ public final class CombatTheatrics {
         FakeDestruction.blockBurst(world, at, Material.CRYING_OBSIDIAN, 8);
     }
 
-        int points = Math.max(16, (int) (radius * 6));
-        Particle.DustOptions dust = new Particle.DustOptions(color, size);
-        for (int i = 0; i < points; i++) {
-            double angle = Math.PI * 2 * i / points;
-            world.spawnParticle(Particle.DUST, at.getX() + Math.cos(angle) * radius, at.getY() + 0.15,
-                    at.getZ() + Math.sin(angle) * radius, 1, 0, 0, 0, dust);
-        }
-    }
-
     private static void ringSquid(Location at, double radius) {
         World world = at.getWorld();
         world.playSound(at, Sound.ENTITY_SQUID_SQUIRT, 0.9f, 0.5f);
