@@ -21,16 +21,23 @@ import java.util.Set;
  * Commands that belong to another backend leave for it, so typing {@code /capital} on the isles works like
  * typing it in the capital: the character crosses to mmo-r and the command runs there on arrival.
  *
- * <p>Armed only on the backends listed in {@code network.routed-commands.on} (default mmo-c, mmo-i).
- * A label a local plugin owns (other than AetherionHub / AetherionDungeons, whose worlds live elsewhere)
- * stays local — except the {@code force-main} economy labels (Bazaar / Auction House live on mmo-r only).
+ * <p>Armed on every backend but the main world ({@code network.routed-commands.everywhere}, default true; the old
+ * {@code on} list still adds backends when it is switched off). The built-in labels always count; the config lists
+ * only add to them, so an old saved config can't switch a road off.
+ * <ul>
+ *   <li>mmo-c / mmo-i / mmo-d: main-world travel labels always cross, whoever answers them locally (an Essentials
+ *   {@code /spawn} on the exile must not keep people there). Only AetherionDungeons keeps its own labels on mmo-d
+ *   (its {@code /spawn} already sends people home through its own pipeline).</li>
+ *   <li>hub: only labels nobody answers there cross (the lobby keeps its own warps and {@code /spawn}); every road
+ *   from the hub leads to mmo-r first, which forwards {@code /island} & co. itself.</li>
+ * </ul>
  */
 public final class MainCommandRouter implements Listener {
 
     private static final List<String> DEFAULT_MAIN = List.of(
             "spawn", "hub", "spawns", "hubs", "spawnmenu",
-            "harbour", "oreridge", "ore_ridge", "mines", "capital", "forage", "forageisle", "farm", "farmisle",
-            "borderlands", "colosseum", "eldervale", "mining", "miningisle", "fishing", "fishingisle",
+            "harbour", "harbor", "hafen", "oreridge", "ore_ridge", "mines", "capital", "forage", "forageisle", "farm",
+            "farmisle", "borderlands", "colosseum", "eldervale", "mining", "miningisle", "fishing", "fishingisle",
             "summit", "skyreach", "whisperwood", "wilds", "origin", "originisle", "originjournal");
     private static final List<String> DEFAULT_DUNGEON = List.of("dhub", "dungeonhub", "dh");
     /**
@@ -39,31 +46,58 @@ public final class MainCommandRouter implements Listener {
      */
     private static final List<String> DEFAULT_FORCE_MAIN = List.of(
             "bazaar", "bz", "aetherbazaar", "ah", "auction", "auctionhouse", "aetherah");
+    /** From the hub only: island commands go to mmo-r first, whose island link carries on to the isles. */
+    private static final List<String> HUB_ISLANDS = List.of(
+            "island", "is", "insel", "guild", "g", "gilde", "friend", "friends", "freund", "freunde");
+    /** Spellings players type that the owning plugin may not know: replayed as the label it does. */
+    private static final Map<String, String> CANONICAL = Map.of("harbor", "harbour", "hafen", "harbour");
     private static final Set<String> FOREIGN_OWNERS = Set.of("AetherionHub", "AetherionDungeons");
 
     private final AetherionCore plugin;
     private final NetworkRouter router;
     private final Map<String, String> labelToRole = new HashMap<>();
     private final Set<String> forced = new HashSet<>();
+    private final Set<String> hubOnly = new HashSet<>();
 
     public MainCommandRouter(AetherionCore plugin, NetworkRouter router) {
         this.plugin = plugin;
         this.router = router;
         var cfg = plugin.getConfig();
         String base = "network.routed-commands.";
-        for (String label : cfg.isSet(base + "main") ? cfg.getStringList(base + "main") : DEFAULT_MAIN) {
+        for (String label : DEFAULT_MAIN) {
             put(label, "main");
         }
-        for (String label : cfg.isSet(base + "dungeon") ? cfg.getStringList(base + "dungeon") : DEFAULT_DUNGEON) {
+        for (String label : cfg.getStringList(base + "main")) {
+            put(label, "main");
+        }
+        for (String label : DEFAULT_DUNGEON) {
             put(label, "dungeon");
         }
-        for (String label : cfg.isSet(base + "force-main") ? cfg.getStringList(base + "force-main") : DEFAULT_FORCE_MAIN) {
+        for (String label : cfg.getStringList(base + "dungeon")) {
+            put(label, "dungeon");
+        }
+        List<String> market = new java.util.ArrayList<>(DEFAULT_FORCE_MAIN);
+        if (cfg.isSet(base + "force-main")) {
+            // an explicit empty list keeps a local market (documented opt-out); otherwise defaults + additions
+            List<String> configured = cfg.getStringList(base + "force-main");
+            if (configured.isEmpty()) {
+                market.clear();
+            } else {
+                market.addAll(configured);
+            }
+        }
+        for (String label : market) {
             put(label, "main");
             if (label != null && !label.isBlank()) {
                 forced.add(label.trim().toLowerCase(Locale.ROOT));
             }
         }
+        for (String label : HUB_ISLANDS) {
+            hubOnly.add(label);
+        }
         Bukkit.getPluginManager().registerEvents(this, plugin);
+        plugin.getLogger().info("[Route] command routing " + (armedHere() ? "armed on " + router.here()
+                + " (" + labelToRole.size() + " labels)" : "off on " + router.here()));
     }
 
     private void put(String label, String role) {
@@ -89,22 +123,37 @@ public final class MainCommandRouter implements Listener {
         }
         String first = line.split("\\s+")[0].toLowerCase(Locale.ROOT);
         String label = first.contains(":") ? first.substring(first.indexOf(':') + 1) : first;
+        String here = router.here();
+        boolean hub = ServerNames.isHub(here);
         String role = labelToRole.get(label);
+        if (role == null && hub && hubOnly.contains(label)) {
+            role = "main";
+        }
         if (role == null) {
             return;
         }
         PluginCommand local = Bukkit.getPluginCommand(label);
-        if (local != null && !forced.contains(label) && !FOREIGN_OWNERS.contains(local.getPlugin().getName())) {
-            return;
+        String owner = local == null ? null : local.getPlugin().getName();
+        if (owner != null && !forced.contains(label)) {
+            if (hub) {
+                return; // the lobby answers its own warps
+            }
+            if (ServerNames.isDungeon(here) && "AetherionDungeons".equals(owner)) {
+                return; // Dungeons' /spawn /hub /dhub on mmo-d
+            }
+            if (!"main".equals(role) && !FOREIGN_OWNERS.contains(owner)) {
+                return;
+            }
         }
-        String target = router.serverFor(role);
-        if (target.isBlank() || target.equalsIgnoreCase(router.here())) {
+        // From the hub every road runs through the main world (the character lives there, not on the hub).
+        String target = hub ? router.serverFor("main") : router.serverFor(role);
+        if (target.isBlank() || target.equalsIgnoreCase(here)) {
             return;
         }
         Player player = event.getPlayer();
         event.setCancelled(true);
-        // Replay without the namespace: the owning plugin on the target answers the plain label.
-        String replay = label + line.substring(first.length());
+        // Replay without the namespace, as the label the owning plugin on the target answers.
+        String replay = CANONICAL.getOrDefault(label, label) + line.substring(first.length());
         if (!router.travel(player, target, RouteBook.Kind.COMMAND, replay, null, "command:" + label)) {
             player.sendMessage("§7That road is closed right now — try again in a moment.");
         }

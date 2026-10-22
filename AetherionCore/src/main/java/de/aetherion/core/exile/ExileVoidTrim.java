@@ -28,12 +28,14 @@ import java.util.zip.InflaterInputStream;
  * {@code AetherionCore.onLoad} (worlds not loaded yet) when {@code plugins/AetherionCore/exile-void-trim.armed} exists,
  * once: the file becomes {@code .done} or {@code .aborted}.
  * <p>
- * {@link ExileMapPaste} cleared the island's box plus 48 blocks to air at every height before pasting, so the island is
- * ringed by at least two all-air chunks. Every chunk that still holds natural terrain (bedrock at the bottom, or not fully
- * generated) is deleted from region/, entities/ and poi/; with {@code generator: AetherionCore} for the world they come
- * back empty. Island and moat chunks are never touched. Aborts without changing anything when terrain touches a built
- * chunk (the island was not pasted that way), when nothing is built near the spawn, or on a format it can't read.
- * Changed region files are copied (whole ones moved) to {@code <world>.void-backup-<time>} next to the world first.
+ * The island was pasted into a fresh void world (Runde 7, generator AetherionCore); the overworld only came later, when
+ * the world lost its generator and every chunk not generated yet grew vanilla terrain, right up to the island's edge.
+ * A chunk that holds island blocks was generated (void) by the paste itself, so it can never carry natural bedrock.
+ * Every chunk that does (bedrock at the bottom, or not fully generated) is therefore pure overworld and is deleted from
+ * region/, entities/ and poi/, also where it touches the island; with {@code generator: AetherionCore} for the world
+ * it comes back empty. Built chunks are never touched. Aborts without changing anything when nothing is built near
+ * the spawn, or on a format it can't read. Changed region files are copied (whole ones moved) to
+ * {@code <world>.void-backup-<time>} next to the world first.
  */
 public final class ExileVoidTrim {
 
@@ -69,21 +71,17 @@ public final class ExileVoidTrim {
         }
         int built = 0;
         int terrain = 0;
+        List<String> edge = new ArrayList<>();
         for (Map.Entry<Long, Kind> e : chunks.entrySet()) {
             if (e.getValue() == Kind.BUILT) {
                 built++;
-                int cx = (int) (e.getKey() >> 32);
-                int cz = (int) (long) e.getKey();
-                for (int dx = -1; dx <= 1; dx++) {
-                    for (int dz = -1; dz <= 1; dz++) {
-                        if (chunks.get(key(cx + dx, cz + dz)) == Kind.TERRAIN) {
-                            return "aborted, nothing changed: terrain touches the island at chunk "
-                                    + (cx + dx) + "," + (cz + dz) + " (no air moat; was it pasted with /exile paste?)";
-                        }
-                    }
-                }
             } else if (e.getValue() == Kind.TERRAIN) {
                 terrain++;
+                int cx = (int) (e.getKey() >> 32);
+                int cz = (int) (long) e.getKey();
+                if (touchesBuilt(chunks, cx, cz)) {
+                    edge.add(cx + "," + cz);
+                }
             }
         }
         boolean nearSpawn = false;
@@ -116,8 +114,23 @@ public final class ExileVoidTrim {
             }
         }
         log.info("[ExileVoid] backup of the changed region files: " + backup.getPath());
-        return "trimmed " + terrain + " terrain chunks (" + files + " region files), kept " + built
-                + " built chunks and their air moat";
+        if (!edge.isEmpty()) {
+            log.info("[ExileVoid] terrain chunks right beside the island (gone too, in the backup): "
+                    + (edge.size() > 40 ? edge.subList(0, 40) + " … +" + (edge.size() - 40) : edge));
+        }
+        return "trimmed " + terrain + " terrain chunks (" + files + " region files, " + edge.size()
+                + " of them beside the island), kept " + built + " built chunks";
+    }
+
+    private static boolean touchesBuilt(Map<Long, Kind> chunks, int cx, int cz) {
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dz = -1; dz <= 1; dz++) {
+                if (chunks.get(key(cx + dx, cz + dz)) == Kind.BUILT) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private static long key(int cx, int cz) {
