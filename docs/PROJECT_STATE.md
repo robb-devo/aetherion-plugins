@@ -101,6 +101,18 @@ server already runs them, AetherMobs on mmo-r only, one restart per backend, bac
 - AetherMobs: pet bodies polished (cow and mooshroom patches, upright blaze rods, framed hacker terminal, 12-spike
   guardian, glow squid teal, dolphin slate, cat tail, butterfly wing borders).
 
+## Exile, ferry, islands, routing (2026-10-22, cloud session, PR #99)
+
+Deployed with `deploy-exile-isles.ps1` (Core, BossEngine, Hub jar on mmo-r; islands moved by `ae-islands-migrate.py`).
+- Veil Quay: `/exile turnquay [apply]` turned the islet 180° (`exile.quay.facing: east`, origin x - 58); the ferry casts
+  off east, away from the main island. Anchors, causeway entry (`ENTRY_TURNED`) and `repairquay` follow the facing.
+- Exile void: the trim deletes every terrain chunk (bedrock or half-generated), also right beside the island; island
+  chunks were generated void by the Runde 7 paste, so they never carry bedrock. Backup `<world>.void-backup-<time>`.
+- Islands live on mmo-i only: mmo-r's Guilds jar parked, data moved; `/island` `/insel` `/guild` `/friend` on mmo-r, mmo-c,
+  mmo-d cross to mmo-i (IslandLink), from the hub via mmo-r.
+- Routing: `network.routed-commands.everywhere: true` arms travel commands on every backend but mmo-r; built-in labels
+  always count, `/harbor` `/hafen` replay as `/harbour`; hub hops to mmo-r only for labels it does not answer itself.
+
 ## Content state (verified against live 2026-10-19)
 
 Live and committed: onboarding v2 (Acts I–VII incl. skill-isle lessons), exile crossing,
