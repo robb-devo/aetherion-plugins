@@ -1,0 +1,101 @@
+#!/bin/bash
+# helm-ctl: the one command the Helm gateway may run as root (sudo, see /etc/sudoers.d/aetherion-helm).
+# It only wraps the existing ops scripts, so power actions behave exactly like ae.ps1: graceful stop with the
+# LOCKED countdown, stop markers for the watchdog, session-lock cleanup on start.
+#
+#   helm-ctl status                     JSON: pid, stop marker and uptime per server
+#   helm-ctl sizes                      JSON: disk use per server and world, backup snapshots
+#   helm-ctl watchdog                   last lines of the watchdog log
+#   helm-ctl start|stop|restart|kill <id>
+set -uo pipefail
+
+OPS=/root/aetherion-ops
+BACKUPS=/var/backups/aetherion/snapshots
+IDS=(proxy hub mmor mmod mmoc mmoi)
+. "$OPS/ae-lib.sh"
+
+known() {
+  local i
+  for i in "${IDS[@]}"; do [[ "$1" == "$i" ]] && return 0; done
+  return 1
+}
+
+java_pid() {
+  # the java process itself (ae_pid can also match the nohup wrapper)
+  local dir="$1" p
+  for p in $(pgrep -x java 2>/dev/null || true); do
+    [[ "$(readlink -f "/proc/$p/cwd" 2>/dev/null)" == "$dir" ]] && { echo "$p"; return 0; }
+  done
+  ae_pid "$dir"
+}
+
+case "${1:-}" in
+  status)
+    printf '{"servers":{'
+    sep=""
+    for id in "${IDS[@]}"; do
+      dir=$(ae_resolve "$id" 2>/dev/null) || continue
+      pid=$(java_pid "$dir" 2>/dev/null || true)
+      stopped=false
+      [[ -f "$OPS/state/$(basename "$dir").stopped" ]] && stopped=true
+      up=0
+      [[ -n "$pid" ]] && up=$(ps -o etimes= -p "$pid" 2>/dev/null | tr -d ' ')
+      printf '%s"%s":{"pid":%s,"stopped":%s,"uptime":%s}' "$sep" "$id" "${pid:-null}" "$stopped" "${up:-0}"
+      sep=","
+    done
+    printf '}}\n'
+    ;;
+
+  sizes)
+    # du reads metadata only; nice/ionice keep it out of the servers' way
+    printf '{"servers":{'
+    sep=""
+    for id in "${IDS[@]}"; do
+      dir=$(ae_resolve "$id" 2>/dev/null) || continue
+      [[ -d "$dir" ]] || continue
+      total=$(nice -n 19 ionice -c3 du -sb "$dir" 2>/dev/null | cut -f1)
+      printf '%s"%s":{"bytes":%s,"worlds":{' "$sep" "$id" "${total:-0}"
+      wsep=""
+      for lvl in "$dir"/*/level.dat; do
+        [[ -f "$lvl" ]] || continue
+        w=$(dirname "$lvl")
+        b=$(nice -n 19 ionice -c3 du -sb "$w" 2>/dev/null | cut -f1)
+        printf '%s"%s":%s' "$wsep" "$(basename "$w")" "${b:-0}"
+        wsep=","
+      done
+      printf '}}'
+      sep=","
+    done
+    printf '}'
+    if [[ -d "$BACKUPS" ]]; then
+      bb=$(nice -n 19 ionice -c3 du -sb "$BACKUPS" 2>/dev/null | cut -f1)
+      count=$(find "$BACKUPS" -mindepth 1 -maxdepth 1 | wc -l)
+      latest=$(find "$BACKUPS" -mindepth 1 -maxdepth 1 -printf '%T@ %f\n' 2>/dev/null | sort -n | tail -1)
+      lts=${latest%% *}
+      lts=${lts%.*}
+      lname=${latest#* }
+      printf ',"backups":{"bytes":%s,"count":%s,"latest":%s,"latestName":"%s"}' "${bb:-0}" "$count" "$(( ${lts:-0} * 1000 ))" "${lname//\"/}"
+    fi
+    printf '}\n'
+    ;;
+
+  watchdog)
+    tail -n 30 "$OPS/state/watchdog.log" 2>/dev/null || true
+    ;;
+
+  start | stop | restart | kill)
+    id="${2:-}"
+    known "$id" || { echo "unbekannter Server: $id"; exit 2; }
+    case "$1" in
+      start) bash "$OPS/ae-start.sh" "$id" ;;
+      stop) bash "$OPS/ae-stop.sh" "$id" ;;
+      kill) bash "$OPS/ae-stop.sh" "$id" now ;;
+      restart) bash "$OPS/ae-stop.sh" "$id" && bash "$OPS/ae-start.sh" "$id" ;;
+    esac
+    ;;
+
+  *)
+    echo "usage: helm-ctl status | sizes | watchdog | start|stop|restart|kill <id>"
+    exit 2
+    ;;
+esac

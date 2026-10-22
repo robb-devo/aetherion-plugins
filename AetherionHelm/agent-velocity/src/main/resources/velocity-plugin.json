@@ -1,0 +1,1 @@
+{"id":"aetherionhelm","name":"AetherionHelm","version":"${project.version}","description":"Aetherion Helm agent for the proxy","authors":["Aetherion"],"dependencies":[],"main":"de.aetherion.helm.proxy.HelmProxy"}

@@ -1,0 +1,169 @@
+name: Aetherion Helm
+
+# Builds the staff panel (gateway, both server agents, web app) and the Android app, and publishes everything as
+# the GitHub release "aetherion-helm". deploy-helm.ps1 installs that release on the server.
+on:
+  push:
+    branches:
+      - main
+      - claude/aetherion-helm
+    paths:
+      - AetherionHelm/**
+      - .github/workflows/aetherion-helm.yml
+  workflow_dispatch:
+    inputs:
+      panel_url:
+        description: Address the Android app opens
+        default: https://panel.donnernet.de
+
+concurrency:
+  group: aetherion-helm-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  HELM_URL: ${{ inputs.panel_url || 'https://panel.donnernet.de' }}
+
+jobs:
+  jars:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Velocity 4 ships Java 25 class files; the gateway and the Paper agent still target 21.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+      - name: Package gateway and agents
+        run: |
+          for m in gateway agent-paper agent-velocity; do
+            mvn -B -q -DskipTests -f AetherionHelm/$m/pom.xml package
+          done
+          mkdir out
+          cp AetherionHelm/gateway/target/helm-gateway.jar out/helm-gateway.jar
+          cp AetherionHelm/agent-paper/target/AetherionHelm-*.jar out/AetherionHelm.jar
+          cp AetherionHelm/agent-velocity/target/AetherionHelmProxy-*.jar out/AetherionHelmProxy.jar
+      - uses: actions/upload-artifact@v4
+        with:
+          name: helm-jars
+          path: out/*
+          if-no-files-found: error
+          retention-days: 7
+
+  app:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: AetherionHelm/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: AetherionHelm/web/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - run: npm ci
+      - name: Build web app
+        run: |
+          npm run build
+          node scripts/prepare-app.mjs
+          (cd dist && zip -qr ../helm-web.zip .)
+      - name: Sync Android project
+        run: npx cap sync android
+      - name: Signing key
+        env:
+          KEYSTORE_B64: ${{ secrets.HELM_KEYSTORE_B64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.HELM_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.HELM_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.HELM_KEY_PASSWORD }}
+        run: |
+          ks="$RUNNER_TEMP/helm.keystore"
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$ks"
+            echo "HELM_SIGNING=permanent" >> "$GITHUB_ENV"
+            echo "HELM_KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
+            echo "HELM_KEY_ALIAS=${KEY_ALIAS:-helm}" >> "$GITHUB_ENV"
+            echo "HELM_KEY_PASSWORD=${KEY_PASSWORD:-$KEYSTORE_PASSWORD}" >> "$GITHUB_ENV"
+          else
+            # no secret yet: a throwaway key, so the APK still installs. A later permanent key needs one reinstall.
+            pw=$(openssl rand -hex 16)
+            echo "::add-mask::$pw"
+            keytool -genkeypair -v -keystore "$ks" -storepass "$pw" -keypass "$pw" -alias helm \
+              -keyalg RSA -keysize 4096 -validity 10000 -dname "CN=Aetherion Helm" >/dev/null 2>&1
+            echo "HELM_SIGNING=provisional" >> "$GITHUB_ENV"
+            echo "HELM_KEYSTORE_PASSWORD=$pw" >> "$GITHUB_ENV"
+            echo "HELM_KEY_ALIAS=helm" >> "$GITHUB_ENV"
+            echo "HELM_KEY_PASSWORD=$pw" >> "$GITHUB_ENV"
+          fi
+          echo "HELM_KEYSTORE_FILE=$ks" >> "$GITHUB_ENV"
+      - name: Build APK
+        working-directory: AetherionHelm/web/android
+        env:
+          HELM_BUILD: ${{ github.run_number }}
+        run: |
+          chmod +x gradlew
+          ./gradlew -q assembleRelease
+          cp app/build/outputs/apk/release/app-release.apk ../aetherion-helm.apk
+          rm -f "$HELM_KEYSTORE_FILE"
+          echo "$HELM_SIGNING" > ../signing.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: helm-app
+          path: |
+            AetherionHelm/web/helm-web.zip
+            AetherionHelm/web/aetherion-helm.apk
+            AetherionHelm/web/signing.txt
+          if-no-files-found: error
+          retention-days: 7
+
+  release:
+    needs: [jars, app]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: dl
+          merge-multiple: true
+      - name: Publish release "aetherion-helm"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BUILD: ${{ github.run_number }}
+        run: |
+          d=AetherionHelm/deploy
+          cp $d/install.sh $d/helm-ctl $d/aetherion-helm.service $d/deploy-helm.ps1 dl/
+          if [ "$(cat dl/signing.txt)" = permanent ]; then
+            sig="Signiert mit dem festen App-Schlüssel."
+          else
+            sig="Vorläufig signiert. Sobald der feste App-Schlüssel als Secret hinterlegt ist, einmal deinstallieren und neu installieren; danach laufen Updates einfach drüber."
+          fi
+          short=$(git rev-parse --short HEAD)
+          cat > notes.md <<EOF
+          **Aetherion Helm**, Build $BUILD ($short, Branch \`${GITHUB_REF_NAME}\`)
+
+          Die Staff-Konsole für das Netzwerk: Live-Status aller Server und des Hetzner-Hosts, Spieler mit Inventar und Enderchest, Konsole, Strafen, Meldungen, Protokoll. Login mit Passwort und Pflicht-2FA.
+
+          **Android:** \`aetherion-helm.apk\` aufs Handy laden und öffnen (einmal „Installation aus dieser Quelle erlauben“). Die App öffnet ${HELM_URL}; neue Funktionen kommen über den Server, die APK muss dafür nicht neu installiert werden. ${sig}
+
+          **iPhone und PC:** ${HELM_URL} im Browser öffnen. Auf dem iPhone über Teilen → „Zum Home-Bildschirm“ wird daraus eine App.
+
+          **Server:** \`deploy-helm.ps1\` auf dem PC ausführen. Es lädt diese Dateien, installiert alles auf dem Server und legt die Konten an.
+
+          | Datei | Wohin |
+          |---|---|
+          | helm-gateway.jar, helm-web.zip | Panel-Dienst auf dem Server |
+          | AetherionHelm.jar | plugins/ jedes Paper-Servers |
+          | AetherionHelmProxy.jar | plugins/ des Proxys |
+          | install.sh, helm-ctl, aetherion-helm.service | Installer und Steuerung, nutzt deploy-helm.ps1 |
+          EOF
+          gh release delete aetherion-helm --cleanup-tag -y 2>/dev/null || true
+          gh release create aetherion-helm --target "$GITHUB_SHA" --title "Aetherion Helm · Build $BUILD" \
+            --notes-file notes.md --latest=false \
+            dl/helm-gateway.jar dl/AetherionHelm.jar dl/AetherionHelmProxy.jar dl/helm-web.zip \
+            dl/aetherion-helm.apk dl/install.sh dl/helm-ctl dl/aetherion-helm.service dl/deploy-helm.ps1

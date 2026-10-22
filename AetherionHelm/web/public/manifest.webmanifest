@@ -1,0 +1,17 @@
+{
+  "name": "Aetherion Helm",
+  "short_name": "Helm",
+  "description": "Staff-Konsole des Aetherion-Netzwerks",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#04050a",
+  "theme_color": "#05060b",
+  "lang": "de",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

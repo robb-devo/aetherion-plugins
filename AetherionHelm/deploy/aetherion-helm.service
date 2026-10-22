@@ -1,0 +1,19 @@
+[Unit]
+Description=Aetherion Helm (Staff-Panel und Agent-Gateway)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=helm
+Group=helm
+WorkingDirectory=/opt/aetherion-helm
+ExecStart=/usr/bin/env java -Xms96m -Xmx384m -XX:+UseSerialGC -Dfile.encoding=UTF-8 -jar /opt/aetherion-helm/helm-gateway.jar --config /opt/aetherion-helm/helm.json serve
+Restart=always
+RestartSec=3
+# helm-ctl runs through sudo, so no NoNewPrivileges and no ProtectHome (it has to reach /root/aetherion-ops)
+PrivateTmp=true
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,17 @@
+name: AetherionHelm
+version: '${project.version}'
+main: de.aetherion.helm.agent.HelmAgent
+api-version: '1.21'
+description: Live link to the Aetherion Helm staff app (stats, console, inventories, moderation, reports).
+authors: [Robb]
+commands:
+  report:
+    description: Einen Spieler beim Team melden
+    usage: /report <Spieler> <Grund>
+    aliases: [melden]
+  helm:
+    description: Status der Verbindung zu Aetherion Helm
+    permission: aetherion.helm.admin
+permissions:
+  aetherion.helm.admin:
+    default: op
