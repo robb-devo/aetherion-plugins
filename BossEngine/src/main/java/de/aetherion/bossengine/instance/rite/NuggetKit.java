@@ -346,7 +346,7 @@ final class NuggetKit extends RiteKit {
         Stage.fx(at.clone().add(0, 0.4, 0), Particle.CLOUD, 12, 1.2, 0.06);
         Stage.fx(at.clone().add(0, 0.8, 0), Particle.ITEM, 8, 1.0, 0.12, new ItemStack(Material.FEATHER));
         Stage.dustRing(at, SPLAT, YOLK, 1.4f, 0.6);
-        Stage.sound(at, Sound.BLOCK_TURTLE_EGG_BREAK, 1.4f, 0.6f);
+        Stage.sound(at, Sound.BLOCK_SNIFFER_EGG_CRACK, 1.5f, 0.55f);
         Stage.sound(at, Sound.ENTITY_CHICKEN_HURT, 1.0f, 0.6f);
         Stage.sound(at, Sound.ENTITY_GENERIC_EXPLODE, 0.5f, 1.6f);
         if (golden) {
